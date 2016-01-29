@@ -26,6 +26,7 @@
 
 #include "gluCallLogWrapper.hpp"
 #include "gluContextInfo.hpp"
+#include "gluRenderContext.hpp"
 
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
@@ -102,8 +103,8 @@ void activetexture (NegativeTestContext& ctx)
 
 void bindtexture (NegativeTestContext& ctx)
 {
-	GLuint texture[2];
-	ctx.glGenTextures(2, texture);
+	GLuint texture[5];
+	ctx.glGenTextures(5, texture);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if target is not one of the allowable values.");
 	ctx.glBindTexture(0, 1);
@@ -130,9 +131,49 @@ void bindtexture (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glBindTexture(GL_TEXTURE_2D_ARRAY, texture[1]);
 	ctx.expectError(GL_INVALID_OPERATION);
+
+	ctx.glBindTexture(GL_TEXTURE_3D, texture[2]);
+	ctx.expectError(GL_NO_ERROR);
+	ctx.glBindTexture(GL_TEXTURE_2D, texture[2]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, texture[2]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glBindTexture(GL_TEXTURE_2D_ARRAY, texture[2]);
+	ctx.expectError(GL_INVALID_OPERATION);
+
+	ctx.glBindTexture(GL_TEXTURE_2D_ARRAY, texture[3]);
+	ctx.expectError(GL_NO_ERROR);
+	ctx.glBindTexture(GL_TEXTURE_2D, texture[3]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, texture[3]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glBindTexture(GL_TEXTURE_3D, texture[3]);
+	ctx.expectError(GL_INVALID_OPERATION);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, texture[0]);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, texture[1]);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, texture[2]);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, texture[3]);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, texture[4]);
+		ctx.expectError(GL_NO_ERROR);
+		ctx.glBindTexture(GL_TEXTURE_2D, texture[4]);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, texture[4]);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glBindTexture(GL_TEXTURE_3D, texture[4]);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glBindTexture(GL_TEXTURE_2D_ARRAY, texture[4]);
+		ctx.expectError(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 
-	ctx.glDeleteTextures(2, texture);
+	ctx.glDeleteTextures(5, texture);
 }
 
 // glCompressedTexImage2D
@@ -417,14 +458,132 @@ void compressedteximage2d_invalid_border (NegativeTestContext& ctx)
 void compressedteximage2d_invalid_size (NegativeTestContext& ctx)
 {
 	ctx.beginSection("GL_INVALID_VALUE is generated if imageSize is not consistent with the format, dimensions, and contents of the specified compressed image data.");
-	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 0, -1, 0);
+	// Subtracting 1 to the imageSize field to deviate from the expected size. Removing the -1 would cause the imageSize to be correct.
+	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_R11_EAC, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 8 - 1, 0);
 	ctx.expectError(GL_INVALID_VALUE);
-	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 16, 16, 0, 4*4*8, 0);
+	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SIGNED_R11_EAC, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 8 - 1, 0);
 	ctx.expectError(GL_INVALID_VALUE);
-	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB8_ETC2, 16, 16, 0, 4*4*16, 0);
+	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RG11_EAC, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 16 - 1, 0);
 	ctx.expectError(GL_INVALID_VALUE);
-	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SIGNED_R11_EAC, 16, 16, 0, 4*4*16, 0);
+	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SIGNED_RG11_EAC, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 16 - 1, 0);
 	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB8_ETC2, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 8 - 1, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ETC2, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 8 - 1, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 8 - 1, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 8 - 1, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 16 - 1, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 16 - 1, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	{
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_4x4, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_5x4, 1, 1, 0, divRoundUp(1, 5) * divRoundUp(1, 4) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_5x5, 1, 1, 0, divRoundUp(1, 5) * divRoundUp(1, 5) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_6x5, 1, 1, 0, divRoundUp(1, 6) * divRoundUp(1, 5) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_6x6, 1, 1, 0, divRoundUp(1, 6) * divRoundUp(1, 6) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_8x5, 1, 1, 0, divRoundUp(1, 8) * divRoundUp(1, 5) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_8x6, 1, 1, 0, divRoundUp(1, 8) * divRoundUp(1, 6) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_8x8, 1, 1, 0, divRoundUp(1, 8) * divRoundUp(1, 8) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_10x5, 1, 1, 0, divRoundUp(1, 10) * divRoundUp(1, 5) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_10x6, 1, 1, 0, divRoundUp(1, 10) * divRoundUp(1, 6) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_10x8, 1, 1, 0, divRoundUp(1, 10) * divRoundUp(1, 8) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_10x10, 1, 1, 0, divRoundUp(1, 10) * divRoundUp(1, 10) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_12x10, 1, 1, 0, divRoundUp(1, 12) * divRoundUp(1, 10) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_12x12, 1, 1, 0, divRoundUp(1, 12) * divRoundUp(1, 12) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4, 1, 1, 0, divRoundUp(1, 5) * divRoundUp(1, 4) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5, 1, 1, 0, divRoundUp(1, 5) * divRoundUp(1, 5) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5, 1, 1, 0, divRoundUp(1, 6) * divRoundUp(1, 5) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6, 1, 1, 0, divRoundUp(1, 6) * divRoundUp(1, 6) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5, 1, 1, 0, divRoundUp(1, 8) * divRoundUp(1, 5) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6, 1, 1, 0, divRoundUp(1, 8) * divRoundUp(1, 6) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8, 1, 1, 0, divRoundUp(1, 8) * divRoundUp(1, 8) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5, 1, 1, 0, divRoundUp(1, 10) * divRoundUp(1, 5) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6, 1, 1, 0, divRoundUp(1, 10) * divRoundUp(1, 6) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8, 1, 1, 0, divRoundUp(1, 10) * divRoundUp(1, 8) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10, 1, 1, 0, divRoundUp(1, 10) * divRoundUp(1, 10) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10, 1, 1, 0, divRoundUp(1, 12) * divRoundUp(1, 10) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12, 1, 1, 0, divRoundUp(1, 12) * divRoundUp(1, 12) * 16 - 1, 0);
+	    ctx.expectError(GL_INVALID_VALUE);
+	}
+	ctx.endSection();
+}
+
+void compressedteximage2d_neg_size (NegativeTestContext& ctx)
+{
+	ctx.beginSection("GL_INVALID_VALUE is generated if imageSize is negative.");
+	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_R11_EAC, 0, 0, 0, -1, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+}
+
+void compressedteximage2d_invalid_width_height (NegativeTestContext& ctx)
+{
+	ctx.beginSection("GL_INVALID_VALUE is generated if target is a cube map face and width and height are not equal.");
+
+	ctx.beginSection("GL_TEXTURE_CUBE_MAP_POSITIVE_X target");
+	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_COMPRESSED_R11_EAC, 1, 2, 0, divRoundUp(1, 4) * divRoundUp(2, 4) * 8, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	ctx.beginSection("GL_TEXTURE_CUBE_MAP_POSITIVE_Y target");
+	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_COMPRESSED_R11_EAC, 1, 2, 0, divRoundUp(1, 4) * divRoundUp(2, 4) * 8, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	ctx.beginSection("GL_TEXTURE_CUBE_MAP_POSITIVE_Z target");
+	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_COMPRESSED_R11_EAC, 1, 2, 0, divRoundUp(1, 4) * divRoundUp(2, 4) * 8, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	ctx.beginSection("GL_TEXTURE_CUBE_MAP_NEGATIVE_X target");
+	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_COMPRESSED_R11_EAC, 1, 2, 0, divRoundUp(1, 4) * divRoundUp(2, 4) * 8, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	ctx.beginSection("GL_TEXTURE_CUBE_MAP_NEGATIVE_Y target");
+	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_COMPRESSED_R11_EAC, 1, 2, 0, divRoundUp(1, 4) * divRoundUp(2, 4) * 8, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	ctx.beginSection("GL_TEXTURE_CUBE_MAP_NEGATIVE_Z target");
+	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_COMPRESSED_R11_EAC, 1, 2, 0, divRoundUp(1, 4) * divRoundUp(2, 4) * 8, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
 	ctx.endSection();
 }
 
@@ -783,6 +942,36 @@ void copytexsubimage2d_invalid_target (NegativeTestContext& ctx)
 	ctx.beginSection("GL_INVALID_ENUM is generated if target is invalid.");
 	ctx.glCopyTexSubImage2D(0, 0, 0, 0, 0, 0, 4, 4);
 	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteTextures(1, &texture);
+}
+void copytexsubimage2d_read_buffer_is_none (NegativeTestContext& ctx)
+{
+	GLuint texture = 0x1234;
+	ctx.glGenTextures	(1, &texture);
+	ctx.glBindTexture	(GL_TEXTURE_2D, texture);
+	ctx.glTexImage2D	(GL_TEXTURE_2D, 0, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if the read buffer is NONE");
+	ctx.glReadBuffer(GL_NONE);
+	ctx.glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 4, 4);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.glDeleteTextures(1, &texture);
+}
+
+void copytexsubimage2d_texture_internalformat (NegativeTestContext& ctx)
+{
+	GLuint texture = 0x1234;
+	ctx.glGenTextures	(1, &texture);
+	ctx.glBindTexture	(GL_TEXTURE_2D, texture);
+	ctx.glTexImage2D	(GL_TEXTURE_2D, 0, GL_RGB9_E5, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if internal format of the texture is GL_RGB9_E5");
+	ctx.glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 4, 4);
+	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 
 	ctx.glDeleteTextures(1, &texture);
@@ -1562,27 +1751,9 @@ void texsubimage2d_invalid_buffer_target (NegativeTestContext& ctx)
 
 void texparameteri (NegativeTestContext& ctx)
 {
-	ctx.beginSection("GL_INVALID_ENUM is generated if target or pname is not one of the accepted defined values.");
-	ctx.glTexParameteri(0, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameteri(GL_TEXTURE_2D, 0, GL_LINEAR);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameteri(0, 0, GL_LINEAR);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.endSection();
-
-	ctx.beginSection("GL_INVALID_ENUM is generated if params should have a defined symbolic constant value (based on the value of pname) and does not.");
-	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, 0);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_REPEAT);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_NEAREST);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.endSection();
-
 	GLuint texture = 0x1234;
+	GLint textureMode = -1;
+
 	ctx.glGenTextures(1, &texture);
 	ctx.glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -1595,15 +1766,108 @@ void texparameteri (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_ENUM is generated if params should have a defined symbolic constant value (based on the value of pname) and does not.");
-	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, 0);
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is enum and the value of param(s) is not a valid value.");
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, textureMode);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_REPEAT);
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, textureMode);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0);
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, textureMode);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_NEAREST);
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, textureMode);
 	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if pname is GL_TEXTURE_BASE_LEVEL or GL_TEXTURE_MAX_LEVEL and param(s) is negative.");
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, -1);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, -1);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	{
+		ctx.beginSection("GL_INVALID_ENUM is generated if pname is a non-scalar parameter.");
+		ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, 0);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.endSection();
+	}
+
+	ctx.beginSection("GL_INVALID_ENUM error is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname is not valid.");
+	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BORDER_COLOR, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_LOD, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LOD, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_MODE, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_FUNC, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	{
+		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BORDER_COLOR, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MIN_FILTER, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAG_FILTER, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_S, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_T, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_R, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MIN_LOD, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAX_LOD, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_COMPARE_MODE, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_COMPARE_FUNC, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+	}
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname GL_TEXTURE_BASE_LEVEL is not 0.");
+	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, -1);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, 1);
+	ctx.expectError(GL_INVALID_OPERATION);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	{
+		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, -1);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, 1);
+		ctx.expectError(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 
 	ctx.glDeleteTextures(1, &texture);
@@ -1613,27 +1877,8 @@ void texparameteri (NegativeTestContext& ctx)
 
 void texparameterf (NegativeTestContext& ctx)
 {
-	ctx.beginSection("GL_INVALID_ENUM is generated if target or pname is not one of the accepted defined values.");
-	ctx.glTexParameterf(0, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameterf(GL_TEXTURE_2D, 0, GL_LINEAR);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameterf(0, 0, GL_LINEAR);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.endSection();
-
-	ctx.beginSection("GL_INVALID_ENUM is generated if params should have a defined symbolic constant value (based on the value of pname) and does not.");
-	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, 0);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_REPEAT);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_NEAREST);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.endSection();
-
 	GLuint texture = 0x1234;
+	GLfloat textureMode = -1.0f;
 	ctx.glGenTextures(1, &texture);
 	ctx.glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -1646,15 +1891,108 @@ void texparameterf (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_ENUM is generated if params should have a defined symbolic constant value (based on the value of pname) and does not.");
-	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, 0);
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is enum and the value of param(s) is not a valid value.");
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, textureMode);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_REPEAT);
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, textureMode);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0);
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, textureMode);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_NEAREST);
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, textureMode);
 	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if pname is GL_TEXTURE_BASE_LEVEL or GL_TEXTURE_MAX_LEVEL and param(s) is negative.");
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, -1.0f);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, -1.0f);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	{
+		ctx.beginSection("GL_INVALID_ENUM is generated if pname is a non-scalar parameter.");
+		ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, 0.0f);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.endSection();
+	}
+
+	ctx.beginSection("GL_INVALID_ENUM error is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname is not valid.");
+	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BORDER_COLOR, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_LOD, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LOD, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_MODE, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_FUNC, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	{
+		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BORDER_COLOR, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MIN_FILTER, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAG_FILTER, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_S, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_T, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_R, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MIN_LOD, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAX_LOD, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_COMPARE_MODE, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_COMPARE_FUNC, textureMode);
+		ctx.expectError(GL_INVALID_ENUM);
+	}
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname GL_TEXTURE_BASE_LEVEL is not 0.");
+	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, -1.0f);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, 1.0f);
+	ctx.expectError(GL_INVALID_OPERATION);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	{
+		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, -1.0f);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, 1.0f);
+		ctx.expectError(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 
 	ctx.glDeleteTextures(1, &texture);
@@ -1664,37 +2002,12 @@ void texparameterf (NegativeTestContext& ctx)
 
 void texparameteriv (NegativeTestContext& ctx)
 {
-	ctx.beginSection("GL_INVALID_ENUM is generated if target or pname is not one of the accepted defined values.");
 	GLint params[1] = {GL_LINEAR};
-	ctx.glTexParameteriv(0, GL_TEXTURE_MIN_FILTER, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameteriv(GL_TEXTURE_2D, 0, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameteriv(0, 0, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.endSection();
-
-	ctx.beginSection("GL_INVALID_ENUM is generated if params should have a defined symbolic constant value (based on the value of pname) and does not.");
-	params[0] = 0;
-	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	params[0] = GL_REPEAT;
-	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	params[0] = 0;
-	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	params[0] = GL_NEAREST;
-	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.endSection();
-
 	GLuint texture = 0x1234;
 	ctx.glGenTextures(1, &texture);
 	ctx.glBindTexture(GL_TEXTURE_2D, texture);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if target or pname is not one of the accepted defined values.");
-	params[0] = GL_LINEAR;
 	ctx.glTexParameteriv(0, GL_TEXTURE_MIN_FILTER, &params[0]);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.glTexParameteriv(GL_TEXTURE_2D, 0, &params[0]);
@@ -1703,19 +2016,105 @@ void texparameteriv (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_ENUM is generated if params should have a defined symbolic constant value (based on the value of pname) and does not.");
-	params[0] = 0;
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is enum and the value of param(s) is not a valid value.");
+	params[0] = -1;
+	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
 	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, &params[0]);
 	ctx.expectError(GL_INVALID_ENUM);
-	params[0] = GL_REPEAT;
 	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &params[0]);
 	ctx.expectError(GL_INVALID_ENUM);
-	params[0] = 0;
+	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
 	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, &params[0]);
 	ctx.expectError(GL_INVALID_ENUM);
-	params[0] = GL_NEAREST;
 	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, &params[0]);
 	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if pname is GL_TEXTURE_BASE_LEVEL or GL_TEXTURE_MAX_LEVEL and param(s) is negative.");
+	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, &params[0]);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, &params[0]);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_ENUM error is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname is not valid.");
+	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BORDER_COLOR, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_R, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_LOD, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LOD, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_MODE, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_FUNC, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	{
+		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BORDER_COLOR, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MIN_FILTER, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAG_FILTER, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_S, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_T, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_R, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MIN_LOD, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAX_LOD, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_COMPARE_MODE, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_COMPARE_FUNC, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+	}
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname GL_TEXTURE_BASE_LEVEL is not 0.");
+	params[0] = -1;
+	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	params[0] = 1;
+	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	{
+		params[0] = -1;
+		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, &params[0]);
+		ctx.expectError(GL_INVALID_OPERATION);
+		params[0] = 1;
+		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, &params[0]);
+		ctx.expectError(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 
 	ctx.glDeleteTextures(1, &texture);
@@ -1725,31 +2124,7 @@ void texparameteriv (NegativeTestContext& ctx)
 
 void texparameterfv (NegativeTestContext& ctx)
 {
-	ctx.beginSection("GL_INVALID_ENUM is generated if target or pname is not one of the accepted defined values.");
 	GLfloat params[1] = {GL_LINEAR};
-	ctx.glTexParameterfv(0, GL_TEXTURE_MIN_FILTER, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameterfv(GL_TEXTURE_2D, 0, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glTexParameterfv(0, 0, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.endSection();
-
-	ctx.beginSection("GL_INVALID_ENUM is generated if params should have a defined symbolic constant value (based on the value of pname) and does not.");
-	params[0] = 0.0f;
-	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	params[0] = GL_REPEAT;
-	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	params[0] = 0.0f;
-	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	params[0] = GL_NEAREST;
-	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, &params[0]);
-	ctx.expectError(GL_INVALID_ENUM);
-	ctx.endSection();
-
 	GLuint texture = 0x1234;
 	ctx.glGenTextures(1, &texture);
 	ctx.glBindTexture(GL_TEXTURE_2D, texture);
@@ -1764,22 +2139,327 @@ void texparameterfv (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_ENUM is generated if params should have a defined symbolic constant value (based on the value of pname) and does not.");
-	params[0] = 0.0f;
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is enum and the value of param(s) is not a valid value.");
+	params[0] = -1.0f;
+	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
 	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, &params[0]);
 	ctx.expectError(GL_INVALID_ENUM);
-	params[0] = GL_REPEAT;
 	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &params[0]);
 	ctx.expectError(GL_INVALID_ENUM);
-	params[0] = 0.0f;
+	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
 	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, &params[0]);
 	ctx.expectError(GL_INVALID_ENUM);
-	params[0] = GL_NEAREST;
 	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, &params[0]);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
+	ctx.beginSection("GL_INVALID_VALUE is generated if pname is GL_TEXTURE_BASE_LEVEL or GL_TEXTURE_MAX_LEVEL and param(s) is negative.");
+	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, &params[0]);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, &params[0]);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_ENUM error is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname is not valid.");
+	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BORDER_COLOR, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_R, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_LOD, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LOD, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_MODE, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_FUNC, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	{
+		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BORDER_COLOR, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MIN_FILTER, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAG_FILTER, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_S, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_T, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_R, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MIN_LOD, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAX_LOD, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_COMPARE_MODE, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_COMPARE_FUNC, &params[0]);
+		ctx.expectError(GL_INVALID_ENUM);
+	}
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname GL_TEXTURE_BASE_LEVEL is not 0.");
+	params[0] = -1.0f;
+	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	params[0] = 1.0f;
+	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	{
+		params[0] = -1.0f;
+		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, &params[0]);
+		ctx.expectError(GL_INVALID_OPERATION);
+		params[0] = 1.0f;
+		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, &params[0]);
+		ctx.expectError(GL_INVALID_OPERATION);
+	}
+	ctx.endSection();
+
 	ctx.glDeleteTextures(1, &texture);
+}
+
+// glTexParameterIiv
+
+void texparameterIiv (NegativeTestContext& ctx)
+{
+	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		throw tcu::NotSupportedError("glTexParameterIiv is not supported.", DE_NULL, __FILE__, __LINE__);
+
+	GLint textureMode[] = { GL_DEPTH_COMPONENT, GL_STENCIL_INDEX };
+	ctx.beginSection("GL_INVALID_ENUM is generated if target is not a valid target.");
+	ctx.glTexParameterIiv(0, GL_DEPTH_STENCIL_TEXTURE_MODE, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not a valid parameter.");
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, 0, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is enum and the value of param(s) is not a valid value.");
+	textureMode[0] = -1;
+	textureMode[1] = -1;
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if pname is GL_TEXTURE_BASE_LEVEL or GL_TEXTURE_MAX_LEVEL and param(s) is negative.");
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, textureMode);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, textureMode);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_ENUM error is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname is not valid.");
+	textureMode[0] = 0;
+	textureMode[1] = 0;
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BORDER_COLOR, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_LOD, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LOD, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_MODE, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_FUNC, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BORDER_COLOR, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MIN_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAG_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_S, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_T, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MIN_LOD, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAX_LOD, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_COMPARE_MODE, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_COMPARE_FUNC, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname GL_TEXTURE_BASE_LEVEL is not 0.");
+	textureMode[0] = -1;
+	textureMode[1] = -1;
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, textureMode);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, textureMode);
+	ctx.expectError(GL_INVALID_OPERATION);
+
+	textureMode[0] = 1;
+	textureMode[1] = 1;
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, textureMode);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, textureMode);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+}
+
+// glTexParameterIuiv
+
+void texparameterIuiv (NegativeTestContext& ctx)
+{
+	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		throw tcu::NotSupportedError("glTexParameterIuiv is not supported.", DE_NULL, __FILE__, __LINE__);
+
+	GLuint textureMode[] = { GL_DEPTH_COMPONENT, GL_STENCIL_INDEX };
+	ctx.beginSection("GL_INVALID_ENUM is generated if target is not a valid target.");
+	ctx.glTexParameterIuiv(0, GL_DEPTH_STENCIL_TEXTURE_MODE, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not a valid parameter.");
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, 0, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is enum and the value of param(s) is not a valid value.");
+	textureMode[0] = GL_DONT_CARE;
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_ENUM error is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname is not valid.");
+	textureMode[0] = 0;
+	textureMode[1] = 0;
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BORDER_COLOR, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_LOD, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LOD, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_MODE, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_FUNC, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BORDER_COLOR, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MIN_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAG_FILTER, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_S, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_T, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_WRAP_R, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MIN_LOD, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAX_LOD, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_COMPARE_MODE, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_COMPARE_FUNC, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname GL_TEXTURE_BASE_LEVEL is not 0.");
+	textureMode[0] = 1;
+	textureMode[1] = 1;
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, textureMode);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, textureMode);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
 }
 
 // glCompressedTexSubImage2D
@@ -2039,6 +2719,19 @@ void teximage3d (NegativeTestContext& ctx)
 	ctx.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32UI, 1, 1, 1, 0, GL_RGBA_INTEGER, GL_INT, 0);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.beginSection("GL_INVALID_VALUE is generated if target is GL_TEXTURE_CUBE_MAP_ARRAY and width and height are not equal.");
+		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, 2, 1, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.endSection();
+
+		ctx.beginSection("GL_INVALID_VALUE is generated if target is GL_TEXTURE_CUBE_MAP_ARRAY and depth is not a multiple of six.");
+		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, 1, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.endSection();
+	}
 }
 
 void teximage3d_neg_level (NegativeTestContext& ctx)
@@ -2048,7 +2741,15 @@ void teximage3d_neg_level (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.glTexImage3D(GL_TEXTURE_2D_ARRAY, -1, GL_RGB, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, -1, GL_RGBA, 1, 1, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+	}
+
 	ctx.endSection();
+
 }
 
 void teximage3d_max_level (NegativeTestContext& ctx)
@@ -2086,6 +2787,18 @@ void teximage3d_neg_width_height_depth (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, -1, -1, -1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, -1, 1, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, 1, -1, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, 1, 1, -6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, -1, -1, -6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+	}
 	ctx.endSection();
 }
 
@@ -2128,6 +2841,15 @@ void teximage3d_invalid_border (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB, 1, 1, 1, 2, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_RGBA, 1, 1, 6, -1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_RGBA, 1, 1, 6, 1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+	}
+
 	ctx.endSection();
 }
 
@@ -2215,12 +2937,14 @@ void texsubimage3d (NegativeTestContext& ctx)
 
 void texsubimage3d_neg_level (NegativeTestContext& ctx)
 {
-	deUint32			textures[2];
-	ctx.glGenTextures		(2, &textures[0]);
+	deUint32			textures[3];
+	ctx.glGenTextures		(3, &textures[0]);
 	ctx.glBindTexture		(GL_TEXTURE_3D, textures[0]);
 	ctx.glTexImage3D		(GL_TEXTURE_3D, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.glBindTexture		(GL_TEXTURE_2D_ARRAY, textures[1]);
 	ctx.glTexImage3D		(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	ctx.glBindTexture		(GL_TEXTURE_CUBE_MAP_ARRAY, textures[2]);
+	ctx.glTexImage3D		(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, 4, 4, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError			(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if level is less than 0.");
@@ -2228,9 +2952,16 @@ void texsubimage3d_neg_level (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.glTexSubImage3D(GL_TEXTURE_2D_ARRAY, -1, 0, 0, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, -1, 0, 0, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+	}
+
 	ctx.endSection();
 
-	ctx.glDeleteTextures	(2, &textures[0]);
+	ctx.glDeleteTextures	(3, &textures[0]);
 }
 
 void texsubimage3d_max_level (NegativeTestContext& ctx)
@@ -2261,12 +2992,14 @@ void texsubimage3d_max_level (NegativeTestContext& ctx)
 
 void texsubimage3d_neg_offset (NegativeTestContext& ctx)
 {
-	deUint32			textures[2];
-	ctx.glGenTextures		(2, &textures[0]);
+	deUint32			textures[3];
+	ctx.glGenTextures		(3, &textures[0]);
 	ctx.glBindTexture		(GL_TEXTURE_3D, textures[0]);
 	ctx.glTexImage3D		(GL_TEXTURE_3D, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.glBindTexture		(GL_TEXTURE_2D_ARRAY, textures[1]);
 	ctx.glTexImage3D		(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	ctx.glBindTexture		(GL_TEXTURE_CUBE_MAP_ARRAY, textures[2]);
+	ctx.glTexImage3D		(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, 4, 4, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError			(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if xoffset, yoffset or zoffset are negative.");
@@ -2286,9 +3019,22 @@ void texsubimage3d_neg_offset (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, -1, -1, -1, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, -1, 0, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, -1, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, -1, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, -1, -1, -1, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+	}
+
 	ctx.endSection();
 
-	ctx.glDeleteTextures	(2, &textures[0]);
+	ctx.glDeleteTextures	(3, &textures[0]);
 }
 
 void texsubimage3d_invalid_offset (NegativeTestContext& ctx)
@@ -2328,6 +3074,19 @@ void texsubimage3d_neg_width_height (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, -1, -1, -1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, 0, -1, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, 0, 0, -1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, 0, 0, 0, -1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, 0, -1, -1, -1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+	}
+
 	ctx.endSection();
 }
 
@@ -2394,36 +3153,47 @@ void copytexsubimage3d (NegativeTestContext& ctx)
 
 void copytexsubimage3d_neg_level (NegativeTestContext& ctx)
 {
-	deUint32			textures[2];
-	ctx.glGenTextures		(2, &textures[0]);
-	ctx.glBindTexture		(GL_TEXTURE_3D, textures[0]);
-	ctx.glTexImage3D		(GL_TEXTURE_3D, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	ctx.glBindTexture		(GL_TEXTURE_2D_ARRAY, textures[1]);
-	ctx.glTexImage3D		(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	ctx.expectError			(GL_NO_ERROR);
+	deUint32	textures[3];
+	ctx.glGenTextures(3, &textures[0]);
+	ctx.glBindTexture(GL_TEXTURE_3D, textures[0]);
+	ctx.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	ctx.glBindTexture(GL_TEXTURE_2D_ARRAY, textures[1]);
+	ctx.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if level is less than 0.");
 	ctx.glCopyTexSubImage3D(GL_TEXTURE_3D, -1, 0, 0, 0, 0, 0, 4, 4);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.glCopyTexSubImage3D(GL_TEXTURE_2D_ARRAY, -1, 0, 0, 0, 0, 0, 4, 4);
 	ctx.expectError(GL_INVALID_VALUE);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, textures[2]);
+		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, 4, 4, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_NO_ERROR);
+		ctx.glCopyTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, -1, 0, 0, 0, 0, 0, 4, 4);
+		ctx.expectError(GL_INVALID_VALUE);
+	}
+
 	ctx.endSection();
 
-	ctx.glDeleteTextures(2, &textures[0]);
+	ctx.glDeleteTextures(3, &textures[0]);
 }
 
 void copytexsubimage3d_max_level (NegativeTestContext& ctx)
 {
-	deUint32	log2Max3DTextureSize	= deLog2Floor32(ctx.getInteger(GL_MAX_3D_TEXTURE_SIZE)) + 1;
-	deUint32	log2MaxTextureSize		= deLog2Floor32(ctx.getInteger(GL_MAX_TEXTURE_SIZE)) + 1;
+	deUint32	log2Max3DTextureSize		= deLog2Floor32(ctx.getInteger(GL_MAX_3D_TEXTURE_SIZE)) + 1;
+	deUint32	log2MaxTextureSize			= deLog2Floor32(ctx.getInteger(GL_MAX_TEXTURE_SIZE)) + 1;
+	deUint32	log2MaxCubeMapTextureSize	= deLog2Floor32(ctx.getInteger(GL_MAX_CUBE_MAP_TEXTURE_SIZE)) + 1;
 
-	deUint32			textures[2];
-	ctx.glGenTextures		(2, &textures[0]);
-	ctx.glBindTexture		(GL_TEXTURE_3D, textures[0]);
-	ctx.glTexImage3D		(GL_TEXTURE_3D, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	ctx.glBindTexture		(GL_TEXTURE_2D_ARRAY, textures[1]);
-	ctx.glTexImage3D		(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	ctx.expectError			(GL_NO_ERROR);
+	deUint32	textures[3];
+	ctx.glGenTextures(3, &textures[0]);
+	ctx.glBindTexture(GL_TEXTURE_3D, textures[0]);
+	ctx.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	ctx.glBindTexture(GL_TEXTURE_2D_ARRAY, textures[1]);
+	ctx.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if level is greater than log_2(GL_MAX_3D_TEXTURE_SIZE).");
 	ctx.glCopyTexSubImage3D(GL_TEXTURE_3D, log2Max3DTextureSize, 0, 0, 0, 0, 0, 4, 4);
@@ -2435,7 +3205,18 @@ void copytexsubimage3d_max_level (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
-	ctx.glDeleteTextures(2, &textures[0]);
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, textures[2]);
+		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, 4, 4, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_NO_ERROR);
+		ctx.beginSection("GL_INVALID_VALUE is generated if level is greater than log_2(GL_MAX_CUBE_MAP_TEXTURE_SIZE).");
+		ctx.glCopyTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, log2MaxCubeMapTextureSize, 0, 0, 0, 0, 0, 4, 4);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.endSection();
+	}
+
+	ctx.glDeleteTextures(3, &textures[0]);
 }
 
 void copytexsubimage3d_neg_offset (NegativeTestContext& ctx)
@@ -2618,6 +3399,34 @@ void compressedteximage3d_invalid_size (NegativeTestContext& ctx)
 	ctx.glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_SIGNED_R11_EAC, 16, 16, 1, 0, 4*4*16, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
+}
+
+void compressedteximage3d_invalid_width_height (NegativeTestContext& ctx)
+{
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.beginSection("GL_INVALID_VALUE is generated if target is GL_TEXTURE_CUBE_MAP_ARRAY and width and height are not equal.");
+		// TODO: [2015-12-17 dag]: validate that we're triggering the error for the correct reasons
+		ctx.glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_COMPRESSED_RGBA_ASTC_4x4, 4, 6, 1, 0, 0, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.endSection();
+	}
+}
+
+void compressedteximage3d_invalid_format (NegativeTestContext& ctx)
+{
+	ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_3D and the internal format does not support 3D textures.");
+	ctx.glCompressedTexImage3D(GL_TEXTURE_3D, 0, GL_COMPRESSED_RGB8_ETC2, 4, 4, 1, 0, etc2DataSize(4, 4), 0);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_CUBE_MAP_ARRAY and the internal format does not support cube map array textures.");
+		ctx.glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_COMPRESSED_R11_EAC, 4, 4, 1, 0, 0, 0);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.endSection();
+	}
 }
 
 void compressedteximage3d_invalid_buffer_target (NegativeTestContext& ctx)
@@ -2848,145 +3657,228 @@ void compressedtexsubimage3d_invalid_buffer_target (NegativeTestContext& ctx)
 
 void texstorage2d (NegativeTestContext& ctx)
 {
-	deUint32  texture = 0x1234;
-	ctx.glGenTextures	(1, &texture);
-	ctx.glBindTexture	(GL_TEXTURE_2D, texture);
+	deUint32  textures[] = {0x1234, 0x1234};
+
+	ctx.glGenTextures(2, textures);
+	ctx.glBindTexture(GL_TEXTURE_2D, textures[0]);
+	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_ENUM or GL_INVALID_VALUE is generated if internalformat is not a valid sized internal format.");
-	ctx.glTexStorage2D	(GL_TEXTURE_2D, 1, 0, 16, 16);
-	ctx.expectError		(GL_INVALID_ENUM, GL_INVALID_VALUE);
-	ctx.glTexStorage2D	(GL_TEXTURE_2D, 1, GL_RGBA_INTEGER, 16, 16);
-	ctx.expectError		(GL_INVALID_ENUM, GL_INVALID_VALUE);
+	ctx.glTexStorage2D(GL_TEXTURE_2D, 1, 0, 16, 16);
+	ctx.expectError(GL_INVALID_ENUM, GL_INVALID_VALUE);
+	ctx.glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA_INTEGER, 16, 16);
+	ctx.expectError(GL_INVALID_ENUM, GL_INVALID_VALUE);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if target is not one of the accepted target enumerants.");
-	ctx.glTexStorage2D	(0, 1, GL_RGBA8, 16, 16);
-	ctx.expectError		(GL_INVALID_ENUM);
-	ctx.glTexStorage2D	(GL_TEXTURE_3D, 1, GL_RGBA8, 16, 16);
-	ctx.expectError		(GL_INVALID_ENUM);
-	ctx.glTexStorage2D	(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, 16, 16);
-	ctx.expectError		(GL_INVALID_ENUM);
+	ctx.glTexStorage2D(0, 1, GL_RGBA8, 16, 16);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexStorage2D(GL_TEXTURE_3D, 1, GL_RGBA8, 16, 16);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexStorage2D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, 16, 16);
+	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if width or height are less than 1.");
-	ctx.glTexStorage2D	(GL_TEXTURE_2D, 1, GL_RGBA8, 0, 16);
-	ctx.expectError		(GL_INVALID_VALUE);
-	ctx.glTexStorage2D	(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 0);
-	ctx.expectError		(GL_INVALID_VALUE);
-	ctx.glTexStorage2D	(GL_TEXTURE_2D, 1, GL_RGBA8, 0, 0);
-	ctx.expectError		(GL_INVALID_VALUE);
+	ctx.glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 0, 16);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 0, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	{
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, textures[1]);
+		ctx.expectError(GL_NO_ERROR);
+		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, 0, 16);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, 16, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, 0, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+	}
 	ctx.endSection();
 
-	ctx.glDeleteTextures(1, &texture);
+	ctx.glDeleteTextures(2, textures);
 }
 
 void texstorage2d_invalid_binding (NegativeTestContext& ctx)
 {
-	ctx.glBindTexture	(GL_TEXTURE_2D, 0);
+	deUint32	textures[]	= {0x1234, 0x1234};
+	deInt32		immutable	= 0x1234;
+	const bool	isES32		= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the default texture object is curently bound to target.");
-	ctx.glTexStorage2D	(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 16);
-	ctx.expectError		(GL_INVALID_OPERATION);
+	ctx.glBindTexture(GL_TEXTURE_2D, 0);
+	ctx.glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 16);
+	ctx.expectError(GL_INVALID_OPERATION);
+
+	if (isES32)
+	{
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, 16, 16);
+		ctx.expectError(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 
-	deUint32		texture = 0x1234;
-	ctx.glGenTextures	(1, &texture);
-	ctx.glBindTexture	(GL_TEXTURE_2D, texture);
+	ctx.glGenTextures(2, textures);
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the texture object currently bound to target already has GL_TEXTURE_IMMUTABLE_FORMAT set to GL_TRUE.");
-	deInt32			immutable = 0x1234;
+	ctx.glBindTexture(GL_TEXTURE_2D, textures[0]);
 	ctx.glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_IMMUTABLE_FORMAT, &immutable);
 	ctx.getLog() << TestLog::Message << "// GL_TEXTURE_IMMUTABLE_FORMAT = " << ((immutable != 0) ? "GL_TRUE" : "GL_FALSE") << TestLog::EndMessage;
-	ctx.glTexStorage2D	(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 16);
-	ctx.expectError		(GL_NO_ERROR);
+	ctx.glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 16);
+	ctx.expectError(GL_NO_ERROR);
 	ctx.glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_IMMUTABLE_FORMAT, &immutable);
 	ctx.getLog() << TestLog::Message << "// GL_TEXTURE_IMMUTABLE_FORMAT = " << ((immutable != 0) ? "GL_TRUE" : "GL_FALSE") << TestLog::EndMessage;
-	ctx.glTexStorage2D	(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 16);
-	ctx.expectError		(GL_INVALID_OPERATION);
+	ctx.glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 16);
+	ctx.expectError(GL_INVALID_OPERATION);
+
+	if (isES32)
+	{
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, textures[1]);
+		ctx.glGetTexParameteriv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_IMMUTABLE_FORMAT, &immutable);
+		ctx.getLog() << TestLog::Message << "// GL_TEXTURE_IMMUTABLE_FORMAT = " << ((immutable != 0) ? "GL_TRUE" : "GL_FALSE") << TestLog::EndMessage;
+		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, 16, 16);
+		ctx.expectError(GL_NO_ERROR);
+		ctx.glGetTexParameteriv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_IMMUTABLE_FORMAT, &immutable);
+		ctx.getLog() << TestLog::Message << "// GL_TEXTURE_IMMUTABLE_FORMAT = " << ((immutable != 0) ? "GL_TRUE" : "GL_FALSE") << TestLog::EndMessage;
+		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, 16, 16);
+		ctx.expectError(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 
-	ctx.glDeleteTextures(1, &texture);
+	ctx.glDeleteTextures(2, textures);
 }
 
 void texstorage2d_invalid_levels (NegativeTestContext& ctx)
 {
-	deUint32  texture = 0x1234;
-	ctx.glGenTextures	(1, &texture);
-	ctx.glBindTexture	(GL_TEXTURE_2D, texture);
+	deUint32	textures[]	= {0x1234, 0x1234};
+	deUint32	log2MaxSize	= deLog2Floor32(deMax32(16, 4)) + 1 + 1;
+	const bool	isES32		= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
+	ctx.glGenTextures(2, textures);
+	ctx.glBindTexture(GL_TEXTURE_2D, textures[0]);
+
+	if (isES32)
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, textures[1]);
+
+	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if levels is less than 1.");
-	ctx.glTexStorage2D	(GL_TEXTURE_2D, 0, GL_RGBA8, 16, 16);
-	ctx.expectError		(GL_INVALID_VALUE);
-	ctx.glTexStorage2D	(GL_TEXTURE_2D, 0, GL_RGBA8, 0, 0);
-	ctx.expectError		(GL_INVALID_VALUE);
+	ctx.glTexStorage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 16, 16);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glTexStorage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 0, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+
+	if (isES32)
+	{
+		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 0, GL_RGBA8, 16, 16);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 0, GL_RGBA8, 0, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+	}
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if levels is greater than floor(log_2(max(width, height))) + 1");
-	deUint32 log2MaxSize = deLog2Floor32(deMax32(16, 4)) + 1 + 1;
-	ctx.glTexStorage2D	(GL_TEXTURE_2D, log2MaxSize, GL_RGBA8, 16, 4);
-	ctx.expectError		(GL_INVALID_OPERATION);
-	ctx.glTexStorage2D	(GL_TEXTURE_2D, log2MaxSize, GL_RGBA8, 4, 16);
-	ctx.expectError		(GL_INVALID_OPERATION);
-	ctx.glTexStorage2D	(GL_TEXTURE_2D, log2MaxSize, GL_RGBA8, 16, 16);
-	ctx.expectError		(GL_INVALID_OPERATION);
+	ctx.glTexStorage2D(GL_TEXTURE_2D, log2MaxSize, GL_RGBA8, 16, 4);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glTexStorage2D(GL_TEXTURE_2D, log2MaxSize, GL_RGBA8, 4, 16);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glTexStorage2D(GL_TEXTURE_2D, log2MaxSize, GL_RGBA8, 16, 16);
+	ctx.expectError(GL_INVALID_OPERATION);
+
+	if (isES32)
+	{
+		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, log2MaxSize, GL_RGBA8, 16, 4);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, log2MaxSize, GL_RGBA8, 4, 16);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, log2MaxSize, GL_RGBA8, 16, 16);
+		ctx.expectError(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 
-	ctx.glDeleteTextures(1, &texture);
+	ctx.glDeleteTextures(2, textures);
 }
 
 // glTexStorage3D
 
 void texstorage3d (NegativeTestContext& ctx)
 {
-	deUint32 texture = 0x1234;
-	ctx.glGenTextures	(1, &texture);
-	ctx.glBindTexture	(GL_TEXTURE_3D, texture);
+	deUint32 textures[] = {0x1234, 0x1234};
+
+	ctx.glGenTextures(2, textures);
+	ctx.glBindTexture(GL_TEXTURE_3D, textures[0]);
+	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_ENUM or GL_INVALID_VALUE is generated if internalformat is not a valid sized internal format.");
-	ctx.glTexStorage3D	(GL_TEXTURE_3D, 1, 0, 4, 4, 4);
-	ctx.expectError		(GL_INVALID_ENUM, GL_INVALID_VALUE);
-	ctx.glTexStorage3D	(GL_TEXTURE_3D, 1, GL_RGBA_INTEGER, 4, 4, 4);
-	ctx.expectError		(GL_INVALID_ENUM, GL_INVALID_VALUE);
+	ctx.glTexStorage3D(GL_TEXTURE_3D, 1, 0, 4, 4, 4);
+	ctx.expectError(GL_INVALID_ENUM, GL_INVALID_VALUE);
+	ctx.glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA_INTEGER, 4, 4, 4);
+	ctx.expectError(GL_INVALID_ENUM, GL_INVALID_VALUE);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if target is not one of the accepted target enumerants.");
-	ctx.glTexStorage3D	(0, 1, GL_RGBA8, 4, 4, 4);
-	ctx.expectError		(GL_INVALID_ENUM);
-	ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, 4, 4, 4);
-	ctx.expectError		(GL_INVALID_ENUM);
-	ctx.glTexStorage3D	(GL_TEXTURE_2D, 1, GL_RGBA8, 4, 4, 4);
-	ctx.expectError		(GL_INVALID_ENUM);
+	ctx.glTexStorage3D(0, 1, GL_RGBA8, 4, 4, 4);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexStorage3D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, 4, 4, 4);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glTexStorage3D(GL_TEXTURE_2D, 1, GL_RGBA8, 4, 4, 4);
+	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if width, height or depth are less than 1.");
-	ctx.glTexStorage3D	(GL_TEXTURE_3D, 1, GL_RGBA8, 0, 4, 4);
-	ctx.expectError		(GL_INVALID_VALUE);
-	ctx.glTexStorage3D	(GL_TEXTURE_3D, 1, GL_RGBA8, 4, 0, 4);
-	ctx.expectError		(GL_INVALID_VALUE);
-	ctx.glTexStorage3D	(GL_TEXTURE_3D, 1, GL_RGBA8, 4, 4, 0);
-	ctx.expectError		(GL_INVALID_VALUE);
-	ctx.glTexStorage3D	(GL_TEXTURE_3D, 1, GL_RGBA8, 0, 0, 0);
-	ctx.expectError		(GL_INVALID_VALUE);
+	ctx.glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA8, 0, 4, 4);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA8, 4, 0, 4);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA8, 4, 4, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA8, 0, 0, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, textures[1]);
+		ctx.expectError(GL_NO_ERROR);
+		ctx.glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_RGBA8, 0, 4, 4);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_RGBA8, 4, 0, 4);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_RGBA8, 4, 4, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_RGBA8, 0, 0, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+	}
 	ctx.endSection();
 
-	ctx.glDeleteTextures(1, &texture);
+	ctx.glDeleteTextures(2, textures);
 }
 
 void texstorage3d_invalid_binding (NegativeTestContext& ctx)
 {
-	ctx.glBindTexture	(GL_TEXTURE_3D, 0);
+	deUint32	textures[]	= {0x1234, 0x1234};
+	deInt32		immutable	= 0x1234;
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the default texture object is curently bound to target.");
+	ctx.glBindTexture	(GL_TEXTURE_3D, 0);
 	ctx.glTexStorage3D	(GL_TEXTURE_3D, 1, GL_RGBA8, 4, 4, 4);
 	ctx.expectError		(GL_INVALID_OPERATION);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glBindTexture	(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
+		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_RGBA8, 4, 4, 4);
+		ctx.expectError		(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 
-	deUint32		texture = 0x1234;
-	ctx.glGenTextures	(1, &texture);
-	ctx.glBindTexture	(GL_TEXTURE_3D, texture);
+	ctx.glGenTextures	(2, textures);
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the texture object currently bound to target already has GL_TEXTURE_IMMUTABLE_FORMAT set to GL_TRUE.");
-	deInt32			immutable = 0x1234;
+	ctx.glBindTexture	(GL_TEXTURE_3D, textures[0]);
 	ctx.glGetTexParameteriv(GL_TEXTURE_3D, GL_TEXTURE_IMMUTABLE_FORMAT, &immutable);
 	ctx.getLog() << TestLog::Message << "// GL_TEXTURE_IMMUTABLE_FORMAT = " << ((immutable != 0) ? "GL_TRUE" : "GL_FALSE") << TestLog::EndMessage;
 	ctx.glTexStorage3D	(GL_TEXTURE_3D, 1, GL_RGBA8, 4, 4, 4);
@@ -2995,26 +3887,49 @@ void texstorage3d_invalid_binding (NegativeTestContext& ctx)
 	ctx.getLog() << TestLog::Message << "// GL_TEXTURE_IMMUTABLE_FORMAT = " << ((immutable != 0) ? "GL_TRUE" : "GL_FALSE") << TestLog::EndMessage;
 	ctx.glTexStorage3D	(GL_TEXTURE_3D, 1, GL_RGBA8, 4, 4, 4);
 	ctx.expectError		(GL_INVALID_OPERATION);
+
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glBindTexture	(GL_TEXTURE_CUBE_MAP_ARRAY, textures[1]);
+		ctx.glGetTexParameteriv(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_IMMUTABLE_FORMAT, &immutable);
+		ctx.getLog() << TestLog::Message << "// GL_TEXTURE_IMMUTABLE_FORMAT = " << ((immutable != 0) ? "GL_TRUE" : "GL_FALSE") << TestLog::EndMessage;
+		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_RGBA8, 4, 4, 6);
+		ctx.expectError		(GL_NO_ERROR);
+		ctx.glGetTexParameteriv(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_IMMUTABLE_FORMAT, &immutable);
+		ctx.getLog() << TestLog::Message << "// GL_TEXTURE_IMMUTABLE_FORMAT = " << ((immutable != 0) ? "GL_TRUE" : "GL_FALSE") << TestLog::EndMessage;
+		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_RGBA8, 4, 4, 6);
+		ctx.expectError		(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 
-	ctx.glDeleteTextures(1, &texture);
+	ctx.glDeleteTextures(2, textures);
 }
 
 void texstorage3d_invalid_levels (NegativeTestContext& ctx)
 {
-	deUint32  texture = 0x1234;
-	ctx.glGenTextures	(1, &texture);
-	ctx.glBindTexture	(GL_TEXTURE_3D, texture);
+	deUint32	textures[]	= {0x1234, 0x1234};
+	deUint32	log2MaxSize	= deLog2Floor32(8) + 1 + 1;
+	const bool	isES32		= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	ctx.glGenTextures(2, textures);
+	ctx.glBindTexture(GL_TEXTURE_3D, textures[0]);
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if levels is less than 1.");
-	ctx.glTexStorage3D	(GL_TEXTURE_3D, 0, GL_RGBA8, 4, 4, 4);
-	ctx.expectError		(GL_INVALID_VALUE);
-	ctx.glTexStorage3D	(GL_TEXTURE_3D, 0, GL_RGBA8, 0, 0, 0);
-	ctx.expectError		(GL_INVALID_VALUE);
+	ctx.glTexStorage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 4, 4, 4);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glTexStorage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 0, 0, 0);
+	ctx.expectError(GL_INVALID_VALUE);
+
+	if (isES32 || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, textures[1]);
+		ctx.glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA8, 4, 4, 6);
+		ctx.expectError(GL_INVALID_VALUE);
+		ctx.glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA8, 0, 0, 6);
+		ctx.expectError(GL_INVALID_VALUE);
+	}
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if levels is greater than floor(log_2(max(width, height, depth))) + 1");
-	deUint32 log2MaxSize = deLog2Floor32(8) + 1 + 1;
 	ctx.glTexStorage3D	(GL_TEXTURE_3D, log2MaxSize, GL_RGBA8, 8, 2, 2);
 	ctx.expectError		(GL_INVALID_OPERATION);
 	ctx.glTexStorage3D	(GL_TEXTURE_3D, log2MaxSize, GL_RGBA8, 2, 8, 2);
@@ -3023,9 +3938,21 @@ void texstorage3d_invalid_levels (NegativeTestContext& ctx)
 	ctx.expectError		(GL_INVALID_OPERATION);
 	ctx.glTexStorage3D	(GL_TEXTURE_3D, log2MaxSize, GL_RGBA8, 8, 8, 8);
 	ctx.expectError		(GL_INVALID_OPERATION);
+
+	if (isES32 || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	{
+		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, log2MaxSize, GL_RGBA8, 8, 2, 6);
+		ctx.expectError		(GL_INVALID_OPERATION);
+		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, log2MaxSize, GL_RGBA8, 2, 8, 6);
+		ctx.expectError		(GL_INVALID_OPERATION);
+		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, log2MaxSize, GL_RGBA8, 2, 2, 6);
+		ctx.expectError		(GL_INVALID_OPERATION);
+		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, log2MaxSize, GL_RGBA8, 8, 8, 6);
+		ctx.expectError		(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 
-	ctx.glDeleteTextures(1, &texture);
+	ctx.glDeleteTextures(2, textures);
 }
 
 std::vector<FunctionContainer> getNegativeTextureApiTestFunctions()
@@ -3042,6 +3969,8 @@ std::vector<FunctionContainer> getNegativeTextureApiTestFunctions()
 		{compressedteximage2d_max_width_height,			"compressedteximage2d_max_width_height",			"Invalid glCompressedTexImage2D() usage"   },
 		{compressedteximage2d_invalid_border,			"compressedteximage2d_invalid_border",				"Invalid glCompressedTexImage2D() usage"   },
 		{compressedteximage2d_invalid_size,				"compressedteximage2d_invalid_size",				"Invalid glCompressedTexImage2D() usage"   },
+		{compressedteximage2d_neg_size,					"compressedteximage2d_neg_size",					"Invalid glCompressedTexImage2D() usage"   },
+		{compressedteximage2d_invalid_width_height,		"compressedteximage2d_invalid_width_height",		"Invalid glCompressedTexImage2D() usage"   },
 		{compressedteximage2d_invalid_buffer_target,	"compressedteximage2d_invalid_buffer_target",		"Invalid glCompressedTexImage2D() usage"   },
 		{copyteximage2d_invalid_target,					"copyteximage2d_invalid_target",					"Invalid glCopyTexImage2D() usage"		   },
 		{copyteximage2d_invalid_format,					"copyteximage2d_invalid_format",					"Invalid glCopyTexImage2D() usage"		   },
@@ -3053,6 +3982,8 @@ std::vector<FunctionContainer> getNegativeTextureApiTestFunctions()
 		{copyteximage2d_invalid_border,					"copyteximage2d_invalid_border",					"Invalid glCopyTexImage2D() usage"		   },
 		{copyteximage2d_incomplete_framebuffer,			"copyteximage2d_incomplete_framebuffer",			"Invalid glCopyTexImage2D() usage"		   },
 		{copytexsubimage2d_invalid_target,				"copytexsubimage2d_invalid_target",					"Invalid glCopyTexSubImage2D() usage"	   },
+		{copytexsubimage2d_read_buffer_is_none,			"copytexsubimage2d_read_buffer_is_none",			"Invalid glCopyTexSubImage2D() usage"	   },
+		{copytexsubimage2d_texture_internalformat,		"copytexsubimage2d_texture_internalformat",			"Invalid glCopyTexSubImage2D() usage"	   },
 		{copytexsubimage2d_neg_level,					"copytexsubimage2d_neg_level",						"Invalid glCopyTexSubImage2D() usage"	   },
 		{copytexsubimage2d_max_level,					"copytexsubimage2d_max_level",						"Invalid glCopyTexSubImage2D() usage"	   },
 		{copytexsubimage2d_neg_offset,					"copytexsubimage2d_neg_offset",						"Invalid glCopyTexSubImage2D() usage"	   },
@@ -3082,6 +4013,8 @@ std::vector<FunctionContainer> getNegativeTextureApiTestFunctions()
 		{texparameterf,									"texparameterf",									"Invalid glTexParameterf() usage"		   },
 		{texparameteriv,								"texparameteriv",									"Invalid glTexParameteriv() usage"		   },
 		{texparameterfv,								"texparameterfv",									"Invalid glTexParameterfv() usage"		   },
+		{texparameterIiv,								"texparameterIiv",									"Invalid glTexParameterIiv() usage"		   },
+		{texparameterIuiv,								"texparameterIuiv",									"Invalid glTexParameterIuiv() usage"	   },
 		{compressedtexsubimage2d,						"compressedtexsubimage2d",							"Invalid glCompressedTexSubImage2D() usage"},
 		{compressedtexsubimage2d_neg_level,				"compressedtexsubimage2d_neg_level",				"Invalid glCompressedTexSubImage2D() usage"},
 		{compressedtexsubimage2d_max_level,				"compressedtexsubimage2d_max_level",				"Invalid glCompressedTexSubImage2D() usage"},
@@ -3118,6 +4051,8 @@ std::vector<FunctionContainer> getNegativeTextureApiTestFunctions()
 		{compressedteximage3d_max_width_height_depth,	"compressedteximage3d_max_width_height_depth",		"Invalid glCompressedTexImage3D() usage"   },
 		{compressedteximage3d_invalid_border,			"compressedteximage3d_invalid_border",				"Invalid glCompressedTexImage3D() usage"   },
 		{compressedteximage3d_invalid_size,				"compressedteximage3d_invalid_size",				"Invalid glCompressedTexImage3D() usage"   },
+		{compressedteximage3d_invalid_width_height,		"compressedteximage3d_invalid_width_height",		"Invalid glCompressedTexImage3D() usage"   },
+		{compressedteximage3d_invalid_format,			"compressedteximage3d_invalid_format",				"Invalid glCompressedTexImage3D() usage"   },
 		{compressedteximage3d_invalid_buffer_target,	"compressedteximage3d_invalid_buffer_target",		"Invalid glCompressedTexImage3D() usage"   },
 		{compressedtexsubimage3d,						"compressedtexsubimage3d",							"Invalid glCompressedTexSubImage3D() usage"},
 		{compressedtexsubimage3d_neg_level,				"compressedtexsubimage3d_neg_level",				"Invalid glCompressedTexSubImage3D() usage"},
