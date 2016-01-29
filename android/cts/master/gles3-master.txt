@@ -1146,6 +1146,10 @@ dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_vertex
 dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_fragment
 dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_macro_exp_vertex
 dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_macro_exp_fragment
+dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_unrecognized_debug_vertex
+dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_unrecognized_debug_fragment
+dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_unrecognized_token_vertex
+dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_unrecognized_token_fragment
 dEQP-GLES3.functional.shaders.preprocessor.extensions.basic_vertex
 dEQP-GLES3.functional.shaders.preprocessor.extensions.basic_fragment
 dEQP-GLES3.functional.shaders.preprocessor.extensions.macro_exp_vertex
@@ -15451,6 +15455,7 @@ dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.usampler2d_
 dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.usampler2d_vec4_fragment
 dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.sampler3d_fixed_vertex
 dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.sampler3d_fixed_fragment
+dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.sampler3d_float_vertex
 dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.sampler3d_float_fragment
 dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.isampler3d_fragment
 dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.usampler3d_fragment
@@ -27854,6 +27859,7 @@ dEQP-GLES3.functional.fbo.api.invalid_texcube_attachments
 dEQP-GLES3.functional.fbo.api.invalid_rbo_attachments
 dEQP-GLES3.functional.fbo.api.attach_names
 dEQP-GLES3.functional.fbo.api.texture_levels
+dEQP-GLES3.functional.fbo.api.attachment_query_default_fbo
 dEQP-GLES3.functional.fbo.api.attachment_query_empty_fbo
 dEQP-GLES3.functional.fbo.api.attachment_query_tex2d
 dEQP-GLES3.functional.fbo.api.attachment_query_texcube
@@ -38640,6 +38646,7 @@ dEQP-GLES3.functional.negative_api.texture.compressedtexsubimage2d_invalid_offse
 dEQP-GLES3.functional.negative_api.texture.compressedtexsubimage2d_neg_width_height
 dEQP-GLES3.functional.negative_api.texture.compressedtexsubimage2d_invalid_size
 dEQP-GLES3.functional.negative_api.texture.compressedtexsubimage2d_invalid_buffer_target
+dEQP-GLES3.functional.negative_api.texture.teximage3d
 dEQP-GLES3.functional.negative_api.texture.teximage3d_neg_level
 dEQP-GLES3.functional.negative_api.texture.teximage3d_max_level
 dEQP-GLES3.functional.negative_api.texture.teximage3d_neg_width_height_depth
