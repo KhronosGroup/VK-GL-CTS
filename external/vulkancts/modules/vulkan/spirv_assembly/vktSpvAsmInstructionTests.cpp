@@ -3792,7 +3792,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 string makeGeometryShaderAssembly(const map<string, string>& fragments)
 {
 	static const char geometryShaderBoilerplate[] =
-		"OpCapability GeometryStreams\n"
+		"OpCapability Geometry\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_in %BP_out_color %BP_in_color\n"
 		"OpExecutionMode %BP_main Triangles\n"
@@ -3817,7 +3817,6 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpMemberDecorate %BP_per_vertex_in 3 BuiltIn CullDistance\n"
 		"OpDecorate %BP_per_vertex_in Block\n"
 		"OpDecorate %BP_out_color Location 1\n"
-		"OpDecorate %BP_out_color Stream 0\n"
 		"OpDecorate %BP_in_color Location 1\n"
 		"${decoration:opt}\n"
 		SPIRV_ASSEMBLY_TYPES
@@ -3993,7 +3992,7 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 	// \todo [2015-12-07 awoloszyn] Remove OpName and OpMemberName at some point
 	dst.spirvAsmSources.add("module") <<
 		"OpCapability Shader\n"
-		"OpCapability GeometryStreams\n"
+		"OpCapability Geometry\n"
 		"OpCapability Tessellation\n"
 		"OpMemoryModel Logical GLSL450\n"
 
@@ -4069,7 +4068,6 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 		"OpMemberDecorate %geom_per_vertex_in 3 BuiltIn CullDistance\n"
 		"OpDecorate %geom_per_vertex_in Block\n"
 		"OpDecorate %geom_out_color Location 1\n"
-		"OpDecorate %geom_out_color Stream 0\n"
 		"OpDecorate %geom_in_color Location 1\n"
 
 		"; Tessellation Control decorations\n"
@@ -4353,7 +4351,7 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpFunctionEnd\n";
 
 	dst.spirvAsmSources.add("geom") <<
-		"OpCapability GeometryStreams\n"
+		"OpCapability Geometry\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Geometry %geom1_main \"geom1\" %out_gl_position %gl_in %out_color %in_color\n"
 		"OpEntryPoint Geometry %geom2_main \"geom2\" %out_gl_position %gl_in %out_color %in_color\n"
@@ -4382,7 +4380,6 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpMemberDecorate %per_vertex_in 3 BuiltIn CullDistance\n"
 		"OpDecorate %per_vertex_in Block\n"
 		"OpDecorate %out_color Location 1\n"
-		"OpDecorate %out_color Stream 0\n"
 		"OpDecorate %in_color Location 1\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
