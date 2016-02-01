@@ -77,9 +77,8 @@ tcu::TestStatus createPoolNullParamsTest(Context& context)
 		0u,															// flags;
 		queueFamilyIndex,											// queueFamilyIndex;
 	};
-	VkCommandPool cmdPool;
 
-	VK_CHECK(vk.createCommandPool(vkDevice, &cmdPoolParams, DE_NULL, &cmdPool));
+	createCommandPool(vk, vkDevice, &cmdPoolParams, DE_NULL);
 
 	return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
@@ -98,9 +97,8 @@ tcu::TestStatus createPoolNonNullAllocatorTest(Context& context)
 		0u,															// flags;
 		queueFamilyIndex,											// queueFamilyIndex;
 	};
-	VkCommandPool cmdPool;
 
-	VK_CHECK(vk.createCommandPool(vkDevice, &cmdPoolParams, allocationCallbacks, &cmdPool));
+	createCommandPool(vk, vkDevice, &cmdPoolParams, allocationCallbacks);
 
 	return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
@@ -118,9 +116,8 @@ tcu::TestStatus createPoolTransientBitTest(Context& context)
 		VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,						// flags;
 		queueFamilyIndex,											// queueFamilyIndex;
 	};
-	VkCommandPool cmdPool;
 
-	VK_CHECK(vk.createCommandPool(vkDevice, &cmdPoolParams, DE_NULL, &cmdPool));
+	createCommandPool(vk, vkDevice, &cmdPoolParams, DE_NULL);
 
 	return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
@@ -138,9 +135,8 @@ tcu::TestStatus createPoolResetBitTest(Context& context)
 		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			// flags;
 		queueFamilyIndex,											// queueFamilyIndex;
 	};
-	VkCommandPool cmdPool;
 
-	VK_CHECK(vk.createCommandPool(vkDevice, &cmdPoolParams, DE_NULL, &cmdPool));
+	createCommandPool(vk, vkDevice, &cmdPoolParams, DE_NULL);
 
 	return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
@@ -158,10 +154,10 @@ tcu::TestStatus resetPoolReleaseResourcesBitTest(Context& context)
 		0u,															// flags;
 		queueFamilyIndex,											// queueFamilyIndex;
 	};
-	VkCommandPool cmdPool;
 
-	VK_CHECK(vk.createCommandPool(vkDevice, &cmdPoolParams, DE_NULL, &cmdPool));
-	VK_CHECK(vk.resetCommandPool(vkDevice, cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams, DE_NULL));
+
+	VK_CHECK(vk.resetCommandPool(vkDevice, *cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
 
 	return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
@@ -179,10 +175,10 @@ tcu::TestStatus resetPoolNoFlagsTest(Context& context)
 		0u,															// flags;
 		queueFamilyIndex,											// queueFamilyIndex;
 	};
-	VkCommandPool cmdPool;
 
-	VK_CHECK(vk.createCommandPool(vkDevice, &cmdPoolParams, DE_NULL, &cmdPool));
-	VK_CHECK(vk.resetCommandPool(vkDevice, cmdPool, 0u));
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams, DE_NULL));
+
+	VK_CHECK(vk.resetCommandPool(vkDevice, *cmdPool, 0u));
 
 	return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
@@ -1326,17 +1322,17 @@ tcu::TestStatus oneTimeSubmitFlagPrimaryBufferTest(Context& context)
 	const VkQueue							queue					= context.getUniversalQueue();
 	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 
-	const VkCommandPoolCreateInfo				cmdPoolParams			=
+	const VkCommandPoolCreateInfo			cmdPoolParams			=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					//	VkStructureType				sType;
 		DE_NULL,													//	const void*					pNext;
 		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			//	VkCommandPoolCreateFlags	flags;
 		queueFamilyIndex,											//	deUint32					queueFamilyIndex;
 	};
-	const Unique<VkCommandPool>					cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
 
 	// Command buffer
-	const VkCommandBufferAllocateInfo				cmdBufParams			=
+	const VkCommandBufferAllocateInfo		cmdBufParams			=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				//	VkStructureType				sType;
 		DE_NULL,													//	const void*					pNext;
@@ -1344,8 +1340,8 @@ tcu::TestStatus oneTimeSubmitFlagPrimaryBufferTest(Context& context)
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							//	VkCommandBufferLevel		level;
 		1u,															//	uint32_t					bufferCount;
 	};
-	const Unique<VkCommandBuffer>				primCmdBuf				(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
-	const VkCommandBufferBeginInfo				primCmdBufBeginInfo		=
+	const Unique<VkCommandBuffer>			primCmdBuf				(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
+	const VkCommandBufferBeginInfo			primCmdBufBeginInfo		=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,

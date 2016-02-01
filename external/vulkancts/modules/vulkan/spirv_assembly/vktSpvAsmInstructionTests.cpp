@@ -3390,6 +3390,7 @@ void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDev
 	"%f32 = OpTypeFloat 32\n"																	\
 	"%v3f32 = OpTypeVector %f32 3\n"															\
 	"%v4f32 = OpTypeVector %f32 4\n"															\
+	"%v4bool = OpTypeVector %bool 4\n"															\
 																								\
 	"%v4f32_function = OpTypeFunction %v4f32 %v4f32\n"											\
 	"%fun = OpTypeFunction %void\n"																\
@@ -6565,7 +6566,8 @@ tcu::TestCaseGroup* createNoContractionTests(tcu::TestContext& testCtx)
 		"%is0            = OpFOrdEqual %bool %add %c_f32_0\n"
 		"%isn1n24         = OpFOrdEqual %bool %add %c_f32_n1pn24\n"
 		"%success        = OpLogicalOr %bool %is0 %isn1n24\n"
-		"%ret            = OpSelect %v4f32 %success %c_vec4_0 %c_vec4_1\n"
+		"%v4success      = OpCompositeConstruct %v4bool %success %success %success %success\n"
+		"%ret            = OpSelect %v4f32 %v4success %c_vec4_0 %c_vec4_1\n"
 		"                  OpReturnValue %ret\n"
 		"                  OpFunctionEnd\n";
 
@@ -6950,7 +6952,8 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 		"%b             = OpFAdd %f32 %test_constant %a\n"
 		"%c             = OpQuantizeToF16 %f32 %b\n"
 		"${condition}\n"
-		"%retval        = OpSelect %v4f32 %cond %c_v4f32_1_0_0_1 %param1"
+		"%v4cond        = OpCompositeConstruct %v4bool %cond %cond %cond %cond\n"
+		"%retval        = OpSelect %v4f32 %v4cond %c_v4f32_1_0_0_1 %param1\n"
 		"                 OpReturnValue %retval\n"
 		"OpFunctionEnd\n"
 	);
@@ -6965,7 +6968,8 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 		"%param1        = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"${condition}\n"
-		"%retval        = OpSelect %v4f32 %cond %c_v4f32_1_0_0_1 %param1"
+		"%v4cond        = OpCompositeConstruct %v4bool %cond %cond %cond %cond\n"
+		"%retval        = OpSelect %v4f32 %v4cond %c_v4f32_1_0_0_1 %param1\n"
 		"                 OpReturnValue %retval\n"
 		"OpFunctionEnd\n"
 	);
@@ -7079,7 +7083,8 @@ void createOpQuantizeTwoPossibilityTests(tcu::TestCaseGroup* testCtx)
 		"%eq_1          = OpFOrdEqual %bool %c %possible_solution1\n"
 		"%eq_2          = OpFOrdEqual %bool %c %possible_solution2\n"
 		"%cond          = OpLogicalOr %bool %eq_1 %eq_2\n"
-		"%retval        = OpSelect %v4f32 %cond %c_v4f32_1_0_0_1 %param1"
+		"%v4cond        = OpCompositeConstruct %v4bool %cond %cond %cond %cond\n"
+		"%retval        = OpSelect %v4f32 %v4cond %c_v4f32_1_0_0_1 %param1"
 		"                 OpReturnValue %retval\n"
 		"OpFunctionEnd\n";
 
