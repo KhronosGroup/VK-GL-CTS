@@ -299,6 +299,7 @@ group if "If Statements"
 		}
 		vertex ""
 			#version 300 es
+			precision mediump float;
 			${VERTEX_DECLARATIONS}
 			out mediump float FragVarying;  // Necessary to reproduce.
 			void main()
