@@ -5956,7 +5956,7 @@ void GeometryShaderTests::init (void)
 	{
 		// limits with a corresponding glsl constant
 		queryGroup->addChild(new GeometryProgramLimitCase(m_context, "max_geometry_input_components",				"", GL_MAX_GEOMETRY_INPUT_COMPONENTS,				"MaxGeometryInputComponents",		64));
-		queryGroup->addChild(new GeometryProgramLimitCase(m_context, "max_geometry_output_components",				"", GL_MAX_GEOMETRY_OUTPUT_COMPONENTS,				"MaxGeometryOutputComponents",		128));
+		queryGroup->addChild(new GeometryProgramLimitCase(m_context, "max_geometry_output_components",				"", GL_MAX_GEOMETRY_OUTPUT_COMPONENTS,				"MaxGeometryOutputComponents",		64));
 		queryGroup->addChild(new GeometryProgramLimitCase(m_context, "max_geometry_image_uniforms",					"", GL_MAX_GEOMETRY_IMAGE_UNIFORMS,					"MaxGeometryImageUniforms",			0));
 		queryGroup->addChild(new GeometryProgramLimitCase(m_context, "max_geometry_texture_image_units",			"", GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS,			"MaxGeometryTextureImageUnits",		16));
 		queryGroup->addChild(new GeometryProgramLimitCase(m_context, "max_geometry_output_vertices",				"", GL_MAX_GEOMETRY_OUTPUT_VERTICES,				"MaxGeometryOutputVertices",		256));
