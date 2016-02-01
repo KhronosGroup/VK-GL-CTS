@@ -11,16 +11,6 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_co
 # Bug 18033342
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_framebuffer_attachment_parameteriv
 
-# Bug 20302019
-dEQP-GLES31.functional.copy_image.non_compressed.viewclass_32_bits.rgba8_snorm_*
-dEQP-GLES31.functional.copy_image.non_compressed.viewclass_32_bits.*_rgba8_snorm.*
-dEQP-GLES31.functional.copy_image.non_compressed.viewclass_24_bits.rgb8_snorm_*
-dEQP-GLES31.functional.copy_image.non_compressed.viewclass_24_bits.*_rgb8_snorm.*
-dEQP-GLES31.functional.copy_image.non_compressed.viewclass_16_bits.rg8_snorm_*
-dEQP-GLES31.functional.copy_image.non_compressed.viewclass_16_bits.*_rg8_snorm.*
-dEQP-GLES31.functional.copy_image.non_compressed.viewclass_8_bits.r8_snorm_*
-dEQP-GLES31.functional.copy_image.non_compressed.viewclass_8_bits.*_r8_snorm.*
-
 # Bug 20453509
 dEQP-GLES31.functional.shaders.multisample_interpolation.interpolate_at_centroid.consistency.*
 dEQP-GLES31.functional.shaders.multisample_interpolation.interpolate_at_centroid.array_element.*
