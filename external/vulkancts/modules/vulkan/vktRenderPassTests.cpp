@@ -2675,9 +2675,9 @@ public:
 	};
 
 			PixelStatus			(Status color, Status depth, Status stencil)
-		: m_status	((deUint8)(color << COLOR_OFFSET)
-					| (deUint8)((deUint8)depth << DEPTH_OFFSET)
-					| (deUint8)((deUint8)stencil << STENCIL_OFFSET))
+				: m_status	((deUint32)((color << COLOR_OFFSET)
+					| (depth << DEPTH_OFFSET)
+					| (stencil << STENCIL_OFFSET)))
 	{
 	}
 
@@ -3530,7 +3530,7 @@ void getImageUsageFromAttachmentReferences(vector<VkImageUsageFlags>& attachment
 	}
 }
 
-void initializeAttachmentImageUsage (vector<VkImageUsageFlags>& attachmentImageUsage, const RenderPass& renderPassInfo, const vector<bool>& attachmentIsLazy, const vector<Maybe<VkClearValue> >& clearValues)
+void initializeAttachmentImageUsage (Context &context, vector<VkImageUsageFlags>& attachmentImageUsage, const RenderPass& renderPassInfo, const vector<bool>& attachmentIsLazy, const vector<Maybe<VkClearValue> >& clearValues)
 {
 	attachmentImageUsage.resize(renderPassInfo.getAttachments().size(), VkImageUsageFlags(0));
 
@@ -3547,6 +3547,15 @@ void initializeAttachmentImageUsage (vector<VkImageUsageFlags>& attachmentImageU
 	for (size_t attachmentNdx = 0; attachmentNdx < renderPassInfo.getAttachments().size(); attachmentNdx++)
 	{
 		const Attachment& attachment = renderPassInfo.getAttachments()[attachmentNdx];
+
+		const VkFormatProperties		formatProperties = getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), attachment.getFormat());
+		const VkFormatFeatureFlags		supportedFeatures = formatProperties.optimalTilingFeatures;
+
+		if ((supportedFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0)
+			attachmentImageUsage[attachmentNdx] |= VK_IMAGE_USAGE_SAMPLED_BIT;
+
+		if ((supportedFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) != 0)
+			attachmentImageUsage[attachmentNdx] |= VK_IMAGE_USAGE_STORAGE_BIT;
 
 		attachmentImageUsage[attachmentNdx] |= getImageUsageFromLayout(attachment.getInitialLayout());
 		attachmentImageUsage[attachmentNdx] |= getImageUsageFromLayout(attachment.getFinalLayout());
@@ -3812,7 +3821,7 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 
 	initializeAttachmentIsLazy(attachmentIsLazy, renderPassInfo.getAttachments(), config.imageMemory);
 	initializeImageClearValues(rng, imageClearValues, renderPassInfo.getAttachments(), attachmentIsLazy);
-	initializeAttachmentImageUsage(attachmentImageUsage, renderPassInfo, attachmentIsLazy, imageClearValues);
+	initializeAttachmentImageUsage(context, attachmentImageUsage, renderPassInfo, attachmentIsLazy, imageClearValues);
 	initializeRenderPassClearValues(rng, renderPassClearValues, renderPassInfo.getAttachments());
 
 	initializeSubpassIsSecondary(subpassIsSecondary, renderPassInfo.getSubpasses(), config.commandBufferTypes);
