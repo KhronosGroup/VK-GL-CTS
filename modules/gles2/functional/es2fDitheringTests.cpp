@@ -315,8 +315,9 @@ bool DitheringCase::drawAndCheckGradient (const bool isVerticallyIncreasing, con
 
 	if (!m_ditheringEnabled)
 	{
-		const int increasingDirectionSize	= isVerticallyIncreasing ? renderedImg.getHeight() : renderedImg.getWidth();
-		const int constantDirectionSize		= isVerticallyIncreasing ? renderedImg.getWidth() : renderedImg.getHeight();
+		const int	increasingDirectionSize	= isVerticallyIncreasing ? renderedImg.getHeight() : renderedImg.getWidth();
+		const int	constantDirectionSize	= isVerticallyIncreasing ? renderedImg.getWidth() : renderedImg.getHeight();
+		bool		colorHasChanged			= false;
 
 		for (int incrPos = 0; incrPos < increasingDirectionSize; incrPos++)
 		{
@@ -329,13 +330,20 @@ bool DitheringCase::drawAndCheckGradient (const bool isVerticallyIncreasing, con
 
 				if (constPos > 0 && clr != prevConstantDirectionPix)
 				{
-					log << TestLog::Message
-						<< "Failure: colors should be constant per " << (isVerticallyIncreasing ? "row" : "column")
-						<< " (since dithering is disabled), but the color at position (" << x << ", " << y << ") is " << clr
-						<< " and does not equal the color at (" << (isVerticallyIncreasing ? x-1 : x) << ", " << (isVerticallyIncreasing ? y : y-1) << "), which is " << prevConstantDirectionPix
-						<< TestLog::EndMessage;
+					// Allow color to change once to take into account possibly
+					// discontinuity between triangles
+					if (colorHasChanged)
+					{
+						log << TestLog::Message
+							<< "Failure: colors should be constant per " << (isVerticallyIncreasing ? "row" : "column")
+							<< " (since dithering is disabled), but the color at position (" << x << ", " << y << ") is " << clr
+							<< " and does not equal the color at (" << (isVerticallyIncreasing ? x-1 : x) << ", " << (isVerticallyIncreasing ? y : y-1) << "), which is " << prevConstantDirectionPix
+							<< TestLog::EndMessage;
 
-					return false;
+						return false;
+					}
+					else
+						colorHasChanged = true;
 				}
 
 				prevConstantDirectionPix = clr;
