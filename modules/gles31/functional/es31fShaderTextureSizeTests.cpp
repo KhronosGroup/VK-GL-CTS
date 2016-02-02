@@ -150,6 +150,14 @@ void TextureSizeCase::init (void)
 	};
 
 	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
+
+	// requirements
+	if (m_isArrayType && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+		TCU_THROW(NotSupportedError, "Test requires OES_texture_storage_multisample_2d_array extension");
+
+	if (m_context.getRenderTarget().getWidth() < 1 || m_context.getRenderTarget().getHeight() < 1)
+		TCU_THROW(NotSupportedError, "rendertarget size must be at least 1x1");
+
 	glw::GLint				maxTextureSize		= 0;
 	glw::GLint				maxTextureLayers	= 0;
 	glw::GLint				maxSamples			= 0;
@@ -158,13 +166,8 @@ void TextureSizeCase::init (void)
 	gl.getIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxTextureLayers);
 	gl.getInternalformativ(getTextureGLTarget(), getTextureGLInternalFormat(), GL_SAMPLES, 1, &maxSamples);
 
-	// requirements
-	if (m_isArrayType && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
-		throw tcu::NotSupportedError("Test requires OES_texture_storage_multisample_2d_array extension");
-	if (m_context.getRenderTarget().getWidth() < 1 || m_context.getRenderTarget().getHeight() < 1)
-		throw tcu::NotSupportedError("rendertarget size must be at least 1x1");
 	if (m_numSamples > maxSamples)
-		throw tcu::NotSupportedError("sample count is not supported");
+		TCU_THROW(NotSupportedError, "sample count is not supported");
 
 	// gen shade
 
