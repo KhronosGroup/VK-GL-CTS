@@ -2347,7 +2347,6 @@ dEQP-EGL.functional.negative_api.destroy_context
 dEQP-EGL.functional.negative_api.destroy_surface
 dEQP-EGL.functional.negative_api.get_config_attrib
 dEQP-EGL.functional.negative_api.get_configs
-dEQP-EGL.functional.negative_api.get_display
 dEQP-EGL.functional.negative_api.initialize
 dEQP-EGL.functional.negative_api.make_current
 dEQP-EGL.functional.negative_api.get_current_context

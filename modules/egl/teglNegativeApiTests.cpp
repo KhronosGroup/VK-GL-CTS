@@ -27,7 +27,10 @@
 #include "egluNativeDisplay.hpp"
 #include "egluNativeWindow.hpp"
 #include "egluUtil.hpp"
+#include "egluUtil.hpp"
 #include "egluUnique.hpp"
+
+#include "eglwLibrary.hpp"
 
 #include <memory>
 
@@ -181,27 +184,40 @@ void NegativeApiTests::init (void)
 			log << TestLog::EndSection;
 		});
 
+	static const EGLint s_validGenericPbufferAttrib[] = { EGL_WIDTH, 64, EGL_HEIGHT, 64, EGL_NONE };
+
 	TEGL_ADD_API_CASE(copy_buffers, "eglCopyBuffers() negative tests",
 		{
-			TestLog&	log			= m_testCtx.getLog();
-			EGLDisplay	display		= getDisplay();
+			TestLog&							log				= m_testCtx.getLog();
+			const eglw::Library&				egl				= m_eglTestCtx.getLibrary();
+			EGLDisplay							display			= getDisplay();
+			const eglu::NativePixmapFactory&	factory			= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+			de::UniquePtr<eglu::NativePixmap>	pixmap			(factory.createPixmap(&m_eglTestCtx.getNativeDisplay(), 64, 64));
+			EGLConfig							config;
 
-			log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
+			{
+				if (getConfig(&config, FilterList() << surfaceBits<EGL_PBUFFER_BIT>))
+				{
+					eglu::UniqueSurface	surface	(egl, display, egl.createPbufferSurface(display, config, s_validGenericPbufferAttrib));
 
-			expectFalse(eglCopyBuffers(EGL_NO_DISPLAY, EGL_NO_SURFACE, (EGLNativePixmapType)0));
-			expectError(EGL_BAD_DISPLAY);
+					log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-			expectFalse(eglCopyBuffers((EGLDisplay)-1, EGL_NO_SURFACE, (EGLNativePixmapType)0));
-			expectError(EGL_BAD_DISPLAY);
+					expectFalse(eglCopyBuffers(EGL_NO_DISPLAY, EGL_NO_SURFACE, pixmap->getLegacyNative()));
+					expectError(EGL_BAD_DISPLAY);
 
-			log << TestLog::EndSection;
+					expectFalse(eglCopyBuffers((EGLDisplay)-1, EGL_NO_SURFACE, pixmap->getLegacyNative()));
+					expectError(EGL_BAD_DISPLAY);
+
+					log << TestLog::EndSection;
+				}
+			}
 
 			log << TestLog::Section("Test2", "EGL_BAD_SURFACE is generated if surface is not an EGL surface");
 
-			expectFalse(eglCopyBuffers(display, EGL_NO_SURFACE, (EGLNativePixmapType)0));
+			expectFalse(eglCopyBuffers(display, EGL_NO_SURFACE, pixmap->getLegacyNative()));
 			expectError(EGL_BAD_SURFACE);
 
-			expectFalse(eglCopyBuffers(display, (EGLSurface)-1, (EGLNativePixmapType)0));
+			expectFalse(eglCopyBuffers(display, (EGLSurface)-1, pixmap->getLegacyNative()));
 			expectError(EGL_BAD_SURFACE);
 
 			log << TestLog::EndSection;
@@ -212,9 +228,8 @@ void NegativeApiTests::init (void)
 	static const EGLint s_invalidChooseConfigAttribList2[]	= { EGL_BIND_TO_TEXTURE_RGB, 4, EGL_NONE };
 	static const EGLint s_invalidChooseConfigAttribList3[]	= { EGL_BIND_TO_TEXTURE_RGBA, 5, EGL_NONE };
 	static const EGLint s_invalidChooseConfigAttribList4[]	= { EGL_COLOR_BUFFER_TYPE, 0, EGL_NONE };
-	static const EGLint s_invalidChooseConfigAttribList5[]	= { EGL_MATCH_NATIVE_PIXMAP, -1, EGL_NONE };
-	static const EGLint s_invalidChooseConfigAttribList6[]	= { EGL_NATIVE_RENDERABLE, 6, EGL_NONE };
-	static const EGLint s_invalidChooseConfigAttribList7[]	= { EGL_TRANSPARENT_TYPE, 6, EGL_NONE };
+	static const EGLint s_invalidChooseConfigAttribList5[]	= { EGL_NATIVE_RENDERABLE, 6, EGL_NONE };
+	static const EGLint s_invalidChooseConfigAttribList6[]	= { EGL_TRANSPARENT_TYPE, 6, EGL_NONE };
 	static const EGLint* s_invalidChooseConfigAttribLists[] =
 	{
 		&s_invalidChooseConfigAttribList0[0],
@@ -223,8 +238,7 @@ void NegativeApiTests::init (void)
 		&s_invalidChooseConfigAttribList3[0],
 		&s_invalidChooseConfigAttribList4[0],
 		&s_invalidChooseConfigAttribList5[0],
-		&s_invalidChooseConfigAttribList6[0],
-		&s_invalidChooseConfigAttribList7[0]
+		&s_invalidChooseConfigAttribList6[0]
 	};
 
 	TEGL_ADD_API_CASE(choose_config, "eglChooseConfig() negative tests",
@@ -479,8 +493,6 @@ void NegativeApiTests::init (void)
 			}
 		});
 
-	static const EGLint s_validGenericPbufferAttrib[] = { EGL_WIDTH, 64, EGL_HEIGHT, 64, EGL_NONE };
-
 	static const EGLint s_invalidGenericPbufferAttrib0[] = { 0, EGL_NONE };
 	static const EGLint s_invalidGenericPbufferAttrib1[] = { (EGLint)0xffffffff };
 	static const EGLint s_negativeWidthPbufferAttrib[] = { EGL_WIDTH, -1, EGL_HEIGHT, 64, EGL_NONE };
@@ -649,41 +661,30 @@ void NegativeApiTests::init (void)
 			expectError(EGL_BAD_CONFIG);
 
 			log << TestLog::EndSection;
-
-			log << TestLog::Section("Test3", "EGL_BAD_NATIVE_PIXMAP may be generated if native_pixmap is not a valid native pixmap");
-
-			// Any pixmap-capable config.
-			EGLConfig pixmapConfig;
-			if (getConfig(&pixmapConfig, FilterList() << surfaceBits<EGL_PIXMAP_BIT>))
-			{
-				expectNoSurface(eglCreatePixmapSurface(display, pixmapConfig, DE_NULL, s_emptyAttribList));
-				expectError(EGL_BAD_NATIVE_PIXMAP);
-			}
-
-			log << TestLog::EndSection;
 		});
 
 	TEGL_ADD_API_CASE(create_window_surface, "eglCreateWindowSurface() negative tests",
 		{
-			TestLog&	log			= m_testCtx.getLog();
-			EGLDisplay	display		= getDisplay();
+			EGLConfig				config			= DE_NULL;
+			bool					gotConfig		= getConfig(&config, FilterList() << renderable<EGL_OPENGL_ES2_BIT> << surfaceBits<EGL_WINDOW_BIT>);
 
-			log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
+			if (gotConfig)
+			{
+				TestLog&							log				= m_testCtx.getLog();
+				EGLDisplay							display			= getDisplay();
+				const eglu::NativeWindowFactory&	factory			= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+				de::UniquePtr<eglu::NativeWindow>	window			(factory.createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(256, 256, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
 
-			expectNoSurface(eglCreateWindowSurface(EGL_NO_DISPLAY, DE_NULL, DE_NULL, s_emptyAttribList));
-			expectError(EGL_BAD_DISPLAY);
+				log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-			expectNoSurface(eglCreateWindowSurface((EGLDisplay)-1, DE_NULL, DE_NULL, s_emptyAttribList));
-			expectError(EGL_BAD_DISPLAY);
+				expectNoSurface(eglCreateWindowSurface(EGL_NO_DISPLAY, config, window->getLegacyNative(), s_emptyAttribList));
+				expectError(EGL_BAD_DISPLAY);
 
-			log << TestLog::EndSection;
+				expectNoSurface(eglCreateWindowSurface((EGLDisplay)-1, config, window->getLegacyNative(), s_emptyAttribList));
+				expectError(EGL_BAD_DISPLAY);
 
-			log << TestLog::Section("Test2", "EGL_BAD_CONFIG is generated if config is not an EGL frame buffer configuration");
-
-			expectNoSurface(eglCreateWindowSurface(display, (EGLConfig)-1, DE_NULL, s_emptyAttribList));
-			expectError(EGL_BAD_CONFIG);
-
-			log << TestLog::EndSection;
+				log << TestLog::EndSection;
+			}
 		});
 
 	TEGL_ADD_API_CASE(destroy_context, "eglDestroyContext() negative tests",
@@ -802,12 +803,6 @@ void NegativeApiTests::init (void)
 			expectError(EGL_BAD_PARAMETER);
 
 			log << TestLog::EndSection;
-		});
-
-	TEGL_ADD_API_CASE(get_display, "eglGetDisplay() negative tests",
-		{
-			expectNoDisplay(eglGetDisplay((EGLNativeDisplayType)-1));
-			expectError(EGL_SUCCESS);
 		});
 
 	TEGL_ADD_API_CASE(initialize, "eglInitialize() negative tests",
