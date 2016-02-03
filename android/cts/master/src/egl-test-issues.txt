@@ -1,0 +1,9 @@
+# Bug: 26953953
+dEQP-EGL.functional.multithread.window
+dEQP-EGL.functional.multithread.pbuffer_window
+dEQP-EGL.functional.multithread.pixmap_window
+dEQP-EGL.functional.multithread.window_context
+dEQP-EGL.functional.multithread.pbuffer_pixmap_window
+dEQP-EGL.functional.multithread.pixmap_window_context
+dEQP-EGL.functional.multithread.pbuffer_window_context
+dEQP-EGL.functional.multithread.pbuffer_pixmap_window_context

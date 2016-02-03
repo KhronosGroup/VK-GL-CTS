@@ -199,7 +199,9 @@ MNC_GLES31_PKG					= Package(module = GLES31_MODULE, configurations = [
 
 # Master
 
-MASTER_EGL_COMMON_FILTERS		= [include("egl-master.txt"), exclude("egl-internal-api-tests.txt")]
+MASTER_EGL_COMMON_FILTERS		= [include("egl-master.txt"),
+								   exclude("egl-test-issues.txt"),
+								   exclude("egl-internal-api-tests.txt")]
 MASTER_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
