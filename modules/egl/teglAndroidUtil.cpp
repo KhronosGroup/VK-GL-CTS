@@ -101,7 +101,8 @@ AndroidNativeClientBuffer::AndroidNativeClientBuffer (const LibUI& lib, GLenum f
 class AndroidNativeImageSource : public ImageSource
 {
 public:
-							AndroidNativeImageSource	(GLenum format) : m_format(format) {}
+							AndroidNativeImageSource	(GLenum format) : m_format(format), m_libui(DE_NULL) {}
+							~AndroidNativeImageSource	(void);
 	MovePtr<ClientBuffer>	createBuffer 				(const glw::Functions&, Texture2D*) const;
 	string					getRequiredExtension		(void) const { return "EGL_ANDROID_image_native_buffer"; }
 	EGLImageKHR				createImage					(const Library& egl, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
@@ -109,8 +110,25 @@ public:
 
 protected:
 	GLenum					m_format;
-	LibUI					m_libui;
+
+	const LibUI&			getLibUI					(void) const;
+
+private:
+	mutable LibUI*			m_libui;
 };
+
+AndroidNativeImageSource::~AndroidNativeImageSource (void)
+{
+	delete m_libui;
+}
+
+const LibUI& AndroidNativeImageSource::getLibUI (void) const
+{
+	if (!m_libui)
+		m_libui = new LibUI();
+
+	return *m_libui;
+}
 
 void checkStatus (status_t status)
 {
@@ -120,7 +138,7 @@ void checkStatus (status_t status)
 
 MovePtr<ClientBuffer> AndroidNativeImageSource::createBuffer (const glw::Functions&, Texture2D* ref) const
 {
-	MovePtr<AndroidNativeClientBuffer>	buffer			(new AndroidNativeClientBuffer(m_libui, m_format));
+	MovePtr<AndroidNativeClientBuffer>	buffer			(new AndroidNativeClientBuffer(getLibUI(), m_format));
 	GraphicBuffer&						graphicBuffer	= buffer->getGraphicBuffer();
 	if (ref != DE_NULL)
 	{
@@ -157,7 +175,7 @@ MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format)
 	{
 		return MovePtr<ImageSource>(new AndroidNativeImageSource(format));
 	}
-	catch (std::runtime_error& exc)
+	catch (const std::runtime_error& exc)
 	{
 		return createUnsupportedImageSource(string("Android native buffers unsupported: ") + exc.what(), format);
 	}
