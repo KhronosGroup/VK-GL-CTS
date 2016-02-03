@@ -30,6 +30,8 @@
 #include "es31fNegativeFragmentApiTests.hpp"
 #include "es31fNegativeVertexArrayApiTests.hpp"
 #include "es31fNegativeStateApiTests.hpp"
+#include "es31fNegativeAtomicCounterTests.hpp"
+#include "es31fNegativeShaderImageLoadStoreTests.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
@@ -96,6 +98,12 @@ static const GLenum s_debugSeverities[] =
     GL_DEBUG_SEVERITY_LOW,
     GL_DEBUG_SEVERITY_NOTIFICATION,
 };
+
+static bool isKHRDebugSupported (Context& ctx)
+{
+	const bool isES32 = glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	return isES32 || ctx.getContextInfo().isExtensionSupported("GL_KHR_debug");
+}
 
 class BaseCase;
 
@@ -639,7 +647,7 @@ CallbackErrorCase::CallbackErrorCase (Context&				ctx,
 
 CallbackErrorCase::IterateResult CallbackErrorCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	const glw::Functions&	gl		= m_context.getRenderContext().getFunctions();
 	tcu::TestLog&			log		= m_testCtx.getLog();
@@ -708,7 +716,7 @@ LogErrorCase::LogErrorCase (Context&			ctx,
 
 LogErrorCase::IterateResult LogErrorCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	const glw::Functions&	gl		= m_context.getRenderContext().getFunctions();
 	tcu::TestLog&			log		= m_testCtx.getLog();
@@ -914,7 +922,7 @@ FilterCase::FilterCase (Context&							ctx,
 
 FilterCase::IterateResult FilterCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
@@ -1226,7 +1234,7 @@ vector<T> join(const vector<T>& a, const vector<T>&b)
 
 GroupFilterCase::IterateResult GroupFilterCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	tcu::TestLog&			log			= m_testCtx.getLog();
@@ -1329,7 +1337,7 @@ GroupCase::GroupCase (Context&				ctx,
 
 GroupCase::IterateResult GroupCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	const glw::Functions&	gl		= m_context.getRenderContext().getFunctions();
 	tcu::TestLog&			log		= m_testCtx.getLog();
@@ -1426,7 +1434,7 @@ AsyncCase::AsyncCase (Context&								ctx,
 
 AsyncCase::IterateResult AsyncCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	tcu::TestLog&			log			= m_testCtx.getLog();
@@ -1646,7 +1654,7 @@ LabelCase::LabelCase (Context&		ctx,
 
 LabelCase::IterateResult LabelCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	const char*	const		msg			= "This is a debug label";
@@ -1790,7 +1798,7 @@ SyncLabelCase::SyncLabelCase (Context& ctx, const char* name, const char* desc)
 
 SyncLabelCase::IterateResult SyncLabelCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	const char*	const		msg			= "This is a debug label";
@@ -1838,7 +1846,7 @@ InitialLabelCase::InitialLabelCase (Context& ctx, const char* name, const char* 
 
 InitialLabelCase::IterateResult InitialLabelCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	tcu::ResultCollector	result		(m_testCtx.getLog(), " // ERROR: ");
@@ -1908,7 +1916,7 @@ ClearLabelCase::ClearLabelCase (Context& ctx, const char* name, const char* desc
 
 ClearLabelCase::IterateResult ClearLabelCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	static const struct
 	{
@@ -2012,7 +2020,7 @@ SpecifyWithLengthCase::SpecifyWithLengthCase (Context& ctx, const char* name, co
 
 SpecifyWithLengthCase::IterateResult SpecifyWithLengthCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	tcu::ResultCollector	result		(m_testCtx.getLog(), " // ERROR: ");
@@ -2122,7 +2130,7 @@ BufferLimitedLabelCase::BufferLimitedLabelCase (Context& ctx, const char* name, 
 
 BufferLimitedLabelCase::IterateResult BufferLimitedLabelCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	tcu::ResultCollector	result		(m_testCtx.getLog(), " // ERROR: ");
@@ -2351,7 +2359,7 @@ LabelMaxSizeCase::LabelMaxSizeCase (Context& ctx, const char* name, const char* 
 
 LabelMaxSizeCase::IterateResult LabelMaxSizeCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	tcu::ResultCollector	result		(m_testCtx.getLog(), " // ERROR: ");
@@ -2478,7 +2486,7 @@ LabelLengthCase::LabelLengthCase (Context& ctx, const char* name, const char* de
 
 LabelLengthCase::IterateResult LabelLengthCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	tcu::ResultCollector	result		(m_testCtx.getLog(), " // ERROR: ");
@@ -2588,7 +2596,7 @@ LimitQueryCase::LimitQueryCase (Context&						context,
 
 LimitQueryCase::IterateResult LimitQueryCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -2638,7 +2646,7 @@ IsEnabledCase::IsEnabledCase (Context&							context,
 
 IsEnabledCase::IterateResult IsEnabledCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -2701,7 +2709,7 @@ PositiveIntegerCase::PositiveIntegerCase (Context&							context,
 
 PositiveIntegerCase::IterateResult PositiveIntegerCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -2737,7 +2745,7 @@ GroupStackDepthQueryCase::GroupStackDepthQueryCase (Context&						context,
 
 GroupStackDepthQueryCase::IterateResult GroupStackDepthQueryCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -2782,7 +2790,7 @@ DebugCallbackFunctionCase::DebugCallbackFunctionCase (Context& context, const ch
 DebugCallbackFunctionCase::IterateResult DebugCallbackFunctionCase::iterate (void)
 {
 	using namespace gls::StateQueryUtil;
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -2821,7 +2829,8 @@ DebugCallbackUserParamCase::DebugCallbackUserParamCase (Context& context, const 
 DebugCallbackUserParamCase::IterateResult DebugCallbackUserParamCase::iterate (void)
 {
 	using namespace gls::StateQueryUtil;
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
+
+	TCU_CHECK_AND_THROW(NotSupportedError, isKHRDebugSupported(m_context), "GL_KHR_debug is not supported");
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -2904,13 +2913,15 @@ vector<FunctionContainer> wrapCoreFunctions (const vector<NegativeTestShared::Fu
 
 void DebugTests::init (void)
 {
-	const vector<FunctionContainer> bufferFuncs		= wrapCoreFunctions(NegativeTestShared::getNegativeBufferApiTestFunctions());
-	const vector<FunctionContainer> textureFuncs	= wrapCoreFunctions(NegativeTestShared::getNegativeTextureApiTestFunctions());
-	const vector<FunctionContainer> shaderFuncs		= wrapCoreFunctions(NegativeTestShared::getNegativeShaderApiTestFunctions());
-	const vector<FunctionContainer> fragmentFuncs	= wrapCoreFunctions(NegativeTestShared::getNegativeFragmentApiTestFunctions());
-	const vector<FunctionContainer> vaFuncs			= wrapCoreFunctions(NegativeTestShared::getNegativeVertexArrayApiTestFunctions());
-	const vector<FunctionContainer> stateFuncs		= wrapCoreFunctions(NegativeTestShared::getNegativeStateApiTestFunctions());
-	const vector<FunctionContainer> externalFuncs	= getUserMessageFuncs();
+	const vector<FunctionContainer> bufferFuncs					= wrapCoreFunctions(NegativeTestShared::getNegativeBufferApiTestFunctions());
+	const vector<FunctionContainer> textureFuncs				= wrapCoreFunctions(NegativeTestShared::getNegativeTextureApiTestFunctions());
+	const vector<FunctionContainer> shaderFuncs					= wrapCoreFunctions(NegativeTestShared::getNegativeShaderApiTestFunctions());
+	const vector<FunctionContainer> fragmentFuncs				= wrapCoreFunctions(NegativeTestShared::getNegativeFragmentApiTestFunctions());
+	const vector<FunctionContainer> vaFuncs						= wrapCoreFunctions(NegativeTestShared::getNegativeVertexArrayApiTestFunctions());
+	const vector<FunctionContainer> stateFuncs					= wrapCoreFunctions(NegativeTestShared::getNegativeStateApiTestFunctions());
+	const vector<FunctionContainer> atomicCounterFuncs			= wrapCoreFunctions(NegativeTestShared::getNegativeAtomicCounterTestFunctions());
+	const vector<FunctionContainer> shaderImageLoadStoreFuncs	= wrapCoreFunctions(NegativeTestShared::getNegativeShaderImageLoadStoreTestFunctions());
+	const vector<FunctionContainer> externalFuncs				= getUserMessageFuncs();
 
 	{
 		using namespace gls::StateQueryUtil;
@@ -3001,12 +3012,14 @@ void DebugTests::init (void)
 			tcu::TestCaseGroup* const	host	= new tcu::TestCaseGroup(m_testCtx, "callbacks", "Reporting of standard API errors via callback");
 
 			negative->addChild(host);
-			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "buffer",			"Negative Buffer API Cases",		bufferFuncs));
-			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "texture",		"Negative Texture API Cases",		textureFuncs));
-			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader",			"Negative Shader API Cases",		shaderFuncs));
-			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "fragment",		"Negative Fragment API Cases",		fragmentFuncs));
-			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "vertex_array",	"Negative Vertex Array API Cases",	vaFuncs));
-			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "state",			"Negative GL State API Cases",		stateFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "buffer",						"Negative Buffer API Cases",						bufferFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "texture",					"Negative Texture API Cases",						textureFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader",						"Negative Shader API Cases",						shaderFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "fragment",					"Negative Fragment API Cases",						fragmentFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "vertex_array",				"Negative Vertex Array API Cases",					vaFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "state",						"Negative GL State API Cases",						stateFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "atomic_counter",				"Negative Atomic Counter API Cases",				atomicCounterFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_image_load_store",	"Negative Shader Image Load and Store API Cases",	shaderImageLoadStoreFuncs));
 		}
 
 		{
@@ -3014,12 +3027,14 @@ void DebugTests::init (void)
 
 			negative->addChild(host);
 
-			host->addChild(createChildCases(CASETYPE_LOG, m_context, "buffer",				"Negative Buffer API Cases",		bufferFuncs));
-			host->addChild(createChildCases(CASETYPE_LOG, m_context, "texture",				"Negative Texture API Cases",		textureFuncs));
-			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader",				"Negative Shader API Cases",		shaderFuncs));
-			host->addChild(createChildCases(CASETYPE_LOG, m_context, "fragment",			"Negative Fragment API Cases",		fragmentFuncs));
-			host->addChild(createChildCases(CASETYPE_LOG, m_context, "vertex_array",		"Negative Vertex Array API Cases",	vaFuncs));
-			host->addChild(createChildCases(CASETYPE_LOG, m_context, "state",				"Negative GL State API Cases",		stateFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "buffer",					"Negative Buffer API Cases",						bufferFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "texture",					"Negative Texture API Cases",						textureFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader",					"Negative Shader API Cases",						shaderFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "fragment",				"Negative Fragment API Cases",						fragmentFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "vertex_array",			"Negative Vertex Array API Cases",					vaFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "state",					"Negative GL State API Cases",						stateFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "atomic_counter",			"Negative Atomic Counter API Cases",				atomicCounterFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_image_load_store",	"Negative Shader Image Load and Store API Cases",	shaderImageLoadStoreFuncs));
 		}
 
 		{
@@ -3027,12 +3042,14 @@ void DebugTests::init (void)
 
 			negative->addChild(host);
 
-			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "buffer",			"Negative Buffer API Cases",		bufferFuncs));
-			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "texture",		"Negative Texture API Cases",		textureFuncs));
-			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader",			"Negative Shader API Cases",		shaderFuncs));
-			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "fragment",		"Negative Fragment API Cases",		fragmentFuncs));
-			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "vertex_array",	"Negative Vertex Array API Cases",	vaFuncs));
-			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "state",			"Negative GL State API Cases",		stateFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "buffer",						"Negative Buffer API Cases",						bufferFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "texture",					"Negative Texture API Cases",						textureFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader",						"Negative Shader API Cases",						shaderFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "fragment",					"Negative Fragment API Cases",						fragmentFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "vertex_array",				"Negative Vertex Array API Cases",					vaFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "state",						"Negative GL State API Cases",						stateFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "atomic_counter",				"Negative Atomic Counter API Cases",				atomicCounterFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_image_load_store",	"Negative Shader Image Load and Store API Cases",	shaderImageLoadStoreFuncs));
 		}
 	}
 

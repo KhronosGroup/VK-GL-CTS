@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 30159.
+ * Generated from Khronos GL API description (gl.xml) revision 32093.
  */
 
 void glwActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -236,12 +236,12 @@ void glwBindVertexBuffers (GLuint first, GLsizei count, const GLuint *buffers, c
 	gl->bindVertexBuffers(first, count, buffers, offsets, strides);
 }
 
-void glwBlendBarrierKHR (void)
+void glwBlendBarrier (void)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->blendBarrierKHR();
+	gl->blendBarrier();
 }
 
 void glwBlendColor (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
@@ -3044,12 +3044,12 @@ void glwPopGroupMarkerEXT (void)
 	gl->popGroupMarkerEXT();
 }
 
-void glwPrimitiveBoundingBoxEXT (GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW)
+void glwPrimitiveBoundingBox (GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->primitiveBoundingBoxEXT(minX, minY, minZ, minW, maxX, maxY, maxZ, maxW);
+	gl->primitiveBoundingBox(minX, minY, minZ, minW, maxX, maxY, maxZ, maxW);
 }
 
 void glwPrimitiveRestartIndex (GLuint index)

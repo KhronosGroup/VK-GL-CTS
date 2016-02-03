@@ -63,6 +63,17 @@ static const char* getVerifierSuffix (QueryType type)
 	}
 }
 
+void isExtensionSupported (Context& context, std::string extensionName)
+{
+	if (extensionName == "GL_EXT_draw_buffers_indexed" || extensionName == "GL_KHR_blend_equation_advanced")
+	{
+		if (!contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !context.getContextInfo().isExtensionSupported(extensionName.c_str()))
+			TCU_THROW(NotSupportedError, (std::string("Extension ") + extensionName + std::string(" not supported.")).c_str());
+	}
+	else if (!context.getContextInfo().isExtensionSupported(extensionName.c_str()))
+		TCU_THROW(NotSupportedError, (std::string("Extension ") + extensionName + std::string(" not supported.")).c_str());
+}
+
 class SampleMaskCase : public TestCase
 {
 public:
@@ -862,8 +873,7 @@ EnableBlendCase::EnableBlendCase (Context& context, const char* name, const char
 
 void EnableBlendCase::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
-		throw tcu::NotSupportedError("Extension GL_EXT_draw_buffers_indexed not supported", "", __FILE__, __LINE__);
+	isExtensionSupported(m_context, "GL_EXT_draw_buffers_indexed");
 }
 
 EnableBlendCase::IterateResult EnableBlendCase::iterate (void)
@@ -947,8 +957,7 @@ ColorMaskCase::ColorMaskCase (Context& context, const char* name, const char* de
 
 void ColorMaskCase::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
-		throw tcu::NotSupportedError("Extension GL_EXT_draw_buffers_indexed not supported", "", __FILE__, __LINE__);
+	isExtensionSupported(m_context, "GL_EXT_draw_buffers_indexed");
 }
 
 ColorMaskCase::IterateResult ColorMaskCase::iterate (void)
@@ -1021,8 +1030,7 @@ BlendFuncCase::BlendFuncCase (Context& context, const char* name, const char* de
 
 void BlendFuncCase::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
-		throw tcu::NotSupportedError("Extension GL_EXT_draw_buffers_indexed not supported", "", __FILE__, __LINE__);
+	isExtensionSupported(m_context, "GL_EXT_draw_buffers_indexed");
 }
 
 BlendFuncCase::IterateResult BlendFuncCase::iterate (void)
@@ -1214,8 +1222,7 @@ BlendEquationCase::BlendEquationCase (Context& context, const char* name, const 
 
 void BlendEquationCase::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
-		throw tcu::NotSupportedError("Extension GL_EXT_draw_buffers_indexed not supported", "", __FILE__, __LINE__);
+	isExtensionSupported(m_context, "GL_EXT_draw_buffers_indexed");
 }
 
 BlendEquationCase::IterateResult BlendEquationCase::iterate (void)
@@ -1346,11 +1353,8 @@ BlendEquationAdvancedCase::BlendEquationAdvancedCase (Context& context, const ch
 
 void BlendEquationAdvancedCase::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
-		throw tcu::NotSupportedError("Extension GL_EXT_draw_buffers_indexed not supported", "", __FILE__, __LINE__);
-
-	if (!m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"))
-		throw tcu::NotSupportedError("Extension GL_KHR_blend_equation_advanced not supported", "", __FILE__, __LINE__);
+	isExtensionSupported(m_context, "GL_EXT_draw_buffers_indexed");
+	isExtensionSupported(m_context, "GL_KHR_blend_equation_advanced");
 }
 
 BlendEquationAdvancedCase::IterateResult BlendEquationAdvancedCase::iterate (void)
@@ -1366,21 +1370,21 @@ BlendEquationAdvancedCase::IterateResult BlendEquationAdvancedCase::iterate (voi
 
 	const deUint32 blendEquationAdvanced[] =
 	{
-		GL_MULTIPLY_KHR,
-		GL_SCREEN_KHR,
-		GL_OVERLAY_KHR,
-		GL_DARKEN_KHR,
-		GL_LIGHTEN_KHR,
-		GL_COLORDODGE_KHR,
-		GL_COLORBURN_KHR,
-		GL_HARDLIGHT_KHR,
-		GL_SOFTLIGHT_KHR,
-		GL_DIFFERENCE_KHR,
-		GL_EXCLUSION_KHR,
-		GL_HSL_HUE_KHR,
-		GL_HSL_SATURATION_KHR,
-		GL_HSL_COLOR_KHR,
-		GL_HSL_LUMINOSITY_KHR
+		GL_MULTIPLY,
+		GL_SCREEN,
+		GL_OVERLAY,
+		GL_DARKEN,
+		GL_LIGHTEN,
+		GL_COLORDODGE,
+		GL_COLORBURN,
+		GL_HARDLIGHT,
+		GL_SOFTLIGHT,
+		GL_DIFFERENCE,
+		GL_EXCLUSION,
+		GL_HSL_HUE,
+		GL_HSL_SATURATION,
+		GL_HSL_COLOR,
+		GL_HSL_LUMINOSITY
 	};
 
 	glu::CallLogWrapper		gl				(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
@@ -1395,13 +1399,13 @@ BlendEquationAdvancedCase::IterateResult BlendEquationAdvancedCase::iterate (voi
 	{
 		const tcu::ScopedLogSection section (m_testCtx.getLog(), "AfterSettingCommon", "After setting common");
 
-		gl.glBlendEquation(GL_SCREEN_KHR);
+		gl.glBlendEquation(GL_SCREEN);
 
 		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
-			verifyStateIndexedInteger(result, gl, GL_BLEND_EQUATION_RGB, ndx, GL_SCREEN_KHR, m_verifierType);
+			verifyStateIndexedInteger(result, gl, GL_BLEND_EQUATION_RGB, ndx, GL_SCREEN, m_verifierType);
 
 		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
-			verifyStateIndexedInteger(result, gl, GL_BLEND_EQUATION_ALPHA, ndx, GL_SCREEN_KHR, m_verifierType);
+			verifyStateIndexedInteger(result, gl, GL_BLEND_EQUATION_ALPHA, ndx, GL_SCREEN, m_verifierType);
 	}
 	{
 		const tcu::ScopedLogSection section (m_testCtx.getLog(), "AfterSettingIndexed", "After setting indexed");
@@ -1421,13 +1425,13 @@ BlendEquationAdvancedCase::IterateResult BlendEquationAdvancedCase::iterate (voi
 		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
 			gl.glBlendEquationi(ndx, blendEquationAdvanced[ndx % DE_LENGTH_OF_ARRAY(blendEquationAdvanced)]);
 
-		gl.glBlendEquation(GL_MULTIPLY_KHR);
+		gl.glBlendEquation(GL_MULTIPLY);
 
 		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
-			verifyStateIndexedInteger(result, gl, GL_BLEND_EQUATION_RGB, ndx, GL_MULTIPLY_KHR, m_verifierType);
+			verifyStateIndexedInteger(result, gl, GL_BLEND_EQUATION_RGB, ndx, GL_MULTIPLY, m_verifierType);
 
 		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
-			verifyStateIndexedInteger(result, gl, GL_BLEND_EQUATION_ALPHA, ndx, GL_MULTIPLY_KHR, m_verifierType);
+			verifyStateIndexedInteger(result, gl, GL_BLEND_EQUATION_ALPHA, ndx, GL_MULTIPLY, m_verifierType);
 	}
 	{
 		const tcu::ScopedLogSection section (m_testCtx.getLog(), "AfterResettingIndexedSeparateWithCommon", "After resetting indexed separate with common");
@@ -1435,13 +1439,13 @@ BlendEquationAdvancedCase::IterateResult BlendEquationAdvancedCase::iterate (voi
 		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
 			gl.glBlendEquationSeparatei(ndx, blendEquations[ndx % DE_LENGTH_OF_ARRAY(blendEquations)], blendEquations[(ndx + 1) % DE_LENGTH_OF_ARRAY(blendEquations)]);
 
-		gl.glBlendEquation(GL_LIGHTEN_KHR);
+		gl.glBlendEquation(GL_LIGHTEN);
 
 		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
-			verifyStateIndexedInteger(result, gl, GL_BLEND_EQUATION_RGB, ndx, GL_LIGHTEN_KHR, m_verifierType);
+			verifyStateIndexedInteger(result, gl, GL_BLEND_EQUATION_RGB, ndx, GL_LIGHTEN, m_verifierType);
 
 		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
-			verifyStateIndexedInteger(result, gl, GL_BLEND_EQUATION_ALPHA, ndx, GL_LIGHTEN_KHR, m_verifierType);
+			verifyStateIndexedInteger(result, gl, GL_BLEND_EQUATION_ALPHA, ndx, GL_LIGHTEN, m_verifierType);
 	}
 
 	result.setTestContextResult(m_testCtx);
@@ -1485,13 +1489,13 @@ void IndexedStateQueryTests::init (void)
 	FOR_EACH_VERIFIER(new MinValueIndexed3Case		(m_context, (std::string() + "max_compute_work_group_count_" + verifierSuffix).c_str(),		"Test MAX_COMPUTE_WORK_GROUP_COUNT",	GL_MAX_COMPUTE_WORK_GROUP_COUNT,	tcu::IVec3(65535,65535,65535),	verifier))
 	FOR_EACH_VERIFIER(new MinValueIndexed3Case		(m_context, (std::string() + "max_compute_work_group_size_" + verifierSuffix).c_str(),		"Test MAX_COMPUTE_WORK_GROUP_SIZE",		GL_MAX_COMPUTE_WORK_GROUP_SIZE,		tcu::IVec3(128, 128, 64),		verifier))
 
-	FOR_EACH_VERIFIER(new BufferBindingCase			(m_context, (std::string() + "atomic_counter_buffer_binding_" + verifierSuffix).c_str(),	"Test ATOMIC_COUNTER_BUFFER_BINDING",	GL_ATOMIC_COUNTER_BUFFER_BINDING,	GL_ATOMIC_COUNTER_BUFFER,	GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS, verifier))
+	FOR_EACH_VERIFIER(new BufferBindingCase			(m_context, (std::string() + "atomic_counter_buffer_binding_" + verifierSuffix).c_str(),	"Test ATOMIC_COUNTER_BUFFER_BINDING",	GL_ATOMIC_COUNTER_BUFFER_BINDING,	GL_ATOMIC_COUNTER_BUFFER,	GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS,	verifier))
 	FOR_EACH_VERIFIER(new BufferStartCase			(m_context, (std::string() + "atomic_counter_buffer_start_" + verifierSuffix).c_str(),		"Test ATOMIC_COUNTER_BUFFER_START",		GL_ATOMIC_COUNTER_BUFFER_START,		GL_ATOMIC_COUNTER_BUFFER,	GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS,	verifier))
 	FOR_EACH_VERIFIER(new BufferSizeCase			(m_context, (std::string() + "atomic_counter_buffer_size_" + verifierSuffix).c_str(),		"Test ATOMIC_COUNTER_BUFFER_SIZE",		GL_ATOMIC_COUNTER_BUFFER_SIZE,		GL_ATOMIC_COUNTER_BUFFER,	GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS,	verifier))
 
-	FOR_EACH_VERIFIER(new BufferBindingCase			(m_context, (std::string() + "shader_storager_buffer_binding_" + verifierSuffix).c_str(),	"Test SHADER_STORAGE_BUFFER_BINDING",	GL_SHADER_STORAGE_BUFFER_BINDING,	GL_SHADER_STORAGE_BUFFER,	GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,	verifier))
-	FOR_EACH_VERIFIER(new BufferStartCase			(m_context, (std::string() + "shader_storager_buffer_start_" + verifierSuffix).c_str(),		"Test SHADER_STORAGE_BUFFER_START",		GL_SHADER_STORAGE_BUFFER_START,		GL_SHADER_STORAGE_BUFFER,	GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,	verifier))
-	FOR_EACH_VERIFIER(new BufferSizeCase			(m_context, (std::string() + "shader_storager_buffer_size_" + verifierSuffix).c_str(),		"Test SHADER_STORAGE_BUFFER_SIZE",		GL_SHADER_STORAGE_BUFFER_SIZE,		GL_SHADER_STORAGE_BUFFER,	GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,	verifier))
+	FOR_EACH_VERIFIER(new BufferBindingCase			(m_context, (std::string() + "shader_storage_buffer_binding_" + verifierSuffix).c_str(),	"Test SHADER_STORAGE_BUFFER_BINDING",	GL_SHADER_STORAGE_BUFFER_BINDING,	GL_SHADER_STORAGE_BUFFER,	GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,	verifier))
+	FOR_EACH_VERIFIER(new BufferStartCase			(m_context, (std::string() + "shader_storage_buffer_start_" + verifierSuffix).c_str(),		"Test SHADER_STORAGE_BUFFER_START",		GL_SHADER_STORAGE_BUFFER_START,		GL_SHADER_STORAGE_BUFFER,	GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,	verifier))
+	FOR_EACH_VERIFIER(new BufferSizeCase			(m_context, (std::string() + "shader_storage_buffer_size_" + verifierSuffix).c_str(),		"Test SHADER_STORAGE_BUFFER_SIZE",		GL_SHADER_STORAGE_BUFFER_SIZE,		GL_SHADER_STORAGE_BUFFER,	GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,	verifier))
 
 	FOR_EACH_VERIFIER(new ImageBindingNameCase		(m_context, (std::string() + "image_binding_name_" + verifierSuffix).c_str(),				"Test IMAGE_BINDING_NAME",				verifier))
 	FOR_EACH_VERIFIER(new ImageBindingLevelCase		(m_context, (std::string() + "image_binding_level_" + verifierSuffix).c_str(),				"Test IMAGE_BINDING_LEVEL",				verifier))

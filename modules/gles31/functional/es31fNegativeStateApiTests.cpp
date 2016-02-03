@@ -30,7 +30,12 @@
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
 
+#include "tcuStringTemplate.hpp"
+
 #include "deMemory.h"
+
+#include <string>
+#include <map>
 
 namespace deqp
 {
@@ -45,7 +50,7 @@ using tcu::TestLog;
 using glu::CallLogWrapper;
 using namespace glw;
 
-static const char* uniformTestVertSource	=	"#version 300 es\n"
+static const char* uniformTestVertSource	=	"${GLSL_VERSION_DECL}\n"
 												"uniform mediump vec4 vUnif_vec4;\n"
 												"in mediump vec4 attr;"
 												"layout(shared) uniform Block { mediump vec4 blockVar; };\n"
@@ -53,7 +58,8 @@ static const char* uniformTestVertSource	=	"#version 300 es\n"
 												"{\n"
 												"	gl_Position = vUnif_vec4 + blockVar + attr;\n"
 												"}\n\0";
-static const char* uniformTestFragSource	=	"#version 300 es\n"
+
+static const char* uniformTestFragSource	=	"${GLSL_VERSION_DECL}\n"
 												"uniform mediump ivec4 fUnif_ivec4;\n"
 												"uniform mediump uvec4 fUnif_uvec4;\n"
 												"layout(location = 0) out mediump vec4 fragColor;"
@@ -62,12 +68,39 @@ static const char* uniformTestFragSource	=	"#version 300 es\n"
 												"	fragColor = vec4(vec4(fUnif_ivec4) + vec4(fUnif_uvec4));\n"
 												"}\n\0";
 
+static std::string getVtxFragVersionSources (const std::string source, NegativeTestContext& ctx)
+{
+	const bool isES32 = glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
+	std::map<std::string, std::string> args;
+
+	args["GLSL_VERSION_DECL"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_300_ES);
+
+	return tcu::StringTemplate(source).specialize(args);
+}
+
 // Enabling & disabling states
 void enable (NegativeTestContext& ctx)
 {
 	ctx.beginSection("GL_INVALID_ENUM is generated if cap is not one of the allowed values.");
 	ctx.glEnable(-1);
 	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+}
+
+// Enabling & disabling states
+void enablei (NegativeTestContext& ctx)
+{
+	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if cap is not one of the allowed values.");
+	ctx.glEnablei(-1, -1);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_VALUE is generated  if index is greater than or equal to the number of indexed capabilities for cap.");
+	ctx.glEnablei(GL_BLEND, -1);
+	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 }
 
@@ -79,6 +112,21 @@ void disable (NegativeTestContext& ctx)
 	ctx.endSection();
 }
 
+void disablei (NegativeTestContext& ctx)
+{
+	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if cap is not one of the allowed values.");
+	ctx.glDisablei(-1,-1);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_VALUE is generated  if index is greater than or equal to the number of indexed capabilities for cap.");
+	ctx.glDisablei(GL_BLEND, -1);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+}
+
 // Simple state queries
 void get_booleanv (NegativeTestContext& ctx)
 {
@@ -86,6 +134,24 @@ void get_booleanv (NegativeTestContext& ctx)
 	GLboolean params = GL_FALSE;
 	ctx.glGetBooleanv(-1, &params);
 	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+}
+
+void get_booleani_v (NegativeTestContext& ctx)
+{
+	GLboolean	data						= -1;
+	GLint		maxUniformBufferBindings	= 0;
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if target is not indexed state queriable with these commands.");
+	ctx.glGetBooleani_v(-1, 0, &data);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if index is outside of the valid range for the indexed state target.");
+	ctx.glGetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &maxUniformBufferBindings);
+	ctx.expectError(GL_NO_ERROR);
+	ctx.glGetBooleani_v(GL_UNIFORM_BUFFER_BINDING, maxUniformBufferBindings, &data);
+	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 }
 
@@ -100,8 +166,8 @@ void get_floatv (NegativeTestContext& ctx)
 
 void get_integerv (NegativeTestContext& ctx)
 {
-	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not one of the allowed values.");
 	GLint params = -1;
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not one of the allowed values.");
 	ctx.glGetIntegerv(-1, &params);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
@@ -109,8 +175,8 @@ void get_integerv (NegativeTestContext& ctx)
 
 void get_integer64v (NegativeTestContext& ctx)
 {
-	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not one of the allowed values.");
 	GLint64 params = -1;
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not one of the allowed values.");
 	ctx.glGetInteger64v(-1, &params);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
@@ -136,8 +202,8 @@ void get_integeri_v (NegativeTestContext& ctx)
 
 void get_integer64i_v (NegativeTestContext& ctx)
 {
-	GLint64 data					= (GLint64)-1;
-	GLint maxUniformBufferBindings	= 0;
+	GLint64	data						= (GLint64)-1;
+	GLint	maxUniformBufferBindings	= 0;
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if name is not an accepted value.");
 	ctx.glGetInteger64i_v(-1, 0, &data);
@@ -180,10 +246,10 @@ void get_stringi (NegativeTestContext& ctx)
 
 void get_attached_shaders (NegativeTestContext& ctx)
 {
-	GLuint shaders[1]	= { 0 };
-	GLuint shaderObject = ctx.glCreateShader(GL_VERTEX_SHADER);
-	GLuint program		= ctx.glCreateProgram();
-	GLsizei count[1]	= { 0 };
+	GLuint	shaders[1]		= { 0 };
+	GLuint	shaderObject	= ctx.glCreateShader(GL_VERTEX_SHADER);
+	GLuint	program			= ctx.glCreateProgram();
+	GLsizei	count[1]		= { 0 };
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if program is not a value generated by OpenGL.");
 	ctx.glGetAttachedShaders(-1, 1, &count[0], &shaders[0]);
@@ -206,13 +272,13 @@ void get_attached_shaders (NegativeTestContext& ctx)
 
 void get_shaderiv (NegativeTestContext& ctx)
 {
-	GLboolean shaderCompilerSupported;
+	GLboolean	shaderCompilerSupported;
+	GLuint		shader		= ctx.glCreateShader(GL_VERTEX_SHADER);
+	GLuint		program		= ctx.glCreateProgram();
+	GLint		param[1]	= { -1 };
+
 	ctx.glGetBooleanv(GL_SHADER_COMPILER, &shaderCompilerSupported);
 	ctx.getLog() << TestLog::Message << "// GL_SHADER_COMPILER = " << (shaderCompilerSupported ? "GL_TRUE" : "GL_FALSE") << TestLog::EndMessage;
-
-	GLuint shader	= ctx.glCreateShader(GL_VERTEX_SHADER);
-	GLuint program	= ctx.glCreateProgram();
-	GLint param[1]	= { -1 };
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
 	ctx.glGetShaderiv(shader, -1, &param[0]);
@@ -261,12 +327,12 @@ void get_shader_info_log (NegativeTestContext& ctx)
 
 void get_shader_precision_format (NegativeTestContext& ctx)
 {
-	GLboolean shaderCompilerSupported;
+	GLboolean	shaderCompilerSupported;
+	GLint		range[2];
+	GLint		precision[1];
+
 	ctx.glGetBooleanv(GL_SHADER_COMPILER, &shaderCompilerSupported);
 	ctx.getLog() << TestLog::Message << "// GL_SHADER_COMPILER = " << (shaderCompilerSupported ? "GL_TRUE" : "GL_FALSE") << TestLog::EndMessage;
-
-	GLint range[2];
-	GLint precision[1];
 
 	deMemset(&range[0], 0xcd, sizeof(range));
 	deMemset(&precision[0], 0xcd, sizeof(precision));
@@ -364,7 +430,7 @@ void get_program_info_log (NegativeTestContext& ctx)
 
 void get_tex_parameterfv (NegativeTestContext& ctx)
 {
-	GLfloat params[1]	= { 0 };
+	GLfloat params[1] = { 0 };
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if target or pname is not an accepted value.");
 	ctx.glGetTexParameterfv (-1, GL_TEXTURE_MAG_FILTER, &params[0]);
@@ -378,7 +444,7 @@ void get_tex_parameterfv (NegativeTestContext& ctx)
 
 void get_tex_parameteriv (NegativeTestContext& ctx)
 {
-	GLint params[1]	= { 0 };
+	GLint params[1] = { 0 };
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if target or pname is not an accepted value.");
 	ctx.glGetTexParameteriv (-1, GL_TEXTURE_MAG_FILTER, &params[0]);
@@ -390,18 +456,54 @@ void get_tex_parameteriv (NegativeTestContext& ctx)
 	ctx.endSection();
 }
 
+void get_tex_parameteriiv (NegativeTestContext& ctx)
+{
+	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+
+	GLint params[1] = { 0 };
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if target or pname is not an accepted value.");
+	ctx.glGetTexParameterIiv(-1, GL_TEXTURE_MAG_FILTER, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glGetTexParameterIiv(GL_TEXTURE_2D, -1, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glGetTexParameterIiv(-1, -1, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+}
+
+void get_tex_parameteriuiv (NegativeTestContext& ctx)
+{
+	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+
+	GLuint params[1] = { 0 };
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if target or pname is not an accepted value.");
+	ctx.glGetTexParameterIuiv(-1, GL_TEXTURE_MAG_FILTER, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glGetTexParameterIuiv(GL_TEXTURE_2D, -1, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glGetTexParameterIuiv(-1, -1, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+}
+
 void get_uniformfv (NegativeTestContext& ctx)
 {
-	glu::ShaderProgram program(ctx.getRenderContext(), glu::makeVtxFragSources(uniformTestVertSource, uniformTestFragSource));
+	glu::ShaderProgram	program		(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
+	GLfloat				params[4]	= { 0.f };
+	GLuint				shader;
+	GLuint				programEmpty;
+	GLint				unif;
+
 	ctx.glUseProgram(program.getProgram());
 
-	GLint unif = ctx.glGetUniformLocation(program.getProgram(), "vUnif_vec4");	// vec4
+	unif = ctx.glGetUniformLocation(program.getProgram(), "vUnif_vec4");	// vec4
 	if (unif == -1)
 		ctx.fail("Failed to retrieve uniform location");
 
-	GLuint shader		= ctx.glCreateShader(GL_VERTEX_SHADER);
-	GLuint programEmpty = ctx.glCreateProgram();
-	GLfloat params[4]	= { 0.f };
+	shader = ctx.glCreateShader(GL_VERTEX_SHADER);
+	programEmpty = ctx.glCreateProgram();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if program is not a value generated by OpenGL.");
 	ctx.glGetUniformfv (-1, unif, &params[0]);
@@ -427,18 +529,71 @@ void get_uniformfv (NegativeTestContext& ctx)
 	ctx.glDeleteProgram(programEmpty);
 }
 
-void get_uniformiv (NegativeTestContext& ctx)
+void get_nuniformfv (NegativeTestContext& ctx)
 {
-	glu::ShaderProgram program(ctx.getRenderContext(), glu::makeVtxFragSources(uniformTestVertSource, uniformTestFragSource));
+	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+
+	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
+	GLint				unif			= ctx.glGetUniformLocation(program.getProgram(), "vUnif_vec4");
+	GLfloat				params[4]		= { 0.0f, 0.0f, 0.0f, 0.0f };
+	GLuint				shader;
+	GLuint				programEmpty;
+	GLsizei 			bufferSize;
+
 	ctx.glUseProgram(program.getProgram());
 
-	GLint unif = ctx.glGetUniformLocation(program.getProgram(), "fUnif_ivec4");	// ivec4
 	if (unif == -1)
 		ctx.fail("Failed to retrieve uniform location");
 
-	GLuint shader		= ctx.glCreateShader(GL_VERTEX_SHADER);
-	GLuint programEmpty = ctx.glCreateProgram();
-	GLint params[4]		= { 0 };
+	shader			= ctx.glCreateShader(GL_VERTEX_SHADER);
+	programEmpty	= ctx.glCreateProgram();
+
+	ctx.glGetIntegerv(GL_MAX_COMBINED_UNIFORM_BLOCKS, &bufferSize);
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if program is not a value generated by OpenGL.");
+	ctx.glGetnUniformfv(-1, unif, bufferSize, &params[0]);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if program is not a program object.");
+	ctx.glGetnUniformfv(shader, unif, bufferSize, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if program has not been successfully linked.");
+	ctx.glGetnUniformfv(programEmpty, unif, bufferSize, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if location does not correspond to a valid uniform variable location for the specified program object.");
+	ctx.glGetnUniformfv(program.getProgram(), -1, bufferSize, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if the buffer size required to store the requested data is greater than bufSize.");
+	ctx.glGetnUniformfv(program.getProgram(), unif, 0, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.glDeleteShader(shader);
+	ctx.glDeleteProgram(programEmpty);
+}
+
+void get_uniformiv (NegativeTestContext& ctx)
+{
+	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
+	GLint				unif			= ctx.glGetUniformLocation(program.getProgram(), "fUnif_ivec4");
+	GLint				params[4]		= { 0, 0, 0, 0 };
+	GLuint				shader;
+	GLuint				programEmpty;
+
+	ctx.glUseProgram(program.getProgram());
+
+	if (unif == -1)
+		ctx.fail("Failed to retrieve uniform location");
+
+	shader = ctx.glCreateShader(GL_VERTEX_SHADER);
+	programEmpty = ctx.glCreateProgram();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if program is not a value generated by OpenGL.");
 	ctx.glGetUniformiv (-1, unif, &params[0]);
@@ -464,18 +619,71 @@ void get_uniformiv (NegativeTestContext& ctx)
 	ctx.glDeleteProgram(programEmpty);
 }
 
-void get_uniformuiv (NegativeTestContext& ctx)
+void get_nuniformiv (NegativeTestContext& ctx)
 {
-	glu::ShaderProgram program(ctx.getRenderContext(), glu::makeVtxFragSources(uniformTestVertSource, uniformTestFragSource));
+	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+
+	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
+	GLint				unif			= ctx.glGetUniformLocation(program.getProgram(), "fUnif_ivec4");
+	GLint				params[4]		= { 0, 0, 0, 0 };
+	GLuint				shader;
+	GLuint				programEmpty;
+	GLsizei				bufferSize;
+
 	ctx.glUseProgram(program.getProgram());
 
-	GLint unif = ctx.glGetUniformLocation(program.getProgram(), "fUnif_uvec4");	// uvec4
 	if (unif == -1)
 		ctx.fail("Failed to retrieve uniform location");
 
-	GLuint shader		= ctx.glCreateShader(GL_VERTEX_SHADER);
-	GLuint programEmpty = ctx.glCreateProgram();
-	GLuint params[4]	= { 0 };
+	shader = ctx.glCreateShader(GL_VERTEX_SHADER);
+	programEmpty = ctx.glCreateProgram();
+
+	ctx.glGetIntegerv(GL_MAX_COMBINED_UNIFORM_BLOCKS, &bufferSize);
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if program is not a value generated by OpenGL.");
+	ctx.glGetnUniformiv(-1, unif, bufferSize, &params[0]);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if program is not a program object.");
+	ctx.glGetnUniformiv(shader, unif, bufferSize, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if program has not been successfully linked.");
+	ctx.glGetnUniformiv(programEmpty, unif, bufferSize, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if location does not correspond to a valid uniform variable location for the specified program object.");
+	ctx.glGetnUniformiv(program.getProgram(), -1, bufferSize, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if the buffer size required to store the requested data is greater than bufSize.");
+	ctx.glGetnUniformiv(program.getProgram(), unif, - 1, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.glDeleteShader(shader);
+	ctx.glDeleteProgram(programEmpty);
+}
+
+void get_uniformuiv (NegativeTestContext& ctx)
+{
+	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
+	GLint				unif			= ctx.glGetUniformLocation(program.getProgram(), "fUnif_uvec4");
+	GLuint				params[4]		= { 0, 0, 0, 0 };
+	GLuint				shader;
+	GLuint				programEmpty;
+
+	ctx.glUseProgram(program.getProgram());
+
+	if (unif == -1)
+		ctx.fail("Failed to retrieve uniform location");
+
+	shader = ctx.glCreateShader(GL_VERTEX_SHADER);
+	programEmpty = ctx.glCreateProgram();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if program is not a value generated by OpenGL.");
 	ctx.glGetUniformuiv (-1, unif, &params[0]);
@@ -501,10 +709,60 @@ void get_uniformuiv (NegativeTestContext& ctx)
 	ctx.glDeleteProgram(programEmpty);
 }
 
+void get_nuniformuiv (NegativeTestContext& ctx)
+{
+	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+
+	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
+	GLint				unif			= ctx.glGetUniformLocation(program.getProgram(), "fUnif_ivec4");
+	GLuint				params[4]		= { 0, 0, 0, 0 };
+	GLuint				shader;
+	GLuint				programEmpty;
+	GLsizei				bufferSize;
+
+	ctx.glUseProgram(program.getProgram());
+
+	if (unif == -1)
+		ctx.fail("Failed to retrieve uniform location");
+
+	shader = ctx.glCreateShader(GL_VERTEX_SHADER);
+	programEmpty = ctx.glCreateProgram();
+
+	ctx.glGetIntegerv(GL_MAX_COMBINED_UNIFORM_BLOCKS, &bufferSize);
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if program is not a value generated by OpenGL.");
+	ctx.glGetnUniformuiv(-1, unif, bufferSize, &params[0]);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if program is not a program object.");
+	ctx.glGetnUniformuiv(shader, unif, bufferSize, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if program has not been successfully linked.");
+	ctx.glGetnUniformuiv(programEmpty, unif, bufferSize, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if location does not correspond to a valid uniform variable location for the specified program object.");
+	ctx.glGetnUniformuiv(program.getProgram(), -1, bufferSize, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if the buffer size required to store the requested data is greater than bufSize.");
+	ctx.glGetnUniformuiv(program.getProgram(), unif, -1, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.glDeleteShader(shader);
+	ctx.glDeleteProgram(programEmpty);
+}
+
 void get_active_uniform (NegativeTestContext& ctx)
 {
 	GLuint				shader				= ctx.glCreateShader(GL_VERTEX_SHADER);
-	glu::ShaderProgram	program				(ctx.getRenderContext(), glu::makeVtxFragSources(uniformTestVertSource, uniformTestFragSource));
+	glu::ShaderProgram	program				(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
 	GLint				numActiveUniforms	= -1;
 
 	ctx.glGetProgramiv	(program.getProgram(), GL_ACTIVE_UNIFORMS,	&numActiveUniforms);
@@ -538,7 +796,7 @@ void get_active_uniform (NegativeTestContext& ctx)
 void get_active_uniformsiv (NegativeTestContext& ctx)
 {
 	GLuint					shader				= ctx.glCreateShader(GL_VERTEX_SHADER);
-	glu::ShaderProgram		program				(ctx.getRenderContext(), glu::makeVtxFragSources(uniformTestVertSource, uniformTestFragSource));
+	glu::ShaderProgram		program				(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
 	GLuint					dummyUniformIndex	= 1;
 	GLint					dummyParamDst		= -1;
 	GLint					numActiveUniforms	= -1;
@@ -583,13 +841,24 @@ void get_active_uniformsiv (NegativeTestContext& ctx)
 
 void get_active_uniform_blockiv (NegativeTestContext& ctx)
 {
-	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(uniformTestVertSource, uniformTestFragSource));
+	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
+	GLuint				shader			= ctx.glCreateShader(GL_VERTEX_SHADER);
 	GLint				params			= -1;
 	GLint				numActiveBlocks	= -1;
 
-	ctx.glGetProgramiv	(program.getProgram(), GL_ACTIVE_UNIFORM_BLOCKS,	&numActiveBlocks);
+	ctx.glGetProgramiv(program.getProgram(), GL_ACTIVE_UNIFORM_BLOCKS, &numActiveBlocks);
 	ctx.getLog() << TestLog::Message << "// GL_ACTIVE_UNIFORM_BLOCKS = " << numActiveBlocks << " (expected 1)." << TestLog::EndMessage;
-	ctx.expectError		(GL_NO_ERROR);
+	ctx.expectError(GL_NO_ERROR);
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if program is not the name of either a program or shader object.");
+	ctx.glGetActiveUniformBlockiv(-1, 0, GL_UNIFORM_BLOCK_BINDING, &params);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if program is the name of a shader object");
+	ctx.glGetActiveUniformBlockiv(shader, 0, GL_UNIFORM_BLOCK_BINDING, &params);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if uniformBlockIndex is greater than or equal to the value of GL_ACTIVE_UNIFORM_BLOCKS or is not the index of an active uniform block in program.");
 	ctx.glUseProgram(program.getProgram());
@@ -608,16 +877,27 @@ void get_active_uniform_blockiv (NegativeTestContext& ctx)
 
 void get_active_uniform_block_name (NegativeTestContext& ctx)
 {
-	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(uniformTestVertSource, uniformTestFragSource));
+	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
+	GLuint				shader			= ctx.glCreateShader(GL_VERTEX_SHADER);
 	GLsizei				length			= -1;
 	GLint				numActiveBlocks	= -1;
 	GLchar				uniformBlockName[128];
 
 	deMemset(&uniformBlockName[0], 0, sizeof(uniformBlockName));
 
-	ctx.glGetProgramiv	(program.getProgram(), GL_ACTIVE_UNIFORM_BLOCKS,	&numActiveBlocks);
+	ctx.glGetProgramiv(program.getProgram(), GL_ACTIVE_UNIFORM_BLOCKS, &numActiveBlocks);
 	ctx.getLog() << TestLog::Message << "// GL_ACTIVE_UNIFORM_BLOCKS = " << numActiveBlocks << " (expected 1)." << TestLog::EndMessage;
-	ctx.expectError		(GL_NO_ERROR);
+	ctx.expectError(GL_NO_ERROR);
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if program is the name of a shader object.");
+	ctx.glGetActiveUniformBlockName(shader, numActiveBlocks, GL_UNIFORM_BLOCK_BINDING, &length, &uniformBlockName[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if program is not the name of either a program or shader object.");
+	ctx.glGetActiveUniformBlockName(-1, numActiveBlocks, GL_UNIFORM_BLOCK_BINDING, &length, &uniformBlockName[0]);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if uniformBlockIndex is greater than or equal to the value of GL_ACTIVE_UNIFORM_BLOCKS or is not the index of an active uniform block in program.");
 	ctx.glUseProgram(program.getProgram());
@@ -632,9 +912,8 @@ void get_active_uniform_block_name (NegativeTestContext& ctx)
 void get_active_attrib (NegativeTestContext& ctx)
 {
 	GLuint				shader				= ctx.glCreateShader(GL_VERTEX_SHADER);
-	glu::ShaderProgram	program				(ctx.getRenderContext(), glu::makeVtxFragSources(uniformTestVertSource, uniformTestFragSource));
+	glu::ShaderProgram	program				(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
 	GLint				numActiveAttributes	= -1;
-
 	GLsizei				length				= -1;
 	GLint				size				= -1;
 	GLenum				type				= -1;
@@ -673,15 +952,16 @@ void get_active_attrib (NegativeTestContext& ctx)
 
 void get_uniform_indices (NegativeTestContext& ctx)
 {
-	GLuint shader			= ctx.glCreateShader(GL_VERTEX_SHADER);
-	glu::ShaderProgram program(ctx.getRenderContext(), glu::makeVtxFragSources(uniformTestVertSource, uniformTestFragSource));
-	GLint numActiveBlocks = -1;
-	const GLchar* uniformName =  "Block.blockVar";
-	GLuint uniformIndices = -1;
+	GLuint				shader			= ctx.glCreateShader(GL_VERTEX_SHADER);
+	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
+	GLint 				numActiveBlocks	= -1;
+	const GLchar*		uniformName		= "Block.blockVar";
+	GLuint				uniformIndices	= -1;
+	GLuint				invalid			= -1;
 
-	ctx.glGetProgramiv	(program.getProgram(), GL_ACTIVE_UNIFORM_BLOCKS,	&numActiveBlocks);
+	ctx.glGetProgramiv(program.getProgram(), GL_ACTIVE_UNIFORM_BLOCKS,	&numActiveBlocks);
 	ctx.getLog() << TestLog::Message << "// GL_ACTIVE_UNIFORM_BLOCKS = "		<< numActiveBlocks			<< TestLog::EndMessage;
-	ctx.expectError		(GL_NO_ERROR);
+	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if program is a name of shader object.");
 	ctx.glGetUniformIndices(shader, 1, &uniformName, &uniformIndices);
@@ -689,7 +969,6 @@ void get_uniform_indices (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if program is not name of program or shader object.");
-	GLuint invalid = -1;
 	ctx.glGetUniformIndices(invalid, 1, &uniformName, &uniformIndices);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
@@ -700,7 +979,8 @@ void get_uniform_indices (NegativeTestContext& ctx)
 
 void get_vertex_attribfv (NegativeTestContext& ctx)
 {
-	GLfloat params = 0.0f;
+	GLfloat	params				= 0.0f;
+	GLint	maxVertexAttribs;
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
 	ctx.glGetVertexAttribfv(0, -1, &params);
@@ -708,7 +988,6 @@ void get_vertex_attribfv (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if index is greater than or equal to GL_MAX_VERTEX_ATTRIBS.");
-	GLint maxVertexAttribs;
 	ctx.glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxVertexAttribs);
 	ctx.glGetVertexAttribfv(maxVertexAttribs, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &params);
 	ctx.expectError(GL_INVALID_VALUE);
@@ -717,7 +996,8 @@ void get_vertex_attribfv (NegativeTestContext& ctx)
 
 void get_vertex_attribiv (NegativeTestContext& ctx)
 {
-	GLint params = -1;
+	GLint	params				= -1;
+	GLint	maxVertexAttribs;
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
 	ctx.glGetVertexAttribiv(0, -1, &params);
@@ -725,7 +1005,6 @@ void get_vertex_attribiv (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if index is greater than or equal to GL_MAX_VERTEX_ATTRIBS.");
-	GLint maxVertexAttribs;
 	ctx.glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxVertexAttribs);
 	ctx.glGetVertexAttribiv(maxVertexAttribs, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &params);
 	ctx.expectError(GL_INVALID_VALUE);
@@ -734,7 +1013,8 @@ void get_vertex_attribiv (NegativeTestContext& ctx)
 
 void get_vertex_attribi_iv (NegativeTestContext& ctx)
 {
-	GLint params = -1;
+	GLint	params				= -1;
+	GLint	maxVertexAttribs;
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
 	ctx.glGetVertexAttribIiv(0, -1, &params);
@@ -742,7 +1022,6 @@ void get_vertex_attribi_iv (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if index is greater than or equal to GL_MAX_VERTEX_ATTRIBS.");
-	GLint maxVertexAttribs;
 	ctx.glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxVertexAttribs);
 	ctx.glGetVertexAttribIiv(maxVertexAttribs, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &params);
 	ctx.expectError(GL_INVALID_VALUE);
@@ -751,7 +1030,8 @@ void get_vertex_attribi_iv (NegativeTestContext& ctx)
 
 void get_vertex_attribi_uiv (NegativeTestContext& ctx)
 {
-	GLuint params = (GLuint)-1;
+	GLuint	params				= (GLuint)-1;
+	GLint	maxVertexAttribs;
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
 	ctx.glGetVertexAttribIuiv(0, -1, &params);
@@ -759,7 +1039,6 @@ void get_vertex_attribi_uiv (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if index is greater than or equal to GL_MAX_VERTEX_ATTRIBS.");
-	GLint maxVertexAttribs;
 	ctx.glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxVertexAttribs);
 	ctx.glGetVertexAttribIuiv(maxVertexAttribs, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &params);
 	ctx.expectError(GL_INVALID_VALUE);
@@ -768,7 +1047,8 @@ void get_vertex_attribi_uiv (NegativeTestContext& ctx)
 
 void get_vertex_attrib_pointerv (NegativeTestContext& ctx)
 {
-	GLvoid* ptr[1] = { DE_NULL };
+	GLvoid*	ptr[1]				= { DE_NULL };
+	GLint	maxVertexAttribs;
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
 	ctx.glGetVertexAttribPointerv(0, -1, &ptr[0]);
@@ -776,7 +1056,6 @@ void get_vertex_attrib_pointerv (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if index is greater than or equal to GL_MAX_VERTEX_ATTRIBS.");
-	GLint maxVertexAttribs;
 	ctx.glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxVertexAttribs);
 	ctx.glGetVertexAttribPointerv(maxVertexAttribs, GL_VERTEX_ATTRIB_ARRAY_POINTER, &ptr[0]);
 	ctx.expectError(GL_INVALID_VALUE);
@@ -806,8 +1085,8 @@ void get_frag_data_location (NegativeTestContext& ctx)
 
 void get_buffer_parameteriv (NegativeTestContext& ctx)
 {
-	GLint params = -1;
-	GLuint buf;
+	GLint	params	= -1;
+	GLuint	buf;
 	ctx.glGenBuffers(1, &buf);
 	ctx.glBindBuffer(GL_ARRAY_BUFFER, buf);
 
@@ -831,8 +1110,8 @@ void get_buffer_parameteriv (NegativeTestContext& ctx)
 
 void get_buffer_parameteri64v (NegativeTestContext& ctx)
 {
-	GLint64 params = -1;
-	GLuint buf;
+	GLint64	params	= -1;
+	GLuint	buf;
 	ctx.glGenBuffers(1, &buf);
 	ctx.glBindBuffer(GL_ARRAY_BUFFER, buf);
 
@@ -856,8 +1135,8 @@ void get_buffer_parameteri64v (NegativeTestContext& ctx)
 
 void get_buffer_pointerv (NegativeTestContext& ctx)
 {
-	GLvoid* params = DE_NULL;
-	GLuint buf;
+	GLvoid*	params	= DE_NULL;
+	GLuint	buf;
 	ctx.glGenBuffers(1, &buf);
 	ctx.glBindBuffer(GL_ARRAY_BUFFER, buf);
 
@@ -879,9 +1158,9 @@ void get_buffer_pointerv (NegativeTestContext& ctx)
 
 void get_framebuffer_attachment_parameteriv (NegativeTestContext& ctx)
 {
-	GLint params[1] = { -1 };
-	GLuint fbo;
-	GLuint rbo[2];
+	GLint	params[1]	= { -1 };
+	GLuint	fbo;
+	GLuint	rbo[2];
 
 	ctx.glGenFramebuffers			(1, &fbo);
 	ctx.glGenRenderbuffers			(2, rbo);
@@ -935,8 +1214,8 @@ void get_framebuffer_attachment_parameteriv (NegativeTestContext& ctx)
 
 void get_renderbuffer_parameteriv (NegativeTestContext& ctx)
 {
-	GLint params[1] = { -1 };
-	GLuint rbo;
+	GLint	params[1] = { -1 };
+	GLuint	rbo;
 	ctx.glGenRenderbuffers(1, &rbo);
 	ctx.glBindRenderbuffer(GL_RENDERBUFFER, rbo);
 
@@ -948,6 +1227,13 @@ void get_renderbuffer_parameteriv (NegativeTestContext& ctx)
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not one of the accepted tokens.");
 	ctx.glGetRenderbufferParameteriv(GL_RENDERBUFFER, -1, &params[0]);
 	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION  is generated if the renderbuffer currently bound to target is zero.");
+	ctx.glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	ctx.expectError(GL_NO_ERROR);
+	ctx.glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &params[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 
 	ctx.glDeleteRenderbuffers(1, &rbo);
@@ -1051,22 +1337,31 @@ void get_query_objectuiv (NegativeTestContext& ctx)
 
 void get_synciv (NegativeTestContext& ctx)
 {
-	GLsizei length	= -1;
+	GLsizei	length		= -1;
 	GLint	values[32];
 	GLsync	sync;
 
 	deMemset(&values[0], 0xcd, sizeof(values));
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if sync is not the name of a sync object.");
-	ctx.glGetSynciv	(0, GL_OBJECT_TYPE, 32, &length, &values[0]);
-	ctx.expectError	(GL_INVALID_VALUE);
+	ctx.glGetSynciv(0, GL_OBJECT_TYPE, 32, &length, &values[0]);
+	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not one of the accepted tokens.");
 	sync = ctx.glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-	ctx.expectError	(GL_NO_ERROR);
-	ctx.glGetSynciv	(sync, -1, 32, &length, &values[0]);
-	ctx.expectError	(GL_INVALID_ENUM);
+	ctx.expectError(GL_NO_ERROR);
+	ctx.glGetSynciv(sync, -1, 32, &length, &values[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteSync(sync);
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if bufSize is negative.");
+	sync = ctx.glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+	ctx.expectError(GL_NO_ERROR);
+	ctx.glGetSynciv(sync, GL_OBJECT_TYPE, -1, &length, &values[0]);
+	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
 	ctx.glDeleteSync(sync);
@@ -1081,6 +1376,23 @@ void is_enabled (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.glIsEnabled(GL_TRIANGLES);
 	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+}
+
+void is_enabledi (NegativeTestContext& ctx)
+{
+	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if cap is not an accepted value.");
+	ctx.glIsEnabledi(-1, 1);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glIsEnabledi(GL_TRIANGLES, 1);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if index is outside the valid range for the indexed state cap.");
+	ctx.glIsEnabledi(GL_BLEND, -1);
+	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 }
 
@@ -1100,53 +1412,62 @@ void hint (NegativeTestContext& ctx)
 
 std::vector<FunctionContainer> getNegativeStateApiTestFunctions ()
 {
-	FunctionContainer funcs[] =
+	const FunctionContainer funcs[] =
 	{
-		{enable,									"enable",									"Invalid glEnable() usage"							   },
-		{disable,									"disable",									"Invalid glDisable() usage"							   },
-		{get_booleanv,								"get_booleanv",								"Invalid glGetBooleanv() usage"						   },
-		{get_floatv,								"get_floatv",								"Invalid glGetFloatv() usage"						   },
-		{get_integerv,								"get_integerv",								"Invalid glGetIntegerv() usage"						   },
-		{get_integer64v,							"get_integer64v",							"Invalid glGetInteger64v() usage"					   },
-		{get_integeri_v,							"get_integeri_v",							"Invalid glGetIntegeri_v() usage"					   },
-		{get_integer64i_v,							"get_integer64i_v",							"Invalid glGetInteger64i_v() usage"					   },
-		{get_string,								"get_string",								"Invalid glGetString() usage"						   },
-		{get_stringi,								"get_stringi",								"Invalid glGetStringi() usage"						   },
-		{get_attached_shaders,						"get_attached_shaders",						"Invalid glGetAttachedShaders() usage"				   },
-		{get_shaderiv,								"get_shaderiv",								"Invalid glGetShaderiv() usage"						   },
-		{get_shader_info_log,						"get_shader_info_log",						"Invalid glGetShaderInfoLog() usage"				   },
-		{get_shader_precision_format,				"get_shader_precision_format",				"Invalid glGetShaderPrecisionFormat() usage"		   },
-		{get_shader_source,							"get_shader_source",						"Invalid glGetShaderSource() usage"					   },
-		{get_programiv,								"get_programiv",							"Invalid glGetProgramiv() usage"					   },
-		{get_program_info_log,						"get_program_info_log",						"Invalid glGetProgramInfoLog() usage"				   },
-		{get_tex_parameterfv,						"get_tex_parameterfv",						"Invalid glGetTexParameterfv() usage"				   },
-		{get_tex_parameteriv,						"get_tex_parameteriv",						"Invalid glGetTexParameteriv() usage"				   },
-		{get_uniformfv,								"get_uniformfv",							"Invalid glGetUniformfv() usage"					   },
-		{get_uniformiv,								"get_uniformiv",							"Invalid glGetUniformiv() usage"					   },
-		{get_uniformuiv,							"get_uniformuiv",							"Invalid glGetUniformuiv() usage"					   },
-		{get_active_uniform,						"get_active_uniform",						"Invalid glGetActiveUniform() usage"				   },
-		{get_active_uniformsiv,						"get_active_uniformsiv",					"Invalid glGetActiveUniformsiv() usage"				   },
-		{get_active_uniform_blockiv,				"get_active_uniform_blockiv",				"Invalid glGetActiveUniformBlockiv() usage"			   },
-		{get_active_uniform_block_name,				"get_active_uniform_block_name",			"Invalid glGetActiveUniformBlockName() usage"		   },
-		{get_active_attrib,							"get_active_attrib",						"Invalid glGetActiveAttrib() usage"					   },
-		{get_uniform_indices,						"get_uniform_indices",						"Invalid glGetUniformIndices() usage"				   },
-		{get_vertex_attribfv,						"get_vertex_attribfv",						"Invalid glGetVertexAttribfv() usage"				   },
-		{get_vertex_attribiv,						"get_vertex_attribiv",						"Invalid glGetVertexAttribiv() usage"				   },
-		{get_vertex_attribi_iv,						"get_vertex_attribi_iv",					"Invalid glGetVertexAttribIiv() usage"				   },
-		{get_vertex_attribi_uiv,					"get_vertex_attribi_uiv",					"Invalid glGetVertexAttribIuiv() usage"				   },
-		{get_vertex_attrib_pointerv,				"get_vertex_attrib_pointerv",				"Invalid glGetVertexAttribPointerv() usage"			   },
-		{get_frag_data_location,					"get_frag_data_location",					"Invalid glGetFragDataLocation() usage"				   },
-		{get_buffer_parameteriv,					"get_buffer_parameteriv",					"Invalid glGetBufferParameteriv() usage"			   },
-		{get_buffer_parameteri64v,					"get_buffer_parameteri64v",					"Invalid glGetBufferParameteri64v() usage"			   },
-		{get_buffer_pointerv,						"get_buffer_pointerv",						"Invalid glGetBufferPointerv() usage"				   },
-		{get_framebuffer_attachment_parameteriv,	"get_framebuffer_attachment_parameteriv",	"Invalid glGetFramebufferAttachmentParameteriv() usage"},
-		{get_renderbuffer_parameteriv,				"get_renderbuffer_parameteriv",				"Invalid glGetRenderbufferParameteriv() usage"		   },
-		{get_internalformativ,						"get_internalformativ",						"Invalid glGetInternalformativ() usage"				   },
-		{get_queryiv,								"get_queryiv",								"Invalid glGetQueryiv() usage"						   },
-		{get_query_objectuiv,						"get_query_objectuiv",						"Invalid glGetQueryObjectuiv() usage"				   },
-		{get_synciv,								"get_synciv",								"Invalid glGetSynciv() usage"						   },
-		{is_enabled,								"is_enabled",								"Invalid glIsEnabled() usage"						   },
-		{hint,										"hint",										"Invalid glHint() usage"							   },
+		{enable,									"enable",									"Invalid glEnable() usage"								},
+		{disable,									"disable",									"Invalid glDisable() usage"								},
+		{get_booleanv,								"get_booleanv",								"Invalid glGetBooleanv() usage"							},
+		{get_floatv,								"get_floatv",								"Invalid glGetFloatv() usage"							},
+		{get_integerv,								"get_integerv",								"Invalid glGetIntegerv() usage"							},
+		{get_integer64v,							"get_integer64v",							"Invalid glGetInteger64v() usage"						},
+		{get_integeri_v,							"get_integeri_v",							"Invalid glGetIntegeri_v() usage"						},
+		{get_booleani_v,							"get_booleani_v",							"Invalid glGetBooleani_v() usage"						},
+		{get_integer64i_v,							"get_integer64i_v",							"Invalid glGetInteger64i_v() usage"						},
+		{get_string,								"get_string",								"Invalid glGetString() usage"							},
+		{get_stringi,								"get_stringi",								"Invalid glGetStringi() usage"							},
+		{get_attached_shaders,						"get_attached_shaders",						"Invalid glGetAttachedShaders() usage"					},
+		{get_shaderiv,								"get_shaderiv",								"Invalid glGetShaderiv() usage"							},
+		{get_shader_info_log,						"get_shader_info_log",						"Invalid glGetShaderInfoLog() usage"					},
+		{get_shader_precision_format,				"get_shader_precision_format",				"Invalid glGetShaderPrecisionFormat() usage"			},
+		{get_shader_source,							"get_shader_source",						"Invalid glGetShaderSource() usage"						},
+		{get_programiv,								"get_programiv",							"Invalid glGetProgramiv() usage"						},
+		{get_program_info_log,						"get_program_info_log",						"Invalid glGetProgramInfoLog() usage"					},
+		{get_tex_parameterfv,						"get_tex_parameterfv",						"Invalid glGetTexParameterfv() usage"					},
+		{get_tex_parameteriv,						"get_tex_parameteriv",						"Invalid glGetTexParameteriv() usage"					},
+		{get_uniformfv,								"get_uniformfv",							"Invalid glGetUniformfv() usage"						},
+		{get_uniformiv,								"get_uniformiv",							"Invalid glGetUniformiv() usage"						},
+		{get_uniformuiv,							"get_uniformuiv",							"Invalid glGetUniformuiv() usage"						},
+		{get_active_uniform,						"get_active_uniform",						"Invalid glGetActiveUniform() usage"					},
+		{get_active_uniformsiv,						"get_active_uniformsiv",					"Invalid glGetActiveUniformsiv() usage"					},
+		{get_active_uniform_blockiv,				"get_active_uniform_blockiv",				"Invalid glGetActiveUniformBlockiv() usage"				},
+		{get_active_uniform_block_name,				"get_active_uniform_block_name",			"Invalid glGetActiveUniformBlockName() usage"			},
+		{get_active_attrib,							"get_active_attrib",						"Invalid glGetActiveAttrib() usage"						},
+		{get_uniform_indices,						"get_uniform_indices",						"Invalid glGetUniformIndices() usage"					},
+		{get_vertex_attribfv,						"get_vertex_attribfv",						"Invalid glGetVertexAttribfv() usage"					},
+		{get_vertex_attribiv,						"get_vertex_attribiv",						"Invalid glGetVertexAttribiv() usage"					},
+		{get_vertex_attribi_iv,						"get_vertex_attribi_iv",					"Invalid glGetVertexAttribIiv() usage"					},
+		{get_vertex_attribi_uiv,					"get_vertex_attribi_uiv",					"Invalid glGetVertexAttribIuiv() usage"					},
+		{get_vertex_attrib_pointerv,				"get_vertex_attrib_pointerv",				"Invalid glGetVertexAttribPointerv() usage"				},
+		{get_frag_data_location,					"get_frag_data_location",					"Invalid glGetFragDataLocation() usage"					},
+		{get_buffer_parameteriv,					"get_buffer_parameteriv",					"Invalid glGetBufferParameteriv() usage"				},
+		{get_buffer_parameteri64v,					"get_buffer_parameteri64v",					"Invalid glGetBufferParameteri64v() usage"				},
+		{get_buffer_pointerv,						"get_buffer_pointerv",						"Invalid glGetBufferPointerv() usage"					},
+		{get_framebuffer_attachment_parameteriv,	"get_framebuffer_attachment_parameteriv",	"Invalid glGetFramebufferAttachmentParameteriv() usage"	},
+		{get_renderbuffer_parameteriv,				"get_renderbuffer_parameteriv",				"Invalid glGetRenderbufferParameteriv() usage"			},
+		{get_internalformativ,						"get_internalformativ",						"Invalid glGetInternalformativ() usage"					},
+		{get_queryiv,								"get_queryiv",								"Invalid glGetQueryiv() usage"							},
+		{get_query_objectuiv,						"get_query_objectuiv",						"Invalid glGetQueryObjectuiv() usage"					},
+		{get_synciv,								"get_synciv",								"Invalid glGetSynciv() usage"							},
+		{is_enabled,								"is_enabled",								"Invalid glIsEnabled() usage"							},
+		{hint,										"hint",										"Invalid glHint() usage"								},
+		{enablei,									"enablei",									"Invalid glEnablei() usage"								},
+		{disablei,									"disablei",									"Invalid glDisablei() usage"							},
+		{get_tex_parameteriiv,						"get_tex_parameteriiv",						"Invalid glGetTexParameterIiv() usage"					},
+		{get_tex_parameteriuiv,						"get_tex_parameteriuiv",					"Invalid glGetTexParameterIuiv() usage"					},
+		{get_nuniformfv,							"get_nuniformfv",							"Invalid glGetnUniformfv() usage"						},
+		{get_nuniformiv,							"get_nuniformiv",							"Invalid glGetnUniformiv() usage"						},
+		{get_nuniformuiv,							"get_nuniformuiv",							"Invalid glGetnUniformuiv() usage"						},
+		{is_enabledi,								"is_enabledi",								"Invalid glIsEnabledi() usage"							},
 	};
 
 	return std::vector<FunctionContainer>(DE_ARRAY_BEGIN(funcs), DE_ARRAY_END(funcs));

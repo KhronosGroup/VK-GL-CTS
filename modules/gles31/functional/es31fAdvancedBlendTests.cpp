@@ -90,21 +90,21 @@ static const char* getEquationName (glw::GLenum equation)
 {
 	switch (equation)
 	{
-		case GL_MULTIPLY_KHR:		return "multiply";
-		case GL_SCREEN_KHR:			return "screen";
-		case GL_OVERLAY_KHR:		return "overlay";
-		case GL_DARKEN_KHR:			return "darken";
-		case GL_LIGHTEN_KHR:		return "lighten";
-		case GL_COLORDODGE_KHR:		return "colordodge";
-		case GL_COLORBURN_KHR:		return "colorburn";
-		case GL_HARDLIGHT_KHR:		return "hardlight";
-		case GL_SOFTLIGHT_KHR:		return "softlight";
-		case GL_DIFFERENCE_KHR:		return "difference";
-		case GL_EXCLUSION_KHR:		return "exclusion";
-		case GL_HSL_HUE_KHR:		return "hsl_hue";
-		case GL_HSL_SATURATION_KHR:	return "hsl_saturation";
-		case GL_HSL_COLOR_KHR:		return "hsl_color";
-		case GL_HSL_LUMINOSITY_KHR:	return "hsl_luminosity";
+		case GL_MULTIPLY:		return "multiply";
+		case GL_SCREEN:			return "screen";
+		case GL_OVERLAY:		return "overlay";
+		case GL_DARKEN:			return "darken";
+		case GL_LIGHTEN:		return "lighten";
+		case GL_COLORDODGE:		return "colordodge";
+		case GL_COLORBURN:		return "colorburn";
+		case GL_HARDLIGHT:		return "hardlight";
+		case GL_SOFTLIGHT:		return "softlight";
+		case GL_DIFFERENCE:		return "difference";
+		case GL_EXCLUSION:		return "exclusion";
+		case GL_HSL_HUE:		return "hsl_hue";
+		case GL_HSL_SATURATION:	return "hsl_saturation";
+		case GL_HSL_COLOR:		return "hsl_color";
+		case GL_HSL_LUMINOSITY:	return "hsl_luminosity";
 		default:
 			DE_ASSERT(false);
 			return DE_NULL;
@@ -207,9 +207,11 @@ const char* getBlendLayoutQualifier (rr::BlendEquationAdvanced equation)
 	return s_qualifiers[equation];
 }
 
-glu::ProgramSources getBlendProgramSrc (rr::BlendEquationAdvanced equation)
+glu::ProgramSources getBlendProgramSrc (rr::BlendEquationAdvanced equation, glu::RenderContext& renderContext)
 {
-	static const char*	s_vertSrc	= "#version 310 es\n"
+	const bool isES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+
+	static const char*	s_vertSrc	= "${GLSL_VERSION_DECL}\n"
 									  "in highp vec4 a_position;\n"
 									  "in mediump vec4 a_color;\n"
 									  "out mediump vec4 v_color;\n"
@@ -218,8 +220,8 @@ glu::ProgramSources getBlendProgramSrc (rr::BlendEquationAdvanced equation)
 									  "	gl_Position = a_position;\n"
 									  "	v_color = a_color;\n"
 									  "}\n";
-	static const char*	s_fragSrc	= "#version 310 es\n"
-									  "#extension GL_KHR_blend_equation_advanced : require\n"
+	static const char*	s_fragSrc	= "${GLSL_VERSION_DECL}\n"
+									  "${EXTENSION}"
 									  "in mediump vec4 v_color;\n"
 									  "layout(${SUPPORT_QUALIFIER}) out;\n"
 									  "layout(location = 0) out mediump vec4 o_color;\n"
@@ -229,11 +231,12 @@ glu::ProgramSources getBlendProgramSrc (rr::BlendEquationAdvanced equation)
 									  "}\n";
 
 	map<string, string> args;
-
+	args["GLSL_VERSION_DECL"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["EXTENSION"] = isES32 ? "\n" : "#extension GL_KHR_blend_equation_advanced : require\n";
 	args["SUPPORT_QUALIFIER"] = getBlendLayoutQualifier(equation);
 
 	return glu::ProgramSources()
-		<< glu::VertexSource(s_vertSrc)
+		<< glu::VertexSource(tcu::StringTemplate(s_vertSrc).specialize(args))
 		<< glu::FragmentSource(tcu::StringTemplate(s_fragSrc).specialize(args));
 }
 
@@ -243,21 +246,22 @@ void AdvancedBlendCase::init (void)
 	const bool				useFbo			= m_rtType != RENDERTARGETTYPE_DEFAULT;
 	const bool				useSRGB			= m_rtType == RENDERTARGETTYPE_SRGB_FBO;
 
-	if (!m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"))
-		throw tcu::NotSupportedError("GL_KHR_blend_equation_advanced is not supported", DE_NULL, __FILE__, __LINE__);
+	m_coherentExtensionSupported = m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced_coherent");
 
-	if (m_coherentBlending && !m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced_coherent"))
-		throw tcu::NotSupportedError("GL_KHR_blend_equation_advanced_coherent is not supported", DE_NULL, __FILE__, __LINE__);
+	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		if (!m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"))
+			TCU_THROW(NotSupportedError, "GL_KHR_blend_equation_advanced is not supported");
 
-	TCU_CHECK(gl.blendBarrierKHR);
+	if (m_coherentBlending && !m_coherentExtensionSupported)
+		TCU_THROW(NotSupportedError, "GL_KHR_blend_equation_advanced_coherent is not supported");
+
+	TCU_CHECK(gl.blendBarrier);
 
 	DE_ASSERT(!m_program);
 	DE_ASSERT(!m_referenceRenderer);
 	DE_ASSERT(!m_refColorBuffer);
 
-	m_coherentExtensionSupported = m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced_coherent");
-
-	m_program = new glu::ShaderProgram(m_context.getRenderContext(), getBlendProgramSrc(sglr::rr_util::mapGLBlendEquationAdvanced(m_blendMode)));
+	m_program = new glu::ShaderProgram(m_context.getRenderContext(), getBlendProgramSrc(sglr::rr_util::mapGLBlendEquationAdvanced(m_blendMode), m_context.getRenderContext()));
 	m_testCtx.getLog() << *m_program;
 
 	if (!m_program->isOk())
@@ -463,7 +467,7 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate (void)
 		gl.enable(GL_BLEND);
 
 		if (!m_coherentBlending)
-			gl.blendBarrierKHR();
+			gl.blendBarrier();
 
 		if (m_coherentBlending)
 		{
@@ -474,7 +478,7 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate (void)
 			for (int quadNdx = 1; quadNdx < numQuads; quadNdx++)
 			{
 				gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const void*)(deUintptr)(quadNdx*6*sizeof(deUint16)));
-				gl.blendBarrierKHR();
+				gl.blendBarrier();
 			}
 		}
 
@@ -525,10 +529,10 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate (void)
 		gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo);
 
 	{
-		const bool	isHSLMode	= m_blendMode == GL_HSL_HUE_KHR			||
-								  m_blendMode == GL_HSL_SATURATION_KHR	||
-								  m_blendMode == GL_HSL_COLOR_KHR		||
-								  m_blendMode == GL_HSL_LUMINOSITY_KHR;
+		const bool	isHSLMode	= m_blendMode == GL_HSL_HUE			||
+								  m_blendMode == GL_HSL_SATURATION	||
+								  m_blendMode == GL_HSL_COLOR		||
+								  m_blendMode == GL_HSL_LUMINOSITY;
 		bool		comparePass	= false;
 
 		if (isHSLMode)
@@ -657,7 +661,8 @@ BlendEquationStateCase::BlendEquationStateCase	(Context&						context,
 
 BlendEquationStateCase::IterateResult BlendEquationStateCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"), "GL_KHR_blend_equation_advanced is not supported");
+	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"), "GL_KHR_blend_equation_advanced is not supported");
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -710,8 +715,11 @@ BlendEquationIndexedStateCase::BlendEquationIndexedStateCase	(Context&						cont
 
 BlendEquationIndexedStateCase::IterateResult BlendEquationIndexedStateCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"), "GL_KHR_blend_equation_advanced is not supported");
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"), "GL_EXT_draw_buffers_indexed is not supported");
+	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	{
+		TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"), "GL_KHR_blend_equation_advanced is not supported");
+		TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"), "GL_EXT_draw_buffers_indexed is not supported");
+	}
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -735,7 +743,7 @@ BlendEquationIndexedStateCase::IterateResult BlendEquationIndexedStateCase::iter
 } // anonymous
 
 AdvancedBlendTests::AdvancedBlendTests (Context& context)
-	: TestCaseGroup(context, "blend_equation_advanced", "GL_KHR_blend_equation_advanced Tests")
+	: TestCaseGroup(context, "blend_equation_advanced", "GL_blend_equation_advanced Tests")
 {
 }
 
@@ -747,21 +755,21 @@ void AdvancedBlendTests::init (void)
 {
 	static const glw::GLenum s_blendEquations[] =
 	{
-		GL_MULTIPLY_KHR,
-		GL_SCREEN_KHR,
-		GL_OVERLAY_KHR,
-		GL_DARKEN_KHR,
-		GL_LIGHTEN_KHR,
-		GL_COLORDODGE_KHR,
-		GL_COLORBURN_KHR,
-		GL_HARDLIGHT_KHR,
-		GL_SOFTLIGHT_KHR,
-		GL_DIFFERENCE_KHR,
-		GL_EXCLUSION_KHR,
-		GL_HSL_HUE_KHR,
-		GL_HSL_SATURATION_KHR,
-		GL_HSL_COLOR_KHR,
-		GL_HSL_LUMINOSITY_KHR,
+		GL_MULTIPLY,
+		GL_SCREEN,
+		GL_OVERLAY,
+		GL_DARKEN,
+		GL_LIGHTEN,
+		GL_COLORDODGE,
+		GL_COLORBURN,
+		GL_HARDLIGHT,
+		GL_SOFTLIGHT,
+		GL_DIFFERENCE,
+		GL_EXCLUSION,
+		GL_HSL_HUE,
+		GL_HSL_SATURATION,
+		GL_HSL_COLOR,
+		GL_HSL_LUMINOSITY,
 	};
 
 	tcu::TestCaseGroup* const	stateQueryGroup		= new tcu::TestCaseGroup(m_testCtx, "state_query",		"State query tests");

@@ -58,17 +58,20 @@ static const char* getVerifierSuffix (QueryType type)
 class IsEnabledStateTestCase : public TestCase, private glu::CallLogWrapper
 {
 public:
-	IsEnabledStateTestCase (Context& context, QueryType verifier, const char* name, const char* description, glw::GLenum targetName, bool initial)
+	IsEnabledStateTestCase (Context& context, QueryType verifier, const char* name, const char* description, glw::GLenum targetName, bool initial, glu::ApiType minimumContextVersion)
 		: TestCase				(context, name, description)
 		, glu::CallLogWrapper	(context.getRenderContext().getFunctions(), context.getTestContext().getLog())
 		, m_targetName			(targetName)
 		, m_initial				(initial)
 		, m_verifier			(verifier)
+		, m_minimumVersion		(minimumContextVersion)
 	{
 	}
 
 	IterateResult iterate (void)
 	{
+		TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(m_context.getRenderContext().getType(), m_minimumVersion), "This test requires a higher context version.");
+
 		tcu::ResultCollector result(m_testCtx.getLog(), " // ERROR: ");
 		enableLogging(true);
 
@@ -93,6 +96,7 @@ private:
 	const glw::GLenum		m_targetName;
 	const bool				m_initial;
 	const QueryType			m_verifier;
+	const glu::ApiType		m_minimumVersion;
 };
 
 } // anonymous
@@ -108,6 +112,8 @@ BooleanStateQueryTests::~BooleanStateQueryTests (void)
 
 void BooleanStateQueryTests::init (void)
 {
+	const bool isDebugContext = (m_context.getRenderContext().getType().getFlags() & glu::CONTEXT_DEBUG) != 0;
+
 	static const QueryType isEnabledVerifiers[] =
 	{
 		QUERY_ISENABLED,
@@ -131,15 +137,22 @@ void BooleanStateQueryTests::init (void)
 		const char*		description;
 		glw::GLenum		targetName;
 		bool			value;
-	};
-	const StateBoolean isEnableds[] =
-	{
-		{ "sample_mask",	"SAMPLE_MASK",	GL_SAMPLE_MASK,	false},
+		glu::ApiType	minimumContext;
 	};
 
-	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(isEnableds); testNdx++)
 	{
-		FOR_EACH_VERIFIER(isEnabledVerifiers, new IsEnabledStateTestCase(m_context, verifier, (std::string(isEnableds[testNdx].name) + "_" + verifierSuffix).c_str(), isEnableds[testNdx].description, isEnableds[testNdx].targetName, isEnableds[testNdx].value));
+		const StateBoolean isEnableds[] =
+		{
+			{ "sample_mask",				"SAMPLE_MASK",				GL_SAMPLE_MASK,					false,			glu::ApiType::es(3, 1)},
+			{ "sample_shading",				"SAMPLE_SHADING",			GL_SAMPLE_SHADING,				false,			glu::ApiType::es(3, 2)},
+			{ "debug_output",				"DEBUG_OUTPUT",				GL_DEBUG_OUTPUT,				isDebugContext,	glu::ApiType::es(3, 2)},
+			{ "debug_output_synchronous",	"DEBUG_OUTPUT_SYNCHRONOUS",	GL_DEBUG_OUTPUT_SYNCHRONOUS,	false,			glu::ApiType::es(3, 2)},
+		};
+
+		for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(isEnableds); testNdx++)
+		{
+			FOR_EACH_VERIFIER(isEnabledVerifiers, new IsEnabledStateTestCase(m_context, verifier, (std::string(isEnableds[testNdx].name) + "_" + verifierSuffix).c_str(), isEnableds[testNdx].description, isEnableds[testNdx].targetName, isEnableds[testNdx].value, isEnableds[testNdx].minimumContext));
+		}
 	}
 
 #undef FOR_EACH_VERIFIER

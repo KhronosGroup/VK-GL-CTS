@@ -26,6 +26,7 @@
 #include "tcuDefs.hpp"
 #include "glwDefs.hpp"
 #include "gluCallLogWrapper.hpp"
+#include "gluShaderUtil.hpp"
 #include "tes31TestCase.hpp"
 
 namespace tcu
@@ -70,6 +71,8 @@ public:
 
 	void						expectError				(glw::GLenum error);
 	void						expectError				(glw::GLenum error0, glw::GLenum error1);
+	bool						isShaderSupported		(glu::ShaderType shaderType);
+	bool 						isExtensionSupported	(std::string extension);
 
 protected:
 	ErrorCase&					m_host;

@@ -254,8 +254,8 @@ QueryCase::IterateResult QueryCase::iterate (void)
 		const tcu::ScopedLogSection	section		(m_testCtx.getLog(), "Iteration", "Iteration " + de::toString(caseNdx+1));
 		const BoundingBox&			boundingBox	= cases[caseNdx];
 
-		gl.glPrimitiveBoundingBoxEXT(boundingBox.min.x(), boundingBox.min.y(), boundingBox.min.z(), boundingBox.min.w(),
-									 boundingBox.max.x(), boundingBox.max.y(), boundingBox.max.z(), boundingBox.max.w());
+		gl.glPrimitiveBoundingBox(boundingBox.min.x(), boundingBox.min.y(), boundingBox.min.z(), boundingBox.min.w(),
+								  boundingBox.max.x(), boundingBox.max.y(), boundingBox.max.z(), boundingBox.max.w());
 
 		if (!verifyState(gl, boundingBox))
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Unexpected query result");
@@ -830,12 +830,12 @@ void BBoxRenderCase::setupRender (const IterationConfig& config)
 			<< tcu::TestLog::EndMessage;
 
 	if (m_useGlobalState)
-		gl.primitiveBoundingBoxEXT(config.bbox.min.x(), config.bbox.min.y(), config.bbox.min.z(), config.bbox.min.w(),
-								   config.bbox.max.x(), config.bbox.max.y(), config.bbox.max.z(), config.bbox.max.w());
+		gl.primitiveBoundingBox(config.bbox.min.x(), config.bbox.min.y(), config.bbox.min.z(), config.bbox.min.w(),
+								config.bbox.max.x(), config.bbox.max.y(), config.bbox.max.z(), config.bbox.max.w());
 	else
 		// state is overriden by the tessellation output, set bbox to invisible area to imitiate dirty state left by application
-		gl.primitiveBoundingBoxEXT(-2.0f, -2.0f, 0.0f, 1.0f,
-								   -1.7f, -1.7f, 0.0f, 1.0f);
+		gl.primitiveBoundingBox(-2.0f, -2.0f, 0.0f, 1.0f,
+								-1.7f, -1.7f, 0.0f, 1.0f);
 
 	if (m_fbo)
 		gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, **m_fbo);
@@ -3351,8 +3351,8 @@ BlitFboCase::IterateResult BlitFboCase::iterate (void)
 		<<	"\tfilter: " << ((blitCfg.linear) ? ("linear") : ("nearest"))
 		<< tcu::TestLog::EndMessage;
 
-	gl.primitiveBoundingBoxEXT(blitCfg.bboxMin.x(), blitCfg.bboxMin.y(), blitCfg.bboxMin.z(), blitCfg.bboxMin.w(),
-							   blitCfg.bboxMax.x(), blitCfg.bboxMax.y(), blitCfg.bboxMax.z(), blitCfg.bboxMax.w());
+	gl.primitiveBoundingBox(blitCfg.bboxMin.x(), blitCfg.bboxMin.y(), blitCfg.bboxMin.z(), blitCfg.bboxMin.w(),
+							blitCfg.bboxMax.x(), blitCfg.bboxMax.y(), blitCfg.bboxMax.z(), blitCfg.bboxMax.w());
 
 	gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, (m_dst == TARGET_FBO) ? (**m_dstFbo) : (m_context.getRenderContext().getDefaultFramebuffer()));
 	gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -3672,8 +3672,8 @@ DepthDrawCase::IterateResult DepthDrawCase::iterate (void)
 			const float negPadding = (m_bboxSize == BBOX_EQUAL) ? (0.0f) : (rnd.getFloat() * 0.3f);
 			const float posPadding = (m_bboxSize == BBOX_EQUAL) ? (0.0f) : (rnd.getFloat() * 0.3f);
 
-			gl.primitiveBoundingBoxEXT(-1.0f, -1.0f, m_layers[layerNdx].zOffset - negPadding, 1.0f,
-									    1.0f,  1.0f, (m_layers[layerNdx].zOffset + m_layers[layerNdx].zScale + posPadding), 1.0f);
+			gl.primitiveBoundingBox(-1.0f, -1.0f, m_layers[layerNdx].zOffset - negPadding, 1.0f,
+									1.0f,  1.0f, (m_layers[layerNdx].zOffset + m_layers[layerNdx].zScale + posPadding), 1.0f);
 		}
 
 		gl.drawArrays((hasTessellation) ? (GL_PATCHES) : (GL_TRIANGLES), 0, m_gridSize * m_gridSize * 6);
@@ -4236,8 +4236,8 @@ void ClearCase::renderTo (tcu::Surface& dst, bool useBBox)
 		{
 			DE_ASSERT(m_useGlobalState || m_drawTriangles); // !m_useGlobalState -> m_drawTriangles
 			if (m_useGlobalState)
-				gl.primitiveBoundingBoxEXT(bboxMin.x(), bboxMin.y(), bboxMin.z(), bboxMin.w(),
-										   bboxMax.x(), bboxMax.y(), bboxMax.z(), bboxMax.w());
+				gl.primitiveBoundingBox(bboxMin.x(), bboxMin.y(), bboxMin.z(), bboxMin.w(),
+										bboxMax.x(), bboxMax.y(), bboxMax.z(), bboxMax.w());
 		}
 
 		if (m_drawTriangles)
@@ -4520,8 +4520,8 @@ ViewportCallOrderCase::IterateResult ViewportCallOrderCase::iterate (void)
 				<< "\t(0.0, -1.0, -1.0, 1.0) .. (1.0, 1.0, 1.0f, 1.0)"
 				<< tcu::TestLog::EndMessage;
 
-			gl.primitiveBoundingBoxEXT(0.0f, -1.0f, -1.0f, 1.0f,
-									   1.0f,  1.0f,  1.0f, 1.0f);
+			gl.primitiveBoundingBox(0.0f, -1.0f, -1.0f, 1.0f,
+									1.0f,  1.0f,  1.0f, 1.0f);
 		}
 	}
 

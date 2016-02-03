@@ -71,23 +71,38 @@ FormatSamplesCase::FormatSamplesCase (Context& ctx, const char* name, const char
 
 void FormatSamplesCase::init (void)
 {
-	const bool isTextureTarget = (m_target == GL_TEXTURE_2D_MULTISAMPLE) ||
-								 (m_target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
+	const bool isTextureTarget	=	(m_target == GL_TEXTURE_2D_MULTISAMPLE) ||
+									(m_target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
+	const bool isES32			=	contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (m_target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
-		throw tcu::NotSupportedError("Test requires OES_texture_storage_multisample_2d_array extension");
+	if (!isES32 && m_target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+		TCU_THROW(NotSupportedError, "Test requires OES_texture_storage_multisample_2d_array extension or a context version equal or higher than 3.2");
 
 	// stencil8 textures are not supported without GL_OES_texture_stencil8 extension
-	if (isTextureTarget && m_internalFormat == GL_STENCIL_INDEX8 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_stencil8"))
-		throw tcu::NotSupportedError("Test requires GL_OES_texture_stencil8 extension");
+	if (!isES32 && isTextureTarget && m_internalFormat == GL_STENCIL_INDEX8 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_stencil8"))
+		TCU_THROW(NotSupportedError, "Test requires GL_OES_texture_stencil8 extension or a context version equal or higher than 3.2");
 }
 
 FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
 {
 	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
+	bool					isFloatFormat	= false;
 	bool					error			= false;
 	glw::GLint				maxSamples		= 0;
 	glw::GLint				numSampleCounts	= 0;
+	const bool				isES32			= contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
+	if (!isES32)
+	{
+		if (m_internalFormat == GL_RGBA16F || m_internalFormat == GL_R32F || m_internalFormat == GL_RG32F || m_internalFormat == GL_RGBA32F || m_internalFormat == GL_R16F || m_internalFormat == GL_RG16F || m_internalFormat == GL_R11F_G11F_B10F)
+		{
+			TCU_THROW(NotSupportedError, "The internal format is not supported in a context lower than 3.2");
+		}
+	}
+	else if (m_internalFormat == GL_RGBA16F || m_internalFormat == GL_R32F || m_internalFormat == GL_RG32F || m_internalFormat == GL_RGBA32F)
+	{
+		isFloatFormat = true;
+	}
 
 	// Lowest limit
 	{
@@ -113,10 +128,13 @@ FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
 
 		m_testCtx.getLog() << tcu::TestLog::Message << "GL_NUM_SAMPLE_COUNTS = " << numSampleCounts << tcu::TestLog::EndMessage;
 
-		if (numSampleCounts < 1)
+		if (!isFloatFormat)
 		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Format MUST support some multisample configuration, got GL_NUM_SAMPLE_COUNTS = " << numSampleCounts << tcu::TestLog::EndMessage;
-			error = true;
+			if (numSampleCounts < 1)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Format MUST support some multisample configuration, got GL_NUM_SAMPLE_COUNTS = " << numSampleCounts << tcu::TestLog::EndMessage;
+				error = true;
+			}
 		}
 	}
 
@@ -125,7 +143,7 @@ FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
 		tcu::MessageBuilder		samplesMsg(&m_testCtx.getLog());
 		std::vector<glw::GLint>	samples;
 
-		if (numSampleCounts > 0)
+		if (numSampleCounts > 0 || isFloatFormat)
 		{
 			samples.resize(numSampleCounts, -1);
 
@@ -169,10 +187,13 @@ FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
 		}
 
 		// maxSamples must be supported
-		if (samples[0] < maxSamples)
+		if (!isFloatFormat)
 		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: MAX_*_SAMPLES must be supported." << tcu::TestLog::EndMessage;
-			error = true;
+			if (samples[0] < maxSamples)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: MAX_*_SAMPLES must be supported." << tcu::TestLog::EndMessage;
+				error = true;
+			}
 		}
 	}
 
@@ -386,6 +407,15 @@ void InternalFormatQueryTests::init (void)
 		{ "rgba16ui",				GL_RGBA16UI,			FormatSamplesCase::FORMAT_INT			},
 		{ "rgba32i",				GL_RGBA32I,				FormatSamplesCase::FORMAT_INT			},
 		{ "rgba32ui",				GL_RGBA32UI,			FormatSamplesCase::FORMAT_INT			},
+
+		// float formats
+		{ "r16f",					GL_R16F,				FormatSamplesCase::FORMAT_COLOR			},
+		{ "rg16f",					GL_RG16F,				FormatSamplesCase::FORMAT_COLOR			},
+		{ "rgba16f",				GL_RGBA16F,				FormatSamplesCase::FORMAT_COLOR			},
+		{ "r32f",					GL_R32F,				FormatSamplesCase::FORMAT_INT			},
+		{ "rg32f",					GL_RG32F,				FormatSamplesCase::FORMAT_INT			},
+		{ "rgba32f",				GL_RGBA32F,				FormatSamplesCase::FORMAT_INT			},
+		{ "r11f_g11f_b10f",			GL_R11F_G11F_B10F,		FormatSamplesCase::FORMAT_COLOR			},
 
 		// depth renderable
 		{ "depth_component16",		GL_DEPTH_COMPONENT16,	FormatSamplesCase::FORMAT_DEPTH_STENCIL	},

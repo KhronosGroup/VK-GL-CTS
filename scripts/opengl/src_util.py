@@ -37,8 +37,8 @@ OPENGL_INC_DIR		= os.path.join(OPENGL_DIR, "wrapper")
 
 GL_SOURCE			= khr_util.registry_cache.RegistrySource(
 						"gl.xml",
-						30159,
-						"0af7e185d0db15e9f44a1b6ff6c72102f67509a8590f19a289b983d652008070")
+						32093,
+						"3292120320cacbc27009e7507656d7be17bb25f06876814c67eeffa369281eed")
 
 EXTENSIONS			= [
 	'GL_KHR_texture_compression_astc_ldr',

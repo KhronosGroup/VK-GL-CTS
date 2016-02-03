@@ -47,6 +47,11 @@ void initES31 (Functions* gl, const FunctionLoader* loader)
 #include "glwInitES31.inl"
 }
 
+void initES32 (Functions* gl, const FunctionLoader* loader)
+{
+#include "glwInitES32.inl"
+}
+
 void initGL30Core (Functions* gl, const FunctionLoader* loader)
 {
 #include "glwInitGL30.inl"

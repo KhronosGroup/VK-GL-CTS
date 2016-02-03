@@ -33,6 +33,7 @@ namespace glw
 void	initES20			(Functions* gl, const FunctionLoader* loader);	//!< Load all OpenGL ES 2.0 functions.
 void	initES30			(Functions* gl, const FunctionLoader* loader);	//!< Load all OpenGL ES 3.0 functions.
 void	initES31			(Functions* gl, const FunctionLoader* loader);	//!< Load all OpenGL ES 3.1 functions.
+void	initES32			(Functions* gl, const FunctionLoader* loader);	//!< Load all OpenGL ES 3.2 functions.
 
 void	initGL30Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 3.0 core functions.
 void	initGL31Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 3.1 core functions.

@@ -25,6 +25,7 @@
 
 #include "tcuResultCollector.hpp"
 
+#include "gluContextInfo.hpp"
 #include "gluRenderContext.hpp"
 #include "glwFunctions.hpp"
 
@@ -107,6 +108,28 @@ void NegativeTestContext::expectError (GLenum error)
 void NegativeTestContext::expectError (GLenum error0, GLenum error1)
 {
 	m_host.expectError(error0, error1);
+}
+
+bool NegativeTestContext::isShaderSupported (glu::ShaderType shaderType)
+{
+	if (contextSupports(getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		return true;
+
+	switch (shaderType)
+	{
+		case glu::SHADERTYPE_GEOMETRY:
+			return getContextInfo().isExtensionSupported("GL_EXT_geometry_shader");
+		case glu::SHADERTYPE_TESSELLATION_CONTROL:
+		case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+			return getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader");
+		default:
+			return true;
+	}
+}
+
+bool NegativeTestContext::isExtensionSupported (std::string extension)
+{
+	return getContextInfo().isExtensionSupported(extension.c_str());
 }
 
 } // NegativeTestShared

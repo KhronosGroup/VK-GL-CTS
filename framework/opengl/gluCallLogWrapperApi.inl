@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 30159.
+ * Generated from Khronos GL API description (gl.xml) revision 32093.
  */
 void					glActiveShaderProgram							(glw::GLuint pipeline, glw::GLuint program);
 void					glActiveTexture									(glw::GLenum texture);
@@ -32,7 +32,7 @@ void					glBindTransformFeedback							(glw::GLenum target, glw::GLuint id);
 void					glBindVertexArray								(glw::GLuint array);
 void					glBindVertexBuffer								(glw::GLuint bindingindex, glw::GLuint buffer, glw::GLintptr offset, glw::GLsizei stride);
 void					glBindVertexBuffers								(glw::GLuint first, glw::GLsizei count, const glw::GLuint *buffers, const glw::GLintptr *offsets, const glw::GLsizei *strides);
-void					glBlendBarrierKHR								(void);
+void					glBlendBarrier									(void);
 void					glBlendColor									(glw::GLfloat red, glw::GLfloat green, glw::GLfloat blue, glw::GLfloat alpha);
 void					glBlendEquation									(glw::GLenum mode);
 void					glBlendEquationSeparate							(glw::GLenum modeRGB, glw::GLenum modeAlpha);
@@ -383,7 +383,7 @@ void					glPolygonMode									(glw::GLenum face, glw::GLenum mode);
 void					glPolygonOffset									(glw::GLfloat factor, glw::GLfloat units);
 void					glPopDebugGroup									(void);
 void					glPopGroupMarkerEXT								(void);
-void					glPrimitiveBoundingBoxEXT						(glw::GLfloat minX, glw::GLfloat minY, glw::GLfloat minZ, glw::GLfloat minW, glw::GLfloat maxX, glw::GLfloat maxY, glw::GLfloat maxZ, glw::GLfloat maxW);
+void					glPrimitiveBoundingBox							(glw::GLfloat minX, glw::GLfloat minY, glw::GLfloat minZ, glw::GLfloat minW, glw::GLfloat maxX, glw::GLfloat maxY, glw::GLfloat maxZ, glw::GLfloat maxW);
 void					glPrimitiveRestartIndex							(glw::GLuint index);
 void					glProgramBinary									(glw::GLuint program, glw::GLenum binaryFormat, const void *binary, glw::GLsizei length);
 void					glProgramParameteri								(glw::GLuint program, glw::GLenum pname, glw::GLint value);
