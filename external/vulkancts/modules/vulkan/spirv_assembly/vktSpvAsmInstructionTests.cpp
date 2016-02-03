@@ -448,7 +448,7 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 		inputFloats1[ndx]	= 1.f + std::ldexp(1.f, -23); // 1 + 2^-23.
 		inputFloats2[ndx]	= 1.f - std::ldexp(1.f, -23); // 1 - 2^-23.
 		// Result for (1 + 2^-23) * (1 - 2^-23) - 1. With NoContraction, the multiplication will be
-		// conducted separately and the result is rounded to 1, or 0x1.fffffcp-1 
+		// conducted separately and the result is rounded to 1, or 0x1.fffffcp-1
 		// So the final result will be 0.f or 0x1p-24.
 		// If the operation is combined into a precise fused multiply-add, then the result would be
 		// 2^-46 (0xa8800000).
@@ -3818,7 +3818,6 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpMemberDecorate %BP_per_vertex_in 3 BuiltIn CullDistance\n"
 		"OpDecorate %BP_per_vertex_in Block\n"
 		"OpDecorate %BP_out_color Location 1\n"
-		"OpDecorate %BP_out_color Stream 0\n"
 		"OpDecorate %BP_in_color Location 1\n"
 		"${decoration:opt}\n"
 		SPIRV_ASSEMBLY_TYPES
@@ -4070,7 +4069,6 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 		"OpMemberDecorate %geom_per_vertex_in 3 BuiltIn CullDistance\n"
 		"OpDecorate %geom_per_vertex_in Block\n"
 		"OpDecorate %geom_out_color Location 1\n"
-		"OpDecorate %geom_out_color Stream 0\n"
 		"OpDecorate %geom_in_color Location 1\n"
 
 		"; Tessellation Control decorations\n"
@@ -4383,7 +4381,6 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpMemberDecorate %per_vertex_in 3 BuiltIn CullDistance\n"
 		"OpDecorate %per_vertex_in Block\n"
 		"OpDecorate %out_color Location 1\n"
-		"OpDecorate %out_color Stream 0\n"
 		"OpDecorate %in_color Location 1\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
