@@ -102,8 +102,8 @@ void loadPNG (TextureLevel& dst, const tcu::Archive& archive, const char* fileNa
 
 	png_read_info(png_ptr, info_ptr);
 
-	const int		width			= png_get_image_width(png_ptr, info_ptr);
-	const int		height			= png_get_image_height(png_ptr, info_ptr);
+	const deUint32	width			= (deUint32)png_get_image_width(png_ptr, info_ptr);
+	const deUint32	height			= (deUint32)png_get_image_height(png_ptr, info_ptr);
 	TextureFormat	textureFormat;
 
 	{
@@ -123,7 +123,7 @@ void loadPNG (TextureLevel& dst, const tcu::Archive& archive, const char* fileNa
 
 	std::vector<png_bytep> row_pointers;
 	row_pointers.resize(height);
-	for (int y = 0; y < height; y++)
+	for (deUint32 y = 0; y < height; y++)
 		row_pointers[y] = (deUint8*)dst.getAccess().getDataPtr() + y*dst.getAccess().getRowPitch();
 
 	png_read_image(png_ptr, &row_pointers[0]);
