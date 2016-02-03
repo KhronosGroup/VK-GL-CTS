@@ -19,9 +19,6 @@ dEQP-GLES31.functional.shaders.multisample_interpolation.interpolate_at_centroid
 dEQP-GLES31.functional.shaders.builtin_functions.precision.atan2.mediump_*
 dEQP-GLES31.functional.shaders.builtin_functions.precision.atan2.highp_*
 
-# Bug 22180525
-dEQP-GLES31.functional.shaders.helper_invocation.derivate.wide_lines_*_samples_*
-
 # Bug 22302334
 dEQP-GLES31.functional.shaders.builtin_functions.precision.acosh.highp_*
 dEQP-GLES31.functional.shaders.builtin_functions.precision.atanh.highp_*

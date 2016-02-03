@@ -542,24 +542,16 @@ void HelperInvocationDerivateCase::deinit (void)
 
 static bool hasNeighborWithColor (const tcu::Surface& surface, int x, int y, tcu::RGBA color, tcu::RGBA threshold)
 {
-	static const IVec2 s_neighbors[] =
-	{
-		IVec2(-1, -1),
-		IVec2( 0, -1),
-		IVec2(+1, -1),
-		IVec2(-1,  0),
-		IVec2(+1,  0),
-		IVec2(-1, +1),
-		IVec2( 0, +1),
-		IVec2(+1, +1)
-	};
-
 	const int	w	= surface.getWidth();
 	const int	h	= surface.getHeight();
 
-	for (int sample = 0; sample < DE_LENGTH_OF_ARRAY(s_neighbors); sample++)
+	for (int dx = -1; dx < 2; dx++)
+	for (int dy = -1; dy < 2; dy++)
 	{
-		const IVec2	pos	= IVec2(x, y) + s_neighbors[sample];
+		const IVec2	pos	= IVec2(x + dx, y + dy);
+
+		if (dx == 0 && dy == 0)
+			continue;
 
 		if (de::inBounds(pos.x(), 0, w) && de::inBounds(pos.y(), 0, h))
 		{
@@ -598,8 +590,8 @@ static bool verifyHelperInvocationDerivate (TestLog& log, const tcu::Surface& re
 			if (nonZeroDeriv)
 				numNonZeroDeriv	+= 1;
 
-			if ((!isBg && !isFg) ||				// Neither of valid colors (ignoring blue channel that has derivate)
-				(nonZeroDeriv && !neighborBg))	// Has non-zero derivate, but sample not at primitive edge
+			if ((!isBg && !isFg) ||							// Neither of valid colors (ignoring blue channel that has derivate)
+				(nonZeroDeriv && !neighborBg && !isFg))		// Has non-zero derivate, but sample not at primitive edge or inside primitive
 				numInvalidPixels += 1;
 
 			if (isFg)
