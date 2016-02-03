@@ -2631,14 +2631,6 @@ dEQP-GLES2.functional.texture.specification.teximage2d_align.cube_rgba8888_47_1
 dEQP-GLES2.functional.texture.specification.teximage2d_align.cube_rgba8888_47_2
 dEQP-GLES2.functional.texture.specification.teximage2d_align.cube_rgba8888_47_4
 dEQP-GLES2.functional.texture.specification.teximage2d_align.cube_rgba8888_47_8
-dEQP-GLES2.functional.texture.units.2_units.mixed.0
-dEQP-GLES2.functional.texture.units.2_units.mixed.1
-dEQP-GLES2.functional.texture.units.2_units.mixed.2
-dEQP-GLES2.functional.texture.units.2_units.mixed.5
-dEQP-GLES2.functional.texture.units.2_units.only_cube.0
-dEQP-GLES2.functional.texture.units.2_units.only_cube.1
-dEQP-GLES2.functional.texture.units.2_units.only_cube.3
-dEQP-GLES2.functional.texture.units.4_units.mixed.6
 dEQP-GLES2.functional.texture.vertex.2d.filtering.linear_mipmap_nearest_linear_clamp
 dEQP-GLES2.functional.texture.vertex.2d.filtering.linear_mipmap_nearest_linear_mirror
 dEQP-GLES2.functional.texture.vertex.2d.filtering.linear_mipmap_nearest_linear_repeat

@@ -20,3 +20,6 @@ dEQP-GLES2.functional.texture.wrap.repeat_clamp_nearest_pot_etc1
 dEQP-GLES2.functional.texture.wrap.repeat_mirror_nearest_pot_etc1
 dEQP-GLES2.functional.texture.wrap.repeat_mirror_nearest_pot_rgba4444
 dEQP-GLES2.functional.texture.wrap.repeat_repeat_nearest_pot_etc1
+
+# Bug 26906226
+dEQP-GLES2.functional.texture.units.*
