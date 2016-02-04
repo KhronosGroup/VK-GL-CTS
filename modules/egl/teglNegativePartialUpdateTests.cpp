@@ -26,11 +26,12 @@
 #include "tcuTestLog.hpp"
 #include "tcuSurface.hpp"
 
-#include "egluNativeWindow.hpp"
-#include "egluUtil.hpp"
-#include "egluStrUtil.hpp"
-#include "egluConfigFilter.hpp"
 #include "egluCallLogWrapper.hpp"
+#include "egluConfigFilter.hpp"
+#include "egluNativeWindow.hpp"
+#include "egluStrUtil.hpp"
+#include "egluUnique.hpp"
+#include "egluUtil.hpp"
 
 #include "eglwLibrary.hpp"
 #include "eglwEnums.hpp"
@@ -269,16 +270,24 @@ NotCurrentSurfaceTest::NotCurrentSurfaceTest (EglTestContext& context)
 
 TestCase::IterateResult NotCurrentSurfaceTest::iterate (void)
 {
-	const int 				impossibleBufferAge = -26084;
-	const Library&			egl					= m_eglTestCtx.getLibrary();
-	TestLog&				log					= m_testCtx.getLog();
-	CallLogWrapper			wrapper				(egl, log);
-	EGLint 					damageRegion[]		= { 10, 10, 10, 10 };
-	int						bufferAge			= impossibleBufferAge;
+	const int					impossibleBufferAge = -26084;
+	const Library&				egl					= m_eglTestCtx.getLibrary();
+	const EGLConfig				config				= getEGLConfig(egl, m_eglDisplay, SURFACETYPE_PBUFFER, false);
+	const EGLint				attribList[]		=
+	{
+		EGL_WIDTH,	64,
+		EGL_HEIGHT,	64,
+		EGL_NONE
+	};
+	const eglu::UniqueSurface	dummyPbuffer		(egl, m_eglDisplay, egl.createPbufferSurface(m_eglDisplay, config, attribList));
+	TestLog&					log					= m_testCtx.getLog();
+	CallLogWrapper				wrapper				(egl, log);
+	EGLint						damageRegion[]		= { 10, 10, 10, 10 };
+	int							bufferAge			= impossibleBufferAge;
 
 	wrapper.enableLogging(true);
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	egl.makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, m_eglContext);
+	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, *dummyPbuffer, *dummyPbuffer, m_eglContext));
 	{
 		tcu::ScopedLogSection(log, "Test2.1", "If query buffer age on a surface that is not the current draw surface --> EGL_BAD_SURFACE");
 		EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
@@ -295,6 +304,47 @@ TestCase::IterateResult NotCurrentSurfaceTest::iterate (void)
 		tcu::ScopedLogSection(log, "Test2.2", "If call setDamageRegion() on a surface that is not the current draw surface --> EGL_BAD_MATCH");
 		expectFalse(wrapper.eglSetDamageRegionKHR(m_eglDisplay, m_eglSurface, damageRegion, 1));
 		expectError(EGL_BAD_MATCH);
+	}
+
+	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+	{
+		tcu::ScopedLogSection(log, "Test3.1", "If query buffer age on a surface that is not the current draw surface --> EGL_BAD_SURFACE");
+		EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
+		expectFalse(wrapper.eglQuerySurface(m_eglDisplay, m_eglSurface, EGL_BUFFER_AGE_KHR, &bufferAge));
+		expectError(EGL_BAD_SURFACE);
+
+		if (bufferAge != impossibleBufferAge)
+		{
+			log << tcu::TestLog::Message << "On failure, eglQuerySurface shouldn't change buffer age but buffer age has been changed to " << bufferAge << tcu::TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail, bufferAge shouldn't be changed");
+		}
+	}
+	{
+		tcu::ScopedLogSection(log, "Test3.2", "If call setDamageRegion() on a surface that is not the current draw surface --> EGL_BAD_MATCH");
+		expectFalse(wrapper.eglSetDamageRegionKHR(m_eglDisplay, m_eglSurface, damageRegion, 1));
+		expectError(EGL_BAD_MATCH);
+	}
+
+	if (hasExtension(egl, m_eglDisplay, "EGL_KHR_surfaceless_context"))
+	{
+		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, m_eglContext));
+		{
+			tcu::ScopedLogSection(log, "Test4.1", "If query buffer age on a surface that is not the current draw surface --> EGL_BAD_SURFACE");
+			EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
+			expectFalse(wrapper.eglQuerySurface(m_eglDisplay, m_eglSurface, EGL_BUFFER_AGE_KHR, &bufferAge));
+			expectError(EGL_BAD_SURFACE);
+
+			if (bufferAge != impossibleBufferAge)
+			{
+				log << tcu::TestLog::Message << "On failure, eglQuerySurface shouldn't change buffer age but buffer age has been changed to " << bufferAge << tcu::TestLog::EndMessage;
+				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail, bufferAge shouldn't be changed");
+			}
+		}
+		{
+			tcu::ScopedLogSection(log, "Test4.2", "If call setDamageRegion() on a surface that is not the current draw surface --> EGL_BAD_MATCH");
+			expectFalse(wrapper.eglSetDamageRegionKHR(m_eglDisplay, m_eglSurface, damageRegion, 1));
+			expectError(EGL_BAD_MATCH);
+		}
 	}
 
 	return STOP;
@@ -445,19 +495,42 @@ NotCurrentSurfaceTest2::NotCurrentSurfaceTest2 (EglTestContext& context)
 
 TestCase::IterateResult NotCurrentSurfaceTest2::iterate (void)
 {
-	const Library&			egl				= m_eglTestCtx.getLibrary();
-	TestLog&				log				= m_testCtx.getLog();
-	CallLogWrapper			wrapper			(egl, log);
-	EGLint 					damageRegion[]	= { 10, 10, 10, 10 };
-	int						bufferAge		= -1;
+	const Library&				egl				= m_eglTestCtx.getLibrary();
+	const EGLConfig				config			= getEGLConfig(egl, m_eglDisplay, SURFACETYPE_PBUFFER, false);
+	const EGLint				attribList[]	=
+	{
+		EGL_WIDTH,	64,
+		EGL_HEIGHT,	64,
+		EGL_NONE
+	};
+	const eglu::UniqueSurface	dummyPbuffer	(egl, m_eglDisplay, egl.createPbufferSurface(m_eglDisplay, config, attribList));
+	TestLog&					log				= m_testCtx.getLog();
+	CallLogWrapper				wrapper			(egl, log);
+	EGLint						damageRegion[]	= { 10, 10, 10, 10 };
+	int							bufferAge		= -1;
 
 	wrapper.enableLogging(true);
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+	EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
+	EGLU_CHECK_CALL(egl, querySurface(m_eglDisplay, m_eglSurface, EGL_BUFFER_AGE_KHR, &bufferAge));
+
 	{
 		tcu::ScopedLogSection(log, "Test7", "If call setDamageRegion() on a surface that is not the current draw surface --> EGL_BAD_MATCH");
-		EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
-		EGLU_CHECK_CALL(egl, querySurface(m_eglDisplay, m_eglSurface, EGL_BUFFER_AGE_KHR, &bufferAge));
-		egl.makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, m_eglContext);
+		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, *dummyPbuffer, *dummyPbuffer, m_eglContext));
+		expectFalse(wrapper.eglSetDamageRegionKHR(m_eglDisplay, m_eglSurface, damageRegion, 1));
+		expectError(EGL_BAD_MATCH);
+	}
+	{
+		tcu::ScopedLogSection(log, "Test8", "If call setDamageRegion() on a surface that is not the current draw surface --> EGL_BAD_MATCH");
+		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+		expectFalse(wrapper.eglSetDamageRegionKHR(m_eglDisplay, m_eglSurface, damageRegion, 1));
+		expectError(EGL_BAD_MATCH);
+	}
+	if (hasExtension(egl, m_eglDisplay, "EGL_KHR_surfaceless_context"))
+	{
+		tcu::ScopedLogSection(log, "Test9", "If call setDamageRegion() on a surface that is not the current draw surface --> EGL_BAD_MATCH");
+		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, m_eglContext));
 		expectFalse(wrapper.eglSetDamageRegionKHR(m_eglDisplay, m_eglSurface, damageRegion, 1));
 		expectError(EGL_BAD_MATCH);
 	}
