@@ -346,8 +346,9 @@ void SamplerIndexingCase::init (void)
 	const char* extName = "GL_EXT_gpu_shader5";
 
 	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL &&
+		m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION &&
 		!m_context.getContextInfo().isExtensionSupported(extName))
-		throw tcu::NotSupportedError(string(extName) + " extension is required for dynamic indexing of sampler arrays");
+		throw tcu::NotSupportedError(string(extName) + " extension is required for dynamic indexing of interface blocks");
 }
 
 void SamplerIndexingCase::getShaderSpec (ShaderSpec* spec, int numSamplers, int numLookups, const int* lookupIndices) const
@@ -684,6 +685,7 @@ void BlockArrayIndexingCase::init (void)
 	const char* extName = "GL_EXT_gpu_shader5";
 
 	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL &&
+		m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION &&
 		!m_context.getContextInfo().isExtensionSupported(extName))
 		throw tcu::NotSupportedError(string(extName) + " extension is required for dynamic indexing of interface blocks");
 
@@ -721,7 +723,8 @@ void BlockArrayIndexingCase::getShaderSpec (ShaderSpec* spec, int numInstances, 
 	const char*			layout			= m_blockType == BLOCKTYPE_UNIFORM ? "std140" : "std430";
 	std::ostringstream	global, code;
 
-	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL)
+	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL
+		&& m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
 		global << "#extension GL_EXT_gpu_shader5 : require\n";
 
 	if (m_indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
@@ -897,8 +900,9 @@ void AtomicCounterIndexingCase::init (void)
 	const char* extName = "GL_EXT_gpu_shader5";
 
 	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL &&
+		m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION &&
 		!m_context.getContextInfo().isExtensionSupported(extName))
-		throw tcu::NotSupportedError(string(extName) + " extension is required for dynamic indexing of atomic counters");
+		throw tcu::NotSupportedError(string(extName) + " extension is required for dynamic indexing of interface blocks");
 
 	if (m_shaderType == glu::SHADERTYPE_VERTEX || m_shaderType == glu::SHADERTYPE_FRAGMENT)
 	{
@@ -918,7 +922,8 @@ void AtomicCounterIndexingCase::getShaderSpec (ShaderSpec* spec, int numCounters
 	const char*			resultPrefix	= "result";
 	std::ostringstream	global, code;
 
-	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL)
+	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL
+		&& m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
 		global << "#extension GL_EXT_gpu_shader5 : require\n";
 
 	if (m_indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
