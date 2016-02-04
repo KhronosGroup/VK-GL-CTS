@@ -330,11 +330,20 @@ MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-pixelformat.txt")]),
 	])
 
+MASTER_VULKAN_FILTERS			= [
+		include("vulkan-master.txt"),
+		exclude("vulkan-test-issues.txt")
+	]
+MASTER_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
+		Configuration(name			= "master",
+					  filters		= MASTER_VULKAN_FILTERS),
+	])
+
 MUSTPASS_LISTS				= [
 		Mustpass(project = CTS_PROJECT, version = "lmp",		packages = [LMP_GLES3_PKG, LMP_GLES31_PKG]),
 		Mustpass(project = CTS_PROJECT, version = "lmp-mr1",	packages = [LMP_MR1_GLES3_PKG, LMP_MR1_GLES31_PKG]),
 		Mustpass(project = CTS_PROJECT, version = "mnc",		packages = [MNC_EGL_PKG, MNC_GLES2_PKG, MNC_GLES3_PKG, MNC_GLES31_PKG]),
-		Mustpass(project = CTS_PROJECT, version = "master",		packages = [MASTER_EGL_PKG, MASTER_GLES2_PKG, MASTER_GLES3_PKG, MASTER_GLES31_PKG])
+		Mustpass(project = CTS_PROJECT, version = "master",		packages = [MASTER_EGL_PKG, MASTER_GLES2_PKG, MASTER_GLES3_PKG, MASTER_GLES31_PKG, MASTER_VULKAN_PKG])
 	]
 
 BUILD_CONFIG				= getBuildConfig(DEFAULT_BUILD_DIR, DEFAULT_TARGET, "Debug")

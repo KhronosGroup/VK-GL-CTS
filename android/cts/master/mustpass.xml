@@ -42,4 +42,7 @@
 		<Configuration caseListFile="gles31-multisample.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms4 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="multisample"/>
 		<Configuration caseListFile="gles31-565-no-depth-no-stencil.txt" commandLine="--deqp-gl-config-name=rgb565d0s0ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="565-no-depth-no-stencil"/>
 	</TestPackage>
+	<TestPackage name="dEQP-VK">
+		<Configuration caseListFile="vk-master.txt" commandLine="--deqp-watchdog=enable" name="master"/>
+	</TestPackage>
 </Mustpass>

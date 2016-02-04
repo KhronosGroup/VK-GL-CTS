@@ -85,6 +85,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
     private static final String LOG_FILE_NAME = "/sdcard/TestLog.qpa";
     public static final String FEATURE_LANDSCAPE = "android.hardware.screen.landscape";
     public static final String FEATURE_PORTRAIT = "android.hardware.screen.portrait";
+    // TODO(misojarvi): Replace with correct feature name
+    public static final String FEATURE_VULKAN_1_0 = "android.hardware.vulkan.1.0";
 
     private static final int TESTCASE_BATCH_LIMIT = 1000;
     private static final BatchRunConfiguration DEFAULT_CONFIG =
@@ -1643,6 +1645,16 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
     }
 
     /**
+     * Check if device supports Vulkan.
+     */
+    private boolean isSupportedVulkan ()
+            throws DeviceNotAvailableException, CapabilityQueryFailureException {
+        final Set<String> features = getDeviceFeatures(mDevice);
+
+        return features.contains(FEATURE_VULKAN_1_0);
+    }
+
+    /**
      * Check if device supports OpenGL ES version.
      */
     private static boolean isSupportedGles(ITestDevice device, int requiredMajorVersion,
@@ -1797,8 +1809,23 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
         if ("dEQP-GLES2".equals(mDeqpPackage) || "dEQP-GLES3".equals(mDeqpPackage) ||
                 "dEQP-GLES31".equals(mDeqpPackage)) {
             return true;
-        } else if ("dEQP-EGL".equals(mDeqpPackage)) {
+        } else if ("dEQP-EGL".equals(mDeqpPackage) ||
+                "dEQP-VK".equals(mDeqpPackage)) {
             return false;
+        } else {
+            throw new IllegalStateException("dEQP runner was created with illegal name");
+        }
+    }
+
+    /**
+     * Parse vulkan nature from package name
+     */
+    private boolean isVulkanPackage() {
+        if ("dEQP-GLES2".equals(mDeqpPackage) || "dEQP-GLES3".equals(mDeqpPackage) ||
+                "dEQP-GLES31".equals(mDeqpPackage) || "dEQP-EGL".equals(mDeqpPackage)) {
+            return false;
+        } else if ("dEQP-VK".equals(mDeqpPackage)) {
+            return true;
         } else {
             throw new IllegalStateException("dEQP runner was created with illegal name");
         }
@@ -1934,8 +1961,6 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
     @Override
     public void run(ITestInvocationListener listener) throws DeviceNotAvailableException {
         final Map<String, String> emptyMap = Collections.emptyMap();
-        final boolean isSupportedApi = !isOpenGlEsPackage() || isSupportedGles();
-
         // If sharded, split() will load the tests.
         if (mTestInstances == null)
             loadTests();
@@ -1945,6 +1970,10 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
         listener.testRunStarted(getId(), mRemainingTests.size());
 
         try {
+            final boolean isSupportedApi = (isOpenGlEsPackage() && isSupportedGles())
+                                            || (isVulkanPackage() && isSupportedVulkan())
+                                            || (!isOpenGlEsPackage() && !isVulkanPackage());
+
             if (isSupportedApi) {
                 // Make sure there is no pre-existing package form earlier interrupted test run.
                 uninstallTestApk();
