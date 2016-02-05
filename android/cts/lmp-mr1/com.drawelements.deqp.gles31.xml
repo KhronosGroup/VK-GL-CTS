@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <TestPackage appPackageName="com.drawelements.deqp.gles31" deqp:glesVersion="196609" name="dEQP-GLES31" testType="deqpTest" xmlns:deqp="http://drawelements.com/deqp">
 	<!--
-     Copyright (C) 2015 The Android Open Source Project
+     Copyright (C) 2016 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
