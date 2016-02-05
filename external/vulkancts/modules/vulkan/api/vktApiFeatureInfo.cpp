@@ -42,9 +42,11 @@
 #include "vkRef.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkImageUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
+#include "tcuTextureUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -67,8 +69,10 @@ using tcu::ScopedLogSection;
 
 enum
 {
-	GUARD_SIZE	= 0x20,			//!< Number of bytes to check
-	GUARD_VALUE	= 0xcd,			//!< Data pattern
+	GUARD_SIZE								= 0x20,			//!< Number of bytes to check
+	GUARD_VALUE								= 0xcd,			//!< Data pattern
+
+	MINIMUM_REQUIRED_IMAGE_RESOURCE_SIZE	= 1<<31,		//!< Minimum value for VkImageFormatProperties::maxResourceSize (2GiB)
 };
 
 enum LimitFormat
@@ -516,6 +520,9 @@ tcu::TestStatus deviceFeatures (Context& context)
 
 	log << TestLog::Message << "device = " << context.getPhysicalDevice() << TestLog::EndMessage
 		<< TestLog::Message << *features << TestLog::EndMessage;
+
+	if (!features->robustBufferAccess)
+		return tcu::TestStatus::fail("robustBufferAccess is not supported");
 
 	for (int ndx = 0; ndx < GUARD_SIZE; ndx++)
 	{
@@ -1027,7 +1034,7 @@ tcu::TestStatus testCompressedFormatsSupported (Context& context)
 		VK_FORMAT_BC7_UNORM_BLOCK,
 		VK_FORMAT_BC7_SRGB_BLOCK,
 	};
-	static const VkFormat s_allEtcEacFormats[] =
+	static const VkFormat s_allEtc2Formats[] =
 	{
 		VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
 		VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
@@ -1040,7 +1047,7 @@ tcu::TestStatus testCompressedFormatsSupported (Context& context)
 		VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
 		VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
 	};
-	static const VkFormat s_allAstcFormats[] =
+	static const VkFormat s_allAstcLdrFormats[] =
 	{
 		VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
 		VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
@@ -1072,28 +1079,68 @@ tcu::TestStatus testCompressedFormatsSupported (Context& context)
 		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
 	};
 
-	const bool	bcFormatsSupported		= optimalTilingFeaturesSupportedForAll(context,
-																			   DE_ARRAY_BEGIN(s_allBcFormats),
-																			   DE_ARRAY_END(s_allBcFormats),
-																			   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
-	const bool	etcEacFormatsSupported	= optimalTilingFeaturesSupportedForAll(context,
-																			   DE_ARRAY_BEGIN(s_allEtcEacFormats),
-																			   DE_ARRAY_END(s_allEtcEacFormats),
-																			   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
-	const bool	astcFormatsSupported	= optimalTilingFeaturesSupportedForAll(context,
-																			   DE_ARRAY_BEGIN(s_allAstcFormats),
-																			   DE_ARRAY_END(s_allAstcFormats),
-																			   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
-	TestLog&	log						= context.getTestContext().getLog();
+	static const struct
+	{
+		const char*									setName;
+		const char*									featureName;
+		const VkBool32 VkPhysicalDeviceFeatures::*	feature;
+		const VkFormat*								formatsBegin;
+		const VkFormat*								formatsEnd;
+	} s_compressedFormatSets[] =
+	{
+		{ "BC",			"textureCompressionBC",			&VkPhysicalDeviceFeatures::textureCompressionBC,		DE_ARRAY_BEGIN(s_allBcFormats),			DE_ARRAY_END(s_allBcFormats)		},
+		{ "ETC2",		"textureCompressionETC2",		&VkPhysicalDeviceFeatures::textureCompressionETC2,		DE_ARRAY_BEGIN(s_allEtc2Formats),		DE_ARRAY_END(s_allEtc2Formats)		},
+		{ "ASTC LDR",	"textureCompressionASTC_LDR",	&VkPhysicalDeviceFeatures::textureCompressionASTC_LDR,	DE_ARRAY_BEGIN(s_allAstcLdrFormats),	DE_ARRAY_END(s_allAstcLdrFormats)	},
+	};
 
-	log << TestLog::Message << "All BC* formats supported: " << (bcFormatsSupported ? "true" : "false") << TestLog::EndMessage;
-	log << TestLog::Message << "All ETC2/EAC formats supported: " << (etcEacFormatsSupported ? "true" : "false") << TestLog::EndMessage;
-	log << TestLog::Message << "All ASTC formats supported: " << (astcFormatsSupported ? "true" : "false") << TestLog::EndMessage;
+	TestLog&						log					= context.getTestContext().getLog();
+	const VkPhysicalDeviceFeatures&	features			= context.getDeviceFeatures();
+	int								numSupportedSets	= 0;
+	int								numErrors			= 0;
+	int								numWarnings			= 0;
 
-	if (bcFormatsSupported || etcEacFormatsSupported || astcFormatsSupported)
-		return tcu::TestStatus::pass("At least one set of compressed formats supported");
+	for (int setNdx = 0; setNdx < DE_LENGTH_OF_ARRAY(s_compressedFormatSets); ++setNdx)
+	{
+		const char* const	setName			= s_compressedFormatSets[setNdx].setName;
+		const char* const	featureName		= s_compressedFormatSets[setNdx].featureName;
+		const bool			featureBitSet	= features.*s_compressedFormatSets[setNdx].feature == VK_TRUE;
+		const bool			allSupported	= optimalTilingFeaturesSupportedForAll(context,
+																				   s_compressedFormatSets[setNdx].formatsBegin,
+																				   s_compressedFormatSets[setNdx].formatsEnd,
+																				   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+
+		if (featureBitSet && !allSupported)
+		{
+			log << TestLog::Message << "ERROR: " << featureName << " = VK_TRUE but " << setName << " formats not supported" << TestLog::EndMessage;
+			numErrors += 1;
+		}
+		else if (allSupported && !featureBitSet)
+		{
+			log << TestLog::Message << "WARNING: " << setName << " formats supported but " << featureName << " = VK_FALSE" << TestLog::EndMessage;
+			numWarnings += 1;
+		}
+
+		if (featureBitSet)
+		{
+			log << TestLog::Message << "All " << setName << " formats are supported" << TestLog::EndMessage;
+			numSupportedSets += 1;
+		}
+		else
+			log << TestLog::Message << setName << " formats are not supported" << TestLog::EndMessage;
+	}
+
+	if (numSupportedSets == 0)
+	{
+		log << TestLog::Message << "No compressed format sets supported" << TestLog::EndMessage;
+		numErrors += 1;
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus::fail("Compressed format support not valid");
+	else if (numWarnings > 0)
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Found inconsistencies in compressed format support");
 	else
-		return tcu::TestStatus::fail("Compressed formats not supported");
+		return tcu::TestStatus::pass("Compressed texture format support is valid");
 }
 
 void createFormatTests (tcu::TestCaseGroup* testGroup)
@@ -1171,6 +1218,68 @@ bool isValidImageCreateFlagCombination (VkImageCreateFlags)
 	return true;
 }
 
+bool isRequiredImageParameterCombination (const VkPhysicalDeviceFeatures&	deviceFeatures,
+										  const VkFormat					format,
+										  const VkFormatProperties&			formatProperties,
+										  const VkImageType					imageType,
+										  const VkImageTiling				imageTiling,
+										  const VkImageUsageFlags			usageFlags,
+										  const VkImageCreateFlags			createFlags)
+{
+	DE_UNREF(deviceFeatures);
+	DE_UNREF(formatProperties);
+	DE_UNREF(createFlags);
+
+	// Linear images can have arbitrary limitations
+	if (imageTiling == VK_IMAGE_TILING_LINEAR)
+		return false;
+
+	// Support for other usages for compressed formats is optional
+	if (isCompressedFormat(format) &&
+		(usageFlags & ~(VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT)) != 0)
+		return false;
+
+	// Support for 1D, and sliced 3D compressed formats is optional
+	if (isCompressedFormat(format) && (imageType == VK_IMAGE_TYPE_1D || imageType == VK_IMAGE_TYPE_3D))
+		return false;
+
+	DE_ASSERT(deviceFeatures.sparseBinding || (createFlags & (VK_IMAGE_CREATE_SPARSE_BINDING_BIT|VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)) == 0);
+	DE_ASSERT(deviceFeatures.sparseResidencyAliased || (createFlags & VK_IMAGE_CREATE_SPARSE_ALIASED_BIT) == 0);
+
+	return true;
+}
+
+VkSampleCountFlags getRequiredOptimalTilingSampleCounts (const VkPhysicalDeviceLimits&	deviceLimits,
+														 const VkFormat					format,
+														 const VkImageUsageFlags		usageFlags)
+{
+	if (!isCompressedFormat(format))
+	{
+		const tcu::TextureFormat		tcuFormat	= mapVkFormat(format);
+
+		if (usageFlags & VK_IMAGE_USAGE_STORAGE_BIT)
+			return deviceLimits.storageImageSampleCounts;
+		else if (tcuFormat.order == tcu::TextureFormat::D)
+			return deviceLimits.sampledImageDepthSampleCounts;
+		else if (tcuFormat.order == tcu::TextureFormat::S)
+			return deviceLimits.sampledImageStencilSampleCounts;
+		else if (tcuFormat.order == tcu::TextureFormat::DS)
+			return deviceLimits.sampledImageDepthSampleCounts & deviceLimits.sampledImageStencilSampleCounts;
+		else
+		{
+			const tcu::TextureChannelClass	chnClass	= tcu::getTextureChannelClass(tcuFormat.type);
+
+			if (chnClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ||
+				chnClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
+				return deviceLimits.sampledImageIntegerSampleCounts;
+			else
+				return deviceLimits.sampledImageColorSampleCounts;
+		}
+	}
+	else
+		return VK_SAMPLE_COUNT_1_BIT;
+}
+
 struct ImageFormatPropertyCase
 {
 	VkFormat		format;
@@ -1197,6 +1306,7 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 	const VkImageType				imageType			= params.imageType;
 	const VkImageTiling				tiling				= params.tiling;
 	const VkPhysicalDeviceFeatures&	deviceFeatures		= context.getDeviceFeatures();
+	const VkPhysicalDeviceLimits&	deviceLimits		= context.getDeviceProperties().limits;
 	const VkFormatProperties		formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
 
 	const VkFormatFeatureFlags		supportedFeatures	= tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures : formatProperties.optimalTilingFeatures;
@@ -1216,6 +1326,14 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 				!isValidImageCreateFlagCombination(curCreateFlags))
 				continue;
 
+			const bool	isRequiredCombination	= isRequiredImageParameterCombination(deviceFeatures,
+																					  format,
+																					  formatProperties,
+																					  imageType,
+																					  tiling,
+																					  curUsageFlags,
+																					  curCreateFlags);
+
 			log << TestLog::Message << "Testing " << getImageTypeStr(imageType) << ", "
 									<< getImageTilingStr(tiling) << ", "
 									<< getImageUsageFlagsStr(curUsageFlags) << ", "
@@ -1224,26 +1342,60 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 
 			try
 			{
-				const VkImageFormatProperties	properties	= getPhysicalDeviceImageFormatProperties(context.getInstanceInterface(),
-																										context.getPhysicalDevice(),
-																										format,
-																										imageType,
-																										tiling,
-																										curUsageFlags,
-																										curCreateFlags);
+				const VkImageFormatProperties	properties			= getPhysicalDeviceImageFormatProperties(context.getInstanceInterface(),
+																											 context.getPhysicalDevice(),
+																											 format,
+																											 imageType,
+																											 tiling,
+																											 curUsageFlags,
+																											 curCreateFlags);
+				const deUint32					fullMipPyramidSize	= de::max(de::max(deLog2Ceil32(properties.maxExtent.width),
+																					  deLog2Ceil32(properties.maxExtent.height)),
+																			  deLog2Ceil32(properties.maxExtent.depth));
+
 				log << TestLog::Message << properties << "\n" << TestLog::EndMessage;
 
-				// \todo [2016-01-24 pyry] Expand validation
-				TCU_CHECK((properties.sampleCounts & VK_SAMPLE_COUNT_1_BIT) != 0);
 				TCU_CHECK(imageType != VK_IMAGE_TYPE_1D || (properties.maxExtent.width >= 1 && properties.maxExtent.height == 1 && properties.maxExtent.depth == 1));
 				TCU_CHECK(imageType != VK_IMAGE_TYPE_2D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth == 1));
 				TCU_CHECK(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth >= 1));
+
+				if (tiling == VK_IMAGE_TILING_OPTIMAL)
+				{
+					const VkSampleCountFlags	requiredSampleCounts	= getRequiredOptimalTilingSampleCounts(deviceLimits, format, curUsageFlags);
+					TCU_CHECK((properties.sampleCounts & requiredSampleCounts) == requiredSampleCounts);
+				}
+				else
+					TCU_CHECK(properties.sampleCounts == VK_SAMPLE_COUNT_1_BIT);
+
+				if (isRequiredCombination)
+				{
+					TCU_CHECK(imageType != VK_IMAGE_TYPE_1D || (properties.maxExtent.width	>= deviceLimits.maxImageDimension1D));
+					TCU_CHECK(imageType != VK_IMAGE_TYPE_2D || (properties.maxExtent.width	>= deviceLimits.maxImageDimension2D &&
+																properties.maxExtent.height	>= deviceLimits.maxImageDimension2D));
+					TCU_CHECK(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width	>= deviceLimits.maxImageDimension3D &&
+																properties.maxExtent.height	>= deviceLimits.maxImageDimension3D &&
+																properties.maxExtent.depth	>= deviceLimits.maxImageDimension3D));
+					TCU_CHECK(properties.maxMipLevels == fullMipPyramidSize);
+					TCU_CHECK(imageType != VK_IMAGE_TYPE_3D || properties.maxArrayLayers == 1);
+					TCU_CHECK(imageType == VK_IMAGE_TYPE_3D || properties.maxArrayLayers >= deviceLimits.maxImageArrayLayers);
+				}
+				else
+				{
+					TCU_CHECK(properties.maxMipLevels == 1 || properties.maxMipLevels == fullMipPyramidSize);
+					TCU_CHECK(properties.maxArrayLayers >= 1);
+				}
+
+				TCU_CHECK(properties.maxResourceSize >= (VkDeviceSize)MINIMUM_REQUIRED_IMAGE_RESOURCE_SIZE);
 			}
 			catch (const Error& error)
 			{
-				// \todo [2016-01-22 pyry] Check if this is indeed optional image type / flag combination
 				if (error.getError() == VK_ERROR_FORMAT_NOT_SUPPORTED)
+				{
 					log << TestLog::Message << "Got VK_ERROR_FORMAT_NOT_SUPPORTED" << TestLog::EndMessage;
+
+					if (isRequiredCombination)
+						TCU_FAIL("VK_ERROR_FORMAT_NOT_SUPPORTED returned for required image parameter combination");
+				}
 				else
 					throw;
 			}
