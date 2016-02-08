@@ -393,6 +393,12 @@ void TestLog::writeShader (qpShaderType type, const char* source, bool compileOk
 		throw LogWriteFailedError();
 }
 
+void TestLog::writeSpirVAssemblySource (const char* source)
+{
+	if (qpTestLog_writeSpirVAssemblySource(m_log, source) == DE_FALSE)
+		throw LogWriteFailedError();
+}
+
 void TestLog::writeKernelSource (const char* source)
 {
 	if (qpTestLog_writeKernelSource(m_log, source) == DE_FALSE)

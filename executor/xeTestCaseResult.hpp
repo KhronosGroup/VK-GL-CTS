@@ -142,6 +142,7 @@ enum Type
 	TYPE_SHADER,
 	TYPE_SHADERPROGRAM,
 	TYPE_SHADERSOURCE,
+	TYPE_SPIRVSOURCE,
 	TYPE_INFOLOG,
 	TYPE_EGLCONFIG,
 	TYPE_EGLCONFIGSET,
@@ -285,6 +286,15 @@ class ShaderSource : public Item
 public:
 						ShaderSource		(void) : Item(TYPE_SHADERSOURCE) {}
 						~ShaderSource		(void) {}
+
+	std::string			source;
+};
+
+class SpirVSource : public Item
+{
+public:
+						SpirVSource			(void) : Item(TYPE_SPIRVSOURCE) {}
+						~SpirVSource		(void) {}
 
 	std::string			source;
 };
