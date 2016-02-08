@@ -152,25 +152,21 @@ static const char* const s_CommonTypes =
 
 // Declares two uniform variables (indata, outdata) of type "struct { float[] }". Depends on type "f32arr" (for "float[]").
 static const char* const s_InputOutputBuffer =
-	"%inbuf     = OpTypeStruct %f32arr\n"
-	"%inbufptr  = OpTypePointer Uniform %inbuf\n"
-	"%indata    = OpVariable %inbufptr Uniform\n"
-	"%outbuf    = OpTypeStruct %f32arr\n"
-	"%outbufptr = OpTypePointer Uniform %outbuf\n"
-	"%outdata   = OpVariable %outbufptr Uniform\n";
+	"%buf     = OpTypeStruct %f32arr\n"
+	"%bufptr  = OpTypePointer Uniform %buf\n"
+	"%indata    = OpVariable %bufptr Uniform\n"
+	"%outdata   = OpVariable %bufptr Uniform\n";
 
 // Declares buffer type and layout for uniform variables indata and outdata. Both of them are SSBO bounded to descriptor set 0.
 // indata is at binding point 0, while outdata is at 1.
 static const char* const s_InputOutputBufferTraits =
-	"OpDecorate %inbuf BufferBlock\n"
+	"OpDecorate %buf BufferBlock\n"
 	"OpDecorate %indata DescriptorSet 0\n"
 	"OpDecorate %indata Binding 0\n"
-	"OpDecorate %outbuf BufferBlock\n"
 	"OpDecorate %outdata DescriptorSet 0\n"
 	"OpDecorate %outdata Binding 1\n"
 	"OpDecorate %f32arr ArrayStride 4\n"
-	"OpMemberDecorate %inbuf 0 Offset 0\n"
-	"OpMemberDecorate %outbuf 0 Offset 0\n";
+	"OpMemberDecorate %buf 0 Offset 0\n";
 
 tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 {
@@ -394,31 +390,23 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 
 		"${DECORATION}\n"
 
-		"OpDecorate %inbuf1 BufferBlock\n"
+		"OpDecorate %buf BufferBlock\n"
 		"OpDecorate %indata1 DescriptorSet 0\n"
 		"OpDecorate %indata1 Binding 0\n"
-		"OpDecorate %inbuf2 BufferBlock\n"
 		"OpDecorate %indata2 DescriptorSet 0\n"
 		"OpDecorate %indata2 Binding 1\n"
-		"OpDecorate %outbuf BufferBlock\n"
 		"OpDecorate %outdata DescriptorSet 0\n"
 		"OpDecorate %outdata Binding 2\n"
 		"OpDecorate %f32arr ArrayStride 4\n"
-		"OpMemberDecorate %inbuf1 0 Offset 0\n"
-		"OpMemberDecorate %inbuf2 0 Offset 0\n"
-		"OpMemberDecorate %outbuf 0 Offset 0\n"
+		"OpMemberDecorate %buf 0 Offset 0\n"
 
 		+ string(s_CommonTypes) +
 
-		"%inbuf1     = OpTypeStruct %f32arr\n"
-		"%inbufptr1  = OpTypePointer Uniform %inbuf1\n"
-		"%indata1    = OpVariable %inbufptr1 Uniform\n"
-		"%inbuf2     = OpTypeStruct %f32arr\n"
-		"%inbufptr2  = OpTypePointer Uniform %inbuf2\n"
-		"%indata2    = OpVariable %inbufptr2 Uniform\n"
-		"%outbuf     = OpTypeStruct %f32arr\n"
-		"%outbufptr  = OpTypePointer Uniform %outbuf\n"
-		"%outdata    = OpVariable %outbufptr Uniform\n"
+		"%buf        = OpTypeStruct %f32arr\n"
+		"%bufptr     = OpTypePointer Uniform %buf\n"
+		"%indata1    = OpVariable %bufptr Uniform\n"
+		"%indata2    = OpVariable %bufptr Uniform\n"
+		"%outdata    = OpVariable %bufptr Uniform\n"
 
 		"%id         = OpVariable %uvec3ptr Input\n"
 		"%zero       = OpConstant %i32 0\n"
@@ -527,31 +515,23 @@ tcu::TestCaseGroup* createOpFRemGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		"OpDecorate %inbuf1 BufferBlock\n"
+		"OpDecorate %buf BufferBlock\n"
 		"OpDecorate %indata1 DescriptorSet 0\n"
 		"OpDecorate %indata1 Binding 0\n"
-		"OpDecorate %inbuf2 BufferBlock\n"
 		"OpDecorate %indata2 DescriptorSet 0\n"
 		"OpDecorate %indata2 Binding 1\n"
-		"OpDecorate %outbuf BufferBlock\n"
 		"OpDecorate %outdata DescriptorSet 0\n"
 		"OpDecorate %outdata Binding 2\n"
 		"OpDecorate %f32arr ArrayStride 4\n"
-		"OpMemberDecorate %inbuf1 0 Offset 0\n"
-		"OpMemberDecorate %inbuf2 0 Offset 0\n"
-		"OpMemberDecorate %outbuf 0 Offset 0\n"
+		"OpMemberDecorate %buf 0 Offset 0\n"
 
 		+ string(s_CommonTypes) +
 
-		"%inbuf1     = OpTypeStruct %f32arr\n"
-		"%inbufptr1  = OpTypePointer Uniform %inbuf1\n"
-		"%indata1    = OpVariable %inbufptr1 Uniform\n"
-		"%inbuf2     = OpTypeStruct %f32arr\n"
-		"%inbufptr2  = OpTypePointer Uniform %inbuf2\n"
-		"%indata2    = OpVariable %inbufptr2 Uniform\n"
-		"%outbuf     = OpTypeStruct %f32arr\n"
-		"%outbufptr  = OpTypePointer Uniform %outbuf\n"
-		"%outdata    = OpVariable %outbufptr Uniform\n"
+		"%buf        = OpTypeStruct %f32arr\n"
+		"%bufptr     = OpTypePointer Uniform %buf\n"
+		"%indata1    = OpVariable %bufptr Uniform\n"
+		"%indata2    = OpVariable %bufptr Uniform\n"
+		"%outdata    = OpVariable %bufptr Uniform\n"
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -613,12 +593,10 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"%vec4ptr_u  = OpTypePointer Uniform %vec4\n"
 		"%vec4ptr_f  = OpTypePointer Function %vec4\n"
 		"%vec4arr    = OpTypeRuntimeArray %vec4\n"
-		"%inbuf      = OpTypeStruct %vec4arr\n"
-		"%inbufptr   = OpTypePointer Uniform %inbuf\n"
-		"%indata     = OpVariable %inbufptr Uniform\n"
-		"%outbuf     = OpTypeStruct %vec4arr\n"
-		"%outbufptr  = OpTypePointer Uniform %outbuf\n"
-		"%outdata    = OpVariable %outbufptr Uniform\n"
+		"%buf        = OpTypeStruct %vec4arr\n"
+		"%bufptr     = OpTypePointer Uniform %buf\n"
+		"%indata     = OpVariable %bufptr Uniform\n"
+		"%outdata    = OpVariable %bufptr Uniform\n"
 
 		"%id         = OpVariable %uvec3ptr Input\n"
 		"%zero       = OpConstant %i32 0\n"
@@ -673,12 +651,10 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"%f32arr100      = OpTypeArray %f32 %hundred\n"
 		"%f32arr100ptr_f = OpTypePointer Function %f32arr100\n"
 		"%f32arr100ptr_u = OpTypePointer Uniform %f32arr100\n"
-		"%inbuf          = OpTypeStruct %f32arr100\n"
-		"%inbufptr       = OpTypePointer Uniform %inbuf\n"
-		"%indata         = OpVariable %inbufptr Uniform\n"
-		"%outbuf         = OpTypeStruct %f32arr100\n"
-		"%outbufptr      = OpTypePointer Uniform %outbuf\n"
-		"%outdata        = OpVariable %outbufptr Uniform\n"
+		"%buf            = OpTypeStruct %f32arr100\n"
+		"%bufptr         = OpTypePointer Uniform %buf\n"
+		"%indata         = OpVariable %bufptr Uniform\n"
+		"%outdata        = OpVariable %bufptr Uniform\n"
 
 		"%id             = OpVariable %uvec3ptr Input\n"
 		"%zero           = OpConstant %i32 0\n"
@@ -716,25 +692,19 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
-		"OpMemberDecorate %inbuf 0 Offset 0\n"
-		"OpMemberDecorate %inbuf 1 Offset 16\n"
-		"OpMemberDecorate %inbuf 2 Offset 32\n"
-		"OpMemberDecorate %inbuf 3 Offset 48\n"
-		"OpMemberDecorate %outbuf 0 Offset 0\n"
-		"OpMemberDecorate %outbuf 1 Offset 16\n"
-		"OpMemberDecorate %outbuf 2 Offset 32\n"
-		"OpMemberDecorate %outbuf 3 Offset 48\n"
+		"OpMemberDecorate %buf 0 Offset 0\n"
+		"OpMemberDecorate %buf 1 Offset 16\n"
+		"OpMemberDecorate %buf 2 Offset 32\n"
+		"OpMemberDecorate %buf 3 Offset 48\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
 		"%vec4      = OpTypeVector %f32 4\n"
-		"%inbuf     = OpTypeStruct %vec4 %vec4 %vec4 %vec4\n"
-		"%inbufptr  = OpTypePointer Uniform %inbuf\n"
-		"%indata    = OpVariable %inbufptr Uniform\n"
-		"%outbuf    = OpTypeStruct %vec4 %vec4 %vec4 %vec4\n"
-		"%outbufptr = OpTypePointer Uniform %outbuf\n"
-		"%outdata   = OpVariable %outbufptr Uniform\n"
-		"%vec4stptr = OpTypePointer Function %inbuf\n"
+		"%buf       = OpTypeStruct %vec4 %vec4 %vec4 %vec4\n"
+		"%bufptr    = OpTypePointer Uniform %buf\n"
+		"%indata    = OpVariable %bufptr Uniform\n"
+		"%outdata   = OpVariable %bufptr Uniform\n"
+		"%vec4stptr = OpTypePointer Function %buf\n"
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -1256,12 +1226,10 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		"%i32arr    = OpTypeRuntimeArray %i32\n"
 		"%boolptr   = OpTypePointer Uniform %bool\n"
 		"%boolarr   = OpTypeRuntimeArray %bool\n"
-		"%inbuf     = OpTypeStruct %i32arr\n"
-		"%inbufptr  = OpTypePointer Uniform %inbuf\n"
-		"%indata    = OpVariable %inbufptr Uniform\n"
-		"%outbuf    = OpTypeStruct %i32arr\n"
-		"%outbufptr = OpTypePointer Uniform %outbuf\n"
-		"%outdata   = OpVariable %outbufptr Uniform\n"
+		"%buf     = OpTypeStruct %i32arr\n"
+		"%bufptr  = OpTypePointer Uniform %buf\n"
+		"%indata    = OpVariable %bufptr Uniform\n"
+		"%outdata   = OpVariable %bufptr Uniform\n"
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -1371,12 +1339,10 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		"%i32arr    = OpTypeRuntimeArray %i32\n"
 		"%boolptr   = OpTypePointer Uniform %bool\n"
 		"%boolarr   = OpTypeRuntimeArray %bool\n"
-		"%inbuf     = OpTypeStruct %i32arr\n"
-		"%inbufptr  = OpTypePointer Uniform %inbuf\n"
-		"%indata    = OpVariable %inbufptr Uniform\n"
-		"%outbuf    = OpTypeStruct %i32arr\n"
-		"%outbufptr = OpTypePointer Uniform %outbuf\n"
-		"%outdata   = OpVariable %outbufptr Uniform\n"
+		"%buf     = OpTypeStruct %i32arr\n"
+		"%bufptr  = OpTypePointer Uniform %buf\n"
+		"%indata    = OpVariable %bufptr Uniform\n"
+		"%outdata   = OpVariable %bufptr Uniform\n"
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
