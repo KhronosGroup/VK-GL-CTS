@@ -26,6 +26,7 @@
 #include "tcuVector.hpp"
 #include "tcuSurface.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuStringTemplate.hpp"
 #include "gluPixelTransfer.hpp"
 #include "gluRenderContext.hpp"
 #include "gluCallLogWrapper.hpp"
@@ -53,6 +54,9 @@ namespace Functional
 {
 namespace
 {
+
+using std::map;
+using std::string;
 
 static std::string sampleMaskToString (const std::vector<deUint32>& bitfield, int numBits)
 {
@@ -222,8 +226,12 @@ DefaultFBOMultisampleCase::~DefaultFBOMultisampleCase (void)
 
 void DefaultFBOMultisampleCase::init (void)
 {
+	const bool					isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>			args;
+	args["GLSL_VERSION_DECL"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+
 	static const char* vertShaderSource =
-		"#version 310 es\n"
+		"${GLSL_VERSION_DECL}\n"
 		"in highp vec4 a_position;\n"
 		"in mediump vec4 a_color;\n"
 		"out mediump vec4 v_color;\n"
@@ -234,7 +242,7 @@ void DefaultFBOMultisampleCase::init (void)
 		"}\n";
 
 	static const char* fragShaderSource =
-		"#version 310 es\n"
+		"${GLSL_VERSION_DECL}\n"
 		"in mediump vec4 v_color;\n"
 		"layout(location = 0) out mediump vec4 o_color;\n"
 		"void main()\n"
@@ -260,7 +268,9 @@ void DefaultFBOMultisampleCase::init (void)
 
 	DE_ASSERT(!m_program);
 
-	m_program = new glu::ShaderProgram(m_context.getRenderContext(), glu::makeVtxFragSources(vertShaderSource, fragShaderSource));
+	m_program = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+		<< glu::VertexSource(tcu::StringTemplate(vertShaderSource).specialize(args))
+		<< glu::FragmentSource(tcu::StringTemplate(fragShaderSource).specialize(args)));
 	if (!m_program->isOk())
 		throw tcu::TestError("Failed to compile program", DE_NULL, __FILE__, __LINE__);
 
