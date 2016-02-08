@@ -144,7 +144,7 @@ typedef struct qpKeyStringMap_s
 	char*	string;
 } qpKeyStringMap;
 
-static const char* LOG_FORMAT_VERSION = "0.3.3";
+static const char* LOG_FORMAT_VERSION = "0.3.4";
 
 /* Mapping enum to above strings... */
 static const qpKeyStringMap s_qpTestTypeMap[] =
@@ -1225,6 +1225,26 @@ deBool qpTestLog_writeKernelSource (qpTestLog* log, const char* source)
 	if (!qpXmlWriter_writeStringElement(log->writer, "KernelSource", sourceStr))
 	{
 		qpPrintf("qpTestLog_writeKernelSource(): Writing XML failed\n");
+		deMutex_unlock(log->lock);
+		return DE_FALSE;
+	}
+
+	deMutex_unlock(log->lock);
+	return DE_TRUE;
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Write a SPIR-V module assembly source into the log.
+ *//*--------------------------------------------------------------------*/
+deBool qpTestLog_writeSpirVAssemblySource (qpTestLog* log, const char* source)
+{
+	DE_ASSERT(log);
+	DE_ASSERT(ContainerStack_getTop(&log->containerStack) == CONTAINERTYPE_SHADERPROGRAM);
+	deMutex_lock(log->lock);
+
+	if (!qpXmlWriter_writeStringElement(log->writer, "SpirVAssemblySource", source))
+	{
+		qpPrintf("qpTestLog_writeSpirVAssemblySource(): Writing XML failed\n");
 		deMutex_unlock(log->lock);
 		return DE_FALSE;
 	}

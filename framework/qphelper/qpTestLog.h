@@ -216,6 +216,7 @@ deBool			qpTestLog_endShaderProgram		(qpTestLog* log);
 deBool 			qpTestLog_writeShader			(qpTestLog* log, qpShaderType type, const char* source, deBool compileOk, const char* infoLog);
 
 deBool 			qpTestLog_writeKernelSource		(qpTestLog* log, const char* source);
+deBool 			qpTestLog_writeSpirVAssemblySource	(qpTestLog* log, const char* source);
 deBool 			qpTestLog_writeCompileInfo		(qpTestLog* log, const char* name, const char* description, deBool compileOk, const char* infoLog);
 
 deBool			qpTestLog_startSampleList		(qpTestLog* log, const char* name, const char* description);
