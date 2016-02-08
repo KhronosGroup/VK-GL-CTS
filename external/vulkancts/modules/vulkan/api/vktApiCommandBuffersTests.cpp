@@ -1976,6 +1976,7 @@ tcu::TestStatus recordBufferQueryPreciseWithFlagTest(Context& context)
 
 	VK_CHECK(vk.beginCommandBuffer(primCmdBuf.get(), &primBufferBeginInfo));
 	{
+		vk.cmdResetQueryPool(primCmdBuf.get(), queryPool.get(), 0u, 1u);
 		vk.cmdBeginQuery(primCmdBuf.get(), queryPool.get(), 0u, VK_QUERY_CONTROL_PRECISE_BIT);
 		{
 			vk.cmdExecuteCommands(primCmdBuf.get(), 1u, &secCmdBuf.get());
@@ -2068,6 +2069,7 @@ tcu::TestStatus recordBufferQueryImpreciseWithFlagTest(Context& context)
 
 	VK_CHECK(vk.beginCommandBuffer(primCmdBuf.get(), &primBufferBeginInfo));
 	{
+		vk.cmdResetQueryPool(primCmdBuf.get(), queryPool.get(), 0u, 1u);
 		vk.cmdBeginQuery(primCmdBuf.get(), queryPool.get(), 0u, VK_QUERY_CONTROL_PRECISE_BIT);
 		{
 			vk.cmdExecuteCommands(primCmdBuf.get(), 1u, &secCmdBuf.get());
@@ -2160,6 +2162,7 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context& context)
 
 	VK_CHECK(vk.beginCommandBuffer(primCmdBuf.get(), &primBufferBeginInfo));
 	{
+		vk.cmdResetQueryPool(primCmdBuf.get(), queryPool.get(), 0u, 1u);
 		vk.cmdBeginQuery(primCmdBuf.get(), queryPool.get(), 0u, VK_QUERY_CONTROL_PRECISE_BIT);
 		{
 			vk.cmdExecuteCommands(primCmdBuf.get(), 1u, &secCmdBuf.get());
