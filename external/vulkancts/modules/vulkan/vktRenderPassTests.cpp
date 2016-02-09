@@ -1183,12 +1183,12 @@ public:
 						 deUint32					queueIndex,
 						 const UVec2&				size,
 						 const Attachment&			attachmentInfo,
-						 bool						lazy)
-		: m_image			(createAttachmentImage(vk, device, queueIndex, size, attachmentInfo.getFormat(), attachmentInfo.getSamples(), lazy ? VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT : VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_LAYOUT_UNDEFINED))
-		, m_imageMemory		(createImageMemory(vk, device, allocator, *m_image, lazy))
+						 VkImageUsageFlags			usageFlags)
+		: m_image			(createAttachmentImage(vk, device, queueIndex, size, attachmentInfo.getFormat(), attachmentInfo.getSamples(), usageFlags, VK_IMAGE_LAYOUT_UNDEFINED))
+		, m_imageMemory		(createImageMemory(vk, device, allocator, *m_image, ((usageFlags & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) != 0)))
 		, m_attachmentView	(createImageAttachmentView(vk, device, *m_image, attachmentInfo.getFormat(), getImageAspectFlags(attachmentInfo.getFormat())))
 	{
-		if (!lazy)
+		if ((usageFlags & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) == 0)
 		{
 			const tcu::TextureFormat format = mapVkFormat(attachmentInfo.getFormat());
 
@@ -1906,7 +1906,8 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 		}
 
 		if (!initializeLayouts.empty())
-			vk.cmdPipelineBarrier(commandBuffer, (VkPipelineStageFlags)0, (VkPipelineStageFlags)0, (VkDependencyFlags)0,
+			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+								  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0,
 								  0, (const VkMemoryBarrier*)DE_NULL,
 								  0, (const VkBufferMemoryBarrier*)DE_NULL,
 								  (deUint32)initializeLayouts.size(), &initializeLayouts[0]);
@@ -1993,7 +1994,8 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 		}
 
 		if (!renderPassLayouts.empty())
-			vk.cmdPipelineBarrier(commandBuffer, 0, 0, (VkDependencyFlags)0,
+			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+								  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0,
 								  0, (const VkMemoryBarrier*)DE_NULL,
 								  0, (const VkBufferMemoryBarrier*)DE_NULL,
 								  (deUint32)renderPassLayouts.size(), &renderPassLayouts[0]);
@@ -2673,7 +2675,7 @@ public:
 	};
 
 			PixelStatus			(Status color, Status depth, Status stencil)
-				: m_status	((deUint8)((color << COLOR_OFFSET)
+				: m_status	((deUint32)((color << COLOR_OFFSET)
 					| (depth << DEPTH_OFFSET)
 					| (stencil << STENCIL_OFFSET)))
 	{
@@ -2686,8 +2688,7 @@ public:
 	void	setColorStatus		(Status status)
 	{
 		DE_ASSERT(getColorStatus() == STATUS_UNDEFINED);
-		deUint8 statusFlags = (deUint8)(status << COLOR_OFFSET);
-		m_status |= statusFlags;
+		m_status |= (deUint8)(status << COLOR_OFFSET);
 	}
 
 	void	setDepthStatus		(Status status)
@@ -3456,6 +3457,119 @@ void initializeAttachmentIsLazy (vector<bool>& attachmentIsLazy, const vector<At
 	}
 }
 
+enum AttachmentRefType
+{
+	ATTACHMENTREFTYPE_COLOR,
+	ATTACHMENTREFTYPE_DEPTH_STENCIL,
+	ATTACHMENTREFTYPE_INPUT,
+	ATTACHMENTREFTYPE_RESOLVE,
+};
+
+VkImageUsageFlags getImageUsageFromLayout(VkImageLayout layout)
+{
+	switch (layout)
+	{
+		case VK_IMAGE_LAYOUT_GENERAL:
+		case VK_IMAGE_LAYOUT_PREINITIALIZED:
+			return 0;
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+			return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
+			return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+			return VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+			return VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+			return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		default:
+			DE_FATAL("Unexpected image layout");
+			return 0;
+	}
+}
+
+void getImageUsageFromAttachmentReferences(vector<VkImageUsageFlags>& attachmentImageUsage, AttachmentRefType refType, size_t count, const AttachmentReference* references)
+{
+	for (size_t referenceNdx = 0; referenceNdx < count; ++referenceNdx)
+	{
+		const deUint32 attachment = references[referenceNdx].getAttachment();
+
+		if (attachment != VK_ATTACHMENT_UNUSED)
+		{
+			VkImageUsageFlags usage;
+
+			switch (refType)
+			{
+				case ATTACHMENTREFTYPE_COLOR:
+				case ATTACHMENTREFTYPE_RESOLVE:
+					usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+					break;
+				case ATTACHMENTREFTYPE_DEPTH_STENCIL:
+					usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+					break;
+				case ATTACHMENTREFTYPE_INPUT:
+					usage = VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+					break;
+				default:
+					DE_FATAL("Unexpected attachment reference type");
+					usage = 0;
+					break;
+			}
+
+			attachmentImageUsage[attachment] |= usage;
+		}
+	}
+}
+
+void getImageUsageFromAttachmentReferences(vector<VkImageUsageFlags>& attachmentImageUsage, AttachmentRefType refType, const vector<AttachmentReference>& references)
+{
+	if (!references.empty())
+	{
+		getImageUsageFromAttachmentReferences(attachmentImageUsage, refType, references.size(), &references[0]);
+	}
+}
+
+void initializeAttachmentImageUsage (Context &context, vector<VkImageUsageFlags>& attachmentImageUsage, const RenderPass& renderPassInfo, const vector<bool>& attachmentIsLazy, const vector<Maybe<VkClearValue> >& clearValues)
+{
+	attachmentImageUsage.resize(renderPassInfo.getAttachments().size(), VkImageUsageFlags(0));
+
+	for (size_t subpassNdx = 0; subpassNdx < renderPassInfo.getSubpasses().size(); ++subpassNdx)
+	{
+		const Subpass& subpass = renderPassInfo.getSubpasses()[subpassNdx];
+
+		getImageUsageFromAttachmentReferences(attachmentImageUsage, ATTACHMENTREFTYPE_COLOR, subpass.getColorAttachments());
+		getImageUsageFromAttachmentReferences(attachmentImageUsage, ATTACHMENTREFTYPE_DEPTH_STENCIL, 1, &subpass.getDepthStencilAttachment());
+		getImageUsageFromAttachmentReferences(attachmentImageUsage, ATTACHMENTREFTYPE_INPUT, subpass.getInputAttachments());
+		getImageUsageFromAttachmentReferences(attachmentImageUsage, ATTACHMENTREFTYPE_RESOLVE, subpass.getResolveAttachments());
+	}
+
+	for (size_t attachmentNdx = 0; attachmentNdx < renderPassInfo.getAttachments().size(); attachmentNdx++)
+	{
+		const Attachment& attachment = renderPassInfo.getAttachments()[attachmentNdx];
+
+		const VkFormatProperties		formatProperties = getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), attachment.getFormat());
+		const VkFormatFeatureFlags		supportedFeatures = formatProperties.optimalTilingFeatures;
+
+		if ((supportedFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0)
+			attachmentImageUsage[attachmentNdx] |= VK_IMAGE_USAGE_SAMPLED_BIT;
+
+		if ((supportedFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) != 0)
+			attachmentImageUsage[attachmentNdx] |= VK_IMAGE_USAGE_STORAGE_BIT;
+
+		attachmentImageUsage[attachmentNdx] |= getImageUsageFromLayout(attachment.getInitialLayout());
+		attachmentImageUsage[attachmentNdx] |= getImageUsageFromLayout(attachment.getFinalLayout());
+
+		if (!attachmentIsLazy[attachmentNdx])
+		{
+			if (clearValues[attachmentNdx])
+				attachmentImageUsage[attachmentNdx] |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+			attachmentImageUsage[attachmentNdx] |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		}
+	}
+}
+
 void initializeSubpassIsSecondary (vector<bool>& subpassIsSecondary, const vector<Subpass>& subpasses, TestConfig::CommandBufferTypes commandBuffer)
 {
 	bool lastSubpassWasSecondary = false;
@@ -3697,6 +3811,7 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 	de::Random							rng					(config.seed);
 
 	vector<bool>						attachmentIsLazy;
+	vector<VkImageUsageFlags>			attachmentImageUsage;
 	vector<Maybe<VkClearValue> >		imageClearValues;
 	vector<Maybe<VkClearValue> >		renderPassClearValues;
 
@@ -3706,6 +3821,7 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 
 	initializeAttachmentIsLazy(attachmentIsLazy, renderPassInfo.getAttachments(), config.imageMemory);
 	initializeImageClearValues(rng, imageClearValues, renderPassInfo.getAttachments(), attachmentIsLazy);
+	initializeAttachmentImageUsage(context, attachmentImageUsage, renderPassInfo, attachmentIsLazy, imageClearValues);
 	initializeRenderPassClearValues(rng, renderPassClearValues, renderPassInfo.getAttachments());
 
 	initializeSubpassIsSecondary(subpassIsSecondary, renderPassInfo.getSubpasses(), config.commandBufferTypes);
@@ -3749,7 +3865,7 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 		{
 			const Attachment&	attachmentInfo	= renderPassInfo.getAttachments()[attachmentNdx];
 
-			attachmentResources.push_back(de::SharedPtr<AttachmentResources>(new AttachmentResources(vk, device, allocator, queueIndex, targetSize, attachmentInfo, attachmentIsLazy[attachmentNdx])));
+			attachmentResources.push_back(de::SharedPtr<AttachmentResources>(new AttachmentResources(vk, device, allocator, queueIndex, targetSize, attachmentInfo, attachmentImageUsage[attachmentNdx])));
 			attachmentViews.push_back(attachmentResources[attachmentNdx]->getAttachmentView());
 		}
 

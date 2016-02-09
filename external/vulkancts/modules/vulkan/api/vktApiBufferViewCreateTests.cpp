@@ -151,7 +151,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,		//	VkStructureType		sType
 		NULL,										//	const void*			pNext
 		memReqs.size,								//	VkDeviceSize		allocationSize
-		0											//	deUint32			memoryTypeIndex
+		deCtz32(memReqs.memoryTypeBits)				//	deUint32			memoryTypeIndex
 	};
 
 	{

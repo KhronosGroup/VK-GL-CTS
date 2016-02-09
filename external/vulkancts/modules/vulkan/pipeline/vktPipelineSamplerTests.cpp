@@ -301,7 +301,7 @@ std::vector<Vertex4Tex4> SamplerTest::createVertices (void) const
 	// TODO: Would be nice to base this on number of texels and subtexel precision. But this
 	// seems to work.
 	for (unsigned int i = 0; i < vertices.size(); ++i) {
-		vertices[i].texCoord += tcu::Vec4(0.001f, 0.001f, 0.001f, 0.0f);
+		vertices[i].texCoord += tcu::Vec4(0.002f, 0.002f, 0.002f, 0.0f);
 	}
 	return vertices;
 }
