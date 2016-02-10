@@ -1,3 +1,5 @@
+#ifndef _VKTSPARSERESOURCESBUFFERSPARSERESIDENCY_HPP
+#define _VKTSPARSERESOURCESBUFFERSPARSERESIDENCY_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -24,31 +26,21 @@
  * MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
  *
  *//*!
- * \file  vktSparseResourcesTests.cpp
- * \brief Sparse Resources Tests
+ * \file  vktSparseResourcesBufferSparseResidency.hpp
+ * \brief Sparse partially resident buffers tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktSparseResourcesTests.hpp"
-#include "vktSparseResourcesBufferSparseBinding.hpp"
-#include "vktSparseResourcesImageSparseBinding.hpp"
-#include "vktSparseResourcesBufferSparseResidency.hpp"
-#include "deUniquePtr.hpp"
+#include "tcuDefs.hpp"
+#include "vktTestCase.hpp"
 
 namespace vkt
 {
 namespace sparse
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup> sparseTests (new tcu::TestCaseGroup(testCtx, "sparse_resources", "Sparse Resources Tests"));
-
-	sparseTests->addChild(createBufferSparseBindingTests(testCtx));
-	sparseTests->addChild(createImageSparseBindingTests(testCtx));
-	sparseTests->addChild(createBufferSparseResidencyTests(testCtx));
-
-	return sparseTests.release();
-}
+tcu::TestCaseGroup* createBufferSparseResidencyTests(tcu::TestContext& testCtx);
 
 } // sparse
 } // vkt
+
+#endif // _VKTSPARSERESOURCESBUFFERSPARSERESIDENCY_HPP

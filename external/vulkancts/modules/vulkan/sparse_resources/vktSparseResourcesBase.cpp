@@ -71,9 +71,11 @@ bool SparseResourcesBaseInstance::createDeviceSupportingQueues (const QueueRequi
 
 	instance.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, &queueFamilyProperties[0]);
 
-	typedef std::map<deUint32, QueueFamilyQueuesCount> SelectedQueuesMap;
+	typedef std::map<deUint32, QueueFamilyQueuesCount>	SelectedQueuesMap;
+	typedef std::map<deUint32, std::vector<float> >		QueuePrioritiesMap;
 
-	SelectedQueuesMap selectedQueueFamilies;
+	SelectedQueuesMap	selectedQueueFamilies;
+	QueuePrioritiesMap	queuePriorities;
 
 	for (deUint32 queueReqNdx = 0; queueReqNdx < queueRequirements.size(); ++queueReqNdx)
 	{
@@ -86,10 +88,13 @@ bool SparseResourcesBaseInstance::createDeviceSupportingQueues (const QueueRequi
 		}
 
 		selectedQueueFamilies[queueFamilyIndex].queueCount += queueRequirement.queueCount;
+		for (deUint32 queueNdx = 0; queueNdx < queueRequirement.queueCount; ++queueNdx)
+		{
+			queuePriorities[queueFamilyIndex].push_back(1.0f);
+		}
 	}
 
 	std::vector<VkDeviceQueueCreateInfo> queueInfos;
-	const float							 queuePriority = 1.0f;
 
 	for (SelectedQueuesMap::iterator queueFamilyIter = selectedQueueFamilies.begin(); queueFamilyIter != selectedQueueFamilies.end(); ++queueFamilyIter)
 	{
@@ -101,7 +106,7 @@ bool SparseResourcesBaseInstance::createDeviceSupportingQueues (const QueueRequi
 		queueInfo.flags				= (VkDeviceQueueCreateFlags)0u;
 		queueInfo.queueFamilyIndex	= queueFamilyIter->first;
 		queueInfo.queueCount		= queueFamilyIter->second.queueCount;
-		queueInfo.pQueuePriorities	= &queuePriority;
+		queueInfo.pQueuePriorities  = &queuePriorities[queueFamilyIter->first][0];
 
 		queueInfos.push_back(queueInfo);
 	}
