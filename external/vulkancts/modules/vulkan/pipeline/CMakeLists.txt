@@ -40,6 +40,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineTimestampTests.hpp
 	vktPipelineVertexUtil.cpp
 	vktPipelineVertexUtil.hpp
+	vktPipelineEarlyFragmentTests.cpp
+	vktPipelineEarlyFragmentTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_LIBS
