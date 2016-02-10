@@ -219,6 +219,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 	for (vk::SpirVAsmCollection::Iterator asmIterator = sourceProgs.spirvAsmSources.begin(); asmIterator != sourceProgs.spirvAsmSources.end(); ++asmIterator)
 	{
 		buildProgram<vk::SpirVProgramInfo, vk::SpirVAsmCollection::Iterator>(casePath, asmIterator, m_prebuiltBinRegistry, log, &m_progCollection);
+		log << TestLog::KernelSource((*asmIterator).program.str());
 	}
 
 	DE_ASSERT(!m_instance);

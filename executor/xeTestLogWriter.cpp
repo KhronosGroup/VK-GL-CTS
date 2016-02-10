@@ -335,6 +335,10 @@ static void writeResultItem (const ri::Item& item, xml::Writer& dst)
 			dst << Writer::BeginElement("ShaderSource") << static_cast<const ri::ShaderSource&>(item).source << Writer::EndElement;
 			break;
 
+		case ri::TYPE_SPIRVSOURCE:
+			dst << Writer::BeginElement("SpirVAssemblySource") << static_cast<const ri::SpirVSource&>(item).source << Writer::EndElement;
+			break;
+
 		case ri::TYPE_INFOLOG:
 			dst << Writer::BeginElement("InfoLog") << static_cast<const ri::InfoLog&>(item).log << Writer::EndElement;
 			break;

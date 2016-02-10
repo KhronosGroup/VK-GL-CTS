@@ -2025,7 +2025,7 @@ tcu::TestStatus ImageAtomicOpTestInstance::iterate (void)
 	const deUint32 numInputValues = multiplyComponents(m_imageSize) * m_localSize;
 	const VkDeviceSize inputBufferSizeBytes = sizeof(deUint32) * numInputValues;
 
-	const Buffer inputBuffer(vk, device, allocator, makeBufferCreateInfo(inputBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT), MemoryRequirement::HostVisible);
+	const Buffer inputBuffer(vk, device, allocator, makeBufferCreateInfo(inputBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Populate the input buffer with test data
 	{

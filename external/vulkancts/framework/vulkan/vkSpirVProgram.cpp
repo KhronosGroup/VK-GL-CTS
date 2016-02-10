@@ -41,7 +41,7 @@ namespace vk
 
 tcu::TestLog& operator<< (tcu::TestLog& log, const SpirVProgramInfo& shaderInfo)
 {
-	log << tcu::TestLog::ShaderProgram(shaderInfo.compileOk , shaderInfo.infoLog) << tcu::TestLog::EndShaderProgram;
+	log << tcu::TestLog::ShaderProgram(shaderInfo.compileOk , shaderInfo.infoLog) << tcu::TestLog::SpirVAssemblySource(shaderInfo.source->program.str()) << tcu::TestLog::EndShaderProgram;
 
 	// Write statistics
 	log << tcu::TestLog::Float(	"SpirVAssemblyTime",

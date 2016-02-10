@@ -78,7 +78,7 @@ const char* getGLSLVersionDeclaration (GLSLVersion version)
 
 bool glslVersionUsesInOutQualifiers (GLSLVersion version)
 {
-	return de::inRange<int>(version, GLSL_VERSION_300_ES, GLSL_VERSION_310_ES) || de::inRange<int>(version, GLSL_VERSION_330, GLSL_VERSION_430);
+	return de::inRange<int>(version, GLSL_VERSION_300_ES, GLSL_VERSION_320_ES) || de::inRange<int>(version, GLSL_VERSION_330, GLSL_VERSION_430);
 }
 
 bool glslVersionIsES (GLSLVersion version)
@@ -246,6 +246,15 @@ const char* getDataTypeName (DataType dataType)
 		"uimage3D",
 		"uimageCubeArray",
 		"atomic_uint",
+		"samplerBuffer",
+		"isamplerBuffer",
+		"usamplerBuffer",
+		"sampler2DMSArray",
+		"isampler2DMSArray",
+		"usampler2DMSArray",
+		"imageBuffer",
+		"iimageBuffer",
+		"uimageBuffer",
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_names) == TYPE_LAST);
@@ -325,6 +334,15 @@ int getDataTypeScalarSize (DataType dataType)
 		1,		// uimage3D
 		1,		// uimageCubeArray
 		1,		// atomic_uint
+		1,		// samplerBuffer
+		1,		// isamplerBuffer
+		1,		// usamplerBuffer
+		1,		// sampler2DMSArray
+		1,		// isampler2DMSArray
+		1,		// usampler2DMSArray
+		1,		// imageBuffer
+		1,		// iimageBuffer
+		1,		// uimageBuffer
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_sizes) == TYPE_LAST);
@@ -336,74 +354,83 @@ DataType getDataTypeScalarType (DataType dataType)
 {
 	const DataType s_scalarTypes[] =
 	{
-		TYPE_INVALID,		// invalid
-		TYPE_FLOAT,			// float
-		TYPE_FLOAT,			// vec2
-		TYPE_FLOAT,			// vec3
-		TYPE_FLOAT,			// vec4
-		TYPE_FLOAT,			// mat2
-		TYPE_FLOAT,			// mat2x3
-		TYPE_FLOAT,			// mat2x4
-		TYPE_FLOAT,			// mat3x2
-		TYPE_FLOAT,			// mat3
-		TYPE_FLOAT,			// mat3x4
-		TYPE_FLOAT,			// mat4x2
-		TYPE_FLOAT,			// mat4x3
-		TYPE_FLOAT,			// mat4
-		TYPE_INT,			// int
-		TYPE_INT,			// ivec2
-		TYPE_INT,			// ivec3
-		TYPE_INT,			// ivec4
-		TYPE_UINT,			// uint
-		TYPE_UINT,			// uvec2
-		TYPE_UINT,			// uvec3
-		TYPE_UINT,			// uvec4
-		TYPE_BOOL,			// bool
-		TYPE_BOOL,			// bvec2
-		TYPE_BOOL,			// bvec3
-		TYPE_BOOL,			// bvec4
-		TYPE_SAMPLER_1D,					// sampler1D
-		TYPE_SAMPLER_2D,					// sampler2D
-		TYPE_SAMPLER_CUBE,					// samplerCube
-		TYPE_SAMPLER_2D_ARRAY,				// sampler2DArray
-		TYPE_SAMPLER_3D,					// sampler3D
-		TYPE_SAMPLER_CUBE_ARRAY,			// samplerCubeArray
-		TYPE_SAMPLER_1D_SHADOW,				// sampler1DShadow
-		TYPE_SAMPLER_2D_SHADOW,				// sampler2DShadow
-		TYPE_SAMPLER_CUBE_SHADOW,			// samplerCubeShadow
-		TYPE_SAMPLER_2D_ARRAY_SHADOW,		// sampler2DArrayShadow
-		TYPE_SAMPLER_CUBE_ARRAY_SHADOW,		// samplerCubeArrayShadow
-		TYPE_INT_SAMPLER_1D,				// isampler1D
-		TYPE_INT_SAMPLER_2D,				// isampler2D
-		TYPE_INT_SAMPLER_CUBE,				// isamplerCube
-		TYPE_INT_SAMPLER_2D_ARRAY,			// isampler2DArray
-		TYPE_INT_SAMPLER_3D,				// isampler3D
-		TYPE_INT_SAMPLER_CUBE_ARRAY,		// isamplerCubeArray
-		TYPE_UINT_SAMPLER_1D,				// usampler1D
-		TYPE_UINT_SAMPLER_2D,				// usampler2D
-		TYPE_UINT_SAMPLER_CUBE,				// usamplerCube
-		TYPE_UINT_SAMPLER_2D_ARRAY,			// usampler2DArray
-		TYPE_UINT_SAMPLER_3D,				// usampler3D
-		TYPE_UINT_SAMPLER_CUBE_ARRAY,		// usamplerCubeArray
-		TYPE_SAMPLER_2D_MULTISAMPLE,		// sampler2DMS
-		TYPE_INT_SAMPLER_2D_MULTISAMPLE,	// isampler2DMS
-		TYPE_UINT_SAMPLER_2D_MULTISAMPLE,	// usampler2DMS
-		TYPE_IMAGE_2D,						// image2D
-		TYPE_IMAGE_CUBE,					// imageCube
-		TYPE_IMAGE_2D_ARRAY,				// image2DArray
-		TYPE_IMAGE_3D,						// image3D
-		TYPE_IMAGE_CUBE_ARRAY,				// imageCubeArray
-		TYPE_INT_IMAGE_2D,					// iimage2D
-		TYPE_INT_IMAGE_CUBE,				// iimageCube
-		TYPE_INT_IMAGE_2D_ARRAY,			// iimage2DArray
-		TYPE_INT_IMAGE_3D,					// iimage3D
-		TYPE_INT_IMAGE_CUBE_ARRAY,			// iimageCubeArray
-		TYPE_UINT_IMAGE_2D,					// uimage2D
-		TYPE_UINT_IMAGE_CUBE,				// uimageCube
-		TYPE_UINT_IMAGE_2D_ARRAY,			// uimage2DArray
-		TYPE_UINT_IMAGE_3D,					// uimage3D
-		TYPE_UINT_IMAGE_CUBE_ARRAY,			// uimageCubeArray
-		TYPE_UINT_ATOMIC_COUNTER,			// atomic_uint
+		TYPE_INVALID,							// invalid
+		TYPE_FLOAT,								// float
+		TYPE_FLOAT,								// vec2
+		TYPE_FLOAT,								// vec3
+		TYPE_FLOAT,								// vec4
+		TYPE_FLOAT,								// mat2
+		TYPE_FLOAT,								// mat2x3
+		TYPE_FLOAT,								// mat2x4
+		TYPE_FLOAT,								// mat3x2
+		TYPE_FLOAT,								// mat3
+		TYPE_FLOAT,								// mat3x4
+		TYPE_FLOAT,								// mat4x2
+		TYPE_FLOAT,								// mat4x3
+		TYPE_FLOAT,								// mat4
+		TYPE_INT,								// int
+		TYPE_INT,								// ivec2
+		TYPE_INT,								// ivec3
+		TYPE_INT,								// ivec4
+		TYPE_UINT,								// uint
+		TYPE_UINT,								// uvec2
+		TYPE_UINT,								// uvec3
+		TYPE_UINT,								// uvec4
+		TYPE_BOOL,								// bool
+		TYPE_BOOL,								// bvec2
+		TYPE_BOOL,								// bvec3
+		TYPE_BOOL,								// bvec4
+		TYPE_SAMPLER_1D,						// sampler1D
+		TYPE_SAMPLER_2D,						// sampler2D
+		TYPE_SAMPLER_CUBE,						// samplerCube
+		TYPE_SAMPLER_2D_ARRAY,					// sampler2DArray
+		TYPE_SAMPLER_3D,						// sampler3D
+		TYPE_SAMPLER_CUBE_ARRAY,				// samplerCubeArray
+		TYPE_SAMPLER_1D_SHADOW,					// sampler1DShadow
+		TYPE_SAMPLER_2D_SHADOW,					// sampler2DShadow
+		TYPE_SAMPLER_CUBE_SHADOW,				// samplerCubeShadow
+		TYPE_SAMPLER_2D_ARRAY_SHADOW,			// sampler2DArrayShadow
+		TYPE_SAMPLER_CUBE_ARRAY_SHADOW,			// samplerCubeArrayShadow
+		TYPE_INT_SAMPLER_1D,					// isampler1D
+		TYPE_INT_SAMPLER_2D,					// isampler2D
+		TYPE_INT_SAMPLER_CUBE,					// isamplerCube
+		TYPE_INT_SAMPLER_2D_ARRAY,				// isampler2DArray
+		TYPE_INT_SAMPLER_3D,					// isampler3D
+		TYPE_INT_SAMPLER_CUBE_ARRAY,			// isamplerCubeArray
+		TYPE_UINT_SAMPLER_1D,					// usampler1D
+		TYPE_UINT_SAMPLER_2D,					// usampler2D
+		TYPE_UINT_SAMPLER_CUBE,					// usamplerCube
+		TYPE_UINT_SAMPLER_2D_ARRAY,				// usampler2DArray
+		TYPE_UINT_SAMPLER_3D,					// usampler3D
+		TYPE_UINT_SAMPLER_CUBE_ARRAY,			// usamplerCubeArray
+		TYPE_SAMPLER_2D_MULTISAMPLE,			// sampler2DMS
+		TYPE_INT_SAMPLER_2D_MULTISAMPLE,		// isampler2DMS
+		TYPE_UINT_SAMPLER_2D_MULTISAMPLE,		// usampler2DMS
+		TYPE_IMAGE_2D,							// image2D
+		TYPE_IMAGE_CUBE,						// imageCube
+		TYPE_IMAGE_2D_ARRAY,					// image2DArray
+		TYPE_IMAGE_3D,							// image3D
+		TYPE_IMAGE_CUBE_ARRAY,					// imageCubeArray
+		TYPE_INT_IMAGE_2D,						// iimage2D
+		TYPE_INT_IMAGE_CUBE,					// iimageCube
+		TYPE_INT_IMAGE_2D_ARRAY,				// iimage2DArray
+		TYPE_INT_IMAGE_3D,						// iimage3D
+		TYPE_INT_IMAGE_CUBE_ARRAY,				// iimageCubeArray
+		TYPE_UINT_IMAGE_2D,						// uimage2D
+		TYPE_UINT_IMAGE_CUBE,					// uimageCube
+		TYPE_UINT_IMAGE_2D_ARRAY,				// uimage2DArray
+		TYPE_UINT_IMAGE_3D,						// uimage3D
+		TYPE_UINT_IMAGE_CUBE_ARRAY,				// uimageCubeArray
+		TYPE_UINT_ATOMIC_COUNTER,				// atomic_uint
+		TYPE_SAMPLER_BUFFER,					// samplerBuffer
+		TYPE_INT_SAMPLER_BUFFER,				// isamplerBuffer
+		TYPE_UINT_SAMPLER_BUFFER,				// usamplerBuffer
+		TYPE_SAMPLER_2D_MULTISAMPLE_ARRAY,		// sampler2DMSArray
+		TYPE_INT_SAMPLER_2D_MULTISAMPLE_ARRAY,	// isampler2DMSArray
+		TYPE_UINT_SAMPLER_2D_MULTISAMPLE_ARRAY,	// usampler2DMSArray
+		TYPE_IMAGE_BUFFER,						// imageBuffer
+		TYPE_INT_IMAGE_BUFFER,					// iimageBuffer
+		TYPE_UINT_IMAGE_BUFFER,					// uimageBuffer
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_scalarTypes) == TYPE_LAST);
@@ -483,6 +510,15 @@ DataType getDataTypeFloatScalars (DataType dataType)
 		TYPE_INVALID,		// uimage3D
 		TYPE_INVALID,		// uimageCubeArray
 		TYPE_INVALID,		// atomic_uint
+		TYPE_INVALID,		// samplerBuffer
+		TYPE_INVALID,		// isamplerBuffer
+		TYPE_INVALID,		// usamplerBuffer
+		TYPE_INVALID,		// sampler2DMSArray
+		TYPE_INVALID,		// isampler2DMSArray
+		TYPE_INVALID,		// usampler2DMSArray
+		TYPE_INVALID,		// imageBuffer
+		TYPE_INVALID,		// iimageBuffer
+		TYPE_INVALID,		// uimageBuffer
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_floatTypes) == TYPE_LAST);
@@ -595,83 +631,95 @@ DataType getDataTypeFromGLType (deUint32 glType)
 {
 	switch (glType)
 	{
-		case GL_FLOAT:									return TYPE_FLOAT;
-		case GL_FLOAT_VEC2:								return TYPE_FLOAT_VEC2;
-		case GL_FLOAT_VEC3:								return TYPE_FLOAT_VEC3;
-		case GL_FLOAT_VEC4:								return TYPE_FLOAT_VEC4;
+		case GL_FLOAT:										return TYPE_FLOAT;
+		case GL_FLOAT_VEC2:									return TYPE_FLOAT_VEC2;
+		case GL_FLOAT_VEC3:									return TYPE_FLOAT_VEC3;
+		case GL_FLOAT_VEC4:									return TYPE_FLOAT_VEC4;
 
-		case GL_FLOAT_MAT2:								return TYPE_FLOAT_MAT2;
-		case GL_FLOAT_MAT2x3:							return TYPE_FLOAT_MAT2X3;
-		case GL_FLOAT_MAT2x4:							return TYPE_FLOAT_MAT2X4;
+		case GL_FLOAT_MAT2:									return TYPE_FLOAT_MAT2;
+		case GL_FLOAT_MAT2x3:								return TYPE_FLOAT_MAT2X3;
+		case GL_FLOAT_MAT2x4:								return TYPE_FLOAT_MAT2X4;
 
-		case GL_FLOAT_MAT3x2:							return TYPE_FLOAT_MAT3X2;
-		case GL_FLOAT_MAT3:								return TYPE_FLOAT_MAT3;
-		case GL_FLOAT_MAT3x4:							return TYPE_FLOAT_MAT3X4;
+		case GL_FLOAT_MAT3x2:								return TYPE_FLOAT_MAT3X2;
+		case GL_FLOAT_MAT3:									return TYPE_FLOAT_MAT3;
+		case GL_FLOAT_MAT3x4:								return TYPE_FLOAT_MAT3X4;
 
-		case GL_FLOAT_MAT4x2:							return TYPE_FLOAT_MAT4X2;
-		case GL_FLOAT_MAT4x3:							return TYPE_FLOAT_MAT4X3;
-		case GL_FLOAT_MAT4:								return TYPE_FLOAT_MAT4;
+		case GL_FLOAT_MAT4x2:								return TYPE_FLOAT_MAT4X2;
+		case GL_FLOAT_MAT4x3:								return TYPE_FLOAT_MAT4X3;
+		case GL_FLOAT_MAT4:									return TYPE_FLOAT_MAT4;
 
-		case GL_INT:									return TYPE_INT;
-		case GL_INT_VEC2:								return TYPE_INT_VEC2;
-		case GL_INT_VEC3:								return TYPE_INT_VEC3;
-		case GL_INT_VEC4:								return TYPE_INT_VEC4;
+		case GL_INT:										return TYPE_INT;
+		case GL_INT_VEC2:									return TYPE_INT_VEC2;
+		case GL_INT_VEC3:									return TYPE_INT_VEC3;
+		case GL_INT_VEC4:									return TYPE_INT_VEC4;
 
-		case GL_UNSIGNED_INT:							return TYPE_UINT;
-		case GL_UNSIGNED_INT_VEC2:						return TYPE_UINT_VEC2;
-		case GL_UNSIGNED_INT_VEC3:						return TYPE_UINT_VEC3;
-		case GL_UNSIGNED_INT_VEC4:						return TYPE_UINT_VEC4;
+		case GL_UNSIGNED_INT:								return TYPE_UINT;
+		case GL_UNSIGNED_INT_VEC2:							return TYPE_UINT_VEC2;
+		case GL_UNSIGNED_INT_VEC3:							return TYPE_UINT_VEC3;
+		case GL_UNSIGNED_INT_VEC4:							return TYPE_UINT_VEC4;
 
-		case GL_BOOL:									return TYPE_BOOL;
-		case GL_BOOL_VEC2:								return TYPE_BOOL_VEC2;
-		case GL_BOOL_VEC3:								return TYPE_BOOL_VEC3;
-		case GL_BOOL_VEC4:								return TYPE_BOOL_VEC4;
+		case GL_BOOL:										return TYPE_BOOL;
+		case GL_BOOL_VEC2:									return TYPE_BOOL_VEC2;
+		case GL_BOOL_VEC3:									return TYPE_BOOL_VEC3;
+		case GL_BOOL_VEC4:									return TYPE_BOOL_VEC4;
 
-		case GL_SAMPLER_1D:								return TYPE_SAMPLER_1D;
-		case GL_SAMPLER_2D:								return TYPE_SAMPLER_2D;
-		case GL_SAMPLER_CUBE:							return TYPE_SAMPLER_CUBE;
-		case GL_SAMPLER_2D_ARRAY:						return TYPE_SAMPLER_2D_ARRAY;
-		case GL_SAMPLER_3D:								return TYPE_SAMPLER_3D;
-		case GL_SAMPLER_CUBE_MAP_ARRAY:					return TYPE_SAMPLER_CUBE_ARRAY;
+		case GL_SAMPLER_1D:									return TYPE_SAMPLER_1D;
+		case GL_SAMPLER_2D:									return TYPE_SAMPLER_2D;
+		case GL_SAMPLER_CUBE:								return TYPE_SAMPLER_CUBE;
+		case GL_SAMPLER_2D_ARRAY:							return TYPE_SAMPLER_2D_ARRAY;
+		case GL_SAMPLER_3D:									return TYPE_SAMPLER_3D;
+		case GL_SAMPLER_CUBE_MAP_ARRAY:						return TYPE_SAMPLER_CUBE_ARRAY;
 
-		case GL_SAMPLER_1D_SHADOW:						return TYPE_SAMPLER_1D_SHADOW;
-		case GL_SAMPLER_2D_SHADOW:						return TYPE_SAMPLER_2D_SHADOW;
-		case GL_SAMPLER_CUBE_SHADOW:					return TYPE_SAMPLER_CUBE_SHADOW;
-		case GL_SAMPLER_2D_ARRAY_SHADOW:				return TYPE_SAMPLER_2D_ARRAY_SHADOW;
-		case GL_SAMPLER_CUBE_MAP_ARRAY_SHADOW:			return TYPE_SAMPLER_CUBE_ARRAY_SHADOW;
+		case GL_SAMPLER_1D_SHADOW:							return TYPE_SAMPLER_1D_SHADOW;
+		case GL_SAMPLER_2D_SHADOW:							return TYPE_SAMPLER_2D_SHADOW;
+		case GL_SAMPLER_CUBE_SHADOW:						return TYPE_SAMPLER_CUBE_SHADOW;
+		case GL_SAMPLER_2D_ARRAY_SHADOW:					return TYPE_SAMPLER_2D_ARRAY_SHADOW;
+		case GL_SAMPLER_CUBE_MAP_ARRAY_SHADOW:				return TYPE_SAMPLER_CUBE_ARRAY_SHADOW;
 
-		case GL_INT_SAMPLER_1D:							return TYPE_INT_SAMPLER_1D;
-		case GL_INT_SAMPLER_2D:							return TYPE_INT_SAMPLER_2D;
-		case GL_INT_SAMPLER_CUBE:						return TYPE_INT_SAMPLER_CUBE;
-		case GL_INT_SAMPLER_2D_ARRAY:					return TYPE_INT_SAMPLER_2D_ARRAY;
-		case GL_INT_SAMPLER_3D:							return TYPE_INT_SAMPLER_3D;
-		case GL_INT_SAMPLER_CUBE_MAP_ARRAY:				return TYPE_INT_SAMPLER_CUBE_ARRAY;
+		case GL_INT_SAMPLER_1D:								return TYPE_INT_SAMPLER_1D;
+		case GL_INT_SAMPLER_2D:								return TYPE_INT_SAMPLER_2D;
+		case GL_INT_SAMPLER_CUBE:							return TYPE_INT_SAMPLER_CUBE;
+		case GL_INT_SAMPLER_2D_ARRAY:						return TYPE_INT_SAMPLER_2D_ARRAY;
+		case GL_INT_SAMPLER_3D:								return TYPE_INT_SAMPLER_3D;
+		case GL_INT_SAMPLER_CUBE_MAP_ARRAY:					return TYPE_INT_SAMPLER_CUBE_ARRAY;
 
-		case GL_UNSIGNED_INT_SAMPLER_1D:				return TYPE_UINT_SAMPLER_1D;
-		case GL_UNSIGNED_INT_SAMPLER_2D:				return TYPE_UINT_SAMPLER_2D;
-		case GL_UNSIGNED_INT_SAMPLER_CUBE:				return TYPE_UINT_SAMPLER_CUBE;
-		case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:			return TYPE_UINT_SAMPLER_2D_ARRAY;
-		case GL_UNSIGNED_INT_SAMPLER_3D:				return TYPE_UINT_SAMPLER_3D;
-		case GL_UNSIGNED_INT_SAMPLER_CUBE_MAP_ARRAY:	return TYPE_UINT_SAMPLER_CUBE_ARRAY;
+		case GL_UNSIGNED_INT_SAMPLER_1D:					return TYPE_UINT_SAMPLER_1D;
+		case GL_UNSIGNED_INT_SAMPLER_2D:					return TYPE_UINT_SAMPLER_2D;
+		case GL_UNSIGNED_INT_SAMPLER_CUBE:					return TYPE_UINT_SAMPLER_CUBE;
+		case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:				return TYPE_UINT_SAMPLER_2D_ARRAY;
+		case GL_UNSIGNED_INT_SAMPLER_3D:					return TYPE_UINT_SAMPLER_3D;
+		case GL_UNSIGNED_INT_SAMPLER_CUBE_MAP_ARRAY:		return TYPE_UINT_SAMPLER_CUBE_ARRAY;
 
-		case GL_SAMPLER_2D_MULTISAMPLE:					return TYPE_SAMPLER_2D_MULTISAMPLE;
-		case GL_INT_SAMPLER_2D_MULTISAMPLE:				return TYPE_INT_SAMPLER_2D_MULTISAMPLE;
-		case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE:	return TYPE_UINT_SAMPLER_2D_MULTISAMPLE;
+		case GL_SAMPLER_2D_MULTISAMPLE:						return TYPE_SAMPLER_2D_MULTISAMPLE;
+		case GL_INT_SAMPLER_2D_MULTISAMPLE:					return TYPE_INT_SAMPLER_2D_MULTISAMPLE;
+		case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE:		return TYPE_UINT_SAMPLER_2D_MULTISAMPLE;
 
-		case GL_IMAGE_2D:								return TYPE_IMAGE_2D;
-		case GL_IMAGE_CUBE:								return TYPE_IMAGE_CUBE;
-		case GL_IMAGE_2D_ARRAY:							return TYPE_IMAGE_2D_ARRAY;
-		case GL_IMAGE_3D:								return TYPE_IMAGE_3D;
-		case GL_INT_IMAGE_2D:							return TYPE_INT_IMAGE_2D;
-		case GL_INT_IMAGE_CUBE:							return TYPE_INT_IMAGE_CUBE;
-		case GL_INT_IMAGE_2D_ARRAY:						return TYPE_INT_IMAGE_2D_ARRAY;
-		case GL_INT_IMAGE_3D:							return TYPE_INT_IMAGE_3D;
-		case GL_UNSIGNED_INT_IMAGE_2D:					return TYPE_UINT_IMAGE_2D;
-		case GL_UNSIGNED_INT_IMAGE_CUBE:				return TYPE_UINT_IMAGE_CUBE;
-		case GL_UNSIGNED_INT_IMAGE_2D_ARRAY:			return TYPE_UINT_IMAGE_2D_ARRAY;
-		case GL_UNSIGNED_INT_IMAGE_3D:					return TYPE_UINT_IMAGE_3D;
+		case GL_IMAGE_2D:									return TYPE_IMAGE_2D;
+		case GL_IMAGE_CUBE:									return TYPE_IMAGE_CUBE;
+		case GL_IMAGE_2D_ARRAY:								return TYPE_IMAGE_2D_ARRAY;
+		case GL_IMAGE_3D:									return TYPE_IMAGE_3D;
+		case GL_INT_IMAGE_2D:								return TYPE_INT_IMAGE_2D;
+		case GL_INT_IMAGE_CUBE:								return TYPE_INT_IMAGE_CUBE;
+		case GL_INT_IMAGE_2D_ARRAY:							return TYPE_INT_IMAGE_2D_ARRAY;
+		case GL_INT_IMAGE_3D:								return TYPE_INT_IMAGE_3D;
+		case GL_UNSIGNED_INT_IMAGE_2D:						return TYPE_UINT_IMAGE_2D;
+		case GL_UNSIGNED_INT_IMAGE_CUBE:					return TYPE_UINT_IMAGE_CUBE;
+		case GL_UNSIGNED_INT_IMAGE_2D_ARRAY:				return TYPE_UINT_IMAGE_2D_ARRAY;
+		case GL_UNSIGNED_INT_IMAGE_3D:						return TYPE_UINT_IMAGE_3D;
 
-		case GL_UNSIGNED_INT_ATOMIC_COUNTER:			return TYPE_UINT_ATOMIC_COUNTER;
+		case GL_UNSIGNED_INT_ATOMIC_COUNTER:				return TYPE_UINT_ATOMIC_COUNTER;
+
+		case GL_SAMPLER_BUFFER:								return TYPE_SAMPLER_BUFFER;
+		case GL_INT_SAMPLER_BUFFER:							return TYPE_INT_SAMPLER_BUFFER;
+		case GL_UNSIGNED_INT_SAMPLER_BUFFER:				return TYPE_UINT_SAMPLER_BUFFER;
+
+		case GL_SAMPLER_2D_MULTISAMPLE_ARRAY:				return TYPE_SAMPLER_2D_MULTISAMPLE_ARRAY;
+		case GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY:			return TYPE_INT_SAMPLER_2D_MULTISAMPLE_ARRAY;
+		case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY:	return TYPE_UINT_SAMPLER_2D_MULTISAMPLE_ARRAY;
+
+		case GL_IMAGE_BUFFER:								return TYPE_IMAGE_BUFFER;
+		case GL_INT_IMAGE_BUFFER:							return TYPE_INT_IMAGE_BUFFER;
+		case GL_UNSIGNED_INT_IMAGE_BUFFER:					return TYPE_UINT_IMAGE_BUFFER;
 
 		default:
 			return TYPE_LAST;

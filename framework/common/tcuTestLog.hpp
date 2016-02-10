@@ -39,6 +39,7 @@ class LogImage;
 class LogSection;
 class LogShaderProgram;
 class LogShader;
+class LogSpirVAssemblySource;
 class LogKernelSource;
 class LogSampleList;
 class LogValueInfo;
@@ -89,16 +90,17 @@ public:
 	static const class EndSampleListToken {}		EndSampleList;
 
 	// Typedefs.
-	typedef LogImageSet			ImageSet;
-	typedef LogImage			Image;
-	typedef LogSection			Section;
-	typedef LogShaderProgram	ShaderProgram;
-	typedef LogShader			Shader;
-	typedef LogKernelSource		KernelSource;
-	typedef LogSampleList		SampleList;
-	typedef LogValueInfo		ValueInfo;
-	typedef LogNumber<float>	Float;
-	typedef LogNumber<deInt64>	Integer;
+	typedef LogImageSet				ImageSet;
+	typedef LogImage				Image;
+	typedef LogSection				Section;
+	typedef LogShaderProgram		ShaderProgram;
+	typedef LogShader				Shader;
+	typedef LogSpirVAssemblySource	SpirVAssemblySource;
+	typedef LogKernelSource			KernelSource;
+	typedef LogSampleList			SampleList;
+	typedef LogValueInfo			ValueInfo;
+	typedef LogNumber<float>		Float;
+	typedef LogNumber<deInt64>		Integer;
 
 	explicit			TestLog					(const char* fileName, deUint32 flags = 0);
 						~TestLog				(void);
@@ -116,6 +118,7 @@ public:
 	TestLog&			operator<<				(const ShaderProgram& shaderProgram);
 	TestLog&			operator<<				(const EndShaderProgramToken&);
 	TestLog&			operator<<				(const Shader& shader);
+	TestLog&			operator<<				(const SpirVAssemblySource& module);
 
 	TestLog&			operator<<				(const KernelSource& kernelSrc);
 
@@ -143,7 +146,7 @@ public:
 	void				startShaderProgram		(bool linkOk, const char* linkInfoLog);
 	void				endShaderProgram		(void);
 	void				writeShader				(qpShaderType type, const char* source, bool compileOk, const char* infoLog);
-
+	void				writeSpirVAssemblySource(const char* source);
 	void				writeKernelSource		(const char* source);
 	void				writeCompileInfo		(const char* name, const char* description, bool compileOk, const char* infoLog);
 
@@ -318,6 +321,20 @@ private:
 	std::string		m_infoLog;
 };
 
+class LogSpirVAssemblySource
+{
+public:
+	LogSpirVAssemblySource (const std::string& source)
+		: m_source		(source)
+	{
+	}
+
+	void write (TestLog& log) const;
+
+private:
+	std::string		m_source;
+};
+
 class LogKernelSource
 {
 public:
@@ -420,6 +437,7 @@ inline TestLog& TestLog::operator<< (const EndSectionToken&)			{ endSection();		
 inline TestLog& TestLog::operator<< (const ShaderProgram& shaderProg)	{ shaderProg.write(*this);	return *this;	}
 inline TestLog& TestLog::operator<< (const EndShaderProgramToken&)		{ endShaderProgram();		return *this;	}
 inline TestLog& TestLog::operator<< (const Shader& shader)				{ shader.write(*this);		return *this;	}
+inline TestLog& TestLog::operator<< (const SpirVAssemblySource& module)	{ module.write(*this);		return *this;	}
 inline TestLog& TestLog::operator<< (const KernelSource& kernelSrc)		{ kernelSrc.write(*this);	return *this;	}
 inline TestLog&	TestLog::operator<<	(const SampleList& sampleList)		{ sampleList.write(*this);	return *this;	}
 inline TestLog&	TestLog::operator<<	(const SampleInfoToken&)			{ startSampleInfo();		return *this;	}
@@ -483,6 +501,11 @@ inline void LogShaderProgram::write (TestLog& log) const
 inline void LogShader::write (TestLog& log) const
 {
 	log.writeShader(m_type, m_source.c_str(), m_compileOk, m_infoLog.c_str());
+}
+
+inline void LogSpirVAssemblySource::write (TestLog& log) const
+{
+	log.writeSpirVAssemblySource(m_source.c_str());
 }
 
 inline void LogKernelSource::write (TestLog& log) const

@@ -333,6 +333,7 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 	std::vector<VertexInputInstance::VertexInputAttributeDescription>	attributeDescriptions;
 	deUint32															attributeLocation		= 0;
 	std::vector<deUint32>												attributeOffsets		(bindingDescriptions.size(), 0);
+	std::vector<deUint32>												attributeMaxSizes		(bindingDescriptions.size(), 0);
 
 	for (size_t attributeNdx = 0; attributeNdx < m_attributeInfos.size(); attributeNdx++)
 	{
@@ -385,6 +386,7 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 
 			bindingDescriptions[attributeBinding].stride	+= offsetToComponentAlignment + inputSize;
 			attributeOffsets[attributeBinding]				+= inputSize;
+			attributeMaxSizes[attributeBinding]				 = de::max(attributeMaxSizes[attributeBinding], getVertexFormatComponentSize(attributeInfo.vkType));
 
 			//double formats with more than 2 components will take 2 locations
 			const GlslType type = attributeInfo.glslType;
@@ -398,6 +400,13 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 
 			attributeDescriptions.push_back(attributeDescription);
 		}
+	}
+
+	// Make sure the stride results in aligned access
+	for (deUint32 bindingNdx = 0; bindingNdx < bindingDescriptions.size(); ++bindingNdx)
+	{
+		if (attributeMaxSizes[bindingNdx] > 0)
+			bindingDescriptions[bindingNdx].stride += getNextMultipleOffset(attributeMaxSizes[bindingNdx], bindingDescriptions[bindingNdx].stride);
 	}
 
 	return new VertexInputInstance(context, attributeDescriptions, bindingDescriptions, bindingOffsets);
