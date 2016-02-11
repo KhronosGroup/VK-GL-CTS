@@ -39,6 +39,9 @@ namespace vk
 //! Assemble SPIR-V program. Will fail with NotSupportedError if compiler is not available.
 void assembleSpirV (const SpirVAsmSource* program, std::vector<deUint8>* dst, SpirVProgramInfo* buildInfo);
 
+//! Validate SPIR-V binary, returning true if validation succeeds. Will fail with NotSupportedError if compiler is not available.
+bool validateSpirV (const std::vector<deUint8>& spirv, std::string* infoLog);
+
 } // vk
 
 #endif // _VKSPIRVASM_HPP
