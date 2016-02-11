@@ -287,23 +287,25 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 	m_device_interface.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
 
 	// Allocate descriptor sets
-	DynArray< vk::Move<vk::VkDescriptorSet> > descriptorSets(m_dispatchCommands.size());
+	typedef de::SharedPtr<vk::Unique<vk::VkDescriptorSet> > SharedVkDescriptorSet;
+	std::vector<SharedVkDescriptorSet> descriptorSets(m_dispatchCommands.size());
 
 	vk::VkDeviceSize curOffset = 0;
 
 	// Create descriptor sets
 	for (deUint32 cmdNdx = 0; cmdNdx < m_dispatchCommands.size(); ++cmdNdx)
 	{
-		descriptorSets[cmdNdx] = makeDescriptorSet(m_device_interface, m_device, *descriptorPool, *descriptorSetLayout);
+		descriptorSets[cmdNdx] = SharedVkDescriptorSet(new vk::Unique<vk::VkDescriptorSet>(
+									makeDescriptorSet(m_device_interface, m_device, *descriptorPool, *descriptorSetLayout)));
 
 		const vk::VkDescriptorBufferInfo resultDescriptorInfo = makeDescriptorBufferInfo(*resultBuffer, curOffset, resultBlockSize);
 
 		vk::DescriptorSetUpdateBuilder descriptorSetBuilder;
-		descriptorSetBuilder.writeSingle(*descriptorSets[cmdNdx], vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDescriptorInfo);
+		descriptorSetBuilder.writeSingle(**descriptorSets[cmdNdx], vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDescriptorInfo);
 		descriptorSetBuilder.update(m_device_interface, m_device);
 
 		// Bind descriptor set
-		m_device_interface.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSets[cmdNdx].get(), 0u, DE_NULL);
+		m_device_interface.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &(**descriptorSets[cmdNdx]), 0u, DE_NULL);
 
 		// Dispatch indirect compute command
 		m_device_interface.cmdDispatchIndirect(*cmdBuffer, *indirectBuffer, m_dispatchCommands[cmdNdx].m_offset);

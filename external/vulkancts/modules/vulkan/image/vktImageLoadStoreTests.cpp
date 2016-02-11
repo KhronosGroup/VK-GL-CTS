@@ -44,6 +44,7 @@
 #include "vkImageUtil.hpp"
 
 #include "deUniquePtr.hpp"
+#include "deSharedPtr.hpp"
 #include "deStringUtil.hpp"
 
 #include "tcuImageCompare.hpp"
@@ -62,6 +63,15 @@ namespace image
 {
 namespace
 {
+
+typedef de::SharedPtr<Unique<VkDescriptorSet> >	SharedVkDescriptorSet;
+typedef de::SharedPtr<Unique<VkImageView> >		SharedVkImageView;
+
+template<typename T>
+inline de::SharedPtr<Unique<T> > makeVkSharedPtr (Move<T> vkMove)
+{
+	return de::SharedPtr<Unique<T> >(new Unique<T>(vkMove));
+}
 
 inline VkImageCreateInfo makeImageCreateInfo (const Texture& texture, const VkFormat format, const VkImageUsageFlags usage, const VkImageCreateFlags flags)
 {
@@ -660,8 +670,8 @@ protected:
 	const VkDeviceSize					m_constantsBufferChunkSizeBytes;
 	Move<VkDescriptorSetLayout>			m_descriptorSetLayout;
 	Move<VkDescriptorPool>				m_descriptorPool;
-	DynArray<Move<VkDescriptorSet> >	m_allDescriptorSets;
-	DynArray<Move<VkImageView> >		m_allImageViews;
+	std::vector<SharedVkDescriptorSet>	m_allDescriptorSets;
+	std::vector<SharedVkImageView>		m_allImageViews;
 };
 
 ImageStoreTestInstance::ImageStoreTestInstance (Context&		context,
@@ -727,16 +737,18 @@ VkDescriptorSetLayout ImageStoreTestInstance::prepareDescriptors (void)
 	{
 		for (int layerNdx = 0; layerNdx < numLayers; ++layerNdx)
 		{
-			m_allDescriptorSets[layerNdx] = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
-			m_allImageViews[layerNdx] = makeImageView(vk, device, m_image->get(), mapImageViewType(getImageTypeForSingleLayer(m_texture.type())), m_format,
-													  makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, layerNdx, 1u));
+			m_allDescriptorSets[layerNdx] = makeVkSharedPtr(makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout));
+			m_allImageViews[layerNdx]     = makeVkSharedPtr(makeImageView(
+												vk, device, m_image->get(), mapImageViewType(getImageTypeForSingleLayer(m_texture.type())), m_format,
+												makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, layerNdx, 1u)));
 		}
 	}
 	else // bind all layers at once
 	{
-		m_allDescriptorSets[0] = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
-		m_allImageViews[0] = makeImageView(vk, device, m_image->get(), mapImageViewType(m_texture.type()), m_format,
-										   makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers));
+		m_allDescriptorSets[0] = makeVkSharedPtr(makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout));
+		m_allImageViews[0] = makeVkSharedPtr(makeImageView(
+								vk, device, m_image->get(), mapImageViewType(m_texture.type()), m_format,
+								makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers)));
 	}
 
 	return *m_descriptorSetLayout;  // not passing the ownership
@@ -747,8 +759,8 @@ void ImageStoreTestInstance::commandBindDescriptorsForLayer (const VkCommandBuff
 	const DeviceInterface&	vk		= m_context.getDeviceInterface();
 	const VkDevice			device	= m_context.getDevice();
 
-	const VkDescriptorSet descriptorSet = *m_allDescriptorSets[layerNdx];
-	const VkImageView imageView = *m_allImageViews[layerNdx];
+	const VkDescriptorSet descriptorSet = **m_allDescriptorSets[layerNdx];
+	const VkImageView imageView = **m_allImageViews[layerNdx];
 
 	const VkDescriptorImageInfo descriptorImageInfo = makeDescriptorImageInfo(DE_NULL, imageView, VK_IMAGE_LAYOUT_GENERAL);
 
@@ -1016,50 +1028,32 @@ tcu::TestStatus LoadStoreTestInstance::verifyResult	(void)
 class ImageLoadStoreTestInstance : public LoadStoreTestInstance
 {
 public:
-	struct PerLayerData
-	{
-										PerLayerData		(Move<VkDescriptorSet>	descriptorSet,
-															 Move<VkImageView>		imageViewSrc,
-															 Move<VkImageView>		imageViewDst);
-
-		const Unique<VkDescriptorSet>	descriptorSet;
-		const Unique<VkImageView>		imageViewSrc;
-		const Unique<VkImageView>		imageViewDst;
-	};
-
-											ImageLoadStoreTestInstance			(Context&				context,
-																				 const Texture&			texture,
-																				 const VkFormat			format,
-																				 const VkFormat			imageFormat,
-																				 const bool				singleLayerBind);
+										ImageLoadStoreTestInstance			(Context&				context,
+																			 const Texture&			texture,
+																			 const VkFormat			format,
+																			 const VkFormat			imageFormat,
+																			 const bool				singleLayerBind);
 
 protected:
-	VkDescriptorSetLayout					prepareDescriptors					(void);
-	void									commandBeforeCompute				(const VkCommandBuffer	cmdBuffer);
-	void									commandBetweenShaderInvocations		(const VkCommandBuffer	cmdBuffer);
-	void									commandAfterCompute					(const VkCommandBuffer	cmdBuffer);
+	VkDescriptorSetLayout				prepareDescriptors					(void);
+	void								commandBeforeCompute				(const VkCommandBuffer	cmdBuffer);
+	void								commandBetweenShaderInvocations		(const VkCommandBuffer	cmdBuffer);
+	void								commandAfterCompute					(const VkCommandBuffer	cmdBuffer);
 
-	void									commandBindDescriptorsForLayer		(const VkCommandBuffer	cmdBuffer,
-																				 const VkPipelineLayout pipelineLayout,
-																				 const int				layerNdx);
+	void								commandBindDescriptorsForLayer		(const VkCommandBuffer	cmdBuffer,
+																			 const VkPipelineLayout pipelineLayout,
+																			 const int				layerNdx);
 
-	Buffer*									getResultBuffer						(void) const { return m_imageBuffer.get(); }
+	Buffer*								getResultBuffer						(void) const { return m_imageBuffer.get(); }
 
-	de::MovePtr<Image>						m_imageSrc;
-	de::MovePtr<Image>						m_imageDst;
-	Move<VkDescriptorSetLayout>				m_descriptorSetLayout;
-	Move<VkDescriptorPool>					m_descriptorPool;
-	DynArray<de::MovePtr<PerLayerData> >	m_perLayerData;
+	de::MovePtr<Image>					m_imageSrc;
+	de::MovePtr<Image>					m_imageDst;
+	Move<VkDescriptorSetLayout>			m_descriptorSetLayout;
+	Move<VkDescriptorPool>				m_descriptorPool;
+	std::vector<SharedVkDescriptorSet>	m_allDescriptorSets;
+	std::vector<SharedVkImageView>		m_allSrcImageViews;
+	std::vector<SharedVkImageView>		m_allDstImageViews;
 };
-
-ImageLoadStoreTestInstance::PerLayerData::PerLayerData (Move<VkDescriptorSet>	descriptorSet_,
-														Move<VkImageView>		imageViewSrc_,
-														Move<VkImageView>		imageViewDst_)
-	: descriptorSet	(descriptorSet_)
-	, imageViewSrc	(imageViewSrc_)
-	, imageViewDst	(imageViewDst_)
-{
-}
 
 ImageLoadStoreTestInstance::ImageLoadStoreTestInstance (Context&		context,
 														const Texture&	texture,
@@ -1067,7 +1061,9 @@ ImageLoadStoreTestInstance::ImageLoadStoreTestInstance (Context&		context,
 														const VkFormat	imageFormat,
 														const bool		singleLayerBind)
 	: LoadStoreTestInstance	(context, texture, format, imageFormat, singleLayerBind)
-	, m_perLayerData		(texture.numLayers())
+	, m_allDescriptorSets	(texture.numLayers())
+	, m_allSrcImageViews	(texture.numLayers())
+	, m_allDstImageViews	(texture.numLayers())
 {
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
 	const VkDevice				device				= m_context.getDevice();
@@ -1108,12 +1104,9 @@ VkDescriptorSetLayout ImageLoadStoreTestInstance::prepareDescriptors (void)
 			const VkImageViewType viewType = mapImageViewType(getImageTypeForSingleLayer(m_texture.type()));
 			const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, layerNdx, 1u);
 
-			de::MovePtr<PerLayerData> data(new PerLayerData(
-				makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout),
-				makeImageView(vk, device, m_imageSrc->get(), viewType, m_format, subresourceRange),
-				makeImageView(vk, device, m_imageDst->get(), viewType, m_format, subresourceRange)));
-
-			m_perLayerData[layerNdx] = data;
+			m_allDescriptorSets[layerNdx] = makeVkSharedPtr(makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout));
+			m_allSrcImageViews[layerNdx]  = makeVkSharedPtr(makeImageView(vk, device, m_imageSrc->get(), viewType, m_format, subresourceRange));
+			m_allDstImageViews[layerNdx]  = makeVkSharedPtr(makeImageView(vk, device, m_imageDst->get(), viewType, m_format, subresourceRange));
 		}
 	}
 	else // bind all layers at once
@@ -1121,12 +1114,9 @@ VkDescriptorSetLayout ImageLoadStoreTestInstance::prepareDescriptors (void)
 		const VkImageViewType viewType = mapImageViewType(m_texture.type());
 		const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers);
 
-		de::MovePtr<PerLayerData> data(new PerLayerData(
-			makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout),
-			makeImageView(vk, device, m_imageSrc->get(), viewType, m_format, subresourceRange),
-			makeImageView(vk, device, m_imageDst->get(), viewType, m_format, subresourceRange)));
-
-		m_perLayerData[0] = data;
+		m_allDescriptorSets[0] = makeVkSharedPtr(makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout));
+		m_allSrcImageViews[0]  = makeVkSharedPtr(makeImageView(vk, device, m_imageSrc->get(), viewType, m_format, subresourceRange));
+		m_allDstImageViews[0]  = makeVkSharedPtr(makeImageView(vk, device, m_imageDst->get(), viewType, m_format, subresourceRange));
 	}
 
 	return *m_descriptorSetLayout;  // not passing the ownership
@@ -1137,16 +1127,18 @@ void ImageLoadStoreTestInstance::commandBindDescriptorsForLayer (const VkCommand
 	const VkDevice			device	= m_context.getDevice();
 	const DeviceInterface&	vk		= m_context.getDeviceInterface();
 
-	const PerLayerData* data = m_perLayerData[layerNdx].get();
+	const VkDescriptorSet descriptorSet = **m_allDescriptorSets[layerNdx];
+	const VkImageView	  srcImageView	= **m_allSrcImageViews[layerNdx];
+	const VkImageView	  dstImageView	= **m_allDstImageViews[layerNdx];
 
-	const VkDescriptorImageInfo descriptorSrcImageInfo = makeDescriptorImageInfo(DE_NULL, *data->imageViewSrc, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	const VkDescriptorImageInfo descriptorDstImageInfo = makeDescriptorImageInfo(DE_NULL, *data->imageViewDst, VK_IMAGE_LAYOUT_GENERAL);
+	const VkDescriptorImageInfo descriptorSrcImageInfo = makeDescriptorImageInfo(DE_NULL, srcImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	const VkDescriptorImageInfo descriptorDstImageInfo = makeDescriptorImageInfo(DE_NULL, dstImageView, VK_IMAGE_LAYOUT_GENERAL);
 
 	DescriptorSetUpdateBuilder()
-		.writeSingle(*data->descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorSrcImageInfo)
-		.writeSingle(*data->descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorDstImageInfo)
+		.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorSrcImageInfo)
+		.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorDstImageInfo)
 		.update(vk, device);
-	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &data->descriptorSet.get(), 0u, DE_NULL);
+	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
 }
 
 void ImageLoadStoreTestInstance::commandBeforeCompute (const VkCommandBuffer cmdBuffer)

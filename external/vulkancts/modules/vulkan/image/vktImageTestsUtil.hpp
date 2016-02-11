@@ -72,8 +72,8 @@ public:
 													 const vk::VkBufferCreateInfo&	bufferCreateInfo,
 													 const vk::MemoryRequirement	memoryRequirement);
 
-	vk::VkBuffer					get				(void) const { return *m_buffer; }
-	vk::VkBuffer					operator*		(void) const { return get(); }
+	const vk::VkBuffer&				get				(void) const { return *m_buffer; }
+	const vk::VkBuffer&				operator*		(void) const { return get(); }
 	vk::Allocation&					getAllocation	(void) const { return *m_allocation; }
 
 private:
@@ -93,8 +93,8 @@ public:
 													 const vk::VkImageCreateInfo&	imageCreateInfo,
 													 const vk::MemoryRequirement	memoryRequirement);
 
-	vk::VkImage						get				(void) const { return *m_image; }
-	vk::VkImage						operator*		(void) const { return get(); }
+	const vk::VkImage&				get				(void) const { return *m_image; }
+	const vk::VkImage&				operator*		(void) const { return get(); }
 	vk::Allocation&					getAllocation	(void) const { return *m_allocation; }
 
 private:
@@ -103,24 +103,6 @@ private:
 
 									Image			(const Image&);  // "deleted"
 	Image&							operator=		(const Image&);
-};
-
-//! Dynamic size array, used to hold smart pointers like vk::Move which don't work with std::vector.
-template<typename T>
-class DynArray
-{
-public:
-				DynArray	(std::size_t size)			{ data = new T[size]; }
-				~DynArray	(void)						{ delete [] data; }
-
-	T&			operator[]	(std::size_t idx)			{ return data[idx]; }
-	const T&	operator[]	(std::size_t idx) const		{ return data[idx]; }
-
-private:
-	T* data;
-
-				DynArray	(const DynArray&);  // "deleted"
-	DynArray&	operator=	(const DynArray&);
 };
 
 vk::Move<vk::VkCommandPool>		makeCommandPool					(const vk::DeviceInterface&			vk,
