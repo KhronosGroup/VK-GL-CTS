@@ -3762,7 +3762,12 @@ void initializeSubpassRenderInfo (vector<SubpassRenderInfo>& renderInfos, de::Ra
 		}
 
 		if (config.renderTypes & TestConfig::RENDERTYPES_DRAW)
-			renderQuad = tcu::just(RenderQuad(tcu::Vec4(-0.5f, -0.5f, 0.0f, 1.0f), tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f)));
+		{
+			// (-0.5,-0.5) - (0.5,0.5) rounded to pixel edges
+			const float x = (float)(viewportSize.x() / 4) / (float)(viewportSize.x() / 2);
+			const float y = (float)(viewportSize.y() / 4) / (float)(viewportSize.y() / 2);
+			renderQuad = tcu::just(RenderQuad(tcu::Vec4(-x, -y, 0.0f, 1.0f), tcu::Vec4(x, y, 1.0f, 1.0f)));
+		}
 
 		renderInfos.push_back(SubpassRenderInfo(renderPass, subpassNdx, subpassIsSecondary, viewportOffset, viewportSize, renderQuad, colorClears, depthStencilClear));
 	}
