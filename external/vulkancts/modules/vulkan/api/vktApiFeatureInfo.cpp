@@ -85,6 +85,7 @@ enum LimitType
 {
 	LIMIT_TYPE_MIN,
 	LIMIT_TYPE_MAX,
+	LIMIT_TYPE_NONE,
 
 	LIMIT_TYPE_LAST
 };
@@ -116,8 +117,10 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(maxImageArrayLayers),								256, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   , -1 },
 		{ LIMIT(maxTexelBufferElements),							65536, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxUniformBufferRange),								16384, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxStorageBufferRange),								0, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
 		{ LIMIT(maxPushConstantsSize),								128, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxMemoryAllocationCount),							4096, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxSamplerAllocationCount),							0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE , -1 },
 		{ LIMIT(bufferImageGranularity),							0, 0, 131072, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1 },
 		{ LIMIT(sparseAddressSpaceSize),							0, 0, 2UL*1024*1024*1024, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxBoundDescriptorSets),							4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
@@ -127,6 +130,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(maxPerStageDescriptorSampledImages),				16, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
 		{ LIMIT(maxPerStageDescriptorStorageImages),				4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
 		{ LIMIT(maxPerStageDescriptorInputAttachments),				4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxPerStageResources),								0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE , -1 },
 		{ LIMIT(maxDescriptorSetSamplers),							96, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxDescriptorSetUniformBuffers),					72, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
 		{ LIMIT(maxDescriptorSetUniformBuffersDynamic),				8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
@@ -134,6 +138,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(maxDescriptorSetStorageBuffersDynamic),				4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxDescriptorSetSampledImages),						96, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxDescriptorSetStorageImages),						24, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxDescriptorSetInputAttachments),					0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE  , -1 },
 		{ LIMIT(maxVertexInputAttributes),							16, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxVertexInputBindings),							16, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxVertexInputAttributeOffset),						2047, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
@@ -190,12 +195,24 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(subPixelInterpolationOffsetBits),					4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxFramebufferWidth),								4096, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxFramebufferHeight),								4096, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
-		{ LIMIT(maxFramebufferLayers),								256, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxFramebufferLayers),								0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(framebufferColorSampleCounts),						0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(framebufferDepthSampleCounts),						0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(framebufferStencilSampleCounts),					0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(framebufferNoAttachmentsSampleCounts),				0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
 		{ LIMIT(maxColorAttachments),								4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(sampledImageColorSampleCounts),						4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(sampledImageIntegerSampleCounts),					4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(sampledImageDepthSampleCounts),						4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(sampledImageStencilSampleCounts),					4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(storageImageSampleCounts),							4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
 		{ LIMIT(maxSampleMaskWords),								1, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(timestampComputeAndGraphics),						0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(timestampPeriod),									0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
 		{ LIMIT(maxClipDistances),									8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxCullDistances),									8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxCombinedClipAndCullDistances),					8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(discreteQueuePriorities),							8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
 		{ LIMIT(pointSizeRange[0]),									0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
 		{ LIMIT(pointSizeRange[1]),									0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(pointSizeRange[0]),									0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
@@ -206,6 +223,10 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(lineWidthRange[1]),									0, 0, 0, 8.0f - limits->lineWidthGranularity, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(pointSizeGranularity),								0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
 		{ LIMIT(lineWidthGranularity),								0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(strictLines),										0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(standardSampleLocations),							0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(optimalBufferCopyOffsetAlignment),					0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(optimalBufferCopyRowPitchAlignment),				0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_NONE, -1 },
 		{ LIMIT(nonCoherentAtomSize),								0, 0, 128, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1 },
 	};
 
@@ -284,7 +305,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].uintVal;
 				}
 
-				if ( featureLimitTable[ndx].type == LIMIT_TYPE_MIN )
+				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
 				{
 
 					if (*((deUint32*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
@@ -295,7 +316,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 						limitsOk = false;
 					}
 				}
-				else
+				else if (featureLimitTable[ndx].type == LIMIT_TYPE_MAX)
 				{
 					if (*((deUint32*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
@@ -317,7 +338,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].floatVal;
 				}
 
-				if ( featureLimitTable[ndx].type == LIMIT_TYPE_MIN )
+				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
 				{
 					if (*((float*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
@@ -327,7 +348,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 						limitsOk = false;
 					}
 				}
-				else
+				else if (featureLimitTable[ndx].type == LIMIT_TYPE_MAX)
 				{
 					if (*((float*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
@@ -358,7 +379,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 						limitsOk = false;
 					}
 				}
-				else
+				else if (featureLimitTable[ndx].type == LIMIT_TYPE_MAX)
 				{
 					if (*((deInt32*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
@@ -380,7 +401,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].deviceSizeVal;
 				}
 
-				if ( featureLimitTable[ndx].type == LIMIT_TYPE_MIN )
+				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
 				{
 					if (*((deUint64*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
@@ -390,7 +411,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 						limitsOk = false;
 					}
 				}
-				else
+				else if (featureLimitTable[ndx].type == LIMIT_TYPE_MAX)
 				{
 					if (*((deUint64*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
@@ -503,11 +524,75 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 	return tcu::TestStatus::pass("Enumerating extensions succeeded");
 }
 
+#define VK_SIZE_OF(STRUCT, MEMBER)					(sizeof(((STRUCT*)0)->MEMBER))
+#define OFFSET_TABLE_ENTRY(STRUCT, MEMBER)			{ DE_OFFSET_OF(STRUCT, MEMBER), VK_SIZE_OF(STRUCT, MEMBER) }
+
 tcu::TestStatus deviceFeatures (Context& context)
 {
 	TestLog&						log			= context.getTestContext().getLog();
 	VkPhysicalDeviceFeatures*		features;
 	deUint8							buffer[sizeof(VkPhysicalDeviceFeatures) + GUARD_SIZE];
+
+	const QueryMemberTableEntry featureOffsetTable[] =
+	{
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, robustBufferAccess),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, fullDrawIndexUint32),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, imageCubeArray),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, independentBlend),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, geometryShader),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, tessellationShader),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sampleRateShading),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, dualSrcBlend),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, logicOp),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, multiDrawIndirect),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, drawIndirectFirstInstance),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, depthClamp),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, depthBiasClamp),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, fillModeNonSolid),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, depthBounds),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, wideLines),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, largePoints),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, alphaToOne),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, multiViewport),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, samplerAnisotropy),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, textureCompressionETC2),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, textureCompressionASTC_LDR),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, textureCompressionBC),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, occlusionQueryPrecise),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, pipelineStatisticsQuery),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, vertexPipelineStoresAndAtomics),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, fragmentStoresAndAtomics),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderTessellationAndGeometryPointSize),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderImageGatherExtended),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderStorageImageExtendedFormats),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderStorageImageMultisample),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderStorageImageReadWithoutFormat),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderStorageImageWriteWithoutFormat),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderUniformBufferArrayDynamicIndexing),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderSampledImageArrayDynamicIndexing),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderStorageBufferArrayDynamicIndexing),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderStorageImageArrayDynamicIndexing),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderClipDistance),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderCullDistance),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderFloat64),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderInt64),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderInt16),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderResourceResidency),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderResourceMinLod),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseBinding),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidencyBuffer),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidencyImage2D),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidencyImage3D),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidency2Samples),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidency4Samples),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidency8Samples),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidency16Samples),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidencyAliased),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, variableMultisampleRate),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, inheritedQueries),
+		{ 0, 0 }
+	};
+
 
 	deMemset(buffer, GUARD_VALUE, sizeof(buffer));
 	features = reinterpret_cast<VkPhysicalDeviceFeatures*>(buffer);
@@ -529,6 +614,13 @@ tcu::TestStatus deviceFeatures (Context& context)
 		}
 	}
 
+	if (!validateInitComplete(context.getPhysicalDevice(), &InstanceInterface::getPhysicalDeviceFeatures, context.getInstanceInterface(), featureOffsetTable))
+	{
+		log << TestLog::Message << "deviceFeatures - VkPhysicalDeviceFeatures not completely initialized" << TestLog::EndMessage;
+		return tcu::TestStatus::fail("deviceFeatures incomplete initialization");
+	}
+
+
 	return tcu::TestStatus::pass("Query succeeded");
 }
 
@@ -538,6 +630,117 @@ tcu::TestStatus deviceProperties (Context& context)
 	VkPhysicalDeviceProperties*		props;
 	VkPhysicalDeviceFeatures		features;
 	deUint8							buffer[sizeof(VkPhysicalDeviceProperties) + GUARD_SIZE];
+
+	const QueryMemberTableEntry limitOffsetTable[] =
+	{
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxImageDimension1D),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxImageDimension2D),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxImageDimension3D),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxImageDimensionCube),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxImageArrayLayers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTexelBufferElements),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxUniformBufferRange),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxStorageBufferRange),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPushConstantsSize),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxMemoryAllocationCount),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxSamplerAllocationCount),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, bufferImageGranularity),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, sparseAddressSpaceSize),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxBoundDescriptorSets),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageDescriptorSamplers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageDescriptorUniformBuffers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageDescriptorStorageBuffers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageDescriptorSampledImages),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageDescriptorStorageImages),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageDescriptorInputAttachments),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageResources),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetSamplers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetUniformBuffers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetUniformBuffersDynamic),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetStorageBuffers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetStorageBuffersDynamic),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetSampledImages),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetStorageImages),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetInputAttachments),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxVertexInputAttributes),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxVertexInputBindings),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxVertexInputAttributeOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxVertexInputBindingStride),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxVertexOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationGenerationLevel),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationPatchSize),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationControlPerVertexInputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationControlPerVertexOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationControlPerPatchOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationControlTotalOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationEvaluationInputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationEvaluationOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxGeometryShaderInvocations),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxGeometryInputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxGeometryOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxGeometryOutputVertices),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxGeometryTotalOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFragmentInputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFragmentOutputAttachments),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFragmentDualSrcAttachments),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFragmentCombinedOutputResources),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxComputeSharedMemorySize),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxComputeWorkGroupCount[3]),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxComputeWorkGroupInvocations),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxComputeWorkGroupSize[3]),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, subPixelPrecisionBits),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, subTexelPrecisionBits),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, mipmapPrecisionBits),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDrawIndexedIndexValue),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDrawIndirectCount),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxSamplerLodBias),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxSamplerAnisotropy),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxViewports),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxViewportDimensions[2]),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, viewportBoundsRange[2]),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, viewportSubPixelBits),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minMemoryMapAlignment),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minTexelBufferOffsetAlignment),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minUniformBufferOffsetAlignment),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minStorageBufferOffsetAlignment),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minTexelOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTexelOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minTexelGatherOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTexelGatherOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minInterpolationOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxInterpolationOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, subPixelInterpolationOffsetBits),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFramebufferWidth),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFramebufferHeight),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFramebufferLayers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, framebufferColorSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, framebufferDepthSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, framebufferStencilSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, framebufferNoAttachmentsSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxColorAttachments),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, sampledImageColorSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, sampledImageIntegerSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, sampledImageDepthSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, sampledImageStencilSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, storageImageSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxSampleMaskWords),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, timestampComputeAndGraphics),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, timestampPeriod),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxClipDistances),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxCullDistances),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxCombinedClipAndCullDistances),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, discreteQueuePriorities),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, pointSizeRange[2]),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, lineWidthRange[2]),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, pointSizeGranularity),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, lineWidthGranularity),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, strictLines),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, standardSampleLocations),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, optimalBufferCopyOffsetAlignment),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, optimalBufferCopyRowPitchAlignment),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, nonCoherentAtomSize),
+		{ 0, 0 }
+	};
 
 	props = reinterpret_cast<VkPhysicalDeviceProperties*>(buffer);
 	deMemset(props, GUARD_VALUE, sizeof(buffer));
@@ -558,6 +761,12 @@ tcu::TestStatus deviceProperties (Context& context)
 			log << TestLog::Message << "deviceProperties - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
 			return tcu::TestStatus::fail("deviceProperties buffer overflow");
 		}
+	}
+
+	if (!validateInitComplete(context.getPhysicalDevice(), &InstanceInterface::getPhysicalDeviceProperties, context.getInstanceInterface(), limitOffsetTable))
+	{
+		log << TestLog::Message << "deviceProperties - VkPhysicalDeviceProperties not completely initialized" << TestLog::EndMessage;
+		return tcu::TestStatus::fail("deviceProperties incomplete initialization");
 	}
 
 	return tcu::TestStatus::pass("DeviceProperites query succeeded");

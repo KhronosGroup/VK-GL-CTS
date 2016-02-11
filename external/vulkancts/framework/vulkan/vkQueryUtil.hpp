@@ -84,9 +84,15 @@ bool									isExtensionSupported					(const std::vector<VkExtensionProperties>&
 
 // Return variable initialization validation
 
-template <typename Context, typename Interface, typename Type>
-bool validateInitComplete(Context context, void (Interface::*Function)(Context, Type*)const, const Interface& interface)
+typedef struct
 {
+	size_t		offset;
+	size_t		size;
+} QueryMemberTableEntry;
+template <typename Context, typename Interface, typename Type>
+bool validateInitComplete(Context context, void (Interface::*Function)(Context, Type*)const, const Interface& interface, const QueryMemberTableEntry* queryMemberTableEntry)
+{
+	const QueryMemberTableEntry	*iterator;
 	Type vec[2];
 	deMemset(&vec[0], 0x00, sizeof(Type));
 	deMemset(&vec[1], 0xFF, sizeof(Type));
@@ -94,9 +100,9 @@ bool validateInitComplete(Context context, void (Interface::*Function)(Context, 
 	(interface.*Function)(context, &vec[0]);
 	(interface.*Function)(context, &vec[1]);
 
-	for (size_t ndx = 0; ndx < sizeof(Type); ndx++)
+	for (iterator = queryMemberTableEntry; iterator->size != 0; iterator++)
 	{
-		if (reinterpret_cast<deUint8*>(&vec[0])[ndx] != reinterpret_cast<deUint8*>(&vec[1])[ndx])
+		if (deMemCmp(((deUint8*)(&vec[0]))+iterator->offset, ((deUint8*)(&vec[1]))+iterator->offset, iterator->size) != 0)
 			return false;
 	}
 
