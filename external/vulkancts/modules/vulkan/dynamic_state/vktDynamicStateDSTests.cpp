@@ -143,13 +143,15 @@ protected:
 
 		const vk::VkExtent3D imageExtent = { WIDTH, HEIGHT, 1 };
 		const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, imageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
-													vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+													vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+													vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 		m_colorTargetImage = Image::createAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator());
 
 		const ImageCreateInfo depthStencilImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_depthStencilAttachmentFormat, imageExtent,
 														  1, 1, vk::VK_SAMPLE_COUNT_1_BIT, vk::VK_IMAGE_TILING_OPTIMAL,
-														  vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+														  vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+														  vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 		m_depthStencilImage = Image::createAndAlloc(m_vk, device, depthStencilImageCreateInfo, m_context.getDefaultAllocator());
 
@@ -173,7 +175,7 @@ protected:
 																 vk::VK_SAMPLE_COUNT_1_BIT,
 																 vk::VK_ATTACHMENT_LOAD_OP_LOAD,
 																 vk::VK_ATTACHMENT_STORE_OP_STORE,
-																 vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																 vk::VK_ATTACHMENT_LOAD_OP_LOAD,
 																 vk::VK_ATTACHMENT_STORE_OP_STORE,
 																 vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 																 vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
@@ -326,6 +328,18 @@ protected:
 		m_vk.cmdClearDepthStencilImage(*m_cmdBuffer, m_depthStencilImage->object(),
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &depthStencilClearValue, 2, subresourceRangeDepthStencil);
 
+		vk::VkMemoryBarrier memBarrier;
+		memBarrier.sType = vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+		memBarrier.pNext = NULL;
+		memBarrier.srcAccessMask = vk::VK_ACCESS_TRANSFER_WRITE_BIT;
+ 		memBarrier.dstAccessMask = vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+					   vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+ 
+		m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+						      vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+						      vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+						      0, 1, &memBarrier, 0, NULL, 0, NULL);
+ 
 		const vk::VkRect2D renderArea = { { 0, 0 }, { WIDTH, HEIGHT } };
 		const RenderPassBeginInfo renderPassBegin(*m_renderPass, *m_framebuffer, renderArea);
 
