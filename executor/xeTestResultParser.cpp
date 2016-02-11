@@ -165,7 +165,8 @@ static const EnumMapEntry s_logVersionMap[] =
 	{ 0x0b7db0d4,	"0.3.0",		TESTLOGVERSION_0_3_0	},
 	{ 0x0b7db0d5,	"0.3.1",		TESTLOGVERSION_0_3_1	},
 	{ 0x0b7db0d6,	"0.3.2",		TESTLOGVERSION_0_3_2	},
-	{ 0x0b7db0d7,	"0.3.3",		TESTLOGVERSION_0_3_3	}
+	{ 0x0b7db0d7,	"0.3.3",		TESTLOGVERSION_0_3_3	},
+	{ 0x0b7db0d8,	"0.3.4",		TESTLOGVERSION_0_3_4	}
 };
 
 static const EnumMapEntry s_sampleValueTagMap[] =
