@@ -2,7 +2,8 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2015 Mobica Ltd.
+ * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2016 The Android Open Source Project
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and/or associated documentation files (the
@@ -14,10 +15,6 @@
  *
  * The above copyright notice(s) and this permission notice shall be included
  * in all copies or substantial portions of the Materials.
- *
- * The Materials are Confidential Information as defined by the
- * Khronos Membership Agreement until designated non-confidential by Khronos,
- * at which point this condition clause shall be removed.
  *
  * THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -291,23 +288,25 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 	m_device_interface.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
 
 	// Allocate descriptor sets
-	DynArray< vk::Move<vk::VkDescriptorSet> > descriptorSets(m_dispatchCommands.size());
+	typedef de::SharedPtr<vk::Unique<vk::VkDescriptorSet> > SharedVkDescriptorSet;
+	std::vector<SharedVkDescriptorSet> descriptorSets(m_dispatchCommands.size());
 
 	vk::VkDeviceSize curOffset = 0;
 
 	// Create descriptor sets
 	for (deUint32 cmdNdx = 0; cmdNdx < m_dispatchCommands.size(); ++cmdNdx)
 	{
-		descriptorSets[cmdNdx] = makeDescriptorSet(m_device_interface, m_device, *descriptorPool, *descriptorSetLayout);
+		descriptorSets[cmdNdx] = SharedVkDescriptorSet(new vk::Unique<vk::VkDescriptorSet>(
+									makeDescriptorSet(m_device_interface, m_device, *descriptorPool, *descriptorSetLayout)));
 
 		const vk::VkDescriptorBufferInfo resultDescriptorInfo = makeDescriptorBufferInfo(*resultBuffer, curOffset, resultBlockSize);
 
 		vk::DescriptorSetUpdateBuilder descriptorSetBuilder;
-		descriptorSetBuilder.writeSingle(*descriptorSets[cmdNdx], vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDescriptorInfo);
+		descriptorSetBuilder.writeSingle(**descriptorSets[cmdNdx], vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDescriptorInfo);
 		descriptorSetBuilder.update(m_device_interface, m_device);
 
 		// Bind descriptor set
-		m_device_interface.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSets[cmdNdx].get(), 0u, DE_NULL);
+		m_device_interface.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &(**descriptorSets[cmdNdx]), 0u, DE_NULL);
 
 		// Dispatch indirect compute command
 		m_device_interface.cmdDispatchIndirect(*cmdBuffer, *indirectBuffer, m_dispatchCommands[cmdNdx].m_offset);

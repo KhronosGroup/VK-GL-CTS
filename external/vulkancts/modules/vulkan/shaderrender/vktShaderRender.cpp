@@ -4,6 +4,7 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2016 The Android Open Source Project
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and/or associated documentation files (the
@@ -15,10 +16,6 @@
  *
  * The above copyright notice(s) and this permission notice shall be included
  * in all copies or substantial portions of the Materials.
- *
- * The Materials are Confidential Information as defined by the
- * Khronos Membership Agreement until designated non-confidential by Khronos,
- * at which point this condition clause shall be removed.
  *
  * THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -1704,7 +1701,44 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		};
 
 		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+
+		const VkImageMemoryBarrier imageBarrier =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+			*m_colorImage,								// VkImage					image;
+			{											// VkImageSubresourceRange	subresourceRange;
+				VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask;
+				0u,							// deUint32				baseMipLevel;
+				1u,							// deUint32				mipLevels;
+				0u,							// deUint32				baseArraySlice;
+				1u							// deUint32				arraySize;
+			}
+		};
+
+		const VkBufferMemoryBarrier bufferBarrier =
+		{
+			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+			DE_NULL,									// const void*		pNext;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+			VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
+			*readImageBuffer,							// VkBuffer			buffer;
+			0u,											// VkDeviceSize		offset;
+			imageSizeBytes								// VkDeviceSize		size;
+		};
+
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 		vk.cmdCopyImageToBuffer(*cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+
 		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 		VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));

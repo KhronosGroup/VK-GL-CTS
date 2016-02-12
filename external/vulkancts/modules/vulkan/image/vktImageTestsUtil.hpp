@@ -4,7 +4,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2015 Mobica Ltd.
+ * Copyright (c) 2016 The Khronos Group Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and/or associated documentation files (the
@@ -16,10 +16,6 @@
  *
  * The above copyright notice(s) and this permission notice shall be included
  * in all copies or substantial portions of the Materials.
- *
- * The Materials are Confidential Information as defined by the
- * Khronos Membership Agreement until designated non-confidential by Khronos,
- * at which point this condition clause shall be removed.
  *
  * THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -76,8 +72,8 @@ public:
 													 const vk::VkBufferCreateInfo&	bufferCreateInfo,
 													 const vk::MemoryRequirement	memoryRequirement);
 
-	vk::VkBuffer					get				(void) const { return *m_buffer; }
-	vk::VkBuffer					operator*		(void) const { return get(); }
+	const vk::VkBuffer&				get				(void) const { return *m_buffer; }
+	const vk::VkBuffer&				operator*		(void) const { return get(); }
 	vk::Allocation&					getAllocation	(void) const { return *m_allocation; }
 
 private:
@@ -97,8 +93,8 @@ public:
 													 const vk::VkImageCreateInfo&	imageCreateInfo,
 													 const vk::MemoryRequirement	memoryRequirement);
 
-	vk::VkImage						get				(void) const { return *m_image; }
-	vk::VkImage						operator*		(void) const { return get(); }
+	const vk::VkImage&				get				(void) const { return *m_image; }
+	const vk::VkImage&				operator*		(void) const { return get(); }
 	vk::Allocation&					getAllocation	(void) const { return *m_allocation; }
 
 private:
@@ -107,24 +103,6 @@ private:
 
 									Image			(const Image&);  // "deleted"
 	Image&							operator=		(const Image&);
-};
-
-//! Dynamic size array, used to hold smart pointers like vk::Move which don't work with std::vector.
-template<typename T>
-class DynArray
-{
-public:
-				DynArray	(std::size_t size)			{ data = new T[size]; }
-				~DynArray	(void)						{ delete [] data; }
-
-	T&			operator[]	(std::size_t idx)			{ return data[idx]; }
-	const T&	operator[]	(std::size_t idx) const		{ return data[idx]; }
-
-private:
-	T* data;
-
-				DynArray	(const DynArray&);  // "deleted"
-	DynArray&	operator=	(const DynArray&);
 };
 
 vk::Move<vk::VkCommandPool>		makeCommandPool					(const vk::DeviceInterface&			vk,

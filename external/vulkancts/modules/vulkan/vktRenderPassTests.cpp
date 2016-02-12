@@ -15,10 +15,6 @@
  * The above copyright notice(s) and this permission notice shall be
  * included in all copies or substantial portions of the Materials.
  *
- * The Materials are Confidential Information as defined by the
- * Khronos Membership Agreement until designated non-confidential by
- * Khronos, at which point this condition clause shall be removed.
- *
  * THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -3766,7 +3762,12 @@ void initializeSubpassRenderInfo (vector<SubpassRenderInfo>& renderInfos, de::Ra
 		}
 
 		if (config.renderTypes & TestConfig::RENDERTYPES_DRAW)
-			renderQuad = tcu::just(RenderQuad(tcu::Vec4(-0.5f, -0.5f, 0.0f, 1.0f), tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f)));
+		{
+			// (-0.5,-0.5) - (0.5,0.5) rounded to pixel edges
+			const float x = (float)(viewportSize.x() / 4) / (float)(viewportSize.x() / 2);
+			const float y = (float)(viewportSize.y() / 4) / (float)(viewportSize.y() / 2);
+			renderQuad = tcu::just(RenderQuad(tcu::Vec4(-x, -y, 0.0f, 1.0f), tcu::Vec4(x, y, 1.0f, 1.0f)));
+		}
 
 		renderInfos.push_back(SubpassRenderInfo(renderPass, subpassNdx, subpassIsSecondary, viewportOffset, viewportSize, renderQuad, colorClears, depthStencilClear));
 	}
