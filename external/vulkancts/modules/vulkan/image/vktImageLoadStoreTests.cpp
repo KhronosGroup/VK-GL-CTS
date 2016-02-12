@@ -1150,11 +1150,11 @@ void ImageLoadStoreTestInstance::commandBeforeCompute (const VkCommandBuffer cmd
 		const VkImageMemoryBarrier preCopyImageBarriers[] =
 		{
 			makeImageMemoryBarrier(
-				0u, 0u,
+				0u, VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				m_imageSrc->get(), fullImageSubresourceRange),
 			makeImageMemoryBarrier(
-				0u, 0u,
+				0u, VK_ACCESS_SHADER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 				m_imageDst->get(), fullImageSubresourceRange)
 		};
