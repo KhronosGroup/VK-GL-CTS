@@ -161,37 +161,6 @@ static void split (vector<string>& dst, const string& src)
 		dst.push_back(src.substr(start, end-start));
 }
 
-vector<string> GetExtensions::operator() (const RenderContext& context) const
-{
-	const glw::Functions& gl = context.getFunctions();
-
-	if (context.getType().getAPI() == ApiType::es(2,0))
-	{
-		const char* result = (const char*)gl.getString(GL_EXTENSIONS);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetString(GL_EXTENSIONS) failed");
-
-		vector<string> extensions;
-		split(extensions, string(result));
-
-		return extensions;
-	}
-	else
-	{
-		int				numExtensions	= 0;
-		vector<string>	extensions;
-
-		gl.getIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv(GL_NUM_EXTENSIONS) failed");
-
-		extensions.resize(numExtensions);
-		for (int ndx = 0; ndx < numExtensions; ndx++)
-			extensions[ndx] = (const char*)gl.getStringi(GL_EXTENSIONS, ndx);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetStringi(GL_EXTENSIONS, ndx) failed");
-
-		return extensions;
-	}
-}
-
 set<int> GetCompressedTextureFormats::operator() (const RenderContext& context) const
 {
 	const glw::Functions& gl = context.getFunctions();
@@ -216,6 +185,27 @@ set<int> GetCompressedTextureFormats::operator() (const RenderContext& context) 
 ContextInfo::ContextInfo (const RenderContext& context)
 	: m_context(context)
 {
+	const glw::Functions& gl = context.getFunctions();
+
+	if (context.getType().getAPI() == ApiType::es(2,0))
+	{
+		const char* result = (const char*)gl.getString(GL_EXTENSIONS);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetString(GL_EXTENSIONS) failed");
+
+		split(m_extensions, string(result));
+	}
+	else
+	{
+		int				numExtensions	= 0;
+
+		gl.getIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv(GL_NUM_EXTENSIONS) failed");
+
+		m_extensions.resize(numExtensions);
+		for (int ndx = 0; ndx < numExtensions; ndx++)
+			m_extensions[ndx] = (const char*)gl.getStringi(GL_EXTENSIONS, ndx);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetStringi(GL_EXTENSIONS, ndx) failed");
+	}
 }
 
 ContextInfo::~ContextInfo (void)
