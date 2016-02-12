@@ -61,19 +61,12 @@ private:
 	mutable bool	m_isComputed;
 };
 
-class GetExtensions
-{
-public:
-	std::vector<std::string> operator() (const RenderContext& context) const;
-};
-
 class GetCompressedTextureFormats
 {
 public:
 	std::set<int> operator() (const RenderContext& context) const;
 };
 
-typedef CachedValue<std::vector<std::string>, GetExtensions>	ExtensionList;
 typedef CachedValue<std::set<int>, GetCompressedTextureFormats>	CompressedTextureFormats;
 
 /*--------------------------------------------------------------------*//*!
@@ -96,7 +89,7 @@ public:
 
 	virtual bool								isCompressedTextureFormatSupported	(int format) const;
 
-	const std::vector<std::string>&				getExtensions						(void) const { return m_extensions.getValue(m_context); }
+	const std::vector<std::string>&				getExtensions						(void) const { return m_extensions; }
 	bool										isExtensionSupported				(const char* extName) const;
 
 	static ContextInfo*							create								(const RenderContext& context);
@@ -110,7 +103,7 @@ private:
 												ContextInfo							(const ContextInfo& other);
 	ContextInfo&								operator=							(const ContextInfo& other);
 
-	ExtensionList								m_extensions;
+	std::vector<std::string>					m_extensions;
 	CompressedTextureFormats					m_compressedTextureFormats;
 };
 
