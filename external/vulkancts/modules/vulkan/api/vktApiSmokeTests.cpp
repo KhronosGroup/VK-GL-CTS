@@ -103,7 +103,7 @@ tcu::TestStatus createSamplerTest (Context& context)
 void createShaderProgs (SourceCollections& dst)
 {
 	dst.glslSources.add("test") << glu::VertexSource(
-		"#version 300 es\n"
+		"#version 310 es\n"
 		"in highp vec4 a_position;\n"
 		"void main (void) { gl_Position = a_position; }\n");
 }
@@ -186,11 +186,11 @@ void createTriangleAsmProgs (SourceCollections& dst)
 void createTriangleProgs (SourceCollections& dst)
 {
 	dst.glslSources.add("vert") << glu::VertexSource(
-		"#version 300 es\n"
+		"#version 310 es\n"
 		"layout(location = 0) in highp vec4 a_position;\n"
 		"void main (void) { gl_Position = a_position; }\n");
 	dst.glslSources.add("frag") << glu::FragmentSource(
-		"#version 300 es\n"
+		"#version 310 es\n"
 		"layout(location = 0) out lowp vec4 o_color;\n"
 		"void main (void) { o_color = vec4(1.0, 0.0, 1.0, 1.0); }\n");
 }
