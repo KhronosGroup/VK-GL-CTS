@@ -45,7 +45,10 @@
 #	include "glslang/Include/ShHandle.h"
 #	include "glslang/MachineIndependent/localintermediate.h"
 #	include "glslang/Public/ShaderLang.h"
+#endif
 
+#if defined(DEQP_HAVE_SPIRV_TOOLS)
+#	include "libspirv/libspirv.h"
 #endif
 
 namespace vk
@@ -275,6 +278,16 @@ void glslToSpirV (const glu::ProgramSources& program, std::vector<deUint8>* dst,
 	TCU_THROW(InternalError, "Can't compile empty program");
 }
 
+#else // defined(DEQP_HAVE_GLSLANG)
+
+void glslToSpirV (const glu::ProgramSources&, std::vector<deUint8>*, glu::ShaderProgramInfo*)
+{
+	TCU_THROW(NotSupportedError, "GLSL to SPIR-V compilation not supported (DEQP_HAVE_GLSLANG not defined)");
+}
+
+#endif // defined(DEQP_HAVE_GLSLANG)
+
+#if defined(DEQP_HAVE_SPIRV_TOOLS)
 void disassembleSpirV (size_t binarySize, const deUint8* binary, std::ostream* dst)
 {
 	std::vector<deUint32>	binForDisasm	(binarySize/4);
@@ -287,21 +300,32 @@ void disassembleSpirV (size_t binarySize, const deUint8* binary, std::ostream* d
 #	error "Big-endian not supported"
 #endif
 
-	spv::Disassemble(*dst, binForDisasm);
+	const spv_context	context		= spvContextCreate();
+	if (!context)
+		throw std::bad_alloc();
+	spv_text			text		= DE_NULL;
+	spv_diagnostic		diagnostic;
+	try
+	{
+		const spv_result_t	error	= spvBinaryToText(context, &binForDisasm[0], binForDisasm.size() , 0, &text, &diagnostic);
+		TCU_CHECK_INTERNAL(!error);
+		*dst << text->str;
+	}
+	catch (...)
+	{
+		spvTextDestroy(text);
+		spvContextDestroy(context);
+		throw;
+	}
+	spvTextDestroy(text);
+	spvContextDestroy(context);
 }
-
-#else // defined(DEQP_HAVE_GLSLANG)
-
-void glslToSpirV (const glu::ProgramSources&, std::vector<deUint8>*, glu::ShaderProgramInfo*)
-{
-	TCU_THROW(NotSupportedError, "GLSL to SPIR-V compilation not supported (DEQP_HAVE_GLSLANG not defined)");
-}
+#else // defined(DEQP_HAVE_SPIRV_TOOLS)
 
 void disassembleSpirV (size_t, const deUint8*, std::ostream*)
 {
-	TCU_THROW(NotSupportedError, "SPIR-V disassembling not supported (DEQP_HAVE_GLSLANG not defined)");
+	TCU_THROW(NotSupportedError, "SPIR-V disassembling not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
 }
-
-#endif
+#endif // defined(DEQP_HAVE_SPIRV_TOOLS)
 
 } // vk
