@@ -144,7 +144,7 @@ private:
 			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 			NULL,
 			memReqs.size,
-			deCtz32(memReqs.memoryTypeBits)				//	deUint32		memoryTypeIndex
+			(deUint32)deCtz32(memReqs.memoryTypeBits)	//	deUint32		memoryTypeIndex
 		};
 
 		try
