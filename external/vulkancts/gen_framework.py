@@ -64,6 +64,9 @@ INSTANCE_FUNCTIONS	= [
 	"vkEnumerateDeviceLayerProperties",
 	"vkCreateDevice",
 	"vkGetDeviceProcAddr",
+	"vkCreateDebugReportCallbackEXT",
+	"vkDestroyDebugReportCallbackEXT",
+	"vkDebugReportMessageEXT",
 ]
 
 DEFINITIONS			= [
@@ -196,22 +199,24 @@ def getFunctionTypeName (function):
 	assert function.name[:2] == "vk"
 	return function.name[2:] + "Func"
 
+def endsWith (str, postfix):
+	return str[-len(postfix):] == postfix
+
+def splitNameExtPostfix (name):
+	knownExtPostfixes = ["KHR", "EXT"]
+	for postfix in knownExtPostfixes:
+		if endsWith(name, postfix):
+			return (name[:-len(postfix)], postfix)
+	return (name, "")
+
 def getBitEnumNameForBitfield (bitfieldName):
-	if bitfieldName[-3:] == "KHR":
-		postfix = "KHR"
-		bitfieldName = bitfieldName[:-3]
-	else:
-		postfix = ""
+	bitfieldName, postfix = splitNameExtPostfix(bitfieldName)
 
 	assert bitfieldName[-1] == "s"
 	return bitfieldName[:-1] + "Bits" + postfix
 
 def getBitfieldNameForBitEnum (bitEnumName):
-	if bitEnumName[-3:] == "KHR":
-		postfix = "KHR"
-		bitEnumName = bitEnumName[:-3]
-	else:
-		postfix = ""
+	bitEnumName, postfix = splitNameExtPostfix(bitEnumName)
 
 	assert bitEnumName[-4:] == "Bits"
 	return bitEnumName[:-4] + "s" + postfix
@@ -627,7 +632,15 @@ def writeRefUtilImpl (api, filename):
 		yield ""
 
 		for function in functions:
-			dtorObj = "device" if function.type == Function.TYPE_DEVICE else "object"
+			if function.type == Function.TYPE_DEVICE:
+				dtorObj = "device"
+			elif function.type == Function.TYPE_INSTANCE:
+				if function.name == "createDevice":
+					dtorObj = "object"
+				else:
+					dtorObj = "instance"
+			else:
+				dtorObj = "object"
 
 			yield "Move<%s> %s (%s)" % (function.objectType, function.name, argListToStr([function.iface] + function.arguments))
 			yield "{"

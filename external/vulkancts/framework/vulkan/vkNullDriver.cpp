@@ -125,10 +125,10 @@ void freeHandle (Handle handle, const VkAllocationCallbacks* pAllocator)
 		delete obj;
 }
 
-template<typename Object, typename Handle, typename CreateInfo>
-Handle allocateNonDispHandle (VkDevice device, const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+template<typename Object, typename Handle, typename Parent, typename CreateInfo>
+Handle allocateNonDispHandle (Parent parent, const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
-	Object* const	obj		= allocateHandle<Object, Object*>(device, pCreateInfo, pAllocator);
+	Object* const	obj		= allocateHandle<Object, Object*>(parent, pCreateInfo, pAllocator);
 	return Handle((deUint64)(deUintptr)obj);
 }
 
@@ -186,6 +186,13 @@ public:
 
 private:
 	const tcu::StaticFunctionLibrary	m_functions;
+};
+
+class DebugReportCallbackEXT
+{
+public:
+										DebugReportCallbackEXT	(VkInstance, const VkDebugReportCallbackCreateInfoEXT*) {}
+										~DebugReportCallbackEXT	(void) {}
 };
 
 class Device

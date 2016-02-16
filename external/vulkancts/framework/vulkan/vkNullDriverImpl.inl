@@ -121,6 +121,12 @@ VKAPI_ATTR VkResult VKAPI_CALL createCommandPool (VkDevice device, const VkComma
 	VK_NULL_RETURN((*pCommandPool = allocateNonDispHandle<CommandPool, VkCommandPool>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createDebugReportCallbackEXT (VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pCallback = allocateNonDispHandle<DebugReportCallbackEXT, VkDebugReportCallbackEXT>(instance, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR void VKAPI_CALL destroyInstance (VkInstance instance, const VkAllocationCallbacks* pAllocator)
 {
 	freeHandle<Instance, VkInstance>(instance, pAllocator);
@@ -243,6 +249,12 @@ VKAPI_ATTR void VKAPI_CALL destroyCommandPool (VkDevice device, VkCommandPool co
 {
 	DE_UNREF(device);
 	freeNonDispHandle<CommandPool, VkCommandPool>(commandPool, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyDebugReportCallbackEXT (VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(instance);
+	freeNonDispHandle<DebugReportCallbackEXT, VkDebugReportCallbackEXT>(callback, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFeatures (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures* pFeatures)
@@ -912,6 +924,18 @@ VKAPI_ATTR void VKAPI_CALL cmdExecuteCommands (VkCommandBuffer commandBuffer, de
 	DE_UNREF(pCommandBuffers);
 }
 
+VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage)
+{
+	DE_UNREF(instance);
+	DE_UNREF(flags);
+	DE_UNREF(objectType);
+	DE_UNREF(object);
+	DE_UNREF(location);
+	DE_UNREF(messageCode);
+	DE_UNREF(pLayerPrefix);
+	DE_UNREF(pMessage);
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -934,6 +958,9 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateDevice,								createDevice),
 	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,		enumerateDeviceExtensionProperties),
 	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,			enumerateDeviceLayerProperties),
+	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,				createDebugReportCallbackEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,				destroyDebugReportCallbackEXT),
+	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,						debugReportMessageEXT),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =

@@ -13,3 +13,6 @@ m_vk.getDeviceProcAddr						= (GetDeviceProcAddrFunc)						GET_PROC_ADDR("vkGetD
 m_vk.createDevice							= (CreateDeviceFunc)							GET_PROC_ADDR("vkCreateDevice");
 m_vk.enumerateDeviceExtensionProperties		= (EnumerateDeviceExtensionPropertiesFunc)		GET_PROC_ADDR("vkEnumerateDeviceExtensionProperties");
 m_vk.enumerateDeviceLayerProperties			= (EnumerateDeviceLayerPropertiesFunc)			GET_PROC_ADDR("vkEnumerateDeviceLayerProperties");
+m_vk.createDebugReportCallbackEXT			= (CreateDebugReportCallbackEXTFunc)			GET_PROC_ADDR("vkCreateDebugReportCallbackEXT");
+m_vk.destroyDebugReportCallbackEXT			= (DestroyDebugReportCallbackEXTFunc)			GET_PROC_ADDR("vkDestroyDebugReportCallbackEXT");
+m_vk.debugReportMessageEXT					= (DebugReportMessageEXTFunc)					GET_PROC_ADDR("vkDebugReportMessageEXT");

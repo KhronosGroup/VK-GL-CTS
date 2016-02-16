@@ -1183,3 +1183,12 @@ struct VkDrawIndirectCommand
 	deUint32	firstInstance;
 };
 
+struct VkDebugReportCallbackCreateInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDebugReportFlagsEXT			flags;
+	PFN_vkDebugReportCallbackEXT	pfnCallback;
+	void*							pUserData;
+};
+
