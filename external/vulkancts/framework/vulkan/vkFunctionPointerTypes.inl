@@ -138,3 +138,6 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderPassFunc)							(VkComman
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdNextSubpassFunc)								(VkCommandBuffer commandBuffer, VkSubpassContents contents);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderPassFunc)								(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdExecuteCommandsFunc)							(VkCommandBuffer commandBuffer, deUint32 commandBufferCount, const VkCommandBuffer* pCommandBuffers);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDebugReportCallbackEXTFunc)					(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDebugReportCallbackEXTFunc)					(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DebugReportMessageEXTFunc)							(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage);

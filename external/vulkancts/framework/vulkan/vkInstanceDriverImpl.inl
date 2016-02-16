@@ -61,3 +61,18 @@ VkResult InstanceDriver::enumerateDeviceLayerProperties (VkPhysicalDevice physic
 {
 	return m_vk.enumerateDeviceLayerProperties(physicalDevice, pPropertyCount, pProperties);
 }
+
+VkResult InstanceDriver::createDebugReportCallbackEXT (VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) const
+{
+	return m_vk.createDebugReportCallbackEXT(instance, pCreateInfo, pAllocator, pCallback);
+}
+
+void InstanceDriver::destroyDebugReportCallbackEXT (VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyDebugReportCallbackEXT(instance, callback, pAllocator);
+}
+
+void InstanceDriver::debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage) const
+{
+	m_vk.debugReportMessageEXT(instance, flags, objectType, object, location, messageCode, pLayerPrefix, pMessage);
+}
