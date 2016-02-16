@@ -32,7 +32,7 @@ DEQP_CASELISTS:=$(sort $(patsubst master/%,%, \
   $(shell cd $(LOCAL_PATH) ; \
           find -L master -maxdepth 1 -name "*.txt") \
   ))
-LOCAL_COMPATIBILITY_SUPPORT_FILES := $(foreach file, $(DEQP_CASELISTS), ./master/$(file):$(file))
+LOCAL_COMPATIBILITY_SUPPORT_FILES := $(foreach file, $(DEQP_CASELISTS), $(LOCAL_PATH)/master/$(file):$(file))
 
 include $(BUILD_HOST_JAVA_LIBRARY)
 
