@@ -32,6 +32,23 @@ template<> const char*	getTypeName<VkDisplayKHR>				(void) { return "VkDisplayKH
 template<> const char*	getTypeName<VkDisplayModeKHR>			(void) { return "VkDisplayModeKHR";			}
 template<> const char*	getTypeName<VkDebugReportCallbackEXT>	(void) { return "VkDebugReportCallbackEXT";	}
 
+namespace pt
+{
+std::ostream& operator<< (std::ostream& s, XlibDisplayPtr			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XlibWindow				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XlibVisualID				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XcbConnectionPtr			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XcbWindow				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XcbVisualid				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, WaylandDisplayPtr		v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, WaylandSurfacePtr		v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, MirConnectionPtr			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, MirSurfacePtr			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, AndroidNativeWindowPtr	v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, Win32InstanceHandle		v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, Win32WindowHandle		v) { return s << tcu::toHex(v.internal); }
+}
+
 const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion value)
 {
 	switch (value)
@@ -2942,6 +2959,240 @@ std::ostream& operator<< (std::ostream& s, const VkDrawIndirectCommand& value)
 	s << "\tinstanceCount = " << value.instanceCount << '\n';
 	s << "\tfirstVertex = " << value.firstVertex << '\n';
 	s << "\tfirstInstance = " << value.firstInstance << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSurfaceCapabilitiesKHR& value)
+{
+	s << "VkSurfaceCapabilitiesKHR = {\n";
+	s << "\tminImageCount = " << value.minImageCount << '\n';
+	s << "\tmaxImageCount = " << value.maxImageCount << '\n';
+	s << "\tcurrentExtent = " << value.currentExtent << '\n';
+	s << "\tminImageExtent = " << value.minImageExtent << '\n';
+	s << "\tmaxImageExtent = " << value.maxImageExtent << '\n';
+	s << "\tmaxImageArrayLayers = " << value.maxImageArrayLayers << '\n';
+	s << "\tsupportedTransforms = " << getSurfaceTransformFlagsKHRStr(value.supportedTransforms) << '\n';
+	s << "\tcurrentTransform = " << value.currentTransform << '\n';
+	s << "\tsupportedCompositeAlpha = " << getCompositeAlphaFlagsKHRStr(value.supportedCompositeAlpha) << '\n';
+	s << "\tsupportedUsageFlags = " << getImageUsageFlagsStr(value.supportedUsageFlags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSurfaceFormatKHR& value)
+{
+	s << "VkSurfaceFormatKHR = {\n";
+	s << "\tformat = " << value.format << '\n';
+	s << "\tcolorSpace = " << value.colorSpace << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSwapchainCreateInfoKHR& value)
+{
+	s << "VkSwapchainCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getSwapchainCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tsurface = " << value.surface << '\n';
+	s << "\tminImageCount = " << value.minImageCount << '\n';
+	s << "\timageFormat = " << value.imageFormat << '\n';
+	s << "\timageColorSpace = " << value.imageColorSpace << '\n';
+	s << "\timageExtent = " << value.imageExtent << '\n';
+	s << "\timageArrayLayers = " << value.imageArrayLayers << '\n';
+	s << "\timageUsage = " << getImageUsageFlagsStr(value.imageUsage) << '\n';
+	s << "\timageSharingMode = " << value.imageSharingMode << '\n';
+	s << "\tqueueFamilyIndexCount = " << value.queueFamilyIndexCount << '\n';
+	s << "\tpQueueFamilyIndices = " << value.pQueueFamilyIndices << '\n';
+	s << "\tpreTransform = " << value.preTransform << '\n';
+	s << "\tcompositeAlpha = " << value.compositeAlpha << '\n';
+	s << "\tpresentMode = " << value.presentMode << '\n';
+	s << "\tclipped = " << value.clipped << '\n';
+	s << "\toldSwapchain = " << value.oldSwapchain << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentInfoKHR& value)
+{
+	s << "VkPresentInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\twaitSemaphoreCount = " << value.waitSemaphoreCount << '\n';
+	s << "\tpWaitSemaphores = " << value.pWaitSemaphores << '\n';
+	s << "\tswapchainCount = " << value.swapchainCount << '\n';
+	s << "\tpSwapchains = " << value.pSwapchains << '\n';
+	s << "\tpImageIndices = " << value.pImageIndices << '\n';
+	s << "\tpResults = " << value.pResults << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayPropertiesKHR& value)
+{
+	s << "VkDisplayPropertiesKHR = {\n";
+	s << "\tdisplay = " << value.display << '\n';
+	s << "\tdisplayName = " << getCharPtrStr(value.displayName) << '\n';
+	s << "\tphysicalDimensions = " << value.physicalDimensions << '\n';
+	s << "\tphysicalResolution = " << value.physicalResolution << '\n';
+	s << "\tsupportedTransforms = " << getSurfaceTransformFlagsKHRStr(value.supportedTransforms) << '\n';
+	s << "\tplaneReorderPossible = " << value.planeReorderPossible << '\n';
+	s << "\tpersistentContent = " << value.persistentContent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayModeParametersKHR& value)
+{
+	s << "VkDisplayModeParametersKHR = {\n";
+	s << "\tvisibleRegion = " << value.visibleRegion << '\n';
+	s << "\trefreshRate = " << value.refreshRate << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayModePropertiesKHR& value)
+{
+	s << "VkDisplayModePropertiesKHR = {\n";
+	s << "\tdisplayMode = " << value.displayMode << '\n';
+	s << "\tparameters = " << value.parameters << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayModeCreateInfoKHR& value)
+{
+	s << "VkDisplayModeCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDisplayModeCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tparameters = " << value.parameters << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayPlaneCapabilitiesKHR& value)
+{
+	s << "VkDisplayPlaneCapabilitiesKHR = {\n";
+	s << "\tsupportedAlpha = " << getDisplayPlaneAlphaFlagsKHRStr(value.supportedAlpha) << '\n';
+	s << "\tminSrcPosition = " << value.minSrcPosition << '\n';
+	s << "\tmaxSrcPosition = " << value.maxSrcPosition << '\n';
+	s << "\tminSrcExtent = " << value.minSrcExtent << '\n';
+	s << "\tmaxSrcExtent = " << value.maxSrcExtent << '\n';
+	s << "\tminDstPosition = " << value.minDstPosition << '\n';
+	s << "\tmaxDstPosition = " << value.maxDstPosition << '\n';
+	s << "\tminDstExtent = " << value.minDstExtent << '\n';
+	s << "\tmaxDstExtent = " << value.maxDstExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayPlanePropertiesKHR& value)
+{
+	s << "VkDisplayPlanePropertiesKHR = {\n";
+	s << "\tcurrentDisplay = " << value.currentDisplay << '\n';
+	s << "\tcurrentStackIndex = " << value.currentStackIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplaySurfaceCreateInfoKHR& value)
+{
+	s << "VkDisplaySurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDisplaySurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tdisplayMode = " << value.displayMode << '\n';
+	s << "\tplaneIndex = " << value.planeIndex << '\n';
+	s << "\tplaneStackIndex = " << value.planeStackIndex << '\n';
+	s << "\ttransform = " << value.transform << '\n';
+	s << "\tglobalAlpha = " << value.globalAlpha << '\n';
+	s << "\talphaMode = " << value.alphaMode << '\n';
+	s << "\timageExtent = " << value.imageExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayPresentInfoKHR& value)
+{
+	s << "VkDisplayPresentInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcRect = " << value.srcRect << '\n';
+	s << "\tdstRect = " << value.dstRect << '\n';
+	s << "\tpersistent = " << value.persistent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkXlibSurfaceCreateInfoKHR& value)
+{
+	s << "VkXlibSurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getXlibSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tdpy = " << value.dpy << '\n';
+	s << "\twindow = " << value.window << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkXcbSurfaceCreateInfoKHR& value)
+{
+	s << "VkXcbSurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getXcbSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tconnection = " << value.connection << '\n';
+	s << "\twindow = " << value.window << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkWaylandSurfaceCreateInfoKHR& value)
+{
+	s << "VkWaylandSurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getWaylandSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tdisplay = " << value.display << '\n';
+	s << "\tsurface = " << value.surface << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMirSurfaceCreateInfoKHR& value)
+{
+	s << "VkMirSurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getMirSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tconnection = " << value.connection << '\n';
+	s << "\tmirSurface = " << value.mirSurface << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAndroidSurfaceCreateInfoKHR& value)
+{
+	s << "VkAndroidSurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getAndroidSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\twindow = " << value.window << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkWin32SurfaceCreateInfoKHR& value)
+{
+	s << "VkWin32SurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getWin32SurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\thinstance = " << value.hinstance << '\n';
+	s << "\thwnd = " << value.hwnd << '\n';
 	s << '}';
 	return s;
 }

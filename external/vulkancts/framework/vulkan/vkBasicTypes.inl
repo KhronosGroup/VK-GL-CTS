@@ -1153,3 +1153,16 @@ typedef deUint32 VkAndroidSurfaceCreateFlagsKHR;
 
 typedef deUint32 VkWin32SurfaceCreateFlagsKHR;
 
+VK_DEFINE_PLATFORM_TYPE(XlibDisplayPtr,			void*);
+VK_DEFINE_PLATFORM_TYPE(XlibWindow,				deUintptr);
+VK_DEFINE_PLATFORM_TYPE(XlibVisualID,			deUint32);
+VK_DEFINE_PLATFORM_TYPE(XcbConnectionPtr,		void*);
+VK_DEFINE_PLATFORM_TYPE(XcbWindow,				deUintptr);
+VK_DEFINE_PLATFORM_TYPE(XcbVisualid,			deUint32);
+VK_DEFINE_PLATFORM_TYPE(WaylandDisplayPtr,		void*);
+VK_DEFINE_PLATFORM_TYPE(WaylandSurfacePtr,		void*);
+VK_DEFINE_PLATFORM_TYPE(MirConnectionPtr,		void*);
+VK_DEFINE_PLATFORM_TYPE(MirSurfacePtr,			void*);
+VK_DEFINE_PLATFORM_TYPE(AndroidNativeWindowPtr,	void*);
+VK_DEFINE_PLATFORM_TYPE(Win32InstanceHandle,	void*);
+VK_DEFINE_PLATFORM_TYPE(Win32WindowHandle,		void*);

@@ -1183,6 +1183,186 @@ struct VkDrawIndirectCommand
 	deUint32	firstInstance;
 };
 
+struct VkSurfaceCapabilitiesKHR
+{
+	deUint32						minImageCount;
+	deUint32						maxImageCount;
+	VkExtent2D						currentExtent;
+	VkExtent2D						minImageExtent;
+	VkExtent2D						maxImageExtent;
+	deUint32						maxImageArrayLayers;
+	VkSurfaceTransformFlagsKHR		supportedTransforms;
+	VkSurfaceTransformFlagBitsKHR	currentTransform;
+	VkCompositeAlphaFlagsKHR		supportedCompositeAlpha;
+	VkImageUsageFlags				supportedUsageFlags;
+};
+
+struct VkSurfaceFormatKHR
+{
+	VkFormat		format;
+	VkColorSpaceKHR	colorSpace;
+};
+
+struct VkSwapchainCreateInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkSwapchainCreateFlagsKHR		flags;
+	VkSurfaceKHR					surface;
+	deUint32						minImageCount;
+	VkFormat						imageFormat;
+	VkColorSpaceKHR					imageColorSpace;
+	VkExtent2D						imageExtent;
+	deUint32						imageArrayLayers;
+	VkImageUsageFlags				imageUsage;
+	VkSharingMode					imageSharingMode;
+	deUint32						queueFamilyIndexCount;
+	const deUint32*					pQueueFamilyIndices;
+	VkSurfaceTransformFlagBitsKHR	preTransform;
+	VkCompositeAlphaFlagBitsKHR		compositeAlpha;
+	VkPresentModeKHR				presentMode;
+	VkBool32						clipped;
+	VkSwapchainKHR					oldSwapchain;
+};
+
+struct VkPresentInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	deUint32				waitSemaphoreCount;
+	const VkSemaphore*		pWaitSemaphores;
+	deUint32				swapchainCount;
+	const VkSwapchainKHR*	pSwapchains;
+	const deUint32*			pImageIndices;
+	VkResult*				pResults;
+};
+
+struct VkDisplayPropertiesKHR
+{
+	VkDisplayKHR				display;
+	const char*					displayName;
+	VkExtent2D					physicalDimensions;
+	VkExtent2D					physicalResolution;
+	VkSurfaceTransformFlagsKHR	supportedTransforms;
+	VkBool32					planeReorderPossible;
+	VkBool32					persistentContent;
+};
+
+struct VkDisplayModeParametersKHR
+{
+	VkExtent2D	visibleRegion;
+	deUint32	refreshRate;
+};
+
+struct VkDisplayModePropertiesKHR
+{
+	VkDisplayModeKHR			displayMode;
+	VkDisplayModeParametersKHR	parameters;
+};
+
+struct VkDisplayModeCreateInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDisplayModeCreateFlagsKHR	flags;
+	VkDisplayModeParametersKHR	parameters;
+};
+
+struct VkDisplayPlaneCapabilitiesKHR
+{
+	VkDisplayPlaneAlphaFlagsKHR	supportedAlpha;
+	VkOffset2D					minSrcPosition;
+	VkOffset2D					maxSrcPosition;
+	VkExtent2D					minSrcExtent;
+	VkExtent2D					maxSrcExtent;
+	VkOffset2D					minDstPosition;
+	VkOffset2D					maxDstPosition;
+	VkExtent2D					minDstExtent;
+	VkExtent2D					maxDstExtent;
+};
+
+struct VkDisplayPlanePropertiesKHR
+{
+	VkDisplayKHR	currentDisplay;
+	deUint32		currentStackIndex;
+};
+
+struct VkDisplaySurfaceCreateInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDisplaySurfaceCreateFlagsKHR	flags;
+	VkDisplayModeKHR				displayMode;
+	deUint32						planeIndex;
+	deUint32						planeStackIndex;
+	VkSurfaceTransformFlagBitsKHR	transform;
+	float							globalAlpha;
+	VkDisplayPlaneAlphaFlagBitsKHR	alphaMode;
+	VkExtent2D						imageExtent;
+};
+
+struct VkDisplayPresentInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkRect2D		srcRect;
+	VkRect2D		dstRect;
+	VkBool32		persistent;
+};
+
+struct VkXlibSurfaceCreateInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkXlibSurfaceCreateFlagsKHR	flags;
+	pt::XlibDisplayPtr			dpy;
+	pt::XlibWindow				window;
+};
+
+struct VkXcbSurfaceCreateInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkXcbSurfaceCreateFlagsKHR	flags;
+	pt::XcbConnectionPtr		connection;
+	pt::XcbWindow				window;
+};
+
+struct VkWaylandSurfaceCreateInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkWaylandSurfaceCreateFlagsKHR	flags;
+	pt::WaylandDisplayPtr			display;
+	pt::WaylandSurfacePtr			surface;
+};
+
+struct VkMirSurfaceCreateInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkMirSurfaceCreateFlagsKHR	flags;
+	pt::MirConnectionPtr		connection;
+	pt::MirSurfacePtr			mirSurface;
+};
+
+struct VkAndroidSurfaceCreateInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkAndroidSurfaceCreateFlagsKHR	flags;
+	pt::AndroidNativeWindowPtr		window;
+};
+
+struct VkWin32SurfaceCreateInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkWin32SurfaceCreateFlagsKHR	flags;
+	pt::Win32InstanceHandle			hinstance;
+	pt::Win32WindowHandle			hwnd;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;

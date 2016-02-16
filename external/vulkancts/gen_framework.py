@@ -64,6 +64,47 @@ INSTANCE_FUNCTIONS	= [
 	"vkEnumerateDeviceLayerProperties",
 	"vkCreateDevice",
 	"vkGetDeviceProcAddr",
+
+	# VK_KHR_surface
+	"vkDestroySurfaceKHR",
+	"vkGetPhysicalDeviceSurfaceSupportKHR",
+	"vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
+	"vkGetPhysicalDeviceSurfaceFormatsKHR",
+	"vkGetPhysicalDeviceSurfacePresentModesKHR",
+
+	# VK_KHR_display
+	"vkGetPhysicalDeviceDisplayPropertiesKHR",
+	"vkGetPhysicalDeviceDisplayPlanePropertiesKHR",
+	"vkGetDisplayPlaneSupportedDisplaysKHR",
+	"vkGetDisplayModePropertiesKHR",
+	"vkCreateDisplayModeKHR",
+	"vkGetDisplayPlaneCapabilitiesKHR",
+	"vkCreateDisplayPlaneSurfaceKHR",
+
+	# VK_KHR_xlib_surface
+	"vkCreateXlibSurfaceKHR",
+	"vkGetPhysicalDeviceXlibPresentationSupportKHR",
+
+	# VK_KHR_xcb_surface
+	"vkCreateXcbSurfaceKHR",
+	"vkGetPhysicalDeviceXcbPresentationSupportKHR",
+
+	# VK_KHR_wayland_surface
+	"vkCreateWaylandSurfaceKHR",
+	"vkGetPhysicalDeviceWaylandPresentationSupportKHR",
+
+	# VK_KHR_mir_surface
+	"vkCreateMirSurfaceKHR",
+	"vkGetPhysicalDeviceMirPresentationSupportKHR",
+
+	# VK_KHR_android_surface
+	"vkCreateAndroidSurfaceKHR",
+
+	# VK_KHR_win32_surface
+	"vkCreateWin32SurfaceKHR",
+	"vkGetPhysicalDeviceWin32PresentationSupportKHR",
+
+	# VK_EXT_debug_report
 	"vkCreateDebugReportCallbackEXT",
 	"vkDestroyDebugReportCallbackEXT",
 	"vkDebugReportMessageEXT",
@@ -79,6 +120,34 @@ DEFINITIONS			= [
 	"VK_MAX_DESCRIPTION_SIZE",
 	"VK_ATTACHMENT_UNUSED",
 ]
+
+PLATFORM_TYPES		= [
+	# VK_KHR_xlib_surface
+	("Display*",			"XlibDisplayPtr",			"void*"),
+	("Window",				"XlibWindow",				"deUintptr",),
+	("VisualID",			"XlibVisualID",				"deUint32"),
+
+	# VK_KHR_xcb_surface
+	("xcb_connection_t*",	"XcbConnectionPtr",			"void*"),
+	("xcb_window_t",		"XcbWindow",				"deUintptr"),
+	("xcb_visualid_t",		"XcbVisualid",				"deUint32"),
+
+	# VK_KHR_wayland_surface
+	("struct wl_display*",	"WaylandDisplayPtr",		"void*"),
+	("struct wl_surface*",	"WaylandSurfacePtr",		"void*"),
+
+	# VK_KHR_mir_surface
+	("MirConnection*",		"MirConnectionPtr",			"void*"),
+	("MirSurface*",			"MirSurfacePtr",			"void*"),
+
+	# VK_KHR_android_surface
+	("ANativeWindow*",		"AndroidNativeWindowPtr",	"void*"),
+
+	# VK_KHR_win32_surface
+	("HINSTANCE",			"Win32InstanceHandle",		"void*"),
+	("HWND",				"Win32WindowHandle",		"void*")
+]
+PLATFORM_TYPE_NAMESPACE	= "pt"
 
 class Handle:
 	TYPE_DISP		= 0
@@ -167,6 +236,10 @@ def fixupEnumValues (values):
 	return fixed
 
 def fixupType (type):
+	for platformType, substitute, compat in PLATFORM_TYPES:
+		if type == platformType:
+			return PLATFORM_TYPE_NAMESPACE + "::" + substitute
+
 	replacements = [
 			("uint8_t",		"deUint8"),
 			("uint16_t",	"deUint16"),
@@ -262,9 +335,6 @@ def parseCompositeTypes (src):
 	types	= []
 
 	for type, structname, contents, typename in matches:
-		if typename[-3:] == "KHR":
-			continue # \todo [2016-01-05 pyry] Figure out how to handle platform-specific types
-
 		types.append(parseCompositeType(typeMap[type], typename, contents))
 
 	return types
@@ -296,9 +366,6 @@ def parseFunctions (src):
 	functions	= []
 
 	for returnType, name, argList in matches:
-		if name[-3:] == "KHR":
-			continue # \todo [2015-11-16 pyry] Figure out how to handle platform-specific extension functions
-
 		functions.append(Function(name.strip(), returnType.strip(), parseArgList(argList)))
 
 	return [fixupFunction(f) for f in functions]
@@ -428,6 +495,8 @@ def writeBasicTypes (api, filename):
 			for line in genBitfieldSrc(bitfield):
 				yield line
 			yield ""
+		for line in indentLines(["VK_DEFINE_PLATFORM_TYPE(%s,\t%s);" % (s, c) for n, s, c in PLATFORM_TYPES]):
+			yield line
 
 	writeInlFile(filename, INL_HEADER, gen())
 
@@ -506,6 +575,15 @@ def writeStrUtilImpl (api, filename):
 		for line in indentLines(["template<> const char*\tgetTypeName<%s>\t(void) { return \"%s\";\t}" % (handle.name, handle.name) for handle in api.handles]):
 			yield line
 
+		yield ""
+		yield "namespace %s" % PLATFORM_TYPE_NAMESPACE
+		yield "{"
+
+		for line in indentLines("std::ostream& operator<< (std::ostream& s, %s\tv) { return s << tcu::toHex(v.internal); }" % s for n, s, c in PLATFORM_TYPES):
+			yield line
+
+		yield "}"
+
 		for enum in api.enums:
 			yield ""
 			yield "const char* get%sName (%s value)" % (enum.name[2:], enum.name)
@@ -582,6 +660,9 @@ def getConstructorFunctions (api):
 	funcs = []
 	for function in api.functions:
 		if (function.name[:8] == "vkCreate" or function.name == "vkAllocateMemory") and not "count" in [a.name for a in function.arguments]:
+			if function.name == "vkCreateDisplayModeKHR":
+				continue # No way to delete display modes (bug?)
+
 			# \todo [pyry] Rather hacky
 			iface = None
 			if function.getType() == Function.TYPE_PLATFORM:
@@ -671,7 +752,9 @@ def writeNullDriverImpl (api, filename):
 				"vkFreeDescriptorSets",
 				"vkResetDescriptorPool",
 				"vkAllocateCommandBuffers",
-				"vkFreeCommandBuffers"
+				"vkFreeCommandBuffers",
+				"vkCreateDisplayModeKHR",
+				"vkCreateSharedSwapchainsKHR",
 			]
 		specialFuncs		= [f for f in api.functions if f.name in specialFuncNames]
 		createFuncs			= [f for f in api.functions if (f.name[:8] == "vkCreate" or f.name == "vkAllocateMemory") and not f in specialFuncs]

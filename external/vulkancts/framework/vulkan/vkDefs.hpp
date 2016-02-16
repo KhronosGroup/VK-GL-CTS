@@ -47,6 +47,15 @@
 #define VK_DEFINE_HANDLE(NAME, TYPE)					typedef struct NAME##_s* NAME
 #define VK_DEFINE_NON_DISPATCHABLE_HANDLE(NAME, TYPE)	typedef Handle<TYPE> NAME
 
+#define VK_DEFINE_PLATFORM_TYPE(NAME, COMPATIBLE)		\
+namespace pt {											\
+struct NAME {											\
+	COMPATIBLE internal;								\
+	explicit NAME (COMPATIBLE internal_)				\
+		: internal(internal_) {}						\
+};														\
+} // pt
+
 #define VK_MAKE_VERSION(MAJOR, MINOR, PATCH)	((MAJOR << 22) | (MINOR << 12) | PATCH)
 #define VK_BIT(NUM)								(1<<NUM)
 
@@ -100,6 +109,23 @@ enum
 	VK_TRUE			= 1,
 	VK_WHOLE_SIZE	= (~0ULL),
 };
+
+namespace wsi
+{
+
+enum Type
+{
+	TYPE_XLIB = 0,
+	TYPE_XCB,
+	TYPE_WAYLAND,
+	TYPE_MIR,
+	TYPE_ANDROID,
+	TYPE_WIN32,
+
+	TYPE_LAST
+};
+
+} // wsi
 
 typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkVoidFunction)					(void);
 

@@ -216,4 +216,23 @@ bool isShaderStageSupported (const VkPhysicalDeviceFeatures& deviceFeatures, VkS
 		return true;
 }
 
+bool isCompatible (const VkExtensionProperties& extensionProperties, const RequiredExtension& required)
+{
+	if (required.name != extensionProperties.extensionName)
+		return false;
+
+	if (required.minVersion && required.minVersion.get() > extensionProperties.specVersion)
+		return false;
+
+	if (required.maxVersion && required.maxVersion.get() < extensionProperties.specVersion)
+		return false;
+
+	return true;
+}
+
+bool isExtensionSupported (const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
+{
+	return isExtensionSupported(extensions.begin(), extensions.end(), required);
+}
+
 } // vk

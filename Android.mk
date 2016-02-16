@@ -802,7 +802,9 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkTypeUtil.cpp \
 	external/vulkancts/framework/vulkan/vkImageUtil.cpp \
 	external/vulkancts/framework/vulkan/vkQueryUtil.cpp \
-	external/vulkancts/framework/vulkan/vkRef.cpp
+	external/vulkancts/framework/vulkan/vkRef.cpp \
+	external/vulkancts/framework/vulkan/vkWsiPlatform.cpp \
+	external/vulkancts/framework/vulkan/vkWsiUtil.cpp
 
 LOCAL_C_INCLUDES := \
 	frameworks/native/opengl/include \

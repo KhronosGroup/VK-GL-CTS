@@ -188,6 +188,26 @@ private:
 	const tcu::StaticFunctionLibrary	m_functions;
 };
 
+class SurfaceKHR
+{
+public:
+										SurfaceKHR		(VkInstance, const VkXlibSurfaceCreateInfoKHR*)		{}
+										SurfaceKHR		(VkInstance, const VkXcbSurfaceCreateInfoKHR*)		{}
+										SurfaceKHR		(VkInstance, const VkWaylandSurfaceCreateInfoKHR*)	{}
+										SurfaceKHR		(VkInstance, const VkMirSurfaceCreateInfoKHR*)		{}
+										SurfaceKHR		(VkInstance, const VkAndroidSurfaceCreateInfoKHR*)	{}
+										SurfaceKHR		(VkInstance, const VkWin32SurfaceCreateInfoKHR*)	{}
+										SurfaceKHR		(VkInstance, const VkDisplaySurfaceCreateInfoKHR*)	{}
+										~SurfaceKHR		(void) {}
+};
+
+class DisplayModeKHR
+{
+public:
+										DisplayModeKHR	(VkDisplayKHR, const VkDisplayModeCreateInfoKHR*) {}
+										~DisplayModeKHR	(void) {}
+};
+
 class DebugReportCallbackEXT
 {
 public:
@@ -212,6 +232,13 @@ class Pipeline
 public:
 	Pipeline (VkDevice, const VkGraphicsPipelineCreateInfo*) {}
 	Pipeline (VkDevice, const VkComputePipelineCreateInfo*) {}
+};
+
+class SwapchainKHR
+{
+public:
+										SwapchainKHR	(VkDevice, const VkSwapchainCreateInfoKHR*) {}
+										~SwapchainKHR	(void) {}
 };
 
 void* allocateHeap (const VkMemoryAllocateInfo* pAllocInfo)
@@ -635,6 +662,23 @@ VKAPI_ATTR void VKAPI_CALL freeCommandBuffers (VkDevice device, VkCommandPool co
 
 	for (deUint32 ndx = 0; ndx < commandBufferCount; ++ndx)
 		delete reinterpret_cast<CommandBuffer*>(pCommandBuffers[ndx]);
+}
+
+
+VKAPI_ATTR VkResult VKAPI_CALL createDisplayModeKHR (VkPhysicalDevice, VkDisplayKHR display, const VkDisplayModeCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDisplayModeKHR* pMode)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pMode = allocateNonDispHandle<DisplayModeKHR, VkDisplayModeKHR>(display, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createSharedSwapchainsKHR (VkDevice device, deUint32 swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains)
+{
+	for (deUint32 ndx = 0; ndx < swapchainCount; ++ndx)
+	{
+		pSwapchains[ndx] = allocateNonDispHandle<SwapchainKHR, VkSwapchainKHR>(device, pCreateInfos+ndx, pAllocator);
+	}
+
+	return VK_SUCCESS;
 }
 
 #include "vkNullDriverImpl.inl"

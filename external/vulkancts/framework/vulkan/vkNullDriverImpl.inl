@@ -121,6 +121,54 @@ VKAPI_ATTR VkResult VKAPI_CALL createCommandPool (VkDevice device, const VkComma
 	VK_NULL_RETURN((*pCommandPool = allocateNonDispHandle<CommandPool, VkCommandPool>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createSwapchainKHR (VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSwapchain = allocateNonDispHandle<SwapchainKHR, VkSwapchainKHR>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createDisplayPlaneSurfaceKHR (VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createXlibSurfaceKHR (VkInstance instance, const VkXlibSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createXcbSurfaceKHR (VkInstance instance, const VkXcbSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createWaylandSurfaceKHR (VkInstance instance, const VkWaylandSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createMirSurfaceKHR (VkInstance instance, const VkMirSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createAndroidSurfaceKHR (VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createWin32SurfaceKHR (VkInstance instance, const VkWin32SurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createDebugReportCallbackEXT (VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
 {
 	DE_UNREF(pAllocator);
@@ -249,6 +297,18 @@ VKAPI_ATTR void VKAPI_CALL destroyCommandPool (VkDevice device, VkCommandPool co
 {
 	DE_UNREF(device);
 	freeNonDispHandle<CommandPool, VkCommandPool>(commandPool, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroySurfaceKHR (VkInstance instance, VkSurfaceKHR surface, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(instance);
+	freeNonDispHandle<SurfaceKHR, VkSurfaceKHR>(surface, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroySwapchainKHR (VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<SwapchainKHR, VkSwapchainKHR>(swapchain, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyDebugReportCallbackEXT (VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator)
@@ -924,6 +984,152 @@ VKAPI_ATTR void VKAPI_CALL cmdExecuteCommands (VkCommandBuffer commandBuffer, de
 	DE_UNREF(pCommandBuffers);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, VkSurfaceKHR surface, VkBool32* pSupported)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(surface);
+	DE_UNREF(pSupported);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceCapabilitiesKHR (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR* pSurfaceCapabilities)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(surface);
+	DE_UNREF(pSurfaceCapabilities);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceFormatsKHR (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pSurfaceFormatCount, VkSurfaceFormatKHR* pSurfaceFormats)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(surface);
+	DE_UNREF(pSurfaceFormatCount);
+	DE_UNREF(pSurfaceFormats);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfacePresentModesKHR (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pPresentModeCount, VkPresentModeKHR* pPresentModes)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(surface);
+	DE_UNREF(pPresentModeCount);
+	DE_UNREF(pPresentModes);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getSwapchainImagesKHR (VkDevice device, VkSwapchainKHR swapchain, deUint32* pSwapchainImageCount, VkImage* pSwapchainImages)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pSwapchainImageCount);
+	DE_UNREF(pSwapchainImages);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL acquireNextImageKHR (VkDevice device, VkSwapchainKHR swapchain, deUint64 timeout, VkSemaphore semaphore, VkFence fence, deUint32* pImageIndex)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(timeout);
+	DE_UNREF(semaphore);
+	DE_UNREF(fence);
+	DE_UNREF(pImageIndex);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL queuePresentKHR (VkQueue queue, const VkPresentInfoKHR* pPresentInfo)
+{
+	DE_UNREF(queue);
+	DE_UNREF(pPresentInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayPropertiesKHR (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkDisplayPropertiesKHR* pProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pPropertyCount);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayPlanePropertiesKHR (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkDisplayPlanePropertiesKHR* pProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pPropertyCount);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneSupportedDisplaysKHR (VkPhysicalDevice physicalDevice, deUint32 planeIndex, deUint32* pDisplayCount, VkDisplayKHR* pDisplays)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(planeIndex);
+	DE_UNREF(pDisplayCount);
+	DE_UNREF(pDisplays);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDisplayModePropertiesKHR (VkPhysicalDevice physicalDevice, VkDisplayKHR display, deUint32* pPropertyCount, VkDisplayModePropertiesKHR* pProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(display);
+	DE_UNREF(pPropertyCount);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneCapabilitiesKHR (VkPhysicalDevice physicalDevice, VkDisplayModeKHR mode, deUint32 planeIndex, VkDisplayPlaneCapabilitiesKHR* pCapabilities)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(mode);
+	DE_UNREF(planeIndex);
+	DE_UNREF(pCapabilities);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceXlibPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::XlibDisplayPtr dpy, pt::XlibVisualID visualID)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(dpy);
+	DE_UNREF(visualID);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceXcbPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::XcbConnectionPtr connection, pt::XcbVisualid visual_id)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(connection);
+	DE_UNREF(visual_id);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWaylandPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::WaylandDisplayPtr display)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(display);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceMirPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::MirConnectionPtr connection)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(connection);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWin32PresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage)
 {
 	DE_UNREF(instance);
@@ -946,21 +1152,44 @@ static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 
 static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 {
-	VK_NULL_FUNC_ENTRY(vkDestroyInstance,							destroyInstance),
-	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDevices,					enumeratePhysicalDevices),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures,					getPhysicalDeviceFeatures),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties,			getPhysicalDeviceFormatProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties,	getPhysicalDeviceImageFormatProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties,				getPhysicalDeviceProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties,	getPhysicalDeviceQueueFamilyProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties,			getPhysicalDeviceMemoryProperties),
-	VK_NULL_FUNC_ENTRY(vkGetDeviceProcAddr,							getDeviceProcAddr),
-	VK_NULL_FUNC_ENTRY(vkCreateDevice,								createDevice),
-	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,		enumerateDeviceExtensionProperties),
-	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,			enumerateDeviceLayerProperties),
-	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,				createDebugReportCallbackEXT),
-	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,				destroyDebugReportCallbackEXT),
-	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,						debugReportMessageEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyInstance,									destroyInstance),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDevices,							enumeratePhysicalDevices),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures,							getPhysicalDeviceFeatures),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties,					getPhysicalDeviceFormatProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties,			getPhysicalDeviceImageFormatProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties,						getPhysicalDeviceProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties,			getPhysicalDeviceQueueFamilyProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties,					getPhysicalDeviceMemoryProperties),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceProcAddr,									getDeviceProcAddr),
+	VK_NULL_FUNC_ENTRY(vkCreateDevice,										createDevice),
+	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,				enumerateDeviceExtensionProperties),
+	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,					enumerateDeviceLayerProperties),
+	VK_NULL_FUNC_ENTRY(vkDestroySurfaceKHR,									destroySurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceSupportKHR,				getPhysicalDeviceSurfaceSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilitiesKHR,			getPhysicalDeviceSurfaceCapabilitiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormatsKHR,				getPhysicalDeviceSurfaceFormatsKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfacePresentModesKHR,			getPhysicalDeviceSurfacePresentModesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPropertiesKHR,				getPhysicalDeviceDisplayPropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlanePropertiesKHR,		getPhysicalDeviceDisplayPlanePropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneSupportedDisplaysKHR,				getDisplayPlaneSupportedDisplaysKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayModePropertiesKHR,						getDisplayModePropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDisplayModeKHR,								createDisplayModeKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilitiesKHR,					getDisplayPlaneCapabilitiesKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDisplayPlaneSurfaceKHR,						createDisplayPlaneSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateXlibSurfaceKHR,								createXlibSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXlibPresentationSupportKHR,		getPhysicalDeviceXlibPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateXcbSurfaceKHR,								createXcbSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXcbPresentationSupportKHR,		getPhysicalDeviceXcbPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateWaylandSurfaceKHR,							createWaylandSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWaylandPresentationSupportKHR,	getPhysicalDeviceWaylandPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateMirSurfaceKHR,								createMirSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMirPresentationSupportKHR,		getPhysicalDeviceMirPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateAndroidSurfaceKHR,							createAndroidSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateWin32SurfaceKHR,								createWin32SurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWin32PresentationSupportKHR,		getPhysicalDeviceWin32PresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,						createDebugReportCallbackEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,						destroyDebugReportCallbackEXT),
+	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,								debugReportMessageEXT),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -1086,5 +1315,11 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdNextSubpass,								cmdNextSubpass),
 	VK_NULL_FUNC_ENTRY(vkCmdEndRenderPass,								cmdEndRenderPass),
 	VK_NULL_FUNC_ENTRY(vkCmdExecuteCommands,							cmdExecuteCommands),
+	VK_NULL_FUNC_ENTRY(vkCreateSwapchainKHR,							createSwapchainKHR),
+	VK_NULL_FUNC_ENTRY(vkDestroySwapchainKHR,							destroySwapchainKHR),
+	VK_NULL_FUNC_ENTRY(vkGetSwapchainImagesKHR,							getSwapchainImagesKHR),
+	VK_NULL_FUNC_ENTRY(vkAcquireNextImageKHR,							acquireNextImageKHR),
+	VK_NULL_FUNC_ENTRY(vkQueuePresentKHR,								queuePresentKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateSharedSwapchainsKHR,						createSharedSwapchainsKHR),
 };
 
