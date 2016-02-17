@@ -106,7 +106,7 @@ public:
 	MovePtr<ClientBuffer>	createBuffer 				(const glw::Functions&, Texture2D*) const;
 	string					getRequiredExtension		(void) const { return "EGL_ANDROID_image_native_buffer"; }
 	EGLImageKHR				createImage					(const Library& egl, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
-	GLenum					getFormat					(void) const { return m_format; }
+	GLenum					getEffectiveFormat			(void) const { return m_format; }
 
 protected:
 	GLenum					m_format;

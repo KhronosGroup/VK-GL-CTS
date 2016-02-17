@@ -180,7 +180,7 @@ class TextureImageSource : public GLImageSource
 public:
 							TextureImageSource	(GLenum internalFormat, GLenum format, GLenum type, bool useTexLevel0) : m_internalFormat(internalFormat), m_format(format), m_type(type), m_useTexLevel0(useTexLevel0) {}
 	MovePtr<ClientBuffer>	createBuffer		(const glw::Functions& gl, Texture2D* reference) const;
-	GLenum					getFormat			(void) const { return m_format; }
+	GLenum					getEffectiveFormat	(void) const;
 	GLenum					getInternalFormat	(void) const { return m_internalFormat; }
 
 protected:
@@ -193,6 +193,32 @@ protected:
 	const GLenum			m_type;
 	const bool				m_useTexLevel0;
 };
+
+bool isSizedFormat (GLenum format)
+{
+	try
+	{
+		glu::mapGLInternalFormat(format);
+		return true;
+	}
+	catch (const tcu::InternalError&)
+	{
+		return false;
+	}
+}
+
+GLenum getEffectiveFormat (GLenum format, GLenum type)
+{
+	return glu::getInternalFormat(glu::mapGLTransferFormat(format, type));
+}
+
+GLenum TextureImageSource::getEffectiveFormat (void) const
+{
+	if (isSizedFormat(m_internalFormat))
+		return m_internalFormat;
+	else
+		return deqp::egl::Image::getEffectiveFormat(m_format, m_type);
+}
 
 AttribMap TextureImageSource::getCreateAttribs (void) const
 {
@@ -307,7 +333,7 @@ public:
 
 	string					getRequiredExtension	(void) const 	{ return "EGL_KHR_gl_renderbuffer_image"; }
 	MovePtr<ClientBuffer>	createBuffer			(const glw::Functions& gl, Texture2D* reference) const;
-	GLenum					getFormat				(void) const { return m_format; }
+	GLenum					getEffectiveFormat		(void) const { return m_format; }
 
 protected:
 	EGLenum					getSource				(void) const	{ return EGL_GL_RENDERBUFFER_KHR; }
@@ -492,7 +518,7 @@ public:
 	string					getRequiredExtension	(void) const { fail(); return ""; }
 	MovePtr<ClientBuffer>	createBuffer			(const glw::Functions&, tcu::Texture2D*) const { fail(); return de::MovePtr<ClientBuffer>(); }
 	EGLImageKHR				createImage				(const Library& egl, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
-	GLenum					getFormat				(void) const { return m_format; }
+	GLenum					getEffectiveFormat		(void) const { return m_format; }
 
 private:
 	const string			m_message;

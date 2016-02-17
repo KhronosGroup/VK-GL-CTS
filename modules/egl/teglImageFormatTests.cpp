@@ -185,7 +185,7 @@ public:
 								Create					(MovePtr<ImageSource> imgSource) : m_imgSource(imgSource) {}
 		string					getRequiredExtension	(void) const { return m_imgSource->getRequiredExtension(); }
 		bool					invokeGLES2				(GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const;
-		glw::GLenum				getFormat				(void) const { return m_imgSource->getFormat(); }
+		glw::GLenum				getEffectiveFormat		(void) const { return m_imgSource->getEffectiveFormat(); }
 
 	private:
 		UniquePtr<ImageSource>	m_imgSource;
@@ -216,6 +216,7 @@ public:
 							ModifyTexSubImage		(GLenum format, GLenum type) : m_format(format), m_type(type) {}
 		bool				invokeGLES2				(GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const;
 		GLenum				getFormat				(void) const { return m_format; }
+		GLenum				getType					(void) const { return m_type; }
 
 	private:
 		GLenum				m_format;
@@ -1214,7 +1215,7 @@ bool isCompatibleCreateAndRenderActions (const Action& create, const Action& ren
 {
 	if (const GLES2ImageApi::Create* gles2Create = dynamic_cast<const GLES2ImageApi::Create*>(&create))
 	{
-		const GLenum createFormat = gles2Create->getFormat();
+		const GLenum createFormat = gles2Create->getEffectiveFormat();
 
 		if (dynamic_cast<const GLES2ImageApi::RenderTexture2D*>(&render))
 		{
@@ -1291,38 +1292,84 @@ TestCaseGroup* createSimpleCreationTests (EglTestContext& eglTestCtx, const stri
 	return new SimpleCreationTests(eglTestCtx, name, desc);
 }
 
-bool isCompatibleFormats (GLenum createFormat, GLenum modifyFormat)
+bool isCompatibleFormats (GLenum createFormat, GLenum modifyFormat, GLenum modifyType)
 {
-	switch (createFormat)
+	switch (modifyFormat)
 	{
 		case GL_RGB:
-		case GL_RGB8:
-		case GL_RGB565:
-			if (modifyFormat == GL_RGB
-				|| modifyFormat == GL_RGB8
-				|| modifyFormat == GL_RGB565)
-				return true;
-			else
-				return false;
+			switch (modifyType)
+			{
+				case GL_UNSIGNED_BYTE:
+					return createFormat == GL_RGB
+							|| createFormat == GL_RGB8
+							|| createFormat == GL_RGB565
+							|| createFormat == GL_SRGB8;
+
+				case GL_BYTE:
+					return createFormat == GL_RGB8_SNORM;
+
+				case GL_UNSIGNED_SHORT_5_6_5:
+					return createFormat == GL_RGB
+							|| createFormat == GL_RGB565;
+
+				case GL_UNSIGNED_INT_10F_11F_11F_REV:
+					return createFormat == GL_R11F_G11F_B10F;
+
+				case GL_UNSIGNED_INT_5_9_9_9_REV:
+					return createFormat == GL_RGB9_E5;
+
+				case GL_HALF_FLOAT:
+					return createFormat == GL_RGB16F
+							|| createFormat == GL_R11F_G11F_B10F
+							|| createFormat == GL_RGB9_E5;
+
+				case GL_FLOAT:
+					return createFormat == GL_RGB16F
+							|| createFormat == GL_RGB32F
+							|| createFormat == GL_R11F_G11F_B10F
+							|| createFormat == GL_RGB9_E5;
+
+				default:
+					DE_FATAL("Unknown modify type");
+					return false;
+			}
 
 		case GL_RGBA:
-		case GL_RGBA4:
-		case GL_RGBA8:
-		case GL_RGB5_A1:
-			if (modifyFormat == GL_RGBA
-				|| modifyFormat == GL_RGBA8
-				|| modifyFormat == GL_RGBA4
-				|| modifyFormat == GL_RGB5_A1)
-				return true;
-			else
-				return false;
+			switch (modifyType)
+			{
+				case GL_UNSIGNED_BYTE:
+					return createFormat == GL_RGBA8
+						|| createFormat == GL_RGB5_A1
+						|| createFormat == GL_RGBA4
+						|| createFormat == GL_SRGB8_ALPHA8
+						|| createFormat == GL_RGBA;
 
-		case GL_DEPTH_COMPONENT16:
-		case GL_STENCIL_INDEX8:
-			return false;
+				case GL_UNSIGNED_SHORT_4_4_4_4:
+					return createFormat == GL_RGBA4
+						|| createFormat == GL_RGBA;
+
+				case GL_UNSIGNED_SHORT_5_5_5_1:
+					return createFormat == GL_RGB5_A1
+						|| createFormat == GL_RGBA;
+
+				case GL_UNSIGNED_INT_2_10_10_10_REV:
+					return createFormat == GL_RGB10_A2
+						|| createFormat == GL_RGB5_A1;
+
+				case GL_HALF_FLOAT:
+					return createFormat == GL_RGBA16F;
+
+				case GL_FLOAT:
+					return createFormat == GL_RGBA16F
+						|| createFormat == GL_RGBA32F;
+
+				default:
+					DE_FATAL("Unknown modify type");
+					return false;
+			};
 
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unknown modify format");
 			return false;
 	}
 }
@@ -1331,13 +1378,14 @@ bool isCompatibleCreateAndModifyActions (const Action& create, const Action& mod
 {
 	if (const GLES2ImageApi::Create* gles2Create = dynamic_cast<const GLES2ImageApi::Create*>(&create))
 	{
-		const GLenum createFormat = gles2Create->getFormat();
+		const GLenum createFormat = gles2Create->getEffectiveFormat();
 
 		if (const GLES2ImageApi::ModifyTexSubImage* gles2TexSubImageModify = dynamic_cast<const GLES2ImageApi::ModifyTexSubImage*>(&modify))
 		{
-			const GLenum modifyFormat  = gles2TexSubImageModify->getFormat();
+			const GLenum modifyFormat 	= gles2TexSubImageModify->getFormat();
+			const GLenum modifyType		= gles2TexSubImageModify->getType();
 
-			return isCompatibleFormats(createFormat, modifyFormat);
+			return isCompatibleFormats(createFormat, modifyFormat, modifyType);
 		}
 
 		if (dynamic_cast<const GLES2ImageApi::ModifyRenderbufferClearColor*>(&modify))
