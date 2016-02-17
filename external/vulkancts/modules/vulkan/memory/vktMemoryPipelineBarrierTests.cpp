@@ -2796,8 +2796,8 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			DE_NULL,
 
-			0,
 			vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+			0,
 
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -3228,8 +3228,8 @@ void ImageCopyFromImage::prepare (PrepareContext& context)
 			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			DE_NULL,
 
-			0,
 			vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+			0,
 
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -3708,8 +3708,8 @@ void ImageBlitFromImage::prepare (PrepareContext& context)
 			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			DE_NULL,
 
-			0,
 			vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+			0,
 
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
