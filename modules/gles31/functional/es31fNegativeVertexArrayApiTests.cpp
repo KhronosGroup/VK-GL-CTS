@@ -687,7 +687,7 @@ void draw_elements_base_vertex (NegativeTestContext& ctx)
 	ctx.glGenFramebuffers(1, &fbo);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.glDrawElementsBaseVertex(GL_POINTS, -1, GL_UNSIGNED_INT, vertices, 1);
+	ctx.glDrawElementsBaseVertex(GL_POINTS, 1, GL_UNSIGNED_INT, vertices, 1);
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
