@@ -416,9 +416,10 @@ IterateResult PreserveBackBufferCase::iterate (void)
 					  << TestLog::Image("After resizing", "After resizing", newSurface)
 					  << TestLog::EndImageSet;
 
-				m_status.check(compareCorners(oldSurface, newSurface),
-							   "Resizing the native window changed the contents of "
-							   "the EGL surface");
+				m_status.checkResult(compareCorners(oldSurface, newSurface),
+									 QP_TEST_RESULT_QUALITY_WARNING,
+									 "Resizing the native window changed the contents of "
+									 "the EGL surface");
 			}
 		}
 	}
