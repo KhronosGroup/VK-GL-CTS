@@ -36,6 +36,7 @@
 struct qpXmlWriter_s
 {
 	FILE*				outputFile;
+	deBool				flushAfterWrite;
 
 	deBool				xmlPrevIsStartElement;
 	deBool				xmlIsWriting;
@@ -114,12 +115,13 @@ static deBool writeEscaped (qpXmlWriter* writer, const char* str)
 		}
 	} while (!isEOS);
 
-	fflush(writer->outputFile);
+	if (writer->flushAfterWrite)
+		fflush(writer->outputFile);
 	DE_ASSERT(d == &buf[0]); /* buffer must be empty */
 	return DE_TRUE;
 }
 
-qpXmlWriter* qpXmlWriter_createFileWriter (FILE* outputFile, deBool useCompression)
+qpXmlWriter* qpXmlWriter_createFileWriter (FILE* outputFile, deBool useCompression, deBool flushAfterWrite)
 {
 	qpXmlWriter* writer = (qpXmlWriter*)deCalloc(sizeof(qpXmlWriter));
 	if (!writer)
@@ -128,6 +130,7 @@ qpXmlWriter* qpXmlWriter_createFileWriter (FILE* outputFile, deBool useCompressi
 	DE_UNREF(useCompression); /* no compression supported. */
 
 	writer->outputFile = outputFile;
+	writer->flushAfterWrite = flushAfterWrite;
 
 	return writer;
 }
