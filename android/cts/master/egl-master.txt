@@ -3545,3 +3545,9 @@ dEQP-EGL.functional.swap_buffers_with_damage.resize_after_swap.buffer_age_clear_
 dEQP-EGL.functional.swap_buffers_with_damage.resize_after_swap.buffer_age_render_render
 dEQP-EGL.functional.swap_buffers_with_damage.resize_after_swap.buffer_age_clear_render
 dEQP-EGL.functional.swap_buffers_with_damage.resize_after_swap.buffer_age_render_clear
+dEQP-EGL.functional.multicontext.non_shared
+dEQP-EGL.functional.multicontext.shared
+dEQP-EGL.functional.multicontext.non_shared_make_current
+dEQP-EGL.functional.multicontext.shared_make_current
+dEQP-EGL.functional.multicontext.non_shared_clear
+dEQP-EGL.functional.multicontext.shared_clear

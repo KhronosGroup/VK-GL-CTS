@@ -60,6 +60,7 @@
 #include "teglPartialUpdateTests.hpp"
 #include "teglNegativePartialUpdateTests.hpp"
 #include "teglSwapBuffersWithDamageTests.hpp"
+#include "teglMultiContextTests.hpp"
 
 namespace deqp
 {
@@ -132,6 +133,7 @@ public:
 		addChild(new PartialUpdateTests			(m_eglTestCtx));
 		addChild(new NegativePartialUpdateTests	(m_eglTestCtx));
 		addChild(new SwapBuffersWithDamageTests	(m_eglTestCtx));
+		addChild(createMultiContextTests		(m_eglTestCtx));
 	}
 };
 
