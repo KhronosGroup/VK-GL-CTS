@@ -1734,7 +1734,7 @@ void invalidate_sub_framebuffer (NegativeTestContext& ctx)
 	ctx.glGetIntegerv				(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
 	attachments[0]					= GL_COLOR_ATTACHMENT0;
 	attachments[1]					= GL_COLOR_ATTACHMENT0 + maxColorAttachments;
-	attachments[3]					= GL_DEPTH_STENCIL_ATTACHMENT;
+	attachments[2]					= GL_DEPTH_STENCIL_ATTACHMENT;
 
 	ctx.glGenFramebuffers			(1, &fbo);
 	ctx.glGenTextures				(1, &texture);
