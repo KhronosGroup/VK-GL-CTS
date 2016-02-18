@@ -33,6 +33,7 @@
 #include "es31fNegativeAtomicCounterTests.hpp"
 #include "es31fNegativeShaderImageLoadStoreTests.hpp"
 #include "es31fNegativeShaderFunctionTests.hpp"
+#include "es31fNegativeShaderDirectiveTests.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
@@ -2916,6 +2917,7 @@ void DebugTests::init (void)
 	const vector<FunctionContainer> atomicCounterFuncs			= wrapCoreFunctions(NegativeTestShared::getNegativeAtomicCounterTestFunctions());
 	const vector<FunctionContainer> shaderImageLoadStoreFuncs	= wrapCoreFunctions(NegativeTestShared::getNegativeShaderImageLoadStoreTestFunctions());
 	const vector<FunctionContainer> shaderFunctionFuncs			= wrapCoreFunctions(NegativeTestShared::getNegativeShaderFunctionTestFunctions());
+	const vector<FunctionContainer> shaderDirectiveFuncs		= wrapCoreFunctions(NegativeTestShared::getNegativeShaderDirectiveTestFunctions());
 	const vector<FunctionContainer> externalFuncs				= getUserMessageFuncs();
 
 	{
@@ -3016,6 +3018,7 @@ void DebugTests::init (void)
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "atomic_counter",				"Negative Atomic Counter API Cases",				atomicCounterFuncs));
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_image_load_store",	"Negative Shader Image Load and Store API Cases",	shaderImageLoadStoreFuncs));
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_function",			"Negative Shader Function Cases",					shaderFunctionFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_directive",			"Negative Shader Directive Cases",					shaderDirectiveFuncs));
 		}
 
 		{
@@ -3032,6 +3035,7 @@ void DebugTests::init (void)
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "atomic_counter",			"Negative Atomic Counter API Cases",				atomicCounterFuncs));
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_image_load_store",	"Negative Shader Image Load and Store API Cases",	shaderImageLoadStoreFuncs));
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_function",			"Negative Shader Function Cases",					shaderFunctionFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_directive",		"Negative Shader Directive Cases",					shaderDirectiveFuncs));
 		}
 
 		{
@@ -3048,6 +3052,7 @@ void DebugTests::init (void)
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "atomic_counter",				"Negative Atomic Counter API Cases",				atomicCounterFuncs));
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_image_load_store",	"Negative Shader Image Load and Store API Cases",	shaderImageLoadStoreFuncs));
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_function",			"Negative Shader Function Cases",					shaderFunctionFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_directive",			"Negative Shader Directive Cases",					shaderDirectiveFuncs));
 		}
 	}
 
