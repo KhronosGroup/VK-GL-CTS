@@ -3149,9 +3149,6 @@
 					<Test name="tex_rgb8_tex_subimage_rgb8">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="tex_rgb8_tex_subimage_rgb565">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="tex_rgb8_renderbuffer_clear_color">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
@@ -3167,12 +3164,6 @@
 					<Test name="tex_rgba8_tex_subimage_rgba8">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="tex_rgba8_tex_subimage_rgba5_a1">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="tex_rgba8_tex_subimage_rgba4">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="tex_rgba8_renderbuffer_clear_color">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
@@ -3182,16 +3173,10 @@
 					<Test name="tex_rgba5_a1_tex_subimage_rgba5_a1">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="tex_rgba5_a1_tex_subimage_rgba4">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="tex_rgba5_a1_renderbuffer_clear_color">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="tex_rgba4_tex_subimage_rgba8">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="tex_rgba4_tex_subimage_rgba5_a1">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="tex_rgba4_tex_subimage_rgba4">
@@ -3201,9 +3186,6 @@
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="renderbuffer_rgba4_tex_subimage_rgba8">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="renderbuffer_rgba4_tex_subimage_rgba5_a1">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="renderbuffer_rgba4_tex_subimage_rgba4">
@@ -3216,9 +3198,6 @@
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="renderbuffer_rgb5_a1_tex_subimage_rgba5_a1">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="renderbuffer_rgb5_a1_tex_subimage_rgba4">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="renderbuffer_rgb5_a1_renderbuffer_clear_color">
