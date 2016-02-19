@@ -55,20 +55,26 @@ NativeDisplay::~NativeDisplay (void)
 
 EGLNativeDisplayType NativeDisplay::getLegacyNative (void)
 {
+	// If NativeDisplay claims to support CAPABILITY_GET_DISPLAY_LEGACY then
+	// this method must be implemented.
 	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_GET_DISPLAY_LEGACY) == 0);
-	throw tcu::NotSupportedError("eglu::NativeDisplay can't be used with eglGetDisplay()", DE_NULL, __FILE__, __LINE__);
+	TCU_THROW(NotSupportedError, "eglu::NativeDisplay can't be used with eglGetDisplay()");
 }
 
 void* NativeDisplay::getPlatformNative (void)
 {
+	// If NativeDisplay claims to support CAPABILITY_GET_DISPLAY_PLATFORM then
+	// this method must be implemented.
 	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_GET_DISPLAY_PLATFORM) == 0);
-	throw tcu::NotSupportedError("eglu::NativeDisplay can't be used with eglGetPlatformDisplay()", DE_NULL, __FILE__, __LINE__);
+	TCU_THROW(NotSupportedError, "eglu::NativeDisplay can't be used with eglGetPlatformDisplay()");
 }
 
 const EGLAttrib* NativeDisplay::getPlatformAttributes (void) const
 {
+	// If NativeDisplay claims to support CAPABILITY_GET_DISPLAY_PLATFORM then
+	// this method must be implemented.
 	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_GET_DISPLAY_PLATFORM) == 0);
-	return DE_NULL;
+	TCU_THROW(NotSupportedError, "eglu::NativeDisplay can't be used with eglGetPlatformDisplay()");
 }
 
 // NativeDisplayFactory
