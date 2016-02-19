@@ -108,11 +108,12 @@ public:
 													 "EGL_EXT_platform_x11")
 									, m_display		(x11Display) {}
 
-	void*						getPlatformNative	(void) 	{ return m_display->getXDisplay(); }
-	eglw::EGLNativeDisplayType	getLegacyNative		(void)	{ return reinterpret_cast<eglw::EGLNativeDisplayType>(m_display->getXDisplay()); }
+	void*						getPlatformNative		(void) 	{ return m_display->getXDisplay(); }
+	eglw::EGLNativeDisplayType	getLegacyNative			(void)	{ return reinterpret_cast<eglw::EGLNativeDisplayType>(m_display->getXDisplay()); }
 
-	x11::Display&				getX11Display		(void)			{ return *m_display;	}
-	const eglw::Library&		getLibrary			(void) const	{ return m_library;		}
+	x11::Display&				getX11Display			(void)			{ return *m_display;	}
+	const eglw::Library&		getLibrary				(void) const	{ return m_library;		}
+	const eglw::EGLAttrib*		getPlatformAttributes	(void) const	{ return DE_NULL;		}
 
 private:
 	UniquePtr<x11::Display>		m_display;
