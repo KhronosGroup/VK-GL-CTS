@@ -79,8 +79,23 @@ public:
 		DRAWTYPE_GLES2_RENDER
 	};
 
-								BufferAgeTest	(EglTestContext& eglTestCtx, bool preserveColorBuffer, const vector<DrawType>& oddFrameDrawType,
-												 const vector<DrawType>& evenFrameDrawType, const char* name, const char* description);
+	enum ResizeType
+	{
+		RESIZETYPE_NONE = 0,
+		RESIZETYPE_BEFORE_SWAP,
+		RESIZETYPE_AFTER_SWAP,
+
+		RESIZETYPE_LAST
+	};
+
+								BufferAgeTest	(EglTestContext&			eglTestCtx,
+												 bool						preserveColorBuffer,
+												 const vector<DrawType>&	oddFrameDrawType,
+												 const vector<DrawType>&	evenFrameDrawType,
+												 ResizeType					resizeType,
+												 const char*				name,
+												 const char*				description);
+
 								~BufferAgeTest	(void);
 
 	void						init			(void);
@@ -95,6 +110,7 @@ private:
 	const bool					m_preserveColorBuffer;
 	const vector<DrawType>		m_oddFrameDrawType;
 	const vector<DrawType>		m_evenFrameDrawType;
+	const ResizeType			m_resizeType;
 
 	EGLDisplay					m_eglDisplay;
 	eglu::NativeWindow*			m_window;
@@ -112,7 +128,7 @@ struct ColoredRect
 {
 public:
 							ColoredRect (const IVec2& bottomLeft_, const IVec2& topRight_, const Color& color_);
-	IVec2	 				bottomLeft;
+	IVec2					bottomLeft;
 	IVec2 					topRight;
 	Color 					color;
 };
@@ -311,11 +327,11 @@ void GLES2Renderer::render (int width, int height, const Frame& frame) const
 class ReferenceRenderer
 {
 public:
-						ReferenceRenderer 	(void);
-	void				render			  	(tcu::Surface* target, const Frame& frame) const;
+						ReferenceRenderer	(void);
+	void				render				(tcu::Surface* target, const Frame& frame) const;
 private:
 						ReferenceRenderer	(const ReferenceRenderer&);
-	ReferenceRenderer&	operator=		  	(const ReferenceRenderer&);
+	ReferenceRenderer&	operator=			(const ReferenceRenderer&);
 };
 
 ReferenceRenderer::ReferenceRenderer(void)
@@ -338,13 +354,19 @@ void ReferenceRenderer::render (tcu::Surface* target, const Frame& frame) const
 	}
 }
 
-BufferAgeTest::BufferAgeTest (EglTestContext& eglTestCtx, bool preserveColorBuffer, const vector<DrawType>& oddFrameDrawType, const vector<DrawType>& evenFrameDrawType,
-							  const char* name, const char* description)
+BufferAgeTest::BufferAgeTest (EglTestContext&			eglTestCtx,
+							  bool						preserveColorBuffer,
+							  const vector<DrawType>&	oddFrameDrawType,
+							  const vector<DrawType>&	evenFrameDrawType,
+							  ResizeType				resizeType,
+							  const char*				name,
+							  const char*				description)
 	: TestCase				(eglTestCtx, name, description)
 	, m_seed				(deStringHash(name))
 	, m_preserveColorBuffer (preserveColorBuffer)
 	, m_oddFrameDrawType	(oddFrameDrawType)
 	, m_evenFrameDrawType	(evenFrameDrawType)
+	, m_resizeType			(resizeType)
 	, m_eglDisplay			(EGL_NO_DISPLAY)
 	, m_window				(DE_NULL)
 	, m_eglSurface			(EGL_NO_SURFACE)
@@ -520,7 +542,25 @@ TestCase::IterateResult BufferAgeTest::iterate (void)
 				clearColorScreen(m_gl, clearColor);
 
 			m_gles2Renderer->render(width, height, newFrame);
+
+			if (m_resizeType == RESIZETYPE_BEFORE_SWAP)
+			{
+				if (frameNdx % 2 == 0)
+					m_window->setSurfaceSize(IVec2(width*2, height/2));
+				else
+					m_window->setSurfaceSize(IVec2(height/2, width*2));
+			}
+
 			EGLU_CHECK_CALL(egl, swapBuffers(m_eglDisplay, m_eglSurface));
+
+			if (m_resizeType == RESIZETYPE_AFTER_SWAP)
+			{
+				if (frameNdx % 2 == 0)
+					m_window->setSurfaceSize(IVec2(width*2, height/2));
+				else
+					m_window->setSurfaceSize(IVec2(height/2, width*2));
+			}
+
 			continue;
 		}
 
@@ -557,7 +597,23 @@ TestCase::IterateResult BufferAgeTest::iterate (void)
 			return STOP;
 		}
 
+		if (m_resizeType == RESIZETYPE_BEFORE_SWAP)
+		{
+			if (frameNdx % 2 == 0)
+				m_window->setSurfaceSize(IVec2(width*2, height/2));
+			else
+				m_window->setSurfaceSize(IVec2(height/2, width*2));
+		}
+
 		EGLU_CHECK_CALL(egl, swapBuffers(m_eglDisplay, m_eglSurface));
+
+		if (m_resizeType == RESIZETYPE_AFTER_SWAP)
+		{
+			if (frameNdx % 2 == 0)
+				m_window->setSurfaceSize(IVec2(width*2, height/2));
+			else
+				m_window->setSurfaceSize(IVec2(height/2, width*2));
+		}
 	}
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -585,6 +641,25 @@ string generateDrawTypeName (const vector<BufferAgeTest::DrawType>& drawTypes)
 string generateTestName (const vector<BufferAgeTest::DrawType>& oddFrameDrawType, const vector<BufferAgeTest::DrawType>& evenFrameDrawType)
 {
 	return "odd" + generateDrawTypeName(oddFrameDrawType) + "_even" + generateDrawTypeName(evenFrameDrawType);
+}
+
+string generateResizeGroupName (BufferAgeTest::ResizeType resizeType)
+{
+	switch (resizeType)
+	{
+		case BufferAgeTest::RESIZETYPE_NONE:
+			return "no_resize";
+
+		case BufferAgeTest::RESIZETYPE_AFTER_SWAP:
+			return "resize_after_swap";
+
+		case BufferAgeTest::RESIZETYPE_BEFORE_SWAP:
+			return "resize_before_swap";
+
+		default:
+			DE_FATAL("Unknown resize type");
+			return "";
+	}
 }
 
 bool isWindow (const eglu::CandidateConfig& c)
@@ -649,16 +724,23 @@ BufferAgeTests::BufferAgeTests (EglTestContext& eglTestCtx)
 
 void BufferAgeTests::init (void)
 {
-	const BufferAgeTest::DrawType clearRender[2] =
+	const BufferAgeTest::DrawType clearRender[] =
 	{
 		BufferAgeTest::DRAWTYPE_GLES2_CLEAR,
 		BufferAgeTest::DRAWTYPE_GLES2_RENDER
 	};
 
-	const BufferAgeTest::DrawType renderClear[2] =
+	const BufferAgeTest::DrawType renderClear[] =
 	{
 		BufferAgeTest::DRAWTYPE_GLES2_RENDER,
 		BufferAgeTest::DRAWTYPE_GLES2_CLEAR
+	};
+
+	const BufferAgeTest::ResizeType resizeTypes[] =
+	{
+		BufferAgeTest::RESIZETYPE_NONE,
+		BufferAgeTest::RESIZETYPE_BEFORE_SWAP,
+		BufferAgeTest::RESIZETYPE_AFTER_SWAP
 	};
 
 	vector< vector<BufferAgeTest::DrawType> > frameDrawTypes;
@@ -672,19 +754,27 @@ void BufferAgeTests::init (void)
 
 	for (int preserveNdx = 0; preserveNdx < 2; preserveNdx++)
 	{
-		const bool			 preserve 		= (preserveNdx == 0);
-		TestCaseGroup* const preserveGroup 	= new TestCaseGroup(m_eglTestCtx, (preserve ? "preserve" : "no_preserve"), "");
+		const bool				preserve 		= (preserveNdx == 0);
+		TestCaseGroup* const	preserveGroup	= new TestCaseGroup(m_eglTestCtx, (preserve ? "preserve" : "no_preserve"), "");
 
-		for (size_t evenNdx = 0; evenNdx < frameDrawTypes.size(); evenNdx++)
+		for (size_t resizeTypeNdx = 0; resizeTypeNdx < DE_LENGTH_OF_ARRAY(resizeTypes); resizeTypeNdx++)
 		{
-			const vector<BufferAgeTest::DrawType>& evenFrameDrawType = frameDrawTypes[evenNdx];
+			const BufferAgeTest::ResizeType	resizeType	= resizeTypes[resizeTypeNdx];
+			TestCaseGroup* const			resizeGroup	= new TestCaseGroup(m_eglTestCtx, generateResizeGroupName(resizeType).c_str(), "");
 
-			for (size_t oddNdx = evenNdx; oddNdx < frameDrawTypes.size(); oddNdx++)
+			for (size_t evenNdx = 0; evenNdx < frameDrawTypes.size(); evenNdx++)
 			{
-				const vector<BufferAgeTest::DrawType>& 	oddFrameDrawType = frameDrawTypes[oddNdx];
-				const std::string 						name 			 = generateTestName(oddFrameDrawType, evenFrameDrawType);
-				preserveGroup->addChild(new BufferAgeTest(m_eglTestCtx, preserve, oddFrameDrawType, evenFrameDrawType, name.c_str(), ""));
+				const vector<BufferAgeTest::DrawType>& evenFrameDrawType = frameDrawTypes[evenNdx];
+
+				for (size_t oddNdx = evenNdx; oddNdx < frameDrawTypes.size(); oddNdx++)
+				{
+					const vector<BufferAgeTest::DrawType>&	oddFrameDrawType	= frameDrawTypes[oddNdx];
+					const std::string 						name 				= generateTestName(oddFrameDrawType, evenFrameDrawType);
+					resizeGroup->addChild(new BufferAgeTest(m_eglTestCtx, preserve, oddFrameDrawType, evenFrameDrawType, BufferAgeTest::RESIZETYPE_NONE, name.c_str(), ""));
+				}
 			}
+
+			preserveGroup->addChild(resizeGroup);
 		}
 		addChild(preserveGroup);
 	}
