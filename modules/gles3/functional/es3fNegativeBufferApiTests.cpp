@@ -356,8 +356,12 @@ void NegativeBufferApiTests::init (void)
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if target is GL_UNIFORM_BUFFER and offset is not a multiple of GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT.");
 			int alignment;
 			glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &alignment);
-			glBindBufferRange(GL_UNIFORM_BUFFER, 0, bufU, alignment+1, 4);
-			expectError(GL_INVALID_VALUE);
+
+			if (alignment > 1)
+			{
+				glBindBufferRange(GL_UNIFORM_BUFFER, 0, bufU, alignment+1, 4);
+				expectError(GL_INVALID_VALUE);
+			}
 			m_log << TestLog::EndSection;
 
 			glDeleteBuffers(1, &bufU);
