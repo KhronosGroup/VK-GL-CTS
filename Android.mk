@@ -713,6 +713,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateGeneralTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateImageObjectUtil.cpp \
 	external/vulkancts/modules/vulkan/vktTestPackage.cpp \
+	external/vulkancts/modules/vulkan/vktSynchronization.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderPackingFunctionTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderIntegerFunctionTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderExecutor.cpp \
