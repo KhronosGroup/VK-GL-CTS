@@ -1863,11 +1863,23 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	setLayoutBuilder
 		.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
 
-	const int numBlocks	= (int)m_refLayout.blocks.size();
-	for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+	int numBlocks = 0;
+	const int numBindings = m_interface.getNumBlocks();
+	for (int bindingNdx = 0; bindingNdx < numBindings; bindingNdx++)
 	{
-		setLayoutBuilder
-			.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+		const BufferBlock& block = m_interface.getBlock(bindingNdx);
+		if (block.isArray())
+		{
+			setLayoutBuilder
+				.addArrayBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, block.getArraySize(), vk::VK_SHADER_STAGE_COMPUTE_BIT);
+			numBlocks += block.getArraySize();
+		}
+		else
+		{
+			setLayoutBuilder
+				.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+			numBlocks += 1;
+		}
 	}
 
 	poolBuilder
@@ -1923,10 +1935,10 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 
 				m_uniformBuffers.push_back(VkBufferSp(new vk::Unique<vk::VkBuffer>(buffer)));
 				m_uniformAllocs.push_back(AllocationSp(alloc.release()));
-
-				setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(blockNdx + 1),
-											vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptors[blockNdx]);
 			}
+
+			setUpdateBuilder.writeArray(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1),
+										vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, numBlocks, &descriptors[0]);
 		}
 		else
 		{
@@ -1960,10 +1972,10 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 				const deUint32						offset		= blockLocations[blockNdx].offset;
 
 				descriptors[blockNdx] = makeDescriptorBufferInfo(*buffer, offset, bufferSize);
-
-				setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(blockNdx + 1),
-										vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptors[blockNdx]);
 			}
+
+			setUpdateBuilder.writeArray(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1),
+										vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, numBlocks, &descriptors[0]);
 
 			m_uniformBuffers.push_back(VkBufferSp(new vk::Unique<vk::VkBuffer>(buffer)));
 			m_uniformAllocs.push_back(AllocationSp(alloc.release()));
