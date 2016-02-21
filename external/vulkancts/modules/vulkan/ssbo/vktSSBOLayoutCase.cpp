@@ -1923,10 +1923,10 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 
 				m_uniformBuffers.push_back(VkBufferSp(new vk::Unique<vk::VkBuffer>(buffer)));
 				m_uniformAllocs.push_back(AllocationSp(alloc.release()));
-
-				setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(blockNdx + 1),
-											vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptors[blockNdx]);
 			}
+
+			setUpdateBuilder.writeArray(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1),
+										vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, numBlocks, &descriptors[0]);
 		}
 		else
 		{
@@ -1960,10 +1960,10 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 				const deUint32						offset		= blockLocations[blockNdx].offset;
 
 				descriptors[blockNdx] = makeDescriptorBufferInfo(*buffer, offset, bufferSize);
-
-				setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(blockNdx + 1),
-										vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptors[blockNdx]);
 			}
+
+			setUpdateBuilder.writeArray(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1),
+										vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, numBlocks, &descriptors[0]);
 
 			m_uniformBuffers.push_back(VkBufferSp(new vk::Unique<vk::VkBuffer>(buffer)));
 			m_uniformAllocs.push_back(AllocationSp(alloc.release()));
