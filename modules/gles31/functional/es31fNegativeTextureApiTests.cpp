@@ -2344,13 +2344,6 @@ void texparameterIiv (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname GL_TEXTURE_BASE_LEVEL is not 0.");
-	textureMode[0] = -1;
-	textureMode[1] = -1;
-	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, textureMode);
-	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, textureMode);
-	ctx.expectError(GL_INVALID_OPERATION);
-
 	textureMode[0] = 1;
 	textureMode[1] = 1;
 	ctx.glTexParameterIiv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, textureMode);
@@ -3405,9 +3398,14 @@ void compressedteximage3d_invalid_width_height (NegativeTestContext& ctx)
 {
 	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
+		const int				width		= 4;
+		const int				height		= 6;
+		const int				depth		= 6;
+		const int				blockSize	= 16;
+		const int				imageSize	= divRoundUp(width, 4) * divRoundUp(height, 4) * depth * blockSize;
+		std::vector<GLubyte>	data		(imageSize);
 		ctx.beginSection("GL_INVALID_VALUE is generated if target is GL_TEXTURE_CUBE_MAP_ARRAY and width and height are not equal.");
-		// TODO: [2015-12-17 dag]: validate that we're triggering the error for the correct reasons
-		ctx.glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_COMPRESSED_RGBA_ASTC_4x4, 4, 6, 1, 0, 0, 0);
+		ctx.glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_COMPRESSED_RGBA_ASTC_4x4, width, height, depth, 0, imageSize, &data[0]);
 		ctx.expectError(GL_INVALID_VALUE);
 		ctx.endSection();
 	}
@@ -3415,15 +3413,16 @@ void compressedteximage3d_invalid_width_height (NegativeTestContext& ctx)
 
 void compressedteximage3d_invalid_format (NegativeTestContext& ctx)
 {
-	ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_3D and the internal format does not support 3D textures.");
-	ctx.glCompressedTexImage3D(GL_TEXTURE_3D, 0, GL_COMPRESSED_RGB8_ETC2, 4, 4, 1, 0, etc2DataSize(4, 4), 0);
-	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.endSection();
-
 	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
+		const int				width		= 4;
+		const int				height		= 4;
+		const int				depth		= 6;
+		const int				blockSize	= 16;
+		const int				imageSize	= divRoundUp(width, 4) * divRoundUp(height, 4) * depth * blockSize;
+		std::vector<GLubyte>	data		(imageSize);
 		ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_CUBE_MAP_ARRAY and the internal format does not support cube map array textures.");
-		ctx.glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_COMPRESSED_R11_EAC, 4, 4, 1, 0, 0, 0);
+		ctx.glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC, width, height, depth, 0, imageSize, &data[0]);
 		ctx.expectError(GL_INVALID_OPERATION);
 		ctx.endSection();
 	}
@@ -3870,7 +3869,7 @@ void texstorage3d_invalid_binding (NegativeTestContext& ctx)
 	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glBindTexture	(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
-		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_RGBA8, 4, 4, 4);
+		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_RGBA8, 4, 4, 6);
 		ctx.expectError		(GL_INVALID_OPERATION);
 	}
 	ctx.endSection();
@@ -3941,10 +3940,6 @@ void texstorage3d_invalid_levels (NegativeTestContext& ctx)
 
 	if (isES32 || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
-		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, log2MaxSize, GL_RGBA8, 8, 2, 6);
-		ctx.expectError		(GL_INVALID_OPERATION);
-		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, log2MaxSize, GL_RGBA8, 2, 8, 6);
-		ctx.expectError		(GL_INVALID_OPERATION);
 		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, log2MaxSize, GL_RGBA8, 2, 2, 6);
 		ctx.expectError		(GL_INVALID_OPERATION);
 		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, log2MaxSize, GL_RGBA8, 8, 8, 6);

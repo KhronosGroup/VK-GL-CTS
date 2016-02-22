@@ -82,6 +82,7 @@ enum TextureType
 	TEXTURE_TYPE_CUBE,
 	TEXTURE_TYPE_2D_ARRAY,
 	TEXTURE_TYPE_3D,
+	TEXTURE_TYPE_CUBE_ARRAY,
 
 	TEXTURE_TYPE_LAST
 };
@@ -148,8 +149,14 @@ static TextureType getTextureType (glu::DataType samplerType)
 		case glu::TYPE_UINT_SAMPLER_3D:
 			return TEXTURE_TYPE_3D;
 
+		case glu::TYPE_SAMPLER_CUBE_ARRAY:
+		case glu::TYPE_SAMPLER_CUBE_ARRAY_SHADOW:
+		case glu::TYPE_INT_SAMPLER_CUBE_ARRAY:
+		case glu::TYPE_UINT_SAMPLER_CUBE_ARRAY:
+			return TEXTURE_TYPE_CUBE_ARRAY;
+
 		default:
-			throw tcu::InternalError("Invalid sampler type");
+			TCU_THROW(InternalError, "Invalid sampler type");
 	}
 }
 
@@ -158,7 +165,8 @@ static bool isShadowSampler (glu::DataType samplerType)
 	return samplerType == glu::TYPE_SAMPLER_1D_SHADOW		||
 		   samplerType == glu::TYPE_SAMPLER_2D_SHADOW		||
 		   samplerType == glu::TYPE_SAMPLER_2D_ARRAY_SHADOW	||
-		   samplerType == glu::TYPE_SAMPLER_CUBE_SHADOW;
+		   samplerType == glu::TYPE_SAMPLER_CUBE_SHADOW		||
+		   samplerType == glu::TYPE_SAMPLER_CUBE_ARRAY_SHADOW;
 }
 
 static glu::DataType getSamplerOutputType (glu::DataType samplerType)
@@ -170,12 +178,14 @@ static glu::DataType getSamplerOutputType (glu::DataType samplerType)
 		case glu::TYPE_SAMPLER_CUBE:
 		case glu::TYPE_SAMPLER_2D_ARRAY:
 		case glu::TYPE_SAMPLER_3D:
+		case glu::TYPE_SAMPLER_CUBE_ARRAY:
 			return glu::TYPE_FLOAT_VEC4;
 
 		case glu::TYPE_SAMPLER_1D_SHADOW:
 		case glu::TYPE_SAMPLER_2D_SHADOW:
 		case glu::TYPE_SAMPLER_CUBE_SHADOW:
 		case glu::TYPE_SAMPLER_2D_ARRAY_SHADOW:
+		case glu::TYPE_SAMPLER_CUBE_ARRAY_SHADOW:
 			return glu::TYPE_FLOAT;
 
 		case glu::TYPE_INT_SAMPLER_1D:
@@ -183,6 +193,7 @@ static glu::DataType getSamplerOutputType (glu::DataType samplerType)
 		case glu::TYPE_INT_SAMPLER_CUBE:
 		case glu::TYPE_INT_SAMPLER_2D_ARRAY:
 		case glu::TYPE_INT_SAMPLER_3D:
+		case glu::TYPE_INT_SAMPLER_CUBE_ARRAY:
 			return glu::TYPE_INT_VEC4;
 
 		case glu::TYPE_UINT_SAMPLER_1D:
@@ -190,10 +201,11 @@ static glu::DataType getSamplerOutputType (glu::DataType samplerType)
 		case glu::TYPE_UINT_SAMPLER_CUBE:
 		case glu::TYPE_UINT_SAMPLER_2D_ARRAY:
 		case glu::TYPE_UINT_SAMPLER_3D:
+		case glu::TYPE_UINT_SAMPLER_CUBE_ARRAY:
 			return glu::TYPE_UINT_VEC4;
 
 		default:
-			throw tcu::InternalError("Invalid sampler type");
+			TCU_THROW(InternalError, "Invalid sampler type");
 	}
 }
 
@@ -214,7 +226,7 @@ static tcu::TextureFormat getSamplerTextureFormat (glu::DataType samplerType)
 		case glu::TYPE_UINT:	return tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNSIGNED_INT8);
 
 		default:
-			throw tcu::InternalError("Invalid sampler type");
+			TCU_THROW(InternalError, "Invalid sampler type");
 	}
 }
 
@@ -225,16 +237,17 @@ static glu::DataType getSamplerCoordType (glu::DataType samplerType)
 
 	switch (texType)
 	{
-		case TEXTURE_TYPE_1D:		numCoords = 1;	break;
-		case TEXTURE_TYPE_2D:		numCoords = 2;	break;
-		case TEXTURE_TYPE_2D_ARRAY:	numCoords = 3;	break;
-		case TEXTURE_TYPE_CUBE:		numCoords = 3;	break;
-		case TEXTURE_TYPE_3D:		numCoords = 3;	break;
+		case TEXTURE_TYPE_1D:			numCoords = 1;	break;
+		case TEXTURE_TYPE_2D:			numCoords = 2;	break;
+		case TEXTURE_TYPE_2D_ARRAY:		numCoords = 3;	break;
+		case TEXTURE_TYPE_CUBE:			numCoords = 3;	break;
+		case TEXTURE_TYPE_3D:			numCoords = 3;	break;
+		case TEXTURE_TYPE_CUBE_ARRAY:	numCoords = 4;	break;
 		default:
-			DE_ASSERT(false);
+			TCU_THROW(InternalError, "Invalid texture type");
 	}
 
-	if (isShadowSampler(samplerType))
+	if (isShadowSampler(samplerType) && samplerType != TYPE_SAMPLER_CUBE_ARRAY_SHADOW)
 		numCoords += 1;
 
 	DE_ASSERT(de::inRange(numCoords, 1, 4));
@@ -246,14 +259,14 @@ static deUint32 getGLTextureTarget (TextureType texType)
 {
 	switch (texType)
 	{
-		case TEXTURE_TYPE_1D:		return GL_TEXTURE_1D;
-		case TEXTURE_TYPE_2D:		return GL_TEXTURE_2D;
-		case TEXTURE_TYPE_2D_ARRAY:	return GL_TEXTURE_2D_ARRAY;
-		case TEXTURE_TYPE_CUBE:		return GL_TEXTURE_CUBE_MAP;
-		case TEXTURE_TYPE_3D:		return GL_TEXTURE_3D;
+		case TEXTURE_TYPE_1D:			return GL_TEXTURE_1D;
+		case TEXTURE_TYPE_2D:			return GL_TEXTURE_2D;
+		case TEXTURE_TYPE_2D_ARRAY:		return GL_TEXTURE_2D_ARRAY;
+		case TEXTURE_TYPE_CUBE:			return GL_TEXTURE_CUBE_MAP;
+		case TEXTURE_TYPE_3D:			return GL_TEXTURE_3D;
+		case TEXTURE_TYPE_CUBE_ARRAY:	return GL_TEXTURE_CUBE_MAP_ARRAY;
 		default:
-			DE_ASSERT(false);
-			return 0;
+			TCU_THROW(InternalError, "Invalid texture type");
 	}
 }
 
@@ -290,6 +303,13 @@ static void setupTexture (const glw::Functions&	gl,
 			gl.texSubImage3D(texTarget, 0, 0, 0, 0, 1, 1, 1, transferFmt.format, transferFmt.dataType, color);
 			break;
 
+		case TEXTURE_TYPE_CUBE_ARRAY:
+			gl.texStorage3D(texTarget, 1, intFormat, 1, 1, 6);
+			for (int zoffset = 0; zoffset < 6; ++zoffset)
+				for (int face = 0; face < tcu::CUBEFACE_LAST; face++)
+					gl.texSubImage3D(texTarget, 0, 0, 0, zoffset, 1, 1, 1, transferFmt.format, transferFmt.dataType, color);
+			break;
+
 		case TEXTURE_TYPE_CUBE:
 			gl.texStorage2D(texTarget, 1, intFormat, 1, 1);
 			for (int face = 0; face < tcu::CUBEFACE_LAST; face++)
@@ -297,7 +317,7 @@ static void setupTexture (const glw::Functions&	gl,
 			break;
 
 		default:
-			DE_ASSERT(false);
+			TCU_THROW(InternalError, "Invalid texture type");
 	}
 
 	gl.texParameteri(texTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -322,7 +342,7 @@ private:
 							SamplerIndexingCase			(const SamplerIndexingCase&);
 	SamplerIndexingCase&	operator=					(const SamplerIndexingCase&);
 
-	void					getShaderSpec				(ShaderSpec* spec, int numSamplers, int numLookups, const int* lookupIndices) const;
+	void					getShaderSpec				(ShaderSpec* spec, int numSamplers, int numLookups, const int* lookupIndices, const RenderContext& renderContext) const;
 
 	const glu::ShaderType	m_shaderType;
 	const glu::DataType		m_samplerType;
@@ -343,15 +363,26 @@ SamplerIndexingCase::~SamplerIndexingCase (void)
 
 void SamplerIndexingCase::init (void)
 {
-	const char* extName = "GL_EXT_gpu_shader5";
+	if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	{
+		if (m_shaderType == SHADERTYPE_GEOMETRY)
+			TCU_CHECK_AND_THROW(NotSupportedError,
+				m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"),
+				"GL_EXT_geometry_shader extension is required to run geometry shader tests.");
 
-	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL &&
-		m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION &&
-		!m_context.getContextInfo().isExtensionSupported(extName))
-		throw tcu::NotSupportedError(string(extName) + " extension is required for dynamic indexing of interface blocks");
+		if (m_shaderType == SHADERTYPE_TESSELLATION_CONTROL || m_shaderType == SHADERTYPE_TESSELLATION_EVALUATION)
+			TCU_CHECK_AND_THROW(NotSupportedError,
+				m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"),
+				"GL_EXT_tessellation_shader extension is required to run tessellation shader tests.");
+
+		if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL && m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
+			TCU_CHECK_AND_THROW(NotSupportedError,
+				m_context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5"),
+				"GL_EXT_gpu_shader5 extension is required for dynamic indexing of sampler arrays.");
+	}
 }
 
-void SamplerIndexingCase::getShaderSpec (ShaderSpec* spec, int numSamplers, int numLookups, const int* lookupIndices) const
+void SamplerIndexingCase::getShaderSpec (ShaderSpec* spec, int numSamplers, int numLookups, const int* lookupIndices, const RenderContext& renderContext) const
 {
 	const char*			samplersName	= "sampler";
 	const char*			coordsName		= "coords";
@@ -359,11 +390,13 @@ void SamplerIndexingCase::getShaderSpec (ShaderSpec* spec, int numSamplers, int 
 	const char*			resultPrefix	= "result";
 	const DataType		coordType		= getSamplerCoordType(m_samplerType);
 	const DataType		outType			= getSamplerOutputType(m_samplerType);
-	std::ostringstream	global, code;
+	const bool			isES32			= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	std::ostringstream	global;
+	std::ostringstream	code;
 
 	spec->inputs.push_back(Symbol(coordsName, VarType(coordType, PRECISION_HIGHP)));
 
-	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL)
+	if (!isES32 && m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL && m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
 		global << "#extension GL_EXT_gpu_shader5 : require\n";
 
 	if (m_indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
@@ -400,10 +433,11 @@ void SamplerIndexingCase::getShaderSpec (ShaderSpec* spec, int numSamplers, int 
 		else
 			code << indicesPrefix << lookupNdx;
 
-		code << "], " << coordsName << ");\n";
+
+		code << "], " << coordsName << (m_samplerType == TYPE_SAMPLER_CUBE_ARRAY_SHADOW ? ", 0.0" : "") << ");\n";
 	}
 
-	spec->version				= GLSL_VERSION_310_ES;
+	spec->version				= isES32 ? GLSL_VERSION_320_ES : GLSL_VERSION_310_ES;
 	spec->globalDeclarations	= global.str();
 	spec->source				= code.str();
 }
@@ -443,17 +477,18 @@ SamplerIndexingCase::IterateResult SamplerIndexingCase::iterate (void)
 	vector<deUint32>				outData;
 	vector<deUint8>					texData				(numSamplers * texFormat.getPixelSize());
 	const tcu::PixelBufferAccess	refTexAccess		(texFormat, numSamplers, 1, 1, &texData[0]);
+
 	ShaderSpec						shaderSpec;
 	de::Random						rnd					(deInt32Hash(m_samplerType) ^ deInt32Hash(m_shaderType) ^ deInt32Hash(m_indexExprType));
 
 	for (int ndx = 0; ndx < numLookups; ndx++)
 		lookupIndices[ndx] = rnd.getInt(0, numSamplers-1);
 
-	getShaderSpec(&shaderSpec, numSamplers, numLookups, &lookupIndices[0]);
+	getShaderSpec(&shaderSpec, numSamplers, numLookups, &lookupIndices[0], m_context.getRenderContext());
 
 	coords.resize(numInvocations * getDataTypeScalarSize(coordType));
 
-	if (isShadowSampler(m_samplerType))
+	if (m_samplerType != TYPE_SAMPLER_CUBE_ARRAY_SHADOW && isShadowSampler(m_samplerType))
 	{
 		// Use different comparison value per invocation.
 		// \note Texture uses odd values, comparison even values.
@@ -658,7 +693,7 @@ private:
 								BlockArrayIndexingCase		(const BlockArrayIndexingCase&);
 	BlockArrayIndexingCase&		operator=					(const BlockArrayIndexingCase&);
 
-	void						getShaderSpec				(ShaderSpec* spec, int numInstances, int numReads, const int* readIndices) const;
+	void						getShaderSpec				(ShaderSpec* spec, int numInstances, int numReads, const int* readIndices, const RenderContext& renderContext) const;
 
 	const BlockType				m_blockType;
 	const IndexExprType			m_indexExprType;
@@ -682,12 +717,23 @@ BlockArrayIndexingCase::~BlockArrayIndexingCase (void)
 
 void BlockArrayIndexingCase::init (void)
 {
-	const char* extName = "GL_EXT_gpu_shader5";
+	if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	{
+		if (m_shaderType == SHADERTYPE_GEOMETRY)
+			TCU_CHECK_AND_THROW(NotSupportedError,
+				m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"),
+				"GL_EXT_geometry_shader extension is required to run geometry shader tests.");
 
-	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL &&
-		m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION &&
-		!m_context.getContextInfo().isExtensionSupported(extName))
-		throw tcu::NotSupportedError(string(extName) + " extension is required for dynamic indexing of interface blocks");
+		if (m_shaderType == SHADERTYPE_TESSELLATION_CONTROL || m_shaderType == SHADERTYPE_TESSELLATION_EVALUATION)
+			TCU_CHECK_AND_THROW(NotSupportedError,
+				m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"),
+				"GL_EXT_tessellation_shader extension is required to run tessellation shader tests.");
+
+		if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL && m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
+			TCU_CHECK_AND_THROW(NotSupportedError,
+				m_context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5"),
+				"GL_EXT_gpu_shader5 extension is required for dynamic indexing of interface blocks.");
+	}
 
 	if (m_blockType == BLOCKTYPE_BUFFER)
 	{
@@ -712,7 +758,7 @@ void BlockArrayIndexingCase::init (void)
 	}
 }
 
-void BlockArrayIndexingCase::getShaderSpec (ShaderSpec* spec, int numInstances, int numReads, const int* readIndices) const
+void BlockArrayIndexingCase::getShaderSpec (ShaderSpec* spec, int numInstances, int numReads, const int* readIndices, const RenderContext& renderContext) const
 {
 	const int			binding			= 2;
 	const char*			blockName		= "Block";
@@ -721,10 +767,11 @@ void BlockArrayIndexingCase::getShaderSpec (ShaderSpec* spec, int numInstances, 
 	const char*			resultPrefix	= "result";
 	const char*			interfaceName	= m_blockType == BLOCKTYPE_UNIFORM ? "uniform" : "buffer";
 	const char*			layout			= m_blockType == BLOCKTYPE_UNIFORM ? "std140" : "std430";
-	std::ostringstream	global, code;
+	const bool			isES32			= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	std::ostringstream	global;
+	std::ostringstream	code;
 
-	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL
-		&& m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
+	if (!isES32 && m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL && m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
 		global << "#extension GL_EXT_gpu_shader5 : require\n";
 
 	if (m_indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
@@ -767,7 +814,7 @@ void BlockArrayIndexingCase::getShaderSpec (ShaderSpec* spec, int numInstances, 
 		code << "].value;\n";
 	}
 
-	spec->version				= GLSL_VERSION_310_ES;
+	spec->version				= isES32 ? GLSL_VERSION_320_ES : GLSL_VERSION_310_ES;
 	spec->globalDeclarations	= global.str();
 	spec->source				= code.str();
 }
@@ -789,7 +836,7 @@ BlockArrayIndexingCase::IterateResult BlockArrayIndexingCase::iterate (void)
 	for (int instanceNdx = 0; instanceNdx < numInstances; instanceNdx++)
 		inValues[instanceNdx] = rnd.getUint32();
 
-	getShaderSpec(&shaderSpec, numInstances, numReads, &readIndices[0]);
+	getShaderSpec(&shaderSpec, numInstances, numReads, &readIndices[0], m_context.getRenderContext());
 
 	{
 		const RenderContext&	renderCtx		= m_context.getRenderContext();
@@ -878,7 +925,7 @@ private:
 								AtomicCounterIndexingCase		(const AtomicCounterIndexingCase&);
 	AtomicCounterIndexingCase&	operator=						(const AtomicCounterIndexingCase&);
 
-	void						getShaderSpec					(ShaderSpec* spec, int numCounters, int numOps, const int* opIndices) const;
+	void						getShaderSpec					(ShaderSpec* spec, int numCounters, int numOps, const int* opIndices, const RenderContext& renderContext) const;
 
 	const IndexExprType			m_indexExprType;
 	const glu::ShaderType		m_shaderType;
@@ -897,12 +944,23 @@ AtomicCounterIndexingCase::~AtomicCounterIndexingCase (void)
 
 void AtomicCounterIndexingCase::init (void)
 {
-	const char* extName = "GL_EXT_gpu_shader5";
+	if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	{
+		if (m_shaderType == SHADERTYPE_GEOMETRY)
+			TCU_CHECK_AND_THROW(NotSupportedError,
+				m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"),
+				"GL_EXT_geometry_shader extension is required to run geometry shader tests.");
 
-	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL &&
-		m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION &&
-		!m_context.getContextInfo().isExtensionSupported(extName))
-		throw tcu::NotSupportedError(string(extName) + " extension is required for dynamic indexing of interface blocks");
+		if (m_shaderType == SHADERTYPE_TESSELLATION_CONTROL || m_shaderType == SHADERTYPE_TESSELLATION_EVALUATION)
+			TCU_CHECK_AND_THROW(NotSupportedError,
+				m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"),
+				"GL_EXT_tessellation_shader extension is required to run tessellation shader tests.");
+
+		if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL && m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
+			TCU_CHECK_AND_THROW(NotSupportedError,
+				m_context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5"),
+				"GL_EXT_gpu_shader5 extension is required for dynamic indexing of atomic counters.");
+	}
 
 	if (m_shaderType == glu::SHADERTYPE_VERTEX || m_shaderType == glu::SHADERTYPE_FRAGMENT)
 	{
@@ -912,18 +970,22 @@ void AtomicCounterIndexingCase::init (void)
 																&numAtomicCounterBuffers);
 
 		if (numAtomicCounterBuffers == 0)
-			throw tcu::NotSupportedError(string("Atomic counters not supported in ") + glu::getShaderTypeName(m_shaderType) + " shader");
+		{
+			const string message =  "Atomic counters not supported in " + string(glu::getShaderTypeName(m_shaderType)) + " shader";
+			TCU_THROW(NotSupportedError, message.c_str());
+		}
 	}
 }
 
-void AtomicCounterIndexingCase::getShaderSpec (ShaderSpec* spec, int numCounters, int numOps, const int* opIndices) const
+void AtomicCounterIndexingCase::getShaderSpec (ShaderSpec* spec, int numCounters, int numOps, const int* opIndices, const RenderContext& renderContext) const
 {
 	const char*			indicesPrefix	= "index";
 	const char*			resultPrefix	= "result";
-	std::ostringstream	global, code;
+	const bool			isES32			= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	std::ostringstream	global;
+	std::ostringstream	code;
 
-	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL
-		&& m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
+	if (!isES32 && m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL && m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
 		global << "#extension GL_EXT_gpu_shader5 : require\n";
 
 	if (m_indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
@@ -963,7 +1025,7 @@ void AtomicCounterIndexingCase::getShaderSpec (ShaderSpec* spec, int numCounters
 		code << "]);\n";
 	}
 
-	spec->version				= GLSL_VERSION_310_ES;
+	spec->version				= isES32 ? GLSL_VERSION_320_ES : GLSL_VERSION_310_ES;
 	spec->globalDeclarations	= global.str();
 	spec->source				= code.str();
 }
@@ -985,7 +1047,7 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate (voi
 	for (int opNdx = 0; opNdx < numOps; opNdx++)
 		opIndices[opNdx] = rnd.getInt(0, numOps-1);
 
-	getShaderSpec(&shaderSpec, numCounters, numOps, &opIndices[0]);
+	getShaderSpec(&shaderSpec, numCounters, numOps, &opIndices[0], m_context.getRenderContext());
 
 	{
 		const BufferVector		buffers			(renderCtx, numCounters);
@@ -1168,9 +1230,12 @@ void OpaqueTypeIndexingTests::init (void)
 		const char*		name;
 	} shaderTypes[] =
 	{
-		{ SHADERTYPE_VERTEX,		"vertex"	},
-		{ SHADERTYPE_FRAGMENT,		"fragment"	},
-		{ SHADERTYPE_COMPUTE,		"compute"	}
+		{ SHADERTYPE_VERTEX,					"vertex"					},
+		{ SHADERTYPE_FRAGMENT,					"fragment"					},
+		{ SHADERTYPE_COMPUTE,					"compute"					},
+		{ SHADERTYPE_GEOMETRY,					"geometry"					},
+		{ SHADERTYPE_TESSELLATION_CONTROL,		"tessellation_control"		},
+		{ SHADERTYPE_TESSELLATION_EVALUATION,	"tessellation_evaluation"	}
 	};
 
 	// .sampler
@@ -1197,6 +1262,10 @@ void OpaqueTypeIndexingTests::init (void)
 			TYPE_UINT_SAMPLER_CUBE,
 			TYPE_UINT_SAMPLER_2D_ARRAY,
 			TYPE_UINT_SAMPLER_3D,
+			TYPE_SAMPLER_CUBE_ARRAY,
+			TYPE_SAMPLER_CUBE_ARRAY_SHADOW,
+			TYPE_INT_SAMPLER_CUBE_ARRAY,
+			TYPE_UINT_SAMPLER_CUBE_ARRAY
 		};
 
 		tcu::TestCaseGroup* const samplerGroup = new tcu::TestCaseGroup(m_testCtx, "sampler", "Sampler Array Indexing Tests");

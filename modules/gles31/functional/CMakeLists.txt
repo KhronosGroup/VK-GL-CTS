@@ -149,6 +149,10 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fNegativeAtomicCounterTests.hpp
 	es31fNegativeShaderImageLoadStoreTests.cpp
 	es31fNegativeShaderImageLoadStoreTests.hpp
+	es31fNegativeShaderFunctionTests.cpp
+	es31fNegativeShaderFunctionTests.hpp
+	es31fNegativeShaderDirectiveTests.cpp
+	es31fNegativeShaderDirectiveTests.hpp
 	es31fTextureGatherTests.cpp
 	es31fTextureGatherTests.hpp
 	es31fTextureFormatTests.cpp

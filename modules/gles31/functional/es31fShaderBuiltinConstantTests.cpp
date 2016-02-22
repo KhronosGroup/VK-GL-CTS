@@ -158,8 +158,29 @@ ShaderBuiltinConstantCase<DataType>::~ShaderBuiltinConstantCase (void)
 template<typename DataType>
 void ShaderBuiltinConstantCase<DataType>::init (void)
 {
-	if (!m_requiredExt.empty() && !m_context.getContextInfo().isExtensionSupported(m_requiredExt.c_str()))
-		throw tcu::NotSupportedError(m_requiredExt + " not supported");
+	const bool isES32 = contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
+	if (m_requiredExt == "GL_OES_sample_variables" || m_requiredExt == "GL_EXT_geometry_shader" || m_requiredExt == "GL_EXT_tessellation_shader")
+	{
+		if(!isES32)
+		{
+			const std::string message = "The test requires a 3.2 context or support for the extension " + m_requiredExt + ".";
+			TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported(m_requiredExt.c_str()), message.c_str());
+		}
+	}
+	else if (!m_requiredExt.empty() && !m_context.getContextInfo().isExtensionSupported(m_requiredExt.c_str()))
+			throw tcu::NotSupportedError(m_requiredExt + " not supported");
+
+	if (!isES32 && (m_varName == "gl_MaxTessControlImageUniforms"	||
+		m_varName == "gl_MaxTessEvaluationImageUniforms"			||
+		m_varName == "gl_MaxTessControlAtomicCounters"				||
+		m_varName == "gl_MaxTessEvaluationAtomicCounters"			||
+		m_varName == "gl_MaxTessControlAtomicCounterBuffers"		||
+		m_varName == "gl_MaxTessEvaluationAtomicCounterBuffers"))
+	{
+		std::string message = "The test requires a 3.2 context. The constant '" + m_varName + "' is not supported.";
+		TCU_THROW(NotSupportedError, message.c_str());
+	}
 }
 
 static gls::ShaderExecUtil::ShaderExecutor* createGetConstantExecutor (const glu::RenderContext&	renderCtx,
@@ -170,14 +191,15 @@ static gls::ShaderExecUtil::ShaderExecutor* createGetConstantExecutor (const glu
 {
 	using namespace gls::ShaderExecUtil;
 
+	const bool	isES32		= contextSupports(renderCtx.getType(), glu::ApiType::es(3, 2));
 	ShaderSpec	shaderSpec;
 
-	shaderSpec.version	= glu::GLSL_VERSION_310_ES;
+	shaderSpec.version	= isES32 ? glu::GLSL_VERSION_320_ES : glu::GLSL_VERSION_310_ES;
 	shaderSpec.source	= string("result = ") + varName + ";\n";
 
 	shaderSpec.outputs.push_back(Symbol("result", glu::VarType(dataType, glu::PRECISION_HIGHP)));
 
-	if (!extName.empty())
+	if (!extName.empty() && !(isES32 && (extName == "GL_OES_sample_variables" || extName == "GL_EXT_geometry_shader" || extName == "GL_EXT_tessellation_shader")))
 		shaderSpec.globalDeclarations = "#extension " + extName + " : require\n";
 
 	return createExecutor(renderCtx, shaderType, shaderSpec);
@@ -383,21 +405,28 @@ void ShaderBuiltinConstantTests::init (void)
 			ShaderBuiltinConstantCase<int>::GetConstantValueFunc	getValue;
 		} intConstants[] =
 		{
-			{ "gl_MaxTessControlInputComponents",			getInteger<GL_MAX_TESS_CONTROL_INPUT_COMPONENTS>		},
-			{ "gl_MaxTessControlOutputComponents",			getInteger<GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS>		},
-			{ "gl_MaxTessControlTextureImageUnits",			getInteger<GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS>		},
-			{ "gl_MaxTessControlUniformComponents",			getInteger<GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS>		},
-			{ "gl_MaxTessControlTotalOutputComponents",		getInteger<GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS>	},
+			{ "gl_MaxTessControlInputComponents",			getInteger<GL_MAX_TESS_CONTROL_INPUT_COMPONENTS>			},
+			{ "gl_MaxTessControlOutputComponents",			getInteger<GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS>			},
+			{ "gl_MaxTessControlTextureImageUnits",			getInteger<GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS>			},
+			{ "gl_MaxTessControlUniformComponents",			getInteger<GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS>			},
+			{ "gl_MaxTessControlTotalOutputComponents",		getInteger<GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS>		},
 
-			{ "gl_MaxTessEvaluationInputComponents",		getInteger<GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS>		},
-			{ "gl_MaxTessEvaluationOutputComponents",		getInteger<GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS>	},
-			{ "gl_MaxTessEvaluationTextureImageUnits",		getInteger<GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS>	},
-			{ "gl_MaxTessEvaluationUniformComponents",		getInteger<GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS>	},
+			{ "gl_MaxTessControlImageUniforms",				getInteger<GL_MAX_TESS_CONTROL_IMAGE_UNIFORMS>				},
+			{ "gl_MaxTessEvaluationImageUniforms",			getInteger<GL_MAX_TESS_EVALUATION_IMAGE_UNIFORMS>			},
+			{ "gl_MaxTessControlAtomicCounters",			getInteger<GL_MAX_TESS_CONTROL_ATOMIC_COUNTERS>				},
+			{ "gl_MaxTessEvaluationAtomicCounters",			getInteger<GL_MAX_TESS_EVALUATION_ATOMIC_COUNTERS>			},
+			{ "gl_MaxTessControlAtomicCounterBuffers",		getInteger<GL_MAX_TESS_CONTROL_ATOMIC_COUNTER_BUFFERS>		},
+			{ "gl_MaxTessEvaluationAtomicCounterBuffers",	getInteger<GL_MAX_TESS_EVALUATION_ATOMIC_COUNTER_BUFFERS>	},
 
-			{ "gl_MaxTessPatchComponents",					getInteger<GL_MAX_TESS_PATCH_COMPONENTS>				},
+			{ "gl_MaxTessEvaluationInputComponents",		getInteger<GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS>			},
+			{ "gl_MaxTessEvaluationOutputComponents",		getInteger<GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS>		},
+			{ "gl_MaxTessEvaluationTextureImageUnits",		getInteger<GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS>		},
+			{ "gl_MaxTessEvaluationUniformComponents",		getInteger<GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS>		},
 
-			{ "gl_MaxPatchVertices",						getInteger<GL_MAX_PATCH_VERTICES>						},
-			{ "gl_MaxTessGenLevel",							getInteger<GL_MAX_TESS_GEN_LEVEL>						},
+			{ "gl_MaxTessPatchComponents",					getInteger<GL_MAX_TESS_PATCH_COMPONENTS>					},
+
+			{ "gl_MaxPatchVertices",						getInteger<GL_MAX_PATCH_VERTICES>							},
+			{ "gl_MaxTessGenLevel",							getInteger<GL_MAX_TESS_GEN_LEVEL>							},
 		};
 
 		tcu::TestCaseGroup* const tessGroup = new tcu::TestCaseGroup(m_testCtx, "tessellation_shader", "GL_EXT_tessellation_shader");
