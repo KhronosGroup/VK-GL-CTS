@@ -25,6 +25,7 @@
 #include "tcuRenderTarget.hpp"
 #include "tcuSurface.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuStringTemplate.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluRenderContext.hpp"
 #include "gluPixelTransfer.hpp"
@@ -40,10 +41,12 @@ namespace Functional
 {
 namespace MultisampleShaderRenderUtil
 {
+using std::map;
+using std::string;
 namespace
 {
 
-static const char* const s_vertexSource =	"#version 310 es\n"
+static const char* const s_vertexSource =	"${GLSL_VERSION_DECL}\n"
 											"in highp vec4 a_position;\n"
 											"out highp vec4 v_position;\n"
 											"void main (void)\n"
@@ -95,6 +98,9 @@ void MultisampleRenderCase::init (void)
 {
 	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
 	deInt32					queriedSampleCount	= -1;
+	const bool				isES32				= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>		args;
+	args["GLSL_VERSION_DECL"]					= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 
 	// requirements
 
@@ -203,7 +209,9 @@ void MultisampleRenderCase::init (void)
 		}
 
 		// texture sampler shader
-		m_textureSamplerProgram = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(s_vertexSource) << glu::FragmentSource(genMSSamplerSource(queriedSampleCount)));
+		m_textureSamplerProgram = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource(tcu::StringTemplate(s_vertexSource).specialize(args))
+			<< glu::FragmentSource(genMSSamplerSource(queriedSampleCount)));
 		if (!m_textureSamplerProgram->isOk())
 		{
 			m_testCtx.getLog() << tcu::TestLog::Section("SamplerShader", "Sampler shader") << *m_textureSamplerProgram << tcu::TestLog::EndSection;
@@ -450,7 +458,9 @@ void MultisampleRenderCase::drawOneIteration (void)
 		delete m_program;
 		m_program = DE_NULL;
 
-		m_program = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(genVertexSource(m_numTargetSamples)) << glu::FragmentSource(genFragmentSource(m_numTargetSamples)));
+		m_program = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource(genVertexSource(m_numTargetSamples))
+			<< glu::FragmentSource(genFragmentSource(m_numTargetSamples)));
 		m_testCtx.getLog() << tcu::TestLog::Section("RenderShader", "Render shader") << *m_program << tcu::TestLog::EndSection;
 		if (!m_program->isOk())
 			throw tcu::TestError("could not build program");
@@ -660,8 +670,12 @@ void MultisampleRenderCase::drawOneIteration (void)
 
 std::string	MultisampleRenderCase::genVertexSource (int numTargetSamples) const
 {
+	const bool				isES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>		args;
+	args["GLSL_VERSION_DECL"]		= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+
 	DE_UNREF(numTargetSamples);
-	return std::string(s_vertexSource);
+	return std::string(tcu::StringTemplate(s_vertexSource).specialize(args));
 }
 
 std::string MultisampleRenderCase::genMSSamplerSource (int numTargetSamples) const
@@ -676,10 +690,13 @@ std::string	MultisampleRenderCase::genMSTextureResolverSource (int numTargetSamp
 {
 	// default behavior: average
 
-	const bool			isSingleSampleTarget = (m_numRequestedSamples == 0);
-	std::ostringstream	buf;
+	const bool				isES32					= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>		args;
+	args["GLSL_VERSION_DECL"]						= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	const bool				isSingleSampleTarget	= (m_numRequestedSamples == 0);
+	std::ostringstream		buf;
 
-	buf <<	"#version 310 es\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
 			"in mediump vec4 v_position;\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n"
 			"uniform mediump " << ((isSingleSampleTarget) ? ("sampler2D") : ("sampler2DMS")) << " u_sampler;\n"
@@ -702,17 +719,20 @@ std::string	MultisampleRenderCase::genMSTextureResolverSource (int numTargetSamp
 	buf <<	"	fragColor = vec4(colorSum.xyz, 1.0);\n"
 			"}\n";
 
-	return buf.str();
+	return tcu::StringTemplate(buf.str()).specialize(args);
 }
 
 std::string MultisampleRenderCase::genMSTextureLayerFetchSource (int numTargetSamples) const
 {
 	DE_UNREF(numTargetSamples);
 
-	const bool			isSingleSampleTarget = (m_numRequestedSamples == 0);
-	std::ostringstream	buf;
+	const bool				isES32					= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>		args;
+	args["GLSL_VERSION_DECL"]						= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	const bool				isSingleSampleTarget	= (m_numRequestedSamples == 0);
+	std::ostringstream		buf;
 
-	buf <<	"#version 310 es\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
 			"in mediump vec4 v_position;\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n"
 			"uniform mediump " << ((isSingleSampleTarget) ? ("sampler2D") : ("sampler2DMS")) << " u_sampler;\n"
@@ -726,7 +746,7 @@ std::string MultisampleRenderCase::genMSTextureLayerFetchSource (int numTargetSa
 			"	fragColor = vec4(color.rgb, 1.0);\n"
 			"}\n";
 
-	return buf.str();
+	return tcu::StringTemplate(buf.str()).specialize(args);
 }
 
 bool MultisampleRenderCase::verifySampleBuffers (const std::vector<tcu::Surface>& resultBuffers)

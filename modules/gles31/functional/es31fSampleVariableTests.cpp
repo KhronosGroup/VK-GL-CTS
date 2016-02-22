@@ -29,6 +29,7 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorUtil.hpp"
 #include "tcuFormatUtil.hpp"
+#include "tcuStringTemplate.hpp"
 #include "gluContextInfo.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluRenderContext.hpp"
@@ -38,6 +39,10 @@
 
 namespace deqp
 {
+
+using std::map;
+using std::string;
+
 namespace gles31
 {
 namespace Functional
@@ -271,8 +276,9 @@ MultisampleRenderCase::~MultisampleRenderCase (void)
 
 void MultisampleRenderCase::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
-		throw tcu::NotSupportedError("Test requires GL_OES_sample_variables extension");
+	const bool	isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	if (!isES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
+		TCU_THROW(NotSupportedError, "Test requires GL_OES_sample_variables extension or a context version 3.2 or higher.");
 
 	MultisampleShaderRenderUtil::MultisampleRenderCase::init();
 }
@@ -304,10 +310,14 @@ NumSamplesCase::~NumSamplesCase (void)
 
 std::string NumSamplesCase::genFragmentSource (int numTargetSamples) const
 {
-	std::ostringstream buf;
+	std::ostringstream	buf;
+	const bool			isES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>	args;
+	args["GLSL_VERSION_DECL"]	= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]		= isES32 ? "" : "#extension GL_OES_sample_variables : require";
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_sample_variables : require\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXTENSION}\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n"
 			"void main (void)\n"
 			"{\n"
@@ -316,7 +326,7 @@ std::string NumSamplesCase::genFragmentSource (int numTargetSamples) const
 			"		fragColor = vec4(0.0, 1.0, 0.0, 1.0);\n"
 			"}\n";
 
-	return buf.str();
+	return tcu::StringTemplate(buf.str()).specialize(args);
 }
 
 bool NumSamplesCase::verifyImage (const tcu::Surface& resultImage)
@@ -380,10 +390,14 @@ std::string MaxSamplesCase::genFragmentSource (int numTargetSamples) const
 {
 	DE_UNREF(numTargetSamples);
 
-	std::ostringstream buf;
+	std::ostringstream	buf;
+	const bool			isES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>	args;
+	args["GLSL_VERSION_DECL"]	= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]		= isES32 ? "" : "#extension GL_OES_sample_variables : require";
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_sample_variables : require\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXTENSION}\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n"
 			"uniform mediump int u_maxSamples;\n"
 			"void main (void)\n"
@@ -393,7 +407,7 @@ std::string MaxSamplesCase::genFragmentSource (int numTargetSamples) const
 			"		fragColor = vec4(0.0, 1.0, 0.0, 1.0);\n"
 			"}\n";
 
-	return buf.str();
+	return tcu::StringTemplate(buf.str()).specialize(args);
 }
 
 bool MaxSamplesCase::verifyImage (const tcu::Surface& resultImage)
@@ -464,12 +478,16 @@ std::string SampleIDCase::genFragmentSource (int numTargetSamples) const
 	DE_ASSERT(numTargetSamples != 0);
 
 	std::ostringstream buf;
+	const bool			isES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>	args;
+	args["GLSL_VERSION_DECL"]	= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]		= isES32 ? "" : "#extension GL_OES_sample_variables : require";
 
 	if (m_vericationMode == VERIFY_USING_SAMPLES)
 	{
 		// encode the id to the output, and then verify it during sampling
-		buf <<	"#version 310 es\n"
-				"#extension GL_OES_sample_variables : require\n"
+		buf <<	"${GLSL_VERSION_DECL}\n"
+				"${GLSL_EXTENSION}\n"
 				"layout(location = 0) out mediump vec4 fragColor;\n"
 				"void main (void)\n"
 				"{\n"
@@ -482,8 +500,8 @@ std::string SampleIDCase::genFragmentSource (int numTargetSamples) const
 		if (numTargetSamples == 1)
 		{
 			// single sample, just verify value is 0
-			buf <<	"#version 310 es\n"
-					"#extension GL_OES_sample_variables : require\n"
+			buf <<	"${GLSL_VERSION_DECL}\n"
+					"${GLSL_EXTENSION}\n"
 					"layout(location = 0) out mediump vec4 fragColor;\n"
 					"void main (void)\n"
 					"{\n"
@@ -496,8 +514,8 @@ std::string SampleIDCase::genFragmentSource (int numTargetSamples) const
 		else
 		{
 			// select only one sample per PIXEL
-			buf <<	"#version 310 es\n"
-					"#extension GL_OES_sample_variables : require\n"
+			buf <<	"${GLSL_VERSION_DECL}\n"
+					"${GLSL_EXTENSION}\n"
 					"in highp vec4 v_position;\n"
 					"layout(location = 0) out mediump vec4 fragColor;\n"
 					"void main (void)\n"
@@ -516,7 +534,7 @@ std::string SampleIDCase::genFragmentSource (int numTargetSamples) const
 	else
 		DE_ASSERT(false);
 
-	return buf.str();
+	return tcu::StringTemplate(buf.str()).specialize(args);
 }
 
 bool SampleIDCase::verifyImage (const tcu::Surface& resultImage)
@@ -631,14 +649,18 @@ std::string SamplePosDistributionCase::genFragmentSource (int numTargetSamples) 
 	DE_ASSERT(numTargetSamples != 0);
 	DE_UNREF(numTargetSamples);
 
-	const bool			multisampleTarget = (m_numRequestedSamples > 0) || (m_renderTarget == TARGET_DEFAULT && m_context.getRenderTarget().getNumSamples() > 1);
+	const bool			multisampleTarget	= (m_numRequestedSamples > 0) || (m_renderTarget == TARGET_DEFAULT && m_context.getRenderTarget().getNumSamples() > 1);
 	std::ostringstream	buf;
+	const bool			isES32				= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>	args;
+	args["GLSL_VERSION_DECL"]				= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]					= isES32 ? "\n" : "#extension GL_OES_sample_variables : require\n";
 
 	if (multisampleTarget)
 	{
 		// encode the position to the output, use red channel as error channel
-		buf <<	"#version 310 es\n"
-				"#extension GL_OES_sample_variables : require\n"
+		buf <<	"${GLSL_VERSION_DECL}\n"
+				"${GLSL_EXTENSION}\n"
 				"layout(location = 0) out mediump vec4 fragColor;\n"
 				"void main (void)\n"
 				"{\n"
@@ -651,8 +673,8 @@ std::string SamplePosDistributionCase::genFragmentSource (int numTargetSamples) 
 	else
 	{
 		// verify value is ok
-		buf <<	"#version 310 es\n"
-				"#extension GL_OES_sample_variables : require\n"
+		buf <<	"${GLSL_VERSION_DECL}\n"
+				"${GLSL_EXTENSION}\n"
 				"layout(location = 0) out mediump vec4 fragColor;\n"
 				"void main (void)\n"
 				"{\n"
@@ -663,7 +685,7 @@ std::string SamplePosDistributionCase::genFragmentSource (int numTargetSamples) 
 				"}\n";
 	}
 
-	return buf.str();
+	return tcu::StringTemplate(buf.str()).specialize(args);
 }
 
 bool SamplePosDistributionCase::verifyImage (const tcu::Surface& resultImage)
@@ -898,10 +920,11 @@ SamplePosCorrectnessCase::~SamplePosCorrectnessCase (void)
 
 void SamplePosCorrectnessCase::init (void)
 {
+	const bool isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	// requirements: per-invocation interpolation required
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") &&
+	if (!isES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") &&
 		!m_context.getContextInfo().isExtensionSupported("GL_OES_sample_shading"))
-		throw tcu::NotSupportedError("Test requires GL_OES_shader_multisample_interpolation or GL_OES_sample_shading extension");
+		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation or GL_OES_sample_shading extension or a context version 3.2 or higher.");
 
 	// prefer to use the sample qualifier path
 	m_useSampleQualifier = m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation");
@@ -948,10 +971,14 @@ std::string SamplePosCorrectnessCase::genVertexSource (int numTargetSamples) con
 {
 	DE_UNREF(numTargetSamples);
 
-	std::ostringstream buf;
+	std::ostringstream	buf;
+	const bool			isES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>	args;
+	args["GLSL_VERSION_DECL"]	= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]		= isES32 ? "" : m_useSampleQualifier ? "#extension GL_OES_shader_multisample_interpolation : require" : "";
 
-	buf <<	"#version 310 es\n"
-		<<	((m_useSampleQualifier) ? ("#extension GL_OES_shader_multisample_interpolation : require\n") : (""))
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXTENSION}\n"
 		<<	"in highp vec4 a_position;\n"
 		<<	((m_useSampleQualifier) ? ("sample ") : ("")) << "out highp vec4 v_position;\n"
 			"void main (void)\n"
@@ -960,19 +987,24 @@ std::string SamplePosCorrectnessCase::genVertexSource (int numTargetSamples) con
 			"	v_position = a_position;\n"
 			"}\n";
 
-	return buf.str();
+	return tcu::StringTemplate(buf.str()).specialize(args);
 }
 
 std::string SamplePosCorrectnessCase::genFragmentSource (int numTargetSamples) const
 {
 	DE_UNREF(numTargetSamples);
 
-	std::ostringstream buf;
+	std::ostringstream	buf;
+	const bool			isES32			= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>	args;
+	args["GLSL_VERSION_DECL"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_SAMPLE_EXTENSION"]		= isES32 ? "" : "#extension GL_OES_sample_variables : require";
+	args["GLSL_MULTISAMPLE_EXTENSION"]	= isES32 ? "" : m_useSampleQualifier ? "#extension GL_OES_shader_multisample_interpolation : require" : "";
 
 	// encode the position to the output, use red channel as error channel
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_sample_variables : require\n"
-		<<	((m_useSampleQualifier) ? ("#extension GL_OES_shader_multisample_interpolation : require\n") : (""))
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_SAMPLE_EXTENSION}\n"
+			"${GLSL_MULTISAMPLE_EXTENSION}\n"
 		<<	((m_useSampleQualifier) ? ("sample ") : ("")) << "in highp vec4 v_position;\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n"
 			"void main (void)\n"
@@ -1001,7 +1033,7 @@ std::string SamplePosCorrectnessCase::genFragmentSource (int numTargetSamples) c
 			"		fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
 			"}\n";
 
-	return buf.str();
+	return tcu::StringTemplate(buf.str()).specialize(args);
 }
 
 bool SamplePosCorrectnessCase::verifyImage (const tcu::Surface& resultImage)
@@ -1046,9 +1078,10 @@ SampleMaskBaseCase::~SampleMaskBaseCase (void)
 
 void SampleMaskBaseCase::init (void)
 {
+	const bool isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	// required extra extension
-	if (m_runMode == RUN_PER_TWO_SAMPLES && !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_shading"))
-		throw tcu::NotSupportedError("Test requires GL_OES_sample_shading extension");
+	if (m_runMode == RUN_PER_TWO_SAMPLES && !isES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_shading"))
+			TCU_THROW(NotSupportedError, "Test requires GL_OES_sample_shading extension or a context version 3.2 or higher.");
 
 	MultisampleRenderCase::init();
 }
@@ -1173,17 +1206,21 @@ std::string SampleMaskCase::genFragmentSource (int numTargetSamples) const
 {
 	DE_ASSERT(numTargetSamples != 0);
 
-	const bool			multisampleTarget = (m_numRequestedSamples > 0) || (m_renderTarget == TARGET_DEFAULT && m_context.getRenderTarget().getNumSamples() > 1);
+	const bool			multisampleTarget	= (m_numRequestedSamples > 0) || (m_renderTarget == TARGET_DEFAULT && m_context.getRenderTarget().getNumSamples() > 1);
 	std::ostringstream	buf;
+	const bool			isES32				= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>	args;
+	args["GLSL_VERSION_DECL"]				= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]					= isES32 ? "" : "#extension GL_OES_sample_variables : require";
 
 	// test supports only one sample mask word
 	if (numTargetSamples > 32)
-		throw tcu::NotSupportedError("Sample count larger than 32 is not supported.");
+		TCU_THROW(NotSupportedError, "Sample count larger than 32 is not supported.");
 
 	if (multisampleTarget)
 	{
-		buf <<	"#version 310 es\n"
-				"#extension GL_OES_sample_variables : require\n"
+		buf <<	"${GLSL_VERSION_DECL}\n"
+				"${GLSL_EXTENSION}\n"
 				"layout(location = 0) out mediump vec4 fragColor;\n"
 				"uniform highp uint u_sampleMask;\n"
 				"void main (void)\n"
@@ -1198,8 +1235,8 @@ std::string SampleMaskCase::genFragmentSource (int numTargetSamples) const
 	{
 		// non-multisample targets don't get multisample operations like ANDing with mask
 
-		buf <<	"#version 310 es\n"
-				"#extension GL_OES_sample_variables : require\n"
+		buf <<	"${GLSL_VERSION_DECL}\n"
+				"${GLSL_EXTENSION}\n"
 				"layout(location = 0) out mediump vec4 fragColor;\n"
 				"uniform highp uint u_sampleMask;\n"
 				"void main (void)\n"
@@ -1211,7 +1248,7 @@ std::string SampleMaskCase::genFragmentSource (int numTargetSamples) const
 				"}\n";
 	}
 
-	return buf.str();
+	return tcu::StringTemplate(buf.str()).specialize(args);
 }
 
 class SampleMaskCountCase : public SampleMaskBaseCase
@@ -1329,16 +1366,20 @@ std::string SampleMaskCountCase::genFragmentSource (int numTargetSamples) const
 {
 	DE_ASSERT(numTargetSamples != 0);
 
-	std::ostringstream buf;
+	std::ostringstream	buf;
+	const bool			isES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>	args;
+	args["GLSL_VERSION_DECL"]	= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]		= isES32 ? "" : "#extension GL_OES_sample_variables : require";
 
 	// test supports only one sample mask word
 	if (numTargetSamples > 32)
-		throw tcu::NotSupportedError("Sample count larger than 32 is not supported.");
+		TCU_THROW(NotSupportedError, "Sample count larger than 32 is not supported.");
 
 	// count the number of the bits in gl_SampleMask
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_sample_variables : require\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXTENSION}\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n";
 
 	if (m_runMode != RUN_PER_SAMPLE)
@@ -1375,7 +1416,7 @@ std::string SampleMaskCountCase::genFragmentSource (int numTargetSamples) const
 				"}\n";
 	}
 
-	return buf.str();
+	return tcu::StringTemplate(buf.str()).specialize(args);
 }
 
 class SampleMaskUniqueCase : public SampleMaskBaseCase
@@ -1426,15 +1467,19 @@ std::string SampleMaskUniqueCase::genFragmentSource (int numTargetSamples) const
 {
 	DE_ASSERT(numTargetSamples != 0);
 
-	std::ostringstream buf;
+	std::ostringstream	buf;
+	const bool			isES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>	args;
+	args["GLSL_VERSION_DECL"]	= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]		= isES32 ? "" : "#extension GL_OES_sample_variables : require";
 
 	// test supports only one sample mask word
 	if (numTargetSamples > 32)
-		throw tcu::NotSupportedError("Sample count larger than 32 is not supported.");
+		TCU_THROW(NotSupportedError, "Sample count larger than 32 is not supported.");
 
 	// find our sampleID by searching for unique bit.
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_sample_variables : require\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXTENSION}\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n"
 			"void main (void)\n"
 			"{\n"
@@ -1464,7 +1509,7 @@ std::string SampleMaskUniqueCase::genFragmentSource (int numTargetSamples) const
 			"		fragColor = vec4(0.0, encodedSampleId, blue, 1.0);\n"
 			"}\n";
 
-	return buf.str();
+	return tcu::StringTemplate(buf.str()).specialize(args);
 }
 
 bool SampleMaskUniqueCase::verifySampleBuffers (const std::vector<tcu::Surface>& resultBuffers)
@@ -1665,15 +1710,19 @@ std::string SampleMaskUniqueSetCase::genFragmentSource (int numTargetSamples) co
 {
 	DE_ASSERT(numTargetSamples != 0);
 
-	std::ostringstream buf;
+	std::ostringstream	buf;
+	const bool			isES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>	args;
+	args["GLSL_VERSION_DECL"]	= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]		= isES32 ? "" : "#extension GL_OES_sample_variables : require";
 
 	// test supports only one sample mask word
 	if (numTargetSamples > 32)
-		throw tcu::NotSupportedError("Sample count larger than 32 is not supported.");
+		TCU_THROW(NotSupportedError, "Sample count larger than 32 is not supported.");
 
 	// output min and max sample id
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_sample_variables : require\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXTENSION}\n"
 			"uniform highp uint u_bitSelector;\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n"
 			"void main (void)\n"
@@ -1692,7 +1741,7 @@ std::string SampleMaskUniqueSetCase::genFragmentSource (int numTargetSamples) co
 			"	fragColor = vec4(float(redBits) / float(31), float(greenBits) / float(63), float(blueBits) / float(31), 1.0);\n"
 			"}\n";
 
-	return buf.str();
+	return tcu::StringTemplate(buf.str()).specialize(args);
 }
 
 bool SampleMaskUniqueSetCase::verifySampleBuffers (const std::vector<tcu::Surface>& resultBuffers)
@@ -2032,13 +2081,17 @@ std::string SampleMaskWriteCase::genFragmentSource (int numTargetSamples) const
 	DE_UNREF(numTargetSamples);
 
 	std::ostringstream	buf;
+	const bool			isES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>	args;
+	args["GLSL_VERSION_DECL"]	= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]		= isES32 ? "" : "#extension GL_OES_sample_variables : require";
 
 	if (m_testMode == TEST_DISCARD)
 	{
 		// mask out every other coverage bit
 
-		buf <<	"#version 310 es\n"
-				"#extension GL_OES_sample_variables : require\n"
+		buf <<	"${GLSL_VERSION_DECL}\n"
+				"${GLSL_EXTENSION}\n"
 				"layout(location = 0) out mediump vec4 fragColor;\n"
 				"void main (void)\n"
 				"{\n"
@@ -2060,8 +2113,8 @@ std::string SampleMaskWriteCase::genFragmentSource (int numTargetSamples) const
 	{
 		// inverse every coverage bit
 
-		buf <<	"#version 310 es\n"
-				"#extension GL_OES_sample_variables : require\n"
+		buf <<	"${GLSL_VERSION_DECL}\n"
+				"${GLSL_EXTENSION}\n"
 				"layout(location = 0) out mediump vec4 fragColor;\n"
 				"uniform highp uint u_mask;\n"
 				"void main (void)\n"
@@ -2082,7 +2135,7 @@ std::string SampleMaskWriteCase::genFragmentSource (int numTargetSamples) const
 	else
 		DE_ASSERT(false);
 
-	return buf.str();
+	return tcu::StringTemplate(buf.str()).specialize(args);
 }
 
 bool SampleMaskWriteCase::verifyImage (const tcu::Surface& resultImage)
