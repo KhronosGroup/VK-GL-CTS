@@ -91,6 +91,8 @@ set(DEQP_EGL_SRCS
 	teglResizeTests.cpp
 	teglSwapBuffersWithDamageTests.hpp
 	teglSwapBuffersWithDamageTests.cpp
+	teglMultiContextTests.hpp
+	teglMultiContextTests.cpp
 	)
 
 set(DEQP_EGL_LIBS
