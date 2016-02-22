@@ -11161,6 +11161,26 @@
 					</Test>
 				</TestCase>
 			</TestSuite>
+			<TestCase name="multicontext">
+				<Test name="non_shared">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="shared">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="non_shared_make_current">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="shared_make_current">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="non_shared_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="shared_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+			</TestCase>
 		</TestSuite>
 	</TestSuite>
 </TestPackage>
