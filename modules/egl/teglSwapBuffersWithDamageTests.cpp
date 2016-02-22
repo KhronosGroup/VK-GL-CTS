@@ -71,6 +71,15 @@ enum DrawType
     DRAWTYPE_GLES2_RENDER
 };
 
+enum ResizeType
+{
+	RESIZETYPE_NONE = 0,
+	RESIZETYPE_BEFORE_SWAP,
+	RESIZETYPE_AFTER_SWAP,
+
+	RESIZETYPE_LAST
+};
+
 struct ColoredRect
 {
 public:
@@ -249,11 +258,13 @@ void GLES2Renderer::render (int width, int height, const Frame& frame) const
 class SwapBuffersWithDamageTest : public TestCase
 {
 public:
-								SwapBuffersWithDamageTest		(EglTestContext& eglTestCtx,
-																 const vector<DrawType>& frameDrawType,
-																 int iterationTimes,
-																 const char* name,
-																 const char* description);
+								SwapBuffersWithDamageTest		(EglTestContext&			eglTestCtx,
+																 const vector<DrawType>&	frameDrawType,
+																 int						iterationTimes,
+																 ResizeType					resizeType,
+																 const char*				name,
+																 const char*				description);
+
 								~SwapBuffersWithDamageTest		(void);
 
 	virtual void				init							(void);
@@ -271,23 +282,25 @@ protected:
 	EGLContext					m_eglContext;
 	const int					m_seed;
 	const int					m_iterationTimes;
-	const vector<DrawType>	    m_frameDrawType;
+	const vector<DrawType>		m_frameDrawType;
+	const ResizeType			m_resizeType;
 	EGLDisplay					m_eglDisplay;
 	EGLSurface					m_eglSurface;
 	glw::Functions				m_gl;
 	GLES2Renderer*				m_gles2Renderer;
 };
 
-SwapBuffersWithDamageTest::SwapBuffersWithDamageTest (EglTestContext& eglTestCtx, const vector<DrawType>& frameDrawType, int iterationTimes,  const char* name, const char* description)
-	: TestCase		  (eglTestCtx, name, description)
-	, m_window		  (DE_NULL)
-	, m_eglContext	  (EGL_NO_CONTEXT)
-	, m_seed		  (deStringHash(name))
-	, m_iterationTimes(iterationTimes)
-	, m_frameDrawType (frameDrawType)
-	, m_eglDisplay	  (EGL_NO_DISPLAY)
-	, m_eglSurface	  (EGL_NO_SURFACE)
-	, m_gles2Renderer (DE_NULL)
+SwapBuffersWithDamageTest::SwapBuffersWithDamageTest (EglTestContext& eglTestCtx, const vector<DrawType>& frameDrawType, int iterationTimes, ResizeType resizeType, const char* name, const char* description)
+	: TestCase			(eglTestCtx, name, description)
+	, m_window			(DE_NULL)
+	, m_eglContext		(EGL_NO_CONTEXT)
+	, m_seed			(deStringHash(name))
+	, m_iterationTimes	(iterationTimes)
+	, m_frameDrawType	(frameDrawType)
+	, m_resizeType		(resizeType)
+	, m_eglDisplay		(EGL_NO_DISPLAY)
+	, m_eglSurface		(EGL_NO_SURFACE)
+	, m_gles2Renderer	 (DE_NULL)
 {
 }
 
@@ -407,7 +420,23 @@ TestCase::IterateResult SwapBuffersWithDamageTest::iterate (void)
 			for (int ndx = 0; ndx <= currentFrameNdx; ndx++)
 				m_gles2Renderer->render(width, height, frameSequence[ndx]);
 
+			if (m_resizeType == RESIZETYPE_BEFORE_SWAP)
+			{
+				if (iterationNdx % 2 == 0)
+					m_window->setSurfaceSize(IVec2(width*2, height/2));
+				else
+					m_window->setSurfaceSize(IVec2(height/2, width*2));
+			}
+
 			EGLU_CHECK_CALL(egl, swapBuffersWithDamageKHR(m_eglDisplay, m_eglSurface, &damageRegion[0], (EGLint)damageRegion.size()/4));
+
+			if (m_resizeType == RESIZETYPE_AFTER_SWAP)
+			{
+				if (iterationNdx % 2 == 0)
+					m_window->setSurfaceSize(IVec2(width*2, height/2));
+				else
+					m_window->setSurfaceSize(IVec2(height/2, width*2));
+			}
 		}
 	}
 	return STOP;
@@ -416,23 +445,26 @@ TestCase::IterateResult SwapBuffersWithDamageTest::iterate (void)
 class SwapBuffersWithDamageAndPreserveBufferTest : public SwapBuffersWithDamageTest
 {
 public:
-					SwapBuffersWithDamageAndPreserveBufferTest	(EglTestContext& eglTestCtx,
-																 const vector<DrawType>& frameDrawType,
-																 int itertionTimes,
-																 const char* name,
-																 const char* description);
+					SwapBuffersWithDamageAndPreserveBufferTest	(EglTestContext&			eglTestCtx,
+																 const vector<DrawType>&	frameDrawType,
+																 int						iterationTimes,
+																 ResizeType					resizeType,
+																 const char*				name,
+																 const char*				description);
+
 	IterateResult	iterate										(void);
 
 protected:
 	EGLConfig		getConfig									(const Library& egl, EGLDisplay eglDisplay);
 };
 
-SwapBuffersWithDamageAndPreserveBufferTest::SwapBuffersWithDamageAndPreserveBufferTest (EglTestContext& eglTestCtx,
-																						const vector<DrawType>& frameDrawType,
-																						int iterationTimes,
-																						const char* name,
-																						const char* description)
-	: SwapBuffersWithDamageTest (eglTestCtx, frameDrawType, iterationTimes, name, description)
+SwapBuffersWithDamageAndPreserveBufferTest::SwapBuffersWithDamageAndPreserveBufferTest (EglTestContext&			eglTestCtx,
+																						const vector<DrawType>&	frameDrawType,
+																						int						iterationTimes,
+																						ResizeType				resizeType,
+																						const char*				name,
+																						const char*				description)
+	: SwapBuffersWithDamageTest (eglTestCtx, frameDrawType, iterationTimes, resizeType, name, description)
 {
 }
 
@@ -469,7 +501,24 @@ TestCase::IterateResult SwapBuffersWithDamageAndPreserveBufferTest::iterate (voi
 			vector<EGLint>	damageRegion = getDamageRegion(currentFrame);
 
 			m_gles2Renderer->render(width, height, currentFrame);
+
+			if (m_resizeType == RESIZETYPE_BEFORE_SWAP)
+			{
+				if (iterationNdx % 2 == 0)
+					m_window->setSurfaceSize(IVec2(width*2, height/2));
+				else
+					m_window->setSurfaceSize(IVec2(height/2, width*2));
+			}
+
 			EGLU_CHECK_CALL(egl, swapBuffersWithDamageKHR(m_eglDisplay, m_eglSurface, &damageRegion[0], (EGLint)damageRegion.size()/4));
+
+			if (m_resizeType == RESIZETYPE_AFTER_SWAP)
+			{
+				if (iterationNdx % 2 == 0)
+					m_window->setSurfaceSize(IVec2(width*2, height/2));
+				else
+					m_window->setSurfaceSize(IVec2(height/2, width*2));
+			}
 		}
 	}
 
@@ -479,23 +528,26 @@ TestCase::IterateResult SwapBuffersWithDamageAndPreserveBufferTest::iterate (voi
 class SwapBuffersWithDamageAndBufferAgeTest : public SwapBuffersWithDamageTest
 {
 public:
-					SwapBuffersWithDamageAndBufferAgeTest	(EglTestContext& eglTestCtx,
-															 const vector<DrawType>& frameDrawType,
-															 int iterationTimes,
-															 const char* name,
-															 const char* description);
+					SwapBuffersWithDamageAndBufferAgeTest	(EglTestContext&			eglTestCtx,
+															 const vector<DrawType>&	frameDrawType,
+															 int						iterationTimes,
+															 ResizeType					resizeType,
+															 const char*				name,
+															 const char*				description);
+
 	IterateResult	iterate									(void);
 
 protected:
 	void			checkExtension							(const Library& egl, EGLDisplay eglDisplay);
 };
 
-SwapBuffersWithDamageAndBufferAgeTest::SwapBuffersWithDamageAndBufferAgeTest (EglTestContext& eglTestCtx,
-																			  const vector<DrawType>& frameDrawType,
-																			  int iterationTimes,
-																			  const char* name,
-																			  const char* description)
-	: SwapBuffersWithDamageTest (eglTestCtx, frameDrawType, iterationTimes, name, description)
+SwapBuffersWithDamageAndBufferAgeTest::SwapBuffersWithDamageAndBufferAgeTest (EglTestContext&			eglTestCtx,
+																			  const vector<DrawType>&	frameDrawType,
+																			  int						iterationTimes,
+																			  ResizeType				resizeType,
+																			  const char*				name,
+																			  const char*				description)
+	: SwapBuffersWithDamageTest (eglTestCtx, frameDrawType, iterationTimes, resizeType, name, description)
 {
 }
 
@@ -564,7 +616,23 @@ TestCase::IterateResult SwapBuffersWithDamageAndBufferAgeTest::iterate (void)
 				m_gles2Renderer->render(width, height, frameSequence[ndx]);
 			}
 
+			if (m_resizeType == RESIZETYPE_BEFORE_SWAP)
+			{
+				if (iterationNdx % 2 == 0)
+					m_window->setSurfaceSize(IVec2(width*2, height/2));
+				else
+					m_window->setSurfaceSize(IVec2(height/2, width*2));
+			}
+
 			EGLU_CHECK_CALL(egl, swapBuffersWithDamageKHR(m_eglDisplay, m_eglSurface, &damageRegion[0], (EGLint)damageRegion.size()/4));
+
+			if (m_resizeType == RESIZETYPE_AFTER_SWAP)
+			{
+				if (iterationNdx % 2 == 0)
+					m_window->setSurfaceSize(IVec2(width*2, height/2));
+				else
+					m_window->setSurfaceSize(IVec2(height/2, width*2));
+			}
 		}
 	}
 	return STOP;
@@ -633,6 +701,25 @@ string generateTestName (const vector<DrawType>& frameDrawType)
 	return stream.str();
 }
 
+string generateResizeGroupName (ResizeType resizeType)
+{
+	switch (resizeType)
+	{
+		case RESIZETYPE_NONE:
+			return "no_resize";
+
+		case RESIZETYPE_AFTER_SWAP:
+			return "resize_after_swap";
+
+		case RESIZETYPE_BEFORE_SWAP:
+			return "resize_before_swap";
+
+		default:
+			DE_FATAL("Unknown resize type");
+			return "";
+	}
+}
+
 bool isWindow (const eglu::CandidateConfig& c)
 {
 	return (c.surfaceType() & EGL_WINDOW_BIT) == EGL_WINDOW_BIT;
@@ -691,6 +778,13 @@ void SwapBuffersWithDamageTests::init (void)
 		DRAWTYPE_GLES2_CLEAR
 	};
 
+	const ResizeType resizeTypes[] =
+	{
+		RESIZETYPE_NONE,
+		RESIZETYPE_BEFORE_SWAP,
+		RESIZETYPE_AFTER_SWAP
+	};
+
 	vector< vector<DrawType> > frameDrawTypes;
 	frameDrawTypes.push_back(vector<DrawType> (1, DRAWTYPE_GLES2_CLEAR));
 	frameDrawTypes.push_back(vector<DrawType> (1, DRAWTYPE_GLES2_RENDER));
@@ -699,22 +793,30 @@ void SwapBuffersWithDamageTests::init (void)
 	frameDrawTypes.push_back(vector<DrawType> (DE_ARRAY_BEGIN(clearRender), DE_ARRAY_END(clearRender)));
 	frameDrawTypes.push_back(vector<DrawType> (DE_ARRAY_BEGIN(renderClear), DE_ARRAY_END(renderClear)));
 
-	for (size_t drawTypeNdx = 0; drawTypeNdx < frameDrawTypes.size(); drawTypeNdx++)
+	for (size_t resizeTypeNdx = 0; resizeTypeNdx < DE_LENGTH_OF_ARRAY(resizeTypes); resizeTypeNdx++)
 	{
-		string name = generateTestName(frameDrawTypes[drawTypeNdx]);
-		addChild(new SwapBuffersWithDamageTest(m_eglTestCtx, frameDrawTypes[drawTypeNdx], 4, name.c_str(), ""));
-	}
+		const ResizeType		resizeType	= resizeTypes[resizeTypeNdx];
+		TestCaseGroup* const	resizeGroup	= new TestCaseGroup(m_eglTestCtx, generateResizeGroupName(resizeType).c_str(), "");
 
-	for (size_t drawTypeNdx = 0; drawTypeNdx < frameDrawTypes.size(); drawTypeNdx++)
-	{
-		string name = "preserve_buffer_" + generateTestName(frameDrawTypes[drawTypeNdx]);
-		addChild(new SwapBuffersWithDamageAndPreserveBufferTest(m_eglTestCtx, frameDrawTypes[drawTypeNdx], 4, name.c_str(), ""));
-	}
+		for (size_t drawTypeNdx = 0; drawTypeNdx < frameDrawTypes.size(); drawTypeNdx++)
+		{
+			string name = generateTestName(frameDrawTypes[drawTypeNdx]);
+			resizeGroup->addChild(new SwapBuffersWithDamageTest(m_eglTestCtx, frameDrawTypes[drawTypeNdx], 4, resizeType, name.c_str(), ""));
+		}
 
-	for (size_t drawTypeNdx = 0; drawTypeNdx < frameDrawTypes.size(); drawTypeNdx++)
-	{
-		string name = "buffer_age_" + generateTestName(frameDrawTypes[drawTypeNdx]);
-		addChild(new SwapBuffersWithDamageAndBufferAgeTest(m_eglTestCtx, frameDrawTypes[drawTypeNdx], 4, name.c_str(), ""));
+		for (size_t drawTypeNdx = 0; drawTypeNdx < frameDrawTypes.size(); drawTypeNdx++)
+		{
+			string name = "preserve_buffer_" + generateTestName(frameDrawTypes[drawTypeNdx]);
+			resizeGroup->addChild(new SwapBuffersWithDamageAndPreserveBufferTest(m_eglTestCtx, frameDrawTypes[drawTypeNdx], 4, resizeType, name.c_str(), ""));
+		}
+
+		for (size_t drawTypeNdx = 0; drawTypeNdx < frameDrawTypes.size(); drawTypeNdx++)
+		{
+			string name = "buffer_age_" + generateTestName(frameDrawTypes[drawTypeNdx]);
+			resizeGroup->addChild(new SwapBuffersWithDamageAndBufferAgeTest(m_eglTestCtx, frameDrawTypes[drawTypeNdx], 4, resizeType, name.c_str(),  ""));
+		}
+
+		addChild(resizeGroup);
 	}
 }
 
