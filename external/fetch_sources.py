@@ -169,12 +169,12 @@ PACKAGES = [
 		"libpng",
 		postExtract = postExtractLibpng),
 	GitRepo(
-		"git@gitlab.khronos.org:spirv/spirv-tools.git",
+		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		"3e6b2dfa699b13987657298ab2a7652a0a577ca9",
 		"spirv-tools"),
 	GitRepo(
-		"git@gitlab.khronos.org:GLSL/glslang.git",
-		"6060845a36bfeed28357942b93335b29642c99cb",
+		"https://github.com/KhronosGroup/glslang.git",
+		"6c292d3ba78533fed7b5ec46bb93b53419cf6535",
 		"glslang"),
 ]
 
