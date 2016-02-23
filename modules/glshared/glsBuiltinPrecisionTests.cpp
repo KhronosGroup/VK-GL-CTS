@@ -63,6 +63,15 @@
 // set this to true to dump even passing results
 #define GLS_LOG_ALL_RESULTS false
 
+enum
+{
+	// Computing reference intervals can take a non-trivial amount of time, especially on
+	// platforms where toggling floating-point rounding mode is slow (emulated arm on x86).
+	// As a workaround watchdog is kept happy by touching it periodically during reference
+	// interval computation.
+	TOUCH_WATCHDOG_VALUE_FREQUENCY	= 4096
+};
+
 namespace deqp
 {
 namespace gls
@@ -4552,6 +4561,9 @@ void PrecisionCase::testStatement (const Variables<In, Out>&	variables,
 		bool						result		= true;
 		typename Traits<Out0>::IVal	reference0;
 		typename Traits<Out1>::IVal	reference1;
+
+		if (valueNdx % (size_t)TOUCH_WATCHDOG_VALUE_FREQUENCY == 0)
+			m_testCtx.touchWatchdog();
 
 		env.lookup(*variables.in0) = convert<In0>(fmt, round(fmt, inputs.in0[valueNdx]));
 		env.lookup(*variables.in1) = convert<In1>(fmt, round(fmt, inputs.in1[valueNdx]));
