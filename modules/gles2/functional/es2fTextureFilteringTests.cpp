@@ -591,7 +591,7 @@ TextureCubeFilteringCase::IterateResult TextureCubeFilteringCase::iterate (void)
 			lodPrecision.lodBits			= 3;
 			lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(colorBits) / sampleParams.colorScale;
 			lookupPrecision.coordBits		= tcu::IVec3(9,9,9); // mediump interpolation
-			lookupPrecision.uvwBits			= tcu::IVec3(5,5,0);
+			lookupPrecision.uvwBits			= tcu::IVec3(3,3,0);
 			lookupPrecision.colorMask		= getCompareMask(pixelFormat);
 
 			const bool isOk = verifyTextureResult(m_testCtx, result.getAccess(), curCase.texture->getRefTexture(),
