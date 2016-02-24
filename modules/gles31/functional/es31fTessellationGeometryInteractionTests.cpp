@@ -29,6 +29,7 @@
 #include "tcuImageCompare.hpp"
 #include "tcuVectorUtil.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuStringTemplate.hpp"
 #include "gluRenderContext.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluStrUtil.hpp"
@@ -53,13 +54,25 @@ namespace Functional
 namespace
 {
 
-static const char* const s_positionVertexShader =		"#version 310 es\n"
+static std::string specializeShader (const std::string& shaderSource, const glu::ContextType& contextType)
+{
+	const bool supportsES32 = glu::contextSupports(contextType, glu::ApiType::es(3, 2));
+	std::map<std::string, std::string> shaderArgs;
+
+	shaderArgs["VERSION_DECL"]					= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(contextType));
+	shaderArgs["EXTENSION_GEOMETRY_SHADER"]		= (supportsES32) ? ("") : ("#extension GL_EXT_geometry_shader : require\n");
+	shaderArgs["EXTENSION_TESSELATION_SHADER"]	= (supportsES32) ? ("") : ("#extension GL_EXT_tessellation_shader : require\n");
+
+	return tcu::StringTemplate(shaderSource).specialize(shaderArgs);
+}
+
+static const char* const s_positionVertexShader =		"${VERSION_DECL}\n"
 														"in highp vec4 a_position;\n"
 														"void main (void)\n"
 														"{\n"
 														"	gl_Position = a_position;\n"
 														"}\n";
-static const char* const s_whiteOutputFragmentShader =	"#version 310 es\n"
+static const char* const s_whiteOutputFragmentShader =	"${VERSION_DECL}\n"
 														"layout(location = 0) out mediump vec4 fragColor;\n"
 														"void main (void)\n"
 														"{\n"
@@ -77,8 +90,8 @@ public:
 					IdentityShaderCase	(Context& context, const char* name, const char* description);
 
 protected:
-	const char*		getVertexSource		(void) const;
-	const char*		getFragmentSource	(void) const;
+	std::string		getVertexSource		(void) const;
+	std::string		getFragmentSource	(void) const;
 };
 
 IdentityShaderCase::IdentityShaderCase (Context& context, const char* name, const char* description)
@@ -86,27 +99,31 @@ IdentityShaderCase::IdentityShaderCase (Context& context, const char* name, cons
 {
 }
 
-const char* IdentityShaderCase::getVertexSource (void) const
+std::string IdentityShaderCase::getVertexSource (void) const
 {
-	return	"#version 310 es\n"
-			"in highp vec4 a_position;\n"
-			"out highp vec4 v_vertex_color;\n"
-			"void main (void)\n"
-			"{\n"
-			"	gl_Position = a_position;\n"
-			"	v_vertex_color = vec4(a_position.x * 0.5 + 0.5, a_position.y * 0.5 + 0.5, 1.0, 0.4);\n"
-			"}\n";
+	std::string source =	"${VERSION_DECL}\n"
+							"in highp vec4 a_position;\n"
+							"out highp vec4 v_vertex_color;\n"
+							"void main (void)\n"
+							"{\n"
+							"	gl_Position = a_position;\n"
+							"	v_vertex_color = vec4(a_position.x * 0.5 + 0.5, a_position.y * 0.5 + 0.5, 1.0, 0.4);\n"
+							"}\n";
+
+	return specializeShader(source, m_context.getRenderContext().getType());
 }
 
-const char* IdentityShaderCase::getFragmentSource (void) const
+std::string IdentityShaderCase::getFragmentSource (void) const
 {
-	return	"#version 310 es\n"
-			"in mediump vec4 v_fragment_color;\n"
-			"layout(location = 0) out mediump vec4 fragColor;\n"
-			"void main (void)\n"
-			"{\n"
-			"	fragColor = v_fragment_color;\n"
-			"}\n";
+	std::string source =	"${VERSION_DECL}\n"
+							"in mediump vec4 v_fragment_color;\n"
+							"layout(location = 0) out mediump vec4 fragColor;\n"
+							"void main (void)\n"
+							"{\n"
+							"	fragColor = v_fragment_color;\n"
+							"}\n";
+
+return specializeShader(source, m_context.getRenderContext().getType());
 }
 
 class IdentityGeometryShaderCase : public IdentityShaderCase
@@ -155,9 +172,11 @@ IdentityGeometryShaderCase::~IdentityGeometryShaderCase (void)
 void IdentityGeometryShaderCase::init (void)
 {
 	// Requirements
+	const bool supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
-		!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!supportsES32 &&
+		(!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
+		 !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader and GL_EXT_geometry_shader extensions");
 
 	if (m_context.getRenderTarget().getWidth() < RENDER_SIZE ||
@@ -310,8 +329,8 @@ std::string IdentityGeometryShaderCase::getTessellationControlSource (void) cons
 {
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+	buf <<	"${VERSION_DECL}\n"
+			"${EXTENSION_TESSELATION_SHADER}"
 			"layout(vertices = 4) out;\n"
 			"\n"
 			"uniform highp float u_innerTessellationLevel;\n"
@@ -345,7 +364,7 @@ std::string IdentityGeometryShaderCase::getTessellationControlSource (void) cons
 
 	buf <<	"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string IdentityGeometryShaderCase::getTessellationEvaluationSource (bool geometryActive) const
@@ -353,8 +372,8 @@ std::string IdentityGeometryShaderCase::getTessellationEvaluationSource (bool ge
 	const char* const	colorOutputName = ((geometryActive) ? ("v_evaluated_color") : ("v_fragment_color"));
 	std::ostringstream	buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+	buf <<	"${VERSION_DECL}\n"
+			"${EXTENSION_TESSELATION_SHADER}"
 			"layout("
 				<< ((m_case == CASE_TRIANGLES) ? ("triangles") : (m_case == CASE_QUADS) ? ("quads") : ("isolines"))
 				<< ") in;\n"
@@ -383,7 +402,7 @@ std::string IdentityGeometryShaderCase::getTessellationEvaluationSource (bool ge
 
 	buf <<	"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string IdentityGeometryShaderCase::getGeometrySource (void) const
@@ -393,8 +412,8 @@ std::string IdentityGeometryShaderCase::getGeometrySource (void) const
 	const int			numEmitVertices					= (m_case == CASE_ISOLINES) ? (2) : (3);
 	std::ostringstream	buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_EXT_geometry_shader : require\n"
+	buf <<	"${VERSION_DECL}\n"
+			"${EXTENSION_GEOMETRY_SHADER}"
 			"layout(" << geometryInputPrimitive << ") in;\n"
 			"layout(" << geometryOutputPrimitive << ", max_vertices=" << numEmitVertices <<") out;\n"
 			"\n"
@@ -411,7 +430,7 @@ std::string IdentityGeometryShaderCase::getGeometrySource (void) const
 			"	}\n"
 			"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 class IdentityTessellationShaderCase : public IdentityShaderCase
@@ -459,9 +478,11 @@ IdentityTessellationShaderCase::~IdentityTessellationShaderCase (void)
 void IdentityTessellationShaderCase::init (void)
 {
 	// Requirements
+	const bool supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
-		!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!supportsES32 &&
+		(!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
+		 !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader and GL_EXT_geometry_shader extensions");
 
 	if (m_context.getRenderTarget().getWidth() < RENDER_SIZE ||
@@ -624,8 +645,8 @@ std::string IdentityTessellationShaderCase::getTessellationControlSource (void) 
 {
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+	buf <<	"${VERSION_DECL}\n"
+			"${EXTENSION_TESSELATION_SHADER}"
 			"layout(vertices = " << ((m_case == CASE_TRIANGLES) ? (3) : (2)) << ") out;\n"
 			"\n"
 			"in highp vec4 v_vertex_color[];\n"
@@ -650,15 +671,15 @@ std::string IdentityTessellationShaderCase::getTessellationControlSource (void) 
 
 	buf <<	"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string IdentityTessellationShaderCase::getTessellationEvaluationSource (void) const
 {
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+	buf <<	"${VERSION_DECL}\n"
+			"${EXTENSION_TESSELATION_SHADER}"
 			"layout("
 				<< ((m_case == CASE_TRIANGLES) ? ("triangles") : ("isolines"))
 				<< ") in;\n"
@@ -681,7 +702,7 @@ std::string IdentityTessellationShaderCase::getTessellationEvaluationSource (voi
 
 	buf <<	"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string IdentityTessellationShaderCase::getGeometrySource (bool tessellationActive) const
@@ -692,8 +713,8 @@ std::string IdentityTessellationShaderCase::getGeometrySource (bool tessellation
 	const int			numEmitVertices			= (m_case == CASE_ISOLINES) ? (11) : (8);
 	std::ostringstream	buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_EXT_geometry_shader : require\n"
+	buf <<	"${VERSION_DECL}\n"
+			"${EXTENSION_GEOMETRY_SHADER}"
 			"layout(" << geometryInputPrimitive << ") in;\n"
 			"layout(" << geometryOutputPrimitive << ", max_vertices=" << numEmitVertices <<") out;\n"
 			"\n"
@@ -736,7 +757,7 @@ std::string IdentityTessellationShaderCase::getGeometrySource (bool tessellation
 
 	buf <<	"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 class FeedbackPrimitiveTypeCase : public TestCase
@@ -790,8 +811,8 @@ private:
 	int								getNumTessellatedPrimitives				(void) const;
 	int								getGeometryAmplification				(void) const;
 
-	const char*						getVertexSource							(void) const;
-	const char*						getFragmentSource						(void) const;
+	std::string						getVertexSource							(void) const;
+	std::string						getFragmentSource						(void) const;
 	std::string						getTessellationControlSource			(void) const;
 	std::string						getTessellationEvaluationSource			(void) const;
 	std::string						getGeometrySource						(void) const;
@@ -850,9 +871,11 @@ void FeedbackPrimitiveTypeCase::init (void)
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	// Requirements
+	const bool supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
-		!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!supportsES32 &&
+		(!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
+		 !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader and GL_EXT_geometry_shader extensions");
 
 	if (m_context.getRenderTarget().getWidth() < RENDER_SIZE ||
@@ -1379,22 +1402,22 @@ glw::GLenum FeedbackPrimitiveTypeCase::getOutputPrimitiveGLType (void) const
 	}
 }
 
-const char* FeedbackPrimitiveTypeCase::getVertexSource (void) const
+std::string FeedbackPrimitiveTypeCase::getVertexSource (void) const
 {
-	return s_positionVertexShader;
+	return specializeShader(s_positionVertexShader, m_context.getRenderContext().getType());
 }
 
-const char* FeedbackPrimitiveTypeCase::getFragmentSource (void) const
+std::string FeedbackPrimitiveTypeCase::getFragmentSource (void) const
 {
-	return s_whiteOutputFragmentShader;
+	return specializeShader(s_whiteOutputFragmentShader, m_context.getRenderContext().getType());
 }
 
 std::string FeedbackPrimitiveTypeCase::getTessellationControlSource (void) const
 {
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+	buf <<	"${VERSION_DECL}\n"
+			"${EXTENSION_TESSELATION_SHADER}"
 			"layout(vertices = 9) out;\n"
 			"\n"
 			"uniform highp float u_innerTessellationLevel;\n"
@@ -1435,15 +1458,15 @@ std::string FeedbackPrimitiveTypeCase::getTessellationControlSource (void) const
 
 	buf <<	"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string FeedbackPrimitiveTypeCase::getTessellationEvaluationSource (void) const
 {
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+	buf <<	"${VERSION_DECL}\n"
+			"${EXTENSION_TESSELATION_SHADER}"
 			"layout("
 				<< ((m_tessellationOutput == TESSELLATION_OUT_TRIANGLES) ? ("triangles") : (m_tessellationOutput == TESSELLATION_OUT_QUADS) ? ("quads") : ("isolines"))
 				<< ((m_tessellationPointMode) ? (", point_mode") : (""))
@@ -1477,7 +1500,7 @@ std::string FeedbackPrimitiveTypeCase::getTessellationEvaluationSource (void) co
 	buf <<	"	v_tessellationCoords = vec4(gl_TessCoord, 0.0);\n"
 			"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string FeedbackPrimitiveTypeCase::getGeometrySource (void) const
@@ -1489,8 +1512,8 @@ std::string FeedbackPrimitiveTypeCase::getGeometrySource (void) const
 	const int			numEmitVertices					= numInputVertices * numSingleVertexOutputVertices;
 	std::ostringstream	buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_EXT_geometry_shader : require\n"
+	buf <<	"${VERSION_DECL}\n"
+			"${EXTENSION_GEOMETRY_SHADER}"
 			"layout(" << geometryInputPrimitive << ") in;\n"
 			"layout(" << geometryOutputPrimitive << ", max_vertices=" << numEmitVertices <<") out;\n"
 			"\n"
@@ -1552,7 +1575,7 @@ std::string FeedbackPrimitiveTypeCase::getGeometrySource (void) const
 	buf <<	"	}\n"
 			"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 const char* FeedbackPrimitiveTypeCase::getTessellationOutputDescription (TessellationOutputType tessellationOutput, TessellationPointMode pointMode)
@@ -1628,7 +1651,7 @@ private:
 	int					getExpectedPointSize			(void) const;
 
 	std::string			genVertexSource					(void) const;
-	const char*			genFragmentSource				(void) const;
+	std::string			genFragmentSource				(void) const;
 	std::string			genTessellationControlSource	(void) const;
 	std::string			genTessellationEvaluationSource	(void) const;
 	std::string			genGeometrySource				(void) const;
@@ -1757,15 +1780,16 @@ PointSizeCase::IterateResult PointSizeCase::iterate (void)
 void PointSizeCase::checkExtensions (void) const
 {
 	std::vector<std::string>	requiredExtensions;
+	const bool					supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	bool						allOk				= true;
 
-	if (m_flags & (FLAG_TESSELLATION_CONTROL_SET | FLAG_TESSELLATION_EVALUATION_SET | FLAG_TESSELLATION_ADD | FLAG_TESSELLATION_DONT_SET))
+	if ((m_flags & (FLAG_TESSELLATION_CONTROL_SET | FLAG_TESSELLATION_EVALUATION_SET | FLAG_TESSELLATION_ADD | FLAG_TESSELLATION_DONT_SET)) && !supportsES32)
 		requiredExtensions.push_back("GL_EXT_tessellation_shader");
 
 	if (m_flags & (FLAG_TESSELLATION_CONTROL_SET | FLAG_TESSELLATION_EVALUATION_SET | FLAG_TESSELLATION_ADD))
 		requiredExtensions.push_back("GL_EXT_tessellation_point_size");
 
-	if (m_flags & (m_flags & (FLAG_GEOMETRY_SET | FLAG_GEOMETRY_ADD | FLAG_GEOMETRY_DONT_SET)))
+	if ((m_flags & (m_flags & (FLAG_GEOMETRY_SET | FLAG_GEOMETRY_ADD | FLAG_GEOMETRY_DONT_SET))) && !supportsES32)
 		requiredExtensions.push_back("GL_EXT_geometry_shader");
 
 	if (m_flags & (m_flags & (FLAG_GEOMETRY_SET | FLAG_GEOMETRY_ADD)))
@@ -1962,7 +1986,7 @@ std::string PointSizeCase::genVertexSource (void) const
 {
 	std::ostringstream buf;
 
-	buf	<< "#version 310 es\n"
+	buf	<< "${VERSION_DECL}\n"
 		<< "in highp vec4 a_position;\n"
 		<< "void main ()\n"
 		<< "{\n"
@@ -1973,20 +1997,20 @@ std::string PointSizeCase::genVertexSource (void) const
 
 	buf	<< "}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
-const char* PointSizeCase::genFragmentSource (void) const
+std::string PointSizeCase::genFragmentSource (void) const
 {
-	return s_whiteOutputFragmentShader;
+	return specializeShader(s_whiteOutputFragmentShader, m_context.getRenderContext().getType());
 }
 
 std::string PointSizeCase::genTessellationControlSource (void) const
 {
 	std::ostringstream buf;
 
-	buf	<< "#version 310 es\n"
-		<< "#extension GL_EXT_tessellation_shader : require\n"
+	buf	<< "${VERSION_DECL}\n"
+		<< "${EXTENSION_TESSELATION_SHADER}"
 		<< ((m_flags & FLAG_TESSELLATION_DONT_SET) ? ("") : ("#extension GL_EXT_tessellation_point_size : require\n"))
 		<< "layout(vertices = 1) out;\n"
 		<< "void main ()\n"
@@ -2006,15 +2030,15 @@ std::string PointSizeCase::genTessellationControlSource (void) const
 
 	buf	<< "}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string PointSizeCase::genTessellationEvaluationSource (void) const
 {
 	std::ostringstream buf;
 
-	buf	<< "#version 310 es\n"
-		<< "#extension GL_EXT_tessellation_shader : require\n"
+	buf	<< "${VERSION_DECL}\n"
+		<< "${EXTENSION_TESSELATION_SHADER}"
 		<< ((m_flags & FLAG_TESSELLATION_DONT_SET) ? ("") : ("#extension GL_EXT_tessellation_point_size : require\n"))
 		<< "layout(triangles, point_mode) in;\n"
 		<< "void main ()\n"
@@ -2036,15 +2060,15 @@ std::string PointSizeCase::genTessellationEvaluationSource (void) const
 
 	buf	<< "}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string PointSizeCase::genGeometrySource (void) const
 {
 	std::ostringstream buf;
 
-	buf	<< "#version 310 es\n"
-		<< "#extension GL_EXT_geometry_shader : require\n"
+	buf	<< "${VERSION_DECL}\n"
+		<< "${EXTENSION_GEOMETRY_SHADER}"
 		<< ((m_flags & FLAG_GEOMETRY_DONT_SET) ? ("") : ("#extension GL_EXT_geometry_point_size : require\n"))
 		<< "layout (points) in;\n"
 		<< "layout (points, max_vertices=1) out;\n"
@@ -2064,7 +2088,7 @@ std::string PointSizeCase::genGeometrySource (void) const
 	buf	<< "	EmitVertex();\n"
 		<< "}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 class AllowedRenderFailureException : public std::runtime_error
@@ -2104,8 +2128,8 @@ private:
 	void				renderTo						(std::vector<tcu::Surface>& dst);
 	bool				verifyResultLayer				(int layerNdx, const tcu::Surface& dst);
 
-	const char*			getVertexSource					(void);
-	const char*			getFragmentSource				(void);
+	std::string			getVertexSource					(void);
+	std::string			getFragmentSource				(void);
 	std::string			getTessellationControlSource	(int tessLevel);
 	std::string			getTessellationEvaluationSource	(int tessLevel);
 	std::string			getGeometryShaderSource			(int numPrimitives, int numInstances, int tessLevel);
@@ -2142,12 +2166,14 @@ GridRenderCase::~GridRenderCase (void)
 
 void GridRenderCase::init (void)
 {
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
+	const bool				supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	// Requirements
 
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
-		!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!supportsES32 &&
+		(!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
+		 !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader and GL_EXT_geometry_shader extensions");
 
 	if ((m_flags & FLAG_GEOMETRY_SCATTER_LAYERS) == 0)
@@ -2535,28 +2561,30 @@ bool GridRenderCase::verifyResultLayer (int layerNdx, const tcu::Surface& image)
 	}
 }
 
-const char* GridRenderCase::getVertexSource (void)
+std::string GridRenderCase::getVertexSource (void)
 {
-	return s_positionVertexShader;
+	return specializeShader(s_positionVertexShader, m_context.getRenderContext().getType());
 }
 
-const char* GridRenderCase::getFragmentSource (void)
+std::string GridRenderCase::getFragmentSource (void)
 {
-	return	"#version 310 es\n"
-			"flat in mediump vec4 v_color;\n"
-			"layout(location = 0) out mediump vec4 fragColor;\n"
-			"void main (void)\n"
-			"{\n"
-			"	fragColor = v_color;\n"
-			"}\n";
+	const char* source = "${VERSION_DECL}\n"
+						 "flat in mediump vec4 v_color;\n"
+						 "layout(location = 0) out mediump vec4 fragColor;\n"
+						 "void main (void)\n"
+						 "{\n"
+						 "	fragColor = v_color;\n"
+						 "}\n";
+
+	return specializeShader(source, m_context.getRenderContext().getType());
 }
 
 std::string GridRenderCase::getTessellationControlSource (int tessLevel)
 {
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+	buf <<	"${VERSION_DECL}\n"
+			"${EXTENSION_TESSELATION_SHADER}"
 			"layout(vertices=1) out;\n"
 			"\n"
 			"void main()\n"
@@ -2570,15 +2598,15 @@ std::string GridRenderCase::getTessellationControlSource (int tessLevel)
 			"	gl_TessLevelInner[1] = " << tessLevel << ".0;\n"
 			"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string GridRenderCase::getTessellationEvaluationSource (int tessLevel)
 {
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+	buf <<	"${VERSION_DECL}\n"
+			"${EXTENSION_TESSELATION_SHADER}"
 			"layout(quads) in;\n"
 			"\n"
 			"out mediump ivec2 v_tessellationGridPosition;\n"
@@ -2598,15 +2626,15 @@ std::string GridRenderCase::getTessellationEvaluationSource (int tessLevel)
 			"	v_tessellationGridPosition = ivec2(round(gl_TessCoord.xy * float(" << tessLevel << ")));\n"
 			"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string GridRenderCase::getGeometryShaderSource (int numPrimitives, int numInstances, int tessLevel)
 {
 	std::ostringstream buf;
 
-	buf	<<	"#version 310 es\n"
-			"#extension GL_EXT_geometry_shader : require\n"
+	buf	<<	"${VERSION_DECL}\n"
+			"${EXTENSION_GEOMETRY_SHADER}"
 			"layout(triangles, invocations=" << numInstances << ") in;\n"
 			"layout(triangle_strip, max_vertices=" << ((m_flags & FLAG_GEOMETRY_SEPARATE_PRIMITIVES) ? (4 * numPrimitives) : (numPrimitives + 2)) << ") out;\n"
 			"\n"
@@ -2769,7 +2797,7 @@ std::string GridRenderCase::getGeometryShaderSource (int numPrimitives, int numI
 
 	buf <<	"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 class FeedbackRecordVariableSelectionCase : public TestCase
@@ -2783,11 +2811,11 @@ private:
 	void				deinit									(void);
 	IterateResult		iterate									(void);
 
-	const char*			getVertexSource							(void);
-	const char*			getFragmentSource						(void);
-	const char*			getTessellationControlSource			(void);
-	const char*			getTessellationEvaluationSource			(void);
-	const char*			getGeometrySource						(void);
+	std::string			getVertexSource							(void);
+	std::string			getFragmentSource						(void);
+	std::string			getTessellationControlSource			(void);
+	std::string			getTessellationEvaluationSource			(void);
+	std::string			getGeometrySource						(void);
 
 	glu::ShaderProgram*	m_program;
 	deUint32			m_xfbBuf;
@@ -2807,8 +2835,11 @@ FeedbackRecordVariableSelectionCase::~FeedbackRecordVariableSelectionCase (void)
 
 void FeedbackRecordVariableSelectionCase::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
-		!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
+	if (!supportsES32 &&
+		(!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
+		 !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader and GL_EXT_geometry_shader extensions");
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Declaring multiple output variables with the same name in multiple shader stages. Capturing the value of the varying using transform feedback." << tcu::TestLog::EndMessage;
@@ -2932,68 +2963,76 @@ FeedbackRecordVariableSelectionCase::IterateResult FeedbackRecordVariableSelecti
 	return STOP;
 }
 
-const char* FeedbackRecordVariableSelectionCase::getVertexSource (void)
+std::string FeedbackRecordVariableSelectionCase::getVertexSource (void)
 {
-	return	"#version 310 es\n"
-			"in highp vec4 a_position;\n"
-			"out highp vec4 tf_feedback;\n"
-			"void main()\n"
-			"{\n"
-			"	gl_Position = a_position;\n"
-			"	tf_feedback = vec4(1.0, 1.0, 1.0, 1.0);\n"
-			"}\n";
+	std::string source =	"${VERSION_DECL}\n"
+							"in highp vec4 a_position;\n"
+							"out highp vec4 tf_feedback;\n"
+							"void main()\n"
+							"{\n"
+							"	gl_Position = a_position;\n"
+							"	tf_feedback = vec4(1.0, 1.0, 1.0, 1.0);\n"
+							"}\n";
+
+	return specializeShader(source, m_context.getRenderContext().getType());
 }
 
-const char* FeedbackRecordVariableSelectionCase::getFragmentSource (void)
+std::string FeedbackRecordVariableSelectionCase::getFragmentSource (void)
 {
-	return s_whiteOutputFragmentShader;
+	return specializeShader(s_whiteOutputFragmentShader, m_context.getRenderContext().getType());
 }
 
-const char* FeedbackRecordVariableSelectionCase::getTessellationControlSource (void)
+std::string FeedbackRecordVariableSelectionCase::getTessellationControlSource (void)
 {
-	return	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
-			"layout(vertices=3) out;\n"
-			"void main()\n"
-			"{\n"
-			"	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-			"	gl_TessLevelOuter[0] = 1.0;\n"
-			"	gl_TessLevelOuter[1] = 1.0;\n"
-			"	gl_TessLevelOuter[2] = 1.0;\n"
-			"	gl_TessLevelInner[0] = 1.0;\n"
-			"}\n";
+	std::string source =	"${VERSION_DECL}\n"
+							"${EXTENSION_TESSELATION_SHADER}"
+							"layout(vertices=3) out;\n"
+							"void main()\n"
+							"{\n"
+							"	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+							"	gl_TessLevelOuter[0] = 1.0;\n"
+							"	gl_TessLevelOuter[1] = 1.0;\n"
+							"	gl_TessLevelOuter[2] = 1.0;\n"
+							"	gl_TessLevelInner[0] = 1.0;\n"
+							"}\n";
+
+	return specializeShader(source, m_context.getRenderContext().getType());
 }
 
-const char* FeedbackRecordVariableSelectionCase::getTessellationEvaluationSource (void)
+std::string FeedbackRecordVariableSelectionCase::getTessellationEvaluationSource (void)
 {
-	return	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
-			"layout(triangles) in;\n"
-			"out highp vec4 tf_feedback;\n"
-			"void main()\n"
-			"{\n"
-			"	gl_Position = gl_in[0].gl_Position * gl_TessCoord.x + gl_in[1].gl_Position * gl_TessCoord.y + gl_in[2].gl_Position * gl_TessCoord.z;\n"
-			"	tf_feedback = vec4(2.0, 2.0, 2.0, 2.0);\n"
-			"}\n";
+	std::string source =	"${VERSION_DECL}\n"
+							"${EXTENSION_TESSELATION_SHADER}"
+							"layout(triangles) in;\n"
+							"out highp vec4 tf_feedback;\n"
+							"void main()\n"
+							"{\n"
+							"	gl_Position = gl_in[0].gl_Position * gl_TessCoord.x + gl_in[1].gl_Position * gl_TessCoord.y + gl_in[2].gl_Position * gl_TessCoord.z;\n"
+							"	tf_feedback = vec4(2.0, 2.0, 2.0, 2.0);\n"
+							"}\n";
+
+	return specializeShader(source, m_context.getRenderContext().getType());
 }
 
-const char* FeedbackRecordVariableSelectionCase::getGeometrySource (void)
+std::string FeedbackRecordVariableSelectionCase::getGeometrySource(void)
 {
-	return	"#version 310 es\n"
-			"#extension GL_EXT_geometry_shader : require\n"
-			"layout (triangles) in;\n"
-			"layout (triangle_strip, max_vertices=3) out;\n"
-			"out highp vec4 tf_feedback;\n"
-			"void main()\n"
-			"{\n"
-			"	for (int ndx = 0; ndx < 3; ++ndx)\n"
-			"	{\n"
-			"		gl_Position = gl_in[ndx].gl_Position + vec4(float(ndx), float(ndx)*float(ndx), 0.0, 0.0);\n"
-			"		tf_feedback = vec4(3.0, 3.0, 3.0, 3.0);\n"
-			"		EmitVertex();\n"
-			"	}\n"
-			"	EndPrimitive();\n"
-			"}\n";
+	std::string source =	"${VERSION_DECL}\n"
+							"${EXTENSION_GEOMETRY_SHADER}"
+							"layout (triangles) in;\n"
+							"layout (triangle_strip, max_vertices=3) out;\n"
+							"out highp vec4 tf_feedback;\n"
+							"void main()\n"
+							"{\n"
+							"	for (int ndx = 0; ndx < 3; ++ndx)\n"
+							"	{\n"
+							"		gl_Position = gl_in[ndx].gl_Position + vec4(float(ndx), float(ndx)*float(ndx), 0.0, 0.0);\n"
+							"		tf_feedback = vec4(3.0, 3.0, 3.0, 3.0);\n"
+							"		EmitVertex();\n"
+							"	}\n"
+							"	EndPrimitive();\n"
+							"}\n";
+
+	return specializeShader(source, m_context.getRenderContext().getType());
 }
 
 } // anonymous
