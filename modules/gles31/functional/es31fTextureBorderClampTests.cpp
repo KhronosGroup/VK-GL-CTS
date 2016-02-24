@@ -649,11 +649,13 @@ TextureBorderClampTest::~TextureBorderClampTest (void)
 void TextureBorderClampTest::init (void)
 {
 	// requirements
+	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_border_clamp"))
+	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_border_clamp"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_texture_border_clamp extension");
 
 	if (glu::isCompressedFormat(m_texFormat)													&&
+		!supportsES32																			&&
 		tcu::isAstcFormat(glu::mapGLCompressedTexFormat(m_texFormat))							&&
 		!m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
 	{
@@ -681,7 +683,9 @@ void TextureBorderClampTest::init (void)
 
 	if (m_samplingFunction == SAMPLE_FILTER)
 	{
-		m_renderer = de::MovePtr<gls::TextureTestUtil::TextureRenderer>(new gls::TextureTestUtil::TextureRenderer(m_context.getRenderContext(), m_testCtx.getLog(), glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP));
+		const glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+
+		m_renderer = de::MovePtr<gls::TextureTestUtil::TextureRenderer>(new gls::TextureTestUtil::TextureRenderer(m_context.getRenderContext(), m_testCtx.getLog(), glslVersion, glu::PRECISION_HIGHP));
 	}
 	else
 	{
@@ -1281,15 +1285,16 @@ gls::TextureTestUtil::ReferenceParams TextureBorderClampTest::genSamplerParams (
 
 glu::ShaderProgram* TextureBorderClampTest::genGatherProgram (void) const
 {
-	const char* const	vtxSource =	"#version 310 es\n"
-									"in highp vec4 a_position;\n"
-									"in highp vec2 a_texcoord;\n"
-									"out highp vec2 v_texcoord;\n"
-									"void main()\n"
-									"{\n"
-									"	gl_Position = a_position;\n"
-									"	v_texcoord = a_texcoord;\n"
-									"}\n";
+	const std::string	glslVersionDecl	= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType()));
+	const std::string	vtxSource 		= glslVersionDecl + "\n"
+										"in highp vec4 a_position;\n"
+										"in highp vec2 a_texcoord;\n"
+										"out highp vec2 v_texcoord;\n"
+										"void main()\n"
+										"{\n"
+										"	gl_Position = a_position;\n"
+										"	v_texcoord = a_texcoord;\n"
+										"}\n";
 	const char* 		samplerType;
 	const char* 		lookup;
 	std::ostringstream	fragSource;
@@ -1327,7 +1332,7 @@ glu::ShaderProgram* TextureBorderClampTest::genGatherProgram (void) const
 		}
 	}
 
-	fragSource	<<	"#version 310 es\n"
+	fragSource	<<	glslVersionDecl + "\n"
 					"uniform highp " << samplerType << " u_sampler;\n"
 					"uniform highp vec4 u_colorScale;\n"
 					"uniform highp vec4 u_colorBias;\n"
@@ -2062,10 +2067,14 @@ TextureBorderClampPerAxisCase3D::TextureBorderClampPerAxisCase3D (Context&		cont
 
 void TextureBorderClampPerAxisCase3D::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_border_clamp"))
+	const bool				supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::GLSLVersion	glslVersion		= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+
+	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_border_clamp"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_texture_border_clamp extension");
 
 	if (glu::isCompressedFormat(m_texFormat)													&&
+		!supportsES32																			&&
 		tcu::isAstcFormat(glu::mapGLCompressedTexFormat(m_texFormat))							&&
 		!m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
 	{
@@ -2081,7 +2090,7 @@ void TextureBorderClampPerAxisCase3D::init (void)
 
 	// resources
 	m_texture = genDummyTexture<glu::Texture3D>(m_context.getRenderContext(), m_context.getContextInfo(), m_texFormat, m_size);
-	m_renderer = de::MovePtr<gls::TextureTestUtil::TextureRenderer>(new gls::TextureTestUtil::TextureRenderer(m_context.getRenderContext(), m_testCtx.getLog(), glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP));
+	m_renderer = de::MovePtr<gls::TextureTestUtil::TextureRenderer>(new gls::TextureTestUtil::TextureRenderer(m_context.getRenderContext(), m_testCtx.getLog(), glslVersion, glu::PRECISION_HIGHP));
 
 	// texture info
 	m_testCtx.getLog()	<< tcu::TestLog::Message
