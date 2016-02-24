@@ -634,6 +634,24 @@ std::string getShaderImageType (const tcu::TextureFormat& format, const ImageTyp
 	return formatPart + "image" + imageTypePart;
 }
 
+
+std::string getShaderImageDataType(const tcu::TextureFormat& format)
+{
+	switch (tcu::getTextureChannelClass(format.type))
+	{
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			return "uvec4";
+		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			return "ivec4";
+		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+			return "vec4";
+		default:
+			DE_ASSERT(false);
+			return "";
+	}
+}
+
+
 std::string getShaderImageFormatQualifier (const tcu::TextureFormat& format)
 {
 	const char* orderPart;

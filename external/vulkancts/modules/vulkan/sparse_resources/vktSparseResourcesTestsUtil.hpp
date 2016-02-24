@@ -62,6 +62,7 @@ vk::VkImageType			mapImageType					(const ImageType imageType);
 vk::VkImageViewType		mapImageViewType				(const ImageType imageType);
 std::string				getImageTypeName				(const ImageType imageType);
 std::string				getShaderImageType				(const tcu::TextureFormat& format, const ImageType imageType);
+std::string				getShaderImageDataType			(const tcu::TextureFormat& format);
 std::string				getShaderImageFormatQualifier	(const tcu::TextureFormat& format);
 
 class Buffer

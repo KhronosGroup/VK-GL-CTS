@@ -1,6 +1,8 @@
 include_directories(..)
 
 set(DEQP_VK_IMAGE_SRCS
+	vktSparseResourcesImageSparseResidency.cpp
+	vktSparseResourcesImageSparseResidency.hpp
 	vktSparseResourcesBufferSparseResidency.cpp
 	vktSparseResourcesBufferSparseResidency.hpp
 	vktSparseResourcesImageSparseBinding.cpp

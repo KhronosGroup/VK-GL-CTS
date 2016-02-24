@@ -32,6 +32,7 @@
 #include "vktSparseResourcesBufferSparseBinding.hpp"
 #include "vktSparseResourcesImageSparseBinding.hpp"
 #include "vktSparseResourcesBufferSparseResidency.hpp"
+#include "vktSparseResourcesImageSparseResidency.hpp"
 #include "deUniquePtr.hpp"
 
 namespace vkt
@@ -46,6 +47,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	sparseTests->addChild(createBufferSparseBindingTests(testCtx));
 	sparseTests->addChild(createImageSparseBindingTests(testCtx));
 	sparseTests->addChild(createBufferSparseResidencyTests(testCtx));
+	sparseTests->addChild(createImageSparseResidencyTests(testCtx));
 
 	return sparseTests.release();
 }
