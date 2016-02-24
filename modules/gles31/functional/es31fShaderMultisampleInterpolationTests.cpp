@@ -48,6 +48,17 @@ namespace Functional
 namespace
 {
 
+static std::string specializeShader(const std::string& shaderSource, const glu::ContextType& contextType)
+{
+	const bool supportsES32 = glu::contextSupports(contextType, glu::ApiType::es(3, 2));
+
+	std::map<std::string, std::string> args;
+	args["GLSL_VERSION_DECL"]							= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(contextType));
+	args["GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION"]	= supportsES32 ? "" : "#extension GL_OES_shader_multisample_interpolation : require\n";
+	args["GLSL_EXT_SAMPLE_VARIABLES"]					= supportsES32 ? "" : "#extension GL_OES_sample_variables : require\n";
+
+	return tcu::StringTemplate(shaderSource).specialize(args);
+}
 
 static bool verifyGreenImage (const tcu::Surface& image, tcu::TestLog& log)
 {
@@ -112,7 +123,7 @@ MultisampleShadeCountRenderCase::~MultisampleShadeCountRenderCase (void)
 void MultisampleShadeCountRenderCase::init (void)
 {
 	// requirements
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
+	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 
 	MultisampleShaderRenderUtil::MultisampleRenderCase::init();
@@ -233,8 +244,8 @@ std::string	SampleQualifierRenderCase::genVertexSource (int numTargetSamples) co
 
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_shader_multisample_interpolation : require\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}"
 			"in highp vec4 a_position;\n";
 
 	if (m_iteration == 0)
@@ -276,7 +287,7 @@ std::string	SampleQualifierRenderCase::genVertexSource (int numTargetSamples) co
 
 	buf <<	"}";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());;
 }
 
 std::string	SampleQualifierRenderCase::genFragmentSource (int numTargetSamples) const
@@ -285,8 +296,8 @@ std::string	SampleQualifierRenderCase::genFragmentSource (int numTargetSamples) 
 
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_shader_multisample_interpolation : require\n";
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}";
 
 	if (m_iteration == 0)
 		buf << "sample in highp float v_input;\n";
@@ -329,7 +340,7 @@ std::string	SampleQualifierRenderCase::genFragmentSource (int numTargetSamples) 
 			"		fragColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
 			"}";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string	SampleQualifierRenderCase::getIterationDescription (int iteration) const
@@ -448,7 +459,7 @@ std::string InterpolateAtSampleRenderCase::genVertexSource (int numTargetSamples
 
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
 			"in highp vec4 a_position;\n";
 
 	if (m_iteration == 0)
@@ -484,15 +495,15 @@ std::string InterpolateAtSampleRenderCase::genVertexSource (int numTargetSamples
 
 	buf <<	"}";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string InterpolateAtSampleRenderCase::genFragmentSource (int numTargetSamples) const
 {
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_shader_multisample_interpolation : require\n";
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}";
 
 	if (m_iteration == 0)
 		buf << "in highp float v_input;\n";
@@ -593,7 +604,7 @@ std::string InterpolateAtSampleRenderCase::genFragmentSource (int numTargetSampl
 	buf <<	"	fragColor = vec4(vec3(float(coverage) / float(" << numTargetSamples << ")), 1.0);\n"
 			"}";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string InterpolateAtSampleRenderCase::getIterationDescription (int iteration) const
@@ -653,7 +664,7 @@ SingleSampleInterpolateAtSampleCase::~SingleSampleInterpolateAtSampleCase (void)
 void SingleSampleInterpolateAtSampleCase::init (void)
 {
 	// requirements
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
+	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 	if (m_renderTarget == TARGET_DEFAULT && m_context.getRenderTarget().getNumSamples() > 1)
 		TCU_THROW(NotSupportedError, "Non-multisample framebuffer required");
@@ -675,7 +686,7 @@ std::string SingleSampleInterpolateAtSampleCase::genVertexSource (int numTargetS
 
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
 			"in highp vec4 a_position;\n"
 			"out highp vec2 v_position;\n"
 			"void main (void)\n"
@@ -684,7 +695,7 @@ std::string SingleSampleInterpolateAtSampleCase::genVertexSource (int numTargetS
 			"	v_position = (a_position.xy + vec2(1.0, 1.0)) / 2.0 * vec2(" << (int)RENDER_SIZE << ".0, " << (int)RENDER_SIZE << ".0);\n"
 			"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string SingleSampleInterpolateAtSampleCase::genFragmentSource (int numTargetSamples) const
@@ -693,8 +704,8 @@ std::string SingleSampleInterpolateAtSampleCase::genFragmentSource (int numTarge
 
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_shader_multisample_interpolation : require\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}"
 			"in highp vec2 v_position;\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n"
 			"void main (void)\n"
@@ -732,7 +743,7 @@ std::string SingleSampleInterpolateAtSampleCase::genFragmentSource (int numTarge
 	else
 		DE_ASSERT(false);
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 bool SingleSampleInterpolateAtSampleCase::verifyImage (const tcu::Surface& resultImage)
@@ -764,7 +775,7 @@ CentroidRenderCase::~CentroidRenderCase (void)
 void CentroidRenderCase::init (void)
 {
 	// requirements
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
+	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 
 	MultisampleShaderRenderUtil::MultisampleRenderCase::init();
@@ -856,7 +867,9 @@ std::string CentroidQualifierAtSampleCase::genVertexSource (int numTargetSamples
 {
 	DE_UNREF(numTargetSamples);
 
-	return	"#version 310 es\n"
+	std::ostringstream buf;
+
+	buf <<	"${GLSL_VERSION_DECL}\n"
 			"in highp vec4 a_position;\n"
 			"in highp vec4 a_barycentricsA;\n"
 			"in highp vec4 a_barycentricsB;\n"
@@ -868,6 +881,8 @@ std::string CentroidQualifierAtSampleCase::genVertexSource (int numTargetSamples
 			"	v_barycentricsA = a_barycentricsA.xyz;\n"
 			"	v_barycentricsB = a_barycentricsB.xyz;\n"
 			"}\n";
+
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string CentroidQualifierAtSampleCase::genFragmentSource (int numTargetSamples) const
@@ -876,8 +891,8 @@ std::string CentroidQualifierAtSampleCase::genFragmentSource (int numTargetSampl
 
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_shader_multisample_interpolation : require\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}"
 			"in highp vec3 v_barycentricsA;\n"
 			"centroid in highp vec3 v_barycentricsB;\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n"
@@ -901,7 +916,7 @@ std::string CentroidQualifierAtSampleCase::genFragmentSource (int numTargetSampl
 			"		fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
 			"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 bool CentroidQualifierAtSampleCase::verifyImage (const tcu::Surface& resultImage)
@@ -939,9 +954,9 @@ InterpolateAtSampleIDCase::~InterpolateAtSampleIDCase (void)
 void InterpolateAtSampleIDCase::init (void)
 {
 	// requirements
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
+	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
+	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_sample_variables extension");
 
 	// test purpose and expectations
@@ -961,8 +976,8 @@ std::string InterpolateAtSampleIDCase::genVertexSource (int numTargetSamples) co
 
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_shader_multisample_interpolation : require\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}"
 			"in highp vec4 a_position;\n"
 			"sample out highp vec2 v_screenPosition;\n"
 			"void main (void)\n"
@@ -971,16 +986,18 @@ std::string InterpolateAtSampleIDCase::genVertexSource (int numTargetSamples) co
 			"	v_screenPosition = (a_position.xy + vec2(1.0, 1.0)) / 2.0 * vec2(" << (int)RENDER_SIZE << ".0, " << (int)RENDER_SIZE << ".0);\n"
 			"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string InterpolateAtSampleIDCase::genFragmentSource (int numTargetSamples) const
 {
 	DE_UNREF(numTargetSamples);
 
-	return	"#version 310 es\n"
-			"#extension GL_OES_sample_variables : require\n"
-			"#extension GL_OES_shader_multisample_interpolation : require\n"
+	std::ostringstream buf;
+
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXT_SAMPLE_VARIABLES}"
+			"${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}"
 			"sample in highp vec2 v_screenPosition;\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n"
 			"void main (void)\n"
@@ -996,6 +1013,8 @@ std::string InterpolateAtSampleIDCase::genFragmentSource (int numTargetSamples) 
 			"	else\n"
 			"		fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
 			"}\n";
+
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 bool InterpolateAtSampleIDCase::verifyImage (const tcu::Surface& resultImage)
@@ -1073,8 +1092,10 @@ std::string InterpolateAtCentroidCase::genVertexSource (int numTargetSamples) co
 {
 	DE_UNREF(numTargetSamples);
 
+	std::ostringstream buf;
+
 	if (m_type == TEST_CONSISTENCY)
-		return	"#version 310 es\n"
+		buf <<	"${GLSL_VERSION_DECL}\n"
 				"in highp vec4 a_position;\n"
 				"in highp vec4 a_barycentricsA;\n"
 				"in highp vec4 a_barycentricsB;\n"
@@ -1087,7 +1108,7 @@ std::string InterpolateAtCentroidCase::genVertexSource (int numTargetSamples) co
 				"	v_barycentricsB = a_barycentricsB.xyz;\n"
 				"}\n";
 	else if (m_type == TEST_ARRAY_ELEMENT)
-		return	"#version 310 es\n"
+		buf <<	"${GLSL_VERSION_DECL}\n"
 				"in highp vec4 a_position;\n"
 				"in highp vec4 a_barycentricsA;\n"
 				"in highp vec4 a_barycentricsB;\n"
@@ -1098,18 +1119,21 @@ std::string InterpolateAtCentroidCase::genVertexSource (int numTargetSamples) co
 				"	v_barycentrics[0] = a_barycentricsA.xyz;\n"
 				"	v_barycentrics[1] = a_barycentricsB.xyz;\n"
 				"}\n";
+	else
+		DE_ASSERT(false);
 
-	DE_ASSERT(false);
-	return "";
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string InterpolateAtCentroidCase::genFragmentSource (int numTargetSamples) const
 {
 	DE_UNREF(numTargetSamples);
 
+	std::ostringstream buf;
+
 	if (m_type == TEST_CONSISTENCY)
-		return	"#version 310 es\n"
-				"#extension GL_OES_shader_multisample_interpolation : require\n"
+		buf <<	"${GLSL_VERSION_DECL}\n"
+				"${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}"
 				"in highp vec3 v_barycentricsA;\n"
 				"centroid in highp vec3 v_barycentricsB;\n"
 				"layout(location = 0) out highp vec4 fragColor;\n"
@@ -1132,8 +1156,8 @@ std::string InterpolateAtCentroidCase::genFragmentSource (int numTargetSamples) 
 				"		fragColor = vec4(1.0, 1.0, 0.0, 1.0);\n"
 				"}\n";
 	else if (m_type == TEST_ARRAY_ELEMENT)
-		return	"#version 310 es\n"
-				"#extension GL_OES_shader_multisample_interpolation : require\n"
+		buf <<	"${GLSL_VERSION_DECL}\n"
+				"${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}"
 				"in highp vec3[2] v_barycentrics;\n"
 				"layout(location = 0) out mediump vec4 fragColor;\n"
 				"void main (void)\n"
@@ -1149,9 +1173,10 @@ std::string InterpolateAtCentroidCase::genFragmentSource (int numTargetSamples) 
 				"	else\n"
 				"		fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
 				"}\n";
+	else
+		DE_ASSERT(false);
 
-	DE_ASSERT(false);
-	return "";
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 bool InterpolateAtCentroidCase::verifyImage (const tcu::Surface& resultImage)
@@ -1202,7 +1227,7 @@ InterpolateAtOffsetCase::~InterpolateAtOffsetCase (void)
 void InterpolateAtOffsetCase::init (void)
 {
 	// requirements
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
+	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 
 	// test purpose and expectations
@@ -1221,8 +1246,8 @@ std::string InterpolateAtOffsetCase::genVertexSource (int numTargetSamples) cons
 	DE_UNREF(numTargetSamples);
 
 	std::ostringstream buf;
-	buf << "#version 310 es\n"
-		<< "#extension GL_OES_shader_multisample_interpolation : require\n"
+	buf << "${GLSL_VERSION_DECL}\n"
+		<< "${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}"
 		<< "in highp vec4 a_position;\n";
 
 	if (m_testType == TEST_QUALIFIER_NONE || m_testType == TEST_QUALIFIER_CENTROID || m_testType == TEST_QUALIFIER_SAMPLE)
@@ -1252,7 +1277,7 @@ std::string InterpolateAtOffsetCase::genVertexSource (int numTargetSamples) cons
 	buf	<< "	v_offset = a_position.xy * 0.5f;\n"
 		<< "}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string InterpolateAtOffsetCase::genFragmentSource (int numTargetSamples) const
@@ -1262,8 +1287,8 @@ std::string InterpolateAtOffsetCase::genFragmentSource (int numTargetSamples) co
 	const char* const	arrayIndexing = (m_testType == TEST_ARRAY_ELEMENT) ? ("[1]") : ("");
 	std::ostringstream	buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_shader_multisample_interpolation : require\n";
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}";
 
 	if (m_testType == TEST_QUALIFIER_NONE || m_testType == TEST_QUALIFIER_CENTROID || m_testType == TEST_QUALIFIER_SAMPLE)
 	{
@@ -1295,7 +1320,7 @@ std::string InterpolateAtOffsetCase::genFragmentSource (int numTargetSamples) co
 			"		fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
 			"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 bool InterpolateAtOffsetCase::verifyImage (const tcu::Surface& resultImage)
@@ -1333,9 +1358,9 @@ InterpolateAtSamplePositionCase::~InterpolateAtSamplePositionCase (void)
 void InterpolateAtSamplePositionCase::init (void)
 {
 	// requirements
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
+	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
+	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_sample_variables extension");
 
 	// test purpose and expectations
@@ -1355,8 +1380,8 @@ std::string InterpolateAtSamplePositionCase::genVertexSource (int numTargetSampl
 
 	std::ostringstream buf;
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_shader_multisample_interpolation : require\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}"
 			"in highp vec4 a_position;\n"
 			"sample out highp vec2 v_screenPosition;\n"
 			"void main (void)\n"
@@ -1365,16 +1390,18 @@ std::string InterpolateAtSamplePositionCase::genVertexSource (int numTargetSampl
 			"	v_screenPosition = (a_position.xy + vec2(1.0, 1.0)) / 2.0 * vec2(" << (int)RENDER_SIZE << ".0, " << (int)RENDER_SIZE << ".0);\n"
 			"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string InterpolateAtSamplePositionCase::genFragmentSource (int numTargetSamples) const
 {
 	DE_UNREF(numTargetSamples);
 
-	return	"#version 310 es\n"
-			"#extension GL_OES_sample_variables : require\n"
-			"#extension GL_OES_shader_multisample_interpolation : require\n"
+	std::ostringstream buf;
+
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_EXT_SAMPLE_VARIABLES}"
+			"${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}"
 			"sample in highp vec2 v_screenPosition;\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n"
 			"void main (void)\n"
@@ -1391,6 +1418,8 @@ std::string InterpolateAtSamplePositionCase::genFragmentSource (int numTargetSam
 			"	else\n"
 			"		fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
 			"}\n";
+
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 bool InterpolateAtSamplePositionCase::verifyImage (const tcu::Surface& resultImage)
@@ -1449,7 +1478,7 @@ NegativeCompileInterpolationCase::NegativeCompileInterpolationCase (Context& con
 
 void NegativeCompileInterpolationCase::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
+	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Trying to compile illegal shader, expecting compile to fail." << tcu::TestLog::EndMessage;
@@ -1603,8 +1632,8 @@ std::string NegativeCompileInterpolationCase::genShaderSource (void) const
 		interpolation = tcu::StringTemplate(interpolationTemplate).specialize(args);
 	}
 
-	buf <<	"#version 310 es\n"
-			"#extension GL_OES_shader_multisample_interpolation : require\n"
+	buf <<	glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType())) << "\n"
+		<< "${GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION}"
 		<<	globalDeclarations
 		<<	"layout(location = 0) out mediump vec4 fragColor;\n"
 			"void main (void)\n"
@@ -1613,7 +1642,7 @@ std::string NegativeCompileInterpolationCase::genShaderSource (void) const
 		<<	"	fragColor = vec4(" << interpolation << "); // " << description << "\n"
 			"}\n";
 
-	return buf.str();
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 } // anonymous
