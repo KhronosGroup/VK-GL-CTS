@@ -5194,18 +5194,18 @@ void CacheState::barrier (vk::VkPipelineStageFlags	srcStages,
 		{
 			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
 
-			if ((srcStage_ & m_allowedStages) == 0)
+			if ((srcStage_ & srcStages) == 0)
 				continue;
 
 			for (vk::VkPipelineStageFlags dstStage_ = 1; dstStage_ <= dstStages; dstStage_ <<= 1)
 			{
 				const PipelineStage	dstStage			= pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
 
-				if ((dstStage_ & m_allowedStages) == 0)
+				if ((dstStage_ & dstStages) == 0)
 					continue;
 
 				// Stages that have completed before srcStage have also completed before dstStage
-				m_incompleteOperations[dstStage] &= ~oldIncompleteOperations[srcStage];
+				m_incompleteOperations[dstStage] &= oldIncompleteOperations[srcStage];
 
 				for (vk::VkPipelineStageFlags sharedStage_ = 1; sharedStage_ <= m_allowedStages; sharedStage_ <<= 1)
 				{
@@ -5215,7 +5215,7 @@ void CacheState::barrier (vk::VkPipelineStageFlags	srcStages,
 						continue;
 
 					// Writes that are available in srcStage are also available in dstStage
-					m_unavailableWriteOperations[dstStage][sharedStage] &= ~oldUnavailableWriteOperations[srcStage][sharedStage];
+					m_unavailableWriteOperations[dstStage][sharedStage] &= oldUnavailableWriteOperations[srcStage][sharedStage];
 				}
 			}
 		}
@@ -5227,21 +5227,22 @@ void CacheState::barrier (vk::VkPipelineStageFlags	srcStages,
 		const PipelineStage	dstStage			= pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
 		bool				allWritesAvailable	= true;
 
-		if ((dstStage_ & m_allowedStages) == 0)
+		if ((dstStage_ & dstStages) == 0)
 			continue;
 
 		// Operations in srcStages have completed before any stage in dstStages
 		m_incompleteOperations[dstStage] &= ~srcStages;
 
-		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= srcStages; srcStage_ <<= 1)
+		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= m_allowedStages; srcStage_ <<= 1)
 		{
 			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
 
 			if ((srcStage_ & m_allowedStages) == 0)
 				continue;
 
-			// Make srcAccesses from srcStagees available in dstStage
-			m_unavailableWriteOperations[dstStage][srcStage] &= ~srcAccesses;
+			// Make srcAccesses from srcStage available in dstStage
+			if ((srcStage_ & srcStages) != 0)
+				m_unavailableWriteOperations[dstStage][srcStage] &= ~srcAccesses;
 
 			if (m_unavailableWriteOperations[dstStage][srcStage] != 0)
 				allWritesAvailable = false;
@@ -5506,6 +5507,7 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 			else
 			{
 				if (usage & USAGE_TRANSFER_DST
+					&& state.imageHasGeneralLayout
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT))
 				{
 					ops.push_back(OP_IMAGE_COPY_FROM_BUFFER);
@@ -5514,6 +5516,7 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 				}
 
 				if (usage & USAGE_TRANSFER_SRC
+					&& state.imageHasGeneralLayout
 					&& state.imageDefined
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT))
 				{
@@ -5538,6 +5541,7 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 	{
 		if (usage & USAGE_VERTEX_BUFFER
 			&& state.memoryDefined
+			&& state.hasBoundBufferMemory
 			&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT))
 		{
 			ops.push_back(OP_RENDER_VERTEX_BUFFER);
@@ -5545,6 +5549,7 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 
 		if (usage & USAGE_INDEX_BUFFER
 			&& state.memoryDefined
+			&& state.hasBoundBufferMemory
 			&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, vk::VK_ACCESS_INDEX_READ_BIT))
 		{
 			ops.push_back(OP_RENDER_INDEX_BUFFER);
@@ -5597,6 +5602,7 @@ void applyOp (State& state, const Memory& memory, Op op)
 
 			state.memoryDefined = true;
 			state.imageDefined = false;
+			state.imageHasGeneralLayout = false;
 			state.rng.getUint32();
 			break;
 
@@ -5714,6 +5720,7 @@ void applyOp (State& state, const Memory& memory, Op op)
 			state.commandBufferIsEmpty = false;
 			state.memoryDefined = true;
 			state.imageDefined = false;
+			state.imageHasGeneralLayout = false;
 			state.cache.perform(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT);
 			break;
 
@@ -5732,6 +5739,9 @@ void applyOp (State& state, const Memory& memory, Op op)
 		case OP_IMAGE_COPY_FROM_IMAGE:
 			state.rng.getUint32();
 			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER);
+
+			if ((memory.getMemoryType().propertyFlags & vk::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
+				state.hostInvalidated = false;
 
 			state.commandBufferIsEmpty = false;
 			state.memoryDefined = false;
