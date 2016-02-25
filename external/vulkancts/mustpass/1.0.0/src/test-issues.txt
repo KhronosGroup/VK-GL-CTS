@@ -19,6 +19,3 @@ dEQP-VK.glsl.builtin.function.common.frexp.float_highp_vertex
 dEQP-VK.glsl.builtin.function.common.frexp.vec2_highp_vertex
 dEQP-VK.glsl.builtin.function.common.frexp.vec3_highp_vertex
 dEQP-VK.glsl.builtin.function.common.frexp.vec4_highp_vertex
-
-# Issue 274: Invalid round tests for fraction 0.5
-dEQP-VK.glsl.operator.common_functions.round.*
