@@ -108,6 +108,8 @@ public:
 	VkQueue								getUniversalQueue				(void) const;
 
 private:
+	static VkPhysicalDeviceFeatures		filterDefaultDeviceFeatures		(const VkPhysicalDeviceFeatures& deviceFeatures);
+
 	const Unique<VkInstance>			m_instance;
 	const InstanceDriver				m_instanceInterface;
 
@@ -126,7 +128,7 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_instanceInterface			(vkPlatform, *m_instance)
 	, m_physicalDevice				(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
 	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
-	, m_deviceFeatures				(getPhysicalDeviceFeatures(m_instanceInterface, m_physicalDevice)) // \note All supported features are enabled
+	, m_deviceFeatures				(filterDefaultDeviceFeatures(getPhysicalDeviceFeatures(m_instanceInterface, m_physicalDevice)))
 	, m_deviceProperties			(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice)) // \note All supported features are enabled
 	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_deviceFeatures))
 	, m_deviceInterface				(m_instanceInterface, *m_device)
@@ -142,6 +144,16 @@ VkQueue DefaultDevice::getUniversalQueue (void) const
 	VkQueue	queue	= 0;
 	m_deviceInterface.getDeviceQueue(*m_device, m_universalQueueFamilyIndex, 0, &queue);
 	return queue;
+}
+
+VkPhysicalDeviceFeatures DefaultDevice::filterDefaultDeviceFeatures (const VkPhysicalDeviceFeatures& deviceFeatures)
+{
+	VkPhysicalDeviceFeatures enabledDeviceFeatures = deviceFeatures;
+
+	// Disable robustness by default, as it has an impact on performance on some HW.
+	enabledDeviceFeatures.robustBufferAccess = false;
+
+	return enabledDeviceFeatures;
 }
 
 // Allocator utilities
