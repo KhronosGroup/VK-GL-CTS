@@ -102,7 +102,7 @@ tcu::TestCase::IterateResult MultiContextTest::iterate (void)
 {
 	const deUint32					seed			= m_sharing == SHARING_SHARED ? 2498541716u : 8825414;
 	const size_t					maxContextCount	= 128;
-	const size_t					minContextCount	= 16;
+	const size_t					minContextCount	= 32;
 	const eglw::EGLint				attribList[]	=
 	{
 		EGL_CONTEXT_CLIENT_VERSION, 2,
