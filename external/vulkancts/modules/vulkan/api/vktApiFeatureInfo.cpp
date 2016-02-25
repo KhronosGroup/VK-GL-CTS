@@ -67,9 +67,9 @@ enum
 {
 	GUARD_SIZE								= 0x20,			//!< Number of bytes to check
 	GUARD_VALUE								= 0xcd,			//!< Data pattern
-
-	MINIMUM_REQUIRED_IMAGE_RESOURCE_SIZE	= 1<<31,		//!< Minimum value for VkImageFormatProperties::maxResourceSize (2GiB)
 };
+
+static const VkDeviceSize MINIMUM_REQUIRED_IMAGE_RESOURCE_SIZE =	(1LLU<<31)	//!< Minimum value for VkImageFormatProperties::maxResourceSize (2GiB)
 
 enum LimitFormat
 {
@@ -1347,7 +1347,7 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 																											 curCreateFlags);
 				const deUint32					fullMipPyramidSize	= de::max(de::max(deLog2Ceil32(properties.maxExtent.width),
 																					  deLog2Ceil32(properties.maxExtent.height)),
-																			  deLog2Ceil32(properties.maxExtent.depth));
+																			  deLog2Ceil32(properties.maxExtent.depth)) + 1;
 
 				log << TestLog::Message << properties << "\n" << TestLog::EndMessage;
 
