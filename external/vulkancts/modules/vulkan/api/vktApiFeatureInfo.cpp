@@ -69,7 +69,7 @@ enum
 	GUARD_VALUE								= 0xcd,			//!< Data pattern
 };
 
-static const VkDeviceSize MINIMUM_REQUIRED_IMAGE_RESOURCE_SIZE =	(1LLU<<31)	//!< Minimum value for VkImageFormatProperties::maxResourceSize (2GiB)
+static const VkDeviceSize MINIMUM_REQUIRED_IMAGE_RESOURCE_SIZE =	(1LLU<<31);	//!< Minimum value for VkImageFormatProperties::maxResourceSize (2GiB)
 
 enum LimitFormat
 {
