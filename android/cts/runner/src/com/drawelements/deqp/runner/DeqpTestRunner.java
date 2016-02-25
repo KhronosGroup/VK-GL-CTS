@@ -85,8 +85,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
     private static final String LOG_FILE_NAME = "/sdcard/TestLog.qpa";
     public static final String FEATURE_LANDSCAPE = "android.hardware.screen.landscape";
     public static final String FEATURE_PORTRAIT = "android.hardware.screen.portrait";
-    // TODO(misojarvi): Replace with correct feature name
-    public static final String FEATURE_VULKAN_1_0 = "android.hardware.vulkan.1.0";
+    public static final String FEATURE_VULKAN_LEVEL = "android.hardware.vulkan.level";
 
     private static final int TESTCASE_BATCH_LIMIT = 1000;
     private static final BatchRunConfiguration DEFAULT_CONFIG =
@@ -1651,7 +1650,13 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
             throws DeviceNotAvailableException, CapabilityQueryFailureException {
         final Set<String> features = getDeviceFeatures(mDevice);
 
-        return features.contains(FEATURE_VULKAN_1_0);
+        for (String feature : features) {
+            if (feature.startsWith(FEATURE_VULKAN_LEVEL)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
