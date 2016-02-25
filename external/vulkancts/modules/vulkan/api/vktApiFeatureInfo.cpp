@@ -1347,7 +1347,7 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 																											 curCreateFlags);
 				const deUint32					fullMipPyramidSize	= de::max(de::max(deLog2Ceil32(properties.maxExtent.width),
 																					  deLog2Ceil32(properties.maxExtent.height)),
-																			  deLog2Ceil32(properties.maxExtent.depth));
+																			  deLog2Ceil32(properties.maxExtent.depth)) + 1;
 
 				log << TestLog::Message << properties << "\n" << TestLog::EndMessage;
 
