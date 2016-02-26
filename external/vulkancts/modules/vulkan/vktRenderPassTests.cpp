@@ -2671,7 +2671,7 @@ public:
 	};
 
 			PixelStatus			(Status color, Status depth, Status stencil)
-				: m_status	((deUint32)((color << COLOR_OFFSET)
+				: m_status	((deUint8)((color << COLOR_OFFSET)
 					| (depth << DEPTH_OFFSET)
 					| (stencil << STENCIL_OFFSET)))
 	{
