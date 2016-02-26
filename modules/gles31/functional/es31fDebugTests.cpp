@@ -34,6 +34,8 @@
 #include "es31fNegativeShaderImageLoadStoreTests.hpp"
 #include "es31fNegativeShaderFunctionTests.hpp"
 #include "es31fNegativeShaderDirectiveTests.hpp"
+#include "es31fNegativePreciseTests.hpp"
+#include "es31fNegativeAdvancedBlendEquationTests.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
@@ -2918,6 +2920,8 @@ void DebugTests::init (void)
 	const vector<FunctionContainer> shaderImageLoadStoreFuncs	= wrapCoreFunctions(NegativeTestShared::getNegativeShaderImageLoadStoreTestFunctions());
 	const vector<FunctionContainer> shaderFunctionFuncs			= wrapCoreFunctions(NegativeTestShared::getNegativeShaderFunctionTestFunctions());
 	const vector<FunctionContainer> shaderDirectiveFuncs		= wrapCoreFunctions(NegativeTestShared::getNegativeShaderDirectiveTestFunctions());
+	const vector<FunctionContainer> preciseFuncs				= wrapCoreFunctions(NegativeTestShared::getNegativePreciseTestFunctions());
+	const vector<FunctionContainer> advancedBlendFuncs			= wrapCoreFunctions(NegativeTestShared::getNegativeAdvancedBlendEquationTestFunctions());
 	const vector<FunctionContainer> externalFuncs				= getUserMessageFuncs();
 
 	{
@@ -3019,6 +3023,8 @@ void DebugTests::init (void)
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_image_load_store",	"Negative Shader Image Load and Store API Cases",	shaderImageLoadStoreFuncs));
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_function",			"Negative Shader Function Cases",					shaderFunctionFuncs));
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_directive",			"Negative Shader Directive Cases",					shaderDirectiveFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "precise",					"Negative Precise Cases",							preciseFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "advanced_blend",				"Negative Advanced Blend Equation Cases",			advancedBlendFuncs));
 		}
 
 		{
@@ -3036,6 +3042,8 @@ void DebugTests::init (void)
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_image_load_store",	"Negative Shader Image Load and Store API Cases",	shaderImageLoadStoreFuncs));
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_function",			"Negative Shader Function Cases",					shaderFunctionFuncs));
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_directive",		"Negative Shader Directive Cases",					shaderDirectiveFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "precise",					"Negative Precise Cases",							preciseFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "advanced_blend",			"Negative Advanced Blend Equation Cases",			advancedBlendFuncs));
 		}
 
 		{
@@ -3053,6 +3061,8 @@ void DebugTests::init (void)
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_image_load_store",	"Negative Shader Image Load and Store API Cases",	shaderImageLoadStoreFuncs));
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_function",			"Negative Shader Function Cases",					shaderFunctionFuncs));
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_directive",			"Negative Shader Directive Cases",					shaderDirectiveFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "precise",					"Negative Precise Cases",							preciseFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "advanced_blend",				"Negative Advanced Blend Equation Cases",			advancedBlendFuncs));
 		}
 	}
 
