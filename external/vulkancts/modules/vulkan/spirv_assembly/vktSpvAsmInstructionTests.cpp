@@ -1743,6 +1743,7 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 
 	const string assembly(
 		"OpCapability Shader\n"
+		"OpCapability ClipDistance\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %comp_main1 \"entrypoint1\" %id\n"
 		"OpEntryPoint GLCompute %comp_main2 \"entrypoint2\" %id\n"
@@ -3420,6 +3421,8 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 // \todo [2015-11-23 awoloszyn] Remove OpName once these have stabalized
 	static const char vertexShaderBoilerplate[] =
 		"OpCapability Shader\n"
+		"OpCapability ClipDistance\n"
+		"OpCapability CullDistance\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Vertex %main \"main\" %BP_stream %BP_position %BP_vtx_color %BP_color %BP_gl_VertexIndex %BP_gl_InstanceIndex\n"
 		"${debug:opt}\n"
@@ -3499,6 +3502,8 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 {
 	static const char tessControlShaderBoilerplate[] =
 		"OpCapability Tessellation\n"
+		"OpCapability ClipDistance\n"
+		"OpCapability CullDistance\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint TessellationControl %BP_main \"main\" %BP_out_color %BP_gl_InvocationID %BP_in_color %BP_gl_out %BP_gl_in %BP_gl_TessLevelOuter %BP_gl_TessLevelInner\n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
@@ -3621,6 +3626,8 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 {
 	static const char tessEvalBoilerplate[] =
 		"OpCapability Tessellation\n"
+		"OpCapability ClipDistance\n"
+		"OpCapability CullDistance\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint TessellationEvaluation %BP_main \"main\" %BP_stream %BP_gl_TessCoord %BP_gl_in %BP_out_color %BP_in_color\n"
 		"OpExecutionMode %BP_main Triangles\n"
@@ -3756,6 +3763,8 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 {
 	static const char geometryShaderBoilerplate[] =
 		"OpCapability Geometry\n"
+		"OpCapability ClipDistance\n"
+		"OpCapability CullDistance\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_in %BP_out_color %BP_in_color\n"
 		"OpExecutionMode %BP_main Triangles\n"
@@ -3955,6 +3964,8 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 	// \todo [2015-12-07 awoloszyn] Remove OpName and OpMemberName at some point
 	dst.spirvAsmSources.add("module") <<
 		"OpCapability Shader\n"
+		"OpCapability ClipDistance\n"
+		"OpCapability CullDistance\n"
 		"OpCapability Geometry\n"
 		"OpCapability Tessellation\n"
 		"OpMemoryModel Logical GLSL450\n"
@@ -4315,6 +4326,8 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 
 	dst.spirvAsmSources.add("geom") <<
 		"OpCapability Geometry\n"
+		"OpCapability ClipDistance\n"
+		"OpCapability CullDistance\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Geometry %geom1_main \"geom1\" %out_gl_position %gl_in %out_color %in_color\n"
 		"OpEntryPoint Geometry %geom2_main \"geom2\" %out_gl_position %gl_in %out_color %in_color\n"
@@ -4513,6 +4526,8 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 
 	dst.spirvAsmSources.add("tesse") <<
 		"OpCapability Tessellation\n"
+		"OpCapability ClipDistance\n"
+		"OpCapability CullDistance\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint TessellationEvaluation %tesse1_main \"tesse1\" %stream %gl_tessCoord %in_position %out_color %in_color \n"
 		"OpEntryPoint TessellationEvaluation %tesse2_main \"tesse2\" %stream %gl_tessCoord %in_position %out_color %in_color \n"
