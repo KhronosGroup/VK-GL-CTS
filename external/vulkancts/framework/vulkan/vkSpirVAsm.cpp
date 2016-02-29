@@ -36,8 +36,6 @@
 #include "qpDebugOut.h"
 
 #if defined(DEQP_HAVE_SPIRV_TOOLS)
-#	include "deSingleton.h"
-
 #	include "libspirv/libspirv.h"
 #endif
 
@@ -82,11 +80,33 @@ void assembleSpirV (const SpirVAsmSource* program, std::vector<deUint8>* dst, Sp
 	return;
 }
 
+bool validateSpirV (const std::vector<deUint8>& spirv, std::string* infoLog)
+{
+	const size_t bytesPerWord = sizeof(uint32_t) / sizeof(deUint8);
+	DE_ASSERT(spirv.size() % bytesPerWord == 0);
+	std::vector<uint32_t> words(spirv.size() / bytesPerWord);
+	deMemcpy(words.data(), spirv.data(), spirv.size());
+	spv_const_binary_t	cbinary		= { words.data(), words.size() };
+	spv_diagnostic		diagnostic	= DE_NULL;
+	spv_context			context		= spvContextCreate();
+	const spv_result_t	valid		= spvValidate(context, &cbinary, SPV_VALIDATE_ALL, &diagnostic);
+	if (diagnostic)
+		*infoLog += diagnostic->error;
+	spvContextDestroy(context);
+	spvDiagnosticDestroy(diagnostic);
+	return valid == SPV_SUCCESS;
+}
+
 #else // defined(DEQP_HAVE_SPIRV_TOOLS)
 
 void assembleSpirV (const SpirVAsmSource*, std::vector<deUint8>*, SpirVProgramInfo*)
 {
 	TCU_THROW(NotSupportedError, "SPIR-V assembly not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
+}
+
+bool validateSpirV (std::vector<deUint8>*, std::string*)
+{
+	TCU_THROW(NotSupportedError, "SPIR-V validation not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
 }
 
 #endif

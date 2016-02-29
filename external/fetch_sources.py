@@ -170,7 +170,7 @@ PACKAGES = [
 		postExtract = postExtractLibpng),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
-		"3e6b2dfa699b13987657298ab2a7652a0a577ca9",
+		"7ef6da7b7f9175da509b4d71a881c0a04e0b701b",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
