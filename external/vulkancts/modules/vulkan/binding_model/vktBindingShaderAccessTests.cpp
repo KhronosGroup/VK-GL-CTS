@@ -94,6 +94,46 @@ bool isDynamicDescriptorType (vk::VkDescriptorType type)
 	return type == vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC || type == vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
 }
 
+void verifyDriverSupport(const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
+						 vk::VkDescriptorType					descType,
+						 vk::VkShaderStageFlags					activeStages)
+{
+	switch (descType)
+	{
+		case vk::VK_DESCRIPTOR_TYPE_SAMPLER:
+		case vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+		case vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+		case vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+		case vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+		case vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+			// These are supported in all stages
+			return;
+
+		case vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+		case vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+		case vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+		case vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+			if (activeStages & (vk::VK_SHADER_STAGE_VERTEX_BIT |
+								vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT |
+								vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT |
+								vk::VK_SHADER_STAGE_GEOMETRY_BIT))
+			{
+				if (!deviceFeatures.vertexPipelineStoresAndAtomics)
+					TCU_THROW(NotSupportedError, (de::toString(descType) + " is not supported in the vertex pipeline").c_str());
+			}
+
+			if (activeStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT)
+			{
+				if (!deviceFeatures.fragmentStoresAndAtomics)
+					TCU_THROW(NotSupportedError, (de::toString(descType) + " is not supported in fragment shaders").c_str());
+			}
+			return;
+
+		default:
+			DE_FATAL("Impossible");
+	}
+}
+
 vk::VkImageType viewTypeToImageType (vk::VkImageViewType type)
 {
 	switch (type)
@@ -2740,6 +2780,8 @@ std::string BufferDescriptorCase::genNoAccessSource (void) const
 
 vkt::TestInstance* BufferDescriptorCase::createInstance (vkt::Context& context) const
 {
+	verifyDriverSupport(context.getDeviceFeatures(), m_descriptorType, m_activeStages);
+
 	if (m_exitingStages == vk::VK_SHADER_STAGE_COMPUTE_BIT)
 	{
 		DE_ASSERT(m_isPrimaryCmdBuf); // secondaries are only valid within renderpass
@@ -5220,6 +5262,8 @@ std::string ImageDescriptorCase::genNoAccessSource (void) const
 
 vkt::TestInstance* ImageDescriptorCase::createInstance (vkt::Context& context) const
 {
+	verifyDriverSupport(context.getDeviceFeatures(), m_descriptorType, m_activeStages);
+
 	switch (m_descriptorType)
 	{
 		case vk::VK_DESCRIPTOR_TYPE_SAMPLER:
@@ -6099,6 +6143,8 @@ std::string TexelBufferDescriptorCase::genNoAccessSource (void) const
 
 vkt::TestInstance* TexelBufferDescriptorCase::createInstance (vkt::Context& context) const
 {
+	verifyDriverSupport(context.getDeviceFeatures(), m_descriptorType, m_activeStages);
+
 	if (m_exitingStages == vk::VK_SHADER_STAGE_COMPUTE_BIT)
 	{
 		DE_ASSERT(m_isPrimaryCmdBuf); // secondaries are only valid within renderpass
