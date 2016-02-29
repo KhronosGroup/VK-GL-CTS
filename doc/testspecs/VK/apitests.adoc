@@ -731,8 +731,13 @@ Clearing tests need to validate that clearing happen as expected for both simple
 Multisample resolve
 ~~~~~~~~~~~~~~~~~~~
 
-Multisample tests need to validate that clearing happen as expected for both simple and more complex cases.
+Multisample tests need to validate that image resolving happen as expected for both simple and more complex cases.
 
+* Various multisample counts.
+** All possible sample counts: 2, 4, 8, 16, 32 and 64.
+* Whole and partial image.
+** Regions with different offsets and extents.
+** Use multiple regions.
 
 Push constants
 --------------
