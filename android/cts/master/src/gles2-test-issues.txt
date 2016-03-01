@@ -49,3 +49,6 @@ dEQP-GLES2.functional.texture.wrap.repeat_mirror_linear_pot_etc1
 dEQP-GLES2.functional.texture.wrap.mirror_clamp_linear_pot_etc1
 dEQP-GLES2.functional.texture.wrap.mirror_repeat_linear_pot_etc1
 dEQP-GLES2.functional.texture.wrap.mirror_mirror_linear_pot_etc1
+
+# Bug 26906226
+dEQP-GLES2.functional.texture.units.*
