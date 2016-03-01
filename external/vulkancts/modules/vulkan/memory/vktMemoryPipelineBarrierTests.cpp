@@ -3835,7 +3835,9 @@ void ImageBlitFromImage::verify (VerifyContext& context, size_t)
 		}
 		else if (m_scale == BLIT_SCALE_20)
 		{
-			tcu::TextureLevel source (TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_srcImageWidth, m_srcImageHeight);
+			tcu::TextureLevel	source	(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_srcImageWidth, m_srcImageHeight);
+			const float			xscale	= ((float)m_srcImageWidth)  / (float)m_imageWidth;
+			const float			yscale	= ((float)m_srcImageHeight) / (float)m_imageHeight;
 
 			for (deInt32 y = 0; y < m_srcImageHeight; y++)
 			for (deInt32 x = 0; x < m_srcImageWidth; x++)
@@ -3850,7 +3852,7 @@ void ImageBlitFromImage::verify (VerifyContext& context, size_t)
 
 			for (deInt32 y = 0; y < m_imageHeight; y++)
 			for (deInt32 x = 0; x < m_imageWidth; x++)
-				refAccess.setPixel(source.getAccess().getPixelUint(x / 2, y / 2), x, y);
+				refAccess.setPixel(source.getAccess().getPixelUint(int(x * xscale), int(y * yscale)), x, y);
 		}
 		else
 			DE_FATAL("Unsupported scale");
