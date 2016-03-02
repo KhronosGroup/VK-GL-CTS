@@ -34,6 +34,7 @@
 #include "vktSparseResourcesBufferSparseResidency.hpp"
 #include "vktSparseResourcesImageSparseResidency.hpp"
 #include "vktSparseResourcesMipmapSparseResidency.hpp"
+#include "vktSparseResourcesBufferMemoryAliasing.hpp"
 #include "deUniquePtr.hpp"
 
 namespace vkt
@@ -50,6 +51,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	sparseTests->addChild(createBufferSparseResidencyTests(testCtx));
 	sparseTests->addChild(createImageSparseResidencyTests(testCtx));
 	sparseTests->addChild(createMipmapSparseResidencyTests(testCtx));
+	sparseTests->addChild(createBufferSparseMemoryAliasingTests(testCtx));
 
 	return sparseTests.release();
 }

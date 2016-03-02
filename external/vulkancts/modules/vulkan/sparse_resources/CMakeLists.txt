@@ -1,6 +1,8 @@
 include_directories(..)
 
 set(DEQP_VK_IMAGE_SRCS
+	vktSparseResourcesBufferMemoryAliasing.cpp
+	vktSparseResourcesBufferMemoryAliasing.hpp
 	vktSparseResourcesMipmapSparseResidency.cpp
 	vktSparseResourcesMipmapSparseResidency.hpp
 	vktSparseResourcesImageSparseResidency.cpp
