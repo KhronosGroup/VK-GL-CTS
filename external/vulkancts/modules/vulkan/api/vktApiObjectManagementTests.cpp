@@ -1861,7 +1861,12 @@ struct CommandBuffer
 
 	static deUint32 getMaxConcurrent (Context&)
 	{
+		// \todo Scale this based on available system memory
+#if (DE_PTR_SIZE == 4)
+		return 1024;
+#else
 		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+#endif
 	}
 
 	struct Parameters
