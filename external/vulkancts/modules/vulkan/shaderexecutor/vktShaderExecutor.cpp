@@ -2956,15 +2956,15 @@ ShaderExecutor* createExecutor (glu::ShaderType shaderType, const ShaderSpec& sh
 	}
 }
 
-void ShaderExecutor::setupUniformData (const VkDevice&				vkDevice,
-									   const DeviceInterface&		vk,
-									   const VkQueue				/*queue*/,
-									   const deUint32				queueFamilyIndex,
-									   Allocator&					memAlloc,
-									   deUint32						bindingLocation,
-									   VkDescriptorType				descriptorType,
-									   deUint32						size,
-									   const void*					dataPtr)
+de::MovePtr<ShaderExecutor::BufferUniform> ShaderExecutor::createBufferUniform (const VkDevice&				vkDevice,
+																				const DeviceInterface&		vk,
+																				const VkQueue				/*queue*/,
+																				const deUint32				queueFamilyIndex,
+																				Allocator&					memAlloc,
+																				deUint32					bindingLocation,
+																				VkDescriptorType			descriptorType,
+																				deUint32					size,
+																				const void*					dataPtr)
 {
 	DE_ASSERT(descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
@@ -2996,10 +2996,57 @@ void ShaderExecutor::setupUniformData (const VkDevice&				vkDevice,
 	uniformInfo->buffer = VkBufferSp(new Unique<VkBuffer>(buffer));
 	uniformInfo->alloc = AllocationSp(alloc.release());
 
+	return uniformInfo;
+}
+
+void ShaderExecutor::setupUniformData (const VkDevice&				vkDevice,
+									   const DeviceInterface&		vk,
+									   const VkQueue				queue,
+									   const deUint32				queueFamilyIndex,
+									   Allocator&					memAlloc,
+									   deUint32						bindingLocation,
+									   VkDescriptorType				descriptorType,
+									   deUint32						size,
+									   const void*					dataPtr)
+{
+	de::MovePtr<BufferUniform>			uniform			= createBufferUniform(vkDevice, vk, queue, queueFamilyIndex, memAlloc, bindingLocation, descriptorType, size, dataPtr);
+
 	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, VK_SHADER_STAGE_ALL);
 	m_descriptorPoolBuilder.addType(descriptorType);
 
-	m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(uniformInfo)));
+	m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(uniform)));
+}
+
+void ShaderExecutor::setupUniformArray (const VkDevice&				vkDevice,
+										const DeviceInterface&		vk,
+										const VkQueue				queue,
+										const deUint32				queueFamilyIndex,
+										Allocator&					memAlloc,
+										deUint32					bindingLocation,
+										VkDescriptorType			descriptorType,
+										deUint32					arraySize,
+										deUint32					size,
+										const void*					dataPtr)
+{
+	DE_ASSERT(arraySize > 0);
+
+	de::MovePtr<BufferArrayUniform>		bufferArray		(new BufferArrayUniform());
+
+	bufferArray->type = descriptorType;
+	bufferArray->location = bindingLocation;
+
+	for (deUint32 ndx = 0; ndx < arraySize; ++ndx)
+	{
+		const void*						bufferData		= ((deUint8*)dataPtr) + (ndx * size);
+		de::MovePtr<BufferUniform>		uniform			= createBufferUniform(vkDevice, vk, queue, queueFamilyIndex, memAlloc, bindingLocation, descriptorType, size, bufferData);
+
+		bufferArray->uniforms.push_back(BufferUniformSp(new de::UniquePtr<BufferUniform>(uniform)));
+	}
+
+	m_descriptorSetLayoutBuilder.addArrayBinding(descriptorType, arraySize, VK_SHADER_STAGE_ALL);
+	m_descriptorPoolBuilder.addType(descriptorType, arraySize);
+
+	m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(bufferArray)));
 }
 
 void ShaderExecutor::setupSamplerData (const VkDevice&				vkDevice,
@@ -3044,7 +3091,7 @@ const void*	ShaderExecutor::getBufferPtr (const deUint32 bindingLocation) const
 	for (; it != m_uniformInfos.end(); it++)
 	{
 		const UniformInfo* uniformInfo = it->get()->get();
-		if (uniformInfo->isBufferUniform() && uniformInfo->location == bindingLocation)
+		if (uniformInfo->getType() == UniformInfo::UNIFORM_TYPE_BUFFER && uniformInfo->location == bindingLocation)
 		{
 			const BufferUniform* bufferUniform = static_cast<const BufferUniform*>(uniformInfo);
 			return bufferUniform->alloc->getHostPtr();
@@ -3070,12 +3117,25 @@ void ShaderExecutor::uploadUniforms (DescriptorSetUpdateBuilder& descriptorSetUp
 {
 	for (std::vector<UniformInfoSp>::const_iterator it = m_uniformInfos.begin(); it != m_uniformInfos.end(); ++it)
 	{
-		const UniformInfo* uniformInfo = it->get()->get();
+		const UniformInfo*							uniformInfo		= it->get()->get();
+		UniformInfo::UniformType					uniformType		= uniformInfo->getType();
 
-		if (uniformInfo->isSamplerArray())
+		if (uniformType == UniformInfo::UNIFORM_TYPE_BUFFER_ARRAY)
 		{
-			const SamplerArrayUniform*			arrayInfo		= static_cast<const SamplerArrayUniform*>(uniformInfo);
-			std::vector<VkDescriptorImageInfo>	descriptors;
+			const BufferArrayUniform*				arrayInfo		= static_cast<const BufferArrayUniform*>(uniformInfo);
+			std::vector<VkDescriptorBufferInfo>		descriptors;
+
+			for (std::vector<BufferUniformSp>::const_iterator ait = arrayInfo->uniforms.begin(); ait != arrayInfo->uniforms.end(); ++ait)
+			{
+				descriptors.push_back(ait->get()->get()->descriptor);
+			}
+
+			descriptorSetUpdateBuilder.writeArray(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(uniformInfo->location), uniformInfo->type, (deUint32)descriptors.size(), &descriptors[0]);
+		}
+		else if (uniformType == UniformInfo::UNIFORM_TYPE_SAMPLER_ARRAY)
+		{
+			const SamplerArrayUniform*				arrayInfo		= static_cast<const SamplerArrayUniform*>(uniformInfo);
+			std::vector<VkDescriptorImageInfo>		descriptors;
 
 			for (std::vector<SamplerUniformSp>::const_iterator ait = arrayInfo->uniforms.begin(); ait != arrayInfo->uniforms.end(); ++ait)
 			{
@@ -3084,14 +3144,14 @@ void ShaderExecutor::uploadUniforms (DescriptorSetUpdateBuilder& descriptorSetUp
 
 			descriptorSetUpdateBuilder.writeArray(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(uniformInfo->location), uniformInfo->type, (deUint32)descriptors.size(), &descriptors[0]);
 		}
-		else if (uniformInfo->isBufferUniform())
+		else if (uniformType == UniformInfo::UNIFORM_TYPE_BUFFER)
 		{
-			const BufferUniform* bufferUniform = static_cast<const BufferUniform*>(uniformInfo);
+			const BufferUniform*					bufferUniform	= static_cast<const BufferUniform*>(uniformInfo);
 			descriptorSetUpdateBuilder.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferUniform->location), bufferUniform->type, &bufferUniform->descriptor);
 		}
-		else if (uniformInfo->isSamplerUniform())
+		else if (uniformType == UniformInfo::UNIFORM_TYPE_SAMPLER)
 		{
-			const SamplerUniform* samplerUniform = static_cast<const SamplerUniform*>(uniformInfo);
+			const SamplerUniform*					samplerUniform	= static_cast<const SamplerUniform*>(uniformInfo);
 			descriptorSetUpdateBuilder.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(samplerUniform->location), samplerUniform->type, &samplerUniform->descriptor);
 		}
 	}
