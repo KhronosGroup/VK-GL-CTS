@@ -130,6 +130,17 @@ public:
 												 deUint32					size,
 												 const void*				dataPtr);
 
+	void					setupUniformArray	(const VkDevice&			vkDevice,
+												 const DeviceInterface&		vk,
+												 const VkQueue				queue,
+												 const deUint32				queueFamilyIndex,
+												 Allocator&					memAlloc,
+												 deUint32					bindingLocation,
+												 VkDescriptorType			descriptorType,
+												 deUint32					arraySize,
+												 deUint32					size,
+												 const void*				dataPtr);
+
 	void					setupSamplerData	(const VkDevice&			vkDevice,
 												 const DeviceInterface&		vk,
 												 const VkQueue				queue,
@@ -155,7 +166,8 @@ protected:
 
 	class UniformInfo;
 	typedef de::SharedPtr<de::UniquePtr<UniformInfo> >			UniformInfoSp;
-
+	class BufferUniform;
+	typedef de::SharedPtr<de::UniquePtr<BufferUniform> >		BufferUniformSp;
 	class SamplerUniform;
 	typedef de::SharedPtr<de::UniquePtr<SamplerUniform> >		SamplerUniformSp;
 
@@ -168,11 +180,19 @@ protected:
 	class UniformInfo
 	{
 	public:
+		enum UniformType
+		{
+			UNIFORM_TYPE_BUFFER = 0,
+			UNIFORM_TYPE_SAMPLER,
+			UNIFORM_TYPE_BUFFER_ARRAY,
+			UNIFORM_TYPE_SAMPLER_ARRAY,
+
+			UNIFORM_TYPE_LAST
+		};
+
 									UniformInfo			(void) {}
 		virtual						~UniformInfo		(void) {}
-		virtual bool				isSamplerArray		(void) const { return false; }
-		virtual bool				isBufferUniform		(void) const { return false; }
-		virtual bool				isSamplerUniform	(void) const { return false; }
+		virtual UniformType			getType				(void) const = 0;
 
 		VkDescriptorType			type;
 		deUint32					location;
@@ -183,7 +203,7 @@ protected:
 	public:
 									BufferUniform		(void) {}
 		virtual						~BufferUniform		(void) {}
-		virtual bool				isBufferUniform		(void) const { return true; }
+		virtual UniformType			getType				(void) const { return UNIFORM_TYPE_BUFFER; }
 
 		VkBufferSp					buffer;
 		AllocationSp				alloc;
@@ -195,7 +215,8 @@ protected:
 	public:
 									SamplerUniform		(void) {}
 		virtual						~SamplerUniform		(void) {}
-		virtual bool				isSamplerUniform	(void) const { return true; }
+		virtual UniformType			getType				(void) const { return UNIFORM_TYPE_SAMPLER; }
+
 		VkImageSp					image;
 		VkImageViewSp				imageView;
 		VkSamplerSp					sampler;
@@ -203,12 +224,22 @@ protected:
 		VkDescriptorImageInfo		descriptor;
 	};
 
+	class BufferArrayUniform : public UniformInfo
+	{
+	public:
+											BufferArrayUniform		(void) {}
+		virtual								~BufferArrayUniform		(void) {}
+		virtual UniformType					getType					(void) const { return UNIFORM_TYPE_BUFFER_ARRAY; }
+
+		std::vector<BufferUniformSp>		uniforms;
+	};
+
 	class SamplerArrayUniform : public UniformInfo
 	{
 	public:
 											SamplerArrayUniform		(void) {}
 		virtual								~SamplerArrayUniform	(void) {}
-		virtual bool						isSamplerArray			(void) const { return true; }
+		virtual UniformType					getType					(void) const { return UNIFORM_TYPE_SAMPLER_ARRAY; }
 
 		std::vector<SamplerUniformSp>		uniforms;
 	};
@@ -237,6 +268,16 @@ protected:
 																		 VkImageType					imageType,
 																		 VkImageViewType				imageViewType,
 																		 const void*					data);
+
+	de::MovePtr<BufferUniform>				createBufferUniform			(const VkDevice&				vkDevice,
+																		 const DeviceInterface&			vk,
+																		 const VkQueue					queue,
+																		 const deUint32					queueFamilyIndex,
+																		 Allocator&						memAlloc,
+																		 deUint32						bindingLocation,
+																		 VkDescriptorType				descriptorType,
+																		 deUint32						size,
+																		 const void*					dataPtr);
 
 	const ShaderSpec									m_shaderSpec;
 	const glu::ShaderType								m_shaderType;
@@ -297,6 +338,39 @@ template<typename T>
 void UniformData<T>::setup (ShaderExecutor& executor, const VkDevice& vkDevice, const DeviceInterface& vk, const VkQueue queue, const deUint32 queueFamilyIndex, Allocator& memAlloc) const
 {
 	executor.setupUniformData(vkDevice, vk, queue, queueFamilyIndex, memAlloc, m_bindingLocation, m_descriptorType, sizeof(T), &m_data);
+}
+
+template<typename T>
+class UniformArrayData : public UniformDataBase
+{
+public:
+							UniformArrayData	(deUint32 bindingLocation, VkDescriptorType descriptorType, const std::vector<T>& data);
+	virtual					~UniformArrayData	(void);
+	virtual void			setup				(ShaderExecutor& executor, const VkDevice& vkDevice, const DeviceInterface& vk, const VkQueue queue, const deUint32 queueFamilyIndex, Allocator& memAlloc) const;
+
+private:
+	VkDescriptorType		m_descriptorType;
+	std::vector<T>			m_data;
+};
+
+template<typename T>
+UniformArrayData<T>::UniformArrayData (deUint32 bindingLocation, VkDescriptorType descriptorType, const std::vector<T>& data)
+	: UniformDataBase		(bindingLocation)
+	, m_descriptorType		(descriptorType)
+	, m_data				(data)
+{
+}
+
+template<typename T>
+UniformArrayData<T>::~UniformArrayData (void)
+{
+}
+
+template<typename T>
+void UniformArrayData<T>::setup (ShaderExecutor& executor, const VkDevice& vkDevice, const DeviceInterface& vk, const VkQueue queue, const deUint32 queueFamilyIndex, Allocator& memAlloc) const
+{
+	DE_ASSERT(!m_data.empty());
+	executor.setupUniformArray(vkDevice, vk, queue, queueFamilyIndex, memAlloc, m_bindingLocation, m_descriptorType, (deUint32)m_data.size(), sizeof(T), &m_data[0]);
 }
 
 class SamplerUniformData : public UniformDataBase
