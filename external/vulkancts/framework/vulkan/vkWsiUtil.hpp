@@ -82,6 +82,11 @@ Move<VkSurfaceKHR>			createSurface							(const InstanceInterface&		vki,
 																	 const Window&					nativeWindow,
 																	 const VkAllocationCallbacks*	pAllocator = DE_NULL);
 
+VkBool32					getPhysicalDeviceSurfaceSupport			(const InstanceInterface&		vki,
+																	 VkPhysicalDevice				physicalDevice,
+																	 deUint32						queueFamilyIndex,
+																	 VkSurfaceKHR					surface);
+
 VkSurfaceCapabilitiesKHR	getPhysicalDeviceSurfaceCapabilities	(const InstanceInterface&		vki,
 																	 VkPhysicalDevice				physicalDevice,
 																	 VkSurfaceKHR					surface);

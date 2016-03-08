@@ -252,6 +252,18 @@ Move<VkSurfaceKHR> createSurface (const InstanceInterface&		vki,
 	return Move<VkSurfaceKHR>(check<VkSurfaceKHR>(object), Deleter<VkSurfaceKHR>(vki, instance, pAllocator));
 }
 
+VkBool32 getPhysicalDeviceSurfaceSupport (const InstanceInterface&	vki,
+										  VkPhysicalDevice			physicalDevice,
+										  deUint32					queueFamilyIndex,
+										  VkSurfaceKHR				surface)
+{
+	VkBool32 result = 0;
+
+	VK_CHECK(vki.getPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamilyIndex, surface, &result));
+
+	return result;
+}
+
 VkSurfaceCapabilitiesKHR getPhysicalDeviceSurfaceCapabilities (const InstanceInterface&		vki,
 															   VkPhysicalDevice				physicalDevice,
 															   VkSurfaceKHR					surface)
