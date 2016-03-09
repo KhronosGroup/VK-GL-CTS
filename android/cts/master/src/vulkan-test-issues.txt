@@ -20,9 +20,6 @@ dEQP-VK.glsl.builtin.function.common.frexp.vec2_highp_vertex
 dEQP-VK.glsl.builtin.function.common.frexp.vec3_highp_vertex
 dEQP-VK.glsl.builtin.function.common.frexp.vec4_highp_vertex
 
-# Khronos Issue 274: Invalid round tests for fraction 0.5
-dEQP-VK.glsl.operator.common_functions.round.*
-
 # Khronos Issue 218: Excluded built-in function precision tests
 dEQP-VK.glsl.builtin.precision.clamp.highp_compute.*
 dEQP-VK.glsl.builtin.precision.cos.mediump_*
