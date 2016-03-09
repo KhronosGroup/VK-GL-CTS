@@ -442,9 +442,116 @@ static RequiredExtensions getTesterExtension (TesterType tester)
 
 } // es31
 
+namespace es32
+{
+
+static bool isCoreTextureTarget (glw::GLenum target)
+{
+	return	es31::isCoreTextureTarget(target)			||
+			target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY	||
+			target == GL_TEXTURE_BUFFER					||
+			target == GL_TEXTURE_CUBE_MAP_ARRAY;
+}
+
+static RequiredExtensions getTextureTargetExtension (glw::GLenum target)
+{
+	DE_UNREF(target);
+	DE_ASSERT(false);
+	return RequiredExtensions();
+}
+
+static bool isCoreTextureParam (glw::GLenum pname)
+{
+	return	es31::isCoreTextureParam(pname)		||
+			pname == GL_TEXTURE_BORDER_COLOR;
+}
+
+static RequiredExtensions getTextureParamExtension (glw::GLenum pname)
+{
+	switch (pname)
+	{
+		case GL_TEXTURE_SRGB_DECODE_EXT:	return RequiredExtensions("GL_EXT_texture_sRGB_decode");
+		default:
+			DE_ASSERT(false);
+			return RequiredExtensions();
+	}
+}
+
+static bool isCoreQuery (QueryType query)
+{
+	return	es31::isCoreQuery(query)								||
+			query == QUERY_TEXTURE_PARAM_PURE_INTEGER				||
+			query == QUERY_TEXTURE_PARAM_PURE_INTEGER				||
+			query == QUERY_TEXTURE_PARAM_PURE_UNSIGNED_INTEGER		||
+			query == QUERY_TEXTURE_PARAM_PURE_INTEGER_VEC4			||
+			query == QUERY_TEXTURE_PARAM_PURE_UNSIGNED_INTEGER_VEC4	||
+			query == QUERY_SAMPLER_PARAM_PURE_INTEGER				||
+			query == QUERY_SAMPLER_PARAM_PURE_UNSIGNED_INTEGER		||
+			query == QUERY_SAMPLER_PARAM_PURE_INTEGER_VEC4			||
+			query == QUERY_SAMPLER_PARAM_PURE_UNSIGNED_INTEGER_VEC4;
+}
+
+static RequiredExtensions getQueryExtension (QueryType query)
+{
+	DE_UNREF(query);
+	DE_ASSERT(false);
+	return RequiredExtensions();
+}
+
+static bool isCoreTester (TesterType tester)
+{
+#define COMPARE_PURE_SETTERS(TESTER, X) (TESTER == X ## _SET_PURE_INT) || (TESTER == X ## _SET_PURE_UINT)
+
+	return	es31::isCoreTester(tester)										||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_SWIZZLE_R)			||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_SWIZZLE_G)			||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_SWIZZLE_B)			||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_SWIZZLE_A)			||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_WRAP_S)				||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_WRAP_T)				||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_WRAP_R)				||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_MAG_FILTER)			||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_MIN_FILTER)			||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_MIN_LOD)			||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_MAX_LOD)			||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_BASE_LEVEL)			||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_MAX_LEVEL)			||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_COMPARE_MODE)		||
+			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_COMPARE_FUNC)		||
+			COMPARE_PURE_SETTERS(tester, TESTER_DEPTH_STENCIL_TEXTURE_MODE)	||
+			tester == TESTER_TEXTURE_WRAP_S_CLAMP_TO_BORDER					||
+			tester == TESTER_TEXTURE_WRAP_T_CLAMP_TO_BORDER					||
+			tester == TESTER_TEXTURE_WRAP_R_CLAMP_TO_BORDER					||
+			tester == TESTER_TEXTURE_BORDER_COLOR;
+
+#undef COMPARE_PURE_SETTERS
+}
+
+static RequiredExtensions getTesterExtension (TesterType tester)
+{
+#define CASE_PURE_SETTERS(X) case X ## _SET_PURE_INT: case X ## _SET_PURE_UINT
+
+	switch (tester)
+	{
+		CASE_PURE_SETTERS(TESTER_TEXTURE_SRGB_DECODE_EXT):
+		case TESTER_TEXTURE_SRGB_DECODE_EXT:
+			return RequiredExtensions("GL_EXT_texture_sRGB_decode");
+
+		default:
+			DE_ASSERT(false);
+			return RequiredExtensions();
+	}
+
+#undef CASE_PURE_SETTERS
+}
+
+} // es32
+
 static bool isCoreTextureTarget (const glu::ContextType& contextType, glw::GLenum target)
 {
-	if (contextSupports(contextType, glu::ApiType::es(3,1)))
+	if (contextSupports(contextType, glu::ApiType::es(3,2)))
+		return es32::isCoreTextureTarget(target);
+	else if (contextSupports(contextType, glu::ApiType::es(3,1)))
 		return es31::isCoreTextureTarget(target);
 	else if (contextSupports(contextType, glu::ApiType::es(3,0)))
 		return es30::isCoreTextureTarget(target);
@@ -457,7 +564,9 @@ static bool isCoreTextureTarget (const glu::ContextType& contextType, glw::GLenu
 
 static bool isCoreTextureParam (const glu::ContextType& contextType, glw::GLenum pname)
 {
-	if (contextSupports(contextType, glu::ApiType::es(3,1)))
+	if (contextSupports(contextType, glu::ApiType::es(3,2)))
+		return es32::isCoreTextureParam(pname);
+	else if (contextSupports(contextType, glu::ApiType::es(3,1)))
 		return es31::isCoreTextureParam(pname);
 	else if (contextSupports(contextType, glu::ApiType::es(3,0)))
 		return es30::isCoreTextureParam(pname);
@@ -470,7 +579,9 @@ static bool isCoreTextureParam (const glu::ContextType& contextType, glw::GLenum
 
 static bool isCoreQuery (const glu::ContextType& contextType, QueryType query)
 {
-	if (contextSupports(contextType, glu::ApiType::es(3,1)))
+	if (contextSupports(contextType, glu::ApiType::es(3,2)))
+		return es32::isCoreQuery(query);
+	else if (contextSupports(contextType, glu::ApiType::es(3,1)))
 		return es31::isCoreQuery(query);
 	else if (contextSupports(contextType, glu::ApiType::es(3,0)))
 		return es30::isCoreQuery(query);
@@ -483,7 +594,9 @@ static bool isCoreQuery (const glu::ContextType& contextType, QueryType query)
 
 static bool isCoreTester (const glu::ContextType& contextType, TesterType tester)
 {
-	if (contextSupports(contextType, glu::ApiType::es(3,1)))
+	if (contextSupports(contextType, glu::ApiType::es(3,2)))
+		return es32::isCoreTester(tester);
+	else if (contextSupports(contextType, glu::ApiType::es(3,1)))
 		return es31::isCoreTester(tester);
 	else if (contextSupports(contextType, glu::ApiType::es(3,0)))
 		return es30::isCoreTester(tester);
@@ -498,6 +611,8 @@ static RequiredExtensions getTextureTargetExtension (const glu::ContextType& con
 {
 	DE_ASSERT(!isCoreTextureTarget(contextType, target));
 
+	if (contextSupports(contextType, glu::ApiType::es(3,2)))
+		return es32::getTextureTargetExtension(target);
 	if (contextSupports(contextType, glu::ApiType::es(3,1)))
 		return es31::getTextureTargetExtension(target);
 	else if (contextSupports(contextType, glu::ApiType::es(3,0)))
@@ -513,7 +628,9 @@ static RequiredExtensions getTextureParamExtension (const glu::ContextType& cont
 {
 	DE_ASSERT(!isCoreTextureParam(contextType, pname));
 
-	if (contextSupports(contextType, glu::ApiType::es(3,1)))
+	if (contextSupports(contextType, glu::ApiType::es(3,2)))
+		return es32::getTextureParamExtension(pname);
+	else if (contextSupports(contextType, glu::ApiType::es(3,1)))
 		return es31::getTextureParamExtension(pname);
 	else if (contextSupports(contextType, glu::ApiType::es(3,0)))
 		return es30::getTextureParamExtension(pname);
@@ -528,7 +645,9 @@ static RequiredExtensions getQueryExtension (const glu::ContextType& contextType
 {
 	DE_ASSERT(!isCoreQuery(contextType, query));
 
-	if (contextSupports(contextType, glu::ApiType::es(3,1)))
+	if (contextSupports(contextType, glu::ApiType::es(3,2)))
+		return es32::getQueryExtension(query);
+	else if (contextSupports(contextType, glu::ApiType::es(3,1)))
 		return es31::getQueryExtension(query);
 	else if (contextSupports(contextType, glu::ApiType::es(3,0)))
 		return es30::getQueryExtension(query);
@@ -543,7 +662,9 @@ static RequiredExtensions getTesterExtension (const glu::ContextType& contextTyp
 {
 	DE_ASSERT(!isCoreTester(contextType, tester));
 
-	if (contextSupports(contextType, glu::ApiType::es(3,1)))
+	if (contextSupports(contextType, glu::ApiType::es(3,2)))
+		return es32::getTesterExtension(tester);
+	else if (contextSupports(contextType, glu::ApiType::es(3,1)))
 		return es31::getTesterExtension(tester);
 	else if (contextSupports(contextType, glu::ApiType::es(3,0)))
 		return es30::getTesterExtension(tester);
