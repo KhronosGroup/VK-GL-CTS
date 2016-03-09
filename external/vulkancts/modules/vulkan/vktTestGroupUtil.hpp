@@ -94,6 +94,24 @@ tcu::TestCaseGroup* createTestGroup (tcu::TestContext&										testCtx,
 	return new TestGroupHelper1<Arg0>(testCtx, name, description, createChildren, arg0);
 }
 
+inline void addTestGroup (tcu::TestCaseGroup*					parent,
+						  const std::string&					name,
+						  const std::string&					description,
+						  TestGroupHelper0::CreateChildrenFunc	createChildren)
+{
+	parent->addChild(createTestGroup(parent->getTestContext(), name, description, createChildren));
+}
+
+template<typename Arg0>
+void addTestGroup (tcu::TestCaseGroup*									parent,
+				   const std::string&									name,
+				   const std::string&									description,
+				   typename TestGroupHelper1<Arg0>::CreateChildrenFunc	createChildren,
+				   Arg0													arg0)
+{
+	parent->addChild(createTestGroup<Arg0>(parent->getTestContext(), name, description, createChildren, arg0));
+}
+
 } // vkt
 
 #endif // _VKTTESTGROUPUTIL_HPP
