@@ -350,16 +350,26 @@ static inline TextureType textureLayerType (TextureType entireTextureType)
 
 static const char* const s_texBufExtString = "GL_EXT_texture_buffer";
 
-static inline void checkTextureTypeExtensions (const glu::ContextInfo& contextInfo, TextureType type)
+static inline void checkTextureTypeExtensions (const glu::ContextInfo& contextInfo, TextureType type, const RenderContext& renderContext)
 {
-	if (type == TEXTURETYPE_BUFFER && !contextInfo.isExtensionSupported(s_texBufExtString))
+	if (type == TEXTURETYPE_BUFFER && !contextInfo.isExtensionSupported(s_texBufExtString) && !glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2)))
 		throw tcu::NotSupportedError("Test requires " + string(s_texBufExtString) + " extension");
 }
 
-static inline string textureTypeExtensionShaderRequires (TextureType type)
+static inline string textureTypeExtensionShaderRequires (TextureType type, const RenderContext& renderContext)
 {
-	if (type == TEXTURETYPE_BUFFER)
+	if (!glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2)) && (type == TEXTURETYPE_BUFFER))
 		return "#extension " + string(s_texBufExtString) + " : require\n";
+	else
+		return "";
+}
+
+static const char* const s_imageAtomicExtString = "GL_OES_shader_image_atomic";
+
+static inline string imageAtomicExtensionShaderRequires (const RenderContext& renderContext)
+{
+	if (!glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2)))
+		return "#extension " + string(s_imageAtomicExtString) + " : require\n";
 	else
 		return "";
 }
@@ -879,9 +889,10 @@ static bool readFloatOrNormTextureWithLookupsAndVerify (const RenderContext&		re
 	TestLog& log = glLog.getLog();
 
 	const tcu::ScopedLogSection section(log, "Verification", "Result verification (read texture layer-by-layer in compute shader with texture() into SSBO)");
+	const std::string			glslVersionDeclaration = getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(renderCtx.getType()));
 
 	const glu::ShaderProgram program(renderCtx,
-		glu::ProgramSources() << glu::ComputeSource("#version 310 es\n"
+		glu::ProgramSources() << glu::ComputeSource(glslVersionDeclaration + "\n"
 													"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 													"layout (binding = 0) buffer Output\n"
 													"{\n"
@@ -1107,7 +1118,7 @@ public:
 	{
 	}
 
-	void			init		(void) { checkTextureTypeExtensions(m_context.getContextInfo(), m_textureType); }
+	void			init		(void) { checkTextureTypeExtensions(m_context.getContextInfo(), m_textureType, m_context.getRenderContext()); }
 	IterateResult	iterate		(void);
 
 private:
@@ -1162,10 +1173,11 @@ ImageStoreCase::IterateResult ImageStoreCase::iterate (void)
 																												 "(" + toString(imageSize.x()-1) + "-gx)^(" + toString(imageSize.y()-1) + "-gy)^gz)";
 		const string		colorExpr				= colorBaseExpr + (storeColorScale == 1.0f ? "" : "*" + toString(storeColorScale))
 																	+ (storeColorBias == 0.0f ? "" : " + float(" + toString(storeColorBias) + ")");
+		const std::string	glslVersionDeclaration	= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(renderCtx.getType()));
 
 		const glu::ShaderProgram program(renderCtx,
-			glu::ProgramSources() << glu::ComputeSource("#version 310 es\n"
-														+ textureTypeExtensionShaderRequires(shaderImageType) +
+			glu::ProgramSources() << glu::ComputeSource(glslVersionDeclaration + "\n"
+														+ textureTypeExtensionShaderRequires(shaderImageType, renderCtx) +
 														"\n"
 														"precision highp " + shaderImageTypeStr + ";\n"
 														"\n"
@@ -1284,7 +1296,7 @@ public:
 		DE_ASSERT(textureFormat.getPixelSize() == imageFormat.getPixelSize());
 	}
 
-	void			init		(void) { checkTextureTypeExtensions(m_context.getContextInfo(), m_textureType); }
+	void			init		(void) { checkTextureTypeExtensions(m_context.getContextInfo(), m_textureType, m_context.getRenderContext()); }
 	IterateResult	iterate		(void);
 
 private:
@@ -1412,10 +1424,11 @@ ImageLoadAndStoreCase::IterateResult ImageLoadAndStoreCase::iterate (void)
 		const string			shaderImageFormatStr	= getShaderImageFormatQualifier(m_imageFormat);
 		const TextureType		shaderImageType			= m_singleLayerBind ? textureLayerType(m_textureType) : m_textureType;
 		const string			shaderImageTypeStr		= getShaderImageType(m_imageFormat.type, shaderImageType);
+		const std::string		glslVersionDeclaration	= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(renderCtx.getType()));
 
 		const glu::ShaderProgram program(renderCtx,
-			glu::ProgramSources() << glu::ComputeSource("#version 310 es\n"
-														+ textureTypeExtensionShaderRequires(shaderImageType) +
+			glu::ProgramSources() << glu::ComputeSource(glslVersionDeclaration + "\n"
+														+ textureTypeExtensionShaderRequires(shaderImageType, renderCtx) +
 														"\n"
 														"precision highp " + shaderImageTypeStr + ";\n"
 														"\n"
@@ -1903,10 +1916,10 @@ private:
 
 void BinaryAtomicOperationCase::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
+	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 		throw tcu::NotSupportedError("Test requires OES_shader_image_atomic extension");
 
-	checkTextureTypeExtensions(m_context.getContextInfo(), m_imageType);
+	checkTextureTypeExtensions(m_context.getContextInfo(), m_imageType, m_context.getRenderContext());
 }
 
 BinaryAtomicOperationCase::IterateResult BinaryAtomicOperationCase::iterate (void)
@@ -2005,11 +2018,12 @@ BinaryAtomicOperationCase::IterateResult BinaryAtomicOperationCase::iterate (voi
 		const string atomicInvocation		= string() + getAtomicOperationShaderFuncName(m_operation) + "(u_results, " + atomicCoord + ", " + atomicArgExpr + ")";
 		const string shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
 		const string shaderImageTypeStr		= getShaderImageType(m_format.type, m_imageType);
+		const std::string		glslVersionDeclaration	= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(renderCtx.getType()));
 
 		const glu::ShaderProgram program(renderCtx,
-			glu::ProgramSources() << glu::ComputeSource("#version 310 es\n"
-														"#extension GL_OES_shader_image_atomic : require\n"
-														+ textureTypeExtensionShaderRequires(m_imageType) +
+			glu::ProgramSources() << glu::ComputeSource(glslVersionDeclaration + "\n"
+														+ imageAtomicExtensionShaderRequires(renderCtx)
+														+ textureTypeExtensionShaderRequires(m_imageType, renderCtx) +
 														"\n"
 														"precision highp " + shaderImageTypeStr + ";\n"
 														"\n"
@@ -2147,10 +2161,10 @@ string AtomicCompSwapCase::getAssignArgShaderStr (const string& x, const string&
 
 void AtomicCompSwapCase::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
+	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 		throw tcu::NotSupportedError("Test requires OES_shader_image_atomic extension");
 
-	checkTextureTypeExtensions(m_context.getContextInfo(), m_imageType);
+	checkTextureTypeExtensions(m_context.getContextInfo(), m_imageType, m_context.getRenderContext());
 }
 
 class AtomicCompSwapCase::EndResultVerifier : public ImageLayerVerifier
@@ -2401,11 +2415,12 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate (void)
 											: "ivec3(gx, gy, gz)";
 		const string shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
 		const string shaderImageTypeStr		= getShaderImageType(m_format.type, m_imageType);
+		const string glslVersionDeclaration	= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(renderCtx.getType()));
 
 		const glu::ShaderProgram program(renderCtx,
-			glu::ProgramSources() << glu::ComputeSource("#version 310 es\n"
-														"#extension GL_OES_shader_image_atomic : require\n"
-														+ textureTypeExtensionShaderRequires(m_imageType) +
+			glu::ProgramSources() << glu::ComputeSource(glslVersionDeclaration + "\n"
+														+ imageAtomicExtensionShaderRequires(renderCtx)
+														+ textureTypeExtensionShaderRequires(m_imageType, renderCtx) +
 														"\n"
 														"precision highp " + shaderImageTypeStr + ";\n"
 														"\n"
@@ -2505,7 +2520,7 @@ public:
 				  m_format == TextureFormat(TextureFormat::R, TextureFormat::FLOAT));
 	}
 
-	void			init		(void) { checkTextureTypeExtensions(m_context.getContextInfo(), m_imageType); }
+	void			init		(void) { checkTextureTypeExtensions(m_context.getContextInfo(), m_imageType, m_context.getRenderContext()); }
 	IterateResult	iterate		(void);
 
 private:
@@ -2586,10 +2601,12 @@ CoherenceCase::IterateResult CoherenceCase::iterate (void)
 		const string		localSizeX				= de::toString(localSize.x());
 		const string		localSizeY				= de::toString(localSize.y());
 		const string		localSizeZ				= de::toString(localSize.z());
+		const std::string	glslVersionDeclaration	= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(renderCtx.getType()));
+
 
 		const glu::ShaderProgram program(renderCtx,
-			glu::ProgramSources() << glu::ComputeSource("#version 310 es\n"
-														+ textureTypeExtensionShaderRequires(m_imageType) +
+			glu::ProgramSources() << glu::ComputeSource(glslVersionDeclaration + "\n"
+														+ textureTypeExtensionShaderRequires(m_imageType, renderCtx) +
 														"\n"
 														"precision highp " + shaderImageTypeStr + ";\n"
 														"\n"
@@ -2741,7 +2758,7 @@ public:
 	{
 	}
 
-	void			init		(void) { checkTextureTypeExtensions(m_context.getContextInfo(), m_imageType); }
+	void			init		(void) { checkTextureTypeExtensions(m_context.getContextInfo(), m_imageType, m_context.getRenderContext()); }
 	IterateResult	iterate		(void);
 
 private:
@@ -2796,10 +2813,11 @@ ImageSizeCase::IterateResult ImageSizeCase::iterate (void)
 													: DE_NULL;
 		const string		shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
 		const string		shaderImageTypeStr		= getShaderImageType(m_format.type, m_imageType);
+		const string		glslVersionDeclaration	= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(renderCtx.getType()));
 
 		const glu::ShaderProgram program(renderCtx,
-			glu::ProgramSources() << glu::ComputeSource("#version 310 es\n"
-														+ textureTypeExtensionShaderRequires(m_imageType) +
+			glu::ProgramSources() << glu::ComputeSource(glslVersionDeclaration + "\n"
+														+ textureTypeExtensionShaderRequires(m_imageType, renderCtx) +
 														"\n"
 														"precision highp " + shaderImageTypeStr + ";\n"
 														"precision highp uimage2D;\n"
@@ -2892,7 +2910,7 @@ public:
 		if (m_context.getContextInfo().getInt(GL_MAX_FRAGMENT_IMAGE_UNIFORMS) == 0)
 			throw tcu::NotSupportedError("GL_MAX_FRAGMENT_IMAGE_UNIFORMS is zero");
 
-		if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
+		if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 			throw tcu::NotSupportedError("Test requires OES_shader_image_atomic extension");
 
 		if (m_type == TESTTYPE_DEPTH 				&&
@@ -3029,10 +3047,12 @@ EarlyFragmentTestsCase::IterateResult EarlyFragmentTestsCase::iterate (void)
 	// Perform image stores in fragment shader.
 
 	{
+		const std::string glslVersionDeclaration = glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(renderCtx.getType()));
+
 		// Generate fragment shader.
 
 		const glu::ShaderProgram program(renderCtx,
-			glu::ProgramSources() << glu::VertexSource(		"#version 310 es\n"
+			glu::ProgramSources() << glu::VertexSource(		glslVersionDeclaration + "\n"
 															"\n"
 															"highp in vec3 a_position;\n"
 															"\n"
@@ -3041,8 +3061,8 @@ EarlyFragmentTestsCase::IterateResult EarlyFragmentTestsCase::iterate (void)
 															"	gl_Position = vec4(a_position, 1.0);\n"
 															"}\n")
 
-								  << glu::FragmentSource(	"#version 310 es\n"
-															"#extension GL_OES_shader_image_atomic : require\n"
+								  << glu::FragmentSource(	glslVersionDeclaration + "\n"
+															+ imageAtomicExtensionShaderRequires(renderCtx) +
 															"\n"
 															+ string(m_useEarlyTests ? "layout (early_fragment_tests) in;\n\n" : "") +
 															"layout (location = 0) out highp vec4 o_color;\n"

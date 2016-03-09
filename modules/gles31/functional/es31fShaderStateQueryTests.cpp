@@ -43,9 +43,14 @@ namespace Functional
 namespace
 {
 
-static const char* const s_brokenSource =	"#version 310 es\n"
-											"broken, this should not compile,\n"
-											"{";
+static inline std::string brokenShaderSource (const glu::ContextType &contextType)
+{
+	const std::string glslVersionDecl = glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(contextType));
+
+	return	glslVersionDecl + "\n"
+			"broken, this should not compile,\n"
+			"{";
+}
 
 class BaseTypeCase : public TestCase
 {
@@ -75,13 +80,13 @@ BaseTypeCase::BaseTypeCase (Context& ctx, const char* name, const char* desc, co
 
 BaseTypeCase::IterateResult BaseTypeCase::iterate (void)
 {
-	static const char* const	vertexSource			=	"#version 310 es\n"
+	static const char* const	vertexSourceTemplate	=	"${VERSIONDECL}\n"
 															"in highp vec4 a_position;\n"
 															"void main(void)\n"
 															"{\n"
 															"	gl_Position = a_position;\n"
 															"}\n";
-	static const char* const	fragmentSourceTemplate	=	"#version 310 es\n"
+	static const char* const	fragmentSourceTemplate	=	"${VERSIONDECL}\n"
 															"${EXTENSIONSTATEMENT}"
 															"${DECLARATIONSTR};\n"
 															"layout(location = 0) out highp vec4 dEQP_FragColor;\n"
@@ -92,8 +97,9 @@ BaseTypeCase::IterateResult BaseTypeCase::iterate (void)
 
 	tcu::ResultCollector		result			(m_testCtx.getLog());
 	std::vector<TestTypeInfo>	samplerTypes	= getInfos();
+	const bool					supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (m_extension && !m_context.getContextInfo().isExtensionSupported(m_extension))
+	if (m_extension && !m_context.getContextInfo().isExtensionSupported(m_extension) && !supportsES32)
 		throw tcu::NotSupportedError("Test requires " + std::string(m_extension));
 	checkRequirements();
 
@@ -106,9 +112,11 @@ BaseTypeCase::IterateResult BaseTypeCase::iterate (void)
 		std::map<std::string, std::string>	shaderArgs;
 		shaderArgs["DECLARATIONSTR"]		= samplerTypes[typeNdx].declarationStr;
 		shaderArgs["ACCESSSTR"]				= samplerTypes[typeNdx].accessStr;
-		shaderArgs["EXTENSIONSTATEMENT"]	= (m_extension) ? (std::string() + "#extension " + m_extension + " : require\n") : ("");
+		shaderArgs["EXTENSIONSTATEMENT"]	= (m_extension && !supportsES32) ? (std::string() + "#extension " + m_extension + " : require\n") : ("");
+		shaderArgs["VERSIONDECL"]			= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType()));
 
 		const std::string					fragmentSource	= tcu::StringTemplate(fragmentSourceTemplate).specialize(shaderArgs);
+		const std::string					vertexSource	= tcu::StringTemplate(vertexSourceTemplate).specialize(shaderArgs);
 		const glw::Functions&				gl				= m_context.getRenderContext().getFunctions();
 		glu::ShaderProgram					program			(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(vertexSource) << glu::FragmentSource(fragmentSource));
 
@@ -371,6 +379,8 @@ ShaderLogCase::ShaderLogCase (Context& ctx, const char* name, const char* desc, 
 
 void ShaderLogCase::init (void)
 {
+	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
 	switch (m_shaderType)
 	{
 		case glu::SHADERTYPE_VERTEX:
@@ -379,14 +389,14 @@ void ShaderLogCase::init (void)
 			break;
 
 		case glu::SHADERTYPE_GEOMETRY:
-			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
-				throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader") && !supportsES32)
+				throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension or an OpenGL ES 3.2 or higher context.");
 			break;
 
 		case glu::SHADERTYPE_TESSELLATION_CONTROL:
 		case glu::SHADERTYPE_TESSELLATION_EVALUATION:
-			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
-				throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") && !supportsES32)
+				throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension or an OpenGL ES 3.2 or higher context.");
 			break;
 
 		default:
@@ -399,9 +409,11 @@ ShaderLogCase::IterateResult ShaderLogCase::iterate (void)
 {
 	using gls::StateQueryUtil::StateQueryMemoryWriteGuard;
 
-	tcu::ResultCollector					result		(m_testCtx.getLog());
-	glu::CallLogWrapper						gl			(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	deUint32								shader		= 0;
+	tcu::ResultCollector					result			(m_testCtx.getLog());
+	glu::CallLogWrapper						gl				(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	deUint32								shader			= 0;
+	const std::string						source			= brokenShaderSource(m_context.getRenderContext().getType());
+	const char* const						brokenSource	= source.c_str();
 	StateQueryMemoryWriteGuard<glw::GLint>	logLen;
 
 	gl.enableLogging(true);
@@ -411,7 +423,7 @@ ShaderLogCase::IterateResult ShaderLogCase::iterate (void)
 	shader = gl.glCreateShader(glu::getGLShaderType(m_shaderType));
 	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "create shader");
 
-	gl.glShaderSource(shader, 1, &s_brokenSource, DE_NULL);
+	gl.glShaderSource(shader, 1, &brokenSource, DE_NULL);
 	gl.glCompileShader(shader);
 	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "compile");
 

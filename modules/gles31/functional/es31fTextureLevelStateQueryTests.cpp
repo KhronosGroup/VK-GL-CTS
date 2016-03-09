@@ -97,7 +97,7 @@ static const char* getTextureTargetExtension (glw::GLenum target)
 	}
 }
 
-static bool isCoreTextureTarget (glw::GLenum target)
+static bool isCoreTextureTarget (glw::GLenum target, const glu::ContextType& contextType)
 {
 	switch (target)
 	{
@@ -107,6 +107,11 @@ static bool isCoreTextureTarget (glw::GLenum target)
 		case GL_TEXTURE_CUBE_MAP:
 		case GL_TEXTURE_2D_MULTISAMPLE:
 			return true;
+
+		case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+		case GL_TEXTURE_BUFFER:
+		case GL_TEXTURE_CUBE_MAP_ARRAY:
+			return glu::contextSupports(contextType, glu::ApiType::es(3, 2));
 
 		default:
 			return false;
@@ -856,7 +861,7 @@ TextureLevelCase::~TextureLevelCase (void)
 
 void TextureLevelCase::init (void)
 {
-	if (!isCoreTextureTarget(m_target))
+	if (!isCoreTextureTarget(m_target, m_context.getRenderContext().getType()))
 	{
 		const char* const targetExtension = getTextureTargetExtension(m_target);
 
@@ -1497,7 +1502,8 @@ public:
 private:
 	void init (void)
 	{
-		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"))
+		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer") &&
+			!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 			throw tcu::NotSupportedError("Test requires GL_EXT_texture_buffer extension");
 		TextureLevelCase::init();
 	}
@@ -1535,7 +1541,8 @@ public:
 private:
 	void init (void)
 	{
-		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"))
+		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer") &&
+			!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 			throw tcu::NotSupportedError("Test requires GL_EXT_texture_buffer extension");
 		TextureLevelCase::init();
 	}
@@ -1575,7 +1582,8 @@ public:
 private:
 	void init (void)
 	{
-		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"))
+		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer") &&
+			!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 			throw tcu::NotSupportedError("Test requires GL_EXT_texture_buffer extension");
 		TextureLevelCase::init();
 	}
