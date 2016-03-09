@@ -225,8 +225,12 @@ tcu::TestStatus allocateManyPrimaryBuffersTest(Context& context)
 	};
 	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
 
-	// create a minimal amount of command buffers - is there any minimal amount in spec?
+	// \todo Determining the minimum number of command buffers should be a function of available system memory and driver capabilities.
+#if (DE_PTR_SIZE == 4)
+	const unsigned minCommandBuffer = 1024;
+#else
 	const unsigned minCommandBuffer = 10000;
+#endif
 
 	// Command buffer
 	const VkCommandBufferAllocateInfo		cmdBufParams			=
@@ -326,8 +330,12 @@ tcu::TestStatus allocateManySecondaryBuffersTest(Context& context)
 	};
 	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
 
-	// create a minimal amount of command buffers - is there any minimal amount in spec?
+	// \todo Determining the minimum number of command buffers should be a function of available system memory and driver capabilities.
+#if (DE_PTR_SIZE == 4)
+	const unsigned minCommandBuffer = 1024;
+#else
 	const unsigned minCommandBuffer = 10000;
+#endif
 
 	// Command buffer
 	const VkCommandBufferAllocateInfo		cmdBufParams			=

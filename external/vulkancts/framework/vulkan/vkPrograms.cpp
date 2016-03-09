@@ -61,6 +61,8 @@ ProgramBinary* buildProgram (const glu::ProgramSources& program, ProgramFormat b
 	{
 		vector<deUint8> binary;
 		glslToSpirV(program, &binary, buildInfo);
+		// \todo[2016-02-10 dekimir]: Enable this when all glsl tests can pass it.
+		//validateSpirV(binary, &buildInfo->program.infoLog);
 		return new ProgramBinary(binaryFormat, binary.size(), &binary[0]);
 	}
 	else
@@ -71,6 +73,11 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 {
 	vector<deUint8> binary;
 	assembleSpirV(&program, &binary, buildInfo);
+#if defined(DE_DEBUG)
+	buildInfo->compileOk &= validateSpirV(binary, &buildInfo->infoLog);
+	if (!buildInfo->compileOk)
+		TCU_FAIL("Failed to validate shader");
+#endif
 	return new ProgramBinary(PROGRAM_FORMAT_SPIRV, binary.size(), &binary[0]);
 }
 

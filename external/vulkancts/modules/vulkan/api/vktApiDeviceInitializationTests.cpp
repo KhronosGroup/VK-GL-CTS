@@ -181,12 +181,10 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 	const ApiVersion			apiVersion			= unpackVersion(VK_API_VERSION);
 	const deUint32				invalidMajorVersion	= (1 << 10) - 1;
 	const deUint32				invalidMinorVersion	= (1 << 10) - 1;
-	const deUint32				invalidPatchNum		= (1 << 12) - 1;
 	vector<ApiVersion>			invalidApiVersions;
 
 	invalidApiVersions.push_back(ApiVersion(invalidMajorVersion, apiVersion.minorNum, apiVersion.patchNum));
 	invalidApiVersions.push_back(ApiVersion(apiVersion.majorNum, invalidMinorVersion, apiVersion.patchNum));
-	invalidApiVersions.push_back(ApiVersion(apiVersion.majorNum, apiVersion.minorNum, invalidPatchNum));
 
 	for (size_t apiVersionNdx = 0; apiVersionNdx < invalidApiVersions.size(); apiVersionNdx++)
 	{

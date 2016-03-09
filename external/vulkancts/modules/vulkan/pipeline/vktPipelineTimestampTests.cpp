@@ -1633,11 +1633,11 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 	const VkDevice              vkDevice            = context.getDevice();
 
 	// Create buffer object, allocate storage, and generate input data
-	const VkDeviceSize          size                = sizeof(tcu::Vec4) * 128u;
+	const VkDeviceSize          size                = sizeof(tcu::Vec4) * 128u * 128u;
 	m_inputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &m_inputBufAlloc);
 	// Load vertices into buffer
 	tcu::Vec4* pVec = reinterpret_cast<tcu::Vec4*>(m_inputBufAlloc->getHostPtr());
-	for (deUint32 ndx = 0u; ndx < 128u; ndx++)
+	for (deUint32 ndx = 0u; ndx < (128u * 128u); ndx++)
 	{
 		for (deUint32 component = 0u; component < 4u; component++)
 		{
@@ -1649,8 +1649,8 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 	m_outputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &m_outputBufAlloc);
 
 	std::vector<VkDescriptorBufferInfo>        descriptorInfos;
-	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_inputBuf, 0u, sizeof(tcu::Vec4) * 128u));
-	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_outputBuf, 0u, sizeof(tcu::Vec4) * 128u));
+	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_inputBuf, 0u, size));
+	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_outputBuf, 0u, size));
 
 	// Create descriptor set layout
 	DescriptorSetLayoutBuilder descLayoutBuilder;
