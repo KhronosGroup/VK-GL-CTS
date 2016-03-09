@@ -242,6 +242,39 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 	return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
+tcu::TestStatus createInstanceWithNullApplicationInfoTest (Context& context)
+{
+	tcu::TestLog&				log						= context.getTestContext().getLog();
+	tcu::ResultCollector		resultCollector			(log);
+	const PlatformInterface&	platformInterface		= context.getPlatformInterface();
+
+	const VkInstanceCreateInfo		instanceCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,	// VkStructureType				sType;
+		DE_NULL,								// const void*					pNext;
+		(VkInstanceCreateFlags)0u,				// VkInstanceCreateFlags		flags;
+		DE_NULL,								// const VkApplicationInfo*		pAppInfo;
+		0u,										// deUint32						layerCount;
+		DE_NULL,								// const char*const*			ppEnabledLayernames;
+		0u,										// deUint32						extensionCount;
+		DE_NULL,								// const char*const*			ppEnabledExtensionNames;
+	};
+
+	log << TestLog::Message << "Creating instance with NULL pApplicationInfo" << TestLog::EndMessage;
+
+	try
+	{
+		const Unique<VkInstance> instance(createInstance(platformInterface, &instanceCreateInfo));
+		log << TestLog::Message << "Succeeded" << TestLog::EndMessage;
+	}
+	catch (const vk::Error& err)
+	{
+		resultCollector.fail("Failed, Error code: " + de::toString(err.getMessage()));
+	}
+
+	return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
 tcu::TestStatus createInstanceWithUnsupportedExtensionsTest (Context& context)
 {
 	tcu::TestLog&						log						= context.getTestContext().getLog();
@@ -582,6 +615,7 @@ tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_name_version",			"", createInstanceTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_invalid_api_version",		"", createInstanceWithInvalidApiVersionTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_instance_null_appinfo",		    "", createInstanceWithNullApplicationInfoTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_unsupported_extensions",	"", createInstanceWithUnsupportedExtensionsTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device",							"", createDeviceTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_multiple_devices",					"", createMultipleDevicesTest);
