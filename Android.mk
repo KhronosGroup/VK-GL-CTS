@@ -887,8 +887,7 @@ LOCAL_STATIC_LIBRARIES := \
 		libpng_ndk \
 
 LOCAL_CFLAGS += \
-	$(deqp_compile_flags) \
-	-Wno-error=date-time
+	$(deqp_compile_flags)
 
 LOCAL_SDK_VERSION := 9
 LOCAL_CPPFLAGS += -Wno-non-virtual-dtor
