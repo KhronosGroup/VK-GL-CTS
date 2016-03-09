@@ -143,8 +143,10 @@ protected:
 
 		const vk::VkExtent3D imageExtent = { WIDTH, HEIGHT, 1 };
 		const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, imageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
-													vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-													vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+													vk::VK_IMAGE_TILING_OPTIMAL,
+													vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+													vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+													vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 		m_colorTargetImage = Image::createAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator());
 

@@ -874,8 +874,7 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate (void)
 
 		checkSupported(descriptorType);
 
-		for (size_t i = 0 ; i < m_inValues.size(); i++)
-			m_uniformSetup->addData(new UniformData<deUint32>(bindingLocation++, descriptorType, m_inValues[i]));
+		m_uniformSetup->addData(new UniformArrayData<deUint32>(bindingLocation++, descriptorType, m_inValues));
 
 		if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
 		{
@@ -1007,12 +1006,10 @@ void BlockArrayIndexingCase::createShaderSpec (void)
 		global << "const highp int indexBase = 1;\n";
 
 	global <<
-		"layout(set = 0, binding = " << binding << ") " << interfaceName << " " << blockName << "\n"
+		"layout(set = 0, binding = " << binding++ << ") " << interfaceName << " " << blockName << "\n"
 		"{\n"
 		"	highp uint value;\n"
 		"} " << instanceName << "[" << numInstances << "];\n";
-
-	binding += numInstances;
 
 	if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
 	{
