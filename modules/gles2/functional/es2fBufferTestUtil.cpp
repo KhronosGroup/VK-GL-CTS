@@ -414,7 +414,7 @@ bool VertexArrayVerifier::verify (deUint32 buffer, const deUint8* refPtr, int of
 	int							maxQuadsPerBatch	= maxQuadsX*maxQuadsY;
 	int							numVerified			= 0;
 	deUint32					program				= m_program->getProgram();
-	tcu::RGBA					threshold			= renderTarget.getPixelFormat().getColorThreshold() + tcu::RGBA(3,3,3,3);
+	tcu::RGBA					threshold			= renderTarget.getPixelFormat().getColorThreshold() + tcu::RGBA(4,4,4,4);
 	bool						isOk				= true;
 
 	vector<tcu::Vec2>			positions;
