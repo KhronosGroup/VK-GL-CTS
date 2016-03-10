@@ -350,7 +350,7 @@ qpTestLog* qpTestLog_createFileLog (const char* fileName, deUint32 flags)
 	}
 
 	log->flags			= flags;
-	log->writer			= qpXmlWriter_createFileWriter(log->outputFile, 0);
+	log->writer			= qpXmlWriter_createFileWriter(log->outputFile, 0, !(flags & QP_TEST_LOG_NO_FLUSH));
 	log->lock			= deMutex_create(DE_NULL);
 	log->isSessionOpen	= DE_FALSE;
 	log->isCaseOpen		= DE_FALSE;
@@ -419,7 +419,8 @@ deBool qpTestLog_startCase (qpTestLog* log, const char* testCasePath, qpTestCase
 	/* Flush XML and write out #beginTestCaseResult. */
 	qpXmlWriter_flush(log->writer);
 	fprintf(log->outputFile, "\n#beginTestCaseResult %s\n", testCasePath);
-	qpTestLog_flushFile(log);
+	if (!(log->flags & QP_TEST_LOG_NO_FLUSH))
+		qpTestLog_flushFile(log);
 
 	log->isCaseOpen = DE_TRUE;
 
@@ -473,7 +474,8 @@ deBool qpTestLog_endCase (qpTestLog* log, qpTestResult result, const char* resul
 	/* Flush XML and write #endTestCaseResult. */
 	qpXmlWriter_flush(log->writer);
 	fprintf(log->outputFile, "\n#endTestCaseResult\n");
-	qpTestLog_flushFile(log);
+	if (!(log->flags & QP_TEST_LOG_NO_FLUSH))
+		qpTestLog_flushFile(log);
 
 	log->isCaseOpen = DE_FALSE;
 
