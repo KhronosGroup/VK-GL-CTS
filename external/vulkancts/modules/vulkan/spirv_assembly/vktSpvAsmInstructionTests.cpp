@@ -101,6 +101,18 @@ static void fillRandomScalars (de::Random& rnd, T minValue, T maxValue, void* ds
 		typedPtr[offset + ndx] = randomScalar<T>(rnd, minValue, maxValue);
 }
 
+static void floorAll (vector<float>& values)
+{
+	for (size_t i = 0; i < values.size(); i++)
+		values[i] = deFloatFloor(values[i]);
+}
+
+static void floorAll (vector<Vec4>& values)
+{
+	for (size_t i = 0; i < values.size(); i++)
+		values[i] = floor(values[i]);
+}
+
 struct CaseParameter
 {
 	const char*		name;
@@ -571,6 +583,9 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 
 	fillRandomScalars(rnd, -200.f, 200.f, &inputFloats1[0], numElements * 4);
 
+	// CPU might not use the same rounding mode as the GPU. Use whole numbers to avoid rounding differences.
+	floorAll(inputFloats1);
+
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
 		outputFloats1[ndx] = inputFloats1[ndx] + Vec4(0.f, 0.5f, 1.5f, 2.5f);
 
@@ -776,6 +791,9 @@ tcu::TestCaseGroup* createOpCopyObjectGroup (tcu::TestContext& testCtx)
 	vector<float>					outputFloats	(numElements, 0);
 
 	fillRandomScalars(rnd, -200.f, 200.f, &inputFloats[0], numElements);
+
+	// CPU might not use the same rounding mode as the GPU. Use whole numbers to avoid rounding differences.
+	floorAll(inputFloats);
 
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
 		outputFloats[ndx] = inputFloats[ndx] + 7.5f;
@@ -1037,15 +1055,12 @@ tcu::TestCaseGroup* createDecorationGroupGroup (tcu::TestContext& testCtx)
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats3[0], numElements);
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats4[0], numElements);
 
-
-	for (size_t ndx = 0; ndx < numElements; ++ndx)
-	{
-		inputFloats0[ndx] = deFloatFloor(inputFloats0[ndx]);
-		inputFloats1[ndx] = deFloatFloor(inputFloats1[ndx]);
-		inputFloats2[ndx] = deFloatFloor(inputFloats2[ndx]);
-		inputFloats3[ndx] = deFloatFloor(inputFloats3[ndx]);
-		inputFloats4[ndx] = deFloatFloor(inputFloats4[ndx]);
-	}
+	// CPU might not use the same rounding mode as the GPU. Use whole numbers to avoid rounding differences.
+	floorAll(inputFloats0);
+	floorAll(inputFloats1);
+	floorAll(inputFloats2);
+	floorAll(inputFloats3);
+	floorAll(inputFloats4);
 
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
 		outputFloats[ndx] = inputFloats0[ndx] + inputFloats1[ndx] + inputFloats2[ndx] + inputFloats3[ndx] + inputFloats4[ndx];
@@ -1396,6 +1411,9 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats[0], numElements);
 
+	// CPU might not use the same rounding mode as the GPU. Use whole numbers to avoid rounding differences.
+	floorAll(inputFloats);
+
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
 	{
 		switch (ndx % 3)
@@ -1598,8 +1616,8 @@ tcu::TestCaseGroup* createBlockOrderGroup (tcu::TestContext& testCtx)
 
 	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats[0], numElements);
 
-	for (size_t ndx = 0; ndx < numElements; ++ndx)
-		inputFloats[ndx] = deFloatFloor(inputFloats[ndx]);
+	// CPU might not use the same rounding mode as the GPU. Use whole numbers to avoid rounding differences.
+	floorAll(inputFloats);
 
 	for (size_t ndx = 0; ndx <= 50; ++ndx)
 		outputFloats[ndx] = -inputFloats[ndx];
@@ -2928,6 +2946,9 @@ tcu::TestCaseGroup* createSelectionControlGroup (tcu::TestContext& testCtx)
 
 	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats[0], numElements);
 
+	// CPU might not use the same rounding mode as the GPU. Use whole numbers to avoid rounding differences.
+	floorAll(inputFloats);
+
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
 		outputFloats[ndx] = inputFloats[ndx] + (inputFloats[ndx] > 10.f ? 1.f : -1.f);
 
@@ -3019,6 +3040,9 @@ tcu::TestCaseGroup* createFunctionControlGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("pure_inline_dont_inline",	"Pure|Inline|DontInline"));
 
 	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats[0], numElements);
+
+	// CPU might not use the same rounding mode as the GPU. Use whole numbers to avoid rounding differences.
+	floorAll(inputFloats);
 
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
 		outputFloats[ndx] = inputFloats[ndx] + 10.f;
