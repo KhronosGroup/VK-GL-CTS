@@ -790,7 +790,7 @@ bool CreateContextExtCase::validateCurrentContext (const glw::Functions& gl)
 		{
 			deInt32 profileMaskGL = 0;
 
-			gl.getIntegerv(GL_CONTEXT_PROFILE_MASK, &profileMask);
+			gl.getIntegerv(GL_CONTEXT_PROFILE_MASK, &profileMaskGL);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv()");
 
 			if (profileMask != profileMaskGL)
