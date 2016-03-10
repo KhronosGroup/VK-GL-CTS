@@ -187,8 +187,6 @@ void BuildInfoTests::init (void)
 	const bool isDebug = false;
 #endif
 
-	addChild(new BuildInfoStringCase		(m_testCtx, "date",						"__DATE__",			__DATE__));
-	addChild(new BuildInfoStringCase		(m_testCtx, "time",						"__TIME__",			__TIME__));
 	addChild(new BuildInfoStringCase		(m_testCtx, "de_debug",					"DE_DEBUG",			isDebug ? "1" : "not defined"));
 	addChild(new BuildEnumCase				(m_testCtx, "de_os",					"DE_OS",			DE_OS,									getOsName));
 	addChild(new BuildEnumCase				(m_testCtx, "de_cpu",					"DE_CPU",			DE_CPU,									getCpuName));
