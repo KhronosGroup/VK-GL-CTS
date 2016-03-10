@@ -30,13 +30,12 @@
 
 #include "vkSpirVAsm.hpp"
 #include "vkSpirVProgram.hpp"
-#include "deArrayUtil.hpp"
-#include "deMemory.h"
 #include "deClock.h"
-#include "qpDebugOut.h"
+
+#include <algorithm>
 
 #if defined(DEQP_HAVE_SPIRV_TOOLS)
-#	include "libspirv/libspirv.h"
+#	include "spirv-tools/libspirv.h"
 #endif
 
 namespace vk
@@ -47,64 +46,117 @@ using std::vector;
 
 #if defined(DEQP_HAVE_SPIRV_TOOLS)
 
-
-void assembleSpirV (const SpirVAsmSource* program, std::vector<deUint8>* dst, SpirVProgramInfo* buildInfo)
+bool assembleSpirV (const SpirVAsmSource* program, std::vector<deUint32>* dst, SpirVProgramInfo* buildInfo)
 {
-	spv_context context = spvContextCreate();
+	const spv_context	context		= spvContextCreate();
+	spv_binary			binary		= DE_NULL;
+	spv_diagnostic		diagnostic	= DE_NULL;
 
-	const std::string&	spvSource			= program->program.str();
-	spv_binary			binary				= DE_NULL;
-	spv_diagnostic		diagnostic			= DE_NULL;
-	const deUint64		compileStartTime	= deGetMicroseconds();
-	const spv_result_t	compileOk			= spvTextToBinary(context, spvSource.c_str(), spvSource.size(), &binary, &diagnostic);
+	if (!context)
+		throw std::bad_alloc();
 
+	try
 	{
-		buildInfo->source			= program;
+		const std::string&	spvSource			= program->source;
+		const deUint64		compileStartTime	= deGetMicroseconds();
+		const spv_result_t	compileOk			= spvTextToBinary(context, spvSource.c_str(), spvSource.size(), &binary, &diagnostic);
+
+		buildInfo->source			= spvSource;
 		buildInfo->infoLog			= diagnostic? diagnostic->error : ""; // \todo [2015-07-13 pyry] Include debug log?
 		buildInfo->compileTimeUs	= deGetMicroseconds() - compileStartTime;
 		buildInfo->compileOk		= (compileOk == SPV_SUCCESS);
+
+		dst->resize(binary->wordCount);
+		std::copy(&binary->code[0], &binary->code[0] + binary->wordCount, dst->begin());
+
+		spvBinaryDestroy(binary);
+		spvDiagnosticDestroy(diagnostic);
+		spvContextDestroy(context);
+
+		return compileOk == SPV_SUCCESS;
 	}
+	catch (...)
+	{
+		spvBinaryDestroy(binary);
+		spvDiagnosticDestroy(diagnostic);
+		spvContextDestroy(context);
 
-	if (compileOk != SPV_SUCCESS)
-		TCU_FAIL("Failed to compile shader");
-
-	dst->resize((int)binary->wordCount * sizeof(deUint32));
-#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
-	deMemcpy(&(*dst)[0], &binary->code[0], dst->size());
-#else
-#	error "Big-endian not supported"
-#endif
-	spvBinaryDestroy(binary);
-	spvDiagnosticDestroy(diagnostic);
-	spvContextDestroy(context);
-	return;
+		throw;
+	}
 }
 
-bool validateSpirV (const std::vector<deUint8>& spirv, std::string* infoLog)
+void disassembleSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostream* dst)
 {
-	const size_t bytesPerWord = sizeof(uint32_t) / sizeof(deUint8);
-	DE_ASSERT(spirv.size() % bytesPerWord == 0);
-	std::vector<uint32_t> words(spirv.size() / bytesPerWord);
-	deMemcpy(words.data(), spirv.data(), spirv.size());
-	spv_const_binary_t	cbinary		= { words.data(), words.size() };
+	const spv_context	context		= spvContextCreate();
+	spv_text			text		= DE_NULL;
 	spv_diagnostic		diagnostic	= DE_NULL;
-	spv_context			context		= spvContextCreate();
-	const spv_result_t	valid		= spvValidate(context, &cbinary, SPV_VALIDATE_ALL, &diagnostic);
-	if (diagnostic)
-		*infoLog += diagnostic->error;
-	spvContextDestroy(context);
-	spvDiagnosticDestroy(diagnostic);
-	return valid == SPV_SUCCESS;
+
+	if (!context)
+		throw std::bad_alloc();
+
+	try
+	{
+		const spv_result_t	result	= spvBinaryToText(context, binary, binarySizeInWords, 0, &text, &diagnostic);
+
+		if (result != SPV_SUCCESS)
+			TCU_THROW(InternalError, "Disassembling SPIR-V failed");
+
+		*dst << text->str;
+
+		spvTextDestroy(text);
+		spvDiagnosticDestroy(diagnostic);
+		spvContextDestroy(context);
+	}
+	catch (...)
+	{
+		spvTextDestroy(text);
+		spvDiagnosticDestroy(diagnostic);
+		spvContextDestroy(context);
+
+		throw;
+	}
+}
+
+bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostream* infoLog)
+{
+	const spv_context	context		= spvContextCreate();
+	spv_diagnostic		diagnostic	= DE_NULL;
+
+	try
+	{
+		spv_const_binary_t	cbinary		= { binary, binarySizeInWords };
+		const spv_result_t	valid		= spvValidate(context, &cbinary, &diagnostic);
+
+		if (diagnostic)
+			*infoLog << diagnostic->error;
+
+		spvDiagnosticDestroy(diagnostic);
+		spvContextDestroy(context);
+
+		return valid == SPV_SUCCESS;
+	}
+	catch (...)
+	{
+		spvDiagnosticDestroy(diagnostic);
+		spvContextDestroy(context);
+
+		throw;
+	}
 }
 
 #else // defined(DEQP_HAVE_SPIRV_TOOLS)
 
-void assembleSpirV (const SpirVAsmSource*, std::vector<deUint8>*, SpirVProgramInfo*)
+bool assembleSpirV (const SpirVAsmSource*, std::vector<deUint32>*, SpirVProgramInfo*)
 {
 	TCU_THROW(NotSupportedError, "SPIR-V assembly not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
 }
 
-bool validateSpirV (const std::vector<deUint8>&, std::string*)
+void disassembleSpirV (size_t, const deUint32*, std::ostream*)
+{
+	TCU_THROW(NotSupportedError, "SPIR-V disassembling not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
+}
+
+bool validateSpirV (size_t, const deUint32*, std::ostream*)
 {
 	TCU_THROW(NotSupportedError, "SPIR-V validation not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
 }

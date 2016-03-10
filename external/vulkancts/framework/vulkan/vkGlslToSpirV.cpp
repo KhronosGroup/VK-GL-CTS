@@ -30,14 +30,13 @@
 
 #include "vkGlslToSpirV.hpp"
 #include "deArrayUtil.hpp"
+#include "deMutex.hpp"
+#include "deSingleton.h"
 #include "deMemory.h"
 #include "deClock.h"
 #include "qpDebugOut.h"
 
 #if defined(DEQP_HAVE_GLSLANG)
-#	include "deSingleton.h"
-#	include "deMutex.hpp"
-
 #	include "SPIRV/GlslangToSpv.h"
 #	include "SPIRV/disassemble.h"
 #	include "SPIRV/doc.h"
@@ -45,10 +44,6 @@
 #	include "glslang/Include/ShHandle.h"
 #	include "glslang/MachineIndependent/localintermediate.h"
 #	include "glslang/Public/ShaderLang.h"
-#endif
-
-#if defined(DEQP_HAVE_SPIRV_TOOLS)
-#	include "libspirv/libspirv.h"
 #endif
 
 namespace vk
@@ -206,9 +201,25 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 
 } // anonymous
 
-void glslToSpirV (const glu::ProgramSources& program, std::vector<deUint8>* dst, glu::ShaderProgramInfo* buildInfo)
+bool getNumShaderStages (const glu::ProgramSources& program)
+{
+	int numShaderStages = 0;
+
+	for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; ++shaderType)
+	{
+		if (!program.sources[shaderType].empty())
+			numShaderStages += 1;
+	}
+
+	return numShaderStages;
+}
+
+bool compileGlslToSpirV (const glu::ProgramSources& program, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo)
 {
 	TBuiltInResource	builtinRes;
+
+	if (getNumShaderStages(program) > 1)
+		TCU_THROW(InternalError, "Linking multiple shader stages into a single SPIR-V binary is not supported");
 
 	prepareGlslang();
 	getDefaultBuiltInResources(&builtinRes);
@@ -222,7 +233,6 @@ void glslToSpirV (const glu::ProgramSources& program, std::vector<deUint8>* dst,
 			const std::string&		srcText				= program.sources[shaderType][0];
 			const char*				srcPtrs[]			= { srcText.c_str() };
 			const int				srcLengths[]		= { (int)srcText.size() };
-			vector<deUint32>		spvBlob;
 			const EShLanguage		shaderStage			= getGlslangStage(glu::ShaderType(shaderType));
 			glslang::TShader		shader				(shaderStage);
 			glslang::TProgram		program;
@@ -242,11 +252,10 @@ void glslToSpirV (const glu::ProgramSources& program, std::vector<deUint8>* dst,
 				shaderBuildInfo.compileOk		= (compileRes != 0);
 
 				buildInfo->shaders.push_back(shaderBuildInfo);
-
-				if (compileRes == 0)
-					TCU_FAIL("Failed to compile shader");
 			}
 
+			DE_ASSERT(buildInfo->shaders.size() == 1);
+			if (buildInfo->shaders[0].compileOk)
 			{
 				const deUint64	linkStartTime	= deGetMicroseconds();
 				const int		linkRes			= program.link((EShMessages)(EShMsgSpvRules | EShMsgVulkanRules));
@@ -254,24 +263,15 @@ void glslToSpirV (const glu::ProgramSources& program, std::vector<deUint8>* dst,
 				buildInfo->program.infoLog		= program.getInfoLog(); // \todo [2015-11-05 scygan] Include debug log?
 				buildInfo->program.linkOk		= (linkRes != 0);
 				buildInfo->program.linkTimeUs	= deGetMicroseconds()-linkStartTime;
-
-				if (linkRes == 0)
-					TCU_FAIL("Failed to link shader");
 			}
 
+			if (buildInfo->program.linkOk)
 			{
 				const glslang::TIntermediate* const	intermediate	= program.getIntermediate(shaderStage);
-				glslang::GlslangToSpv(*intermediate, spvBlob);
+				glslang::GlslangToSpv(*intermediate, *dst);
 			}
 
-			dst->resize(spvBlob.size() * sizeof(deUint32));
-#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
-			deMemcpy(&(*dst)[0], &spvBlob[0], dst->size());
-#else
-#	error "Big-endian not supported"
-#endif
-
-			return;
+			return buildInfo->program.linkOk;
 		}
 	}
 
@@ -280,52 +280,11 @@ void glslToSpirV (const glu::ProgramSources& program, std::vector<deUint8>* dst,
 
 #else // defined(DEQP_HAVE_GLSLANG)
 
-void glslToSpirV (const glu::ProgramSources&, std::vector<deUint8>*, glu::ShaderProgramInfo*)
+bool compileGlslToSpirV (const glu::ProgramSources&, std::vector<deUint32>*, glu::ShaderProgramInfo*)
 {
 	TCU_THROW(NotSupportedError, "GLSL to SPIR-V compilation not supported (DEQP_HAVE_GLSLANG not defined)");
 }
 
 #endif // defined(DEQP_HAVE_GLSLANG)
-
-#if defined(DEQP_HAVE_SPIRV_TOOLS)
-void disassembleSpirV (size_t binarySize, const deUint8* binary, std::ostream* dst)
-{
-	std::vector<deUint32>	binForDisasm	(binarySize/4);
-
-	DE_ASSERT(binarySize%4 == 0);
-
-#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
-	deMemcpy(&binForDisasm[0], binary, binarySize);
-#else
-#	error "Big-endian not supported"
-#endif
-
-	const spv_context	context		= spvContextCreate();
-	if (!context)
-		throw std::bad_alloc();
-	spv_text			text		= DE_NULL;
-	spv_diagnostic		diagnostic;
-	try
-	{
-		const spv_result_t	error	= spvBinaryToText(context, &binForDisasm[0], binForDisasm.size() , 0, &text, &diagnostic);
-		TCU_CHECK_INTERNAL(!error);
-		*dst << text->str;
-	}
-	catch (...)
-	{
-		spvTextDestroy(text);
-		spvContextDestroy(context);
-		throw;
-	}
-	spvTextDestroy(text);
-	spvContextDestroy(context);
-}
-#else // defined(DEQP_HAVE_SPIRV_TOOLS)
-
-void disassembleSpirV (size_t, const deUint8*, std::ostream*)
-{
-	TCU_THROW(NotSupportedError, "SPIR-V disassembling not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
-}
-#endif // defined(DEQP_HAVE_SPIRV_TOOLS)
 
 } // vk

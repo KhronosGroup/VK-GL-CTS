@@ -41,6 +41,7 @@
 #include "vktTestPackage.hpp"
 #include "deUniquePtr.hpp"
 #include "deCommandLine.hpp"
+#include "deSharedPtr.hpp"
 
 #include <iostream>
 
@@ -48,6 +49,7 @@ using std::vector;
 using std::string;
 using de::UniquePtr;
 using de::MovePtr;
+using de::SharedPtr;
 
 namespace vkt
 {
@@ -58,14 +60,6 @@ tcu::TestPackageRoot* createRoot (tcu::TestContext& testCtx)
 	children.push_back(new TestPackage(testCtx));
 	return new tcu::TestPackageRoot(testCtx, children);
 }
-
-enum BuildMode
-{
-	BUILDMODE_BUILD = 0,
-	BUILDMODE_VERIFY,
-
-	BUILDMODE_LAST
-};
 
 struct BuildStats
 {
@@ -82,89 +76,122 @@ struct BuildStats
 namespace // anonymous
 {
 
-vk::ProgramBinary* compileProgram (const glu::ProgramSources& source, glu::ShaderProgramInfo* buildInfo)
-{
-	return vk::buildProgram(source, vk::PROGRAM_FORMAT_SPIRV, buildInfo);
-}
-
-vk::ProgramBinary* compileProgram (const vk::SpirVAsmSource& source, vk::SpirVProgramInfo* buildInfo)
-{
-	return vk::assembleProgram(source, buildInfo);
-}
-
-void writeVerboseLogs (const glu::ShaderProgramInfo& buildInfo)
+void writeBuildLogs (const glu::ShaderProgramInfo& buildInfo, std::ostream& dst)
 {
 	for (size_t shaderNdx = 0; shaderNdx < buildInfo.shaders.size(); shaderNdx++)
 	{
 		const glu::ShaderInfo&	shaderInfo	= buildInfo.shaders[shaderNdx];
 		const char* const		shaderName	= getShaderTypeName(shaderInfo.type);
 
-		tcu::print("%s source:\n---\n%s\n---\n", shaderName, shaderInfo.source.c_str());
-		tcu::print("%s compile log:\n---\n%s\n---\n", shaderName, shaderInfo.infoLog.c_str());
+		dst << shaderName << " source:\n"
+			<< "---\n"
+			<< shaderInfo.source << "\n"
+			<< "---\n"
+			<< shaderName << " compile log:\n"
+			<< "---\n"
+			<< shaderInfo.infoLog << "\n"
+			<< "---\n";
 	}
+
+	dst << "link log:\n"
+		<< "---\n"
+		<< buildInfo.program.infoLog << "\n"
+		<< "---\n";
 }
 
-void writeVerboseLogs (const vk::SpirVProgramInfo& buildInfo)
+void writeBuildLogs (const vk::SpirVProgramInfo& buildInfo, std::ostream& dst)
 {
-	tcu::print("source:\n---\n%s\n---\n", buildInfo.source->program.str().c_str());
-	tcu::print("compile log:\n---\n%s\n---\n", buildInfo.infoLog.c_str());
+	dst << "source:\n"
+		<< "---\n"
+		<< buildInfo.source << "\n"
+		<< "---\n";
 }
 
-template <typename InfoType, typename IteratorType>
-void buildProgram (const std::string&			casePath,
-				   bool							printLogs,
-				   IteratorType					iter,
-				   BuildMode					mode,
-				   BuildStats*					stats,
-				   vk::BinaryRegistryReader*	reader,
-				   vk::BinaryRegistryWriter*	writer)
+vk::ProgramBinary* compileProgram (const glu::ProgramSources& source, std::ostream& buildLog)
 {
-	InfoType							buildInfo;
+	glu::ShaderProgramInfo	buildInfo;
+
 	try
 	{
-		const vk::ProgramIdentifier			progId		(casePath, iter.getName());
-		const UniquePtr<vk::ProgramBinary>	binary		(compileProgram(iter.getProgram(), &buildInfo));
-
-		if (mode == BUILDMODE_BUILD)
-			writer->storeProgram(progId, *binary);
-		else
-		{
-			DE_ASSERT(mode == BUILDMODE_VERIFY);
-
-			const UniquePtr<vk::ProgramBinary>	storedBinary	(reader->loadProgram(progId));
-
-			if (binary->getSize() != storedBinary->getSize())
-				throw tcu::Exception("Binary size doesn't match");
-
-			if (deMemCmp(binary->getBinary(), storedBinary->getBinary(), binary->getSize()))
-				throw tcu::Exception("Binary contents don't match");
-		}
-
-		tcu::print("  OK: %s\n", iter.getName().c_str());
-		stats->numSucceeded += 1;
+		return vk::buildProgram(source, vk::PROGRAM_FORMAT_SPIRV, &buildInfo);
 	}
-	catch (const std::exception& e)
+	catch (const tcu::Exception&)
 	{
-		tcu::print("  ERROR: %s: %s\n", iter.getName().c_str(), e.what());
-		if (printLogs)
-		{
-			writeVerboseLogs(buildInfo);
-		}
-		stats->numFailed += 1;
+		writeBuildLogs(buildInfo, buildLog);
+		throw;
 	}
+}
+
+vk::ProgramBinary* compileProgram (const vk::SpirVAsmSource& source, std::ostream& buildLog)
+{
+	vk::SpirVProgramInfo	buildInfo;
+
+	try
+	{
+		return vk::assembleProgram(source, &buildInfo);
+	}
+	catch (const tcu::Exception&)
+	{
+		writeBuildLogs(buildInfo, buildLog);
+		throw;
+	}
+}
+
+struct BuiltProgram
+{
+	vk::ProgramIdentifier			id;
+	bool							buildOk;
+	UniquePtr<vk::ProgramBinary>	binary;		// Null if build failed
+	std::string						buildLog;
+
+	BuiltProgram (const vk::ProgramIdentifier&	id_,
+				  bool							buildOk_,
+				  MovePtr<vk::ProgramBinary>	binary_,
+				  const std::string&			buildLog_)
+		: id		(id_)
+		, buildOk	(buildOk_)
+		, binary	(binary_)
+		, buildLog	(buildLog_)
+	{
+	}
+};
+
+typedef SharedPtr<BuiltProgram> BuiltProgramSp;
+
+template<typename IteratorType>
+BuiltProgramSp buildProgram (IteratorType progIter, const std::string& casePath)
+{
+	std::ostringstream			buildLog;
+	MovePtr<vk::ProgramBinary>	programBinary;
+	bool						buildOk			= false;
+
+	try
+	{
+		programBinary	= MovePtr<vk::ProgramBinary>(compileProgram(progIter.getProgram(), buildLog));
+		buildOk			= true;
+	}
+	catch (const std::exception&)
+	{
+		// Ignore, buildOk = false
+		DE_ASSERT(!programBinary);
+	}
+
+	return BuiltProgramSp(new BuiltProgram(vk::ProgramIdentifier(casePath, progIter.getName()),
+										   buildOk,
+										   programBinary,
+										   buildLog.str()));
 }
 
 } // anonymous
-BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath, BuildMode mode, bool verbose)
+
+BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath, bool validateBinaries)
 {
 	const UniquePtr<tcu::TestPackageRoot>	root		(createRoot(testCtx));
 	tcu::DefaultHierarchyInflater			inflater	(testCtx);
 	tcu::TestHierarchyIterator				iterator	(*root, inflater, testCtx.getCommandLine());
 	const tcu::DirArchive					srcArchive	(dstPath.c_str());
-	UniquePtr<vk::BinaryRegistryWriter>		writer		(mode == BUILDMODE_BUILD	? new vk::BinaryRegistryWriter(dstPath)			: DE_NULL);
-	UniquePtr<vk::BinaryRegistryReader>		reader		(mode == BUILDMODE_VERIFY	? new vk::BinaryRegistryReader(srcArchive, "")	: DE_NULL);
+	UniquePtr<vk::BinaryRegistryWriter>		writer		(new vk::BinaryRegistryWriter(dstPath));
 	BuildStats								stats;
-	const bool								printLogs	= verbose;
 
 	while (iterator.getState() != tcu::TestHierarchyIterator::STATE_FINISHED)
 	{
@@ -173,28 +200,63 @@ BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath,
 		{
 			const TestCase* const		testCase	= dynamic_cast<TestCase*>(iterator.getNode());
 			const string				casePath	= iterator.getNodePath();
-			vk::SourceCollections		progs;
+			vk::SourceCollections		sourcePrograms;
+			vector<BuiltProgramSp>		builtPrograms;
 
 			tcu::print("%s\n", casePath.c_str());
 
-			testCase->initPrograms(progs);
+			testCase->initPrograms(sourcePrograms);
 
-			for (vk::GlslSourceCollection::Iterator progIter = progs.glslSources.begin(); progIter != progs.glslSources.end(); ++progIter)
+			for (vk::GlslSourceCollection::Iterator progIter = sourcePrograms.glslSources.begin();
+				 progIter != sourcePrograms.glslSources.end();
+				 ++progIter)
 			{
-				buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, printLogs, progIter, mode, &stats, reader.get(), writer.get());
+				builtPrograms.push_back(buildProgram(progIter, casePath));
 			}
 
-			for (vk::SpirVAsmCollection::Iterator progIter = progs.spirvAsmSources.begin(); progIter != progs.spirvAsmSources.end(); ++progIter)
+			for (vk::SpirVAsmCollection::Iterator progIter = sourcePrograms.spirvAsmSources.begin();
+				 progIter != sourcePrograms.spirvAsmSources.end();
+				 ++progIter)
 			{
-				buildProgram<vk::SpirVProgramInfo, vk::SpirVAsmCollection::Iterator>(casePath, printLogs, progIter, mode, &stats, reader.get(), writer.get());
+				builtPrograms.push_back(buildProgram(progIter, casePath));
+			}
+
+			// Process programs
+			for (vector<BuiltProgramSp>::const_iterator progIter = builtPrograms.begin();
+				 progIter != builtPrograms.end();
+				 ++progIter)
+			{
+				const BuiltProgram&	program	= **progIter;
+
+				if (program.buildOk)
+				{
+					std::ostringstream	validationLog;
+
+					writer->storeProgram(program.id, *program.binary);
+
+					if (validateBinaries &&
+						!vk::validateProgram(*program.binary, &validationLog))
+					{
+						tcu::print("ERROR: validation failed for %s\n", program.id.programName.c_str());
+						tcu::print("%s\n", validationLog.str().c_str());
+						stats.numFailed += 1;
+					}
+					else
+						stats.numSucceeded += 1;
+				}
+				else
+				{
+					tcu::print("ERROR: failed to build %s\n", program.id.programName.c_str());
+					tcu::print("%s\n", program.buildLog.c_str());
+					stats.numFailed += 1;
+				}
 			}
 		}
 
 		iterator.next();
 	}
 
-	if (mode == BUILDMODE_BUILD)
-		writer->writeIndex();
+	writer->writeIndex();
 
 	return stats;
 }
@@ -205,27 +267,18 @@ namespace opt
 {
 
 DE_DECLARE_COMMAND_LINE_OPT(DstPath,	std::string);
-DE_DECLARE_COMMAND_LINE_OPT(Mode,		vkt::BuildMode);
-DE_DECLARE_COMMAND_LINE_OPT(Verbose,	bool);
 DE_DECLARE_COMMAND_LINE_OPT(Cases,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(Validate,	bool);
 
 } // opt
 
 void registerOptions (de::cmdline::Parser& parser)
 {
 	using de::cmdline::Option;
-	using de::cmdline::NamedValue;
 
-	static const NamedValue<vkt::BuildMode> s_modes[] =
-	{
-		{ "build",	vkt::BUILDMODE_BUILD	},
-		{ "verify",	vkt::BUILDMODE_VERIFY	}
-	};
-
-	parser << Option<opt::DstPath>	("d", "dst-path",	"Destination path",	"out")
-		   << Option<opt::Mode>		("m", "mode",		"Build mode",		s_modes,	"build")
-		   << Option<opt::Verbose>	("v", "verbose",	"Verbose output")
-		   << Option<opt::Cases>	("n", "deqp-case",	"Case path filter (works as in test binaries)");
+	parser << Option<opt::DstPath>	("d", "dst-path",		"Destination path",	"out")
+		   << Option<opt::Cases>	("n", "deqp-case",		"Case path filter (works as in test binaries)")
+		   << Option<opt::Validate>	("v", "validate-spv",	"Validate generated SPIR-V binaries");
 }
 
 int main (int argc, const char* argv[])
@@ -267,8 +320,7 @@ int main (int argc, const char* argv[])
 
 		const vkt::BuildStats	stats			= vkt::buildPrograms(testCtx,
 																	 cmdLine.getOption<opt::DstPath>(),
-																	 cmdLine.getOption<opt::Mode>(),
-																	 cmdLine.getOption<opt::Verbose>());
+																	 cmdLine.getOption<opt::Validate>());
 
 		tcu::print("DONE: %d passed, %d failed\n", stats.numSucceeded, stats.numFailed);
 

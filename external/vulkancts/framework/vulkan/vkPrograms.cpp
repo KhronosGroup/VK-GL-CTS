@@ -37,6 +37,7 @@
 
 #include "deArrayUtil.hpp"
 #include "deMemory.h"
+#include "deInt32.h"
 
 namespace vk
 {
@@ -44,6 +45,14 @@ namespace vk
 using std::string;
 using std::vector;
 using tcu::TestLog;
+
+#if defined(DE_DEBUG) && defined(DEQP_HAVE_SPIRV_TOOLS)
+#	define VALIDATE_BINARIES	true
+#else
+#	define VALIDATE_BINARIES	false
+#endif
+
+#define SPIRV_BINARY_ENDIANNESS DE_LITTLE_ENDIAN
 
 // ProgramBinary
 
@@ -55,15 +64,76 @@ ProgramBinary::ProgramBinary (ProgramFormat format, size_t binarySize, const deU
 
 // Utils
 
+namespace
+{
+
+bool isNativeSpirVBinaryEndianness (void)
+{
+#if (DE_ENDIANNESS == SPIRV_BINARY_ENDIANNESS)
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool isSaneSpirVBinary (const ProgramBinary& binary)
+{
+	const deUint32	spirvMagicWord	= 0x07230203;
+	const deUint32	spirvMagicBytes	= isNativeSpirVBinaryEndianness()
+									? spirvMagicWord
+									: deReverseBytes32(spirvMagicWord);
+
+	DE_ASSERT(binary.getFormat() == PROGRAM_FORMAT_SPIRV);
+
+	if (binary.getSize() % sizeof(deUint32) != 0)
+		return false;
+
+	if (binary.getSize() < sizeof(deUint32))
+		return false;
+
+	if (*(const deUint32*)binary.getBinary() != spirvMagicBytes)
+		return false;
+
+	return true;
+}
+
+ProgramBinary* createProgramBinaryFromSpirV (const vector<deUint32>& binary)
+{
+	DE_ASSERT(!binary.empty());
+
+	if (isNativeSpirVBinaryEndianness())
+		return new ProgramBinary(PROGRAM_FORMAT_SPIRV, binary.size()*sizeof(deUint32), (const deUint8*)&binary[0]);
+	else
+		TCU_THROW(InternalError, "SPIR-V endianness translation not supported");
+}
+
+} // anonymous
+
 ProgramBinary* buildProgram (const glu::ProgramSources& program, ProgramFormat binaryFormat, glu::ShaderProgramInfo* buildInfo)
 {
+	const bool	validateBinary	= VALIDATE_BINARIES;
+
 	if (binaryFormat == PROGRAM_FORMAT_SPIRV)
 	{
-		vector<deUint8> binary;
-		glslToSpirV(program, &binary, buildInfo);
-		// \todo[2016-02-10 dekimir]: Enable this when all glsl tests can pass it.
-		//validateSpirV(binary, &buildInfo->program.infoLog);
-		return new ProgramBinary(binaryFormat, binary.size(), &binary[0]);
+		vector<deUint32> binary;
+
+		if (!compileGlslToSpirV(program, &binary, buildInfo))
+			TCU_THROW(InternalError, "Compiling GLSL to SPIR-V failed");
+
+		if (validateBinary)
+		{
+			std::ostringstream validationLog;
+
+			if (!validateSpirV(binary.size(), &binary[0], &validationLog))
+			{
+				buildInfo->program.linkOk 	 = false;
+				buildInfo->program.infoLog	+= "\n" + validationLog.str();
+
+				TCU_THROW(InternalError, "Validation failed for compiled SPIR-V binary");
+			}
+		}
+
+		return createProgramBinaryFromSpirV(binary);
 	}
 	else
 		TCU_THROW(NotSupportedError, "Unsupported program format");
@@ -71,14 +141,60 @@ ProgramBinary* buildProgram (const glu::ProgramSources& program, ProgramFormat b
 
 ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo* buildInfo)
 {
-	vector<deUint8> binary;
-	assembleSpirV(&program, &binary, buildInfo);
-#if defined(DE_DEBUG)
-	buildInfo->compileOk &= validateSpirV(binary, &buildInfo->infoLog);
-	if (!buildInfo->compileOk)
-		TCU_FAIL("Failed to validate shader");
-#endif
-	return new ProgramBinary(PROGRAM_FORMAT_SPIRV, binary.size(), &binary[0]);
+	const bool			validateBinary		= VALIDATE_BINARIES;
+	vector<deUint32>	binary;
+
+	if (!assembleSpirV(&program, &binary, buildInfo))
+		TCU_THROW(InternalError, "Failed to assemble SPIR-V");
+
+	if (validateBinary)
+	{
+		std::ostringstream	validationLog;
+
+		if (!validateSpirV(binary.size(), &binary[0], &validationLog))
+		{
+			buildInfo->compileOk	 = false;
+			buildInfo->infoLog		+= "\n" + validationLog.str();
+
+			TCU_THROW(InternalError, "Validation failed for assembled SPIR-V binary");
+		}
+	}
+
+	return createProgramBinaryFromSpirV(binary);
+}
+
+void disassembleProgram (const ProgramBinary& program, std::ostream* dst)
+{
+	if (program.getFormat() == PROGRAM_FORMAT_SPIRV)
+	{
+		TCU_CHECK_INTERNAL(isSaneSpirVBinary(program));
+
+		if (isNativeSpirVBinaryEndianness())
+			disassembleSpirV(program.getSize()/sizeof(deUint32), (const deUint32*)program.getBinary(), dst);
+		else
+			TCU_THROW(InternalError, "SPIR-V endianness translation not supported");
+	}
+	else
+		TCU_THROW(NotSupportedError, "Unsupported program format");
+}
+
+bool validateProgram (const ProgramBinary& program, std::ostream* dst)
+{
+	if (program.getFormat() == PROGRAM_FORMAT_SPIRV)
+	{
+		if (!isSaneSpirVBinary(program))
+		{
+			*dst << "Binary doesn't look like SPIR-V at all";
+			return false;
+		}
+
+		if (isNativeSpirVBinaryEndianness())
+			return validateSpirV(program.getSize()/sizeof(deUint32), (const deUint32*)program.getBinary(), dst);
+		else
+			TCU_THROW(InternalError, "SPIR-V endianness translation not supported");
+	}
+	else
+		TCU_THROW(NotSupportedError, "Unsupported program format");
 }
 
 Move<VkShaderModule> createShaderModule (const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags)

@@ -176,9 +176,11 @@ struct SourceCollections
 
 typedef ProgramCollection<ProgramBinary>		BinaryCollection;
 
-// \todo [2015-03-13 pyry] Likely need BinaryBuilder abstraction for this
 ProgramBinary*			buildProgram		(const glu::ProgramSources& program, ProgramFormat binaryFormat, glu::ShaderProgramInfo* buildInfo);
 ProgramBinary*			assembleProgram		(const vk::SpirVAsmSource& program, SpirVProgramInfo* buildInfo);
+void					disassembleProgram	(const ProgramBinary& program, std::ostream* dst);
+bool					validateProgram		(const ProgramBinary& program, std::ostream* dst);
+
 Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags);
 
 glu::ShaderType			getGluShaderType	(VkShaderStageFlagBits shaderStage);
