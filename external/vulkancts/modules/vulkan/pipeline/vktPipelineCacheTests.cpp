@@ -291,7 +291,8 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline (tcu::UVec2 render
 		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,    // VkStructureType                          sType;
 		DE_NULL,                                                        // const void*                              pNext;
 		0u,                                                             // VkPipelineInputAssemblyStateCreateFlags  flags;
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,                            // VkPrimitiveTopology                      topology;
+		(m_patchControlPoints == 0 ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
+								   : VK_PRIMITIVE_TOPOLOGY_PATCH_LIST), // VkPrimitiveTopology                      topology;
 		VK_FALSE,                                                       // VkBool32                                 primitiveRestartEnable;
 	};
 
@@ -778,8 +779,8 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 				programCollection.glslSources.add("basic_tcs") << glu::TessellationControlSource(
 					"#version 450 \n"
 					"layout(vertices = 3) out;\n"
-					"in highp vec4 color[];\n"
-					"out highp vec4 vtxColor[];\n"
+					"layout(location = 0) in highp vec4 color[];\n"
+					"layout(location = 0) out highp vec4 vtxColor[];\n"
 					"void main()\n"
 					"{\n"
 					"  gl_TessLevelOuter[0] = 4.0;\n"
@@ -795,8 +796,8 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 				programCollection.glslSources.add("basic_tes") << glu::TessellationEvaluationSource(
 					"#version 450 \n"
 					"layout(triangles, fractional_even_spacing, ccw) in;\n"
-					"in highp vec4 colors[];\n"
-					"out highp vec4 vtxColor;\n"
+					"layout(location = 0) in highp vec4 colors[];\n"
+					"layout(location = 0) out highp vec4 vtxColor;\n"
 					"void main() \n"
 					"{\n"
 					"  float u = gl_TessCoord.x;\n"
@@ -834,7 +835,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 	: CacheTestInstance (context,param)
 	, m_renderSize      (32u, 32u)
 	, m_colorFormat     (VK_FORMAT_R8G8B8A8_UNORM)
-	, m_depthFormat     (VK_FORMAT_D24_UNORM_S8_UINT)
+	, m_depthFormat     (VK_FORMAT_D16_UNORM)
 	, m_pipelineBuilder (context)
 {
 	const DeviceInterface&  vk               = m_context.getDeviceInterface();
@@ -1051,6 +1052,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 				else
 				{
 					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "basic_tcs", "main");
+					m_pipelineBuilder.enableTessellationStage(3);
 				}
 				break;
 			case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
@@ -1061,6 +1063,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 				else
 				{
 					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "basic_tes", "main");
+					m_pipelineBuilder.enableTessellationStage(3);
 				}
 				break;
 			default:
@@ -1214,7 +1217,7 @@ void ComputeCacheTest::initPrograms (SourceCollections& programCollection) const
 {
 	programCollection.glslSources.add("basic_compute") << glu::ComputeSource(
 		"#version 310 es\n"
-		"layout(local_size_x = 128) in;\n"
+		"layout(local_size_x = 1) in;\n"
 		"layout(std430) buffer;\n"
 		"layout(binding = 0) readonly buffer Input0\n"
 		"{\n"
