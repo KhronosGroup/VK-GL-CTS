@@ -140,13 +140,11 @@ FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
 
 	// Sample counts
 	{
-		tcu::MessageBuilder		samplesMsg(&m_testCtx.getLog());
-		std::vector<glw::GLint>	samples;
+		tcu::MessageBuilder		samplesMsg	(&m_testCtx.getLog());
+		std::vector<glw::GLint>	samples		(numSampleCounts > 0 ? numSampleCounts : 1);
 
 		if (numSampleCounts > 0 || isFloatFormat)
 		{
-			samples.resize(numSampleCounts, -1);
-
 			gl.getInternalformativ(m_target, m_internalFormat, GL_SAMPLES, numSampleCounts, &samples[0]);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "get GL_SAMPLES");
 		}
@@ -156,7 +154,7 @@ FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
 		// make a pretty log
 
 		samplesMsg << "GL_SAMPLES = [";
-		for (int ndx = 0; ndx < numSampleCounts; ++ndx)
+		for (size_t ndx = 0; ndx < samples.size(); ++ndx)
 		{
 			if (ndx)
 				samplesMsg << ", ";
@@ -165,7 +163,7 @@ FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
 		samplesMsg << "]" << tcu::TestLog::EndMessage;
 
 		// Samples are in order
-		for (int ndx = 1; ndx < numSampleCounts; ++ndx)
+		for (size_t ndx = 1; ndx < samples.size(); ++ndx)
 		{
 			if (samples[ndx-1] <= samples[ndx])
 			{
@@ -176,7 +174,7 @@ FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
 		}
 
 		// samples are positive
-		for (int ndx = 1; ndx < numSampleCounts; ++ndx)
+		for (size_t ndx = 1; ndx < samples.size(); ++ndx)
 		{
 			if (samples[ndx-1] <= 0)
 			{
