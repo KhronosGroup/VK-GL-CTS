@@ -88,9 +88,6 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
     public static final String FEATURE_VULKAN_LEVEL = "android.hardware.vulkan.level";
 
     private static final int TESTCASE_BATCH_LIMIT = 1000;
-    private static final BatchRunConfiguration DEFAULT_CONFIG =
-        new BatchRunConfiguration("rgba8888d24s8", "unspecified", "window");
-
     private static final int UNRESPOSIVE_CMD_TIMEOUT_MS = 60000; // one minute
 
     // !NOTE: There's a static method copyOptions() for copying options during split.
@@ -102,8 +99,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
     private String mDeqpPackage;
     @Option(name="deqp-gl-config-name",
             description="GL render target config. See deqp documentation for syntax. ",
-            importance=Option.Importance.ALWAYS)
-    private String mConfigName;
+            importance=Option.Importance.NEVER)
+    private String mConfigName = "";
     @Option(name="deqp-caselist-file",
             description="File listing the names of the cases to be run.",
             importance=Option.Importance.ALWAYS)
