@@ -17,3 +17,12 @@ if (de::contains(extSet, "GL_KHR_debug"))
 	gl->popDebugGroup			= (glPopDebugGroupFunc)			loader->get("glPopDebugGroup");
 	gl->pushDebugGroup			= (glPushDebugGroupFunc)		loader->get("glPushDebugGroup");
 }
+
+if (de::contains(extSet, "GL_KHR_robustness"))
+{
+	gl->getGraphicsResetStatus	= (glGetGraphicsResetStatusFunc)	loader->get("glGetGraphicsResetStatus");
+	gl->getnUniformfv			= (glGetnUniformfvFunc)				loader->get("glGetnUniformfv");
+	gl->getnUniformiv			= (glGetnUniformivFunc)				loader->get("glGetnUniformiv");
+	gl->getnUniformuiv			= (glGetnUniformuivFunc)			loader->get("glGetnUniformuiv");
+	gl->readnPixels				= (glReadnPixelsFunc)				loader->get("glReadnPixels");
+}

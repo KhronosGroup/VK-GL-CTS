@@ -96,3 +96,20 @@ if (de::contains(extSet, "GL_EXT_debug_marker"))
 	gl->popGroupMarkerEXT		= (glPopGroupMarkerEXTFunc)		loader->get("glPopGroupMarkerEXT");
 	gl->pushGroupMarkerEXT		= (glPushGroupMarkerEXTFunc)	loader->get("glPushGroupMarkerEXT");
 }
+
+if (de::contains(extSet, "GL_EXT_robustness"))
+{
+	gl->getGraphicsResetStatus	= (glGetGraphicsResetStatusFunc)	loader->get("glGetGraphicsResetStatusEXT");
+	gl->getnUniformfv			= (glGetnUniformfvFunc)				loader->get("glGetnUniformfvEXT");
+	gl->getnUniformiv			= (glGetnUniformivFunc)				loader->get("glGetnUniformivEXT");
+	gl->readnPixels				= (glReadnPixelsFunc)				loader->get("glReadnPixelsEXT");
+}
+
+if (de::contains(extSet, "GL_KHR_robustness"))
+{
+	gl->getGraphicsResetStatus	= (glGetGraphicsResetStatusFunc)	loader->get("glGetGraphicsResetStatusKHR");
+	gl->getnUniformfv			= (glGetnUniformfvFunc)				loader->get("glGetnUniformfvKHR");
+	gl->getnUniformiv			= (glGetnUniformivFunc)				loader->get("glGetnUniformivKHR");
+	gl->getnUniformuiv			= (glGetnUniformuivFunc)			loader->get("glGetnUniformuivKHR");
+	gl->readnPixels				= (glReadnPixelsFunc)				loader->get("glReadnPixelsKHR");
+}
