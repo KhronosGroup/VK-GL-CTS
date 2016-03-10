@@ -155,7 +155,6 @@ public:
 			checkRenderbufferParam(m_testCtx, *this, GL_RENDERBUFFER_HEIGHT,	h);
 		}
 
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, 0);
 		glDeleteRenderbuffers(1, &renderbufferID);
 	}
 };
