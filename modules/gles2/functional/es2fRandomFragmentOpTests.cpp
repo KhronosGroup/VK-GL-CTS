@@ -417,7 +417,7 @@ tcu::UVec4 RandomFragmentOpCase::getCompareThreshold (void) const
 	tcu::PixelFormat format = m_context.getRenderTarget().getPixelFormat();
 
 	if (format == tcu::PixelFormat(8, 8, 8, 8) || format == tcu::PixelFormat(8, 8, 8, 0))
-		return format.getColorThreshold().toIVec().asUint() + tcu::UVec4(2); // Default threshold.
+		return format.getColorThreshold().toIVec().asUint() + tcu::UVec4(6); // Default threshold.
 	else
 		return format.getColorThreshold().toIVec().asUint()
 			   * tcu::UVec4(5) + tcu::UVec4(2); // \note Non-scientific ad hoc formula. Need big threshold when few color bits; especially multiple blendings bring extra inaccuracy.
