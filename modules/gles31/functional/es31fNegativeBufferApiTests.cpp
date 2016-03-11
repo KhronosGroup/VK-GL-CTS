@@ -199,6 +199,13 @@ void readn_pixels (NegativeTestContext& ctx)
 	std::vector<GLubyte>	ubyteData	(4);
 	GLuint					fbo			= 0x1234;
 
+	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2))
+		&& !ctx.isExtensionSupported("GL_KHR_robustness")
+		&& !ctx.isExtensionSupported("GL_EXT_robustness"))
+	{
+		TCU_THROW(NotSupportedError, "GLES 3.2 or robustness extension not supported");
+	}
+
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the combination of format and type is unsupported.");
 	ctx.glReadnPixels(0, 0, 1, 1, GL_LUMINANCE_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, (int) ubyteData.size(), &ubyteData[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
