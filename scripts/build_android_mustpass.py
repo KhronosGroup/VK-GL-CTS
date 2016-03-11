@@ -332,6 +332,7 @@ MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 
 MASTER_VULKAN_FILTERS			= [
 		include("vulkan-master.txt"),
+		exclude("vulkan-not-applicable.txt"),
 		exclude("vulkan-test-issues.txt"),
 		exclude("vulkan-hw-issues.txt")
 	]
