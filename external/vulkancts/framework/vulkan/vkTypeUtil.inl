@@ -367,3 +367,19 @@ inline VkDrawIndirectCommand makeDrawIndirectCommand (deUint32 vertexCount, deUi
 	res.firstInstance	= firstInstance;
 	return res;
 }
+
+inline VkSurfaceFormatKHR makeSurfaceFormatKHR (VkFormat format, VkColorSpaceKHR colorSpace)
+{
+	VkSurfaceFormatKHR res;
+	res.format		= format;
+	res.colorSpace	= colorSpace;
+	return res;
+}
+
+inline VkDisplayPlanePropertiesKHR makeDisplayPlanePropertiesKHR (VkDisplayKHR currentDisplay, deUint32 currentStackIndex)
+{
+	VkDisplayPlanePropertiesKHR res;
+	res.currentDisplay		= currentDisplay;
+	res.currentStackIndex	= currentStackIndex;
+	return res;
+}

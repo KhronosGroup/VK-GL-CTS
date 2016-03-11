@@ -1,35 +1,53 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
-template<> const char*	getTypeName<VkInstance>				(void) { return "VkInstance";				}
-template<> const char*	getTypeName<VkPhysicalDevice>		(void) { return "VkPhysicalDevice";			}
-template<> const char*	getTypeName<VkDevice>				(void) { return "VkDevice";					}
-template<> const char*	getTypeName<VkQueue>				(void) { return "VkQueue";					}
-template<> const char*	getTypeName<VkSemaphore>			(void) { return "VkSemaphore";				}
-template<> const char*	getTypeName<VkCommandBuffer>		(void) { return "VkCommandBuffer";			}
-template<> const char*	getTypeName<VkFence>				(void) { return "VkFence";					}
-template<> const char*	getTypeName<VkDeviceMemory>			(void) { return "VkDeviceMemory";			}
-template<> const char*	getTypeName<VkBuffer>				(void) { return "VkBuffer";					}
-template<> const char*	getTypeName<VkImage>				(void) { return "VkImage";					}
-template<> const char*	getTypeName<VkEvent>				(void) { return "VkEvent";					}
-template<> const char*	getTypeName<VkQueryPool>			(void) { return "VkQueryPool";				}
-template<> const char*	getTypeName<VkBufferView>			(void) { return "VkBufferView";				}
-template<> const char*	getTypeName<VkImageView>			(void) { return "VkImageView";				}
-template<> const char*	getTypeName<VkShaderModule>			(void) { return "VkShaderModule";			}
-template<> const char*	getTypeName<VkPipelineCache>		(void) { return "VkPipelineCache";			}
-template<> const char*	getTypeName<VkPipelineLayout>		(void) { return "VkPipelineLayout";			}
-template<> const char*	getTypeName<VkRenderPass>			(void) { return "VkRenderPass";				}
-template<> const char*	getTypeName<VkPipeline>				(void) { return "VkPipeline";				}
-template<> const char*	getTypeName<VkDescriptorSetLayout>	(void) { return "VkDescriptorSetLayout";	}
-template<> const char*	getTypeName<VkSampler>				(void) { return "VkSampler";				}
-template<> const char*	getTypeName<VkDescriptorPool>		(void) { return "VkDescriptorPool";			}
-template<> const char*	getTypeName<VkDescriptorSet>		(void) { return "VkDescriptorSet";			}
-template<> const char*	getTypeName<VkFramebuffer>			(void) { return "VkFramebuffer";			}
-template<> const char*	getTypeName<VkCommandPool>			(void) { return "VkCommandPool";			}
-template<> const char*	getTypeName<VkSurfaceKHR>			(void) { return "VkSurfaceKHR";				}
-template<> const char*	getTypeName<VkSwapchainKHR>			(void) { return "VkSwapchainKHR";			}
-template<> const char*	getTypeName<VkDisplayKHR>			(void) { return "VkDisplayKHR";				}
-template<> const char*	getTypeName<VkDisplayModeKHR>		(void) { return "VkDisplayModeKHR";			}
+template<> const char*	getTypeName<VkInstance>					(void) { return "VkInstance";				}
+template<> const char*	getTypeName<VkPhysicalDevice>			(void) { return "VkPhysicalDevice";			}
+template<> const char*	getTypeName<VkDevice>					(void) { return "VkDevice";					}
+template<> const char*	getTypeName<VkQueue>					(void) { return "VkQueue";					}
+template<> const char*	getTypeName<VkSemaphore>				(void) { return "VkSemaphore";				}
+template<> const char*	getTypeName<VkCommandBuffer>			(void) { return "VkCommandBuffer";			}
+template<> const char*	getTypeName<VkFence>					(void) { return "VkFence";					}
+template<> const char*	getTypeName<VkDeviceMemory>				(void) { return "VkDeviceMemory";			}
+template<> const char*	getTypeName<VkBuffer>					(void) { return "VkBuffer";					}
+template<> const char*	getTypeName<VkImage>					(void) { return "VkImage";					}
+template<> const char*	getTypeName<VkEvent>					(void) { return "VkEvent";					}
+template<> const char*	getTypeName<VkQueryPool>				(void) { return "VkQueryPool";				}
+template<> const char*	getTypeName<VkBufferView>				(void) { return "VkBufferView";				}
+template<> const char*	getTypeName<VkImageView>				(void) { return "VkImageView";				}
+template<> const char*	getTypeName<VkShaderModule>				(void) { return "VkShaderModule";			}
+template<> const char*	getTypeName<VkPipelineCache>			(void) { return "VkPipelineCache";			}
+template<> const char*	getTypeName<VkPipelineLayout>			(void) { return "VkPipelineLayout";			}
+template<> const char*	getTypeName<VkRenderPass>				(void) { return "VkRenderPass";				}
+template<> const char*	getTypeName<VkPipeline>					(void) { return "VkPipeline";				}
+template<> const char*	getTypeName<VkDescriptorSetLayout>		(void) { return "VkDescriptorSetLayout";	}
+template<> const char*	getTypeName<VkSampler>					(void) { return "VkSampler";				}
+template<> const char*	getTypeName<VkDescriptorPool>			(void) { return "VkDescriptorPool";			}
+template<> const char*	getTypeName<VkDescriptorSet>			(void) { return "VkDescriptorSet";			}
+template<> const char*	getTypeName<VkFramebuffer>				(void) { return "VkFramebuffer";			}
+template<> const char*	getTypeName<VkCommandPool>				(void) { return "VkCommandPool";			}
+template<> const char*	getTypeName<VkSurfaceKHR>				(void) { return "VkSurfaceKHR";				}
+template<> const char*	getTypeName<VkSwapchainKHR>				(void) { return "VkSwapchainKHR";			}
+template<> const char*	getTypeName<VkDisplayKHR>				(void) { return "VkDisplayKHR";				}
+template<> const char*	getTypeName<VkDisplayModeKHR>			(void) { return "VkDisplayModeKHR";			}
+template<> const char*	getTypeName<VkDebugReportCallbackEXT>	(void) { return "VkDebugReportCallbackEXT";	}
+
+namespace pt
+{
+std::ostream& operator<< (std::ostream& s, XlibDisplayPtr			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XlibWindow				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XlibVisualID				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XcbConnectionPtr			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XcbWindow				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XcbVisualid				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, WaylandDisplayPtr		v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, WaylandSurfacePtr		v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, MirConnectionPtr			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, MirSurfacePtr			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, AndroidNativeWindowPtr	v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, Win32InstanceHandle		v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, Win32WindowHandle		v) { return s << tcu::toHex(v.internal); }
+}
 
 const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion value)
 {
@@ -62,11 +80,12 @@ const char* getResultName (VkResult value)
 		case VK_ERROR_TOO_MANY_OBJECTS:			return "VK_ERROR_TOO_MANY_OBJECTS";
 		case VK_ERROR_FORMAT_NOT_SUPPORTED:		return "VK_ERROR_FORMAT_NOT_SUPPORTED";
 		case VK_ERROR_SURFACE_LOST_KHR:			return "VK_ERROR_SURFACE_LOST_KHR";
+		case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:	return "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR";
 		case VK_SUBOPTIMAL_KHR:					return "VK_SUBOPTIMAL_KHR";
 		case VK_ERROR_OUT_OF_DATE_KHR:			return "VK_ERROR_OUT_OF_DATE_KHR";
 		case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:	return "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR";
-		case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:	return "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR";
 		case VK_ERROR_VALIDATION_FAILED_EXT:	return "VK_ERROR_VALIDATION_FAILED_EXT";
+		case VK_ERROR_INVALID_SHADER_NV:		return "VK_ERROR_INVALID_SHADER_NV";
 		default:								return DE_NULL;
 	}
 }
@@ -135,7 +154,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR:					return "VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR:				return "VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR:				return "VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR";
-		case VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT:		return "VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT";
 		default:															return DE_NULL;
 	}
 }
@@ -769,6 +788,53 @@ const char* getPresentModeKHRName (VkPresentModeKHR value)
 	}
 }
 
+const char* getDebugReportObjectTypeEXTName (VkDebugReportObjectTypeEXT value)
+{
+	switch (value)
+	{
+		case VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_INSTANCE_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_INSTANCE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_PHYSICAL_DEVICE_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_PHYSICAL_DEVICE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_QUEUE_EXT:					return "VK_DEBUG_REPORT_OBJECT_TYPE_QUEUE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT:					return "VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT:					return "VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_EVENT_EXT:					return "VK_DEBUG_REPORT_OBJECT_TYPE_EVENT_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_QUERY_POOL_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_QUERY_POOL_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_VIEW_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_VIEW_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_CACHE_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_CACHE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_LAYOUT_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_LAYOUT_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT_EXT:	return "VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_POOL_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_POOL_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_POOL_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_POOL_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SURFACE_KHR_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_SURFACE_KHR_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SWAPCHAIN_KHR_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_SWAPCHAIN_KHR_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DEBUG_REPORT_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_DEBUG_REPORT_EXT";
+		default:													return DE_NULL;
+	}
+}
+
+const char* getDebugReportErrorEXTName (VkDebugReportErrorEXT value)
+{
+	switch (value)
+	{
+		case VK_DEBUG_REPORT_ERROR_NONE_EXT:			return "VK_DEBUG_REPORT_ERROR_NONE_EXT";
+		case VK_DEBUG_REPORT_ERROR_CALLBACK_REF_EXT:	return "VK_DEBUG_REPORT_ERROR_CALLBACK_REF_EXT";
+		default:										return DE_NULL;
+	}
+}
+
 tcu::Format::Bitfield<32> getFormatFeatureFlagsStr (VkFormatFeatureFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -785,6 +851,7 @@ tcu::Format::Bitfield<32> getFormatFeatureFlagsStr (VkFormatFeatureFlags value)
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_BLIT_SRC_BIT,					"VK_FORMAT_FEATURE_BLIT_SRC_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_BLIT_DST_BIT,					"VK_FORMAT_FEATURE_BLIT_DST_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT,	"VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1191,6 +1258,19 @@ tcu::Format::Bitfield<32> getDisplayPlaneAlphaFlagsKHRStr (VkDisplayPlaneAlphaFl
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR,						"VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR,					"VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR,	"VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getDebugReportFlagsEXTStr (VkDebugReportFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_DEBUG_REPORT_INFORMATION_BIT_EXT,			"VK_DEBUG_REPORT_INFORMATION_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEBUG_REPORT_WARNING_BIT_EXT,				"VK_DEBUG_REPORT_WARNING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT,	"VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEBUG_REPORT_ERROR_BIT_EXT,					"VK_DEBUG_REPORT_ERROR_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEBUG_REPORT_DEBUG_BIT_EXT,					"VK_DEBUG_REPORT_DEBUG_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2879,6 +2959,252 @@ std::ostream& operator<< (std::ostream& s, const VkDrawIndirectCommand& value)
 	s << "\tinstanceCount = " << value.instanceCount << '\n';
 	s << "\tfirstVertex = " << value.firstVertex << '\n';
 	s << "\tfirstInstance = " << value.firstInstance << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSurfaceCapabilitiesKHR& value)
+{
+	s << "VkSurfaceCapabilitiesKHR = {\n";
+	s << "\tminImageCount = " << value.minImageCount << '\n';
+	s << "\tmaxImageCount = " << value.maxImageCount << '\n';
+	s << "\tcurrentExtent = " << value.currentExtent << '\n';
+	s << "\tminImageExtent = " << value.minImageExtent << '\n';
+	s << "\tmaxImageExtent = " << value.maxImageExtent << '\n';
+	s << "\tmaxImageArrayLayers = " << value.maxImageArrayLayers << '\n';
+	s << "\tsupportedTransforms = " << getSurfaceTransformFlagsKHRStr(value.supportedTransforms) << '\n';
+	s << "\tcurrentTransform = " << value.currentTransform << '\n';
+	s << "\tsupportedCompositeAlpha = " << getCompositeAlphaFlagsKHRStr(value.supportedCompositeAlpha) << '\n';
+	s << "\tsupportedUsageFlags = " << getImageUsageFlagsStr(value.supportedUsageFlags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSurfaceFormatKHR& value)
+{
+	s << "VkSurfaceFormatKHR = {\n";
+	s << "\tformat = " << value.format << '\n';
+	s << "\tcolorSpace = " << value.colorSpace << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSwapchainCreateInfoKHR& value)
+{
+	s << "VkSwapchainCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getSwapchainCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tsurface = " << value.surface << '\n';
+	s << "\tminImageCount = " << value.minImageCount << '\n';
+	s << "\timageFormat = " << value.imageFormat << '\n';
+	s << "\timageColorSpace = " << value.imageColorSpace << '\n';
+	s << "\timageExtent = " << value.imageExtent << '\n';
+	s << "\timageArrayLayers = " << value.imageArrayLayers << '\n';
+	s << "\timageUsage = " << getImageUsageFlagsStr(value.imageUsage) << '\n';
+	s << "\timageSharingMode = " << value.imageSharingMode << '\n';
+	s << "\tqueueFamilyIndexCount = " << value.queueFamilyIndexCount << '\n';
+	s << "\tpQueueFamilyIndices = " << value.pQueueFamilyIndices << '\n';
+	s << "\tpreTransform = " << value.preTransform << '\n';
+	s << "\tcompositeAlpha = " << value.compositeAlpha << '\n';
+	s << "\tpresentMode = " << value.presentMode << '\n';
+	s << "\tclipped = " << value.clipped << '\n';
+	s << "\toldSwapchain = " << value.oldSwapchain << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentInfoKHR& value)
+{
+	s << "VkPresentInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\twaitSemaphoreCount = " << value.waitSemaphoreCount << '\n';
+	s << "\tpWaitSemaphores = " << value.pWaitSemaphores << '\n';
+	s << "\tswapchainCount = " << value.swapchainCount << '\n';
+	s << "\tpSwapchains = " << value.pSwapchains << '\n';
+	s << "\tpImageIndices = " << value.pImageIndices << '\n';
+	s << "\tpResults = " << value.pResults << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayPropertiesKHR& value)
+{
+	s << "VkDisplayPropertiesKHR = {\n";
+	s << "\tdisplay = " << value.display << '\n';
+	s << "\tdisplayName = " << getCharPtrStr(value.displayName) << '\n';
+	s << "\tphysicalDimensions = " << value.physicalDimensions << '\n';
+	s << "\tphysicalResolution = " << value.physicalResolution << '\n';
+	s << "\tsupportedTransforms = " << getSurfaceTransformFlagsKHRStr(value.supportedTransforms) << '\n';
+	s << "\tplaneReorderPossible = " << value.planeReorderPossible << '\n';
+	s << "\tpersistentContent = " << value.persistentContent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayModeParametersKHR& value)
+{
+	s << "VkDisplayModeParametersKHR = {\n";
+	s << "\tvisibleRegion = " << value.visibleRegion << '\n';
+	s << "\trefreshRate = " << value.refreshRate << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayModePropertiesKHR& value)
+{
+	s << "VkDisplayModePropertiesKHR = {\n";
+	s << "\tdisplayMode = " << value.displayMode << '\n';
+	s << "\tparameters = " << value.parameters << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayModeCreateInfoKHR& value)
+{
+	s << "VkDisplayModeCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDisplayModeCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tparameters = " << value.parameters << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayPlaneCapabilitiesKHR& value)
+{
+	s << "VkDisplayPlaneCapabilitiesKHR = {\n";
+	s << "\tsupportedAlpha = " << getDisplayPlaneAlphaFlagsKHRStr(value.supportedAlpha) << '\n';
+	s << "\tminSrcPosition = " << value.minSrcPosition << '\n';
+	s << "\tmaxSrcPosition = " << value.maxSrcPosition << '\n';
+	s << "\tminSrcExtent = " << value.minSrcExtent << '\n';
+	s << "\tmaxSrcExtent = " << value.maxSrcExtent << '\n';
+	s << "\tminDstPosition = " << value.minDstPosition << '\n';
+	s << "\tmaxDstPosition = " << value.maxDstPosition << '\n';
+	s << "\tminDstExtent = " << value.minDstExtent << '\n';
+	s << "\tmaxDstExtent = " << value.maxDstExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayPlanePropertiesKHR& value)
+{
+	s << "VkDisplayPlanePropertiesKHR = {\n";
+	s << "\tcurrentDisplay = " << value.currentDisplay << '\n';
+	s << "\tcurrentStackIndex = " << value.currentStackIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplaySurfaceCreateInfoKHR& value)
+{
+	s << "VkDisplaySurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDisplaySurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tdisplayMode = " << value.displayMode << '\n';
+	s << "\tplaneIndex = " << value.planeIndex << '\n';
+	s << "\tplaneStackIndex = " << value.planeStackIndex << '\n';
+	s << "\ttransform = " << value.transform << '\n';
+	s << "\tglobalAlpha = " << value.globalAlpha << '\n';
+	s << "\talphaMode = " << value.alphaMode << '\n';
+	s << "\timageExtent = " << value.imageExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayPresentInfoKHR& value)
+{
+	s << "VkDisplayPresentInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcRect = " << value.srcRect << '\n';
+	s << "\tdstRect = " << value.dstRect << '\n';
+	s << "\tpersistent = " << value.persistent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkXlibSurfaceCreateInfoKHR& value)
+{
+	s << "VkXlibSurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getXlibSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tdpy = " << value.dpy << '\n';
+	s << "\twindow = " << value.window << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkXcbSurfaceCreateInfoKHR& value)
+{
+	s << "VkXcbSurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getXcbSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tconnection = " << value.connection << '\n';
+	s << "\twindow = " << value.window << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkWaylandSurfaceCreateInfoKHR& value)
+{
+	s << "VkWaylandSurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getWaylandSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tdisplay = " << value.display << '\n';
+	s << "\tsurface = " << value.surface << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMirSurfaceCreateInfoKHR& value)
+{
+	s << "VkMirSurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getMirSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tconnection = " << value.connection << '\n';
+	s << "\tmirSurface = " << value.mirSurface << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAndroidSurfaceCreateInfoKHR& value)
+{
+	s << "VkAndroidSurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getAndroidSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\twindow = " << value.window << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkWin32SurfaceCreateInfoKHR& value)
+{
+	s << "VkWin32SurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getWin32SurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\thinstance = " << value.hinstance << '\n';
+	s << "\thwnd = " << value.hwnd << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value)
+{
+	s << "VkDebugReportCallbackCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDebugReportFlagsEXTStr(value.flags) << '\n';
+	s << "\tpfnCallback = " << value.pfnCallback << '\n';
+	s << "\tpUserData = " << value.pUserData << '\n';
 	s << '}';
 	return s;
 }

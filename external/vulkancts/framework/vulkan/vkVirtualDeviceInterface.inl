@@ -122,3 +122,9 @@ virtual void		cmdBeginRenderPass								(VkCommandBuffer commandBuffer, const Vk
 virtual void		cmdNextSubpass									(VkCommandBuffer commandBuffer, VkSubpassContents contents) const = 0;
 virtual void		cmdEndRenderPass								(VkCommandBuffer commandBuffer) const = 0;
 virtual void		cmdExecuteCommands								(VkCommandBuffer commandBuffer, deUint32 commandBufferCount, const VkCommandBuffer* pCommandBuffers) const = 0;
+virtual VkResult	createSwapchainKHR								(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain) const = 0;
+virtual void		destroySwapchainKHR								(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator) const = 0;
+virtual VkResult	getSwapchainImagesKHR							(VkDevice device, VkSwapchainKHR swapchain, deUint32* pSwapchainImageCount, VkImage* pSwapchainImages) const = 0;
+virtual VkResult	acquireNextImageKHR								(VkDevice device, VkSwapchainKHR swapchain, deUint64 timeout, VkSemaphore semaphore, VkFence fence, deUint32* pImageIndex) const = 0;
+virtual VkResult	queuePresentKHR									(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) const = 0;
+virtual VkResult	createSharedSwapchainsKHR						(VkDevice device, deUint32 swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains) const = 0;

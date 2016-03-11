@@ -606,3 +606,33 @@ void DeviceDriver::cmdExecuteCommands (VkCommandBuffer commandBuffer, deUint32 c
 {
 	m_vk.cmdExecuteCommands(commandBuffer, commandBufferCount, pCommandBuffers);
 }
+
+VkResult DeviceDriver::createSwapchainKHR (VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain) const
+{
+	return m_vk.createSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
+}
+
+void DeviceDriver::destroySwapchainKHR (VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroySwapchainKHR(device, swapchain, pAllocator);
+}
+
+VkResult DeviceDriver::getSwapchainImagesKHR (VkDevice device, VkSwapchainKHR swapchain, deUint32* pSwapchainImageCount, VkImage* pSwapchainImages) const
+{
+	return m_vk.getSwapchainImagesKHR(device, swapchain, pSwapchainImageCount, pSwapchainImages);
+}
+
+VkResult DeviceDriver::acquireNextImageKHR (VkDevice device, VkSwapchainKHR swapchain, deUint64 timeout, VkSemaphore semaphore, VkFence fence, deUint32* pImageIndex) const
+{
+	return m_vk.acquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex);
+}
+
+VkResult DeviceDriver::queuePresentKHR (VkQueue queue, const VkPresentInfoKHR* pPresentInfo) const
+{
+	return m_vk.queuePresentKHR(queue, pPresentInfo);
+}
+
+VkResult DeviceDriver::createSharedSwapchainsKHR (VkDevice device, deUint32 swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains) const
+{
+	return m_vk.createSharedSwapchainsKHR(device, swapchainCount, pCreateInfos, pAllocator, pSwapchains);
+}

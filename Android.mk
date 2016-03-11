@@ -784,6 +784,8 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineStencilTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineTests.cpp \
+	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \
+	external/vulkancts/modules/vulkan/wsi/vktWsiTests.cpp \
 	external/vulkancts/framework/vulkan/vkBuilderUtil.cpp \
 	external/vulkancts/framework/vulkan/vkSpirVProgram.cpp \
 	external/vulkancts/framework/vulkan/vkPrograms.cpp \
@@ -802,7 +804,9 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkTypeUtil.cpp \
 	external/vulkancts/framework/vulkan/vkImageUtil.cpp \
 	external/vulkancts/framework/vulkan/vkQueryUtil.cpp \
-	external/vulkancts/framework/vulkan/vkRef.cpp
+	external/vulkancts/framework/vulkan/vkRef.cpp \
+	external/vulkancts/framework/vulkan/vkWsiPlatform.cpp \
+	external/vulkancts/framework/vulkan/vkWsiUtil.cpp
 
 LOCAL_C_INCLUDES := \
 	frameworks/native/opengl/include \
@@ -857,7 +861,8 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderrender \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/spirv_assembly \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ssbo \
-	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo
+	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi
 
 deqp_compile_flags := \
 	-DDEQP_SUPPORT_EGL=1 \

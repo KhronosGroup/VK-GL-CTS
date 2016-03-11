@@ -71,6 +71,11 @@ DeviceDriver::~DeviceDriver (void)
 #include "vkInstanceDriverImpl.inl"
 #include "vkDeviceDriverImpl.inl"
 
+wsi::Display* Platform::createWsiDisplay (wsi::Type) const
+{
+	TCU_THROW(NotSupportedError, "WSI not supported");
+}
+
 void Platform::describePlatform (std::ostream& dst) const
 {
 	dst << "vk::Platform::describePlatform() not implemented";

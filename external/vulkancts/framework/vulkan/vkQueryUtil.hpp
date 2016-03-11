@@ -31,12 +31,15 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "tcuMaybe.hpp"
 #include "deMemory.h"
 
 #include <vector>
 
 namespace vk
 {
+
+// API queries
 
 std::vector<VkPhysicalDevice>			enumeratePhysicalDevices				(const InstanceInterface& vk, VkInstance instance);
 std::vector<VkQueueFamilyProperties>	getPhysicalDeviceQueueFamilyProperties	(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
@@ -54,7 +57,32 @@ std::vector<VkExtensionProperties>		enumerateInstanceExtensionProperties	(const 
 std::vector<VkLayerProperties>			enumerateDeviceLayerProperties			(const InstanceInterface& vki, VkPhysicalDevice physicalDevice);
 std::vector<VkExtensionProperties>		enumerateDeviceExtensionProperties		(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const char* layerName);
 
+// Feature / extension support
+
 bool									isShaderStageSupported					(const VkPhysicalDeviceFeatures& deviceFeatures, VkShaderStageFlagBits stage);
+
+struct RequiredExtension
+{
+	std::string				name;
+	tcu::Maybe<deUint32>	minVersion;
+	tcu::Maybe<deUint32>	maxVersion;
+
+	explicit RequiredExtension (const std::string&		name_,
+								tcu::Maybe<deUint32>	minVersion_ = tcu::nothing<deUint32>(),
+								tcu::Maybe<deUint32>	maxVersion_ = tcu::nothing<deUint32>())
+		: name			(name_)
+		, minVersion	(minVersion_)
+		, maxVersion	(maxVersion_)
+	{}
+};
+
+bool									isCompatible							(const VkExtensionProperties& extensionProperties, const RequiredExtension& required);
+
+template<typename ExtensionIterator>
+bool									isExtensionSupported					(ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required);
+bool									isExtensionSupported					(const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
+
+// Return variable initialization validation
 
 template <typename Context, typename Interface, typename Type>
 bool validateInitComplete(Context context, void (Interface::*Function)(Context, Type*)const, const Interface& interface)
@@ -73,6 +101,19 @@ bool validateInitComplete(Context context, void (Interface::*Function)(Context, 
 	}
 
 	return true;
+}
+
+// Template implementations
+
+template<typename ExtensionIterator>
+bool isExtensionSupported (ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required)
+{
+	for (ExtensionIterator cur = begin; cur != end; ++cur)
+	{
+		if (isCompatible(*cur, required))
+			return true;
+	}
+	return false;
 }
 
 } // vk

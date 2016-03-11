@@ -31,6 +31,7 @@
 #include "eglwLibrary.hpp"
 #include "eglwEnums.hpp"
 #include "tcuFunctionLibrary.hpp"
+#include "vkWsiPlatform.hpp"
 
 // Assume no call translation is needed
 #include <android/native_window.h>
@@ -205,6 +206,61 @@ private:
 	const vk::PlatformDriver			m_driver;
 };
 
+DE_STATIC_ASSERT(sizeof(vk::pt::AndroidNativeWindowPtr) == sizeof(ANativeWindow*));
+
+class VulkanWindow : public vk::wsi::AndroidWindowInterface
+{
+public:
+	VulkanWindow (tcu::Android::Window& window)
+		: vk::wsi::AndroidWindowInterface	(vk::pt::AndroidNativeWindowPtr(window.getNativeWindow()))
+		, m_window							(window)
+	{
+	}
+
+	~VulkanWindow (void)
+	{
+		m_window.release();
+	}
+
+private:
+	tcu::Android::Window&	m_window;
+};
+
+class VulkanDisplay : public vk::wsi::Display
+{
+public:
+	VulkanDisplay (WindowRegistry& windowRegistry)
+		: m_windowRegistry(windowRegistry)
+	{
+	}
+
+	vk::wsi::Window* createWindow (const Maybe<UVec2>& initialSize) const
+	{
+		Window* const	window	= m_windowRegistry.tryAcquireWindow();
+
+		if (window)
+		{
+			try
+			{
+				if (initialSize)
+					window->setBuffersGeometry((int)initialSize->x(), (int)initialSize->y(), WINDOW_FORMAT_RGBA_8888);
+
+				return new VulkanWindow(*window);
+			}
+			catch (...)
+			{
+				window->release();
+				throw;
+			}
+		}
+		else
+			TCU_THROW(ResourceError, "Native window is not available");
+	}
+
+private:
+	WindowRegistry&		m_windowRegistry;
+};
+
 // Platform
 
 Platform::Platform (NativeActivity& activity)
@@ -232,6 +288,14 @@ vk::Library* Platform::createLibrary (void) const
 void Platform::describePlatform (std::ostream& dst) const
 {
 	tcu::Android::describePlatform(m_activity.getNativeActivity(), dst);
+}
+
+vk::wsi::Display* Platform::createWsiDisplay (vk::wsi::Type wsiType) const
+{
+	if (wsiType == vk::wsi::TYPE_ANDROID)
+		return new VulkanDisplay(const_cast<WindowRegistry&>(m_windowRegistry));
+	else
+		TCU_THROW(NotSupportedError, "WSI type not supported on Android");
 }
 
 } // Android

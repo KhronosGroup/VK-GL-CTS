@@ -39,6 +39,10 @@ set(VKUTIL_SRCS
 	vkTypeUtil.hpp
 	vkAllocationCallbackUtil.cpp
 	vkAllocationCallbackUtil.hpp
+	vkWsiPlatform.cpp
+	vkWsiPlatform.hpp
+	vkWsiUtil.cpp
+	vkWsiUtil.hpp
 	)
 
 set(VKUTIL_LIBS
