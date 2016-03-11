@@ -1,10 +1,10 @@
-#ifndef _VKDEVICEUTIL_HPP
-#define _VKDEVICEUTIL_HPP
+#ifndef _VKWSISURFACETESTS_HPP
+#define _VKWSISURFACETESTS_HPP
 /*-------------------------------------------------------------------------
- * Vulkan CTS Framework
- * --------------------
+ * Vulkan Conformance Tests
+ * ------------------------
  *
- * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2016 Google Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and/or associated documentation files (the
@@ -27,32 +27,21 @@
  *
  *//*!
  * \file
- * \brief Instance and device initialization utilities.
+ * \brief VkSurface Tests
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 #include "vkDefs.hpp"
-#include "vkRef.hpp"
 
-#include <vector>
-#include <string>
-
-namespace tcu
+namespace vkt
 {
-class CommandLine;
-}
-
-namespace vk
+namespace wsi
 {
 
-Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform);
-Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform,
-											 const std::vector<std::string>&	enabledLayers,
-											 const std::vector<std::string>&	enabledExtensions);
+void	createSurfaceTests		(tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType);
 
-VkPhysicalDevice	chooseDevice			(const InstanceInterface&			vkInstance,
-											 VkInstance							instance,
-											 const tcu::CommandLine&			cmdLine);
+} // wsi
+} // vkt
 
-} // vk
-
-#endif // _VKDEVICEUTIL_HPP
+#endif // _VKWSISURFACETESTS_HPP

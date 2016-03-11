@@ -31,20 +31,26 @@
 #include "vkDeviceUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkApiVersion.hpp"
 
 #include "tcuCommandLine.hpp"
 
 #include "qpInfo.h"
 
-#include <vector>
-
 namespace vk
 {
 
 using std::vector;
+using std::string;
 
-Move<VkInstance> createDefaultInstance (const PlatformInterface& vkPlatform)
+Move<VkInstance> createDefaultInstance (const PlatformInterface&	vkPlatform,
+										const vector<string>&		enabledLayers,
+										const vector<string>&		enabledExtensions)
 {
+	vector<const char*>		layerNamePtrs		(enabledLayers.size());
+	vector<const char*>		extensionNamePtrs	(enabledExtensions.size());
+	const deUint32			apiVersion			= pack(ApiVersion(1, 0, 0));
+
 	const struct VkApplicationInfo		appInfo			=
 	{
 		VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -53,7 +59,7 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface& vkPlatform)
 		qpGetReleaseId(),						// appVersion
 		"deqp",									// pEngineName
 		qpGetReleaseId(),						// engineVersion
-		VK_API_VERSION							// apiVersion
+		apiVersion								// apiVersion
 	};
 	const struct VkInstanceCreateInfo	instanceInfo	=
 	{
@@ -61,13 +67,24 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface& vkPlatform)
 		DE_NULL,
 		(VkInstanceCreateFlags)0,
 		&appInfo,
-		0u,										// enabledLayerNameCount
-		DE_NULL,								// ppEnabledLayerNames
-		0u,										// enabledExtensionNameCount;
-		DE_NULL									// ppEnabledExtensionNames
+		(deUint32)layerNamePtrs.size(),
+		layerNamePtrs.empty() ? DE_NULL : &layerNamePtrs[0],
+		(deUint32)extensionNamePtrs.size(),
+		extensionNamePtrs.empty() ? DE_NULL : &extensionNamePtrs[0],
 	};
 
+	for (size_t ndx = 0; ndx < enabledLayers.size(); ++ndx)
+		layerNamePtrs[ndx] = enabledLayers[ndx].c_str();
+
+	for (size_t ndx = 0; ndx < enabledExtensions.size(); ++ndx)
+		extensionNamePtrs[ndx] = enabledExtensions[ndx].c_str();
+
 	return createInstance(vkPlatform, &instanceInfo);
+}
+
+Move<VkInstance> createDefaultInstance (const PlatformInterface& vkPlatform)
+{
+	return createDefaultInstance(vkPlatform, vector<string>(), vector<string>());
 }
 
 VkPhysicalDevice chooseDevice (const InstanceInterface& vkInstance, VkInstance instance, const tcu::CommandLine& cmdLine)

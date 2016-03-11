@@ -102,19 +102,27 @@ protected:
 	Functions	m_vk;
 };
 
+// Defined in vkWsiPlatform.hpp
+namespace wsi
+{
+class Display;
+} // wsi
+
 /*--------------------------------------------------------------------*//*!
  * \brief Vulkan platform interface
  *//*--------------------------------------------------------------------*/
 class Platform
 {
 public:
-						Platform			(void) {}
-						~Platform			(void) {}
+							Platform			(void) {}
+							~Platform			(void) {}
 
 	// \todo [2015-01-05 pyry] Parametrize this to select for example debug library / interface?
-	virtual Library*	createLibrary		(void) const = 0;
+	virtual Library*		createLibrary		(void) const = 0;
 
-	virtual void		describePlatform	(std::ostream& dst) const;
+	virtual wsi::Display*	createWsiDisplay	(wsi::Type wsiType) const;
+
+	virtual void			describePlatform	(std::ostream& dst) const;
 };
 
 } // vk

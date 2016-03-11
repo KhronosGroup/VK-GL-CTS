@@ -30,38 +30,48 @@
 #include "tcuWin32API.h"
 
 #if defined(DEQP_SUPPORT_EGL)
-#	ifndef _EGLUPLATFORM_HPP
-#		include "egluPlatform.hpp"
-#	endif
+#	include "egluPlatform.hpp"
 #endif
 
 namespace tcu
 {
 
-class Win32Platform : public tcu::Platform, private glu::Platform, private vk::Platform
+class Win32VulkanPlatform : public vk::Platform
+{
+public:
+						Win32VulkanPlatform		(HINSTANCE instance);
+						~Win32VulkanPlatform	(void);
+
+	vk::Library*		createLibrary			(void) const;
+	void				describePlatform		(std::ostream& dst) const;
+	vk::wsi::Display*	createWsiDisplay		(vk::wsi::Type wsiType) const;
+
+private:
+	const HINSTANCE		m_instance;
+};
+
+class Win32Platform : public tcu::Platform, private glu::Platform
 #if defined(DEQP_SUPPORT_EGL)
 	, private eglu::Platform
 #endif
 {
 public:
-							Win32Platform		(void);
-							~Win32Platform		(void);
+								Win32Platform		(void);
+								~Win32Platform		(void);
 
-	bool					processEvents		(void);
+	bool						processEvents		(void);
 
-	const glu::Platform&	getGLPlatform		(void) const { return static_cast<const glu::Platform&>(*this);		}
+	const glu::Platform&		getGLPlatform		(void) const { return static_cast<const glu::Platform&>(*this);	}
 
 #if defined(DEQP_SUPPORT_EGL)
-	const eglu::Platform&	getEGLPlatform		(void) const { return static_cast<const eglu::Platform&>(*this);	}
+	const eglu::Platform&		getEGLPlatform		(void) const { return static_cast<const eglu::Platform&>(*this);}
 #endif
 
-	const vk::Platform&		getVulkanPlatform	(void) const { return static_cast<const vk::Platform&>(*this);		}
+	const vk::Platform&			getVulkanPlatform	(void) const { return m_vulkanPlatform;							}
 
 private:
-	vk::Library*			createLibrary		(void) const;
-	void					describePlatform	(std::ostream& dst) const;
-
-	HINSTANCE				m_instance;
+	const HINSTANCE				m_instance;
+	const Win32VulkanPlatform	m_vulkanPlatform;
 };
 
 } // tcu

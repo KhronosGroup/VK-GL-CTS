@@ -1,10 +1,8 @@
-#ifndef _VKDEVICEUTIL_HPP
-#define _VKDEVICEUTIL_HPP
 /*-------------------------------------------------------------------------
- * Vulkan CTS Framework
- * --------------------
+ * Vulkan Conformance Tests
+ * ------------------------
  *
- * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2016 Google Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and/or associated documentation files (the
@@ -27,32 +25,43 @@
  *
  *//*!
  * \file
- * \brief Instance and device initialization utilities.
+ * \brief WSI Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vkDefs.hpp"
-#include "vkRef.hpp"
+#include "vktWsiTests.hpp"
+#include "vktWsiSurfaceTests.hpp"
+#include "vktTestGroupUtil.hpp"
+#include "vkWsiUtil.hpp"
 
-#include <vector>
-#include <string>
-
-namespace tcu
+namespace vkt
 {
-class CommandLine;
+namespace wsi
+{
+
+namespace
+{
+
+void createTypeSpecificTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
+{
+	addTestGroup(testGroup, "surface", "VkSurface Tests", createSurfaceTests, wsiType);
 }
 
-namespace vk
+void createWsiTests (tcu::TestCaseGroup* apiTests)
 {
+	for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
+	{
+		const vk::wsi::Type	wsiType	= (vk::wsi::Type)typeNdx;
 
-Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform);
-Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform,
-											 const std::vector<std::string>&	enabledLayers,
-											 const std::vector<std::string>&	enabledExtensions);
+		addTestGroup(apiTests, getName(wsiType), "", createTypeSpecificTests, wsiType);
+	}
+}
 
-VkPhysicalDevice	chooseDevice			(const InstanceInterface&			vkInstance,
-											 VkInstance							instance,
-											 const tcu::CommandLine&			cmdLine);
+} // anonymous
 
-} // vk
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "wsi", "WSI Tests", createWsiTests);
+}
 
-#endif // _VKDEVICEUTIL_HPP
+} // wsi
+} // vkt

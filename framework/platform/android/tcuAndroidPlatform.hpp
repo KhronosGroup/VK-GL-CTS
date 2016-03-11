@@ -50,8 +50,10 @@ public:
 
 	WindowRegistry&					getWindowRegistry	(void) { return m_windowRegistry; }
 
+	// Vulkan Platform API
 	vk::Library*					createLibrary		(void) const;
 	void							describePlatform	(std::ostream& dst) const;
+	vk::wsi::Display*				createWsiDisplay	(vk::wsi::Type wsiType) const;
 
 private:
 	NativeActivity&					m_activity;

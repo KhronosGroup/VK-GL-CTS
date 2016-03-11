@@ -1,10 +1,8 @@
-#ifndef _VKDEVICEUTIL_HPP
-#define _VKDEVICEUTIL_HPP
 /*-------------------------------------------------------------------------
  * Vulkan CTS Framework
  * --------------------
  *
- * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2016 Google Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and/or associated documentation files (the
@@ -27,32 +25,20 @@
  *
  *//*!
  * \file
- * \brief Instance and device initialization utilities.
+ * \brief WSI Platform Abstraction.
  *//*--------------------------------------------------------------------*/
 
-#include "vkDefs.hpp"
-#include "vkRef.hpp"
-
-#include <vector>
-#include <string>
-
-namespace tcu
-{
-class CommandLine;
-}
+#include "vkWsiPlatform.hpp"
 
 namespace vk
 {
+namespace wsi
+{
 
-Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform);
-Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform,
-											 const std::vector<std::string>&	enabledLayers,
-											 const std::vector<std::string>&	enabledExtensions);
+void Window::resize (const tcu::UVec2&)
+{
+	TCU_THROW(InternalError, "resize() called on window not supporting it");
+}
 
-VkPhysicalDevice	chooseDevice			(const InstanceInterface&			vkInstance,
-											 VkInstance							instance,
-											 const tcu::CommandLine&			cmdLine);
-
+} // wsi
 } // vk
-
-#endif // _VKDEVICEUTIL_HPP

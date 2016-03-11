@@ -14,6 +14,7 @@ add_subdirectory(query_pool)
 add_subdirectory(draw)
 add_subdirectory(compute)
 add_subdirectory(image)
+add_subdirectory(wsi)
 
 include_directories(
 	api
@@ -30,6 +31,7 @@ include_directories(
 	draw
 	compute
 	image
+	wsi
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -67,6 +69,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-draw
 	deqp-vk-compute
 	deqp-vk-image
+	deqp-vk-wsi
 	)
 
 add_library(deqp-vk-common STATIC ${DEQP_VK_COMMON_SRCS})
