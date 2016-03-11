@@ -21,6 +21,8 @@ set(DEQP_VK_SHADERRENDER_SRCS
 	vktShaderRenderStructTests.hpp
 	vktShaderRenderSwitchTests.cpp
 	vktShaderRenderSwitchTests.hpp
+	vktShaderRenderTextureFunctionTests.cpp
+	vktShaderRenderTextureFunctionTests.hpp
 	)
 
 set(DEQP_VK_SHADERRENDER_LIBS
