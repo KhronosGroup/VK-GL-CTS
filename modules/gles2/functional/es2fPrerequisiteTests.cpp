@@ -65,7 +65,7 @@ TestCase::IterateResult StateResetCase::iterate (void)
 {
 	try
 	{
-		glu::resetState(m_context.getRenderContext());
+		glu::resetState(m_context.getRenderContext(), m_context.getContextInfo());
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
 	catch (const tcu::TestError& e)

@@ -31,18 +31,38 @@
 
 namespace glu
 {
-
-void resetStateES (const RenderContext& renderCtx)
+namespace
 {
-	const glw::Functions&					gl		= renderCtx.getFunctions();
-	const ContextType						type	= renderCtx.getType();
-	const de::UniquePtr<glu::ContextInfo>	ctxInfo	(glu::ContextInfo::create(renderCtx));
+enum
+{
+	MAX_ERROR_COUNT = 10
+};
+
+void resetErrors (const glw::Functions& gl)
+{
+	size_t errorNdx = 0;
+
+	for (errorNdx = 0; errorNdx < MAX_ERROR_COUNT; errorNdx++)
+	{
+		if (gl.getError() == GL_NONE)
+			break;
+	}
+
+	if (errorNdx == MAX_ERROR_COUNT)
+		TCU_FAIL("Couldn't reset error state");
+}
+
+}
+
+void resetStateES (const RenderContext& renderCtx, const ContextInfo& ctxInfo)
+{
+	const glw::Functions&	gl	= renderCtx.getFunctions();
+	const ContextType		type	= renderCtx.getType();
+
+	// Reset error state
+	resetErrors(gl);
 
 	DE_ASSERT(isContextTypeES(type));
-
-	// Reset error state.
-	gl.getError();
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error state");
 
 	// Vertex attrib array state.
 	{
@@ -157,7 +177,7 @@ void resetStateES (const RenderContext& renderCtx)
 			if (contextSupports(type, ApiType::es(3,1)))
 				gl.texParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
 
-			if (ctxInfo->isExtensionSupported("GL_EXT_texture_border_clamp"))
+			if (ctxInfo.isExtensionSupported("GL_EXT_texture_border_clamp"))
 				gl.texParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 
 			// Reset cube map texture.
@@ -190,7 +210,7 @@ void resetStateES (const RenderContext& renderCtx)
 			if (contextSupports(type, ApiType::es(3,1)))
 				gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
 
-			if (ctxInfo->isExtensionSupported("GL_EXT_texture_border_clamp"))
+			if (ctxInfo.isExtensionSupported("GL_EXT_texture_border_clamp"))
 				gl.texParameterfv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 
 			if (contextSupports(type, ApiType::es(3,0)))
@@ -213,7 +233,7 @@ void resetStateES (const RenderContext& renderCtx)
 				gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE,	GL_NONE);
 				gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_FUNC,	GL_LEQUAL);
 
-				if (ctxInfo->isExtensionSupported("GL_EXT_texture_border_clamp"))
+				if (ctxInfo.isExtensionSupported("GL_EXT_texture_border_clamp"))
 					gl.texParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 			}
 
@@ -241,7 +261,7 @@ void resetStateES (const RenderContext& renderCtx)
 				gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_COMPARE_MODE,	GL_NONE);
 				gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_COMPARE_FUNC,	GL_LEQUAL);
 
-				if (ctxInfo->isExtensionSupported("GL_EXT_texture_border_clamp"))
+				if (ctxInfo.isExtensionSupported("GL_EXT_texture_border_clamp"))
 					gl.texParameterfv(GL_TEXTURE_3D, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 			}
 
@@ -260,7 +280,7 @@ void resetStateES (const RenderContext& renderCtx)
 				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL,	1000);
 			}
 
-			if (ctxInfo->isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+			if (ctxInfo.isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 			{
 				gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, 0);
 				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_SWIZZLE_R,		GL_RED);
@@ -271,7 +291,7 @@ void resetStateES (const RenderContext& renderCtx)
 				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAX_LEVEL,		1000);
 			}
 
-			if (ctxInfo->isExtensionSupported("GL_EXT_texture_cube_map_array"))
+			if (ctxInfo.isExtensionSupported("GL_EXT_texture_cube_map_array"))
 			{
 				// Reset cube array texture.
 				gl.bindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
@@ -290,7 +310,7 @@ void resetStateES (const RenderContext& renderCtx)
 				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_COMPARE_MODE,	GL_NONE);
 				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_COMPARE_FUNC,	GL_LEQUAL);
 
-				if (ctxInfo->isExtensionSupported("GL_EXT_texture_border_clamp"))
+				if (ctxInfo.isExtensionSupported("GL_EXT_texture_border_clamp"))
 					gl.texParameterfv(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 			}
 		}
@@ -309,7 +329,7 @@ void resetStateES (const RenderContext& renderCtx)
 	// Resetting state using non-indexed variants should be enough, but some
 	// implementations have bugs so we need to make sure indexed state gets
 	// set back to initial values.
-	if (ctxInfo->isExtensionSupported("GL_EXT_draw_buffers_indexed"))
+	if (ctxInfo.isExtensionSupported("GL_EXT_draw_buffers_indexed"))
 	{
 		int numDrawBuffers = 0;
 
@@ -537,7 +557,7 @@ void resetStateES (const RenderContext& renderCtx)
 	}
 
 	// Sample shading state.
-	if (contextSupports(type, ApiType::es(3,1)) && ctxInfo->isExtensionSupported("GL_OES_sample_shading"))
+	if (contextSupports(type, ApiType::es(3,1)) && ctxInfo.isExtensionSupported("GL_OES_sample_shading"))
 	{
 		gl.minSampleShading(0.0f);
 		gl.disable(GL_SAMPLE_SHADING);
@@ -546,7 +566,7 @@ void resetStateES (const RenderContext& renderCtx)
 	}
 
 	// Debug state
-	if (ctxInfo->isExtensionSupported("GL_KHR_debug"))
+	if (ctxInfo.isExtensionSupported("GL_KHR_debug"))
 	{
 		const bool entrypointsPresent =	gl.debugMessageControl	!= DE_NULL	&&
 										gl.debugMessageCallback	!= DE_NULL	&&
@@ -575,28 +595,28 @@ void resetStateES (const RenderContext& renderCtx)
 	}
 
 	// Primitive bounding box state.
-	if (ctxInfo->isExtensionSupported("GL_EXT_primitive_bounding_box"))
+	if (ctxInfo.isExtensionSupported("GL_EXT_primitive_bounding_box"))
 	{
 		gl.primitiveBoundingBox(-1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Primitive bounding box state reset failed");
 	}
 
 	// Tessellation state
-	if (ctxInfo->isExtensionSupported("GL_EXT_tessellation_shader"))
+	if (ctxInfo.isExtensionSupported("GL_EXT_tessellation_shader"))
 	{
 		gl.patchParameteri(GL_PATCH_VERTICES, 3);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Tessellation patch vertices state reset failed");
 	}
 
 	// Advanced coherent blending
-	if (ctxInfo->isExtensionSupported("GL_KHR_blend_equation_advanced_coherent"))
+	if (ctxInfo.isExtensionSupported("GL_KHR_blend_equation_advanced_coherent"))
 	{
 		gl.enable(GL_BLEND_ADVANCED_COHERENT_KHR);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Blend equation advanced coherent state reset failed");
 	}
 
 	// Texture buffer
-	if (ctxInfo->isExtensionSupported("GL_EXT_texture_buffer"))
+	if (ctxInfo.isExtensionSupported("GL_EXT_texture_buffer"))
 	{
 		gl.bindTexture(GL_TEXTURE_BUFFER, 0);
 		gl.bindBuffer(GL_TEXTURE_BUFFER, 0);
@@ -604,15 +624,13 @@ void resetStateES (const RenderContext& renderCtx)
 	}
 }
 
-void resetStateGLCore (const RenderContext& renderCtx)
+void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInfo)
 {
-	const glw::Functions&					gl		= renderCtx.getFunctions();
-	const ContextType						type	= renderCtx.getType();
-	const de::UniquePtr<glu::ContextInfo>	ctxInfo	(glu::ContextInfo::create(renderCtx));
+	const glw::Functions&	gl		= renderCtx.getFunctions();
+	const ContextType		type	= renderCtx.getType();
 
-	// Reset error state.
-	gl.getError();
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error state");
+	// Reset error state
+	resetErrors(gl);
 
 	// Vertex attrib array state.
 	{
@@ -1100,7 +1118,7 @@ void resetStateGLCore (const RenderContext& renderCtx)
 	}
 
 	// Debug state
-	if (ctxInfo->isExtensionSupported("GL_KHR_debug"))
+	if (ctxInfo.isExtensionSupported("GL_KHR_debug"))
 	{
 		const bool entrypointsPresent =	gl.debugMessageControl	!= DE_NULL	&&
 										gl.debugMessageCallback	!= DE_NULL;
@@ -1120,12 +1138,12 @@ void resetStateGLCore (const RenderContext& renderCtx)
 	}
 }
 
-void resetState (const RenderContext& renderCtx)
+void resetState (const RenderContext& renderCtx, const ContextInfo& ctxInfo)
 {
 	if (isContextTypeES(renderCtx.getType()))
-		resetStateES(renderCtx);
+		resetStateES(renderCtx, ctxInfo);
 	else if (isContextTypeGLCore(renderCtx.getType()))
-		resetStateGLCore(renderCtx);
+		resetStateGLCore(renderCtx, ctxInfo);
 	else
 		throw tcu::InternalError("State reset requested for unsupported context type");
 }

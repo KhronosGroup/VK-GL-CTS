@@ -29,8 +29,9 @@ namespace glu
 {
 
 class RenderContext;
+class ContextInfo;
 
-void resetState (const RenderContext& renderCtx);
+void resetState (const RenderContext& renderCtx, const ContextInfo& ctxInfo);
 
 } // glu
 
