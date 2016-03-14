@@ -34,6 +34,8 @@
 #include "vkWsiPlatform.hpp"
 #include "vkRef.hpp"
 
+#include <vector>
+
 namespace vk
 {
 namespace wsi
@@ -62,34 +64,42 @@ struct PlatformProperties
 	deUint32		maxWindowsPerDisplay;
 };
 
-const char*					getName									(Type wsiType);
-const char*					getExtensionName						(Type wsiType);
+const char*						getName									(Type wsiType);
+const char*						getExtensionName						(Type wsiType);
 
-const PlatformProperties&	getPlatformProperties					(Type wsiType);
+const PlatformProperties&		getPlatformProperties					(Type wsiType);
 
-VkResult					createSurface							(const InstanceInterface&		vki,
-																	 VkInstance						instance,
-																	 Type							wsiType,
-																	 const Display&					nativeDisplay,
-																	 const Window&					nativeWindow,
-																	 const VkAllocationCallbacks*	pAllocator,
-																	 VkSurfaceKHR*					pSurface);
+VkResult						createSurface							(const InstanceInterface&		vki,
+																		 VkInstance						instance,
+																		 Type							wsiType,
+																		 const Display&					nativeDisplay,
+																		 const Window&					nativeWindow,
+																		 const VkAllocationCallbacks*	pAllocator,
+																		 VkSurfaceKHR*					pSurface);
 
-Move<VkSurfaceKHR>			createSurface							(const InstanceInterface&		vki,
-																	 VkInstance						instance,
-																	 Type							wsiType,
-																	 const Display&					nativeDisplay,
-																	 const Window&					nativeWindow,
-																	 const VkAllocationCallbacks*	pAllocator = DE_NULL);
+Move<VkSurfaceKHR>				createSurface							(const InstanceInterface&		vki,
+																		 VkInstance						instance,
+																		 Type							wsiType,
+																		 const Display&					nativeDisplay,
+																		 const Window&					nativeWindow,
+																		 const VkAllocationCallbacks*	pAllocator = DE_NULL);
 
-VkBool32					getPhysicalDeviceSurfaceSupport			(const InstanceInterface&		vki,
-																	 VkPhysicalDevice				physicalDevice,
-																	 deUint32						queueFamilyIndex,
-																	 VkSurfaceKHR					surface);
+VkBool32						getPhysicalDeviceSurfaceSupport			(const InstanceInterface&		vki,
+																		 VkPhysicalDevice				physicalDevice,
+																		 deUint32						queueFamilyIndex,
+																		 VkSurfaceKHR					surface);
 
-VkSurfaceCapabilitiesKHR	getPhysicalDeviceSurfaceCapabilities	(const InstanceInterface&		vki,
-																	 VkPhysicalDevice				physicalDevice,
-																	 VkSurfaceKHR					surface);
+VkSurfaceCapabilitiesKHR		getPhysicalDeviceSurfaceCapabilities	(const InstanceInterface&		vki,
+																		 VkPhysicalDevice				physicalDevice,
+																		 VkSurfaceKHR					surface);
+
+std::vector<VkSurfaceFormatKHR>	getPhysicalDeviceSurfaceFormats			(const InstanceInterface&		vki,
+																		 VkPhysicalDevice				physicalDevice,
+																		 VkSurfaceKHR					surface);
+
+std::vector<VkPresentModeKHR>	getPhysicalDeviceSurfacePresentModes	(const InstanceInterface&		vki,
+																		 VkPhysicalDevice				physicalDevice,
+																		 VkSurfaceKHR					surface);
 
 } // wsi
 } // vk
