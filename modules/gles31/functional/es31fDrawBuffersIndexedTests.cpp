@@ -1339,7 +1339,7 @@ TextureFormat getRandomFormat (de::Random& rng, Context& context)
 	if (isES32)
 		return glu::mapGLInternalFormat(de::getArrayElement(glFormats, rng.getUint32() % DE_LENGTH_OF_ARRAY(glFormats)));
 	else
-		return glu::mapGLInternalFormat(de::getArrayElement(glFormats, rng.getUint32() % DE_LENGTH_OF_ARRAY(glFormats) - 6));
+		return glu::mapGLInternalFormat(de::getArrayElement(glFormats, rng.getUint32() % (DE_LENGTH_OF_ARRAY(glFormats) - 6)));
 }
 
 void genRandomTest (de::Random& rng, BlendState& preCommon, BlendState& postCommon, vector<DrawBufferInfo>& drawBuffers, int maxDrawBufferCount, Context& context)
