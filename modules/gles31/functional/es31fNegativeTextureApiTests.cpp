@@ -1856,15 +1856,11 @@ void texparameteri (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname GL_TEXTURE_BASE_LEVEL is not 0.");
-	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, -1);
-	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, 1);
 	ctx.expectError(GL_INVALID_OPERATION);
 
 	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 	{
-		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, -1);
-		ctx.expectError(GL_INVALID_OPERATION);
 		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, 1);
 		ctx.expectError(GL_INVALID_OPERATION);
 	}
@@ -1981,15 +1977,11 @@ void texparameterf (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname GL_TEXTURE_BASE_LEVEL is not 0.");
-	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, -1.0f);
-	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, 1.0f);
 	ctx.expectError(GL_INVALID_OPERATION);
 
 	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 	{
-		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, -1.0f);
-		ctx.expectError(GL_INVALID_OPERATION);
 		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, 1.0f);
 		ctx.expectError(GL_INVALID_OPERATION);
 	}
@@ -2099,18 +2091,12 @@ void texparameteriv (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname GL_TEXTURE_BASE_LEVEL is not 0.");
-	params[0] = -1;
-	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, &params[0]);
-	ctx.expectError(GL_INVALID_OPERATION);
 	params[0] = 1;
 	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, &params[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
 
 	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 	{
-		params[0] = -1;
-		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, &params[0]);
-		ctx.expectError(GL_INVALID_OPERATION);
 		params[0] = 1;
 		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, &params[0]);
 		ctx.expectError(GL_INVALID_OPERATION);
@@ -2222,18 +2208,12 @@ void texparameterfv (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_2D_MULTISAMPLE or GL_TEXTURE_2D_MULTISAMPLE_ARRAY and pname GL_TEXTURE_BASE_LEVEL is not 0.");
-	params[0] = -1.0f;
-	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, &params[0]);
-	ctx.expectError(GL_INVALID_OPERATION);
 	params[0] = 1.0f;
 	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, &params[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
 
 	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 	{
-		params[0] = -1.0f;
-		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, &params[0]);
-		ctx.expectError(GL_INVALID_OPERATION);
 		params[0] = 1.0f;
 		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, &params[0]);
 		ctx.expectError(GL_INVALID_OPERATION);
