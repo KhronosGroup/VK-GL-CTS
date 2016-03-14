@@ -67,7 +67,7 @@ void TestCaseWrapper::deinit (tcu::TestCase* testCase)
 	testCase->deinit();
 
 	DE_ASSERT(m_testPackage.getContext());
-	glu::resetState(m_testPackage.getContext()->getRenderContext());
+	glu::resetState(m_testPackage.getContext()->getRenderContext(), m_testPackage.getContext()->getContextInfo());
 }
 
 tcu::TestNode::IterateResult TestCaseWrapper::iterate (tcu::TestCase* testCase)
