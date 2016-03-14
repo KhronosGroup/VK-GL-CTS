@@ -284,10 +284,18 @@ void buildFinalIndex (std::vector<BinaryIndexNode>* dst, const SparseIndexNode* 
 {
 	const deUint32	indexSize	= getIndexSize(root);
 
-	DE_ASSERT(indexSize > 0);
-
-	dst->resize(indexSize);
-	addAndCountNodes(&(*dst)[0], 0, root);
+	if (indexSize > 0)
+	{
+		dst->resize(indexSize);
+		addAndCountNodes(&(*dst)[0], 0, root);
+	}
+	else
+	{
+		// Generate empty index
+		dst->resize(1);
+		(*dst)[0].word	= 0u;
+		(*dst)[0].index	= 0u;
+	}
 }
 
 } // anonymous

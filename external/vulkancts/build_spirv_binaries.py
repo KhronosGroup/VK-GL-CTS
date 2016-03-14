@@ -60,20 +60,21 @@ def getBuildConfig (buildPathPtrn, targetName, buildType):
 	return BuildConfig(buildPath, buildType, ["-DDEQP_TARGET=%s" % targetName])
 
 def cleanDstDir (dstPath):
-	binFiles = [f for f in os.listdir(dstPath) if os.path.isfile(os.path.join(dstPath, f)) and fnmatch.fnmatch(f, "*.spirv")]
+	binFiles = [f for f in os.listdir(dstPath) if os.path.isfile(os.path.join(dstPath, f)) and fnmatch.fnmatch(f, "*.spv")]
 
 	for binFile in binFiles:
 		print "Removing %s" % os.path.join(dstPath, binFile)
 		os.remove(os.path.join(dstPath, binFile))
 
-def execBuildPrograms (buildCfg, generator, module, mode, dstPath):
-	workDir = os.path.join(buildCfg.getBuildDir(), "modules", module.dirName)
+def execBuildPrograms (buildCfg, generator, module, dstPath):
+	fullDstPath	= os.path.realpath(dstPath)
+	workDir		= os.path.join(buildCfg.getBuildDir(), "modules", module.dirName)
 
 	pushWorkingDir(workDir)
 
 	try:
 		binPath = generator.getBinaryPath(buildCfg.getBuildType(), os.path.join(".", "vk-build-programs"))
-		execute([binPath, "--mode", mode, "--dst-path", dstPath])
+		execute([binPath, "--validate-spv", "--dst-path", fullDstPath])
 	finally:
 		popWorkingDir()
 
@@ -95,10 +96,6 @@ def parseArgs ():
 						dest="targetName",
 						default=DEFAULT_TARGET,
 						help="dEQP build target")
-	parser.add_argument("--mode",
-						dest="mode",
-						default="build",
-						help="Build mode (build or verify)")
 	parser.add_argument("-d",
 						"--dst-path",
 						dest="dstPath",
@@ -115,10 +112,9 @@ if __name__ == "__main__":
 
 	build(buildCfg, generator, ["vk-build-programs"])
 
-	if args.mode == "build":
-		if os.path.exists(args.dstPath):
-			cleanDstDir(args.dstPath)
-		else:
-			os.makedirs(args.dstPath)
+	if os.path.exists(args.dstPath):
+		cleanDstDir(args.dstPath)
+	else:
+		os.makedirs(args.dstPath)
 
-	execBuildPrograms(buildCfg, generator, module, args.mode, args.dstPath)
+	execBuildPrograms(buildCfg, generator, module, args.dstPath)
