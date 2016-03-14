@@ -32,41 +32,51 @@
 
 #include "vkDefs.hpp"
 #include "tcuTestLog.hpp"
+#include "deStringUtil.hpp"
 
 #include <string>
-#include <sstream>
 
 namespace vk
 {
 
 struct SpirVAsmSource
 {
-	template<typename T>
-	SpirVAsmSource& operator<<(const T& val)
+	SpirVAsmSource (void)
 	{
-		program << val;
-		return *this;
 	}
-	std::ostringstream program;
+
+	SpirVAsmSource (const std::string& source_)
+		: source(source_)
+	{
+	}
+
+	std::string		source;
 };
 
 struct SpirVProgramInfo
 {
-	SpirVProgramInfo()
-		: source		(DE_NULL)
-		, compileTimeUs	(0)
+	SpirVProgramInfo (void)
+		: compileTimeUs	(0)
 		, compileOk		(false)
 	{
 	}
 
-	const SpirVAsmSource*	source;
-	std::string				infoLog;
-	deUint64				compileTimeUs;
-	bool					compileOk;
+	std::string		source;
+	std::string		infoLog;
+	deUint64		compileTimeUs;
+	bool			compileOk;
 };
 
-tcu::TestLog&	operator<<			(tcu::TestLog& log, const SpirVProgramInfo& shaderInfo);
-tcu::TestLog&	operator<<			(tcu::TestLog& log, const SpirVAsmSource& program);
+tcu::TestLog&	operator<<		(tcu::TestLog& log, const SpirVProgramInfo& shaderInfo);
+tcu::TestLog&	operator<<		(tcu::TestLog& log, const SpirVAsmSource& program);
+
+// Helper for constructing SpirVAsmSource
+template<typename T>
+SpirVAsmSource& operator<< (SpirVAsmSource& src, const T& val)
+{
+	src.source += de::toString(val);
+	return src;
+}
 
 }
 

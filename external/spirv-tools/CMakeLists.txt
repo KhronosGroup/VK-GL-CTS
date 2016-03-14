@@ -4,7 +4,7 @@ if (NOT DE_DEFS)
 	message(FATAL_ERROR "Include Defs.cmake")
 endif ()
 
-if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/include/libspirv/libspirv.h")
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/include/spirv-tools/libspirv.h")
 	set(DEFAULT_SPIRV_TOOLS_SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src)
 else ()
 	set(DEFAULT_SPIRV_TOOLS_SRC_PATH "../spirv-tools")

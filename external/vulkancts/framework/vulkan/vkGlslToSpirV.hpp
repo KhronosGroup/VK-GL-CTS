@@ -39,11 +39,20 @@
 namespace vk
 {
 
-//! Compile GLSL program to SPIR-V. Will fail with NotSupportedError if compiler is not available.
-void	glslToSpirV			(const glu::ProgramSources& src, std::vector<deUint8>* dst, glu::ShaderProgramInfo* buildInfo);
-
-//! Disassemble SPIR-V binary
-void	disassembleSpirV	(size_t binarySize, const deUint8* binary, std::ostream* dst);
+/*--------------------------------------------------------------------*//*!
+ * \brief Compile GLSL program to SPIR-V binary
+ * \param src
+ * \param dst
+ * \param buildInfo
+ * \return True if compilation and linking succeeded, false otherwise
+ *
+ * If deqp was built without glslang (and thus compiler is not available)
+ * tcu::NotSupportedError will be thrown instead.
+ *
+ * \note No linking is currently supported so src may contain source
+ *       for only one shader stage.
+ *//*--------------------------------------------------------------------*/
+bool	compileGlslToSpirV		(const glu::ProgramSources& src, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo);
 
 } // vk
 
