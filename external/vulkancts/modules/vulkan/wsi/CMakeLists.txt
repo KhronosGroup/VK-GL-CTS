@@ -7,6 +7,8 @@ set(DEQP_VK_WSI_SRCS
 	vktWsiTests.hpp
 	vktWsiSurfaceTests.cpp
 	vktWsiSurfaceTests.hpp
+	vktWsiSwapchainTests.cpp
+	vktWsiSwapchainTests.hpp
 	)
 
 set(DEQP_VK_WSI_LIBS

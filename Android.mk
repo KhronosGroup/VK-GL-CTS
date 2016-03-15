@@ -785,6 +785,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineStencilTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \
+	external/vulkancts/modules/vulkan/wsi/vktWsiSwapchainTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiTests.cpp \
 	external/vulkancts/framework/vulkan/vkBuilderUtil.cpp \
 	external/vulkancts/framework/vulkan/vkSpirVProgram.cpp \
