@@ -2600,8 +2600,8 @@ void BuiltinVariableRenderTest::init (void)
 
 		tcu::Vec2 range = tcu::Vec2(1.0f, 1.0f);
 
-		if (m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_point_size"))
-			TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension.");
+		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_point_size"))
+			TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_point_size extension.");
 
 		m_context.getRenderContext().getFunctions().getFloatv(GL_ALIASED_POINT_SIZE_RANGE, range.getPtr());
 		if (range.y() < requiredPointSize)
