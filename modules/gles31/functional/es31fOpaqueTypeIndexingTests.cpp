@@ -381,9 +381,9 @@ void SamplerIndexingCase::init (void)
 				"GL_EXT_gpu_shader5 extension is required for dynamic indexing of sampler arrays.");
 
 		if (m_samplerType == TYPE_SAMPLER_CUBE_ARRAY
-			&& m_samplerType == TYPE_SAMPLER_CUBE_ARRAY_SHADOW
-			&& m_samplerType == TYPE_INT_SAMPLER_CUBE_ARRAY
-			&& m_samplerType == TYPE_UINT_SAMPLER_CUBE_ARRAY)
+			|| m_samplerType == TYPE_SAMPLER_CUBE_ARRAY_SHADOW
+			|| m_samplerType == TYPE_INT_SAMPLER_CUBE_ARRAY
+			|| m_samplerType == TYPE_UINT_SAMPLER_CUBE_ARRAY)
 		{
 			TCU_CHECK_AND_THROW(NotSupportedError,
 				m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_cube_map_array"),
@@ -410,10 +410,10 @@ void SamplerIndexingCase::getShaderSpec (ShaderSpec* spec, int numSamplers, int 
 		global << "#extension GL_EXT_gpu_shader5 : require\n";
 
 	if (!isES32
-		&& m_samplerType == TYPE_SAMPLER_CUBE_ARRAY
-		&& m_samplerType == TYPE_SAMPLER_CUBE_ARRAY_SHADOW
-		&& m_samplerType == TYPE_INT_SAMPLER_CUBE_ARRAY
-		&& m_samplerType == TYPE_UINT_SAMPLER_CUBE_ARRAY)
+		&& (m_samplerType == TYPE_SAMPLER_CUBE_ARRAY
+			|| m_samplerType == TYPE_SAMPLER_CUBE_ARRAY_SHADOW
+			|| m_samplerType == TYPE_INT_SAMPLER_CUBE_ARRAY
+			|| m_samplerType == TYPE_UINT_SAMPLER_CUBE_ARRAY))
 	{
 		global << "#extension GL_EXT_texture_cube_map_array: require\n";
 	}
