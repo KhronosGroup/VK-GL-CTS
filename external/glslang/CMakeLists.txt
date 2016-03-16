@@ -27,7 +27,7 @@ if (NOT BISON_FOUND AND DE_OS_IS_WIN32 AND EXISTS ${GLSLANG_ABS_PATH}/tools/biso
 	set(BISON_FOUND ON)
 endif ()
 
-if (BISON_FOUND AND EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp AND NOT DE_OS_IS_ANDROID)
+if (BISON_FOUND AND EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 	message(STATUS "glslang found; building with DEQP_SUPPORT_GLSLANG")
 
 	include_directories(
