@@ -96,7 +96,7 @@ const PlatformProperties& getPlatformProperties (Type wsiType)
 		},
 		// VK_KHR_wayland_surface
 		{
-			PlatformProperties::FEATURE_INITIAL_WINDOW_SIZE|PlatformProperties::FEATURE_RESIZE_WINDOW,
+			0u,
 			PlatformProperties::SWAPCHAIN_EXTENT_SETS_WINDOW_SIZE,
 			noDisplayLimit,
 			noWindowLimit,
@@ -275,6 +275,46 @@ VkSurfaceCapabilitiesKHR getPhysicalDeviceSurfaceCapabilities (const InstanceInt
 	VK_CHECK(vki.getPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilities));
 
 	return capabilities;
+}
+
+std::vector<VkSurfaceFormatKHR> getPhysicalDeviceSurfaceFormats (const InstanceInterface&		vki,
+																 VkPhysicalDevice				physicalDevice,
+																 VkSurfaceKHR					surface)
+{
+	deUint32	numFormats	= 0;
+
+	VK_CHECK(vki.getPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &numFormats, DE_NULL));
+
+	if (numFormats > 0)
+	{
+		std::vector<VkSurfaceFormatKHR>	formats	(numFormats);
+
+		VK_CHECK(vki.getPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &numFormats, &formats[0]));
+
+		return formats;
+	}
+	else
+		return std::vector<VkSurfaceFormatKHR>();
+}
+
+std::vector<VkPresentModeKHR> getPhysicalDeviceSurfacePresentModes (const InstanceInterface&		vki,
+																	VkPhysicalDevice				physicalDevice,
+																	VkSurfaceKHR					surface)
+{
+	deUint32	numModes	= 0;
+
+	VK_CHECK(vki.getPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &numModes, DE_NULL));
+
+	if (numModes > 0)
+	{
+		std::vector<VkPresentModeKHR>	modes	(numModes);
+
+		VK_CHECK(vki.getPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &numModes, &modes[0]));
+
+		return modes;
+	}
+	else
+		return std::vector<VkPresentModeKHR>();
 }
 
 } // wsi
