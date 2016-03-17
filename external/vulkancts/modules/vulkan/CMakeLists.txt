@@ -49,6 +49,8 @@ set(DEQP_VK_COMMON_SRCS
 	vktTestGroupUtil.hpp
 	vktInfoTests.cpp
 	vktInfoTests.hpp
+	vktSynchronization.cpp
+	vktSynchronization.hpp
 	)
 
 set(DEQP_VK_COMMON_LIBS
