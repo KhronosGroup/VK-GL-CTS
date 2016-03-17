@@ -49,6 +49,10 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	set(CMAKE_C_FLAGS			"${CMAKE_C_FLAGS} ${TARGET_FLAGS} ${WARNING_FLAGS} -ansi -pedantic ")
 	set(CMAKE_CXX_FLAGS			"${CMAKE_CXX_FLAGS} ${TARGET_FLAGS} ${WARNING_FLAGS}")
 
+	# Force compiler to generate code where integers have well defined overflow
+	# Turn on -Wstrict-overflow=5 and check all warnings before removing
+	set(CMAKE_C_FLAGS			"${CMAKE_C_FLAGS} -fwrapv")
+	set(CMAKE_CXX_FLAGS			"${CMAKE_CXX_FLAGS} -fwrapv")
 elseif (DE_COMPILER_IS_MSC)
 	# Compiler flags for msc
 
