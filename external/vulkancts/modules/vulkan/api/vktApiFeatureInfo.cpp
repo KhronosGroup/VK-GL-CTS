@@ -808,6 +808,83 @@ tcu::TestStatus deviceMemoryProperties (Context& context)
 		}
 	}
 
+	if (memProps->memoryHeapCount >= VK_MAX_MEMORY_HEAPS)
+	{
+		log << TestLog::Message << "deviceMemoryProperties - HeapCount larger than " << (deUint32)VK_MAX_MEMORY_HEAPS << TestLog::EndMessage;
+		return tcu::TestStatus::fail("deviceMemoryProperties HeapCount too large");
+	}
+
+	if (memProps->memoryHeapCount == 1)
+	{
+		if ((memProps->memoryHeaps[0].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) == 0)
+		{
+			log << TestLog::Message << "deviceMemoryProperties - Single heap is not marked DEVICE_LOCAL" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryProperties invalid HeapFlags");
+		}
+	}
+
+	const VkMemoryPropertyFlags validPropertyFlags[] =
+	{
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT|VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT|VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT|VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_CACHED_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_CACHED_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT|VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT
+	};
+
+	const VkMemoryPropertyFlags requiredPropertyFlags[] =
+	{
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+	};
+
+	bool requiredFlagsFound[DE_LENGTH_OF_ARRAY(requiredPropertyFlags)];
+	std::fill(DE_ARRAY_BEGIN(requiredFlagsFound), DE_ARRAY_END(requiredFlagsFound), false);
+
+	for (deUint32 memoryNdx = 0; memoryNdx < memProps->memoryTypeCount; memoryNdx++)
+	{
+		bool validPropTypeFound = false;
+
+		if (memProps->memoryTypes[memoryNdx].heapIndex >= memProps->memoryHeapCount)
+		{
+			log << TestLog::Message << "deviceMemoryProperties - heapIndex " << memProps->memoryTypes[memoryNdx].heapIndex << " larger than heapCount" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryProperties - invalid heapIndex");
+		}
+
+		const VkMemoryPropertyFlags bitsToCheck = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT|VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT|VK_MEMORY_PROPERTY_HOST_CACHED_BIT|VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+		const VkMemoryPropertyFlags* requiredFlagsIterator = std::find(DE_ARRAY_BEGIN(requiredPropertyFlags),
+																		DE_ARRAY_END(requiredPropertyFlags),
+																		memProps->memoryTypes[memoryNdx].propertyFlags & bitsToCheck);
+
+		if (requiredFlagsIterator != DE_ARRAY_END(requiredPropertyFlags))
+		{
+			DE_ASSERT(requiredFlagsIterator - DE_ARRAY_BEGIN(requiredPropertyFlags) <= DE_LENGTH_OF_ARRAY(requiredFlagsFound));
+			requiredFlagsFound[requiredFlagsIterator - DE_ARRAY_BEGIN(requiredPropertyFlags)] = true;
+		}
+
+		if (de::contains(DE_ARRAY_BEGIN(validPropertyFlags), DE_ARRAY_END(validPropertyFlags), memProps->memoryTypes[memoryNdx].propertyFlags & bitsToCheck))
+			validPropTypeFound = true;
+
+		if (!validPropTypeFound)
+		{
+			log << TestLog::Message << "deviceMemoryProperties - propertyFlags "
+				<< memProps->memoryTypes[memoryNdx].propertyFlags << " not valid" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryProperties propertyFlags not valid");
+		}
+	}
+
+	bool* requiredFlagsFoundIterator = std::find(DE_ARRAY_BEGIN(requiredFlagsFound), DE_ARRAY_END(requiredFlagsFound), false);
+	if (requiredFlagsFoundIterator != DE_ARRAY_END(requiredFlagsFound))
+	{
+		DE_ASSERT(requiredFlagsFoundIterator - DE_ARRAY_BEGIN(requiredFlagsFound) <= DE_LENGTH_OF_ARRAY(requiredPropertyFlags));
+		log << TestLog::Message << "deviceMemoryProperties - required property flags "
+			<< requiredPropertyFlags[requiredFlagsFoundIterator - DE_ARRAY_BEGIN(requiredFlagsFound)] << "not found" << TestLog::EndMessage;
+
+		return tcu::TestStatus::fail("deviceMemoryProperties propertyFlags not valid");
+	}
+
 	return tcu::TestStatus::pass("Querying memory properties succeeded");
 }
 
