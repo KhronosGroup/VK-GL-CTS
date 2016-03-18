@@ -43,9 +43,10 @@ namespace vk
 using std::vector;
 using std::string;
 
-Move<VkInstance> createDefaultInstance (const PlatformInterface&	vkPlatform,
-										const vector<string>&		enabledLayers,
-										const vector<string>&		enabledExtensions)
+Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
+										const vector<string>&			enabledLayers,
+										const vector<string>&			enabledExtensions,
+										const VkAllocationCallbacks*	pAllocator)
 {
 	vector<const char*>		layerNamePtrs		(enabledLayers.size());
 	vector<const char*>		extensionNamePtrs	(enabledExtensions.size());
@@ -79,12 +80,12 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&	vkPlatform,
 	for (size_t ndx = 0; ndx < enabledExtensions.size(); ++ndx)
 		extensionNamePtrs[ndx] = enabledExtensions[ndx].c_str();
 
-	return createInstance(vkPlatform, &instanceInfo);
+	return createInstance(vkPlatform, &instanceInfo, pAllocator);
 }
 
 Move<VkInstance> createDefaultInstance (const PlatformInterface& vkPlatform)
 {
-	return createDefaultInstance(vkPlatform, vector<string>(), vector<string>());
+	return createDefaultInstance(vkPlatform, vector<string>(), vector<string>(), DE_NULL);
 }
 
 VkPhysicalDevice chooseDevice (const InstanceInterface& vkInstance, VkInstance instance, const tcu::CommandLine& cmdLine)

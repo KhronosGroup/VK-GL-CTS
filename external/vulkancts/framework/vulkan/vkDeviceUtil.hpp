@@ -47,7 +47,8 @@ namespace vk
 Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform);
 Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform,
 											 const std::vector<std::string>&	enabledLayers,
-											 const std::vector<std::string>&	enabledExtensions);
+											 const std::vector<std::string>&	enabledExtensions,
+											 const VkAllocationCallbacks*		pAllocator	= DE_NULL);
 
 VkPhysicalDevice	chooseDevice			(const InstanceInterface&			vkInstance,
 											 VkInstance							instance,
