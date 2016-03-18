@@ -1328,7 +1328,6 @@ TextureFormat getRandomFormat (de::Random& rng, Context& context)
 		GL_RGBA16UI,
 		GL_RGBA32I,
 		GL_RGBA32UI,
-		GL_RGB16F,
 		GL_RGBA16F,
 		GL_R32F,
 		GL_RG32F,
