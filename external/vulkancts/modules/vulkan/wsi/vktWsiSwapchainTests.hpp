@@ -1,3 +1,5 @@
+#ifndef _VKWSISWAPCHAINTESTS_HPP
+#define _VKWSISWAPCHAINTESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -25,46 +27,21 @@
  *
  *//*!
  * \file
- * \brief WSI Tests
+ * \brief VkSwapchain Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktWsiTests.hpp"
-#include "vktTestGroupUtil.hpp"
-#include "vkWsiUtil.hpp"
-
-#include "vktWsiSurfaceTests.hpp"
-#include "vktWsiSwapchainTests.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
+#include "vkDefs.hpp"
 
 namespace vkt
 {
 namespace wsi
 {
 
-namespace
-{
-
-void createTypeSpecificTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
-{
-	addTestGroup(testGroup, "surface",		"VkSurface Tests",		createSurfaceTests,		wsiType);
-	addTestGroup(testGroup, "swapchain",	"VkSwapchain Tests",	createSwapchainTests,	wsiType);
-}
-
-void createWsiTests (tcu::TestCaseGroup* apiTests)
-{
-	for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
-	{
-		const vk::wsi::Type	wsiType	= (vk::wsi::Type)typeNdx;
-
-		addTestGroup(apiTests, getName(wsiType), "", createTypeSpecificTests, wsiType);
-	}
-}
-
-} // anonymous
-
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	return createTestGroup(testCtx, "wsi", "WSI Tests", createWsiTests);
-}
+void	createSwapchainTests	(tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType);
 
 } // wsi
 } // vkt
+
+#endif // _VKWSISWAPCHAINTESTS_HPP

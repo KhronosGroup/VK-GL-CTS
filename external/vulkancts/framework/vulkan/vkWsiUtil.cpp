@@ -111,7 +111,7 @@ const PlatformProperties& getPlatformProperties (Type wsiType)
 		// VK_KHR_android_surface
 		{
 			PlatformProperties::FEATURE_INITIAL_WINDOW_SIZE,
-			PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE,
+			PlatformProperties::SWAPCHAIN_EXTENT_SCALED_TO_WINDOW_SIZE,
 			1u,
 			1u, // Only one window available
 		},
