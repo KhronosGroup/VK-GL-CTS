@@ -1253,7 +1253,7 @@ void framebuffer_texture2d (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_Z, texCube, -1);
 	ctx.expectError(GL_INVALID_VALUE);
-	ctx.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, tex2D, 1);
+	ctx.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, tex2DMS, 1);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
