@@ -192,54 +192,6 @@ void precise_as_function_argument (NegativeTestContext& ctx)
 	ctx.endSection();
 }
 
-void precise_as_macro_name (NegativeTestContext& ctx)
-{
-	TCU_CHECK_AND_THROW(NotSupportedError,
-		ctx.isExtensionSupported("GL_EXT_gpu_shader5") || contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)),
-		"This test requires support for the extension GL_EXT_gpu_shader5 or context version 3.2 or higher.");
-
-	ctx.beginSection("Test precise keyword as macro name.");
-	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_shaderTypes); ++ndx)
-		generateAndVerifyShader(ctx, s_shaderTypes[ndx], TEST_PRECISE_AS_MACRO_NAME);
-	ctx.endSection();
-}
-
-void precise_as_macro_and_variable (NegativeTestContext& ctx)
-{
-	TCU_CHECK_AND_THROW(NotSupportedError,
-		ctx.isExtensionSupported("GL_EXT_gpu_shader5") || contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)),
-		"This test requires support for the extension GL_EXT_gpu_shader5 or context version 3.2 or higher.");
-
-	ctx.beginSection("Test precise keyword as macro and variable name.");
-	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_shaderTypes); ++ndx)
-		generateAndVerifyShader(ctx, s_shaderTypes[ndx], TEST_PRECISE_MACRO_AND_VARIABLE);
-	ctx.endSection();
-}
-
-void precise_as_macro_and_function (NegativeTestContext& ctx)
-{
-	TCU_CHECK_AND_THROW(NotSupportedError,
-		ctx.isExtensionSupported("GL_EXT_gpu_shader5") || contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)),
-		"This test requires support for the extension GL_EXT_gpu_shader5 or context version 3.2 or higher.");
-
-	ctx.beginSection("Test precise keyword as macro and function name.");
-	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_shaderTypes); ++ndx)
-		generateAndVerifyShader(ctx, s_shaderTypes[ndx], TEST_PRECISE_MACRO_AND_FUNCTION);
-	ctx.endSection();
-}
-
-void precise_as_macro_and_argument (NegativeTestContext& ctx)
-{
-	TCU_CHECK_AND_THROW(NotSupportedError,
-		ctx.isExtensionSupported("GL_EXT_gpu_shader5") || contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)),
-		"This test requires support for the extension GL_EXT_gpu_shader5 or context version 3.2 or higher.");
-
-	ctx.beginSection("Test precise keyword as macro and argument name.");
-	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_shaderTypes); ++ndx)
-		generateAndVerifyShader(ctx, s_shaderTypes[ndx], TEST_PRECISE_MACRO_AND_ARGUMENT);
-	ctx.endSection();
-}
-
 } // anonymous
 
 std::vector<FunctionContainer> getNegativePreciseTestFunctions (void)
@@ -249,10 +201,6 @@ std::vector<FunctionContainer> getNegativePreciseTestFunctions (void)
         {precise_as_variable_name,			"precise_as_variable_name",			"Test precise keyword as variable name."			},
         {precise_as_function_name,			"precise_as_function_name",			"Test precise keyword as function name."			},
         {precise_as_function_argument,		"precise_as_function_argument",		"Test precise keyword as argument name."			},
-        {precise_as_macro_name,				"precise_as_macro_name",			"Test precise keyword as macro name."				},
-        {precise_as_macro_and_variable,		"precise_as_macro_and_variable",	"Test precise keyword as macro and variable name."	},
-        {precise_as_macro_and_function,		"precise_as_macro_and_function",	"Test precise keyword as macro and function name."	},
-        {precise_as_macro_and_argument,		"precise_as_macro_and_argument",	"Test precise keyword as macro and argument name."	},
 	};
 
 	return std::vector<FunctionContainer>(DE_ARRAY_BEGIN(funcs), DE_ARRAY_END(funcs));
