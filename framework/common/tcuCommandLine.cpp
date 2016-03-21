@@ -84,6 +84,7 @@ DE_DECLARE_COMMAND_LINE_OPT(LogImages,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogShaderSources,			bool);
 DE_DECLARE_COMMAND_LINE_OPT(TestOOM,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(VKDeviceID,					int);
+DE_DECLARE_COMMAND_LINE_OPT(LogFlush,					bool);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -168,7 +169,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<VKDeviceID>			(DE_NULL,	"deqp-vk-device-id",			"Vulkan device ID (IDs start from 1)",									"1")
 		<< Option<LogImages>			(DE_NULL,	"deqp-log-images",				"Enable or disable logging of result images",		s_enableNames,		"enable")
 		<< Option<LogShaderSources>		(DE_NULL,	"deqp-log-shader-sources",		"Enable or disable logging of shader sources",		s_enableNames,		"enable")
-		<< Option<TestOOM>				(DE_NULL,	"deqp-test-oom",				"Run tests that exhaust memory on purpose",			s_enableNames,		TEST_OOM_DEFAULT);
+		<< Option<TestOOM>				(DE_NULL,	"deqp-test-oom",				"Run tests that exhaust memory on purpose",			s_enableNames,		TEST_OOM_DEFAULT)
+		<< Option<LogFlush>             (DE_NULL,   "deqp-log-flush",               "Enable or disable log file fflush",                s_enableNames,      "enable");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -724,6 +726,9 @@ bool CommandLine::parse (int argc, const char* const* argv)
 
 	if (!m_cmdLine.getOption<opt::LogShaderSources>())
 		m_logFlags |= QP_TEST_LOG_EXCLUDE_SHADER_SOURCES;
+
+	if (!m_cmdLine.getOption<opt::LogFlush>())
+		m_logFlags |= QP_TEST_LOG_NO_FLUSH;
 
 	if ((m_cmdLine.hasOption<opt::CasePath>()?1:0) +
 		(m_cmdLine.hasOption<opt::CaseList>()?1:0) +
