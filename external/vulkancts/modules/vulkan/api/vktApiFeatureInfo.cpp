@@ -854,15 +854,10 @@ tcu::TestStatus deviceMemoryProperties (Context& context)
 		}
 
 		const VkMemoryPropertyFlags bitsToCheck = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT|VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT|VK_MEMORY_PROPERTY_HOST_CACHED_BIT|VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
-		const VkMemoryPropertyFlags* requiredFlagsIterator = std::find(DE_ARRAY_BEGIN(requiredPropertyFlags),
-																		DE_ARRAY_END(requiredPropertyFlags),
-																		memProps->memoryTypes[memoryNdx].propertyFlags & bitsToCheck);
 
-		if (requiredFlagsIterator != DE_ARRAY_END(requiredPropertyFlags))
-		{
-			DE_ASSERT(requiredFlagsIterator - DE_ARRAY_BEGIN(requiredPropertyFlags) <= DE_LENGTH_OF_ARRAY(requiredFlagsFound));
-			requiredFlagsFound[requiredFlagsIterator - DE_ARRAY_BEGIN(requiredPropertyFlags)] = true;
-		}
+		for (const VkMemoryPropertyFlags* requiredFlagsIterator = DE_ARRAY_BEGIN(requiredPropertyFlags); requiredFlagsIterator != DE_ARRAY_END(requiredPropertyFlags); requiredFlagsIterator++)
+			if ((memProps->memoryTypes[memoryNdx].propertyFlags & *requiredFlagsIterator) == *requiredFlagsIterator)
+				requiredFlagsFound[requiredFlagsIterator - DE_ARRAY_BEGIN(requiredPropertyFlags)] = true;
 
 		if (de::contains(DE_ARRAY_BEGIN(validPropertyFlags), DE_ARRAY_END(validPropertyFlags), memProps->memoryTypes[memoryNdx].propertyFlags & bitsToCheck))
 			validPropTypeFound = true;
