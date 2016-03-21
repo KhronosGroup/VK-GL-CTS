@@ -146,7 +146,7 @@ void writeXmlCaselistsToFiles (TestPackageRoot& root, TestContext& testCtx, cons
 			if (!file)
 				throw Exception("Failed to open " + filename);
 
-			writer = qpXmlWriter_createFileWriter(file, DE_FALSE);
+			writer = qpXmlWriter_createFileWriter(file, DE_FALSE, DE_FALSE);
 			if (!writer)
 				throw Exception("XML writer creation failed");
 

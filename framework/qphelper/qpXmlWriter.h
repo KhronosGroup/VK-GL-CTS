@@ -85,9 +85,10 @@ DE_INLINE qpXmlAttribute qpSetBoolAttrib (const char* name, deBool value)
  * \brief Create a file based XML Writer instance
  * \param fileName Name of the file
  * \param useCompression Set to DE_TRUE to use compression, if supported by implementation
+ * \param flushAfterWrite Set to DE_TRUE to call fflush after writing each XML token
  * \return qpXmlWriter instance, or DE_NULL if cannot create file
  *//*--------------------------------------------------------------------*/
-qpXmlWriter*	qpXmlWriter_createFileWriter (FILE* outFile, deBool useCompression);
+qpXmlWriter*	qpXmlWriter_createFileWriter (FILE* outFile, deBool useCompression, deBool flushAfterWrite);
 
 /*--------------------------------------------------------------------*//*!
  * \brief XML Writer instance
