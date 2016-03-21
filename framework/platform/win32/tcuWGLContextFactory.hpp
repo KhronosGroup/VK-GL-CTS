@@ -29,18 +29,21 @@
 
 namespace tcu
 {
+namespace wgl
+{
 
-class WGLContextFactory : public glu::ContextFactory
+class ContextFactory : public glu::ContextFactory
 {
 public:
-								WGLContextFactory	(HINSTANCE instance);
-	virtual glu::RenderContext*	createContext		(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine) const;
+								ContextFactory	(HINSTANCE instance);
+	virtual glu::RenderContext*	createContext	(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine) const;
 
 private:
-	HINSTANCE					m_instance;
-	wgl::Core					m_wglCore;
+	const HINSTANCE				m_instance;
+	Core						m_wglCore;
 };
 
+} // wgl
 } // tcu
 
 #endif // _TCUWGLCONTEXTFACTORY_HPP

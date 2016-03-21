@@ -1,10 +1,10 @@
-#ifndef _TCUWIN32EGLNATIVEDISPLAYFACTORY_HPP
-#define _TCUWIN32EGLNATIVEDISPLAYFACTORY_HPP
+#ifndef _TCUWIN32VULKANPLATFORM_HPP
+#define _TCUWIN32VULKANPLATFORM_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
  *
- * Copyright 2014 The Android Open Source Project
+ * Copyright 2016 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,11 @@
  *
  *//*!
  * \file
- * \brief Win32 EGL native display factory
+ * \brief Win32 Vulkan platform
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
-#include "egluNativeDisplay.hpp"
-#include "eglwDefs.hpp"
+#include "vkPlatform.hpp"
 #include "tcuWin32API.h"
 
 namespace tcu
@@ -33,19 +32,21 @@ namespace tcu
 namespace win32
 {
 
-class EGLNativeDisplayFactory : public eglu::NativeDisplayFactory
+class VulkanPlatform : public vk::Platform
 {
 public:
-									EGLNativeDisplayFactory		(HINSTANCE instance);
-	virtual							~EGLNativeDisplayFactory	(void);
+						VulkanPlatform		(HINSTANCE instance);
+						~VulkanPlatform		(void);
 
-	virtual eglu::NativeDisplay*	createDisplay				(const eglw::EGLAttrib* attribList) const;
+	vk::Library*		createLibrary		(void) const;
+	void				describePlatform	(std::ostream& dst) const;
+	vk::wsi::Display*	createWsiDisplay	(vk::wsi::Type wsiType) const;
 
 private:
-	const HINSTANCE					m_instance;
+	const HINSTANCE		m_instance;
 };
 
 } // win32
 } // tcu
 
-#endif // _TCUWIN32EGLNATIVEDISPLAYFACTORY_HPP
+#endif // _TCUWIN32VULKANPLATFORM_HPP

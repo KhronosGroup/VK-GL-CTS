@@ -40,6 +40,8 @@ DE_STATIC_ASSERT(sizeof(eglw::EGLNativeWindowType) == sizeof(HWND));
 
 namespace tcu
 {
+namespace win32
+{
 namespace
 {
 
@@ -127,7 +129,7 @@ public:
 	virtual void					readScreenPixels		(tcu::TextureLevel* dst) const;
 
 private:
-	Win32Window						m_window;
+	win32::Window					m_window;
 	eglu::WindowParams::Visibility	m_curVisibility;
 	deUint64						m_setVisibleTime;		//!< Time window was set visible.
 };
@@ -378,7 +380,7 @@ void NativeWindow::readScreenPixels (tcu::TextureLevel* dst) const
 
 } // anonymous
 
-Win32EGLNativeDisplayFactory::Win32EGLNativeDisplayFactory (HINSTANCE instance)
+EGLNativeDisplayFactory::EGLNativeDisplayFactory (HINSTANCE instance)
 	: eglu::NativeDisplayFactory	("win32", "Native Win32 Display", DISPLAY_CAPABILITIES)
 	, m_instance					(instance)
 {
@@ -386,14 +388,15 @@ Win32EGLNativeDisplayFactory::Win32EGLNativeDisplayFactory (HINSTANCE instance)
 	m_nativePixmapRegistry.registerFactory(new NativePixmapFactory());
 }
 
-Win32EGLNativeDisplayFactory::~Win32EGLNativeDisplayFactory (void)
+EGLNativeDisplayFactory::~EGLNativeDisplayFactory (void)
 {
 }
 
-eglu::NativeDisplay* Win32EGLNativeDisplayFactory::createDisplay (const EGLAttrib* attribList) const
+eglu::NativeDisplay* EGLNativeDisplayFactory::createDisplay (const EGLAttrib* attribList) const
 {
 	DE_UNREF(attribList);
 	return new NativeDisplay();
 }
 
+} // win32
 } // tcu
