@@ -45,6 +45,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
+#include "vkAllocationCallbackUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -108,9 +109,10 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 	}
 }
 
-Move<VkInstance> createInstanceWithWsi (const PlatformInterface&	vkp,
-										const Extensions&			supportedExtensions,
-										Type						wsiType)
+Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
+										const Extensions&				supportedExtensions,
+										Type							wsiType,
+										const VkAllocationCallbacks*	pAllocator	= DE_NULL)
 {
 	vector<string>	extensions;
 
@@ -119,7 +121,7 @@ Move<VkInstance> createInstanceWithWsi (const PlatformInterface&	vkp,
 
 	checkAllSupported(supportedExtensions, extensions);
 
-	return createDefaultInstance(vkp, vector<string>(), extensions);
+	return createDefaultInstance(vkp, vector<string>(), extensions, pAllocator);
 }
 
 struct InstanceHelper
@@ -128,12 +130,13 @@ struct InstanceHelper
 	Unique<VkInstance>					instance;
 	const InstanceDriver				vki;
 
-	InstanceHelper (Context& context, Type wsiType)
+	InstanceHelper (Context& context, Type wsiType, const VkAllocationCallbacks* pAllocator = DE_NULL)
 		: supportedExtensions	(enumerateInstanceExtensionProperties(context.getPlatformInterface(),
 																	  DE_NULL))
 		, instance				(createInstanceWithWsi(context.getPlatformInterface(),
 													   supportedExtensions,
-													   wsiType))
+													   wsiType,
+													   pAllocator))
 		, vki					(context.getPlatformInterface(), *instance)
 	{}
 };
@@ -194,6 +197,89 @@ tcu::TestStatus createSurfaceTest (Context& context, Type wsiType)
 	const Unique<VkSurfaceKHR>	surface		(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
 
 	return tcu::TestStatus::pass("Creating surface succeeded");
+}
+
+tcu::TestStatus createSurfaceCustomAllocatorTest (Context& context, Type wsiType)
+{
+	AllocationCallbackRecorder	allocationRecorder	(getSystemAllocator());
+	tcu::TestLog&				log					= context.getTestContext().getLog();
+
+	{
+		const InstanceHelper		instHelper	(context, wsiType, allocationRecorder.getCallbacks());
+		const NativeObjects			native		(context, instHelper.supportedExtensions, wsiType);
+		const Unique<VkSurfaceKHR>	surface		(createSurface(instHelper.vki,
+															   *instHelper.instance,
+															   wsiType,
+															   *native.display,
+															   *native.window,
+															   allocationRecorder.getCallbacks()));
+
+		if (!validateAndLog(log,
+							allocationRecorder,
+							(1u<<VK_SYSTEM_ALLOCATION_SCOPE_OBJECT)		|
+							(1u<<VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE)))
+			return tcu::TestStatus::fail("Detected invalid system allocation callback");
+	}
+
+	if (!validateAndLog(log, allocationRecorder, 0u))
+		return tcu::TestStatus::fail("Detected invalid system allocation callback");
+
+	if (allocationRecorder.getRecordsBegin() == allocationRecorder.getRecordsEnd())
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks were not used");
+	else
+		return tcu::TestStatus::pass("Creating surface succeeded using custom allocator");
+}
+
+tcu::TestStatus createSurfaceSimulateOOMTest (Context& context, Type wsiType)
+{
+	tcu::TestLog&	log	= context.getTestContext().getLog();
+
+	for (deUint32 numPassingAllocs = 0; numPassingAllocs <= 1024u; ++numPassingAllocs)
+	{
+		AllocationCallbackRecorder	allocationRecorder	(getSystemAllocator());
+		DeterministicFailAllocator	failingAllocator	(allocationRecorder.getCallbacks(), numPassingAllocs);
+		bool						gotOOM				= false;
+
+		log << TestLog::Message << "Testing with " << numPassingAllocs << " first allocations succeeding" << TestLog::EndMessage;
+
+		try
+		{
+			const InstanceHelper		instHelper	(context, wsiType, failingAllocator.getCallbacks());
+			const NativeObjects			native		(context, instHelper.supportedExtensions, wsiType);
+			const Unique<VkSurfaceKHR>	surface		(createSurface(instHelper.vki,
+																   *instHelper.instance,
+																   wsiType,
+																   *native.display,
+																   *native.window,
+																   failingAllocator.getCallbacks()));
+
+			if (!validateAndLog(log,
+								allocationRecorder,
+								(1u<<VK_SYSTEM_ALLOCATION_SCOPE_OBJECT)		|
+								(1u<<VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE)))
+				return tcu::TestStatus::fail("Detected invalid system allocation callback");
+		}
+		catch (const OutOfMemoryError& e)
+		{
+			log << TestLog::Message << "Got " << e.getError() << TestLog::EndMessage;
+			gotOOM = true;
+		}
+
+		if (!validateAndLog(log, allocationRecorder, 0u))
+			return tcu::TestStatus::fail("Detected invalid system allocation callback");
+
+		if (!gotOOM)
+		{
+			log << TestLog::Message << "Creating surface succeeded!" << TestLog::EndMessage;
+
+			if (numPassingAllocs == 0)
+				return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks were not used");
+			else
+				return tcu::TestStatus::pass("OOM simulation completed");
+		}
+	}
+
+	return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Creating surface did not succeed, callback limit exceeded");
 }
 
 deUint32 getNumQueueFamilies (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
@@ -524,11 +610,13 @@ void createSurfaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
 	const PlatformProperties&	platformProperties	= getPlatformProperties(wsiType);
 
-	addFunctionCase(testGroup, "create",				"Create surface",				createSurfaceTest,				wsiType);
-	addFunctionCase(testGroup, "query_support",			"Query surface support",		querySurfaceSupportTest,		wsiType);
-	addFunctionCase(testGroup, "query_capabilities",	"Query surface capabilities",	querySurfaceCapabilitiesTest,	wsiType);
-	addFunctionCase(testGroup, "query_formats",			"Query surface formats",		querySurfaceFormatsTest,		wsiType);
-	addFunctionCase(testGroup, "query_present_modes",	"Query surface present modes",	querySurfacePresentModesTest,	wsiType);
+	addFunctionCase(testGroup, "create",					"Create surface",						createSurfaceTest,					wsiType);
+	addFunctionCase(testGroup, "create_custom_allocator",	"Create surface with custom allocator",	createSurfaceCustomAllocatorTest,	wsiType);
+	addFunctionCase(testGroup, "create_simulate_oom",		"Create surface with simulating OOM",	createSurfaceSimulateOOMTest,		wsiType);
+	addFunctionCase(testGroup, "query_support",				"Query surface support",				querySurfaceSupportTest,			wsiType);
+	addFunctionCase(testGroup, "query_capabilities",		"Query surface capabilities",			querySurfaceCapabilitiesTest,		wsiType);
+	addFunctionCase(testGroup, "query_formats",				"Query surface formats",				querySurfaceFormatsTest,			wsiType);
+	addFunctionCase(testGroup, "query_present_modes",		"Query surface present modes",			querySurfacePresentModesTest,		wsiType);
 
 	if ((platformProperties.features & PlatformProperties::FEATURE_INITIAL_WINDOW_SIZE) != 0)
 		addFunctionCase(testGroup, "initial_size",	"Create surface with initial window size set",	createSurfaceInitialSizeTest,	wsiType);

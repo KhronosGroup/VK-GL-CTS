@@ -45,6 +45,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
+#include "vkAllocationCallbackUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -89,9 +90,10 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 	}
 }
 
-Move<VkInstance> createInstanceWithWsi (const PlatformInterface&	vkp,
-										const Extensions&			supportedExtensions,
-										Type						wsiType)
+Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
+										const Extensions&				supportedExtensions,
+										Type							wsiType,
+										const VkAllocationCallbacks*	pAllocator	= DE_NULL)
 {
 	vector<string>	extensions;
 
@@ -100,7 +102,7 @@ Move<VkInstance> createInstanceWithWsi (const PlatformInterface&	vkp,
 
 	checkAllSupported(supportedExtensions, extensions);
 
-	return createDefaultInstance(vkp, vector<string>(), extensions);
+	return createDefaultInstance(vkp, vector<string>(), extensions, pAllocator);
 }
 
 VkPhysicalDeviceFeatures getDeviceFeaturesForWsi (void)
@@ -110,10 +112,11 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi (void)
 	return features;
 }
 
-Move<VkDevice> createDeviceWithWsi (const InstanceInterface&	vki,
-									VkPhysicalDevice			physicalDevice,
-									const Extensions&			supportedExtensions,
-									const deUint32				queueFamilyIndex)
+Move<VkDevice> createDeviceWithWsi (const InstanceInterface&		vki,
+									VkPhysicalDevice				physicalDevice,
+									const Extensions&				supportedExtensions,
+									const deUint32					queueFamilyIndex,
+									const VkAllocationCallbacks*	pAllocator = DE_NULL)
 {
 	const float						queuePriorities[]	= { 1.0f };
 	const VkDeviceQueueCreateInfo	queueInfos[]		=
@@ -149,7 +152,7 @@ Move<VkDevice> createDeviceWithWsi (const InstanceInterface&	vki,
 			TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
 	}
 
-	return createDevice(vki, physicalDevice, &deviceParams, (const VkAllocationCallbacks*)DE_NULL);
+	return createDevice(vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 deUint32 getNumQueueFamilyIndices (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
@@ -191,12 +194,13 @@ struct InstanceHelper
 	const Unique<VkInstance>			instance;
 	const InstanceDriver				vki;
 
-	InstanceHelper (Context& context, Type wsiType)
+	InstanceHelper (Context& context, Type wsiType, const VkAllocationCallbacks* pAllocator = DE_NULL)
 		: supportedExtensions	(enumerateInstanceExtensionProperties(context.getPlatformInterface(),
 																	  DE_NULL))
 		, instance				(createInstanceWithWsi(context.getPlatformInterface(),
 													   supportedExtensions,
-													   wsiType))
+													   wsiType,
+													   pAllocator))
 		, vki					(context.getPlatformInterface(), *instance)
 	{}
 };
@@ -216,13 +220,18 @@ struct DeviceHelper
 	const DeviceDriver		vkd;
 	const VkQueue			queue;
 
-	DeviceHelper (Context& context, const InstanceInterface& vki, VkInstance instance, VkSurfaceKHR surface)
+	DeviceHelper (Context&						context,
+				  const InstanceInterface&		vki,
+				  VkInstance					instance,
+				  VkSurfaceKHR					surface,
+				  const VkAllocationCallbacks*	pAllocator = DE_NULL)
 		: physicalDevice	(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
 		, queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, surface))
 		, device			(createDeviceWithWsi(vki,
 												 physicalDevice,
 												 enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL),
-												 queueFamilyIndex))
+												 queueFamilyIndex,
+												 pAllocator))
 		, vkd				(vki, *device)
 		, queue				(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
@@ -572,6 +581,75 @@ tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 	return tcu::TestStatus::pass("Creating swapchain succeeded");
 }
 
+tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters params)
+{
+	tcu::TestLog&	log	= context.getTestContext().getLog();
+
+	// \note This is a little counter-intuitive order (iterating on callback count until all cases pass)
+	//		 but since cases depend on what device reports, it is the only easy way. In practice
+	//		 we should see same number of total callbacks (and executed code) regardless of the
+	//		 loop order.
+
+	for (deUint32 numPassingAllocs = 0; numPassingAllocs <= 16*1024u; ++numPassingAllocs)
+	{
+		AllocationCallbackRecorder	allocationRecorder	(getSystemAllocator());
+		DeterministicFailAllocator	failingAllocator	(allocationRecorder.getCallbacks(), numPassingAllocs);
+		bool						gotOOM				= false;
+
+		log << TestLog::Message << "Testing with " << numPassingAllocs << " first allocations succeeding" << TestLog::EndMessage;
+
+		try
+		{
+			const InstanceHelper					instHelper	(context, params.wsiType, failingAllocator.getCallbacks());
+			const NativeObjects						native		(context, instHelper.supportedExtensions, params.wsiType);
+			const Unique<VkSurfaceKHR>				surface		(createSurface(instHelper.vki,
+																			   *instHelper.instance,
+																			   params.wsiType,
+																			   *native.display,
+																			   *native.window,
+																			   failingAllocator.getCallbacks()));
+			const DeviceHelper						devHelper	(context, instHelper.vki, *instHelper.instance, *surface, failingAllocator.getCallbacks());
+			const vector<VkSwapchainCreateInfoKHR>	cases		(generateSwapchainParameterCases(params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
+
+			for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
+			{
+				VkSwapchainCreateInfoKHR	curParams	= cases[caseNdx];
+
+				curParams.surface				= *surface;
+				curParams.queueFamilyIndexCount	= 1u;
+				curParams.pQueueFamilyIndices	= &devHelper.queueFamilyIndex;
+
+				context.getTestContext().getLog()
+					<< TestLog::Message << "Sub-case " << (caseNdx+1) << " / " << cases.size() << TestLog::EndMessage;
+
+				{
+					const Unique<VkSwapchainKHR>	swapchain	(createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams, failingAllocator.getCallbacks()));
+				}
+			}
+		}
+		catch (const OutOfMemoryError& e)
+		{
+			log << TestLog::Message << "Got " << e.getError() << TestLog::EndMessage;
+			gotOOM = true;
+		}
+
+		if (!validateAndLog(log, allocationRecorder, 0u))
+			return tcu::TestStatus::fail("Detected invalid system allocation callback");
+
+		if (!gotOOM)
+		{
+			log << TestLog::Message << "Creating surface succeeded!" << TestLog::EndMessage;
+
+			if (numPassingAllocs == 0)
+				return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks were not used");
+			else
+				return tcu::TestStatus::pass("OOM simulation completed");
+		}
+	}
+
+	return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Creating swapchain did not succeed, callback limit exceeded");
+}
+
 struct GroupParameters
 {
 	typedef FunctionInstance1<TestParameters>::Function	Function;
@@ -604,7 +682,8 @@ void populateSwapchainGroup (tcu::TestCaseGroup* testGroup, GroupParameters para
 
 void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	addTestGroup(testGroup, "create", "Create VkSwapchain with various parameters", populateSwapchainGroup, GroupParameters(wsiType, createSwapchainTest));
+	addTestGroup(testGroup, "create",			"Create VkSwapchain with various parameters",					populateSwapchainGroup, GroupParameters(wsiType, createSwapchainTest));
+	addTestGroup(testGroup, "simulate_oom",		"Simulate OOM using callbacks during swapchain construction",	populateSwapchainGroup, GroupParameters(wsiType, createSwapchainSimulateOOMTest));
 }
 
 } // wsi
