@@ -50,6 +50,8 @@ namespace api
 namespace
 {
 
+static const deUint32	MAX_BUFFER_SIZE_DIVISOR	= 16;
+
 struct BufferCaseParameters
 {
 	VkBufferUsageFlags	usage;
@@ -97,16 +99,19 @@ private:
 
  tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest (VkDeviceSize size)
 {
-	const VkDevice			vkDevice			= m_context.getDevice();
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	Move<VkBuffer>			testBuffer;
-	VkMemoryRequirements	memReqs;
-	Move<VkDeviceMemory>	memory;
-	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const VkPhysicalDevice		vkPhysicalDevice	= m_context.getPhysicalDevice();
+	const InstanceInterface&	vkInstance			= m_context.getInstanceInterface();
+	const VkDevice				vkDevice			= m_context.getDevice();
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	Move<VkBuffer>				testBuffer;
+	VkMemoryRequirements		memReqs;
+	Move<VkDeviceMemory>		memory;
+	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const VkPhysicalDeviceMemoryProperties	memoryProperties = getPhysicalDeviceMemoryProperties(vkInstance, vkPhysicalDevice);
 
 	// Create buffer
 	{
-		const VkBufferCreateInfo		bufferParams		=
+		VkBufferCreateInfo		bufferParams		=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 			DE_NULL,
@@ -120,7 +125,7 @@ private:
 
 		try
 		{
-			testBuffer = createBuffer(vk, vkDevice, &bufferParams, (const VkAllocationCallbacks*)DE_NULL);
+			testBuffer = createBuffer(vk, vkDevice, &bufferParams);
 		}
 		catch (const vk::Error& error)
 		{
@@ -128,6 +133,27 @@ private:
 		}
 
 		vk.getBufferMemoryRequirements(vkDevice, *testBuffer, &memReqs);
+
+		const deUint32		heapTypeIndex	= (deUint32)deCtz32(memReqs.memoryTypeBits);
+		const VkMemoryType	memoryType		= memoryProperties.memoryTypes[heapTypeIndex];
+		const VkMemoryHeap	memoryHeap		= memoryProperties.memoryHeaps[memoryType.heapIndex];
+		const VkDeviceSize	maxBufferSize	= memoryHeap.size / MAX_BUFFER_SIZE_DIVISOR;
+		// If the requested size is too large, clamp it based on the selected heap size
+		if (size > maxBufferSize)
+		{
+			size = maxBufferSize;
+			bufferParams.size = size;
+			try
+			{
+				// allocate a new buffer with the adjusted size, the old one will be destroyed by the smart pointer
+				testBuffer = createBuffer(vk, vkDevice, &bufferParams);
+			}
+			catch (const vk::Error& error)
+			{
+				return tcu::TestStatus::fail("Buffer creation failed! (requested memory size: " + de::toString(size) + ", Error code: " + de::toString(error.getMessage()) + ")");
+			}
+			vk.getBufferMemoryRequirements(vkDevice, *testBuffer, &memReqs);
+		}
 
 		if (size > memReqs.size)
 		{
@@ -250,14 +276,10 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 	{
 		const VkPhysicalDevice					vkPhysicalDevice	= m_context.getPhysicalDevice();
 		const InstanceInterface&				vkInstance			= m_context.getInstanceInterface();
-		const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vkInstance, vkPhysicalDevice);
 		VkPhysicalDeviceProperties	props;
 
 		vkInstance.getPhysicalDeviceProperties(vkPhysicalDevice, &props);
-
-		const VkDeviceSize maxTestBufferSize = de::min((VkDeviceSize) props.limits.maxTexelBufferElements, memoryProperties.memoryHeaps[memoryProperties.memoryTypes[0].heapIndex].size / 16);
-
-		testStatus = bufferCreateAndAllocTest(maxTestBufferSize);
+		testStatus = bufferCreateAndAllocTest((VkDeviceSize) props.limits.maxTexelBufferElements);
 	}
 
 	return testStatus;
