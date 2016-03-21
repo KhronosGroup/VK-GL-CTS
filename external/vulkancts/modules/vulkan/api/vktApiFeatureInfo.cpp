@@ -873,6 +873,23 @@ tcu::TestStatus deviceMemoryProperties (Context& context)
 				<< memProps->memoryTypes[memoryNdx].propertyFlags << " not valid" << TestLog::EndMessage;
 			return tcu::TestStatus::fail("deviceMemoryProperties propertyFlags not valid");
 		}
+
+		if (memProps->memoryTypes[memoryNdx].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		{
+			if ((memProps->memoryHeaps[memProps->memoryTypes[memoryNdx].heapIndex].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) == 0)
+			{
+				log << TestLog::Message << "deviceMemoryProperties - DEVICE_LOCAL memory type references heap which is not DEVICE_LOCAL" << TestLog::EndMessage;
+				return tcu::TestStatus::fail("deviceMemoryProperties inconsistent memoryType and HeapFlags");
+			}
+		}
+		else
+		{
+			if (memProps->memoryHeaps[memProps->memoryTypes[memoryNdx].heapIndex].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+			{
+				log << TestLog::Message << "deviceMemoryProperties - non-DEVICE_LOCAL memory type references heap with is DEVICE_LOCAL" << TestLog::EndMessage;
+				return tcu::TestStatus::fail("deviceMemoryProperties inconsistent memoryType and HeapFlags");
+			}
+		}
 	}
 
 	bool* requiredFlagsFoundIterator = std::find(DE_ARRAY_BEGIN(requiredFlagsFound), DE_ARRAY_END(requiredFlagsFound), false);
