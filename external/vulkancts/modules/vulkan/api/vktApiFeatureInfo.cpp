@@ -880,7 +880,7 @@ tcu::TestStatus deviceMemoryProperties (Context& context)
 	{
 		DE_ASSERT(requiredFlagsFoundIterator - DE_ARRAY_BEGIN(requiredFlagsFound) <= DE_LENGTH_OF_ARRAY(requiredPropertyFlags));
 		log << TestLog::Message << "deviceMemoryProperties - required property flags "
-			<< requiredPropertyFlags[requiredFlagsFoundIterator - DE_ARRAY_BEGIN(requiredFlagsFound)] << "not found" << TestLog::EndMessage;
+			<< getMemoryPropertyFlagsStr(requiredPropertyFlags[requiredFlagsFoundIterator - DE_ARRAY_BEGIN(requiredFlagsFound)]) << " not found" << TestLog::EndMessage;
 
 		return tcu::TestStatus::fail("deviceMemoryProperties propertyFlags not valid");
 	}

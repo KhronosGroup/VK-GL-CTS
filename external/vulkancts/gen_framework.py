@@ -635,8 +635,12 @@ def writeStrUtilImpl (api, filename):
 						newLine = "'\\n' << "
 						valFmt = "tcu::formatArray(tcu::Format::HexIterator<%s>(DE_ARRAY_BEGIN(value.%s)), tcu::Format::HexIterator<%s>(DE_ARRAY_END(value.%s)))" % (member.type, baseName, member.type, baseName)
 					else:
+						if baseName == "memoryTypes" or baseName == "memoryHeaps":
+							endIter = "DE_ARRAY_BEGIN(value.%s) + value.%sCount" % (baseName, baseName[:-1])
+						else:
+							endIter = "DE_ARRAY_END(value.%s)" % baseName
 						newLine = "'\\n' << "
-						valFmt = "tcu::formatArray(DE_ARRAY_BEGIN(value.%s), DE_ARRAY_END(value.%s))" % (baseName, baseName)
+						valFmt = "tcu::formatArray(DE_ARRAY_BEGIN(value.%s), %s)" % (baseName, endIter)
 					memberName = baseName
 				else:
 					valFmt = "value.%s" % member.name
