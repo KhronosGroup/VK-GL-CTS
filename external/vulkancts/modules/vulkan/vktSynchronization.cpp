@@ -209,7 +209,7 @@ void createVulkanBuffer (const BufferParameters& bufferParameters, Buffer& buffe
 			range.offset	= newMemory->getOffset();
 			range.size		= bufferParameters.size;
 
-			deMemcpy(newMemory->getHostPtr(), bufferParameters.memory, bufferParameters.size);
+			deMemcpy(newMemory->getHostPtr(), bufferParameters.memory, (size_t)bufferParameters.size);
 			VK_CHECK(deviceInterface.flushMappedMemoryRanges(device, 1, &range));
 
 			barrier.sType			= VK_STRUCTURE_TYPE_MEMORY_BARRIER;
