@@ -5004,7 +5004,7 @@ vk::VkAccessFlags getWriteAccessFlags (void)
 
 bool isWriteAccess (vk::VkAccessFlagBits access)
 {
-	return getWriteAccessFlags() & access;
+	return (getWriteAccessFlags() & access) != 0;
 }
 
 class CacheState
