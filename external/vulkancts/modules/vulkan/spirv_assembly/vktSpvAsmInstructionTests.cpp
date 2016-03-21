@@ -7698,6 +7698,71 @@ const string getAsmTypeDeclaration (IntegerType type)
 	return "OpTypeInt " + getBitWidthStr(type) + sign;
 }
 
+const string getConvertCaseShaderStr (const string& instruction, map<string, string> types)
+{
+	const StringTemplate shader (
+		"OpCapability Shader\n"
+		"${int_capabilities}"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+		// Decorators
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %indata DescriptorSet 0\n"
+		"OpDecorate %indata Binding 0\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 1\n"
+		"OpDecorate %in_buf BufferBlock\n"
+		"OpDecorate %out_buf BufferBlock\n"
+		"OpMemberDecorate %in_buf 0 Offset 0\n"
+		"OpMemberDecorate %out_buf 0 Offset 0\n"
+		// Base types
+		"%void       = OpTypeVoid\n"
+		"%voidf      = OpTypeFunction %void\n"
+		"%u32        = OpTypeInt 32 0\n"
+		"%i32        = OpTypeInt 32 1\n"
+		"%uvec3      = OpTypeVector %u32 3\n"
+		"%uvec3ptr   = OpTypePointer Input %uvec3\n"
+		// Custom types
+		"%in_type    = ${inputType}\n"
+		"%out_type   = ${outputType}\n"
+		// Derived types
+		"%in_ptr     = OpTypePointer Uniform %in_type\n"
+		"%out_ptr    = OpTypePointer Uniform %out_type\n"
+		"%in_arr     = OpTypeRuntimeArray %in_type\n"
+		"%out_arr    = OpTypeRuntimeArray %out_type\n"
+		"%in_buf     = OpTypeStruct %in_arr\n"
+		"%out_buf    = OpTypeStruct %out_arr\n"
+		"%in_bufptr  = OpTypePointer Uniform %in_buf\n"
+		"%out_bufptr = OpTypePointer Uniform %out_buf\n"
+		"%indata     = OpVariable %in_bufptr Uniform\n"
+		"%outdata    = OpVariable %out_bufptr Uniform\n"
+		"%inputptr   = OpTypePointer Input %in_type\n"
+		"%id         = OpVariable %uvec3ptr Input\n"
+		// Constants
+		"%zero       = OpConstant %i32 0\n"
+		// Main function
+		"%main       = OpFunction %void None %voidf\n"
+		"%label      = OpLabel\n"
+		"%idval      = OpLoad %uvec3 %id\n"
+		"%x          = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc      = OpAccessChain %in_ptr %indata %zero %x\n"
+		"%outloc     = OpAccessChain %out_ptr %outdata %zero %x\n"
+		"%inval      = OpLoad %in_type %inloc\n"
+		"%conv       = ${instruction} %out_type %inval\n"
+		"              OpStore %outloc %conv\n"
+		"              OpReturn\n"
+		"              OpFunctionEnd\n"
+	);
+
+	types["instruction"] = instruction;
+
+	return shader.specialize(types);
+}
+
 template<typename T>
 BufferSp getSpecializedBuffer (deInt64 number)
 {
@@ -7811,77 +7876,59 @@ void createSConvertCases (vector<ConvertCase>& testCases)
 //  Test for the OpSConvert instruction.
 tcu::TestCaseGroup* createSConvertTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group (new tcu::TestCaseGroup(testCtx, "sconvert", "OpSConvert"));
+	const string instruction				("OpSConvert");
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "sconvert", "OpSConvert"));
 	vector<ConvertCase>				testCases;
 	createSConvertCases(testCases);
-
-	const StringTemplate shader (
-		"OpCapability Shader\n"
-		"${int_capabilities}"
-		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint GLCompute %main \"main\" %id\n"
-		"OpExecutionMode %main LocalSize 1 1 1\n"
-		"OpSource GLSL 430\n"
-		"OpName %main           \"main\"\n"
-		"OpName %id             \"gl_GlobalInvocationID\"\n"
-		// Decorators
-		"OpDecorate %id BuiltIn GlobalInvocationId\n"
-		"OpDecorate %indata DescriptorSet 0\n"
-		"OpDecorate %indata Binding 0\n"
-		"OpDecorate %outdata DescriptorSet 0\n"
-		"OpDecorate %outdata Binding 1\n"
-		"OpDecorate %in_buf BufferBlock\n"
-		"OpDecorate %out_buf BufferBlock\n"
-		"OpMemberDecorate %in_buf 0 Offset 0\n"
-		"OpMemberDecorate %out_buf 0 Offset 0\n"
-		// Base types
-		"%void       = OpTypeVoid\n"
-		"%voidf      = OpTypeFunction %void\n"
-		"%u32        = OpTypeInt 32 0\n"
-		"%i32        = OpTypeInt 32 1\n"
-		"%uvec3      = OpTypeVector %u32 3\n"
-		"%uvec3ptr   = OpTypePointer Input %uvec3\n"
-		// Custom types
-		"%in_type    = ${inputType}\n"
-		"%out_type   = ${outputType}\n"
-		// Derived types
-		"%in_ptr     = OpTypePointer Uniform %in_type\n"
-		"%out_ptr    = OpTypePointer Uniform %out_type\n"
-		"%in_arr     = OpTypeRuntimeArray %in_type\n"
-		"%out_arr    = OpTypeRuntimeArray %out_type\n"
-		"%in_buf     = OpTypeStruct %in_arr\n"
-		"%out_buf    = OpTypeStruct %out_arr\n"
-		"%in_bufptr  = OpTypePointer Uniform %in_buf\n"
-		"%out_bufptr = OpTypePointer Uniform %out_buf\n"
-		"%indata     = OpVariable %in_bufptr Uniform\n"
-		"%outdata    = OpVariable %out_bufptr Uniform\n"
-		"%inputptr   = OpTypePointer Input %in_type\n"
-		"%id         = OpVariable %uvec3ptr Input\n"
-		// Constants
-		"%zero       = OpConstant %i32 0\n"
-		// Main function
-		"%main       = OpFunction %void None %voidf\n"
-		"%label      = OpLabel\n"
-		"%idval      = OpLoad %uvec3 %id\n"
-		"%x          = OpCompositeExtract %u32 %idval 0\n"
-		"%inloc      = OpAccessChain %in_ptr %indata %zero %x\n"
-		"%outloc     = OpAccessChain %out_ptr %outdata %zero %x\n"
-		"%inval      = OpLoad %in_type %inloc\n"
-		"%conv       = OpSConvert %out_type %inval\n"
-		"              OpStore %outloc %conv\n"
-		"              OpReturn\n"
-		"              OpFunctionEnd\n");
 
 	for (vector<ConvertCase>::const_iterator test = testCases.begin(); test != testCases.end(); ++test)
 	{
 		ComputeShaderSpec	spec;
 
-		spec.assembly = shader.specialize(test->m_asmTypes);
+		spec.assembly = getConvertCaseShaderStr(instruction, test->m_asmTypes);
 		spec.inputs.push_back(test->m_inputBuffer);
 		spec.outputs.push_back(test->m_inputBuffer);
 		spec.numWorkGroups = IVec3(1, 1, 1);
 
 		group->addChild(new ConvertTestCase(testCtx, test->m_name.c_str(), "Convert integers with OpSConvert.", spec, test->m_features));
+	}
+
+	return group.release();
+}
+
+void createUConvertCases (vector<ConvertCase>& testCases)
+{
+	// Convert unsigned int to unsigned int
+	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_16,	INTEGER_TYPE_UNSIGNED_32,	60653));
+	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_16,	INTEGER_TYPE_UNSIGNED_64,	17991));
+
+	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_32,	INTEGER_TYPE_UNSIGNED_64,	904256275));
+
+	// Convert unsigned int to int
+	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_16,	INTEGER_TYPE_SIGNED_32,		38002));
+	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_16,	INTEGER_TYPE_SIGNED_64,		64921));
+
+	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_32,	INTEGER_TYPE_SIGNED_64,		4294956295));
+}
+
+//  Test for the OpUConvert instruction.
+tcu::TestCaseGroup* createUConvertTests (tcu::TestContext& testCtx)
+{
+	const string instruction				("OpUConvert");
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "uconvert", "OpUConvert"));
+	vector<ConvertCase>				testCases;
+	createUConvertCases(testCases);
+
+	for (vector<ConvertCase>::const_iterator test = testCases.begin(); test != testCases.end(); ++test)
+	{
+		ComputeShaderSpec	spec;
+
+		spec.assembly = getConvertCaseShaderStr(instruction, test->m_asmTypes);
+		spec.inputs.push_back(test->m_inputBuffer);
+		spec.outputs.push_back(test->m_inputBuffer);
+		spec.numWorkGroups = IVec3(1, 1, 1);
+
+		group->addChild(new ConvertTestCase(testCtx, test->m_name.c_str(), "Convert integers with OpUConvert.", spec, test->m_features));
 	}
 
 	return group.release();
@@ -7918,6 +7965,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests ->addChild(createOpQuantizeToF16Group(testCtx));
 	computeTests ->addChild(createOpFRemGroup(testCtx));
 	computeTests->addChild(createSConvertTests(testCtx));
+	computeTests->addChild(createUConvertTests(testCtx));
 
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
