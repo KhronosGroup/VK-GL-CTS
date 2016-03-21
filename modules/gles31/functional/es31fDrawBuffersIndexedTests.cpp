@@ -661,7 +661,9 @@ rr::RenderState createRenderState (const BlendState& preCommonBlendState, const 
 	else
 		state.fragOps.blendMode = rr::BLENDMODE_NONE;
 
-	if (tcu::getTextureChannelClass(info.getFormat().type) != tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT && tcu::getTextureChannelClass(info.getFormat().type) != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT)
+	if (tcu::getTextureChannelClass(info.getFormat().type) != tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT
+		&& tcu::getTextureChannelClass(info.getFormat().type) != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT
+		&& tcu::getTextureChannelClass(info.getFormat().type) != tcu::TEXTURECHANNELCLASS_FLOATING_POINT)
 		state.fragOps.blendMode = rr::BLENDMODE_NONE;
 
 	return state;
