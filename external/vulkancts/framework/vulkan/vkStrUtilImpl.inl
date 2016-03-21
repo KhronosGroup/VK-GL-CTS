@@ -1753,9 +1753,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMemoryPropertie
 {
 	s << "VkPhysicalDeviceMemoryProperties = {\n";
 	s << "\tmemoryTypeCount = " << value.memoryTypeCount << '\n';
-	s << "\tmemoryTypes = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.memoryTypes), DE_ARRAY_END(value.memoryTypes)) << '\n';
+	s << "\tmemoryTypes = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.memoryTypes), DE_ARRAY_BEGIN(value.memoryTypes) + value.memoryTypeCount) << '\n';
 	s << "\tmemoryHeapCount = " << value.memoryHeapCount << '\n';
-	s << "\tmemoryHeaps = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.memoryHeaps), DE_ARRAY_END(value.memoryHeaps)) << '\n';
+	s << "\tmemoryHeaps = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.memoryHeaps), DE_ARRAY_BEGIN(value.memoryHeaps) + value.memoryHeapCount) << '\n';
 	s << '}';
 	return s;
 }
