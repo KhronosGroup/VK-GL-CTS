@@ -1357,6 +1357,32 @@ void genRandomTest (de::Random& rng, BlendState& preCommon, BlendState& postComm
 		BlendState			blendState;
 
 		genRandomBlendState(rng, blendState);
+
+		// 32bit float formats don't support blending in GLES32
+		if (format.type == tcu::TextureFormat::FLOAT)
+		{
+			// If format is 32bit float post common can't enable blending
+			if (postCommon.enableBlend && *postCommon.enableBlend)
+			{
+				// Either don't set enable blend or disable blending
+				if (rng.getBool())
+					postCommon.enableBlend = tcu::nothing<bool>();
+				else
+					postCommon.enableBlend = tcu::just(false);
+			}
+
+			// If post common doesn't disable blending, per attachment state or
+			// pre common must.
+			if (!postCommon.enableBlend)
+			{
+				// If pre common enables blend per attachment must disable it
+				// If per attachment state changes blend state it must disable it
+				if ((preCommon.enableBlend && *preCommon.enableBlend)
+					|| blendState.enableBlend)
+					blendState.enableBlend = tcu::just(false);
+			}
+		}
+
 		drawBuffers.push_back(DrawBufferInfo(render, size, blendState, format));
 	}
 }
