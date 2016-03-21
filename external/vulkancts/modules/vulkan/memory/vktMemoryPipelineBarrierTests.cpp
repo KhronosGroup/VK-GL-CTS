@@ -60,7 +60,7 @@
 #include <string>
 #include <vector>
 
-// \todo Check bufferImageGranularity
+// \todo [2016-03-09 mika] Check bufferImageGranularity
 
 using tcu::TestLog;
 using tcu::Maybe;
@@ -145,7 +145,7 @@ enum Usage
 	USAGE_UNIFORM_TEXEL_BUFFER = (0x1u<<8),
 	USAGE_STORAGE_TEXEL_BUFFER = (0x1u<<9),
 
-	// \todo This is probably almost impossible to do
+	// \todo [2016-03-09 mika] This is probably almost impossible to do
 	USAGE_INDIRECT_BUFFER = (0x1u<<10),
 
 	// Texture usage flags
@@ -753,7 +753,7 @@ void ReferenceMemory::setData (size_t offset, size_t size, const void* data_)
 {
 	const deUint8* data = (const deUint8*)data_;
 
-	// \todo Optimize
+	// \todo [2016-03-09 mika] Optimize
 	for (size_t pos = 0; pos < size; pos++)
 	{
 		m_data[offset + pos] = data[pos];
@@ -763,7 +763,7 @@ void ReferenceMemory::setData (size_t offset, size_t size, const void* data_)
 
 void ReferenceMemory::setUndefined	(size_t offset, size_t size)
 {
-	// \todo Optimize
+	// \todo [2016-03-09 mika] Optimize
 	for (size_t pos = 0; pos < size; pos++)
 		m_defined[(offset + pos) / 64] |= 0x1ull << ((offset + pos) % 64);
 }
@@ -874,7 +874,7 @@ vk::VkDeviceSize roundBufferSizeToWxHx4 (vk::VkDeviceSize size)
 	vk::VkDeviceSize		bestW			= de::max(maxTexelCount, maxTextureSize);
 	vk::VkDeviceSize		bestH			= maxTexelCount / bestW;
 
-	// \todo Could probably be faster?
+	// \todo [2016-03-09 mika] Could probably be faster?
 	for (vk::VkDeviceSize w = 1; w * w < maxTexelCount && w < maxTextureSize && bestW * bestH * 4 < size; w++)
 	{
 		const vk::VkDeviceSize h = maxTexelCount / w;
@@ -898,7 +898,7 @@ IVec2 findImageSizeWxHx4 (vk::VkDeviceSize size)
 
 	DE_ASSERT((size % 4) == 0);
 
-	// \todo Could probably be faster?
+	// \todo [2016-03-09 mika] Could probably be faster?
 	for (vk::VkDeviceSize w = 1; w < maxTextureSize && w < texelCount; w++)
 	{
 		const vk::VkDeviceSize	h	= texelCount / w;
@@ -2077,7 +2077,15 @@ void PipelineBarrier::submit (SubmitContext& context)
 class ImageTransition : public CmdCommand
 {
 public:
-						ImageTransition		(void) {}
+						ImageTransition		(vk::VkPipelineStageFlags	srcStages,
+											 vk::VkAccessFlags			srcAccesses,
+
+											 vk::VkPipelineStageFlags	dstStages,
+											 vk::VkAccessFlags			dstAccesses,
+
+											 vk::VkImageLayout			srcLayout,
+											 vk::VkImageLayout			dstLayout);
+
 						~ImageTransition	(void) {}
 	const char*			getName				(void) const { return "ImageTransition"; }
 
@@ -2087,17 +2095,47 @@ public:
 	void				verify				(VerifyContext& context, size_t);
 
 private:
-	vk::VkDeviceSize	m_imageMemorySize;
+	const vk::VkPipelineStageFlags	m_srcStages;
+	const vk::VkAccessFlags			m_srcAccesses;
+	const vk::VkPipelineStageFlags	m_dstStages;
+	const vk::VkAccessFlags			m_dstAccesses;
+	const vk::VkImageLayout			m_srcLayout;
+	const vk::VkImageLayout			m_dstLayout;
+
+	vk::VkDeviceSize				m_imageMemorySize;
 };
+
+ImageTransition::ImageTransition (vk::VkPipelineStageFlags	srcStages,
+								  vk::VkAccessFlags			srcAccesses,
+
+								  vk::VkPipelineStageFlags	dstStages,
+								  vk::VkAccessFlags			dstAccesses,
+
+								  vk::VkImageLayout			srcLayout,
+								  vk::VkImageLayout			dstLayout)
+	: m_srcStages		(srcStages)
+	, m_srcAccesses		(srcAccesses)
+	, m_dstStages		(dstStages)
+	, m_dstAccesses		(dstAccesses)
+	, m_srcLayout		(srcLayout)
+	, m_dstLayout		(dstLayout)
+{
+}
 
 void ImageTransition::logSubmit (TestLog& log, size_t commandIndex) const
 {
-	log << TestLog::Message << commandIndex << ":" << getName() << " Use pipeline barrier to transition to VK_IMAGE_LAYOUT_GENERAL." << TestLog::EndMessage;
+	log << TestLog::Message << commandIndex << ":" << getName()
+		<< " Image transition pipeline barrier"
+		<< ", srcStages: " << vk::getPipelineStageFlagsStr(m_srcStages) << ", srcAccesses: " << vk::getAccessFlagsStr(m_srcAccesses)
+		<< ", dstStages: " << vk::getPipelineStageFlagsStr(m_dstStages) << ", dstAccesses: " << vk::getAccessFlagsStr(m_dstAccesses)
+		<< ", srcLayout: " << m_srcLayout << ", dstLayout: " << m_dstLayout << TestLog::EndMessage;
 }
 
 void ImageTransition::prepare (PrepareContext& context)
 {
-	context.setImageLayout(vk::VK_IMAGE_LAYOUT_GENERAL);
+	DE_ASSERT(context.getImageLayout() == vk::VK_IMAGE_LAYOUT_UNDEFINED || m_srcLayout == vk::VK_IMAGE_LAYOUT_UNDEFINED || context.getImageLayout() == m_srcLayout);
+
+	context.setImageLayout(m_dstLayout);
 	m_imageMemorySize = context.getImageMemorySize();
 }
 
@@ -2110,11 +2148,11 @@ void ImageTransition::submit (SubmitContext& context)
 		vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		DE_NULL,
 
-		ALL_ACCESSES,
-		ALL_ACCESSES,
+		m_srcAccesses,
+		m_dstAccesses,
 
-		context.getImageLayout(),
-		vk::VK_IMAGE_LAYOUT_GENERAL,
+		m_srcLayout,
+		m_dstLayout,
 
 		vk::VK_QUEUE_FAMILY_IGNORED,
 		vk::VK_QUEUE_FAMILY_IGNORED,
@@ -2127,7 +2165,7 @@ void ImageTransition::submit (SubmitContext& context)
 		}
 	};
 
-	vkd.cmdPipelineBarrier(cmd, ALL_PIPELINE_STAGES, ALL_PIPELINE_STAGES, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
+	vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
 }
 
 void ImageTransition::verify (VerifyContext& context, size_t)
@@ -4920,7 +4958,7 @@ enum Op
 	OP_IMAGE_DESTROY,
 	OP_IMAGE_BINDMEMORY,
 
-	OP_IMAGE_TRANSITION_TO_GENERAL,
+	OP_IMAGE_TRANSITION_LAYOUT,
 
 	OP_IMAGE_COPY_TO_BUFFER,
 	OP_IMAGE_COPY_FROM_BUFFER,
@@ -4954,63 +4992,60 @@ enum Stage
 	STAGE_RENDER_PASS
 };
 
+vk::VkAccessFlags getWriteAccessFlags (void)
+{
+	return vk::VK_ACCESS_SHADER_WRITE_BIT
+		| vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+		| vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+		| vk::VK_ACCESS_TRANSFER_WRITE_BIT
+		| vk::VK_ACCESS_HOST_WRITE_BIT
+		| vk::VK_ACCESS_MEMORY_WRITE_BIT;
+}
+
 bool isWriteAccess (vk::VkAccessFlagBits access)
 {
-	switch (access)
-	{
-
-		case vk::VK_ACCESS_INDIRECT_COMMAND_READ_BIT:			return false;
-		case vk::VK_ACCESS_INDEX_READ_BIT:						return false;
-		case vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT:			return false;
-		case vk::VK_ACCESS_UNIFORM_READ_BIT:					return false;
-		case vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT:			return false;
-		case vk::VK_ACCESS_SHADER_READ_BIT:						return false;
-		case vk::VK_ACCESS_SHADER_WRITE_BIT:					return true;
-		case vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT:			return false;
-		case vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT:			return true;
-		case vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT:	return false;
-		case vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT:	return true;
-		case vk::VK_ACCESS_TRANSFER_READ_BIT:					return false;
-		case vk::VK_ACCESS_TRANSFER_WRITE_BIT:					return true;
-		case vk::VK_ACCESS_HOST_READ_BIT:						return false;
-		case vk::VK_ACCESS_HOST_WRITE_BIT:						return true;
-		case vk::VK_ACCESS_MEMORY_READ_BIT:						return false;
-		case vk::VK_ACCESS_MEMORY_WRITE_BIT:					return true;
-
-		default:
-			DE_FATAL("Unknown access");
-			return true;
-	}
+	return getWriteAccessFlags() & access;
 }
 
 class CacheState
 {
 public:
-			CacheState			(vk::VkPipelineStageFlags allowedStages, vk::VkAccessFlags allowedAccesses);
+									CacheState				(vk::VkPipelineStageFlags allowedStages, vk::VkAccessFlags allowedAccesses);
 
-	bool	isValid				(vk::VkPipelineStageFlagBits	stage,
-								 vk::VkAccessFlagBits			access) const;
+	bool							isValid					(vk::VkPipelineStageFlagBits	stage,
+															 vk::VkAccessFlagBits			access) const;
 
-	void	perform				(vk::VkPipelineStageFlagBits	stage,
-								 vk::VkAccessFlagBits			access);
+	void							perform					(vk::VkPipelineStageFlagBits	stage,
+															 vk::VkAccessFlagBits			access);
 
-	void	submitCommandBuffer	(void);
+	void							submitCommandBuffer		(void);
+	void							waitForIdle				(void);
 
-	void	getFullBarrier		(vk::VkPipelineStageFlags&	srcStages,
-								 vk::VkAccessFlags&			srcAccesses,
-								 vk::VkPipelineStageFlags&	dstStages,
-								 vk::VkAccessFlags&			dstAccesses) const;
+	void							getFullBarrier			(vk::VkPipelineStageFlags&	srcStages,
+															 vk::VkAccessFlags&			srcAccesses,
+															 vk::VkPipelineStageFlags&	dstStages,
+															 vk::VkAccessFlags&			dstAccesses) const;
 
-	void	barrier				(vk::VkPipelineStageFlags	srcStages,
-								 vk::VkAccessFlags			srcAccesses,
-								 vk::VkPipelineStageFlags	dstStages,
-								 vk::VkAccessFlags			dstAccesses);
+	void							barrier					(vk::VkPipelineStageFlags	srcStages,
+															 vk::VkAccessFlags			srcAccesses,
+															 vk::VkPipelineStageFlags	dstStages,
+															 vk::VkAccessFlags			dstAccesses);
 
-	void	fullBarrier			(void);
+	void							imageLayoutBarrier		(vk::VkPipelineStageFlags	srcStages,
+															 vk::VkAccessFlags			srcAccesses,
+															 vk::VkPipelineStageFlags	dstStages,
+															 vk::VkAccessFlags			dstAccesses);
+
+	void							checkImageLayoutBarrier	(vk::VkPipelineStageFlags	srcStages,
+															 vk::VkAccessFlags			srcAccesses,
+															 vk::VkPipelineStageFlags	dstStages,
+															 vk::VkAccessFlags			dstAccesses);
 
 	// Everything is clean and there is no need for barriers
-	bool	isClean				(void) const;
+	bool							isClean					(void) const;
 
+	vk::VkPipelineStageFlags		getAllowedStages		(void) const { return m_allowedStages; }
+	vk::VkAccessFlags				getAllowedAcceses		(void) const { return m_allowedAccesses; }
 private:
 	// Limit which stages and accesses are used by the CacheState tracker
 	const vk::VkPipelineStageFlags	m_allowedStages;
@@ -5019,6 +5054,8 @@ private:
 	// [dstStage][srcStage] = srcAccesses
 	// In stage dstStage write srcAccesses from srcStage are not yet available
 	vk::VkAccessFlags				m_unavailableWriteOperations[PIPELINESTAGE_LAST][PIPELINESTAGE_LAST];
+	// Latest pipeline transition is not available in stage
+	bool							m_unavailableLayoutTransition[PIPELINESTAGE_LAST];
 	// [dstStage] = dstAccesses
 	// In stage dstStage ops with dstAccesses are not yet visible
 	vk::VkAccessFlags				m_invisibleOperations[PIPELINESTAGE_LAST];
@@ -5045,6 +5082,9 @@ CacheState::CacheState (vk::VkPipelineStageFlags allowedStages, vk::VkAccessFlag
 		// There are no incomplete read operations initially
 		m_incompleteOperations[dstStage] = 0;
 
+		// There are no incomplete layout transitions
+		m_unavailableLayoutTransition[dstStage] = false;
+
 		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= m_allowedStages; srcStage_ <<= 1)
 		{
 			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
@@ -5068,7 +5108,7 @@ bool CacheState::isValid (vk::VkPipelineStageFlagBits	stage,
 	const PipelineStage	dstStage	= pipelineStageFlagToPipelineStage(stage);
 
 	// Previous operations are not visible to access on stage
-	if ((m_invisibleOperations[dstStage] & access) != 0)
+	if (m_unavailableLayoutTransition[dstStage] || (m_invisibleOperations[dstStage] & access) != 0)
 		return false;
 
 	if (isWriteAccess(access))
@@ -5120,6 +5160,21 @@ void CacheState::submitCommandBuffer (void)
 			m_allowedAccesses);
 }
 
+void CacheState::waitForIdle (void)
+{
+	// Make all writes available
+	barrier(m_allowedStages,
+			m_allowedAccesses & getWriteAccessFlags(),
+			m_allowedStages,
+			0);
+
+	// Make all writes visible on device side
+	barrier(m_allowedStages,
+			0,
+			m_allowedStages & (~vk::VK_PIPELINE_STAGE_HOST_BIT),
+			m_allowedAccesses);
+}
+
 void CacheState::getFullBarrier (vk::VkPipelineStageFlags&	srcStages,
 								 vk::VkAccessFlags&			srcAccesses,
 								 vk::VkPipelineStageFlags&	dstStages,
@@ -5165,6 +5220,14 @@ void CacheState::getFullBarrier (vk::VkPipelineStageFlags&	srcStages,
 				srcStages |= dstStage_;
 				srcAccesses |= m_unavailableWriteOperations[dstStage][srcStage];
 			}
+
+			if (m_unavailableLayoutTransition[dstStage] && !m_unavailableLayoutTransition[srcStage])
+			{
+				// Add dependency between srcStage and dstStage if layout transition has not completed in dstStage,
+				// but has completed in srcStage.
+				dstStages |= dstStage_;
+				srcStages |= dstStage_;
+			}
 		}
 	}
 
@@ -5172,6 +5235,108 @@ void CacheState::getFullBarrier (vk::VkPipelineStageFlags&	srcStages,
 	DE_ASSERT((srcAccesses & (~m_allowedAccesses)) == 0);
 	DE_ASSERT((dstStages & (~m_allowedStages)) == 0);
 	DE_ASSERT((dstAccesses & (~m_allowedAccesses)) == 0);
+}
+
+void CacheState::checkImageLayoutBarrier (vk::VkPipelineStageFlags	srcStages,
+										 vk::VkAccessFlags			srcAccesses,
+										 vk::VkPipelineStageFlags	dstStages,
+										 vk::VkAccessFlags			dstAccesses)
+{
+	DE_ASSERT((srcStages & (~m_allowedStages)) == 0);
+	DE_ASSERT((srcAccesses & (~m_allowedAccesses)) == 0);
+	DE_ASSERT((dstStages & (~m_allowedStages)) == 0);
+	DE_ASSERT((dstAccesses & (~m_allowedAccesses)) == 0);
+
+	DE_UNREF(srcStages);
+	DE_UNREF(srcAccesses);
+
+	DE_UNREF(dstStages);
+	DE_UNREF(dstAccesses);
+
+#if defined(DE_DEBUG)
+	// Check that all stages have completed before srcStages or are in srcStages.
+	{
+		vk::VkPipelineStageFlags completedStages = srcStages;
+
+		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= srcStages; srcStage_ <<= 1)
+		{
+			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
+
+			if ((srcStage_ & srcStages) == 0)
+				continue;
+
+			completedStages |= (~m_incompleteOperations[srcStage]);
+		}
+
+		DE_ASSERT((completedStages & m_allowedStages) == m_allowedStages);
+	}
+
+	// Check that any write is available at least in one stage. Since all stages are complete even single flush is enough.
+	if ((getWriteAccessFlags() & m_allowedAccesses) != 0 && (srcAccesses & getWriteAccessFlags()) == 0)
+	{
+		bool anyWriteAvailable = false;
+
+		for (vk::VkPipelineStageFlags dstStage_ = 1; dstStage_ <= m_allowedStages; dstStage_ <<= 1)
+		{
+			const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
+
+			if ((dstStage_ & m_allowedStages) == 0)
+				continue;
+
+			for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= m_allowedStages; srcStage_ <<= 1)
+			{
+				const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
+
+				if ((srcStage_ & m_allowedStages) == 0)
+					continue;
+
+				if (m_unavailableWriteOperations[dstStage][srcStage] != (getWriteAccessFlags() & m_allowedAccesses))
+				{
+					anyWriteAvailable = true;
+					break;
+				}
+			}
+		}
+
+		DE_ASSERT(anyWriteAvailable);
+	}
+#endif
+}
+
+void CacheState::imageLayoutBarrier (vk::VkPipelineStageFlags	srcStages,
+									 vk::VkAccessFlags			srcAccesses,
+									 vk::VkPipelineStageFlags	dstStages,
+									 vk::VkAccessFlags			dstAccesses)
+{
+	checkImageLayoutBarrier(srcStages, srcAccesses, dstStages, dstAccesses);
+
+	for (vk::VkPipelineStageFlags dstStage_ = 1; dstStage_ <= m_allowedStages; dstStage_ <<= 1)
+	{
+		const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
+
+		if ((dstStage_ & m_allowedStages) == 0)
+			continue;
+
+		// All stages are incomplete after the barrier except each dstStage in it self.
+		m_incompleteOperations[dstStage] = m_allowedStages & (~dstStage_);
+
+		// All memory operations are invisible unless they are listed in dstAccess
+		m_invisibleOperations[dstStage] = m_allowedAccesses & (~dstAccesses);
+
+		// Layout transition is unavailable in stage unless it was listed in dstStages
+		m_unavailableLayoutTransition[dstStage]= (dstStage_ & dstStages) == 0;
+
+		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= m_allowedStages; srcStage_ <<= 1)
+		{
+			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
+
+			if ((srcStage_ & m_allowedStages) == 0)
+				continue;
+
+			// All write operations are available after layout transition
+			m_unavailableWriteOperations[dstStage][srcStage] = 0;
+		}
+	}
 }
 
 void CacheState::barrier (vk::VkPipelineStageFlags	srcStages,
@@ -5188,9 +5353,11 @@ void CacheState::barrier (vk::VkPipelineStageFlags	srcStages,
 	{
 		vk::VkPipelineStageFlags		oldIncompleteOperations[PIPELINESTAGE_LAST];
 		vk::VkAccessFlags				oldUnavailableWriteOperations[PIPELINESTAGE_LAST][PIPELINESTAGE_LAST];
+		bool							oldUnavailableLayoutTransition[PIPELINESTAGE_LAST];
 
 		deMemcpy(oldIncompleteOperations, m_incompleteOperations, sizeof(oldIncompleteOperations));
 		deMemcpy(oldUnavailableWriteOperations, m_unavailableWriteOperations, sizeof(oldUnavailableWriteOperations));
+		deMemcpy(oldUnavailableLayoutTransition, m_unavailableLayoutTransition, sizeof(oldUnavailableLayoutTransition));
 
 		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= srcStages; srcStage_ <<= 1)
 		{
@@ -5208,6 +5375,9 @@ void CacheState::barrier (vk::VkPipelineStageFlags	srcStages,
 
 				// Stages that have completed before srcStage have also completed before dstStage
 				m_incompleteOperations[dstStage] &= oldIncompleteOperations[srcStage];
+
+				// Image layout transition in srcStage are now available in dstStage
+				m_unavailableLayoutTransition[dstStage] &= oldUnavailableLayoutTransition[srcStage];
 
 				for (vk::VkPipelineStageFlags sharedStage_ = 1; sharedStage_ <= m_allowedStages; sharedStage_ <<= 1)
 				{
@@ -5273,6 +5443,10 @@ bool CacheState::isClean (void) const
 		if (m_incompleteOperations[dstStage] != 0)
 			return false;
 
+		// Layout transition has not completed yet
+		if (m_unavailableLayoutTransition[dstStage])
+			return false;
+
 		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= m_allowedStages; srcStage_ <<= 1)
 		{
 			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
@@ -5289,34 +5463,6 @@ bool CacheState::isClean (void) const
 	return true;
 }
 
-void CacheState::fullBarrier (void)
-{
-	for (vk::VkPipelineStageFlags dstStage_ = 1; dstStage_ <= m_allowedStages; dstStage_ <<= 1)
-	{
-		const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
-
-		if ((dstStage_ & m_allowedStages) == 0)
-			continue;
-
-		// All stages have completed
-		m_incompleteOperations[dstStage] = 0;
-
-		// All operations are visible
-		m_invisibleOperations[dstStage] = 0;
-
-		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= m_allowedStages; srcStage_ <<= 1)
-		{
-			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
-
-			if ((srcStage_ & m_allowedStages) == 0)
-				continue;
-
-			// All writes are available
-			m_unavailableWriteOperations[dstStage][srcStage] = 0;
-		}
-	}
-}
-
 struct State
 {
 	State (Usage usage, deUint32 seed)
@@ -5331,7 +5477,7 @@ struct State
 		, hasBoundBufferMemory	(false)
 		, hasImage				(false)
 		, hasBoundImageMemory	(false)
-		, imageHasGeneralLayout	(false)
+		, imageLayout			(vk::VK_IMAGE_LAYOUT_UNDEFINED)
 		, imageDefined			(false)
 		, queueIdle				(true)
 		, deviceIdle			(true)
@@ -5339,27 +5485,27 @@ struct State
 	{
 	}
 
-	Stage		stage;
-	CacheState	cache;
-	de::Random	rng;
+	Stage				stage;
+	CacheState			cache;
+	de::Random			rng;
 
-	bool		mapped;
-	bool		hostInvalidated;
-	bool		hostFlushed;
-	bool		memoryDefined;
+	bool				mapped;
+	bool				hostInvalidated;
+	bool				hostFlushed;
+	bool				memoryDefined;
 
-	bool		hasBuffer;
-	bool		hasBoundBufferMemory;
+	bool				hasBuffer;
+	bool				hasBoundBufferMemory;
 
-	bool		hasImage;
-	bool		hasBoundImageMemory;
-	bool		imageHasGeneralLayout;
-	bool		imageDefined;
+	bool				hasImage;
+	bool				hasBoundImageMemory;
+	vk::VkImageLayout	imageLayout;
+	bool				imageDefined;
 
-	bool		queueIdle;
-	bool		deviceIdle;
+	bool				queueIdle;
+	bool				deviceIdle;
 
-	bool		commandBufferIsEmpty;
+	bool				commandBufferIsEmpty;
 };
 
 void getAvailableOps (const State& state, bool supportsBuffers, bool supportsImages, Usage usage, vector<Op>& ops)
@@ -5502,14 +5648,12 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 
 		if (state.hasBoundImageMemory)
 		{
-			if (!state.imageHasGeneralLayout)
-			{
-				ops.push_back(OP_IMAGE_TRANSITION_TO_GENERAL);
-			}
-			else
+			ops.push_back(OP_IMAGE_TRANSITION_LAYOUT);
+
 			{
 				if (usage & USAGE_TRANSFER_DST
-					&& state.imageHasGeneralLayout
+					&& (state.imageLayout == vk::VK_IMAGE_LAYOUT_GENERAL
+						|| state.imageLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT))
 				{
 					ops.push_back(OP_IMAGE_COPY_FROM_BUFFER);
@@ -5518,7 +5662,8 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 				}
 
 				if (usage & USAGE_TRANSFER_SRC
-					&& state.imageHasGeneralLayout
+					&& (state.imageLayout == vk::VK_IMAGE_LAYOUT_GENERAL
+						|| state.imageLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
 					&& state.imageDefined
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT))
 				{
@@ -5529,7 +5674,7 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 			}
 		}
 
-		// \todo Add other usages?
+		// \todo [2016-03-09 mika] Add other usages?
 		if (((usage & USAGE_VERTEX_BUFFER) && state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT))
 			|| ((usage & USAGE_INDEX_BUFFER) && state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, vk::VK_ACCESS_INDEX_READ_BIT)))
 			ops.push_back(OP_RENDERPASS_BEGIN);
@@ -5563,7 +5708,85 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 		DE_FATAL("Unknown stage");
 }
 
-void applyOp (State& state, const Memory& memory, Op op)
+bool layoutSupportedByUsage (Usage usage, vk::VkImageLayout layout)
+{
+	switch (layout)
+	{
+		case vk::VK_IMAGE_LAYOUT_GENERAL:
+			return true;
+
+		case vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+			return (usage & USAGE_COLOR_ATTACHMENT) != 0;
+
+		case vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+			return (usage & USAGE_DEPTH_STENCIL_ATTACHMENT) != 0;
+
+		case vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
+			return (usage & USAGE_DEPTH_STENCIL_ATTACHMENT) != 0;
+
+		case vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+			// \todo [2016-03-09 mika] Should include input attachment
+			return (usage & USAGE_TEXTURE_SAMPLED) != 0;
+
+		case vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+			return (usage & USAGE_TRANSFER_SRC) != 0;
+
+		case vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+			return (usage & USAGE_TRANSFER_DST) != 0;
+
+		case vk::VK_IMAGE_LAYOUT_PREINITIALIZED:
+			return true;
+
+		default:
+			DE_FATAL("Unknown layout");
+			return false;
+	}
+}
+
+vk::VkImageLayout getRandomNextLayout (de::Random&			rng,
+									   Usage				usage,
+									   vk::VkImageLayout	previousLayout)
+{
+	const vk::VkImageLayout layouts[] =
+	{
+		vk::VK_IMAGE_LAYOUT_GENERAL,
+		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	};
+	size_t possibleLayoutCount = 0;
+
+	for (size_t layoutNdx = 0; layoutNdx < DE_LENGTH_OF_ARRAY(layouts); layoutNdx++)
+	{
+		const vk::VkImageLayout layout = layouts[layoutNdx];
+
+		if (layoutSupportedByUsage(usage, layout) && layout != previousLayout)
+			possibleLayoutCount++;
+	}
+
+	size_t nextLayoutNdx = ((size_t)rng.getUint64()) % possibleLayoutCount;
+
+	for (size_t layoutNdx = 0; layoutNdx < DE_LENGTH_OF_ARRAY(layouts); layoutNdx++)
+	{
+		const vk::VkImageLayout layout = layouts[layoutNdx];
+
+		if (layoutSupportedByUsage(usage, layout) && layout != previousLayout)
+		{
+			if (nextLayoutNdx == 0)
+				return layout;
+			else
+				nextLayoutNdx--;
+		}
+	}
+
+	DE_FATAL("Unreachable");
+	return vk::VK_IMAGE_LAYOUT_UNDEFINED;
+}
+
+void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 {
 	switch (op)
 	{
@@ -5604,7 +5827,7 @@ void applyOp (State& state, const Memory& memory, Op op)
 
 			state.memoryDefined = true;
 			state.imageDefined = false;
-			state.imageHasGeneralLayout = false;
+			state.imageLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
 			state.rng.getUint32();
 			break;
 
@@ -5657,7 +5880,7 @@ void applyOp (State& state, const Memory& memory, Op op)
 
 			state.hasImage = false;
 			state.hasBoundImageMemory = false;
-			state.imageHasGeneralLayout = false;
+			state.imageLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
 			state.imageDefined = false;
 			break;
 
@@ -5669,20 +5892,58 @@ void applyOp (State& state, const Memory& memory, Op op)
 			state.hasBoundImageMemory = true;
 			break;
 
-		case OP_IMAGE_TRANSITION_TO_GENERAL:
+		case OP_IMAGE_TRANSITION_LAYOUT:
+		{
 			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER);
 			DE_ASSERT(state.hasImage);
 			DE_ASSERT(state.hasBoundImageMemory);
 
-			state.imageHasGeneralLayout = true;
+			// \todo [2016-03-09 mika] Support linear tiling and predefined data
+			const vk::VkImageLayout		srcLayout	= state.rng.getFloat() < 0.9f ? state.imageLayout : vk::VK_IMAGE_LAYOUT_UNDEFINED;
+			const vk::VkImageLayout		dstLayout	= getRandomNextLayout(state.rng, usage, srcLayout);
+
+			vk::VkPipelineStageFlags	dirtySrcStages;
+			vk::VkAccessFlags			dirtySrcAccesses;
+			vk::VkPipelineStageFlags	dirtyDstStages;
+			vk::VkAccessFlags			dirtyDstAccesses;
+
+			vk::VkPipelineStageFlags	srcStages;
+			vk::VkAccessFlags			srcAccesses;
+			vk::VkPipelineStageFlags	dstStages;
+			vk::VkAccessFlags			dstAccesses;
+
+			state.cache.getFullBarrier(dirtySrcStages, dirtySrcAccesses, dirtyDstStages, dirtyDstAccesses);
+
+			// Try masking some random bits
+			srcStages	= dirtySrcStages;
+			srcAccesses	= dirtySrcAccesses;
+
+			dstStages	= state.cache.getAllowedStages() & state.rng.getUint32();
+			dstAccesses	= state.cache.getAllowedAcceses() & state.rng.getUint32();
+
+			// If there are no bits in dst stage mask use all stages
+			dstStages	= dstStages ? dstStages : state.cache.getAllowedStages();
+
+			if (!srcStages)
+				srcStages = dstStages;
+
+			if (srcLayout == vk::VK_IMAGE_LAYOUT_UNDEFINED)
+				state.imageDefined = false;
+
+			state.commandBufferIsEmpty = false;
+			state.imageLayout = dstLayout;
 			state.memoryDefined = false;
+			state.cache.imageLayoutBarrier(srcStages, srcAccesses, dstStages, dstAccesses);
 			break;
+		}
 
 		case OP_QUEUE_WAIT_FOR_IDLE:
 			DE_ASSERT(state.stage == STAGE_HOST);
 			DE_ASSERT(!state.queueIdle);
 
 			state.queueIdle = true;
+
+			state.cache.waitForIdle();
 			break;
 
 		case OP_DEVICE_WAIT_FOR_IDLE:
@@ -5691,6 +5952,8 @@ void applyOp (State& state, const Memory& memory, Op op)
 
 			state.queueIdle = true;
 			state.deviceIdle = true;
+
+			state.cache.waitForIdle();
 			break;
 
 		case OP_COMMAND_BUFFER_BEGIN:
@@ -5706,7 +5969,6 @@ void applyOp (State& state, const Memory& memory, Op op)
 			state.stage = STAGE_HOST;
 			state.queueIdle = false;
 			state.deviceIdle = false;
-			// \todo Should this set all device reads ready?
 			break;
 
 		case OP_BUFFER_COPY_FROM_BUFFER:
@@ -5722,7 +5984,7 @@ void applyOp (State& state, const Memory& memory, Op op)
 			state.commandBufferIsEmpty = false;
 			state.memoryDefined = true;
 			state.imageDefined = false;
-			state.imageHasGeneralLayout = false;
+			state.imageLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
 			state.cache.perform(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT);
 			break;
 
@@ -5872,7 +6134,8 @@ de::MovePtr<Command> createHostCommand (Op					op,
 
 de::MovePtr<CmdCommand> createCmdCommand (de::Random&	rng,
 										  const State&	state,
-										  Op			op)
+										  Op			op,
+										  Usage			usage)
 {
 	switch (op)
 	{
@@ -5884,7 +6147,42 @@ de::MovePtr<CmdCommand> createCmdCommand (de::Random&	rng,
 		case OP_BUFFER_COPY_TO_IMAGE:			return de::MovePtr<CmdCommand>(new BufferCopyToImage());
 		case OP_BUFFER_COPY_FROM_IMAGE:			return de::MovePtr<CmdCommand>(new BufferCopyFromImage(rng.getUint32()));
 
-		case OP_IMAGE_TRANSITION_TO_GENERAL:	return de::MovePtr<CmdCommand>(new ImageTransition());
+		case OP_IMAGE_TRANSITION_LAYOUT:
+		{
+			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER);
+			DE_ASSERT(state.hasImage);
+			DE_ASSERT(state.hasBoundImageMemory);
+
+			const vk::VkImageLayout		srcLayout	= rng.getFloat() < 0.9f ? state.imageLayout : vk::VK_IMAGE_LAYOUT_UNDEFINED;
+			const vk::VkImageLayout		dstLayout	= getRandomNextLayout(rng, usage, srcLayout);
+
+			vk::VkPipelineStageFlags	dirtySrcStages;
+			vk::VkAccessFlags			dirtySrcAccesses;
+			vk::VkPipelineStageFlags	dirtyDstStages;
+			vk::VkAccessFlags			dirtyDstAccesses;
+
+			vk::VkPipelineStageFlags	srcStages;
+			vk::VkAccessFlags			srcAccesses;
+			vk::VkPipelineStageFlags	dstStages;
+			vk::VkAccessFlags			dstAccesses;
+
+			state.cache.getFullBarrier(dirtySrcStages, dirtySrcAccesses, dirtyDstStages, dirtyDstAccesses);
+
+			// Try masking some random bits
+			srcStages	= dirtySrcStages;
+			srcAccesses	= dirtySrcAccesses;
+
+			dstStages	= state.cache.getAllowedStages() & rng.getUint32();
+			dstAccesses	= state.cache.getAllowedAcceses() & rng.getUint32();
+
+			// If there are no bits in dst stage mask use all stages
+			dstStages	= dstStages ? dstStages : state.cache.getAllowedStages();
+
+			if (!srcStages)
+				srcStages = dstStages;
+
+			return de::MovePtr<CmdCommand>(new ImageTransition(srcStages, srcAccesses, dstStages, dstAccesses, srcLayout, dstLayout));
+		}
 
 		case OP_IMAGE_COPY_TO_BUFFER:			return de::MovePtr<CmdCommand>(new ImageCopyToBuffer());
 		case OP_IMAGE_COPY_FROM_BUFFER:			return de::MovePtr<CmdCommand>(new ImageCopyFromBuffer(rng.getUint32()));
@@ -5977,38 +6275,47 @@ de::MovePtr<CmdCommand> createRenderPassCommands (const Memory&	memory,
 												  size_t&		opNdx,
 												  size_t		opCount)
 {
-	// \todo Exception safety
 	vector<RenderPassCommand*>	commands;
 
-	for (; opNdx < opCount; opNdx++)
+	try
 	{
-		vector<Op>	ops;
-
-		getAvailableOps(state, memory.getSupportBuffers(), memory.getSupportImages(), usage, ops);
-
-		DE_ASSERT(!ops.empty());
-
+		for (; opNdx < opCount; opNdx++)
 		{
-			const Op op = nextOpRng.choose<Op>(ops.begin(), ops.end());
+			vector<Op>	ops;
 
-			if (op == OP_RENDERPASS_END)
+			getAvailableOps(state, memory.getSupportBuffers(), memory.getSupportImages(), usage, ops);
+
+			DE_ASSERT(!ops.empty());
+
 			{
-				break;
-			}
-			else
-			{
-				de::Random	rng	(state.rng);
+				const Op op = nextOpRng.choose<Op>(ops.begin(), ops.end());
 
-				commands.push_back(createRenderPassCommand(rng, state, op).release());
-				applyOp(state, memory, op);
+				if (op == OP_RENDERPASS_END)
+				{
+					break;
+				}
+				else
+				{
+					de::Random	rng	(state.rng);
 
-				DE_ASSERT(state.rng == rng);
+					commands.push_back(createRenderPassCommand(rng, state, op).release());
+					applyOp(state, memory, op, usage);
+
+					DE_ASSERT(state.rng == rng);
+				}
 			}
 		}
-	}
 
-	applyOp(state, memory, OP_RENDERPASS_END);
-	return de::MovePtr<CmdCommand>(new SubmitRenderPass(commands));
+		applyOp(state, memory, OP_RENDERPASS_END, usage);
+		return de::MovePtr<CmdCommand>(new SubmitRenderPass(commands));
+	}
+	catch (...)
+	{
+		for (size_t commandNdx = 0; commandNdx < commands.size(); commandNdx++)
+			delete commands[commandNdx];
+
+		throw;
+	}
 }
 
 de::MovePtr<Command> createCmdCommands (const Memory&	memory,
@@ -6018,48 +6325,57 @@ de::MovePtr<Command> createCmdCommands (const Memory&	memory,
 										size_t&			opNdx,
 										size_t			opCount)
 {
-	// \todo Exception safety
 	vector<CmdCommand*>	commands;
 
-	for (; opNdx < opCount; opNdx++)
+	try
 	{
-		vector<Op>	ops;
-
-		getAvailableOps(state, memory.getSupportBuffers(), memory.getSupportImages(), usage, ops);
-
-		DE_ASSERT(!ops.empty());
-
+		for (; opNdx < opCount; opNdx++)
 		{
-			const Op op = nextOpRng.choose<Op>(ops.begin(), ops.end());
+			vector<Op>	ops;
 
-			if (op == OP_COMMAND_BUFFER_END)
+			getAvailableOps(state, memory.getSupportBuffers(), memory.getSupportImages(), usage, ops);
+
+			DE_ASSERT(!ops.empty());
+
 			{
-				break;
-			}
-			else
-			{
-				// \note Command needs to known the state before the operation
-				if (op == OP_RENDERPASS_BEGIN)
+				const Op op = nextOpRng.choose<Op>(ops.begin(), ops.end());
+
+				if (op == OP_COMMAND_BUFFER_END)
 				{
-					applyOp(state, memory, op);
-					commands.push_back(createRenderPassCommands(memory, nextOpRng, state, usage, opNdx, opCount).release());
+					break;
 				}
 				else
 				{
-					de::Random	rng	(state.rng);
+					// \note Command needs to known the state before the operation
+					if (op == OP_RENDERPASS_BEGIN)
+					{
+						applyOp(state, memory, op, usage);
+						commands.push_back(createRenderPassCommands(memory, nextOpRng, state, usage, opNdx, opCount).release());
+					}
+					else
+					{
+						de::Random	rng	(state.rng);
 
-					commands.push_back(createCmdCommand(rng, state, op).release());
-					applyOp(state, memory, op);
+						commands.push_back(createCmdCommand(rng, state, op, usage).release());
+						applyOp(state, memory, op, usage);
 
-					DE_ASSERT(state.rng == rng);
+						DE_ASSERT(state.rng == rng);
+					}
+
 				}
-
 			}
 		}
-	}
 
-	applyOp(state, memory, OP_COMMAND_BUFFER_END);
-	return de::MovePtr<Command>(new SubmitCommandBuffer(commands));
+		applyOp(state, memory, OP_COMMAND_BUFFER_END, usage);
+		return de::MovePtr<Command>(new SubmitCommandBuffer(commands));
+	}
+	catch (...)
+	{
+		for (size_t commandNdx = 0; commandNdx < commands.size(); commandNdx++)
+			delete commands[commandNdx];
+
+		throw;
+	}
 }
 
 void createCommands (vector<Command*>&			commands,
@@ -6088,7 +6404,7 @@ void createCommands (vector<Command*>&			commands,
 
 			if (op == OP_COMMAND_BUFFER_BEGIN)
 			{
-				applyOp(state, memory, op);
+				applyOp(state, memory, op, usage);
 				commands.push_back(createCmdCommands(memory, nextOpRng, state, usage, opNdx, opCount).release());
 			}
 			else
@@ -6096,7 +6412,7 @@ void createCommands (vector<Command*>&			commands,
 				de::Random	rng	(state.rng);
 
 				commands.push_back(createHostCommand(op, rng, usage, sharingMode).release());
-				applyOp(state, memory, op);
+				applyOp(state, memory, op, usage);
 
 				// Make sure that random generator is in sync
 				DE_ASSERT(state.rng == rng);
@@ -6319,7 +6635,7 @@ MemoryTestInstance::MemoryTestInstance (::vkt::Context& context, const TestConfi
 
 tcu::TestStatus MemoryTestInstance::iterate (void)
 {
-	// \todo Split different stages over multiple iterations
+	// \todo [2016-03-09 mika] Split different stages over multiple iterations
 	if (m_memoryTypeNdx < m_memoryProperties.memoryTypeCount)
 	{
 		TestLog&									log					= m_context.getTestContext().getLog();
