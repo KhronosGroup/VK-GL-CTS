@@ -48,6 +48,16 @@ inline VkClearValue makeClearValueColorF32 (float r, float g, float b, float a)
 	return v;
 }
 
+inline VkClearValue makeClearValueColorU32 (deUint32 r, deUint32 g, deUint32 b, deUint32 a)
+{
+	VkClearValue v;
+	v.color.uint32[0] = r;
+	v.color.uint32[1] = g;
+	v.color.uint32[2] = b;
+	v.color.uint32[3] = a;
+	return v;
+}
+
 inline VkClearValue makeClearValueColor (const tcu::Vec4& color)
 {
 	VkClearValue v;
