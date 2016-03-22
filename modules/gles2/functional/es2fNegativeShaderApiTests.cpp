@@ -29,6 +29,8 @@
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
 
+#include "deStringUtil.hpp"
+
 using namespace glw; // GL types
 
 namespace deqp
@@ -986,24 +988,31 @@ void NegativeShaderApiTests::init (void)
 		});
 	ES2F_ADD_API_CASE(uniform_matrixfv_invalid_transpose, "Invalid glUniformMatrix{234}fv() usage",
 		{
-			glu::ShaderProgram program(m_context.getRenderContext(), glu::makeVtxFragSources(uniformTestVertSource, uniformTestFragSource));
-			glUseProgram(program.getProgram());
+			if (de::beginsWith((const char*)glGetString(GL_VERSION), "OpenGL ES 2.0 "))
+			{
+				DE_ASSERT(m_context.getRenderContext().getType().getMajorVersion() < 3);
+				DE_ASSERT(m_context.getRenderContext().getType().getMinorVersion() == 0);
+				DE_ASSERT(m_context.getRenderContext().getType().getProfile() == glu::PROFILE_ES);
 
-			m_log << program;
+				glu::ShaderProgram program(m_context.getRenderContext(), glu::makeVtxFragSources(uniformTestVertSource, uniformTestFragSource));
+				glUseProgram(program.getProgram());
 
-			std::vector<GLfloat> data(16);
+				m_log << program;
 
-			m_log << tcu::TestLog::Section("", "GL_INVALID_VALUE is generated if transpose is not GL_FALSE.");
-			glUseProgram(program.getProgram());
-			glUniformMatrix2fv(-1, 1, GL_TRUE, &data[0]);
-			expectError(GL_INVALID_VALUE);
-			glUniformMatrix3fv(-1, 1, GL_TRUE, &data[0]);
-			expectError(GL_INVALID_VALUE);
-			glUniformMatrix4fv(-1, 1, GL_TRUE, &data[0]);
-			expectError(GL_INVALID_VALUE);
-			m_log << tcu::TestLog::EndSection;
+				std::vector<GLfloat> data(16);
 
-			glUseProgram(0);
+				m_log << tcu::TestLog::Section("", "GL_INVALID_VALUE is generated if transpose is not GL_FALSE.");
+				glUseProgram(program.getProgram());
+				glUniformMatrix2fv(0, 1, GL_TRUE, &data[0]);
+				expectError(GL_INVALID_VALUE);
+				glUniformMatrix3fv(0, 1, GL_TRUE, &data[0]);
+				expectError(GL_INVALID_VALUE);
+				glUniformMatrix4fv(0, 1, GL_TRUE, &data[0]);
+				expectError(GL_INVALID_VALUE);
+				m_log << tcu::TestLog::EndSection;
+
+				glUseProgram(0);
+			}
 		});
 }
 
