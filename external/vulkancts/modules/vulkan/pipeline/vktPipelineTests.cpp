@@ -41,6 +41,7 @@
 #include "vktPipelineMultisampleTests.hpp"
 #include "vktPipelineVertexInputTests.hpp"
 #include "vktPipelineTimestampTests.hpp"
+#include "vktPipelineEarlyFragmentTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -66,6 +67,7 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createVertexInputTests	(testCtx));
 	pipelineTests->addChild(createInputAssemblyTests(testCtx));
 	pipelineTests->addChild(createTimestampTests	(testCtx));
+	pipelineTests->addChild(createEarlyFragmentTests(testCtx));
 }
 
 } // anonymous
