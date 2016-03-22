@@ -3792,7 +3792,6 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_in %BP_out_color %BP_in_color\n"
 		"OpExecutionMode %BP_main Triangles\n"
-		"OpExecutionMode %BP_main Invocations 0\n"
 		"OpExecutionMode %BP_main OutputTriangleStrip\n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
 		"${debug:opt}\n"
@@ -4001,7 +4000,6 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 		"OpEntryPoint Fragment %frag_main \"main\" %frag_vtxColor %frag_fragColor\n"
 
 		"OpExecutionMode %geom_main Triangles\n"
-		"OpExecutionMode %geom_main Invocations 0\n"
 		"OpExecutionMode %geom_main OutputTriangleStrip\n"
 		"OpExecutionMode %geom_main OutputVertices 3\n"
 
@@ -4357,8 +4355,6 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpEntryPoint Geometry %geom2_main \"geom2\" %out_gl_position %gl_in %out_color %in_color\n"
 		"OpExecutionMode %geom1_main Triangles\n"
 		"OpExecutionMode %geom2_main Triangles\n"
-		"OpExecutionMode %geom1_main Invocations 0\n"
-		"OpExecutionMode %geom2_main Invocations 0\n"
 		"OpExecutionMode %geom1_main OutputTriangleStrip\n"
 		"OpExecutionMode %geom2_main OutputTriangleStrip\n"
 		"OpExecutionMode %geom1_main OutputVertices 3\n"
