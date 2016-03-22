@@ -4,7 +4,7 @@
  * drawElements Quality Program Tester Core
  * ----------------------------------------
  *
- * Copyright 2014 The Android Open Source Project
+ * Copyright 2016 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,54 +26,35 @@
 #include "tcuDefs.hpp"
 #include "tcuPlatform.hpp"
 #include "gluPlatform.hpp"
-#include "vkPlatform.hpp"
+#include "egluPlatform.hpp"
+#include "tcuWin32VulkanPlatform.hpp"
 #include "tcuWin32API.h"
-
-#if defined(DEQP_SUPPORT_EGL)
-#	include "egluPlatform.hpp"
-#endif
 
 namespace tcu
 {
+namespace win32
+{
 
-class Win32VulkanPlatform : public vk::Platform
+class Platform : public tcu::Platform, private glu::Platform, private eglu::Platform
 {
 public:
-						Win32VulkanPlatform		(HINSTANCE instance);
-						~Win32VulkanPlatform	(void);
-
-	vk::Library*		createLibrary			(void) const;
-	void				describePlatform		(std::ostream& dst) const;
-	vk::wsi::Display*	createWsiDisplay		(vk::wsi::Type wsiType) const;
-
-private:
-	const HINSTANCE		m_instance;
-};
-
-class Win32Platform : public tcu::Platform, private glu::Platform
-#if defined(DEQP_SUPPORT_EGL)
-	, private eglu::Platform
-#endif
-{
-public:
-								Win32Platform		(void);
-								~Win32Platform		(void);
+								Platform			(void);
+								~Platform			(void);
 
 	bool						processEvents		(void);
 
 	const glu::Platform&		getGLPlatform		(void) const { return static_cast<const glu::Platform&>(*this);	}
 
-#if defined(DEQP_SUPPORT_EGL)
 	const eglu::Platform&		getEGLPlatform		(void) const { return static_cast<const eglu::Platform&>(*this);}
-#endif
 
 	const vk::Platform&			getVulkanPlatform	(void) const { return m_vulkanPlatform;							}
 
 private:
 	const HINSTANCE				m_instance;
-	const Win32VulkanPlatform	m_vulkanPlatform;
+	const VulkanPlatform		m_vulkanPlatform;
 };
 
+} // win32
 } // tcu
 
 #endif // _TCUWIN32PLATFORM_HPP

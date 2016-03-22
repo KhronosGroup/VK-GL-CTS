@@ -186,7 +186,7 @@ Library::Library (HINSTANCE instance)
 	: m_library("opengl32.dll")
 {
 	// Temporary 1x1 window for creating context
-	Win32Window tmpWindow(instance, 1, 1);
+	win32::Window tmpWindow(instance, 1, 1);
 
 	// Load WGL core.
 	m_functions.createContext		= (wglCreateContextFunc)		m_library.getFunction("wglCreateContext");

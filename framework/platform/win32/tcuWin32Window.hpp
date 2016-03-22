@@ -4,7 +4,7 @@
  * drawElements Quality Program Tester Core
  * ----------------------------------------
  *
- * Copyright 2014 The Android Open Source Project
+ * Copyright 2016 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,27 +29,33 @@
 
 namespace tcu
 {
+namespace win32
+{
 
-class Win32Window
+class Window
 {
 public:
-							Win32Window				(HINSTANCE instance, int width, int height);
-							~Win32Window			(void);
+				Window				(HINSTANCE instance, int width, int height);
+				~Window				(void);
 
-	void					setVisible				(bool visible);
-	void					setSize					(int width, int height);
+	void		setVisible			(bool visible);
+	void		setSize				(int width, int height);
 
-	LRESULT					windowProc				(UINT uMsg, WPARAM wParam, LPARAM lParam);
-	void					processEvents			(void);
+	LRESULT		windowProc			(UINT uMsg, WPARAM wParam, LPARAM lParam);
+	void		processEvents		(void);
 
-	IVec2					getSize					(void) const;
-	HWND					getHandle				(void) const { return m_window;			}
-	HDC						getDeviceContext		(void) const { return GetDC(m_window);	}
+	IVec2		getSize				(void) const;
+	HWND		getHandle			(void) const { return m_window;			}
+	HDC			getDeviceContext	(void) const { return GetDC(m_window);	}
 
 private:
-	HWND					m_window;
+				Window				(const Window&);
+	Window		operator=			(const Window&);
+
+	HWND		m_window;
 };
 
+} // win32
 } // tcu
 
 #endif // _TCUWIN32WINDOW_HPP

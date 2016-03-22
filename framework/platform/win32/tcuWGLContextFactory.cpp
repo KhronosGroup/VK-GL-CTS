@@ -34,6 +34,8 @@ using std::vector;
 
 namespace tcu
 {
+namespace wgl
+{
 namespace
 {
 
@@ -77,7 +79,7 @@ private:
 
 	glu::ContextType				m_contextType;
 
-	Win32Window						m_window;
+	win32::Window					m_window;
 	wgl::Context*					m_context;
 
 	tcu::RenderTarget				m_renderTarget;
@@ -151,16 +153,17 @@ void WGLContext::postIterate (void)
 
 } // anonymous
 
-WGLContextFactory::WGLContextFactory (HINSTANCE instance)
+ContextFactory::ContextFactory (HINSTANCE instance)
 	: glu::ContextFactory	("wgl", "Windows WGL OpenGL context")
 	, m_instance			(instance)
 	, m_wglCore				(instance)
 {
 }
 
-glu::RenderContext* WGLContextFactory::createContext (const glu::RenderConfig& config, const tcu::CommandLine&) const
+glu::RenderContext* ContextFactory::createContext (const glu::RenderConfig& config, const tcu::CommandLine&) const
 {
 	return new WGLContext(m_instance, m_wglCore, config);
 }
 
+} // wgl
 } // tcu
