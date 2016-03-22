@@ -2,7 +2,7 @@
  * drawElements Quality Program Tester Core
  * ----------------------------------------
  *
- * Copyright 2014 The Android Open Source Project
+ * Copyright 2016 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,18 +25,20 @@
 
 namespace tcu
 {
-
-static LRESULT CALLBACK win32WindowProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+namespace win32
 {
-	Win32Window* window = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+
+static LRESULT CALLBACK windowProcCallback (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	Window* window = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	if (window)
 		return window->windowProc(uMsg, wParam, lParam);
 	else
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
-Win32Window::Win32Window (HINSTANCE instance, int width, int height)
-	: m_window		(DE_NULL)
+Window::Window (HINSTANCE instance, int width, int height)
+	: m_window	(DE_NULL)
 {
 	try
 	{
@@ -47,7 +49,7 @@ Win32Window::Win32Window (HINSTANCE instance, int width, int height)
 			WNDCLASS wndClass;
 			memset(&wndClass, 0, sizeof(wndClass));
 			wndClass.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-			wndClass.lpfnWndProc	= win32WindowProc;
+			wndClass.lpfnWndProc	= windowProcCallback;
 			wndClass.cbClsExtra		= 0;
 			wndClass.cbWndExtra		= 0;
 			wndClass.hInstance		= instance;
@@ -83,7 +85,7 @@ Win32Window::Win32Window (HINSTANCE instance, int width, int height)
 	}
 }
 
-Win32Window::~Win32Window (void)
+Window::~Window (void)
 {
 	if (m_window)
 	{
@@ -94,12 +96,12 @@ Win32Window::~Win32Window (void)
 	DestroyWindow(m_window);
 }
 
-void Win32Window::setVisible (bool visible)
+void Window::setVisible (bool visible)
 {
 	ShowWindow(m_window, visible ? SW_SHOW : SW_HIDE);
 }
 
-void Win32Window::setSize (int width, int height)
+void Window::setSize (int width, int height)
 {
 	RECT rc;
 
@@ -117,7 +119,7 @@ void Win32Window::setSize (int width, int height)
 		TCU_THROW(TestError, "SetWindowPos() failed");
 }
 
-IVec2 Win32Window::getSize (void) const
+IVec2 Window::getSize (void) const
 {
 	RECT rc;
 	if (!GetClientRect(m_window, &rc))
@@ -127,14 +129,14 @@ IVec2 Win32Window::getSize (void) const
 				 rc.bottom - rc.top);
 }
 
-void Win32Window::processEvents (void)
+void Window::processEvents (void)
 {
 	MSG msg;
 	while (PeekMessage(&msg, m_window, 0, 0, PM_REMOVE))
 		DispatchMessage(&msg);
 }
 
-LRESULT Win32Window::windowProc (UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT Window::windowProc (UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
@@ -157,4 +159,5 @@ LRESULT Win32Window::windowProc (UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 }
 
+} // win32
 } // tcu

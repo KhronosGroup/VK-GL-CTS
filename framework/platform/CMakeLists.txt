@@ -3,25 +3,22 @@
 # Target file may define TCUTIL_PLATFORM_SRCS
 if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 	if (DE_OS_IS_WIN32)
-			set(TCUTIL_PLATFORM_SRCS
-				win32/tcuWin32Platform.hpp
-				win32/tcuWin32Platform.cpp
-				win32/tcuWGLContextFactory.hpp
-				win32/tcuWGLContextFactory.cpp
-				win32/tcuWGL.hpp
-				win32/tcuWGL.cpp
-				win32/tcuWin32API.h
-				win32/tcuWin32Window.cpp
-				win32/tcuWin32Window.hpp
+		set(TCUTIL_PLATFORM_SRCS
+			win32/tcuWin32Platform.hpp
+			win32/tcuWin32Platform.cpp
+			win32/tcuWGLContextFactory.hpp
+			win32/tcuWGLContextFactory.cpp
+			win32/tcuWGL.hpp
+			win32/tcuWGL.cpp
+			win32/tcuWin32API.h
+			win32/tcuWin32Window.cpp
+			win32/tcuWin32Window.hpp
+			win32/tcuWin32EGLNativeDisplayFactory.hpp
+			win32/tcuWin32EGLNativeDisplayFactory.cpp
+			win32/tcuWin32VulkanPlatform.hpp
+			win32/tcuWin32VulkanPlatform.cpp
 			)
 
-		if (DEQP_SUPPORT_EGL)
-			set(TCUTIL_PLATFORM_SRCS
-				${TCUTIL_PLATFORM_SRCS}
-				win32/tcuWin32EGLNativeDisplayFactory.hpp
-				win32/tcuWin32EGLNativeDisplayFactory.cpp
-				)
-		endif()
 	elseif ((DE_OS_IS_UNIX OR DE_OS_IS_OSX) AND DEQP_USE_X11)
 		set(TCUTIL_PLATFORM_SRCS
 			X11/tcuX11.cpp
@@ -107,10 +104,8 @@ target_link_libraries(tcutil-platform tcutil ${TCUTIL_PLATFORM_LIBS})
 # Always link to glutil as some platforms such as Win32 always support GL
 target_link_libraries(tcutil-platform glutil)
 
-# Link to eglutil if platform supports EGL
-if (DEQP_SUPPORT_EGL)
-	target_link_libraries(tcutil-platform eglutil eglwrapper)
-endif ()
+# Always link to eglutil
+target_link_libraries(tcutil-platform eglutil)
 
 # X11 libraries
 if (DEQP_USE_X11)
