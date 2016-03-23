@@ -72,31 +72,9 @@ static const char* const	g_ShaderReadOffsetsXStr		= "int[]( 1, 4, 7, 10 )";
 static const char* const	g_ShaderReadOffsetsYStr		= "int[]( 2, 5, 8, 11 )";
 static const char* const	g_ShaderReadOffsetsZStr		= "int[]( 3, 6, 9, 12 )";
 
-const tcu::UVec3 getComputeGridSize (const ImageType imageType, const tcu::UVec4& imageSize)
+const tcu::UVec3 getLocalWorkGroupSize (const ImageType imageType, const tcu::UVec3& imageSize)
 {
-	switch (imageType)
-	{
-		case IMAGE_TYPE_1D:
-		case IMAGE_TYPE_2D:
-		case IMAGE_TYPE_2D_ARRAY:
-		case IMAGE_TYPE_3D:
-		case IMAGE_TYPE_CUBE:
-		case IMAGE_TYPE_CUBE_ARRAY:
-		case IMAGE_TYPE_BUFFER:
-			return tcu::UVec3(imageSize.x(), imageSize.y(), imageSize.z() * imageSize.w());
-
-		case IMAGE_TYPE_1D_ARRAY:
-			return tcu::UVec3(imageSize.x(), imageSize.w(), 1);
-
-		default:
-			DE_FATAL("Unknown image type");
-			return tcu::UVec3(1, 1, 1);
-	}
-}
-
-const tcu::UVec3 getLocalWorkGroupSize (const ImageType imageType, const tcu::UVec4& imageSize)
-{
-	const tcu::UVec3 computeGridSize	= getComputeGridSize(imageType, imageSize);
+	const tcu::UVec3 computeGridSize	= getShaderGridSize(imageType, imageSize);
 
 	const tcu::UVec3 localWorkGroupSize = tcu::UVec3(de::min(g_localWorkGroupSizeBase.x(), computeGridSize.x()),
 													 de::min(g_localWorkGroupSizeBase.y(), computeGridSize.y()),
@@ -104,9 +82,9 @@ const tcu::UVec3 getLocalWorkGroupSize (const ImageType imageType, const tcu::UV
 	return localWorkGroupSize;
 }
 
-const tcu::UVec3 getNumWorkGroups (const ImageType imageType, const tcu::UVec4& imageSize)
+const tcu::UVec3 getNumWorkGroups (const ImageType imageType, const tcu::UVec3& imageSize)
 {
-	const tcu::UVec3 computeGridSize	= getComputeGridSize(imageType, imageSize);
+	const tcu::UVec3 computeGridSize	= getShaderGridSize(imageType, imageSize);
 	const tcu::UVec3 localWorkGroupSize = getLocalWorkGroupSize(imageType, imageSize);
 
 	return computeGridSize / localWorkGroupSize;
@@ -141,7 +119,7 @@ tcu::ConstPixelBufferAccess getLayerOrSlice (const ImageType					imageType,
 
 bool comparePixelBuffers (tcu::TestContext&						testCtx,
 						  const ImageType						imageType,
-						  const tcu::UVec4&						imageSize,
+						  const tcu::UVec3&						imageSize,
 						  const tcu::TextureFormat&				format,
 						  const tcu::ConstPixelBufferAccess&	reference,
 						  const tcu::ConstPixelBufferAccess&	result)
@@ -152,7 +130,7 @@ bool comparePixelBuffers (tcu::TestContext&						testCtx,
 	const bool		 intFormat			= isIntFormat(mapTextureFormat(format)) || isUintFormat(mapTextureFormat(format));
 	deUint32		 passedLayers		= 0;
 
-	for (deUint32 layerNdx = 0; layerNdx < imageSize.z() * imageSize.w(); ++layerNdx)
+	for (deUint32 layerNdx = 0; layerNdx < getNumLayers(imageType, imageSize); ++layerNdx)
 	{
 		const std::string comparisonName = "Comparison" + de::toString(layerNdx);
 
@@ -186,7 +164,7 @@ bool comparePixelBuffers (tcu::TestContext&						testCtx,
 			++passedLayers;
 	}
 
-	return passedLayers == (imageSize.z() * imageSize.w());
+	return passedLayers == getNumLayers(imageType, imageSize);
 }
 
 const std::string getCoordStr (const ImageType		imageType,
@@ -233,7 +211,7 @@ public:
 															 const std::string&			description,
 															 const Qualifier			qualifier,
 															 const ImageType			imageType,
-															 const tcu::UVec4&			imageSize,
+															 const tcu::UVec3&			imageSize,
 															 const tcu::TextureFormat&	format,
 															 const glu::GLSLVersion		glslVersion);
 
@@ -246,7 +224,7 @@ protected:
 
 	const Qualifier				m_qualifier;
 	const ImageType				m_imageType;
-	const tcu::UVec4			m_imageSize;
+	const tcu::UVec3			m_imageSize;
 	const tcu::TextureFormat	m_format;
 	const glu::GLSLVersion		m_glslVersion;
 };
@@ -256,7 +234,7 @@ MemoryQualifierTestCase::MemoryQualifierTestCase (tcu::TestContext&			testCtx,
 												  const std::string&		description,
 												  const Qualifier			qualifier,
 												  const ImageType			imageType,
-												  const tcu::UVec4&			imageSize,
+												  const tcu::UVec3&			imageSize,
 												  const tcu::TextureFormat&	format,
 												  const glu::GLSLVersion	glslVersion)
 	: vkt::TestCase(testCtx, name, description)
@@ -338,7 +316,7 @@ public:
 									MemoryQualifierInstanceBase		(Context&					context,
 																	 const std::string&			name,
 																	 const ImageType			imageType,
-																	 const tcu::UVec4&			imageSize,
+																	 const tcu::UVec3&			imageSize,
 																	 const tcu::TextureFormat&	format);
 
 	virtual							~MemoryQualifierInstanceBase	(void) {};
@@ -360,7 +338,7 @@ protected:
 
 	const std::string				m_name;
 	const ImageType					m_imageType;
-	const tcu::UVec4				m_imageSize;
+	const tcu::UVec3				m_imageSize;
 	const tcu::TextureFormat		m_format;
 
 	de::MovePtr<Buffer>				m_buffer;
@@ -372,7 +350,7 @@ protected:
 MemoryQualifierInstanceBase::MemoryQualifierInstanceBase (Context&					context,
 														  const std::string&		name,
 														  const ImageType			imageType,
-														  const tcu::UVec4&			imageSize,
+														  const tcu::UVec3&			imageSize,
 														  const tcu::TextureFormat&	format)
 	: vkt::TestInstance(context)
 	, m_name(name)
@@ -389,7 +367,7 @@ tcu::TestStatus	MemoryQualifierInstanceBase::iterate (void)
 	const VkQueue			queue				= m_context.getUniversalQueue();
 	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
-	const VkDeviceSize	bufferSizeInBytes = m_imageSize.x() * m_imageSize.y() * m_imageSize.z() * m_imageSize.w() * tcu::getPixelSize(m_format);
+	const VkDeviceSize	bufferSizeInBytes = getNumPixels(m_imageType, m_imageSize) * tcu::getPixelSize(m_format);
 
 	// Prepare resources for the test
 	prepareResources(bufferSizeInBytes);
@@ -430,7 +408,7 @@ tcu::TestStatus	MemoryQualifierInstanceBase::iterate (void)
 	const Allocation& allocation = m_buffer->getAllocation();
 	invalidateMappedMemoryRange(deviceInterface, device, allocation.getMemory(), allocation.getOffset(), bufferSizeInBytes);
 
-	const tcu::UVec3 computeGridSize = getComputeGridSize(m_imageType, m_imageSize);
+	const tcu::UVec3 computeGridSize = getShaderGridSize(m_imageType, m_imageSize);
 	tcu::ConstPixelBufferAccess resultPixelBuffer(m_format, computeGridSize.x(), computeGridSize.y(), computeGridSize.z(), allocation.getHostPtr());
 
 	// Create a reference image
@@ -447,7 +425,7 @@ tcu::TestStatus	MemoryQualifierInstanceBase::iterate (void)
 tcu::TextureLevel MemoryQualifierInstanceBase::generateReferenceImage (void) const
 {
 	// Generate a reference image data using the storage format
-	const tcu::UVec3 computeGridSize = getComputeGridSize(m_imageType, m_imageSize);
+	const tcu::UVec3 computeGridSize = getShaderGridSize(m_imageType, m_imageSize);
 
 	tcu::TextureLevel base(m_format, computeGridSize.x(), computeGridSize.y(), computeGridSize.z());
 	tcu::PixelBufferAccess baseAccess = base.getAccess();
@@ -493,7 +471,7 @@ public:
 						MemoryQualifierInstanceImage	(Context&					context,
 														 const std::string&			name,
 														 const ImageType			imageType,
-														 const tcu::UVec4&			imageSize,
+														 const tcu::UVec3&			imageSize,
 														 const tcu::TextureFormat&	format)
 							: MemoryQualifierInstanceBase(context, name, imageType, imageSize, format) {}
 
@@ -523,35 +501,36 @@ void MemoryQualifierInstanceImage::prepareResources (const VkDeviceSize bufferSi
 	// Create image
 	const VkImageCreateInfo imageCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,									// VkStructureType			sType;
-		DE_NULL,																// const void*				pNext;
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,							// VkStructureType			sType;
+		DE_NULL,														// const void*				pNext;
 		m_imageType == IMAGE_TYPE_CUBE ||
 		m_imageType	== IMAGE_TYPE_CUBE_ARRAY
-		? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u,			// VkImageCreateFlags		flags;
-		mapImageType(m_imageType),												// VkImageType				imageType;
-		mapTextureFormat(m_format),												// VkFormat					format;
-		vk::makeExtent3D(m_imageSize.x(), m_imageSize.y(), m_imageSize.z()),	// VkExtent3D				extent;
-		1u,																		// deUint32					mipLevels;
-		m_imageSize.w(),														// deUint32					arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits	samples;
-		VK_IMAGE_TILING_OPTIMAL,												// VkImageTiling			tiling;
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,			// VkImageUsageFlags		usage;
-		VK_SHARING_MODE_EXCLUSIVE,												// VkSharingMode			sharingMode;
-		0u,																		// deUint32					queueFamilyIndexCount;
-		DE_NULL,																// const deUint32*			pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout			initialLayout;
+		? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u,	// VkImageCreateFlags		flags;
+		mapImageType(m_imageType),										// VkImageType				imageType;
+		mapTextureFormat(m_format),										// VkFormat					format;
+		makeExtent3D(getLayerSize(m_imageType, m_imageSize)),			// VkExtent3D				extent;
+		1u,																// deUint32					mipLevels;
+		getNumLayers(m_imageType, m_imageSize),							// deUint32					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,											// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,										// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,	// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,										// VkSharingMode			sharingMode;
+		0u,																// deUint32					queueFamilyIndexCount;
+		DE_NULL,														// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,										// VkImageLayout			initialLayout;
 	};
 
 	m_image = de::MovePtr<Image>(new Image(deviceInterface, device, allocator, imageCreateInfo, MemoryRequirement::Any));
 
 	// Create imageView
-	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_imageSize.w());
+	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
 	m_imageView = makeImageView(deviceInterface, device, m_image->get(), mapImageViewType(m_imageType), mapTextureFormat(m_format), subresourceRange);
 
 	// Create a buffer to store shader output (copied from image data)
 	const VkBufferCreateInfo	bufferCreateInfo = makeBufferCreateInfo(bufferSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	m_buffer = de::MovePtr<Buffer>(new Buffer(deviceInterface, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible));
 }
+
 void MemoryQualifierInstanceImage::prepareDescriptors (void)
 {
 	const VkDevice			device			= m_context.getDevice();
@@ -585,7 +564,7 @@ void MemoryQualifierInstanceImage::commandsBeforeCompute (const VkCommandBuffer 
 	DE_UNREF(bufferSizeInBytes);
 
 	const DeviceInterface&			deviceInterface	 = m_context.getDeviceInterface();
-	const VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_imageSize.w());
+	const VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
 
 	const VkImageMemoryBarrier imageLayoutBarrier
 		= makeImageMemoryBarrier(0u,
@@ -595,13 +574,13 @@ void MemoryQualifierInstanceImage::commandsBeforeCompute (const VkCommandBuffer 
 								 m_image->get(),
 								 subresourceRange);
 
-	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageLayoutBarrier);
+	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageLayoutBarrier);
 }
 
-void MemoryQualifierInstanceImage::commandsAfterCompute (const VkCommandBuffer cmdBuffer, const VkDeviceSize	bufferSizeInBytes) const
+void MemoryQualifierInstanceImage::commandsAfterCompute (const VkCommandBuffer cmdBuffer, const VkDeviceSize bufferSizeInBytes) const
 {
 	const DeviceInterface&			deviceInterface	 = m_context.getDeviceInterface();
-	const VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_imageSize.w());
+	const VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
 
 	const VkImageMemoryBarrier imagePreCopyBarrier
 		= makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT,
@@ -611,9 +590,9 @@ void MemoryQualifierInstanceImage::commandsAfterCompute (const VkCommandBuffer c
 								 m_image->get(),
 								 subresourceRange);
 
-	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imagePreCopyBarrier);
+	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imagePreCopyBarrier);
 
-	const VkBufferImageCopy copyParams = makeBufferImageCopy(vk::makeExtent3D(m_imageSize.x(), m_imageSize.y(), m_imageSize.z()), m_imageSize.w());
+	const VkBufferImageCopy copyParams = makeBufferImageCopy(makeExtent3D(getLayerSize(m_imageType, m_imageSize)), getNumLayers(m_imageType, m_imageSize));
 	deviceInterface.cmdCopyImageToBuffer(cmdBuffer, m_image->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_buffer->get(), 1u, &copyParams);
 
 	const VkBufferMemoryBarrier bufferPostCopyBarrier
@@ -623,7 +602,7 @@ void MemoryQualifierInstanceImage::commandsAfterCompute (const VkCommandBuffer c
 								  0ull,
 								  bufferSizeInBytes);
 
-	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferPostCopyBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &bufferPostCopyBarrier, 0u, DE_NULL);
 }
 
 class MemoryQualifierInstanceBuffer : public MemoryQualifierInstanceBase
@@ -632,7 +611,7 @@ public:
 						MemoryQualifierInstanceBuffer	(Context&					context,
 														 const std::string&			name,
 														 const ImageType			imageType,
-														 const tcu::UVec4&			imageSize,
+														 const tcu::UVec3&			imageSize,
 														 const tcu::TextureFormat&	format)
 							: MemoryQualifierInstanceBase(context, name, imageType, imageSize, format) {}
 
@@ -702,7 +681,7 @@ void MemoryQualifierInstanceBuffer::commandsAfterCompute (const VkCommandBuffer 
 								  0ull,
 								  bufferSizeInBytes);
 
-	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &shaderWriteBarrier, 0u, DE_NULL);
 }
 
 TestInstance* MemoryQualifierTestCase::createInstance (Context& context) const
@@ -719,22 +698,27 @@ tcu::TestCaseGroup* createImageQualifiersTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> imageQualifiersTests(new tcu::TestCaseGroup(testCtx, "qualifiers", "Coherent, volatile and restrict"));
 
-	struct ImageParameters
+	struct ImageParams
 	{
-		ImageType	imageType;
-		tcu::UVec4	imageSize;
+		ImageParams(const ImageType imageType, const tcu::UVec3& imageSize)
+			: m_imageType	(imageType)
+			, m_imageSize	(imageSize) 
+		{
+		}
+		ImageType	m_imageType;
+		tcu::UVec3	m_imageSize;
 	};
 
-	static const ImageParameters imageParametersArray[] =
+	static const ImageParams imageParamsArray[] =
 	{
-		{ IMAGE_TYPE_1D,			tcu::UVec4(64, 1,  1, 1)	},
-		{ IMAGE_TYPE_1D_ARRAY,		tcu::UVec4(64, 1,  1, 8)	},
-		{ IMAGE_TYPE_2D,			tcu::UVec4(64, 64, 1, 1)	},
-		{ IMAGE_TYPE_2D_ARRAY,		tcu::UVec4(64, 64, 1, 8)	},
-		{ IMAGE_TYPE_3D,			tcu::UVec4(64, 64, 8, 1)	},
-		{ IMAGE_TYPE_CUBE,			tcu::UVec4(64, 64, 1, 6)	},
-		{ IMAGE_TYPE_CUBE_ARRAY,	tcu::UVec4(64, 64, 1, 6*8)	},
-		{ IMAGE_TYPE_BUFFER,		tcu::UVec4(64, 1,  1, 1)	}
+		ImageParams(IMAGE_TYPE_1D,			tcu::UVec3(64u, 1u,  1u)),
+		ImageParams(IMAGE_TYPE_1D_ARRAY,	tcu::UVec3(64u, 1u,  8u)),
+		ImageParams(IMAGE_TYPE_2D,			tcu::UVec3(64u, 64u, 1u)),
+		ImageParams(IMAGE_TYPE_2D_ARRAY,	tcu::UVec3(64u, 64u, 8u)),
+		ImageParams(IMAGE_TYPE_3D,			tcu::UVec3(64u, 64u, 8u)),
+		ImageParams(IMAGE_TYPE_CUBE,		tcu::UVec3(64u, 64u, 1u)),
+		ImageParams(IMAGE_TYPE_CUBE_ARRAY,	tcu::UVec3(64u, 64u, 2u)),
+		ImageParams(IMAGE_TYPE_BUFFER,		tcu::UVec3(64u, 1u,  1u))
 	};
 
 	static const tcu::TextureFormat formats[] =
@@ -755,10 +739,10 @@ tcu::TestCaseGroup* createImageQualifiersTests (tcu::TestContext& testCtx)
 
 		de::MovePtr<tcu::TestCaseGroup> qualifierGroup(new tcu::TestCaseGroup(testCtx, memoryQualifierName, ""));
 
-		for (deInt32 imageTypeNdx = 0; imageTypeNdx < DE_LENGTH_OF_ARRAY(imageParametersArray); imageTypeNdx++)
+		for (deInt32 imageTypeNdx = 0; imageTypeNdx < DE_LENGTH_OF_ARRAY(imageParamsArray); imageTypeNdx++)
 		{
-			const ImageType		imageType = imageParametersArray[imageTypeNdx].imageType;
-			const tcu::UVec4	imageSize = imageParametersArray[imageTypeNdx].imageSize;
+			const ImageType		imageType = imageParamsArray[imageTypeNdx].m_imageType;
+			const tcu::UVec3	imageSize = imageParamsArray[imageTypeNdx].m_imageSize;
 
 			if (memoryQualifier == MemoryQualifierTestCase::QUALIFIER_RESTRICT)
 			{

@@ -105,6 +105,13 @@ private:
 	Image&							operator=		(const Image&);
 };
 
+tcu::UVec3	getShaderGridSize	(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Size used for addresing image in a shader
+tcu::UVec3	getLayerSize		(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Size of a single layer
+deUint32	getNumLayers		(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Number of array layers (for array and cube types)
+deUint32	getNumPixels		(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Number of texels in an image
+deUint32	getDimensions		(const ImageType imageType);								//!< Coordinate dimension used for addressing (e.g. 3 (x,y,z) for 2d array)
+deUint32	getLayerDimensions	(const ImageType imageType);								//!< Coordinate dimension used for addressing a single layer (e.g. 2 (x,y) for 2d array)
+
 vk::Move<vk::VkCommandPool>		makeCommandPool					(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device,
 																 const deUint32						queueFamilyIndex);
@@ -170,11 +177,6 @@ void							submitCommandsAndWait			(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device,
 																 const vk::VkQueue					queue,
 																 const vk::VkCommandBuffer			cmdBuffer);
-
-inline vk::VkExtent3D makeExtent3D (const tcu::IVec3& vec)
-{
-	return vk::makeExtent3D(vec.x(), vec.y(), vec.z());
-}
 
 inline vk::VkDeviceSize getImageSizeBytes (const tcu::IVec3& imageSize, const vk::VkFormat format)
 {
