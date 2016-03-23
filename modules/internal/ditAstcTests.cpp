@@ -113,7 +113,9 @@ AstcCase::IterateResult AstcCase::iterate (void)
 		{
 			verifyBlocksValid(m_format, TexDecompressionParams::ASTCMODE_HDR, getNumBlocksFromBytes(generatedData.size()), &generatedData[0]);
 
-			if (!astc::isBlockTestTypeHDROnly(blockTestType))
+			// \note CEMS generates HDR blocks as well
+			if (!astc::isBlockTestTypeHDROnly(blockTestType) &&
+				(blockTestType != astc::BLOCK_TEST_TYPE_CEMS))
 				verifyBlocksValid(m_format, TexDecompressionParams::ASTCMODE_LDR, getNumBlocksFromBytes(generatedData.size()), &generatedData[0]);
 		}
 	}
