@@ -1881,7 +1881,8 @@ PolyVertexClipTestGroup::PolyVertexClipTestGroup (Context& context)
 
 void PolyVertexClipTestGroup::init (void)
 {
-	const float far = 30000.0f;
+	const float far					= 30000.0f;
+	const float farForThreeVertex	= 20000.0f; // 3 vertex clipping tests use smaller triangles
 	const tcu::IVec3 outside[] =
 	{
 		// outside one clipping plane
@@ -2023,9 +2024,9 @@ void PolyVertexClipTestGroup::init (void)
 		const tcu::IVec3 r0		= outside[ndx1];
 		const tcu::IVec3 r1		= outside[ndx2];
 		const tcu::IVec3 r2		= outside[ndx3];
-		const tcu::Vec4 p0		= tcu::Vec4(float(r0.x()) * far * w0, float(r0.y()) * far * w0, float(r0.z()) * far * w0, w0);
-		const tcu::Vec4 p1		= tcu::Vec4(float(r1.x()) * far * w1, float(r1.y()) * far * w1, float(r1.z()) * far * w1, w1);
-		const tcu::Vec4 p2		= tcu::Vec4(float(r2.x()) * far * w2, float(r2.y()) * far * w2, float(r2.z()) * far * w2, w2);
+		const tcu::Vec4 p0		= tcu::Vec4(float(r0.x()) * farForThreeVertex * w0, float(r0.y()) * farForThreeVertex * w0, float(r0.z()) * farForThreeVertex * w0, w0);
+		const tcu::Vec4 p1		= tcu::Vec4(float(r1.x()) * farForThreeVertex * w1, float(r1.y()) * farForThreeVertex * w1, float(r1.z()) * farForThreeVertex * w1, w1);
+		const tcu::Vec4 p2		= tcu::Vec4(float(r2.x()) * farForThreeVertex * w2, float(r2.y()) * farForThreeVertex * w2, float(r2.z()) * farForThreeVertex * w2, w2);
 
 		// ignore cases where polygon is along xz or yz planes
 		if (pointsOnLine(r0.swizzle(0, 1), r1.swizzle(0, 1), r2.swizzle(0, 1)))
