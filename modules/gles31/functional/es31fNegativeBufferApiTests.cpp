@@ -1487,7 +1487,7 @@ void blit_framebuffer (NegativeTestContext& ctx)
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the source and destination buffers are identical.");
 	ctx.glBindFramebuffer		(GL_DRAW_FRAMEBUFFER, fbo[0]);
 	ctx.expectError				(GL_NO_ERROR);
-	ctx.glBlitFramebuffer		(0, 0, 16, 16, 0, 0, 16, 16, 0, GL_NEAREST);
+	ctx.glBlitFramebuffer		(0, 0, 16, 16, 0, 0, 16, 16, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 	ctx.expectError				(GL_INVALID_OPERATION);
 	// restore
 	ctx.glBindFramebuffer		(GL_DRAW_FRAMEBUFFER, fbo[1]);
