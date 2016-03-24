@@ -714,10 +714,11 @@ protected:
 
 	Move<VkImage>                       m_depthImage;
 	de::MovePtr<Allocation>             m_depthImageAlloc;
-	de::MovePtr<Allocation>             m_colorImageAlloc;
+	de::MovePtr<Allocation>             m_colorImageAlloc[PIPELINE_CACHE_NDX_COUNT];
 	Move<VkImageView>                   m_depthAttachmentView;
 
 	Move<VkBuffer>                      m_vertexBuffer;
+	de::MovePtr<Allocation>				m_vertexBufferMemory;
 	std::vector<Vertex4RGBA>            m_vertices;
 
 	SimpleGraphicsPipelineBuilder       m_pipelineBuilder;
@@ -843,13 +844,12 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 
 	// Create vertex buffer
 	{
-		de::MovePtr<Allocation>     bufferAlloc;
-		m_vertexBuffer = createBufferAndBindMemory(m_context, 1024u, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &bufferAlloc);
+		m_vertexBuffer = createBufferAndBindMemory(m_context, 1024u, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &m_vertexBufferMemory);
 
 		m_vertices          = createOverlappingQuads();
 		// Load vertices into vertex buffer
-		deMemcpy(bufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
-		flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), 1024u);
+		deMemcpy(m_vertexBufferMemory->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
+		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferMemory->getMemory(), m_vertexBufferMemory->getOffset(), 1024u);
 	}
 
 	// Create render pass
@@ -937,14 +937,14 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 																			   m_renderSize.y(),
 																			   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 																			   VK_SAMPLE_COUNT_1_BIT,
-																			   &m_colorImageAlloc);
+																			   &m_colorImageAlloc[PIPELINE_CACHE_NDX_NO_CACHE]);
 		m_colorImage[PIPELINE_CACHE_NDX_CACHED]   = createImage2DAndBindMemory(m_context,
 																			   m_colorFormat,
 																			   m_renderSize.x(),
 																			   m_renderSize.y(),
 																			   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 																			   VK_SAMPLE_COUNT_1_BIT,
-																			   &m_colorImageAlloc);
+																			   &m_colorImageAlloc[PIPELINE_CACHE_NDX_CACHED]);
 	}
 
 	// Create depth image
