@@ -68,6 +68,7 @@
 #include "vktComputeTests.hpp"
 #include "vktImageTests.hpp"
 #include "vktInfoTests.hpp"
+#include "vktSparseResourcesTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -323,6 +324,7 @@ void TestPackage::init (void)
 	addChild(Draw::createTests			(m_testCtx));
 	addChild(compute::createTests		(m_testCtx));
 	addChild(image::createTests			(m_testCtx));
+	addChild(sparse::createTests		(m_testCtx));
 }
 
 } // vkt

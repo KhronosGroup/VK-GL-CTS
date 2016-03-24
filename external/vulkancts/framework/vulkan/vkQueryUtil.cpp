@@ -124,6 +124,25 @@ VkImageFormatProperties getPhysicalDeviceImageFormatProperties (const InstanceIn
 	return properties;
 }
 
+std::vector<VkSparseImageFormatProperties> getPhysicalDeviceSparseImageFormatProperties(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling)
+{
+	deUint32								numProp = 0;
+	vector<VkSparseImageFormatProperties>	properties;
+
+	vk.getPhysicalDeviceSparseImageFormatProperties(physicalDevice, format, type, samples, usage, tiling, &numProp, DE_NULL);
+
+	if (numProp > 0)
+	{
+		properties.resize(numProp);
+		vk.getPhysicalDeviceSparseImageFormatProperties(physicalDevice, format, type, samples, usage, tiling, &numProp, &properties[0]);
+
+		if ((size_t)numProp != properties.size())
+			TCU_FAIL("Returned sparse image properties count changes between queries");
+	}
+
+	return properties;
+}
+
 VkMemoryRequirements getBufferMemoryRequirements (const DeviceInterface& vk, VkDevice device, VkBuffer buffer)
 {
 	VkMemoryRequirements req;

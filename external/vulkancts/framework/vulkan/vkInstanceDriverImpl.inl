@@ -61,3 +61,8 @@ VkResult InstanceDriver::enumerateDeviceLayerProperties (VkPhysicalDevice physic
 {
 	return m_vk.enumerateDeviceLayerProperties(physicalDevice, pPropertyCount, pProperties);
 }
+
+void InstanceDriver::getPhysicalDeviceSparseImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling, deUint32* pPropertyCount, VkSparseImageFormatProperties* pProperties) const
+{
+	m_vk.getPhysicalDeviceSparseImageFormatProperties(physicalDevice, format, type, samples, usage, tiling, pPropertyCount, pProperties);
+}
