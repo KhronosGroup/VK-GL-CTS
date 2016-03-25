@@ -3090,7 +3090,7 @@ struct ApplyReflect
 template<typename Ret, typename Arg0, typename Arg1>
 struct ApplyReflect<1, Ret, Arg0, Arg1>
 {
-	static ExprP<Ret> apply	(ExpandContext&		ctx,
+	static ExprP<Ret> apply	(ExpandContext&,
 							 const ExprP<Arg0>&	i,
 							 const ExprP<Arg1>&	n)
 	{
