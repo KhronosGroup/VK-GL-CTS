@@ -93,7 +93,7 @@ enum AtomicOperation
 	ATOMIC_OPERATION_LAST
 };
 
-static string getCoordStr (const ImageType		imageType, 
+static string getCoordStr (const ImageType		imageType,
 						   const std::string&	x,
 						   const std::string&	y,
 						   const std::string&	z)
@@ -460,9 +460,10 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,					// VkStructureType			sType;
 		DE_NULL,												// const void*				pNext;
-		m_imageType == IMAGE_TYPE_CUBE || 
-		m_imageType == IMAGE_TYPE_CUBE_ARRAY ? 
-		VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u,				// VkImageCreateFlags		flags;
+		(m_imageType == IMAGE_TYPE_CUBE ||
+		 m_imageType == IMAGE_TYPE_CUBE_ARRAY ?
+		 (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT :
+		 (VkImageCreateFlags)0u),								// VkImageCreateFlags		flags;
 		mapImageType(m_imageType),								// VkImageType				imageType;
 		mapTextureFormat(m_format),								// VkFormat					format;
 		makeExtent3D(getLayerSize(m_imageType, m_imageSize)),	// VkExtent3D				extent;
@@ -470,8 +471,8 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 		getNumLayers(m_imageType, m_imageSize),					// deUint32					arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,									// VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,								// VkImageTiling			tiling;
-		VK_IMAGE_USAGE_STORAGE_BIT | 
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | 
+		VK_IMAGE_USAGE_STORAGE_BIT |
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT,						// VkImageUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,								// VkSharingMode			sharingMode;
 		0u,														// deUint32					queueFamilyIndexCount;
@@ -486,11 +487,11 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 
 	m_resultImageView = makeImageView(deviceInterface, device, m_resultImage->get(), mapImageViewType(m_imageType), mapTextureFormat(m_format), subresourceRange);
 
-	//Prepare the buffer with the initial data for the image 
+	//Prepare the buffer with the initial data for the image
 	const Buffer inputBuffer(deviceInterface, device, allocator, makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT), MemoryRequirement::HostVisible);
 
 	Allocation& inputBufferAllocation = inputBuffer.getAllocation();
-	
+
 	//Prepare the initial data for the image
 	const tcu::IVec4 initialValue(getOperationInitialValue(m_operation));
 
@@ -527,19 +528,19 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 	deviceInterface.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 	deviceInterface.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
 
-	const VkBufferMemoryBarrier inputBufferPostHostWriteBarrier	= 
-		makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, 
+	const VkBufferMemoryBarrier inputBufferPostHostWriteBarrier	=
+		makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT,
 								VK_ACCESS_TRANSFER_READ_BIT,
 								*inputBuffer,
 								0ull,
 								imageSizeInBytes);
 
-	const VkImageMemoryBarrier	resultImagePreCopyBarrier = 
-		makeImageMemoryBarrier(	0u, 
+	const VkImageMemoryBarrier	resultImagePreCopyBarrier =
+		makeImageMemoryBarrier(	0u,
 								VK_ACCESS_TRANSFER_WRITE_BIT,
-								VK_IMAGE_LAYOUT_UNDEFINED, 
+								VK_IMAGE_LAYOUT_UNDEFINED,
 								VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-								m_resultImage->get(), 
+								m_resultImage->get(),
 								subresourceRange);
 
 	deviceInterface.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, DE_FALSE, 0u, DE_NULL, 1u, &inputBufferPostHostWriteBarrier, 1u, &resultImagePreCopyBarrier);
@@ -548,8 +549,8 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 
 	deviceInterface.cmdCopyBufferToImage(*cmdBuffer, *inputBuffer, m_resultImage->get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &bufferImageCopyParams);
 
-	const VkImageMemoryBarrier	resultImagePostCopyBarrier	= 
-		makeImageMemoryBarrier(	VK_ACCESS_TRANSFER_WRITE_BIT, 
+	const VkImageMemoryBarrier	resultImagePostCopyBarrier	=
+		makeImageMemoryBarrier(	VK_ACCESS_TRANSFER_WRITE_BIT,
 								VK_ACCESS_SHADER_READ_BIT,
 								VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 								VK_IMAGE_LAYOUT_GENERAL,
@@ -564,7 +565,7 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 
 	commandsAfterCompute(*cmdBuffer);
 
-	const VkBufferMemoryBarrier	outputBufferPreHostReadBarrier 
+	const VkBufferMemoryBarrier	outputBufferPreHostReadBarrier
 		= makeBufferMemoryBarrier(	VK_ACCESS_TRANSFER_WRITE_BIT,
 									VK_ACCESS_HOST_READ_BIT,
 									m_outputBuffer->get(),
@@ -644,7 +645,7 @@ void BinaryAtomicEndResultInstance::commandsAfterCompute (const VkCommandBuffer	
 	const DeviceInterface&			deviceInterface		= m_context.getDeviceInterface();
 	const VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
 
-	const VkImageMemoryBarrier	resultImagePostDispatchBarrier = 
+	const VkImageMemoryBarrier	resultImagePostDispatchBarrier =
 		makeImageMemoryBarrier(	VK_ACCESS_SHADER_WRITE_BIT,
 								VK_ACCESS_TRANSFER_READ_BIT,
 								VK_IMAGE_LAYOUT_GENERAL,
@@ -735,7 +736,7 @@ public:
 protected:
 
 	bool				verifyRecursive					   (const deInt32			index,
-															const deInt32			valueSoFar, 
+															const deInt32			valueSoFar,
 															bool					argsUsed[NUM_INVOCATIONS_PER_PIXEL],
 															const deInt32			atomicArgs[NUM_INVOCATIONS_PER_PIXEL],
 															const deInt32			resultValues[NUM_INVOCATIONS_PER_PIXEL]) const;
@@ -761,9 +762,10 @@ void BinaryAtomicIntermValuesInstance::prepareResources (void)
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
-		m_imageType == IMAGE_TYPE_CUBE ||
-		m_imageType == IMAGE_TYPE_CUBE_ARRAY ?
-		VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u,	// VkImageCreateFlags		flags;
+		(m_imageType == IMAGE_TYPE_CUBE ||
+		 m_imageType == IMAGE_TYPE_CUBE_ARRAY ?
+		 (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT :
+		 (VkImageCreateFlags)0u),					// VkImageCreateFlags		flags;
 		mapImageType(m_imageType),					// VkImageType				imageType;
 		mapTextureFormat(m_format),					// VkFormat					format;
 		makeExtent3D(extendedLayerSize),			// VkExtent3D				extent;
@@ -834,7 +836,7 @@ void BinaryAtomicIntermValuesInstance::commandsAfterCompute (const VkCommandBuff
 	const DeviceInterface&			deviceInterface		= m_context.getDeviceInterface();
 	const VkImageSubresourceRange	subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
 
-	const VkImageMemoryBarrier	imagePostDispatchBarrier = 
+	const VkImageMemoryBarrier	imagePostDispatchBarrier =
 		makeImageMemoryBarrier(	VK_ACCESS_SHADER_WRITE_BIT,
 								VK_ACCESS_TRANSFER_READ_BIT,
 								VK_IMAGE_LAYOUT_GENERAL,
@@ -865,7 +867,7 @@ bool BinaryAtomicIntermValuesInstance::verifyResult (Allocation&	outputBufferAll
 		deInt32 resultValues[NUM_INVOCATIONS_PER_PIXEL];
 		deInt32 atomicArgs[NUM_INVOCATIONS_PER_PIXEL];
 		bool	argsUsed[NUM_INVOCATIONS_PER_PIXEL];
-				
+
 		for (deInt32 i = 0; i < static_cast<deInt32>(NUM_INVOCATIONS_PER_PIXEL); i++)
 		{
 			IVec3 gid(x + i*gridSize.x(), y, z);
@@ -885,8 +887,8 @@ bool BinaryAtomicIntermValuesInstance::verifyResult (Allocation&	outputBufferAll
 	return true;
 }
 
-bool BinaryAtomicIntermValuesInstance::verifyRecursive (const deInt32	index, 
-														const deInt32	valueSoFar, 
+bool BinaryAtomicIntermValuesInstance::verifyRecursive (const deInt32	index,
+														const deInt32	valueSoFar,
 														bool			argsUsed[NUM_INVOCATIONS_PER_PIXEL],
 														const deInt32	atomicArgs[NUM_INVOCATIONS_PER_PIXEL],
 														const deInt32	resultValues[NUM_INVOCATIONS_PER_PIXEL]) const
