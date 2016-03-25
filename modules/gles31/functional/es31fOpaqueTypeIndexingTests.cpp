@@ -948,17 +948,36 @@ private:
 
 	const IndexExprType			m_indexExprType;
 	const glu::ShaderType		m_shaderType;
+	deInt32						m_numCounters;
 };
 
 AtomicCounterIndexingCase::AtomicCounterIndexingCase (Context& context, const char* name, const char* description, IndexExprType indexExprType, ShaderType shaderType)
 	: TestCase			(context, name, description)
 	, m_indexExprType	(indexExprType)
 	, m_shaderType		(shaderType)
+	, m_numCounters		(0)
 {
 }
 
 AtomicCounterIndexingCase::~AtomicCounterIndexingCase (void)
 {
+}
+
+deUint32 getMaxAtomicCounterEnum (glu::ShaderType type)
+{
+	switch (type)
+	{
+		case glu::SHADERTYPE_VERTEX:					return GL_MAX_VERTEX_ATOMIC_COUNTERS;
+		case glu::SHADERTYPE_FRAGMENT:					return GL_MAX_FRAGMENT_ATOMIC_COUNTERS;
+		case glu::SHADERTYPE_GEOMETRY:					return GL_MAX_GEOMETRY_ATOMIC_COUNTERS;
+		case glu::SHADERTYPE_COMPUTE:					return GL_MAX_COMPUTE_ATOMIC_COUNTERS;
+		case glu::SHADERTYPE_TESSELLATION_CONTROL:		return GL_MAX_TESS_CONTROL_ATOMIC_COUNTERS;
+		case glu::SHADERTYPE_TESSELLATION_EVALUATION:	return GL_MAX_TESS_EVALUATION_ATOMIC_COUNTERS;
+
+		default:
+			DE_FATAL("Unknown shader type");
+			return -1;
+	}
 }
 
 void AtomicCounterIndexingCase::init (void)
@@ -981,14 +1000,11 @@ void AtomicCounterIndexingCase::init (void)
 				"GL_EXT_gpu_shader5 extension is required for dynamic indexing of atomic counters.");
 	}
 
-	if (m_shaderType == glu::SHADERTYPE_VERTEX || m_shaderType == glu::SHADERTYPE_FRAGMENT)
 	{
-		int numAtomicCounterBuffers = 0;
-		m_context.getRenderContext().getFunctions().getIntegerv(m_shaderType == glu::SHADERTYPE_VERTEX ? GL_MAX_VERTEX_ATOMIC_COUNTER_BUFFERS
-																									   : GL_MAX_FRAGMENT_ATOMIC_COUNTER_BUFFERS,
-																&numAtomicCounterBuffers);
+		m_context.getRenderContext().getFunctions().getIntegerv(getMaxAtomicCounterEnum(m_shaderType),
+																&m_numCounters);
 
-		if (numAtomicCounterBuffers == 0)
+		if (m_numCounters < 1)
 		{
 			const string message =  "Atomic counters not supported in " + string(glu::getShaderTypeName(m_shaderType)) + " shader";
 			TCU_THROW(NotSupportedError, message.c_str());
@@ -1056,7 +1072,6 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate (voi
 	const Buffer			counterBuffer		(renderCtx);
 
 	const int				numInvocations		= 32;
-	const int				numCounters			= 4;
 	const int				numOps				= 4;
 	vector<int>				opIndices			(numOps);
 	vector<deUint32>		outValues			(numInvocations*numOps);
@@ -1066,10 +1081,10 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate (voi
 	for (int opNdx = 0; opNdx < numOps; opNdx++)
 		opIndices[opNdx] = rnd.getInt(0, numOps-1);
 
-	getShaderSpec(&shaderSpec, numCounters, numOps, &opIndices[0], m_context.getRenderContext());
+	getShaderSpec(&shaderSpec, m_numCounters, numOps, &opIndices[0], m_context.getRenderContext());
 
 	{
-		const BufferVector		buffers			(renderCtx, numCounters);
+		const BufferVector		buffers			(renderCtx, m_numCounters);
 		ShaderExecutorPtr		shaderExecutor	(createExecutor(renderCtx, m_shaderType, shaderSpec));
 		vector<int>				expandedIndices;
 		vector<void*>			inputs;
@@ -1083,7 +1098,7 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate (voi
 		{
 			const int				bufSize		= getProgramResourceInt(gl, shaderExecutor->getProgram(), GL_ATOMIC_COUNTER_BUFFER, 0, GL_BUFFER_DATA_SIZE);
 			const int				maxNdx		= maxElement(opIndices);
-			std::vector<deUint8>	emptyData	(numCounters*4, 0);
+			std::vector<deUint8>	emptyData	(m_numCounters*4, 0);
 
 			if (bufSize < (maxNdx+1)*4)
 				TCU_FAIL((string("GL reported invalid buffer size " + de::toString(bufSize)).c_str()));
@@ -1123,9 +1138,9 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate (voi
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	{
-		vector<int>				numHits			(numCounters, 0);	// Number of hits per counter.
-		vector<deUint32>		counterValues	(numCounters);
-		vector<vector<bool> >	counterMasks	(numCounters);
+		vector<int>				numHits			(m_numCounters, 0);	// Number of hits per counter.
+		vector<deUint32>		counterValues	(m_numCounters);
+		vector<vector<bool> >	counterMasks	(m_numCounters);
 
 		for (int opNdx = 0; opNdx < numOps; opNdx++)
 			numHits[opIndices[opNdx]] += 1;
@@ -1136,10 +1151,10 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate (voi
 
 			try
 			{
-				mapPtr = gl.mapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, numCounters*4, GL_MAP_READ_BIT);
+				mapPtr = gl.mapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, m_numCounters*4, GL_MAP_READ_BIT);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER)");
 				TCU_CHECK(mapPtr);
-				std::copy((const deUint32*)mapPtr, (const deUint32*)mapPtr + numCounters, &counterValues[0]);
+				std::copy((const deUint32*)mapPtr, (const deUint32*)mapPtr + m_numCounters, &counterValues[0]);
 				gl.unmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
 			}
 			catch (...)
@@ -1151,7 +1166,7 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate (voi
 		}
 
 		// Verify counter values
-		for (int counterNdx = 0; counterNdx < numCounters; counterNdx++)
+		for (int counterNdx = 0; counterNdx < m_numCounters; counterNdx++)
 		{
 			const deUint32		refCount	= (deUint32)(numHits[counterNdx]*numInvocations);
 			const deUint32		resCount	= counterValues[counterNdx];
@@ -1168,7 +1183,7 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate (voi
 		}
 
 		// Allocate bitmasks - one bit per each valid result value
-		for (int counterNdx = 0; counterNdx < numCounters; counterNdx++)
+		for (int counterNdx = 0; counterNdx < m_numCounters; counterNdx++)
 		{
 			const int	counterValue	= numHits[counterNdx]*numInvocations;
 			counterMasks[counterNdx].resize(counterValue, false);
@@ -1206,7 +1221,7 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate (voi
 		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
 		{
 			// Consistency check - all masks should be 1 now
-			for (int counterNdx = 0; counterNdx < numCounters; counterNdx++)
+			for (int counterNdx = 0; counterNdx < m_numCounters; counterNdx++)
 			{
 				for (vector<bool>::const_iterator i = counterMasks[counterNdx].begin(); i != counterMasks[counterNdx].end(); i++)
 					TCU_CHECK_INTERNAL(*i);

@@ -24,6 +24,8 @@
 #include "es2fNegativeTextureApiTests.hpp"
 #include "es2fApiCase.hpp"
 #include "tcuFormatUtil.hpp"
+#include "tcuCompressedTexture.hpp"
+#include "gluTextureUtil.hpp"
 #include "gluContextInfo.hpp"
 
 #include <vector>
@@ -1970,12 +1972,37 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if target is invalid.");
-					m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					glCompressedTexSubImage2D(0, 0, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_ENUM);
-					m_log << TestLog::EndSection;
+					const deInt32	glFormat 	= accepted[i];
+
+					try
+					{
+						const tcu::CompressedTexFormat	format			= glu::mapGLCompressedTexFormat(glFormat);
+						const tcu::IVec3				blockPixelSize	= tcu::getBlockPixelSize(format);
+						const int						blockSize		= tcu::getBlockSize(format);
+						const std::vector<deUint8>		data			(blockSize, 0);
+						GLuint							texture			= 0;
+
+						glGenTextures(1, &texture);
+						glBindTexture(GL_TEXTURE_2D, texture);
+						expectError(GL_NO_ERROR);
+
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, glFormat, blockPixelSize.x(), blockPixelSize.y(), 0, blockSize, DE_NULL);
+						expectError(GL_NO_ERROR);
+
+						m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if target is invalid.");
+						m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
+						//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
+						glCompressedTexSubImage2D(0, 0, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_ENUM);
+						m_log << TestLog::EndSection;
+
+						glDeleteTextures(1, &texture);
+						expectError(GL_NO_ERROR);
+					}
+					catch (const tcu::InternalError&)
+					{
+						m_log << TestLog::Message << "Skipping unknown format: " << glFormat << TestLog::EndMessage;
+					}
 				}
 			}
 		});
@@ -1995,13 +2022,38 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is less than 0.");
-					m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, -1, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					m_log << TestLog::EndSection;
+					const deInt32	glFormat 	= accepted[i];
+
+					try
+					{
+						const tcu::CompressedTexFormat	format			= glu::mapGLCompressedTexFormat(glFormat);
+						const tcu::IVec3				blockPixelSize	= tcu::getBlockPixelSize(format);
+						const int						blockSize		= tcu::getBlockSize(format);
+						const std::vector<deUint8>		data			(blockSize, 0);
+						GLuint							texture			= 0;
+
+						glGenTextures(1, &texture);
+						glBindTexture(GL_TEXTURE_2D, texture);
+						expectError(GL_NO_ERROR);
+
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, glFormat, blockPixelSize.x(), blockPixelSize.y(), 0, blockSize, DE_NULL);
+						expectError(GL_NO_ERROR);
+
+						m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is less than 0.");
+						m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
+						//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, -1, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						m_log << TestLog::EndSection;
+
+						glDeleteTextures(1, &texture);
+						expectError(GL_NO_ERROR);
+					}
+					catch (const tcu::InternalError&)
+					{
+						m_log << TestLog::Message << "Skipping unknown format: " << glFormat << TestLog::EndMessage;
+					}
 				}
 			}
 		});
@@ -2021,33 +2073,58 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is less than 0.");
-					m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
-					//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, -1, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, -1, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, -1, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, -1, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, -1, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, -1, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					m_log << TestLog::EndSection;
+					const deInt32	glFormat 	= accepted[i];
+
+					try
+					{
+						const tcu::CompressedTexFormat	format			= glu::mapGLCompressedTexFormat(glFormat);
+						const tcu::IVec3				blockPixelSize	= tcu::getBlockPixelSize(format);
+						const int						blockSize		= tcu::getBlockSize(format);
+						const std::vector<deUint8>		data			(blockSize, 0);
+						GLuint							texture			= 0;
+
+						glGenTextures(1, &texture);
+						glBindTexture(GL_TEXTURE_2D, texture);
+						expectError(GL_NO_ERROR);
+
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, glFormat, blockPixelSize.x(), blockPixelSize.y(), 0, blockSize, DE_NULL);
+						expectError(GL_NO_ERROR);
+
+						m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is less than 0.");
+						m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
+						//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, -1, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, -1, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, -1, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, -1, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, -1, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, -1, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						m_log << TestLog::EndSection;
+
+						glDeleteTextures(1, &texture);
+						expectError(GL_NO_ERROR);
+					}
+					catch (const tcu::InternalError&)
+					{
+						m_log << TestLog::Message << "Skipping unknown format: " << glFormat << TestLog::EndMessage;
+					}
 				}
 			}
 		});
@@ -2067,14 +2144,39 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is greater than log_2(GL_MAX_TEXTURE_SIZE).");
-					m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
-					deUint32 log2MaxTextureSize = deLog2Floor32(m_context.getContextInfo().getInt(GL_MAX_TEXTURE_SIZE)) + 1;
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					m_log << TestLog::EndSection;
+					const deInt32	glFormat 	= accepted[i];
+
+					try
+					{
+						const tcu::CompressedTexFormat	format			= glu::mapGLCompressedTexFormat(glFormat);
+						const tcu::IVec3				blockPixelSize	= tcu::getBlockPixelSize(format);
+						const int						blockSize		= tcu::getBlockSize(format);
+						const std::vector<deUint8>		data			(blockSize, 0);
+						GLuint							texture			= 0;
+
+						glGenTextures(1, &texture);
+						glBindTexture(GL_TEXTURE_2D, texture);
+						expectError(GL_NO_ERROR);
+
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, glFormat, blockPixelSize.x(), blockPixelSize.y(), 0, blockSize, DE_NULL);
+						expectError(GL_NO_ERROR);
+
+						m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is greater than log_2(GL_MAX_TEXTURE_SIZE).");
+						m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
+						deUint32 log2MaxTextureSize = deLog2Floor32(m_context.getContextInfo().getInt(GL_MAX_TEXTURE_SIZE)) + 1;
+						//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						m_log << TestLog::EndSection;
+
+						glDeleteTextures(1, &texture);
+						expectError(GL_NO_ERROR);
+					}
+					catch (const tcu::InternalError&)
+					{
+						m_log << TestLog::Message << "Skipping unknown format: " << glFormat << TestLog::EndMessage;
+					}
 				}
 			}
 		});
@@ -2094,38 +2196,63 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is greater than log_2(GL_MAX_CUBE_MAP_TEXTURE_SIZE).");
-					m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
-					deUint32 log2MaxTextureSize = deLog2Floor32(m_context.getContextInfo().getInt(GL_MAX_CUBE_MAP_TEXTURE_SIZE)) + 1;
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					m_log << TestLog::EndSection;
+					const deInt32	glFormat 	= accepted[i];
+
+					try
+					{
+						const tcu::CompressedTexFormat	format			= glu::mapGLCompressedTexFormat(glFormat);
+						const tcu::IVec3				blockPixelSize	= tcu::getBlockPixelSize(format);
+						const int						blockSize		= tcu::getBlockSize(format);
+						const std::vector<deUint8>		data			(blockSize, 0);
+						GLuint							texture			= 0;
+
+						glGenTextures(1, &texture);
+						glBindTexture(GL_TEXTURE_2D, texture);
+						expectError(GL_NO_ERROR);
+
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, glFormat, blockPixelSize.x(), blockPixelSize.y(), 0, blockSize, DE_NULL);
+						expectError(GL_NO_ERROR);
+
+						m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is greater than log_2(GL_MAX_CUBE_MAP_TEXTURE_SIZE).");
+						m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
+						deUint32 log2MaxTextureSize = deLog2Floor32(m_context.getContextInfo().getInt(GL_MAX_CUBE_MAP_TEXTURE_SIZE)) + 1;
+						//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, log2MaxTextureSize, 0, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						m_log << TestLog::EndSection;
+
+						glDeleteTextures(1, &texture);
+						expectError(GL_NO_ERROR);
+					}
+					catch (const tcu::InternalError&)
+					{
+						m_log << TestLog::Message << "Skipping unknown format: " << glFormat << TestLog::EndMessage;
+					}
 				}
 			}
 		});
@@ -2145,21 +2272,46 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if xoffset or yoffset are negative.");
-					m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, -1, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, -1, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, -1, -1, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					m_log << TestLog::EndSection;
+					const deInt32	glFormat 	= accepted[i];
+
+					try
+					{
+						const tcu::CompressedTexFormat	format			= glu::mapGLCompressedTexFormat(glFormat);
+						const tcu::IVec3				blockPixelSize	= tcu::getBlockPixelSize(format);
+						const int						blockSize		= tcu::getBlockSize(format);
+						const std::vector<deUint8>		data			(blockSize, 0);
+						GLuint							texture			= 0;
+
+						glGenTextures(1, &texture);
+						glBindTexture(GL_TEXTURE_2D, texture);
+						expectError(GL_NO_ERROR);
+
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, glFormat, blockPixelSize.x(), blockPixelSize.y(), 0, blockSize, DE_NULL);
+						expectError(GL_NO_ERROR);
+
+						m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if xoffset or yoffset are negative.");
+						m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
+						//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, -1, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, -1, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, -1, -1, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						m_log << TestLog::EndSection;
+
+						glDeleteTextures(1, &texture);
+						expectError(GL_NO_ERROR);
+					}
+					catch (const tcu::InternalError&)
+					{
+						m_log << TestLog::Message << "Skipping unknown format: " << glFormat << TestLog::EndMessage;
+					}
 				}
 			}
 		});
@@ -2179,22 +2331,47 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					deUint32 maxTextureSize = m_context.getContextInfo().getInt(GL_MAX_CUBE_MAP_TEXTURE_SIZE) + 1;
-					m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if xoffset + width > texture_width or yoffset + height > texture_height.");
-					m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, maxTextureSize, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, maxTextureSize, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, maxTextureSize, maxTextureSize, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					m_log << TestLog::EndSection;
+					const deInt32	glFormat 	= accepted[i];
+
+					try
+					{
+						const tcu::CompressedTexFormat	format			= glu::mapGLCompressedTexFormat(glFormat);
+						const tcu::IVec3				blockPixelSize	= tcu::getBlockPixelSize(format);
+						const int						blockSize		= tcu::getBlockSize(format);
+						const std::vector<deUint8>		data			(blockSize, 0);
+						GLuint							texture			= 0;
+
+						glGenTextures(1, &texture);
+						glBindTexture(GL_TEXTURE_2D, texture);
+						expectError(GL_NO_ERROR);
+
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, glFormat, blockPixelSize.x(), blockPixelSize.y(), 0, blockSize, DE_NULL);
+						expectError(GL_NO_ERROR);
+
+						deUint32 maxTextureSize = m_context.getContextInfo().getInt(GL_MAX_CUBE_MAP_TEXTURE_SIZE) + 1;
+						m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if xoffset + width > texture_width or yoffset + height > texture_height.");
+						m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
+						//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, maxTextureSize, 0, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, maxTextureSize, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, maxTextureSize, maxTextureSize, 0, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						m_log << TestLog::EndSection;
+
+						glDeleteTextures(1, &texture);
+						expectError(GL_NO_ERROR);
+					}
+					catch (const tcu::InternalError&)
+					{
+						m_log << TestLog::Message << "Skipping unknown format: " << glFormat << TestLog::EndMessage;
+					}
 				}
 			}
 		});
@@ -2214,21 +2391,46 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if width or height is less than 0.");
-					m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, -1, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, -1, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, -1, -1, accepted[i], 0, 0);
-					expectError(GL_INVALID_VALUE);
-					m_log << TestLog::EndSection;
+					const deInt32	glFormat 	= accepted[i];
+
+					try
+					{
+						const tcu::CompressedTexFormat	format			= glu::mapGLCompressedTexFormat(glFormat);
+						const tcu::IVec3				blockPixelSize	= tcu::getBlockPixelSize(format);
+						const int						blockSize		= tcu::getBlockSize(format);
+						const std::vector<deUint8>		data			(blockSize, 0);
+						GLuint							texture			= 0;
+
+						glGenTextures(1, &texture);
+						glBindTexture(GL_TEXTURE_2D, texture);
+						expectError(GL_NO_ERROR);
+
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, glFormat, blockPixelSize.x(), blockPixelSize.y(), 0, blockSize, DE_NULL);
+						expectError(GL_NO_ERROR);
+
+						m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if width or height is less than 0.");
+						m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
+						//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, -1, 0, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, -1, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
+						//expectError(GL_NO_ERROR);
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, -1, -1, accepted[i], 0, 0);
+						expectError(GL_INVALID_VALUE);
+						m_log << TestLog::EndSection;
+
+						glDeleteTextures(1, &texture);
+						expectError(GL_NO_ERROR);
+					}
+					catch (const tcu::InternalError&)
+					{
+						m_log << TestLog::Message << "Skipping unknown format: " << glFormat << TestLog::EndMessage;
+					}
 				}
 			}
 		});
@@ -2248,13 +2450,49 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if imageSize is not consistent with the format, dimensions, and contents of the specified compressed image data.");
-					m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, accepted[i], -1, 0);
-					expectError(GL_INVALID_VALUE);
-					m_log << TestLog::EndSection;
+					const deInt32	glFormat 	= accepted[i];
+
+					try
+					{
+						const tcu::CompressedTexFormat	format			= glu::mapGLCompressedTexFormat(glFormat);
+						const tcu::IVec3				blockPixelSize	= tcu::getBlockPixelSize(format);
+						const int						blockSize		= tcu::getBlockSize(format);
+						const std::vector<deUint8>		data			(blockSize, 0);
+						GLuint							texture			= 0;
+
+						glGenTextures(1, &texture);
+						glBindTexture(GL_TEXTURE_2D, texture);
+						expectError(GL_NO_ERROR);
+
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, glFormat, blockPixelSize.x(), blockPixelSize.y(), 0, blockSize, DE_NULL);
+						expectError(GL_NO_ERROR);
+
+						m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if imageSize is not consistent with the format, dimensions, and contents of the specified compressed image data.");
+						m_log << TestLog::Message << "// Using texture format " << tcu::toHex(glFormat) << TestLog::EndMessage;
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, blockPixelSize.x(), blockPixelSize.y(), glFormat, -1, &data[0]);
+						expectError(GL_INVALID_VALUE);
+
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, blockPixelSize.x(), blockPixelSize.y(), glFormat, blockSize / 2, &data[0]);
+						expectError(GL_INVALID_VALUE);
+
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, blockPixelSize.x(), blockPixelSize.y(), glFormat, blockSize * 2, &data[0]);
+						expectError(GL_INVALID_VALUE);
+
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, blockPixelSize.x(), blockPixelSize.y() * 2, glFormat, blockSize, &data[0]);
+						expectError(GL_INVALID_VALUE);
+
+						glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, blockPixelSize.x() * 2, blockPixelSize.y(), glFormat, blockSize, &data[0]);
+						expectError(GL_INVALID_VALUE);
+
+						m_log << TestLog::EndSection;
+
+						glDeleteTextures(1, &texture);
+						expectError(GL_NO_ERROR);
+					}
+					catch (const tcu::InternalError&)
+					{
+						m_log << TestLog::Message << "Skipping unknown format: " << glFormat << TestLog::EndMessage;
+					}
 				}
 			}
 		});
