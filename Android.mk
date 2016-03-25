@@ -743,6 +743,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockTests.cpp \
 	external/vulkancts/modules/vulkan/vktTestCaseUtil.cpp \
 	external/vulkancts/modules/vulkan/vktTestGroupUtil.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageAtomicOperationTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageSizeTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageTestsUtil.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageTexture.cpp \
@@ -768,6 +769,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiDeviceInitializationTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferComputeInstance.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineEarlyFragmentTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineTimestampTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageUtil.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleTests.cpp \
@@ -778,13 +780,23 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexUtil.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelinePushConstantTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineReferenceRenderer.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineCacheTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineClearUtil.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineSamplerTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageSamplingInstance.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineStencilTests.cpp \
-	external/vulkancts/modules/vulkan/pipeline/vktPipelineTests.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineTests.cpp \ \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBase.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferMemoryAliasing.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferSparseBinding.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferSparseResidency.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageSparseBinding.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageSparseResidency.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesMipmapSparseResidency.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesTests.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesTestsUtil.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSwapchainTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiTests.cpp \
@@ -864,6 +876,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/spirv_assembly \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ssbo \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/sparse_resources \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi
 
 deqp_compile_flags := \
