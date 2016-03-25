@@ -69,6 +69,7 @@
 #include "vktInfoTests.hpp"
 #include "vktWsiTests.hpp"
 #include "vktSynchronization.hpp"
+#include "vktSparseResourcesTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -325,6 +326,7 @@ void TestPackage::init (void)
 	addChild(image::createTests			(m_testCtx));
 	addChild(wsi::createTests			(m_testCtx));
 	addChild(createSynchronizationTests	(m_testCtx));
+	addChild(sparse::createTests		(m_testCtx));
 }
 
 } // vkt

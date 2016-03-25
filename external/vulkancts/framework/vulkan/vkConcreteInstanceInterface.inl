@@ -13,6 +13,7 @@ virtual PFN_vkVoidFunction	getDeviceProcAddr								(VkDevice device, const char
 virtual VkResult			createDevice									(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice) const;
 virtual VkResult			enumerateDeviceExtensionProperties				(VkPhysicalDevice physicalDevice, const char* pLayerName, deUint32* pPropertyCount, VkExtensionProperties* pProperties) const;
 virtual VkResult			enumerateDeviceLayerProperties					(VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkLayerProperties* pProperties) const;
+virtual void				getPhysicalDeviceSparseImageFormatProperties	(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling, deUint32* pPropertyCount, VkSparseImageFormatProperties* pProperties) const;
 virtual void				destroySurfaceKHR								(VkInstance instance, VkSurfaceKHR surface, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			getPhysicalDeviceSurfaceSupportKHR				(VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, VkSurfaceKHR surface, VkBool32* pSupported) const;
 virtual VkResult			getPhysicalDeviceSurfaceCapabilitiesKHR			(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR* pSurfaceCapabilities) const;

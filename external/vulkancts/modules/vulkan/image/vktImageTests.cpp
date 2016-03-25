@@ -33,6 +33,7 @@
 #include "vktImageQualifiersTests.hpp"
 #include "vktImageSizeTests.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktImageAtomicOperationTests.hpp"
 
 namespace vkt
 {
@@ -45,12 +46,13 @@ namespace
 void createChildren (tcu::TestCaseGroup* imageTests)
 {
 	tcu::TestContext&	testCtx		= imageTests->getTestContext();
-
+	
 	imageTests->addChild(createImageStoreTests(testCtx));
 	imageTests->addChild(createImageLoadStoreTests(testCtx));
 	imageTests->addChild(createImageFormatReinterpretTests(testCtx));
 	imageTests->addChild(createImageQualifiersTests(testCtx));
 	imageTests->addChild(createImageSizeTests(testCtx));
+	imageTests->addChild(createImageAtomicOperationTests(testCtx));
 }
 
 } // anonymous

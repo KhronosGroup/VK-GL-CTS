@@ -13,6 +13,7 @@ GetDeviceProcAddrFunc								getDeviceProcAddr;
 CreateDeviceFunc									createDevice;
 EnumerateDeviceExtensionPropertiesFunc				enumerateDeviceExtensionProperties;
 EnumerateDeviceLayerPropertiesFunc					enumerateDeviceLayerProperties;
+GetPhysicalDeviceSparseImageFormatPropertiesFunc	getPhysicalDeviceSparseImageFormatProperties;
 DestroySurfaceKHRFunc								destroySurfaceKHR;
 GetPhysicalDeviceSurfaceSupportKHRFunc				getPhysicalDeviceSurfaceSupportKHR;
 GetPhysicalDeviceSurfaceCapabilitiesKHRFunc			getPhysicalDeviceSurfaceCapabilitiesKHR;
