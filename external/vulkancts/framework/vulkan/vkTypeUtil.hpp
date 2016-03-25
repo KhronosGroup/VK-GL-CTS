@@ -48,6 +48,16 @@ inline VkClearValue makeClearValueColorF32 (float r, float g, float b, float a)
 	return v;
 }
 
+inline VkClearValue makeClearValueColorU32 (deUint32 r, deUint32 g, deUint32 b, deUint32 a)
+{
+	VkClearValue v;
+	v.color.uint32[0] = r;
+	v.color.uint32[1] = g;
+	v.color.uint32[2] = b;
+	v.color.uint32[3] = a;
+	return v;
+}
+
 inline VkClearValue makeClearValueColor (const tcu::Vec4& color)
 {
 	VkClearValue v;
@@ -79,6 +89,16 @@ inline VkComponentMapping makeComponentMappingRGBA (void)
 								VK_COMPONENT_SWIZZLE_G,
 								VK_COMPONENT_SWIZZLE_B,
 								VK_COMPONENT_SWIZZLE_A);
+}
+
+inline VkExtent3D makeExtent3D(const tcu::IVec3& vec)
+{
+	return makeExtent3D((deUint32)vec.x(), (deUint32)vec.y(), (deUint32)vec.z());
+}
+
+inline VkExtent3D makeExtent3D(const tcu::UVec3& vec)
+{
+	return makeExtent3D(vec.x(), vec.y(), vec.z());
 }
 
 } // vk

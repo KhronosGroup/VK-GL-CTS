@@ -15,6 +15,7 @@ add_subdirectory(draw)
 add_subdirectory(compute)
 add_subdirectory(image)
 add_subdirectory(wsi)
+add_subdirectory(sparse_resources)
 
 include_directories(
 	api
@@ -32,6 +33,7 @@ include_directories(
 	compute
 	image
 	wsi
+	sparse_resources
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -72,6 +74,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-compute
 	deqp-vk-image
 	deqp-vk-wsi
+	deqp-vk-sparse-resources
 	)
 
 add_library(deqp-vk-common STATIC ${DEQP_VK_COMMON_SRCS})

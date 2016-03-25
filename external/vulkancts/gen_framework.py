@@ -56,6 +56,7 @@ INSTANCE_FUNCTIONS	= [
 	"vkGetPhysicalDeviceFeatures",
 	"vkGetPhysicalDeviceFormatProperties",
 	"vkGetPhysicalDeviceImageFormatProperties",
+	"vkGetPhysicalDeviceSparseImageFormatProperties",
 	"vkGetPhysicalDeviceLimits",
 	"vkGetPhysicalDeviceProperties",
 	"vkGetPhysicalDeviceQueueFamilyProperties",
