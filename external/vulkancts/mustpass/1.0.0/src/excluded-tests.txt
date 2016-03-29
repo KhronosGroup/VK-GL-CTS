@@ -20,8 +20,4 @@ dEQP-VK.pipeline.blend.format.r5g5b5a1_unorm_pack16.states.color_dc_dc_add_alpha
 dEQP-VK.pipeline.blend.format.r5g5b5a1_unorm_pack16.states.color_sa_z_sub_alpha_ca_cc_sub-color_sas_1msa_rsub_alpha_ca_da_sub-color_1mca_ca_min_alpha_1msc_1mcc_rsub-color_dc_da_sub_alpha_1mcc_1mda_add
 
 # Issue 348: New tests
-dEQP-VK.api.device_init.create_instance_null_appinfo
-dEQP-VK.wsi.*
-dEQP-VK.synchronization.*
-dEQP-VK.binding_model.*discontiguous*
-dEQP-VK.api.smoke.unused_resolve_attachment
+dEQP-VK.synchronization.events
