@@ -201,7 +201,7 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 
 } // anonymous
 
-bool getNumShaderStages (const glu::ProgramSources& program)
+int getNumShaderStages (const glu::ProgramSources& program)
 {
 	int numShaderStages = 0;
 
