@@ -183,16 +183,16 @@ Context::~Context (void)
 {
 }
 
-vk::VkInstance						Context::getInstance					(void) const { return m_device->getInstance();					}
-const vk::InstanceInterface&		Context::getInstanceInterface			(void) const { return m_device->getInstanceInterface();			}
-vk::VkPhysicalDevice				Context::getPhysicalDevice				(void) const { return m_device->getPhysicalDevice();			}
-const vk::VkPhysicalDeviceFeatures&	Context::getDeviceFeatures				(void) const { return m_device->getDeviceFeatures();			}
-const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties		(void) const { return m_device->getDeviceProperties();			}
-vk::VkDevice						Context::getDevice						(void) const { return m_device->getDevice();					}
-const vk::DeviceInterface&			Context::getDeviceInterface				(void) const { return m_device->getDeviceInterface();			}
-deUint32							Context::getUniversalQueueFamilyIndex	(void) const { return m_device->getUniversalQueueFamilyIndex();	}
-vk::VkQueue							Context::getUniversalQueue				(void) const { return m_device->getUniversalQueue();			}
-vk::Allocator&						Context::getDefaultAllocator			(void) const { return *m_allocator;								}
+vk::VkInstance							Context::getInstance					(void) const { return m_device->getInstance();					}
+const vk::InstanceInterface&			Context::getInstanceInterface			(void) const { return m_device->getInstanceInterface();			}
+vk::VkPhysicalDevice					Context::getPhysicalDevice				(void) const { return m_device->getPhysicalDevice();			}
+const vk::VkPhysicalDeviceFeatures&		Context::getDeviceFeatures				(void) const { return m_device->getDeviceFeatures();			}
+const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
+vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}
+const vk::DeviceInterface&				Context::getDeviceInterface				(void) const { return m_device->getDeviceInterface();			}
+deUint32								Context::getUniversalQueueFamilyIndex	(void) const { return m_device->getUniversalQueueFamilyIndex();	}
+vk::VkQueue								Context::getUniversalQueue				(void) const { return m_device->getUniversalQueue();			}
+vk::Allocator&							Context::getDefaultAllocator			(void) const { return *m_allocator;								}
 
 // TestCase
 
