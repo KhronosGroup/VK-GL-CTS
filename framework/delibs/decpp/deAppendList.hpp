@@ -59,6 +59,8 @@ public:
 
 	size_t						size			(void) const { return m_numElements;	}
 
+	void						clear			(void);
+
 private:
 								AppendList		(const AppendList<ElementType>&);
 	AppendList<ElementType>&	operator=		(const AppendList<ElementType>&);
@@ -132,6 +134,11 @@ public:
 			return m_curBlock->elements[m_slotNdx];
 		}
 
+		CompatibleType*				operator->						(void) const
+		{
+			return &m_curBlock->elements[m_slotNdx];
+		}
+
 		operator					Iterator<const CompatibleType>	(void) const
 		{
 			return Iterator<const CompatibleType>(m_curBlock, m_blockSize, m_slotNdx);
@@ -180,6 +187,36 @@ AppendList<ElementType>::~AppendList (void)
 
 		delete delBlock;
 	}
+
+	DE_ASSERT(elementNdx == m_numElements);
+}
+
+template<typename ElementType>
+void AppendList<ElementType>::clear (void)
+{
+	// \todo [2016-03-28 pyry] Make thread-safe, if possible
+
+	size_t	elementNdx	= 0;
+	Block*	curBlock	= m_first;
+
+	while (curBlock)
+	{
+		Block* const	delBlock	= curBlock;
+
+		curBlock = delBlock->next;
+
+		// Call destructor for allocated elements
+		for (; elementNdx < min(m_numElements, delBlock->blockNdx*m_blockSize); ++elementNdx)
+			delBlock->elements[elementNdx%m_blockSize].~ElementType();
+
+		if (delBlock != m_first)
+			delete delBlock;
+	}
+
+	DE_ASSERT(elementNdx == m_numElements);
+
+	m_numElements	= 0;
+	m_last			= m_first;
 }
 
 template<typename ElementType>
