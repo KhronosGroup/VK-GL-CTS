@@ -26,11 +26,14 @@
 #include "tcuPlatform.hpp"
 #include "tcuTestCase.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
 #include "vkBinaryRegistry.hpp"
 #include "vkGlslToSpirV.hpp"
+#include "vkDebugReportUtil.hpp"
+#include "vkQueryUtil.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -134,27 +137,42 @@ using de::UniquePtr;
 using de::MovePtr;
 using tcu::TestLog;
 
+namespace
+{
+
+MovePtr<vk::DebugReportRecorder> createDebugReportRecorder (const vk::PlatformInterface& vkp, const vk::InstanceInterface& vki, vk::VkInstance instance)
+{
+	if (isDebugReportSupported(vkp))
+		return MovePtr<vk::DebugReportRecorder>(new vk::DebugReportRecorder(vki, instance));
+	else
+		TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
+}
+
+} // anonymous
+
 // TestCaseExecutor
 
 class TestCaseExecutor : public tcu::TestCaseExecutor
 {
 public:
-											TestCaseExecutor	(tcu::TestContext& testCtx);
-											~TestCaseExecutor	(void);
+												TestCaseExecutor	(tcu::TestContext& testCtx);
+												~TestCaseExecutor	(void);
 
-	virtual void							init				(tcu::TestCase* testCase, const std::string& path);
-	virtual void							deinit				(tcu::TestCase* testCase);
+	virtual void								init				(tcu::TestCase* testCase, const std::string& path);
+	virtual void								deinit				(tcu::TestCase* testCase);
 
-	virtual tcu::TestNode::IterateResult	iterate				(tcu::TestCase* testCase);
+	virtual tcu::TestNode::IterateResult		iterate				(tcu::TestCase* testCase);
 
 private:
-	vk::BinaryCollection					m_progCollection;
-	vk::BinaryRegistryReader				m_prebuiltBinRegistry;
+	vk::BinaryCollection						m_progCollection;
+	vk::BinaryRegistryReader					m_prebuiltBinRegistry;
 
-	de::UniquePtr<vk::Library>				m_library;
-	Context									m_context;
+	const UniquePtr<vk::Library>				m_library;
+	Context										m_context;
 
-	TestInstance*							m_instance;			//!< Current test case instance
+	const UniquePtr<vk::DebugReportRecorder>	m_debugReportRecorder;
+
+	TestInstance*								m_instance;			//!< Current test case instance
 };
 
 static MovePtr<vk::Library> createLibrary (tcu::TestContext& testCtx)
@@ -166,6 +184,11 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 	: m_prebuiltBinRegistry	(testCtx.getArchive(), "vulkan/prebuilt")
 	, m_library				(createLibrary(testCtx))
 	, m_context				(testCtx, m_library->getPlatformInterface(), m_progCollection)
+	, m_debugReportRecorder	(testCtx.getCommandLine().isValidationEnabled()
+							 ? createDebugReportRecorder(m_library->getPlatformInterface(),
+														 m_context.getInstanceInterface(),
+														 m_context.getInstance())
+							 : MovePtr<vk::DebugReportRecorder>(DE_NULL))
 	, m_instance			(DE_NULL)
 {
 }
@@ -220,6 +243,34 @@ void TestCaseExecutor::deinit (tcu::TestCase*)
 {
 	delete m_instance;
 	m_instance = DE_NULL;
+
+	// Collect and report any debug messages
+	if (m_debugReportRecorder)
+	{
+		typedef vk::DebugReportRecorder::MessageList	DebugMessages;
+
+		const DebugMessages&	messages	= m_debugReportRecorder->getMessages();
+		tcu::TestLog&			log			= m_context.getTestContext().getLog();
+
+		if (messages.begin() != messages.end())
+		{
+			const tcu::ScopedLogSection	section		(log, "DebugMessages", "Debug Messages");
+			bool						anyErrors	= false;
+
+			for (DebugMessages::const_iterator curMsg = messages.begin(); curMsg != messages.end(); ++curMsg)
+			{
+				log << tcu::TestLog::Message << *curMsg << tcu::TestLog::EndMessage;
+
+				if ((curMsg->flags & vk::VK_DEBUG_REPORT_ERROR_BIT_EXT) != 0)
+					anyErrors = true;
+			}
+
+			m_debugReportRecorder->clearMessages();
+
+			if (anyErrors)
+				m_context.getTestContext().setTestResult(QP_TEST_RESULT_INTERNAL_ERROR, "API usage error found");
+		}
+	}
 }
 
 tcu::TestNode::IterateResult TestCaseExecutor::iterate (tcu::TestCase*)

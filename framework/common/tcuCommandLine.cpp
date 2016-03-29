@@ -85,6 +85,7 @@ DE_DECLARE_COMMAND_LINE_OPT(LogShaderSources,			bool);
 DE_DECLARE_COMMAND_LINE_OPT(TestOOM,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(VKDeviceID,					int);
 DE_DECLARE_COMMAND_LINE_OPT(LogFlush,					bool);
+DE_DECLARE_COMMAND_LINE_OPT(Validation,					bool);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -170,7 +171,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<LogImages>			(DE_NULL,	"deqp-log-images",				"Enable or disable logging of result images",		s_enableNames,		"enable")
 		<< Option<LogShaderSources>		(DE_NULL,	"deqp-log-shader-sources",		"Enable or disable logging of shader sources",		s_enableNames,		"enable")
 		<< Option<TestOOM>				(DE_NULL,	"deqp-test-oom",				"Run tests that exhaust memory on purpose",			s_enableNames,		TEST_OOM_DEFAULT)
-		<< Option<LogFlush>             (DE_NULL,   "deqp-log-flush",               "Enable or disable log file fflush",                s_enableNames,      "enable");
+		<< Option<LogFlush>				(DE_NULL,	"deqp-log-flush",				"Enable or disable log file fflush",				s_enableNames,		"enable")
+		<< Option<Validation>			(DE_NULL,	"deqp-validation",				"Enable or disable test case validation",			s_enableNames,		"disable");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -817,6 +819,7 @@ int						CommandLine::getGLConfigId				(void) const	{ return m_cmdLine.getOption
 int						CommandLine::getCLPlatformId			(void) const	{ return m_cmdLine.getOption<opt::CLPlatformID>();					}
 const std::vector<int>&	CommandLine::getCLDeviceIds				(void) const	{ return m_cmdLine.getOption<opt::CLDeviceIDs>();					}
 int						CommandLine::getVKDeviceId				(void) const	{ return m_cmdLine.getOption<opt::VKDeviceID>();					}
+bool					CommandLine::isValidationEnabled		(void) const	{ return m_cmdLine.getOption<opt::Validation>();					}
 bool					CommandLine::isOutOfMemoryTestEnabled	(void) const	{ return m_cmdLine.getOption<opt::TestOOM>();						}
 
 const char* CommandLine::getGLContextType (void) const

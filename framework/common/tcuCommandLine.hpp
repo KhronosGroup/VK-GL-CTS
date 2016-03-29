@@ -179,6 +179,9 @@ public:
 	//! Get Vulkan device ID (--deqp-vk-device-id)
 	int								getVKDeviceId				(void) const;
 
+	//! Enable development-time test case validation checks
+	bool							isValidationEnabled			(void) const;
+
 	//! Should we run tests that exhaust memory (--deqp-test-oom)
 	bool							isOutOfMemoryTestEnabled(void) const;
 

@@ -70,11 +70,37 @@ struct RequiredExtension
 	{}
 };
 
+struct RequiredLayer
+{
+	std::string				name;
+	tcu::Maybe<deUint32>	minSpecVersion;
+	tcu::Maybe<deUint32>	maxSpecVersion;
+	tcu::Maybe<deUint32>	minImplVersion;
+	tcu::Maybe<deUint32>	maxImplVersion;
+
+	explicit RequiredLayer (const std::string&			name_,
+							tcu::Maybe<deUint32>		minSpecVersion_		= tcu::nothing<deUint32>(),
+							tcu::Maybe<deUint32>		maxSpecVersion_		= tcu::nothing<deUint32>(),
+							tcu::Maybe<deUint32>		minImplVersion_		= tcu::nothing<deUint32>(),
+							tcu::Maybe<deUint32>		maxImplVersion_		= tcu::nothing<deUint32>())
+		: name			(name_)
+		, minSpecVersion(minSpecVersion_)
+		, maxSpecVersion(maxSpecVersion_)
+		, minImplVersion(minImplVersion_)
+		, maxImplVersion(maxImplVersion_)
+	{}
+};
+
 bool										isCompatible							(const VkExtensionProperties& extensionProperties, const RequiredExtension& required);
+bool										isCompatible							(const VkLayerProperties& layerProperties, const RequiredLayer& required);
 
 template<typename ExtensionIterator>
 bool										isExtensionSupported					(ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required);
 bool										isExtensionSupported					(const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
+
+template<typename LayerIterator>
+bool										isLayerSupported						(LayerIterator begin, LayerIterator end, const RequiredLayer& required);
+bool										isLayerSupported						(const std::vector<VkLayerProperties>& layers, const RequiredLayer& required);
 
 // Return variable initialization validation
 
@@ -83,6 +109,7 @@ typedef struct
 	size_t		offset;
 	size_t		size;
 } QueryMemberTableEntry;
+
 template <typename Context, typename Interface, typename Type>
 bool validateInitComplete(Context context, void (Interface::*Function)(Context, Type*)const, const Interface& interface, const QueryMemberTableEntry* queryMemberTableEntry)
 {
@@ -109,6 +136,17 @@ template<typename ExtensionIterator>
 bool isExtensionSupported (ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required)
 {
 	for (ExtensionIterator cur = begin; cur != end; ++cur)
+	{
+		if (isCompatible(*cur, required))
+			return true;
+	}
+	return false;
+}
+
+template<typename LayerIterator>
+bool isLayerSupported (LayerIterator begin, LayerIterator end, const RequiredLayer& required)
+{
+	for (LayerIterator cur = begin; cur != end; ++cur)
 	{
 		if (isCompatible(*cur, required))
 			return true;
