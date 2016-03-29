@@ -801,6 +801,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSwapchainTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiTests.cpp \
 	external/vulkancts/framework/vulkan/vkBuilderUtil.cpp \
+	external/vulkancts/framework/vulkan/vkDebugReportUtil.cpp \
 	external/vulkancts/framework/vulkan/vkSpirVProgram.cpp \
 	external/vulkancts/framework/vulkan/vkPrograms.cpp \
 	external/vulkancts/framework/vulkan/vkApiVersion.cpp \
