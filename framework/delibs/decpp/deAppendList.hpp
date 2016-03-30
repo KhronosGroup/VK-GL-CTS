@@ -182,7 +182,7 @@ AppendList<ElementType>::~AppendList (void)
 		curBlock = delBlock->next;
 
 		// Call destructor for allocated elements
-		for (; elementNdx < min(m_numElements, delBlock->blockNdx*m_blockSize); ++elementNdx)
+		for (; elementNdx < min(m_numElements, (delBlock->blockNdx+1)*m_blockSize); ++elementNdx)
 			delBlock->elements[elementNdx%m_blockSize].~ElementType();
 
 		delete delBlock;
@@ -206,7 +206,7 @@ void AppendList<ElementType>::clear (void)
 		curBlock = delBlock->next;
 
 		// Call destructor for allocated elements
-		for (; elementNdx < min(m_numElements, delBlock->blockNdx*m_blockSize); ++elementNdx)
+		for (; elementNdx < min(m_numElements, (delBlock->blockNdx+1)*m_blockSize); ++elementNdx)
 			delBlock->elements[elementNdx%m_blockSize].~ElementType();
 
 		if (delBlock != m_first)
@@ -216,6 +216,7 @@ void AppendList<ElementType>::clear (void)
 	DE_ASSERT(elementNdx == m_numElements);
 
 	m_numElements	= 0;
+	m_first->next	= DE_NULL;
 	m_last			= m_first;
 }
 
