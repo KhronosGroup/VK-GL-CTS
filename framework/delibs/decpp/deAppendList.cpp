@@ -132,6 +132,62 @@ void runAppendListTest (deUint32 numThreads, deUint32 numElements, deUint32 numE
 	}
 }
 
+class ObjCountElem
+{
+public:
+	ObjCountElem (int* liveCount)
+		: m_liveCount(liveCount)
+	{
+		*m_liveCount += 1;
+	}
+
+	~ObjCountElem (void)
+	{
+		*m_liveCount -= 1;
+	}
+
+	ObjCountElem (const ObjCountElem& other)
+		: m_liveCount(other.m_liveCount)
+	{
+		*m_liveCount += 1;
+	}
+
+	ObjCountElem& operator= (const ObjCountElem& other)
+	{
+		m_liveCount = other.m_liveCount;
+		*m_liveCount += 1;
+		return *this;
+	}
+
+private:
+	int* m_liveCount;
+};
+
+void runClearTest (deUint32 numElements1, deUint32 numElements2, deUint32 numElementsHint)
+{
+	int		liveCount	= 0;
+
+	{
+		de::AppendList<ObjCountElem>	testList	(numElementsHint);
+
+		for (deUint32 ndx = 0; ndx < numElements1; ++ndx)
+			testList.append(ObjCountElem(&liveCount));
+
+		DE_TEST_ASSERT(liveCount == (int)numElements1);
+
+		testList.clear();
+
+		DE_TEST_ASSERT(liveCount == 0);
+
+		for (deUint32 ndx = 0; ndx < numElements2; ++ndx)
+			testList.append(ObjCountElem(&liveCount));
+
+		DE_TEST_ASSERT(liveCount == (int)numElements2);
+	}
+
+	DE_TEST_ASSERT(liveCount == 0);
+}
+
 } // anonymous
 
 void AppendList_selfTest (void)
@@ -150,6 +206,15 @@ void AppendList_selfTest (void)
 		runAppendListTest(4, 10000, 500);
 		runAppendListTest(4, 100, 10);
 	}
+
+	// Dtor + clear()
+	runClearTest(1, 1, 1);
+	runClearTest(1, 2, 10);
+	runClearTest(50, 25, 10);
+	runClearTest(9, 50, 10);
+	runClearTest(10, 50, 10);
+	runClearTest(50, 9, 10);
+	runClearTest(50, 10, 10);
 }
 
 } // de
