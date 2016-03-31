@@ -420,7 +420,7 @@ def writeHandleType (api, filename):
 def getEnumValuePrefix (enum):
 	prefix = enum.name[0]
 	for i in range(1, len(enum.name)):
-		if enum.name[i].isupper():
+		if enum.name[i].isupper() and not enum.name[i-1].isupper():
 			prefix += "_"
 		prefix += enum.name[i].upper()
 	return prefix
