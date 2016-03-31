@@ -12611,17 +12611,12 @@ dEQP-GLES31.functional.texture.border_clamp.range_clamp.linear_unorm_color
 dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_snorm_color
 dEQP-GLES31.functional.texture.border_clamp.range_clamp.linear_snorm_color
 dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_float_color
-dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_int_color
-dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_uint_color
 dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_srgb_color
 dEQP-GLES31.functional.texture.border_clamp.range_clamp.linear_srgb_color
 dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_unorm_depth
 dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_float_depth
-dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_uint_stencil
 dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_float_depth_uint_stencil_sample_depth
-dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_float_depth_uint_stencil_sample_stencil
 dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_unorm_depth_uint_stencil_sample_depth
-dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_unorm_depth_uint_stencil_sample_stencil
 dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_compressed_color
 dEQP-GLES31.functional.texture.border_clamp.range_clamp.linear_compressed_color
 dEQP-GLES31.functional.texture.border_clamp.sampler.unorm_color
