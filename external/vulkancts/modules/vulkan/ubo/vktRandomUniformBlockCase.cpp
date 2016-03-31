@@ -58,7 +58,7 @@ RandomUniformBlockCase::RandomUniformBlockCase (tcu::TestContext&	testCtx,
 												BufferMode			bufferMode,
 												deUint32			features,
 												deUint32			seed)
-	: UniformBlockCase		(testCtx, name, description, bufferMode)
+	: UniformBlockCase		(testCtx, name, description, bufferMode, LOAD_FULL_MATRIX)
 	, m_features			(features)
 	, m_maxVertexBlocks		((features & FEATURE_VERTEX_BLOCKS)		? 4 : 0)
 	, m_maxFragmentBlocks	((features & FEATURE_FRAGMENT_BLOCKS)	? 4 : 0)
