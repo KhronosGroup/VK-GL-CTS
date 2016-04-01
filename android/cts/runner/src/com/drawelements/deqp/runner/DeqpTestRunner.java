@@ -39,6 +39,7 @@ import com.android.tradefed.testtype.IAbiReceiver;
 import com.android.tradefed.testtype.IDeviceTest;
 import com.android.tradefed.testtype.IRemoteTest;
 import com.android.tradefed.testtype.IShardableTest;
+import com.android.tradefed.testtype.ITestCollector;
 import com.android.tradefed.testtype.ITestFilterReceiver;
 import com.android.tradefed.util.IRunUtil;
 import com.android.tradefed.util.RunInterruptedException;
@@ -73,8 +74,8 @@ import java.util.concurrent.TimeUnit;
  * Supports running drawElements Quality Program tests found under external/deqp.
  */
 @OptionClass(alias="deqp-test-runner")
-public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
-        ITestFilterReceiver, IAbiReceiver, IShardableTest {
+public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
+        ITestFilterReceiver, IAbiReceiver, IShardableTest, ITestCollector {
 
     private static final String DEQP_ONDEVICE_APK = "com.drawelements.deqp.apk";
     private static final String DEQP_ONDEVICE_PKG = "com.drawelements.deqp";
@@ -119,6 +120,12 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
     @Option(name = "exclude-filter",
             description="Test exclude filter. '*' is zero or more letters. '.' has no special meaning.")
     private List<String> mExcludeFilters = new ArrayList<>();
+    @Option(name = "collect-tests-only",
+            description = "Only invoke the instrumentation to collect list of applicable test "
+                    + "cases. All test run callbacks will be triggered, but test execution will "
+                    + "not be actually carried out.")
+    private boolean mCollectTestsOnly = false;
+
     private Collection<TestIdentifier> mRemainingTests = null;
     private Map<TestIdentifier, Set<BatchRunConfiguration>> mTestInstances = null;
     private final TestInstanceResultListener mInstanceListerner = new TestInstanceResultListener();
@@ -1976,7 +1983,11 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
                                             || (isVulkanPackage() && isSupportedVulkan())
                                             || (!isOpenGlEsPackage() && !isVulkanPackage());
 
-            if (isSupportedApi) {
+            if (!isSupportedApi || mCollectTestsOnly) {
+                // Pass all tests if OpenGL ES version is not supported or we are collecting
+                // the names of the tests only
+                fakePassTests(listener);
+            } else {
                 // Make sure there is no pre-existing package form earlier interrupted test run.
                 uninstallTestApk();
                 installTestApk();
@@ -1986,9 +1997,6 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
                 runTests();
 
                 uninstallTestApk();
-            } else {
-                // Pass all tests if OpenGL ES version is not supported
-                fakePassTests(listener);
             }
         } catch (CapabilityQueryFailureException ex) {
             // Platform is not behaving correctly, for example crashing when trying to create
@@ -2030,6 +2038,14 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
     @Override
     public void addAllExcludeFilters(List<String> filters) {
         mExcludeFilters.addAll(filters);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setCollectTestsOnly(boolean collectTests) {
+        mCollectTestsOnly = collectTests;
     }
 
     private static void copyOptions(DeqpTestRunner destination, DeqpTestRunner source) {
