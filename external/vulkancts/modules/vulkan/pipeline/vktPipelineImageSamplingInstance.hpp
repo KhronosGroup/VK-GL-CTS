@@ -69,6 +69,7 @@ protected:
 
 private:
 	const vk::VkImageViewType					m_imageViewType;
+	const vk::VkFormat							m_imageFormat;
 	const tcu::IVec3							m_imageSize;
 	const int									m_layerCount;
 
