@@ -3385,7 +3385,7 @@ void compressedteximage3d_invalid_width_height (NegativeTestContext& ctx)
 		const int				imageSize	= divRoundUp(width, 4) * divRoundUp(height, 4) * depth * blockSize;
 		std::vector<GLubyte>	data		(imageSize);
 		ctx.beginSection("GL_INVALID_VALUE is generated if target is GL_TEXTURE_CUBE_MAP_ARRAY and width and height are not equal.");
-		ctx.glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_COMPRESSED_RGBA_ASTC_4x4, width, height, depth, 0, imageSize, &data[0]);
+		ctx.glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_COMPRESSED_RGB8_ETC2, width, height, depth, 0, imageSize, &data[0]);
 		ctx.expectError(GL_INVALID_VALUE);
 		ctx.endSection();
 	}
