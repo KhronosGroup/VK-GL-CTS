@@ -365,7 +365,7 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 												   imageFormat, config.samplerLod, componentMapping,		\
 												   config.subresourceRange));							\
 		}																								\
-	} while (0)
+	} while (deGetFalse())
 
 	if (viewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY || viewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY)
 	{
