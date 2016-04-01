@@ -205,6 +205,18 @@ void DrawTestsBaseClass::beginRenderPass (void)
 	m_vk.cmdClearColorImage(*m_cmdBuffer, m_colorTargetImage->object(),
 		vk::VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);
 
+	const vk::VkMemoryBarrier memBarrier =
+	{
+		vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+		DE_NULL,
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+		vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+	};
+
+	m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+		vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+
 	const vk::VkRect2D renderArea = { { 0, 0 }, { WIDTH, HEIGHT } };
 	const RenderPassBeginInfo renderPassBegin(*m_renderPass, *m_framebuffer, renderArea);
 
