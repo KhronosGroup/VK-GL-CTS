@@ -3391,23 +3391,6 @@ void compressedteximage3d_invalid_width_height (NegativeTestContext& ctx)
 	}
 }
 
-void compressedteximage3d_invalid_format (NegativeTestContext& ctx)
-{
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
-	{
-		const int				width		= 4;
-		const int				height		= 4;
-		const int				depth		= 6;
-		const int				blockSize	= 16;
-		const int				imageSize	= divRoundUp(width, 4) * divRoundUp(height, 4) * depth * blockSize;
-		std::vector<GLubyte>	data		(imageSize);
-		ctx.beginSection("GL_INVALID_OPERATION is generated if target is GL_TEXTURE_CUBE_MAP_ARRAY and the internal format does not support cube map array textures.");
-		ctx.glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC, width, height, depth, 0, imageSize, &data[0]);
-		ctx.expectError(GL_INVALID_OPERATION);
-		ctx.endSection();
-	}
-}
-
 void compressedteximage3d_invalid_buffer_target (NegativeTestContext& ctx)
 {
 	deUint32				buf = 0x1234;
@@ -4027,7 +4010,6 @@ std::vector<FunctionContainer> getNegativeTextureApiTestFunctions()
 		{compressedteximage3d_invalid_border,			"compressedteximage3d_invalid_border",				"Invalid glCompressedTexImage3D() usage"   },
 		{compressedteximage3d_invalid_size,				"compressedteximage3d_invalid_size",				"Invalid glCompressedTexImage3D() usage"   },
 		{compressedteximage3d_invalid_width_height,		"compressedteximage3d_invalid_width_height",		"Invalid glCompressedTexImage3D() usage"   },
-		{compressedteximage3d_invalid_format,			"compressedteximage3d_invalid_format",				"Invalid glCompressedTexImage3D() usage"   },
 		{compressedteximage3d_invalid_buffer_target,	"compressedteximage3d_invalid_buffer_target",		"Invalid glCompressedTexImage3D() usage"   },
 		{compressedtexsubimage3d,						"compressedtexsubimage3d",							"Invalid glCompressedTexSubImage3D() usage"},
 		{compressedtexsubimage3d_neg_level,				"compressedtexsubimage3d_neg_level",				"Invalid glCompressedTexSubImage3D() usage"},
