@@ -4,24 +4,17 @@
  *
  * Copyright (c) 2015 Google Inc.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and/or associated documentation files (the
- * "Materials"), to deal in the Materials without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Materials, and to
- * permit persons to whom the Materials are furnished to do so, subject to
- * the following conditions:
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * The above copyright notice(s) and this permission notice shall be
- * included in all copies or substantial portions of the Materials.
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  *//*!
  * \file
@@ -68,6 +61,7 @@ tcu::TestStatus createInstanceTest (Context& context)
 	tcu::ResultCollector		resultCollector			(log);
 	const char*					appNames[]				= { "appName", DE_NULL, "",  "app, name", "app(\"name\"", "app~!@#$%^&*()_+name", "app\nName", "app\r\nName" };
 	const char*					engineNames[]			= { "engineName", DE_NULL, "",  "engine. name", "engine\"(name)", "eng~!@#$%^&*()_+name", "engine\nName", "engine\r\nName" };
+	const int                   patchNumbers[]          = { 0, 1, 2, 3, 4, 5, 13, 4094, 4095 };
 	const deUint32				appVersions[]			= { 0, 1, (deUint32)-1 };
 	const deUint32				engineVersions[]		= { 0, 1, (deUint32)-1 };
 	const PlatformInterface&	platformInterface		= context.getPlatformInterface();
@@ -140,7 +134,22 @@ tcu::TestStatus createInstanceTest (Context& context)
 
 		appInfos.push_back(appInfo);
 	}
+	// patch component of api version checking (should be ignored by implementation)
+	for (int patchVersion = 0; patchVersion < DE_LENGTH_OF_ARRAY(patchNumbers); patchVersion++)
+	{
+		const VkApplicationInfo appInfo =
+		{
+			VK_STRUCTURE_TYPE_APPLICATION_INFO,					// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			"appName",											// const char*					pAppName;
+			0u,													// deUint32						appVersion;
+			"engineName",										// const char*					pEngineName;
+			0u,													// deUint32						engineVersion;
+			VK_MAKE_VERSION(1, 0, patchNumbers[patchVersion]),	// deUint32						apiVersion;
+		};
 
+		appInfos.push_back(appInfo);
+	}
 	// run the tests!
 	for (size_t appInfoNdx = 0; appInfoNdx < appInfos.size(); ++appInfoNdx)
 	{
