@@ -4,24 +4,17 @@
  *
  * Copyright (c) 2015 Google Inc.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and/or associated documentation files (the
- * "Materials"), to deal in the Materials without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Materials, and to
- * permit persons to whom the Materials are furnished to do so, subject to
- * the following conditions:
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * The above copyright notice(s) and this permission notice shall be
- * included in all copies or substantial portions of the Materials.
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  *//*!
  * \file
@@ -3792,7 +3785,6 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_in %BP_out_color %BP_in_color\n"
 		"OpExecutionMode %BP_main Triangles\n"
-		"OpExecutionMode %BP_main Invocations 0\n"
 		"OpExecutionMode %BP_main OutputTriangleStrip\n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
 		"${debug:opt}\n"
@@ -4001,7 +3993,6 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 		"OpEntryPoint Fragment %frag_main \"main\" %frag_vtxColor %frag_fragColor\n"
 
 		"OpExecutionMode %geom_main Triangles\n"
-		"OpExecutionMode %geom_main Invocations 0\n"
 		"OpExecutionMode %geom_main OutputTriangleStrip\n"
 		"OpExecutionMode %geom_main OutputVertices 3\n"
 
@@ -4357,8 +4348,6 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpEntryPoint Geometry %geom2_main \"geom2\" %out_gl_position %gl_in %out_color %in_color\n"
 		"OpExecutionMode %geom1_main Triangles\n"
 		"OpExecutionMode %geom2_main Triangles\n"
-		"OpExecutionMode %geom1_main Invocations 0\n"
-		"OpExecutionMode %geom2_main Invocations 0\n"
 		"OpExecutionMode %geom1_main OutputTriangleStrip\n"
 		"OpExecutionMode %geom2_main OutputTriangleStrip\n"
 		"OpExecutionMode %geom1_main OutputVertices 3\n"
@@ -6726,8 +6715,10 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 		"%label_testfun = OpLabel\n"
 		"%undef = OpUndef %f32\n"
 		"%zero = OpFMul %f32 %undef %c_f32_0\n"
+		"%is_nan = OpIsNan %bool %zero\n" //OpUndef may result in NaN which may turn %zero into Nan.
+		"%actually_zero = OpSelect %f32 %is_nan %c_f32_0 %zero\n"
 		"%a = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
-		"%b = OpFAdd %f32 %a %zero\n"
+		"%b = OpFAdd %f32 %a %actually_zero\n"
 		"%ret = OpVectorInsertDynamic %v4f32 %param1 %b %c_i32_0\n"
 		"OpReturnValue %ret\n"
 		"OpFunctionEnd\n"
@@ -6770,14 +6761,22 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 		"%zero_1 = OpVectorExtractDynamic %f32 %vzero %c_i32_1\n"
 		"%zero_2 = OpVectorExtractDynamic %f32 %vzero %c_i32_2\n"
 		"%zero_3 = OpVectorExtractDynamic %f32 %vzero %c_i32_3\n"
+		"%is_nan_0 = OpIsNan %bool %zero_0\n"
+		"%is_nan_1 = OpIsNan %bool %zero_1\n"
+		"%is_nan_2 = OpIsNan %bool %zero_2\n"
+		"%is_nan_3 = OpIsNan %bool %zero_3\n"
+		"%actually_zero_0 = OpSelect %f32 %is_nan_0 %c_f32_0 %zero_0\n"
+		"%actually_zero_1 = OpSelect %f32 %is_nan_0 %c_f32_0 %zero_1\n"
+		"%actually_zero_2 = OpSelect %f32 %is_nan_0 %c_f32_0 %zero_2\n"
+		"%actually_zero_3 = OpSelect %f32 %is_nan_0 %c_f32_0 %zero_3\n"
 		"%param1_0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
 		"%param1_1 = OpVectorExtractDynamic %f32 %param1 %c_i32_1\n"
 		"%param1_2 = OpVectorExtractDynamic %f32 %param1 %c_i32_2\n"
 		"%param1_3 = OpVectorExtractDynamic %f32 %param1 %c_i32_3\n"
-		"%sum_0 = OpFAdd %f32 %param1_0 %zero_0\n"
-		"%sum_1 = OpFAdd %f32 %param1_1 %zero_1\n"
-		"%sum_2 = OpFAdd %f32 %param1_2 %zero_2\n"
-		"%sum_3 = OpFAdd %f32 %param1_3 %zero_3\n"
+		"%sum_0 = OpFAdd %f32 %param1_0 %actually_zero_0\n"
+		"%sum_1 = OpFAdd %f32 %param1_1 %actually_zero_1\n"
+		"%sum_2 = OpFAdd %f32 %param1_2 %actually_zero_2\n"
+		"%sum_3 = OpFAdd %f32 %param1_3 %actually_zero_3\n"
 		"%ret3 = OpVectorInsertDynamic %v4f32 %param1 %sum_3 %c_i32_3\n"
 		"%ret2 = OpVectorInsertDynamic %v4f32 %ret3 %sum_2 %c_i32_2\n"
 		"%ret1 = OpVectorInsertDynamic %v4f32 %ret2 %sum_1 %c_i32_1\n"
@@ -6800,14 +6799,22 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 		"%zero_1 = OpCompositeExtract %f32 %mzero 0 1\n"
 		"%zero_2 = OpCompositeExtract %f32 %mzero 1 0\n"
 		"%zero_3 = OpCompositeExtract %f32 %mzero 1 1\n"
+		"%is_nan_0 = OpIsNan %bool %zero_0\n"
+		"%is_nan_1 = OpIsNan %bool %zero_1\n"
+		"%is_nan_2 = OpIsNan %bool %zero_2\n"
+		"%is_nan_3 = OpIsNan %bool %zero_3\n"
+		"%actually_zero_0 = OpSelect %f32 %is_nan_0 %c_f32_0 %zero_0\n"
+		"%actually_zero_1 = OpSelect %f32 %is_nan_0 %c_f32_0 %zero_1\n"
+		"%actually_zero_2 = OpSelect %f32 %is_nan_0 %c_f32_0 %zero_2\n"
+		"%actually_zero_3 = OpSelect %f32 %is_nan_0 %c_f32_0 %zero_3\n"
 		"%param1_0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
 		"%param1_1 = OpVectorExtractDynamic %f32 %param1 %c_i32_1\n"
 		"%param1_2 = OpVectorExtractDynamic %f32 %param1 %c_i32_2\n"
 		"%param1_3 = OpVectorExtractDynamic %f32 %param1 %c_i32_3\n"
-		"%sum_0 = OpFAdd %f32 %param1_0 %zero_0\n"
-		"%sum_1 = OpFAdd %f32 %param1_1 %zero_1\n"
-		"%sum_2 = OpFAdd %f32 %param1_2 %zero_2\n"
-		"%sum_3 = OpFAdd %f32 %param1_3 %zero_3\n"
+		"%sum_0 = OpFAdd %f32 %param1_0 %actually_zero_0\n"
+		"%sum_1 = OpFAdd %f32 %param1_1 %actually_zero_1\n"
+		"%sum_2 = OpFAdd %f32 %param1_2 %actually_zero_2\n"
+		"%sum_3 = OpFAdd %f32 %param1_3 %actually_zero_3\n"
 		"%ret3 = OpVectorInsertDynamic %v4f32 %param1 %sum_3 %c_i32_3\n"
 		"%ret2 = OpVectorInsertDynamic %v4f32 %ret3 %sum_2 %c_i32_2\n"
 		"%ret1 = OpVectorInsertDynamic %v4f32 %ret2 %sum_1 %c_i32_1\n"
