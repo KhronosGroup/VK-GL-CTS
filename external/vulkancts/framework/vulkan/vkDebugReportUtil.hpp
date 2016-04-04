@@ -85,6 +85,8 @@ private:
 	const Unique<VkDebugReportCallbackEXT>	m_callback;
 };
 
+bool	isDebugReportSupported		(const PlatformInterface& vkp);
+
 } // vk
 
 #endif // _VKDEBUGREPORTUTIL_HPP

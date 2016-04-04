@@ -242,9 +242,34 @@ bool isCompatible (const VkExtensionProperties& extensionProperties, const Requi
 	return true;
 }
 
+bool isCompatible (const VkLayerProperties& layerProperties, const RequiredLayer& required)
+{
+	if (required.name != layerProperties.layerName)
+		return false;
+
+	if (required.minSpecVersion && required.minSpecVersion.get() > layerProperties.specVersion)
+		return false;
+
+	if (required.maxSpecVersion && required.maxSpecVersion.get() < layerProperties.specVersion)
+		return false;
+
+	if (required.minImplVersion && required.minImplVersion.get() > layerProperties.implementationVersion)
+		return false;
+
+	if (required.maxImplVersion && required.maxImplVersion.get() < layerProperties.implementationVersion)
+		return false;
+
+	return true;
+}
+
 bool isExtensionSupported (const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
 {
 	return isExtensionSupported(extensions.begin(), extensions.end(), required);
+}
+
+bool isLayerSupported (const std::vector<VkLayerProperties>& layers, const RequiredLayer& required)
+{
+	return isLayerSupported(layers.begin(), layers.end(), required);
 }
 
 } // vk
