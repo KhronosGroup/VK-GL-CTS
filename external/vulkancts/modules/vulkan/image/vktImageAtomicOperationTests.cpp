@@ -756,7 +756,9 @@ void BinaryAtomicIntermValuesInstance::prepareResources (void)
 	Allocator&				allocator		= m_context.getDefaultAllocator();
 
 	const UVec3 layerSize			= getLayerSize(m_imageType, m_imageSize);
-	const UVec3 extendedLayerSize	= UVec3(NUM_INVOCATIONS_PER_PIXEL * layerSize.x(), layerSize.y(), layerSize.z());
+	const bool  isCubeBasedImage	= (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY);
+	const UVec3 extendedLayerSize	= isCubeBasedImage	? UVec3(NUM_INVOCATIONS_PER_PIXEL * layerSize.x(), NUM_INVOCATIONS_PER_PIXEL * layerSize.y(), layerSize.z())
+														: UVec3(NUM_INVOCATIONS_PER_PIXEL * layerSize.x(), layerSize.y(), layerSize.z());
 
 	const VkImageCreateInfo imageParams =
 	{
