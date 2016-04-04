@@ -61,6 +61,7 @@ tcu::TestStatus createInstanceTest (Context& context)
 	tcu::ResultCollector		resultCollector			(log);
 	const char*					appNames[]				= { "appName", DE_NULL, "",  "app, name", "app(\"name\"", "app~!@#$%^&*()_+name", "app\nName", "app\r\nName" };
 	const char*					engineNames[]			= { "engineName", DE_NULL, "",  "engine. name", "engine\"(name)", "eng~!@#$%^&*()_+name", "engine\nName", "engine\r\nName" };
+	const int                   patchNumbers[]          = { 0, 1, 2, 3, 4, 5, 13, 4094, 4095 };
 	const deUint32				appVersions[]			= { 0, 1, (deUint32)-1 };
 	const deUint32				engineVersions[]		= { 0, 1, (deUint32)-1 };
 	const PlatformInterface&	platformInterface		= context.getPlatformInterface();
@@ -133,7 +134,22 @@ tcu::TestStatus createInstanceTest (Context& context)
 
 		appInfos.push_back(appInfo);
 	}
+	// patch component of api version checking (should be ignored by implementation)
+	for (int patchVersion = 0; patchVersion < DE_LENGTH_OF_ARRAY(patchNumbers); patchVersion++)
+	{
+		const VkApplicationInfo appInfo =
+		{
+			VK_STRUCTURE_TYPE_APPLICATION_INFO,					// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			"appName",											// const char*					pAppName;
+			0u,													// deUint32						appVersion;
+			"engineName",										// const char*					pEngineName;
+			0u,													// deUint32						engineVersion;
+			VK_MAKE_VERSION(1, 0, patchNumbers[patchVersion]),	// deUint32						apiVersion;
+		};
 
+		appInfos.push_back(appInfo);
+	}
 	// run the tests!
 	for (size_t appInfoNdx = 0; appInfoNdx < appInfos.size(); ++appInfoNdx)
 	{
