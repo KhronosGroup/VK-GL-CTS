@@ -23,6 +23,7 @@
 
 #include "vkDebugReportUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "deArrayUtil.hpp"
 
 namespace vk
@@ -154,6 +155,12 @@ DebugReportRecorder::DebugReportRecorder (const InstanceInterface& vki, VkInstan
 
 DebugReportRecorder::~DebugReportRecorder (void)
 {
+}
+
+bool isDebugReportSupported (const PlatformInterface& vkp)
+{
+	return isExtensionSupported(enumerateInstanceExtensionProperties(vkp, DE_NULL),
+								RequiredExtension("VK_EXT_debug_report"));
 }
 
 } // vk
