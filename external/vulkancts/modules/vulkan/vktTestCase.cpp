@@ -29,6 +29,9 @@
 #include "vkDeviceUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPlatform.hpp"
+#include "vkDebugReportUtil.hpp"
+
+#include "tcuCommandLine.hpp"
 
 #include "deMemory.h"
 
@@ -38,7 +41,70 @@ namespace vkt
 // Default device utilities
 
 using std::vector;
+using std::string;
 using namespace vk;
+
+vector<string> getValidationLayers (const vector<VkLayerProperties>& supportedLayers)
+{
+	static const char*	s_magicLayer		= "VK_LAYER_LUNARG_standard_validation";
+	static const char*	s_defaultLayers[]	=
+	{
+		"VK_LAYER_GOOGLE_threading",
+		"VK_LAYER_LUNARG_parameter_validation",
+		"VK_LAYER_LUNARG_device_limits",
+		"VK_LAYER_LUNARG_object_tracker",
+		"VK_LAYER_LUNARG_image",
+		"VK_LAYER_LUNARG_core_validation",
+		"VK_LAYER_LUNARG_swapchain",
+		"VK_LAYER_GOOGLE_unique_objects"
+	};
+
+	vector<string>		enabledLayers;
+
+	if (isLayerSupported(supportedLayers, RequiredLayer(s_magicLayer)))
+		enabledLayers.push_back(s_magicLayer);
+	else
+	{
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_defaultLayers); ++ndx)
+		{
+			if (isLayerSupported(supportedLayers, RequiredLayer(s_defaultLayers[ndx])))
+				enabledLayers.push_back(s_defaultLayers[ndx]);
+		}
+	}
+
+	return enabledLayers;
+}
+
+vector<string> getValidationLayers (const PlatformInterface& vkp)
+{
+	return getValidationLayers(enumerateInstanceLayerProperties(vkp));
+}
+
+vector<string> getValidationLayers (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
+{
+	return getValidationLayers(enumerateDeviceLayerProperties(vki, physicalDevice));
+}
+
+Move<VkInstance> createInstance (const PlatformInterface& vkp, const tcu::CommandLine& cmdLine)
+{
+	const bool		isValidationEnabled	= cmdLine.isValidationEnabled();
+	vector<string>	enabledExtensions;
+	vector<string>	enabledLayers;
+
+	if (isValidationEnabled)
+	{
+		if (isDebugReportSupported(vkp))
+			enabledExtensions.push_back("VK_EXT_debug_report");
+		else
+			TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
+
+		enabledLayers = getValidationLayers(vkp);
+		if (enabledLayers.empty())
+			TCU_THROW(NotSupportedError, "No validation layers found");
+	}
+
+	return createDefaultInstance(vkp, enabledLayers, enabledExtensions);
+}
 
 static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
 {
@@ -53,14 +119,32 @@ static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstanc
 	TCU_THROW(NotSupportedError, "No matching queue found");
 }
 
-Move<VkDevice> createDefaultDevice (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, deUint32 queueIndex, const VkPhysicalDeviceFeatures& enabledFeatures)
+Move<VkDevice> createDefaultDevice (const InstanceInterface&		vki,
+									VkPhysicalDevice				physicalDevice,
+									deUint32						queueIndex,
+									const VkPhysicalDeviceFeatures&	enabledFeatures,
+									const tcu::CommandLine&			cmdLine)
 {
 	VkDeviceQueueCreateInfo		queueInfo;
 	VkDeviceCreateInfo			deviceInfo;
+	vector<string>				enabledLayers;
+	vector<const char*>			layerPtrs;
 	const float					queuePriority	= 1.0f;
 
 	deMemset(&queueInfo,	0, sizeof(queueInfo));
 	deMemset(&deviceInfo,	0, sizeof(deviceInfo));
+
+	if (cmdLine.isValidationEnabled())
+	{
+		enabledLayers = getValidationLayers(vki, physicalDevice);
+		if (enabledLayers.empty())
+			TCU_THROW(NotSupportedError, "No validation layers found");
+	}
+
+	layerPtrs.resize(enabledLayers.size());
+
+	for (size_t ndx = 0; ndx < enabledLayers.size(); ++ndx)
+		layerPtrs[ndx] = enabledLayers[ndx].c_str();
 
 	queueInfo.sType							= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 	queueInfo.pNext							= DE_NULL;
@@ -75,8 +159,8 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface& vki, VkPhysicalDevi
 	deviceInfo.pQueueCreateInfos			= &queueInfo;
 	deviceInfo.enabledExtensionCount		= 0u;
 	deviceInfo.ppEnabledExtensionNames		= DE_NULL;
-	deviceInfo.enabledLayerCount			= 0u;
-	deviceInfo.ppEnabledLayerNames			= DE_NULL;
+	deviceInfo.enabledLayerCount			= (deUint32)layerPtrs.size();
+	deviceInfo.ppEnabledLayerNames			= (layerPtrs.empty() ? DE_NULL : &layerPtrs[0]);
 	deviceInfo.pEnabledFeatures				= &enabledFeatures;
 
 	return createDevice(vki, physicalDevice, &deviceInfo);
@@ -117,13 +201,13 @@ private:
 };
 
 DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine)
-	: m_instance					(createDefaultInstance(vkPlatform))
+	: m_instance					(createInstance(vkPlatform, cmdLine))
 	, m_instanceInterface			(vkPlatform, *m_instance)
 	, m_physicalDevice				(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
 	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
 	, m_deviceFeatures				(filterDefaultDeviceFeatures(getPhysicalDeviceFeatures(m_instanceInterface, m_physicalDevice)))
-	, m_deviceProperties			(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice)) // \note All supported features are enabled
-	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_deviceFeatures))
+	, m_deviceProperties			(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice))
+	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_deviceFeatures, cmdLine))
 	, m_deviceInterface				(m_instanceInterface, *m_device)
 {
 }
