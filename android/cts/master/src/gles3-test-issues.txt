@@ -59,6 +59,9 @@ dEQP-GLES3.functional.shaders.texture_functions.textureoffset.isampler3d_vertex
 # Bug 20700212
 dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.usampler3d_vertex
 
+# Bug 27535731
+dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.sampler3d_float_vertex
+
 # Bug 21620051
 dEQP-GLES3.functional.shaders.texture_functions.texture.sampler2darrayshadow_vertex
 
