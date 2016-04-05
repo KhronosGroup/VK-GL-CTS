@@ -42,12 +42,13 @@ class Project:
 		self.copyright	= copyright
 
 class Configuration:
-	def __init__ (self, name, filters, glconfig = None, rotation = None, surfacetype = None):
-		self.name			= name
-		self.glconfig		= glconfig
-		self.rotation		= rotation
-		self.surfacetype	= surfacetype
-		self.filters		= filters
+	def __init__ (self, name, filters, glconfig = None, rotation = None, surfacetype = None, runtime = None):
+		self.name			 = name
+		self.glconfig		 = glconfig
+		self.rotation		 = rotation
+		self.surfacetype	 = surfacetype
+		self.filters		 = filters
+		self.expectedRuntime = runtime
 
 class Package:
 	def __init__ (self, module, configurations):
@@ -387,6 +388,9 @@ def genAndroidTestXml (mustpass):
 
 			if config.rotation != None:
 				addOptionElement(testElement, "deqp-screen-rotation", config.rotation)
+
+			if config.expectedRuntime != None:
+				addOptionElement(testElement, "runtime-hint", config.expectedRuntime)
 
 	insertXMLHeaders(mustpass, configElement)
 
