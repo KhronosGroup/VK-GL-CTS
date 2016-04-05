@@ -38,6 +38,7 @@ import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.testtype.IAbiReceiver;
 import com.android.tradefed.testtype.IDeviceTest;
 import com.android.tradefed.testtype.IRemoteTest;
+import com.android.tradefed.testtype.IRuntimeHintProvider;
 import com.android.tradefed.testtype.IShardableTest;
 import com.android.tradefed.testtype.ITestCollector;
 import com.android.tradefed.testtype.ITestFilterReceiver;
@@ -75,8 +76,8 @@ import java.util.concurrent.TimeUnit;
  */
 @OptionClass(alias="deqp-test-runner")
 public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
-        ITestFilterReceiver, IAbiReceiver, IShardableTest, ITestCollector {
-
+        ITestFilterReceiver, IAbiReceiver, IShardableTest, ITestCollector,
+        IRuntimeHintProvider {
     private static final String DEQP_ONDEVICE_APK = "com.drawelements.deqp.apk";
     private static final String DEQP_ONDEVICE_PKG = "com.drawelements.deqp";
     private static final String INCOMPLETE_LOG_MESSAGE = "Crash: Incomplete test log";
@@ -125,6 +126,10 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                     + "cases. All test run callbacks will be triggered, but test execution will "
                     + "not be actually carried out.")
     private boolean mCollectTestsOnly = false;
+    @Option(name = "runtime-hint",
+            isTimeVal = true,
+            description="The estimated config runtime. Defaults to 200ms x num tests.")
+    private long mRuntimeHint = -1;
 
     private Collection<TestIdentifier> mRemainingTests = null;
     private Map<TestIdentifier, Set<BatchRunConfiguration>> mTestInstances = null;
@@ -148,7 +153,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     private DeqpTestRunner(DeqpTestRunner optionTemplate,
-            Map<TestIdentifier, Set<BatchRunConfiguration>> tests) {
+                Map<TestIdentifier, Set<BatchRunConfiguration>> tests) {
         copyOptions(this, optionTemplate);
         mTestInstances = tests;
     }
@@ -1957,9 +1962,16 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         for (String filter : mExcludeFilters) {
             CLog.d("Exclude: %s", filter);
         }
-        CLog.i("Num tests before filtering: %d", mTestInstances.size());
-        if (!mIncludeFilters.isEmpty() || !mExcludeFilters.isEmpty()) {
+
+        long originalTestCount = mTestInstances.size();
+        CLog.i("Num tests before filtering: %d", originalTestCount);
+        if ((!mIncludeFilters.isEmpty() || !mExcludeFilters.isEmpty()) && originalTestCount > 0) {
             filterTests(mTestInstances, mIncludeFilters, mExcludeFilters);
+
+            // Update runtime estimation hint.
+            if (mRuntimeHint != -1) {
+                mRuntimeHint = (mRuntimeHint * mTestInstances.size()) / originalTestCount;
+            }
         }
         CLog.i("Num tests after filtering: %d", mTestInstances.size());
     }
@@ -1971,8 +1983,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     public void run(ITestInvocationListener listener) throws DeviceNotAvailableException {
         final Map<String, String> emptyMap = Collections.emptyMap();
         // If sharded, split() will load the tests.
-        if (mTestInstances == null)
+        if (mTestInstances == null) {
             loadTests();
+        }
 
         mRemainingTests = new LinkedList<>(mTestInstances.keySet());
 
@@ -2090,7 +2103,34 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         }
         runners.add(new DeqpTestRunner(this, currentSet));
 
+        // Compute new runtime hints
+        long originalSize = iterationSet.size();
+        if (originalSize > 0) {
+            long fullRuntimeMs = getRuntimeHint();
+            for (IRemoteTest remote: runners) {
+                DeqpTestRunner runner = (DeqpTestRunner)remote;
+                long shardRuntime = (fullRuntimeMs * runner.mTestInstances.size()) / originalSize;
+                runner.mRuntimeHint = shardRuntime;
+            }
+        }
+
         CLog.i("Split deqp tests into %d shards", runners.size());
         return runners;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getRuntimeHint() {
+        if (mRuntimeHint != -1) {
+            return mRuntimeHint;
+        }
+        if (mTestInstances == null) {
+            loadTests();
+        }
+        // Tests normally take something like ~100ms. Some take a
+        // second. Let's guess 200ms per test.
+        return 200 * mTestInstances.size();
     }
 }
