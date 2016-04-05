@@ -947,6 +947,30 @@ VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
 		VK_FORMAT_D16_UNORM,
 		VK_FORMAT_D32_SFLOAT
 	};
+	static const VkFormat s_requiredSampledImageFilterLinearFormats[] =
+	{
+		VK_FORMAT_B4G4R4A4_UNORM_PACK16,
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+		VK_FORMAT_R8_UNORM,
+		VK_FORMAT_R8_SNORM,
+		VK_FORMAT_R8G8_UNORM,
+		VK_FORMAT_R8G8_SNORM,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_SNORM,
+		VK_FORMAT_R8G8B8A8_SRGB,
+		VK_FORMAT_B8G8R8A8_UNORM,
+		VK_FORMAT_B8G8R8A8_SRGB,
+		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_SRGB_PACK32,
+		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+		VK_FORMAT_R16_SFLOAT,
+		VK_FORMAT_R16G16_SFLOAT,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
+		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+	};
 	static const VkFormat s_requiredStorageImageFormats[] =
 	{
 		VK_FORMAT_R8G8B8A8_UNORM,
@@ -1038,6 +1062,9 @@ VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
 
 	if (de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageBlitSrcFormats), DE_ARRAY_END(s_requiredSampledImageBlitSrcFormats), format))
 		flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT|VK_FORMAT_FEATURE_BLIT_SRC_BIT;
+
+	if (de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageFilterLinearFormats), DE_ARRAY_END(s_requiredSampledImageFilterLinearFormats), format))
+		flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
 
 	if (de::contains(DE_ARRAY_BEGIN(s_requiredStorageImageFormats), DE_ARRAY_END(s_requiredStorageImageFormats), format))
 		flags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
