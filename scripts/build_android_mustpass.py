@@ -208,7 +208,8 @@ MASTER_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
-					  filters		= MASTER_EGL_COMMON_FILTERS),
+					  filters		= MASTER_EGL_COMMON_FILTERS,
+				      runtime 		= "24m"),
 	])
 
 MASTER_GLES2_COMMON_FILTERS		= [
@@ -222,7 +223,8 @@ MASTER_GLES2_PKG				= Package(module = GLES2_MODULE, configurations = [
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES2_COMMON_FILTERS),
+					  filters		= MASTER_GLES2_COMMON_FILTERS,
+					  runtime 		= "40m"),
 	])
 
 MASTER_GLES3_COMMON_FILTERS		= [
@@ -238,28 +240,33 @@ MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES3_COMMON_FILTERS),
+					  filters		= MASTER_GLES3_COMMON_FILTERS,
+					  runtime		= "1h15m"),
 		# Rotations
 		Configuration(name			= "rotate-portrait",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "0",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
+					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")],
+					  runtime		= "7m"),
 		Configuration(name			= "rotate-landscape",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "90",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
+					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")],
+					  runtime		= "7m"),
 		Configuration(name			= "rotate-reverse-portrait",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "180",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
+					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")],
+					  runtime		= "7m"),
 		Configuration(name			= "rotate-reverse-landscape",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "270",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
+					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")],
+					  runtime		= "7m"),
 
 		# MSAA
 		Configuration(name			= "multisample",
@@ -267,7 +274,8 @@ MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-multisample.txt"),
-																	 exclude("gles3-multisample-issues.txt")]),
+																	 exclude("gles3-multisample-issues.txt")],
+					  runtime		= "10m"),
 
 		# Pixel format
 		Configuration(name			= "565-no-depth-no-stencil",
@@ -275,7 +283,8 @@ MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt"),
-																	 exclude("gles3-pixelformat-issues.txt")]),
+																	 exclude("gles3-pixelformat-issues.txt")],
+					  runtime		= "10m"),
 	])
 
 MASTER_GLES31_COMMON_FILTERS	= [
@@ -291,43 +300,50 @@ MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES31_COMMON_FILTERS),
+					  filters		= MASTER_GLES31_COMMON_FILTERS,
+					  runtime 		= "7h30m"),
 
 		# Rotations
 		Configuration(name			= "rotate-portrait",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "0",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")],
+					  runtime		= "1m30s"),
 		Configuration(name			= "rotate-landscape",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "90",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")],
+					  runtime		= "1m30s"),
 		Configuration(name			= "rotate-reverse-portrait",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "180",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")],
+					  runtime		= "1m30s"),
 		Configuration(name			= "rotate-reverse-landscape",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "270",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")],
+					  runtime		= "1m30s"),
 
 		# MSAA
 		Configuration(name			= "multisample",
 					  glconfig		= "rgba8888d24s8ms4",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-multisample.txt")]),
+					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-multisample.txt")],
+					  runtime		= "2m"),
 
 		# Pixel format
 		Configuration(name			= "565-no-depth-no-stencil",
 					  glconfig		= "rgb565d0s0ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-pixelformat.txt")]),
+					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-pixelformat.txt")],
+					  runtime		= "1m"),
 	])
 
 MASTER_VULKAN_FILTERS			= [
@@ -338,7 +354,8 @@ MASTER_VULKAN_FILTERS			= [
 	]
 MASTER_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
 		Configuration(name			= "master",
-					  filters		= MASTER_VULKAN_FILTERS),
+					  filters		= MASTER_VULKAN_FILTERS,
+					  runtime		= "3h45m"),
 	])
 
 MUSTPASS_LISTS				= [
