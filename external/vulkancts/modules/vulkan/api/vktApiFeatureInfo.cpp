@@ -70,6 +70,7 @@ enum LimitFormat
 	LIMIT_FORMAT_UNSIGNED_INT,
 	LIMIT_FORMAT_FLOAT,
 	LIMIT_FORMAT_DEVICE_SIZE,
+	LIMIT_FORMAT_BITMASK,
 
 	LIMIT_FORMAT_LAST
 };
@@ -189,16 +190,16 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(maxFramebufferWidth),								4096, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxFramebufferHeight),								4096, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxFramebufferLayers),								0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
-		{ LIMIT(framebufferColorSampleCounts),						0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
-		{ LIMIT(framebufferDepthSampleCounts),						0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
-		{ LIMIT(framebufferStencilSampleCounts),					0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
-		{ LIMIT(framebufferNoAttachmentsSampleCounts),				0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(framebufferColorSampleCounts),						VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(framebufferDepthSampleCounts),						VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(framebufferStencilSampleCounts),					VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(framebufferNoAttachmentsSampleCounts),				VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxColorAttachments),								4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
-		{ LIMIT(sampledImageColorSampleCounts),						4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
-		{ LIMIT(sampledImageIntegerSampleCounts),					4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
-		{ LIMIT(sampledImageDepthSampleCounts),						4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
-		{ LIMIT(sampledImageStencilSampleCounts),					4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
-		{ LIMIT(storageImageSampleCounts),							4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(sampledImageColorSampleCounts),						VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(sampledImageIntegerSampleCounts),					VK_SAMPLE_COUNT_1_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(sampledImageDepthSampleCounts),						VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(sampledImageStencilSampleCounts),					VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(storageImageSampleCounts),							VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxSampleMaskWords),								1, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(timestampComputeAndGraphics),						0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
 		{ LIMIT(timestampPeriod),									0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
@@ -258,7 +259,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(minInterpolationOffset),							FEATURE(sampleRateShading),				0, 0, 0, 0.0f },
 		{ LIMIT(maxInterpolationOffset),							FEATURE(sampleRateShading),				0, 0, 0, 0.0f },
 		{ LIMIT(subPixelInterpolationOffsetBits),					FEATURE(sampleRateShading),				0, 0, 0, 0.0f },
-		{ LIMIT(storageImageSampleCounts),							FEATURE(shaderStorageImageMultisample),	0, 0, 0, 0.0f },
+		{ LIMIT(storageImageSampleCounts),							FEATURE(shaderStorageImageMultisample),	VK_SAMPLE_COUNT_1_BIT, 0, 0, 0.0f },
 		{ LIMIT(maxClipDistances),									FEATURE(shaderClipDistance),			0, 0, 0, 0.0f },
 		{ LIMIT(maxCullDistances),									FEATURE(shaderClipDistance),			0, 0, 0, 0.0f },
 		{ LIMIT(maxCombinedClipAndCullDistances),					FEATURE(shaderClipDistance),			0, 0, 0, 0.0f },
@@ -294,28 +295,28 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 				deUint32 limitToCheck = featureLimitTable[ndx].uintVal;
 				if (featureLimitTable[ndx].unsuppTableNdx != -1)
 				{
-					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
+					if (*((VkBool32*)((deUint8*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].uintVal;
 				}
 
 				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
 				{
 
-					if (*((deUint32*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
+					if (*((deUint32*)((deUint8*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
 						log << TestLog::Message << "limit Validation failed " << featureLimitTable[ndx].name
 							<< " not valid-limit type MIN - actual is "
-							<< *((deUint32*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((deUint32*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
 				else if (featureLimitTable[ndx].type == LIMIT_TYPE_MAX)
 				{
-					if (*((deUint32*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
+					if (*((deUint32*)((deUint8*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed,  " << featureLimitTable[ndx].name
 							<< " not valid-limit type MAX - actual is "
-							<< *((deUint32*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((deUint32*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
@@ -327,27 +328,27 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 				float limitToCheck = featureLimitTable[ndx].floatVal;
 				if (featureLimitTable[ndx].unsuppTableNdx != -1)
 				{
-					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
+					if (*((VkBool32*)((deUint8*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].floatVal;
 				}
 
 				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
 				{
-					if (*((float*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
+					if (*((float*)((deUint8*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MIN - actual is "
-							<< *((float*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((float*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
 				else if (featureLimitTable[ndx].type == LIMIT_TYPE_MAX)
 				{
-					if (*((float*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
+					if (*((float*)((deUint8*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MAX actual is "
-							<< *((float*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((float*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
@@ -359,26 +360,26 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 				deInt32 limitToCheck = featureLimitTable[ndx].intVal;
 				if (featureLimitTable[ndx].unsuppTableNdx != -1)
 				{
-					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
+					if (*((VkBool32*)((deUint8*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].intVal;
 				}
 				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
 				{
-					if (*((deInt32*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
+					if (*((deInt32*)((deUint8*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
 						log << TestLog::Message <<  "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MIN actual is "
-							<< *((deInt32*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((deInt32*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
 				else if (featureLimitTable[ndx].type == LIMIT_TYPE_MAX)
 				{
-					if (*((deInt32*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
+					if (*((deInt32*)((deUint8*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MAX actual is "
-							<< *((deInt32*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((deInt32*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
@@ -390,27 +391,49 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 				deUint64 limitToCheck = featureLimitTable[ndx].deviceSizeVal;
 				if (featureLimitTable[ndx].unsuppTableNdx != -1)
 				{
-					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
+					if (*((VkBool32*)((deUint8*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].deviceSizeVal;
 				}
 
 				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
 				{
-					if (*((deUint64*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
+					if (*((deUint64*)((deUint8*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MIN actual is "
-							<< *((deUint64*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((deUint64*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
 				else if (featureLimitTable[ndx].type == LIMIT_TYPE_MAX)
 				{
-					if (*((deUint64*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
+					if (*((deUint64*)((deUint8*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MAX actual is "
-							<< *((deUint64*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((deUint64*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+						limitsOk = false;
+					}
+				}
+				break;
+			}
+
+			case LIMIT_FORMAT_BITMASK:
+			{
+				deUint32 limitToCheck = featureLimitTable[ndx].uintVal;
+				if (featureLimitTable[ndx].unsuppTableNdx != -1)
+				{
+					if (*((VkBool32*)((deUint8*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
+						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].uintVal;
+				}
+
+				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
+				{
+					if ((*((deUint32*)((deUint8*)limits+featureLimitTable[ndx].offset)) & limitToCheck) != limitToCheck)
+					{
+						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
+							<< " not valid-limit type bitmask actual is "
+							<< *((deUint64*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
