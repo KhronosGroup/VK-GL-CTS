@@ -423,6 +423,30 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		}
 	}
 
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(limits->maxViewportDimensions); ndx++)
+	{
+		if (limits->maxImageDimension2D > limits->maxViewportDimensions[ndx])
+		{
+			log << TestLog::Message << "limit validation failed, maxImageDimension2D of " << limits->maxImageDimension2D
+				<< "is larger than maxViewportDimension[" << ndx << "] of " << limits->maxViewportDimensions[ndx] << TestLog::EndMessage;
+			limitsOk = false;
+		}
+	}
+
+	if (limits->viewportBoundsRange[0] > -2 * limits->maxViewportDimensions[0])
+	{
+		log << TestLog::Message << "limit validation failed, viewPortBoundsRange[0] of " << limits->viewportBoundsRange[0]
+			<< "is larger than -2*maxViewportDimension[0] of " << -2*limits->maxViewportDimensions[0] << TestLog::EndMessage;
+		limitsOk = false;
+	}
+
+	if (limits->viewportBoundsRange[1] < 2 * limits->maxViewportDimensions[1] - 1)
+	{
+		log << TestLog::Message << "limit validation failed, viewportBoundsRange[1] of " << limits->viewportBoundsRange[1]
+			<< "is less than 2*maxViewportDimension[1] of " << 2*limits->maxViewportDimensions[1] << TestLog::EndMessage;
+		limitsOk = false;
+	}
+
 	return limitsOk;
 }
 
