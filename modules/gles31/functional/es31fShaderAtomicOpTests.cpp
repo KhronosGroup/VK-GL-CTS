@@ -282,14 +282,14 @@ protected:
 		for (int groupNdx = 0; groupNdx < numWorkGroups; groupNdx++)
 		{
 			const int	groupOffset		= groupNdx*workGroupSize;
-			const int	groupOutput		= *(const int*)((const deUint8*)groupOutputs + groupNdx*groupStride);
+			const int	groupOutput		= *(const deInt32*)((const deUint8*)groupOutputs + groupNdx*groupStride);
 			set<int>	outValues;
 			bool		maxFound		= false;
 			int			valueSum		= (int)m_initialValue;
 
 			for (int localNdx = 0; localNdx < workGroupSize; localNdx++)
 			{
-				const int inputValue = *(const int*)((const deUint8*)inputs + inputStride*(groupOffset+localNdx));
+				const int inputValue = *(const deInt32*)((const deUint8*)inputs + inputStride*(groupOffset+localNdx));
 				valueSum += inputValue;
 			}
 
@@ -301,8 +301,8 @@ protected:
 
 			for (int localNdx = 0; localNdx < workGroupSize; localNdx++)
 			{
-				const int	inputValue		= *(const int*)((const deUint8*)inputs + inputStride*(groupOffset+localNdx));
-				const int	outputValue		= *(const int*)((const deUint8*)outputs + outputStride*(groupOffset+localNdx));
+				const int	inputValue		= *(const deInt32*)((const deUint8*)inputs + inputStride*(groupOffset+localNdx));
+				const int	outputValue		= *(const deInt32*)((const deUint8*)outputs + outputStride*(groupOffset+localNdx));
 
 				if (!de::inRange(outputValue, (int)m_initialValue, valueSum-inputValue))
 				{
@@ -603,8 +603,11 @@ protected:
 
 	bool verify (int numValues, int inputStride, const void* inputs, int outputStride, const void* outputs, int groupStride, const void* groupOutputs) const
 	{
-		const int	workGroupSize	= (int)product(m_workGroupSize);
-		const int	numWorkGroups	= numValues/workGroupSize;
+		const int		workGroupSize	= (int)product(m_workGroupSize);
+		const int		numWorkGroups	= numValues/workGroupSize;
+		const int		numBits			= m_precision == PRECISION_HIGHP ? 32 :
+										  m_precision == PRECISION_MEDIUMP ? 16 : 8;
+		const deUint32	compareMask		= (m_type == TYPE_UINT || numBits == 32) ? ~0u : (1u<<numBits)-1u;
 
 		for (int groupNdx = 0; groupNdx < numWorkGroups; groupNdx++)
 		{
@@ -618,7 +621,7 @@ protected:
 				expectedValue &= inputValue;
 			}
 
-			if (expectedValue != groupOutput)
+			if ((groupOutput & compareMask) != (expectedValue & compareMask))
 			{
 				m_testCtx.getLog() << TestLog::Message << "ERROR: at group " << groupNdx << ": expected " << tcu::toHex(expectedValue) << ", got " << tcu::toHex(groupOutput) << TestLog::EndMessage;
 				return false;
@@ -628,7 +631,7 @@ protected:
 			{
 				const deUint32 outputValue = *(const deUint32*)((const deUint8*)outputs + outputStride*(groupOffset+localNdx));
 
-				if ((outputValue & ~m_initialValue) != 0)
+				if ((compareMask & (outputValue & ~m_initialValue)) != 0)
 				{
 					m_testCtx.getLog() << TestLog::Message << "ERROR: at group " << groupNdx << ", invocation " << localNdx
 														   << ": found unexpected value " << tcu::toHex(outputValue)
@@ -671,8 +674,11 @@ protected:
 
 	bool verify (int numValues, int inputStride, const void* inputs, int outputStride, const void* outputs, int groupStride, const void* groupOutputs) const
 	{
-		const int	workGroupSize	= (int)product(m_workGroupSize);
-		const int	numWorkGroups	= numValues/workGroupSize;
+		const int		workGroupSize	= (int)product(m_workGroupSize);
+		const int		numWorkGroups	= numValues/workGroupSize;
+		const int		numBits			= m_precision == PRECISION_HIGHP ? 32 :
+										  m_precision == PRECISION_MEDIUMP ? 16 : 8;
+		const deUint32	compareMask		= (m_type == TYPE_UINT || numBits == 32) ? ~0u : (1u<<numBits)-1u;
 
 		for (int groupNdx = 0; groupNdx < numWorkGroups; groupNdx++)
 		{
@@ -686,7 +692,7 @@ protected:
 				expectedValue |= inputValue;
 			}
 
-			if (expectedValue != groupOutput)
+			if ((groupOutput & compareMask) != (expectedValue & compareMask))
 			{
 				m_testCtx.getLog() << TestLog::Message << "ERROR: at group " << groupNdx << ": expected " << tcu::toHex(expectedValue) << ", got " << tcu::toHex(groupOutput) << TestLog::EndMessage;
 				return false;
@@ -696,7 +702,7 @@ protected:
 			{
 				const deUint32 outputValue = *(const deUint32*)((const deUint8*)outputs + outputStride*(groupOffset+localNdx));
 
-				if ((outputValue & m_initialValue) == 0)
+				if ((compareMask & (outputValue & m_initialValue)) == 0)
 				{
 					m_testCtx.getLog() << TestLog::Message << "ERROR: at group " << groupNdx << ", invocation " << localNdx
 														   << ": found unexpected value " << tcu::toHex(outputValue)
@@ -745,13 +751,13 @@ protected:
 		const int		numWorkGroups	= numValues/workGroupSize;
 		const int		numBits			= m_precision == PRECISION_HIGHP ? 32 :
 										  m_precision == PRECISION_MEDIUMP ? 16 : 8;
-		const deUint32	compareMask		= numBits == 32 ? ~0u : (1u<<numBits)-1u;
+		const deUint32	compareMask		= (m_type == TYPE_UINT || numBits == 32) ? ~0u : (1u<<numBits)-1u;
 
 		for (int groupNdx = 0; groupNdx < numWorkGroups; groupNdx++)
 		{
 			const int		groupOffset		= groupNdx*workGroupSize;
 			const deUint32	groupOutput		= *(const deUint32*)((const deUint8*)groupOutputs + groupNdx*groupStride);
-			const deUint32	randomValue		= *(const int*)((const deUint8*)inputs + inputStride*groupOffset);
+			const deUint32	randomValue		= *(const deInt32*)((const deUint8*)inputs + inputStride*groupOffset);
 			const deUint32	expected0		= randomValue ^ 0u;
 			const deUint32	expected1		= randomValue ^ ~0u;
 			int				numXorZeros		= (m_initialValue == 0) ? 1 : 0;
@@ -828,12 +834,12 @@ protected:
 		for (int groupNdx = 0; groupNdx < numWorkGroups; groupNdx++)
 		{
 			const int	groupOffset		= groupNdx*workGroupSize;
-			const int	groupOutput		= *(const int*)((const deUint8*)groupOutputs + groupNdx*groupStride);
+			const int	groupOutput		= *(const deInt32*)((const deUint8*)groupOutputs + groupNdx*groupStride);
 			set<int>	usedValues;
 
 			for (int localNdx = 0; localNdx < workGroupSize; localNdx++)
 			{
-				const int outputValue = *(const int*)((const deUint8*)outputs + outputStride*(groupOffset+localNdx));
+				const int outputValue = *(const deInt32*)((const deUint8*)outputs + outputStride*(groupOffset+localNdx));
 
 				if (!de::inRange(outputValue, 0, workGroupSize) || usedValues.find(outputValue) != usedValues.end())
 				{
@@ -1043,12 +1049,12 @@ ShaderAtomicOpCase::IterateResult ShaderAtomicCompSwapCase::iterate (void)
 		for (int groupNdx = 0; groupNdx < numWorkGroups; groupNdx++)
 		{
 			const int	groupOffset		= groupNdx*workGroupSize;
-			const int	groupOutput		= *(const int*)((const deUint8*)resPtr + groupVarInfo.offset + groupNdx*groupVarInfo.arrayStride);
+			const int	groupOutput		= *(const deInt32*)((const deUint8*)resPtr + groupVarInfo.offset + groupNdx*groupVarInfo.arrayStride);
 
 			for (int localNdx = 0; localNdx < workGroupSize; localNdx++)
 			{
 				const int	refValue		= localNdx;
-				const int	outputValue		= *(const int*)((const deUint8*)resPtr + outVarInfo.offset + outVarInfo.arrayStride*(groupOffset+localNdx));
+				const int	outputValue		= *(const deInt32*)((const deUint8*)resPtr + outVarInfo.offset + outVarInfo.arrayStride*(groupOffset+localNdx));
 
 				if (outputValue != refValue)
 				{
