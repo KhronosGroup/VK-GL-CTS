@@ -32,6 +32,7 @@
 #include "vkDeviceUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkApiVersion.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -760,6 +761,23 @@ tcu::TestStatus deviceProperties (Context& context)
 	{
 		log << TestLog::Message << "deviceProperties - VkPhysicalDeviceProperties not completely initialized" << TestLog::EndMessage;
 		return tcu::TestStatus::fail("deviceProperties incomplete initialization");
+	}
+
+	{
+		const ApiVersion deviceVersion = unpackVersion(props->apiVersion);
+		const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION);
+
+		if (deviceVersion.majorNum != deqpVersion.majorNum)
+		{
+			log << TestLog::Message << "deviceProperties - API Major Version " << deviceVersion.majorNum << " is not valid" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceProperties apiVersion not valid");
+		}
+
+		if (deviceVersion.minorNum > deqpVersion.minorNum)
+		{
+			log << TestLog::Message << "deviceProperties - API Minor Version " << deviceVersion.minorNum << " is not valid for this version of dEQP" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceProperties apiVersion not valid");
+		}
 	}
 
 	return tcu::TestStatus::pass("DeviceProperites query succeeded");
