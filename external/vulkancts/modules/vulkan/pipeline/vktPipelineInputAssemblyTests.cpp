@@ -1257,15 +1257,6 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 			+1.0f														// float			maxDepthBounds;
 		};
 
-		const VkPipelineDynamicStateCreateInfo dynamicStateParams =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType						sType;
-			DE_NULL,													// const void*							pNext;
-			0u,															// VkPipelineDynamicStateCreateFlags	flags;
-			0u,															// deUint32								dynamicStateCount;
-			DE_NULL														// const VkDynamicState*				pDynamicStates;
-		};
-
 		const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
@@ -1281,7 +1272,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 			&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 			&depthStencilStateParams,							// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-			&dynamicStateParams,								// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+			(const VkPipelineDynamicStateCreateInfo*)DE_NULL,	// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 			*m_pipelineLayout,									// VkPipelineLayout									layout;
 			*m_renderPass,										// VkRenderPass										renderPass;
 			0u,													// deUint32											subpass;

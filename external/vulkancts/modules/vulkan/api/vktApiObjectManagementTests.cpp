@@ -1511,14 +1511,6 @@ struct GraphicsPipeline
 			colorBlendAttState,
 			{ 0.0f, 0.0f, 0.0f, 0.0f }				// blendConstants
 		};
-		const VkPipelineDynamicStateCreateInfo			dynamicState		=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-			DE_NULL,
-			(VkPipelineDynamicStateCreateFlags)0,
-			0u,										// dynamicStateCount
-			DE_NULL,								// pDynamicStates
-		};
 		const VkGraphicsPipelineCreateInfo				pipelineInfo		=
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -1534,7 +1526,7 @@ struct GraphicsPipeline
 			&multisampleState,
 			&depthStencilState,
 			&colorBlendState,
-			&dynamicState,
+			(const VkPipelineDynamicStateCreateInfo*)DE_NULL,
 			*res.layout.object,
 			*res.renderPass.object,
 			0u,										// subpass

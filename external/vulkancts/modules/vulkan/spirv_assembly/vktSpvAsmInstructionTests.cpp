@@ -5056,15 +5056,6 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		&attBlendParams,											//	const VkPipelineColorBlendAttachmentState*	pAttachments;
 		{ 0.0f, 0.0f, 0.0f, 0.0f },									//	float										blendConst[4];
 	};
-	const VkPipelineDynamicStateCreateInfo	dynamicStateInfo		=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType			sType;
-		DE_NULL,												//	const void*				pNext;
-		(VkPipelineDynamicStateCreateFlags)0,
-		0u,														//	deUint32				dynamicStateCount;
-		DE_NULL													//	const VkDynamicState*	pDynamicStates;
-	};
-
 	const VkPipelineTessellationStateCreateInfo	tessellationState	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
@@ -5089,7 +5080,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		&multisampleParams,										//	const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 		&depthStencilParams,									//	const VkPipelineDepthStencilStateCreateInfo*	pDepthStencilState;
 		&blendParams,											//	const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		&dynamicStateInfo,										//	const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+		(const VkPipelineDynamicStateCreateInfo*)DE_NULL,		//	const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 		*pipelineLayout,										//	VkPipelineLayout								layout;
 		*renderPass,											//	VkRenderPass									renderPass;
 		0u,														//	deUint32										subpass;

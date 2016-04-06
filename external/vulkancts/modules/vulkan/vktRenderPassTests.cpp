@@ -1672,14 +1672,6 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 		attachmentBlendStates.empty() ? DE_NULL : &attachmentBlendStates[0],// pAttachments
 		{ 0.0f, 0.0f, 0.0f, 0.0f }											// blendConst
 	};
-	const VkPipelineDynamicStateCreateInfo dynamicState =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineDynamicStateCreateFlags)0u,
-		0,
-		DE_NULL
-	};
 	const VkGraphicsPipelineCreateInfo createInfo =
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,		// sType
@@ -1697,7 +1689,7 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 		&multisampleState,										// pMultisampleState
 		&depthStencilState,										// pDepthStencilState
 		&blendState,											// pColorBlendState
-		&dynamicState,											// pDynamicState
+		(const VkPipelineDynamicStateCreateInfo*)DE_NULL,		// pDynamicState
 		pipelineLayout,											// layout
 
 		renderPass,												// renderPass

@@ -521,14 +521,6 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		&attBlendParams,											// pAttachments
 		{ 0.0f, 0.0f, 0.0f, 0.0f },									// blendConstants[4]
 	};
-	const VkPipelineDynamicStateCreateInfo	dynamicStateInfo		=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	// sType
-		DE_NULL,												// pNext
-		0u,														// flags
-		0u,														// dynamicStateCount
-		DE_NULL													// pDynamicStates
-	};
 	const VkGraphicsPipelineCreateInfo		pipelineParams			=
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,		// sType
@@ -544,7 +536,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		&multisampleParams,										// pMultisampleState
 		&depthStencilParams,									// pDepthStencilState
 		&blendParams,											// pColorBlendState
-		&dynamicStateInfo,										// pDynamicState
+		(const VkPipelineDynamicStateCreateInfo*)DE_NULL,		// pDynamicState
 		*pipelineLayout,										// layout
 		*renderPass,											// renderPass
 		0u,														// subpass

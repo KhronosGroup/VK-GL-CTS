@@ -1193,14 +1193,6 @@ Move<vk::VkPipeline> createPipeline (Context&					context,
 		&attBlendParams,													// pAttachments
 		{ 0.0f, 0.0f, 0.0f, 0.0f },											// blendConstants
 	};
-	const vk::VkPipelineDynamicStateCreateInfo			dynStateParams			=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,			// sType
-		DE_NULL,															// pNext
-		(vk::VkPipelineDynamicStateCreateFlags)0,
-		0u,																	// dynamicStateCount
-		DE_NULL,															// pDynamicStates
-	};
 	const vk::VkGraphicsPipelineCreateInfo				pipelineParams			=
 	{
 		vk::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,				// sType
@@ -1216,7 +1208,7 @@ Move<vk::VkPipeline> createPipeline (Context&					context,
 		&multisampleParams,													// pMultisampleState
 		&depthStencilParams,												// pDepthStencilState
 		&blendParams,														// pColorBlendState
-		&dynStateParams,													// pDynamicState
+		(const vk::VkPipelineDynamicStateCreateInfo*)DE_NULL,				// pDynamicState
 		pipelineLayout,														// layout
 		renderPass,															// renderPass
 		0u,																	// subpass

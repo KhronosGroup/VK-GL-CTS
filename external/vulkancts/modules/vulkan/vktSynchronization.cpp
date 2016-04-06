@@ -696,7 +696,6 @@ void generateWork (TestContext& testContext)
 	VkPipelineDepthStencilStateCreateInfo		depthStencilState;
 	VkPipelineColorBlendAttachmentState			blendAttachment;
 	VkPipelineColorBlendStateCreateInfo			blendState;
-	VkPipelineDynamicStateCreateInfo			dynamicState;
 	VkPipelineLayoutCreateInfo					pipelineLayoutState;
 	VkGraphicsPipelineCreateInfo				pipelineState;
 	VkPipelineCacheCreateInfo					cacheState;
@@ -867,12 +866,6 @@ void generateWork (TestContext& testContext)
 	blendState.attachmentCount					= 1;
 	blendState.pAttachments						= &blendAttachment;
 
-	dynamicState.sType							= VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	dynamicState.pNext							= DE_NULL;
-	dynamicState.flags							= 0;
-	dynamicState.dynamicStateCount				= 0;
-	dynamicState.pDynamicStates					= DE_NULL;
-
 	pipelineLayoutState.sType					= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutState.pNext					= DE_NULL;
 	pipelineLayoutState.flags					= 0;
@@ -895,7 +888,7 @@ void generateWork (TestContext& testContext)
 	pipelineState.pMultisampleState				= &multisampleState;
 	pipelineState.pDepthStencilState			= &depthStencilState;
 	pipelineState.pColorBlendState				= &blendState;
-	pipelineState.pDynamicState					= &dynamicState;
+	pipelineState.pDynamicState					= (const VkPipelineDynamicStateCreateInfo*)DE_NULL;
 	pipelineState.layout						= layout;
 	pipelineState.renderPass					= renderPass.get();
 	pipelineState.subpass						= 0;

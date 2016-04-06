@@ -1163,15 +1163,6 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			{ 0.0f, 0.0f, 0.0f, 0.0f }										// float										blendConst[4];
 		};
 
-		const VkPipelineDynamicStateCreateInfo dynamicStateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType									sType;
-			DE_NULL,													// const void*										pNext;
-			(VkPipelineDynamicStateCreateFlags)0,						// VkPipelineDynamicStateCreateFlags				flags;
-			0u,															// deUint32											dynamicStateCount;
-			DE_NULL														// const VkDynamicState*							pDynamicStates;
-		};
-
 		const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
@@ -1187,7 +1178,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 			DE_NULL,											// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-			&dynamicStateInfo,									// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+			(const VkPipelineDynamicStateCreateInfo*)DE_NULL,	// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 			*pipelineLayout,									// VkPipelineLayout									layout;
 			*renderPass,										// VkRenderPass										renderPass;
 			0u,													// deUint32											subpass;
@@ -2593,15 +2584,6 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConst[4];
 		};
 
-		const VkPipelineDynamicStateCreateInfo dynamicStateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType						sType;
-			DE_NULL,													// const void*							pNext;
-			(VkPipelineDynamicStateCreateFlags)0,						// VkPipelineDynamicStateCreateFlags	flags;
-			0u,															// deUint32								dynamicStateCount;
-			DE_NULL														// const VkDynamicState*				pDynamicStates;
-		};
-
 		const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
@@ -2617,7 +2599,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 			DE_NULL,											// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-			&dynamicStateInfo,									// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+			(const VkPipelineDynamicStateCreateInfo*)DE_NULL,	// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 			*pipelineLayout,									// VkPipelineLayout									layout;
 			*renderPass,										// VkRenderPass										renderPass;
 			0u,													// deUint32											subpass;
