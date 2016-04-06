@@ -1614,15 +1614,6 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4];
 		};
 
-		const VkPipelineDynamicStateCreateInfo	dynamicStateParams		=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType						sType;
-			DE_NULL,													// const void*							pNext;
-			0u,															// VkPipelineDynamicStateCreateFlags	flags;
-			0u,															// deUint32								dynamicStateCount;
-			DE_NULL														// const VkDynamicState*				pDynamicStates;
-		};
-
 		const VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType							sType;
@@ -1672,7 +1663,7 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 			&m_multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 			&depthStencilStateParams,							// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-			&dynamicStateParams,								// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+			(const VkPipelineDynamicStateCreateInfo*)DE_NULL,	// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 			*m_pipelineLayout,									// VkPipelineLayout									layout;
 			*m_renderPass,										// VkRenderPass										renderPass;
 			0u,													// deUint32											subpass;
