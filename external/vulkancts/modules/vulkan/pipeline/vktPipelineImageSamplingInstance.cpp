@@ -340,6 +340,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 											  const std::vector<Vertex4Tex4>&	vertices)
 	: vkt::TestInstance		(context)
 	, m_imageViewType		(imageViewType)
+	, m_imageFormat			(imageFormat)
 	, m_imageSize			(imageSize)
 	, m_layerCount			(layerCount)
 	, m_componentMapping	(componentMapping)
@@ -988,16 +989,20 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 		const deUint32				queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
 		SimpleAllocator				memAlloc					(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 		MovePtr<tcu::TextureLevel>	result						= readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, memAlloc, *m_colorImage, m_colorFormat, m_renderSize);
+		tcu::UVec4					threshold					= tcu::UVec4(4, 4, 4, 4);
+
+		if ((m_imageFormat == vk::VK_FORMAT_EAC_R11G11_SNORM_BLOCK) || (m_imageFormat == vk::VK_FORMAT_EAC_R11_SNORM_BLOCK))
+			threshold = tcu::UVec4(8, 8, 8, 8);
 
 		compareOk = tcu::intThresholdPositionDeviationCompare(m_context.getTestContext().getLog(),
-															  "IntImageCompare",
-															  "Image comparison",
-															  refRenderer->getAccess(),
-															  result->getAccess(),
-															  tcu::UVec4(4, 4, 4, 4),
-															  tcu::IVec3(1, 1, 0),
-															  true,
-															  tcu::COMPARE_LOG_RESULT);
+								      "IntImageCompare",
+							    	      "Image comparison",
+								      refRenderer->getAccess(),
+								      result->getAccess(),
+								      threshold,
+							              tcu::IVec3(1, 1, 0),
+								      true,
+								      tcu::COMPARE_LOG_RESULT);
 	}
 
 	if (compareOk)
