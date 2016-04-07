@@ -947,14 +947,6 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 		&cbAttachment,								// pAttachments
 		{ 0.0f, 0.0f, 0.0f, 0.0f },					// blendConst
 	};
-	const vk::VkPipelineDynamicStateCreateInfo			dynState			=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineDynamicStateCreateFlags)0,
-		0u,											// dynamicStateCount
-		DE_NULL,									// pDynamicStates
-	};
 	const vk::VkGraphicsPipelineCreateInfo createInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -970,7 +962,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 		&msState,														// pMultisampleState
 		&dsState,														// pDepthStencilState
 		&cbState,														// pColorBlendState
-		&dynState,														// pDynamicState
+		(const vk::VkPipelineDynamicStateCreateInfo*)DE_NULL,			// pDynamicState
 		pipelineLayout,													// layout
 		*m_renderPass,													// renderPass
 		0u,																// subpass
