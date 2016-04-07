@@ -134,8 +134,8 @@ Move<VkDevice> createDeviceWithWsi (const InstanceInterface&		vki,
 		&queueInfos[0],
 		0u,									// enabledLayerCount
 		DE_NULL,							// ppEnabledLayerNames
-		0u,									// enabledExtensionCount
-		DE_NULL,							// ppEnabledExtensionNames
+		DE_LENGTH_OF_ARRAY(extensions),		// enabledExtensionCount
+		DE_ARRAY_BEGIN(extensions),			// ppEnabledExtensionNames
 		&features
 	};
 
