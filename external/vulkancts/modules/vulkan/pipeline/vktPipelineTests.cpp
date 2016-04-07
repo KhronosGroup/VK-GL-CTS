@@ -31,6 +31,7 @@
 #include "vktPipelineSamplerTests.hpp"
 #include "vktPipelineImageViewTests.hpp"
 #include "vktPipelinePushConstantTests.hpp"
+#include "vktPipelineSpecConstantTests.hpp"
 #include "vktPipelineMultisampleTests.hpp"
 #include "vktPipelineVertexInputTests.hpp"
 #include "vktPipelineTimestampTests.hpp"
@@ -57,6 +58,7 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createSamplerTests		(testCtx));
 	pipelineTests->addChild(createImageViewTests	(testCtx));
 	pipelineTests->addChild(createPushConstantTests	(testCtx));
+	pipelineTests->addChild(createSpecConstantTests	(testCtx));
 	pipelineTests->addChild(createMultisampleTests	(testCtx));
 	pipelineTests->addChild(createVertexInputTests	(testCtx));
 	pipelineTests->addChild(createInputAssemblyTests(testCtx));
