@@ -1917,15 +1917,6 @@ vk::Move<VkPipeline> UniformBlockCaseInstance::createPipeline (vk::VkShaderModul
 		{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConstants[4];
 	};
 
-	const VkPipelineDynamicStateCreateInfo			dynamicStateInfo			=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// const void*							pNext;
-		0u,														// VkPipelineDynamicStateCreateFlags	flags;
-		0u,														// deUint32								dynamicStateCount;
-		DE_NULL													// const VkDynamicState*				pDynamicStates;
-	};
-
 	const VkGraphicsPipelineCreateInfo				graphicsPipelineParams		=
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
@@ -1941,7 +1932,7 @@ vk::Move<VkPipeline> UniformBlockCaseInstance::createPipeline (vk::VkShaderModul
 		&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 		DE_NULL,											// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 		&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		&dynamicStateInfo,									// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+		(const VkPipelineDynamicStateCreateInfo*)DE_NULL,	// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 		pipelineLayout,										// VkPipelineLayout									layout;
 		renderPass,											// VkRenderPass										renderPass;
 		0u,													// deUint32											subpass;

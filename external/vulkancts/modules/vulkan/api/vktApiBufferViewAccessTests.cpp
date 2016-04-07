@@ -565,15 +565,6 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 			{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConst[4];
 		};
 
-		const VkPipelineDynamicStateCreateInfo	dynamicStateParams		=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			(VkPipelineDynamicStateCreateFlags)0,
-			0u,															// deUint32					dynamicStateCount;
-			DE_NULL														// const VkDynamicState*	pDynamicStates;
-		};
-
 		const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
@@ -589,7 +580,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 			&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 			DE_NULL,											// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-			&dynamicStateParams,								// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+			DE_NULL,											// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 			*m_pipelineLayout,									// VkPipelineLayout									layout;
 			*m_renderPass,										// VkRenderPass										renderPass;
 			0u,													// deUint32											subpass;
