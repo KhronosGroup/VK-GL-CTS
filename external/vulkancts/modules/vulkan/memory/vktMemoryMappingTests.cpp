@@ -298,13 +298,15 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 class MemoryMapping
 {
 public:
-				MemoryMapping	(const MemoryRange&	range,
-								 void*				ptr,
-								 deUint16*			refPtr);
+						MemoryMapping	(const MemoryRange&	range,
+										 void*				ptr,
+										 deUint16*			refPtr);
 
-	void		randomRead		(de::Random& rng);
-	void		randomWrite		(de::Random& rng);
-	void		randomModify	(de::Random& rng);
+	void				randomRead		(de::Random& rng);
+	void				randomWrite		(de::Random& rng);
+	void				randomModify	(de::Random& rng);
+
+	const MemoryRange&	getRange		(void) const { return m_range; }
 
 private:
 	MemoryRange	m_range;
@@ -370,14 +372,14 @@ void MemoryMapping::randomModify (de::Random& rng)
 	}
 }
 
-void randomRanges (de::Random& rng, vector<VkMappedMemoryRange>& ranges, size_t count, VkDeviceMemory memory, VkDeviceSize maxSize)
+void randomRanges (de::Random& rng, vector<VkMappedMemoryRange>& ranges, size_t count, VkDeviceMemory memory, VkDeviceSize minOffset, VkDeviceSize maxSize)
 {
 	ranges.resize(count);
 
 	for (size_t rangeNdx = 0; rangeNdx < count; rangeNdx++)
 	{
 		const VkDeviceSize	size	= (maxSize > 1 ? (VkDeviceSize)(1 + (rng.getUint64() % (deUint64)(maxSize - 1))) : 1);
-		const VkDeviceSize	offset	= (VkDeviceSize)(rng.getUint64() % (deUint64)(maxSize - size + 1));
+		const VkDeviceSize	offset	= minOffset + (VkDeviceSize)(rng.getUint64() % (deUint64)(maxSize - size + 1));
 
 		const VkMappedMemoryRange range =
 		{
@@ -471,7 +473,7 @@ void MemoryObject::randomFlush (const DeviceInterface& vkd, VkDevice device, de:
 	const size_t				rangeCount	= (size_t)rng.getInt(1, 10);
 	vector<VkMappedMemoryRange>	ranges		(rangeCount);
 
-	randomRanges(rng, ranges, rangeCount, *m_memory, m_size);
+	randomRanges(rng, ranges, rangeCount, *m_memory, m_mapping->getRange().offset, m_mapping->getRange().size);
 
 	VK_CHECK(vkd.flushMappedMemoryRanges(device, (deUint32)ranges.size(), ranges.empty() ? DE_NULL : &ranges[0]));
 }
@@ -481,7 +483,7 @@ void MemoryObject::randomInvalidate (const DeviceInterface& vkd, VkDevice device
 	const size_t				rangeCount	= (size_t)rng.getInt(1, 10);
 	vector<VkMappedMemoryRange>	ranges		(rangeCount);
 
-	randomRanges(rng, ranges, rangeCount, *m_memory, m_size);
+	randomRanges(rng, ranges, rangeCount, *m_memory, m_mapping->getRange().offset, m_mapping->getRange().size);
 
 	VK_CHECK(vkd.invalidateMappedMemoryRanges(device, (deUint32)ranges.size(), ranges.empty() ? DE_NULL : &ranges[0]));
 }
@@ -784,54 +786,54 @@ TestConfig subMappedConfig (VkDeviceSize				allocationSize,
 			return config;
 
 		case OP_FLUSH:
-			config.flushMappings = vector<MemoryRange>(1, MemoryRange(0, allocationSize));
+			config.flushMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset, mapping.size));
 			return config;
 
 		case OP_SUB_FLUSH:
-			DE_ASSERT(allocationSize / 4 > 0);
+			DE_ASSERT(mapping.size / 4 > 0);
 
-			config.flushMappings = vector<MemoryRange>(1, MemoryRange(allocationSize / 4, allocationSize / 2));
+			config.flushMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset + mapping.size / 4, mapping.size / 2));
 			return config;
 
 		case OP_SUB_FLUSH_SEPARATE:
-			DE_ASSERT(allocationSize / 2 > 0);
+			DE_ASSERT(mapping.size / 2 > 0);
 
-			config.flushMappings.push_back(MemoryRange(allocationSize /  2, allocationSize - (allocationSize / 2)));
-			config.flushMappings.push_back(MemoryRange(0, allocationSize / 2));
+			config.flushMappings.push_back(MemoryRange(mapping.offset + mapping.size /  2, mapping.size - (mapping.size / 2)));
+			config.flushMappings.push_back(MemoryRange(mapping.offset, mapping.size / 2));
 
 			return config;
 
 		case OP_SUB_FLUSH_OVERLAPPING:
-			DE_ASSERT((allocationSize / 3) > 0);
+			DE_ASSERT((mapping.size / 3) > 0);
 
-			config.flushMappings.push_back(MemoryRange(allocationSize /  3, allocationSize - (allocationSize / 2)));
-			config.flushMappings.push_back(MemoryRange(0, (2 * allocationSize) / 3));
+			config.flushMappings.push_back(MemoryRange(mapping.offset + mapping.size /  3, mapping.size - (mapping.size / 2)));
+			config.flushMappings.push_back(MemoryRange(mapping.offset, (2 * mapping.size) / 3));
 
 			return config;
 
 		case OP_INVALIDATE:
-			config.invalidateMappings = vector<MemoryRange>(1, MemoryRange(0, allocationSize));
+			config.invalidateMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset, mapping.size));
 			return config;
 
 		case OP_SUB_INVALIDATE:
-			DE_ASSERT(allocationSize / 4 > 0);
+			DE_ASSERT(mapping.size / 4 > 0);
 
-			config.invalidateMappings = vector<MemoryRange>(1, MemoryRange(allocationSize / 4, allocationSize / 2));
+			config.invalidateMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset + mapping.size / 4, mapping.size / 2));
 			return config;
 
 		case OP_SUB_INVALIDATE_SEPARATE:
-			DE_ASSERT(allocationSize / 2 > 0);
+			DE_ASSERT(mapping.size / 2 > 0);
 
-			config.invalidateMappings.push_back(MemoryRange(allocationSize /  2, allocationSize - (allocationSize / 2)));
-			config.invalidateMappings.push_back(MemoryRange(0, allocationSize / 2));
+			config.invalidateMappings.push_back(MemoryRange(mapping.offset + mapping.size /  2, mapping.size - (mapping.size / 2)));
+			config.invalidateMappings.push_back(MemoryRange(mapping.offset, mapping.size / 2));
 
 			return config;
 
 		case OP_SUB_INVALIDATE_OVERLAPPING:
-			DE_ASSERT((allocationSize / 3) > 0);
+			DE_ASSERT((mapping.size / 3) > 0);
 
-			config.invalidateMappings.push_back(MemoryRange(allocationSize /  3, allocationSize - (allocationSize / 2)));
-			config.invalidateMappings.push_back(MemoryRange(0, (2 * allocationSize) / 3));
+			config.invalidateMappings.push_back(MemoryRange(mapping.offset + mapping.size /  3, mapping.size - (mapping.size / 2)));
+			config.invalidateMappings.push_back(MemoryRange(mapping.offset, (2 * mapping.size) / 3));
 
 			return config;
 
