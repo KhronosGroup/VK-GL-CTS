@@ -120,7 +120,9 @@ VKAPI_ATTR VkBool32	VKAPI_CALL debugReportCallback (VkDebugReportFlagsEXT		flags
 
 	messageList->append(DebugReportMessage(flags, objectType, object, location, messageCode, pLayerPrefix, pMessage));
 
-	return VK_TRUE;
+	// Return false to indicate that the call should not return error and should
+	// continue execution normally.
+	return VK_FALSE;
 }
 
 Move<VkDebugReportCallbackEXT> createCallback (const InstanceInterface&				vki,
