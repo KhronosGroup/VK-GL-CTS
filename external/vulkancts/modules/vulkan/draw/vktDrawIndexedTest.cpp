@@ -353,7 +353,7 @@ void DrawIndexedTests::init (void)
 	addChild(new InstanceFactory<DrawIndexed>(m_testCtx, "draw_indexed_triangle_list", "Draws indexed triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
 	addChild(new InstanceFactory<DrawIndexed>(m_testCtx, "draw_indexed_triangle_strip", "Draws indexed triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
 
-	shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchWithInstance.vert";
+	shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstancedFirstInstance.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
 
 	addChild(new InstanceFactory<DrawInstancedIndexed>(m_testCtx, "draw_instanced_indexed_triangle_list", "Draws indexed triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
