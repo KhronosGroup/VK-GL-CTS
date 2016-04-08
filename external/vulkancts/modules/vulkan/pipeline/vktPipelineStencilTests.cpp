@@ -35,6 +35,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "deMemory.h"
 #include "deRandom.hpp"
@@ -143,6 +144,7 @@ private:
 	const tcu::UVec2					m_renderSize;
 	const VkFormat						m_colorFormat;
 	const VkFormat						m_stencilFormat;
+	VkImageSubresourceRange				m_stencilImageSubresourceRange;
 
 	VkImageCreateInfo					m_colorImageCreateInfo;
 	Move<VkImage>						m_colorImage;
@@ -379,6 +381,10 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 		// Allocate and bind stencil image memory
 		m_stencilImageAlloc = memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_stencilImage), MemoryRequirement::Any);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_stencilImage, m_stencilImageAlloc->getMemory(), m_stencilImageAlloc->getOffset()));
+
+		const VkImageAspectFlags aspect = (mapVkFormat(m_stencilFormat).order == tcu::TextureFormat::DS ? VK_IMAGE_ASPECT_STENCIL_BIT | VK_IMAGE_ASPECT_DEPTH_BIT
+																										: VK_IMAGE_ASPECT_STENCIL_BIT);
+		m_stencilImageSubresourceRange  = makeImageSubresourceRange(aspect, 0u, stencilImageParams.mipLevels, 0u, stencilImageParams.arrayLayers);
 	}
 
 	// Create color attachment view
@@ -409,7 +415,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			VK_IMAGE_VIEW_TYPE_2D,								// VkImageViewType			viewType;
 			m_stencilFormat,									// VkFormat					format;
 			componentMappingRGBA,								// VkComponentMapping		components;
-			{ VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange	subresourceRange;
+			m_stencilImageSubresourceRange,						// VkImageSubresourceRange	subresourceRange;
 		};
 
 		m_stencilAttachmentView = createImageView(vk, vkDevice, &stencilAttachmentViewParams);
@@ -689,8 +695,8 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			true,														// VkBool32									stencilTestEnable;
 			m_stencilOpStateFront,										// VkStencilOpState							front;
 			m_stencilOpStateBack,										// VkStencilOpState							back;
-			-1.0f,														// float									minDepthBounds;
-			+1.0f														// float									maxDepthBounds;
+			0.0f,														// float									minDepthBounds;
+			1.0f														// float									maxDepthBounds;
 		};
 
 		const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
@@ -825,9 +831,43 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			attachmentClearValues									// const VkClearValue*	pClearValues;
 		};
 
+		const VkImageMemoryBarrier imageLayoutBarriers[] =
+		{
+			// color image layout transition
+			{
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,									// VkStructureType            sType;
+				DE_NULL,																// const void*                pNext;
+				(VkAccessFlags)0,														// VkAccessFlags              srcAccessMask;
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,									// VkAccessFlags              dstAccessMask;
+				VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout              oldLayout;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,								// VkImageLayout              newLayout;
+				VK_QUEUE_FAMILY_IGNORED,												// uint32_t                   srcQueueFamilyIndex;
+				VK_QUEUE_FAMILY_IGNORED,												// uint32_t                   dstQueueFamilyIndex;
+				*m_colorImage,															// VkImage                    image;
+				{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }							// VkImageSubresourceRange    subresourceRange;
+			},
+			// stencil image layout transition
+			{
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,									// VkStructureType            sType;
+				DE_NULL,																// const void*                pNext;
+				(VkAccessFlags)0,														// VkAccessFlags              srcAccessMask;
+				VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,							// VkAccessFlags              dstAccessMask;
+				VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout              oldLayout;
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,						// VkImageLayout              newLayout;
+				VK_QUEUE_FAMILY_IGNORED,												// uint32_t                   srcQueueFamilyIndex;
+				VK_QUEUE_FAMILY_IGNORED,												// uint32_t                   dstQueueFamilyIndex;
+				*m_stencilImage,														// VkImage                    image;
+				m_stencilImageSubresourceRange,											// VkImageSubresourceRange    subresourceRange;
+			},
+		};
+
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,
+			0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(imageLayoutBarriers), imageLayoutBarriers);
+
 		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		const VkDeviceSize		quadOffset		= (m_vertices.size() / StencilTest::QUAD_COUNT) * sizeof(Vertex4RGBA);

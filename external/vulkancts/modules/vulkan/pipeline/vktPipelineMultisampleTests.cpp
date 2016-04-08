@@ -1644,8 +1644,8 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 				0u,						// deUint32		writeMask;
 				0u,						// deUint32		reference;
 			},
-			-1.0f,														// float			minDepthBounds;
-			+1.0f,														// float			maxDepthBounds;
+			0.0f,														// float			minDepthBounds;
+			1.0f,														// float			maxDepthBounds;
 		};
 
 		const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
@@ -1756,9 +1756,43 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 			clearValues												// const VkClearValue*	pClearValues;
 		};
 
+		const VkImageMemoryBarrier imageLayoutBarriers[] =
+		{
+			// color attachment image
+			{
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
+				DE_NULL,										// const void*				pNext;
+				0u,												// VkAccessFlags			srcAccessMask;
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			dstAccessMask;
+				VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			oldLayout;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// VkImageLayout			newLayout;
+				VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
+				VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
+				*m_colorImage,									// VkImage					image;
+				{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange	subresourceRange;
+			},
+			// resolve attachment image
+			{
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
+				DE_NULL,										// const void*				pNext;
+				0u,												// VkAccessFlags			srcAccessMask;
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			dstAccessMask;
+				VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			oldLayout;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// VkImageLayout			newLayout;
+				VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
+				VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
+				*m_resolveImage,								// VkImage					image;
+				{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange	subresourceRange;
+			},
+		};
+
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,
+			0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(imageLayoutBarriers), imageLayoutBarriers);
+
 		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		VkDeviceSize vertexBufferOffset = 0u;
