@@ -103,11 +103,11 @@ public:
 
 	virtual void							shadeVertices		(const VertexAttrib* inputs, VertexPacket* const* packets, const int numPackets) const = 0;
 
-	const std::vector<VertexInputInfo>&		getInputs() const	{ return m_inputs; }
-	const std::vector<VertexOutputInfo>&	getOutputs() const	{ return m_outputs; }
+	const std::vector<VertexInputInfo>&		getInputs			(void) const	{ return m_inputs;	}
+	const std::vector<VertexOutputInfo>&	getOutputs			(void) const	{ return m_outputs;	}
 
 protected:
-											~VertexShader() {}; // \note Renderer will not delete any objects passed in.
+											~VertexShader		(void) {}; // \note Renderer will not delete any objects passed in.
 
 	std::vector<VertexInputInfo>			m_inputs;
 	std::vector<VertexOutputInfo>			m_outputs;
@@ -124,13 +124,13 @@ class FragmentShader
 public:
 											FragmentShader		(size_t numInputs, size_t numOutputs) : m_inputs(numInputs), m_outputs(numOutputs) {}
 
-	const std::vector<FragmentInputInfo>&	getInputs() const	{ return m_inputs; }
-	const std::vector<FragmentOutputInfo>&	getOutputs() const	{ return m_outputs; }
+	const std::vector<FragmentInputInfo>&	getInputs			(void) const	{ return m_inputs;	}
+	const std::vector<FragmentOutputInfo>&	getOutputs			(void) const	{ return m_outputs;	}
 
 	virtual void							shadeFragments		(FragmentPacket* packets, const int numPackets, const FragmentShadingContext& context) const = 0; // \note numPackets must be greater than zero.
 
 protected:
-											~FragmentShader() {}; // \note Renderer will not delete any objects passed in.
+											~FragmentShader		(void) {}; // \note Renderer will not delete any objects passed in.
 
 	std::vector<FragmentInputInfo>			m_inputs;
 	std::vector<FragmentOutputInfo>			m_outputs;
