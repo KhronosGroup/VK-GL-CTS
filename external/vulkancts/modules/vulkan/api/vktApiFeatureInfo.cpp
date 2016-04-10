@@ -31,9 +31,13 @@
 #include "vkRef.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkImageUtil.hpp"
+#include "vkApiVersion.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
+#include "tcuTextureUtil.hpp"
+#include "tcuResultCollector.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -56,9 +60,11 @@ using tcu::ScopedLogSection;
 
 enum
 {
-	GUARD_SIZE	= 0x20,			//!< Number of bytes to check
-	GUARD_VALUE	= 0xcd,			//!< Data pattern
+	GUARD_SIZE								= 0x20,			//!< Number of bytes to check
+	GUARD_VALUE								= 0xcd,			//!< Data pattern
 };
+
+static const VkDeviceSize MINIMUM_REQUIRED_IMAGE_RESOURCE_SIZE =	(1LLU<<31);	//!< Minimum value for VkImageFormatProperties::maxResourceSize (2GiB)
 
 enum LimitFormat
 {
@@ -66,6 +72,7 @@ enum LimitFormat
 	LIMIT_FORMAT_UNSIGNED_INT,
 	LIMIT_FORMAT_FLOAT,
 	LIMIT_FORMAT_DEVICE_SIZE,
+	LIMIT_FORMAT_BITMASK,
 
 	LIMIT_FORMAT_LAST
 };
@@ -74,6 +81,7 @@ enum LimitType
 {
 	LIMIT_TYPE_MIN,
 	LIMIT_TYPE_MAX,
+	LIMIT_TYPE_NONE,
 
 	LIMIT_TYPE_LAST
 };
@@ -105,8 +113,10 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(maxImageArrayLayers),								256, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   , -1 },
 		{ LIMIT(maxTexelBufferElements),							65536, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxUniformBufferRange),								16384, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxStorageBufferRange),								0, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
 		{ LIMIT(maxPushConstantsSize),								128, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxMemoryAllocationCount),							4096, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxSamplerAllocationCount),							0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE , -1 },
 		{ LIMIT(bufferImageGranularity),							0, 0, 131072, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1 },
 		{ LIMIT(sparseAddressSpaceSize),							0, 0, 2UL*1024*1024*1024, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxBoundDescriptorSets),							4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
@@ -116,6 +126,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(maxPerStageDescriptorSampledImages),				16, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
 		{ LIMIT(maxPerStageDescriptorStorageImages),				4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
 		{ LIMIT(maxPerStageDescriptorInputAttachments),				4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxPerStageResources),								0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE , -1 },
 		{ LIMIT(maxDescriptorSetSamplers),							96, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxDescriptorSetUniformBuffers),					72, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
 		{ LIMIT(maxDescriptorSetUniformBuffersDynamic),				8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
@@ -123,6 +134,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(maxDescriptorSetStorageBuffersDynamic),				4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxDescriptorSetSampledImages),						96, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxDescriptorSetStorageImages),						24, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxDescriptorSetInputAttachments),					0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE  , -1 },
 		{ LIMIT(maxVertexInputAttributes),							16, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxVertexInputBindings),							16, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxVertexInputAttributeOffset),						2047, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
@@ -179,12 +191,24 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(subPixelInterpolationOffsetBits),					4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxFramebufferWidth),								4096, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxFramebufferHeight),								4096, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
-		{ LIMIT(maxFramebufferLayers),								256, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxFramebufferLayers),								0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(framebufferColorSampleCounts),						VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(framebufferDepthSampleCounts),						VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(framebufferStencilSampleCounts),					VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(framebufferNoAttachmentsSampleCounts),				VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxColorAttachments),								4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(sampledImageColorSampleCounts),						VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(sampledImageIntegerSampleCounts),					VK_SAMPLE_COUNT_1_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(sampledImageDepthSampleCounts),						VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(sampledImageStencilSampleCounts),					VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(storageImageSampleCounts),							VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT, 0, 0, 0.0f, LIMIT_FORMAT_BITMASK, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxSampleMaskWords),								1, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(timestampComputeAndGraphics),						0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(timestampPeriod),									0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
 		{ LIMIT(maxClipDistances),									8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxCullDistances),									8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxCombinedClipAndCullDistances),					8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(discreteQueuePriorities),							8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
 		{ LIMIT(pointSizeRange[0]),									0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
 		{ LIMIT(pointSizeRange[1]),									0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(pointSizeRange[0]),									0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
@@ -195,6 +219,10 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(lineWidthRange[1]),									0, 0, 0, 8.0f - limits->lineWidthGranularity, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(pointSizeGranularity),								0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
 		{ LIMIT(lineWidthGranularity),								0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(strictLines),										0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(standardSampleLocations),							0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(optimalBufferCopyOffsetAlignment),					0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(optimalBufferCopyRowPitchAlignment),				0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_NONE, -1 },
 		{ LIMIT(nonCoherentAtomSize),								0, 0, 128, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1 },
 	};
 
@@ -233,7 +261,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(minInterpolationOffset),							FEATURE(sampleRateShading),				0, 0, 0, 0.0f },
 		{ LIMIT(maxInterpolationOffset),							FEATURE(sampleRateShading),				0, 0, 0, 0.0f },
 		{ LIMIT(subPixelInterpolationOffsetBits),					FEATURE(sampleRateShading),				0, 0, 0, 0.0f },
-		{ LIMIT(storageImageSampleCounts),							FEATURE(shaderStorageImageMultisample),	0, 0, 0, 0.0f },
+		{ LIMIT(storageImageSampleCounts),							FEATURE(shaderStorageImageMultisample),	VK_SAMPLE_COUNT_1_BIT, 0, 0, 0.0f },
 		{ LIMIT(maxClipDistances),									FEATURE(shaderClipDistance),			0, 0, 0, 0.0f },
 		{ LIMIT(maxCullDistances),									FEATURE(shaderClipDistance),			0, 0, 0, 0.0f },
 		{ LIMIT(maxCombinedClipAndCullDistances),					FEATURE(shaderClipDistance),			0, 0, 0, 0.0f },
@@ -269,28 +297,28 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 				deUint32 limitToCheck = featureLimitTable[ndx].uintVal;
 				if (featureLimitTable[ndx].unsuppTableNdx != -1)
 				{
-					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
+					if (*((VkBool32*)((deUint8*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].uintVal;
 				}
 
-				if ( featureLimitTable[ndx].type == LIMIT_TYPE_MIN )
+				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
 				{
 
-					if (*((deUint32*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
+					if (*((deUint32*)((deUint8*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
 						log << TestLog::Message << "limit Validation failed " << featureLimitTable[ndx].name
 							<< " not valid-limit type MIN - actual is "
-							<< *((deUint32*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((deUint32*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
-				else
+				else if (featureLimitTable[ndx].type == LIMIT_TYPE_MAX)
 				{
-					if (*((deUint32*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
+					if (*((deUint32*)((deUint8*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed,  " << featureLimitTable[ndx].name
 							<< " not valid-limit type MAX - actual is "
-							<< *((deUint32*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((deUint32*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
@@ -302,27 +330,27 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 				float limitToCheck = featureLimitTable[ndx].floatVal;
 				if (featureLimitTable[ndx].unsuppTableNdx != -1)
 				{
-					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
+					if (*((VkBool32*)((deUint8*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].floatVal;
 				}
 
-				if ( featureLimitTable[ndx].type == LIMIT_TYPE_MIN )
+				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
 				{
-					if (*((float*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
+					if (*((float*)((deUint8*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MIN - actual is "
-							<< *((float*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((float*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
-				else
+				else if (featureLimitTable[ndx].type == LIMIT_TYPE_MAX)
 				{
-					if (*((float*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
+					if (*((float*)((deUint8*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MAX actual is "
-							<< *((float*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((float*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
@@ -334,26 +362,26 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 				deInt32 limitToCheck = featureLimitTable[ndx].intVal;
 				if (featureLimitTable[ndx].unsuppTableNdx != -1)
 				{
-					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
+					if (*((VkBool32*)((deUint8*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].intVal;
 				}
 				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
 				{
-					if (*((deInt32*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
+					if (*((deInt32*)((deUint8*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
 						log << TestLog::Message <<  "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MIN actual is "
-							<< *((deInt32*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((deInt32*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
-				else
+				else if (featureLimitTable[ndx].type == LIMIT_TYPE_MAX)
 				{
-					if (*((deInt32*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
+					if (*((deInt32*)((deUint8*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MAX actual is "
-							<< *((deInt32*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((deInt32*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
@@ -365,27 +393,49 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 				deUint64 limitToCheck = featureLimitTable[ndx].deviceSizeVal;
 				if (featureLimitTable[ndx].unsuppTableNdx != -1)
 				{
-					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
+					if (*((VkBool32*)((deUint8*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].deviceSizeVal;
 				}
 
-				if ( featureLimitTable[ndx].type == LIMIT_TYPE_MIN )
+				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
 				{
-					if (*((deUint64*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
+					if (*((deUint64*)((deUint8*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MIN actual is "
-							<< *((deUint64*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((deUint64*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
-				else
+				else if (featureLimitTable[ndx].type == LIMIT_TYPE_MAX)
 				{
-					if (*((deUint64*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
+					if (*((deUint64*)((deUint8*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MAX actual is "
-							<< *((deUint64*)((char*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+							<< *((deUint64*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+						limitsOk = false;
+					}
+				}
+				break;
+			}
+
+			case LIMIT_FORMAT_BITMASK:
+			{
+				deUint32 limitToCheck = featureLimitTable[ndx].uintVal;
+				if (featureLimitTable[ndx].unsuppTableNdx != -1)
+				{
+					if (*((VkBool32*)((deUint8*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
+						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].uintVal;
+				}
+
+				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
+				{
+					if ((*((deUint32*)((deUint8*)limits+featureLimitTable[ndx].offset)) & limitToCheck) != limitToCheck)
+					{
+						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
+							<< " not valid-limit type bitmask actual is "
+							<< *((deUint64*)((deUint8*)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
 						limitsOk = false;
 					}
 				}
@@ -396,6 +446,30 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 				DE_ASSERT(0);
 				limitsOk = false;
 		}
+	}
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(limits->maxViewportDimensions); ndx++)
+	{
+		if (limits->maxImageDimension2D > limits->maxViewportDimensions[ndx])
+		{
+			log << TestLog::Message << "limit validation failed, maxImageDimension2D of " << limits->maxImageDimension2D
+				<< "is larger than maxViewportDimension[" << ndx << "] of " << limits->maxViewportDimensions[ndx] << TestLog::EndMessage;
+			limitsOk = false;
+		}
+	}
+
+	if (limits->viewportBoundsRange[0] > -2 * limits->maxViewportDimensions[0])
+	{
+		log << TestLog::Message << "limit validation failed, viewPortBoundsRange[0] of " << limits->viewportBoundsRange[0]
+			<< "is larger than -2*maxViewportDimension[0] of " << -2*limits->maxViewportDimensions[0] << TestLog::EndMessage;
+		limitsOk = false;
+	}
+
+	if (limits->viewportBoundsRange[1] < 2 * limits->maxViewportDimensions[1] - 1)
+	{
+		log << TestLog::Message << "limit validation failed, viewportBoundsRange[1] of " << limits->viewportBoundsRange[1]
+			<< "is less than 2*maxViewportDimension[1] of " << 2*limits->maxViewportDimensions[1] << TestLog::EndMessage;
+		limitsOk = false;
 	}
 
 	return limitsOk;
@@ -492,11 +566,75 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 	return tcu::TestStatus::pass("Enumerating extensions succeeded");
 }
 
+#define VK_SIZE_OF(STRUCT, MEMBER)					(sizeof(((STRUCT*)0)->MEMBER))
+#define OFFSET_TABLE_ENTRY(STRUCT, MEMBER)			{ DE_OFFSET_OF(STRUCT, MEMBER), VK_SIZE_OF(STRUCT, MEMBER) }
+
 tcu::TestStatus deviceFeatures (Context& context)
 {
 	TestLog&						log			= context.getTestContext().getLog();
 	VkPhysicalDeviceFeatures*		features;
 	deUint8							buffer[sizeof(VkPhysicalDeviceFeatures) + GUARD_SIZE];
+
+	const QueryMemberTableEntry featureOffsetTable[] =
+	{
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, robustBufferAccess),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, fullDrawIndexUint32),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, imageCubeArray),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, independentBlend),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, geometryShader),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, tessellationShader),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sampleRateShading),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, dualSrcBlend),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, logicOp),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, multiDrawIndirect),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, drawIndirectFirstInstance),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, depthClamp),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, depthBiasClamp),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, fillModeNonSolid),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, depthBounds),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, wideLines),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, largePoints),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, alphaToOne),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, multiViewport),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, samplerAnisotropy),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, textureCompressionETC2),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, textureCompressionASTC_LDR),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, textureCompressionBC),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, occlusionQueryPrecise),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, pipelineStatisticsQuery),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, vertexPipelineStoresAndAtomics),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, fragmentStoresAndAtomics),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderTessellationAndGeometryPointSize),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderImageGatherExtended),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderStorageImageExtendedFormats),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderStorageImageMultisample),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderStorageImageReadWithoutFormat),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderStorageImageWriteWithoutFormat),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderUniformBufferArrayDynamicIndexing),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderSampledImageArrayDynamicIndexing),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderStorageBufferArrayDynamicIndexing),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderStorageImageArrayDynamicIndexing),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderClipDistance),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderCullDistance),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderFloat64),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderInt64),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderInt16),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderResourceResidency),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, shaderResourceMinLod),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseBinding),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidencyBuffer),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidencyImage2D),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidencyImage3D),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidency2Samples),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidency4Samples),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidency8Samples),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidency16Samples),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, sparseResidencyAliased),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, variableMultisampleRate),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceFeatures, inheritedQueries),
+		{ 0, 0 }
+	};
+
 
 	deMemset(buffer, GUARD_VALUE, sizeof(buffer));
 	features = reinterpret_cast<VkPhysicalDeviceFeatures*>(buffer);
@@ -505,6 +643,9 @@ tcu::TestStatus deviceFeatures (Context& context)
 
 	log << TestLog::Message << "device = " << context.getPhysicalDevice() << TestLog::EndMessage
 		<< TestLog::Message << *features << TestLog::EndMessage;
+
+	if (!features->robustBufferAccess)
+		return tcu::TestStatus::fail("robustBufferAccess is not supported");
 
 	for (int ndx = 0; ndx < GUARD_SIZE; ndx++)
 	{
@@ -515,6 +656,13 @@ tcu::TestStatus deviceFeatures (Context& context)
 		}
 	}
 
+	if (!validateInitComplete(context.getPhysicalDevice(), &InstanceInterface::getPhysicalDeviceFeatures, context.getInstanceInterface(), featureOffsetTable))
+	{
+		log << TestLog::Message << "deviceFeatures - VkPhysicalDeviceFeatures not completely initialized" << TestLog::EndMessage;
+		return tcu::TestStatus::fail("deviceFeatures incomplete initialization");
+	}
+
+
 	return tcu::TestStatus::pass("Query succeeded");
 }
 
@@ -524,6 +672,117 @@ tcu::TestStatus deviceProperties (Context& context)
 	VkPhysicalDeviceProperties*		props;
 	VkPhysicalDeviceFeatures		features;
 	deUint8							buffer[sizeof(VkPhysicalDeviceProperties) + GUARD_SIZE];
+
+	const QueryMemberTableEntry limitOffsetTable[] =
+	{
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxImageDimension1D),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxImageDimension2D),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxImageDimension3D),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxImageDimensionCube),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxImageArrayLayers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTexelBufferElements),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxUniformBufferRange),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxStorageBufferRange),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPushConstantsSize),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxMemoryAllocationCount),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxSamplerAllocationCount),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, bufferImageGranularity),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, sparseAddressSpaceSize),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxBoundDescriptorSets),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageDescriptorSamplers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageDescriptorUniformBuffers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageDescriptorStorageBuffers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageDescriptorSampledImages),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageDescriptorStorageImages),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageDescriptorInputAttachments),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxPerStageResources),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetSamplers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetUniformBuffers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetUniformBuffersDynamic),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetStorageBuffers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetStorageBuffersDynamic),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetSampledImages),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetStorageImages),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDescriptorSetInputAttachments),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxVertexInputAttributes),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxVertexInputBindings),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxVertexInputAttributeOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxVertexInputBindingStride),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxVertexOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationGenerationLevel),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationPatchSize),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationControlPerVertexInputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationControlPerVertexOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationControlPerPatchOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationControlTotalOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationEvaluationInputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTessellationEvaluationOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxGeometryShaderInvocations),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxGeometryInputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxGeometryOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxGeometryOutputVertices),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxGeometryTotalOutputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFragmentInputComponents),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFragmentOutputAttachments),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFragmentDualSrcAttachments),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFragmentCombinedOutputResources),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxComputeSharedMemorySize),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxComputeWorkGroupCount[3]),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxComputeWorkGroupInvocations),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxComputeWorkGroupSize[3]),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, subPixelPrecisionBits),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, subTexelPrecisionBits),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, mipmapPrecisionBits),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDrawIndexedIndexValue),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxDrawIndirectCount),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxSamplerLodBias),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxSamplerAnisotropy),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxViewports),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxViewportDimensions[2]),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, viewportBoundsRange[2]),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, viewportSubPixelBits),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minMemoryMapAlignment),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minTexelBufferOffsetAlignment),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minUniformBufferOffsetAlignment),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minStorageBufferOffsetAlignment),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minTexelOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTexelOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minTexelGatherOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxTexelGatherOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, minInterpolationOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxInterpolationOffset),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, subPixelInterpolationOffsetBits),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFramebufferWidth),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFramebufferHeight),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxFramebufferLayers),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, framebufferColorSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, framebufferDepthSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, framebufferStencilSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, framebufferNoAttachmentsSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxColorAttachments),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, sampledImageColorSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, sampledImageIntegerSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, sampledImageDepthSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, sampledImageStencilSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, storageImageSampleCounts),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxSampleMaskWords),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, timestampComputeAndGraphics),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, timestampPeriod),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxClipDistances),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxCullDistances),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, maxCombinedClipAndCullDistances),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, discreteQueuePriorities),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, pointSizeRange[2]),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, lineWidthRange[2]),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, pointSizeGranularity),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, lineWidthGranularity),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, strictLines),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, standardSampleLocations),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, optimalBufferCopyOffsetAlignment),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, optimalBufferCopyRowPitchAlignment),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceLimits, nonCoherentAtomSize),
+		{ 0, 0 }
+	};
 
 	props = reinterpret_cast<VkPhysicalDeviceProperties*>(buffer);
 	deMemset(props, GUARD_VALUE, sizeof(buffer));
@@ -543,6 +802,29 @@ tcu::TestStatus deviceProperties (Context& context)
 		{
 			log << TestLog::Message << "deviceProperties - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
 			return tcu::TestStatus::fail("deviceProperties buffer overflow");
+		}
+	}
+
+	if (!validateInitComplete(context.getPhysicalDevice(), &InstanceInterface::getPhysicalDeviceProperties, context.getInstanceInterface(), limitOffsetTable))
+	{
+		log << TestLog::Message << "deviceProperties - VkPhysicalDeviceProperties not completely initialized" << TestLog::EndMessage;
+		return tcu::TestStatus::fail("deviceProperties incomplete initialization");
+	}
+
+	{
+		const ApiVersion deviceVersion = unpackVersion(props->apiVersion);
+		const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION);
+
+		if (deviceVersion.majorNum != deqpVersion.majorNum)
+		{
+			log << TestLog::Message << "deviceProperties - API Major Version " << deviceVersion.majorNum << " is not valid" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceProperties apiVersion not valid");
+		}
+
+		if (deviceVersion.minorNum > deqpVersion.minorNum)
+		{
+			log << TestLog::Message << "deviceProperties - API Minor Version " << deviceVersion.minorNum << " is not valid for this version of dEQP" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceProperties apiVersion not valid");
 		}
 	}
 
@@ -583,6 +865,95 @@ tcu::TestStatus deviceMemoryProperties (Context& context)
 			log << TestLog::Message << "deviceMemoryProperties - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
 			return tcu::TestStatus::fail("deviceMemoryProperties buffer overflow");
 		}
+	}
+
+	if (memProps->memoryHeapCount >= VK_MAX_MEMORY_HEAPS)
+	{
+		log << TestLog::Message << "deviceMemoryProperties - HeapCount larger than " << (deUint32)VK_MAX_MEMORY_HEAPS << TestLog::EndMessage;
+		return tcu::TestStatus::fail("deviceMemoryProperties HeapCount too large");
+	}
+
+	if (memProps->memoryHeapCount == 1)
+	{
+		if ((memProps->memoryHeaps[0].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) == 0)
+		{
+			log << TestLog::Message << "deviceMemoryProperties - Single heap is not marked DEVICE_LOCAL" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryProperties invalid HeapFlags");
+		}
+	}
+
+	const VkMemoryPropertyFlags validPropertyFlags[] =
+	{
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT|VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT|VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT|VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_CACHED_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_CACHED_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT|VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT
+	};
+
+	const VkMemoryPropertyFlags requiredPropertyFlags[] =
+	{
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+	};
+
+	bool requiredFlagsFound[DE_LENGTH_OF_ARRAY(requiredPropertyFlags)];
+	std::fill(DE_ARRAY_BEGIN(requiredFlagsFound), DE_ARRAY_END(requiredFlagsFound), false);
+
+	for (deUint32 memoryNdx = 0; memoryNdx < memProps->memoryTypeCount; memoryNdx++)
+	{
+		bool validPropTypeFound = false;
+
+		if (memProps->memoryTypes[memoryNdx].heapIndex >= memProps->memoryHeapCount)
+		{
+			log << TestLog::Message << "deviceMemoryProperties - heapIndex " << memProps->memoryTypes[memoryNdx].heapIndex << " larger than heapCount" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryProperties - invalid heapIndex");
+		}
+
+		const VkMemoryPropertyFlags bitsToCheck = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT|VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT|VK_MEMORY_PROPERTY_HOST_CACHED_BIT|VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+
+		for (const VkMemoryPropertyFlags* requiredFlagsIterator = DE_ARRAY_BEGIN(requiredPropertyFlags); requiredFlagsIterator != DE_ARRAY_END(requiredPropertyFlags); requiredFlagsIterator++)
+			if ((memProps->memoryTypes[memoryNdx].propertyFlags & *requiredFlagsIterator) == *requiredFlagsIterator)
+				requiredFlagsFound[requiredFlagsIterator - DE_ARRAY_BEGIN(requiredPropertyFlags)] = true;
+
+		if (de::contains(DE_ARRAY_BEGIN(validPropertyFlags), DE_ARRAY_END(validPropertyFlags), memProps->memoryTypes[memoryNdx].propertyFlags & bitsToCheck))
+			validPropTypeFound = true;
+
+		if (!validPropTypeFound)
+		{
+			log << TestLog::Message << "deviceMemoryProperties - propertyFlags "
+				<< memProps->memoryTypes[memoryNdx].propertyFlags << " not valid" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryProperties propertyFlags not valid");
+		}
+
+		if (memProps->memoryTypes[memoryNdx].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		{
+			if ((memProps->memoryHeaps[memProps->memoryTypes[memoryNdx].heapIndex].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) == 0)
+			{
+				log << TestLog::Message << "deviceMemoryProperties - DEVICE_LOCAL memory type references heap which is not DEVICE_LOCAL" << TestLog::EndMessage;
+				return tcu::TestStatus::fail("deviceMemoryProperties inconsistent memoryType and HeapFlags");
+			}
+		}
+		else
+		{
+			if (memProps->memoryHeaps[memProps->memoryTypes[memoryNdx].heapIndex].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+			{
+				log << TestLog::Message << "deviceMemoryProperties - non-DEVICE_LOCAL memory type references heap with is DEVICE_LOCAL" << TestLog::EndMessage;
+				return tcu::TestStatus::fail("deviceMemoryProperties inconsistent memoryType and HeapFlags");
+			}
+		}
+	}
+
+	bool* requiredFlagsFoundIterator = std::find(DE_ARRAY_BEGIN(requiredFlagsFound), DE_ARRAY_END(requiredFlagsFound), false);
+	if (requiredFlagsFoundIterator != DE_ARRAY_END(requiredFlagsFound))
+	{
+		DE_ASSERT(requiredFlagsFoundIterator - DE_ARRAY_BEGIN(requiredFlagsFound) <= DE_LENGTH_OF_ARRAY(requiredPropertyFlags));
+		log << TestLog::Message << "deviceMemoryProperties - required property flags "
+			<< getMemoryPropertyFlagsStr(requiredPropertyFlags[requiredFlagsFoundIterator - DE_ARRAY_BEGIN(requiredFlagsFound)]) << " not found" << TestLog::EndMessage;
+
+		return tcu::TestStatus::fail("deviceMemoryProperties propertyFlags not valid");
 	}
 
 	return tcu::TestStatus::pass("Querying memory properties succeeded");
@@ -641,6 +1012,30 @@ VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
 		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
 		VK_FORMAT_D16_UNORM,
 		VK_FORMAT_D32_SFLOAT
+	};
+	static const VkFormat s_requiredSampledImageFilterLinearFormats[] =
+	{
+		VK_FORMAT_B4G4R4A4_UNORM_PACK16,
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+		VK_FORMAT_R8_UNORM,
+		VK_FORMAT_R8_SNORM,
+		VK_FORMAT_R8G8_UNORM,
+		VK_FORMAT_R8G8_SNORM,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_SNORM,
+		VK_FORMAT_R8G8B8A8_SRGB,
+		VK_FORMAT_B8G8R8A8_UNORM,
+		VK_FORMAT_B8G8R8A8_SRGB,
+		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_SRGB_PACK32,
+		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+		VK_FORMAT_R16_SFLOAT,
+		VK_FORMAT_R16G16_SFLOAT,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
+		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
 	};
 	static const VkFormat s_requiredStorageImageFormats[] =
 	{
@@ -733,6 +1128,9 @@ VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
 
 	if (de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageBlitSrcFormats), DE_ARRAY_END(s_requiredSampledImageBlitSrcFormats), format))
 		flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT|VK_FORMAT_FEATURE_BLIT_SRC_BIT;
+
+	if (de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageFilterLinearFormats), DE_ARRAY_END(s_requiredSampledImageFilterLinearFormats), format))
+		flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
 
 	if (de::contains(DE_ARRAY_BEGIN(s_requiredStorageImageFormats), DE_ARRAY_END(s_requiredStorageImageFormats), format))
 		flags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
@@ -983,7 +1381,7 @@ tcu::TestStatus testCompressedFormatsSupported (Context& context)
 		VK_FORMAT_BC7_UNORM_BLOCK,
 		VK_FORMAT_BC7_SRGB_BLOCK,
 	};
-	static const VkFormat s_allEtcEacFormats[] =
+	static const VkFormat s_allEtc2Formats[] =
 	{
 		VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
 		VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
@@ -996,7 +1394,7 @@ tcu::TestStatus testCompressedFormatsSupported (Context& context)
 		VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
 		VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
 	};
-	static const VkFormat s_allAstcFormats[] =
+	static const VkFormat s_allAstcLdrFormats[] =
 	{
 		VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
 		VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
@@ -1028,28 +1426,68 @@ tcu::TestStatus testCompressedFormatsSupported (Context& context)
 		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
 	};
 
-	const bool	bcFormatsSupported		= optimalTilingFeaturesSupportedForAll(context,
-																			   DE_ARRAY_BEGIN(s_allBcFormats),
-																			   DE_ARRAY_END(s_allBcFormats),
-																			   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
-	const bool	etcEacFormatsSupported	= optimalTilingFeaturesSupportedForAll(context,
-																			   DE_ARRAY_BEGIN(s_allEtcEacFormats),
-																			   DE_ARRAY_END(s_allEtcEacFormats),
-																			   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
-	const bool	astcFormatsSupported	= optimalTilingFeaturesSupportedForAll(context,
-																			   DE_ARRAY_BEGIN(s_allAstcFormats),
-																			   DE_ARRAY_END(s_allAstcFormats),
-																			   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
-	TestLog&	log						= context.getTestContext().getLog();
+	static const struct
+	{
+		const char*									setName;
+		const char*									featureName;
+		const VkBool32 VkPhysicalDeviceFeatures::*	feature;
+		const VkFormat*								formatsBegin;
+		const VkFormat*								formatsEnd;
+	} s_compressedFormatSets[] =
+	{
+		{ "BC",			"textureCompressionBC",			&VkPhysicalDeviceFeatures::textureCompressionBC,		DE_ARRAY_BEGIN(s_allBcFormats),			DE_ARRAY_END(s_allBcFormats)		},
+		{ "ETC2",		"textureCompressionETC2",		&VkPhysicalDeviceFeatures::textureCompressionETC2,		DE_ARRAY_BEGIN(s_allEtc2Formats),		DE_ARRAY_END(s_allEtc2Formats)		},
+		{ "ASTC LDR",	"textureCompressionASTC_LDR",	&VkPhysicalDeviceFeatures::textureCompressionASTC_LDR,	DE_ARRAY_BEGIN(s_allAstcLdrFormats),	DE_ARRAY_END(s_allAstcLdrFormats)	},
+	};
 
-	log << TestLog::Message << "All BC* formats supported: " << (bcFormatsSupported ? "true" : "false") << TestLog::EndMessage;
-	log << TestLog::Message << "All ETC2/EAC formats supported: " << (etcEacFormatsSupported ? "true" : "false") << TestLog::EndMessage;
-	log << TestLog::Message << "All ASTC formats supported: " << (astcFormatsSupported ? "true" : "false") << TestLog::EndMessage;
+	TestLog&						log					= context.getTestContext().getLog();
+	const VkPhysicalDeviceFeatures&	features			= context.getDeviceFeatures();
+	int								numSupportedSets	= 0;
+	int								numErrors			= 0;
+	int								numWarnings			= 0;
 
-	if (bcFormatsSupported || etcEacFormatsSupported || astcFormatsSupported)
-		return tcu::TestStatus::pass("At least one set of compressed formats supported");
+	for (int setNdx = 0; setNdx < DE_LENGTH_OF_ARRAY(s_compressedFormatSets); ++setNdx)
+	{
+		const char* const	setName			= s_compressedFormatSets[setNdx].setName;
+		const char* const	featureName		= s_compressedFormatSets[setNdx].featureName;
+		const bool			featureBitSet	= features.*s_compressedFormatSets[setNdx].feature == VK_TRUE;
+		const bool			allSupported	= optimalTilingFeaturesSupportedForAll(context,
+																				   s_compressedFormatSets[setNdx].formatsBegin,
+																				   s_compressedFormatSets[setNdx].formatsEnd,
+																				   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+
+		if (featureBitSet && !allSupported)
+		{
+			log << TestLog::Message << "ERROR: " << featureName << " = VK_TRUE but " << setName << " formats not supported" << TestLog::EndMessage;
+			numErrors += 1;
+		}
+		else if (allSupported && !featureBitSet)
+		{
+			log << TestLog::Message << "WARNING: " << setName << " formats supported but " << featureName << " = VK_FALSE" << TestLog::EndMessage;
+			numWarnings += 1;
+		}
+
+		if (featureBitSet)
+		{
+			log << TestLog::Message << "All " << setName << " formats are supported" << TestLog::EndMessage;
+			numSupportedSets += 1;
+		}
+		else
+			log << TestLog::Message << setName << " formats are not supported" << TestLog::EndMessage;
+	}
+
+	if (numSupportedSets == 0)
+	{
+		log << TestLog::Message << "No compressed format sets supported" << TestLog::EndMessage;
+		numErrors += 1;
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus::fail("Compressed format support not valid");
+	else if (numWarnings > 0)
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Found inconsistencies in compressed format support");
 	else
-		return tcu::TestStatus::fail("Compressed formats not supported");
+		return tcu::TestStatus::pass("Compressed texture format support is valid");
 }
 
 void createFormatTests (tcu::TestCaseGroup* testGroup)
@@ -1127,6 +1565,68 @@ bool isValidImageCreateFlagCombination (VkImageCreateFlags)
 	return true;
 }
 
+bool isRequiredImageParameterCombination (const VkPhysicalDeviceFeatures&	deviceFeatures,
+										  const VkFormat					format,
+										  const VkFormatProperties&			formatProperties,
+										  const VkImageType					imageType,
+										  const VkImageTiling				imageTiling,
+										  const VkImageUsageFlags			usageFlags,
+										  const VkImageCreateFlags			createFlags)
+{
+	DE_UNREF(deviceFeatures);
+	DE_UNREF(formatProperties);
+	DE_UNREF(createFlags);
+
+	// Linear images can have arbitrary limitations
+	if (imageTiling == VK_IMAGE_TILING_LINEAR)
+		return false;
+
+	// Support for other usages for compressed formats is optional
+	if (isCompressedFormat(format) &&
+		(usageFlags & ~(VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT)) != 0)
+		return false;
+
+	// Support for 1D, and sliced 3D compressed formats is optional
+	if (isCompressedFormat(format) && (imageType == VK_IMAGE_TYPE_1D || imageType == VK_IMAGE_TYPE_3D))
+		return false;
+
+	DE_ASSERT(deviceFeatures.sparseBinding || (createFlags & (VK_IMAGE_CREATE_SPARSE_BINDING_BIT|VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)) == 0);
+	DE_ASSERT(deviceFeatures.sparseResidencyAliased || (createFlags & VK_IMAGE_CREATE_SPARSE_ALIASED_BIT) == 0);
+
+	return true;
+}
+
+VkSampleCountFlags getRequiredOptimalTilingSampleCounts (const VkPhysicalDeviceLimits&	deviceLimits,
+														 const VkFormat					format,
+														 const VkImageUsageFlags		usageFlags)
+{
+	if (!isCompressedFormat(format))
+	{
+		const tcu::TextureFormat		tcuFormat	= mapVkFormat(format);
+
+		if (usageFlags & VK_IMAGE_USAGE_STORAGE_BIT)
+			return deviceLimits.storageImageSampleCounts;
+		else if (tcuFormat.order == tcu::TextureFormat::D)
+			return deviceLimits.sampledImageDepthSampleCounts;
+		else if (tcuFormat.order == tcu::TextureFormat::S)
+			return deviceLimits.sampledImageStencilSampleCounts;
+		else if (tcuFormat.order == tcu::TextureFormat::DS)
+			return deviceLimits.sampledImageDepthSampleCounts & deviceLimits.sampledImageStencilSampleCounts;
+		else
+		{
+			const tcu::TextureChannelClass	chnClass	= tcu::getTextureChannelClass(tcuFormat.type);
+
+			if (chnClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ||
+				chnClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
+				return deviceLimits.sampledImageIntegerSampleCounts;
+			else
+				return deviceLimits.sampledImageColorSampleCounts;
+		}
+	}
+	else
+		return VK_SAMPLE_COUNT_1_BIT;
+}
+
 struct ImageFormatPropertyCase
 {
 	VkFormat		format;
@@ -1153,10 +1653,13 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 	const VkImageType				imageType			= params.imageType;
 	const VkImageTiling				tiling				= params.tiling;
 	const VkPhysicalDeviceFeatures&	deviceFeatures		= context.getDeviceFeatures();
+	const VkPhysicalDeviceLimits&	deviceLimits		= context.getDeviceProperties().limits;
 	const VkFormatProperties		formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
 
 	const VkFormatFeatureFlags		supportedFeatures	= tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures : formatProperties.optimalTilingFeatures;
 	const VkImageUsageFlags			usageFlagSet		= getValidImageUsageFlags(format, supportedFeatures);
+
+	tcu::ResultCollector			results				(log, "ERROR: ");
 
 	for (VkImageUsageFlags curUsageFlags = 0; curUsageFlags <= usageFlagSet; curUsageFlags++)
 	{
@@ -1172,41 +1675,102 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 				!isValidImageCreateFlagCombination(curCreateFlags))
 				continue;
 
+			const bool				isRequiredCombination	= isRequiredImageParameterCombination(deviceFeatures,
+																								  format,
+																								  formatProperties,
+																								  imageType,
+																								  tiling,
+																								  curUsageFlags,
+																								  curCreateFlags);
+			VkImageFormatProperties	properties;
+			VkResult				queryResult;
+
 			log << TestLog::Message << "Testing " << getImageTypeStr(imageType) << ", "
 									<< getImageTilingStr(tiling) << ", "
 									<< getImageUsageFlagsStr(curUsageFlags) << ", "
 									<< getImageCreateFlagsStr(curCreateFlags)
 				<< TestLog::EndMessage;
 
-			try
+			// Set return value to known garbage
+			deMemset(&properties, 0xcd, sizeof(properties));
+
+			queryResult = context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(context.getPhysicalDevice(),
+																								format,
+																								imageType,
+																								tiling,
+																								curUsageFlags,
+																								curCreateFlags,
+																								&properties);
+
+			if (queryResult == VK_SUCCESS)
 			{
-				const VkImageFormatProperties	properties	= getPhysicalDeviceImageFormatProperties(context.getInstanceInterface(),
-																										context.getPhysicalDevice(),
-																										format,
-																										imageType,
-																										tiling,
-																										curUsageFlags,
-																										curCreateFlags);
+				const deUint32	fullMipPyramidSize	= de::max(de::max(deLog2Ceil32(properties.maxExtent.width),
+																	  deLog2Ceil32(properties.maxExtent.height)),
+															  deLog2Ceil32(properties.maxExtent.depth)) + 1;
+
 				log << TestLog::Message << properties << "\n" << TestLog::EndMessage;
 
-				// \todo [2016-01-24 pyry] Expand validation
-				TCU_CHECK((properties.sampleCounts & VK_SAMPLE_COUNT_1_BIT) != 0);
-				TCU_CHECK(imageType != VK_IMAGE_TYPE_1D || (properties.maxExtent.width >= 1 && properties.maxExtent.height == 1 && properties.maxExtent.depth == 1));
-				TCU_CHECK(imageType != VK_IMAGE_TYPE_2D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth == 1));
-				TCU_CHECK(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth >= 1));
-			}
-			catch (const Error& error)
-			{
-				// \todo [2016-01-22 pyry] Check if this is indeed optional image type / flag combination
-				if (error.getError() == VK_ERROR_FORMAT_NOT_SUPPORTED)
-					log << TestLog::Message << "Got VK_ERROR_FORMAT_NOT_SUPPORTED" << TestLog::EndMessage;
+				results.check(imageType != VK_IMAGE_TYPE_1D || (properties.maxExtent.width >= 1 && properties.maxExtent.height == 1 && properties.maxExtent.depth == 1), "Invalid dimensions for 1D image");
+				results.check(imageType != VK_IMAGE_TYPE_2D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth == 1), "Invalid dimensions for 2D image");
+				results.check(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth >= 1), "Invalid dimensions for 3D image");
+				results.check(imageType != VK_IMAGE_TYPE_3D || properties.maxArrayLayers == 1, "Invalid maxArrayLayers for 3D image");
+
+				if (tiling == VK_IMAGE_TILING_OPTIMAL)
+				{
+					const VkSampleCountFlags	requiredSampleCounts	= getRequiredOptimalTilingSampleCounts(deviceLimits, format, curUsageFlags);
+					results.check((properties.sampleCounts & requiredSampleCounts) == requiredSampleCounts, "Required sample counts not supported");
+				}
 				else
-					throw;
+					results.check(properties.sampleCounts == VK_SAMPLE_COUNT_1_BIT, "sampleCounts != VK_SAMPLE_COUNT_1_BIT");
+
+				if (isRequiredCombination)
+				{
+					results.check(imageType != VK_IMAGE_TYPE_1D || (properties.maxExtent.width	>= deviceLimits.maxImageDimension1D),
+								  "Reported dimensions smaller than device limits");
+					results.check(imageType != VK_IMAGE_TYPE_2D || (properties.maxExtent.width	>= deviceLimits.maxImageDimension2D &&
+																	properties.maxExtent.height	>= deviceLimits.maxImageDimension2D),
+								  "Reported dimensions smaller than device limits");
+					results.check(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width	>= deviceLimits.maxImageDimension3D &&
+																	properties.maxExtent.height	>= deviceLimits.maxImageDimension3D &&
+																	properties.maxExtent.depth	>= deviceLimits.maxImageDimension3D),
+								  "Reported dimensions smaller than device limits");
+					results.check(properties.maxMipLevels == fullMipPyramidSize, "maxMipLevels is not full mip pyramid size");
+					results.check(imageType == VK_IMAGE_TYPE_3D || properties.maxArrayLayers >= deviceLimits.maxImageArrayLayers,
+								  "maxArrayLayers smaller than device limits");
+				}
+				else
+				{
+					results.check(properties.maxMipLevels == 1 || properties.maxMipLevels == fullMipPyramidSize, "Invalid mip pyramid size");
+					results.check(properties.maxArrayLayers >= 1, "Invalid maxArrayLayers");
+				}
+
+				results.check(properties.maxResourceSize >= (VkDeviceSize)MINIMUM_REQUIRED_IMAGE_RESOURCE_SIZE,
+							  "maxResourceSize smaller than minimum required size");
+			}
+			else if (queryResult == VK_ERROR_FORMAT_NOT_SUPPORTED)
+			{
+				log << TestLog::Message << "Got VK_ERROR_FORMAT_NOT_SUPPORTED" << TestLog::EndMessage;
+
+				if (isRequiredCombination)
+					results.fail("VK_ERROR_FORMAT_NOT_SUPPORTED returned for required image parameter combination");
+
+				// Specification requires that all fields are set to 0
+				results.check(properties.maxExtent.width	== 0, "maxExtent.width != 0");
+				results.check(properties.maxExtent.height	== 0, "maxExtent.height != 0");
+				results.check(properties.maxExtent.depth	== 0, "maxExtent.depth != 0");
+				results.check(properties.maxMipLevels		== 0, "maxMipLevels != 0");
+				results.check(properties.maxArrayLayers		== 0, "maxArrayLayers != 0");
+				results.check(properties.sampleCounts		== 0, "sampleCounts != 0");
+				results.check(properties.maxResourceSize	== 0, "maxResourceSize != 0");
+			}
+			else
+			{
+				results.fail("Got unexpected error" + de::toString(queryResult));
 			}
 		}
 	}
 
-	return tcu::TestStatus::pass("All queries succeeded");
+	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 void createImageFormatTypeTilingTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyCase params)

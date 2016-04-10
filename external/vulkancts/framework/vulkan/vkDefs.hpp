@@ -96,11 +96,34 @@ enum
 
 typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkVoidFunction)					(void);
 
-typedef VKAPI_ATTR void*	(VKAPI_CALL* PFN_vkAllocationFunction)				(void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope);
-typedef VKAPI_ATTR void*	(VKAPI_CALL* PFN_vkReallocationFunction)			(void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope);
-typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkFreeFunction)					(void* pUserData, void* pMem);
-typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkInternalAllocationNotification)	(void* pUserData, size_t size, VkInternalAllocationType allocationType, VkSystemAllocationScope allocationScope);
-typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkInternalFreeNotification)		(void* pUserData, size_t size, VkInternalAllocationType allocationType, VkSystemAllocationScope allocationScope);
+typedef VKAPI_ATTR void*	(VKAPI_CALL* PFN_vkAllocationFunction)				(void*						pUserData,
+																				 size_t						size,
+																				 size_t						alignment,
+																				 VkSystemAllocationScope	allocationScope);
+typedef VKAPI_ATTR void*	(VKAPI_CALL* PFN_vkReallocationFunction)			(void*						pUserData,
+																				 void*						pOriginal,
+																				 size_t						size,
+																				 size_t						alignment,
+																				 VkSystemAllocationScope	allocationScope);
+typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkFreeFunction)					(void*						pUserData,
+																				 void*						pMem);
+typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkInternalAllocationNotification)	(void*						pUserData,
+																				 size_t						size,
+																				 VkInternalAllocationType	allocationType,
+																				 VkSystemAllocationScope	allocationScope);
+typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkInternalFreeNotification)		(void*						pUserData,
+																				 size_t						size,
+																				 VkInternalAllocationType	allocationType,
+																				 VkSystemAllocationScope	allocationScope);
+
+typedef VKAPI_ATTR VkBool32	(VKAPI_CALL* PFN_vkDebugReportCallbackEXT)			(VkDebugReportFlagsEXT		flags,
+																				 VkDebugReportObjectTypeEXT	objectType,
+																				 deUint64					object,
+																				 size_t						location,
+																				 deInt32					messageCode,
+																				 const char*				pLayerPrefix,
+																				 const char*				pMessage,
+																				 void*						pUserData);
 
 #include "vkStructTypes.inl"
 

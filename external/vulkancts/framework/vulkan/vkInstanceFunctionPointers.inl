@@ -13,3 +13,6 @@ GetDeviceProcAddrFunc						getDeviceProcAddr;
 CreateDeviceFunc							createDevice;
 EnumerateDeviceExtensionPropertiesFunc		enumerateDeviceExtensionProperties;
 EnumerateDeviceLayerPropertiesFunc			enumerateDeviceLayerProperties;
+CreateDebugReportCallbackEXTFunc			createDebugReportCallbackEXT;
+DestroyDebugReportCallbackEXTFunc			destroyDebugReportCallbackEXT;
+DebugReportMessageEXTFunc					debugReportMessageEXT;

@@ -38,6 +38,8 @@ const char*	getIndexTypeName					(VkIndexType value);
 const char*	getSubpassContentsName				(VkSubpassContents value);
 const char*	getColorSpaceKHRName				(VkColorSpaceKHR value);
 const char*	getPresentModeKHRName				(VkPresentModeKHR value);
+const char*	getDebugReportObjectTypeEXTName		(VkDebugReportObjectTypeEXT value);
+const char*	getDebugReportErrorEXTName			(VkDebugReportErrorEXT value);
 
 inline tcu::Format::Enum<VkPipelineCacheHeaderVersion>	getPipelineCacheHeaderVersionStr	(VkPipelineCacheHeaderVersion value)	{ return tcu::Format::Enum<VkPipelineCacheHeaderVersion>(getPipelineCacheHeaderVersionName, value);	}
 inline tcu::Format::Enum<VkResult>						getResultStr						(VkResult value)						{ return tcu::Format::Enum<VkResult>(getResultName, value);											}
@@ -76,6 +78,8 @@ inline tcu::Format::Enum<VkIndexType>					getIndexTypeStr						(VkIndexType valu
 inline tcu::Format::Enum<VkSubpassContents>				getSubpassContentsStr				(VkSubpassContents value)				{ return tcu::Format::Enum<VkSubpassContents>(getSubpassContentsName, value);						}
 inline tcu::Format::Enum<VkColorSpaceKHR>				getColorSpaceKHRStr					(VkColorSpaceKHR value)					{ return tcu::Format::Enum<VkColorSpaceKHR>(getColorSpaceKHRName, value);							}
 inline tcu::Format::Enum<VkPresentModeKHR>				getPresentModeKHRStr				(VkPresentModeKHR value)				{ return tcu::Format::Enum<VkPresentModeKHR>(getPresentModeKHRName, value);							}
+inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>	getDebugReportObjectTypeEXTStr		(VkDebugReportObjectTypeEXT value)		{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);		}
+inline tcu::Format::Enum<VkDebugReportErrorEXT>			getDebugReportErrorEXTStr			(VkDebugReportErrorEXT value)			{ return tcu::Format::Enum<VkDebugReportErrorEXT>(getDebugReportErrorEXTName, value);				}
 
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineCacheHeaderVersion value)	{ return s << getPipelineCacheHeaderVersionStr(value);	}
 inline std::ostream&	operator<<	(std::ostream& s, VkResult value)						{ return s << getResultStr(value);						}
@@ -114,6 +118,8 @@ inline std::ostream&	operator<<	(std::ostream& s, VkIndexType value)					{ retur
 inline std::ostream&	operator<<	(std::ostream& s, VkSubpassContents value)				{ return s << getSubpassContentsStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkColorSpaceKHR value)				{ return s << getColorSpaceKHRStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkPresentModeKHR value)				{ return s << getPresentModeKHRStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)		{ return s << getDebugReportObjectTypeEXTStr(value);	}
+inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportErrorEXT value)			{ return s << getDebugReportErrorEXTStr(value);			}
 
 tcu::Format::Bitfield<32>	getFormatFeatureFlagsStr					(VkFormatFeatureFlags value);
 tcu::Format::Bitfield<32>	getImageUsageFlagsStr						(VkImageUsageFlags value);
@@ -148,6 +154,7 @@ tcu::Format::Bitfield<32>	getStencilFaceFlagsStr						(VkStencilFaceFlags value)
 tcu::Format::Bitfield<32>	getSurfaceTransformFlagsKHRStr				(VkSurfaceTransformFlagsKHR value);
 tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr				(VkCompositeAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr				(VkDisplayPlaneAlphaFlagsKHR value);
+tcu::Format::Bitfield<32>	getDebugReportFlagsEXTStr					(VkDebugReportFlagsEXT value);
 tcu::Format::Bitfield<32>	getInstanceCreateFlagsStr					(VkInstanceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceCreateFlagsStr						(VkDeviceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceQueueCreateFlagsStr				(VkDeviceQueueCreateFlags value);
@@ -293,3 +300,4 @@ std::ostream&	operator<<	(std::ostream& s, const VkRenderPassBeginInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDispatchIndirectCommand& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDrawIndexedIndirectCommand& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDrawIndirectCommand& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
