@@ -35,9 +35,14 @@
 #include "vkDeviceUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkImageUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
+#include "tcuTextureUtil.hpp"
+#include "tcuImageCompare.hpp"
+
+#include "rrRenderer.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -188,6 +193,69 @@ void createTriangleProgs (SourceCollections& dst)
 		"void main (void) { o_color = vec4(1.0, 0.0, 1.0, 1.0); }\n");
 }
 
+class RefVertexShader : public rr::VertexShader
+{
+public:
+	RefVertexShader (void)
+		: rr::VertexShader(1, 0)
+	{
+		m_inputs[0].type = rr::GENERICVECTYPE_FLOAT;
+	}
+
+	void shadeVertices (const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const
+	{
+		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
+		{
+			packets[packetNdx]->position = rr::readVertexAttribFloat(inputs[0],
+																	 packets[packetNdx]->instanceNdx,
+																	 packets[packetNdx]->vertexNdx);
+		}
+	}
+};
+
+class RefFragmentShader : public rr::FragmentShader
+{
+public:
+	RefFragmentShader (void)
+		: rr::FragmentShader(0, 1)
+	{
+		m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
+	}
+
+	void shadeFragments (rr::FragmentPacket*, const int numPackets, const rr::FragmentShadingContext& context) const
+	{
+		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
+		{
+			for (int fragNdx = 0; fragNdx < rr::NUM_FRAGMENTS_PER_PACKET; ++fragNdx)
+			{
+				rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f));
+			}
+		}
+	}
+};
+
+void renderReferenceTriangle (const tcu::PixelBufferAccess& dst, const tcu::Vec4 (&vertices)[3])
+{
+	const RefVertexShader					vertShader;
+	const RefFragmentShader					fragShader;
+	const rr::Program						program			(&vertShader, &fragShader);
+	const rr::MultisamplePixelBufferAccess	colorBuffer		= rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(dst);
+	const rr::RenderTarget					renderTarget	(colorBuffer);
+	const rr::RenderState					renderState		((rr::ViewportState(colorBuffer)));
+	const rr::Renderer						renderer;
+	const rr::VertexAttrib					vertexAttribs[]	=
+	{
+		rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0, vertices[0].getPtr())
+	};
+
+	renderer.draw(rr::DrawCommand(renderState,
+								  renderTarget,
+								  program,
+								  DE_LENGTH_OF_ARRAY(vertexAttribs),
+								  &vertexAttribs[0],
+								  rr::PrimitiveList(rr::PRIMITIVETYPE_TRIANGLES, DE_LENGTH_OF_ARRAY(vertices), 0)));
+}
+
 tcu::TestStatus renderTriangleTest (Context& context)
 {
 	const VkDevice							vkDevice				= context.getDevice();
@@ -196,6 +264,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
 	const tcu::IVec2						renderSize				(256, 256);
+	const VkFormat							colorFormat				= VK_FORMAT_R8G8B8A8_UNORM;
+	const tcu::Vec4							clearColor				(0.125f, 0.25f, 0.75f, 1.0f);
 
 	const tcu::Vec4							vertices[]				=
 	{
@@ -624,7 +694,10 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	}
 
 	{
-		const VkClearValue			clearValue		= makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f);
+		const VkClearValue			clearValue		= makeClearValueColorF32(clearColor[0],
+																			 clearColor[1],
+																			 clearColor[2],
+																			 clearColor[3]);
 		const VkRenderPassBeginInfo	passBeginParams	=
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			// sType
@@ -754,9 +827,10 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), DE_TRUE, ~0ull));
 	}
 
-	// Log image
+	// Read results, render reference, compare
 	{
-		const VkMappedMemoryRange	range		=
+		const tcu::TextureFormat			tcuFormat		= vk::mapVkFormat(colorFormat);
+		const VkMappedMemoryRange			range			=
 		{
 			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// sType
 			DE_NULL,								// pNext
@@ -764,10 +838,31 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			0,										// offset
 			imageSizeBytes,							// size
 		};
-		void*						imagePtr	= readImageBufferMemory->getHostPtr();
+		const tcu::ConstPixelBufferAccess	resultAccess	(tcuFormat, renderSize.x(), renderSize.y(), 1, readImageBufferMemory->getHostPtr());
 
 		VK_CHECK(vk.invalidateMappedMemoryRanges(vkDevice, 1u, &range));
-		context.getTestContext().getLog() << TestLog::Image("Result", "Result", tcu::ConstPixelBufferAccess(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), renderSize.x(), renderSize.y(), 1, imagePtr));
+
+		{
+			tcu::TextureLevel	refImage		(tcuFormat, renderSize.x(), renderSize.y());
+			const tcu::UVec4	threshold		(0u);
+			const tcu::IVec3	posDeviation	(1,1,0);
+
+			tcu::clear(refImage.getAccess(), clearColor);
+			renderReferenceTriangle(refImage.getAccess(), vertices);
+
+			if (tcu::intThresholdPositionDeviationCompare(context.getTestContext().getLog(),
+														  "ComparisonResult",
+														  "Image comparison result",
+														  refImage.getAccess(),
+														  resultAccess,
+														  threshold,
+														  posDeviation,
+														  false,
+														  tcu::COMPARE_LOG_RESULT))
+				return tcu::TestStatus::pass("Rendering succeeded");
+			else
+				return tcu::TestStatus::fail("Image comparison failed");
+		}
 	}
 
 	return tcu::TestStatus::pass("Rendering succeeded");
