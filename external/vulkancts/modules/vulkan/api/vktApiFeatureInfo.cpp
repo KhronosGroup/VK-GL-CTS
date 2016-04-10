@@ -1756,8 +1756,8 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 
 				// Specification requires that all fields are set to 0
 				results.check(properties.maxExtent.width	== 0, "maxExtent.width != 0");
-				results.check(properties.maxExtent.height	== 0, "maxExtent.width != 0");
-				results.check(properties.maxExtent.depth	== 0, "maxExtent.width != 0");
+				results.check(properties.maxExtent.height	== 0, "maxExtent.height != 0");
+				results.check(properties.maxExtent.depth	== 0, "maxExtent.depth != 0");
 				results.check(properties.maxMipLevels		== 0, "maxMipLevels != 0");
 				results.check(properties.maxArrayLayers		== 0, "maxArrayLayers != 0");
 				results.check(properties.sampleCounts		== 0, "sampleCounts != 0");
