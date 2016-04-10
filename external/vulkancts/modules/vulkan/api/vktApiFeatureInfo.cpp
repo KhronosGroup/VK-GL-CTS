@@ -37,6 +37,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuResultCollector.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -1658,6 +1659,8 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 	const VkFormatFeatureFlags		supportedFeatures	= tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures : formatProperties.optimalTilingFeatures;
 	const VkImageUsageFlags			usageFlagSet		= getValidImageUsageFlags(format, supportedFeatures);
 
+	tcu::ResultCollector			results				(log, "ERROR: ");
+
 	for (VkImageUsageFlags curUsageFlags = 0; curUsageFlags <= usageFlagSet; curUsageFlags++)
 	{
 		if ((curUsageFlags & ~usageFlagSet) != 0 ||
@@ -1672,13 +1675,15 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 				!isValidImageCreateFlagCombination(curCreateFlags))
 				continue;
 
-			const bool	isRequiredCombination	= isRequiredImageParameterCombination(deviceFeatures,
-																					  format,
-																					  formatProperties,
-																					  imageType,
-																					  tiling,
-																					  curUsageFlags,
-																					  curCreateFlags);
+			const bool				isRequiredCombination	= isRequiredImageParameterCombination(deviceFeatures,
+																								  format,
+																								  formatProperties,
+																								  imageType,
+																								  tiling,
+																								  curUsageFlags,
+																								  curCreateFlags);
+			VkImageFormatProperties	properties;
+			VkResult				queryResult;
 
 			log << TestLog::Message << "Testing " << getImageTypeStr(imageType) << ", "
 									<< getImageTilingStr(tiling) << ", "
@@ -1686,69 +1691,86 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 									<< getImageCreateFlagsStr(curCreateFlags)
 				<< TestLog::EndMessage;
 
-			try
+			// Set return value to known garbage
+			deMemset(&properties, 0xcd, sizeof(properties));
+
+			queryResult = context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(context.getPhysicalDevice(),
+																								format,
+																								imageType,
+																								tiling,
+																								curUsageFlags,
+																								curCreateFlags,
+																								&properties);
+
+			if (queryResult == VK_SUCCESS)
 			{
-				const VkImageFormatProperties	properties			= getPhysicalDeviceImageFormatProperties(context.getInstanceInterface(),
-																											 context.getPhysicalDevice(),
-																											 format,
-																											 imageType,
-																											 tiling,
-																											 curUsageFlags,
-																											 curCreateFlags);
-				const deUint32					fullMipPyramidSize	= de::max(de::max(deLog2Ceil32(properties.maxExtent.width),
-																					  deLog2Ceil32(properties.maxExtent.height)),
-																			  deLog2Ceil32(properties.maxExtent.depth)) + 1;
+				const deUint32	fullMipPyramidSize	= de::max(de::max(deLog2Ceil32(properties.maxExtent.width),
+																	  deLog2Ceil32(properties.maxExtent.height)),
+															  deLog2Ceil32(properties.maxExtent.depth)) + 1;
 
 				log << TestLog::Message << properties << "\n" << TestLog::EndMessage;
 
-				TCU_CHECK(imageType != VK_IMAGE_TYPE_1D || (properties.maxExtent.width >= 1 && properties.maxExtent.height == 1 && properties.maxExtent.depth == 1));
-				TCU_CHECK(imageType != VK_IMAGE_TYPE_2D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth == 1));
-				TCU_CHECK(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth >= 1));
+				results.check(imageType != VK_IMAGE_TYPE_1D || (properties.maxExtent.width >= 1 && properties.maxExtent.height == 1 && properties.maxExtent.depth == 1), "Invalid dimensions for 1D image");
+				results.check(imageType != VK_IMAGE_TYPE_2D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth == 1), "Invalid dimensions for 2D image");
+				results.check(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth >= 1), "Invalid dimensions for 3D image");
+				results.check(imageType != VK_IMAGE_TYPE_3D || properties.maxArrayLayers == 1, "Invalid maxArrayLayers for 3D image");
 
 				if (tiling == VK_IMAGE_TILING_OPTIMAL)
 				{
 					const VkSampleCountFlags	requiredSampleCounts	= getRequiredOptimalTilingSampleCounts(deviceLimits, format, curUsageFlags);
-					TCU_CHECK((properties.sampleCounts & requiredSampleCounts) == requiredSampleCounts);
+					results.check((properties.sampleCounts & requiredSampleCounts) == requiredSampleCounts, "Required sample counts not supported");
 				}
 				else
-					TCU_CHECK(properties.sampleCounts == VK_SAMPLE_COUNT_1_BIT);
+					results.check(properties.sampleCounts == VK_SAMPLE_COUNT_1_BIT, "sampleCounts != VK_SAMPLE_COUNT_1_BIT");
 
 				if (isRequiredCombination)
 				{
-					TCU_CHECK(imageType != VK_IMAGE_TYPE_1D || (properties.maxExtent.width	>= deviceLimits.maxImageDimension1D));
-					TCU_CHECK(imageType != VK_IMAGE_TYPE_2D || (properties.maxExtent.width	>= deviceLimits.maxImageDimension2D &&
-																properties.maxExtent.height	>= deviceLimits.maxImageDimension2D));
-					TCU_CHECK(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width	>= deviceLimits.maxImageDimension3D &&
-																properties.maxExtent.height	>= deviceLimits.maxImageDimension3D &&
-																properties.maxExtent.depth	>= deviceLimits.maxImageDimension3D));
-					TCU_CHECK(properties.maxMipLevels == fullMipPyramidSize);
-					TCU_CHECK(imageType != VK_IMAGE_TYPE_3D || properties.maxArrayLayers == 1);
-					TCU_CHECK(imageType == VK_IMAGE_TYPE_3D || properties.maxArrayLayers >= deviceLimits.maxImageArrayLayers);
+					results.check(imageType != VK_IMAGE_TYPE_1D || (properties.maxExtent.width	>= deviceLimits.maxImageDimension1D),
+								  "Reported dimensions smaller than device limits");
+					results.check(imageType != VK_IMAGE_TYPE_2D || (properties.maxExtent.width	>= deviceLimits.maxImageDimension2D &&
+																	properties.maxExtent.height	>= deviceLimits.maxImageDimension2D),
+								  "Reported dimensions smaller than device limits");
+					results.check(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width	>= deviceLimits.maxImageDimension3D &&
+																	properties.maxExtent.height	>= deviceLimits.maxImageDimension3D &&
+																	properties.maxExtent.depth	>= deviceLimits.maxImageDimension3D),
+								  "Reported dimensions smaller than device limits");
+					results.check(properties.maxMipLevels == fullMipPyramidSize, "maxMipLevels is not full mip pyramid size");
+					results.check(imageType == VK_IMAGE_TYPE_3D || properties.maxArrayLayers >= deviceLimits.maxImageArrayLayers,
+								  "maxArrayLayers smaller than device limits");
 				}
 				else
 				{
-					TCU_CHECK(properties.maxMipLevels == 1 || properties.maxMipLevels == fullMipPyramidSize);
-					TCU_CHECK(properties.maxArrayLayers >= 1);
+					results.check(properties.maxMipLevels == 1 || properties.maxMipLevels == fullMipPyramidSize, "Invalid mip pyramid size");
+					results.check(properties.maxArrayLayers >= 1, "Invalid maxArrayLayers");
 				}
 
-				TCU_CHECK(properties.maxResourceSize >= (VkDeviceSize)MINIMUM_REQUIRED_IMAGE_RESOURCE_SIZE);
+				results.check(properties.maxResourceSize >= (VkDeviceSize)MINIMUM_REQUIRED_IMAGE_RESOURCE_SIZE,
+							  "maxResourceSize smaller than minimum required size");
 			}
-			catch (const Error& error)
+			else if (queryResult == VK_ERROR_FORMAT_NOT_SUPPORTED)
 			{
-				if (error.getError() == VK_ERROR_FORMAT_NOT_SUPPORTED)
-				{
-					log << TestLog::Message << "Got VK_ERROR_FORMAT_NOT_SUPPORTED" << TestLog::EndMessage;
+				log << TestLog::Message << "Got VK_ERROR_FORMAT_NOT_SUPPORTED" << TestLog::EndMessage;
 
-					if (isRequiredCombination)
-						TCU_FAIL("VK_ERROR_FORMAT_NOT_SUPPORTED returned for required image parameter combination");
-				}
-				else
-					throw;
+				if (isRequiredCombination)
+					results.fail("VK_ERROR_FORMAT_NOT_SUPPORTED returned for required image parameter combination");
+
+				// Specification requires that all fields are set to 0
+				results.check(properties.maxExtent.width	== 0, "maxExtent.width != 0");
+				results.check(properties.maxExtent.height	== 0, "maxExtent.height != 0");
+				results.check(properties.maxExtent.depth	== 0, "maxExtent.depth != 0");
+				results.check(properties.maxMipLevels		== 0, "maxMipLevels != 0");
+				results.check(properties.maxArrayLayers		== 0, "maxArrayLayers != 0");
+				results.check(properties.sampleCounts		== 0, "sampleCounts != 0");
+				results.check(properties.maxResourceSize	== 0, "maxResourceSize != 0");
+			}
+			else
+			{
+				results.fail("Got unexpected error" + de::toString(queryResult));
 			}
 		}
 	}
 
-	return tcu::TestStatus::pass("All queries succeeded");
+	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 void createImageFormatTypeTilingTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyCase params)
