@@ -67897,17 +67897,6 @@
 								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 							</Test>
 						</TestCase>
-						<TestCase name="vertex_geometry_fragment">
-							<Test name="fbo_bbox_equal">
-								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-							</Test>
-							<Test name="fbo_bbox_larger">
-								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-							</Test>
-							<Test name="fbo_bbox_smaller">
-								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-							</Test>
-						</TestCase>
 						<TestCase name="vertex_tessellation_geometry_fragment">
 							<Test name="fbo_bbox_equal">
 								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
@@ -68211,17 +68200,6 @@
 							</Test>
 						</TestCase>
 						<TestCase name="vertex_tessellation_fragment">
-							<Test name="fbo_bbox_equal">
-								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-							</Test>
-							<Test name="fbo_bbox_larger">
-								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-							</Test>
-							<Test name="fbo_bbox_smaller">
-								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-							</Test>
-						</TestCase>
-						<TestCase name="vertex_geometry_fragment">
 							<Test name="fbo_bbox_equal">
 								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 							</Test>
