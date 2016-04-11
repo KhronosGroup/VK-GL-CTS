@@ -49,8 +49,8 @@ struct NAME {											\
 };														\
 } // pt
 
-#define VK_MAKE_VERSION(MAJOR, MINOR, PATCH)	((MAJOR << 22) | (MINOR << 12) | PATCH)
-#define VK_BIT(NUM)								(1<<NUM)
+#define VK_MAKE_VERSION(MAJOR, MINOR, PATCH)	(((deUint32)(MAJOR) << 22u) | ((deUint32)(MINOR) << 12u) | (deUint32)(PATCH))
+#define VK_BIT(NUM)								(1u<<(deUint32)(NUM))
 
 #define VK_CHECK(EXPR)							vk::checkResult((EXPR), #EXPR, __FILE__, __LINE__)
 #define VK_CHECK_MSG(EXPR, MSG)					vk::checkResult((EXPR), MSG, __FILE__, __LINE__)
