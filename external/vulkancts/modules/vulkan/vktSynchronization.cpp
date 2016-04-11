@@ -81,20 +81,30 @@ void buildShaders (SourceCollections& shaderCollection)
 				"}\n");
 }
 
-Move<VkDevice> createTestDevice (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
+Move<VkDevice> createTestDevice (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, deUint32 *outQueueFamilyIndex)
 {
 	VkDeviceQueueCreateInfo		queueInfo;
 	VkDeviceCreateInfo			deviceInfo;
 	size_t						queueNdx;
 	const float					queuePriority	= 1.0f;
+	const deUint32				queueCount		= 2u;
 
 	const vector<VkQueueFamilyProperties>	queueProps				= getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 	const VkPhysicalDeviceFeatures			physicalDeviceFeatures	= getPhysicalDeviceFeatures(vki, physicalDevice);
 
 	for (queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
 	{
-		if ((queueProps[queueNdx].queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT)
+		if ((queueProps[queueNdx].queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT && (queueProps[queueNdx].queueCount >= queueCount))
 			break;
+	}
+
+	if (queueNdx >= queueProps.size())
+	{
+		// No queue family index found
+		std::ostringstream msg;
+		msg << "Cannot create device with " << queueCount << " graphics queues";
+
+		throw tcu::NotSupportedError(msg.str());
 	}
 
 	deMemset(&queueInfo,	0, sizeof(queueInfo));
@@ -104,7 +114,7 @@ Move<VkDevice> createTestDevice (const InstanceInterface& vki, VkPhysicalDevice 
 	queueInfo.pNext							= DE_NULL;
 	queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
 	queueInfo.queueFamilyIndex				= (deUint32)queueNdx;
-	queueInfo.queueCount					= 2u;
+	queueInfo.queueCount					= queueCount;
 	queueInfo.pQueuePriorities				= &queuePriority;
 
 	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -116,6 +126,8 @@ Move<VkDevice> createTestDevice (const InstanceInterface& vki, VkPhysicalDevice 
 	deviceInfo.enabledLayerCount			= 0u;
 	deviceInfo.ppEnabledLayerNames			= DE_NULL;
 	deviceInfo.pEnabledFeatures				= &physicalDeviceFeatures;
+
+	*outQueueFamilyIndex					= queueInfo.queueFamilyIndex;
 
 	return createDevice(vki, physicalDevice, &deviceInfo);
 };
@@ -314,7 +326,7 @@ void createVulkanImage (const ImageParameters& imageParameters, Image& image, Me
 		imageViewCreateInfo.pNext				= DE_NULL;
 		imageViewCreateInfo.flags				= 0;
 		imageViewCreateInfo.image				= image.image.get();
-		imageViewCreateInfo.viewType			= VK_IMAGE_VIEW_TYPE_3D;
+		imageViewCreateInfo.viewType			= VK_IMAGE_VIEW_TYPE_2D;
 		imageViewCreateInfo.format				= imageParameters.format;
 		imageViewCreateInfo.components			= componentMap;
 		imageViewCreateInfo.subresourceRange	= subresourceRange;
@@ -498,7 +510,7 @@ void createCommandBuffer (Context& context, const VkDevice device, const deUint3
 	commandBufferInfo.commandBufferCount	= 1;
 
 	VK_CHECK(deviceInterface.allocateCommandBuffers(device, &commandBufferInfo, &commandBuffer));
-	*commandBufferRef = vk::Move<VkCommandBuffer>(vk::check<VkCommandBuffer>(commandBuffer), Deleter<VkCommandBuffer>(deviceInterface, device, DE_NULL));
+	*commandBufferRef = vk::Move<VkCommandBuffer>(vk::check<VkCommandBuffer>(commandBuffer), Deleter<VkCommandBuffer>(deviceInterface, device, commandPool));
 }
 
 void createFences (const DeviceInterface& deviceInterface, VkDevice device, bool signaled, deUint32 numFences, VkFence* fence)
@@ -663,7 +675,7 @@ struct TestContext
 		, setEvent		(DE_FALSE)
 		, waitEvent		(DE_FALSE)
 	{
-		createFences(context.getDeviceInterface(), device, DE_NULL, DE_LENGTH_OF_ARRAY(fences), fences);
+		createFences(context.getDeviceInterface(), device, false, DE_LENGTH_OF_ARRAY(fences), fences);
 	}
 
 	~TestContext()
@@ -972,7 +984,7 @@ void generateWork (TestContext& testContext)
 	bufferBarriers.resize(0);
 	imageBarriers.resize(0);
 
-	transferInfo.context = &testContext.context;
+	transferInfo.context			= &testContext.context;
 	transferInfo.commandBuffer		= renderInfo.commandBuffer;
 	transferInfo.width				= testContext.renderDimension.x();
 	transferInfo.height				= testContext.renderDimension.y();
@@ -1020,14 +1032,12 @@ tcu::TestStatus testFences (Context& context)
 {
 	TestLog&					log					= context.getTestContext().getLog();
 	const DeviceInterface&		deviceInterface		= context.getDeviceInterface();
-	const InstanceInterface&	instanceInterface	= context.getInstanceInterface();
-	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
 	const VkQueue				queue				= context.getUniversalQueue();
 	const deUint32				queueFamilyIdx		= context.getUniversalQueueFamilyIndex();
-	vk::Move<VkDevice>			device				= createTestDevice(instanceInterface, physicalDevice);
+	VkDevice					device				= context.getDevice();
 	VkResult					testStatus;
 	VkResult					fenceStatus;
-	TestContext					testContext(context, device.get());
+	TestContext					testContext(context, device);
 	VkSubmitInfo				submitInfo;
 	VkMappedMemoryRange			range;
 	void*						resultImage;
@@ -1044,29 +1054,38 @@ tcu::TestStatus testFences (Context& context)
 	testContext.renderDimension = tcu::IVec2(256, 256);
 	testContext.renderSize = sizeof(deUint32) * testContext.renderDimension.x() * testContext.renderDimension.y();
 
-	createCommandBuffer(testContext.context, device.get(), queueFamilyIdx, &testContext.cmdBuffer);
+	createCommandBuffer(testContext.context, device, queueFamilyIdx, &testContext.cmdBuffer);
 	generateWork(testContext);
 
 	initSubmitInfo(&submitInfo, 1);
 	submitInfo.pCommandBuffers		= &testContext.cmdBuffer.get();
 
-	VK_CHECK(deviceInterface.queueSubmit(queue, 1, &submitInfo, testContext.fences[0]));
-
-	fenceStatus = deviceInterface.getFenceStatus(device.get(), testContext.fences[0]);
+	// Default status is unsignaled
+	fenceStatus = deviceInterface.getFenceStatus(device, testContext.fences[0]);
 	if (fenceStatus != VK_NOT_READY)
 	{
-		log << TestLog::Message << "testSynchronizationPrimitives fence should be reset but status is " << fenceStatus << TestLog::EndMessage;
+		log << TestLog::Message << "testSynchronizationPrimitives fence 0 should be reset but status is " << getResultName(fenceStatus) << TestLog::EndMessage;
+		return tcu::TestStatus::fail("Fence in incorrect state");
+	}
+	fenceStatus = deviceInterface.getFenceStatus(device, testContext.fences[1]);
+	if (fenceStatus != VK_NOT_READY)
+	{
+		log << TestLog::Message << "testSynchronizationPrimitives fence 1 should be reset but status is " << getResultName(fenceStatus) << TestLog::EndMessage;
 		return tcu::TestStatus::fail("Fence in incorrect state");
 	}
 
-	testStatus  = deviceInterface.waitForFences(device.get(), 1, &testContext.fences[0], DE_TRUE, DEFAULT_TIMEOUT);
+	VK_CHECK(deviceInterface.queueSubmit(queue, 1, &submitInfo, testContext.fences[0]));
+
+	// Wait for both fences
+	testStatus  = deviceInterface.waitForFences(device, 2, &testContext.fences[0], DE_TRUE, DEFAULT_TIMEOUT);
 	if (testStatus != VK_TIMEOUT)
 	{
 		log << TestLog::Message << "testSynchPrimitives failed to wait for all fences" << TestLog::EndMessage;
 		return tcu::TestStatus::fail("Failed to wait for mulitple fences");
 	}
 
-	testStatus = deviceInterface.waitForFences(device.get(),
+	// Wait until timeout (no work has been submited to testContext.fences[1])
+	testStatus = deviceInterface.waitForFences(device,
 												1,
 												&testContext.fences[1],
 												DE_TRUE,
@@ -1078,17 +1097,20 @@ tcu::TestStatus testFences (Context& context)
 		return tcu::TestStatus::fail("failed to wait for single fence");
 	}
 
-	testStatus = deviceInterface.waitForFences(device.get(), 1, &testContext.fences[0], DE_TRUE, DEFAULT_TIMEOUT);
+	// Wait for testContext.fences[0], assuming that the work can be completed
+	// in the default time + the time given so far since the queueSubmit
+	testStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[0], DE_TRUE, DEFAULT_TIMEOUT);
 	if (testStatus != VK_SUCCESS)
 	{
 		log << TestLog::Message << "testSynchPrimitives failed to wait for a set fence" << TestLog::EndMessage;
 		return tcu::TestStatus::fail("failed to wait for a set fence");
 	}
 
-	fenceStatus = deviceInterface.getFenceStatus(device.get(), testContext.fences[0]);
+	// Check that the fence is signaled after the wait
+	fenceStatus = deviceInterface.getFenceStatus(device, testContext.fences[0]);
 	if (fenceStatus != VK_SUCCESS)
 	{
-		log << TestLog::Message << "testSynchronizationPrimitives fence should be signaled but status is " << fenceStatus << TestLog::EndMessage;
+		log << TestLog::Message << "testSynchronizationPrimitives fence should be signaled but status is " << getResultName(fenceStatus) << TestLog::EndMessage;
 		return tcu::TestStatus::fail("Fence in incorrect state");
 	}
 
@@ -1097,7 +1119,7 @@ tcu::TestStatus testFences (Context& context)
 	range.memory		= testContext.renderReadBuffer->getMemory();
 	range.offset		= 0;
 	range.size			= testContext.renderSize;
-	VK_CHECK(deviceInterface.invalidateMappedMemoryRanges(device.get(), 1, &range));
+	VK_CHECK(deviceInterface.invalidateMappedMemoryRanges(device, 1, &range));
 	resultImage = testContext.renderReadBuffer->getHostPtr();
 
 	log << TestLog::Image(	"result",
@@ -1109,7 +1131,7 @@ tcu::TestStatus testFences (Context& context)
 									1,
 									resultImage));
 
-	return TestStatus::pass("synchornization-fences passed");
+	return TestStatus::pass("synchronization-fences passed");
 }
 
 vk::refdetails::Checked<VkSemaphore> createSemaphore (const DeviceInterface& deviceInterface, const VkDevice& device, const VkAllocationCallbacks* allocationCallbacks)
@@ -1131,9 +1153,9 @@ tcu::TestStatus testSemaphores (Context& context)
 	const DeviceInterface&		deviceInterface		= context.getDeviceInterface();
 	const InstanceInterface&	instanceInterface	= context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
-	vk::Move<VkDevice>			device				= createTestDevice(instanceInterface, physicalDevice);
+	deUint32					queueFamilyIdx;
+	vk::Move<VkDevice>			device				= createTestDevice(instanceInterface, physicalDevice, &queueFamilyIdx);
 	VkQueue						queue[2];
-	const deUint32				queueFamilyIdx		= context.getUniversalQueueFamilyIndex();
 	VkResult					testStatus;
 	TestContext					testContext1(context, device.get());
 	TestContext					testContext2(context, device.get());
@@ -1159,15 +1181,15 @@ tcu::TestStatus testSemaphores (Context& context)
 		tcu::Vec4( 0.0f, +0.5f, 0.0f, 1.0f)
 	};
 
-	testContext1.vertices = vertices1;
-	testContext1.numVertices = DE_LENGTH_OF_ARRAY(vertices1);
-	testContext1.renderDimension = tcu::IVec2(256, 256);
-	testContext1.renderSize = sizeof(deUint32) * testContext1.renderDimension.x() * testContext1.renderDimension.y();
+	testContext1.vertices			= vertices1;
+	testContext1.numVertices		= DE_LENGTH_OF_ARRAY(vertices1);
+	testContext1.renderDimension	= tcu::IVec2(256, 256);
+	testContext1.renderSize			= sizeof(deUint32) * testContext1.renderDimension.x() * testContext1.renderDimension.y();
 
-	testContext2.vertices = vertices2;
-	testContext2.numVertices = DE_LENGTH_OF_ARRAY(vertices2);
-	testContext2.renderDimension = tcu::IVec2(256, 256);
-	testContext2.renderSize = sizeof(deUint32) * testContext2.renderDimension.x() * testContext2.renderDimension.y();
+	testContext2.vertices			= vertices2;
+	testContext2.numVertices		= DE_LENGTH_OF_ARRAY(vertices2);
+	testContext2.renderDimension	= tcu::IVec2(256, 256);
+	testContext2.renderSize			= sizeof(deUint32) * testContext2.renderDimension.x() * testContext2.renderDimension.y();
 
 	createCommandBuffer(testContext1.context, device.get(), queueFamilyIdx, &testContext1.cmdBuffer);
 	generateWork(testContext1);
@@ -1180,13 +1202,13 @@ tcu::TestStatus testSemaphores (Context& context)
 	// The difference between the two submit infos is that each will use a unique cmd buffer,
 	// and one will signal a semaphore but not wait on a semaphore, the other will wait on the
 	// semaphore but not signal a semaphore
-	submitInfo[0].pCommandBuffers = &testContext1.cmdBuffer.get();
-	submitInfo[1].pCommandBuffers = &testContext2.cmdBuffer.get();
+	submitInfo[0].pCommandBuffers		= &testContext1.cmdBuffer.get();
+	submitInfo[1].pCommandBuffers		= &testContext2.cmdBuffer.get();
 
-	submitInfo[0].signalSemaphoreCount = 1;
-	submitInfo[0].pSignalSemaphores = &semaphore.get();
-	submitInfo[1].waitSemaphoreCount = 1;
-	submitInfo[1].pWaitSemaphores = &semaphore.get();
+	submitInfo[0].signalSemaphoreCount	= 1;
+	submitInfo[0].pSignalSemaphores		= &semaphore.get();
+	submitInfo[1].waitSemaphoreCount	= 1;
+	submitInfo[1].pWaitSemaphores		= &semaphore.get();
 
 	VK_CHECK(deviceInterface.queueSubmit(queue[0], 1, &submitInfo[0], testContext1.fences[0]));
 
@@ -1262,9 +1284,9 @@ tcu::TestStatus testEvents (Context& context)
 	const DeviceInterface&		deviceInterface		= context.getDeviceInterface();
 	const InstanceInterface&	instanceInterface	= context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
-	vk::Move<VkDevice>			device				= createTestDevice(instanceInterface, physicalDevice);
+	deUint32					queueFamilyIdx;
+	vk::Move<VkDevice>			device				= createTestDevice(instanceInterface, physicalDevice, &queueFamilyIdx);
 	VkQueue						queue[2];
-	const deUint32				queueFamilyIdx		= context.getUniversalQueueFamilyIndex();
 	VkResult					testStatus;
 	VkResult					eventStatus;
 	TestContext					testContext1(context, device.get());
@@ -1318,7 +1340,7 @@ tcu::TestStatus testEvents (Context& context)
 	eventStatus = deviceInterface.getEventStatus(device.get(), event.get());
 	if (eventStatus != VK_EVENT_RESET)
 	{
-		log << TestLog::Message << "testSynchronizationPrimitives event should be reset but status is " << eventStatus << TestLog::EndMessage;
+		log << TestLog::Message << "testSynchronizationPrimitives event should be reset but status is " << getResultName(eventStatus) << TestLog::EndMessage;
 		return tcu::TestStatus::fail("Event in incorrect status");
 	}
 
