@@ -41,6 +41,8 @@
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
 
+#include <limits>
+
 namespace vkt
 {
 
@@ -1035,7 +1037,7 @@ tcu::TestStatus testFences (Context& context)
 	const VkQueue				queue				= context.getUniversalQueue();
 	const deUint32				queueFamilyIdx		= context.getUniversalQueueFamilyIndex();
 	VkDevice					device				= context.getDevice();
-	VkResult					testStatus;
+	VkResult					waitStatus;
 	VkResult					fenceStatus;
 	TestContext					testContext(context, device);
 	VkSubmitInfo				submitInfo;
@@ -1076,34 +1078,38 @@ tcu::TestStatus testFences (Context& context)
 
 	VK_CHECK(deviceInterface.queueSubmit(queue, 1, &submitInfo, testContext.fences[0]));
 
-	// Wait for both fences
-	testStatus  = deviceInterface.waitForFences(device, 2, &testContext.fences[0], DE_TRUE, DEFAULT_TIMEOUT);
-	if (testStatus != VK_TIMEOUT)
+	// Wait with timeout = 0
+	waitStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[0], DE_TRUE, 0u);
+	if (waitStatus != VK_SUCCESS && waitStatus != VK_TIMEOUT)
 	{
-		log << TestLog::Message << "testSynchPrimitives failed to wait for all fences" << TestLog::EndMessage;
-		return tcu::TestStatus::fail("Failed to wait for mulitple fences");
+		// Will most likely end with VK_TIMEOUT
+		log << TestLog::Message << "testSynchPrimitives failed to wait for a single fence" << TestLog::EndMessage;
+		return tcu::TestStatus::fail("Failed to wait for a single fence");
 	}
 
-	// Wait until timeout (no work has been submited to testContext.fences[1])
-	testStatus = deviceInterface.waitForFences(device,
-												1,
-												&testContext.fences[1],
-												DE_TRUE,
-												DEFAULT_TIMEOUT);
-
-	if (testStatus != VK_TIMEOUT)
+	// Wait with a reasonable timeout
+	waitStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[0], DE_TRUE, DEFAULT_TIMEOUT);
+	if (waitStatus != VK_SUCCESS && waitStatus != VK_TIMEOUT)
 	{
-		log << TestLog::Message << "testSyncPrimitives failed to wait for single fence" << TestLog::EndMessage;
-		return tcu::TestStatus::fail("failed to wait for single fence");
+		// \note Wait can end with a timeout if DEFAULT_TIMEOUT is not sufficient
+		log << TestLog::Message << "testSynchPrimitives failed to wait for a single fence" << TestLog::EndMessage;
+		return tcu::TestStatus::fail("Failed to wait for a single fence");
 	}
 
-	// Wait for testContext.fences[0], assuming that the work can be completed
-	// in the default time + the time given so far since the queueSubmit
-	testStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[0], DE_TRUE, DEFAULT_TIMEOUT);
-	if (testStatus != VK_SUCCESS)
+	// Wait for work on fences[0] to actually complete
+	waitStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[0], DE_TRUE, std::numeric_limits<deUint64>::max());
+	if (waitStatus != VK_SUCCESS)
 	{
-		log << TestLog::Message << "testSynchPrimitives failed to wait for a set fence" << TestLog::EndMessage;
-		return tcu::TestStatus::fail("failed to wait for a set fence");
+		log << TestLog::Message << "testSynchPrimitives failed to wait for a fence" << TestLog::EndMessage;
+		return tcu::TestStatus::fail("failed to wait for a fence");
+	}
+
+	// Wait until timeout on a fence that has not been submitted
+	waitStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[1], DE_TRUE, DEFAULT_TIMEOUT);
+	if (waitStatus != VK_TIMEOUT)
+	{
+		log << TestLog::Message << "testSyncPrimitives failed to timeout on wait for single fence" << TestLog::EndMessage;
+		return tcu::TestStatus::fail("failed to timeout on wait for single fence");
 	}
 
 	// Check that the fence is signaled after the wait
