@@ -1795,7 +1795,6 @@ public:
 	vk::VkImage					getImage			(void) const { return m_context.getImage(); }
 	deInt32						getImageWidth		(void) const { return m_context.getImageWidth(); }
 	deInt32						getImageHeight		(void) const { return m_context.getImageHeight(); }
-	vk::VkImageLayout			getImageLayout		(void) const { return m_context.getImageLayout(); }
 
 private:
 	const PrepareContext&		m_context;
@@ -1946,11 +1945,12 @@ public:
 		TYPE_IMAGE,
 		TYPE_LAST
 	};
-									PipelineBarrier		(const vk::VkPipelineStageFlags	srcStages,
-														 const vk::VkAccessFlags		srcAccesses,
-														 const vk::VkPipelineStageFlags	dstStages,
-														 const vk::VkAccessFlags		dstAccesses,
-														 Type							type);
+									PipelineBarrier		(const vk::VkPipelineStageFlags			srcStages,
+														 const vk::VkAccessFlags				srcAccesses,
+														 const vk::VkPipelineStageFlags			dstStages,
+														 const vk::VkAccessFlags				dstAccesses,
+														 Type									type,
+														 const tcu::Maybe<vk::VkImageLayout>	imageLayout);
 									~PipelineBarrier	(void) {}
 	const char*						getName				(void) const { return "PipelineBarrier"; }
 
@@ -1958,23 +1958,26 @@ public:
 	void							submit				(SubmitContext& context);
 
 private:
-	const vk::VkPipelineStageFlags	m_srcStages;
-	const vk::VkAccessFlags			m_srcAccesses;
-	const vk::VkPipelineStageFlags	m_dstStages;
-	const vk::VkAccessFlags			m_dstAccesses;
-	const Type						m_type;
+	const vk::VkPipelineStageFlags		m_srcStages;
+	const vk::VkAccessFlags				m_srcAccesses;
+	const vk::VkPipelineStageFlags		m_dstStages;
+	const vk::VkAccessFlags				m_dstAccesses;
+	const Type							m_type;
+	const tcu::Maybe<vk::VkImageLayout>	m_imageLayout;
 };
 
-PipelineBarrier::PipelineBarrier (const vk::VkPipelineStageFlags	srcStages,
-								  const vk::VkAccessFlags			srcAccesses,
-								  const vk::VkPipelineStageFlags	dstStages,
-								  const vk::VkAccessFlags			dstAccesses,
-								  Type								type)
+PipelineBarrier::PipelineBarrier (const vk::VkPipelineStageFlags		srcStages,
+								  const vk::VkAccessFlags				srcAccesses,
+								  const vk::VkPipelineStageFlags		dstStages,
+								  const vk::VkAccessFlags				dstAccesses,
+								  Type									type,
+								  const tcu::Maybe<vk::VkImageLayout>	imageLayout)
 	: m_srcStages	(srcStages)
 	, m_srcAccesses	(srcAccesses)
 	, m_dstStages	(dstStages)
 	, m_dstAccesses	(dstAccesses)
 	, m_type		(type)
+	, m_imageLayout	(imageLayout)
 {
 }
 
@@ -2044,8 +2047,8 @@ void PipelineBarrier::submit (SubmitContext& context)
 				m_srcAccesses,
 				m_dstAccesses,
 
-				context.getImageLayout(),
-				context.getImageLayout(),
+				*m_imageLayout,
+				*m_imageLayout,
 
 				vk::VK_QUEUE_FAMILY_IGNORED,
 				vk::VK_QUEUE_FAMILY_IGNORED,
@@ -2925,7 +2928,7 @@ void BufferCopyFromImage::verify (VerifyContext& context, size_t)
 class ImageCopyToBuffer : public CmdCommand
 {
 public:
-									ImageCopyToBuffer	(void) {}
+									ImageCopyToBuffer	(vk::VkImageLayout imageLayout) : m_imageLayout (imageLayout) {}
 									~ImageCopyToBuffer	(void) {}
 	const char*						getName				(void) const { return "BufferCopyToImage"; }
 
@@ -2936,6 +2939,7 @@ public:
 	void							verify				(VerifyContext& context, size_t commandIndex);
 
 private:
+	vk::VkImageLayout				m_imageLayout;
 	vk::VkDeviceSize				m_bufferSize;
 	vk::Move<vk::VkBuffer>			m_dstBuffer;
 	vk::Move<vk::VkDeviceMemory>	m_memory;
@@ -2992,7 +2996,7 @@ void ImageCopyToBuffer::submit (SubmitContext& context)
 		}
 	};
 
-	vkd.cmdCopyImageToBuffer(commandBuffer, context.getImage(), context.getImageLayout(), *m_dstBuffer, 1, &region);
+	vkd.cmdCopyImageToBuffer(commandBuffer, context.getImage(), m_imageLayout, *m_dstBuffer, 1, &region);
 }
 
 void ImageCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
@@ -3042,7 +3046,7 @@ void ImageCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
 class ImageCopyFromBuffer : public CmdCommand
 {
 public:
-									ImageCopyFromBuffer		(deUint32 seed) : m_seed(seed) {}
+									ImageCopyFromBuffer		(deUint32 seed, vk::VkImageLayout imageLayout) : m_seed(seed), m_imageLayout(imageLayout) {}
 									~ImageCopyFromBuffer	(void) {}
 	const char*						getName					(void) const { return "ImageCopyFromBuffer"; }
 
@@ -3054,6 +3058,7 @@ public:
 
 private:
 	const deUint32					m_seed;
+	const vk::VkImageLayout			m_imageLayout;
 	deInt32							m_imageWidth;
 	deInt32							m_imageHeight;
 	vk::VkDeviceSize				m_imageMemorySize;
@@ -3125,7 +3130,7 @@ void ImageCopyFromBuffer::submit (SubmitContext& context)
 		}
 	};
 
-	vkd.cmdCopyBufferToImage(commandBuffer, *m_srcBuffer, context.getImage(), context.getImageLayout(), 1, &region);
+	vkd.cmdCopyBufferToImage(commandBuffer, *m_srcBuffer, context.getImage(), m_imageLayout, 1, &region);
 }
 
 void ImageCopyFromBuffer::verify (VerifyContext& context, size_t)
@@ -3154,7 +3159,7 @@ void ImageCopyFromBuffer::verify (VerifyContext& context, size_t)
 class ImageCopyFromImage : public CmdCommand
 {
 public:
-									ImageCopyFromImage	(deUint32 seed) : m_seed(seed) {}
+									ImageCopyFromImage	(deUint32 seed, vk::VkImageLayout imageLayout) : m_seed(seed), m_imageLayout(imageLayout) {}
 									~ImageCopyFromImage	(void) {}
 	const char*						getName				(void) const { return "ImageCopyFromImage"; }
 
@@ -3166,6 +3171,7 @@ public:
 
 private:
 	const deUint32					m_seed;
+	const vk::VkImageLayout			m_imageLayout;
 	deInt32							m_imageWidth;
 	deInt32							m_imageHeight;
 	vk::VkDeviceSize				m_imageMemorySize;
@@ -3348,7 +3354,7 @@ void ImageCopyFromImage::submit (SubmitContext& context)
 		}
 	};
 
-	vkd.cmdCopyImage(commandBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, context.getImage(), context.getImageLayout(), 1, &region);
+	vkd.cmdCopyImage(commandBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, context.getImage(), m_imageLayout, 1, &region);
 }
 
 void ImageCopyFromImage::verify (VerifyContext& context, size_t)
@@ -3377,7 +3383,7 @@ void ImageCopyFromImage::verify (VerifyContext& context, size_t)
 class ImageCopyToImage : public CmdCommand
 {
 public:
-									ImageCopyToImage	(void) {}
+									ImageCopyToImage	(vk::VkImageLayout imageLayout) : m_imageLayout(imageLayout) {}
 									~ImageCopyToImage	(void) {}
 	const char*						getName				(void) const { return "ImageCopyToImage"; }
 
@@ -3388,6 +3394,7 @@ public:
 	void							verify				(VerifyContext& context, size_t commandIndex);
 
 private:
+	const vk::VkImageLayout			m_imageLayout;
 	deInt32							m_imageWidth;
 	deInt32							m_imageHeight;
 	vk::VkDeviceSize				m_imageMemorySize;
@@ -3511,7 +3518,7 @@ void ImageCopyToImage::submit (SubmitContext& context)
 		}
 	};
 
-	vkd.cmdCopyImage(commandBuffer, context.getImage(), context.getImageLayout(), *m_dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	vkd.cmdCopyImage(commandBuffer, context.getImage(), m_imageLayout, *m_dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 void ImageCopyToImage::verify (VerifyContext& context, size_t commandIndex)
@@ -3618,7 +3625,7 @@ enum BlitScale
 class ImageBlitFromImage : public CmdCommand
 {
 public:
-									ImageBlitFromImage	(deUint32 seed, BlitScale scale) : m_seed(seed), m_scale(scale) {}
+									ImageBlitFromImage	(deUint32 seed, BlitScale scale, vk::VkImageLayout imageLayout) : m_seed(seed), m_scale(scale), m_imageLayout(imageLayout) {}
 									~ImageBlitFromImage	(void) {}
 	const char*						getName				(void) const { return "ImageBlitFromImage"; }
 
@@ -3631,6 +3638,7 @@ public:
 private:
 	const deUint32					m_seed;
 	const BlitScale					m_scale;
+	const vk::VkImageLayout			m_imageLayout;
 	deInt32							m_imageWidth;
 	deInt32							m_imageHeight;
 	vk::VkDeviceSize				m_imageMemorySize;
@@ -3838,7 +3846,7 @@ void ImageBlitFromImage::submit (SubmitContext& context)
 			}
 		}
 	};
-	vkd.cmdBlitImage(commandBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, context.getImage(), context.getImageLayout(), 1, &region, vk::VK_FILTER_NEAREST);
+	vkd.cmdBlitImage(commandBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, context.getImage(), m_imageLayout, 1, &region, vk::VK_FILTER_NEAREST);
 }
 
 void ImageBlitFromImage::verify (VerifyContext& context, size_t)
@@ -3893,7 +3901,7 @@ void ImageBlitFromImage::verify (VerifyContext& context, size_t)
 class ImageBlitToImage : public CmdCommand
 {
 public:
-									ImageBlitToImage	(BlitScale scale) : m_scale(scale) {}
+									ImageBlitToImage	(BlitScale scale, vk::VkImageLayout imageLayout) : m_scale(scale), m_imageLayout(imageLayout) {}
 									~ImageBlitToImage	(void) {}
 	const char*						getName				(void) const { return "ImageBlitToImage"; }
 
@@ -3905,6 +3913,7 @@ public:
 
 private:
 	const BlitScale					m_scale;
+	const vk::VkImageLayout			m_imageLayout;
 	deInt32							m_imageWidth;
 	deInt32							m_imageHeight;
 	vk::VkDeviceSize				m_imageMemorySize;
@@ -4053,7 +4062,7 @@ void ImageBlitToImage::submit (SubmitContext& context)
 			}
 		}
 	};
-	vkd.cmdBlitImage(commandBuffer, context.getImage(), context.getImageLayout(), *m_dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region, vk::VK_FILTER_NEAREST);
+	vkd.cmdBlitImage(commandBuffer, context.getImage(), m_imageLayout, *m_dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region, vk::VK_FILTER_NEAREST);
 }
 
 void ImageBlitToImage::verify (VerifyContext& context, size_t commandIndex)
@@ -6177,20 +6186,20 @@ de::MovePtr<CmdCommand> createCmdCommand (de::Random&	rng,
 			return de::MovePtr<CmdCommand>(new ImageTransition(srcStages, srcAccesses, dstStages, dstAccesses, srcLayout, dstLayout));
 		}
 
-		case OP_IMAGE_COPY_TO_BUFFER:			return de::MovePtr<CmdCommand>(new ImageCopyToBuffer());
-		case OP_IMAGE_COPY_FROM_BUFFER:			return de::MovePtr<CmdCommand>(new ImageCopyFromBuffer(rng.getUint32()));
-		case OP_IMAGE_COPY_TO_IMAGE:			return de::MovePtr<CmdCommand>(new ImageCopyToImage());
-		case OP_IMAGE_COPY_FROM_IMAGE:			return de::MovePtr<CmdCommand>(new ImageCopyFromImage(rng.getUint32()));
+		case OP_IMAGE_COPY_TO_BUFFER:			return de::MovePtr<CmdCommand>(new ImageCopyToBuffer(state.imageLayout));
+		case OP_IMAGE_COPY_FROM_BUFFER:			return de::MovePtr<CmdCommand>(new ImageCopyFromBuffer(rng.getUint32(), state.imageLayout));
+		case OP_IMAGE_COPY_TO_IMAGE:			return de::MovePtr<CmdCommand>(new ImageCopyToImage(state.imageLayout));
+		case OP_IMAGE_COPY_FROM_IMAGE:			return de::MovePtr<CmdCommand>(new ImageCopyFromImage(rng.getUint32(), state.imageLayout));
 		case OP_IMAGE_BLIT_TO_IMAGE:
 		{
 			const BlitScale scale = rng.getBool() ? BLIT_SCALE_20 : BLIT_SCALE_10;
-			return de::MovePtr<CmdCommand>(new ImageBlitToImage(scale));
+			return de::MovePtr<CmdCommand>(new ImageBlitToImage(scale, state.imageLayout));
 		}
 
 		case OP_IMAGE_BLIT_FROM_IMAGE:
 		{
 			const BlitScale scale = rng.getBool() ? BLIT_SCALE_20 : BLIT_SCALE_10;
-			return de::MovePtr<CmdCommand>(new ImageBlitFromImage(rng.getUint32(), scale));
+			return de::MovePtr<CmdCommand>(new ImageBlitFromImage(rng.getUint32(), scale, state.imageLayout));
 		}
 
 		case OP_PIPELINE_BARRIER_GLOBAL:
@@ -6237,7 +6246,10 @@ de::MovePtr<CmdCommand> createCmdCommand (de::Random&	rng,
 				DE_FATAL("Unknown op");
 			}
 
-			return de::MovePtr<CmdCommand>(new PipelineBarrier(srcStages, srcAccesses, dstStages, dstAccesses, type));
+			if (type == PipelineBarrier::TYPE_IMAGE)
+				return de::MovePtr<CmdCommand>(new PipelineBarrier(srcStages, srcAccesses, dstStages, dstAccesses, type, tcu::just(state.imageLayout)));
+			else
+				return de::MovePtr<CmdCommand>(new PipelineBarrier(srcStages, srcAccesses, dstStages, dstAccesses, type, tcu::nothing<vk::VkImageLayout>()));
 		}
 
 		default:
