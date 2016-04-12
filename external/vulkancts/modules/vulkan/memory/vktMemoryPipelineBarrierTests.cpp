@@ -4274,7 +4274,7 @@ class SubmitRenderPass : public CmdCommand
 {
 public:
 				SubmitRenderPass	(const vector<RenderPassCommand*>& commands);
-				~SubmitRenderPass	(void) {}
+				~SubmitRenderPass	(void);
 	const char*	getName				(void) const { return "SubmitRenderPass"; }
 
 	void		logPrepare			(TestLog&, size_t) const;
@@ -4302,6 +4302,12 @@ SubmitRenderPass::SubmitRenderPass (const vector<RenderPassCommand*>& commands)
 	, m_targetHeight	(256)
 	, m_commands		(commands)
 {
+}
+
+SubmitRenderPass::~SubmitRenderPass()
+{
+	for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
+		delete m_commands[cmdNdx];
 }
 
 void SubmitRenderPass::logPrepare (TestLog& log, size_t commandIndex) const
