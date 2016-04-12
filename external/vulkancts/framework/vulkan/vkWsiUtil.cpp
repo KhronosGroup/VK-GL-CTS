@@ -310,5 +310,25 @@ std::vector<VkPresentModeKHR> getPhysicalDeviceSurfacePresentModes (const Instan
 		return std::vector<VkPresentModeKHR>();
 }
 
+std::vector<VkImage> getSwapchainImages (const DeviceInterface&			vkd,
+					 					 VkDevice						device,
+					 					 VkSwapchainKHR					swapchain)
+{
+	deUint32	numImages	= 0;
+
+	VK_CHECK(vkd.getSwapchainImagesKHR(device, swapchain, &numImages, DE_NULL));
+
+	if (numImages > 0)
+	{
+		std::vector<VkImage>	images	(numImages);
+
+		VK_CHECK(vkd.getSwapchainImagesKHR(device, swapchain, &numImages, &images[0]));
+
+		return images;
+	}
+	else
+		return std::vector<VkImage>();
+}
+
 } // wsi
 } // vk

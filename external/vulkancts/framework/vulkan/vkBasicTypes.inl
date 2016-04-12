@@ -9,6 +9,7 @@ enum { VK_MAX_MEMORY_TYPES				= 32						};
 enum { VK_MAX_MEMORY_HEAPS				= 16						};
 enum { VK_MAX_DESCRIPTION_SIZE			= 256						};
 enum { VK_ATTACHMENT_UNUSED				= (~0U)						};
+enum { VK_SUBPASS_EXTERNAL				= (~0U)						};
 
 VK_DEFINE_HANDLE					(VkInstance,				HANDLE_TYPE_INSTANCE);
 VK_DEFINE_HANDLE					(VkPhysicalDevice,			HANDLE_TYPE_PHYSICAL_DEVICE);
