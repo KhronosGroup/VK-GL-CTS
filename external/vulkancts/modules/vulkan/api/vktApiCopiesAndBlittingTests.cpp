@@ -296,7 +296,7 @@ void CopiesAndBlittingTestInstance::uploadImage(tcu::ConstPixelBufferAccess imag
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
 		DE_NULL,										// const void*				pNext;
 		0u,												// VkAccessFlags			srcAccessMask;
-		0u,												// VkAccessFlags			dstAccessMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			oldLayout;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
@@ -705,45 +705,46 @@ tcu::TestStatus CopyImageToImage::iterate()
 	for (deUint32 i = 0; i < m_params.regions.size(); i++)
 		imageCopies[i] = m_params.regions[i].imageCopy;
 
-	// Barriers for copying image to buffer
-	const VkImageMemoryBarrier srcImageBarrier =
+	const VkImageMemoryBarrier imageBarriers[] =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
-		DE_NULL,									// const void*				pNext;
-		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
-		VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-		m_source.get(),								// VkImage					image;
-		{											// VkImageSubresourceRange	subresourceRange;
-			getAspectFlag(srcTcuFormat),	// VkImageAspectFlags	aspectMask;
-			0u,							// deUint32				baseMipLevel;
-			1u,							// deUint32				mipLevels;
-			0u,							// deUint32				baseArraySlice;
-			1u							// deUint32				arraySize;
-		}
-	};
-
-	const VkImageMemoryBarrier dstImageBarrier =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
-		DE_NULL,									// const void*				pNext;
-		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
-		VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-		m_destination.get(),						// VkImage					image;
-		{											// VkImageSubresourceRange	subresourceRange;
-			getAspectFlag(dstTcuFormat),	// VkImageAspectFlags	aspectMask;
-			0u,							// deUint32				baseMipLevel;
-			1u,							// deUint32				mipLevels;
-			0u,							// deUint32				baseArraySlice;
-			1u							// deUint32				arraySize;
-		}
+		// source image
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+			m_source.get(),								// VkImage					image;
+			{											// VkImageSubresourceRange	subresourceRange;
+				getAspectFlag(srcTcuFormat),	// VkImageAspectFlags	aspectMask;
+				0u,								// deUint32				baseMipLevel;
+				1u,								// deUint32				mipLevels;
+				0u,								// deUint32				baseArraySlice;
+				1u								// deUint32				arraySize;
+			}
+		},
+		// destination image
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+			m_destination.get(),						// VkImage					image;
+			{											// VkImageSubresourceRange	subresourceRange;
+				getAspectFlag(dstTcuFormat),	// VkImageAspectFlags	aspectMask;
+				0u,								// deUint32				baseMipLevel;
+				1u,								// deUint32				mipLevels;
+				0u,								// deUint32				baseArraySlice;
+				1u								// deUint32				arraySize;
+			}
+		},
 	};
 
 	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
@@ -755,9 +756,8 @@ tcu::TestStatus CopyImageToImage::iterate()
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &srcImageBarrier);
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
 	vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), imageCopies);
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &dstImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
 	const VkSubmitInfo submitInfo =
@@ -1320,28 +1320,14 @@ tcu::TestStatus CopyBufferToImage::iterate()
 	const VkQueue				queue		= m_context.getUniversalQueue();
 	SimpleAllocator				memAlloc	(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 
-	// Barriers for copying image to buffer
-	const VkBufferMemoryBarrier bufferBarrier =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
-		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
-		*m_source,									// VkBuffer			buffer;
-		0u,											// VkDeviceSize		offset;
-		m_bufferSize								// VkDeviceSize		size;
-	};
-
 	const VkImageMemoryBarrier imageBarrier =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
 		*m_destination,								// VkImage					image;
@@ -1368,9 +1354,8 @@ tcu::TestStatus CopyBufferToImage::iterate()
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
-	vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), bufferImageCopies);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
+	vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), bufferImageCopies);
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
 	const VkSubmitInfo				submitInfo		=
@@ -1390,7 +1375,6 @@ tcu::TestStatus CopyBufferToImage::iterate()
 	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
 
-	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel	= readImage(vk, vkDevice, queue, memAlloc, *m_destination, m_params.dst.image.format, m_params.dst.image.extent);
 	deFree(bufferImageCopies);
 
