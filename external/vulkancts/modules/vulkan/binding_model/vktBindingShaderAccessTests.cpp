@@ -3390,7 +3390,6 @@ vk::Move<vk::VkDescriptorSetLayout> ImageFetchRenderInstance::createDescriptorSe
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
-		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
 			builder.addSingleBinding(descriptorType, stageFlags);
 			builder.addSingleBinding(descriptorType, stageFlags);
 			break;
@@ -3467,7 +3466,6 @@ vk::Move<vk::VkDescriptorSet> ImageFetchRenderInstance::createDescriptorSet (con
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
-		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
 			builder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &imageInfos[0]);
 			builder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), descriptorType, &imageInfos[1]);
 			break;
@@ -3492,7 +3490,6 @@ void ImageFetchRenderInstance::logTestPlan (void) const
 		<< "Single descriptor set. Descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
-				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
 			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
@@ -3639,7 +3636,6 @@ vk::Move<vk::VkDescriptorSetLayout> ImageFetchComputeInstance::createDescriptorS
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
-		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
 			builder.addSingleBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT);
 			builder.addSingleBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT);
 			break;
@@ -3695,7 +3691,6 @@ vk::Move<vk::VkDescriptorSet> ImageFetchComputeInstance::createDescriptorSet (vk
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
-		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
 			builder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), m_descriptorType, &imageInfos[0]);
 			builder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(2u), m_descriptorType, &imageInfos[1]);
 			break;
@@ -3726,7 +3721,6 @@ void ImageFetchComputeInstance::logTestPlan (void) const
 		<< "Single descriptor set. Descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
-				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
 			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
@@ -4276,33 +4270,34 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleRenderInstance::createDescriptorS
 	};
 
 	vk::DescriptorSetLayoutBuilder	builder;
-
-	if (shaderInterface != SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS)
-	{
-		// with samplers, separate texture at binding 0
-		if (descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
-			builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stageFlags);
-	}
+	const bool						addSeparateImage	= descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER;
 
 	// (combined)samplers follow
 	switch (shaderInterface)
 	{
 		case SHADER_INPUT_SINGLE_DESCRIPTOR:
+			if (addSeparateImage)
+				builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stageFlags);
 			builder.addSingleSamplerBinding(descriptorType, stageFlags, (images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
+			if (addSeparateImage)
+				builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stageFlags);
+			builder.addSingleSamplerBinding(descriptorType, stageFlags, (images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+			builder.addSingleSamplerBinding(descriptorType, stageFlags, (images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
+			break;
+
 		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
 			builder.addSingleSamplerBinding(descriptorType, stageFlags, (images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
-			if (shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS)
-			{
-				if (descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
-					builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stageFlags);
-			}
+			if (addSeparateImage)
+				builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stageFlags);
 			builder.addSingleSamplerBinding(descriptorType, stageFlags, (images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
+			if (addSeparateImage)
+				builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stageFlags);
 			builder.addArraySamplerBinding(descriptorType, 2u, stageFlags, (images.isImmutable()) ? (samplers) : (DE_NULL));
 			break;
 
@@ -4401,9 +4396,10 @@ void ImageSampleRenderInstance::writeSamplerDescriptorSet (const vk::DeviceInter
 	};
 
 	vk::DescriptorSetUpdateBuilder		builder;
+	const deUint32						samplerLocation		= shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS ? 1u : 0u;
 
 	// stand alone texture
-	builder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo);
+	builder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(samplerLocation), vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo);
 
 	// samplers
 	if (!isImmutable)
@@ -4464,11 +4460,6 @@ void ImageSampleRenderInstance::writeImageSamplerDescriptorSet (const vk::Device
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
-			builder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[0]);
-			builder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[1]);
-			break;
-
-		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
 			builder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[0]);
 			builder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[1]);
 			break;
@@ -4685,7 +4676,6 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptor
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
-		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
 			builder.addSingleSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, (m_images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
 			builder.addSingleSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, (m_images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
 			break;
@@ -4765,7 +4755,6 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSet (vk::VkDescriptorSet 
 				break;
 
 			case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
-			case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
 				builder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(2u), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[0]);
 				builder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(3u), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[1]);
 				break;
@@ -4809,7 +4798,6 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSet (vk::VkDescripto
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
-		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
 			builder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[0]);
 			builder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(2u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[1]);
 			break;
@@ -4842,7 +4830,6 @@ void ImageSampleComputeInstance::logTestPlan (void) const
 		msg << "Single descriptor set. Descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
 			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
 			<< " VK_DESCRIPTOR_TYPE_SAMPLER descriptor(s) and a single texture.\n";
@@ -4852,7 +4839,6 @@ void ImageSampleComputeInstance::logTestPlan (void) const
 		msg << "Single descriptor set. Descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
 			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
 			<< " VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER descriptor(s).\n";
@@ -6234,8 +6220,9 @@ void createShaderAccessImageTests (tcu::TestCaseGroup*		group,
 		// never overlap
 		DE_ASSERT((s_imageTypes[ndx].flags & resourceFlags) == 0u);
 
-		// SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS only applies to VK_DESCRIPTOR_TYPE_SAMPLER
-		if (dimension==SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS && descriptorType != vk::VK_DESCRIPTOR_TYPE_SAMPLER)
+		// SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS only supported in VK_DESCRIPTOR_TYPE_SAMPLER on graphics shaders for now
+		if (dimension == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS &&
+			(descriptorType != vk::VK_DESCRIPTOR_TYPE_SAMPLER || activeStages == vk::VK_SHADER_STAGE_COMPUTE_BIT))
 			continue;
 
 		group->addChild(new ImageDescriptorCase(group->getTestContext(),
