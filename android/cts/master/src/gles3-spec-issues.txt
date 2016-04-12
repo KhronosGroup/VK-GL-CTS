@@ -519,3 +519,9 @@ dEQP-GLES3.functional.shaders.linkage.uniform.block.layout_qualifier_mismatch_3
 # Khronos bug 14266, internal bug 22654014
 dEQP-GLES3.functional.negative_api.texture.compressedteximage3d_invalid_astc_target
 dEQP-GLES3.functional.negative_api.texture.texstorage3d_invalid_astc_target
+
+# Khronos bug 15567, internal bug 27126954
+dEQP-GLES3.functional.shaders.preprocessor.conditional_inclusion.define_defined_vertex
+dEQP-GLES3.functional.shaders.preprocessor.conditional_inclusion.define_defined_fragment
+dEQP-GLES3.functional.shaders.preprocessor.conditional_inclusion.define_defined_outside_if_vertex
+dEQP-GLES3.functional.shaders.preprocessor.conditional_inclusion.define_defined_outside_if_fragment
