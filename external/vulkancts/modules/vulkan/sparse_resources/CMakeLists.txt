@@ -1,6 +1,14 @@
 include_directories(..)
 
 set(DEQP_VK_IMAGE_SRCS
+	vktSparseResourcesShaderIntrinsics.cpp
+	vktSparseResourcesShaderIntrinsics.hpp
+	vktSparseResourcesShaderIntrinsicsBase.cpp
+	vktSparseResourcesShaderIntrinsicsBase.hpp
+	vktSparseResourcesShaderIntrinsicsSampled.cpp
+	vktSparseResourcesShaderIntrinsicsSampled.hpp
+	vktSparseResourcesShaderIntrinsicsStorage.cpp
+	vktSparseResourcesShaderIntrinsicsStorage.hpp
 	vktSparseResourcesImageMemoryAliasing.cpp
 	vktSparseResourcesImageMemoryAliasing.hpp
 	vktSparseResourcesBufferMemoryAliasing.cpp

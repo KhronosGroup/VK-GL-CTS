@@ -100,6 +100,11 @@ protected:
 														 const vk::VkPhysicalDevice								physicalDevice,
 														 const vk::VkImageCreateInfo&							imageInfo) const;
 
+	bool			checkImageFormatFeatureSupport		(const vk::InstanceInterface&							instance,
+														 const vk::VkPhysicalDevice								physicalDevice,
+														 const vk::VkFormat										format,
+														 const vk::VkFormatFeatureFlags							featureFlags) const;
+
 	deUint32		getSparseAspectRequirementsIndex	(const std::vector<vk::VkSparseImageMemoryRequirements>&requirements,
 														 const vk::VkImageAspectFlags							aspectFlags) const;
 

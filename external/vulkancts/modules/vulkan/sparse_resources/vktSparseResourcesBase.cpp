@@ -190,13 +190,23 @@ bool SparseResourcesBaseInstance::checkSparseSupportForImageType (const Instance
 }
 
 bool SparseResourcesBaseInstance::checkSparseSupportForImageFormat (const InstanceInterface&	instance,
-																	  const VkPhysicalDevice	physicalDevice,
-																	  const VkImageCreateInfo&	imageInfo) const
+																	const VkPhysicalDevice		physicalDevice,
+																	const VkImageCreateInfo&	imageInfo) const
 {
 	const std::vector<VkSparseImageFormatProperties> sparseImageFormatPropVec = getPhysicalDeviceSparseImageFormatProperties(
 		instance, physicalDevice, imageInfo.format, imageInfo.imageType, imageInfo.samples, imageInfo.usage, imageInfo.tiling);
 
 	return sparseImageFormatPropVec.size() > 0u;
+}
+
+bool SparseResourcesBaseInstance::checkImageFormatFeatureSupport (const vk::InstanceInterface&		instance,
+																  const vk::VkPhysicalDevice		physicalDevice,
+																  const vk::VkFormat				format,
+																  const vk::VkFormatFeatureFlags	featureFlags) const
+{
+	const VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(instance, physicalDevice, format);
+
+	return (formatProperties.optimalTilingFeatures & featureFlags) == featureFlags;
 }
 
 deUint32 SparseResourcesBaseInstance::getSparseAspectRequirementsIndex (const std::vector<VkSparseImageMemoryRequirements>&	requirements,

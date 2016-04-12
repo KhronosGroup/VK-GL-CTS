@@ -13,6 +13,7 @@ Includes:
 5. Test partially resident image with mipmaps, put some mipmap levels in mip tail region
 6. Test memory aliasing for fully resident buffer objects
 7. Test memory aliasing for partially resident images
+8. Test OpImageSparse* shader intrinsics
 
 Description:
 
@@ -140,3 +141,20 @@ The validation part retrieves data back from output buffer to host memory. For e
 compared against the expected output from compute shader. On the other hand for each mipmap level that landed in the mip tail region, the data is compared
 against data stored in the input buffer (the compute shader could not have changed this data). The test passes if for each mipmap level
 the comparison results in both data sets being the same.
+
+8. Test OpImageSparse* shader intrinsics
+
+The test creates sparse partially resident image. The memory is bound to the image every second mipmap level. 
+
+The test creates also a second non-sparse texels image with the same dimensions and format as the sparse one and 
+a third residency image with the same dimensions as the sparse one and unsigned int format.
+
+For OpImageSparse* opcodes that are fed with float image coordinates the test creates a graphics queue, otherwise a compute queue is created.
+In both cases the commands submited to queue have the purpose of copying the data from sparse image to texels and residency images using one
+of the OpImageSparse* shader intrinsics. For graphics operations the data is copied via rendering to two color attachments, for compute operations
+the data is copied via image load/store.
+
+Data is retreived from the non-sparse images back to the CPU. Contents of the texels image are compared against the data originaly sent to the sparse image.
+For mipmap levels of the sparse image that do not have backing device memory, the fetched data is compared against zeroed memory if residencyNonResidentStrict is set to VK_TRUE,
+otherwise comparion for those mipmap levels is ommited. The data fetched from the residency image is checked, if for each mipmap level the OpImageSparseTexelsResident 
+returned correct residency information.
