@@ -94,6 +94,10 @@ std::vector<VkPresentModeKHR>	getPhysicalDeviceSurfacePresentModes	(const Instan
 																		 VkPhysicalDevice				physicalDevice,
 																		 VkSurfaceKHR					surface);
 
+std::vector<VkImage>			getSwapchainImages						(const DeviceInterface&			vkd,
+																		 VkDevice						device,
+																		 VkSwapchainKHR					swapchain);
+
 } // wsi
 } // vk
 
