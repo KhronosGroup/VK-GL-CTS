@@ -273,6 +273,7 @@ LOCAL_SRC_FILES := \
 	modules/egl/teglMakeCurrentPerfTests.cpp \
 	modules/egl/teglMemoryStressTests.cpp \
 	modules/egl/teglMultiThreadTests.cpp \
+	modules/egl/teglMutableRenderBufferTests.cpp \
 	modules/egl/teglNativeColorMappingTests.cpp \
 	modules/egl/teglNativeCoordMappingTests.cpp \
 	modules/egl/teglNegativeApiTests.cpp \
