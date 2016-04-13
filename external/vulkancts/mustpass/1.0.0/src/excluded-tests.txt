@@ -23,3 +23,5 @@ dEQP-VK.pipeline.blend.format.r5g5b5a1_unorm_pack16.states.color_sa_z_sub_alpha_
 dEQP-VK.api.device_init.create_instance_null_appinfo
 dEQP-VK.wsi.*
 dEQP-VK.synchronization.*
+dEQP-VK.binding_model.*discontiguous*
+dEQP-VK.api.smoke.unused_resolve_attachment
