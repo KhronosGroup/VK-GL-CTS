@@ -455,7 +455,7 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 		CmdBufferBeginInfo beginInfo;
 		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));
 
-		transition2DImage(m_vk, *copyCmdBuffer, stagingResource->object(), aspect, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL);
+		transition2DImage(m_vk, *copyCmdBuffer, stagingResource->object(), aspect, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL, 0, vk::VK_ACCESS_TRANSFER_WRITE_BIT);
 
 		const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 		vk::VkImageCopy region = { {aspect, mipLevel, arrayElement, 1}, offset, {aspect, 0, 0, 1}, zeroOffset, {(deUint32)width, (deUint32)height, (deUint32)depth} };
@@ -879,22 +879,24 @@ de::SharedPtr<Image> Image::create(const vk::DeviceInterface&	vk,
 }
 
 void transition2DImage (const vk::DeviceInterface&	vk,
-						vk::VkCommandBuffer				cmdBuffer,
+						vk::VkCommandBuffer			cmdBuffer,
 						vk::VkImage					image,
 						vk::VkImageAspectFlags		aspectMask,
 						vk::VkImageLayout			oldLayout,
-						vk::VkImageLayout			newLayout)
+						vk::VkImageLayout			newLayout,
+						vk::VkAccessFlags			srcAccessMask,
+						vk::VkAccessFlags			dstAccessMask)
 {
 	vk::VkImageMemoryBarrier barrier;
-	barrier.sType					= vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.pNext					= DE_NULL;
-	barrier.srcAccessMask				= 0;
-	barrier.dstAccessMask				= 0;
-	barrier.oldLayout				= oldLayout;
-	barrier.newLayout				= newLayout;
-	barrier.srcQueueFamilyIndex		= vk::VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex	= vk::VK_QUEUE_FAMILY_IGNORED;
-	barrier.image					= image;
+	barrier.sType							= vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.pNext							= DE_NULL;
+	barrier.srcAccessMask					= srcAccessMask;
+	barrier.dstAccessMask					= dstAccessMask;
+	barrier.oldLayout						= oldLayout;
+	barrier.newLayout						= newLayout;
+	barrier.srcQueueFamilyIndex				= vk::VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex				= vk::VK_QUEUE_FAMILY_IGNORED;
+	barrier.image							= image;
 	barrier.subresourceRange.aspectMask		= aspectMask;
 	barrier.subresourceRange.baseMipLevel	= 0;
 	barrier.subresourceRange.levelCount		= 1;
