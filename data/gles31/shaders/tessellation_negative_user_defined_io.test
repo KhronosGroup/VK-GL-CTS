@@ -115,52 +115,6 @@ case per_patch_structs_containing_arrays
 	""
 end
 
-case per_vertex_incorrect_control_explicit_output_array_size_1
-	version 310 es
-	desc "Incorrectly sized tessellation control output array"
-	expect compile_or_link_fail
-	require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
-	vertex ""
-		#version 310 es
-		${VERTEX_DECLARATIONS}
-		void main()
-		{
-			${VERTEX_OUTPUT}
-		}
-	""
-	tessellation_control ""
-		#version 310 es
-		${TESSELLATION_CONTROL_DECLARATIONS}
-		out highp float varyingArray[3]; // size is not equal to gl_MaxPatchVertices
-		void main()
-		{
-			varyingArray[gl_InvocationID] = gl_in[0].gl_Position[gl_InvocationID];
-			${TESSELLATION_CONTROL_OUTPUT}
-		}
-	""
-	tessellation_evaluation ""
-		#version 310 es
-		${TESSELLATION_EVALUATION_DECLARATIONS}
-		in highp float varyingArray[gl_MaxPatchVertices]; // size is correct
-		out mediump float te_out;
-		void main()
-		{
-			te_out = varyingArray[0] * gl_TessCoord.x + varyingArray[1] * gl_TessCoord.y + varyingArray[2];
-			${TESSELLATION_EVALUATION_OUTPUT}
-		}
-	""
-	fragment ""
-		#version 310 es
-		precision mediump float;
-		${FRAGMENT_DECLARATIONS}
-		in mediump float te_out;
-		void main()
-		{
-			${FRAG_COLOR} = vec4(te_out);
-		}
-	""
-end
-
 case per_vertex_incorrect_control_explicit_output_array_size_2
 	version 310 es
 	desc "Incorrectly sized tessellation control output array"
