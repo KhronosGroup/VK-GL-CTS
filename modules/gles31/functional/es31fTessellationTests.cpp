@@ -5509,12 +5509,21 @@ public:
 		VERTEX_IO_ARRAY_SIZE_LAST
 	};
 
-	UserDefinedIOCase (Context& context, const char* name, const char* description, TessPrimitiveType primType, IOType ioType, VertexIOArraySize vertexIOArraySize, const char* referenceImagePath)
-		: TestCase				(context, name, description)
-		, m_primitiveType		(primType)
-		, m_ioType				(ioType)
-		, m_vertexIOArraySize	(vertexIOArraySize)
-		, m_referenceImagePath	(referenceImagePath)
+	enum TessControlOutArraySize
+	{
+		TESS_CONTROL_OUT_ARRAY_SIZE_IMPLICIT = 0,
+		TESS_CONTROL_OUT_ARRAY_SIZE_LAYOUT,
+		TESS_CONTROL_OUT_ARRAY_SIZE_QUERY,
+		TESS_CONTROL_OUT_ARRAY_SIZE_SHADER_BUILTIN
+	};
+
+	UserDefinedIOCase (Context& context, const char* name, const char* description, TessPrimitiveType primType, IOType ioType, VertexIOArraySize vertexIOArraySize, TessControlOutArraySize tessControlOutArraySize, const char* referenceImagePath)
+		: TestCase					(context, name, description)
+		, m_primitiveType			(primType)
+		, m_ioType					(ioType)
+		, m_vertexIOArraySize		(vertexIOArraySize)
+		, m_tessControlOutArraySize	(tessControlOutArraySize)
+		, m_referenceImagePath		(referenceImagePath)
 	{
 	}
 
@@ -5629,6 +5638,7 @@ private:
 	const TessPrimitiveType					m_primitiveType;
 	const IOType							m_ioType;
 	const VertexIOArraySize					m_vertexIOArraySize;
+	const TessControlOutArraySize			m_tessControlOutArraySize;
 	const string							m_referenceImagePath;
 
 	vector<glu::StructType>					m_structTypes;
@@ -5999,9 +6009,11 @@ void UserDefinedIOCase::init (void)
 
 			if (isArray)
 			{
-				// \note: TCS output arrays are always implicitly-sized
-				tcsDeclarations += outMaybePatch + output.declareArray(m_ioType == IO_TYPE_PER_PATCH_ARRAY			? de::toString(int(NUM_PER_PATCH_ARRAY_ELEMS))
-																	   : m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY	? de::toString(int(NUM_PER_PATCH_BLOCKS))
+				tcsDeclarations += outMaybePatch + output.declareArray(m_ioType == IO_TYPE_PER_PATCH_ARRAY											? de::toString(int(NUM_PER_PATCH_ARRAY_ELEMS))
+																	   : m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY									? de::toString(int(NUM_PER_PATCH_BLOCKS))
+																	   : m_tessControlOutArraySize == TESS_CONTROL_OUT_ARRAY_SIZE_LAYOUT			? de::toString(int(NUM_OUTPUT_VERTICES))
+																	   : m_tessControlOutArraySize == TESS_CONTROL_OUT_ARRAY_SIZE_QUERY				? de::toString(m_context.getContextInfo().getInt(GL_MAX_PATCH_VERTICES))
+																	   : m_tessControlOutArraySize == TESS_CONTROL_OUT_ARRAY_SIZE_SHADER_BUILTIN	? "gl_MaxPatchVertices"
 																	   : "");
 			}
 			else
@@ -7566,8 +7578,19 @@ void TessellationTests::init (void)
 				for (int primitiveTypeI = 0; primitiveTypeI < TESSPRIMITIVETYPE_LAST; primitiveTypeI++)
 				{
 					const TessPrimitiveType primitiveType = (TessPrimitiveType)primitiveTypeI;
-					vertexArraySizeGroup->addChild(new UserDefinedIOCase(m_context, getTessPrimitiveTypeShaderName(primitiveType), "", primitiveType, ioCases[ndx].ioType, vertexArraySize,
+					vertexArraySizeGroup->addChild(new UserDefinedIOCase(m_context, getTessPrimitiveTypeShaderName(primitiveType), "", primitiveType, ioCases[ndx].ioType, vertexArraySize, UserDefinedIOCase::TESS_CONTROL_OUT_ARRAY_SIZE_IMPLICIT,
 																		 (string() + "data/tessellation/user_defined_io_" + getTessPrimitiveTypeShaderName(primitiveType) + "_ref.png").c_str()));
+				}
+
+				if (ioCases[ndx].ioType == UserDefinedIOCase::IO_TYPE_PER_VERTEX
+					|| ioCases[ndx].ioType == UserDefinedIOCase::IO_TYPE_PER_VERTEX_BLOCK)
+				{
+					for (int primitiveTypeI = 0; primitiveTypeI < TESSPRIMITIVETYPE_LAST; primitiveTypeI++)
+					{
+						const TessPrimitiveType primitiveType = (TessPrimitiveType)primitiveTypeI;
+						vertexArraySizeGroup->addChild(new UserDefinedIOCase(m_context, (string(getTessPrimitiveTypeShaderName(primitiveType)) + "_explicit_tcs_out_size").c_str(), "", primitiveType, ioCases[ndx].ioType, vertexArraySize, UserDefinedIOCase::TESS_CONTROL_OUT_ARRAY_SIZE_LAYOUT,
+																			 (string() + "data/tessellation/user_defined_io_" + getTessPrimitiveTypeShaderName(primitiveType) + "_ref.png").c_str()));
+					}
 				}
 			}
 		}
