@@ -247,6 +247,12 @@ void TestCaseExecutor::deinit (tcu::TestCase*)
 	// Collect and report any debug messages
 	if (m_debugReportRecorder)
 	{
+		// \note We are not logging INFORMATION and DEBUG messages
+		static const vk::VkDebugReportFlagsEXT			errorFlags		= vk::VK_DEBUG_REPORT_ERROR_BIT_EXT;
+		static const vk::VkDebugReportFlagsEXT			logFlags		= errorFlags
+																		| vk::VK_DEBUG_REPORT_WARNING_BIT_EXT
+																		| vk::VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+
 		typedef vk::DebugReportRecorder::MessageList	DebugMessages;
 
 		const DebugMessages&	messages	= m_debugReportRecorder->getMessages();
@@ -255,20 +261,21 @@ void TestCaseExecutor::deinit (tcu::TestCase*)
 		if (messages.begin() != messages.end())
 		{
 			const tcu::ScopedLogSection	section		(log, "DebugMessages", "Debug Messages");
-			bool						anyErrors	= false;
+			int							numErrors	= 0;
 
 			for (DebugMessages::const_iterator curMsg = messages.begin(); curMsg != messages.end(); ++curMsg)
 			{
-				log << tcu::TestLog::Message << *curMsg << tcu::TestLog::EndMessage;
+				if ((curMsg->flags & logFlags) != 0)
+					log << tcu::TestLog::Message << *curMsg << tcu::TestLog::EndMessage;
 
-				if ((curMsg->flags & vk::VK_DEBUG_REPORT_ERROR_BIT_EXT) != 0)
-					anyErrors = true;
+				if ((curMsg->flags & errorFlags) != 0)
+					numErrors += 1;
 			}
 
 			m_debugReportRecorder->clearMessages();
 
-			if (anyErrors)
-				m_context.getTestContext().setTestResult(QP_TEST_RESULT_INTERNAL_ERROR, "API usage error found");
+			if (numErrors > 0)
+				m_context.getTestContext().setTestResult(QP_TEST_RESULT_INTERNAL_ERROR, (de::toString(numErrors) + " API usage errors found").c_str());
 		}
 	}
 }
