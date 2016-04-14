@@ -138,8 +138,6 @@ Move<VkDevice> createTestDevice (const InstanceInterface& vki, VkPhysicalDevice 
 
 struct BufferParameters
 {
-	Context*						context;
-	VkDevice						device;
 	const void*						memory;
 	VkDeviceSize					size;
 	VkBufferUsageFlags				usage;
@@ -156,18 +154,9 @@ struct Buffer
 	vk::Move<VkBuffer>				buffer;
 };
 
-void createVulkanBuffer (const BufferParameters& bufferParameters, Buffer& buffer, MemoryRequirement visibility)
+void createVulkanBuffer (const DeviceInterface& vkd, VkDevice device, Allocator& allocator, const BufferParameters& bufferParameters, Buffer& buffer, MemoryRequirement visibility)
 {
-	TestLog&							log					= bufferParameters.context->getTestContext().getLog();
-	const VkDevice						device				= bufferParameters.device;
-	const VkPhysicalDevice				physDevice			= bufferParameters.context->getPhysicalDevice();
-	const DeviceInterface&				deviceInterface		= bufferParameters.context->getDeviceInterface();
-	const InstanceInterface&			instanceInterface	= bufferParameters.context->getInstanceInterface();
-	VkResult							vkApiStatus;
-	VkPhysicalDeviceMemoryProperties	memProps;
-	VkMemoryRequirements				memReq;
-	VkBufferCreateInfo					bufferCreateParams;
-	VkBuffer							newBuffer;
+	VkBufferCreateInfo	bufferCreateParams;
 
 	deMemset(&bufferCreateParams, 0xcd, sizeof(bufferCreateParams));
 	bufferCreateParams.sType					= VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -179,66 +168,41 @@ void createVulkanBuffer (const BufferParameters& bufferParameters, Buffer& buffe
 	bufferCreateParams.queueFamilyIndexCount	= bufferParameters.queueFamilyCount;
 	bufferCreateParams.pQueueFamilyIndices		= bufferParameters.queueFamilyIndex;
 
-	vkApiStatus = deviceInterface.createBuffer(device, &bufferCreateParams, DE_NULL, &newBuffer);
-	if (vkApiStatus != VK_SUCCESS)
+	buffer.buffer		= createBuffer(vkd, device, &bufferCreateParams);
+	buffer.allocation	= allocator.allocate(getBufferMemoryRequirements(vkd, device, *buffer.buffer), visibility);
+
+	VK_CHECK(vkd.bindBufferMemory(device, *buffer.buffer, buffer.allocation->getMemory(), buffer.allocation->getOffset()));
+
+	// If caller provides a host memory buffer for the allocation, then go
+	// ahead and copy the provided data into the allocation and update the
+	// barrier list with the associated access
+	if (bufferParameters.memory != DE_NULL)
 	{
-		log << TestLog::Message << "Vulkan createBuffer  with (size,usage,sharingMode) = ("
-			<< bufferParameters.size << "," << bufferParameters.usage << "," << bufferParameters.sharingMode <<") failed with status "
-			<< vkApiStatus << TestLog::EndMessage;
-		VK_CHECK(vkApiStatus);
-	}
+		VkMemoryBarrier				barrier;
+		VkMappedMemoryRange			range;
 
-	buffer.buffer = vk::Move<VkBuffer>(vk::check<VkBuffer>(newBuffer), Deleter<VkBuffer>(deviceInterface, device, DE_NULL));
+		deMemset(&range, 0xcd, sizeof(range));
+		range.sType		= VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range.pNext		= DE_NULL;
+		range.memory	= buffer.allocation->getMemory();
+		range.offset	= buffer.allocation->getOffset();
+		range.size		= bufferParameters.size;
 
-	instanceInterface.getPhysicalDeviceMemoryProperties(physDevice, &memProps);
-	deviceInterface.getBufferMemoryRequirements(device, buffer.buffer.get(), &memReq);
+		deMemcpy(buffer.allocation->getHostPtr(), bufferParameters.memory, (size_t)bufferParameters.size);
+		VK_CHECK(vkd.flushMappedMemoryRanges(device, 1, &range));
 
-	{
-		Allocator&              allocator = bufferParameters.context->getDefaultAllocator();
-		MovePtr<Allocation>		newMemory	(allocator.allocate(memReq, visibility));
+		deMemset(&barrier, 0xcd, sizeof(barrier));
+		barrier.sType			= VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+		barrier.pNext			= DE_NULL;
+		barrier.srcAccessMask	= VK_ACCESS_HOST_WRITE_BIT;
+		barrier.dstAccessMask	= bufferParameters.inputBarrierFlags;
 
-		vkApiStatus = deviceInterface.bindBufferMemory(device, buffer.buffer.get(), newMemory->getMemory(), newMemory->getOffset());
-		if (vkApiStatus != VK_SUCCESS)
-		{
-			log << TestLog::Message << "bindBufferMemory on device " << device
-				<< "failed with status " << vkApiStatus << TestLog::EndMessage;
-			VK_CHECK(vkApiStatus);
-		}
-
-		// If caller provides a host memory buffer for the allocation, then go
-		// ahead and copy the provided data into the allocation and update the
-		// barrier list with the associated access
-		if (bufferParameters.memory != DE_NULL)
-		{
-			VkMemoryBarrier				barrier;
-			VkMappedMemoryRange			range;
-
-			deMemset(&range, 0xcd, sizeof(range));
-			range.sType		= VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-			range.pNext		= DE_NULL;
-			range.memory	= newMemory->getMemory();
-			range.offset	= newMemory->getOffset();
-			range.size		= bufferParameters.size;
-
-			deMemcpy(newMemory->getHostPtr(), bufferParameters.memory, (size_t)bufferParameters.size);
-			VK_CHECK(deviceInterface.flushMappedMemoryRanges(device, 1, &range));
-
-			deMemset(&barrier, 0xcd, sizeof(barrier));
-			barrier.sType			= VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-			barrier.pNext			= DE_NULL;
-			barrier.srcAccessMask	= VK_ACCESS_HOST_WRITE_BIT;
-			barrier.dstAccessMask	= bufferParameters.inputBarrierFlags;
-
-			buffer.memoryBarrier.push_back(barrier);
-		}
-		buffer.allocation = newMemory;
+		buffer.memoryBarrier.push_back(barrier);
 	}
 }
 
 struct ImageParameters
 {
-	Context*							context;
-	VkDevice							device;
 	VkImageType							imageType;
 	VkFormat							format;
 	VkExtent3D							extent3D;
@@ -262,23 +226,13 @@ struct Image
 	vector<VkImageMemoryBarrier>		imageMemoryBarrier;
 };
 
-void createVulkanImage (const ImageParameters& imageParameters, Image& image, MemoryRequirement visibility)
+void createVulkanImage (const DeviceInterface& vkd, VkDevice device, Allocator& allocator, const ImageParameters& imageParameters, Image& image, MemoryRequirement visibility)
 {
-	TestLog&							log					= imageParameters.context->getTestContext().getLog();
-	const DeviceInterface&				deviceInterface		= imageParameters.context->getDeviceInterface();
-	const InstanceInterface&			instanceInterface	= imageParameters.context->getInstanceInterface();
-	const VkPhysicalDevice				physDevice			= imageParameters.context->getPhysicalDevice();
-	const VkDevice						device				= imageParameters.device;
-	VkResult							result;
-	VkPhysicalDeviceMemoryProperties	memProps;
-	VkMemoryRequirements				memReq;
-	VkComponentMapping					componentMap;
-	VkImageSubresourceRange				subresourceRange;
-	VkImageViewCreateInfo				imageViewCreateInfo;
-	VkImageCreateInfo					imageCreateParams;
-	VkImageMemoryBarrier				imageBarrier;
-	VkImage								newImage;
-	VkImageView							newImageView;
+	VkComponentMapping			componentMap;
+	VkImageSubresourceRange		subresourceRange;
+	VkImageViewCreateInfo		imageViewCreateInfo;
+	VkImageCreateInfo			imageCreateParams;
+	VkImageMemoryBarrier		imageBarrier;
 
 	deMemset(&imageCreateParams, 0xcd, sizeof(imageCreateParams));
 	imageCreateParams.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -297,87 +251,57 @@ void createVulkanImage (const ImageParameters& imageParameters, Image& image, Me
 	imageCreateParams.pQueueFamilyIndices	= imageParameters.queueFamilyNdxList;
 	imageCreateParams.initialLayout			= imageParameters.initialLayout;
 
-	result = deviceInterface.createImage(device, &imageCreateParams, DE_NULL, &newImage);
-	if (result != VK_SUCCESS)
-	{
-		log << TestLog::Message << "createImage failed with status " << result << TestLog::EndMessage;
-		VK_CHECK(result);
-	}
+	image.image			= createImage(vkd, device, &imageCreateParams);
+	image.allocation	= allocator.allocate(getImageMemoryRequirements(vkd, device, *image.image), visibility);
 
-	image.image = vk::Move<VkImage>(vk::check<VkImage>(newImage), Deleter<VkImage>(deviceInterface, device, DE_NULL));
+	VK_CHECK(vkd.bindImageMemory(device, *image.image, image.allocation->getMemory(), image.allocation->getOffset()));
 
-	instanceInterface.getPhysicalDeviceMemoryProperties(physDevice, &memProps);
-	deviceInterface.getImageMemoryRequirements(device, image.image.get(), &memReq);
+	componentMap.r							= VK_COMPONENT_SWIZZLE_R;
+	componentMap.g							= VK_COMPONENT_SWIZZLE_G;
+	componentMap.b							= VK_COMPONENT_SWIZZLE_B;
+	componentMap.a							= VK_COMPONENT_SWIZZLE_A;
 
-	{
-		Allocator&				allocator = imageParameters.context->getDefaultAllocator();
-		MovePtr<Allocation>		newMemory	(allocator.allocate(memReq, visibility));
-		result = deviceInterface.bindImageMemory(device, image.image.get(), newMemory->getMemory(), newMemory->getOffset());
-		if (result != VK_SUCCESS)
-		{
-			log << TestLog::Message << "bindImageMemory failed with status " << result << TestLog::EndMessage;
-			VK_CHECK(result);
-		}
+	subresourceRange.aspectMask				= VK_IMAGE_ASPECT_COLOR_BIT;
+	subresourceRange.baseMipLevel			= 0;
+	subresourceRange.levelCount				= imageParameters.mipLevels;
+	subresourceRange.baseArrayLayer			= 0;
+	subresourceRange.layerCount				= 1;
 
-		componentMap.r							= VK_COMPONENT_SWIZZLE_R;
-		componentMap.g							= VK_COMPONENT_SWIZZLE_G;
-		componentMap.b							= VK_COMPONENT_SWIZZLE_B;
-		componentMap.a							= VK_COMPONENT_SWIZZLE_A;
+	deMemset(&imageViewCreateInfo, 0xcd, sizeof(imageViewCreateInfo));
+	imageViewCreateInfo.sType				= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	imageViewCreateInfo.pNext				= DE_NULL;
+	imageViewCreateInfo.flags				= 0;
+	imageViewCreateInfo.image				= image.image.get();
+	imageViewCreateInfo.viewType			= VK_IMAGE_VIEW_TYPE_2D;
+	imageViewCreateInfo.format				= imageParameters.format;
+	imageViewCreateInfo.components			= componentMap;
+	imageViewCreateInfo.subresourceRange	= subresourceRange;
 
-		subresourceRange.aspectMask				= VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.baseMipLevel			= 0;
-		subresourceRange.levelCount				= imageParameters.mipLevels;
-		subresourceRange.baseArrayLayer			= 0;
-		subresourceRange.layerCount				= 1;
+	image.imageView	= createImageView(vkd, device, &imageViewCreateInfo);
 
-		deMemset(&imageViewCreateInfo, 0xcd, sizeof(imageViewCreateInfo));
-		imageViewCreateInfo.sType				= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCreateInfo.pNext				= DE_NULL;
-		imageViewCreateInfo.flags				= 0;
-		imageViewCreateInfo.image				= image.image.get();
-		imageViewCreateInfo.viewType			= VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCreateInfo.format				= imageParameters.format;
-		imageViewCreateInfo.components			= componentMap;
-		imageViewCreateInfo.subresourceRange	= subresourceRange;
+	deMemset(&imageBarrier, 0xcd, sizeof(imageBarrier));
+	imageBarrier.sType					= VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	imageBarrier.pNext					= DE_NULL;
+	imageBarrier.srcAccessMask			= 0;
+	imageBarrier.dstAccessMask			= imageParameters.barrierInputMask;
+	imageBarrier.oldLayout				= imageParameters.initialLayout;
+	imageBarrier.newLayout				= imageParameters.finalLayout;
+	imageBarrier.srcQueueFamilyIndex	= imageParameters.queueFamilyNdxList[0];
+	imageBarrier.dstQueueFamilyIndex	= imageParameters.queueFamilyNdxList[imageParameters.queueFamilyCount-1];
+	imageBarrier.image					= image.image.get();
+	imageBarrier.subresourceRange		= subresourceRange;
 
-		result = deviceInterface.createImageView(device, &imageViewCreateInfo, DE_NULL, &newImageView);
-		if (result != VK_SUCCESS)
-		{
-			log << TestLog::Message << "createImageView failed with status " << result << TestLog::EndMessage;
-			VK_CHECK(result);
-		}
-
-		image.imageView = vk::Move<VkImageView>(vk::check<VkImageView>(newImageView), Deleter<VkImageView>(deviceInterface, device, DE_NULL));
-		image.allocation = newMemory;
-
-		deMemset(&imageBarrier, 0xcd, sizeof(imageBarrier));
-		imageBarrier.sType					= VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		imageBarrier.pNext					= DE_NULL;
-		imageBarrier.srcAccessMask			= 0;
-		imageBarrier.dstAccessMask			= imageParameters.barrierInputMask;
-		imageBarrier.oldLayout				= imageParameters.initialLayout;
-		imageBarrier.newLayout				= imageParameters.finalLayout;
-		imageBarrier.srcQueueFamilyIndex	= imageParameters.queueFamilyNdxList[0];
-		imageBarrier.dstQueueFamilyIndex	= imageParameters.queueFamilyNdxList[imageParameters.queueFamilyCount-1];
-		imageBarrier.image					= image.image.get();
-		imageBarrier.subresourceRange		= subresourceRange;
-
-		image.imageMemoryBarrier.push_back(imageBarrier);
-	}
+	image.imageMemoryBarrier.push_back(imageBarrier);
 }
 
 struct RenderPassParameters
 {
-	Context*				context;
-	VkDevice				device;
 	VkFormat				colorFormat;
 	VkSampleCountFlagBits	colorSamples;
 };
 
-void  createColorOnlyRenderPass (const RenderPassParameters& renderPassParameters, vk::Move<VkRenderPass>& renderPass)
+void  createColorOnlyRenderPass (const DeviceInterface& vkd, VkDevice device, const RenderPassParameters& renderPassParameters, vk::Move<VkRenderPass>& renderPass)
 {
-	const DeviceInterface&				deviceInterface		= renderPassParameters.context->getDeviceInterface();
-	const VkDevice						device				= renderPassParameters.device;
 	VkAttachmentDescription				colorAttachmentDesc;
 	VkAttachmentReference				colorAttachmentRef;
 	VkAttachmentReference				stencilAttachmentRef;
@@ -423,45 +347,14 @@ void  createColorOnlyRenderPass (const RenderPassParameters& renderPassParameter
 	renderPassParams.dependencyCount	= 0;
 	renderPassParams.pDependencies		= DE_NULL;
 
-	VK_CHECK(deviceInterface.createRenderPass(device, &renderPassParams, DE_NULL, &newRenderPass));
-	renderPass = vk::Move<VkRenderPass>(vk::check<VkRenderPass>(newRenderPass), Deleter<VkRenderPass>(deviceInterface, device, DE_NULL));
+	renderPass = createRenderPass(vkd, device, &renderPassParams);
 }
 
 struct ShaderDescParams
 {
-	const char*				name;
+	VkShaderModule			shaderModule;
 	VkShaderStageFlagBits	stage;
 };
-
-void createGraphicsShaderStages (Context& context, const VkDevice device, vector<ShaderDescParams> shaderDesc, vector<VkPipelineShaderStageCreateInfo>& shaderCreateParams)
-{
-	const DeviceInterface&				deviceInterface		= context.getDeviceInterface();
-
-	for (vector<ShaderDescParams>::iterator shaderDescIter = shaderDesc.begin(); shaderDescIter != shaderDesc.end(); shaderDescIter++)
-	{
-		VkPipelineShaderStageCreateInfo		shaderStageInfo;
-		VkShaderModule						shaderModule;
-		VkShaderModuleCreateInfo			shaderModuleInfo;
-
-		deMemset(&shaderModuleInfo, 0xcd, sizeof(shaderModuleInfo));
-		shaderModuleInfo.sType				= VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		shaderModuleInfo.pNext				= DE_NULL;
-		shaderModuleInfo.flags				= 0;
-		shaderModuleInfo.codeSize			= context.getBinaryCollection().get(shaderDescIter->name).getSize();
-		shaderModuleInfo.pCode				= (const deUint32*)context.getBinaryCollection().get(shaderDescIter->name).getBinary();
-		VK_CHECK(deviceInterface.createShaderModule(device, &shaderModuleInfo, DE_NULL, &shaderModule));
-
-		deMemset(&shaderStageInfo, 0xcd, sizeof(shaderStageInfo));
-		shaderStageInfo.sType				= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageInfo.pNext				= DE_NULL;
-		shaderStageInfo.flags				= 0;
-		shaderStageInfo.stage				= shaderDescIter->stage;
-		shaderStageInfo.module				= shaderModule;
-		shaderStageInfo.pName				= "main";
-		shaderStageInfo.pSpecializationInfo	= DE_NULL;
-		shaderCreateParams.push_back(shaderStageInfo);
-	}
-}
 
 struct VertexDesc
 {
@@ -502,9 +395,8 @@ void createVertexInfo (const vector<VertexDesc>& vertexDesc, vector<VkVertexInpu
 	vertexInputState.pVertexAttributeDescriptions = &attrList[0];
 }
 
-void createCommandBuffer (Context& context, const VkDevice device, const deUint32 queueFamilyNdx, vk::Move<VkCommandBuffer>* commandBufferRef, vk::Move<VkCommandPool>* commandPoolRef)
+void createCommandBuffer (const DeviceInterface& deviceInterface, const VkDevice device, const deUint32 queueFamilyNdx, vk::Move<VkCommandBuffer>* commandBufferRef, vk::Move<VkCommandPool>* commandPoolRef)
 {
-	const DeviceInterface&		deviceInterface		= context.getDeviceInterface();
 	vk::Move<VkCommandPool>		commandPool;
 	VkCommandPoolCreateInfo		commandPoolInfo;
 	VkCommandBufferAllocateInfo	commandBufferInfo;
@@ -552,7 +444,6 @@ void destroyFences (const DeviceInterface& deviceInterface, VkDevice device, deU
 
 struct RenderInfo
 {
-	Context*						context;
 	deInt32							width;
 	deInt32							height;
 	deUint32						vertexBufferSize;
@@ -571,9 +462,8 @@ struct RenderInfo
 	vector<VkImageMemoryBarrier>*	barriers;
 };
 
-void  recordRenderPass (const RenderInfo& renderInfo)
+void  recordRenderPass (const DeviceInterface& deviceInterface, const RenderInfo& renderInfo)
 {
-	const DeviceInterface&				deviceInterface			= renderInfo.context->getDeviceInterface();
 	const VkDeviceSize					bindingOffset			= 0;
 	const VkClearValue					clearValue				= makeClearValueColorF32(0.0, 0.0, 1.0, 1.0);
 	VkRenderPassBeginInfo				renderPassBeginState;
@@ -621,7 +511,6 @@ void  recordRenderPass (const RenderInfo& renderInfo)
 
 struct TransferInfo
 {
-	Context*						context;
 	VkCommandBuffer					commandBuffer;
 	deUint32						width;
 	deUint32						height;
@@ -633,10 +522,9 @@ struct TransferInfo
 	vector<VkBufferMemoryBarrier>*	barriers;
 };
 
-void copyToCPU (TransferInfo* transferInfo)
+void copyToCPU (const DeviceInterface& vkd, TransferInfo* transferInfo)
 {
-	const DeviceInterface&				deviceInterface			= transferInfo->context->getDeviceInterface();
-	VkBufferImageCopy					copyState;
+	VkBufferImageCopy	copyState;
 
 	copyState.bufferOffset						= 0;
 	copyState.bufferRowLength					= transferInfo->width;
@@ -650,7 +538,7 @@ void copyToCPU (TransferInfo* transferInfo)
 	copyState.imageExtent.height				= (deInt32)(transferInfo->height);
 	copyState.imageExtent.depth					= 1;
 
-	deviceInterface.cmdCopyImageToBuffer(transferInfo->commandBuffer, transferInfo->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, transferInfo->buffer, 1, &copyState);
+	vkd.cmdCopyImageToBuffer(transferInfo->commandBuffer, transferInfo->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, transferInfo->buffer, 1, &copyState);
 
 	{
 		VkBufferMemoryBarrier	bufferBarrier;
@@ -670,8 +558,12 @@ void copyToCPU (TransferInfo* transferInfo)
 
 struct TestContext
 {
-	Context&					context;
-	const VkDevice&				device;
+	const DeviceInterface&		vkd;
+	const VkDevice				device;
+	const deUint32				queueFamilyIndex;
+	const BinaryCollection&		binaryCollection;
+	Allocator&					allocator;
+
 	const tcu::Vec4*			vertices;
 	deUint32					numVertices;
 	tcu::IVec2					renderDimension;
@@ -686,37 +578,77 @@ struct TestContext
 	VkEvent						event;
 	vk::Move<VkImage>			image;
 	vk::Move<VkImageView>		imageView;
-	vk::Move<VkCommandBuffer>	cmdBuffer;
+	vk::Move<VkFramebuffer>		framebuffer;
 	vk::Move<VkCommandPool>		commandPool;
+	vk::Move<VkCommandBuffer>	cmdBuffer;
 	vk::Move<VkRenderPass>		renderPass;
 	MovePtr<Allocation>			imageAllocation;
 
-	TestContext(Context& context_, const VkDevice& device_)
-		: context		(context_)
-		, device		(device_)
-		, numVertices	(0)
-		, setEvent		(DE_FALSE)
-		, waitEvent		(DE_FALSE)
+	TestContext (const DeviceInterface&		vkd_,
+				 const VkDevice				device_,
+				 deUint32					queueFamilyIndex_,
+				 const BinaryCollection&	binaryCollection_,
+				 Allocator&					allocator_)
+		: vkd				(vkd_)
+		, device			(device_)
+		, queueFamilyIndex	(queueFamilyIndex_)
+		, binaryCollection	(binaryCollection_)
+		, allocator			(allocator_)
+		, numVertices		(0)
+		, setEvent			(DE_FALSE)
+		, waitEvent			(DE_FALSE)
 	{
-		createFences(context.getDeviceInterface(), device, false, DE_LENGTH_OF_ARRAY(fences), fences);
+		createFences(vkd, device, false, DE_LENGTH_OF_ARRAY(fences), fences);
 	}
 
 	~TestContext()
 	{
-		destroyFences(context.getDeviceInterface(), device, DE_LENGTH_OF_ARRAY(fences), fences);
+		destroyFences(vkd, device, DE_LENGTH_OF_ARRAY(fences), fences);
 	}
 };
 
 void generateWork (TestContext& testContext)
 {
-	const DeviceInterface&						deviceInterface		= testContext.context.getDeviceInterface();
-	const deUint32								queueFamilyNdx		= testContext.context.getUniversalQueueFamilyIndex();
+	const DeviceInterface&						deviceInterface		= testContext.vkd;
+	const deUint32								queueFamilyNdx		= testContext.queueFamilyIndex;
+
+	// \note VkShaderModule is consumed by vkCreate*Pipelines() so it can be deleted
+	//       as pipeline has been constructed.
+	const vk::Unique<VkShaderModule>			vertShaderModule	(createShaderModule(deviceInterface,
+																						testContext.device,
+																						testContext.binaryCollection.get("glslvert"),
+																						(VkShaderModuleCreateFlags)0));
+
+	const vk::Unique<VkShaderModule>			fragShaderModule	(createShaderModule(deviceInterface,
+																						testContext.device,
+																						testContext.binaryCollection.get("glslfrag"),
+																						(VkShaderModuleCreateFlags)0));
+	const VkPipelineShaderStageCreateInfo		shaderStageParams[]	=
+	{
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			DE_NULL,
+			(VkPipelineShaderStageCreateFlags)0,
+			VK_SHADER_STAGE_VERTEX_BIT,
+			*vertShaderModule,
+			"main",
+			(const VkSpecializationInfo*)DE_NULL,
+		},
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			DE_NULL,
+			(VkPipelineShaderStageCreateFlags)0,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+			*fragShaderModule,
+			"main",
+			(const VkSpecializationInfo*)DE_NULL,
+		}
+	};
+
 	vk::Move<VkPipelineCache>					cache;
 	vk::Move<VkPipelineLayout>					layout;
 	vk::Move<VkPipeline>						pipeline;
-	VkFramebuffer								framebuffer;
 	vector<ShaderDescParams>					shaderDescParams;
-	vector<VkPipelineShaderStageCreateInfo>		shaderStageCreateParams;
 	VertexDesc									vertexDesc;
 	vector<VertexDesc>							vertexDescList;
 	vector<VkVertexInputAttributeDescription>	attrList;
@@ -765,8 +697,6 @@ void generateWork (TestContext& testContext)
 	bufferBarriers.resize(0);
 	imageBarriers.resize(0);
 
-	bufferParameters.context				= &testContext.context;
-	bufferParameters.device					= testContext.device;
 	bufferParameters.memory					= testContext.vertices;
 	bufferParameters.size					= testContext.numVertices * sizeof(tcu::Vec4);
 	bufferParameters.usage					= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
@@ -774,12 +704,10 @@ void generateWork (TestContext& testContext)
 	bufferParameters.queueFamilyCount		= 1;
 	bufferParameters.queueFamilyIndex		= &queueFamilyNdx;
 	bufferParameters.inputBarrierFlags		= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-	createVulkanBuffer(bufferParameters, buffer, MemoryRequirement::HostVisible);
+	createVulkanBuffer(deviceInterface, testContext.device, testContext.allocator, bufferParameters, buffer, MemoryRequirement::HostVisible);
 	testContext.vertexBufferAllocation		= buffer.allocation;
 	testContext.vertexBuffer				= buffer.buffer;
 
-	bufferParameters.context				= &testContext.context;
-	bufferParameters.device					= testContext.device;
 	bufferParameters.memory					= DE_NULL;
 	bufferParameters.size					= testContext.renderSize;
 	bufferParameters.usage					= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -787,7 +715,7 @@ void generateWork (TestContext& testContext)
 	bufferParameters.queueFamilyCount		= 1;
 	bufferParameters.queueFamilyIndex		= &queueFamilyNdx;
 	bufferParameters.inputBarrierFlags		= 0;
-	createVulkanBuffer(bufferParameters, buffer, MemoryRequirement::HostVisible);
+	createVulkanBuffer(deviceInterface, testContext.device, testContext.allocator, bufferParameters, buffer, MemoryRequirement::HostVisible);
 	testContext.renderReadBuffer			= buffer.allocation;
 	testContext.renderBuffer				= buffer.buffer;
 
@@ -795,8 +723,6 @@ void generateWork (TestContext& testContext)
 	extent.height							= testContext.renderDimension.y();
 	extent.depth							= 1;
 
-	imageParameters.context					= &testContext.context;
-	imageParameters.device					= testContext.device;
 	imageParameters.imageType 				= VK_IMAGE_TYPE_2D;
 	imageParameters.format					= VK_FORMAT_R8G8B8A8_UNORM;
 	imageParameters.extent3D				= extent;
@@ -810,25 +736,13 @@ void generateWork (TestContext& testContext)
 	imageParameters.initialLayout			= VK_IMAGE_LAYOUT_UNDEFINED;
 	imageParameters.finalLayout				= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	imageParameters.barrierInputMask		= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	createVulkanImage(imageParameters, image, MemoryRequirement::Any);
+	createVulkanImage(deviceInterface, testContext.device, testContext.allocator, imageParameters, image, MemoryRequirement::Any);
 	testContext.imageAllocation				= image.allocation;
 	testContext.image						= image.image;
 
-	renderPassParameters.context			= &testContext.context;
-	renderPassParameters.device				= testContext.device;
 	renderPassParameters.colorFormat		= VK_FORMAT_R8G8B8A8_UNORM;
 	renderPassParameters.colorSamples		= VK_SAMPLE_COUNT_1_BIT;
-	createColorOnlyRenderPass(renderPassParameters, testContext.renderPass);
-
-	ShaderDescParams param;
-	param.name = "glslvert";
-	param.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	shaderDescParams.push_back(param);
-
-	param.name = "glslfrag";
-	param.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	shaderDescParams.push_back(param);
-	createGraphicsShaderStages(testContext.context, testContext.device, shaderDescParams, shaderStageCreateParams);
+	createColorOnlyRenderPass(deviceInterface, testContext.device, renderPassParameters, testContext.renderPass);
 
 	vertexDesc.location = 0;
 	vertexDesc.format = VK_FORMAT_R32G32B32A32_SFLOAT;
@@ -921,8 +835,8 @@ void generateWork (TestContext& testContext)
 	pipelineState.sType							= VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineState.pNext							= DE_NULL;
 	pipelineState.flags							= 0;
-	pipelineState.stageCount					= (deUint32)shaderStageCreateParams.size();
-	pipelineState.pStages						= &shaderStageCreateParams[0];
+	pipelineState.stageCount					= DE_LENGTH_OF_ARRAY(shaderStageParams);
+	pipelineState.pStages						= &shaderStageParams[0];
 	pipelineState.pVertexInputState				= &vertexInputState;
 	pipelineState.pInputAssemblyState			= &inputAssemblyState;
 	pipelineState.pTessellationState			= DE_NULL;
@@ -945,8 +859,8 @@ void generateWork (TestContext& testContext)
 	cacheState.initialDataSize					= 0;
 	cacheState.pInitialData						= DE_NULL;
 
-	cache = createPipelineCache(deviceInterface, testContext.device, &cacheState, DE_NULL);
-	pipeline = createGraphicsPipelines(deviceInterface, testContext.device, cache.get(), 1, &pipelineState, DE_NULL);
+	cache = createPipelineCache(deviceInterface, testContext.device, &cacheState);
+	pipeline = createGraphicsPipeline(deviceInterface, testContext.device, cache.get(), &pipelineState);
 
 	deMemset(&fbState, 0xcd, sizeof(fbState));
 	fbState.sType								= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -958,15 +872,16 @@ void generateWork (TestContext& testContext)
 	fbState.width								= (deUint32)testContext.renderDimension.x();
 	fbState.height								= (deUint32)testContext.renderDimension.y();
 	fbState.layers								= 1;
-	VK_CHECK(deviceInterface.createFramebuffer(testContext.device, &fbState, DE_NULL, &framebuffer));
-	testContext.imageView						= image.imageView;
+
+	testContext.framebuffer	= createFramebuffer(deviceInterface, testContext.device, &fbState);
+	testContext.imageView	= image.imageView;
 
 	deMemset(&inheritanceInfo, 0xcd, sizeof(inheritanceInfo));
 	inheritanceInfo.sType						= VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 	inheritanceInfo.pNext						= DE_NULL;
 	inheritanceInfo.renderPass					= testContext.renderPass.get();
 	inheritanceInfo.subpass						= 0;
-	inheritanceInfo.framebuffer					= framebuffer;
+	inheritanceInfo.framebuffer					= *testContext.framebuffer;
 	inheritanceInfo.occlusionQueryEnable		= VK_FALSE;
 
 	deMemset(&commandBufRecordState, 0xcd, sizeof(commandBufRecordState));
@@ -980,15 +895,14 @@ void generateWork (TestContext& testContext)
 										VK_PIPELINE_STAGE_HOST_BIT,
 										VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 										DE_FALSE,
-										(deUint32)memoryBarriers.size(), &memoryBarriers[0],
-										(deUint32)bufferBarriers.size(), &bufferBarriers[0],
-										(deUint32)imageBarriers.size(), &imageBarriers[0]);
+										(deUint32)memoryBarriers.size(), (memoryBarriers.empty() ? DE_NULL : &memoryBarriers[0]),
+										(deUint32)bufferBarriers.size(), (bufferBarriers.empty() ? DE_NULL : &bufferBarriers[0]),
+										(deUint32)imageBarriers.size(), (imageBarriers.empty() ? DE_NULL : &imageBarriers[0]));
 
 	memoryBarriers.resize(0);
 	bufferBarriers.resize(0);
 	imageBarriers.resize(0);
 
-	renderInfo.context				= &testContext.context;
 	renderInfo.width				= testContext.renderDimension.x();
 	renderInfo.height				= testContext.renderDimension.y();
 	renderInfo.vertexBufferSize		= testContext.numVertices;
@@ -996,7 +910,7 @@ void generateWork (TestContext& testContext)
 	renderInfo.image				= testContext.image.get();
 	renderInfo.commandBuffer		= testContext.cmdBuffer.get();
 	renderInfo.renderPass			= testContext.renderPass.get();
-	renderInfo.framebuffer			= framebuffer;
+	renderInfo.framebuffer			= *testContext.framebuffer;
 	renderInfo.pipeline				= pipeline;
 	renderInfo.mipLevels			= 1;
 	renderInfo.queueFamilyNdxList	= &queueFamilyNdx;
@@ -1005,21 +919,20 @@ void generateWork (TestContext& testContext)
 	renderInfo.waitEvent			= testContext.waitEvent;
 	renderInfo.event				= testContext.event;
 	renderInfo.barriers				= &imageBarriers;
-	recordRenderPass(renderInfo);
+	recordRenderPass(deviceInterface, renderInfo);
 
 	deviceInterface.cmdPipelineBarrier(	renderInfo.commandBuffer,
 										VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 										VK_PIPELINE_STAGE_TRANSFER_BIT,
 										DE_FALSE,
-										(deUint32)memoryBarriers.size(), &memoryBarriers[0],
-										(deUint32)bufferBarriers.size(), &bufferBarriers[0],
-										(deUint32)imageBarriers.size(), &imageBarriers[0]);
+										(deUint32)memoryBarriers.size(), (memoryBarriers.empty() ? DE_NULL : &memoryBarriers[0]),
+										(deUint32)bufferBarriers.size(), (bufferBarriers.empty() ? DE_NULL : &bufferBarriers[0]),
+										(deUint32)imageBarriers.size(), (imageBarriers.empty() ? DE_NULL : &imageBarriers[0]));
 
 	memoryBarriers.resize(0);
 	bufferBarriers.resize(0);
 	imageBarriers.resize(0);
 
-	transferInfo.context			= &testContext.context;
 	transferInfo.commandBuffer		= renderInfo.commandBuffer;
 	transferInfo.width				= testContext.renderDimension.x();
 	transferInfo.height				= testContext.renderDimension.y();
@@ -1031,15 +944,15 @@ void generateWork (TestContext& testContext)
 	transferInfo.imageOffset.y		= 0;
 	transferInfo.imageOffset.z		= 0;
 	transferInfo.barriers			= &bufferBarriers;
-	copyToCPU(&transferInfo);
+	copyToCPU(deviceInterface, &transferInfo);
 
 	deviceInterface.cmdPipelineBarrier(	transferInfo.commandBuffer,
 										VK_PIPELINE_STAGE_TRANSFER_BIT,
 										VK_PIPELINE_STAGE_HOST_BIT,
 										DE_FALSE,
-										(deUint32)memoryBarriers.size(), &memoryBarriers[0],
-										(deUint32)bufferBarriers.size(), &bufferBarriers[0],
-										(deUint32)imageBarriers.size(), &imageBarriers[0]);
+										(deUint32)memoryBarriers.size(), (memoryBarriers.empty() ? DE_NULL : &memoryBarriers[0]),
+										(deUint32)bufferBarriers.size(), (bufferBarriers.empty() ? DE_NULL : &bufferBarriers[0]),
+										(deUint32)imageBarriers.size(), (imageBarriers.empty() ? DE_NULL : &imageBarriers[0]));
 
 	memoryBarriers.resize(0);
 	bufferBarriers.resize(0);
@@ -1072,7 +985,7 @@ tcu::TestStatus testFences (Context& context)
 	VkDevice					device				= context.getDevice();
 	VkResult					waitStatus;
 	VkResult					fenceStatus;
-	TestContext					testContext(context, device);
+	TestContext					testContext			(deviceInterface, device, queueFamilyIdx, context.getBinaryCollection(), context.getDefaultAllocator());
 	VkSubmitInfo				submitInfo;
 	VkMappedMemoryRange			range;
 	void*						resultImage;
@@ -1089,7 +1002,7 @@ tcu::TestStatus testFences (Context& context)
 	testContext.renderDimension = tcu::IVec2(256, 256);
 	testContext.renderSize = sizeof(deUint32) * testContext.renderDimension.x() * testContext.renderDimension.y();
 
-	createCommandBuffer(testContext.context, device, queueFamilyIdx, &testContext.cmdBuffer, &testContext.commandPool);
+	createCommandBuffer(deviceInterface, device, queueFamilyIdx, &testContext.cmdBuffer, &testContext.commandPool);
 	generateWork(testContext);
 
 	initSubmitInfo(&submitInfo, 1);
@@ -1189,16 +1102,19 @@ vk::refdetails::Checked<VkSemaphore> createSemaphore (const DeviceInterface& dev
 tcu::TestStatus testSemaphores (Context& context)
 {
 	TestLog&					log					= context.getTestContext().getLog();
-	const DeviceInterface&		deviceInterface		= context.getDeviceInterface();
 	const InstanceInterface&	instanceInterface	= context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
 	deUint32					queueFamilyIdx;
 	vk::Move<VkDevice>			device				= createTestDevice(instanceInterface, physicalDevice, &queueFamilyIdx);
+	const DeviceDriver			deviceInterface		(instanceInterface, *device);
+	SimpleAllocator				allocator			(deviceInterface,
+													 *device,
+													 getPhysicalDeviceMemoryProperties(instanceInterface, physicalDevice));
 	VkQueue						queue[2];
 	VkResult					testStatus;
-	TestContext					testContext1(context, device.get());
-	TestContext					testContext2(context, device.get());
-	Unique<VkSemaphore>			semaphore(createSemaphore(deviceInterface, device.get(), (VkAllocationCallbacks*)DE_NULL), Deleter<VkSemaphore>(deviceInterface, device.get(), DE_NULL));
+	TestContext					testContext1		(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
+	TestContext					testContext2		(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
+	Unique<VkSemaphore>			semaphore			(createSemaphore(deviceInterface, device.get(), (VkAllocationCallbacks*)DE_NULL), Deleter<VkSemaphore>(deviceInterface, device.get(), DE_NULL));
 	VkSubmitInfo				submitInfo[2];
 	VkMappedMemoryRange			range;
 	void*						resultImage;
@@ -1230,10 +1146,10 @@ tcu::TestStatus testSemaphores (Context& context)
 	testContext2.renderDimension	= tcu::IVec2(256, 256);
 	testContext2.renderSize			= sizeof(deUint32) * testContext2.renderDimension.x() * testContext2.renderDimension.y();
 
-	createCommandBuffer(testContext1.context, device.get(), queueFamilyIdx, &testContext1.cmdBuffer, &testContext1.commandPool);
+	createCommandBuffer(deviceInterface, device.get(), queueFamilyIdx, &testContext1.cmdBuffer, &testContext1.commandPool);
 	generateWork(testContext1);
 
-	createCommandBuffer(testContext2.context, device.get(), queueFamilyIdx, &testContext2.cmdBuffer, &testContext2.commandPool);
+	createCommandBuffer(deviceInterface, device.get(), queueFamilyIdx, &testContext2.cmdBuffer, &testContext2.commandPool);
 	generateWork(testContext2);
 
 	initSubmitInfo(submitInfo, DE_LENGTH_OF_ARRAY(submitInfo));
@@ -1320,17 +1236,20 @@ vk::refdetails::Checked<VkEvent> createEvent (const DeviceInterface& deviceInter
 tcu::TestStatus testEvents (Context& context)
 {
 	TestLog&					log					= context.getTestContext().getLog();
-	const DeviceInterface&		deviceInterface		= context.getDeviceInterface();
 	const InstanceInterface&	instanceInterface	= context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
 	deUint32					queueFamilyIdx;
 	vk::Move<VkDevice>			device				= createTestDevice(instanceInterface, physicalDevice, &queueFamilyIdx);
+	const DeviceDriver			deviceInterface		(instanceInterface, *device);
+	SimpleAllocator				allocator			(deviceInterface,
+													 *device,
+													 getPhysicalDeviceMemoryProperties(instanceInterface, physicalDevice));
 	VkQueue						queue[2];
 	VkResult					testStatus;
 	VkResult					eventStatus;
-	TestContext					testContext1(context, device.get());
-	TestContext					testContext2(context, device.get());
-	Unique<VkEvent>				event(createEvent(deviceInterface, device.get(), (VkAllocationCallbacks*)DE_NULL), Deleter<VkEvent>(deviceInterface, device.get(), DE_NULL));
+	TestContext					testContext1		(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
+	TestContext					testContext2		(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
+	Unique<VkEvent>				event				(createEvent(deviceInterface, device.get(), (VkAllocationCallbacks*)DE_NULL), Deleter<VkEvent>(deviceInterface, device.get(), DE_NULL));
 	VkSubmitInfo				submitInfo[2];
 	VkMappedMemoryRange			range;
 	void*						resultImage;
@@ -1366,10 +1285,10 @@ tcu::TestStatus testEvents (Context& context)
 	testContext2.event = event.get();
 	testContext2.renderSize = sizeof(deUint32) * testContext2.renderDimension.x() * testContext2.renderDimension.y();
 
-	createCommandBuffer(testContext1.context, device.get(), queueFamilyIdx, &testContext1.cmdBuffer, &testContext1.commandPool);
+	createCommandBuffer(deviceInterface, device.get(), queueFamilyIdx, &testContext1.cmdBuffer, &testContext1.commandPool);
 	generateWork(testContext1);
 
-	createCommandBuffer(testContext2.context, device.get(), queueFamilyIdx, &testContext2.cmdBuffer, &testContext2.commandPool);
+	createCommandBuffer(deviceInterface, device.get(), queueFamilyIdx, &testContext2.cmdBuffer, &testContext2.commandPool);
 	generateWork(testContext2);
 
 	initSubmitInfo(submitInfo, DE_LENGTH_OF_ARRAY(submitInfo));
