@@ -304,6 +304,24 @@ vkNullDriver.cpp. To use that, implement `vk::Platform::createLibrary()` with
 `vk::createNullDriver()`.
 
 
+Validation Layers
+-----------------
+
+Vulkan CTS framework includes first-party support for validation layers, that
+can be turned on with `--deqp-validation=enable` command line option.
+
+When validation is turned on, default instance and device will be created with
+validation layers enabled and debug callback is registered to record any
+messages. Debug messages collected during test execution will be included at
+the end of the test case log.
+
+If any validation errors are found, test result will be set to `InternalError`.
+
+By default `VK_DEBUG_REPORT_INFORMATION_BIT_EXT` and `_DEBUG_BIT_EXT` messages
+are excluded from the log, but that can be customized by modifying
+`vkt::TestCaseExecutor::deinit()` in `vktTestPackage.cpp`.
+
+
 Cherry GUI
 ----------
 
