@@ -112,6 +112,7 @@ Move<VkDevice> createTestDevice (const InstanceInterface& vki, VkPhysicalDevice 
 	deMemset(&queueInfo,	0, sizeof(queueInfo));
 	deMemset(&deviceInfo,	0, sizeof(deviceInfo));
 
+	deMemset(&queueInfo, 0xcd, sizeof(queueInfo));
 	queueInfo.sType							= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 	queueInfo.pNext							= DE_NULL;
 	queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
@@ -119,6 +120,7 @@ Move<VkDevice> createTestDevice (const InstanceInterface& vki, VkPhysicalDevice 
 	queueInfo.queueCount					= queueCount;
 	queueInfo.pQueuePriorities				= &queuePriority;
 
+	deMemset(&deviceInfo, 0xcd, sizeof(deviceInfo));
 	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceInfo.pNext						= DE_NULL;
 	deviceInfo.queueCreateInfoCount			= 1u;
@@ -167,6 +169,7 @@ void createVulkanBuffer (const BufferParameters& bufferParameters, Buffer& buffe
 	VkBufferCreateInfo					bufferCreateParams;
 	VkBuffer							newBuffer;
 
+	deMemset(&bufferCreateParams, 0xcd, sizeof(bufferCreateParams));
 	bufferCreateParams.sType					= VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferCreateParams.pNext					= DE_NULL;
 	bufferCreateParams.flags					= 0;
@@ -210,6 +213,7 @@ void createVulkanBuffer (const BufferParameters& bufferParameters, Buffer& buffe
 			VkMemoryBarrier				barrier;
 			VkMappedMemoryRange			range;
 
+			deMemset(&range, 0xcd, sizeof(range));
 			range.sType		= VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 			range.pNext		= DE_NULL;
 			range.memory	= newMemory->getMemory();
@@ -219,6 +223,7 @@ void createVulkanBuffer (const BufferParameters& bufferParameters, Buffer& buffe
 			deMemcpy(newMemory->getHostPtr(), bufferParameters.memory, (size_t)bufferParameters.size);
 			VK_CHECK(deviceInterface.flushMappedMemoryRanges(device, 1, &range));
 
+			deMemset(&barrier, 0xcd, sizeof(barrier));
 			barrier.sType			= VK_STRUCTURE_TYPE_MEMORY_BARRIER;
 			barrier.pNext			= DE_NULL;
 			barrier.srcAccessMask	= VK_ACCESS_HOST_WRITE_BIT;
@@ -275,6 +280,7 @@ void createVulkanImage (const ImageParameters& imageParameters, Image& image, Me
 	VkImage								newImage;
 	VkImageView							newImageView;
 
+	deMemset(&imageCreateParams, 0xcd, sizeof(imageCreateParams));
 	imageCreateParams.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageCreateParams.pNext					= DE_NULL;
 	imageCreateParams.flags					= 0;
@@ -324,6 +330,7 @@ void createVulkanImage (const ImageParameters& imageParameters, Image& image, Me
 		subresourceRange.baseArrayLayer			= 0;
 		subresourceRange.layerCount				= 1;
 
+		deMemset(&imageViewCreateInfo, 0xcd, sizeof(imageViewCreateInfo));
 		imageViewCreateInfo.sType				= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		imageViewCreateInfo.pNext				= DE_NULL;
 		imageViewCreateInfo.flags				= 0;
@@ -343,6 +350,7 @@ void createVulkanImage (const ImageParameters& imageParameters, Image& image, Me
 		image.imageView = vk::Move<VkImageView>(vk::check<VkImageView>(newImageView), Deleter<VkImageView>(deviceInterface, device, DE_NULL));
 		image.allocation = newMemory;
 
+		deMemset(&imageBarrier, 0xcd, sizeof(imageBarrier));
 		imageBarrier.sType					= VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		imageBarrier.pNext					= DE_NULL;
 		imageBarrier.srcAccessMask			= 0;
@@ -404,6 +412,7 @@ void  createColorOnlyRenderPass (const RenderPassParameters& renderPassParameter
 	subpassDesc.preserveAttachmentCount	= 0;
 	subpassDesc.pPreserveAttachments	= DE_NULL;
 
+	deMemset(&renderPassParams, 0xcd, sizeof(renderPassParams));
 	renderPassParams.sType				= VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	renderPassParams.pNext				= DE_NULL;
 	renderPassParams.flags				= 0;
@@ -434,6 +443,7 @@ void createGraphicsShaderStages (Context& context, const VkDevice device, vector
 		VkShaderModule						shaderModule;
 		VkShaderModuleCreateInfo			shaderModuleInfo;
 
+		deMemset(&shaderModuleInfo, 0xcd, sizeof(shaderModuleInfo));
 		shaderModuleInfo.sType				= VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		shaderModuleInfo.pNext				= DE_NULL;
 		shaderModuleInfo.flags				= 0;
@@ -441,6 +451,7 @@ void createGraphicsShaderStages (Context& context, const VkDevice device, vector
 		shaderModuleInfo.pCode				= (const deUint32*)context.getBinaryCollection().get(shaderDescIter->name).getBinary();
 		VK_CHECK(deviceInterface.createShaderModule(device, &shaderModuleInfo, DE_NULL, &shaderModule));
 
+		deMemset(&shaderStageInfo, 0xcd, sizeof(shaderStageInfo));
 		shaderStageInfo.sType				= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStageInfo.pNext				= DE_NULL;
 		shaderStageInfo.flags				= 0;
@@ -482,6 +493,7 @@ void createVertexInfo (const vector<VertexDesc>& vertexDesc, vector<VkVertexInpu
 		bindingId++;
 	}
 
+	deMemset(&vertexInputState, 0xcd, sizeof(vertexInputState));
 	vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 	vertexInputState.pNext = DE_NULL,
 	vertexInputState.vertexBindingDescriptionCount = (deUint32)bindingList.size();
@@ -490,29 +502,32 @@ void createVertexInfo (const vector<VertexDesc>& vertexDesc, vector<VkVertexInpu
 	vertexInputState.pVertexAttributeDescriptions = &attrList[0];
 }
 
-void createCommandBuffer (Context& context, const VkDevice device, const deUint32 queueFamilyNdx, vk::Move<VkCommandBuffer>* commandBufferRef)
+void createCommandBuffer (Context& context, const VkDevice device, const deUint32 queueFamilyNdx, vk::Move<VkCommandBuffer>* commandBufferRef, vk::Move<VkCommandPool>* commandPoolRef)
 {
 	const DeviceInterface&		deviceInterface		= context.getDeviceInterface();
-	VkCommandPool				commandPool;
+	vk::Move<VkCommandPool>		commandPool;
 	VkCommandPoolCreateInfo		commandPoolInfo;
 	VkCommandBufferAllocateInfo	commandBufferInfo;
 	VkCommandBuffer				commandBuffer;
 
+	deMemset(&commandPoolInfo, 0xcd, sizeof(commandPoolInfo));
 	commandPoolInfo.sType				= VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	commandPoolInfo.pNext				= DE_NULL;
 	commandPoolInfo.flags				= 0;
 	commandPoolInfo.queueFamilyIndex	= queueFamilyNdx;
 
-	VK_CHECK(deviceInterface.createCommandPool(device, &commandPoolInfo, DE_NULL, &commandPool));
+	commandPool = createCommandPool(deviceInterface, device, &commandPoolInfo, DE_NULL);
 
+	deMemset(&commandBufferInfo, 0xcd, sizeof(commandBufferInfo));
 	commandBufferInfo.sType					= VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	commandBufferInfo.pNext					= DE_NULL;
-	commandBufferInfo.commandPool			= commandPool;
+	commandBufferInfo.commandPool			= commandPool.get();
 	commandBufferInfo.level					= VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	commandBufferInfo.commandBufferCount	= 1;
 
 	VK_CHECK(deviceInterface.allocateCommandBuffers(device, &commandBufferInfo, &commandBuffer));
-	*commandBufferRef = vk::Move<VkCommandBuffer>(vk::check<VkCommandBuffer>(commandBuffer), Deleter<VkCommandBuffer>(deviceInterface, device, commandPool));
+	*commandBufferRef = vk::Move<VkCommandBuffer>(vk::check<VkCommandBuffer>(commandBuffer), Deleter<VkCommandBuffer>(deviceInterface, device, commandPool.get()));
+	*commandPoolRef = commandPool;
 }
 
 void createFences (const DeviceInterface& deviceInterface, VkDevice device, bool signaled, deUint32 numFences, VkFence* fence)
@@ -520,6 +535,7 @@ void createFences (const DeviceInterface& deviceInterface, VkDevice device, bool
 	VkFenceCreateInfo		fenceState;
 	VkFenceCreateFlags		signalFlag = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
 
+	deMemset(&fenceState, 0xcd, sizeof(fenceState));
 	fenceState.sType		= VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceState.pNext		= DE_NULL;
 	fenceState.flags		= signalFlag;
@@ -545,7 +561,7 @@ struct RenderInfo
 	VkCommandBuffer					commandBuffer;
 	VkRenderPass					renderPass;
 	VkFramebuffer					framebuffer;
-	VkPipeline						pipeline;
+	vk::Move<VkPipeline>			pipeline;
 	deUint32						mipLevels;
 	const deUint32*					queueFamilyNdxList;
 	deUint32						queueFamilyNdxCount;
@@ -563,6 +579,7 @@ void  recordRenderPass (const RenderInfo& renderInfo)
 	VkRenderPassBeginInfo				renderPassBeginState;
 	VkImageMemoryBarrier				renderBarrier;
 
+	deMemset(&renderPassBeginState, 0xcd, sizeof(renderPassBeginState));
 	renderPassBeginState.sType						= VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassBeginState.pNext						= DE_NULL;
 	renderPassBeginState.renderPass					= renderInfo.renderPass;
@@ -577,13 +594,14 @@ void  recordRenderPass (const RenderInfo& renderInfo)
 	deviceInterface.cmdBeginRenderPass(renderInfo.commandBuffer, &renderPassBeginState, VK_SUBPASS_CONTENTS_INLINE);
 	if (renderInfo.waitEvent)
 		deviceInterface.cmdWaitEvents(renderInfo.commandBuffer, 1, &renderInfo.event, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
-	deviceInterface.cmdBindPipeline(renderInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderInfo.pipeline);
+	deviceInterface.cmdBindPipeline(renderInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderInfo.pipeline.get());
 	deviceInterface.cmdBindVertexBuffers(renderInfo.commandBuffer, 0u, 1u, &renderInfo.vertexBuffer, &bindingOffset);
 	deviceInterface.cmdDraw(renderInfo.commandBuffer, renderInfo.vertexBufferSize, 1, 0, 0);
 	if (renderInfo.setEvent)
 		deviceInterface.cmdSetEvent(renderInfo.commandBuffer, renderInfo.event, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 	deviceInterface.cmdEndRenderPass(renderInfo.commandBuffer);
 
+	deMemset(&renderBarrier, 0xcd, sizeof(renderBarrier));
 	renderBarrier.sType								= VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	renderBarrier.pNext								= DE_NULL;
 	renderBarrier.srcAccessMask						= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -636,6 +654,7 @@ void copyToCPU (TransferInfo* transferInfo)
 
 	{
 		VkBufferMemoryBarrier	bufferBarrier;
+		deMemset(&bufferBarrier, 0xcd, sizeof(bufferBarrier));
 		bufferBarrier.sType					= VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 		bufferBarrier.pNext					= DE_NULL;
 		bufferBarrier.srcAccessMask			= VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -668,6 +687,8 @@ struct TestContext
 	vk::Move<VkImage>			image;
 	vk::Move<VkImageView>		imageView;
 	vk::Move<VkCommandBuffer>	cmdBuffer;
+	vk::Move<VkCommandPool>		commandPool;
+	vk::Move<VkRenderPass>		renderPass;
 	MovePtr<Allocation>			imageAllocation;
 
 	TestContext(Context& context_, const VkDevice& device_)
@@ -690,10 +711,9 @@ void generateWork (TestContext& testContext)
 {
 	const DeviceInterface&						deviceInterface		= testContext.context.getDeviceInterface();
 	const deUint32								queueFamilyNdx		= testContext.context.getUniversalQueueFamilyIndex();
-	vk::Move<VkRenderPass>						renderPass;
-	VkPipelineCache								cache;
-	VkPipelineLayout							layout;
-	VkPipeline									pipeline;
+	vk::Move<VkPipelineCache>					cache;
+	vk::Move<VkPipelineLayout>					layout;
+	vk::Move<VkPipeline>						pipeline;
 	VkFramebuffer								framebuffer;
 	vector<ShaderDescParams>					shaderDescParams;
 	vector<VkPipelineShaderStageCreateInfo>		shaderStageCreateParams;
@@ -798,7 +818,7 @@ void generateWork (TestContext& testContext)
 	renderPassParameters.device				= testContext.device;
 	renderPassParameters.colorFormat		= VK_FORMAT_R8G8B8A8_UNORM;
 	renderPassParameters.colorSamples		= VK_SAMPLE_COUNT_1_BIT;
-	createColorOnlyRenderPass(renderPassParameters, renderPass);
+	createColorOnlyRenderPass(renderPassParameters, testContext.renderPass);
 
 	ShaderDescParams param;
 	param.name = "glslvert";
@@ -818,6 +838,7 @@ void generateWork (TestContext& testContext)
 
 	createVertexInfo(vertexDescList, bindingList, attrList, vertexInputState);
 
+	deMemset(&inputAssemblyState, 0xcd, sizeof(inputAssemblyState));
 	inputAssemblyState.sType					= VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	inputAssemblyState.pNext					= DE_NULL;
 	inputAssemblyState.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -835,6 +856,7 @@ void generateWork (TestContext& testContext)
 	scissor.extent.width						= testContext.renderDimension.x();
 	scissor.extent.height						= testContext.renderDimension.y();
 
+	deMemset(&viewportInfo, 0xcd, sizeof(viewportInfo));
 	viewportInfo.sType							= VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportInfo.pNext							= DE_NULL;
 	viewportInfo.flags							= 0;
@@ -843,6 +865,7 @@ void generateWork (TestContext& testContext)
 	viewportInfo.scissorCount					= 1;
 	viewportInfo.pScissors						= &scissor;
 
+	deMemset(&rasterState, 0xcd, sizeof(rasterState));
 	rasterState.sType							= VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterState.pNext							= DE_NULL;
 	rasterState.flags							= 0;
@@ -854,6 +877,7 @@ void generateWork (TestContext& testContext)
 	rasterState.depthBiasEnable					= VK_FALSE;
 	rasterState.lineWidth						= 1;
 
+	deMemset(&multisampleState, 0xcd, sizeof(multisampleState));
 	multisampleState.sType						= VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampleState.pNext						= DE_NULL;
 	multisampleState.flags						= 0;
@@ -863,6 +887,7 @@ void generateWork (TestContext& testContext)
 	multisampleState.alphaToCoverageEnable		= VK_FALSE;
 	multisampleState.alphaToOneEnable			= VK_FALSE;
 
+	deMemset(&depthStencilState, 0xcd, sizeof(depthStencilState));
 	depthStencilState.sType						= VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	depthStencilState.pNext						= DE_NULL;
 	depthStencilState.flags						= 0;
@@ -871,8 +896,10 @@ void generateWork (TestContext& testContext)
 	depthStencilState.depthBoundsTestEnable		= VK_FALSE;
 	depthStencilState.stencilTestEnable			= VK_FALSE;
 
+	deMemset(&blendAttachment, 0xcd, sizeof(blendAttachment));
 	blendAttachment.blendEnable					= VK_FALSE;
 
+	deMemset(&blendState, 0xcd, sizeof(blendState));
 	blendState.sType							= VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	blendState.pNext							= DE_NULL;
 	blendState.flags							= 0;
@@ -880,6 +907,7 @@ void generateWork (TestContext& testContext)
 	blendState.attachmentCount					= 1;
 	blendState.pAttachments						= &blendAttachment;
 
+	deMemset(&pipelineLayoutState, 0xcd, sizeof(pipelineLayoutState));
 	pipelineLayoutState.sType					= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutState.pNext					= DE_NULL;
 	pipelineLayoutState.flags					= 0;
@@ -887,8 +915,9 @@ void generateWork (TestContext& testContext)
 	pipelineLayoutState.pSetLayouts				= DE_NULL;
 	pipelineLayoutState.pushConstantRangeCount	= 0;
 	pipelineLayoutState.pPushConstantRanges		= DE_NULL;
-	VK_CHECK(deviceInterface.createPipelineLayout(testContext.device, &pipelineLayoutState, DE_NULL, &layout));
+	layout = createPipelineLayout(deviceInterface, testContext.device, &pipelineLayoutState, DE_NULL);
 
+	deMemset(&pipelineState, 0xcd, sizeof(pipelineState));
 	pipelineState.sType							= VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineState.pNext							= DE_NULL;
 	pipelineState.flags							= 0;
@@ -903,25 +932,27 @@ void generateWork (TestContext& testContext)
 	pipelineState.pDepthStencilState			= &depthStencilState;
 	pipelineState.pColorBlendState				= &blendState;
 	pipelineState.pDynamicState					= (const VkPipelineDynamicStateCreateInfo*)DE_NULL;
-	pipelineState.layout						= layout;
-	pipelineState.renderPass					= renderPass.get();
+	pipelineState.layout						= layout.get();
+	pipelineState.renderPass					= testContext.renderPass.get();
 	pipelineState.subpass						= 0;
 	pipelineState.basePipelineHandle			= DE_NULL;
 	pipelineState.basePipelineIndex				= 0;
 
+	deMemset(&cacheState, 0xcd, sizeof(cacheState));
 	cacheState.sType							= VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 	cacheState.pNext							= DE_NULL;
 	cacheState.flags							= 0;
 	cacheState.initialDataSize					= 0;
 	cacheState.pInitialData						= DE_NULL;
 
-	VK_CHECK(deviceInterface.createPipelineCache(testContext.device, &cacheState, DE_NULL, &cache));
-	VK_CHECK(deviceInterface.createGraphicsPipelines(testContext.device, cache, 1, &pipelineState, DE_NULL, &pipeline));
+	cache = createPipelineCache(deviceInterface, testContext.device, &cacheState, DE_NULL);
+	pipeline = createGraphicsPipelines(deviceInterface, testContext.device, cache.get(), 1, &pipelineState, DE_NULL);
 
+	deMemset(&fbState, 0xcd, sizeof(fbState));
 	fbState.sType								= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 	fbState.pNext								= DE_NULL;
 	fbState.flags								= 0;
-	fbState.renderPass							= renderPass.get();
+	fbState.renderPass							= testContext.renderPass.get();
 	fbState.attachmentCount						= 1;
 	fbState.pAttachments						= &image.imageView.get();
 	fbState.width								= (deUint32)testContext.renderDimension.x();
@@ -930,13 +961,15 @@ void generateWork (TestContext& testContext)
 	VK_CHECK(deviceInterface.createFramebuffer(testContext.device, &fbState, DE_NULL, &framebuffer));
 	testContext.imageView						= image.imageView;
 
+	deMemset(&inheritanceInfo, 0xcd, sizeof(inheritanceInfo));
 	inheritanceInfo.sType						= VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 	inheritanceInfo.pNext						= DE_NULL;
-	inheritanceInfo.renderPass					= renderPass.get();
+	inheritanceInfo.renderPass					= testContext.renderPass.get();
 	inheritanceInfo.subpass						= 0;
 	inheritanceInfo.framebuffer					= framebuffer;
 	inheritanceInfo.occlusionQueryEnable		= VK_FALSE;
 
+	deMemset(&commandBufRecordState, 0xcd, sizeof(commandBufRecordState));
 	commandBufRecordState.sType					= VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	commandBufRecordState.pNext					= DE_NULL;
 	commandBufRecordState.flags					= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -962,7 +995,7 @@ void generateWork (TestContext& testContext)
 	renderInfo.vertexBuffer			= testContext.vertexBuffer.get();
 	renderInfo.image				= testContext.image.get();
 	renderInfo.commandBuffer		= testContext.cmdBuffer.get();
-	renderInfo.renderPass			= renderPass.get();
+	renderInfo.renderPass			= testContext.renderPass.get();
 	renderInfo.framebuffer			= framebuffer;
 	renderInfo.pipeline				= pipeline;
 	renderInfo.mipLevels			= 1;
@@ -1056,7 +1089,7 @@ tcu::TestStatus testFences (Context& context)
 	testContext.renderDimension = tcu::IVec2(256, 256);
 	testContext.renderSize = sizeof(deUint32) * testContext.renderDimension.x() * testContext.renderDimension.y();
 
-	createCommandBuffer(testContext.context, device, queueFamilyIdx, &testContext.cmdBuffer);
+	createCommandBuffer(testContext.context, device, queueFamilyIdx, &testContext.cmdBuffer, &testContext.commandPool);
 	generateWork(testContext);
 
 	initSubmitInfo(&submitInfo, 1);
@@ -1197,10 +1230,10 @@ tcu::TestStatus testSemaphores (Context& context)
 	testContext2.renderDimension	= tcu::IVec2(256, 256);
 	testContext2.renderSize			= sizeof(deUint32) * testContext2.renderDimension.x() * testContext2.renderDimension.y();
 
-	createCommandBuffer(testContext1.context, device.get(), queueFamilyIdx, &testContext1.cmdBuffer);
+	createCommandBuffer(testContext1.context, device.get(), queueFamilyIdx, &testContext1.cmdBuffer, &testContext1.commandPool);
 	generateWork(testContext1);
 
-	createCommandBuffer(testContext2.context, device.get(), queueFamilyIdx, &testContext2.cmdBuffer);
+	createCommandBuffer(testContext2.context, device.get(), queueFamilyIdx, &testContext2.cmdBuffer, &testContext2.commandPool);
 	generateWork(testContext2);
 
 	initSubmitInfo(submitInfo, DE_LENGTH_OF_ARRAY(submitInfo));
@@ -1333,10 +1366,10 @@ tcu::TestStatus testEvents (Context& context)
 	testContext2.event = event.get();
 	testContext2.renderSize = sizeof(deUint32) * testContext2.renderDimension.x() * testContext2.renderDimension.y();
 
-	createCommandBuffer(testContext1.context, device.get(), queueFamilyIdx, &testContext1.cmdBuffer);
+	createCommandBuffer(testContext1.context, device.get(), queueFamilyIdx, &testContext1.cmdBuffer, &testContext1.commandPool);
 	generateWork(testContext1);
 
-	createCommandBuffer(testContext2.context, device.get(), queueFamilyIdx, &testContext2.cmdBuffer);
+	createCommandBuffer(testContext2.context, device.get(), queueFamilyIdx, &testContext2.cmdBuffer, &testContext2.commandPool);
 	generateWork(testContext2);
 
 	initSubmitInfo(submitInfo, DE_LENGTH_OF_ARRAY(submitInfo));
