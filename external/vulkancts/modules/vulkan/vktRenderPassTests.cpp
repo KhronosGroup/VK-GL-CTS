@@ -4658,8 +4658,8 @@ de::MovePtr<tcu::TestCaseGroup> createFormatTestGroup(tcu::TestContext& testCtx)
 	// Depth stencil formats
 	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_coreDepthStencilFormats); formatNdx++)
 	{
-		const VkFormat					format		= s_coreDepthStencilFormats[formatNdx];
-		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatToName(format).c_str(), de::toString(format).c_str()));
+		const VkFormat					vkFormat		= s_coreDepthStencilFormats[formatNdx];
+		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatToName(vkFormat).c_str(), de::toString(vkFormat).c_str()));
 
 		for (size_t loadOpNdx = 0; loadOpNdx < DE_LENGTH_OF_ARRAY(loadOps); loadOpNdx++)
 		{
@@ -4668,12 +4668,15 @@ de::MovePtr<tcu::TestCaseGroup> createFormatTestGroup(tcu::TestContext& testCtx)
 
 			for (size_t renderTypeNdx = 0; renderTypeNdx < DE_LENGTH_OF_ARRAY(renderTypes); renderTypeNdx++)
 			{
-				const RenderPass	renderPass	(vector<Attachment>(1, Attachment(format,
+				const tcu::TextureFormat	format				= mapVkFormat(vkFormat);
+				const bool					isStencilAttachment	= hasStencilComponent(format.order);
+				const bool					isDepthAttachment	= hasDepthComponent(format.order);
+				const RenderPass			renderPass			(vector<Attachment>(1, Attachment(vkFormat,
 																				  VK_SAMPLE_COUNT_1_BIT,
-																				  VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-																				  VK_ATTACHMENT_STORE_OP_DONT_CARE,
-																				  loadOp,
-																				  VK_ATTACHMENT_STORE_OP_STORE,
+																				  isDepthAttachment ? loadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																				  isDepthAttachment ? VK_ATTACHMENT_STORE_OP_STORE :VK_ATTACHMENT_STORE_OP_DONT_CARE,
+																				  isStencilAttachment ? loadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																				  isStencilAttachment ? VK_ATTACHMENT_STORE_OP_STORE :VK_ATTACHMENT_STORE_OP_DONT_CARE,
 																				  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 																				  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)),
 												 vector<Subpass>(1, Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
