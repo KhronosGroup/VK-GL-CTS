@@ -40,6 +40,7 @@
 #include "tcuResultCollector.hpp"
 
 #include "deUniquePtr.hpp"
+#include "deString.h"
 #include "deStringUtil.hpp"
 #include "deSTLUtil.hpp"
 #include "deMemory.h"
@@ -819,6 +820,13 @@ tcu::TestStatus deviceProperties (Context& context)
 	if (!validateInitComplete(context.getPhysicalDevice(), &InstanceInterface::getPhysicalDeviceProperties, context.getInstanceInterface(), physicalDevicePropertiesOffsetTable))
 	{
 		log << TestLog::Message << "deviceProperties - VkPhysicalDeviceProperties not completely initialized" << TestLog::EndMessage;
+		return tcu::TestStatus::fail("deviceProperties incomplete initialization");
+	}
+
+	// Check if deviceName string is properly terminated.
+	if (deStrnlen(props->deviceName, VK_MAX_PHYSICAL_DEVICE_NAME_SIZE) == VK_MAX_PHYSICAL_DEVICE_NAME_SIZE)
+	{
+		log << TestLog::Message << "deviceProperties - VkPhysicalDeviceProperties deviceName not properly initialized" << TestLog::EndMessage;
 		return tcu::TestStatus::fail("deviceProperties incomplete initialization");
 	}
 
