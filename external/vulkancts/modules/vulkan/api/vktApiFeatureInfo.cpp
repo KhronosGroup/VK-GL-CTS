@@ -680,7 +680,6 @@ tcu::TestStatus deviceProperties (Context& context)
 		OFFSET_TABLE_ENTRY(VkPhysicalDeviceProperties, vendorID),
 		OFFSET_TABLE_ENTRY(VkPhysicalDeviceProperties, deviceID),
 		OFFSET_TABLE_ENTRY(VkPhysicalDeviceProperties, deviceType),
-		OFFSET_TABLE_ENTRY(VkPhysicalDeviceProperties, deviceName),
 		OFFSET_TABLE_ENTRY(VkPhysicalDeviceProperties, pipelineCacheUUID),
 		OFFSET_TABLE_ENTRY(VkPhysicalDeviceProperties, limits.maxImageDimension1D),
 		OFFSET_TABLE_ENTRY(VkPhysicalDeviceProperties, limits.maxImageDimension2D),
