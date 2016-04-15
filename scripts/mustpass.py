@@ -365,13 +365,8 @@ def addOptionElement (parent, optionName, optionValue):
 	ElementTree.SubElement(parent, "option", name=optionName, value=optionValue)
 
 def genAndroidTestXml (mustpass):
-	INSTALLER_CLASS = "com.android.compatibility.common.tradefed.targetprep.ApkInstaller"
 	RUNNER_CLASS = "com.drawelements.deqp.runner.DeqpTestRunner"
 	configElement = ElementTree.Element("configuration")
-	preparerElement = ElementTree.SubElement(configElement, "target_preparer")
-	preparerElement.set("class", INSTALLER_CLASS)
-	addOptionElement(preparerElement, "cleanup-apks", "true")
-	addOptionElement(preparerElement, "test-file-name", APK_NAME)
 
 	for package in mustpass.packages:
 		for config in package.configurations:
