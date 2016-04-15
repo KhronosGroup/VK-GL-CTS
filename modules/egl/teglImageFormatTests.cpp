@@ -1104,7 +1104,7 @@ void ImageTests::addCreateTexture2DActions (const string& prefix)
 	addCreateTexture(prefix + "rgb8", 		EGL_GL_TEXTURE_2D_KHR,	GL_RGB,		GL_RGB,		GL_UNSIGNED_BYTE);
 	addCreateTexture(prefix + "rgb565",		EGL_GL_TEXTURE_2D_KHR,	GL_RGB,		GL_RGB,		GL_UNSIGNED_SHORT_5_6_5);
 	addCreateTexture(prefix + "rgba8",		EGL_GL_TEXTURE_2D_KHR,	GL_RGBA,	GL_RGBA,	GL_UNSIGNED_BYTE);
-	addCreateTexture(prefix + "rgba5_a1",	EGL_GL_TEXTURE_2D_KHR,	GL_RGBA,	GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1);
+	addCreateTexture(prefix + "rgb5_a1",	EGL_GL_TEXTURE_2D_KHR,	GL_RGBA,	GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1);
 	addCreateTexture(prefix + "rgba4",		EGL_GL_TEXTURE_2D_KHR,	GL_RGBA,	GL_RGBA,	GL_UNSIGNED_SHORT_4_4_4_4);
 }
 
@@ -1505,7 +1505,7 @@ void ModifyTests::addModifyActions (void)
 	m_modifyActions.add("tex_subimage_rgb8",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGB,	GL_UNSIGNED_BYTE)));
 	m_modifyActions.add("tex_subimage_rgb565",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGB, 	GL_UNSIGNED_SHORT_5_6_5)));
 	m_modifyActions.add("tex_subimage_rgba8",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_BYTE)));
-	m_modifyActions.add("tex_subimage_rgba5_a1",		MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1)));
+	m_modifyActions.add("tex_subimage_rgb5_a1",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1)));
 	m_modifyActions.add("tex_subimage_rgba4",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_4_4_4_4)));
 
 	m_modifyActions.add("renderbuffer_clear_color",		MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearColor(tcu::Vec4(0.3f, 0.5f, 0.3f, 1.0f))));

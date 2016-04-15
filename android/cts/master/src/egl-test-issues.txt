@@ -17,3 +17,6 @@ dEQP-EGL.functional.multithread.pixmap
 dEQP-EGL.functional.multithread.pixmap_context
 dEQP-EGL.functional.multithread.pixmap_single_window
 dEQP-EGL.functional.multithread.pixmap_single_window_context
+
+# Bug: 27702713
+dEQP-EGL.functional.image.modify.*_rgb5_a1_tex_subimage_rgba8
