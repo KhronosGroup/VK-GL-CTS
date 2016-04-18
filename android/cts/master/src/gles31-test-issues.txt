@@ -26,3 +26,7 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.atanh.highp_*
 # Bug 22859221
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.*mediump*.scalar
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.*highp*.scalar
+
+# Bug 28196756
+dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.mediump_compute.*
+dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.mediump_compute.*
