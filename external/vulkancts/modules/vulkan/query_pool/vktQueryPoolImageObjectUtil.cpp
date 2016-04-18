@@ -162,30 +162,6 @@ Image::Image (const vk::DeviceInterface& vk,
 {
 }
 
-tcu::ConstPixelBufferAccess Image::readSurface (vk::VkQueue					queue,
-												vk::Allocator&				allocator,
-												vk::VkImageLayout			layout,
-												vk::VkOffset3D				offset,
-												int							width,
-												int							height,
-												vk::VkImageAspectFlagBits	aspect,
-												unsigned int				mipLevel,
-												unsigned int				arrayElement)
-{
-	m_pixelAccessData.resize(width * height * vk::mapVkFormat(m_format).getPixelSize());
-	deMemset(m_pixelAccessData.data(), 0, m_pixelAccessData.size());
-	if (aspect == vk::VK_IMAGE_ASPECT_COLOR_BIT)
-	{
-		read(queue, allocator, layout, offset, width, height, 1, mipLevel, arrayElement, aspect, vk::VK_IMAGE_TYPE_2D,
-		m_pixelAccessData.data());
-	}
-	if (aspect == vk::VK_IMAGE_ASPECT_DEPTH_BIT || aspect == vk::VK_IMAGE_ASPECT_STENCIL_BIT)
-	{
-		readUsingBuffer(queue, allocator, layout, offset, width, height, 1, mipLevel, arrayElement, aspect, m_pixelAccessData.data());
-	}
-	return tcu::ConstPixelBufferAccess(vk::mapVkFormat(m_format), width, height, 1, m_pixelAccessData.data());
-}
-
 tcu::ConstPixelBufferAccess Image::readVolume (vk::VkQueue					queue,
 											   vk::Allocator&				allocator,
 											   vk::VkImageLayout			layout,

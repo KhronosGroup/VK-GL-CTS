@@ -492,14 +492,6 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 	}
 	log << tcu::TestLog::EndSection;
 
-	const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
-
-	tcu::ConstPixelBufferAccess resultImageAccess = m_stateObjects->m_colorAttachmentImage->readSurface(
-				queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL,
-				zeroOffset,  StateObjects::HEIGHT, StateObjects::WIDTH, vk::VK_IMAGE_ASPECT_COLOR_BIT);
-
-	log << tcu::TestLog::Image("Result", "Result", resultImageAccess);
-
 	if (passed)
 	{
 		return tcu::TestStatus(QP_TEST_RESULT_PASS, "Query result verification passed");
@@ -521,7 +513,6 @@ private:
 	void							captureResults					(deUint64*			retResults,	deUint64*		retAvailability,	bool	allowNotReady);
 	void							logResults						(const deUint64*	results,	const deUint64* availability);
 	bool							validateResults					(const deUint64*	results,	const deUint64* availability,		bool	allowUnavailable,	vk::VkPrimitiveTopology primitiveTopology);
-	void							logRenderTarget					(void);
 
 	enum
 	{
@@ -702,7 +693,10 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 
 	log << tcu::TestLog::EndSection;
 
-	logRenderTarget();
+	if (m_testVector.queryResultsMode != RESULTS_MODE_COPY)
+	{
+		VK_CHECK(vk.queueWaitIdle(queue));
+	}
 
 		if (passed)
 	{
@@ -984,18 +978,6 @@ bool OcclusionQueryTestInstance::validateResults (const deUint64* results , cons
 		}
 	}
 	return passed;
-}
-
-void OcclusionQueryTestInstance::logRenderTarget (void)
-{
-	tcu::TestLog&			log						= m_context.getTestContext().getLog();
-	const vk::VkQueue		queue					= m_context.getUniversalQueue();
-	const vk::VkOffset3D	zeroOffset				= { 0, 0, 0 };
-	tcu::ConstPixelBufferAccess resultImageAccess	= m_stateObjects->m_colorAttachmentImage->readSurface(
-		queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		zeroOffset, StateObjects::HEIGHT, StateObjects::WIDTH, vk::VK_IMAGE_ASPECT_COLOR_BIT);
-
-	log << tcu::TestLog::Image("Result", "Result", resultImageAccess);
 }
 
 template<class Instance>
