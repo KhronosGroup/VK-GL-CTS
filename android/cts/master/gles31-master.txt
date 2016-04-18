@@ -2214,10 +2214,6 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.lowp_compute.sca
 dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.lowp_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.lowp_compute.vec3
 dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.lowp_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.mediump_compute.scalar
-dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.mediump_compute.vec2
-dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.mediump_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.mediump_compute.vec4
 dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.highp_compute.scalar
 dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.highp_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.highp_compute.vec3
@@ -2230,10 +2226,6 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.lowp_compute.sca
 dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.lowp_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.lowp_compute.vec3
 dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.lowp_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.mediump_compute.scalar
-dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.mediump_compute.vec2
-dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.mediump_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.mediump_compute.vec4
 dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.highp_compute.scalar
 dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.highp_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.highp_compute.vec3
