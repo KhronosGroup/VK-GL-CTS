@@ -2000,7 +2000,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 // Pass all tests if OpenGL ES version is not supported or we are collecting
                 // the names of the tests only
                 fakePassTests(listener);
-            } else {
+            } else if (!mRemainingTests.isEmpty()) {
                 // Make sure there is no pre-existing package form earlier interrupted test run.
                 uninstallTestApk();
                 installTestApk();
@@ -2015,6 +2015,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             // Platform is not behaving correctly, for example crashing when trying to create
             // a window. Instead of silenty failing, signal failure by leaving the rest of the
             // test cases in "NotExecuted" state
+            CLog.e("Capability query failed - leaving tests unexecuted.");
             uninstallTestApk();
         }
 
