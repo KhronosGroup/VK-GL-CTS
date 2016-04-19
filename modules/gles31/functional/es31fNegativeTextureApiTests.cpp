@@ -3717,7 +3717,7 @@ void texstorage2d_invalid_binding (NegativeTestContext& ctx)
 void texstorage2d_invalid_levels (NegativeTestContext& ctx)
 {
 	deUint32	textures[]	= {0x1234, 0x1234};
-	deUint32	log2MaxSize	= deLog2Floor32(deMax32(16, 4)) + 1 + 1;
+	deUint32	log2MaxSize	= deLog2Floor32(deMax32(16, 16)) + 1 + 1;
 	const bool	isES32		= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	ctx.glGenTextures(2, textures);
@@ -3744,19 +3744,11 @@ void texstorage2d_invalid_levels (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if levels is greater than floor(log_2(max(width, height))) + 1");
-	ctx.glTexStorage2D(GL_TEXTURE_2D, log2MaxSize, GL_RGBA8, 16, 4);
-	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.glTexStorage2D(GL_TEXTURE_2D, log2MaxSize, GL_RGBA8, 4, 16);
-	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glTexStorage2D(GL_TEXTURE_2D, log2MaxSize, GL_RGBA8, 16, 16);
 	ctx.expectError(GL_INVALID_OPERATION);
 
 	if (isES32)
 	{
-		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, log2MaxSize, GL_RGBA8, 16, 4);
-		ctx.expectError(GL_INVALID_OPERATION);
-		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, log2MaxSize, GL_RGBA8, 4, 16);
-		ctx.expectError(GL_INVALID_OPERATION);
 		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, log2MaxSize, GL_RGBA8, 16, 16);
 		ctx.expectError(GL_INVALID_OPERATION);
 	}
