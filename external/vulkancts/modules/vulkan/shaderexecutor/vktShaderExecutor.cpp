@@ -2170,7 +2170,7 @@ public:
 						TessellationExecutor		(const ShaderSpec& shaderSpec, glu::ShaderType shaderType);
 	virtual				~TessellationExecutor		(void);
 
-	void				renderTess					(const Context& ctx, deUint32 vertexCount);
+	void				renderTess					(const Context& ctx, deUint32 numValues, deUint32 vertexCount, deUint32 patchControlPoints);
 };
 
 TessellationExecutor::TessellationExecutor (const ShaderSpec& shaderSpec, glu::ShaderType shaderType)
@@ -2182,9 +2182,9 @@ TessellationExecutor::~TessellationExecutor (void)
 {
 }
 
-void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
+void TessellationExecutor::renderTess (const Context& ctx, deUint32 numValues, deUint32 vertexCount, deUint32 patchControlPoints)
 {
-	const size_t						inputBufferSize				= (vertexCount/2) * getInputStride();
+	const size_t						inputBufferSize				= numValues * getInputStride();
 	const VkDevice						vkDevice					= ctx.getDevice();
 	const DeviceInterface&				vk							= ctx.getDeviceInterface();
 	const VkQueue						queue						= ctx.getUniversalQueue();
@@ -2387,7 +2387,8 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 				0u,							// VkDeviceSize		offset;
 				VK_WHOLE_SIZE				// VkDeviceSize		range;
 			};
-			if (inputBufferSize)
+
+			if (inputBufferSize > 0)
 			{
 				inputDescriptorBufferInfo.buffer = *m_inputBuffer;
 
@@ -2491,7 +2492,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
 			(VkPipelineTessellationStateCreateFlags)0,						// VkPipelineTessellationStateCreateFlags	flags;
-			1																// uint32_t									patchControlPoints;
+			patchControlPoints												// uint32_t									patchControlPoints;
 		};
 
 		const VkViewport viewport =
@@ -2787,6 +2788,8 @@ void TessControlExecutor::setShaderSources (SourceCollections& programCollection
 
 void TessControlExecutor::execute (const Context& ctx, int numValues, const void* const* inputs, void* const* outputs)
 {
+	const deUint32	patchSize	= 3;
+
 	checkSupported(ctx, m_shaderType);
 
 	initBuffers(ctx, numValues);
@@ -2794,7 +2797,7 @@ void TessControlExecutor::execute (const Context& ctx, int numValues, const void
 	// Setup input buffer & copy data
 	uploadInputBuffer(ctx, inputs, numValues);
 
-	renderTess(ctx, 3 * numValues);
+	renderTess(ctx, numValues, patchSize * numValues, patchSize);
 
 	// Read back data
 	readOutputBuffer(ctx, outputs, numValues);
@@ -2865,7 +2868,7 @@ std::string TessEvaluationExecutor::generateTessEvalShader (const ShaderSpec& sh
 
 	src << "void main (void)\n{\n"
 		<< "\tgl_Position = vec4(gl_TessCoord.x, 0.0, 0.0, 1.0);\n"
-		<< "\thighp uint invocationId = uint(gl_PrimitiveID) + (gl_TessCoord.x > 0.5 ? 1u : 0u);\n";
+		<< "\thighp uint invocationId = uint(gl_PrimitiveID)*2u + (gl_TessCoord.x > 0.5 ? 1u : 0u);\n";
 
 	generateExecBufferIo(src, shaderSpec, "invocationId");
 
@@ -2886,7 +2889,8 @@ void TessEvaluationExecutor::execute (const Context& ctx, int numValues, const v
 {
 	checkSupported(ctx, m_shaderType);
 
-	const int	alignedValues	= deAlign32(numValues, 2);
+	const int	patchSize		= 2;
+	const int	alignedValues	= deAlign32(numValues, patchSize);
 
 	// Initialize buffers with aligned value count to make room for padding
 	initBuffers(ctx, alignedValues);
@@ -2894,7 +2898,7 @@ void TessEvaluationExecutor::execute (const Context& ctx, int numValues, const v
 	// Setup input buffer & copy data
 	uploadInputBuffer(ctx, inputs, numValues);
 
-	renderTess(ctx, 2 * numValues);
+	renderTess(ctx, (deUint32)alignedValues, (deUint32)alignedValues, (deUint32)patchSize);
 
 	// Read back data
 	readOutputBuffer(ctx, outputs, numValues);

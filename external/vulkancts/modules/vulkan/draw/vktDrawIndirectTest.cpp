@@ -71,6 +71,19 @@ protected:
 	deUint32								m_drawIndirectMaxCount;
 };
 
+struct FirtsInstanceSupported
+{
+	static deUint32 getFirstInstance	(void)											{ return 2; }
+	static bool		isTestSupported		(const vk::VkPhysicalDeviceFeatures& features)	{ return features.drawIndirectFirstInstance == vk::VK_TRUE; }
+};
+
+struct FirtsInstanceNotSupported
+{
+	static deUint32 getFirstInstance	(void)											{ return 0; }
+	static bool		isTestSupported		(const vk::VkPhysicalDeviceFeatures&)			{ return true; }
+};
+
+template<class FirstInstanceSupport>
 class IndirectDrawInstanced : public IndirectDraw
 {
 public:
@@ -316,12 +329,18 @@ tcu::TestStatus IndirectDraw::iterate (void)
 
 }
 
-IndirectDrawInstanced::IndirectDrawInstanced (Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology)
+template<class FirstInstanceSupport>
+IndirectDrawInstanced<FirstInstanceSupport>::IndirectDrawInstanced (Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology)
 	: IndirectDraw	(context, shaders, topology)
 {
+	if (!FirstInstanceSupport::isTestSupported(m_context.getDeviceFeatures()))
+	{
+		throw tcu::NotSupportedError("Required 'drawIndirectFirstInstance' feature is not supported");
+	}
 }
 
-tcu::TestStatus IndirectDrawInstanced::iterate (void)
+template<class FirstInstanceSupport>
+tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 {
 	tcu::TestLog &log = m_context.getTestContext().getLog();
 	const vk::VkQueue queue = m_context.getUniversalQueue();
@@ -333,17 +352,17 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 			vk::VkDrawIndirectCommand drawCmd[] =
 			{
 				{
-					3,		//vertexCount
-					4,		//instanceCount
-					2,		//firstVertex
-					2		//firstInstance
+					3,											//vertexCount
+					4,											//instanceCount
+					2,											//firstVertex
+					FirstInstanceSupport::getFirstInstance()	//firstInstance
 				},
 				{ (deUint32)-4, (deUint32)-2, (deUint32)-11, (deUint32)-9 }, // junk (stride)
 				{
-					3,		//vertexCount
-					4,		//instanceCount
-					5,		//firstVertex
-					2		//firstInstance
+					3,											//vertexCount
+					4,											//instanceCount
+					5,											//firstVertex
+					FirstInstanceSupport::getFirstInstance()	//firstInstance
 				}
 			};
 			m_indirectDrawCmd.push_back(drawCmd[0]);
@@ -356,17 +375,17 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 			vk::VkDrawIndirectCommand drawCmd[] =
 			{
 				{
-					4,		//vertexCount
-					4,		//instanceCount
-					2,		//firstVertex
-					2		//firstInstance
+					4,											//vertexCount
+					4,											//instanceCount
+					2,											//firstVertex
+					FirstInstanceSupport::getFirstInstance()	//firstInstance
 				},
 				{ (deUint32)-4, (deUint32)-2, (deUint32)-11, (deUint32)-9 },
 				{
-					4,		//vertexCount
-					4,		//instanceCount
-					6,		//firstVertex
-					2		//firstInstance
+					4,											//vertexCount
+					4,											//instanceCount
+					6,											//firstVertex
+					FirstInstanceSupport::getFirstInstance()	//firstInstance
 				}
 			};
 			m_indirectDrawCmd.push_back(drawCmd[0]);
@@ -511,16 +530,37 @@ void IndirectDrawTests::init (void)
 {
 	ShaderMap shaderPaths;
 	shaderPaths[glu::SHADERTYPE_VERTEX]		= "vulkan/draw/VertexFetch.vert";
-	shaderPaths[glu::SHADERTYPE_FRAGMENT]	 = "vulkan/draw/VertexFetch.frag";
-
-	addChild(new InstanceFactory<IndirectDraw>(m_testCtx, "indirect_draw_triangle_list", "Draws triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
-	addChild(new InstanceFactory<IndirectDraw>(m_testCtx, "indirect_draw_triangle_strip", "Draws triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
-
-	shaderPaths[glu::SHADERTYPE_VERTEX]		= "vulkan/draw/VertexFetchWithInstance.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
 
-	addChild(new InstanceFactory<IndirectDrawInstanced>(m_testCtx, "indirect_draw_instanced_triangle_list", "Draws an instanced triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
-	addChild(new InstanceFactory<IndirectDrawInstanced>(m_testCtx, "indirect_draw_instanced_triangle_strip", "Draws an instanced triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
+	tcu::TestCaseGroup* indirectDrawGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw", "Draws geometry");
+	{
+		indirectDrawGroup->addChild(new InstanceFactory<IndirectDraw>(m_testCtx, "triangle_list", "Draws triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
+		indirectDrawGroup->addChild(new InstanceFactory<IndirectDraw>(m_testCtx, "triangle_strip", "Draws triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
+	}
+	addChild(indirectDrawGroup);
+
+
+	tcu::TestCaseGroup* indirectDrawInstancedGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_instanced", "Draws an instanced geometry");
+	{
+		tcu::TestCaseGroup*	noFirstInstanceGroup	= new tcu::TestCaseGroup(m_testCtx, "no_first_instance", "Use 0 as firstInstance");
+		{
+			shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstanced.vert";
+
+			noFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirtsInstanceNotSupported> >(m_testCtx, "triangle_list", "Draws an instanced triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
+			noFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirtsInstanceNotSupported> >(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
+		}		
+		indirectDrawInstancedGroup->addChild(noFirstInstanceGroup);
+
+		tcu::TestCaseGroup*	firstInstanceGroup		= new tcu::TestCaseGroup(m_testCtx, "first_instance", "Use drawIndirectFirstInstance optional feature");
+		{
+			shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstancedFirstInstance.vert";
+
+			firstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirtsInstanceSupported> >(m_testCtx, "triangle_list", "Draws an instanced triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
+			firstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirtsInstanceSupported> >(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
+		}
+		indirectDrawInstancedGroup->addChild(firstInstanceGroup);
+	}
+	addChild(indirectDrawInstancedGroup);
 }
 
 }	// DrawTests
