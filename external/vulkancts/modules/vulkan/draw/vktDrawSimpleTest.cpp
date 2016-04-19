@@ -332,7 +332,7 @@ void SimpleDrawTests::init (void)
 	addChild(new InstanceFactory<SimpleDraw>(m_testCtx, "simple_draw_triangle_list", "Draws triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
 	addChild(new InstanceFactory<SimpleDraw>(m_testCtx, "simple_draw_triangle_strip", "Draws triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
 
-	shaderPaths[glu::SHADERTYPE_VERTEX]		= "vulkan/draw/VertexFetchWithInstance.vert";
+	shaderPaths[glu::SHADERTYPE_VERTEX]		= "vulkan/draw/VertexFetchInstancedFirstInstance.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
 
 	addChild(new InstanceFactory<SimpleDrawInstanced>(m_testCtx, "simple_draw_instanced_triangle_list", "Draws an instanced triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
