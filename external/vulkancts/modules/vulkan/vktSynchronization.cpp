@@ -740,6 +740,9 @@ void generateWork (TestContext& testContext)
 	testContext.imageAllocation				= image.allocation;
 	testContext.image						= image.image;
 
+	for (size_t ndx = 0; ndx < image.imageMemoryBarrier.size(); ++ndx)
+		imageBarriers.push_back(image.imageMemoryBarrier[ndx]);
+
 	renderPassParameters.colorFormat		= VK_FORMAT_R8G8B8A8_UNORM;
 	renderPassParameters.colorSamples		= VK_SAMPLE_COUNT_1_BIT;
 	createColorOnlyRenderPass(deviceInterface, testContext.device, renderPassParameters, testContext.renderPass);
@@ -809,15 +812,27 @@ void generateWork (TestContext& testContext)
 	depthStencilState.depthWriteEnable			= VK_FALSE;
 	depthStencilState.depthBoundsTestEnable		= VK_FALSE;
 	depthStencilState.stencilTestEnable			= VK_FALSE;
+	depthStencilState.depthCompareOp			= VK_COMPARE_OP_ALWAYS;
+	depthStencilState.front.failOp				= VK_STENCIL_OP_KEEP;
+	depthStencilState.front.passOp				= VK_STENCIL_OP_KEEP;
+	depthStencilState.front.depthFailOp			= VK_STENCIL_OP_KEEP;
+	depthStencilState.back						= depthStencilState.front;
 
 	deMemset(&blendAttachment, 0xcd, sizeof(blendAttachment));
 	blendAttachment.blendEnable					= VK_FALSE;
+	blendAttachment.srcColorBlendFactor			= VK_BLEND_FACTOR_ZERO;
+	blendAttachment.srcAlphaBlendFactor			= VK_BLEND_FACTOR_ZERO;
+	blendAttachment.dstColorBlendFactor			= VK_BLEND_FACTOR_ZERO;
+	blendAttachment.dstAlphaBlendFactor			= VK_BLEND_FACTOR_ZERO;
+	blendAttachment.colorBlendOp				= VK_BLEND_OP_ADD;
+	blendAttachment.alphaBlendOp				= VK_BLEND_OP_ADD;
 
 	deMemset(&blendState, 0xcd, sizeof(blendState));
 	blendState.sType							= VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	blendState.pNext							= DE_NULL;
 	blendState.flags							= 0;
 	blendState.logicOpEnable					= VK_FALSE;
+	blendState.logicOp							= VK_LOGIC_OP_COPY;
 	blendState.attachmentCount					= 1;
 	blendState.pAttachments						= &blendAttachment;
 
