@@ -80,7 +80,7 @@ struct FirtsInstanceSupported
 struct FirtsInstanceNotSupported
 {
 	static deUint32 getFirstInstance	(void)											{ return 0; }
-	static bool		isTestSupported		(const vk::VkPhysicalDeviceFeatures& features)	{ return true; }
+	static bool		isTestSupported		(const vk::VkPhysicalDeviceFeatures&)			{ return true; }
 };
 
 template<class FirstInstanceSupport>
