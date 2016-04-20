@@ -7543,16 +7543,10 @@
 				<Test name="pbuffer">
 					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 				</Test>
-				<Test name="pixmap">
-					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-				</Test>
 				<Test name="single_window">
 					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 				</Test>
 				<Test name="context">
-					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-				</Test>
-				<Test name="pbuffer_pixmap">
 					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 				</Test>
 				<Test name="pbuffer_single_window">
@@ -7561,28 +7555,10 @@
 				<Test name="pbuffer_context">
 					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 				</Test>
-				<Test name="pixmap_single_window">
-					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-				</Test>
-				<Test name="pixmap_context">
-					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-				</Test>
 				<Test name="single_window_context">
 					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 				</Test>
-				<Test name="pbuffer_pixmap_single_window">
-					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-				</Test>
-				<Test name="pbuffer_pixmap_context">
-					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-				</Test>
 				<Test name="pbuffer_single_window_context">
-					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-				</Test>
-				<Test name="pixmap_single_window_context">
-					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-				</Test>
-				<Test name="pbuffer_pixmap_single_window_context">
 					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 				</Test>
 			</TestCase>
