@@ -319,17 +319,20 @@ protected:
 	VkImageViewType						getCorrespondingImageViewType	(VkImageType imageType) const;
 	VkImageUsageFlags					getImageUsageFlags				(VkFormat format) const;
 	VkImageAspectFlags					getImageAspectFlags				(VkFormat format) const;
+	bool								getIsAttachmentFormat			(VkFormat format) const;
 	bool								getIsStencilFormat				(VkFormat format) const;
 	bool								getIsDepthFormat				(VkFormat format) const;
 	de::MovePtr<Allocation>				allocateAndBindImageMemory		(VkImage image) const;
 
 	const TestParams&					m_params;
 	const VkDevice						m_device;
+	const InstanceInterface&			m_vki;
 	const DeviceInterface&				m_vkd;
 	const VkQueue						m_queue;
 	const deUint32						m_queueFamilyIndex;
 	Allocator&							m_allocator;
 
+	const bool							m_isAttachmentFormat;
 	const VkImageUsageFlags				m_imageUsageFlags;
 	const VkImageAspectFlags			m_imageAspectFlags;
 
@@ -347,10 +350,12 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 	: TestInstance				(context)
 	, m_params					(params)
 	, m_device					(context.getDevice())
+	, m_vki						(context.getInstanceInterface())
 	, m_vkd						(context.getDeviceInterface())
 	, m_queue					(context.getUniversalQueue())
 	, m_queueFamilyIndex		(context.getUniversalQueueFamilyIndex())
 	, m_allocator				(context.getDefaultAllocator())
+	, m_isAttachmentFormat		(getIsAttachmentFormat(params.imageFormat))
 	, m_imageUsageFlags			(getImageUsageFlags(params.imageFormat))
 	, m_imageAspectFlags		(getImageAspectFlags(params.imageFormat))
 	, m_commandPool				(createCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT))
@@ -362,13 +367,13 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 											 m_imageUsageFlags))
 
 	, m_imageMemory				(allocateAndBindImageMemory(*m_image))
-	, m_imageView				(createImageView(*m_image,
+	, m_imageView				(m_isAttachmentFormat ? createImageView(*m_image,
 												 getCorrespondingImageViewType(params.imageType),
 												 params.imageFormat,
-												 m_imageAspectFlags))
+												 m_imageAspectFlags) : vk::Move<VkImageView>())
 
-	, m_renderPass				(createRenderPass(params.imageFormat))
-	, m_frameBuffer				(createFrameBuffer(*m_imageView, *m_renderPass, params.imageExtent.width, params.imageExtent.height))
+	, m_renderPass				(m_isAttachmentFormat ? createRenderPass(params.imageFormat) : vk::Move<vk::VkRenderPass>())
+	, m_frameBuffer				(m_isAttachmentFormat ? createFrameBuffer(*m_imageView, *m_renderPass, params.imageExtent.width, params.imageExtent.height) : vk::Move<vk::VkFramebuffer>())
 {
 }
 
@@ -393,10 +398,14 @@ VkImageUsageFlags ImageClearingTestInstance::getImageUsageFlags (VkFormat format
 {
 	VkImageUsageFlags	commonFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-	if (isDepthStencilFormat(format))
-		return commonFlags | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	if (m_isAttachmentFormat)
+	{
+		if (isDepthStencilFormat(format))
+			return commonFlags | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-	return commonFlags | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		return commonFlags | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	}
+	return commonFlags;
 }
 
 VkImageAspectFlags ImageClearingTestInstance::getImageAspectFlags (VkFormat format) const
@@ -413,6 +422,13 @@ VkImageAspectFlags ImageClearingTestInstance::getImageAspectFlags (VkFormat form
 		imageAspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
 
 	return imageAspectFlags;
+}
+
+bool ImageClearingTestInstance::getIsAttachmentFormat (VkFormat format) const
+{
+	const VkFormatProperties props	= vk::getPhysicalDeviceFormatProperties(m_vki, m_context.getPhysicalDevice(), format);
+
+	return (props.optimalTilingFeatures & (vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) != 0;
 }
 
 bool ImageClearingTestInstance::getIsStencilFormat (VkFormat format) const
@@ -859,19 +875,27 @@ TestStatus ClearColorImageTestInstance::iterate (void)
 	pipelineImageBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// VkPipelineStageFlags		srcStageMask
 						 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,			// VkPipelineStageFlags		dstStageMask
 						 0,												// VkAccessFlags			srcAccessMask
-						 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			dstAccessMask
+						 (m_isAttachmentFormat
+							? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+							: VK_ACCESS_TRANSFER_WRITE_BIT),			// VkAccessFlags			dstAccessMask
 						 VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			oldLayout;
-						 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);		// VkImageLayout			newLayout;
+						 (m_isAttachmentFormat
+							? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+							: VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));	// VkImageLayout			newLayout;
 
-	beginRenderPass(VK_SUBPASS_CONTENTS_INLINE, m_params.initValue);
-	m_vkd.cmdEndRenderPass(*m_commandBuffer);
+	if (m_isAttachmentFormat)
+	{
+		beginRenderPass(VK_SUBPASS_CONTENTS_INLINE, m_params.initValue);
+		m_vkd.cmdEndRenderPass(*m_commandBuffer);
 
-	pipelineImageBarrier(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,			// VkPipelineStageFlags		srcStageMask
-						 VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		dstStageMask
-						 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask
+		pipelineImageBarrier(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,			// VkPipelineStageFlags		srcStageMask
+			VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		dstStageMask
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask
 						 VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask
-						 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// VkImageLayout			oldLayout;
-						 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);			// VkImageLayout			newLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);			// VkImageLayout			newLayout;
+	}
+
 
 	m_vkd.cmdClearColorImage(*m_commandBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.clearValue.color, 1, &subResourcerange);
 
@@ -908,7 +932,7 @@ class ClearDepthStencilImageTestInstance : public ImageClearingTestInstance
 public:
 									ClearDepthStencilImageTestInstance	(Context&			context,
 																		 const TestParams&	testParams)
-										: ImageClearingTestInstance(context, testParams)
+										: ImageClearingTestInstance			(context, testParams)
 									{}
 
 	virtual TestStatus				iterate								(void);
@@ -930,19 +954,26 @@ TestStatus ClearDepthStencilImageTestInstance::iterate (void)
 	pipelineImageBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,					// VkPipelineStageFlags		srcStageMask
 						 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,				// VkPipelineStageFlags		dstStageMask
 						 0,													// VkAccessFlags			srcAccessMask
-						 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask
+						 (m_isAttachmentFormat
+							?	VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+							:	VK_ACCESS_TRANSFER_WRITE_BIT),				// VkAccessFlags			dstAccessMask
 						 VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			oldLayout;
-						 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);	// VkImageLayout			newLayout;
+						 (m_isAttachmentFormat
+							?	VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+							:	VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));		// VkImageLayout			newLayout;
 
-	beginRenderPass(VK_SUBPASS_CONTENTS_INLINE, m_params.initValue);
-	m_vkd.cmdEndRenderPass(*m_commandBuffer);
+	if (m_isAttachmentFormat)
+	{
+		beginRenderPass(VK_SUBPASS_CONTENTS_INLINE, m_params.initValue);
+		m_vkd.cmdEndRenderPass(*m_commandBuffer);
 
-	pipelineImageBarrier(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,					// VkPipelineStageFlags		srcStageMask
-						 VK_PIPELINE_STAGE_TRANSFER_BIT,						// VkPipelineStageFlags		dstStageMask
-						 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask
-						 VK_ACCESS_TRANSFER_WRITE_BIT,							// VkAccessFlags			dstAccessMask
-						 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,		// VkImageLayout			oldLayout;
-						 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);					// VkImageLayout			newLayout;
+		pipelineImageBarrier(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,					// VkPipelineStageFlags		srcStageMask
+							 VK_PIPELINE_STAGE_TRANSFER_BIT,						// VkPipelineStageFlags		dstStageMask
+							 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask
+							 VK_ACCESS_TRANSFER_WRITE_BIT,							// VkAccessFlags			dstAccessMask
+							 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,		// VkImageLayout			oldLayout;
+							 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);					// VkImageLayout			newLayout;
+	}
 
 	m_vkd.cmdClearDepthStencilImage(*m_commandBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.clearValue.depthStencil, 1, &subResourcerange);
 
@@ -993,7 +1024,12 @@ public:
 									ClearColorAttachmentTestInstance	(Context&					context,
 																		 const TestParams&	testParams)
 										: ImageClearingTestInstance(context, testParams)
-									{}
+									{
+										if (!m_isAttachmentFormat)
+										{
+											TCU_THROW(NotSupportedError, "Format not renderable");
+										}
+									}
 
 	virtual TestStatus				iterate								(void);
 };
@@ -1063,7 +1099,12 @@ public:
 									ClearDepthStencilAttachmentTestInstance	(Context&				context,
 																			 const TestParams&		testParams)
 										: ImageClearingTestInstance(context, testParams)
-									{}
+									{
+										if (!m_isAttachmentFormat)
+										{
+											TCU_THROW(NotSupportedError, "Format not renderable");
+										}
+									}
 
 	virtual TestStatus				iterate									(void);
 };
@@ -1151,7 +1192,12 @@ public:
 									PartialClearColorAttachmentTestInstance	(Context&				context,
 																			 const TestParams&		testParams)
 										: ImageClearingTestInstance(context, testParams)
-									{}
+									{
+										if (!m_isAttachmentFormat)
+										{
+											TCU_THROW(NotSupportedError, "Format not renderable");
+										}
+									}
 
 	virtual TestStatus				iterate									(void);
 };
@@ -1239,7 +1285,12 @@ public:
 									PartialClearDepthStencilAttachmentTestInstance	(Context&				context,
 																					 const TestParams&		testParams)
 										: ImageClearingTestInstance(context, testParams)
-									{}
+									{
+										if (!m_isAttachmentFormat)
+										{
+											TCU_THROW(NotSupportedError, "Format not renderable");
+										}
+									}
 
 	virtual TestStatus				iterate											(void);
 };
