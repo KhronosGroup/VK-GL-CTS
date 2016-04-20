@@ -261,10 +261,35 @@ private:
 	WindowRegistry&		m_windowRegistry;
 };
 
+static size_t getTotalSystemMemory (ANativeActivity* activity)
+{
+	const size_t	MiB		= (size_t)(1<<20);
+
+	try
+	{
+		const size_t	cddRequiredSize	= getCDDRequiredSystemMemory(activity);
+
+		print("Device has at least %.2f MiB total system memory per Android CDD\n", double(cddRequiredSize) / double(MiB));
+
+		return cddRequiredSize;
+	}
+	catch (const std::exception& e)
+	{
+		// Use relatively high fallback size to encourage CDD-compliant behavior
+		const size_t	fallbackSize	= (sizeof(void*) == sizeof(deUint64)) ? 2048*MiB : 1024*MiB;
+
+		print("WARNING: Failed to determine system memory size required by CDD: %s\n", e.what());
+		print("WARNING: Using fall-back size of %.2f MiB\n", double(fallbackSize) / double(MiB));
+
+		return fallbackSize;
+	}
+}
+
 // Platform
 
 Platform::Platform (NativeActivity& activity)
-	: m_activity(activity)
+	: m_activity			(activity)
+	, m_totalSystemMemory	(getTotalSystemMemory(activity.getNativeActivity()))
 {
 	m_nativeDisplayFactoryRegistry.registerFactory(new NativeDisplayFactory(m_windowRegistry));
 	m_contextFactoryRegistry.registerFactory(new eglu::GLContextFactory(m_nativeDisplayFactoryRegistry));
@@ -292,8 +317,17 @@ void Platform::describePlatform (std::ostream& dst) const
 
 void Platform::getMemoryLimits (vk::PlatformMemoryLimits& limits) const
 {
-	limits.totalSystemMemory					= 128*1024*1024;
+	// Worst-case estimates
+	const size_t	MiB				= (size_t)(1<<20);
+	const size_t	baseMemUsage	= 400*MiB;
+	const double	safeUsageRatio	= 0.25;
+
+	limits.totalSystemMemory					= de::max((size_t)(double(deInt64(m_totalSystemMemory)-deInt64(baseMemUsage)) * safeUsageRatio), 16*MiB);
+
+	// Assume UMA architecture
 	limits.totalDeviceLocalMemory				= 0;
+
+	// Reasonable worst-case estimates
 	limits.deviceMemoryAllocationGranularity	= 64*1024;
 	limits.devicePageSize						= 4096;
 	limits.devicePageTableEntrySize				= 8;

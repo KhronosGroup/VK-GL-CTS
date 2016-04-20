@@ -59,6 +59,7 @@ public:
 private:
 	NativeActivity&					m_activity;
 	WindowRegistry					m_windowRegistry;
+	const size_t					m_totalSystemMemory;
 };
 
 } // Android
