@@ -1655,9 +1655,9 @@ void framebuffer_texture_layer (NegativeTestContext& ctx)
 		ctx.expectError					(GL_NO_ERROR);
 
 		ctx.beginSection("GL_INVALID_VALUE is generated if texture is a 2D multisample array texture and layer not 0.");
-		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex2DMSArray, -1, 0);
+		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex2DMSArray, 0, -1);
 		ctx.expectError					(GL_INVALID_VALUE);
-		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex2DMSArray, 1, 0);
+		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex2DMSArray, 0, 1);
 		ctx.expectError					(GL_INVALID_VALUE);
 		ctx.endSection();
 
