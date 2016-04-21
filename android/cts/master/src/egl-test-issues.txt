@@ -7,3 +7,13 @@ dEQP-EGL.functional.multithread.pbuffer_pixmap_window
 dEQP-EGL.functional.multithread.pixmap_window_context
 dEQP-EGL.functional.multithread.pbuffer_window_context
 dEQP-EGL.functional.multithread.pbuffer_pixmap_window_context
+
+# Bug: 28268533
+dEQP-EGL.functional.multithread.pbuffer_pixmap
+dEQP-EGL.functional.multithread.pbuffer_pixmap_context
+dEQP-EGL.functional.multithread.pbuffer_pixmap_single_window
+dEQP-EGL.functional.multithread.pbuffer_pixmap_single_window_context
+dEQP-EGL.functional.multithread.pixmap
+dEQP-EGL.functional.multithread.pixmap_context
+dEQP-EGL.functional.multithread.pixmap_single_window
+dEQP-EGL.functional.multithread.pixmap_single_window_context

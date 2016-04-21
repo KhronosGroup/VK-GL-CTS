@@ -883,3 +883,6 @@ dEQP-GLES3.functional.texture.filtering.3d.formats.rgba16f_linear_mipmap_linear
 # Bug 22920759
 dEQP-GLES3.functional.texture.mipmap.cube.projected.nearest_linear
 dEQP-GLES3.functional.texture.mipmap.cube.max_level.nearest_nearest
+
+# Bug 28200359
+dEQP-GLES3.functional.texture.mipmap.2d.projected.*
