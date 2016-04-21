@@ -372,6 +372,23 @@ VkAccessFlags getAllMemoryWriteFlags (void)
 		   | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 }
 
+VkAccessFlags getMemoryFlagsForLayout (const VkImageLayout layout)
+{
+	switch (layout)
+	{
+		case VK_IMAGE_LAYOUT_GENERAL:							return getAllMemoryReadFlags() | getAllMemoryWriteFlags();
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:			return VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:	return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:	return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:			return VK_ACCESS_SHADER_READ_BIT;
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:				return VK_ACCESS_TRANSFER_READ_BIT;
+		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:				return VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		default:
+			return (VkAccessFlags)0;
+	}
+}
+
 VkPipelineStageFlags getAllPipelineStageFlags (void)
 {
 	return VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT
@@ -1658,7 +1675,7 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 			STENCIL_VALUE											// stencilReference
 		},															// back
 
-		-1.0f,														// minDepthBounds;
+		0.0f,														// minDepthBounds;
 		1.0f														// maxDepthBounds;
 	};
 	const VkPipelineColorBlendStateCreateInfo blendState =
@@ -1861,25 +1878,25 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 
 			const VkImageMemoryBarrier barrier =
 			{
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,								// sType;
-				DE_NULL,															// pNext;
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,							// sType;
+				DE_NULL,														// pNext;
 
-				getAllMemoryWriteFlags(),											// srcAccessMask
-				getAllMemoryReadFlags(),											// dstAccessMask
+				(VkAccessFlags)0,												// srcAccessMask
+				getAllMemoryReadFlags() | VK_ACCESS_TRANSFER_WRITE_BIT,			// dstAccessMask
 
-				VK_IMAGE_LAYOUT_UNDEFINED,											// oldLayout
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,								// newLayout;
+				VK_IMAGE_LAYOUT_UNDEFINED,										// oldLayout
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,							// newLayout;
 
-				queueIndex,															// srcQueueFamilyIndex;
-				queueIndex,															// destQueueFamilyIndex;
+				queueIndex,														// srcQueueFamilyIndex;
+				queueIndex,														// destQueueFamilyIndex;
 
-				attachmentResources[attachmentNdx]->getImage(),						// image;
-				{																	// subresourceRange;
-					getImageAspectFlags(attachmentInfo[attachmentNdx].getFormat()),	// aspect;
-					0,																// baseMipLevel;
-					1,																// mipLevels;
-					0,																// baseArraySlice;
-					1																// arraySize;
+				attachmentResources[attachmentNdx]->getImage(),					// image;
+				{																// subresourceRange;
+					getImageAspectFlags(attachmentInfo[attachmentNdx].getFormat()),		// aspect;
+					0,																	// baseMipLevel;
+					1,																	// mipLevels;
+					0,																	// baseArraySlice;
+					1																	// arraySize;
 				}
 			};
 
@@ -1944,30 +1961,28 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 
 		for (size_t attachmentNdx = 0; attachmentNdx < attachmentInfo.size(); attachmentNdx++)
 		{
-			const VkImageMemoryBarrier barrier =
+			const VkImageLayout			oldLayout = clearValues[attachmentNdx] ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+			const VkImageMemoryBarrier	barrier   =
 			{
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,								// sType;
-				DE_NULL,															// pNext;
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					// sType;
+				DE_NULL,												// pNext;
 
-				getAllMemoryWriteFlags(),											// srcAccessMask
-				getAllMemoryReadFlags(),											// dstAccessMask
+				(oldLayout != VK_IMAGE_LAYOUT_UNDEFINED ? getAllMemoryWriteFlags() : (VkAccessFlags)0),					// srcAccessMask
+				getAllMemoryReadFlags() | getMemoryFlagsForLayout(attachmentInfo[attachmentNdx].getInitialLayout()),	// dstAccessMask
 
-				clearValues[attachmentNdx] ?
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-					: VK_IMAGE_LAYOUT_UNDEFINED,									// oldLayout
+				oldLayout,												// oldLayout
+				attachmentInfo[attachmentNdx].getInitialLayout(),		// newLayout;
 
-				attachmentInfo[attachmentNdx].getInitialLayout(),					// newLayout;
+				queueIndex,												// srcQueueFamilyIndex;
+				queueIndex,												// destQueueFamilyIndex;
 
-				queueIndex,															// srcQueueFamilyIndex;
-				queueIndex,															// destQueueFamilyIndex;
-
-				attachmentResources[attachmentNdx]->getImage(),						// image;
-				{																	// subresourceRange;
-					getImageAspectFlags(attachmentInfo[attachmentNdx].getFormat()),	// aspect;
-					0,																// baseMipLevel;
-					1,																// mipLevels;
-					0,																// baseArraySlice;
-					1																// arraySize;
+				attachmentResources[attachmentNdx]->getImage(),			// image;
+				{														// subresourceRange;
+					getImageAspectFlags(attachmentInfo[attachmentNdx].getFormat()),		// aspect;
+					0,																	// baseMipLevel;
+					1,																	// mipLevels;
+					0,																	// baseArraySlice;
+					1																	// arraySize;
 				}
 			};
 
@@ -2058,27 +2073,28 @@ void pushReadImagesToBuffers (const DeviceInterface&								vk,
 			if (isLazy[attachmentNdx])
 				continue;
 
-			const VkImageMemoryBarrier barrier =
+			const VkImageLayout			oldLayout	= attachmentInfo[attachmentNdx].getFinalLayout();
+			const VkImageMemoryBarrier	barrier		=
 			{
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// sType
-				DE_NULL,											// pNext
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,							// sType
+				DE_NULL,														// pNext
 
-				getAllMemoryWriteFlags(),							// srcAccessMask
-				getAllMemoryReadFlags(),							// dstAccessMask
+				getAllMemoryWriteFlags() | getMemoryFlagsForLayout(oldLayout),	// srcAccessMask
+				getAllMemoryReadFlags(),										// dstAccessMask
 
-				attachmentInfo[attachmentNdx].getFinalLayout(),		// oldLayout
-				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,				// newLayout
+				oldLayout,														// oldLayout
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,							// newLayout
 
-				queueIndex,											// srcQueueFamilyIndex
-				queueIndex,											// destQueueFamilyIndex
+				queueIndex,														// srcQueueFamilyIndex
+				queueIndex,														// destQueueFamilyIndex
 
-				attachmentResources[attachmentNdx]->getImage(),		// image
-				{													// subresourceRange
-					getImageAspectFlags(attachmentInfo[attachmentNdx].getFormat()),	// aspect;
-					0,										// baseMipLevel
-					1,										// mipLevels
-					0,										// baseArraySlice
-					1										// arraySize
+				attachmentResources[attachmentNdx]->getImage(),					// image
+				{																// subresourceRange
+					getImageAspectFlags(attachmentInfo[attachmentNdx].getFormat()),		// aspect;
+					0,																	// baseMipLevel
+					1,																	// mipLevels
+					0,																	// baseArraySlice
+					1																	// arraySize
 				}
 			};
 
@@ -2186,8 +2202,6 @@ void pushReadImagesToBuffers (const DeviceInterface&								vk,
 
 				bufferBarriers.push_back(secondaryBufferBarrier);
 			}
-
-			bufferBarriers.push_back(bufferBarrier);
 		}
 
 		if (!bufferBarriers.empty())
