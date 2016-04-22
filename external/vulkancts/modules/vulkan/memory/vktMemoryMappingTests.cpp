@@ -28,20 +28,25 @@
 #include "tcuMaybe.hpp"
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuPlatform.hpp"
 
 #include "vkDeviceUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
+#include "vkRefUtil.hpp"
 #include "vkStrUtil.hpp"
+#include "vkAllocationCallbackUtil.hpp"
 
 #include "deRandom.hpp"
 #include "deSharedPtr.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
+#include "deSTLUtil.hpp"
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using tcu::Maybe;
 using tcu::TestLog;
@@ -57,11 +62,37 @@ namespace vkt
 {
 namespace memory
 {
+
 namespace
 {
+
+size_t computeDeviceMemorySystemMemFootprint (const DeviceInterface& vk, VkDevice device)
+{
+	AllocationCallbackRecorder	callbackRecorder	(getSystemAllocator());
+
+	{
+		// 1 B allocation from memory type 0
+		const VkMemoryAllocateInfo	allocInfo	=
+		{
+			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+			DE_NULL,
+			1u,
+			0u,
+		};
+		const Unique<VkDeviceMemory>			memory			(allocateMemory(vk, device, &allocInfo));
+		AllocationCallbackValidationResults		validateRes;
+
+		validateAllocationCallbacks(callbackRecorder, &validateRes);
+
+		TCU_CHECK(validateRes.violations.empty());
+
+		return getLiveSystemAllocationTotal(validateRes)
+			   + sizeof(void*)*validateRes.liveAllocations.size(); // allocation overhead
+	}
+}
+
 Move<VkDeviceMemory> allocMemory (const DeviceInterface& vk, VkDevice device, VkDeviceSize pAllocInfo_allocationSize, deUint32 pAllocInfo_memoryTypeIndex)
 {
-	VkDeviceMemory object = 0;
 	const VkMemoryAllocateInfo pAllocInfo =
 	{
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -69,8 +100,7 @@ Move<VkDeviceMemory> allocMemory (const DeviceInterface& vk, VkDevice device, Vk
 		pAllocInfo_allocationSize,
 		pAllocInfo_memoryTypeIndex,
 	};
-	VK_CHECK(vk.allocateMemory(device, &pAllocInfo, (const VkAllocationCallbacks*)DE_NULL, &object));
-	return Move<VkDeviceMemory>(check<VkDeviceMemory>(object), Deleter<VkDeviceMemory>(vk, device, (const VkAllocationCallbacks*)DE_NULL));
+	return allocateMemory(vk, device, &pAllocInfo);
 }
 
 struct MemoryRange
@@ -490,8 +520,8 @@ void MemoryObject::randomInvalidate (const DeviceInterface& vkd, VkDevice device
 
 enum
 {
-	// Use only 1/16 of each memory heap.
-	MAX_MEMORY_USAGE_DIV = 16
+	// Use only 1/2 of each memory heap.
+	MAX_MEMORY_USAGE_DIV = 2
 };
 
 template<typename T>
@@ -508,14 +538,63 @@ void removeFirstEqual (vector<T>& vec, const T& val)
 	}
 }
 
+enum MemoryClass
+{
+	MEMORY_CLASS_SYSTEM = 0,
+	MEMORY_CLASS_DEVICE,
+
+	MEMORY_CLASS_LAST
+};
+
+// \todo [2016-04-20 pyry] Consider estimating memory fragmentation
+class TotalMemoryTracker
+{
+public:
+					TotalMemoryTracker	(void)
+	{
+		std::fill(DE_ARRAY_BEGIN(m_usage), DE_ARRAY_END(m_usage), 0);
+	}
+
+	void			allocate			(MemoryClass memClass, VkDeviceSize size)
+	{
+		m_usage[memClass] += size;
+	}
+
+	void			free				(MemoryClass memClass, VkDeviceSize size)
+	{
+		DE_ASSERT(size <= m_usage[memClass]);
+		m_usage[memClass] -= size;
+	}
+
+	VkDeviceSize	getUsage			(MemoryClass memClass) const
+	{
+		return m_usage[memClass];
+	}
+
+	VkDeviceSize	getTotalUsage		(void) const
+	{
+		VkDeviceSize total = 0;
+		for (int ndx = 0; ndx < MEMORY_CLASS_LAST; ++ndx)
+			total += getUsage((MemoryClass)ndx);
+		return total;
+	}
+
+private:
+	VkDeviceSize	m_usage[MEMORY_CLASS_LAST];
+};
+
 class MemoryHeap
 {
 public:
 	MemoryHeap (const VkMemoryHeap&			heap,
-				const vector<deUint32>&		memoryTypes)
-		: m_heap		(heap)
-		, m_memoryTypes	(memoryTypes)
-		, m_usage		(0)
+				const vector<deUint32>&		memoryTypes,
+				const PlatformMemoryLimits&	memoryLimits,
+				TotalMemoryTracker&			totalMemTracker)
+		: m_heap			(heap)
+		, m_memoryTypes		(memoryTypes)
+		, m_limits			(memoryLimits)
+		, m_totalMemTracker	(totalMemTracker)
+		, m_usage			(0)
 	{
 	}
 
@@ -525,20 +604,24 @@ public:
 			delete *iter;
 	}
 
-	bool								full			(void) const { return m_usage * MAX_MEMORY_USAGE_DIV >= m_heap.size; }
-	bool								empty			(void) const { return m_usage == 0; }
+	bool								full			(void) const { return getAvailableMem() == 0;	}
+	bool								empty			(void) const { return m_usage == 0;				}
 
 	MemoryObject*						allocateRandom	(const DeviceInterface& vkd, VkDevice device, de::Random& rng)
 	{
-		const VkDeviceSize		size	= 1 + (rng.getUint64() % (de::max((deInt64)((m_heap.size / MAX_MEMORY_USAGE_DIV) - m_usage - 1ull), (deInt64)1)));
-		const deUint32			type	= rng.choose<deUint32>(m_memoryTypes.begin(), m_memoryTypes.end());
+		const VkDeviceSize		availableMem	= getAvailableMem();
 
-		if ( (size > (VkDeviceSize)((m_heap.size / MAX_MEMORY_USAGE_DIV) - m_usage)) && (size != 1))
-			TCU_THROW(InternalError, "Test Error: trying to allocate memory more than the available heap size.");
+		DE_ASSERT(availableMem > 0);
+
+		const VkDeviceSize		size			= 1ull + (rng.getUint64() % availableMem);
+		const deUint32			type			= rng.choose<deUint32>(m_memoryTypes.begin(), m_memoryTypes.end());
+
+		DE_ASSERT(size <= availableMem);
 
 		MemoryObject* const		object	= new MemoryObject(vkd, device, size, type);
 
 		m_usage += size;
+		m_totalMemTracker.allocate(getMemoryClass(), size);
 		m_objects.push_back(object);
 
 		return object;
@@ -553,24 +636,80 @@ public:
 	{
 		removeFirstEqual(m_objects, object);
 		m_usage -= object->getSize();
+		m_totalMemTracker.free(getMemoryClass(), object->getSize());
 		delete object;
 	}
 
 private:
-	VkMemoryHeap			m_heap;
-	vector<deUint32>		m_memoryTypes;
+	MemoryClass							getMemoryClass	(void) const
+	{
+		if ((m_heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0)
+			return MEMORY_CLASS_DEVICE;
+		else
+			return MEMORY_CLASS_SYSTEM;
+	}
 
-	VkDeviceSize			m_usage;
-	vector<MemoryObject*>	m_objects;
+	VkDeviceSize						getAvailableMem	(void) const
+	{
+		DE_ASSERT(m_usage <= m_heap.size/MAX_MEMORY_USAGE_DIV);
+
+		const VkDeviceSize	availableInHeap	= m_heap.size/MAX_MEMORY_USAGE_DIV - m_usage;
+		const bool			isUMA			= m_limits.totalDeviceLocalMemory == 0;
+
+		if (isUMA)
+		{
+			const VkDeviceSize	totalUsage	= m_totalMemTracker.getTotalUsage();
+			const VkDeviceSize	totalSysMem	= (VkDeviceSize)m_limits.totalSystemMemory;
+
+			DE_ASSERT(totalUsage <= totalSysMem);
+
+			return de::min(availableInHeap, totalSysMem-totalUsage);
+		}
+		else
+		{
+			const MemoryClass	memClass		= getMemoryClass();
+			const VkDeviceSize	totalMemClass	= memClass == MEMORY_CLASS_SYSTEM
+												? (VkDeviceSize)m_limits.totalSystemMemory
+												: m_limits.totalDeviceLocalMemory;
+			const VkDeviceSize	usedMemClass	= m_totalMemTracker.getUsage(memClass);
+
+			DE_ASSERT(usedMemClass <= totalMemClass);
+
+			return de::min(availableInHeap, totalMemClass-usedMemClass);
+		}
+	}
+
+	const VkMemoryHeap			m_heap;
+	const vector<deUint32>		m_memoryTypes;
+	const PlatformMemoryLimits&	m_limits;
+	TotalMemoryTracker&			m_totalMemTracker;
+
+	VkDeviceSize				m_usage;
+	vector<MemoryObject*>		m_objects;
 };
+
+size_t getMemoryObjectSystemSize (Context& context)
+{
+	return computeDeviceMemorySystemMemFootprint(context.getDeviceInterface(), context.getDevice())
+		   + sizeof(MemoryObject)
+		   + sizeof(de::SharedPtr<MemoryObject>);
+}
+
+size_t getMemoryMappingSystemSize (void)
+{
+	return sizeof(MemoryMapping) + sizeof(de::SharedPtr<MemoryMapping>);
+}
 
 class RandomMemoryMappingInstance : public TestInstance
 {
 public:
 	RandomMemoryMappingInstance (Context& context, deUint32 seed)
-		: TestInstance	(context)
-		, m_rng			(seed)
-		, m_opNdx		(0)
+		: TestInstance				(context)
+		, m_memoryObjectSysMemSize	(getMemoryObjectSystemSize(context))
+		, m_memoryMappingSysMemSize	(getMemoryMappingSystemSize())
+		, m_memoryLimits			(getMemoryLimits(context.getTestContext().getPlatform().getVulkanPlatform()))
+		, m_rng						(seed)
+		, m_opNdx					(0)
 	{
 		const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
 		const InstanceInterface&				vki					= context.getInstanceInterface();
@@ -592,10 +731,11 @@ public:
 
 				if (!memoryTypes[heapIndex].empty())
 				{
-					const de::SharedPtr<MemoryHeap>	heap	(new MemoryHeap(heapInfo, memoryTypes[heapIndex]));
+					const de::SharedPtr<MemoryHeap>	heap	(new MemoryHeap(heapInfo, memoryTypes[heapIndex], m_memoryLimits, m_totalMemTracker));
 
-					if (!heap->full())
-						m_nonFullHeaps.push_back(heap);
+					TCU_CHECK_INTERNAL(!heap->full());
+
+					m_memoryHeaps.push_back(heap);
 				}
 			}
 		}
@@ -618,127 +758,165 @@ public:
 		const VkDevice			device						= m_context.getDevice();
 		const DeviceInterface&	vkd							= m_context.getDeviceInterface();
 
-		if (m_opNdx < opCount)
+		const VkDeviceSize		sysMemUsage					= (m_memoryLimits.totalDeviceLocalMemory == 0)
+															? m_totalMemTracker.getTotalUsage()
+															: m_totalMemTracker.getUsage(MEMORY_CLASS_SYSTEM);
+
+		if (!m_memoryMappings.empty() && m_rng.getFloat() < memoryOpProbability)
 		{
-			if (!m_memoryMappings.empty() && m_rng.getFloat() < memoryOpProbability)
+			// Perform operations on mapped memory
+			MemoryMapping* const	mapping	= m_rng.choose<MemoryMapping*>(m_memoryMappings.begin(), m_memoryMappings.end());
+
+			enum Op
 			{
-				// Perform operations on mapped memory
-				MemoryMapping* const	mapping	= m_rng.choose<MemoryMapping*>(m_memoryMappings.begin(), m_memoryMappings.end());
+				OP_READ = 0,
+				OP_WRITE,
+				OP_MODIFY,
+				OP_LAST
+			};
 
-				enum Op
+			const Op op = (Op)(m_rng.getUint32() % OP_LAST);
+
+			switch (op)
+			{
+				case OP_READ:
+					mapping->randomRead(m_rng);
+					break;
+
+				case OP_WRITE:
+					mapping->randomWrite(m_rng);
+					break;
+
+				case OP_MODIFY:
+					mapping->randomModify(m_rng);
+					break;
+
+				default:
+					DE_FATAL("Invalid operation");
+			}
+		}
+		else if (!m_mappedMemoryObjects.empty() && m_rng.getFloat() < flushInvalidateProbability)
+		{
+			MemoryObject* const	object	= m_rng.choose<MemoryObject*>(m_mappedMemoryObjects.begin(), m_mappedMemoryObjects.end());
+
+			if (m_rng.getBool())
+				object->randomFlush(vkd, device, m_rng);
+			else
+				object->randomInvalidate(vkd, device, m_rng);
+		}
+		else if (!m_mappedMemoryObjects.empty() && m_rng.getFloat() < unmapProbability)
+		{
+			// Unmap memory object
+			MemoryObject* const	object	= m_rng.choose<MemoryObject*>(m_mappedMemoryObjects.begin(), m_mappedMemoryObjects.end());
+
+			// Remove mapping
+			removeFirstEqual(m_memoryMappings, object->getMapping());
+
+			object->unmap();
+			removeFirstEqual(m_mappedMemoryObjects, object);
+			m_nonMappedMemoryObjects.push_back(object);
+
+			m_totalMemTracker.free(MEMORY_CLASS_SYSTEM, (VkDeviceSize)m_memoryMappingSysMemSize);
+		}
+		else if (!m_nonMappedMemoryObjects.empty() &&
+				 (m_rng.getFloat() < mapProbability) &&
+				 (sysMemUsage+m_memoryMappingSysMemSize <= (VkDeviceSize)m_memoryLimits.totalSystemMemory))
+		{
+			// Map memory object
+			MemoryObject* const		object	= m_rng.choose<MemoryObject*>(m_nonMappedMemoryObjects.begin(), m_nonMappedMemoryObjects.end());
+			MemoryMapping*			mapping	= object->mapRandom(vkd, device, m_rng);
+
+			m_memoryMappings.push_back(mapping);
+			m_mappedMemoryObjects.push_back(object);
+			removeFirstEqual(m_nonMappedMemoryObjects, object);
+
+			m_totalMemTracker.allocate(MEMORY_CLASS_SYSTEM, (VkDeviceSize)m_memoryMappingSysMemSize);
+		}
+		else
+		{
+			// Sort heaps based on capacity (full or not)
+			vector<MemoryHeap*>		nonFullHeaps;
+			vector<MemoryHeap*>		nonEmptyHeaps;
+
+			if (sysMemUsage+m_memoryObjectSysMemSize <= (VkDeviceSize)m_memoryLimits.totalSystemMemory)
+			{
+				// For the duration of sorting reserve MemoryObject space from system memory
+				m_totalMemTracker.allocate(MEMORY_CLASS_SYSTEM, (VkDeviceSize)m_memoryObjectSysMemSize);
+
+				for (vector<de::SharedPtr<MemoryHeap> >::const_iterator heapIter = m_memoryHeaps.begin();
+					 heapIter != m_memoryHeaps.end();
+					 ++heapIter)
 				{
-					OP_READ = 0,
-					OP_WRITE,
-					OP_MODIFY,
-					OP_LAST
-				};
+					if (!(*heapIter)->full())
+						nonFullHeaps.push_back(heapIter->get());
 
-				const Op op = (Op)(m_rng.getUint32() % OP_LAST);
-
-				switch (op)
-				{
-					case OP_READ:
-						mapping->randomRead(m_rng);
-						break;
-
-					case OP_WRITE:
-						mapping->randomWrite(m_rng);
-						break;
-
-					case OP_MODIFY:
-						mapping->randomModify(m_rng);
-						break;
-
-					default:
-						DE_FATAL("Invalid operation");
+					if (!(*heapIter)->empty())
+						nonEmptyHeaps.push_back(heapIter->get());
 				}
-			}
-			else if (!m_mappedMemoryObjects.empty() && m_rng.getFloat() < flushInvalidateProbability)
-			{
-				MemoryObject* const	object	= m_rng.choose<MemoryObject*>(m_mappedMemoryObjects.begin(), m_mappedMemoryObjects.end());
 
-				if (m_rng.getBool())
-					object->randomFlush(vkd, device, m_rng);
-				else
-					object->randomInvalidate(vkd, device, m_rng);
-			}
-			else if (!m_mappedMemoryObjects.empty() && m_rng.getFloat() < unmapProbability)
-			{
-				// Unmap memory object
-				MemoryObject* const	object	= m_rng.choose<MemoryObject*>(m_mappedMemoryObjects.begin(), m_mappedMemoryObjects.end());
-
-				// Remove mapping
-				removeFirstEqual(m_memoryMappings, object->getMapping());
-
-				object->unmap();
-				removeFirstEqual(m_mappedMemoryObjects, object);
-				m_nonMappedMemoryObjects.push_back(object);
-			}
-			else if (!m_nonMappedMemoryObjects.empty() && m_rng.getFloat() < mapProbability)
-			{
-				// Map memory object
-				MemoryObject* const		object	= m_rng.choose<MemoryObject*>(m_nonMappedMemoryObjects.begin(), m_nonMappedMemoryObjects.end());
-				MemoryMapping*			mapping	= object->mapRandom(vkd, device, m_rng);
-
-				m_memoryMappings.push_back(mapping);
-				m_mappedMemoryObjects.push_back(object);
-				removeFirstEqual(m_nonMappedMemoryObjects, object);
+				m_totalMemTracker.free(MEMORY_CLASS_SYSTEM, (VkDeviceSize)m_memoryObjectSysMemSize);
 			}
 			else
 			{
-				if (!m_nonFullHeaps.empty() && (m_nonEmptyHeaps.empty() || m_rng.getFloat() < allocProbability))
+				// Not possible to even allocate MemoryObject from system memory, look for non-empty heaps
+				for (vector<de::SharedPtr<MemoryHeap> >::const_iterator heapIter = m_memoryHeaps.begin();
+					 heapIter != m_memoryHeaps.end();
+					 ++heapIter)
 				{
-					// Allocate more memory objects
-					de::SharedPtr<MemoryHeap> const heap = m_rng.choose<de::SharedPtr<MemoryHeap> >(m_nonFullHeaps.begin(), m_nonFullHeaps.end());
-
-					if (heap->empty())
-						m_nonEmptyHeaps.push_back(heap);
-
-					{
-						MemoryObject* const	object = heap->allocateRandom(vkd, device, m_rng);
-
-						if (heap->full())
-							removeFirstEqual(m_nonFullHeaps, heap);
-
-						m_nonMappedMemoryObjects.push_back(object);
-					}
-				}
-				else
-				{
-					// Free memory objects
-					de::SharedPtr<MemoryHeap> const		heap	= m_rng.choose<de::SharedPtr<MemoryHeap> >(m_nonEmptyHeaps.begin(), m_nonEmptyHeaps.end());
-					MemoryObject* const					object	= heap->getRandomObject(m_rng);
-
-					// Remove mapping
-					if (object->getMapping())
-						removeFirstEqual(m_memoryMappings, object->getMapping());
-
-					removeFirstEqual(m_mappedMemoryObjects, object);
-					removeFirstEqual(m_nonMappedMemoryObjects, object);
-
-					if (heap->full())
-						m_nonFullHeaps.push_back(heap);
-
-					heap->free(object);
-
-					if (heap->empty())
-						removeFirstEqual(m_nonEmptyHeaps, heap);
+					if (!(*heapIter)->empty())
+						nonEmptyHeaps.push_back(heapIter->get());
 				}
 			}
 
-			m_opNdx++;
-			return tcu::TestStatus::incomplete();
+			if (!nonFullHeaps.empty() && (nonEmptyHeaps.empty() || m_rng.getFloat() < allocProbability))
+			{
+				// Reserve MemoryObject from sys mem first
+				m_totalMemTracker.allocate(MEMORY_CLASS_SYSTEM, (VkDeviceSize)m_memoryObjectSysMemSize);
+
+				// Allocate more memory objects
+				MemoryHeap* const	heap	= m_rng.choose<MemoryHeap*>(nonFullHeaps.begin(), nonFullHeaps.end());
+				MemoryObject* const	object	= heap->allocateRandom(vkd, device, m_rng);
+
+				m_nonMappedMemoryObjects.push_back(object);
+			}
+			else
+			{
+				// Free memory objects
+				MemoryHeap* const		heap	= m_rng.choose<MemoryHeap*>(nonEmptyHeaps.begin(), nonEmptyHeaps.end());
+				MemoryObject* const		object	= heap->getRandomObject(m_rng);
+
+				// Remove mapping
+				if (object->getMapping())
+				{
+					removeFirstEqual(m_memoryMappings, object->getMapping());
+					m_totalMemTracker.free(MEMORY_CLASS_SYSTEM, m_memoryMappingSysMemSize);
+				}
+
+				removeFirstEqual(m_mappedMemoryObjects, object);
+				removeFirstEqual(m_nonMappedMemoryObjects, object);
+
+				heap->free(object);
+				m_totalMemTracker.free(MEMORY_CLASS_SYSTEM, (VkDeviceSize)m_memoryObjectSysMemSize);
+			}
 		}
-		else
+
+		m_opNdx += 1;
+		if (m_opNdx == opCount)
 			return tcu::TestStatus::pass("Pass");
+		else
+			return tcu::TestStatus::incomplete();
 	}
 
 private:
+	const size_t						m_memoryObjectSysMemSize;
+	const size_t						m_memoryMappingSysMemSize;
+	const PlatformMemoryLimits			m_memoryLimits;
+
 	de::Random							m_rng;
 	size_t								m_opNdx;
 
-	vector<de::SharedPtr<MemoryHeap> >	m_nonEmptyHeaps;
-	vector<de::SharedPtr<MemoryHeap> >	m_nonFullHeaps;
+	TotalMemoryTracker					m_totalMemTracker;
+	vector<de::SharedPtr<MemoryHeap> >	m_memoryHeaps;
 
 	vector<MemoryObject*>				m_mappedMemoryObjects;
 	vector<MemoryObject*>				m_nonMappedMemoryObjects;

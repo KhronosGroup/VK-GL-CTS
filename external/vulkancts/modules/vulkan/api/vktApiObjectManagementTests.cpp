@@ -39,6 +39,7 @@
 #include "tcuResultCollector.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuPlatform.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
@@ -46,6 +47,8 @@
 #include "deSpinBarrier.hpp"
 #include "deThread.hpp"
 #include "deInt32.h"
+
+#include <limits>
 
 namespace vkt
 {
@@ -271,21 +274,150 @@ struct Dependency
 	{}
 };
 
+template<typename T>
+T roundUpToNextMultiple (T value, T multiple)
+{
+	if (value % multiple == 0)
+		return value;
+	else
+		return value + multiple - (value % multiple);
+}
+
+#if defined(DE_DEBUG)
+template<typename T>
+bool isPowerOfTwo (T value)
+{
+	return ((value & (value - T(1))) == 0);
+}
+#endif
+
+template<typename T>
+T alignToPowerOfTwo (T value, T align)
+{
+	DE_ASSERT(isPowerOfTwo(align));
+	return (value + align - T(1)) & ~(align - T(1));
+}
+
+VkDeviceSize getPageTableSize (const PlatformMemoryLimits& limits, VkDeviceSize allocationSize)
+{
+	VkDeviceSize	totalSize	= 0;
+
+	for (size_t levelNdx = 0; levelNdx < limits.devicePageTableHierarchyLevels; ++levelNdx)
+	{
+		const VkDeviceSize	coveredAddressSpaceSize	= limits.devicePageSize<<levelNdx;
+		const VkDeviceSize	numPagesNeeded			= alignToPowerOfTwo(allocationSize, coveredAddressSpaceSize) / coveredAddressSpaceSize;
+
+		totalSize += numPagesNeeded*limits.devicePageTableEntrySize;
+	}
+
+	return totalSize;
+}
+
+
+
+size_t getCurrentSystemMemoryUsage (const AllocationCallbackRecorder& allocRecoder)
+{
+	const size_t						systemAllocationOverhead	= sizeof(void*)*2;
+	AllocationCallbackValidationResults	validationResults;
+
+	validateAllocationCallbacks(allocRecoder, &validationResults);
+	TCU_CHECK(validationResults.violations.empty());
+
+	return getLiveSystemAllocationTotal(validationResults) + systemAllocationOverhead*validationResults.liveAllocations.size();
+}
+
+template<typename Object>
+size_t computeSystemMemoryUsage (Context& context, const typename Object::Parameters& params)
+{
+	AllocationCallbackRecorder			allocRecorder		(getSystemAllocator());
+	const Environment					env					(context.getPlatformInterface(),
+															 context.getDeviceInterface(),
+															 context.getDevice(),
+															 context.getUniversalQueueFamilyIndex(),
+															 context.getBinaryCollection(),
+															 allocRecorder.getCallbacks(),
+															 1u);
+	const typename Object::Resources	res					(env, params);
+	const size_t						resourceMemoryUsage	= getCurrentSystemMemoryUsage(allocRecorder);
+
+	{
+		Unique<typename Object::Type>	obj					(Object::create(env, res, params));
+		const size_t					totalMemoryUsage	= getCurrentSystemMemoryUsage(allocRecorder);
+
+		return totalMemoryUsage - resourceMemoryUsage;
+	}
+}
+
+size_t getSafeObjectCount (const PlatformMemoryLimits&	memoryLimits,
+						   size_t						objectSystemMemoryUsage,
+						   VkDeviceSize					objectDeviceMemoryUsage = 0)
+{
+	const VkDeviceSize	roundedUpDeviceMemory	= roundUpToNextMultiple(objectDeviceMemoryUsage, memoryLimits.deviceMemoryAllocationGranularity);
+
+	if (memoryLimits.totalDeviceLocalMemory > 0 && roundedUpDeviceMemory > 0)
+	{
+		if (objectSystemMemoryUsage > 0)
+			return de::min(memoryLimits.totalSystemMemory / objectSystemMemoryUsage,
+						   (size_t)(memoryLimits.totalDeviceLocalMemory / roundedUpDeviceMemory));
+		else
+			return (size_t)(memoryLimits.totalDeviceLocalMemory / roundedUpDeviceMemory);
+	}
+	else if (objectSystemMemoryUsage + roundedUpDeviceMemory > 0)
+	{
+		DE_ASSERT(roundedUpDeviceMemory <= std::numeric_limits<size_t>::max() - objectSystemMemoryUsage);
+		return memoryLimits.totalSystemMemory / (objectSystemMemoryUsage + (size_t)roundedUpDeviceMemory);
+	}
+	else
+	{
+		// Warning: at this point driver has probably not implemented allocation callbacks correctly
+		return std::numeric_limits<size_t>::max();
+	}
+}
+
+PlatformMemoryLimits getPlatformMemoryLimits (Context& context)
+{
+	PlatformMemoryLimits	memoryLimits;
+
+	context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(memoryLimits);
+
+	return memoryLimits;
+}
+
+size_t getSafeObjectCount (Context& context, size_t objectSystemMemoryUsage, VkDeviceSize objectDeviceMemorySize = 0)
+{
+	return getSafeObjectCount(getPlatformMemoryLimits(context), objectSystemMemoryUsage, objectDeviceMemorySize);
+}
+
+VkDeviceSize getPageTableSize (Context& context, VkDeviceSize allocationSize)
+{
+	return getPageTableSize(getPlatformMemoryLimits(context), allocationSize);
+}
+
+template<typename Object>
+deUint32 getSafeObjectCount (Context&							context,
+							 const typename Object::Parameters&	params,
+							 deUint32							hardCountLimit,
+							 VkDeviceSize						deviceMemoryUsage = 0)
+{
+	return (deUint32)de::min((size_t)hardCountLimit,
+							 getSafeObjectCount(context,
+												computeSystemMemoryUsage<Object>(context, params),
+												deviceMemoryUsage));
+}
+
 // Object definitions
 
 enum
 {
-	DEFAULT_MAX_CONCURRENT_OBJECTS	= 16*1024
+	MAX_CONCURRENT_INSTANCES		= 32,
+	MAX_CONCURRENT_DEVICES			= 32,
+	MAX_CONCURRENT_SYNC_PRIMITIVES	= 100,
+	DEFAULT_MAX_CONCURRENT_OBJECTS	= 16*1024,
 };
 
 struct Instance
 {
 	typedef VkInstance Type;
-
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return 32;
-	}
 
 	struct Parameters
 	{
@@ -297,6 +429,11 @@ struct Instance
 		Resources (const Environment&, const Parameters&) {}
 	};
 
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<Instance>(context, params, MAX_CONCURRENT_INSTANCES);
+	}
+
 	static Move<VkInstance> create (const Environment& env, const Resources&, const Parameters&)
 	{
 		const VkApplicationInfo		appInfo			=
@@ -307,7 +444,7 @@ struct Instance
 			0u,									// applicationVersion
 			DE_NULL,							// pEngineName
 			0u,									// engineVersion
-			VK_API_VERSION
+			VK_MAKE_VERSION(1,0,0)
 		};
 		const VkInstanceCreateInfo	instanceInfo	=
 		{
@@ -328,11 +465,6 @@ struct Instance
 struct Device
 {
 	typedef VkDevice Type;
-
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return 32;
-	}
 
 	struct Parameters
 	{
@@ -386,6 +518,11 @@ struct Device
 		}
 	};
 
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<Device>(context, params, MAX_CONCURRENT_DEVICES);
+	}
+
 	static Move<VkDevice> create (const Environment& env, const Resources& res, const Parameters&)
 	{
 		const float	queuePriority	= 1.0;
@@ -401,7 +538,7 @@ struct Device
 				&queuePriority,						// pQueuePriorities
 			}
 		};
-		const VkDeviceCreateInfo	deviceInfo	=
+		const VkDeviceCreateInfo		deviceInfo	=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 			DE_NULL,
@@ -423,11 +560,6 @@ struct DeviceMemory
 {
 	typedef VkDeviceMemory Type;
 
-	static deUint32 getMaxConcurrent (Context& context)
-	{
-		return de::min(context.getDeviceProperties().limits.maxMemoryAllocationCount, 4096u);
-	}
-
 	struct Parameters
 	{
 		VkDeviceSize	size;
@@ -445,6 +577,17 @@ struct DeviceMemory
 	{
 		Resources (const Environment&, const Parameters&) {}
 	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		const VkDeviceSize	deviceMemoryUsage	= params.size + getPageTableSize(context, params.size);
+
+		return getSafeObjectCount<DeviceMemory>(context,
+												params,
+												de::min(context.getDeviceProperties().limits.maxMemoryAllocationCount,
+														(deUint32)DEFAULT_MAX_CONCURRENT_OBJECTS),
+												deviceMemoryUsage);
+	}
 
 	static Move<VkDeviceMemory> create (const Environment& env, const Resources&, const Parameters& params)
 	{
@@ -479,11 +622,6 @@ struct Buffer
 {
 	typedef VkBuffer Type;
 
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
-
 	struct Parameters
 	{
 		VkDeviceSize		size;
@@ -500,6 +638,19 @@ struct Buffer
 	{
 		Resources (const Environment&, const Parameters&) {}
 	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		const Environment			env		(context, 1u);
+		const Resources				res		(env, params);
+		const Unique<VkBuffer>		buffer	(create(env, res, params));
+		const VkMemoryRequirements	memReqs	= getBufferMemoryRequirements(env.vkd, env.device, *buffer);
+
+		return getSafeObjectCount<Buffer>(context,
+										  params,
+										  DEFAULT_MAX_CONCURRENT_OBJECTS,
+										  getPageTableSize(context, memReqs.size));
+	}
 
 	static Move<VkBuffer> create (const Environment& env, const Resources&, const Parameters& params)
 	{
@@ -522,11 +673,6 @@ struct Buffer
 struct BufferView
 {
 	typedef VkBufferView Type;
-
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
 
 	struct Parameters
 	{
@@ -559,6 +705,11 @@ struct BufferView
 		}
 	};
 
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<BufferView>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
+
 	static Move<VkBufferView> create (const Environment& env, const Resources& res, const Parameters& params)
 	{
 		const VkBufferViewCreateInfo	bufferViewInfo	=
@@ -579,11 +730,6 @@ struct BufferView
 struct Image
 {
 	typedef VkImage Type;
-
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
 
 	struct Parameters
 	{
@@ -626,6 +772,19 @@ struct Image
 		Resources (const Environment&, const Parameters&) {}
 	};
 
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		const Environment			env		(context, 1u);
+		const Resources				res		(env, params);
+		const Unique<VkImage>		image	(create(env, res, params));
+		const VkMemoryRequirements	memReqs	= getImageMemoryRequirements(env.vkd, env.device, *image);
+
+		return getSafeObjectCount<Image>(context,
+										 params,
+										 DEFAULT_MAX_CONCURRENT_OBJECTS,
+										 getPageTableSize(context, memReqs.size));
+	}
+
 	static Move<VkImage> create (const Environment& env, const Resources&, const Parameters& params)
 	{
 		const VkImageCreateInfo		imageInfo	=
@@ -654,11 +813,6 @@ struct Image
 struct ImageView
 {
 	typedef VkImageView Type;
-
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
 
 	struct Parameters
 	{
@@ -694,6 +848,11 @@ struct ImageView
 		}
 	};
 
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<ImageView>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
+
 	static Move<VkImageView> create (const Environment& env, const Resources& res, const Parameters& params)
 	{
 		const VkImageViewCreateInfo	imageViewInfo	=
@@ -716,11 +875,6 @@ struct Semaphore
 {
 	typedef VkSemaphore Type;
 
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return 100;
-	}
-
 	struct Parameters
 	{
 		VkSemaphoreCreateFlags	flags;
@@ -734,6 +888,11 @@ struct Semaphore
 	{
 		Resources (const Environment&, const Parameters&) {}
 	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<Semaphore>(context, params, MAX_CONCURRENT_SYNC_PRIMITIVES);
+	}
 
 	static Move<VkSemaphore> create (const Environment& env, const Resources&, const Parameters& params)
 	{
@@ -752,11 +911,6 @@ struct Fence
 {
 	typedef VkFence Type;
 
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return 100;
-	}
-
 	struct Parameters
 	{
 		VkFenceCreateFlags	flags;
@@ -770,6 +924,11 @@ struct Fence
 	{
 		Resources (const Environment&, const Parameters&) {}
 	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<Fence>(context, params, MAX_CONCURRENT_SYNC_PRIMITIVES);
+	}
 
 	static Move<VkFence> create (const Environment& env, const Resources&, const Parameters& params)
 	{
@@ -788,11 +947,6 @@ struct Event
 {
 	typedef VkEvent Type;
 
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return 100;
-	}
-
 	struct Parameters
 	{
 		VkEventCreateFlags	flags;
@@ -806,6 +960,11 @@ struct Event
 	{
 		Resources (const Environment&, const Parameters&) {}
 	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<Event>(context, params, MAX_CONCURRENT_SYNC_PRIMITIVES);
+	}
 
 	static Move<VkEvent> create (const Environment& env, const Resources&, const Parameters& params)
 	{
@@ -823,11 +982,6 @@ struct Event
 struct QueryPool
 {
 	typedef VkQueryPool Type;
-
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
 
 	struct Parameters
 	{
@@ -849,6 +1003,11 @@ struct QueryPool
 		Resources (const Environment&, const Parameters&) {}
 	};
 
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<QueryPool>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
+
 	static Move<VkQueryPool> create (const Environment& env, const Resources&, const Parameters& params)
 	{
 		const VkQueryPoolCreateInfo	queryPoolInfo	=
@@ -868,11 +1027,6 @@ struct QueryPool
 struct ShaderModule
 {
 	typedef VkShaderModule Type;
-
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
 
 	struct Parameters
 	{
@@ -894,6 +1048,11 @@ struct ShaderModule
 			: binary(env.programBinaries.get(params.binaryName))
 		{}
 	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<ShaderModule>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
 
 	static const char* getSource (VkShaderStageFlagBits stage)
 	{
@@ -953,11 +1112,6 @@ struct PipelineCache
 {
 	typedef VkPipelineCache Type;
 
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
-
 	struct Parameters
 	{
 		Parameters (void) {}
@@ -967,6 +1121,11 @@ struct PipelineCache
 	{
 		Resources (const Environment&, const Parameters&) {}
 	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<PipelineCache>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
 
 	static Move<VkPipelineCache> create (const Environment& env, const Resources&, const Parameters&)
 	{
@@ -986,11 +1145,6 @@ struct PipelineCache
 struct Sampler
 {
 	typedef VkSampler Type;
-
-	static deUint32 getMaxConcurrent (Context& context)
-	{
-		return context.getDeviceProperties().limits.maxSamplerAllocationCount;
-	}
 
 	struct Parameters
 	{
@@ -1035,6 +1189,14 @@ struct Sampler
 		Resources (const Environment&, const Parameters&) {}
 	};
 
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<Sampler>(context,
+										   params,
+										   de::min(context.getDeviceProperties().limits.maxSamplerAllocationCount,
+												   (deUint32)DEFAULT_MAX_CONCURRENT_OBJECTS));
+	}
+
 	static Move<VkSampler> create (const Environment& env, const Resources&, const Parameters& params)
 	{
 		const VkSamplerCreateInfo	samplerInfo	=
@@ -1066,11 +1228,6 @@ struct Sampler
 struct DescriptorSetLayout
 {
 	typedef VkDescriptorSetLayout Type;
-
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
 
 	struct Parameters
 	{
@@ -1156,6 +1313,11 @@ struct DescriptorSetLayout
 		}
 	};
 
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<DescriptorSetLayout>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
+
 	static Move<VkDescriptorSetLayout> create (const Environment& env, const Resources& res, const Parameters&)
 	{
 		const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutInfo	=
@@ -1174,11 +1336,6 @@ struct DescriptorSetLayout
 struct PipelineLayout
 {
 	typedef VkPipelineLayout Type;
-
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
 
 	struct Parameters
 	{
@@ -1220,6 +1377,11 @@ struct PipelineLayout
 		}
 	};
 
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<PipelineLayout>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
+
 	static Move<VkPipelineLayout> create (const Environment& env, const Resources& res, const Parameters& params)
 	{
 		const VkPipelineLayoutCreateInfo	pipelineLayoutInfo	=
@@ -1241,11 +1403,6 @@ struct RenderPass
 {
 	typedef VkRenderPass Type;
 
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
-
 	// \todo [2015-09-17 pyry] More interesting configurations
 	struct Parameters
 	{
@@ -1256,6 +1413,11 @@ struct RenderPass
 	{
 		Resources (const Environment&, const Parameters&) {}
 	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<RenderPass>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
 
 	static Move<VkRenderPass> create (const Environment& env, const Resources&, const Parameters&)
 	{
@@ -1332,12 +1494,6 @@ struct GraphicsPipeline
 {
 	typedef VkPipeline Type;
 
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		// \todo [2016-01-26 pyry] Scale this based on pipeline memory usage and available system memory
-		return 256;
-	}
-
 	// \todo [2015-09-17 pyry] More interesting configurations
 	struct Parameters
 	{
@@ -1361,6 +1517,11 @@ struct GraphicsPipeline
 			, pipelineCache		(env, PipelineCache::Parameters())
 		{}
 	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<GraphicsPipeline>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
 
 	static void initPrograms (SourceCollections& dst, Parameters)
 	{
@@ -1542,12 +1703,6 @@ struct ComputePipeline
 {
 	typedef VkPipeline Type;
 
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		// \todo [2016-01-26 pyry] Scale this based on pipeline memory usage and available system memory
-		return 256;
-	}
-
 	// \todo [2015-09-17 pyry] More interesting configurations
 	struct Parameters
 	{
@@ -1578,6 +1733,11 @@ struct ComputePipeline
 			, pipelineCache		(env, PipelineCache::Parameters())
 		{}
 	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<ComputePipeline>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
 
 	static void initPrograms (SourceCollections& dst, Parameters)
 	{
@@ -1613,11 +1773,6 @@ struct DescriptorPool
 {
 	typedef VkDescriptorPool Type;
 
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
-
 	struct Parameters
 	{
 		VkDescriptorPoolCreateFlags		flags;
@@ -1648,6 +1803,11 @@ struct DescriptorPool
 		Resources (const Environment&, const Parameters&) {}
 	};
 
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<DescriptorPool>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
+
 	static Move<VkDescriptorPool> create (const Environment& env, const Resources&, const Parameters& params)
 	{
 		const VkDescriptorPoolCreateInfo	descriptorPoolInfo	=
@@ -1667,11 +1827,6 @@ struct DescriptorPool
 struct DescriptorSet
 {
 	typedef VkDescriptorSet Type;
-
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
 
 	struct Parameters
 	{
@@ -1718,6 +1873,11 @@ struct DescriptorSet
 		}
 	};
 
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<DescriptorSet>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
+
 	static Move<VkDescriptorSet> create (const Environment& env, const Resources& res, const Parameters&)
 	{
 		const VkDescriptorSetAllocateInfo	allocateInfo	=
@@ -1736,11 +1896,6 @@ struct DescriptorSet
 struct Framebuffer
 {
 	typedef VkFramebuffer Type;
-
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
 
 	struct Parameters
 	{
@@ -1779,6 +1934,12 @@ struct Framebuffer
 		{}
 	};
 
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		// \todo [2016-03-23 pyry] Take into account attachment sizes
+		return getSafeObjectCount<Framebuffer>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
+
 	static Move<VkFramebuffer> create (const Environment& env, const Resources& res, const Parameters&)
 	{
 		const VkImageView				attachments[]	=
@@ -1807,11 +1968,6 @@ struct CommandPool
 {
 	typedef VkCommandPool Type;
 
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-	}
-
 	struct Parameters
 	{
 		VkCommandPoolCreateFlags	flags;
@@ -1825,6 +1981,11 @@ struct CommandPool
 	{
 		Resources (const Environment&, const Parameters&) {}
 	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<CommandPool>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
 
 	static Move<VkCommandPool> create (const Environment& env, const Resources&, const Parameters& params)
 	{
@@ -1843,16 +2004,6 @@ struct CommandPool
 struct CommandBuffer
 {
 	typedef VkCommandBuffer Type;
-
-	static deUint32 getMaxConcurrent (Context&)
-	{
-		// \todo Scale this based on available system memory
-#if (DE_PTR_SIZE == 4)
-		return 1024;
-#else
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
-#endif
-	}
 
 	struct Parameters
 	{
@@ -1874,6 +2025,11 @@ struct CommandBuffer
 			: commandPool(env, params.commandPool)
 		{}
 	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<CommandBuffer>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+	}
 
 	static Move<VkCommandBuffer> create (const Environment& env, const Resources& res, const Parameters& params)
 	{
@@ -1946,16 +2102,22 @@ tcu::TestStatus createMaxConcurrentTest (Context& context, typename Object::Para
 	typedef Unique<typename Object::Type>	UniqueObject;
 	typedef SharedPtr<UniqueObject>			ObjectPtr;
 
-	const deUint32						numObjects	= Object::getMaxConcurrent(context);
-	const Environment					env			(context, numObjects);
-	const typename Object::Resources	res			(env, params);
-	vector<ObjectPtr>					objects		(numObjects);
+	const deUint32						numObjects			= Object::getMaxConcurrent(context, params);
+	const Environment					env					(context, numObjects);
+	const typename Object::Resources	res					(env, params);
+	vector<ObjectPtr>					objects				(numObjects);
+	const deUint32						watchdogInterval	= 1024;
 
 	context.getTestContext().getLog()
-		<< TestLog::Message << "Creating " << numObjects << " " << getTypeName<typename Object::Type>() << "s" << TestLog::EndMessage;
+		<< TestLog::Message << "Creating " << numObjects << " " << getTypeName<typename Object::Type>() << " objects" << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < numObjects; ndx++)
+	{
 		objects[ndx] = ObjectPtr(new UniqueObject(Object::create(env, res, params)));
+
+		if ((ndx > 0) && ((ndx % watchdogInterval) == 0))
+			context.getTestContext().touchWatchdog();
+	}
 
 	objects.clear();
 
