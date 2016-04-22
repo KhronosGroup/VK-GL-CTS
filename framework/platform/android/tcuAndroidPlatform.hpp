@@ -53,11 +53,13 @@ public:
 	// Vulkan Platform API
 	vk::Library*					createLibrary		(void) const;
 	void							describePlatform	(std::ostream& dst) const;
+	void							getMemoryLimits		(vk::PlatformMemoryLimits& limits) const;
 	vk::wsi::Display*				createWsiDisplay	(vk::wsi::Type wsiType) const;
 
 private:
 	NativeActivity&					m_activity;
 	WindowRegistry					m_windowRegistry;
+	const size_t					m_totalSystemMemory;
 };
 
 } // Android
