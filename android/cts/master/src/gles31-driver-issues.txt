@@ -1,0 +1,3 @@
+# Khronos bug 12908, internal bug 25389474
+dEQP-GLES31.functional.tessellation.user_defined_io.negative.per_vertex_incorrect_control_explicit_output_array_size_2
+dEQP-GLES31.functional.tessellation.user_defined_io.negative.per_vertex_incorrect_control_explicit_output_array_size_3
