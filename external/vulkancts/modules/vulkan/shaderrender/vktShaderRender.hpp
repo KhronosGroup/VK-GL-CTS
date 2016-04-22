@@ -37,6 +37,7 @@
 #include "vkMemUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkPlatform.hpp"
 
 #include "vktTestCaseUtil.hpp"
 
@@ -363,7 +364,10 @@ enum BaseUniformType
 
 	UV4_BLACK,
 	UV4_GRAY,
-	UV4_WHITE
+	UV4_WHITE,
+
+// Last
+	U_LAST
 };
 
 enum BaseAttributeType
@@ -442,6 +446,8 @@ protected:
 	const tcu::TextureLevel&							getResultImage				(void) const { return m_resultImage; }
 
 	const tcu::UVec2									getViewportSize				(void) const;
+
+	void												setSampleCount				(vk::VkSampleCountFlagBits sampleCount);
 
 	vk::Allocator&										m_memAlloc;
 	const tcu::Vec4										m_clearColor;
@@ -551,6 +557,9 @@ private:
 
 	std::vector<VkBufferSp>								m_vertexBuffers;
 	std::vector<AllocationSp>							m_vertexBufferAllocs;
+
+	vk::VkSampleCountFlagBits							m_sampleCount;
+	bool												m_multisampling;
 };
 
 template<typename T>

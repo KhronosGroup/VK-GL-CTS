@@ -45,6 +45,7 @@
 #include "vktShaderLibrary.hpp"
 #include "vktRenderPassTests.hpp"
 #include "vktMemoryTests.hpp"
+#include "vktShaderRenderDerivateTests.hpp"
 #include "vktShaderRenderDiscardTests.hpp"
 #include "vktShaderRenderIndexingTests.hpp"
 #include "vktShaderRenderLoopTests.hpp"
@@ -332,6 +333,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 													 std::string("vulkan/glsl/es310/") + s_es310Tests[ndx].name + ".test").release());
 
 	// ShaderRenderCase-based tests
+	glslTests->addChild(sr::createDerivateTests			(testCtx));
 	glslTests->addChild(sr::createDiscardTests			(testCtx));
 	glslTests->addChild(sr::createIndexingTests			(testCtx));
 	glslTests->addChild(sr::createLoopTests				(testCtx));
