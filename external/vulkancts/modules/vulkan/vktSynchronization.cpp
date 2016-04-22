@@ -452,7 +452,7 @@ struct RenderInfo
 	VkCommandBuffer					commandBuffer;
 	VkRenderPass					renderPass;
 	VkFramebuffer					framebuffer;
-	vk::Move<VkPipeline>			pipeline;
+	VkPipeline						pipeline;
 	deUint32						mipLevels;
 	const deUint32*					queueFamilyNdxList;
 	deUint32						queueFamilyNdxCount;
@@ -484,7 +484,7 @@ void  recordRenderPass (const DeviceInterface& deviceInterface, const RenderInfo
 	deviceInterface.cmdBeginRenderPass(renderInfo.commandBuffer, &renderPassBeginState, VK_SUBPASS_CONTENTS_INLINE);
 	if (renderInfo.waitEvent)
 		deviceInterface.cmdWaitEvents(renderInfo.commandBuffer, 1, &renderInfo.event, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
-	deviceInterface.cmdBindPipeline(renderInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderInfo.pipeline.get());
+	deviceInterface.cmdBindPipeline(renderInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderInfo.pipeline);
 	deviceInterface.cmdBindVertexBuffers(renderInfo.commandBuffer, 0u, 1u, &renderInfo.vertexBuffer, &bindingOffset);
 	deviceInterface.cmdDraw(renderInfo.commandBuffer, renderInfo.vertexBufferSize, 1, 0, 0);
 	if (renderInfo.setEvent)
@@ -582,6 +582,8 @@ struct TestContext
 	vk::Move<VkCommandPool>		commandPool;
 	vk::Move<VkCommandBuffer>	cmdBuffer;
 	vk::Move<VkRenderPass>		renderPass;
+	vk::Move<VkPipelineCache>	pipelineCache;
+	vk::Move<VkPipeline>		pipeline;
 	MovePtr<Allocation>			imageAllocation;
 
 	TestContext (const DeviceInterface&		vkd_,
@@ -645,9 +647,7 @@ void generateWork (TestContext& testContext)
 		}
 	};
 
-	vk::Move<VkPipelineCache>					cache;
 	vk::Move<VkPipelineLayout>					layout;
-	vk::Move<VkPipeline>						pipeline;
 	vector<ShaderDescParams>					shaderDescParams;
 	VertexDesc									vertexDesc;
 	vector<VertexDesc>							vertexDescList;
@@ -874,8 +874,8 @@ void generateWork (TestContext& testContext)
 	cacheState.initialDataSize					= 0;
 	cacheState.pInitialData						= DE_NULL;
 
-	cache = createPipelineCache(deviceInterface, testContext.device, &cacheState);
-	pipeline = createGraphicsPipeline(deviceInterface, testContext.device, cache.get(), &pipelineState);
+	testContext.pipelineCache	= createPipelineCache(deviceInterface, testContext.device, &cacheState);
+	testContext.pipeline		= createGraphicsPipeline(deviceInterface, testContext.device, testContext.pipelineCache.get(), &pipelineState);
 
 	deMemset(&fbState, 0xcd, sizeof(fbState));
 	fbState.sType								= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -926,7 +926,7 @@ void generateWork (TestContext& testContext)
 	renderInfo.commandBuffer		= testContext.cmdBuffer.get();
 	renderInfo.renderPass			= testContext.renderPass.get();
 	renderInfo.framebuffer			= *testContext.framebuffer;
-	renderInfo.pipeline				= pipeline;
+	renderInfo.pipeline				= *testContext.pipeline;
 	renderInfo.mipLevels			= 1;
 	renderInfo.queueFamilyNdxList	= &queueFamilyNdx;
 	renderInfo.queueFamilyNdxCount	= 1;
