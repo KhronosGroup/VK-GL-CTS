@@ -210,14 +210,16 @@ struct AllocationCallbackValidationResults
 	void										clear								(void);
 };
 
-void							validateAllocationCallbacks	(const AllocationCallbackRecorder& recorder, AllocationCallbackValidationResults* results);
-bool							checkAndLog					(tcu::TestLog& log, const AllocationCallbackValidationResults& results, deUint32 allowedLiveAllocScopeBits);
-bool							validateAndLog				(tcu::TestLog& log, const AllocationCallbackRecorder& recorder, deUint32 allowedLiveAllocScopeBits);
+void							validateAllocationCallbacks		(const AllocationCallbackRecorder& recorder, AllocationCallbackValidationResults* results);
+bool							checkAndLog						(tcu::TestLog& log, const AllocationCallbackValidationResults& results, deUint32 allowedLiveAllocScopeBits);
+bool							validateAndLog					(tcu::TestLog& log, const AllocationCallbackRecorder& recorder, deUint32 allowedLiveAllocScopeBits);
 
-std::ostream&					operator<<					(std::ostream& str, const AllocationCallbackRecord& record);
-std::ostream&					operator<<					(std::ostream& str, const AllocationCallbackViolation& violation);
+size_t							getLiveSystemAllocationTotal	(const AllocationCallbackValidationResults& validationResults);
 
-const VkAllocationCallbacks*	getSystemAllocator			(void);
+std::ostream&					operator<<						(std::ostream& str, const AllocationCallbackRecord& record);
+std::ostream&					operator<<						(std::ostream& str, const AllocationCallbackViolation& violation);
+
+const VkAllocationCallbacks*	getSystemAllocator				(void);
 
 } // vk
 

@@ -80,6 +80,16 @@ vk::Library* Platform::createLibrary (void) const
 	return vk::createNullDriver();
 }
 
+void Platform::getMemoryLimits (vk::PlatformMemoryLimits& limits) const
+{
+	limits.totalSystemMemory					= 256*1024*1024;
+	limits.totalDeviceLocalMemory				= 0;
+	limits.deviceMemoryAllocationGranularity	= 4096;
+	limits.devicePageSize						= 4096;
+	limits.devicePageTableEntrySize				= 8;
+	limits.devicePageTableHierarchyLevels		= 3;
+}
+
 } // null
 } // tcu
 
