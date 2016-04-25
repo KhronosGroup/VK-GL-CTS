@@ -35,6 +35,7 @@
 #include "deMath.h"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
+#include "deArrayUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vktTestCase.hpp"
@@ -1376,6 +1377,22 @@ VkClearValue makeClearColorValue (VkFormat format, float r, float g, float b, fl
 	return clearValue;
 }
 
+std::string getFormatCaseName (VkFormat format)
+{
+	return de::toLower(de::toString(getFormatStr(format)).substr(10));
+}
+
+const char* getImageTypeCaseName (VkImageType type)
+{
+	const char* s_names[] =
+	{
+		"1d",
+		"2d",
+		"3d"
+	};
+	return de::getSizedArrayElement<VK_IMAGE_TYPE_LAST>(s_names, type);
+}
+
 } // anonymous
 
 TestCaseGroup* createImageClearingTests (TestContext& testCtx)
@@ -1614,8 +1631,8 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 				colorImageTestParams.clearValue		= makeClearColorValue(colorImageTestParams.imageFormat, 0.1f, 0.5f, 0.3f, 0.9f);
 
 				std::ostringstream	testCaseName;
-				testCaseName << getImageTypeStr(colorImageTestParams.imageType);
-				testCaseName << "-" << getFormatStr(colorImageTestParams.imageFormat);
+				testCaseName << getImageTypeCaseName(colorImageTestParams.imageType);
+				testCaseName << "_" << getFormatCaseName(colorImageTestParams.imageFormat);
 
 				colorImageClearTests->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Clear Color Image", colorImageTestParams));
 			}
@@ -1639,8 +1656,8 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 			depthStencilImageTestParams.imageFormat = depthStencilImageFormatsToTest[imageFormatIndex];
 
 			std::ostringstream	testCaseName;
-			testCaseName << getImageTypeStr(depthStencilImageTestParams.imageType);
-			testCaseName << "_" << getFormatStr(depthStencilImageTestParams.imageFormat);
+			testCaseName << getImageTypeCaseName(depthStencilImageTestParams.imageType);
+			testCaseName << "_" << getFormatCaseName(depthStencilImageTestParams.imageFormat);
 
 			depthStencilImageClearTests->addChild(new InstanceFactory1<ClearDepthStencilImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Clear Depth/Stencil Image", depthStencilImageTestParams));
 		}
@@ -1665,8 +1682,8 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 			colorAttachmentTestParams.clearValue	= makeClearColorValue(colorAttachmentTestParams.imageFormat, 0.1f, 0.5f, 0.3f, 0.9f);
 
 			std::ostringstream	testCaseName;
-			testCaseName << getImageTypeStr(colorAttachmentTestParams.imageType);
-			testCaseName << "-" << getFormatStr(colorAttachmentTestParams.imageFormat);
+			testCaseName << getImageTypeCaseName(colorAttachmentTestParams.imageType);
+			testCaseName << "_" << getFormatCaseName(colorAttachmentTestParams.imageFormat);
 
 			colorAttachmentClearTests->addChild(new InstanceFactory1<ClearColorAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Clear Color Attachment", colorAttachmentTestParams));
 		}
@@ -1689,8 +1706,8 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 			depthStencilAttachmentTestParams.imageFormat = depthStencilImageFormatsToTest[imageFormatIndex];
 
 			std::ostringstream	testCaseName;
-			testCaseName << getImageTypeStr(depthStencilAttachmentTestParams.imageType);
-			testCaseName << "-" << getFormatStr(depthStencilAttachmentTestParams.imageFormat);
+			testCaseName << getImageTypeCaseName(depthStencilAttachmentTestParams.imageType);
+			testCaseName << "_" << getFormatCaseName(depthStencilAttachmentTestParams.imageFormat);
 
 			depthStencilAttachmentClearTests->addChild(new InstanceFactory1<ClearDepthStencilAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Clear Depth/Stencil Attachment", depthStencilAttachmentTestParams));
 		}
@@ -1715,8 +1732,8 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 			colorAttachmentTestParams.clearValue	= makeClearColorValue(colorAttachmentTestParams.imageFormat, 0.1f, 0.5f, 0.3f, 0.9f);
 
 			std::ostringstream	testCaseName;
-			testCaseName << getImageTypeStr(colorAttachmentTestParams.imageType);
-			testCaseName << "-" << getFormatStr(colorAttachmentTestParams.imageFormat);
+			testCaseName << getImageTypeCaseName(colorAttachmentTestParams.imageType);
+			testCaseName << "_" << getFormatCaseName(colorAttachmentTestParams.imageFormat);
 
 			partialColorAttachmentClearTests->addChild(new InstanceFactory1<PartialClearColorAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Partial Clear Color Attachment", colorAttachmentTestParams));
 		}
@@ -1739,8 +1756,8 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 			depthStencilAttachmentTestParams.imageFormat	= depthStencilImageFormatsToTest[imageFormatIndex];
 
 			std::ostringstream	testCaseName;
-			testCaseName << getImageTypeStr(depthStencilAttachmentTestParams.imageType);
-			testCaseName << "-" << getFormatStr(depthStencilAttachmentTestParams.imageFormat);
+			testCaseName << getImageTypeCaseName(depthStencilAttachmentTestParams.imageType);
+			testCaseName << "_" << getFormatCaseName(depthStencilAttachmentTestParams.imageFormat);
 
 			partialDepthStencilAttachmentClearTests->addChild(new InstanceFactory1<PartialClearDepthStencilAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Parital Clear Depth/Stencil Attachment", depthStencilAttachmentTestParams));
 		}
