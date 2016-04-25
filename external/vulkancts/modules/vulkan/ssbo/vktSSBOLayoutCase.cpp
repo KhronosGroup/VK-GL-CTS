@@ -1925,9 +1925,6 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 				m_uniformBuffers.push_back(VkBufferSp(new vk::Unique<vk::VkBuffer>(buffer)));
 				m_uniformAllocs.push_back(AllocationSp(alloc.release()));
 			}
-
-			setUpdateBuilder.writeArray(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1),
-										vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, numBlocks, &descriptors[0]);
 		}
 		else
 		{
@@ -1963,11 +1960,23 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 				descriptors[blockNdx] = makeDescriptorBufferInfo(*buffer, offset, bufferSize);
 			}
 
-			setUpdateBuilder.writeArray(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1),
-										vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, numBlocks, &descriptors[0]);
-
 			m_uniformBuffers.push_back(VkBufferSp(new vk::Unique<vk::VkBuffer>(buffer)));
 			m_uniformAllocs.push_back(AllocationSp(alloc.release()));
+		}
+
+		// Update remaining bindings
+		{
+			int blockNdx = 0;
+			for (int bindingNdx = 0; bindingNdx < numBindings; ++bindingNdx)
+			{
+				const BufferBlock&	block				= m_interface.getBlock(bindingNdx);
+				const int			numBlocksInBinding	= (block.isArray() ? block.getArraySize() : 1);
+
+				setUpdateBuilder.writeArray(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(bindingNdx + 1),
+					vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, numBlocksInBinding, &descriptors[blockNdx]);
+
+				blockNdx += numBlocksInBinding;
+			}
 		}
 
 		// Copy the initial data to the storage buffers
