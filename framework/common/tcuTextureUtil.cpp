@@ -469,6 +469,10 @@ IVec4 getFormatMaxIntValue (const TextureFormat& format)
 {
 	DE_ASSERT(getTextureChannelClass(format.type) == TEXTURECHANNELCLASS_SIGNED_INTEGER);
 
+	if (format == TextureFormat(TextureFormat::RGBA, TextureFormat::SIGNED_INT_1010102_REV) ||
+		format == TextureFormat(TextureFormat::BGRA, TextureFormat::SIGNED_INT_1010102_REV))
+		return IVec4(511, 511, 511, 1);
+
 	switch (format.type)
 	{
 		case TextureFormat::SIGNED_INT8:	return IVec4(std::numeric_limits<deInt8>::max());
@@ -485,7 +489,8 @@ UVec4 getFormatMaxUintValue (const TextureFormat& format)
 {
 	DE_ASSERT(getTextureChannelClass(format.type) == TEXTURECHANNELCLASS_UNSIGNED_INTEGER);
 
-	if (format == TextureFormat(TextureFormat::RGBA, TextureFormat::UNSIGNED_INT_1010102_REV))
+	if (format == TextureFormat(TextureFormat::RGBA, TextureFormat::UNSIGNED_INT_1010102_REV) ||
+		format == TextureFormat(TextureFormat::BGRA, TextureFormat::UNSIGNED_INT_1010102_REV))
 		return UVec4(1023u, 1023u, 1023u, 3u);
 
 	switch (format.type)
