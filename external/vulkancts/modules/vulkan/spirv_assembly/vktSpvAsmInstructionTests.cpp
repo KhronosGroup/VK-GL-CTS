@@ -7791,6 +7791,246 @@ tcu::TestCaseGroup* createFRemTests(tcu::TestContext& testCtx)
 	return testGroup.release();
 }
 
+enum IntegerType
+{
+	INTEGER_TYPE_SIGNED_16,
+	INTEGER_TYPE_SIGNED_32,
+	INTEGER_TYPE_SIGNED_64,
+
+	INTEGER_TYPE_UNSIGNED_16,
+	INTEGER_TYPE_UNSIGNED_32,
+	INTEGER_TYPE_UNSIGNED_64,
+};
+
+const string getBitWidthStr (IntegerType type)
+{
+	switch (type)
+	{
+		case INTEGER_TYPE_SIGNED_16:
+		case INTEGER_TYPE_UNSIGNED_16:	return "16";
+
+		case INTEGER_TYPE_SIGNED_32:
+		case INTEGER_TYPE_UNSIGNED_32:	return "32";
+
+		case INTEGER_TYPE_SIGNED_64:
+		case INTEGER_TYPE_UNSIGNED_64:	return "64";
+
+		default:						DE_ASSERT(false);
+										return "";
+	}
+}
+
+bool isSigned (IntegerType type)
+{
+	return (type <= INTEGER_TYPE_SIGNED_64);
+}
+
+const string getTypeName (IntegerType type)
+{
+	string prefix = isSigned(type) ? "" : "u";
+	return prefix + "int" + getBitWidthStr(type);
+}
+
+const string getTestName (IntegerType from, IntegerType to)
+{
+	return getTypeName(from) + "_to_" + getTypeName(to);
+}
+
+const string getAsmTypeDeclaration (IntegerType type)
+{
+	string sign = isSigned(type) ? " 1" : " 0";
+	return "OpTypeInt " + getBitWidthStr(type) + sign;
+}
+
+template<typename T>
+BufferSp getSpecializedBuffer (deInt64 number)
+{
+	return BufferSp(new Buffer<T>(vector<T>(1, (T)number)));
+}
+
+BufferSp getBuffer (IntegerType type, deInt64 number)
+{
+	switch (type)
+	{
+		case INTEGER_TYPE_SIGNED_16:	return getSpecializedBuffer<deInt16>(number);
+		case INTEGER_TYPE_SIGNED_32:	return getSpecializedBuffer<deInt32>(number);
+		case INTEGER_TYPE_SIGNED_64:	return getSpecializedBuffer<deInt64>(number);
+
+		case INTEGER_TYPE_UNSIGNED_16:	return getSpecializedBuffer<deUint16>(number);
+		case INTEGER_TYPE_UNSIGNED_32:	return getSpecializedBuffer<deUint32>(number);
+		case INTEGER_TYPE_UNSIGNED_64:	return getSpecializedBuffer<deUint64>(number);
+
+		default:						DE_ASSERT(false);
+										return BufferSp(new Buffer<deInt32>(vector<deInt32>(1, 0)));
+	}
+}
+
+bool usesInt16 (IntegerType from, IntegerType to)
+{
+	return (from == INTEGER_TYPE_SIGNED_16 || from == INTEGER_TYPE_UNSIGNED_16
+			|| to == INTEGER_TYPE_SIGNED_16 || to == INTEGER_TYPE_UNSIGNED_16);
+}
+
+bool usesInt64 (IntegerType from, IntegerType to)
+{
+	return (from == INTEGER_TYPE_SIGNED_64 || from == INTEGER_TYPE_UNSIGNED_64
+			|| to == INTEGER_TYPE_SIGNED_64 || to == INTEGER_TYPE_UNSIGNED_64);
+}
+
+ConvertTestFeatures getUsedFeatures (IntegerType from, IntegerType to)
+{
+	if (usesInt16(from, to))
+	{
+		if (usesInt64(from, to))
+		{
+			return CONVERT_TEST_USES_INT16_INT64;
+		}
+		else
+		{
+			return CONVERT_TEST_USES_INT16;
+		}
+	}
+	else
+	{
+		return CONVERT_TEST_USES_INT64;
+	}
+}
+
+struct ConvertCase
+{
+	ConvertCase (IntegerType from, IntegerType to, deInt64 number)
+	: m_fromType		(from)
+	, m_toType			(to)
+	, m_features		(getUsedFeatures(from, to))
+	, m_name			(getTestName(from, to))
+	, m_inputBuffer		(getBuffer(from, number))
+	, m_outputBuffer	(getBuffer(to, number))
+	{
+		m_asmTypes["inputType"]		= getAsmTypeDeclaration(from);
+		m_asmTypes["outputType"]	= getAsmTypeDeclaration(to);
+
+		if (m_features == CONVERT_TEST_USES_INT16)
+		{
+			m_asmTypes["int_capabilities"] = "OpCapability Int16\n";
+		}
+		else if (m_features == CONVERT_TEST_USES_INT64)
+		{
+			m_asmTypes["int_capabilities"] = "OpCapability Int64\n";
+		}
+		else if (m_features == CONVERT_TEST_USES_INT16_INT64)
+		{
+			m_asmTypes["int_capabilities"] = "OpCapability Int16\n \
+											  OpCapability Int64\n";
+		}
+		else
+		{
+			DE_ASSERT(false);
+		}
+	}
+
+	IntegerType				m_fromType;
+	IntegerType				m_toType;
+	ConvertTestFeatures		m_features;
+	string					m_name;
+	map<string, string>		m_asmTypes;
+	BufferSp				m_inputBuffer;
+	BufferSp				m_outputBuffer;
+};
+
+void createSConvertCases (vector<ConvertCase>& testCases)
+{
+	// Convert int to int
+	testCases.push_back(ConvertCase(INTEGER_TYPE_SIGNED_16,	INTEGER_TYPE_SIGNED_32,		14669));
+	testCases.push_back(ConvertCase(INTEGER_TYPE_SIGNED_16,	INTEGER_TYPE_SIGNED_64,		3341));
+
+	testCases.push_back(ConvertCase(INTEGER_TYPE_SIGNED_32,	INTEGER_TYPE_SIGNED_64,		973610259));
+
+	// Convert int to unsigned int
+	testCases.push_back(ConvertCase(INTEGER_TYPE_SIGNED_16,	INTEGER_TYPE_UNSIGNED_32,	9288));
+	testCases.push_back(ConvertCase(INTEGER_TYPE_SIGNED_16,	INTEGER_TYPE_UNSIGNED_64,	15460));
+
+	testCases.push_back(ConvertCase(INTEGER_TYPE_SIGNED_32,	INTEGER_TYPE_UNSIGNED_64,	346213461));
+}
+
+//  Test for the OpSConvert instruction.
+tcu::TestCaseGroup* createSConvertTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group (new tcu::TestCaseGroup(testCtx, "sconvert", "OpSConvert"));
+	vector<ConvertCase>				testCases;
+	createSConvertCases(testCases);
+
+	const StringTemplate shader (
+		"OpCapability Shader\n"
+		"${int_capabilities}"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+		// Decorators
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %indata DescriptorSet 0\n"
+		"OpDecorate %indata Binding 0\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 1\n"
+		"OpDecorate %in_buf BufferBlock\n"
+		"OpDecorate %out_buf BufferBlock\n"
+		"OpMemberDecorate %in_buf 0 Offset 0\n"
+		"OpMemberDecorate %out_buf 0 Offset 0\n"
+		// Base types
+		"%void       = OpTypeVoid\n"
+		"%voidf      = OpTypeFunction %void\n"
+		"%u32        = OpTypeInt 32 0\n"
+		"%i32        = OpTypeInt 32 1\n"
+		"%uvec3      = OpTypeVector %u32 3\n"
+		"%uvec3ptr   = OpTypePointer Input %uvec3\n"
+		// Custom types
+		"%in_type    = ${inputType}\n"
+		"%out_type   = ${outputType}\n"
+		// Derived types
+		"%in_ptr     = OpTypePointer Uniform %in_type\n"
+		"%out_ptr    = OpTypePointer Uniform %out_type\n"
+		"%in_arr     = OpTypeRuntimeArray %in_type\n"
+		"%out_arr    = OpTypeRuntimeArray %out_type\n"
+		"%in_buf     = OpTypeStruct %in_arr\n"
+		"%out_buf    = OpTypeStruct %out_arr\n"
+		"%in_bufptr  = OpTypePointer Uniform %in_buf\n"
+		"%out_bufptr = OpTypePointer Uniform %out_buf\n"
+		"%indata     = OpVariable %in_bufptr Uniform\n"
+		"%outdata    = OpVariable %out_bufptr Uniform\n"
+		"%inputptr   = OpTypePointer Input %in_type\n"
+		"%id         = OpVariable %uvec3ptr Input\n"
+		// Constants
+		"%zero       = OpConstant %i32 0\n"
+		// Main function
+		"%main       = OpFunction %void None %voidf\n"
+		"%label      = OpLabel\n"
+		"%idval      = OpLoad %uvec3 %id\n"
+		"%x          = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc      = OpAccessChain %in_ptr %indata %zero %x\n"
+		"%outloc     = OpAccessChain %out_ptr %outdata %zero %x\n"
+		"%inval      = OpLoad %in_type %inloc\n"
+		"%conv       = OpSConvert %out_type %inval\n"
+		"              OpStore %outloc %conv\n"
+		"              OpReturn\n"
+		"              OpFunctionEnd\n");
+
+	for (vector<ConvertCase>::const_iterator test = testCases.begin(); test != testCases.end(); ++test)
+	{
+		ComputeShaderSpec	spec;
+
+		spec.assembly = shader.specialize(test->m_asmTypes);
+		spec.inputs.push_back(test->m_inputBuffer);
+		spec.outputs.push_back(test->m_inputBuffer);
+		spec.numWorkGroups = IVec3(1, 1, 1);
+
+		group->addChild(new ConvertTestCase(testCtx, test->m_name.c_str(), "Convert integers with OpSConvert.", spec, test->m_features));
+	}
+
+	return group.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> instructionTests	(new tcu::TestCaseGroup(testCtx, "instruction", "Instructions with special opcodes/operands"));
@@ -7822,6 +8062,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpUnreachableGroup(testCtx));
 	computeTests ->addChild(createOpQuantizeToF16Group(testCtx));
 	computeTests ->addChild(createOpFRemGroup(testCtx));
+	computeTests->addChild(createSConvertTests(testCtx));
 
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
