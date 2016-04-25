@@ -25,6 +25,7 @@
 
 #include "tcuCommandLine.hpp"
 #include "tcuFormatUtil.hpp"
+#include "tcuFloat.hpp"
 #include "tcuRGBA.hpp"
 #include "tcuStringTemplate.hpp"
 #include "tcuTestLog.hpp"
@@ -149,7 +150,9 @@ static const char* const s_CommonTypes =
 	"%fvec3     = OpTypeVector %f32 3\n"
 	"%uvec3ptr  = OpTypePointer Input %uvec3\n"
 	"%f32ptr    = OpTypePointer Uniform %f32\n"
-	"%f32arr    = OpTypeRuntimeArray %f32\n";
+	"%boolptr   = OpTypePointer Uniform %bool\n"
+	"%f32arr    = OpTypeRuntimeArray %f32\n"
+	"%boolarr   = OpTypeRuntimeArray %bool\n";
 
 // Declares two uniform variables (indata, outdata) of type "struct { float[] }". Depends on type "f32arr" (for "float[]").
 static const char* const s_InputOutputBuffer =
@@ -218,6 +221,156 @@ tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpNop appearing at different places", spec));
+
+	return group.release();
+}
+
+bool compareFUnord (const std::vector<BufferSp>& inputs, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, TestLog& log)
+{
+	if (outputAllocs.size() != 1)
+		return false;
+
+	const BufferSp&	expectedOutput			= expectedOutputs[0];
+	const VkBool32*	expectedOutputAsBool	= static_cast<const VkBool32*>(expectedOutputs[0]->data());
+	const VkBool32*	outputAsBool			= static_cast<const VkBool32*>(outputAllocs[0]->getHostPtr());
+	const float*	input1AsFloat			= static_cast<const float*>(inputs[0]->data());
+	const float*	input2AsFloat			= static_cast<const float*>(inputs[1]->data());
+	bool returnValue						= true;
+
+	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(VkBool32); ++idx)
+	{
+		if (outputAsBool[idx] != expectedOutputAsBool[idx])
+		{
+			log << TestLog::Message << "ERROR: Sub-case failed. inputs: " << input1AsFloat[idx] << "," << input2AsFloat[idx] << " output: " << outputAsBool[idx]<< " expected output: " << expectedOutputAsBool[idx] << TestLog::EndMessage;
+			returnValue = false;
+		}
+	}
+	return returnValue;
+}
+
+typedef VkBool32 (*compareFuncType) (float, float);
+
+struct OpFUnordCase
+{
+	const char*		name;
+	const char*		opCode;
+	compareFuncType	compareFunc;
+
+					OpFUnordCase 			(const char* _name, const char* _opCode, compareFuncType _compareFunc)
+						: name				(_name)
+						, opCode			(_opCode)
+						, compareFunc		(_compareFunc) {}
+};
+
+#define ADD_OPFUNORD_CASE(NAME, OPCODE, OPERATOR) \
+do { \
+    struct compare_##NAME { static VkBool32 compare(float x, float y) { return (x OPERATOR y) ? VK_TRUE : VK_FALSE; } }; \
+    cases.push_back(OpFUnordCase(#NAME, OPCODE, compare_##NAME::compare)); \
+} while (deGetFalse())
+
+tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opfunord", "Test the OpFUnord* opcodes"));
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 100;
+	vector<OpFUnordCase>			cases;
+
+	const StringTemplate			shaderTemplate	(
+
+		string(s_ShaderPreamble) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		"OpDecorate %buf BufferBlock\n"
+		"OpDecorate %buf2 BufferBlock\n"
+		"OpDecorate %indata1 DescriptorSet 0\n"
+		"OpDecorate %indata1 Binding 0\n"
+		"OpDecorate %indata2 DescriptorSet 0\n"
+		"OpDecorate %indata2 Binding 1\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 2\n"
+		"OpDecorate %f32arr ArrayStride 4\n"
+		"OpDecorate %boolarr ArrayStride 4\n"
+		"OpMemberDecorate %buf 0 Offset 0\n"
+		"OpMemberDecorate %buf2 0 Offset 0\n"
+
+		+ string(s_CommonTypes) +
+
+		"%buf        = OpTypeStruct %f32arr\n"
+		"%bufptr     = OpTypePointer Uniform %buf\n"
+		"%indata1    = OpVariable %bufptr Uniform\n"
+		"%indata2    = OpVariable %bufptr Uniform\n"
+
+		"%buf2       = OpTypeStruct %boolarr\n"
+		"%buf2ptr    = OpTypePointer Uniform %buf2\n"
+		"%outdata    = OpVariable %buf2ptr Uniform\n"
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+		"%constf1   = OpConstant %f32 1.0\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+
+		"%inloc1    = OpAccessChain %f32ptr %indata1 %zero %x\n"
+		"%inval1    = OpLoad %f32 %inloc1\n"
+		"%inloc2    = OpAccessChain %f32ptr %indata2 %zero %x\n"
+		"%inval2    = OpLoad %f32 %inloc2\n"
+		"%outloc    = OpAccessChain %boolptr %outdata %zero %x\n"
+
+		"%result    = ${OPCODE} %bool %inval1 %inval2\n"
+		"             OpStore %outloc %result\n"
+
+		"             OpReturn\n"
+		"             OpFunctionEnd\n");
+
+	ADD_OPFUNORD_CASE(equal, "OpFUnordEqual", ==);
+	ADD_OPFUNORD_CASE(less, "OpFUnordLessThan", <);
+	ADD_OPFUNORD_CASE(lessequal, "OpFUnordLessThanEqual", <=);
+	ADD_OPFUNORD_CASE(greater, "OpFUnordGreaterThan", >);
+	ADD_OPFUNORD_CASE(greaterequal, "OpFUnordGreaterThanEqual", >=);
+	ADD_OPFUNORD_CASE(notequal, "OpFUnordNotEqual", !=);
+
+	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
+	{
+		map<string, string>			specializations;
+		ComputeShaderSpec			spec;
+		const float					NaN				= std::numeric_limits<float>::quiet_NaN();
+		vector<float>				inputFloats1	(numElements, 0);
+		vector<float>				inputFloats2	(numElements, 0);
+		vector<VkBool32>			expectedBools	(numElements, VK_FALSE);
+
+		specializations["OPCODE"]	= cases[caseNdx].opCode;
+		spec.assembly				= shaderTemplate.specialize(specializations);
+
+		fillRandomScalars(rnd, 1.f, 100.f, &inputFloats1[0], numElements);
+		for (size_t ndx = 0; ndx < numElements; ++ndx)
+		{
+			switch (ndx % 6)
+			{
+				case 0:		inputFloats2[ndx] = inputFloats1[ndx] + 1.0f; break;
+				case 1:		inputFloats2[ndx] = inputFloats1[ndx] - 1.0f; break;
+				case 2:		inputFloats2[ndx] = inputFloats1[ndx]; break;
+				case 3:		inputFloats2[ndx] = NaN; break;
+				case 4:		inputFloats2[ndx] = inputFloats1[ndx];	inputFloats1[ndx] = NaN; break;
+				case 5:		inputFloats2[ndx] = NaN;				inputFloats1[ndx] = NaN; break;
+			}
+			expectedBools[ndx] = tcu::Float32(inputFloats1[ndx]).isNaN() || tcu::Float32(inputFloats2[ndx]).isNaN() || cases[caseNdx].compareFunc(inputFloats1[ndx], inputFloats2[ndx]);
+		}
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats1)));
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
+		spec.outputs.push_back(BufferSp(new BoolBuffer(expectedBools)));
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+		spec.verifyIO = &compareFUnord;
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
+	}
 
 	return group.release();
 }
@@ -354,7 +507,7 @@ tcu::TestCaseGroup* createOpNoLineGroup (tcu::TestContext& testCtx)
 
 // Compare instruction for the contraction compute case.
 // Returns true if the output is what is expected from the test case.
-bool compareNoContractCase(const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs)
+bool compareNoContractCase(const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, TestLog&)
 {
 	if (outputAllocs.size() != 1)
 		return false;
@@ -463,7 +616,7 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
-bool compareFRem(const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs)
+bool compareFRem(const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, TestLog&)
 {
 	if (outputAllocs.size() != 1)
 		return false;
@@ -2208,7 +2361,7 @@ float constructNormalizedFloat (deInt32 exponent, deUint32 significand)
 
 // Compare instruction for the OpQuantizeF16 compute exact case.
 // Returns true if the output is what is expected from the test case.
-bool compareOpQuantizeF16ComputeExactCase (const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs)
+bool compareOpQuantizeF16ComputeExactCase (const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, TestLog&)
 {
 	if (outputAllocs.size() != 1)
 		return false;
@@ -2248,7 +2401,7 @@ bool compareOpQuantizeF16ComputeExactCase (const std::vector<BufferSp>&, const v
 }
 
 // Checks that every output from a test-case is a float NaN.
-bool compareNan (const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs)
+bool compareNan (const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, TestLog&)
 {
 	if (outputAllocs.size() != 1)
 		return false;
@@ -7645,6 +7798,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> graphicsTests		(new tcu::TestCaseGroup(testCtx, "graphics", "Graphics Instructions with special opcodes/operands"));
 
 	computeTests->addChild(createOpNopGroup(testCtx));
+	computeTests->addChild(createOpFUnordGroup(testCtx));
 	computeTests->addChild(createOpLineGroup(testCtx));
 	computeTests->addChild(createOpNoLineGroup(testCtx));
 	computeTests->addChild(createOpConstantNullGroup(testCtx));

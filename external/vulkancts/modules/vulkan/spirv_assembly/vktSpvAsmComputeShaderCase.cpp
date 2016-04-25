@@ -403,7 +403,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// Check output.
 	if (m_shaderSpec.verifyIO)
 	{
-		if (!(*m_shaderSpec.verifyIO)(m_shaderSpec.inputs, outputAllocs, m_shaderSpec.outputs))
+		if (!(*m_shaderSpec.verifyIO)(m_shaderSpec.inputs, outputAllocs, m_shaderSpec.outputs, m_context.getTestContext().getLog()))
 			return tcu::TestStatus::fail("Output doesn't match with expected");
 	}
 	else
