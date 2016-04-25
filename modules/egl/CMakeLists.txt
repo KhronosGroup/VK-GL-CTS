@@ -93,6 +93,8 @@ set(DEQP_EGL_SRCS
 	teglSwapBuffersWithDamageTests.cpp
 	teglMultiContextTests.hpp
 	teglMultiContextTests.cpp
+	teglThreadCleanUpTests.hpp
+	teglThreadCleanUpTests.cpp
 	)
 
 set(DEQP_EGL_LIBS
