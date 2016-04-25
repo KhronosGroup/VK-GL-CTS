@@ -59,8 +59,12 @@ bool assembleSpirV (const SpirVAsmSource* program, std::vector<deUint32>* dst, S
 		buildInfo->compileTimeUs	= deGetMicroseconds() - compileStartTime;
 		buildInfo->compileOk		= (compileOk == SPV_SUCCESS);
 
-		dst->resize(binary->wordCount);
-		std::copy(&binary->code[0], &binary->code[0] + binary->wordCount, dst->begin());
+		if (buildInfo->compileOk)
+		{
+			DE_ASSERT(binary->wordCount > 0);
+			dst->resize(binary->wordCount);
+			std::copy(&binary->code[0], &binary->code[0] + binary->wordCount, dst->begin());
+		}
 
 		spvBinaryDestroy(binary);
 		spvDiagnosticDestroy(diagnostic);
