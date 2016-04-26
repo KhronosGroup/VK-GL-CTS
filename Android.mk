@@ -910,10 +910,6 @@ LOCAL_STATIC_LIBRARIES := \
 LOCAL_CFLAGS += \
 	$(deqp_compile_flags)
 
-# Suppress about 947 clang-tidy warnings of google-explicit-constructor,
-# and 430 warnings of google-build-using-namespace.
-LOCAL_TIDY_CHECKS := -google-build-using-namespace,-google-explicit-constructor
-
 LOCAL_SDK_VERSION := 9
 LOCAL_CPPFLAGS += -Wno-non-virtual-dtor -fwrapv
 LOCAL_NDK_STL_VARIANT := gnustl_static
