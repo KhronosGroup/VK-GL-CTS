@@ -4,32 +4,6 @@ group varying "Varying linkage"
 
 	# Linking rules
 	group rules "Varying linking rules"
-		# not declared in vertex shader, declared in fragment shader
-		case fragment_declare
-			version 310 es
-			desc "varying declared in fragment shader, no reference in vertex shader"
-			values { output float out0 = 1.0; }
-			vertex ""
-				#version 310 es
-				${VERTEX_DECLARATIONS}
-				void main()
-				{
-					${VERTEX_OUTPUT}
-				}
-			""
-			fragment ""
-				#version 310 es
-				precision mediump float;
-				layout(location = 0) in mediump float var;
-				${FRAGMENT_DECLARATIONS}
-				void main()
-				{
-					out0 = 1.0;
-					${FRAGMENT_OUTPUT}
-				}
-			""
-		end
-
 		# declared in vertex shader, no reference in frag shader
 		case vertex_declare
 			version 310 es
