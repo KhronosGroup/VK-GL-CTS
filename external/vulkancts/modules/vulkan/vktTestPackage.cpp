@@ -54,6 +54,7 @@
 #include "vktShaderRenderStructTests.hpp"
 #include "vktShaderRenderSwitchTests.hpp"
 #include "vktShaderRenderTextureFunctionTests.hpp"
+#include "vktShaderRenderTextureGatherTests.hpp"
 #include "vktShaderBuiltinTests.hpp"
 #include "vktOpaqueTypeIndexingTests.hpp"
 #include "vktUniformBlockTests.hpp"
@@ -340,6 +341,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	glslTests->addChild(sr::createStructTests			(testCtx));
 	glslTests->addChild(sr::createSwitchTests			(testCtx));
 	glslTests->addChild(sr::createTextureFunctionTests	(testCtx));
+	glslTests->addChild(sr::createTextureGatherTests	(testCtx));
 
 	// ShaderExecutor-based tests
 	glslTests->addChild(shaderexecutor::createBuiltinTests				(testCtx));
