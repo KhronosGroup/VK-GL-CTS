@@ -787,7 +787,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageSamplingInstance.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineStencilTests.cpp \
-	external/vulkancts/modules/vulkan/pipeline/vktPipelineTests.cpp \ \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineTests.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBase.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferMemoryAliasing.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferSparseBinding.cpp \
