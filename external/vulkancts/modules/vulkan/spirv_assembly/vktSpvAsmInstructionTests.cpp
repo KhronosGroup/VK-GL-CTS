@@ -1381,8 +1381,6 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 
 		"%i32ptr    = OpTypePointer Uniform %i32\n"
 		"%i32arr    = OpTypeRuntimeArray %i32\n"
-		"%boolptr   = OpTypePointer Uniform %bool\n"
-		"%boolarr   = OpTypeRuntimeArray %bool\n"
 		"%buf     = OpTypeStruct %i32arr\n"
 		"%bufptr  = OpTypePointer Uniform %buf\n"
 		"%indata    = OpVariable %bufptr Uniform\n"
@@ -1494,8 +1492,6 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		"%ivec3     = OpTypeVector %i32 3\n"
 		"%i32ptr    = OpTypePointer Uniform %i32\n"
 		"%i32arr    = OpTypeRuntimeArray %i32\n"
-		"%boolptr   = OpTypePointer Uniform %bool\n"
-		"%boolarr   = OpTypeRuntimeArray %bool\n"
 		"%buf     = OpTypeStruct %i32arr\n"
 		"%bufptr  = OpTypePointer Uniform %buf\n"
 		"%indata    = OpVariable %bufptr Uniform\n"
