@@ -8397,6 +8397,177 @@ tcu::TestCaseGroup* createOpCompositeInsertGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+struct AssemblyStructInfo
+{
+	AssemblyStructInfo (const deUint32 components, const deUint32 index)
+	: components	(components)
+	, index			(index)
+	{}
+
+	deUint32 components;
+	deUint32 index;
+};
+
+const string specializeInBoundsShaderTemplate (const NumberType type, const AssemblyStructInfo& structInfo, const map<string, string>& params)
+{
+	// Create the full index string
+	string 				fullIndex	= numberToString(structInfo.index) + " " + params.at("indexes");
+	// Convert it to list of indexes
+	vector<string> 		indexes		= de::splitString(fullIndex, ' ');
+
+	map<string, string>	parameters	(params);
+	parameters["typeDeclaration"]	= getAssemblyTypeDeclaration(type);
+	parameters["structType"]		= repeatString(" %composite", structInfo.components);
+	parameters["structConstruct"]	= repeatString(" %instance", structInfo.components);
+	parameters["insertIndexes"]		= fullIndex;
+
+	// Only the last index
+	parameters["extractIndex"] = indexes.back();
+
+	deUint32 id = 0;
+	// Generate AccessChain index expressions (except for the last one, because we use ptr to the composite)
+	for (vector<string>::const_iterator index = indexes.begin(); index != indexes.end() - 1; ++index)
+	{
+		string indexId = "%index_" + numberToString(id++);
+		parameters["accessChainConstDeclaration"] += indexId + "   = OpConstant %u32 " + *index + "\n";
+		parameters["accessChainIndexes"] += " " + indexId;
+	}
+
+	return StringTemplate (
+		"OpCapability Shader\n"
+		"OpCapability Matrix\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+		// Decorators
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %buf BufferBlock\n"
+		"OpDecorate %indata DescriptorSet 0\n"
+		"OpDecorate %indata Binding 0\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 1\n"
+		"OpDecorate %customarr ArrayStride 4\n"
+		"OpMemberDecorate %buf 0 Offset 0\n"
+		// General types
+		"%void      = OpTypeVoid\n"
+		"%voidf     = OpTypeFunction %void\n"
+		"%u32       = OpTypeInt 32 0\n"
+		"%uvec3     = OpTypeVector %u32 3\n"
+		"%uvec3ptr  = OpTypePointer Input %uvec3\n"
+		// Custom type
+		"%custom    = ${typeDeclaration}\n"
+		// Custom types
+		"${compositeType}"
+		// Inherited from composite
+		"%composite_p = OpTypePointer Function %composite\n"
+		"%struct_t  = OpTypeStruct${structType}\n"
+		"%struct_p  = OpTypePointer Function %struct_t\n"
+		// Constants
+		"${filler}"
+		"${accessChainConstDeclaration}"
+		// Inherited from custom
+		"%customptr = OpTypePointer Uniform %custom\n"
+		"%customarr = OpTypeRuntimeArray %custom\n"
+		"%buf       = OpTypeStruct %customarr\n"
+		"%bufptr    = OpTypePointer Uniform %buf\n"
+		"%indata    = OpVariable %bufptr Uniform\n"
+		"%outdata   = OpVariable %bufptr Uniform\n"
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %u32 0\n"
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		// Create the input/output type
+		"%inloc     = OpInBoundsAccessChain %customptr %indata %zero %x\n"
+		"%outloc    = OpInBoundsAccessChain %customptr %outdata %zero %x\n"
+		// Read the input value
+		"%inval     = OpLoad %custom %inloc\n"
+		// Create the composite and fill it
+		"${compositeConstruct}"
+		// Create the struct and fill it with the composite
+		"%struct    = OpCompositeConstruct %struct_t${structConstruct}\n"
+		// Insert the value
+		"%comp_obj  = OpCompositeInsert %struct_t %inval %struct ${insertIndexes}\n"
+		// Store the object
+		"%struct_v  = OpVariable %struct_p Function\n"
+		"             OpStore %struct_v %comp_obj\n"
+		// Get deepest possible composite pointer
+		"%inner_ptr = OpInBoundsAccessChain %composite_p %struct_v${accessChainIndexes}\n"
+		"%read_obj  = OpLoad %composite %inner_ptr\n"
+		// Read back the stored value
+		"%read_val  = OpCompositeExtract %custom %read_obj ${extractIndex}\n"
+		"             OpStore %outloc %read_val\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n").specialize(parameters);
+}
+
+tcu::TestCaseGroup* createOpInBoundsAccessChainGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opinboundsaccesschain", "Test the OpInBoundsAccessChain instruction"));
+	de::Random						rnd				(deStringHash(group->getName()));
+
+	for (int type = TYPE_INT; type != TYPE_END; ++type)
+	{
+		NumberType						numberType	= NumberType(type);
+		const string					typeName	= getNumberTypeName(numberType);
+		const string					description	= "Test the OpInBoundsAccessChain instruction with " + typeName + "s";
+		de::MovePtr<tcu::TestCaseGroup>	subGroup	(new tcu::TestCaseGroup(testCtx, typeName.c_str(), description.c_str()));
+
+		vector<map<string, string> >	testCases;
+		createCompositeCases(testCases, rnd, numberType);
+
+		for (vector<map<string, string> >::const_iterator test = testCases.begin(); test != testCases.end(); ++test)
+		{
+			ComputeShaderSpec	spec;
+
+			// Number of components inside of a struct
+			deUint32 structComponents = rnd.getInt(2, 8);
+			// Component index value
+			deUint32 structIndex = rnd.getInt(0, structComponents - 1);
+			AssemblyStructInfo structInfo(structComponents, structIndex);
+
+			spec.assembly = specializeInBoundsShaderTemplate(numberType, structInfo, *test);
+
+			switch (numberType)
+			{
+				case TYPE_INT:
+				{
+					deInt32 number = getInt(rnd);
+					spec.inputs.push_back(createCompositeBuffer<deInt32>(number));
+					spec.outputs.push_back(createCompositeBuffer<deInt32>(number));
+					break;
+				}
+				case TYPE_UINT:
+				{
+					deUint32 number = rnd.getUint32();
+					spec.inputs.push_back(createCompositeBuffer<deUint32>(number));
+					spec.outputs.push_back(createCompositeBuffer<deUint32>(number));
+					break;
+				}
+				case TYPE_FLOAT:
+				{
+					float number = rnd.getFloat();
+					spec.inputs.push_back(createCompositeBuffer<float>(number));
+					spec.outputs.push_back(createCompositeBuffer<float>(number));
+					break;
+				}
+				default:
+					DE_ASSERT(false);
+			}
+			spec.numWorkGroups = IVec3(1, 1, 1);
+			subGroup->addChild(new SpvAsmComputeShaderCase(testCtx, test->at("name").c_str(), "OpInBoundsAccessChain test", spec));
+		}
+		group->addChild(subGroup.release());
+	}
+	return group.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> instructionTests	(new tcu::TestCaseGroup(testCtx, "instruction", "Instructions with special opcodes/operands"));
@@ -8431,6 +8602,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createSConvertTests(testCtx));
 	computeTests->addChild(createUConvertTests(testCtx));
 	computeTests->addChild(createOpCompositeInsertGroup(testCtx));
+	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
 
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
