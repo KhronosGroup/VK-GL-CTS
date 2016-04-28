@@ -8252,21 +8252,22 @@ void createCompositeCases (vector<map<string, string> >& testCases, de::Random& 
 	}
 }
 
-const string specializeCompositeShaderTemplate (const NumberType type, const map<string, string>& params)
+const string getAssemblyTypeDeclaration (const NumberType type)
+{
+	switch (type)
+	{
+		case TYPE_INT:		return "OpTypeInt 32 1";
+		case TYPE_UINT:		return "OpTypeInt 32 0";
+		case TYPE_FLOAT:	return "OpTypeFloat 32";
+		default:			DE_ASSERT(false); return "";
+	}
+}
+
+const string specializeCompositeInsertShaderTemplate (const NumberType type, const map<string, string>& params)
 {
 	map<string, string>	parameters(params);
 
-	string typeAssembly;
-
-	switch (type)
-	{
-		case TYPE_INT:		typeAssembly = "OpTypeInt 32 1"; break;
-		case TYPE_UINT:		typeAssembly = "OpTypeInt 32 0"; break;
-		case TYPE_FLOAT:	typeAssembly = "OpTypeFloat 32"; break;
-		default:			DE_ASSERT(false);
-	}
-
-	parameters["typeDeclaration"] = typeAssembly;
+	parameters["typeDeclaration"] = getAssemblyTypeDeclaration(type);
 
 	return StringTemplate (
 		"OpCapability Shader\n"
@@ -8363,7 +8364,7 @@ tcu::TestCaseGroup* createOpCompositeInsertGroup (tcu::TestContext& testCtx)
 		{
 			ComputeShaderSpec	spec;
 
-			spec.assembly = specializeCompositeShaderTemplate(numberType, *test);
+			spec.assembly = specializeCompositeInsertShaderTemplate(numberType, *test);
 
 			switch (numberType)
 			{
