@@ -2125,6 +2125,19 @@ tcu::TestStatus createMaxConcurrentTest (Context& context, typename Object::Para
 }
 
 template<typename Object>
+int getCreateCount (void)
+{
+	return 100;
+}
+
+template<>
+int getCreateCount<Device> (void)
+{
+	// Creating VkDevice can take significantly longer than other object types
+	return 20;
+}
+
+template<typename Object>
 class CreateThread : public ThreadGroupThread
 {
 public:
@@ -2136,8 +2149,10 @@ public:
 
 	void runThread (void)
 	{
-		const int	numIters			= 100;
-		const int	itersBetweenSyncs	= 20;
+		const int	numIters			= getCreateCount<Object>();
+		const int	itersBetweenSyncs	= numIters / 5;
+
+		DE_ASSERT(itersBetweenSyncs > 0);
 
 		for (int iterNdx = 0; iterNdx < numIters; iterNdx++)
 		{
