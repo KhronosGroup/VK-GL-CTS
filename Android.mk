@@ -295,6 +295,7 @@ LOCAL_SRC_FILES := \
 	modules/egl/teglTestPackageEntry.cpp \
 	modules/egl/teglVGRenderUtil.cpp \
 	modules/egl/teglMultiContextTests.cpp \
+	modules/egl/teglThreadCleanUpTests.cpp \
     modules/gles2/tes2CapabilityTests.cpp \
 	modules/gles2/tes2Context.cpp \
 	modules/gles2/tes2InfoTests.cpp \

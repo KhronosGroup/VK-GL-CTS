@@ -1,0 +1,2 @@
+# EGL thread clean up tests
+dEQP-EGL.functional.thread_cleanup.*
