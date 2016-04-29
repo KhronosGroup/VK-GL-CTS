@@ -66,6 +66,11 @@ namespace memory
 namespace
 {
 
+enum
+{
+	REFERENCE_BYTES_PER_BYTE = 2
+};
+
 size_t computeDeviceMemorySystemMemFootprint (const DeviceInterface& vk, VkDevice device)
 {
 	AllocationCallbackRecorder	callbackRecorder	(getSystemAllocator());
@@ -622,6 +627,8 @@ public:
 
 		m_usage += size;
 		m_totalMemTracker.allocate(getMemoryClass(), size);
+		m_totalMemTracker.allocate(MEMORY_CLASS_SYSTEM, size * REFERENCE_BYTES_PER_BYTE);
+		m_totalMemTracker.allocate(getMemoryClass(), size);
 		m_objects.push_back(object);
 
 		return object;
@@ -636,6 +643,7 @@ public:
 	{
 		removeFirstEqual(m_objects, object);
 		m_usage -= object->getSize();
+		m_totalMemTracker.free(MEMORY_CLASS_SYSTEM, object->getSize() * REFERENCE_BYTES_PER_BYTE);
 		m_totalMemTracker.free(getMemoryClass(), object->getSize());
 		delete object;
 	}
@@ -663,19 +671,22 @@ private:
 
 			DE_ASSERT(totalUsage <= totalSysMem);
 
-			return de::min(availableInHeap, totalSysMem-totalUsage);
+			return de::min(availableInHeap, (totalSysMem-totalUsage) / (1 + REFERENCE_BYTES_PER_BYTE));
 		}
 		else
 		{
+			const VkDeviceSize	totalUsage	= m_totalMemTracker.getTotalUsage();
+			const VkDeviceSize	totalSysMem	= (VkDeviceSize)m_limits.totalSystemMemory;
+
 			const MemoryClass	memClass		= getMemoryClass();
 			const VkDeviceSize	totalMemClass	= memClass == MEMORY_CLASS_SYSTEM
-												? (VkDeviceSize)m_limits.totalSystemMemory
+												? (VkDeviceSize)(m_limits.totalSystemMemory / (1 + REFERENCE_BYTES_PER_BYTE))
 												: m_limits.totalDeviceLocalMemory;
 			const VkDeviceSize	usedMemClass	= m_totalMemTracker.getUsage(memClass);
 
 			DE_ASSERT(usedMemClass <= totalMemClass);
 
-			return de::min(availableInHeap, totalMemClass-usedMemClass);
+			return de::min(de::min(availableInHeap, totalMemClass-usedMemClass), (totalSysMem - totalUsage) / REFERENCE_BYTES_PER_BYTE);
 		}
 	}
 
