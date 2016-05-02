@@ -38,8 +38,6 @@
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
 
-#include "deClock.h"
-
 #include <vector>
 #include <string>
 #include <sstream>
@@ -463,20 +461,14 @@ public:
 
 	IterateResult	iterate					(void)
 	{
-		const deUint64	timeoutUs	= 100;
-		const Library&	egl			= m_eglTestCtx.getLibrary();
-		TestLog&		log			= m_testCtx.getLog();
-		deUint64		beginTimeUs;
-		deUint64		endTimeUs;
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
 		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
 		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
-		beginTimeUs = deGetMicroseconds();
 		EGLint status = egl.clientWaitSyncKHR(m_eglDisplay, m_sync, 0, 0);
-		endTimeUs = deGetMicroseconds();
-
 		log << TestLog::Message << status << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", 0, 0)" << TestLog::EndMessage;
 
 		if (m_syncType == EGL_SYNC_FENCE_KHR)
@@ -485,15 +477,6 @@ public:
 			TCU_CHECK(status == EGL_TIMEOUT_EXPIRED_KHR);
 		else
 			DE_ASSERT(DE_FALSE);
-
-		log << TestLog::Message << "eglClientWaitSyncKHR() took " << (endTimeUs - beginTimeUs) << "us to finish." << TestLog::EndMessage;
-
-		if (endTimeUs - beginTimeUs > timeoutUs)
-		{
-			log << TestLog::Message << "Call without timeout should finish in less than: " << timeoutUs << "us." << TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "eglClientWaitSyncKHR(timeout=0) didn't finish fast enough");
-			return STOP;
-		}
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 		return STOP;
