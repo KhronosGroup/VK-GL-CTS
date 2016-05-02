@@ -577,35 +577,52 @@ tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 	return tcu::TestStatus::pass("Creating swapchain succeeded");
 }
 
-tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters params)
+class CreateSwapchainSimulateOOMTest : public TestInstance
 {
-	tcu::TestLog&	log	= context.getTestContext().getLog();
+public:
+							CreateSwapchainSimulateOOMTest	(Context& context, TestParameters params)
+			: TestInstance			(context)
+			, m_params				(params)
+			, m_numPassingAllocs	(0)
+	{
+	}
+
+	tcu::TestStatus			iterate							(void);
+
+private:
+	const TestParameters	m_params;
+	deUint32				m_numPassingAllocs;
+};
+
+tcu::TestStatus CreateSwapchainSimulateOOMTest::iterate (void)
+{
+	tcu::TestLog&	log	= m_context.getTestContext().getLog();
 
 	// \note This is a little counter-intuitive order (iterating on callback count until all cases pass)
 	//		 but since cases depend on what device reports, it is the only easy way. In practice
 	//		 we should see same number of total callbacks (and executed code) regardless of the
 	//		 loop order.
 
-	for (deUint32 numPassingAllocs = 0; numPassingAllocs <= 16*1024u; ++numPassingAllocs)
+	if (m_numPassingAllocs <= 16*1024u)
 	{
 		AllocationCallbackRecorder	allocationRecorder	(getSystemAllocator());
-		DeterministicFailAllocator	failingAllocator	(allocationRecorder.getCallbacks(), numPassingAllocs);
+		DeterministicFailAllocator	failingAllocator	(allocationRecorder.getCallbacks(), m_numPassingAllocs);
 		bool						gotOOM				= false;
 
-		log << TestLog::Message << "Testing with " << numPassingAllocs << " first allocations succeeding" << TestLog::EndMessage;
+		log << TestLog::Message << "Testing with " << m_numPassingAllocs << " first allocations succeeding" << TestLog::EndMessage;
 
 		try
 		{
-			const InstanceHelper					instHelper	(context, params.wsiType, failingAllocator.getCallbacks());
-			const NativeObjects						native		(context, instHelper.supportedExtensions, params.wsiType);
+			const InstanceHelper					instHelper	(m_context, m_params.wsiType, failingAllocator.getCallbacks());
+			const NativeObjects						native		(m_context, instHelper.supportedExtensions, m_params.wsiType);
 			const Unique<VkSurfaceKHR>				surface		(createSurface(instHelper.vki,
 																			   *instHelper.instance,
-																			   params.wsiType,
+																			   m_params.wsiType,
 																			   *native.display,
 																			   *native.window,
 																			   failingAllocator.getCallbacks()));
-			const DeviceHelper						devHelper	(context, instHelper.vki, *instHelper.instance, *surface, failingAllocator.getCallbacks());
-			const vector<VkSwapchainCreateInfoKHR>	cases		(generateSwapchainParameterCases(params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
+			const DeviceHelper						devHelper	(m_context, instHelper.vki, *instHelper.instance, *surface, failingAllocator.getCallbacks());
+			const vector<VkSwapchainCreateInfoKHR>	cases		(generateSwapchainParameterCases(m_params.wsiType, m_params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
 
 			for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 			{
@@ -615,7 +632,7 @@ tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters
 				curParams.queueFamilyIndexCount	= 1u;
 				curParams.pQueueFamilyIndices	= &devHelper.queueFamilyIndex;
 
-				context.getTestContext().getLog()
+				log
 					<< TestLog::Message << "Sub-case " << (caseNdx+1) << " / " << cases.size() << TestLog::EndMessage;
 
 				{
@@ -636,14 +653,17 @@ tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters
 		{
 			log << TestLog::Message << "Creating surface succeeded!" << TestLog::EndMessage;
 
-			if (numPassingAllocs == 0)
+			if (m_numPassingAllocs == 0)
 				return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks were not used");
 			else
 				return tcu::TestStatus::pass("OOM simulation completed");
 		}
-	}
 
-	return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Creating swapchain did not succeed, callback limit exceeded");
+		m_numPassingAllocs++;
+		return tcu::TestStatus::incomplete();
+	}
+	else
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Creating swapchain did not succeed, callback limit exceeded");
 }
 
 struct GroupParameters
@@ -671,6 +691,16 @@ void populateSwapchainGroup (tcu::TestCaseGroup* testGroup, GroupParameters para
 		const TestDimension		testDimension	= (TestDimension)dimensionNdx;
 
 		addFunctionCase(testGroup, getTestDimensionName(testDimension), "", params.function, TestParameters(params.wsiType, testDimension));
+	}
+}
+
+void populateSwapchainOOMGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
+{
+	for (int dimensionNdx = 0; dimensionNdx < TEST_DIMENSION_LAST; ++dimensionNdx)
+	{
+		const TestDimension		testDimension	= (TestDimension)dimensionNdx;
+
+		testGroup->addChild(new InstanceFactory1<CreateSwapchainSimulateOOMTest, TestParameters>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, getTestDimensionName(testDimension), "", TestParameters(wsiType, testDimension)));
 	}
 }
 
@@ -1559,9 +1589,9 @@ void populateRenderGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 
 void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	addTestGroup(testGroup, "create",			"Create VkSwapchain with various parameters",					populateSwapchainGroup, GroupParameters(wsiType, createSwapchainTest));
-	addTestGroup(testGroup, "simulate_oom",		"Simulate OOM using callbacks during swapchain construction",	populateSwapchainGroup, GroupParameters(wsiType, createSwapchainSimulateOOMTest));
-	addTestGroup(testGroup, "render",			"Rendering Tests",												populateRenderGroup,	wsiType);
+	addTestGroup(testGroup, "create",			"Create VkSwapchain with various parameters",					populateSwapchainGroup,		GroupParameters(wsiType, createSwapchainTest));
+	addTestGroup(testGroup, "simulate_oom",		"Simulate OOM using callbacks during swapchain construction",	populateSwapchainOOMGroup,	wsiType);
+	addTestGroup(testGroup, "render",			"Rendering Tests",												populateRenderGroup,		wsiType);
 }
 
 } // wsi
