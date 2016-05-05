@@ -26565,13 +26565,7 @@
 					</TestCase>
 				</TestSuite>
 				<TestCase name="wrap">
-					<Test name="clamp_clamp_nearest_pot_rgba8888">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="clamp_clamp_nearest_pot_rgb888">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="clamp_clamp_nearest_pot_l8">
+					<Test name="clamp_clamp_nearest_npot_rgba8888">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="clamp_clamp_nearest_npot_rgb888">
@@ -26604,40 +26598,34 @@
 					<Test name="clamp_clamp_linear_npot_l8">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="clamp_repeat_nearest_pot_rgba8888">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="clamp_mirror_nearest_pot_rgba8888">
+					<Test name="clamp_repeat_linear_pot_rgba8888">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="clamp_mirror_linear_pot_rgba8888">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="repeat_clamp_nearest_pot_rgba8888">
+					<Test name="repeat_clamp_linear_pot_rgba8888">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="repeat_repeat_nearest_pot_rgba8888">
+					<Test name="repeat_repeat_linear_pot_rgba8888">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="repeat_mirror_nearest_pot_rgba8888">
+					<Test name="repeat_mirror_linear_pot_rgba8888">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="repeat_mirror_nearest_pot_rgb888">
+					<Test name="repeat_mirror_linear_pot_rgb888">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="repeat_mirror_nearest_pot_l8">
+					<Test name="repeat_mirror_linear_pot_rgba4444">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="mirror_clamp_nearest_pot_rgba8888">
+					<Test name="repeat_mirror_linear_pot_l8">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="mirror_clamp_linear_pot_rgba8888">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="mirror_repeat_nearest_pot_rgba8888">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="mirror_mirror_nearest_pot_rgba8888">
+					<Test name="mirror_repeat_linear_pot_rgba8888">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="mirror_mirror_linear_pot_rgba8888">
