@@ -53,3 +53,19 @@ dEQP-GLES2.functional.texture.wrap.mirror_mirror_linear_pot_etc1
 
 # Bug 26906226
 dEQP-GLES2.functional.texture.units.*
+
+# Bug 26542781
+dEQP-GLES2.functional.texture.wrap.clamp_clamp_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.clamp_clamp_nearest_pot_rgb888
+dEQP-GLES2.functional.texture.wrap.clamp_clamp_nearest_pot_l8
+dEQP-GLES2.functional.texture.wrap.clamp_repeat_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.clamp_mirror_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.repeat_clamp_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.repeat_repeat_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.repeat_mirror_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.repeat_mirror_nearest_pot_rgb888
+dEQP-GLES2.functional.texture.wrap.repeat_mirror_nearest_pot_l8
+dEQP-GLES2.functional.texture.wrap.mirror_clamp_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.mirror_repeat_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.mirror_mirror_nearest_pot_rgba8888
+
