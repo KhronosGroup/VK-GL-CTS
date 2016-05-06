@@ -174,7 +174,7 @@ PACKAGES = [
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
-		"f2d8a5c53fda69a7e19defbda7964f380da54ad1",
+		"af459216a18a08c2e3eec880329c3a7a1244ddeb",
 		"glslang"),
 ]
 

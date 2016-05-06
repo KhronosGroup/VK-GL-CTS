@@ -18,16 +18,7 @@ else ()
 	set(GLSLANG_ABS_PATH "${CMAKE_SOURCE_DIR}/${GLSLANG_SRC_PATH}")
 endif ()
 
-find_package(BISON)
-
-# \todo [2015-06-24 pyry] Full C++11 support on Android requires using CLang + libc++
-if (NOT BISON_FOUND AND DE_OS_IS_WIN32 AND EXISTS ${GLSLANG_ABS_PATH}/tools/bison.exe)
-	message(STATUS "Using pre-built bison executable")
-	set(BISON_EXECUTABLE ${GLSLANG_ABS_PATH}/tools/bison.exe)
-	set(BISON_FOUND ON)
-endif ()
-
-if (BISON_FOUND AND EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp AND NOT DE_OS_IS_ANDROID)
+if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 	message(STATUS "glslang found; building with DEQP_SUPPORT_GLSLANG")
 
 	include_directories(
@@ -40,7 +31,6 @@ if (BISON_FOUND AND EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cp
 		${GLSLANG_ABS_PATH}/glslang/OSDependent
 		${GLSLANG_ABS_PATH}/OGLCompilersDLL
 		${GLSLANG_ABS_PATH}/SPIRV
-		${CMAKE_CURRENT_BINARY_DIR}
 		)
 
 	set(GLSLANG_SRCS
@@ -56,6 +46,7 @@ if (BISON_FOUND AND EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/ShaderLang.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/SymbolTable.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/Versions.cpp
+		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/glslang_tab.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/intermOut.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/limits.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/linkValidate.cpp
@@ -71,6 +62,10 @@ if (BISON_FOUND AND EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cp
 		${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp
 		${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/Link.cpp
 		${GLSLANG_ABS_PATH}/OGLCompilersDLL/InitializeDll.cpp
+		
+		${GLSLANG_ABS_PATH}/hlsl/hlslGrammar.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslParseHelper.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslScanContext.cpp
 
 		${GLSLANG_ABS_PATH}/SPIRV/GlslangToSpv.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/InReadableOrder.cpp
@@ -78,9 +73,6 @@ if (BISON_FOUND AND EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cp
 		${GLSLANG_ABS_PATH}/SPIRV/SPVRemapper.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/doc.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/disassemble.cpp
-
-		${CMAKE_CURRENT_BINARY_DIR}/glslang_tab.cpp
-		${CMAKE_CURRENT_BINARY_DIR}/glslang_tab.cpp.h
 
 		osinclude.cpp
 		)
@@ -91,11 +83,6 @@ if (BISON_FOUND AND EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cp
 	if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 	endif ()
-
-	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/glslang_tab.cpp ${CMAKE_CURRENT_BINARY_DIR}/glslang_tab.cpp.h
-					   COMMAND ${BISON_EXECUTABLE} --defines=${CMAKE_CURRENT_BINARY_DIR}/glslang_tab.cpp.h -t MachineIndependent/glslang.y -o ${CMAKE_CURRENT_BINARY_DIR}/glslang_tab.cpp
-					   MAIN_DEPENDENCY ${GLSLANG_ABS_PATH}/glslang/MachineIndependent/glslang.y
-					   WORKING_DIRECTORY ${GLSLANG_ABS_PATH}/glslang)
 
 	add_library(glslang STATIC ${GLSLANG_SRCS})
 	target_link_libraries(glslang dethread ${ZLIB_LIBRARY})
