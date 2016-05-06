@@ -24,6 +24,11 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktSynchronizationTests.hpp"
 #include "vktSynchronizationSmokeTests.hpp"
+#include "vktSynchronizationBasicFenceTests.hpp"
+#include "vktSynchronizationBasicSemaphoreTests.hpp"
+#include "vktSynchronizationBasicEventTests.hpp"
+
+#include "deUniquePtr.hpp"
 
 namespace vkt
 {
@@ -35,9 +40,15 @@ namespace
 
 void createChildren (tcu::TestCaseGroup* group)
 {
-	tcu::TestContext& testCtx = group->getTestContext();
+	tcu::TestContext&				testCtx		= group->getTestContext();
+	de::MovePtr<tcu::TestCaseGroup> basicTests	(new tcu::TestCaseGroup(testCtx, "basic", "Basic synchronization tests"));
 	
+	basicTests->addChild(createBasicFenceTests(testCtx));
+	basicTests->addChild(createBasicSemaphoreTests(testCtx));
+	basicTests->addChild(createBasicEventTests(testCtx));
+
 	group->addChild(createSmokeTests(testCtx));
+	group->addChild(basicTests.release());
 }
 
 } // anonymous

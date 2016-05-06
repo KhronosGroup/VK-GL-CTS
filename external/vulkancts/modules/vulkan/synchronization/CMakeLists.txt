@@ -7,6 +7,12 @@ set(DEQP_VK_SYNCHRONIZATION_SRCS
 	vktSynchronizationUtil.hpp
 	vktSynchronizationSmokeTests.cpp
 	vktSynchronizationSmokeTests.hpp
+	vktSynchronizationBasicFenceTests.cpp
+	vktSynchronizationBasicFenceTests.hpp
+	vktSynchronizationBasicSemaphoreTests.cpp
+	vktSynchronizationBasicSemaphoreTests.hpp
+	vktSynchronizationBasicEventTests.cpp
+	vktSynchronizationBasicEventTests.hpp
 	)
 
 set(DEQP_VK_SYNCHRONIZATION_LIBS
