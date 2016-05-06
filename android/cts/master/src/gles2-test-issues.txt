@@ -1,6 +1,7 @@
 # Bug 21526557
 dEQP-GLES2.functional.texture.size.cube.256x256_rgba4444
 dEQP-GLES2.functional.texture.size.cube.512x512_rgba4444
+
 # Bug 22665757
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.rgb16f
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb16f
@@ -49,3 +50,18 @@ dEQP-GLES2.functional.texture.wrap.repeat_mirror_linear_pot_etc1
 dEQP-GLES2.functional.texture.wrap.mirror_clamp_linear_pot_etc1
 dEQP-GLES2.functional.texture.wrap.mirror_repeat_linear_pot_etc1
 dEQP-GLES2.functional.texture.wrap.mirror_mirror_linear_pot_etc1
+
+# Bug 26542781
+dEQP-GLES2.functional.texture.wrap.clamp_clamp_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.clamp_clamp_nearest_pot_rgb888
+dEQP-GLES2.functional.texture.wrap.clamp_clamp_nearest_pot_l8
+dEQP-GLES2.functional.texture.wrap.clamp_repeat_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.clamp_mirror_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.repeat_clamp_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.repeat_repeat_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.repeat_mirror_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.repeat_mirror_nearest_pot_rgb888
+dEQP-GLES2.functional.texture.wrap.repeat_mirror_nearest_pot_l8
+dEQP-GLES2.functional.texture.wrap.mirror_clamp_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.mirror_repeat_nearest_pot_rgba8888
+dEQP-GLES2.functional.texture.wrap.mirror_mirror_nearest_pot_rgba8888
