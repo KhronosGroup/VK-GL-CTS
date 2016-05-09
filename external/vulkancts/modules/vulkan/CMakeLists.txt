@@ -18,6 +18,7 @@ add_subdirectory(wsi)
 add_subdirectory(sparse_resources)
 add_subdirectory(tessellation)
 add_subdirectory(rasterization)
+add_subdirectory(synchronization)
 
 include_directories(
 	api
@@ -38,6 +39,7 @@ include_directories(
 	sparse_resources
 	tessellation
 	rasterization
+	synchronization
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -55,8 +57,6 @@ set(DEQP_VK_COMMON_SRCS
 	vktTestGroupUtil.hpp
 	vktInfoTests.cpp
 	vktInfoTests.hpp
-	vktSynchronization.cpp
-	vktSynchronization.hpp
 	)
 
 set(DEQP_VK_COMMON_LIBS
@@ -81,6 +81,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-sparse-resources
 	deqp-vk-tessellation
 	deqp-vk-rasterization
+	deqp-vk-synchronization
 	)
 
 add_library(deqp-vk-common STATIC ${DEQP_VK_COMMON_SRCS})

@@ -1,5 +1,5 @@
-#ifndef _VKTSYNCHRONIZATION_HPP
-#define _VKTSYNCHRONIZATION_HPP
+#ifndef _VKTSYNCHRONIZATIONSMOKETESTS_HPP
+#define _VKTSYNCHRONIZATIONSMOKETESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -28,9 +28,12 @@
 
 namespace vkt
 {
+namespace synchronization
+{
 
-tcu::TestCaseGroup*		createSynchronizationTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createSmokeTests (tcu::TestContext& testCtx);
 
+} // synchronization
 } // vkt
 
-#endif // _VKTSYNCHRONIZATION_HPP
+#endif // _VKTSYNCHRONIZATIONSMOKETESTS_HPP
