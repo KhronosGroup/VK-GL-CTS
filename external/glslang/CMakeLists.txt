@@ -66,6 +66,8 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 		${GLSLANG_ABS_PATH}/hlsl/hlslGrammar.cpp
 		${GLSLANG_ABS_PATH}/hlsl/hlslParseHelper.cpp
 		${GLSLANG_ABS_PATH}/hlsl/hlslScanContext.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslTokenStream.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslOpMap.cpp
 
 		${GLSLANG_ABS_PATH}/SPIRV/GlslangToSpv.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/InReadableOrder.cpp
@@ -73,6 +75,7 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 		${GLSLANG_ABS_PATH}/SPIRV/SPVRemapper.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/doc.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/disassemble.cpp
+		${GLSLANG_ABS_PATH}/SPIRV/Logger.cpp
 
 		osinclude.cpp
 		)
