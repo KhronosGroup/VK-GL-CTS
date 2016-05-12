@@ -29,6 +29,7 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent
 		${GLSLANG_ABS_PATH}/glslang/GenericCodeGen
 		${GLSLANG_ABS_PATH}/glslang/OSDependent
+		${GLSLANG_ABS_PATH}/hlsl
 		${GLSLANG_ABS_PATH}/OGLCompilersDLL
 		${GLSLANG_ABS_PATH}/SPIRV
 		${GLSLANG_ABS_PATH}/hlsl
@@ -52,6 +53,7 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/limits.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/linkValidate.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/parseConst.cpp
+		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/propagateNoContraction.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/reflection.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/Pp.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/PpAtom.cpp
@@ -64,10 +66,17 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 		${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/Link.cpp
 		${GLSLANG_ABS_PATH}/OGLCompilersDLL/InitializeDll.cpp
 
+		${GLSLANG_ABS_PATH}/hlsl/hlslGrammar.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslOpMap.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslParseHelper.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslScanContext.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslTokenStream.cpp
+
 		${GLSLANG_ABS_PATH}/SPIRV/GlslangToSpv.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/InReadableOrder.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/SpvBuilder.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/SPVRemapper.cpp
+		${GLSLANG_ABS_PATH}/SPIRV/Logger.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/doc.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/disassemble.cpp
 
