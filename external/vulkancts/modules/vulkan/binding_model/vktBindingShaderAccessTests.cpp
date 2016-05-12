@@ -1784,7 +1784,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 	m_vki.cmdBindDescriptorSets(*cmd, vk::VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, 0, m_numDescriptorSets, m_descriptorSets, m_numDynamicOffsets, m_dynamicOffsets);
 
 	if (m_numPreBarriers)
-		m_vki.cmdPipelineBarrier(*cmd, 0u, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0,
+		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0,
 								 0, (const vk::VkMemoryBarrier*)DE_NULL,
 								 m_numPreBarriers, m_preBarriers,
 								 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
@@ -3118,7 +3118,7 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 
 	// record command buffer
 	VK_CHECK(vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
-	vki.cmdPipelineBarrier(*cmd, 0u, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0,
+	vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0,
 						   0, (const vk::VkMemoryBarrier*)DE_NULL,
 						   1, &preMemoryBarrier,
 						   1, &preImageBarrier);
