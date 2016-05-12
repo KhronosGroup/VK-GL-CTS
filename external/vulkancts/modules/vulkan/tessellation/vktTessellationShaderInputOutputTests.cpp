@@ -305,7 +305,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	vertexData.reserve(caseDef.inPatchSize);
 	for (int i = 0; i < caseDef.inPatchSize; ++i)
 	{
-		const float f = static_cast<float>(i) / (caseDef.inPatchSize - 1);
+		const float f = static_cast<float>(i) / static_cast<float>(caseDef.inPatchSize - 1);
 		vertexData.push_back(f*f);
 	}
 	const VkDeviceSize vertexBufferSize = sizeof(float) * vertexData.size();
@@ -411,7 +411,7 @@ void initPrograms (vk::SourceCollections& programCollection, const CaseDefinitio
 
 	// Tessellation evaluation shader
 	{
-		const float xScale = 1.0f / getNumPrimitives(caseDef.caseType);
+		const float xScale = 1.0f / static_cast<float>(getNumPrimitives(caseDef.caseType));
 
 		std::ostringstream src;
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
@@ -488,7 +488,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	const VkDeviceSize vertexBufferSize = sizeof(float) * vertexData.size();
 
 	for (int i = 0; i < numPrimitives; ++i)
-		vertexData[INPUT_PATCH_SIZE * i] = static_cast<float>(i) / numPrimitives;
+		vertexData[INPUT_PATCH_SIZE * i] = static_cast<float>(i) / static_cast<float>(numPrimitives);
 
 	tcu::TextureLevel referenceImage;
 	if (caseDef.usesReferenceImageFromFile)

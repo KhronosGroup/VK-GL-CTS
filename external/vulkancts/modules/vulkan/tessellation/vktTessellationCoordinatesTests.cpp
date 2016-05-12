@@ -235,7 +235,11 @@ void drawTessCoordPoint (tcu::Surface& dst, const TessPrimitiveType primitiveTyp
 
 					  : tcu::Vec2(-1.0f);
 
-	drawPoint(dst, static_cast<int>(dstPos.x() * dst.getWidth()), static_cast<int>(dstPos.y() * dst.getHeight()), color, size);
+	drawPoint(dst,
+			  static_cast<int>(dstPos.x() * (float)dst.getWidth()),
+			  static_cast<int>(dstPos.y() * (float)dst.getHeight()),
+			  color,
+			  size);
 }
 
 void drawTessCoordVisualization (tcu::Surface& dst, const TessPrimitiveType primitiveType, const std::vector<tcu::Vec3>& coords)
@@ -485,7 +489,7 @@ tcu::TestStatus TessCoordTestInstance::iterate (void)
 	for (deUint32 i = 0; i < tessLevelCases.size(); ++i)
 		allReferenceTessCoords[i] = generateReferenceTessCoords(m_primitiveType, m_spacingMode, &tessLevelCases[i].inner[0], &tessLevelCases[i].outer[0]);
 
-	const int maxNumVertices = static_cast<int>(std::max_element(allReferenceTessCoords.begin(), allReferenceTessCoords.end(), SizeLessThan<std::vector<tcu::Vec3> >())->size());
+	const size_t maxNumVertices = static_cast<int>(std::max_element(allReferenceTessCoords.begin(), allReferenceTessCoords.end(), SizeLessThan<std::vector<tcu::Vec3> >())->size());
 
 	// Input buffer: tessellation levels. Data is filled in later.
 
@@ -494,7 +498,7 @@ tcu::TestStatus TessCoordTestInstance::iterate (void)
 
 	// Output buffer: number of invocations + padding + tessellation coordinates. Initialized later.
 
-	const int          resultBufferTessCoordsOffset	 = 4 * sizeof(deInt32);
+	const int          resultBufferTessCoordsOffset	 = 4 * (int)sizeof(deInt32);
 	const int          extraneousVertices			 = 16;	// allow some room for extraneous vertices from duplicate shader invocations (number is arbitrary)
 	const VkDeviceSize resultBufferSizeBytes		 = resultBufferTessCoordsOffset + (maxNumVertices + extraneousVertices)*sizeof(tcu::Vec4);
 	const Buffer       resultBuffer					 (vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);

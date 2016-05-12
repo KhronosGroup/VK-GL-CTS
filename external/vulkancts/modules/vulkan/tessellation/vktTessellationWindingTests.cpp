@@ -337,7 +337,7 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 		{
 			// State is slightly different on the first iteration.
 			const VkImageLayout currentLayout = (caseNdx == 0 ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-			const VkAccessFlags srcFlags	  = (caseNdx == 0 ? (VkAccessFlags)0          : VK_ACCESS_TRANSFER_READ_BIT);
+			const VkAccessFlags srcFlags	  = (caseNdx == 0 ? (VkAccessFlags)0          : (VkAccessFlags)VK_ACCESS_TRANSFER_READ_BIT);
 
 			const VkImageMemoryBarrier colorAttachmentLayoutBarrier = makeImageMemoryBarrier(
 				srcFlags, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,

@@ -73,9 +73,9 @@ private:
 
 inline GenericValue makeValueBool32	 (const bool a)		{ return GenericValue(&a, sizeof(a)); }
 inline GenericValue makeValueInt32	 (const deInt32 a)	{ return GenericValue(&a, sizeof(a)); }
-inline GenericValue makeValueInt64	 (const deInt64 a)	{ return GenericValue(&a, sizeof(a)); }
+// \note deInt64 not tested
 inline GenericValue makeValueUint32	 (const deUint32 a)	{ return GenericValue(&a, sizeof(a)); }
-inline GenericValue makeValueUint64	 (const deUint64 a)	{ return GenericValue(&a, sizeof(a)); }
+// \note deUint64 not tested
 inline GenericValue makeValueFloat32 (const float a)	{ return GenericValue(&a, sizeof(a)); }
 inline GenericValue makeValueFloat64 (const double a)	{ return GenericValue(&a, sizeof(a)); }
 
@@ -204,7 +204,7 @@ Specialization::Specialization (const std::vector<SpecConstant>& specConstants)
 		{
 			m_data.push_back(it->specValue);
 			m_entries.push_back(makeSpecializationMapEntry(it->specID, offset, it->size));
-			offset += sizeof(GenericValue);
+			offset += (deUint32)sizeof(GenericValue);
 		}
 
 	if (m_entries.size() > 0)
@@ -689,10 +689,12 @@ FeatureFlags getShaderStageRequirements (const VkShaderStageFlags stageFlags)
 
 	// All tests use SSBO writes to read back results.
 	if ((stageFlags & VK_SHADER_STAGE_ALL_GRAPHICS) != 0)
+	{
 		if ((stageFlags & VK_SHADER_STAGE_FRAGMENT_BIT) != 0)
 			features |= FEATURE_FRAGMENT_STORES_AND_ATOMICS;
 		else
 			features |= FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS;
+	}
 
 	return features;
 }
@@ -1462,7 +1464,7 @@ CaseDefinition makeMatrixVectorCompositeCaseDefinition (const glu::DataType type
 		globalCode.str(),
 		generateShaderChecksumComputationCode(scalarType, varName, accumType, size1, size2, numCombinations),
 		computeExpectedValues(specValue, scalarType, numCombinations),
-		(scalarType == glu::TYPE_DOUBLE ? FEATURE_SHADER_FLOAT_64 : (FeatureFlags)0),
+		(scalarType == glu::TYPE_DOUBLE ? (FeatureFlags)FEATURE_SHADER_FLOAT_64 : (FeatureFlags)0),
 	};
 	return def;
 }
@@ -1505,7 +1507,7 @@ CaseDefinition makeArrayCompositeCaseDefinition (const glu::DataType elemType, c
 		globalCode.str(),
 		generateShaderChecksumComputationCode(elemType, varName, accumType, size1, size2, numCombinations),
 		computeExpectedValues(specValue, scalarType, numCombinations),
-		(scalarType == glu::TYPE_DOUBLE ? FEATURE_SHADER_FLOAT_64 : (FeatureFlags)0),
+		(scalarType == glu::TYPE_DOUBLE ? (FeatureFlags)FEATURE_SHADER_FLOAT_64 : (FeatureFlags)0),
 	};
 	return def;
 }
@@ -1560,7 +1562,7 @@ CaseDefinition makeStructCompositeCaseDefinition (const glu::DataType memberType
 		globalCode.str(),
 		mainCode.str(),
 		makeVector(OffsetValue(getDataTypeScalarSizeBytes(memberType), 0, makeValue(scalarType, checksum))),
-		(scalarType == glu::TYPE_DOUBLE ? FEATURE_SHADER_FLOAT_64 : (FeatureFlags)0),
+		(scalarType == glu::TYPE_DOUBLE ? (FeatureFlags)FEATURE_SHADER_FLOAT_64 : (FeatureFlags)0),
 	};
 	return def;
 }

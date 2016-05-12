@@ -161,7 +161,7 @@ std::string glslAssignBasicTypeObject (const std::string& name, const glu::DataT
 	if (type != glu::TYPE_FLOAT)
 		result << std::string() << glu::getDataTypeName(type) << "(";
 	for (int i = 0; i < scalarSize; ++i)
-		result << (i > 0 ? ", v+" + de::floatToString(0.8f*i, 1) : "v");
+		result << (i > 0 ? ", v+" + de::floatToString(0.8f*(float)i, 1) : "v");
 	if (type != glu::TYPE_FLOAT)
 		result << ")";
 	result << ";\n"
@@ -181,7 +181,7 @@ std::string glslCheckBasicTypeObject (const std::string& name, const glu::DataTy
 	if (type != glu::TYPE_FLOAT)
 		result << std::string() << glu::getDataTypeName(type) << "(";
 	for (int i = 0; i < scalarSize; ++i)
-		result << (i > 0 ? ", v+" + de::floatToString(0.8f*i, 1) : "v");
+		result << (i > 0 ? ", v+" + de::floatToString(0.8f*(float)i, 1) : "v");
 	if (type != glu::TYPE_FLOAT)
 		result << ")";
 	result << ");\n"
@@ -562,7 +562,7 @@ UserDefinedIOTest::UserDefinedIOTest (tcu::TestContext& testCtx, const std::stri
 		tcsNextOutputLocation += output.numBasicSubobjectsInElementType();
 
 		if (!isPerPatchIO)
-			tcsStatements << "\t\tv += float(gl_InvocationID)*" << de::floatToString(0.4f * output.numBasicSubobjectsInElementType(), 1) << ";\n";
+			tcsStatements << "\t\tv += float(gl_InvocationID)*" << de::floatToString(0.4f * (float)output.numBasicSubobjectsInElementType(), 1) << ";\n";
 
 		tcsStatements << "\n\t\t// Assign values to output " << output.name() << "\n";
 		if (isArray)
@@ -571,7 +571,7 @@ UserDefinedIOTest::UserDefinedIOTest (tcu::TestContext& testCtx, const std::stri
 			tcsStatements << output.glslTraverseBasicType(2, glslAssignBasicTypeObject);
 
 		if (!isPerPatchIO)
-			tcsStatements << "\t\tv += float(" << de::toString(NUM_OUTPUT_VERTICES) << "-gl_InvocationID-1)*" << de::floatToString(0.4f * output.numBasicSubobjectsInElementType(), 1) << ";\n";
+			tcsStatements << "\t\tv += float(" << de::toString(NUM_OUTPUT_VERTICES) << "-gl_InvocationID-1)*" << de::floatToString(0.4f * (float)output.numBasicSubobjectsInElementType(), 1) << ";\n";
 	}
 	tcsStatements << "\t}\n";
 

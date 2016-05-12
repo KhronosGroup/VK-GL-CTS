@@ -592,7 +592,7 @@ BaseTestInstance::BaseTestInstance (Context& context, const CaseDefinition caseD
 	, m_vertexDataSizeBytes					(NUM_TESS_LEVELS * m_numPatchesToDraw * m_vertexStride)
 	, m_vertexBuffer						(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getDefaultAllocator(),
 											makeBufferCreateInfo(m_vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible)
-	, m_resultBufferPrimitiveDataOffset		(sizeof(deInt32) * 4)
+	, m_resultBufferPrimitiveDataOffset		((int)sizeof(deInt32) * 4)
 	, m_resultBufferSizeBytes				(m_resultBufferPrimitiveDataOffset + m_maxNumPrimitivesInDrawCall * sizeof(PerPrimitive))
 	, m_resultBuffer						(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getDefaultAllocator(),
 											makeBufferCreateInfo(m_resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible)
@@ -1360,7 +1360,7 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 	// Output buffer: number of primitives and an array of PerPrimitive structures
 
 	const int		   resultBufferMaxVertices		= numPatchesPerDrawCall * maxNumPrimitivesPerPatch * numVerticesPerPrimitive(m_caseDef.primitiveType, m_caseDef.usePointMode);
-	const int		   resultBufferTessCoordsOffset = sizeof(deInt32) * 4;
+	const int		   resultBufferTessCoordsOffset = (int)sizeof(deInt32) * 4;
 	const VkDeviceSize resultBufferSizeBytes        = resultBufferTessCoordsOffset + resultBufferMaxVertices * sizeof(PerPrimitive);
 	const Buffer       resultBuffer                 (vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
@@ -2009,7 +2009,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 
 	// Output buffer: number of invocations and array of tess coords
 
-	const int		   resultBufferTessCoordsOffset = sizeof(deInt32) * 4;
+	const int		   resultBufferTessCoordsOffset = (int)sizeof(deInt32) * 4;
 	const VkDeviceSize resultBufferSizeBytes        = resultBufferTessCoordsOffset + maxNumVerticesInDrawCall * sizeof(tcu::Vec4);
 	const Buffer       resultBuffer                 (vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 

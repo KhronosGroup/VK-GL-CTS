@@ -71,10 +71,10 @@ struct CaseDefinition
 //! Returns true if an image successfully passess the verification.
 bool verifyResult (tcu::TestLog& log, const tcu::ConstPixelBufferAccess image)
 {
-	const int startX = static_cast<int>(0.15f * image.getWidth());
-	const int endX	 = static_cast<int>(0.85f * image.getWidth());
-	const int startY = static_cast<int>(0.15f * image.getHeight());
-	const int endY	 = static_cast<int>(0.85f * image.getHeight());
+	const int startX = static_cast<int>(0.15f * (float)image.getWidth());
+	const int endX	 = static_cast<int>(0.85f * (float)image.getWidth());
+	const int startY = static_cast<int>(0.15f * (float)image.getHeight());
+	const int endY	 = static_cast<int>(0.85f * (float)image.getHeight());
 
 	for (int y = startY; y < endY; ++y)
 	for (int x = startX; x < endX; ++x)
