@@ -31,6 +31,7 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 		${GLSLANG_ABS_PATH}/glslang/OSDependent
 		${GLSLANG_ABS_PATH}/OGLCompilersDLL
 		${GLSLANG_ABS_PATH}/SPIRV
+		${GLSLANG_ABS_PATH}/hlsl
 		)
 
 	set(GLSLANG_SRCS
@@ -69,6 +70,10 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 		${GLSLANG_ABS_PATH}/SPIRV/SPVRemapper.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/doc.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/disassemble.cpp
+
+		${GLSLANG_ABS_PATH}/hlsl/hlslGrammar.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslParseHelper.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslScanContext.cpp
 
 		osinclude.cpp
 		)
