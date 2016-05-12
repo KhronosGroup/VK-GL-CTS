@@ -1468,17 +1468,18 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 	const DeviceHelper				devHelper					(context, instHelper.vki, *instHelper.instance, *surface);
 	const DeviceInterface&			vkd							= devHelper.vkd;
 	const VkDevice					device						= *devHelper.device;
+	SimpleAllocator					allocator					(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
 	const VkSwapchainCreateInfoKHR	swapchainInfo				= getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
 	const Unique<VkSwapchainKHR>	swapchain					(createSwapchainKHR(vkd, device, &swapchainInfo));
 	const vector<VkImage>			swapchainImages				= getSwapchainImages(vkd, device, *swapchain);
 
 	const TriangleRenderer			renderer					(vkd,
-																	 device,
-																	 context.getDefaultAllocator(),
-																	 context.getBinaryCollection(),
-																	 swapchainImages,
-																	 swapchainInfo.imageFormat,
-																	 tcu::UVec2(swapchainInfo.imageExtent.width, swapchainInfo.imageExtent.height));
+																 device,
+																 allocator,
+																 context.getBinaryCollection(),
+																 swapchainImages,
+																 swapchainInfo.imageFormat,
+																 tcu::UVec2(swapchainInfo.imageExtent.width, swapchainInfo.imageExtent.height));
 
 	const Unique<VkCommandPool>		commandPool					(createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
 
