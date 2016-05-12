@@ -1471,6 +1471,7 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 
 					// If this fails then we didn't read all vertices from shader and test must be changed to allow more.
 					DE_ASSERT(numPrimitiveVertices * numPrimitives <= resultBufferMaxVertices);
+					DE_UNREF(numPrimitiveVertices);
 
 					tcu::TestLog& log = m_context.getTestContext().getLog();
 

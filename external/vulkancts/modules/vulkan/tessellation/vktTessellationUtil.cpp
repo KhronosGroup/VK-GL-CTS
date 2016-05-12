@@ -760,7 +760,7 @@ float getClampedTessLevel (const SpacingMode mode, const float tessLevel)
 
 int getRoundedTessLevel (const SpacingMode mode, const float clampedTessLevel)
 {
-	static const int MINIMUM_MAX_TESS_GEN_LEVEL = 64;	//!< Minimum maxTessellationGenerationLevel defined by the spec.
+	static const int minimumMaxTessGenLevel = 64;	//!< Minimum maxTessellationGenerationLevel defined by the spec.
 
 	int result = (int)deFloatCeil(clampedTessLevel);
 
@@ -772,7 +772,8 @@ int getRoundedTessLevel (const SpacingMode mode, const float clampedTessLevel)
 		default:
 			DE_ASSERT(false);
 	}
-	DE_ASSERT(de::inRange<int>(result, 1, MINIMUM_MAX_TESS_GEN_LEVEL));
+	DE_ASSERT(de::inRange<int>(result, 1, minimumMaxTessGenLevel));
+	DE_UNREF(minimumMaxTessGenLevel);
 
 	return result;
 }
