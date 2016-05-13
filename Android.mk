@@ -295,6 +295,7 @@ LOCAL_SRC_FILES := \
 	modules/egl/teglTestPackageEntry.cpp \
 	modules/egl/teglVGRenderUtil.cpp \
 	modules/egl/teglMultiContextTests.cpp \
+	modules/egl/teglThreadCleanUpTests.cpp \
     modules/gles2/tes2CapabilityTests.cpp \
 	modules/gles2/tes2Context.cpp \
 	modules/gles2/tes2InfoTests.cpp \
@@ -787,7 +788,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageSamplingInstance.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineStencilTests.cpp \
-	external/vulkancts/modules/vulkan/pipeline/vktPipelineTests.cpp \ \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineTests.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBase.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferMemoryAliasing.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferSparseBinding.cpp \
@@ -909,10 +910,6 @@ LOCAL_STATIC_LIBRARIES := \
 
 LOCAL_CFLAGS += \
 	$(deqp_compile_flags)
-
-# Suppress about 947 clang-tidy warnings of google-explicit-constructor,
-# and 430 warnings of google-build-using-namespace.
-LOCAL_TIDY_CHECKS := -google-build-using-namespace,-google-explicit-constructor
 
 LOCAL_SDK_VERSION := 9
 LOCAL_CPPFLAGS += -Wno-non-virtual-dtor -fwrapv

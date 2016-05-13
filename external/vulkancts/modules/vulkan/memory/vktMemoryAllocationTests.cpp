@@ -28,12 +28,15 @@
 #include "tcuMaybe.hpp"
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuPlatform.hpp"
 
 #include "vkPlatform.hpp"
 #include "vkStrUtil.hpp"
 #include "vkRef.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkRefUtil.hpp"
+#include "vkAllocationCallbackUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -53,6 +56,7 @@ namespace memory
 {
 namespace
 {
+
 enum
 {
 	// The min max for allocation count is 4096. Use 4000 to take into account
@@ -237,6 +241,31 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 		return tcu::TestStatus(m_result.getResult(), m_result.getMessage());
 }
 
+size_t computeDeviceMemorySystemMemFootprint (const DeviceInterface& vk, VkDevice device)
+{
+	AllocationCallbackRecorder	callbackRecorder	(getSystemAllocator());
+
+	{
+		// 1 B allocation from memory type 0
+		const VkMemoryAllocateInfo	allocInfo	=
+		{
+			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+			DE_NULL,
+			1u,
+			0u,
+		};
+		const Unique<VkDeviceMemory>			memory			(allocateMemory(vk, device, &allocInfo));
+		AllocationCallbackValidationResults		validateRes;
+
+		validateAllocationCallbacks(callbackRecorder, &validateRes);
+
+		TCU_CHECK(validateRes.violations.empty());
+
+		return getLiveSystemAllocationTotal(validateRes)
+			   + sizeof(void*)*validateRes.liveAllocations.size(); // allocation overhead
+	}
+}
+
 struct MemoryType
 {
 	deUint32		index;
@@ -261,27 +290,35 @@ struct Heap
 class RandomAllocFreeTestInstance : public TestInstance
 {
 public:
-						RandomAllocFreeTestInstance		(Context& context, deUint32 seed);
-						~RandomAllocFreeTestInstance	(void);
+								RandomAllocFreeTestInstance		(Context& context, deUint32 seed);
+								~RandomAllocFreeTestInstance	(void);
 
-	tcu::TestStatus		iterate							(void);
+	tcu::TestStatus				iterate							(void);
 
 private:
-	const size_t		m_opCount;
-	deUint32			m_memoryObjectCount;
-	size_t				m_opNdx;
-	de::Random			m_rng;
-	vector<Heap>		m_heaps;
-	vector<size_t>		m_nonFullHeaps;
-	vector<size_t>		m_nonEmptyHeaps;
+	const size_t				m_opCount;
+	const size_t				m_allocSysMemSize;
+	const PlatformMemoryLimits	m_memoryLimits;
+
+	deUint32					m_memoryObjectCount;
+	size_t						m_opNdx;
+	de::Random					m_rng;
+	vector<Heap>				m_heaps;
+	VkDeviceSize				m_totalSystemMem;
+	VkDeviceSize				m_totalDeviceMem;
 };
 
-RandomAllocFreeTestInstance::RandomAllocFreeTestInstance	(Context& context, deUint32 seed)
+RandomAllocFreeTestInstance::RandomAllocFreeTestInstance (Context& context, deUint32 seed)
 	: TestInstance			(context)
 	, m_opCount				(128)
+	, m_allocSysMemSize		(computeDeviceMemorySystemMemFootprint(context.getDeviceInterface(), context.getDevice())
+							 + sizeof(MemoryObject))
+	, m_memoryLimits		(getMemoryLimits(context.getTestContext().getPlatform().getVulkanPlatform()))
 	, m_memoryObjectCount	(0)
 	, m_opNdx				(0)
 	, m_rng					(seed)
+	, m_totalSystemMem		(0)
+	, m_totalDeviceMem		(0)
 {
 	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
 	const InstanceInterface&				vki					= context.getInstanceInterface();
@@ -292,18 +329,13 @@ RandomAllocFreeTestInstance::RandomAllocFreeTestInstance	(Context& context, deUi
 
 	m_heaps.resize(memoryProperties.memoryHeapCount);
 
-	m_nonFullHeaps.reserve(m_heaps.size());
-	m_nonEmptyHeaps.reserve(m_heaps.size());
-
 	for (deUint32 heapNdx = 0; heapNdx < memoryProperties.memoryHeapCount; heapNdx++)
 	{
 		m_heaps[heapNdx].heap			= memoryProperties.memoryHeaps[heapNdx];
 		m_heaps[heapNdx].memoryUsage	= 0;
-		m_heaps[heapNdx].maxMemoryUsage	= m_heaps[heapNdx].heap.size / 8;
+		m_heaps[heapNdx].maxMemoryUsage	= m_heaps[heapNdx].heap.size / 2; /* Use at maximum 50% of heap */
 
 		m_heaps[heapNdx].objects.reserve(100);
-
-		m_nonFullHeaps.push_back((size_t)heapNdx);
 	}
 
 	for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < memoryProperties.memoryTypeCount; memoryTypeNdx++)
@@ -342,6 +374,12 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 	const VkDevice			device			= m_context.getDevice();
 	const DeviceInterface&	vkd				= m_context.getDeviceInterface();
 	TestLog&				log				= m_context.getTestContext().getLog();
+	const bool				isUMA			= m_memoryLimits.totalDeviceLocalMemory == 0;
+	const VkDeviceSize		usedSysMem		= isUMA ? (m_totalDeviceMem+m_totalSystemMem) : m_totalSystemMem;
+	const bool				canAllocateSys	= usedSysMem + m_allocSysMemSize + 1024 < m_memoryLimits.totalSystemMemory; // \note Always leave room for 1 KiB sys mem alloc
+	const bool				canAllocateDev	= isUMA ? canAllocateSys : (m_totalDeviceMem + 16 < m_memoryLimits.totalDeviceLocalMemory);
+	vector<size_t>			nonFullHeaps;
+	vector<size_t>			nonEmptyHeaps;
 	bool					allocateMore;
 
 	if (m_opNdx == 0)
@@ -350,18 +388,40 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 		log << TestLog::Message << "Using max 1/8 of the memory in each memory heap." << TestLog::EndMessage;
 	}
 
+	// Sort heaps based on whether allocations or frees are possible
+	for (size_t heapNdx = 0; heapNdx < m_heaps.size(); ++heapNdx)
+	{
+		const bool	isDeviceLocal	= (m_heaps[heapNdx].heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
+		const bool	isHeapFull		= m_heaps[heapNdx].memoryUsage >= m_heaps[heapNdx].maxMemoryUsage;
+		const bool	isHeapEmpty		= m_heaps[heapNdx].memoryUsage == 0;
+
+		if (!isHeapEmpty)
+			nonEmptyHeaps.push_back(heapNdx);
+
+		if (!isHeapFull && ((isUMA && canAllocateSys) ||
+							(!isUMA && isDeviceLocal && canAllocateDev) ||
+							(!isUMA && !isDeviceLocal && canAllocateSys)))
+			nonFullHeaps.push_back(heapNdx);
+	}
+
 	if (m_opNdx >= m_opCount)
 	{
-		if (m_nonEmptyHeaps.empty())
+		if (nonEmptyHeaps.empty())
 			return tcu::TestStatus::pass("Pass");
 		else
 			allocateMore = false;
 	}
-	else if (!m_nonEmptyHeaps.empty() && !m_nonFullHeaps.empty() && (m_memoryObjectCount < MAX_ALLOCATION_COUNT))
+	else if (!nonEmptyHeaps.empty() &&
+			 !nonFullHeaps.empty() &&
+			 (m_memoryObjectCount < MAX_ALLOCATION_COUNT) &&
+			 canAllocateSys)
 		allocateMore = m_rng.getBool(); // Randomize if both operations are doable.
-	else if (m_nonEmptyHeaps.empty())
+	else if (nonEmptyHeaps.empty())
+	{
+		DE_ASSERT(canAllocateSys);
 		allocateMore = true; // Allocate more if there are no objects to free.
-	else if (m_nonFullHeaps.empty())
+	}
+	else if (nonFullHeaps.empty() || !canAllocateSys)
 		allocateMore = false; // Free objects if there is no free space for new objects.
 	else
 	{
@@ -371,16 +431,18 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 
 	if (allocateMore)
 	{
-		const size_t		nonFullHeapNdx	= (size_t)(m_rng.getUint32() % (deUint32)m_nonFullHeaps.size());
-		const size_t		heapNdx			= m_nonFullHeaps[nonFullHeapNdx];
+		const size_t		nonFullHeapNdx	= (size_t)(m_rng.getUint32() % (deUint32)nonFullHeaps.size());
+		const size_t		heapNdx			= nonFullHeaps[nonFullHeapNdx];
 		Heap&				heap			= m_heaps[heapNdx];
 		const MemoryType&	memoryType		= m_rng.choose<MemoryType>(heap.types.begin(), heap.types.end());
-		const VkDeviceSize	allocationSize	= 1 + (m_rng.getUint64() % (deUint64)(heap.maxMemoryUsage - heap.memoryUsage));
-
+		const bool			isDeviceLocal	= (heap.heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
+		const VkDeviceSize	maxAllocSize	= (isDeviceLocal && !isUMA)
+											? de::min(heap.maxMemoryUsage - heap.memoryUsage, (VkDeviceSize)m_memoryLimits.totalDeviceLocalMemory - m_totalDeviceMem)
+											: de::min(heap.maxMemoryUsage - heap.memoryUsage, (VkDeviceSize)m_memoryLimits.totalSystemMemory - usedSysMem - m_allocSysMemSize);
+		const VkDeviceSize	allocationSize	= 1 + (m_rng.getUint64() % maxAllocSize);
 
 		if ((allocationSize > (deUint64)(heap.maxMemoryUsage - heap.memoryUsage)) && (allocationSize != 1))
 			TCU_THROW(InternalError, "Test Error: trying to allocate memory more than the available heap size.");
-
 
 		const MemoryObject object =
 		{
@@ -402,53 +464,31 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 		TCU_CHECK(!!heap.objects.back().memory);
 		m_memoryObjectCount++;
 
-		// If heap was empty add to the non empty heaps.
-		if (heap.memoryUsage == 0)
-		{
-			DE_ASSERT(heap.objects.size() == 1);
-			m_nonEmptyHeaps.push_back(heapNdx);
-		}
-		else
-			DE_ASSERT(heap.objects.size() > 1);
-
-		heap.memoryUsage += allocationSize;
-
-		// If heap became full, remove from non full heaps.
-		if (heap.memoryUsage >= heap.maxMemoryUsage)
-		{
-			m_nonFullHeaps[nonFullHeapNdx] = m_nonFullHeaps.back();
-			m_nonFullHeaps.pop_back();
-		}
+		heap.memoryUsage										+= allocationSize;
+		(isDeviceLocal ? m_totalDeviceMem : m_totalSystemMem)	+= allocationSize;
+		m_totalSystemMem										+= m_allocSysMemSize;
 	}
 	else
 	{
-		const size_t		nonEmptyHeapNdx	= (size_t)(m_rng.getUint32() % (deUint32)m_nonEmptyHeaps.size());
-		const size_t		heapNdx			= m_nonEmptyHeaps[nonEmptyHeapNdx];
+		const size_t		nonEmptyHeapNdx	= (size_t)(m_rng.getUint32() % (deUint32)nonEmptyHeaps.size());
+		const size_t		heapNdx			= nonEmptyHeaps[nonEmptyHeapNdx];
 		Heap&				heap			= m_heaps[heapNdx];
 		const size_t		memoryObjectNdx	= m_rng.getUint32() % heap.objects.size();
 		MemoryObject&		memoryObject	= heap.objects[memoryObjectNdx];
+		const bool			isDeviceLocal	= (heap.heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
 
 		vkd.freeMemory(device, memoryObject.memory, (const VkAllocationCallbacks*)DE_NULL);
 		memoryObject.memory = (VkDeviceMemory)0;
 		m_memoryObjectCount--;
 
-		if (heap.memoryUsage >= heap.maxMemoryUsage && heap.memoryUsage - memoryObject.size < heap.maxMemoryUsage)
-			m_nonFullHeaps.push_back(heapNdx);
-
-		heap.memoryUsage -= memoryObject.size;
+		heap.memoryUsage										-= memoryObject.size;
+		(isDeviceLocal ? m_totalDeviceMem : m_totalSystemMem)	-= memoryObject.size;
+		m_totalSystemMem										-= m_allocSysMemSize;
 
 		heap.objects[memoryObjectNdx] = heap.objects.back();
 		heap.objects.pop_back();
 
-		if (heap.memoryUsage == 0)
-		{
-			DE_ASSERT(heap.objects.empty());
-
-			m_nonEmptyHeaps[nonEmptyHeapNdx] = m_nonEmptyHeaps.back();
-			m_nonEmptyHeaps.pop_back();
-		}
-		else
-			DE_ASSERT(!heap.objects.empty());
+		DE_ASSERT(heap.memoryUsage == 0 || !heap.objects.empty());
 	}
 
 	m_opNdx++;

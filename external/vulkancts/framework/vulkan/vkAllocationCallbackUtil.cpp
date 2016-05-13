@@ -626,6 +626,34 @@ bool validateAndLog (tcu::TestLog& log, const AllocationCallbackRecorder& record
 	return checkAndLog(log, validationResults, allowedLiveAllocScopeBits);
 }
 
+size_t getLiveSystemAllocationTotal (const AllocationCallbackValidationResults& validationResults)
+{
+	size_t	allocationTotal	= 0;
+
+	DE_ASSERT(validationResults.violations.empty());
+
+	for (std::vector<AllocationCallbackRecord>::const_iterator alloc = validationResults.liveAllocations.begin();
+		 alloc != validationResults.liveAllocations.end();
+		 ++alloc)
+	{
+		DE_ASSERT(alloc->type == AllocationCallbackRecord::TYPE_ALLOCATION ||
+				  alloc->type == AllocationCallbackRecord::TYPE_REALLOCATION);
+
+		const size_t	size		= (alloc->type == AllocationCallbackRecord::TYPE_ALLOCATION ? alloc->data.allocation.size : alloc->data.reallocation.size);
+		const size_t	alignment	= (alloc->type == AllocationCallbackRecord::TYPE_ALLOCATION ? alloc->data.allocation.alignment : alloc->data.reallocation.alignment);
+
+		allocationTotal += size + alignment - (alignment > 0 ? 1 : 0);
+	}
+
+	for (int internalAllocationTypeNdx = 0; internalAllocationTypeNdx < VK_INTERNAL_ALLOCATION_TYPE_LAST; ++internalAllocationTypeNdx)
+	{
+		for (int internalAllocationScopeNdx = 0; internalAllocationScopeNdx < VK_SYSTEM_ALLOCATION_SCOPE_LAST; ++internalAllocationScopeNdx)
+			allocationTotal += validationResults.internalAllocationTotal[internalAllocationTypeNdx][internalAllocationScopeNdx];
+	}
+
+	return allocationTotal;
+}
+
 std::ostream& operator<< (std::ostream& str, const AllocationCallbackRecord& record)
 {
 	switch (record.type)

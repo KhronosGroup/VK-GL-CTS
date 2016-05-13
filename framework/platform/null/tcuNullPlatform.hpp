@@ -46,7 +46,7 @@ public:
 
 private:
 	virtual vk::Library*			createLibrary		(void) const;
-
+	void							getMemoryLimits		(vk::PlatformMemoryLimits& limits) const;
 };
 
 } // null

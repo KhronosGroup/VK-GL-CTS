@@ -798,7 +798,8 @@ void NegativeVertexArrayApiTests::init (void)
 			GLuint fbo;
 			GLuint buf;
 			GLuint tfID;
-			GLfloat vertices[1];
+			deUint32 vertices[1];
+			vertices[0] = 0xffffffffu;
 
 			m_log << tcu::TestLog::Section("", "GL_INVALID_ENUM is generated if mode is not an accepted value.");
 			glDrawRangeElements(-1, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
@@ -836,6 +837,8 @@ void NegativeVertexArrayApiTests::init (void)
 			{
 				m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
 				const char* tfVarying		= "gl_Position";
+				deUint32 verticesInRange[1];
+				verticesInRange[0] 			= 0;
 
 				glGenBuffers				(1, &buf);
 				glGenTransformFeedbacks		(1, &tfID);
@@ -854,7 +857,7 @@ void NegativeVertexArrayApiTests::init (void)
 				expectError					(GL_INVALID_OPERATION);
 
 				glPauseTransformFeedback();
-				glDrawRangeElements			(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+				glDrawRangeElements			(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, verticesInRange);
 				expectError					(GL_NO_ERROR);
 
 				glEndTransformFeedback		();
@@ -870,7 +873,8 @@ void NegativeVertexArrayApiTests::init (void)
 		{
 			glUseProgram(0);
 			GLuint fbo;
-			GLfloat vertices[1];
+			deUint32 vertices[1];
+			vertices[0] = 0xffffffffu;
 
 			m_log << tcu::TestLog::Section("", "GL_INVALID_ENUM is generated if mode is not an accepted value.");
 			glDrawRangeElements(-1, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
@@ -911,7 +915,8 @@ void NegativeVertexArrayApiTests::init (void)
 			GLuint fbo;
 			GLuint buf;
 			GLuint tfID;
-			GLfloat vertices[1];
+			deUint32 vertices[1];
+			vertices[0] = 0xffffffffu;
 
 			m_log << tcu::TestLog::Section("", "GL_INVALID_ENUM is generated if mode is not an accepted value.");
 			glDrawRangeElements(-1, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
@@ -949,6 +954,8 @@ void NegativeVertexArrayApiTests::init (void)
 			{
 				m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
 				const char* tfVarying		= "gl_Position";
+				deUint32 verticesInRange[1];
+				verticesInRange[0] 			= 0;
 
 				glGenBuffers				(1, &buf);
 				glGenTransformFeedbacks		(1, &tfID);
@@ -967,7 +974,7 @@ void NegativeVertexArrayApiTests::init (void)
 				expectError					(GL_INVALID_OPERATION);
 
 				glPauseTransformFeedback();
-				glDrawRangeElements			(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+				glDrawRangeElements			(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, verticesInRange);
 				expectError					(GL_NO_ERROR);
 
 				glEndTransformFeedback		();

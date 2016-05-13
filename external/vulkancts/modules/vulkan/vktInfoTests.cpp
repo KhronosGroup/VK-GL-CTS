@@ -31,6 +31,8 @@
 #include "tcuPlatform.hpp"
 #include "deStringUtil.hpp"
 
+#include <iomanip>
+
 namespace vkt
 {
 
@@ -153,13 +155,94 @@ tcu::TestStatus logPlatformInfo (Context& context)
 	return tcu::TestStatus::pass("Not validated");
 }
 
+template<typename SizeType>
+struct PrettySize
+{
+	SizeType	value;
+	int			precision;
+
+	PrettySize (SizeType value_, int precision_)
+		: value		(value_)
+		, precision	(precision_)
+	{}
+};
+
+struct SizeUnit
+{
+	const char*		name;
+	deUint64		value;
+};
+
+const SizeUnit* getBestSizeUnit (deUint64 value)
+{
+	static const SizeUnit s_units[]		=
+	{
+		// \note Must be ordered from largest to smallest
+		{ "TiB",	1ull<<40ull		},
+		{ "MiB",	1ull<<20ull		},
+		{ "GiB",	1ull<<30ull		},
+		{ "KiB",	1ull<<10ull		},
+	};
+	static const SizeUnit s_defaultUnit	= { "B", 1u };
+
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_units); ++ndx)
+	{
+		if (value >= s_units[ndx].value)
+			return &s_units[ndx];
+	}
+
+	return &s_defaultUnit;
+}
+
+template<typename SizeType>
+std::ostream& operator<< (std::ostream& str, const PrettySize<SizeType>& size)
+{
+	const SizeUnit*		unit = getBestSizeUnit(deUint64(size.value));
+	std::ostringstream	tmp;
+
+	tmp << std::fixed << std::setprecision(size.precision)
+		<< (double(size.value) / double(unit->value))
+		<< " " << unit->name;
+
+	return str << tmp.str();
+}
+
+template<typename SizeType>
+PrettySize<SizeType> prettySize (SizeType value, int precision = 2)
+{
+	return PrettySize<SizeType>(value, precision);
+}
+
+tcu::TestStatus logPlatformMemoryLimits (Context& context)
+{
+	TestLog&					log			= context.getTestContext().getLog();
+	vk::PlatformMemoryLimits	limits;
+
+	context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(limits);
+
+	log << TestLog::Message << "totalSystemMemory = " << prettySize(limits.totalSystemMemory) << " (" << limits.totalSystemMemory << ")\n"
+							<< "totalDeviceLocalMemory = " << prettySize(limits.totalDeviceLocalMemory) << " (" << limits.totalDeviceLocalMemory << ")\n"
+							<< "deviceMemoryAllocationGranularity = " << limits.deviceMemoryAllocationGranularity << "\n"
+							<< "devicePageSize = " << limits.devicePageSize << "\n"
+							<< "devicePageTableEntrySize = " << limits.devicePageTableEntrySize << "\n"
+							<< "devicePageTableHierarchyLevels = " << limits.devicePageTableHierarchyLevels << "\n"
+		<< TestLog::EndMessage;
+
+	TCU_CHECK(limits.totalSystemMemory > 0);
+	TCU_CHECK(limits.deviceMemoryAllocationGranularity > 0);
+	TCU_CHECK(deIsPowerOfTwo64(limits.devicePageSize));
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous
 
 void createInfoTests (tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "build",		"Build Info",		logBuildInfo);
-	addFunctionCase(testGroup, "device",	"Device Info",		logDeviceInfo);
-	addFunctionCase(testGroup, "platform",	"Platform Info",	logPlatformInfo);
+	addFunctionCase(testGroup, "build",			"Build Info",				logBuildInfo);
+	addFunctionCase(testGroup, "device",		"Device Info",				logDeviceInfo);
+	addFunctionCase(testGroup, "platform",		"Platform Info",			logPlatformInfo);
+	addFunctionCase(testGroup, "memory_limits",	"Platform Memory Limits",	logPlatformMemoryLimits);
 }
 
 } // vkt
