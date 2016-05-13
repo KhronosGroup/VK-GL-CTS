@@ -88,8 +88,8 @@ Move<VkDevice> createTestDevice (const InstanceInterface& vki, VkPhysicalDevice 
 	VkDeviceQueueCreateInfo		queueInfo;
 	VkDeviceCreateInfo			deviceInfo;
 	size_t						queueNdx;
-	const float					queuePriority	= 1.0f;
-	const deUint32				queueCount		= 2u;
+	const deUint32				queueCount					= 2u;
+	const float					queuePriority[queueCount]	= { 1.0f, 1.0f };
 
 	const vector<VkQueueFamilyProperties>	queueProps				= getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 	const VkPhysicalDeviceFeatures			physicalDeviceFeatures	= getPhysicalDeviceFeatures(vki, physicalDevice);
@@ -118,7 +118,7 @@ Move<VkDevice> createTestDevice (const InstanceInterface& vki, VkPhysicalDevice 
 	queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
 	queueInfo.queueFamilyIndex				= (deUint32)queueNdx;
 	queueInfo.queueCount					= queueCount;
-	queueInfo.pQueuePriorities				= &queuePriority;
+	queueInfo.pQueuePriorities				= queuePriority;
 
 	deMemset(&deviceInfo, 0xcd, sizeof(deviceInfo));
 	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -487,9 +487,9 @@ void  recordRenderPass (const DeviceInterface& deviceInterface, const RenderInfo
 	deviceInterface.cmdBindPipeline(renderInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderInfo.pipeline);
 	deviceInterface.cmdBindVertexBuffers(renderInfo.commandBuffer, 0u, 1u, &renderInfo.vertexBuffer, &bindingOffset);
 	deviceInterface.cmdDraw(renderInfo.commandBuffer, renderInfo.vertexBufferSize, 1, 0, 0);
+	deviceInterface.cmdEndRenderPass(renderInfo.commandBuffer);
 	if (renderInfo.setEvent)
 		deviceInterface.cmdSetEvent(renderInfo.commandBuffer, renderInfo.event, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
-	deviceInterface.cmdEndRenderPass(renderInfo.commandBuffer);
 
 	deMemset(&renderBarrier, 0xcd, sizeof(renderBarrier));
 	renderBarrier.sType								= VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -810,12 +810,16 @@ void generateWork (TestContext& testContext)
 	depthStencilState.flags						= 0;
 	depthStencilState.depthTestEnable			= VK_FALSE;
 	depthStencilState.depthWriteEnable			= VK_FALSE;
+	depthStencilState.depthCompareOp			= VK_COMPARE_OP_ALWAYS;
 	depthStencilState.depthBoundsTestEnable		= VK_FALSE;
 	depthStencilState.stencilTestEnable			= VK_FALSE;
-	depthStencilState.depthCompareOp			= VK_COMPARE_OP_ALWAYS;
 	depthStencilState.front.failOp				= VK_STENCIL_OP_KEEP;
 	depthStencilState.front.passOp				= VK_STENCIL_OP_KEEP;
 	depthStencilState.front.depthFailOp			= VK_STENCIL_OP_KEEP;
+	depthStencilState.front.compareOp			= VK_COMPARE_OP_ALWAYS;
+	depthStencilState.front.compareMask			= 0u;
+	depthStencilState.front.writeMask			= 0u;
+	depthStencilState.front.reference			= 0u;
 	depthStencilState.back						= depthStencilState.front;
 
 	deMemset(&blendAttachment, 0xcd, sizeof(blendAttachment));
@@ -1133,6 +1137,7 @@ tcu::TestStatus testSemaphores (Context& context)
 	VkSubmitInfo				submitInfo[2];
 	VkMappedMemoryRange			range;
 	void*						resultImage;
+	const VkPipelineStageFlags	waitDstStageMask	= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
 	deviceInterface.getDeviceQueue(device.get(), queueFamilyIdx, 0, &queue[0]);
 	deviceInterface.getDeviceQueue(device.get(), queueFamilyIdx, 1, &queue[1]);
@@ -1179,6 +1184,7 @@ tcu::TestStatus testSemaphores (Context& context)
 	submitInfo[0].pSignalSemaphores		= &semaphore.get();
 	submitInfo[1].waitSemaphoreCount	= 1;
 	submitInfo[1].pWaitSemaphores		= &semaphore.get();
+	submitInfo[1].pWaitDstStageMask		= &waitDstStageMask;
 
 	VK_CHECK(deviceInterface.queueSubmit(queue[0], 1, &submitInfo[0], testContext1.fences[0]));
 
