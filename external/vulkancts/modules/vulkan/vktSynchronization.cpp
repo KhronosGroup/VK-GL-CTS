@@ -456,7 +456,6 @@ struct RenderInfo
 	deUint32						mipLevels;
 	const deUint32*					queueFamilyNdxList;
 	deUint32						queueFamilyNdxCount;
-	bool							setEvent;
 	bool							waitEvent;
 	VkEvent							event;
 	vector<VkImageMemoryBarrier>*	barriers;
@@ -483,13 +482,11 @@ void  recordRenderPass (const DeviceInterface& deviceInterface, const RenderInfo
 
 	deviceInterface.cmdBeginRenderPass(renderInfo.commandBuffer, &renderPassBeginState, VK_SUBPASS_CONTENTS_INLINE);
 	if (renderInfo.waitEvent)
-		deviceInterface.cmdWaitEvents(renderInfo.commandBuffer, 1, &renderInfo.event, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
+		deviceInterface.cmdWaitEvents(renderInfo.commandBuffer, 1, &renderInfo.event, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
 	deviceInterface.cmdBindPipeline(renderInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderInfo.pipeline);
 	deviceInterface.cmdBindVertexBuffers(renderInfo.commandBuffer, 0u, 1u, &renderInfo.vertexBuffer, &bindingOffset);
 	deviceInterface.cmdDraw(renderInfo.commandBuffer, renderInfo.vertexBufferSize, 1, 0, 0);
 	deviceInterface.cmdEndRenderPass(renderInfo.commandBuffer);
-	if (renderInfo.setEvent)
-		deviceInterface.cmdSetEvent(renderInfo.commandBuffer, renderInfo.event, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 
 	deMemset(&renderBarrier, 0xcd, sizeof(renderBarrier));
 	renderBarrier.sType								= VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -573,7 +570,6 @@ struct TestContext
 	MovePtr<Allocation>			vertexBufferAllocation;
 	vk::Move<VkBuffer>			vertexBuffer;
 	vk::Move<VkBuffer>			renderBuffer;
-	bool						setEvent;
 	bool						waitEvent;
 	VkEvent						event;
 	vk::Move<VkImage>			image;
@@ -597,8 +593,7 @@ struct TestContext
 		, binaryCollection	(binaryCollection_)
 		, allocator			(allocator_)
 		, numVertices		(0)
-		, setEvent			(DE_FALSE)
-		, waitEvent			(DE_FALSE)
+		, waitEvent			(false)
 	{
 		createFences(vkd, device, false, DE_LENGTH_OF_ARRAY(fences), fences);
 	}
@@ -759,7 +754,7 @@ void generateWork (TestContext& testContext)
 	inputAssemblyState.sType					= VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	inputAssemblyState.pNext					= DE_NULL;
 	inputAssemblyState.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	inputAssemblyState.primitiveRestartEnable	= DE_FALSE;
+	inputAssemblyState.primitiveRestartEnable	= false;
 
 	viewport.x									= 0;
 	viewport.y									= 0;
@@ -913,7 +908,7 @@ void generateWork (TestContext& testContext)
 	deviceInterface.cmdPipelineBarrier( testContext.cmdBuffer.get(),
 										VK_PIPELINE_STAGE_HOST_BIT,
 										VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-										DE_FALSE,
+										false,
 										(deUint32)memoryBarriers.size(), (memoryBarriers.empty() ? DE_NULL : &memoryBarriers[0]),
 										(deUint32)bufferBarriers.size(), (bufferBarriers.empty() ? DE_NULL : &bufferBarriers[0]),
 										(deUint32)imageBarriers.size(), (imageBarriers.empty() ? DE_NULL : &imageBarriers[0]));
@@ -934,7 +929,6 @@ void generateWork (TestContext& testContext)
 	renderInfo.mipLevels			= 1;
 	renderInfo.queueFamilyNdxList	= &queueFamilyNdx;
 	renderInfo.queueFamilyNdxCount	= 1;
-	renderInfo.setEvent				= testContext.setEvent;
 	renderInfo.waitEvent			= testContext.waitEvent;
 	renderInfo.event				= testContext.event;
 	renderInfo.barriers				= &imageBarriers;
@@ -943,7 +937,7 @@ void generateWork (TestContext& testContext)
 	deviceInterface.cmdPipelineBarrier(	renderInfo.commandBuffer,
 										VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 										VK_PIPELINE_STAGE_TRANSFER_BIT,
-										DE_FALSE,
+										false,
 										(deUint32)memoryBarriers.size(), (memoryBarriers.empty() ? DE_NULL : &memoryBarriers[0]),
 										(deUint32)bufferBarriers.size(), (bufferBarriers.empty() ? DE_NULL : &bufferBarriers[0]),
 										(deUint32)imageBarriers.size(), (imageBarriers.empty() ? DE_NULL : &imageBarriers[0]));
@@ -968,7 +962,7 @@ void generateWork (TestContext& testContext)
 	deviceInterface.cmdPipelineBarrier(	transferInfo.commandBuffer,
 										VK_PIPELINE_STAGE_TRANSFER_BIT,
 										VK_PIPELINE_STAGE_HOST_BIT,
-										DE_FALSE,
+										false,
 										(deUint32)memoryBarriers.size(), (memoryBarriers.empty() ? DE_NULL : &memoryBarriers[0]),
 										(deUint32)bufferBarriers.size(), (bufferBarriers.empty() ? DE_NULL : &bufferBarriers[0]),
 										(deUint32)imageBarriers.size(), (imageBarriers.empty() ? DE_NULL : &imageBarriers[0]));
@@ -1044,7 +1038,7 @@ tcu::TestStatus testFences (Context& context)
 	VK_CHECK(deviceInterface.queueSubmit(queue, 1, &submitInfo, testContext.fences[0]));
 
 	// Wait with timeout = 0
-	waitStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[0], DE_TRUE, 0u);
+	waitStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[0], true, 0u);
 	if (waitStatus != VK_SUCCESS && waitStatus != VK_TIMEOUT)
 	{
 		// Will most likely end with VK_TIMEOUT
@@ -1053,7 +1047,7 @@ tcu::TestStatus testFences (Context& context)
 	}
 
 	// Wait with a reasonable timeout
-	waitStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[0], DE_TRUE, DEFAULT_TIMEOUT);
+	waitStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[0], true, DEFAULT_TIMEOUT);
 	if (waitStatus != VK_SUCCESS && waitStatus != VK_TIMEOUT)
 	{
 		// \note Wait can end with a timeout if DEFAULT_TIMEOUT is not sufficient
@@ -1062,7 +1056,7 @@ tcu::TestStatus testFences (Context& context)
 	}
 
 	// Wait for work on fences[0] to actually complete
-	waitStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[0], DE_TRUE, std::numeric_limits<deUint64>::max());
+	waitStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[0], true, std::numeric_limits<deUint64>::max());
 	if (waitStatus != VK_SUCCESS)
 	{
 		log << TestLog::Message << "testSynchPrimitives failed to wait for a fence" << TestLog::EndMessage;
@@ -1070,7 +1064,7 @@ tcu::TestStatus testFences (Context& context)
 	}
 
 	// Wait until timeout on a fence that has not been submitted
-	waitStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[1], DE_TRUE, DEFAULT_TIMEOUT);
+	waitStatus = deviceInterface.waitForFences(device, 1, &testContext.fences[1], true, 1);
 	if (waitStatus != VK_TIMEOUT)
 	{
 		log << TestLog::Message << "testSyncPrimitives failed to timeout on wait for single fence" << TestLog::EndMessage;
@@ -1188,7 +1182,7 @@ tcu::TestStatus testSemaphores (Context& context)
 
 	VK_CHECK(deviceInterface.queueSubmit(queue[0], 1, &submitInfo[0], testContext1.fences[0]));
 
-	testStatus  = deviceInterface.waitForFences(device.get(), 1, &testContext1.fences[0], DE_TRUE, DEFAULT_TIMEOUT);
+	testStatus  = deviceInterface.waitForFences(device.get(), 1, &testContext1.fences[0], true, DEFAULT_TIMEOUT);
 	if (testStatus != VK_SUCCESS)
 	{
 		log << TestLog::Message << "testSynchPrimitives failed to wait for a set fence" << TestLog::EndMessage;
@@ -1214,7 +1208,7 @@ tcu::TestStatus testSemaphores (Context& context)
 
 	VK_CHECK(deviceInterface.queueSubmit(queue[1], 1, &submitInfo[1], testContext2.fences[0]));
 
-	testStatus  = deviceInterface.waitForFences(device.get(), 1, &testContext2.fences[0], DE_TRUE, DEFAULT_TIMEOUT);
+	testStatus  = deviceInterface.waitForFences(device.get(), 1, &testContext2.fences[0], true, DEFAULT_TIMEOUT);
 	if (testStatus != VK_SUCCESS)
 	{
 		log << TestLog::Message << "testSynchPrimitives failed to wait for a set fence" << TestLog::EndMessage;
@@ -1257,26 +1251,18 @@ vk::refdetails::Checked<VkEvent> createEvent (const DeviceInterface& deviceInter
 tcu::TestStatus testEvents (Context& context)
 {
 	TestLog&					log					= context.getTestContext().getLog();
-	const InstanceInterface&	instanceInterface	= context.getInstanceInterface();
-	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
-	deUint32					queueFamilyIdx;
-	vk::Move<VkDevice>			device				= createTestDevice(instanceInterface, physicalDevice, &queueFamilyIdx);
-	const DeviceDriver			deviceInterface		(instanceInterface, *device);
-	SimpleAllocator				allocator			(deviceInterface,
-													 *device,
-													 getPhysicalDeviceMemoryProperties(instanceInterface, physicalDevice));
-	VkQueue						queue[2];
+	const DeviceInterface&		deviceInterface		= context.getDeviceInterface();
+	VkDevice					device				= context.getDevice();
+	const deUint32				queueFamilyIdx		= context.getUniversalQueueFamilyIndex();
+	Allocator&					allocator			= context.getDefaultAllocator();
+	VkQueue						queue				= context.getUniversalQueue();
 	VkResult					testStatus;
 	VkResult					eventStatus;
-	TestContext					testContext1		(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
-	TestContext					testContext2		(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
-	Unique<VkEvent>				event				(createEvent(deviceInterface, device.get(), (VkAllocationCallbacks*)DE_NULL), Deleter<VkEvent>(deviceInterface, device.get(), DE_NULL));
-	VkSubmitInfo				submitInfo[2];
+	TestContext					testContext			(deviceInterface, device, queueFamilyIdx, context.getBinaryCollection(), allocator);
+	Unique<VkEvent>				event				(createEvent(deviceInterface, device, (VkAllocationCallbacks*)DE_NULL), Deleter<VkEvent>(deviceInterface, device, DE_NULL));
+	VkSubmitInfo				submitInfo;
 	VkMappedMemoryRange			range;
 	void*						resultImage;
-
-	deviceInterface.getDeviceQueue(device.get(), queueFamilyIdx, 0, &queue[0]);
-	deviceInterface.getDeviceQueue(device.get(), queueFamilyIdx, 1, &queue[1]);
 
 	const tcu::Vec4		vertices1[]			=
 	{
@@ -1285,93 +1271,68 @@ tcu::TestStatus testEvents (Context& context)
 		tcu::Vec4( 0.0f, -0.5f, 0.0f, 1.0f)
 	};
 
-	const tcu::Vec4		vertices2[]			=
-	{
-		tcu::Vec4(-0.5f, -0.5f, 0.0f, 1.0f),
-		tcu::Vec4(+0.5f, -0.5f, 0.0f, 1.0f),
-		tcu::Vec4( 0.0f, +0.5f, 0.0f, 1.0f)
-	};
+	testContext.vertices = vertices1;
+	testContext.numVertices = DE_LENGTH_OF_ARRAY(vertices1);
+	testContext.renderDimension = tcu::IVec2(256, 256);
+	testContext.waitEvent = true;
+	testContext.event = event.get();
+	testContext.renderSize = sizeof(deUint32) * testContext.renderDimension.x() * testContext.renderDimension.y();
 
-	testContext1.vertices = vertices1;
-	testContext1.numVertices = DE_LENGTH_OF_ARRAY(vertices1);
-	testContext1.renderDimension = tcu::IVec2(256, 256);
-	testContext1.setEvent = DE_TRUE;
-	testContext1.event = event.get();
-	testContext1.renderSize = sizeof(deUint32) * testContext1.renderDimension.x() * testContext1.renderDimension.y();
+	createCommandBuffer(deviceInterface, device, queueFamilyIdx, &testContext.cmdBuffer, &testContext.commandPool);
+	generateWork(testContext);
 
-	testContext2.vertices = vertices2;
-	testContext2.numVertices = DE_LENGTH_OF_ARRAY(vertices2);
-	testContext2.renderDimension = tcu::IVec2(256, 256);
-	testContext2.waitEvent = DE_TRUE;
-	testContext2.event = event.get();
-	testContext2.renderSize = sizeof(deUint32) * testContext2.renderDimension.x() * testContext2.renderDimension.y();
+	initSubmitInfo(&submitInfo, 1);
+	submitInfo.pCommandBuffers = &testContext.cmdBuffer.get();
 
-	createCommandBuffer(deviceInterface, device.get(), queueFamilyIdx, &testContext1.cmdBuffer, &testContext1.commandPool);
-	generateWork(testContext1);
-
-	createCommandBuffer(deviceInterface, device.get(), queueFamilyIdx, &testContext2.cmdBuffer, &testContext2.commandPool);
-	generateWork(testContext2);
-
-	initSubmitInfo(submitInfo, DE_LENGTH_OF_ARRAY(submitInfo));
-	submitInfo[0].pCommandBuffers = &testContext1.cmdBuffer.get();
-	submitInfo[1].pCommandBuffers = &testContext2.cmdBuffer.get();
-
-	eventStatus = deviceInterface.getEventStatus(device.get(), event.get());
+	// 6.3 An event is initially in the unsignaled state
+	eventStatus = deviceInterface.getEventStatus(device, event.get());
 	if (eventStatus != VK_EVENT_RESET)
 	{
 		log << TestLog::Message << "testSynchronizationPrimitives event should be reset but status is " << getResultName(eventStatus) << TestLog::EndMessage;
 		return tcu::TestStatus::fail("Event in incorrect status");
 	}
 
-	// Now the two contexts are submitted normally, so, context1 and set the event and context2 can wait for the event
-	VK_CHECK(deviceInterface.queueSubmit(queue[0], 1, &submitInfo[0], testContext1.fences[0]));
-	VK_CHECK(deviceInterface.queueSubmit(queue[1], 1, &submitInfo[1], testContext2.fences[0]));
+	// The recorded command buffer should wait at the top of the graphics pipe for an event signaled by the host and so should not
+	// make forward progress as long as the event is not signaled
+	VK_CHECK(deviceInterface.queueSubmit(queue, 1, &submitInfo, testContext.fences[0]));
 
-	testStatus  = deviceInterface.waitForFences(device.get(), 1, &testContext1.fences[0], DE_TRUE, DEFAULT_TIMEOUT);
+	testStatus  = deviceInterface.waitForFences(device, 1, &testContext.fences[0], true, 1);
+	if (testStatus != VK_TIMEOUT)
+	{
+		log << TestLog::Message << "testSynchronizationPrimitives failed to wait for set event from host." << TestLog::EndMessage;
+		return tcu::TestStatus::fail("failed to wait for event set from host");
+	}
+
+	// Should allow the recorded command buffer to finally make progress
+	VK_CHECK(deviceInterface.setEvent(device, event.get()));
+	eventStatus = deviceInterface.getEventStatus(device, event.get());
+	if (eventStatus != VK_EVENT_SET)
+	{
+		log << TestLog::Message << "testEvents failed to transition event to signaled state via setEvent call from host" << TestLog::EndMessage;
+		return tcu::TestStatus::fail("failed to signal event from host");
+	}
+
+	testStatus  = deviceInterface.waitForFences(device, 1, &testContext.fences[0], true, ~(0ull));
 	if (testStatus != VK_SUCCESS)
 	{
-		log << TestLog::Message << "testSynchronizationPrimitives failed to wait for set fence" << TestLog::EndMessage;
-		return tcu::TestStatus::fail("failed to wait for set fence");
+		log << TestLog::Message << "testSynchronizationPrimitives failed to proceed after set event from host." << TestLog::EndMessage;
+		return tcu::TestStatus::fail("failed to proceed after event set from host");
 	}
 
 	range.sType			= VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 	range.pNext			= DE_NULL;
-	range.memory		= testContext1.renderReadBuffer->getMemory();
+	range.memory		= testContext.renderReadBuffer->getMemory();
 	range.offset		= 0;
-	range.size			= testContext1.renderSize;
-	VK_CHECK(deviceInterface.invalidateMappedMemoryRanges(device.get(), 1, &range));
-	resultImage = testContext1.renderReadBuffer->getHostPtr();
+	range.size			= testContext.renderSize;
+	VK_CHECK(deviceInterface.invalidateMappedMemoryRanges(device, 1, &range));
+	resultImage = testContext.renderReadBuffer->getHostPtr();
 
 	log << TestLog::Image(	"result",
 							"result",
 							tcu::ConstPixelBufferAccess(tcu::TextureFormat(
 									tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8),
-									testContext1.renderDimension.x(),
-									testContext1.renderDimension.y(),
-									1,
-									resultImage));
-
-	testStatus  = deviceInterface.waitForFences(device.get(), 1, &testContext2.fences[0], DE_TRUE, DEFAULT_TIMEOUT);
-	if (testStatus != VK_SUCCESS)
-	{
-		log << TestLog::Message << "testSynchPrimitives failed to wait for a set fence" << TestLog::EndMessage;
-		return tcu::TestStatus::fail("failed to wait for a set fence");
-	}
-
-	range.sType			= VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-	range.pNext			= DE_NULL;
-	range.memory		= testContext2.renderReadBuffer->getMemory();
-	range.offset		= 0;
-	range.size			= testContext2.renderSize;
-	VK_CHECK(deviceInterface.invalidateMappedMemoryRanges(device.get(), 1, &range));
-	resultImage = testContext2.renderReadBuffer->getHostPtr();
-
-	log << TestLog::Image(	"result",
-							"result",
-							tcu::ConstPixelBufferAccess(tcu::TextureFormat(
-									tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8),
-									testContext2.renderDimension.x(),
-									testContext2.renderDimension.y(),
+									testContext.renderDimension.x(),
+									testContext.renderDimension.y(),
 									1,
 									resultImage));
 
