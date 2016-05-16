@@ -2119,16 +2119,6 @@ tcu::TestStatus createMaxConcurrentTest (Context& context, typename Object::Para
 			context.getTestContext().touchWatchdog();
 	}
 
-	// Destroy objects one by one and touch watchdog periodically as
-	// cleaning up resources is very costly on certain implementations.
-	for (deUint32 ndx = 0; ndx < numObjects; ndx++)
-	{
-		objects[ndx].clear();
-
-		if ((ndx > 0) && ((ndx % watchdogInterval) == 0))
-			context.getTestContext().touchWatchdog();
-	}
-
 	objects.clear();
 
 	return tcu::TestStatus::pass("Ok");
