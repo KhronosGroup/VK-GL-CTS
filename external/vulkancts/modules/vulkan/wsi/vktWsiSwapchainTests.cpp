@@ -341,6 +341,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 {
 	const PlatformProperties&			platformProperties	= getPlatformProperties(wsiType);
 	vector<VkSwapchainCreateInfoKHR>	cases;
+	const VkSurfaceTransformFlagBitsKHR transform			= (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR : capabilities.currentTransform;
 	const VkSwapchainCreateInfoKHR		baseParameters		=
 	{
 		VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -357,7 +358,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 		VK_SHARING_MODE_EXCLUSIVE,
 		0u,
 		(const deUint32*)DE_NULL,
-		VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+		transform,
 		VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		VK_PRESENT_MODE_FIFO_KHR,
 		VK_FALSE,							// clipped
@@ -368,7 +369,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 	{
 		case TEST_DIMENSION_MIN_IMAGE_COUNT:
 		{
-			const deUint32	maxImageCountToTest	= de::clamp(16u, capabilities.minImageCount, capabilities.maxImageCount);
+			const deUint32	maxImageCountToTest	= de::clamp(16u, capabilities.minImageCount, (capabilities.maxImageCount > 0) ? capabilities.maxImageCount : capabilities.minImageCount + 16u);
 
 			for (deUint32 imageCount = capabilities.minImageCount; imageCount <= maxImageCountToTest; ++imageCount)
 			{
@@ -718,13 +719,14 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters (Type						wsiType,
 																							  physicalDevice,
 																							  surface);
 	const PlatformProperties&			platformProperties	= getPlatformProperties(wsiType);
+	const VkSurfaceTransformFlagBitsKHR transform			= (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR : capabilities.currentTransform;
 	const VkSwapchainCreateInfoKHR		parameters			=
 	{
 		VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		DE_NULL,
 		(VkSwapchainCreateFlagsKHR)0,
 		surface,
-		de::clamp(desiredImageCount, capabilities.minImageCount, capabilities.maxImageCount),
+		de::clamp(desiredImageCount, capabilities.minImageCount, capabilities.maxImageCount > 0 ? capabilities.maxImageCount : capabilities.minImageCount + desiredImageCount),
 		formats[0].format,
 		formats[0].colorSpace,
 		(platformProperties.swapchainExtent == PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE
@@ -734,7 +736,7 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters (Type						wsiType,
 		VK_SHARING_MODE_EXCLUSIVE,
 		0u,
 		(const deUint32*)DE_NULL,
-		VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+		transform,
 		VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		VK_PRESENT_MODE_FIFO_KHR,
 		VK_FALSE,							// clipped
