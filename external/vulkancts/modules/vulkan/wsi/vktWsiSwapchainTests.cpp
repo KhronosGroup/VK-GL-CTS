@@ -1253,36 +1253,6 @@ void TriangleRenderer::recordFrame (VkCommandBuffer	cmdBuffer,
 	}
 
 	{
-		const VkImageMemoryBarrier	fromPresentationBarrier	=
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			DE_NULL,
-			VK_ACCESS_MEMORY_READ_BIT,
-			(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|
-			 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			VK_QUEUE_FAMILY_IGNORED,
-			VK_QUEUE_FAMILY_IGNORED,
-			curImage,
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				0u,					// baseMipLevel
-				1u,					// levelCount
-				0u,					// baseArrayLayer
-				1u,					// layerCount
-			}
-		};
-		m_vkd.cmdPipelineBarrier(cmdBuffer,
-								 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-								 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-								 (VkDependencyFlags)0,
-								 0, (const VkMemoryBarrier*)DE_NULL,
-								 0, (const VkBufferMemoryBarrier*)DE_NULL,
-								 1, &fromPresentationBarrier);
-	}
-
-	{
 		const VkClearValue			clearValue		= makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f);
 		const VkRenderPassBeginInfo	passBeginParams	=
 		{
