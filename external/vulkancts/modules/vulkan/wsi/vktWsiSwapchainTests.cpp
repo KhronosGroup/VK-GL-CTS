@@ -341,6 +341,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 {
 	const PlatformProperties&			platformProperties	= getPlatformProperties(wsiType);
 	vector<VkSwapchainCreateInfoKHR>	cases;
+	const VkSurfaceTransformFlagBitsKHR transform			= (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR : capabilities.currentTransform;
 	const VkSwapchainCreateInfoKHR		baseParameters		=
 	{
 		VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -357,7 +358,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 		VK_SHARING_MODE_EXCLUSIVE,
 		0u,
 		(const deUint32*)DE_NULL,
-		VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+		transform,
 		VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		VK_PRESENT_MODE_FIFO_KHR,
 		VK_FALSE,							// clipped
@@ -368,7 +369,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 	{
 		case TEST_DIMENSION_MIN_IMAGE_COUNT:
 		{
-			const deUint32	maxImageCountToTest	= de::clamp(16u, capabilities.minImageCount, capabilities.maxImageCount);
+			const deUint32	maxImageCountToTest	= de::clamp(16u, capabilities.minImageCount, (capabilities.maxImageCount > 0) ? capabilities.maxImageCount : capabilities.minImageCount + 16u);
 
 			for (deUint32 imageCount = capabilities.minImageCount; imageCount <= maxImageCountToTest; ++imageCount)
 			{
@@ -718,13 +719,14 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters (Type						wsiType,
 																							  physicalDevice,
 																							  surface);
 	const PlatformProperties&			platformProperties	= getPlatformProperties(wsiType);
+	const VkSurfaceTransformFlagBitsKHR transform			= (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR : capabilities.currentTransform;
 	const VkSwapchainCreateInfoKHR		parameters			=
 	{
 		VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		DE_NULL,
 		(VkSwapchainCreateFlagsKHR)0,
 		surface,
-		de::clamp(desiredImageCount, capabilities.minImageCount, capabilities.maxImageCount),
+		de::clamp(desiredImageCount, capabilities.minImageCount, capabilities.maxImageCount > 0 ? capabilities.maxImageCount : capabilities.minImageCount + desiredImageCount),
 		formats[0].format,
 		formats[0].colorSpace,
 		(platformProperties.swapchainExtent == PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE
@@ -734,7 +736,7 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters (Type						wsiType,
 		VK_SHARING_MODE_EXCLUSIVE,
 		0u,
 		(const deUint32*)DE_NULL,
-		VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+		transform,
 		VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		VK_PRESENT_MODE_FIFO_KHR,
 		VK_FALSE,							// clipped
@@ -1017,7 +1019,7 @@ Move<VkPipeline> TriangleRenderer::createPipeline (const DeviceInterface&	vkd,
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 		DE_NULL,
 		(VkPipelineRasterizationStateCreateFlags)0,
-		VK_TRUE,									// depthClampEnable
+		VK_FALSE,									// depthClampEnable
 		VK_FALSE,									// rasterizerDiscardEnable
 		VK_POLYGON_MODE_FILL,						// polygonMode
 		VK_CULL_MODE_NONE,							// cullMode
@@ -1251,36 +1253,6 @@ void TriangleRenderer::recordFrame (VkCommandBuffer	cmdBuffer,
 	}
 
 	{
-		const VkImageMemoryBarrier	fromPresentationBarrier	=
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			DE_NULL,
-			VK_ACCESS_MEMORY_READ_BIT,
-			(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|
-			 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			VK_QUEUE_FAMILY_IGNORED,
-			VK_QUEUE_FAMILY_IGNORED,
-			curImage,
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				0u,					// baseMipLevel
-				1u,					// levelCount
-				0u,					// baseArrayLayer
-				1u,					// layerCount
-			}
-		};
-		m_vkd.cmdPipelineBarrier(cmdBuffer,
-								 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-								 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-								 (VkDependencyFlags)0,
-								 0, (const VkMemoryBarrier*)DE_NULL,
-								 0, (const VkBufferMemoryBarrier*)DE_NULL,
-								 1, &fromPresentationBarrier);
-	}
-
-	{
 		const VkClearValue			clearValue		= makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f);
 		const VkRenderPassBeginInfo	passBeginParams	=
 		{
@@ -1308,36 +1280,6 @@ void TriangleRenderer::recordFrame (VkCommandBuffer	cmdBuffer,
 	m_vkd.cmdPushConstants(cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, (deUint32)sizeof(deUint32), &frameNdx);
 	m_vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
 	m_vkd.cmdEndRenderPass(cmdBuffer);
-
-	{
-		const VkImageMemoryBarrier	toPresentationBarrier	=
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			DE_NULL,
-			(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|
-			 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
-			VK_ACCESS_MEMORY_READ_BIT,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-			VK_QUEUE_FAMILY_IGNORED,
-			VK_QUEUE_FAMILY_IGNORED,
-			curImage,
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				0u,					// baseMipLevel
-				1u,					// levelCount
-				0u,					// baseArrayLayer
-				1u,					// layerCount
-			}
-		};
-		m_vkd.cmdPipelineBarrier(cmdBuffer,
-								 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-								 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-								 (VkDependencyFlags)0,
-								 0, (const VkMemoryBarrier*)DE_NULL,
-								 0, (const VkBufferMemoryBarrier*)DE_NULL,
-								 1, &toPresentationBarrier);
-	}
 
 	VK_CHECK(m_vkd.endCommandBuffer(cmdBuffer));
 }
