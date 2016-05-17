@@ -1694,8 +1694,8 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 		params.src.buffer.size = size;
 		params.dst.buffer.size = size * (size + 1);
 
-		// Copy region with size 0..size
-		for (unsigned int i = 0; i <= size; i++)
+		// Copy region with size 1..size
+		for (unsigned int i = 1; i <= size; i++)
 		{
 			const VkBufferCopy bufferCopy = {
 				0,		// VkDeviceSize	srcOffset;
