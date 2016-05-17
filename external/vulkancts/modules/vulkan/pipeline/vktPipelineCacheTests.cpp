@@ -1180,6 +1180,7 @@ protected:
 			void            buildPipeline               (deUint32 ndx);
 protected:
 	Move<VkBuffer>              m_inputBuf;
+	de::MovePtr<Allocation>     m_inputBufferAlloc;
 	Move<VkShaderModule>        m_computeShaderModule;
 
 	Move<VkBuffer>              m_outputBuf[PIPELINE_CACHE_NDX_COUNT];
@@ -1226,17 +1227,16 @@ void ComputeCacheTestInstance::buildBuffers (void)
 
 	// Create buffer object, allocate storage, and generate input data
 	const VkDeviceSize          size                = sizeof(tcu::Vec4) * 128u;
-	de::MovePtr<Allocation>     bufferAlloc;
-	m_inputBuf = createBufferAndBindMemory(m_context, size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &bufferAlloc);
+	m_inputBuf = createBufferAndBindMemory(m_context, size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &m_inputBufferAlloc);
 
 	// Initialize input buffer
-	tcu::Vec4* pVec = reinterpret_cast<tcu::Vec4*>(bufferAlloc->getHostPtr());
+	tcu::Vec4* pVec = reinterpret_cast<tcu::Vec4*>(m_inputBufferAlloc->getHostPtr());
 	for (deUint32 ndx = 0u; ndx < 128u; ndx++)
 	{
 		for (deUint32 component = 0u; component < 4u; component++)
 			pVec[ndx][component]= (float)(ndx * (component + 1u));
 	}
-	flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), size);
+	flushMappedMemoryRange(vk, vkDevice, m_inputBufferAlloc->getMemory(), m_inputBufferAlloc->getOffset(), size);
 
 	// Clear the output buffer
 	for (deUint32 ndx = 0; ndx < PIPELINE_CACHE_NDX_COUNT; ndx++)
