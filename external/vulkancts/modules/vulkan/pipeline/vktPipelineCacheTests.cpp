@@ -445,7 +445,7 @@ void SimpleGraphicsPipelineBuilder::enableTessellationStage (deUint32 patchContr
 
 template <class Test>
 vkt::TestCase* newTestCase (tcu::TestContext&     testContext,
-						    const CacheTestParam* testParam)
+							const CacheTestParam* testParam)
 {
 	return new Test(testContext,
 					testParam->generateTestName().c_str(),
@@ -1405,7 +1405,7 @@ void ComputeCacheTestInstance::buildPipeline (deUint32 ndx)
 }
 
 ComputeCacheTestInstance::ComputeCacheTestInstance (Context&              context,
-												    const CacheTestParam*  param)
+													const CacheTestParam*  param)
 	: CacheTestInstance (context, param)
 {
 	buildBuffers();
@@ -1480,6 +1480,135 @@ tcu::TestStatus ComputeCacheTestInstance::verifyTestResult (void)
 	return tcu::TestStatus::pass("Output buffers w/o cached pipeline match.");
 }
 
+class PipelineFromCacheTest : public GraphicsCacheTest
+{
+public:
+							PipelineFromCacheTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+	virtual                 ~PipelineFromCacheTest		(void) {		}
+	virtual TestInstance*   createInstance				(Context& context) const;
+};
+
+PipelineFromCacheTest::PipelineFromCacheTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, description, param)
+{
+}
+
+class PipelineFromCacheTestInstance : public GraphicsCacheTestInstance
+{
+public:
+							PipelineFromCacheTestInstance	(Context& context, const CacheTestParam* param);
+	virtual                 ~PipelineFromCacheTestInstance	(void);
+protected:
+	Move<VkPipelineCache>   m_newCache;
+	deUint8*                m_data;
+};
+
+TestInstance* PipelineFromCacheTest::createInstance (Context& context) const
+{
+	return new PipelineFromCacheTestInstance(context, &m_param);
+}
+
+PipelineFromCacheTestInstance::PipelineFromCacheTestInstance (Context& context, const CacheTestParam* param)
+	: GraphicsCacheTestInstance	(context, param)
+	, m_data					(DE_NULL)
+{
+	const DeviceInterface&  vk = m_context.getDeviceInterface();
+	const VkDevice          vkDevice = m_context.getDevice();
+
+	// Create more pipeline caches
+	{
+		size_t  dataSize	= 0u;
+
+		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, DE_NULL));
+
+		m_data				= new deUint8[dataSize];
+		DE_ASSERT(m_data);
+		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, (void*)m_data));
+
+		const VkPipelineCacheCreateInfo pipelineCacheCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,           // VkStructureType             sType;
+			DE_NULL,                                                // const void*                 pNext;
+			0u,                                                     // VkPipelineCacheCreateFlags  flags;
+			dataSize,                                               // deUintptr                   initialDataSize;
+			m_data,                                                 // const void*                 pInitialData;
+		};
+		m_newCache = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
+	}
+	m_pipeline[PIPELINE_CACHE_NDX_CACHED] = m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *m_newCache);
+}
+
+PipelineFromCacheTestInstance::~PipelineFromCacheTestInstance (void)
+{
+	delete[] m_data;
+}
+
+class PipelineFromIncompleteCacheTest : public GraphicsCacheTest
+{
+public:
+							PipelineFromIncompleteCacheTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+	virtual                 ~PipelineFromIncompleteCacheTest	(void)			{}
+	virtual TestInstance*   createInstance						(Context& context) const;
+};
+
+PipelineFromIncompleteCacheTest::PipelineFromIncompleteCacheTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, description, param)
+{
+}
+
+class PipelineFromIncompleteCacheTestInstance : public GraphicsCacheTestInstance
+{
+public:
+							PipelineFromIncompleteCacheTestInstance(Context& context, const CacheTestParam* param);
+	virtual                 ~PipelineFromIncompleteCacheTestInstance(void);
+protected:
+protected:
+	Move<VkPipelineCache>   m_newCache;
+	deUint8*                m_data;
+};
+
+TestInstance* PipelineFromIncompleteCacheTest::createInstance (Context& context) const
+{
+	return new PipelineFromIncompleteCacheTestInstance(context, &m_param);
+}
+
+PipelineFromIncompleteCacheTestInstance::PipelineFromIncompleteCacheTestInstance (Context& context, const CacheTestParam* param)
+	: GraphicsCacheTestInstance	(context, param)
+	, m_data					(DE_NULL)
+{
+	const DeviceInterface&  vk			= m_context.getDeviceInterface();
+	const VkDevice          vkDevice	= m_context.getDevice();
+
+	// Create more pipeline caches
+	{
+		size_t  dataSize = 0u;
+		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, DE_NULL));
+
+		dataSize--;
+
+		m_data = new deUint8[dataSize];
+		DE_ASSERT(m_data);
+		if (vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, (void*)m_data) != VK_INCOMPLETE)
+			TCU_THROW(TestError, "GetPipelineCacheData should return VK_INCOMPLETE state!");
+
+		const VkPipelineCacheCreateInfo pipelineCacheCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,           // VkStructureType             sType;
+			DE_NULL,                                                // const void*                 pNext;
+			0u,                                                     // VkPipelineCacheCreateFlags  flags;
+			dataSize,                                               // deUintptr                   initialDataSize;
+			m_data,                                                 // const void*                 pInitialData;
+		};
+		m_newCache = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
+	}
+	m_pipeline[PIPELINE_CACHE_NDX_CACHED] = m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *m_newCache);
+}
+
+PipelineFromIncompleteCacheTestInstance::~PipelineFromIncompleteCacheTestInstance (void)
+{
+	delete[] m_data;
+}
+
 class MergeCacheTest : public GraphicsCacheTest
 {
 public:
@@ -1499,7 +1628,6 @@ public:
 							MergeCacheTestInstance  (Context&              context,
 													 const CacheTestParam*  param);
 	virtual                 ~MergeCacheTestInstance (void);
-protected:
 protected:
 	Move<VkPipelineCache>   m_cacheGetData;
 	Move<VkPipelineCache>   m_cacheEmpty;
@@ -1565,6 +1693,172 @@ MergeCacheTestInstance::~MergeCacheTestInstance (void)
 	delete[] m_data;
 }
 
+class CacheHeaderTest : public GraphicsCacheTest
+{
+public:
+	CacheHeaderTest(tcu::TestContext&      testContext,
+		const std::string&     name,
+		const std::string&     description,
+		const CacheTestParam*  param)
+		: GraphicsCacheTest(testContext, name, description, param)
+	{ }
+	virtual                 ~CacheHeaderTest(void) { }
+	virtual TestInstance*   createInstance(Context&               context) const;
+};
+
+class CacheHeaderTestInstance : public GraphicsCacheTestInstance
+{
+public:
+							CacheHeaderTestInstance  (Context& context, const CacheTestParam*  param);
+	virtual                 ~CacheHeaderTestInstance (void);
+protected:
+	deUint8*                m_data;
+
+	struct CacheHeader
+	{
+		deUint32 HeaderLength;
+		deUint32 HeaderVersion;
+		deUint32 VendorID;
+		deUint32 DeviceID;
+		deUint8 PipelineCacheUUID[VK_UUID_SIZE];
+	} m_header;
+};
+
+TestInstance* CacheHeaderTest::createInstance (Context& context) const
+{
+	return new CacheHeaderTestInstance(context, &m_param);
+}
+
+CacheHeaderTestInstance::CacheHeaderTestInstance (Context& context, const CacheTestParam* param)
+	: GraphicsCacheTestInstance (context, param)
+	, m_data                    (DE_NULL)
+{
+	const DeviceInterface&  vk               = m_context.getDeviceInterface();
+	const VkDevice          vkDevice         = m_context.getDevice();
+
+	// Create more pipeline caches
+	{
+		// Create a empty cache as one of source cache
+		VkPipelineCacheCreateInfo pipelineCacheCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,           // VkStructureType             sType;
+			DE_NULL,                                                // const void*                 pNext;
+			0u,                                                     // VkPipelineCacheCreateFlags  flags;
+			0u,                                                     // deUintptr                   initialDataSize;
+			DE_NULL,                                                // const void*                 pInitialData;
+		};
+
+		// Create a cache with init data from m_cache
+		size_t  dataSize = 0u;
+		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, DE_NULL));
+
+		m_data = new deUint8[dataSize];
+		DE_ASSERT(m_data);
+		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, (void*)m_data));
+
+		deMemcpy(&m_header, m_data, sizeof(m_header));
+
+		if (m_header.HeaderLength - VK_UUID_SIZE != 16)
+			TCU_THROW(TestError, "Invalid header size!");
+
+		if (m_header.HeaderVersion != 1)
+			TCU_THROW(TestError, "Invalid header version!");
+
+		if (m_header.VendorID != m_context.getDeviceProperties().vendorID)
+			TCU_THROW(TestError, "Invalid header vendor ID!");
+
+		if (m_header.DeviceID != m_context.getDeviceProperties().deviceID)
+			TCU_THROW(TestError, "Invalid header device ID!");
+
+		if (deMemCmp(&m_header.PipelineCacheUUID, &m_context.getDeviceProperties().pipelineCacheUUID, VK_UUID_SIZE) != 0)
+			TCU_THROW(TestError, "Invalid header pipeline cache UUID!");
+	}
+}
+
+CacheHeaderTestInstance::~CacheHeaderTestInstance (void)
+{
+	delete[] m_data;
+}
+
+class InvalidSizeTest : public GraphicsCacheTest
+{
+public:
+							InvalidSizeTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+	virtual                 ~InvalidSizeTest	(void)	 {}
+	virtual TestInstance*   createInstance		(Context& context) const;
+};
+
+InvalidSizeTest::InvalidSizeTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, description, param)
+{
+}
+
+class InvalidSizeTestInstance : public GraphicsCacheTestInstance
+{
+public:
+							InvalidSizeTestInstance		(Context& context, const CacheTestParam*  param);
+	virtual                 ~InvalidSizeTestInstance	(void);
+protected:
+	deUint8*                m_data;
+	deUint8*                m_zeroBlock;
+};
+
+TestInstance* InvalidSizeTest::createInstance (Context& context) const
+{
+	return new InvalidSizeTestInstance(context, &m_param);
+}
+
+InvalidSizeTestInstance::InvalidSizeTestInstance (Context& context, const CacheTestParam* param)
+	: GraphicsCacheTestInstance	(context, param)
+	, m_data					(DE_NULL)
+	, m_zeroBlock				(DE_NULL)
+{
+	const DeviceInterface&  vk			= m_context.getDeviceInterface();
+	const VkDevice          vkDevice	= m_context.getDevice();
+
+	// Create more pipeline caches
+	{
+		// Create a cache with init data from m_cache
+		size_t dataSize			= 0u;
+		size_t savedDataSize	= 0u;
+		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, DE_NULL));
+		savedDataSize = dataSize;
+
+		// If the value of dataSize is less than the maximum size that can be retrieved by the pipeline cache, 
+		// at most pDataSize bytes will be written to pData, and vkGetPipelineCacheData will return VK_INCOMPLETE.
+		dataSize--;
+
+		m_data = new deUint8[savedDataSize];
+		deMemset(m_data, 0, savedDataSize);
+		DE_ASSERT(m_data);
+		if (vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, (void*)m_data) != VK_INCOMPLETE)
+			TCU_THROW(TestError, "GetPipelineCacheData should return VK_INCOMPLETE state!");
+
+		delete[] m_data;
+
+		// If the value of dataSize is less than what is necessary to store the header, 
+		// nothing will be written to pData and zero will be written to dataSize.
+		dataSize = 16 + VK_UUID_SIZE - 1;
+
+		m_data = new deUint8[savedDataSize];
+		deMemset(m_data, 0, savedDataSize);
+		DE_ASSERT(m_data);
+		if (vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, (void*)m_data) != VK_INCOMPLETE)
+			TCU_THROW(TestError, "GetPipelineCacheData should return VK_INCOMPLETE state!");
+
+		m_zeroBlock = new deUint8[savedDataSize];
+		deMemset(m_zeroBlock, 0, savedDataSize);
+		if (deMemCmp(m_data, m_zeroBlock, savedDataSize) != 0 || dataSize != 0)
+			TCU_THROW(TestError, "Data needs to be empty and data size should be 0 when invalid size is passed to GetPipelineCacheData!");
+	}
+}
+
+InvalidSizeTestInstance::~InvalidSizeTestInstance (void)
+{
+	delete[] m_data;
+	delete[] m_zeroBlock;
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
@@ -1611,6 +1905,80 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 
 	// Graphics Pipeline Tests
 	{
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_getData", "Test pipeline cache with graphics pipeline."));
+
+		const VkShaderStageFlagBits testParamShaders0[] =
+		{
+			VK_SHADER_STAGE_VERTEX_BIT,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+		};
+		const VkShaderStageFlagBits testParamShaders1[] =
+		{
+			VK_SHADER_STAGE_VERTEX_BIT,
+			VK_SHADER_STAGE_GEOMETRY_BIT,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+		};
+		const VkShaderStageFlagBits testParamShaders2[] =
+		{
+			VK_SHADER_STAGE_VERTEX_BIT,
+			VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+			VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+		};
+		const CacheTestParam* testParams[] =
+		{
+			new CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0)),
+			new CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1)),
+			new CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2)),
+		};
+
+		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
+		{
+			graphicsTests->addChild(newTestCase<PipelineFromCacheTest>(testCtx, testParams[i]));
+			delete testParams[i];
+		}
+		cacheTests->addChild(graphicsTests.release());
+	}
+
+	// Graphics Pipeline Tests
+	{
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_incomplete_getData", "Test pipeline cache with graphics pipeline."));
+
+		const VkShaderStageFlagBits testParamShaders0[] =
+		{
+			VK_SHADER_STAGE_VERTEX_BIT,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+		};
+		const VkShaderStageFlagBits testParamShaders1[] =
+		{
+			VK_SHADER_STAGE_VERTEX_BIT,
+			VK_SHADER_STAGE_GEOMETRY_BIT,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+		};
+		const VkShaderStageFlagBits testParamShaders2[] =
+		{
+			VK_SHADER_STAGE_VERTEX_BIT,
+			VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+			VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+		};
+		const CacheTestParam* testParams[] =
+		{
+			new CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0)),
+			new CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1)),
+			new CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2)),
+		};
+
+		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
+		{
+			graphicsTests->addChild(newTestCase<PipelineFromIncompleteCacheTest>(testCtx, testParams[i]));
+			delete testParams[i];
+		}
+		cacheTests->addChild(graphicsTests.release());
+	}
+
+	// Compute Pipeline Tests
+	{
 		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute_tests", "Test pipeline cache with compute pipeline."));
 
 		const VkShaderStageFlagBits testParamShaders0[] =
@@ -1645,6 +2013,17 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 											   "merge_cache_test",
 											   "Merge the caches test.",
 											   testParam));
+
+		miscTests->addChild(new CacheHeaderTest(testCtx,
+											   "cache_header_test",
+											   "Cache header test.",
+											   testParam));
+
+		miscTests->addChild(new InvalidSizeTest(testCtx,
+												"invalid_size_test",
+												"Invalid size test.",
+												testParam));
+
 		delete testParam;
 
 		cacheTests->addChild(miscTests.release());
