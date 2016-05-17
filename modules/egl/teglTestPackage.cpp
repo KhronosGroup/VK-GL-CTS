@@ -62,6 +62,7 @@
 #include "teglSwapBuffersWithDamageTests.hpp"
 #include "teglMultiContextTests.hpp"
 #include "teglThreadCleanUpTests.hpp"
+#include "teglMutableRenderBufferTests.hpp"
 
 namespace deqp
 {
@@ -136,6 +137,7 @@ public:
 		addChild(new SwapBuffersWithDamageTests	(m_eglTestCtx));
 		addChild(createMultiContextTests		(m_eglTestCtx));
 		addChild(createThreadCleanUpTest		(m_eglTestCtx));
+		addChild(new MutableRenderBufferTests	(m_eglTestCtx));
 	}
 };
 
