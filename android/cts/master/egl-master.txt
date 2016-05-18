@@ -424,7 +424,6 @@ dEQP-EGL.functional.color_clears.single_context.gles1.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.single_context.gles1.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.single_context.gles1.rgba5551_window
 dEQP-EGL.functional.color_clears.single_context.gles1.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.single_context.gles1.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.single_context.gles1.rgba8888_window
 dEQP-EGL.functional.color_clears.single_context.gles1.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.single_context.gles1.rgba8888_pbuffer
@@ -440,7 +439,6 @@ dEQP-EGL.functional.color_clears.single_context.gles2.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.single_context.gles2.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.single_context.gles2.rgba5551_window
 dEQP-EGL.functional.color_clears.single_context.gles2.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.single_context.gles2.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.single_context.gles2.rgba8888_window
 dEQP-EGL.functional.color_clears.single_context.gles2.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.single_context.gles2.rgba8888_pbuffer
@@ -456,7 +454,6 @@ dEQP-EGL.functional.color_clears.single_context.gles3.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.single_context.gles3.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.single_context.gles3.rgba5551_window
 dEQP-EGL.functional.color_clears.single_context.gles3.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.single_context.gles3.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.single_context.gles3.rgba8888_window
 dEQP-EGL.functional.color_clears.single_context.gles3.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.single_context.gles3.rgba8888_pbuffer
@@ -488,7 +485,6 @@ dEQP-EGL.functional.color_clears.multi_context.gles1.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles1.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles1.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_context.gles1.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_context.gles1.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles1.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_context.gles1.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles1.rgba8888_pbuffer
@@ -504,7 +500,6 @@ dEQP-EGL.functional.color_clears.multi_context.gles2.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles2.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles2.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_context.gles2.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_context.gles2.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles2.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_context.gles2.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles2.rgba8888_pbuffer
@@ -520,7 +515,6 @@ dEQP-EGL.functional.color_clears.multi_context.gles3.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles3.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles3.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_context.gles3.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_context.gles3.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles3.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_context.gles3.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles3.rgba8888_pbuffer
@@ -552,7 +546,6 @@ dEQP-EGL.functional.color_clears.multi_context.gles1_gles2.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_context.gles1_gles2.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2.rgba8888_pbuffer
@@ -568,7 +561,6 @@ dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_gles3.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_gles3.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_gles3.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_gles3.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_gles3.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_gles3.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_gles3.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_gles3.rgba8888_pbuffer
@@ -584,7 +576,6 @@ dEQP-EGL.functional.color_clears.multi_context.gles1_vg.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles1_vg.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles1_vg.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_context.gles1_vg.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_context.gles1_vg.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles1_vg.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_context.gles1_vg.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles1_vg.rgba8888_pbuffer
@@ -600,7 +591,6 @@ dEQP-EGL.functional.color_clears.multi_context.gles2_vg.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles2_vg.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles2_vg.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_context.gles2_vg.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_context.gles2_vg.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles2_vg.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_context.gles2_vg.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles2_vg.rgba8888_pbuffer
@@ -616,7 +606,6 @@ dEQP-EGL.functional.color_clears.multi_context.gles3_vg.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles3_vg.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles3_vg.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_context.gles3_vg.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_context.gles3_vg.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles3_vg.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_context.gles3_vg.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles3_vg.rgba8888_pbuffer
@@ -632,7 +621,6 @@ dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_vg.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_vg.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_vg.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_vg.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_vg.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_vg.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_vg.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_context.gles1_gles2_vg.rgba8888_pbuffer
@@ -648,7 +636,6 @@ dEQP-EGL.functional.color_clears.multi_thread.gles1.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles1.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles1.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_thread.gles1.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_thread.gles1.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles1.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_thread.gles1.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles1.rgba8888_pbuffer
@@ -664,7 +651,6 @@ dEQP-EGL.functional.color_clears.multi_thread.gles2.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles2.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles2.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_thread.gles2.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_thread.gles2.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles2.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_thread.gles2.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles2.rgba8888_pbuffer
@@ -680,7 +666,6 @@ dEQP-EGL.functional.color_clears.multi_thread.gles3.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles3.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles3.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_thread.gles3.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_thread.gles3.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles3.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_thread.gles3.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles3.rgba8888_pbuffer
@@ -712,7 +697,6 @@ dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2.rgba8888_pbuffer
@@ -728,7 +712,6 @@ dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_gles3.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_gles3.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_gles3.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_gles3.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_gles3.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_gles3.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_gles3.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_gles3.rgba8888_pbuffer
@@ -744,7 +727,6 @@ dEQP-EGL.functional.color_clears.multi_thread.gles1_vg.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles1_vg.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles1_vg.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_thread.gles1_vg.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_thread.gles1_vg.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles1_vg.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_thread.gles1_vg.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles1_vg.rgba8888_pbuffer
@@ -760,7 +742,6 @@ dEQP-EGL.functional.color_clears.multi_thread.gles2_vg.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles2_vg.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles2_vg.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_thread.gles2_vg.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_thread.gles2_vg.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles2_vg.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_thread.gles2_vg.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles2_vg.rgba8888_pbuffer
@@ -776,7 +757,6 @@ dEQP-EGL.functional.color_clears.multi_thread.gles3_vg.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles3_vg.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles3_vg.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_thread.gles3_vg.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_thread.gles3_vg.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles3_vg.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_thread.gles3_vg.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles3_vg.rgba8888_pbuffer
@@ -792,7 +772,6 @@ dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_vg.rgba4444_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_vg.rgba4444_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_vg.rgba5551_window
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_vg.rgba5551_pixmap
-dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_vg.rgba5551_pbuffer
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_vg.rgba8888_window
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_vg.rgba8888_pixmap
 dEQP-EGL.functional.color_clears.multi_thread.gles1_gles2_vg.rgba8888_pbuffer

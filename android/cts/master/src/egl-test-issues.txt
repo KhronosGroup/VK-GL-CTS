@@ -20,3 +20,6 @@ dEQP-EGL.functional.multithread.pixmap_single_window_context
 
 # Bug: 27702713
 dEQP-EGL.functional.image.modify.*_rgb5_a1_tex_subimage_rgba8
+
+# Bug: 28676683
+dEQP-EGL.functional.color_clears.*.gles*.rgba5551_pbuffer
