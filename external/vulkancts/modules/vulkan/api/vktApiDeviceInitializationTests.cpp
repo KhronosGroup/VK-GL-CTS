@@ -150,6 +150,23 @@ tcu::TestStatus createInstanceTest (Context& context)
 
 		appInfos.push_back(appInfo);
 	}
+
+	// test when apiVersion is 0
+	{
+		const VkApplicationInfo appInfo =
+		{
+			VK_STRUCTURE_TYPE_APPLICATION_INFO,		// VkStructureType				sType;
+			DE_NULL,								// const void*					pNext;
+			"appName",								// const char*					pAppName;
+			0u,										// deUint32						appVersion;
+			"engineName",							// const char*					pEngineName;
+			0u,										// deUint32						engineVersion;
+			0u,										// deUint32						apiVersion;
+		};
+
+		appInfos.push_back(appInfo);
+	}
+
 	// run the tests!
 	for (size_t appInfoNdx = 0; appInfoNdx < appInfos.size(); ++appInfoNdx)
 	{
