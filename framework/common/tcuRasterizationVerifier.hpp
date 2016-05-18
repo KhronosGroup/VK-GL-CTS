@@ -1,8 +1,8 @@
-#ifndef _GLSRASTERIZATIONTESTUTIL_HPP
-#define _GLSRASTERIZATIONTESTUTIL_HPP
+#ifndef _TCURASTERIZATIONVERIFIER_HPP
+#define _TCURASTERIZATIONVERIFIER_HPP
 /*-------------------------------------------------------------------------
- * drawElements Quality Program OpenGL (ES) Module
- * -----------------------------------------------
+ * drawElements Quality Program Tester Core
+ * ----------------------------------------
  *
  * Copyright 2014 The Android Open Source Project
  *
@@ -20,20 +20,16 @@
  *
  *//*!
  * \file
- * \brief rasterization test utils.
+ * \brief Rasterization verifier utils.
  *//*--------------------------------------------------------------------*/
 
-#include "deMath.h"
 #include "tcuDefs.hpp"
 #include "tcuTestLog.hpp"
+#include "deMath.h"
 
 #include <vector>
 
-namespace deqp
-{
-namespace gls
-{
-namespace RasterizationTestUtil
+namespace tcu
 {
 
 enum CoverageType
@@ -137,6 +133,19 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 bool verifyLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Verify clipped line rasterization result
+ * Verifies pixels in the surface are rasterized within the bounds given
+ * by RasterizationArguments and by clipping the lines with a (-1, -1), (1, 1)
+ * square. Lines should not be z-clipped.
+ *
+ * Line colors are not used. The line is expected to be white. Lines are
+ * rasterized as two triangles.
+ *
+ * Returns false if invalid rasterization is found.
+ *//*--------------------------------------------------------------------*/
+bool verifyClippedTriangulatedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
+
+/*--------------------------------------------------------------------*//*!
  * \brief Verify point rasterization result
  * Verifies points in the surface are rasterized within the bounds given
  * by RasterizationArguments. Points should not be z-clipped.
@@ -169,8 +178,18 @@ bool verifyTriangleGroupInterpolation (const tcu::Surface& surface, const Triang
  *//*--------------------------------------------------------------------*/
 LineInterpolationMethod verifyLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
 
-} // StateQueryUtil
-} // gls
-} // deqp
+/*--------------------------------------------------------------------*//*!
+ * \brief Verify line color interpolation is valid
+ * Verifies the color of a fragments of a colored line is in the
+ * valid range. Lines should not be z-clipped.
+ *
+ * The background is expected to be black. The lines are rasterized
+ * as two triangles.
+ *
+ * Returns false if invalid rasterization interpolation is found.
+ *//*--------------------------------------------------------------------*/
+bool verifyTriangulatedLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
 
-#endif // _GLSRASTERIZATIONTESTUTIL_HPP
+} // tcu
+
+#endif // _TCURASTERIZATIONVERIFIER_HPP
