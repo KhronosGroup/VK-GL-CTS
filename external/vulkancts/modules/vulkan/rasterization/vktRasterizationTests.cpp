@@ -639,6 +639,14 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 	Move<VkPipeline>							graphicsPipeline;
 	Move<VkBuffer>								vertexBuffer;
 	de::MovePtr<Allocation>						vertexBufferMemory;
+	const VkPhysicalDeviceProperties			properties				= m_context.getDeviceProperties();
+	
+	if (attributeBatchSize > properties.limits.maxVertexInputAttributeOffset)
+	{
+		std::stringstream message;
+		message << "Larger vertex input attribute offset is needed (" << attributeBatchSize << ") than the available maximum (" << properties.limits.maxVertexInputAttributeOffset << ").";
+		TCU_THROW(NotSupportedError, message.str().c_str());
+	}
 
 	// Create Graphics Pipeline
 	{
