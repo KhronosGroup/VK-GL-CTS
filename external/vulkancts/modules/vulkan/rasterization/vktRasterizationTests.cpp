@@ -928,7 +928,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 	// Set Point Size
 	{
 		float	pointSize	= getPointSize();
-		deMemcpy(m_uniformBufferMemory->getHostPtr(), &pointSize, m_uniformBufferSize);
+		deMemcpy(m_uniformBufferMemory->getHostPtr(), &pointSize, (size_t)m_uniformBufferSize);
 		flushMappedMemoryRange(vkd, vkDevice, m_uniformBufferMemory->getMemory(), m_uniformBufferMemory->getOffset(), m_uniformBufferSize);
 	}
 

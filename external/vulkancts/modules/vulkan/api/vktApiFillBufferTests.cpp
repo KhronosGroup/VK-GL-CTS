@@ -389,7 +389,7 @@ void UpdateBufferTestInstance::generateExpectedResult (void)
 
 	deUint32*	currentPtr	= (deUint32*) m_expectedTextureLevel->getAccess().getDataPtr() + m_params.dstOffset / 4;
 
-	deMemcpy(currentPtr, m_params.testData, m_params.size);
+	deMemcpy(currentPtr, m_params.testData, (size_t)m_params.size);
 }
 
 class UpdateBufferTestCase : public vkt::TestCase
@@ -420,7 +420,7 @@ tcu::TestCaseGroup* createFillAndUpdateBufferTests (tcu::TestContext& testCtx)
 	params.dstSize = TestParams::TEST_DATA_SIZE;
 
 	DE_ASSERT(params.dstSize <= TestParams::TEST_DATA_SIZE);
-	deMemset(params.testData, 0xFFu, params.dstSize);
+	deMemset(params.testData, 0xFFu, (size_t)params.dstSize);
 
 	{
 		const std::string	description	("whole buffer");
