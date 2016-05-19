@@ -28,7 +28,7 @@
 #include "tcuStringTemplate.hpp"
 #include "tcuTextureUtil.hpp"
 #include "glsStateQueryUtil.hpp"
-#include "glsRasterizationTestUtil.hpp"
+#include "tcuRasterizationVerifier.hpp"
 #include "gluRenderContext.hpp"
 #include "gluCallLogWrapper.hpp"
 #include "gluObjectWrapper.hpp"
@@ -42,8 +42,6 @@
 #include "deRandom.hpp"
 
 using namespace glw;
-using deqp::gls::RasterizationTestUtil::RasterizationArguments;
-using deqp::gls::RasterizationTestUtil::TriangleSceneSpec;
 
 namespace deqp
 {
@@ -53,6 +51,9 @@ namespace Functional
 {
 namespace
 {
+
+using tcu::RasterizationArguments;
+using tcu::TriangleSceneSpec;
 
 static std::string sampleMaskToString (const std::vector<deUint32>& bitfield, int numBits)
 {
@@ -456,7 +457,7 @@ bool SamplePosRasterizationTest::testMultisampleTexture (int sampleNdx)
 		args.numSamples		= 0;
 		args.subpixelBits	= m_subpixelBits;
 
-		return gls::RasterizationTestUtil::verifyTriangleGroupRasterization(glSurface, scene, args, m_testCtx.getLog(), deqp::gls::RasterizationTestUtil::VERIFICATIONMODE_STRICT);
+		return tcu::verifyTriangleGroupRasterization(glSurface, scene, args, m_testCtx.getLog(), tcu::VERIFICATIONMODE_STRICT);
 	}
 }
 
