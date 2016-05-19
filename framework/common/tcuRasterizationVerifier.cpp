@@ -879,20 +879,20 @@ void applyClippingBox (tcu::Vec2 line[2], float w)
 	{
 		const int	sign		= ((side / 2) * -2) + 1;
 		const int	component	= side % 2;
-		const float	t			= calculateIntersectionParameter(line, w * sign, component);
+		const float	t			= calculateIntersectionParameter(line, w * (float)sign, component);
 
-		if (t > 0 && t < 1)
+		if ((t > 0) && (t < 1))
 		{
-			float newCoord		= t * line[1][1 - component] + (1 - t) * line[0][1 - component];
+			const float newCoord	= t * line[1][1 - component] + (1 - t) * line[0][1 - component];
 
-			if (line[1][component] > w * sign)
+			if (line[1][component] > (w * (float)sign))
 			{
-				line[1 - side / 2][component] = w * sign;
+				line[1 - side / 2][component] = w * (float)sign;
 				line[1 - side / 2][1 - component] = newCoord;
 			}
 			else
 			{
-				line[side / 2][component] = w * sign;
+				line[side / 2][component] = w * (float)sign;
 				line[side / 2][1 - component] = newCoord;
 			}
 		}

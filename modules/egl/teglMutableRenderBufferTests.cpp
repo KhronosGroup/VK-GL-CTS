@@ -179,7 +179,7 @@ void MutableRenderBufferTest::deinit (void)
 deUint32 MutableRenderBufferTest::drawAndSwap (const Library& egl, deUint32 color, bool flush)
 {
 	DE_ASSERT(color < 256);
-	m_gl.clearColor(color/255.f, color/255.f, color/255.f, color/255.f);
+	m_gl.clearColor((float)color/255.f, (float)color/255.f, (float)color/255.f, (float)color/255.f);
 	m_gl.clear(GL_COLOR_BUFFER_BIT);
 	if (flush)
 	{

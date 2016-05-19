@@ -719,8 +719,8 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 		{
 			0.0f,						// float	originX;
 			0.0f,						// float	originY;
-			m_renderSize,				// float	width;
-			m_renderSize,				// float	height;
+			(float)m_renderSize,		// float	width;
+			(float)m_renderSize,		// float	height;
 			0.0f,						// float	minDepth;
 			1.0f						// float	maxDepth;
 		};

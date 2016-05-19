@@ -341,7 +341,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 {
 	const PlatformProperties&			platformProperties	= getPlatformProperties(wsiType);
 	vector<VkSwapchainCreateInfoKHR>	cases;
-	const VkSurfaceTransformFlagBitsKHR transform			= (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR : capabilities.currentTransform;
+	const VkSurfaceTransformFlagBitsKHR defaultTransform	= (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR : capabilities.currentTransform;
 	const VkSwapchainCreateInfoKHR		baseParameters		=
 	{
 		VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -358,7 +358,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 		VK_SHARING_MODE_EXCLUSIVE,
 		0u,
 		(const deUint32*)DE_NULL,
-		transform,
+		defaultTransform,
 		VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		VK_PRESENT_MODE_FIFO_KHR,
 		VK_FALSE,							// clipped
@@ -1238,7 +1238,6 @@ void TriangleRenderer::recordFrame (VkCommandBuffer	cmdBuffer,
 									deUint32		imageNdx,
 									deUint32		frameNdx) const
 {
-	const VkImage		curImage		= m_swapchainImages[imageNdx];
 	const VkFramebuffer	curFramebuffer	= **m_framebuffers[imageNdx];
 
 	{
