@@ -1,0 +1,46 @@
+# Khronos Issue 217: Built-in function precision test issues
+dEQP-VK.glsl.builtin.precision.dot.highp_compute.*
+dEQP-VK.glsl.builtin.precision.smoothstep.mediump_compute.*
+dEQP-VK.glsl.builtin.precision.smoothstep.highp_compute.*
+dEQP-VK.glsl.builtin.precision.atan2.mediump_compute.*
+dEQP-VK.glsl.builtin.precision.atan2.highp_compute.*
+dEQP-VK.glsl.builtin.precision.acosh.highp_compute.*
+dEQP-VK.glsl.builtin.precision.atanh.highp_compute.*
+dEQP-VK.glsl.builtin.precision.atanh.mediump_compute.*
+dEQP-VK.glsl.builtin.precision.reflect.mediump_compute.scalar
+dEQP-VK.glsl.builtin.precision.reflect.highp_compute.scalar
+dEQP-VK.glsl.builtin.precision.acos.mediump_compute.*
+dEQP-VK.glsl.builtin.precision.atan.mediump_compute.*
+dEQP-VK.glsl.builtin.precision.inverse.highp_compute.mat2
+dEQP-VK.glsl.builtin.precision.refract.*
+
+# Khronos Issue 233: Negative zero flat varying issue
+dEQP-VK.glsl.builtin.function.common.frexp.float_highp_vertex
+dEQP-VK.glsl.builtin.function.common.frexp.vec2_highp_vertex
+dEQP-VK.glsl.builtin.function.common.frexp.vec3_highp_vertex
+dEQP-VK.glsl.builtin.function.common.frexp.vec4_highp_vertex
+
+# Khronos Issue 218: Excluded built-in function precision tests
+dEQP-VK.glsl.builtin.precision.clamp.highp_compute.*
+dEQP-VK.glsl.builtin.precision.cos.mediump_*
+dEQP-VK.glsl.builtin.precision.div.highp_compute.*
+dEQP-VK.glsl.builtin.precision.max.highp_compute.*
+dEQP-VK.glsl.builtin.precision.min.highp_compute.*
+dEQP-VK.glsl.builtin.precision.mod.highp_compute.*
+dEQP-VK.glsl.builtin.precision.reflect.highp_compute.vec4
+dEQP-VK.glsl.builtin.precision.sin.mediump_compute.*
+dEQP-VK.glsl.builtin.precision.tan.mediump_compute.*
+
+# Khronos Issue 242: Excluded blend tests where propagated errors may be large
+dEQP-VK.pipeline.blend.format.a2r10g10b10_unorm_pack32.states.color_dc_dc_add_alpha_o_1msc_add-color_sas_1mdc_max_alpha_sa_1msc_min-color_dc_sas_min_alpha_1mcc_cc_sub-color_z_1mda_add_alpha_o_1mdc_add
+dEQP-VK.pipeline.blend.format.a2r10g10b10_unorm_pack32.states.color_sa_z_sub_alpha_ca_cc_sub-color_sas_1msa_rsub_alpha_ca_da_sub-color_1mca_ca_min_alpha_1msc_1mcc_rsub-color_dc_da_sub_alpha_1mcc_1mda_add
+dEQP-VK.pipeline.blend.format.b5g5r5a1_unorm_pack16.states.color_1mcc_cc_min_alpha_sc_cc_min-color_o_o_min_alpha_1msc_1msc_add-color_sas_da_add_alpha_1mdc_ca_add-color_cc_1mda_sub_alpha_dc_1mda_add
+dEQP-VK.pipeline.blend.format.b5g5r5a1_unorm_pack16.states.color_dc_dc_add_alpha_o_1msc_add-color_sas_1mdc_max_alpha_sa_1msc_min-color_dc_sas_min_alpha_1mcc_cc_sub-color_z_1mda_add_alpha_o_1mdc_add
+dEQP-VK.pipeline.blend.format.b5g5r5a1_unorm_pack16.states.color_sa_z_sub_alpha_ca_cc_sub-color_sas_1msa_rsub_alpha_ca_da_sub-color_1mca_ca_min_alpha_1msc_1mcc_rsub-color_dc_da_sub_alpha_1mcc_1mda_add
+dEQP-VK.pipeline.blend.format.r5g5b5a1_unorm_pack16.states.color_1mcc_cc_min_alpha_sc_cc_min-color_o_o_min_alpha_1msc_1msc_add-color_sas_da_add_alpha_1mdc_ca_add-color_cc_1mda_sub_alpha_dc_1mda_add
+dEQP-VK.pipeline.blend.format.r5g5b5a1_unorm_pack16.states.color_dc_dc_add_alpha_o_1msc_add-color_sas_1mdc_max_alpha_sa_1msc_min-color_dc_sas_min_alpha_1mcc_cc_sub-color_z_1mda_add_alpha_o_1mdc_add
+dEQP-VK.pipeline.blend.format.r5g5b5a1_unorm_pack16.states.color_sa_z_sub_alpha_ca_cc_sub-color_sas_1msa_rsub_alpha_ca_da_sub-color_1mca_ca_min_alpha_1msc_1mcc_rsub-color_dc_da_sub_alpha_1mcc_1mda_add
+
+
+# Bug: 28594488
+dEQP-VK.ssbo.layout.random.all_shared_buffer.5

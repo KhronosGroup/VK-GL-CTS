@@ -1,3 +1,0 @@
-# EGL thread clean up tests
-dEQP-EGL.functional.thread_cleanup.*
-dEQP-EGL.functional.mutable_render_buffer.*

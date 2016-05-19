@@ -3535,3 +3535,10 @@ dEQP-EGL.functional.multicontext.non_shared_make_current
 dEQP-EGL.functional.multicontext.shared_make_current
 dEQP-EGL.functional.multicontext.non_shared_clear
 dEQP-EGL.functional.multicontext.shared_clear
+dEQP-EGL.functional.thread_cleanup.single_context_single_surface
+dEQP-EGL.functional.thread_cleanup.multi_context_single_surface
+dEQP-EGL.functional.thread_cleanup.single_context_multi_surface
+dEQP-EGL.functional.thread_cleanup.multi_context_multi_surface
+dEQP-EGL.functional.mutable_render_buffer.querySurface
+dEQP-EGL.functional.mutable_render_buffer.negativeConfigBit
+dEQP-EGL.functional.mutable_render_buffer.basic

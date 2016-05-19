@@ -1,0 +1,16 @@
+# Bug 27598329
+dEQP-VK.pipeline.sampler.view_type.cube.format.a2b10g10r10_unorm_pack32.mag_filter.linear
+dEQP-VK.pipeline.sampler.view_type.cube_array.format.a2b10g10r10_unorm_pack32.mag_filter.linear
+
+dEQP-VK.pipeline.sampler.view_type.cube.format.etc2_r8g8b8_srgb_block.mag_filter.linear
+dEQP-VK.pipeline.sampler.view_type.cube.format.etc2_r8g8b8a1_srgb_block.mag_filter.linear
+dEQP-VK.pipeline.sampler.view_type.cube.format.etc2_r8g8b8a8_srgb_block.mag_filter.linear
+dEQP-VK.pipeline.sampler.view_type.cube.format.r8_srgb.mag_filter.linear
+dEQP-VK.pipeline.sampler.view_type.cube.format.r8g8_srgb.mag_filter.linear
+dEQP-VK.pipeline.sampler.view_type.cube.format.r8g8b8a8_srgb.mag_filter.linear
+dEQP-VK.pipeline.sampler.view_type.cube_array.format.etc2_r8g8b8_srgb_block.mag_filter.linear
+dEQP-VK.pipeline.sampler.view_type.cube_array.format.etc2_r8g8b8a1_srgb_block.mag_filter.linear
+dEQP-VK.pipeline.sampler.view_type.cube_array.format.etc2_r8g8b8a8_srgb_block.mag_filter.linear
+dEQP-VK.pipeline.sampler.view_type.cube_array.format.r8_srgb.mag_filter.linear
+dEQP-VK.pipeline.sampler.view_type.cube_array.format.r8g8_srgb.mag_filter.linear
+dEQP-VK.pipeline.sampler.view_type.cube_array.format.r8g8b8a8_srgb.mag_filter.linear
