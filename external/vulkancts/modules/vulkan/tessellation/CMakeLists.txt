@@ -25,6 +25,12 @@ set(DEQP_VK_TESSELLATION_SRCS
 	vktTessellationInvarianceTests.cpp
 	vktTessellationUserDefinedIO.hpp
 	vktTessellationUserDefinedIO.cpp
+	vktTessellationGeometryPassthroughTests.hpp
+	vktTessellationGeometryPassthroughTests.cpp
+	vktTessellationGeometryPointSizeTests.hpp
+	vktTessellationGeometryPointSizeTests.cpp
+	vktTessellationGeometryGridRenderTests.hpp
+	vktTessellationGeometryGridRenderTests.cpp
 	)
 
 set(DEQP_VK_TESSELLATION_LIBS
