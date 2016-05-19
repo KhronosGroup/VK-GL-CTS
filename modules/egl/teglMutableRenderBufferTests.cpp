@@ -36,6 +36,8 @@
 
 using namespace eglw;
 
+using std::vector;
+
 namespace deqp
 {
 namespace egl
@@ -119,9 +121,30 @@ void MutableRenderBufferTest::init (void)
 		EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
 		EGL_NONE
 	};
-	m_eglConfig			= m_enableConfigBit ?
-								eglu::chooseSingleConfig(egl, m_eglDisplay, attribs) :
-								eglu::chooseSingleConfig(egl, m_eglDisplay, attribsNoBit);
+
+	if (m_enableConfigBit)
+	{
+		m_eglConfig = eglu::chooseSingleConfig(egl, m_eglDisplay, attribs);
+	}
+	else
+	{
+		const vector<EGLConfig> configs = eglu::chooseConfigs(egl, m_eglDisplay, attribsNoBit);
+
+		for (vector<EGLConfig>::const_iterator config = configs.begin(); config != configs.end(); ++config)
+		{
+			EGLint surfaceType = -1;
+			EGLU_CHECK_CALL(egl, getConfigAttrib(m_eglDisplay, *config, EGL_SURFACE_TYPE, &surfaceType));
+
+			if (!(surfaceType & EGL_MUTABLE_RENDER_BUFFER_BIT_KHR))
+			{
+				m_eglConfig = *config;
+				break;
+			}
+		}
+
+		if (m_eglConfig == DE_NULL)
+			TCU_THROW(NotSupportedError, "No config without support for mutable_render_buffer found");
+	}
 
 	// create surface
 	const eglu::NativeWindowFactory& factory = eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
