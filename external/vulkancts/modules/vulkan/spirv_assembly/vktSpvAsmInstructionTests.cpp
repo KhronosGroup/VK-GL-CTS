@@ -8070,7 +8070,330 @@ tcu::TestCaseGroup* createUConvertTests (tcu::TestContext& testCtx)
 
 		group->addChild(new ConvertTestCase(testCtx, test->m_name.c_str(), "Convert integers with OpUConvert.", spec, test->m_features));
 	}
+	return group.release();
+}
 
+enum NumberType
+{
+	TYPE_INT,
+	TYPE_UINT,
+	TYPE_FLOAT,
+	TYPE_END,
+};
+
+const string getNumberTypeName (const NumberType type)
+{
+	if (type == TYPE_INT)
+	{
+		return "int";
+	}
+	else if (type == TYPE_UINT)
+	{
+		return "uint";
+	}
+	else if (type == TYPE_FLOAT)
+	{
+		return "float";
+	}
+	else
+	{
+		DE_ASSERT(false);
+		return "";
+	}
+}
+
+deInt32 getInt(de::Random& rnd)
+{
+	return rnd.getInt(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+}
+
+template <typename T>
+const string numberToString (T number)
+{
+	std::stringstream ss;
+	ss << number;
+	return ss.str();
+}
+
+const string repeatString (const string& str, int times)
+{
+	string filler;
+	for (int i = 0; i < times; ++i)
+	{
+		filler += str;
+	}
+	return filler;
+}
+
+const string getRandomConstantString (const NumberType type, de::Random& rnd)
+{
+	if (type == TYPE_INT)
+	{
+		return numberToString<deInt32>(getInt(rnd));
+	}
+	else if (type == TYPE_UINT)
+	{
+		return numberToString<deUint32>(rnd.getUint32());
+	}
+	else if (type == TYPE_FLOAT)
+	{
+		return numberToString<float>(rnd.getFloat());
+	}
+	else
+	{
+		DE_ASSERT(false);
+		return "";
+	}
+}
+
+void createVectorCompositeCases (vector<map<string, string> >& testCases, de::Random& rnd, const NumberType type)
+{
+	map<string, string> params;
+
+	// Vec2 to Vec4
+	for (int width = 2; width <= 4; ++width)
+	{
+		string randomConst = numberToString(getInt(rnd));
+		string widthStr = numberToString(width);
+		int index = rnd.getInt(0, width-1);
+
+		params["name"]					= "vec_" + widthStr;
+		params["compositeType"]			= "%composite = OpTypeVector %custom " + widthStr +"\n";
+		params["filler"]				= string("%filler    = OpConstant %custom ") + getRandomConstantString(type, rnd) + "\n";
+		params["compositeConstruct"]	= "%instance  = OpCompositeConstruct %composite" + repeatString(" %filler", width) + "\n";
+		params["indexes"]				= numberToString(index);
+		testCases.push_back(params);
+	}
+}
+
+void createArrayCompositeCases (vector<map<string, string> >& testCases, de::Random& rnd, const NumberType type)
+{
+	const int limit = 10;
+	map<string, string> params;
+
+	for (int width = 2; width <= limit; ++width)
+	{
+		string randomConst = numberToString(getInt(rnd));
+		string widthStr = numberToString(width);
+		int index = rnd.getInt(0, width-1);
+
+		params["name"]					= "array_" + widthStr;
+		params["compositeType"]			= string("%arraywidth = OpConstant %u32 " + widthStr + "\n")
+											+	 "%composite = OpTypeArray %custom %arraywidth\n";
+
+		params["filler"]				= string("%filler    = OpConstant %custom ") + getRandomConstantString(type, rnd) + "\n";
+		params["compositeConstruct"]	= "%instance  = OpCompositeConstruct %composite" + repeatString(" %filler", width) + "\n";
+		params["indexes"]				= numberToString(index);
+		testCases.push_back(params);
+	}
+}
+
+void createStructCompositeCases (vector<map<string, string> >& testCases, de::Random& rnd, const NumberType type)
+{
+	const int limit = 10;
+	map<string, string> params;
+
+	for (int width = 2; width <= limit; ++width)
+	{
+		string randomConst = numberToString(getInt(rnd));
+		int index = rnd.getInt(0, width-1);
+
+		params["name"]					= "struct_" + numberToString(width);
+		params["compositeType"]			= "%composite = OpTypeStruct" + repeatString(" %custom", width) + "\n";
+		params["filler"]				= string("%filler    = OpConstant %custom ") + getRandomConstantString(type, rnd) + "\n";
+		params["compositeConstruct"]	= "%instance  = OpCompositeConstruct %composite" + repeatString(" %filler", width) + "\n";
+		params["indexes"]				= numberToString(index);
+		testCases.push_back(params);
+	}
+}
+
+void createMatrixCompositeCases (vector<map<string, string> >& testCases, de::Random& rnd, const NumberType type)
+{
+	map<string, string> params;
+
+	// Vec2 to Vec4
+	for (int width = 2; width <= 4; ++width)
+	{
+		string widthStr = numberToString(width);
+
+		for (int column = 2 ; column <= 4; ++column)
+		{
+			int index_0 = rnd.getInt(0, column-1);
+			int index_1 = rnd.getInt(0, width-1);
+			string columnStr = numberToString(column);
+
+			params["name"]					= "matrix_" + widthStr + "x" + columnStr;
+			params["compositeType"]			= string("%vectype   = OpTypeVector %custom " + widthStr + "\n")
+												+	 "%composite = OpTypeMatrix %vectype " + columnStr + "\n";
+
+			params["filler"]				= string("%filler    = OpConstant %custom ") + getRandomConstantString(type, rnd) + "\n"
+												+	 "%fillerVec = OpConstantComposite %vectype" + repeatString(" %filler", width) + "\n";
+
+			params["compositeConstruct"]	= "%instance  = OpCompositeConstruct %composite" + repeatString(" %fillerVec", column) + "\n";
+			params["indexes"]				= numberToString(index_0) + " " + numberToString(index_1);
+			testCases.push_back(params);
+		}
+	}
+}
+
+void createCompositeCases (vector<map<string, string> >& testCases, de::Random& rnd, const NumberType type)
+{
+	createVectorCompositeCases(testCases, rnd, type);
+	createArrayCompositeCases(testCases, rnd, type);
+	createStructCompositeCases(testCases, rnd, type);
+	// Matrix only supports float types
+	if (type == TYPE_FLOAT)
+	{
+		createMatrixCompositeCases(testCases, rnd, type);
+	}
+}
+
+const string getAssemblyTypeDeclaration (const NumberType type)
+{
+	switch (type)
+	{
+		case TYPE_INT:		return "OpTypeInt 32 1";
+		case TYPE_UINT:		return "OpTypeInt 32 0";
+		case TYPE_FLOAT:	return "OpTypeFloat 32";
+		default:			DE_ASSERT(false); return "";
+	}
+}
+
+const string specializeCompositeInsertShaderTemplate (const NumberType type, const map<string, string>& params)
+{
+	map<string, string>	parameters(params);
+
+	parameters["typeDeclaration"] = getAssemblyTypeDeclaration(type);
+
+	return StringTemplate (
+		"OpCapability Shader\n"
+		"OpCapability Matrix\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		// Decorators
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %buf BufferBlock\n"
+		"OpDecorate %indata DescriptorSet 0\n"
+		"OpDecorate %indata Binding 0\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 1\n"
+		"OpDecorate %customarr ArrayStride 4\n"
+		"OpMemberDecorate %buf 0 Offset 0\n"
+
+		// General types
+		"%void      = OpTypeVoid\n"
+		"%voidf     = OpTypeFunction %void\n"
+		"%u32       = OpTypeInt 32 0\n"
+		"%i32       = OpTypeInt 32 1\n"
+		"%uvec3     = OpTypeVector %u32 3\n"
+		"%uvec3ptr  = OpTypePointer Input %uvec3\n"
+
+		// Custom type
+		"%custom    = ${typeDeclaration}\n"
+		"${compositeType}"
+
+		// Constants
+		"${filler}"
+
+		// Inherited from custom
+		"%customptr = OpTypePointer Uniform %custom\n"
+		"%customarr = OpTypeRuntimeArray %custom\n"
+		"%buf       = OpTypeStruct %customarr\n"
+		"%bufptr    = OpTypePointer Uniform %buf\n"
+
+		"%indata    = OpVariable %bufptr Uniform\n"
+		"%outdata   = OpVariable %bufptr Uniform\n"
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+
+		"%inloc     = OpAccessChain %customptr %indata %zero %x\n"
+		"%outloc    = OpAccessChain %customptr %outdata %zero %x\n"
+		// Read the input value
+		"%inval     = OpLoad %custom %inloc\n"
+		// Create the composite and fill it
+		"${compositeConstruct}"
+		// Insert the input value to a place
+		"%instance2 = OpCompositeInsert %composite %inval %instance ${indexes}\n"
+		// Read back the value from the position
+		"%out_val   = OpCompositeExtract %custom %instance2 ${indexes}\n"
+		// Store it in the output position
+		"             OpStore %outloc %out_val\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n"
+	).specialize(parameters);
+}
+
+template<typename T>
+BufferSp createCompositeBuffer(T number)
+{
+	return BufferSp(new Buffer<T>(vector<T>(1, number)));
+}
+
+tcu::TestCaseGroup* createOpCompositeInsertGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opcompositeinsert", "Test the OpCompositeInsert instruction"));
+	de::Random						rnd		(deStringHash(group->getName()));
+
+	for (int type = TYPE_INT; type != TYPE_END; ++type)
+	{
+		NumberType						numberType		= NumberType(type);
+		const string					typeName		= getNumberTypeName(numberType);
+		const string					description		= "Test the OpCompositeInsert instruction with " + typeName + "s";
+		de::MovePtr<tcu::TestCaseGroup>	subGroup		(new tcu::TestCaseGroup(testCtx, typeName.c_str(), description.c_str()));
+		vector<map<string, string> >	testCases;
+
+		createCompositeCases(testCases, rnd, numberType);
+
+		for (vector<map<string, string> >::const_iterator test = testCases.begin(); test != testCases.end(); ++test)
+		{
+			ComputeShaderSpec	spec;
+
+			spec.assembly = specializeCompositeInsertShaderTemplate(numberType, *test);
+
+			switch (numberType)
+			{
+				case TYPE_INT:
+				{
+					deInt32 number = getInt(rnd);
+					spec.inputs.push_back(createCompositeBuffer<deInt32>(number));
+					spec.outputs.push_back(createCompositeBuffer<deInt32>(number));
+					break;
+				}
+				case TYPE_UINT:
+				{
+					deUint32 number = rnd.getUint32();
+					spec.inputs.push_back(createCompositeBuffer<deUint32>(number));
+					spec.outputs.push_back(createCompositeBuffer<deUint32>(number));
+					break;
+				}
+				case TYPE_FLOAT:
+				{
+					float number = rnd.getFloat();
+					spec.inputs.push_back(createCompositeBuffer<float>(number));
+					spec.outputs.push_back(createCompositeBuffer<float>(number));
+					break;
+				}
+				default:
+					DE_ASSERT(false);
+			}
+
+			spec.numWorkGroups = IVec3(1, 1, 1);
+			subGroup->addChild(new SpvAsmComputeShaderCase(testCtx, test->at("name").c_str(), "OpCompositeInsert test", spec));
+		}
+		group->addChild(subGroup.release());
+	}
 	return group.release();
 }
 
@@ -8107,6 +8430,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests ->addChild(createOpFRemGroup(testCtx));
 	computeTests->addChild(createSConvertTests(testCtx));
 	computeTests->addChild(createUConvertTests(testCtx));
+	computeTests->addChild(createOpCompositeInsertGroup(testCtx));
 
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
