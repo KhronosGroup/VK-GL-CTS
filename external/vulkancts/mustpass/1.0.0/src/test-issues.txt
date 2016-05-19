@@ -22,3 +22,6 @@ dEQP-VK.glsl.builtin.function.common.frexp.vec4_highp_vertex
 
 # Issue 340: Cube map corner texel selection
 dEQP-VK.pipeline.sampler.view_type.cube.format.r5g6b5_unorm_pack16.mag_filter.linear
+
+# Issue 384: glslang incorrect stuct member decorations
+dEQP-VK.tessellation.user_defined_io.*

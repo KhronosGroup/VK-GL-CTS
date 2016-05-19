@@ -33,6 +33,8 @@
 #include "vktApiFeatureInfo.hpp"
 #include "vktApiCommandBuffersTests.hpp"
 #include "vktApiCopiesAndBlittingTests.hpp"
+#include "vktApiImageClearingTests.hpp"
+#include "vktApiFillBufferTests.hpp"
 
 namespace vkt
 {
@@ -62,6 +64,8 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createTestGroup					(testCtx, "buffer_view", "BufferView tests", createBufferViewTests));
 	apiTests->addChild(createCommandBuffersTests		(testCtx));
 	apiTests->addChild(createCopiesAndBlittingTests		(testCtx));
+	apiTests->addChild(createImageClearingTests			(testCtx));
+	apiTests->addChild(createFillAndUpdateBufferTests	(testCtx));
 }
 
 } // anonymous

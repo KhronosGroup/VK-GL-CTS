@@ -543,8 +543,8 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline(tcu::UVec2 renderS
 			0u,                     // deUint32     writeMask;
 			0u,                     // deUint32     reference;
 		},
-		-1.0f,                                                      // float                                    minDepthBounds;
-		+1.0f,                                                      // float                                    maxDepthBounds;
+		0.0f,                                                      // float                                    minDepthBounds;
+		1.0f,                                                      // float                                    maxDepthBounds;
 	};
 
 	const VkPipelineTessellationStateCreateInfo*	pTessCreateInfo		= DE_NULL;
@@ -983,6 +983,7 @@ protected:
 	Move<VkImageView>                   m_depthAttachmentView;
 	Move<VkRenderPass>                  m_renderPass;
 	Move<VkFramebuffer>                 m_framebuffer;
+	VkImageMemoryBarrier				m_imageLayoutBarriers[2];
 
 	de::MovePtr<Allocation>             m_vertexBufferAlloc;
 	Move<VkBuffer>                      m_vertexBuffer;
@@ -1145,6 +1146,39 @@ void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat
 												  &m_depthImageAlloc);
 	}
 
+	// Set up image layout transition barriers
+	{
+		const VkImageMemoryBarrier colorImageBarrier =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType			sType;
+			DE_NULL,											// const void*				pNext;
+			0u,													// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,							// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,							// deUint32					dstQueueFamilyIndex;
+			*m_colorImage,										// VkImage					image;
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },		// VkImageSubresourceRange	subresourceRange;
+		};
+		const VkImageMemoryBarrier depthImageBarrier =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType			sType;
+			DE_NULL,											// const void*				pNext;
+			0u,													// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,							// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,							// deUint32					dstQueueFamilyIndex;
+			*m_depthImage,										// VkImage					image;
+			{ VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u },		// VkImageSubresourceRange	subresourceRange;
+		};
+
+		m_imageLayoutBarriers[0] = colorImageBarrier;
+		m_imageLayoutBarriers[1] = depthImageBarrier;
+	}
+
 	// Create color attachment view
 	{
 		const VkImageViewCreateInfo colorAttachmentViewParams =
@@ -1262,6 +1296,9 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,
+		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
+
 	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
 	vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -1331,13 +1368,16 @@ void AdvGraphicsTest::initPrograms(SourceCollections& programCollection) const
 
 	programCollection.glslSources.add("dummy_geo") << glu::GeometrySource(
 		"#version 450 \n"
-		"layout (triangles) in;\n"
-		"layout (triangle_strip, max_vertices = 3) out;\n"
+		"layout(triangles) in;\n"
+		"layout(triangle_strip, max_vertices = 3) out;\n"
+		"layout(location = 0) in highp vec4 in_vtxColor[];\n"
+		"layout(location = 0) out highp vec4 vtxColor;\n"
 		"void main (void)\n"
 		"{\n"
 		"  for(int ndx=0; ndx<3; ndx++)\n"
 		"  {\n"
 		"    gl_Position = gl_in[ndx].gl_Position;\n"
+		"    vtxColor    = in_vtxColor[ndx];\n"
 		"    EmitVertex();\n"
 		"  }\n"
 		"  EndPrimitive();\n"
@@ -1507,6 +1547,9 @@ void AdvGraphicsTestInstance::configCommandBuffer(void)
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,
+		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
 
 	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 

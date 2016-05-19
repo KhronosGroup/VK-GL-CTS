@@ -403,7 +403,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// Check output.
 	if (m_shaderSpec.verifyIO)
 	{
-		if (!(*m_shaderSpec.verifyIO)(m_shaderSpec.inputs, outputAllocs, m_shaderSpec.outputs))
+		if (!(*m_shaderSpec.verifyIO)(m_shaderSpec.inputs, outputAllocs, m_shaderSpec.outputs, m_context.getTestContext().getLog()))
 			return tcu::TestStatus::fail("Output doesn't match with expected");
 	}
 	else
@@ -417,6 +417,50 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	}
 
 	return tcu::TestStatus::pass("Ouput match with expected");
+}
+
+class ConvertTestInstance : public SpvAsmComputeShaderInstance
+{
+public:
+						ConvertTestInstance	(Context& ctx, const ComputeShaderSpec& spec, const ConvertTestFeatures features);
+	tcu::TestStatus		iterate				(void);
+private:
+	const ConvertTestFeatures	m_features;
+};
+
+ConvertTestInstance::ConvertTestInstance (Context& ctx, const ComputeShaderSpec& spec, const ConvertTestFeatures features)
+	: SpvAsmComputeShaderInstance	(ctx, spec)
+	, m_features					(features)
+{
+}
+
+tcu::TestStatus ConvertTestInstance::iterate (void)
+{
+	const VkPhysicalDeviceFeatures&		features = m_context.getDeviceFeatures();
+
+	if ((m_features == CONVERT_TEST_USES_INT16 || m_features == CONVERT_TEST_USES_INT16_INT64) && !features.shaderInt16)
+	{
+		throw tcu::NotSupportedError("shaderInt16 feature is not supported");
+	}
+
+	if ((m_features == CONVERT_TEST_USES_INT64 || m_features == CONVERT_TEST_USES_INT16_INT64) && !features.shaderInt64)
+	{
+		throw tcu::NotSupportedError("shaderInt64 feature is not supported");
+	}
+
+	return SpvAsmComputeShaderInstance::iterate();
+}
+
+ConvertTestCase::ConvertTestCase (tcu::TestContext& testCtx, const char* name, const char* description, const ComputeShaderSpec& spec, const ConvertTestFeatures features)
+	: SpvAsmComputeShaderCase	(testCtx, name, description, spec)
+	, m_shaderSpec				(spec)
+	, m_features				(features)
+{
+}
+
+TestInstance* ConvertTestCase::createInstance (Context& ctx) const
+{
+	return new ConvertTestInstance(ctx, m_shaderSpec, m_features);
 }
 
 } // SpirVAssembly

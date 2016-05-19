@@ -294,7 +294,8 @@ public:
 								UniformBlockCase			(tcu::TestContext&	testCtx,
 															 const std::string&	name,
 															 const std::string&	description,
-															 BufferMode			bufferMode);
+															 BufferMode			bufferMode,
+															 MatrixLoadFlags	matrixLoadFlag);
 								~UniformBlockCase			(void);
 
 	virtual	void				initPrograms				(vk::SourceCollections& programCollection) const;
@@ -305,6 +306,7 @@ protected:
 
 	BufferMode					m_bufferMode;
 	ShaderInterface				m_interface;
+	MatrixLoadFlags				m_matrixLoadFlag;
 
 private:
 	std::string					m_vertShaderSource;

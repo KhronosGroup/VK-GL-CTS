@@ -356,7 +356,7 @@ void validateSurfaceCapabilities (tcu::ResultCollector& results, const VkSurface
 					  "currentExtent dimensions must be larger than 0");
 
 		results.check(de::inRange(capabilities.currentExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width) &&
-					  de::inRange(capabilities.currentExtent.height, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
+					  de::inRange(capabilities.currentExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height),
 					  "currentExtent is not in supported extent limits");
 	}
 

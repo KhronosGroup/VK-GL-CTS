@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------
- * drawElements Quality Program OpenGL (ES) Module
- * -----------------------------------------------
+ * drawElements Quality Program Tester Core
+ * ----------------------------------------
  *
  * Copyright 2014 The Android Open Source Project
  *
@@ -18,10 +18,10 @@
  *
  *//*!
  * \file
- * \brief rasterization test utils.
+ * \brief Rasterization verifier utils.
  *//*--------------------------------------------------------------------*/
 
-#include "glsRasterizationTestUtil.hpp"
+#include "tcuRasterizationVerifier.hpp"
 #include "tcuVector.hpp"
 #include "tcuSurface.hpp"
 #include "tcuTestLog.hpp"
@@ -34,11 +34,7 @@
 
 #include <limits>
 
-namespace deqp
-{
-namespace gls
-{
-namespace RasterizationTestUtil
+namespace tcu
 {
 namespace
 {
@@ -612,7 +608,6 @@ struct MultisampleLineInterpolator
 
 	InterpolationRange interpolate (int primitiveNdx, const tcu::IVec2 pixel, const tcu::IVec2 viewportSize, bool multisample, int subpixelBits) const
 	{
-		DE_ASSERT(multisample);
 		DE_UNREF(multisample);
 		DE_UNREF(subpixelBits);
 
@@ -867,7 +862,52 @@ bool verifyTriangleGroupInterpolationWithInterpolator (const tcu::Surface& surfa
 	}
 }
 
-bool verifyMultisampleLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
+
+float calculateIntersectionParameter (const tcu::Vec2 line[2], float w, int componentNdx)
+{
+	DE_ASSERT(componentNdx < 2);
+	if (line[1][componentNdx] == line[0][componentNdx])
+		return -1.0f;
+
+	return (w - line[0][componentNdx]) / (line[1][componentNdx] - line[0][componentNdx]);
+}
+
+// Clips the given line with a ((-w, -w), (-w, w), (w, w), (w, -w)) rectangle
+void applyClippingBox (tcu::Vec2 line[2], float w)
+{
+	for (int side = 0; side < 4; ++side)
+	{
+		const int	sign		= ((side / 2) * -2) + 1;
+		const int	component	= side % 2;
+		const float	t			= calculateIntersectionParameter(line, w * (float)sign, component);
+
+		if ((t > 0) && (t < 1))
+		{
+			const float newCoord	= t * line[1][1 - component] + (1 - t) * line[0][1 - component];
+
+			if (line[1][component] > (w * (float)sign))
+			{
+				line[1 - side / 2][component] = w * (float)sign;
+				line[1 - side / 2][1 - component] = newCoord;
+			}
+			else
+			{
+				line[side / 2][component] = w * (float)sign;
+				line[side / 2][1 - component] = newCoord;
+			}
+		}
+	}
+}
+
+enum ClipMode
+{
+	CLIPMODE_NO_CLIPPING = 0,
+	CLIPMODE_USE_CLIPPING_BOX,
+
+	CLIPMODE_LAST
+};
+
+bool verifyMultisampleLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, ClipMode clipMode)
 {
 	// Multisampled line == 2 triangles
 
@@ -879,11 +919,17 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface& surface, const
 	for (int lineNdx = 0; lineNdx < (int)scene.lines.size(); ++lineNdx)
 	{
 		// Transform to screen space, add pixel offsets, convert back to normalized device space, and test as triangles
-		const tcu::Vec2 lineNormalizedDeviceSpace[2] =
+		tcu::Vec2 lineNormalizedDeviceSpace[2] =
 		{
 			tcu::Vec2(scene.lines[lineNdx].positions[0].x() / scene.lines[lineNdx].positions[0].w(), scene.lines[lineNdx].positions[0].y() / scene.lines[lineNdx].positions[0].w()),
 			tcu::Vec2(scene.lines[lineNdx].positions[1].x() / scene.lines[lineNdx].positions[1].w(), scene.lines[lineNdx].positions[1].y() / scene.lines[lineNdx].positions[1].w()),
 		};
+
+		if (clipMode == CLIPMODE_USE_CLIPPING_BOX)
+		{
+			applyClippingBox(lineNormalizedDeviceSpace, 1.0f);
+		}
+
 		const tcu::Vec2 lineScreenSpace[2] =
 		{
 			(lineNormalizedDeviceSpace[0] + tcu::Vec2(1.0f, 1.0f)) * 0.5f * viewportSize,
@@ -2356,9 +2402,14 @@ bool verifyLineGroupRasterization (const tcu::Surface& surface, const LineSceneS
 	const bool multisampled = args.numSamples != 0;
 
 	if (multisampled)
-		return verifyMultisampleLineGroupRasterization(surface, scene, args, log);
+		return verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_NO_CLIPPING);
 	else
 		return verifySinglesampleLineGroupRasterization(surface, scene, args, log);
+}
+
+bool verifyClippedTriangulatedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
+{
+	return verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_USE_CLIPPING_BOX);
 }
 
 bool verifyPointGroupRasterization (const tcu::Surface& surface, const PointSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
@@ -2407,6 +2458,9 @@ LineInterpolationMethod verifyLineGroupInterpolation (const tcu::Surface& surfac
 	}
 }
 
-} // StateQueryUtil
-} // gls
-} // deqp
+bool verifyTriangulatedLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
+{
+	return verifyMultisampleLineGroupInterpolation(surface, scene, args, log);
+}
+
+} // tcu

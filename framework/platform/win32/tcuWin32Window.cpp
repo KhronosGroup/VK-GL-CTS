@@ -63,7 +63,7 @@ Window::Window (HINSTANCE instance, int width, int height)
 		}
 
 		m_window = CreateWindow(s_className, s_windowName,
-								WS_CLIPCHILDREN | WS_OVERLAPPEDWINDOW,
+								WS_CLIPCHILDREN | WS_POPUP,
 								CW_USEDEFAULT, CW_USEDEFAULT,
 								width, height,
 								NULL, NULL, instance, NULL);

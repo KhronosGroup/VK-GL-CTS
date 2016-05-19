@@ -39,9 +39,11 @@ using std::vector;
 
 #if defined(DEQP_HAVE_SPIRV_TOOLS)
 
+static const spv_target_env s_defaultEnvironment = SPV_ENV_VULKAN_1_0;
+
 bool assembleSpirV (const SpirVAsmSource* program, std::vector<deUint32>* dst, SpirVProgramInfo* buildInfo)
 {
-	const spv_context	context		= spvContextCreate();
+	const spv_context	context		= spvContextCreate(s_defaultEnvironment);
 	spv_binary			binary		= DE_NULL;
 	spv_diagnostic		diagnostic	= DE_NULL;
 
@@ -59,8 +61,12 @@ bool assembleSpirV (const SpirVAsmSource* program, std::vector<deUint32>* dst, S
 		buildInfo->compileTimeUs	= deGetMicroseconds() - compileStartTime;
 		buildInfo->compileOk		= (compileOk == SPV_SUCCESS);
 
-		dst->resize(binary->wordCount);
-		std::copy(&binary->code[0], &binary->code[0] + binary->wordCount, dst->begin());
+		if (buildInfo->compileOk)
+		{
+			DE_ASSERT(binary->wordCount > 0);
+			dst->resize(binary->wordCount);
+			std::copy(&binary->code[0], &binary->code[0] + binary->wordCount, dst->begin());
+		}
 
 		spvBinaryDestroy(binary);
 		spvDiagnosticDestroy(diagnostic);
@@ -80,7 +86,7 @@ bool assembleSpirV (const SpirVAsmSource* program, std::vector<deUint32>* dst, S
 
 void disassembleSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostream* dst)
 {
-	const spv_context	context		= spvContextCreate();
+	const spv_context	context		= spvContextCreate(s_defaultEnvironment);
 	spv_text			text		= DE_NULL;
 	spv_diagnostic		diagnostic	= DE_NULL;
 
@@ -112,7 +118,7 @@ void disassembleSpirV (size_t binarySizeInWords, const deUint32* binary, std::os
 
 bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostream* infoLog)
 {
-	const spv_context	context		= spvContextCreate();
+	const spv_context	context		= spvContextCreate(s_defaultEnvironment);
 	spv_diagnostic		diagnostic	= DE_NULL;
 
 	try
