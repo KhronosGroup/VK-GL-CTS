@@ -90,7 +90,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     public static final String FEATURE_VULKAN_LEVEL = "android.hardware.vulkan.level";
 
     private static final int TESTCASE_BATCH_LIMIT = 1000;
-    private static final int UNRESPOSIVE_CMD_TIMEOUT_MS = 60000; // one minute
+    private static final int UNRESPONSIVE_CMD_TIMEOUT_MS = 10 * 60 * 1000; // 10min
 
     // !NOTE: There's a static method copyOptions() for copying options during split.
     // If you add state update copyOptions() as appropriate!
@@ -1380,7 +1380,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             throws AdbComLinkOpenError, AdbComLinkKilledError {
         try {
             mDevice.getIDevice().executeShellCommand(command, receiver,
-                    UNRESPOSIVE_CMD_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                    UNRESPONSIVE_CMD_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         } catch (TimeoutException ex) {
             // Opening connection timed out
             throw new AdbComLinkOpenError("opening connection timed out", ex);
