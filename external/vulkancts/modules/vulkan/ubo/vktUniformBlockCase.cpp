@@ -165,7 +165,7 @@ std::ostream& operator<< (std::ostream& stream, const UniformLayoutEntry& entry)
 {
 	stream << entry.name << " { type = " << glu::getDataTypeName(entry.type)
 		   << ", size = " << entry.size
-		   << ", blockNdx = " << entry.blockNdx
+		   << ", blockNdx = " << entry.blockLayoutNdx
 		   << ", offset = " << entry.offset
 		   << ", arrayStride = " << entry.arrayStride
 		   << ", matrixStride = " << entry.matrixStride
@@ -174,22 +174,24 @@ std::ostream& operator<< (std::ostream& stream, const UniformLayoutEntry& entry)
 	return stream;
 }
 
-int UniformLayout::getUniformIndex (const std::string& name) const
+int UniformLayout::getUniformLayoutIndex (int blockNdx, const std::string& name) const
 {
 	for (int ndx = 0; ndx < (int)uniforms.size(); ndx++)
 	{
-		if (uniforms[ndx].name == name)
+		if (blocks[uniforms[ndx].blockLayoutNdx].blockDeclarationNdx == blockNdx &&
+			uniforms[ndx].name == name)
 			return ndx;
 	}
 
 	return -1;
 }
 
-int UniformLayout::getBlockIndex (const std::string& name) const
+int UniformLayout::getBlockLayoutIndex (int blockNdx, int instanceNdx) const
 {
 	for (int ndx = 0; ndx < (int)blocks.size(); ndx++)
 	{
-		if (blocks[ndx].name == name)
+		if (blocks[ndx].blockDeclarationNdx == blockNdx &&
+			blocks[ndx].instanceNdx == instanceNdx)
 			return ndx;
 	}
 
@@ -423,7 +425,7 @@ void computeStd140Layout (UniformLayout& layout, int& curOffset, int curBlockNdx
 		entry.size			= 1;
 		entry.arrayStride	= 0;
 		entry.matrixStride	= 0;
-		entry.blockNdx		= curBlockNdx;
+		entry.blockLayoutNdx= curBlockNdx;
 
 		if (glu::isDataTypeMatrix(basicType))
 		{
@@ -464,7 +466,7 @@ void computeStd140Layout (UniformLayout& layout, int& curOffset, int curBlockNdx
 
 			entry.name			= curPrefix + "[0]"; // Array uniforms are always postfixed with [0]
 			entry.type			= elemBasicType;
-			entry.blockNdx		= curBlockNdx;
+			entry.blockLayoutNdx= curBlockNdx;
 			entry.offset		= curOffset;
 			entry.size			= type.getArraySize();
 			entry.arrayStride	= stride;
@@ -488,7 +490,7 @@ void computeStd140Layout (UniformLayout& layout, int& curOffset, int curBlockNdx
 
 			entry.name			= curPrefix + "[0]"; // Array uniforms are always postfixed with [0]
 			entry.type			= elemBasicType;
-			entry.blockNdx		= curBlockNdx;
+			entry.blockLayoutNdx= curBlockNdx;
 			entry.offset		= curOffset;
 			entry.size			= type.getArraySize();
 			entry.arrayStride	= stride*numVecs;
@@ -551,6 +553,7 @@ void computeStd140Layout (UniformLayout& layout, const ShaderInterface& interfac
 			blockEntry.name = block.getBlockName();
 			blockEntry.size = blockSize;
 			blockEntry.bindingNdx = blockNdx;
+			blockEntry.blockDeclarationNdx = blockNdx;
 			blockEntry.instanceNdx = instanceNdx;
 
 			// Compute active uniform set for block.
@@ -946,6 +949,7 @@ void generateCompareSrc (std::ostringstream&	src,
 						 const std::string&		srcName,
 						 const std::string&		apiName,
 						 const UniformLayout&	layout,
+						 int					blockNdx,
 						 const void*			basePtr,
 						 deUint32				unusedMask)
 {
@@ -956,7 +960,7 @@ void generateCompareSrc (std::ostringstream&	src,
 		glu::DataType				elementType		= isArray ? type.getElementType().getBasicType() : type.getBasicType();
 		const char*					typeName		= glu::getDataTypeName(elementType);
 		std::string					fullApiName		= std::string(apiName) + (isArray ? "[0]" : ""); // Arrays are always postfixed with [0]
-		int							uniformNdx		= layout.getUniformIndex(fullApiName);
+		int							uniformNdx		= layout.getUniformLayoutIndex(blockNdx, fullApiName);
 		const UniformLayoutEntry&	entry			= layout.uniforms[uniformNdx];
 
 		if (isArray)
@@ -984,7 +988,7 @@ void generateCompareSrc (std::ostringstream&	src,
 			std::string op = std::string("[") + de::toString(elementNdx) + "]";
 			std::string elementSrcName = std::string(srcName) + op;
 			std::string elementApiName = std::string(apiName) + op;
-			generateCompareSrc(src, resultVar, elementType, elementSrcName, elementApiName, layout, basePtr, unusedMask);
+			generateCompareSrc(src, resultVar, elementType, elementSrcName, elementApiName, layout, blockNdx, basePtr, unusedMask);
 		}
 	}
 	else
@@ -999,7 +1003,7 @@ void generateCompareSrc (std::ostringstream&	src,
 			std::string op = std::string(".") + memberIter->getName();
 			std::string memberSrcName = std::string(srcName) + op;
 			std::string memberApiName = std::string(apiName) + op;
-			generateCompareSrc(src, resultVar, memberIter->getType(), memberSrcName, memberApiName, layout, basePtr, unusedMask);
+			generateCompareSrc(src, resultVar, memberIter->getType(), memberSrcName, memberApiName, layout, blockNdx, basePtr, unusedMask);
 		}
 	}
 }
@@ -1027,8 +1031,8 @@ void generateCompareSrc (std::ostringstream& src, const char* resultVar, const S
 			std::string		instancePostfix		= isArray ? std::string("[") + de::toString(instanceNdx) + "]" : std::string("");
 			std::string		blockInstanceName	= block.getBlockName() + instancePostfix;
 			std::string		srcPrefix			= hasInstanceName ? block.getInstanceName() + instancePostfix + "." : std::string("");
-			int				activeBlockNdx		= layout.getBlockIndex(blockInstanceName);
-			void*			basePtr				= blockPointers.find(activeBlockNdx)->second;
+			int				blockLayoutNdx		= layout.getBlockLayoutIndex(blockNdx, instanceNdx);
+			void*			basePtr				= blockPointers.find(blockLayoutNdx)->second;
 
 			for (UniformBlock::ConstIterator uniformIter = block.begin(); uniformIter != block.end(); uniformIter++)
 			{
@@ -1039,7 +1043,7 @@ void generateCompareSrc (std::ostringstream& src, const char* resultVar, const S
 
 				std::string srcName = srcPrefix + uniform.getName();
 				std::string apiName = apiPrefix + uniform.getName();
-				generateCompareSrc(src, resultVar, uniform.getType(), srcName, apiName, layout, basePtr, unusedMask);
+				generateCompareSrc(src, resultVar, uniform.getType(), srcName, apiName, layout, blockNdx, basePtr, unusedMask);
 			}
 		}
 	}
