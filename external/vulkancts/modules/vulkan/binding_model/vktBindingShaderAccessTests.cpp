@@ -676,8 +676,16 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 			vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
 			(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
+		const vk::VkFenceCreateInfo				fenceCreateInfo				=
+		{
+			vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+			DE_NULL,
+			(vk::VkFenceCreateFlags)0,
+		};
 
 		const vk::Unique<vk::VkCommandBuffer>	cmd					(vk::allocateCommandBuffer(m_vki, m_device, &cmdBufAllocInfo));
+		const vk::Unique<vk::VkFence>			fence				(vk::createFence(m_vki, m_device, &fenceCreateInfo));
+		const deUint64							infiniteTimeout		= ~(deUint64)0u;
 
 		VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
 		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
@@ -700,8 +708,9 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 				(const vk::VkSemaphore*)0,
 			};
 
-			VK_CHECK(m_vki.queueSubmit(m_queue, 1, &submitInfo, (vk::VkFence)0));
+			VK_CHECK(m_vki.queueSubmit(m_queue, 1u, &submitInfo, *fence));
 		}
+		VK_CHECK(m_vki.waitForFences(m_device, 1u, &fence.get(), vk::VK_TRUE, infiniteTimeout));
 
 		// and then render to
 		renderToTarget();
@@ -1288,6 +1297,8 @@ vk::Move<vk::VkBuffer> BufferRenderInstance::createSourceBuffer (const vk::Devic
 
 	flushMappedMemoryRange(vki, device, bufferMemory->getMemory(), bufferMemory->getOffset(), bufferSize);
 
+	// Flushed host-visible memory is automatically made available to the GPU, no barrier is needed.
+
 	*outMemory = bufferMemory;
 	return buffer;
 }
@@ -1455,8 +1466,6 @@ vk::VkPipelineLayout BufferRenderInstance::getPipelineLayout (void) const
 
 void BufferRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) const
 {
-	const bool							isUniformBuffer		= isUniformDescriptorType(m_descriptorType);
-
 	// \note dynamic offset replaces the view offset, i.e. it is not offset relative to the view offset
 	const deUint32						dynamicOffsets[]	=
 	{
@@ -1466,40 +1475,7 @@ void BufferRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) const
 	const deUint32						numOffsets			= (!m_setDynamicOffset) ? (0u) : (getInterfaceNumResources(m_shaderInterface));
 	const deUint32* const				dynamicOffsetPtr	= (!m_setDynamicOffset) ? (DE_NULL) : (dynamicOffsets);
 
-	// make host writes device-visible
-	const vk::VkAccessFlags				inputBit			= (isUniformBuffer) ? (vk::VK_ACCESS_UNIFORM_READ_BIT) : (vk::VK_ACCESS_SHADER_READ_BIT);
-	const vk::VkBufferMemoryBarrier		memoryBarriers[]	=
-	{
-		{
-			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-			DE_NULL,
-			vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
-			inputBit,									// inputMask
-			vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
-			vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
-			*m_sourceBufferA,							// buffer
-			0u,											// offset
-			(vk::VkDeviceSize)m_bufferSizeA,			// size
-		},
-		{
-			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-			DE_NULL,
-			vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
-			inputBit,									// inputMask
-			vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
-			vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
-			*m_sourceBufferB,							// buffer
-			0u,											// offset
-			(vk::VkDeviceSize)m_bufferSizeB,			// size
-		}
-	};
-	const deUint32						numMemoryBarriers	= getInterfaceNumResources(m_shaderInterface);
-
 	m_vki.cmdBindDescriptorSets(cmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0, 1, &m_descriptorSet.get(), numOffsets, dynamicOffsetPtr);
-	m_vki.cmdPipelineBarrier(cmd, 0u, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (vk::VkDependencyFlags)0,
-							 0, (const vk::VkMemoryBarrier*)DE_NULL,
-							 numMemoryBarriers, memoryBarriers,
-							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	m_vki.cmdDraw(cmd, 6 * 4, 1, 0, 0); // render four quads (two separate triangles)
 }
 
@@ -1806,7 +1782,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 	m_vki.cmdBindDescriptorSets(*cmd, vk::VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, 0, m_numDescriptorSets, m_descriptorSets, m_numDynamicOffsets, m_dynamicOffsets);
 
 	if (m_numPreBarriers)
-		m_vki.cmdPipelineBarrier(*cmd, 0u, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0,
+		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0,
 								 0, (const vk::VkMemoryBarrier*)DE_NULL,
 								 m_numPreBarriers, m_preBarriers,
 								 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
@@ -2261,19 +2237,21 @@ std::string QuadrantRendederCase::genVertexSource (void) const
 
 	if ((m_activeStages & vk::VK_SHADER_STAGE_VERTEX_BIT) != 0u)
 	{
+		const bool onlyVS = (m_activeStages == vk::VK_SHADER_STAGE_VERTEX_BIT);
+
 		// active vertex shader
 		buf << versionDecl << "\n"
 			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_VERTEX_BIT)
 			<< genResourceDeclarations(vk::VK_SHADER_STAGE_VERTEX_BIT, 0)
 			<< "layout(location = 0) out highp vec4 " << nextStageName << "_color;\n"
-			<< "layout(location = 1) flat out highp int " << nextStageName << "_quadrant_id;\n"
+			<< (onlyVS ? "" : "layout(location = 1) flat out highp int " + de::toString(nextStageName) + "_quadrant_id;\n")
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "	highp vec4 result_position;\n"
 			<< "	highp int quadrant_id;\n"
 			<< s_quadrantGenVertexPosSource
 			<< "	gl_Position = result_position;\n"
-			<< "	" << nextStageName << "_quadrant_id = quadrant_id;\n"
+			<< (onlyVS ? "" : "\t" + de::toString(nextStageName) + "_quadrant_id = quadrant_id;\n")
 			<< "\n"
 			<< "	highp vec4 result_color;\n"
 			<< genResourceAccessSource(vk::VK_SHADER_STAGE_VERTEX_BIT)
@@ -2578,7 +2556,7 @@ std::string QuadrantRendederCase::genComputeSource (void) const
 		<< "{\n"
 		<< "	highp vec4 read_colors[4];\n"
 		<< "} b_out;\n"
-		<< "void main(void)\n"
+		<< "void main (void)\n"
 		<< "{\n"
 		<< "	highp int quadrant_id = int(gl_WorkGroupID.x);\n"
 		<< "	highp vec4 result_color;\n"
@@ -3082,7 +3060,7 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 		vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		DE_NULL,
 		0u,													// outputMask
-		0u,													// inputMask
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,					// inputMask
 		vk::VK_IMAGE_LAYOUT_UNDEFINED,						// oldLayout
 		vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// newLayout
 		vk::VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex
@@ -3138,7 +3116,7 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 
 	// record command buffer
 	VK_CHECK(vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
-	vki.cmdPipelineBarrier(*cmd, 0u, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0,
+	vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0,
 						   0, (const vk::VkMemoryBarrier*)DE_NULL,
 						   1, &preMemoryBarrier,
 						   1, &preImageBarrier);

@@ -764,9 +764,10 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 
 		for (int outNdx = 0; outNdx < (int)m_outputLayout.locationSymbols.size(); ++outNdx)
 		{
-			bool												isFloat = isDataTypeFloatOrVec(m_shaderSpec.outputs[outNdx].varType.getBasicType());
-			bool												isSigned = isDataTypeIntOrIVec(m_shaderSpec.outputs[outNdx].varType.getBasicType());
-			VkFormat											colorFormat = isFloat ? VK_FORMAT_R32G32B32A32_SFLOAT : (isSigned ? VK_FORMAT_R32G32B32A32_SINT : VK_FORMAT_R32G32B32A32_UINT);
+			const bool		isFloat		= isDataTypeFloatOrVec(m_shaderSpec.outputs[outNdx].varType.getBasicType());
+			const bool		isSigned	= isDataTypeIntOrIVec (m_shaderSpec.outputs[outNdx].varType.getBasicType());
+			const bool		isBool		= isDataTypeBoolOrBVec(m_shaderSpec.outputs[outNdx].varType.getBasicType());
+			const VkFormat	colorFormat = isFloat ? VK_FORMAT_R32G32B32A32_SFLOAT : (isSigned || isBool ? VK_FORMAT_R32G32B32A32_SINT : VK_FORMAT_R32G32B32A32_UINT);
 
 			const VkImageCreateInfo	 colorImageParams =
 			{
@@ -2284,7 +2285,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 numValues, d
 			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp			storeOp;
 			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp			stencilLoadOp;
 			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp			stencilStoreOp;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout				initialLayout;
+			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout				initialLayout;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout				finalLayout
 		};
 
@@ -3234,7 +3235,7 @@ void ShaderExecutor::uploadImage (const VkDevice&				vkDevice,
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
 		DE_NULL,										// const void*				pNext;
 		0u,												// VkAccessFlags			srcAccessMask;
-		0u,												// VkAccessFlags			dstAccessMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			oldLayout;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;

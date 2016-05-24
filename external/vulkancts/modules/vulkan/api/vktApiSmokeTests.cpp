@@ -403,8 +403,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			0u,															// writeMask
 			0u,															// reference
 		},															// back;
-		-1.0f,														//	float				minDepthBounds;
-		+1.0f,														//	float				maxDepthBounds;
+		0.0f,														//	float				minDepthBounds;
+		1.0f,														//	float				maxDepthBounds;
 	};
 	const VkViewport						viewport0				=
 	{

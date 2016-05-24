@@ -876,22 +876,24 @@ de::SharedPtr<Image> Image::create(const vk::DeviceInterface&	vk,
 }
 
 void transition2DImage (const vk::DeviceInterface&	vk,
-						vk::VkCommandBuffer				cmdBuffer,
+						vk::VkCommandBuffer			cmdBuffer,
 						vk::VkImage					image,
 						vk::VkImageAspectFlags		aspectMask,
 						vk::VkImageLayout			oldLayout,
-						vk::VkImageLayout			newLayout)
+						vk::VkImageLayout			newLayout,
+						vk::VkAccessFlags			srcAccessMask,
+						vk::VkAccessFlags			dstAccessMask)
 {
 	vk::VkImageMemoryBarrier barrier;
-	barrier.sType					= vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.pNext					= DE_NULL;
-	barrier.srcAccessMask				= 0;
-	barrier.dstAccessMask				= 0;
-	barrier.oldLayout				= oldLayout;
-	barrier.newLayout				= newLayout;
-	barrier.srcQueueFamilyIndex		= vk::VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex	= vk::VK_QUEUE_FAMILY_IGNORED;
-	barrier.image					= image;
+	barrier.sType							= vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.pNext							= DE_NULL;
+	barrier.srcAccessMask					= srcAccessMask;
+	barrier.dstAccessMask					= dstAccessMask;
+	barrier.oldLayout						= oldLayout;
+	barrier.newLayout						= newLayout;
+	barrier.srcQueueFamilyIndex				= vk::VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex				= vk::VK_QUEUE_FAMILY_IGNORED;
+	barrier.image							= image;
 	barrier.subresourceRange.aspectMask		= aspectMask;
 	barrier.subresourceRange.baseMipLevel	= 0;
 	barrier.subresourceRange.levelCount		= 1;
@@ -919,9 +921,14 @@ void initialTransitionStencil2DImage (const vk::DeviceInterface &vk, vk::VkComma
 	transition2DImage(vk, cmdBuffer, image, vk::VK_IMAGE_ASPECT_STENCIL_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, layout);
 }
 
-void initialTransitionDepthStencil2DImage (const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout)
+void initialTransitionDepthStencil2DImage (const vk::DeviceInterface&	vk,
+										   vk::VkCommandBuffer			cmdBuffer,
+										   vk::VkImage					image,
+										   vk::VkImageLayout			layout,
+										   vk::VkAccessFlags			srcAccessMask,
+										   vk::VkAccessFlags			dstAccessMask)
 {
-	transition2DImage(vk, cmdBuffer, image, vk::VK_IMAGE_ASPECT_DEPTH_BIT | vk::VK_IMAGE_ASPECT_STENCIL_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, layout);
+	transition2DImage(vk, cmdBuffer, image, vk::VK_IMAGE_ASPECT_DEPTH_BIT | vk::VK_IMAGE_ASPECT_STENCIL_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, layout, srcAccessMask, dstAccessMask);
 }
 
 } // DynamicState
