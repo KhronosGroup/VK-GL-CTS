@@ -81,3 +81,7 @@ dEQP-VK.glsl.texture_functions.texturegrad.isampler3d_vertex
 dEQP-VK.glsl.texture_functions.texturegrad.isampler3d_fragment
 dEQP-VK.glsl.texture_functions.texturegrad.usampler3d_vertex
 dEQP-VK.glsl.texture_functions.texturegrad.usampler3d_fragment
+dEQP-VK.glsl.texture_functions.query.texturequerylod.sampler3d_fixed_fragment
+dEQP-VK.glsl.texture_functions.query.texturequerylod.sampler3d_float_fragment
+dEQP-VK.glsl.texture_functions.query.texturequerylod.isampler3d_fragment
+dEQP-VK.glsl.texture_functions.query.texturequerylod.usampler3d_fragment

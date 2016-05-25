@@ -67,10 +67,14 @@ static VkImageViewType textureTypeToImageViewType (TextureBinding::Type type)
 {
 	switch (type)
 	{
+		case TextureBinding::TYPE_1D:			return VK_IMAGE_VIEW_TYPE_1D;
 		case TextureBinding::TYPE_2D:			return VK_IMAGE_VIEW_TYPE_2D;
-		case TextureBinding::TYPE_2D_ARRAY:		return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-		case TextureBinding::TYPE_CUBE_MAP:		return VK_IMAGE_VIEW_TYPE_CUBE;
 		case TextureBinding::TYPE_3D:			return VK_IMAGE_VIEW_TYPE_3D;
+		case TextureBinding::TYPE_CUBE_MAP:		return VK_IMAGE_VIEW_TYPE_CUBE;
+		case TextureBinding::TYPE_1D_ARRAY:		return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+		case TextureBinding::TYPE_2D_ARRAY:		return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+		case TextureBinding::TYPE_CUBE_ARRAY:	return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+
 		default:
 			DE_FATAL("Impossible");
 			return (VkImageViewType)0;
@@ -81,10 +85,14 @@ static VkImageType viewTypeToImageType (VkImageViewType type)
 {
 	switch (type)
 	{
+		case VK_IMAGE_VIEW_TYPE_1D:
+		case VK_IMAGE_VIEW_TYPE_1D_ARRAY:		return VK_IMAGE_TYPE_1D;
 		case VK_IMAGE_VIEW_TYPE_2D:
-		case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
-		case VK_IMAGE_VIEW_TYPE_CUBE:			return VK_IMAGE_TYPE_2D;
+		case VK_IMAGE_VIEW_TYPE_2D_ARRAY:		return VK_IMAGE_TYPE_2D;
 		case VK_IMAGE_VIEW_TYPE_3D:				return VK_IMAGE_TYPE_3D;
+		case VK_IMAGE_VIEW_TYPE_CUBE:
+		case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:		return VK_IMAGE_TYPE_2D;
+
 		default:
 			DE_FATAL("Impossible");
 			return (VkImageType)0;
@@ -285,25 +293,18 @@ TextureBinding::TextureBinding (const tcu::Archive&	archive,
 	}
 }
 
+TextureBinding::TextureBinding (const tcu::Texture1D* tex1D, const tcu::Sampler& sampler)
+	: m_type	(TYPE_1D)
+	, m_sampler	(sampler)
+{
+	m_binding.tex1D = tex1D;
+}
+
 TextureBinding::TextureBinding (const tcu::Texture2D* tex2D, const tcu::Sampler& sampler)
 	: m_type	(TYPE_2D)
 	, m_sampler	(sampler)
 {
 	m_binding.tex2D = tex2D;
-}
-
-TextureBinding::TextureBinding (const tcu::TextureCube* texCube, const tcu::Sampler& sampler)
-	: m_type	(TYPE_CUBE_MAP)
-	, m_sampler	(sampler)
-{
-	m_binding.texCube = texCube;
-}
-
-TextureBinding::TextureBinding (const tcu::Texture2DArray* tex2DArray, const tcu::Sampler& sampler)
-	: m_type	(TYPE_2D_ARRAY)
-	, m_sampler	(sampler)
-{
-	m_binding.tex2DArray = tex2DArray;
 }
 
 TextureBinding::TextureBinding (const tcu::Texture3D* tex3D, const tcu::Sampler& sampler)
@@ -313,14 +314,45 @@ TextureBinding::TextureBinding (const tcu::Texture3D* tex3D, const tcu::Sampler&
 	m_binding.tex3D = tex3D;
 }
 
+TextureBinding::TextureBinding (const tcu::TextureCube* texCube, const tcu::Sampler& sampler)
+	: m_type	(TYPE_CUBE_MAP)
+	, m_sampler	(sampler)
+{
+	m_binding.texCube = texCube;
+}
+
+TextureBinding::TextureBinding (const tcu::Texture1DArray* tex1DArray, const tcu::Sampler& sampler)
+	: m_type	(TYPE_1D_ARRAY)
+	, m_sampler	(sampler)
+{
+	m_binding.tex1DArray = tex1DArray;
+}
+
+TextureBinding::TextureBinding (const tcu::Texture2DArray* tex2DArray, const tcu::Sampler& sampler)
+	: m_type	(TYPE_2D_ARRAY)
+	, m_sampler	(sampler)
+{
+	m_binding.tex2DArray = tex2DArray;
+}
+
+TextureBinding::TextureBinding (const tcu::TextureCubeArray* texCubeArray, const tcu::Sampler& sampler)
+	: m_type	(TYPE_CUBE_ARRAY)
+	, m_sampler	(sampler)
+{
+	m_binding.texCubeArray = texCubeArray;
+}
+
 TextureBinding::~TextureBinding (void)
 {
 	switch(m_type)
 	{
+		case TYPE_1D:			delete m_binding.tex1D;			break;
 		case TYPE_2D:			delete m_binding.tex2D;			break;
-		case TYPE_CUBE_MAP:		delete m_binding.texCube;		break;
-		case TYPE_2D_ARRAY:		delete m_binding.tex2DArray;	break;
 		case TYPE_3D:			delete m_binding.tex3D;			break;
+		case TYPE_CUBE_MAP:		delete m_binding.texCube;		break;
+		case TYPE_1D_ARRAY:		delete m_binding.tex1DArray;	break;
+		case TYPE_2D_ARRAY:		delete m_binding.tex2DArray;	break;
+		case TYPE_CUBE_ARRAY:	delete m_binding.texCubeArray;	break;
 		default:												break;
 	}
 }
@@ -365,10 +397,13 @@ ShaderEvalContext::ShaderEvalContext (const QuadGrid& quadGrid)
 
 		switch (binding.getType())
 		{
-			case TextureBinding::TYPE_2D:		textures[ndx].tex2D			= &binding.get2D();			break;
-			case TextureBinding::TYPE_CUBE_MAP:	textures[ndx].texCube		= &binding.getCube();		break;
-			case TextureBinding::TYPE_2D_ARRAY:	textures[ndx].tex2DArray	= &binding.get2DArray();	break;
-			case TextureBinding::TYPE_3D:		textures[ndx].tex3D			= &binding.get3D();			break;
+			case TextureBinding::TYPE_1D:			textures[ndx].tex1D			= &binding.get1D();			break;
+			case TextureBinding::TYPE_2D:			textures[ndx].tex2D			= &binding.get2D();			break;
+			case TextureBinding::TYPE_3D:			textures[ndx].tex3D			= &binding.get3D();			break;
+			case TextureBinding::TYPE_CUBE_MAP:		textures[ndx].texCube		= &binding.getCube();		break;
+			case TextureBinding::TYPE_1D_ARRAY:		textures[ndx].tex1DArray	= &binding.get1DArray();	break;
+			case TextureBinding::TYPE_2D_ARRAY:		textures[ndx].tex2DArray	= &binding.get2DArray();	break;
+			case TextureBinding::TYPE_CUBE_ARRAY:	textures[ndx].texCubeArray	= &binding.getCubeArray();	break;
 			default:
 				TCU_THROW(InternalError, "Handling of texture binding type not implemented");
 		}
@@ -1063,6 +1098,7 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 	const TextureBinding::Type			textureType			= textureBinding.getType();
 	const tcu::Sampler&					refSampler			= textureBinding.getSampler();
 	const TextureBinding::Parameters&	textureParams		= textureBinding.getParameters();
+	const bool							isMSTexture			= textureParams.samples != vk::VK_SAMPLE_COUNT_1_BIT;
 	deUint32							mipLevels			= 1u;
 	deUint32							arrayLayers			= 1u;
 	tcu::TextureFormat					texFormat;
@@ -1075,7 +1111,7 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 
 		texFormat									= texture.getFormat();
 		texSize										= tcu::IVec3(texture.getWidth(), texture.getHeight(), 1u);
-		mipLevels									= (deUint32)texture.getNumLevels();
+		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
 		arrayLayers									= 1u;
 
 		textureData.resize(mipLevels);
@@ -1094,7 +1130,7 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 
 		texFormat									= texture.getFormat();
 		texSize										= tcu::IVec3(texture.getSize(), texture.getSize(), 1u);
-		mipLevels									= (deUint32)texture.getNumLevels();
+		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
 		arrayLayers									= 6u;
 
 		static const tcu::CubeFace		cubeFaceMapping[tcu::CUBEFACE_LAST] =
@@ -1119,7 +1155,6 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 					continue;
 
 				textureData[level].push_back(texture.getLevelFace(level, face));
-
 			}
 		}
 	}
@@ -1129,7 +1164,7 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 
 		texFormat									= texture.getFormat();
 		texSize										= tcu::IVec3(texture.getWidth(), texture.getHeight(), 1u);
-		mipLevels									= (deUint32)texture.getNumLevels();
+		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
 		arrayLayers									= (deUint32)texture.getNumLayers();
 
 		textureData.resize(mipLevels);
@@ -1156,7 +1191,7 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 
 		texFormat									= texture.getFormat();
 		texSize										= tcu::IVec3(texture.getWidth(), texture.getHeight(), texture.getDepth());
-		mipLevels									= (deUint32)texture.getNumLevels();
+		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
 		arrayLayers									= 1u;
 
 		textureData.resize(mipLevels);
@@ -1167,6 +1202,78 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 				continue;
 
 			textureData[level].push_back(texture.getLevel(level));
+		}
+	}
+	else if (textureType == TextureBinding::TYPE_1D)
+	{
+		const tcu::Texture1D&			texture		= textureBinding.get1D();
+
+		texFormat									= texture.getFormat();
+		texSize										= tcu::IVec3(texture.getWidth(), 1, 1);
+		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
+		arrayLayers									= 1u;
+
+		textureData.resize(mipLevels);
+
+		for (deUint32 level = 0; level < mipLevels; ++level)
+		{
+			if (texture.isLevelEmpty(level))
+				continue;
+
+			textureData[level].push_back(texture.getLevel(level));
+		}
+	}
+	else if (textureType == TextureBinding::TYPE_1D_ARRAY)
+	{
+		const tcu::Texture1DArray&		texture		= textureBinding.get1DArray();
+
+		texFormat									= texture.getFormat();
+		texSize										= tcu::IVec3(texture.getWidth(), 1, 1);
+		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
+		arrayLayers									= (deUint32)texture.getNumLayers();
+
+		textureData.resize(mipLevels);
+
+		for (deUint32 level = 0; level < mipLevels; ++level)
+		{
+			if (texture.isLevelEmpty(level))
+				continue;
+
+			const tcu::ConstPixelBufferAccess&	levelLayers		= texture.getLevel(level);
+			const deUint32						layerSize		= levelLayers.getWidth() * levelLayers.getFormat().getPixelSize();
+
+			for (deUint32 layer = 0; layer < arrayLayers; ++layer)
+			{
+				const deUint32					layerOffset		= layerSize * layer;
+				tcu::ConstPixelBufferAccess		layerData		(levelLayers.getFormat(), levelLayers.getWidth(), 1, 1, (deUint8*)levelLayers.getDataPtr() + layerOffset);
+				textureData[level].push_back(layerData);
+			}
+		}
+	}
+	else if (textureType == TextureBinding::TYPE_CUBE_ARRAY)
+	{
+		const tcu::TextureCubeArray&	texture		= textureBinding.getCubeArray();
+		texFormat									= texture.getFormat();
+		texSize										= tcu::IVec3(texture.getSize(), texture.getSize(), 1);
+		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
+		arrayLayers									= texture.getDepth();
+
+		textureData.resize(mipLevels);
+
+		for (deUint32 level = 0; level < mipLevels; ++level)
+		{
+			if (texture.isLevelEmpty(level))
+				continue;
+
+			const tcu::ConstPixelBufferAccess&	levelLayers		= texture.getLevel(level);
+			const deUint32						layerSize		= levelLayers.getWidth() * levelLayers.getHeight() * levelLayers.getFormat().getPixelSize();
+
+			for (deUint32 layer = 0; layer < arrayLayers; ++layer)
+			{
+				const deUint32					layerOffset		= layerSize * layer;
+				tcu::ConstPixelBufferAccess		layerData		(levelLayers.getFormat(), levelLayers.getWidth(), levelLayers.getHeight(), 1, (deUint8*)levelLayers.getDataPtr() + layerOffset);
+				textureData[level].push_back(layerData);
+			}
 		}
 	}
 	else
@@ -1220,7 +1327,7 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 		},
 		mipLevels,														// deUint32					mipLevels;
 		arrayLayers,													// deUint32					arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,											// VkSampleCountFlagBits	samples;
+		textureParams.samples,											// VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,										// VkImageTiling			tiling;
 		imageUsageFlags,												// VkImageUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,										// VkSharingMode			sharingMode;
@@ -2037,7 +2144,6 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			(const VkSemaphore*)DE_NULL,
 		};
 
-		VK_CHECK(vk.resetFences(vkDevice, 1, &fence.get()));
 		VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
 		VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity*/));
 	}

@@ -70,10 +70,13 @@ public:
 	enum Type
 	{
 		TYPE_NONE = 0,
+		TYPE_1D,
 		TYPE_2D,
-		TYPE_CUBE_MAP,
-		TYPE_2D_ARRAY,
 		TYPE_3D,
+		TYPE_CUBE_MAP,
+		TYPE_1D_ARRAY,
+		TYPE_2D_ARRAY,
+		TYPE_CUBE_ARRAY,
 
 		TYPE_LAST
 	};
@@ -82,11 +85,14 @@ public:
 	{
 		deUint32					baseMipLevel;
 		vk::VkComponentMapping		componentMapping;
+		vk::VkSampleCountFlagBits	samples;
 
 		Parameters (deUint32					baseMipLevel_		= 0,
-					vk::VkComponentMapping		componentMapping_	= vk::makeComponentMappingRGBA())
+					vk::VkComponentMapping		componentMapping_	= vk::makeComponentMappingRGBA(),
+					vk::VkSampleCountFlagBits	samples_			= vk::VK_SAMPLE_COUNT_1_BIT)
 			: baseMipLevel		(baseMipLevel_)
 			, componentMapping	(componentMapping_)
+			, samples			(samples_)
 		{
 		}
 	};
@@ -95,18 +101,27 @@ public:
 															const char*				filename,
 															const Type				type,
 															const tcu::Sampler&		sampler);
+
+										TextureBinding		(const tcu::Texture1D* tex1D, const tcu::Sampler& sampler);
 										TextureBinding		(const tcu::Texture2D* tex2D, const tcu::Sampler& sampler);
-										TextureBinding		(const tcu::TextureCube* texCube, const tcu::Sampler& sampler);
-										TextureBinding		(const tcu::Texture2DArray* tex2DArray, const tcu::Sampler& sampler);
 										TextureBinding		(const tcu::Texture3D* tex3D, const tcu::Sampler& sampler);
+										TextureBinding		(const tcu::TextureCube* texCube, const tcu::Sampler& sampler);
+										TextureBinding		(const tcu::Texture1DArray* tex1DArray, const tcu::Sampler& sampler);
+										TextureBinding		(const tcu::Texture2DArray* tex2DArray, const tcu::Sampler& sampler);
+										TextureBinding		(const tcu::TextureCubeArray* texCubeArray, const tcu::Sampler& sampler);
+
 										~TextureBinding		(void);
 
 	Type								getType				(void) const { return m_type;		}
 	const tcu::Sampler&					getSampler			(void) const { return m_sampler;	}
-	const tcu::Texture2D&				get2D				(void) const { DE_ASSERT(getType() == TYPE_2D && m_binding.tex2D != NULL);				return *m_binding.tex2D;		}
-	const tcu::TextureCube&				getCube				(void) const { DE_ASSERT(getType() == TYPE_CUBE_MAP && m_binding.texCube != NULL);		return *m_binding.texCube;		}
-	const tcu::Texture2DArray&			get2DArray			(void) const { DE_ASSERT(getType() == TYPE_2D_ARRAY && m_binding.tex2DArray != NULL);	return *m_binding.tex2DArray;	}
-	const tcu::Texture3D&				get3D				(void) const { DE_ASSERT(getType() == TYPE_3D && m_binding.tex3D != NULL);				return *m_binding.tex3D;		}
+
+	const tcu::Texture1D&				get1D				(void) const { DE_ASSERT(getType() == TYPE_1D && m_binding.tex1D != NULL);					return *m_binding.tex1D;		}
+	const tcu::Texture2D&				get2D				(void) const { DE_ASSERT(getType() == TYPE_2D && m_binding.tex2D != NULL);					return *m_binding.tex2D;		}
+	const tcu::Texture3D&				get3D				(void) const { DE_ASSERT(getType() == TYPE_3D && m_binding.tex3D != NULL);					return *m_binding.tex3D;		}
+	const tcu::TextureCube&				getCube				(void) const { DE_ASSERT(getType() == TYPE_CUBE_MAP && m_binding.texCube != NULL);			return *m_binding.texCube;		}
+	const tcu::Texture1DArray&			get1DArray			(void) const { DE_ASSERT(getType() == TYPE_1D_ARRAY && m_binding.tex1DArray != NULL);		return *m_binding.tex1DArray;	}
+	const tcu::Texture2DArray&			get2DArray			(void) const { DE_ASSERT(getType() == TYPE_2D_ARRAY && m_binding.tex2DArray != NULL);		return *m_binding.tex2DArray;	}
+	const tcu::TextureCubeArray&		getCubeArray		(void) const { DE_ASSERT(getType() == TYPE_CUBE_ARRAY && m_binding.texCubeArray != NULL);	return *m_binding.texCubeArray;	}
 
 	void								setParameters		(const Parameters& params) { m_params = params; }
 	const Parameters&					getParameters		(void) const { return m_params; }
@@ -123,10 +138,13 @@ private:
 
 	union
 	{
+		const tcu::Texture1D*			tex1D;
 		const tcu::Texture2D*			tex2D;
-		const tcu::TextureCube*			texCube;
-		const tcu::Texture2DArray*		tex2DArray;
 		const tcu::Texture3D*			tex3D;
+		const tcu::TextureCube*			texCube;
+		const tcu::Texture1DArray*		tex1DArray;
+		const tcu::Texture2DArray*		tex2DArray;
+		const tcu::TextureCubeArray*	texCubeArray;
 	} m_binding;
 };
 
@@ -146,17 +164,23 @@ public:
 
 	struct ShaderSampler
 	{
-		tcu::Sampler				sampler;
-		const tcu::Texture2D*		tex2D;
-		const tcu::TextureCube*		texCube;
-		const tcu::Texture2DArray*	tex2DArray;
-		const tcu::Texture3D*		tex3D;
+		tcu::Sampler					sampler;
+		const tcu::Texture1D*			tex1D;
+		const tcu::Texture2D*			tex2D;
+		const tcu::Texture3D*			tex3D;
+		const tcu::TextureCube*			texCube;
+		const tcu::Texture1DArray*		tex1DArray;
+		const tcu::Texture2DArray*		tex2DArray;
+		const tcu::TextureCubeArray*	texCubeArray;
 
 		inline ShaderSampler (void)
-			: tex2D		(DE_NULL)
-			, texCube	(DE_NULL)
-			, tex2DArray(DE_NULL)
-			, tex3D		(DE_NULL)
+			: tex1D			(DE_NULL)
+			, tex2D			(DE_NULL)
+			, tex3D			(DE_NULL)
+			, texCube		(DE_NULL)
+			, tex1DArray	(DE_NULL)
+			, tex2DArray	(DE_NULL)
+			, texCubeArray	(DE_NULL)
 		{
 		}
 	};

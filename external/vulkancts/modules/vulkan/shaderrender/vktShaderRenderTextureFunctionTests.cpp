@@ -27,7 +27,7 @@
  *
  *//*!
  * \file
- * \brief Texture access function tests.
+ * \brief Texture access and query function tests.
  *//*--------------------------------------------------------------------*/
 
 #include "vktShaderRenderTextureFunctionTests.hpp"
@@ -38,6 +38,7 @@
 #include "tcuTestLog.hpp"
 #include "glwEnums.hpp"
 #include "deMath.h"
+#include "vkImageUtil.hpp"
 
 namespace vkt
 {
@@ -52,6 +53,8 @@ using tcu::Vec4;
 using tcu::IVec2;
 using tcu::IVec3;
 using tcu::IVec4;
+
+using std::vector;
 
 enum Function
 {
@@ -169,10 +172,13 @@ struct TextureLookupSpec
 
 enum TextureType
 {
+	TEXTURETYPE_1D = 0,
 	TEXTURETYPE_2D,
-	TEXTURETYPE_CUBE_MAP,
-	TEXTURETYPE_2D_ARRAY,
 	TEXTURETYPE_3D,
+	TEXTURETYPE_CUBE_MAP,
+	TEXTURETYPE_1D_ARRAY,
+	TEXTURETYPE_2D_ARRAY,
+	TEXTURETYPE_CUBE_ARRAY,
 
 	TEXTURETYPE_LAST
 };
@@ -232,6 +238,8 @@ struct TexLookupParams
 };
 
 // \note LodMode and computeLodFromDerivates functions are copied from glsTextureTestUtil
+namespace TextureTestUtil
+{
 
 enum LodMode
 {
@@ -241,6 +249,27 @@ enum LodMode
 
 	LODMODE_LAST
 };
+
+// 1D lookup LOD computation.
+
+float computeLodFromDerivates (LodMode mode, float dudx, float dudy)
+{
+	float p = 0.0f;
+	switch (mode)
+	{
+		// \note [mika] Min and max bounds equal to exact with 1D textures
+		case LODMODE_EXACT:
+		case LODMODE_MIN_BOUND:
+		case LODMODE_MAX_BOUND:
+			p = de::max(deFloatAbs(dudx), deFloatAbs(dudy));
+			break;
+
+		default:
+			DE_ASSERT(DE_FALSE);
+	}
+
+	return deFloatLog2(p);
+}
 
 // 2D lookup LOD computation.
 
@@ -298,6 +327,10 @@ float computeLodFromDerivates (LodMode mode, float dudx, float dvdx, float dwdx,
 
 	return deFloatLog2(p);
 }
+
+} // TextureTestUtil
+
+using namespace TextureTestUtil;
 
 static const LodMode DEFAULT_LOD_MODE = LODMODE_EXACT;
 
@@ -1041,7 +1074,297 @@ void ShaderTextureFunctionCase::initShaderSources (void)
 	m_fragShaderSource = frag.str();
 }
 
-class TextureSizeInstance : public ShaderRenderCaseInstance
+enum QueryFunction
+{
+	QUERYFUNCTION_TEXTURESIZE = 0,
+	QUERYFUNCTION_TEXTUREQUERYLOD,
+	QUERYFUNCTION_TEXTUREQUERYLEVELS,
+	QUERYFUNCTION_TEXTURESAMPLES,
+
+	QUERYFUNCTION_LAST
+};
+
+static void checkDeviceFeatures (Context& context, TextureType textureType)
+{
+	if (textureType == TEXTURETYPE_CUBE_ARRAY)
+	{
+		const vk::VkPhysicalDeviceFeatures&	deviceFeatures	= context.getDeviceFeatures();
+
+		if (!deviceFeatures.imageCubeArray)
+			TCU_THROW(NotSupportedError, "Cube array is not supported");
+	}
+}
+
+class TextureQueryInstance : public ShaderRenderCaseInstance
+{
+public:
+								TextureQueryInstance			(Context&					context,
+																 const bool					isVertexCase,
+																 const TextureSpec&			textureSpec);
+	virtual						~TextureQueryInstance			(void);
+
+protected:
+	virtual void				setupDefaultInputs				(void);
+	virtual void				setupUniforms					(const tcu::Vec4&);
+
+	void						render							(void);
+
+protected:
+	const TextureSpec&			m_textureSpec;
+};
+
+TextureQueryInstance::TextureQueryInstance (Context&				context,
+											const bool				isVertexCase,
+											const TextureSpec&		textureSpec)
+	: ShaderRenderCaseInstance	(context, isVertexCase, DE_NULL, DE_NULL, DE_NULL)
+	, m_textureSpec				(textureSpec)
+{
+	m_colorFormat = vk::VK_FORMAT_R32G32B32A32_SFLOAT;
+
+	checkDeviceFeatures(m_context, m_textureSpec.type);
+}
+
+TextureQueryInstance::~TextureQueryInstance (void)
+{
+}
+
+void TextureQueryInstance::setupDefaultInputs (void)
+{
+	const deUint32		numVertices		= 4;
+	const float			positions[]		=
+	{
+		-1.0f, -1.0f, 0.0f, 1.0f,
+		-1.0f,  1.0f, 0.0f, 1.0f,
+		 1.0f, -1.0f, 0.0f, 1.0f,
+		 1.0f,  1.0f, 0.0f, 1.0f
+	};
+
+	addAttribute(0u, vk::VK_FORMAT_R32G32B32A32_SFLOAT, 4 * (deUint32)sizeof(float), numVertices, positions);
+}
+
+void TextureQueryInstance::setupUniforms (const tcu::Vec4&)
+{
+	useSampler(0u, 0u);
+}
+
+void TextureQueryInstance::render (void)
+{
+	const deUint32		numVertices		= 4;
+	const deUint32		numTriangles	= 2;
+	const deUint16		indices[6]		= { 0, 1, 2, 2, 1, 3 };
+
+	ShaderRenderCaseInstance::setup();
+
+	ShaderRenderCaseInstance::render(numVertices, numTriangles, indices);
+}
+
+static int getMaxTextureSize (TextureType type, const tcu::IVec3& textureSize)
+{
+	int		maxSize		= 0;
+
+	switch (type)
+	{
+		case TEXTURETYPE_1D:
+		case TEXTURETYPE_1D_ARRAY:
+			maxSize = textureSize.x();
+			break;
+
+		case TEXTURETYPE_2D:
+		case TEXTURETYPE_2D_ARRAY:
+		case TEXTURETYPE_CUBE_MAP:
+		case TEXTURETYPE_CUBE_ARRAY:
+			maxSize = de::max(textureSize.x(), textureSize.y());
+			break;
+
+		case TEXTURETYPE_3D:
+			maxSize = de::max(textureSize.x(), de::max(textureSize.y(), textureSize.z()));
+			break;
+
+		default:
+			DE_ASSERT(false);
+	}
+
+	return maxSize;
+}
+
+static std::string getTextureSizeString (TextureType type, const tcu::IVec3& textureSize)
+{
+	std::ostringstream	str;
+
+	switch (type)
+	{
+		case TEXTURETYPE_1D:
+			str << textureSize.x() << "x1";
+			break;
+
+		case TEXTURETYPE_2D:
+		case TEXTURETYPE_CUBE_MAP:
+			str << textureSize.x() << "x" << textureSize.y();
+			break;
+
+		case TEXTURETYPE_3D:
+			str << textureSize.x() << "x" << textureSize.y() << "x" << textureSize.z();
+			break;
+
+		case TEXTURETYPE_1D_ARRAY:
+			str << textureSize.x() << "x1 with " << textureSize.z() << " layer(s)";
+			break;
+
+		case TEXTURETYPE_2D_ARRAY:
+		case TEXTURETYPE_CUBE_ARRAY:
+			str << textureSize.x() << "x" << textureSize.y() << " with " << textureSize.z() << " layers(s)";
+			break;
+
+		default:
+			DE_ASSERT(false);
+			break;
+	}
+
+	return str.str();
+}
+
+static bool isValidCase (TextureType type, const tcu::IVec3& textureSize, int lod, int lodBase)
+{
+	const bool		isSquare		= textureSize.x() == textureSize.y();
+	const bool		isCubeArray		= isSquare && (textureSize.z() % 6) == 0;
+	const int		maxSize			= getMaxTextureSize(type, textureSize);
+	const bool		isLodValid		= (maxSize >> (lod + lodBase)) != 0;
+
+	if (!isLodValid)
+		return false;
+	if (type == TEXTURETYPE_CUBE_MAP && !isSquare)
+		return false;
+	if (type == TEXTURETYPE_CUBE_ARRAY && !isCubeArray)
+		return false;
+
+	return true;
+}
+
+static TextureBindingSp createEmptyTexture (deUint32				format,
+											TextureType 			type,
+											const tcu::IVec3&		textureSize,
+											int						numLevels,
+											int						lodBase,
+											const tcu::Sampler&		sampler)
+{
+	const tcu::TextureFormat			texFmt				= glu::mapGLInternalFormat(format);
+	const TextureBinding::Parameters	params				(lodBase);
+	TextureBindingSp					textureBinding;
+
+	switch (type)
+	{
+
+		case TEXTURETYPE_1D:
+		{
+			de::MovePtr<tcu::Texture1D>			texture		(new tcu::Texture1D(texFmt, textureSize.x()));
+
+			for (int level = 0; level < numLevels; level++)
+				texture->allocLevel(level);
+
+			textureBinding = TextureBindingSp(new TextureBinding(texture.release(), sampler));
+			break;
+		}
+
+		case TEXTURETYPE_2D:
+		{
+			de::MovePtr<tcu::Texture2D>			texture		(new tcu::Texture2D(texFmt, textureSize.x(), textureSize.y()));
+
+			for (int level = 0; level < numLevels; level++)
+				texture->allocLevel(level);
+
+			textureBinding = TextureBindingSp(new TextureBinding(texture.release(), sampler));
+			break;
+		}
+
+		case TEXTURETYPE_3D:
+		{
+			de::MovePtr<tcu::Texture3D>			texture		(new tcu::Texture3D(texFmt, textureSize.x(), textureSize.y(), textureSize.z()));
+
+			for (int level = 0; level < numLevels; level++)
+				texture->allocLevel(level);
+
+			textureBinding = TextureBindingSp(new TextureBinding(texture.release(), sampler));
+			break;
+		}
+
+		case TEXTURETYPE_CUBE_MAP:
+		{
+			de::MovePtr<tcu::TextureCube>		texture		(new tcu::TextureCube(texFmt, textureSize.x()));
+
+			for (int level = 0; level < numLevels; level++)
+				for (int face = 0; face < tcu::CUBEFACE_LAST; face++)
+					texture->allocLevel((tcu::CubeFace)face, level);
+
+			textureBinding = TextureBindingSp(new TextureBinding(texture.release(), sampler));
+			break;
+		}
+
+		case TEXTURETYPE_1D_ARRAY:
+		{
+			de::MovePtr<tcu::Texture1DArray>	texture		(new tcu::Texture1DArray(texFmt, textureSize.x(), textureSize.z()));
+
+			for (int level = 0; level < numLevels; level++)
+				texture->allocLevel(level);
+
+			textureBinding = TextureBindingSp(new TextureBinding(texture.release(), sampler));
+			break;
+		}
+
+		case TEXTURETYPE_2D_ARRAY:
+		{
+			de::MovePtr<tcu::Texture2DArray>	texture		(new tcu::Texture2DArray(texFmt, textureSize.x(), textureSize.y(), textureSize.z()));
+
+			for (int level = 0; level < numLevels; level++)
+				texture->allocLevel(level);
+
+			textureBinding = TextureBindingSp(new TextureBinding(texture.release(), sampler));
+			break;
+		}
+
+		case TEXTURETYPE_CUBE_ARRAY:
+		{
+			de::MovePtr<tcu::TextureCubeArray>	texture		(new tcu::TextureCubeArray(texFmt, textureSize.x(), textureSize.z()));
+
+			for (int level = 0; level < numLevels; level++)
+				texture->allocLevel(level);
+
+			textureBinding = TextureBindingSp(new TextureBinding(texture.release(), sampler));
+			break;
+		}
+
+		default:
+			DE_ASSERT(false);
+			break;
+	}
+
+	textureBinding->setParameters(params);
+	return textureBinding;
+}
+
+static inline glu::DataType getTextureSizeFuncResultType (TextureType textureType)
+{
+	switch (textureType)
+	{
+		case TEXTURETYPE_1D:
+			return glu::TYPE_INT;
+
+		case TEXTURETYPE_2D:
+		case TEXTURETYPE_CUBE_MAP:
+		case TEXTURETYPE_1D_ARRAY:
+			return glu::TYPE_INT_VEC2;
+
+		case TEXTURETYPE_3D:
+		case TEXTURETYPE_2D_ARRAY:
+		case TEXTURETYPE_CUBE_ARRAY:
+			return glu::TYPE_INT_VEC3;
+
+		default:
+			DE_ASSERT(false);
+			return glu::TYPE_LAST;
+	}
+}
+
+class TextureSizeInstance : public TextureQueryInstance
 {
 public:
 								TextureSizeInstance				(Context&					context,
@@ -1052,8 +1375,7 @@ public:
 	virtual tcu::TestStatus		iterate							(void);
 
 protected:
-	virtual void				setupDefaultInputs				(void);
-	virtual void				setupUniforms					(const tcu::Vec4&);
+	virtual void				setupUniforms					(const tcu::Vec4& constCoords);
 
 private:
 	struct TestSize
@@ -1067,17 +1389,17 @@ private:
 	void						initTexture						(void);
 	bool						testTextureSize					(void);
 
-	const TextureSpec&			m_textureSpec;
 	TestSize					m_testSize;
+	tcu::IVec3					m_expectedSize;
 	int							m_iterationCounter;
 };
 
 TextureSizeInstance::TextureSizeInstance (Context&					context,
 										  const bool				isVertexCase,
 										  const TextureSpec&		textureSpec)
-	: ShaderRenderCaseInstance	(context, isVertexCase, DE_NULL, DE_NULL, DE_NULL)
-	, m_textureSpec				(textureSpec)
+	: TextureQueryInstance		(context, isVertexCase, textureSpec)
 	, m_testSize				()
+	, m_expectedSize			()
 	, m_iterationCounter		(0)
 {
 	deMemset(&m_testSize, 0, sizeof(TestSize));
@@ -1089,107 +1411,59 @@ TextureSizeInstance::~TextureSizeInstance (void)
 {
 }
 
-void TextureSizeInstance::setupDefaultInputs (void)
+void TextureSizeInstance::setupUniforms (const tcu::Vec4& constCoords)
 {
-	const tcu::Vec4 triangle[3] = // covers entire viewport
-	{
-		tcu::Vec4(-1, -1, 0, 1),
-		tcu::Vec4( 4, -1, 0, 1),
-		tcu::Vec4(-1,  4, 0, 1),
-	};
-
-	addAttribute(0u, vk::VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(tcu::Vec4), 3, triangle);
-}
-
-void TextureSizeInstance::setupUniforms (const tcu::Vec4&)
-{
-	const tcu::IVec3	expectedSize	= m_textureSpec.type == TEXTURETYPE_2D_ARRAY ? tcu::IVec3(m_testSize.expectedSize.x(), m_testSize.expectedSize.y(), m_testSize.textureSize.z()) : m_testSize.expectedSize;
-
-	useSampler(0u, 0u);
-	addUniform(1u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(tcu::IVec3), expectedSize.getPtr());
-	addUniform(2u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(int), &m_testSize.lod);
+	TextureQueryInstance::setupUniforms(constCoords);
+	addUniform(1u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(int), &m_testSize.lod);
 }
 
 void TextureSizeInstance::initTexture (void)
 {
-	tcu::TestLog&						log					= m_context.getTestContext().getLog();
-	const tcu::TextureFormat			texFmt				= glu::mapGLInternalFormat(m_textureSpec.format);
-	const int							maxLevel			= m_testSize.lod + m_testSize.lodBase;
-	const int							levels				= maxLevel + 1;
-	const TextureBinding::Parameters	params				(m_testSize.lodBase);
-	TextureBindingSp					textureBinding;
+	tcu::TestLog&			log					= m_context.getTestContext().getLog();
+	const int				numLevels			= m_testSize.lod + m_testSize.lodBase + 1;
+	TextureBindingSp		textureBinding;
+
+	log << tcu::TestLog::Message << "Testing image size " << getTextureSizeString(m_textureSpec.type, m_testSize.textureSize) << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Lod: " << m_testSize.lod << ", base level: " << m_testSize.lodBase << tcu::TestLog::EndMessage;
 
 	switch (m_textureSpec.type)
 	{
 		case TEXTURETYPE_3D:
-		{
-			de::MovePtr<tcu::Texture3D>			texture		(new tcu::Texture3D(texFmt, m_testSize.textureSize.x(), m_testSize.textureSize.y(), m_testSize.textureSize.z()));
-
-			for (int level = 0; level < levels; level++)
-				texture->allocLevel(level);
-
-			log << tcu::TestLog::Message << "Testing image size " << m_testSize.textureSize.x() << "x" << m_testSize.textureSize.y() << "x" << m_testSize.textureSize.z() << tcu::TestLog::EndMessage;
-			log << tcu::TestLog::Message << "Lod: " << m_testSize.lod << ", base level: " << m_testSize.lodBase << tcu::TestLog::EndMessage;
 			log << tcu::TestLog::Message << "Expecting: " << m_testSize.expectedSize.x() << "x" << m_testSize.expectedSize.y() << "x" << m_testSize.expectedSize.z() << tcu::TestLog::EndMessage;
-
-			textureBinding = TextureBindingSp(new TextureBinding(texture.release(), m_textureSpec.sampler));
 			break;
-		}
 
 		case TEXTURETYPE_2D:
-		{
-			de::MovePtr<tcu::Texture2D>			texture		(new tcu::Texture2D(texFmt, m_testSize.textureSize.x(), m_testSize.textureSize.y()));
-
-			for (int level = 0; level < levels; level++)
-				texture->allocLevel(level);
-
-			log << tcu::TestLog::Message << "Testing image size " << m_testSize.textureSize.x() << "x" << m_testSize.textureSize.y() << tcu::TestLog::EndMessage;
-			log << tcu::TestLog::Message << "Lod: " << m_testSize.lod << ", base level: " << m_testSize.lodBase << tcu::TestLog::EndMessage;
 			log << tcu::TestLog::Message << "Expecting: " << m_testSize.expectedSize.x() << "x" << m_testSize.expectedSize.y() << tcu::TestLog::EndMessage;
-
-			textureBinding = TextureBindingSp(new TextureBinding(texture.release(), m_textureSpec.sampler));
 			break;
-		}
 
 		case TEXTURETYPE_CUBE_MAP:
-		{
-			de::MovePtr<tcu::TextureCube>		texture		(new tcu::TextureCube(texFmt, m_testSize.textureSize.x()));
-
-			for (int level = 0; level < levels; level++)
-				for (int face = 0; face < tcu::CUBEFACE_LAST; face++)
-					texture->allocLevel((tcu::CubeFace)face, level);
-
-			log << tcu::TestLog::Message << "Testing image size " << m_testSize.textureSize.x() << "x" << m_testSize.textureSize.y() << tcu::TestLog::EndMessage;
-			log << tcu::TestLog::Message << "Lod: " << m_testSize.lod << ", base level: " << m_testSize.lodBase << tcu::TestLog::EndMessage;
 			log << tcu::TestLog::Message << "Expecting: " << m_testSize.expectedSize.x() << "x" << m_testSize.expectedSize.y() << tcu::TestLog::EndMessage;
-
-			textureBinding = TextureBindingSp(new TextureBinding(texture.release(), m_textureSpec.sampler));
 			break;
-		}
 
 		case TEXTURETYPE_2D_ARRAY:
-		{
-			de::MovePtr<tcu::Texture2DArray>	texture		(new tcu::Texture2DArray(texFmt, m_testSize.textureSize.x(), m_testSize.textureSize.y(), m_testSize.textureSize.z()));
-
-			for (int level = 0; level < levels; level++)
-				texture->allocLevel(level);
-
-			log << tcu::TestLog::Message << "Testing image size " << m_testSize.textureSize.x() << "x" << m_testSize.textureSize.y() << " with " << m_testSize.textureSize.z() << " layer(s)" << tcu::TestLog::EndMessage;
-			log << tcu::TestLog::Message << "Lod: " << m_testSize.lod << ", base level: " << m_testSize.lodBase << tcu::TestLog::EndMessage;
 			log << tcu::TestLog::Message << "Expecting: " << m_testSize.expectedSize.x() << "x" << m_testSize.expectedSize.y() << " and " << m_testSize.textureSize.z() << " layer(s)" << tcu::TestLog::EndMessage;
-
-			textureBinding = TextureBindingSp(new TextureBinding(texture.release(), m_textureSpec.sampler));
 			break;
-		}
+
+		case TEXTURETYPE_CUBE_ARRAY:
+			log << tcu::TestLog::Message << "Expecting: " << m_testSize.expectedSize.x() << "x" << m_testSize.expectedSize.y() << " and " << (m_testSize.textureSize.z() / 6) << " cube(s)" << tcu::TestLog::EndMessage;
+			break;
+
+		case TEXTURETYPE_1D:
+			log << tcu::TestLog::Message << "Expecting: " << m_testSize.expectedSize.x() << tcu::TestLog::EndMessage;
+			break;
+
+		case TEXTURETYPE_1D_ARRAY:
+			log << tcu::TestLog::Message << "Expecting: " << m_testSize.expectedSize.x() << " and " << m_testSize.textureSize.z() << " layer(s)" << tcu::TestLog::EndMessage;
+			break;
 
 		default:
 			DE_ASSERT(false);
 			break;
 	}
 
-	m_textures.clear();
+	textureBinding = createEmptyTexture(m_textureSpec.format, m_textureSpec.type, m_testSize.textureSize, numLevels, m_testSize.lodBase, m_textureSpec.sampler);
 
-	textureBinding->setParameters(params);
+	m_textures.clear();
 	m_textures.push_back(textureBinding);
 }
 
@@ -1197,8 +1471,8 @@ tcu::TestStatus TextureSizeInstance::iterate (void)
 {
 	const TestSize testSizes[] =
 	{
-		{ tcu::IVec3(1, 2, 1),			1,		0,	tcu::IVec3(1, 1, 1)			},
 		{ tcu::IVec3(1, 2, 1),			0,		0,	tcu::IVec3(1, 2, 1)			},
+		{ tcu::IVec3(1, 2, 1),			1,		0,	tcu::IVec3(1, 1, 1)			},
 
 		{ tcu::IVec3(1, 3, 2),			0,		0,	tcu::IVec3(1, 3, 2)			},
 		{ tcu::IVec3(1, 3, 2),			1,		0,	tcu::IVec3(1, 1, 1)			},
@@ -1242,6 +1516,16 @@ tcu::TestStatus TextureSizeInstance::iterate (void)
 		{ tcu::IVec3(100, 31, 18),		3,		1,	tcu::IVec3(6, 1, 1)			},
 		{ tcu::IVec3(128, 64, 32),		3,		1,	tcu::IVec3(8, 4, 2)			},
 		{ tcu::IVec3(64, 64, 64),		1,		1,	tcu::IVec3(16, 16, 16)		},
+
+		// w == h and d % 6 == 0 (for cube array)
+		{ tcu::IVec3(1, 1, 6),			0,		0,	tcu::IVec3(1, 1, 6)			},
+		{ tcu::IVec3(32, 32, 12),		0,		0,	tcu::IVec3(32, 32, 12)		},
+		{ tcu::IVec3(32, 32, 12),		0,		1,	tcu::IVec3(16, 16, 6)		},
+		{ tcu::IVec3(32, 32, 12),		1,		0,	tcu::IVec3(16, 16, 6)		},
+		{ tcu::IVec3(32, 32, 12),		2,		0,	tcu::IVec3(8, 8, 3)			},
+		{ tcu::IVec3(32, 32, 12),		3,		0,	tcu::IVec3(4, 4, 1)			},
+		{ tcu::IVec3(32, 32, 12),		4,		0,	tcu::IVec3(2, 2, 1)			},
+		{ tcu::IVec3(32, 32, 12),		5,		0,	tcu::IVec3(1, 1, 1)			},
 	};
 	const int lastIterationIndex = DE_LENGTH_OF_ARRAY(testSizes) + 1;
 
@@ -1255,7 +1539,7 @@ tcu::TestStatus TextureSizeInstance::iterate (void)
 		m_testSize = testSizes[m_iterationCounter - 1];
 
 		if (!testTextureSize())
-			return tcu::TestStatus::fail("Got unexpected texture size");
+			return tcu::TestStatus::fail("Got unexpected result");
 
 		return tcu::TestStatus::incomplete();
 	}
@@ -1264,38 +1548,61 @@ tcu::TestStatus TextureSizeInstance::iterate (void)
 bool TextureSizeInstance::testTextureSize (void)
 {
 	tcu::TestLog&			log				= m_context.getTestContext().getLog();
-	const bool				isSquare		= m_testSize.textureSize.x() == m_testSize.textureSize.y();
-	const bool				is2DLodValid	= (m_testSize.textureSize.x() >> (m_testSize.lod + m_testSize.lodBase)) != 0 || (m_testSize.textureSize.y() >> (m_testSize.lod + m_testSize.lodBase)) != 0;
 	bool					success			= true;
 
-	// Skip incompatible cases
-	if (m_textureSpec.type == TEXTURETYPE_CUBE_MAP && !isSquare)
-		return true;
-	if (m_textureSpec.type == TEXTURETYPE_2D && !is2DLodValid)
-		return true;
-	if (m_textureSpec.type == TEXTURETYPE_2D_ARRAY && !is2DLodValid)
+	// skip incompatible cases
+	if (!isValidCase(m_textureSpec.type, m_testSize.textureSize, m_testSize.lod, m_testSize.lodBase))
 		return true;
 
 	// setup texture
 	initTexture();
 
-	// render
+	// determine expected texture size
+	switch (m_textureSpec.type)
 	{
-		const deUint16		indices[3]		= { 0, 1, 2 };
+		case TEXTURETYPE_1D:
+		case TEXTURETYPE_2D:
+		case TEXTURETYPE_3D:
+		case TEXTURETYPE_CUBE_MAP:
+			m_expectedSize = m_testSize.expectedSize;
+			break;
 
-		setup();
-		render(3, 1, indices);
+		case TEXTURETYPE_1D_ARRAY:
+			m_expectedSize = tcu::IVec3(m_testSize.expectedSize.x(), m_testSize.textureSize.z(), 0);
+			break;
+
+		case TEXTURETYPE_2D_ARRAY:
+			m_expectedSize = tcu::IVec3(m_testSize.expectedSize.x(), m_testSize.expectedSize.y(), m_testSize.textureSize.z());
+			break;
+
+		case TEXTURETYPE_CUBE_ARRAY:
+			m_expectedSize = tcu::IVec3(m_testSize.expectedSize.x(), m_testSize.expectedSize.y(), m_testSize.textureSize.z() / 6);
+			break;
+
+		default:
+			DE_ASSERT(false);
+			break;
 	}
+
+	// render
+	TextureQueryInstance::render();
 
 	// test
 	{
-		const float					colorTolerance		= 0.1f;
 		const tcu::TextureLevel&	result				= getResultImage();
-		tcu::Vec4					outputColor			= result.getAccess().getPixel(0, 0);
+		tcu::IVec4					output				= result.getAccess().getPixelInt(0, 0);
+		const int					resultComponents	= glu::getDataTypeScalarSize(getTextureSizeFuncResultType(m_textureSpec.type));
 
-		if (outputColor.x() >= 1.0f - colorTolerance &&
-			outputColor.y() >= 1.0f - colorTolerance &&
-			outputColor.z() >= 1.0f - colorTolerance)
+		for (int ndx = 0; ndx < resultComponents; ndx++)
+		{
+			if (output[ndx] != m_expectedSize[ndx])
+			{
+				success = false;
+				break;
+			}
+		}
+
+		if (success)
 		{
 			// success
 			log << tcu::TestLog::Message << "Passed" << tcu::TestLog::EndMessage;
@@ -1303,118 +1610,836 @@ bool TextureSizeInstance::testTextureSize (void)
 		else
 		{
 			// failure
+			std::stringstream	resultSizeStr;
+			switch (resultComponents)
+			{
+				case 1:
+					resultSizeStr << output[0];
+					break;
+				case 2:
+					resultSizeStr << output.toWidth<2>();
+					break;
+				case 3:
+					resultSizeStr << output.toWidth<3>();
+					break;
+				default:
+					DE_ASSERT(false);
+					break;
+			}
+			log << tcu::TestLog::Message << "Result: " << resultSizeStr.str() << tcu::TestLog::EndMessage;
 			log << tcu::TestLog::Message << "Failed" << tcu::TestLog::EndMessage;
-			success = false;
 		}
 	}
 
-	// empty line to format log nicely
 	log << tcu::TestLog::Message << tcu::TestLog::EndMessage;
 
 	return success;
 }
 
-class TextureSizeCase : public ShaderRenderCase
+static vk::VkImageType getVkImageType (TextureType type)
+{
+	switch (type)
+	{
+		case TEXTURETYPE_1D:
+		case TEXTURETYPE_1D_ARRAY:
+			return vk::VK_IMAGE_TYPE_1D;
+
+		case TEXTURETYPE_2D:
+		case TEXTURETYPE_2D_ARRAY:
+		case TEXTURETYPE_CUBE_MAP:
+		case TEXTURETYPE_CUBE_ARRAY:
+			return vk::VK_IMAGE_TYPE_2D;
+
+		case TEXTURETYPE_3D:
+			return vk::VK_IMAGE_TYPE_3D;
+
+		default:
+			DE_ASSERT(false);
+			return (vk::VkImageType)0;
+	}
+}
+
+class TextureSamplesInstance : public TextureQueryInstance
 {
 public:
-								TextureSizeCase					(tcu::TestContext&			testCtx,
+								TextureSamplesInstance			(Context&					context,
+																 const bool					isVertexCase,
+																 const TextureSpec&			textureSpec);
+	virtual						~TextureSamplesInstance			(void);
+
+	virtual tcu::TestStatus		iterate							(void);
+
+private:
+	void						initTexture						(void);
+
+	int										m_iterationCounter;
+	vector<vk::VkSampleCountFlagBits>		m_iterations;
+};
+
+TextureSamplesInstance::TextureSamplesInstance (Context&				context,
+												const bool				isVertexCase,
+												const TextureSpec&		textureSpec)
+	: TextureQueryInstance		(context, isVertexCase, textureSpec)
+	, m_iterationCounter		(0)
+{
+	m_renderSize = tcu::UVec2(1, 1);
+
+	// determine available sample counts
+	{
+		const vk::VkFormat						format			= vk::mapTextureFormat(glu::mapGLInternalFormat(m_textureSpec.format));
+		const vk::VkImageType					imageType		= getVkImageType(m_textureSpec.type);
+		vk::VkImageFormatProperties				properties;
+
+		if (m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(),
+																					format,
+																					imageType,
+																					vk::VK_IMAGE_TILING_OPTIMAL,
+																					vk::VK_IMAGE_USAGE_SAMPLED_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+																					(vk::VkImageCreateFlags)0,
+																					&properties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format not supported");
+
+		static const vk::VkSampleCountFlagBits	sampleFlags[]	=
+		{
+			vk::VK_SAMPLE_COUNT_1_BIT,
+			vk::VK_SAMPLE_COUNT_2_BIT,
+			vk::VK_SAMPLE_COUNT_4_BIT,
+			vk::VK_SAMPLE_COUNT_8_BIT,
+			vk::VK_SAMPLE_COUNT_16_BIT,
+			vk::VK_SAMPLE_COUNT_32_BIT,
+			vk::VK_SAMPLE_COUNT_64_BIT
+		};
+
+		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(sampleFlags); samplesNdx++)
+		{
+			const vk::VkSampleCountFlagBits&	flag			= sampleFlags[samplesNdx];
+
+			if ((properties.sampleCounts & flag) != 0)
+				m_iterations.push_back(flag);
+		}
+
+		DE_ASSERT(!m_iterations.empty());
+	}
+
+	// setup texture
+	initTexture();
+}
+
+TextureSamplesInstance::~TextureSamplesInstance (void)
+{
+}
+
+tcu::TestStatus TextureSamplesInstance::iterate (void)
+{
+	tcu::TestLog&		log		= m_context.getTestContext().getLog();
+
+	// update samples count
+	{
+		DE_ASSERT(m_textures.size() == 1);
+
+		TextureBinding::Parameters	params	= m_textures[0]->getParameters();
+
+		params.samples = m_iterations[m_iterationCounter];
+		log << tcu::TestLog::Message << "Expected samples: " << m_iterations[m_iterationCounter] << tcu::TestLog::EndMessage;
+
+		m_textures[0]->setParameters(params);
+	}
+
+	// render
+	TextureQueryInstance::render();
+
+	// test
+	{
+		const tcu::TextureLevel&	result				= getResultImage();
+		tcu::IVec4					output				= result.getAccess().getPixelInt(0, 0);
+
+		if (output.x() == (int)m_iterations[m_iterationCounter])
+		{
+			// success
+			log << tcu::TestLog::Message << "Passed" << tcu::TestLog::EndMessage;
+		}
+		else
+		{
+			// failure
+			log << tcu::TestLog::Message << "Result: " << output.x() << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Failed" << tcu::TestLog::EndMessage;
+			return tcu::TestStatus::fail("Got unexpected result");
+		}
+
+		m_iterationCounter++;
+		if (m_iterationCounter == (int)m_iterations.size())
+			return tcu::TestStatus::pass("Pass");
+		else
+			return tcu::TestStatus::incomplete();
+	}
+}
+
+void TextureSamplesInstance::initTexture (void)
+{
+	tcu::TestLog&			log					= m_context.getTestContext().getLog();
+	tcu::IVec3				textureSize			(m_textureSpec.width, m_textureSpec.height, m_textureSpec.depth);
+	TextureBindingSp		textureBinding;
+
+	DE_ASSERT(m_textures.empty());
+	DE_ASSERT(m_textureSpec.type == TEXTURETYPE_2D || m_textureSpec.type == TEXTURETYPE_2D_ARRAY);
+
+	log << tcu::TestLog::Message << "Image size: " << getTextureSizeString(m_textureSpec.type, textureSize) << tcu::TestLog::EndMessage;
+
+	textureBinding = createEmptyTexture(m_textureSpec.format, m_textureSpec.type, textureSize, m_textureSpec.numLevels, 0 /* lodBase */, m_textureSpec.sampler);
+
+	m_textures.push_back(textureBinding);
+}
+
+class TextureQueryLevelsInstance : public TextureQueryInstance
+{
+public:
+								TextureQueryLevelsInstance		(Context&					context,
+																 const bool					isVertexCase,
+																 const TextureSpec&			textureSpec);
+	virtual						~TextureQueryLevelsInstance		(void);
+
+	virtual tcu::TestStatus		iterate							(void);
+
+private:
+	struct TestSize
+	{
+		tcu::IVec3	textureSize;
+		int			lodBase;
+	};
+
+	void						initTexture						(void);
+	bool						testTextureLevels				(void);
+
+	TestSize					m_testSize;
+	int							m_levels;
+	int							m_iterationCounter;
+};
+
+TextureQueryLevelsInstance::TextureQueryLevelsInstance (Context&				context,
+														const bool				isVertexCase,
+														const TextureSpec&		textureSpec)
+	: TextureQueryInstance		(context, isVertexCase, textureSpec)
+	, m_testSize				()
+	, m_levels					(0)
+	, m_iterationCounter		(0)
+{
+	deMemset(&m_testSize, 0, sizeof(TestSize));
+
+	m_renderSize = tcu::UVec2(1, 1);
+}
+
+TextureQueryLevelsInstance::~TextureQueryLevelsInstance (void)
+{
+}
+
+tcu::TestStatus TextureQueryLevelsInstance::iterate (void)
+{
+	const TestSize testSizes[] =
+	{
+		{ tcu::IVec3(1, 2, 1),			0	},
+		{ tcu::IVec3(1, 2, 1),			1	},
+
+		{ tcu::IVec3(1, 3, 2),			0	},
+		{ tcu::IVec3(1, 3, 2),			1	},
+
+		{ tcu::IVec3(100, 31, 18),		0	},
+		{ tcu::IVec3(100, 31, 18),		1	},
+		{ tcu::IVec3(100, 31, 18),		2	},
+		{ tcu::IVec3(100, 31, 18),		3	},
+		{ tcu::IVec3(100, 31, 18),		4	},
+		{ tcu::IVec3(100, 31, 18),		5	},
+		{ tcu::IVec3(100, 31, 18),		6	},
+
+		{ tcu::IVec3(100, 128, 32),		0	},
+		{ tcu::IVec3(100, 128, 32),		1	},
+		{ tcu::IVec3(100, 128, 32),		2	},
+		{ tcu::IVec3(100, 128, 32),		3	},
+		{ tcu::IVec3(100, 128, 32),		4	},
+		{ tcu::IVec3(100, 128, 32),		5	},
+		{ tcu::IVec3(100, 128, 32),		6	},
+		{ tcu::IVec3(100, 128, 32),		7	},
+
+		// pow 2
+		{ tcu::IVec3(128, 64, 32),		0	},
+		{ tcu::IVec3(128, 64, 32),		1	},
+		{ tcu::IVec3(128, 64, 32),		2	},
+		{ tcu::IVec3(128, 64, 32),		3	},
+		{ tcu::IVec3(128, 64, 32),		4	},
+		{ tcu::IVec3(128, 64, 32),		5	},
+		{ tcu::IVec3(128, 64, 32),		6	},
+		{ tcu::IVec3(128, 64, 32),		7	},
+
+		// w == h
+		{ tcu::IVec3(1, 1, 1),			0	},
+		{ tcu::IVec3(64, 64, 64),		0	},
+		{ tcu::IVec3(64, 64, 64),		1	},
+		{ tcu::IVec3(64, 64, 64),		2	},
+		{ tcu::IVec3(64, 64, 64),		3	},
+		{ tcu::IVec3(64, 64, 64),		4	},
+		{ tcu::IVec3(64, 64, 64),		5	},
+		{ tcu::IVec3(64, 64, 64),		6	},
+
+		// w == h and d % 6 == 0 (for cube array)
+		{ tcu::IVec3(1, 1, 6),			0	},
+		{ tcu::IVec3(32, 32, 12),		0	},
+		{ tcu::IVec3(32, 32, 12),		1	},
+		{ tcu::IVec3(32, 32, 12),		2	},
+		{ tcu::IVec3(32, 32, 12),		3	},
+		{ tcu::IVec3(32, 32, 12),		4	},
+		{ tcu::IVec3(32, 32, 12),		5	},
+	};
+	const int lastIterationIndex = DE_LENGTH_OF_ARRAY(testSizes) + 1;
+
+	m_iterationCounter++;
+
+	if (m_iterationCounter == lastIterationIndex)
+		return tcu::TestStatus::pass("Pass");
+	else
+	{
+		// set current test size
+		m_testSize = testSizes[m_iterationCounter - 1];
+
+		if (!testTextureLevels())
+			return tcu::TestStatus::fail("Got unexpected result");
+
+		return tcu::TestStatus::incomplete();
+	}
+}
+
+bool TextureQueryLevelsInstance::testTextureLevels (void)
+{
+	tcu::TestLog&			log				= m_context.getTestContext().getLog();
+	bool					success			= true;
+
+	// skip incompatible cases
+	if (!isValidCase(m_textureSpec.type, m_testSize.textureSize, 0, m_testSize.lodBase))
+		return true;
+
+	// setup texture
+	initTexture();
+
+	// calculate accessible levels
+	{
+		const int	mipLevels	= deLog2Floor32(getMaxTextureSize(m_textureSpec.type, m_testSize.textureSize)) + 1;
+
+		m_levels = mipLevels - m_testSize.lodBase;
+		DE_ASSERT(m_levels > 0);
+
+		log << tcu::TestLog::Message << "Expected levels: " << m_levels << tcu::TestLog::EndMessage;
+	}
+
+	// render
+	TextureQueryInstance::render();
+
+	// test
+	{
+		const tcu::TextureLevel&	result				= getResultImage();
+		tcu::IVec4					output				= result.getAccess().getPixelInt(0, 0);
+
+		if (output.x() == m_levels)
+		{
+			// success
+			log << tcu::TestLog::Message << "Passed" << tcu::TestLog::EndMessage;
+		}
+		else
+		{
+			// failure
+			log << tcu::TestLog::Message << "Result: " << output.x() << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Failed" << tcu::TestLog::EndMessage;
+			success = false;
+		}
+	}
+
+	log << tcu::TestLog::Message << tcu::TestLog::EndMessage;
+
+	return success;
+}
+
+void TextureQueryLevelsInstance::initTexture (void)
+{
+	tcu::TestLog&			log					= m_context.getTestContext().getLog();
+	int						numLevels			= m_testSize.lodBase + 1;
+	TextureBindingSp		textureBinding;
+
+	log << tcu::TestLog::Message << "Image size: " << getTextureSizeString(m_textureSpec.type, m_testSize.textureSize) << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Base level: " << m_testSize.lodBase << tcu::TestLog::EndMessage;
+
+	textureBinding = createEmptyTexture(m_textureSpec.format, m_textureSpec.type, m_testSize.textureSize, numLevels, m_testSize.lodBase, m_textureSpec.sampler);
+
+	m_textures.clear();
+	m_textures.push_back(textureBinding);
+}
+
+static int getQueryLodFuncTextCoordComps (TextureType type)
+{
+	switch (type)
+	{
+		case TEXTURETYPE_1D:
+		case TEXTURETYPE_1D_ARRAY:
+			return 1;
+
+		case TEXTURETYPE_2D:
+		case TEXTURETYPE_2D_ARRAY:
+			return 2;
+
+		case TEXTURETYPE_3D:
+		case TEXTURETYPE_CUBE_MAP:
+		case TEXTURETYPE_CUBE_ARRAY:
+			return 3;
+
+		default:
+			DE_ASSERT(false);
+			return 0;
+	}
+}
+
+class TextureQueryLodInstance : public TextureQueryInstance
+{
+public:
+								TextureQueryLodInstance			(Context&					context,
+																 const bool					isVertexCase,
+																 const TextureSpec&			textureSpec);
+	virtual						~TextureQueryLodInstance		(void);
+
+	virtual tcu::TestStatus		iterate							(void);
+
+protected:
+	virtual void				setupDefaultInputs				(void);
+
+private:
+	void						initTexture						(void);
+	float						computeAccessedLod				(float computedLod) const;
+	vector<float>				computeQuadTexCoord				(void) const;
+
+	tcu::Vec4					m_minCoord;
+	tcu::Vec4					m_maxCoord;
+	float						m_level;
+	float						m_lod;
+};
+
+TextureQueryLodInstance::TextureQueryLodInstance (Context&					context,
+												  const bool				isVertexCase,
+												  const TextureSpec&		textureSpec)
+	: TextureQueryInstance		(context, isVertexCase, textureSpec)
+	, m_minCoord				()
+	, m_maxCoord				()
+	, m_level					(0)
+	, m_lod						(0)
+{
+	// setup texture
+	initTexture();
+
+	// init min/max coords
+	switch (m_textureSpec.type)
+	{
+		case TEXTURETYPE_1D:
+		case TEXTURETYPE_1D_ARRAY:
+			m_minCoord		= Vec4(-0.2f,  0.0f,  0.0f,  0.0f);
+			m_maxCoord		= Vec4( 1.5f,  0.0f,  0.0f,  0.0f);
+			break;
+
+		case TEXTURETYPE_2D:
+		case TEXTURETYPE_2D_ARRAY:
+			m_minCoord		= Vec4(-0.2f, -0.4f,  0.0f,  0.0f);
+			m_maxCoord		= Vec4( 1.5f,  2.3f,  0.0f,  0.0f);
+			break;
+
+		case TEXTURETYPE_3D:
+			m_minCoord		= Vec4(-1.2f, -1.4f,  0.1f,  0.0f);
+			m_maxCoord		= Vec4( 1.5f,  2.3f,  2.3f,  0.0f);
+			break;
+
+		case TEXTURETYPE_CUBE_MAP:
+		case TEXTURETYPE_CUBE_ARRAY:
+			m_minCoord		= Vec4(-1.0f, -1.0f,  1.01f,  0.0f);
+			m_maxCoord		= Vec4( 1.0f,  1.0f,  1.01f,  0.0f);
+			break;
+
+		default:
+			DE_ASSERT(false);
+			break;
+	}
+
+	// calculate lod and accessed level
+	{
+		const tcu::UVec2&		viewportSize		= getViewportSize();
+
+		switch (m_textureSpec.type)
+		{
+			case TEXTURETYPE_1D:
+			case TEXTURETYPE_1D_ARRAY:
+			{
+				float	dudx	= (m_maxCoord[0]-m_minCoord[0])*(float)m_textureSpec.width	/ (float)viewportSize[0];
+
+				m_lod	= computeLodFromDerivates(DEFAULT_LOD_MODE, dudx, 0.0f);
+				m_level	= computeAccessedLod(m_lod);
+				break;
+			}
+
+			case TEXTURETYPE_2D:
+			case TEXTURETYPE_2D_ARRAY:
+			{
+				float	dudx	= (m_maxCoord[0]-m_minCoord[0])*(float)m_textureSpec.width	/ (float)viewportSize[0];
+				float	dvdy	= (m_maxCoord[1]-m_minCoord[1])*(float)m_textureSpec.height	/ (float)viewportSize[1];
+
+				m_lod	= computeLodFromDerivates(DEFAULT_LOD_MODE, dudx, 0.0f, 0.0f, dvdy);
+				m_level	= computeAccessedLod(m_lod);
+				break;
+			}
+
+			case TEXTURETYPE_CUBE_MAP:
+			case TEXTURETYPE_CUBE_ARRAY:
+			{
+				// Compute LOD \note Assumes that only single side is accessed and R is constant major axis.
+				DE_ASSERT(de::abs(m_minCoord[2] - m_maxCoord[2]) < 0.005);
+				DE_ASSERT(de::abs(m_minCoord[0]) < de::abs(m_minCoord[2]) && de::abs(m_maxCoord[0]) < de::abs(m_minCoord[2]));
+				DE_ASSERT(de::abs(m_minCoord[1]) < de::abs(m_minCoord[2]) && de::abs(m_maxCoord[1]) < de::abs(m_minCoord[2]));
+
+				tcu::CubeFaceFloatCoords	c00		= tcu::getCubeFaceCoords(Vec3(m_minCoord[0], m_minCoord[1], m_minCoord[2]));
+				tcu::CubeFaceFloatCoords	c10		= tcu::getCubeFaceCoords(Vec3(m_maxCoord[0], m_minCoord[1], m_minCoord[2]));
+				tcu::CubeFaceFloatCoords	c01		= tcu::getCubeFaceCoords(Vec3(m_minCoord[0], m_maxCoord[1], m_minCoord[2]));
+				float						dudx	= (c10.s - c00.s)*(float)m_textureSpec.width	/ (float)viewportSize[0];
+				float						dvdy	= (c01.t - c00.t)*(float)m_textureSpec.height	/ (float)viewportSize[1];
+
+				m_lod	= computeLodFromDerivates(DEFAULT_LOD_MODE, dudx, 0.0f, 0.0f, dvdy);
+				m_level	= computeAccessedLod(m_lod);
+				break;
+			}
+
+			case TEXTURETYPE_3D:
+			{
+				float	dudx	= (m_maxCoord[0]-m_minCoord[0])*(float)m_textureSpec.width		/ (float)viewportSize[0];
+				float	dvdy	= (m_maxCoord[1]-m_minCoord[1])*(float)m_textureSpec.height		/ (float)viewportSize[1];
+				float	dwdx	= (m_maxCoord[2]-m_minCoord[2])*0.5f*(float)m_textureSpec.depth	/ (float)viewportSize[0];
+				float	dwdy	= (m_maxCoord[2]-m_minCoord[2])*0.5f*(float)m_textureSpec.depth	/ (float)viewportSize[1];
+
+				m_lod	= computeLodFromDerivates(DEFAULT_LOD_MODE, dudx, 0.0f, dwdx, 0.0f, dvdy, dwdy);
+				m_level	= computeAccessedLod(m_lod);
+				break;
+			}
+
+			default:
+				DE_ASSERT(false);
+				break;
+		}
+	}
+}
+
+TextureQueryLodInstance::~TextureQueryLodInstance (void)
+{
+}
+
+tcu::TestStatus TextureQueryLodInstance::iterate (void)
+{
+	tcu::TestLog&		log		= m_context.getTestContext().getLog();
+
+	log << tcu::TestLog::Message << "Expected: level: " << m_level << ", lod: " << m_lod << tcu::TestLog::EndMessage;
+
+	// render
+	TextureQueryInstance::render();
+
+	// test
+	{
+		const float					tolerance			= 0.01f;
+		const tcu::TextureLevel&	result				= getResultImage();
+		tcu::Vec4					output				= result.getAccess().getPixel(0, 0);
+
+		if ((de::abs(output.x() - m_level) < tolerance) && (de::abs(output.y() - m_lod) < tolerance))
+		{
+			// success
+			log << tcu::TestLog::Message << "Passed" << tcu::TestLog::EndMessage;
+			return tcu::TestStatus::pass("Pass");
+		}
+		else
+		{
+			// failure
+			log << tcu::TestLog::Message << "Result: level: " << output.x() << ", lod: " << output.y() << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Failed" << tcu::TestLog::EndMessage;
+			return tcu::TestStatus::fail("Got unexpected result");
+		}
+	}
+}
+
+void TextureQueryLodInstance::setupDefaultInputs (void)
+{
+	TextureQueryInstance::setupDefaultInputs();
+
+	const deUint32			numVertices			= 4;
+	const vector<float>		texCoord			= computeQuadTexCoord();
+	const int				texCoordComps		= getQueryLodFuncTextCoordComps(m_textureSpec.type);
+	const vk::VkFormat		coordFormats[]		=
+	{
+		vk::VK_FORMAT_R32_SFLOAT,
+		vk::VK_FORMAT_R32G32_SFLOAT,
+		vk::VK_FORMAT_R32G32B32_SFLOAT
+	};
+
+	DE_ASSERT(de::inRange(texCoordComps, 1, 3));
+	DE_ASSERT((int)texCoord.size() == texCoordComps * 4);
+
+	addAttribute(1u, coordFormats[texCoordComps - 1], (deUint32)(texCoordComps * sizeof(float)), numVertices, texCoord.data());
+}
+
+void TextureQueryLodInstance::initTexture (void)
+{
+	tcu::TestLog&			log					= m_context.getTestContext().getLog();
+	tcu::IVec3				textureSize			(m_textureSpec.width, m_textureSpec.height, m_textureSpec.depth);
+	TextureBindingSp		textureBinding;
+
+	DE_ASSERT(m_textures.empty());
+
+	log << tcu::TestLog::Message << "Image size: " << getTextureSizeString(m_textureSpec.type, textureSize) << tcu::TestLog::EndMessage;
+
+	textureBinding = createEmptyTexture(m_textureSpec.format, m_textureSpec.type, textureSize, m_textureSpec.numLevels, 0 /* lodBase */, m_textureSpec.sampler);
+
+	m_textures.push_back(textureBinding);
+}
+
+float TextureQueryLodInstance::computeAccessedLod (float computedLod) const
+{
+	const int	maxAccessibleLevel	= m_textureSpec.numLevels - 1;
+
+	// Clamp the computed LOD to the range of accessible levels.
+	computedLod = deFloatClamp(computedLod, 0.0f, (float)maxAccessibleLevel);
+
+	// Return a value according to the min filter.
+	switch (m_textureSpec.sampler.minFilter)
+	{
+		case tcu::Sampler::LINEAR:
+		case tcu::Sampler::NEAREST:
+			return 0.0f;
+
+		case tcu::Sampler::NEAREST_MIPMAP_NEAREST:
+		case tcu::Sampler::LINEAR_MIPMAP_NEAREST:
+			return deFloatClamp(deFloatCeil(computedLod + 0.5f) - 1.0f, 0.0f, (float)maxAccessibleLevel);
+
+		case tcu::Sampler::NEAREST_MIPMAP_LINEAR:
+		case tcu::Sampler::LINEAR_MIPMAP_LINEAR:
+			return computedLod;
+
+		default:
+			DE_ASSERT(false);
+			return 0.0f;
+	}
+}
+
+vector<float> TextureQueryLodInstance::computeQuadTexCoord (void) const
+{
+	vector<float>	res;
+	tcu::Mat4		coordTransMat;
+
+	{
+		Vec4 s = m_maxCoord - m_minCoord;
+		Vec4 b = m_minCoord;
+
+		float baseCoordTrans[] =
+		{
+			s.x(),		0.0f,		0.f,	b.x(),
+			0.f,		s.y(),		0.f,	b.y(),
+			s.z()/2.f,	-s.z()/2.f,	0.f,	s.z()/2.f + b.z(),
+			-s.w()/2.f,	s.w()/2.f,	0.f,	s.w()/2.f + b.w()
+		};
+
+		coordTransMat = tcu::Mat4(baseCoordTrans);
+	}
+
+	const int		texCoordComps	= getQueryLodFuncTextCoordComps(m_textureSpec.type);
+	Vec4			coords[4]		=
+	{
+		coordTransMat * tcu::Vec4(0, 0, 0, 1),
+		coordTransMat * tcu::Vec4(0, 1, 0, 1),
+		coordTransMat * tcu::Vec4(1, 0, 0, 1),
+		coordTransMat * tcu::Vec4(1, 1, 0, 1)
+	};
+
+	res.resize(4 * texCoordComps);
+
+	for (int ndx = 0; ndx < 4; ndx++)
+		deMemcpy(&res[ndx * texCoordComps], coords[ndx].getPtr(), texCoordComps * sizeof(float));
+
+	return res;
+}
+
+class TextureQueryCase : public ShaderRenderCase
+{
+public:
+								TextureQueryCase				(tcu::TestContext&			testCtx,
 																 const std::string&			name,
 																 const std::string&			desc,
 																 const std::string&			samplerType,
 																 const TextureSpec&			texture,
-																 bool						isVertexCase);
-	virtual						~TextureSizeCase				(void);
+																 bool						isVertexCase,
+																 QueryFunction				function);
+	virtual						~TextureQueryCase				(void);
 
 	virtual TestInstance*		createInstance					(Context& context) const;
 
-private:
-	std::string					genVertexShader					(void) const;
-	std::string					genFragmentShader				(void) const;
+protected:
+	void						initShaderSources				(void);
 
 	const std::string			m_samplerTypeStr;
 	const TextureSpec			m_textureSpec;
-	const bool					m_isVertexCase;
-	const bool					m_has3DSize;
+	const QueryFunction			m_function;
 };
 
-TextureSizeCase::TextureSizeCase (tcu::TestContext&			testCtx,
-								  const std::string&		name,
-								  const std::string&		desc,
-								  const std::string&		samplerType,
-								  const TextureSpec&		texture,
-								  bool						isVertexCase)
+TextureQueryCase::TextureQueryCase (tcu::TestContext&		testCtx,
+									const std::string&		name,
+									const std::string&		desc,
+									const std::string&		samplerType,
+									const TextureSpec&		texture,
+									bool					isVertexCase,
+									QueryFunction			function)
 	: ShaderRenderCase	(testCtx, name, desc, isVertexCase, (ShaderEvaluator*)DE_NULL, DE_NULL, DE_NULL)
 	, m_samplerTypeStr	(samplerType)
 	, m_textureSpec		(texture)
-	, m_isVertexCase	(isVertexCase)
-	, m_has3DSize		(texture.type == TEXTURETYPE_3D || texture.type == TEXTURETYPE_2D_ARRAY)
+	, m_function		(function)
 {
-	m_vertShaderSource	= genVertexShader();
-	m_fragShaderSource	= genFragmentShader();
+	initShaderSources();
 }
 
-TextureSizeCase::~TextureSizeCase (void)
+TextureQueryCase::~TextureQueryCase (void)
 {
 }
 
-TestInstance* TextureSizeCase::createInstance (Context& context) const
+TestInstance* TextureQueryCase::createInstance (Context& context) const
 {
-	return new TextureSizeInstance(context, m_isVertexCase, m_textureSpec);
+	switch (m_function)
+	{
+		case QUERYFUNCTION_TEXTURESIZE:				return new TextureSizeInstance(context, m_isVertexCase, m_textureSpec);
+		case QUERYFUNCTION_TEXTUREQUERYLOD:			return new TextureQueryLodInstance(context, m_isVertexCase, m_textureSpec);
+		case QUERYFUNCTION_TEXTUREQUERYLEVELS:		return new TextureQueryLevelsInstance(context, m_isVertexCase, m_textureSpec);
+		case QUERYFUNCTION_TEXTURESAMPLES:			return new TextureSamplesInstance(context, m_isVertexCase, m_textureSpec);
+		default:
+			DE_ASSERT(false);
+			return DE_NULL;
+	}
 }
 
-std::string TextureSizeCase::genVertexShader() const
+void TextureQueryCase::initShaderSources (void)
 {
-	std::ostringstream	vert;
+	std::ostringstream		vert;
+	std::ostringstream		frag;
+	std::ostringstream&		op			= m_isVertexCase ? vert : frag;
+	glu::GLSLVersion 		version		= glu::GLSL_VERSION_LAST;
 
-	vert << "#version 310 es\n"
+	DE_ASSERT(m_function != QUERYFUNCTION_TEXTUREQUERYLOD || !m_isVertexCase);
+
+	switch (m_function)
+	{
+		case QUERYFUNCTION_TEXTURESIZE:
+			if (m_textureSpec.type == TEXTURETYPE_1D || m_textureSpec.type == TEXTURETYPE_1D_ARRAY || m_textureSpec.type == TEXTURETYPE_CUBE_ARRAY)
+				version = glu::GLSL_VERSION_420;
+			else
+				version = glu::GLSL_VERSION_310_ES;
+			break;
+
+		case QUERYFUNCTION_TEXTUREQUERYLOD:
+			version = glu::GLSL_VERSION_420;
+			break;
+
+		case QUERYFUNCTION_TEXTUREQUERYLEVELS:
+			version = glu::GLSL_VERSION_430;
+			break;
+
+		case QUERYFUNCTION_TEXTURESAMPLES:
+			version = glu::GLSL_VERSION_450;
+			break;
+
+		default:
+			DE_ASSERT(false);
+			break;
+	}
+
+	vert << glu::getGLSLVersionDeclaration(version) << "\n"
 		 << "layout(location = 0) in highp vec4 a_position;\n";
+
+	frag << glu::getGLSLVersionDeclaration(version) << "\n"
+		 << "layout(location = 0) out mediump vec4 o_color;\n";
 
 	if (m_isVertexCase)
 	{
 		vert << "layout(location = 0) out mediump vec4 v_color;\n";
-		vert << "layout(set = 0, binding = 0) uniform highp " << m_samplerTypeStr << " u_sampler;\n";
-		vert << "layout(set = 0, binding = 1) uniform buf0 { highp ivec" << (m_has3DSize ? 3 : 2) << " u_texSize; };\n";
-		vert << "layout(set = 0, binding = 2) uniform buf1 { highp int u_lod; };\n";
-	}
-
-	vert << "void main()\n{\n";
-
-	if (m_isVertexCase)
-		vert << "	v_color = (textureSize(u_sampler, u_lod) == u_texSize ? vec4(1.0, 1.0, 1.0, 1.0) : vec4(0.0, 0.0, 1.0, 0.0));\n";
-
-	vert << "	gl_Position = a_position;\n"
-		 << "}\n";
-
-	return vert.str();
-}
-
-std::string TextureSizeCase::genFragmentShader() const
-{
-	std::ostringstream	frag;
-
-	frag << "#version 310 es\n"
-		 << "layout(location = 0) out mediump vec4 o_color;\n";
-
-	if (m_isVertexCase)
 		frag << "layout(location = 0) in mediump vec4 v_color;\n";
-
-	if (!m_isVertexCase)
-	{
-		frag << "layout(set = 0, binding = 0) uniform highp " << m_samplerTypeStr << " u_sampler;\n";
-		frag << "layout(set = 0, binding = 1) uniform buf0 { highp ivec" << (m_has3DSize ? 3 : 2) << " u_texSize; };\n";
-		frag << "layout(set = 0, binding = 2) uniform buf1 { highp int u_lod; };\n";
 	}
 
-	frag << "void main()\n{\n";
+	if (m_function == QUERYFUNCTION_TEXTUREQUERYLOD)
+	{
+		const int		texCoordComps	= getQueryLodFuncTextCoordComps(m_textureSpec.type);
+		const char*		coordTypeName	= glu::getDataTypeName(glu::getDataTypeFloatVec(texCoordComps));
 
-	if (!m_isVertexCase)
-		frag << "	o_color = (textureSize(u_sampler, u_lod) == u_texSize ? vec4(1.0, 1.0, 1.0, 1.0) : vec4(0.0, 0.0, 0.0, 1.0));\n";
+		vert << "layout (location = 1) in highp " << coordTypeName << " a_texCoord;\n";
+		vert << "layout (location = 0) out highp " << coordTypeName << " v_texCoord;\n";
+		frag << "layout (location = 0) in highp " << coordTypeName << " v_texCoord;\n";
+	}
+
+	// uniforms
+	op << "layout(set = 0, binding = 0) uniform highp " << m_samplerTypeStr << " u_sampler;\n";
+	if (m_function == QUERYFUNCTION_TEXTURESIZE)
+		op << "layout(set = 0, binding = 1) uniform buf0 { highp int u_lod; };\n";
+
+	if (version != glu::GLSL_VERSION_310_ES)
+		vert << "out gl_PerVertex {\n"
+			 << "\tvec4 gl_Position;\n"
+			 << "};\n";
+
+	vert << "\nvoid main()\n{\n"
+		 << "\tgl_Position = a_position;\n";
+	frag << "\nvoid main()\n{\n";
+
+	if (m_isVertexCase)
+		vert << "\tv_color = ";
 	else
-		frag << "	o_color = v_color;\n";
+		frag << "\to_color = ";
 
+	// op
+	{
+		op << "vec4(";
+
+		switch (m_function)
+		{
+			case QUERYFUNCTION_TEXTURESIZE:
+			{
+				const int		resultComponents	= glu::getDataTypeScalarSize(getTextureSizeFuncResultType(m_textureSpec.type));
+
+				op << "textureSize(u_sampler, u_lod)";
+				for (int ndx = 0; ndx < 3 - resultComponents; ndx++)
+					op << ", 0.0";
+				op << ", 1.0";
+
+				break;
+			}
+
+			case QUERYFUNCTION_TEXTUREQUERYLOD:
+				op << "textureQueryLod(u_sampler, v_texCoord), 0.0, 1.0";
+				break;
+
+			case QUERYFUNCTION_TEXTUREQUERYLEVELS:
+				op << "textureQueryLevels(u_sampler), 0.0, 0.0, 1.0";
+				break;
+
+			case QUERYFUNCTION_TEXTURESAMPLES:
+				op << "textureSamples(u_sampler), 0.0, 0.0, 1.0";
+				break;
+
+			default:
+				DE_ASSERT(false);
+				break;
+		}
+
+		op << ");\n";
+	}
+
+	if (m_isVertexCase)
+		frag << "\to_color = v_color;\n";
+
+	if (m_function == QUERYFUNCTION_TEXTUREQUERYLOD)
+		vert << "\tv_texCoord = a_texCoord;\n";
+
+	vert << "}\n";
 	frag << "}\n";
 
-	return frag.str();
+	m_vertShaderSource = vert.str();
+	m_fragShaderSource = frag.str();
 }
 
 class ShaderTextureFunctionTests : public tcu::TestCaseGroup
@@ -1534,7 +2559,7 @@ void ShaderTextureFunctionTests::init (void)
 	static const TextureSpec tex2DMipmapInt			(TEXTURETYPE_2D,		GL_RGBA8I,				256,	256,	1,	9,	samplerNearestMipmap);
 	static const TextureSpec tex2DMipmapUint		(TEXTURETYPE_2D,		GL_RGBA8UI,				256,	256,	1,	9,	samplerNearestMipmap);
 
-	static const TextureSpec tex2DShadow			(TEXTURETYPE_2D,		GL_DEPTH_COMPONENT16,	256,	256,	1,	9,	samplerShadowNoMipmap);
+	static const TextureSpec tex2DShadow			(TEXTURETYPE_2D,		GL_DEPTH_COMPONENT16,	256,	256,	1,	1,	samplerShadowNoMipmap);
 	static const TextureSpec tex2DMipmapShadow		(TEXTURETYPE_2D,		GL_DEPTH_COMPONENT16,	256,	256,	1,	9,	samplerShadowMipmap);
 
 	static const TextureSpec tex2DTexelFetchFixed	(TEXTURETYPE_2D,		GL_RGBA8,				256,	256,	1,	9,	samplerTexelFetch);
@@ -1584,6 +2609,42 @@ void ShaderTextureFunctionTests::init (void)
 	static const TextureSpec tex3DTexelFetchFloat	(TEXTURETYPE_3D,		GL_RGBA16F,	64,		32,		32,	7,	samplerTexelFetch);
 	static const TextureSpec tex3DTexelFetchInt		(TEXTURETYPE_3D,		GL_RGBA8I,	64,		32,		32,	7,	samplerTexelFetch);
 	static const TextureSpec tex3DTexelFetchUint	(TEXTURETYPE_3D,		GL_RGBA8UI,	64,		32,		32,	7,	samplerTexelFetch);
+
+	static const TextureSpec tex1DFixed				(TEXTURETYPE_1D,		GL_RGBA8,				256,	1,	1,	1,	samplerLinearNoMipmap);
+	static const TextureSpec tex1DFloat				(TEXTURETYPE_1D,		GL_RGBA16F,				256,	1,	1,	1,	samplerLinearNoMipmap);
+	static const TextureSpec tex1DInt				(TEXTURETYPE_1D,		GL_RGBA8I,				256,	1,	1,	1,	samplerNearestNoMipmap);
+	static const TextureSpec tex1DUint				(TEXTURETYPE_1D,		GL_RGBA8UI,				256,	1,	1,	1,	samplerNearestNoMipmap);
+	static const TextureSpec tex1DMipmapFixed		(TEXTURETYPE_1D,		GL_RGBA8,				256,	1,	1,	9,	samplerLinearMipmap);
+	static const TextureSpec tex1DMipmapFloat		(TEXTURETYPE_1D,		GL_RGBA16F,				256,	1,	1,	9,	samplerLinearMipmap);
+	static const TextureSpec tex1DMipmapInt			(TEXTURETYPE_1D,		GL_RGBA8I,				256,	1,	1,	9,	samplerNearestMipmap);
+	static const TextureSpec tex1DMipmapUint		(TEXTURETYPE_1D,		GL_RGBA8UI,				256,	1,	1,	9,	samplerNearestMipmap);
+
+	static const TextureSpec tex1DShadow			(TEXTURETYPE_1D,		GL_DEPTH_COMPONENT16,	256,	1,	1,	1,	samplerShadowNoMipmap);
+	static const TextureSpec tex1DMipmapShadow		(TEXTURETYPE_1D,		GL_DEPTH_COMPONENT16,	256,	1,	1,	9,	samplerShadowMipmap);
+
+	static const TextureSpec tex1DArrayFixed		(TEXTURETYPE_1D_ARRAY,	GL_RGBA8,	256,	1,	4,	1,	samplerLinearNoMipmap);
+	static const TextureSpec tex1DArrayFloat		(TEXTURETYPE_1D_ARRAY,	GL_RGBA16F,	256,	1,	4,	1,	samplerLinearNoMipmap);
+	static const TextureSpec tex1DArrayInt			(TEXTURETYPE_1D_ARRAY,	GL_RGBA8I,	256,	1,	4,	1,	samplerNearestNoMipmap);
+	static const TextureSpec tex1DArrayUint			(TEXTURETYPE_1D_ARRAY,	GL_RGBA8UI,	256,	1,	4,	1,	samplerNearestNoMipmap);
+	static const TextureSpec tex1DArrayMipmapFixed	(TEXTURETYPE_1D_ARRAY,	GL_RGBA8,	256,	1,	4,	9,	samplerLinearMipmap);
+	static const TextureSpec tex1DArrayMipmapFloat	(TEXTURETYPE_1D_ARRAY,	GL_RGBA16F,	256,	1,	4,	9,	samplerLinearMipmap);
+	static const TextureSpec tex1DArrayMipmapInt	(TEXTURETYPE_1D_ARRAY,	GL_RGBA8I,	256,	1,	4,	9,	samplerNearestMipmap);
+	static const TextureSpec tex1DArrayMipmapUint	(TEXTURETYPE_1D_ARRAY,	GL_RGBA8UI,	256,	1,	4,	9,	samplerNearestMipmap);
+
+	static const TextureSpec tex1DArrayShadow		(TEXTURETYPE_1D_ARRAY,	GL_DEPTH_COMPONENT16,	256,	1,	4,	1,	samplerShadowNoMipmap);
+	static const TextureSpec tex1DArrayMipmapShadow	(TEXTURETYPE_1D_ARRAY,	GL_DEPTH_COMPONENT16,	256,	1,	4,	9,	samplerShadowMipmap);
+
+	static const TextureSpec texCubeArrayFixed			(TEXTURETYPE_CUBE_ARRAY,	GL_RGBA8,	256,	256,	12,	1,	samplerLinearNoMipmap);
+	static const TextureSpec texCubeArrayFloat			(TEXTURETYPE_CUBE_ARRAY,	GL_RGBA16F,	256,	256,	12,	1,	samplerLinearNoMipmap);
+	static const TextureSpec texCubeArrayInt			(TEXTURETYPE_CUBE_ARRAY,	GL_RGBA8I,	256,	256,	12,	1,	samplerNearestNoMipmap);
+	static const TextureSpec texCubeArrayUint			(TEXTURETYPE_CUBE_ARRAY,	GL_RGBA8UI,	256,	256,	12,	1,	samplerNearestNoMipmap);
+	static const TextureSpec texCubeArrayMipmapFixed	(TEXTURETYPE_CUBE_ARRAY,	GL_RGBA8,	256,	256,	12,	9,	samplerLinearMipmap);
+	static const TextureSpec texCubeArrayMipmapFloat	(TEXTURETYPE_CUBE_ARRAY,	GL_RGBA16F,	128,	128,	12,	8,	samplerLinearMipmap);
+	static const TextureSpec texCubeArrayMipmapInt		(TEXTURETYPE_CUBE_ARRAY,	GL_RGBA8I,	256,	256,	12,	9,	samplerNearestMipmap);
+	static const TextureSpec texCubeArrayMipmapUint		(TEXTURETYPE_CUBE_ARRAY,	GL_RGBA8UI,	256,	256,	12,	9,	samplerNearestMipmap);
+
+	static const TextureSpec texCubeArrayShadow			(TEXTURETYPE_CUBE_ARRAY,	GL_DEPTH_COMPONENT16,	256,	256,	12,	1,	samplerShadowNoMipmap);
+	static const TextureSpec texCubeArrayMipmapShadow	(TEXTURETYPE_CUBE_ARRAY,	GL_DEPTH_COMPONENT16,	256,	256,	12,	9,	samplerShadowMipmap);
 
 	// texture() cases
 	static const TexFuncCaseSpec textureCases[] =
@@ -2074,47 +3135,204 @@ void ShaderTextureFunctionTests::init (void)
 	};
 	createCaseGroup(this, "texelfetchoffset", "texelFetchOffset() Tests", texelFetchOffsetCases, DE_LENGTH_OF_ARRAY(texelFetchOffsetCases));
 
-	// textureSize() cases
+	// texture query functions
 	{
-		struct TextureSizeCaseSpec
+		struct TexQueryFuncCaseSpec
 		{
-			const char* name;
-			const char* samplerName;
-			TextureSpec textureSpec;
-		} textureSizeCases[] =
-		{
-			{ "sampler2d_fixed",			"sampler2D",				tex2DFixed			},
-			{ "sampler2d_float",			"sampler2D",				tex2DFloat			},
-			{ "isampler2d",					"isampler2D",				tex2DInt			},
-			{ "usampler2d",					"usampler2D",				tex2DUint			},
-			{ "sampler2dshadow",			"sampler2DShadow",			tex2DShadow			},
-			{ "sampler3d_fixed",			"sampler3D",				tex3DFixed			},
-			{ "sampler3d_float",			"sampler3D",				tex3DFloat			},
-			{ "isampler3d",					"isampler3D",				tex3DInt			},
-			{ "usampler3d",					"usampler3D",				tex3DUint			},
-			{ "samplercube_fixed",			"samplerCube",				texCubeFixed		},
-			{ "samplercube_float",			"samplerCube",				texCubeFloat		},
-			{ "isamplercube",				"isamplerCube",				texCubeInt			},
-			{ "usamplercube",				"usamplerCube",				texCubeUint			},
-			{ "samplercubeshadow",			"samplerCubeShadow",		texCubeShadow		},
-			{ "sampler2darray_fixed",		"sampler2DArray",			tex2DArrayFixed		},
-			{ "sampler2darray_float",		"sampler2DArray",			tex2DArrayFloat		},
-			{ "isampler2darray",			"isampler2DArray",			tex2DArrayInt		},
-			{ "usampler2darray",			"usampler2DArray",			tex2DArrayUint		},
-			{ "sampler2darrayshadow",		"sampler2DArrayShadow",		tex2DArrayShadow	},
+			const char*		name;
+			const char*		samplerName;
+			TextureSpec		textureSpec;
 		};
 
-		de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(m_testCtx, "texturesize", "textureSize() Tests"));
+		de::MovePtr<tcu::TestCaseGroup>			queryGroup	(new tcu::TestCaseGroup(m_testCtx, "query", "Texture query function tests"));
 
-		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(textureSizeCases); ++ndx)
+		// textureSize() cases
 		{
-			const TextureSizeCaseSpec&	caseSpec		= textureSizeCases[ndx];
+			const TexQueryFuncCaseSpec textureSizeCases[] =
+			{
+				{ "sampler2d_fixed",			"sampler2D",				tex2DFixed			},
+				{ "sampler2d_float",			"sampler2D",				tex2DFloat			},
+				{ "isampler2d",					"isampler2D",				tex2DInt			},
+				{ "usampler2d",					"usampler2D",				tex2DUint			},
+				{ "sampler2dshadow",			"sampler2DShadow",			tex2DShadow			},
+				{ "sampler3d_fixed",			"sampler3D",				tex3DFixed			},
+				{ "sampler3d_float",			"sampler3D",				tex3DFloat			},
+				{ "isampler3d",					"isampler3D",				tex3DInt			},
+				{ "usampler3d",					"usampler3D",				tex3DUint			},
+				{ "samplercube_fixed",			"samplerCube",				texCubeFixed		},
+				{ "samplercube_float",			"samplerCube",				texCubeFloat		},
+				{ "isamplercube",				"isamplerCube",				texCubeInt			},
+				{ "usamplercube",				"usamplerCube",				texCubeUint			},
+				{ "samplercubeshadow",			"samplerCubeShadow",		texCubeShadow		},
+				{ "sampler2darray_fixed",		"sampler2DArray",			tex2DArrayFixed		},
+				{ "sampler2darray_float",		"sampler2DArray",			tex2DArrayFloat		},
+				{ "isampler2darray",			"isampler2DArray",			tex2DArrayInt		},
+				{ "usampler2darray",			"usampler2DArray",			tex2DArrayUint		},
+				{ "sampler2darrayshadow",		"sampler2DArrayShadow",		tex2DArrayShadow	},
+				{ "samplercubearray_fixed",		"samplerCubeArray",			texCubeArrayFixed	},
+				{ "samplercubearray_float",		"samplerCubeArray",			texCubeArrayFloat	},
+				{ "isamplercubearray",			"isamplerCubeArray",		texCubeArrayInt		},
+				{ "usamplercubearray",			"usamplerCubeArray",		texCubeArrayUint	},
+				{ "samplercubearrayshadow",		"samplerCubeArrayShadow",	texCubeArrayShadow	},
+				{ "sampler1d_fixed",			"sampler1D",				tex1DFixed			},
+				{ "sampler1d_float",			"sampler1D",				tex1DFloat			},
+				{ "isampler1d",					"isampler1D",				tex1DInt			},
+				{ "usampler1d",					"usampler1D",				tex1DUint			},
+				{ "sampler1dshadow",			"sampler1DShadow",			tex1DShadow			},
+				{ "sampler1darray_fixed",		"sampler1DArray",			tex1DArrayFixed		},
+				{ "sampler1darray_float",		"sampler1DArray",			tex1DArrayFloat		},
+				{ "isampler1darray",			"isampler1DArray",			tex1DArrayInt		},
+				{ "usampler1darray",			"usampler1DArray",			tex1DArrayUint		},
+				{ "sampler1darrayshadow",		"sampler1DArrayShadow",		tex1DArrayShadow	},
+			};
 
-			group->addChild(new TextureSizeCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"),   "", caseSpec.samplerName, caseSpec.textureSpec, true));
-			group->addChild(new TextureSizeCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false));
+			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturesize", "textureSize() Tests"));
+
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(textureSizeCases); ++ndx)
+			{
+				const TexQueryFuncCaseSpec&		caseSpec	= textureSizeCases[ndx];
+
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"),   "", caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTURESIZE));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTURESIZE));
+			}
+
+			queryGroup->addChild(group.release());
 		}
 
-		addChild(group.release());
+		// textureSamples() cases
+		{
+			const TexQueryFuncCaseSpec textureSamplesCases[] =
+			{
+				{ "sampler2dms_fixed",			"sampler2DMS",				tex2DFixed			},
+				{ "sampler2dms_float",			"sampler2DMS",				tex2DFloat			},
+				{ "isampler2dms",				"isampler2DMS",				tex2DInt			},
+				{ "usampler2dms",				"usampler2DMS",				tex2DUint			},
+				{ "sampler2dmsarray_fixed",		"sampler2DMSArray",			tex2DArrayFixed		},
+				{ "sampler2dmsarray_float",		"sampler2DMSArray",			tex2DArrayFloat		},
+				{ "isampler2dmsarray",			"isampler2DMSArray",		tex2DArrayInt		},
+				{ "usampler2dmsarray",			"usampler2DMSArray",		tex2DArrayUint		},
+			};
+
+			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturesamples", "textureSamples() Tests"));
+
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(textureSamplesCases); ++ndx)
+			{
+				const TexQueryFuncCaseSpec&		caseSpec	= textureSamplesCases[ndx];
+
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"),   "", caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTURESAMPLES));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTURESAMPLES));
+			}
+
+			queryGroup->addChild(group.release());
+		}
+
+		// textureQueryLevels() cases
+		{
+			const TexQueryFuncCaseSpec textureQueryLevelsCases[] =
+			{
+				{ "sampler2d_fixed",			"sampler2D",				tex2DFixed			},
+				{ "sampler2d_float",			"sampler2D",				tex2DFloat			},
+				{ "isampler2d",					"isampler2D",				tex2DInt			},
+				{ "usampler2d",					"usampler2D",				tex2DUint			},
+				{ "sampler2dshadow",			"sampler2DShadow",			tex2DShadow			},
+				{ "sampler3d_fixed",			"sampler3D",				tex3DFixed			},
+				{ "sampler3d_float",			"sampler3D",				tex3DFloat			},
+				{ "isampler3d",					"isampler3D",				tex3DInt			},
+				{ "usampler3d",					"usampler3D",				tex3DUint			},
+				{ "samplercube_fixed",			"samplerCube",				texCubeFixed		},
+				{ "samplercube_float",			"samplerCube",				texCubeFloat		},
+				{ "isamplercube",				"isamplerCube",				texCubeInt			},
+				{ "usamplercube",				"usamplerCube",				texCubeUint			},
+				{ "samplercubeshadow",			"samplerCubeShadow",		texCubeShadow		},
+				{ "sampler2darray_fixed",		"sampler2DArray",			tex2DArrayFixed		},
+				{ "sampler2darray_float",		"sampler2DArray",			tex2DArrayFloat		},
+				{ "isampler2darray",			"isampler2DArray",			tex2DArrayInt		},
+				{ "usampler2darray",			"usampler2DArray",			tex2DArrayUint		},
+				{ "sampler2darrayshadow",		"sampler2DArrayShadow",		tex2DArrayShadow	},
+				{ "samplercubearray_fixed",		"samplerCubeArray",			texCubeArrayFixed	},
+				{ "samplercubearray_float",		"samplerCubeArray",			texCubeArrayFloat	},
+				{ "isamplercubearray",			"isamplerCubeArray",		texCubeArrayInt		},
+				{ "usamplercubearray",			"usamplerCubeArray",		texCubeArrayUint	},
+				{ "samplercubearrayshadow",		"samplerCubeArrayShadow",	texCubeArrayShadow	},
+				{ "sampler1d_fixed",			"sampler1D",				tex1DFixed			},
+				{ "sampler1d_float",			"sampler1D",				tex1DFloat			},
+				{ "isampler1d",					"isampler1D",				tex1DInt			},
+				{ "usampler1d",					"usampler1D",				tex1DUint			},
+				{ "sampler1dshadow",			"sampler1DShadow",			tex1DShadow			},
+				{ "sampler1darray_fixed",		"sampler1DArray",			tex1DArrayFixed		},
+				{ "sampler1darray_float",		"sampler1DArray",			tex1DArrayFloat		},
+				{ "isampler1darray",			"isampler1DArray",			tex1DArrayInt		},
+				{ "usampler1darray",			"usampler1DArray",			tex1DArrayUint		},
+				{ "sampler1darrayshadow",		"sampler1DArrayShadow",		tex1DArrayShadow	},
+			};
+
+			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturequerylevels", "textureQueryLevels() Tests"));
+
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(textureQueryLevelsCases); ++ndx)
+			{
+				const TexQueryFuncCaseSpec&		caseSpec	= textureQueryLevelsCases[ndx];
+
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"),   "", caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTUREQUERYLEVELS));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTUREQUERYLEVELS));
+			}
+
+			queryGroup->addChild(group.release());
+		}
+
+		// textureQueryLod() cases
+		{
+			const TexQueryFuncCaseSpec textureQueryLodCases[] =
+			{
+				{ "sampler2d_fixed",			"sampler2D",				tex2DMipmapFixed			},
+				{ "sampler2d_float",			"sampler2D",				tex2DMipmapFloat			},
+				{ "isampler2d",					"isampler2D",				tex2DMipmapInt				},
+				{ "usampler2d",					"usampler2D",				tex2DMipmapUint				},
+				{ "sampler2dshadow",			"sampler2DShadow",			tex2DMipmapShadow			},
+				{ "sampler3d_fixed",			"sampler3D",				tex3DMipmapFixed			},
+				{ "sampler3d_float",			"sampler3D",				tex3DMipmapFloat			},
+				{ "isampler3d",					"isampler3D",				tex3DMipmapInt				},
+				{ "usampler3d",					"usampler3D",				tex3DMipmapUint				},
+				{ "samplercube_fixed",			"samplerCube",				texCubeMipmapFixed			},
+				{ "samplercube_float",			"samplerCube",				texCubeMipmapFloat			},
+				{ "isamplercube",				"isamplerCube",				texCubeMipmapInt			},
+				{ "usamplercube",				"usamplerCube",				texCubeMipmapUint			},
+				{ "samplercubeshadow",			"samplerCubeShadow",		texCubeMipmapShadow			},
+				{ "sampler2darray_fixed",		"sampler2DArray",			tex2DArrayMipmapFixed		},
+				{ "sampler2darray_float",		"sampler2DArray",			tex2DArrayMipmapFloat		},
+				{ "isampler2darray",			"isampler2DArray",			tex2DArrayMipmapInt			},
+				{ "usampler2darray",			"usampler2DArray",			tex2DArrayMipmapUint		},
+				{ "sampler2darrayshadow",		"sampler2DArrayShadow",		tex2DArrayMipmapShadow		},
+				{ "samplercubearray_fixed",		"samplerCubeArray",			texCubeArrayMipmapFixed		},
+				{ "samplercubearray_float",		"samplerCubeArray",			texCubeArrayMipmapFloat		},
+				{ "isamplercubearray",			"isamplerCubeArray",		texCubeArrayMipmapInt		},
+				{ "usamplercubearray",			"usamplerCubeArray",		texCubeArrayMipmapUint		},
+				{ "samplercubearrayshadow",		"samplerCubeArrayShadow",	texCubeArrayMipmapShadow	},
+				{ "sampler1d_fixed",			"sampler1D",				tex1DMipmapFixed			},
+				{ "sampler1d_float",			"sampler1D",				tex1DMipmapFloat			},
+				{ "isampler1d",					"isampler1D",				tex1DMipmapInt				},
+				{ "usampler1d",					"usampler1D",				tex1DMipmapUint				},
+				{ "sampler1dshadow",			"sampler1DShadow",			tex1DMipmapShadow			},
+				{ "sampler1darray_fixed",		"sampler1DArray",			tex1DArrayMipmapFixed		},
+				{ "sampler1darray_float",		"sampler1DArray",			tex1DArrayMipmapFloat		},
+				{ "isampler1darray",			"isampler1DArray",			tex1DArrayMipmapInt			},
+				{ "usampler1darray",			"usampler1DArray",			tex1DArrayMipmapUint		},
+				{ "sampler1darrayshadow",		"sampler1DArrayShadow",		tex1DArrayMipmapShadow		},
+			};
+
+			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturequerylod", "textureQueryLod() Tests"));
+
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(textureQueryLodCases); ++ndx)
+			{
+				const TexQueryFuncCaseSpec&		caseSpec	= textureQueryLodCases[ndx];
+
+				// available only in fragment shader
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTUREQUERYLOD));
+			}
+
+			queryGroup->addChild(group.release());
+		}
+
+		addChild(queryGroup.release());
 	}
 }
 
