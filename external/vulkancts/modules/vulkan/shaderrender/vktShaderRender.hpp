@@ -419,12 +419,19 @@ enum BaseAttributeType
 class ShaderRenderCaseInstance : public vkt::TestInstance
 {
 public:
+	enum ImageBackingMode
+	{
+		IMAGE_BACKING_MODE_REGULAR = 0,
+		IMAGE_BACKING_MODE_SPARSE,
+	};
+
 														ShaderRenderCaseInstance	(Context&					context);
 														ShaderRenderCaseInstance	(Context&					context,
 																					const bool					isVertexCase,
 																					const ShaderEvaluator&		evaluator,
 																					const UniformSetup&			uniformSetup,
-																					const AttributeSetupFunc	attribFunc);
+																					const AttributeSetupFunc	attribFunc,
+																					const ImageBackingMode		imageBackingMode = IMAGE_BACKING_MODE_REGULAR);
 
 	virtual												~ShaderRenderCaseInstance	(void);
 	virtual tcu::TestStatus								iterate						(void);
@@ -457,7 +464,8 @@ protected:
 																					 const bool					isVertexCase,
 																					 const ShaderEvaluator*		evaluator,
 																					 const UniformSetup*		uniformSetup,
-																					 const AttributeSetupFunc	attribFunc);
+																					 const AttributeSetupFunc	attribFunc,
+																					 const ImageBackingMode		imageBackingMode = IMAGE_BACKING_MODE_REGULAR);
 
 	virtual void										setup						(void);
 	virtual void										setupUniforms				(const tcu::Vec4& constCoords);
@@ -487,6 +495,7 @@ protected:
 	std::string											m_fragmentShaderName;
 	tcu::UVec2											m_renderSize;
 	vk::VkFormat										m_colorFormat;
+	ImageBackingMode									m_imageBackingMode;
 
 private:
 	typedef std::vector<tcu::ConstPixelBufferAccess>	TextureLayerData;
@@ -499,10 +508,21 @@ private:
 																					 deUint32						arrayLayers,
 																					 vk::VkImage					destImage);
 
+	void												checkSparseSupport			(const vk::VkImageType imageType) const;
+
+	void												uploadSparseImage			(const tcu::TextureFormat&		texFormat,
+																					 const TextureData&				textureData,
+																					 const tcu::Sampler&			refSampler,
+																					 const deUint32					mipLevels,
+																					 const deUint32					arrayLayers,
+																					 const vk::VkImage				sparseImage,
+																					 const vk::VkImageCreateInfo&	imageCreateInfo,
+																					 const tcu::UVec3				texSize);
+
 	void												createSamplerUniform		(deUint32						bindingLocation,
 																					 TextureBinding::Type			textureType,
 																					 const tcu::TextureFormat&		texFormat,
-																					 const tcu::IVec3				texSize,
+																					 const tcu::UVec3				texSize,
 																					 const TextureData&				textureData,
 																					 const tcu::Sampler&			refSampler,
 																					 deUint32						mipLevels,
@@ -522,6 +542,23 @@ private:
 	const UniformSetup*									m_uniformSetup;
 	const AttributeSetupFunc							m_attribFunc;
 
+	struct SparseContext
+	{
+		SparseContext (vk::Move<vk::VkDevice>& device, const deUint32 universalQueueFamilyIndex, const vk::InstanceInterface& interface)
+		: m_device						(device)
+		, m_universalQueueFamilyIndex	(universalQueueFamilyIndex)
+		, m_deviceInterface				(interface, *m_device)
+		{
+			m_deviceInterface.getDeviceQueue(*m_device, m_universalQueueFamilyIndex, 0, &m_queue);
+		}
+
+		vk::Unique<vk::VkDevice>	m_device;
+		const deUint32				m_universalQueueFamilyIndex;
+		vk::DeviceDriver			m_deviceInterface;
+		vk::VkQueue					m_queue;
+	};
+
+	de::UniquePtr<SparseContext>						m_sparseContext;
 	de::MovePtr<QuadGrid>								m_quadGrid;
 	tcu::TextureLevel									m_resultImage;
 
@@ -586,6 +623,15 @@ private:
 	std::vector<AllocationSp>							m_vertexBufferAllocs;
 
 	vk::VkSampleCountFlagBits							m_sampleCount;
+
+	// Wrapper functions around m_context calls to support sparse cases.
+	vk::VkDevice										getDevice						(void) const;
+	deUint32											getUniversalQueueFamilyIndex	(void) const;
+	const vk::DeviceInterface&							getDeviceInterface				(void) const;
+	vk::VkQueue											getUniversalQueue				(void) const;
+	vk::VkPhysicalDevice								getPhysicalDevice				(void) const;
+	const vk::InstanceInterface&						getInstanceInterface			(void) const;
+	SparseContext*										createSparseContext	(void) const;
 };
 
 template<typename T>

@@ -544,6 +544,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context)
 	, m_evaluator			(DE_NULL)
 	, m_uniformSetup		(DE_NULL)
 	, m_attribFunc			(DE_NULL)
+	, m_sparseContext		(createSparseContext())
 	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
 {
 }
@@ -553,7 +554,8 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 													const bool					isVertexCase,
 													const ShaderEvaluator&		evaluator,
 													const UniformSetup&			uniformSetup,
-													const AttributeSetupFunc	attribFunc)
+													const AttributeSetupFunc	attribFunc,
+													const ImageBackingMode		imageBackingMode)
 	: vkt::TestInstance		(context)
 	, m_memAlloc			(context.getDefaultAllocator())
 	, m_clearColor			(DEFAULT_CLEAR_COLOR)
@@ -562,9 +564,11 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 	, m_fragmentShaderName	("frag")
 	, m_renderSize			(128, 128)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_imageBackingMode	(imageBackingMode)
 	, m_evaluator			(&evaluator)
 	, m_uniformSetup		(&uniformSetup)
 	, m_attribFunc			(attribFunc)
+	, m_sparseContext		(createSparseContext())
 	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
 {
 }
@@ -573,7 +577,8 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 													const bool					isVertexCase,
 													const ShaderEvaluator*		evaluator,
 													const UniformSetup*			uniformSetup,
-													const AttributeSetupFunc	attribFunc)
+													const AttributeSetupFunc	attribFunc,
+													const ImageBackingMode		imageBackingMode)
 	: vkt::TestInstance		(context)
 	, m_memAlloc			(context.getDefaultAllocator())
 	, m_clearColor			(DEFAULT_CLEAR_COLOR)
@@ -582,15 +587,116 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 	, m_fragmentShaderName	("frag")
 	, m_renderSize			(128, 128)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_imageBackingMode	(imageBackingMode)
 	, m_evaluator			(evaluator)
 	, m_uniformSetup		(uniformSetup)
 	, m_attribFunc			(attribFunc)
+	, m_sparseContext		(createSparseContext())
 	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
 {
 }
 
+static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
+{
+	const std::vector<VkQueueFamilyProperties>	queueProps	= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
+
+	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
+	{
+		if ((queueProps[queueNdx].queueFlags & requiredCaps) == requiredCaps)
+			return (deUint32)queueNdx;
+	}
+
+	TCU_THROW(NotSupportedError, "No matching queue found");
+}
+
+ShaderRenderCaseInstance::SparseContext* ShaderRenderCaseInstance::createSparseContext (void) const
+{
+	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
+	{
+		const InstanceInterface&		vk				= getInstanceInterface();
+		const VkPhysicalDevice			physicalDevice	= getPhysicalDevice();
+		const VkPhysicalDeviceFeatures	deviceFeatures	= getPhysicalDeviceFeatures(vk, physicalDevice);
+
+		const deUint32 queueIndex = findQueueFamilyIndexWithCaps(vk, physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_SPARSE_BINDING_BIT);
+
+		VkDeviceQueueCreateInfo			queueInfo;
+		VkDeviceCreateInfo				deviceInfo;
+		const float						queuePriority	= 1.0f;
+
+		deMemset(&queueInfo,	0, sizeof(queueInfo));
+		deMemset(&deviceInfo,	0, sizeof(deviceInfo));
+
+		queueInfo.sType							= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueInfo.pNext							= DE_NULL;
+		queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
+		queueInfo.queueFamilyIndex				= queueIndex;
+		queueInfo.queueCount					= 1u;
+		queueInfo.pQueuePriorities				= &queuePriority;
+
+		deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		deviceInfo.pNext						= DE_NULL;
+		deviceInfo.queueCreateInfoCount			= 1u;
+		deviceInfo.pQueueCreateInfos			= &queueInfo;
+		deviceInfo.enabledExtensionCount		= 0u;
+		deviceInfo.ppEnabledExtensionNames		= DE_NULL;
+		deviceInfo.enabledLayerCount			= 0u;
+		deviceInfo.ppEnabledLayerNames			= DE_NULL;
+		deviceInfo.pEnabledFeatures				= &deviceFeatures;
+
+		Move<VkDevice>	device = createDevice(vk, physicalDevice, &deviceInfo);
+
+		return new SparseContext(device, queueIndex, vk);
+	}
+
+	return DE_NULL;
+}
+
 ShaderRenderCaseInstance::~ShaderRenderCaseInstance (void)
 {
+}
+
+VkDevice ShaderRenderCaseInstance::getDevice (void) const
+{
+	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
+		return *m_sparseContext->m_device;
+
+	return m_context.getDevice();
+}
+
+deUint32 ShaderRenderCaseInstance::getUniversalQueueFamilyIndex	(void) const
+{
+	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
+		return m_sparseContext->m_universalQueueFamilyIndex;
+
+	return m_context.getUniversalQueueFamilyIndex();
+}
+
+const DeviceInterface& ShaderRenderCaseInstance::getDeviceInterface (void) const
+{
+	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
+		return m_sparseContext->m_deviceInterface;
+
+	return m_context.getDeviceInterface();
+}
+
+VkQueue ShaderRenderCaseInstance::getUniversalQueue (void) const
+{
+	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
+		return m_sparseContext->m_queue;
+
+	return m_context.getUniversalQueue();
+}
+
+VkPhysicalDevice ShaderRenderCaseInstance::getPhysicalDevice (void) const
+{
+	// Same in sparse and regular case
+	return m_context.getPhysicalDevice();
+}
+
+const InstanceInterface& ShaderRenderCaseInstance::getInstanceInterface (void) const
+{
+	// Same in sparse and regular case
+	return m_context.getInstanceInterface();
 }
 
 tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
@@ -642,9 +748,9 @@ void ShaderRenderCaseInstance::setup (void)
 
 void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, size_t size, const void* dataPtr)
 {
-	const VkDevice					vkDevice			= m_context.getDevice();
-	const DeviceInterface&			vk					= m_context.getDeviceInterface();
-	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const VkDevice					vkDevice			= getDevice();
+	const DeviceInterface&			vk					= getDeviceInterface();
+	const deUint32					queueFamilyIndex	= getUniversalQueueFamilyIndex();
 
 	const VkBufferCreateInfo		uniformBufferParams	=
 	{
@@ -712,9 +818,9 @@ void ShaderRenderCaseInstance::addAttribute (deUint32		bindingLocation,
 	m_vertexAttributeDescription.push_back(attributeDescription);
 
 	// Upload data to buffer
-	const VkDevice							vkDevice				= m_context.getDevice();
-	const DeviceInterface&					vk						= m_context.getDeviceInterface();
-	const deUint32							queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkDevice							vkDevice				= getDevice();
+	const DeviceInterface&					vk						= getDeviceInterface();
+	const deUint32							queueFamilyIndex		= getUniversalQueueFamilyIndex();
 
 	const VkDeviceSize						inputSize				= sizePerElement * count;
 	const VkBufferCreateInfo				vertexBufferParams		=
@@ -890,10 +996,10 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 											deUint32							arrayLayers,
 											VkImage								destImage)
 {
-	const VkDevice					vkDevice				= m_context.getDevice();
-	const DeviceInterface&			vk						= m_context.getDeviceInterface();
-	const VkQueue					queue					= m_context.getUniversalQueue();
-	const deUint32					queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkDevice					vkDevice				= getDevice();
+	const DeviceInterface&			vk						= getDeviceInterface();
+	const VkQueue					queue					= getUniversalQueue();
+	const deUint32					queueFamilyIndex		= getUniversalQueueFamilyIndex();
 
 	const bool						isShadowSampler			= refSampler.compare != tcu::Sampler::COMPAREMODE_NONE;
 	const VkImageAspectFlags		aspectMask				= isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1107,6 +1213,506 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity */));
 }
 
+// Sparse utility function
+Move<VkSemaphore> makeSemaphore (const DeviceInterface& vk, const VkDevice device)
+{
+	const VkSemaphoreCreateInfo semaphoreCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		DE_NULL,
+		0u
+	};
+
+	return createSemaphore(vk, device, &semaphoreCreateInfo);
+}
+
+VkExtent3D mipLevelExtents (const VkExtent3D& baseExtents, const deUint32 mipLevel)
+{
+	VkExtent3D result;
+
+	result.width	= std::max(baseExtents.width  >> mipLevel, 1u);
+	result.height	= std::max(baseExtents.height >> mipLevel, 1u);
+	result.depth	= std::max(baseExtents.depth  >> mipLevel, 1u);
+
+	return result;
+}
+
+tcu::UVec3 alignedDivide (const VkExtent3D& extent, const VkExtent3D& divisor)
+{
+	tcu::UVec3 result;
+
+	result.x() = extent.width  / divisor.width  + ((extent.width  % divisor.width != 0)  ? 1u : 0u);
+	result.y() = extent.height / divisor.height + ((extent.height % divisor.height != 0) ? 1u : 0u);
+	result.z() = extent.depth  / divisor.depth  + ((extent.depth  % divisor.depth != 0)  ? 1u : 0u);
+
+	return result;
+}
+
+bool isImageSizeSupported (const VkImageType imageType, const tcu::UVec3& imageSize, const vk::VkPhysicalDeviceLimits& limits)
+{
+	switch (imageType)
+	{
+		case VK_IMAGE_TYPE_1D:
+			return (imageSize.x() <= limits.maxImageDimension1D
+				 && imageSize.y() == 1
+				 && imageSize.z() == 1);
+		case VK_IMAGE_TYPE_2D:
+			return (imageSize.x() <= limits.maxImageDimension2D
+				 && imageSize.y() <= limits.maxImageDimension2D
+				 && imageSize.z() == 1);
+		case VK_IMAGE_TYPE_3D:
+			return (imageSize.x() <= limits.maxImageDimension3D
+				 && imageSize.y() <= limits.maxImageDimension3D
+				 && imageSize.z() <= limits.maxImageDimension3D);
+		default:
+			DE_FATAL("Unknown image type");
+			return false;
+	}
+}
+
+void ShaderRenderCaseInstance::checkSparseSupport (const VkImageType imageType) const
+{
+	const InstanceInterface&		instance		= getInstanceInterface();
+	const VkPhysicalDevice			physicalDevice	= getPhysicalDevice();
+	const VkPhysicalDeviceFeatures	deviceFeatures	= getPhysicalDeviceFeatures(instance, physicalDevice);
+
+	if (!deviceFeatures.shaderResourceResidency)
+		TCU_THROW(NotSupportedError, "Required feature: shaderResourceResidency.");
+
+	if (!deviceFeatures.sparseBinding)
+		TCU_THROW(NotSupportedError, "Required feature: sparseBinding.");
+
+	if (imageType == VK_IMAGE_TYPE_2D && !deviceFeatures.sparseResidencyImage2D)
+		TCU_THROW(NotSupportedError, "Required feature: sparseResidencyImage2D.");
+
+	if (imageType == VK_IMAGE_TYPE_3D && !deviceFeatures.sparseResidencyImage3D)
+		TCU_THROW(NotSupportedError, "Required feature: sparseResidencyImage3D.");
+}
+
+void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		texFormat,
+												  const TextureData&			textureData,
+												  const tcu::Sampler&			refSampler,
+												  const deUint32				mipLevels,
+												  const deUint32				arrayLayers,
+												  const VkImage					sparseImage,
+												  const VkImageCreateInfo&		imageCreateInfo,
+												  const tcu::UVec3				texSize)
+{
+	const VkDevice							vkDevice				= getDevice();
+	const DeviceInterface&					vk						= getDeviceInterface();
+	const VkPhysicalDevice					physicalDevice			= getPhysicalDevice();
+	const VkQueue							queue					= getUniversalQueue();
+	const deUint32							queueFamilyIndex		= getUniversalQueueFamilyIndex();
+	const InstanceInterface&				instance				= getInstanceInterface();
+	const VkPhysicalDeviceProperties		deviceProperties		= getPhysicalDeviceProperties(instance, physicalDevice);
+	const VkPhysicalDeviceMemoryProperties	deviceMemoryProperties	= getPhysicalDeviceMemoryProperties(instance, physicalDevice);
+	const bool								isShadowSampler			= refSampler.compare != tcu::Sampler::COMPAREMODE_NONE;
+	const VkImageAspectFlags				aspectMask				= isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+	const Unique<VkSemaphore> 				imageMemoryBindSemaphore(makeSemaphore(vk, vkDevice));
+	deUint32								bufferSize				= 0u;
+	std::vector<deUint32>					offsetMultiples;
+	offsetMultiples.push_back(4u);
+	offsetMultiples.push_back(texFormat.getPixelSize());
+
+	if (isImageSizeSupported(imageCreateInfo.imageType, texSize, deviceProperties.limits) == false)
+		TCU_THROW(NotSupportedError, "Image size not supported for device.");
+
+	// Calculate buffer size
+	for (TextureData::const_iterator mit = textureData.begin(); mit != textureData.end(); ++mit)
+	{
+		for (TextureLayerData::const_iterator lit = mit->begin(); lit != mit->end(); ++lit)
+		{
+			const tcu::ConstPixelBufferAccess&	access	= *lit;
+
+			bufferSize = getNextMultiple(offsetMultiples, bufferSize);
+			bufferSize += access.getWidth() * access.getHeight() * access.getDepth() * access.getFormat().getPixelSize();
+		}
+	}
+
+	{
+		deUint32 sparseMemoryReqCount = 0;
+
+		vk.getImageSparseMemoryRequirements(vkDevice, sparseImage, &sparseMemoryReqCount, DE_NULL);
+
+		DE_ASSERT(sparseMemoryReqCount != 0);
+
+		std::vector<VkSparseImageMemoryRequirements> sparseImageMemoryRequirements;
+		sparseImageMemoryRequirements.resize(sparseMemoryReqCount);
+
+		vk.getImageSparseMemoryRequirements(vkDevice, sparseImage, &sparseMemoryReqCount, &sparseImageMemoryRequirements[0]);
+
+		const deUint32 noMatchFound = ~((deUint32)0);
+
+		deUint32 colorAspectIndex = noMatchFound;
+		for (deUint32 memoryReqNdx = 0; memoryReqNdx < sparseMemoryReqCount; ++memoryReqNdx)
+		{
+			if (sparseImageMemoryRequirements[memoryReqNdx].formatProperties.aspectMask & VK_IMAGE_ASPECT_COLOR_BIT)
+			{
+				colorAspectIndex = memoryReqNdx;
+				break;
+			}
+		}
+
+		if (colorAspectIndex == noMatchFound)
+			TCU_THROW(NotSupportedError, "Not supported image aspect - the test supports currently only VK_IMAGE_ASPECT_COLOR_BIT.");
+
+		const VkMemoryRequirements	memoryRequirements	= getImageMemoryRequirements(vk, vkDevice, sparseImage);
+
+		deUint32 memoryType = noMatchFound;
+		for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < deviceMemoryProperties.memoryTypeCount; ++memoryTypeNdx)
+		{
+			if ((memoryRequirements.memoryTypeBits & (1u << memoryTypeNdx)) != 0 &&
+				MemoryRequirement::Any.matchesHeap(deviceMemoryProperties.memoryTypes[memoryTypeNdx].propertyFlags))
+			{
+				memoryType = memoryTypeNdx;
+				break;
+			}
+		}
+
+		if (memoryType == noMatchFound)
+			TCU_THROW(NotSupportedError, "No matching memory type found.");
+
+		if (memoryRequirements.size > deviceProperties.limits.sparseAddressSpaceSize)
+			TCU_THROW(NotSupportedError, "Required memory size for sparse resource exceeds device limits.");
+
+		// Check if the image format supports sparse oprerations
+		const std::vector<VkSparseImageFormatProperties> sparseImageFormatPropVec =
+			getPhysicalDeviceSparseImageFormatProperties(instance, physicalDevice, imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.samples, imageCreateInfo.usage, imageCreateInfo.tiling);
+
+		if (sparseImageFormatPropVec.size() == 0)
+			TCU_THROW(NotSupportedError, "The image format does not support sparse operations.");
+
+		const VkSparseImageMemoryRequirements		aspectRequirements	= sparseImageMemoryRequirements[colorAspectIndex];
+		const VkExtent3D							imageGranularity	= aspectRequirements.formatProperties.imageGranularity;
+
+		std::vector<VkSparseImageMemoryBind>		imageResidencyMemoryBinds;
+		std::vector<VkSparseMemoryBind>				imageMipTailMemoryBinds;
+		std::vector< de::SharedPtr<Allocation> >	allocations;
+
+		for (deUint32 layerNdx = 0; layerNdx < arrayLayers; ++ layerNdx)
+		{
+			for (deUint32 mipLevelNdx = 0; mipLevelNdx < aspectRequirements.imageMipTailFirstLod; ++mipLevelNdx)
+			{
+				const VkExtent3D	mipExtent		= mipLevelExtents(imageCreateInfo.extent, mipLevelNdx);
+				const tcu::UVec3	numSparseBinds	= alignedDivide(mipExtent, imageGranularity);
+				const tcu::UVec3	lastBlockExtent	= tcu::UVec3(mipExtent.width  % imageGranularity.width  ? mipExtent.width  % imageGranularity.width  : imageGranularity.width,
+																 mipExtent.height % imageGranularity.height ? mipExtent.height % imageGranularity.height : imageGranularity.height,
+																 mipExtent.depth  % imageGranularity.depth  ? mipExtent.depth  % imageGranularity.depth  : imageGranularity.depth );
+
+				for (deUint32 z = 0; z < numSparseBinds.z(); ++z)
+				for (deUint32 y = 0; y < numSparseBinds.y(); ++y)
+				for (deUint32 x = 0; x < numSparseBinds.x(); ++x)
+				{
+					const deUint32 linearIndex = x + y*numSparseBinds.x() + z*numSparseBinds.x()*numSparseBinds.y() + layerNdx*numSparseBinds.x()*numSparseBinds.y()*numSparseBinds.z();
+
+					if (linearIndex % 2 == 1)
+					{
+						continue;
+					}
+
+					const VkMemoryRequirements allocRequirements =
+					{
+						// 28.7.5 alignment shows the block size in bytes
+						memoryRequirements.alignment,		// VkDeviceSize	size;
+						memoryRequirements.alignment,		// VkDeviceSize	alignment;
+						memoryRequirements.memoryTypeBits,	// uint32_t		memoryTypeBits;
+					};
+
+					de::SharedPtr<Allocation> allocation(m_memAlloc.allocate(allocRequirements, MemoryRequirement::Any).release());
+
+					allocations.push_back(allocation);
+
+					VkOffset3D offset;
+					offset.x = x*imageGranularity.width;
+					offset.y = y*imageGranularity.height;
+					offset.z = z*imageGranularity.depth;
+
+					VkExtent3D extent;
+					extent.width	= (x == numSparseBinds.x() - 1) ? lastBlockExtent.x() : imageGranularity.width;
+					extent.height	= (y == numSparseBinds.y() - 1) ? lastBlockExtent.y() : imageGranularity.height;
+					extent.depth	= (z == numSparseBinds.z() - 1) ? lastBlockExtent.z() : imageGranularity.depth;
+
+					const VkSparseImageMemoryBind imageMemoryBind =
+					{
+						{
+							aspectMask,	// VkImageAspectFlags	aspectMask;
+							mipLevelNdx,// uint32_t				mipLevel;
+							layerNdx,	// uint32_t				arrayLayer;
+						},							// VkImageSubresource		subresource;
+						offset,						// VkOffset3D				offset;
+						extent,						// VkExtent3D				extent;
+						allocation->getMemory(),	// VkDeviceMemory			memory;
+						allocation->getOffset(),	// VkDeviceSize				memoryOffset;
+						0u,							// VkSparseMemoryBindFlags	flags;
+					};
+
+					imageResidencyMemoryBinds.push_back(imageMemoryBind);
+				}
+			}
+
+			// Handle MIP tail for each layer
+			{
+				const VkMemoryRequirements allocRequirements =
+				{
+					aspectRequirements.imageMipTailSize,	// VkDeviceSize	size;
+					memoryRequirements.alignment,			// VkDeviceSize	alignment;
+					memoryRequirements.memoryTypeBits,		// uint32_t		memoryTypeBits;
+				};
+
+				const de::SharedPtr<Allocation> allocation(m_memAlloc.allocate(allocRequirements, MemoryRequirement::Any).release());
+
+				const VkSparseMemoryBind imageMipTailMemoryBind =
+				{
+					aspectRequirements.imageMipTailOffset + layerNdx * aspectRequirements.imageMipTailStride,	// VkDeviceSize					resourceOffset;
+					aspectRequirements.imageMipTailSize,														// VkDeviceSize					size;
+					allocation->getMemory(),																	// VkDeviceMemory				memory;
+					allocation->getOffset(),																	// VkDeviceSize					memoryOffset;
+					0u,																							// VkSparseMemoryBindFlags		flags;
+				};
+
+				allocations.push_back(allocation);
+				imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
+			}
+		}
+
+		VkBindSparseInfo bindSparseInfo =
+		{
+			VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,			//VkStructureType							sType;
+			DE_NULL,									//const void*								pNext;
+			0u,											//deUint32									waitSemaphoreCount;
+			DE_NULL,									//const VkSemaphore*						pWaitSemaphores;
+			0u,											//deUint32									bufferBindCount;
+			DE_NULL,									//const VkSparseBufferMemoryBindInfo*		pBufferBinds;
+			0u,											//deUint32									imageOpaqueBindCount;
+			DE_NULL,									//const VkSparseImageOpaqueMemoryBindInfo*	pImageOpaqueBinds;
+			0u,											//deUint32									imageBindCount;
+			DE_NULL,									//const VkSparseImageMemoryBindInfo*		pImageBinds;
+			1u,											//deUint32									signalSemaphoreCount;
+			&imageMemoryBindSemaphore.get()				//const VkSemaphore*						pSignalSemaphores;
+		};
+
+		VkSparseImageMemoryBindInfo			imageResidencyBindInfo;
+		VkSparseImageOpaqueMemoryBindInfo	imageMipTailBindInfo;
+
+		if (imageResidencyMemoryBinds.size() > 0)
+		{
+			imageResidencyBindInfo.image		= sparseImage;
+			imageResidencyBindInfo.bindCount	= static_cast<deUint32>(imageResidencyMemoryBinds.size());
+			imageResidencyBindInfo.pBinds		= &imageResidencyMemoryBinds[0];
+
+			bindSparseInfo.imageBindCount		= 1u;
+			bindSparseInfo.pImageBinds			= &imageResidencyBindInfo;
+		}
+
+		if (imageMipTailMemoryBinds.size() > 0)
+		{
+			imageMipTailBindInfo.image = sparseImage;
+			imageMipTailBindInfo.bindCount = static_cast<deUint32>(imageMipTailMemoryBinds.size());
+			imageMipTailBindInfo.pBinds = &imageMipTailMemoryBinds[0];
+
+			bindSparseInfo.imageOpaqueBindCount = 1u;
+			bindSparseInfo.pImageOpaqueBinds = &imageMipTailBindInfo;
+		}
+
+		VK_CHECK(vk.queueBindSparse(queue, 1u, &bindSparseInfo, DE_NULL));
+	}
+
+	Move<VkCommandPool>		cmdPool;
+	Move<VkCommandBuffer>	cmdBuffer;
+	// Create command pool
+	{
+		const VkCommandPoolCreateInfo cmdPoolParams =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCommandPoolCreateFlags	flags;
+			queueFamilyIndex,								// deUint32					queueFamilyIndex;
+		};
+
+		cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
+	}
+
+	{
+		// Create command buffer
+		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			*cmdPool,										// VkCommandPool			commandPool;
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
+			1u,												// deUint32					bufferCount;
+		};
+
+		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
+	}
+
+	// Create source buffer
+	const VkBufferCreateInfo bufferParams =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		0u,											// VkBufferCreateFlags	flags;
+		bufferSize,									// VkDeviceSize			size;
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,			// VkBufferUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+		0u,											// deUint32				queueFamilyIndexCount;
+		DE_NULL,									// const deUint32*		pQueueFamilyIndices;
+	};
+
+	Move<VkBuffer>					buffer		= createBuffer(vk, vkDevice, &bufferParams);
+	de::MovePtr<Allocation>			bufferAlloc = m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
+
+	// Barriers for copying buffer to image
+	const VkBufferMemoryBarrier preBufferBarrier =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,									// const void*		pNext;
+		VK_ACCESS_HOST_WRITE_BIT,					// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
+		*buffer,									// VkBuffer			buffer;
+		0u,											// VkDeviceSize		offset;
+		bufferSize									// VkDeviceSize		size;
+	};
+
+	const VkImageMemoryBarrier preImageBarrier =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
+		DE_NULL,										// const void*				pNext;
+		0u,												// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
+		sparseImage,									// VkImage					image;
+		{												// VkImageSubresourceRange	subresourceRange;
+			aspectMask,								// VkImageAspect	aspect;
+			0u,										// deUint32			baseMipLevel;
+			mipLevels,								// deUint32			mipLevels;
+			0u,										// deUint32			baseArraySlice;
+			arrayLayers								// deUint32			arraySize;
+		}
+	};
+
+	const VkImageMemoryBarrier postImageBarrier =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
+		DE_NULL,										// const void*				pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_SHADER_READ_BIT,						// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
+		sparseImage,									// VkImage					image;
+		{												// VkImageSubresourceRange	subresourceRange;
+			aspectMask,								// VkImageAspect	aspect;
+			0u,										// deUint32			baseMipLevel;
+			mipLevels,								// deUint32			mipLevels;
+			0u,										// deUint32			baseArraySlice;
+			arrayLayers								// deUint32			arraySize;
+		}
+	};
+
+	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
+		DE_NULL,										// const void*						pNext;
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags		flags;
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
+	};
+
+	std::vector<VkBufferImageCopy>	copyRegions;
+	// Get copy regions and write buffer data
+	{
+		deUint32	layerDataOffset		= 0;
+		deUint8*	destPtr				= (deUint8*)bufferAlloc->getHostPtr();
+
+		for (size_t levelNdx = 0; levelNdx < textureData.size(); levelNdx++)
+		{
+			const TextureLayerData&		layerData	= textureData[levelNdx];
+
+			for (size_t layerNdx = 0; layerNdx < layerData.size(); layerNdx++)
+			{
+				layerDataOffset = getNextMultiple(offsetMultiples, layerDataOffset);
+
+				const tcu::ConstPixelBufferAccess&	access		= layerData[layerNdx];
+				const tcu::PixelBufferAccess		destAccess	(access.getFormat(), access.getSize(), destPtr + layerDataOffset);
+
+				const VkBufferImageCopy				layerRegion =
+				{
+					layerDataOffset,						// VkDeviceSize				bufferOffset;
+					(deUint32)access.getWidth(),			// deUint32					bufferRowLength;
+					(deUint32)access.getHeight(),			// deUint32					bufferImageHeight;
+					{										// VkImageSubresourceLayers	imageSubresource;
+						aspectMask,								// VkImageAspectFlags		aspectMask;
+						(deUint32)levelNdx,						// uint32_t					mipLevel;
+						(deUint32)layerNdx,						// uint32_t					baseArrayLayer;
+						1u										// uint32_t					layerCount;
+					},
+					{ 0u, 0u, 0u },							// VkOffset3D			imageOffset;
+					{										// VkExtent3D			imageExtent;
+						(deUint32)access.getWidth(),
+						(deUint32)access.getHeight(),
+						(deUint32)access.getDepth()
+					}
+				};
+
+				copyRegions.push_back(layerRegion);
+				tcu::copy(destAccess, access);
+
+				layerDataOffset += access.getWidth() * access.getHeight() * access.getDepth() * access.getFormat().getPixelSize();
+			}
+		}
+	}
+
+	// Copy buffer to image
+	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
+	vk.cmdCopyBufferToImage(*cmdBuffer, *buffer, sparseImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copyRegions.size(), copyRegions.data());
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
+	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+
+	const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+
+	const VkSubmitInfo submitInfo =
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
+		DE_NULL,								// const void*					pNext;
+		1u,										// deUint32						waitSemaphoreCount;
+		&imageMemoryBindSemaphore.get(),		// const VkSemaphore*			pWaitSemaphores;
+		&pipelineStageFlags,					// const VkPipelineStageFlags*	pWaitDstStageMask;
+		1u,										// deUint32						commandBufferCount;
+		&cmdBuffer.get(),						// const VkCommandBuffer*		pCommandBuffers;
+		0u,										// deUint32						signalSemaphoreCount;
+		DE_NULL									// const VkSemaphore*			pSignalSemaphores;
+	};
+
+	const VkFenceCreateInfo fenceParams =
+	{
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,		// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		0u											// VkFenceCreateFlags	flags;
+	};
+
+	Move<VkFence>	fence = createFence(vk, vkDevice, &fenceParams);
+
+	try
+	{
+		VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
+		VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity */));
+	}
+	catch (...)
+	{
+		VK_CHECK(vk.deviceWaitIdle(vkDevice));
+		throw;
+	}
+}
+
 void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 textureId)
 {
 	DE_ASSERT(textureId < m_textures.size());
@@ -1119,7 +1725,7 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 	deUint32							mipLevels			= 1u;
 	deUint32							arrayLayers			= 1u;
 	tcu::TextureFormat					texFormat;
-	tcu::IVec3							texSize;
+	tcu::UVec3							texSize;
 	TextureData							textureData;
 
 	if (textureType == TextureBinding::TYPE_2D)
@@ -1127,8 +1733,8 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 		const tcu::Texture2D&			texture		= textureBinding.get2D();
 
 		texFormat									= texture.getFormat();
-		texSize										= tcu::IVec3(texture.getWidth(), texture.getHeight(), 1u);
-		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
+		texSize										= tcu::UVec3(texture.getWidth(), texture.getHeight(), 1u);
+		mipLevels									= (deUint32)texture.getNumLevels();
 		arrayLayers									= 1u;
 
 		textureData.resize(mipLevels);
@@ -1146,8 +1752,8 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 		const tcu::TextureCube&			texture		= textureBinding.getCube();
 
 		texFormat									= texture.getFormat();
-		texSize										= tcu::IVec3(texture.getSize(), texture.getSize(), 1u);
-		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
+		texSize										= tcu::UVec3(texture.getSize(), texture.getSize(), 1u);
+		mipLevels									= (deUint32)texture.getNumLevels();
 		arrayLayers									= 6u;
 
 		static const tcu::CubeFace		cubeFaceMapping[tcu::CUBEFACE_LAST] =
@@ -1180,8 +1786,8 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 		const tcu::Texture2DArray&		texture		= textureBinding.get2DArray();
 
 		texFormat									= texture.getFormat();
-		texSize										= tcu::IVec3(texture.getWidth(), texture.getHeight(), 1u);
-		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
+		texSize										= tcu::UVec3(texture.getWidth(), texture.getHeight(), 1u);
+		mipLevels									= (deUint32)texture.getNumLevels();
 		arrayLayers									= (deUint32)texture.getNumLayers();
 
 		textureData.resize(mipLevels);
@@ -1207,8 +1813,8 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 		const tcu::Texture3D&			texture		= textureBinding.get3D();
 
 		texFormat									= texture.getFormat();
-		texSize										= tcu::IVec3(texture.getWidth(), texture.getHeight(), texture.getDepth());
-		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
+		texSize										= tcu::UVec3(texture.getWidth(), texture.getHeight(), texture.getDepth());
+		mipLevels									= (deUint32)texture.getNumLevels();
 		arrayLayers									= 1u;
 
 		textureData.resize(mipLevels);
@@ -1226,7 +1832,7 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 		const tcu::Texture1D&			texture		= textureBinding.get1D();
 
 		texFormat									= texture.getFormat();
-		texSize										= tcu::IVec3(texture.getWidth(), 1, 1);
+		texSize										= tcu::UVec3(texture.getWidth(), 1, 1);
 		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
 		arrayLayers									= 1u;
 
@@ -1245,7 +1851,7 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 		const tcu::Texture1DArray&		texture		= textureBinding.get1DArray();
 
 		texFormat									= texture.getFormat();
-		texSize										= tcu::IVec3(texture.getWidth(), 1, 1);
+		texSize										= tcu::UVec3(texture.getWidth(), 1, 1);
 		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
 		arrayLayers									= (deUint32)texture.getNumLayers();
 
@@ -1271,7 +1877,7 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 	{
 		const tcu::TextureCubeArray&	texture		= textureBinding.getCubeArray();
 		texFormat									= texture.getFormat();
-		texSize										= tcu::IVec3(texture.getSize(), texture.getSize(), 1);
+		texSize										= tcu::UVec3(texture.getSize(), texture.getSize(), 1);
 		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
 		arrayLayers									= texture.getDepth();
 
@@ -1304,16 +1910,16 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocation,
 													 TextureBinding::Type			textureType,
 													 const tcu::TextureFormat&		texFormat,
-													 const tcu::IVec3				texSize,
+													 const tcu::UVec3				texSize,
 													 const TextureData&				textureData,
 													 const tcu::Sampler&			refSampler,
 													 deUint32						mipLevels,
 													 deUint32						arrayLayers,
 													 TextureBinding::Parameters		textureParams)
 {
-	const VkDevice					vkDevice			= m_context.getDevice();
-	const DeviceInterface&			vk					= m_context.getDeviceInterface();
-	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const VkDevice					vkDevice			= getDevice();
+	const DeviceInterface&			vk					= getDeviceInterface();
+	const deUint32					queueFamilyIndex	= getUniversalQueueFamilyIndex();
 
 	const bool						isShadowSampler		= refSampler.compare != tcu::Sampler::COMPAREMODE_NONE;
 	const VkImageAspectFlags		aspectMask			= isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1321,13 +1927,19 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 	const VkImageType				imageType			= viewTypeToImageType(imageViewType);
 	const VkFormat					format				= mapTextureFormat(texFormat);
 	const bool						isCube				= imageViewType == VK_IMAGE_VIEW_TYPE_CUBE || imageViewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
-	const VkImageCreateFlags		imageCreateFlags	= isCube ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (VkImageCreateFlags)0;
+	VkImageCreateFlags				imageCreateFlags	= isCube ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (VkImageCreateFlags)0;
 	VkImageUsageFlags				imageUsageFlags		= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	Move<VkImage>					vkTexture;
 	de::MovePtr<Allocation>			allocation;
 
 	if (isShadowSampler)
 		imageUsageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
+	{
+		checkSparseSupport(imageType);
+		imageCreateFlags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
+	}
 
 	// Create image
 	const VkImageCreateInfo			imageParams =
@@ -1338,9 +1950,9 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 		imageType,														// VkImageType				imageType;
 		format,															// VkFormat					format;
 		{																// VkExtent3D				extent;
-			(deUint32)texSize.x(),
-			(deUint32)texSize.y(),
-			(deUint32)texSize.z()
+			texSize.x(),
+			texSize.y(),
+			texSize.z()
 		},
 		mipLevels,														// deUint32					mipLevels;
 		arrayLayers,													// deUint32					arrayLayers;
@@ -1355,10 +1967,17 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 
 	vkTexture		= createImage(vk, vkDevice, &imageParams);
 	allocation		= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *vkTexture), MemoryRequirement::Any);
-	VK_CHECK(vk.bindImageMemory(vkDevice, *vkTexture, allocation->getMemory(), allocation->getOffset()));
 
-	// Upload texture data
-	uploadImage(texFormat, textureData, refSampler, mipLevels, arrayLayers, *vkTexture);
+	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
+	{
+		uploadSparseImage(texFormat, textureData, refSampler, mipLevels, arrayLayers, *vkTexture, imageParams, texSize);
+	}
+	else
+	{
+		// Upload texture data
+		VK_CHECK(vk.bindImageMemory(vkDevice, *vkTexture, allocation->getMemory(), allocation->getOffset()));
+		uploadImage(texFormat, textureData, refSampler, mipLevels, arrayLayers, *vkTexture);
+	}
 
 	// Create sampler
 	const VkSamplerCreateInfo		samplerParams	= mapSampler(refSampler, texFormat);
@@ -1487,10 +2106,10 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 									   const deUint16*		indices,
 									   const tcu::Vec4&		constCoords)
 {
-	const VkDevice										vkDevice					= m_context.getDevice();
-	const DeviceInterface&								vk							= m_context.getDeviceInterface();
-	const VkQueue										queue						= m_context.getUniversalQueue();
-	const deUint32										queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const VkDevice										vkDevice					= getDevice();
+	const DeviceInterface&								vk							= getDeviceInterface();
+	const VkQueue										queue						= getUniversalQueue();
+	const deUint32										queueFamilyIndex			= getUniversalQueueFamilyIndex();
 
 	vk::Move<vk::VkImage>								colorImage;
 	de::MovePtr<vk::Allocation>							colorImageAlloc;
@@ -1518,13 +2137,13 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		const VkImageUsageFlags	imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		VkImageFormatProperties	properties;
 
-		if ((m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(),
-																					 m_colorFormat,
-																					 VK_IMAGE_TYPE_2D,
-																					 VK_IMAGE_TILING_OPTIMAL,
-																					 imageUsage,
-																					 0u,
-																					 &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+		if ((getInstanceInterface().getPhysicalDeviceImageFormatProperties(getPhysicalDevice(),
+																		   m_colorFormat,
+																		   VK_IMAGE_TYPE_2D,
+																		   VK_IMAGE_TILING_OPTIMAL,
+																		   imageUsage,
+																		   0u,
+																		   &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
 		{
 			TCU_THROW(NotSupportedError, "Format not supported");
 		}
@@ -1595,13 +2214,13 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			const VkImageUsageFlags	imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 			VkImageFormatProperties	properties;
 
-			if ((m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(),
-																						 m_colorFormat,
-																						 VK_IMAGE_TYPE_2D,
-																						 VK_IMAGE_TILING_OPTIMAL,
-																						 imageUsage,
-																						 0,
-																						 &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+			if ((getInstanceInterface().getPhysicalDeviceImageFormatProperties(getPhysicalDevice(),
+																			   m_colorFormat,
+																			   VK_IMAGE_TYPE_2D,
+																			   VK_IMAGE_TILING_OPTIMAL,
+																			   imageUsage,
+																			   0,
+																			   &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
 			{
 				TCU_THROW(NotSupportedError, "Format not supported");
 			}

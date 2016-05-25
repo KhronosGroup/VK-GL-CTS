@@ -39,6 +39,7 @@
 #include "glwEnums.hpp"
 #include "deMath.h"
 #include "vkImageUtil.hpp"
+#include "vkQueryUtil.hpp"
 
 namespace vkt
 {
@@ -540,13 +541,13 @@ public:
 																	 const UniformSetup&		uniformSetup,
 																	 const TextureLookupSpec&	lookupSpec,
 																	 const TextureSpec&			textureSpec,
-																	 const TexLookupParams&		lookupParams);
+																	 const TexLookupParams&		lookupParams,
+																	 const ImageBackingMode		imageBackingMode = IMAGE_BACKING_MODE_REGULAR);
 	virtual						~ShaderTextureFunctionInstance		(void);
 
 protected:
 	virtual void				setupUniforms						(const tcu::Vec4&);
 	void						initTexture							(void);
-
 private:
 	const TextureLookupSpec&	m_lookupSpec;
 	const TextureSpec&			m_textureSpec;
@@ -559,8 +560,9 @@ ShaderTextureFunctionInstance::ShaderTextureFunctionInstance (Context&						cont
 															  const UniformSetup&			uniformSetup,
 															  const TextureLookupSpec&		lookupSpec,
 															  const TextureSpec&			textureSpec,
-															  const TexLookupParams&		lookupParams)
-	: ShaderRenderCaseInstance	(context, isVertexCase, evaluator, uniformSetup, DE_NULL)
+															  const TexLookupParams&		lookupParams,
+															  const ImageBackingMode		imageBackingMode)
+	: ShaderRenderCaseInstance	(context, isVertexCase, evaluator, uniformSetup, DE_NULL, imageBackingMode)
 	, m_lookupSpec				(lookupSpec)
 	, m_textureSpec				(textureSpec)
 	, m_lookupParams			(lookupParams)
@@ -854,12 +856,12 @@ public:
 
 	virtual TestInstance*		createInstance					(Context& context) const;
 
-private:
-	void						initShaderSources				(void);
+protected:
+	const TextureLookupSpec		m_lookupSpec;
+	const TextureSpec			m_textureSpec;
+	const TexLookupParams		m_lookupParams;
 
-	TextureLookupSpec			m_lookupSpec;
-	TextureSpec					m_textureSpec;
-	TexLookupParams				m_lookupParams;
+	void						initShaderSources				(void);
 };
 
 ShaderTextureFunctionCase::ShaderTextureFunctionCase (tcu::TestContext&				testCtx,
@@ -2484,6 +2486,283 @@ struct TexFuncCaseSpec
 #define GRAD_CASE_SPEC(NAME, FUNC, MINCOORD, MAXCOORD, MINDX, MAXDX, MINDY, MAXDY, USEOFFSET, OFFSET, TEXSPEC, EVALFUNC, FLAGS) \
 	{ #NAME, TextureLookupSpec(FUNC, MINCOORD, MAXCOORD, false, 0.0f, 0.0f, MINDX, MAXDX, MINDY, MAXDY, USEOFFSET, OFFSET), TEXSPEC, EVALFUNC, FLAGS }
 
+class SparseShaderTextureFunctionInstance : public ShaderTextureFunctionInstance
+{
+public:
+				SparseShaderTextureFunctionInstance		(Context&					context,
+														const bool					isVertexCase,
+														const ShaderEvaluator&		evaluator,
+														const UniformSetup&			uniformSetup,
+														const TextureLookupSpec&	lookupSpec,
+														const TextureSpec&			textureSpec,
+														const TexLookupParams&		lookupParams,
+														const ImageBackingMode		imageBackingMode = IMAGE_BACKING_MODE_SPARSE);
+	virtual		~SparseShaderTextureFunctionInstance	(void);
+};
+
+SparseShaderTextureFunctionInstance::SparseShaderTextureFunctionInstance (Context&					context,
+																		 const bool					isVertexCase,
+																		 const ShaderEvaluator&		evaluator,
+																		 const UniformSetup&		uniformSetup,
+																		 const TextureLookupSpec&	lookupSpec,
+																		 const TextureSpec&			textureSpec,
+																		 const TexLookupParams&		lookupParams,
+																		 const ImageBackingMode		imageBackingMode)
+	: ShaderTextureFunctionInstance (context, isVertexCase, evaluator, uniformSetup, lookupSpec, textureSpec, lookupParams, imageBackingMode)
+{
+}
+
+SparseShaderTextureFunctionInstance::~SparseShaderTextureFunctionInstance (void)
+{
+}
+
+class SparseShaderTextureFunctionCase : public ShaderTextureFunctionCase
+{
+public:
+							SparseShaderTextureFunctionCase		(tcu::TestContext&			testCtx,
+																const std::string&			name,
+																const std::string&			desc,
+																const TextureLookupSpec&	lookup,
+																const TextureSpec&			texture,
+																TexEvalFunc					evalFunc,
+																bool						isVertexCase);
+
+	virtual 				~SparseShaderTextureFunctionCase	(void);
+
+	virtual	TestInstance*	createInstance						(Context& context) const;
+protected:
+	void					initShaderSources					(void);
+};
+
+SparseShaderTextureFunctionCase::SparseShaderTextureFunctionCase (tcu::TestContext&				testCtx,
+																  const std::string&			name,
+																  const std::string&			desc,
+																  const TextureLookupSpec&		lookup,
+																  const TextureSpec&			texture,
+																  TexEvalFunc					evalFunc,
+																  bool							isVertexCase)
+	: ShaderTextureFunctionCase 	(testCtx, name, desc, lookup, texture, evalFunc, isVertexCase)
+{
+	initShaderSources();
+}
+
+void SparseShaderTextureFunctionCase::initShaderSources (void)
+{
+	const Function				function			= m_lookupSpec.function;
+	const bool					isVtxCase			= m_isVertexCase;
+	const bool					isProj				= functionHasProj(function);
+	const bool					isGrad				= functionHasGrad(function);
+	const bool					isShadow			= m_textureSpec.sampler.compare != tcu::Sampler::COMPAREMODE_NONE;
+	const bool					is2DProj4			= !isShadow && m_textureSpec.type == TEXTURETYPE_2D && (function == FUNCTION_TEXTUREPROJ || function == FUNCTION_TEXTUREPROJLOD || function == FUNCTION_TEXTUREPROJGRAD);
+	const bool					isIntCoord			= function == FUNCTION_TEXELFETCH;
+	const bool					hasLodBias			= functionHasLod(m_lookupSpec.function) || m_lookupSpec.useBias;
+	const int					texCoordComps		= m_textureSpec.type == TEXTURETYPE_2D ? 2 : 3;
+	const int					extraCoordComps		= (isProj ? (is2DProj4 ? 2 : 1) : 0) + (isShadow ? 1 : 0);
+	const glu::DataType			coordType			= glu::getDataTypeFloatVec(texCoordComps+extraCoordComps);
+	const glu::Precision		coordPrec			= glu::PRECISION_HIGHP;
+	const char*					coordTypeName		= glu::getDataTypeName(coordType);
+	const char*					coordPrecName		= glu::getPrecisionName(coordPrec);
+	const tcu::TextureFormat	texFmt				= glu::mapGLInternalFormat(m_textureSpec.format);
+	glu::DataType				samplerType			= glu::TYPE_LAST;
+	const glu::DataType			gradType			= (m_textureSpec.type == TEXTURETYPE_CUBE_MAP || m_textureSpec.type == TEXTURETYPE_3D) ? glu::TYPE_FLOAT_VEC3 : glu::TYPE_FLOAT_VEC2;
+	const char*					gradTypeName		= glu::getDataTypeName(gradType);
+	const char*					baseFuncName		= DE_NULL;
+
+	DE_ASSERT(!isGrad || !hasLodBias);
+
+	switch (m_textureSpec.type)
+	{
+		case TEXTURETYPE_2D:		samplerType = isShadow ? glu::TYPE_SAMPLER_2D_SHADOW		: glu::getSampler2DType(texFmt);		break;
+		case TEXTURETYPE_CUBE_MAP:	samplerType = isShadow ? glu::TYPE_SAMPLER_CUBE_SHADOW		: glu::getSamplerCubeType(texFmt);		break;
+		case TEXTURETYPE_2D_ARRAY:	samplerType = isShadow ? glu::TYPE_SAMPLER_2D_ARRAY_SHADOW	: glu::getSampler2DArrayType(texFmt);	break;
+		case TEXTURETYPE_3D:		DE_ASSERT(!isShadow); samplerType = glu::getSampler3DType(texFmt);									break;
+		default:
+			DE_ASSERT(DE_FALSE);
+	}
+
+	// Not supported cases
+	switch (m_lookupSpec.function)
+	{
+		case FUNCTION_TEXTURE:			baseFuncName = "sparseTexture";			break;
+		case FUNCTION_TEXTURELOD:		baseFuncName = "sparseTextureLod";		break;
+		case FUNCTION_TEXTUREGRAD:		baseFuncName = "sparseTextureGrad";		break;
+		case FUNCTION_TEXELFETCH:		baseFuncName = "sparseTexelFetch";		break;
+		default:
+			DE_ASSERT(DE_FALSE);
+	}
+
+	std::ostringstream	vert;
+	std::ostringstream	frag;
+	std::ostringstream&	op		= isVtxCase ? vert : frag;
+
+	vert << "#version 450\n"
+		 << "#extension GL_ARB_sparse_texture2 : require\n"
+		 << "layout(location = 0) in highp vec4 a_position;\n"
+		 << "layout(location = 4) in " << coordPrecName << " " << coordTypeName << " a_in0;\n";
+
+	if (isGrad)
+	{
+		vert << "layout(location = 5) in " << coordPrecName << " " << gradTypeName << " a_in1;\n";
+		vert << "layout(location = 6) in " << coordPrecName << " " << gradTypeName << " a_in2;\n";
+	}
+	else if (hasLodBias)
+		vert << "layout(location = 5) in " << coordPrecName << " float a_in1;\n";
+
+	frag << "#version 450\n"
+		 << "#extension GL_ARB_sparse_texture2 : require\n"
+		 << "layout(location = 0) out mediump vec4 o_color;\n";
+
+	if (isVtxCase)
+	{
+		vert << "layout(location = 0) out mediump vec4 v_color;\n";
+		frag << "layout(location = 0) in mediump vec4 v_color;\n";
+	}
+	else
+	{
+		vert << "layout(location = 0) out " << coordPrecName << " " << coordTypeName << " v_texCoord;\n";
+		frag << "layout(location = 0) in " << coordPrecName << " " << coordTypeName << " v_texCoord;\n";
+
+		if (isGrad)
+		{
+			vert << "layout(location = 1) out " << coordPrecName << " " << gradTypeName << " v_gradX;\n";
+			vert << "layout(location = 2) out " << coordPrecName << " " << gradTypeName << " v_gradY;\n";
+			frag << "layout(location = 1) in " << coordPrecName << " " << gradTypeName << " v_gradX;\n";
+			frag << "layout(location = 2) in " << coordPrecName << " " << gradTypeName << " v_gradY;\n";
+		}
+		else if (hasLodBias)
+		{
+			vert << "layout(location = 1) out " << coordPrecName << " float v_lodBias;\n";
+			frag << "layout(location = 1) in " << coordPrecName << " float v_lodBias;\n";
+		}
+	}
+
+	// Uniforms
+	op << "layout(set = 0, binding = 0) uniform highp " << glu::getDataTypeName(samplerType) << " u_sampler;\n"
+	   << "layout(set = 0, binding = 1) uniform buf0 { highp vec4 u_scale; };\n"
+	   << "layout(set = 0, binding = 2) uniform buf1 { highp vec4 u_bias; };\n";
+
+	vert << "out gl_PerVertex {\n"
+		 << "	vec4 gl_Position;\n"
+		 << "};\n";
+	vert << "\nvoid main()\n{\n"
+		 << "\tgl_Position = a_position;\n";
+	frag << "\nvoid main()\n{\n";
+
+	// Op.
+	{
+		// Texel declaration
+		if (isShadow)
+			op << "\tfloat texel;\n";
+		else
+			op << "\tvec4 texel;\n";
+
+		const char*	const texCoord	= isVtxCase ? "a_in0" : "v_texCoord";
+		const char* const gradX		= isVtxCase ? "a_in1" : "v_gradX";
+		const char* const gradY		= isVtxCase ? "a_in2" : "v_gradY";
+		const char*	const lodBias	= isVtxCase ? "a_in1" : "v_lodBias";
+
+		op << "\tint success = " << baseFuncName;
+
+		if (m_lookupSpec.useOffset)
+			op << "Offset";
+
+		op << "ARB(u_sampler, ";
+
+		if (isIntCoord)
+			op << "ivec" << (texCoordComps+extraCoordComps) << "(";
+
+		op << texCoord;
+
+		if (isIntCoord)
+			op << ")";
+
+		if (isGrad)
+			op << ", " << gradX << ", " << gradY;
+
+		if (functionHasLod(function))
+		{
+			if (isIntCoord)
+				op << ", int(" << lodBias << ")";
+			else
+				op << ", " << lodBias;
+		}
+
+		if (m_lookupSpec.useOffset)
+		{
+			int offsetComps = m_textureSpec.type == TEXTURETYPE_3D ? 3 : 2;
+
+			op << ", ivec" << offsetComps << "(";
+			for (int ndx = 0; ndx < offsetComps; ndx++)
+			{
+				if (ndx != 0)
+					op << ", ";
+				op << m_lookupSpec.offset[ndx];
+			}
+			op << ")";
+		}
+
+		op << ", texel";
+
+		if (m_lookupSpec.useBias)
+			op << ", " << lodBias;
+
+		op << ");\n";
+
+		// Check sparse validity, and handle each case
+		op << "\tif (sparseTexelsResidentARB(success))\n";
+
+		if (isVtxCase)
+			vert << "\t\tv_color = ";
+		else
+			frag << "\t\to_color = ";
+
+		if (isShadow)
+			op << "vec4(texel, 0.0, 0.0, 1.0);\n";
+		else
+			op << "vec4(texel * u_scale + u_bias);\n";
+
+		op << "\telse\n";
+
+		// This color differs from the used colors
+		if (isVtxCase)
+			vert << "\t\tv_color = vec4(0.54117647058, 0.16862745098, 0.8862745098, 1.0);\n";
+		else
+			frag << "\t\to_color = vec4(0.54117647058, 0.16862745098, 0.8862745098, 1.0);\n";
+	}
+
+	if (isVtxCase)
+		frag << "\to_color = v_color;\n";
+	else
+	{
+		vert << "\tv_texCoord = a_in0;\n";
+
+		if (isGrad)
+		{
+			vert << "\tv_gradX = a_in1;\n";
+			vert << "\tv_gradY = a_in2;\n";
+		}
+		else if (hasLodBias)
+			vert << "\tv_lodBias = a_in1;\n";
+	}
+
+	vert << "}\n";
+	frag << "}\n";
+
+	m_vertShaderSource = vert.str();
+	m_fragShaderSource = frag.str();
+}
+
+SparseShaderTextureFunctionCase::~SparseShaderTextureFunctionCase ()
+{
+}
+
+TestInstance* SparseShaderTextureFunctionCase::createInstance (Context& context) const
+{
+	DE_ASSERT(m_evaluator != DE_NULL);
+	DE_ASSERT(m_uniformSetup != DE_NULL);
+	return new SparseShaderTextureFunctionInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_lookupSpec, m_textureSpec, m_lookupParams);
+}
+
 static void createCaseGroup (tcu::TestCaseGroup* parent, const char* groupName, const char* groupDesc, const TexFuncCaseSpec* cases, int numCases)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(parent->getTestContext(), groupName, groupDesc));
@@ -2506,9 +2785,18 @@ static void createCaseGroup (tcu::TestCaseGroup* parent, const char* groupName, 
 
 		std::string name = cases[ndx].name;
 		if (cases[ndx].flags & VERTEX)
+		{
+			if (!functionHasProj(cases[ndx].lookupSpec.function))
+				group->addChild(new SparseShaderTextureFunctionCase(parent->getTestContext(), ("sparse_" + name + "_vertex"),   "", cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, true ));
 			group->addChild(new ShaderTextureFunctionCase(parent->getTestContext(), (name + "_vertex"),   "", cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, true ));
+		}
+
 		if (cases[ndx].flags & FRAGMENT)
+		{
+			if (!functionHasProj(cases[ndx].lookupSpec.function))
+				group->addChild(new SparseShaderTextureFunctionCase(parent->getTestContext(), ("sparse_" + name + "_fragment"), "", cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, false));
 			group->addChild(new ShaderTextureFunctionCase(parent->getTestContext(), (name + "_fragment"), "", cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, false));
+		}
 	}
 
 	parent->addChild(group.release());

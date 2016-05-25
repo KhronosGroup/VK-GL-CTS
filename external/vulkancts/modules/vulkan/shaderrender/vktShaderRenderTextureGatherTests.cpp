@@ -62,6 +62,8 @@ namespace sr
 namespace
 {
 
+typedef ShaderRenderCaseInstance::ImageBackingMode ImageBackingMode;
+
 enum
 {
 	SPEC_MAX_MIN_OFFSET = -8,
@@ -999,6 +1001,7 @@ struct GatherCaseBaseParams
 	int							baseLevel;
 	deUint32					flags;
 	TextureType					textureType;
+	ImageBackingMode			sparseCase;
 
 	GatherCaseBaseParams (const TextureType					textureType_,
 						  const GatherType					gatherType_,
@@ -1011,7 +1014,8 @@ struct GatherCaseBaseParams
 						  const tcu::Sampler::FilterMode	minFilter_,
 						  const tcu::Sampler::FilterMode	magFilter_,
 						  const int							baseLevel_,
-						  const deUint32					flags_)
+						  const deUint32					flags_,
+						  const ImageBackingMode			sparseCase_)
 		: gatherType			(gatherType_)
 		, offsetSize			(offsetSize_)
 		, textureFormat			(textureFormat_)
@@ -1024,6 +1028,7 @@ struct GatherCaseBaseParams
 		, baseLevel				(baseLevel_)
 		, flags					(flags_)
 		, textureType			(textureType_)
+		, sparseCase			(sparseCase_)
 	{}
 
 	GatherCaseBaseParams (void)
@@ -1039,6 +1044,7 @@ struct GatherCaseBaseParams
 		, baseLevel				(0)
 		, flags					(0)
 		, textureType			(TEXTURETYPE_LAST)
+		, sparseCase			(ShaderRenderCaseInstance::IMAGE_BACKING_MODE_REGULAR)
 	{}
 };
 
@@ -1126,7 +1132,7 @@ const IVec2 TextureGatherInstance::RENDER_SIZE = IVec2(64, 64);
 
 TextureGatherInstance::TextureGatherInstance (Context&						context,
 											  const GatherCaseBaseParams&	baseParams)
-	: ShaderRenderCaseInstance	(context, false, DE_NULL, DE_NULL, DE_NULL)
+	: ShaderRenderCaseInstance	(context, false, DE_NULL, DE_NULL, DE_NULL, baseParams.sparseCase)
 	, m_baseParams				(baseParams)
 	, m_colorBufferFormat		(tcu::TextureFormat(tcu::TextureFormat::RGBA,
 													isDepthFormat(baseParams.textureFormat) ? tcu::TextureFormat::UNORM_INT8 : baseParams.textureFormat.type))
@@ -1441,13 +1447,14 @@ glu::VertexSource genVertexShaderSource (bool requireGpuShader5, int numTexCoord
 	return glu::VertexSource(vert.str());
 }
 
-glu::FragmentSource genFragmentShaderSource (bool			requireGpuShader5,
-											 int			numTexCoordComponents,
-											 glu::DataType	samplerType,
-											 const string&	funcCall,
-											 bool			useNormalizedCoordInput,
-											 bool			usePixCoord,
-											 OffsetSize		offsetSize)
+glu::FragmentSource genFragmentShaderSource (bool					requireGpuShader5,
+											 int					numTexCoordComponents,
+											 glu::DataType			samplerType,
+											 const string&			funcCall,
+											 bool					useNormalizedCoordInput,
+											 bool					usePixCoord,
+											 OffsetSize				offsetSize,
+											 const ImageBackingMode	sparseCase)
 {
 	DE_ASSERT(glu::isDataTypeSampler(samplerType));
 	DE_ASSERT(de::inRange(numTexCoordComponents, 2, 3));
@@ -1456,14 +1463,19 @@ glu::FragmentSource genFragmentShaderSource (bool			requireGpuShader5,
 	const string		texCoordType	= "vec" + de::toString(numTexCoordComponents);
 	deUint32			binding			= 0;
 	std::ostringstream	frag;
+	const string		outType			= glu::getDataTypeName(getSamplerGatherResultType(samplerType));
 
-	frag << "#version 310 es\n";
+	if (sparseCase == ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE)
+		frag	<< "#version 450\n"
+				<< "#extension GL_ARB_sparse_texture2 : require\n";
+	else
+		frag << "#version 310 es\n";
 
 	if (requireGpuShader5)
 		frag << "#extension GL_EXT_gpu_shader5 : require\n";
 
 	frag << "\n"
-			"layout (location = 0) out mediump " << glu::getDataTypeName(getSamplerGatherResultType(samplerType)) << " o_color;\n"
+			"layout (location = 0) out mediump " << outType << " o_color;\n"
 			"\n"
 			"layout (location = 0) in highp " << texCoordType << " v_texCoord;\n";
 
@@ -1486,8 +1498,24 @@ glu::FragmentSource genFragmentShaderSource (bool			requireGpuShader5,
 	if (usePixCoord)
 		frag << "	ivec2 pixCoord = ivec2(v_normalizedCoord*u_viewportSize);\n";
 
-	frag << "	o_color = " << funcCall << ";\n"
-			"}\n";
+	if (sparseCase == ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE)
+	{
+		// Texel declaration
+		frag << "\t" << outType << " texel;\n";
+		frag << "\tint success = " << funcCall << ";\n";
+		
+		// Check sparse validity, and handle each case
+		frag << "\tif (sparseTexelsResidentARB(success))\n"
+			 << "\t\to_color = texel;\n"
+			 <<	"\telse\n"
+			 << "\t\to_color = " << outType << "(0.0, 0.0, 0.0, 1.0);\n";
+	}
+	else
+	{
+		frag << "\t\to_color = " << funcCall << ";\n";
+	}
+	
+	frag << "}\n";
 
 	return glu::FragmentSource(frag.str());
 }
@@ -1498,26 +1526,48 @@ string genGatherFuncCall (GatherType				gatherType,
 						  const string&				refZExpr,
 						  const IVec2&				offsetRange,
 						  int						indentationDepth,
-						  OffsetSize				offsetSize)
+						  OffsetSize				offsetSize,
+						  const ImageBackingMode	sparseCase)
 {
 	string result;
 
-	switch (gatherType)
+	if (sparseCase == ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE)
 	{
-		case GATHERTYPE_BASIC:
-			result += "textureGather";
-			break;
-		case GATHERTYPE_OFFSET: // \note Fallthrough.
-		case GATHERTYPE_OFFSET_DYNAMIC:
-			result += "textureGatherOffset";
-			break;
-		case GATHERTYPE_OFFSETS:
-			result += "textureGatherOffsets";
-			break;
-		default:
-			DE_ASSERT(false);
+		switch (gatherType)
+		{
+			case GATHERTYPE_BASIC:
+				result += "sparseTextureGatherARB";
+				break;
+			case GATHERTYPE_OFFSET: // \note Fallthrough.
+			case GATHERTYPE_OFFSET_DYNAMIC:
+				result += "sparseTextureGatherOffsetARB";
+				break;
+			case GATHERTYPE_OFFSETS:
+				result += "sparseTextureGatherOffsetsARB";
+				break;
+			default:
+				DE_ASSERT(false);
+		}
 	}
-
+	else
+	{
+		switch (gatherType)
+		{
+			case GATHERTYPE_BASIC:
+				result += "textureGather";
+				break;
+			case GATHERTYPE_OFFSET: // \note Fallthrough.
+			case GATHERTYPE_OFFSET_DYNAMIC:
+				result += "textureGatherOffset";
+				break;
+			case GATHERTYPE_OFFSETS:
+				result += "textureGatherOffsets";
+				break;
+			default:
+				DE_ASSERT(false);
+		}
+	}
+	
 	result += "(u_sampler, v_texCoord";
 
 	if (isDepthFormat(textureFormat))
@@ -1562,6 +1612,9 @@ string genGatherFuncCall (GatherType				gatherType,
 		}
 	}
 
+	if (sparseCase == ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE)
+		result += ", texel";
+	
 	if (gatherArgs.componentNdx >= 0)
 	{
 		DE_ASSERT(gatherArgs.componentNdx < 4);
@@ -1593,8 +1646,8 @@ void genGatherPrograms (vk::SourceCollections& programCollection, const GatherCa
 	for (int iterNdx = 0; iterNdx < numIterations; iterNdx++)
 	{
 		const GatherArgs&		gatherArgs			= iterations[iterNdx];
-		const string			funcCall			= genGatherFuncCall(baseParams.gatherType, baseParams.textureFormat, gatherArgs, refZExpr, offsetRange, 1, baseParams.offsetSize);
-		glu::FragmentSource		frag				= genFragmentShaderSource(requireGpuShader5(baseParams.gatherType, baseParams.offsetSize), numDims, samplerType, funcCall, useNormalizedCoord, usePixCoord, baseParams.offsetSize);
+		const string			funcCall			= genGatherFuncCall(baseParams.gatherType, baseParams.textureFormat, gatherArgs, refZExpr, offsetRange, 1, baseParams.offsetSize, baseParams.sparseCase);
+		glu::FragmentSource		frag				= genFragmentShaderSource(requireGpuShader5(baseParams.gatherType, baseParams.offsetSize), numDims, samplerType, funcCall, useNormalizedCoord, usePixCoord, baseParams.offsetSize, baseParams.sparseCase);
 
 		programCollection.glslSources.add("frag_" + de::toString(iterNdx)) << frag;
 	}
@@ -1702,7 +1755,8 @@ public:
 																		 const tcu::Sampler::FilterMode		magFilter,
 																		 const int							baseLevel,
 																		 const deUint32						flags,
-																		 const IVec2&						textureSize);
+																		 const IVec2&						textureSize,
+																		 const ImageBackingMode				sparseCase);
 	virtual							~TextureGather2DCase				(void);
 
 	virtual void					initPrograms						(vk::SourceCollections& dst) const;
@@ -1727,9 +1781,10 @@ TextureGather2DCase::TextureGather2DCase (tcu::TestContext&						testCtx,
 										  const tcu::Sampler::FilterMode		magFilter,
 										  const int								baseLevel,
 										  const deUint32						flags,
-										  const IVec2&							textureSize)
+										  const IVec2&							textureSize,
+										  const ImageBackingMode				sparseCase)
 	: TestCase		(testCtx, name, description)
-	, m_baseParams	(TEXTURETYPE_2D, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
+	, m_baseParams	(TEXTURETYPE_2D, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags, sparseCase)
 	, m_textureSize	(textureSize)
 {
 }
@@ -1912,7 +1967,8 @@ public:
 																		 const tcu::Sampler::FilterMode		magFilter,
 																		 const int							baseLevel,
 																		 const deUint32						flags,
-																		 const IVec3&						textureSize);
+																		 const IVec3&						textureSize,
+																		 const ImageBackingMode				sparseCase);
 	virtual							~TextureGather2DArrayCase			(void);
 
 	virtual void					initPrograms						(vk::SourceCollections& dst) const;
@@ -1937,9 +1993,10 @@ TextureGather2DArrayCase::TextureGather2DArrayCase (tcu::TestContext&					testCt
 													const tcu::Sampler::FilterMode		magFilter,
 													const int							baseLevel,
 													const deUint32						flags,
-													const IVec3&						textureSize)
+													const IVec3&						textureSize,
+													const ImageBackingMode				sparseCase)
 	: TestCase			(testCtx, name, description)
-	, m_baseParams		(TEXTURETYPE_2D_ARRAY, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
+	, m_baseParams		(TEXTURETYPE_2D_ARRAY, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags, sparseCase)
 	, m_textureSize		(textureSize)
 {
 }
@@ -2128,7 +2185,8 @@ public:
 																		 const tcu::Sampler::FilterMode		magFilter,
 																		 const int							baseLevel,
 																		 const deUint32						flags,
-																		 const int							textureSize);
+																		 const int							textureSize,
+																		 const ImageBackingMode				sparseCase);
 	virtual							~TextureGatherCubeCase				(void);
 
 	virtual void					initPrograms						(vk::SourceCollections& dst) const;
@@ -2151,9 +2209,10 @@ TextureGatherCubeCase::TextureGatherCubeCase (tcu::TestContext&						testCtx,
 											  const tcu::Sampler::FilterMode		magFilter,
 											  const int								baseLevel,
 											  const deUint32						flags,
-											  const int								textureSize)
+											  const int								textureSize,
+											  const ImageBackingMode				sparseCase)
 	: TestCase			(testCtx, name, description)
-	, m_baseParams		(TEXTURETYPE_CUBE, GATHERTYPE_BASIC, OFFSETSIZE_NONE, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
+	, m_baseParams		(TEXTURETYPE_CUBE, GATHERTYPE_BASIC, OFFSETSIZE_NONE, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags, sparseCase)
 	, m_textureSize		(textureSize)
 {
 }
@@ -2216,23 +2275,24 @@ static inline TestCase* makeTextureGatherCase (TextureType					textureType,
 											   tcu::Sampler::FilterMode		magFilter,
 											   int							baseLevel,
 											   const IVec3&					textureSize,
-											   deUint32						flags = 0)
+											   deUint32						flags = 0,
+											   const ImageBackingMode		sparseCase = ShaderRenderCaseInstance::IMAGE_BACKING_MODE_REGULAR)
 {
 	switch (textureType)
 	{
 		case TEXTURETYPE_2D:
 			return new TextureGather2DCase(testCtx, name, description, gatherType, offsetSize, textureFormat, shadowCompareMode,
-										   wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, flags, textureSize.swizzle(0, 1));
+										   wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, flags, textureSize.swizzle(0, 1), sparseCase);
 
 		case TEXTURETYPE_2D_ARRAY:
 			return new TextureGather2DArrayCase(testCtx, name, description, gatherType, offsetSize, textureFormat, shadowCompareMode,
-												wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, flags, textureSize);
+												wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, flags, textureSize, sparseCase);
 
 		case TEXTURETYPE_CUBE:
 			DE_ASSERT(gatherType == GATHERTYPE_BASIC);
 			DE_ASSERT(offsetSize == OFFSETSIZE_NONE);
 			return new TextureGatherCubeCase(testCtx, name, description, textureFormat, shadowCompareMode,
-											 wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, flags, textureSize.x());
+											 wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, flags, textureSize.x(), sparseCase);
 
 		default:
 			DE_ASSERT(false);
@@ -2394,6 +2454,9 @@ void TextureGatherTests::init (void)
 									compareModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), "", gatherType, offsetSize, format, compareMode, wrapS, wrapT,
 																					 MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, 0, textureSize,
 																					 noCorners ? GATHERCASE_DONT_SAMPLE_CUBE_CORNERS : 0));
+									compareModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, "", gatherType, offsetSize, format, compareMode, wrapS, wrapT,
+																					 MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, 0, textureSize,
+																					 noCorners ? GATHERCASE_DONT_SAMPLE_CUBE_CORNERS : 0, ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE));
 								}
 							}
 						}
@@ -2421,6 +2484,9 @@ void TextureGatherTests::init (void)
 								swizzleGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), "", gatherType, offsetSize, format,
 																			 tcu::Sampler::COMPAREMODE_NONE, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 																			 swizzle, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, 0, IVec3(64, 64, 3)));
+								swizzleGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, "", gatherType, offsetSize, format,
+																			 tcu::Sampler::COMPAREMODE_NONE, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
+																			 swizzle, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, 0, IVec3(64, 64, 3), 0, ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE));
 							}
 						}
 
@@ -2470,6 +2536,9 @@ void TextureGatherTests::init (void)
 								filterModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), "", gatherType, offsetSize, format, compareMode,
 																				tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, MaybeTextureSwizzle::createNoneTextureSwizzle(),
 																				minFilter, magFilter, 0, IVec3(64, 64, 3)));
+								filterModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, "", gatherType, offsetSize, format, compareMode,
+																				tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, MaybeTextureSwizzle::createNoneTextureSwizzle(),
+																				minFilter, magFilter, 0, IVec3(64, 64, 3), 0, ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE));
 							}
 						}
 
@@ -2485,6 +2554,10 @@ void TextureGatherTests::init (void)
 																			   compareMode, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 																			   MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
 																			   baseLevel, IVec3(64, 64, 3)));
+								baseLevelGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, "", gatherType, offsetSize, format,
+																			   compareMode, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
+																			   MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
+																			   baseLevel, IVec3(64, 64, 3), 0, ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE));
 							}
 						}
 					}
