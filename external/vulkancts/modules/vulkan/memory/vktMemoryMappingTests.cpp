@@ -628,7 +628,6 @@ public:
 		m_usage += size;
 		m_totalMemTracker.allocate(getMemoryClass(), size);
 		m_totalMemTracker.allocate(MEMORY_CLASS_SYSTEM, size * REFERENCE_BYTES_PER_BYTE);
-		m_totalMemTracker.allocate(getMemoryClass(), size);
 		m_objects.push_back(object);
 
 		return object;
