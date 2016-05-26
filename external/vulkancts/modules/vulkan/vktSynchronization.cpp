@@ -1182,7 +1182,7 @@ tcu::TestStatus testSemaphores (Context& context)
 
 	VK_CHECK(deviceInterface.queueSubmit(queue[0], 1, &submitInfo[0], testContext1.fences[0]));
 
-	testStatus  = deviceInterface.waitForFences(device.get(), 1, &testContext1.fences[0], true, DEFAULT_TIMEOUT);
+	testStatus  = deviceInterface.waitForFences(device.get(), 1, &testContext1.fences[0], true, std::numeric_limits<deUint64>::max());
 	if (testStatus != VK_SUCCESS)
 	{
 		log << TestLog::Message << "testSynchPrimitives failed to wait for a set fence" << TestLog::EndMessage;
@@ -1208,7 +1208,7 @@ tcu::TestStatus testSemaphores (Context& context)
 
 	VK_CHECK(deviceInterface.queueSubmit(queue[1], 1, &submitInfo[1], testContext2.fences[0]));
 
-	testStatus  = deviceInterface.waitForFences(device.get(), 1, &testContext2.fences[0], true, DEFAULT_TIMEOUT);
+	testStatus  = deviceInterface.waitForFences(device.get(), 1, &testContext2.fences[0], true, std::numeric_limits<deUint64>::max());
 	if (testStatus != VK_SUCCESS)
 	{
 		log << TestLog::Message << "testSynchPrimitives failed to wait for a set fence" << TestLog::EndMessage;
