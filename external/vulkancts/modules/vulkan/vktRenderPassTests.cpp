@@ -2123,7 +2123,7 @@ void pushReadImagesToBuffers (const DeviceInterface&								vk,
 			0, // bufferRowLength
 			0, // bufferImageHeight
 			{							// imageSubresource
-				getPrimaryImageAspect(mapVkFormat(attachmentInfo[attachmentNdx].getFormat()).order),	// aspect
+				(vk::VkImageAspectFlags)getPrimaryImageAspect(mapVkFormat(attachmentInfo[attachmentNdx].getFormat()).order),	// aspect
 				0,						// mipLevel
 				0,						// arraySlice
 				1						// arraySize
