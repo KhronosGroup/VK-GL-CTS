@@ -35,6 +35,7 @@
 #include "vktApiCopiesAndBlittingTests.hpp"
 #include "vktApiImageClearingTests.hpp"
 #include "vktApiFillBufferTests.hpp"
+#include "vktApiDescriptorPoolTests.hpp"
 
 namespace vkt
 {
@@ -66,6 +67,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createCopiesAndBlittingTests		(testCtx));
 	apiTests->addChild(createImageClearingTests			(testCtx));
 	apiTests->addChild(createFillAndUpdateBufferTests	(testCtx));
+	apiTests->addChild(createDescriptorPoolTests(testCtx));
 }
 
 } // anonymous
