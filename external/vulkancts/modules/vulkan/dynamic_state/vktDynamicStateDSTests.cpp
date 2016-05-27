@@ -434,11 +434,11 @@ public:
 		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
 
 		m_depthStencilState_1 = PipelineCreateInfo::DepthStencilState(
-			vk::VK_TRUE, vk::VK_TRUE, vk::VK_COMPARE_OP_ALWAYS, vk::VK_FALSE);
+			VK_TRUE, VK_TRUE, vk::VK_COMPARE_OP_ALWAYS, VK_FALSE);
 
 		// enable depth bounds test
 		m_depthStencilState_2 = PipelineCreateInfo::DepthStencilState(
-			vk::VK_FALSE, vk::VK_FALSE, vk::VK_COMPARE_OP_NEVER, vk::VK_TRUE);
+			VK_FALSE, VK_FALSE, vk::VK_COMPARE_OP_NEVER, VK_TRUE);
 
 		DepthStencilBaseCase::initialize();
 	}
@@ -587,10 +587,10 @@ public:
 
 		// enable stencil test
 		m_depthStencilState_1 = PipelineCreateInfo::DepthStencilState(
-			vk::VK_FALSE, vk::VK_FALSE, vk::VK_COMPARE_OP_NEVER, vk::VK_FALSE, vk::VK_TRUE, frontState_1, backState_1);
+			VK_FALSE, VK_FALSE, vk::VK_COMPARE_OP_NEVER, VK_FALSE, VK_TRUE, frontState_1, backState_1);
 
 		m_depthStencilState_2 = PipelineCreateInfo::DepthStencilState(
-			vk::VK_FALSE, vk::VK_FALSE, vk::VK_COMPARE_OP_NEVER, vk::VK_FALSE, vk::VK_TRUE, frontState_2, backState_2);
+			VK_FALSE, VK_FALSE, vk::VK_COMPARE_OP_NEVER, VK_FALSE, VK_TRUE, frontState_2, backState_2);
 
 		DepthStencilBaseCase::initialize();
 	}
@@ -757,10 +757,10 @@ public:
 
 		// enable stencil test
 		m_depthStencilState_1 = PipelineCreateInfo::DepthStencilState(
-			vk::VK_FALSE, vk::VK_FALSE, vk::VK_COMPARE_OP_NEVER, vk::VK_FALSE, vk::VK_TRUE, frontState_1, backState_1);
+			VK_FALSE, VK_FALSE, vk::VK_COMPARE_OP_NEVER, VK_FALSE, VK_TRUE, frontState_1, backState_1);
 
 		m_depthStencilState_2 = PipelineCreateInfo::DepthStencilState(
-			vk::VK_FALSE, vk::VK_FALSE, vk::VK_COMPARE_OP_NEVER, vk::VK_FALSE, vk::VK_TRUE, frontState_2, backState_2);
+			VK_FALSE, VK_FALSE, vk::VK_COMPARE_OP_NEVER, VK_FALSE, VK_TRUE, frontState_2, backState_2);
 
 		DepthStencilBaseCase::initialize();
 	}

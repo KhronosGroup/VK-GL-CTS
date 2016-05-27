@@ -105,15 +105,19 @@ INSTANCE_FUNCTIONS	= [
 ]
 
 DEFINITIONS			= [
-	"VK_API_VERSION",
-	"VK_MAX_PHYSICAL_DEVICE_NAME_SIZE",
-	"VK_MAX_EXTENSION_NAME_SIZE",
-	"VK_UUID_SIZE",
-	"VK_MAX_MEMORY_TYPES",
-	"VK_MAX_MEMORY_HEAPS",
-	"VK_MAX_DESCRIPTION_SIZE",
-	"VK_ATTACHMENT_UNUSED",
-	"VK_SUBPASS_EXTERNAL"
+	("VK_API_VERSION",						"deUint32"),
+	("VK_MAX_PHYSICAL_DEVICE_NAME_SIZE",	"size_t"),
+	("VK_MAX_EXTENSION_NAME_SIZE",			"size_t"),
+	("VK_UUID_SIZE",						"size_t"),
+	("VK_MAX_MEMORY_TYPES",					"size_t"),
+	("VK_MAX_MEMORY_HEAPS",					"size_t"),
+	("VK_MAX_DESCRIPTION_SIZE",				"size_t"),
+	("VK_ATTACHMENT_UNUSED",				"deUint32"),
+	("VK_SUBPASS_EXTERNAL",					"deUint32"),
+	("VK_QUEUE_FAMILY_IGNORED",				"deUint32"),
+	("VK_WHOLE_SIZE",						"vk::VkDeviceSize"),
+	("VK_TRUE",								"vk::VkBool32"),
+	("VK_FALSE",							"vk::VkBool32"),
 ]
 
 PLATFORM_TYPES		= [
@@ -219,13 +223,10 @@ def readFile (filename):
 IDENT_PTRN	= r'[a-zA-Z_][a-zA-Z0-9_]*'
 TYPE_PTRN	= r'[a-zA-Z_][a-zA-Z0-9_ \t*]*'
 
-def endswith (s, postfix):
-	return len(s) >= len(postfix) and s[len(s)-len(postfix):] == postfix
-
 def fixupEnumValues (values):
 	fixed = []
 	for name, value in values:
-		if endswith(name, "_BEGIN_RANGE") or endswith(name, "_END_RANGE"):
+		if "_BEGIN_RANGE" in name or "_END_RANGE" in name:
 			continue
 		fixed.append((name, value))
 	return fixed
@@ -372,7 +373,7 @@ def parseBitfieldNames (src):
 	return matches
 
 def parseAPI (src):
-	definitions		= [(name, parsePreprocDefinedValue(src, name)) for name in DEFINITIONS]
+	definitions		= [(name, type, parsePreprocDefinedValue(src, name)) for name, type in DEFINITIONS]
 	rawEnums		= parseEnums(src)
 	bitfieldNames	= parseBitfieldNames(src)
 	enums			= []
@@ -476,7 +477,7 @@ def genHandlesSrc (handles):
 
 def writeBasicTypes (api, filename):
 	def gen ():
-		for line in indentLines(["enum { %s\t= %s\t};" % define for define in api.definitions]):
+		for line in indentLines(["#define %s\t(static_cast<%s>\t(%s))" % (name, type, value) for name, type, value in api.definitions]):
 			yield line
 		yield ""
 		for line in genHandlesSrc(api.handles):

@@ -322,7 +322,7 @@ void  createColorOnlyRenderPass (const DeviceInterface& vkd, VkDevice device, co
 	colorAttachmentRef.attachment		= 0;
 	colorAttachmentRef.layout			= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	stencilAttachmentRef.attachment		= VK_NO_ATTACHMENT;
+	stencilAttachmentRef.attachment		= VK_ATTACHMENT_UNUSED;
 	stencilAttachmentRef.layout			= VK_IMAGE_LAYOUT_UNDEFINED;
 
 	subpassDesc.flags					= 0;

@@ -1372,3 +1372,38 @@ struct VkDebugReportCallbackCreateInfoEXT
 	void*							pUserData;
 };
 
+struct VkPipelineRasterizationStateRasterizationOrderAMD
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkRasterizationOrderAMD	rasterizationOrder;
+};
+
+struct VkDebugMarkerObjectNameInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDebugReportObjectTypeEXT	objectType;
+	deUint64					object;
+	const char*					pObjectName;
+};
+
+struct VkDebugMarkerObjectTagInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDebugReportObjectTypeEXT	objectType;
+	deUint64					object;
+	deUint64					tagName;
+	deUintptr					tagSize;
+	const void*					pTag;
+};
+
+struct VkDebugMarkerMarkerInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	const char*		pMarkerName;
+	float			color[4];
+};
+

@@ -331,8 +331,8 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 			barrier.dstAccessMask = 0;
 			barrier.oldLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
 			barrier.newLayout = vk::VK_IMAGE_LAYOUT_GENERAL;
-			barrier.srcQueueFamilyIndex = vk::VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = vk::VK_QUEUE_FAMILY_IGNORED;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			barrier.image = object();
 
 			barrier.subresourceRange.aspectMask = aspect;
@@ -617,8 +617,8 @@ void Image::upload (vk::VkQueue					queue,
 			barrier.dstAccessMask = 0;
 			barrier.oldLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
 			barrier.newLayout = vk::VK_IMAGE_LAYOUT_GENERAL;
-			barrier.srcQueueFamilyIndex = vk::VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = vk::VK_QUEUE_FAMILY_IGNORED;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			barrier.image = object();
 
 			barrier.subresourceRange.aspectMask = aspect;
@@ -738,8 +738,8 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 			barrier.dstAccessMask = 0;
 			barrier.oldLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
 			barrier.newLayout = vk::VK_IMAGE_LAYOUT_GENERAL;
-			barrier.srcQueueFamilyIndex = vk::VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = vk::VK_QUEUE_FAMILY_IGNORED;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			barrier.image = object();
 
 			barrier.subresourceRange.aspectMask = aspect;
@@ -891,8 +891,8 @@ void transition2DImage (const vk::DeviceInterface&	vk,
 	barrier.dstAccessMask					= dstAccessMask;
 	barrier.oldLayout						= oldLayout;
 	barrier.newLayout						= newLayout;
-	barrier.srcQueueFamilyIndex				= vk::VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex				= vk::VK_QUEUE_FAMILY_IGNORED;
+	barrier.srcQueueFamilyIndex				= VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex				= VK_QUEUE_FAMILY_IGNORED;
 	barrier.image							= image;
 	barrier.subresourceRange.aspectMask		= aspectMask;
 	barrier.subresourceRange.baseMipLevel	= 0;

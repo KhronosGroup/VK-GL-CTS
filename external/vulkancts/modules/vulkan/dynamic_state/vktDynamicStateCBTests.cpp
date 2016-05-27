@@ -62,7 +62,7 @@ public:
 		const vk::Unique<vk::VkShaderModule> fs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
 
 		const vk::VkPipelineColorBlendAttachmentState VkPipelineColorBlendAttachmentState =
-			PipelineCreateInfo::ColorBlendState::Attachment(vk::VK_TRUE,
+			PipelineCreateInfo::ColorBlendState::Attachment(VK_TRUE,
 															vk::VK_BLEND_FACTOR_SRC_ALPHA, vk::VK_BLEND_FACTOR_CONSTANT_COLOR, vk::VK_BLEND_OP_ADD,
 															vk::VK_BLEND_FACTOR_SRC_ALPHA, vk::VK_BLEND_FACTOR_CONSTANT_ALPHA, vk::VK_BLEND_OP_ADD);
 

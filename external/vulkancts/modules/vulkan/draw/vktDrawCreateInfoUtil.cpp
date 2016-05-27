@@ -446,7 +446,7 @@ AttachmentReference::AttachmentReference (deUint32 _attachment, vk::VkImageLayou
 
 AttachmentReference::AttachmentReference (void)
 {
-	attachment = vk::VK_ATTACHMENT_UNUSED;
+	attachment = VK_ATTACHMENT_UNUSED;
 	layout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
 }
 

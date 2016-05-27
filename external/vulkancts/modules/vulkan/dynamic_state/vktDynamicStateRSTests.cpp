@@ -398,7 +398,7 @@ public:
 
 		// enable depth test
 		m_depthStencilState = PipelineCreateInfo::DepthStencilState(
-			vk::VK_TRUE, vk::VK_TRUE, vk::VK_COMPARE_OP_GREATER_OR_EQUAL);
+			VK_TRUE, VK_TRUE, vk::VK_COMPARE_OP_GREATER_OR_EQUAL);
 
 		DepthBiasBaseCase::initialize();
 	}
@@ -505,7 +505,7 @@ public:
 		m_data.push_back(PositionColorVertex(tcu::Vec4(0.5f, -0.5f, 0.01f, 1.0f), tcu::RGBA::green().toVec()));
 
 		// enable depth test
-		m_depthStencilState = PipelineCreateInfo::DepthStencilState(vk::VK_TRUE, vk::VK_TRUE, vk::VK_COMPARE_OP_GREATER_OR_EQUAL);
+		m_depthStencilState = PipelineCreateInfo::DepthStencilState(VK_TRUE, VK_TRUE, vk::VK_COMPARE_OP_GREATER_OR_EQUAL);
 
 		DepthBiasBaseCase::initialize();
 	}
