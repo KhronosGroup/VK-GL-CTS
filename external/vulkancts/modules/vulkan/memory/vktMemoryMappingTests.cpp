@@ -1028,17 +1028,22 @@ TestConfig subMappedConfig (VkDeviceSize				allocationSize,
 			return config;
 
 		case OP_INVALIDATE:
+			config.flushMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset, mapping.size));
 			config.invalidateMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset, mapping.size));
 			return config;
 
 		case OP_SUB_INVALIDATE:
 			DE_ASSERT(mapping.size / 4 > 0);
 
+			config.flushMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset + mapping.size / 4, mapping.size / 2));
 			config.invalidateMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset + mapping.size / 4, mapping.size / 2));
 			return config;
 
 		case OP_SUB_INVALIDATE_SEPARATE:
 			DE_ASSERT(mapping.size / 2 > 0);
+
+			config.flushMappings.push_back(MemoryRange(mapping.offset + mapping.size /  2, mapping.size - (mapping.size / 2)));
+			config.flushMappings.push_back(MemoryRange(mapping.offset, mapping.size / 2));
 
 			config.invalidateMappings.push_back(MemoryRange(mapping.offset + mapping.size /  2, mapping.size - (mapping.size / 2)));
 			config.invalidateMappings.push_back(MemoryRange(mapping.offset, mapping.size / 2));
@@ -1047,6 +1052,9 @@ TestConfig subMappedConfig (VkDeviceSize				allocationSize,
 
 		case OP_SUB_INVALIDATE_OVERLAPPING:
 			DE_ASSERT((mapping.size / 3) > 0);
+
+			config.flushMappings.push_back(MemoryRange(mapping.offset + mapping.size /  3, mapping.size - (mapping.size / 2)));
+			config.flushMappings.push_back(MemoryRange(mapping.offset, (2 * mapping.size) / 3));
 
 			config.invalidateMappings.push_back(MemoryRange(mapping.offset + mapping.size /  3, mapping.size - (mapping.size / 2)));
 			config.invalidateMappings.push_back(MemoryRange(mapping.offset, (2 * mapping.size) / 3));
