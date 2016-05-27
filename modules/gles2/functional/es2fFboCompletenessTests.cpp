@@ -139,19 +139,19 @@ static const FormatExtEntry s_es2ExtFormats[] =
 	// The extension does not specify these to be color-renderable.
 	{
 		"GL_OES_texture_float",
-		TEXTURE_VALID,
+		(deUint32)TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_oesTextureFloatFormats)
 	},
 	{
 		"GL_OES_texture_half_float",
-		TEXTURE_VALID,
+		(deUint32)TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_oesTextureHalfFloatFormats)
 	},
 
 	// GL_EXT_sRGB_write_control makes SRGB8_ALPHA8 color-renderable
 	{
 		"GL_EXT_sRGB_write_control",
-		REQUIRED_RENDERABLE | TEXTURE_VALID | COLOR_RENDERABLE | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | TEXTURE_VALID | COLOR_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_extSrgbWriteControlFormats)
 	},
 
@@ -166,27 +166,27 @@ static const FormatExtEntry s_es2ExtFormats[] =
 	//       the formats
 	{
 		"DEQP_gles3_core_compatible",
-		REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_es3NoExtRboFormats)
 	},
 	{
 		"DEQP_gles3_core_compatible",
-		TEXTURE_VALID,
+		(deUint32)TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_es3NoExtTextureFormats)
 	},
 	{
 		"DEQP_gles3_core_compatible",
-		REQUIRED_RENDERABLE | TEXTURE_VALID | COLOR_RENDERABLE,
+		(deUint32)(REQUIRED_RENDERABLE | TEXTURE_VALID | COLOR_RENDERABLE),
 		GLS_ARRAY_RANGE(s_es3NoExtTextureColorRenderableFormats)
 	},
 	{
 		"DEQP_gles3_core_compatible GL_EXT_color_buffer_float",
-		REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_es3NoExtExtColorBufferFloatFormats)
 	},
 	{
 		"DEQP_gles3_core_compatible GL_OES_texture_stencil8",
-		REQUIRED_RENDERABLE | STENCIL_RENDERABLE | TEXTURE_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | STENCIL_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_es3NoExtOesTextureStencil8Formats)
 	},
 };

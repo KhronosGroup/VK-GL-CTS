@@ -350,7 +350,7 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 		vk::VkBufferImageCopy region =
 		{
 			0, 0, 0,
-			{ aspect, mipLevel, arrayElement, 1 },
+			{ (vk::VkImageAspectFlags)aspect, mipLevel, arrayElement, 1 },
 			offset,
 			{ (deUint32)width, (deUint32)height, (deUint32)depth }
 		};
@@ -402,7 +402,7 @@ void Image::readLinear (vk::VkOffset3D				offset,
 						vk::VkImageAspectFlagBits	aspect,
 						void *						data)
 {
-	vk::VkImageSubresource imageSubResource = { aspect, mipLevel, arrayElement };
+	vk::VkImageSubresource imageSubResource = { (vk::VkImageAspectFlags)aspect, mipLevel, arrayElement };
 
 	vk::VkSubresourceLayout imageLayout;
 
@@ -457,7 +457,7 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 		transition2DImage(m_vk, *copyCmdBuffer, stagingResource->object(), aspect, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL);
 
 		const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
-		vk::VkImageCopy region = { {aspect, mipLevel, arrayElement, 1}, offset, {aspect, 0, 0, 1}, zeroOffset, {(deUint32)width, (deUint32)height, (deUint32)depth} };
+		vk::VkImageCopy region = { { (vk::VkImageAspectFlags)aspect, mipLevel, arrayElement, 1}, offset, { (vk::VkImageAspectFlags)aspect, 0, 0, 1}, zeroOffset, {(deUint32)width, (deUint32)height, (deUint32)depth} };
 
 		m_vk.cmdCopyImage(*copyCmdBuffer, object(), layout, stagingResource->object(), vk::VK_IMAGE_LAYOUT_GENERAL, 1, &region);
 		VK_CHECK(m_vk.endCommandBuffer(*copyCmdBuffer));
@@ -635,9 +635,9 @@ void Image::upload (vk::VkQueue					queue,
 
 		transition2DImage(m_vk, *copyCmdBuffer, stagingResource->object(), aspect, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL);
 
-		vk::VkImageCopy region = {{aspect, 0, 0, 1},
+		vk::VkImageCopy region = {{ (vk::VkImageAspectFlags)aspect, 0, 0, 1},
 									zeroOffset,
-									{aspect, mipLevel, arrayElement, 1},
+									{ (vk::VkImageAspectFlags)aspect, mipLevel, arrayElement, 1},
 									offset,
 									{(deUint32)width, (deUint32)height, (deUint32)depth}};
 
@@ -756,7 +756,7 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 
 		vk::VkBufferImageCopy region = {
 			0, 0, 0,
-			{ aspect, mipLevel, arrayElement, 1 },
+			{ (vk::VkImageAspectFlags)aspect, mipLevel, arrayElement, 1 },
 			offset,
 			{ (deUint32)width, (deUint32)height, (deUint32)depth }
 		};
@@ -795,7 +795,7 @@ void Image::uploadLinear (vk::VkOffset3D			offset,
 {
 	vk::VkSubresourceLayout imageLayout;
 
-	vk::VkImageSubresource imageSubResource = {aspect, mipLevel, arrayElement};
+	vk::VkImageSubresource imageSubResource = { (vk::VkImageAspectFlags)aspect, mipLevel, arrayElement};
 
 	m_vk.getImageSubresourceLayout(m_device, object(), &imageSubResource,
 													&imageLayout);
