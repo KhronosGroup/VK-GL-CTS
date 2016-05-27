@@ -33,15 +33,18 @@
 #include "vkPlatform.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
+#include "vkRefUtil.hpp"
 #include "vkStrUtil.hpp"
 
 #include "deRandom.hpp"
 #include "deSharedPtr.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
+#include "deSTLUtil.hpp"
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using tcu::Maybe;
 using tcu::TestLog;
@@ -59,9 +62,140 @@ namespace memory
 {
 namespace
 {
+
+template<typename T>
+T divRoundUp (const T& a, const T& b)
+{
+	return (a / b) + (a % b == 0 ? 0 : 1);
+}
+
+// \note Bit vector that guarantees that each value takes only one bit.
+// std::vector<bool> is often optimized to only take one bit for each bool, but
+// that is implementation detail and in this case we really need to known how much
+// memory is used.
+class BitVector
+{
+public:
+	enum
+	{
+		BLOCK_BIT_SIZE = 8 * sizeof(deUint32)
+	};
+
+	BitVector (size_t size, bool value = false)
+		: m_data(divRoundUp<size_t>(size, (size_t)BLOCK_BIT_SIZE), value ? ~0x0u : 0x0u)
+	{
+	}
+
+	bool get (size_t ndx) const
+	{
+		return (m_data[ndx / BLOCK_BIT_SIZE] & (0x1u << (deUint32)(ndx % BLOCK_BIT_SIZE))) != 0;
+	}
+
+	void set (size_t ndx, bool value)
+	{
+		if (value)
+			m_data[ndx / BLOCK_BIT_SIZE] |= 0x1u << (deUint32)(ndx % BLOCK_BIT_SIZE);
+		else
+			m_data[ndx / BLOCK_BIT_SIZE] &= ~(0x1u << (deUint32)(ndx % BLOCK_BIT_SIZE));
+	}
+
+private:
+	vector<deUint32>	m_data;
+};
+
+class ReferenceMemory
+{
+public:
+	ReferenceMemory (size_t size, size_t atomSize)
+		: m_atomSize	(atomSize)
+		, m_bytes		(size, 0xDEu)
+		, m_defined		(size, false)
+		, m_flushed		(size / atomSize, false)
+	{
+		DE_ASSERT(size % m_atomSize == 0);
+	}
+
+	void write (size_t pos, deUint8 value)
+	{
+		m_bytes[pos] = value;
+		m_defined.set(pos, true);
+		m_flushed.set(pos / m_atomSize, false);
+	}
+
+	bool read (size_t pos, deUint8 value)
+	{
+		const bool isOk = !m_defined.get(pos)
+						|| m_bytes[pos] == value;
+
+		m_bytes[pos] = value;
+		m_defined.set(pos, true);
+
+		return isOk;
+	}
+
+	bool modifyXor (size_t pos, deUint8 value, deUint8 mask)
+	{
+		const bool isOk = !m_defined.get(pos)
+						|| m_bytes[pos] == value;
+
+		m_bytes[pos] = value ^ mask;
+		m_defined.set(pos, true);
+		m_flushed.set(pos / m_atomSize, false);
+
+		return isOk;
+	}
+
+	void flush (size_t offset, size_t size)
+	{
+		DE_ASSERT((offset % m_atomSize) == 0);
+		DE_ASSERT((size % m_atomSize) == 0);
+
+		for (size_t ndx = 0; ndx < size / m_atomSize; ndx++)
+			m_flushed.set((offset / m_atomSize) + ndx, true);
+	}
+
+	void invalidate (size_t offset, size_t size)
+	{
+		DE_ASSERT((offset % m_atomSize) == 0);
+		DE_ASSERT((size % m_atomSize) == 0);
+
+		for (size_t ndx = 0; ndx < size / m_atomSize; ndx++)
+		{
+			if (!m_flushed.get((offset / m_atomSize) + ndx))
+			{
+				for (size_t i = 0; i < m_atomSize; i++)
+					m_defined.set(offset + ndx * m_atomSize + i, false);
+			}
+		}
+	}
+
+
+private:
+	const size_t	m_atomSize;
+	vector<deUint8>	m_bytes;
+	BitVector		m_defined;
+	BitVector		m_flushed;
+};
+
+struct MemoryType
+{
+	MemoryType		(deUint32 index_, const VkMemoryType& type_)
+		: index	(index_)
+		, type	(type_)
+	{
+	}
+
+	MemoryType		(void)
+		: index	(~0u)
+	{
+	}
+
+	deUint32		index;
+	VkMemoryType	type;
+};
+
 Move<VkDeviceMemory> allocMemory (const DeviceInterface& vk, VkDevice device, VkDeviceSize pAllocInfo_allocationSize, deUint32 pAllocInfo_memoryTypeIndex)
 {
-	VkDeviceMemory object = 0;
 	const VkMemoryAllocateInfo pAllocInfo =
 	{
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -69,8 +203,7 @@ Move<VkDeviceMemory> allocMemory (const DeviceInterface& vk, VkDevice device, Vk
 		pAllocInfo_allocationSize,
 		pAllocInfo_memoryTypeIndex,
 	};
-	VK_CHECK(vk.allocateMemory(device, &pAllocInfo, (const VkAllocationCallbacks*)DE_NULL, &object));
-	return Move<VkDeviceMemory>(check<VkDeviceMemory>(object), Deleter<VkDeviceMemory>(vk, device, (const VkAllocationCallbacks*)DE_NULL));
+	return allocateMemory(vk, device, &pAllocInfo);
 }
 
 struct MemoryRange
@@ -160,20 +293,24 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 	const InstanceInterface&				vki					= context.getInstanceInterface();
 	const DeviceInterface&					vkd					= context.getDeviceInterface();
 	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+	// \todo [2016-05-27 misojarvi] Remove once drivers start reporting correctly nonCoherentAtomSize that is at least 1.
+	const VkDeviceSize						nonCoherentAtomSize	= context.getDeviceProperties().limits.nonCoherentAtomSize != 0
+																? context.getDeviceProperties().limits.nonCoherentAtomSize
+																: 1;
 
 	{
 		const tcu::ScopedLogSection	section	(log, "TestCaseInfo", "TestCaseInfo");
 
 		log << TestLog::Message << "Seed: " << config.seed << TestLog::EndMessage;
-		log << TestLog::Message << "Allocation size: " << config.allocationSize << TestLog::EndMessage;
-		log << TestLog::Message << "Mapping, offset: " << config.mapping.offset << ", size: " << config.mapping.size << TestLog::EndMessage;
+		log << TestLog::Message << "Allocation size: " << config.allocationSize << " * atom" <<  TestLog::EndMessage;
+		log << TestLog::Message << "Mapping, offset: " << config.mapping.offset << " * atom, size: " << config.mapping.size << " * atom" << TestLog::EndMessage;
 
 		if (!config.flushMappings.empty())
 		{
 			log << TestLog::Message << "Invalidating following ranges:" << TestLog::EndMessage;
 
 			for (size_t ndx = 0; ndx < config.flushMappings.size(); ndx++)
-				log << TestLog::Message << "\tOffset: " << config.flushMappings[ndx].offset << ", Size: " << config.flushMappings[ndx].size << TestLog::EndMessage;
+				log << TestLog::Message << "\tOffset: " << config.flushMappings[ndx].offset << " * atom, Size: " << config.flushMappings[ndx].size << " * atom" << TestLog::EndMessage;
 		}
 
 		if (config.remap)
@@ -184,7 +321,7 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 			log << TestLog::Message << "Flushing following ranges:" << TestLog::EndMessage;
 
 			for (size_t ndx = 0; ndx < config.invalidateMappings.size(); ndx++)
-				log << TestLog::Message << "\tOffset: " << config.invalidateMappings[ndx].offset << ", Size: " << config.invalidateMappings[ndx].size << TestLog::EndMessage;
+				log << TestLog::Message << "\tOffset: " << config.invalidateMappings[ndx].offset << " * atom, Size: " << config.invalidateMappings[ndx].size << " * atom" << TestLog::EndMessage;
 		}
 	}
 
@@ -195,35 +332,61 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 			const tcu::ScopedLogSection		section		(log, "MemoryType" + de::toString(memoryTypeIndex), "MemoryType" + de::toString(memoryTypeIndex));
 			const VkMemoryType&				memoryType	= memoryProperties.memoryTypes[memoryTypeIndex];
 			const VkMemoryHeap&				memoryHeap	= memoryProperties.memoryHeaps[memoryType.heapIndex];
+			const VkDeviceSize				atomSize	= (memoryType.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0
+														? 1
+														: nonCoherentAtomSize;
 
 			log << TestLog::Message << "MemoryType: " << memoryType << TestLog::EndMessage;
 			log << TestLog::Message << "MemoryHeap: " << memoryHeap << TestLog::EndMessage;
+			log << TestLog::Message << "AtomSize: " << atomSize << TestLog::EndMessage;
+			log << TestLog::Message << "AllocationSize: " << config.allocationSize * atomSize <<  TestLog::EndMessage;
+			log << TestLog::Message << "Mapping, offset: " << config.mapping.offset * atomSize << ", size: " << config.mapping.size * atomSize << TestLog::EndMessage;
+
+			if (!config.flushMappings.empty())
+			{
+				log << TestLog::Message << "Invalidating following ranges:" << TestLog::EndMessage;
+
+				for (size_t ndx = 0; ndx < config.flushMappings.size(); ndx++)
+					log << TestLog::Message << "\tOffset: " << config.flushMappings[ndx].offset * atomSize << ", Size: " << config.flushMappings[ndx].size * atomSize << TestLog::EndMessage;
+			}
+
+			if (!config.invalidateMappings.empty())
+			{
+				log << TestLog::Message << "Flushing following ranges:" << TestLog::EndMessage;
+
+				for (size_t ndx = 0; ndx < config.invalidateMappings.size(); ndx++)
+					log << TestLog::Message << "\tOffset: " << config.invalidateMappings[ndx].offset * atomSize << ", Size: " << config.invalidateMappings[ndx].size * atomSize << TestLog::EndMessage;
+			}
 
 			if ((memoryType.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
 			{
 				log << TestLog::Message << "Memory type doesn't support mapping." << TestLog::EndMessage;
 			}
+			else if (memoryHeap.size <= 4 * atomSize * config.allocationSize)
+			{
+				log << TestLog::Message << "Memory types heap is too small." << TestLog::EndMessage;
+			}
 			else
 			{
-				const Unique<VkDeviceMemory>	memory				(allocMemory(vkd, device, config.allocationSize, memoryTypeIndex));
+				const Unique<VkDeviceMemory>	memory				(allocMemory(vkd, device, config.allocationSize * atomSize, memoryTypeIndex));
 				de::Random						rng					(config.seed);
-				vector<deUint8>					reference			((size_t)config.allocationSize);
+				vector<deUint8>					reference			((size_t)(config.allocationSize * atomSize));
 				deUint8*						mapping				= DE_NULL;
 
 				{
 					void* ptr;
-					VK_CHECK(vkd.mapMemory(device, *memory, config.mapping.offset, config.mapping.size, 0u, &ptr));
+					VK_CHECK(vkd.mapMemory(device, *memory, config.mapping.offset * atomSize, config.mapping.size * atomSize, 0u, &ptr));
 					TCU_CHECK(ptr);
 
 					mapping = (deUint8*)ptr;
 				}
 
-				for (VkDeviceSize ndx = 0; ndx < config.mapping.size; ndx++)
+				for (VkDeviceSize ndx = 0; ndx < config.mapping.size * atomSize; ndx++)
 				{
 					const deUint8 val = rng.getUint8();
 
-					mapping[ndx]										= val;
-					reference[(size_t)(config.mapping.offset + ndx)]	= val;
+					mapping[ndx]												= val;
+					reference[(size_t)(config.mapping.offset * atomSize + ndx)]	= val;
 				}
 
 				if (!config.flushMappings.empty())
@@ -238,8 +401,8 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 							DE_NULL,
 
 							*memory,
-							config.flushMappings[ndx].offset,
-							config.flushMappings[ndx].size
+							config.flushMappings[ndx].offset * atomSize,
+							config.flushMappings[ndx].size * atomSize
 						};
 
 						ranges.push_back(range);
@@ -252,7 +415,7 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 				{
 					void* ptr;
 					vkd.unmapMemory(device, *memory);
-					VK_CHECK(vkd.mapMemory(device, *memory, config.mapping.offset, config.mapping.size, 0u, &ptr));
+					VK_CHECK(vkd.mapMemory(device, *memory, config.mapping.offset * atomSize, config.mapping.size * atomSize, 0u, &ptr));
 					TCU_CHECK(ptr);
 
 					mapping = (deUint8*)ptr;
@@ -270,8 +433,8 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 							DE_NULL,
 
 							*memory,
-							config.invalidateMappings[ndx].offset,
-							config.invalidateMappings[ndx].size
+							config.invalidateMappings[ndx].offset * atomSize,
+							config.invalidateMappings[ndx].size * atomSize
 						};
 
 						ranges.push_back(range);
@@ -280,7 +443,7 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 					VK_CHECK(vkd.invalidateMappedMemoryRanges(device, (deUint32)ranges.size(), &ranges[0]));
 				}
 
-				if (!compareAndLogBuffer(log, (size_t)config.mapping.size, mapping, &reference[(size_t)config.mapping.offset]))
+				if (!compareAndLogBuffer(log, (size_t)(config.mapping.size * atomSize), mapping, &reference[(size_t)(config.mapping.offset * atomSize)]))
 					result.fail("Unexpected values read from mapped memory.");
 
 				vkd.unmapMemory(device, *memory);
@@ -298,26 +461,28 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 class MemoryMapping
 {
 public:
-				MemoryMapping	(const MemoryRange&	range,
-								 void*				ptr,
-								 deUint16*			refPtr);
+						MemoryMapping	(const MemoryRange&	range,
+										 void*				ptr,
+										 ReferenceMemory&	reference);
 
-	void		randomRead		(de::Random& rng);
-	void		randomWrite		(de::Random& rng);
-	void		randomModify	(de::Random& rng);
+	void				randomRead		(de::Random& rng);
+	void				randomWrite		(de::Random& rng);
+	void				randomModify	(de::Random& rng);
+
+	const MemoryRange&	getRange		(void) const { return m_range; }
 
 private:
-	MemoryRange	m_range;
-	void*		m_ptr;
-	deUint16*	m_refPtr;
+	MemoryRange			m_range;
+	void*				m_ptr;
+	ReferenceMemory&	m_reference;
 };
 
 MemoryMapping::MemoryMapping (const MemoryRange&	range,
 							  void*					ptr,
-							  deUint16*				refPtr)
-	: m_range	(range)
-	, m_ptr		(ptr)
-	, m_refPtr	(refPtr)
+							  ReferenceMemory&		reference)
+	: m_range		(range)
+	, m_ptr			(ptr)
+	, m_reference	(reference)
 {
 	DE_ASSERT(range.size > 0);
 }
@@ -329,12 +494,9 @@ void MemoryMapping::randomRead (de::Random& rng)
 	for (size_t ndx = 0; ndx < count; ndx++)
 	{
 		const size_t	pos	= (size_t)(rng.getUint64() % (deUint64)m_range.size);
-		const deUint8	val	= ((deUint8*) m_ptr)[pos];
+		const deUint8	val	= ((deUint8*)m_ptr)[pos];
 
-		if (m_refPtr[pos] < 256)
-			TCU_CHECK((deUint16)val == m_refPtr[pos]);
-		else
-			m_refPtr[pos] = (deUint16)val;
+		TCU_CHECK(m_reference.read((size_t)(m_range.offset + pos), val));
 	}
 }
 
@@ -348,7 +510,7 @@ void MemoryMapping::randomWrite (de::Random& rng)
 		const deUint8	val	= rng.getUint8();
 
 		((deUint8*)m_ptr)[pos]	= val;
-		m_refPtr[pos]			= (deUint16)val;
+		m_reference.write((size_t)(m_range.offset + pos), val);
 	}
 }
 
@@ -362,22 +524,39 @@ void MemoryMapping::randomModify (de::Random& rng)
 		const deUint8	val		= ((deUint8*)m_ptr)[pos];
 		const deUint8	mask	= rng.getUint8();
 
-		if (m_refPtr[pos] < 256)
-			TCU_CHECK((deUint16)val == m_refPtr[pos]);
-
 		((deUint8*)m_ptr)[pos]	= val ^ mask;
-		m_refPtr[pos]			= (deUint16)(val ^ mask);
+		DE_ASSERT(m_reference.modifyXor((size_t)(m_range.offset + pos), val, mask));
 	}
 }
 
-void randomRanges (de::Random& rng, vector<VkMappedMemoryRange>& ranges, size_t count, VkDeviceMemory memory, VkDeviceSize maxSize)
+VkDeviceSize randomSize (de::Random& rng, VkDeviceSize atomSize, VkDeviceSize maxSize)
+{
+	const VkDeviceSize maxSizeInAtoms = maxSize / atomSize;
+
+	DE_ASSERT(maxSizeInAtoms > 0);
+
+	return maxSizeInAtoms > 1
+			? atomSize * (1 + (VkDeviceSize)(rng.getUint64() % (deUint64)maxSizeInAtoms))
+			: atomSize;
+}
+
+VkDeviceSize randomOffset (de::Random& rng, VkDeviceSize atomSize, VkDeviceSize maxOffset)
+{
+	const VkDeviceSize maxOffsetInAtoms = maxOffset / atomSize;
+
+	return maxOffsetInAtoms > 0
+			? atomSize * (VkDeviceSize)(rng.getUint64() % (deUint64)(maxOffsetInAtoms + 1))
+			: 0;
+}
+
+void randomRanges (de::Random& rng, vector<VkMappedMemoryRange>& ranges, size_t count, VkDeviceMemory memory, VkDeviceSize minOffset, VkDeviceSize maxSize, VkDeviceSize atomSize)
 {
 	ranges.resize(count);
 
 	for (size_t rangeNdx = 0; rangeNdx < count; rangeNdx++)
 	{
-		const VkDeviceSize	size	= (maxSize > 1 ? (VkDeviceSize)(1 + (rng.getUint64() % (deUint64)(maxSize - 1))) : 1);
-		const VkDeviceSize	offset	= (VkDeviceSize)(rng.getUint64() % (deUint64)(maxSize - size + 1));
+		const VkDeviceSize	size	= randomSize(rng, atomSize, maxSize);
+		const VkDeviceSize	offset	= minOffset + randomOffset(rng, atomSize, maxSize - size);
 
 		const VkMappedMemoryRange range =
 		{
@@ -398,7 +577,8 @@ public:
 							MemoryObject		(const DeviceInterface&		vkd,
 												 VkDevice					device,
 												 VkDeviceSize				size,
-												 deUint32					memoryTypeIndex);
+												 deUint32					memoryTypeIndex,
+												 VkDeviceSize				atomSize);
 
 							~MemoryObject		(void);
 
@@ -413,29 +593,32 @@ public:
 
 private:
 	const DeviceInterface&	m_vkd;
-	VkDevice				m_device;
+	const VkDevice			m_device;
 
-	deUint32				m_memoryTypeIndex;
-	VkDeviceSize			m_size;
+	const deUint32			m_memoryTypeIndex;
+	const VkDeviceSize		m_size;
+	const VkDeviceSize		m_atomSize;
 
 	Move<VkDeviceMemory>	m_memory;
 
 	MemoryMapping*			m_mapping;
-	vector<deUint16>		m_reference;
+	ReferenceMemory			m_referenceMemory;
 };
 
 MemoryObject::MemoryObject (const DeviceInterface&		vkd,
 							VkDevice					device,
 							VkDeviceSize				size,
-							deUint32					memoryTypeIndex)
+							deUint32					memoryTypeIndex,
+							VkDeviceSize				atomSize)
 	: m_vkd				(vkd)
 	, m_device			(device)
 	, m_memoryTypeIndex	(memoryTypeIndex)
 	, m_size			(size)
+	, m_atomSize		(atomSize)
 	, m_mapping			(DE_NULL)
+	, m_referenceMemory	((size_t)size, (size_t)m_atomSize)
 {
 	m_memory = allocMemory(m_vkd, m_device, m_size, m_memoryTypeIndex);
-	m_reference.resize((size_t)m_size, 0xFFFFu);
 }
 
 MemoryObject::~MemoryObject (void)
@@ -445,15 +628,15 @@ MemoryObject::~MemoryObject (void)
 
 MemoryMapping* MemoryObject::mapRandom (const DeviceInterface& vkd, VkDevice device, de::Random& rng)
 {
-	const VkDeviceSize	size	= (m_size > 1 ? (VkDeviceSize)(1 + (rng.getUint64() % (deUint64)(m_size - 1))) : 1);
-	const VkDeviceSize	offset	= (VkDeviceSize)(rng.getUint64() % (deUint64)(m_size - size + 1));
+	const VkDeviceSize	size	= randomSize(rng, m_atomSize, m_size);
+	const VkDeviceSize	offset	= randomOffset(rng, m_atomSize, m_size - size);
 	void*				ptr;
 
 	DE_ASSERT(!m_mapping);
 
 	VK_CHECK(vkd.mapMemory(device, *m_memory, offset, size, 0u, &ptr));
 	TCU_CHECK(ptr);
-	m_mapping = new MemoryMapping(MemoryRange(offset, size), ptr, &(m_reference[(size_t)offset]));
+	m_mapping = new MemoryMapping(MemoryRange(offset, size), ptr, m_referenceMemory);
 
 	return m_mapping;
 }
@@ -471,7 +654,10 @@ void MemoryObject::randomFlush (const DeviceInterface& vkd, VkDevice device, de:
 	const size_t				rangeCount	= (size_t)rng.getInt(1, 10);
 	vector<VkMappedMemoryRange>	ranges		(rangeCount);
 
-	randomRanges(rng, ranges, rangeCount, *m_memory, m_size);
+	randomRanges(rng, ranges, rangeCount, *m_memory, m_mapping->getRange().offset, m_mapping->getRange().size, m_atomSize);
+
+	for (size_t rangeNdx = 0; rangeNdx < ranges.size(); rangeNdx++)
+		m_referenceMemory.flush((size_t)ranges[rangeNdx].offset, (size_t)ranges[rangeNdx].size);
 
 	VK_CHECK(vkd.flushMappedMemoryRanges(device, (deUint32)ranges.size(), ranges.empty() ? DE_NULL : &ranges[0]));
 }
@@ -481,7 +667,10 @@ void MemoryObject::randomInvalidate (const DeviceInterface& vkd, VkDevice device
 	const size_t				rangeCount	= (size_t)rng.getInt(1, 10);
 	vector<VkMappedMemoryRange>	ranges		(rangeCount);
 
-	randomRanges(rng, ranges, rangeCount, *m_memory, m_size);
+	randomRanges(rng, ranges, rangeCount, *m_memory, m_mapping->getRange().offset, m_mapping->getRange().size, m_atomSize);
+
+	for (size_t rangeNdx = 0; rangeNdx < ranges.size(); rangeNdx++)
+		m_referenceMemory.invalidate((size_t)ranges[rangeNdx].offset, (size_t)ranges[rangeNdx].size);
 
 	VK_CHECK(vkd.invalidateMappedMemoryRanges(device, (deUint32)ranges.size(), ranges.empty() ? DE_NULL : &ranges[0]));
 }
@@ -510,10 +699,12 @@ class MemoryHeap
 {
 public:
 	MemoryHeap (const VkMemoryHeap&			heap,
-				const vector<deUint32>&		memoryTypes)
-		: m_heap		(heap)
-		, m_memoryTypes	(memoryTypes)
-		, m_usage		(0)
+				const vector<MemoryType>&	memoryTypes,
+				const VkDeviceSize			nonCoherentAtomSize)
+		: m_heap				(heap)
+		, m_memoryTypes			(memoryTypes)
+		, m_nonCoherentAtomSize	(nonCoherentAtomSize)
+		, m_usage				(0)
 	{
 	}
 
@@ -523,18 +714,24 @@ public:
 			delete *iter;
 	}
 
-	bool								full			(void) const { return m_usage * MAX_MEMORY_USAGE_DIV >= m_heap.size; }
-	bool								empty			(void) const { return m_usage == 0; }
+	bool								full			(void) const { return getAvailableMem() < m_nonCoherentAtomSize;	}
+	bool								empty			(void) const { return m_usage == 0;									}
 
 	MemoryObject*						allocateRandom	(const DeviceInterface& vkd, VkDevice device, de::Random& rng)
 	{
-		const VkDeviceSize		size	= 1 + (rng.getUint64() % (de::max((deInt64)((m_heap.size / MAX_MEMORY_USAGE_DIV) - m_usage - 1ull), (deInt64)1)));
-		const deUint32			type	= rng.choose<deUint32>(m_memoryTypes.begin(), m_memoryTypes.end());
+		const VkDeviceSize		availableMem	= getAvailableMem();
 
-		if ( (size > (VkDeviceSize)((m_heap.size / MAX_MEMORY_USAGE_DIV) - m_usage)) && (size != 1))
-			TCU_THROW(InternalError, "Test Error: trying to allocate memory more than the available heap size.");
+		DE_ASSERT(availableMem > 0);
 
-		MemoryObject* const		object	= new MemoryObject(vkd, device, size, type);
+		const MemoryType		type			= rng.choose<MemoryType>(m_memoryTypes.begin(), m_memoryTypes.end());
+		const VkDeviceSize		atomSize		= (type.type.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0
+												? 1
+												: m_nonCoherentAtomSize;
+		const VkDeviceSize		size			= randomSize(rng, atomSize, availableMem);
+
+		DE_ASSERT(size <= availableMem);
+
+		MemoryObject* const		object	= new MemoryObject(vkd, device, size, type.index, atomSize);
 
 		m_usage += size;
 		m_objects.push_back(object);
@@ -555,33 +752,47 @@ public:
 	}
 
 private:
-	VkMemoryHeap			m_heap;
-	vector<deUint32>		m_memoryTypes;
+	VkDeviceSize						getAvailableMem	(void) const
+	{
+		DE_ASSERT(m_usage <= m_heap.size/MAX_MEMORY_USAGE_DIV);
 
-	VkDeviceSize			m_usage;
-	vector<MemoryObject*>	m_objects;
+		const VkDeviceSize	availableInHeap	= m_heap.size/MAX_MEMORY_USAGE_DIV - m_usage;
+
+		return availableInHeap;
+	}
+
+	const VkMemoryHeap			m_heap;
+	const vector<MemoryType>	m_memoryTypes;
+	const VkDeviceSize			m_nonCoherentAtomSize;
+
+	VkDeviceSize				m_usage;
+	vector<MemoryObject*>		m_objects;
 };
 
 class RandomMemoryMappingInstance : public TestInstance
 {
 public:
 	RandomMemoryMappingInstance (Context& context, deUint32 seed)
-		: TestInstance	(context)
-		, m_rng			(seed)
-		, m_opNdx		(0)
+		: TestInstance				(context)
+		, m_rng						(seed)
+		, m_opNdx					(0)
 	{
 		const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
 		const InstanceInterface&				vki					= context.getInstanceInterface();
 		const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+		// \todo [2016-05-26 misojarvi] Remove zero check once drivers report correctly 1 instead of 0
+		const VkDeviceSize						nonCoherentAtomSize	= context.getDeviceProperties().limits.nonCoherentAtomSize != 0
+																	? context.getDeviceProperties().limits.nonCoherentAtomSize
+																	: 1;
 
 		// Initialize heaps
 		{
-			vector<vector<deUint32> >	memoryTypes	(memoryProperties.memoryHeapCount);
+			vector<vector<MemoryType> >	memoryTypes	(memoryProperties.memoryHeapCount);
 
 			for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < memoryProperties.memoryTypeCount; memoryTypeNdx++)
 			{
 				if (memoryProperties.memoryTypes[memoryTypeNdx].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-					memoryTypes[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].push_back(memoryTypeNdx);
+					memoryTypes[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].push_back(MemoryType(memoryTypeNdx, memoryProperties.memoryTypes[memoryTypeNdx]));
 			}
 
 			for (deUint32 heapIndex = 0; heapIndex < memoryProperties.memoryHeapCount; heapIndex++)
@@ -590,10 +801,11 @@ public:
 
 				if (!memoryTypes[heapIndex].empty())
 				{
-					const de::SharedPtr<MemoryHeap>	heap	(new MemoryHeap(heapInfo, memoryTypes[heapIndex]));
+					const de::SharedPtr<MemoryHeap>	heap	(new MemoryHeap(heapInfo, memoryTypes[heapIndex], nonCoherentAtomSize));
 
-					if (!heap->full())
-						m_nonFullHeaps.push_back(heap);
+					TCU_CHECK_INTERNAL(!heap->full());
+
+					m_memoryHeaps.push_back(heap);
 				}
 			}
 		}
@@ -616,127 +828,127 @@ public:
 		const VkDevice			device						= m_context.getDevice();
 		const DeviceInterface&	vkd							= m_context.getDeviceInterface();
 
-		if (m_opNdx < opCount)
+		if (!m_memoryMappings.empty() && m_rng.getFloat() < memoryOpProbability)
 		{
-			if (!m_memoryMappings.empty() && m_rng.getFloat() < memoryOpProbability)
+			// Perform operations on mapped memory
+			MemoryMapping* const	mapping	= m_rng.choose<MemoryMapping*>(m_memoryMappings.begin(), m_memoryMappings.end());
+
+			enum Op
 			{
-				// Perform operations on mapped memory
-				MemoryMapping* const	mapping	= m_rng.choose<MemoryMapping*>(m_memoryMappings.begin(), m_memoryMappings.end());
+				OP_READ = 0,
+				OP_WRITE,
+				OP_MODIFY,
+				OP_LAST
+			};
 
-				enum Op
-				{
-					OP_READ = 0,
-					OP_WRITE,
-					OP_MODIFY,
-					OP_LAST
-				};
+			const Op op = (Op)(m_rng.getUint32() % OP_LAST);
 
-				const Op op = (Op)(m_rng.getUint32() % OP_LAST);
+			switch (op)
+			{
+				case OP_READ:
+					mapping->randomRead(m_rng);
+					break;
 
-				switch (op)
-				{
-					case OP_READ:
-						mapping->randomRead(m_rng);
-						break;
+				case OP_WRITE:
+					mapping->randomWrite(m_rng);
+					break;
 
-					case OP_WRITE:
-						mapping->randomWrite(m_rng);
-						break;
+				case OP_MODIFY:
+					mapping->randomModify(m_rng);
+					break;
 
-					case OP_MODIFY:
-						mapping->randomModify(m_rng);
-						break;
-
-					default:
-						DE_FATAL("Invalid operation");
-				}
+				default:
+					DE_FATAL("Invalid operation");
 			}
-			else if (!m_mappedMemoryObjects.empty() && m_rng.getFloat() < flushInvalidateProbability)
-			{
-				MemoryObject* const	object	= m_rng.choose<MemoryObject*>(m_mappedMemoryObjects.begin(), m_mappedMemoryObjects.end());
+		}
+		else if (!m_mappedMemoryObjects.empty() && m_rng.getFloat() < flushInvalidateProbability)
+		{
+			MemoryObject* const	object	= m_rng.choose<MemoryObject*>(m_mappedMemoryObjects.begin(), m_mappedMemoryObjects.end());
 
-				if (m_rng.getBool())
-					object->randomFlush(vkd, device, m_rng);
-				else
-					object->randomInvalidate(vkd, device, m_rng);
+			if (m_rng.getBool())
+				object->randomFlush(vkd, device, m_rng);
+			else
+				object->randomInvalidate(vkd, device, m_rng);
+		}
+		else if (!m_mappedMemoryObjects.empty() && m_rng.getFloat() < unmapProbability)
+		{
+			// Unmap memory object
+			MemoryObject* const	object	= m_rng.choose<MemoryObject*>(m_mappedMemoryObjects.begin(), m_mappedMemoryObjects.end());
+
+			// Remove mapping
+			removeFirstEqual(m_memoryMappings, object->getMapping());
+
+			object->unmap();
+			removeFirstEqual(m_mappedMemoryObjects, object);
+			m_nonMappedMemoryObjects.push_back(object);
+		}
+		else if (!m_nonMappedMemoryObjects.empty() &&
+				 (m_rng.getFloat() < mapProbability))
+		{
+			// Map memory object
+			MemoryObject* const		object	= m_rng.choose<MemoryObject*>(m_nonMappedMemoryObjects.begin(), m_nonMappedMemoryObjects.end());
+			MemoryMapping*			mapping	= object->mapRandom(vkd, device, m_rng);
+
+			m_memoryMappings.push_back(mapping);
+			m_mappedMemoryObjects.push_back(object);
+			removeFirstEqual(m_nonMappedMemoryObjects, object);
+		}
+		else
+		{
+			// Sort heaps based on capacity (full or not)
+			vector<MemoryHeap*>		nonFullHeaps;
+			vector<MemoryHeap*>		nonEmptyHeaps;
+
+			for (vector<de::SharedPtr<MemoryHeap> >::const_iterator heapIter = m_memoryHeaps.begin();
+				 heapIter != m_memoryHeaps.end();
+				 ++heapIter)
+			{
+				if (!(*heapIter)->full())
+					nonFullHeaps.push_back(heapIter->get());
+
+				if (!(*heapIter)->empty())
+					nonEmptyHeaps.push_back(heapIter->get());
 			}
-			else if (!m_mappedMemoryObjects.empty() && m_rng.getFloat() < unmapProbability)
+
+			if (!nonFullHeaps.empty() && (nonEmptyHeaps.empty() || m_rng.getFloat() < allocProbability))
 			{
-				// Unmap memory object
-				MemoryObject* const	object	= m_rng.choose<MemoryObject*>(m_mappedMemoryObjects.begin(), m_mappedMemoryObjects.end());
+				// Allocate more memory objects
+				MemoryHeap* const	heap	= m_rng.choose<MemoryHeap*>(nonFullHeaps.begin(), nonFullHeaps.end());
+				MemoryObject* const	object	= heap->allocateRandom(vkd, device, m_rng);
 
-				// Remove mapping
-				removeFirstEqual(m_memoryMappings, object->getMapping());
-
-				object->unmap();
-				removeFirstEqual(m_mappedMemoryObjects, object);
 				m_nonMappedMemoryObjects.push_back(object);
-			}
-			else if (!m_nonMappedMemoryObjects.empty() && m_rng.getFloat() < mapProbability)
-			{
-				// Map memory object
-				MemoryObject* const		object	= m_rng.choose<MemoryObject*>(m_nonMappedMemoryObjects.begin(), m_nonMappedMemoryObjects.end());
-				MemoryMapping*			mapping	= object->mapRandom(vkd, device, m_rng);
-
-				m_memoryMappings.push_back(mapping);
-				m_mappedMemoryObjects.push_back(object);
-				removeFirstEqual(m_nonMappedMemoryObjects, object);
 			}
 			else
 			{
-				if (!m_nonFullHeaps.empty() && (m_nonEmptyHeaps.empty() || m_rng.getFloat() < allocProbability))
+				// Free memory objects
+				MemoryHeap* const		heap	= m_rng.choose<MemoryHeap*>(nonEmptyHeaps.begin(), nonEmptyHeaps.end());
+				MemoryObject* const		object	= heap->getRandomObject(m_rng);
+
+				// Remove mapping
+				if (object->getMapping())
 				{
-					// Allocate more memory objects
-					de::SharedPtr<MemoryHeap> const heap = m_rng.choose<de::SharedPtr<MemoryHeap> >(m_nonFullHeaps.begin(), m_nonFullHeaps.end());
-
-					if (heap->empty())
-						m_nonEmptyHeaps.push_back(heap);
-
-					{
-						MemoryObject* const	object = heap->allocateRandom(vkd, device, m_rng);
-
-						if (heap->full())
-							removeFirstEqual(m_nonFullHeaps, heap);
-
-						m_nonMappedMemoryObjects.push_back(object);
-					}
+					removeFirstEqual(m_memoryMappings, object->getMapping());
 				}
-				else
-				{
-					// Free memory objects
-					de::SharedPtr<MemoryHeap> const		heap	= m_rng.choose<de::SharedPtr<MemoryHeap> >(m_nonEmptyHeaps.begin(), m_nonEmptyHeaps.end());
-					MemoryObject* const					object	= heap->getRandomObject(m_rng);
 
-					// Remove mapping
-					if (object->getMapping())
-						removeFirstEqual(m_memoryMappings, object->getMapping());
+				removeFirstEqual(m_mappedMemoryObjects, object);
+				removeFirstEqual(m_nonMappedMemoryObjects, object);
 
-					removeFirstEqual(m_mappedMemoryObjects, object);
-					removeFirstEqual(m_nonMappedMemoryObjects, object);
-
-					if (heap->full())
-						m_nonFullHeaps.push_back(heap);
-
-					heap->free(object);
-
-					if (heap->empty())
-						removeFirstEqual(m_nonEmptyHeaps, heap);
-				}
+				heap->free(object);
 			}
-
-			m_opNdx++;
-			return tcu::TestStatus::incomplete();
 		}
-		else
+
+		m_opNdx += 1;
+		if (m_opNdx == opCount)
 			return tcu::TestStatus::pass("Pass");
+		else
+			return tcu::TestStatus::incomplete();
 	}
 
 private:
 	de::Random							m_rng;
 	size_t								m_opNdx;
 
-	vector<de::SharedPtr<MemoryHeap> >	m_nonEmptyHeaps;
-	vector<de::SharedPtr<MemoryHeap> >	m_nonFullHeaps;
+	vector<de::SharedPtr<MemoryHeap> >	m_memoryHeaps;
 
 	vector<MemoryObject*>				m_mappedMemoryObjects;
 	vector<MemoryObject*>				m_nonMappedMemoryObjects;
@@ -784,54 +996,62 @@ TestConfig subMappedConfig (VkDeviceSize				allocationSize,
 			return config;
 
 		case OP_FLUSH:
-			config.flushMappings = vector<MemoryRange>(1, MemoryRange(0, allocationSize));
+			config.flushMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset, mapping.size));
 			return config;
 
 		case OP_SUB_FLUSH:
-			DE_ASSERT(allocationSize / 4 > 0);
+			DE_ASSERT(mapping.size / 4 > 0);
 
-			config.flushMappings = vector<MemoryRange>(1, MemoryRange(allocationSize / 4, allocationSize / 2));
+			config.flushMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset + mapping.size / 4, mapping.size / 2));
 			return config;
 
 		case OP_SUB_FLUSH_SEPARATE:
-			DE_ASSERT(allocationSize / 2 > 0);
+			DE_ASSERT(mapping.size / 2 > 0);
 
-			config.flushMappings.push_back(MemoryRange(allocationSize /  2, allocationSize - (allocationSize / 2)));
-			config.flushMappings.push_back(MemoryRange(0, allocationSize / 2));
+			config.flushMappings.push_back(MemoryRange(mapping.offset + mapping.size /  2, mapping.size - (mapping.size / 2)));
+			config.flushMappings.push_back(MemoryRange(mapping.offset, mapping.size / 2));
 
 			return config;
 
 		case OP_SUB_FLUSH_OVERLAPPING:
-			DE_ASSERT((allocationSize / 3) > 0);
+			DE_ASSERT((mapping.size / 3) > 0);
 
-			config.flushMappings.push_back(MemoryRange(allocationSize /  3, allocationSize - (allocationSize / 2)));
-			config.flushMappings.push_back(MemoryRange(0, (2 * allocationSize) / 3));
+			config.flushMappings.push_back(MemoryRange(mapping.offset + mapping.size /  3, mapping.size - (mapping.size / 2)));
+			config.flushMappings.push_back(MemoryRange(mapping.offset, (2 * mapping.size) / 3));
 
 			return config;
 
 		case OP_INVALIDATE:
-			config.invalidateMappings = vector<MemoryRange>(1, MemoryRange(0, allocationSize));
+			config.flushMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset, mapping.size));
+			config.invalidateMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset, mapping.size));
 			return config;
 
 		case OP_SUB_INVALIDATE:
-			DE_ASSERT(allocationSize / 4 > 0);
+			DE_ASSERT(mapping.size / 4 > 0);
 
-			config.invalidateMappings = vector<MemoryRange>(1, MemoryRange(allocationSize / 4, allocationSize / 2));
+			config.flushMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset + mapping.size / 4, mapping.size / 2));
+			config.invalidateMappings = vector<MemoryRange>(1, MemoryRange(mapping.offset + mapping.size / 4, mapping.size / 2));
 			return config;
 
 		case OP_SUB_INVALIDATE_SEPARATE:
-			DE_ASSERT(allocationSize / 2 > 0);
+			DE_ASSERT(mapping.size / 2 > 0);
 
-			config.invalidateMappings.push_back(MemoryRange(allocationSize /  2, allocationSize - (allocationSize / 2)));
-			config.invalidateMappings.push_back(MemoryRange(0, allocationSize / 2));
+			config.flushMappings.push_back(MemoryRange(mapping.offset + mapping.size /  2, mapping.size - (mapping.size / 2)));
+			config.flushMappings.push_back(MemoryRange(mapping.offset, mapping.size / 2));
+
+			config.invalidateMappings.push_back(MemoryRange(mapping.offset + mapping.size /  2, mapping.size - (mapping.size / 2)));
+			config.invalidateMappings.push_back(MemoryRange(mapping.offset, mapping.size / 2));
 
 			return config;
 
 		case OP_SUB_INVALIDATE_OVERLAPPING:
-			DE_ASSERT((allocationSize / 3) > 0);
+			DE_ASSERT((mapping.size / 3) > 0);
 
-			config.invalidateMappings.push_back(MemoryRange(allocationSize /  3, allocationSize - (allocationSize / 2)));
-			config.invalidateMappings.push_back(MemoryRange(0, (2 * allocationSize) / 3));
+			config.flushMappings.push_back(MemoryRange(mapping.offset + mapping.size /  3, mapping.size - (mapping.size / 2)));
+			config.flushMappings.push_back(MemoryRange(mapping.offset, (2 * mapping.size) / 3));
+
+			config.invalidateMappings.push_back(MemoryRange(mapping.offset + mapping.size /  3, mapping.size - (mapping.size / 2)));
+			config.invalidateMappings.push_back(MemoryRange(mapping.offset, (2 * mapping.size) / 3));
 
 			return config;
 
