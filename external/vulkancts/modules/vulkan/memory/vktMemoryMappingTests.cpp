@@ -62,10 +62,8 @@ namespace vkt
 {
 namespace memory
 {
-
 namespace
 {
-
 enum
 {
 	REFERENCE_BYTES_PER_BYTE = 2
@@ -195,20 +193,24 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 	const InstanceInterface&				vki					= context.getInstanceInterface();
 	const DeviceInterface&					vkd					= context.getDeviceInterface();
 	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+	// \todo [2016-05-27 misojarvi] Remove once drivers start reporting correctly nonCoherentAtomSize that is at least 1.
+	const VkDeviceSize						nonCoherentAtomSize	= context.getDeviceProperties().limits.nonCoherentAtomSize != 0
+																? context.getDeviceProperties().limits.nonCoherentAtomSize
+																: 1;
 
 	{
 		const tcu::ScopedLogSection	section	(log, "TestCaseInfo", "TestCaseInfo");
 
 		log << TestLog::Message << "Seed: " << config.seed << TestLog::EndMessage;
-		log << TestLog::Message << "Allocation size: " << config.allocationSize << TestLog::EndMessage;
-		log << TestLog::Message << "Mapping, offset: " << config.mapping.offset << ", size: " << config.mapping.size << TestLog::EndMessage;
+		log << TestLog::Message << "Allocation size: " << config.allocationSize << " * atom" <<  TestLog::EndMessage;
+		log << TestLog::Message << "Mapping, offset: " << config.mapping.offset << " * atom, size: " << config.mapping.size << " * atom" << TestLog::EndMessage;
 
 		if (!config.flushMappings.empty())
 		{
 			log << TestLog::Message << "Invalidating following ranges:" << TestLog::EndMessage;
 
 			for (size_t ndx = 0; ndx < config.flushMappings.size(); ndx++)
-				log << TestLog::Message << "\tOffset: " << config.flushMappings[ndx].offset << ", Size: " << config.flushMappings[ndx].size << TestLog::EndMessage;
+				log << TestLog::Message << "\tOffset: " << config.flushMappings[ndx].offset << " * atom, Size: " << config.flushMappings[ndx].size << " * atom" << TestLog::EndMessage;
 		}
 
 		if (config.remap)
@@ -219,7 +221,7 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 			log << TestLog::Message << "Flushing following ranges:" << TestLog::EndMessage;
 
 			for (size_t ndx = 0; ndx < config.invalidateMappings.size(); ndx++)
-				log << TestLog::Message << "\tOffset: " << config.invalidateMappings[ndx].offset << ", Size: " << config.invalidateMappings[ndx].size << TestLog::EndMessage;
+				log << TestLog::Message << "\tOffset: " << config.invalidateMappings[ndx].offset << " * atom, Size: " << config.invalidateMappings[ndx].size << " * atom" << TestLog::EndMessage;
 		}
 	}
 
@@ -230,35 +232,61 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 			const tcu::ScopedLogSection		section		(log, "MemoryType" + de::toString(memoryTypeIndex), "MemoryType" + de::toString(memoryTypeIndex));
 			const VkMemoryType&				memoryType	= memoryProperties.memoryTypes[memoryTypeIndex];
 			const VkMemoryHeap&				memoryHeap	= memoryProperties.memoryHeaps[memoryType.heapIndex];
+			const VkDeviceSize				atomSize	= (memoryType.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0
+														? 1
+														: nonCoherentAtomSize;
 
 			log << TestLog::Message << "MemoryType: " << memoryType << TestLog::EndMessage;
 			log << TestLog::Message << "MemoryHeap: " << memoryHeap << TestLog::EndMessage;
+			log << TestLog::Message << "AtomSize: " << atomSize << TestLog::EndMessage;
+			log << TestLog::Message << "AllocationSize: " << config.allocationSize * atomSize <<  TestLog::EndMessage;
+			log << TestLog::Message << "Mapping, offset: " << config.mapping.offset * atomSize << ", size: " << config.mapping.size * atomSize << TestLog::EndMessage;
+
+			if (!config.flushMappings.empty())
+			{
+				log << TestLog::Message << "Invalidating following ranges:" << TestLog::EndMessage;
+
+				for (size_t ndx = 0; ndx < config.flushMappings.size(); ndx++)
+					log << TestLog::Message << "\tOffset: " << config.flushMappings[ndx].offset * atomSize << ", Size: " << config.flushMappings[ndx].size * atomSize << TestLog::EndMessage;
+			}
+
+			if (!config.invalidateMappings.empty())
+			{
+				log << TestLog::Message << "Flushing following ranges:" << TestLog::EndMessage;
+
+				for (size_t ndx = 0; ndx < config.invalidateMappings.size(); ndx++)
+					log << TestLog::Message << "\tOffset: " << config.invalidateMappings[ndx].offset * atomSize << ", Size: " << config.invalidateMappings[ndx].size * atomSize << TestLog::EndMessage;
+			}
 
 			if ((memoryType.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
 			{
 				log << TestLog::Message << "Memory type doesn't support mapping." << TestLog::EndMessage;
 			}
+			else if (memoryHeap.size <= 4 * atomSize * config.allocationSize)
+			{
+				log << TestLog::Message << "Memory types heap is too small." << TestLog::EndMessage;
+			}
 			else
 			{
-				const Unique<VkDeviceMemory>	memory				(allocMemory(vkd, device, config.allocationSize, memoryTypeIndex));
+				const Unique<VkDeviceMemory>	memory				(allocMemory(vkd, device, config.allocationSize * atomSize, memoryTypeIndex));
 				de::Random						rng					(config.seed);
-				vector<deUint8>					reference			((size_t)config.allocationSize);
+				vector<deUint8>					reference			((size_t)(config.allocationSize * atomSize));
 				deUint8*						mapping				= DE_NULL;
 
 				{
 					void* ptr;
-					VK_CHECK(vkd.mapMemory(device, *memory, config.mapping.offset, config.mapping.size, 0u, &ptr));
+					VK_CHECK(vkd.mapMemory(device, *memory, config.mapping.offset * atomSize, config.mapping.size * atomSize, 0u, &ptr));
 					TCU_CHECK(ptr);
 
 					mapping = (deUint8*)ptr;
 				}
 
-				for (VkDeviceSize ndx = 0; ndx < config.mapping.size; ndx++)
+				for (VkDeviceSize ndx = 0; ndx < config.mapping.size * atomSize; ndx++)
 				{
 					const deUint8 val = rng.getUint8();
 
-					mapping[ndx]										= val;
-					reference[(size_t)(config.mapping.offset + ndx)]	= val;
+					mapping[ndx]												= val;
+					reference[(size_t)(config.mapping.offset * atomSize + ndx)]	= val;
 				}
 
 				if (!config.flushMappings.empty())
@@ -273,8 +301,8 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 							DE_NULL,
 
 							*memory,
-							config.flushMappings[ndx].offset,
-							config.flushMappings[ndx].size
+							config.flushMappings[ndx].offset * atomSize,
+							config.flushMappings[ndx].size * atomSize
 						};
 
 						ranges.push_back(range);
@@ -287,7 +315,7 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 				{
 					void* ptr;
 					vkd.unmapMemory(device, *memory);
-					VK_CHECK(vkd.mapMemory(device, *memory, config.mapping.offset, config.mapping.size, 0u, &ptr));
+					VK_CHECK(vkd.mapMemory(device, *memory, config.mapping.offset * atomSize, config.mapping.size * atomSize, 0u, &ptr));
 					TCU_CHECK(ptr);
 
 					mapping = (deUint8*)ptr;
@@ -305,8 +333,8 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 							DE_NULL,
 
 							*memory,
-							config.invalidateMappings[ndx].offset,
-							config.invalidateMappings[ndx].size
+							config.invalidateMappings[ndx].offset * atomSize,
+							config.invalidateMappings[ndx].size * atomSize
 						};
 
 						ranges.push_back(range);
@@ -315,7 +343,7 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 					VK_CHECK(vkd.invalidateMappedMemoryRanges(device, (deUint32)ranges.size(), &ranges[0]));
 				}
 
-				if (!compareAndLogBuffer(log, (size_t)config.mapping.size, mapping, &reference[(size_t)config.mapping.offset]))
+				if (!compareAndLogBuffer(log, (size_t)(config.mapping.size * atomSize), mapping, &reference[(size_t)(config.mapping.offset * atomSize)]))
 					result.fail("Unexpected values read from mapped memory.");
 
 				vkd.unmapMemory(device, *memory);
@@ -674,8 +702,8 @@ private:
 		}
 		else
 		{
-			const VkDeviceSize	totalUsage	= m_totalMemTracker.getTotalUsage();
-			const VkDeviceSize	totalSysMem	= (VkDeviceSize)m_limits.totalSystemMemory;
+			const VkDeviceSize	totalUsage		= m_totalMemTracker.getTotalUsage();
+			const VkDeviceSize	totalSysMem		= (VkDeviceSize)m_limits.totalSystemMemory;
 
 			const MemoryClass	memClass		= getMemoryClass();
 			const VkDeviceSize	totalMemClass	= memClass == MEMORY_CLASS_SYSTEM
