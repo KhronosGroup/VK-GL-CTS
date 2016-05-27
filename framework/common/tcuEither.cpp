@@ -44,7 +44,7 @@ public:
 
 	~TestClassWithConstructor (void)
 	{
-		TCU_CHECK(m_copyCheck == COPYCHECK_VALUE);
+		DE_TEST_ASSERT(m_copyCheck == COPYCHECK_VALUE);
 	}
 
 	TestClassWithConstructor (const TestClassWithConstructor& other)
