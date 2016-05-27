@@ -173,6 +173,7 @@ public:
 		, m_display			(EGL_NO_DISPLAY)
 		, m_config			(0)
 		, m_surface			(EGL_NO_SURFACE)
+		, m_context			(EGL_NO_CONTEXT)
 	{
 	}
 
