@@ -1,20 +1,18 @@
-include_directories(..)
+include_directories(
+	..
+	../draw
+	)
 
 set(DEQP_VK_QUERY_POOL_SRCS
 	vktQueryPoolTests.hpp
 	vktQueryPoolTests.cpp
 	vktQueryPoolOcclusionTests.hpp
 	vktQueryPoolOcclusionTests.cpp
-	vktQueryPoolCreateInfoUtil.hpp
-	vktQueryPoolCreateInfoUtil.cpp
-	vktQueryPoolBufferObjectUtil.hpp
-	vktQueryPoolBufferObjectUtil.cpp
-	vktQueryPoolImageObjectUtil.hpp
-	vktQueryPoolImageObjectUtil.cpp
 )
 
 set(DEQP_VK_QUERY_POOL_LIBS
 	deqp-vk-common
+	deqp-vk-draw
 	tcutil
 	vkutil
 )
