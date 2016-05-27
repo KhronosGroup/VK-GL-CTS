@@ -43,6 +43,7 @@ deInt32		deVsprintf				(char* string, size_t size, const char* format, va_list a
 deInt32		deSprintf				(char* string, size_t size, const char* format, ...) DE_PRINTF_FUNC_ATTR(3, 4);
 char*		deStrcpy				(char* dst, size_t size, const char* src);
 char*		deStrcat				(char* s1, size_t size, const char* s2);
+size_t		deStrnlen				(const char* string, size_t maxSize);
 
 DE_END_EXTERN_C
 
