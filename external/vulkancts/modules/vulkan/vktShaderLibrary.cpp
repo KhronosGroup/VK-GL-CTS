@@ -135,7 +135,7 @@ void declareUniforms (ostringstream& out, const ValueBlock& valueBlock)
 DataType getTransportType (DataType valueType)
 {
 	if (isDataTypeBoolOrBVec(valueType))
-		return glu::getDataTypeIntVec(getDataTypeScalarSize(valueType));
+		return glu::getDataTypeUintVec(getDataTypeScalarSize(valueType));
 	else
 		return valueType;
 }
@@ -1162,7 +1162,7 @@ Move<vk::VkPipeline> createPipeline (Context&					context,
 		vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// sType
 		DE_NULL,															// pNext
 		(vk::VkPipelineVertexInputStateCreateFlags)0,
-		DE_LENGTH_OF_ARRAY(vertexBindings),									// bindingCount
+		(inputValues.empty() ? 1u : 2u),									// bindingCount
 		vertexBindings,														// pVertexBindingDescriptions
 		(deUint32)vertexAttribParams.size(),								// attributeCount
 		&vertexAttribParams[0],												// pVertexAttributeDescriptions
@@ -1540,8 +1540,10 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 		vkd.cmdBeginRenderPass(*m_cmdBuffer, &passBeginInfo, vk::VK_SUBPASS_CONTENTS_INLINE);
 	}
 
-	vkd.cmdBindPipeline			(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-	vkd.cmdBindDescriptorSets	(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &*m_descriptorSet, 0u, DE_NULL);
+	vkd.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+	if (!m_spec.values.uniforms.empty() || !m_spec.values.outputs.empty())
+		vkd.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &*m_descriptorSet, 0u, DE_NULL);
 
 	{
 		const vk::VkBuffer		buffers[]	= { *m_posNdxBuffer, *m_inputBuffer };

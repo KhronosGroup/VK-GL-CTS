@@ -111,7 +111,6 @@ deBool deStringBeginsWith (const char* str, const char* lead)
 	return DE_TRUE;
 }
 
-
 int deVsprintf (char* string, size_t size, const char* format, va_list list)
 {
 	int			res;
@@ -177,6 +176,18 @@ char* deStrcat (char* s1, size_t size, const char* s2)
 	return s1;
 #else
 	return strncat(s1, s2, size);
+#endif
+}
+
+size_t deStrnlen (const char* string, size_t maxSize)
+{
+#if ((DE_COMPILER == DE_COMPILER_MSC) && (DE_OS != DE_OS_WINCE)) || (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201100L))
+	return strnlen_s(string, maxSize);
+#else
+	size_t len = 0;
+	while (len < maxSize || string[len] != 0)
+		++len;
+	return len;
 #endif
 }
 
