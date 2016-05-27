@@ -1462,6 +1462,34 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 		&clearValue,									// const VkClearValue*	pClearValues;
 	};
 
+	// Add barrier for initializing image state 
+	{
+		const vk::VkImageMemoryBarrier  initializeBarrier =
+		{
+			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext
+			0,												// VVkAccessFlags			srcAccessMask;
+			vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
+			vk::VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
+			vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			newLayout;
+			queueFamilyIndex,								// deUint32					srcQueueFamilyIndex;
+			queueFamilyIndex,								// deUint32					dstQueueFamilyIndex;
+			*colorImage,									// VkImage					image;
+			{
+				vk::VK_IMAGE_ASPECT_COLOR_BIT,			// VkImageAspectFlags	aspectMask;
+				0u,										// deUint32				baseMipLevel;
+				1u,										// deUint32				mipLevels;
+				0u,										// deUint32				baseArraySlice;
+				1u,										// deUint32				arraySize;
+			}												// VkImageSubresourceRange	subresourceRange
+		};
+
+		vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (vk::VkDependencyFlags)0,
+			0, (const vk::VkMemoryBarrier*)DE_NULL,
+			0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
+			1, &initializeBarrier);
+	}
+
 	vk.cmdBeginRenderPass(*cmdBuffer, &passBeginInfo, vk::VK_SUBPASS_CONTENTS_INLINE);
 
 	vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);

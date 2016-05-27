@@ -162,30 +162,6 @@ Image::Image (const vk::DeviceInterface& vk,
 {
 }
 
-tcu::ConstPixelBufferAccess Image::readSurface (vk::VkQueue					queue,
-												vk::Allocator&				allocator,
-												vk::VkImageLayout			layout,
-												vk::VkOffset3D				offset,
-												int							width,
-												int							height,
-												vk::VkImageAspectFlagBits	aspect,
-												unsigned int				mipLevel,
-												unsigned int				arrayElement)
-{
-	m_pixelAccessData.resize(width * height * vk::mapVkFormat(m_format).getPixelSize());
-	deMemset(m_pixelAccessData.data(), 0, m_pixelAccessData.size());
-	if (aspect == vk::VK_IMAGE_ASPECT_COLOR_BIT)
-	{
-		read(queue, allocator, layout, offset, width, height, 1, mipLevel, arrayElement, aspect, vk::VK_IMAGE_TYPE_2D,
-		m_pixelAccessData.data());
-	}
-	if (aspect == vk::VK_IMAGE_ASPECT_DEPTH_BIT || aspect == vk::VK_IMAGE_ASPECT_STENCIL_BIT)
-	{
-		readUsingBuffer(queue, allocator, layout, offset, width, height, 1, mipLevel, arrayElement, aspect, m_pixelAccessData.data());
-	}
-	return tcu::ConstPixelBufferAccess(vk::mapVkFormat(m_format), width, height, 1, m_pixelAccessData.data());
-}
-
 tcu::ConstPixelBufferAccess Image::readVolume (vk::VkQueue					queue,
 											   vk::Allocator&				allocator,
 											   vk::VkImageLayout			layout,
@@ -455,7 +431,7 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 		CmdBufferBeginInfo beginInfo;
 		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));
 
-		transition2DImage(m_vk, *copyCmdBuffer, stagingResource->object(), aspect, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL);
+		transition2DImage(m_vk, *copyCmdBuffer, stagingResource->object(), aspect, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL, 0, vk::VK_ACCESS_TRANSFER_WRITE_BIT);
 
 		const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 		vk::VkImageCopy region = { {aspect, mipLevel, arrayElement, 1}, offset, {aspect, 0, 0, 1}, zeroOffset, {(deUint32)width, (deUint32)height, (deUint32)depth} };
@@ -879,22 +855,24 @@ de::SharedPtr<Image> Image::create(const vk::DeviceInterface&	vk,
 }
 
 void transition2DImage (const vk::DeviceInterface&	vk,
-						vk::VkCommandBuffer				cmdBuffer,
+						vk::VkCommandBuffer			cmdBuffer,
 						vk::VkImage					image,
 						vk::VkImageAspectFlags		aspectMask,
 						vk::VkImageLayout			oldLayout,
-						vk::VkImageLayout			newLayout)
+						vk::VkImageLayout			newLayout,
+						vk::VkAccessFlags			srcAccessMask,
+						vk::VkAccessFlags			dstAccessMask)
 {
 	vk::VkImageMemoryBarrier barrier;
-	barrier.sType					= vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.pNext					= DE_NULL;
-	barrier.srcAccessMask				= 0;
-	barrier.dstAccessMask				= 0;
-	barrier.oldLayout				= oldLayout;
-	barrier.newLayout				= newLayout;
-	barrier.srcQueueFamilyIndex		= vk::VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex	= vk::VK_QUEUE_FAMILY_IGNORED;
-	barrier.image					= image;
+	barrier.sType							= vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.pNext							= DE_NULL;
+	barrier.srcAccessMask					= srcAccessMask;
+	barrier.dstAccessMask					= dstAccessMask;
+	barrier.oldLayout						= oldLayout;
+	barrier.newLayout						= newLayout;
+	barrier.srcQueueFamilyIndex				= vk::VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex				= vk::VK_QUEUE_FAMILY_IGNORED;
+	barrier.image							= image;
 	barrier.subresourceRange.aspectMask		= aspectMask;
 	barrier.subresourceRange.baseMipLevel	= 0;
 	barrier.subresourceRange.levelCount		= 1;

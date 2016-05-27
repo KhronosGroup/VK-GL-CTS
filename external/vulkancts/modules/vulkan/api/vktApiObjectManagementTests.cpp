@@ -1645,8 +1645,8 @@ struct GraphicsPipeline
 			VK_FALSE,								// stencilTestEnable
 			{ VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS, 0u, 0u, 0u },
 			{ VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS, 0u, 0u, 0u },
-			-1.0f,									// minDepthBounds
-			+1.0f,									// maxDepthBounds
+			0.0f,									// minDepthBounds
+			1.0f,									// maxDepthBounds
 		};
 		const VkPipelineColorBlendAttachmentState		colorBlendAttState[]=
 		{

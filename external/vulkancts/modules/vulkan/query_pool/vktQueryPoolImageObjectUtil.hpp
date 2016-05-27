@@ -69,16 +69,6 @@ public:
 													 vk::Allocator&							allocator,
 													 vk::MemoryRequirement					memoryRequirement = vk::MemoryRequirement::Any);
 
-	tcu::ConstPixelBufferAccess readSurface			(vk::VkQueue							queue,
-													 vk::Allocator&							allocator,
-													 vk::VkImageLayout						layout,
-													 vk::VkOffset3D							offset,
-													 int									width,
-													 int									height,
-													 vk::VkImageAspectFlagBits				aspect,
-													 unsigned int							mipLevel = 0,
-													 unsigned int							arrayElement = 0);
-
 	tcu::ConstPixelBufferAccess readSurface1D		(vk::VkQueue							queue,
 													 vk::Allocator&							allocator,
 													 vk::VkImageLayout						layout,
@@ -260,7 +250,14 @@ private:
 	vk::VkDevice				m_device;
 };
 
-void transition2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageAspectFlags aspectMask, vk::VkImageLayout oldLayout, vk::VkImageLayout newLayout);
+void transition2DImage (const vk::DeviceInterface&	vk,
+						vk::VkCommandBuffer			cmdBuffer,
+						vk::VkImage					image,
+						vk::VkImageAspectFlags		aspectMask,
+						vk::VkImageLayout			oldLayout,
+						vk::VkImageLayout			newLayout,
+						vk::VkAccessFlags			srcAccessMask = 0,
+						vk::VkAccessFlags			dstAccessMask = 0);
 
 void initialTransitionColor2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
 
