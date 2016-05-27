@@ -31,6 +31,8 @@ namespace vkt
 namespace DynamicState
 {
 
+using namespace Draw;
+
 DynamicStateBaseClass::DynamicStateBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName)
 	: TestInstance				(context)
 	, m_colorAttachmentFormat   (vk::VK_FORMAT_R8G8B8A8_UNORM)

@@ -39,6 +39,9 @@ namespace vkt
 {
 namespace DynamicState
 {
+
+using namespace Draw;
+
 namespace
 {
 

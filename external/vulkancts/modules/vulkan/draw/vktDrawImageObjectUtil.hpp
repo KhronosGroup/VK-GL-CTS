@@ -24,6 +24,7 @@
  * \brief Image Object Util
  *//*--------------------------------------------------------------------*/
 
+#include "vkDefs.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
 
@@ -260,7 +261,14 @@ private:
 	vk::VkDevice				m_device;
 };
 
-void transition2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageAspectFlags aspectMask, vk::VkImageLayout oldLayout, vk::VkImageLayout newLayout);
+void transition2DImage (const vk::DeviceInterface&	vk,
+						vk::VkCommandBuffer			cmdBuffer,
+						vk::VkImage					image,
+						vk::VkImageAspectFlags		aspectMask,
+						vk::VkImageLayout			oldLayout,
+						vk::VkImageLayout			newLayout,
+						vk::VkAccessFlags			srcAccessMask = 0,
+						vk::VkAccessFlags			dstAccessMask = 0);
 
 void initialTransitionColor2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
 
@@ -268,7 +276,12 @@ void initialTransitionDepth2DImage (const vk::DeviceInterface& vk, vk::VkCommand
 
 void initialTransitionStencil2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
 
-void initialTransitionDepthStencil2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
+void initialTransitionDepthStencil2DImage (const vk::DeviceInterface&	vk,
+										   vk::VkCommandBuffer			cmdBuffer,
+										   vk::VkImage					image,
+										   vk::VkImageLayout			layout,
+										   vk::VkAccessFlags			srcAccessMask = 0,
+										   vk::VkAccessFlags			dstAccessMask = 0);
 
 } // Draw
 } // vkt
