@@ -69,6 +69,137 @@ enum
 	REFERENCE_BYTES_PER_BYTE = 2
 };
 
+template<typename T>
+T divRoundUp (const T& a, const T& b)
+{
+	return (a / b) + (a % b == 0 ? 0 : 1);
+}
+
+// \note Bit vector that guarantees that each value takes only one bit.
+// std::vector<bool> is often optimized to only take one bit for each bool, but
+// that is implementation detail and in this case we really need to known how much
+// memory is used.
+class BitVector
+{
+public:
+	enum
+	{
+		BLOCK_BIT_SIZE = 8 * sizeof(deUint32)
+	};
+
+	BitVector (size_t size, bool value = false)
+		: m_data(divRoundUp<size_t>(size, (size_t)BLOCK_BIT_SIZE), value ? ~0x0u : 0x0u)
+	{
+	}
+
+	bool get (size_t ndx) const
+	{
+		return (m_data[ndx / BLOCK_BIT_SIZE] & (0x1u << (deUint32)(ndx % BLOCK_BIT_SIZE))) != 0;
+	}
+
+	void set (size_t ndx, bool value)
+	{
+		if (value)
+			m_data[ndx / BLOCK_BIT_SIZE] |= 0x1u << (deUint32)(ndx % BLOCK_BIT_SIZE);
+		else
+			m_data[ndx / BLOCK_BIT_SIZE] &= ~(0x1u << (deUint32)(ndx % BLOCK_BIT_SIZE));
+	}
+
+private:
+	vector<deUint32>	m_data;
+};
+
+class ReferenceMemory
+{
+public:
+	ReferenceMemory (size_t size, size_t atomSize)
+		: m_atomSize	(atomSize)
+		, m_bytes		(size, 0xDEu)
+		, m_defined		(size, false)
+		, m_flushed		(size / atomSize, false)
+	{
+		DE_ASSERT(size % m_atomSize == 0);
+	}
+
+	void write (size_t pos, deUint8 value)
+	{
+		m_bytes[pos] = value;
+		m_defined.set(pos, true);
+		m_flushed.set(pos / m_atomSize, false);
+	}
+
+	bool read (size_t pos, deUint8 value)
+	{
+		const bool isOk = !m_defined.get(pos)
+						|| m_bytes[pos] == value;
+
+		m_bytes[pos] = value;
+		m_defined.set(pos, true);
+
+		return isOk;
+	}
+
+	bool modifyXor (size_t pos, deUint8 value, deUint8 mask)
+	{
+		const bool isOk = !m_defined.get(pos)
+						|| m_bytes[pos] == value;
+
+		m_bytes[pos] = value ^ mask;
+		m_defined.set(pos, true);
+		m_flushed.set(pos / m_atomSize, false);
+
+		return isOk;
+	}
+
+	void flush (size_t offset, size_t size)
+	{
+		DE_ASSERT((offset % m_atomSize) == 0);
+		DE_ASSERT((size % m_atomSize) == 0);
+
+		for (size_t ndx = 0; ndx < size / m_atomSize; ndx++)
+			m_flushed.set((offset / m_atomSize) + ndx, true);
+	}
+
+	void invalidate (size_t offset, size_t size)
+	{
+		DE_ASSERT((offset % m_atomSize) == 0);
+		DE_ASSERT((size % m_atomSize) == 0);
+
+		for (size_t ndx = 0; ndx < size / m_atomSize; ndx++)
+		{
+			if (!m_flushed.get((offset / m_atomSize) + ndx))
+			{
+				for (size_t i = 0; i < m_atomSize; i++)
+					m_defined.set(offset + ndx * m_atomSize + i, false);
+			}
+		}
+	}
+
+
+private:
+	const size_t	m_atomSize;
+	vector<deUint8>	m_bytes;
+	BitVector		m_defined;
+	BitVector		m_flushed;
+};
+
+struct MemoryType
+{
+	MemoryType		(deUint32 index_, const VkMemoryType& type_)
+		: index	(index_)
+		, type	(type_)
+	{
+	}
+
+	MemoryType		(void)
+		: index	(~0u)
+	{
+	}
+
+	deUint32		index;
+	VkMemoryType	type;
+};
+
 size_t computeDeviceMemorySystemMemFootprint (const DeviceInterface& vk, VkDevice device)
 {
 	AllocationCallbackRecorder	callbackRecorder	(getSystemAllocator());
@@ -363,7 +494,7 @@ class MemoryMapping
 public:
 						MemoryMapping	(const MemoryRange&	range,
 										 void*				ptr,
-										 deUint16*			refPtr);
+										 ReferenceMemory&	reference);
 
 	void				randomRead		(de::Random& rng);
 	void				randomWrite		(de::Random& rng);
@@ -372,17 +503,17 @@ public:
 	const MemoryRange&	getRange		(void) const { return m_range; }
 
 private:
-	MemoryRange	m_range;
-	void*		m_ptr;
-	deUint16*	m_refPtr;
+	MemoryRange			m_range;
+	void*				m_ptr;
+	ReferenceMemory&	m_reference;
 };
 
 MemoryMapping::MemoryMapping (const MemoryRange&	range,
 							  void*					ptr,
-							  deUint16*				refPtr)
-	: m_range	(range)
-	, m_ptr		(ptr)
-	, m_refPtr	(refPtr)
+							  ReferenceMemory&		reference)
+	: m_range		(range)
+	, m_ptr			(ptr)
+	, m_reference	(reference)
 {
 	DE_ASSERT(range.size > 0);
 }
@@ -394,12 +525,9 @@ void MemoryMapping::randomRead (de::Random& rng)
 	for (size_t ndx = 0; ndx < count; ndx++)
 	{
 		const size_t	pos	= (size_t)(rng.getUint64() % (deUint64)m_range.size);
-		const deUint8	val	= ((deUint8*) m_ptr)[pos];
+		const deUint8	val	= ((deUint8*)m_ptr)[pos];
 
-		if (m_refPtr[pos] < 256)
-			TCU_CHECK((deUint16)val == m_refPtr[pos]);
-		else
-			m_refPtr[pos] = (deUint16)val;
+		TCU_CHECK(m_reference.read((size_t)(m_range.offset + pos), val));
 	}
 }
 
@@ -413,7 +541,7 @@ void MemoryMapping::randomWrite (de::Random& rng)
 		const deUint8	val	= rng.getUint8();
 
 		((deUint8*)m_ptr)[pos]	= val;
-		m_refPtr[pos]			= (deUint16)val;
+		m_reference.write((size_t)(m_range.offset + pos), val);
 	}
 }
 
@@ -427,22 +555,39 @@ void MemoryMapping::randomModify (de::Random& rng)
 		const deUint8	val		= ((deUint8*)m_ptr)[pos];
 		const deUint8	mask	= rng.getUint8();
 
-		if (m_refPtr[pos] < 256)
-			TCU_CHECK((deUint16)val == m_refPtr[pos]);
-
 		((deUint8*)m_ptr)[pos]	= val ^ mask;
-		m_refPtr[pos]			= (deUint16)(val ^ mask);
+		DE_ASSERT(m_reference.modifyXor((size_t)(m_range.offset + pos), val, mask));
 	}
 }
 
-void randomRanges (de::Random& rng, vector<VkMappedMemoryRange>& ranges, size_t count, VkDeviceMemory memory, VkDeviceSize minOffset, VkDeviceSize maxSize)
+VkDeviceSize randomSize (de::Random& rng, VkDeviceSize atomSize, VkDeviceSize maxSize)
+{
+	const VkDeviceSize maxSizeInAtoms = maxSize / atomSize;
+
+	DE_ASSERT(maxSizeInAtoms > 0);
+
+	return maxSizeInAtoms > 1
+			? atomSize * (1 + (VkDeviceSize)(rng.getUint64() % (deUint64)maxSizeInAtoms))
+			: atomSize;
+}
+
+VkDeviceSize randomOffset (de::Random& rng, VkDeviceSize atomSize, VkDeviceSize maxOffset)
+{
+	const VkDeviceSize maxOffsetInAtoms = maxOffset / atomSize;
+
+	return maxOffsetInAtoms > 0
+			? atomSize * (VkDeviceSize)(rng.getUint64() % (deUint64)(maxOffsetInAtoms + 1))
+			: 0;
+}
+
+void randomRanges (de::Random& rng, vector<VkMappedMemoryRange>& ranges, size_t count, VkDeviceMemory memory, VkDeviceSize minOffset, VkDeviceSize maxSize, VkDeviceSize atomSize)
 {
 	ranges.resize(count);
 
 	for (size_t rangeNdx = 0; rangeNdx < count; rangeNdx++)
 	{
-		const VkDeviceSize	size	= (maxSize > 1 ? (VkDeviceSize)(1 + (rng.getUint64() % (deUint64)(maxSize - 1))) : 1);
-		const VkDeviceSize	offset	= minOffset + (VkDeviceSize)(rng.getUint64() % (deUint64)(maxSize - size + 1));
+		const VkDeviceSize	size	= randomSize(rng, atomSize, maxSize);
+		const VkDeviceSize	offset	= minOffset + randomOffset(rng, atomSize, maxSize - size);
 
 		const VkMappedMemoryRange range =
 		{
@@ -463,7 +608,8 @@ public:
 							MemoryObject		(const DeviceInterface&		vkd,
 												 VkDevice					device,
 												 VkDeviceSize				size,
-												 deUint32					memoryTypeIndex);
+												 deUint32					memoryTypeIndex,
+												 VkDeviceSize				atomSize);
 
 							~MemoryObject		(void);
 
@@ -478,29 +624,32 @@ public:
 
 private:
 	const DeviceInterface&	m_vkd;
-	VkDevice				m_device;
+	const VkDevice			m_device;
 
-	deUint32				m_memoryTypeIndex;
-	VkDeviceSize			m_size;
+	const deUint32			m_memoryTypeIndex;
+	const VkDeviceSize		m_size;
+	const VkDeviceSize		m_atomSize;
 
 	Move<VkDeviceMemory>	m_memory;
 
 	MemoryMapping*			m_mapping;
-	vector<deUint16>		m_reference;
+	ReferenceMemory			m_referenceMemory;
 };
 
 MemoryObject::MemoryObject (const DeviceInterface&		vkd,
 							VkDevice					device,
 							VkDeviceSize				size,
-							deUint32					memoryTypeIndex)
+							deUint32					memoryTypeIndex,
+							VkDeviceSize				atomSize)
 	: m_vkd				(vkd)
 	, m_device			(device)
 	, m_memoryTypeIndex	(memoryTypeIndex)
 	, m_size			(size)
+	, m_atomSize		(atomSize)
 	, m_mapping			(DE_NULL)
+	, m_referenceMemory	((size_t)size, (size_t)m_atomSize)
 {
 	m_memory = allocMemory(m_vkd, m_device, m_size, m_memoryTypeIndex);
-	m_reference.resize((size_t)m_size, 0xFFFFu);
 }
 
 MemoryObject::~MemoryObject (void)
@@ -510,15 +659,15 @@ MemoryObject::~MemoryObject (void)
 
 MemoryMapping* MemoryObject::mapRandom (const DeviceInterface& vkd, VkDevice device, de::Random& rng)
 {
-	const VkDeviceSize	size	= (m_size > 1 ? (VkDeviceSize)(1 + (rng.getUint64() % (deUint64)(m_size - 1))) : 1);
-	const VkDeviceSize	offset	= (VkDeviceSize)(rng.getUint64() % (deUint64)(m_size - size + 1));
+	const VkDeviceSize	size	= randomSize(rng, m_atomSize, m_size);
+	const VkDeviceSize	offset	= randomOffset(rng, m_atomSize, m_size - size);
 	void*				ptr;
 
 	DE_ASSERT(!m_mapping);
 
 	VK_CHECK(vkd.mapMemory(device, *m_memory, offset, size, 0u, &ptr));
 	TCU_CHECK(ptr);
-	m_mapping = new MemoryMapping(MemoryRange(offset, size), ptr, &(m_reference[(size_t)offset]));
+	m_mapping = new MemoryMapping(MemoryRange(offset, size), ptr, m_referenceMemory);
 
 	return m_mapping;
 }
@@ -536,7 +685,10 @@ void MemoryObject::randomFlush (const DeviceInterface& vkd, VkDevice device, de:
 	const size_t				rangeCount	= (size_t)rng.getInt(1, 10);
 	vector<VkMappedMemoryRange>	ranges		(rangeCount);
 
-	randomRanges(rng, ranges, rangeCount, *m_memory, m_mapping->getRange().offset, m_mapping->getRange().size);
+	randomRanges(rng, ranges, rangeCount, *m_memory, m_mapping->getRange().offset, m_mapping->getRange().size, m_atomSize);
+
+	for (size_t rangeNdx = 0; rangeNdx < ranges.size(); rangeNdx++)
+		m_referenceMemory.flush((size_t)ranges[rangeNdx].offset, (size_t)ranges[rangeNdx].size);
 
 	VK_CHECK(vkd.flushMappedMemoryRanges(device, (deUint32)ranges.size(), ranges.empty() ? DE_NULL : &ranges[0]));
 }
@@ -546,7 +698,10 @@ void MemoryObject::randomInvalidate (const DeviceInterface& vkd, VkDevice device
 	const size_t				rangeCount	= (size_t)rng.getInt(1, 10);
 	vector<VkMappedMemoryRange>	ranges		(rangeCount);
 
-	randomRanges(rng, ranges, rangeCount, *m_memory, m_mapping->getRange().offset, m_mapping->getRange().size);
+	randomRanges(rng, ranges, rangeCount, *m_memory, m_mapping->getRange().offset, m_mapping->getRange().size, m_atomSize);
+
+	for (size_t rangeNdx = 0; rangeNdx < ranges.size(); rangeNdx++)
+		m_referenceMemory.invalidate((size_t)ranges[rangeNdx].offset, (size_t)ranges[rangeNdx].size);
 
 	VK_CHECK(vkd.invalidateMappedMemoryRanges(device, (deUint32)ranges.size(), ranges.empty() ? DE_NULL : &ranges[0]));
 }
@@ -620,14 +775,16 @@ class MemoryHeap
 {
 public:
 	MemoryHeap (const VkMemoryHeap&			heap,
-				const vector<deUint32>&		memoryTypes,
+				const vector<MemoryType>&	memoryTypes,
 				const PlatformMemoryLimits&	memoryLimits,
+				const VkDeviceSize			nonCoherentAtomSize,
 				TotalMemoryTracker&			totalMemTracker)
-		: m_heap			(heap)
-		, m_memoryTypes		(memoryTypes)
-		, m_limits			(memoryLimits)
-		, m_totalMemTracker	(totalMemTracker)
-		, m_usage			(0)
+		: m_heap				(heap)
+		, m_memoryTypes			(memoryTypes)
+		, m_limits				(memoryLimits)
+		, m_nonCoherentAtomSize	(nonCoherentAtomSize)
+		, m_totalMemTracker		(totalMemTracker)
+		, m_usage				(0)
 	{
 	}
 
@@ -637,8 +794,8 @@ public:
 			delete *iter;
 	}
 
-	bool								full			(void) const { return getAvailableMem() == 0;	}
-	bool								empty			(void) const { return m_usage == 0;				}
+	bool								full			(void) const { return getAvailableMem() < m_nonCoherentAtomSize * (1 + REFERENCE_BYTES_PER_BYTE);	}
+	bool								empty			(void) const { return m_usage == 0;																	}
 
 	MemoryObject*						allocateRandom	(const DeviceInterface& vkd, VkDevice device, de::Random& rng)
 	{
@@ -646,12 +803,15 @@ public:
 
 		DE_ASSERT(availableMem > 0);
 
-		const VkDeviceSize		size			= 1ull + (rng.getUint64() % availableMem);
-		const deUint32			type			= rng.choose<deUint32>(m_memoryTypes.begin(), m_memoryTypes.end());
+		const MemoryType		type			= rng.choose<MemoryType>(m_memoryTypes.begin(), m_memoryTypes.end());
+		const VkDeviceSize		atomSize		= (type.type.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0
+												? 1
+												: m_nonCoherentAtomSize;
+		const VkDeviceSize		size			= randomSize(rng, atomSize, availableMem);
 
 		DE_ASSERT(size <= availableMem);
 
-		MemoryObject* const		object	= new MemoryObject(vkd, device, size, type);
+		MemoryObject* const		object	= new MemoryObject(vkd, device, size, type.index, atomSize);
 
 		m_usage += size;
 		m_totalMemTracker.allocate(getMemoryClass(), size);
@@ -718,8 +878,9 @@ private:
 	}
 
 	const VkMemoryHeap			m_heap;
-	const vector<deUint32>		m_memoryTypes;
+	const vector<MemoryType>	m_memoryTypes;
 	const PlatformMemoryLimits&	m_limits;
+	const VkDeviceSize			m_nonCoherentAtomSize;
 	TotalMemoryTracker&			m_totalMemTracker;
 
 	VkDeviceSize				m_usage;
@@ -752,15 +913,19 @@ public:
 		const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
 		const InstanceInterface&				vki					= context.getInstanceInterface();
 		const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+		// \todo [2016-05-26 misojarvi] Remove zero check once drivers report correctly 1 instead of 0
+		const VkDeviceSize						nonCoherentAtomSize	= context.getDeviceProperties().limits.nonCoherentAtomSize != 0
+																	? context.getDeviceProperties().limits.nonCoherentAtomSize
+																	: 1;
 
 		// Initialize heaps
 		{
-			vector<vector<deUint32> >	memoryTypes	(memoryProperties.memoryHeapCount);
+			vector<vector<MemoryType> >	memoryTypes	(memoryProperties.memoryHeapCount);
 
 			for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < memoryProperties.memoryTypeCount; memoryTypeNdx++)
 			{
 				if (memoryProperties.memoryTypes[memoryTypeNdx].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-					memoryTypes[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].push_back(memoryTypeNdx);
+					memoryTypes[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].push_back(MemoryType(memoryTypeNdx, memoryProperties.memoryTypes[memoryTypeNdx]));
 			}
 
 			for (deUint32 heapIndex = 0; heapIndex < memoryProperties.memoryHeapCount; heapIndex++)
@@ -769,7 +934,7 @@ public:
 
 				if (!memoryTypes[heapIndex].empty())
 				{
-					const de::SharedPtr<MemoryHeap>	heap	(new MemoryHeap(heapInfo, memoryTypes[heapIndex], m_memoryLimits, m_totalMemTracker));
+					const de::SharedPtr<MemoryHeap>	heap	(new MemoryHeap(heapInfo, memoryTypes[heapIndex], m_memoryLimits, nonCoherentAtomSize, m_totalMemTracker));
 
 					TCU_CHECK_INTERNAL(!heap->full());
 
