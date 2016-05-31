@@ -150,7 +150,6 @@ static const char* const s_CommonTypes =
 	"%fvec3     = OpTypeVector %f32 3\n"
 	"%uvec3ptr  = OpTypePointer Input %uvec3\n"
 	"%f32ptr    = OpTypePointer Uniform %f32\n"
-	"%boolptr   = OpTypePointer Uniform %bool\n"
 	"%f32arr    = OpTypeRuntimeArray %f32\n"
 	"%boolarr   = OpTypeRuntimeArray %bool\n";
 
@@ -300,6 +299,7 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 
 		+ string(s_CommonTypes) +
 
+		"%i32ptr     = OpTypePointer Uniform %i32\n"
 		"%buf        = OpTypeStruct %f32arr\n"
 		"%bufptr     = OpTypePointer Uniform %buf\n"
 		"%indata1    = OpVariable %bufptr Uniform\n"
@@ -311,6 +311,7 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
+		"%consti1   = OpConstant %i32 1\n"
 		"%constf1   = OpConstant %f32 1.0\n"
 
 		"%main      = OpFunction %void None %voidf\n"
@@ -322,10 +323,11 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 		"%inval1    = OpLoad %f32 %inloc1\n"
 		"%inloc2    = OpAccessChain %f32ptr %indata2 %zero %x\n"
 		"%inval2    = OpLoad %f32 %inloc2\n"
-		"%outloc    = OpAccessChain %boolptr %outdata %zero %x\n"
+		"%outloc    = OpAccessChain %i32ptr %outdata %zero %x\n"
 
 		"%result    = ${OPCODE} %bool %inval1 %inval2\n"
-		"             OpStore %outloc %result\n"
+		"%int_res   = OpSelect %i32 %result %consti1 %zero\n"
+		"             OpStore %outloc %int_res\n"
 
 		"             OpReturn\n"
 		"             OpFunctionEnd\n");
