@@ -525,7 +525,7 @@ void MemoryMapping::randomModify (de::Random& rng)
 		const deUint8	mask	= rng.getUint8();
 
 		((deUint8*)m_ptr)[pos]	= val ^ mask;
-		DE_ASSERT(m_reference.modifyXor((size_t)(m_range.offset + pos), val, mask));
+		TCU_CHECK(m_reference.modifyXor((size_t)(m_range.offset + pos), val, mask));
 	}
 }
 
