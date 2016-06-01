@@ -183,10 +183,11 @@ bool comparePixelToColorClearValue (const ConstPixelBufferAccess&	access,
 									 ref.float32[1],
 									 ref.float32[2],
 									 ref.float32[3]);
-			const Vec4	threshold	(bitDepth[0] > 0 ? 20.0f / (float)((1 << bitDepth[0]) - 1) : 1.0f,
-									 bitDepth[1] > 0 ? 20.0f / (float)((1 << bitDepth[1]) - 1) : 1.0f,
-									 bitDepth[2] > 0 ? 20.0f / (float)((1 << bitDepth[2]) - 1) : 1.0f,
-									 bitDepth[3] > 0 ? 20.0f / (float)((1 << bitDepth[3]) - 1) : 1.0f);
+			const int	modifier	= (channelClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT) ? 0 : 1;
+			const Vec4	threshold	(bitDepth[0] > 0 ? 1.0f / ((float)(1 << (bitDepth[0] - modifier)) - 1.0f) : 1.0f,
+									 bitDepth[1] > 0 ? 1.0f / ((float)(1 << (bitDepth[1] - modifier)) - 1.0f) : 1.0f,
+									 bitDepth[2] > 0 ? 1.0f / ((float)(1 << (bitDepth[2] - modifier)) - 1.0f) : 1.0f,
+									 bitDepth[3] > 0 ? 1.0f / ((float)(1 << (bitDepth[3] - modifier)) - 1.0f) : 1.0f);
 
 			if (isSRGB(access.getFormat()))
 				refColor	= linearToSRGB(refColor);
