@@ -150,7 +150,6 @@ static const char* const s_CommonTypes =
 	"%fvec3     = OpTypeVector %f32 3\n"
 	"%uvec3ptr  = OpTypePointer Input %uvec3\n"
 	"%f32ptr    = OpTypePointer Uniform %f32\n"
-	"%boolptr   = OpTypePointer Uniform %bool\n"
 	"%f32arr    = OpTypeRuntimeArray %f32\n"
 	"%boolarr   = OpTypeRuntimeArray %bool\n";
 
@@ -231,17 +230,17 @@ bool compareFUnord (const std::vector<BufferSp>& inputs, const vector<Allocation
 		return false;
 
 	const BufferSp&	expectedOutput			= expectedOutputs[0];
-	const VkBool32*	expectedOutputAsBool	= static_cast<const VkBool32*>(expectedOutputs[0]->data());
-	const VkBool32*	outputAsBool			= static_cast<const VkBool32*>(outputAllocs[0]->getHostPtr());
+	const deInt32*	expectedOutputAsInt		= static_cast<const deInt32*>(expectedOutputs[0]->data());
+	const deInt32*	outputAsInt				= static_cast<const deInt32*>(outputAllocs[0]->getHostPtr());
 	const float*	input1AsFloat			= static_cast<const float*>(inputs[0]->data());
 	const float*	input2AsFloat			= static_cast<const float*>(inputs[1]->data());
 	bool returnValue						= true;
 
-	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(VkBool32); ++idx)
+	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(deInt32); ++idx)
 	{
-		if (outputAsBool[idx] != expectedOutputAsBool[idx])
+		if (outputAsInt[idx] != expectedOutputAsInt[idx])
 		{
-			log << TestLog::Message << "ERROR: Sub-case failed. inputs: " << input1AsFloat[idx] << "," << input2AsFloat[idx] << " output: " << outputAsBool[idx]<< " expected output: " << expectedOutputAsBool[idx] << TestLog::EndMessage;
+			log << TestLog::Message << "ERROR: Sub-case failed. inputs: " << input1AsFloat[idx] << "," << input2AsFloat[idx] << " output: " << outputAsInt[idx]<< " expected output: " << expectedOutputAsInt[idx] << TestLog::EndMessage;
 			returnValue = false;
 		}
 	}
@@ -300,6 +299,7 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 
 		+ string(s_CommonTypes) +
 
+		"%i32ptr     = OpTypePointer Uniform %i32\n"
 		"%buf        = OpTypeStruct %f32arr\n"
 		"%bufptr     = OpTypePointer Uniform %buf\n"
 		"%indata1    = OpVariable %bufptr Uniform\n"
@@ -311,6 +311,7 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
+		"%consti1   = OpConstant %i32 1\n"
 		"%constf1   = OpConstant %f32 1.0\n"
 
 		"%main      = OpFunction %void None %voidf\n"
@@ -322,10 +323,11 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 		"%inval1    = OpLoad %f32 %inloc1\n"
 		"%inloc2    = OpAccessChain %f32ptr %indata2 %zero %x\n"
 		"%inval2    = OpLoad %f32 %inloc2\n"
-		"%outloc    = OpAccessChain %boolptr %outdata %zero %x\n"
+		"%outloc    = OpAccessChain %i32ptr %outdata %zero %x\n"
 
 		"%result    = ${OPCODE} %bool %inval1 %inval2\n"
-		"             OpStore %outloc %result\n"
+		"%int_res   = OpSelect %i32 %result %consti1 %zero\n"
+		"             OpStore %outloc %int_res\n"
 
 		"             OpReturn\n"
 		"             OpFunctionEnd\n");
@@ -344,7 +346,7 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 		const float					NaN				= std::numeric_limits<float>::quiet_NaN();
 		vector<float>				inputFloats1	(numElements, 0);
 		vector<float>				inputFloats2	(numElements, 0);
-		vector<VkBool32>			expectedBools	(numElements, VK_FALSE);
+		vector<deInt32>				expectedInts	(numElements, 0);
 
 		specializations["OPCODE"]	= cases[caseNdx].opCode;
 		spec.assembly				= shaderTemplate.specialize(specializations);
@@ -361,12 +363,12 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 				case 4:		inputFloats2[ndx] = inputFloats1[ndx];	inputFloats1[ndx] = NaN; break;
 				case 5:		inputFloats2[ndx] = NaN;				inputFloats1[ndx] = NaN; break;
 			}
-			expectedBools[ndx] = tcu::Float32(inputFloats1[ndx]).isNaN() || tcu::Float32(inputFloats2[ndx]).isNaN() || cases[caseNdx].compareFunc(inputFloats1[ndx], inputFloats2[ndx]);
+			expectedInts[ndx] = tcu::Float32(inputFloats1[ndx]).isNaN() || tcu::Float32(inputFloats2[ndx]).isNaN() || cases[caseNdx].compareFunc(inputFloats1[ndx], inputFloats2[ndx]);
 		}
 
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats1)));
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
-		spec.outputs.push_back(BufferSp(new BoolBuffer(expectedBools)));
+		spec.outputs.push_back(BufferSp(new Int32Buffer(expectedInts)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
 		spec.verifyIO = &compareFUnord;
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
