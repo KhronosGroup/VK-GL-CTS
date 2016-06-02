@@ -514,7 +514,12 @@ Move<VkImageView> ImageClearingTestInstance::createImageView (VkImage image, VkI
 		image,										// VkImage						image;
 		viewType,									// VkImageViewType				viewType;
 		format,										// VkFormat						format;
-		getFormatComponentMapping(format),			// VkComponentMapping			components;
+		{
+			VK_COMPONENT_SWIZZLE_IDENTITY,				// VkComponentSwizzle			r;
+			VK_COMPONENT_SWIZZLE_IDENTITY,				// VkComponentSwizzle			g;
+			VK_COMPONENT_SWIZZLE_IDENTITY,				// VkComponentSwizzle			b;
+			VK_COMPONENT_SWIZZLE_IDENTITY,				// VkComponentSwizzle			a;
+		},											// VkComponentMapping			components;
 		{
 			aspectMask,									// VkImageAspectFlags			aspectMask;
 			0u,											// deUint32						baseMipLevel;
