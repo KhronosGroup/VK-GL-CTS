@@ -1391,6 +1391,25 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 	// Create color image
 	{
+		const VkImageUsageFlags	imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		VkImageFormatProperties	properties;
+
+		if ((m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(),
+																					 m_colorFormat,
+																					 VK_IMAGE_TYPE_2D,
+																					 VK_IMAGE_TILING_OPTIMAL,
+																					 imageUsage,
+																					 0u,
+																					 &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+		{
+			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+
+		if ((properties.sampleCounts & m_sampleCount) != m_sampleCount)
+		{
+			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+
 		const VkImageCreateInfo							colorImageParams			=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType		sType;
@@ -1403,7 +1422,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			1u,																			// deUint32				arraySize;
 			m_sampleCount,																// deUint32				samples;
 			VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling		tiling;
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags	usage;
+			imageUsage,																	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode		sharingMode;
 			1u,																			// deUint32				queueFamilyCount;
 			&queueFamilyIndex,															// const deUint32*		pQueueFamilyIndices;
