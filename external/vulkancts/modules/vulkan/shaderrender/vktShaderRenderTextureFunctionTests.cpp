@@ -1506,7 +1506,7 @@ void ShaderTextureFunctionTests::init (void)
 
 	static const tcu::Sampler	samplerTexelFetch		(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 														 tcu::Sampler::NEAREST_MIPMAP_NEAREST, tcu::Sampler::NEAREST,
-														 0.0f /* LOD threshold */, false /* non-normalized coords */, tcu::Sampler::COMPAREMODE_NONE,
+														 00.0f /* LOD threshold */, true /* normalized coords */, tcu::Sampler::COMPAREMODE_NONE,
 														 0 /* cmp channel */, tcu::Vec4(0.0f) /* border color */, true /* seamless cube map */);
 
 	// Default textures.
