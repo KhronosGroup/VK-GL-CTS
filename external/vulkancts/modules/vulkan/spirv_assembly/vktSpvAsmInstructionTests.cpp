@@ -230,17 +230,17 @@ bool compareFUnord (const std::vector<BufferSp>& inputs, const vector<Allocation
 		return false;
 
 	const BufferSp&	expectedOutput			= expectedOutputs[0];
-	const VkBool32*	expectedOutputAsBool	= static_cast<const VkBool32*>(expectedOutputs[0]->data());
-	const VkBool32*	outputAsBool			= static_cast<const VkBool32*>(outputAllocs[0]->getHostPtr());
+	const deInt32*	expectedOutputAsInt		= static_cast<const deInt32*>(expectedOutputs[0]->data());
+	const deInt32*	outputAsInt				= static_cast<const deInt32*>(outputAllocs[0]->getHostPtr());
 	const float*	input1AsFloat			= static_cast<const float*>(inputs[0]->data());
 	const float*	input2AsFloat			= static_cast<const float*>(inputs[1]->data());
 	bool returnValue						= true;
 
-	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(VkBool32); ++idx)
+	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(deInt32); ++idx)
 	{
-		if (outputAsBool[idx] != expectedOutputAsBool[idx])
+		if (outputAsInt[idx] != expectedOutputAsInt[idx])
 		{
-			log << TestLog::Message << "ERROR: Sub-case failed. inputs: " << input1AsFloat[idx] << "," << input2AsFloat[idx] << " output: " << outputAsBool[idx]<< " expected output: " << expectedOutputAsBool[idx] << TestLog::EndMessage;
+			log << TestLog::Message << "ERROR: Sub-case failed. inputs: " << input1AsFloat[idx] << "," << input2AsFloat[idx] << " output: " << outputAsInt[idx]<< " expected output: " << expectedOutputAsInt[idx] << TestLog::EndMessage;
 			returnValue = false;
 		}
 	}
@@ -346,7 +346,7 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 		const float					NaN				= std::numeric_limits<float>::quiet_NaN();
 		vector<float>				inputFloats1	(numElements, 0);
 		vector<float>				inputFloats2	(numElements, 0);
-		vector<VkBool32>			expectedBools	(numElements, VK_FALSE);
+		vector<deInt32>				expectedInts	(numElements, 0);
 
 		specializations["OPCODE"]	= cases[caseNdx].opCode;
 		spec.assembly				= shaderTemplate.specialize(specializations);
@@ -363,12 +363,12 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 				case 4:		inputFloats2[ndx] = inputFloats1[ndx];	inputFloats1[ndx] = NaN; break;
 				case 5:		inputFloats2[ndx] = NaN;				inputFloats1[ndx] = NaN; break;
 			}
-			expectedBools[ndx] = tcu::Float32(inputFloats1[ndx]).isNaN() || tcu::Float32(inputFloats2[ndx]).isNaN() || cases[caseNdx].compareFunc(inputFloats1[ndx], inputFloats2[ndx]);
+			expectedInts[ndx] = tcu::Float32(inputFloats1[ndx]).isNaN() || tcu::Float32(inputFloats2[ndx]).isNaN() || cases[caseNdx].compareFunc(inputFloats1[ndx], inputFloats2[ndx]);
 		}
 
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats1)));
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
-		spec.outputs.push_back(BufferSp(new BoolBuffer(expectedBools)));
+		spec.outputs.push_back(BufferSp(new Int32Buffer(expectedInts)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
 		spec.verifyIO = &compareFUnord;
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
