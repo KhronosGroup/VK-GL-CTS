@@ -1,5 +1,5 @@
 #ifndef _VKTSHADERRENDERDERIVATETESTS_HPP
-#define _VKTSHADERRNEDERDERIVATETESTS_HPP
+#define _VKTSHADERRENDERDERIVATETESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -38,4 +38,4 @@ tcu::TestCaseGroup*	createDerivateTests	(tcu::TestContext& testCtx);
 } // sr
 } // vkt
 
-#endif // _VKTSHADERRNEDERDERIVATETESTS_HPP
+#endif // _VKTSHADERRENDERDERIVATETESTS_HPP

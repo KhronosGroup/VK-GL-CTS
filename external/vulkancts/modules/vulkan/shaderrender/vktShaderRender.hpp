@@ -449,6 +449,8 @@ protected:
 
 	void												setSampleCount				(vk::VkSampleCountFlagBits sampleCount);
 
+	bool												isMultiSampling				(void) const;
+	
 	vk::Allocator&										m_memAlloc;
 	const tcu::Vec4										m_clearColor;
 	const bool											m_isVertexCase;
@@ -559,7 +561,6 @@ private:
 	std::vector<AllocationSp>							m_vertexBufferAllocs;
 
 	vk::VkSampleCountFlagBits							m_sampleCount;
-	bool												m_multisampling;
 };
 
 template<typename T>

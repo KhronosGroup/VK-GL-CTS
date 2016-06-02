@@ -514,7 +514,6 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 	, m_uniformSetup		(&uniformSetup)
 	, m_attribFunc			(attribFunc)
 	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
-	, m_multisampling		(false)
 {
 }
 
@@ -535,7 +534,6 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 	, m_uniformSetup		(uniformSetup)
 	, m_attribFunc			(attribFunc)
 	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
-	, m_multisampling		(false)
 {
 }
 
@@ -826,7 +824,11 @@ const tcu::UVec2 ShaderRenderCaseInstance::getViewportSize (void) const
 void ShaderRenderCaseInstance::setSampleCount (VkSampleCountFlagBits sampleCount)
 {
 	m_sampleCount	= sampleCount;
-	m_multisampling	= (m_sampleCount != VK_SAMPLE_COUNT_1_BIT);
+}
+
+bool ShaderRenderCaseInstance::isMultiSampling (void) const
+{
+	return m_sampleCount != VK_SAMPLE_COUNT_1_BIT;
 }
 
 void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texFormat,
@@ -1443,7 +1445,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		colorImageView = createImageView(vk, vkDevice, &colorImageViewParams);
 	}
 
-	if (m_multisampling)
+	if (isMultiSampling())
 	{
 		// Resolved Image
 		{
@@ -1562,7 +1564,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			DE_NULL,											// constVkAttachmentReference*	pInputAttachments;
 			1u,													// deUint32						colorCount;
 			&attachmentReference,								// constVkAttachmentReference*	pColorAttachments;
-			m_multisampling ? &resolveAttachmentRef : DE_NULL,	// constVkAttachmentReference*	pResolveAttachments;
+			isMultiSampling() ? &resolveAttachmentRef : DE_NULL,// constVkAttachmentReference*	pResolveAttachments;
 			DE_NULL,											// VkAttachmentReference		depthStencilAttachment;
 			0u,													// deUint32						preserveCount;
 			DE_NULL												// constVkAttachmentReference*	pPreserveAttachments;
@@ -1573,7 +1575,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
 			0u,													// VkRenderPassCreateFlags			flags;
-			m_multisampling ? 2u : 1u,							// deUint32							attachmentCount;
+			isMultiSampling() ? 2u : 1u,						// deUint32							attachmentCount;
 			attachmentDescription,								// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
 			&subpassDescription,								// const VkSubpassDescription*		pSubpasses;
@@ -1598,7 +1600,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			DE_NULL,											// const void*					pNext;
 			(VkFramebufferCreateFlags)0,
 			*renderPass,										// VkRenderPass					renderPass;
-			m_multisampling ? 2u : 1u,							// deUint32						attachmentCount;
+			isMultiSampling() ? 2u : 1u,						// deUint32						attachmentCount;
 			attachments,										// const VkImageView*			pAttachments;
 			(deUint32)m_renderSize.x(),							// deUint32						width;
 			(deUint32)m_renderSize.y(),							// deUint32						height;
@@ -1941,7 +1943,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, DE_NULL, 1, &imageBarrier);
 
-			if (m_multisampling) {
+			if (isMultiSampling()) {
 				// add multisample barrier
 				const VkImageMemoryBarrier				multiSampleImageBarrier		=
 				{
@@ -2100,7 +2102,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,									// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,												// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,												// deUint32					dstQueueFamilyIndex;
-			m_multisampling ? *resolvedImage : *colorImage,							// VkImage					image;
+			isMultiSampling() ? *resolvedImage : *colorImage,						// VkImage					image;
 			{																		// VkImageSubresourceRange	subresourceRange;
 				VK_IMAGE_ASPECT_COLOR_BIT,											// VkImageAspectFlags		aspectMask;
 				0u,																	// deUint32					baseMipLevel;
@@ -2124,7 +2126,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		};
 
 		vk.cmdPipelineBarrier(*resultCmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
-		vk.cmdCopyImageToBuffer(*resultCmdBuffer, m_multisampling ? *resolvedImage : *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
+		vk.cmdCopyImageToBuffer(*resultCmdBuffer, isMultiSampling() ? *resolvedImage : *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
 		vk.cmdPipelineBarrier(*resultCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
 		VK_CHECK(vk.endCommandBuffer(*resultCmdBuffer));
