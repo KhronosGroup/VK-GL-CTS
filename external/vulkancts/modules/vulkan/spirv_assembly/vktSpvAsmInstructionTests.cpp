@@ -152,8 +152,7 @@ static const char* const s_CommonTypes =
 	"%i32ptr    = OpTypePointer Uniform %i32\n"
 	"%f32ptr    = OpTypePointer Uniform %f32\n"
 	"%i32arr    = OpTypeRuntimeArray %i32\n"
-	"%f32arr    = OpTypeRuntimeArray %f32\n"
-	"%boolarr   = OpTypeRuntimeArray %bool\n";
+	"%f32arr    = OpTypeRuntimeArray %f32\n";
 
 // Declares two uniform variables (indata, outdata) of type "struct { float[] }". Depends on type "f32arr" (for "float[]").
 static const char* const s_InputOutputBuffer =
@@ -295,7 +294,7 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 		"OpDecorate %outdata DescriptorSet 0\n"
 		"OpDecorate %outdata Binding 2\n"
 		"OpDecorate %f32arr ArrayStride 4\n"
-		"OpDecorate %boolarr ArrayStride 4\n"
+		"OpDecorate %i32arr ArrayStride 4\n"
 		"OpMemberDecorate %buf 0 Offset 0\n"
 		"OpMemberDecorate %buf2 0 Offset 0\n"
 
@@ -306,7 +305,7 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 		"%indata1    = OpVariable %bufptr Uniform\n"
 		"%indata2    = OpVariable %bufptr Uniform\n"
 
-		"%buf2       = OpTypeStruct %boolarr\n"
+		"%buf2       = OpTypeStruct %i32arr\n"
 		"%buf2ptr    = OpTypePointer Uniform %buf2\n"
 		"%outdata    = OpVariable %buf2ptr Uniform\n"
 
@@ -383,11 +382,13 @@ struct OpAtomicCase
 	const char*		name;
 	const char*		assembly;
 	void			(*calculateExpected)(deInt32&, deInt32);
+	deInt32			numOutputElements;
 
-					OpAtomicCase 			(const char* _name, const char* _assembly, void (*_calculateExpected)(deInt32&, deInt32) )
+					OpAtomicCase 			(const char* _name, const char* _assembly, void (*_calculateExpected)(deInt32&, deInt32), deInt32 _numOutputElements)
 						: name				(_name)
 						, assembly			(_assembly)
-						, calculateExpected	(_calculateExpected) {}
+						, calculateExpected	(_calculateExpected)
+						, numOutputElements (_numOutputElements) {}
 };
 
 tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx)
@@ -425,13 +426,15 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx)
 		"%bufptr    = OpTypePointer Uniform %buf\n"
 		"%indata    = OpVariable %bufptr Uniform\n"
 
-		"%sumbuf    = OpTypeStruct %i32\n"
+		"%sumbuf    = OpTypeStruct %i32arr\n"
 		"%sumbufptr = OpTypePointer Uniform %sumbuf\n"
 		"%sum       = OpVariable %sumbufptr Uniform\n"
 
 		"%id        = OpVariable %uvec3ptr Input\n"
+		"%minusone  = OpConstant %i32 -1\n"
 		"%zero      = OpConstant %i32 0\n"
 		"%one       = OpConstant %u32 1\n"
+		"%two       = OpConstant %i32 2\n"
 
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
@@ -441,38 +444,51 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx)
 		"%inloc     = OpAccessChain %i32ptr %indata %zero %x\n"
 		"%inval     = OpLoad %i32 %inloc\n"
 
-		"%outloc    = OpAccessChain %i32ptr %sum %zero\n"
+		"%outloc    = OpAccessChain %i32ptr %sum %zero ${INDEX}\n"
 		"${INSTRUCTION}"
+
 		"             OpReturn\n"
 		"             OpFunctionEnd\n");
 
-	#define ADD_OPATOMIC_CASE(NAME, ASSEMBLY, CALCULATE_EXPECTED) \
+	#define ADD_OPATOMIC_CASE(NAME, ASSEMBLY, CALCULATE_EXPECTED, NUM_OUTPUT_ELEMENTS) \
 	do { \
+		DE_STATIC_ASSERT(NUM_OUTPUT_ELEMENTS == 1 || NUM_OUTPUT_ELEMENTS == numElements); \
 		struct calculateExpected_##NAME { static void calculateExpected(deInt32& expected, deInt32 input) CALCULATE_EXPECTED }; \
-		cases.push_back(OpAtomicCase(#NAME, ASSEMBLY, calculateExpected_##NAME::calculateExpected)); \
+		cases.push_back(OpAtomicCase(#NAME, ASSEMBLY, calculateExpected_##NAME::calculateExpected, NUM_OUTPUT_ELEMENTS)); \
 	} while (deGetFalse())
+	#define ADD_OPATOMIC_CASE_1(NAME, ASSEMBLY, CALCULATE_EXPECTED) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, CALCULATE_EXPECTED, 1)
+	#define ADD_OPATOMIC_CASE_N(NAME, ASSEMBLY, CALCULATE_EXPECTED) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, CALCULATE_EXPECTED, numElements)
 
-	ADD_OPATOMIC_CASE(iadd, "%unused    = OpAtomicIAdd %i32 %outloc %one %zero %inval\n", { expected += input; } );
-	ADD_OPATOMIC_CASE(isub, "%unused    = OpAtomicISub %i32 %outloc %one %zero %inval\n", { expected -= input; } );
-	ADD_OPATOMIC_CASE(iinc, "%unused    = OpAtomicIIncrement %i32 %outloc %one %zero\n",  { ++expected; (void)input;} );
-	ADD_OPATOMIC_CASE(idec, "%unused    = OpAtomicIDecrement %i32 %outloc %one %zero\n",  { --expected; (void)input;} );
+	ADD_OPATOMIC_CASE_1(iadd,	"%unused    = OpAtomicIAdd %i32 %outloc %one %zero %inval\n", { expected += input; } );
+	ADD_OPATOMIC_CASE_1(isub,	"%unused    = OpAtomicISub %i32 %outloc %one %zero %inval\n", { expected -= input; } );
+	ADD_OPATOMIC_CASE_1(iinc,	"%unused    = OpAtomicIIncrement %i32 %outloc %one %zero\n",  { ++expected; (void)input;} );
+	ADD_OPATOMIC_CASE_1(idec,	"%unused    = OpAtomicIDecrement %i32 %outloc %one %zero\n",  { --expected; (void)input;} );
+	ADD_OPATOMIC_CASE_N(load,	"%inval2    = OpAtomicLoad %i32 %inloc %zero %zero\n"
+								"             OpStore %outloc %inval2\n",  { expected = input;} );
+	ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc %zero %zero %inval\n",  { expected = input;} );
+	ADD_OPATOMIC_CASE_N(compex, "%even      = OpSMod %i32 %inval %two\n"
+								"             OpStore %outloc %even\n"
+								"%unused    = OpAtomicCompareExchange %i32 %outloc %one %zero %zero %minusone %zero\n",  { expected = (input % 2) == 0 ? -1 : 1;} );
 
 	#undef ADD_OPATOMIC_CASE
+	#undef ADD_OPATOMIC_CASE_1
+	#undef ADD_OPATOMIC_CASE_N
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
 		map<string, string>			specializations;
 		ComputeShaderSpec			spec;
 		vector<deInt32>				inputInts		(numElements, 0);
-		vector<deInt32>				expected		(1, -1);
+		vector<deInt32>				expected		(cases[caseNdx].numOutputElements, -1);
 
+		specializations["INDEX"]		= (cases[caseNdx].numOutputElements == 1) ? "%zero" : "%x";
 		specializations["INSTRUCTION"]	= cases[caseNdx].assembly;
 		spec.assembly					= shaderTemplate.specialize(specializations);
 
 		fillRandomScalars(rnd, 1, 100, &inputInts[0], numElements);
 		for (size_t ndx = 0; ndx < numElements; ++ndx)
 		{
-			cases[caseNdx].calculateExpected(expected[0], inputInts[ndx]);
+			cases[caseNdx].calculateExpected((cases[caseNdx].numOutputElements == 1) ? expected[0] : expected[ndx], inputInts[ndx]);
 		}
 
 		spec.inputs.push_back(BufferSp(new Int32Buffer(inputInts)));
