@@ -1517,6 +1517,157 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 	return tcu::TestStatus::pass("Rendering tests suceeded");
 }
 
+vector<tcu::UVec2> getSwapchainSizeSequence (const VkSurfaceCapabilitiesKHR& capabilities, const tcu::UVec2& defaultSize)
+{
+	vector<tcu::UVec2> sizes(3);
+	sizes[0] = defaultSize / 2u;
+	sizes[1] = defaultSize;
+	sizes[2] = defaultSize * 2u;
+
+	for (deUint32 i = 0; i < sizes.size(); ++i)
+	{
+		sizes[i].x() = de::clamp(sizes[i].x(), capabilities.minImageExtent.width,  capabilities.maxImageExtent.width);
+		sizes[i].y() = de::clamp(sizes[i].y(), capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+	}
+
+	return sizes;
+}
+
+tcu::TestStatus resizeSwapchainTest (Context& context, Type wsiType)
+{
+	const tcu::UVec2				desiredSize			(256, 256);
+	const InstanceHelper			instHelper			(context, wsiType);
+	const NativeObjects				native				(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
+	const Unique<VkSurfaceKHR>		surface				(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
+	const DeviceHelper				devHelper			(context, instHelper.vki, *instHelper.instance, *surface);
+	const PlatformProperties&		platformProperties	= getPlatformProperties(wsiType);
+	const VkSurfaceCapabilitiesKHR	capabilities		= getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface);
+	const DeviceInterface&			vkd					= devHelper.vkd;
+	const VkDevice					device				= *devHelper.device;
+	SimpleAllocator					allocator			(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
+	vector<tcu::UVec2>				sizes				= getSwapchainSizeSequence(capabilities, desiredSize);
+	Move<VkSwapchainKHR>			prevSwapchain;
+
+	DE_ASSERT(platformProperties.swapchainExtent != PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE);
+
+	for (deUint32 sizeNdx = 0; sizeNdx < sizes.size(); ++sizeNdx)
+	{
+		// \todo [2016-05-30 jesse] This test currently waits for idle and
+		// recreates way more than necessary when recreating the swapchain. Make
+		// it match expected real app behavior better by smoothly switching from
+		// old to new swapchain. Once that is done, it will also be possible to
+		// test creating a new swapchain while images from the previous one are
+		// still acquired.
+
+		VkSwapchainCreateInfoKHR		swapchainInfo				= getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, sizes[sizeNdx], 2);
+		swapchainInfo.oldSwapchain = *prevSwapchain;
+
+		Move<VkSwapchainKHR>			swapchain					(createSwapchainKHR(vkd, device, &swapchainInfo));
+		const vector<VkImage>			swapchainImages				= getSwapchainImages(vkd, device, *swapchain);
+		const TriangleRenderer			renderer					(vkd,
+																	device,
+																	allocator,
+																	context.getBinaryCollection(),
+																	swapchainImages,
+																	swapchainInfo.imageFormat,
+																	tcu::UVec2(swapchainInfo.imageExtent.width, swapchainInfo.imageExtent.height));
+		const Unique<VkCommandPool>		commandPool					(createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
+		const size_t					maxQueuedFrames				= swapchainImages.size()*2;
+
+		// We need to keep hold of fences from vkAcquireNextImageKHR to actually
+		// limit number of frames we allow to be queued.
+		const vector<FenceSp>			imageReadyFences			(createFences(vkd, device, maxQueuedFrames));
+
+		// We need maxQueuedFrames+1 for imageReadySemaphores pool as we need to pass
+		// the semaphore in same time as the fence we use to meter rendering.
+		const vector<SemaphoreSp>		imageReadySemaphores		(createSemaphores(vkd, device, maxQueuedFrames+1));
+
+		// For rest we simply need maxQueuedFrames as we will wait for image
+		// from frameNdx-maxQueuedFrames to become available to us, guaranteeing that
+		// previous uses must have completed.
+		const vector<SemaphoreSp>		renderingCompleteSemaphores	(createSemaphores(vkd, device, maxQueuedFrames));
+		const vector<CommandBufferSp>	commandBuffers				(allocateCommandBuffers(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, maxQueuedFrames));
+
+		try
+		{
+			const deUint32	numFramesToRender	= 60;
+
+			for (deUint32 frameNdx = 0; frameNdx < numFramesToRender; ++frameNdx)
+			{
+				const VkFence		imageReadyFence		= **imageReadyFences[frameNdx%imageReadyFences.size()];
+				const VkSemaphore	imageReadySemaphore	= **imageReadySemaphores[frameNdx%imageReadySemaphores.size()];
+				deUint32			imageNdx			= ~0u;
+
+				if (frameNdx >= maxQueuedFrames)
+					VK_CHECK(vkd.waitForFences(device, 1u, &imageReadyFence, VK_TRUE, std::numeric_limits<deUint64>::max()));
+
+				VK_CHECK(vkd.resetFences(device, 1, &imageReadyFence));
+
+				{
+					const VkResult	acquireResult	= vkd.acquireNextImageKHR(device,
+																			  *swapchain,
+																			  std::numeric_limits<deUint64>::max(),
+																			  imageReadySemaphore,
+																			  imageReadyFence,
+																			  &imageNdx);
+
+					if (acquireResult == VK_SUBOPTIMAL_KHR)
+						context.getTestContext().getLog() << TestLog::Message << "Got " << acquireResult << " at frame " << frameNdx << TestLog::EndMessage;
+					else
+						VK_CHECK(acquireResult);
+				}
+
+				TCU_CHECK((size_t)imageNdx < swapchainImages.size());
+
+				{
+					const VkSemaphore			renderingCompleteSemaphore	= **renderingCompleteSemaphores[frameNdx%renderingCompleteSemaphores.size()];
+					const VkCommandBuffer		commandBuffer				= **commandBuffers[frameNdx%commandBuffers.size()];
+					const VkPipelineStageFlags	waitDstStage				= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+					const VkSubmitInfo			submitInfo					=
+					{
+						VK_STRUCTURE_TYPE_SUBMIT_INFO,
+						DE_NULL,
+						1u,
+						&imageReadySemaphore,
+						&waitDstStage,
+						1u,
+						&commandBuffer,
+						1u,
+						&renderingCompleteSemaphore
+					};
+					const VkPresentInfoKHR		presentInfo					=
+					{
+						VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+						DE_NULL,
+						1u,
+						&renderingCompleteSemaphore,
+						1u,
+						&*swapchain,
+						&imageNdx,
+						(VkResult*)DE_NULL
+					};
+
+					renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
+					VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, (VkFence)0));
+					VK_CHECK(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
+				}
+			}
+
+			VK_CHECK(vkd.deviceWaitIdle(device));
+
+			prevSwapchain = swapchain;
+		}
+		catch (...)
+		{
+			// Make sure device is idle before destroying resources
+			vkd.deviceWaitIdle(device);
+			throw;
+		}
+	}
+
+	return tcu::TestStatus::pass("Resizing tests suceeded");
+}
+
 void getBasicRenderPrograms (SourceCollections& dst, Type)
 {
 	TriangleRenderer::getPrograms(dst);
@@ -1527,6 +1678,18 @@ void populateRenderGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 	addFunctionCaseWithPrograms(testGroup, "basic", "Basic Rendering Test", getBasicRenderPrograms, basicRenderTest, wsiType);
 }
 
+void populateModifyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
+{
+	const PlatformProperties&	platformProperties	= getPlatformProperties(wsiType);
+
+	if (platformProperties.swapchainExtent != PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE)
+	{
+		addFunctionCaseWithPrograms(testGroup, "resize", "Resize Swapchain Test", getBasicRenderPrograms, resizeSwapchainTest, wsiType);
+	}
+
+	// \todo [2016-05-30 jesse] Add tests for modifying preTransform, compositeAlpha, presentMode
+}
+
 } // anonymous
 
 void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
@@ -1534,6 +1697,7 @@ void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 	addTestGroup(testGroup, "create",			"Create VkSwapchain with various parameters",					populateSwapchainGroup,		GroupParameters(wsiType, createSwapchainTest));
 	addTestGroup(testGroup, "simulate_oom",		"Simulate OOM using callbacks during swapchain construction",	populateSwapchainOOMGroup,	wsiType);
 	addTestGroup(testGroup, "render",			"Rendering Tests",												populateRenderGroup,		wsiType);
+	addTestGroup(testGroup, "modify",			"Modify VkSwapchain",											populateModifyGroup,		wsiType);
 }
 
 } // wsi
