@@ -53,17 +53,6 @@ using namespace vk;
 namespace
 {
 
-
-// This method is copied from the vktPipelineMultisampleTests.cpp. It should be moved to a common place.
-static bool isSupportedSampleCount (const InstanceInterface& instanceInterface, VkPhysicalDevice physicalDevice, VkSampleCountFlagBits rasterizationSamples)
-{
-	VkPhysicalDeviceProperties deviceProperties;
-
-	instanceInterface.getPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-
-	return !!(deviceProperties.limits.framebufferColorSampleCounts & rasterizationSamples);
-}
-
 union CopyRegion
 {
 	VkBufferCopy		bufferCopy;
@@ -1724,8 +1713,6 @@ public:
 protected:
 	virtual tcu::TestStatus						checkTestResult				(tcu::ConstPixelBufferAccess result);
 private:
-	Move<VkImage>								m_source;
-
 	Move<VkImage>								m_multisampledImage;
 	de::MovePtr<Allocation>						m_multisampledImageAlloc;
 
@@ -1740,7 +1727,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params)
 {
 	const VkSampleCountFlagBits	rasterizationSamples	= m_params.samples;
 
-	if (!isSupportedSampleCount(context.getInstanceInterface(), context.getPhysicalDevice(), rasterizationSamples))
+	if (!(context.getDeviceProperties().limits.framebufferColorSampleCounts & rasterizationSamples))
 		throw tcu::NotSupportedError("Unsupported number of rasterization samples");
 
 	const DeviceInterface&		vk						= context.getDeviceInterface();
@@ -1801,7 +1788,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params)
 			1u,																			// deUint32					arrayLayers;
 			rasterizationSamples,														// VkSampleCountFlagBits	samples;
 			VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling			tiling;
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags		usage;
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,		// VkImageUsageFlags		usage;
 			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode			sharingMode;
 			1u,																			// deUint32					queueFamilyIndexCount;
 			&queueFamilyIndex,															// const deUint32*			pQueueFamilyIndices;
@@ -1829,8 +1816,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params)
 			1u,										// deUint32				arraySize;
 			VK_SAMPLE_COUNT_1_BIT,					// deUint32				samples;
 			VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling		tiling;
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-				VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
 			1u,										// deUint32				queueFamilyCount;
@@ -1874,7 +1860,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params)
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp;
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout					initialLayout;
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout					finalLayout;
-			}
+			},
 		};
 
 		const VkAttachmentReference		colorAttachmentReference	=
@@ -1902,7 +1888,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params)
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType					sType;
 			DE_NULL,									// const void*						pNext;
 			0u,											// VkRenderPassCreateFlags			flags;
-			2u,											// deUint32							attachmentCount;
+			1u,											// deUint32							attachmentCount;
 			attachmentDescriptions,						// const VkAttachmentDescription*	pAttachments;
 			1u,											// deUint32							subpassCount;
 			&subpassDescription,						// const VkSubpassDescription*		pSubpasses;
@@ -1917,7 +1903,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params)
 	{
 		const VkImageView				attachments[1]		=
 		{
-			*sourceAttachmentView
+			*sourceAttachmentView,
 		};
 
 		const VkFramebufferCreateInfo	framebufferParams	=
@@ -2103,15 +2089,6 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params)
 			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4];
 		};
 
-		const VkPipelineDynamicStateCreateInfo		dynamicStateParams		=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType						sType;
-			DE_NULL,													// const void*							pNext;
-			0u,															// VkPipelineDynamicStateCreateFlags	flags;
-			0u,															// deUint32								dynamicStateCount;
-			DE_NULL														// const VkDynamicState*				pDynamicStates;
-		};
-
 		const VkGraphicsPipelineCreateInfo			graphicsPipelineParams	=
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
@@ -2127,7 +2104,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params)
 			&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 			DE_NULL,											// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-			&dynamicStateParams,								// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+			DE_NULL,											// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 			*pipelineLayout,									// VkPipelineLayout									layout;
 			*renderPass,										// VkRenderPass										renderPass;
 			0u,													// deUint32											subpass;
@@ -2228,19 +2205,18 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params)
 			clearValues												// const VkClearValue*	pClearValues;
 		};
 
-
 		// Barriers for copying image to buffer
 		const VkImageMemoryBarrier		srcImageBarrier		=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 			DE_NULL,									// const void*				pNext;
-			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
+			0u,											// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-			m_multisampledImage.get(),						// VkImage					image;
+			m_multisampledImage.get(),					// VkImage					image;
 			{											// VkImageSubresourceRange	subresourceRange;
 				VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
 				0u,								// deUint32				baseMipLevel;
@@ -2335,13 +2311,13 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 			DE_NULL,									// const void*				pNext;
-			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+			0u,											// VkAccessFlags			srcAccessMask;
 			VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-			m_source.get(),								// VkImage					image;
+			m_multisampledImage.get(),					// VkImage					image;
 			{											// VkImageSubresourceRange	subresourceRange;
 				getAspectFlag(srcTcuFormat),	// VkImageAspectFlags	aspectMask;
 				0u,								// deUint32				baseMipLevel;
@@ -2354,9 +2330,9 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 			DE_NULL,									// const void*				pNext;
-			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+			0u,											// VkAccessFlags			srcAccessMask;
 			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
