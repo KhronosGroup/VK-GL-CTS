@@ -1882,12 +1882,24 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         }
     }
 
-    private static List<Pattern> buildPatternList(List<String> filters) {
-        List<Pattern> patterns = new ArrayList(filters.size());
+    private static List<Pattern> getPatternFilters(List<String> filters) {
+        List<Pattern> patterns = new ArrayList<Pattern>();
         for (String filter : filters) {
-            patterns.add(Pattern.compile(filter.replace(".","\\.").replace("*",".*")));
+            if (filter.contains("*")) {
+                patterns.add(Pattern.compile(filter.replace(".","\\.").replace("*",".*")));
+            }
         }
         return patterns;
+    }
+
+    private static Set<String> getNonPatternFilters(List<String> filters) {
+        Set<String> nonPatternFilters = new HashSet<String>();
+        for (String filter : filters) {
+            if (!filter.contains("*")) {
+                nonPatternFilters.add(filter);
+            }
+        }
+        return nonPatternFilters;
     }
 
     private static boolean matchesAny(TestIdentifier test, List<Pattern> patterns) {
@@ -1900,32 +1912,35 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     /**
-     * Filter tests.
+     * Filter tests with the option of filtering by pattern.
      *
-     * '*' is 0 or more characters. '.' is interpreted verbatim.
-     *
-     * Optimized for small number of filters against many tests.
-     *
+     * '*' is 0 or more characters.
+     * '.' is interpreted verbatim.
      */
     private static void filterTests(Map<TestIdentifier, Set<BatchRunConfiguration>> tests,
                                     List<String> includeFilters,
                                     List<String> excludeFilters) {
         // We could filter faster by building the test case tree.
         // Let's see if this is fast enough.
-        List<Pattern> includes = buildPatternList(includeFilters);
-        List<Pattern> excludes = buildPatternList(excludeFilters);
+        Set<String> includeStrings = getNonPatternFilters(includeFilters);
+        Set<String> excludeStrings = getNonPatternFilters(excludeFilters);
+        List<Pattern> includePatterns = getPatternFilters(includeFilters);
+        List<Pattern> excludePatterns = getPatternFilters(excludeFilters);
 
         List<TestIdentifier> testList = new ArrayList(tests.keySet());
         for (TestIdentifier test : testList) {
-            // Remove test if it does not match includes or matches
-            // excludes.
-            // Empty include filter includes everything.
-            if (includes.isEmpty() || matchesAny(test, includes)) {
-                if (!matchesAny(test, excludes)) {
-                    continue;
-                }
+            if (excludeStrings.contains(test.toString())) {
+                tests.remove(test); // remove test if explicitly excluded
+                continue;
             }
-            tests.remove(test);
+            boolean includesExist = !includeStrings.isEmpty() || !includePatterns.isEmpty();
+            boolean testIsIncluded = includeStrings.contains(test.toString())
+                    || matchesAny(test, includePatterns);
+            if ((includesExist && !testIsIncluded) || matchesAny(test, excludePatterns)) {
+                // if this test isn't included and other tests are,
+                // or if test matches exclude pattern, exclude test
+                tests.remove(test);
+            }
         }
     }
 
