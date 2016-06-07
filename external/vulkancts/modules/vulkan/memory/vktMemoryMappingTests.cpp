@@ -55,6 +55,7 @@ using de::SharedPtr;
 
 using std::string;
 using std::vector;
+using std::pair;
 
 using namespace vk;
 
@@ -64,11 +65,6 @@ namespace memory
 {
 namespace
 {
-enum
-{
-	REFERENCE_BYTES_PER_BYTE = 2
-};
-
 template<typename T>
 T divRoundUp (const T& a, const T& b)
 {
@@ -79,6 +75,12 @@ template<typename T>
 T roundDownToMultiple (const T& a, const T& b)
 {
 	return b * (a / b);
+}
+
+template<typename T>
+T roundUpToMultiple (const T& a, const T& b)
+{
+	return b * (a / b + (a % b != 0 ? 1 : 0));
 }
 
 // \note Bit vector that guarantees that each value takes only one bit.
@@ -671,23 +673,27 @@ void randomRanges (de::Random& rng, vector<VkMappedMemoryRange>& ranges, size_t 
 class MemoryObject
 {
 public:
-							MemoryObject		(const DeviceInterface&		vkd,
-												 VkDevice					device,
-												 VkDeviceSize				size,
-												 deUint32					memoryTypeIndex,
-												 VkDeviceSize				atomSize);
+							MemoryObject			(const DeviceInterface&		vkd,
+													 VkDevice					device,
+													 VkDeviceSize				size,
+													 deUint32					memoryTypeIndex,
+													 VkDeviceSize				atomSize,
+													 VkDeviceSize				memoryUsage,
+													 VkDeviceSize				referenceMemoryUsage);
 
-							~MemoryObject		(void);
+							~MemoryObject			(void);
 
-	MemoryMapping*			mapRandom			(const DeviceInterface& vkd, VkDevice device, de::Random& rng);
-	void					unmap				(void);
+	MemoryMapping*			mapRandom				(const DeviceInterface& vkd, VkDevice device, de::Random& rng);
+	void					unmap					(void);
 
-	void					randomFlush			(const DeviceInterface& vkd, VkDevice device, de::Random& rng);
-	void					randomInvalidate	(const DeviceInterface& vkd, VkDevice device, de::Random& rng);
+	void					randomFlush				(const DeviceInterface& vkd, VkDevice device, de::Random& rng);
+	void					randomInvalidate		(const DeviceInterface& vkd, VkDevice device, de::Random& rng);
 
-	VkDeviceSize			getSize				(void) const { return m_size; }
-	MemoryMapping*			getMapping			(void) { return m_mapping; }
+	VkDeviceSize			getSize					(void) const { return m_size; }
+	MemoryMapping*			getMapping				(void) { return m_mapping; }
 
+	VkDeviceSize			getMemoryUsage			(void) const { return m_memoryUsage; }
+	VkDeviceSize			getReferenceMemoryUsage	(void) const { return m_referenceMemoryUsage; }
 private:
 	const DeviceInterface&	m_vkd;
 	const VkDevice			m_device;
@@ -695,6 +701,8 @@ private:
 	const deUint32			m_memoryTypeIndex;
 	const VkDeviceSize		m_size;
 	const VkDeviceSize		m_atomSize;
+	const VkDeviceSize		m_memoryUsage;
+	const VkDeviceSize		m_referenceMemoryUsage;
 
 	Move<VkDeviceMemory>	m_memory;
 
@@ -706,14 +714,18 @@ MemoryObject::MemoryObject (const DeviceInterface&		vkd,
 							VkDevice					device,
 							VkDeviceSize				size,
 							deUint32					memoryTypeIndex,
-							VkDeviceSize				atomSize)
-	: m_vkd				(vkd)
-	, m_device			(device)
-	, m_memoryTypeIndex	(memoryTypeIndex)
-	, m_size			(size)
-	, m_atomSize		(atomSize)
-	, m_mapping			(DE_NULL)
-	, m_referenceMemory	((size_t)size, (size_t)m_atomSize)
+							VkDeviceSize				atomSize,
+							VkDeviceSize				memoryUsage,
+							VkDeviceSize				referenceMemoryUsage)
+	: m_vkd						(vkd)
+	, m_device					(device)
+	, m_memoryTypeIndex			(memoryTypeIndex)
+	, m_size					(size)
+	, m_atomSize				(atomSize)
+	, m_memoryUsage				(memoryUsage)
+	, m_referenceMemoryUsage	(referenceMemoryUsage)
+	, m_mapping					(DE_NULL)
+	, m_referenceMemory			((size_t)size, (size_t)m_atomSize)
 {
 	m_memory = allocMemory(m_vkd, m_device, m_size, m_memoryTypeIndex);
 }
@@ -837,6 +849,22 @@ private:
 	VkDeviceSize	m_usage[MEMORY_CLASS_LAST];
 };
 
+VkDeviceSize getHostPageSize (void)
+{
+	return 4096;
+}
+
+VkDeviceSize getMinAtomSize (VkDeviceSize nonCoherentAtomSize, const vector<MemoryType>& memoryTypes)
+{
+	for (size_t ndx = 0; ndx < memoryTypes.size(); ndx++)
+	{
+		if ((memoryTypes[ndx].type.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0)
+			return 1;
+	}
+
+	return nonCoherentAtomSize;
+}
+
 class MemoryHeap
 {
 public:
@@ -849,6 +877,7 @@ public:
 		, m_memoryTypes			(memoryTypes)
 		, m_limits				(memoryLimits)
 		, m_nonCoherentAtomSize	(nonCoherentAtomSize)
+		, m_minAtomSize			(getMinAtomSize(nonCoherentAtomSize, memoryTypes))
 		, m_totalMemTracker		(totalMemTracker)
 		, m_usage				(0)
 	{
@@ -860,32 +889,13 @@ public:
 			delete *iter;
 	}
 
-	bool								full			(void) const { return getAvailableMem() < m_nonCoherentAtomSize * (1 + REFERENCE_BYTES_PER_BYTE);	}
-	bool								empty			(void) const { return m_usage == 0;																	}
-
-	MemoryObject*						allocateRandom	(const DeviceInterface& vkd, VkDevice device, de::Random& rng)
+	bool								full			(void) const;
+	bool								empty			(void) const
 	{
-		const VkDeviceSize		availableMem	= getAvailableMem();
-
-		DE_ASSERT(availableMem > 0);
-
-		const MemoryType		type			= rng.choose<MemoryType>(m_memoryTypes.begin(), m_memoryTypes.end());
-		const VkDeviceSize		atomSize		= (type.type.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0
-												? 1
-												: m_nonCoherentAtomSize;
-		const VkDeviceSize		size			= randomSize(rng, atomSize, availableMem);
-
-		DE_ASSERT(size <= availableMem);
-
-		MemoryObject* const		object	= new MemoryObject(vkd, device, size, type.index, atomSize);
-
-		m_usage += size;
-		m_totalMemTracker.allocate(getMemoryClass(), size);
-		m_totalMemTracker.allocate(MEMORY_CLASS_SYSTEM, size * REFERENCE_BYTES_PER_BYTE);
-		m_objects.push_back(object);
-
-		return object;
+		return m_usage == 0 && !full();
 	}
+
+	MemoryObject*						allocateRandom	(const DeviceInterface& vkd, VkDevice device, de::Random& rng);
 
 	MemoryObject*						getRandomObject	(de::Random& rng) const
 	{
@@ -895,9 +905,9 @@ public:
 	void								free			(MemoryObject* object)
 	{
 		removeFirstEqual(m_objects, object);
-		m_usage -= object->getSize();
-		m_totalMemTracker.free(MEMORY_CLASS_SYSTEM, object->getSize() * REFERENCE_BYTES_PER_BYTE);
-		m_totalMemTracker.free(getMemoryClass(), object->getSize());
+		m_usage -= object->getMemoryUsage();
+		m_totalMemTracker.free(MEMORY_CLASS_SYSTEM, object->getReferenceMemoryUsage());
+		m_totalMemTracker.free(getMemoryClass(), object->getMemoryUsage());
 		delete object;
 	}
 
@@ -910,48 +920,173 @@ private:
 			return MEMORY_CLASS_SYSTEM;
 	}
 
-	VkDeviceSize						getAvailableMem	(void) const
-	{
-		DE_ASSERT(m_usage <= m_heap.size/MAX_MEMORY_USAGE_DIV);
-
-		const VkDeviceSize	availableInHeap	= m_heap.size/MAX_MEMORY_USAGE_DIV - m_usage;
-		const bool			isUMA			= m_limits.totalDeviceLocalMemory == 0;
-
-		if (isUMA)
-		{
-			const VkDeviceSize	totalUsage	= m_totalMemTracker.getTotalUsage();
-			const VkDeviceSize	totalSysMem	= (VkDeviceSize)m_limits.totalSystemMemory;
-
-			DE_ASSERT(totalUsage <= totalSysMem);
-
-			return de::min(availableInHeap, (totalSysMem-totalUsage) / (1 + REFERENCE_BYTES_PER_BYTE));
-		}
-		else
-		{
-			const VkDeviceSize	totalUsage		= m_totalMemTracker.getTotalUsage();
-			const VkDeviceSize	totalSysMem		= (VkDeviceSize)m_limits.totalSystemMemory;
-
-			const MemoryClass	memClass		= getMemoryClass();
-			const VkDeviceSize	totalMemClass	= memClass == MEMORY_CLASS_SYSTEM
-												? (VkDeviceSize)(m_limits.totalSystemMemory / (1 + REFERENCE_BYTES_PER_BYTE))
-												: m_limits.totalDeviceLocalMemory;
-			const VkDeviceSize	usedMemClass	= m_totalMemTracker.getUsage(memClass);
-
-			DE_ASSERT(usedMemClass <= totalMemClass);
-
-			return de::min(de::min(availableInHeap, totalMemClass-usedMemClass), (totalSysMem - totalUsage) / REFERENCE_BYTES_PER_BYTE);
-		}
-	}
-
 	const VkMemoryHeap			m_heap;
 	const vector<MemoryType>	m_memoryTypes;
 	const PlatformMemoryLimits&	m_limits;
 	const VkDeviceSize			m_nonCoherentAtomSize;
+	const VkDeviceSize			m_minAtomSize;
 	TotalMemoryTracker&			m_totalMemTracker;
 
 	VkDeviceSize				m_usage;
 	vector<MemoryObject*>		m_objects;
 };
+
+// Heap is full if there is not enough memory to allocate minimal memory object.
+bool MemoryHeap::full (void) const
+{
+	DE_ASSERT(m_usage <= m_heap.size/MAX_MEMORY_USAGE_DIV);
+
+	const VkDeviceSize	availableInHeap		= m_heap.size/MAX_MEMORY_USAGE_DIV - m_usage;
+	const bool			isUMA				= m_limits.totalDeviceLocalMemory == 0;
+	const MemoryClass	memClass			= getMemoryClass();
+	const VkDeviceSize	minAllocationSize	= de::max(m_minAtomSize, memClass == MEMORY_CLASS_DEVICE ? m_limits.devicePageSize : getHostPageSize());
+	// Memory required for reference. One byte and one bit for each byte and one bit per each m_atomSize.
+	const VkDeviceSize	minReferenceSize	= minAllocationSize
+											+ divRoundUp<VkDeviceSize>(minAllocationSize,  8)
+											+ divRoundUp<VkDeviceSize>(minAllocationSize,  m_minAtomSize * 8);
+
+	if (isUMA)
+	{
+		const VkDeviceSize	totalUsage	= m_totalMemTracker.getTotalUsage();
+		const VkDeviceSize	totalSysMem	= (VkDeviceSize)m_limits.totalSystemMemory;
+
+		DE_ASSERT(totalUsage <= totalSysMem);
+
+		return (minAllocationSize + minReferenceSize) > (totalSysMem - totalUsage)
+				|| minAllocationSize > availableInHeap;
+	}
+	else
+	{
+		const VkDeviceSize	totalUsage		= m_totalMemTracker.getTotalUsage();
+		const VkDeviceSize	totalSysMem		= (VkDeviceSize)m_limits.totalSystemMemory;
+
+		const VkDeviceSize	totalMemClass	= memClass == MEMORY_CLASS_SYSTEM
+											? m_limits.totalSystemMemory
+											: m_limits.totalDeviceLocalMemory;
+		const VkDeviceSize	usedMemClass	= m_totalMemTracker.getUsage(memClass);
+
+		DE_ASSERT(usedMemClass <= totalMemClass);
+
+		return minAllocationSize > availableInHeap
+				|| minAllocationSize > (totalMemClass - usedMemClass)
+				|| minReferenceSize > (totalSysMem - totalUsage);
+	}
+}
+
+MemoryObject* MemoryHeap::allocateRandom (const DeviceInterface& vkd, VkDevice device, de::Random& rng)
+{
+	pair<MemoryType, VkDeviceSize> memoryTypeMaxSizePair;
+
+	// Pick random memory type
+	{
+		vector<pair<MemoryType, VkDeviceSize> > memoryTypes;
+
+		const VkDeviceSize	availableInHeap		= m_heap.size/MAX_MEMORY_USAGE_DIV - m_usage;
+		const bool			isUMA				= m_limits.totalDeviceLocalMemory == 0;
+		const MemoryClass	memClass			= getMemoryClass();
+
+		// Collect memory types that can be allocated and the maximum size of allocation.
+		// Memory type can be only allocated if minimal memory allocation is less than available memory.
+		for (size_t memoryTypeNdx = 0; memoryTypeNdx < m_memoryTypes.size(); memoryTypeNdx++)
+		{
+			const MemoryType	type						= m_memoryTypes[memoryTypeNdx];
+			const VkDeviceSize	atomSize					= (type.type.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0
+															? 1
+															: m_nonCoherentAtomSize;
+			const VkDeviceSize	allocationSizeGranularity	= de::max(atomSize, memClass == MEMORY_CLASS_DEVICE ? m_limits.devicePageSize : getHostPageSize());
+			const VkDeviceSize	minAllocationSize			= allocationSizeGranularity;
+			const VkDeviceSize	minReferenceSize			= minAllocationSize
+															+ divRoundUp<VkDeviceSize>(minAllocationSize,  8)
+															+ divRoundUp<VkDeviceSize>(minAllocationSize,  atomSize * 8);
+
+			if (isUMA)
+			{
+				// Max memory size calculation is little tricky since reference memory requires 1/n bits per byte.
+				const VkDeviceSize	totalUsage				= m_totalMemTracker.getTotalUsage();
+				const VkDeviceSize	totalSysMem				= (VkDeviceSize)m_limits.totalSystemMemory;
+				const VkDeviceSize	availableBits			= (totalSysMem - totalUsage) * 8;
+				// availableBits == maxAllocationSizeBits + maxAllocationReferenceSizeBits
+				// maxAllocationReferenceSizeBits == maxAllocationSizeBits + (maxAllocationSizeBits / 8) + (maxAllocationSizeBits / atomSizeBits)
+				// availableBits == maxAllocationSizeBits + maxAllocationSizeBits + (maxAllocationSizeBits / 8) + (maxAllocationSizeBits / atomSizeBits)
+				// availableBits == 2 * maxAllocationSizeBits + (maxAllocationSizeBits / 8) + (maxAllocationSizeBits / atomSizeBits)
+				// availableBits == (2 + 1/8 + 1/atomSizeBits) * maxAllocationSizeBits
+				// 8 * availableBits == (16 + 1 + 8/atomSizeBits) * maxAllocationSizeBits
+				// atomSizeBits * 8 * availableBits == (17 * atomSizeBits + 8) * maxAllocationSizeBits
+				// maxAllocationSizeBits == atomSizeBits * 8 * availableBits / (17 * atomSizeBits + 8)
+				// maxAllocationSizeBytes == maxAllocationSizeBits / 8
+				// maxAllocationSizeBytes == atomSizeBits * availableBits / (17 * atomSizeBits + 8)
+				// atomSizeBits = atomSize * 8
+				// maxAllocationSizeBytes == atomSize * 8 * availableBits / (17 * atomSize * 8 + 8)
+				// maxAllocationSizeBytes == atomSize * availableBits / (17 * atomSize + 1)
+				const VkDeviceSize	maxAllocationSize		= roundDownToMultiple(((atomSize * availableBits) / (17 * atomSize + 1)), allocationSizeGranularity);
+
+				DE_ASSERT(totalUsage <= totalSysMem);
+				DE_ASSERT(maxAllocationSize <= totalSysMem);
+
+				if (minAllocationSize + minReferenceSize <= (totalSysMem - totalUsage) && minAllocationSize <= availableInHeap)
+				{
+					DE_ASSERT(maxAllocationSize >= minAllocationSize);
+					memoryTypes.push_back(std::make_pair(type, maxAllocationSize));
+				}
+			}
+			else
+			{
+				// Max memory size calculation is little tricky since reference memory requires 1/n bits per byte.
+				const VkDeviceSize	totalUsage			= m_totalMemTracker.getTotalUsage();
+				const VkDeviceSize	totalSysMem			= (VkDeviceSize)m_limits.totalSystemMemory;
+
+				const VkDeviceSize	totalMemClass		= memClass == MEMORY_CLASS_SYSTEM
+														? m_limits.totalSystemMemory
+														: m_limits.totalDeviceLocalMemory;
+				const VkDeviceSize	usedMemClass		= m_totalMemTracker.getUsage(memClass);
+				// availableRefBits = maxRefBits + maxRefBits/8 + maxRefBits/atomSizeBits
+				// availableRefBits = maxRefBits * (1 + 1/8 + 1/atomSizeBits)
+				// 8 * availableRefBits = maxRefBits * (8 + 1 + 8/atomSizeBits)
+				// 8 * atomSizeBits * availableRefBits = maxRefBits * (9 * atomSizeBits + 8)
+				// maxRefBits = 8 * atomSizeBits * availableRefBits / (9 * atomSizeBits + 8)
+				// atomSizeBits = atomSize * 8
+				// maxRefBits = 8 * atomSize * 8 * availableRefBits / (9 * atomSize * 8 + 8)
+				// maxRefBits = atomSize * 8 * availableRefBits / (9 * atomSize + 1)
+				// maxRefBytes = atomSize * availableRefBits / (9 * atomSize + 1)
+				const VkDeviceSize	maxAllocationSize	= roundDownToMultiple(de::min(totalMemClass - usedMemClass, (atomSize * 8 * (totalSysMem - totalUsage)) / (9 * atomSize + 1)), allocationSizeGranularity);
+
+				DE_ASSERT(usedMemClass <= totalMemClass);
+
+				if (minAllocationSize <= availableInHeap
+						&& minAllocationSize <= (totalMemClass - usedMemClass)
+						&& minReferenceSize <= (totalSysMem - totalUsage))
+				{
+					DE_ASSERT(maxAllocationSize >= minAllocationSize);
+					memoryTypes.push_back(std::make_pair(type, maxAllocationSize));
+				}
+
+			}
+		}
+
+		memoryTypeMaxSizePair = rng.choose<pair<MemoryType, VkDeviceSize> >(memoryTypes.begin(), memoryTypes.end());
+	}
+
+	const MemoryType		type						= memoryTypeMaxSizePair.first;
+	const VkDeviceSize		maxAllocationSize			= memoryTypeMaxSizePair.second;
+	const VkDeviceSize		atomSize					= (type.type.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0
+														? 1
+														: m_nonCoherentAtomSize;
+	const VkDeviceSize		allocationSizeGranularity	= de::max(atomSize, getMemoryClass() == MEMORY_CLASS_DEVICE ? m_limits.devicePageSize : getHostPageSize());
+	const VkDeviceSize		size						= randomSize(rng, atomSize, maxAllocationSize);
+	const VkDeviceSize		memoryUsage					= roundUpToMultiple(size, allocationSizeGranularity);
+	const VkDeviceSize		referenceMemoryUsage		= size + divRoundUp<VkDeviceSize>(size, 8) + divRoundUp(size, atomSize);
+
+	DE_ASSERT(size <= maxAllocationSize);
+
+	MemoryObject* const		object	= new MemoryObject(vkd, device, size, type.index, atomSize, memoryUsage, referenceMemoryUsage);
+
+	m_usage += memoryUsage;
+	m_totalMemTracker.allocate(getMemoryClass(), memoryUsage);
+	m_totalMemTracker.allocate(MEMORY_CLASS_SYSTEM, referenceMemoryUsage);
+	m_objects.push_back(object);
+
+	return object;
+}
 
 size_t getMemoryObjectSystemSize (Context& context)
 {
