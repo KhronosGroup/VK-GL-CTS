@@ -75,6 +75,12 @@ T divRoundUp (const T& a, const T& b)
 	return (a / b) + (a % b == 0 ? 0 : 1);
 }
 
+template<typename T>
+T roundDownToMultiple (const T& a, const T& b)
+{
+	return b * (a / b);
+}
+
 // \note Bit vector that guarantees that each value takes only one bit.
 // std::vector<bool> is often optimized to only take one bit for each bool, but
 // that is implementation detail and in this case we really need to known how much
@@ -103,6 +109,63 @@ public:
 			m_data[ndx / BLOCK_BIT_SIZE] |= 0x1u << (deUint32)(ndx % BLOCK_BIT_SIZE);
 		else
 			m_data[ndx / BLOCK_BIT_SIZE] &= ~(0x1u << (deUint32)(ndx % BLOCK_BIT_SIZE));
+	}
+
+	void setRange (size_t offset, size_t count, bool value)
+	{
+		size_t ndx = offset;
+
+		for (; (ndx < offset + count) && ((ndx % BLOCK_BIT_SIZE) != 0); ndx++)
+		{
+			DE_ASSERT(ndx >= offset);
+			DE_ASSERT(ndx < offset + count);
+			set(ndx, value);
+		}
+
+		{
+			const size_t endOfFullBlockNdx = roundDownToMultiple<size_t>(offset + count, BLOCK_BIT_SIZE);
+
+			if (ndx < endOfFullBlockNdx)
+			{
+				deMemset(&m_data[ndx / BLOCK_BIT_SIZE], (value ? 0xFF : 0x0), (endOfFullBlockNdx - ndx) / 8);
+				ndx = endOfFullBlockNdx;
+			}
+		}
+
+		for (; ndx < offset + count; ndx++)
+		{
+			DE_ASSERT(ndx >= offset);
+			DE_ASSERT(ndx < offset + count);
+			set(ndx, value);
+		}
+	}
+
+	void vectorAnd (const BitVector& other, size_t offset, size_t count)
+	{
+		size_t ndx = offset;
+
+		for (; ndx < offset + count && (ndx % BLOCK_BIT_SIZE) != 0; ndx++)
+		{
+			DE_ASSERT(ndx >= offset);
+			DE_ASSERT(ndx < offset + count);
+			set(ndx, other.get(ndx) && get(ndx));
+		}
+
+		for (; ndx < roundDownToMultiple<size_t>(offset + count, BLOCK_BIT_SIZE); ndx += BLOCK_BIT_SIZE)
+		{
+			DE_ASSERT(ndx >= offset);
+			DE_ASSERT(ndx < offset + count);
+			DE_ASSERT(ndx % BLOCK_BIT_SIZE == 0);
+			DE_ASSERT(ndx + BLOCK_BIT_SIZE <= offset + count);
+			m_data[ndx / BLOCK_BIT_SIZE] &= other.m_data[ndx / BLOCK_BIT_SIZE];
+		}
+
+		for (; ndx < offset + count; ndx++)
+		{
+			DE_ASSERT(ndx >= offset);
+			DE_ASSERT(ndx < offset + count);
+			set(ndx, other.get(ndx) && get(ndx));
+		}
 	}
 
 private:
@@ -156,8 +219,7 @@ public:
 		DE_ASSERT((offset % m_atomSize) == 0);
 		DE_ASSERT((size % m_atomSize) == 0);
 
-		for (size_t ndx = 0; ndx < size / m_atomSize; ndx++)
-			m_flushed.set((offset / m_atomSize) + ndx, true);
+		m_flushed.setRange(offset / m_atomSize, size / m_atomSize, true);
 	}
 
 	void invalidate (size_t offset, size_t size)
@@ -165,12 +227,16 @@ public:
 		DE_ASSERT((offset % m_atomSize) == 0);
 		DE_ASSERT((size % m_atomSize) == 0);
 
-		for (size_t ndx = 0; ndx < size / m_atomSize; ndx++)
+		if (m_atomSize == 1)
 		{
-			if (!m_flushed.get((offset / m_atomSize) + ndx))
+			m_defined.vectorAnd(m_flushed, offset, size);
+		}
+		else
+		{
+			for (size_t ndx = 0; ndx < size / m_atomSize; ndx++)
 			{
-				for (size_t i = 0; i < m_atomSize; i++)
-					m_defined.set(offset + ndx * m_atomSize + i, false);
+				if (!m_flushed.get((offset / m_atomSize) + ndx))
+					m_defined.setRange(offset + ndx * m_atomSize, m_atomSize, false);
 			}
 		}
 	}
