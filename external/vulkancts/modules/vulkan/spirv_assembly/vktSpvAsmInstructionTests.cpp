@@ -7818,6 +7818,24 @@ const string getBitWidthStr (IntegerType type)
 	}
 }
 
+const string getByteWidthStr (IntegerType type)
+{
+	switch (type)
+	{
+		case INTEGER_TYPE_SIGNED_16:
+		case INTEGER_TYPE_UNSIGNED_16:	return "2";
+
+		case INTEGER_TYPE_SIGNED_32:
+		case INTEGER_TYPE_UNSIGNED_32:	return "4";
+
+		case INTEGER_TYPE_SIGNED_64:
+		case INTEGER_TYPE_UNSIGNED_64:	return "8";
+
+		default:						DE_ASSERT(false);
+										return "";
+	}
+}
+
 bool isSigned (IntegerType type)
 {
 	return (type <= INTEGER_TYPE_SIGNED_64);
@@ -7838,71 +7856,6 @@ const string getAsmTypeDeclaration (IntegerType type)
 {
 	string sign = isSigned(type) ? " 1" : " 0";
 	return "OpTypeInt " + getBitWidthStr(type) + sign;
-}
-
-const string getConvertCaseShaderStr (const string& instruction, map<string, string> types)
-{
-	const StringTemplate shader (
-		"OpCapability Shader\n"
-		"${int_capabilities}"
-		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint GLCompute %main \"main\" %id\n"
-		"OpExecutionMode %main LocalSize 1 1 1\n"
-		"OpSource GLSL 430\n"
-		"OpName %main           \"main\"\n"
-		"OpName %id             \"gl_GlobalInvocationID\"\n"
-		// Decorators
-		"OpDecorate %id BuiltIn GlobalInvocationId\n"
-		"OpDecorate %indata DescriptorSet 0\n"
-		"OpDecorate %indata Binding 0\n"
-		"OpDecorate %outdata DescriptorSet 0\n"
-		"OpDecorate %outdata Binding 1\n"
-		"OpDecorate %in_buf BufferBlock\n"
-		"OpDecorate %out_buf BufferBlock\n"
-		"OpMemberDecorate %in_buf 0 Offset 0\n"
-		"OpMemberDecorate %out_buf 0 Offset 0\n"
-		// Base types
-		"%void       = OpTypeVoid\n"
-		"%voidf      = OpTypeFunction %void\n"
-		"%u32        = OpTypeInt 32 0\n"
-		"%i32        = OpTypeInt 32 1\n"
-		"%uvec3      = OpTypeVector %u32 3\n"
-		"%uvec3ptr   = OpTypePointer Input %uvec3\n"
-		// Custom types
-		"%in_type    = ${inputType}\n"
-		"%out_type   = ${outputType}\n"
-		// Derived types
-		"%in_ptr     = OpTypePointer Uniform %in_type\n"
-		"%out_ptr    = OpTypePointer Uniform %out_type\n"
-		"%in_arr     = OpTypeRuntimeArray %in_type\n"
-		"%out_arr    = OpTypeRuntimeArray %out_type\n"
-		"%in_buf     = OpTypeStruct %in_arr\n"
-		"%out_buf    = OpTypeStruct %out_arr\n"
-		"%in_bufptr  = OpTypePointer Uniform %in_buf\n"
-		"%out_bufptr = OpTypePointer Uniform %out_buf\n"
-		"%indata     = OpVariable %in_bufptr Uniform\n"
-		"%outdata    = OpVariable %out_bufptr Uniform\n"
-		"%inputptr   = OpTypePointer Input %in_type\n"
-		"%id         = OpVariable %uvec3ptr Input\n"
-		// Constants
-		"%zero       = OpConstant %i32 0\n"
-		// Main function
-		"%main       = OpFunction %void None %voidf\n"
-		"%label      = OpLabel\n"
-		"%idval      = OpLoad %uvec3 %id\n"
-		"%x          = OpCompositeExtract %u32 %idval 0\n"
-		"%inloc      = OpAccessChain %in_ptr %indata %zero %x\n"
-		"%outloc     = OpAccessChain %out_ptr %outdata %zero %x\n"
-		"%inval      = OpLoad %in_type %inloc\n"
-		"%conv       = ${instruction} %out_type %inval\n"
-		"              OpStore %outloc %conv\n"
-		"              OpReturn\n"
-		"              OpFunctionEnd\n"
-	);
-
-	types["instruction"] = instruction;
-
-	return shader.specialize(types);
 }
 
 template<typename T>
@@ -7982,8 +7935,8 @@ struct ConvertCase
 		}
 		else if (m_features == CONVERT_TEST_USES_INT16_INT64)
 		{
-			m_asmTypes["int_capabilities"] = "OpCapability Int16\n \
-											  OpCapability Int64\n";
+			m_asmTypes["int_capabilities"] = string("OpCapability Int16\n") +
+													"OpCapability Int64\n";
 		}
 		else
 		{
@@ -7999,6 +7952,78 @@ struct ConvertCase
 	BufferSp				m_inputBuffer;
 	BufferSp				m_outputBuffer;
 };
+
+const string getConvertCaseShaderStr (const string& instruction, const ConvertCase& convertCase)
+{
+	map<string, string> params = convertCase.m_asmTypes;
+
+	params["instruction"] = instruction;
+
+	params["inDecorator"] = getByteWidthStr(convertCase.m_fromType);
+	params["outDecorator"] = getByteWidthStr(convertCase.m_toType);
+
+	const StringTemplate shader (
+		"OpCapability Shader\n"
+		"${int_capabilities}"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+		// Decorators
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %indata DescriptorSet 0\n"
+		"OpDecorate %indata Binding 0\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 1\n"
+		"OpDecorate %in_arr ArrayStride ${inDecorator}\n"
+		"OpDecorate %out_arr ArrayStride ${outDecorator}\n"
+		"OpDecorate %in_buf BufferBlock\n"
+		"OpDecorate %out_buf BufferBlock\n"
+		"OpMemberDecorate %in_buf 0 Offset 0\n"
+		"OpMemberDecorate %out_buf 0 Offset 0\n"
+		// Base types
+		"%void       = OpTypeVoid\n"
+		"%voidf      = OpTypeFunction %void\n"
+		"%u32        = OpTypeInt 32 0\n"
+		"%i32        = OpTypeInt 32 1\n"
+		"%uvec3      = OpTypeVector %u32 3\n"
+		"%uvec3ptr   = OpTypePointer Input %uvec3\n"
+		// Custom types
+		"%in_type    = ${inputType}\n"
+		"%out_type   = ${outputType}\n"
+		// Derived types
+		"%in_ptr     = OpTypePointer Uniform %in_type\n"
+		"%out_ptr    = OpTypePointer Uniform %out_type\n"
+		"%in_arr     = OpTypeRuntimeArray %in_type\n"
+		"%out_arr    = OpTypeRuntimeArray %out_type\n"
+		"%in_buf     = OpTypeStruct %in_arr\n"
+		"%out_buf    = OpTypeStruct %out_arr\n"
+		"%in_bufptr  = OpTypePointer Uniform %in_buf\n"
+		"%out_bufptr = OpTypePointer Uniform %out_buf\n"
+		"%indata     = OpVariable %in_bufptr Uniform\n"
+		"%outdata    = OpVariable %out_bufptr Uniform\n"
+		"%inputptr   = OpTypePointer Input %in_type\n"
+		"%id         = OpVariable %uvec3ptr Input\n"
+		// Constants
+		"%zero       = OpConstant %i32 0\n"
+		// Main function
+		"%main       = OpFunction %void None %voidf\n"
+		"%label      = OpLabel\n"
+		"%idval      = OpLoad %uvec3 %id\n"
+		"%x          = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc      = OpAccessChain %in_ptr %indata %zero %x\n"
+		"%outloc     = OpAccessChain %out_ptr %outdata %zero %x\n"
+		"%inval      = OpLoad %in_type %inloc\n"
+		"%conv       = ${instruction} %out_type %inval\n"
+		"              OpStore %outloc %conv\n"
+		"              OpReturn\n"
+		"              OpFunctionEnd\n"
+	);
+
+	return shader.specialize(params);
+}
 
 void createSConvertCases (vector<ConvertCase>& testCases)
 {
@@ -8027,7 +8052,7 @@ tcu::TestCaseGroup* createSConvertTests (tcu::TestContext& testCtx)
 	{
 		ComputeShaderSpec	spec;
 
-		spec.assembly = getConvertCaseShaderStr(instruction, test->m_asmTypes);
+		spec.assembly = getConvertCaseShaderStr(instruction, *test);
 		spec.inputs.push_back(test->m_inputBuffer);
 		spec.outputs.push_back(test->m_inputBuffer);
 		spec.numWorkGroups = IVec3(1, 1, 1);
@@ -8065,7 +8090,7 @@ tcu::TestCaseGroup* createUConvertTests (tcu::TestContext& testCtx)
 	{
 		ComputeShaderSpec	spec;
 
-		spec.assembly = getConvertCaseShaderStr(instruction, test->m_asmTypes);
+		spec.assembly = getConvertCaseShaderStr(instruction, *test);
 		spec.inputs.push_back(test->m_inputBuffer);
 		spec.outputs.push_back(test->m_inputBuffer);
 		spec.numWorkGroups = IVec3(1, 1, 1);
