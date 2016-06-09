@@ -62,7 +62,7 @@ protected:
 		public:																			\
 			ApiCase_##NAME (Context& context) : ApiCase(context, #NAME, DESCRIPTION) {}	\
 		protected:																		\
-			void test (void) TEST_FUNC_BODY												\
+			void test (void) TEST_FUNC_BODY  /* NOLINT(TEST_FUNC_BODY) */				\
 		};																				\
 		addChild(new ApiCase_##NAME(m_context));										\
 	} while (deGetFalse())

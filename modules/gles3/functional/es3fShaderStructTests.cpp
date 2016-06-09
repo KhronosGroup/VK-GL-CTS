@@ -185,7 +185,7 @@ void LocalStructTests::init (void)
 {
 	#define LOCAL_STRUCT_CASE(NAME, DESCRIPTION, SHADER_SRC, EVAL_FUNC_BODY)																	\
 		do {																																	\
-			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };														\
+			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };	/* NOLINT(EVAL_FUNC_BODY) */ 						\
 			addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, true, false, &Eval_##NAME::eval, DE_NULL, SHADER_SRC));			\
 			addChild(createStructCase(m_context, #NAME "_fragment", DESCRIPTION, false, false,&Eval_##NAME::eval, DE_NULL, SHADER_SRC));		\
 		} while (deGetFalse())
@@ -1140,7 +1140,7 @@ public:
 namespace
 {
 
-#define CHECK_SET_UNIFORM(NAME) GLU_EXPECT_NO_ERROR(gl.getError(), (string("Failed to set ") + NAME).c_str())
+#define CHECK_SET_UNIFORM(NAME) GLU_EXPECT_NO_ERROR(gl.getError(), (string("Failed to set ") + (NAME)).c_str())
 
 #define MAKE_SET_VEC_UNIFORM(VECTYPE, SETUNIFORM)															\
 void setUniform (const glw::Functions& gl, deUint32 programID, const char* name, const tcu::VECTYPE& vec)	\
@@ -1191,8 +1191,10 @@ void UniformStructTests::init (void)
 {
 	#define UNIFORM_STRUCT_CASE(NAME, DESCRIPTION, TEXTURES, SHADER_SRC, SET_UNIFORMS_BODY, EVAL_FUNC_BODY)																\
 		do {																																							\
-			struct SetUniforms_##NAME { static void setUniforms (const glw::Functions& gl, deUint32 programID, const tcu::Vec4& constCoords) SET_UNIFORMS_BODY };		\
-			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };																				\
+			struct SetUniforms_##NAME {																																	\
+				 static void setUniforms (const glw::Functions& gl, deUint32 programID, const tcu::Vec4& constCoords) SET_UNIFORMS_BODY /* NOLINT(SET_UNIFORMS_BODY) */ \
+			};																																							\
+			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };	/* NOLINT(EVAL_FUNC_BODY) */												\
 			addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, true, TEXTURES, Eval_##NAME::eval, SetUniforms_##NAME::setUniforms, SHADER_SRC));		\
 			addChild(createStructCase(m_context, #NAME "_fragment", DESCRIPTION, false, TEXTURES, Eval_##NAME::eval, SetUniforms_##NAME::setUniforms, SHADER_SRC));		\
 		} while (deGetFalse())

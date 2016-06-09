@@ -94,7 +94,7 @@ public:
 		};																				\
 		enum																			\
 		{																				\
-			COMPONENTS = COMPS															\
+			COMPONENTS = (COMPS)														\
 		};																				\
 		typedef TYPE Type;																\
 																						\
@@ -128,7 +128,7 @@ public:
 		};																				\
 		enum																			\
 		{																				\
-			COMPONENTS = COMPS															\
+			COMPONENTS = (COMPS)														\
 		};																				\
 		typedef TYPE Type;																\
 																						\
@@ -162,7 +162,7 @@ public:
 		};																				\
 		enum																			\
 		{																				\
-			COMPONENTS = COMPS															\
+			COMPONENTS = (COMPS)														\
 		};																				\
 		typedef TYPE Type;																\
 																						\
@@ -196,7 +196,7 @@ public:
 		};																				\
 		enum																			\
 		{																				\
-			COMPONENTS = COMPS															\
+			COMPONENTS = (COMPS)														\
 		};																				\
 		typedef TYPE Type;																\
 																						\

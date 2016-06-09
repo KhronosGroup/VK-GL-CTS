@@ -924,7 +924,7 @@ deUint32 UniformCase::randomFeatures (const deUint32 seed)
 
 	deUint32 result = 0;
 
-#define ARRAY_CHOICE(ARR) (ARR[rnd.getInt(0, DE_LENGTH_OF_ARRAY(ARR)-1)])
+#define ARRAY_CHOICE(ARR) ((ARR)[rnd.getInt(0, DE_LENGTH_OF_ARRAY(ARR)-1)])
 
 	result |= ARRAY_CHOICE(arrayUsageChoices);
 	result |= ARRAY_CHOICE(uniformFuncChoices);
@@ -1445,7 +1445,7 @@ bool UniformCase::checkUniformDefaultValues (const vector<VarValue>& values, con
 	{																																		\
 		for (int i = 0; i < valSize; i++)																									\
 		{																																	\
-			if (unifValue.val.VAR_VALUE_MEMBER[i] != ZERO)																					\
+			if (unifValue.val.VAR_VALUE_MEMBER[i] != (ZERO))																				\
 			{																																\
 				log << TestLog::Message << "// FAILURE: uniform " << uniform.name << " has non-zero initial value" << TestLog::EndMessage;	\
 				success = false;																											\

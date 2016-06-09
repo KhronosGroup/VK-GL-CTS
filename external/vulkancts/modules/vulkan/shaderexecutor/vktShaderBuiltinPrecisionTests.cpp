@@ -2133,7 +2133,7 @@ ExprP<float> log	(const ExprP<float>& x)	{ return app<Log>(x); }
 ExprP<TRET> NAME (const ExprP<T0>& arg0) { return app<CLASS>(arg0); }
 
 #define DEFINE_DERIVED1(CLASS, TRET, NAME, T0, ARG0, EXPANSION)			\
-class CLASS : public DerivedFunc<Signature<TRET, T0> >					\
+class CLASS : public DerivedFunc<Signature<TRET, T0> > /* NOLINT(CLASS) */ \
 {																		\
 public:																	\
 	string			getName		(void) const		{ return #NAME; }	\
@@ -2142,7 +2142,7 @@ protected:																\
 	ExprP<TRET>		doExpand		(ExpandContext&,					\
 									 const CLASS::ArgExprs& args_) const \
 	{																	\
-		const ExprP<float>& ARG0 = args_.a;								\
+		const ExprP<float>& (ARG0) = args_.a;							\
 		return EXPANSION;												\
 	}																	\
 };																		\
@@ -2158,7 +2158,7 @@ ExprP<TRET> NAME (const ExprP<T0>& arg0, const ExprP<T1>& arg1)		\
 }
 
 #define DEFINE_DERIVED2(CLASS, TRET, NAME, T0, Arg0, T1, Arg1, EXPANSION) \
-class CLASS : public DerivedFunc<Signature<TRET, T0, T1> >				\
+class CLASS : public DerivedFunc<Signature<TRET, T0, T1> > /* NOLINT(CLASS) */ \
 {																		\
 public:																	\
 	string			getName		(void) const		{ return #NAME; }	\
@@ -2166,8 +2166,8 @@ public:																	\
 protected:																\
 	ExprP<TRET>		doExpand	(ExpandContext&, const ArgExprs& args_) const \
 	{																	\
-		const ExprP<T0>& Arg0 = args_.a;								\
-		const ExprP<T1>& Arg1 = args_.b;								\
+		const ExprP<T0>& (Arg0) = args_.a;								\
+		const ExprP<T1>& (Arg1) = args_.b;								\
 		return EXPANSION;												\
 	}																	\
 };																		\
@@ -2183,7 +2183,7 @@ ExprP<TRET> NAME (const ExprP<T0>& arg0, const ExprP<T1>& arg1, const ExprP<T2>&
 }
 
 #define DEFINE_DERIVED3(CLASS, TRET, NAME, T0, ARG0, T1, ARG1, T2, ARG2, EXPANSION) \
-class CLASS : public DerivedFunc<Signature<TRET, T0, T1, T2> >					\
+class CLASS : public DerivedFunc<Signature<TRET, T0, T1, T2> > /* NOLINT(CLASS) */ \
 {																				\
 public:																			\
 	string			getName		(void) const	{ return #NAME; }				\
@@ -2191,9 +2191,9 @@ public:																			\
 protected:																		\
 	ExprP<TRET>		doExpand	(ExpandContext&, const ArgExprs& args_) const	\
 	{																			\
-		const ExprP<T0>& ARG0 = args_.a;										\
-		const ExprP<T1>& ARG1 = args_.b;										\
-		const ExprP<T2>& ARG2 = args_.c;										\
+		const ExprP<T0>& (ARG0) = args_.a;										\
+		const ExprP<T1>& (ARG1) = args_.b;										\
+		const ExprP<T2>& (ARG2) = args_.c;										\
 		return EXPANSION;														\
 	}																			\
 };																				\

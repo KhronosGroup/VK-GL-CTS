@@ -81,7 +81,7 @@ private:
 		public:																					\
 			ApiCase_##NAME (EglTestContext& context) : ApiCase(context, #NAME, DESCRIPTION) {}	\
 		protected:																				\
-			void test (void) TEST_FUNC_BODY														\
+			void test (void) TEST_FUNC_BODY	 /* NOLINT(TEST_FUNC_BODY) */						\
 		};																						\
 		addChild(new ApiCase_##NAME(m_eglTestCtx));												\
 	} while (deGetFalse())
