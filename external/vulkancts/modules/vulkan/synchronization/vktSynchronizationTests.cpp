@@ -27,6 +27,8 @@
 #include "vktSynchronizationBasicFenceTests.hpp"
 #include "vktSynchronizationBasicSemaphoreTests.hpp"
 #include "vktSynchronizationBasicEventTests.hpp"
+#include "vktSynchronizationOperationSingleQueueTests.hpp"
+#include "vktSynchronizationOperationMultiQueueTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -38,17 +40,26 @@ namespace synchronization
 namespace
 {
 
+void createBasicTests (tcu::TestCaseGroup* group)
+{
+	group->addChild(createBasicFenceTests	 (group->getTestContext()));
+	group->addChild(createBasicSemaphoreTests(group->getTestContext()));
+	group->addChild(createBasicEventTests	 (group->getTestContext()));
+}
+
+void createOperationTests (tcu::TestCaseGroup* group)
+{
+	group->addChild(createSynchronizedOperationSingleQueueTests(group->getTestContext()));
+	group->addChild(createSynchronizedOperationMultiQueueTests (group->getTestContext()));
+}
+
 void createChildren (tcu::TestCaseGroup* group)
 {
-	tcu::TestContext&				testCtx		= group->getTestContext();
-	de::MovePtr<tcu::TestCaseGroup> basicTests	(new tcu::TestCaseGroup(testCtx, "basic", "Basic synchronization tests"));
-	
-	basicTests->addChild(createBasicFenceTests(testCtx));
-	basicTests->addChild(createBasicSemaphoreTests(testCtx));
-	basicTests->addChild(createBasicEventTests(testCtx));
+	tcu::TestContext& testCtx = group->getTestContext();
 
 	group->addChild(createSmokeTests(testCtx));
-	group->addChild(basicTests.release());
+	group->addChild(createTestGroup	(testCtx, "basic", "Basic synchronization tests", createBasicTests));
+	group->addChild(createTestGroup	(testCtx, "op", "Synchronization of a memory-modifying operation", createOperationTests));
 }
 
 } // anonymous

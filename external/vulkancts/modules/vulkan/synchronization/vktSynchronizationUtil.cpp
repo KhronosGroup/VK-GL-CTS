@@ -47,6 +47,19 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			bufferSize,
 	return bufferCreateInfo;
 }
 
+VkMemoryBarrier makeMemoryBarrier (const VkAccessFlags	srcAccessMask,
+								   const VkAccessFlags	dstAccessMask)
+{
+	const VkMemoryBarrier barrier =
+	{
+		VK_STRUCTURE_TYPE_MEMORY_BARRIER,	// VkStructureType    sType;
+		DE_NULL,							// const void*        pNext;
+		srcAccessMask,						// VkAccessFlags      srcAccessMask;
+		dstAccessMask,						// VkAccessFlags      dstAccessMask;
+	};
+	return barrier;
+}
+
 VkBufferMemoryBarrier makeBufferMemoryBarrier (const VkAccessFlags	srcAccessMask,
 											   const VkAccessFlags	dstAccessMask,
 											   const VkBuffer		buffer,
@@ -194,18 +207,18 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
 	return createComputePipeline(vk, device, DE_NULL , &pipelineInfo);
 }
 
-VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat format, const VkImageUsageFlags usage, const deUint32 numArrayLayers)
+VkImageCreateInfo makeImageCreateInfo (const VkImageType imageType, const VkExtent3D& extent, const VkFormat format, const VkImageUsageFlags usage)
 {
 	const VkImageCreateInfo imageInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType          sType;
 		DE_NULL,									// const void*              pNext;
 		(VkImageCreateFlags)0,						// VkImageCreateFlags       flags;
-		VK_IMAGE_TYPE_2D,							// VkImageType              imageType;
+		imageType,									// VkImageType              imageType;
 		format,										// VkFormat                 format;
-		makeExtent3D(size.x(), size.y(), 1),		// VkExtent3D               extent;
+		extent,										// VkExtent3D               extent;
 		1u,											// uint32_t                 mipLevels;
-		numArrayLayers,								// uint32_t                 arrayLayers;
+		1u,											// uint32_t                 arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits    samples;
 		VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling            tiling;
 		usage,										// VkImageUsageFlags        usage;
@@ -774,6 +787,44 @@ void requireFeatures (const InstanceInterface& vki, const VkPhysicalDevice physD
 
 	if (((flags & FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE) != 0) && !features.shaderTessellationAndGeometryPointSize)
 		throw tcu::NotSupportedError("Tessellation and geometry shaders don't support PointSize built-in");
+
+	if (((flags & FEATURE_SHADER_STORAGE_IMAGE_EXTENDED_FORMATS) != 0) && !features.shaderStorageImageExtendedFormats)
+		throw tcu::NotSupportedError("Storage image extended formats not supported");
+}
+
+std::string getResourceName (const ResourceDescription& resource)
+{
+	std::ostringstream str;
+
+	if (resource.type == RESOURCE_TYPE_BUFFER)
+		str << "buffer_" << resource.size.x();
+	else if (resource.type == RESOURCE_TYPE_IMAGE)
+	{
+		str << "image_" << resource.size.x()
+						<< (resource.size.y() > 0 ? "x" + de::toString(resource.size.y()) : "")
+						<< (resource.size.z() > 0 ? "x" + de::toString(resource.size.z()) : "")
+			<< "_" << std::string(getFormatName(resource.imageFormat)).substr(10);
+	}
+	else if (isIndirectBuffer(resource.type))
+		str << "indirect_buffer";
+	else
+		DE_ASSERT(0);
+
+	return str.str();
+}
+
+bool isIndirectBuffer (const ResourceType type)
+{
+	switch (type)
+	{
+		case RESOURCE_TYPE_INDIRECT_BUFFER_DRAW:
+		case RESOURCE_TYPE_INDIRECT_BUFFER_DRAW_INDEXED:
+		case RESOURCE_TYPE_INDIRECT_BUFFER_DISPATCH:
+			return true;
+
+		default:
+			return false;
+	}
 }
 
 } // synchronization

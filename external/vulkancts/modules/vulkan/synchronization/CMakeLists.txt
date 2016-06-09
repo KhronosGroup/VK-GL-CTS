@@ -13,6 +13,13 @@ set(DEQP_VK_SYNCHRONIZATION_SRCS
 	vktSynchronizationBasicSemaphoreTests.hpp
 	vktSynchronizationBasicEventTests.cpp
 	vktSynchronizationBasicEventTests.hpp
+	vktSynchronizationOperationSingleQueueTests.cpp
+	vktSynchronizationOperationSingleQueueTests.hpp
+	vktSynchronizationOperationMultiQueueTests.cpp
+	vktSynchronizationOperationMultiQueueTests.hpp
+	vktSynchronizationOperation.cpp
+	vktSynchronizationOperation.hpp
+	vktSynchronizationOperationTestData.hpp
 	)
 
 set(DEQP_VK_SYNCHRONIZATION_LIBS

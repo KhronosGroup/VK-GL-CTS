@@ -149,11 +149,55 @@ enum FeatureFlagBits
 	FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS			= 1u << 3,
 	FEATURE_FRAGMENT_STORES_AND_ATOMICS					= 1u << 4,
 	FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE	= 1u << 5,
+	FEATURE_SHADER_STORAGE_IMAGE_EXTENDED_FORMATS		= 1u << 6,
 };
 typedef deUint32 FeatureFlags;
 
+enum SyncPrimitive
+{
+	SYNC_PRIMITIVE_FENCE,
+	SYNC_PRIMITIVE_SEMAPHORE,
+	SYNC_PRIMITIVE_BARRIER,
+	SYNC_PRIMITIVE_EVENT,
+};
+
+enum ResourceType
+{
+	RESOURCE_TYPE_BUFFER,
+	RESOURCE_TYPE_IMAGE,
+	RESOURCE_TYPE_INDIRECT_BUFFER_DRAW,
+	RESOURCE_TYPE_INDIRECT_BUFFER_DRAW_INDEXED,
+	RESOURCE_TYPE_INDIRECT_BUFFER_DISPATCH,
+};
+
+struct ResourceDescription
+{
+	ResourceType					type;
+	tcu::IVec4						size;			//!< unused components are 0, e.g. for buffers only x is meaningful
+	vk::VkImageType					imageType;
+	vk::VkFormat					imageFormat;
+	vk::VkImageAspectFlags			imageAspect;
+};
+
+struct BufferResource
+{
+	vk::VkBuffer					handle;
+	vk::VkDeviceSize				offset;
+	vk::VkDeviceSize				size;
+};
+
+struct ImageResource
+{
+	vk::VkImage						handle;
+	vk::VkExtent3D					extent;
+	vk::VkImageType					imageType;
+	vk::VkFormat					format;
+	vk::VkImageSubresourceRange		subresourceRange;
+	vk::VkImageSubresourceLayers	subresourceLayers;
+};
+
 vk::VkBufferCreateInfo			makeBufferCreateInfo						(const vk::VkDeviceSize bufferSize, const vk::VkBufferUsageFlags usage);
-vk::VkImageCreateInfo			makeImageCreateInfo							(const tcu::IVec2& size, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const deUint32 numArrayLayers);
+vk::VkImageCreateInfo			makeImageCreateInfo							(const vk::VkImageType imageType, const vk::VkExtent3D& extent, const vk::VkFormat format, const vk::VkImageUsageFlags usage);
 vk::Move<vk::VkCommandPool>		makeCommandPool								(const vk::DeviceInterface& vk, const vk::VkDevice device, const deUint32 queueFamilyIndex);
 vk::Move<vk::VkCommandBuffer>	makeCommandBuffer							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkCommandPool commandPool);
 vk::Move<vk::VkDescriptorSet>	makeDescriptorSet							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorPool descriptorPool, const vk::VkDescriptorSetLayout setLayout);
@@ -167,6 +211,7 @@ vk::Move<vk::VkFramebuffer>		makeFramebufferWithoutAttachments			(const vk::Devi
 vk::Move<vk::VkImageView>		makeImageView								(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkImage image, const vk::VkImageViewType viewType, const vk::VkFormat format, const vk::VkImageSubresourceRange subresourceRange);
 vk::Move<vk::VkEvent>			makeEvent									(const vk::DeviceInterface& vk, const vk::VkDevice device);
 vk::VkBufferImageCopy			makeBufferImageCopy							(const vk::VkImageSubresourceLayers subresourceLayers, const vk::VkExtent3D extent);
+vk::VkMemoryBarrier				makeMemoryBarrier							(const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask);
 vk::VkBufferMemoryBarrier		makeBufferMemoryBarrier						(const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask, const vk::VkBuffer buffer, const vk::VkDeviceSize offset, const vk::VkDeviceSize bufferSizeBytes);
 vk::VkImageMemoryBarrier		makeImageMemoryBarrier						(const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask, const vk::VkImageLayout oldLayout, const vk::VkImageLayout newLayout, const vk::VkImage image, const vk::VkImageSubresourceRange subresourceRange);
 
@@ -177,6 +222,8 @@ void							beginRenderPass								(const vk::DeviceInterface& vk, const vk::VkCo
 void							beginRenderPassWithRasterizationDisabled	(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer);
 void							endRenderPass								(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
 void							requireFeatures								(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const FeatureFlags flags);
+std::string						getResourceName								(const ResourceDescription& resource);
+bool							isIndirectBuffer							(const ResourceType type);
 
 } // synchronization
 } // vkt
