@@ -8269,6 +8269,8 @@ const string specializeCompositeInsertShaderTemplate (const NumberType type, con
 
 	parameters["typeDeclaration"] = getAssemblyTypeDeclaration(type);
 
+	parameters["compositeDecorator"] = (parameters["type"] == "array") ? "OpDecorate %composite ArrayStride 4\n" : "";
+
 	return StringTemplate (
 		"OpCapability Shader\n"
 		"OpCapability Matrix\n"
@@ -8288,6 +8290,7 @@ const string specializeCompositeInsertShaderTemplate (const NumberType type, con
 		"OpDecorate %outdata DescriptorSet 0\n"
 		"OpDecorate %outdata Binding 1\n"
 		"OpDecorate %customarr ArrayStride 4\n"
+		"${compositeDecorator}"
 		"OpMemberDecorate %buf 0 Offset 0\n"
 
 		// General types
@@ -8446,6 +8449,8 @@ const string specializeInBoundsShaderTemplate (const NumberType type, const Asse
 		parameters["accessChainIndexes"] += " " + indexId;
 	}
 
+	parameters["compositeDecorator"] = (parameters["type"] == "array") ? "OpDecorate %composite ArrayStride 4\n" : "";
+
 	return StringTemplate (
 		"OpCapability Shader\n"
 		"OpCapability Matrix\n"
@@ -8464,6 +8469,7 @@ const string specializeInBoundsShaderTemplate (const NumberType type, const Asse
 		"OpDecorate %outdata DescriptorSet 0\n"
 		"OpDecorate %outdata Binding 1\n"
 		"OpDecorate %customarr ArrayStride 4\n"
+		"${compositeDecorator}"
 		"OpMemberDecorate %buf 0 Offset 0\n"
 		// General types
 		"%void      = OpTypeVoid\n"
