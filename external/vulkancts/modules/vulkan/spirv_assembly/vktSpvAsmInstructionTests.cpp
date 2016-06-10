@@ -8157,7 +8157,8 @@ void createVectorCompositeCases (vector<map<string, string> >& testCases, de::Ra
 		string widthStr = numberToString(width);
 		int index = rnd.getInt(0, width-1);
 
-		params["name"]					= "vec_" + widthStr;
+		params["type"]					= "vec";
+		params["name"]					= params["type"] + "_" + widthStr;
 		params["compositeType"]			= "%composite = OpTypeVector %custom " + widthStr +"\n";
 		params["filler"]				= string("%filler    = OpConstant %custom ") + getRandomConstantString(type, rnd) + "\n";
 		params["compositeConstruct"]	= "%instance  = OpCompositeConstruct %composite" + repeatString(" %filler", width) + "\n";
@@ -8177,7 +8178,8 @@ void createArrayCompositeCases (vector<map<string, string> >& testCases, de::Ran
 		string widthStr = numberToString(width);
 		int index = rnd.getInt(0, width-1);
 
-		params["name"]					= "array_" + widthStr;
+		params["type"]					= "array";
+		params["name"]					= params["type"] + "_" + widthStr;
 		params["compositeType"]			= string("%arraywidth = OpConstant %u32 " + widthStr + "\n")
 											+	 "%composite = OpTypeArray %custom %arraywidth\n";
 
@@ -8198,7 +8200,8 @@ void createStructCompositeCases (vector<map<string, string> >& testCases, de::Ra
 		string randomConst = numberToString(getInt(rnd));
 		int index = rnd.getInt(0, width-1);
 
-		params["name"]					= "struct_" + numberToString(width);
+		params["type"]					= "struct";
+		params["name"]					= params["type"] + "_" + numberToString(width);
 		params["compositeType"]			= "%composite = OpTypeStruct" + repeatString(" %custom", width) + "\n";
 		params["filler"]				= string("%filler    = OpConstant %custom ") + getRandomConstantString(type, rnd) + "\n";
 		params["compositeConstruct"]	= "%instance  = OpCompositeConstruct %composite" + repeatString(" %filler", width) + "\n";
@@ -8222,7 +8225,8 @@ void createMatrixCompositeCases (vector<map<string, string> >& testCases, de::Ra
 			int index_1 = rnd.getInt(0, width-1);
 			string columnStr = numberToString(column);
 
-			params["name"]					= "matrix_" + widthStr + "x" + columnStr;
+			params["type"]					= "matrix";
+			params["name"]					= params["type"] + "_" + widthStr + "x" + columnStr;
 			params["compositeType"]			= string("%vectype   = OpTypeVector %custom " + widthStr + "\n")
 												+	 "%composite = OpTypeMatrix %vectype " + columnStr + "\n";
 
@@ -8399,9 +8403,9 @@ tcu::TestCaseGroup* createOpCompositeInsertGroup (tcu::TestContext& testCtx)
 
 struct AssemblyStructInfo
 {
-	AssemblyStructInfo (const deUint32 components, const deUint32 index)
-	: components	(components)
-	, index			(index)
+	AssemblyStructInfo (const deUint32 comp, const deUint32 idx)
+	: components	(comp)
+	, index			(idx)
 	{}
 
 	deUint32 components;
@@ -8421,12 +8425,21 @@ const string specializeInBoundsShaderTemplate (const NumberType type, const Asse
 	parameters["structConstruct"]	= repeatString(" %instance", structInfo.components);
 	parameters["insertIndexes"]		= fullIndex;
 
-	// Only the last index
-	parameters["extractIndex"] = indexes.back();
+	// In matrix cases the last two index is the CompositeExtract indexes
+	const deUint32 extractIndexes = (parameters["type"] == "matrix") ? 2 : 1;
+
+	// Construct the extractIndex
+	for (vector<string>::const_iterator index = indexes.end() - extractIndexes; index != indexes.end(); ++index)
+	{
+		parameters["extractIndexes"] += " " + *index;
+	}
+
+	// Remove the last 1 or 2 element depends on matrix case or not
+	indexes.erase(indexes.end() - extractIndexes, indexes.end());
 
 	deUint32 id = 0;
 	// Generate AccessChain index expressions (except for the last one, because we use ptr to the composite)
-	for (vector<string>::const_iterator index = indexes.begin(); index != indexes.end() - 1; ++index)
+	for (vector<string>::const_iterator index = indexes.begin(); index != indexes.end(); ++index)
 	{
 		string indexId = "%index_" + numberToString(id++);
 		parameters["accessChainConstDeclaration"] += indexId + "   = OpConstant %u32 " + *index + "\n";
@@ -8501,7 +8514,7 @@ const string specializeInBoundsShaderTemplate (const NumberType type, const Asse
 		"%inner_ptr = OpInBoundsAccessChain %composite_p %struct_v${accessChainIndexes}\n"
 		"%read_obj  = OpLoad %composite %inner_ptr\n"
 		// Read back the stored value
-		"%read_val  = OpCompositeExtract %custom %read_obj ${extractIndex}\n"
+		"%read_val  = OpCompositeExtract %custom %read_obj${extractIndexes}\n"
 		"             OpStore %outloc %read_val\n"
 		"             OpReturn\n"
 		"             OpFunctionEnd\n").specialize(parameters);
