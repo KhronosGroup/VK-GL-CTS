@@ -770,6 +770,9 @@ static std::string genVertexSource (glu::DataType coordType, glu::Precision prec
 		"layout(location = 0) in highp vec4 a_position;\n"
 		+ string(coordType != glu::TYPE_LAST ? "layout(location = 1) in ${PRECISION} ${DATATYPE} a_coord;\n"
 											   "layout(location = 0) out ${PRECISION} ${DATATYPE} v_coord;\n" : "") +
+		"out gl_PerVertex {\n"
+		"	vec4 gl_Position;\n"
+		"};\n"
 		"void main (void)\n"
 		"{\n"
 		"	gl_Position = a_position;\n"
