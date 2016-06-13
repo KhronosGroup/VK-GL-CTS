@@ -64,7 +64,7 @@
 #include "vktImageTests.hpp"
 #include "vktInfoTests.hpp"
 #include "vktWsiTests.hpp"
-#include "vktSynchronization.hpp"
+#include "vktSynchronizationTests.hpp"
 #include "vktSparseResourcesTests.hpp"
 #include "vktTessellationTests.hpp"
 #include "vktRasterizationTests.hpp"
@@ -362,24 +362,24 @@ tcu::TestCaseExecutor* TestPackage::createExecutor (void) const
 
 void TestPackage::init (void)
 {
-	addChild(createTestGroup			(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
-	addChild(api::createTests			(m_testCtx));
-	addChild(pipeline::createTests		(m_testCtx));
-	addChild(BindingModel::createTests	(m_testCtx));
-	addChild(SpirVAssembly::createTests	(m_testCtx));
-	addChild(createTestGroup			(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
-	addChild(createRenderPassTests		(m_testCtx));
-	addChild(memory::createTests		(m_testCtx));
-	addChild(ubo::createTests			(m_testCtx));
-	addChild(DynamicState::createTests	(m_testCtx));
-	addChild(ssbo::createTests			(m_testCtx));
-	addChild(QueryPool::createTests		(m_testCtx));
-	addChild(Draw::createTests			(m_testCtx));
-	addChild(compute::createTests		(m_testCtx));
-	addChild(image::createTests			(m_testCtx));
-	addChild(wsi::createTests			(m_testCtx));
-	addChild(createSynchronizationTests	(m_testCtx));
-	addChild(sparse::createTests		(m_testCtx));
+	addChild(createTestGroup				(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
+	addChild(api::createTests				(m_testCtx));
+	addChild(pipeline::createTests			(m_testCtx));
+	addChild(BindingModel::createTests		(m_testCtx));
+	addChild(SpirVAssembly::createTests		(m_testCtx));
+	addChild(createTestGroup				(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
+	addChild(createRenderPassTests			(m_testCtx));
+	addChild(memory::createTests			(m_testCtx));
+	addChild(ubo::createTests				(m_testCtx));
+	addChild(DynamicState::createTests		(m_testCtx));
+	addChild(ssbo::createTests				(m_testCtx));
+	addChild(QueryPool::createTests			(m_testCtx));
+	addChild(Draw::createTests				(m_testCtx));
+	addChild(compute::createTests			(m_testCtx));
+	addChild(image::createTests				(m_testCtx));
+	addChild(wsi::createTests				(m_testCtx));
+	addChild(synchronization::createTests	(m_testCtx));
+	addChild(sparse::createTests			(m_testCtx));
 	addChild(tessellation::createTests	(m_testCtx));
 	addChild(rasterization::createTests (m_testCtx));
 }

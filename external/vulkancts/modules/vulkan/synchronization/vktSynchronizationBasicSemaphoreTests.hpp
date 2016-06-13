@@ -1,10 +1,10 @@
-#ifndef _VKTSYNCHRONIZATION_HPP
-#define _VKTSYNCHRONIZATION_HPP
-/*-------------------------------------------------------------------------
+#ifndef _VKTSYNCHRONIZATIONBASICSEMAPHORETESTS_HPP
+#define _VKTSYNCHRONIZATIONBASICSEMAPHORETESTS_HPP
+/*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2016 Google Inc.
+ * Copyright (c) 2016 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
  *
  *//*!
  * \file
- * \brief Platform Synchronization tests
+ * \brief Synchronization semaphore basic tests
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -28,9 +28,13 @@
 
 namespace vkt
 {
+namespace synchronization
+{
 
-tcu::TestCaseGroup*		createSynchronizationTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createBasicSemaphoreTests	(tcu::TestContext& testCtx);
 
+} //synchronization
 } // vkt
 
-#endif // _VKTSYNCHRONIZATION_HPP
+
+#endif // _VKTSYNCHRONIZATIONBASICSEMAPHORETESTS_HPP
