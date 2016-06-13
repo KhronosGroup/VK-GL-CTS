@@ -1253,17 +1253,17 @@ void TextureGatherInstance::setupDefaultInputs (void)
 	const vector<float>		texCoord						= computeQuadTexCoord(m_currentIteration);
 	const bool				needNormalizedCoordInShader		= m_gatherType == GATHERTYPE_OFFSET_DYNAMIC || isDepthFormat(m_textureFormat);
 
-	addAttribute(0u, vk::VK_FORMAT_R32G32_SFLOAT, 2 * sizeof(float), numVertices, position);
+	addAttribute(0u, vk::VK_FORMAT_R32G32_SFLOAT, 2 * (deUint32)sizeof(float), numVertices, position);
 
 	if (texCoord.size() == 2*4)
-		addAttribute(1u, vk::VK_FORMAT_R32G32_SFLOAT, 2 * sizeof(float), numVertices, texCoord.data());
+		addAttribute(1u, vk::VK_FORMAT_R32G32_SFLOAT, 2 * (deUint32)sizeof(float), numVertices, texCoord.data());
 	else if (texCoord.size() == 3*4)
-		addAttribute(1u, vk::VK_FORMAT_R32G32B32_SFLOAT, 3 * sizeof(float), numVertices, texCoord.data());
+		addAttribute(1u, vk::VK_FORMAT_R32G32B32_SFLOAT, 3 * (deUint32)sizeof(float), numVertices, texCoord.data());
 	else
 		DE_ASSERT(false);
 
 	if (needNormalizedCoordInShader)
-		addAttribute(2u, vk::VK_FORMAT_R32G32_SFLOAT, 2 * sizeof(float), numVertices, normalizedCoord);
+		addAttribute(2u, vk::VK_FORMAT_R32G32_SFLOAT, 2 * (deUint32)sizeof(float), numVertices, normalizedCoord);
 }
 
 tcu::TestStatus TextureGatherInstance::iterate (void)
