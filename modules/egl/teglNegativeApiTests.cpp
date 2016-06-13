@@ -410,7 +410,7 @@ void NegativeApiTests::init (void)
 
 			log << TestLog::Section("Test6", "EGL_BAD_ATTRIBUTE is generated if attrib_list contains an invalid context attribute");
 
-			if (isAPISupported(EGL_OPENGL_API))
+			if (isAPISupported(EGL_OPENGL_API) && !eglu::hasExtension(m_eglTestCtx.getLibrary(), display, "EGL_KHR_create_context"))
 			{
 				EGLConfig glConfig;
 				if (getConfig(&glConfig, FilterList() << renderable<EGL_OPENGL_BIT>))
