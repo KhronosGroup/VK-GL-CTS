@@ -294,6 +294,79 @@ group varying "Varying linkage"
 			""
 		end
 
+		# differing name (linking is done by location only in SPIR-V)
+		case differing_name_1
+			version 310 es
+			desc "varying declared with matching location but different name"
+			values
+			{
+				input float in0		= [ 2.0 | 5.0 | -3.0 | 4.0 ];
+				input float in1		= [ 4.0 | 1.0 | -0.5 | 2.0 ];
+				output float out0	= [ -2.0 | 4.0 | -2.5 | 2.0 ];
+			}
+
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out highp float vtxVarB;
+				layout(location = 2) out highp float vtxVarA;
+				void main()
+				{
+					vtxVarA = in0;
+					vtxVarB = in1;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				layout(location = 2) in highp float fragVarA;
+				layout(location = 0) in highp float fragVarB;
+				void main()
+				{
+					out0 = fragVarA - fragVarB;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		# differing name (linking is done by location only in SPIR-V)
+		case differing_name_2
+			version 310 es
+			desc "varying declared with matching location but different name"
+			values
+			{
+				input float in0		= [ 2.0 | 5.0 | -3.0 | 4.0 ];
+				input float in1		= [ 4.0 | 1.0 | -0.5 | 2.0 ];
+				output float out0	= [ -2.0 | 4.0 | -2.5 | 2.0 ];
+			}
+
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out highp float varA;
+				layout(location = 2) out highp float varB;
+				void main()
+				{
+					varA = in0;
+					varB = in1;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				layout(location = 2) in highp float varA;
+				layout(location = 0) in highp float varB;
+				void main()
+				{
+					out0 = varB - varA;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
 	end
 
 	group basic_types "Basic varying types"
