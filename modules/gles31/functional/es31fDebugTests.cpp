@@ -933,28 +933,39 @@ FilterCase::IterateResult FilterCase::iterate (void)
 	gl.enable(GL_DEBUG_OUTPUT);
 	gl.enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	gl.debugMessageCallback(callbackHandle, this);
-	gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, true);
 
+	try
 	{
-		const vector<MessageData>	refMessages		= genMessages(true, "Reference run");
-		const MessageFilter			baseFilter		(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, vector<GLuint>(), true);
-		const deUint32				baseSeed		= deStringHash(getName()) ^ m_testCtx.getCommandLine().getBaseSeed();
-		const vector<MessageFilter>	filters			= genFilters(refMessages, vector<MessageFilter>(1, baseFilter), baseSeed, 4);
-		vector<MessageData>			filteredMessages;
+		gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, true);
 
-		applyFilters(filters);
+		{
+			const vector<MessageData>	refMessages		= genMessages(true, "Reference run");
+			const MessageFilter			baseFilter		(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, vector<GLuint>(), true);
+			const deUint32				baseSeed		= deStringHash(getName()) ^ m_testCtx.getCommandLine().getBaseSeed();
+			const vector<MessageFilter>	filters			= genFilters(refMessages, vector<MessageFilter>(1, baseFilter), baseSeed, 4);
+			vector<MessageData>			filteredMessages;
 
-		// Generate errors
-		filteredMessages = genMessages(false, "Filtered run");
+			applyFilters(filters);
 
-		// Verify
-		verify(refMessages, filteredMessages, filters);
+			// Generate errors
+			filteredMessages = genMessages(false, "Filtered run");
 
-		if (!isDebugContext() && refMessages.empty())
-			m_results.addResult(QP_TEST_RESULT_QUALITY_WARNING, "Verification accuracy is lacking without a debug context");
+			// Verify
+			verify(refMessages, filteredMessages, filters);
+
+			if (!isDebugContext() && refMessages.empty())
+				m_results.addResult(QP_TEST_RESULT_QUALITY_WARNING, "Verification accuracy is lacking without a debug context");
+		}
+	}
+	catch (...)
+	{
+		gl.disable(GL_DEBUG_OUTPUT);
+		gl.debugMessageCallback(DE_NULL, DE_NULL);
+		throw;
 	}
 
 	gl.disable(GL_DEBUG_OUTPUT);
+	gl.debugMessageCallback(DE_NULL, DE_NULL);
 	m_results.setTestContextResult(m_testCtx);
 
 	return STOP;
@@ -1246,71 +1257,82 @@ GroupFilterCase::IterateResult GroupFilterCase::iterate (void)
 	gl.enable(GL_DEBUG_OUTPUT);
 	gl.enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	gl.debugMessageCallback(callbackHandle, this);
-	gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, true);
 
+	try
 	{
-
-		// Generate reference (all errors)
-		const vector<MessageData>	refMessages		= genMessages(true, "Reference run");
-		const deUint32				baseSeed		= deStringHash(getName()) ^ m_testCtx.getCommandLine().getBaseSeed();
-		const MessageFilter			baseFilter		 (GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, vector<GLuint>(), true);
-		const vector<MessageFilter>	filter0			= genFilters(refMessages, vector<MessageFilter>(1, baseFilter), baseSeed, 4);
-		vector<MessageData>			resMessages0;
-
-		applyFilters(filter0);
-
-		resMessages0 = genMessages(false, "Filtered run, default debug group");
-
-		// Initial verification
-		verify(refMessages, resMessages0, filter0);
+		gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, true);
 
 		{
-			// Generate reference (filters inherited from parent)
-			const vector<MessageFilter> filter1base		= genFilters(refMessages, vector<MessageFilter>(), baseSeed ^ 0xDEADBEEF, 4);
-			const vector<MessageFilter>	filter1full		= join(filter0, filter1base);
-			tcu::ScopedLogSection		section1		(log, "", "Pushing Debug Group");
-			vector<MessageData>			resMessages1;
 
-			gl.pushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Test Group");
-			applyFilters(filter1base);
+			// Generate reference (all errors)
+			const vector<MessageData>	refMessages		= genMessages(true, "Reference run");
+			const deUint32				baseSeed		= deStringHash(getName()) ^ m_testCtx.getCommandLine().getBaseSeed();
+			const MessageFilter			baseFilter		 (GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, vector<GLuint>(), true);
+			const vector<MessageFilter>	filter0			= genFilters(refMessages, vector<MessageFilter>(1, baseFilter), baseSeed, 4);
+			vector<MessageData>			resMessages0;
 
-			// First nested verification
-			resMessages1 = genMessages(false, "Filtered run, pushed one debug group");
-			verify(refMessages, resMessages1, filter1full);
+			applyFilters(filter0);
+
+			resMessages0 = genMessages(false, "Filtered run, default debug group");
+
+			// Initial verification
+			verify(refMessages, resMessages0, filter0);
 
 			{
-				// Generate reference (filters iherited again)
-				const vector<MessageFilter>	filter2base		= genFilters(refMessages, vector<MessageFilter>(), baseSeed ^ 0x43211234, 4);
-				const vector<MessageFilter>	filter2full		= join(filter1full, filter2base);
-				tcu::ScopedLogSection		section2		(log, "", "Pushing Debug Group");
-				vector<MessageData>			resMessages2;
+				// Generate reference (filters inherited from parent)
+				const vector<MessageFilter> filter1base		= genFilters(refMessages, vector<MessageFilter>(), baseSeed ^ 0xDEADBEEF, 4);
+				const vector<MessageFilter>	filter1full		= join(filter0, filter1base);
+				tcu::ScopedLogSection		section1		(log, "", "Pushing Debug Group");
+				vector<MessageData>			resMessages1;
 
-				gl.pushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Nested Test Group");
-				applyFilters(filter2base);
+				gl.pushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Test Group");
+				applyFilters(filter1base);
 
-				// Second nested verification
-				resMessages2 = genMessages(false, "Filtered run, pushed two debug groups");
-				verify(refMessages, resMessages2, filter2full);
+				// First nested verification
+				resMessages1 = genMessages(false, "Filtered run, pushed one debug group");
+				verify(refMessages, resMessages1, filter1full);
+
+				{
+					// Generate reference (filters iherited again)
+					const vector<MessageFilter>	filter2base		= genFilters(refMessages, vector<MessageFilter>(), baseSeed ^ 0x43211234, 4);
+					const vector<MessageFilter>	filter2full		= join(filter1full, filter2base);
+					tcu::ScopedLogSection		section2		(log, "", "Pushing Debug Group");
+					vector<MessageData>			resMessages2;
+
+					gl.pushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Nested Test Group");
+					applyFilters(filter2base);
+
+					// Second nested verification
+					resMessages2 = genMessages(false, "Filtered run, pushed two debug groups");
+					verify(refMessages, resMessages2, filter2full);
+
+					gl.popDebugGroup();
+				}
+
+				// First restore verification
+				resMessages1 = genMessages(false, "Filtered run, popped second debug group");
+				verify(refMessages, resMessages1, filter1full);
 
 				gl.popDebugGroup();
 			}
 
-			// First restore verification
-			resMessages1 = genMessages(false, "Filtered run, popped second debug group");
-			verify(refMessages, resMessages1, filter1full);
+			// restore verification
+			resMessages0 = genMessages(false, "Filtered run, popped first debug group");
+			verify(refMessages, resMessages0, filter0);
 
-			gl.popDebugGroup();
+			if (!isDebugContext() && refMessages.empty())
+				m_results.addResult(QP_TEST_RESULT_QUALITY_WARNING, "Verification accuracy is lacking without a debug context");
 		}
-
-		// restore verification
-		resMessages0 = genMessages(false, "Filtered run, popped first debug group");
-		verify(refMessages, resMessages0, filter0);
-
-		if (!isDebugContext() && refMessages.empty())
-			m_results.addResult(QP_TEST_RESULT_QUALITY_WARNING, "Verification accuracy is lacking without a debug context");
+	}
+	catch (...)
+	{
+		gl.disable(GL_DEBUG_OUTPUT);
+		gl.debugMessageCallback(DE_NULL, DE_NULL);
+		throw;
 	}
 
 	gl.disable(GL_DEBUG_OUTPUT);
+	gl.debugMessageCallback(DE_NULL, DE_NULL);
 	m_results.setTestContextResult(m_testCtx);
 	return STOP;
 }
