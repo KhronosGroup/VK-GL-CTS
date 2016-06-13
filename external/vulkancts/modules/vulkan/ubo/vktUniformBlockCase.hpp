@@ -234,13 +234,17 @@ private:
 struct BlockLayoutEntry
 {
 	BlockLayoutEntry (void)
-		: size(0)
+		: size					(0)
+		, blockDeclarationNdx	(-1)
+		, bindingNdx			(-1)
+		, instanceNdx			(-1)
 	{
 	}
 
 	std::string			name;
 	int					size;
 	std::vector<int>	activeUniformIndices;
+	int					blockDeclarationNdx;
 	int					bindingNdx;
 	int					instanceNdx;
 };
@@ -250,7 +254,7 @@ struct UniformLayoutEntry
 	UniformLayoutEntry (void)
 		: type			(glu::TYPE_LAST)
 		, size			(0)
-		, blockNdx		(-1)
+		, blockLayoutNdx(-1)
 		, offset		(-1)
 		, arrayStride	(-1)
 		, matrixStride	(-1)
@@ -262,7 +266,7 @@ struct UniformLayoutEntry
 	std::string			name;
 	glu::DataType		type;
 	int					size;
-	int					blockNdx;
+	int					blockLayoutNdx;
 	int					offset;
 	int					arrayStride;
 	int					matrixStride;
@@ -276,8 +280,8 @@ public:
 	std::vector<BlockLayoutEntry>		blocks;
 	std::vector<UniformLayoutEntry>		uniforms;
 
-	int									getUniformIndex			(const std::string& name) const;
-	int									getBlockIndex			(const std::string& name) const;
+	int									getUniformLayoutIndex	(int blockDeclarationNdx, const std::string& name) const;
+	int									getBlockLayoutIndex		(int blockDeclarationNdx, int instanceNdx) const;
 };
 
 class UniformBlockCase : public vkt::TestCase

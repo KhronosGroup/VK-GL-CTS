@@ -290,6 +290,37 @@ private:
 	int			m_numInstances;
 };
 
+class LinkByBindingCase : public UniformBlockCase
+{
+public:
+	LinkByBindingCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, BufferMode bufferMode, int numInstances)
+		: UniformBlockCase	(testCtx, name, description, bufferMode, LOAD_FULL_MATRIX)
+	{
+		UniformBlock& blockA = m_interface.allocBlock("TestBlock");
+		blockA.addUniform(Uniform("a", VarType(glu::TYPE_FLOAT, PRECISION_HIGH)));
+		blockA.addUniform(Uniform("b", VarType(glu::TYPE_UINT_VEC3, PRECISION_LOW), UNUSED_BOTH));
+		blockA.addUniform(Uniform("c", VarType(glu::TYPE_FLOAT_MAT2, PRECISION_MEDIUM)));
+		blockA.setFlags(LAYOUT_STD140|DECLARE_VERTEX);
+
+		UniformBlock& blockB = m_interface.allocBlock("TestBlock");
+		blockB.addUniform(Uniform("a", VarType(glu::TYPE_FLOAT_MAT3, PRECISION_MEDIUM)));
+		blockB.addUniform(Uniform("b", VarType(glu::TYPE_INT_VEC2, PRECISION_LOW)));
+		blockB.addUniform(Uniform("c", VarType(glu::TYPE_FLOAT_VEC4, PRECISION_HIGH), UNUSED_BOTH));
+		blockB.addUniform(Uniform("d", VarType(glu::TYPE_BOOL, 0)));
+		blockB.setFlags(LAYOUT_STD140|DECLARE_FRAGMENT);
+
+		if (numInstances > 0)
+		{
+			blockA.setInstanceName("testBlock");
+			blockA.setArraySize(numInstances);
+			blockB.setInstanceName("testBlock");
+			blockB.setArraySize(numInstances);
+		}
+
+		init();
+	}
+};
+
 void createRandomCaseGroup (tcu::TestCaseGroup* parentGroup, tcu::TestContext& testCtx, const char* groupName, const char* description, UniformBlockCase::BufferMode bufferMode, deUint32 features, int numCases, deUint32 baseSeed)
 {
 	tcu::TestCaseGroup* group = new tcu::TestCaseGroup(testCtx, groupName, description);
@@ -794,6 +825,17 @@ void UniformBlockTests::init (void)
 				}
 			}
 		}
+	}
+
+	// .link_by_binding
+	{
+		tcu::TestCaseGroup* linkByBindingGroup = new tcu::TestCaseGroup(m_testCtx, "link_by_binding", "Blocks with same name but different binding");
+		addChild(linkByBindingGroup);
+
+		linkByBindingGroup->addChild(new LinkByBindingCase(m_testCtx, "single_buf_single_instance",		"", UniformBlockCase::BUFFERMODE_SINGLE, 0));
+		linkByBindingGroup->addChild(new LinkByBindingCase(m_testCtx, "single_buf_instance_array",		"", UniformBlockCase::BUFFERMODE_SINGLE, 2));
+		linkByBindingGroup->addChild(new LinkByBindingCase(m_testCtx, "per_block_buf_single_instance",	"", UniformBlockCase::BUFFERMODE_PER_BLOCK, 0));
+		linkByBindingGroup->addChild(new LinkByBindingCase(m_testCtx, "per_block_buf_instance_array",	"", UniformBlockCase::BUFFERMODE_PER_BLOCK, 2));
 	}
 
 	// ubo.random
