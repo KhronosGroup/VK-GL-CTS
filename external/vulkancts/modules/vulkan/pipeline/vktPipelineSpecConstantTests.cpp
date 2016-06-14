@@ -897,75 +897,6 @@ tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, c
 	return testGroup.release();
 }
 
-//! Test various input data sizes, e.g. short -> int.
-tcu::TestCaseGroup* createDataSizeTests (tcu::TestContext& testCtx, const VkShaderStageFlagBits shaderStage)
-{
-	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "data_size", "different input data sizes"));
-
-	static const CaseDefinition defs[] =
-	{
-		{
-			"bool",
-			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const bool sc0 = false;", 1, makeValueBool32(true)),
-					   SpecConstant(2u, "layout(constant_id = ${ID}) const bool sc1 = false;", 2, makeValueBool32(true)),
-					   SpecConstant(3u, "layout(constant_id = ${ID}) const bool sc2 = false;", 4, makeValueBool32(true))),
-			12,
-			"    bool r0;\n"
-			"    bool r1;\n"
-			"    bool r2;\n",
-			"",
-			"    sb_out.r0 = sc0;\n"
-			"    sb_out.r1 = sc1;\n"
-			"    sb_out.r2 = sc2;\n",
-			makeVector(OffsetValue(4,  0, makeValueBool32(true)),
-					   OffsetValue(4,  4, makeValueBool32(true)),
-					   OffsetValue(4,  8, makeValueBool32(true))),
-			(FeatureFlags)0,
-		},
-		{
-			"int",
-			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const int sc0 = 0;", 1, makeValueInt32(0xffffff0a)),
-					   SpecConstant(2u, "layout(constant_id = ${ID}) const int sc1 = 0;", 2, makeValueInt32(0xffff0a0b)),
-					   SpecConstant(3u, "layout(constant_id = ${ID}) const int sc2 = 0;", 4, makeValueInt32(0x0a0b0c0d))),
-			12,
-			"    int r0;\n"
-			"    int r1;\n"
-			"    int r2;\n",
-			"",
-			"    sb_out.r0 = sc0;\n"
-			"    sb_out.r1 = sc1;\n"
-			"    sb_out.r2 = sc2;\n",
-			makeVector(OffsetValue(4, 0, makeValueInt32(0x0a)),
-					   OffsetValue(4, 4, makeValueInt32(0x0a0b)),
-					   OffsetValue(4, 8, makeValueInt32(0x0a0b0c0d))),
-			(FeatureFlags)0,
-		},
-		{
-			"uint",
-			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const uint sc0 = 0u;", 1, makeValueUint32(0xffffffa0)),
-					   SpecConstant(2u, "layout(constant_id = ${ID}) const uint sc1 = 0u;", 2, makeValueUint32(0xffffa0b0)),
-					   SpecConstant(3u, "layout(constant_id = ${ID}) const uint sc2 = 0u;", 4, makeValueUint32(0xa0b0c0d0))),
-			12,
-			"    uint r0;\n"
-			"    uint r1;\n"
-			"    uint r2;\n",
-			"",
-			"    sb_out.r0 = sc0;\n"
-			"    sb_out.r1 = sc1;\n"
-			"    sb_out.r2 = sc2;\n",
-			makeVector(OffsetValue(4, 0, makeValueUint32(0xa0)),
-					   OffsetValue(4, 4, makeValueUint32(0xa0b0)),
-					   OffsetValue(4, 8, makeValueUint32(0xa0b0c0d0))),
-			(FeatureFlags)0,
-		},
-	};
-
-	for (int defNdx = 0; defNdx < DE_LENGTH_OF_ARRAY(defs); ++defNdx)
-		testGroup->addChild(new SpecConstantTest(testCtx, shaderStage, defs[defNdx]));
-
-	return testGroup.release();
-}
-
 //! Specify compute shader work group size through specialization constants.
 tcu::TestCaseGroup* createWorkGroupSizeTests (tcu::TestContext& testCtx)
 {
@@ -1873,7 +1804,6 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 
 		stageGroup->addChild(createDefaultValueTests       (testCtx, stage.stage));
 		stageGroup->addChild(createBasicSpecializationTests(testCtx, stage.stage));
-		stageGroup->addChild(createDataSizeTests           (testCtx, stage.stage));
 		stageGroup->addChild(createBuiltInOverrideTests    (testCtx, stage.stage));
 		stageGroup->addChild(createExpressionTests         (testCtx, stage.stage));
 		stageGroup->addChild(createCompositeTests          (testCtx, stage.stage));
