@@ -46,6 +46,10 @@
 #include "deMemory.h"
 #include "deMath.h"
 
+#include <vector>
+#include <set>
+#include <string>
+
 namespace vkt
 {
 namespace api
@@ -55,6 +59,7 @@ namespace
 
 using namespace vk;
 using std::vector;
+using std::set;
 using std::string;
 using tcu::TestLog;
 using tcu::ScopedLogSection;
@@ -489,27 +494,87 @@ tcu::TestStatus enumeratePhysicalDevices (Context& context)
 	return tcu::TestStatus::pass("Enumerating devices succeeded");
 }
 
+template<typename T>
+void collectDuplicates (set<T>& duplicates, const vector<T>& values)
+{
+	set<T> seen;
+
+	for (size_t ndx = 0; ndx < values.size(); ndx++)
+	{
+		const T& value = values[ndx];
+
+		if (!seen.insert(value).second)
+			duplicates.insert(value);
+	}
+}
+
+bool checkDuplicates (TestLog& log, const char* what, const vector<string>& values)
+{
+	set<string> duplicates;
+
+	collectDuplicates(duplicates, values);
+
+	if (duplicates.empty())
+	{
+		return true;
+	}
+	else
+	{
+		for (set<string>::const_iterator iter = duplicates.begin(); iter != duplicates.end(); ++iter)
+			log << TestLog::Message << "Duplicate " << what << ": " << *iter << TestLog::EndMessage;
+
+		return false;
+	}
+}
+
+bool checkDuplicateExtensions (TestLog& log, const vector<string>& extensions)
+{
+	return checkDuplicates(log, "extension", extensions);
+}
+
+bool checkDuplicateLayers (TestLog& log, const vector<string>& layers)
+{
+	return checkDuplicates(log, "layer", layers);
+}
+
 tcu::TestStatus enumerateInstanceLayers (Context& context)
 {
-	TestLog&						log			= context.getTestContext().getLog();
-	const vector<VkLayerProperties>	properties	= enumerateInstanceLayerProperties(context.getPlatformInterface());
+	TestLog&						log					= context.getTestContext().getLog();
+	const vector<VkLayerProperties>	properties			= enumerateInstanceLayerProperties(context.getPlatformInterface());
+	vector<string>					layerNames;
 
 	for (size_t ndx = 0; ndx < properties.size(); ndx++)
+	{
 		log << TestLog::Message << ndx << ": " << properties[ndx] << TestLog::EndMessage;
 
-	return tcu::TestStatus::pass("Enumerating layers succeeded");
+		layerNames.push_back(properties[ndx].layerName);
+	}
+
+	if (checkDuplicateLayers(log, layerNames))
+		return tcu::TestStatus::pass("Enumerating layers succeeded");
+	else
+		return tcu::TestStatus::fail("Duplicate layers");
 }
 
 tcu::TestStatus enumerateInstanceExtensions (Context& context)
 {
-	TestLog&	log		= context.getTestContext().getLog();
+	TestLog&	log						= context.getTestContext().getLog();
+	bool		hasDuplicateExtensions	= false;
 
 	{
 		const ScopedLogSection				section		(log, "Global", "Global Extensions");
 		const vector<VkExtensionProperties>	properties	= enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL);
+		vector<string>						extensionNames;
 
 		for (size_t ndx = 0; ndx < properties.size(); ndx++)
+		{
 			log << TestLog::Message << ndx << ": " << properties[ndx] << TestLog::EndMessage;
+
+			extensionNames.push_back(properties[ndx].extensionName);
+		}
+
+		if (!checkDuplicateExtensions(log, extensionNames))
+			hasDuplicateExtensions = true;
 	}
 
 	{
@@ -517,38 +582,66 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 
 		for (vector<VkLayerProperties>::const_iterator layer = layers.begin(); layer != layers.end(); ++layer)
 		{
-			const ScopedLogSection				section		(log, layer->layerName, string("Layer: ") + layer->layerName);
-			const vector<VkExtensionProperties>	properties	= enumerateInstanceExtensionProperties(context.getPlatformInterface(), layer->layerName);
+			const ScopedLogSection				section				(log, layer->layerName, string("Layer: ") + layer->layerName);
+			const vector<VkExtensionProperties>	properties			= enumerateInstanceExtensionProperties(context.getPlatformInterface(), layer->layerName);
+			vector<string>						extensionNames;
 
 			for (size_t extNdx = 0; extNdx < properties.size(); extNdx++)
+			{
 				log << TestLog::Message << extNdx << ": " << properties[extNdx] << TestLog::EndMessage;
+
+				extensionNames.push_back(properties[extNdx].extensionName);
+			}
+
+			if (!checkDuplicateExtensions(log, extensionNames))
+				hasDuplicateExtensions = true;
 		}
 	}
 
-	return tcu::TestStatus::pass("Enumerating extensions succeeded");
+	if (hasDuplicateExtensions)
+		return tcu::TestStatus::fail("Duplicate extensions");
+	else
+		return tcu::TestStatus::pass("Enumerating extensions succeeded");
 }
 
 tcu::TestStatus enumerateDeviceLayers (Context& context)
 {
 	TestLog&						log			= context.getTestContext().getLog();
 	const vector<VkLayerProperties>	properties	= vk::enumerateDeviceLayerProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+	vector<string>					layerNames;
 
 	for (size_t ndx = 0; ndx < properties.size(); ndx++)
+	{
 		log << TestLog::Message << ndx << ": " << properties[ndx] << TestLog::EndMessage;
 
-	return tcu::TestStatus::pass("Enumerating layers succeeded");
+		layerNames.push_back(properties[ndx].layerName);
+	}
+
+	if (checkDuplicateLayers(log, layerNames))
+		return tcu::TestStatus::pass("Enumerating layers succeeded");
+	else
+		return tcu::TestStatus::fail("Duplicate layers");
 }
 
 tcu::TestStatus enumerateDeviceExtensions (Context& context)
 {
-	TestLog&	log		= context.getTestContext().getLog();
+	TestLog&	log						= context.getTestContext().getLog();
+	bool		hasDuplicateExtensions	= false;
 
 	{
 		const ScopedLogSection				section		(log, "Global", "Global Extensions");
 		const vector<VkExtensionProperties>	properties	= enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
+		vector<string>						extensionNames;
 
 		for (size_t ndx = 0; ndx < properties.size(); ndx++)
+		{
 			log << TestLog::Message << ndx << ": " << properties[ndx] << TestLog::EndMessage;
+
+			extensionNames.push_back(properties[ndx].extensionName);
+		}
+
+		if (!checkDuplicateExtensions(log, extensionNames))
+			hasDuplicateExtensions = true;
 	}
 
 	{
@@ -558,13 +651,25 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 		{
 			const ScopedLogSection				section		(log, layer->layerName, string("Layer: ") + layer->layerName);
 			const vector<VkExtensionProperties>	properties	= enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), layer->layerName);
+			vector<string>						extensionNames;
 
 			for (size_t extNdx = 0; extNdx < properties.size(); extNdx++)
+			{
 				log << TestLog::Message << extNdx << ": " << properties[extNdx] << TestLog::EndMessage;
+
+
+				extensionNames.push_back(properties[extNdx].extensionName);
+			}
+
+			if (!checkDuplicateExtensions(log, extensionNames))
+				hasDuplicateExtensions = true;
 		}
 	}
 
-	return tcu::TestStatus::pass("Enumerating extensions succeeded");
+	if (hasDuplicateExtensions)
+		return tcu::TestStatus::fail("Duplicate extensions");
+	else
+		return tcu::TestStatus::pass("Enumerating extensions succeeded");
 }
 
 #define VK_SIZE_OF(STRUCT, MEMBER)					(sizeof(((STRUCT*)0)->MEMBER))
