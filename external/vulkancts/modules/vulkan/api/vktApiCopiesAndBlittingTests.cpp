@@ -2229,7 +2229,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params)
 		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
 
 		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &srcImageBarrier);
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &srcImageBarrier);
 		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		const VkDeviceSize	vertexBufferOffset	= 0u;
@@ -2313,7 +2313,7 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 			DE_NULL,									// const void*				pNext;
 			0u,											// VkAccessFlags			srcAccessMask;
 			VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
@@ -2347,6 +2347,26 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 		},
 	};
 
+	const VkImageMemoryBarrier postImageBarrier =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType         sType;
+		DE_NULL,                                  // const void*             pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,             // VkAccessFlags           srcAccessMask;
+		VK_ACCESS_TRANSFER_READ_BIT,              // VkAccessFlags           dstAccessMask;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,     // VkImageLayout           oldLayout;
+		VK_IMAGE_LAYOUT_GENERAL,                  // VkImageLayout           newLayout;
+		VK_QUEUE_FAMILY_IGNORED,                  // deUint32                srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,                  // deUint32                dstQueueFamilyIndex;
+		m_destination.get(),                      // VkImage                 image;
+		{                                         // VkImageSubresourceRange subresourceRange;
+			getAspectFlag(dstTcuFormat),          // VkImageAspectFlags      aspectMask;
+			0u,                                   // deUint32                baseMipLevel;
+			1u,                                   // deUint32                mipLevels;
+			0u,                                   // deUint32                baseArraySlice;
+			1u                                    // deUint32                arraySize;
+		}
+	};
+
 	const VkCommandBufferBeginInfo	cmdBufferBeginInfo	=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// VkStructureType					sType;
@@ -2356,8 +2376,9 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
 	vk.cmdResolveImage(*m_cmdBuffer, m_multisampledImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), imageResolves.data());
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
 	const VkSubmitInfo				submitInfo			=
