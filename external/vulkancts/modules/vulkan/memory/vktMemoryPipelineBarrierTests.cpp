@@ -4248,7 +4248,6 @@ private:
 	TextureLevel	m_referenceTarget;
 };
 
-
 class RenderPassCommand
 {
 public:
@@ -4549,7 +4548,7 @@ void SubmitRenderPass::verify (VerifyContext& context, size_t commandIndex)
 				vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 				vk::VK_ACCESS_TRANSFER_READ_BIT,
 
-				vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 				vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 
 				VK_QUEUE_FAMILY_IGNORED,
