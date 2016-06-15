@@ -2769,20 +2769,6 @@ static void createCaseGroup (tcu::TestCaseGroup* parent, const char* groupName, 
 
 	for (int ndx = 0; ndx < numCases; ndx++)
 	{
-		{
-			// \todo Remove this hack and enable all tests after glslang issue will be fixed: https://github.com/KhronosGroup/glslang/issues/319
-			switch (cases[ndx].lookupSpec.function)
-			{
-				case FUNCTION_TEXTUREPROJ3:
-				case FUNCTION_TEXTUREPROJLOD3:
-				case FUNCTION_TEXTUREPROJGRAD3:
-					continue;
-
-				default:
-					break;
-			}
-		}
-
 		std::string name = cases[ndx].name;
 		if (cases[ndx].flags & VERTEX)
 		{
