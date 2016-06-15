@@ -29,6 +29,7 @@
 #include "vktSynchronizationBasicEventTests.hpp"
 #include "vktSynchronizationOperationSingleQueueTests.hpp"
 #include "vktSynchronizationOperationMultiQueueTests.hpp"
+#include "vktSynchronizationInternallySynchronizedObjectsTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -60,6 +61,7 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(createSmokeTests(testCtx));
 	group->addChild(createTestGroup	(testCtx, "basic", "Basic synchronization tests", createBasicTests));
 	group->addChild(createTestGroup	(testCtx, "op", "Synchronization of a memory-modifying operation", createOperationTests));
+	group->addChild(createInternallySynchronizedObjects(testCtx));
 }
 
 } // anonymous

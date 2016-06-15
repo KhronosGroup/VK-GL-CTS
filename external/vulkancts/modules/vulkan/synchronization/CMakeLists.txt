@@ -19,6 +19,8 @@ set(DEQP_VK_SYNCHRONIZATION_SRCS
 	vktSynchronizationOperationMultiQueueTests.hpp
 	vktSynchronizationOperation.cpp
 	vktSynchronizationOperation.hpp
+	vktSynchronizationInternallySynchronizedObjectsTests.cpp
+	vktSynchronizationInternallySynchronizedObjectsTests.hpp
 	vktSynchronizationOperationTestData.hpp
 	)
 
