@@ -2148,7 +2148,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params)
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset()));
 
 		// Load vertices into vertex buffer.
-		deMemcpy(vertexBufferAlloc->getHostPtr(), vertices.data(), vertexDataSize);
+		deMemcpy(vertexBufferAlloc->getHostPtr(), vertices.data(), (size_t)vertexDataSize);
 		flushMappedMemoryRange(vk, vkDevice, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexDataSize);
 	}
 
