@@ -139,6 +139,7 @@ class VSProjectGenerator(CMakeGenerator):
 				10:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.10.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\10.0")],
 				11:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.11.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\11.0")],
 				12:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.12.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\12.0")],
+				14:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.14.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\14.0")],
 			}
 
 			if not self.version in keyMap:
@@ -162,6 +163,8 @@ VS2012_X32_GENERATOR	= VSProjectGenerator(11, VSProjectGenerator.ARCH_32BIT)
 VS2012_X64_GENERATOR	= VSProjectGenerator(11, VSProjectGenerator.ARCH_64BIT)
 VS2013_X32_GENERATOR	= VSProjectGenerator(12, VSProjectGenerator.ARCH_32BIT)
 VS2013_X64_GENERATOR	= VSProjectGenerator(12, VSProjectGenerator.ARCH_64BIT)
+VS2015_X32_GENERATOR	= VSProjectGenerator(14, VSProjectGenerator.ARCH_32BIT)
+VS2015_X64_GENERATOR	= VSProjectGenerator(14, VSProjectGenerator.ARCH_64BIT)
 
 def selectFirstAvailableGenerator (generators):
 	for generator in generators:
@@ -170,11 +173,13 @@ def selectFirstAvailableGenerator (generators):
 	return None
 
 ANY_VS_X32_GENERATOR	= selectFirstAvailableGenerator([
+								VS2015_X32_GENERATOR,
 								VS2013_X32_GENERATOR,
 								VS2012_X32_GENERATOR,
 								VS2010_X32_GENERATOR,
 							])
 ANY_VS_X64_GENERATOR	= selectFirstAvailableGenerator([
+								VS2015_X64_GENERATOR,
 								VS2013_X64_GENERATOR,
 								VS2012_X64_GENERATOR,
 								VS2010_X64_GENERATOR,
@@ -184,6 +189,8 @@ ANY_UNIX_GENERATOR		= selectFirstAvailableGenerator([
 								MAKEFILE_GENERATOR,
 							])
 ANY_GENERATOR			= selectFirstAvailableGenerator([
+								VS2015_X64_GENERATOR,
+								VS2015_X32_GENERATOR,
 								VS2013_X64_GENERATOR,
 								VS2012_X64_GENERATOR,
 								VS2010_X64_GENERATOR,

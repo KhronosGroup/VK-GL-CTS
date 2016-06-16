@@ -74,7 +74,7 @@ protected:
 struct FirtsInstanceSupported
 {
 	static deUint32 getFirstInstance	(void)											{ return 2; }
-	static bool		isTestSupported		(const vk::VkPhysicalDeviceFeatures& features)	{ return features.drawIndirectFirstInstance == vk::VK_TRUE; }
+	static bool		isTestSupported		(const vk::VkPhysicalDeviceFeatures& features)	{ return features.drawIndirectFirstInstance == VK_TRUE; }
 };
 
 struct FirtsInstanceNotSupported

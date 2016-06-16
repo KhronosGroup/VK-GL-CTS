@@ -51,8 +51,6 @@ set(DEQP_GL_SHARED_SRCS
 	glsSamplerObjectTest.cpp
 	glsShaderPerformanceMeasurer.cpp
 	glsShaderPerformanceMeasurer.hpp
-	glsRasterizationTestUtil.cpp
-	glsRasterizationTestUtil.hpp
 	glsInteractionTestUtil.cpp
 	glsInteractionTestUtil.hpp
 	glsRandomShaderProgram.cpp

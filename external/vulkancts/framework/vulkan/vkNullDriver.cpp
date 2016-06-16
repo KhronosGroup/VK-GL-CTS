@@ -366,6 +366,7 @@ void DescriptorPool::free (VkDescriptorSet set)
 	DescriptorSet* const	impl	= reinterpret_cast<DescriptorSet*>((deUintptr)set.getInternal());
 
 	DE_ASSERT(m_flags & VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
+	DE_UNREF(m_flags);
 
 	delete impl;
 

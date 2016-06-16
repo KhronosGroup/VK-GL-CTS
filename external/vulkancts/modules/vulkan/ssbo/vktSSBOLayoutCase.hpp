@@ -31,6 +31,7 @@
 
 namespace vkt
 {
+
 namespace ssbo
 {
 
@@ -216,17 +217,18 @@ public:
 		BUFFERMODE_LAST
 	};
 
-								SSBOLayoutCase				(tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode);
+								SSBOLayoutCase				(tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag);
 	virtual						~SSBOLayoutCase				(void);
 
 	virtual void				initPrograms				(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance				(Context& context) const;
 
 protected:
-    void                        init                        (void);
+	void                        init                        (void);
 
 	BufferMode					m_bufferMode;
 	ShaderInterface				m_interface;
+	MatrixLoadFlags				m_matrixLoadFlag;
 
 private:
 								SSBOLayoutCase				(const SSBOLayoutCase&);

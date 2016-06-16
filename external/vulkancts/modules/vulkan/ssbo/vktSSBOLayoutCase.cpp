@@ -919,6 +919,50 @@ void generateImmMatrixSrc (std::ostream& src, glu::DataType basicType, int matri
 	src << ")";
 }
 
+void generateImmMatrixSrc (std::ostream& src,
+						   glu::DataType basicType,
+						   int matrixStride,
+						   bool isRowMajor,
+						   const void* valuePtr,
+						   const char* resultVar,
+						   const char* typeName,
+						   const string shaderName)
+{
+	const int		compSize		= sizeof(deUint32);
+	const int		numRows			= glu::getDataTypeMatrixNumRows(basicType);
+	const int		numCols			= glu::getDataTypeMatrixNumColumns(basicType);
+
+	typeName = "float";
+	for (int colNdex = 0; colNdex < numCols; colNdex++)
+	{
+		for (int rowNdex = 0; rowNdex < numRows; rowNdex++)
+		{
+			src << "\t" << resultVar << " = " << resultVar << " && compare_" << typeName << "(" << shaderName << "[" << colNdex << "][" << rowNdex << "], ";
+			const deUint8*	compPtr	= (const deUint8*)valuePtr + (isRowMajor ? rowNdex*matrixStride + colNdex*compSize
+																						: colNdex*matrixStride + rowNdex*compSize);
+
+			src << de::floatToString(*((const float*)compPtr), 1);
+			src << ");\n";
+		}
+	}
+
+	typeName = "vec";
+	for (int colNdex = 0; colNdex < numCols; colNdex++)
+	{
+		src << "\t" << resultVar << " = " << resultVar << " && compare_" << typeName << numRows << "(" << shaderName << "[" << colNdex << "], " << typeName << numRows << "(";
+		for (int rowNdex = 0; rowNdex < numRows; rowNdex++)
+		{
+			const deUint8*	compPtr	= (const deUint8*)valuePtr + (isRowMajor ? (rowNdex * matrixStride + colNdex * compSize)
+																  : (colNdex * matrixStride + rowNdex * compSize));
+			src << de::floatToString(*((const float*)compPtr), 1);
+
+			if (rowNdex < numRows-1)
+				src << ", ";
+		}
+		src << "));\n";
+	}
+}
+
 void generateImmScalarVectorSrc (std::ostream& src, glu::DataType basicType, const void* valuePtr)
 {
 	DE_ASSERT(glu::isDataTypeFloatOrVec(basicType)	||
@@ -1039,7 +1083,8 @@ void generateCompareSrc (
 	int							instanceNdx,
 	const BlockDataPtr&			blockPtr,
 	const BufferVar&			bufVar,
-	const glu::SubTypeAccess&	accessPath)
+	const glu::SubTypeAccess&	accessPath,
+	MatrixLoadFlags				matrixLoadFlag)
 {
 	const VarType curType = accessPath.getType();
 
@@ -1048,14 +1093,14 @@ void generateCompareSrc (
 		const int arraySize = curType.getArraySize() == VarType::UNSIZED_ARRAY ? block.getLastUnsizedArraySize(instanceNdx) : curType.getArraySize();
 
 		for (int elemNdx = 0; elemNdx < arraySize; elemNdx++)
-			generateCompareSrc(src, resultVar, bufferLayout, block, instanceNdx, blockPtr, bufVar, accessPath.element(elemNdx));
+			generateCompareSrc(src, resultVar, bufferLayout, block, instanceNdx, blockPtr, bufVar, accessPath.element(elemNdx), LOAD_FULL_MATRIX);
 	}
 	else if (curType.isStructType())
 	{
 		const int numMembers = curType.getStructPtr()->getNumMembers();
 
 		for (int memberNdx = 0; memberNdx < numMembers; memberNdx++)
-			generateCompareSrc(src, resultVar, bufferLayout, block, instanceNdx, blockPtr, bufVar, accessPath.member(memberNdx));
+			generateCompareSrc(src, resultVar, bufferLayout, block, instanceNdx, blockPtr, bufVar, accessPath.member(memberNdx), LOAD_FULL_MATRIX);
 	}
 	else
 	{
@@ -1073,19 +1118,29 @@ void generateCompareSrc (
 			const char*					typeName		= glu::getDataTypeName(basicType);
 			const void*					valuePtr		= (const deUint8*)blockPtr.ptr + computeOffset(varLayout, accessPath.getPath());
 
-			src << "\t" << resultVar << " = " << resultVar << " && compare_" << typeName << "(" << shaderName << ", ";
 
 			if (isMatrix)
-				generateImmMatrixSrc(src, basicType, varLayout.matrixStride, varLayout.isRowMajor, valuePtr);
+			{
+				if (matrixLoadFlag == LOAD_MATRIX_COMPONENTS)
+					generateImmMatrixSrc(src, basicType, varLayout.matrixStride, varLayout.isRowMajor, valuePtr, resultVar, typeName, shaderName);
+				else
+				{
+					src << "\t" << resultVar << " = " << resultVar << " && compare_" << typeName << "(" << shaderName << ", ";
+					generateImmMatrixSrc (src, basicType, varLayout.matrixStride, varLayout.isRowMajor, valuePtr);
+					src << ");\n";
+				}
+			}
 			else
+			{
+				src << "\t" << resultVar << " = " << resultVar << " && compare_" << typeName << "(" << shaderName << ", ";
 				generateImmScalarVectorSrc(src, basicType, valuePtr);
-
-			src << ");\n";
+				src << ");\n";
+			}
 		}
 	}
 }
 
-void generateCompareSrc (std::ostream& src, const char* resultVar, const ShaderInterface& interface, const BufferLayout& layout, const vector<BlockDataPtr>& blockPointers)
+void generateCompareSrc (std::ostream& src, const char* resultVar, const ShaderInterface& interface, const BufferLayout& layout, const vector<BlockDataPtr>& blockPointers, MatrixLoadFlags matrixLoadFlag)
 {
 	for (int declNdx = 0; declNdx < interface.getNumBlocks(); declNdx++)
 	{
@@ -1108,7 +1163,7 @@ void generateCompareSrc (std::ostream& src, const char* resultVar, const ShaderI
 				if ((bufVar.getFlags() & ACCESS_READ) == 0)
 					continue; // Don't read from that variable.
 
-				generateCompareSrc(src, resultVar, layout, block, instanceNdx, blockPtr, bufVar, glu::SubTypeAccess(bufVar.getType()));
+				generateCompareSrc(src, resultVar, layout, block, instanceNdx, blockPtr, bufVar, glu::SubTypeAccess(bufVar.getType()), matrixLoadFlag);
 			}
 		}
 	}
@@ -1197,7 +1252,7 @@ void generateWriteSrc (std::ostream& src, const ShaderInterface& interface, cons
 	}
 }
 
-string generateComputeShader (const ShaderInterface& interface, const BufferLayout& layout, const vector<BlockDataPtr>& comparePtrs, const vector<BlockDataPtr>& writePtrs)
+string generateComputeShader (const ShaderInterface& interface, const BufferLayout& layout, const vector<BlockDataPtr>& comparePtrs, const vector<BlockDataPtr>& writePtrs, MatrixLoadFlags matrixLoadFlag)
 {
 	std::ostringstream src;
 
@@ -1231,7 +1286,7 @@ string generateComputeShader (const ShaderInterface& interface, const BufferLayo
 		   "	bool allOk = true;\n";
 
 	// Value compare.
-	generateCompareSrc(src, "allOk", interface, layout, comparePtrs);
+	generateCompareSrc(src, "allOk", interface, layout, comparePtrs, matrixLoadFlag);
 
 	src << "	if (allOk)\n"
 		<< "		ac_numPassed++;\n"
@@ -2137,9 +2192,10 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 
 // SSBOLayoutCase.
 
-SSBOLayoutCase::SSBOLayoutCase (tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode)
-	: TestCase		(testCtx, name, description)
-	, m_bufferMode	(bufferMode)
+SSBOLayoutCase::SSBOLayoutCase (tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag)
+	: TestCase			(testCtx, name, description)
+	, m_bufferMode		(bufferMode)
+	, m_matrixLoadFlag	(matrixLoadFlag)
 {
 }
 
@@ -2159,7 +2215,7 @@ TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 	return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData);
 }
 
-void SSBOLayoutCase::init (void)
+void SSBOLayoutCase::init ()
 {
 	computeReferenceLayout	(m_refLayout, m_interface);
 	initRefDataStorage		(m_interface, m_refLayout, m_initialData);
@@ -2168,7 +2224,8 @@ void SSBOLayoutCase::init (void)
 	generateValues			(m_refLayout, m_writeData.pointers, deStringHash(getName()) ^ 0x25ca4e7);
 	copyNonWrittenData		(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers);
 
-	m_computeShaderSrc = generateComputeShader(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers);
+	m_computeShaderSrc = generateComputeShader(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers, m_matrixLoadFlag);
+
 }
 
 } // ssbo

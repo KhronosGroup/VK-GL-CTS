@@ -66,6 +66,8 @@
 #include "vktWsiTests.hpp"
 #include "vktSynchronization.hpp"
 #include "vktSparseResourcesTests.hpp"
+#include "vktTessellationTests.hpp"
+#include "vktRasterizationTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -378,6 +380,8 @@ void TestPackage::init (void)
 	addChild(wsi::createTests			(m_testCtx));
 	addChild(createSynchronizationTests	(m_testCtx));
 	addChild(sparse::createTests		(m_testCtx));
+	addChild(tessellation::createTests	(m_testCtx));
+	addChild(rasterization::createTests (m_testCtx));
 }
 
 } // vkt

@@ -26,9 +26,9 @@
 
 #include "vktTestCase.hpp"
 
-#include "vktQueryPoolImageObjectUtil.hpp"
-#include "vktQueryPoolBufferObjectUtil.hpp"
-#include "vktQueryPoolCreateInfoUtil.hpp"
+#include "vktDrawImageObjectUtil.hpp"
+#include "vktDrawBufferObjectUtil.hpp"
+#include "vktDrawCreateInfoUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkPrograms.hpp"
@@ -38,7 +38,13 @@
 #include "tcuImageCompare.hpp"
 #include "tcuCommandLine.hpp"
 
-using namespace vkt::QueryPool;
+namespace vkt
+{
+
+namespace QueryPool
+{
+
+using namespace Draw;
 
 namespace
 {
@@ -1016,12 +1022,6 @@ private:
 };
 
 } //anonymous
-
-namespace vkt
-{
-
-namespace QueryPool
-{
 
 QueryPoolOcclusionTests::QueryPoolOcclusionTests (tcu::TestContext &testCtx)
 	: TestCaseGroup(testCtx, "occlusion_query", "Tests for occlusion queries")

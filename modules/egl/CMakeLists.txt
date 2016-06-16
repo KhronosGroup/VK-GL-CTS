@@ -39,6 +39,8 @@ set(DEQP_EGL_SRCS
 	teglImageTests.hpp
 	teglInfoTests.cpp
 	teglInfoTests.hpp
+	teglMutableRenderBufferTests.cpp
+	teglMutableRenderBufferTests.hpp
 	teglNegativeApiTests.cpp
 	teglNegativeApiTests.hpp
 	teglPartialUpdateTests.cpp
@@ -93,6 +95,8 @@ set(DEQP_EGL_SRCS
 	teglSwapBuffersWithDamageTests.cpp
 	teglMultiContextTests.hpp
 	teglMultiContextTests.cpp
+	teglThreadCleanUpTests.hpp
+	teglThreadCleanUpTests.cpp
 	)
 
 set(DEQP_EGL_LIBS

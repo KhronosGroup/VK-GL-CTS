@@ -148,14 +148,14 @@ static const FormatExtEntry s_es3ExtFormats[] =
 		"GL_EXT_color_buffer_float",
 		// These are already texture-valid in ES3, the extension just adds RBO
 		// support and makes them color-renderable.
-		REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_extColorBufferFloatFormats)
 	},
 	{
 		"GL_OES_texture_stencil8",
 		// \note: es3 RBO tests actually cover the first two requirements
 		// - kept here for completeness
-		REQUIRED_RENDERABLE | STENCIL_RENDERABLE | TEXTURE_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | STENCIL_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_extOESTextureStencil8)
 	},
 
@@ -166,7 +166,7 @@ static const FormatExtEntry s_es3ExtFormats[] =
 	//       the formats
 	{
 		"DEQP_gles31_core_compatible GL_EXT_render_snorm",
-		REQUIRED_RENDERABLE | COLOR_RENDERABLE | TEXTURE_VALID | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | TEXTURE_VALID | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_extRenderSnorm)
 	},
 };

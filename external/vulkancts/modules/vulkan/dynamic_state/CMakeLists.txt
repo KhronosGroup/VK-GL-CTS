@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+	..
+	../draw
+	)
 
 set(DEQP_VK_DYNAMIC_STATE_SRCS
 	vktDynamicStateTestCaseUtil.hpp
@@ -16,16 +19,11 @@ set(DEQP_VK_DYNAMIC_STATE_SRCS
 	vktDynamicStateTests.hpp
 	vktDynamicStateVPTests.cpp
 	vktDynamicStateVPTests.hpp
-	vktDynamicStateCreateInfoUtil.hpp
-	vktDynamicStateCreateInfoUtil.cpp
-	vktDynamicStateBufferObjectUtil.hpp
-	vktDynamicStateBufferObjectUtil.cpp
-	vktDynamicStateImageObjectUtil.hpp
-	vktDynamicStateImageObjectUtil.cpp
 )
 
 set(DEQP_VK_DYNAMIC_STATE_LIBS
 	deqp-vk-common
+	deqp-vk-draw
 	tcutil
 	vkutil
 )
