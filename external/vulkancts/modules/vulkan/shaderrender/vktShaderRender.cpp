@@ -513,6 +513,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 	, m_evaluator			(&evaluator)
 	, m_uniformSetup		(&uniformSetup)
 	, m_attribFunc			(attribFunc)
+	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
 {
 }
 
@@ -532,6 +533,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 	, m_evaluator			(evaluator)
 	, m_uniformSetup		(uniformSetup)
 	, m_attribFunc			(attribFunc)
+	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
 {
 }
 
@@ -817,6 +819,16 @@ const tcu::UVec2 ShaderRenderCaseInstance::getViewportSize (void) const
 {
 	return tcu::UVec2(de::min(m_renderSize.x(), MAX_RENDER_WIDTH),
 					  de::min(m_renderSize.y(), MAX_RENDER_HEIGHT));
+}
+
+void ShaderRenderCaseInstance::setSampleCount (VkSampleCountFlagBits sampleCount)
+{
+	m_sampleCount	= sampleCount;
+}
+
+bool ShaderRenderCaseInstance::isMultiSampling (void) const
+{
+	return m_sampleCount != VK_SAMPLE_COUNT_1_BIT;
 }
 
 void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texFormat,
@@ -1359,6 +1371,9 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 	vk::Move<vk::VkImage>								colorImage;
 	de::MovePtr<vk::Allocation>							colorImageAlloc;
 	vk::Move<vk::VkImageView>							colorImageView;
+	vk::Move<vk::VkImage>								resolvedImage;
+	de::MovePtr<vk::Allocation>							resolvedImageAlloc;
+	vk::Move<vk::VkImageView>							resolvedImageView;
 	vk::Move<vk::VkRenderPass>							renderPass;
 	vk::Move<vk::VkFramebuffer>							framebuffer;
 	vk::Move<vk::VkPipelineLayout>						pipelineLayout;
@@ -1376,6 +1391,25 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 	// Create color image
 	{
+		const VkImageUsageFlags	imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		VkImageFormatProperties	properties;
+
+		if ((m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(),
+																					 m_colorFormat,
+																					 VK_IMAGE_TYPE_2D,
+																					 VK_IMAGE_TILING_OPTIMAL,
+																					 imageUsage,
+																					 0u,
+																					 &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+		{
+			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+
+		if ((properties.sampleCounts & m_sampleCount) != m_sampleCount)
+		{
+			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+
 		const VkImageCreateInfo							colorImageParams			=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType		sType;
@@ -1386,9 +1420,9 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			{ m_renderSize.x(), m_renderSize.y(), 1u },									// VkExtent3D			extent;
 			1u,																			// deUint32				mipLevels;
 			1u,																			// deUint32				arraySize;
-			VK_SAMPLE_COUNT_1_BIT,														// deUint32				samples;
+			m_sampleCount,																// deUint32				samples;
 			VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling		tiling;
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags	usage;
+			imageUsage,																	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode		sharingMode;
 			1u,																			// deUint32				queueFamilyCount;
 			&queueFamilyIndex,															// const deUint32*		pQueueFamilyIndices;
@@ -1430,24 +1464,114 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		colorImageView = createImageView(vk, vkDevice, &colorImageViewParams);
 	}
 
+	if (isMultiSampling())
+	{
+		// Resolved Image
+		{
+			const VkImageUsageFlags	imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+			VkImageFormatProperties	properties;
+
+			if ((m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(),
+																						 m_colorFormat,
+																						 VK_IMAGE_TYPE_2D,
+																						 VK_IMAGE_TILING_OPTIMAL,
+																						 imageUsage,
+																						 0,
+																						 &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+			{
+				TCU_THROW(NotSupportedError, "Format not supported");
+			}
+
+			const VkImageCreateInfo					imageCreateInfo			=
+			{
+				VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType			sType;
+				DE_NULL,									// const void*				pNext;
+				0u,											// VkImageCreateFlags		flags;
+				VK_IMAGE_TYPE_2D,							// VkImageType				imageType;
+				m_colorFormat,								// VkFormat					format;
+				{ m_renderSize.x(),	m_renderSize.y(), 1u },	// VkExtent3D				extent;
+				1u,											// deUint32					mipLevels;
+				1u,											// deUint32					arrayLayers;
+				VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits	samples;
+				VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling			tiling;
+				imageUsage,									// VkImageUsageFlags		usage;
+				VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode			sharingMode;
+				1u,											// deUint32					queueFamilyIndexCount;
+				&queueFamilyIndex,							// const deUint32*			pQueueFamilyIndices;
+				VK_IMAGE_LAYOUT_UNDEFINED					// VkImageLayout			initialLayout;
+			};
+
+			resolvedImage		= vk::createImage(vk, vkDevice, &imageCreateInfo, DE_NULL);
+			resolvedImageAlloc	= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *resolvedImage), MemoryRequirement::Any);
+			VK_CHECK(vk.bindImageMemory(vkDevice, *resolvedImage, resolvedImageAlloc->getMemory(), resolvedImageAlloc->getOffset()));
+		}
+
+		// Resolved Image View
+		{
+			const VkImageViewCreateInfo				imageViewCreateInfo		=
+			{
+				VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType				sType;
+				DE_NULL,									// const void*					pNext;
+				0u,											// VkImageViewCreateFlags		flags;
+				*resolvedImage,								// VkImage						image;
+				VK_IMAGE_VIEW_TYPE_2D,						// VkImageViewType				viewType;
+				m_colorFormat,								// VkFormat						format;
+				{
+					VK_COMPONENT_SWIZZLE_R,					// VkChannelSwizzle		r;
+					VK_COMPONENT_SWIZZLE_G,					// VkChannelSwizzle		g;
+					VK_COMPONENT_SWIZZLE_B,					// VkChannelSwizzle		b;
+					VK_COMPONENT_SWIZZLE_A					// VkChannelSwizzle		a;
+				},
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,					// VkImageAspectFlags			aspectMask;
+					0u,											// deUint32						baseMipLevel;
+					1u,											// deUint32						mipLevels;
+					0u,											// deUint32						baseArrayLayer;
+					1u,											// deUint32						arraySize;
+				},											// VkImageSubresourceRange		subresourceRange;
+			};
+
+			resolvedImageView = vk::createImageView(vk, vkDevice, &imageViewCreateInfo, DE_NULL);
+		}
+	}
+
 	// Create render pass
 	{
-		const VkAttachmentDescription					attachmentDescription		=
+		const VkAttachmentDescription					attachmentDescription[]		=
 		{
-			(VkAttachmentDescriptionFlags)0,
-			m_colorFormat,										// VkFormat						format;
-			VK_SAMPLE_COUNT_1_BIT,								// deUint32						samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp			loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp			storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp			stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp			stencilStoreOp;
-			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout				initialLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout				finalLayout;
+			{
+				(VkAttachmentDescriptionFlags)0,					// VkAttachmentDescriptionFlags		flags;
+				m_colorFormat,										// VkFormat							format;
+				m_sampleCount,										// deUint32							samples;
+				VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
+				VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
+				VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
+				VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					initialLayout;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					finalLayout;
+			},
+			{
+				(VkAttachmentDescriptionFlags)0,					// VkAttachmentDescriptionFlags		flags;
+				m_colorFormat,										// VkFormat							format;
+				VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
+				VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
+				VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
+				VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
+				VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					initialLayout;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					finalLayout;
+			}
 		};
 
 		const VkAttachmentReference						attachmentReference			=
 		{
 			0u,													// deUint32			attachment;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout	layout;
+		};
+
+		const VkAttachmentReference						resolveAttachmentRef		=
+		{
+			1u,													// deUint32			attachment;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout	layout;
 		};
 
@@ -1459,7 +1583,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			DE_NULL,											// constVkAttachmentReference*	pInputAttachments;
 			1u,													// deUint32						colorCount;
 			&attachmentReference,								// constVkAttachmentReference*	pColorAttachments;
-			DE_NULL,											// constVkAttachmentReference*	pResolveAttachments;
+			isMultiSampling() ? &resolveAttachmentRef : DE_NULL,// constVkAttachmentReference*	pResolveAttachments;
 			DE_NULL,											// VkAttachmentReference		depthStencilAttachment;
 			0u,													// deUint32						preserveCount;
 			DE_NULL												// constVkAttachmentReference*	pPreserveAttachments;
@@ -1469,9 +1593,9 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
-			(VkRenderPassCreateFlags)0,
-			1u,													// deUint32							attachmentCount;
-			&attachmentDescription,								// const VkAttachmentDescription*	pAttachments;
+			0u,													// VkRenderPassCreateFlags			flags;
+			isMultiSampling() ? 2u : 1u,						// deUint32							attachmentCount;
+			attachmentDescription,								// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
 			&subpassDescription,								// const VkSubpassDescription*		pSubpasses;
 			0u,													// deUint32							dependencyCount;
@@ -1483,14 +1607,20 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 	// Create framebuffer
 	{
+		const VkImageView								attachments[]				=
+		{
+			*colorImageView,
+			*resolvedImageView
+		};
+
 		const VkFramebufferCreateInfo					framebufferParams			=
 		{
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
 			(VkFramebufferCreateFlags)0,
 			*renderPass,										// VkRenderPass					renderPass;
-			1u,													// deUint32						attachmentCount;
-			&*colorImageView,									// const VkImageView*			pAttachments;
+			isMultiSampling() ? 2u : 1u,						// deUint32						attachmentCount;
+			attachments,										// const VkImageView*			pAttachments;
 			(deUint32)m_renderSize.x(),							// deUint32						width;
 			(deUint32)m_renderSize.y(),							// deUint32						height;
 			1u													// deUint32						layers;
@@ -1640,13 +1770,13 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 		const VkPipelineViewportStateCreateInfo			viewportStateParams			=
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType		sType;
-			DE_NULL,														// const void*			pNext;
-			(VkPipelineViewportStateCreateFlags)0,
-			1u,																// deUint32				viewportCount;
-			&viewport,														// const VkViewport*	pViewports;
-			1u,																// deUint32				scissorsCount;
-			&scissor,														// const VkRect2D*		pScissors;
+			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType						sType;
+			DE_NULL,														// const void*							pNext;
+			0u,																// VkPipelineViewportStateCreateFlags	flags;
+			1u,																// deUint32								viewportCount;
+			&viewport,														// const VkViewport*					pViewports;
+			1u,																// deUint32								scissorsCount;
+			&scissor,														// const VkRect2D*						pScissors;
 		};
 
 		const VkPipelineRasterizationStateCreateInfo	rasterStateParams			=
@@ -1671,7 +1801,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
 			0u,																// VkPipelineMultisampleStateCreateFlags	flags;
-			VK_SAMPLE_COUNT_1_BIT,											// VkSampleCountFlagBits					rasterizationSamples;
+			m_sampleCount,													// VkSampleCountFlagBits					rasterizationSamples;
 			VK_FALSE,														// VkBool32									sampleShadingEnable;
 			0.0f,															// float									minSampleShading;
 			DE_NULL,														// const VkSampleMask*						pSampleMask;
@@ -1809,6 +1939,55 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
 
+		{
+			const VkImageMemoryBarrier					imageBarrier				=
+			{
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,										// VkStructureType			sType;
+				DE_NULL,																	// const void*				pNext;
+				0u,																			// VkAccessFlags			srcAccessMask;
+				VK_PIPELINE_STAGE_TRANSFER_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
+				VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout			oldLayout;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,									// VkImageLayout			newLayout;
+				VK_QUEUE_FAMILY_IGNORED,													// deUint32					srcQueueFamilyIndex;
+				VK_QUEUE_FAMILY_IGNORED,													// deUint32					dstQueueFamilyIndex;
+				*colorImage,																// VkImage					image;
+				{																			// VkImageSubresourceRange	subresourceRange;
+					VK_IMAGE_ASPECT_COLOR_BIT,												// VkImageAspectFlags		aspectMask;
+					0u,																		// deUint32					baseMipLevel;
+					1u,																		// deUint32					mipLevels;
+					0u,																		// deUint32					baseArrayLayer;
+					1u,																		// deUint32					arraySize;
+				}
+			};
+
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, DE_NULL, 1, &imageBarrier);
+
+			if (isMultiSampling()) {
+				// add multisample barrier
+				const VkImageMemoryBarrier				multiSampleImageBarrier		=
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,										// VkStructureType			sType;
+					DE_NULL,																	// const void*				pNext;
+					0u,																			// VkAccessFlags			srcAccessMask;
+					VK_PIPELINE_STAGE_TRANSFER_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
+					VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout			oldLayout;
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,									// VkImageLayout			newLayout;
+					VK_QUEUE_FAMILY_IGNORED,													// deUint32					srcQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,													// deUint32					dstQueueFamilyIndex;
+					*resolvedImage,																// VkImage					image;
+					{																			// VkImageSubresourceRange	subresourceRange;
+						VK_IMAGE_ASPECT_COLOR_BIT,												// VkImageAspectFlags		aspectMask;
+						0u,																		// deUint32					baseMipLevel;
+						1u,																		// deUint32					mipLevels;
+						0u,																		// deUint32					baseArrayLayer;
+						1u,																		// deUint32					arraySize;
+					}
+				};
+
+				vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, DE_NULL, 1, &multiSampleImageBarrier);
+			}
+		}
+
 		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
@@ -1865,7 +2044,8 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 	// Read back the result
 	{
-		const VkDeviceSize								imageSizeBytes				= (VkDeviceSize)(sizeof(deUint32) * m_renderSize.x() * m_renderSize.y());
+		const tcu::TextureFormat						resultFormat				= mapVkFormat(m_colorFormat);
+		const VkDeviceSize								imageSizeBytes				= (VkDeviceSize)(resultFormat.getPixelSize() * m_renderSize.x() * m_renderSize.y());
 		const VkBufferCreateInfo						readImageBufferParams		=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		//  VkStructureType		sType;
@@ -1931,27 +2111,27 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 		VK_CHECK(vk.beginCommandBuffer(*resultCmdBuffer, &cmdBufferBeginInfo));
 
-		const VkImageMemoryBarrier imageBarrier =
+		const VkImageMemoryBarrier						imageBarrier				=
 		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-			*colorImage,								// VkImage					image;
-			{											// VkImageSubresourceRange	subresourceRange;
-				VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask;
-				0u,							// deUint32				baseMipLevel;
-				1u,							// deUint32				mipLevels;
-				0u,							// deUint32				baseArraySlice;
-				1u							// deUint32				arraySize;
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,									// VkStructureType			sType;
+			DE_NULL,																// const void*				pNext;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,	// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,								// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,									// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,												// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,												// deUint32					dstQueueFamilyIndex;
+			isMultiSampling() ? *resolvedImage : *colorImage,						// VkImage					image;
+			{																		// VkImageSubresourceRange	subresourceRange;
+				VK_IMAGE_ASPECT_COLOR_BIT,											// VkImageAspectFlags		aspectMask;
+				0u,																	// deUint32					baseMipLevel;
+				1u,																	// deUint32					mipLevels;
+				0u,																	// deUint32					baseArraySlice;
+				1u																	// deUint32					arraySize;
 			}
 		};
 
-		const VkBufferMemoryBarrier bufferBarrier =
+		const VkBufferMemoryBarrier						bufferBarrier				=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
 			DE_NULL,									// const void*		pNext;
@@ -1965,7 +2145,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		};
 
 		vk.cmdPipelineBarrier(*resultCmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
-		vk.cmdCopyImageToBuffer(*resultCmdBuffer, *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
+		vk.cmdCopyImageToBuffer(*resultCmdBuffer, isMultiSampling() ? *resolvedImage : *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
 		vk.cmdPipelineBarrier(*resultCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
 		VK_CHECK(vk.endCommandBuffer(*resultCmdBuffer));
@@ -1976,7 +2156,6 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 		invalidateMappedMemoryRange(vk, vkDevice, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset(), imageSizeBytes);
 
-		const tcu::TextureFormat						resultFormat				= mapVkFormat(m_colorFormat);
 		const tcu::ConstPixelBufferAccess				resultAccess				(resultFormat, m_renderSize.x(), m_renderSize.y(), 1, readImageBufferMemory->getHostPtr());
 
 		m_resultImage.setStorage(resultFormat, m_renderSize.x(), m_renderSize.y());
