@@ -50,6 +50,10 @@ using namespace vk;
 namespace
 {
 
+static const char* const s_perVertexBlock =	"gl_PerVertex {\n"
+											"    vec4 gl_Position;\n"
+											"}";
+
 //! Raw memory storage for values used in test cases.
 //! We use it to simplify test case definitions where different types are expected in the result.
 class GenericValue
@@ -289,6 +293,8 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 			<< "layout(location = 0) in highp vec4 position;\n"
 			<< "\n"
+			<< "out " << s_perVertexBlock << ";\n"
+			<< "\n"
 			<< (useSpecConst ? generateSpecConstantCode(m_caseDef.specConstants) : "")
 			<< (useSpecConst ? generateSSBOCode(m_caseDef.ssboCode) : "")
 			<< (useSpecConst ? m_caseDef.globalCode + "\n" : "")
@@ -327,6 +333,10 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 			<< "layout(vertices = 3) out;\n"
 			<< "\n"
+			<< "in " << s_perVertexBlock << " gl_in[gl_MaxPatchVertices];\n"
+			<< "\n"
+			<< "out " << s_perVertexBlock << " gl_out[];\n"
+			<< "\n"
 			<< (useSpecConst ? generateSpecConstantCode(m_caseDef.specConstants) : "")
 			<< (useSpecConst ? generateSSBOCode(m_caseDef.ssboCode) : "")
 			<< (useSpecConst ? m_caseDef.globalCode + "\n" : "")
@@ -353,6 +363,10 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 			<< "layout(triangles, equal_spacing, ccw) in;\n"
 			<< "\n"
+			<< "in " << s_perVertexBlock << " gl_in[gl_MaxPatchVertices];\n"
+			<< "\n"
+			<< "out " << s_perVertexBlock << ";\n"
+			<< "\n"
 			<< (useSpecConst ? generateSpecConstantCode(m_caseDef.specConstants) : "")
 			<< (useSpecConst ? generateSSBOCode(m_caseDef.ssboCode) : "")
 			<< (useSpecConst ? m_caseDef.globalCode + "\n" : "")
@@ -375,6 +389,10 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 			<< "layout(triangles) in;\n"
 			<< "layout(triangle_strip, max_vertices = 3) out;\n"
+			<< "\n"
+			<< "in " << s_perVertexBlock << " gl_in[];\n"
+			<< "\n"
+			<< "out " << s_perVertexBlock << ";\n"
 			<< "\n"
 			<< (useSpecConst ? generateSpecConstantCode(m_caseDef.specConstants) : "")
 			<< (useSpecConst ? generateSSBOCode(m_caseDef.ssboCode) : "")
