@@ -144,8 +144,10 @@ void resetStateES (const RenderContext& renderCtx, const ContextInfo& ctxInfo)
 	// Texture state.
 	// \todo [2013-04-08 pyry] Reset all levels?
 	{
-		const float	borderColor[]	= { 0.0f, 0.0f, 0.0f, 0.0f };
-		int			numTexUnits		= 0;
+		const float	borderColor[]		= { 0.0f, 0.0f, 0.0f, 0.0f };
+		int			numTexUnits			= 0;
+		const bool	supportsBorderClamp	= ctxInfo.isExtensionSupported("GL_EXT_texture_border_clamp") || contextSupports(type, ApiType::es(3,2));
+
 		gl.getIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &numTexUnits);
 
 		for (int ndx = 0; ndx < numTexUnits; ndx++)
@@ -177,7 +179,7 @@ void resetStateES (const RenderContext& renderCtx, const ContextInfo& ctxInfo)
 			if (contextSupports(type, ApiType::es(3,1)))
 				gl.texParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
 
-			if (ctxInfo.isExtensionSupported("GL_EXT_texture_border_clamp"))
+			if (supportsBorderClamp)
 				gl.texParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 
 			// Reset cube map texture.
@@ -210,7 +212,7 @@ void resetStateES (const RenderContext& renderCtx, const ContextInfo& ctxInfo)
 			if (contextSupports(type, ApiType::es(3,1)))
 				gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
 
-			if (ctxInfo.isExtensionSupported("GL_EXT_texture_border_clamp"))
+			if (supportsBorderClamp)
 				gl.texParameterfv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 
 			if (contextSupports(type, ApiType::es(3,0)))
@@ -233,7 +235,7 @@ void resetStateES (const RenderContext& renderCtx, const ContextInfo& ctxInfo)
 				gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE,	GL_NONE);
 				gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_FUNC,	GL_LEQUAL);
 
-				if (ctxInfo.isExtensionSupported("GL_EXT_texture_border_clamp"))
+				if (supportsBorderClamp)
 					gl.texParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 			}
 
@@ -261,7 +263,7 @@ void resetStateES (const RenderContext& renderCtx, const ContextInfo& ctxInfo)
 				gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_COMPARE_MODE,	GL_NONE);
 				gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_COMPARE_FUNC,	GL_LEQUAL);
 
-				if (ctxInfo.isExtensionSupported("GL_EXT_texture_border_clamp"))
+				if (supportsBorderClamp)
 					gl.texParameterfv(GL_TEXTURE_3D, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 			}
 
@@ -310,7 +312,7 @@ void resetStateES (const RenderContext& renderCtx, const ContextInfo& ctxInfo)
 				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_COMPARE_MODE,	GL_NONE);
 				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_COMPARE_FUNC,	GL_LEQUAL);
 
-				if (ctxInfo.isExtensionSupported("GL_EXT_texture_border_clamp"))
+				if (supportsBorderClamp)
 					gl.texParameterfv(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 			}
 		}

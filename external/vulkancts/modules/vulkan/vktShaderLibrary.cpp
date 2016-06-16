@@ -861,7 +861,7 @@ Move<vk::VkRenderPass> createRenderPass (Context& context, vk::VkFormat colorAtt
 	};
 	const vk::VkAttachmentReference		dsAttRef			=
 	{
-		vk::VK_NO_ATTACHMENT,									// attachment
+		VK_ATTACHMENT_UNUSED,									// attachment
 		vk::VK_IMAGE_LAYOUT_GENERAL,							// layout
 	};
 	const vk::VkSubpassDescription		subpassDesc			=
@@ -1058,11 +1058,11 @@ Move<vk::VkPipeline> createPipeline (Context&					context,
 		vk::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,		// sType
 		DE_NULL,															// pNext
 		(vk::VkPipelineDepthStencilStateCreateFlags)0,
-		vk::VK_FALSE,														// depthTestEnable
-		vk::VK_FALSE,														// depthWriteEnable
+		VK_FALSE,															// depthTestEnable
+		VK_FALSE,															// depthWriteEnable
 		vk::VK_COMPARE_OP_ALWAYS,											// depthCompareOp
-		vk::VK_FALSE,														// depthBoundsTestEnable
-		vk::VK_FALSE,														// stencilTestEnable
+		VK_FALSE,															// depthBoundsTestEnable
+		VK_FALSE,															// stencilTestEnable
 		{
 			vk::VK_STENCIL_OP_KEEP,												// stencilFailOp;
 			vk::VK_STENCIL_OP_KEEP,												// stencilPassOp;
@@ -1117,8 +1117,8 @@ Move<vk::VkPipeline> createPipeline (Context&					context,
 		DE_FALSE,															// sampleShadingEnable
 		0.0f,																// minSampleShading
 		DE_NULL,															// pSampleMask
-		vk::VK_FALSE,														// alphaToCoverageEnable
-		vk::VK_FALSE,														// alphaToOneEnable
+		VK_FALSE,															// alphaToCoverageEnable
+		VK_FALSE,															// alphaToOneEnable
 	};
 	const vk::VkPipelineRasterizationStateCreateInfo	rasterParams			=
 	{
@@ -1130,7 +1130,7 @@ Move<vk::VkPipeline> createPipeline (Context&					context,
 		vk::VK_POLYGON_MODE_FILL,											// fillMode
 		vk::VK_CULL_MODE_NONE,												// cullMode;
 		vk::VK_FRONT_FACE_COUNTER_CLOCKWISE,								// frontFace;
-		vk::VK_FALSE,														// depthBiasEnable
+		VK_FALSE,															// depthBiasEnable
 		0.0f,																// depthBiasConstantFactor
 		0.0f,																// depthBiasClamp
 		0.0f,																// depthBiasSlopeFactor
@@ -1173,7 +1173,7 @@ Move<vk::VkPipeline> createPipeline (Context&					context,
 																				| vk::VK_COLOR_COMPONENT_A_BIT;
 	const vk::VkPipelineColorBlendAttachmentState		attBlendParams			=
 	{
-		vk::VK_FALSE,														// blendEnable
+		VK_FALSE,															// blendEnable
 		vk::VK_BLEND_FACTOR_ONE,											// srcBlendColor
 		vk::VK_BLEND_FACTOR_ZERO,											// destBlendColor
 		vk::VK_BLEND_OP_ADD,												// blendOpColor
@@ -1187,7 +1187,7 @@ Move<vk::VkPipeline> createPipeline (Context&					context,
 		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// sType
 		DE_NULL,															// pNext
 		(vk::VkPipelineColorBlendStateCreateFlags)0,
-		vk::VK_FALSE,														// logicOpEnable
+		VK_FALSE,															// logicOpEnable
 		vk::VK_LOGIC_OP_COPY,												// logicOp
 		1u,																	// attachmentCount
 		&attBlendParams,													// pAttachments

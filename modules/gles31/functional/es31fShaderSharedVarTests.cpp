@@ -367,6 +367,9 @@ void ShaderSharedVarTests::init (void)
 
 		for (int basicType = TYPE_FLOAT; basicType <= TYPE_BOOL_VEC4; basicType++)
 		{
+			if (glu::getDataTypeScalarType(DataType(basicType)) == glu::TYPE_DOUBLE)
+				continue;
+
 			if (glu::isDataTypeBoolOrBVec(DataType(basicType)))
 			{
 				const tcu::UVec3	workGroupSize	(2,1,3);

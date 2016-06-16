@@ -44,6 +44,23 @@ private:
 	ComputeShaderSpec	m_shaderSpec;
 };
 
+enum ConvertTestFeatures
+{
+	CONVERT_TEST_USES_INT16,
+	CONVERT_TEST_USES_INT64,
+	CONVERT_TEST_USES_INT16_INT64,
+};
+
+class ConvertTestCase : public SpvAsmComputeShaderCase
+{
+public:
+						ConvertTestCase	(tcu::TestContext& testCtx, const char* name, const char* description, const ComputeShaderSpec& spec, const ConvertTestFeatures features);
+	TestInstance*		createInstance	(Context& ctx) const;
+private:
+	ComputeShaderSpec			m_shaderSpec;
+	const ConvertTestFeatures	m_features;
+};
+
 } // SpirVAssembly
 } // vkt
 

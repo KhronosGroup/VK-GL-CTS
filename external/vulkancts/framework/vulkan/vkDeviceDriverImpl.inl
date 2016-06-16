@@ -631,3 +631,28 @@ VkResult DeviceDriver::createSharedSwapchainsKHR (VkDevice device, deUint32 swap
 {
 	return m_vk.createSharedSwapchainsKHR(device, swapchainCount, pCreateInfos, pAllocator, pSwapchains);
 }
+
+VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, VkDebugMarkerObjectTagInfoEXT* pTagInfo) const
+{
+	return m_vk.debugMarkerSetObjectTagEXT(device, pTagInfo);
+}
+
+VkResult DeviceDriver::debugMarkerSetObjectNameEXT (VkDevice device, VkDebugMarkerObjectNameInfoEXT* pNameInfo) const
+{
+	return m_vk.debugMarkerSetObjectNameEXT(device, pNameInfo);
+}
+
+void DeviceDriver::cmdDebugMarkerBeginEXT (VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const
+{
+	m_vk.cmdDebugMarkerBeginEXT(commandBuffer, pMarkerInfo);
+}
+
+void DeviceDriver::cmdDebugMarkerEndEXT (VkCommandBuffer commandBuffer) const
+{
+	m_vk.cmdDebugMarkerEndEXT(commandBuffer);
+}
+
+void DeviceDriver::cmdDebugMarkerInsertEXT (VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const
+{
+	m_vk.cmdDebugMarkerInsertEXT(commandBuffer, pMarkerInfo);
+}

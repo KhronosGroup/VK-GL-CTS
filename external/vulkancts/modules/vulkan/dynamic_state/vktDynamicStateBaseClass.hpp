@@ -28,9 +28,9 @@
 #include "vktTestCase.hpp"
 
 #include "vktDynamicStateTestCaseUtil.hpp"
-#include "vktDynamicStateImageObjectUtil.hpp"
-#include "vktDynamicStateBufferObjectUtil.hpp"
-#include "vktDynamicStateCreateInfoUtil.hpp"
+#include "vktDrawImageObjectUtil.hpp"
+#include "vktDrawBufferObjectUtil.hpp"
+#include "vktDrawCreateInfoUtil.hpp"
 
 namespace vkt
 {
@@ -91,11 +91,11 @@ protected:
 	vk::Move<vk::VkPipeline>						m_pipeline;
 	vk::Move<vk::VkPipelineLayout>					m_pipelineLayout;
 
-	de::SharedPtr<Image>							m_colorTargetImage;
+	de::SharedPtr<Draw::Image>						m_colorTargetImage;
 	vk::Move<vk::VkImageView>						m_colorTargetView;
 
-	PipelineCreateInfo::VertexInputState			m_vertexInputState;
-	de::SharedPtr<Buffer>							m_vertexBuffer;
+	Draw::PipelineCreateInfo::VertexInputState		m_vertexInputState;
+	de::SharedPtr<Draw::Buffer>						m_vertexBuffer;
 
 	vk::Move<vk::VkCommandPool>						m_cmdPool;
 	vk::Move<vk::VkCommandBuffer>					m_cmdBuffer;

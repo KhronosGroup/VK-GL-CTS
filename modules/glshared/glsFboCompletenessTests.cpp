@@ -214,22 +214,22 @@ static const FormatExtEntry s_esExtFormats[] =
 {
 	{
 		"GL_OES_depth_texture",
-		REQUIRED_RENDERABLE | DEPTH_RENDERABLE | TEXTURE_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | DEPTH_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_oesDepthTextureFormats),
 	},
 	{
 		"GL_OES_packed_depth_stencil",
-		REQUIRED_RENDERABLE | DEPTH_RENDERABLE | STENCIL_RENDERABLE | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | DEPTH_RENDERABLE | STENCIL_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_oesPackedDepthStencilSizedFormats)
 	},
 	{
 		"GL_OES_packed_depth_stencil GL_OES_required_internalformat",
-		TEXTURE_VALID,
+		(deUint32)TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_oesPackedDepthStencilSizedFormats)
 	},
 	{
 		"GL_OES_packed_depth_stencil",
-		DEPTH_RENDERABLE | STENCIL_RENDERABLE | TEXTURE_VALID,
+		(deUint32)(DEPTH_RENDERABLE | STENCIL_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_oesPackedDepthStencilTexFormats)
 	},
 	// \todo [2013-12-10 lauri] Find out if OES_texture_half_float is really a
@@ -237,7 +237,7 @@ static const FormatExtEntry s_esExtFormats[] =
 	// all on ES3, since there's also EXT_color_buffer_float?
 	{
 		"GL_OES_texture_half_float GL_EXT_color_buffer_half_float",
-		REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_extColorBufferHalfFloatFormats)
 	},
 
@@ -247,71 +247,71 @@ static const FormatExtEntry s_esExtFormats[] =
 		"GL_OES_required_internalformat",
 		 // Allow but don't require RGBA8 to be color-renderable if
 		 // OES_rgb8_rgba8 is not present.
-		COLOR_RENDERABLE | TEXTURE_VALID,
+		(deUint32)(COLOR_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_oesRequiredInternalFormatColorFormats)
 	},
 	{
 		"GL_OES_required_internalformat",
-		DEPTH_RENDERABLE | TEXTURE_VALID,
+		(deUint32)(DEPTH_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_oesRequiredInternalFormatDepthFormats)
 	},
 	{
 		"GL_EXT_texture_rg",
-		REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_extTextureRgRboFormats)
 	},
 	// These are not specified to be color-renderable, but the wording is
 	// exactly as ambiguous as the wording in the ES2 spec.
 	{
 		"GL_EXT_texture_rg",
-		COLOR_RENDERABLE | TEXTURE_VALID,
+		(deUint32)(COLOR_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_extTextureRgTexFormats)
 	},
 	{
 		"GL_EXT_texture_rg GL_OES_texture_float",
-		COLOR_RENDERABLE | TEXTURE_VALID,
+		(deUint32)(COLOR_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_extTextureRgFloatTexFormats)
 	},
 	{
 		"GL_EXT_texture_rg GL_OES_texture_half_float",
-		COLOR_RENDERABLE | TEXTURE_VALID,
+		(deUint32)(COLOR_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_extTextureRgHalfFloatTexFormats)
 	},
 
 	{
 		"GL_NV_packed_float",
-		COLOR_RENDERABLE | TEXTURE_VALID,
+		(deUint32)(COLOR_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_nvPackedFloatTexFormats)
 	},
 	{
 		"GL_NV_packed_float GL_EXT_color_buffer_half_float",
-		REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_nvPackedFloatRboFormats)
 	},
 
 	{
 		"GL_EXT_sRGB",
-		COLOR_RENDERABLE | TEXTURE_VALID,
+		(deUint32)(COLOR_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_extSrgbRenderableTexFormats)
 	},
 	{
 		"GL_EXT_sRGB",
-		TEXTURE_VALID,
+		(deUint32)TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_extSrgbNonRenderableTexFormats)
 	},
 	{
 		"GL_EXT_sRGB",
-		REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_extSrgbRboFormats)
 	},
 	{
 		"GL_NV_sRGB_formats",
-		REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_nvSrgbFormatsRboFormats)
 	},
 	{
 		"GL_NV_sRGB_formats",
-		REQUIRED_RENDERABLE | COLOR_RENDERABLE | TEXTURE_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_nvSrgbFormatsTextureFormats)
 	},
 
@@ -320,17 +320,17 @@ static const FormatExtEntry s_esExtFormats[] =
 	 // found in any extension specs, so only allow it, not require it.
 	{
 		"GL_OES_rgb8_rgba8",
-		COLOR_RENDERABLE | TEXTURE_VALID,
+		(deUint32)(COLOR_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_oesRgb8Rgba8TexFormats)
 	},
 	{
 		"GL_OES_rgb8_rgba8",
-		REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_oesRgb8Rgba8RboFormats)
 	},
 	{
 		"GL_OES_rgb8_rgba8 GL_OES_required_internalformat",
-		TEXTURE_VALID,
+		(deUint32)TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_oesRequiredInternalFormatRgb8ColorFormat)
 	},
 
@@ -338,45 +338,45 @@ static const FormatExtEntry s_esExtFormats[] =
 	// spelled out, but all renderbuffer formats are meant to be renderable.
 	{
 		"GL_OES_depth24",
-		REQUIRED_RENDERABLE | DEPTH_RENDERABLE | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | DEPTH_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_oesDepth24SizedFormats)
 	},
 	{
 		"GL_OES_depth24 GL_OES_required_internalformat GL_OES_depth_texture",
-		TEXTURE_VALID,
+		(deUint32)TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_oesDepth24SizedFormats)
 	},
 
 	{
 		"GL_OES_depth32",
-		REQUIRED_RENDERABLE | DEPTH_RENDERABLE | RENDERBUFFER_VALID,
+		(deUint32)(REQUIRED_RENDERABLE | DEPTH_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_oesDepth32SizedFormats)
 	},
 	{
 		"GL_OES_depth32 GL_OES_required_internalformat GL_OES_depth_texture",
-		TEXTURE_VALID,
+		(deUint32)TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_oesDepth32SizedFormats)
 	},
 
 	{
 		"GL_EXT_texture_type_2_10_10_10_REV",
-		TEXTURE_VALID, // explicitly unrenderable
+		(deUint32)TEXTURE_VALID, // explicitly unrenderable
 		GLS_ARRAY_RANGE(s_extTextureType2101010RevFormats)
 	},
 	{
 		"GL_EXT_texture_type_2_10_10_10_REV GL_OES_required_internalformat",
-		TEXTURE_VALID, // explicitly unrenderable
+		(deUint32)TEXTURE_VALID, // explicitly unrenderable
 		GLS_ARRAY_RANGE(s_oesRequiredInternalFormat10bitColorFormats)
 	},
 
 	{
 		"GL_EXT_texture_sRGB_R8",
-		TEXTURE_VALID,
+		(deUint32)TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_extTextureSRGBR8Formats)
 	},
 	{
 		"GL_EXT_texture_sRGB_RG8",
-		TEXTURE_VALID,
+		(deUint32)TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_extTextureSRGBRG8Formats)
 	},
 };

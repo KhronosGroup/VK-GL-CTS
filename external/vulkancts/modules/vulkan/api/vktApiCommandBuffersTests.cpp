@@ -169,7 +169,7 @@ CommandBufferRenderPassTestEnvironment::CommandBufferRenderPassTestEnvironment(C
 			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
 			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
 			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					initialLayout;
+			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					initialLayout;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					finalLayout;
 		};
 
@@ -3332,13 +3332,20 @@ tcu::TestStatus submitBufferNullFence(Context& context)
 	// Wait for the queue
 	VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), VK_TRUE, INFINITE_TIMEOUT));
 
+
 	tcu::TestStatus testResult = tcu::TestStatus::incomplete();
 
-	if (vk.getEventStatus(vkDevice, events[0]->get()) != VK_EVENT_SET)
-		testResult = tcu::TestStatus::fail("The first event was not signaled -> the buffer was not executed.");
+	//Fence guaranteed that all buffers submited before fence were executed
+	if (vk.getEventStatus(vkDevice, events[0]->get()) != VK_EVENT_SET || vk.getEventStatus(vkDevice, events[1]->get()) != VK_EVENT_SET)
+	{
+		testResult = tcu::TestStatus::fail("One of the buffers was not executed.");
+	}
 	else
-		testResult = tcu::TestStatus::pass("The first event was signaled -> the buffer with null fence submitted and executed correctly.");
+	{
+		testResult = tcu::TestStatus::pass("Buffers have been submitted and executed correctly.");
+	}
 
+	vk.queueWaitIdle(queue);
 	return testResult;
 }
 

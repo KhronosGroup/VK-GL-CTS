@@ -27,6 +27,12 @@ set(DEQP_VK_API_SRCS
 	vktApiBufferComputeInstance.hpp
 	vktApiCopiesAndBlittingTests.cpp
 	vktApiCopiesAndBlittingTests.hpp
+	vktApiImageClearingTests.cpp
+	vktApiImageClearingTests.hpp
+	vktApiFillBufferTests.cpp
+	vktApiFillBufferTests.hpp
+	vktApiDescriptorPoolTests.cpp
+	vktApiDescriptorPoolTests.hpp
 	)
 
 set(DEQP_VK_API_LIBS
