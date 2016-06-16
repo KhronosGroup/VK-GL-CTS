@@ -499,7 +499,7 @@ vk::Move<vk::VkCommandBuffer> createBeginCommandBuffer (const vk::DeviceInterfac
 		0,
 		0,
 		0,
-		vk::VK_FALSE,
+		VK_FALSE,
 		0u,
 		0u
 	};
@@ -2025,12 +2025,12 @@ void PipelineBarrier::submit (SubmitContext& context)
 				m_srcAccesses,
 				m_dstAccesses,
 
-				vk::VK_QUEUE_FAMILY_IGNORED,
-				vk::VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
 
 				context.getBuffer(),
 				0,
-				vk::VK_WHOLE_SIZE
+				VK_WHOLE_SIZE
 			};
 
 			vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &barrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
@@ -2050,8 +2050,8 @@ void PipelineBarrier::submit (SubmitContext& context)
 				*m_imageLayout,
 				*m_imageLayout,
 
-				vk::VK_QUEUE_FAMILY_IGNORED,
-				vk::VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
 
 				context.getImage(),
 				{
@@ -2150,8 +2150,8 @@ void ImageTransition::submit (SubmitContext& context)
 		m_srcLayout,
 		m_dstLayout,
 
-		vk::VK_QUEUE_FAMILY_IGNORED,
-		vk::VK_QUEUE_FAMILY_IGNORED,
+		VK_QUEUE_FAMILY_IGNORED,
+		VK_QUEUE_FAMILY_IGNORED,
 
 		context.getImage(),
 		{
@@ -2351,11 +2351,11 @@ void BufferCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
 		vk::VK_ACCESS_TRANSFER_WRITE_BIT,
 		vk::VK_ACCESS_HOST_READ_BIT,
 
-		vk::VK_QUEUE_FAMILY_IGNORED,
-		vk::VK_QUEUE_FAMILY_IGNORED,
+		VK_QUEUE_FAMILY_IGNORED,
+		VK_QUEUE_FAMILY_IGNORED,
 		*m_dstBuffer,
 		0,
-		vk::VK_WHOLE_SIZE
+		VK_WHOLE_SIZE
 	};
 
 	vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &barrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
@@ -2562,8 +2562,8 @@ void BufferCopyToImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_LAYOUT_UNDEFINED,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 
 			*m_dstImage,
 			{
@@ -2638,8 +2638,8 @@ void BufferCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 
 			*m_dstImage,
 			{
@@ -2658,11 +2658,11 @@ void BufferCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 			vk::VK_ACCESS_TRANSFER_WRITE_BIT,
 			vk::VK_ACCESS_HOST_READ_BIT,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 			*dstBuffer,
 			0,
-			vk::VK_WHOLE_SIZE
+			VK_WHOLE_SIZE
 		};
 
 		const vk::VkBufferImageCopy	region =
@@ -2809,8 +2809,8 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_LAYOUT_UNDEFINED,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 
 			*m_srcImage,
 			{
@@ -2832,8 +2832,8 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 
 			*m_srcImage,
 			{
@@ -3016,11 +3016,11 @@ void ImageCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
 		vk::VK_ACCESS_TRANSFER_WRITE_BIT,
 		vk::VK_ACCESS_HOST_READ_BIT,
 
-		vk::VK_QUEUE_FAMILY_IGNORED,
-		vk::VK_QUEUE_FAMILY_IGNORED,
+		VK_QUEUE_FAMILY_IGNORED,
+		VK_QUEUE_FAMILY_IGNORED,
 		*m_dstBuffer,
 		0,
-		vk::VK_WHOLE_SIZE
+		VK_WHOLE_SIZE
 	};
 
 	vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &barrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
@@ -3244,8 +3244,8 @@ void ImageCopyFromImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_LAYOUT_UNDEFINED,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 
 			*m_srcImage,
 			{
@@ -3267,8 +3267,8 @@ void ImageCopyFromImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 
 			*m_srcImage,
 			{
@@ -3465,8 +3465,8 @@ void ImageCopyToImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_LAYOUT_UNDEFINED,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 
 			*m_dstImage,
 			{
@@ -3546,8 +3546,8 @@ void ImageCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 
 			*m_dstImage,
 			{
@@ -3566,11 +3566,11 @@ void ImageCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 			vk::VK_ACCESS_TRANSFER_WRITE_BIT,
 			vk::VK_ACCESS_HOST_READ_BIT,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 			*dstBuffer,
 			0,
-			vk::VK_WHOLE_SIZE
+			VK_WHOLE_SIZE
 		};
 		const vk::VkBufferImageCopy	region =
 		{
@@ -3726,8 +3726,8 @@ void ImageBlitFromImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_LAYOUT_UNDEFINED,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 
 			*m_srcImage,
 			{
@@ -3749,8 +3749,8 @@ void ImageBlitFromImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 
 			*m_srcImage,
 			{
@@ -3999,8 +3999,8 @@ void ImageBlitToImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_LAYOUT_UNDEFINED,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 
 			*m_dstImage,
 			{
@@ -4090,8 +4090,8 @@ void ImageBlitToImage::verify (VerifyContext& context, size_t commandIndex)
 			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 
 			*m_dstImage,
 			{
@@ -4110,11 +4110,11 @@ void ImageBlitToImage::verify (VerifyContext& context, size_t commandIndex)
 			vk::VK_ACCESS_TRANSFER_WRITE_BIT,
 			vk::VK_ACCESS_HOST_READ_BIT,
 
-			vk::VK_QUEUE_FAMILY_IGNORED,
-			vk::VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
 			*dstBuffer,
 			0,
-			vk::VK_WHOLE_SIZE
+			VK_WHOLE_SIZE
 		};
 		const vk::VkBufferImageCopy	region =
 		{
@@ -4552,8 +4552,8 @@ void SubmitRenderPass::verify (VerifyContext& context, size_t commandIndex)
 				vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 
-				vk::VK_QUEUE_FAMILY_IGNORED,
-				vk::VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
 
 				*m_colorTarget,
 				{
@@ -4572,11 +4572,11 @@ void SubmitRenderPass::verify (VerifyContext& context, size_t commandIndex)
 				vk::VK_ACCESS_TRANSFER_WRITE_BIT,
 				vk::VK_ACCESS_HOST_READ_BIT,
 
-				vk::VK_QUEUE_FAMILY_IGNORED,
-				vk::VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
 				*dstBuffer,
 				0,
-				vk::VK_WHOLE_SIZE
+				VK_WHOLE_SIZE
 			};
 			const vk::VkBufferImageCopy	region =
 			{
@@ -4788,7 +4788,7 @@ void RenderBuffer::prepare (PrepareRenderPassContext& context)
 			DE_NULL,
 			0,
 			vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
-			vk::VK_FALSE
+			VK_FALSE
 		};
 		const vk::VkViewport								viewports[]						=
 		{
@@ -4814,12 +4814,12 @@ void RenderBuffer::prepare (PrepareRenderPassContext& context)
 			DE_NULL,
 			0,
 
-			vk::VK_TRUE,
-			vk::VK_FALSE,
+			VK_TRUE,
+			VK_FALSE,
 			vk::VK_POLYGON_MODE_FILL,
 			vk::VK_CULL_MODE_NONE,
 			vk::VK_FRONT_FACE_COUNTER_CLOCKWISE,
-			vk::VK_FALSE,
+			VK_FALSE,
 			0.0f,
 			0.0f,
 			0.0f,
@@ -4833,16 +4833,16 @@ void RenderBuffer::prepare (PrepareRenderPassContext& context)
 			0,
 
 			vk::VK_SAMPLE_COUNT_1_BIT,
-			vk::VK_FALSE,
+			VK_FALSE,
 			0.0f,
 			&sampleMask,
-			vk::VK_FALSE,
-			vk::VK_FALSE
+			VK_FALSE,
+			VK_FALSE
 		};
 		const vk::VkPipelineColorBlendAttachmentState		attachments[]					=
 		{
 			{
-				vk::VK_FALSE,
+				VK_FALSE,
 				vk::VK_BLEND_FACTOR_ONE,
 				vk::VK_BLEND_FACTOR_ZERO,
 				vk::VK_BLEND_OP_ADD,
@@ -4861,7 +4861,7 @@ void RenderBuffer::prepare (PrepareRenderPassContext& context)
 			DE_NULL,
 			0,
 
-			vk::VK_FALSE,
+			VK_FALSE,
 			vk::VK_LOGIC_OP_COPY,
 			DE_LENGTH_OF_ARRAY(attachments),
 			attachments,

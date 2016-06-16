@@ -427,7 +427,7 @@ vk::Move<vk::VkRenderPass> SingleTargetRenderInstance::createRenderPass (const v
 	};
 	const vk::VkAttachmentReference		depthStencilAttachment	=
 	{
-		vk::VK_NO_ATTACHMENT,							// attachment
+		VK_ATTACHMENT_UNUSED,							// attachment
 		vk::VK_IMAGE_LAYOUT_UNDEFINED					// layout
 	};
 	const vk::VkSubpassDescription		subpass					=
@@ -526,8 +526,8 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 		vk::VK_ACCESS_TRANSFER_READ_BIT,				// dstAccessMask
 		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// oldLayout
 		vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// newLayout
-		vk::VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex
-		vk::VK_QUEUE_FAMILY_IGNORED,					// destQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex
 		*m_colorAttachmentImage,						// image
 		fullSubrange,									// subresourceRange
 	};
@@ -537,8 +537,8 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 		DE_NULL,
 		vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// srcAccessMask
 		vk::VK_ACCESS_HOST_READ_BIT,					// dstAccessMask
-		vk::VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex
-		vk::VK_QUEUE_FAMILY_IGNORED,					// destQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex
 		*buffer,										// buffer
 		0u,												// offset
 		(vk::VkDeviceSize)pixelDataSize					// size
@@ -656,8 +656,8 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 			vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// dstAccessMask
 			vk::VK_IMAGE_LAYOUT_UNDEFINED,					// oldLayout
 			vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// newLayout
-			vk::VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex
-			vk::VK_QUEUE_FAMILY_IGNORED,					// destQueueFamilyIndex
+			VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex
+			VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex
 			*m_colorAttachmentImage,						// image
 			fullSubrange,									// subresourceRange
 		};
@@ -710,7 +710,7 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 
 			VK_CHECK(m_vki.queueSubmit(m_queue, 1u, &submitInfo, *fence));
 		}
-		VK_CHECK(m_vki.waitForFences(m_device, 1u, &fence.get(), vk::VK_TRUE, infiniteTimeout));
+		VK_CHECK(m_vki.waitForFences(m_device, 1u, &fence.get(), VK_TRUE, infiniteTimeout));
 
 		// and then render to
 		renderToTarget();
@@ -854,7 +854,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 		DE_NULL,
 		(vk::VkPipelineInputAssemblyStateCreateFlags)0,
 		topology,									// topology
-		vk::VK_FALSE,								// primitiveRestartEnable
+		VK_FALSE,									// primitiveRestartEnable
 	};
 	const vk::VkPipelineTessellationStateCreateInfo		tessState			=
 	{
@@ -892,12 +892,12 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 		DE_NULL,
 		(vk::VkPipelineRasterizationStateCreateFlags)0,
-		vk::VK_TRUE,								// depthClipEnable
-		vk::VK_FALSE,								// rasterizerDiscardEnable
+		VK_TRUE,									// depthClipEnable
+		VK_FALSE,									// rasterizerDiscardEnable
 		vk::VK_POLYGON_MODE_FILL,					// fillMode
 		vk::VK_CULL_MODE_NONE,						// cullMode
 		vk::VK_FRONT_FACE_COUNTER_CLOCKWISE,		// frontFace
-		vk::VK_FALSE,								// depthBiasEnable
+		VK_FALSE,									// depthBiasEnable
 		0.0f,										// depthBias
 		0.0f,										// depthBiasClamp
 		0.0f,										// slopeScaledDepthBias
@@ -910,22 +910,22 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 		DE_NULL,
 		(vk::VkPipelineMultisampleStateCreateFlags)0,
 		vk::VK_SAMPLE_COUNT_1_BIT,					// rasterSamples
-		vk::VK_FALSE,								// sampleShadingEnable
+		VK_FALSE,									// sampleShadingEnable
 		0.0f,										// minSampleShading
 		&sampleMask,								// sampleMask
-		vk::VK_FALSE,								// alphaToCoverageEnable
-		vk::VK_FALSE,								// alphaToOneEnable
+		VK_FALSE,									// alphaToCoverageEnable
+		VK_FALSE,									// alphaToOneEnable
 	};
 	const vk::VkPipelineDepthStencilStateCreateInfo		dsState				=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
 		DE_NULL,
 		(vk::VkPipelineDepthStencilStateCreateFlags)0,
-		vk::VK_FALSE,								// depthTestEnable
-		vk::VK_FALSE,								// depthWriteEnable
+		VK_FALSE,									// depthTestEnable
+		VK_FALSE,									// depthWriteEnable
 		vk::VK_COMPARE_OP_ALWAYS,					// depthCompareOp
-		vk::VK_FALSE,								// depthBoundsTestEnable
-		vk::VK_FALSE,								// stencilTestEnable
+		VK_FALSE,									// depthBoundsTestEnable
+		VK_FALSE,									// stencilTestEnable
 		{ vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_COMPARE_OP_ALWAYS, 0u, 0u, 0u },	// front
 		{ vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_COMPARE_OP_ALWAYS, 0u, 0u, 0u },	// back
 		-1.0f,										// minDepthBounds
@@ -933,7 +933,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 	};
 	const vk::VkPipelineColorBlendAttachmentState		cbAttachment		=
 	{
-		vk::VK_FALSE,								// blendEnable
+		VK_FALSE,									// blendEnable
 		vk::VK_BLEND_FACTOR_ZERO,					// srcBlendColor
 		vk::VK_BLEND_FACTOR_ZERO,					// destBlendColor
 		vk::VK_BLEND_OP_ADD,						// blendOpColor
@@ -950,7 +950,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
 		DE_NULL,
 		(vk::VkPipelineColorBlendStateCreateFlags)0,
-		vk::VK_FALSE,								// logicOpEnable
+		VK_FALSE,									// logicOpEnable
 		vk::VK_LOGIC_OP_CLEAR,						// logicOp
 		1u,											// attachmentCount
 		&cbAttachment,								// pAttachments
@@ -1018,7 +1018,7 @@ void SingleCmdRenderInstance::renderToTarget (void)
 		(vk::VkRenderPass)*m_renderPass,						// renderPass
 		0u,														// subpass
 		(vk::VkFramebuffer)*m_framebuffer,						// framebuffer
-		vk::VK_FALSE,											// occlusionQueryEnable
+		VK_FALSE,												// occlusionQueryEnable
 		(vk::VkQueryControlFlags)0,
 		(vk::VkQueryPipelineStatisticFlags)0,
 	};
@@ -1583,8 +1583,8 @@ vk::VkBufferMemoryBarrier ComputeInstanceResultBuffer::createResultBufferBarrier
 		DE_NULL,
 		vk::VK_ACCESS_SHADER_WRITE_BIT,				// outputMask
 		vk::VK_ACCESS_HOST_READ_BIT,				// inputMask
-		vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
-		vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,					// destQueueFamilyIndex
 		buffer,										// buffer
 		(vk::VkDeviceSize)0u,						// offset
 		DATA_SIZE,									// size
@@ -2087,8 +2087,8 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess (void)
 			DE_NULL,
 			vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
 			inputBit,									// inputMask
-			vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
-			vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
+			VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex
+			VK_QUEUE_FAMILY_IGNORED,					// destQueueFamilyIndex
 			*bufferA,									// buffer
 			(vk::VkDeviceSize)0u,						// offset
 			(vk::VkDeviceSize)bufferSizeA,				// size
@@ -2098,8 +2098,8 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess (void)
 			DE_NULL,
 			vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
 			inputBit,									// inputMask
-			vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
-			vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
+			VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex
+			VK_QUEUE_FAMILY_IGNORED,					// destQueueFamilyIndex
 			*bufferB,									// buffer
 			(vk::VkDeviceSize)0u,						// offset
 			(vk::VkDeviceSize)bufferSizeB,				// size
@@ -3041,10 +3041,10 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_ACCESS_HOST_WRITE_BIT,					// outputMask
+		vk::VK_ACCESS_HOST_WRITE_BIT,						// outputMask
 		vk::VK_ACCESS_TRANSFER_READ_BIT,					// inputMask
-		vk::VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex
-		vk::VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,							// srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,							// destQueueFamilyIndex
 		*dataBuffer,										// buffer
 		0u,													// offset
 		dataBufferSize,										// size
@@ -3065,8 +3065,8 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 		vk::VK_ACCESS_TRANSFER_WRITE_BIT,					// inputMask
 		vk::VK_IMAGE_LAYOUT_UNDEFINED,						// oldLayout
 		vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// newLayout
-		vk::VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex
-		vk::VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,							// srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,							// destQueueFamilyIndex
 		image,												// image
 		fullSubrange										// subresourceRange
 	};
@@ -3078,8 +3078,8 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 		vk::VK_ACCESS_SHADER_READ_BIT,						// inputMask
 		vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// oldLayout
 		layout,												// newLayout
-		vk::VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex
-		vk::VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,							// srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,							// destQueueFamilyIndex
 		image,												// image
 		fullSubrange										// subresourceRange
 	};
@@ -5457,8 +5457,8 @@ vk::VkBufferMemoryBarrier TexelBufferInstanceBuffers::createBarrier (vk::VkDescr
 		DE_NULL,
 		vk::VK_ACCESS_HOST_WRITE_BIT,			// outputMask
 		inputBit,								// inputMask
-		vk::VK_QUEUE_FAMILY_IGNORED,			// srcQueueFamilyIndex
-		vk::VK_QUEUE_FAMILY_IGNORED,			// destQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
 		buffer	,								// buffer
 		0u,										// offset
 		(vk::VkDeviceSize)BUFFER_SIZE			// size

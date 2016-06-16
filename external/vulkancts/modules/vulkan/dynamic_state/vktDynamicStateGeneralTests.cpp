@@ -27,9 +27,9 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktDynamicStateTestCaseUtil.hpp"
 #include "vktDynamicStateBaseClass.hpp"
-#include "vktDynamicStateCreateInfoUtil.hpp"
-#include "vktDynamicStateImageObjectUtil.hpp"
-#include "vktDynamicStateBufferObjectUtil.hpp"
+#include "vktDrawCreateInfoUtil.hpp"
+#include "vktDrawImageObjectUtil.hpp"
+#include "vktDrawBufferObjectUtil.hpp"
 
 #include "vkImageUtil.hpp"
 
@@ -45,6 +45,9 @@ namespace vkt
 {
 namespace DynamicState
 {
+
+using namespace Draw;
+
 namespace
 {
 

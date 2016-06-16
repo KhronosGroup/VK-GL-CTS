@@ -92,17 +92,17 @@ enum LimitType
 	LIMIT_TYPE_LAST
 };
 
-#define LIMIT(_X_)		DE_OFFSET_OF(VkPhysicalDeviceLimits, _X_),(char*)(#_X_)
-#define FEATURE(_X_)	DE_OFFSET_OF(VkPhysicalDeviceFeatures, _X_)
+#define LIMIT(_X_)		(deUint32)DE_OFFSET_OF(VkPhysicalDeviceLimits, _X_), (const char*)(#_X_)
+#define FEATURE(_X_)	(deUint32)DE_OFFSET_OF(VkPhysicalDeviceFeatures, _X_)
 
 bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDeviceFeatures* features, TestLog& log)
 {
-	bool					limitsOk	= true;
-	VkPhysicalDeviceLimits* limits		= &properties->limits;
+	bool						limitsOk	= true;
+	VkPhysicalDeviceLimits*		limits		= &properties->limits;
 	struct FeatureLimitTable
 	{
 		deUint32		offset;
-		char*			name;
+		const char*		name;
 		deUint32		uintVal;			//!< Format is UNSIGNED_INT
 		deInt32			intVal;				//!< Format is SIGNED_INT
 		deUint64		deviceSizeVal;		//!< Format is DEVICE_SIZE
@@ -232,10 +232,10 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(nonCoherentAtomSize),								0, 0, 128, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1 },
 	};
 
-	struct UnsupportedFeatureLimitTable
+	const struct UnsupportedFeatureLimitTable
 	{
 		deUint32		limitOffset;
-		char*			name;
+		const char*		name;
 		deUint32		featureOffset;
 		deUint32		uintVal;			//!< Format is UNSIGNED_INT
 		deInt32			intVal;				//!< Format is SIGNED_INT
@@ -673,7 +673,7 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 }
 
 #define VK_SIZE_OF(STRUCT, MEMBER)					(sizeof(((STRUCT*)0)->MEMBER))
-#define OFFSET_TABLE_ENTRY(STRUCT, MEMBER)			{ DE_OFFSET_OF(STRUCT, MEMBER), VK_SIZE_OF(STRUCT, MEMBER) }
+#define OFFSET_TABLE_ENTRY(STRUCT, MEMBER)			{ (size_t)DE_OFFSET_OF(STRUCT, MEMBER), VK_SIZE_OF(STRUCT, MEMBER) }
 
 tcu::TestStatus deviceFeatures (Context& context)
 {

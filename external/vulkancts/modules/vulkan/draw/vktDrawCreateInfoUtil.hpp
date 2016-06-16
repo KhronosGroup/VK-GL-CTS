@@ -493,7 +493,7 @@ public:
 					   vk::VkSamplerAddressMode	addressV				= vk::VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
 					   vk::VkSamplerAddressMode	addressW				= vk::VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
 					   float					mipLodBias				= 0.0f,
-					   vk::VkBool32				anisotropyEnable		= vk::VK_FALSE,
+					   vk::VkBool32				anisotropyEnable		= VK_FALSE,
 					   float					maxAnisotropy			= 1.0f,
 					   vk::VkBool32				compareEnable			= false,
 					   vk::VkCompareOp			compareOp				= vk::VK_COMPARE_OP_ALWAYS,

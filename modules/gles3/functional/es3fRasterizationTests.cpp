@@ -22,7 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "es3fRasterizationTests.hpp"
-#include "glsRasterizationTestUtil.hpp"
+#include "tcuRasterizationVerifier.hpp"
 #include "tcuSurface.hpp"
 #include "tcuRenderTarget.hpp"
 #include "tcuVectorUtil.hpp"
@@ -50,7 +50,11 @@ namespace Functional
 namespace
 {
 
-using namespace gls::RasterizationTestUtil;
+using tcu::RasterizationArguments;
+using tcu::TriangleSceneSpec;
+using tcu::PointSceneSpec;
+using tcu::LineSceneSpec;
+using tcu::LineInterpolationMethod;
 
 static const char* const s_shaderVertexTemplate =	"#version 300 es\n"
 													"in highp vec4 a_position;\n"
@@ -1561,7 +1565,7 @@ CullingTest::IterateResult CullingTest::iterate (void)
 
 		scene.triangles.swap(triangles);
 
-		if (verifyTriangleGroupRasterization(resultImage, scene, args, m_testCtx.getLog(), VERIFICATIONMODE_WEAK))
+		if (verifyTriangleGroupRasterization(resultImage, scene, args, m_testCtx.getLog(), tcu::VERIFICATIONMODE_WEAK))
 			m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 		else
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Incorrect rendering");
@@ -2017,12 +2021,12 @@ LineInterpolationTest::IterateResult LineInterpolationTest::iterate (void)
 			iterationResult = verifyLineGroupInterpolation(resultImage, scene, args, m_testCtx.getLog());
 			switch (iterationResult)
 			{
-				case LINEINTERPOLATION_STRICTLY_CORRECT:
+				case tcu::LINEINTERPOLATION_STRICTLY_CORRECT:
 					// line interpolation matches the specification
 					m_result.addResult(QP_TEST_RESULT_PASS, "Pass");
 					break;
 
-				case LINEINTERPOLATION_PROJECTED:
+				case tcu::LINEINTERPOLATION_PROJECTED:
 					// line interpolation weights are otherwise correct, but they are projected onto major axis
 					m_testCtx.getLog()	<< tcu::TestLog::Message
 										<< "Interpolation was calculated using coordinates projected onto major axis. "
@@ -2031,7 +2035,7 @@ LineInterpolationTest::IterateResult LineInterpolationTest::iterate (void)
 					m_result.addResult(QP_TEST_RESULT_QUALITY_WARNING, "Interpolation was calculated using projected coordinateds");
 					break;
 
-				case LINEINTERPOLATION_INCORRECT:
+				case tcu::LINEINTERPOLATION_INCORRECT:
 					if (scene.lineWidth != 1.0f && m_numSamples > 1)
 					{
 						// multisampled wide lines might not be supported

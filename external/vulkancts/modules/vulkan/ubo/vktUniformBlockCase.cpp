@@ -943,6 +943,191 @@ void generateValueSrc (std::ostringstream& src, const UniformLayoutEntry& entry,
 		src << ")";
 }
 
+bool isMatrix (glu::DataType elementType)
+{
+	return (elementType >= glu::TYPE_FLOAT_MAT2) && (elementType <= glu::TYPE_FLOAT_MAT4);
+}
+
+void writeMatrixTypeSrc (int						columnCount,
+						 int						rowCount,
+						 std::string				compare,
+						 std::string				compareType,
+						 std::ostringstream&		src,
+						 const std::string&			srcName,
+						 const void*				basePtr,
+						 const UniformLayoutEntry&	entry,
+						 bool						vector)
+{
+	if (vector)	// generateTestSrcMatrixPerVec
+	{
+		for (int colNdex = 0; colNdex < columnCount; colNdex++)
+		{
+			src << "\tresult *= " << compare + compareType << "(" << srcName << "[" << colNdex << "], ";
+
+			if (glu::isDataTypeMatrix(entry.type))
+			{
+				int	scalarSize = glu::getDataTypeScalarSize(entry.type);
+				const deUint8*	elemPtr			= (const deUint8*)basePtr + entry.offset;
+				const int		compSize		= sizeof(deUint32);
+
+				if (scalarSize > 1)
+					src << compareType << "(";
+				for (int rowNdex = 0; rowNdex < rowCount; rowNdex++)
+				{
+					const deUint8*	compPtr	= elemPtr + (entry.isRowMajor ? (rowNdex * entry.matrixStride + colNdex * compSize)
+																		  : (colNdex * entry.matrixStride + rowNdex * compSize));
+					src << de::floatToString(*((const float*)compPtr), 1);
+
+					if (rowNdex < rowCount-1)
+						src << ", ";
+				}
+				src << "));\n";
+			}
+			else
+			{
+				generateValueSrc(src, entry, basePtr, 0);
+				src << "[" << colNdex << "]);\n";
+			}
+		}
+	}
+	else		// generateTestSrcMatrixPerElement
+	{
+		for (int colNdex = 0; colNdex < columnCount; colNdex++)
+		{
+			for (int rowNdex = 0; rowNdex < rowCount; rowNdex++)
+			{
+				src << "\tresult *= " << compare + compareType << "(" << srcName << "[" << colNdex << "][" << rowNdex << "], ";
+				if (glu::isDataTypeMatrix(entry.type))
+				{
+					const deUint8*	elemPtr			= (const deUint8*)basePtr + entry.offset;
+					const int		compSize		= sizeof(deUint32);
+					const deUint8*	compPtr	= elemPtr + (entry.isRowMajor ? (rowNdex * entry.matrixStride + colNdex * compSize)
+																		  : (colNdex * entry.matrixStride + rowNdex * compSize));
+
+					src << de::floatToString(*((const float*)compPtr), 1) << ");\n";
+				}
+				else
+				{
+					generateValueSrc(src, entry, basePtr, 0);
+					src << "[" << colNdex << "][" << rowNdex << "]);\n";
+				}
+			}
+		}
+	}
+}
+
+void generateTestSrcMatrixPerVec (glu::DataType				elementType,
+								  std::ostringstream&		src,
+								  const std::string&		srcName,
+								  const void*				basePtr,
+								  const UniformLayoutEntry&	entry,
+								  bool						vector)
+{
+	std::string compare = "compare_";
+	switch (elementType)
+	{
+		case glu::TYPE_FLOAT_MAT2:
+			writeMatrixTypeSrc(2, 2, compare, "vec2", src, srcName, basePtr, entry, vector);
+			break;
+
+		case glu::TYPE_FLOAT_MAT2X3:
+			writeMatrixTypeSrc(2, 3, compare, "vec3", src, srcName, basePtr, entry, vector);
+			break;
+
+		case glu::TYPE_FLOAT_MAT2X4:
+			writeMatrixTypeSrc(2, 4, compare, "vec4", src, srcName, basePtr, entry, vector);
+			break;
+
+		case glu::TYPE_FLOAT_MAT3X4:
+			writeMatrixTypeSrc(3, 4, compare, "vec4", src, srcName, basePtr, entry, vector);
+			break;
+
+		case glu::TYPE_FLOAT_MAT4:
+			writeMatrixTypeSrc(4, 4, compare, "vec4", src, srcName, basePtr, entry, vector);
+			break;
+
+		case glu::TYPE_FLOAT_MAT4X2:
+			writeMatrixTypeSrc(4, 2, compare, "vec2", src, srcName, basePtr, entry, vector);
+			break;
+
+		case glu::TYPE_FLOAT_MAT4X3:
+			writeMatrixTypeSrc(4, 3, compare, "vec3", src, srcName, basePtr, entry, vector);
+			break;
+
+		default:
+			break;
+	}
+}
+
+void generateTestSrcMatrixPerElement (glu::DataType				elementType,
+									  std::ostringstream&		src,
+									  const std::string&		srcName,
+									  const void*				basePtr,
+									  const UniformLayoutEntry&	entry,
+									  bool						vector)
+{
+	std::string compare = "compare_";
+	std::string compareType = "float";
+	switch (elementType)
+	{
+		case glu::TYPE_FLOAT_MAT2:
+			writeMatrixTypeSrc(2, 2, compare, compareType, src, srcName, basePtr, entry, vector);
+			break;
+
+		case glu::TYPE_FLOAT_MAT2X3:
+			writeMatrixTypeSrc(2, 3, compare, compareType, src, srcName, basePtr, entry, vector);
+			break;
+
+		case glu::TYPE_FLOAT_MAT2X4:
+			writeMatrixTypeSrc(2, 4, compare, compareType, src, srcName, basePtr, entry, vector);
+			break;
+
+		case glu::TYPE_FLOAT_MAT3X4:
+			writeMatrixTypeSrc(3, 4, compare, compareType, src, srcName, basePtr, entry, vector);
+			break;
+
+		case glu::TYPE_FLOAT_MAT4:
+			writeMatrixTypeSrc(4, 4, compare, compareType, src, srcName, basePtr, entry, vector);
+			break;
+
+		case glu::TYPE_FLOAT_MAT4X2:
+			writeMatrixTypeSrc(4, 2, compare, compareType, src, srcName, basePtr, entry, vector);
+			break;
+
+		case glu::TYPE_FLOAT_MAT4X3:
+			writeMatrixTypeSrc(4, 3, compare, compareType, src, srcName, basePtr, entry, vector);
+			break;
+
+		default:
+			break;
+	}
+}
+
+void generateSingleCompare (std::ostringstream&			src,
+							glu::DataType				elementType,
+							const std::string&			srcName,
+							const void*					basePtr,
+							const UniformLayoutEntry&	entry,
+							MatrixLoadFlags				matrixLoadFlag)
+{
+	if (matrixLoadFlag == LOAD_FULL_MATRIX)
+	{
+		const char* typeName = glu::getDataTypeName(elementType);
+
+		src << "\tresult *= compare_" << typeName << "(" << srcName << ", ";
+		generateValueSrc(src, entry, basePtr, 0);
+		src << ");\n";
+	}
+	else
+	{
+		if (isMatrix(elementType))
+		{
+			generateTestSrcMatrixPerVec		(elementType, src, srcName, basePtr, entry, true);
+			generateTestSrcMatrixPerElement	(elementType, src, srcName, basePtr, entry, false);
+		}
+	}
+}
+
 void generateCompareSrc (std::ostringstream&	src,
 						 const char*			resultVar,
 						 const VarType&			type,
@@ -951,7 +1136,8 @@ void generateCompareSrc (std::ostringstream&	src,
 						 const UniformLayout&	layout,
 						 int					blockNdx,
 						 const void*			basePtr,
-						 deUint32				unusedMask)
+						 deUint32				unusedMask,
+						 MatrixLoadFlags		matrixLoadFlag)
 {
 	if (type.isBasicType() || (type.isArrayType() && type.getElementType().isBasicType()))
 	{
@@ -974,9 +1160,7 @@ void generateCompareSrc (std::ostringstream&	src,
 		}
 		else
 		{
-			src << "\tresult *= compare_" << typeName << "(" << srcName << ", ";
-			generateValueSrc(src, entry, basePtr, 0);
-			src << ");\n";
+			generateSingleCompare(src, elementType, srcName, basePtr, entry, matrixLoadFlag);
 		}
 	}
 	else if (type.isArrayType())
@@ -988,7 +1172,7 @@ void generateCompareSrc (std::ostringstream&	src,
 			std::string op = std::string("[") + de::toString(elementNdx) + "]";
 			std::string elementSrcName = std::string(srcName) + op;
 			std::string elementApiName = std::string(apiName) + op;
-			generateCompareSrc(src, resultVar, elementType, elementSrcName, elementApiName, layout, blockNdx, basePtr, unusedMask);
+			generateCompareSrc(src, resultVar, elementType, elementSrcName, elementApiName, layout, blockNdx, basePtr, unusedMask, LOAD_FULL_MATRIX);
 		}
 	}
 	else
@@ -1003,12 +1187,19 @@ void generateCompareSrc (std::ostringstream&	src,
 			std::string op = std::string(".") + memberIter->getName();
 			std::string memberSrcName = std::string(srcName) + op;
 			std::string memberApiName = std::string(apiName) + op;
-			generateCompareSrc(src, resultVar, memberIter->getType(), memberSrcName, memberApiName, layout, blockNdx, basePtr, unusedMask);
+			generateCompareSrc(src, resultVar, memberIter->getType(), memberSrcName, memberApiName, layout, blockNdx, basePtr, unusedMask, LOAD_FULL_MATRIX);
 		}
 	}
 }
 
-void generateCompareSrc (std::ostringstream& src, const char* resultVar, const ShaderInterface& interface, const UniformLayout& layout, const std::map<int, void*>& blockPointers, bool isVertex)
+void generateCompareSrc (std::ostringstream& src,
+						 const char* resultVar,
+						 const ShaderInterface& interface,
+						 const UniformLayout& layout,
+						 const std::map<int,
+						 void*>& blockPointers,
+						 bool isVertex,
+						 MatrixLoadFlags matrixLoadFlag)
 {
 	deUint32 unusedMask = isVertex ? UNUSED_VERTEX : UNUSED_FRAGMENT;
 
@@ -1043,13 +1234,13 @@ void generateCompareSrc (std::ostringstream& src, const char* resultVar, const S
 
 				std::string srcName = srcPrefix + uniform.getName();
 				std::string apiName = apiPrefix + uniform.getName();
-				generateCompareSrc(src, resultVar, uniform.getType(), srcName, apiName, layout, blockNdx, basePtr, unusedMask);
+				generateCompareSrc(src, resultVar, uniform.getType(), srcName, apiName, layout, blockNdx, basePtr, unusedMask, matrixLoadFlag);
 			}
 		}
 	}
 }
 
-std::string generateVertexShader (const ShaderInterface& interface, const UniformLayout& layout, const std::map<int, void*>& blockPointers)
+std::string generateVertexShader (const ShaderInterface& interface, const UniformLayout& layout, const std::map<int, void*>& blockPointers, MatrixLoadFlags matrixLoadFlag)
 {
 	std::ostringstream src;
 	src << "#version 450\n";
@@ -1081,7 +1272,7 @@ std::string generateVertexShader (const ShaderInterface& interface, const Unifor
 		   "	mediump float result = 1.0;\n";
 
 	// Value compare.
-	generateCompareSrc(src, "result", interface, layout, blockPointers, true);
+	generateCompareSrc(src, "result", interface, layout, blockPointers, true, matrixLoadFlag);
 
 	src << "	v_vtxResult = result;\n"
 		   "}\n";
@@ -1089,7 +1280,7 @@ std::string generateVertexShader (const ShaderInterface& interface, const Unifor
 	return src.str();
 }
 
-std::string generateFragmentShader (const ShaderInterface& interface, const UniformLayout& layout, const std::map<int, void*>& blockPointers)
+std::string generateFragmentShader (const ShaderInterface& interface, const UniformLayout& layout, const std::map<int, void*>& blockPointers, MatrixLoadFlags matrixLoadFlag)
 {
 	std::ostringstream src;
 	src << "#version 450\n";
@@ -1120,7 +1311,7 @@ std::string generateFragmentShader (const ShaderInterface& interface, const Unif
 		   "	mediump float result = 1.0;\n";
 
 	// Value compare.
-	generateCompareSrc(src, "result", interface, layout, blockPointers, false);
+	generateCompareSrc(src, "result", interface, layout, blockPointers, false, matrixLoadFlag);
 
 	src << "	dEQP_FragColor = vec4(1.0, v_vtxResult, result, 1.0);\n"
 		   "}\n";
@@ -1979,9 +2170,10 @@ vk::Move<VkPipeline> UniformBlockCaseInstance::createPipeline (vk::VkShaderModul
 
 // UniformBlockCase.
 
-UniformBlockCase::UniformBlockCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, BufferMode bufferMode)
-	: TestCase		(testCtx, name, description)
-	, m_bufferMode	(bufferMode)
+UniformBlockCase::UniformBlockCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag)
+	: TestCase			(testCtx, name, description)
+	, m_bufferMode		(bufferMode)
+	, m_matrixLoadFlag	(matrixLoadFlag)
 {
 }
 
@@ -2028,8 +2220,8 @@ void UniformBlockCase::init (void)
 	generateValues(m_uniformLayout, m_blockPointers, 1 /* seed */);
 
 	// Generate shaders.
-	m_vertShaderSource = generateVertexShader(m_interface, m_uniformLayout, m_blockPointers);
-	m_fragShaderSource = generateFragmentShader(m_interface, m_uniformLayout, m_blockPointers);
+	m_vertShaderSource = generateVertexShader(m_interface, m_uniformLayout, m_blockPointers, m_matrixLoadFlag);
+	m_fragShaderSource = generateFragmentShader(m_interface, m_uniformLayout, m_blockPointers, m_matrixLoadFlag);
 }
 
 } // ubo

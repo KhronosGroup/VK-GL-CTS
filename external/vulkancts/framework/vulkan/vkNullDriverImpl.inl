@@ -1142,6 +1142,37 @@ VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugRe
 	DE_UNREF(pMessage);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL debugMarkerSetObjectTagEXT (VkDevice device, VkDebugMarkerObjectTagInfoEXT* pTagInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pTagInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL debugMarkerSetObjectNameEXT (VkDevice device, VkDebugMarkerObjectNameInfoEXT* pNameInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pNameInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerBeginEXT (VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pMarkerInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerEndEXT (VkCommandBuffer commandBuffer)
+{
+	DE_UNREF(commandBuffer);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerInsertEXT (VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pMarkerInfo);
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -1321,5 +1352,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkAcquireNextImageKHR,				acquireNextImageKHR),
 	VK_NULL_FUNC_ENTRY(vkQueuePresentKHR,					queuePresentKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateSharedSwapchainsKHR,			createSharedSwapchainsKHR),
+	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectTagEXT,		debugMarkerSetObjectTagEXT),
+	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectNameEXT,		debugMarkerSetObjectNameEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,			cmdDebugMarkerBeginEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerEndEXT,				cmdDebugMarkerEndEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerInsertEXT,			cmdDebugMarkerInsertEXT),
 };
 

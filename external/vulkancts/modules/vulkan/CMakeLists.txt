@@ -16,6 +16,8 @@ add_subdirectory(compute)
 add_subdirectory(image)
 add_subdirectory(wsi)
 add_subdirectory(sparse_resources)
+add_subdirectory(tessellation)
+add_subdirectory(rasterization)
 
 include_directories(
 	api
@@ -34,6 +36,8 @@ include_directories(
 	image
 	wsi
 	sparse_resources
+	tessellation
+	rasterization
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -75,6 +79,8 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-image
 	deqp-vk-wsi
 	deqp-vk-sparse-resources
+	deqp-vk-tessellation
+	deqp-vk-rasterization
 	)
 
 add_library(deqp-vk-common STATIC ${DEQP_VK_COMMON_SRCS})

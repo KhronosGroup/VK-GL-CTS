@@ -89,6 +89,8 @@ set(TCUTIL_SRCS
 	tcuTestHierarchyUtil.hpp
 	tcuAstcUtil.cpp
 	tcuAstcUtil.hpp
+	tcuRasterizationVerifier.cpp
+	tcuRasterizationVerifier.hpp
 	)
 
 set(TCUTIL_LIBS
