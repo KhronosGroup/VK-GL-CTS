@@ -221,35 +221,30 @@ TestCase::IterateResult MutableRenderBufferTest::iterate (void)
 
 	int frameNumber = 1;
 
-	// test a few back-buffered frames
-	for(; frameNumber < 5; frameNumber++)
+	// run a few back-buffered frames even if we can't verify their contents
+	for (; frameNumber < 5; frameNumber++)
 	{
-		deUint32 backBufferPixel = 0xFFFFFFFF;
-		deUint32 frontBufferPixel = drawAndSwap(egl, frameNumber, false);
-		m_gl.readPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &backBufferPixel);
-
-		// the front-buffer and the back-buffer should have different contents
-		if (backBufferPixel == frontBufferPixel)
-		{
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Surface isn't being back-buffered");
-			return STOP;
-		}
+		drawAndSwap(egl, frameNumber, false);
 	}
 
 	// switch to single-buffer rendering
 	EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_RENDER_BUFFER, EGL_SINGLE_BUFFER));
 
+	// Use eglSwapBuffers for the first frame
+	drawAndSwap(egl, frameNumber, false);
+	frameNumber++;
+
 	// test a few single-buffered frames
 	for (; frameNumber < 10; frameNumber++)
 	{
 		deUint32 backBufferPixel = 0xFFFFFFFF;
-		deUint32 frontBufferPixel = drawAndSwap(egl, frameNumber, frameNumber > 5); // only the first frame should eglSwapBuffers
+		deUint32 frontBufferPixel = drawAndSwap(egl, frameNumber, true);
 		m_gl.readPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &backBufferPixel);
 
 		// when single buffered, front-buffer == back-buffer
 		if (backBufferPixel != frontBufferPixel)
 		{
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Surface didn't switch to being single-buffered");
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Surface isn't single-buffered");
 			return STOP;
 		}
 	}
@@ -257,19 +252,10 @@ TestCase::IterateResult MutableRenderBufferTest::iterate (void)
 	// switch back to back-buffer rendering
 	EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_RENDER_BUFFER, EGL_BACK_BUFFER));
 
-	// test a few back-buffered frames
-	for (; frameNumber < 15; frameNumber++)
+	// run a few back-buffered frames even if we can't verify their contents
+	for (; frameNumber < 14; frameNumber++)
 	{
-		deUint32 backBufferPixel = 0xFFFFFFFF;
-		deUint32 frontBufferPixel = drawAndSwap(egl, frameNumber, false);
-		m_gl.readPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &backBufferPixel);
-
-		// the front-buffer and the back-buffer should have different contents
-		if (backBufferPixel == frontBufferPixel)
-		{
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Surface didn't switch back to being back-buffered");
-			return STOP;
-		}
+		drawAndSwap(egl, frameNumber, false);
 	}
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
