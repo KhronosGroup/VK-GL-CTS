@@ -8132,7 +8132,7 @@ tcu::TestCaseGroup* createSConvertTests (tcu::TestContext& testCtx)
 
 		spec.assembly = getConvertCaseShaderStr(instruction, test->m_asmTypes);
 		spec.inputs.push_back(test->m_inputBuffer);
-		spec.outputs.push_back(test->m_inputBuffer);
+		spec.outputs.push_back(test->m_outputBuffer);
 		spec.numWorkGroups = IVec3(1, 1, 1);
 
 		group->addChild(new ConvertTestCase(testCtx, test->m_name.c_str(), "Convert integers with OpSConvert.", spec, test->m_features));
@@ -8170,7 +8170,7 @@ tcu::TestCaseGroup* createUConvertTests (tcu::TestContext& testCtx)
 
 		spec.assembly = getConvertCaseShaderStr(instruction, test->m_asmTypes);
 		spec.inputs.push_back(test->m_inputBuffer);
-		spec.outputs.push_back(test->m_inputBuffer);
+		spec.outputs.push_back(test->m_outputBuffer);
 		spec.numWorkGroups = IVec3(1, 1, 1);
 
 		group->addChild(new ConvertTestCase(testCtx, test->m_name.c_str(), "Convert integers with OpUConvert.", spec, test->m_features));
