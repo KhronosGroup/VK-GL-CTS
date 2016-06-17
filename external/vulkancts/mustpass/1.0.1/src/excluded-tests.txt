@@ -37,3 +37,8 @@ dEQP-VK.glsl.texture_functions.textureprojoffset.sampler3d_fixed_fragment
 dEQP-VK.glsl.texture_functions.textureprojoffset.sampler3d_float_fragment
 dEQP-VK.glsl.texture_functions.textureprojoffset.usampler3d_fragment
 dEQP-VK.glsl.texture_functions.texture.sampler2darrayshadow_vertex
+
+# Excluded texture function tests because they fail on some drivers
+dEQP-VK.glsl.texture_functions.textureprojlod.isampler3d_vertex
+dEQP-VK.glsl.texture_functions.textureprojlod.usampler3d_vertex
+dEQP-VK.glsl.texture_functions.textureprojlodoffset.isampler3d_vertex
