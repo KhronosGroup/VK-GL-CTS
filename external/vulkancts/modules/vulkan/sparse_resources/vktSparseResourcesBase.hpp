@@ -26,6 +26,7 @@
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktSparseResourcesTestsUtil.hpp"
 
 #include "vkDefs.hpp"
 #include "vkMemUtil.hpp"
@@ -33,6 +34,7 @@
 #include "vkRef.hpp"
 #include "vkTypeUtil.hpp"
 
+#include "deSharedPtr.hpp"
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 
@@ -75,24 +77,38 @@ public:
 
 protected:
 
-	typedef			std::map<vk::VkQueueFlags, std::vector<Queue> >								QueuesMap;
-	typedef			std::vector<vk::VkQueueFamilyProperties>										QueueFamilyPropertiesVec;
-	typedef			vk::Move<vk::VkDevice>															DevicePtr;
+	typedef			std::map<vk::VkQueueFlags, std::vector<Queue> >												QueuesMap;
+	typedef			std::vector<vk::VkQueueFamilyProperties>													QueueFamilyPropertiesVec;
+	typedef			vk::Move<vk::VkDevice>																		DevicePtr;
+	typedef			de::SharedPtr< vk::Unique<vk::VkDeviceMemory> >												DeviceMemoryUniquePtr;
 
-	bool			createDeviceSupportingQueues	(const QueueRequirementsVec&					queueRequirements);
+	void			createDeviceSupportingQueues		(const QueueRequirementsVec&							queueRequirements);
 
-	const Queue&	getQueue						(const vk::VkQueueFlags							queueFlags,
-													 const deUint32									queueIndex);
+	const Queue&	getQueue							(const vk::VkQueueFlags									queueFlags,
+														 const deUint32											queueIndex);
 
-	deUint32		findMatchingMemoryType			(const vk::VkPhysicalDeviceMemoryProperties&	deviceMemoryProperties,
-													 const vk::VkMemoryRequirements&				objectMemoryRequirements,
-													 const vk::MemoryRequirement&					memoryRequirement) const;
+	deUint32		findMatchingMemoryType				(const vk::InstanceInterface&							instance,
+														 const vk::VkPhysicalDevice								physicalDevice,
+														 const vk::VkMemoryRequirements&						objectMemoryRequirements,
+														 const vk::MemoryRequirement&							memoryRequirement) const;
+
+	bool			checkSparseSupportForImageType		(const vk::InstanceInterface&							instance,
+														 const vk::VkPhysicalDevice								physicalDevice,
+														 const ImageType										imageType) const;
+
+	bool			checkSparseSupportForImageFormat	(const vk::InstanceInterface&							instance,
+														 const vk::VkPhysicalDevice								physicalDevice,
+														 const vk::VkImageCreateInfo&							imageInfo) const;
+
+	deUint32		getSparseAspectRequirementsIndex	(const std::vector<vk::VkSparseImageMemoryRequirements>&requirements,
+														 const vk::VkImageAspectFlags							aspectFlags) const;
+
 	DevicePtr		m_logicalDevice;
 
 private:
 
-	deUint32		findMatchingQueueFamilyIndex	(const QueueFamilyPropertiesVec&				queueFamilyProperties,
-													 const vk::VkQueueFlags							queueFlags) const;
+	deUint32		findMatchingQueueFamilyIndex		(const QueueFamilyPropertiesVec&						queueFamilyProperties,
+														 const vk::VkQueueFlags									queueFlags) const;
 	QueuesMap		m_queues;
 };
 

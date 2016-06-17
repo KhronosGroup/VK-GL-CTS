@@ -57,7 +57,7 @@ Image::Image (const DeviceInterface&	vk,
 	VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
 }
 
-tcu::UVec3 getShaderGridSize(const ImageType imageType, const tcu::UVec3& imageSize, const deUint32 mipLevel)
+tcu::UVec3 getShaderGridSize (const ImageType imageType, const tcu::UVec3& imageSize, const deUint32 mipLevel)
 {
 	const deUint32 mipLevelX = std::max(imageSize.x() >> mipLevel, 1u);
 	const deUint32 mipLevelY = std::max(imageSize.y() >> mipLevel, 1u);
@@ -95,7 +95,7 @@ tcu::UVec3 getShaderGridSize(const ImageType imageType, const tcu::UVec3& imageS
 	}
 }
 
-tcu::UVec3 getLayerSize(const ImageType imageType, const tcu::UVec3& imageSize)
+tcu::UVec3 getLayerSize (const ImageType imageType, const tcu::UVec3& imageSize)
 {
 	switch (imageType)
 	{
@@ -119,7 +119,7 @@ tcu::UVec3 getLayerSize(const ImageType imageType, const tcu::UVec3& imageSize)
 	}
 }
 
-deUint32 getNumLayers(const ImageType imageType, const tcu::UVec3& imageSize)
+deUint32 getNumLayers (const ImageType imageType, const tcu::UVec3& imageSize)
 {
 	switch (imageType)
 	{
@@ -145,14 +145,14 @@ deUint32 getNumLayers(const ImageType imageType, const tcu::UVec3& imageSize)
 	}
 }
 
-deUint32 getNumPixels(const ImageType imageType, const tcu::UVec3& imageSize)
+deUint32 getNumPixels (const ImageType imageType, const tcu::UVec3& imageSize)
 {
 	const tcu::UVec3 gridSize = getShaderGridSize(imageType, imageSize);
 
 	return gridSize.x() * gridSize.y() * gridSize.z();
 }
 
-deUint32 getDimensions(const ImageType imageType)
+deUint32 getDimensions (const ImageType imageType)
 {
 	switch (imageType)
 	{
@@ -176,7 +176,7 @@ deUint32 getDimensions(const ImageType imageType)
 	}
 }
 
-deUint32 getLayerDimensions(const ImageType imageType)
+deUint32 getLayerDimensions (const ImageType imageType)
 {
 	switch (imageType)
 	{
@@ -200,33 +200,35 @@ deUint32 getLayerDimensions(const ImageType imageType)
 	}
 }
 
-bool isImageSizeSupported(const ImageType imageType, const tcu::UVec3& imageSize, const vk::VkPhysicalDeviceLimits& limits)
+bool isImageSizeSupported (const InstanceInterface& instance, const VkPhysicalDevice physicalDevice, const ImageType imageType, const tcu::UVec3& imageSize)
 {
+	const VkPhysicalDeviceProperties deviceProperties = getPhysicalDeviceProperties(instance, physicalDevice);
+
 	switch (imageType)
 	{
 		case IMAGE_TYPE_1D:
-			return	imageSize.x() <= limits.maxImageDimension1D;
+			return	imageSize.x() <= deviceProperties.limits.maxImageDimension1D;
 		case IMAGE_TYPE_1D_ARRAY:
-			return	imageSize.x() <= limits.maxImageDimension1D &&
-					imageSize.z() <= limits.maxImageArrayLayers;
+			return	imageSize.x() <= deviceProperties.limits.maxImageDimension1D &&
+					imageSize.z() <= deviceProperties.limits.maxImageArrayLayers;
 		case IMAGE_TYPE_2D:
-			return	imageSize.x() <= limits.maxImageDimension2D &&
-					imageSize.y() <= limits.maxImageDimension2D;
+			return	imageSize.x() <= deviceProperties.limits.maxImageDimension2D &&
+					imageSize.y() <= deviceProperties.limits.maxImageDimension2D;
 		case IMAGE_TYPE_2D_ARRAY:
-			return	imageSize.x() <= limits.maxImageDimension2D &&
-					imageSize.y() <= limits.maxImageDimension2D &&
-					imageSize.z() <= limits.maxImageArrayLayers;
+			return	imageSize.x() <= deviceProperties.limits.maxImageDimension2D &&
+					imageSize.y() <= deviceProperties.limits.maxImageDimension2D &&
+					imageSize.z() <= deviceProperties.limits.maxImageArrayLayers;
 		case IMAGE_TYPE_CUBE:
-			return	imageSize.x() <= limits.maxImageDimensionCube &&
-					imageSize.y() <= limits.maxImageDimensionCube;
+			return	imageSize.x() <= deviceProperties.limits.maxImageDimensionCube &&
+					imageSize.y() <= deviceProperties.limits.maxImageDimensionCube;
 		case IMAGE_TYPE_CUBE_ARRAY:
-			return	imageSize.x() <= limits.maxImageDimensionCube &&
-					imageSize.y() <= limits.maxImageDimensionCube &&
-					imageSize.z() <= limits.maxImageArrayLayers;
+			return	imageSize.x() <= deviceProperties.limits.maxImageDimensionCube &&
+					imageSize.y() <= deviceProperties.limits.maxImageDimensionCube &&
+					imageSize.z() <= deviceProperties.limits.maxImageArrayLayers;
 		case IMAGE_TYPE_3D:
-			return	imageSize.x() <= limits.maxImageDimension3D &&
-					imageSize.y() <= limits.maxImageDimension3D &&
-					imageSize.z() <= limits.maxImageDimension3D;
+			return	imageSize.x() <= deviceProperties.limits.maxImageDimension3D &&
+					imageSize.y() <= deviceProperties.limits.maxImageDimension3D &&
+					imageSize.z() <= deviceProperties.limits.maxImageDimension3D;
 		case IMAGE_TYPE_BUFFER:
 			return true;
 		default:
@@ -438,16 +440,41 @@ VkImageMemoryBarrier makeImageMemoryBarrier	(const VkAccessFlags			srcAccessMask
 {
 	const VkImageMemoryBarrier barrier =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		srcAccessMask,									// VkAccessFlags			outputMask;
-		dstAccessMask,									// VkAccessFlags			inputMask;
-		oldLayout,										// VkImageLayout			oldLayout;
-		newLayout,										// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					destQueueFamilyIndex;
-		image,											// VkImage					image;
-		subresourceRange,								// VkImageSubresourceRange	subresourceRange;
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,	// VkStructureType			sType;
+		DE_NULL,								// const void*				pNext;
+		srcAccessMask,							// VkAccessFlags			outputMask;
+		dstAccessMask,							// VkAccessFlags			inputMask;
+		oldLayout,								// VkImageLayout			oldLayout;
+		newLayout,								// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,				// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,				// deUint32					destQueueFamilyIndex;
+		image,									// VkImage					image;
+		subresourceRange,						// VkImageSubresourceRange	subresourceRange;
+	};
+	return barrier;
+}
+
+VkImageMemoryBarrier makeImageMemoryBarrier (const vk::VkAccessFlags			srcAccessMask,
+											 const vk::VkAccessFlags			dstAccessMask,
+											 const vk::VkImageLayout			oldLayout,
+											 const vk::VkImageLayout			newLayout,
+											 const deUint32						srcQueueFamilyIndex,
+											 const deUint32						destQueueFamilyIndex,
+											 const vk::VkImage					image,
+											 const vk::VkImageSubresourceRange	subresourceRange)
+{
+	const VkImageMemoryBarrier barrier =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,	// VkStructureType			sType;
+		DE_NULL,								// const void*				pNext;
+		srcAccessMask,							// VkAccessFlags			outputMask;
+		dstAccessMask,							// VkAccessFlags			inputMask;
+		oldLayout,								// VkImageLayout			oldLayout;
+		newLayout,								// VkImageLayout			newLayout;
+		srcQueueFamilyIndex,					// deUint32					srcQueueFamilyIndex;
+		destQueueFamilyIndex,					// deUint32					destQueueFamilyIndex;
+		image,									// VkImage					image;
+		subresourceRange,						// VkImageSubresourceRange	subresourceRange;
 	};
 	return barrier;
 }
@@ -700,9 +727,9 @@ VkExtent3D mipLevelExtents (const VkExtent3D& baseExtents, const deUint32 mipLev
 	return result;
 }
 
-deUint32 getImageMaxMipLevels (const VkImageFormatProperties& imageFormatProperties, const VkImageCreateInfo &imageInfo)
+deUint32 getImageMaxMipLevels (const VkImageFormatProperties& imageFormatProperties, const VkExtent3D& extent)
 {
-	const deUint32 widestEdge = std::max(std::max(imageInfo.extent.width, imageInfo.extent.height), imageInfo.extent.depth);
+	const deUint32 widestEdge = std::max(std::max(extent.width, extent.height), extent.depth);
 
 	return std::min(static_cast<deUint32>(deFloatLog2(static_cast<float>(widestEdge))) + 1u, imageFormatProperties.maxMipLevels);
 }
@@ -723,6 +750,65 @@ deUint32 getImageSizeInBytes (const VkExtent3D& baseExtents, const deUint32 laye
 	}
 
 	return imageSizeInBytes;
+}
+
+VkSparseImageMemoryBind	makeSparseImageMemoryBind  (const DeviceInterface&		vk,
+													const VkDevice				device,
+													const VkDeviceSize			allocationSize,
+													const deUint32				memoryType,
+													const VkImageSubresource&	subresource,
+													const VkOffset3D&			offset,
+													const VkExtent3D&			extent)
+{
+	const VkMemoryAllocateInfo	allocInfo =
+	{
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType			sType;
+		DE_NULL,								//	const void*				pNext;
+		allocationSize,							//	VkDeviceSize			allocationSize;
+		memoryType,								//	deUint32				memoryTypeIndex;
+	};
+
+	VkDeviceMemory deviceMemory = 0;
+	VK_CHECK(vk.allocateMemory(device, &allocInfo, DE_NULL, &deviceMemory));
+
+	VkSparseImageMemoryBind imageMemoryBind;
+
+	imageMemoryBind.subresource		= subresource;
+	imageMemoryBind.memory			= deviceMemory;
+	imageMemoryBind.memoryOffset	= 0u;
+	imageMemoryBind.flags			= 0u;
+	imageMemoryBind.offset			= offset;
+	imageMemoryBind.extent			= extent;
+
+	return imageMemoryBind;
+}
+
+VkSparseMemoryBind makeSparseMemoryBind	(const vk::DeviceInterface&	vk,
+										 const vk::VkDevice			device, 
+										 const vk::VkDeviceSize		allocationSize,
+										 const deUint32				memoryType,
+										 const vk::VkDeviceSize		resourceOffset)
+{
+	const VkMemoryAllocateInfo allocInfo =
+	{
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType	sType;
+		DE_NULL,								//	const void*		pNext;
+		allocationSize,							//	VkDeviceSize	allocationSize;
+		memoryType,								//	deUint32		memoryTypeIndex;
+	};
+
+	VkDeviceMemory deviceMemory = 0;
+	VK_CHECK(vk.allocateMemory(device, &allocInfo, DE_NULL, &deviceMemory));
+
+	VkSparseMemoryBind memoryBind;
+
+	memoryBind.resourceOffset	= resourceOffset;
+	memoryBind.size				= allocationSize;
+	memoryBind.memory			= deviceMemory;
+	memoryBind.memoryOffset		= 0u;
+	memoryBind.flags			= 0u;
+
+	return memoryBind;
 }
 
 } // sparse
