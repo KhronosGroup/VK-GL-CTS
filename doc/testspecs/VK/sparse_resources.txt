@@ -12,6 +12,7 @@ Includes:
 4. Test partially resident image created with VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT flag bit
 5. Test partially resident image with mipmaps, put some mipmap levels in mip tail region
 6. Test memory aliasing for fully resident buffer objects
+7. Test memory aliasing for partially resident images
 
 Description:
 
@@ -117,5 +118,25 @@ and bound to both buffers (buffers share memory).
 The second queue is used to perform compute and transfer operations. A compute shader is invoked to fill the whole WRITE buffer with data.
 Afterwards the data from READ buffer is being transfered to non-sparse output buffer.
 
-The validation part retrieves data back from output buffer to host memory. The data is compared against the expected output 
+The validation part retrieves data back from output buffer to host memory. The data is compared against the expected output
 from compute shader. The test passes if the data sets are equal.
+
+7. Test memory aliasing for partially resident images
+
+The test creates two partially resident images (READ and WRITE) with VK_IMAGE_CREATE_SPARSE_ALIASED_BIT and VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT flag bits.
+Both images have the same type, format and dimensions.
+
+The test creates two queues - one supporting sparse binding operations, the second one supporting compute and transfer operations.
+
+First queue is used to perform binding of device memory to sparse images. The memory bound via VkSparseImageMemoryBind is shared between
+both images. The mipmap levels that land in the mip tail region have separate memory regions for both images.
+
+The second queue is used to perform compute and transfer operations. The test creates two non-sparse buffer objects,
+one used as input and the second as output. The input buffer is used to transfer data to READ sparse image to create some initial state.
+Afterwards compute shaders are invoked to write data to each mipmap level of WRITE sparse image. The mipmap levels of READ image that share memory with
+WRITE image should be overwritten by this operation, the mip tail region should be left intact. Next the data is copied from the READ image to the output buffer.
+
+The validation part retrieves data back from output buffer to host memory. For each mipmap level that both images share memory for, the data is
+compared against the expected output from compute shader. On the other hand for each mipmap level that landed in the mip tail region, the data is compared
+against data stored in the input buffer (the compute shader could not have changed this data). The test passes if for each mipmap level
+the comparison results in both data sets being the same.
