@@ -38,7 +38,25 @@ dEQP-VK.glsl.texture_functions.textureprojoffset.sampler3d_float_fragment
 dEQP-VK.glsl.texture_functions.textureprojoffset.usampler3d_fragment
 dEQP-VK.glsl.texture_functions.texture.sampler2darrayshadow_vertex
 
-# Excluded texture function tests because they fail on some drivers
+# Issue 410: Excluded texture function tests
 dEQP-VK.glsl.texture_functions.textureprojlod.isampler3d_vertex
 dEQP-VK.glsl.texture_functions.textureprojlod.usampler3d_vertex
 dEQP-VK.glsl.texture_functions.textureprojlodoffset.isampler3d_vertex
+dEQP-VK.glsl.texture_functions.textureproj.sampler2dshadow_vertex
+dEQP-VK.glsl.texture_functions.textureproj.sampler2dshadow_fragment
+dEQP-VK.glsl.texture_functions.textureproj.sampler2dshadow_bias_fragment
+dEQP-VK.glsl.texture_functions.textureprojoffset.sampler2dshadow_vertex
+dEQP-VK.glsl.texture_functions.textureprojoffset.sampler2dshadow_fragment
+dEQP-VK.glsl.texture_functions.textureprojoffset.sampler2dshadow_bias_fragment
+dEQP-VK.glsl.texture_functions.textureprojlod.sampler2dshadow_vertex
+dEQP-VK.glsl.texture_functions.textureprojlod.sampler2dshadow_fragment
+dEQP-VK.glsl.texture_functions.textureprojlodoffset.sampler2dshadow_vertex
+dEQP-VK.glsl.texture_functions.textureprojlodoffset.sampler2dshadow_fragment
+dEQP-VK.glsl.texture_functions.textureprojgrad.sampler2dshadow_vertex
+dEQP-VK.glsl.texture_functions.textureprojgrad.sampler2dshadow_fragment
+dEQP-VK.glsl.texture_functions.textureprojgradoffset.sampler2dshadow_vertex
+dEQP-VK.glsl.texture_functions.textureprojgradoffset.sampler2dshadow_fragment
+dEQP-VK.glsl.texture_functions.texturegrad.sampler2darrayshadow_vertex
+dEQP-VK.glsl.texture_functions.texturegrad.sampler2darrayshadow_fragment
+dEQP-VK.glsl.texture_functions.texturegradoffset.sampler2darrayshadow_vertex
+dEQP-VK.glsl.texture_functions.texturegradoffset.sampler2darrayshadow_fragment
