@@ -4622,68 +4622,24 @@ void SubmitRenderPass::verify (VerifyContext& context, size_t commandIndex)
 	}
 }
 
-class RenderBuffer : public RenderPassCommand
+struct PipelineResources
 {
-public:
-	enum RenderAs
-	{
-		RENDERAS_VERTEX_BUFFER,
-		RENDERAS_INDEX_BUFFER,
-	};
-				RenderBuffer		(RenderAs renderAs) : m_renderAs(renderAs) {}
-				~RenderBuffer		(void) {}
-
-	const char*	getName				(void) const { return "RenderBuffer"; }
-	void		logPrepare			(TestLog&, size_t) const;
-	void		logSubmit			(TestLog&, size_t) const;
-	void		prepare				(PrepareRenderPassContext&);
-	void		submit				(SubmitContext& context);
-	void		verify				(VerifyRenderPassContext&, size_t);
-
-private:
-	const RenderAs						m_renderAs;
-	vk::Move<vk::VkPipeline>			m_pipeline;
-	vk::Move<vk::VkPipelineLayout>		m_pipelineLayout;
-	vk::VkDeviceSize					m_bufferSize;
-
-	static const vk::ProgramBinary&		getVertexShader		(const vk::ProgramCollection<vk::ProgramBinary>& collections, RenderAs renderAs)
-	{
-		switch (renderAs)
-		{
-			case RENDERAS_VERTEX_BUFFER:
-				return collections.get("vertex-buffer.vert");
-
-			case RENDERAS_INDEX_BUFFER:
-				return collections.get("index-buffer.vert");
-
-			default:
-				DE_FATAL("Unknown renderAs");
-				return collections.get("");
-		}
-	}
+	vk::Move<vk::VkPipeline>		pipeline;
+	vk::Move<vk::VkPipelineLayout>	pipelineLayout;
 };
 
-void RenderBuffer::logPrepare (TestLog& log, size_t commandIndex) const
+void createPipelineWithResources (const vk::DeviceInterface&							vkd,
+								  const vk::VkDevice									device,
+								  const vk::VkRenderPass								renderPass,
+								  const deUint32										subpass,
+								  const vk::VkShaderModule&								vertexShaderModule,
+								  const vk::VkShaderModule&								fragmentShaderModule,
+								  const deUint32										viewPortWidth,
+								  const deUint32										viewPortHeight,
+								  const vector<vk::VkVertexInputBindingDescription>&	vertexBindingDescriptions,
+								  const vector<vk::VkVertexInputAttributeDescription>&	vertexAttributeDescriptions,
+								  PipelineResources&									resources)
 {
-	log << TestLog::Message << commandIndex << ":" << getName() << " Create pipeline for render buffer as " << (m_renderAs == RENDERAS_VERTEX_BUFFER ? "vertex" : "index") << " buffer." << TestLog::EndMessage;
-}
-
-void RenderBuffer::logSubmit (TestLog& log, size_t commandIndex) const
-{
-	log << TestLog::Message << commandIndex << ":" << getName() << " Render using buffer as " << (m_renderAs == RENDERAS_VERTEX_BUFFER ? "vertex" : "index") << " buffer." << TestLog::EndMessage;
-}
-
-void RenderBuffer::prepare (PrepareRenderPassContext& context)
-{
-	const vk::DeviceInterface&				vkd						= context.getContext().getDeviceInterface();
-	const vk::VkDevice						device					= context.getContext().getDevice();
-	const vk::VkRenderPass					renderPass				= context.getRenderPass();
-	const deUint32							subpass					= 0;
-	const vk::Unique<vk::VkShaderModule>	vertexShaderModule		(vk::createShaderModule(vkd, device, getVertexShader(context.getBinaryCollection(), m_renderAs), 0));
-	const vk::Unique<vk::VkShaderModule>	fragmentShaderModule	(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("render-white.frag"), 0));
-
-	m_bufferSize = context.getBufferSize();
-
 	{
 		const vk::VkPipelineLayoutCreateInfo	createInfo	=
 		{
@@ -4696,7 +4652,7 @@ void RenderBuffer::prepare (PrepareRenderPassContext& context)
 			DE_NULL
 		};
 
-		m_pipelineLayout = vk::createPipelineLayout(vkd, device, &createInfo);
+		resources.pipelineLayout = vk::createPipelineLayout(vkd, device, &createInfo);
 	}
 
 	{
@@ -4707,7 +4663,7 @@ void RenderBuffer::prepare (PrepareRenderPassContext& context)
 				DE_NULL,
 				0,
 				vk::VK_SHADER_STAGE_VERTEX_BIT,
-				*vertexShaderModule,
+				vertexShaderModule,
 				"main",
 				DE_NULL
 			},
@@ -4716,7 +4672,7 @@ void RenderBuffer::prepare (PrepareRenderPassContext& context)
 				DE_NULL,
 				0,
 				vk::VK_SHADER_STAGE_FRAGMENT_BIT,
-				*fragmentShaderModule,
+				fragmentShaderModule,
 				"main",
 				DE_NULL
 			}
@@ -4752,34 +4708,17 @@ void RenderBuffer::prepare (PrepareRenderPassContext& context)
 			-1.0f,
 			+1.0f
 		};
-		const vk::VkVertexInputBindingDescription			vertexBindingDescriptions[]		=
-		{
-			{
-				0,
-				2,
-				vk::VK_VERTEX_INPUT_RATE_VERTEX
-			}
-		};
-		const vk::VkVertexInputAttributeDescription			vertexAttributeDescriptions[]	=
-		{
-			{
-				0,
-				0,
-				vk::VK_FORMAT_R8G8_UNORM,
-				0
-			}
-		};
 		const vk::VkPipelineVertexInputStateCreateInfo		vertexInputState				=
 		{
 			vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 			DE_NULL,
 			0u,
 
-			m_renderAs == RENDERAS_VERTEX_BUFFER ? DE_LENGTH_OF_ARRAY(vertexBindingDescriptions) : 0u,
-			m_renderAs == RENDERAS_VERTEX_BUFFER ? vertexBindingDescriptions : DE_NULL,
+			(deUint32)vertexBindingDescriptions.size(),
+			vertexBindingDescriptions.empty() ? DE_NULL : &vertexBindingDescriptions[0],
 
-			m_renderAs == RENDERAS_VERTEX_BUFFER ? DE_LENGTH_OF_ARRAY(vertexAttributeDescriptions) : 0u,
-			m_renderAs == RENDERAS_VERTEX_BUFFER ? vertexAttributeDescriptions : DE_NULL,
+			(deUint32)vertexAttributeDescriptions.size(),
+			vertexAttributeDescriptions.empty() ? DE_NULL : &vertexAttributeDescriptions[0]
 		};
 		const vk::VkPipelineInputAssemblyStateCreateInfo	inputAssemblyState				=
 		{
@@ -4791,11 +4730,11 @@ void RenderBuffer::prepare (PrepareRenderPassContext& context)
 		};
 		const vk::VkViewport								viewports[]						=
 		{
-			{ 0.0f, 0.0f, (float)context.getTargetWidth(), (float)context.getTargetHeight(), 0.0f, 1.0f }
+			{ 0.0f, 0.0f, (float)viewPortWidth, (float)viewPortHeight, 0.0f, 1.0f }
 		};
 		const vk::VkRect2D									scissors[]						=
 		{
-			{ { 0, 0 }, { (deUint32)context.getTargetWidth(), (deUint32)context.getTargetHeight() } }
+			{ { 0, 0 }, { (deUint32)viewPortWidth, (deUint32)viewPortHeight } }
 		};
 		const vk::VkPipelineViewportStateCreateInfo			viewportState					=
 		{
@@ -4884,41 +4823,160 @@ void RenderBuffer::prepare (PrepareRenderPassContext& context)
 			&depthStencilState,
 			&colorBlendState,
 			DE_NULL,
-			*m_pipelineLayout,
+			*resources.pipelineLayout,
 			renderPass,
 			subpass,
 			0,
 			0
 		};
 
-		m_pipeline = vk::createGraphicsPipeline(vkd, device, 0, &createInfo);
+		resources.pipeline = vk::createGraphicsPipeline(vkd, device, 0, &createInfo);
 	}
 }
 
-void RenderBuffer::submit (SubmitContext& context)
+class RenderIndexBuffer : public RenderPassCommand
+{
+public:
+				RenderIndexBuffer	(void) {}
+				~RenderIndexBuffer	(void) {}
+
+	const char*	getName				(void) const { return "RenderIndexBuffer"; }
+	void		logPrepare			(TestLog&, size_t) const;
+	void		logSubmit			(TestLog&, size_t) const;
+	void		prepare				(PrepareRenderPassContext&);
+	void		submit				(SubmitContext& context);
+	void		verify				(VerifyRenderPassContext&, size_t);
+
+private:
+	PipelineResources				m_resources;
+	vk::VkDeviceSize				m_bufferSize;
+};
+
+void RenderIndexBuffer::logPrepare (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Create pipeline for render buffer as index buffer." << TestLog::EndMessage;
+}
+
+void RenderIndexBuffer::logSubmit (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Render using buffer as index buffer." << TestLog::EndMessage;
+}
+
+void RenderIndexBuffer::prepare (PrepareRenderPassContext& context)
+{
+	const vk::DeviceInterface&				vkd						= context.getContext().getDeviceInterface();
+	const vk::VkDevice						device					= context.getContext().getDevice();
+	const vk::VkRenderPass					renderPass				= context.getRenderPass();
+	const deUint32							subpass					= 0;
+	const vk::Unique<vk::VkShaderModule>	vertexShaderModule		(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("index-buffer.vert"), 0));
+	const vk::Unique<vk::VkShaderModule>	fragmentShaderModule	(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("render-white.frag"), 0));
+
+	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), m_resources);
+	m_bufferSize = context.getBufferSize();
+}
+
+void RenderIndexBuffer::submit (SubmitContext& context)
+{
+	const vk::DeviceInterface&	vkd				= context.getContext().getDeviceInterface();
+	const vk::VkCommandBuffer	commandBuffer	= context.getCommandBuffer();
+
+	vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
+	vkd.cmdBindIndexBuffer(commandBuffer, context.getBuffer(), 0, vk::VK_INDEX_TYPE_UINT16);
+	vkd.cmdDrawIndexed(commandBuffer, (deUint32)(context.getBufferSize() / 2), 1, 0, 0, 0);
+}
+
+void RenderIndexBuffer::verify (VerifyRenderPassContext& context, size_t)
+{
+	for (size_t pos = 0; pos < (size_t)m_bufferSize / 2; pos++)
+	{
+		const deUint8 x  = context.getReference().get(pos * 2);
+		const deUint8 y  = context.getReference().get((pos * 2) + 1);
+
+		context.getReferenceTarget().getAccess().setPixel(Vec4(1.0f, 1.0f, 1.0f, 1.0f), x, y);
+	}
+}
+
+class RenderVertexBuffer : public RenderPassCommand
+{
+public:
+				RenderVertexBuffer	(void) {}
+				~RenderVertexBuffer	(void) {}
+
+	const char*	getName				(void) const { return "RenderVertexBuffer"; }
+	void		logPrepare			(TestLog&, size_t) const;
+	void		logSubmit			(TestLog&, size_t) const;
+	void		prepare				(PrepareRenderPassContext&);
+	void		submit				(SubmitContext& context);
+	void		verify				(VerifyRenderPassContext&, size_t);
+
+private:
+	PipelineResources	m_resources;
+	vk::VkDeviceSize	m_bufferSize;
+};
+
+void RenderVertexBuffer::logPrepare (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Create pipeline for render buffer as vertex buffer." << TestLog::EndMessage;
+}
+
+void RenderVertexBuffer::logSubmit (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Render using buffer as vertex buffer." << TestLog::EndMessage;
+}
+
+void RenderVertexBuffer::prepare (PrepareRenderPassContext& context)
+{
+	const vk::DeviceInterface&						vkd						= context.getContext().getDeviceInterface();
+	const vk::VkDevice								device					= context.getContext().getDevice();
+	const vk::VkRenderPass							renderPass				= context.getRenderPass();
+	const deUint32									subpass					= 0;
+	const vk::Unique<vk::VkShaderModule>			vertexShaderModule		(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("vertex-buffer.vert"), 0));
+	const vk::Unique<vk::VkShaderModule>			fragmentShaderModule	(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("render-white.frag"), 0));
+
+	vector<vk::VkVertexInputAttributeDescription>	vertexAttributeDescriptions;
+	vector<vk::VkVertexInputBindingDescription>		vertexBindingDescriptions;
+
+	{
+		const vk::VkVertexInputBindingDescription vertexBindingDescription =
+			{
+				0,
+				2,
+				vk::VK_VERTEX_INPUT_RATE_VERTEX
+			};
+
+		vertexBindingDescriptions.push_back(vertexBindingDescription);
+	}
+	{
+		const vk::VkVertexInputAttributeDescription vertexAttributeDescription =
+		{
+			0,
+			0,
+			vk::VK_FORMAT_R8G8_UNORM,
+			0
+		};
+
+		vertexAttributeDescriptions.push_back(vertexAttributeDescription);
+	}
+	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
+								vertexBindingDescriptions, vertexAttributeDescriptions, m_resources);
+
+	m_bufferSize = context.getBufferSize();
+}
+
+void RenderVertexBuffer::submit (SubmitContext& context)
 {
 	const vk::DeviceInterface&	vkd				= context.getContext().getDeviceInterface();
 	const vk::VkCommandBuffer	commandBuffer	= context.getCommandBuffer();
 	const vk::VkDeviceSize		offset			= 0;
 	const vk::VkBuffer			buffer			= context.getBuffer();
 
-	vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-
-	if (m_renderAs == RENDERAS_VERTEX_BUFFER)
-	{
-		vkd.cmdBindVertexBuffers(commandBuffer, 0, 1, &buffer, &offset);
-		vkd.cmdDraw(commandBuffer, (deUint32)(context.getBufferSize() / 2), 1, 0, 0);
-	}
-	else if (m_renderAs == RENDERAS_INDEX_BUFFER)
-	{
-		vkd.cmdBindIndexBuffer(commandBuffer, context.getBuffer(), 0, vk::VK_INDEX_TYPE_UINT16);
-		vkd.cmdDrawIndexed(commandBuffer, (deUint32)(context.getBufferSize() / 2), 1, 0, 0, 0);
-	}
-	else
-		DE_FATAL("Unknown renderAs");
+	vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
+	vkd.cmdBindVertexBuffers(commandBuffer, 0, 1, &buffer, &offset);
+	vkd.cmdDraw(commandBuffer, (deUint32)(context.getBufferSize() / 2), 1, 0, 0);
 }
 
-void RenderBuffer::verify (VerifyRenderPassContext& context, size_t)
+void RenderVertexBuffer::verify (VerifyRenderPassContext& context, size_t)
 {
 	for (size_t pos = 0; pos < (size_t)m_bufferSize / 2; pos++)
 	{
@@ -6269,8 +6327,8 @@ de::MovePtr<RenderPassCommand> createRenderPassCommand (de::Random&,
 {
 	switch (op)
 	{
-		case OP_RENDER_VERTEX_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderBuffer(RenderBuffer::RENDERAS_VERTEX_BUFFER));
-		case OP_RENDER_INDEX_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderBuffer(RenderBuffer::RENDERAS_INDEX_BUFFER));
+		case OP_RENDER_VERTEX_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderVertexBuffer());
+		case OP_RENDER_INDEX_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderIndexBuffer());
 
 		default:
 			DE_FATAL("Unknown op");
