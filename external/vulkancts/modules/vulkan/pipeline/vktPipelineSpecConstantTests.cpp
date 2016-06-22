@@ -1457,12 +1457,13 @@ CaseDefinition makeMatrixVectorCompositeCaseDefinition (const glu::DataType type
 	const int           numCombinations = getDataTypeScalarSize(type);
 	const glu::DataType scalarType      = glu::getDataTypeScalarType(type);
 	const std::string   typeName        = glu::getDataTypeName(type);
+	const bool			isConst		= (scalarType != glu::TYPE_FLOAT) && (scalarType != glu::TYPE_DOUBLE);
 
 	std::ostringstream globalCode;
 	{
 		// Build N matrices/vectors with specialization constant inserted at various locations in the constructor.
 		for (int combNdx = 0; combNdx < numCombinations; ++combNdx)
-			globalCode << "const " << typeName << " " << varName << combNdx << " = " << typeName << "("
+			globalCode << ( isConst ? "const " : "" ) << typeName << " " << varName << combNdx << " = " << typeName << "("
 					   << generateInitializerListWithSpecConstant(type, false, 0, numCombinations, "sc0", combNdx) << ");\n";
 	}
 
@@ -1506,7 +1507,7 @@ CaseDefinition makeArrayCompositeCaseDefinition (const glu::DataType elemType, c
 	{
 		// Create several arrays with specialization constant inserted in different positions.
 		for (int combNdx = 0; combNdx < numCombinations; ++combNdx)
-			globalCode << "const " << elemTypeName << " " << varName << combNdx << arraySizeDecl << " = "
+			globalCode << elemTypeName << " " << varName << combNdx << arraySizeDecl << " = "
 					   << elemTypeName << arraySizeDecl << "(" << generateArrayConstructorString(elemType, size1, size2, "sc0", combNdx) << ");\n";
 	}
 
@@ -1546,7 +1547,7 @@ CaseDefinition makeStructCompositeCaseDefinition (const glu::DataType memberType
 				   << "    uint  ui;\n"
 				   << "};\n"
 				   << "\n"
-				   << "const Data s0 = Data(3, 2.0, true, " << glu::getDataTypeName(memberType) << "(sc0), 8u);\n";
+				   << "Data s0 = Data(3, 2.0, true, " << glu::getDataTypeName(memberType) << "(sc0), 8u);\n";
 	}
 
 	const glu::DataType scalarType   = glu::getDataTypeScalarType(memberType);
@@ -1730,7 +1731,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 				"    bool  z;\n"
 				"};\n"
 				"\n"
-				"const Data a0[3] = Data[3](Data(sc0, 2.0, true), Data(1, sc1, true), Data(1, 2.0, sc2));\n",
+				"Data a0[3] = Data[3](Data(sc0, 2.0, true), Data(1, sc1, true), Data(1, 2.0, sc2));\n",
 
 				"    int sum_a0 = 0;\n"
 				"\n"
@@ -1773,7 +1774,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 				"    bool b;\n"
 				"};\n"
 				"\n"
-				"const Data s0 = Data(1, vec3[3](vec3(2.0), vec3(sc0), vec3(4.0)), false);\n",
+				"Data s0 = Data(1, vec3[3](vec3(2.0), vec3(sc0), vec3(4.0)), false);\n",
 
 				"    float sum_s0 = 0;\n"
 				"\n"
@@ -1814,7 +1815,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 				"    bool   b;\n"
 				"};\n"
 				"\n"
-				"const Data s0 = Data(1u, Nested(vec2(2.0), sc0, 4.0), true);\n",
+				"Data s0 = Data(1u, Nested(vec2(2.0), sc0, 4.0), true);\n",
 
 				"    int sum_s0 = 0;\n"
 				"\n"
