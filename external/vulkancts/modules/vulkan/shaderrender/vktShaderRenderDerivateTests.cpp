@@ -974,10 +974,13 @@ bool LinearDerivateCaseInstance::verify (const tcu::ConstPixelBufferAccess& resu
 		const bool			isX			= isDfdxFunc(m_definitions.func);
 		const float			div			= isX ? float(result.getWidth()) : float(result.getHeight());
 		const tcu::Vec4		scale		= isX ? xScale : yScale;
-		const tcu::Vec4		reference	= ((m_values.coordMax - m_values.coordMin) / div) * scale;
-		const tcu::Vec4		opThreshold	= getDerivateThreshold(m_definitions.precision, m_values.coordMin*scale, m_values.coordMax*scale, reference);
+		tcu::Vec4			reference	= ((m_values.coordMax - m_values.coordMin) / div);
+		const tcu::Vec4		opThreshold	= getDerivateThreshold(m_definitions.precision, m_values.coordMin, m_values.coordMax, reference);
 		const tcu::Vec4		threshold	= max(surfaceThreshold, opThreshold);
 		const int			numComps	= glu::getDataTypeFloatScalars(m_definitions.dataType);
+
+		/* adjust the reference value for the correct dfdx or dfdy sample adjacency */
+		reference = reference * scale;
 
 		m_context.getTestContext().getLog()
 			<< tcu::TestLog::Message
@@ -1265,10 +1268,13 @@ bool TextureDerivateCaseInstance::verify (const tcu::ConstPixelBufferAccess& res
 		const bool			isX			= isDfdxFunc(m_definitions.func);
 		const float			div			= isX ? w : h;
 		const tcu::Vec4		scale		= isX ? xScale : yScale;
-		const tcu::Vec4		reference	= ((m_textureValues.texValueMax - m_textureValues.texValueMin) / div) * scale;
-		const tcu::Vec4		opThreshold	= getDerivateThreshold(m_definitions.precision, m_textureValues.texValueMin*scale, m_textureValues.texValueMax*scale, reference);
+		tcu::Vec4			reference	= ((m_textureValues.texValueMax - m_textureValues.texValueMin) / div);
+		const tcu::Vec4		opThreshold	= getDerivateThreshold(m_definitions.precision, m_textureValues.texValueMin, m_textureValues.texValueMax, reference);
 		const tcu::Vec4		threshold	= max(surfaceThreshold, opThreshold);
 		const int			numComps	= glu::getDataTypeFloatScalars(m_definitions.dataType);
+
+		/* adjust the reference value for the correct dfdx or dfdy sample adjacency */
+		reference = reference * scale;
 
 		m_context.getTestContext().getLog()
 			<< tcu::TestLog::Message
