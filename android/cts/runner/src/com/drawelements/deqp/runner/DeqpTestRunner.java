@@ -2049,7 +2049,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * {@inheritDoc}
      */
     @Override
-    public void addAllIncludeFilters(List<String> filters) {
+    public void addAllIncludeFilters(Set<String> filters) {
         mIncludeFilters.addAll(filters);
     }
 
@@ -2065,7 +2065,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * {@inheritDoc}
      */
     @Override
-    public void addAllExcludeFilters(List<String> filters) {
+    public void addAllExcludeFilters(Set<String> filters) {
         mExcludeFilters.addAll(filters);
     }
 
