@@ -45,6 +45,7 @@
 #include "vktShaderLibrary.hpp"
 #include "vktRenderPassTests.hpp"
 #include "vktMemoryTests.hpp"
+#include "vktShaderRenderDerivateTests.hpp"
 #include "vktShaderRenderDiscardTests.hpp"
 #include "vktShaderRenderIndexingTests.hpp"
 #include "vktShaderRenderLoopTests.hpp"
@@ -53,6 +54,8 @@
 #include "vktShaderRenderReturnTests.hpp"
 #include "vktShaderRenderStructTests.hpp"
 #include "vktShaderRenderSwitchTests.hpp"
+#include "vktShaderRenderTextureFunctionTests.hpp"
+#include "vktShaderRenderTextureGatherTests.hpp"
 #include "vktShaderBuiltinTests.hpp"
 #include "vktOpaqueTypeIndexingTests.hpp"
 #include "vktUniformBlockTests.hpp"
@@ -330,14 +333,17 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 													 std::string("vulkan/glsl/es310/") + s_es310Tests[ndx].name + ".test").release());
 
 	// ShaderRenderCase-based tests
-	glslTests->addChild(sr::createDiscardTests	(testCtx));
-	glslTests->addChild(sr::createIndexingTests	(testCtx));
-	glslTests->addChild(sr::createLoopTests		(testCtx));
-	glslTests->addChild(sr::createMatrixTests	(testCtx));
-	glslTests->addChild(sr::createOperatorTests	(testCtx));
-	glslTests->addChild(sr::createReturnTests	(testCtx));
-	glslTests->addChild(sr::createStructTests	(testCtx));
-	glslTests->addChild(sr::createSwitchTests	(testCtx));
+	glslTests->addChild(sr::createDerivateTests			(testCtx));
+	glslTests->addChild(sr::createDiscardTests			(testCtx));
+	glslTests->addChild(sr::createIndexingTests			(testCtx));
+	glslTests->addChild(sr::createLoopTests				(testCtx));
+	glslTests->addChild(sr::createMatrixTests			(testCtx));
+	glslTests->addChild(sr::createOperatorTests			(testCtx));
+	glslTests->addChild(sr::createReturnTests			(testCtx));
+	glslTests->addChild(sr::createStructTests			(testCtx));
+	glslTests->addChild(sr::createSwitchTests			(testCtx));
+	glslTests->addChild(sr::createTextureFunctionTests	(testCtx));
+	glslTests->addChild(sr::createTextureGatherTests	(testCtx));
 
 	// ShaderExecutor-based tests
 	glslTests->addChild(shaderexecutor::createBuiltinTests				(testCtx));
