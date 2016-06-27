@@ -47,8 +47,10 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -634,8 +636,8 @@ public class DeqpTestRunnerTest extends TestCase {
         return output.toString();
     }
 
-    private void testFiltering(List<String> includes,
-                               List<String> excludes,
+    private void testFiltering(Set<String> includes,
+                               Set<String> excludes,
                                List<TestIdentifier> fullTestList,
                                String expectedTrie,
                                List<TestIdentifier> expectedTests) throws Exception {
@@ -732,7 +734,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
 
-        ArrayList<String> includes = new ArrayList();
+        Set<String> includes = new HashSet();
         includes.add("dEQP-GLES3.pick_me#*");
         testFiltering(includes, null, allTests, expectedTrie, activeTests);
     }
@@ -759,7 +761,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
 
-        ArrayList<String> excludes = new ArrayList();
+        Set<String> excludes = new HashSet();
         excludes.add("dEQP-GLES3.missing#*");
         testFiltering(null, excludes, allTests, expectedTrie, activeTests);
     }
@@ -784,10 +786,10 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{group2{yes}}}";
 
-        ArrayList<String> includes = new ArrayList();
+        Set<String> includes = new HashSet();
         includes.add("dEQP-GLES3.group2#*");
 
-        ArrayList<String> excludes = new ArrayList();
+        Set<String> excludes = new HashSet();
         excludes.add("*foo");
         excludes.add("*thoushallnotpass");
         testFiltering(includes, excludes, allTests, expectedTrie, activeTests);
@@ -810,7 +812,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{group1{mememe,yeah,takeitall},group2{jeba,yes,granted}}}";
 
-        ArrayList<String> includes = new ArrayList();
+        Set<String> includes = new HashSet();
         includes.add("*");
 
         testFiltering(includes, null, allTests, expectedTrie, allTests);
@@ -833,7 +835,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "";
 
-        ArrayList<String> excludes = new ArrayList();
+        Set<String> excludes = new HashSet();
         excludes.add("*");
 
         testFiltering(null, excludes, allTests, expectedTrie, new ArrayList<TestIdentifier>());
