@@ -5,6 +5,8 @@ include_directories(
 set(DEQP_VK_SHADERRENDER_SRCS
 	vktShaderRender.cpp
 	vktShaderRender.hpp
+	vktShaderRenderBuiltinVarTests.cpp
+	vktShaderRenderBuiltinVarTests.hpp
 	vktShaderRenderDerivateTests.cpp
 	vktShaderRenderDerivateTests.hpp
 	vktShaderRenderDiscardTests.cpp

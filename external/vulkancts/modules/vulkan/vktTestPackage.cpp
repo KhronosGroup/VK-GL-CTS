@@ -45,6 +45,7 @@
 #include "vktShaderLibrary.hpp"
 #include "vktRenderPassTests.hpp"
 #include "vktMemoryTests.hpp"
+#include "vktShaderRenderBuiltinVarTests.hpp"
 #include "vktShaderRenderDerivateTests.hpp"
 #include "vktShaderRenderDiscardTests.hpp"
 #include "vktShaderRenderIndexingTests.hpp"
@@ -344,6 +345,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	glslTests->addChild(sr::createSwitchTests			(testCtx));
 	glslTests->addChild(sr::createTextureFunctionTests	(testCtx));
 	glslTests->addChild(sr::createTextureGatherTests	(testCtx));
+	glslTests->addChild(sr::createBuiltinVarTests		(testCtx));
 
 	// ShaderExecutor-based tests
 	glslTests->addChild(shaderexecutor::createBuiltinTests				(testCtx));
@@ -386,8 +388,8 @@ void TestPackage::init (void)
 	addChild(wsi::createTests				(m_testCtx));
 	addChild(synchronization::createTests	(m_testCtx));
 	addChild(sparse::createTests			(m_testCtx));
-	addChild(tessellation::createTests	(m_testCtx));
-	addChild(rasterization::createTests (m_testCtx));
+	addChild(tessellation::createTests		(m_testCtx));
+	addChild(rasterization::createTests 	(m_testCtx));
 }
 
 } // vkt

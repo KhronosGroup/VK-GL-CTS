@@ -419,6 +419,7 @@ enum BaseAttributeType
 class ShaderRenderCaseInstance : public vkt::TestInstance
 {
 public:
+														ShaderRenderCaseInstance	(Context&					context);
 														ShaderRenderCaseInstance	(Context&					context,
 																					const bool					isVertexCase,
 																					const ShaderEvaluator&		evaluator,
@@ -474,7 +475,7 @@ protected:
 	void												setSampleCount				(vk::VkSampleCountFlagBits sampleCount);
 
 	bool												isMultiSampling				(void) const;
-	
+
 	vk::Allocator&										m_memAlloc;
 	const tcu::Vec4										m_clearColor;
 	const bool											m_isVertexCase;

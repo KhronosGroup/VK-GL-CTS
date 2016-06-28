@@ -532,6 +532,23 @@ TestInstance* ShaderRenderCase::createInstance (Context& context) const
 
 // ShaderRenderCaseInstance.
 
+ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context)
+	: vkt::TestInstance		(context)
+	, m_memAlloc			(context.getDefaultAllocator())
+	, m_clearColor			(DEFAULT_CLEAR_COLOR)
+	, m_isVertexCase		(false)
+	, m_vertexShaderName	("vert")
+	, m_fragmentShaderName	("frag")
+	, m_renderSize			(128, 128)
+	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_evaluator			(DE_NULL)
+	, m_uniformSetup		(DE_NULL)
+	, m_attribFunc			(DE_NULL)
+	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
+{
+}
+
+
 ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 													const bool					isVertexCase,
 													const ShaderEvaluator&		evaluator,
