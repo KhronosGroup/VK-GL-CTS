@@ -2297,7 +2297,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 				(VkAttachmentDescriptionFlags)0,					// VkAttachmentDescriptionFlags		flags;
 				m_colorFormat,										// VkFormat							format;
 				VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
-				VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
+				VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				loadOp;
 				VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
 				VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
@@ -2688,7 +2688,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,										// VkStructureType			sType;
 				DE_NULL,																	// const void*				pNext;
 				0u,																			// VkAccessFlags			srcAccessMask;
-				VK_PIPELINE_STAGE_TRANSFER_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,										// VkAccessFlags			dstAccessMask;
 				VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout			oldLayout;
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,									// VkImageLayout			newLayout;
 				VK_QUEUE_FAMILY_IGNORED,													// deUint32					srcQueueFamilyIndex;
@@ -2712,7 +2712,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,										// VkStructureType			sType;
 					DE_NULL,																	// const void*				pNext;
 					0u,																			// VkAccessFlags			srcAccessMask;
-					VK_PIPELINE_STAGE_TRANSFER_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,										// VkAccessFlags			dstAccessMask;
 					VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout			oldLayout;
 					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,									// VkImageLayout			newLayout;
 					VK_QUEUE_FAMILY_IGNORED,													// deUint32					srcQueueFamilyIndex;
@@ -2857,8 +2857,8 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,									// VkStructureType			sType;
 			DE_NULL,																// const void*				pNext;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,	// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,									// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_TRANSFER_READ_BIT,											// VkAccessFlags			dstAccessMask;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,								// VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,									// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,												// deUint32					srcQueueFamilyIndex;
