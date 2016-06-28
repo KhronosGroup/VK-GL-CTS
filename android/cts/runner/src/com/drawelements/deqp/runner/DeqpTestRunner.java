@@ -2087,6 +2087,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         destination.mExcludeFilters = new ArrayList<>(source.mExcludeFilters);
         destination.mAbi = source.mAbi;
         destination.mLogData = source.mLogData;
+        destination.mCollectTestsOnly = source.mCollectTestsOnly;
     }
 
     /**
