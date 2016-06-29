@@ -19,6 +19,7 @@ add_subdirectory(sparse_resources)
 add_subdirectory(tessellation)
 add_subdirectory(rasterization)
 add_subdirectory(synchronization)
+add_subdirectory(clipping)
 
 include_directories(
 	api
@@ -40,6 +41,7 @@ include_directories(
 	tessellation
 	rasterization
 	synchronization
+	clipping
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -82,6 +84,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-tessellation
 	deqp-vk-rasterization
 	deqp-vk-synchronization
+	deqp-vk-clipping
 	)
 
 add_library(deqp-vk-common STATIC ${DEQP_VK_COMMON_SRCS})
