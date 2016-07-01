@@ -273,3 +273,16 @@ dEQP-VK.glsl.texture_functions.texelfetch.sparse_sampler3d_fixed_vertex
 dEQP-VK.glsl.texture_functions.texelfetch.sparse_sampler3d_fixed_fragment
 dEQP-VK.glsl.texture_functions.texelfetch.sparse_usampler3d_vertex
 dEQP-VK.glsl.texture_functions.texelfetch.sparse_usampler3d_fragment
+
+# Issue 420: Exclude problematic clipping tests
+dEQP-VK.clipping.clip_volume.clipped.large_points
+dEQP-VK.clipping.clip_volume.clipped.wide_lines_axis_aligned
+dEQP-VK.clipping.clip_volume.clipped.wide_lines_diagonal
+dEQP-VK.clipping.user_defined.clip_distance.vert_tess.*
+dEQP-VK.clipping.user_defined.clip_distance.vert_geom.*
+dEQP-VK.clipping.user_defined.clip_distance.vert_tess_geom.*
+dEQP-VK.clipping.user_defined.clip_distance_dynamic_index.*
+dEQP-VK.clipping.user_defined.clip_cull_distance.vert_tess.*
+dEQP-VK.clipping.user_defined.clip_cull_distance.vert_geom.*
+dEQP-VK.clipping.user_defined.clip_cull_distance.vert_tess_geom.*
+dEQP-VK.clipping.user_defined.clip_cull_distance_dynamic_index.*
