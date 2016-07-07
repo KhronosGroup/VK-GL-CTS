@@ -1788,7 +1788,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params)
 			1u,																			// deUint32					arrayLayers;
 			rasterizationSamples,														// VkSampleCountFlagBits	samples;
 			VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling			tiling;
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,		// VkImageUsageFlags		usage;
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags		usage;
 			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode			sharingMode;
 			1u,																			// deUint32					queueFamilyIndexCount;
 			&queueFamilyIndex,															// const deUint32*			pQueueFamilyIndices;
