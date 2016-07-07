@@ -663,9 +663,9 @@ void TriangleDerivateCaseInstance::setupDefaultInputs (void)
 		m_values.coordMax.x(), m_values.coordMax.y(), m_values.coordMax.z(),								m_values.coordMin.w()
 	};
 
-	addAttribute(0u, vk::VK_FORMAT_R32G32B32A32_SFLOAT, 4 * sizeof(float), numVertices, positions);
+	addAttribute(0u, vk::VK_FORMAT_R32G32B32A32_SFLOAT, 4 * (deUint32)sizeof(float), numVertices, positions);
 	if (m_definitions.coordDataType != glu::TYPE_LAST)
-		addAttribute(1u, vk::VK_FORMAT_R32G32B32A32_SFLOAT, 4 * sizeof(float), numVertices, coords);
+		addAttribute(1u, vk::VK_FORMAT_R32G32B32A32_SFLOAT, 4 * (deUint32)sizeof(float), numVertices, coords);
 }
 
 tcu::TestStatus TriangleDerivateCaseInstance::iterate (void)
