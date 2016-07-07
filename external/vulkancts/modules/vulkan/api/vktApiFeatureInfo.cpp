@@ -1552,6 +1552,11 @@ VkImageUsageFlags getValidImageUsageFlags (VkFormat, VkFormatFeatureFlags suppor
 
 bool isValidImageUsageFlagCombination (VkImageUsageFlags usage)
 {
+	if (usage & vk::VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT)
+	{
+		const VkImageUsageFlags		allowedFlags	= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+		return (usage & ~allowedFlags) == 0;
+	}
 	return usage != 0;
 }
 
