@@ -62,6 +62,12 @@ namespace sr
 namespace
 {
 
+enum
+{
+	SPEC_MAX_MIN_OFFSET = -8,
+	SPEC_MIN_MAX_OFFSET = 7
+};
+
 enum TextureType
 {
 	TEXTURETYPE_2D,
@@ -979,109 +985,122 @@ vector<GatherArgs> generateBasic2DCaseIterations (GatherType gatherType, const t
 	return result;
 }
 
-class TextureGatherBase
+struct GatherCaseBaseParams
 {
-public:
-										TextureGatherBase			(const TextureType					textureType,
-																	 const GatherType					gatherType,
-																	 const OffsetSize					offsetSize,
-																	 const tcu::TextureFormat			textureFormat,
-																	 const tcu::Sampler::CompareMode	shadowCompareMode, //!< Should be COMPAREMODE_NONE if textureFormat is a depth format.
-																	 const tcu::Sampler::WrapMode		wrapS,
-																	 const tcu::Sampler::WrapMode		wrapT,
-																	 const MaybeTextureSwizzle&			textureSwizzle,
-																	 // \note Filter modes have no effect on gather (except when it comes to
-																	 //		  texture completeness); these are supposed to test just that.
-																	 const tcu::Sampler::FilterMode		minFilter,
-																	 const tcu::Sampler::FilterMode		magFilter,
-																	 const int							baseLevel,
-																	 const deUint32						flags);
-	virtual								~TextureGatherBase			(void);
+	GatherType					gatherType;
+	OffsetSize					offsetSize;
+	tcu::TextureFormat			textureFormat;
+	tcu::Sampler::CompareMode	shadowCompareMode;
+	tcu::Sampler::WrapMode		wrapS;
+	tcu::Sampler::WrapMode		wrapT;
+	MaybeTextureSwizzle			textureSwizzle;
+	tcu::Sampler::FilterMode	minFilter;
+	tcu::Sampler::FilterMode	magFilter;
+	int							baseLevel;
+	deUint32					flags;
+	TextureType					textureType;
 
-protected:
-	virtual IVec2						getOffsetRange				(void) const = 0;
-	virtual void						generateIterations			(void) = 0;
-	virtual int							getNumIterations			(void) const = 0;
-	virtual GatherArgs					getGatherArgs				(int iterationNdx) const = 0;
+	GatherCaseBaseParams (const TextureType					textureType_,
+						  const GatherType					gatherType_,
+						  const OffsetSize					offsetSize_,
+						  const tcu::TextureFormat			textureFormat_,
+						  const tcu::Sampler::CompareMode	shadowCompareMode_,
+						  const tcu::Sampler::WrapMode		wrapS_,
+						  const tcu::Sampler::WrapMode		wrapT_,
+						  const MaybeTextureSwizzle&		textureSwizzle_,
+						  const tcu::Sampler::FilterMode	minFilter_,
+						  const tcu::Sampler::FilterMode	magFilter_,
+						  const int							baseLevel_,
+						  const deUint32					flags_)
+		: gatherType			(gatherType_)
+		, offsetSize			(offsetSize_)
+		, textureFormat			(textureFormat_)
+		, shadowCompareMode		(shadowCompareMode_)
+		, wrapS					(wrapS_)
+		, wrapT					(wrapT_)
+		, textureSwizzle		(textureSwizzle_)
+		, minFilter				(minFilter_)
+		, magFilter				(magFilter_)
+		, baseLevel				(baseLevel_)
+		, flags					(flags_)
+		, textureType			(textureType_)
+	{}
 
-protected:
-	const GatherType					m_gatherType;
-	const OffsetSize					m_offsetSize;
-	const tcu::TextureFormat			m_textureFormat;
-	const tcu::Sampler::CompareMode		m_shadowCompareMode;
-	const tcu::Sampler::WrapMode		m_wrapS;
-	const tcu::Sampler::WrapMode		m_wrapT;
-	const MaybeTextureSwizzle			m_textureSwizzle;
-	const tcu::Sampler::FilterMode		m_minFilter;
-	const tcu::Sampler::FilterMode		m_magFilter;
-	const int							m_baseLevel;
-	const deUint32						m_flags;
-	const TextureType					m_textureType;
-
-	enum
-	{
-		SPEC_MAX_MIN_OFFSET = -8,
-		SPEC_MIN_MAX_OFFSET = 7
-	};
+	GatherCaseBaseParams (void)
+		: gatherType			(GATHERTYPE_LAST)
+		, offsetSize			(OFFSETSIZE_LAST)
+		, textureFormat			()
+		, shadowCompareMode		(tcu::Sampler::COMPAREMODE_LAST)
+		, wrapS					(tcu::Sampler::WRAPMODE_LAST)
+		, wrapT					(tcu::Sampler::WRAPMODE_LAST)
+		, textureSwizzle		(MaybeTextureSwizzle::createNoneTextureSwizzle())
+		, minFilter				(tcu::Sampler::FILTERMODE_LAST)
+		, magFilter				(tcu::Sampler::FILTERMODE_LAST)
+		, baseLevel				(0)
+		, flags					(0)
+		, textureType			(TEXTURETYPE_LAST)
+	{}
 };
 
-TextureGatherBase::TextureGatherBase (const TextureType						textureType,
-									  const GatherType						gatherType,
-									  const OffsetSize						offsetSize,
-									  const tcu::TextureFormat				textureFormat,
-									  const tcu::Sampler::CompareMode		shadowCompareMode,
-									  const tcu::Sampler::WrapMode			wrapS,
-									  const tcu::Sampler::WrapMode			wrapT,
-									  const MaybeTextureSwizzle&			textureSwizzle,
-									  const tcu::Sampler::FilterMode		minFilter,
-									  const tcu::Sampler::FilterMode		magFilter,
-									  const int								baseLevel,
-									  const deUint32						flags)
-	: m_gatherType				(gatherType)
-	, m_offsetSize				(offsetSize)
-	, m_textureFormat			(textureFormat)
-	, m_shadowCompareMode		(shadowCompareMode)
-	, m_wrapS					(wrapS)
-	, m_wrapT					(wrapT)
-	, m_textureSwizzle			(textureSwizzle)
-	, m_minFilter				(minFilter)
-	, m_magFilter				(magFilter)
-	, m_baseLevel				(baseLevel)
-	, m_flags					(flags)
-	, m_textureType				(textureType)
+IVec2 getOffsetRange (const OffsetSize offsetSize, const vk::VkPhysicalDeviceLimits& deviceLimits)
 {
+	switch (offsetSize)
+	{
+		case OFFSETSIZE_NONE:
+			return IVec2(0);
+
+		case OFFSETSIZE_MINIMUM_REQUIRED:
+			// \note Defined by spec.
+			return IVec2(SPEC_MAX_MIN_OFFSET,
+						 SPEC_MIN_MAX_OFFSET);
+
+		case OFFSETSIZE_IMPLEMENTATION_MAXIMUM:
+			return IVec2(deviceLimits.minTexelGatherOffset, deviceLimits.maxTexelGatherOffset);
+
+		default:
+			DE_ASSERT(false);
+			return IVec2(-1);
+	}
 }
 
-TextureGatherBase::~TextureGatherBase (void)
+IVec2 getOffsetRange (const OffsetSize offsetSize)
 {
+	switch (offsetSize)
+	{
+		case OFFSETSIZE_NONE:
+			return IVec2(0);
+
+		case OFFSETSIZE_MINIMUM_REQUIRED:
+			// \note Defined by spec.
+			return IVec2(SPEC_MAX_MIN_OFFSET,
+						 SPEC_MIN_MAX_OFFSET);
+
+		case OFFSETSIZE_IMPLEMENTATION_MAXIMUM:
+			DE_FATAL("Not known");
+
+		default:
+			DE_ASSERT(false);
+			return IVec2(-1);
+	}
 }
 
-class TextureGatherInstance : public virtual TextureGatherBase, public ShaderRenderCaseInstance
+class TextureGatherInstance : public ShaderRenderCaseInstance
 {
 public:
-										TextureGatherInstance		(Context&							context,
-																	 const TextureType					textureType,
-																	 const GatherType					gatherType,
-																	 const OffsetSize					offsetSize,
-																	 const tcu::TextureFormat			textureFormat,
-																	 const tcu::Sampler::CompareMode	shadowCompareMode,
-																	 const tcu::Sampler::WrapMode		wrapS,
-																	 const tcu::Sampler::WrapMode		wrapT,
-																	 const MaybeTextureSwizzle&			textureSwizzle,
-																	 const tcu::Sampler::FilterMode		minFilter,
-																	 const tcu::Sampler::FilterMode		magFilter,
-																	 const int							baseLevel,
-																	 const deUint32						flags);
+										TextureGatherInstance		(Context&						context,
+																	 const GatherCaseBaseParams&	baseParams);
 	virtual								~TextureGatherInstance		(void);
 
 	virtual tcu::TestStatus				iterate						(void);
 
 protected:
+	void								init						(void);
+
+	virtual int							getNumIterations			(void) const = 0;
+	virtual GatherArgs					getGatherArgs				(int iterationNdx) const = 0;
+
 	virtual void						setupDefaultInputs			(void);
 	virtual void						setupUniforms				(const tcu::Vec4&);
-
-	void								init						(void);
-	virtual IVec2						getOffsetRange				(void) const;
 
 	template <typename TexViewT, typename TexCoordT>
 	bool								verify						(const ConstPixelBufferAccess&		rendered,
@@ -1096,6 +1115,8 @@ protected:
 protected:
 	static const IVec2					RENDER_SIZE;
 
+	const GatherCaseBaseParams			m_baseParams;
+
 private:
 	const tcu::TextureFormat			m_colorBufferFormat;
 	int									m_currentIteration;
@@ -1103,35 +1124,24 @@ private:
 
 const IVec2 TextureGatherInstance::RENDER_SIZE = IVec2(64, 64);
 
-TextureGatherInstance::TextureGatherInstance (Context&								context,
-											  const TextureType						textureType,
-											  const GatherType						gatherType,
-											  const OffsetSize						offsetSize,
-											  const tcu::TextureFormat				textureFormat,
-											  const tcu::Sampler::CompareMode		shadowCompareMode,
-											  const tcu::Sampler::WrapMode			wrapS,
-											  const tcu::Sampler::WrapMode			wrapT,
-											  const MaybeTextureSwizzle&			textureSwizzle,
-											  const tcu::Sampler::FilterMode		minFilter,
-											  const tcu::Sampler::FilterMode		magFilter,
-											  const int								baseLevel,
-											  const deUint32						flags)
-	: TextureGatherBase			(textureType, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
-	, ShaderRenderCaseInstance	(context, false, DE_NULL, DE_NULL, DE_NULL)
+TextureGatherInstance::TextureGatherInstance (Context&						context,
+											  const GatherCaseBaseParams&	baseParams)
+	: ShaderRenderCaseInstance	(context, false, DE_NULL, DE_NULL, DE_NULL)
+	, m_baseParams				(baseParams)
 	, m_colorBufferFormat		(tcu::TextureFormat(tcu::TextureFormat::RGBA,
-													isDepthFormat(textureFormat) ? tcu::TextureFormat::UNORM_INT8 : textureFormat.type))
+													isDepthFormat(baseParams.textureFormat) ? tcu::TextureFormat::UNORM_INT8 : baseParams.textureFormat.type))
 	, m_currentIteration		(0)
 {
-	DE_ASSERT((m_gatherType == GATHERTYPE_BASIC) == (m_offsetSize == OFFSETSIZE_NONE));
-	DE_ASSERT((m_shadowCompareMode != tcu::Sampler::COMPAREMODE_NONE) == isDepthFormat(m_textureFormat));
+	DE_ASSERT((m_baseParams.gatherType == GATHERTYPE_BASIC) == (m_baseParams.offsetSize == OFFSETSIZE_NONE));
+	DE_ASSERT((m_baseParams.shadowCompareMode != tcu::Sampler::COMPAREMODE_NONE) == isDepthFormat(m_baseParams.textureFormat));
 	DE_ASSERT(isUnormFormatType(m_colorBufferFormat.type)						||
 			  m_colorBufferFormat.type == tcu::TextureFormat::UNSIGNED_INT8		||
 			  m_colorBufferFormat.type == tcu::TextureFormat::UNSIGNED_INT16	||
 			  m_colorBufferFormat.type == tcu::TextureFormat::SIGNED_INT8		||
 			  m_colorBufferFormat.type == tcu::TextureFormat::SIGNED_INT16);
 	DE_ASSERT(glu::isGLInternalColorFormatFilterable(glu::getInternalFormat(m_colorBufferFormat)) ||
-			  (m_magFilter == tcu::Sampler::NEAREST && (m_minFilter == tcu::Sampler::NEAREST || m_minFilter == tcu::Sampler::NEAREST_MIPMAP_NEAREST)));
-	DE_ASSERT(m_textureType == TEXTURETYPE_CUBE || !(m_flags & GATHERCASE_DONT_SAMPLE_CUBE_CORNERS));
+			  (m_baseParams.magFilter == tcu::Sampler::NEAREST && (m_baseParams.minFilter == tcu::Sampler::NEAREST || m_baseParams.minFilter == tcu::Sampler::NEAREST_MIPMAP_NEAREST)));
+	DE_ASSERT(m_baseParams.textureType == TEXTURETYPE_CUBE || !(m_baseParams.flags & GATHERCASE_DONT_SAMPLE_CUBE_CORNERS));
 
 	m_renderSize				= RENDER_SIZE.asUint();
 	m_colorFormat				= vk::mapTextureFormat(m_colorBufferFormat);
@@ -1148,7 +1158,7 @@ void TextureGatherInstance::init (void)
 	TextureBinding::Parameters		textureParams;
 
 	// Check prerequisites.
-	if (requireGpuShader5(m_gatherType, m_offsetSize))
+	if (requireGpuShader5(m_baseParams.gatherType, m_baseParams.offsetSize))
 	{
 		const vk::VkPhysicalDeviceFeatures&		deviceFeatures	= m_context.getDeviceFeatures();
 		if (!deviceFeatures.shaderImageGatherExtended)
@@ -1156,26 +1166,22 @@ void TextureGatherInstance::init (void)
 	}
 
 	// Log and check implementation offset limits, if appropriate.
-	if (m_offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM)
+	if (m_baseParams.offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM)
 	{
-		const IVec2		offsetRange		= getOffsetRange();
+		const IVec2		offsetRange		= getOffsetRange(m_baseParams.offsetSize, m_context.getDeviceProperties().limits);
 		log << TestLog::Integer("ImplementationMinTextureGatherOffset", "Implementation's value for minTexelGatherOffset", "", QP_KEY_TAG_NONE, offsetRange[0])
 			<< TestLog::Integer("ImplementationMaxTextureGatherOffset", "Implementation's value for maxTexelGatherOffset", "", QP_KEY_TAG_NONE, offsetRange[1]);
 		TCU_CHECK_MSG(offsetRange[0] <= SPEC_MAX_MIN_OFFSET, ("minTexelGatherOffset must be at most " + de::toString((int)SPEC_MAX_MIN_OFFSET)).c_str());
 		TCU_CHECK_MSG(offsetRange[1] >= SPEC_MIN_MAX_OFFSET, ("maxTexelGatherOffset must be at least " + de::toString((int)SPEC_MIN_MAX_OFFSET)).c_str());
 	}
 
-	// Generate subclass-specific iterations.
-
-	generateIterations();
-
 	// Initialize texture.
 
 	textureBinding = createTexture();
 
-	if (m_textureSwizzle.isSome())
+	if (m_baseParams.textureSwizzle.isSome())
 	{
-		const tcu::Vector<TextureSwizzleComponent, 4>&	swizzle		= m_textureSwizzle.getSwizzle();
+		const tcu::Vector<TextureSwizzleComponent, 4>&	swizzle		= m_baseParams.textureSwizzle.getSwizzle();
 
 		const vk::VkComponentMapping					components	=
 		{
@@ -1188,49 +1194,25 @@ void TextureGatherInstance::init (void)
 		textureParams.componentMapping = components;
 	}
 
-	if (m_baseLevel != 0)
-		textureParams.baseMipLevel = m_baseLevel;
+	if (m_baseParams.baseLevel != 0)
+		textureParams.baseMipLevel = m_baseParams.baseLevel;
 
 	textureBinding->setParameters(textureParams);
 	m_textures.push_back(textureBinding);
 
-	log << TestLog::Message << "Texture base level is " << m_baseLevel << TestLog::EndMessage
+	log << TestLog::Message << "Texture base level is " << m_baseParams.baseLevel << TestLog::EndMessage
 		<< TestLog::Message << "s and t wrap modes are "
-							<< vk::mapWrapMode(m_wrapS) << " and "
-							<< vk::mapWrapMode(m_wrapT) << ", respectively" << TestLog::EndMessage
+							<< vk::mapWrapMode(m_baseParams.wrapS) << " and "
+							<< vk::mapWrapMode(m_baseParams.wrapT) << ", respectively" << TestLog::EndMessage
 		<< TestLog::Message << "Minification and magnification filter modes are "
-							<< vk::mapFilterMode(m_minFilter) << " and "
-							<< vk::mapFilterMode(m_magFilter) << ", respectively "
+							<< vk::mapFilterMode(m_baseParams.minFilter) << " and "
+							<< vk::mapFilterMode(m_baseParams.magFilter) << ", respectively "
 							<< "(note that they should have no effect on gather result)"
 							<< TestLog::EndMessage
-		<< TestLog::Message << "Using texture swizzle " << m_textureSwizzle << TestLog::EndMessage;
+		<< TestLog::Message << "Using texture swizzle " << m_baseParams.textureSwizzle << TestLog::EndMessage;
 
-	if (m_shadowCompareMode != tcu::Sampler::COMPAREMODE_NONE)
-		log << TestLog::Message << "Using texture compare func " << vk::mapCompareMode(m_shadowCompareMode) << TestLog::EndMessage;
-}
-
-IVec2 TextureGatherInstance::getOffsetRange (void) const
-{
-	switch (m_offsetSize)
-	{
-		case OFFSETSIZE_NONE:
-			return IVec2(0);
-
-		case OFFSETSIZE_MINIMUM_REQUIRED:
-			// \note Defined by spec.
-			return IVec2(SPEC_MAX_MIN_OFFSET,
-						 SPEC_MIN_MAX_OFFSET);
-
-		case OFFSETSIZE_IMPLEMENTATION_MAXIMUM:
-		{
-			const vk::VkPhysicalDeviceLimits&	limits	= m_context.getDeviceProperties().limits;
-			return IVec2(limits.minTexelGatherOffset, limits.maxTexelGatherOffset);
-		}
-
-		default:
-			DE_ASSERT(false);
-			return IVec2(-1);
-	}
+	if (m_baseParams.shadowCompareMode != tcu::Sampler::COMPAREMODE_NONE)
+		log << TestLog::Message << "Using texture compare func " << vk::mapCompareMode(m_baseParams.shadowCompareMode) << TestLog::EndMessage;
 }
 
 void TextureGatherInstance::setupDefaultInputs (void)
@@ -1251,7 +1233,7 @@ void TextureGatherInstance::setupDefaultInputs (void)
 		1.0f, 1.0f,
 	};
 	const vector<float>		texCoord						= computeQuadTexCoord(m_currentIteration);
-	const bool				needNormalizedCoordInShader		= m_gatherType == GATHERTYPE_OFFSET_DYNAMIC || isDepthFormat(m_textureFormat);
+	const bool				needNormalizedCoordInShader		= m_baseParams.gatherType == GATHERTYPE_OFFSET_DYNAMIC || isDepthFormat(m_baseParams.textureFormat);
 
 	addAttribute(0u, vk::VK_FORMAT_R32G32_SFLOAT, 2 * (deUint32)sizeof(float), numVertices, position);
 
@@ -1320,19 +1302,19 @@ void TextureGatherInstance::setupUniforms (const tcu::Vec4&)
 
 	useSampler(binding++, 0u);
 
-	if (m_gatherType == GATHERTYPE_OFFSET_DYNAMIC)
+	if (m_baseParams.gatherType == GATHERTYPE_OFFSET_DYNAMIC)
 		addUniform(binding++, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(tcu::Vec2), RENDER_SIZE.asFloat().getPtr());
 
-	if (m_offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM)
+	if (m_baseParams.offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM)
 	{
-		if (m_gatherType == GATHERTYPE_OFFSET)
+		if (m_baseParams.gatherType == GATHERTYPE_OFFSET)
 		{
 			const GatherArgs&	gatherArgs		= getGatherArgs(m_currentIteration);
 			addUniform(binding++, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(tcu::IVec2), gatherArgs.offsets[0].getPtr());
 		}
-		else if (m_gatherType == GATHERTYPE_OFFSET_DYNAMIC)
+		else if (m_baseParams.gatherType == GATHERTYPE_OFFSET_DYNAMIC)
 		{
-			const IVec2&		offsetRange		= getOffsetRange();
+			const IVec2&		offsetRange		= getOffsetRange(m_baseParams.offsetSize, m_context.getDeviceProperties().limits);
 			addUniform(binding++, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(tcu::IVec2), offsetRange.getPtr());
 		}
 		else
@@ -1354,23 +1336,23 @@ bool TextureGatherInstance::verify (const ConstPixelBufferAccess&	rendered,
 				  m_colorBufferFormat.type == tcu::TextureFormat::UNSIGNED_INT8		||
 				  m_colorBufferFormat.type == tcu::TextureFormat::SIGNED_INT8);
 
-		const MovePtr<PixelOffsets>		pixelOffsets	= makePixelOffsetsFunctor(m_gatherType, gatherArgs, getOffsetRange());
+		const MovePtr<PixelOffsets>		pixelOffsets	= makePixelOffsetsFunctor(m_baseParams.gatherType, gatherArgs, getOffsetRange(m_baseParams.offsetSize, m_context.getDeviceProperties().limits));
 		const tcu::PixelFormat			pixelFormat		= tcu::PixelFormat(8,8,8,8);
 		const IVec4						colorBits		= tcu::max(TextureTestUtil::getBitsVec(pixelFormat) - 1, tcu::IVec4(0));
-		const IVec3						coordBits		= m_textureType == TEXTURETYPE_2D			? IVec3(20,20,0)
-														: m_textureType == TEXTURETYPE_CUBE			? IVec3(10,10,10)
-														: m_textureType == TEXTURETYPE_2D_ARRAY		? IVec3(20,20,20)
+		const IVec3						coordBits		= m_baseParams.textureType == TEXTURETYPE_2D			? IVec3(20,20,0)
+														: m_baseParams.textureType == TEXTURETYPE_CUBE			? IVec3(10,10,10)
+														: m_baseParams.textureType == TEXTURETYPE_2D_ARRAY		? IVec3(20,20,20)
 														: IVec3(-1);
-		const IVec3						uvwBits			= m_textureType == TEXTURETYPE_2D			? IVec3(7,7,0)
-														: m_textureType == TEXTURETYPE_CUBE			? IVec3(6,6,0)
-														: m_textureType == TEXTURETYPE_2D_ARRAY		? IVec3(7,7,7)
+		const IVec3						uvwBits			= m_baseParams.textureType == TEXTURETYPE_2D			? IVec3(7,7,0)
+														: m_baseParams.textureType == TEXTURETYPE_CUBE			? IVec3(6,6,0)
+														: m_baseParams.textureType == TEXTURETYPE_2D_ARRAY		? IVec3(7,7,7)
 														: IVec3(-1);
 		tcu::Sampler					sampler;
-		sampler.wrapS		= m_wrapS;
-		sampler.wrapT		= m_wrapT;
-		sampler.compare		= m_shadowCompareMode;
+		sampler.wrapS		= m_baseParams.wrapS;
+		sampler.wrapT		= m_baseParams.wrapT;
+		sampler.compare		= m_baseParams.shadowCompareMode;
 
-		if (isDepthFormat(m_textureFormat))
+		if (isDepthFormat(m_baseParams.textureFormat))
 		{
 			tcu::TexComparePrecision comparePrec;
 			comparePrec.coordBits		= coordBits;
@@ -1384,7 +1366,7 @@ bool TextureGatherInstance::verify (const ConstPixelBufferAccess&	rendered,
 		{
 			const int componentNdx = de::max(0, gatherArgs.componentNdx);
 
-			if (isUnormFormatType(m_textureFormat.type))
+			if (isUnormFormatType(m_baseParams.textureFormat.type))
 			{
 				tcu::LookupPrecision lookupPrec;
 				lookupPrec.colorThreshold	= tcu::computeFixedPointThreshold(colorBits);
@@ -1393,7 +1375,7 @@ bool TextureGatherInstance::verify (const ConstPixelBufferAccess&	rendered,
 				lookupPrec.colorMask		= TextureTestUtil::getCompareMask(pixelFormat);
 				return verifyGatherOffsets<float>(log, rendered, texture, texCoords, sampler, lookupPrec, componentNdx, *pixelOffsets);
 			}
-			else if (isUIntFormatType(m_textureFormat.type) || isSIntFormatType(m_textureFormat.type))
+			else if (isUIntFormatType(m_baseParams.textureFormat.type) || isSIntFormatType(m_baseParams.textureFormat.type))
 			{
 				tcu::IntLookupPrecision		lookupPrec;
 				lookupPrec.colorThreshold	= UVec4(0);
@@ -1401,9 +1383,9 @@ bool TextureGatherInstance::verify (const ConstPixelBufferAccess&	rendered,
 				lookupPrec.uvwBits			= uvwBits;
 				lookupPrec.colorMask		= TextureTestUtil::getCompareMask(pixelFormat);
 
-				if (isUIntFormatType(m_textureFormat.type))
+				if (isUIntFormatType(m_baseParams.textureFormat.type))
 					return verifyGatherOffsets<deUint32>(log, rendered, texture, texCoords, sampler, lookupPrec, componentNdx, *pixelOffsets);
-				else if (isSIntFormatType(m_textureFormat.type))
+				else if (isSIntFormatType(m_baseParams.textureFormat.type))
 					return verifyGatherOffsets<deInt32>(log, rendered, texture, texCoords, sampler, lookupPrec, componentNdx, *pixelOffsets);
 				else
 				{
@@ -1420,129 +1402,7 @@ bool TextureGatherInstance::verify (const ConstPixelBufferAccess&	rendered,
 	}
 }
 
-class TextureGatherCase : public virtual TextureGatherBase, public TestCase
-{
-public:
-									TextureGatherCase					(tcu::TestContext&					testCtx,
-																		 const string&						name,
-																		 const string&						description,
-																		 const TextureType					textureType,
-																		 const GatherType					gatherType,
-																		 const OffsetSize					offsetSize,
-																		 const tcu::TextureFormat			textureFormat,
-																		 const tcu::Sampler::CompareMode	shadowCompareMode,
-																		 const tcu::Sampler::WrapMode		wrapS,
-																		 const tcu::Sampler::WrapMode		wrapT,
-																		 const MaybeTextureSwizzle&			textureSwizzle,
-																		 const tcu::Sampler::FilterMode		minFilter,
-																		 const tcu::Sampler::FilterMode		magFilter,
-																		 const int							baseLevel,
-																		 const deUint32						flags);
-	virtual							~TextureGatherCase					(void);
-
-	virtual void					initPrograms						(vk::SourceCollections& programCollection) const;
-
-protected:
-	void							init								(void);
-	virtual IVec2					getOffsetRange						(void) const;
-
-private:
-	static glu::VertexSource		genVertexShaderSource				(bool						requireGpuShader5,
-																		 int						numTexCoordComponents,
-																		 bool						useNormalizedCoordInput);
-	static glu::FragmentSource		genFragmentShaderSource				(bool						requireGpuShader5,
-																		 int						numTexCoordComponents,
-																		 glu::DataType				samplerType,
-																		 const string&				funcCall,
-																		 bool						useNormalizedCoordInput,
-																		 bool						usePixCoord,
-																		 OffsetSize					offsetSize);
-	static string					genGatherFuncCall					(GatherType					gatherType,
-																		 const tcu::TextureFormat&	textureFormat,
-																		 const GatherArgs&			gatherArgs,
-																		 const string&				refZExpr,
-																		 const IVec2&				offsetRange,
-																		 int						indentationDepth,
-																		 OffsetSize					offsetSize);
-};
-
-TextureGatherCase::TextureGatherCase (tcu::TestContext&					testCtx,
-									  const string&						name,
-									  const string&						description,
-									  const TextureType					textureType,
-									  const GatherType					gatherType,
-									  const OffsetSize					offsetSize,
-									  const tcu::TextureFormat			textureFormat,
-									  const tcu::Sampler::CompareMode	shadowCompareMode,
-									  const tcu::Sampler::WrapMode		wrapS,
-									  const tcu::Sampler::WrapMode		wrapT,
-									  const MaybeTextureSwizzle&		textureSwizzle,
-									  const tcu::Sampler::FilterMode	minFilter,
-									  const tcu::Sampler::FilterMode	magFilter,
-									  const int							baseLevel,
-									  const deUint32					flags)
-	: TextureGatherBase		(textureType, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
-	, TestCase				(testCtx, name, description)
-{
-}
-
-TextureGatherCase::~TextureGatherCase (void)
-{
-}
-
-void TextureGatherCase::initPrograms (vk::SourceCollections& programCollection) const
-{
-	const int					numIterations		= getNumIterations();
-	const string				refZExpr			= "v_normalizedCoord.x";
-	const IVec2&				offsetRange			= getOffsetRange();
-	const bool					usePixCoord			= m_gatherType == GATHERTYPE_OFFSET_DYNAMIC;
-	const bool					useNormalizedCoord	= usePixCoord || isDepthFormat(m_textureFormat);
-	const bool					isDynamicOffset		= m_gatherType == GATHERTYPE_OFFSET_DYNAMIC;
-	const bool					isShadow			= isDepthFormat(m_textureFormat);
-	const glu::DataType			samplerType			= getSamplerType(m_textureType, m_textureFormat);
-	const int					numDims				= getNumTextureSamplingDimensions(m_textureType);
-	glu::VertexSource			vert				= genVertexShaderSource(requireGpuShader5(m_gatherType, m_offsetSize), numDims, isDynamicOffset || isShadow);
-
-	programCollection.glslSources.add("vert") << vert;
-
-	for (int iterNdx = 0; iterNdx < numIterations; iterNdx++)
-	{
-		const GatherArgs&		gatherArgs			= getGatherArgs(iterNdx);
-		const string			funcCall			= genGatherFuncCall(m_gatherType, m_textureFormat, gatherArgs, refZExpr, offsetRange, 1, m_offsetSize);
-		glu::FragmentSource		frag				= genFragmentShaderSource(requireGpuShader5(m_gatherType, m_offsetSize), numDims, samplerType, funcCall, useNormalizedCoord, usePixCoord, m_offsetSize);
-
-		programCollection.glslSources.add("frag_" + de::toString(iterNdx)) << frag;
-	}
-}
-
-void TextureGatherCase::init (void)
-{
-	generateIterations();
-}
-
-IVec2 TextureGatherCase::getOffsetRange (void) const
-{
-	switch (m_offsetSize)
-	{
-		case OFFSETSIZE_NONE:
-			return IVec2(0);
-
-		case OFFSETSIZE_MINIMUM_REQUIRED:
-			// \note Defined by spec.
-			return IVec2(SPEC_MAX_MIN_OFFSET,
-						 SPEC_MIN_MAX_OFFSET);
-
-		case OFFSETSIZE_IMPLEMENTATION_MAXIMUM:
-			// \note Limits are not available from here, uniform is used in the shader code instead.
-			return IVec2(0);
-
-		default:
-			DE_ASSERT(false);
-			return IVec2(-1);
-	}
-}
-
-glu::VertexSource TextureGatherCase::genVertexShaderSource (bool requireGpuShader5, int numTexCoordComponents, bool useNormalizedCoordInput)
+glu::VertexSource genVertexShaderSource (bool requireGpuShader5, int numTexCoordComponents, bool useNormalizedCoordInput)
 {
 	DE_ASSERT(numTexCoordComponents == 2 || numTexCoordComponents == 3);
 
@@ -1581,13 +1441,13 @@ glu::VertexSource TextureGatherCase::genVertexShaderSource (bool requireGpuShade
 	return glu::VertexSource(vert.str());
 }
 
-glu::FragmentSource TextureGatherCase::genFragmentShaderSource (bool			requireGpuShader5,
-																int				numTexCoordComponents,
-																glu::DataType	samplerType,
-																const string&	funcCall,
-																bool			useNormalizedCoordInput,
-																bool			usePixCoord,
-																OffsetSize		offsetSize)
+glu::FragmentSource genFragmentShaderSource (bool			requireGpuShader5,
+											 int			numTexCoordComponents,
+											 glu::DataType	samplerType,
+											 const string&	funcCall,
+											 bool			useNormalizedCoordInput,
+											 bool			usePixCoord,
+											 OffsetSize		offsetSize)
 {
 	DE_ASSERT(glu::isDataTypeSampler(samplerType));
 	DE_ASSERT(de::inRange(numTexCoordComponents, 2, 3));
@@ -1632,13 +1492,13 @@ glu::FragmentSource TextureGatherCase::genFragmentShaderSource (bool			requireGp
 	return glu::FragmentSource(frag.str());
 }
 
-string TextureGatherCase::genGatherFuncCall (GatherType						gatherType,
-											 const tcu::TextureFormat&		textureFormat,
-											 const GatherArgs&				gatherArgs,
-											 const string&					refZExpr,
-											 const IVec2&					offsetRange,
-											 int							indentationDepth,
-											 OffsetSize						offsetSize)
+string genGatherFuncCall (GatherType				gatherType,
+						  const tcu::TextureFormat&	textureFormat,
+						  const GatherArgs&			gatherArgs,
+						  const string&				refZExpr,
+						  const IVec2&				offsetRange,
+						  int						indentationDepth,
+						  OffsetSize				offsetSize)
 {
 	string result;
 
@@ -1713,103 +1573,66 @@ string TextureGatherCase::genGatherFuncCall (GatherType						gatherType,
 	return result;
 }
 
-class TextureGather2DBase : public virtual TextureGatherBase
+// \todo [2016-07-08 pyry] Re-use programs if sources are identical
+
+void genGatherPrograms (vk::SourceCollections& programCollection, const GatherCaseBaseParams& baseParams, const vector<GatherArgs>& iterations)
+{
+	const int					numIterations		= (int)iterations.size();
+	const string				refZExpr			= "v_normalizedCoord.x";
+	const IVec2&				offsetRange			= baseParams.offsetSize != OFFSETSIZE_IMPLEMENTATION_MAXIMUM ? getOffsetRange(baseParams.offsetSize) : IVec2(0);
+	const bool					usePixCoord			= baseParams.gatherType == GATHERTYPE_OFFSET_DYNAMIC;
+	const bool					useNormalizedCoord	= usePixCoord || isDepthFormat(baseParams.textureFormat);
+	const bool					isDynamicOffset		= baseParams.gatherType == GATHERTYPE_OFFSET_DYNAMIC;
+	const bool					isShadow			= isDepthFormat(baseParams.textureFormat);
+	const glu::DataType			samplerType			= getSamplerType(baseParams.textureType, baseParams.textureFormat);
+	const int					numDims				= getNumTextureSamplingDimensions(baseParams.textureType);
+	glu::VertexSource			vert				= genVertexShaderSource(requireGpuShader5(baseParams.gatherType, baseParams.offsetSize), numDims, isDynamicOffset || isShadow);
+
+	programCollection.glslSources.add("vert") << vert;
+
+	for (int iterNdx = 0; iterNdx < numIterations; iterNdx++)
+	{
+		const GatherArgs&		gatherArgs			= iterations[iterNdx];
+		const string			funcCall			= genGatherFuncCall(baseParams.gatherType, baseParams.textureFormat, gatherArgs, refZExpr, offsetRange, 1, baseParams.offsetSize);
+		glu::FragmentSource		frag				= genFragmentShaderSource(requireGpuShader5(baseParams.gatherType, baseParams.offsetSize), numDims, samplerType, funcCall, useNormalizedCoord, usePixCoord, baseParams.offsetSize);
+
+		programCollection.glslSources.add("frag_" + de::toString(iterNdx)) << frag;
+	}
+}
+
+// 2D
+
+class TextureGather2DInstance : public TextureGatherInstance
 {
 public:
-									TextureGather2DBase					(const GatherType					gatherType,
-																		 const OffsetSize					offsetSize,
-																		 const tcu::TextureFormat			textureFormat,
-																		 const tcu::Sampler::CompareMode	shadowCompareMode,
-																		 const tcu::Sampler::WrapMode		wrapS,
-																		 const tcu::Sampler::WrapMode		wrapT,
-																		 const MaybeTextureSwizzle&			textureSwizzle,
-																		 const tcu::Sampler::FilterMode		minFilter,
-																		 const tcu::Sampler::FilterMode		magFilter,
-																		 const int							baseLevel,
-																		 const deUint32						flags,
-																		 const IVec2&						textureSize);
-	virtual							~TextureGather2DBase				(void);
-
-protected:
-	virtual void					generateIterations					(void);
-	virtual int						getNumIterations					(void) const { DE_ASSERT(!m_iterations.empty()); return (int)m_iterations.size(); }
-	virtual GatherArgs				getGatherArgs						(int iterationNdx) const { return m_iterations[iterationNdx]; }
-
-protected:
-	const IVec2						m_textureSize;
-	vector<GatherArgs>				m_iterations;
-};
-
-TextureGather2DBase::TextureGather2DBase (const GatherType						gatherType,
-										  const OffsetSize						offsetSize,
-										  const tcu::TextureFormat				textureFormat,
-										  const tcu::Sampler::CompareMode		shadowCompareMode,
-										  const tcu::Sampler::WrapMode			wrapS,
-										  const tcu::Sampler::WrapMode			wrapT,
-										  const MaybeTextureSwizzle&			textureSwizzle,
-										  const tcu::Sampler::FilterMode		minFilter,
-										  const tcu::Sampler::FilterMode		magFilter,
-										  const int								baseLevel,
-										  const deUint32						flags,
-										  const IVec2&							textureSize)
-	: TextureGatherBase			(TEXTURETYPE_2D, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
-	, m_textureSize				(textureSize)
-{
-}
-
-TextureGather2DBase::~TextureGather2DBase (void)
-{
-}
-
-void TextureGather2DBase::generateIterations (void)
-{
-	DE_ASSERT(m_iterations.empty());
-	m_iterations = generateBasic2DCaseIterations(m_gatherType, m_textureFormat, getOffsetRange());
-}
-
-class TextureGather2DInstance : public TextureGather2DBase, public TextureGatherInstance
-{
-public:
-									TextureGather2DInstance				(Context&							context,
-																		 const GatherType					gatherType,
-																		 const OffsetSize					offsetSize,
-																		 const tcu::TextureFormat			textureFormat,
-																		 const tcu::Sampler::CompareMode	shadowCompareMode,
-																		 const tcu::Sampler::WrapMode		wrapS,
-																		 const tcu::Sampler::WrapMode		wrapT,
-																		 const MaybeTextureSwizzle&			textureSwizzle,
-																		 const tcu::Sampler::FilterMode		minFilter,
-																		 const tcu::Sampler::FilterMode		magFilter,
-																		 const int							baseLevel,
-																		 const deUint32						flags,
-																		 const IVec2&						textureSize);
+									TextureGather2DInstance				(Context&						context,
+																		 const GatherCaseBaseParams&	baseParams,
+																		 const IVec2&					textureSize,
+																		 const vector<GatherArgs>&		iterations);
 	virtual							~TextureGather2DInstance			(void);
 
 protected:
+	virtual int						getNumIterations					(void) const				{ return (int)m_iterations.size();	}
+	virtual GatherArgs				getGatherArgs						(int iterationNdx) const	{ return m_iterations[iterationNdx];}
+
 	virtual TextureBindingSp		createTexture						(void);
 	virtual vector<float>			computeQuadTexCoord					(int iterationNdx) const;
 	virtual bool					verify								(int iterationNdx, const ConstPixelBufferAccess& rendered) const;
 
 private:
+	const IVec2						m_textureSize;
+	const vector<GatherArgs>		m_iterations;
+
 	tcu::Texture2D					m_swizzledTexture;
 };
 
-TextureGather2DInstance::TextureGather2DInstance (Context&								context,
-												  const GatherType						gatherType,
-												  const OffsetSize						offsetSize,
-												  const tcu::TextureFormat				textureFormat,
-												  const tcu::Sampler::CompareMode		shadowCompareMode,
-												  const tcu::Sampler::WrapMode			wrapS,
-												  const tcu::Sampler::WrapMode			wrapT,
-												  const MaybeTextureSwizzle&			textureSwizzle,
-												  const tcu::Sampler::FilterMode		minFilter,
-												  const tcu::Sampler::FilterMode		magFilter,
-												  const int								baseLevel,
-												  const deUint32						flags,
-												  const IVec2&							textureSize)
-	: TextureGatherBase			(TEXTURETYPE_2D, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
-	, TextureGather2DBase		(gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags, textureSize)
-	, TextureGatherInstance		(context, TEXTURETYPE_2D, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
+TextureGather2DInstance::TextureGather2DInstance (Context&						context,
+												  const GatherCaseBaseParams&	baseParams,
+												  const IVec2&					textureSize,
+												  const vector<GatherArgs>&		iterations)
+	: TextureGatherInstance		(context, baseParams)
+	, m_textureSize				(textureSize)
+	, m_iterations				(iterations)
 	, m_swizzledTexture			(tcu::TextureFormat(), 1, 1)
 {
 	init();
@@ -1829,16 +1652,16 @@ vector<float> TextureGather2DInstance::computeQuadTexCoord (int /* iterationNdx 
 TextureBindingSp TextureGather2DInstance::createTexture (void)
 {
 	TestLog&						log			= m_context.getTestContext().getLog();
-	const tcu::TextureFormatInfo	texFmtInfo	= tcu::getTextureFormatInfo(m_textureFormat);
-	MovePtr<tcu::Texture2D>			texture		= MovePtr<tcu::Texture2D>(new tcu::Texture2D(m_textureFormat, m_textureSize.x(), m_textureSize.y()));
-	const tcu::Sampler				sampler		(m_wrapS, m_wrapT, tcu::Sampler::REPEAT_GL,
-												 m_minFilter, m_magFilter,
-												 0.0f /* LOD threshold */, true /* normalized coords */, m_shadowCompareMode);
+	const tcu::TextureFormatInfo	texFmtInfo	= tcu::getTextureFormatInfo(m_baseParams.textureFormat);
+	MovePtr<tcu::Texture2D>			texture		= MovePtr<tcu::Texture2D>(new tcu::Texture2D(m_baseParams.textureFormat, m_textureSize.x(), m_textureSize.y()));
+	const tcu::Sampler				sampler		(m_baseParams.wrapS, m_baseParams.wrapT, tcu::Sampler::REPEAT_GL,
+												 m_baseParams.minFilter, m_baseParams.magFilter,
+												 0.0f /* LOD threshold */, true /* normalized coords */, m_baseParams.shadowCompareMode);
 
 	{
-		const int	levelBegin	= m_baseLevel;
+		const int	levelBegin	= m_baseParams.baseLevel;
 		const int	levelEnd	= texture->getNumLevels();
-		DE_ASSERT(m_baseLevel < texture->getNumLevels());
+		DE_ASSERT(m_baseParams.baseLevel < texture->getNumLevels());
 
 		for (int levelNdx = levelBegin; levelNdx < levelEnd; levelNdx++)
 		{
@@ -1849,7 +1672,7 @@ TextureBindingSp TextureGather2DInstance::createTexture (void)
 				<< TestLog::Message << "Note: texture level's size is " << IVec2(level.getWidth(), level.getHeight()) << TestLog::EndMessage;
 		}
 
-		swizzleTexture(m_swizzledTexture, *texture, m_textureSwizzle);
+		swizzleTexture(m_swizzledTexture, *texture, m_baseParams.textureSwizzle);
 	}
 
 	return TextureBindingSp(new TextureBinding(texture.release(), sampler));
@@ -1859,10 +1682,10 @@ bool TextureGather2DInstance::verify (int iterationNdx, const ConstPixelBufferAc
 {
 	Vec2 texCoords[4];
 	computeTexCoordVecs(computeQuadTexCoord(iterationNdx), texCoords);
-	return TextureGatherInstance::verify(rendered, getOneLevelSubView(tcu::Texture2DView(m_swizzledTexture), m_baseLevel), texCoords, m_iterations[iterationNdx]);
+	return TextureGatherInstance::verify(rendered, getOneLevelSubView(tcu::Texture2DView(m_swizzledTexture), m_baseParams.baseLevel), texCoords, m_iterations[iterationNdx]);
 }
 
-class TextureGather2DCase : public TextureGather2DBase, public TextureGatherCase
+class TextureGather2DCase : public TestCase
 {
 public:
 									TextureGather2DCase					(tcu::TestContext&					testCtx,
@@ -1882,7 +1705,12 @@ public:
 																		 const IVec2&						textureSize);
 	virtual							~TextureGather2DCase				(void);
 
+	virtual void					initPrograms						(vk::SourceCollections& dst) const;
 	virtual	TestInstance*			createInstance						(Context& context) const;
+
+private:
+	const GatherCaseBaseParams		m_baseParams;
+	const IVec2						m_textureSize;
 };
 
 TextureGather2DCase::TextureGather2DCase (tcu::TestContext&						testCtx,
@@ -1900,94 +1728,63 @@ TextureGather2DCase::TextureGather2DCase (tcu::TestContext&						testCtx,
 										  const int								baseLevel,
 										  const deUint32						flags,
 										  const IVec2&							textureSize)
-	: TextureGatherBase			(TEXTURETYPE_2D, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
-	, TextureGather2DBase		(gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags, textureSize)
-	, TextureGatherCase			(testCtx, name, description, TEXTURETYPE_2D, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
+	: TestCase		(testCtx, name, description)
+	, m_baseParams	(TEXTURETYPE_2D, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
+	, m_textureSize	(textureSize)
 {
-	init();
 }
 
 TextureGather2DCase::~TextureGather2DCase (void)
 {
 }
 
+void TextureGather2DCase::initPrograms (vk::SourceCollections& dst) const
+{
+	const vector<GatherArgs>	iterations	= generateBasic2DCaseIterations(m_baseParams.gatherType,
+																			m_baseParams.textureFormat,
+																			m_baseParams.offsetSize != OFFSETSIZE_IMPLEMENTATION_MAXIMUM ? getOffsetRange(m_baseParams.offsetSize) : IVec2(0));
+
+	genGatherPrograms(dst, m_baseParams, iterations);
+}
+
 TestInstance* TextureGather2DCase::createInstance (Context& context) const
 {
-	return new TextureGather2DInstance(context, m_gatherType, m_offsetSize, m_textureFormat, m_shadowCompareMode,
-									   m_wrapS, m_wrapT, m_textureSwizzle, m_minFilter, m_magFilter, m_baseLevel, m_flags, m_textureSize);
+	const vector<GatherArgs>	iterations	= generateBasic2DCaseIterations(m_baseParams.gatherType,
+																			m_baseParams.textureFormat,
+																			getOffsetRange(m_baseParams.offsetSize, context.getDeviceProperties().limits));
+
+	return new TextureGather2DInstance(context, m_baseParams, m_textureSize, iterations);
 }
 
-class TextureGather2DArrayBase : public virtual TextureGatherBase
+// 2D array
+
+struct Gather2DArrayArgs
 {
-public:
-									TextureGather2DArrayBase			(const GatherType					gatherType,
-																		 const OffsetSize					offsetSize,
-																		 const tcu::TextureFormat			textureFormat,
-																		 const tcu::Sampler::CompareMode	shadowCompareMode,
-																		 const tcu::Sampler::WrapMode		wrapS,
-																		 const tcu::Sampler::WrapMode		wrapT,
-																		 const MaybeTextureSwizzle&			textureSwizzle,
-																		 const tcu::Sampler::FilterMode		minFilter,
-																		 const tcu::Sampler::FilterMode		magFilter,
-																		 const int							baseLevel,
-																		 const deUint32						flags,
-																		 const IVec3&						textureSize);
-	virtual							~TextureGather2DArrayBase			(void);
+	GatherArgs	gatherArgs;
+	int			layerNdx;
 
-protected:
-	virtual void					generateIterations					(void);
-	virtual int						getNumIterations					(void) const { DE_ASSERT(!m_iterations.empty()); return (int)m_iterations.size(); }
-	virtual GatherArgs				getGatherArgs						(int iterationNdx) const { return m_iterations[iterationNdx].gatherArgs; }
-
-protected:
-	struct Iteration
-	{
-		GatherArgs	gatherArgs;
-		int			layerNdx;
-	};
-
-	const IVec3						m_textureSize;
-	vector<Iteration>				m_iterations;
+	operator GatherArgs() const { return gatherArgs; }
 };
 
-TextureGather2DArrayBase::TextureGather2DArrayBase (const GatherType					gatherType,
-													const OffsetSize					offsetSize,
-													const tcu::TextureFormat			textureFormat,
-													const tcu::Sampler::CompareMode		shadowCompareMode,
-													const tcu::Sampler::WrapMode		wrapS,
-													const tcu::Sampler::WrapMode		wrapT,
-													const MaybeTextureSwizzle&			textureSwizzle,
-													const tcu::Sampler::FilterMode		minFilter,
-													const tcu::Sampler::FilterMode		magFilter,
-													const int							baseLevel,
-													const deUint32						flags,
-													const IVec3&						textureSize)
-	: TextureGatherBase			(TEXTURETYPE_2D_ARRAY, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
-	, m_textureSize				(textureSize)
+vector<Gather2DArrayArgs> generate2DArrayCaseIterations (GatherType					gatherType,
+														 const tcu::TextureFormat&	textureFormat,
+														 const IVec2&				offsetRange,
+														 const IVec3&				textureSize)
 {
-}
-
-TextureGather2DArrayBase::~TextureGather2DArrayBase (void)
-{
-}
-
-void TextureGather2DArrayBase::generateIterations (void)
-{
-	DE_ASSERT(m_iterations.empty());
-
-	const vector<GatherArgs> basicIterations = generateBasic2DCaseIterations(m_gatherType, m_textureFormat, getOffsetRange());
+	const vector<GatherArgs>	basicIterations	= generateBasic2DCaseIterations(gatherType, textureFormat, offsetRange);
+	vector<Gather2DArrayArgs>	iterations;
 
 	// \note Out-of-bounds layer indices are tested too.
-	for (int layerNdx = -1; layerNdx < m_textureSize.z()+1; layerNdx++)
+	for (int layerNdx = -1; layerNdx < textureSize.z()+1; layerNdx++)
 	{
 		// Don't duplicate all cases for all layers.
 		if (layerNdx == 0)
 		{
 			for (int basicNdx = 0; basicNdx < (int)basicIterations.size(); basicNdx++)
 			{
-				m_iterations.push_back(Iteration());
-				m_iterations.back().gatherArgs = basicIterations[basicNdx];
-				m_iterations.back().layerNdx = layerNdx;
+				iterations.push_back(Gather2DArrayArgs());
+				iterations.back().gatherArgs = basicIterations[basicNdx];
+				iterations.back().layerNdx = layerNdx;
 			}
 		}
 		else
@@ -1995,61 +1792,51 @@ void TextureGather2DArrayBase::generateIterations (void)
 			// For other layers than 0, only test one component and one set of offsets per layer.
 			for (int basicNdx = 0; basicNdx < (int)basicIterations.size(); basicNdx++)
 			{
-				if (isDepthFormat(m_textureFormat) || basicIterations[basicNdx].componentNdx == (layerNdx + 2) % 4)
+				if (isDepthFormat(textureFormat) || basicIterations[basicNdx].componentNdx == (layerNdx + 2) % 4)
 				{
-					m_iterations.push_back(Iteration());
-					m_iterations.back().gatherArgs = basicIterations[basicNdx];
-					m_iterations.back().layerNdx = layerNdx;
+					iterations.push_back(Gather2DArrayArgs());
+					iterations.back().gatherArgs = basicIterations[basicNdx];
+					iterations.back().layerNdx = layerNdx;
 					break;
 				}
 			}
 		}
 	}
+
+	return iterations;
 }
 
-class TextureGather2DArrayInstance : public TextureGather2DArrayBase, public TextureGatherInstance
+class TextureGather2DArrayInstance : public TextureGatherInstance
 {
 public:
 									TextureGather2DArrayInstance		(Context&							context,
-																		 const GatherType					gatherType,
-																		 const OffsetSize					offsetSize,
-																		 const tcu::TextureFormat			textureFormat,
-																		 const tcu::Sampler::CompareMode	shadowCompareMode,
-																		 const tcu::Sampler::WrapMode		wrapS,
-																		 const tcu::Sampler::WrapMode		wrapT,
-																		 const MaybeTextureSwizzle&			textureSwizzle,
-																		 const tcu::Sampler::FilterMode		minFilter,
-																		 const tcu::Sampler::FilterMode		magFilter,
-																		 const int							baseLevel,
-																		 const deUint32						flags,
-																		 const IVec3&						textureSize);
+																		 const GatherCaseBaseParams&		baseParams,
+																		 const IVec3&						textureSize,
+																		 const vector<Gather2DArrayArgs>&	iterations);
 	virtual							~TextureGather2DArrayInstance		(void);
 
 protected:
+	virtual int						getNumIterations					(void) const				{ return (int)m_iterations.size();				}
+	virtual GatherArgs				getGatherArgs						(int iterationNdx) const	{ return m_iterations[iterationNdx].gatherArgs;	}
+
 	virtual TextureBindingSp		createTexture						(void);
 	virtual vector<float>			computeQuadTexCoord					(int iterationNdx) const;
 	virtual bool					verify								(int iterationNdx, const ConstPixelBufferAccess& rendered) const;
 
 private:
+	const IVec3						m_textureSize;
+	const vector<Gather2DArrayArgs>	m_iterations;
+
 	tcu::Texture2DArray				m_swizzledTexture;
 };
 
 TextureGather2DArrayInstance::TextureGather2DArrayInstance (Context&							context,
-															const GatherType					gatherType,
-															const OffsetSize					offsetSize,
-															const tcu::TextureFormat			textureFormat,
-															const tcu::Sampler::CompareMode		shadowCompareMode,
-															const tcu::Sampler::WrapMode		wrapS,
-															const tcu::Sampler::WrapMode		wrapT,
-															const MaybeTextureSwizzle&			textureSwizzle,
-															const tcu::Sampler::FilterMode		minFilter,
-															const tcu::Sampler::FilterMode		magFilter,
-															const int							baseLevel,
-															const deUint32						flags,
-															const IVec3&						textureSize)
-	: TextureGatherBase			(TEXTURETYPE_2D_ARRAY, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
-	, TextureGather2DArrayBase	(gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags, textureSize)
-	, TextureGatherInstance		(context, TEXTURETYPE_2D_ARRAY, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
+															const GatherCaseBaseParams&			baseParams,
+															const IVec3&						textureSize,
+															const vector<Gather2DArrayArgs>&	iterations)
+	: TextureGatherInstance		(context, baseParams)
+	, m_textureSize				(textureSize)
+	, m_iterations				(iterations)
 	, m_swizzledTexture			(tcu::TextureFormat(), 1, 1, 1)
 {
 	init();
@@ -2069,16 +1856,16 @@ vector<float> TextureGather2DArrayInstance::computeQuadTexCoord (int iterationNd
 TextureBindingSp TextureGather2DArrayInstance::createTexture (void)
 {
 	TestLog&						log			= m_context.getTestContext().getLog();
-	const tcu::TextureFormatInfo	texFmtInfo	= tcu::getTextureFormatInfo(m_textureFormat);
-	MovePtr<tcu::Texture2DArray>	texture		= MovePtr<tcu::Texture2DArray>(new tcu::Texture2DArray(m_textureFormat, m_textureSize.x(), m_textureSize.y(), m_textureSize.z()));
-	const tcu::Sampler				sampler		(m_wrapS, m_wrapT, tcu::Sampler::REPEAT_GL,
-												 m_minFilter, m_magFilter,
-												 0.0f /* LOD threshold */, true /* normalized coords */, m_shadowCompareMode);
+	const tcu::TextureFormatInfo	texFmtInfo	= tcu::getTextureFormatInfo(m_baseParams.textureFormat);
+	MovePtr<tcu::Texture2DArray>	texture		= MovePtr<tcu::Texture2DArray>(new tcu::Texture2DArray(m_baseParams.textureFormat, m_textureSize.x(), m_textureSize.y(), m_textureSize.z()));
+	const tcu::Sampler				sampler		(m_baseParams.wrapS, m_baseParams.wrapT, tcu::Sampler::REPEAT_GL,
+												 m_baseParams.minFilter, m_baseParams.magFilter,
+												 0.0f /* LOD threshold */, true /* normalized coords */, m_baseParams.shadowCompareMode);
 
 	{
-		const int	levelBegin	= m_baseLevel;
+		const int	levelBegin	= m_baseParams.baseLevel;
 		const int	levelEnd	= texture->getNumLevels();
-		DE_ASSERT(m_baseLevel < texture->getNumLevels());
+		DE_ASSERT(m_baseParams.baseLevel < texture->getNumLevels());
 
 		for (int levelNdx = levelBegin; levelNdx < levelEnd; levelNdx++)
 		{
@@ -2095,7 +1882,7 @@ TextureBindingSp TextureGather2DArrayInstance::createTexture (void)
 				<< TestLog::Message << "Note: texture level's size is " << IVec3(level.getWidth(), level.getHeight(), level.getDepth()) << TestLog::EndMessage;
 		}
 
-		swizzleTexture(m_swizzledTexture, *texture, m_textureSwizzle);
+		swizzleTexture(m_swizzledTexture, *texture, m_baseParams.textureSwizzle);
 	}
 
 	return TextureBindingSp(new TextureBinding(texture.release(), sampler));
@@ -2105,10 +1892,10 @@ bool TextureGather2DArrayInstance::verify (int iterationNdx, const ConstPixelBuf
 {
 	Vec3 texCoords[4];
 	computeTexCoordVecs(computeQuadTexCoord(iterationNdx), texCoords);
-	return TextureGatherInstance::verify(rendered, getOneLevelSubView(tcu::Texture2DArrayView(m_swizzledTexture), m_baseLevel), texCoords, m_iterations[iterationNdx].gatherArgs);
+	return TextureGatherInstance::verify(rendered, getOneLevelSubView(tcu::Texture2DArrayView(m_swizzledTexture), m_baseParams.baseLevel), texCoords, m_iterations[iterationNdx].gatherArgs);
 }
 
-class TextureGather2DArrayCase : public TextureGather2DArrayBase, public TextureGatherCase
+class TextureGather2DArrayCase : public TestCase
 {
 public:
 									TextureGather2DArrayCase			(tcu::TestContext&					testCtx,
@@ -2128,7 +1915,12 @@ public:
 																		 const IVec3&						textureSize);
 	virtual							~TextureGather2DArrayCase			(void);
 
+	virtual void					initPrograms						(vk::SourceCollections& dst) const;
 	virtual	TestInstance*			createInstance						(Context& context) const;
+
+private:
+	const GatherCaseBaseParams		m_baseParams;
+	const IVec3						m_textureSize;
 };
 
 TextureGather2DArrayCase::TextureGather2DArrayCase (tcu::TestContext&					testCtx,
@@ -2146,78 +1938,50 @@ TextureGather2DArrayCase::TextureGather2DArrayCase (tcu::TestContext&					testCt
 													const int							baseLevel,
 													const deUint32						flags,
 													const IVec3&						textureSize)
-	: TextureGatherBase			(TEXTURETYPE_2D_ARRAY, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
-	, TextureGather2DArrayBase	(gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags, textureSize)
-	, TextureGatherCase			(testCtx, name, description, TEXTURETYPE_2D_ARRAY, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
+	: TestCase			(testCtx, name, description)
+	, m_baseParams		(TEXTURETYPE_2D_ARRAY, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
+	, m_textureSize		(textureSize)
 {
-	init();
 }
 
 TextureGather2DArrayCase::~TextureGather2DArrayCase (void)
 {
 }
 
+void TextureGather2DArrayCase::initPrograms (vk::SourceCollections& dst) const
+{
+	const vector<Gather2DArrayArgs>		iterations	= generate2DArrayCaseIterations(m_baseParams.gatherType,
+																					m_baseParams.textureFormat,
+																					m_baseParams.offsetSize != OFFSETSIZE_IMPLEMENTATION_MAXIMUM ? getOffsetRange(m_baseParams.offsetSize) : IVec2(0),
+																					m_textureSize);
+
+	genGatherPrograms(dst, m_baseParams, vector<GatherArgs>(iterations.begin(), iterations.end()));
+}
+
 TestInstance* TextureGather2DArrayCase::createInstance (Context& context) const
 {
-	return new TextureGather2DArrayInstance(context, m_gatherType, m_offsetSize, m_textureFormat, m_shadowCompareMode,
-											m_wrapS, m_wrapT, m_textureSwizzle, m_minFilter, m_magFilter, m_baseLevel, m_flags, m_textureSize);
+	const vector<Gather2DArrayArgs>		iterations	= generate2DArrayCaseIterations(m_baseParams.gatherType,
+																					m_baseParams.textureFormat,
+																					getOffsetRange(m_baseParams.offsetSize, context.getDeviceProperties().limits),
+																					m_textureSize);
+
+	return new TextureGather2DArrayInstance(context, m_baseParams, m_textureSize, iterations);
 }
 
-class TextureGatherCubeBase : public virtual TextureGatherBase
+// Cube
+
+struct GatherCubeArgs
 {
-public:
-									TextureGatherCubeBase				(const tcu::TextureFormat			textureFormat,
-																		 const tcu::Sampler::CompareMode	shadowCompareMode,
-																		 const tcu::Sampler::WrapMode		wrapS,
-																		 const tcu::Sampler::WrapMode		wrapT,
-																		 const MaybeTextureSwizzle&			textureSwizzle,
-																		 const tcu::Sampler::FilterMode		minFilter,
-																		 const tcu::Sampler::FilterMode		magFilter,
-																		 const int							baseLevel,
-																		 const deUint32						flags,
-																		 const int							textureSize);
-	virtual							~TextureGatherCubeBase				(void);
+	GatherArgs		gatherArgs;
+	tcu::CubeFace	face;
 
-protected:
-	virtual void					generateIterations					(void);
-	virtual int						getNumIterations					(void) const { DE_ASSERT(!m_iterations.empty()); return (int)m_iterations.size(); }
-	virtual GatherArgs				getGatherArgs						(int iterationNdx) const { return m_iterations[iterationNdx].gatherArgs; }
-
-protected:
-	struct Iteration
-	{
-		GatherArgs		gatherArgs;
-		tcu::CubeFace	face;
-	};
-
-	const int						m_textureSize;
-	vector<Iteration>				m_iterations;
+	operator GatherArgs() const { return gatherArgs; }
 };
 
-TextureGatherCubeBase::TextureGatherCubeBase (const tcu::TextureFormat				textureFormat,
-											  const tcu::Sampler::CompareMode		shadowCompareMode,
-											  const tcu::Sampler::WrapMode			wrapS,
-											  const tcu::Sampler::WrapMode			wrapT,
-											  const MaybeTextureSwizzle&			textureSwizzle,
-											  const tcu::Sampler::FilterMode		minFilter,
-											  const tcu::Sampler::FilterMode		magFilter,
-											  const int								baseLevel,
-											  const deUint32						flags,
-											  const int								textureSize)
-	: TextureGatherBase			(TEXTURETYPE_CUBE, GATHERTYPE_BASIC, OFFSETSIZE_NONE, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
-	, m_textureSize				(textureSize)
+vector<GatherCubeArgs> generateCubeCaseIterations (GatherType gatherType, const tcu::TextureFormat& textureFormat, const IVec2& offsetRange)
 {
-}
-
-TextureGatherCubeBase::~TextureGatherCubeBase (void)
-{
-}
-
-void TextureGatherCubeBase::generateIterations (void)
-{
-	DE_ASSERT(m_iterations.empty());
-
-	const vector<GatherArgs> basicIterations = generateBasic2DCaseIterations(m_gatherType, m_textureFormat, getOffsetRange());
+	const vector<GatherArgs>	basicIterations = generateBasic2DCaseIterations(gatherType, textureFormat, offsetRange);
+	vector<GatherCubeArgs>		iterations;
 
 	for (int cubeFaceI = 0; cubeFaceI < tcu::CUBEFACE_LAST; cubeFaceI++)
 	{
@@ -2228,9 +1992,9 @@ void TextureGatherCubeBase::generateIterations (void)
 		{
 			for (int basicNdx = 0; basicNdx < (int)basicIterations.size(); basicNdx++)
 			{
-				m_iterations.push_back(Iteration());
-				m_iterations.back().gatherArgs = basicIterations[basicNdx];
-				m_iterations.back().face = cubeFace;
+				iterations.push_back(GatherCubeArgs());
+				iterations.back().gatherArgs = basicIterations[basicNdx];
+				iterations.back().face = cubeFace;
 			}
 		}
 		else
@@ -2238,57 +2002,51 @@ void TextureGatherCubeBase::generateIterations (void)
 			// For other faces than first, only test one component per face.
 			for (int basicNdx = 0; basicNdx < (int)basicIterations.size(); basicNdx++)
 			{
-				if (isDepthFormat(m_textureFormat) || basicIterations[basicNdx].componentNdx == cubeFaceI % 4)
+				if (isDepthFormat(textureFormat) || basicIterations[basicNdx].componentNdx == cubeFaceI % 4)
 				{
-					m_iterations.push_back(Iteration());
-					m_iterations.back().gatherArgs = basicIterations[basicNdx];
-					m_iterations.back().face = cubeFace;
+					iterations.push_back(GatherCubeArgs());
+					iterations.back().gatherArgs = basicIterations[basicNdx];
+					iterations.back().face = cubeFace;
 					break;
 				}
 			}
 		}
 	}
+
+	return iterations;
 }
 
-class TextureGatherCubeInstance : public TextureGatherCubeBase, public TextureGatherInstance
+class TextureGatherCubeInstance : public TextureGatherInstance
 {
 public:
 									TextureGatherCubeInstance			(Context&							context,
-																		 const tcu::TextureFormat			textureFormat,
-																		 const tcu::Sampler::CompareMode	shadowCompareMode,
-																		 const tcu::Sampler::WrapMode		wrapS,
-																		 const tcu::Sampler::WrapMode		wrapT,
-																		 const MaybeTextureSwizzle&			textureSwizzle,
-																		 const tcu::Sampler::FilterMode		minFilter,
-																		 const tcu::Sampler::FilterMode		magFilter,
-																		 const int							baseLevel,
-																		 const deUint32						flags,
-																		 const int							textureSize);
+																		 const GatherCaseBaseParams&		baseParams,
+																		 const int							textureSize,
+																		 const vector<GatherCubeArgs>&		iterations);
 	virtual							~TextureGatherCubeInstance			(void);
 
 protected:
+	virtual int						getNumIterations					(void) const				{ return (int)m_iterations.size();				}
+	virtual GatherArgs				getGatherArgs						(int iterationNdx) const	{ return m_iterations[iterationNdx].gatherArgs;	}
+
 	virtual TextureBindingSp		createTexture						(void);
 	virtual vector<float>			computeQuadTexCoord					(int iterationNdx) const;
 	virtual bool					verify								(int iterationNdx, const ConstPixelBufferAccess& rendered) const;
 
 private:
+	const int						m_textureSize;
+	const vector<GatherCubeArgs>	m_iterations;
+
 	tcu::TextureCube				m_swizzledTexture;
 };
 
-TextureGatherCubeInstance::TextureGatherCubeInstance (Context&								context,
-													  const tcu::TextureFormat				textureFormat,
-													  const tcu::Sampler::CompareMode		shadowCompareMode,
-													  const tcu::Sampler::WrapMode			wrapS,
-													  const tcu::Sampler::WrapMode			wrapT,
-													  const MaybeTextureSwizzle&			textureSwizzle,
-													  const tcu::Sampler::FilterMode		minFilter,
-													  const tcu::Sampler::FilterMode		magFilter,
-													  const int								baseLevel,
-													  const deUint32						flags,
-													  const int								textureSize)
-	: TextureGatherBase			(TEXTURETYPE_CUBE, GATHERTYPE_BASIC, OFFSETSIZE_NONE, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
-	, TextureGatherCubeBase		(textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags, textureSize)
-	, TextureGatherInstance		(context, TEXTURETYPE_CUBE, GATHERTYPE_BASIC, OFFSETSIZE_NONE, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
+TextureGatherCubeInstance::TextureGatherCubeInstance (Context&							context,
+													  const GatherCaseBaseParams&		baseParams,
+													  const int							textureSize,
+													  const vector<GatherCubeArgs>&		iterations)
+	: TextureGatherInstance		(context, baseParams)
+	, m_textureSize				(textureSize)
+	, m_iterations				(iterations)
 	, m_swizzledTexture			(tcu::TextureFormat(), 1)
 {
 	init();
@@ -2300,7 +2058,7 @@ TextureGatherCubeInstance::~TextureGatherCubeInstance (void)
 
 vector<float> TextureGatherCubeInstance::computeQuadTexCoord (int iterationNdx) const
 {
-	const bool		corners	= (m_flags & GATHERCASE_DONT_SAMPLE_CUBE_CORNERS) == 0;
+	const bool		corners	= (m_baseParams.flags & GATHERCASE_DONT_SAMPLE_CUBE_CORNERS) == 0;
 	const Vec2		minC	= corners ? Vec2(-1.2f) : Vec2(-0.6f, -1.2f);
 	const Vec2		maxC	= corners ? Vec2( 1.2f) : Vec2( 0.6f,  1.2f);
 	vector<float>	res;
@@ -2311,17 +2069,17 @@ vector<float> TextureGatherCubeInstance::computeQuadTexCoord (int iterationNdx) 
 TextureBindingSp TextureGatherCubeInstance::createTexture (void)
 {
 	TestLog&						log			= m_context.getTestContext().getLog();
-	const tcu::TextureFormatInfo	texFmtInfo	= tcu::getTextureFormatInfo(m_textureFormat);
-	MovePtr<tcu::TextureCube>		texture		= MovePtr<tcu::TextureCube>(new tcu::TextureCube(m_textureFormat, m_textureSize));
-	const tcu::Sampler				sampler		(m_wrapS, m_wrapT, tcu::Sampler::REPEAT_GL,
-												 m_minFilter, m_magFilter,
-												 0.0f /* LOD threshold */, true /* normalized coords */, m_shadowCompareMode,
+	const tcu::TextureFormatInfo	texFmtInfo	= tcu::getTextureFormatInfo(m_baseParams.textureFormat);
+	MovePtr<tcu::TextureCube>		texture		= MovePtr<tcu::TextureCube>(new tcu::TextureCube(m_baseParams.textureFormat, m_textureSize));
+	const tcu::Sampler				sampler		(m_baseParams.wrapS, m_baseParams.wrapT, tcu::Sampler::REPEAT_GL,
+												 m_baseParams.minFilter, m_baseParams.magFilter,
+												 0.0f /* LOD threshold */, true /* normalized coords */, m_baseParams.shadowCompareMode,
 												 0 /* cmp channel */, tcu::Vec4(0.0f) /* border color */, true /* seamless cube map */);
 
 	{
-		const int	levelBegin	= m_baseLevel;
+		const int	levelBegin	= m_baseParams.baseLevel;
 		const int	levelEnd	= texture->getNumLevels();
-		DE_ASSERT(m_baseLevel < texture->getNumLevels());
+		DE_ASSERT(m_baseParams.baseLevel < texture->getNumLevels());
 
 		for (int levelNdx = levelBegin; levelNdx < levelEnd; levelNdx++)
 		{
@@ -2341,7 +2099,7 @@ TextureBindingSp TextureGatherCubeInstance::createTexture (void)
 				<< TestLog::Message << "Note: texture level's size is " << texture->getLevelFace(levelNdx, tcu::CUBEFACE_NEGATIVE_X).getWidth() << TestLog::EndMessage;
 		}
 
-		swizzleTexture(m_swizzledTexture, *texture, m_textureSwizzle);
+		swizzleTexture(m_swizzledTexture, *texture, m_baseParams.textureSwizzle);
 	}
 
 	return TextureBindingSp(new TextureBinding(texture.release(), sampler));
@@ -2351,11 +2109,11 @@ bool TextureGatherCubeInstance::verify (int iterationNdx, const ConstPixelBuffer
 {
 	Vec3 texCoords[4];
 	computeTexCoordVecs(computeQuadTexCoord(iterationNdx), texCoords);
-	return TextureGatherInstance::verify(rendered, getOneLevelSubView(tcu::TextureCubeView(m_swizzledTexture), m_baseLevel), texCoords, m_iterations[iterationNdx].gatherArgs);
+	return TextureGatherInstance::verify(rendered, getOneLevelSubView(tcu::TextureCubeView(m_swizzledTexture), m_baseParams.baseLevel), texCoords, m_iterations[iterationNdx].gatherArgs);
 }
 
 // \note Cube case always uses just basic textureGather(); offset versions are not defined for cube maps.
-class TextureGatherCubeCase : public TextureGatherCubeBase, public TextureGatherCase
+class TextureGatherCubeCase : public TestCase
 {
 public:
 									TextureGatherCubeCase				(tcu::TestContext&					testCtx,
@@ -2373,7 +2131,12 @@ public:
 																		 const int							textureSize);
 	virtual							~TextureGatherCubeCase				(void);
 
+	virtual void					initPrograms						(vk::SourceCollections& dst) const;
 	virtual	TestInstance*			createInstance						(Context& context) const;
+
+private:
+	const GatherCaseBaseParams		m_baseParams;
+	const int						m_textureSize;
 };
 
 TextureGatherCubeCase::TextureGatherCubeCase (tcu::TestContext&						testCtx,
@@ -2389,21 +2152,32 @@ TextureGatherCubeCase::TextureGatherCubeCase (tcu::TestContext&						testCtx,
 											  const int								baseLevel,
 											  const deUint32						flags,
 											  const int								textureSize)
-	: TextureGatherBase			(TEXTURETYPE_CUBE, GATHERTYPE_BASIC, OFFSETSIZE_NONE, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
-	, TextureGatherCubeBase		(textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags, textureSize)
-	, TextureGatherCase			(testCtx, name, description, TEXTURETYPE_CUBE, GATHERTYPE_BASIC, OFFSETSIZE_NONE, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
+	: TestCase			(testCtx, name, description)
+	, m_baseParams		(TEXTURETYPE_CUBE, GATHERTYPE_BASIC, OFFSETSIZE_NONE, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, baseLevel, flags)
+	, m_textureSize		(textureSize)
 {
-	init();
 }
 
 TextureGatherCubeCase::~TextureGatherCubeCase (void)
 {
 }
 
+void TextureGatherCubeCase::initPrograms (vk::SourceCollections& dst) const
+{
+	const vector<GatherCubeArgs>	iterations	= generateCubeCaseIterations(m_baseParams.gatherType,
+																			 m_baseParams.textureFormat,
+																			 m_baseParams.offsetSize != OFFSETSIZE_IMPLEMENTATION_MAXIMUM ? getOffsetRange(m_baseParams.offsetSize) : IVec2(0));
+
+	genGatherPrograms(dst, m_baseParams, vector<GatherArgs>(iterations.begin(), iterations.end()));
+}
+
 TestInstance* TextureGatherCubeCase::createInstance (Context& context) const
 {
-	return new TextureGatherCubeInstance(context, m_textureFormat, m_shadowCompareMode,
-										 m_wrapS, m_wrapT, m_textureSwizzle, m_minFilter, m_magFilter, m_baseLevel, m_flags, m_textureSize);
+	const vector<GatherCubeArgs>	iterations	= generateCubeCaseIterations(m_baseParams.gatherType,
+																			 m_baseParams.textureFormat,
+																			 getOffsetRange(m_baseParams.offsetSize, context.getDeviceProperties().limits));
+
+	return new TextureGatherCubeInstance(context, m_baseParams, m_textureSize, iterations);
 }
 
 class TextureGatherTests : public tcu::TestCaseGroup
@@ -2427,22 +2201,22 @@ TextureGatherTests::~TextureGatherTests (void)
 {
 }
 
-static inline TextureGatherCase* makeTextureGatherCase (TextureType					textureType,
-														tcu::TestContext&			testCtx,
-														const string&				name,
-														const string&				description,
-														GatherType					gatherType,
-														OffsetSize					offsetSize,
-														tcu::TextureFormat			textureFormat,
-														tcu::Sampler::CompareMode	shadowCompareMode,
-														tcu::Sampler::WrapMode		wrapS,
-														tcu::Sampler::WrapMode		wrapT,
-														const MaybeTextureSwizzle&	texSwizzle,
-														tcu::Sampler::FilterMode	minFilter,
-														tcu::Sampler::FilterMode	magFilter,
-														int							baseLevel,
-														const IVec3&				textureSize,
-														deUint32					flags = 0)
+static inline TestCase* makeTextureGatherCase (TextureType					textureType,
+											   tcu::TestContext&			testCtx,
+											   const string&				name,
+											   const string&				description,
+											   GatherType					gatherType,
+											   OffsetSize					offsetSize,
+											   tcu::TextureFormat			textureFormat,
+											   tcu::Sampler::CompareMode	shadowCompareMode,
+											   tcu::Sampler::WrapMode		wrapS,
+											   tcu::Sampler::WrapMode		wrapT,
+											   const MaybeTextureSwizzle&	texSwizzle,
+											   tcu::Sampler::FilterMode		minFilter,
+											   tcu::Sampler::FilterMode		magFilter,
+											   int							baseLevel,
+											   const IVec3&					textureSize,
+											   deUint32						flags = 0)
 {
 	switch (textureType)
 	{
