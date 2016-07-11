@@ -476,7 +476,10 @@ private:
 	glw::GLenum getCapturedPrimitiveType(shaderStage shader_stage) const;
 	glw::GLenum getDrawPrimitiveType(shaderStage shader_stage) const;
 	glw::GLuint getMaxUniformComponents(shaderStage shader_stage) const;
+	glw::GLuint getMaxUniformBlockSize() const;
 	glw::GLuint getRequiredComponentsNumber(const uniformTypeDetails& uniform_type) const;
+	glw::GLuint getUniformTypeMemberSize(const uniformTypeDetails& uniform_type) const;
+	glw::GLuint getAmountUniforms(shaderStage shader_stage, const uniformTypeDetails& uniform_type) const;
 	const glw::GLchar* getShaderStageName(shaderStage shader_stage) const;
 
 	void inspectProgram(glw::GLuint program_id, glw::GLint n_uniforms, const uniformTypeDetails& uniform_type,
