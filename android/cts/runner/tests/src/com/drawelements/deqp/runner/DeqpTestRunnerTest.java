@@ -47,8 +47,10 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -634,13 +636,13 @@ public class DeqpTestRunnerTest extends TestCase {
         return output.toString();
     }
 
-    private void testFiltering(List<String> includes,
-                               List<String> excludes,
+    private void testFiltering(Set<String> includes,
+                               Set<String> excludes,
                                List<TestIdentifier> fullTestList,
                                String expectedTrie,
                                List<TestIdentifier> expectedTests) throws Exception {
 
-
+        boolean thereAreTests = !expectedTests.isEmpty();
         ITestDevice mockDevice = EasyMock.createMock(ITestDevice.class);
         ITestInvocationListener mockListener
                 = EasyMock.createStrictMock(ITestInvocationListener.class);
@@ -658,16 +660,21 @@ public class DeqpTestRunnerTest extends TestCase {
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                 .andReturn(Integer.toString(version)).atLeastOnce();
 
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
+        if (thereAreTests)
+        {
+            // only expect to install/uninstall packages if there are any tests
+            EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
                 .once();
-        EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
+            EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
                 EasyMock.eq(true), EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName()))))
                 .andReturn(null).once();
+        }
+
 
         mockListener.testRunStarted(getTestId(deqpTest), expectedTests.size());
         EasyMock.expectLastCall().once();
 
-        if (expectedTests.size() > 0)
+        if (thereAreTests)
         {
             expectRenderConfigQuery(mockDevice, 3, 0);
 
@@ -688,8 +695,12 @@ public class DeqpTestRunnerTest extends TestCase {
         mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.<Map<String, String>>notNull());
         EasyMock.expectLastCall().once();
 
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
+        if (thereAreTests)
+        {
+            // package will only be installed if there are tests to run
+            EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
                 .once();
+        }
 
         EasyMock.replay(mockDevice, mockIDevice);
         EasyMock.replay(mockListener);
@@ -723,7 +734,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
 
-        ArrayList<String> includes = new ArrayList();
+        Set<String> includes = new HashSet();
         includes.add("dEQP-GLES3.pick_me#*");
         testFiltering(includes, null, allTests, expectedTrie, activeTests);
     }
@@ -750,7 +761,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
 
-        ArrayList<String> excludes = new ArrayList();
+        Set<String> excludes = new HashSet();
         excludes.add("dEQP-GLES3.missing#*");
         testFiltering(null, excludes, allTests, expectedTrie, activeTests);
     }
@@ -775,10 +786,10 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{group2{yes}}}";
 
-        ArrayList<String> includes = new ArrayList();
+        Set<String> includes = new HashSet();
         includes.add("dEQP-GLES3.group2#*");
 
-        ArrayList<String> excludes = new ArrayList();
+        Set<String> excludes = new HashSet();
         excludes.add("*foo");
         excludes.add("*thoushallnotpass");
         testFiltering(includes, excludes, allTests, expectedTrie, activeTests);
@@ -801,7 +812,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{group1{mememe,yeah,takeitall},group2{jeba,yes,granted}}}";
 
-        ArrayList<String> includes = new ArrayList();
+        Set<String> includes = new HashSet();
         includes.add("*");
 
         testFiltering(includes, null, allTests, expectedTrie, allTests);
@@ -824,7 +835,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "";
 
-        ArrayList<String> excludes = new ArrayList();
+        Set<String> excludes = new HashSet();
         excludes.add("*");
 
         testFiltering(null, excludes, allTests, expectedTrie, new ArrayList<TestIdentifier>());

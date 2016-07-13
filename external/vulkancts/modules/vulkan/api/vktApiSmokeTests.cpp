@@ -193,6 +193,77 @@ void createTriangleProgs (SourceCollections& dst)
 		"void main (void) { o_color = vec4(1.0, 0.0, 1.0, 1.0); }\n");
 }
 
+void createProgsNoOpName (SourceCollections& dst)
+{
+	dst.spirvAsmSources.add("vert") <<
+		"OpCapability Shader\n"
+		"%1 = OpExtInstImport \"GLSL.std.450\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint Vertex %4 \"main\" %20 %22 %26\n"
+		"OpSource ESSL 310\n"
+		"OpMemberDecorate %18 0 BuiltIn Position\n"
+		"OpMemberDecorate %18 1 BuiltIn PointSize\n"
+		"OpDecorate %18 Block\n"
+		"OpDecorate %22 Location 0\n"
+		"OpDecorate %26 Location 2\n"
+		"%2 = OpTypeVoid\n"
+		"%3 = OpTypeFunction %2\n"
+		"%6 = OpTypeFloat 32\n"
+		"%7 = OpTypeVector %6 4\n"
+		"%8 = OpTypeStruct %7\n"
+		"%9 = OpTypePointer Function %8\n"
+		"%11 = OpTypeInt 32 1\n"
+		"%12 = OpConstant %11 0\n"
+		"%13 = OpConstant %6 1\n"
+		"%14 = OpConstant %6 0\n"
+		"%15 = OpConstantComposite %7 %13 %14 %13 %13\n"
+		"%16 = OpTypePointer Function %7\n"
+		"%18 = OpTypeStruct %7 %6\n"
+		"%19 = OpTypePointer Output %18\n"
+		"%20 = OpVariable %19 Output\n"
+		"%21 = OpTypePointer Input %7\n"
+		"%22 = OpVariable %21 Input\n"
+		"%24 = OpTypePointer Output %7\n"
+		"%26 = OpVariable %24 Output\n"
+		"%4 = OpFunction %2 None %3\n"
+		"%5 = OpLabel\n"
+		"%10 = OpVariable %9 Function\n"
+		"%17 = OpAccessChain %16 %10 %12\n"
+		"OpStore %17 %15\n"
+		"%23 = OpLoad %7 %22\n"
+		"%25 = OpAccessChain %24 %20 %12\n"
+		"OpStore %25 %23\n"
+		"%27 = OpAccessChain %16 %10 %12\n"
+		"%28 = OpLoad %7 %27\n"
+		"OpStore %26 %28\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n";
+	dst.spirvAsmSources.add("frag") <<
+		"OpCapability Shader\n"
+		"%1 = OpExtInstImport \"GLSL.std.450\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint Fragment %4 \"main\" %9 %11\n"
+		"OpExecutionMode %4 OriginUpperLeft\n"
+		"OpSource ESSL 310\n"
+		"OpDecorate %9 RelaxedPrecision\n"
+		"OpDecorate %9 Location 0\n"
+		"OpDecorate %11 Location 2\n"
+		"%2 = OpTypeVoid\n"
+		"%3 = OpTypeFunction %2\n"
+		"%6 = OpTypeFloat 32\n"
+		"%7 = OpTypeVector %6 4\n"
+		"%8 = OpTypePointer Output %7\n"
+		"%9 = OpVariable %8 Output\n"
+		"%10 = OpTypePointer Input %7\n"
+		"%11 = OpVariable %10 Input\n"
+		"%4 = OpFunction %2 None %3\n"
+		"%5 = OpLabel\n"
+		"%12 = OpLoad %7 %11\n"
+		"OpStore %9 %12\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n";
+}
+
 class RefVertexShader : public rr::VertexShader
 {
 public:
@@ -1495,6 +1566,7 @@ tcu::TestCaseGroup* createSmokeTests (tcu::TestContext& testCtx)
 	addFunctionCaseWithPrograms	(smokeTests.get(), "create_shader",				"", createShaderProgs,		createShaderModuleTest);
 	addFunctionCaseWithPrograms	(smokeTests.get(), "triangle",					"", createTriangleProgs,	renderTriangleTest);
 	addFunctionCaseWithPrograms	(smokeTests.get(), "asm_triangle",				"", createTriangleAsmProgs,	renderTriangleTest);
+	addFunctionCaseWithPrograms	(smokeTests.get(), "asm_triangle_no_opname",	"", createProgsNoOpName,	renderTriangleTest);
 	addFunctionCaseWithPrograms	(smokeTests.get(), "unused_resolve_attachment",	"", createTriangleProgs,	renderTriangleUnusedResolveAttachmentTest);
 
 	return smokeTests.release();
