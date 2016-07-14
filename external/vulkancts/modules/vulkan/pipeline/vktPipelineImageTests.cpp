@@ -162,7 +162,7 @@ TestInstance* ImageTest::createInstance (Context& context) const
 	}
 
 	const std::vector<Vertex4Tex4>	vertices			= createTestQuadMosaic(m_imageViewType);
-	const VkComponentMapping		componentMapping	= getFormatComponentMapping(m_imageFormat);
+	const VkComponentMapping		componentMapping	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 	const VkImageSubresourceRange	subresourceRange	=
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,
