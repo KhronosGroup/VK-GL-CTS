@@ -112,6 +112,11 @@ bool isSRGB (TextureFormat format)
 			format.order == TextureFormat::sBGRA;
 }
 
+tcu::Vec4 linearToSRGBIfNeeded (const TextureFormat& format, const tcu::Vec4& color)
+{
+	return isSRGB(format) ? linearToSRGB(color) : color;
+}
+
 bool isCombinedDepthStencilType (TextureFormat::ChannelType type)
 {
 	// make sure to update this if type table is updated
@@ -1108,14 +1113,14 @@ void scale (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src, Sam
 	{
 		for (int y = 0; y < dst.getHeight(); y++)
 		for (int x = 0; x < dst.getWidth(); x++)
-			dst.setPixel(src.sample2D(sampler, filter, ((float)x+0.5f)*sX, ((float)y+0.5f)*sY, 0), x, y);
+			dst.setPixel(linearToSRGBIfNeeded(dst.getFormat(), src.sample2D(sampler, filter, ((float)x+0.5f)*sX, ((float)y+0.5f)*sY, 0)), x, y);
 	}
 	else
 	{
 		for (int z = 0; z < dst.getDepth(); z++)
 		for (int y = 0; y < dst.getHeight(); y++)
 		for (int x = 0; x < dst.getWidth(); x++)
-			dst.setPixel(src.sample3D(sampler, filter, ((float)x+0.5f)*sX, ((float)y+0.5f)*sY, ((float)z+0.5f)*sZ), x, y, z);
+			dst.setPixel(linearToSRGBIfNeeded(dst.getFormat(), src.sample3D(sampler, filter, ((float)x+0.5f)*sX, ((float)y+0.5f)*sY, ((float)z+0.5f)*sZ)), x, y, z);
 	}
 }
 
