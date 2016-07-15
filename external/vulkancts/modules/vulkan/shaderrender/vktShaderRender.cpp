@@ -1734,7 +1734,7 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 
 		texFormat									= texture.getFormat();
 		texSize										= tcu::UVec3(texture.getWidth(), texture.getHeight(), 1u);
-		mipLevels									= (deUint32)texture.getNumLevels();
+		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
 		arrayLayers									= 1u;
 
 		textureData.resize(mipLevels);
@@ -1753,7 +1753,7 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 
 		texFormat									= texture.getFormat();
 		texSize										= tcu::UVec3(texture.getSize(), texture.getSize(), 1u);
-		mipLevels									= (deUint32)texture.getNumLevels();
+		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
 		arrayLayers									= 6u;
 
 		static const tcu::CubeFace		cubeFaceMapping[tcu::CUBEFACE_LAST] =
@@ -1787,7 +1787,7 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 
 		texFormat									= texture.getFormat();
 		texSize										= tcu::UVec3(texture.getWidth(), texture.getHeight(), 1u);
-		mipLevels									= (deUint32)texture.getNumLevels();
+		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
 		arrayLayers									= (deUint32)texture.getNumLayers();
 
 		textureData.resize(mipLevels);
@@ -1814,7 +1814,7 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 
 		texFormat									= texture.getFormat();
 		texSize										= tcu::UVec3(texture.getWidth(), texture.getHeight(), texture.getDepth());
-		mipLevels									= (deUint32)texture.getNumLevels();
+		mipLevels									= isMSTexture ? 1u : (deUint32)texture.getNumLevels();
 		arrayLayers									= 1u;
 
 		textureData.resize(mipLevels);

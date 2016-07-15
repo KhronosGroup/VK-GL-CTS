@@ -1703,7 +1703,6 @@ TextureSamplesInstance::TextureSamplesInstance (Context&				context,
 
 		static const vk::VkSampleCountFlagBits	sampleFlags[]	=
 		{
-			vk::VK_SAMPLE_COUNT_1_BIT,
 			vk::VK_SAMPLE_COUNT_2_BIT,
 			vk::VK_SAMPLE_COUNT_4_BIT,
 			vk::VK_SAMPLE_COUNT_8_BIT,
