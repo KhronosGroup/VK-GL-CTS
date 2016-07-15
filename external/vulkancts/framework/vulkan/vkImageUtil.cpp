@@ -734,7 +734,7 @@ static VkBorderColor mapBorderColor (tcu::TextureChannelClass channelClass, cons
 	return VK_BORDER_COLOR_LAST;
 }
 
-VkSamplerCreateInfo mapSampler (const tcu::Sampler& sampler, const tcu::TextureFormat& format)
+VkSamplerCreateInfo mapSampler (const tcu::Sampler& sampler, const tcu::TextureFormat& format, float minLod, float maxLod)
 {
 	const bool					compareEnabled	= (sampler.compare != tcu::Sampler::COMPAREMODE_NONE);
 	const VkCompareOp			compareOp		= (compareEnabled) ? (mapCompareMode(sampler.compare)) : (VK_COMPARE_OP_ALWAYS);
@@ -757,8 +757,8 @@ VkSamplerCreateInfo mapSampler (const tcu::Sampler& sampler, const tcu::TextureF
 		1.0f,														// maxAnisotropy
 		(VkBool32)(compareEnabled ? VK_TRUE : VK_FALSE),			// compareEnable
 		compareOp,													// compareOp
-		0.0f,														// minLod
-		(isMipmapEnabled ? 1000.0f : 0.25f),						// maxLod
+		(isMipmapEnabled ? minLod : 0.0f),							// minLod
+		(isMipmapEnabled ? maxLod : 0.25f),							// maxLod
 		borderColor,												// borderColor
 		(VkBool32)(sampler.normalizedCoords ? VK_FALSE : VK_TRUE),	// unnormalizedCoords
 	};
