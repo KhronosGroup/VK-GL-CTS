@@ -342,13 +342,13 @@ VkImageAspectFlags getImageAspectFlags (const tcu::TextureFormat textureFormat)
 
 } // anonymous
 
-void uploadTestTexture (const DeviceInterface&			vk,
-						VkDevice						device,
-						VkQueue							queue,
-						deUint32						queueFamilyIndex,
-						Allocator&						allocator,
-						const TestTexture&				srcTexture,
-						VkImage							destImage)
+void uploadTestTextureInternal (const DeviceInterface&			vk,
+								VkDevice						device,
+								VkQueue							queue,
+								deUint32						queueFamilyIndex,
+								Allocator&						allocator,
+								const TestTexture&				srcTexture,
+								VkImage							destImage)
 {
 	deUint32						bufferSize;
 	Move<VkBuffer>					buffer;
@@ -507,6 +507,46 @@ void uploadTestTexture (const DeviceInterface&			vk,
 
 	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
 	VK_CHECK(vk.waitForFences(device, 1, &fence.get(), true, ~(0ull) /* infinity */));
+}
+
+void uploadTestTexture (const DeviceInterface&			vk,
+						VkDevice						device,
+						VkQueue							queue,
+						deUint32						queueFamilyIndex,
+						Allocator&						allocator,
+						const TestTexture&				srcTexture,
+						VkImage							destImage)
+{
+	if (tcu::isCombinedDepthStencilType(srcTexture.getTextureFormat().type))
+	{
+		if (tcu::hasDepthComponent(srcTexture.getTextureFormat().order))
+		{
+			tcu::TextureFormat format;
+			switch (srcTexture.getTextureFormat().type) {
+			case tcu::TextureFormat::UNSIGNED_INT_16_8_8:
+				format = tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNORM_INT16);
+				break;
+			case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:
+				format = tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNSIGNED_INT_24_8_REV);
+				break;
+			case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+				format = tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::FLOAT);
+				break;
+			default:
+				DE_ASSERT(0);
+			}
+			de::MovePtr<TestTexture> depthTexture	= srcTexture.copy(format);
+			uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, *depthTexture, destImage);
+		}
+
+		if (tcu::hasStencilComponent(srcTexture.getTextureFormat().order))
+		{
+			de::MovePtr<TestTexture> stencilTexture	= srcTexture.copy(tcu::getEffectiveDepthStencilTextureFormat(srcTexture.getTextureFormat(), tcu::Sampler::MODE_STENCIL));
+			uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, *stencilTexture, destImage);
+		}
+	}
+	else
+		uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, srcTexture, destImage);
 }
 
 // Utilities for test textures
@@ -764,6 +804,13 @@ void TestTexture::write (deUint8* destPtr) const
 	}
 }
 
+void TestTexture::copyToTexture (TestTexture& destTexture) const
+{
+	for (int levelNdx = 0; levelNdx < getNumLevels(); levelNdx++)
+		for (int layerNdx = 0; layerNdx < getArraySize(); layerNdx++)
+			tcu::copy(destTexture.getLevel(levelNdx, layerNdx), getLevel(levelNdx, layerNdx));
+}
+
 void TestTexture::populateLevels (const std::vector<tcu::PixelBufferAccess>& levels)
 {
 	for (size_t levelNdx = 0; levelNdx < levels.size(); levelNdx++)
@@ -861,6 +908,17 @@ tcu::Texture1D& TestTexture1D::getTexture (void)
 	return m_texture;
 }
 
+de::MovePtr<TestTexture> TestTexture1D::copy(const tcu::TextureFormat format) const
+{
+	DE_ASSERT(!isCompressed());
+
+	de::MovePtr<TestTexture>	texture	(new TestTexture1D(format, m_texture.getWidth()));
+
+	copyToTexture(*texture);
+
+	return texture;
+}
+
 // TestTexture1DArray
 
 TestTexture1DArray::TestTexture1DArray (const tcu::TextureFormat& format, int width, int arraySize)
@@ -927,6 +985,17 @@ int TestTexture1DArray::getArraySize (void) const
 	return m_texture.getNumLayers();
 }
 
+de::MovePtr<TestTexture> TestTexture1DArray::copy(const tcu::TextureFormat format) const
+{
+	DE_ASSERT(!isCompressed());
+
+	de::MovePtr<TestTexture>	texture	(new TestTexture1DArray(format, m_texture.getWidth(), getArraySize()));
+
+	copyToTexture(*texture);
+
+	return texture;
+}
+
 // TestTexture2D
 
 TestTexture2D::TestTexture2D (const tcu::TextureFormat& format, int width, int height)
@@ -976,6 +1045,17 @@ const tcu::Texture2D& TestTexture2D::getTexture (void) const
 tcu::Texture2D& TestTexture2D::getTexture (void)
 {
 	return m_texture;
+}
+
+de::MovePtr<TestTexture> TestTexture2D::copy(const tcu::TextureFormat format) const
+{
+	DE_ASSERT(!isCompressed());
+
+	de::MovePtr<TestTexture>	texture	(new TestTexture2D(format, m_texture.getWidth(), m_texture.getHeight()));
+
+	copyToTexture(*texture);
+
+	return texture;
 }
 
 // TestTexture2DArray
@@ -1044,6 +1124,16 @@ int TestTexture2DArray::getArraySize (void) const
 	return m_texture.getNumLayers();
 }
 
+de::MovePtr<TestTexture> TestTexture2DArray::copy(const tcu::TextureFormat format) const
+{
+	DE_ASSERT(!isCompressed());
+
+	de::MovePtr<TestTexture>	texture	(new TestTexture2DArray(format, m_texture.getWidth(), m_texture.getHeight(), getArraySize()));
+
+	copyToTexture(*texture);
+
+	return texture;
+}
 
 // TestTexture3D
 
@@ -1094,6 +1184,17 @@ const tcu::Texture3D& TestTexture3D::getTexture (void) const
 tcu::Texture3D& TestTexture3D::getTexture (void)
 {
 	return m_texture;
+}
+
+de::MovePtr<TestTexture> TestTexture3D::copy(const tcu::TextureFormat format) const
+{
+	DE_ASSERT(!isCompressed());
+
+	de::MovePtr<TestTexture>	texture	(new TestTexture3D(format, m_texture.getWidth(), m_texture.getHeight(), m_texture.getDepth()));
+
+	copyToTexture(*texture);
+
+	return texture;
 }
 
 // TestTextureCube
@@ -1174,6 +1275,17 @@ tcu::TextureCube& TestTextureCube::getTexture (void)
 	return m_texture;
 }
 
+de::MovePtr<TestTexture> TestTextureCube::copy(const tcu::TextureFormat format) const
+{
+	DE_ASSERT(!isCompressed());
+
+	de::MovePtr<TestTexture>	texture	(new TestTextureCube(format, m_texture.getSize()));
+
+	copyToTexture(*texture);
+
+	return texture;
+}
+
 // TestTextureCubeArray
 
 TestTextureCubeArray::TestTextureCubeArray (const tcu::TextureFormat& format, int size, int arraySize)
@@ -1240,6 +1352,17 @@ const tcu::TextureCubeArray& TestTextureCubeArray::getTexture (void) const
 tcu::TextureCubeArray& TestTextureCubeArray::getTexture (void)
 {
 	return m_texture;
+}
+
+de::MovePtr<TestTexture> TestTextureCubeArray::copy(const tcu::TextureFormat format) const
+{
+	DE_ASSERT(!isCompressed());
+
+	de::MovePtr<TestTexture>	texture	(new TestTextureCubeArray(format, m_texture.getSize(), getArraySize()));
+
+	copyToTexture(*texture);
+
+	return texture;
 }
 
 } // pipeline
