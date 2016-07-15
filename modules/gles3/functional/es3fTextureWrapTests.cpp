@@ -54,6 +54,7 @@ using std::string;
 using tcu::Sampler;
 using namespace glu;
 using namespace gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
 
 //! Checks whether any ASTC version (LDR, HDR, full) is supported.
 static inline bool isASTCSupported (const glu::ContextInfo& contextInfo)

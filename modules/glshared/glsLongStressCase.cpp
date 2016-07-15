@@ -75,9 +75,9 @@ namespace deqp
 namespace gls
 {
 
-using TextureTestUtil::TextureType;
-using TextureTestUtil::TEXTURETYPE_2D;
-using TextureTestUtil::TEXTURETYPE_CUBE;
+using glu::TextureTestUtil::TextureType;
+using glu::TextureTestUtil::TEXTURETYPE_2D;
+using glu::TextureTestUtil::TEXTURETYPE_CUBE;
 
 static const float Mi = (float)(1<<20);
 

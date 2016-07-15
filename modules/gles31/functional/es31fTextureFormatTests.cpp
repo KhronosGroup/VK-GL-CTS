@@ -47,6 +47,8 @@ namespace Functional
 
 using namespace deqp::gls;
 using namespace deqp::gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
+
 using tcu::Sampler;
 
 static tcu::CubeFace getCubeFaceFromNdx (int ndx)
@@ -216,7 +218,7 @@ bool TextureCubeArrayFormatCase::testLayerFace (int layerFaceNdx)
 	glu::readPixels(m_renderCtx, viewport.x, viewport.y, renderedFrame.getAccess());
 
 	// Compute reference.
-	sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
+	sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
 
 	// Compare and log.
 	return compareImages(log, (string("LayerFace" + de::toString(layerFaceNdx))).c_str(), (string("Layer-face " + de::toString(layerFaceNdx))).c_str(), referenceFrame, renderedFrame, threshold);
@@ -360,7 +362,7 @@ TextureBufferFormatCase::IterateResult TextureBufferFormatCase::iterate (void)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels()");
 
 	// Compute reference.
-	fetchTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), effectiveRefTexture, &texCoord[0], spec.lookupScale, spec.lookupBias);
+	fetchTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), effectiveRefTexture, &texCoord[0], spec.lookupScale, spec.lookupBias);
 
 	// Compare and log.
 	bool isOk = compareImages(log, referenceFrame, renderedFrame, threshold);

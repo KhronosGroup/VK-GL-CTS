@@ -77,7 +77,7 @@ namespace deqp
 
 using gls::TextureTestUtil::TextureRenderer;
 using gls::TextureTestUtil::RandomViewport;
-using gls::TextureTestUtil::ReferenceParams;
+using namespace glu::TextureTestUtil;
 
 namespace gles3
 {
@@ -331,11 +331,11 @@ void ASTCRenderer2D::render (Surface& referenceDst, Surface& resultDst, const gl
 	const int						textureWidth			= texture.getRefTexture().getWidth();
 	const int						textureHeight			= texture.getRefTexture().getHeight();
 	const RandomViewport			viewport				(renderCtx.getRenderTarget(), textureWidth, textureHeight, m_rnd.getUint32());
-	ReferenceParams					renderParams			(gls::TextureTestUtil::TEXTURETYPE_2D);
+	ReferenceParams					renderParams			(TEXTURETYPE_2D);
 	vector<float>					texCoord;
-	gls::TextureTestUtil::computeQuadTexCoord2D(texCoord, Vec2(0.0f, 0.0f), Vec2(1.0f, 1.0f));
+	computeQuadTexCoord2D(texCoord, Vec2(0.0f, 0.0f), Vec2(1.0f, 1.0f));
 
-	renderParams.samplerType	= gls::TextureTestUtil::getSamplerType(uncompressedFormat);
+	renderParams.samplerType	= getSamplerType(uncompressedFormat);
 	renderParams.sampler		= Sampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::NEAREST, Sampler::NEAREST);
 	renderParams.colorScale		= m_colorScale;
 	renderParams.colorBias		= m_colorBias;
@@ -360,7 +360,7 @@ void ASTCRenderer2D::render (Surface& referenceDst, Surface& resultDst, const gl
 	gl.flush();
 
 	// Compute reference.
-	sampleTexture(gls::TextureTestUtil::SurfaceAccess(referenceDst, renderCtx.getRenderTarget().getPixelFormat()), texture.getRefTexture(), &texCoord[0], renderParams);
+	sampleTexture(tcu::SurfaceAccess(referenceDst, renderCtx.getRenderTarget().getPixelFormat()), texture.getRefTexture(), &texCoord[0], renderParams);
 
 	// Read GL-rendered image.
 	glu::readPixels(renderCtx, viewport.x, viewport.y, resultDst.getAccess());

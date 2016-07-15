@@ -60,6 +60,7 @@
 #include <vector>
 
 using namespace deqp::gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
 
 using tcu::Float;
 using tcu::IVec3;
@@ -948,7 +949,7 @@ void verifyTexture2DView (tcu::TestContext&			testContext,
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render and read pixels.");
 
 		// Compute reference.
-		sampleTexture(SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
+		sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
 
 		// Compare and log.
 		if (!pixelThresholdCompare(log, ("Level" + de::toString(level)).c_str(), ("Render level " + de::toString(level)).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
@@ -1108,7 +1109,7 @@ void verifyTexture3DView (tcu::TestContext&			testContext,
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render and read pixels.");
 
 			// Compute reference.
-			sampleTexture(SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
+			sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
 
 			// Compare and log.
 			if (!pixelThresholdCompare(log, ("Level" + de::toString(level) + "Slice" + de::toString(slice)).c_str(), ("Render level " + de::toString(level) + ", Slice" + de::toString(slice)).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
@@ -1221,7 +1222,7 @@ void verifyTextureCubemapView (tcu::TestContext&			testContext,
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render and read pixels.");
 
 			// Compute reference.
-			sampleTexture(SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
+			sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
 
 			// Compare and log.
 			if (!pixelThresholdCompare(log, ("Level" + de::toString(level) + "Face" + cubemapFaceName).c_str(), ("Render level " + de::toString(level) + ", Face " + cubemapFaceName).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
@@ -1391,7 +1392,7 @@ void verifyTexture2DArrayView (tcu::TestContext&				testContext,
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render and read pixels.");
 
 			// Compute reference.
-			sampleTexture(SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
+			sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
 
 			// Compare and log.
 			if (!pixelThresholdCompare(log, ("Level" + de::toString(level) + "Layer" + de::toString(layer)).c_str(), ("Render level " + de::toString(level) + ", Layer" + de::toString(layer)).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
