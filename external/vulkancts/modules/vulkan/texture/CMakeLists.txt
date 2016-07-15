@@ -7,6 +7,8 @@ set(DEQP_VK_TEXTURE_SRCS
 	vktTextureTestUtil.hpp
 	vktTextureFilteringTests.cpp
 	vktTextureFilteringTests.hpp
+	vktTextureMipmapTests.cpp
+	vktTextureMipmapTests.hpp
 	)
 
 set(DEQP_VK_TEXTURE_LIBS

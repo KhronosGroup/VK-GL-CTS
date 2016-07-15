@@ -25,6 +25,7 @@
 
 #include "vktTestGroupUtil.hpp"
 #include "vktTextureFilteringTests.hpp"
+#include "vktTextureMipmapTests.hpp"
 #include "vktTextureTests.hpp"
 
 namespace vkt
@@ -37,6 +38,7 @@ namespace
 void createTextureTests (tcu::TestCaseGroup* imageTests)
 {
 	createTextureFilteringTests(imageTests);
+	createTextureMipmappingTests(imageTests);
 }
 
 } // anonymous
