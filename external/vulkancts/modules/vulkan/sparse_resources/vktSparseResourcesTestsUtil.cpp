@@ -762,20 +762,18 @@ deUint32 getImageMaxMipLevels (const VkImageFormatProperties& imageFormatPropert
 	return std::min(static_cast<deUint32>(deFloatLog2(static_cast<float>(widestEdge))) + 1u, imageFormatProperties.maxMipLevels);
 }
 
-deUint32 getImageMipLevelSizeInBytes (const VkExtent3D& baseExtents, const deUint32 layersCount, const tcu::TextureFormat& format, const deUint32 mipmapLevel)
+deUint32 getImageMipLevelSizeInBytes(const VkExtent3D& baseExtents, const deUint32 layersCount, const tcu::TextureFormat& format, const deUint32 mipmapLevel, const deUint32 mipmapMemoryAlignment)
 {
 	const VkExtent3D extents = mipLevelExtents(baseExtents, mipmapLevel);
 
-	return extents.width * extents.height * extents.depth * layersCount * tcu::getPixelSize(format);
+	return deAlign32(extents.width * extents.height * extents.depth * layersCount * tcu::getPixelSize(format), mipmapMemoryAlignment);
 }
 
-deUint32 getImageSizeInBytes (const VkExtent3D& baseExtents, const deUint32 layersCount, const tcu::TextureFormat& format, const deUint32 mipmapLevelsCount)
+deUint32 getImageSizeInBytes(const VkExtent3D& baseExtents, const deUint32 layersCount, const tcu::TextureFormat& format, const deUint32 mipmapLevelsCount, const deUint32 mipmapMemoryAlignment)
 {
 	deUint32 imageSizeInBytes = 0;
 	for (deUint32 mipmapLevel = 0; mipmapLevel < mipmapLevelsCount; ++mipmapLevel)
-	{
-		imageSizeInBytes += getImageMipLevelSizeInBytes(baseExtents, layersCount, format, mipmapLevel);
-	}
+		imageSizeInBytes += getImageMipLevelSizeInBytes(baseExtents, layersCount, format, mipmapLevel, mipmapMemoryAlignment);
 
 	return imageSizeInBytes;
 }

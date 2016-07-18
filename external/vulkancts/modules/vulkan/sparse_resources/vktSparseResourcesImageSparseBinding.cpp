@@ -233,16 +233,26 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 	const Unique<VkCommandPool>	  commandPool(makeCommandPool(deviceInterface, *m_logicalDevice, computeQueue.queueFamilyIndex));
 	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, *m_logicalDevice, *commandPool));
 
+	std::vector<VkBufferImageCopy> bufferImageCopy(imageSparseInfo.mipLevels);
+
+	{
+		deUint32 bufferOffset = 0;
+		for (deUint32 mipmapNdx = 0; mipmapNdx < imageSparseInfo.mipLevels; mipmapNdx++)
+		{
+			bufferImageCopy[mipmapNdx] = makeBufferImageCopy(mipLevelExtents(imageSparseInfo.extent, mipmapNdx), imageSparseInfo.arrayLayers, mipmapNdx, static_cast<VkDeviceSize>(bufferOffset));
+			bufferOffset += getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, mipmapNdx, MEM_ALIGN_BUFFERIMAGECOPY_OFFSET);
+		}
+	}
+
 	// Start recording commands
 	beginCommandBuffer(deviceInterface, *commandBuffer);
 
-	const deUint32				imageSizeInBytes = getImageSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, imageSparseInfo.mipLevels);
-	const VkBufferCreateInfo	inputBufferCreateInfo = makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+	const deUint32				imageSizeInBytes		= getImageSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, imageSparseInfo.mipLevels, MEM_ALIGN_BUFFERIMAGECOPY_OFFSET);
+	const VkBufferCreateInfo	inputBufferCreateInfo	= makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
 	const de::UniquePtr<Buffer>	inputBuffer(new Buffer(deviceInterface, *m_logicalDevice, *allocator, inputBufferCreateInfo, MemoryRequirement::HostVisible));
 
-	std::vector<deUint8> referenceData;
-	referenceData.resize(imageSizeInBytes);
+	std::vector<deUint8> referenceData(imageSizeInBytes);
 
 	for (deUint32 valueNdx = 0; valueNdx < imageSizeInBytes; ++valueNdx)
 	{
@@ -280,17 +290,6 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 		);
 
 		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageSparseTransferDstBarrier);
-	}
-
-	std::vector <VkBufferImageCopy> bufferImageCopy;
-	bufferImageCopy.resize(imageSparseInfo.mipLevels);
-
-	VkDeviceSize bufferOffset = 0;
-	for (deUint32 mipmapNdx = 0; mipmapNdx < imageSparseInfo.mipLevels; mipmapNdx++)
-	{
-		bufferImageCopy[mipmapNdx] = makeBufferImageCopy(mipLevelExtents(imageSparseInfo.extent, mipmapNdx), imageSparseInfo.arrayLayers, mipmapNdx, bufferOffset);
-
-		bufferOffset += getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, mipmapNdx);
 	}
 
 	deviceInterface.cmdCopyBufferToImage(*commandBuffer, inputBuffer->get(), *imageSparse, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, static_cast<deUint32>(bufferImageCopy.size()), &bufferImageCopy[0]);
@@ -344,10 +343,16 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 	// Wait for sparse queue to become idle
 	deviceInterface.queueWaitIdle(sparseQueue.queueHandle);
 
-	if (deMemCmp(outputData, &referenceData[0], imageSizeInBytes) != 0)
-		return tcu::TestStatus::fail("Failed");
-	else
-		return tcu::TestStatus::pass("Passed");;
+	for (deUint32 mipmapNdx = 0; mipmapNdx < imageSparseInfo.mipLevels; ++mipmapNdx)
+	{
+		const deUint32 mipLevelSizeInBytes	= getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, mipmapNdx);
+		const deUint32 bufferOffset			= static_cast<deUint32>(bufferImageCopy[mipmapNdx].bufferOffset);
+
+		if (deMemCmp(outputData + bufferOffset, &referenceData[bufferOffset], mipLevelSizeInBytes) != 0)
+			return tcu::TestStatus::fail("Failed");
+	}
+
+	return tcu::TestStatus::pass("Passed");
 }
 
 TestInstance* ImageSparseBindingCase::createInstance (Context& context) const

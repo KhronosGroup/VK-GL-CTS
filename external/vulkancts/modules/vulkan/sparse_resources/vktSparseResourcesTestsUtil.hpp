@@ -51,6 +51,11 @@ enum ImageType
 	IMAGE_TYPE_LAST
 };
 
+enum MemoryAlignment
+{
+	MEM_ALIGN_BUFFERIMAGECOPY_OFFSET = 4u
+};
+
 class Buffer
 {
 public:
@@ -203,12 +208,14 @@ deUint32			getImageMaxMipLevels			(const vk::VkImageFormatProperties& imageForma
 deUint32			getImageMipLevelSizeInBytes		(const vk::VkExtent3D&				baseExtents,
 													 const deUint32						layersCount,
 													 const tcu::TextureFormat&			format,
-													 const deUint32						mipmapLevel);
+													 const deUint32						mipmapLevel,
+													 const deUint32						mipmapMemoryAlignment	= 1u);
 
 deUint32			getImageSizeInBytes				(const vk::VkExtent3D&				baseExtents,
 													 const deUint32						layersCount,
 													 const tcu::TextureFormat&			format,
-													 const deUint32						mipmapLevelsCount = 1u);
+													 const deUint32						mipmapLevelsCount		= 1u,
+													 const deUint32						mipmapMemoryAlignment	= 1u);
 
 vk::Move<vk::VkCommandPool>		makeCommandPool					(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device,
