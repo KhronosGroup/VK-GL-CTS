@@ -53,6 +53,7 @@ struct Queue
 {
 	vk::VkQueue	queueHandle;
 	deUint32	queueFamilyIndex;
+	deUint32	queueIndex;
 };
 
 struct QueueRequirements
@@ -91,8 +92,9 @@ protected:
 
 private:
 
-	deUint32		findMatchingQueueFamilyIndex	(const QueueFamilyPropertiesVec&				queueFamilyProperties,
-													 const vk::VkQueueFlags							queueFlags) const;
+	deUint32		findMatchingQueueFamilyIndex		(const QueueFamilyPropertiesVec&						queueFamilyProperties,
+														 const vk::VkQueueFlags									queueFlags,
+														 const deUint32											startIndex) const;
 	QueuesMap		m_queues;
 };
 

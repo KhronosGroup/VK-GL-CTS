@@ -34,10 +34,9 @@ namespace sparse
 
 struct QueueFamilyQueuesCount
 {
-	QueueFamilyQueuesCount() : queueCount(0u), counter(0u) {};
+	QueueFamilyQueuesCount() : queueCount(0u) {};
 
-	deUint32		queueCount;
-	deUint32		counter;
+	deUint32 queueCount;
 };
 
 SparseResourcesBaseInstance::SparseResourcesBaseInstance (Context &context) 
@@ -73,18 +72,33 @@ bool SparseResourcesBaseInstance::createDeviceSupportingQueues (const QueueRequi
 	for (deUint32 queueReqNdx = 0; queueReqNdx < queueRequirements.size(); ++queueReqNdx)
 	{
 		const QueueRequirements queueRequirement = queueRequirements[queueReqNdx];
-		const deUint32			queueFamilyIndex = findMatchingQueueFamilyIndex(queueFamilyProperties, queueRequirement.queueFlags);
 
-		if (queueFamilyIndex == NO_MATCH_FOUND)
+		deUint32 queueFamilyIndex	= 0u;
+		deUint32 queuesFoundCount	= 0u;
+		do
 		{
-			return false;
-		}
+			queueFamilyIndex = findMatchingQueueFamilyIndex(queueFamilyProperties, queueRequirement.queueFlags, queueFamilyIndex);
 
-		selectedQueueFamilies[queueFamilyIndex].queueCount += queueRequirement.queueCount;
-		for (deUint32 queueNdx = 0; queueNdx < queueRequirement.queueCount; ++queueNdx)
-		{
-			queuePriorities[queueFamilyIndex].push_back(1.0f);
-		}
+			if (queueFamilyIndex == NO_MATCH_FOUND)
+				return false;
+
+			const deUint32 queuesPerFamilyCount = deMin32(queueFamilyProperties[queueFamilyIndex].queueCount, queueRequirement.queueCount - queuesFoundCount);
+
+			selectedQueueFamilies[queueFamilyIndex].queueCount = deMax32(queuesPerFamilyCount, selectedQueueFamilies[queueFamilyIndex].queueCount);
+
+			for (deUint32 queueNdx = 0; queueNdx < queuesPerFamilyCount; ++queueNdx)
+			{
+				Queue queue;
+				queue.queueFamilyIndex	= queueFamilyIndex;
+				queue.queueIndex		= queueNdx;
+
+				m_queues[queueRequirement.queueFlags].push_back(queue);
+			}
+
+			queuesFoundCount += queuesPerFamilyCount;
+
+			++queueFamilyIndex;
+		} while (queuesFoundCount < queueRequirement.queueCount);
 	}
 
 	std::vector<VkDeviceQueueCreateInfo> queueInfos;
@@ -93,6 +107,11 @@ bool SparseResourcesBaseInstance::createDeviceSupportingQueues (const QueueRequi
 	{
 		VkDeviceQueueCreateInfo queueInfo;
 		deMemset(&queueInfo, 0, sizeof(queueInfo));
+
+		for (deUint32 queueNdx = 0; queueNdx < queueFamilyIter->second.queueCount; ++queueNdx)
+		{
+			queuePriorities[queueFamilyIter->first].push_back(1.0f);
+		}
 
 		queueInfo.sType				= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueInfo.pNext				= DE_NULL;
@@ -122,26 +141,16 @@ bool SparseResourcesBaseInstance::createDeviceSupportingQueues (const QueueRequi
 
 	m_logicalDevice = vk::createDevice(instance, physicalDevice, &deviceInfo);
 
-	for (deUint32 queueReqNdx = 0; queueReqNdx < queueRequirements.size(); ++queueReqNdx)
+	for (QueuesMap::iterator queuesIter = m_queues.begin(); queuesIter != m_queues.end(); ++queuesIter)
 	{
-		const QueueRequirements queueRequirement = queueRequirements[queueReqNdx];
-		const deUint32			queueFamilyIndex = findMatchingQueueFamilyIndex(queueFamilyProperties, queueRequirement.queueFlags);
-
-		if (queueFamilyIndex == NO_MATCH_FOUND)
+		for (deUint32 queueNdx = 0u; queueNdx < queuesIter->second.size(); ++queueNdx)
 		{
-			return false;
-		}
+			Queue& queue = queuesIter->second[queueNdx];
 
-		for (deUint32 queueNdx = 0; queueNdx < queueRequirement.queueCount; ++queueNdx)
-		{
 			VkQueue	queueHandle = 0;
-			deviceInterface.getDeviceQueue(*m_logicalDevice, queueFamilyIndex, selectedQueueFamilies[queueFamilyIndex].counter++, &queueHandle);
+			deviceInterface.getDeviceQueue(*m_logicalDevice, queue.queueFamilyIndex, queue.queueIndex, &queueHandle);
 
-			Queue queue;
-			queue.queueHandle		= queueHandle;
-			queue.queueFamilyIndex	= queueFamilyIndex;
-
-			m_queues[queueRequirement.queueFlags].push_back(queue);
+			queue.queueHandle = queueHandle;
 		}
 	}
 
@@ -170,9 +179,10 @@ deUint32 SparseResourcesBaseInstance::findMatchingMemoryType (const VkPhysicalDe
 }
 
 deUint32 SparseResourcesBaseInstance::findMatchingQueueFamilyIndex (const QueueFamilyPropertiesVec& queueFamilyProperties,
-																	const VkQueueFlags				queueFlags)	const
+																	const VkQueueFlags				queueFlags,
+																	const deUint32					startIndex)	const
 {
-	for (deUint32 queueNdx = 0; queueNdx < queueFamilyProperties.size(); ++queueNdx)
+	for (deUint32 queueNdx = startIndex; queueNdx < queueFamilyProperties.size(); ++queueNdx)
 	{
 		if ((queueFamilyProperties[queueNdx].queueFlags & queueFlags) == queueFlags)
 		{
