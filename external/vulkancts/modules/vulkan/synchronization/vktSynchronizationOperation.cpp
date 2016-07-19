@@ -991,7 +991,7 @@ public:
 			pipelineBuilder
 				.setShader	(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,	context.getBinaryCollection().get(shaderPrefix + "geom"), DE_NULL);
 
-		m_pipeline = pipelineBuilder.build(vk, device, *m_pipelineLayout, *m_renderPass);
+		m_pipeline = pipelineBuilder.build(vk, device, *m_pipelineLayout, *m_renderPass, context.getPipelineCacheData());
 	}
 
 	void recordCommands (OperationContext& context, const VkCommandBuffer cmdBuffer, const VkDescriptorSet descriptorSet)
@@ -1072,7 +1072,7 @@ public:
 		const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, context.getBinaryCollection().get(shaderPrefix + "comp"), (VkShaderModuleCreateFlags)0));
 
 		m_pipelineLayout = makePipelineLayout(vk, device, descriptorSetLayout);
-		m_pipeline		 = makeComputePipeline(vk, device, *m_pipelineLayout, *shaderModule, DE_NULL);
+		m_pipeline		 = makeComputePipeline(vk, device, *m_pipelineLayout, *shaderModule, DE_NULL, context.getPipelineCacheData());
 	}
 
 	void recordCommands (OperationContext& context, const VkCommandBuffer cmdBuffer, const VkDescriptorSet descriptorSet)
@@ -2295,7 +2295,7 @@ public:
 			.setShader						(vk, device, VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("draw_vert"), DE_NULL)
 			.setShader						(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("draw_frag"), DE_NULL);
 
-		m_pipeline = pipelineBuilder.build(vk, device, *m_pipelineLayout, *m_renderPass);
+		m_pipeline = pipelineBuilder.build(vk, device, *m_pipelineLayout, *m_renderPass, context.getPipelineCacheData());
 
 		// Set expected draw values
 
@@ -2751,7 +2751,7 @@ public:
 			.setShader						(vk, device, VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get(shaderPrefix + "vert"), DE_NULL)
 			.setShader						(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get(shaderPrefix + "frag"), DE_NULL);
 
-		m_pipeline = pipelineBuilder.build(vk, device, *m_pipelineLayout, *m_renderPass);
+		m_pipeline = pipelineBuilder.build(vk, device, *m_pipelineLayout, *m_renderPass, context.getPipelineCacheData());
 	}
 
 	void recordCommands (OperationContext& context, const VkCommandBuffer cmdBuffer, const VkDescriptorSet descriptorSet)
@@ -2835,7 +2835,7 @@ public:
 		const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, context.getBinaryCollection().get(shaderPrefix + "comp"), (VkShaderModuleCreateFlags)0));
 
 		m_pipelineLayout = makePipelineLayout(vk, device, descriptorSetLayout);
-		m_pipeline		 = makeComputePipeline(vk, device, *m_pipelineLayout, *shaderModule, DE_NULL);
+		m_pipeline		 = makeComputePipeline(vk, device, *m_pipelineLayout, *shaderModule, DE_NULL, context.getPipelineCacheData());
 	}
 
 	void recordCommands (OperationContext& context, const VkCommandBuffer cmdBuffer, const VkDescriptorSet descriptorSet)
@@ -3215,7 +3215,7 @@ public:
 			.setVertexInputSingleAttribute	(VK_FORMAT_R32G32B32A32_UINT, tcu::getPixelSize(mapVkFormat(VK_FORMAT_R32G32B32A32_UINT)))
 			.setShader						(vk, device, VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("input_vert"), DE_NULL)
 			.setShader						(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("input_frag"), DE_NULL)
-			.build							(vk, device, *m_pipelineLayout, *m_renderPass);
+			.build							(vk, device, *m_pipelineLayout, *m_renderPass, context.getPipelineCacheData());
 	}
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
@@ -3358,23 +3358,25 @@ private:
 
 } // anonymous ns
 
-OperationContext::OperationContext (Context& context)
+OperationContext::OperationContext (Context& context, PipelineCacheData& pipelineCacheData)
 	: m_vki					(context.getInstanceInterface())
 	, m_vk					(context.getDeviceInterface())
 	, m_physicalDevice		(context.getPhysicalDevice())
 	, m_device				(context.getDevice())
 	, m_allocator			(context.getDefaultAllocator())
 	, m_progCollection		(context.getBinaryCollection())
+	, m_pipelineCacheData	(pipelineCacheData)
 {
 }
 
-OperationContext::OperationContext (Context& context, const DeviceInterface& vk, const VkDevice device, vk::Allocator& allocator)
+OperationContext::OperationContext (Context& context, PipelineCacheData& pipelineCacheData, const DeviceInterface& vk, const VkDevice device, vk::Allocator& allocator)
 	: m_vki					(context.getInstanceInterface())
 	, m_vk					(vk)
 	, m_physicalDevice		(context.getPhysicalDevice())
 	, m_device				(device)
 	, m_allocator			(allocator)
 	, m_progCollection		(context.getBinaryCollection())
+	, m_pipelineCacheData	(pipelineCacheData)
 {
 }
 

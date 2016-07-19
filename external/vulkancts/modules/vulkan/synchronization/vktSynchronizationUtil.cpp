@@ -182,7 +182,8 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
 									  const VkDevice				device,
 									  const VkPipelineLayout		pipelineLayout,
 									  const VkShaderModule			shaderModule,
-									  const VkSpecializationInfo*	specInfo)
+									  const VkSpecializationInfo*	specInfo,
+									  PipelineCacheData&			pipelineCacheData)
 {
 	const VkPipelineShaderStageCreateInfo shaderStageInfo =
 	{
@@ -204,7 +205,16 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
 		DE_NULL,											// VkPipeline						basePipelineHandle;
 		0,													// deInt32							basePipelineIndex;
 	};
-	return createComputePipeline(vk, device, DE_NULL , &pipelineInfo);
+
+	{
+		const vk::Unique<vk::VkPipelineCache>	pipelineCache	(pipelineCacheData.createPipelineCache(vk, device));
+		vk::Move<vk::VkPipeline>				pipeline		(createComputePipeline(vk, device, *pipelineCache, &pipelineInfo));
+
+		// Refresh data from cache
+		pipelineCacheData.setFromPipelineCache(vk, device, *pipelineCache);
+
+		return pipeline;
+	}
 }
 
 VkImageCreateInfo makeImageCreateInfo (const VkImageType imageType, const VkExtent3D& extent, const VkFormat format, const VkImageUsageFlags usage)
@@ -606,7 +616,8 @@ inline const T* dataPointer (const std::vector<T>& vec)
 Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 												 const VkDevice			device,
 												 const VkPipelineLayout	pipelineLayout,
-												 const VkRenderPass		renderPass)
+												 const VkRenderPass		renderPass,
+												 PipelineCacheData&		pipelineCacheData)
 {
 	const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo =
 	{
@@ -763,7 +774,15 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 		0,																		// deInt32											basePipelineIndex;
 	};
 
-	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
+	{
+		const vk::Unique<vk::VkPipelineCache>	pipelineCache	(pipelineCacheData.createPipelineCache(vk, device));
+		vk::Move<vk::VkPipeline>				pipeline		(createGraphicsPipeline(vk, device, *pipelineCache, &graphicsPipelineInfo));
+
+		// Refresh data from cache
+		pipelineCacheData.setFromPipelineCache(vk, device, *pipelineCache);
+
+		return pipeline;
+	}
 }
 
 void requireFeatures (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const FeatureFlags flags)
@@ -825,6 +844,42 @@ bool isIndirectBuffer (const ResourceType type)
 		default:
 			return false;
 	}
+}
+
+PipelineCacheData::PipelineCacheData (void)
+{
+}
+
+PipelineCacheData::~PipelineCacheData (void)
+{
+}
+
+vk::Move<VkPipelineCache> PipelineCacheData::createPipelineCache (const vk::DeviceInterface& vk, const vk::VkDevice device) const
+{
+	const de::ScopedLock						dataLock	(m_lock);
+	const struct vk::VkPipelineCacheCreateInfo	params	=
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
+		DE_NULL,
+		(vk::VkPipelineCacheCreateFlags)0,
+		(deUintptr)m_data.size(),
+		(m_data.empty() ? DE_NULL : &m_data[0])
+	};
+
+	return vk::createPipelineCache(vk, device, &params);
+}
+
+void PipelineCacheData::setFromPipelineCache (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineCache pipelineCache)
+{
+	const de::ScopedLock		dataLock		(m_lock);
+	deUintptr					dataSize		= 0;
+
+	VK_CHECK(vk.getPipelineCacheData(device, pipelineCache, &dataSize, DE_NULL));
+
+	m_data.resize(dataSize);
+
+	if (dataSize > 0)
+		VK_CHECK(vk.getPipelineCacheData(device, pipelineCache, &dataSize, &m_data[0]));
 }
 
 } // synchronization
