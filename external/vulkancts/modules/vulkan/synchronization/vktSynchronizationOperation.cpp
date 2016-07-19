@@ -2876,7 +2876,7 @@ public:
 		// Init host buffer data
 		{
 			const Allocation& alloc = m_hostBuffer->getAllocation();
-			deMemset(alloc.getHostPtr(), 0, m_hostBufferSizeBytes);
+			deMemset(alloc.getHostPtr(), 0, static_cast<size_t>(m_hostBufferSizeBytes));
 			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), static_cast<size_t>(m_hostBufferSizeBytes));
 		}
 

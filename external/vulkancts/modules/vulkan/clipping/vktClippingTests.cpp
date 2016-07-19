@@ -178,7 +178,7 @@ DrawContext::DrawContext (Context&						context,
 
 		{
 			const Allocation& alloc = m_colorAttachmentBuffer->getAllocation();
-			deMemset(alloc.getHostPtr(), 0, bitmapSize);
+			deMemset(alloc.getHostPtr(), 0, (size_t)bitmapSize);
 			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), bitmapSize);
 		}
 	}
@@ -190,7 +190,7 @@ DrawContext::DrawContext (Context&						context,
 			vk, device, allocator, makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 
 		const Allocation& alloc = m_vertexBuffer->getAllocation();
-		deMemcpy(alloc.getHostPtr(), &vertices[0], bufferSize);
+		deMemcpy(alloc.getHostPtr(), &vertices[0], (size_t)bufferSize);
 		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), bufferSize);
 	}
 

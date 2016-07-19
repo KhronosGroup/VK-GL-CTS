@@ -1738,16 +1738,6 @@ CacheHeaderTestInstance::CacheHeaderTestInstance (Context& context, const CacheT
 
 	// Create more pipeline caches
 	{
-		// Create a empty cache as one of source cache
-		VkPipelineCacheCreateInfo pipelineCacheCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,           // VkStructureType             sType;
-			DE_NULL,                                                // const void*                 pNext;
-			0u,                                                     // VkPipelineCacheCreateFlags  flags;
-			0u,                                                     // deUintptr                   initialDataSize;
-			DE_NULL,                                                // const void*                 pInitialData;
-		};
-
 		// Create a cache with init data from m_cache
 		size_t  dataSize = 0u;
 		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, DE_NULL));
