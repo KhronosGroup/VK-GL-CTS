@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineMultisampleTests.hpp"
+#include "vktPipelineMultisampleImageTests.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
@@ -2028,6 +2029,11 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 			alphaToCoverageTests->addChild(samplesTests.release());
 		}
 		multisampleTests->addChild(alphaToCoverageTests.release());
+	}
+
+	// Sampling from a multisampled image texture (texelFetch)
+	{
+		multisampleTests->addChild(createMultisampleImageTests(testCtx));
 	}
 
 	return multisampleTests.release();
