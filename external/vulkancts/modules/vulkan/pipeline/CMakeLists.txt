@@ -48,6 +48,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineEarlyFragmentTests.hpp
 	vktPipelineCacheTests.cpp
 	vktPipelineCacheTests.hpp
+	vktPipelineMakeUtil.cpp
+	vktPipelineMakeUtil.hpp
 	)
 
 set(DEQP_VK_PIPELINE_LIBS
