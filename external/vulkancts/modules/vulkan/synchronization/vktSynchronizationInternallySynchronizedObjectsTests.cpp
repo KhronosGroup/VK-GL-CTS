@@ -607,7 +607,7 @@ public:
 		ResultCollector		resultCollector;
 		for (int executionNdx = 0; executionNdx < EXECUTION_PER_THREAD; ++executionNdx)
 		{
-			const int shaderNdx					= executionNdx % m_pipelineInfo.size();
+			const int shaderNdx					= executionNdx % (int)m_pipelineInfo.size();
 			const DeviceInterface&	vk			= m_context.getDeviceInterface();
 			const VkDevice			device		= m_queues.getDevice();
 			Move<VkPipeline>		pipeline	= createComputePipeline(vk,device,m_pipelineCache, &m_pipelineInfo[shaderNdx]);
@@ -637,7 +637,7 @@ public:
 		ResultCollector		resultCollector;
 		for (int executionNdx = 0; executionNdx < EXECUTION_PER_THREAD; ++executionNdx)
 		{
-			const int shaderNdx					= executionNdx % m_pipelineInfo.size();
+			const int shaderNdx					= executionNdx % (int)m_pipelineInfo.size();
 			const DeviceInterface&	vk			= m_context.getDeviceInterface();
 			const VkDevice			device		= m_queues.getDevice();
 			Move<VkPipeline>		pipeline	= createGraphicsPipeline(vk,device, m_pipelineCache, &m_pipelineInfo[shaderNdx]);

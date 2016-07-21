@@ -3251,7 +3251,7 @@ public:
 			vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_resource.getBuffer().handle, &vertexBufferOffset);
 		}
 
-		vk.cmdDraw(cmdBuffer, static_cast<deUint32>(dataSizeBytes)/sizeof(tcu::UVec4), 1u, 0u, 0u);
+		vk.cmdDraw(cmdBuffer, static_cast<deUint32>(dataSizeBytes / sizeof(tcu::UVec4)), 1u, 0u, 0u);
 		endRenderPass(vk, cmdBuffer);
 	}
 

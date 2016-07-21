@@ -48,8 +48,8 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 	const std::string	formatDataStr	= getShaderImageDataType(m_format);
 	const std::string	formatQualStr	= getShaderImageFormatQualifier(m_format);
 
-	const std::string  coordString		= getShaderImageCoordinates(m_imageType, 
-																	"%local_int_GlobalInvocationID_x", 
+	const std::string  coordString		= getShaderImageCoordinates(m_imageType,
+																	"%local_int_GlobalInvocationID_x",
 																	"%local_ivec2_GlobalInvocationID_xy",
 																	"%local_ivec3_GlobalInvocationID_xyz");
 	// Create compute program
@@ -212,7 +212,7 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 		// Load residency code for OpImageSparse*
 		<< "%local_residency_code = OpCompositeExtract %type_int %local_sparse_op_result 0\n"
 		// End Call OpImageSparse*
-			
+
 		// Load texels image
 		<< "%local_image_texels = OpLoad %type_image_texels %uniform_image_texels\n"
 
@@ -236,16 +236,16 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 
 		// Loaded texel is not in resident memory
 		<< "OpImageWrite %local_image_residency " << coordString << " %constant_uvec4_not_resident\n"
-			
+
 		<< "OpBranch %branch_texel_resident\n"
 		<< "%branch_texel_resident = OpLabel\n"
-			
+
 		<< "OpBranch %label_out_range_z\n"
 		<< "%label_out_range_z = OpLabel\n"
 
 		<< "OpBranch %label_out_range_y\n"
 		<< "%label_out_range_y = OpLabel\n"
-			
+
 		<< "OpBranch %label_out_range_x\n"
 		<< "%label_out_range_x = OpLabel\n"
 
@@ -266,7 +266,7 @@ std::string SparseCaseOpImageSparseFetch::sparseImageTypeDecl (const std::string
 
 std::string	SparseCaseOpImageSparseFetch::sparseImageOpString  (const std::string& resultVariable,
 																const std::string& resultType,
-																const std::string& image, 
+																const std::string& image,
 																const std::string& coord,
 																const std::string& mipLevel) const
 {
@@ -423,12 +423,12 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (vk::Allocator&				al
 
 	const VkSpecializationMapEntry specializationMapEntries[6] =
 	{
-		{ 1u, 0u * sizeof(deUint32), sizeof(deUint32) }, // GridSize.x
-		{ 2u, 1u * sizeof(deUint32), sizeof(deUint32) }, // GridSize.y
-		{ 3u, 2u * sizeof(deUint32), sizeof(deUint32) }, // GridSize.z
-		{ 4u, 3u * sizeof(deUint32), sizeof(deUint32) }, // WorkGroupSize.x
-		{ 5u, 4u * sizeof(deUint32), sizeof(deUint32) }, // WorkGroupSize.y
-		{ 6u, 5u * sizeof(deUint32), sizeof(deUint32) }, // WorkGroupSize.z
+		{ 1u, 0u * (deUint32)sizeof(deUint32), sizeof(deUint32) }, // GridSize.x
+		{ 2u, 1u * (deUint32)sizeof(deUint32), sizeof(deUint32) }, // GridSize.y
+		{ 3u, 2u * (deUint32)sizeof(deUint32), sizeof(deUint32) }, // GridSize.z
+		{ 4u, 3u * (deUint32)sizeof(deUint32), sizeof(deUint32) }, // WorkGroupSize.x
+		{ 5u, 4u * (deUint32)sizeof(deUint32), sizeof(deUint32) }, // WorkGroupSize.y
+		{ 6u, 5u * (deUint32)sizeof(deUint32), sizeof(deUint32) }, // WorkGroupSize.z
 	};
 
 	Unique<VkShaderModule> shaderModule(createShaderModule(deviceInterface, *m_logicalDevice, m_context.getBinaryCollection().get("compute"), 0u));
@@ -441,10 +441,10 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (vk::Allocator&				al
 
 		const VkSpecializationInfo specializationInfo =
 		{
-			sizeof(specializationMapEntries) / sizeof(VkSpecializationMapEntry),	// mapEntryCount
-			specializationMapEntries,												// pMapEntries
-			sizeof(specializationData),												// dataSize
-			specializationData,														// pData
+			(deUint32)DE_LENGTH_OF_ARRAY(specializationMapEntries),	// mapEntryCount
+			specializationMapEntries,								// pMapEntries
+			sizeof(specializationData),								// dataSize
+			specializationData,										// pData
 		};
 
 		// Create and bind compute pipeline
@@ -459,7 +459,7 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (vk::Allocator&				al
 
 		// Bind resources
 		const VkImageSubresourceRange mipLevelRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipLevelNdx, 1u, 0u, imageSparseInfo.arrayLayers);
-		
+
 		imageSparseViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, *m_logicalDevice, imageSparse, mapImageViewType(m_imageType), imageSparseInfo.format, mipLevelRange));
 		const VkDescriptorImageInfo imageSparseDescInfo = makeDescriptorImageInfo(DE_NULL, **imageSparseViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
 
