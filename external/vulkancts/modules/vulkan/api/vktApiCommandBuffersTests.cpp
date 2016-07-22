@@ -2110,14 +2110,11 @@ tcu::TestStatus simultaneousUsePrimaryBufferTest(Context& context)
 	// record primary command buffer
 	VK_CHECK(vk.beginCommandBuffer(*primCmdBuf, &primCmdBufBeginInfo));
 	{
-		// allow execution of event during every stage of pipeline
-		VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-
 		// wait for event
-		vk.cmdWaitEvents(*primCmdBuf, 1u, &eventOne.get(), stageMask, stageMask, 0u, DE_NULL, 0u, DE_NULL, 0u, DE_NULL);
+		vk.cmdWaitEvents(*primCmdBuf, 1u, &eventOne.get(), VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0u, DE_NULL, 0u, DE_NULL, 0u, DE_NULL);
 
 		// Set the second event
-		vk.cmdSetEvent(*primCmdBuf, eventTwo.get(), stageMask);
+		vk.cmdSetEvent(*primCmdBuf, eventTwo.get(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 	}
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf));
 
@@ -2392,12 +2389,11 @@ tcu::TestStatus recordBufferQueryPreciseWithFlagTest(Context& context)
 		&secBufferInheritInfo,
 	};
 
-	// Create an occlusion query with VK_QUERY_CONTROL_PRECISE_BIT set
 	const VkQueryPoolCreateInfo				queryPoolCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,					// sType
 		DE_NULL,													// pNext
-		VK_QUERY_CONTROL_PRECISE_BIT,								// flags
+		(VkQueryPoolCreateFlags)0,									// flags
 		VK_QUERY_TYPE_OCCLUSION,									// queryType
 		1u,															// entryCount
 		0u,															// pipelineStatistics
@@ -3790,7 +3786,7 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 	vk.cmdBindDescriptorSets(*cmd, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, numDescriptorSets, descriptorSets, numDynamicOffsets, dynamicOffsets);
 
 	if (numPreBarriers)
-		vk.cmdPipelineBarrier(*cmd, 0u, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0,
+		vk.cmdPipelineBarrier(*cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0,
 							  0, (const VkMemoryBarrier*)DE_NULL,
 							  numPreBarriers, bufferBarriers,
 							  0, (const VkImageMemoryBarrier*)DE_NULL);
