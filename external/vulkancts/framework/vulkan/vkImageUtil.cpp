@@ -63,6 +63,23 @@ bool isDepthStencilFormat (VkFormat format)
 	return tcuFormat.order == tcu::TextureFormat::D || tcuFormat.order == tcu::TextureFormat::S || tcuFormat.order == tcu::TextureFormat::DS;
 }
 
+bool isSrgbFormat (VkFormat format)
+{
+	switch (mapVkFormat(format).order)
+	{
+		case tcu::TextureFormat::sR:
+		case tcu::TextureFormat::sRG:
+		case tcu::TextureFormat::sRGB:
+		case tcu::TextureFormat::sRGBA:
+		case tcu::TextureFormat::sBGR:
+		case tcu::TextureFormat::sBGRA:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 bool isCompressedFormat (VkFormat format)
 {
 	// update this mapping if VkFormat changes

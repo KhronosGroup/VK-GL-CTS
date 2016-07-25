@@ -148,6 +148,10 @@ public:
 												 VkImageViewType			imageViewType,
 												 const void*				data);
 
+	void					addSamplerUniform	(deUint32					bindingLocation,
+												 VkImageView				imageView,
+												 VkSampler					sampler);
+
 	const void*				getBufferPtr		(const deUint32 bindingLocation) const;
 
 protected:
@@ -177,6 +181,7 @@ protected:
 		{
 			UNIFORM_TYPE_BUFFER = 0,
 			UNIFORM_TYPE_SAMPLER,
+			UNIFORM_TYPE_UNMANAGED_SAMPLER,
 			UNIFORM_TYPE_BUFFER_ARRAY,
 			UNIFORM_TYPE_SAMPLER_ARRAY,
 
@@ -215,6 +220,18 @@ protected:
 		VkSamplerSp					sampler;
 		AllocationSp				alloc;
 		VkDescriptorImageInfo		descriptor;
+	};
+
+	class UnmanagedSamplerUniform : public UniformInfo
+	{
+	public:
+								UnmanagedSamplerUniform  (void) {}
+		virtual 				~UnmanagedSamplerUniform (void) {}
+		virtual UniformType		getType                  (void) const { return UNIFORM_TYPE_UNMANAGED_SAMPLER; }
+
+		VkImageView				imageView;
+		VkSampler				sampler;
+		VkDescriptorImageInfo	descriptor;
 	};
 
 	class BufferArrayUniform : public UniformInfo
