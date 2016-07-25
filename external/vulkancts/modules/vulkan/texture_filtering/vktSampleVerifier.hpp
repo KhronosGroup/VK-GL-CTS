@@ -27,6 +27,7 @@
 
 #include "deUniquePtr.hpp"
 
+#include "tcuFloatFormat.hpp"
 #include "tcuTexture.hpp"
 #include "tcuVector.hpp"
 
@@ -112,10 +113,10 @@ struct ImageViewParameters
 	ImgDim			dim;
 	vk::VkFormat	format;
 	tcu::IVec3		size;
-	deUint8			levels;
+	int				levels;
 
 	bool			isArrayed;
-	deUint32		arrayLayers;
+	int				arrayLayers;
 };
 
 class SampleVerifier
@@ -136,30 +137,25 @@ public:
 										 std::string&										report) const;
 
 private:
-	bool verifySampleMipmapLinear		(tcu::Vec4											result,
-										 tcu::Vec4											sampleHi,
-										 tcu::Vec4											sampleLo,
-										 deInt32											lodStepMin,
-										 deInt32											lodStepMax,
-										 deUint32											layer,
-										 deUint8											levelHi) const;
 
 	bool verifySampleFiltered			(const tcu::Vec4&									result,
-										 const tcu::Vec3&									unnormalizedCoordHi,
-										 const tcu::Vec3&									unnormalizedCoordLo,
-										 deUint32											layer,
-										 deUint8											levelHi,
+										 const tcu::IVec3&								    baseTexelHi,
+										 const tcu::IVec3&								    baseTexelLo,
+										 const tcu::IVec3&								    texelGridOffsetHi,
+										 const tcu::IVec3&								    texelGridOffsetLo,
+										 int												layer,
+										 int												levelHi,
 										 const tcu::Vec2&									lodFracBounds,
 										 vk::VkFilter										filter,
 										 vk::VkSamplerMipmapMode							mipmapFilter,
 										 std::ostream&										report) const;
 
-	bool verifySampleUnnormalizedCoords (const SampleArguments&								args,
+	bool verifySampleTexelGridCoords	(const SampleArguments&								args,
 										 const tcu::Vec4&									result,
-										 const tcu::Vec3&									unnormalizedCoord,
-										 const tcu::Vec3&									unnormalizedCoordLo,
+										 const tcu::IVec3&									gridCoordHi,
+										 const tcu::IVec3&									gridCoordLo,
 										 const tcu::Vec2&									lodBounds,
-										 deUint8											level,
+										 int												level,
 										 vk::VkSamplerMipmapMode							mipmapFilter,
 										 std::ostream&										report) const;
 
@@ -167,7 +163,7 @@ private:
 										 const tcu::Vec4&									result,
 										 const tcu::Vec4&									coord,
 										 const tcu::Vec2&									lodFracBounds,
-										 deUint8											level,
+										 int												level,
 										 std::ostream&										report) const;
 
 	bool verifySampleCubemapFace		(const SampleArguments&								args,
@@ -175,7 +171,7 @@ private:
 										 const tcu::Vec4&									coord,
 										 const tcu::Vec4&									dPdx,
 										 const tcu::Vec4&									dPdy,
-										 deUint8											face,
+										 int												face,
 										 std::ostream&										report) const;
 
 	bool verifySampleImpl				(const SampleArguments&								args,
@@ -186,48 +182,61 @@ private:
 										 int												compNdx,
 										 int 												level) const;
 
-	tcu::Vec4 fetchTexel				(const tcu::IVec3&									coordIn,
-										 deUint32											layer,
-										 deUint8											level,
-										 vk::VkFilter										filter) const;
+	void fetchTexel						(const tcu::IVec3&									coordIn,
+										 int												layer,
+										 int												level,
+										 vk::VkFilter										filter,
+										 tcu::Vec4& 										resultMin,
+										 tcu::Vec4& 										resultMax) const;
 
-	tcu::Vec4 getFilteredSample1D		(const tcu::IVec3&									texelBase,
+	void fetchTexelWrapped				(const tcu::IVec3&									coord,
+										 int												layer,
+										 int												level,
+										 tcu::Vec4&											resultMin,
+										 tcu::Vec4& 										resultMax) const;
+
+    void getFilteredSample1D			(const tcu::IVec3&									texelBase,
 										 float												weight,
-										 deUint32											layer,
-										 deUint8											level) const;
+										 int												layer,
+										 int												level,
+										 tcu::Vec4& 										resultMin,
+										 tcu::Vec4& 										resultMax) const;
 
-	tcu::Vec4 getFilteredSample2D		(const tcu::IVec3&									texelBase,
+	void getFilteredSample2D			(const tcu::IVec3&									texelBase,
 										 const tcu::Vec2&									weights,
-										 deUint32											layer,
-										 deUint8											level) const;
+										 int												layer,
+										 int												level,
+										 tcu::Vec4& 										resultMin,
+										 tcu::Vec4& 										resultMax) const;
 
-	tcu::Vec4 getFilteredSample3D		(const tcu::IVec3&									texelBase,
+	void getFilteredSample3D			(const tcu::IVec3&									texelBase,
 										 const tcu::Vec3&									weights,
-										 deUint32											layer,
-										 deUint8											level) const;
+										 int												layer,
+										 int												level,
+										 tcu::Vec4& 										resultMin,
+										 tcu::Vec4& 										resultMax) const;
 
-	tcu::Vec4 getFilteredSample			(const tcu::IVec3&									texelBase,
+	void getFilteredSample				(const tcu::IVec3&									texelBase,
 										 const tcu::Vec3&									weights,
-										 deUint32											layer,
-										 deUint8											level) const;
-
-	void getWeightStepBounds			(const tcu::Vec3&									unnormalizedCoord,
-										 tcu::IVec3&										weightStepMin,
-										 tcu::IVec3&										weightStepMax,
-										 tcu::IVec3&										texelBase) const;
+										 int												layer,
+										 int												level,
+										 tcu::Vec4& 										resultMin,
+										 tcu::Vec4& 										resultMax) const;
 
 	void getMipmapStepBounds			(const tcu::Vec2&									lodFracBounds,
 										 deInt32&											stepMin,
 										 deInt32&											stepMax) const;
 
+	const tcu::FloatFormat 							m_internalFormat;
+
 	const ImageViewParameters&						m_imParams;
 	const SamplerParameters&						m_samplerParams;
 	const SampleLookupSettings&						m_sampleLookupSettings;
 
-    int												m_coordBits;
-	int												m_mipmapBits;
+    const int										m_coordBits;
+	const int										m_mipmapBits;
 
-	int												m_unnormalizedDim;
+	const int										m_unnormalizedDim;
 
 	const std::vector<tcu::ConstPixelBufferAccess>&	m_pba;
 };

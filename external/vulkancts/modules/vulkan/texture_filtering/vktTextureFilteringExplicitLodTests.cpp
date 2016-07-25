@@ -44,6 +44,7 @@
 
 #include "deClock.h"
 #include "deMath.h"
+#include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 
 #include <sstream>
@@ -74,15 +75,19 @@ string genSamplerDeclaration(const ImageViewParameters& imParams,
 		case IMG_DIM_1D:
 			result += "1D";
 			break;
+
 		case IMG_DIM_2D:
 			result += "2D";
 			break;
+
 		case IMG_DIM_3D:
 			result += "3D";
 			break;
+
 		case IMG_DIM_CUBE:
 			result += "Cube";
 			break;
+
 		default:
 			break;
 	}
@@ -104,22 +109,26 @@ string genLookupCode(const ImageViewParameters&		imParams,
 					 const SamplerParameters&		samplerParams,
 					 const SampleLookupSettings&	lookupSettings)
 {
-	int dim;
+	int dim = -1;
 
 	switch (imParams.dim)
 	{
 		case IMG_DIM_1D:
 			dim = 1;
 			break;
+
 		case IMG_DIM_2D:
 			dim = 2;
 			break;
+
 		case IMG_DIM_3D:
 			dim = 3;
 			break;
+
 		case IMG_DIM_CUBE:
 			dim = 3;
 			break;
+
 		default:
 			dim = 0;
 			break;
@@ -212,7 +221,12 @@ string genLookupCode(const ImageViewParameters&		imParams,
 
 	if (lookupSettings.lookupLodMode == LOOKUP_LOD_MODE_DERIVATIVES)
 	{
-		code += ", dPdx, dPdy";
+		code += ", vec";
+		code += (char) (numCoordComp + '0');
+		code += "(dPdx), ";
+		code += "vec";
+		code += (char) (numCoordComp + '0');
+		code += "(dPdy)";
 	}
 	else if (lookupSettings.lookupLodMode == LOOKUP_LOD_MODE_LOD)
 	{
@@ -300,9 +314,9 @@ void initializeImage(Context& ctx, VkImage im, const ConstPixelBufferAccess* pba
 		const VkImageSubresourceLayers curSubresource =
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,
-			(deUint32) level,
+			(deUint32)level,
 			0,
-			(deUint32) imParams.arrayLayers
+			(deUint32)imParams.arrayLayers
 		};
 
 		const VkBufferImageCopy curRegion =
@@ -312,7 +326,7 @@ void initializeImage(Context& ctx, VkImage im, const ConstPixelBufferAccess* pba
 			0,
 			curSubresource,
 			{0U, 0U, 0U},
-			{(deUint32) curLevelSize[0], (deUint32) curLevelSize[1], (deUint32) curLevelSize[2]}
+			{(deUint32)curLevelSize[0], (deUint32)curLevelSize[1], (deUint32)curLevelSize[2]}
 		};
 
 		copyRegions.push_back(curRegion);
@@ -334,9 +348,9 @@ void initializeImage(Context& ctx, VkImage im, const ConstPixelBufferAccess* pba
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,
 		0,
-		imParams.levels,
+		(deUint32)imParams.levels,
 		0,
-		imParams.arrayLayers
+		(deUint32)imParams.arrayLayers
 	};
 
 	VkImageMemoryBarrier imMemBar =
@@ -381,7 +395,7 @@ void initializeImage(Context& ctx, VkImage im, const ConstPixelBufferAccess* pba
 							 buf.get(),
 							 im,
 							 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-							 (deUint32) copyRegions.size(),
+							 (deUint32)copyRegions.size(),
 							 &copyRegions[0]);
 
 	imMemBar.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -425,8 +439,6 @@ struct TestCaseData
 	ImageViewParameters					imParams;
 	SamplerParameters					samplerParams;
 	SampleLookupSettings				sampleLookupSettings;
-	const SampleArguments*				sampleArguments;
-	deUint32							numSamples;
 	glu::ShaderType						shaderType;
 };
 
@@ -473,13 +485,16 @@ VkImageType mapImageType (ImgDim dim)
 		case IMG_DIM_1D:
 			imType = VK_IMAGE_TYPE_1D;
 			break;
+
 		case IMG_DIM_2D:
 		case IMG_DIM_CUBE:
 			imType = VK_IMAGE_TYPE_2D;
 			break;
+
 		case IMG_DIM_3D:
 			imType = VK_IMAGE_TYPE_3D;
 			break;
+
 		default:
 			imType = VK_IMAGE_TYPE_LAST;
 			break;
@@ -499,12 +514,15 @@ VkImageViewType mapImageViewType (const ImageViewParameters& imParams)
 			case IMG_DIM_1D:
 				imViewType = VK_IMAGE_VIEW_TYPE_1D_ARRAY;
 				break;
+
 			case IMG_DIM_2D:
 				imViewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
 				break;
+
 			case IMG_DIM_CUBE:
 				imViewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
 				break;
+
 			default:
 				imViewType = VK_IMAGE_VIEW_TYPE_LAST;
 				break;
@@ -517,15 +535,19 @@ VkImageViewType mapImageViewType (const ImageViewParameters& imParams)
 			case IMG_DIM_1D:
 				imViewType = VK_IMAGE_VIEW_TYPE_1D;
 				break;
+
 			case IMG_DIM_2D:
 				imViewType = VK_IMAGE_VIEW_TYPE_2D;
 				break;
+
 			case IMG_DIM_3D:
 				imViewType = VK_IMAGE_VIEW_TYPE_3D;
 				break;
+
 			case IMG_DIM_CUBE:
 				imViewType = VK_IMAGE_VIEW_TYPE_CUBE;
 				break;
+
 			default:
 				imViewType = VK_IMAGE_VIEW_TYPE_LAST;
 				break;
@@ -640,7 +662,7 @@ TestStatus TextureFilteringTestInstance::runTest (void)
 	m_pba =   m_gen->getPba();
 
 	m_sampleArguments = m_gen->getSampleArgs();
-	m_numSamples = (deUint32) m_sampleArguments.size();
+	m_numSamples = (deUint32)m_sampleArguments.size();
 
 	createResources();
 	initializeImage(m_ctx, m_im.get(), &m_pba[0], m_imParams);
@@ -694,37 +716,39 @@ bool TextureFilteringTestInstance::verify (void)
 							m_mipmapBits,
 							m_pba);
 
+	const int maxPrintedFailures = 5;
+	int failCount = 0;
+
 	for (deUint32 sampleNdx = 0; sampleNdx < m_numSamples; ++sampleNdx)
 	{
 		if (!verifier.verifySample(m_sampleArguments[sampleNdx], m_resultSamples[sampleNdx]))
 		{
-			// Re-run with report logging
-			std::string report;
-			verifier.verifySampleReport(m_sampleArguments[sampleNdx], m_resultSamples[sampleNdx], report);
-
-			m_ctx.getTestContext().getLog()
-				<< TestLog::Message
-				<< "Failed verification at sample " << sampleNdx << ".\n"
-				<< "\tCoordinate: " << m_sampleArguments[sampleNdx].coord << "\n"
-				<< "\tLOD: " << m_sampleArguments[sampleNdx].lod << "\n"
-				<< "\tGPU Result: " << m_resultSamples[sampleNdx] << "\n"
-				<< TestLog::EndMessage;
-
-			for (int levelNdx = 0; levelNdx < m_imParams.levels; ++levelNdx)
+			if (failCount++ < maxPrintedFailures)
 			{
-				LogImage("", "", m_pba[levelNdx]).write(m_ctx.getTestContext().getLog());
+				// Re-run with report logging
+				std::string report;
+				verifier.verifySampleReport(m_sampleArguments[sampleNdx], m_resultSamples[sampleNdx], report);
+
+				m_ctx.getTestContext().getLog()
+					<< TestLog::Section("Failed sample", "Failed sample")
+					<< TestLog::Message
+					<< "Sample " << sampleNdx << ".\n"
+					<< "\tCoordinate: " << m_sampleArguments[sampleNdx].coord << "\n"
+					<< "\tLOD: " << m_sampleArguments[sampleNdx].lod << "\n"
+					<< "\tGPU Result: " << m_resultSamples[sampleNdx] << "\n\n"
+					<< "Failure report:\n" << report << "\n"
+					<< TestLog::EndMessage
+					<< TestLog::EndSection;
 			}
-
-		    m_ctx.getTestContext().getLog()
-				<< TestLog::Message
-				<< "Failure report:\n" << report << "\n"
-				<< TestLog::EndMessage;
-
-			return false;
 		}
 	}
 
-	return true;
+	m_ctx.getTestContext().getLog()
+		<< TestLog::Message
+		<< "Passed " << m_numSamples - failCount << " out of " << m_numSamples << "."
+		<< TestLog::EndMessage;
+
+	return failCount == 0;
 }
 
 void TextureFilteringTestInstance::execute (void)
@@ -803,8 +827,8 @@ void TextureFilteringTestInstance::createResources (void)
 	    mapImageType(m_imParams.dim),									// imageType
 	    m_imParams.format,												// format
 		m_imExtent,														// extent
-	    m_imParams.levels,												// mipLevels
-	    m_imParams.arrayLayers,											// arrayLayers
+	    (deUint32)m_imParams.levels,									// mipLevels
+	    (deUint32)m_imParams.arrayLayers,								// arrayLayers
 		VK_SAMPLE_COUNT_1_BIT,											// samples
 		VK_IMAGE_TILING_OPTIMAL,										// tiling
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,	// usage
@@ -829,11 +853,11 @@ void TextureFilteringTestInstance::createResources (void)
 	// \todo [2016-06-23 collinbaker] Pick aspectMask based on image type (i.e. support depth and/or stencil images)
 	VkImageSubresourceRange imViewSubresourceRange =
 	{
-		VK_IMAGE_ASPECT_COLOR_BIT,	// aspectMask
-		0,							// baseMipLevel
-		m_imParams.levels,			// levelCount
-		0,							// baseArrayLayer
-		m_imParams.arrayLayers		// layerCount
+		VK_IMAGE_ASPECT_COLOR_BIT,			// aspectMask
+		0,									// baseMipLevel
+		(deUint32)m_imParams.levels,		// levelCount
+		0,									// baseArrayLayer
+		(deUint32)m_imParams.arrayLayers	// layerCount
 	};
 
 	if (m_imParams.dim == IMG_DIM_CUBE)
@@ -972,7 +996,8 @@ public:
 							   VkFilter magFilter,
 							   VkFilter minFilter,
 							   VkSamplerMipmapMode mipmapFilter,
-							   VkSamplerAddressMode wrappingMode)
+							   VkSamplerAddressMode wrappingMode,
+							   bool useDerivatives)
 
 		: TextureFilteringTestCase	(testCtx, name, desc)
 		, m_format					(format)
@@ -981,6 +1006,7 @@ public:
 		, m_minFilter				(minFilter)
 		, m_mipmapFilter			(mipmapFilter)
 		, m_wrappingMode			(wrappingMode)
+		, m_useDerivatives			(useDerivatives)
 	{
 		m_testCaseData = genTestCaseData();
 		init();
@@ -997,7 +1023,7 @@ protected:
 
 		SampleLookupSettings sampleLookupSettings =
 		{
-			LOOKUP_LOD_MODE_LOD, // lookupLodMode
+		    m_useDerivatives ? LOOKUP_LOD_MODE_DERIVATIVES : LOOKUP_LOD_MODE_LOD, // lookupLodMode
 			false, // hasLodBias
 			false, // isProjective
 		};
@@ -1037,8 +1063,6 @@ protected:
 			imParameters,
 			samplerParameters,
 			sampleLookupSettings,
-			&m_args[0],
-			(deUint32) m_args.size(),
 			glu::SHADERTYPE_FRAGMENT
 		};
 
@@ -1052,8 +1076,7 @@ private:
 	VkFilter						m_minFilter;
 	VkSamplerMipmapMode				m_mipmapFilter;
 	VkSamplerAddressMode			m_wrappingMode;
-
-	std::vector<SampleArguments>	m_args;
+	bool							m_useDerivatives;
 };
 
 class Texture2DGradientTestCase::Generator : public DataGenerator
@@ -1110,21 +1133,58 @@ public:
 	{
 		std::vector<SampleArguments> args;
 
-		const float lodList[] = {-1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0};
-
-		for (deInt32 i = 0; i < 2 * m_testCase->m_dimensions[0] + 1; ++i)
+		if (m_testCase->m_useDerivatives)
 		{
-			for (deInt32 j = 0; j < 2 * m_testCase->m_dimensions[1] + 1; ++j)
+			struct
 			{
-				for (deUint32 lodNdx = 0; lodNdx < DE_LENGTH_OF_ARRAY(lodList); ++lodNdx)
-				{
-					SampleArguments cur;
-					cur.coord = Vec4((float) i / (float) (2 * m_testCase->m_dimensions[0]),
-									 (float) j / (float) (2 * m_testCase->m_dimensions[1]),
-									 0.0f, 0.0f);
-					cur.lod = lodList[lodNdx];
+				Vec4 dPdx;
+				Vec4 dPdy;
+			}
+			derivativePairs[] =
+			{
+				{Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(0.0f, 0.0f, 0.0f, 0.0f)},
+				{Vec4(1.0f, 1.0f, 1.0f, 0.0f), Vec4(1.0f, 1.0f, 1.0f, 0.0f)},
+				{Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(1.0f, 1.0f, 1.0f, 0.0f)},
+				{Vec4(1.0f, 1.0f, 1.0f, 0.0f), Vec4(0.0f, 0.0f, 0.0f, 0.0f)},
+				{Vec4(2.0f, 2.0f, 2.0f, 0.0f), Vec4(2.0f, 2.0f, 2.0f, 0.0f)}
+			};
 
-					args.push_back(cur);
+			for (deInt32 i = 0; i < 2 * m_testCase->m_dimensions[0] + 1; ++i)
+			{
+				for (deInt32 j = 0; j < 2 * m_testCase->m_dimensions[1] + 1; ++j)
+				{
+				    for (deUint32 derivNdx = 0; derivNdx < DE_LENGTH_OF_ARRAY(derivativePairs); ++derivNdx)
+					{
+						SampleArguments cur;
+						cur.coord = Vec4((float)i / (float)(2 * m_testCase->m_dimensions[0]),
+										 (float)j / (float)(2 * m_testCase->m_dimensions[1]),
+										 0.0f, 0.0f);
+						cur.dPdx = derivativePairs[derivNdx].dPdx;
+						cur.dPdy = derivativePairs[derivNdx].dPdy;
+
+						args.push_back(cur);
+					}
+				}
+			}
+		}
+		else
+		{
+			const float lodList[] = {-1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0};
+
+			for (deInt32 i = 0; i < 2 * m_testCase->m_dimensions[0] + 1; ++i)
+			{
+				for (deInt32 j = 0; j < 2 * m_testCase->m_dimensions[1] + 1; ++j)
+				{
+					for (deUint32 lodNdx = 0; lodNdx < DE_LENGTH_OF_ARRAY(lodList); ++lodNdx)
+					{
+						SampleArguments cur;
+						cur.coord = Vec4((float)i / (float)(2 * m_testCase->m_dimensions[0]),
+										 (float)j / (float)(2 * m_testCase->m_dimensions[1]),
+										 0.0f, 0.0f);
+						cur.lod = lodList[lodNdx];
+
+						args.push_back(cur);
+					}
 				}
 			}
 		}
@@ -1158,25 +1218,28 @@ TestCaseGroup* create2DFormatTests (TestContext& testCtx)
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8B8A8_UNORM,
 		VK_FORMAT_R8G8B8A8_SNORM,
-		VK_FORMAT_R8G8B8A8_SRGB,
+//		VK_FORMAT_R8G8B8A8_SRGB,
 		VK_FORMAT_B8G8R8A8_UNORM,
-		VK_FORMAT_B8G8R8A8_SRGB,
+//		VK_FORMAT_B8G8R8A8_SRGB,
 		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
 		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
-		VK_FORMAT_A8B8G8R8_SRGB_PACK32,
+//		VK_FORMAT_A8B8G8R8_SRGB_PACK32,
 		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
 		VK_FORMAT_R16_SFLOAT,
 		VK_FORMAT_R16G16_SFLOAT,
 		VK_FORMAT_R16G16B16A16_SFLOAT,
-		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32
+		VK_FORMAT_R32_SFLOAT,
+		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32A32_SFLOAT,
+//		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+//		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32
 	};
 
 	const IVec3 size(32, 32, 1);
 
 	for (deUint32 formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); ++formatNdx)
 	{
-		std::string prefix = getFormatName(formats[formatNdx]);
+		std::string prefix = de::toLower(std::string(getFormatName(formats[formatNdx])).substr(10));
 
 		Texture2DGradientTestCase* testCaseNearest =
 			new Texture2DGradientTestCase(
@@ -1188,7 +1251,8 @@ TestCaseGroup* create2DFormatTests (TestContext& testCtx)
 				VK_FILTER_NEAREST,
 				VK_FILTER_NEAREST,
 				VK_SAMPLER_MIPMAP_MODE_NEAREST,
-				VK_SAMPLER_ADDRESS_MODE_REPEAT);
+				VK_SAMPLER_ADDRESS_MODE_REPEAT,
+				false);
 
 		tests->addChild(testCaseNearest);
 
@@ -1202,9 +1266,104 @@ TestCaseGroup* create2DFormatTests (TestContext& testCtx)
 				VK_FILTER_LINEAR,
 				VK_FILTER_LINEAR,
 				VK_SAMPLER_MIPMAP_MODE_LINEAR,
-				VK_SAMPLER_ADDRESS_MODE_REPEAT);
+				VK_SAMPLER_ADDRESS_MODE_REPEAT,
+				false);
 
 		tests->addChild(testCaseLinear);
+	}
+
+	return tests.release();
+}
+
+TestCaseGroup* create2DDerivTests (TestContext& testCtx)
+{
+	de::MovePtr<TestCaseGroup> tests(
+		new TestCaseGroup(testCtx, "derivatives", "Explicit derivative tests"));
+
+	const VkFormat				format		 = VK_FORMAT_R8G8B8A8_UNORM;
+	const VkSamplerAddressMode	wrappingMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	const IVec3					size		 = IVec3(16, 16, 1);
+
+	const VkFilter filters[2] =
+	{
+		VK_FILTER_NEAREST,
+		VK_FILTER_LINEAR
+	};
+
+	const VkSamplerMipmapMode mipmapFilters[2] =
+	{
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,
+		VK_SAMPLER_MIPMAP_MODE_LINEAR,
+	};
+
+	for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(filters); ++magFilterNdx)
+	{
+		for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(filters); ++minFilterNdx)
+		{
+			for (int mipmapFilterNdx = 0; mipmapFilterNdx < DE_LENGTH_OF_ARRAY(mipmapFilters); ++mipmapFilterNdx)
+			{
+				std::ostringstream caseName;
+
+				switch (filters[magFilterNdx])
+				{
+					case VK_FILTER_NEAREST:
+						caseName << "nearest";
+						break;
+
+					case VK_FILTER_LINEAR:
+						caseName << "linear";
+						break;
+
+					default:
+						break;
+				}
+
+				switch (filters[minFilterNdx])
+				{
+					case VK_FILTER_NEAREST:
+						caseName << "_nearest";
+						break;
+
+					case VK_FILTER_LINEAR:
+						caseName << "_linear";
+						break;
+
+					default:
+						break;
+				}
+
+				caseName << "_mipmap";
+
+				switch (mipmapFilters[mipmapFilterNdx])
+				{
+					case VK_SAMPLER_MIPMAP_MODE_NEAREST:
+						caseName << "_nearest";
+						break;
+
+					case VK_SAMPLER_MIPMAP_MODE_LINEAR:
+						caseName << "_linear";
+						break;
+
+					default:
+						break;
+				}
+
+				Texture2DGradientTestCase* testCase =
+					new Texture2DGradientTestCase(
+						testCtx,
+						caseName.str().c_str(),
+						"...",
+						mapVkFormat(format),
+						size,
+						filters[magFilterNdx],
+						filters[minFilterNdx],
+						mipmapFilters[mipmapFilterNdx],
+						wrappingMode,
+						true);
+
+				tests->addChild(testCase);
+			}
+		}
 	}
 
 	return tests.release();
@@ -1266,9 +1425,11 @@ TestCaseGroup* create2DSizeTests (TestContext& testCtx)
 							case VK_FILTER_NEAREST:
 								caseName << "_nearest";
 								break;
+
 							case VK_FILTER_LINEAR:
 								caseName << "_linear";
 								break;
+
 							default:
 								break;
 						}
@@ -1278,9 +1439,11 @@ TestCaseGroup* create2DSizeTests (TestContext& testCtx)
 							case VK_FILTER_NEAREST:
 								caseName << "_nearest";
 								break;
+
 							case VK_FILTER_LINEAR:
 								caseName << "_linear";
 								break;
+
 							default:
 								break;
 						}
@@ -1290,9 +1453,11 @@ TestCaseGroup* create2DSizeTests (TestContext& testCtx)
 							case VK_SAMPLER_MIPMAP_MODE_NEAREST:
 								caseName << "_mipmap_nearest";
 								break;
+
 							case VK_SAMPLER_MIPMAP_MODE_LINEAR:
 								caseName << "_mipmap_linear";
 								break;
+
 							default:
 								break;
 						}
@@ -1302,9 +1467,11 @@ TestCaseGroup* create2DSizeTests (TestContext& testCtx)
 							case VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE:
 								caseName << "_clamp";
 								break;
+
 							case VK_SAMPLER_ADDRESS_MODE_REPEAT:
 								caseName << "_repeat";
 								break;
+
 							default:
 								break;
 						}
@@ -1319,7 +1486,8 @@ TestCaseGroup* create2DSizeTests (TestContext& testCtx)
 								filters[magFilterNdx],
 								filters[minFilterNdx],
 								mipmapFilters[mipmapFilterNdx],
-								wrappingModes[wrappingModeNdx]);
+								wrappingModes[wrappingModeNdx],
+								false);
 
 						tests->addChild(testCase);
 					}
@@ -1338,6 +1506,7 @@ TestCaseGroup* create2DTests (TestContext& testCtx)
 
 	tests->addChild(create2DSizeTests(testCtx));
 	tests->addChild(create2DFormatTests(testCtx));
+	tests->addChild(create2DDerivTests(testCtx));
 
 	return tests.release();
 }
