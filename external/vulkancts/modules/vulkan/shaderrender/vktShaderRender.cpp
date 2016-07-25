@@ -534,7 +534,9 @@ TestInstance* ShaderRenderCase::createInstance (Context& context) const
 
 ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context)
 	: vkt::TestInstance		(context)
-	, m_memAlloc			(context.getDefaultAllocator())
+	, m_imageBackingMode	(IMAGE_BACKING_MODE_REGULAR)
+	, m_sparseContext		(createSparseContext())
+	, m_memAlloc			(getAllocator())
 	, m_clearColor			(DEFAULT_CLEAR_COLOR)
 	, m_isVertexCase		(false)
 	, m_vertexShaderName	("vert")
@@ -544,7 +546,6 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context)
 	, m_evaluator			(DE_NULL)
 	, m_uniformSetup		(DE_NULL)
 	, m_attribFunc			(DE_NULL)
-	, m_sparseContext		(createSparseContext())
 	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
 {
 }
@@ -557,18 +558,18 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 													const AttributeSetupFunc	attribFunc,
 													const ImageBackingMode		imageBackingMode)
 	: vkt::TestInstance		(context)
-	, m_memAlloc			(context.getDefaultAllocator())
+	, m_imageBackingMode	(imageBackingMode)
+	, m_sparseContext		(createSparseContext())
+	, m_memAlloc			(getAllocator())
 	, m_clearColor			(DEFAULT_CLEAR_COLOR)
 	, m_isVertexCase		(isVertexCase)
 	, m_vertexShaderName	("vert")
 	, m_fragmentShaderName	("frag")
 	, m_renderSize			(128, 128)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_imageBackingMode	(imageBackingMode)
 	, m_evaluator			(&evaluator)
 	, m_uniformSetup		(&uniformSetup)
 	, m_attribFunc			(attribFunc)
-	, m_sparseContext		(createSparseContext())
 	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
 {
 }
@@ -580,18 +581,18 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 													const AttributeSetupFunc	attribFunc,
 													const ImageBackingMode		imageBackingMode)
 	: vkt::TestInstance		(context)
-	, m_memAlloc			(context.getDefaultAllocator())
+	, m_imageBackingMode	(imageBackingMode)
+	, m_sparseContext		(createSparseContext())
+	, m_memAlloc			(getAllocator())
 	, m_clearColor			(DEFAULT_CLEAR_COLOR)
 	, m_isVertexCase		(isVertexCase)
 	, m_vertexShaderName	("vert")
 	, m_fragmentShaderName	("frag")
 	, m_renderSize			(128, 128)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_imageBackingMode	(imageBackingMode)
 	, m_evaluator			(evaluator)
 	, m_uniformSetup		(uniformSetup)
 	, m_attribFunc			(attribFunc)
-	, m_sparseContext		(createSparseContext())
 	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
 {
 }
@@ -609,46 +610,74 @@ static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstanc
 	TCU_THROW(NotSupportedError, "No matching queue found");
 }
 
+
+ShaderRenderCaseInstance::SparseContext::SparseContext (vkt::Context& context)
+	: m_context				(context)
+	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(context.getInstanceInterface(), context.getPhysicalDevice(), VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_SPARSE_BINDING_BIT))
+	, m_device				(createDevice())
+	, m_deviceInterface		(context.getInstanceInterface(), *m_device)
+	, m_allocator			(createAllocator())
+{
+	m_deviceInterface.getDeviceQueue(*m_device, m_queueFamilyIndex, 0, &m_queue);
+}
+
+Move<VkDevice> ShaderRenderCaseInstance::SparseContext::createDevice () const
+{
+	const InstanceInterface&				vk					= m_context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice		= m_context.getPhysicalDevice();
+	const VkPhysicalDeviceFeatures			deviceFeatures		= getPhysicalDeviceFeatures(vk, physicalDevice);
+
+	VkDeviceQueueCreateInfo					queueInfo;
+	VkDeviceCreateInfo						deviceInfo;
+	const float								queuePriority		= 1.0f;
+
+	deMemset(&queueInfo,	0, sizeof(queueInfo));
+	deMemset(&deviceInfo,	0, sizeof(deviceInfo));
+
+	queueInfo.sType							= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueInfo.pNext							= DE_NULL;
+	queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
+	queueInfo.queueFamilyIndex				= m_queueFamilyIndex;
+	queueInfo.queueCount					= 1u;
+	queueInfo.pQueuePriorities				= &queuePriority;
+
+	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceInfo.pNext						= DE_NULL;
+	deviceInfo.queueCreateInfoCount			= 1u;
+	deviceInfo.pQueueCreateInfos			= &queueInfo;
+	deviceInfo.enabledExtensionCount		= 0u;
+	deviceInfo.ppEnabledExtensionNames		= DE_NULL;
+	deviceInfo.enabledLayerCount			= 0u;
+	deviceInfo.ppEnabledLayerNames			= DE_NULL;
+	deviceInfo.pEnabledFeatures				= &deviceFeatures;
+
+	return vk::createDevice(vk, physicalDevice, &deviceInfo);
+}
+
+vk::Allocator* ShaderRenderCaseInstance::SparseContext::createAllocator	() const
+{
+	const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+	return new SimpleAllocator(m_deviceInterface, *m_device, memoryProperties);
+}
+
 ShaderRenderCaseInstance::SparseContext* ShaderRenderCaseInstance::createSparseContext (void) const
 {
 	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
 	{
-		const InstanceInterface&		vk				= getInstanceInterface();
-		const VkPhysicalDevice			physicalDevice	= getPhysicalDevice();
-		const VkPhysicalDeviceFeatures	deviceFeatures	= getPhysicalDeviceFeatures(vk, physicalDevice);
-
-		const deUint32 queueIndex = findQueueFamilyIndexWithCaps(vk, physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_SPARSE_BINDING_BIT);
-
-		VkDeviceQueueCreateInfo			queueInfo;
-		VkDeviceCreateInfo				deviceInfo;
-		const float						queuePriority	= 1.0f;
-
-		deMemset(&queueInfo,	0, sizeof(queueInfo));
-		deMemset(&deviceInfo,	0, sizeof(deviceInfo));
-
-		queueInfo.sType							= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueInfo.pNext							= DE_NULL;
-		queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
-		queueInfo.queueFamilyIndex				= queueIndex;
-		queueInfo.queueCount					= 1u;
-		queueInfo.pQueuePriorities				= &queuePriority;
-
-		deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		deviceInfo.pNext						= DE_NULL;
-		deviceInfo.queueCreateInfoCount			= 1u;
-		deviceInfo.pQueueCreateInfos			= &queueInfo;
-		deviceInfo.enabledExtensionCount		= 0u;
-		deviceInfo.ppEnabledExtensionNames		= DE_NULL;
-		deviceInfo.enabledLayerCount			= 0u;
-		deviceInfo.ppEnabledLayerNames			= DE_NULL;
-		deviceInfo.pEnabledFeatures				= &deviceFeatures;
-
-		Move<VkDevice>	device = createDevice(vk, physicalDevice, &deviceInfo);
-
-		return new SparseContext(device, queueIndex, vk);
+		return new SparseContext(m_context);
 	}
 
 	return DE_NULL;
+}
+
+vk::Allocator& ShaderRenderCaseInstance::getAllocator (void) const
+{
+	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
+	{
+		return *m_sparseContext->m_allocator;
+	}
+
+	return m_context.getDefaultAllocator();
 }
 
 ShaderRenderCaseInstance::~ShaderRenderCaseInstance (void)
@@ -666,7 +695,7 @@ VkDevice ShaderRenderCaseInstance::getDevice (void) const
 deUint32 ShaderRenderCaseInstance::getUniversalQueueFamilyIndex	(void) const
 {
 	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
-		return m_sparseContext->m_universalQueueFamilyIndex;
+		return m_sparseContext->m_queueFamilyIndex;
 
 	return m_context.getUniversalQueueFamilyIndex();
 }
@@ -1309,7 +1338,7 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 	const bool								isShadowSampler			= refSampler.compare != tcu::Sampler::COMPAREMODE_NONE;
 	const VkImageAspectFlags				aspectMask				= isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
-	const Unique<VkSemaphore> 				imageMemoryBindSemaphore(makeSemaphore(vk, vkDevice));
+	const Unique<VkSemaphore>				imageMemoryBindSemaphore(makeSemaphore(vk, vkDevice));
 	deUint32								bufferSize				= 0u;
 	std::vector<deUint32>					offsetMultiples;
 	offsetMultiples.push_back(4u);
@@ -2379,7 +2408,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		descriptorSetLayout = m_descriptorSetLayoutBuilder->build(vk, vkDevice);
 		if (!m_uniformInfos.empty())
 		{
-			descriptorPool 									= m_descriptorPoolBuilder->build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+			descriptorPool									= m_descriptorPoolBuilder->build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 			const VkDescriptorSetAllocateInfo	allocInfo	=
 			{
 				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,

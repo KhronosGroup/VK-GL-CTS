@@ -484,6 +484,27 @@ protected:
 
 	bool												isMultiSampling				(void) const;
 
+	ImageBackingMode									m_imageBackingMode;
+private:
+
+	struct SparseContext
+	{
+											SparseContext	(vkt::Context& context);
+
+		vkt::Context&						m_context;
+		const deUint32						m_queueFamilyIndex;
+		vk::Unique<vk::VkDevice>			m_device;
+		vk::DeviceDriver					m_deviceInterface;
+		vk::VkQueue							m_queue;
+		const de::UniquePtr<vk::Allocator>	m_allocator;
+	private:
+		vk::Move<vk::VkDevice>				createDevice	(void) const;
+		vk::Allocator*						createAllocator	(void) const;
+
+	};
+
+	de::UniquePtr<SparseContext>						m_sparseContext;
+protected:
 	vk::Allocator&										m_memAlloc;
 	const tcu::Vec4										m_clearColor;
 	const bool											m_isVertexCase;
@@ -495,7 +516,6 @@ protected:
 	std::string											m_fragmentShaderName;
 	tcu::UVec2											m_renderSize;
 	vk::VkFormat										m_colorFormat;
-	ImageBackingMode									m_imageBackingMode;
 
 private:
 	typedef std::vector<tcu::ConstPixelBufferAccess>	TextureLayerData;
@@ -541,24 +561,6 @@ private:
 	const ShaderEvaluator*								m_evaluator;
 	const UniformSetup*									m_uniformSetup;
 	const AttributeSetupFunc							m_attribFunc;
-
-	struct SparseContext
-	{
-		SparseContext (vk::Move<vk::VkDevice>& device, const deUint32 universalQueueFamilyIndex, const vk::InstanceInterface& interface)
-		: m_device						(device)
-		, m_universalQueueFamilyIndex	(universalQueueFamilyIndex)
-		, m_deviceInterface				(interface, *m_device)
-		{
-			m_deviceInterface.getDeviceQueue(*m_device, m_universalQueueFamilyIndex, 0, &m_queue);
-		}
-
-		vk::Unique<vk::VkDevice>	m_device;
-		const deUint32				m_universalQueueFamilyIndex;
-		vk::DeviceDriver			m_deviceInterface;
-		vk::VkQueue					m_queue;
-	};
-
-	de::UniquePtr<SparseContext>						m_sparseContext;
 	de::MovePtr<QuadGrid>								m_quadGrid;
 	tcu::TextureLevel									m_resultImage;
 
@@ -631,7 +633,8 @@ private:
 	vk::VkQueue											getUniversalQueue				(void) const;
 	vk::VkPhysicalDevice								getPhysicalDevice				(void) const;
 	const vk::InstanceInterface&						getInstanceInterface			(void) const;
-	SparseContext*										createSparseContext	(void) const;
+	SparseContext*										createSparseContext				(void) const;
+	vk::Allocator&										getAllocator					(void) const;
 };
 
 template<typename T>
