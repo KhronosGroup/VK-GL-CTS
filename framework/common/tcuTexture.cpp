@@ -287,40 +287,6 @@ int getChannelSize (TextureFormat::ChannelType type)
 	}
 }
 
-int getNumUsedChannels (TextureFormat::ChannelOrder order)
-{
-	// make sure this table is updated if type table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 21);
-
-	switch (order)
-	{
-		case TextureFormat::R:			return 1;
-		case TextureFormat::A:			return 1;
-		case TextureFormat::I:			return 1;
-		case TextureFormat::L:			return 1;
-		case TextureFormat::LA:			return 2;
-		case TextureFormat::RG:			return 2;
-		case TextureFormat::RA:			return 2;
-		case TextureFormat::RGB:		return 3;
-		case TextureFormat::RGBA:		return 4;
-		case TextureFormat::ARGB:		return 4;
-		case TextureFormat::BGR:		return 3;
-		case TextureFormat::BGRA:		return 4;
-		case TextureFormat::sR:			return 1;
-		case TextureFormat::sRG:		return 2;
-		case TextureFormat::sRGB:		return 3;
-		case TextureFormat::sRGBA:		return 4;
-		case TextureFormat::sBGR:		return 3;
-		case TextureFormat::sBGRA:		return 4;
-		case TextureFormat::D:			return 1;
-		case TextureFormat::S:			return 1;
-		case TextureFormat::DS:			return 2;
-		default:
-			DE_ASSERT(DE_FALSE);
-			return 0;
-	}
-}
-
 inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
@@ -654,6 +620,40 @@ bool isValid (TextureFormat format)
 	}
 
 	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
+}
+
+int getNumUsedChannels (TextureFormat::ChannelOrder order)
+{
+	// make sure this table is updated if type table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 21);
+
+	switch (order)
+	{
+		case TextureFormat::R:			return 1;
+		case TextureFormat::A:			return 1;
+		case TextureFormat::I:			return 1;
+		case TextureFormat::L:			return 1;
+		case TextureFormat::LA:			return 2;
+		case TextureFormat::RG:			return 2;
+		case TextureFormat::RA:			return 2;
+		case TextureFormat::RGB:		return 3;
+		case TextureFormat::RGBA:		return 4;
+		case TextureFormat::ARGB:		return 4;
+		case TextureFormat::BGR:		return 3;
+		case TextureFormat::BGRA:		return 4;
+		case TextureFormat::sR:			return 1;
+		case TextureFormat::sRG:		return 2;
+		case TextureFormat::sRGB:		return 3;
+		case TextureFormat::sRGBA:		return 4;
+		case TextureFormat::sBGR:		return 3;
+		case TextureFormat::sBGRA:		return 4;
+		case TextureFormat::D:			return 1;
+		case TextureFormat::S:			return 1;
+		case TextureFormat::DS:			return 2;
+		default:
+			DE_ASSERT(DE_FALSE);
+			return 0;
+	}
 }
 
 /** Get pixel size in bytes. */

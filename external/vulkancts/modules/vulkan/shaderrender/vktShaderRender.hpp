@@ -36,6 +36,8 @@
 #include "vkRef.hpp"
 #include "vkMemUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include "vkPlatform.hpp"
 
 #include "vktTestCaseUtil.hpp"
 
@@ -68,22 +70,61 @@ public:
 	enum Type
 	{
 		TYPE_NONE = 0,
+		TYPE_1D,
 		TYPE_2D,
-		TYPE_CUBE_MAP,
-		TYPE_2D_ARRAY,
 		TYPE_3D,
+		TYPE_CUBE_MAP,
+		TYPE_1D_ARRAY,
+		TYPE_2D_ARRAY,
+		TYPE_CUBE_ARRAY,
 
 		TYPE_LAST
+	};
+
+	struct Parameters
+	{
+		deUint32					baseMipLevel;
+		vk::VkComponentMapping		componentMapping;
+		vk::VkSampleCountFlagBits	samples;
+
+		Parameters (deUint32					baseMipLevel_		= 0,
+					vk::VkComponentMapping		componentMapping_	= vk::makeComponentMappingRGBA(),
+					vk::VkSampleCountFlagBits	samples_			= vk::VK_SAMPLE_COUNT_1_BIT)
+			: baseMipLevel		(baseMipLevel_)
+			, componentMapping	(componentMapping_)
+			, samples			(samples_)
+		{
+		}
 	};
 
 										TextureBinding		(const tcu::Archive&	archive,
 															const char*				filename,
 															const Type				type,
 															const tcu::Sampler&		sampler);
+
+										TextureBinding		(const tcu::Texture1D* tex1D, const tcu::Sampler& sampler);
+										TextureBinding		(const tcu::Texture2D* tex2D, const tcu::Sampler& sampler);
+										TextureBinding		(const tcu::Texture3D* tex3D, const tcu::Sampler& sampler);
+										TextureBinding		(const tcu::TextureCube* texCube, const tcu::Sampler& sampler);
+										TextureBinding		(const tcu::Texture1DArray* tex1DArray, const tcu::Sampler& sampler);
+										TextureBinding		(const tcu::Texture2DArray* tex2DArray, const tcu::Sampler& sampler);
+										TextureBinding		(const tcu::TextureCubeArray* texCubeArray, const tcu::Sampler& sampler);
+
 										~TextureBinding		(void);
+
 	Type								getType				(void) const { return m_type;		}
 	const tcu::Sampler&					getSampler			(void) const { return m_sampler;	}
-	const tcu::Texture2D&				get2D				(void) const { DE_ASSERT(getType() == TYPE_2D && m_binding.tex2D !=NULL); return *m_binding.tex2D; }
+
+	const tcu::Texture1D&				get1D				(void) const { DE_ASSERT(getType() == TYPE_1D && m_binding.tex1D != NULL);					return *m_binding.tex1D;		}
+	const tcu::Texture2D&				get2D				(void) const { DE_ASSERT(getType() == TYPE_2D && m_binding.tex2D != NULL);					return *m_binding.tex2D;		}
+	const tcu::Texture3D&				get3D				(void) const { DE_ASSERT(getType() == TYPE_3D && m_binding.tex3D != NULL);					return *m_binding.tex3D;		}
+	const tcu::TextureCube&				getCube				(void) const { DE_ASSERT(getType() == TYPE_CUBE_MAP && m_binding.texCube != NULL);			return *m_binding.texCube;		}
+	const tcu::Texture1DArray&			get1DArray			(void) const { DE_ASSERT(getType() == TYPE_1D_ARRAY && m_binding.tex1DArray != NULL);		return *m_binding.tex1DArray;	}
+	const tcu::Texture2DArray&			get2DArray			(void) const { DE_ASSERT(getType() == TYPE_2D_ARRAY && m_binding.tex2DArray != NULL);		return *m_binding.tex2DArray;	}
+	const tcu::TextureCubeArray&		getCubeArray		(void) const { DE_ASSERT(getType() == TYPE_CUBE_ARRAY && m_binding.texCubeArray != NULL);	return *m_binding.texCubeArray;	}
+
+	void								setParameters		(const Parameters& params) { m_params = params; }
+	const Parameters&					getParameters		(void) const { return m_params; }
 
 private:
 										TextureBinding		(const TextureBinding&);	// not allowed!
@@ -93,10 +134,17 @@ private:
 
 	Type								m_type;
 	tcu::Sampler						m_sampler;
+	Parameters							m_params;
 
 	union
 	{
-		const tcu::Texture2D*	tex2D;
+		const tcu::Texture1D*			tex1D;
+		const tcu::Texture2D*			tex2D;
+		const tcu::Texture3D*			tex3D;
+		const tcu::TextureCube*			texCube;
+		const tcu::Texture1DArray*		tex1DArray;
+		const tcu::Texture2DArray*		tex2DArray;
+		const tcu::TextureCubeArray*	texCubeArray;
 	} m_binding;
 };
 
@@ -116,17 +164,23 @@ public:
 
 	struct ShaderSampler
 	{
-		tcu::Sampler				sampler;
-		const tcu::Texture2D*		tex2D;
-		const tcu::TextureCube*		texCube;
-		const tcu::Texture2DArray*	tex2DArray;
-		const tcu::Texture3D*		tex3D;
+		tcu::Sampler					sampler;
+		const tcu::Texture1D*			tex1D;
+		const tcu::Texture2D*			tex2D;
+		const tcu::Texture3D*			tex3D;
+		const tcu::TextureCube*			texCube;
+		const tcu::Texture1DArray*		tex1DArray;
+		const tcu::Texture2DArray*		tex2DArray;
+		const tcu::TextureCubeArray*	texCubeArray;
 
 		inline ShaderSampler (void)
-			: tex2D		(DE_NULL)
-			, texCube	(DE_NULL)
-			, tex2DArray(DE_NULL)
-			, tex3D		(DE_NULL)
+			: tex1D			(DE_NULL)
+			, tex2D			(DE_NULL)
+			, tex3D			(DE_NULL)
+			, texCube		(DE_NULL)
+			, tex1DArray	(DE_NULL)
+			, tex2DArray	(DE_NULL)
+			, texCubeArray	(DE_NULL)
 		{
 		}
 	};
@@ -223,7 +277,6 @@ public:
 																		 const UniformSetup*		uniformSetup,
 																		 const AttributeSetupFunc	attribFunc);
 
-
 	virtual											~ShaderRenderCase	(void);
 	virtual	void									initPrograms		(vk::SourceCollections& programCollection) const;
 	virtual	TestInstance*							createInstance		(Context& context) const;
@@ -237,7 +290,6 @@ protected:
 	const de::UniquePtr<const UniformSetup>			m_uniformSetup;
 	const AttributeSetupFunc						m_attribFunc;
 };
-
 
 enum BaseUniformType
 {
@@ -336,7 +388,10 @@ enum BaseUniformType
 
 	UV4_BLACK,
 	UV4_GRAY,
-	UV4_WHITE
+	UV4_WHITE,
+
+// Last
+	U_LAST
 };
 
 enum BaseAttributeType
@@ -364,11 +419,19 @@ enum BaseAttributeType
 class ShaderRenderCaseInstance : public vkt::TestInstance
 {
 public:
+	enum ImageBackingMode
+	{
+		IMAGE_BACKING_MODE_REGULAR = 0,
+		IMAGE_BACKING_MODE_SPARSE,
+	};
+
+														ShaderRenderCaseInstance	(Context&					context);
 														ShaderRenderCaseInstance	(Context&					context,
 																					const bool					isVertexCase,
 																					const ShaderEvaluator&		evaluator,
 																					const UniformSetup&			uniformSetup,
-																					const AttributeSetupFunc	attribFunc);
+																					const AttributeSetupFunc	attribFunc,
+																					const ImageBackingMode		imageBackingMode = IMAGE_BACKING_MODE_REGULAR);
 
 	virtual												~ShaderRenderCaseInstance	(void);
 	virtual tcu::TestStatus								iterate						(void);
@@ -391,49 +454,115 @@ public:
 																					const void*				data);
 	void												useUniform					(deUint32				bindingLocation,
 																					BaseUniformType			type);
-	void												useSampler2D				(deUint32				bindingLocation,
+	void												useSampler					(deUint32				bindingLocation,
 																					deUint32				textureId);
 
+	static const tcu::Vec4								getDefaultConstCoords		(void) { return tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f); }
+
 protected:
+														ShaderRenderCaseInstance	(Context&					context,
+																					 const bool					isVertexCase,
+																					 const ShaderEvaluator*		evaluator,
+																					 const UniformSetup*		uniformSetup,
+																					 const AttributeSetupFunc	attribFunc,
+																					 const ImageBackingMode		imageBackingMode = IMAGE_BACKING_MODE_REGULAR);
+
 	virtual void										setup						(void);
 	virtual void										setupUniforms				(const tcu::Vec4& constCoords);
+	virtual void										setupDefaultInputs			(void);
+
+	void												render						(deUint32					numVertices,
+																					 deUint32					numTriangles,
+																					 const deUint16*			indices,
+																					 const tcu::Vec4&			constCoords		= getDefaultConstCoords());
+
+	const tcu::TextureLevel&							getResultImage				(void) const { return m_resultImage; }
 
 	const tcu::UVec2									getViewportSize				(void) const;
 
-	std::vector<tcu::Mat4>								m_userAttribTransforms;
-	const tcu::Vec4										m_clearColor;
-	std::vector<TextureBindingSp>						m_textures;
+	void												setSampleCount				(vk::VkSampleCountFlagBits sampleCount);
 
-	vk::Allocator&										m_memAlloc;
+	bool												isMultiSampling				(void) const;
 
+	ImageBackingMode									m_imageBackingMode;
 private:
 
-	void												setupTextures				(void);
-	de::MovePtr<vk::Allocation>							uploadImage2D				(const tcu::Texture2D&			refTexture,
-																					 const vk::VkImage&				vkTexture);
-	vk::Move<vk::VkImage>								createImage2D				(const tcu::Texture2D&			texture,
-																					 const vk::VkFormat				format,
-																					 const vk::VkImageUsageFlags	usage,
-																					 const vk::VkImageTiling		tiling);
-	void												copyTilingImageToOptimal	(const vk::VkImage&				srcImage,
-																					 const vk::VkImage&				dstImage,
-																					 deUint32						width,
-																					 deUint32						height);
+	struct SparseContext
+	{
+											SparseContext	(vkt::Context& context);
+
+		vkt::Context&						m_context;
+		const deUint32						m_queueFamilyIndex;
+		vk::Unique<vk::VkDevice>			m_device;
+		vk::DeviceDriver					m_deviceInterface;
+		vk::VkQueue							m_queue;
+		const de::UniquePtr<vk::Allocator>	m_allocator;
+	private:
+		vk::Move<vk::VkDevice>				createDevice	(void) const;
+		vk::Allocator*						createAllocator	(void) const;
+
+	};
+
+	de::UniquePtr<SparseContext>						m_sparseContext;
+protected:
+	vk::Allocator&										m_memAlloc;
+	const tcu::Vec4										m_clearColor;
+	const bool											m_isVertexCase;
+
+	std::vector<tcu::Mat4>								m_userAttribTransforms;
+	std::vector<TextureBindingSp>						m_textures;
+
+	std::string											m_vertexShaderName;
+	std::string											m_fragmentShaderName;
+	tcu::UVec2											m_renderSize;
+	vk::VkFormat										m_colorFormat;
+
+private:
+	typedef std::vector<tcu::ConstPixelBufferAccess>	TextureLayerData;
+	typedef std::vector<TextureLayerData>				TextureData;
+
+	void												uploadImage					(const tcu::TextureFormat&		texFormat,
+																					 const TextureData&				textureData,
+																					 const tcu::Sampler&			refSampler,
+																					 deUint32						mipLevels,
+																					 deUint32						arrayLayers,
+																					 vk::VkImage					destImage);
+
+	void												checkSparseSupport			(const vk::VkImageType imageType) const;
+
+	void												uploadSparseImage			(const tcu::TextureFormat&		texFormat,
+																					 const TextureData&				textureData,
+																					 const tcu::Sampler&			refSampler,
+																					 const deUint32					mipLevels,
+																					 const deUint32					arrayLayers,
+																					 const vk::VkImage				sparseImage,
+																					 const vk::VkImageCreateInfo&	imageCreateInfo,
+																					 const tcu::UVec3				texSize);
+
+	void												createSamplerUniform		(deUint32						bindingLocation,
+																					 TextureBinding::Type			textureType,
+																					 const tcu::TextureFormat&		texFormat,
+																					 const tcu::UVec3				texSize,
+																					 const TextureData&				textureData,
+																					 const tcu::Sampler&			refSampler,
+																					 deUint32						mipLevels,
+																					 deUint32						arrayLayers,
+																					 TextureBinding::Parameters		textureParams);
 
 	void												setupUniformData			(deUint32 bindingLocation, size_t size, const void* dataPtr);
-	void												setupDefaultInputs			(const QuadGrid& quadGrid);
 
-	void												render						(tcu::Surface& result, const QuadGrid& quadGrid);
 	void												computeVertexReference		(tcu::Surface& result, const QuadGrid& quadGrid);
 	void												computeFragmentReference	(tcu::Surface& result, const QuadGrid& quadGrid);
 	bool												compareImages				(const tcu::Surface&	resImage,
 																					 const tcu::Surface&	refImage,
 																					 float					errorThreshold);
 
-	const bool											m_isVertexCase;
-	const ShaderEvaluator&								m_evaluator;
-	const UniformSetup&									m_uniformSetup;
+private:
+	const ShaderEvaluator*								m_evaluator;
+	const UniformSetup*									m_uniformSetup;
 	const AttributeSetupFunc							m_attribFunc;
+	de::MovePtr<QuadGrid>								m_quadGrid;
+	tcu::TextureLevel									m_resultImage;
 
 	struct EnabledBaseAttribute
 	{
@@ -442,40 +571,11 @@ private:
 	};
 	std::vector<EnabledBaseAttribute>					m_enabledBaseAttributes;
 
-	const tcu::UVec2									m_renderSize;
-	const vk::VkFormat									m_colorFormat;
-
-	vk::Move<vk::VkImage>								m_colorImage;
-	de::MovePtr<vk::Allocation>							m_colorImageAlloc;
-	vk::Move<vk::VkImageView>							m_colorImageView;
-
-	vk::Move<vk::VkRenderPass>							m_renderPass;
-	vk::Move<vk::VkFramebuffer>							m_framebuffer;
-	vk::Move<vk::VkPipelineLayout>						m_pipelineLayout;
-	vk::Move<vk::VkPipeline>							m_graphicsPipeline;
-
-	vk::Move<vk::VkShaderModule>						m_vertexShaderModule;
-	vk::Move<vk::VkShaderModule>						m_fragmentShaderModule;
-
-	vk::Move<vk::VkBuffer>								m_indiceBuffer;
-	de::MovePtr<vk::Allocation>							m_indiceBufferAlloc;
-
-	vk::Move<vk::VkDescriptorSetLayout>					m_descriptorSetLayout;
-
-	vk::Move<vk::VkDescriptorPool>						m_descriptorPool;
-	vk::Move<vk::VkDescriptorSet>						m_descriptorSet;
-
-	vk::Move<vk::VkCommandPool>							m_cmdPool;
-	vk::Move<vk::VkCommandBuffer>						m_cmdBuffer;
-
-	vk::Move<vk::VkFence>								m_fence;
-
-	vk::DescriptorSetLayoutBuilder						m_descriptorSetLayoutBuilder;
-	vk::DescriptorPoolBuilder							m_descriptorPoolBuilder;
-	vk::DescriptorSetUpdateBuilder						m_descriptorSetUpdateBuilder;
+	de::MovePtr<vk::DescriptorSetLayoutBuilder>			m_descriptorSetLayoutBuilder;
+	de::MovePtr<vk::DescriptorPoolBuilder>				m_descriptorPoolBuilder;
+	de::MovePtr<vk::DescriptorSetUpdateBuilder>			m_descriptorSetUpdateBuilder;
 
 	typedef de::SharedPtr<vk::Unique<vk::VkBuffer> >		VkBufferSp;
-
 	typedef de::SharedPtr<vk::Unique<vk::VkImage> >			VkImageSp;
 	typedef de::SharedPtr<vk::Unique<vk::VkImageView> >		VkImageViewSp;
 	typedef de::SharedPtr<vk::Unique<vk::VkSampler> >		VkSamplerSp;
@@ -519,10 +619,22 @@ private:
 	std::vector<UniformInfoSp>							m_uniformInfos;
 
 	std::vector<vk::VkVertexInputBindingDescription>	m_vertexBindingDescription;
-	std::vector<vk::VkVertexInputAttributeDescription>	m_vertexattributeDescription;
+	std::vector<vk::VkVertexInputAttributeDescription>	m_vertexAttributeDescription;
 
 	std::vector<VkBufferSp>								m_vertexBuffers;
 	std::vector<AllocationSp>							m_vertexBufferAllocs;
+
+	vk::VkSampleCountFlagBits							m_sampleCount;
+
+	// Wrapper functions around m_context calls to support sparse cases.
+	vk::VkDevice										getDevice						(void) const;
+	deUint32											getUniversalQueueFamilyIndex	(void) const;
+	const vk::DeviceInterface&							getDeviceInterface				(void) const;
+	vk::VkQueue											getUniversalQueue				(void) const;
+	vk::VkPhysicalDevice								getPhysicalDevice				(void) const;
+	const vk::InstanceInterface&						getInstanceInterface			(void) const;
+	SparseContext*										createSparseContext				(void) const;
+	vk::Allocator&										getAllocator					(void) const;
 };
 
 template<typename T>

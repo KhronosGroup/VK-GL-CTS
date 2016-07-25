@@ -62,7 +62,7 @@ public:
 											 const tcu::UVec3&			imageSize,
 											 const tcu::TextureFormat&	format);
 
-	TestInstance*	createInstance			(Context&			context) const;
+	TestInstance*	createInstance			(Context&					context) const;
 
 private:
 	const ImageType				m_imageType;
@@ -112,48 +112,33 @@ ImageSparseBindingInstance::ImageSparseBindingInstance (Context&					context,
 
 tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 {
-	const InstanceInterface&	instance		= m_context.getInstanceInterface();
-	const DeviceInterface&		deviceInterface = m_context.getDeviceInterface();
-	const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
-
-	// Check if device supports sparse binding
-	const VkPhysicalDeviceFeatures  deviceFeatures = getPhysicalDeviceFeatures(instance, physicalDevice);
-
-	if (deviceFeatures.sparseBinding == false)
-	{
-		return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "Device does not support sparse binding");
-	}
+	const InstanceInterface&			instance		= m_context.getInstanceInterface();
+	const DeviceInterface&				deviceInterface = m_context.getDeviceInterface();
+	const VkPhysicalDevice				physicalDevice	= m_context.getPhysicalDevice();
+	VkImageCreateInfo					imageSparseInfo;
+	std::vector<DeviceMemoryUniquePtr>	deviceMemUniquePtrVec;
 
 	// Check if image size does not exceed device limits
-	const VkPhysicalDeviceProperties deviceProperties = getPhysicalDeviceProperties(instance, physicalDevice);
+	if (!isImageSizeSupported(instance, physicalDevice, m_imageType, m_imageSize))
+		TCU_THROW(NotSupportedError, "Image size not supported for device");
 
-	if (isImageSizeSupported(m_imageType, m_imageSize, deviceProperties.limits) == false)
+	// Check if device supports sparse binding
+	if (!getPhysicalDeviceFeatures(instance, physicalDevice).sparseBinding)
+		TCU_THROW(NotSupportedError, "Device does not support sparse binding");
+
 	{
-		return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "Image size not supported for device");
+		// Create logical device supporting both sparse and compute queues
+		QueueRequirementsVec queueRequirements;
+		queueRequirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
+		queueRequirements.push_back(QueueRequirements(VK_QUEUE_COMPUTE_BIT, 1u));
+
+		createDeviceSupportingQueues(queueRequirements);
 	}
 
-	QueueRequirementsVec queueRequirements;
-	queueRequirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
-	queueRequirements.push_back(QueueRequirements(VK_QUEUE_COMPUTE_BIT, 1u));
+	const de::UniquePtr<Allocator> allocator(new SimpleAllocator(deviceInterface, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
 
-	// Create logical device supporting both sparse and compute queues
-	if (!createDeviceSupportingQueues(queueRequirements))
-	{
-		return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Could not create device supporting sparse and compute queue");
-	}
-
-	const VkPhysicalDeviceMemoryProperties	deviceMemoryProperties = getPhysicalDeviceMemoryProperties(instance, physicalDevice);
-
-	// Create memory allocator for logical device
-	const de::UniquePtr<Allocator> allocator(new SimpleAllocator(deviceInterface, *m_logicalDevice, deviceMemoryProperties));
-
-	// Create queue supporting sparse binding operations
-	const Queue& sparseQueue = getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
-
-	// Create queue supporting compute and transfer operations
-	const Queue& computeQueue = getQueue(VK_QUEUE_COMPUTE_BIT, 0);
-
-	VkImageCreateInfo imageSparseInfo;
+	const Queue& sparseQueue	= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
+	const Queue& computeQueue	= getQueue(VK_QUEUE_COMPUTE_BIT, 0);
 
 	imageSparseInfo.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;					//VkStructureType		sType;
 	imageSparseInfo.pNext					= DE_NULL;												//const void*			pNext;
@@ -176,107 +161,73 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 		imageSparseInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 	}
 
-	VkImageFormatProperties imageFormatProperties;
-	instance.getPhysicalDeviceImageFormatProperties(physicalDevice,
-													imageSparseInfo.format,
-													imageSparseInfo.imageType,
-													imageSparseInfo.tiling,
-													imageSparseInfo.usage,
-													imageSparseInfo.flags,
-													&imageFormatProperties);
-
-	imageSparseInfo.mipLevels = getImageMaxMipLevels(imageFormatProperties, imageSparseInfo);
-
-	// Allow sharing of sparse image by two different queue families (if necessary)
-	const deUint32 queueFamilyIndices[] = { sparseQueue.queueFamilyIndex, computeQueue.queueFamilyIndex };
-
-	if (sparseQueue.queueFamilyIndex != computeQueue.queueFamilyIndex)
 	{
-		imageSparseInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;	//VkSharingMode			sharingMode;
-		imageSparseInfo.queueFamilyIndexCount = 2u;					//deUint32				queueFamilyIndexCount;
-		imageSparseInfo.pQueueFamilyIndices = queueFamilyIndices;	//const deUint32*		pQueueFamilyIndices;
+		VkImageFormatProperties imageFormatProperties;
+		instance.getPhysicalDeviceImageFormatProperties(physicalDevice,
+			imageSparseInfo.format,
+			imageSparseInfo.imageType,
+			imageSparseInfo.tiling,
+			imageSparseInfo.usage,
+			imageSparseInfo.flags,
+			&imageFormatProperties);
+
+		imageSparseInfo.mipLevels = getImageMaxMipLevels(imageFormatProperties, imageSparseInfo.extent);
 	}
 
 	// Create sparse image
 	const Unique<VkImage> imageSparse(createImage(deviceInterface, *m_logicalDevice, &imageSparseInfo));
 
+	// Create sparse image memory bind semaphore
+	const Unique<VkSemaphore> imageMemoryBindSemaphore(makeSemaphore(deviceInterface, *m_logicalDevice));
+
 	// Get sparse image general memory requirements
 	const VkMemoryRequirements imageSparseMemRequirements = getImageMemoryRequirements(deviceInterface, *m_logicalDevice, *imageSparse);
 
 	// Check if required image memory size does not exceed device limits
-	if (imageSparseMemRequirements.size > deviceProperties.limits.sparseAddressSpaceSize)
-	{
-		return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "Required memory size for sparse resource exceeds device limits");
-	}
+	if (imageSparseMemRequirements.size > getPhysicalDeviceProperties(instance, physicalDevice).limits.sparseAddressSpaceSize)
+		TCU_THROW(NotSupportedError, "Required memory size for sparse resource exceeds device limits");
 
 	DE_ASSERT((imageSparseMemRequirements.size % imageSparseMemRequirements.alignment) == 0);
 
-	typedef de::SharedPtr< Unique<VkDeviceMemory> > DeviceMemoryUniquePtr;
-
-	std::vector<VkSparseMemoryBind>		sparseMemoryBinds;
-	std::vector<DeviceMemoryUniquePtr>	deviceMemUniquePtrVec;
-	const deUint32						numSparseBinds	= static_cast<deUint32>(imageSparseMemRequirements.size / imageSparseMemRequirements.alignment);
-	const deUint32						memoryType		= findMatchingMemoryType(deviceMemoryProperties, imageSparseMemRequirements, MemoryRequirement::Any);
-
-	if (memoryType == NO_MATCH_FOUND)
 	{
-		return tcu::TestStatus(QP_TEST_RESULT_FAIL, "No matching memory type found");
-	}
+		std::vector<VkSparseMemoryBind>	sparseMemoryBinds;
+		const deUint32					numSparseBinds	= static_cast<deUint32>(imageSparseMemRequirements.size / imageSparseMemRequirements.alignment);
+		const deUint32					memoryType		= findMatchingMemoryType(instance, physicalDevice, imageSparseMemRequirements, MemoryRequirement::Any);
 
-	for (deUint32 sparseBindNdx = 0; sparseBindNdx < numSparseBinds; ++sparseBindNdx)
-	{
-		const VkMemoryAllocateInfo allocInfo =
+		if (memoryType == NO_MATCH_FOUND)
+			return tcu::TestStatus::fail("No matching memory type found");
+
+		for (deUint32 sparseBindNdx = 0; sparseBindNdx < numSparseBinds; ++sparseBindNdx)
 		{
-			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType			sType;
-			DE_NULL,								//	const void*				pNext;
-			imageSparseMemRequirements.alignment,	//	VkDeviceSize			allocationSize;
-			memoryType,								//	deUint32				memoryTypeIndex;
+			const VkSparseMemoryBind sparseMemoryBind = makeSparseMemoryBind(deviceInterface, *m_logicalDevice,
+				imageSparseMemRequirements.alignment, memoryType, imageSparseMemRequirements.alignment * sparseBindNdx);
+
+			deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(sparseMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, *m_logicalDevice, DE_NULL))));
+
+			sparseMemoryBinds.push_back(sparseMemoryBind);
+		}
+
+		const VkSparseImageOpaqueMemoryBindInfo opaqueBindInfo = makeSparseImageOpaqueMemoryBindInfo(*imageSparse, numSparseBinds, &sparseMemoryBinds[0]);
+
+		const VkBindSparseInfo bindSparseInfo =
+		{
+			VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,			//VkStructureType							sType;
+			DE_NULL,									//const void*								pNext;
+			0u,											//deUint32									waitSemaphoreCount;
+			DE_NULL,									//const VkSemaphore*						pWaitSemaphores;
+			0u,											//deUint32									bufferBindCount;
+			DE_NULL,									//const VkSparseBufferMemoryBindInfo*		pBufferBinds;
+			1u,											//deUint32									imageOpaqueBindCount;
+			&opaqueBindInfo,							//const VkSparseImageOpaqueMemoryBindInfo*	pImageOpaqueBinds;
+			0u,											//deUint32									imageBindCount;
+			DE_NULL,									//const VkSparseImageMemoryBindInfo*		pImageBinds;
+			1u,											//deUint32									signalSemaphoreCount;
+			&imageMemoryBindSemaphore.get()				//const VkSemaphore*						pSignalSemaphores;
 		};
 
-		VkDeviceMemory deviceMemory = 0;
-		VK_CHECK(deviceInterface.allocateMemory(*m_logicalDevice, &allocInfo, DE_NULL, &deviceMemory));
-
-		deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(deviceMemory), Deleter<VkDeviceMemory>(deviceInterface, *m_logicalDevice, DE_NULL))));
-
-		const VkSparseMemoryBind sparseMemoryBind = makeSparseMemoryBind
-		(
-			imageSparseMemRequirements.alignment * sparseBindNdx,	//VkDeviceSize				resourceOffset
-			imageSparseMemRequirements.alignment,					//VkDeviceSize				size
-			deviceMemory,											//VkDeviceMemory			memory;
-			0u,														//VkDeviceSize				memoryOffset;
-			0u														//VkSparseMemoryBindFlags	flags;
-		);
-
-		sparseMemoryBinds.push_back(sparseMemoryBind);
+		// Submit sparse bind commands for execution
+		VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, DE_NULL));
 	}
-
-	const VkSparseImageOpaqueMemoryBindInfo opaqueBindInfo = makeSparseImageOpaqueMemoryBindInfo
-	(
-		*imageSparse,			// VkImage						image
-		numSparseBinds,			// deUint32						bindCount
-		&sparseMemoryBinds[0]   // const VkSparseMemoryBind*	pBinds
-	);
-
-	const Unique<VkSemaphore> imageMemoryBindSemaphore(makeSemaphore(deviceInterface, *m_logicalDevice));
-
-	const VkBindSparseInfo bindSparseInfo =
-	{
-		VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,			//VkStructureType							sType;
-		DE_NULL,									//const void*								pNext;
-		0u,											//deUint32									waitSemaphoreCount;
-		DE_NULL,									//const VkSemaphore*						pWaitSemaphores;
-		0u,											//deUint32									bufferBindCount;
-		DE_NULL,									//const VkSparseBufferMemoryBindInfo*		pBufferBinds;
-		1u,											//deUint32									imageOpaqueBindCount;
-		&opaqueBindInfo,							//const VkSparseImageOpaqueMemoryBindInfo*	pImageOpaqueBinds;
-		0u,											//deUint32									imageBindCount;
-		DE_NULL,									//const VkSparseImageMemoryBindInfo*		pImageBinds;
-		1u,											//deUint32									signalSemaphoreCount;
-		&imageMemoryBindSemaphore.get()				//const VkSemaphore*						pSignalSemaphores;
-	};
-
-	// Submit sparse bind commands for execution
-	VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, DE_NULL));
 
 	// Create command buffer for compute and transfer oparations
 	const Unique<VkCommandPool>	  commandPool(makeCommandPool(deviceInterface, *m_logicalDevice, computeQueue.queueFamilyIndex));
@@ -302,26 +253,34 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 
 	flushMappedMemoryRange(deviceInterface, *m_logicalDevice, inputBuffer->getAllocation().getMemory(), inputBuffer->getAllocation().getOffset(), imageSizeInBytes);
 
-	const VkBufferMemoryBarrier inputBufferBarrier
-		= makeBufferMemoryBarrier(
-		VK_ACCESS_HOST_WRITE_BIT,
-		VK_ACCESS_TRANSFER_READ_BIT,
-		inputBuffer->get(),
-		0u,
-		imageSizeInBytes);
+	{
+		const VkBufferMemoryBarrier inputBufferBarrier = makeBufferMemoryBarrier
+		(
+			VK_ACCESS_HOST_WRITE_BIT,
+			VK_ACCESS_TRANSFER_READ_BIT,
+			inputBuffer->get(),
+			0u,
+			imageSizeInBytes
+		);
 
-	const VkImageSubresourceRange fullImageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, imageSparseInfo.mipLevels, 0u, imageSparseInfo.arrayLayers);
+		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 1u, &inputBufferBarrier, 0u, DE_NULL);
+	}
 
-	const VkImageMemoryBarrier imageSparseTransferDstBarrier
-		= makeImageMemoryBarrier(
-		0u,
-		VK_ACCESS_TRANSFER_WRITE_BIT,
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		*imageSparse,
-		fullImageSubresourceRange);
+	{
+		const VkImageMemoryBarrier imageSparseTransferDstBarrier = makeImageMemoryBarrier
+		(
+			0u,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			sparseQueue.queueFamilyIndex != computeQueue.queueFamilyIndex ? sparseQueue.queueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
+			sparseQueue.queueFamilyIndex != computeQueue.queueFamilyIndex ? computeQueue.queueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
+			*imageSparse,
+			makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, imageSparseInfo.mipLevels, 0u, imageSparseInfo.arrayLayers)
+		);
 
-	deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 1u, &inputBufferBarrier, 1u, &imageSparseTransferDstBarrier);
+		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageSparseTransferDstBarrier);
+	}
 
 	std::vector <VkBufferImageCopy> bufferImageCopy;
 	bufferImageCopy.resize(imageSparseInfo.mipLevels);
@@ -336,31 +295,37 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 
 	deviceInterface.cmdCopyBufferToImage(*commandBuffer, inputBuffer->get(), *imageSparse, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, static_cast<deUint32>(bufferImageCopy.size()), &bufferImageCopy[0]);
 
-	const VkImageMemoryBarrier imageSparseTransferSrcBarrier
-		= makeImageMemoryBarrier(
-		VK_ACCESS_TRANSFER_WRITE_BIT,
-		VK_ACCESS_TRANSFER_READ_BIT,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		*imageSparse,
-		fullImageSubresourceRange);
+	{
+		const VkImageMemoryBarrier imageSparseTransferSrcBarrier = makeImageMemoryBarrier
+		(
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_TRANSFER_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			*imageSparse,
+			makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, imageSparseInfo.mipLevels, 0u, imageSparseInfo.arrayLayers)
+		);
 
-	deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageSparseTransferSrcBarrier);
+		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageSparseTransferSrcBarrier);
+	}
 
 	const VkBufferCreateInfo	outputBufferCreateInfo = makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	const de::UniquePtr<Buffer>	outputBuffer(new Buffer(deviceInterface, *m_logicalDevice, *allocator, outputBufferCreateInfo, MemoryRequirement::HostVisible));
 
 	deviceInterface.cmdCopyImageToBuffer(*commandBuffer, *imageSparse, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outputBuffer->get(), static_cast<deUint32>(bufferImageCopy.size()), &bufferImageCopy[0]);
 
-	const VkBufferMemoryBarrier outputBufferBarrier
-		= makeBufferMemoryBarrier(
-		VK_ACCESS_TRANSFER_WRITE_BIT,
-		VK_ACCESS_HOST_READ_BIT,
-		outputBuffer->get(),
-		0u,
-		imageSizeInBytes);
+	{
+		const VkBufferMemoryBarrier outputBufferBarrier = makeBufferMemoryBarrier
+		(
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_HOST_READ_BIT,
+			outputBuffer->get(),
+			0u,
+			imageSizeInBytes
+		);
 
-	deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &outputBufferBarrier, 0u, DE_NULL);
+		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &outputBufferBarrier, 0u, DE_NULL);
+	}
 
 	// End recording commands
 	endCommandBuffer(deviceInterface, *commandBuffer);
@@ -372,21 +337,17 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 
 	// Retrieve data from buffer to host memory
 	const Allocation& allocation = outputBuffer->getAllocation();
-
 	invalidateMappedMemoryRange(deviceInterface, *m_logicalDevice, allocation.getMemory(), allocation.getOffset(), imageSizeInBytes);
 
-	const deUint8*  outputData = static_cast<const deUint8*>(allocation.getHostPtr());
-	tcu::TestStatus testStatus = tcu::TestStatus::pass("Passed");
-
-	if (deMemCmp(outputData, &referenceData[0], imageSizeInBytes) != 0)
-	{
-		testStatus = tcu::TestStatus::fail("Failed");
-	}
+	const deUint8* outputData = static_cast<const deUint8*>(allocation.getHostPtr());
 
 	// Wait for sparse queue to become idle
 	deviceInterface.queueWaitIdle(sparseQueue.queueHandle);
 
-	return testStatus;
+	if (deMemCmp(outputData, &referenceData[0], imageSizeInBytes) != 0)
+		return tcu::TestStatus::fail("Failed");
+	else
+		return tcu::TestStatus::pass("Passed");;
 }
 
 TestInstance* ImageSparseBindingCase::createInstance (Context& context) const
@@ -410,13 +371,13 @@ tcu::TestCaseGroup* createImageSparseBindingTests(tcu::TestContext& testCtx)
 
 	static const ImageParameters imageParametersArray[] =
 	{
-		{ IMAGE_TYPE_1D,		{ tcu::UVec3(512u, 1u,   1u ), tcu::UVec3(1024u, 1u,   1u), tcu::UVec3(11u, 1u,   1u) } },
-		{ IMAGE_TYPE_1D_ARRAY,  { tcu::UVec3(512u, 1u,   64u), tcu::UVec3(1024u, 1u,   8u), tcu::UVec3(11u, 1u,   3u) } },
-		{ IMAGE_TYPE_2D,		{ tcu::UVec3(512u, 256u, 1u ), tcu::UVec3(1024u, 128u, 1u), tcu::UVec3(11u, 137u, 1u) } },
-		{ IMAGE_TYPE_2D_ARRAY,	{ tcu::UVec3(512u, 256u, 6u ), tcu::UVec3(1024u, 128u, 8u), tcu::UVec3(11u, 137u, 3u) } },
-		{ IMAGE_TYPE_3D,		{ tcu::UVec3(512u, 256u, 6u ), tcu::UVec3(1024u, 128u, 8u), tcu::UVec3(11u, 137u, 3u) } },
-		{ IMAGE_TYPE_CUBE,		{ tcu::UVec3(512u, 256u, 1u ), tcu::UVec3(1024u, 128u, 1u), tcu::UVec3(11u, 137u, 1u) } },
-		{ IMAGE_TYPE_CUBE_ARRAY,{ tcu::UVec3(512u, 256u, 6u ), tcu::UVec3(1024u, 128u, 8u), tcu::UVec3(11u, 137u, 3u) } }
+		{ IMAGE_TYPE_1D,		{ tcu::UVec3(512u, 1u,   1u ), tcu::UVec3(1024u, 1u,   1u), tcu::UVec3(11u,  1u,   1u) } },
+		{ IMAGE_TYPE_1D_ARRAY,  { tcu::UVec3(512u, 1u,   64u), tcu::UVec3(1024u, 1u,   8u), tcu::UVec3(11u,  1u,   3u) } },
+		{ IMAGE_TYPE_2D,		{ tcu::UVec3(512u, 256u, 1u ), tcu::UVec3(1024u, 128u, 1u), tcu::UVec3(11u,  137u, 1u) } },
+		{ IMAGE_TYPE_2D_ARRAY,	{ tcu::UVec3(512u, 256u, 6u ), tcu::UVec3(1024u, 128u, 8u), tcu::UVec3(11u,  137u, 3u) } },
+		{ IMAGE_TYPE_3D,		{ tcu::UVec3(512u, 256u, 6u ), tcu::UVec3(1024u, 128u, 8u), tcu::UVec3(11u,  137u, 3u) } },
+		{ IMAGE_TYPE_CUBE,		{ tcu::UVec3(256u, 256u, 1u ), tcu::UVec3(128u,  128u, 1u), tcu::UVec3(137u, 137u, 1u) } },
+		{ IMAGE_TYPE_CUBE_ARRAY,{ tcu::UVec3(256u, 256u, 6u ), tcu::UVec3(128u,  128u, 8u), tcu::UVec3(137u, 137u, 3u) } }
 	};
 
 	static const tcu::TextureFormat formats[] =

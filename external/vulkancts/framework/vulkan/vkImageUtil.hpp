@@ -53,7 +53,6 @@ tcu::Sampler::FilterMode	mapVkMagTexFilter			(VkFilter filter);
 int							mapVkComponentSwizzle		(const VkComponentSwizzle& channelSwizzle);
 tcu::UVec4					mapVkComponentMapping		(const vk::VkComponentMapping& mapping);
 
-VkComponentMapping			getFormatComponentMapping	(VkFormat format);
 VkFilter					mapFilterMode				(tcu::Sampler::FilterMode filterMode);
 VkSamplerMipmapMode			mapMipmapMode				(tcu::Sampler::FilterMode filterMode);
 VkSamplerAddressMode		mapWrapMode					(tcu::Sampler::WrapMode wrapMode);

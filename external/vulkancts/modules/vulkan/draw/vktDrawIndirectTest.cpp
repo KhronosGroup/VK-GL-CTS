@@ -242,7 +242,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 
 	m_indirectBuffer = Buffer::createAndAlloc(	m_vk,
 												m_context.getDevice(),
-												BufferCreateInfo(dataSize,
+												BufferCreateInfo(dataSize + m_offsetInBuffer,
 																 vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
 												m_context.getDefaultAllocator(),
 												vk::MemoryRequirement::HostVisible);
@@ -425,7 +425,7 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 
 	m_indirectBuffer = Buffer::createAndAlloc(	m_vk,
 												m_context.getDevice(),
-												BufferCreateInfo(dataSize,
+												BufferCreateInfo(dataSize + m_offsetInBuffer,
 																 vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
 												m_context.getDefaultAllocator(),
 												vk::MemoryRequirement::HostVisible);

@@ -189,7 +189,7 @@ uncommitted changes. Thus it is necessary to run and capture output of `git
 status` and `git log` (2) in the source directory:
 
 	git status > <submission pkg dir>/git-status.txt
-	git log <release tag>..HEAD > <submission pkg dir>/git-log.txt
+	git log --first-parent <release tag>^..HEAD > <submission pkg dir>/git-log.txt
 
 Any changes made to CTS must be committed to the local repository, and provided
 as part of the submission package (3). This can be done by running:

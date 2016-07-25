@@ -1657,6 +1657,11 @@ VkImageUsageFlags getValidImageUsageFlags (VkFormat, VkFormatFeatureFlags suppor
 
 bool isValidImageUsageFlagCombination (VkImageUsageFlags usage)
 {
+	if (usage & vk::VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT)
+	{
+		const VkImageUsageFlags		allowedFlags	= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+		return (usage & ~allowedFlags) == 0;
+	}
 	return usage != 0;
 }
 
@@ -1840,7 +1845,9 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 				results.check(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth >= 1), "Invalid dimensions for 3D image");
 				results.check(imageType != VK_IMAGE_TYPE_3D || properties.maxArrayLayers == 1, "Invalid maxArrayLayers for 3D image");
 
-				if (tiling == VK_IMAGE_TILING_OPTIMAL)
+				if (tiling == VK_IMAGE_TILING_OPTIMAL && imageType == VK_IMAGE_TYPE_2D && !(curCreateFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) &&
+					 ((supportedFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)) ||
+					 ((supportedFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) && deviceFeatures.shaderStorageImageMultisample)))
 				{
 					const VkSampleCountFlags	requiredSampleCounts	= getRequiredOptimalTilingSampleCounts(deviceLimits, format, curUsageFlags);
 					results.check((properties.sampleCounts & requiredSampleCounts) == requiredSampleCounts, "Required sample counts not supported");
