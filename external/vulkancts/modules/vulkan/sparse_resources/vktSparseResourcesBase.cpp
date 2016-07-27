@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSparseResourcesBase.hpp"
+#include "vktSparseResourcesTestsUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 
@@ -41,11 +42,11 @@ struct QueueFamilyQueuesCount
 };
 
 SparseResourcesBaseInstance::SparseResourcesBaseInstance (Context &context) 
-	: TestInstance(context) 
+	: TestInstance(context)
 {
 }
 
-bool SparseResourcesBaseInstance::createDeviceSupportingQueues (const QueueRequirementsVec&	queueRequirements)
+void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequirementsVec& queueRequirements)
 {
 	const InstanceInterface&	instance		= m_context.getInstanceInterface();
 	const DeviceInterface&		deviceInterface = m_context.getDeviceInterface();
@@ -54,15 +55,16 @@ bool SparseResourcesBaseInstance::createDeviceSupportingQueues (const QueueRequi
 	deUint32 queueFamilyPropertiesCount = 0u;
 	instance.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, DE_NULL);
 
-	if (queueFamilyPropertiesCount == 0u)
-	{
-		return false;
-	}
+	if(queueFamilyPropertiesCount == 0u)
+		TCU_THROW(ResourceError, "Device reports an empty set of queue family properties");
 
 	std::vector<VkQueueFamilyProperties> queueFamilyProperties;
 	queueFamilyProperties.resize(queueFamilyPropertiesCount);
 
 	instance.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, &queueFamilyProperties[0]);
+
+	if (queueFamilyPropertiesCount == 0u)
+		TCU_THROW(ResourceError, "Device reports an empty set of queue family properties");
 
 	typedef std::map<deUint32, QueueFamilyQueuesCount>	SelectedQueuesMap;
 	typedef std::map<deUint32, std::vector<float> >		QueuePrioritiesMap;
@@ -76,9 +78,7 @@ bool SparseResourcesBaseInstance::createDeviceSupportingQueues (const QueueRequi
 		const deUint32			queueFamilyIndex = findMatchingQueueFamilyIndex(queueFamilyProperties, queueRequirement.queueFlags);
 
 		if (queueFamilyIndex == NO_MATCH_FOUND)
-		{
-			return false;
-		}
+			TCU_THROW(NotSupportedError, "No match found for queue requirements");
 
 		selectedQueueFamilies[queueFamilyIndex].queueCount += queueRequirement.queueCount;
 		for (deUint32 queueNdx = 0; queueNdx < queueRequirement.queueCount; ++queueNdx)
@@ -128,9 +128,7 @@ bool SparseResourcesBaseInstance::createDeviceSupportingQueues (const QueueRequi
 		const deUint32			queueFamilyIndex = findMatchingQueueFamilyIndex(queueFamilyProperties, queueRequirement.queueFlags);
 
 		if (queueFamilyIndex == NO_MATCH_FOUND)
-		{
-			return false;
-		}
+			TCU_THROW(NotSupportedError, "No match found for queue requirements");
 
 		for (deUint32 queueNdx = 0; queueNdx < queueRequirement.queueCount; ++queueNdx)
 		{
@@ -144,8 +142,6 @@ bool SparseResourcesBaseInstance::createDeviceSupportingQueues (const QueueRequi
 			m_queues[queueRequirement.queueFlags].push_back(queue);
 		}
 	}
-
-	return true;
 }
 
 const Queue& SparseResourcesBaseInstance::getQueue (const VkQueueFlags queueFlags, const deUint32 queueIndex)
@@ -153,16 +149,74 @@ const Queue& SparseResourcesBaseInstance::getQueue (const VkQueueFlags queueFlag
 	return m_queues[queueFlags][queueIndex];
 }
 
-deUint32 SparseResourcesBaseInstance::findMatchingMemoryType (const VkPhysicalDeviceMemoryProperties&	deviceMemoryProperties,
-															  const VkMemoryRequirements&				objectMemoryRequirements,
-															  const MemoryRequirement&					memoryRequirement) const
+deUint32 SparseResourcesBaseInstance::findMatchingMemoryType (const InstanceInterface&		instance,
+															  const VkPhysicalDevice		physicalDevice,
+															  const VkMemoryRequirements&	objectMemoryRequirements,
+															  const MemoryRequirement&		memoryRequirement) const
 {
+	const VkPhysicalDeviceMemoryProperties deviceMemoryProperties = getPhysicalDeviceMemoryProperties(instance, physicalDevice);
+
 	for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < deviceMemoryProperties.memoryTypeCount; ++memoryTypeNdx)
 	{
 		if ((objectMemoryRequirements.memoryTypeBits & (1u << memoryTypeNdx)) != 0 &&
 			memoryRequirement.matchesHeap(deviceMemoryProperties.memoryTypes[memoryTypeNdx].propertyFlags))
 		{
 			return memoryTypeNdx;
+		}
+	}
+
+	return NO_MATCH_FOUND;
+}
+
+bool SparseResourcesBaseInstance::checkSparseSupportForImageType (const InstanceInterface&	instance,
+																	const VkPhysicalDevice		physicalDevice,
+																	const ImageType				imageType) const
+{
+	const VkPhysicalDeviceFeatures deviceFeatures = getPhysicalDeviceFeatures(instance, physicalDevice);
+
+	if (!deviceFeatures.sparseBinding)
+		return false;
+
+	switch (mapImageType(imageType))
+	{
+		case VK_IMAGE_TYPE_2D:
+			return deviceFeatures.sparseResidencyImage2D == VK_TRUE;
+		case VK_IMAGE_TYPE_3D:
+			return deviceFeatures.sparseResidencyImage3D == VK_TRUE;
+		default:
+			DE_ASSERT(0);
+			return false;
+	};
+}
+
+bool SparseResourcesBaseInstance::checkSparseSupportForImageFormat (const InstanceInterface&	instance,
+																	const VkPhysicalDevice		physicalDevice,
+																	const VkImageCreateInfo&	imageInfo) const
+{
+	const std::vector<VkSparseImageFormatProperties> sparseImageFormatPropVec = getPhysicalDeviceSparseImageFormatProperties(
+		instance, physicalDevice, imageInfo.format, imageInfo.imageType, imageInfo.samples, imageInfo.usage, imageInfo.tiling);
+
+	return sparseImageFormatPropVec.size() > 0u;
+}
+
+bool SparseResourcesBaseInstance::checkImageFormatFeatureSupport (const vk::InstanceInterface&		instance,
+																  const vk::VkPhysicalDevice		physicalDevice,
+																  const vk::VkFormat				format,
+																  const vk::VkFormatFeatureFlags	featureFlags) const
+{
+	const VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(instance, physicalDevice, format);
+
+	return (formatProperties.optimalTilingFeatures & featureFlags) == featureFlags;
+}
+
+deUint32 SparseResourcesBaseInstance::getSparseAspectRequirementsIndex (const std::vector<VkSparseImageMemoryRequirements>&	requirements,
+																		const VkImageAspectFlags							aspectFlags) const
+{
+	for (deUint32 memoryReqNdx = 0; memoryReqNdx < requirements.size(); ++memoryReqNdx)
+	{
+		if (requirements[memoryReqNdx].formatProperties.aspectMask & aspectFlags)
+		{
+			return memoryReqNdx;
 		}
 	}
 

@@ -50,6 +50,10 @@ using namespace vk;
 namespace
 {
 
+static const char* const s_perVertexBlock =	"gl_PerVertex {\n"
+											"    vec4 gl_Position;\n"
+											"}";
+
 //! Raw memory storage for values used in test cases.
 //! We use it to simplify test case definitions where different types are expected in the result.
 class GenericValue
@@ -289,6 +293,8 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 			<< "layout(location = 0) in highp vec4 position;\n"
 			<< "\n"
+			<< "out " << s_perVertexBlock << ";\n"
+			<< "\n"
 			<< (useSpecConst ? generateSpecConstantCode(m_caseDef.specConstants) : "")
 			<< (useSpecConst ? generateSSBOCode(m_caseDef.ssboCode) : "")
 			<< (useSpecConst ? m_caseDef.globalCode + "\n" : "")
@@ -327,6 +333,10 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 			<< "layout(vertices = 3) out;\n"
 			<< "\n"
+			<< "in " << s_perVertexBlock << " gl_in[gl_MaxPatchVertices];\n"
+			<< "\n"
+			<< "out " << s_perVertexBlock << " gl_out[];\n"
+			<< "\n"
 			<< (useSpecConst ? generateSpecConstantCode(m_caseDef.specConstants) : "")
 			<< (useSpecConst ? generateSSBOCode(m_caseDef.ssboCode) : "")
 			<< (useSpecConst ? m_caseDef.globalCode + "\n" : "")
@@ -353,6 +363,10 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 			<< "layout(triangles, equal_spacing, ccw) in;\n"
 			<< "\n"
+			<< "in " << s_perVertexBlock << " gl_in[gl_MaxPatchVertices];\n"
+			<< "\n"
+			<< "out " << s_perVertexBlock << ";\n"
+			<< "\n"
 			<< (useSpecConst ? generateSpecConstantCode(m_caseDef.specConstants) : "")
 			<< (useSpecConst ? generateSSBOCode(m_caseDef.ssboCode) : "")
 			<< (useSpecConst ? m_caseDef.globalCode + "\n" : "")
@@ -375,6 +389,10 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 			<< "layout(triangles) in;\n"
 			<< "layout(triangle_strip, max_vertices = 3) out;\n"
+			<< "\n"
+			<< "in " << s_perVertexBlock << " gl_in[];\n"
+			<< "\n"
+			<< "out " << s_perVertexBlock << ";\n"
 			<< "\n"
 			<< (useSpecConst ? generateSpecConstantCode(m_caseDef.specConstants) : "")
 			<< (useSpecConst ? generateSSBOCode(m_caseDef.ssboCode) : "")
@@ -879,75 +897,6 @@ tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, c
 	return testGroup.release();
 }
 
-//! Test various input data sizes, e.g. short -> int.
-tcu::TestCaseGroup* createDataSizeTests (tcu::TestContext& testCtx, const VkShaderStageFlagBits shaderStage)
-{
-	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "data_size", "different input data sizes"));
-
-	static const CaseDefinition defs[] =
-	{
-		{
-			"bool",
-			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const bool sc0 = false;", 1, makeValueBool32(true)),
-					   SpecConstant(2u, "layout(constant_id = ${ID}) const bool sc1 = false;", 2, makeValueBool32(true)),
-					   SpecConstant(3u, "layout(constant_id = ${ID}) const bool sc2 = false;", 4, makeValueBool32(true))),
-			12,
-			"    bool r0;\n"
-			"    bool r1;\n"
-			"    bool r2;\n",
-			"",
-			"    sb_out.r0 = sc0;\n"
-			"    sb_out.r1 = sc1;\n"
-			"    sb_out.r2 = sc2;\n",
-			makeVector(OffsetValue(4,  0, makeValueBool32(true)),
-					   OffsetValue(4,  4, makeValueBool32(true)),
-					   OffsetValue(4,  8, makeValueBool32(true))),
-			(FeatureFlags)0,
-		},
-		{
-			"int",
-			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const int sc0 = 0;", 1, makeValueInt32(0xffffff0a)),
-					   SpecConstant(2u, "layout(constant_id = ${ID}) const int sc1 = 0;", 2, makeValueInt32(0xffff0a0b)),
-					   SpecConstant(3u, "layout(constant_id = ${ID}) const int sc2 = 0;", 4, makeValueInt32(0x0a0b0c0d))),
-			12,
-			"    int r0;\n"
-			"    int r1;\n"
-			"    int r2;\n",
-			"",
-			"    sb_out.r0 = sc0;\n"
-			"    sb_out.r1 = sc1;\n"
-			"    sb_out.r2 = sc2;\n",
-			makeVector(OffsetValue(4, 0, makeValueInt32(0x0a)),
-					   OffsetValue(4, 4, makeValueInt32(0x0a0b)),
-					   OffsetValue(4, 8, makeValueInt32(0x0a0b0c0d))),
-			(FeatureFlags)0,
-		},
-		{
-			"uint",
-			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const uint sc0 = 0u;", 1, makeValueUint32(0xffffffa0)),
-					   SpecConstant(2u, "layout(constant_id = ${ID}) const uint sc1 = 0u;", 2, makeValueUint32(0xffffa0b0)),
-					   SpecConstant(3u, "layout(constant_id = ${ID}) const uint sc2 = 0u;", 4, makeValueUint32(0xa0b0c0d0))),
-			12,
-			"    uint r0;\n"
-			"    uint r1;\n"
-			"    uint r2;\n",
-			"",
-			"    sb_out.r0 = sc0;\n"
-			"    sb_out.r1 = sc1;\n"
-			"    sb_out.r2 = sc2;\n",
-			makeVector(OffsetValue(4, 0, makeValueUint32(0xa0)),
-					   OffsetValue(4, 4, makeValueUint32(0xa0b0)),
-					   OffsetValue(4, 8, makeValueUint32(0xa0b0c0d0))),
-			(FeatureFlags)0,
-		},
-	};
-
-	for (int defNdx = 0; defNdx < DE_LENGTH_OF_ARRAY(defs); ++defNdx)
-		testGroup->addChild(new SpecConstantTest(testCtx, shaderStage, defs[defNdx]));
-
-	return testGroup.release();
-}
-
 //! Specify compute shader work group size through specialization constants.
 tcu::TestCaseGroup* createWorkGroupSizeTests (tcu::TestContext& testCtx)
 {
@@ -1439,12 +1388,13 @@ CaseDefinition makeMatrixVectorCompositeCaseDefinition (const glu::DataType type
 	const int           numCombinations = getDataTypeScalarSize(type);
 	const glu::DataType scalarType      = glu::getDataTypeScalarType(type);
 	const std::string   typeName        = glu::getDataTypeName(type);
+	const bool			isConst		= (scalarType != glu::TYPE_FLOAT) && (scalarType != glu::TYPE_DOUBLE);
 
 	std::ostringstream globalCode;
 	{
 		// Build N matrices/vectors with specialization constant inserted at various locations in the constructor.
 		for (int combNdx = 0; combNdx < numCombinations; ++combNdx)
-			globalCode << "const " << typeName << " " << varName << combNdx << " = " << typeName << "("
+			globalCode << ( isConst ? "const " : "" ) << typeName << " " << varName << combNdx << " = " << typeName << "("
 					   << generateInitializerListWithSpecConstant(type, false, 0, numCombinations, "sc0", combNdx) << ");\n";
 	}
 
@@ -1488,7 +1438,7 @@ CaseDefinition makeArrayCompositeCaseDefinition (const glu::DataType elemType, c
 	{
 		// Create several arrays with specialization constant inserted in different positions.
 		for (int combNdx = 0; combNdx < numCombinations; ++combNdx)
-			globalCode << "const " << elemTypeName << " " << varName << combNdx << arraySizeDecl << " = "
+			globalCode << elemTypeName << " " << varName << combNdx << arraySizeDecl << " = "
 					   << elemTypeName << arraySizeDecl << "(" << generateArrayConstructorString(elemType, size1, size2, "sc0", combNdx) << ");\n";
 	}
 
@@ -1528,7 +1478,7 @@ CaseDefinition makeStructCompositeCaseDefinition (const glu::DataType memberType
 				   << "    uint  ui;\n"
 				   << "};\n"
 				   << "\n"
-				   << "const Data s0 = Data(3, 2.0, true, " << glu::getDataTypeName(memberType) << "(sc0), 8u);\n";
+				   << "Data s0 = Data(3, 2.0, true, " << glu::getDataTypeName(memberType) << "(sc0), 8u);\n";
 	}
 
 	const glu::DataType scalarType   = glu::getDataTypeScalarType(memberType);
@@ -1712,7 +1662,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 				"    bool  z;\n"
 				"};\n"
 				"\n"
-				"const Data a0[3] = Data[3](Data(sc0, 2.0, true), Data(1, sc1, true), Data(1, 2.0, sc2));\n",
+				"Data a0[3] = Data[3](Data(sc0, 2.0, true), Data(1, sc1, true), Data(1, 2.0, sc2));\n",
 
 				"    int sum_a0 = 0;\n"
 				"\n"
@@ -1755,7 +1705,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 				"    bool b;\n"
 				"};\n"
 				"\n"
-				"const Data s0 = Data(1, vec3[3](vec3(2.0), vec3(sc0), vec3(4.0)), false);\n",
+				"Data s0 = Data(1, vec3[3](vec3(2.0), vec3(sc0), vec3(4.0)), false);\n",
 
 				"    float sum_s0 = 0;\n"
 				"\n"
@@ -1796,7 +1746,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 				"    bool   b;\n"
 				"};\n"
 				"\n"
-				"const Data s0 = Data(1u, Nested(vec2(2.0), sc0, 4.0), true);\n",
+				"Data s0 = Data(1u, Nested(vec2(2.0), sc0, 4.0), true);\n",
 
 				"    int sum_s0 = 0;\n"
 				"\n"
@@ -1854,7 +1804,6 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 
 		stageGroup->addChild(createDefaultValueTests       (testCtx, stage.stage));
 		stageGroup->addChild(createBasicSpecializationTests(testCtx, stage.stage));
-		stageGroup->addChild(createDataSizeTests           (testCtx, stage.stage));
 		stageGroup->addChild(createBuiltInOverrideTests    (testCtx, stage.stage));
 		stageGroup->addChild(createExpressionTests         (testCtx, stage.stage));
 		stageGroup->addChild(createCompositeTests          (testCtx, stage.stage));

@@ -1243,7 +1243,7 @@ void generateCompareSrc (std::ostringstream& src,
 std::string generateVertexShader (const ShaderInterface& interface, const UniformLayout& layout, const std::map<int, void*>& blockPointers, MatrixLoadFlags matrixLoadFlag)
 {
 	std::ostringstream src;
-	src << "#version 450\n";
+	src << "#version 310 es\n";
 
 	src << "layout(location = 0) in highp vec4 a_position;\n";
 	src << "layout(location = 0) out mediump float v_vtxResult;\n";
@@ -1283,7 +1283,7 @@ std::string generateVertexShader (const ShaderInterface& interface, const Unifor
 std::string generateFragmentShader (const ShaderInterface& interface, const UniformLayout& layout, const std::map<int, void*>& blockPointers, MatrixLoadFlags matrixLoadFlag)
 {
 	std::ostringstream src;
-	src << "#version 450\n";
+	src << "#version 310 es\n";
 
 	src << "layout(location = 0) in mediump float v_vtxResult;\n";
 	src << "layout(location = 0) out mediump vec4 dEQP_FragColor;\n";

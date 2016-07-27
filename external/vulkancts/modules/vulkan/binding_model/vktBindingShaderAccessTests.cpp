@@ -75,6 +75,43 @@ static const char* const s_quadrantGenVertexPosSource =	"	highp int quadPhase = 
 														"	quadrant_id = gl_VertexIndex / 6;\n"
 														"	result_position = vec4(float(quadOriginX + quadXcoord - 1), float(quadOriginY + quadYcoord - 1), 0.0, 1.0);\n";
 
+std::string genPerVertexBlock (const vk::VkShaderStageFlagBits stage, const glu::GLSLVersion version)
+{
+	static const char* const block = "gl_PerVertex {\n"
+									 "    vec4  gl_Position;\n"
+									 "    float gl_PointSize;\n"	// not used, but for compatibility with how implicit block is declared in ES
+									 "}";
+	std::ostringstream str;
+
+	if (!glu::glslVersionIsES(version))
+		switch (stage)
+		{
+			case vk::VK_SHADER_STAGE_VERTEX_BIT:
+				str << "out " << block << ";\n";
+				break;
+
+			case vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+				str << "in " << block << " gl_in[gl_MaxPatchVertices];\n"
+					<< "out " << block << " gl_out[];\n";
+				break;
+
+			case vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+				str << "in " << block << " gl_in[gl_MaxPatchVertices];\n"
+					<< "out " << block << ";\n";
+				break;
+
+			case vk::VK_SHADER_STAGE_GEOMETRY_BIT:
+				str << "in " << block << " gl_in[];\n"
+					<< "out " << block << ";\n";
+				break;
+
+			default:
+				break;
+		}
+
+	return str.str();
+}
+
 bool isUniformDescriptorType (vk::VkDescriptorType type)
 {
 	return type == vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
@@ -2247,6 +2284,7 @@ std::string QuadrantRendederCase::genVertexSource (void) const
 			<< genResourceDeclarations(vk::VK_SHADER_STAGE_VERTEX_BIT, 0)
 			<< "layout(location = 0) out highp vec4 " << nextStageName << "_color;\n"
 			<< (onlyVS ? "" : "layout(location = 1) flat out highp int " + de::toString(nextStageName) + "_quadrant_id;\n")
+			<< genPerVertexBlock(vk::VK_SHADER_STAGE_VERTEX_BIT, m_glslVersion)
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "	highp vec4 result_position;\n"
@@ -2266,6 +2304,7 @@ std::string QuadrantRendederCase::genVertexSource (void) const
 		buf << versionDecl << "\n"
 			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_VERTEX_BIT)
 			<< "layout(location = 1) flat out highp int " << nextStageName << "_quadrant_id;\n"
+			<< genPerVertexBlock(vk::VK_SHADER_STAGE_VERTEX_BIT, m_glslVersion)
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "	highp vec4 result_position;\n"
@@ -2299,6 +2338,7 @@ std::string QuadrantRendederCase::genTessCtrlSource (void) const
 			<< genResourceDeclarations(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 0)
 			<< "layout(location = 1) flat in highp int tsc_quadrant_id[];\n"
 			<< "layout(location = 0) out highp vec4 tes_color[];\n"
+			<< genPerVertexBlock(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, m_glslVersion)
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "	highp vec4 result_color;\n"
@@ -2332,6 +2372,7 @@ std::string QuadrantRendederCase::genTessCtrlSource (void) const
 			<< "layout(vertices=3) out;\n"
 			<< "layout(location = 1) flat in highp int tsc_quadrant_id[];\n"
 			<< "layout(location = 1) flat out highp int tes_quadrant_id[];\n"
+			<< genPerVertexBlock(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, m_glslVersion)
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "	tes_quadrant_id[gl_InvocationID] = tsc_quadrant_id[0];\n"
@@ -2382,6 +2423,7 @@ std::string QuadrantRendederCase::genTessEvalSource (void) const
 			<< genResourceDeclarations(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 0)
 			<< "layout(location = 1) flat in highp int tes_quadrant_id[];\n"
 			<< "layout(location = 0) out highp vec4 frag_color;\n"
+			<< genPerVertexBlock(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_glslVersion)
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "	highp vec4 result_color;\n"
@@ -2403,6 +2445,7 @@ std::string QuadrantRendederCase::genTessEvalSource (void) const
 			<< "layout(triangles) in;\n"
 			<< "layout(location = 0) in highp vec4 tes_color[];\n"
 			<< "layout(location = 0) out highp vec4 frag_color;\n"
+			<< genPerVertexBlock(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_glslVersion)
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "	frag_color = tes_color[0];\n"
@@ -2439,6 +2482,7 @@ std::string QuadrantRendederCase::genGeometrySource (void) const
 			<< genResourceDeclarations(vk::VK_SHADER_STAGE_GEOMETRY_BIT, 0)
 			<< "layout(location = 1) flat in highp int geo_quadrant_id[];\n"
 			<< "layout(location = 0) out highp vec4 frag_color;\n"
+			<< genPerVertexBlock(vk::VK_SHADER_STAGE_GEOMETRY_BIT, m_glslVersion)
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "	highp int quadrant_id;\n"
