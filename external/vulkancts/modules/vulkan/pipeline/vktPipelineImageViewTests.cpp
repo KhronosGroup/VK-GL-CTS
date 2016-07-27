@@ -343,7 +343,7 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 	const deUint32				numLevels				= ImageViewTest::getNumLevels(viewType);
 	const deUint32				arraySize				= ImageViewTest::getArraySize(viewType);
 	const VkImageAspectFlags	imageAspectFlags		= VK_IMAGE_ASPECT_COLOR_BIT;
-	const VkComponentMapping	componentMapping		= getFormatComponentMapping(imageFormat);
+	const VkComponentMapping	componentMapping		= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 
 	de::MovePtr<tcu::TestCaseGroup> rangeTests (new tcu::TestCaseGroup(testCtx, "subresource_range", ""));
 
@@ -355,7 +355,7 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 			const TestCaseConfig	config	= TEST_CASES[configNdx];									\
 			desc << "Samples level " << config.samplerLod << " with :\n" << config.subresourceRange;	\
 			rangeTests->addChild(new ImageViewTest(testCtx, config.name, desc.str().c_str(), viewType,	\
-												   imageFormat, config.samplerLod, componentMapping,		\
+												   imageFormat, config.samplerLod, componentMapping,	\
 												   config.subresourceRange));							\
 		}																								\
 	} while (deGetFalse())
@@ -588,7 +588,8 @@ static de::MovePtr<tcu::TestCaseGroup> createComponentSwizzleTests (tcu::TestCon
 		arraySize,											// deUint32				arraySize;
 	};
 
-	const std::vector<VkComponentMapping>	componentMappings	= getComponentMappingPermutations(getFormatComponentMapping(imageFormat));
+	const VkComponentMapping				baseMapping			= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	const std::vector<VkComponentMapping>	componentMappings	= getComponentMappingPermutations(baseMapping);
 	de::MovePtr<tcu::TestCaseGroup>			swizzleTests		(new tcu::TestCaseGroup(testCtx, "component_swizzle", ""));
 
 	for (size_t mappingNdx = 0; mappingNdx < componentMappings.size(); mappingNdx++)

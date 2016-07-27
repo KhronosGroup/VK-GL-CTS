@@ -252,7 +252,7 @@ TestInstance* SamplerTest::createInstance (Context& context) const
 	const tcu::UVec2				renderSize			= getRenderSize(m_imageViewType);
 	const std::vector<Vertex4Tex4>	vertices			= createVertices();
 	const VkSamplerCreateInfo		samplerParams		= getSamplerCreateInfo();
-	const VkComponentMapping		componentMapping	= getFormatComponentMapping(m_imageFormat);
+	const VkComponentMapping		componentMapping	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 	const VkImageSubresourceRange	subresourceRange	=
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,								// VkImageAspectFlags	aspectMask;
