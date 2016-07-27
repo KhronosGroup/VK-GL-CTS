@@ -149,10 +149,10 @@ static const char* const s_CommonTypes =
 	"%uvec3     = OpTypeVector %u32 3\n"
 	"%fvec3     = OpTypeVector %f32 3\n"
 	"%uvec3ptr  = OpTypePointer Input %uvec3\n"
+	"%i32ptr    = OpTypePointer Uniform %i32\n"
 	"%f32ptr    = OpTypePointer Uniform %f32\n"
-	"%boolptr   = OpTypePointer Uniform %bool\n"
-	"%f32arr    = OpTypeRuntimeArray %f32\n"
-	"%boolarr   = OpTypeRuntimeArray %bool\n";
+	"%i32arr    = OpTypeRuntimeArray %i32\n"
+	"%f32arr    = OpTypeRuntimeArray %f32\n";
 
 // Declares two uniform variables (indata, outdata) of type "struct { float[] }". Depends on type "f32arr" (for "float[]").
 static const char* const s_InputOutputBuffer =
@@ -231,17 +231,17 @@ bool compareFUnord (const std::vector<BufferSp>& inputs, const vector<Allocation
 		return false;
 
 	const BufferSp&	expectedOutput			= expectedOutputs[0];
-	const VkBool32*	expectedOutputAsBool	= static_cast<const VkBool32*>(expectedOutputs[0]->data());
-	const VkBool32*	outputAsBool			= static_cast<const VkBool32*>(outputAllocs[0]->getHostPtr());
+	const deInt32*	expectedOutputAsInt		= static_cast<const deInt32*>(expectedOutputs[0]->data());
+	const deInt32*	outputAsInt				= static_cast<const deInt32*>(outputAllocs[0]->getHostPtr());
 	const float*	input1AsFloat			= static_cast<const float*>(inputs[0]->data());
 	const float*	input2AsFloat			= static_cast<const float*>(inputs[1]->data());
 	bool returnValue						= true;
 
-	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(VkBool32); ++idx)
+	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(deInt32); ++idx)
 	{
-		if (outputAsBool[idx] != expectedOutputAsBool[idx])
+		if (outputAsInt[idx] != expectedOutputAsInt[idx])
 		{
-			log << TestLog::Message << "ERROR: Sub-case failed. inputs: " << input1AsFloat[idx] << "," << input2AsFloat[idx] << " output: " << outputAsBool[idx]<< " expected output: " << expectedOutputAsBool[idx] << TestLog::EndMessage;
+			log << TestLog::Message << "ERROR: Sub-case failed. inputs: " << input1AsFloat[idx] << "," << input2AsFloat[idx] << " output: " << outputAsInt[idx]<< " expected output: " << expectedOutputAsInt[idx] << TestLog::EndMessage;
 			returnValue = false;
 		}
 	}
@@ -294,7 +294,7 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 		"OpDecorate %outdata DescriptorSet 0\n"
 		"OpDecorate %outdata Binding 2\n"
 		"OpDecorate %f32arr ArrayStride 4\n"
-		"OpDecorate %boolarr ArrayStride 4\n"
+		"OpDecorate %i32arr ArrayStride 4\n"
 		"OpMemberDecorate %buf 0 Offset 0\n"
 		"OpMemberDecorate %buf2 0 Offset 0\n"
 
@@ -305,12 +305,13 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 		"%indata1    = OpVariable %bufptr Uniform\n"
 		"%indata2    = OpVariable %bufptr Uniform\n"
 
-		"%buf2       = OpTypeStruct %boolarr\n"
+		"%buf2       = OpTypeStruct %i32arr\n"
 		"%buf2ptr    = OpTypePointer Uniform %buf2\n"
 		"%outdata    = OpVariable %buf2ptr Uniform\n"
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
+		"%consti1   = OpConstant %i32 1\n"
 		"%constf1   = OpConstant %f32 1.0\n"
 
 		"%main      = OpFunction %void None %voidf\n"
@@ -322,10 +323,11 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 		"%inval1    = OpLoad %f32 %inloc1\n"
 		"%inloc2    = OpAccessChain %f32ptr %indata2 %zero %x\n"
 		"%inval2    = OpLoad %f32 %inloc2\n"
-		"%outloc    = OpAccessChain %boolptr %outdata %zero %x\n"
+		"%outloc    = OpAccessChain %i32ptr %outdata %zero %x\n"
 
 		"%result    = ${OPCODE} %bool %inval1 %inval2\n"
-		"             OpStore %outloc %result\n"
+		"%int_res   = OpSelect %i32 %result %consti1 %zero\n"
+		"             OpStore %outloc %int_res\n"
 
 		"             OpReturn\n"
 		"             OpFunctionEnd\n");
@@ -344,7 +346,7 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 		const float					NaN				= std::numeric_limits<float>::quiet_NaN();
 		vector<float>				inputFloats1	(numElements, 0);
 		vector<float>				inputFloats2	(numElements, 0);
-		vector<VkBool32>			expectedBools	(numElements, VK_FALSE);
+		vector<deInt32>				expectedInts	(numElements, 0);
 
 		specializations["OPCODE"]	= cases[caseNdx].opCode;
 		spec.assembly				= shaderTemplate.specialize(specializations);
@@ -361,14 +363,137 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 				case 4:		inputFloats2[ndx] = inputFloats1[ndx];	inputFloats1[ndx] = NaN; break;
 				case 5:		inputFloats2[ndx] = NaN;				inputFloats1[ndx] = NaN; break;
 			}
-			expectedBools[ndx] = tcu::Float32(inputFloats1[ndx]).isNaN() || tcu::Float32(inputFloats2[ndx]).isNaN() || cases[caseNdx].compareFunc(inputFloats1[ndx], inputFloats2[ndx]);
+			expectedInts[ndx] = tcu::Float32(inputFloats1[ndx]).isNaN() || tcu::Float32(inputFloats2[ndx]).isNaN() || cases[caseNdx].compareFunc(inputFloats1[ndx], inputFloats2[ndx]);
 		}
 
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats1)));
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
-		spec.outputs.push_back(BufferSp(new BoolBuffer(expectedBools)));
+		spec.outputs.push_back(BufferSp(new Int32Buffer(expectedInts)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
 		spec.verifyIO = &compareFUnord;
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
+	}
+
+	return group.release();
+}
+
+struct OpAtomicCase
+{
+	const char*		name;
+	const char*		assembly;
+	void			(*calculateExpected)(deInt32&, deInt32);
+	deInt32			numOutputElements;
+
+					OpAtomicCase 			(const char* _name, const char* _assembly, void (*_calculateExpected)(deInt32&, deInt32), deInt32 _numOutputElements)
+						: name				(_name)
+						, assembly			(_assembly)
+						, calculateExpected	(_calculateExpected)
+						, numOutputElements (_numOutputElements) {}
+};
+
+tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opatomic", "Test the OpAtomic* opcodes"));
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 1000000;
+	vector<OpAtomicCase>			cases;
+
+	const StringTemplate			shaderTemplate	(
+
+		string(s_ShaderPreamble) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		"OpDecorate %buf BufferBlock\n"
+		"OpDecorate %indata DescriptorSet 0\n"
+		"OpDecorate %indata Binding 0\n"
+		"OpDecorate %i32arr ArrayStride 4\n"
+		"OpMemberDecorate %buf 0 Offset 0\n"
+
+		"OpDecorate %sumbuf BufferBlock\n"
+		"OpDecorate %sum DescriptorSet 0\n"
+		"OpDecorate %sum Binding 1\n"
+		"OpMemberDecorate %sumbuf 0 Coherent\n"
+		"OpMemberDecorate %sumbuf 0 Offset 0\n"
+
+		+ string(s_CommonTypes) +
+
+		"%buf       = OpTypeStruct %i32arr\n"
+		"%bufptr    = OpTypePointer Uniform %buf\n"
+		"%indata    = OpVariable %bufptr Uniform\n"
+
+		"%sumbuf    = OpTypeStruct %i32arr\n"
+		"%sumbufptr = OpTypePointer Uniform %sumbuf\n"
+		"%sum       = OpVariable %sumbufptr Uniform\n"
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%minusone  = OpConstant %i32 -1\n"
+		"%zero      = OpConstant %i32 0\n"
+		"%one       = OpConstant %u32 1\n"
+		"%two       = OpConstant %i32 2\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+
+		"%inloc     = OpAccessChain %i32ptr %indata %zero %x\n"
+		"%inval     = OpLoad %i32 %inloc\n"
+
+		"%outloc    = OpAccessChain %i32ptr %sum %zero ${INDEX}\n"
+		"${INSTRUCTION}"
+
+		"             OpReturn\n"
+		"             OpFunctionEnd\n");
+
+	#define ADD_OPATOMIC_CASE(NAME, ASSEMBLY, CALCULATE_EXPECTED, NUM_OUTPUT_ELEMENTS) \
+	do { \
+		DE_STATIC_ASSERT(NUM_OUTPUT_ELEMENTS == 1 || NUM_OUTPUT_ELEMENTS == numElements); \
+		struct calculateExpected_##NAME { static void calculateExpected(deInt32& expected, deInt32 input) CALCULATE_EXPECTED }; \
+		cases.push_back(OpAtomicCase(#NAME, ASSEMBLY, calculateExpected_##NAME::calculateExpected, NUM_OUTPUT_ELEMENTS)); \
+	} while (deGetFalse())
+	#define ADD_OPATOMIC_CASE_1(NAME, ASSEMBLY, CALCULATE_EXPECTED) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, CALCULATE_EXPECTED, 1)
+	#define ADD_OPATOMIC_CASE_N(NAME, ASSEMBLY, CALCULATE_EXPECTED) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, CALCULATE_EXPECTED, numElements)
+
+	ADD_OPATOMIC_CASE_1(iadd,	"%unused    = OpAtomicIAdd %i32 %outloc %one %zero %inval\n", { expected += input; } );
+	ADD_OPATOMIC_CASE_1(isub,	"%unused    = OpAtomicISub %i32 %outloc %one %zero %inval\n", { expected -= input; } );
+	ADD_OPATOMIC_CASE_1(iinc,	"%unused    = OpAtomicIIncrement %i32 %outloc %one %zero\n",  { ++expected; (void)input;} );
+	ADD_OPATOMIC_CASE_1(idec,	"%unused    = OpAtomicIDecrement %i32 %outloc %one %zero\n",  { --expected; (void)input;} );
+	ADD_OPATOMIC_CASE_N(load,	"%inval2    = OpAtomicLoad %i32 %inloc %zero %zero\n"
+								"             OpStore %outloc %inval2\n",  { expected = input;} );
+	ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc %zero %zero %inval\n",  { expected = input;} );
+	ADD_OPATOMIC_CASE_N(compex, "%even      = OpSMod %i32 %inval %two\n"
+								"             OpStore %outloc %even\n"
+								"%unused    = OpAtomicCompareExchange %i32 %outloc %one %zero %zero %minusone %zero\n",  { expected = (input % 2) == 0 ? -1 : 1;} );
+
+	#undef ADD_OPATOMIC_CASE
+	#undef ADD_OPATOMIC_CASE_1
+	#undef ADD_OPATOMIC_CASE_N
+
+	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
+	{
+		map<string, string>			specializations;
+		ComputeShaderSpec			spec;
+		vector<deInt32>				inputInts		(numElements, 0);
+		vector<deInt32>				expected		(cases[caseNdx].numOutputElements, -1);
+
+		specializations["INDEX"]		= (cases[caseNdx].numOutputElements == 1) ? "%zero" : "%x";
+		specializations["INSTRUCTION"]	= cases[caseNdx].assembly;
+		spec.assembly					= shaderTemplate.specialize(specializations);
+
+		fillRandomScalars(rnd, 1, 100, &inputInts[0], numElements);
+		for (size_t ndx = 0; ndx < numElements; ++ndx)
+		{
+			cases[caseNdx].calculateExpected((cases[caseNdx].numOutputElements == 1) ? expected[0] : expected[ndx], inputInts[ndx]);
+		}
+
+		spec.inputs.push_back(BufferSp(new Int32Buffer(inputInts)));
+		spec.outputs.push_back(BufferSp(new Int32Buffer(expected)));
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
 
@@ -1379,8 +1504,6 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
-		"%i32ptr    = OpTypePointer Uniform %i32\n"
-		"%i32arr    = OpTypeRuntimeArray %i32\n"
 		"%buf     = OpTypeStruct %i32arr\n"
 		"%bufptr  = OpTypePointer Uniform %buf\n"
 		"%indata    = OpVariable %bufptr Uniform\n"
@@ -1490,8 +1613,6 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
 		"%ivec3     = OpTypeVector %i32 3\n"
-		"%i32ptr    = OpTypePointer Uniform %i32\n"
-		"%i32arr    = OpTypeRuntimeArray %i32\n"
 		"%buf     = OpTypeStruct %i32arr\n"
 		"%bufptr  = OpTypePointer Uniform %buf\n"
 		"%indata    = OpVariable %bufptr Uniform\n"
@@ -1937,7 +2058,7 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		"%one        = OpConstant %u32 1\n"
 		"%c_f32_1    = OpConstant %f32 1\n"
 
-		"%i32ptr              = OpTypePointer Input %i32\n"
+		"%i32inputptr         = OpTypePointer Input %i32\n"
 		"%vec4                = OpTypeVector %f32 4\n"
 		"%vec4ptr             = OpTypePointer Output %vec4\n"
 		"%f32arr1             = OpTypeArray %f32 %one\n"
@@ -1946,8 +2067,8 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		"%vert_builtins       = OpVariable %vert_builtin_st_ptr Output\n"
 
 		"%id         = OpVariable %uvec3ptr Input\n"
-		"%vertexIndex = OpVariable %i32ptr Input\n"
-		"%instanceIndex = OpVariable %i32ptr Input\n"
+		"%vertexIndex = OpVariable %i32inputptr Input\n"
+		"%instanceIndex = OpVariable %i32inputptr Input\n"
 		"%c_vec4_1   = OpConstantComposite %vec4 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"
 
 		// gl_Position = vec4(1.);
@@ -7816,6 +7937,24 @@ const string getBitWidthStr (IntegerType type)
 	}
 }
 
+const string getByteWidthStr (IntegerType type)
+{
+	switch (type)
+	{
+		case INTEGER_TYPE_SIGNED_16:
+		case INTEGER_TYPE_UNSIGNED_16:	return "2";
+
+		case INTEGER_TYPE_SIGNED_32:
+		case INTEGER_TYPE_UNSIGNED_32:	return "4";
+
+		case INTEGER_TYPE_SIGNED_64:
+		case INTEGER_TYPE_UNSIGNED_64:	return "8";
+
+		default:						DE_ASSERT(false);
+										return "";
+	}
+}
+
 bool isSigned (IntegerType type)
 {
 	return (type <= INTEGER_TYPE_SIGNED_64);
@@ -7836,71 +7975,6 @@ const string getAsmTypeDeclaration (IntegerType type)
 {
 	string sign = isSigned(type) ? " 1" : " 0";
 	return "OpTypeInt " + getBitWidthStr(type) + sign;
-}
-
-const string getConvertCaseShaderStr (const string& instruction, map<string, string> types)
-{
-	const StringTemplate shader (
-		"OpCapability Shader\n"
-		"${int_capabilities}"
-		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint GLCompute %main \"main\" %id\n"
-		"OpExecutionMode %main LocalSize 1 1 1\n"
-		"OpSource GLSL 430\n"
-		"OpName %main           \"main\"\n"
-		"OpName %id             \"gl_GlobalInvocationID\"\n"
-		// Decorators
-		"OpDecorate %id BuiltIn GlobalInvocationId\n"
-		"OpDecorate %indata DescriptorSet 0\n"
-		"OpDecorate %indata Binding 0\n"
-		"OpDecorate %outdata DescriptorSet 0\n"
-		"OpDecorate %outdata Binding 1\n"
-		"OpDecorate %in_buf BufferBlock\n"
-		"OpDecorate %out_buf BufferBlock\n"
-		"OpMemberDecorate %in_buf 0 Offset 0\n"
-		"OpMemberDecorate %out_buf 0 Offset 0\n"
-		// Base types
-		"%void       = OpTypeVoid\n"
-		"%voidf      = OpTypeFunction %void\n"
-		"%u32        = OpTypeInt 32 0\n"
-		"%i32        = OpTypeInt 32 1\n"
-		"%uvec3      = OpTypeVector %u32 3\n"
-		"%uvec3ptr   = OpTypePointer Input %uvec3\n"
-		// Custom types
-		"%in_type    = ${inputType}\n"
-		"%out_type   = ${outputType}\n"
-		// Derived types
-		"%in_ptr     = OpTypePointer Uniform %in_type\n"
-		"%out_ptr    = OpTypePointer Uniform %out_type\n"
-		"%in_arr     = OpTypeRuntimeArray %in_type\n"
-		"%out_arr    = OpTypeRuntimeArray %out_type\n"
-		"%in_buf     = OpTypeStruct %in_arr\n"
-		"%out_buf    = OpTypeStruct %out_arr\n"
-		"%in_bufptr  = OpTypePointer Uniform %in_buf\n"
-		"%out_bufptr = OpTypePointer Uniform %out_buf\n"
-		"%indata     = OpVariable %in_bufptr Uniform\n"
-		"%outdata    = OpVariable %out_bufptr Uniform\n"
-		"%inputptr   = OpTypePointer Input %in_type\n"
-		"%id         = OpVariable %uvec3ptr Input\n"
-		// Constants
-		"%zero       = OpConstant %i32 0\n"
-		// Main function
-		"%main       = OpFunction %void None %voidf\n"
-		"%label      = OpLabel\n"
-		"%idval      = OpLoad %uvec3 %id\n"
-		"%x          = OpCompositeExtract %u32 %idval 0\n"
-		"%inloc      = OpAccessChain %in_ptr %indata %zero %x\n"
-		"%outloc     = OpAccessChain %out_ptr %outdata %zero %x\n"
-		"%inval      = OpLoad %in_type %inloc\n"
-		"%conv       = ${instruction} %out_type %inval\n"
-		"              OpStore %outloc %conv\n"
-		"              OpReturn\n"
-		"              OpFunctionEnd\n"
-	);
-
-	types["instruction"] = instruction;
-
-	return shader.specialize(types);
 }
 
 template<typename T>
@@ -7980,8 +8054,8 @@ struct ConvertCase
 		}
 		else if (m_features == CONVERT_TEST_USES_INT16_INT64)
 		{
-			m_asmTypes["int_capabilities"] = "OpCapability Int16\n \
-											  OpCapability Int64\n";
+			m_asmTypes["int_capabilities"] = string("OpCapability Int16\n") +
+													"OpCapability Int64\n";
 		}
 		else
 		{
@@ -7997,6 +8071,78 @@ struct ConvertCase
 	BufferSp				m_inputBuffer;
 	BufferSp				m_outputBuffer;
 };
+
+const string getConvertCaseShaderStr (const string& instruction, const ConvertCase& convertCase)
+{
+	map<string, string> params = convertCase.m_asmTypes;
+
+	params["instruction"] = instruction;
+
+	params["inDecorator"] = getByteWidthStr(convertCase.m_fromType);
+	params["outDecorator"] = getByteWidthStr(convertCase.m_toType);
+
+	const StringTemplate shader (
+		"OpCapability Shader\n"
+		"${int_capabilities}"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+		// Decorators
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %indata DescriptorSet 0\n"
+		"OpDecorate %indata Binding 0\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 1\n"
+		"OpDecorate %in_arr ArrayStride ${inDecorator}\n"
+		"OpDecorate %out_arr ArrayStride ${outDecorator}\n"
+		"OpDecorate %in_buf BufferBlock\n"
+		"OpDecorate %out_buf BufferBlock\n"
+		"OpMemberDecorate %in_buf 0 Offset 0\n"
+		"OpMemberDecorate %out_buf 0 Offset 0\n"
+		// Base types
+		"%void       = OpTypeVoid\n"
+		"%voidf      = OpTypeFunction %void\n"
+		"%u32        = OpTypeInt 32 0\n"
+		"%i32        = OpTypeInt 32 1\n"
+		"%uvec3      = OpTypeVector %u32 3\n"
+		"%uvec3ptr   = OpTypePointer Input %uvec3\n"
+		// Custom types
+		"%in_type    = ${inputType}\n"
+		"%out_type   = ${outputType}\n"
+		// Derived types
+		"%in_ptr     = OpTypePointer Uniform %in_type\n"
+		"%out_ptr    = OpTypePointer Uniform %out_type\n"
+		"%in_arr     = OpTypeRuntimeArray %in_type\n"
+		"%out_arr    = OpTypeRuntimeArray %out_type\n"
+		"%in_buf     = OpTypeStruct %in_arr\n"
+		"%out_buf    = OpTypeStruct %out_arr\n"
+		"%in_bufptr  = OpTypePointer Uniform %in_buf\n"
+		"%out_bufptr = OpTypePointer Uniform %out_buf\n"
+		"%indata     = OpVariable %in_bufptr Uniform\n"
+		"%outdata    = OpVariable %out_bufptr Uniform\n"
+		"%inputptr   = OpTypePointer Input %in_type\n"
+		"%id         = OpVariable %uvec3ptr Input\n"
+		// Constants
+		"%zero       = OpConstant %i32 0\n"
+		// Main function
+		"%main       = OpFunction %void None %voidf\n"
+		"%label      = OpLabel\n"
+		"%idval      = OpLoad %uvec3 %id\n"
+		"%x          = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc      = OpAccessChain %in_ptr %indata %zero %x\n"
+		"%outloc     = OpAccessChain %out_ptr %outdata %zero %x\n"
+		"%inval      = OpLoad %in_type %inloc\n"
+		"%conv       = ${instruction} %out_type %inval\n"
+		"              OpStore %outloc %conv\n"
+		"              OpReturn\n"
+		"              OpFunctionEnd\n"
+	);
+
+	return shader.specialize(params);
+}
 
 void createSConvertCases (vector<ConvertCase>& testCases)
 {
@@ -8025,9 +8171,9 @@ tcu::TestCaseGroup* createSConvertTests (tcu::TestContext& testCtx)
 	{
 		ComputeShaderSpec	spec;
 
-		spec.assembly = getConvertCaseShaderStr(instruction, test->m_asmTypes);
+		spec.assembly = getConvertCaseShaderStr(instruction, *test);
 		spec.inputs.push_back(test->m_inputBuffer);
-		spec.outputs.push_back(test->m_inputBuffer);
+		spec.outputs.push_back(test->m_outputBuffer);
 		spec.numWorkGroups = IVec3(1, 1, 1);
 
 		group->addChild(new ConvertTestCase(testCtx, test->m_name.c_str(), "Convert integers with OpSConvert.", spec, test->m_features));
@@ -8063,9 +8209,9 @@ tcu::TestCaseGroup* createUConvertTests (tcu::TestContext& testCtx)
 	{
 		ComputeShaderSpec	spec;
 
-		spec.assembly = getConvertCaseShaderStr(instruction, test->m_asmTypes);
+		spec.assembly = getConvertCaseShaderStr(instruction, *test);
 		spec.inputs.push_back(test->m_inputBuffer);
-		spec.outputs.push_back(test->m_inputBuffer);
+		spec.outputs.push_back(test->m_outputBuffer);
 		spec.numWorkGroups = IVec3(1, 1, 1);
 
 		group->addChild(new ConvertTestCase(testCtx, test->m_name.c_str(), "Convert integers with OpUConvert.", spec, test->m_features));
@@ -8157,7 +8303,8 @@ void createVectorCompositeCases (vector<map<string, string> >& testCases, de::Ra
 		string widthStr = numberToString(width);
 		int index = rnd.getInt(0, width-1);
 
-		params["name"]					= "vec_" + widthStr;
+		params["type"]					= "vec";
+		params["name"]					= params["type"] + "_" + widthStr;
 		params["compositeType"]			= "%composite = OpTypeVector %custom " + widthStr +"\n";
 		params["filler"]				= string("%filler    = OpConstant %custom ") + getRandomConstantString(type, rnd) + "\n";
 		params["compositeConstruct"]	= "%instance  = OpCompositeConstruct %composite" + repeatString(" %filler", width) + "\n";
@@ -8177,7 +8324,8 @@ void createArrayCompositeCases (vector<map<string, string> >& testCases, de::Ran
 		string widthStr = numberToString(width);
 		int index = rnd.getInt(0, width-1);
 
-		params["name"]					= "array_" + widthStr;
+		params["type"]					= "array";
+		params["name"]					= params["type"] + "_" + widthStr;
 		params["compositeType"]			= string("%arraywidth = OpConstant %u32 " + widthStr + "\n")
 											+	 "%composite = OpTypeArray %custom %arraywidth\n";
 
@@ -8198,7 +8346,8 @@ void createStructCompositeCases (vector<map<string, string> >& testCases, de::Ra
 		string randomConst = numberToString(getInt(rnd));
 		int index = rnd.getInt(0, width-1);
 
-		params["name"]					= "struct_" + numberToString(width);
+		params["type"]					= "struct";
+		params["name"]					= params["type"] + "_" + numberToString(width);
 		params["compositeType"]			= "%composite = OpTypeStruct" + repeatString(" %custom", width) + "\n";
 		params["filler"]				= string("%filler    = OpConstant %custom ") + getRandomConstantString(type, rnd) + "\n";
 		params["compositeConstruct"]	= "%instance  = OpCompositeConstruct %composite" + repeatString(" %filler", width) + "\n";
@@ -8222,7 +8371,8 @@ void createMatrixCompositeCases (vector<map<string, string> >& testCases, de::Ra
 			int index_1 = rnd.getInt(0, width-1);
 			string columnStr = numberToString(column);
 
-			params["name"]					= "matrix_" + widthStr + "x" + columnStr;
+			params["type"]					= "matrix";
+			params["name"]					= params["type"] + "_" + widthStr + "x" + columnStr;
 			params["compositeType"]			= string("%vectype   = OpTypeVector %custom " + widthStr + "\n")
 												+	 "%composite = OpTypeMatrix %vectype " + columnStr + "\n";
 
@@ -8265,6 +8415,8 @@ const string specializeCompositeInsertShaderTemplate (const NumberType type, con
 
 	parameters["typeDeclaration"] = getAssemblyTypeDeclaration(type);
 
+	parameters["compositeDecorator"] = (parameters["type"] == "array") ? "OpDecorate %composite ArrayStride 4\n" : "";
+
 	return StringTemplate (
 		"OpCapability Shader\n"
 		"OpCapability Matrix\n"
@@ -8284,6 +8436,7 @@ const string specializeCompositeInsertShaderTemplate (const NumberType type, con
 		"OpDecorate %outdata DescriptorSet 0\n"
 		"OpDecorate %outdata Binding 1\n"
 		"OpDecorate %customarr ArrayStride 4\n"
+		"${compositeDecorator}"
 		"OpMemberDecorate %buf 0 Offset 0\n"
 
 		// General types
@@ -8397,6 +8550,189 @@ tcu::TestCaseGroup* createOpCompositeInsertGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+struct AssemblyStructInfo
+{
+	AssemblyStructInfo (const deUint32 comp, const deUint32 idx)
+	: components	(comp)
+	, index			(idx)
+	{}
+
+	deUint32 components;
+	deUint32 index;
+};
+
+const string specializeInBoundsShaderTemplate (const NumberType type, const AssemblyStructInfo& structInfo, const map<string, string>& params)
+{
+	// Create the full index string
+	string 				fullIndex	= numberToString(structInfo.index) + " " + params.at("indexes");
+	// Convert it to list of indexes
+	vector<string> 		indexes		= de::splitString(fullIndex, ' ');
+
+	map<string, string>	parameters	(params);
+	parameters["typeDeclaration"]	= getAssemblyTypeDeclaration(type);
+	parameters["structType"]		= repeatString(" %composite", structInfo.components);
+	parameters["structConstruct"]	= repeatString(" %instance", structInfo.components);
+	parameters["insertIndexes"]		= fullIndex;
+
+	// In matrix cases the last two index is the CompositeExtract indexes
+	const deUint32 extractIndexes = (parameters["type"] == "matrix") ? 2 : 1;
+
+	// Construct the extractIndex
+	for (vector<string>::const_iterator index = indexes.end() - extractIndexes; index != indexes.end(); ++index)
+	{
+		parameters["extractIndexes"] += " " + *index;
+	}
+
+	// Remove the last 1 or 2 element depends on matrix case or not
+	indexes.erase(indexes.end() - extractIndexes, indexes.end());
+
+	deUint32 id = 0;
+	// Generate AccessChain index expressions (except for the last one, because we use ptr to the composite)
+	for (vector<string>::const_iterator index = indexes.begin(); index != indexes.end(); ++index)
+	{
+		string indexId = "%index_" + numberToString(id++);
+		parameters["accessChainConstDeclaration"] += indexId + "   = OpConstant %u32 " + *index + "\n";
+		parameters["accessChainIndexes"] += " " + indexId;
+	}
+
+	parameters["compositeDecorator"] = (parameters["type"] == "array") ? "OpDecorate %composite ArrayStride 4\n" : "";
+
+	return StringTemplate (
+		"OpCapability Shader\n"
+		"OpCapability Matrix\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+		// Decorators
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %buf BufferBlock\n"
+		"OpDecorate %indata DescriptorSet 0\n"
+		"OpDecorate %indata Binding 0\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 1\n"
+		"OpDecorate %customarr ArrayStride 4\n"
+		"${compositeDecorator}"
+		"OpMemberDecorate %buf 0 Offset 0\n"
+		// General types
+		"%void      = OpTypeVoid\n"
+		"%voidf     = OpTypeFunction %void\n"
+		"%u32       = OpTypeInt 32 0\n"
+		"%uvec3     = OpTypeVector %u32 3\n"
+		"%uvec3ptr  = OpTypePointer Input %uvec3\n"
+		// Custom type
+		"%custom    = ${typeDeclaration}\n"
+		// Custom types
+		"${compositeType}"
+		// Inherited from composite
+		"%composite_p = OpTypePointer Function %composite\n"
+		"%struct_t  = OpTypeStruct${structType}\n"
+		"%struct_p  = OpTypePointer Function %struct_t\n"
+		// Constants
+		"${filler}"
+		"${accessChainConstDeclaration}"
+		// Inherited from custom
+		"%customptr = OpTypePointer Uniform %custom\n"
+		"%customarr = OpTypeRuntimeArray %custom\n"
+		"%buf       = OpTypeStruct %customarr\n"
+		"%bufptr    = OpTypePointer Uniform %buf\n"
+		"%indata    = OpVariable %bufptr Uniform\n"
+		"%outdata   = OpVariable %bufptr Uniform\n"
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %u32 0\n"
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		// Create the input/output type
+		"%inloc     = OpInBoundsAccessChain %customptr %indata %zero %x\n"
+		"%outloc    = OpInBoundsAccessChain %customptr %outdata %zero %x\n"
+		// Read the input value
+		"%inval     = OpLoad %custom %inloc\n"
+		// Create the composite and fill it
+		"${compositeConstruct}"
+		// Create the struct and fill it with the composite
+		"%struct    = OpCompositeConstruct %struct_t${structConstruct}\n"
+		// Insert the value
+		"%comp_obj  = OpCompositeInsert %struct_t %inval %struct ${insertIndexes}\n"
+		// Store the object
+		"%struct_v  = OpVariable %struct_p Function\n"
+		"             OpStore %struct_v %comp_obj\n"
+		// Get deepest possible composite pointer
+		"%inner_ptr = OpInBoundsAccessChain %composite_p %struct_v${accessChainIndexes}\n"
+		"%read_obj  = OpLoad %composite %inner_ptr\n"
+		// Read back the stored value
+		"%read_val  = OpCompositeExtract %custom %read_obj${extractIndexes}\n"
+		"             OpStore %outloc %read_val\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n").specialize(parameters);
+}
+
+tcu::TestCaseGroup* createOpInBoundsAccessChainGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opinboundsaccesschain", "Test the OpInBoundsAccessChain instruction"));
+	de::Random						rnd				(deStringHash(group->getName()));
+
+	for (int type = TYPE_INT; type != TYPE_END; ++type)
+	{
+		NumberType						numberType	= NumberType(type);
+		const string					typeName	= getNumberTypeName(numberType);
+		const string					description	= "Test the OpInBoundsAccessChain instruction with " + typeName + "s";
+		de::MovePtr<tcu::TestCaseGroup>	subGroup	(new tcu::TestCaseGroup(testCtx, typeName.c_str(), description.c_str()));
+
+		vector<map<string, string> >	testCases;
+		createCompositeCases(testCases, rnd, numberType);
+
+		for (vector<map<string, string> >::const_iterator test = testCases.begin(); test != testCases.end(); ++test)
+		{
+			ComputeShaderSpec	spec;
+
+			// Number of components inside of a struct
+			deUint32 structComponents = rnd.getInt(2, 8);
+			// Component index value
+			deUint32 structIndex = rnd.getInt(0, structComponents - 1);
+			AssemblyStructInfo structInfo(structComponents, structIndex);
+
+			spec.assembly = specializeInBoundsShaderTemplate(numberType, structInfo, *test);
+
+			switch (numberType)
+			{
+				case TYPE_INT:
+				{
+					deInt32 number = getInt(rnd);
+					spec.inputs.push_back(createCompositeBuffer<deInt32>(number));
+					spec.outputs.push_back(createCompositeBuffer<deInt32>(number));
+					break;
+				}
+				case TYPE_UINT:
+				{
+					deUint32 number = rnd.getUint32();
+					spec.inputs.push_back(createCompositeBuffer<deUint32>(number));
+					spec.outputs.push_back(createCompositeBuffer<deUint32>(number));
+					break;
+				}
+				case TYPE_FLOAT:
+				{
+					float number = rnd.getFloat();
+					spec.inputs.push_back(createCompositeBuffer<float>(number));
+					spec.outputs.push_back(createCompositeBuffer<float>(number));
+					break;
+				}
+				default:
+					DE_ASSERT(false);
+			}
+			spec.numWorkGroups = IVec3(1, 1, 1);
+			subGroup->addChild(new SpvAsmComputeShaderCase(testCtx, test->at("name").c_str(), "OpInBoundsAccessChain test", spec));
+		}
+		group->addChild(subGroup.release());
+	}
+	return group.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> instructionTests	(new tcu::TestCaseGroup(testCtx, "instruction", "Instructions with special opcodes/operands"));
@@ -8405,6 +8741,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 	computeTests->addChild(createOpNopGroup(testCtx));
 	computeTests->addChild(createOpFUnordGroup(testCtx));
+	computeTests->addChild(createOpAtomicGroup(testCtx));
 	computeTests->addChild(createOpLineGroup(testCtx));
 	computeTests->addChild(createOpNoLineGroup(testCtx));
 	computeTests->addChild(createOpConstantNullGroup(testCtx));
@@ -8431,6 +8768,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createSConvertTests(testCtx));
 	computeTests->addChild(createUConvertTests(testCtx));
 	computeTests->addChild(createOpCompositeInsertGroup(testCtx));
+	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
 
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);

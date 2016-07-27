@@ -136,6 +136,25 @@ std::vector<VkSparseImageFormatProperties> getPhysicalDeviceSparseImageFormatPro
 	return properties;
 }
 
+std::vector<VkSparseImageMemoryRequirements> getImageSparseMemoryRequirements(const DeviceInterface& vk, VkDevice device, VkImage image)
+{
+	deUint32								requirementsCount = 0;
+	vector<VkSparseImageMemoryRequirements> requirements;
+
+	vk.getImageSparseMemoryRequirements(device, image, &requirementsCount, DE_NULL);
+
+	if (requirementsCount > 0)
+	{
+		requirements.resize(requirementsCount);
+		vk.getImageSparseMemoryRequirements(device, image, &requirementsCount, &requirements[0]);
+
+		if ((size_t)requirementsCount != requirements.size())
+			TCU_FAIL("Returned sparse image memory requirements count changes between queries");
+	}
+
+	return requirements;
+}
+
 VkMemoryRequirements getBufferMemoryRequirements (const DeviceInterface& vk, VkDevice device, VkBuffer buffer)
 {
 	VkMemoryRequirements req;

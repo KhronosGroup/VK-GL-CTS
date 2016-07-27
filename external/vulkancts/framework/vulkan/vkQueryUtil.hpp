@@ -34,26 +34,27 @@ namespace vk
 
 // API queries
 
-std::vector<VkPhysicalDevice>				enumeratePhysicalDevices					(const InstanceInterface& vk, VkInstance instance);
-std::vector<VkQueueFamilyProperties>		getPhysicalDeviceQueueFamilyProperties		(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
-VkPhysicalDeviceFeatures					getPhysicalDeviceFeatures					(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
-VkPhysicalDeviceProperties					getPhysicalDeviceProperties					(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
-VkPhysicalDeviceMemoryProperties			getPhysicalDeviceMemoryProperties			(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
-VkFormatProperties							getPhysicalDeviceFormatProperties			(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format);
-VkImageFormatProperties						getPhysicalDeviceImageFormatProperties		(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags);
-std::vector<VkSparseImageFormatProperties>	getPhysicalDeviceSparseImageFormatProperties(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling);
+std::vector<VkPhysicalDevice>					enumeratePhysicalDevices						(const InstanceInterface& vk, VkInstance instance);
+std::vector<VkQueueFamilyProperties>			getPhysicalDeviceQueueFamilyProperties			(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceFeatures						getPhysicalDeviceFeatures						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceProperties						getPhysicalDeviceProperties						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceMemoryProperties				getPhysicalDeviceMemoryProperties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkFormatProperties								getPhysicalDeviceFormatProperties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format);
+VkImageFormatProperties							getPhysicalDeviceImageFormatProperties			(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags);
+std::vector<VkSparseImageFormatProperties>		getPhysicalDeviceSparseImageFormatProperties	(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling);
 
-VkMemoryRequirements						getBufferMemoryRequirements					(const DeviceInterface& vk, VkDevice device, VkBuffer buffer);
-VkMemoryRequirements						getImageMemoryRequirements					(const DeviceInterface& vk, VkDevice device, VkImage image);
+VkMemoryRequirements							getBufferMemoryRequirements						(const DeviceInterface& vk, VkDevice device, VkBuffer buffer);
+VkMemoryRequirements							getImageMemoryRequirements						(const DeviceInterface& vk, VkDevice device, VkImage image);
+std::vector<VkSparseImageMemoryRequirements>	getImageSparseMemoryRequirements				(const DeviceInterface& vk, VkDevice device, VkImage image);
 
-std::vector<VkLayerProperties>				enumerateInstanceLayerProperties			(const PlatformInterface& vkp);
-std::vector<VkExtensionProperties>			enumerateInstanceExtensionProperties		(const PlatformInterface& vkp, const char* layerName);
-std::vector<VkLayerProperties>				enumerateDeviceLayerProperties				(const InstanceInterface& vki, VkPhysicalDevice physicalDevice);
-std::vector<VkExtensionProperties>			enumerateDeviceExtensionProperties			(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const char* layerName);
+std::vector<VkLayerProperties>					enumerateInstanceLayerProperties				(const PlatformInterface& vkp);
+std::vector<VkExtensionProperties>				enumerateInstanceExtensionProperties			(const PlatformInterface& vkp, const char* layerName);
+std::vector<VkLayerProperties>					enumerateDeviceLayerProperties					(const InstanceInterface& vki, VkPhysicalDevice physicalDevice);
+std::vector<VkExtensionProperties>				enumerateDeviceExtensionProperties				(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const char* layerName);
 
 // Feature / extension support
 
-bool										isShaderStageSupported						(const VkPhysicalDeviceFeatures& deviceFeatures, VkShaderStageFlagBits stage);
+bool											isShaderStageSupported							(const VkPhysicalDeviceFeatures& deviceFeatures, VkShaderStageFlagBits stage);
 
 struct RequiredExtension
 {

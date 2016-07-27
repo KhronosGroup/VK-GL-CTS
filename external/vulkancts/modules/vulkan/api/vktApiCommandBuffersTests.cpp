@@ -688,37 +688,6 @@ tcu::TestStatus allocateManyPrimaryBuffersTest(Context& context)
 	return tcu::TestStatus::pass(out.str());
 }
 
-tcu::TestStatus allocateZeroPrimaryBuffersTest(Context& context)
-{
-	const VkDevice							vkDevice				= context.getDevice();
-	const DeviceInterface&					vk						= context.getDeviceInterface();
-	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-
-	const VkCommandPoolCreateInfo			cmdPoolParams			=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					// sType;
-		DE_NULL,													// pNext;
-		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			// flags;
-		queueFamilyIndex,											// queueFamilyIndex;
-	};
-	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
-
-	// Command buffer
-	const VkCommandBufferAllocateInfo		cmdBufParams			=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// sType;
-		DE_NULL,													// pNext;
-		*cmdPool,													// commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							// level;
-		0u,															// bufferCount;
-	};
-
-	VkCommandBuffer cmdBuffer;
-	VK_CHECK(vk.allocateCommandBuffers(vkDevice, &cmdBufParams, &cmdBuffer));
-
-	return tcu::TestStatus::pass("allocateZeroPrimaryBuffersTest passed.");
-}
-
 tcu::TestStatus allocateSecondaryBufferTest(Context& context)
 {
 	const VkDevice							vkDevice				= context.getDevice();
@@ -791,37 +760,6 @@ tcu::TestStatus allocateManySecondaryBuffersTest(Context& context)
 	out << "allocateManySecondaryBuffersTest succeded: created " << minCommandBuffer << " command buffers";
 
 	return tcu::TestStatus::pass(out.str());
-}
-
-tcu::TestStatus allocateZeroSecondaryBuffersTest(Context& context)
-{
-	const VkDevice							vkDevice				= context.getDevice();
-	const DeviceInterface&					vk						= context.getDeviceInterface();
-	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-
-	const VkCommandPoolCreateInfo			cmdPoolParams			=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					// sType;
-		DE_NULL,													// pNext;
-		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			// flags;
-		queueFamilyIndex,											// queueFamilyIndex;
-	};
-	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
-
-	// Command buffer
-	const VkCommandBufferAllocateInfo		cmdBufParams			=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// sType;
-		DE_NULL,													// pNext;
-		*cmdPool,													// commandPool;
-		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							// level;
-		0u,															// bufferCount;
-	};
-
-	VkCommandBuffer cmdBuffer;
-	VK_CHECK(vk.allocateCommandBuffers(vkDevice, &cmdBufParams, &cmdBuffer));
-
-	return tcu::TestStatus::pass("allocateZeroSecondaryBuffersTest passed.");
 }
 
 tcu::TestStatus executePrimaryBufferTest(Context& context)
@@ -3998,10 +3936,8 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	/* 19.2. Command Buffer Lifetime (5.2 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "allocate_single_primary",			"", allocatePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "allocate_many_primary",			"",	allocateManyPrimaryBuffersTest);
-	addFunctionCase				(commandBuffersTests.get(), "allocate_zero_primary",			"", allocateZeroPrimaryBuffersTest);
 	addFunctionCase				(commandBuffersTests.get(), "allocate_single_secondary",		"", allocateSecondaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "allocate_many_secondary",			"", allocateManySecondaryBuffersTest);
-	addFunctionCase				(commandBuffersTests.get(), "allocate_zero_secondary",			"", allocateZeroSecondaryBuffersTest);
 	addFunctionCase				(commandBuffersTests.get(), "execute_small_primary",			"",	executePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "execute_large_primary",			"",	executeLargePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "reset_implicit",					"", resetBufferImplicitlyTest);
