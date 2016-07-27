@@ -1574,7 +1574,7 @@ void NegativeTextureApiTests::init (void)
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
 
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is less than 0.");
-			glTexSubImage2D(GL_TEXTURE_2D, -1, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_2D, -1, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
 			m_log << TestLog::EndSection;
 
@@ -1588,17 +1588,17 @@ void NegativeTextureApiTests::init (void)
 			FOR_CUBE_FACES(faceGL, glTexImage2D(faceGL, 0, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL););
 
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is less than 0.");
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, -1, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, -1, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, -1, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, -1, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, -1, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, -1, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, -1, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, -1, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, -1, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, -1, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, -1, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, -1, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
 			m_log << TestLog::EndSection;
 
@@ -1613,7 +1613,7 @@ void NegativeTextureApiTests::init (void)
 
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is greater than log_2(GL_MAX_TEXTURE_SIZE).");
 			deUint32 log2MaxTextureSize = deLog2Floor32(m_context.getContextInfo().getInt(GL_MAX_TEXTURE_SIZE)) + 1;
-			glTexSubImage2D(GL_TEXTURE_2D, log2MaxTextureSize, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_2D, log2MaxTextureSize, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
 			m_log << TestLog::EndSection;
 
@@ -1628,17 +1628,17 @@ void NegativeTextureApiTests::init (void)
 
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is greater than log_2(GL_MAX_CUBE_MAP_TEXTURE_SIZE).");
 			deUint32 log2MaxTextureSize = deLog2Floor32(m_context.getContextInfo().getInt(GL_MAX_CUBE_MAP_TEXTURE_SIZE)) + 1;
-			glTexSubImage2D(GL_TEXTURE_2D, log2MaxTextureSize, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, log2MaxTextureSize, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, log2MaxTextureSize, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, log2MaxTextureSize, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, log2MaxTextureSize, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, log2MaxTextureSize, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, log2MaxTextureSize, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, log2MaxTextureSize, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, log2MaxTextureSize, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, log2MaxTextureSize, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, log2MaxTextureSize, 0, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, log2MaxTextureSize, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
 			m_log << TestLog::EndSection;
 
@@ -1652,11 +1652,11 @@ void NegativeTextureApiTests::init (void)
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
 
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if xoffset or yoffset are negative.");
-			glTexSubImage2D(GL_TEXTURE_2D, 0, -1, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, -1, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, -1, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, -1, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, -1, -1, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, -1, -1, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
 			m_log << TestLog::EndSection;
 
@@ -1670,11 +1670,11 @@ void NegativeTextureApiTests::init (void)
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
 
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if xoffset + width > texture_width or yoffset + height > texture_height.");
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 8, 4, 10, 10, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 8, 4, 10, 10, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 4, 8, 10, 10, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 4, 8, 10, 10, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 8, 8, 10, 10, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 8, 8, 10, 10, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
 			m_log << TestLog::EndSection;
 
@@ -1688,11 +1688,11 @@ void NegativeTextureApiTests::init (void)
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
 
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if width or height is less than 0.");
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, -1, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, -1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, -1, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, -1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, -1, -1, -GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, -1, -1, -GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
 			m_log << TestLog::EndSection;
 
