@@ -33,7 +33,7 @@ public class DeqpInstrumentation extends Instrumentation
 {
 	private static final String	LOG_TAG					= "dEQP/Instrumentation";
 	private static final long	LAUNCH_TIMEOUT_MS		= 10000;
-	private static final long	NO_DATA_TIMEOUT_MS		= 1000;
+	private static final long	NO_DATA_TIMEOUT_MS		= 5000;
 	private static final long	NO_ACTIVITY_SLEEP_MS	= 100;
 	private static final long	REMOTE_DEAD_SLEEP_MS	= 100;
 
