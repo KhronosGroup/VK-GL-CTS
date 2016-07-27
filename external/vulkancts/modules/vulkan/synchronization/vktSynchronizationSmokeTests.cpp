@@ -21,7 +21,7 @@
  * \brief Platform Synchronization tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktSynchronization.hpp"
+#include "vktSynchronizationSmokeTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 
@@ -44,6 +44,8 @@
 #include <limits>
 
 namespace vkt
+{
+namespace synchronization
 {
 
 using namespace vk;
@@ -123,6 +125,7 @@ Move<VkDevice> createTestDevice (const InstanceInterface& vki, VkPhysicalDevice 
 	deMemset(&deviceInfo, 0xcd, sizeof(deviceInfo));
 	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceInfo.pNext						= DE_NULL;
+	deviceInfo.flags						= (VkDeviceCreateFlags)0u;
 	deviceInfo.queueCreateInfoCount			= 1u;
 	deviceInfo.pQueueCreateInfos			= &queueInfo;
 	deviceInfo.enabledExtensionCount		= 0u;
@@ -387,8 +390,9 @@ void createVertexInfo (const vector<VertexDesc>& vertexDesc, vector<VkVertexInpu
 	}
 
 	deMemset(&vertexInputState, 0xcd, sizeof(vertexInputState));
-	vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-	vertexInputState.pNext = DE_NULL,
+	vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputState.pNext = DE_NULL;
+	vertexInputState.flags = 0u;
 	vertexInputState.vertexBindingDescriptionCount = (deUint32)bindingList.size();
 	vertexInputState.pVertexBindingDescriptions = &bindingList[0];
 	vertexInputState.vertexAttributeDescriptionCount = (deUint32)attrList.size();
@@ -753,6 +757,7 @@ void generateWork (TestContext& testContext)
 	deMemset(&inputAssemblyState, 0xcd, sizeof(inputAssemblyState));
 	inputAssemblyState.sType					= VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	inputAssemblyState.pNext					= DE_NULL;
+	inputAssemblyState.flags					= 0u;
 	inputAssemblyState.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	inputAssemblyState.primitiveRestartEnable	= false;
 
@@ -825,6 +830,7 @@ void generateWork (TestContext& testContext)
 	blendAttachment.dstAlphaBlendFactor			= VK_BLEND_FACTOR_ZERO;
 	blendAttachment.colorBlendOp				= VK_BLEND_OP_ADD;
 	blendAttachment.alphaBlendOp				= VK_BLEND_OP_ADD;
+	blendAttachment.colorWriteMask				= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
 	deMemset(&blendState, 0xcd, sizeof(blendState));
 	blendState.sType							= VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -897,6 +903,8 @@ void generateWork (TestContext& testContext)
 	inheritanceInfo.subpass						= 0;
 	inheritanceInfo.framebuffer					= *testContext.framebuffer;
 	inheritanceInfo.occlusionQueryEnable		= VK_FALSE;
+	inheritanceInfo.queryFlags					= 0u;
+	inheritanceInfo.pipelineStatistics			= 0u;
 
 	deMemset(&commandBufRecordState, 0xcd, sizeof(commandBufRecordState));
 	commandBufRecordState.sType					= VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1341,9 +1349,9 @@ tcu::TestStatus testEvents (Context& context)
 
 } // anonymous
 
-tcu::TestCaseGroup* createSynchronizationTests (tcu::TestContext& textCtx)
+tcu::TestCaseGroup* createSmokeTests (tcu::TestContext& textCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> synchTests  (new tcu::TestCaseGroup(textCtx, "synchronization", "Vulkan Synchronization Tests"));
+	de::MovePtr<tcu::TestCaseGroup> synchTests  (new tcu::TestCaseGroup(textCtx, "smoke", "Synchronization smoke tests"));
 
 	addFunctionCaseWithPrograms(synchTests.get(), "fences", "", buildShaders, testFences);
 	addFunctionCaseWithPrograms(synchTests.get(), "semaphores", "", buildShaders, testSemaphores);
@@ -1352,5 +1360,5 @@ tcu::TestCaseGroup* createSynchronizationTests (tcu::TestContext& textCtx)
 	return synchTests.release();
 }
 
-
-}; // vkt
+} // synchronization
+} // vkt

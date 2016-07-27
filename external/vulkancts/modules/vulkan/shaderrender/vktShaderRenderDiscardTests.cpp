@@ -51,7 +51,7 @@ public:
 							instance.useUniform(0u, UI_ONE);
 							instance.useUniform(1u, UI_TWO);
 							if (m_useSampler)
-								instance.useSampler2D(2u, 0u); // To the uniform binding location 2 bind the texture 0
+								instance.useSampler(2u, 0u); // To the uniform binding location 2 bind the texture 0
 						}
 
 private:

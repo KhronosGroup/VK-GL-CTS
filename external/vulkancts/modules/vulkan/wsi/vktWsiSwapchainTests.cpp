@@ -1549,6 +1549,7 @@ tcu::TestStatus resizeSwapchainTest (Context& context, Type wsiType)
 	Move<VkSwapchainKHR>			prevSwapchain;
 
 	DE_ASSERT(platformProperties.swapchainExtent != PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE);
+	DE_UNREF(platformProperties);
 
 	for (deUint32 sizeNdx = 0; sizeNdx < sizes.size(); ++sizeNdx)
 	{

@@ -1,10 +1,10 @@
-#ifndef _VKTSYNCHRONIZATION_HPP
-#define _VKTSYNCHRONIZATION_HPP
-/*-------------------------------------------------------------------------
+#ifndef _VKTSPARSERESOURCESIMAGEMEMORYALIASING_HPP
+#define _VKTSPARSERESOURCESIMAGEMEMORYALIASING_HPP
+/*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2016 Google Inc.
+ * Copyright (c) 2016 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,21 @@
  * limitations under the License.
  *
  *//*!
- * \file
- * \brief Platform Synchronization tests
+ * \file  vktSparseResourcesImageMemoryAliasing.hpp
+ * \brief Sparse image memory aliasing tests
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
-#include "tcuTestCase.hpp"
+#include "vktTestCase.hpp"
 
 namespace vkt
 {
+namespace sparse
+{
 
-tcu::TestCaseGroup*		createSynchronizationTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createImageSparseMemoryAliasingTests(tcu::TestContext& testCtx);
 
+} // sparse
 } // vkt
 
-#endif // _VKTSYNCHRONIZATION_HPP
+#endif // _VKTSPARSERESOURCESIMAGEMEMORYALIASING_HPP

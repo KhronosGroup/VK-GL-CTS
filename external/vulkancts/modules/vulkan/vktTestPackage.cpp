@@ -45,6 +45,8 @@
 #include "vktShaderLibrary.hpp"
 #include "vktRenderPassTests.hpp"
 #include "vktMemoryTests.hpp"
+#include "vktShaderRenderBuiltinVarTests.hpp"
+#include "vktShaderRenderDerivateTests.hpp"
 #include "vktShaderRenderDiscardTests.hpp"
 #include "vktShaderRenderIndexingTests.hpp"
 #include "vktShaderRenderLoopTests.hpp"
@@ -53,6 +55,8 @@
 #include "vktShaderRenderReturnTests.hpp"
 #include "vktShaderRenderStructTests.hpp"
 #include "vktShaderRenderSwitchTests.hpp"
+#include "vktShaderRenderTextureFunctionTests.hpp"
+#include "vktShaderRenderTextureGatherTests.hpp"
 #include "vktShaderBuiltinTests.hpp"
 #include "vktOpaqueTypeIndexingTests.hpp"
 #include "vktUniformBlockTests.hpp"
@@ -64,10 +68,11 @@
 #include "vktImageTests.hpp"
 #include "vktInfoTests.hpp"
 #include "vktWsiTests.hpp"
-#include "vktSynchronization.hpp"
+#include "vktSynchronizationTests.hpp"
 #include "vktSparseResourcesTests.hpp"
 #include "vktTessellationTests.hpp"
 #include "vktRasterizationTests.hpp"
+#include "vktClippingTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -330,14 +335,18 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 													 std::string("vulkan/glsl/es310/") + s_es310Tests[ndx].name + ".test").release());
 
 	// ShaderRenderCase-based tests
-	glslTests->addChild(sr::createDiscardTests	(testCtx));
-	glslTests->addChild(sr::createIndexingTests	(testCtx));
-	glslTests->addChild(sr::createLoopTests		(testCtx));
-	glslTests->addChild(sr::createMatrixTests	(testCtx));
-	glslTests->addChild(sr::createOperatorTests	(testCtx));
-	glslTests->addChild(sr::createReturnTests	(testCtx));
-	glslTests->addChild(sr::createStructTests	(testCtx));
-	glslTests->addChild(sr::createSwitchTests	(testCtx));
+	glslTests->addChild(sr::createDerivateTests			(testCtx));
+	glslTests->addChild(sr::createDiscardTests			(testCtx));
+	glslTests->addChild(sr::createIndexingTests			(testCtx));
+	glslTests->addChild(sr::createLoopTests				(testCtx));
+	glslTests->addChild(sr::createMatrixTests			(testCtx));
+	glslTests->addChild(sr::createOperatorTests			(testCtx));
+	glslTests->addChild(sr::createReturnTests			(testCtx));
+	glslTests->addChild(sr::createStructTests			(testCtx));
+	glslTests->addChild(sr::createSwitchTests			(testCtx));
+	glslTests->addChild(sr::createTextureFunctionTests	(testCtx));
+	glslTests->addChild(sr::createTextureGatherTests	(testCtx));
+	glslTests->addChild(sr::createBuiltinVarTests		(testCtx));
 
 	// ShaderExecutor-based tests
 	glslTests->addChild(shaderexecutor::createBuiltinTests				(testCtx));
@@ -362,26 +371,27 @@ tcu::TestCaseExecutor* TestPackage::createExecutor (void) const
 
 void TestPackage::init (void)
 {
-	addChild(createTestGroup			(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
-	addChild(api::createTests			(m_testCtx));
-	addChild(pipeline::createTests		(m_testCtx));
-	addChild(BindingModel::createTests	(m_testCtx));
-	addChild(SpirVAssembly::createTests	(m_testCtx));
-	addChild(createTestGroup			(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
-	addChild(createRenderPassTests		(m_testCtx));
-	addChild(memory::createTests		(m_testCtx));
-	addChild(ubo::createTests			(m_testCtx));
-	addChild(DynamicState::createTests	(m_testCtx));
-	addChild(ssbo::createTests			(m_testCtx));
-	addChild(QueryPool::createTests		(m_testCtx));
-	addChild(Draw::createTests			(m_testCtx));
-	addChild(compute::createTests		(m_testCtx));
-	addChild(image::createTests			(m_testCtx));
-	addChild(wsi::createTests			(m_testCtx));
-	addChild(createSynchronizationTests	(m_testCtx));
-	addChild(sparse::createTests		(m_testCtx));
-	addChild(tessellation::createTests	(m_testCtx));
-	addChild(rasterization::createTests (m_testCtx));
+	addChild(createTestGroup				(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
+	addChild(api::createTests				(m_testCtx));
+	addChild(pipeline::createTests			(m_testCtx));
+	addChild(BindingModel::createTests		(m_testCtx));
+	addChild(SpirVAssembly::createTests		(m_testCtx));
+	addChild(createTestGroup				(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
+	addChild(createRenderPassTests			(m_testCtx));
+	addChild(memory::createTests			(m_testCtx));
+	addChild(ubo::createTests				(m_testCtx));
+	addChild(DynamicState::createTests		(m_testCtx));
+	addChild(ssbo::createTests				(m_testCtx));
+	addChild(QueryPool::createTests			(m_testCtx));
+	addChild(Draw::createTests				(m_testCtx));
+	addChild(compute::createTests			(m_testCtx));
+	addChild(image::createTests				(m_testCtx));
+	addChild(wsi::createTests				(m_testCtx));
+	addChild(synchronization::createTests	(m_testCtx));
+	addChild(sparse::createTests			(m_testCtx));
+	addChild(tessellation::createTests		(m_testCtx));
+	addChild(rasterization::createTests		(m_testCtx));
+	addChild(clipping::createTests			(m_testCtx));
 }
 
 } // vkt

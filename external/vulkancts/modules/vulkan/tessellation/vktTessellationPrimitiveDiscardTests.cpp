@@ -56,7 +56,20 @@ struct CaseDefinition
 	SpacingMode			spacingMode;
 	Winding				winding;
 	bool				usePointMode;
+	bool				useLessThanOneInnerLevels;
 };
+
+bool lessThanOneInnerLevelsDefined (const CaseDefinition& caseDef)
+{
+	// From Vulkan API specification:
+	// >> When tessellating triangles or quads in point mode with fractional odd spacing, the tessellator
+	// >> ***may*** produce interior vertices that are positioned on the edge of the patch if an inner
+	// >> tessellation level is less than or equal to one.
+	return !((caseDef.primitiveType == vkt::tessellation::TESSPRIMITIVETYPE_QUADS      ||
+			  caseDef.primitiveType == vkt::tessellation::TESSPRIMITIVETYPE_TRIANGLES) &&
+			 caseDef.usePointMode                                                     &&
+			 caseDef.spacingMode == vkt::tessellation::SPACINGMODE_FRACTIONAL_ODD);
+}
 
 int intPow (int base, int exp)
 {
@@ -73,7 +86,7 @@ int intPow (int base, int exp)
 	}
 }
 
-std::vector<float> genAttributes (void)
+std::vector<float> genAttributes (bool useLessThanOneInnerLevels)
 {
 	// Generate input attributes (tessellation levels, and position scale and
 	// offset) for a number of primitives. Each primitive has a different
@@ -95,7 +108,7 @@ std::vector<float> genAttributes (void)
 
 	for (int levelNdx = 0; levelNdx < 6; levelNdx++)
 		for (int choiceNdx = 0; choiceNdx < numChoices; choiceNdx++)
-			choices[levelNdx][choiceNdx] = choiceNdx == 0 ? baseTessLevels[levelNdx] : invalidTessLevelChoices[choiceNdx-1];
+			choices[levelNdx][choiceNdx] = (choiceNdx == 0 || !useLessThanOneInnerLevels) ? baseTessLevels[levelNdx] : invalidTessLevelChoices[choiceNdx-1];
 
 	{
 		const int	numCols	= intPow(numChoices, 6/2); // sqrt(numChoices**6) == sqrt(number of primitives)
@@ -351,7 +364,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&				allocator			= context.getDefaultAllocator();
 
-	const std::vector<float>	attributes				= genAttributes();
+	const std::vector<float>	attributes				= genAttributes(caseDef.useLessThanOneInnerLevels);
 	const int					numAttribsPerPrimitive	= 6 + 2 + 2; // Tess levels, scale, offset.
 	const int					numPrimitives			= static_cast<int>(attributes.size() / numAttribsPerPrimitive);
 	const int					numExpectedVertices		= expectedVertexCount(numPrimitives, numAttribsPerPrimitive, caseDef.primitiveType, caseDef.spacingMode, attributes);
@@ -537,7 +550,16 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 
 		const deInt32 numResultVertices = *static_cast<deInt32*>(resultAlloc.getHostPtr());
 
-		if (numResultVertices < numExpectedVertices)
+		if (!lessThanOneInnerLevelsDefined(caseDef) && caseDef.useLessThanOneInnerLevels)
+		{
+			// Since we cannot explicitly determine whether or not such interior vertices are going to be
+			// generated, we will not verify the number of generated vertices for fractional odd + quads/triangles
+			// tessellation configurations.
+			log << tcu::TestLog::Message
+				<< "Note: shader invocations generated " << numResultVertices << " vertices (not verified as number of vertices is implementation-dependent)"
+				<< tcu::TestLog::EndMessage;
+		}
+		else if (numResultVertices < numExpectedVertices)
 		{
 			log << tcu::TestLog::Message
 				<< "Failure: expected " << numExpectedVertices << " vertices from shader invocations, but got only " << numResultVertices
@@ -580,6 +602,7 @@ tcu::TestCaseGroup* createPrimitiveDiscardTests (tcu::TestContext& testCtx)
 	for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; spacingModeNdx++)
 	for (int windingNdx = 0; windingNdx < WINDING_LAST; windingNdx++)
 	for (int usePointModeNdx = 0; usePointModeNdx <= 1; usePointModeNdx++)
+	for (int lessThanOneInnerLevelsNdx = 0; lessThanOneInnerLevelsNdx <= 1; lessThanOneInnerLevelsNdx++)
 	{
 		const CaseDefinition caseDef =
 		{
@@ -587,12 +610,17 @@ tcu::TestCaseGroup* createPrimitiveDiscardTests (tcu::TestContext& testCtx)
 			(SpacingMode)spacingModeNdx,
 			(Winding)windingNdx,
 			(usePointModeNdx != 0),
+			(lessThanOneInnerLevelsNdx != 0)
 		};
+
+		if (lessThanOneInnerLevelsDefined(caseDef) && !caseDef.useLessThanOneInnerLevels)
+			continue; // No point generating a separate case as <= 1 inner level behavior is well-defined
 
 		const std::string caseName = std::string() + getTessPrimitiveTypeShaderName(caseDef.primitiveType)
 									 + "_" + getSpacingModeShaderName(caseDef.spacingMode)
 									 + "_" + getWindingShaderName(caseDef.winding)
-									 + (caseDef.usePointMode ? "_point_mode" : "");
+									 + (caseDef.usePointMode ? "_point_mode" : "")
+									 + (caseDef.useLessThanOneInnerLevels ? "" : "_valid_levels");
 
 		addFunctionCaseWithPrograms(group.get(), caseName, "", initPrograms, test, caseDef);
 	}

@@ -684,15 +684,28 @@ LOCAL_SRC_FILES := \
 	modules/internal/ditTestPackageEntry.cpp \
 	modules/internal/ditTextureFormatTests.cpp \
 	modules/internal/ditVulkanTests.cpp \
-	external/vulkancts/modules/vulkan/vktInfoTests.cpp \
-	external/vulkancts/modules/vulkan/vktRenderPassTests.cpp \
-	external/vulkancts/modules/vulkan/vktShaderLibrary.cpp \
-	external/vulkancts/modules/vulkan/vktSynchronization.cpp \
-	external/vulkancts/modules/vulkan/vktTestCase.cpp \
-	external/vulkancts/modules/vulkan/vktTestCaseUtil.cpp \
-	external/vulkancts/modules/vulkan/vktTestGroupUtil.cpp \
-	external/vulkancts/modules/vulkan/vktTestPackage.cpp \
-	external/vulkancts/modules/vulkan/vktTestPackageEntry.cpp \
+	external/vulkancts/framework/vulkan/vkAllocationCallbackUtil.cpp \
+	external/vulkancts/framework/vulkan/vkApiVersion.cpp \
+	external/vulkancts/framework/vulkan/vkBinaryRegistry.cpp \
+	external/vulkancts/framework/vulkan/vkBuilderUtil.cpp \
+	external/vulkancts/framework/vulkan/vkDebugReportUtil.cpp \
+	external/vulkancts/framework/vulkan/vkDefs.cpp \
+	external/vulkancts/framework/vulkan/vkDeviceUtil.cpp \
+	external/vulkancts/framework/vulkan/vkGlslToSpirV.cpp \
+	external/vulkancts/framework/vulkan/vkImageUtil.cpp \
+	external/vulkancts/framework/vulkan/vkMemUtil.cpp \
+	external/vulkancts/framework/vulkan/vkNullDriver.cpp \
+	external/vulkancts/framework/vulkan/vkPlatform.cpp \
+	external/vulkancts/framework/vulkan/vkPrograms.cpp \
+	external/vulkancts/framework/vulkan/vkQueryUtil.cpp \
+	external/vulkancts/framework/vulkan/vkRef.cpp \
+	external/vulkancts/framework/vulkan/vkRefUtil.cpp \
+	external/vulkancts/framework/vulkan/vkSpirVAsm.cpp \
+	external/vulkancts/framework/vulkan/vkSpirVProgram.cpp \
+	external/vulkancts/framework/vulkan/vkStrUtil.cpp \
+	external/vulkancts/framework/vulkan/vkTypeUtil.cpp \
+	external/vulkancts/framework/vulkan/vkWsiPlatform.cpp \
+	external/vulkancts/framework/vulkan/vkWsiUtil.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferComputeInstance.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferViewAccessTests.cpp \
@@ -710,6 +723,8 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingModelTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingShaderAccessTests.cpp \
+	external/vulkancts/modules/vulkan/clipping/vktClippingTests.cpp \
+	external/vulkancts/modules/vulkan/clipping/vktClippingUtil.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeBasicComputeShaderTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeIndirectComputeDispatchTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeShaderBuiltinVarTests.cpp \
@@ -772,7 +787,9 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderExecutor.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderIntegerFunctionTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderPackingFunctionTests.cpp \
+	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderBuiltinVarTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRender.cpp \
+	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderDerivateTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderDiscardTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderIndexingTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderLoopTests.cpp \
@@ -781,13 +798,20 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderReturnTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderStructTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderSwitchTests.cpp \
+	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderTextureFunctionTests.cpp \
+	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderTextureGatherTests.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBase.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferMemoryAliasing.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferSparseBinding.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferSparseResidency.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageMemoryAliasing.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageSparseBinding.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageSparseResidency.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesMipmapSparseResidency.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesShaderIntrinsicsBase.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesShaderIntrinsics.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesShaderIntrinsicsSampled.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesShaderIntrinsicsStorage.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesTests.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesTestsUtil.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmComputeShaderCase.cpp \
@@ -796,6 +820,16 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmTests.cpp \
 	external/vulkancts/modules/vulkan/ssbo/vktSSBOLayoutCase.cpp \
 	external/vulkancts/modules/vulkan/ssbo/vktSSBOLayoutTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicEventTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicFenceTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicSemaphoreTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationInternallySynchronizedObjectsTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationOperation.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationOperationMultiQueueTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationOperationSingleQueueTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationSmokeTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationUtil.cpp \
 	external/vulkancts/modules/vulkan/tessellation/vktTessellationCommonEdgeTests.cpp \
 	external/vulkancts/modules/vulkan/tessellation/vktTessellationCoordinatesTests.cpp \
 	external/vulkancts/modules/vulkan/tessellation/vktTessellationFractionalSpacingTests.cpp \
@@ -814,31 +848,17 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ubo/vktRandomUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockTests.cpp \
+	external/vulkancts/modules/vulkan/vktInfoTests.cpp \
+	external/vulkancts/modules/vulkan/vktRenderPassTests.cpp \
+	external/vulkancts/modules/vulkan/vktShaderLibrary.cpp \
+	external/vulkancts/modules/vulkan/vktTestCase.cpp \
+	external/vulkancts/modules/vulkan/vktTestCaseUtil.cpp \
+	external/vulkancts/modules/vulkan/vktTestGroupUtil.cpp \
+	external/vulkancts/modules/vulkan/vktTestPackage.cpp \
+	external/vulkancts/modules/vulkan/vktTestPackageEntry.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSwapchainTests.cpp \
-	external/vulkancts/modules/vulkan/wsi/vktWsiTests.cpp \
-	external/vulkancts/framework/vulkan/vkAllocationCallbackUtil.cpp \
-	external/vulkancts/framework/vulkan/vkApiVersion.cpp \
-	external/vulkancts/framework/vulkan/vkBinaryRegistry.cpp \
-	external/vulkancts/framework/vulkan/vkBuilderUtil.cpp \
-	external/vulkancts/framework/vulkan/vkDebugReportUtil.cpp \
-	external/vulkancts/framework/vulkan/vkDefs.cpp \
-	external/vulkancts/framework/vulkan/vkDeviceUtil.cpp \
-	external/vulkancts/framework/vulkan/vkGlslToSpirV.cpp \
-	external/vulkancts/framework/vulkan/vkImageUtil.cpp \
-	external/vulkancts/framework/vulkan/vkMemUtil.cpp \
-	external/vulkancts/framework/vulkan/vkNullDriver.cpp \
-	external/vulkancts/framework/vulkan/vkPlatform.cpp \
-	external/vulkancts/framework/vulkan/vkPrograms.cpp \
-	external/vulkancts/framework/vulkan/vkQueryUtil.cpp \
-	external/vulkancts/framework/vulkan/vkRef.cpp \
-	external/vulkancts/framework/vulkan/vkRefUtil.cpp \
-	external/vulkancts/framework/vulkan/vkSpirVAsm.cpp \
-	external/vulkancts/framework/vulkan/vkSpirVProgram.cpp \
-	external/vulkancts/framework/vulkan/vkStrUtil.cpp \
-	external/vulkancts/framework/vulkan/vkTypeUtil.cpp \
-	external/vulkancts/framework/vulkan/vkWsiPlatform.cpp \
-	external/vulkancts/framework/vulkan/vkWsiUtil.cpp
+	external/vulkancts/modules/vulkan/wsi/vktWsiTests.cpp
 
 LOCAL_C_INCLUDES := \
 	frameworks/native/opengl/include \
@@ -882,6 +902,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/api \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/binding_model \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/clipping \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/compute \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/draw \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/dynamic_state \
@@ -892,11 +913,12 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/rasterization \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderexecutor \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderrender \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/sparse_resources \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/spirv_assembly \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ssbo \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/synchronization \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/tessellation \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo \
-	$(deqp_dir)/external/vulkancts/modules/vulkan/sparse_resources \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi
 
 deqp_compile_flags := \

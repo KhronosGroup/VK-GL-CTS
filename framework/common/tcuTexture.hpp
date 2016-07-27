@@ -137,8 +137,9 @@ public:
 	}
 } DE_WARN_UNUSED_TYPE;
 
-bool	isValid			(TextureFormat format);
-int		getPixelSize	(TextureFormat format);
+bool	isValid				(TextureFormat format);
+int		getPixelSize		(TextureFormat format);
+int		getNumUsedChannels	(TextureFormat::ChannelOrder order);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Texture swizzle

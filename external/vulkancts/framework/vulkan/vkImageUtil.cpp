@@ -487,52 +487,6 @@ tcu::CompressedTexFormat mapVkCompressedFormat (VkFormat format)
 	return tcu::COMPRESSEDTEXFORMAT_LAST;
 }
 
-VkComponentMapping getFormatComponentMapping (VkFormat format)
-{
-	using tcu::TextureFormat;
-
-	static const VkComponentMapping	R		= {	VK_COMPONENT_SWIZZLE_R,		VK_COMPONENT_SWIZZLE_ZERO,	VK_COMPONENT_SWIZZLE_ZERO,	VK_COMPONENT_SWIZZLE_ONE	};
-	static const VkComponentMapping	RG		= {	VK_COMPONENT_SWIZZLE_R,		VK_COMPONENT_SWIZZLE_G,		VK_COMPONENT_SWIZZLE_ZERO,	VK_COMPONENT_SWIZZLE_ONE	};
-	static const VkComponentMapping	RGB		= {	VK_COMPONENT_SWIZZLE_R,		VK_COMPONENT_SWIZZLE_G,		VK_COMPONENT_SWIZZLE_B,		VK_COMPONENT_SWIZZLE_ONE	};
-	static const VkComponentMapping	RGBA	= {	VK_COMPONENT_SWIZZLE_R,		VK_COMPONENT_SWIZZLE_G,		VK_COMPONENT_SWIZZLE_B,		VK_COMPONENT_SWIZZLE_A		};
-	static const VkComponentMapping	S		= { VK_COMPONENT_SWIZZLE_ZERO,	VK_COMPONENT_SWIZZLE_ZERO,	VK_COMPONENT_SWIZZLE_ZERO,	VK_COMPONENT_SWIZZLE_A		};
-	static const VkComponentMapping	DS		= {	VK_COMPONENT_SWIZZLE_R,		VK_COMPONENT_SWIZZLE_ZERO,	VK_COMPONENT_SWIZZLE_ZERO,	VK_COMPONENT_SWIZZLE_A		};
-	static const VkComponentMapping	BGRA	= {	VK_COMPONENT_SWIZZLE_B,		VK_COMPONENT_SWIZZLE_G,		VK_COMPONENT_SWIZZLE_R,		VK_COMPONENT_SWIZZLE_A		};
-	static const VkComponentMapping	BGR		= {	VK_COMPONENT_SWIZZLE_B,		VK_COMPONENT_SWIZZLE_G,		VK_COMPONENT_SWIZZLE_R,		VK_COMPONENT_SWIZZLE_ONE	};
-	static const VkComponentMapping	ARGB	= {	VK_COMPONENT_SWIZZLE_A,		VK_COMPONENT_SWIZZLE_R,		VK_COMPONENT_SWIZZLE_G,		VK_COMPONENT_SWIZZLE_B		};
-
-	if (format == VK_FORMAT_UNDEFINED)
-		return RGBA;
-
-	const tcu::TextureFormat tcuFormat = (isCompressedFormat(format)) ? tcu::getUncompressedFormat(mapVkCompressedFormat(format))
-																	  : mapVkFormat(format);
-
-	switch (tcuFormat.order)
-	{
-		case TextureFormat::R:		return R;
-		case TextureFormat::RG:		return RG;
-		case TextureFormat::RGB:	return RGB;
-		case TextureFormat::RGBA:	return RGBA;
-		case TextureFormat::BGRA:	return BGRA;
-		case TextureFormat::BGR:	return BGR;
-		case TextureFormat::ARGB:	return ARGB;
-		case TextureFormat::sR:		return R;
-		case TextureFormat::sRG:	return RG;
-		case TextureFormat::sRGB:	return RGB;
-		case TextureFormat::sRGBA:	return RGBA;
-		case TextureFormat::sBGR:	return BGR;
-		case TextureFormat::sBGRA:	return BGRA;
-		case TextureFormat::D:		return R;
-		case TextureFormat::S:		return S;
-		case TextureFormat::DS:		return DS;
-		default:
-			break;
-	}
-
-	DE_ASSERT(false);
-	return RGBA;
-}
-
 static bool isScaledFormat (VkFormat format)
 {
 	// update this mapping if VkFormat changes

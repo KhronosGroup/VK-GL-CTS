@@ -286,7 +286,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 			*m_image,									// VkImage						image;
 			VK_IMAGE_VIEW_TYPE_2D,						// VkImageViewType				viewType;
 			m_imageFormat,								// VkFormat						format;
-			getFormatComponentMapping(m_imageFormat),	// VkComponentMapping			components;
+			makeComponentMappingRGBA(),					// VkComponentMapping			components;
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,					// VkImageAspectFlags			aspectMask;
 				0u,											// deUint32						baseMipLevel;
@@ -348,10 +348,10 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 				VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType				sType;
 				DE_NULL,									// const void*					pNext;
 				0u,											// VkImageViewCreateFlags		flags;
-				*m_resolvedImage,									// VkImage						image;
+				*m_resolvedImage,							// VkImage						image;
 				VK_IMAGE_VIEW_TYPE_2D,						// VkImageViewType				viewType;
 				m_imageFormat,								// VkFormat						format;
-				getFormatComponentMapping(m_imageFormat),	// VkComponentMapping			components;
+				makeComponentMappingRGBA(),					// VkComponentMapping			components;
 				{
 					VK_IMAGE_ASPECT_COLOR_BIT,					// VkImageAspectFlags			aspectMask;
 					0u,											// deUint32						baseMipLevel;
@@ -386,7 +386,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 				0u,													// VkAttachmentDescriptionFlags		flags;
 				m_imageFormat,										// VkFormat							format;
 				VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
-				VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
+				VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				loadOp;
 				VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
 				VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
