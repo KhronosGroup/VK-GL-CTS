@@ -25,8 +25,12 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineImageUtil.hpp
 	vktPipelineImageViewTests.cpp
 	vktPipelineImageViewTests.hpp
+	vktPipelineMultisampleTestsUtil.cpp
+	vktPipelineMultisampleTestsUtil.hpp
 	vktPipelineMultisampleTests.cpp
 	vktPipelineMultisampleTests.hpp
+	vktPipelineMultisampleInterpolationTests.cpp
+	vktPipelineMultisampleInterpolationTests.hpp
 	vktPipelineInputAssemblyTests.cpp
 	vktPipelineInputAssemblyTests.hpp
 	vktPipelineReferenceRenderer.cpp
