@@ -6,6 +6,7 @@ add_subdirectory(binding_model)
 add_subdirectory(spirv_assembly)
 add_subdirectory(shaderrender)
 add_subdirectory(shaderexecutor)
+add_subdirectory(texture_filtering)
 add_subdirectory(memory)
 add_subdirectory(ubo)
 add_subdirectory(dynamic_state)
@@ -28,6 +29,7 @@ include_directories(
 	spirv_assembly
 	shaderrender
 	shaderexecutor
+	texture_filtering
 	memory
 	ubo
 	dynamic_state
@@ -71,6 +73,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-spirv-assembly
 	deqp-vk-shaderrender
 	deqp-vk-shaderexecutor
+	deqp-vk-texture-filtering
 	deqp-vk-memory
 	deqp-vk-ubo
 	deqp-vk-dynamic-state
