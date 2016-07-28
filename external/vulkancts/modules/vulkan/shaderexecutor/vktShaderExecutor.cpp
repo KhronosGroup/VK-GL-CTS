@@ -960,7 +960,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		descriptorSetLayout = m_descriptorSetLayoutBuilder.build(vk, vkDevice);
 		if (!m_uniformInfos.empty())
 			descriptorPool = m_descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-		else 
+		else
 		{
 			const VkDescriptorPoolSize 			poolSizeCount 	= { vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 };
 			const VkDescriptorPoolCreateInfo	createInfo 		=
@@ -3065,6 +3065,29 @@ void ShaderExecutor::setupSamplerData (const VkDevice&				vkDevice,
 	m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(samplers)));
 }
 
+void ShaderExecutor::addSamplerUniform (deUint32				bindingLocation,
+										VkImageView				imageView,
+										VkSampler				sampler)
+{
+	de::MovePtr<UnmanagedSamplerUniform> samplerUniform(new UnmanagedSamplerUniform());
+
+	const VkDescriptorImageInfo descriptor =
+	{
+		sampler,
+		imageView,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+	};
+
+	samplerUniform->type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplerUniform->location = bindingLocation;
+	samplerUniform->descriptor = descriptor;
+
+	m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(samplerUniform)));
+
+	m_descriptorSetLayoutBuilder.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL, DE_NULL);
+	m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1);
+}
+
 const void*	ShaderExecutor::getBufferPtr (const deUint32 bindingLocation) const
 {
 	std::vector<UniformInfoSp>::const_iterator it = m_uniformInfos.begin();
@@ -3132,6 +3155,11 @@ void ShaderExecutor::uploadUniforms (DescriptorSetUpdateBuilder& descriptorSetUp
 		else if (uniformType == UniformInfo::UNIFORM_TYPE_SAMPLER)
 		{
 			const SamplerUniform*					samplerUniform	= static_cast<const SamplerUniform*>(uniformInfo);
+			descriptorSetUpdateBuilder.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(samplerUniform->location), samplerUniform->type, &samplerUniform->descriptor);
+		}
+		else if (uniformType == UniformInfo::UNIFORM_TYPE_UNMANAGED_SAMPLER)
+		{
+			const UnmanagedSamplerUniform* samplerUniform = static_cast<const UnmanagedSamplerUniform*>(uniformInfo);
 			descriptorSetUpdateBuilder.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(samplerUniform->location), samplerUniform->type, &samplerUniform->descriptor);
 		}
 	}
