@@ -787,8 +787,8 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderExecutor.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderIntegerFunctionTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderPackingFunctionTests.cpp \
-	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderBuiltinVarTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRender.cpp \
+	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderBuiltinVarTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderDerivateTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderDiscardTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderIndexingTests.cpp \
@@ -845,6 +845,9 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/tessellation/vktTessellationUserDefinedIO.cpp \
 	external/vulkancts/modules/vulkan/tessellation/vktTessellationUtil.cpp \
 	external/vulkancts/modules/vulkan/tessellation/vktTessellationWindingTests.cpp \
+	external/vulkancts/modules/vulkan/texture_filtering/vktSampleVerifier.cpp \
+	external/vulkancts/modules/vulkan/texture_filtering/vktTextureFilteringTests.cpp \
+	external/vulkancts/modules/vulkan/texture_filtering/vktTextureFilteringExplicitLodTests.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktRandomUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockTests.cpp \
@@ -918,6 +921,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ssbo \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/synchronization \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/tessellation \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/texture_filtering \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi
 
