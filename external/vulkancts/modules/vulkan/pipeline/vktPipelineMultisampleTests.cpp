@@ -2033,7 +2033,12 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 
 	// Sampling from a multisampled image texture (texelFetch)
 	{
-		multisampleTests->addChild(createMultisampleImageTests(testCtx));
+		multisampleTests->addChild(createMultisampleSampledImageTests(testCtx));
+	}
+
+	// Load/store on a multisampled rendered image (different kinds of access: color attachment write, storage image, etc.)
+	{
+		multisampleTests->addChild(createMultisampleStorageImageTests(testCtx));
 	}
 
 	return multisampleTests.release();

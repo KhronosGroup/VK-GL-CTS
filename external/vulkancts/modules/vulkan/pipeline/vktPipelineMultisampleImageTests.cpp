@@ -464,12 +464,23 @@ inline VkImageSubresourceRange makeColorSubresourceRange (const int baseArrayLay
 	return makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, static_cast<deUint32>(baseArrayLayer), static_cast<deUint32>(layerCount));
 }
 
+inline VkImageSubresourceLayers makeColorSubresourceLayers (const int baseArrayLayer, const int layerCount)
+{
+	return makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, static_cast<deUint32>(baseArrayLayer), static_cast<deUint32>(layerCount));
+}
+
 void checkImageFormatRequirements (const InstanceInterface&		vki,
 								   const VkPhysicalDevice		physDevice,
 								   const VkSampleCountFlagBits	sampleCount,
 								   const VkFormat				format,
 								   const VkImageUsageFlags		usage)
 {
+	VkPhysicalDeviceFeatures	features;
+	vki.getPhysicalDeviceFeatures(physDevice, &features);
+
+	if (((usage & VK_IMAGE_USAGE_STORAGE_BIT) != 0) && !features.shaderStorageImageMultisample)
+		TCU_THROW(NotSupportedError, "Multisampled storage images are not supported");
+
 	VkImageFormatProperties		imageFormatProperties;
 	const VkResult				imageFormatResult		= vki.getPhysicalDeviceImageFormatProperties(
 		physDevice, format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, usage, (VkImageCreateFlags)0, &imageFormatProperties);
@@ -479,6 +490,12 @@ void checkImageFormatRequirements (const InstanceInterface&		vki,
 
 	if ((imageFormatProperties.sampleCounts & sampleCount) != sampleCount)
 		TCU_THROW(NotSupportedError, "Requested sample count is not supported");
+}
+
+void zeroBuffer (const DeviceInterface& vk, const VkDevice device, const Allocation& alloc, const VkDeviceSize bufferSize)
+{
+	deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(bufferSize));
+	flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), bufferSize);
 }
 
 //! The default foreground color.
@@ -563,119 +580,6 @@ inline int getNumSamples (const VkSampleCountFlagBits samples)
 	return static_cast<int>(samples);	// enum bitmask actually matches the number of samples
 }
 
-void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
-{
-	const int	numComponents	= tcu::getNumUsedChannels(mapVkFormat(caseDef.colorFormat).order);
-	const bool	isUint			= isUintFormat(caseDef.colorFormat);
-	const bool	isSint			= isIntFormat(caseDef.colorFormat);
-
-	// Pass 1: Render to texture
-
-	// Vertex shader
-	{
-		std::ostringstream src;
-		src << "#version 450\n"
-			<< "\n"
-			<< "layout(location = 0) in  vec4 in_position;\n"
-			<< "layout(location = 1) in  vec4 in_color;\n"
-			<< "layout(location = 0) out vec4 o_color;\n"
-			<< "\n"
-			<< "out gl_PerVertex {\n"
-			<< "    vec4 gl_Position;\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main(void)\n"
-			<< "{\n"
-			<< "    gl_Position = in_position;\n"
-			<< "    o_color     = in_color;\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("render_vert") << glu::VertexSource(src.str());
-	}
-
-	// Fragment shader
-	{
-		const std::string colorFormat = getColorFormatStr(numComponents, isUint, isSint);
-
-		std::ostringstream src;
-		src << "#version 450\n"
-			<< "\n"
-			<< "layout(location = 0) in  vec4 in_color;\n"
-			<< "layout(location = 0) out " << colorFormat << " o_color;\n"
-			<< "\n"
-			<< "void main(void)\n"
-			<< "{\n"
-			<< "    o_color = " << colorFormat << "("		// float color will be converted to int/uint here if needed
-			<< (numComponents == 1 ? "in_color.r"   :
-				numComponents == 2 ? "in_color.rg"  :
-				numComponents == 3 ? "in_color.rgb" : "in_color") << ");\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("render_frag") << glu::FragmentSource(src.str());
-	}
-
-	// Pass 2: Sample texture
-
-	// Vertex shader
-	{
-		std::ostringstream src;
-		src << "#version 450\n"
-			<< "\n"
-			<< "layout(location = 0) in  vec4  in_position;\n"
-			<< "\n"
-			<< "out gl_PerVertex {\n"
-			<< "    vec4 gl_Position;\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main(void)\n"
-			<< "{\n"
-			<< "    gl_Position = in_position;\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("sample_vert") << glu::VertexSource(src.str());
-	}
-
-	// Fragment shader
-	{
-		const std::string texelFormatStr	= (isUint ? "uvec4" : isSint ? "ivec4" : "vec4");
-		const std::string refClearColor		= getReferenceClearColorStr(caseDef.colorFormat, numComponents, isUint, isSint);
-		const std::string refPrimitiveColor	= getReferencePrimitiveColorStr(numComponents, isUint, isSint);
-		const std::string samplerTypeStr	= getSamplerTypeStr(caseDef.numLayers, isUint, isSint);
-
-		std::ostringstream src;
-		src << "#version 450\n"
-			<< "\n"
-			<< "layout(location = 0) out int o_status;\n"
-			<< "\n"
-			<< "layout(set = 0, binding = 0) uniform " << samplerTypeStr << " colorTexture;\n"
-			<< "\n"
-			<< "void main(void)\n"
-			<< "{\n"
-			<< "    int checksum = 0;\n"
-			<< "\n";
-
-		if (caseDef.numLayers == 1)
-			src << "    for (int sampleNdx = 0; sampleNdx < " << caseDef.numSamples << "; ++sampleNdx) {\n"
-				<< "        " << texelFormatStr << " color = texelFetch(colorTexture, ivec2(gl_FragCoord.xy), sampleNdx);\n"
-				<< "        if (color == " << refClearColor << " || color == " << refPrimitiveColor << ")\n"
-				<< "            ++checksum;\n"
-				<< "    }\n";
-		else
-			src << "    for (int layerNdx = 0; layerNdx < " << caseDef.numLayers << "; ++layerNdx)\n"
-				<< "    for (int sampleNdx = 0; sampleNdx < " << caseDef.numSamples << "; ++sampleNdx) {\n"
-				<< "        " << texelFormatStr << " color = texelFetch(colorTexture, ivec3(gl_FragCoord.xy, layerNdx), sampleNdx);\n"
-				<< "        if (color == " << refClearColor << " || color == " << refPrimitiveColor << ")\n"
-				<< "            ++checksum;\n"
-				<< "    }\n";
-
-		src << "\n"
-			<< "    o_status = checksum;\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("sample_frag") << glu::FragmentSource(src.str());
-	}
-}
-
 //! A flat-colored shape with sharp angles to make antialiasing visible.
 std::vector<Vertex4RGBA> genTriangleVertices (void)
 {
@@ -722,41 +626,128 @@ std::vector<Vertex4RGBA> genFullQuadVertices (void)
 	return std::vector<Vertex4RGBA>(data, data + DE_LENGTH_OF_ARRAY(data));
 }
 
-tcu::TestStatus test (Context& context, const CaseDef caseDef)
+std::string getShaderImageFormatQualifier (const tcu::TextureFormat& format)
 {
-	const DeviceInterface&		vk					= context.getDeviceInterface();
-	const InstanceInterface&	vki					= context.getInstanceInterface();
-	const VkDevice				device				= context.getDevice();
-	const VkPhysicalDevice		physDevice			= context.getPhysicalDevice();
-	const VkQueue				queue				= context.getUniversalQueue();
-	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	Allocator&					allocator			= context.getDefaultAllocator();
+	const char* orderPart;
+	const char* typePart;
 
-	const VkImageUsageFlags		colorImageUsage		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-	checkImageFormatRequirements(vki, physDevice, caseDef.numSamples, caseDef.colorFormat, colorImageUsage);
-
+	switch (format.order)
 	{
-		tcu::TestLog& log = context.getTestContext().getLog();
-		log << tcu::LogSection("Description", "")
-			<< tcu::TestLog::Message << "Rendering to a multisampled image. Expecting all samples to be either a clear color or a primitive color." << tcu::TestLog::EndMessage
-			<< tcu::TestLog::Message << "Sampling from the texture with texelFetch (OpImageFetch)." << tcu::TestLog::EndMessage
-			<< tcu::TestLog::EndSection;
+		case tcu::TextureFormat::R:		orderPart = "r";	break;
+		case tcu::TextureFormat::RG:	orderPart = "rg";	break;
+		case tcu::TextureFormat::RGB:	orderPart = "rgb";	break;
+		case tcu::TextureFormat::RGBA:	orderPart = "rgba";	break;
+
+		default:
+			DE_ASSERT(false);
+			orderPart = DE_NULL;
 	}
 
-	// Multisampled color image
-	const Unique<VkImage>			colorImage		(makeImage(vk, device, caseDef.colorFormat, caseDef.renderSize, caseDef.numLayers, caseDef.numSamples, colorImageUsage));
-	const UniquePtr<Allocation>		colorImageAlloc	(bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any));
+	switch (format.type)
+	{
+		case tcu::TextureFormat::FLOAT:				typePart = "32f";		break;
+		case tcu::TextureFormat::HALF_FLOAT:		typePart = "16f";		break;
 
-	const Unique<VkCommandPool>		cmdPool			(makeCommandPool  (vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>	cmdBuffer		(makeCommandBuffer(vk, device, *cmdPool));
+		case tcu::TextureFormat::UNSIGNED_INT32:	typePart = "32ui";		break;
+		case tcu::TextureFormat::UNSIGNED_INT16:	typePart = "16ui";		break;
+		case tcu::TextureFormat::UNSIGNED_INT8:		typePart = "8ui";		break;
+
+		case tcu::TextureFormat::SIGNED_INT32:		typePart = "32i";		break;
+		case tcu::TextureFormat::SIGNED_INT16:		typePart = "16i";		break;
+		case tcu::TextureFormat::SIGNED_INT8:		typePart = "8i";		break;
+
+		case tcu::TextureFormat::UNORM_INT16:		typePart = "16";		break;
+		case tcu::TextureFormat::UNORM_INT8:		typePart = "8";			break;
+
+		case tcu::TextureFormat::SNORM_INT16:		typePart = "16_snorm";	break;
+		case tcu::TextureFormat::SNORM_INT8:		typePart = "8_snorm";	break;
+
+		default:
+			DE_ASSERT(false);
+			typePart = DE_NULL;
+	}
+
+	return std::string() + orderPart + typePart;
+}
+
+std::string getShaderMultisampledImageType (const tcu::TextureFormat& format, const int numLayers)
+{
+	const std::string formatPart = tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ? "u" :
+								   tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER   ? "i" : "";
+
+	std::ostringstream str;
+	str << formatPart << "image2DMS" << (numLayers > 1 ? "Array" : "");
+
+	return str.str();
+}
+
+void addSimpleVertexAndFragmentPrograms (SourceCollections& programCollection, const CaseDef caseDef)
+{
+	const int	numComponents	= tcu::getNumUsedChannels(mapVkFormat(caseDef.colorFormat).order);
+	const bool	isUint			= isUintFormat(caseDef.colorFormat);
+	const bool	isSint			= isIntFormat(caseDef.colorFormat);
+
+	// Vertex shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in  vec4 in_position;\n"
+			<< "layout(location = 1) in  vec4 in_color;\n"
+			<< "layout(location = 0) out vec4 o_color;\n"
+			<< "\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4 gl_Position;\n"
+			<< "};\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    gl_Position = in_position;\n"
+			<< "    o_color     = in_color;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+	}
+
+	// Fragment shader
+	{
+		const std::string colorFormat = getColorFormatStr(numComponents, isUint, isSint);
+
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in  vec4 in_color;\n"
+			<< "layout(location = 0) out " << colorFormat << " o_color;\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    o_color = " << colorFormat << "("		// float color will be converted to int/uint here if needed
+			<< (numComponents == 1 ? "in_color.r"   :
+				numComponents == 2 ? "in_color.rg"  :
+				numComponents == 3 ? "in_color.rgb" : "in_color") << ");\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+	}
+}
+
+//! Synchronously render to a multisampled color image.
+void renderMultisampledImage (Context& context, const CaseDef& caseDef, const VkImage colorImage)
+{
+	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkDevice					device				= context.getDevice();
+	const VkQueue					queue				= context.getUniversalQueue();
+	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&						allocator			= context.getDefaultAllocator();
+
+	const Unique<VkCommandPool>		cmdPool				(makeCommandPool  (vk, device, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
 
 	const VkRect2D renderArea = {
 		makeOffset2D(0, 0),
 		makeExtent2D(caseDef.renderSize.x(), caseDef.renderSize.y()),
 	};
 
-	// Step 1: Render to texture
 	{
 		// Create an image view (attachment) for each layer of the image
 		std::vector<SharedPtrVkImageView>	colorAttachments;
@@ -764,7 +755,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		for (int i = 0; i < caseDef.numLayers; ++i)
 		{
 			colorAttachments.push_back(makeSharedPtr(makeImageView(
-				vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, caseDef.colorFormat, makeColorSubresourceRange(i, 1))));
+				vk, device, colorImage, VK_IMAGE_VIEW_TYPE_2D, caseDef.colorFormat, makeColorSubresourceRange(i, 1))));
 			attachmentHandles.push_back(**colorAttachments.back());
 		}
 
@@ -779,8 +770,8 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 			flushMappedMemoryRange(vk, device, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexBufferSize);
 		}
 
-		const Unique<VkShaderModule>	vertexModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("render_vert"), 0u));
-		const Unique<VkShaderModule>	fragmentModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("render_frag"), 0u));
+		const Unique<VkShaderModule>	vertexModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("vert"), 0u));
+		const Unique<VkShaderModule>	fragmentModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("frag"), 0u));
 		const Unique<VkRenderPass>		renderPass		(makeMultisampleRenderPass	(vk, device, caseDef.colorFormat, caseDef.numSamples, caseDef.numLayers));
 		const Unique<VkFramebuffer>		framebuffer		(makeFramebuffer			(vk, device, *renderPass, caseDef.numLayers, &attachmentHandles[0],
 																					 static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y())));
@@ -822,6 +813,120 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	}
+}
+
+namespace SampledImage
+{
+
+void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
+{
+	// Pass 1: Render to texture
+
+	addSimpleVertexAndFragmentPrograms(programCollection, caseDef);
+
+	// Pass 2: Sample texture
+
+	// Vertex shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in  vec4  in_position;\n"
+			<< "\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4 gl_Position;\n"
+			<< "};\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    gl_Position = in_position;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("sample_vert") << glu::VertexSource(src.str());
+	}
+
+	// Fragment shader
+	{
+		const int			numComponents		= tcu::getNumUsedChannels(mapVkFormat(caseDef.colorFormat).order);
+		const bool			isUint				= isUintFormat(caseDef.colorFormat);
+		const bool			isSint				= isIntFormat(caseDef.colorFormat);
+		const std::string	texelFormatStr		= (isUint ? "uvec4" : isSint ? "ivec4" : "vec4");
+		const std::string	refClearColor		= getReferenceClearColorStr(caseDef.colorFormat, numComponents, isUint, isSint);
+		const std::string	refPrimitiveColor	= getReferencePrimitiveColorStr(numComponents, isUint, isSint);
+		const std::string	samplerTypeStr		= getSamplerTypeStr(caseDef.numLayers, isUint, isSint);
+
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) out int o_status;\n"
+			<< "\n"
+			<< "layout(set = 0, binding = 0) uniform " << samplerTypeStr << " colorTexture;\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    int checksum = 0;\n"
+			<< "\n";
+
+		if (caseDef.numLayers == 1)
+			src << "    for (int sampleNdx = 0; sampleNdx < " << caseDef.numSamples << "; ++sampleNdx) {\n"
+				<< "        " << texelFormatStr << " color = texelFetch(colorTexture, ivec2(gl_FragCoord.xy), sampleNdx);\n"
+				<< "        if (color == " << refClearColor << " || color == " << refPrimitiveColor << ")\n"
+				<< "            ++checksum;\n"
+				<< "    }\n";
+		else
+			src << "    for (int layerNdx = 0; layerNdx < " << caseDef.numLayers << "; ++layerNdx)\n"
+				<< "    for (int sampleNdx = 0; sampleNdx < " << caseDef.numSamples << "; ++sampleNdx) {\n"
+				<< "        " << texelFormatStr << " color = texelFetch(colorTexture, ivec3(gl_FragCoord.xy, layerNdx), sampleNdx);\n"
+				<< "        if (color == " << refClearColor << " || color == " << refPrimitiveColor << ")\n"
+				<< "            ++checksum;\n"
+				<< "    }\n";
+
+		src << "\n"
+			<< "    o_status = checksum;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("sample_frag") << glu::FragmentSource(src.str());
+	}
+}
+
+tcu::TestStatus test (Context& context, const CaseDef caseDef)
+{
+	const DeviceInterface&		vk					= context.getDeviceInterface();
+	const InstanceInterface&	vki					= context.getInstanceInterface();
+	const VkDevice				device				= context.getDevice();
+	const VkPhysicalDevice		physDevice			= context.getPhysicalDevice();
+	const VkQueue				queue				= context.getUniversalQueue();
+	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&					allocator			= context.getDefaultAllocator();
+
+	const VkImageUsageFlags		colorImageUsage		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+	checkImageFormatRequirements(vki, physDevice, caseDef.numSamples, caseDef.colorFormat, colorImageUsage);
+
+	{
+		tcu::TestLog& log = context.getTestContext().getLog();
+		log << tcu::LogSection("Description", "")
+			<< tcu::TestLog::Message << "Rendering to a multisampled image. Expecting all samples to be either a clear color or a primitive color." << tcu::TestLog::EndMessage
+			<< tcu::TestLog::Message << "Sampling from the texture with texelFetch (OpImageFetch)." << tcu::TestLog::EndMessage
+			<< tcu::TestLog::EndSection;
+	}
+
+	// Multisampled color image
+	const Unique<VkImage>			colorImage		(makeImage(vk, device, caseDef.colorFormat, caseDef.renderSize, caseDef.numLayers, caseDef.numSamples, colorImageUsage));
+	const UniquePtr<Allocation>		colorImageAlloc	(bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any));
+
+	const Unique<VkCommandPool>		cmdPool			(makeCommandPool  (vk, device, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer		(makeCommandBuffer(vk, device, *cmdPool));
+
+	const VkRect2D renderArea = {
+		makeOffset2D(0, 0),
+		makeExtent2D(caseDef.renderSize.x(), caseDef.renderSize.y()),
+	};
+
+	// Step 1: Render to texture
+	{
+		renderMultisampledImage(context, caseDef, *colorImage);
+	}
 
 	// Step 2: Sample texture
 	{
@@ -842,10 +947,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		const Unique<VkBuffer>			checksumBuffer		(makeBuffer(vk, device, checksumBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 		const UniquePtr<Allocation>		checksumBufferAlloc	(bindBuffer(vk, device, allocator, *checksumBuffer, MemoryRequirement::HostVisible));
 
-		{
-			deMemset(checksumBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(checksumBufferSize));
-			flushMappedMemoryRange(vk, device, checksumBufferAlloc->getMemory(), checksumBufferAlloc->getOffset(), checksumBufferSize);
-		}
+		zeroBuffer(vk, device, *checksumBufferAlloc, checksumBufferSize);
 
 		// Vertex buffer
 		const std::vector<Vertex4RGBA>	vertices			= genFullQuadVertices();
@@ -960,7 +1062,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 				0ull,																		// VkDeviceSize                bufferOffset;
 				0u,																			// uint32_t                    bufferRowLength;
 				0u,																			// uint32_t                    bufferImageHeight;
-				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),			// VkImageSubresourceLayers    imageSubresource;
+				makeColorSubresourceLayers(0, 1),											// VkImageSubresourceLayers    imageSubresource;
 				makeOffset3D(0, 0, 0),														// VkOffset3D                  imageOffset;
 				makeExtent3D(caseDef.renderSize.x(), caseDef.renderSize.y(), 1u),			// VkExtent3D                  imageExtent;
 			};
@@ -1011,6 +1113,349 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	return tcu::TestStatus::pass("OK");
 }
 
+} // SampledImage ns
+
+namespace StorageImage
+{
+
+void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
+{
+	// Vertex & fragment
+
+	addSimpleVertexAndFragmentPrograms(programCollection, caseDef);
+
+	// Compute
+	{
+		const std::string	imageTypeStr		= getShaderMultisampledImageType(mapVkFormat(caseDef.colorFormat), caseDef.numLayers);
+		const std::string	formatQualifierStr	= getShaderImageFormatQualifier(mapVkFormat(caseDef.colorFormat));
+		const std::string	signednessPrefix	= isUintFormat(caseDef.colorFormat) ? "u" : isIntFormat(caseDef.colorFormat) ? "i" : "";
+		const std::string	gvec4Expr			= signednessPrefix + "vec4";
+		const std::string	texelCoordStr		= (caseDef.numLayers == 1 ? "ivec2(gx, gy)" : "ivec3(gx, gy, gz)");
+
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "layout(local_size_x = 1) in;\n"
+			<< "layout(set = 0, binding = 0, " << formatQualifierStr << ") uniform " << imageTypeStr << " u_msImage;\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    int gx = int(gl_GlobalInvocationID.x);\n"
+			<< "    int gy = int(gl_GlobalInvocationID.y);\n"
+			<< "    int gz = int(gl_GlobalInvocationID.z);\n"
+			<< "\n"
+			<< "    " << gvec4Expr << " prevColor = imageLoad(u_msImage, " << texelCoordStr << ", 0);\n"
+			<< "    for (int sampleNdx = 1; sampleNdx < " << caseDef.numSamples << "; ++sampleNdx) {\n"
+			<< "        " << gvec4Expr << " color = imageLoad(u_msImage, " << texelCoordStr << ", sampleNdx);\n"
+			<< "        imageStore(u_msImage, " << texelCoordStr <<", sampleNdx, prevColor);\n"
+			<< "        prevColor = color;\n"
+			<< "    }\n"
+			<< "    imageStore(u_msImage, " << texelCoordStr <<", 0, prevColor);\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("comp") << glu::ComputeSource(src.str());
+	}
+}
+
+//! Render a MS image, resolve it, and copy result to resolveBuffer.
+void renderAndResolve (Context& context, const CaseDef& caseDef, const VkBuffer resolveBuffer, const bool useComputePass)
+{
+	const DeviceInterface&		vk					= context.getDeviceInterface();
+	const VkDevice				device				= context.getDevice();
+	const VkQueue				queue				= context.getUniversalQueue();
+	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&					allocator			= context.getDefaultAllocator();
+
+	// Multisampled color image
+	const Unique<VkImage>			colorImage			(makeImage(vk, device, caseDef.colorFormat, caseDef.renderSize, caseDef.numLayers, caseDef.numSamples,
+																   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
+	const UniquePtr<Allocation>		colorImageAlloc		(bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any));
+
+	const Unique<VkImage>			resolveImage		(makeImage(vk, device, caseDef.colorFormat, caseDef.renderSize, caseDef.numLayers, VK_SAMPLE_COUNT_1_BIT,
+																   VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
+	const UniquePtr<Allocation>		resolveImageAlloc	(bindImage(vk, device, allocator, *resolveImage, MemoryRequirement::Any));
+
+	const Unique<VkCommandPool>		cmdPool				(makeCommandPool  (vk, device, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
+
+	// Working image barrier, we change it based on which rendering stages were executed so far.
+	VkImageMemoryBarrier colorImageBarrier =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,						// VkStructureType			sType;
+		DE_NULL,													// const void*				pNext;
+		(VkAccessFlags)0,											// VkAccessFlags			outputMask;
+		(VkAccessFlags)0,											// VkAccessFlags			inputMask;
+		VK_IMAGE_LAYOUT_UNDEFINED,									// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_UNDEFINED,									// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32					destQueueFamilyIndex;
+		*colorImage,												// VkImage					image;
+		makeColorSubresourceRange(0, caseDef.numLayers),			// VkImageSubresourceRange	subresourceRange;
+	};
+
+	// Pass 1: Render an image
+	{
+		renderMultisampledImage(context, caseDef, *colorImage);
+
+		colorImageBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		colorImageBarrier.oldLayout		= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	}
+
+	// Pass 2: Compute shader
+	if (useComputePass)
+	{
+		// Descriptors
+
+		Unique<VkDescriptorSetLayout> descriptorSetLayout(DescriptorSetLayoutBuilder()
+			.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+			.build(vk, device));
+
+		Unique<VkDescriptorPool> descriptorPool(DescriptorPoolBuilder()
+			.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1u)
+			.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+		const Unique<VkImageView>		colorImageView		(makeImageView(vk, device, *colorImage,
+																			(caseDef.numLayers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY),
+																			caseDef.colorFormat, makeColorSubresourceRange(0, caseDef.numLayers)));
+		const Unique<VkDescriptorSet>	descriptorSet		(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+		const VkDescriptorImageInfo		descriptorImageInfo	= makeDescriptorImageInfo(DE_NULL, *colorImageView, VK_IMAGE_LAYOUT_GENERAL);
+
+		DescriptorSetUpdateBuilder()
+			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo)
+			.update(vk, device);
+
+		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout	(vk, device, *descriptorSetLayout));
+		const Unique<VkShaderModule>	shaderModule	(createShaderModule	(vk, device, context.getBinaryCollection().get("comp"), 0));
+		const Unique<VkPipeline>		pipeline		(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule, DE_NULL));
+
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		// Image layout for load/stores
+		{
+			colorImageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+			colorImageBarrier.newLayout		= VK_IMAGE_LAYOUT_GENERAL;
+
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u,
+				0u, DE_NULL, 0u, DE_NULL, 1u, &colorImageBarrier);
+
+			colorImageBarrier.srcAccessMask = colorImageBarrier.dstAccessMask;
+			colorImageBarrier.oldLayout		= colorImageBarrier.newLayout;
+		}
+		// Dispatch
+		{
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+			vk.cmdDispatch(*cmdBuffer, caseDef.renderSize.x(), caseDef.renderSize.y(), caseDef.numLayers);
+		}
+
+		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	}
+
+	// Resolve and verify the image
+	{
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		// Prepare for resolve
+		{
+			colorImageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			colorImageBarrier.newLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+			const VkImageMemoryBarrier barriers[] =
+			{
+				colorImageBarrier,
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,						// VkStructureType			sType;
+					DE_NULL,													// const void*				pNext;
+					(VkAccessFlags)0,											// VkAccessFlags			outputMask;
+					VK_ACCESS_TRANSFER_WRITE_BIT,								// VkAccessFlags			inputMask;
+					VK_IMAGE_LAYOUT_UNDEFINED,									// VkImageLayout			oldLayout;
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,						// VkImageLayout			newLayout;
+					VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,									// deUint32					destQueueFamilyIndex;
+					*resolveImage,												// VkImage					image;
+					makeColorSubresourceRange(0, caseDef.numLayers),			// VkImageSubresourceRange	subresourceRange;
+				},
+			};
+
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+				0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
+
+			colorImageBarrier.srcAccessMask = colorImageBarrier.dstAccessMask;
+			colorImageBarrier.oldLayout		= colorImageBarrier.newLayout;
+		}
+		// Resolve the image
+		{
+			const VkImageResolve resolveRegion =
+			{
+				makeColorSubresourceLayers(0, caseDef.numLayers),					// VkImageSubresourceLayers    srcSubresource;
+				makeOffset3D(0, 0, 0),												// VkOffset3D                  srcOffset;
+				makeColorSubresourceLayers(0, caseDef.numLayers),					// VkImageSubresourceLayers    dstSubresource;
+				makeOffset3D(0, 0, 0),												// VkOffset3D                  dstOffset;
+				makeExtent3D(caseDef.renderSize.x(), caseDef.renderSize.y(), 1u),	// VkExtent3D                  extent;
+			};
+
+			vk.cmdResolveImage(*cmdBuffer, *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *resolveImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &resolveRegion);
+		}
+		// Prepare resolve image for copy
+		{
+			const VkImageMemoryBarrier barriers[] =
+			{
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,						// VkStructureType			sType;
+					DE_NULL,													// const void*				pNext;
+					VK_ACCESS_TRANSFER_WRITE_BIT,								// VkAccessFlags			outputMask;
+					VK_ACCESS_TRANSFER_READ_BIT,								// VkAccessFlags			inputMask;
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,						// VkImageLayout			oldLayout;
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,						// VkImageLayout			newLayout;
+					VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,									// deUint32					destQueueFamilyIndex;
+					*resolveImage,												// VkImage					image;
+					makeColorSubresourceRange(0, caseDef.numLayers),			// VkImageSubresourceRange	subresourceRange;
+				},
+			};
+
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+				0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
+		}
+		// Copy resolved image to host-readable buffer
+		{
+			const VkBufferImageCopy copyRegion =
+			{
+				0ull,																// VkDeviceSize                bufferOffset;
+				0u,																	// uint32_t                    bufferRowLength;
+				0u,																	// uint32_t                    bufferImageHeight;
+				makeColorSubresourceLayers(0, caseDef.numLayers),					// VkImageSubresourceLayers    imageSubresource;
+				makeOffset3D(0, 0, 0),												// VkOffset3D                  imageOffset;
+				makeExtent3D(caseDef.renderSize.x(), caseDef.renderSize.y(), 1u),	// VkExtent3D                  imageExtent;
+			};
+
+			vk.cmdCopyImageToBuffer(*cmdBuffer, *resolveImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, resolveBuffer, 1u, &copyRegion);
+		}
+
+		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	}
+}
+
+//! Exact image compare, but allow for some error when color format is integer.
+bool compareImages (tcu::TestLog& log, const CaseDef& caseDef, const tcu::ConstPixelBufferAccess layeredReferenceImage, const tcu::ConstPixelBufferAccess layeredActualImage)
+{
+	DE_ASSERT(caseDef.numSamples > 1);
+
+	const Vec4	goodColor			= Vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	const Vec4	badColor			= Vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	const bool	isAnyIntFormat		= isIntFormat(caseDef.colorFormat) || isUintFormat(caseDef.colorFormat);
+
+	// There should be no mismatched pixels for non-integer formats. Otherwise we may get a wrong color in a location where sample coverage isn't exactly 0 or 1.
+	const int	badPixelTolerance	= (isAnyIntFormat ? 2 * caseDef.renderSize.x() : 0);
+	int			goodLayers			= 0;
+
+	for (int layerNdx = 0; layerNdx < caseDef.numLayers; ++layerNdx)
+	{
+		const tcu::ConstPixelBufferAccess	referenceImage	= tcu::getSubregion(layeredReferenceImage, 0, 0, layerNdx, caseDef.renderSize.x(), caseDef.renderSize.y(), 1);
+		const tcu::ConstPixelBufferAccess	actualImage		= tcu::getSubregion(layeredActualImage, 0, 0, layerNdx, caseDef.renderSize.x(), caseDef.renderSize.y(), 1);
+		const std::string					imageName		= "color layer " + de::toString(layerNdx);
+
+		tcu::TextureLevel		errorMaskStorage	(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), caseDef.renderSize.x(), caseDef.renderSize.y());
+		tcu::PixelBufferAccess	errorMask			= errorMaskStorage.getAccess();
+		int						numBadPixels		= 0;
+
+		for (int y = 0; y < caseDef.renderSize.y(); ++y)
+		for (int x = 0; x < caseDef.renderSize.x(); ++x)
+		{
+			if (isAnyIntFormat && (referenceImage.getPixelInt(x, y) == actualImage.getPixelInt(x, y)))
+				errorMask.setPixel(goodColor, x, y);
+			else if (referenceImage.getPixel(x, y) == actualImage.getPixel(x, y))
+				errorMask.setPixel(goodColor, x, y);
+			else
+			{
+				++numBadPixels;
+				errorMask.setPixel(badColor, x, y);
+			}
+		}
+
+		if (numBadPixels <= badPixelTolerance)
+		{
+			++goodLayers;
+
+			log << tcu::TestLog::ImageSet(imageName, imageName)
+				<< tcu::TestLog::Image("Result",	"Result",		actualImage)
+				<< tcu::TestLog::EndImageSet;
+		}
+		else
+		{
+			log << tcu::TestLog::ImageSet(imageName, imageName)
+				<< tcu::TestLog::Image("Result",	"Result",		actualImage)
+				<< tcu::TestLog::Image("Reference",	"Reference",	referenceImage)
+				<< tcu::TestLog::Image("ErrorMask",	"Error mask",	errorMask)
+				<< tcu::TestLog::EndImageSet;
+		}
+	}
+
+	if (goodLayers == caseDef.numLayers)
+	{
+		log << tcu::TestLog::Message << "All rendered images are correct." << tcu::TestLog::EndMessage;
+		return true;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "FAILED: Some rendered images were incorrect." << tcu::TestLog::EndMessage;
+		return false;
+	}
+}
+
+tcu::TestStatus test (Context& context, const CaseDef caseDef)
+{
+	const DeviceInterface&		vk					= context.getDeviceInterface();
+	const InstanceInterface&	vki					= context.getInstanceInterface();
+	const VkDevice				device				= context.getDevice();
+	const VkPhysicalDevice		physDevice			= context.getPhysicalDevice();
+	Allocator&					allocator			= context.getDefaultAllocator();
+
+	checkImageFormatRequirements(vki, physDevice, caseDef.numSamples, caseDef.colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
+
+	{
+		tcu::TestLog& log = context.getTestContext().getLog();
+		log << tcu::LogSection("Description", "")
+			<< tcu::TestLog::Message << "Rendering to a multisampled image. Image will be processed with a compute shader using OpImageRead and OpImageWrite." << tcu::TestLog::EndMessage
+			<< tcu::TestLog::Message << "Expecting the processed image to be roughly the same as the input image (deviation may occur for integer formats)." << tcu::TestLog::EndMessage
+			<< tcu::TestLog::EndSection;
+	}
+
+	// Host-readable buffer
+	const VkDeviceSize				resolveBufferSize			= caseDef.renderSize.x() * caseDef.renderSize.y() * caseDef.numLayers * tcu::getPixelSize(mapVkFormat(caseDef.colorFormat));
+	const Unique<VkBuffer>			resolveImageOneBuffer		(makeBuffer(vk, device, resolveBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+	const UniquePtr<Allocation>		resolveImageOneBufferAlloc	(bindBuffer(vk, device, allocator, *resolveImageOneBuffer, MemoryRequirement::HostVisible));
+	const Unique<VkBuffer>			resolveImageTwoBuffer		(makeBuffer(vk, device, resolveBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+	const UniquePtr<Allocation>		resolveImageTwoBufferAlloc	(bindBuffer(vk, device, allocator, *resolveImageTwoBuffer, MemoryRequirement::HostVisible));
+
+	zeroBuffer(vk, device, *resolveImageOneBufferAlloc, resolveBufferSize);
+	zeroBuffer(vk, device, *resolveImageTwoBufferAlloc, resolveBufferSize);
+
+	// Render: repeat the same rendering twice to avoid non-essential API calls and layout transitions (e.g. copy).
+	{
+		renderAndResolve(context, caseDef, *resolveImageOneBuffer, false);	// Pass 1: render a basic multisampled image
+		renderAndResolve(context, caseDef, *resolveImageTwoBuffer, true);	// Pass 2: the same but altered with a compute shader
+	}
+
+	// Verify
+	{
+		invalidateMappedMemoryRange(vk, device, resolveImageOneBufferAlloc->getMemory(), resolveImageOneBufferAlloc->getOffset(), resolveBufferSize);
+		invalidateMappedMemoryRange(vk, device, resolveImageTwoBufferAlloc->getMemory(), resolveImageTwoBufferAlloc->getOffset(), resolveBufferSize);
+
+		const tcu::PixelBufferAccess		layeredImageOne	(mapVkFormat(caseDef.colorFormat), caseDef.renderSize.x(), caseDef.renderSize.y(), caseDef.numLayers, resolveImageOneBufferAlloc->getHostPtr());
+		const tcu::ConstPixelBufferAccess	layeredImageTwo	(mapVkFormat(caseDef.colorFormat), caseDef.renderSize.x(), caseDef.renderSize.y(), caseDef.numLayers, resolveImageTwoBufferAlloc->getHostPtr());
+
+		// Check all layers
+		if (!compareImages(context.getTestContext().getLog(), caseDef, layeredImageOne, layeredImageTwo))
+			return tcu::TestStatus::fail("Rendered images are not correct");
+	}
+
+	return tcu::TestStatus::pass("OK");
+}
+
+} // StorageImage ns
+
 std::string getSizeLayerString (const IVec2& size, const int numLayers)
 {
 	std::ostringstream str;
@@ -1024,7 +1469,9 @@ std::string getFormatString (const VkFormat format)
 	return de::toLower(name.substr(10));
 }
 
-void createTestsInGroup (tcu::TestCaseGroup* group)
+void addTestCasesWithFunctions (tcu::TestCaseGroup*						group,
+								FunctionPrograms1<CaseDef>::Function	initPrograms,
+								FunctionInstance1<CaseDef>::Function	testFunc)
 {
 	const IVec2 size[] =
 	{
@@ -1072,7 +1519,7 @@ void createTestsInGroup (tcu::TestCaseGroup* group)
 					samples[samplesNdx],	// VkSampleCountFlagBits	numSamples;
 				};
 
-				addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), "", initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), "", initPrograms, testFunc, caseDef);
 			}
 			sizeLayerGroup->addChild(formatGroup.release());
 		}
@@ -1080,11 +1527,28 @@ void createTestsInGroup (tcu::TestCaseGroup* group)
 	}
 }
 
+void createSampledImageTestsInGroup (tcu::TestCaseGroup* group)
+{
+	addTestCasesWithFunctions(group, SampledImage::initPrograms, SampledImage::test);
+}
+
+void createStorageImageTestsInGroup (tcu::TestCaseGroup* group)
+{
+	addTestCasesWithFunctions(group, StorageImage::initPrograms, StorageImage::test);
+}
+
 } // anonymous ns
 
-tcu::TestCaseGroup* createMultisampleImageTests (tcu::TestContext& testCtx)
+//! Render to a multisampled image and sample from it in a fragment shader.
+tcu::TestCaseGroup* createMultisampleSampledImageTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "sampled_image", "Multisampled image direct sample access", createTestsInGroup);
+	return createTestGroup(testCtx, "sampled_image", "Multisampled image direct sample access", createSampledImageTestsInGroup);
+}
+
+//! Render to a multisampled image and access it with load/stores in a compute shader.
+tcu::TestCaseGroup* createMultisampleStorageImageTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "storage_image", "Multisampled image draw and read/write in compute shader", createStorageImageTestsInGroup);
 }
 
 } // pipeline

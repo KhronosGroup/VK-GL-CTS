@@ -30,7 +30,8 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createMultisampleImageTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createMultisampleSampledImageTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createMultisampleStorageImageTests (tcu::TestContext& testCtx);
 
 } // pipeline
 } // vkt
