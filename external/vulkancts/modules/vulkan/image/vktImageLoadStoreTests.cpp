@@ -25,6 +25,7 @@
 #include "vktImageLoadStoreTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktImageTestsUtil.hpp"
+#include "vktImageLoadStoreUtil.hpp"
 #include "vktImageTexture.hpp"
 
 #include "vkDefs.hpp"
@@ -58,91 +59,9 @@ namespace image
 namespace
 {
 
-typedef de::SharedPtr<Unique<VkDescriptorSet> >	SharedVkDescriptorSet;
-typedef de::SharedPtr<Unique<VkImageView> >		SharedVkImageView;
-
-template<typename T>
-inline de::SharedPtr<Unique<T> > makeVkSharedPtr (Move<T> vkMove)
-{
-	return de::SharedPtr<Unique<T> >(new Unique<T>(vkMove));
-}
-
-inline VkImageCreateInfo makeImageCreateInfo (const Texture& texture, const VkFormat format, const VkImageUsageFlags usage, const VkImageCreateFlags flags)
-{
-	const VkImageCreateInfo imageParams =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,														// VkStructureType			sType;
-		DE_NULL,																					// const void*				pNext;
-		(isCube(texture) ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u) | flags,	// VkImageCreateFlags		flags;
-		mapImageType(texture.type()),																// VkImageType				imageType;
-		format,																						// VkFormat					format;
-		makeExtent3D(texture.layerSize()),															// VkExtent3D				extent;
-		1u,																							// deUint32					mipLevels;
-		(deUint32)texture.numLayers(),																// deUint32					arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,																		// VkSampleCountFlagBits	samples;
-		VK_IMAGE_TILING_OPTIMAL,																	// VkImageTiling			tiling;
-		usage,																						// VkImageUsageFlags		usage;
-		VK_SHARING_MODE_EXCLUSIVE,																	// VkSharingMode			sharingMode;
-		0u,																							// deUint32					queueFamilyIndexCount;
-		DE_NULL,																					// const deUint32*			pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,																	// VkImageLayout			initialLayout;
-	};
-	return imageParams;
-}
-
 inline VkBufferImageCopy makeBufferImageCopy (const Texture& texture)
 {
 	return image::makeBufferImageCopy(makeExtent3D(texture.layerSize()), texture.numLayers());
-}
-
-ImageType getImageTypeForSingleLayer (const ImageType imageType)
-{
-	switch (imageType)
-	{
-		case IMAGE_TYPE_1D:
-		case IMAGE_TYPE_1D_ARRAY:
-			return IMAGE_TYPE_1D;
-
-		case IMAGE_TYPE_2D:
-		case IMAGE_TYPE_2D_ARRAY:
-		case IMAGE_TYPE_CUBE:
-		case IMAGE_TYPE_CUBE_ARRAY:
-			// A single layer for cube is a 2d face
-			return IMAGE_TYPE_2D;
-
-		case IMAGE_TYPE_3D:
-			return IMAGE_TYPE_3D;
-
-		case IMAGE_TYPE_BUFFER:
-			return IMAGE_TYPE_BUFFER;
-
-		default:
-			DE_FATAL("Internal test error");
-			return IMAGE_TYPE_LAST;
-	}
-}
-
-float computeStoreColorScale (const VkFormat format, const tcu::IVec3 imageSize)
-{
-	const int maxImageDimension = de::max(imageSize.x(), de::max(imageSize.y(), imageSize.z()));
-	const float div = static_cast<float>(maxImageDimension - 1);
-
-	if (isUnormFormat(format))
-		return 1.0f / div;
-	else if (isSnormFormat(format))
-		return 2.0f / div;
-	else
-		return 1.0f;
-}
-
-inline float computeStoreColorBias (const VkFormat format)
-{
-	return isSnormFormat(format) ? -1.0f : 0.0f;
-}
-
-inline bool isIntegerFormat (const VkFormat format)
-{
-	return isIntFormat(format) || isUintFormat(format);
 }
 
 tcu::ConstPixelBufferAccess getLayerOrSlice (const Texture& texture, const tcu::ConstPixelBufferAccess access, const int layer)
@@ -169,15 +88,6 @@ tcu::ConstPixelBufferAccess getLayerOrSlice (const Texture& texture, const tcu::
 			DE_FATAL("Internal test error");
 			return tcu::ConstPixelBufferAccess();
 	}
-}
-
-std::string getFormatCaseName (const VkFormat format)
-{
-	const std::string fullName = getFormatName(format);
-
-	DE_ASSERT(de::beginsWith(fullName, "VK_FORMAT_"));
-
-	return de::toLower(fullName.substr(10));
 }
 
 //! \return true if all layers match in both pixel buffers
@@ -340,15 +250,6 @@ void flipHorizontally (const tcu::PixelBufferAccess access)
 		}
 }
 
-#if defined(DE_DEBUG)
-inline bool colorScaleAndBiasAreValid (const VkFormat format, const float colorScale, const float colorBias)
-{
-	// Only normalized (fixed-point) formats may have scale/bias
-	const bool integerOrFloatFormat = isIntFormat(format) || isUintFormat(format) || isFloatFormat(format);
-	return !integerOrFloatFormat || (colorScale == 1.0f && colorBias == 0.0f);
-}
-#endif
-
 inline bool formatsAreCompatible (const VkFormat format0, const VkFormat format1)
 {
 	return format0 == format1 || mapVkFormat(format0).getPixelSize() == mapVkFormat(format1).getPixelSize();
@@ -403,18 +304,6 @@ void commandCopyImageToBuffer (Context&					context,
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &prepareForTransferBarrier);
 	vk.cmdCopyImageToBuffer(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1u, &copyRegion);
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &copyBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
-}
-
-//! Minimum chunk size is determined by the offset alignment requirements.
-VkDeviceSize getOptimalUniformBufferChunkSize (Context& context, VkDeviceSize minimumRequiredChunkSizeBytes)
-{
-	const VkPhysicalDeviceProperties properties = getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice());
-	const VkDeviceSize alignment = properties.limits.minUniformBufferOffsetAlignment;
-
-	if (minimumRequiredChunkSizeBytes > alignment)
-		return alignment + (minimumRequiredChunkSizeBytes / alignment) * alignment;
-	else
-		return alignment;
 }
 
 class StoreTest : public TestCase
@@ -486,7 +375,7 @@ void StoreTest::initPrograms (SourceCollections& programCollection) const
 	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 		<< "\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-		<< "layout (binding = 0, " << formatQualifierStr << ") writeonly uniform highp " << imageTypeStr << " u_image;\n";
+		<< "layout (binding = 0, " << formatQualifierStr << ") writeonly uniform " << imageTypeStr << " u_image;\n";
 
 	if (m_singleLayerBind)
 		src << "layout (binding = 1) readonly uniform Constants {\n"
@@ -673,7 +562,7 @@ ImageStoreTestInstance::ImageStoreTestInstance (Context&		context,
 												const VkFormat	format,
 												const bool		singleLayerBind)
 	: StoreTestInstance					(context, texture, format, singleLayerBind)
-	, m_constantsBufferChunkSizeBytes	(getOptimalUniformBufferChunkSize(context, sizeof(deUint32)))
+	, m_constantsBufferChunkSizeBytes	(getOptimalUniformBufferChunkSize(context.getInstanceInterface(), context.getPhysicalDevice(), sizeof(deUint32)))
 	, m_allDescriptorSets				(texture.numLayers())
 	, m_allImageViews					(texture.numLayers())
 {
@@ -925,8 +814,8 @@ void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
 	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 		<< "\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-		<< "layout (binding = 0, " << formatQualifierStr << ") " << maybeRestrictStr << "readonly uniform highp " << imageTypeStr << " u_image0;\n"
-		<< "layout (binding = 1, " << formatQualifierStr << ") " << maybeRestrictStr << "writeonly uniform highp " << imageTypeStr << " u_image1;\n"
+		<< "layout (binding = 0, " << formatQualifierStr << ") " << maybeRestrictStr << "readonly uniform " << imageTypeStr << " u_image0;\n"
+		<< "layout (binding = 1, " << formatQualifierStr << ") " << maybeRestrictStr << "writeonly uniform " << imageTypeStr << " u_image1;\n"
 		<< "\n"
 		<< "void main (void)\n"
 		<< "{\n"
@@ -1286,9 +1175,6 @@ TestInstance* LoadStoreTest::createInstance (Context& context) const
 		return new ImageLoadStoreTestInstance(context, m_texture, m_format, m_imageFormat, m_singleLayerBind);
 }
 
-// TODO Which image/format combinations should be supported? Spec says it should be queried with vkGetPhysicalDeviceImageFormatProperties.
-//      What about buffer/format? (texel storage buffer) (use vkGetPhysicalDeviceFormatProperties ?)
-
 static const Texture s_textures[] =
 {
 	Texture(IMAGE_TYPE_1D,			tcu::IVec3(64,	1,	1),	1),
@@ -1346,10 +1232,10 @@ tcu::TestCaseGroup* createImageStoreTests (tcu::TestContext& testCtx)
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
 		{
-			groupByImageViewType->addChild(new StoreTest(testCtx, getFormatCaseName(s_formats[formatNdx]), "", texture, s_formats[formatNdx]));
+			groupByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx]));
 
 			if (isLayered)
-				groupByImageViewType->addChild(new StoreTest(testCtx, getFormatCaseName(s_formats[formatNdx]) + "_single_layer", "",
+				groupByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
 												texture, s_formats[formatNdx], StoreTest::FLAG_SINGLE_LAYER_BIND));
 		}
 		testGroup->addChild(groupByImageViewType.release());
@@ -1370,11 +1256,11 @@ tcu::TestCaseGroup* createImageLoadStoreTests (tcu::TestContext& testCtx)
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
 		{
-			groupByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatCaseName(s_formats[formatNdx]), "",
+			groupByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "",
 											texture, s_formats[formatNdx], s_formats[formatNdx]));
 
 			if (isLayered)
-				groupByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatCaseName(s_formats[formatNdx]) + "_single_layer", "",
+				groupByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
 												texture, s_formats[formatNdx], s_formats[formatNdx], LoadStoreTest::FLAG_SINGLE_LAYER_BIND));
 		}
 		testGroup->addChild(groupByImageViewType.release());
@@ -1395,9 +1281,7 @@ tcu::TestCaseGroup* createImageFormatReinterpretTests (tcu::TestContext& testCtx
 		for (int imageFormatNdx = 0; imageFormatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++imageFormatNdx)
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
 		{
-			//TODO Are all conversions valid or do we have to limit (or expand) somehow? Is it stated anywhere in the spec?
-
-			const std::string caseName = getFormatCaseName(s_formats[imageFormatNdx]) + "_" + getFormatCaseName(s_formats[formatNdx]);
+			const std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" + getFormatShortString(s_formats[formatNdx]);
 			if (imageFormatNdx != formatNdx && formatsAreCompatible(s_formats[imageFormatNdx], s_formats[formatNdx]))
 				groupByImageViewType->addChild(new LoadStoreTest(testCtx, caseName, "", texture, s_formats[formatNdx], s_formats[imageFormatNdx]));
 		}
