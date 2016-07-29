@@ -1935,20 +1935,6 @@ tcu::TestCaseGroup* createBlockOrderGroup (tcu::TestContext& testCtx)
 		"            OpSelectionMerge %if_merge None\n"
 		"            OpBranchConditional %cmp %if_true %if_false\n"
 
-		// Merge block for switch-statement: placed at the beginning.
-		"%switch_merge = OpLabel\n"
-		"                OpBranch %if_merge\n"
-
-		// Case 1 for switch-statement.
-		"%case1    = OpLabel\n"
-		"%x_1      = OpLoad %u32 %xvar\n"
-		"%inloc_1  = OpAccessChain %f32ptr %indata %zero %x_1\n"
-		"%inval_1  = OpLoad %f32 %inloc_1\n"
-		"%addf42   = OpFAdd %f32 %inval_1 %constf42\n"
-		"%outloc_1 = OpAccessChain %f32ptr %outdata %zero %x_1\n"
-		"            OpStore %outloc_1 %addf42\n"
-		"            OpBranch %switch_merge\n"
-
 		// False branch for if-statement: placed in the middle of switch cases and before true branch.
 		"%if_false = OpLabel\n"
 		"%x_f      = OpLoad %u32 %xvar\n"
@@ -1969,6 +1955,22 @@ tcu::TestCaseGroup* createBlockOrderGroup (tcu::TestContext& testCtx)
 		"%mod      = OpUMod %u32 %xval_t %const3\n"
 		"            OpSelectionMerge %switch_merge None\n"
 		"            OpSwitch %mod %default 0 %case0 1 %case1 2 %case2\n"
+
+		// Merge block for switch-statement: placed before the case
+                // bodies.  But it must follow OpSwitch which dominates it.
+		"%switch_merge = OpLabel\n"
+		"                OpBranch %if_merge\n"
+
+		// Case 1 for switch-statement: placed before case 0.
+                // It must follow the OpSwitch that dominates it.
+		"%case1    = OpLabel\n"
+		"%x_1      = OpLoad %u32 %xvar\n"
+		"%inloc_1  = OpAccessChain %f32ptr %indata %zero %x_1\n"
+		"%inval_1  = OpLoad %f32 %inloc_1\n"
+		"%addf42   = OpFAdd %f32 %inval_1 %constf42\n"
+		"%outloc_1 = OpAccessChain %f32ptr %outdata %zero %x_1\n"
+		"            OpStore %outloc_1 %addf42\n"
+		"            OpBranch %switch_merge\n"
 
 		// Case 2 for switch-statement.
 		"%case2    = OpLabel\n"
