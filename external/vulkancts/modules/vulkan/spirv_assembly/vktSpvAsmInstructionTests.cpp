@@ -6127,7 +6127,7 @@ tcu::TestCaseGroup* createSelectionBlockOrderTests(tcu::TestContext& testCtx)
 		"%loop      = OpLabel\n"
 		"%ival      = OpLoad %i32 %iptr\n"
 		"%lt_4      = OpSLessThan %bool %ival %c_i32_4\n"
-		"             OpLoopMerge %exit %loop None\n"
+		"             OpLoopMerge %exit %if_entry None\n"
 		"             OpBranchConditional %lt_4 %if_entry %exit\n"
 
 		// Merge block for loop.
@@ -6219,7 +6219,7 @@ tcu::TestCaseGroup* createSwitchBlockOrderTests(tcu::TestContext& testCtx)
 		"%loop      = OpLabel\n"
 		"%ival      = OpLoad %i32 %iptr\n"
 		"%lt_4      = OpSLessThan %bool %ival %c_i32_4\n"
-		"             OpLoopMerge %exit %loop None\n"
+		"             OpLoopMerge %exit %switch_exit None\n"
 		"             OpBranchConditional %lt_4 %switch_entry %exit\n"
 
 		// Merge block for loop.
@@ -6649,7 +6649,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 		"%loop      = OpLabel\n"
 		"%ival      = OpLoad %i32 %iptr\n"
 		"%lt_4      = OpSLessThan %bool %ival %c_i32_4\n"
-		"             OpLoopMerge %exit %loop None\n"
+		"             OpLoopMerge %exit %phi None\n"
 		"             OpBranchConditional %lt_4 %entry %exit\n"
 
 		"%entry     = OpLabel\n"
