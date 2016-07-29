@@ -3097,7 +3097,7 @@ tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
 		"%loop_entry  = OpLabel\n"
 		"%i_val       = OpLoad %u32 %i\n"
 		"%cmp_lt      = OpULessThan %bool %i_val %four\n"
-		"               OpLoopMerge %loop_merge %loop_entry ${CONTROL}\n"
+		"               OpLoopMerge %loop_merge %loop_body ${CONTROL}\n"
 		"               OpBranchConditional %cmp_lt %loop_body %loop_merge\n"
 		"%loop_body   = OpLabel\n"
 		"%outval      = OpLoad %f32 %outloc\n"
