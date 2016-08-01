@@ -61,20 +61,20 @@ DE_DECLARE_POOL_HASH(TYPENAME##Hash, KEYTYPE, TYPENAME##Set*);										\
 typedef struct TYPENAME##_s																			\
 {																									\
 	TYPENAME##Hash*	hash;																			\
-} TYPENAME;																							\
+} TYPENAME;	 /* NOLINT(TYPENAME) */																	\
 																									\
 DE_INLINE TYPENAME*			TYPENAME##_create			(deMemPool* pool);							\
-DE_INLINE int				TYPENAME##_getNumElements	(const TYPENAME* hashSet)								DE_UNUSED_FUNCTION;	\
-DE_INLINE TYPENAME##Hash*	TYPENAME##_getHash			(const TYPENAME* hashSet)								DE_UNUSED_FUNCTION;	\
-DE_INLINE deBool			TYPENAME##_insert			(TYPENAME* hashSet, KEYTYPE key, VALUETYPE value)		DE_UNUSED_FUNCTION;	\
-DE_INLINE deBool			TYPENAME##_safeInsert		(TYPENAME* hashSet, KEYTYPE key, VALUETYPE value)		DE_UNUSED_FUNCTION;	\
-DE_INLINE TYPENAME##Set*	TYPENAME##_find				(const TYPENAME* hashSet, KEYTYPE key)					DE_UNUSED_FUNCTION;	\
-DE_INLINE void				TYPENAME##_delete			(TYPENAME* hashSet, KEYTYPE key, VALUETYPE value)		DE_UNUSED_FUNCTION;	\
-DE_INLINE deBool			TYPENAME##_exists			(const TYPENAME* hashSet, KEYTYPE key, VALUETYPE value)	DE_UNUSED_FUNCTION;	\
+DE_INLINE int				TYPENAME##_getNumElements	(const TYPENAME* hashSet)								 		DE_UNUSED_FUNCTION;	\
+DE_INLINE TYPENAME##Hash*	TYPENAME##_getHash			(const TYPENAME* hashSet)								 		DE_UNUSED_FUNCTION;	\
+DE_INLINE deBool			TYPENAME##_insert			(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)	DE_UNUSED_FUNCTION;	\
+DE_INLINE deBool			TYPENAME##_safeInsert		(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)	DE_UNUSED_FUNCTION;	\
+DE_INLINE TYPENAME##Set*	TYPENAME##_find				(const TYPENAME* hashSet, KEYTYPE key)					 		DE_UNUSED_FUNCTION;	\
+DE_INLINE void				TYPENAME##_delete			(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value) 	DE_UNUSED_FUNCTION;	\
+DE_INLINE deBool			TYPENAME##_exists			(const TYPENAME* hashSet, KEYTYPE key, VALUETYPE value)	 		DE_UNUSED_FUNCTION;	\
 																									\
 DE_INLINE TYPENAME* TYPENAME##_create (deMemPool* pool)												\
 {																									\
-	TYPENAME* hashSet = DE_POOL_NEW(pool, TYPENAME);												\
+	DE_PTR_TYPE(TYPENAME) hashSet = DE_POOL_NEW(pool, TYPENAME);									\
 	if (!hashSet) return DE_NULL;																	\
 	if ((hashSet->hash = TYPENAME##Hash_create(pool)) == DE_NULL)									\
 		return DE_NULL;																				\
@@ -91,7 +91,7 @@ DE_INLINE TYPENAME##Hash* TYPENAME##_getHash (const TYPENAME* hashSet)								\
 	return hashSet->hash;																			\
 }																									\
 																									\
-DE_INLINE deBool TYPENAME##_insert (TYPENAME* hashSet, KEYTYPE key, VALUETYPE value)				\
+DE_INLINE deBool TYPENAME##_insert (DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)	\
 {																									\
 	TYPENAME##Set**	setPtr	= TYPENAME##Hash_find(hashSet->hash, key);								\
 	TYPENAME##Set*	set		= setPtr ? *setPtr : DE_NULL;											\
@@ -108,7 +108,7 @@ DE_INLINE deBool TYPENAME##_insert (TYPENAME* hashSet, KEYTYPE key, VALUETYPE va
 	}																								\
 }																									\
 																									\
-DE_INLINE deBool TYPENAME##_safeInsert (TYPENAME* hashSet, KEYTYPE key, VALUETYPE value)			\
+DE_INLINE deBool TYPENAME##_safeInsert (DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)\
 {																									\
 	TYPENAME##Set**	setPtr	= TYPENAME##Hash_find(hashSet->hash, key);								\
 	TYPENAME##Set*	set		= setPtr ? *setPtr : DE_NULL;											\
@@ -128,7 +128,7 @@ DE_INLINE TYPENAME##Set* TYPENAME##_find (const TYPENAME* hashSet, KEYTYPE key)	
 	return setPtr ? *setPtr : DE_NULL;																\
 }																									\
 																									\
-DE_INLINE void TYPENAME##_delete (TYPENAME* hashSet, KEYTYPE key, VALUETYPE value)					\
+DE_INLINE void TYPENAME##_delete (DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)		\
 {																									\
 	TYPENAME##Set**	setPtr = TYPENAME##Hash_find(hashSet->hash, key);								\
 	TYPENAME##Set*	set;																			\

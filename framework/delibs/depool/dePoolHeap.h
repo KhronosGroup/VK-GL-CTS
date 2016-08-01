@@ -61,20 +61,20 @@ DE_DECLARE_POOL_ARRAY(TYPENAME##Array, VALUETYPE);		\
 typedef struct TYPENAME##_s    \
 {    \
 	TYPENAME##Array*	array;		\
-} TYPENAME;    \
+} TYPENAME; /* NOLINT(TYPENAME) */  \
 \
-DE_INLINE TYPENAME*	TYPENAME##_create			(deMemPool* pool);										\
-DE_INLINE int		TYPENAME##_getNumElements	(const TYPENAME* heap)				DE_UNUSED_FUNCTION;	\
-DE_INLINE deBool	TYPENAME##_reserve			(TYPENAME* heap, int capacity)		DE_UNUSED_FUNCTION;	\
-DE_INLINE void		TYPENAME##_reset			(TYPENAME* heap)					DE_UNUSED_FUNCTION;	\
-DE_INLINE void		TYPENAME##_moveDown			(TYPENAME* heap, int ndx)			DE_UNUSED_FUNCTION;	\
-DE_INLINE void		TYPENAME##_moveUp			(TYPENAME* heap, int ndx)			DE_UNUSED_FUNCTION;	\
-DE_INLINE deBool	TYPENAME##_push				(TYPENAME* heap, VALUETYPE elem)	DE_UNUSED_FUNCTION;	\
-DE_INLINE VALUETYPE	TYPENAME##_popMin			(TYPENAME* heap)					DE_UNUSED_FUNCTION;	\
+DE_INLINE TYPENAME*	TYPENAME##_create			(deMemPool* pool);													\
+DE_INLINE int		TYPENAME##_getNumElements	(const TYPENAME* heap)							DE_UNUSED_FUNCTION;	\
+DE_INLINE deBool	TYPENAME##_reserve			(DE_PTR_TYPE(TYPENAME) heap, int capacity)		DE_UNUSED_FUNCTION;	\
+DE_INLINE void		TYPENAME##_reset			(DE_PTR_TYPE(TYPENAME) heap)					DE_UNUSED_FUNCTION;	\
+DE_INLINE void		TYPENAME##_moveDown			(DE_PTR_TYPE(TYPENAME) heap, int ndx)			DE_UNUSED_FUNCTION;	\
+DE_INLINE void		TYPENAME##_moveUp			(DE_PTR_TYPE(TYPENAME) heap, int ndx)			DE_UNUSED_FUNCTION;	\
+DE_INLINE deBool	TYPENAME##_push				(DE_PTR_TYPE(TYPENAME) heap, VALUETYPE elem)	DE_UNUSED_FUNCTION;	\
+DE_INLINE VALUETYPE	TYPENAME##_popMin			(DE_PTR_TYPE(TYPENAME) heap)					DE_UNUSED_FUNCTION;	\
 \
 DE_INLINE TYPENAME* TYPENAME##_create (deMemPool* pool)    \
 {    \
-	TYPENAME* heap = DE_POOL_NEW(pool, TYPENAME);	\
+	DE_PTR_TYPE(TYPENAME) heap = DE_POOL_NEW(pool, TYPENAME);	\
 	if (!heap)				\
 		return DE_NULL;		\
 	heap->array = TYPENAME##Array_create(pool);	\
@@ -88,17 +88,17 @@ DE_INLINE int TYPENAME##_getNumElements (const TYPENAME* heap)    \
 	return TYPENAME##Array_getNumElements(heap->array);    \
 }    \
 \
-DE_INLINE deBool TYPENAME##_reserve (TYPENAME* heap, int capacity)    \
+DE_INLINE deBool TYPENAME##_reserve (DE_PTR_TYPE(TYPENAME) heap, int capacity)    \
 {    \
 	return TYPENAME##Array_reserve(heap->array, capacity);    \
 }    \
 \
-DE_INLINE void TYPENAME##_reset (TYPENAME* heap)    \
+DE_INLINE void TYPENAME##_reset (DE_PTR_TYPE(TYPENAME) heap)    \
 {    \
 	TYPENAME##Array_setSize(heap->array, 0);    \
 }    \
 \
-DE_INLINE void TYPENAME##_moveDown (TYPENAME* heap, int ndx)    \
+DE_INLINE void TYPENAME##_moveDown (DE_PTR_TYPE(TYPENAME) heap, int ndx)    \
 {   \
 	TYPENAME##Array*	array 		= heap->array;	\
 	int					numElements	= TYPENAME##Array_getNumElements(array);	\
@@ -124,7 +124,7 @@ DE_INLINE void TYPENAME##_moveDown (TYPENAME* heap, int ndx)    \
 	}	\
 }    \
 \
-DE_INLINE void TYPENAME##_moveUp (TYPENAME* heap, int ndx)    \
+DE_INLINE void TYPENAME##_moveUp (DE_PTR_TYPE(TYPENAME) heap, int ndx)    \
 {    \
 	TYPENAME##Array* array = heap->array;	\
 	while (ndx > 0)	\
@@ -141,7 +141,7 @@ DE_INLINE void TYPENAME##_moveUp (TYPENAME* heap, int ndx)    \
 	}	\
 }    \
 \
-DE_INLINE deBool TYPENAME##_push (TYPENAME* heap, VALUETYPE elem)    \
+DE_INLINE deBool TYPENAME##_push (DE_PTR_TYPE(TYPENAME) heap, VALUETYPE elem)    \
 {    \
 	TYPENAME##Array* array = heap->array;	\
 	int numElements = TYPENAME##Array_getNumElements(array);	\
@@ -152,7 +152,7 @@ DE_INLINE deBool TYPENAME##_push (TYPENAME* heap, VALUETYPE elem)    \
 	return DE_TRUE;    \
 }    \
 \
-DE_INLINE VALUETYPE TYPENAME##_popMin (TYPENAME* heap)    \
+DE_INLINE VALUETYPE TYPENAME##_popMin (DE_PTR_TYPE(TYPENAME) heap)    \
 {    \
 	TYPENAME##Array* array = heap->array;	\
 	VALUETYPE 	tmp			= TYPENAME##Array_get(array, 0);	\

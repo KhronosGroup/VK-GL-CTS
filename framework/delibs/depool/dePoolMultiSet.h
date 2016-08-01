@@ -62,16 +62,16 @@ DE_END_EXTERN_C
 \
 DE_DECLARE_POOL_HASH(TYPENAME##Hash, KEYTYPE, int);	\
 \
-typedef struct TYPENAME##_s    \
-{    \
-	deMemPool*			pool;    \
+typedef struct TYPENAME##_s    			\
+{    									\
+	deMemPool*			pool;    		\
 	int					numElements;    \
-	TYPENAME##Hash*		hash;	\
-} TYPENAME;    \
+	TYPENAME##Hash*		hash;			\
+} TYPENAME; /* NOLINT(TYPENAME) */  	\
 \
 TYPENAME*	TYPENAME##_create		(deMemPool* pool);    \
-void		TYPENAME##_reset		(TYPENAME* set);    \
-deBool		TYPENAME##_setKeyCount	(TYPENAME* set, KEYTYPE key, int newCount);	\
+void		TYPENAME##_reset		(DE_PTR_TYPE(TYPENAME) set);    \
+deBool		TYPENAME##_setKeyCount	(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key, int newCount);	\
 \
 DE_INLINE int TYPENAME##_getNumElements (const TYPENAME* set)    \
 {    \
@@ -91,13 +91,13 @@ DE_INLINE deBool TYPENAME##_exists (const TYPENAME* set, KEYTYPE key)    \
 	return (TYPENAME##_getKeyCount(set, key) > 0);	\
 }    \
 \
-DE_INLINE deBool TYPENAME##_insert (TYPENAME* set, KEYTYPE key)    \
+DE_INLINE deBool TYPENAME##_insert (DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)    \
 {	\
 	int oldCount = TYPENAME##_getKeyCount(set, key);	\
 	return TYPENAME##_setKeyCount(set, key, oldCount + 1);	\
 }	\
 \
-DE_INLINE void TYPENAME##_delete (TYPENAME* set, KEYTYPE key)    \
+DE_INLINE void TYPENAME##_delete (DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)    \
 {    \
 	int oldCount = TYPENAME##_getKeyCount(set, key);	\
 	DE_ASSERT(oldCount > 0);	\
@@ -125,7 +125,7 @@ DE_IMPLEMENT_POOL_HASH(TYPENAME##Hash, KEYTYPE, int, HASHFUNC, CMPFUNC);	\
 TYPENAME* TYPENAME##_create (deMemPool* pool)    \
 {   \
 	/* Alloc struct. */ \
-	TYPENAME* set = DE_POOL_NEW(pool, TYPENAME); \
+	DE_PTR_TYPE(TYPENAME) set = DE_POOL_NEW(pool, TYPENAME); \
 	if (!set) \
 		return DE_NULL; \
 \
@@ -138,13 +138,13 @@ TYPENAME* TYPENAME##_create (deMemPool* pool)    \
 	return set; \
 } \
 \
-void TYPENAME##_reset (TYPENAME* set)    \
+void TYPENAME##_reset (DE_PTR_TYPE(TYPENAME) set)    \
 {   \
 	TYPENAME##Hash_reset(set->hash);	\
 	set->numElements = 0;	\
 }	\
 \
-deBool TYPENAME##_setKeyCount (TYPENAME* set, KEYTYPE key, int newCount)	\
+deBool TYPENAME##_setKeyCount (DE_PTR_TYPE(TYPENAME) set, KEYTYPE key, int newCount)	\
 {	\
 	int* countPtr	= TYPENAME##Hash_find(set->hash, key);	\
 	int  oldCount	= countPtr ? *countPtr : 0;	\
@@ -188,25 +188,25 @@ struct TYPENAME##ImplementDummy_s { int dummy; }
  * void		MultiSet_differenceInplace	(Set* a, const Set* b);
  * \endcode
 *//*--------------------------------------------------------------------*/
-#define DE_DECLARE_POOL_MULTISET_SETWISE_OPERATIONS(TYPENAME)	\
-	deBool TYPENAME##_union (TYPENAME* to, const TYPENAME* a, const TYPENAME* b);	\
-	deBool TYPENAME##_unionInplace (TYPENAME* a, const TYPENAME* b);	\
-	deBool TYPENAME##_intersect (TYPENAME* to, const TYPENAME* a, const TYPENAME* b);	\
-	void TYPENAME##_intersectInplace (TYPENAME* a, const TYPENAME* b);	\
-	deBool TYPENAME##_sum (TYPENAME* to, const TYPENAME* a, const TYPENAME* b);	\
-	deBool TYPENAME##_sumInplace (TYPENAME* a, const TYPENAME* b);	\
-	deBool TYPENAME##_difference (TYPENAME* to, const TYPENAME* a, const TYPENAME* b);	\
-	void TYPENAME##_differenceInplace (TYPENAME* a, const TYPENAME* b);	\
+#define DE_DECLARE_POOL_MULTISET_SETWISE_OPERATIONS(TYPENAME)										\
+	deBool TYPENAME##_union (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b);		\
+	deBool TYPENAME##_unionInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b);					\
+	deBool TYPENAME##_intersect (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b);	\
+	void TYPENAME##_intersectInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b);					\
+	deBool TYPENAME##_sum (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b);			\
+	deBool TYPENAME##_sumInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b);						\
+	deBool TYPENAME##_difference (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b);	\
+	void TYPENAME##_differenceInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b);					\
 	struct TYPENAME##SetwiseDeclareDummy_s { int dummy; }
 
 #define DE_IMPLEMENT_POOL_MULTISET_SETWISE_OPERATIONS(TYPENAME, KEYTYPE)	\
-deBool TYPENAME##_union (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)	\
+deBool TYPENAME##_union (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b)	\
 {	\
 	TYPENAME##_reset(to);	\
 	return TYPENAME##_unionInplace(to, a) && TYPENAME##_unionInplace(to, b);	\
 }	\
 \
-deBool TYPENAME##_unionInplace (TYPENAME* a, const TYPENAME* b)	\
+deBool TYPENAME##_unionInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b)	\
 {	\
 	TYPENAME##HashIter iter;	\
 	for (TYPENAME##HashIter_init(b, &iter);	\
@@ -223,7 +223,7 @@ deBool TYPENAME##_unionInplace (TYPENAME* a, const TYPENAME* b)	\
 	return DE_TRUE;	\
 }	\
 \
-deBool TYPENAME##_intersect (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)	\
+deBool TYPENAME##_intersect (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b)	\
 {	\
 	TYPENAME##HashIter iter;	\
 	TYPENAME##_reset(to);	\
@@ -241,18 +241,18 @@ deBool TYPENAME##_intersect (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)
 	return DE_TRUE;	\
 }	\
 \
-void TYPENAME##_intersectInplace (TYPENAME* a, const TYPENAME* b)	\
+void TYPENAME##_intersectInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b)	\
 {	\
 	DE_FATAL("Not implemented.");	\
 }	\
 \
-deBool TYPENAME##_sum (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)	\
+deBool TYPENAME##_sum (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b)	\
 {	\
 	TYPENAME##_reset(to);	\
 	return TYPENAME##_sumInplace(to, a) && TYPENAME##_sumInplace(to, b);	\
 }	\
 \
-deBool TYPENAME##_sumInplace (TYPENAME* a, const TYPENAME* b)	\
+deBool TYPENAME##_sumInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b)	\
 {	\
 	TYPENAME##HashIter iter;	\
 	for (TYPENAME##HashIter_init(b, &iter);	\
@@ -268,7 +268,7 @@ deBool TYPENAME##_sumInplace (TYPENAME* a, const TYPENAME* b)	\
 	}	\
 }	\
 \
-deBool TYPENAME##_difference (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)	\
+deBool TYPENAME##_difference (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b)	\
 {	\
 	TYPENAME##HashIter iter;	\
 	TYPENAME##_reset(to);	\
@@ -286,7 +286,7 @@ deBool TYPENAME##_difference (TYPENAME* to, const TYPENAME* a, const TYPENAME* b
 	return DE_TRUE;	\
 }	\
 \
-void TYPENAME##_differenceInplace (TYPENAME* a, const TYPENAME* b)	\
+void TYPENAME##_differenceInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b)	\
 {	\
 	DE_FATAL("Not implemented.");	\
 }	\

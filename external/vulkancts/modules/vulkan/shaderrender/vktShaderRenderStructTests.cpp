@@ -145,10 +145,10 @@ public:
 
 void LocalStructTests::init (void)
 {
-	#define LOCAL_STRUCT_CASE(NAME, DESCRIPTION, SHADER_SRC, SET_UNIFORMS_BODY, EVAL_FUNC_BODY)																	\
-		do {																																	\
-			struct SetUniforms_##NAME { static void setUniforms (ShaderRenderCaseInstance& instance, const tcu::Vec4&) SET_UNIFORMS_BODY };		\
-			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };														\
+	#define LOCAL_STRUCT_CASE(NAME, DESCRIPTION, SHADER_SRC, SET_UNIFORMS_BODY, EVAL_FUNC_BODY)																				\
+		do {																																								\
+			struct SetUniforms_##NAME { static void setUniforms (ShaderRenderCaseInstance& instance, const tcu::Vec4&) SET_UNIFORMS_BODY }; /* NOLINT(SET_UNIFORMS_BODY) */ \
+			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };	/* NOLINT(EVAL_FUNC_BODY) */													\
 			addChild(createStructCase(m_testCtx, #NAME "_vertex", DESCRIPTION, true, &Eval_##NAME::eval, &SetUniforms_##NAME::setUniforms, SHADER_SRC).release());			\
 			addChild(createStructCase(m_testCtx, #NAME "_fragment", DESCRIPTION, false, &Eval_##NAME::eval, &SetUniforms_##NAME::setUniforms, SHADER_SRC).release());		\
 		} while (deGetFalse())
@@ -1245,8 +1245,10 @@ void UniformStructTests::init (void)
 {
 	#define UNIFORM_STRUCT_CASE(NAME, DESCRIPTION, SHADER_SRC, SET_UNIFORMS_BODY, EVAL_FUNC_BODY)																\
 		do {																																							\
-			struct SetUniforms_##NAME { static void setUniforms (ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords) SET_UNIFORMS_BODY };		\
-			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };																				\
+			struct SetUniforms_##NAME {																																	\
+				 static void setUniforms (ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords) SET_UNIFORMS_BODY  /* NOLINT(SET_UNIFORMS_BODY) */			\
+			};																																							\
+			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };  /* NOLINT(EVAL_FUNC_BODY) */												\
 			addChild(createStructCase(m_testCtx, #NAME "_vertex", DESCRIPTION, true, Eval_##NAME::eval, SetUniforms_##NAME::setUniforms, SHADER_SRC).release());		\
 			addChild(createStructCase(m_testCtx, #NAME "_fragment", DESCRIPTION, false, Eval_##NAME::eval, SetUniforms_##NAME::setUniforms, SHADER_SRC).release());		\
 		} while (deGetFalse())

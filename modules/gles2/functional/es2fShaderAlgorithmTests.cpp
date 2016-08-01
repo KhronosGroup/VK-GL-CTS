@@ -154,7 +154,7 @@ void ShaderAlgorithmTests::init (void)
 
 	#define SHADER_OP_CASE(NAME, DESCRIPTION, SHADER_OP, EVAL_FUNC_BODY)														\
 		do {																													\
-			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };										\
+			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };	/* NOLINT(EVAL_FUNC_BODY) */ 		\
 			addChild(createExpressionCase(m_context, #NAME "_vertex", DESCRIPTION, true, &Eval_##NAME::eval, SHADER_OP));		\
 			addChild(createExpressionCase(m_context, #NAME "_fragment", DESCRIPTION, false, &Eval_##NAME::eval, SHADER_OP));	\
 		} while (deGetFalse())
