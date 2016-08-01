@@ -484,7 +484,7 @@ public:
 #define FOR_EACH_VERIFIER(VERIFIERS, CODE_BLOCK)												\
 	for (int _verifierNdx = 0; _verifierNdx < DE_LENGTH_OF_ARRAY(VERIFIERS); _verifierNdx++)	\
 	{																							\
-		BufferParamVerifier* verifier = VERIFIERS[_verifierNdx];								\
+		BufferParamVerifier* verifier = (VERIFIERS)[_verifierNdx];								\
 		CODE_BLOCK;																				\
 	}
 

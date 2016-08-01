@@ -146,7 +146,7 @@ void freeNonDispHandle (Handle handle, const VkAllocationCallbacks* pAllocator)
 	} while (deGetFalse())
 
 // \todo [2015-07-14 pyry] Check FUNC type by checkedCastToPtr<T>() or similar
-#define VK_NULL_FUNC_ENTRY(NAME, FUNC)	{ #NAME, (deFunctionPtr)FUNC }
+#define VK_NULL_FUNC_ENTRY(NAME, FUNC)	{ #NAME, (deFunctionPtr)FUNC }  // NOLINT(FUNC)
 
 #define VK_NULL_DEFINE_DEVICE_OBJ(NAME)				\
 struct NAME											\

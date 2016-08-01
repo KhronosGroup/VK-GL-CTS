@@ -88,7 +88,7 @@ namespace Image
 {
 
 #define CHECK_EXTENSION(DPY, EXTNAME) \
-	TCU_CHECK_AND_THROW(NotSupportedError, eglu::hasExtension(m_eglTestCtx.getLibrary(), DPY, EXTNAME), (string("Unsupported extension: ") + EXTNAME).c_str())
+	TCU_CHECK_AND_THROW(NotSupportedError, eglu::hasExtension(m_eglTestCtx.getLibrary(), DPY, EXTNAME), (string("Unsupported extension: ") + (EXTNAME)).c_str())
 
 template <typename RetVal>
 RetVal checkCallError (EglTestContext& eglTestCtx, const char* call, RetVal returnValue, EGLint expectError)
