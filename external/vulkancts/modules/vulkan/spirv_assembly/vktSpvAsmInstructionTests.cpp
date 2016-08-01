@@ -452,8 +452,8 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx)
 
 	#define ADD_OPATOMIC_CASE(NAME, ASSEMBLY, CALCULATE_EXPECTED, NUM_OUTPUT_ELEMENTS) \
 	do { \
-		DE_STATIC_ASSERT(NUM_OUTPUT_ELEMENTS == 1 || NUM_OUTPUT_ELEMENTS == numElements); \
-		struct calculateExpected_##NAME { static void calculateExpected(deInt32& expected, deInt32 input) CALCULATE_EXPECTED }; \
+		DE_STATIC_ASSERT((NUM_OUTPUT_ELEMENTS) == 1 || (NUM_OUTPUT_ELEMENTS) == numElements); \
+		struct calculateExpected_##NAME { static void calculateExpected(deInt32& expected, deInt32 input) CALCULATE_EXPECTED }; /* NOLINT(CALCULATE_EXPECTED) */ \
 		cases.push_back(OpAtomicCase(#NAME, ASSEMBLY, calculateExpected_##NAME::calculateExpected, NUM_OUTPUT_ELEMENTS)); \
 	} while (deGetFalse())
 	#define ADD_OPATOMIC_CASE_1(NAME, ASSEMBLY, CALCULATE_EXPECTED) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, CALCULATE_EXPECTED, 1)

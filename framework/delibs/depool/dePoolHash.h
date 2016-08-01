@@ -84,7 +84,7 @@ typedef struct TYPENAME##_s    \
 	int					slotTableSize;		\
 	TYPENAME##Slot**	slotTable;			\
 	TYPENAME##Slot*		slotFreeList;		\
-} TYPENAME;    \
+} TYPENAME; /* NOLINT(TYPENAME) */  		\
 \
 typedef struct TYPENAME##Iter_s \
 {	\
@@ -94,12 +94,12 @@ typedef struct TYPENAME##Iter_s \
 	int						curElemIndex;	\
 } TYPENAME##Iter;	\
 \
-TYPENAME*	TYPENAME##_create	(deMemPool* pool);    \
-void		TYPENAME##_reset	(TYPENAME* hash);    \
-deBool		TYPENAME##_reserve	(TYPENAME* hash, int capacity);    \
-VALUETYPE*	TYPENAME##_find		(const TYPENAME* hash, KEYTYPE key);    \
-deBool		TYPENAME##_insert	(TYPENAME* hash, KEYTYPE key, VALUETYPE value);    \
-void		TYPENAME##_delete	(TYPENAME* hash, KEYTYPE key);    \
+TYPENAME*	TYPENAME##_create	(deMemPool* pool);    										\
+void		TYPENAME##_reset	(DE_PTR_TYPE(TYPENAME) hash);    							\
+deBool		TYPENAME##_reserve	(DE_PTR_TYPE(TYPENAME) hash, int capacity);    				\
+VALUETYPE*	TYPENAME##_find		(const TYPENAME* hash, KEYTYPE key);    					\
+deBool		TYPENAME##_insert	(DE_PTR_TYPE(TYPENAME) hash, KEYTYPE key, VALUETYPE value);	\
+void		TYPENAME##_delete	(DE_PTR_TYPE(TYPENAME) hash, KEYTYPE key);    				\
 \
 DE_INLINE int		TYPENAME##_getNumElements	(const TYPENAME* hash)							DE_UNUSED_FUNCTION;	\
 DE_INLINE void		TYPENAME##Iter_init			(const TYPENAME* hash, TYPENAME##Iter* iter)	DE_UNUSED_FUNCTION;	\
@@ -202,7 +202,7 @@ struct TYPENAME##Dummy_s { int dummy; }
 TYPENAME* TYPENAME##_create (deMemPool* pool)    \
 {   \
 	/* Alloc struct. */ \
-	TYPENAME* hash = DE_POOL_NEW(pool, TYPENAME); \
+	DE_PTR_TYPE(TYPENAME) hash = DE_POOL_NEW(pool, TYPENAME); \
 	if (!hash) \
 		return DE_NULL; \
 \
@@ -212,7 +212,7 @@ TYPENAME* TYPENAME##_create (deMemPool* pool)    \
 	return hash; \
 } \
 \
-void TYPENAME##_reset (TYPENAME* hash)    \
+void TYPENAME##_reset (DE_PTR_TYPE(TYPENAME) hash)    \
 {   \
 	int slotNdx; \
 	for (slotNdx = 0; slotNdx < hash->slotTableSize; slotNdx++)	\
@@ -231,7 +231,7 @@ void TYPENAME##_reset (TYPENAME* hash)    \
 	hash->numElements = 0; \
 }	\
 \
-TYPENAME##Slot* TYPENAME##_allocSlot (TYPENAME* hash)    \
+TYPENAME##Slot* TYPENAME##_allocSlot (DE_PTR_TYPE(TYPENAME) hash)    \
 {   \
 	TYPENAME##Slot* slot; \
 	if (hash->slotFreeList) \
@@ -251,7 +251,7 @@ TYPENAME##Slot* TYPENAME##_allocSlot (TYPENAME* hash)    \
 	return slot; \
 } \
 \
-deBool TYPENAME##_rehash (TYPENAME* hash, int newSlotTableSize)    \
+deBool TYPENAME##_rehash (DE_PTR_TYPE(TYPENAME) hash, int newSlotTableSize)    \
 {    \
 	DE_ASSERT(deIsPowerOfTwo32(newSlotTableSize) && newSlotTableSize > 0); \
 	if (newSlotTableSize > hash->slotTableSize)    \
@@ -317,7 +317,7 @@ VALUETYPE* TYPENAME##_find (const TYPENAME* hash, KEYTYPE key)    \
 	return DE_NULL; \
 }    \
 \
-deBool TYPENAME##_insert (TYPENAME* hash, KEYTYPE key, VALUETYPE value)    \
+deBool TYPENAME##_insert (DE_PTR_TYPE(TYPENAME) hash, KEYTYPE key, VALUETYPE value)    \
 {    \
 	int				slotNdx; \
 	TYPENAME##Slot*	slot; \
@@ -364,7 +364,7 @@ deBool TYPENAME##_insert (TYPENAME* hash, KEYTYPE key, VALUETYPE value)    \
 	} \
 } \
 \
-void TYPENAME##_delete (TYPENAME* hash, KEYTYPE key)    \
+void TYPENAME##_delete (DE_PTR_TYPE(TYPENAME) hash, KEYTYPE key)    \
 {    \
 	int				slotNdx; \
 	TYPENAME##Slot*	slot; \
@@ -421,11 +421,11 @@ struct TYPENAME##Dummy2_s { int dummy; }
 /* Copy-to-array templates. */
 
 #define DE_DECLARE_POOL_HASH_TO_ARRAY(HASHTYPENAME, KEYARRAYTYPENAME, VALUEARRAYTYPENAME)		\
-	deBool HASHTYPENAME##_copyToArray(const HASHTYPENAME* set, KEYARRAYTYPENAME* keyArray, VALUEARRAYTYPENAME* valueArray);	\
+	deBool HASHTYPENAME##_copyToArray(const HASHTYPENAME* set, DE_PTR_TYPE(KEYARRAYTYPENAME) keyArray, DE_PTR_TYPE(VALUEARRAYTYPENAME) valueArray);	\
 	struct HASHTYPENAME##_##KEYARRAYTYPENAME##_##VALUEARRAYTYPENAME##_declare_dummy { int dummy; }
 
 #define DE_IMPLEMENT_POOL_HASH_TO_ARRAY(HASHTYPENAME, KEYARRAYTYPENAME, VALUEARRAYTYPENAME)		\
-deBool HASHTYPENAME##_copyToArray(const HASHTYPENAME* hash, KEYARRAYTYPENAME* keyArray, VALUEARRAYTYPENAME* valueArray)	\
+deBool HASHTYPENAME##_copyToArray(const HASHTYPENAME* hash, DE_PTR_TYPE(KEYARRAYTYPENAME) keyArray, DE_PTR_TYPE(VALUEARRAYTYPENAME) valueArray)	\
 {	\
 	int numElements	= hash->numElements;	\
 	int arrayNdx	= 0;	\

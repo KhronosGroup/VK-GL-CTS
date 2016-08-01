@@ -74,15 +74,15 @@ struct TYPENAME##Slot_s \
 	KEYTYPE			keys[DE_SET_ELEMENTS_PER_SLOT]; \
 }; \
 \
-typedef struct TYPENAME##_s    \
-{    \
-	deMemPool*			pool;    \
+typedef struct TYPENAME##_s    			\
+{    									\
+	deMemPool*			pool;    		\
 	int					numElements;    \
-\
-	int					slotTableSize;    \
+										\
+	int					slotTableSize;  \
 	TYPENAME##Slot**	slotTable;		\
-	TYPENAME##Slot*		slotFreeList;		\
-} TYPENAME;    \
+	TYPENAME##Slot*		slotFreeList;	\
+} TYPENAME; /* NOLINT(TYPENAME) */  	\
 \
 typedef struct TYPENAME##Iter_s \
 {	\
@@ -92,20 +92,20 @@ typedef struct TYPENAME##Iter_s \
 	int						curElemIndex;	\
 } TYPENAME##Iter;	\
 \
-TYPENAME*	TYPENAME##_create		(deMemPool* pool);    \
-void		TYPENAME##_reset		(TYPENAME* set);    \
-deBool		TYPENAME##_reserve		(TYPENAME* set, int capacity);    \
-deBool		TYPENAME##_exists		(const TYPENAME* set, KEYTYPE key);    \
-deBool		TYPENAME##_insert		(TYPENAME* set, KEYTYPE key);    \
-void		TYPENAME##_delete		(TYPENAME* set, KEYTYPE key);    \
+TYPENAME*	TYPENAME##_create		(deMemPool* pool);    						\
+void		TYPENAME##_reset		(DE_PTR_TYPE(TYPENAME) set);    			\
+deBool		TYPENAME##_reserve		(DE_PTR_TYPE(TYPENAME) set, int capacity);	\
+deBool		TYPENAME##_exists		(const TYPENAME* set, KEYTYPE key);    		\
+deBool		TYPENAME##_insert		(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key);	\
+void		TYPENAME##_delete		(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key);	\
 \
 DE_INLINE int		TYPENAME##_getNumElements	(const TYPENAME* set)							DE_UNUSED_FUNCTION;	\
 DE_INLINE void		TYPENAME##Iter_init			(const TYPENAME* hash, TYPENAME##Iter* iter)	DE_UNUSED_FUNCTION;	\
 DE_INLINE deBool	TYPENAME##Iter_hasItem		(const TYPENAME##Iter* iter)					DE_UNUSED_FUNCTION;	\
 DE_INLINE void		TYPENAME##Iter_next			(TYPENAME##Iter* iter)							DE_UNUSED_FUNCTION;	\
 DE_INLINE KEYTYPE	TYPENAME##Iter_getKey		(const TYPENAME##Iter* iter)					DE_UNUSED_FUNCTION;	\
-DE_INLINE deBool	TYPENAME##_safeInsert		(TYPENAME* set, KEYTYPE key)					DE_UNUSED_FUNCTION;	\
-DE_INLINE void		TYPENAME##_safeDelete		(TYPENAME* set, KEYTYPE key)					DE_UNUSED_FUNCTION;	\
+DE_INLINE deBool	TYPENAME##_safeInsert		(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)		DE_UNUSED_FUNCTION;	\
+DE_INLINE void		TYPENAME##_safeDelete		(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)		DE_UNUSED_FUNCTION;	\
 \
 DE_INLINE int TYPENAME##_getNumElements (const TYPENAME* set)    \
 {    \
@@ -175,7 +175,7 @@ DE_INLINE KEYTYPE TYPENAME##Iter_getKey	(const TYPENAME##Iter* iter)    \
 	return iter->curSlot->keys[iter->curElemIndex];	\
 }	\
 \
-DE_INLINE deBool TYPENAME##_safeInsert (TYPENAME* set, KEYTYPE key)	\
+DE_INLINE deBool TYPENAME##_safeInsert (DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)	\
 {																	\
 	DE_ASSERT(set);													\
 	if (TYPENAME##_exists(set, key))								\
@@ -183,7 +183,7 @@ DE_INLINE deBool TYPENAME##_safeInsert (TYPENAME* set, KEYTYPE key)	\
 	return TYPENAME##_insert(set, key);								\
 }																	\
 \
-DE_INLINE void TYPENAME##_safeDelete (TYPENAME* set, KEYTYPE key)	\
+DE_INLINE void TYPENAME##_safeDelete (DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)	\
 {																	\
 	DE_ASSERT(set);													\
 	if (TYPENAME##_exists(set, key))								\
@@ -206,10 +206,10 @@ struct TYPENAME##Dummy_s { int dummy; }
 *//*--------------------------------------------------------------------*/
 #define DE_IMPLEMENT_POOL_SET(TYPENAME, KEYTYPE, HASHFUNC, CMPFUNC)		\
 \
-TYPENAME* TYPENAME##_create (deMemPool* pool)    \
+DE_PTR_TYPE(TYPENAME) TYPENAME##_create (deMemPool* pool)    \
 {   \
 	/* Alloc struct. */ \
-	TYPENAME* set = DE_POOL_NEW(pool, TYPENAME); \
+	DE_PTR_TYPE(TYPENAME) set = DE_POOL_NEW(pool, TYPENAME); \
 	if (!set) \
 		return DE_NULL; \
 \
@@ -220,7 +220,7 @@ TYPENAME* TYPENAME##_create (deMemPool* pool)    \
 	return set; \
 } \
 \
-void TYPENAME##_reset (TYPENAME* set)    \
+void TYPENAME##_reset (DE_PTR_TYPE(TYPENAME) set)    \
 {   \
 	int slotNdx; \
 	for (slotNdx = 0; slotNdx < set->slotTableSize; slotNdx++)	\
@@ -239,7 +239,7 @@ void TYPENAME##_reset (TYPENAME* set)    \
 	set->numElements = 0; \
 }	\
 \
-TYPENAME##Slot* TYPENAME##_allocSlot (TYPENAME* set)    \
+TYPENAME##Slot* TYPENAME##_allocSlot (DE_PTR_TYPE(TYPENAME) set)    \
 {   \
 	TYPENAME##Slot* slot; \
 	if (set->slotFreeList) \
@@ -259,7 +259,7 @@ TYPENAME##Slot* TYPENAME##_allocSlot (TYPENAME* set)    \
 	return slot; \
 } \
 \
-deBool TYPENAME##_rehash (TYPENAME* set, int newSlotTableSize)    \
+deBool TYPENAME##_rehash (DE_PTR_TYPE(TYPENAME) set, int newSlotTableSize)    \
 {    \
 	DE_ASSERT(deIsPowerOfTwo32(newSlotTableSize) && newSlotTableSize > 0); \
 	if (newSlotTableSize > set->slotTableSize)    \
@@ -325,7 +325,7 @@ deBool TYPENAME##_exists (const TYPENAME* set, KEYTYPE key)    \
 	return DE_FALSE; \
 }    \
 \
-deBool TYPENAME##_insert (TYPENAME* set, KEYTYPE key)    \
+deBool TYPENAME##_insert (DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)    \
 {    \
 	int				slotNdx; \
 	TYPENAME##Slot*	slot; \
@@ -372,7 +372,7 @@ deBool TYPENAME##_insert (TYPENAME* set, KEYTYPE key)    \
 	} \
 } \
 \
-void TYPENAME##_delete (TYPENAME* set, KEYTYPE key)    \
+void TYPENAME##_delete (DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)    \
 {    \
 	int				slotNdx; \
 	TYPENAME##Slot*	slot; \
@@ -429,11 +429,11 @@ struct TYPENAME##Dummy2_s { int dummy; }
 /* Copy-to-array templates. */
 
 #define DE_DECLARE_POOL_SET_TO_ARRAY(SETTYPENAME, ARRAYTYPENAME)		\
-	deBool SETTYPENAME##_copyToArray(const SETTYPENAME* set, ARRAYTYPENAME* array);	\
+	deBool SETTYPENAME##_copyToArray(const SETTYPENAME* set, DE_PTR_TYPE(ARRAYTYPENAME) array);	\
 	struct SETTYPENAME##_##ARRAYTYPENAME##_declare_dummy { int dummy; }
 
 #define DE_IMPLEMENT_POOL_SET_TO_ARRAY(SETTYPENAME, ARRAYTYPENAME)		\
-	deBool SETTYPENAME##_copyToArray(const SETTYPENAME* set, ARRAYTYPENAME* array)	\
+	deBool SETTYPENAME##_copyToArray(const SETTYPENAME* set, DE_PTR_TYPE(ARRAYTYPENAME) array)	\
 	{	\
 		int numElements	= set->numElements;	\
 		int arrayNdx	= 0;	\
@@ -480,17 +480,17 @@ struct TYPENAME##Dummy2_s { int dummy; }
  * void     Set_differenceInplace	(Set* a, const Set* b);
  * \endcode
 *//*--------------------------------------------------------------------*/
-#define DE_DECLARE_POOL_SET_SETWISE_OPERATIONS(TYPENAME)	\
-	deBool TYPENAME##_union (TYPENAME* to, const TYPENAME* a, const TYPENAME* b);	\
-	deBool TYPENAME##_unionInplace (TYPENAME* a, const TYPENAME* b);	\
-	deBool TYPENAME##_intersect (TYPENAME* to, const TYPENAME* a, const TYPENAME* b);	\
-	void TYPENAME##_intersectInplace (TYPENAME* a, const TYPENAME* b);	\
-	deBool TYPENAME##_difference (TYPENAME* to, const TYPENAME* a, const TYPENAME* b);	\
-	void TYPENAME##_differenceInplace (TYPENAME* a, const TYPENAME* b);	\
+#define DE_DECLARE_POOL_SET_SETWISE_OPERATIONS(TYPENAME)											\
+	deBool TYPENAME##_union (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b);		\
+	deBool TYPENAME##_unionInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b);					\
+	deBool TYPENAME##_intersect (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b);	\
+	void TYPENAME##_intersectInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b);					\
+	deBool TYPENAME##_difference (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b);	\
+	void TYPENAME##_differenceInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b);					\
 	struct TYPENAME##SetwiseDeclareDummy_s { int dummy; }
 
 #define DE_IMPLEMENT_POOL_SET_SETWISE_OPERATIONS(TYPENAME, KEYTYPE)	\
-deBool TYPENAME##_union (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)	\
+deBool TYPENAME##_union (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b)	\
 {	\
 	TYPENAME##_reset(to);	\
 	if (!TYPENAME##_unionInplace(to, a))	\
@@ -500,7 +500,7 @@ deBool TYPENAME##_union (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)	\
 	return DE_TRUE;	\
 }	\
 \
-deBool TYPENAME##_unionInplace (TYPENAME* a, const TYPENAME* b)	\
+deBool TYPENAME##_unionInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b)	\
 {	\
 	TYPENAME##Iter iter;	\
 	for (TYPENAME##Iter_init(b, &iter);	\
@@ -517,7 +517,7 @@ deBool TYPENAME##_unionInplace (TYPENAME* a, const TYPENAME* b)	\
 	return DE_TRUE;	\
 }	\
 \
-deBool TYPENAME##_intersect (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)	\
+deBool TYPENAME##_intersect (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b)	\
 {	\
 	TYPENAME##Iter iter;	\
 	TYPENAME##_reset(to);	\
@@ -535,13 +535,13 @@ deBool TYPENAME##_intersect (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)
 	return DE_TRUE;	\
 }	\
 \
-void TYPENAME##_intersectInplace (TYPENAME* a, const TYPENAME* b)	\
+void TYPENAME##_intersectInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b)	\
 {	\
 	DE_UNREF(a && b);	\
 	DE_FATAL("Not implemented.");	\
 }	\
 \
-deBool TYPENAME##_difference (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)	\
+deBool TYPENAME##_difference (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b)	\
 {	\
 	TYPENAME##Iter iter;	\
 	TYPENAME##_reset(to);	\
@@ -559,7 +559,7 @@ deBool TYPENAME##_difference (TYPENAME* to, const TYPENAME* a, const TYPENAME* b
 	return DE_TRUE;	\
 }	\
 \
-void TYPENAME##_differenceInplace (TYPENAME* a, const TYPENAME* b)	\
+void TYPENAME##_differenceInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b)	\
 {	\
 	TYPENAME##Iter iter;	\
 	for (TYPENAME##Iter_init(b, &iter);	\

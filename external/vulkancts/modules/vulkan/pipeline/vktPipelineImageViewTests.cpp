@@ -352,7 +352,7 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 		for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(TEST_CASES); configNdx++)				\
 		{																								\
 			std::ostringstream		desc;																\
-			const TestCaseConfig	config	= TEST_CASES[configNdx];									\
+			const TestCaseConfig	config	= (TEST_CASES)[configNdx];									\
 			desc << "Samples level " << config.samplerLod << " with :\n" << config.subresourceRange;	\
 			rangeTests->addChild(new ImageViewTest(testCtx, config.name, desc.str().c_str(), viewType,	\
 												   imageFormat, config.samplerLod, componentMapping,	\

@@ -500,7 +500,7 @@ static RequiredExtensions getQueryExtension (QueryType query)
 
 static bool isCoreTester (TesterType tester)
 {
-#define COMPARE_PURE_SETTERS(TESTER, X) (TESTER == X ## _SET_PURE_INT) || (TESTER == X ## _SET_PURE_UINT)
+#define COMPARE_PURE_SETTERS(TESTER, X) ((TESTER) == X ## _SET_PURE_INT) || ((TESTER) == X ## _SET_PURE_UINT)
 
 	return	es31::isCoreTester(tester)										||
 			COMPARE_PURE_SETTERS(tester, TESTER_TEXTURE_SWIZZLE_R)			||
