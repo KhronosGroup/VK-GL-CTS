@@ -197,7 +197,7 @@ static deBool initWinsock (void)
 	typedef int						deSocketHandle;
 	typedef socklen_t				NativeSocklen;
 	typedef size_t					NativeSize;
-#	define DE_INVALID_SOCKET_HANDLE	-1
+#	define DE_INVALID_SOCKET_HANDLE	(-1)
 #endif
 
 DE_INLINE deBool deSocketHandleIsValid (deSocketHandle handle)

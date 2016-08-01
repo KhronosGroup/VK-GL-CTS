@@ -65,15 +65,15 @@ typedef struct TYPENAME_s																			\
 {																									\
 	TYPENAME##Hash*		hash;																		\
 	TYPENAME##Array*	array;																		\
-} TYPENAME;																							\
+} TYPENAME; /* NOLINT(TYPENAME) */  																\
 																									\
 TYPENAME*		TYPENAME##_create		(deMemPool* pool);											\
-deBool			TYPENAME##_insert		(TYPENAME* hashArray, KEYTYPE key, VALUETYPE value);		\
-deBool			TYPENAME##_copyToArray	(const TYPENAME* hashArray, KEYARRAYTYPE* keys, VALUEARRAYTYPE* values);	\
+deBool			TYPENAME##_insert		(DE_PTR_TYPE(TYPENAME) hashArray, KEYTYPE key, VALUETYPE value);	\
+deBool			TYPENAME##_copyToArray	(const TYPENAME* hashArray, DE_PTR_TYPE(KEYARRAYTYPE) keys, DE_PTR_TYPE(VALUEARRAYTYPE) values);	\
 																									\
 DE_INLINE int			TYPENAME##_getNumElements	(const TYPENAME* hashArray)					DE_UNUSED_FUNCTION;	\
 DE_INLINE VALUETYPE*	TYPENAME##_find				(const TYPENAME* hashArray, KEYTYPE key)	DE_UNUSED_FUNCTION;	\
-DE_INLINE void			TYPENAME##_reset			(TYPENAME* hashArray)						DE_UNUSED_FUNCTION;	\
+DE_INLINE void			TYPENAME##_reset			(DE_PTR_TYPE(TYPENAME) hashArray)			DE_UNUSED_FUNCTION;	\
 																									\
 DE_INLINE int TYPENAME##_getNumElements (const TYPENAME* hashArray)									\
 {																									\
@@ -97,7 +97,7 @@ DE_INLINE VALUETYPE* TYPENAME##_find (const TYPENAME* hashArray, KEYTYPE key)			
 	}																								\
 }																									\
 																									\
-DE_INLINE void TYPENAME##_reset (TYPENAME* hashArray)												\
+DE_INLINE void TYPENAME##_reset (DE_PTR_TYPE(TYPENAME) hashArray)									\
 {																									\
 	TYPENAME##Hash_reset(hashArray->hash);															\
 	TYPENAME##Array_reset(hashArray->array);														\
@@ -126,7 +126,7 @@ DE_IMPLEMENT_POOL_HASH(TYPENAME##Hash, KEYTYPE, int, KEYHASHFUNC, KEYCMPFUNC);		
 																									\
 TYPENAME* TYPENAME##_create (deMemPool* pool)														\
 {																									\
-	TYPENAME* hashArray = DE_POOL_NEW(pool, TYPENAME);												\
+	DE_PTR_TYPE(TYPENAME) hashArray = DE_POOL_NEW(pool, TYPENAME);									\
 	if (!hashArray) return DE_NULL;																	\
 	if ((hashArray->hash = TYPENAME##Hash_create(pool)) == DE_NULL)									\
 		return DE_NULL;																				\
@@ -135,7 +135,7 @@ TYPENAME* TYPENAME##_create (deMemPool* pool)														\
 	return hashArray;																				\
 }																									\
 																									\
-deBool TYPENAME##_insert (TYPENAME* hashArray, KEYTYPE key, VALUETYPE value)						\
+deBool TYPENAME##_insert (DE_PTR_TYPE(TYPENAME) hashArray, KEYTYPE key, VALUETYPE value)			\
 {																									\
 	int numElements = TYPENAME##Array_getNumElements(hashArray->array);								\
 	DE_ASSERT(TYPENAME##Hash_getNumElements(hashArray->hash) == numElements);						\
@@ -147,7 +147,7 @@ deBool TYPENAME##_insert (TYPENAME* hashArray, KEYTYPE key, VALUETYPE value)				
 	return DE_TRUE;																					\
 }																									\
 																									\
-deBool TYPENAME##_copyToArray (const TYPENAME* hashArray, KEYARRAYTYPE* keys, VALUEARRAYTYPE* values)		\
+deBool TYPENAME##_copyToArray (const TYPENAME* hashArray, DE_PTR_TYPE(KEYARRAYTYPE) keys, DE_PTR_TYPE(VALUEARRAYTYPE) values)		\
 {																									\
 	int					numElements	= TYPENAME##Array_getNumElements(hashArray->array);				\
 	TYPENAME##Hash*		hash		= hashArray->hash;												\
