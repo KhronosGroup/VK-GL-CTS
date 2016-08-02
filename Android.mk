@@ -1,6 +1,13 @@
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
+# The clang-tidy google-explicit-constructor warning is issued to nearly
+# 1000 conversion constructors in this project. They are from more than
+# 500 source files. Most of them should be declared explicit, but many
+# of them need to be implicit. Until we correctly mark them as explicit
+# or NOLINT(implicit), we suppress the google-explicit-constructor check.
+LOCAL_TIDY_CHECKS := -google-explicit-constructor
+
 delibs_dir := $(LOCAL_PATH)/framework/delibs
 deqp_dir := $(LOCAL_PATH)/
 
