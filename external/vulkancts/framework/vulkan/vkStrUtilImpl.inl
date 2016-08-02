@@ -79,6 +79,7 @@ const char* getResultName (VkResult value)
 		case VK_ERROR_INCOMPATIBLE_DRIVER:		return "VK_ERROR_INCOMPATIBLE_DRIVER";
 		case VK_ERROR_TOO_MANY_OBJECTS:			return "VK_ERROR_TOO_MANY_OBJECTS";
 		case VK_ERROR_FORMAT_NOT_SUPPORTED:		return "VK_ERROR_FORMAT_NOT_SUPPORTED";
+		case VK_ERROR_FRAGMENTED_POOL:			return "VK_ERROR_FRAGMENTED_POOL";
 		case VK_ERROR_SURFACE_LOST_KHR:			return "VK_ERROR_SURFACE_LOST_KHR";
 		case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:	return "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR";
 		case VK_SUBOPTIMAL_KHR:					return "VK_SUBOPTIMAL_KHR";
@@ -159,6 +160,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT:						return "VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT";
 		case VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_TAG_INFO_EXT:						return "VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_TAG_INFO_EXT";
 		case VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT:							return "VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT";
+		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV:				return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_BUFFER_CREATE_INFO_NV:				return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_BUFFER_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV:			return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV";
 		default:																		return DE_NULL;
 	}
 }
@@ -3268,6 +3272,37 @@ std::ostream& operator<< (std::ostream& s, const VkDebugMarkerMarkerInfoEXT& val
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpMarkerName = " << getCharPtrStr(value.pMarkerName) << '\n';
 	s << "\tcolor = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.color), DE_ARRAY_END(value.color)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDedicatedAllocationImageCreateInfoNV& value)
+{
+	s << "VkDedicatedAllocationImageCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdedicatedAllocation = " << value.dedicatedAllocation << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDedicatedAllocationBufferCreateInfoNV& value)
+{
+	s << "VkDedicatedAllocationBufferCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdedicatedAllocation = " << value.dedicatedAllocation << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDedicatedAllocationMemoryAllocateInfoNV& value)
+{
+	s << "VkDedicatedAllocationMemoryAllocateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timage = " << value.image << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
 	s << '}';
 	return s;
 }

@@ -1407,3 +1407,25 @@ struct VkDebugMarkerMarkerInfoEXT
 	float			color[4];
 };
 
+struct VkDedicatedAllocationImageCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		dedicatedAllocation;
+};
+
+struct VkDedicatedAllocationBufferCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		dedicatedAllocation;
+};
+
+struct VkDedicatedAllocationMemoryAllocateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkImage			image;
+	VkBuffer		buffer;
+};
+
