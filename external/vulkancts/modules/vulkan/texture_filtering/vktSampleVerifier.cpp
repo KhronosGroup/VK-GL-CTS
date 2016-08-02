@@ -67,6 +67,9 @@ bool isEqualRelEpsilon (const Vector<float, Size>& a, const Vector<float, Size>&
 
 float calcRelEpsilon (VkFormat format, VkFilter filter, VkSamplerMipmapMode mipmapFilter)
 {
+	// This should take into account the format at some point, but doesn't now
+	DE_UNREF(format);
+
 	// fp16 format approximates the minimum precision for internal calculations mandated by spec
 	const float fp16MachineEpsilon = 0.0009765625f;
 
@@ -113,7 +116,7 @@ Vector<float, Size> floor (const Vector<float, Size>& v)
 
 	for (int compNdx = 0; compNdx < Size; ++compNdx)
 	{
-		result[compNdx] = deFloor(v[compNdx]);
+		result[compNdx] = (float)deFloor(v[compNdx]);
 	}
 
 	return result;
@@ -126,7 +129,7 @@ Vector<float, Size> ceil (const Vector<float, Size>& v)
 
 	for (int compNdx = 0; compNdx < Size; ++compNdx)
 	{
-		result[compNdx] = deCeil(v[compNdx]);
+		result[compNdx] = (float)deCeil(v[compNdx]);
 	}
 
 	return result;
@@ -1070,6 +1073,9 @@ bool SampleVerifier::verifySampleCubemapFace (const SampleArguments&	args,
 											  deUint8					face,
 											  std::ostream&				report) const
 {
+	// Will use this parameter once cubemapping is implemented completely
+	DE_UNREF(face);
+
 	Vec2 lodBounds;
 
 	if (m_sampleLookupSettings.lookupLodMode == LOOKUP_LOD_MODE_DERIVATIVES)

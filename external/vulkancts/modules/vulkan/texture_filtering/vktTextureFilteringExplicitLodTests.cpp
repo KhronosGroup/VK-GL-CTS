@@ -975,7 +975,6 @@ public:
 							   VkSamplerAddressMode wrappingMode)
 
 		: TextureFilteringTestCase	(testCtx, name, desc)
-		, m_testCtx					(testCtx)
 		, m_format					(format)
 		, m_dimensions				(dimensions)
 		, m_magFilter				(magFilter)
@@ -1047,7 +1046,6 @@ protected:
 	}
 
 private:
-	TestContext&					m_testCtx;
 	TextureFormat					m_format;
 	IVec3							m_dimensions;
 	VkFilter						m_magFilter;
