@@ -153,8 +153,8 @@ enum Usage
 	USAGE_INDIRECT_BUFFER = (0x1u<<10),
 
 	// Texture usage flags
-	USAGE_TEXTURE_SAMPLED = (0x1u<<11),
-	USAGE_TEXTURE_STORAGE = (0x1u<<12),
+	USAGE_IMAGE_SAMPLED = (0x1u<<11),
+	USAGE_STORAGE_IMAGE = (0x1u<<12),
 	USAGE_COLOR_ATTACHMENT = (0x1u<<13),
 	USAGE_INPUT_ATTACHMENT = (0x1u<<14),
 	USAGE_DEPTH_STENCIL_ATTACHMENT = (0x1u<<15),
@@ -179,7 +179,7 @@ bool supportsDeviceImageWrites (Usage usage)
 	if (usage & USAGE_TRANSFER_DST)
 		return true;
 
-	if (usage & USAGE_TEXTURE_STORAGE)
+	if (usage & USAGE_STORAGE_IMAGE)
 		return true;
 
 	if (usage & USAGE_COLOR_ATTACHMENT)
@@ -291,8 +291,8 @@ string usageToName (Usage usage)
 		{ USAGE_UNIFORM_TEXEL_BUFFER,		"uniform_texel_buffer" },
 		{ USAGE_STORAGE_TEXEL_BUFFER,		"storage_texel_buffer" },
 		{ USAGE_INDIRECT_BUFFER,			"indirect_buffer" },
-		{ USAGE_TEXTURE_SAMPLED,			"sampled_texture" },
-		{ USAGE_TEXTURE_STORAGE,			"texture_storage" },
+		{ USAGE_IMAGE_SAMPLED,				"sampled_image" },
+		{ USAGE_STORAGE_IMAGE,				"storage_image" },
 		{ USAGE_COLOR_ATTACHMENT,			"color_attachment" },
 		{ USAGE_INPUT_ATTACHMENT,			"input_attachment" },
 		{ USAGE_DEPTH_STENCIL_ATTACHMENT,	"depth_stencil_attachment" },
@@ -361,10 +361,10 @@ vk::VkImageUsageFlags usageToImageUsageFlags (Usage usage)
 	if (usage & USAGE_TRANSFER_DST)
 		flags |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-	if (usage & USAGE_TEXTURE_SAMPLED)
+	if (usage & USAGE_IMAGE_SAMPLED)
 		flags |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
 
-	if (usage & USAGE_TEXTURE_STORAGE)
+	if (usage & USAGE_STORAGE_IMAGE)
 		flags |= vk::VK_IMAGE_USAGE_STORAGE_BIT;
 
 	if (usage & USAGE_COLOR_ATTACHMENT)
@@ -400,8 +400,8 @@ vk::VkPipelineStageFlags usageToStageFlags (Usage usage)
 			| USAGE_STORAGE_BUFFER
 			| USAGE_UNIFORM_TEXEL_BUFFER
 			| USAGE_STORAGE_TEXEL_BUFFER
-			| USAGE_TEXTURE_SAMPLED
-			| USAGE_TEXTURE_STORAGE))
+			| USAGE_IMAGE_SAMPLED
+			| USAGE_STORAGE_IMAGE))
 	{
 		flags |= (vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
 				| vk::VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT
@@ -453,8 +453,8 @@ vk::VkAccessFlags usageToAccessFlags (Usage usage)
 
 	if (usage & (USAGE_STORAGE_BUFFER
 				| USAGE_STORAGE_TEXEL_BUFFER
-				| USAGE_TEXTURE_SAMPLED
-				| USAGE_TEXTURE_STORAGE))
+				| USAGE_IMAGE_SAMPLED
+				| USAGE_STORAGE_IMAGE))
 		flags |= vk::VK_ACCESS_SHADER_READ_BIT | vk::VK_ACCESS_SHADER_WRITE_BIT;
 
 	if (usage & USAGE_INDIRECT_BUFFER)
@@ -4631,7 +4631,7 @@ void SubmitRenderPass::verify (VerifyContext& context, size_t commandIndex)
 				const ConstPixelBufferAccess	resAccess	(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_targetWidth, m_targetHeight, 1, data);
 				const ConstPixelBufferAccess&	refAccess	(verifyContext.getReferenceTarget().getAccess());
 
-				if (!tcu::intThresholdCompare(context.getLog(), (de::toString(commandIndex) + ":" + getName()).c_str(), (de::toString(commandIndex) + ":" + getName()).c_str(), refAccess, resAccess, UVec4(0), tcu::COMPARE_LOG_ON_ERROR))
+				if (!tcu::intThresholdCompare(context.getLog(), (de::toString(commandIndex) + ":" + getName()).c_str(), (de::toString(commandIndex) + ":" + getName()).c_str(), refAccess, resAccess, UVec4(0), tcu::COMPARE_LOG_EVERYTHING))
 					resultCollector.fail(de::toString(commandIndex) + ":" + getName() + " Image comparison failed");
 			}
 
@@ -5744,6 +5744,174 @@ void RenderVertexStorageTexelBuffer::verify (VerifyRenderPassContext& context, s
 	}
 }
 
+class RenderVertexStorageImage : public RenderPassCommand
+{
+public:
+				RenderVertexStorageImage	(void) {}
+				~RenderVertexStorageImage	(void);
+
+	const char*	getName							(void) const { return "RenderVertexStorageImage"; }
+	void		logPrepare						(TestLog&, size_t) const;
+	void		logSubmit						(TestLog&, size_t) const;
+	void		prepare							(PrepareRenderPassContext&);
+	void		submit							(SubmitContext& context);
+	void		verify							(VerifyRenderPassContext&, size_t);
+
+private:
+	PipelineResources				m_resources;
+	vk::Move<vk::VkDescriptorPool>	m_descriptorPool;
+	vk::Move<vk::VkDescriptorSet>	m_descriptorSet;
+	vk::Move<vk::VkImageView>		m_imageView;
+};
+
+RenderVertexStorageImage::~RenderVertexStorageImage (void)
+{
+}
+
+void RenderVertexStorageImage::logPrepare (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Create pipeline for render storage image." << TestLog::EndMessage;
+}
+
+void RenderVertexStorageImage::logSubmit (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Render using storage image." << TestLog::EndMessage;
+}
+
+void RenderVertexStorageImage::prepare (PrepareRenderPassContext& context)
+{
+	const vk::DeviceInterface&					vkd						= context.getContext().getDeviceInterface();
+	const vk::VkDevice							device					= context.getContext().getDevice();
+	const vk::VkRenderPass						renderPass				= context.getRenderPass();
+	const deUint32								subpass					= 0;
+	const vk::Unique<vk::VkShaderModule>		vertexShaderModule		(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("storage-image.vert"), 0));
+	const vk::Unique<vk::VkShaderModule>		fragmentShaderModule	(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("render-white.frag"), 0));
+	vector<vk::VkDescriptorSetLayoutBinding>	bindings;
+
+	{
+		const vk::VkDescriptorSetLayoutBinding binding =
+		{
+			0u,
+			vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+			1,
+			vk::VK_SHADER_STAGE_VERTEX_BIT,
+			DE_NULL
+		};
+
+		bindings.push_back(binding);
+	}
+
+	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, m_resources);
+
+	{
+		const vk::VkDescriptorPoolSize			poolSizes		=
+		{
+			vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+			1
+		};
+		const vk::VkDescriptorPoolCreateInfo	createInfo		=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			DE_NULL,
+			vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+
+			1u,
+			1u,
+			&poolSizes,
+		};
+
+		m_descriptorPool = vk::createDescriptorPool(vkd, device, &createInfo);
+	}
+
+	{
+		const vk::VkDescriptorSetLayout			layout			= *m_resources.descriptorSetLayout;
+		const vk::VkDescriptorSetAllocateInfo	allocateInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+
+			*m_descriptorPool,
+			1,
+			&layout
+		};
+
+		m_descriptorSet = vk::allocateDescriptorSet(vkd, device, &allocateInfo);
+
+		{
+			const vk::VkImageViewCreateInfo createInfo =
+			{
+				vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+				DE_NULL,
+				0u,
+
+				context.getImage(),
+				vk::VK_IMAGE_VIEW_TYPE_2D,
+				vk::VK_FORMAT_R8G8B8A8_UNORM,
+				vk::makeComponentMappingRGBA(),
+				{
+					vk::VK_IMAGE_ASPECT_COLOR_BIT,
+					0u,
+					1u,
+					0u,
+					1u
+				}
+			};
+
+			m_imageView = vk::createImageView(vkd, device, &createInfo);
+		}
+
+		{
+			const vk::VkDescriptorImageInfo			imageInfo	=
+			{
+				0,
+				*m_imageView,
+				vk::VK_IMAGE_LAYOUT_GENERAL
+			};
+			const vk::VkWriteDescriptorSet			write		=
+			{
+				vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				DE_NULL,
+				*m_descriptorSet,
+				0u,
+				0u,
+				1u,
+				vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+				&imageInfo,
+				DE_NULL,
+				DE_NULL,
+			};
+
+			vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+		}
+	}
+}
+
+void RenderVertexStorageImage::submit (SubmitContext& context)
+{
+	const vk::DeviceInterface&	vkd				= context.getContext().getDeviceInterface();
+	const vk::VkCommandBuffer	commandBuffer	= context.getCommandBuffer();
+
+	vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
+
+	vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u, 1u, &(*m_descriptorSet), 0u, DE_NULL);
+	vkd.cmdDraw(commandBuffer, context.getImageWidth() * context.getImageHeight() * 2, 1, 0, 0);
+}
+
+void RenderVertexStorageImage::verify (VerifyRenderPassContext& context, size_t)
+{
+	for (int pos = 0; pos < (int)(context.getReferenceImage().getWidth() * context.getReferenceImage().getHeight() * 2); pos++)
+	{
+		const tcu::IVec3		size	= context.getReferenceImage().getAccess().getSize();
+		const tcu::UVec4		pixel	= context.getReferenceImage().getAccess().getPixelUint((pos / 2) / size.x(), (pos / 2) % size.x());
+
+		if (pos % 2 == 0)
+			context.getReferenceTarget().getAccess().setPixel(Vec4(1.0f, 1.0f, 1.0f, 1.0f), pixel.x(), pixel.y());
+		else
+			context.getReferenceTarget().getAccess().setPixel(Vec4(1.0f, 1.0f, 1.0f, 1.0f), pixel.z(), pixel.w());
+	}
+}
+
 enum Op
 {
 	OP_MAP,
@@ -5810,6 +5978,8 @@ enum Op
 
 	OP_RENDER_VERTEX_STORAGE_BUFFER,
 	OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER,
+
+	OP_RENDER_VERTEX_STORAGE_IMAGE
 };
 
 enum Stage
@@ -6291,6 +6461,105 @@ bool CacheState::isClean (void) const
 	return true;
 }
 
+bool layoutSupportedByUsage (Usage usage, vk::VkImageLayout layout)
+{
+	switch (layout)
+	{
+		case vk::VK_IMAGE_LAYOUT_GENERAL:
+			return true;
+
+		case vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+			return (usage & USAGE_COLOR_ATTACHMENT) != 0;
+
+		case vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+			return (usage & USAGE_DEPTH_STENCIL_ATTACHMENT) != 0;
+
+		case vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
+			return (usage & USAGE_DEPTH_STENCIL_ATTACHMENT) != 0;
+
+		case vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+			// \todo [2016-03-09 mika] Should include input attachment
+			return (usage & USAGE_IMAGE_SAMPLED) != 0;
+
+		case vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+			return (usage & USAGE_TRANSFER_SRC) != 0;
+
+		case vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+			return (usage & USAGE_TRANSFER_DST) != 0;
+
+		case vk::VK_IMAGE_LAYOUT_PREINITIALIZED:
+			return true;
+
+		default:
+			DE_FATAL("Unknown layout");
+			return false;
+	}
+}
+
+size_t getNumberOfSupportedLayouts (Usage usage)
+{
+	const vk::VkImageLayout layouts[] =
+	{
+		vk::VK_IMAGE_LAYOUT_GENERAL,
+		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	};
+	size_t supportedLayoutCount = 0;
+
+	for (size_t layoutNdx = 0; layoutNdx < DE_LENGTH_OF_ARRAY(layouts); layoutNdx++)
+	{
+		const vk::VkImageLayout layout = layouts[layoutNdx];
+
+		if (layoutSupportedByUsage(usage, layout))
+			supportedLayoutCount++;
+	}
+
+	return supportedLayoutCount;
+}
+
+vk::VkImageLayout getRandomNextLayout (de::Random&			rng,
+									   Usage				usage,
+									   vk::VkImageLayout	previousLayout)
+{
+	const vk::VkImageLayout	layouts[] =
+	{
+		vk::VK_IMAGE_LAYOUT_GENERAL,
+		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	};
+	const size_t			supportedLayoutCount = getNumberOfSupportedLayouts(usage);
+
+	DE_ASSERT(supportedLayoutCount > 0);
+
+	size_t nextLayoutNdx = ((size_t)rng.getUint64()) % (previousLayout == vk::VK_IMAGE_LAYOUT_UNDEFINED
+														? supportedLayoutCount
+														: supportedLayoutCount - 1);
+
+	for (size_t layoutNdx = 0; layoutNdx < DE_LENGTH_OF_ARRAY(layouts); layoutNdx++)
+	{
+		const vk::VkImageLayout layout = layouts[layoutNdx];
+
+		if (layoutSupportedByUsage(usage, layout) && layout != previousLayout)
+		{
+			if (nextLayoutNdx == 0)
+				return layout;
+			else
+				nextLayoutNdx--;
+		}
+	}
+
+	DE_FATAL("Unreachable");
+	return vk::VK_IMAGE_LAYOUT_UNDEFINED;
+}
+
 struct State
 {
 	State (Usage usage, deUint32 seed)
@@ -6476,7 +6745,9 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 			}
 		}
 
-		if (state.hasBoundImageMemory)
+		if (state.hasBoundImageMemory
+			&& (state.imageLayout == vk::VK_IMAGE_LAYOUT_UNDEFINED
+				|| getNumberOfSupportedLayouts(usage) > 1))
 		{
 			ops.push_back(OP_IMAGE_TRANSITION_LAYOUT);
 
@@ -6505,9 +6776,9 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 		}
 
 		// \todo [2016-03-09 mika] Add other usages?
-		if (state.memoryDefined
-			&& state.hasBoundBufferMemory
-			&& (((usage & USAGE_VERTEX_BUFFER)
+		if ((state.memoryDefined
+				&& state.hasBoundBufferMemory
+				&& (((usage & USAGE_VERTEX_BUFFER)
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT))
 				|| ((usage & USAGE_INDEX_BUFFER)
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, vk::VK_ACCESS_INDEX_READ_BIT))
@@ -6518,6 +6789,11 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 				|| ((usage & USAGE_STORAGE_BUFFER)
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
 				|| ((usage & USAGE_STORAGE_TEXEL_BUFFER)
+					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))))
+			|| (state.imageDefined
+				&& state.hasBoundImageMemory
+				&& ((usage & USAGE_STORAGE_IMAGE)
+					&& state.imageLayout == vk::VK_IMAGE_LAYOUT_GENERAL
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))))
 		{
 			ops.push_back(OP_RENDERPASS_BEGIN);
@@ -6578,89 +6854,20 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 			ops.push_back(OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER);
 		}
 
+		if ((usage & USAGE_STORAGE_IMAGE) != 0
+			&& state.imageDefined
+			&& state.hasBoundImageMemory
+			&& (state.imageLayout == vk::VK_IMAGE_LAYOUT_GENERAL)
+			&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
+		{
+			ops.push_back(OP_RENDER_VERTEX_STORAGE_IMAGE);
+		}
+
 		if (!state.renderPassIsEmpty)
 			ops.push_back(OP_RENDERPASS_END);
 	}
 	else
 		DE_FATAL("Unknown stage");
-}
-
-bool layoutSupportedByUsage (Usage usage, vk::VkImageLayout layout)
-{
-	switch (layout)
-	{
-		case vk::VK_IMAGE_LAYOUT_GENERAL:
-			return true;
-
-		case vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-			return (usage & USAGE_COLOR_ATTACHMENT) != 0;
-
-		case vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-			return (usage & USAGE_DEPTH_STENCIL_ATTACHMENT) != 0;
-
-		case vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
-			return (usage & USAGE_DEPTH_STENCIL_ATTACHMENT) != 0;
-
-		case vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-			// \todo [2016-03-09 mika] Should include input attachment
-			return (usage & USAGE_TEXTURE_SAMPLED) != 0;
-
-		case vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-			return (usage & USAGE_TRANSFER_SRC) != 0;
-
-		case vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-			return (usage & USAGE_TRANSFER_DST) != 0;
-
-		case vk::VK_IMAGE_LAYOUT_PREINITIALIZED:
-			return true;
-
-		default:
-			DE_FATAL("Unknown layout");
-			return false;
-	}
-}
-
-vk::VkImageLayout getRandomNextLayout (de::Random&			rng,
-									   Usage				usage,
-									   vk::VkImageLayout	previousLayout)
-{
-	const vk::VkImageLayout layouts[] =
-	{
-		vk::VK_IMAGE_LAYOUT_GENERAL,
-		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-		vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-	};
-	size_t possibleLayoutCount = 0;
-
-	for (size_t layoutNdx = 0; layoutNdx < DE_LENGTH_OF_ARRAY(layouts); layoutNdx++)
-	{
-		const vk::VkImageLayout layout = layouts[layoutNdx];
-
-		if (layoutSupportedByUsage(usage, layout) && layout != previousLayout)
-			possibleLayoutCount++;
-	}
-
-	size_t nextLayoutNdx = ((size_t)rng.getUint64()) % possibleLayoutCount;
-
-	for (size_t layoutNdx = 0; layoutNdx < DE_LENGTH_OF_ARRAY(layouts); layoutNdx++)
-	{
-		const vk::VkImageLayout layout = layouts[layoutNdx];
-
-		if (layoutSupportedByUsage(usage, layout) && layout != previousLayout)
-		{
-			if (nextLayoutNdx == 0)
-				return layout;
-			else
-				nextLayoutNdx--;
-		}
-	}
-
-	DE_FATAL("Unreachable");
-	return vk::VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
 void applyOp (State& state, const Memory& memory, Op op, Usage usage)
@@ -6994,6 +7201,15 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 			break;
 		}
 
+		case OP_RENDER_VERTEX_STORAGE_IMAGE:
+		{
+			DE_ASSERT(state.stage == STAGE_RENDER_PASS);
+
+			state.renderPassIsEmpty = false;
+			state.cache.perform(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT);
+			break;
+		}
+
 		default:
 			DE_FATAL("Unknown op");
 	}
@@ -7169,6 +7385,7 @@ de::MovePtr<RenderPassCommand> createRenderPassCommand (de::Random&,
 		case OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderVertexUniformTexelBuffer());
 		case OP_RENDER_VERTEX_STORAGE_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderVertexStorageBuffer());
 		case OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderVertexStorageTexelBuffer());
+		case OP_RENDER_VERTEX_STORAGE_IMAGE:		return de::MovePtr<RenderPassCommand>(new RenderVertexStorageImage());
 
 		default:
 			DE_FATAL("Unknown op");
@@ -7733,7 +7950,6 @@ struct AddPrograms
 
 		if (config.usage & USAGE_STORAGE_TEXEL_BUFFER)
 		{
-			// \todo is r32ui really supported like this?
 			// Vertex storage texel buffer rendering
 			const char* const vertexShader =
 				"#version 450\n"
@@ -7756,6 +7972,32 @@ struct AddPrograms
 				"}\n";
 
 			sources.glslSources.add("storage-texel-buffer.vert")
+				<< glu::VertexSource(vertexShader);
+		}
+
+		if (config.usage & USAGE_STORAGE_IMAGE)
+		{
+			// Vertex storage image
+			const char* const vertexShader =
+				"#version 450\n"
+				"highp float;\n"
+				"layout(set=0, binding=0, rgba8) uniform image2D u_image;\n"
+				"out gl_PerVertex {\n"
+				"\tvec4 gl_Position;\n"
+				"\tfloat gl_PointSize;\n"
+				"};\n"
+				"void main (void) {\n"
+				"\tgl_PointSize = 1.0;\n"
+				"\thighp vec4 val = imageLoad(u_image, ivec2((gl_VertexIndex / 2) / imageSize(u_image).x, (gl_VertexIndex / 2) % imageSize(u_image).x));\n"
+				"\thighp vec2 pos;\n"
+				"\tif (gl_VertexIndex % 2 == 0)\n"
+				"\t\tpos = val.xy;\n"
+				"\telse\n"
+				"\t\tpos = val.zw;\n"
+				"\tgl_Position = vec4(1.998 * pos - vec2(0.999), 0.0, 1.0);\n"
+				"}\n";
+
+			sources.glslSources.add("storage-image.vert")
 				<< glu::VertexSource(vertexShader);
 		}
 
@@ -7797,6 +8039,7 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 		USAGE_UNIFORM_TEXEL_BUFFER,
 		USAGE_STORAGE_BUFFER,
 		USAGE_STORAGE_TEXEL_BUFFER,
+		USAGE_STORAGE_IMAGE
 	};
 	const Usage						readUsages[]		=
 	{
@@ -7808,6 +8051,7 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 		USAGE_UNIFORM_TEXEL_BUFFER,
 		USAGE_STORAGE_BUFFER,
 		USAGE_STORAGE_TEXEL_BUFFER,
+		USAGE_STORAGE_IMAGE
 	};
 
 	const Usage						writeUsages[]	=
