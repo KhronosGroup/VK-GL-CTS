@@ -76,17 +76,18 @@ namespace memory
 {
 namespace
 {
+enum
+{
+	MAX_UNIFORM_BUFFER_SIZE = 1024,
+	MAX_STORAGE_BUFFER_SIZE = (1<<28)
+};
+
 // \todo [mika] Add to utilities
 template<typename T>
 T divRoundUp (const T& a, const T& b)
 {
 	return (a / b) + (a % b == 0 ? 0 : 1);
 }
-
-enum
-{
-	MAX_UNIFORM_BUFFER_SIZE = 1024
-};
 
 enum
 {
@@ -5385,6 +5386,169 @@ void RenderVertexUniformTexelBuffer::verify (VerifyRenderPassContext& context, s
 	}
 }
 
+class RenderVertexStorageBuffer : public RenderPassCommand
+{
+public:
+				RenderVertexStorageBuffer	(void) {}
+				~RenderVertexStorageBuffer	(void);
+
+	const char*	getName						(void) const { return "RenderVertexStorageBuffer"; }
+	void		logPrepare					(TestLog&, size_t) const;
+	void		logSubmit					(TestLog&, size_t) const;
+	void		prepare						(PrepareRenderPassContext&);
+	void		submit						(SubmitContext& context);
+	void		verify						(VerifyRenderPassContext&, size_t);
+
+private:
+	PipelineResources				m_resources;
+	vk::Move<vk::VkDescriptorPool>	m_descriptorPool;
+	vector<vk::VkDescriptorSet>		m_descriptorSets;
+
+	vk::VkDeviceSize				m_bufferSize;
+};
+
+RenderVertexStorageBuffer::~RenderVertexStorageBuffer (void)
+{
+}
+
+void RenderVertexStorageBuffer::logPrepare (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Create pipeline for render buffer as storage buffer." << TestLog::EndMessage;
+}
+
+void RenderVertexStorageBuffer::logSubmit (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Render using buffer as storage buffer." << TestLog::EndMessage;
+}
+
+void RenderVertexStorageBuffer::prepare (PrepareRenderPassContext& context)
+{
+	const vk::DeviceInterface&					vkd						= context.getContext().getDeviceInterface();
+	const vk::VkDevice							device					= context.getContext().getDevice();
+	const vk::VkRenderPass						renderPass				= context.getRenderPass();
+	const deUint32								subpass					= 0;
+	const vk::Unique<vk::VkShaderModule>		vertexShaderModule		(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("storage-buffer.vert"), 0));
+	const vk::Unique<vk::VkShaderModule>		fragmentShaderModule	(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("render-white.frag"), 0));
+	vector<vk::VkDescriptorSetLayoutBinding>	bindings;
+
+	m_bufferSize = context.getBufferSize();
+
+	{
+		const vk::VkDescriptorSetLayoutBinding binding =
+		{
+			0u,
+			vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+			1,
+			vk::VK_SHADER_STAGE_VERTEX_BIT,
+			DE_NULL
+		};
+
+		bindings.push_back(binding);
+	}
+
+	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, m_resources);
+
+	{
+		const deUint32							descriptorCount	= (deUint32)(divRoundUp(m_bufferSize, (vk::VkDeviceSize)MAX_STORAGE_BUFFER_SIZE));
+		const vk::VkDescriptorPoolSize			poolSizes		=
+		{
+			vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+			descriptorCount
+		};
+		const vk::VkDescriptorPoolCreateInfo	createInfo		=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			DE_NULL,
+			vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+
+			descriptorCount,
+			1u,
+			&poolSizes,
+		};
+
+		m_descriptorPool = vk::createDescriptorPool(vkd, device, &createInfo);
+		m_descriptorSets.resize(descriptorCount);
+	}
+
+	for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
+	{
+		const vk::VkDescriptorSetLayout			layout			= *m_resources.descriptorSetLayout;
+		const vk::VkDescriptorSetAllocateInfo	allocateInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+
+			*m_descriptorPool,
+			1,
+			&layout
+		};
+
+		m_descriptorSets[descriptorSetNdx] = vk::allocateDescriptorSet(vkd, device, &allocateInfo).disown();
+
+		{
+			const vk::VkDescriptorBufferInfo		bufferInfo	=
+			{
+				context.getBuffer(),
+				descriptorSetNdx * MAX_STORAGE_BUFFER_SIZE,
+				de::min(m_bufferSize - descriptorSetNdx * MAX_STORAGE_BUFFER_SIZE,  (vk::VkDeviceSize)MAX_STORAGE_BUFFER_SIZE)
+			};
+			const vk::VkWriteDescriptorSet			write		=
+			{
+				vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				DE_NULL,
+				m_descriptorSets[descriptorSetNdx],
+				0u,
+				0u,
+				1u,
+				vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+				DE_NULL,
+				&bufferInfo,
+				DE_NULL,
+			};
+
+			vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+		}
+	}
+}
+
+void RenderVertexStorageBuffer::submit (SubmitContext& context)
+{
+	const vk::DeviceInterface&	vkd				= context.getContext().getDeviceInterface();
+	const vk::VkCommandBuffer	commandBuffer	= context.getCommandBuffer();
+
+	vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
+
+	for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
+	{
+		const size_t size	= m_bufferSize < (descriptorSetNdx + 1) * MAX_STORAGE_BUFFER_SIZE
+							? (size_t)(m_bufferSize - descriptorSetNdx * MAX_STORAGE_BUFFER_SIZE)
+							: (size_t)(MAX_STORAGE_BUFFER_SIZE);
+
+		vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u, 1u, &m_descriptorSets[descriptorSetNdx], 0u, DE_NULL);
+		vkd.cmdDraw(commandBuffer, (deUint32)(size / 2), 1, 0, 0);
+	}
+}
+
+void RenderVertexStorageBuffer::verify (VerifyRenderPassContext& context, size_t)
+{
+	for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
+	{
+		const size_t offset	= descriptorSetNdx * MAX_STORAGE_BUFFER_SIZE;
+		const size_t size	= m_bufferSize < (descriptorSetNdx + 1) * MAX_STORAGE_BUFFER_SIZE
+							? (size_t)(m_bufferSize - descriptorSetNdx * MAX_STORAGE_BUFFER_SIZE)
+							: (size_t)(MAX_STORAGE_BUFFER_SIZE);
+
+		for (size_t pos = 0; pos < size / 2; pos++)
+		{
+			const deUint8 x  = context.getReference().get(offset + pos * 2);
+			const deUint8 y  = context.getReference().get(offset + (pos * 2) + 1);
+
+			context.getReferenceTarget().getAccess().setPixel(Vec4(1.0f, 1.0f, 1.0f, 1.0f), x, y);
+		}
+	}
+}
+
 enum Op
 {
 	OP_MAP,
@@ -5445,8 +5609,11 @@ enum Op
 	// Commands inside render pass
 	OP_RENDER_VERTEX_BUFFER,
 	OP_RENDER_INDEX_BUFFER,
+
 	OP_RENDER_VERTEX_UNIFORM_BUFFER,
-	OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER
+	OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER,
+
+	OP_RENDER_VERTEX_STORAGE_BUFFER,
 };
 
 enum Stage
@@ -6151,7 +6318,9 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 				|| ((usage & USAGE_UNIFORM_BUFFER)
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
 				|| ((usage & USAGE_UNIFORM_TEXEL_BUFFER)
-					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))))
+					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
+				|| ((usage & USAGE_STORAGE_BUFFER)
+					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))))
 		{
 			ops.push_back(OP_RENDERPASS_BEGIN);
 		}
@@ -6193,6 +6362,14 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 			&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
 		{
 			ops.push_back(OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER);
+		}
+
+		if ((usage & USAGE_STORAGE_BUFFER) != 0
+			&& state.memoryDefined
+			&& state.hasBoundBufferMemory
+			&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
+		{
+			ops.push_back(OP_RENDER_VERTEX_STORAGE_BUFFER);
 		}
 
 		if (!state.renderPassIsEmpty)
@@ -6601,6 +6778,15 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 			break;
 		}
 
+		case OP_RENDER_VERTEX_STORAGE_BUFFER:
+		{
+			DE_ASSERT(state.stage == STAGE_RENDER_PASS);
+
+			state.renderPassIsEmpty = false;
+			state.cache.perform(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT);
+			break;
+		}
+
 		default:
 			DE_FATAL("Unknown op");
 	}
@@ -6774,6 +6960,7 @@ de::MovePtr<RenderPassCommand> createRenderPassCommand (de::Random&,
 		case OP_RENDER_INDEX_BUFFER:				return de::MovePtr<RenderPassCommand>(new RenderIndexBuffer());
 		case OP_RENDER_VERTEX_UNIFORM_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderVertexUniformBuffer());
 		case OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderVertexUniformTexelBuffer());
+		case OP_RENDER_VERTEX_STORAGE_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderVertexStorageBuffer());
 
 		default:
 			DE_FATAL("Unknown op");
@@ -7283,6 +7470,40 @@ struct AddPrograms
 				<< glu::VertexSource(vertexShader.str());
 		}
 
+		if (config.usage & USAGE_STORAGE_BUFFER)
+		{
+			// Vertex uniform buffer rendering
+			const string vertexShader =
+				"#version 310 es\n"
+				"highp float;\n"
+				"layout(set=0, binding=0) buffer Block\n"
+				"{\n"
+				"\thighp uvec4 values[];\n"
+				"} block;\n"
+				"void main (void) {\n"
+				"\tgl_PointSize = 1.0;\n"
+				"\thighp uvec4 vecVal = block.values[gl_VertexIndex / 8];\n"
+				"\thighp uint val;\n"
+				"\tif (((gl_VertexIndex / 2) % 4 == 0))\n"
+				"\t\tval = vecVal.x;\n"
+				"\telse if (((gl_VertexIndex / 2) % 4 == 1))\n"
+				"\t\tval = vecVal.y;\n"
+				"\telse if (((gl_VertexIndex / 2) % 4 == 2))\n"
+				"\t\tval = vecVal.z;\n"
+				"\telse if (((gl_VertexIndex / 2) % 4 == 3))\n"
+				"\t\tval = vecVal.w;\n"
+				"\tif ((gl_VertexIndex % 2) == 0)\n"
+				"\t\tval = val & 0xFFFFu;\n"
+				"\telse\n"
+				"\t\tval = val >> 16u;\n"
+				"\thighp vec2 pos = vec2(val & 0xFFu, val >> 8u) / vec2(255.0);\n"
+				"\tgl_Position = vec4(1.998 * pos - vec2(0.999), 0.0, 1.0);\n"
+				"}\n";
+
+			sources.glslSources.add("storage-buffer.vert")
+				<< glu::VertexSource(vertexShader);
+		}
+
 		if (config.usage & USAGE_UNIFORM_TEXEL_BUFFER)
 		{
 			// Vertex uniform texel buffer rendering
@@ -7337,7 +7558,8 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 		USAGE_VERTEX_BUFFER,
 		USAGE_INDEX_BUFFER,
 		USAGE_UNIFORM_BUFFER,
-		USAGE_UNIFORM_TEXEL_BUFFER
+		USAGE_UNIFORM_TEXEL_BUFFER,
+		USAGE_STORAGE_BUFFER,
 	};
 	const Usage						readUsages[]		=
 	{
@@ -7346,7 +7568,8 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 		USAGE_VERTEX_BUFFER,
 		USAGE_INDEX_BUFFER,
 		USAGE_UNIFORM_BUFFER,
-		USAGE_UNIFORM_TEXEL_BUFFER
+		USAGE_UNIFORM_TEXEL_BUFFER,
+		USAGE_STORAGE_BUFFER,
 	};
 
 	const Usage						writeUsages[]	=
