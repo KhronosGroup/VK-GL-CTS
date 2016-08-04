@@ -1255,11 +1255,13 @@ void unquantizeWeights (deUint32 dst[64], const ISEDecodedResult* weightGrid, co
 
 }
 
-void interpolateWeights (TexelWeightPair* dst, const deUint32* unquantizedWeights, int blockWidth, int blockHeight, const ASTCBlockMode& blockMode)
+void interpolateWeights (TexelWeightPair* dst, const deUint32 (&unquantizedWeights) [64], int blockWidth, int blockHeight, const ASTCBlockMode& blockMode)
 {
 	const int		numWeightsPerTexel	= blockMode.isDualPlane ? 2 : 1;
 	const deUint32	scaleX				= (1024 + blockWidth/2) / (blockWidth-1);
 	const deUint32	scaleY				= (1024 + blockHeight/2) / (blockHeight-1);
+
+	DE_ASSERT(blockMode.weightGridWidth*blockMode.weightGridHeight*numWeightsPerTexel <= DE_LENGTH_OF_ARRAY(unquantizedWeights));
 
 	for (int texelY = 0; texelY < blockHeight; texelY++)
 	{
@@ -1271,18 +1273,30 @@ void interpolateWeights (TexelWeightPair* dst, const deUint32* unquantizedWeight
 			const deUint32 jY	= gY >> 4;
 			const deUint32 fX	= gX & 0xf;
 			const deUint32 fY	= gY & 0xf;
+
 			const deUint32 w11	= (fX*fY + 8) >> 4;
 			const deUint32 w10	= fY - w11;
 			const deUint32 w01	= fX - w11;
 			const deUint32 w00	= 16 - fX - fY + w11;
-			const deUint32 v0	= jY*blockMode.weightGridWidth + jX;
+
+			const deUint32 i00	= jY*blockMode.weightGridWidth + jX;
+			const deUint32 i01	= i00 + 1;
+			const deUint32 i10	= i00 + blockMode.weightGridWidth;
+			const deUint32 i11	= i00 + blockMode.weightGridWidth + 1;
+
+			// These addresses can be out of bounds, but respective weights will be 0 then.
+			DE_ASSERT(deInBounds32(i00, 0, blockMode.weightGridWidth*blockMode.weightGridHeight) || w00 == 0);
+			DE_ASSERT(deInBounds32(i01, 0, blockMode.weightGridWidth*blockMode.weightGridHeight) || w01 == 0);
+			DE_ASSERT(deInBounds32(i10, 0, blockMode.weightGridWidth*blockMode.weightGridHeight) || w10 == 0);
+			DE_ASSERT(deInBounds32(i11, 0, blockMode.weightGridWidth*blockMode.weightGridHeight) || w11 == 0);
 
 			for (int texelWeightNdx = 0; texelWeightNdx < numWeightsPerTexel; texelWeightNdx++)
 			{
-				const deUint32 p00	= unquantizedWeights[(v0)									* numWeightsPerTexel + texelWeightNdx];
-				const deUint32 p01	= unquantizedWeights[(v0 + 1)								* numWeightsPerTexel + texelWeightNdx];
-				const deUint32 p10	= unquantizedWeights[(v0 + blockMode.weightGridWidth)		* numWeightsPerTexel + texelWeightNdx];
-				const deUint32 p11	= unquantizedWeights[(v0 + blockMode.weightGridWidth + 1)	* numWeightsPerTexel + texelWeightNdx];
+				// & 0x3f clamps address to bounds of unquantizedWeights
+				const deUint32 p00	= unquantizedWeights[(i00 * numWeightsPerTexel + texelWeightNdx) & 0x3f];
+				const deUint32 p01	= unquantizedWeights[(i01 * numWeightsPerTexel + texelWeightNdx) & 0x3f];
+				const deUint32 p10	= unquantizedWeights[(i10 * numWeightsPerTexel + texelWeightNdx) & 0x3f];
+				const deUint32 p11	= unquantizedWeights[(i11 * numWeightsPerTexel + texelWeightNdx) & 0x3f];
 
 				dst[texelY*blockWidth + texelX].w[texelWeightNdx] = (p00*w00 + p01*w01 + p10*w10 + p11*w11 + 8) >> 4;
 			}
@@ -1302,7 +1316,7 @@ void computeTexelWeights (TexelWeightPair* dst, const Block128& blockData, int b
 	{
 		deUint32 unquantizedWeights[64];
 		unquantizeWeights(&unquantizedWeights[0], &weightGrid[0], blockMode);
-		interpolateWeights(dst, &unquantizedWeights[0], blockWidth, blockHeight, blockMode);
+		interpolateWeights(dst, unquantizedWeights, blockWidth, blockHeight, blockMode);
 	}
 }
 
