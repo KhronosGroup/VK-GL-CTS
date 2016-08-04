@@ -773,6 +773,7 @@ void ShaderRenderCaseInstance::setup (void)
 	m_vertexAttributeDescription.clear();
 	m_vertexBuffers.clear();
 	m_vertexBufferAllocs.clear();
+	m_pushConstantRanges.clear();
 }
 
 void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, size_t size, const void* dataPtr)
@@ -2081,6 +2082,19 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 	createSamplerUniform(bindingLocation, textureType, textureBinding.getParameters().initialization, texFormat, texSize, textureData, refSampler, mipLevels, arrayLayers, textureParams);
 }
 
+void ShaderRenderCaseInstance::setPushConstantRanges (const deUint32 rangeCount, const vk::VkPushConstantRange* const pcRanges)
+{
+	m_pushConstantRanges.clear();
+	for (deUint32 i = 0; i < rangeCount; ++i)
+	{
+		m_pushConstantRanges.push_back(pcRanges[i]);
+	}
+}
+
+void ShaderRenderCaseInstance::updatePushConstants (vk::VkCommandBuffer, vk::VkPipelineLayout)
+{
+}
+
 void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocation,
 													 TextureBinding::Type			textureType,
 													 TextureBinding::Init			textureInit,
@@ -2300,6 +2314,15 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 									   const deUint16*		indices,
 									   const tcu::Vec4&		constCoords)
 {
+	render(numVertices, numTriangles * 3, indices, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, constCoords);
+}
+
+void ShaderRenderCaseInstance::render (deUint32				numVertices,
+									   deUint32				numIndices,
+									   const deUint16*		indices,
+									   VkPrimitiveTopology	topology,
+									   const tcu::Vec4&		constCoords)
+{
 	const VkDevice										vkDevice					= getDevice();
 	const DeviceInterface&								vk							= getDeviceInterface();
 	const VkQueue										queue						= getUniversalQueue();
@@ -2317,8 +2340,8 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 	vk::Move<vk::VkPipeline>							graphicsPipeline;
 	vk::Move<vk::VkShaderModule>						vertexShaderModule;
 	vk::Move<vk::VkShaderModule>						fragmentShaderModule;
-	vk::Move<vk::VkBuffer>								indiceBuffer;
-	de::MovePtr<vk::Allocation>							indiceBufferAlloc;
+	vk::Move<vk::VkBuffer>								indexBuffer;
+	de::MovePtr<vk::Allocation>							indexBufferAlloc;
 	vk::Move<vk::VkDescriptorSetLayout>					descriptorSetLayout;
 	vk::Move<vk::VkDescriptorPool>						descriptorPool;
 	vk::Move<vk::VkDescriptorSet>						descriptorSet;
@@ -2612,6 +2635,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 	// Create pipeline layout
 	{
+		const VkPushConstantRange* const				pcRanges					= m_pushConstantRanges.empty() ? DE_NULL : &m_pushConstantRanges[0];
 		const VkPipelineLayoutCreateInfo				pipelineLayoutParams		=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
@@ -2619,8 +2643,8 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			(VkPipelineLayoutCreateFlags)0,
 			1u,													// deUint32						descriptorSetCount;
 			&*descriptorSetLayout,								// const VkDescriptorSetLayout*	pSetLayouts;
-			0u,													// deUint32						pushConstantRangeCount;
-			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
+			deUint32(m_pushConstantRanges.size()),				// deUint32						pushConstantRangeCount;
+			pcRanges											// const VkPushConstantRange*	pPushConstantRanges;
 		};
 
 		pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -2679,7 +2703,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,														// const void*			pNext;
 			(VkPipelineInputAssemblyStateCreateFlags)0,
-			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology	topology;
+			topology,														// VkPrimitiveTopology	topology;
 			false															// VkBool32				primitiveRestartEnable;
 		};
 
@@ -2800,28 +2824,29 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 	}
 
 	// Create vertex indices buffer
+	if (numIndices != 0)
 	{
-		const VkDeviceSize								indiceBufferSize			= numTriangles * 3 * sizeof(deUint16);
-		const VkBufferCreateInfo						indiceBufferParams			=
+		const VkDeviceSize								indexBufferSize			= numIndices * sizeof(deUint16);
+		const VkBufferCreateInfo						indexBufferParams		=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
 			0u,											// VkBufferCreateFlags	flags;
-			indiceBufferSize,							// VkDeviceSize			size;
+			indexBufferSize,							// VkDeviceSize			size;
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
 			1u,											// deUint32				queueFamilyCount;
 			&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
 		};
 
-		indiceBuffer		= createBuffer(vk, vkDevice, &indiceBufferParams);
-		indiceBufferAlloc	= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *indiceBuffer), MemoryRequirement::HostVisible);
+		indexBuffer			= createBuffer(vk, vkDevice, &indexBufferParams);
+		indexBufferAlloc	= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *indexBuffer), MemoryRequirement::HostVisible);
 
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *indiceBuffer, indiceBufferAlloc->getMemory(), indiceBufferAlloc->getOffset()));
+		VK_CHECK(vk.bindBufferMemory(vkDevice, *indexBuffer, indexBufferAlloc->getMemory(), indexBufferAlloc->getOffset()));
 
 		// Load vertice indices into buffer
-		deMemcpy(indiceBufferAlloc->getHostPtr(), indices, (size_t)indiceBufferSize);
-		flushMappedMemoryRange(vk, vkDevice, indiceBufferAlloc->getMemory(), indiceBufferAlloc->getOffset(), indiceBufferSize);
+		deMemcpy(indexBufferAlloc->getHostPtr(), indices, (size_t)indexBufferSize);
+		flushMappedMemoryRange(vk, vkDevice, indexBufferAlloc->getMemory(), indexBufferAlloc->getOffset(), indexBufferSize);
 	}
 
 	// Create command pool
@@ -2926,11 +2951,10 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		}
 
 		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
+		updatePushConstants(*cmdBuffer, *pipelineLayout);
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
 		if (!m_uniformInfos.empty())
 			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
-		vk.cmdBindIndexBuffer(*cmdBuffer, *indiceBuffer, 0, VK_INDEX_TYPE_UINT16);
 
 		const deUint32 numberOfVertexAttributes = (deUint32)m_vertexBuffers.size();
 		const std::vector<VkDeviceSize> offsets(numberOfVertexAttributes, 0);
@@ -2942,7 +2966,13 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		}
 
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0, numberOfVertexAttributes, &buffers[0], &offsets[0]);
-		vk.cmdDrawIndexed(*cmdBuffer, numTriangles * 3, 1, 0, 0, 0);
+		if (numIndices != 0)
+		{
+			vk.cmdBindIndexBuffer(*cmdBuffer, *indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+			vk.cmdDrawIndexed(*cmdBuffer, numIndices, 1, 0, 0, 0);
+		}
+		else
+			vk.cmdDraw(*cmdBuffer, numVertices,  1, 0, 1);
 
 		vk.cmdEndRenderPass(*cmdBuffer);
 		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
