@@ -113,7 +113,7 @@ AstcCase::IterateResult AstcCase::iterate (void)
 		generatedData.clear();
 		astc::generateBlockCaseTestData(generatedData, m_format, blockTestType);
 
-		// testDecompress(m_format, getNumBlocksFromBytes(generatedData.size()), &generatedData[0]);
+		testDecompress(m_format, getNumBlocksFromBytes(generatedData.size()), &generatedData[0]);
 
 		// All but random case should generate only valid blocks
 		if (blockTestType != astc::BLOCK_TEST_TYPE_RANDOM)
