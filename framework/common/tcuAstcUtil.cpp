@@ -2923,6 +2923,10 @@ bool isValidBlock (const deUint8* data, CompressedTexFormat format, TexDecompres
 	const tcu::IVec3		blockPixelSize	= getBlockPixelSize(format);
 	const bool				isSRGB			= isAstcSRGBFormat(format);
 	const bool				isLDR			= isSRGB || mode == TexDecompressionParams::ASTCMODE_LDR;
+
+	// sRGB is not supported in HDR mode
+	DE_ASSERT(!(mode == TexDecompressionParams::ASTCMODE_HDR && isSRGB));
+
 	union
 	{
 		deUint8		sRGB[MAX_BLOCK_WIDTH*MAX_BLOCK_HEIGHT*4];
@@ -2947,6 +2951,9 @@ void decompress (const PixelBufferAccess& dst, const deUint8* data, CompressedTe
 			  dst.getDepth()	== blockPixelSize.z());
 	DE_ASSERT(mode == TexDecompressionParams::ASTCMODE_LDR || mode == TexDecompressionParams::ASTCMODE_HDR);
 #endif
+
+	// sRGB is not supported in HDR mode
+	DE_ASSERT(!(mode == TexDecompressionParams::ASTCMODE_HDR && isSRGBFormat));
 
 	decompress(dst, data, isSRGBFormat, isSRGBFormat || mode == TexDecompressionParams::ASTCMODE_LDR);
 }
