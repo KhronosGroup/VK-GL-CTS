@@ -72,6 +72,9 @@ protected:
 	const deUint32							m_queueFamilyIndex;
 	Allocator&								m_allocator;
 
+	// \note All VkCommandBuffers are allocated from m_commandPool so there is no need
+	//       to free them separately as the auto-generated dtor will do that through
+	//       destroying the pool.
 	Move<VkCommandPool>						m_commandPool;
 	VkCommandBuffer							m_primaryCommandBuffers[NumBuffers];
 };
