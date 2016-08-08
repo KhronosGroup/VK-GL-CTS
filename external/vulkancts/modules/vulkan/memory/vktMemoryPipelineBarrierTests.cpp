@@ -153,7 +153,7 @@ enum Usage
 	USAGE_INDIRECT_BUFFER = (0x1u<<10),
 
 	// Texture usage flags
-	USAGE_IMAGE_SAMPLED = (0x1u<<11),
+	USAGE_SAMPLED_IMAGE = (0x1u<<11),
 	USAGE_STORAGE_IMAGE = (0x1u<<12),
 	USAGE_COLOR_ATTACHMENT = (0x1u<<13),
 	USAGE_INPUT_ATTACHMENT = (0x1u<<14),
@@ -291,7 +291,7 @@ string usageToName (Usage usage)
 		{ USAGE_UNIFORM_TEXEL_BUFFER,		"uniform_texel_buffer" },
 		{ USAGE_STORAGE_TEXEL_BUFFER,		"storage_texel_buffer" },
 		{ USAGE_INDIRECT_BUFFER,			"indirect_buffer" },
-		{ USAGE_IMAGE_SAMPLED,				"sampled_image" },
+		{ USAGE_SAMPLED_IMAGE,				"image_sampled" },
 		{ USAGE_STORAGE_IMAGE,				"storage_image" },
 		{ USAGE_COLOR_ATTACHMENT,			"color_attachment" },
 		{ USAGE_INPUT_ATTACHMENT,			"input_attachment" },
@@ -361,7 +361,7 @@ vk::VkImageUsageFlags usageToImageUsageFlags (Usage usage)
 	if (usage & USAGE_TRANSFER_DST)
 		flags |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-	if (usage & USAGE_IMAGE_SAMPLED)
+	if (usage & USAGE_SAMPLED_IMAGE)
 		flags |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
 
 	if (usage & USAGE_STORAGE_IMAGE)
@@ -400,7 +400,7 @@ vk::VkPipelineStageFlags usageToStageFlags (Usage usage)
 			| USAGE_STORAGE_BUFFER
 			| USAGE_UNIFORM_TEXEL_BUFFER
 			| USAGE_STORAGE_TEXEL_BUFFER
-			| USAGE_IMAGE_SAMPLED
+			| USAGE_SAMPLED_IMAGE
 			| USAGE_STORAGE_IMAGE))
 	{
 		flags |= (vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
@@ -451,9 +451,11 @@ vk::VkAccessFlags usageToAccessFlags (Usage usage)
 	if (usage & (USAGE_UNIFORM_BUFFER | USAGE_UNIFORM_TEXEL_BUFFER))
 		flags |= vk::VK_ACCESS_UNIFORM_READ_BIT;
 
+	if (usage & USAGE_SAMPLED_IMAGE)
+		flags |= vk::VK_ACCESS_SHADER_READ_BIT;
+
 	if (usage & (USAGE_STORAGE_BUFFER
 				| USAGE_STORAGE_TEXEL_BUFFER
-				| USAGE_IMAGE_SAMPLED
 				| USAGE_STORAGE_IMAGE))
 		flags |= vk::VK_ACCESS_SHADER_READ_BIT | vk::VK_ACCESS_SHADER_WRITE_BIT;
 
@@ -4631,7 +4633,7 @@ void SubmitRenderPass::verify (VerifyContext& context, size_t commandIndex)
 				const ConstPixelBufferAccess	resAccess	(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_targetWidth, m_targetHeight, 1, data);
 				const ConstPixelBufferAccess&	refAccess	(verifyContext.getReferenceTarget().getAccess());
 
-				if (!tcu::intThresholdCompare(context.getLog(), (de::toString(commandIndex) + ":" + getName()).c_str(), (de::toString(commandIndex) + ":" + getName()).c_str(), refAccess, resAccess, UVec4(0), tcu::COMPARE_LOG_EVERYTHING))
+				if (!tcu::intThresholdCompare(context.getLog(), (de::toString(commandIndex) + ":" + getName()).c_str(), (de::toString(commandIndex) + ":" + getName()).c_str(), refAccess, resAccess, UVec4(0), tcu::COMPARE_LOG_ON_ERROR))
 					resultCollector.fail(de::toString(commandIndex) + ":" + getName() + " Image comparison failed");
 			}
 
@@ -5164,7 +5166,7 @@ void RenderVertexUniformBuffer::submit (SubmitContext& context)
 	{
 		const size_t	size	= (size_t)(m_bufferSize < (descriptorSetNdx + 1) * (vk::VkDeviceSize)MAX_UNIFORM_BUFFER_SIZE
 								? m_bufferSize - descriptorSetNdx * (vk::VkDeviceSize)MAX_UNIFORM_BUFFER_SIZE
-								: MAX_UNIFORM_BUFFER_SIZE);
+								: (size_t)MAX_UNIFORM_BUFFER_SIZE);
 		const deUint32	count	= (deUint32)(size / 2);
 
 		vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u, 1u, &m_descriptorSets[descriptorSetNdx], 0u, DE_NULL);
@@ -5179,7 +5181,7 @@ void RenderVertexUniformBuffer::verify (VerifyRenderPassContext& context, size_t
 		const size_t	offset	= descriptorSetNdx * MAX_UNIFORM_BUFFER_SIZE;
 		const size_t	size	= (size_t)(m_bufferSize < (descriptorSetNdx + 1) * (vk::VkDeviceSize)MAX_UNIFORM_BUFFER_SIZE
 								? m_bufferSize - descriptorSetNdx * (vk::VkDeviceSize)MAX_UNIFORM_BUFFER_SIZE
-								: MAX_UNIFORM_BUFFER_SIZE);
+								: (size_t)MAX_UNIFORM_BUFFER_SIZE);
 		const size_t	count	= size / 2;
 
 		for (size_t pos = 0; pos < count; pos++)
@@ -5912,6 +5914,203 @@ void RenderVertexStorageImage::verify (VerifyRenderPassContext& context, size_t)
 	}
 }
 
+class RenderVertexSampledImage : public RenderPassCommand
+{
+public:
+				RenderVertexSampledImage	(void) {}
+				~RenderVertexSampledImage	(void);
+
+	const char*	getName							(void) const { return "RenderVertexSampledImage"; }
+	void		logPrepare						(TestLog&, size_t) const;
+	void		logSubmit						(TestLog&, size_t) const;
+	void		prepare							(PrepareRenderPassContext&);
+	void		submit							(SubmitContext& context);
+	void		verify							(VerifyRenderPassContext&, size_t);
+
+private:
+	PipelineResources				m_resources;
+	vk::Move<vk::VkDescriptorPool>	m_descriptorPool;
+	vk::Move<vk::VkDescriptorSet>	m_descriptorSet;
+	vk::Move<vk::VkImageView>		m_imageView;
+	vk::Move<vk::VkSampler>			m_sampler;
+};
+
+RenderVertexSampledImage::~RenderVertexSampledImage (void)
+{
+}
+
+void RenderVertexSampledImage::logPrepare (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Create pipeline for render sampled image." << TestLog::EndMessage;
+}
+
+void RenderVertexSampledImage::logSubmit (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Render using sampled image." << TestLog::EndMessage;
+}
+
+void RenderVertexSampledImage::prepare (PrepareRenderPassContext& context)
+{
+	const vk::DeviceInterface&					vkd						= context.getContext().getDeviceInterface();
+	const vk::VkDevice							device					= context.getContext().getDevice();
+	const vk::VkRenderPass						renderPass				= context.getRenderPass();
+	const deUint32								subpass					= 0;
+	const vk::Unique<vk::VkShaderModule>		vertexShaderModule		(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("sampled-image.vert"), 0));
+	const vk::Unique<vk::VkShaderModule>		fragmentShaderModule	(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("render-white.frag"), 0));
+	vector<vk::VkDescriptorSetLayoutBinding>	bindings;
+
+	{
+		const vk::VkDescriptorSetLayoutBinding binding =
+		{
+			0u,
+			vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			1,
+			vk::VK_SHADER_STAGE_VERTEX_BIT,
+			DE_NULL
+		};
+
+		bindings.push_back(binding);
+	}
+
+	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, m_resources);
+
+	{
+		const vk::VkDescriptorPoolSize			poolSizes		=
+		{
+			vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			1
+		};
+		const vk::VkDescriptorPoolCreateInfo	createInfo		=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			DE_NULL,
+			vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+
+			1u,
+			1u,
+			&poolSizes,
+		};
+
+		m_descriptorPool = vk::createDescriptorPool(vkd, device, &createInfo);
+	}
+
+	{
+		const vk::VkDescriptorSetLayout			layout			= *m_resources.descriptorSetLayout;
+		const vk::VkDescriptorSetAllocateInfo	allocateInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+
+			*m_descriptorPool,
+			1,
+			&layout
+		};
+
+		m_descriptorSet = vk::allocateDescriptorSet(vkd, device, &allocateInfo);
+
+		{
+			const vk::VkImageViewCreateInfo createInfo =
+			{
+				vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+				DE_NULL,
+				0u,
+
+				context.getImage(),
+				vk::VK_IMAGE_VIEW_TYPE_2D,
+				vk::VK_FORMAT_R8G8B8A8_UNORM,
+				vk::makeComponentMappingRGBA(),
+				{
+					vk::VK_IMAGE_ASPECT_COLOR_BIT,
+					0u,
+					1u,
+					0u,
+					1u
+				}
+			};
+
+			m_imageView = vk::createImageView(vkd, device, &createInfo);
+		}
+
+		{
+			const vk::VkSamplerCreateInfo createInfo =
+			{
+				vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+				DE_NULL,
+				0u,
+
+				vk::VK_FILTER_NEAREST,
+				vk::VK_FILTER_NEAREST,
+
+				vk::VK_SAMPLER_MIPMAP_MODE_LINEAR,
+				vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+				vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+				vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+				0.0f,
+				VK_FALSE,
+				1.0f,
+				VK_FALSE,
+				vk::VK_COMPARE_OP_ALWAYS,
+				0.0f,
+				0.0f,
+				vk::VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+				VK_FALSE
+			};
+
+			m_sampler = vk::createSampler(vkd, device, &createInfo);
+		}
+
+		{
+			const vk::VkDescriptorImageInfo			imageInfo	=
+			{
+				*m_sampler,
+				*m_imageView,
+				vk::VK_IMAGE_LAYOUT_GENERAL
+			};
+			const vk::VkWriteDescriptorSet			write		=
+			{
+				vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				DE_NULL,
+				*m_descriptorSet,
+				0u,
+				0u,
+				1u,
+				vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				&imageInfo,
+				DE_NULL,
+				DE_NULL,
+			};
+
+			vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+		}
+	}
+}
+
+void RenderVertexSampledImage::submit (SubmitContext& context)
+{
+	const vk::DeviceInterface&	vkd				= context.getContext().getDeviceInterface();
+	const vk::VkCommandBuffer	commandBuffer	= context.getCommandBuffer();
+
+	vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
+
+	vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u, 1u, &(*m_descriptorSet), 0u, DE_NULL);
+	vkd.cmdDraw(commandBuffer, context.getImageWidth() * context.getImageHeight() * 2, 1, 0, 0);
+}
+
+void RenderVertexSampledImage::verify (VerifyRenderPassContext& context, size_t)
+{
+	for (int pos = 0; pos < (int)(context.getReferenceImage().getWidth() * context.getReferenceImage().getHeight() * 2); pos++)
+	{
+		const tcu::IVec3		size	= context.getReferenceImage().getAccess().getSize();
+		const tcu::UVec4		pixel	= context.getReferenceImage().getAccess().getPixelUint((pos / 2) / size.x(), (pos / 2) % size.x());
+
+		if (pos % 2 == 0)
+			context.getReferenceTarget().getAccess().setPixel(Vec4(1.0f, 1.0f, 1.0f, 1.0f), pixel.x(), pixel.y());
+		else
+			context.getReferenceTarget().getAccess().setPixel(Vec4(1.0f, 1.0f, 1.0f, 1.0f), pixel.z(), pixel.w());
+	}
+}
+
 enum Op
 {
 	OP_MAP,
@@ -5979,7 +6178,8 @@ enum Op
 	OP_RENDER_VERTEX_STORAGE_BUFFER,
 	OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER,
 
-	OP_RENDER_VERTEX_STORAGE_IMAGE
+	OP_RENDER_VERTEX_STORAGE_IMAGE,
+	OP_RENDER_VERTEX_SAMPLED_IMAGE
 };
 
 enum Stage
@@ -6479,7 +6679,7 @@ bool layoutSupportedByUsage (Usage usage, vk::VkImageLayout layout)
 
 		case vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
 			// \todo [2016-03-09 mika] Should include input attachment
-			return (usage & USAGE_IMAGE_SAMPLED) != 0;
+			return (usage & USAGE_SAMPLED_IMAGE) != 0;
 
 		case vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
 			return (usage & USAGE_TRANSFER_SRC) != 0;
@@ -6792,9 +6992,13 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))))
 			|| (state.imageDefined
 				&& state.hasBoundImageMemory
-				&& ((usage & USAGE_STORAGE_IMAGE)
-					&& state.imageLayout == vk::VK_IMAGE_LAYOUT_GENERAL
-					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))))
+				&& (((usage & USAGE_STORAGE_IMAGE)
+						&& state.imageLayout == vk::VK_IMAGE_LAYOUT_GENERAL
+						&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
+					|| ((usage & USAGE_SAMPLED_IMAGE)
+						&& (state.imageLayout == vk::VK_IMAGE_LAYOUT_GENERAL
+							|| state.imageLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+						&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT)))))
 		{
 			ops.push_back(OP_RENDERPASS_BEGIN);
 		}
@@ -6861,6 +7065,16 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 			&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
 		{
 			ops.push_back(OP_RENDER_VERTEX_STORAGE_IMAGE);
+		}
+
+		if ((usage & USAGE_SAMPLED_IMAGE) != 0
+			&& state.imageDefined
+			&& state.hasBoundImageMemory
+			&& (state.imageLayout == vk::VK_IMAGE_LAYOUT_GENERAL
+				|| state.imageLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+			&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
+		{
+			ops.push_back(OP_RENDER_VERTEX_SAMPLED_IMAGE);
 		}
 
 		if (!state.renderPassIsEmpty)
@@ -7202,6 +7416,7 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 		}
 
 		case OP_RENDER_VERTEX_STORAGE_IMAGE:
+		case OP_RENDER_VERTEX_SAMPLED_IMAGE:
 		{
 			DE_ASSERT(state.stage == STAGE_RENDER_PASS);
 
@@ -7386,6 +7601,7 @@ de::MovePtr<RenderPassCommand> createRenderPassCommand (de::Random&,
 		case OP_RENDER_VERTEX_STORAGE_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderVertexStorageBuffer());
 		case OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderVertexStorageTexelBuffer());
 		case OP_RENDER_VERTEX_STORAGE_IMAGE:		return de::MovePtr<RenderPassCommand>(new RenderVertexStorageImage());
+		case OP_RENDER_VERTEX_SAMPLED_IMAGE:		return de::MovePtr<RenderPassCommand>(new RenderVertexSampledImage());
 
 		default:
 			DE_FATAL("Unknown op");
@@ -7706,6 +7922,7 @@ void testCommand (TestLog&											log,
 		throw;
 	}
 }
+
 class MemoryTestInstance : public TestInstance
 {
 public:
@@ -7776,6 +7993,7 @@ tcu::TestStatus MemoryTestInstance::iterate (void)
 
 		queues.push_back(queueFamilyIndex);
 
+		// \todo [2016-08-04] Check that buffers / images are supported
 		if (m_config.usage & (USAGE_HOST_READ|USAGE_HOST_WRITE)
 			&& !(memoryProperties.memoryTypes[m_memoryTypeNdx].propertyFlags & vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
 		{
@@ -8001,6 +8219,32 @@ struct AddPrograms
 				<< glu::VertexSource(vertexShader);
 		}
 
+		if (config.usage & USAGE_SAMPLED_IMAGE)
+		{
+			// Vertex storage image
+			const char* const vertexShader =
+				"#version 450\n"
+				"highp float;\n"
+				"layout(set=0, binding=0) uniform sampler2D u_sampler;\n"
+				"out gl_PerVertex {\n"
+				"\tvec4 gl_Position;\n"
+				"\tfloat gl_PointSize;\n"
+				"};\n"
+				"void main (void) {\n"
+				"\tgl_PointSize = 1.0;\n"
+				"\thighp vec4 val = texelFetch(u_sampler, ivec2((gl_VertexIndex / 2) / textureSize(u_sampler, 0).x, (gl_VertexIndex / 2) % textureSize(u_sampler, 0).x), 0);\n"
+				"\thighp vec2 pos;\n"
+				"\tif (gl_VertexIndex % 2 == 0)\n"
+				"\t\tpos = val.xy;\n"
+				"\telse\n"
+				"\t\tpos = val.zw;\n"
+				"\tgl_Position = vec4(1.998 * pos - vec2(0.999), 0.0, 1.0);\n"
+				"}\n";
+
+			sources.glslSources.add("sampled-image.vert")
+				<< glu::VertexSource(vertexShader);
+		}
+
 		{
 			const char* const fragmentShader =
 				"#version 310 es\n"
@@ -8039,7 +8283,8 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 		USAGE_UNIFORM_TEXEL_BUFFER,
 		USAGE_STORAGE_BUFFER,
 		USAGE_STORAGE_TEXEL_BUFFER,
-		USAGE_STORAGE_IMAGE
+		USAGE_STORAGE_IMAGE,
+		USAGE_SAMPLED_IMAGE
 	};
 	const Usage						readUsages[]		=
 	{
@@ -8051,7 +8296,8 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 		USAGE_UNIFORM_TEXEL_BUFFER,
 		USAGE_STORAGE_BUFFER,
 		USAGE_STORAGE_TEXEL_BUFFER,
-		USAGE_STORAGE_IMAGE
+		USAGE_STORAGE_IMAGE,
+		USAGE_SAMPLED_IMAGE
 	};
 
 	const Usage						writeUsages[]	=
