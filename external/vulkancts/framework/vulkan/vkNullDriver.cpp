@@ -262,7 +262,7 @@ public:
 							// \todo [2016-08-03 pyry] In some cases leaving data unintialized would help valgrind analysis,
 							//						   but currently it mostly hinders it.
 							if (m_memory)
-								deMemset(m_memory, 0xcd, pAllocInfo->allocationSize);
+								deMemset(m_memory, 0xcd, (size_t)pAllocInfo->allocationSize);
 						}
 						~DeviceMemory	(void)
 						{
