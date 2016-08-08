@@ -3947,7 +3947,7 @@ GeometryProgramQueryCase::GeometryProgramQueryCase (Context& context, const char
 
 void GeometryProgramQueryCase::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader") && glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!(m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader") || glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2))))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 }
 
