@@ -1902,7 +1902,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 
 	// Graphics Pipeline Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_getData", "Test pipeline cache with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_get_data", "Test pipeline cache with graphics pipeline."));
 
 		const VkShaderStageFlagBits testParamShaders0[] =
 		{
@@ -1937,7 +1937,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 
 	// Graphics Pipeline Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_incomplete_getData", "Test pipeline cache with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_incomplete_get_data", "Test pipeline cache with graphics pipeline."));
 
 		const VkShaderStageFlagBits testParamShaders0[] =
 		{

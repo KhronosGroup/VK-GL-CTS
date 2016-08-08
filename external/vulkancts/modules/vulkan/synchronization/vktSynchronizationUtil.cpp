@@ -23,6 +23,7 @@
 
 #include "vktSynchronizationUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "deStringUtil.hpp"
 
 namespace vkt
 {
@@ -822,7 +823,7 @@ std::string getResourceName (const ResourceDescription& resource)
 		str << "image_" << resource.size.x()
 						<< (resource.size.y() > 0 ? "x" + de::toString(resource.size.y()) : "")
 						<< (resource.size.z() > 0 ? "x" + de::toString(resource.size.z()) : "")
-			<< "_" << std::string(getFormatName(resource.imageFormat)).substr(10);
+			<< "_" << de::toLower(getFormatName(resource.imageFormat)).substr(10);
 	}
 	else if (isIndirectBuffer(resource.type))
 		str << "indirect_buffer";

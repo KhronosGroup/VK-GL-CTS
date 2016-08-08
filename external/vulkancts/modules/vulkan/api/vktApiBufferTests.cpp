@@ -443,7 +443,7 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 			};
 			std::ostringstream	testName;
 			std::ostringstream	testDescription;
-			testName << "createBuffer_" << combinedBufferUsageFlags << "_" << combinedBufferCreateFlags;
+			testName << "create_buffer_" << combinedBufferUsageFlags << "_" << combinedBufferCreateFlags;
 			testDescription << "vkCreateBuffer test " << combinedBufferUsageFlags << " " << combinedBufferCreateFlags;
 			buffersTests->addChild(new BuffersTestCase(testCtx, testName.str(), testDescription.str(), testParams));
 		}
