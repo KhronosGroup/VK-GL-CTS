@@ -40,7 +40,7 @@ class LaunchControlConfig:
 
 # This is a bit silly, but CMake needs to know the word width prior to
 # parsing the project files, hence cannot use our own defines.
-X86_64_ARGS = ["-DDE_CPU=DE_CPU_X86_64", "-DCMAKE_C_FLAGS=-m64", "-DCMAKE_CXX_FLAGS=-m64"]
+X86_64_ARGS = ["-DDE_CPU=DE_CPU_X86_64", "-DCMAKE_C_FLAGS=-m64 -Werror", "-DCMAKE_CXX_FLAGS=-m64 -Werror"]
 
 BUILD_CONFIGS = {
 	"gcc-x86_64-x11_glx":   LaunchControlConfig(X86_64_ARGS + ["-DDEQP_TARGET=x11_glx"], False),
