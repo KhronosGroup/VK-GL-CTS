@@ -116,9 +116,10 @@ public:
 	vk::VkDevice								getDevice				(void) const { return m_device; }
 	vk::Allocator&								getAllocator			(void) const { return m_allocator; }
 	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection		(void) const { return m_progCollection; }
+	PipelineCacheData&							getPipelineCacheData	(void) const { return m_pipelineCacheData; }
 
-	OperationContext (Context& context);
-	OperationContext (Context& context, const vk::DeviceInterface& vk, const vk::VkDevice device, vk::Allocator& allocator);
+	OperationContext (Context& context, PipelineCacheData& pipelineCacheData);
+	OperationContext (Context& context, PipelineCacheData& pipelineCacheData, const vk::DeviceInterface& vk, const vk::VkDevice device, vk::Allocator& allocator);
 
 private:
 	const vk::InstanceInterface&				m_vki;
@@ -127,6 +128,7 @@ private:
 	const vk::VkDevice							m_device;
 	vk::Allocator&								m_allocator;
 	vk::ProgramCollection<vk::ProgramBinary>&	m_progCollection;
+	PipelineCacheData&							m_pipelineCacheData;
 
 	OperationContext (const OperationContext&);	// "deleted"
 	OperationContext& operator= (const OperationContext&);

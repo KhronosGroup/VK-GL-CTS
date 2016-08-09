@@ -1242,6 +1242,151 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity */));
 }
 
+void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
+										   deUint32								mipLevels,
+										   deUint32								arrayLayers,
+										   VkImage								destImage)
+{
+	const VkDevice					vkDevice				= m_context.getDevice();
+	const DeviceInterface&			vk						= m_context.getDeviceInterface();
+	const VkQueue					queue					= m_context.getUniversalQueue();
+	const deUint32					queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+
+	const bool						isShadowSampler			= refSampler.compare != tcu::Sampler::COMPAREMODE_NONE;
+	const VkImageAspectFlags		aspectMask				= isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+	Move<VkCommandPool>				cmdPool;
+	Move<VkCommandBuffer>			cmdBuffer;
+	Move<VkFence>					fence;
+
+	VkClearValue					clearValue;
+	deMemset(&clearValue, 0, sizeof(clearValue));
+
+
+	// Create command pool and buffer
+	{
+		const VkCommandPoolCreateInfo cmdPoolParams =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCommandPoolCreateFlags	flags;
+			queueFamilyIndex,								// deUint32					queueFamilyIndex;
+		};
+
+		cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
+
+		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			*cmdPool,										// VkCommandPool			commandPool;
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
+			1u,												// deUint32					bufferCount;
+		};
+
+		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
+	}
+
+	// Create fence
+	{
+		const VkFenceCreateInfo fenceParams =
+		{
+			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,		// VkStructureType		sType;
+			DE_NULL,									// const void*			pNext;
+			0u											// VkFenceCreateFlags	flags;
+		};
+
+		fence = createFence(vk, vkDevice, &fenceParams);
+	}
+
+	const VkImageMemoryBarrier preImageBarrier =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
+		DE_NULL,										// const void*				pNext;
+		0u,												// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
+		destImage,										// VkImage					image;
+		{												// VkImageSubresourceRange	subresourceRange;
+			aspectMask,								// VkImageAspect	aspect;
+			0u,										// deUint32			baseMipLevel;
+			mipLevels,								// deUint32			mipLevels;
+			0u,										// deUint32			baseArraySlice;
+			arrayLayers								// deUint32			arraySize;
+		}
+	};
+
+	const VkImageMemoryBarrier postImageBarrier =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
+		DE_NULL,										// const void*				pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_SHADER_READ_BIT,						// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
+		destImage,										// VkImage					image;
+		{												// VkImageSubresourceRange	subresourceRange;
+			aspectMask,								// VkImageAspect	aspect;
+			0u,										// deUint32			baseMipLevel;
+			mipLevels,								// deUint32			mipLevels;
+			0u,										// deUint32			baseArraySlice;
+			arrayLayers								// deUint32			arraySize;
+		}
+	};
+
+	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
+		DE_NULL,										// const void*						pNext;
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags		flags;
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
+	};
+
+
+	const VkImageSubresourceRange clearRange		= 
+	{
+		aspectMask,										// VkImageAspectFlags	aspectMask;
+		0u,												// deUint32				baseMipLevel;
+		mipLevels,										// deUint32				levelCount;
+		0u,												// deUint32				baseArrayLayer;
+		arrayLayers										// deUint32				layerCount;
+	};
+
+	// Copy buffer to image
+	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preImageBarrier);
+	if (aspectMask == VK_IMAGE_ASPECT_COLOR_BIT)
+	{
+		vk.cmdClearColorImage(*cmdBuffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &clearRange);
+	}
+	else
+	{
+		vk.cmdClearDepthStencilImage(*cmdBuffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.depthStencil, 1, &clearRange);
+	}
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
+	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+
+	const VkSubmitInfo submitInfo =
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
+		DE_NULL,						// const void*					pNext;
+		0u,								// deUint32						waitSemaphoreCount;
+		DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
+		DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
+		1u,								// deUint32						commandBufferCount;
+		&cmdBuffer.get(),				// const VkCommandBuffer*		pCommandBuffers;
+		0u,								// deUint32						signalSemaphoreCount;
+		DE_NULL							// const VkSemaphore*			pSignalSemaphores;
+	};
+
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
+	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity */));
+}
+
 // Sparse utility function
 Move<VkSemaphore> makeSemaphore (const DeviceInterface& vk, const VkDevice device)
 {
@@ -1933,11 +2078,12 @@ void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 te
 		TCU_THROW(InternalError, "Invalid texture type");
 	}
 
-	createSamplerUniform(bindingLocation, textureType, texFormat, texSize, textureData, refSampler, mipLevels, arrayLayers, textureParams);
+	createSamplerUniform(bindingLocation, textureType, textureBinding.getParameters().initialization, texFormat, texSize, textureData, refSampler, mipLevels, arrayLayers, textureParams);
 }
 
 void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocation,
 													 TextureBinding::Type			textureType,
+													 TextureBinding::Init			textureInit,
 													 const tcu::TextureFormat&		texFormat,
 													 const tcu::UVec3				texSize,
 													 const TextureData&				textureData,
@@ -1997,15 +2143,34 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 	vkTexture		= createImage(vk, vkDevice, &imageParams);
 	allocation		= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *vkTexture), MemoryRequirement::Any);
 
-	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
+	if (m_imageBackingMode != IMAGE_BACKING_MODE_SPARSE)
 	{
-		uploadSparseImage(texFormat, textureData, refSampler, mipLevels, arrayLayers, *vkTexture, imageParams, texSize);
-	}
-	else
-	{
-		// Upload texture data
 		VK_CHECK(vk.bindImageMemory(vkDevice, *vkTexture, allocation->getMemory(), allocation->getOffset()));
-		uploadImage(texFormat, textureData, refSampler, mipLevels, arrayLayers, *vkTexture);
+	}
+
+	switch (textureInit)
+	{
+		case TextureBinding::INIT_UPLOAD_DATA:
+		{
+			// upload*Image functions use cmdCopyBufferToImage, which is invalid for multisample images
+			DE_ASSERT(textureParams.samples == VK_SAMPLE_COUNT_1_BIT);
+
+			if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
+			{
+				uploadSparseImage(texFormat, textureData, refSampler, mipLevels, arrayLayers, *vkTexture, imageParams, texSize);
+			}
+			else
+			{
+				// Upload texture data
+				uploadImage(texFormat, textureData, refSampler, mipLevels, arrayLayers, *vkTexture);
+			}
+			break;
+		}
+		case TextureBinding::INIT_CLEAR:
+			clearImage(refSampler, mipLevels, arrayLayers, *vkTexture);
+			break;
+		default:
+			DE_FATAL("Impossible");
 	}
 
 	// Create sampler

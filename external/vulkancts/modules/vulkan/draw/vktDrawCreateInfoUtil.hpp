@@ -286,7 +286,7 @@ class PipelineLayoutCreateInfo : public vk::VkPipelineLayoutCreateInfo
 public:
 	PipelineLayoutCreateInfo (deUint32										descriptorSetCount,
 							  const vk::VkDescriptorSetLayout*				pSetLayouts,
-									  deUint32										pushConstantRangeCount	= 0,
+							  deUint32										pushConstantRangeCount	= 0,
 							  const vk::VkPushConstantRange*				pPushConstantRanges		= DE_NULL);
 
 	PipelineLayoutCreateInfo (const std::vector<vk::VkDescriptorSetLayout>&	setLayouts				= std::vector<vk::VkDescriptorSetLayout>(),
@@ -357,7 +357,7 @@ public:
 		MultiSampleState			(vk::VkSampleCountFlagBits				rasterizationSamples		= vk::VK_SAMPLE_COUNT_1_BIT,
 									 vk::VkBool32							sampleShadingEnable			= false,
 									 float									minSampleShading			= 0.0f,
-									 const std::vector<vk::VkSampleMask>&	sampleMask					= std::vector<vk::VkSampleMask>(1, 0xffffffff),
+									 const std::vector<vk::VkSampleMask>&	sampleMask					= std::vector<vk::VkSampleMask>(1, 0xffffffffu),
 									 bool									alphaToCoverageEnable		= false,
 									 bool									alphaToOneEnable			= false);
 
@@ -374,14 +374,17 @@ public:
 		class Attachment : public vk::VkPipelineColorBlendAttachmentState
 		{
 		public:
-			Attachment (vk::VkBool32		blendEnable			= false,
-						vk::VkBlendFactor	srcColorBlendFactor	= vk::VK_BLEND_FACTOR_SRC_COLOR,
-						vk::VkBlendFactor	dstColorBlendFactor	= vk::VK_BLEND_FACTOR_DST_COLOR,
-						vk::VkBlendOp		colorBlendOp		= vk::VK_BLEND_OP_ADD,
-						vk::VkBlendFactor	srcAlphaBlendFactor	= vk::VK_BLEND_FACTOR_SRC_COLOR,
-						vk::VkBlendFactor	dstAlphaBlendFactor	= vk::VK_BLEND_FACTOR_DST_COLOR,
-						vk::VkBlendOp		alphaBlendOp		= vk::VK_BLEND_OP_ADD,
-						deUint8				colorWriteMask		= 0xff);
+			Attachment (vk::VkBool32				blendEnable			= false,
+						vk::VkBlendFactor			srcColorBlendFactor	= vk::VK_BLEND_FACTOR_SRC_COLOR,
+						vk::VkBlendFactor			dstColorBlendFactor	= vk::VK_BLEND_FACTOR_DST_COLOR,
+						vk::VkBlendOp				colorBlendOp		= vk::VK_BLEND_OP_ADD,
+						vk::VkBlendFactor			srcAlphaBlendFactor	= vk::VK_BLEND_FACTOR_SRC_COLOR,
+						vk::VkBlendFactor			dstAlphaBlendFactor	= vk::VK_BLEND_FACTOR_DST_COLOR,
+						vk::VkBlendOp				alphaBlendOp		= vk::VK_BLEND_OP_ADD,
+						vk::VkColorComponentFlags	colorWriteMask		= vk::VK_COLOR_COMPONENT_R_BIT|
+																		  vk::VK_COLOR_COMPONENT_G_BIT|
+																		  vk::VK_COLOR_COMPONENT_B_BIT|
+																		  vk::VK_COLOR_COMPONENT_A_BIT);
 		};
 
 		ColorBlendState (const std::vector<vk::VkPipelineColorBlendAttachmentState>&	attachments,
@@ -413,7 +416,7 @@ public:
 							vk::VkCompareOp compareOp				= vk::VK_COMPARE_OP_ALWAYS,
 							deUint32		compareMask				= 0xffffffffu,
 							deUint32		writeMask				= 0xffffffffu,
-							deUint32		reference				= 0);
+							deUint32		reference				= 0u);
 		};
 
 		DepthStencilState (vk::VkBool32		depthTestEnable			= false,
@@ -423,7 +426,7 @@ public:
 						   vk::VkBool32		stencilTestEnable		= false,
 						   StencilOpState	front					= StencilOpState(),
 						   StencilOpState	back					= StencilOpState(),
-						   float			minDepthBounds			= -1.0f,
+						   float			minDepthBounds			= 0.0f,
 						   float			maxDepthBounds			= 1.0f);
 	};
 
@@ -476,10 +479,8 @@ private:
 	vk::VkPipelineDynamicStateCreateInfo					m_dynamicState;
 
 	std::vector<vk::VkDynamicState>							m_dynamicStates;
-
 	std::vector<vk::VkViewport>								m_viewports;
 	std::vector<vk::VkRect2D>								m_scissors;
-
 	std::vector<vk::VkSampleMask>							m_multisampleStateSampleMask;
 };
 

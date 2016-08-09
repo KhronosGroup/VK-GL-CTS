@@ -32,6 +32,7 @@
 #if defined(DEQP_HAVE_GLSLANG)
 #	include "SPIRV/GlslangToSpv.h"
 #	include "SPIRV/disassemble.h"
+#	include "SPIRV/SPVRemapper.h"
 #	include "SPIRV/doc.h"
 #	include "glslang/Include/InfoSink.h"
 #	include "glslang/Include/ShHandle.h"
@@ -271,11 +272,26 @@ bool compileGlslToSpirV (const glu::ProgramSources& program, std::vector<deUint3
 	TCU_THROW(InternalError, "Can't compile empty program");
 }
 
+void stripSpirVDebugInfo (const size_t numSrcInstrs, const deUint32* srcInstrs, std::vector<deUint32>* dst)
+{
+	spv::spirvbin_t remapper;
+
+	// glslang operates in-place
+	dst->resize(numSrcInstrs);
+	std::copy(srcInstrs, srcInstrs+numSrcInstrs, dst->begin());
+	remapper.remap(*dst, spv::spirvbin_base_t::STRIP);
+}
+
 #else // defined(DEQP_HAVE_GLSLANG)
 
 bool compileGlslToSpirV (const glu::ProgramSources&, std::vector<deUint32>*, glu::ShaderProgramInfo*)
 {
 	TCU_THROW(NotSupportedError, "GLSL to SPIR-V compilation not supported (DEQP_HAVE_GLSLANG not defined)");
+}
+
+void stripSpirVDebugInfo (const size_t, const deUint32*, std::vector<deUint32>*)
+{
+	TCU_THROW(NotSupportedError, "SPIR-V stripping not supported (DEQP_HAVE_GLSLANG not defined)");
 }
 
 #endif // defined(DEQP_HAVE_GLSLANG)
