@@ -676,8 +676,8 @@ bool SampleVerifier::verifySampleFiltered (const Vec4&			result,
 	deInt32			lodStepsMin;
 	deInt32			lodStepsMax;
 
-	deUint8			levels;
-	deUint8			levelLo;
+	int				levels;
+	int				levelLo;
 
 	if (levelHi == m_imParams.levels - 1 || mipmapFilter == VK_SAMPLER_MIPMAP_MODE_NEAREST)
 	{
@@ -688,7 +688,7 @@ bool SampleVerifier::verifySampleFiltered (const Vec4&			result,
 	else
 	{
 		levels = 2;
-		levelLo = (deUint8) 1 + levelHi;
+		levelLo = 1 + levelHi;
 	}
 
 	getWeightStepBounds(unnormalizedCoordHi, weightStepsMin[0], weightStepsMax[0], texelBase[0]);
@@ -732,7 +732,7 @@ bool SampleVerifier::verifySampleFiltered (const Vec4&			result,
 
 			if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
 			{
-				idealSampleLo = getFilteredSample(texelBase[1], roundedWeightsLo, layer, levelLo);
+				idealSampleLo = getFilteredSample(texelBase[1], roundedWeightsLo, layer, (deUint8)levelLo);
 
 				report << "Ideal lo sample: " << idealSampleLo << "\n";
 			}
@@ -746,7 +746,7 @@ bool SampleVerifier::verifySampleFiltered (const Vec4&			result,
 
 			if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
 			{
-				idealSampleLo = fetchTexel(floor(unnormalizedCoordLo).cast<deInt32>(), layer, levelLo, VK_FILTER_NEAREST);
+				idealSampleLo = fetchTexel(floor(unnormalizedCoordLo).cast<deInt32>(), layer, (deUint8)levelLo, VK_FILTER_NEAREST);
 
 				report << "Ideal lo sample: " << idealSampleLo << "\n";
 			}
