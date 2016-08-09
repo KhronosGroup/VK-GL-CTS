@@ -21,8 +21,8 @@
  * \brief Synchronization tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktTestGroupUtil.hpp"
 #include "vktSynchronizationTests.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vktSynchronizationSmokeTests.hpp"
 #include "vktSynchronizationBasicFenceTests.hpp"
 #include "vktSynchronizationBasicSemaphoreTests.hpp"
@@ -30,6 +30,7 @@
 #include "vktSynchronizationOperationSingleQueueTests.hpp"
 #include "vktSynchronizationOperationMultiQueueTests.hpp"
 #include "vktSynchronizationInternallySynchronizedObjectsTests.hpp"
+#include "vktSynchronizationUtil.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -48,11 +49,25 @@ void createBasicTests (tcu::TestCaseGroup* group)
 	group->addChild(createBasicEventTests	 (group->getTestContext()));
 }
 
-void createOperationTests (tcu::TestCaseGroup* group)
+class OperationTests : public tcu::TestCaseGroup
 {
-	group->addChild(createSynchronizedOperationSingleQueueTests(group->getTestContext()));
-	group->addChild(createSynchronizedOperationMultiQueueTests (group->getTestContext()));
-}
+public:
+	OperationTests (tcu::TestContext& testCtx)
+		: tcu::TestCaseGroup(testCtx, "op", "Synchronization of a memory-modifying operation")
+	{
+	}
+
+	void init (void)
+	{
+		addChild(createSynchronizedOperationSingleQueueTests(m_testCtx, m_pipelineCacheData));
+		addChild(createSynchronizedOperationMultiQueueTests (m_testCtx, m_pipelineCacheData));
+	}
+
+private:
+	// synchronization.op tests share pipeline cache data to speed up test
+	// execution.
+	PipelineCacheData	m_pipelineCacheData;
+};
 
 void createChildren (tcu::TestCaseGroup* group)
 {
@@ -60,7 +75,7 @@ void createChildren (tcu::TestCaseGroup* group)
 
 	group->addChild(createSmokeTests(testCtx));
 	group->addChild(createTestGroup	(testCtx, "basic", "Basic synchronization tests", createBasicTests));
-	group->addChild(createTestGroup	(testCtx, "op", "Synchronization of a memory-modifying operation", createOperationTests));
+	group->addChild(new OperationTests(testCtx));
 	group->addChild(createInternallySynchronizedObjects(testCtx));
 }
 
