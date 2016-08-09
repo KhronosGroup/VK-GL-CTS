@@ -81,18 +81,29 @@ public:
 		TYPE_LAST
 	};
 
+	enum Init
+	{
+		INIT_UPLOAD_DATA,
+		INIT_CLEAR,
+
+		INIT_LAST
+	};
+
 	struct Parameters
 	{
 		deUint32					baseMipLevel;
 		vk::VkComponentMapping		componentMapping;
 		vk::VkSampleCountFlagBits	samples;
+		Init						initialization;
 
 		Parameters (deUint32					baseMipLevel_		= 0,
 					vk::VkComponentMapping		componentMapping_	= vk::makeComponentMappingRGBA(),
-					vk::VkSampleCountFlagBits	samples_			= vk::VK_SAMPLE_COUNT_1_BIT)
+					vk::VkSampleCountFlagBits	samples_			= vk::VK_SAMPLE_COUNT_1_BIT, 
+					Init						initialization_		= INIT_UPLOAD_DATA)
 			: baseMipLevel		(baseMipLevel_)
 			, componentMapping	(componentMapping_)
 			, samples			(samples_)
+			, initialization	(initialization_)
 		{
 		}
 	};
@@ -528,6 +539,11 @@ private:
 																					 deUint32						arrayLayers,
 																					 vk::VkImage					destImage);
 
+	void												clearImage					(const tcu::Sampler&			refSampler,
+																					 deUint32						mipLevels,
+																					 deUint32						arrayLayers,
+																					 vk::VkImage					destImage);
+
 	void												checkSparseSupport			(const vk::VkImageType imageType) const;
 
 	void												uploadSparseImage			(const tcu::TextureFormat&		texFormat,
@@ -541,6 +557,7 @@ private:
 
 	void												createSamplerUniform		(deUint32						bindingLocation,
 																					 TextureBinding::Type			textureType,
+																					 TextureBinding::Init			textureInit,
 																					 const tcu::TextureFormat&		texFormat,
 																					 const tcu::UVec3				texSize,
 																					 const TextureData&				textureData,

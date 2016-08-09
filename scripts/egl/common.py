@@ -59,6 +59,7 @@ EXTENSIONS			= [
 	"EGL_EXT_create_context_robustness",
 	"EGL_EXT_platform_base",
 	"EGL_EXT_platform_x11",
+	"EGL_KHR_platform_wayland",
 	"EGL_ANDROID_image_native_buffer",
 	"EGL_EXT_yuv_surface",
 	"EGL_EXT_buffer_age",

@@ -123,12 +123,14 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface&		vki,
 									VkPhysicalDevice				physicalDevice,
 									deUint32						queueIndex,
 									const VkPhysicalDeviceFeatures&	enabledFeatures,
+									const vector<string>&			enabledExtensions,
 									const tcu::CommandLine&			cmdLine)
 {
 	VkDeviceQueueCreateInfo		queueInfo;
 	VkDeviceCreateInfo			deviceInfo;
 	vector<string>				enabledLayers;
 	vector<const char*>			layerPtrs;
+	vector<const char*>			extensionPtrs;
 	const float					queuePriority	= 1.0f;
 
 	deMemset(&queueInfo,	0, sizeof(queueInfo));
@@ -146,6 +148,11 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface&		vki,
 	for (size_t ndx = 0; ndx < enabledLayers.size(); ++ndx)
 		layerPtrs[ndx] = enabledLayers[ndx].c_str();
 
+	extensionPtrs.resize(enabledExtensions.size());
+
+	for (size_t ndx = 0; ndx < enabledExtensions.size(); ++ndx)
+		extensionPtrs[ndx] = enabledExtensions[ndx].c_str();
+
 	queueInfo.sType							= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 	queueInfo.pNext							= DE_NULL;
 	queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
@@ -157,8 +164,8 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface&		vki,
 	deviceInfo.pNext						= DE_NULL;
 	deviceInfo.queueCreateInfoCount			= 1u;
 	deviceInfo.pQueueCreateInfos			= &queueInfo;
-	deviceInfo.enabledExtensionCount		= 0u;
-	deviceInfo.ppEnabledExtensionNames		= DE_NULL;
+	deviceInfo.enabledExtensionCount		= (deUint32)extensionPtrs.size();
+	deviceInfo.ppEnabledExtensionNames		= (extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]);
 	deviceInfo.enabledLayerCount			= (deUint32)layerPtrs.size();
 	deviceInfo.ppEnabledLayerNames			= (layerPtrs.empty() ? DE_NULL : &layerPtrs[0]);
 	deviceInfo.pEnabledFeatures				= &enabledFeatures;
@@ -180,12 +187,14 @@ public:
 	VkDevice							getDevice						(void) const	{ return *m_device;						}
 	const DeviceInterface&				getDeviceInterface				(void) const	{ return m_deviceInterface;				}
 	const VkPhysicalDeviceProperties&	getDeviceProperties				(void) const	{ return m_deviceProperties;			}
+	const vector<string>&				getDeviceExtensions				(void) const	{ return m_deviceExtensions;			}
 
 	deUint32							getUniversalQueueFamilyIndex	(void) const	{ return m_universalQueueFamilyIndex;	}
 	VkQueue								getUniversalQueue				(void) const;
 
 private:
 	static VkPhysicalDeviceFeatures		filterDefaultDeviceFeatures		(const VkPhysicalDeviceFeatures& deviceFeatures);
+	static vector<string>				filterDefaultDeviceExtensions	(const vector<VkExtensionProperties>& deviceExtensions);
 
 	const Unique<VkInstance>			m_instance;
 	const InstanceDriver				m_instanceInterface;
@@ -195,6 +204,7 @@ private:
 	const deUint32						m_universalQueueFamilyIndex;
 	const VkPhysicalDeviceFeatures		m_deviceFeatures;
 	const VkPhysicalDeviceProperties	m_deviceProperties;
+	const vector<string>				m_deviceExtensions;
 
 	const Unique<VkDevice>				m_device;
 	const DeviceDriver					m_deviceInterface;
@@ -207,7 +217,8 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
 	, m_deviceFeatures				(filterDefaultDeviceFeatures(getPhysicalDeviceFeatures(m_instanceInterface, m_physicalDevice)))
 	, m_deviceProperties			(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice))
-	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_deviceFeatures, cmdLine))
+	, m_deviceExtensions			(filterDefaultDeviceExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, DE_NULL)))
+	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_deviceFeatures, m_deviceExtensions, cmdLine))
 	, m_deviceInterface				(m_instanceInterface, *m_device)
 {
 }
@@ -231,6 +242,20 @@ VkPhysicalDeviceFeatures DefaultDevice::filterDefaultDeviceFeatures (const VkPhy
 	enabledDeviceFeatures.robustBufferAccess = false;
 
 	return enabledDeviceFeatures;
+}
+
+vector<string> DefaultDevice::filterDefaultDeviceExtensions (const vector<VkExtensionProperties>& deviceExtensions)
+{
+	vector<string> enabledExtensions;
+
+	// The only extension we enable always (when supported) is
+	// VK_KHR_sampler_mirror_clamp_to_edge that is defined in
+	// the core spec and supported widely.
+	const char* const	mirrorClampToEdgeExt	= "VK_KHR_sampler_mirror_clamp_to_edge";
+	if (vk::isExtensionSupported(deviceExtensions, vk::RequiredExtension(mirrorClampToEdgeExt)))
+		enabledExtensions.push_back(mirrorClampToEdgeExt);
+
+	return enabledExtensions;
 }
 
 // Allocator utilities
@@ -265,6 +290,7 @@ const vk::InstanceInterface&			Context::getInstanceInterface			(void) const { re
 vk::VkPhysicalDevice					Context::getPhysicalDevice				(void) const { return m_device->getPhysicalDevice();			}
 const vk::VkPhysicalDeviceFeatures&		Context::getDeviceFeatures				(void) const { return m_device->getDeviceFeatures();			}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
+const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}
 const vk::DeviceInterface&				Context::getDeviceInterface				(void) const { return m_device->getDeviceInterface();			}
 deUint32								Context::getUniversalQueueFamilyIndex	(void) const { return m_device->getUniversalQueueFamilyIndex();	}

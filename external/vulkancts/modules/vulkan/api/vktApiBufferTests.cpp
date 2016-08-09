@@ -30,6 +30,7 @@
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkPlatform.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt
@@ -57,14 +58,127 @@ class BufferTestInstance : public TestInstance
 public:
 								BufferTestInstance			(Context&				ctx,
 															 BufferCaseParameters	testCase)
-									: TestInstance	(ctx)
-									, m_testCase	(testCase)
+									: TestInstance		(ctx)
+									, m_testCase		(testCase)
+									, m_sparseContext	(createSparseContext())
 								{}
 	virtual tcu::TestStatus		iterate						(void);
 	tcu::TestStatus				bufferCreateAndAllocTest	(VkDeviceSize		size);
 
 private:
 	BufferCaseParameters		m_testCase;
+
+private:
+	// Custom context for sparse cases
+	struct SparseContext
+	{
+		SparseContext (Move<VkDevice>& device, const deUint32 queueFamilyIndex, const InstanceInterface& interface)
+		: m_device				(device)
+		, m_queueFamilyIndex	(queueFamilyIndex)
+		, m_deviceInterface		(interface, *m_device)
+		{}
+
+		Unique<VkDevice>	m_device;
+		const deUint32		m_queueFamilyIndex;
+		DeviceDriver		m_deviceInterface;
+	};
+
+	de::UniquePtr<SparseContext>	m_sparseContext;
+
+	// Wrapper functions around m_context calls to support sparse cases.
+	VkPhysicalDevice				getPhysicalDevice (void) const
+	{
+		// Same in sparse and regular case
+		return m_context.getPhysicalDevice();
+	}
+
+	VkDevice						getDevice (void) const
+	{
+		if (m_sparseContext)
+			return *(m_sparseContext->m_device);
+
+		return m_context.getDevice();
+	}
+
+	const InstanceInterface&		getInstanceInterface (void) const
+	{
+		// Same in sparse and regular case
+		return m_context.getInstanceInterface();
+	}
+
+	const DeviceInterface&			getDeviceInterface (void) const
+	{
+		if (m_sparseContext)
+			return m_sparseContext->m_deviceInterface;
+
+		return m_context.getDeviceInterface();
+	}
+
+	deUint32						getUniversalQueueFamilyIndex (void) const
+	{
+		if (m_sparseContext)
+			return m_sparseContext->m_queueFamilyIndex;
+
+		return m_context.getUniversalQueueFamilyIndex();
+	}
+
+	static deUint32					findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
+	{
+		const std::vector<VkQueueFamilyProperties>	queueProps	= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
+
+		for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
+		{
+			if ((queueProps[queueNdx].queueFlags & requiredCaps) == requiredCaps)
+				return (deUint32)queueNdx;
+		}
+
+		TCU_THROW(NotSupportedError, "No matching queue found");
+	}
+
+	// Create the sparseContext
+	SparseContext*					createSparseContext	(void) const
+	{
+		if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) ||
+			(m_testCase.flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT) ||
+			(m_testCase.flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT))
+		{
+			const InstanceInterface&		vk				= getInstanceInterface();
+			const VkPhysicalDevice			physicalDevice	= getPhysicalDevice();
+			const VkPhysicalDeviceFeatures	deviceFeatures	= getPhysicalDeviceFeatures(vk, physicalDevice);
+
+			const deUint32 queueIndex = findQueueFamilyIndexWithCaps(vk, physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_SPARSE_BINDING_BIT);
+
+			VkDeviceQueueCreateInfo			queueInfo;
+			VkDeviceCreateInfo				deviceInfo;
+			const float						queuePriority	= 1.0f;
+
+			deMemset(&queueInfo,	0, sizeof(queueInfo));
+			deMemset(&deviceInfo,	0, sizeof(deviceInfo));
+
+			queueInfo.sType							= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			queueInfo.pNext							= DE_NULL;
+			queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
+			queueInfo.queueFamilyIndex				= queueIndex;
+			queueInfo.queueCount					= 1u;
+			queueInfo.pQueuePriorities				= &queuePriority;
+
+			deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+			deviceInfo.pNext						= DE_NULL;
+			deviceInfo.queueCreateInfoCount			= 1u;
+			deviceInfo.pQueueCreateInfos			= &queueInfo;
+			deviceInfo.enabledExtensionCount		= 0u;
+			deviceInfo.ppEnabledExtensionNames		= DE_NULL;
+			deviceInfo.enabledLayerCount			= 0u;
+			deviceInfo.ppEnabledLayerNames			= DE_NULL;
+			deviceInfo.pEnabledFeatures				= &deviceFeatures;
+
+			Move<VkDevice>	device = createDevice(vk, physicalDevice, &deviceInfo);
+
+			return new SparseContext(device, queueIndex, vk);
+		}
+
+		return DE_NULL;
+	}
 };
 
 class BuffersTestCase : public TestCase
@@ -90,16 +204,18 @@ private:
 	BufferCaseParameters		m_testCase;
 };
 
- tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest (VkDeviceSize size)
+
+
+tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest (VkDeviceSize size)
 {
-	const VkPhysicalDevice		vkPhysicalDevice	= m_context.getPhysicalDevice();
-	const InstanceInterface&	vkInstance			= m_context.getInstanceInterface();
-	const VkDevice				vkDevice			= m_context.getDevice();
-	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const VkPhysicalDevice		vkPhysicalDevice	= getPhysicalDevice();
+	const InstanceInterface&	vkInstance			= getInstanceInterface();
+	const VkDevice				vkDevice			= getDevice();
+	const DeviceInterface&		vk					= getDeviceInterface();
 	Move<VkBuffer>				testBuffer;
 	VkMemoryRequirements		memReqs;
 	Move<VkDeviceMemory>		memory;
-	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const deUint32				queueFamilyIndex	= getUniversalQueueFamilyIndex();
 	const VkPhysicalDeviceMemoryProperties	memoryProperties = getPhysicalDeviceMemoryProperties(vkInstance, vkPhysicalDevice);
 
 	// Create buffer
@@ -239,7 +355,7 @@ private:
 
 tcu::TestStatus BufferTestInstance::iterate (void)
 {
-	const VkPhysicalDeviceFeatures&	physicalDeviceFeatures	= m_context.getDeviceFeatures();
+	const VkPhysicalDeviceFeatures&	physicalDeviceFeatures	= getPhysicalDeviceFeatures(getInstanceInterface(), getPhysicalDevice());
 
 	if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT ) && !physicalDeviceFeatures.sparseBinding)
 		TCU_THROW(NotSupportedError, "Sparse bindings feature is not supported");
@@ -267,8 +383,8 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 
 	if (m_testCase.usage & (VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT))
 	{
-		const VkPhysicalDevice					vkPhysicalDevice	= m_context.getPhysicalDevice();
-		const InstanceInterface&				vkInstance			= m_context.getInstanceInterface();
+		const VkPhysicalDevice					vkPhysicalDevice	= getPhysicalDevice();
+		const InstanceInterface&				vkInstance			= getInstanceInterface();
 		VkPhysicalDeviceProperties	props;
 
 		vkInstance.getPhysicalDeviceProperties(vkPhysicalDevice, &props);
@@ -327,7 +443,7 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 			};
 			std::ostringstream	testName;
 			std::ostringstream	testDescription;
-			testName << "createBuffer_" << combinedBufferUsageFlags << "_" << combinedBufferCreateFlags;
+			testName << "create_buffer_" << combinedBufferUsageFlags << "_" << combinedBufferCreateFlags;
 			testDescription << "vkCreateBuffer test " << combinedBufferUsageFlags << " " << combinedBufferCreateFlags;
 			buffersTests->addChild(new BuffersTestCase(testCtx, testName.str(), testDescription.str(), testParams));
 		}
