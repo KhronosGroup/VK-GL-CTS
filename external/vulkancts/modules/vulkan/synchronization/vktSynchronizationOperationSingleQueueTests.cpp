@@ -48,9 +48,9 @@ using namespace vk;
 class BaseTestInstance : public TestInstance
 {
 public:
-	BaseTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp)
+	BaseTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData)
 		: TestInstance	(context)
-		, m_opContext	(context)
+		, m_opContext	(context, pipelineCacheData)
 		, m_resource	(new Resource(m_opContext, resourceDesc, writeOp.getResourceUsageFlags() | readOp.getResourceUsageFlags()))
 		, m_writeOp		(writeOp.build(m_opContext, *m_resource))
 		, m_readOp		(readOp.build(m_opContext, *m_resource))
@@ -67,8 +67,8 @@ protected:
 class EventTestInstance : public BaseTestInstance
 {
 public:
-	EventTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp)
-		: BaseTestInstance		(context, resourceDesc, writeOp, readOp)
+	EventTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData)
+		: BaseTestInstance		(context, resourceDesc, writeOp, readOp, pipelineCacheData)
 	{
 	}
 
@@ -122,8 +122,8 @@ public:
 class BarrierTestInstance : public BaseTestInstance
 {
 public:
-	BarrierTestInstance	(Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp)
-		: BaseTestInstance		(context, resourceDesc, writeOp, readOp)
+	BarrierTestInstance	(Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData)
+		: BaseTestInstance		(context, resourceDesc, writeOp, readOp, pipelineCacheData)
 	{
 	}
 
@@ -176,8 +176,8 @@ public:
 class SemaphoreTestInstance : public BaseTestInstance
 {
 public:
-	SemaphoreTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp)
-		: BaseTestInstance	(context, resourceDesc, writeOp, readOp)
+	SemaphoreTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData)
+		: BaseTestInstance	(context, resourceDesc, writeOp, readOp, pipelineCacheData)
 	{
 	}
 
@@ -264,8 +264,8 @@ public:
 class FenceTestInstance : public BaseTestInstance
 {
 public:
-	FenceTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp)
-		: BaseTestInstance	(context, resourceDesc, writeOp, readOp)
+	FenceTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData)
+		: BaseTestInstance	(context, resourceDesc, writeOp, readOp, pipelineCacheData)
 	{
 	}
 
@@ -321,17 +321,19 @@ class SyncTestCase : public TestCase
 {
 public:
 	SyncTestCase	(tcu::TestContext&			testCtx,
-					const std::string&			name,
-					const std::string&			description,
-					const SyncPrimitive			syncPrimitive,
-					const ResourceDescription	resourceDesc,
-					const OperationName			writeOp,
-					const OperationName			readOp)
+					 const std::string&			name,
+					 const std::string&			description,
+					 const SyncPrimitive		syncPrimitive,
+					 const ResourceDescription	resourceDesc,
+					 const OperationName		writeOp,
+					 const OperationName		readOp,
+					 PipelineCacheData&			pipelineCacheData)
 		: TestCase				(testCtx, name, description)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc))
 		, m_readOp				(makeOperationSupport(readOp, resourceDesc))
 		, m_syncPrimitive		(syncPrimitive)
+		, m_pipelineCacheData	(pipelineCacheData)
 	{
 	}
 
@@ -346,13 +348,13 @@ public:
 		switch (m_syncPrimitive)
 		{
 			case SYNC_PRIMITIVE_FENCE:
-				return new FenceTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp);
+				return new FenceTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData);
 			case SYNC_PRIMITIVE_SEMAPHORE:
-				return new SemaphoreTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp);
+				return new SemaphoreTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData);
 			case SYNC_PRIMITIVE_BARRIER:
-				return new BarrierTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp);
+				return new BarrierTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData);
 			case SYNC_PRIMITIVE_EVENT:
-				return new EventTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp);
+				return new EventTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData);
 		}
 
 		DE_ASSERT(0);
@@ -364,9 +366,10 @@ private:
 	const de::UniquePtr<OperationSupport>	m_writeOp;
 	const de::UniquePtr<OperationSupport>	m_readOp;
 	const SyncPrimitive						m_syncPrimitive;
+	PipelineCacheData&						m_pipelineCacheData;
 };
 
-void createTests (tcu::TestCaseGroup* group)
+void createTests (tcu::TestCaseGroup* group, PipelineCacheData* pipelineCacheData)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
@@ -404,7 +407,7 @@ void createTests (tcu::TestCaseGroup* group)
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new SyncTestCase(testCtx, name, "", groups[groupNdx].syncPrimitive, resource, writeOp, readOp));
+					opGroup->addChild(new SyncTestCase(testCtx, name, "", groups[groupNdx].syncPrimitive, resource, writeOp, readOp, *pipelineCacheData));
 					empty = false;
 				}
 			}
@@ -418,9 +421,9 @@ void createTests (tcu::TestCaseGroup* group)
 
 } // anonymous
 
-tcu::TestCaseGroup* createSynchronizedOperationSingleQueueTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createSynchronizedOperationSingleQueueTests (tcu::TestContext& testCtx, PipelineCacheData& pipelineCacheData)
 {
-	return createTestGroup(testCtx, "single_queue", "Synchronization of a memory-modifying operation", createTests);
+	return createTestGroup(testCtx, "single_queue", "Synchronization of a memory-modifying operation", createTests, &pipelineCacheData);
 }
 
 } // synchronization

@@ -65,24 +65,31 @@ AstcCase::AstcCase (tcu::TestContext& testCtx, CompressedTexFormat format)
 {
 }
 
+void testDecompress (CompressedTexFormat format, TexDecompressionParams::AstcMode mode, size_t numBlocks, const deUint8* data)
+{
+	const IVec3						blockPixelSize			= getBlockPixelSize(format);
+	const TexDecompressionParams	decompressionParams		(mode);
+	const TextureFormat				uncompressedFormat		= getUncompressedFormat(format);
+	TextureLevel					texture					(uncompressedFormat, blockPixelSize.x()*(int)numBlocks, blockPixelSize.y());
+
+	decompress(texture.getAccess(), format, data, decompressionParams);
+}
+
 void testDecompress (CompressedTexFormat format, size_t numBlocks, const deUint8* data)
 {
-	const IVec3			blockPixelSize		= getBlockPixelSize(format);
+	testDecompress(format, TexDecompressionParams::ASTCMODE_LDR, numBlocks, data);
 
-	for (int astcModeNdx = 0; astcModeNdx < TexDecompressionParams::ASTCMODE_LAST; astcModeNdx++)
-	{
-		const TexDecompressionParams	decompressionParams		((TexDecompressionParams::AstcMode)astcModeNdx);
-		const TextureFormat				uncompressedFormat		= getUncompressedFormat(format);
-		TextureLevel					texture					(uncompressedFormat, blockPixelSize.x()*(int)numBlocks, blockPixelSize.y());
-
-		decompress(texture.getAccess(), format, data, decompressionParams);
-	}
+	if (!isAstcSRGBFormat(format))
+		testDecompress(format, TexDecompressionParams::ASTCMODE_HDR, numBlocks, data);
 }
 
 void verifyBlocksValid (CompressedTexFormat format, TexDecompressionParams::AstcMode mode, size_t numBlocks, const deUint8* data)
 {
 	for (size_t blockNdx = 0; blockNdx < numBlocks; blockNdx++)
-		TCU_CHECK(astc::isValidBlock(data + blockNdx*astc::BLOCK_SIZE_BYTES, format, mode));
+	{
+		if (!astc::isValidBlock(data + blockNdx*astc::BLOCK_SIZE_BYTES, format, mode))
+			TCU_FAIL("Invalid ASTC block was generated");
+	}
 }
 
 inline size_t getNumBlocksFromBytes (size_t numBytes)
@@ -111,12 +118,13 @@ AstcCase::IterateResult AstcCase::iterate (void)
 		// All but random case should generate only valid blocks
 		if (blockTestType != astc::BLOCK_TEST_TYPE_RANDOM)
 		{
-			verifyBlocksValid(m_format, TexDecompressionParams::ASTCMODE_HDR, getNumBlocksFromBytes(generatedData.size()), &generatedData[0]);
-
 			// \note CEMS generates HDR blocks as well
 			if (!astc::isBlockTestTypeHDROnly(blockTestType) &&
 				(blockTestType != astc::BLOCK_TEST_TYPE_CEMS))
 				verifyBlocksValid(m_format, TexDecompressionParams::ASTCMODE_LDR, getNumBlocksFromBytes(generatedData.size()), &generatedData[0]);
+
+			if (!isAstcSRGBFormat(m_format))
+				verifyBlocksValid(m_format, TexDecompressionParams::ASTCMODE_HDR, getNumBlocksFromBytes(generatedData.size()), &generatedData[0]);
 		}
 	}
 
@@ -130,7 +138,9 @@ AstcCase::IterateResult AstcCase::iterate (void)
 		testDecompress(m_format, numBlocks, &generatedData[0]);
 
 		verifyBlocksValid(m_format, TexDecompressionParams::ASTCMODE_LDR, numBlocks, &generatedData[0]);
-		verifyBlocksValid(m_format, TexDecompressionParams::ASTCMODE_HDR, numBlocks, &generatedData[0]);
+
+		if (!isAstcSRGBFormat(m_format))
+			verifyBlocksValid(m_format, TexDecompressionParams::ASTCMODE_HDR, numBlocks, &generatedData[0]);
 	}
 
 	// Verify generating dummy normal blocks
@@ -144,7 +154,9 @@ AstcCase::IterateResult AstcCase::iterate (void)
 		testDecompress(m_format, numBlocks, &generatedData[0]);
 
 		verifyBlocksValid(m_format, TexDecompressionParams::ASTCMODE_LDR, numBlocks, &generatedData[0]);
-		verifyBlocksValid(m_format, TexDecompressionParams::ASTCMODE_HDR, numBlocks, &generatedData[0]);
+
+		if (!isAstcSRGBFormat(m_format))
+			verifyBlocksValid(m_format, TexDecompressionParams::ASTCMODE_HDR, numBlocks, &generatedData[0]);
 	}
 
 	// Verify generating random valid blocks
@@ -152,6 +164,9 @@ AstcCase::IterateResult AstcCase::iterate (void)
 	{
 		const TexDecompressionParams::AstcMode	mode		= (TexDecompressionParams::AstcMode)astcModeNdx;
 		const size_t							numBlocks	= 1024;
+
+		if (mode == tcu::TexDecompressionParams::ASTCMODE_HDR && isAstcFormat(m_format))
+			continue; // sRGB is not supported in HDR mode
 
 		generatedData.resize(numBlocks*astc::BLOCK_SIZE_BYTES);
 		astc::generateRandomValidBlocks(&generatedData[0], numBlocks, m_format, mode, deInt32Hash(m_format) ^ deInt32Hash(mode));

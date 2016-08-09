@@ -31,7 +31,9 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup* createSynchronizedOperationSingleQueueTests (tcu::TestContext& testCtx);
+class PipelineCacheData;
+
+tcu::TestCaseGroup* createSynchronizedOperationSingleQueueTests (tcu::TestContext& testCtx, PipelineCacheData& pipelineCacheData);
 
 } // synchronization
 } // vkt

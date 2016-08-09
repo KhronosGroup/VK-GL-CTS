@@ -1740,7 +1740,8 @@ tcu::TestStatus TextureSamplesInstance::iterate (void)
 
 		TextureBinding::Parameters	params	= m_textures[0]->getParameters();
 
-		params.samples = m_iterations[m_iterationCounter];
+		params.initialization	= TextureBinding::INIT_CLEAR;
+		params.samples			= m_iterations[m_iterationCounter];
 		log << tcu::TestLog::Message << "Expected samples: " << m_iterations[m_iterationCounter] << tcu::TestLog::EndMessage;
 
 		m_textures[0]->setParameters(params);

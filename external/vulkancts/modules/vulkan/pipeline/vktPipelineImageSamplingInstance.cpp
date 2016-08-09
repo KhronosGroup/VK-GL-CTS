@@ -31,6 +31,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "tcuImageCompare.hpp"
+#include "deSTLUtil.hpp"
 
 namespace vkt
 {
@@ -366,6 +367,12 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		 samplerParams.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR) &&
 		!isLinearFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), imageFormat, VK_IMAGE_TILING_OPTIMAL))
 		throw tcu::NotSupportedError(std::string("Unsupported format for linear filtering: ") + getFormatName(imageFormat));
+
+	if ((samplerParams.addressModeU == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE ||
+		 samplerParams.addressModeV == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE ||
+		 samplerParams.addressModeW == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE) &&
+		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
+		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
 
 	if (isCompressedFormat(imageFormat) && imageViewType == VK_IMAGE_VIEW_TYPE_3D)
 	{
