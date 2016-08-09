@@ -928,14 +928,14 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState (const ColorBlendState& cre
 	deMemcpy(blendConstants, &_blendConstants[0], 4 * sizeof(float));
 }
 
-PipelineCreateInfo::ColorBlendState::Attachment::Attachment (vk::VkBool32		_blendEnable,
-															 vk::VkBlendFactor	_srcColorBlendFactor,
-															 vk::VkBlendFactor	_dstColorBlendFactor,
-															 vk::VkBlendOp		_colorBlendOp,
-															 vk::VkBlendFactor	_srcAlphaBlendFactor,
-															 vk::VkBlendFactor	_dstAlphaBlendFactor,
-															 vk::VkBlendOp		_alphaBlendOp,
-															 deUint8			_colorWriteMask)
+PipelineCreateInfo::ColorBlendState::Attachment::Attachment (vk::VkBool32				_blendEnable,
+															 vk::VkBlendFactor			_srcColorBlendFactor,
+															 vk::VkBlendFactor			_dstColorBlendFactor,
+															 vk::VkBlendOp				_colorBlendOp,
+															 vk::VkBlendFactor			_srcAlphaBlendFactor,
+															 vk::VkBlendFactor			_dstAlphaBlendFactor,
+															 vk::VkBlendOp				_alphaBlendOp,
+															 vk::VkColorComponentFlags	_colorWriteMask)
 {
 	blendEnable			= _blendEnable;
 	srcColorBlendFactor	= _srcColorBlendFactor;
@@ -944,7 +944,7 @@ PipelineCreateInfo::ColorBlendState::Attachment::Attachment (vk::VkBool32		_blen
 	srcAlphaBlendFactor	= _srcAlphaBlendFactor;
 	dstAlphaBlendFactor	= _dstAlphaBlendFactor;
 	alphaBlendOp		= _alphaBlendOp;
-	colorWriteMask	= _colorWriteMask;
+	colorWriteMask		= _colorWriteMask;
 }
 
 PipelineCreateInfo::DepthStencilState::StencilOpState::StencilOpState (vk::VkStencilOp	_failOp,

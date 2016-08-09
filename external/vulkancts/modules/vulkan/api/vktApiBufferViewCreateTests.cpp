@@ -217,7 +217,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	{
 		std::ostringstream	testName;
 		std::ostringstream	testDescription;
-		testName << "createBufferView_" << format;
+		testName << "create_buffer_view_" << format;
 		testDescription << "vkBufferView test " << testName.str();
 		{
 			BufferViewCaseParameters testParams	=

@@ -1324,13 +1324,18 @@ protected:
 
 	void verifyRead (const ConstPixelBufferAccess& src)
 	{
+		// \todo [2016-08-04 pyry] Overflow in float->int conversion is not defined and
+		//						   produces different results depending on arch.
+		const bool	isFloat32Or64	= src.getFormat().type == tcu::TextureFormat::FLOAT ||
+									  src.getFormat().type == tcu::TextureFormat::FLOAT64;
+
 		if (isAccessValid(src.getFormat(), tcu::TEXTUREACCESSTYPE_FLOAT))
 			verifyRead<float>(src);
 
-		if (isAccessValid(src.getFormat(), tcu::TEXTUREACCESSTYPE_UNSIGNED_INT))
+		if (isAccessValid(src.getFormat(), tcu::TEXTUREACCESSTYPE_UNSIGNED_INT) && !isFloat32Or64)
 			verifyRead<deUint32>(src);
 
-		if (isAccessValid(src.getFormat(), tcu::TEXTUREACCESSTYPE_SIGNED_INT))
+		if (isAccessValid(src.getFormat(), tcu::TEXTUREACCESSTYPE_SIGNED_INT) && !isFloat32Or64)
 			verifyRead<deInt32>(src);
 	}
 

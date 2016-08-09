@@ -732,7 +732,7 @@ tcu::TestCaseGroup* createDefaultValueTests (tcu::TestContext& testCtx, const Vk
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "default_value", "use default constant value"));
 
-	static const CaseDefinition defs[] =
+	const CaseDefinition defs[] =
 	{
 		{
 			"bool",
@@ -805,7 +805,7 @@ tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, c
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "basic", "specialize a constant"));
 
-	static const CaseDefinition defs[] =
+	const CaseDefinition defs[] =
 	{
 		{
 			"bool",
@@ -921,7 +921,7 @@ tcu::TestCaseGroup* createWorkGroupSizeTests (tcu::TestContext& testCtx)
 		"    sb_out.workGroupSize = gl_WorkGroupSize;\n"
 		"    sb_out.checksum      = count;\n";
 
-	static const CaseDefinition defs[] =
+	const CaseDefinition defs[] =
 	{
 		{
 			"x",
@@ -1011,7 +1011,7 @@ tcu::TestCaseGroup* createBuiltInOverrideTests (tcu::TestContext& testCtx, const
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "builtin", "built-in override"));
 
-	static const CaseDefinition defs[] =
+	const CaseDefinition defs[] =
 	{
 		{
 			"default",
@@ -1046,7 +1046,7 @@ tcu::TestCaseGroup* createExpressionTests (tcu::TestContext& testCtx, const VkSh
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "expression", "specialization constants usage in expressions"));
 
-	static const CaseDefinition defs[] =
+	const CaseDefinition defs[] =
 	{
 		{
 			"spec_const_expression",
@@ -1785,7 +1785,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		VkShaderStageFlagBits	stage;
 	};
 
-	static const StageDef stages[] =
+	const StageDef stages[] =
 	{
 		{ graphicsGroup.get(),	"vertex",		VK_SHADER_STAGE_VERTEX_BIT					},
 		{ graphicsGroup.get(),	"fragment",		VK_SHADER_STAGE_FRAGMENT_BIT				},

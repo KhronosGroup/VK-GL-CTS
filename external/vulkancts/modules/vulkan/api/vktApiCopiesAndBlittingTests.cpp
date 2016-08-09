@@ -1726,6 +1726,7 @@ tcu::Vec4 getFloatFormatThreshold (const tcu::TextureFormat& format)
 			break;
 
 		case tcu::TextureFormat::FLOAT:
+		case tcu::TextureFormat::FLOAT64:
 			threshold = tcu::Vec4(0.001f);
 			break;
 

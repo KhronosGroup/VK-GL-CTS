@@ -959,19 +959,23 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 			const ImageType	 imageType = imageParamsArray[imageTypeNdx].m_imageType;
 			const tcu::UVec3 imageSize = imageParamsArray[imageTypeNdx].m_imageSize;
 
+			de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
+
 			for (deUint32 formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 			{
 				const TextureFormat&	format		= formats[formatNdx];
 				const std::string		formatName	= getShaderImageFormatQualifier(format);
 
 				//!< Atomic case checks the end result of the operations, and not the intermediate return values
-				const string caseEndResult = getImageTypeName(imageType) + "_" + formatName + "_end_result";
-				operationGroup->addChild(new BinaryAtomicEndResultCase(testCtx, caseEndResult, "", imageType, imageSize, format, operation, glu::GLSL_VERSION_440));
+				const string caseEndResult = formatName + "_end_result";
+				imageTypeGroup->addChild(new BinaryAtomicEndResultCase(testCtx, caseEndResult, "", imageType, imageSize, format, operation, glu::GLSL_VERSION_440));
 
 				//!< Atomic case checks the return values of the atomic function and not the end result.
-				const string caseIntermValues = getImageTypeName(imageType) + "_" + formatName + "_intermediate_values";
-				operationGroup->addChild(new BinaryAtomicIntermValuesCase(testCtx, caseIntermValues, "", imageType, imageSize, format, operation, glu::GLSL_VERSION_440));
+				const string caseIntermValues = formatName + "_intermediate_values";
+				imageTypeGroup->addChild(new BinaryAtomicIntermValuesCase(testCtx, caseIntermValues, "", imageType, imageSize, format, operation, glu::GLSL_VERSION_440));
 			}
+
+			operationGroup->addChild(imageTypeGroup.release());
 		}
 
 		imageAtomicOperationsTests->addChild(operationGroup.release());

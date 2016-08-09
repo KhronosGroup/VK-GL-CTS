@@ -317,24 +317,6 @@ VKAPI_ATTR void VKAPI_CALL destroyDebugReportCallbackEXT (VkInstance instance, V
 	freeNonDispHandle<DebugReportCallbackEXT, VkDebugReportCallbackEXT>(callback, pAllocator);
 }
 
-VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFeatures (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures* pFeatures)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(pFeatures);
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkImageFormatProperties* pImageFormatProperties)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(format);
-	DE_UNREF(type);
-	DE_UNREF(tiling);
-	DE_UNREF(usage);
-	DE_UNREF(flags);
-	DE_UNREF(pImageFormatProperties);
-	return VK_SUCCESS;
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceExtensionProperties (const char* pLayerName, deUint32* pPropertyCount, VkExtensionProperties* pProperties)
 {
 	DE_UNREF(pLayerName);
@@ -365,14 +347,6 @@ VKAPI_ATTR VkResult VKAPI_CALL enumerateDeviceLayerProperties (VkPhysicalDevice 
 	DE_UNREF(pPropertyCount);
 	DE_UNREF(pProperties);
 	return VK_SUCCESS;
-}
-
-VKAPI_ATTR void VKAPI_CALL getDeviceQueue (VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex, VkQueue* pQueue)
-{
-	DE_UNREF(device);
-	DE_UNREF(queueFamilyIndex);
-	DE_UNREF(queueIndex);
-	DE_UNREF(pQueue);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL queueSubmit (VkQueue queue, deUint32 submitCount, const VkSubmitInfo* pSubmits, VkFence fence)
@@ -805,7 +779,7 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyImageToBuffer (VkCommandBuffer commandBuffer, 
 	DE_UNREF(pRegions);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdUpdateBuffer (VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const deUint32* pData)
+VKAPI_ATTR void VKAPI_CALL cmdUpdateBuffer (VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const void* pData)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(dstBuffer);
