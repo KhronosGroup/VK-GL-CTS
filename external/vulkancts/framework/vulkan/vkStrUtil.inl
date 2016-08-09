@@ -326,3 +326,6 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateRas
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectTagInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerMarkerInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationImageCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationBufferCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationMemoryAllocateInfoNV& value);

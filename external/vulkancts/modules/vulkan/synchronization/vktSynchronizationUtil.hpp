@@ -29,6 +29,7 @@
 #include "vkRefUtil.hpp"
 #include "vkPrograms.hpp"
 #include "tcuVector.hpp"
+#include "deMutex.hpp"
 
 namespace vkt
 {
@@ -91,6 +92,20 @@ private:
 	Image&								operator=		(const Image&);
 };
 
+class PipelineCacheData
+{
+public:
+									PipelineCacheData		(void);
+									~PipelineCacheData		(void);
+
+	vk::Move<vk::VkPipelineCache>	createPipelineCache		(const vk::DeviceInterface& vk, const vk::VkDevice device) const;
+	void							setFromPipelineCache	(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineCache pipelineCache);
+
+private:
+	mutable de::Mutex				m_lock;
+	std::vector<deUint8>			m_data;
+};
+
 class GraphicsPipelineBuilder
 {
 public:
@@ -118,7 +133,7 @@ public:
 	//! Basic vertex input configuration (uses biding 0, location 0, etc.)
 	GraphicsPipelineBuilder&	setVertexInputSingleAttribute	(const vk::VkFormat vertexFormat, const deUint32 stride);
 
-	vk::Move<vk::VkPipeline>	build							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkRenderPass renderPass);
+	vk::Move<vk::VkPipeline>	build							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkRenderPass renderPass, PipelineCacheData& pipelineCacheData);
 
 private:
 	tcu::IVec2											m_renderSize;
@@ -203,7 +218,7 @@ vk::Move<vk::VkCommandBuffer>	makeCommandBuffer							(const vk::DeviceInterface
 vk::Move<vk::VkDescriptorSet>	makeDescriptorSet							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorPool descriptorPool, const vk::VkDescriptorSetLayout setLayout);
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout descriptorSetLayout);
 vk::Move<vk::VkPipelineLayout>	makePipelineLayoutWithoutDescriptors		(const vk::DeviceInterface& vk, const vk::VkDevice device);
-vk::Move<vk::VkPipeline>		makeComputePipeline							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo);
+vk::Move<vk::VkPipeline>		makeComputePipeline							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo, PipelineCacheData& pipelineCacheData);
 vk::Move<vk::VkRenderPass>		makeRenderPass								(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat);
 vk::Move<vk::VkRenderPass>		makeRenderPassWithoutAttachments			(const vk::DeviceInterface& vk, const vk::VkDevice device);
 vk::Move<vk::VkFramebuffer>		makeFramebuffer								(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkRenderPass renderPass, const vk::VkImageView colorAttachment, const deUint32 width, const deUint32 height, const deUint32 layers);

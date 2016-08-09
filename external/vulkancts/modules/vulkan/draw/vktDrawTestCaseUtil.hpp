@@ -33,6 +33,8 @@
 #include "gluShaderUtil.hpp"
 #include "vkPrograms.hpp"
 
+#include "deUniquePtr.hpp"
+
 #include <map>
 
 namespace vkt
@@ -45,13 +47,13 @@ class ShaderSourceProvider
 public:
 	static std::string getSource (tcu::Archive& archive, const char* path)
 	{
-		tcu::Resource *resource = archive.getResource(path);
+		de::UniquePtr<tcu::Resource> resource(archive.getResource(path));
 
 		std::vector<deUint8> readBuffer(resource->getSize() + 1);
 		resource->read(&readBuffer[0], resource->getSize());
 		readBuffer[readBuffer.size() - 1] = 0;
 
-		return reinterpret_cast<const char*>(&readBuffer[0]);
+		return std::string(reinterpret_cast<const char*>(&readBuffer[0]));
 	}
 };
 

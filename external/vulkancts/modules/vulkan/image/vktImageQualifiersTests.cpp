@@ -744,15 +744,18 @@ tcu::TestCaseGroup* createImageQualifiersTests (tcu::TestContext& testCtx)
 			}
 			else
 			{
+				de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
+
 				for (deInt32 formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 				{
 					const tcu::TextureFormat&	format		= formats[formatNdx];
 					const std::string			formatName	= getShaderImageFormatQualifier(formats[formatNdx]);
 
-					qualifierGroup->addChild(
-						new MemoryQualifierTestCase(testCtx, getImageTypeName(imageType) + std::string("_") + formatName,
-						"", memoryQualifier, imageType, imageSize, format, glu::GLSL_VERSION_440));
+					imageTypeGroup->addChild(
+						new MemoryQualifierTestCase(testCtx, formatName, "", memoryQualifier, imageType, imageSize, format, glu::GLSL_VERSION_440));
 				}
+
+				qualifierGroup->addChild(imageTypeGroup.release());
 			}
 		}
 

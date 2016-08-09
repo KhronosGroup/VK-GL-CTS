@@ -47,6 +47,18 @@ namespace vk
  *//*--------------------------------------------------------------------*/
 bool	compileGlslToSpirV		(const glu::ProgramSources& src, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo);
 
+/*--------------------------------------------------------------------*//*!
+ * \brief Strip SPIR-V binary
+ * \param src
+ * \param dst
+ *
+ * Removes OpName and OpMemberName opcodes from SPIR-V binary
+ *
+ * If deqp was built without glslang (and thus compiler is not available)
+ * tcu::NotSupportedError will be thrown instead.
+ *//*--------------------------------------------------------------------*/
+void	stripSpirVDebugInfo		(const size_t numSrcInstrs, const deUint32* srcInstrs, std::vector<deUint32>* dst);
+
 } // vk
 
 #endif // _VKGLSLTOSPIRV_HPP

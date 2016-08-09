@@ -257,10 +257,10 @@ void createBarrierMultiQueue (const DeviceInterface& vk, const VkCommandBuffer& 
 class BaseTestInstance : public TestInstance
 {
 public:
-	BaseTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp)
+	BaseTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData)
 		: TestInstance	(context)
 		, m_queues		(createQueues(context, writeOp.getQueueFlags(), readOp.getQueueFlags()))
-		, m_opContext	(new OperationContext(context, m_context.getDeviceInterface(), (*(*m_queues).m_logicalDevice), (*(*m_queues).m_allocator)))
+		, m_opContext	(new OperationContext(context, pipelineCacheData, m_context.getDeviceInterface(), (*(*m_queues).m_logicalDevice), (*(*m_queues).m_allocator)))
 		, m_resource	(new Resource(*m_opContext, resourceDesc, writeOp.getResourceUsageFlags() | readOp.getResourceUsageFlags()))
 		, m_writeOp		(writeOp.build(*m_opContext, *m_resource))
 		, m_readOp		(readOp.build(*m_opContext, *m_resource))
@@ -278,8 +278,8 @@ protected:
 class SemaphoreTestInstance : public BaseTestInstance
 {
 public:
-	SemaphoreTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, const vk::VkSharingMode sharingMode)
-		: BaseTestInstance	(context, resourceDesc, writeOp, readOp)
+	SemaphoreTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData, const vk::VkSharingMode sharingMode)
+		: BaseTestInstance	(context, resourceDesc, writeOp, readOp, pipelineCacheData)
 		, m_sharingMode		(sharingMode)
 	{
 	}
@@ -358,8 +358,8 @@ private:
 class FenceTestInstance : public BaseTestInstance
 {
 public:
-	FenceTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, const vk::VkSharingMode sharingMode)
-		: BaseTestInstance	(context, resourceDesc, writeOp, readOp)
+	FenceTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData, const vk::VkSharingMode sharingMode)
+		: BaseTestInstance	(context, resourceDesc, writeOp, readOp, pipelineCacheData)
 		, m_sharingMode		(sharingMode)
 	{
 	}
@@ -436,13 +436,15 @@ public:
 					const ResourceDescription	resourceDesc,
 					const OperationName			writeOp,
 					const OperationName			readOp,
-					const vk::VkSharingMode		sharingMode)
+					const vk::VkSharingMode		sharingMode,
+					PipelineCacheData&			pipelineCacheData)
 		: TestCase				(testCtx, name, description)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc))
 		, m_readOp				(makeOperationSupport(readOp, resourceDesc))
 		, m_syncPrimitive		(syncPrimitive)
 		, m_sharingMode			(sharingMode)
+		, m_pipelineCacheData	(pipelineCacheData)
 	{
 	}
 
@@ -457,9 +459,9 @@ public:
 		switch (m_syncPrimitive)
 		{
 			case SYNC_PRIMITIVE_FENCE:
-				return new FenceTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp, m_sharingMode);
+				return new FenceTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData, m_sharingMode);
 			case SYNC_PRIMITIVE_SEMAPHORE:
-				return new SemaphoreTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp, m_sharingMode);
+				return new SemaphoreTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData, m_sharingMode);
 			default :
 				DE_ASSERT(0);
 				return DE_NULL;
@@ -472,9 +474,10 @@ private:
 	const de::UniquePtr<OperationSupport>	m_readOp;
 	const SyncPrimitive						m_syncPrimitive;
 	const vk::VkSharingMode					m_sharingMode;
+	PipelineCacheData&						m_pipelineCacheData;
 };
 
-void createTests (tcu::TestCaseGroup* group)
+void createTests (tcu::TestCaseGroup* group, PipelineCacheData* pipelineCacheData)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
@@ -521,7 +524,7 @@ void createTests (tcu::TestCaseGroup* group)
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new SyncTestCase(testCtx, name, "", groups[groupNdx].syncPrimitive, resource, writeOp, readOp, sharingMode));
+					opGroup->addChild(new SyncTestCase(testCtx, name, "", groups[groupNdx].syncPrimitive, resource, writeOp, readOp, sharingMode, *pipelineCacheData));
 					empty = false;
 				}
 			}
@@ -535,9 +538,9 @@ void createTests (tcu::TestCaseGroup* group)
 
 } // anonymous
 
-tcu::TestCaseGroup* createSynchronizedOperationMultiQueueTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createSynchronizedOperationMultiQueueTests (tcu::TestContext& testCtx, PipelineCacheData& pipelineCacheData)
 {
-	return createTestGroup(testCtx, "multi_queue", "Synchronization of a memory-modifying operation", createTests);
+	return createTestGroup(testCtx, "multi_queue", "Synchronization of a memory-modifying operation", createTests, &pipelineCacheData);
 }
 
 } // synchronization
