@@ -5,6 +5,8 @@ set(DEQP_VK_TEXTURE_FILTERING_SRCS
   vktTextureFilteringTests.hpp
   vktSampleVerifier.cpp
   vktSampleVerifier.hpp
+  vktSampleVerifierUtil.cpp
+  vktSampleVerifierUtil.hpp
   vktTextureFilteringExplicitLodTests.cpp
   vktTextureFilteringExplicitLodTests.hpp
 )

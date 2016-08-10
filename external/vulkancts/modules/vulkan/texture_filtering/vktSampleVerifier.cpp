@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSampleVerifier.hpp"
+#include "vktSampleVerifierUtil.hpp"
 
 #include "deMath.h"
 #include "tcuFloat.hpp"
@@ -38,178 +39,25 @@ namespace texture_filtering
 
 using namespace vk;
 using namespace tcu;
+using namespace util;
 
 namespace
 {
 
-bool isEqualRelEpsilon (const float a, const float b, const float epsilon)
+int calcUnnormalizedDim (const ImgDim dim)
 {
-	const float diff = de::abs(a - b);
-
-	const float largest = de::max(de::abs(a), de::abs(b));
-
-	return diff <= largest * epsilon;
-}
-
-template <int Size>
-bool isEqualRelEpsilon (const Vector<float, Size>& a, const Vector<float, Size>& b, const float epsilon)
-{
-	for (deUint8 compNdx = 0; compNdx < Size; ++compNdx)
+	if (dim == IMG_DIM_1D)
 	{
-		if (!isEqualRelEpsilon(a[compNdx], b[compNdx], epsilon))
-		{
-			return false;
-		}
+	    return 1;
 	}
-
-	return true;
-}
-
-float calcRelEpsilon (VkFormat format, VkFilter filter, VkSamplerMipmapMode mipmapFilter)
-{
-	// This should take into account the format at some point, but doesn't now
-	DE_UNREF(format);
-
-	// fp16 format approximates the minimum precision for internal calculations mandated by spec
-	const float fp16MachineEpsilon = 0.0009765625f;
-
-	// \todo [2016-07-06 collinbaker] Pick the epsilon more
-	// scientifically
-	float relEpsilon = fp16MachineEpsilon;
-
-	if (filter == VK_FILTER_LINEAR)
+	else if (dim == IMG_DIM_2D || dim == IMG_DIM_CUBE)
 	{
-		relEpsilon *= 3.0f;
-	}
-
-	if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
-	{
-		relEpsilon *= 2.0f;
-	}
-
-	return relEpsilon;
-}
-
-deInt32 mod (const deInt32 a, const deInt32 n)
-{
-	const deInt32 result = a % n;
-
-	return (result < 0) ? result + n : result;
-}
-
-deInt32 mirror (const deInt32 n)
-{
-	if (n >= 0)
-	{
-		return n;
+	    return 2;
 	}
 	else
 	{
-		return -(1 + n);
+	    return 3;
 	}
-}
-
-template <int Size>
-Vector<float, Size> floor (const Vector<float, Size>& v)
-{
-	Vector<float, Size> result;
-
-	for (int compNdx = 0; compNdx < Size; ++compNdx)
-	{
-		result[compNdx] = (float)deFloor(v[compNdx]);
-	}
-
-	return result;
-}
-
-template <int Size>
-Vector<float, Size> ceil (const Vector<float, Size>& v)
-{
-	Vector<float, Size> result;
-
-	for (int compNdx = 0; compNdx < Size; ++compNdx)
-	{
-		result[compNdx] = (float)deCeil(v[compNdx]);
-	}
-
-	return result;
-}
-
-template <int Size>
-Vector<float, Size> abs (const Vector<float, Size>& v)
-{
-	Vector<float, Size> result;
-
-	for (int compNdx = 0; compNdx < Size; ++compNdx)
-	{
-		result[compNdx] = de::abs(v[compNdx]);
-	}
-
-	return result;
-}
-
-Vec2 computeLevelLodBounds (const Vec2& lodBounds, deUint8 level)
-{
-	Vec2 levelLodBounds;
-
-	if (lodBounds[0] <= 0.0f)
-	{
-		levelLodBounds[0] = lodBounds[0];
-	}
-	else
-	{
-		levelLodBounds[0] = de::max(lodBounds[0], (float) level);
-	}
-
-	levelLodBounds[1] = de::min(lodBounds[1], (float) level + 1.0f);
-
-	return levelLodBounds;
-}
-
-float addUlp (float num, deInt32 ulp)
-{
-	// Note: adding positive ulp always moves float away from zero
-
-	tcu::Float32 f(num);
-
-	DE_ASSERT(!f.isNaN() && !f.isInf());
-	DE_ASSERT(num > FLT_MIN * (float) ulp || num < FLT_MIN * (float) ulp);
-
-	deUint32 bits = f.bits();
-	bits += ulp;
-
-	return tcu::Float32(bits).asFloat();
-}
-
-deInt32 wrapTexelCoord (const deInt32 coord,
-						const deUint32 size,
-						const VkSamplerAddressMode wrap)
-{
-	deInt32 wrappedCoord = 0;
-
-	switch (wrap)
-	{
-		case VK_SAMPLER_ADDRESS_MODE_REPEAT:
-			wrappedCoord = mod(coord, size);
-			break;
-		case VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT:
-			wrappedCoord = (size - 1) - mirror(mod(coord, 2 * size) - size);
-			break;
-		case VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE:
-			wrappedCoord = de::clamp(coord, 0, (deInt32) size - 1);
-			break;
-		case VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER:
-			wrappedCoord = de::clamp(coord, -1, (deInt32) size);
-			break;
-		case VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE:
-			wrappedCoord = de::clamp(mirror(coord), 0, (deInt32) size - 1);
-			break;
-		default:
-			DE_FATAL("Invalid VkSamplerAddressMode");
-			break;
-	}
-
-	return wrappedCoord;
 }
 
 } // anonymous
@@ -220,26 +68,17 @@ SampleVerifier::SampleVerifier (const ImageViewParameters&						imParams,
 								int												coordBits,
 								int												mipmapBits,
 								const std::vector<tcu::ConstPixelBufferAccess>&	pba)
-
-	: m_imParams				(imParams)
+// \todo [2016-07-29 collinbaker] Get rid of magic numbers
+	: m_internalFormat			(-14, 15, 10, true) // fp16 format
+	, m_imParams				(imParams)
 	, m_samplerParams			(samplerParams)
 	, m_sampleLookupSettings	(sampleLookupSettings)
 	, m_coordBits				(coordBits)
 	, m_mipmapBits				(mipmapBits)
+	, m_unnormalizedDim			(calcUnnormalizedDim(imParams.dim))
 	, m_pba						(pba)
 {
-	if (m_imParams.dim == IMG_DIM_1D)
-	{
-		m_unnormalizedDim = 1;
-	}
-	else if (m_imParams.dim == IMG_DIM_2D || m_imParams.dim == IMG_DIM_CUBE)
-	{
-		m_unnormalizedDim = 2;
-	}
-	else
-	{
-		m_unnormalizedDim = 3;
-	}
+
 }
 
 bool SampleVerifier::coordOutOfRange (const IVec3& coord, int compNdx, int level) const
@@ -249,7 +88,36 @@ bool SampleVerifier::coordOutOfRange (const IVec3& coord, int compNdx, int level
 	return coord[compNdx] < 0 || coord[compNdx] >= m_pba[level].getSize()[compNdx];
 }
 
-Vec4 SampleVerifier::fetchTexel (const IVec3& coordIn, deUint32 layer, deUint8 level, VkFilter filter) const
+void SampleVerifier::fetchTexelWrapped (const IVec3&	coord,
+										int				layer,
+										int				level,
+										Vec4&			resultMin,
+										Vec4& 			resultMax) const
+{
+    const void* pixelPtr = DE_NULL;
+
+	if (m_imParams.dim == IMG_DIM_1D)
+	{
+	    pixelPtr = m_pba[level].getPixelPtr(coord[0], layer, 0);
+	}
+	else if (m_imParams.dim == IMG_DIM_2D || m_imParams.dim == IMG_DIM_CUBE)
+	{
+		pixelPtr = m_pba[level].getPixelPtr(coord[0], coord[1], layer);
+	}
+	else
+	{
+		pixelPtr = m_pba[level].getPixelPtr(coord[0], coord[1], coord[2]);
+	}
+
+	convertFormat(pixelPtr, mapVkFormat(m_imParams.format), m_internalFormat, resultMin, resultMax);
+}
+
+void SampleVerifier::fetchTexel (const IVec3&	coordIn,
+								 int			layer,
+								 int			level,
+								 VkFilter		filter,
+								 Vec4&			resultMin,
+								 Vec4& 			resultMax) const
 {
 	IVec3 coord = coordIn;
 
@@ -264,206 +132,100 @@ Vec4 SampleVerifier::fetchTexel (const IVec3& coordIn, deUint32 layer, deUint8 l
 
 	// Wrapping operations
 
+
 	if (m_imParams.dim == IMG_DIM_CUBE && filter == VK_FILTER_LINEAR)
 	{
-		const deUint32	arrayLayer = layer / 6;
-		deUint8			arrayFace  = (deUint8) (layer % 6);
+		// If the image is a cubemap and we are using linear filtering, we do edge or corner wrapping
 
-		// Cube map adjacent faces ordered clockwise from top
-
-		// \todo [2016-07-07 collinbaker] Verify these are correct
-		static const deUint8 adjacentFaces[6][4] =
-		{
-		    {3, 5, 2, 4},
-			{3, 4, 2, 5},
-			{4, 0, 5, 1},
-			{5, 0, 4, 1},
-			{3, 0, 2, 1},
-			{3, 1, 2, 0}
-		};
-
-		static const deUint8 adjacentEdges[6][4] =
-		{
-			{1, 3, 1, 1},
-			{3, 3, 3, 1},
-			{2, 2, 2, 2},
-			{0, 0, 0, 0},
-			{2, 3, 0, 1},
-			{0, 3, 2, 1}
-		};
-
-		static const deInt8 adjacentEdgeDirs[6][4] =
-		{
-			{-1, +1, +1, +1},
-			{+1, +1, -1, +1},
-			{+1, +1, -1, -1},
-			{-1, -1, +1, +1},
-			{+1, +1, +1, +1},
-			{-1, +1, -1, +1}
-		};
-
-		static const deUint8 edgeComponent[4] = {0, 1, 0, 1};
-
-		static const deUint8 edgeFactors[4][2] =
-		{
-			{0, 0},
-			{1, 0},
-			{0, 1},
-			{0, 0}
-		};
+		const int	arrayLayer = layer / 6;
+		int			arrayFace  = layer % 6;
 
 		if (coordOutOfRange(coord, 0, level) != coordOutOfRange(coord, 1, level))
 		{
-			// Handle edge
+			// Wrap around edge
 
-			deUint8 edgeNdx;
+			IVec2	newCoord(0);
+			int		newFace = 0;
 
-			if (coord[1] < 0)
-			{
-				edgeNdx = 0;
-			}
-			else if (coord[0] > 0)
-			{
-				edgeNdx = 1;
-			}
-			else if (coord[1] > 0)
-			{
-				edgeNdx = 2;
-			}
-			else
-			{
-				edgeNdx = 3;
-			}
+			wrapCubemapEdge(coord.swizzle(0, 1),
+							m_pba[level].getSize().swizzle(0, 1),
+							arrayFace,
+							newCoord,
+							newFace);
 
-			const deUint8	adjacentEdgeNdx = adjacentEdges[arrayFace][edgeNdx];
-			const IVec2		edgeFactor		= IVec2(edgeFactors[adjacentEdgeNdx][0],
-													edgeFactors[adjacentEdgeNdx][1]);
-			const IVec2		edgeOffset		= edgeFactor * (m_pba[level].getSize().swizzle(0, 1) - IVec2(1));
-
-			IVec2 newCoord;
-
-			if (adjacentEdgeDirs[arrayFace][edgeNdx] > 0)
-			{
-				newCoord[edgeComponent[adjacentEdgeNdx]] = coord[edgeComponent[edgeNdx]];
-			}
-			else
-			{
-				newCoord[edgeComponent[adjacentEdgeNdx]] =
-					m_pba[level].getSize()[edgeComponent[edgeNdx]] - coord[edgeComponent[edgeNdx]] - 1;
-			}
-
-			newCoord[1 - edgeComponent[adjacentEdgeNdx]] = 0;
-			coord.xy() = newCoord + edgeOffset;
-
-			arrayFace = adjacentFaces[arrayFace][edgeNdx];
-			layer = arrayLayer * 6 + arrayFace;
+			coord.xy()	= newCoord;
+			layer		= arrayLayer * 6 + newFace;
 		}
 		else if (coordOutOfRange(coord, 0, level) && coordOutOfRange(coord, 1, level))
 		{
-			// Handle corner; corners are numbered clockwise starting
-			// from top left
+			// Wrap corner
 
-			deUint8 cornerNdx;
+			int   faces[3] = {arrayFace, 0, 0};
+			IVec2 cornerCoords[3];
 
-			if (coord[0] < 0 && coord[1] < 0)
+			wrapCubemapCorner(coord.swizzle(0, 1),
+							  m_pba[level].getSize().swizzle(0, 1),
+							  arrayFace,
+							  faces[1],
+							  faces[2],
+							  cornerCoords[0],
+							  cornerCoords[1],
+							  cornerCoords[2]);
+
+			// \todo [2016-08-01 collinbaker] Call into fetchTexelWrapped instead
+
+			Vec4 cornerTexels[3];
+
+			for (int ndx = 0; ndx < 3; ++ndx)
 			{
-				cornerNdx = 0;
-			}
-			else if (coord[0] > 0 && coord[1] < 0)
-			{
-				cornerNdx = 1;
-			}
-			else if (coord[0] > 0 && coord[1] > 0)
-			{
-				cornerNdx = 2;
-			}
-			else
-			{
-				cornerNdx = 3;
-			}
-
-			// Calculate faces and corners thereof adjacent to sampled corner
-
-			const deUint8 cornerEdges[2] = {cornerNdx, (deUint8) ((cornerNdx + 3) % 4)};
-
-		    const deUint8 faces[3]		 = {arrayFace,
-											adjacentFaces[arrayFace][cornerEdges[0]],
-											adjacentFaces[arrayFace][cornerEdges[1]]};
-
-			deUint8 	  faceCorners[3] = {cornerNdx, 0, 0};
-
-		    for (deUint8 edgeNdx = 0; edgeNdx < 2; ++edgeNdx)
-			{
-				const deUint8 faceEdge = adjacentEdges[arrayFace][cornerEdges[edgeNdx]];
-
-				bool isFlipped = (adjacentEdgeDirs[arrayFace][cornerEdges[edgeNdx]]);
-
-				if ((cornerEdges[edgeNdx] > 1) != (faceEdge > 1))
-				{
-					isFlipped = !isFlipped;
-				}
-
-				if (isFlipped)
-				{
-					faceCorners[edgeNdx + 1] = (deUint8) ((faceEdge + 1) % 4);
-				}
-				else
-				{
-					faceCorners[edgeNdx + 1] = faceEdge;
-				}
-			}
-
-			// Compute average of corners and return
-
-			Vec4 result(0.0f);
-
-			for (deUint8 faceNdx = 0; faceNdx < 3; ++faceNdx)
-			{
-				IVec2 cornerFactor;
-
-				switch (faceCorners[faceNdx])
-				{
-					case 0:
-						cornerFactor = IVec2(0, 0);
-						break;
-					case 1:
-						cornerFactor = IVec2(1, 0);
-						break;
-					case 2:
-						cornerFactor = IVec2(1, 1);
-						break;
-					case 3:
-						cornerFactor = IVec2(0, 1);
-				}
-
-				const IVec2 cornerCoord = cornerFactor * (m_pba[level].getSize().swizzle(0, 1) - IVec2(1));
-				const deUint32 cornerLayer = arrayLayer * 6 + faces[faceNdx];
+				int cornerLayer = faces[ndx] + arrayLayer * 6;
 
 				if (isSrgb)
 				{
-					result += sRGBToLinear(m_pba[level].getPixel(cornerCoord[0], cornerCoord[1], cornerLayer));
+				    cornerTexels[ndx] += sRGBToLinear(m_pba[level].getPixel(cornerCoords[ndx][0], cornerCoords[ndx][1], cornerLayer));
 				}
 				else
 				{
-					result += m_pba[level].getPixel(cornerCoord[0], cornerCoord[1], cornerLayer);
+					cornerTexels[ndx] += m_pba[level].getPixel(cornerCoords[ndx][0], cornerCoords[ndx][1], cornerLayer);
 				}
 			}
 
-			result = result / 3.0f;
+			for (int compNdx = 0; compNdx < 4; ++compNdx)
+			{
+				float compMin = cornerTexels[0][compNdx];
+				float compMax = cornerTexels[0][compNdx];
 
-			return result;
+				for (int ndx = 1; ndx < 3; ++ndx)
+				{
+					const float comp = cornerTexels[ndx][compNdx];
+
+					compMin = de::min(comp, compMin);
+					compMax = de::max(comp, compMax);
+				}
+
+				resultMin[compNdx] = compMin;
+				resultMax[compNdx] = compMax;
+			}
+
+			return;
+		}
+		else
+		{
+			// If no wrapping is necessary, just do nothing
 		}
 	}
 	else
 	{
+		// Otherwise, we do normal wrapping
+
 		if (m_imParams.dim == IMG_DIM_CUBE)
 		{
 			wrappingModes[0] = wrappingModes[1] = wrappingModes[2] = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		}
 
-		for (deUint8 compNdx = 0; compNdx < 3; ++compNdx)
+		for (int compNdx = 0; compNdx < 3; ++compNdx)
 		{
-			const deUint32 size = m_pba[level].getSize()[compNdx];
+			const int size = m_pba[level].getSize()[compNdx];
 
 			coord[compNdx] = wrapTexelCoord(coord[compNdx], size, wrappingModes[compNdx]);
 		}
@@ -473,168 +235,214 @@ Vec4 SampleVerifier::fetchTexel (const IVec3& coordIn, deUint32 layer, deUint8 l
 		coordOutOfRange(coord, 1, level) ||
 		coordOutOfRange(coord, 2, level))
 	{
+		// If after wrapping coordinates are still out of range, perform texel replacement
+
 		switch (m_samplerParams.borderColor)
 		{
 			case VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK:
-				return Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+			{
+				resultMin = Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+				resultMax = Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+				return;
+			}
 			case VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK:
-				return Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			{
+				resultMin = Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+				resultMax = Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+				return;
+			}
 			case VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE:
-				return Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+			{
+				resultMin = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+				resultMax = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+				return;
+			}
 			default:
+			{
 				// \\ [2016-07-07 collinbaker] Handle
 				// VK_BORDER_COLOR_INT_* borders
 				DE_FATAL("Not implemented");
 				break;
+			}
 		}
 	}
 	else
 	{
-		Vec4 result;
+		// Otherwise, actually fetch a texel
 
-	    if (m_imParams.dim == IMG_DIM_1D)
-		{
-			result = m_pba[level].getPixel(coord[0], layer, 0);
-		}
-		else if (m_imParams.dim == IMG_DIM_2D)
-		{
-			result = m_pba[level].getPixel(coord[0], coord[1], layer);
-		}
-		else
-		{
-			result = m_pba[level].getPixel(coord[0], coord[1], coord[2]);
-		}
-
-		// Do sRGB conversion if necessary
-
-		if (isSrgb)
-		{
-			return sRGBToLinear(result);
-		}
-		else
-		{
-			return result;
-		}
+	    fetchTexelWrapped(coord, layer, level, resultMin, resultMax);
 	}
-
-	return Vec4(0.0f);
 }
 
-Vec4 SampleVerifier::getFilteredSample1D (const IVec3&	texelBase,
+void SampleVerifier::getFilteredSample1D (const IVec3&	texelBase,
 										  float			weight,
-										  deUint32		layer,
-										  deUint8		level) const
+										  int			layer,
+										  int			level,
+										  Vec4&			resultMin,
+										  Vec4& 		resultMax) const
 {
-	Vec4 texels[2];
+	Vec4 texelsMin[2];
+	Vec4 texelsMax[2];
 
-	for (deUint8 i = 0; i < 2; ++i)
+	for (int i = 0; i < 2; ++i)
 	{
-		texels[i] = fetchTexel(texelBase + IVec3(i, 0, 0), layer, level, VK_FILTER_LINEAR);
+	    fetchTexel(texelBase + IVec3(i, 0, 0), layer, level, VK_FILTER_LINEAR, texelsMin[i], texelsMax[i]);
 	}
 
-	return (1.0f - weight) * texels[0] + weight * texels[1];
-}
+	Interval resultIntervals[4];
 
-
-Vec4 SampleVerifier::getFilteredSample2D (const IVec3&	texelBase,
-										  const Vec2&	weights,
-										  deUint32		layer,
-										  deUint8		level) const
-{
-	Vec4 texels[4];
-
-	for (deUint8 i = 0; i < 2; ++i)
+	for (int ndx = 0; ndx < 4; ++ndx)
 	{
-		for (deUint8 j = 0; j < 2; ++j)
+		resultIntervals[ndx] = Interval(0.0);
+	}
+
+    for (int i = 0; i < 2; ++i)
+	{
+		const Interval weightInterval = m_internalFormat.roundOut(Interval(i == 0 ? 1.0f - weight : weight), false);
+
+		for (int compNdx = 0; compNdx < 4; ++compNdx)
 		{
-			texels[2 * j + i] = fetchTexel(texelBase + IVec3(i, j, 0), layer, level, VK_FILTER_LINEAR);
+			const Interval texelInterval(false, texelsMin[i][compNdx], texelsMax[i][compNdx]);
+
+			resultIntervals[compNdx] = m_internalFormat.roundOut(resultIntervals[compNdx] + weightInterval * texelInterval, false);
 		}
 	}
 
-	return (1.0f - weights[0]) * (1.0f - weights[1]) * texels[0]
-		+ weights[0] * (1.0f - weights[1]) * texels[1]
-		+ (1.0f - weights[0]) * weights[1] * texels[2]
-		+ weights[0] * weights[1] * texels[3];
+	for (int compNdx = 0; compNdx < 4; ++compNdx)
+	{
+		resultMin[compNdx] = (float)resultIntervals[compNdx].lo();
+		resultMax[compNdx] = (float)resultIntervals[compNdx].hi();
+	}
 }
 
-Vec4 SampleVerifier::getFilteredSample3D (const IVec3&	texelBase,
-										  const Vec3&	weights,
-										  deUint32		layer,
-										  deUint8		level) const
-{
-	Vec4 texels[8];
 
-	for (deUint8 i = 0; i < 2; ++i)
+void SampleVerifier::getFilteredSample2D (const IVec3&	texelBase,
+										  const Vec2&	weights,
+										  int			layer,
+										  int			level,
+										  Vec4&			resultMin,
+										  Vec4& 		resultMax) const
+{
+	Vec4 texelsMin[4];
+	Vec4 texelsMax[4];
+
+	for (int i = 0; i < 2; ++i)
 	{
-		for (deUint8 j = 0; j < 2; ++j)
+		for (int j = 0; j < 2; ++j)
 		{
-			for (deUint8 k = 0; k < 2; ++k)
+		    fetchTexel(texelBase + IVec3(i, j, 0), layer, level, VK_FILTER_LINEAR, texelsMin[2 * j + i], texelsMax[2 * j + i]);
+		}
+	}
+
+	Interval resultIntervals[4];
+
+	for (int ndx = 0; ndx < 4; ++ndx)
+	{
+		resultIntervals[ndx] = Interval(0.0);
+	}
+
+	for (int i = 0; i < 2; ++i)
+	{
+		const Interval iWeightInterval = m_internalFormat.roundOut(Interval(i == 0 ? 1.0f - weights[1] : weights[1]), false);
+
+		for (int j = 0; j < 2; ++j)
+		{
+		    const Interval jWeightInterval = m_internalFormat.roundOut(iWeightInterval * Interval(j == 0 ? 1.0f - weights[0] : weights[0]), false);
+
+			for (int compNdx = 0; compNdx < 4; ++compNdx)
 			{
-				texels[4 * k + 2 * j + i] = fetchTexel(texelBase + IVec3(i, j, k), layer, level, VK_FILTER_LINEAR);
+				const Interval texelInterval(false, texelsMin[2 * i + j][compNdx], texelsMax[2 * i + j][compNdx]);
+
+				resultIntervals[compNdx] = m_internalFormat.roundOut(resultIntervals[compNdx] + jWeightInterval * texelInterval, false);
 			}
 		}
 	}
 
-	return (1.0f - weights[0]) * (1.0f - weights[1]) * (1.0f - weights[2]) * texels[0]
-		+ weights[0] * (1.0f - weights[1]) * (1.0f - weights[2]) * texels[1]
-		+ (1.0f - weights[0]) * weights[1] * (1.0f - weights[2]) * texels[2]
-		+ weights[0] * weights[1] * (1.0f - weights[2]) * texels[3]
-		+ (1.0f - weights[0]) * (1.0f - weights[1]) * weights[2] * texels[4]
-		+ weights[0] * (1.0f - weights[1]) * weights[2] * texels[5]
-		+ (1.0f - weights[0]) * weights[1] * weights[2] * texels[6]
-		+ weights[0] * weights[1] * weights[3] * texels[7];
+	for (int compNdx = 0; compNdx < 4; ++compNdx)
+	{
+		resultMin[compNdx] = (float)resultIntervals[compNdx].lo();
+		resultMax[compNdx] = (float)resultIntervals[compNdx].hi();
+	}
 }
 
-Vec4 SampleVerifier::getFilteredSample (const IVec3&	texelBase,
+void SampleVerifier::getFilteredSample3D (const IVec3&	texelBase,
+										  const Vec3&	weights,
+										  int			layer,
+										  int			level,
+										  Vec4&			resultMin,
+										  Vec4& 		resultMax) const
+{
+	Vec4 texelsMin[8];
+	Vec4 texelsMax[8];
+
+	for (int i = 0; i < 2; ++i)
+	{
+		for (int j = 0; j < 2; ++j)
+		{
+			for (int k = 0; k < 2; ++k)
+			{
+			    fetchTexel(texelBase + IVec3(i, j, k), layer, level, VK_FILTER_LINEAR, texelsMin[4 * k + 2 * j + i], texelsMax[4 * k + 2 * j + i]);
+			}
+		}
+	}
+
+    Interval resultIntervals[4];
+
+	for (int ndx = 0; ndx < 4; ++ndx)
+	{
+		resultIntervals[ndx] = Interval(0.0);
+	}
+
+	for (int i = 0; i < 2; ++i)
+	{
+	    const Interval iWeightInterval = m_internalFormat.roundOut(Interval(i == 0 ? 1.0f - weights[2] : weights[2]), false);
+
+		for (int j = 0; j < 2; ++j)
+		{
+		    const Interval jWeightInterval = m_internalFormat.roundOut(iWeightInterval * Interval(j == 0 ? 1.0f - weights[1] : weights[1]), false);
+
+			for (int k = 0; k < 2; ++k)
+			{
+			    const Interval kWeightInterval = m_internalFormat.roundOut(jWeightInterval * Interval(k == 0 ? 1.0f - weights[0] : weights[0]), false);
+
+				for (int compNdx = 0; compNdx < 4; ++compNdx)
+				{
+					const Interval texelInterval(false, texelsMin[4 * i + 2 * j + k][compNdx], texelsMax[4 * i + 2 * j + k][compNdx]);
+
+					resultIntervals[compNdx] = m_internalFormat.roundOut(resultIntervals[compNdx] + kWeightInterval * texelInterval, false);
+				}
+			}
+		}
+	}
+
+	for (int compNdx = 0; compNdx < 4; ++compNdx)
+	{
+		resultMin[compNdx] = (float)resultIntervals[compNdx].lo();
+		resultMax[compNdx] = (float)resultIntervals[compNdx].hi();
+	}
+}
+
+void SampleVerifier::getFilteredSample (const IVec3&	texelBase,
 										const Vec3&		weights,
-										deUint32		layer,
-										deUint8			level) const
+										int				layer,
+										int				level,
+										Vec4&			resultMin,
+										Vec4& 			resultMax) const
 {
 	DE_ASSERT(layer < m_imParams.arrayLayers);
 	DE_ASSERT(level < m_imParams.levels);
 
 	if (m_imParams.dim == IMG_DIM_1D)
 	{
-		return getFilteredSample1D(texelBase, weights.x(), layer, level);
+		getFilteredSample1D(texelBase, weights.x(), layer, level, resultMin, resultMax);
 	}
 	else if (m_imParams.dim == IMG_DIM_2D || m_imParams.dim == IMG_DIM_CUBE)
 	{
-		return getFilteredSample2D(texelBase, weights.swizzle(0, 1), layer, level);
+		getFilteredSample2D(texelBase, weights.swizzle(0, 1), layer, level, resultMin, resultMax);
 	}
 	else
 	{
-		return getFilteredSample3D(texelBase, weights, layer, level);
-	}
-}
-
-void SampleVerifier::getWeightStepBounds (const Vec3&	unnormalizedCoord,
-										  IVec3&		weightStepMin,
-										  IVec3&		weightStepMax,
-										  IVec3&		texelBase) const
-{
-	DE_ASSERT(m_coordBits < 32);
-	const deUint32 coordSteps = ((deUint32) 1) << m_coordBits;
-
-    for (deUint8 compNdx = 0; compNdx < m_unnormalizedDim; ++compNdx)
-	{
-		const float component = unnormalizedCoord[compNdx];
-		double intPart;
-
-		float weight = (float) modf((double) component - 0.5, &intPart);
-
-		if (weight < 0.0f)
-		{
-			weight = 1.0f + weight;
-			intPart -= 1.0;
-		}
-
-		texelBase[compNdx] = (deInt32) intPart;
-
-		weightStepMin[compNdx] = deCeilFloatToInt32 (weight * (float) coordSteps - 1.5f);
-		weightStepMax[compNdx] = deFloorFloatToInt32(weight * (float) coordSteps + 1.5f);
-
-		weightStepMin[compNdx] = de::max(weightStepMin[compNdx], (deInt32) 0);
-		weightStepMax[compNdx] = de::min(weightStepMax[compNdx], (deInt32) coordSteps);
+		getFilteredSample3D(texelBase, weights, layer, level, resultMin, resultMax);
 	}
 }
 
@@ -643,20 +451,22 @@ void SampleVerifier::getMipmapStepBounds (const Vec2&	lodFracBounds,
 										  deInt32& 		stepMax) const
 {
 	DE_ASSERT(m_mipmapBits < 32);
-	const deUint32 mipmapSteps = ((deUint32) 1) << m_mipmapBits;
+	const int mipmapSteps = ((int)1) << m_mipmapBits;
 
-	stepMin = deFloorFloatToInt32(lodFracBounds[0] * (float) mipmapSteps);
-	stepMax = deCeilFloatToInt32 (lodFracBounds[1] * (float) mipmapSteps);
+	stepMin = deFloorFloatToInt32(lodFracBounds[0] * (float)mipmapSteps);
+	stepMax = deCeilFloatToInt32 (lodFracBounds[1] * (float)mipmapSteps);
 
-	stepMin = de::max(stepMin, (deInt32) 0);
-	stepMax = de::min(stepMax, (deInt32) mipmapSteps);
+	stepMin = de::max(stepMin, (deInt32)0);
+	stepMax = de::min(stepMax, (deInt32)mipmapSteps);
 }
 
 bool SampleVerifier::verifySampleFiltered (const Vec4&			result,
-										   const Vec3&			unnormalizedCoordHi,
-										   const Vec3&			unnormalizedCoordLo,
-										   deUint32				layer,
-										   deUint8				levelHi,
+										   const IVec3&			baseTexelHiIn,
+										   const IVec3&			baseTexelLoIn,
+										   const IVec3&			texelGridOffsetHiIn,
+										   const IVec3&			texelGridOffsetLoIn,
+										   int					layer,
+										   int					levelHi,
 										   const Vec2&			lodFracBounds,
 										   VkFilter				filter,
 										   VkSamplerMipmapMode	mipmapFilter,
@@ -665,120 +475,96 @@ bool SampleVerifier::verifySampleFiltered (const Vec4&			result,
 	DE_ASSERT(layer < m_imParams.arrayLayers);
 	DE_ASSERT(levelHi < m_imParams.levels);
 
-	const float		epsilon	   = calcRelEpsilon(m_imParams.format, filter, mipmapFilter);
+	const int	coordSteps			= 1 << m_coordBits;
+	const int	lodSteps			= 1 << m_mipmapBits;
+	const int	levelLo				= (levelHi < m_imParams.levels - 1) ? levelHi + 1 : levelHi;
 
-	const deUint32	coordSteps = ((deUint32) 1) << m_coordBits;
-	const deUint32	lodSteps   = ((deUint32) 1) << m_mipmapBits;
+	IVec3		baseTexelHi			= baseTexelHiIn;
+	IVec3		baseTexelLo			= baseTexelLoIn;
+	IVec3		texelGridOffsetHi	= texelGridOffsetHiIn;
+	IVec3		texelGridOffsetLo	= texelGridOffsetLoIn;
+	deInt32		lodStepsMin			= 0;
+	deInt32		lodStepsMax			= 0;
 
-	IVec3			texelBase[2];
-	IVec3			weightStepsMin[2];
-	IVec3			weightStepsMax[2];
-	deInt32			lodStepsMin;
-	deInt32			lodStepsMax;
+	getMipmapStepBounds(lodFracBounds, lodStepsMin, lodStepsMax);
 
-	int				levels;
-	int				levelLo;
+	report << "Testing at base texel " << baseTexelHi << ", " << baseTexelLo << " offset " << texelGridOffsetHi << ", " << texelGridOffsetLo << "\n";
 
-	if (levelHi == m_imParams.levels - 1 || mipmapFilter == VK_SAMPLER_MIPMAP_MODE_NEAREST)
+	Vec4 idealSampleHiMin;
+	Vec4 idealSampleHiMax;
+	Vec4 idealSampleLoMin;
+	Vec4 idealSampleLoMax;
+
+	// Get ideal samples at steps at each mipmap level
+
+	if (filter == VK_FILTER_LINEAR)
 	{
-		levels = 1;
-		levelLo = levelHi;
-		mipmapFilter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-	}
-	else
-	{
-		levels = 2;
-		levelLo = 1 + levelHi;
-	}
-
-	getWeightStepBounds(unnormalizedCoordHi, weightStepsMin[0], weightStepsMax[0], texelBase[0]);
-
-	if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
-	{
-		getWeightStepBounds(unnormalizedCoordLo, weightStepsMin[1], weightStepsMax[1], texelBase[1]);
-		getMipmapStepBounds(lodFracBounds, lodStepsMin, lodStepsMax);
-	}
-	else
-	{
-		texelBase[1] = IVec3(0);
-		weightStepsMin[1] = IVec3(0);
-		weightStepsMax[1] = IVec3(0);
-	}
-
-	IVec3 weightSteps[2] = {weightStepsMin[0], weightStepsMin[1]};
-
-	bool done = false;
-
-	while (!done)
-	{
-		report << "Testing at base texel " << texelBase[0] << ", " << texelBase[1] << " with weight steps " << weightSteps[0] << ", " << weightSteps[1] << "\n";
-
-		Vec4 idealSampleHi, idealSampleLo;
-
-		// Get ideal samples at steps at each mipmap level
-
-		if (filter == VK_FILTER_LINEAR)
-		{
-			Vec3 roundedWeightsHi, roundedWeightsLo;
-
-			roundedWeightsHi = weightSteps[0].asFloat() / (float) coordSteps;
-			roundedWeightsLo = weightSteps[1].asFloat() / (float) coordSteps;
-
-			report << "Computed weights: " << roundedWeightsHi << ", " << roundedWeightsLo << "\n";
-
-			idealSampleHi = getFilteredSample(texelBase[0], roundedWeightsHi, layer, levelHi);
-
-			report << "Ideal hi sample: " << idealSampleHi << "\n";
-
-			if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
-			{
-				idealSampleLo = getFilteredSample(texelBase[1], roundedWeightsLo, layer, (deUint8)levelLo);
-
-				report << "Ideal lo sample: " << idealSampleLo << "\n";
-			}
-		}
-		else
-		{
-			// \todo [2016-07-14 collinbaker] fix this because this is definitely wrong
-			idealSampleHi = fetchTexel(floor(unnormalizedCoordHi).cast<deInt32>(), layer, levelHi, VK_FILTER_NEAREST);
-
-			report << "Ideal hi sample: " << idealSampleHi << "\n";
-
-			if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
-			{
-				idealSampleLo = fetchTexel(floor(unnormalizedCoordLo).cast<deInt32>(), layer, (deUint8)levelLo, VK_FILTER_NEAREST);
-
-				report << "Ideal lo sample: " << idealSampleLo << "\n";
-			}
-		}
-
-		// Test ideal samples based on mipmap filtering mode
+		// Adjust texel grid coordinates for linear filtering
+		wrapTexelGridCoordLinear(baseTexelHi, texelGridOffsetHi, m_coordBits, m_imParams.dim);
 
 		if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
 		{
-			for (deInt32 lodStep = lodStepsMin; lodStep <= lodStepsMax; ++lodStep)
-			{
-				float weight = (float) lodStep / (float) lodSteps;
-
-				report << "Testing at mipmap weight " << weight << "\n";
-
-				Vec4 idealSample = weight * idealSampleLo + (1.0f - weight) * idealSampleHi;
-
-				report << "Ideal sample: " << idealSample << "\n";
-
-				if (isEqualRelEpsilon(idealSample, result, epsilon))
-				{
-					return true;
-				}
-				else
-				{
-					report << "Failed comparison\n";
-				}
-			}
+			wrapTexelGridCoordLinear(baseTexelLo, texelGridOffsetLo, m_coordBits, m_imParams.dim);
 		}
-		else if (filter == VK_FILTER_LINEAR)
+
+		const Vec3 roundedWeightsHi = texelGridOffsetHi.asFloat() / (float)coordSteps;
+		const Vec3 roundedWeightsLo = texelGridOffsetLo.asFloat() / (float)coordSteps;
+
+		report << "Computed weights: " << roundedWeightsHi << ", " << roundedWeightsLo << "\n";
+
+	    getFilteredSample(baseTexelHi, roundedWeightsHi, layer, levelHi, idealSampleHiMin, idealSampleHiMax);
+
+		report << "Ideal hi sample: " << idealSampleHiMin << " through " << idealSampleHiMax << "\n";
+
+		if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
 		{
-			if (isEqualRelEpsilon(idealSampleHi, result, epsilon))
+		    getFilteredSample(baseTexelLo, roundedWeightsLo, layer, levelLo, idealSampleLoMin, idealSampleLoMax);
+
+			report << "Ideal lo sample: " << idealSampleLoMin << " through " << idealSampleLoMax << "\n";
+		}
+	}
+	else
+	{
+	    fetchTexel(baseTexelHi, layer, levelHi, VK_FILTER_NEAREST, idealSampleHiMin, idealSampleHiMax);
+
+		report << "Ideal hi sample: " << idealSampleHiMin << " through " << idealSampleHiMax << "\n";
+
+		if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
+		{
+		    fetchTexel(baseTexelLo, layer, levelLo, VK_FILTER_NEAREST, idealSampleLoMin, idealSampleLoMax);
+
+			report << "Ideal lo sample: " << idealSampleLoMin << " through " << idealSampleLoMax << "\n";
+		}
+	}
+
+	// Test ideal samples based on mipmap filtering mode
+
+	if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
+	{
+		for (deInt32 lodStep = lodStepsMin; lodStep <= lodStepsMax; ++lodStep)
+		{
+			float weight = (float)lodStep / (float)lodSteps;
+
+			report << "Testing at mipmap weight " << weight << "\n";
+
+			Vec4 idealSampleMin;
+			Vec4 idealSampleMax;
+
+			for (int compNdx = 0; compNdx < 4; ++compNdx)
+			{
+				const Interval idealSampleLo(false, idealSampleLoMin[compNdx], idealSampleLoMax[compNdx]);
+				const Interval idealSampleHi(false, idealSampleHiMin[compNdx], idealSampleHiMax[compNdx]);
+
+				const Interval idealSample
+					= m_internalFormat.roundOut(Interval(weight) * idealSampleLo + Interval(1.0f - weight) * idealSampleHi, false);
+
+				idealSampleMin[compNdx] = (float)idealSample.lo();
+				idealSampleMax[compNdx] = (float)idealSample.hi();
+			}
+
+			report << "Ideal sample: " << idealSampleMin << " through " << idealSampleMax << "\n";
+
+			if (isInRange(result, idealSampleMin, idealSampleMax))
 			{
 				return true;
 			}
@@ -787,70 +573,44 @@ bool SampleVerifier::verifySampleFiltered (const Vec4&			result,
 				report << "Failed comparison\n";
 			}
 		}
+	}
+	else
+	{
+		if (isInRange(result, idealSampleHiMin, idealSampleHiMax))
+		{
+			return true;
+		}
 		else
 		{
-			if (idealSampleHi == result)
-			{
-				return true;
-			}
-		}
-
-		// Increment step
-
-		// Represents whether the increment at a position wraps and should "carry" to the next place
-		bool carry = true;
-
-		for (deUint8 levelNdx = 0; levelNdx < levels; ++levelNdx)
-		{
-			for (deUint8 compNdx = 0; compNdx < 3; ++compNdx)
-			{
-				if (carry)
-				{
-					carry = false;
-					deInt32& n = weightSteps[levelNdx][compNdx];
-
-					if (n++ == weightStepsMax[levelNdx][compNdx])
-					{
-						n = weightStepsMin[levelNdx][compNdx];
-						carry = true;
-					}
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			if (!carry)
-			{
-				break;
-			}
-		}
-
-		if (carry)
-		{
-			done = true;
+			report << "Failed comparison\n";
 		}
 	}
-
-	report << "Failed comparison against all possible weights\n\n";
 
 	return false;
 }
 
-bool SampleVerifier::verifySampleUnnormalizedCoords (const SampleArguments&	args,
-													 const Vec4&			result,
-													 const Vec3&			unnormalizedCoord,
-													 const Vec3&			unnormalizedCoordLo,
-													 const Vec2&			lodBounds,
-													 deUint8				level,
-													 VkSamplerMipmapMode	mipmapFilter,
-													 std::ostream&			report) const
+bool SampleVerifier::verifySampleTexelGridCoords (const SampleArguments&	args,
+												  const Vec4&				result,
+												  const IVec3&				gridCoordHi,
+												  const IVec3&				gridCoordLo,
+												  const Vec2&				lodBounds,
+												  int						level,
+												  VkSamplerMipmapMode		mipmapFilter,
+												  std::ostream&				report) const
 {
-	const deUint8 layer = m_imParams.isArrayed ? (deUint8) deRoundEven(args.layer) : 0U;
+	const int	layer		 = m_imParams.isArrayed ? (int)deRoundEven(args.layer) : 0U;
+	const IVec3 gridCoord[2] = {gridCoordHi, gridCoordLo};
 
-	const bool canBeMinified = lodBounds[1] > 0.0f;
-	const bool canBeMagnified = lodBounds[0] <= 0.0f;
+	IVec3 baseTexel[2];
+	IVec3 texelGridOffset[2];
+
+    for (int levelNdx = 0; levelNdx < 2; ++levelNdx)
+	{
+		calcTexelBaseOffset(gridCoord[levelNdx], m_coordBits, baseTexel[levelNdx], texelGridOffset[levelNdx]);
+	}
+
+	const bool	canBeMinified  = lodBounds[1] > 0.0f;
+	const bool	canBeMagnified = lodBounds[0] <= 0.0f;
 
 	if (canBeMagnified)
 	{
@@ -858,22 +618,25 @@ bool SampleVerifier::verifySampleUnnormalizedCoords (const SampleArguments&	args
 
 		if (m_samplerParams.magFilter == VK_FILTER_NEAREST)
 		{
-			report << "Testing against nearest texel at " << floor(unnormalizedCoord).cast<deInt32>() << "\n";
+			report << "Testing against nearest texel at " << baseTexel[0] << "\n";
 
-			const Vec4 ideal = fetchTexel(floor(unnormalizedCoord).cast<deInt32>(), layer, level, VK_FILTER_NEAREST);
+			Vec4 idealMin;
+			Vec4 idealMax;
 
-			if (result == ideal)
+			fetchTexel(baseTexel[0], layer, level, VK_FILTER_NEAREST, idealMin, idealMax);
+
+			if (isInRange(result, idealMin, idealMax))
 		    {
 				return true;
 			}
 			else
 			{
-				report << "Failed against " << ideal << "\n";
+				report << "Failed against " << idealMin << " through " << idealMax << "\n";
 			}
 		}
 		else
 		{
-			if  (verifySampleFiltered(result, unnormalizedCoord, Vec3(0.0f), layer, level, Vec2(0.0f, 0.0f), VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, report))
+			if  (verifySampleFiltered(result, baseTexel[0], baseTexel[1], texelGridOffset[0], texelGridOffset[1], layer, level, Vec2(0.0f, 0.0f), VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, report))
 				return true;
 		}
 	}
@@ -884,29 +647,32 @@ bool SampleVerifier::verifySampleUnnormalizedCoords (const SampleArguments&	args
 
 		if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
 		{
-			const Vec2 lodFracBounds = lodBounds - Vec2(level);
+			const Vec2 lodFracBounds = lodBounds - Vec2((float)level);
 
-			if (verifySampleFiltered(result, unnormalizedCoord, unnormalizedCoordLo, layer, level, lodFracBounds, m_samplerParams.minFilter, VK_SAMPLER_MIPMAP_MODE_LINEAR, report))
+			if (verifySampleFiltered(result, baseTexel[0], baseTexel[1], texelGridOffset[0], texelGridOffset[1], layer, level, lodFracBounds, m_samplerParams.minFilter, VK_SAMPLER_MIPMAP_MODE_LINEAR, report))
 				return true;
 		}
 		else if (m_samplerParams.minFilter == VK_FILTER_LINEAR)
 		{
-		    if (verifySampleFiltered(result, unnormalizedCoord, Vec3(0.0f), layer, level, Vec2(0.0f, 0.0f), VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, report))
+		    if (verifySampleFiltered(result, baseTexel[0], baseTexel[1], texelGridOffset[0], texelGridOffset[1], layer, level, Vec2(0.0f, 0.0f), VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, report))
 				return true;
 		}
 		else
 		{
-			report << "Testing against nearest texel at " << floor(unnormalizedCoord).cast<deInt32>() << "\n";
+			report << "Testing against nearest texel at " << baseTexel[0] << "\n";
 
-			Vec4 ideal = fetchTexel(floor(unnormalizedCoord).cast<deInt32>(), layer, level, VK_FILTER_NEAREST);
+			Vec4 idealMin;
+			Vec4 idealMax;
 
-			if (result == ideal)
+		    fetchTexel(baseTexel[0], layer, level, VK_FILTER_NEAREST, idealMin, idealMax);
+
+			if (isInRange(result, idealMin, idealMax))
 		    {
 				return true;
 			}
 			else
 			{
-				report << "Failed against " << ideal << "\n";
+				report << "Failed against " << idealMin << " through " << idealMax << "\n";
 			}
 		}
 	}
@@ -918,7 +684,7 @@ bool SampleVerifier::verifySampleMipmapLevel (const SampleArguments&	args,
 											  const Vec4&				result,
 											  const Vec4&				coord,
 											  const Vec2&				lodBounds,
-											  deUint8					level,
+											  int						level,
 											  std::ostream&				report) const
 {
 	DE_ASSERT(level < m_imParams.levels);
@@ -930,136 +696,88 @@ bool SampleVerifier::verifySampleMipmapLevel (const SampleArguments&	args,
 		mipmapFilter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 	}
 
-	Vector<double, 3> unnormalizedCoordHiDbl, unnormalizedCoordLoDbl;
+	Vec3	unnormalizedCoordMin[2];
+	Vec3	unnormalizedCoordMax[2];
+	IVec3	gridCoordMin[2];
+	IVec3	gridCoordMax[2];
 
-	unnormalizedCoordHiDbl = coord.cast<double>().swizzle(0, 1, 2) * m_pba[level].getSize().cast<double>();
+	const FloatFormat coordFormat(-32, 32, 16, true);
+
+	calcUnnormalizedCoordRange(coord,
+							   m_pba[level].getSize(),
+							   coordFormat,
+							   unnormalizedCoordMin[0],
+							   unnormalizedCoordMax[0]);
+
+	calcTexelGridCoordRange(unnormalizedCoordMin[0],
+							unnormalizedCoordMax[0],
+							m_coordBits,
+							gridCoordMin[0],
+							gridCoordMax[0]);
+
+	report << "Level " << level << " computed unnormalized coordinate range: [" << unnormalizedCoordMin[0] << ", " << unnormalizedCoordMax[0] << "]\n";
+	report << "Level " << level << " computed texel grid coordinate range: [" << gridCoordMin[0] << ", " << gridCoordMax[0] << "]\n";
 
 	if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
 	{
-		unnormalizedCoordLoDbl = coord.cast<double>().swizzle(0, 1, 2) * m_pba[level + 1].getSize().cast<double>();
+		calcUnnormalizedCoordRange(coord,
+								   m_pba[level+1].getSize(),
+								   coordFormat,
+								   unnormalizedCoordMin[1],
+								   unnormalizedCoordMax[1]);
+
+		calcTexelGridCoordRange(unnormalizedCoordMin[1],
+								unnormalizedCoordMax[1],
+								m_coordBits,
+								gridCoordMin[1],
+								gridCoordMax[1]);
+
+
+		report << "Level " << level+1 << " computed unnormalized coordinate range: [" << unnormalizedCoordMin[1] << " - " << unnormalizedCoordMax[1] << "]\n";
+		report << "Level " << level+1 << " computed texel grid coordinate range: [" << gridCoordMin[1] << " - " << gridCoordMax[1] << "]\n";
 	}
-
-	// Check if result(s) will be rounded
-
-	bool hiIsRounded[3] = {false};
-	bool loIsRounded[3] = {false};
-
-	for (deUint8 compNdx = 0; compNdx < 3; ++compNdx)
+	else
 	{
-		hiIsRounded[compNdx] = ((double) (float) unnormalizedCoordHiDbl[compNdx]) != unnormalizedCoordHiDbl[compNdx];
-
-		if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
-		{
-			loIsRounded[compNdx] = ((double) (float) unnormalizedCoordLoDbl[compNdx]) != unnormalizedCoordLoDbl[compNdx];
-		}
+		unnormalizedCoordMin[1] = unnormalizedCoordMax[1] = Vec3(0.0f);
+		gridCoordMin[1] = gridCoordMax[1] = IVec3(0);
 	}
-
-	const deInt32 ulpEpsilon	= (deInt32) (2.0e-5f / FLT_EPSILON);
-	const deInt32 ulpOffsets[3] = {0, -ulpEpsilon, ulpEpsilon};
-
-	deUint8 roundTypesHi[3] = {0, 0, 0};
-	deUint8 roundTypesLo[3] = {0, 0, 0};
 
 	bool done = false;
 
-	// Take into account different possible rounding modes by offsetting rounded result by ULPs
-	// \todo [2016-07-15 collinbaker] This is not 100% correct; should simulate floating point arithmetic with possible rounding modes
+	IVec3 gridCoord[2] = {gridCoordMin[0], gridCoordMin[1]};
+
     while (!done)
 	{
-		Vec3 unnormalizedCoordHi;
-		Vec3 unnormalizedCoordLo;
-
-		for (deUint8 compNdx = 0; compNdx < 3; ++compNdx)
-		{
-			float comp = coord[compNdx];
-			float compHi;
-			float compLo;
-
-			if (roundTypesHi[compNdx] != 0 && comp > FLT_MIN * (float) ulpEpsilon)
-			{
-				compHi = addUlp(comp, ulpOffsets[roundTypesHi[compNdx]]);
-			}
-			else
-			{
-				compHi = comp;
-			}
-
-			if (roundTypesLo[compNdx] != 0 && comp > FLT_MIN * (float) ulpEpsilon)
-			{
-				compLo = addUlp(comp, ulpOffsets[roundTypesLo[compNdx]]);
-			}
-			else
-			{
-				compLo = comp;
-			}
-
-			unnormalizedCoordHi[compNdx] = compHi * (float) m_pba[level].getSize()[compNdx];
-
-			if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
-			{
-			    unnormalizedCoordLo[compNdx] = compLo * (float) m_pba[level + 1].getSize()[compNdx];
-			}
-		}
-
-		report << "Testing at " << unnormalizedCoordHi << ", " << unnormalizedCoordLo << "\n";
-
-		if (verifySampleUnnormalizedCoords(args, result, unnormalizedCoordHi, unnormalizedCoordLo, lodBounds, level, mipmapFilter, report))
+		if (verifySampleTexelGridCoords(args, result, gridCoord[0], gridCoord[1], lodBounds, level, mipmapFilter, report))
 			return true;
 
-		// Increment rounding types
+		// Get next grid coordinate to test at
 
+		// Represents whether the increment at a position wraps and should "carry" to the next place
 		bool carry = true;
 
-		for (deUint8 compNdx = 0; compNdx < 3; ++compNdx)
+		for (int levelNdx = 0; levelNdx < 2; ++levelNdx)
 		{
-			if (hiIsRounded[compNdx])
+			for (int compNdx = 0; compNdx < 3; ++compNdx)
 			{
 				if (carry)
 				{
-					if (roundTypesHi[compNdx] == 2)
+					deInt32& comp = gridCoord[levelNdx][compNdx];
+				    ++comp;
+
+					if (comp > gridCoordMax[levelNdx][compNdx])
 					{
-						roundTypesHi[compNdx] = 0;
+						comp = gridCoordMin[levelNdx][compNdx];
 					}
 					else
 					{
-						roundTypesHi[compNdx]++;
 						carry = false;
 					}
-				}
-				else
-				{
-					break;
 				}
 			}
 		}
 
-		for (deUint8 compNdx = 0; compNdx < 3; ++compNdx)
-		{
-			if (loIsRounded[compNdx])
-			{
-				if (carry)
-				{
-					if (roundTypesLo[compNdx] == 2)
-					{
-						roundTypesLo[compNdx] = 0;
-					}
-					else
-					{
-						roundTypesLo[compNdx]++;
-						carry = false;
-					}
-				}
-				else
-				{
-					break;
-				}
-			}
-		}
-
-		if (carry)
-		{
-			done = true;
-		}
+		done = carry;
 	}
 
 	return false;
@@ -1070,7 +788,7 @@ bool SampleVerifier::verifySampleCubemapFace (const SampleArguments&	args,
 											  const Vec4&				coord,
 											  const Vec4&				dPdx,
 											  const Vec4&				dPdy,
-											  deUint8					face,
+											  int						face,
 											  std::ostream&				report) const
 {
 	// Will use this parameter once cubemapping is implemented completely
@@ -1080,36 +798,17 @@ bool SampleVerifier::verifySampleCubemapFace (const SampleArguments&	args,
 
 	if (m_sampleLookupSettings.lookupLodMode == LOOKUP_LOD_MODE_DERIVATIVES)
 	{
-		const Vec3 mx = abs(dPdx.swizzle(0, 1, 2)) * m_imParams.size.asFloat();
-		const Vec3 my = abs(dPdy.swizzle(0, 1, 2)) * m_imParams.size.asFloat();
-
-		Vec2 scaleXBounds;
-		Vec2 scaleYBounds;
-
-		scaleXBounds[0] = de::max(de::abs(mx[0]), de::max(de::abs(mx[1]), de::abs(mx[2])));
-		scaleYBounds[0] = de::max(de::abs(my[0]), de::max(de::abs(my[1]), de::abs(my[2])));
-
-		scaleXBounds[1] = de::abs(mx[0]) + de::abs(mx[1]) + de::abs(mx[2]);
-		scaleYBounds[1] = de::abs(my[0]) + de::abs(my[1]) + de::abs(my[2]);
-
-		Vec2 scaleMaxBounds;
-
-		for (deUint8 compNdx = 0; compNdx < 2; ++compNdx)
-		{
-			scaleMaxBounds[compNdx] = de::max(scaleXBounds[compNdx], scaleYBounds[compNdx]);
-		}
-
 		float lodBias = m_samplerParams.lodBias;
 
 		if (m_sampleLookupSettings.hasLodBias)
 			lodBias += args.lodBias;
 
-		for (deUint8 compNdx = 0; compNdx < 2; ++compNdx)
-		{
-			lodBounds[compNdx] = deFloatLog2(scaleMaxBounds[compNdx]);
-			lodBounds[compNdx] += lodBias;
-			lodBounds[compNdx] = de::clamp(lodBounds[compNdx], m_samplerParams.minLod, m_samplerParams.maxLod);
-		}
+		lodBounds = calcLodBounds(dPdx.swizzle(0, 1, 2),
+								  dPdy.swizzle(0, 1, 2),
+								  m_imParams.size,
+								  lodBias,
+								  m_samplerParams.minLod,
+								  m_samplerParams.maxLod);
 	}
 	else
 	{
@@ -1118,73 +817,20 @@ bool SampleVerifier::verifySampleCubemapFace (const SampleArguments&	args,
 
 	DE_ASSERT(lodBounds[0] <= lodBounds[1]);
 
-    const float q = (float) (m_imParams.levels - 1);
+    const UVec2 levelBounds = calcLevelBounds(lodBounds, m_imParams.levels, m_samplerParams.mipmapFilter);
 
-	if (m_samplerParams.mipmapFilter == VK_SAMPLER_MIPMAP_MODE_NEAREST)
+	for (deUint32 level = levelBounds[0]; level <= levelBounds[1]; ++level)
 	{
-		UVec2 levelBounds;
+		report << "Testing at mipmap level " << level << "...\n";
 
-	    if (lodBounds[0] <= 0.5f)
+		const Vec2 levelLodBounds = calcLevelLodBounds(lodBounds, level);
+
+		if (verifySampleMipmapLevel(args, result, coord, levelLodBounds, level, report))
 		{
-			levelBounds[0] = 0;
-		}
-		else if (lodBounds[0] < q + 0.5f)
-		{
-			levelBounds[0] = deCeilFloatToInt32(lodBounds[0] + 0.5f) - 1;
-		}
-		else
-		{
-			levelBounds[0] = deRoundFloatToInt32(q);
+			return true;
 		}
 
-		if (lodBounds[1] < 0.5f)
-		{
-			levelBounds[1] = 0;
-		}
-		else if (lodBounds[1] < q + 0.5f)
-		{
-			levelBounds[1] = deFloorFloatToInt32(lodBounds[1] + 0.5f);
-		}
-		else
-		{
-			levelBounds[1] = deRoundFloatToInt32(q);
-		}
-
-		for (deUint8 level = (deUint8) levelBounds[0]; level <= (deUint8) levelBounds[1]; ++level)
-		{
-			const Vec2 levelLodBounds = computeLevelLodBounds(lodBounds, level);
-
-			if (verifySampleMipmapLevel(args, result, coord, levelLodBounds, level, report))
-			{
-				return true;
-			}
-		}
-	}
-	else
-	{
-		UVec2 levelBounds;
-
-		for (deUint8 compNdx = 0; compNdx < 2; ++compNdx)
-		{
-			if (lodBounds[compNdx] >= q)
-			{
-				levelBounds[compNdx] = deRoundFloatToInt32(q);
-			}
-			else
-			{
-				levelBounds[compNdx] = lodBounds[compNdx] < 0.0f ? 0 : deFloorFloatToInt32(lodBounds[compNdx]);
-			}
-		}
-
-		for (deUint8 level = (deUint8) levelBounds[0]; level <= (deUint8) levelBounds[1]; ++level)
-		{
-			const Vec2 levelLodBounds = computeLevelLodBounds(lodBounds, level);
-
-			if (verifySampleMipmapLevel(args, result, coord, levelLodBounds, level, report))
-			{
-				return true;
-			}
-		}
+		report << "Done testing mipmap level " << level << ".\n\n";
 	}
 
 	return false;
@@ -1198,8 +844,8 @@ bool SampleVerifier::verifySampleImpl (const SampleArguments&	args,
 	// \todo [2016-07-06 collinbaker] Handle dRef
 	DE_ASSERT(m_samplerParams.isCompare == false);
 
-	Vec4 coord = args.coord;
-	deUint8 coordSize = 0;
+	Vec4	coord	  = args.coord;
+	int coordSize = 0;
 
 	if (m_imParams.dim == IMG_DIM_1D)
 	{
@@ -1231,94 +877,39 @@ bool SampleVerifier::verifySampleImpl (const SampleArguments&	args,
 
 	if (m_imParams.dim == IMG_DIM_CUBE)
 	{
-		const Vec3 r = coord.swizzle(0, 1, 2);
-		const Vec3 drdx = dPdx.swizzle(0, 1, 2);
-		const Vec3 drdy = dPdy.swizzle(0, 1, 2);
+		const Vec3	r		   = coord.swizzle(0, 1, 2);
+		const Vec3	drdx	   = dPdx.swizzle(0, 1, 2);
+		const Vec3	drdy	   = dPdy.swizzle(0, 1, 2);
 
-		BVec3 isMajor(false);
-		float rMax = de::abs(r[0]);
-
-		for (deUint8 compNdx = 1; compNdx < 3; ++compNdx)
-		{
-			rMax = de::max(rMax, de::abs(r[compNdx]));
-		}
-
-		for (deUint8 compNdx = 0; compNdx < 3; ++compNdx)
-		{
-			if (de::abs(r[compNdx]) == rMax)
-			{
-				isMajor[compNdx] = true;
-			}
-		}
-
-		DE_ASSERT(isMajor[0] || isMajor[1] || isMajor[2]);
+	    int			faceBitmap = calcCandidateCubemapFaces(r);
 
 		// We must test every possible disambiguation order
 
-		for (deUint8 i = 0; i < 3; ++i)
+		for (int faceNdx = 0; faceNdx < 6; ++faceNdx)
 		{
-		    if (!isMajor[i])
+			const bool isPossible = faceBitmap & (1U << faceNdx);
+
+		    if (!isPossible)
 			{
 				continue;
 			}
 
-			const deUint8 faceNdx = (deUint8) (2U * i + (r[i] < 0.0f ? 1U : 0U));
+			Vec2 coordFace;
+			Vec2 dPdxFace;
+			Vec2 dPdyFace;
 
-			const deUint8 compMap[6][3] =
+			calcCubemapFaceCoords(r, drdx, drdy, faceNdx, coordFace, dPdxFace, dPdyFace);
+
+			if (verifySampleCubemapFace(args,
+										result,
+										Vec4(coordFace[0], coordFace[1], 0.0f, 0.0f),
+										Vec4(dPdxFace[0], dPdxFace[1], 0.0f, 0.0f),
+										Vec4(dPdyFace[0], dPdyFace[1], 0.0f, 0.0f),
+										faceNdx,
+										report))
 			{
-				{2, 1, 0},
-				{2, 1, 0},
-				{0, 2, 1},
-				{0, 2, 1},
-				{0, 1, 2},
-				{0, 1, 2}
-			};
-
-			const deInt8 signMap[6][3] =
-			{
-				{-1, -1, +1},
-				{+1, -1, -1},
-				{+1, +1, +1},
-				{+1, -1, -1},
-				{+1, -1, +1},
-				{-1, -1, -1}
-			};
-
-			Vec3 coordC;
-			Vec3 dPcdx;
-			Vec3 dPcdy;
-
-			for (deUint8 compNdx = 0; compNdx < 3; ++compNdx)
-			{
-				const deUint8	mappedComp = compMap[faceNdx][compNdx];
-				const deInt8	mappedSign = signMap[faceNdx][compNdx];
-
-				coordC[compNdx] = r[mappedComp]		* mappedSign;
-				dPcdx[compNdx]	= drdx[mappedComp]	* mappedSign;
-				dPcdy[compNdx]	= drdy[mappedComp]	* mappedSign;
-			}
-
-			coordC[2] = de::abs(coordC[2]);
-
-			Vec4 coordFace;
-			Vec4 dPdxFace;
-			Vec4 dPdyFace;
-
-			for (deUint8 compNdx = 0; compNdx < 2; ++compNdx)
-			{
-				coordFace[compNdx] = 0.5f * coordC[compNdx] / de::abs(coordC[2]) + 0.5f;
-
-				dPdxFace[compNdx]  = 0.5f * (de::abs(coordC[2]) * dPcdx[compNdx] - coordC[compNdx] * dPcdx[2]) / (coordC[2] * coordC[2]);
-				dPdyFace[compNdx]  = 0.5f * (de::abs(coordC[2]) * dPcdy[compNdx] - coordC[compNdx] * dPcdy[2]) / (coordC[2] * coordC[2]);
-			}
-
-			for (deUint8 compNdx = 2; compNdx < 4; ++compNdx)
-			{
-				coordFace[compNdx] = dPdxFace[compNdx] = dPdyFace[compNdx] = 0.0f;
-			}
-
-			if (verifySampleCubemapFace(args, result, coordFace, dPdxFace, dPdyFace, faceNdx, report))
 				return true;
+			}
 		}
 
 		return false;

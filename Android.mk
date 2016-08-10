@@ -853,6 +853,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/tessellation/vktTessellationUtil.cpp \
 	external/vulkancts/modules/vulkan/tessellation/vktTessellationWindingTests.cpp \
 	external/vulkancts/modules/vulkan/texture_filtering/vktSampleVerifier.cpp \
+	external/vulkancts/modules/vulkan/texture_filtering/vktSampleVerifierUtil.cpp \
 	external/vulkancts/modules/vulkan/texture_filtering/vktTextureFilteringTests.cpp \
 	external/vulkancts/modules/vulkan/texture_filtering/vktTextureFilteringExplicitLodTests.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktRandomUniformBlockCase.cpp \
