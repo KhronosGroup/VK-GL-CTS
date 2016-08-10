@@ -887,7 +887,7 @@ bool SampleVerifier::verifySampleImpl (const SampleArguments&	args,
 
 		for (int faceNdx = 0; faceNdx < 6; ++faceNdx)
 		{
-			const bool isPossible = faceBitmap & (1U << faceNdx);
+			const bool isPossible = ((faceBitmap & (1U << faceNdx)) != 0);
 
 		    if (!isPossible)
 			{
