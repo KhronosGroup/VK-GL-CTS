@@ -136,7 +136,7 @@ void deSha1Stream_process (deSha1Stream* stream, size_t size, const void* data_)
 	{
 		do
 		{
-			const size_t bitOffset = 8 * (4 - (1 + (stream->size % 4)));
+			const size_t bitOffset = (size_t)(8 * (4 - (1 + (stream->size % 4))));
 
 			stream->data[(stream->size / 4) % 16] |= ((deUint32)data[bytesProcessed]) << (deUint32)bitOffset;
 
