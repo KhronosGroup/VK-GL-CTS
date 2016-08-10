@@ -16353,6 +16353,7 @@ dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.framebuffer_text
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.renderbuffer_storage
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.blit_framebuffer
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.blit_framebuffer_multisample
+dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.framebuffer_texture_layer
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.invalidate_framebuffer
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.invalidate_sub_framebuffer
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.renderbuffer_storage_multisample
@@ -16778,6 +16779,7 @@ dEQP-GLES31.functional.debug.negative_coverage.log.buffer.framebuffer_texture2d
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.renderbuffer_storage
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.blit_framebuffer
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.blit_framebuffer_multisample
+dEQP-GLES31.functional.debug.negative_coverage.log.buffer.framebuffer_texture_layer
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.invalidate_framebuffer
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.invalidate_sub_framebuffer
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.renderbuffer_storage_multisample
@@ -17203,6 +17205,7 @@ dEQP-GLES31.functional.debug.negative_coverage.get_error.buffer.framebuffer_text
 dEQP-GLES31.functional.debug.negative_coverage.get_error.buffer.renderbuffer_storage
 dEQP-GLES31.functional.debug.negative_coverage.get_error.buffer.blit_framebuffer
 dEQP-GLES31.functional.debug.negative_coverage.get_error.buffer.blit_framebuffer_multisample
+dEQP-GLES31.functional.debug.negative_coverage.get_error.buffer.framebuffer_texture_layer
 dEQP-GLES31.functional.debug.negative_coverage.get_error.buffer.invalidate_framebuffer
 dEQP-GLES31.functional.debug.negative_coverage.get_error.buffer.invalidate_sub_framebuffer
 dEQP-GLES31.functional.debug.negative_coverage.get_error.buffer.renderbuffer_storage_multisample
