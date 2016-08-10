@@ -551,7 +551,7 @@ void wrapCubemapCorner (const IVec2&	coord,
 	{
 		const int faceEdge = adjacentEdges[faceNdx][cornerEdges[edgeNdx]];
 
-		bool isFlipped = (adjacentEdgeDirs[faceNdx][cornerEdges[edgeNdx]]);
+		bool isFlipped = (adjacentEdgeDirs[faceNdx][cornerEdges[edgeNdx]] == -1);
 
 		if ((cornerEdges[edgeNdx] > 1) != (faceEdge > 1))
 		{
