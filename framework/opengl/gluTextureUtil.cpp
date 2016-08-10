@@ -959,6 +959,42 @@ DataType getSamplerCubeType (tcu::TextureFormat format)
  * If no mapping is found, glu::TYPE_LAST is returned.
  *
  * \param format Texture format
+ * \return GLSL 1D array sampler type for format
+ *//*--------------------------------------------------------------------*/
+DataType getSampler1DArrayType (tcu::TextureFormat format)
+{
+	using tcu::TextureFormat;
+
+	if (format.order == TextureFormat::D || format.order == TextureFormat::DS)
+		return TYPE_SAMPLER_1D_ARRAY;
+
+	if (format.order == TextureFormat::S)
+		return TYPE_LAST;
+
+	switch (tcu::getTextureChannelClass(format.type))
+	{
+		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+			return glu::TYPE_SAMPLER_1D_ARRAY;
+
+		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			return glu::TYPE_INT_SAMPLER_1D_ARRAY;
+
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			return glu::TYPE_UINT_SAMPLER_1D_ARRAY;
+
+		default:
+			return glu::TYPE_LAST;
+	}
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Get GLSL sampler type for texture format.
+ *
+ * If no mapping is found, glu::TYPE_LAST is returned.
+ *
+ * \param format Texture format
  * \return GLSL 2D array sampler type for format
  *//*--------------------------------------------------------------------*/
 DataType getSampler2DArrayType (tcu::TextureFormat format)
