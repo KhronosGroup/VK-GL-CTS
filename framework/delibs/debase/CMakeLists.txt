@@ -29,11 +29,7 @@ add_library(debase STATIC ${DEBASE_SRCS})
 
 # link debase to libm on unix systems
 if (DE_OS_IS_UNIX)
-	find_library(MATH_LIBRARY NAMES libm m PATHS /usr/lib /lib)
-	if (NOT MATH_LIBRARY)
-		message(FATAL_ERROR "Can't find libm.")
-	endif (NOT MATH_LIBRARY)
-	target_link_libraries(debase ${MATH_LIBRARY})
+	target_link_libraries(debase m)
 
 	add_definitions(-D_XOPEN_SOURCE=600)
 endif ()
