@@ -28,65 +28,67 @@ import argparse
 
 import common
 
-def install (extraArgs = [], printPrefix=""):
+def install (buildRoot, extraArgs = [], printPrefix=""):
 	print printPrefix + "Removing old dEQP Package...\n",
 	common.execArgsInDirectory([common.ADB_BIN] + extraArgs + [
 			'uninstall',
 			'com.drawelements.deqp'
-		], common.ANDROID_DIR, printPrefix)
+		], buildRoot, printPrefix)
 	print printPrefix + "Remove complete\n",
 
-	print printPrefix + "Installing dEQP Package...\n",
+	print printPrefix + "Installing dEQP Package from %s...\n" %(buildRoot),
 	common.execArgsInDirectory([common.ADB_BIN] + extraArgs + [
 			'install',
 			'-r',
 			'package/bin/dEQP-debug.apk'
-		], common.ANDROID_DIR, printPrefix)
+		], buildRoot, printPrefix)
 	print printPrefix + "Install complete\n",
 
-def installToDevice (device, printPrefix=""):
+def installToDevice (device, buildRoot, printPrefix=""):
 	if len(printPrefix) == 0:
 		print "Installing to %s (%s)...\n" % (device.serial, device.model),
 	else:
 		print printPrefix + "Installing to %s\n" % device.serial,
 
-	install(['-s', device.serial], printPrefix)
+	install(buildRoot, ['-s', device.serial], printPrefix)
 
-def installToDevices (devices, doParallel):
+def installToDevices (devices, doParallel, buildRoot):
 	padLen = max([len(device.model) for device in devices])+1
 	if doParallel:
-		common.parallelApply(installToDevice, [(device, ("(%s):%s" % (device.model, ' ' * (padLen - len(device.model))))) for device in devices]);
+		common.parallelApply(installToDevice, [(device, buildRoot, ("(%s):%s" % (device.model, ' ' * (padLen - len(device.model))))) for device in devices]);
 	else:
-		common.serialApply(installToDevice, [(device, ) for device in devices]);
+		common.serialApply(installToDevice, [(device, buildRoot) for device in devices]);
 
-def installToAllDevices (doParallel):
+def installToAllDevices (doParallel, buildRoot):
 	devices = common.getDevices(common.ADB_BIN)
-	installToDevices(devices, doParallel)
+	installToDevices(devices, doParallel, buildRoot)
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-p', '--parallel', dest='doParallel', action="store_true", help="Install package in parallel.")
 	parser.add_argument('-s', '--serial', dest='serial', type=str, nargs='+', help="Install package to device with serial number.")
 	parser.add_argument('-a', '--all', dest='all', action="store_true", help="Install to all devices.")
+	parser.add_argument('-b', '--build-root', dest='buildRoot', default=common.ANDROID_DIR, help="Root directory from which to pick up APK. Generally, build root specified in build.py")
 
 	args = parser.parse_args()
+	absBuildRoot = os.path.abspath(args.buildRoot)
 
 	if args.all:
-		installToAllDevices(args.doParallel)
+		installToAllDevices(args.doParallel, absBuildRoot)
 	else:
 		if args.serial == None:
 			devices = common.getDevices(common.ADB_BIN)
 			if len(devices) == 0:
 				common.die('No devices connected')
 			elif len(devices) == 1:
-				installToDevice(devices[0])
+				installToDevice(devices[0], absBuildRoot)
 			else:
 				print "More than one device connected:"
 				for i in range(0, len(devices)):
 					print "%3d: %16s %s" % ((i+1), devices[i].serial, devices[i].model)
 
 				deviceNdx = int(raw_input("Choose device (1-%d): " % len(devices)))
-				installToDevice(devices[deviceNdx-1])
+				installToDevice(devices[deviceNdx-1], absBuildRoot)
 		else:
 			devices = common.getDevices(common.ADB_BIN)
 
@@ -97,4 +99,4 @@ if __name__ == "__main__":
 			for notFound in notFounds:
 				print("Couldn't find device matching serial '%s'" % notFound)
 
-			installToDevices(devices, args.doParallel)
+			installToDevices(devices, args.doParallel, absBuildRoot)
