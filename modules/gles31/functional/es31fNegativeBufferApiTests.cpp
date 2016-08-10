@@ -1556,17 +1556,16 @@ void framebuffer_texture_layer (NegativeTestContext& ctx)
 	deUint32						tex2DArray			= 0x1234;
 	deUint32						tex2D				= 0x1234;
 	deUint32						tex2DMSArray		= 0x1234;
-	deUint32						texCube				= 0x1234;
 	deUint32						texBuffer			= 0x1234;
 	int								max3DTexSize		= 0x1234;
 	int								maxTexSize			= 0x1234;
 	int								maxArrayTexLayers	= 0x1234;
-	int								maxCubeTexSize		= 0x1234;
 	int 							log2Max3DTexSize	= 0x1234;
 	int 							log2MaxTexSize		= 0x1234;
 
 	ctx.glGetIntegerv				(GL_MAX_3D_TEXTURE_SIZE, &max3DTexSize);
 	ctx.glGetIntegerv				(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+	ctx.glGetIntegerv				(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxArrayTexLayers);
 
 	ctx.glGenFramebuffers			(1, &fbo);
 	ctx.glGenTextures				(1, &tex3D);
@@ -1615,7 +1614,6 @@ void framebuffer_texture_layer (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if texture is not zero and layer is greater than GL_MAX_ARRAY_TEXTURE_LAYERS-1 for a 2D array texture.");
-	ctx.glGetIntegerv				(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxArrayTexLayers);
 	ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex2DArray, 0, maxArrayTexLayers);
 	ctx.expectError					(GL_INVALID_VALUE);
 	ctx.endSection();
@@ -1635,7 +1633,7 @@ void framebuffer_texture_layer (NegativeTestContext& ctx)
 	ctx.expectError					(GL_INVALID_VALUE);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_VALUE is generated if texture is a 2D array texture and layer is less than 0 or greater than log2 of the value of GL_MAX_TEXTURE_SIZE.");
+	ctx.beginSection("GL_INVALID_VALUE is generated if texture is a 2D array texture and level is less than 0 or greater than log2 of the value of GL_MAX_TEXTURE_SIZE.");
 	log2MaxTexSize		= deLog2Floor32(maxTexSize);
 	ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex2DArray, -1, maxArrayTexLayers - 1);
 	ctx.expectError					(GL_INVALID_VALUE);
@@ -1645,24 +1643,26 @@ void framebuffer_texture_layer (NegativeTestContext& ctx)
 
 	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 	{
+		deUint32						texCubeArray		= 0x1234;
+		int								maxCubeTexSize		= 0x1234;
 		ctx.glGetIntegerv				(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &maxCubeTexSize);
 		ctx.glGenTextures				(1, &tex2DMSArray);
-		ctx.glGenTextures				(1, &texCube);
+		ctx.glGenTextures				(1, &texCubeArray);
 		ctx.glGenTextures				(1, &texBuffer);
 		ctx.glBindTexture				(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, tex2DMSArray);
-		ctx.glBindTexture				(GL_TEXTURE_CUBE_MAP, texCube);
+		ctx.glBindTexture				(GL_TEXTURE_CUBE_MAP_ARRAY, texCubeArray);
 		ctx.glBindTexture				(GL_TEXTURE_BUFFER, texBuffer);
 		ctx.expectError					(GL_NO_ERROR);
 
-		ctx.beginSection("GL_INVALID_VALUE is generated if texture is a 2D multisample array texture and layer not 0.");
-		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex2DMSArray, 0, -1);
+		ctx.beginSection("GL_INVALID_VALUE is generated if texture is a 2D multisample array texture and level is not 0.");
+		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex2DMSArray, -1, 0);
 		ctx.expectError					(GL_INVALID_VALUE);
-		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex2DMSArray, 0, 1);
+		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex2DMSArray, 1, 0);
 		ctx.expectError					(GL_INVALID_VALUE);
 		ctx.endSection();
 
-		ctx.beginSection("GL_INVALID_VALUE is generated if texture is a cube map array texture and layer is larger than the value of MAX_CUBE_MAP_TEXTURE_SIZE-1 minus one.");
-		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texCube, 0, maxCubeTexSize);
+		ctx.beginSection("GL_INVALID_VALUE is generated if texture is a cube map array texture and layer is larger than MAX_ARRAY_TEXTURE_LAYERS-1. (See Khronos bug 15968)");
+		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texCubeArray, 0, maxArrayTexLayers);
 		ctx.expectError					(GL_INVALID_VALUE);
 		ctx.endSection();
 
@@ -1672,7 +1672,7 @@ void framebuffer_texture_layer (NegativeTestContext& ctx)
 		ctx.endSection();
 
 		ctx.glDeleteTextures			(1, &tex2DMSArray);
-		ctx.glDeleteTextures			(1, &texCube);
+		ctx.glDeleteTextures			(1, &texCubeArray);
 		ctx.glDeleteTextures			(1, &texBuffer);
 	}
 
