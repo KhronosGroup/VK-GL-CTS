@@ -70,6 +70,9 @@ public:
 					, m_lo		(m_hasNaN ? TCU_INFINITY : val)
 					, m_hi		(m_hasNaN ? -TCU_INFINITY : val) {}
 
+				Interval		(bool hasNaN_, double lo_, double hi_)
+					: m_hasNaN(hasNaN_), m_lo(lo_), m_hi(hi_) {}
+
 				Interval		(const Interval& a, const Interval& b)
 					: m_hasNaN	(a.m_hasNaN || b.m_hasNaN)
 					, m_lo		(de::min(a.lo(), b.lo()))
@@ -145,8 +148,6 @@ public:
 	}
 
 private:
-				Interval		(bool hasNaN_, double lo_, double hi_)
-					: m_hasNaN(hasNaN_), m_lo(lo_), m_hi(hi_) {}
 	bool		m_hasNaN;
 	double		m_lo;
 	double		m_hi;
