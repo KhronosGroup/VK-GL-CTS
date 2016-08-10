@@ -65,9 +65,10 @@ class SourcePackage (Source):
 		if not self.isArchiveUpToDate():
 			self.fetchAndVerifyArchive()
 
-		# \note No way to verify that extracted contents match archive, re-extract
-		Source.clean(self)
-		self.extract()
+		if self.getExtractedChecksum() != self.checksum:
+			Source.clean(self)
+			self.extract()
+			self.storeExtractedChecksum(self.checksum)
 
 	def removeArchives (self):
 		archiveDir = os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.archiveDir)
@@ -80,6 +81,20 @@ class SourcePackage (Source):
 			return computeChecksum(readFile(archiveFile)) == self.checksum
 		else:
 			return False
+
+	def getExtractedChecksumFilePath (self):
+		return os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.archiveDir, "extracted")
+
+	def getExtractedChecksum (self):
+		extractedChecksumFile = self.getExtractedChecksumFilePath()
+
+		if os.path.exists(extractedChecksumFile):
+			return readFile(extractedChecksumFile)
+		else:
+			return None
+
+	def storeExtractedChecksum (self, checksum):
+		writeFile(self.getExtractedChecksumFilePath(), checksum)
 
 	def fetchAndVerifyArchive (self):
 		print "Fetching %s" % self.url
