@@ -38,14 +38,19 @@ class LaunchControlConfig:
 	def getCheckMustpassLists (self):
 		return self.checkMustpassLists
 
-# This is a bit silly, but CMake needs to know the word width prior to
-# parsing the project files, hence cannot use our own defines.
-X86_64_ARGS = ["-DDE_CPU=DE_CPU_X86_64", "-DCMAKE_C_FLAGS=-m64 -Werror", "-DCMAKE_CXX_FLAGS=-m64 -Werror"]
+COMMON_GCC_CFLAGS	= ["-Werror"]
+COMMON_CLANG_CFLAGS	= COMMON_GCC_CFLAGS + ["-Wno-error=unused-command-line-argument"]
+X86_64_GCC_CFLAGS	= COMMON_GCC_CFLAGS + ["-m64"]
+X86_64_CLANG_CFLAGS	= COMMON_CLANG_CFLAGS + ["-m64"]
+
+def makeCflagsArgs (cflags):
+	cflagsStr = " ".join(cflags)
+	return ["-DCMAKE_C_FLAGS=%s" % cflagsStr, "-DCMAKE_CXX_FLAGS=%s" % cflagsStr]
 
 BUILD_CONFIGS = {
-	"gcc-x86_64-x11_glx":   LaunchControlConfig(X86_64_ARGS + ["-DDEQP_TARGET=x11_glx"], False),
-	"clang-x86_64-x11_glx": LaunchControlConfig(X86_64_ARGS + ["-DDEQP_TARGET=x11_glx", "-DCMAKE_C_COMPILER=clang", "-DCMAKE_CXX_COMPILER=clang++"], False),
-	"gcc-x86_64-null":		LaunchControlConfig(X86_64_ARGS + ["-DDEQP_TARGET=null"], True)
+	"gcc-x86_64-x11_glx":   LaunchControlConfig(["-DDEQP_TARGET=x11_glx"] + makeCflagsArgs(X86_64_GCC_CFLAGS), False),
+	"clang-x86_64-x11_glx": LaunchControlConfig(["-DDEQP_TARGET=x11_glx", "-DCMAKE_C_COMPILER=clang", "-DCMAKE_CXX_COMPILER=clang++"] + makeCflagsArgs(X86_64_CLANG_CFLAGS), False),
+	"gcc-x86_64-null":		LaunchControlConfig(["-DDEQP_TARGET=null"] + makeCflagsArgs(X86_64_GCC_CFLAGS), True)
 }
 
 def buildWithMake (workingDir):
