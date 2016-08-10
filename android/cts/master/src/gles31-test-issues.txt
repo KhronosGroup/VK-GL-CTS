@@ -31,9 +31,6 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.*highp*.scala
 dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.mediump_compute.*
 dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.mediump_compute.*
 
-# Bug 28090252
-dEQP-GLES31.functional.debug.negative_coverage.*.buffer.framebuffer_texture_layer
-
 # Bug 28381693
 dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.compressedteximage3d_invalid_width_height
 
