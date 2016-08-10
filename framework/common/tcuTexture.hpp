@@ -140,6 +140,7 @@ public:
 bool	isValid				(TextureFormat format);
 int		getPixelSize		(TextureFormat format);
 int		getNumUsedChannels	(TextureFormat::ChannelOrder order);
+int		getChannelSize		(TextureFormat::ChannelType type);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Texture swizzle
