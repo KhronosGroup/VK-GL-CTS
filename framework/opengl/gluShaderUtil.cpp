@@ -220,23 +220,27 @@ const char* getDataTypeName (DataType dataType)
 		"sampler1D",
 		"sampler2D",
 		"samplerCube",
+		"sampler1DArray",
 		"sampler2DArray",
 		"sampler3D",
 		"samplerCubeArray",
 		"sampler1DShadow",
 		"sampler2DShadow",
 		"samplerCubeShadow",
+		"sampler1DArrayShadow",
 		"sampler2DArrayShadow",
 		"samplerCubeArrayShadow",
 		"isampler1D",
 		"isampler2D",
 		"isamplerCube",
+		"isampler1DArray",
 		"isampler2DArray",
 		"isampler3D",
 		"isamplerCubeArray",
 		"usampler1D",
 		"usampler2D",
 		"usamplerCube",
+		"usampler1DArray",
 		"usampler2DArray",
 		"usampler3D",
 		"usamplerCubeArray",
@@ -321,23 +325,27 @@ int getDataTypeScalarSize (DataType dataType)
 		1,		// sampler1D
 		1,		// sampler2D
 		1,		// samplerCube
+		1,		// sampler1DArray
 		1,		// sampler2DArray
 		1,		// sampler3D
 		1,		// samplerCubeArray
 		1,		// sampler1DShadow
 		1,		// sampler2DShadow
 		1,		// samplerCubeShadow
+		1,		// sampler1DArrayShadow
 		1,		// sampler2DArrayShadow
 		1,		// samplerCubeArrayShadow
 		1,		// isampler1D
 		1,		// isampler2D
 		1,		// isamplerCube
+		1,		// isampler1DArray
 		1,		// isampler2DArray
 		1,		// isampler3D
 		1,		// isamplerCubeArray
 		1,		// usampler1D
 		1,		// usampler2D
 		1,		// usamplerCube
+		1,		// usampler1DArray
 		1,		// usampler2DArray
 		1,		// usampler3D
 		1,		// usamplerCubeArray
@@ -422,23 +430,27 @@ DataType getDataTypeScalarType (DataType dataType)
 		TYPE_SAMPLER_1D,						// sampler1D
 		TYPE_SAMPLER_2D,						// sampler2D
 		TYPE_SAMPLER_CUBE,						// samplerCube
+		TYPE_SAMPLER_1D_ARRAY,					// sampler1DArray
 		TYPE_SAMPLER_2D_ARRAY,					// sampler2DArray
 		TYPE_SAMPLER_3D,						// sampler3D
 		TYPE_SAMPLER_CUBE_ARRAY,				// samplerCubeArray
 		TYPE_SAMPLER_1D_SHADOW,					// sampler1DShadow
 		TYPE_SAMPLER_2D_SHADOW,					// sampler2DShadow
 		TYPE_SAMPLER_CUBE_SHADOW,				// samplerCubeShadow
+		TYPE_SAMPLER_1D_ARRAY_SHADOW,			// sampler1DArrayShadow
 		TYPE_SAMPLER_2D_ARRAY_SHADOW,			// sampler2DArrayShadow
 		TYPE_SAMPLER_CUBE_ARRAY_SHADOW,			// samplerCubeArrayShadow
 		TYPE_INT_SAMPLER_1D,					// isampler1D
 		TYPE_INT_SAMPLER_2D,					// isampler2D
 		TYPE_INT_SAMPLER_CUBE,					// isamplerCube
+		TYPE_INT_SAMPLER_1D_ARRAY,				// isampler1DArray
 		TYPE_INT_SAMPLER_2D_ARRAY,				// isampler2DArray
 		TYPE_INT_SAMPLER_3D,					// isampler3D
 		TYPE_INT_SAMPLER_CUBE_ARRAY,			// isamplerCubeArray
 		TYPE_UINT_SAMPLER_1D,					// usampler1D
 		TYPE_UINT_SAMPLER_2D,					// usampler2D
 		TYPE_UINT_SAMPLER_CUBE,					// usamplerCube
+		TYPE_UINT_SAMPLER_1D_ARRAY,				// usampler1DArray
 		TYPE_UINT_SAMPLER_2D_ARRAY,				// usampler2DArray
 		TYPE_UINT_SAMPLER_3D,					// usampler3D
 		TYPE_UINT_SAMPLER_CUBE_ARRAY,			// usamplerCubeArray
@@ -523,23 +535,27 @@ DataType getDataTypeFloatScalars (DataType dataType)
 		TYPE_INVALID,		// sampler1D
 		TYPE_INVALID,		// sampler2D
 		TYPE_INVALID,		// samplerCube
+		TYPE_INVALID,		// sampler1DArray
 		TYPE_INVALID,		// sampler2DArray
 		TYPE_INVALID,		// sampler3D
 		TYPE_INVALID,		// samplerCubeArray
 		TYPE_INVALID,		// sampler1DShadow
 		TYPE_INVALID,		// sampler2DShadow
 		TYPE_INVALID,		// samplerCubeShadow
+		TYPE_INVALID,		// sampler1DArrayShadow
 		TYPE_INVALID,		// sampler2DArrayShadow
 		TYPE_INVALID,		// samplerCubeArrayShadow
 		TYPE_INVALID,		// isampler1D
 		TYPE_INVALID,		// isampler2D
 		TYPE_INVALID,		// isamplerCube
+		TYPE_INVALID,		// isampler1DArray
 		TYPE_INVALID,		// isampler2DArray
 		TYPE_INVALID,		// isampler3D
 		TYPE_INVALID,		// isamplerCubeArray
 		TYPE_INVALID,		// usampler1D
 		TYPE_INVALID,		// usampler2D
 		TYPE_INVALID,		// usamplerCube
+		TYPE_INVALID,		// usampler1DArray
 		TYPE_INVALID,		// usampler2DArray
 		TYPE_INVALID,		// usampler3D
 		TYPE_INVALID,		// usamplerCubeArray
@@ -624,23 +640,27 @@ DataType getDataTypeDoubleScalars (DataType dataType)
 		TYPE_INVALID,		// sampler1D
 		TYPE_INVALID,		// sampler2D
 		TYPE_INVALID,		// samplerCube
+		TYPE_INVALID,		// sampler1DArray
 		TYPE_INVALID,		// sampler2DArray
 		TYPE_INVALID,		// sampler3D
 		TYPE_INVALID,		// samplerCubeArray
 		TYPE_INVALID,		// sampler1DShadow
 		TYPE_INVALID,		// sampler2DShadow
 		TYPE_INVALID,		// samplerCubeShadow
+		TYPE_INVALID,		// sampler1DArrayShadow
 		TYPE_INVALID,		// sampler2DArrayShadow
 		TYPE_INVALID,		// samplerCubeArrayShadow
 		TYPE_INVALID,		// isampler1D
 		TYPE_INVALID,		// isampler2D
 		TYPE_INVALID,		// isamplerCube
+		TYPE_INVALID,		// isampler1DArray
 		TYPE_INVALID,		// isampler2DArray
 		TYPE_INVALID,		// isampler3D
 		TYPE_INVALID,		// isamplerCubeArray
 		TYPE_INVALID,		// usampler1D
 		TYPE_INVALID,		// usampler2D
 		TYPE_INVALID,		// usamplerCube
+		TYPE_INVALID,		// usampler1DArray
 		TYPE_INVALID,		// usampler2DArray
 		TYPE_INVALID,		// usampler3D
 		TYPE_INVALID,		// usamplerCubeArray
@@ -855,6 +875,7 @@ DataType getDataTypeFromGLType (deUint32 glType)
 		case GL_SAMPLER_1D:									return TYPE_SAMPLER_1D;
 		case GL_SAMPLER_2D:									return TYPE_SAMPLER_2D;
 		case GL_SAMPLER_CUBE:								return TYPE_SAMPLER_CUBE;
+		case GL_SAMPLER_1D_ARRAY:							return TYPE_SAMPLER_1D_ARRAY;
 		case GL_SAMPLER_2D_ARRAY:							return TYPE_SAMPLER_2D_ARRAY;
 		case GL_SAMPLER_3D:									return TYPE_SAMPLER_3D;
 		case GL_SAMPLER_CUBE_MAP_ARRAY:						return TYPE_SAMPLER_CUBE_ARRAY;
@@ -862,12 +883,14 @@ DataType getDataTypeFromGLType (deUint32 glType)
 		case GL_SAMPLER_1D_SHADOW:							return TYPE_SAMPLER_1D_SHADOW;
 		case GL_SAMPLER_2D_SHADOW:							return TYPE_SAMPLER_2D_SHADOW;
 		case GL_SAMPLER_CUBE_SHADOW:						return TYPE_SAMPLER_CUBE_SHADOW;
+		case GL_SAMPLER_1D_ARRAY_SHADOW:					return TYPE_SAMPLER_1D_ARRAY_SHADOW;
 		case GL_SAMPLER_2D_ARRAY_SHADOW:					return TYPE_SAMPLER_2D_ARRAY_SHADOW;
 		case GL_SAMPLER_CUBE_MAP_ARRAY_SHADOW:				return TYPE_SAMPLER_CUBE_ARRAY_SHADOW;
 
 		case GL_INT_SAMPLER_1D:								return TYPE_INT_SAMPLER_1D;
 		case GL_INT_SAMPLER_2D:								return TYPE_INT_SAMPLER_2D;
 		case GL_INT_SAMPLER_CUBE:							return TYPE_INT_SAMPLER_CUBE;
+		case GL_INT_SAMPLER_1D_ARRAY:						return TYPE_INT_SAMPLER_1D_ARRAY;
 		case GL_INT_SAMPLER_2D_ARRAY:						return TYPE_INT_SAMPLER_2D_ARRAY;
 		case GL_INT_SAMPLER_3D:								return TYPE_INT_SAMPLER_3D;
 		case GL_INT_SAMPLER_CUBE_MAP_ARRAY:					return TYPE_INT_SAMPLER_CUBE_ARRAY;
@@ -875,6 +898,7 @@ DataType getDataTypeFromGLType (deUint32 glType)
 		case GL_UNSIGNED_INT_SAMPLER_1D:					return TYPE_UINT_SAMPLER_1D;
 		case GL_UNSIGNED_INT_SAMPLER_2D:					return TYPE_UINT_SAMPLER_2D;
 		case GL_UNSIGNED_INT_SAMPLER_CUBE:					return TYPE_UINT_SAMPLER_CUBE;
+		case GL_UNSIGNED_INT_SAMPLER_1D_ARRAY:				return TYPE_UINT_SAMPLER_1D_ARRAY;
 		case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:				return TYPE_UINT_SAMPLER_2D_ARRAY;
 		case GL_UNSIGNED_INT_SAMPLER_3D:					return TYPE_UINT_SAMPLER_3D;
 		case GL_UNSIGNED_INT_SAMPLER_CUBE_MAP_ARRAY:		return TYPE_UINT_SAMPLER_CUBE_ARRAY;

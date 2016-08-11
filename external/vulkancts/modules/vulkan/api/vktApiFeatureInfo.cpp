@@ -1845,7 +1845,7 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 				results.check(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth >= 1), "Invalid dimensions for 3D image");
 				results.check(imageType != VK_IMAGE_TYPE_3D || properties.maxArrayLayers == 1, "Invalid maxArrayLayers for 3D image");
 
-				if (tiling == VK_IMAGE_TILING_OPTIMAL && imageType == VK_IMAGE_TYPE_2D && !(curCreateFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) &&
+				if (tiling == VK_IMAGE_TILING_OPTIMAL && imageType == VK_IMAGE_TYPE_2D &&
 					 ((supportedFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)) ||
 					 ((supportedFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) && deviceFeatures.shaderStorageImageMultisample)))
 				{
