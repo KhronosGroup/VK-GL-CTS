@@ -161,8 +161,8 @@ void blend_equationi (NegativeTestContext& ctx)
 {
 	glw::GLint maxDrawBuffers = -1;
 
-	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !ctx.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"))
-		throw tcu::NotSupportedError("GL_KHR_blend_equation_advanced is not supported", DE_NULL, __FILE__, __LINE__);
+	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !ctx.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
+		throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
 
 	ctx.glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not GL_FUNC_ADD, GL_FUNC_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT, GL_MAX or GL_MIN.");
@@ -181,8 +181,8 @@ void blend_equation_separatei (NegativeTestContext& ctx)
 {
 	glw::GLint maxDrawBuffers = -1;
 
-	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !ctx.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"))
-		throw tcu::NotSupportedError("GL_KHR_blend_equation_advanced is not supported", DE_NULL, __FILE__, __LINE__);
+	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !ctx.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
+		throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
 
 	ctx.glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
 	ctx.beginSection("GL_INVALID_ENUM is generated if modeRGB is not GL_FUNC_ADD, GL_FUNC_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT, GL_MAX or GL_MIN.");
@@ -229,8 +229,8 @@ void blend_funci (NegativeTestContext& ctx)
 {
 	glw::GLint maxDrawBuffers = -1;
 
-	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !ctx.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"))
-		throw tcu::NotSupportedError("GL_KHR_blend_equation_advanced is not supported", DE_NULL, __FILE__, __LINE__);
+	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !ctx.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
+		throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
 
 	ctx.glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
 	ctx.beginSection("GL_INVALID_ENUM is generated if either sfactor or dfactor is not an accepted value.");
@@ -251,8 +251,8 @@ void blend_func_separatei (NegativeTestContext& ctx)
 {
 	glw::GLint maxDrawBuffers = -1;
 
-	if (!glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !ctx.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"))
-		throw tcu::NotSupportedError("GL_KHR_blend_equation_advanced is not supported", DE_NULL, __FILE__, __LINE__);
+	if (!glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !ctx.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
+		throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
 
 	ctx.glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
 	ctx.beginSection("GL_INVALID_ENUM is generated if srcRGB, dstRGB, srcAlpha, or dstAlpha is not an accepted value.");
