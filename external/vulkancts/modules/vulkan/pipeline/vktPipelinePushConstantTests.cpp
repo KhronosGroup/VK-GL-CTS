@@ -1491,7 +1491,7 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 		},
 		// test range count, including all valid shader stage in graphics pipeline, and also multiple shader stages share one single range
 		{
-			"count_2_shader_vert_frag",
+			"count_2_shaders_vert_frag",
 			"test range count is 2, use vertex and fragment shaders",
 			2u,
 			{
@@ -1501,7 +1501,7 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 			false
 		},
 		{
-			"count_3shader_vert_geom_frag",
+			"count_3_shaders_vert_geom_frag",
 			"test range count is 3, use vertex, geometry and fragment shaders",
 			3u,
 			{
@@ -1512,7 +1512,7 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 			false
 		},
 		{
-			"count_5_shader_vert_tess_geom_frag",
+			"count_5_shaders_vert_tess_geom_frag",
 			"test range count is 5, use vertex, tessellation, geometry and fragment shaders",
 			5u,
 			{
