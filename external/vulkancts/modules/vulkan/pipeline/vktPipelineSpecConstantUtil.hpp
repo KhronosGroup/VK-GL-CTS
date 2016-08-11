@@ -35,62 +35,6 @@ namespace vkt
 namespace pipeline
 {
 
-class Buffer
-{
-public:
-										Buffer			(const vk::DeviceInterface&		vk,
-														 const vk::VkDevice				device,
-														 vk::Allocator&					allocator,
-														 const vk::VkBufferCreateInfo&	bufferCreateInfo,
-														 const vk::MemoryRequirement	memoryRequirement)
-
-											: m_buffer		(createBuffer(vk, device, &bufferCreateInfo))
-											, m_allocation	(allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement))
-										{
-											VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
-										}
-
-	const vk::VkBuffer&					get				(void) const { return *m_buffer; }
-	const vk::VkBuffer&					operator*		(void) const { return get(); }
-	vk::Allocation&						getAllocation	(void) const { return *m_allocation; }
-
-private:
-	const vk::Unique<vk::VkBuffer>		m_buffer;
-	const de::UniquePtr<vk::Allocation>	m_allocation;
-
-	// "deleted"
-										Buffer			(const Buffer&);
-	Buffer&								operator=		(const Buffer&);
-};
-
-class Image
-{
-public:
-										Image			(const vk::DeviceInterface&		vk,
-														 const vk::VkDevice				device,
-														 vk::Allocator&					allocator,
-														 const vk::VkImageCreateInfo&	imageCreateInfo,
-														 const vk::MemoryRequirement	memoryRequirement)
-
-											: m_image		(createImage(vk, device, &imageCreateInfo))
-											, m_allocation	(allocator.allocate(getImageMemoryRequirements(vk, device, *m_image), memoryRequirement))
-										{
-											VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
-										}
-
-	const vk::VkImage&					get				(void) const { return *m_image; }
-	const vk::VkImage&					operator*		(void) const { return get(); }
-	vk::Allocation&						getAllocation	(void) const { return *m_allocation; }
-
-private:
-	const vk::Unique<vk::VkImage>		m_image;
-	const de::UniquePtr<vk::Allocation>	m_allocation;
-
-	// "deleted"
-										Image			(const Image&);
-	Image&								operator=		(const Image&);
-};
-
 class GraphicsPipelineBuilder
 {
 public:
@@ -125,23 +69,9 @@ enum FeatureFlagBits
 };
 typedef deUint32 FeatureFlags;
 
-vk::VkBufferCreateInfo			makeBufferCreateInfo	(const vk::VkDeviceSize bufferSize, const vk::VkBufferUsageFlags usage);
 vk::VkImageCreateInfo			makeImageCreateInfo		(const tcu::IVec2& size, const vk::VkFormat format, const vk::VkImageUsageFlags usage);
-vk::Move<vk::VkCommandPool>		makeCommandPool			(const vk::DeviceInterface& vk, const vk::VkDevice device, const deUint32 queueFamilyIndex);
-vk::Move<vk::VkCommandBuffer>	makeCommandBuffer		(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkCommandPool commandPool);
-vk::Move<vk::VkDescriptorSet>	makeDescriptorSet		(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorPool descriptorPool, const vk::VkDescriptorSetLayout setLayout);
-vk::Move<vk::VkPipelineLayout>	makePipelineLayout		(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout descriptorSetLayout);
-vk::Move<vk::VkPipeline>		makeComputePipeline		(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo);
 vk::Move<vk::VkRenderPass>		makeRenderPass			(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat);
-vk::Move<vk::VkFramebuffer>		makeFramebuffer			(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkRenderPass renderPass, const vk::VkImageView colorAttachment, const deUint32 width, const deUint32 height);
-vk::Move<vk::VkImageView>		makeImageView			(const vk::DeviceInterface& vk, const vk::VkDevice vkDevice, const vk::VkImage image, const vk::VkImageViewType viewType, const vk::VkFormat format);
-vk::VkBufferMemoryBarrier		makeBufferMemoryBarrier	(const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask, const vk::VkBuffer buffer, const vk::VkDeviceSize offset, const vk::VkDeviceSize bufferSizeBytes);
-vk::VkImageMemoryBarrier		makeImageMemoryBarrier	(const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask, const vk::VkImageLayout oldLayout, const vk::VkImageLayout newLayout, const vk::VkImage image, const vk::VkImageSubresourceRange subresourceRange);
-void							beginCommandBuffer		(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
-void							endCommandBuffer		(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
-void							submitCommandsAndWait	(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkQueue queue, const vk::VkCommandBuffer commandBuffer);
 void							beginRenderPass			(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer, const vk::VkRect2D& renderArea, const tcu::Vec4& clearColor);
-void							endRenderPass			(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
 void							requireFeatures			(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const FeatureFlags flags);
 
 // Ugly, brute-force replacement for the initializer list
