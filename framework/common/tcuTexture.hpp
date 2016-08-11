@@ -647,6 +647,8 @@ public:
 	// Sampling
 	Vec4							sample				(const Sampler& sampler, float s, float lod) const;
 	Vec4							sampleOffset		(const Sampler& sampler, float s, float lod, deInt32 offset) const;
+	float							sampleCompare		(const Sampler& sampler, float ref, float s, float lod) const;
+	float							sampleCompareOffset	(const Sampler& sampler, float ref, float s, float lod, deInt32 offset) const;
 
 	using TextureLevelPyramid::getFormat;
 	using TextureLevelPyramid::getNumLevels;
@@ -671,6 +673,16 @@ inline Vec4 Texture1D::sample (const Sampler& sampler, float s, float lod) const
 inline Vec4 Texture1D::sampleOffset (const Sampler& sampler, float s, float lod, deInt32 offset) const
 {
 	return m_view.sampleOffset(sampler, s, lod, offset);
+}
+
+inline float Texture1D::sampleCompare (const Sampler& sampler, float ref, float s, float lod) const
+{
+	return m_view.sampleCompare(sampler, ref, s, lod);
+}
+
+inline float Texture1D::sampleCompareOffset	(const Sampler& sampler, float ref, float s, float lod, deInt32 offset) const
+{
+	return m_view.sampleCompareOffset(sampler, ref, s, lod, offset);
 }
 
 /*--------------------------------------------------------------------*//*!

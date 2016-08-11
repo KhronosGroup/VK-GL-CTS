@@ -326,3 +326,6 @@ dEQP-VK.api.copy_and_blit.blit_image.all_formats.r5g5b5a1_unorm_pack16_r32g32b32
 dEQP-VK.api.copy_and_blit.blit_image.all_formats.a1r5g5b5_unorm_pack16_r32_sfloat_nearest
 dEQP-VK.api.copy_and_blit.blit_image.all_formats.a1r5g5b5_unorm_pack16_r32g32_sfloat_nearest
 dEQP-VK.api.copy_and_blit.blit_image.all_formats.a1r5g5b5_unorm_pack16_r32g32b32a32_sfloat_nearest
+
+# CTS issue 426, spec issue 403
+dEQP-VK.spirv_assembly.instruction.compute.opfunord.*
