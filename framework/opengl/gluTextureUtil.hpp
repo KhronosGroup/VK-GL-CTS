@@ -80,6 +80,7 @@ tcu::CubeFace					getCubeFaceFromGL					(deUint32 face);
 DataType						getSampler1DType					(tcu::TextureFormat format);
 DataType						getSampler2DType					(tcu::TextureFormat format);
 DataType						getSamplerCubeType					(tcu::TextureFormat format);
+DataType						getSampler1DArrayType				(tcu::TextureFormat format);
 DataType						getSampler2DArrayType				(tcu::TextureFormat format);
 DataType						getSampler3DType					(tcu::TextureFormat format);
 DataType						getSamplerCubeArrayType				(tcu::TextureFormat format);
