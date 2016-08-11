@@ -453,9 +453,10 @@ deBool qpTestLog_endCase (qpTestLog* log, qpTestResult result, const char* resul
 	const char*		statusStr		= QP_LOOKUP_STRING(s_qpTestResultMap, result);
 	qpXmlAttribute	statusAttrib	= qpSetStringAttrib("StatusCode", statusStr);
 
-	DE_ASSERT(log && log->isCaseOpen);
-	DE_ASSERT(ContainerStack_isEmpty(&log->containerStack));
 	deMutex_lock(log->lock);
+
+	DE_ASSERT(log->isCaseOpen);
+	DE_ASSERT(ContainerStack_isEmpty(&log->containerStack));
 
 	/* <Result StatusCode="Pass">Result details</Result>
 	 * </TestCaseResult>
@@ -1030,9 +1031,10 @@ deBool qpTestLog_writeShader (qpTestLog* log, qpShaderType type, const char* sou
 	int				numShaderAttribs	= 0;
 	qpXmlAttribute	shaderAttribs[4];
 
-	DE_ASSERT(log && source);
-	DE_ASSERT(ContainerStack_getTop(&log->containerStack) == CONTAINERTYPE_SHADERPROGRAM);
 	deMutex_lock(log->lock);
+
+	DE_ASSERT(source);
+	DE_ASSERT(ContainerStack_getTop(&log->containerStack) == CONTAINERTYPE_SHADERPROGRAM);
 
 	shaderAttribs[numShaderAttribs++]	= qpSetStringAttrib("CompileStatus", compileOk ? "OK" : "Fail");
 
@@ -1242,8 +1244,9 @@ deBool qpTestLog_writeSpirVAssemblySource (qpTestLog* log, const char* source)
 {
 	const char* const	sourceStr	= (log->flags & QP_TEST_LOG_EXCLUDE_SHADER_SOURCES) != 0 ? "" : source;
 
-	DE_ASSERT(ContainerStack_getTop(&log->containerStack) == CONTAINERTYPE_SHADERPROGRAM);
 	deMutex_lock(log->lock);
+
+	DE_ASSERT(ContainerStack_getTop(&log->containerStack) == CONTAINERTYPE_SHADERPROGRAM);
 
 	if (!qpXmlWriter_writeStringElement(log->writer, "SpirVAssemblySource", sourceStr))
 	{
