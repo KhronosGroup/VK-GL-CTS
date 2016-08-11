@@ -1240,11 +1240,12 @@ deBool qpTestLog_writeKernelSource (qpTestLog* log, const char* source)
  *//*--------------------------------------------------------------------*/
 deBool qpTestLog_writeSpirVAssemblySource (qpTestLog* log, const char* source)
 {
-	DE_ASSERT(log);
+	const char* const	sourceStr	= (log->flags & QP_TEST_LOG_EXCLUDE_SHADER_SOURCES) != 0 ? "" : source;
+
 	DE_ASSERT(ContainerStack_getTop(&log->containerStack) == CONTAINERTYPE_SHADERPROGRAM);
 	deMutex_lock(log->lock);
 
-	if (!qpXmlWriter_writeStringElement(log->writer, "SpirVAssemblySource", source))
+	if (!qpXmlWriter_writeStringElement(log->writer, "SpirVAssemblySource", sourceStr))
 	{
 		qpPrintf("qpTestLog_writeSpirVAssemblySource(): Writing XML failed\n");
 		deMutex_unlock(log->lock);
