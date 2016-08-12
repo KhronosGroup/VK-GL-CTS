@@ -70,12 +70,26 @@ def indentLines (lines):
 		indented.append(line[-1])
 		yield "".join(indented)
 
+def readFile (filename):
+	f = open(filename, 'rb')
+	data = f.read()
+	f.close()
+	return data
+
+def writeFileIfChanged (filename, data):
+	oldData = readFile(filename)
+	if data != oldData:
+		f = open(filename, 'wb')
+		f.write(data)
+		f.close()
+
 def writeLines (filename, lines):
-	with open(filename, 'wb') as f:
-		for line in lines:
-			if line is not None:
-				f.write(line)
-				f.write('\n')
+	text = ""
+	for line in lines:
+		text += line
+		text += "\n"
+
+	writeFileIfChanged(filename, text)
 	print filename
 
 def writeInlFile (filename, header, source):
