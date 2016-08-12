@@ -1021,14 +1021,14 @@ protected:
 	{
 		// Generate grid
 
-		SampleLookupSettings sampleLookupSettings =
+		const SampleLookupSettings sampleLookupSettings =
 		{
-		    m_useDerivatives ? LOOKUP_LOD_MODE_DERIVATIVES : LOOKUP_LOD_MODE_LOD, // lookupLodMode
+			m_useDerivatives ? LOOKUP_LOD_MODE_DERIVATIVES : LOOKUP_LOD_MODE_LOD, // lookupLodMode
 			false, // hasLodBias
 			false, // isProjective
 		};
 
-		SamplerParameters samplerParameters =
+		const SamplerParameters samplerParameters =
 		{
 			m_magFilter, // magFilter
 			m_minFilter, // minFilter
@@ -1044,10 +1044,10 @@ protected:
 			false // isCompare
 		};
 
-	    deUint8 numLevels = (deUint8) (1 + deLog2Floor32(de::max(m_dimensions[0],
-																 m_dimensions[1])));
+		const deUint8 numLevels = (deUint8) (1 + deLog2Floor32(de::max(m_dimensions[0],
+																	   m_dimensions[1])));
 
-		ImageViewParameters imParameters =
+		const ImageViewParameters imParameters =
 		{
 			IMG_DIM_2D, // dim
 			mapTextureFormat(m_format), // format
@@ -1057,7 +1057,7 @@ protected:
 			1, // arrayLayers
 		};
 
-		TestCaseData data =
+		const TestCaseData data =
 		{
 			std::vector<ConstPixelBufferAccess>(),
 			imParameters,
@@ -1070,13 +1070,13 @@ protected:
 	}
 
 private:
-	TextureFormat					m_format;
-	IVec3							m_dimensions;
-	VkFilter						m_magFilter;
-	VkFilter						m_minFilter;
-	VkSamplerMipmapMode				m_mipmapFilter;
-	VkSamplerAddressMode			m_wrappingMode;
-	bool							m_useDerivatives;
+	const TextureFormat			m_format;
+	const IVec3					m_dimensions;
+	const VkFilter				m_magFilter;
+	const VkFilter				m_minFilter;
+	const VkSamplerMipmapMode	m_mipmapFilter;
+	const VkSamplerAddressMode	m_wrappingMode;
+	const bool					m_useDerivatives;
 };
 
 class Texture2DGradientTestCase::Generator : public DataGenerator
@@ -1095,18 +1095,18 @@ public:
 													 m_testCase->m_dimensions[0],
 													 m_testCase->m_dimensions[1]));
 
-		deUint8 numLevels = (deUint8) (1 + deLog2Floor32(de::max(m_testCase->m_dimensions[0],
-																 m_testCase->m_dimensions[1])));
+		const deUint8 numLevels = (deUint8) (1 + deLog2Floor32(de::max(m_testCase->m_dimensions[0],
+																	   m_testCase->m_dimensions[1])));
 
-		TextureFormatInfo fmtInfo = getTextureFormatInfo(m_testCase->m_format);
+		const TextureFormatInfo fmtInfo = getTextureFormatInfo(m_testCase->m_format);
 
-		Vec4 cBias  = fmtInfo.valueMin;
-		Vec4 cScale = fmtInfo.valueMax - fmtInfo.valueMin;
+		const Vec4 cBias  = fmtInfo.valueMin;
+		const Vec4 cScale = fmtInfo.valueMax - fmtInfo.valueMin;
 
 		for (deUint8 levelNdx = 0; levelNdx < numLevels; ++levelNdx)
 		{
-			Vec4 gMin = Vec4(0.0f, 0.0f, 0.0f, 1.0f) * cScale + cBias;
-			Vec4 gMax = Vec4(1.0f, 1.0f, 1.0f, 0.0f) * cScale + cBias;
+			const Vec4 gMin = Vec4(0.0f, 0.0f, 0.0f, 1.0f) * cScale + cBias;
+			const Vec4 gMax = Vec4(1.0f, 1.0f, 1.0f, 0.0f) * cScale + cBias;
 
 			m_tex->allocLevel(levelNdx);
 			fillWithComponentGradients(m_tex->getLevel(levelNdx), gMin, gMax);
@@ -1239,7 +1239,7 @@ TestCaseGroup* create2DFormatTests (TestContext& testCtx)
 
 	for (deUint32 formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); ++formatNdx)
 	{
-		std::string prefix = de::toLower(std::string(getFormatName(formats[formatNdx])).substr(10));
+		const std::string prefix = de::toLower(std::string(getFormatName(formats[formatNdx])).substr(10));
 
 		Texture2DGradientTestCase* testCaseNearest =
 			new Texture2DGradientTestCase(
@@ -1392,7 +1392,7 @@ TestCaseGroup* create2DSizeTests (TestContext& testCtx)
 		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE
 	};
 
-	IVec3 sizes[] =
+	const IVec3 sizes[] =
 	{
 		IVec3(2, 2, 1),
 		IVec3(2, 3, 1),
