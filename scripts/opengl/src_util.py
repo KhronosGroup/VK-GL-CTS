@@ -120,6 +120,7 @@ def getVersionToken (api, version):
 
 def genCommandList(iface, renderCommand, directory, filename, align=False):
 	lines = map(renderCommand, iface.commands)
+	lines = filter(lambda l: l != None, lines)
 	if align:
 		lines = indentLines(lines)
 	writeInlFile(os.path.join(directory, filename), lines)
