@@ -256,8 +256,8 @@ public:
 	}
 
 	EGLConfig					getConfig		(void) const { return m_config; }
-	EGLDisplay 					getEglDisplay	(void) const { return m_display; }
-	EGLContext 					getEglContext	(void) const { return *m_context; }
+	EGLDisplay					getEglDisplay	(void) const { return m_display; }
+	EGLContext					getEglContext	(void) const { return *m_context; }
 	const glw::Functions&		gl				(void) const { return m_gl; }
 
 private:

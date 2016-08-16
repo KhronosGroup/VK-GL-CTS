@@ -96,7 +96,7 @@ public:
 	{
 		try
 		{
-			const EGLint 	attribList[] =
+			const EGLint	attribList[] =
 			{
 				EGL_CONTEXT_CLIENT_VERSION, 2,
 				EGL_NONE
@@ -196,7 +196,7 @@ public:
 
 		if (m_contextType == CONTEXTTYPE_SINGLE)
 		{
-			const EGLint 	attribList[] =
+			const EGLint	attribList[] =
 			{
 				EGL_CONTEXT_CLIENT_VERSION, 2,
 				EGL_NONE

@@ -4492,7 +4492,7 @@ static ResourceDefinition::Node::SharedPtr generateRandomExtShaderSet (de::Rando
 		const glu::ShaderType						shaderType	= (selector == 0) ? (glu::SHADERTYPE_GEOMETRY)
 																: (selector == 1) ? (glu::SHADERTYPE_TESSELLATION_CONTROL)
 																: (selector == 2) ? (glu::SHADERTYPE_TESSELLATION_EVALUATION)
-																: 					(glu::SHADERTYPE_LAST);
+																:					(glu::SHADERTYPE_LAST);
 
 		return ResourceDefinition::Node::SharedPtr(new ResourceDefinition::Shader(program, shaderType, glu::GLSL_VERSION_310_ES));
 	}

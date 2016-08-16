@@ -86,7 +86,7 @@ void InterpolationOffsetCase::init (void)
 
 InterpolationOffsetCase::IterateResult InterpolationOffsetCase::iterate (void)
 {
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 	gl.enableLogging(true);
 
@@ -134,7 +134,7 @@ void FragmentInterpolationOffsetBitsCase::init (void)
 
 FragmentInterpolationOffsetBitsCase::IterateResult FragmentInterpolationOffsetBitsCase::iterate (void)
 {
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 	gl.enableLogging(true);
 

@@ -131,7 +131,7 @@ int deVsprintf (char* string, size_t size, const char* format, va_list list)
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief 	Safe string print
+ * \brief	Safe string print
  * \note	This has the new safe signature, i.e., string length is a
  *			required parameter.
  *//*--------------------------------------------------------------------*/

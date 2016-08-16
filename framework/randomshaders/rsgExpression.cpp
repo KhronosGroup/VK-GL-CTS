@@ -1053,7 +1053,7 @@ float computeEntryReadWeight (ConstValueRangeAccess entryValueRange, ConstValueR
 				deInt64	intersectionLen			= (deInt64)intersectionMax - (deInt64)intersectionMin;
 				float	entryRatio				= (entryRangeLen	> 0) ? ((float)intersectionLen / (float)entryRangeLen)	: 1.0f;
 				float	readRatio				= (readRangeLen		> 0) ? ((float)intersectionLen / (float)readRangeLen)	: 1.0f;
-				float 	elementWeight			= 0.5f*readRatio + 0.5f*entryRatio;
+				float	elementWeight			= 0.5f*readRatio + 0.5f*entryRatio;
 
 				weight = combineWeight(weight, elementWeight);
 			}

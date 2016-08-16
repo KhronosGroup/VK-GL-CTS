@@ -1391,7 +1391,7 @@ class FragmentTextureWorkloadCullCase : public FragmentWorkloadCullCase
 {
 public:
 						FragmentTextureWorkloadCullCase		(TestContext& testCtx, const RenderContext& renderCtx, const char* name, const char* desc);
-	virtual 			~FragmentTextureWorkloadCullCase	(void) {}
+	virtual				~FragmentTextureWorkloadCullCase	(void) {}
 
 	virtual void		init								(void);
 	virtual void		deinit								(void);

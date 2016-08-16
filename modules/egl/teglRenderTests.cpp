@@ -128,9 +128,9 @@ struct DrawPrimitiveOp
 static bool isANarrowScreenSpaceTriangle (const tcu::Vec4& p0, const tcu::Vec4& p1, const tcu::Vec4& p2)
 {
 	// to clip space
-	const tcu::Vec2	csp0 				= p0.swizzle(0, 1) / p0.w();
-	const tcu::Vec2	csp1 				= p1.swizzle(0, 1) / p1.w();
-	const tcu::Vec2	csp2 				= p2.swizzle(0, 1) / p2.w();
+	const tcu::Vec2	csp0				= p0.swizzle(0, 1) / p0.w();
+	const tcu::Vec2	csp1				= p1.swizzle(0, 1) / p1.w();
+	const tcu::Vec2	csp2				= p2.swizzle(0, 1) / p2.w();
 
 	const tcu::Vec2	e01					= (csp1 - csp0);
 	const tcu::Vec2	e02					= (csp2 - csp0);

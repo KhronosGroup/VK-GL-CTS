@@ -53,21 +53,21 @@ static const char* getVerifierSuffix (QueryType type)
 	}
 }
 
-static const char* const s_vertexSource = 		"#version 310 es\n"
+static const char* const s_vertexSource =		"#version 310 es\n"
 												"out highp vec4 v_color;\n"
 												"void main()\n"
 												"{\n"
 												"	gl_Position = vec4(float(gl_VertexID) * 0.5, float(gl_VertexID+1) * 0.5, 0.0, 1.0);\n"
 												"	v_color = vec4(float(gl_VertexID), 1.0, 0.0, 1.0);\n"
 												"}\n";
-static const char* const s_fragmentSource = 	"#version 310 es\n"
+static const char* const s_fragmentSource =		"#version 310 es\n"
 												"in highp vec4 v_color;\n"
 												"layout(location=0) out highp vec4 o_color;\n"
 												"void main()\n"
 												"{\n"
 												"	o_color = v_color;\n"
 												"}\n";
-static const char* const s_computeSource =	 	"#version 310 es\n"
+static const char* const s_computeSource =		"#version 310 es\n"
 												"layout (local_size_x = 1, local_size_y = 1) in;\n"
 												"layout(binding = 0) buffer Output\n"
 												"{\n"
@@ -194,7 +194,7 @@ PipelineProgramCase::IterateResult PipelineProgramCase::iterate (void)
 
 		{
 			const tcu::ScopedLogSection section		(m_testCtx.getLog(), "Initial", "Initial");
-			glu::ProgramPipeline 		pipeline	(m_context.getRenderContext());
+			glu::ProgramPipeline		pipeline	(m_context.getRenderContext());
 
 			gl.glBindProgramPipeline(pipeline.getPipeline());
 			GLU_EXPECT_NO_ERROR(gl.glGetError(), "setup pipeline");
@@ -204,7 +204,7 @@ PipelineProgramCase::IterateResult PipelineProgramCase::iterate (void)
 
 		{
 			const tcu::ScopedLogSection section		(m_testCtx.getLog(), "Set", "Set");
-			glu::ProgramPipeline 		pipeline	(m_context.getRenderContext());
+			glu::ProgramPipeline		pipeline	(m_context.getRenderContext());
 
 			gl.glBindProgramPipeline(pipeline.getPipeline());
 			gl.glUseProgramStages(pipeline.getPipeline(), stageBit, program.getProgram());
@@ -348,7 +348,7 @@ InfoLogCase::IterateResult InfoLogCase::iterate (void)
 	}
 
 	{
-		const tcu::ScopedLogSection 			superSection	(m_testCtx.getLog(), "ValidationFail", "Failed validation");
+		const tcu::ScopedLogSection				superSection	(m_testCtx.getLog(), "ValidationFail", "Failed validation");
 		glu::ProgramPipeline					pipeline		(m_context.getRenderContext());
 		StateQueryMemoryWriteGuard<glw::GLint>	logLen;
 

@@ -1020,7 +1020,7 @@ deBool qpTestLog_endShaderProgram (qpTestLog* log)
 /*--------------------------------------------------------------------*//*!
  * \brief Write a OpenGL ES shader into the log.
  * \param type				Shader type
- * \param source	 		Shader source
+ * \param source			Shader source
  * \param compileOk			Shader compilation result, false on failure
  * \param infoLog			Implementation provided shader compilation log
  *//*--------------------------------------------------------------------*/

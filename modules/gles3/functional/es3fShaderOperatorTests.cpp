@@ -186,10 +186,10 @@ template<typename T, int Size>	inline Vector<T, Size>			bitwiseAndVecScalar		(co
 template<typename T, int Size>	inline Vector<T, Size>			bitwiseOrVecScalar		(const Vector<T, Size>& v, T s)					{ return bitwiseOr(v, Vector<T, Size>(s)); };
 template<typename T, int Size>	inline Vector<T, Size>			bitwiseXorVecScalar		(const Vector<T, Size>& v, T s)					{ return bitwiseXor(v, Vector<T, Size>(s)); };
 
-template<typename T, int Size> inline Vector<T, Size>			addScalarVec			(T s, const Vector<T, Size>& v) 				{ return s + v; };
-template<typename T, int Size> inline Vector<T, Size>			subScalarVec			(T s, const Vector<T, Size>& v) 				{ return s - v; };
-template<typename T, int Size> inline Vector<T, Size>			mulScalarVec			(T s, const Vector<T, Size>& v) 				{ return s * v; };
-template<typename T, int Size> inline Vector<T, Size>			divScalarVec			(T s, const Vector<T, Size>& v) 				{ return s / v; };
+template<typename T, int Size> inline Vector<T, Size>			addScalarVec			(T s, const Vector<T, Size>& v)					{ return s + v; };
+template<typename T, int Size> inline Vector<T, Size>			subScalarVec			(T s, const Vector<T, Size>& v)					{ return s - v; };
+template<typename T, int Size> inline Vector<T, Size>			mulScalarVec			(T s, const Vector<T, Size>& v)					{ return s * v; };
+template<typename T, int Size> inline Vector<T, Size>			divScalarVec			(T s, const Vector<T, Size>& v)					{ return s / v; };
 template<typename T, int Size> inline Vector<T, Size>			modScalarVec			(T s, const Vector<T, Size>& v)					{ return mod(Vector<T, Size>(s), v); };
 template<typename T, int Size> inline Vector<T, Size>			bitwiseAndScalarVec		(T s, const Vector<T, Size>& v)					{ return bitwiseAnd(Vector<T, Size>(s), v); };
 template<typename T, int Size> inline Vector<T, Size>			bitwiseOrScalarVec		(T s, const Vector<T, Size>& v)					{ return bitwiseOr(Vector<T, Size>(s), v); };
@@ -1871,7 +1871,7 @@ void ShaderOperatorTests::init (void)
 
 		for (int funcInfoNdx = 0; funcInfoNdx < (int)outerGroupInfo.funcInfos.size(); funcInfoNdx++)
 		{
-			const BuiltinFuncInfo&	funcInfo 		= outerGroupInfo.funcInfos[funcInfoNdx];
+			const BuiltinFuncInfo&	funcInfo		= outerGroupInfo.funcInfos[funcInfoNdx];
 			const char*				shaderFuncName	= funcInfo.shaderFuncName;
 			bool					isBoolCase		= (funcInfo.precisionMask == PRECMASK_NA);
 			bool					isBoolOut		= (funcInfo.outValue & (VALUE_BOOL | VALUE_BOOL_VEC | VALUE_BOOL_GENTYPE)) != 0;

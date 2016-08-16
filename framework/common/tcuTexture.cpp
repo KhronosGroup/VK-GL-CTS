@@ -1637,7 +1637,7 @@ static inline Vec4 lookupBorder (const tcu::TextureFormat& format, const tcu::Sa
 	// "lookup" for a combined format does not make sense, disallow
 	DE_ASSERT(!isCombinedDepthStencilType(format.type));
 
-	const tcu::TextureChannelClass	channelClass 			= tcu::getTextureChannelClass(format.type);
+	const tcu::TextureChannelClass	channelClass			= tcu::getTextureChannelClass(format.type);
 	const bool						isFloat					= channelClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT;
 	const bool						isFixed					= channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT ||
 															  channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;

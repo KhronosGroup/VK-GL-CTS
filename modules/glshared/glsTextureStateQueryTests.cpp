@@ -1208,7 +1208,7 @@ TextureLODCase::TextureLODCase (tcu::TestContext& testCtx, const glu::RenderCont
 void TextureLODCase::test (glu::CallLogWrapper& gl, tcu::ResultCollector& result) const
 {
 	const bool	isPureCase		= isPureIntTester(m_tester) || isPureUintTester(m_tester);
-	const int	initialValue 	= (m_pname == GL_TEXTURE_MIN_LOD) ? (-1000)
+	const int	initialValue	= (m_pname == GL_TEXTURE_MIN_LOD) ? (-1000)
 								: (m_pname == GL_TEXTURE_MAX_LOD) ? (1000)
 								: (-1);
 
@@ -2045,7 +2045,7 @@ SamplerLODCase::SamplerLODCase (tcu::TestContext& testCtx, const glu::RenderCont
 void SamplerLODCase::test (glu::CallLogWrapper& gl, tcu::ResultCollector& result) const
 {
 	const bool	isPureCase		= isPureIntTester(m_tester) || isPureUintTester(m_tester);
-	const int	initialValue 	= (m_pname == GL_TEXTURE_MIN_LOD) ? (-1000)
+	const int	initialValue	= (m_pname == GL_TEXTURE_MIN_LOD) ? (-1000)
 								: (m_pname == GL_TEXTURE_MAX_LOD) ? (1000)
 								: (-1);
 

@@ -88,14 +88,14 @@ tcu::TestStatus deviceResetSetEventCase (Context& context)
 	const VkSubmitInfo				submitInfo			=
 														{
 															VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-						  									DE_NULL,						// const void*					pNext;
-						  									0u,								// deUint32						waitSemaphoreCount;
-						  									DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
-						  									DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
-						  									1u,								// deUint32						commandBufferCount;
-						  									&cmdBuffer.get(),				// const VkCommandBuffer*		pCommandBuffers;
-						  									0u,								// deUint32						signalSemaphoreCount;
-						  									DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
+															DE_NULL,						// const void*					pNext;
+															0u,								// deUint32						waitSemaphoreCount;
+															DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
+															DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
+															1u,								// deUint32						commandBufferCount;
+															&cmdBuffer.get(),				// const VkCommandBuffer*		pCommandBuffers;
+															0u,								// deUint32						signalSemaphoreCount;
+															DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
 														};
 	const VkEventCreateInfo			eventInfo			=
 														{
@@ -146,14 +146,14 @@ tcu::TestStatus deviceWaitForEventCase (Context& context)
 	const VkSubmitInfo				submitInfo			=
 														{
 															VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-						  									DE_NULL,						// const void*					pNext;
-						  									0u,								// deUint32						waitSemaphoreCount;
-						  									DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
-						  									DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
-						  									1u,								// deUint32						commandBufferCount;
-						  									&cmdBuffer.get(),				// const VkCommandBuffer*		pCommandBuffers;
-						  									0u,								// deUint32						signalSemaphoreCount;
-						  									DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
+															DE_NULL,						// const void*					pNext;
+															0u,								// deUint32						waitSemaphoreCount;
+															DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
+															DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
+															1u,								// deUint32						commandBufferCount;
+															&cmdBuffer.get(),				// const VkCommandBuffer*		pCommandBuffers;
+															0u,								// deUint32						signalSemaphoreCount;
+															DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
 														};
 	const VkEventCreateInfo			eventInfo			=
 														{
@@ -200,14 +200,14 @@ tcu::TestStatus singleSubmissionCase (Context& context)
 	const VkSubmitInfo				submitInfo			=
 														{
 															VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-						  									DE_NULL,						// const void*					pNext;
-						  									0u,								// deUint32						waitSemaphoreCount;
-						  									DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
-						  									DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
-						  									2u,								// deUint32						commandBufferCount;
-						  									cmdBuffers,						// const VkCommandBuffer*		pCommandBuffers;
-						  									0u,								// deUint32						signalSemaphoreCount;
-						  									DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
+															DE_NULL,						// const void*					pNext;
+															0u,								// deUint32						waitSemaphoreCount;
+															DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
+															DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
+															2u,								// deUint32						commandBufferCount;
+															cmdBuffers,						// const VkCommandBuffer*		pCommandBuffers;
+															0u,								// deUint32						signalSemaphoreCount;
+															DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
 														};
 	const VkEventCreateInfo			eventInfo			=
 														{
@@ -254,25 +254,25 @@ tcu::TestStatus multiSubmissionCase (Context& context)
 														{
 															{
 																VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-						  										DE_NULL,						// const void*					pNext;
-						  										0u,								// deUint32						waitSemaphoreCount;
-						  										DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
-						  										DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
-						  										1u,								// deUint32						commandBufferCount;
-						  										&cmdBuffers[SET],				// const VkCommandBuffer*		pCommandBuffers;
-						  										0u,								// deUint32						signalSemaphoreCount;
-						  										DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
+																DE_NULL,						// const void*					pNext;
+																0u,								// deUint32						waitSemaphoreCount;
+																DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
+																DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
+																1u,								// deUint32						commandBufferCount;
+																&cmdBuffers[SET],				// const VkCommandBuffer*		pCommandBuffers;
+																0u,								// deUint32						signalSemaphoreCount;
+																DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
 															},
 															{
 																VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-						  										DE_NULL,						// const void*					pNext;
-						  										0u,								// deUint32						waitSemaphoreCount;
-						  										DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
-						  										DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
-						  										1u,								// deUint32						commandBufferCount;
-						  										&cmdBuffers[WAIT],				// const VkCommandBuffer*		pCommandBuffers;
-						  										0u,								// deUint32						signalSemaphoreCount;
-						  										DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
+																DE_NULL,						// const void*					pNext;
+																0u,								// deUint32						waitSemaphoreCount;
+																DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
+																DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
+																1u,								// deUint32						commandBufferCount;
+																&cmdBuffers[WAIT],				// const VkCommandBuffer*		pCommandBuffers;
+																0u,								// deUint32						signalSemaphoreCount;
+																DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
 															}
 														};
 	const VkEventCreateInfo			eventInfo			=
@@ -329,14 +329,14 @@ tcu::TestStatus secondaryCommandBufferCase (Context& context)
 	const VkSubmitInfo						submitInfo				=
 																	{
 																		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-						  												DE_NULL,						// const void*					pNext;
-						  												0u,								// deUint32						waitSemaphoreCount;
-						  												DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
-						  												DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
-						  												1u,								// deUint32						commandBufferCount;
-						  												&primaryCmdBuffer.get(),		// const VkCommandBuffer*		pCommandBuffers;
-						  												0u,								// deUint32						signalSemaphoreCount;
-						  												DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
+																		DE_NULL,						// const void*					pNext;
+																		0u,								// deUint32						waitSemaphoreCount;
+																		DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
+																		DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
+																		1u,								// deUint32						commandBufferCount;
+																		&primaryCmdBuffer.get(),		// const VkCommandBuffer*		pCommandBuffers;
+																		0u,								// deUint32						signalSemaphoreCount;
+																		DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
 																	};
 	const VkEventCreateInfo					eventInfo				=
 																	{
@@ -350,12 +350,12 @@ tcu::TestStatus secondaryCommandBufferCase (Context& context)
 																	{
 																		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,	//VkStructureType					sType;
 																		DE_NULL,											//const void*						pNext;
-																		DE_NULL,     										//VkRenderPass					renderPass;
-																		0u,            										//deUint32						subpass;
-																		DE_NULL,          									//VkFramebuffer					framebuffer;
-																		VK_FALSE,        									//VkBool32						occlusionQueryEnable;
-																		(VkQueryControlFlags)0u,    						//VkQueryControlFlags				queryFlags;
-																		(VkQueryPipelineStatisticFlags)0u,    				//VkQueryPipelineStatisticFlags	pipelineStatistics;
+																		DE_NULL,											//VkRenderPass					renderPass;
+																		0u,													//deUint32						subpass;
+																		DE_NULL,											//VkFramebuffer					framebuffer;
+																		VK_FALSE,											//VkBool32						occlusionQueryEnable;
+																		(VkQueryControlFlags)0u,							//VkQueryControlFlags				queryFlags;
+																		(VkQueryPipelineStatisticFlags)0u,					//VkQueryPipelineStatisticFlags	pipelineStatistics;
 																	};
 	const VkCommandBufferBeginInfo			cmdBufferBeginInfo		=
 																	{

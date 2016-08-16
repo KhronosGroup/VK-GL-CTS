@@ -48,8 +48,8 @@ void verifyProgram(NegativeTestContext& ctx, glu::ProgramSources sources, Expect
 {
 	DE_ASSERT(expect >= EXPECT_RESULT_PASS && expect < EXPECT_RESULT_LAST);
 
-	tcu::TestLog& 				log 		= ctx.getLog();
-	const glu::ShaderProgram 	program		(ctx.getRenderContext(), sources);
+	tcu::TestLog&				log			= ctx.getLog();
+	const glu::ShaderProgram	program		(ctx.getRenderContext(), sources);
 	bool						testFailed	= false;
 	std::string					message;
 
@@ -77,7 +77,7 @@ void verifyShader(NegativeTestContext& ctx, glu::ShaderType shaderType, std::str
 {
 	DE_ASSERT(expect >= EXPECT_RESULT_PASS && expect < EXPECT_RESULT_LAST);
 
-	tcu::TestLog& 		log			= ctx.getLog();
+	tcu::TestLog&		log			= ctx.getLog();
 	bool				testFailed	= false;
 	const char* const	source		= shaderSource.c_str();
 	const int			length		= (int) shaderSource.size();

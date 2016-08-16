@@ -294,7 +294,7 @@ typename Traits<T>::IVal convert (const FloatFormat&				fmt,
 template <typename T>
 struct ScalarTraits
 {
-	typedef 			Interval		IVal;
+	typedef				Interval		IVal;
 
 	static Interval		doMakeIVal		(const T& value)
 	{
@@ -370,7 +370,7 @@ struct Traits<bool> : ScalarTraits<bool>
 template<>
 struct Traits<int> : ScalarTraits<int>
 {
-	static void			doPrintValue 	(const FloatFormat&,
+	static void			doPrintValue	(const FloatFormat&,
 										 const int&			value,
 										 ostream&			os)
 	{
@@ -492,13 +492,13 @@ struct Traits<Void>
 {
 	typedef		Void			IVal;
 
-	static Void	doMakeIVal		(const Void& value) 					{ return value; }
+	static Void	doMakeIVal		(const Void& value)						{ return value; }
 	static Void	doUnion			(const Void&, const Void&)				{ return Void(); }
-	static bool	doContains		(const Void&, Void) 					{ return true; }
+	static bool	doContains		(const Void&, Void)						{ return true; }
 	static Void	doRound			(const FloatFormat&, const Void& value)	{ return value; }
 	static Void	doConvert		(const FloatFormat&, const Void& value)	{ return value; }
 
-	static void	doPrintValue 	(const FloatFormat&, const Void&, ostream& os)
+	static void	doPrintValue	(const FloatFormat&, const Void&, ostream& os)
 	{
 		os << "()";
 	}
@@ -514,7 +514,7 @@ struct Traits<Void>
 template <typename T, int Size> struct ContainerOf	{ typedef Vector<T, Size>	Container; };
 
 template <typename T>			struct ContainerOf<T, 1>		{ typedef T		Container; };
-template <int Size> 			struct ContainerOf<Void, Size>	{ typedef Void	Container; };
+template <int Size>				struct ContainerOf<Void, Size>	{ typedef Void	Container; };
 
 // This is a kludge that is only needed to get the ExprP::operator[] syntactic sugar to work.
 template <typename T>	struct ElementOf		{ typedef	typename T::Element	Element; };
@@ -672,7 +672,7 @@ private:
 class Statement
 {
 public:
-	virtual	~Statement		(void) 							{								 }
+	virtual	~Statement		(void)							{								 }
 	//! Execute the statement, modifying the environment of `ctx`
 	void	execute			(EvalContext&	ctx)	const	{ this->doExecute(ctx);			 }
 	void	print			(ostream&		os)		const	{ this->doPrint(os);			 }
@@ -837,8 +837,8 @@ template <typename T>
 class Expr : public ExprBase
 {
 public:
-	typedef 			T				Val;
-	typedef typename 	Traits<T>::IVal	IVal;
+	typedef				T				Val;
+	typedef typename	Traits<T>::IVal	IVal;
 
 	IVal				evaluate		(const EvalContext&	ctx) const;
 
@@ -964,9 +964,9 @@ ExprP<float>						operator+(const ExprP<float>&						arg0,
 											  const ExprP<float>&						arg1);
 ExprP<float>						operator-(const ExprP<float>&						arg0,
 											  const ExprP<float>&						arg1);
-ExprP<float> 						operator*(const ExprP<float>&						arg0,
+ExprP<float>						operator*(const ExprP<float>&						arg0,
 											  const ExprP<float>&						arg1);
-ExprP<float> 						operator/(const ExprP<float>&						arg0,
+ExprP<float>						operator/(const ExprP<float>&						arg0,
 											  const ExprP<float>&						arg1);
 template<int Size>
 ExprP<Vector<float, Size> >			operator-(const ExprP<Vector<float, Size> >&		arg0);
@@ -992,10 +992,10 @@ template<int Rows, int Cols>
 ExprP<Matrix<float, Rows, Cols> >	operator* (const ExprP<Matrix<float, Rows, Cols> >&	left,
 											   const ExprP<float>&						right);
 template<int Rows, int Cols>
-ExprP<Matrix<float, Rows, Cols> > 	operator+ (const ExprP<Matrix<float, Rows, Cols> >&	left,
+ExprP<Matrix<float, Rows, Cols> >	operator+ (const ExprP<Matrix<float, Rows, Cols> >&	left,
 											   const ExprP<Matrix<float, Rows, Cols> >&	right);
 template<int Rows, int Cols>
-ExprP<Matrix<float, Rows, Cols> > 	operator- (const ExprP<Matrix<float, Rows, Cols> >&	mat);
+ExprP<Matrix<float, Rows, Cols> >	operator- (const ExprP<Matrix<float, Rows, Cols> >&	mat);
 
 //! @}
 
@@ -1054,7 +1054,7 @@ public:
 			Constant		(const T& value) : m_value(value) {}
 
 protected:
-	void	doPrintExpr		(ostream& os) const 		{ os << m_value; }
+	void	doPrintExpr		(ostream& os) const			{ os << m_value; }
 	IVal	doEvaluate		(const EvalContext&) const	{ return makeIVal(m_value); }
 
 private:
@@ -1128,7 +1128,7 @@ struct Signature
 	typedef typename Traits<Arg3>::IVal	IArg3;
 
 	typedef Tuple4<	const Arg0&,	const Arg1&,	const Arg2&,	const Arg3&>	Args;
-	typedef Tuple4<	const IArg0&,	const IArg1&,	const IArg2&,	const IArg3&> 	IArgs;
+	typedef Tuple4<	const IArg0&,	const IArg1&,	const IArg2&,	const IArg3&>	IArgs;
 	typedef Tuple4<	ExprP<Arg0>,	ExprP<Arg1>,	ExprP<Arg2>,	ExprP<Arg3> >	ArgExprs;
 };
 
@@ -1142,9 +1142,9 @@ class FuncBase
 {
 public:
 	virtual			~FuncBase				(void)					{}
-	virtual string	getName					(void) 					const = 0;
+	virtual string	getName					(void)					const = 0;
 	//! Name of extension that this function requires, or empty.
-	virtual string	getRequiredExtension	(void) 					const { return ""; }
+	virtual string	getRequiredExtension	(void)					const { return ""; }
 	virtual void	print					(ostream&,
 											 const BaseArgExprs&)	const = 0;
 	//! Index of output parameter, or -1 if none of the parameters is output.
@@ -1765,8 +1765,8 @@ protected:
 	}
 
 	virtual Interval	applyPoint		(const EvalContext&	ctx,
-										 double 			x,
-										 double 			y) const
+										 double				x,
+										 double				y) const
 	{
 		const double exact	= this->applyExact(x, y);
 		const double prec	= this->precision(ctx, exact, x, y);
@@ -1820,8 +1820,8 @@ protected:
 	}
 
 	Interval		applyPoint		(const EvalContext&	ctx,
-									 double 			x,
-									 double 			y) const
+									 double				x,
+									 double				y) const
 	{
 		const double exact	= this->applyExact(x, y);
 
@@ -1857,9 +1857,9 @@ protected:
 	}
 
 	virtual Interval	applyPoint		(const EvalContext&	ctx,
-										 double 			x,
-										 double 			y,
-										 double 			z) const
+										 double				x,
+										 double				y,
+										 double				z) const
 	{
 		const double exact	= this->applyExact(x, y, z);
 		const double prec	= this->precision(ctx, exact, x, y, z);
@@ -1889,8 +1889,8 @@ using namespace tcu;
 class Add : public InfixOperator
 {
 public:
-	string		getName		(void) const 						{ return "add"; }
-	string		getSymbol	(void) const 						{ return "+"; }
+	string		getName		(void) const						{ return "add"; }
+	string		getSymbol	(void) const						{ return "+"; }
 
 	Interval	doApply		(const EvalContext&	ctx,
 							 const IArgs&		iargs) const
@@ -1908,14 +1908,14 @@ public:
 	}
 
 protected:
-	double		applyExact	(double x, double y) const 			{ return x + y; }
+	double		applyExact	(double x, double y) const			{ return x + y; }
 };
 
 class Mul : public InfixOperator
 {
 public:
-	string		getName		(void) const 									{ return "mul"; }
-	string		getSymbol	(void) const 									{ return "*"; }
+	string		getName		(void) const									{ return "mul"; }
+	string		getSymbol	(void) const									{ return "*"; }
 
 	Interval	doApply		(const EvalContext&	ctx, const IArgs& iargs) const
 	{
@@ -1965,8 +1965,8 @@ protected:
 class Sub : public InfixOperator
 {
 public:
-	string		getName		(void) const 				{ return "sub"; }
-	string		getSymbol	(void) const 				{ return "-"; }
+	string		getName		(void) const				{ return "sub"; }
+	string		getSymbol	(void) const				{ return "-"; }
 
 	Interval	doApply		(const EvalContext&	ctx, const IArgs& iargs) const
 	{
@@ -2005,10 +2005,10 @@ protected:
 class Div : public InfixOperator
 {
 public:
-	string		getName			(void) const 						{ return "div"; }
+	string		getName			(void) const						{ return "div"; }
 
 protected:
-	string		getSymbol		(void) const 						{ return "/"; }
+	string		getSymbol		(void) const						{ return "/"; }
 
 	Interval	innerExtrema	(const EvalContext&,
 								 const Interval&		nom,
@@ -2154,7 +2154,7 @@ ExprP<float> log	(const ExprP<float>& x)	{ return app<Log>(x); }
 ExprP<TRET> NAME (const ExprP<T0>& arg0) { return app<CLASS>(arg0); }
 
 #define DEFINE_DERIVED1(CLASS, TRET, NAME, T0, ARG0, EXPANSION)			\
-class CLASS : public DerivedFunc<Signature<TRET, T0> >		 			\
+class CLASS : public DerivedFunc<Signature<TRET, T0> >					\
 {																		\
 public:																	\
 	string			getName		(void) const		{ return #NAME; }	\
@@ -2179,7 +2179,7 @@ ExprP<TRET> NAME (const ExprP<T0>& arg0, const ExprP<T1>& arg1)		\
 }
 
 #define DEFINE_DERIVED2(CLASS, TRET, NAME, T0, Arg0, T1, Arg1, EXPANSION) \
-class CLASS : public DerivedFunc<Signature<TRET, T0, T1> >		 		\
+class CLASS : public DerivedFunc<Signature<TRET, T0, T1> >				\
 {																		\
 public:																	\
 	string			getName		(void) const		{ return #NAME; }	\
@@ -2230,10 +2230,10 @@ ExprP<TRET> NAME (const ExprP<T0>& arg0, const ExprP<T1>& arg1,			\
 	return app<CLASS>(arg0, arg1, arg2, arg3);							\
 }
 
-DEFINE_DERIVED_FLOAT1(Sqrt,		sqrt,		x, 		constant(1.0f) / app<InverseSqrt>(x));
+DEFINE_DERIVED_FLOAT1(Sqrt,		sqrt,		x,		constant(1.0f) / app<InverseSqrt>(x));
 DEFINE_DERIVED_FLOAT2(Pow,		pow,		x,	y,	exp2(y * log2(x)));
-DEFINE_DERIVED_FLOAT1(Radians,	radians,	d, 		(constant(DE_PI) / constant(180.0f)) * d);
-DEFINE_DERIVED_FLOAT1(Degrees,	degrees,	r,	 	(constant(180.0f) / constant(DE_PI)) * r);
+DEFINE_DERIVED_FLOAT1(Radians,	radians,	d,		(constant(DE_PI) / constant(180.0f)) * d);
+DEFINE_DERIVED_FLOAT1(Degrees,	degrees,	r,		(constant(180.0f) / constant(DE_PI)) * r);
 
 class TrigFunc : public CFloatFunc1
 {
@@ -2443,7 +2443,7 @@ public:
 protected:
 	Interval	innerExtrema	(const EvalContext&		ctx,
 								 const Interval&		yi,
-								 const Interval& 		xi) const
+								 const Interval&		xi) const
 	{
 		Interval ret;
 
@@ -2502,7 +2502,7 @@ public:
 	}
 
 protected:
-	IRet		doApply 	(const EvalContext&,
+	IRet		doApply		(const EvalContext&,
 							 const typename GetComponent::IArgs& iargs) const
 	{
 		IRet ret;
@@ -2922,7 +2922,7 @@ public:
 	}
 
 protected:
-	ExprP<float>	doExpand 	(ExpandContext&, const ArgExprs& args) const
+	ExprP<float>	doExpand	(ExpandContext&, const ArgExprs& args) const
 	{
 		ExprP<float> val = args.a[0] * args.b[0];
 
@@ -2942,7 +2942,7 @@ public:
 		return "dot";
 	}
 
-	ExprP<float>	doExpand 	(ExpandContext&, const ArgExprs& args) const
+	ExprP<float>	doExpand	(ExpandContext&, const ArgExprs& args) const
 	{
 		return args.a * args.b;
 	}
@@ -3000,7 +3000,7 @@ public:
 	}
 
 protected:
-	ExprP<Ret>	doExpand 	(ExpandContext&, const ArgExprs& args) const
+	ExprP<Ret>	doExpand	(ExpandContext&, const ArgExprs& args) const
 	{
 		return length<Size>(args.a - args.b);
 	}
@@ -3017,7 +3017,7 @@ public:
 	}
 
 protected:
-	ExprP<Vec3>		doExpand 	(ExpandContext&, const ArgExprs& x) const
+	ExprP<Vec3>		doExpand	(ExpandContext&, const ArgExprs& x) const
 	{
 		return vec3(x.a[1] * x.b[2] - x.b[1] * x.a[2],
 					x.a[2] * x.b[0] - x.b[2] * x.a[0],
@@ -3324,7 +3324,7 @@ public:
 
 protected:
 
-	ExprP<Ret>	doExpand 	(ExpandContext& ctx, const ArgExprs& args) const
+	ExprP<Ret>	doExpand	(ExpandContext& ctx, const ArgExprs& args) const
 	{
 		const ExprP<float>&		edge0	= args.a;
 		const ExprP<float>&		edge1	= args.b;
@@ -3448,7 +3448,7 @@ template<typename Ret, typename Arg0, typename Arg1>
 class MulFunc : public PrimitiveFunc<Signature<Ret, Arg0, Arg1> >
 {
 public:
-	string	getName	(void) const 									{ return "mul"; }
+	string	getName	(void) const									{ return "mul"; }
 
 protected:
 	void	doPrint	(ostream& os, const BaseArgExprs& args) const
@@ -3695,7 +3695,7 @@ public:
 	}
 
 protected:
-	ExprP<Ret>	doExpand 	(ExpandContext& ctx, const ArgExprs& args)			const
+	ExprP<Ret>	doExpand	(ExpandContext& ctx, const ArgExprs& args)			const
 	{
 		ExprP<Mat3>		mat		= args.a;
 		ExprP<Mat2>		invA	= bindExpression("invA", ctx,
@@ -3734,7 +3734,7 @@ public:
 	string		getName		(void) const { return "inverse"; }
 
 protected:
-	ExprP<Ret>			doExpand 			(ExpandContext&		ctx,
+	ExprP<Ret>			doExpand			(ExpandContext&		ctx,
 											 const ArgExprs&	args)			const
 	{
 		ExprP<Mat4>	mat		= args.a;
@@ -3780,7 +3780,7 @@ public:
 	}
 
 protected:
-	ExprP<float>	doExpand 				(ExpandContext&, const ArgExprs& x) const
+	ExprP<float>	doExpand				(ExpandContext&, const ArgExprs& x) const
 	{
 		return x.a * x.b + x.c;
 	}
@@ -4131,7 +4131,7 @@ float DefaultSampling<float>::genRandom (const FloatFormat& format,
 	// Generate some occasional special numbers
 	switch (rnd.getInt(0, 64))
 	{
-		case 0: 	return 0;
+		case 0:		return 0;
 		case 1:		return TCU_INFINITY;
 		case 2:		return -TCU_INFINITY;
 		case 3:		return TCU_NAN;
@@ -4429,11 +4429,11 @@ protected:
 	{
 	}
 
-	RenderContext&		getRenderContext(void) const 			{ return m_ctx.renderContext; }
+	RenderContext&		getRenderContext(void) const			{ return m_ctx.renderContext; }
 
-	const FloatFormat&	getFormat		(void) const 			{ return m_ctx.floatFormat; }
+	const FloatFormat&	getFormat		(void) const			{ return m_ctx.floatFormat; }
 
-	TestLog&			log				(void) const 			{ return m_testCtx.getLog(); }
+	TestLog&			log				(void) const			{ return m_testCtx.getLog(); }
 
 	virtual void		runTest			(void) = 0;
 
@@ -4468,12 +4468,12 @@ void PrecisionCase::testStatement (const Variables<In, Out>&	variables,
 {
 	using namespace ShaderExecUtil;
 
-	typedef typename 	In::In0		In0;
-	typedef typename 	In::In1		In1;
-	typedef typename 	In::In2		In2;
-	typedef typename 	In::In3		In3;
-	typedef typename 	Out::Out0	Out0;
-	typedef typename 	Out::Out1	Out1;
+	typedef typename	In::In0		In0;
+	typedef typename	In::In1		In1;
+	typedef typename	In::In2		In2;
+	typedef typename	In::In3		In3;
+	typedef typename	Out::Out0	Out0;
+	typedef typename	Out::Out1	Out1;
 
 	const FloatFormat&	fmt			= getFormat();
 	const int			inCount		= numInputs<In>();
@@ -4484,7 +4484,7 @@ void PrecisionCase::testStatement (const Variables<In, Out>&	variables,
 	const FloatFormat	highpFmt	= m_ctx.highpFormat;
 	const int			maxMsgs		= 100;
 	int					numErrors	= 0;
-	Environment			env; 		// Hoisted out of the inner loop for optimization.
+	Environment			env;		// Hoisted out of the inner loop for optimization.
 
 	switch (inCount)
 	{
@@ -5319,7 +5319,7 @@ struct PrecisionTestContext
 TestCaseGroup* createFuncGroup (const PrecisionTestContext&	ctx,
 								const CaseFactory&			factory)
 {
-	TestCaseGroup* const 	group	= new TestCaseGroup(ctx.testCtx,
+	TestCaseGroup* const	group	= new TestCaseGroup(ctx.testCtx,
 														factory.getName().c_str(),
 														factory.getDesc().c_str());
 
@@ -5334,7 +5334,7 @@ TestCaseGroup* createFuncGroup (const PrecisionTestContext&	ctx,
 		for (size_t shaderNdx = 0; shaderNdx < ctx.shaderTypes.size(); ++shaderNdx)
 		{
 			const ShaderType	shaderType	= ctx.shaderTypes[shaderNdx];
-			const string 		shaderName	(glu::getShaderTypeName(shaderType));
+			const string		shaderName	(glu::getShaderTypeName(shaderType));
 			const string		name		= precName + "_" + shaderName;
 			const Context		caseCtx		(name, ctx.testCtx, ctx.renderCtx, fmt, highpFmt,
 											 precision, shaderType, ctx.numRandoms);

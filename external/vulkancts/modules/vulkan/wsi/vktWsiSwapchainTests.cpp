@@ -334,7 +334,7 @@ struct TestParameters
 };
 
 vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								wsiType,
-														 		  TestDimension						dimension,
+																  TestDimension						dimension,
 																  const VkSurfaceCapabilitiesKHR&	capabilities,
 																  const vector<VkSurfaceFormatKHR>&	formats,
 																  const vector<VkPresentModeKHR>&	presentModes)

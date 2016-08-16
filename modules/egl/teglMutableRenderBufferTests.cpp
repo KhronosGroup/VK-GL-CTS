@@ -49,8 +49,8 @@ class MutableRenderBufferTest : public TestCase
 {
 public:
 						MutableRenderBufferTest		(EglTestContext&	eglTestCtx,
-													 const char* 		name,
-													 const char* 		description,
+													 const char*		name,
+													 const char*		description,
 													 bool				enableConfigBit);
 						~MutableRenderBufferTest	(void);
 	void				init						(void);
@@ -103,9 +103,9 @@ void MutableRenderBufferTest::init (void)
 	// get mutable render buffer config
 	const EGLint	attribs[]	=
 	{
-        EGL_RED_SIZE, 			8,
-        EGL_GREEN_SIZE, 		8,
-        EGL_BLUE_SIZE, 			8,
+        EGL_RED_SIZE,			8,
+        EGL_GREEN_SIZE,			8,
+        EGL_BLUE_SIZE,			8,
 		EGL_ALPHA_SIZE,			8,
 		EGL_SURFACE_TYPE,		EGL_WINDOW_BIT | EGL_MUTABLE_RENDER_BUFFER_BIT_KHR,
 		EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
@@ -113,9 +113,9 @@ void MutableRenderBufferTest::init (void)
 	};
 	const EGLint	attribsNoBit[]	=
 	{
-        EGL_RED_SIZE, 			8,
-        EGL_GREEN_SIZE, 		8,
-        EGL_BLUE_SIZE, 			8,
+        EGL_RED_SIZE,			8,
+        EGL_GREEN_SIZE,			8,
+        EGL_BLUE_SIZE,			8,
 		EGL_ALPHA_SIZE,			8,
 		EGL_SURFACE_TYPE,		EGL_WINDOW_BIT,
 		EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
@@ -153,7 +153,7 @@ void MutableRenderBufferTest::init (void)
 	m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, m_eglConfig, DE_NULL);
 
 	// create context and make current
-	const EGLint 	contextAttribList[]	=
+	const EGLint	contextAttribList[]	=
 	{
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
@@ -266,8 +266,8 @@ class MutableRenderBufferQueryTest : public MutableRenderBufferTest
 {
 public:
 						MutableRenderBufferQueryTest	(EglTestContext&	eglTestCtx,
-														 const char* 		name,
-														 const char* 		description);
+														 const char*		name,
+														 const char*		description);
 						~MutableRenderBufferQueryTest	(void);
 	IterateResult		iterate							(void);
 };
@@ -321,8 +321,8 @@ class MutableRenderBufferQueryNegativeTest : public MutableRenderBufferTest
 {
 public:
 						MutableRenderBufferQueryNegativeTest	(EglTestContext&	eglTestCtx,
-																 const char* 		name,
-																 const char* 		description);
+																 const char*		name,
+																 const char*		description);
 						~MutableRenderBufferQueryNegativeTest	(void);
 	IterateResult		iterate									(void);
 };

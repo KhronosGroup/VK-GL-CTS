@@ -179,7 +179,7 @@ public:
 					, m_numSamples			(-1)
 					, m_depthStencilImage	(0)
 					, m_depthStencilType	(GL_NONE) {}
-	void		check 		(GLenum attPoint, const Attachment& att, const Image* image);
+	void		check		(GLenum attPoint, const Attachment& att, const Image* image);
 
 private:
 	//! The common number of samples of images.
@@ -329,7 +329,7 @@ string NumSamplesParams::getName (const NumSamplesParams& params)
 	ostringstream os;
 	bool first = true;
 	for (const GLsizei* ns	=	DE_ARRAY_BEGIN(params.numSamples);
-		 ns 				!=	DE_ARRAY_END(params.numSamples);
+		 ns					!=	DE_ARRAY_END(params.numSamples);
 		 ns++)
 	{
 		if (first)

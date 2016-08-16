@@ -246,8 +246,8 @@ ClipVec4 ComponentPlane<Sign, CompNdx>::getLineIntersectionPoint (const ClipVec4
 	// even if the another point is not on the plane. Prevent clipping ratio from saturating by using points on line
 	// that are (nearly) on this and (nearly) on the opposite plane.
 
-	const ClipVec4 	clippedV0	= tcu::mix(v0, v1, ComponentPlane<+1, CompNdx>().clipLineSegmentEnd(v0, v1));
-	const ClipVec4 	clippedV1	= tcu::mix(v0, v1, ComponentPlane<-1, CompNdx>().clipLineSegmentEnd(v0, v1));
+	const ClipVec4	clippedV0	= tcu::mix(v0, v1, ComponentPlane<+1, CompNdx>().clipLineSegmentEnd(v0, v1));
+	const ClipVec4	clippedV1	= tcu::mix(v0, v1, ComponentPlane<-1, CompNdx>().clipLineSegmentEnd(v0, v1));
 	const ClipFloat	clipRatio	= clipLineSegmentEnd(clippedV0, clippedV1);
 
 	// Find intersection point of line from v0 to v1 and the current plane. Avoid ratios near 1.0
@@ -707,9 +707,9 @@ void clipPrimitives (std::vector<pa::Triangle>&		list,
  * Clipping to other planes is a by-product of the viewport test  (i.e.
  * rasterization area selection).
  *//*--------------------------------------------------------------------*/
-void clipPrimitives (std::vector<pa::Line>& 		list,
-					 const Program& 				program,
-					 bool 							clipWithZPlanes,
+void clipPrimitives (std::vector<pa::Line>&			list,
+					 const Program&					program,
+					 bool							clipWithZPlanes,
 					 VertexPacketAllocator&			vpalloc)
 {
 	DE_UNREF(vpalloc);

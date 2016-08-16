@@ -36,7 +36,7 @@ deFloat16 deFloat32To16 (float val32)
 		deUint32	u;
 	} x;
 
-	x.f 		= val32;
+	x.f			= val32;
 	sign		= (x.u >> 16u) & 0x00008000u;
 	expotent	= (int)((x.u >> 23u) & 0x000000ffu) - (127 - 15);
 	mantissa	= x.u & 0x007fffffu;

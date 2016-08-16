@@ -110,7 +110,7 @@ class CacheTestParam
 public:
 								CacheTestParam          (const VkShaderStageFlagBits* shaders,
 														 deUint32                     count);
-	virtual 					~CacheTestParam         (void);
+	virtual						~CacheTestParam         (void);
 	virtual const std::string   generateTestName        (void)          const;
 	virtual const std::string   generateTestDescription (void)          const;
 	VkShaderStageFlagBits       getShaderFlag           (deUint32 ndx)  const   { return m_shaders[ndx]; }
