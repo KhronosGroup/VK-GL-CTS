@@ -1135,7 +1135,7 @@ void GLES2SharedRenderingPerfTests::init (void)
 				if (threadCount * contextCount != 4 && threadCount * contextCount != 1)
 					continue;
 
-				TestConfig config 				= basicConfig;
+				TestConfig config				= basicConfig;
 				config.threadCount				= threadCount;
 				config.perThreadContextCount	= contextCount;
 				config.sharedContexts			= false;

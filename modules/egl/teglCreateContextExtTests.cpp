@@ -1051,27 +1051,27 @@ void CreateContextExtGroup::init (void)
 		eglu::ConfigFilter		stencilFilter;
 	} groups[] =
 	{
-		{ "rgb565_no_depth_no_stencil",		"RGB565 configs without depth or stencil",		colorBits<5, 6, 5, 0>, noDepth, 	noStencil	},
+		{ "rgb565_no_depth_no_stencil",		"RGB565 configs without depth or stencil",		colorBits<5, 6, 5, 0>, noDepth,		noStencil	},
 		{ "rgb565_no_depth_stencil",		"RGB565 configs with stencil and no depth",		colorBits<5, 6, 5, 0>, noDepth,		hasStencil	},
 		{ "rgb565_depth_no_stencil",		"RGB565 configs with depth and no stencil",		colorBits<5, 6, 5, 0>, hasDepth,	noStencil	},
 		{ "rgb565_depth_stencil",			"RGB565 configs with depth and stencil",		colorBits<5, 6, 5, 0>, hasDepth,	hasStencil	},
 
-		{ "rgb888_no_depth_no_stencil",		"RGB888 configs without depth or stencil",		colorBits<8, 8, 8, 0>, noDepth, 	noStencil	},
+		{ "rgb888_no_depth_no_stencil",		"RGB888 configs without depth or stencil",		colorBits<8, 8, 8, 0>, noDepth,		noStencil	},
 		{ "rgb888_no_depth_stencil",		"RGB888 configs with stencil and no depth",		colorBits<8, 8, 8, 0>, noDepth,		hasStencil	},
 		{ "rgb888_depth_no_stencil",		"RGB888 configs with depth and no stencil",		colorBits<8, 8, 8, 0>, hasDepth,	noStencil	},
 		{ "rgb888_depth_stencil",			"RGB888 configs with depth and stencil",		colorBits<8, 8, 8, 0>, hasDepth,	hasStencil	},
 
-		{ "rgba4444_no_depth_no_stencil",	"RGBA4444 configs without depth or stencil",	colorBits<4, 4, 4, 4>, noDepth, 	noStencil	},
+		{ "rgba4444_no_depth_no_stencil",	"RGBA4444 configs without depth or stencil",	colorBits<4, 4, 4, 4>, noDepth,		noStencil	},
 		{ "rgba4444_no_depth_stencil",		"RGBA4444 configs with stencil and no depth",	colorBits<4, 4, 4, 4>, noDepth,		hasStencil	},
-		{ "rgba4444_depth_no_stencil",		"RGBA4444 configs with depth and no stencil",	colorBits<4, 4, 4, 4>, hasDepth, 	noStencil	},
+		{ "rgba4444_depth_no_stencil",		"RGBA4444 configs with depth and no stencil",	colorBits<4, 4, 4, 4>, hasDepth,	noStencil	},
 		{ "rgba4444_depth_stencil",			"RGBA4444 configs with depth and stencil",		colorBits<4, 4, 4, 4>, hasDepth,	hasStencil	},
 
-		{ "rgba5551_no_depth_no_stencil",	"RGBA5551 configs without depth or stencil",	colorBits<5, 5, 5, 1>, noDepth, 	noStencil	},
+		{ "rgba5551_no_depth_no_stencil",	"RGBA5551 configs without depth or stencil",	colorBits<5, 5, 5, 1>, noDepth,		noStencil	},
 		{ "rgba5551_no_depth_stencil",		"RGBA5551 configs with stencil and no depth",	colorBits<5, 5, 5, 1>, noDepth,		hasStencil	},
 		{ "rgba5551_depth_no_stencil",		"RGBA5551 configs with depth and no stencil",	colorBits<5, 5, 5, 1>, hasDepth,	noStencil	},
 		{ "rgba5551_depth_stencil",			"RGBA5551 configs with depth and stencil",		colorBits<5, 5, 5, 1>, hasDepth,	hasStencil	},
 
-		{ "rgba8888_no_depth_no_stencil",	"RGBA8888 configs without depth or stencil",	colorBits<8, 8, 8, 8>, noDepth, 	noStencil	},
+		{ "rgba8888_no_depth_no_stencil",	"RGBA8888 configs without depth or stencil",	colorBits<8, 8, 8, 8>, noDepth,		noStencil	},
 		{ "rgba8888_no_depth_stencil",		"RGBA8888 configs with stencil and no depth",	colorBits<8, 8, 8, 8>, noDepth,		hasStencil	},
 		{ "rgba8888_depth_no_stencil",		"RGBA8888 configs with depth and no stencil",	colorBits<8, 8, 8, 8>, hasDepth,	noStencil	},
 		{ "rgba8888_depth_stencil",			"RGBA8888 configs with depth and stencil",		colorBits<8, 8, 8, 8>, hasDepth,	hasStencil	}

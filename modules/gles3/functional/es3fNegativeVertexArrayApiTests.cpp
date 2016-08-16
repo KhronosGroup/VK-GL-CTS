@@ -838,7 +838,7 @@ void NegativeVertexArrayApiTests::init (void)
 				m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
 				const char* tfVarying		= "gl_Position";
 				deUint32 verticesInRange[1];
-				verticesInRange[0] 			= 0;
+				verticesInRange[0]			= 0;
 
 				glGenBuffers				(1, &buf);
 				glGenTransformFeedbacks		(1, &tfID);
@@ -955,7 +955,7 @@ void NegativeVertexArrayApiTests::init (void)
 				m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
 				const char* tfVarying		= "gl_Position";
 				deUint32 verticesInRange[1];
-				verticesInRange[0] 			= 0;
+				verticesInRange[0]			= 0;
 
 				glGenBuffers				(1, &buf);
 				glGenTransformFeedbacks		(1, &tfID);

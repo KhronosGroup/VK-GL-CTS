@@ -62,12 +62,12 @@ DE_END_EXTERN_C
 \
 DE_DECLARE_POOL_HASH(TYPENAME##Hash, KEYTYPE, int);	\
 \
-typedef struct TYPENAME##_s    			\
-{    									\
-	deMemPool*			pool;    		\
+typedef struct TYPENAME##_s				\
+{										\
+	deMemPool*			pool;			\
 	int					numElements;    \
 	TYPENAME##Hash*		hash;			\
-} TYPENAME; /* NOLINT(TYPENAME) */  	\
+} TYPENAME; /* NOLINT(TYPENAME) */		\
 \
 TYPENAME*	TYPENAME##_create		(deMemPool* pool);    \
 void		TYPENAME##_reset		(DE_PTR_TYPE(TYPENAME) set);    \

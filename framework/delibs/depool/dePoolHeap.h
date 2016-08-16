@@ -100,7 +100,7 @@ DE_INLINE void TYPENAME##_reset (DE_PTR_TYPE(TYPENAME) heap)    \
 \
 DE_INLINE void TYPENAME##_moveDown (DE_PTR_TYPE(TYPENAME) heap, int ndx)    \
 {   \
-	TYPENAME##Array*	array 		= heap->array;	\
+	TYPENAME##Array*	array		= heap->array;	\
 	int					numElements	= TYPENAME##Array_getNumElements(array);	\
 	for (;;)	\
 	{	\
@@ -155,7 +155,7 @@ DE_INLINE deBool TYPENAME##_push (DE_PTR_TYPE(TYPENAME) heap, VALUETYPE elem)   
 DE_INLINE VALUETYPE TYPENAME##_popMin (DE_PTR_TYPE(TYPENAME) heap)    \
 {    \
 	TYPENAME##Array* array = heap->array;	\
-	VALUETYPE 	tmp			= TYPENAME##Array_get(array, 0);	\
+	VALUETYPE	tmp			= TYPENAME##Array_get(array, 0);	\
 	int			numElements	= TYPENAME##Array_getNumElements(array);	\
 	TYPENAME##Array_set(array, 0, TYPENAME##Array_get(array, numElements-1));	\
 	TYPENAME##Array_setSize(array, numElements-1);	\

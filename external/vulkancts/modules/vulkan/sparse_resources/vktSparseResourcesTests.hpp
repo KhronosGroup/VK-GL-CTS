@@ -20,7 +20,7 @@
  *
  *//*!
  * \file  vktSparseResourcesTests.hpp
- * \brief Sparse Resources Tests 
+ * \brief Sparse Resources Tests
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"

@@ -695,7 +695,7 @@ void runTest (tcu::TestContext&			testCtx,
 {
 	TestLog&					log			= testCtx.getLog();
 	const glw::Functions&		gl			= renderCtx.getFunctions();
-	deUint32					program 	= 0;
+	deUint32					program		= 0;
 	pair<deUint32, deUint32>	shaders;
 
 	try

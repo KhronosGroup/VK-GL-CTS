@@ -1,7 +1,7 @@
 
 message("*** Using GLES3 Wrapper")
 
-set(DEQP_TARGET_NAME 	"GLES3 Wrapper")
+set(DEQP_TARGET_NAME	"GLES3 Wrapper")
 set(DEQP_SUPPORT_GLES2	OFF)
 set(DEQP_SUPPORT_EGL	OFF)
 set(DEQP_SUPPORT_GLES3	ON)

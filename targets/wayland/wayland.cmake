@@ -1,5 +1,5 @@
 message("*** Using Wayland target")
-set(DEQP_TARGET_NAME 	"WAYLAND")
+set(DEQP_TARGET_NAME	"WAYLAND")
 set(DEQP_RUNTIME_LINK	ON)
 set(DEQP_SUPPORT_GLES2	ON)
 set(DEQP_SUPPORT_GLES3	ON)

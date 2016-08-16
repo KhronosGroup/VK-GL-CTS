@@ -142,10 +142,10 @@ std::string generateShaderSource (NegativeTestContext& ctx, glu::ShaderType shad
 
 void generateAndVerifyShader (NegativeTestContext& ctx, glu::ShaderType shaderType, TestPrecise test)
 {
-	glu::Shader 		shader			(ctx.getRenderContext(), shaderType);
-	std::string 		shaderSource	= generateShaderSource(ctx, shaderType, test);
+	glu::Shader			shader			(ctx.getRenderContext(), shaderType);
+	std::string			shaderSource	= generateShaderSource(ctx, shaderType, test);
 	const char* const	source			= shaderSource.c_str();
-	const int 			length			= (int) shaderSource.size();
+	const int			length			= (int) shaderSource.size();
 
 	shader.setSources(1, &source, &length);
 	shader.compile();

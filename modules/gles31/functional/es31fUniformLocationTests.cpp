@@ -99,7 +99,7 @@ public:
 														 const char*				name,
 														 const char*				desc,
 														 const vector<UniformInfo>&	uniformInfo);
-	virtual 					~UniformLocationCase	(void) {}
+	virtual						~UniformLocationCase	(void) {}
 
 	virtual IterateResult		iterate					(void);
 
@@ -650,7 +650,7 @@ public:
 															 const char*				name,
 															 const char*				desc,
 															 const vector<UniformInfo>&	uniformInfo);
-	virtual 					~MaxUniformLocationCase		(void) {}
+	virtual						~MaxUniformLocationCase		(void) {}
 	virtual IterateResult		iterate						(void);
 };
 

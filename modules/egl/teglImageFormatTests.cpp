@@ -152,7 +152,7 @@ class ImageApi
 {
 public:
 					ImageApi		(const Library& egl, int contextId, EGLDisplay display, EGLSurface surface);
-	virtual 		~ImageApi		(void) {}
+	virtual			~ImageApi		(void) {}
 
 protected:
 	const Library&	m_egl;
@@ -738,7 +738,7 @@ bool GLES2ImageApi::RenderTryAll::invokeGLES2 (GLES2ImageApi& api, MovePtr<Uniqu
 	GLES2ImageApi::RenderReadPixelsRenderbuffer	renderReadPixels;
 	GLES2ImageApi::RenderDepthbuffer			renderDepth;
 	GLES2ImageApi::RenderStencilbuffer			renderStencil;
-	Action*										actions[] 				= { &renderTex2D, &renderReadPixels, &renderDepth, &renderStencil };
+	Action*										actions[]				= { &renderTex2D, &renderReadPixels, &renderDepth, &renderStencil };
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(actions); ++ndx)
 	{
@@ -887,8 +887,8 @@ EGLConfig ImageFormatCase::getConfig (void)
 {
 	const EGLint attribList[] =
 	{
-		EGL_RENDERABLE_TYPE, 	EGL_OPENGL_ES2_BIT,
-		EGL_SURFACE_TYPE,	 	EGL_WINDOW_BIT,
+		EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
+		EGL_SURFACE_TYPE,		EGL_WINDOW_BIT,
 		EGL_RED_SIZE,			8,
 		EGL_BLUE_SIZE,			8,
 		EGL_GREEN_SIZE,			8,
@@ -1101,7 +1101,7 @@ void ImageTests::addCreateAndroidNative (const string& name, GLenum format)
 
 void ImageTests::addCreateTexture2DActions (const string& prefix)
 {
-	addCreateTexture(prefix + "rgb8", 		EGL_GL_TEXTURE_2D_KHR,	GL_RGB,		GL_RGB,		GL_UNSIGNED_BYTE);
+	addCreateTexture(prefix + "rgb8",		EGL_GL_TEXTURE_2D_KHR,	GL_RGB,		GL_RGB,		GL_UNSIGNED_BYTE);
 	addCreateTexture(prefix + "rgb565",		EGL_GL_TEXTURE_2D_KHR,	GL_RGB,		GL_RGB,		GL_UNSIGNED_SHORT_5_6_5);
 	addCreateTexture(prefix + "rgba8",		EGL_GL_TEXTURE_2D_KHR,	GL_RGBA,	GL_RGBA,	GL_UNSIGNED_BYTE);
 	addCreateTexture(prefix + "rgb5_a1",	EGL_GL_TEXTURE_2D_KHR,	GL_RGBA,	GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1);
@@ -1382,7 +1382,7 @@ bool isCompatibleCreateAndModifyActions (const Action& create, const Action& mod
 
 		if (const GLES2ImageApi::ModifyTexSubImage* gles2TexSubImageModify = dynamic_cast<const GLES2ImageApi::ModifyTexSubImage*>(&modify))
 		{
-			const GLenum modifyFormat 	= gles2TexSubImageModify->getFormat();
+			const GLenum modifyFormat	= gles2TexSubImageModify->getFormat();
 			const GLenum modifyType		= gles2TexSubImageModify->getType();
 
 			return isCompatibleFormats(createFormat, modifyFormat, modifyType);
@@ -1503,7 +1503,7 @@ protected:
 void ModifyTests::addModifyActions (void)
 {
 	m_modifyActions.add("tex_subimage_rgb8",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGB,	GL_UNSIGNED_BYTE)));
-	m_modifyActions.add("tex_subimage_rgb565",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGB, 	GL_UNSIGNED_SHORT_5_6_5)));
+	m_modifyActions.add("tex_subimage_rgb565",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGB,	GL_UNSIGNED_SHORT_5_6_5)));
 	m_modifyActions.add("tex_subimage_rgba8",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_BYTE)));
 	m_modifyActions.add("tex_subimage_rgb5_a1",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1)));
 	m_modifyActions.add("tex_subimage_rgba4",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_4_4_4_4)));

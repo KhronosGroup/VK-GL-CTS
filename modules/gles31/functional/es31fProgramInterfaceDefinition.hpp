@@ -107,7 +107,7 @@ public:
 
 	deUint32						getGeometryNumOutputVertices			(void) const;
 	void							setGeometryNumOutputVertices			(deUint32);
-	deUint32						getTessellationNumOutputPatchVertices 	(void) const;
+	deUint32						getTessellationNumOutputPatchVertices	(void) const;
 	void							setTessellationNumOutputPatchVertices	(deUint32);
 
 	bool							isValid									(void) const;

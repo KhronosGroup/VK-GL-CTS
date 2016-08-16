@@ -186,14 +186,14 @@ class ParameterCase(ShaderCase):
 
 CaseFormat			= namedtuple('CaseFormat', 'name vars')
 
-DECL_INVARIANT		= CaseFormat("invariant", 	[ "invariant", 	"",					"" ])
-DECL_INTERPOLATION	= CaseFormat("interp", 		[ "smooth", 	"flat", 			"" ])
-DECL_STORAGE		= CaseFormat("storage", 	[ "centroid", 	"anon_centroid", 	"uniform" ])
-DECL_PRECISION		= CaseFormat("precision", 	[ "lowp", 		"mediump",			"highp" ])
+DECL_INVARIANT		= CaseFormat("invariant",	[ "invariant",	"",					"" ])
+DECL_INTERPOLATION	= CaseFormat("interp",		[ "smooth",		"flat",				"" ])
+DECL_STORAGE		= CaseFormat("storage",		[ "centroid",	"anon_centroid",	"uniform" ])
+DECL_PRECISION		= CaseFormat("precision",	[ "lowp",		"mediump",			"highp" ])
 
-PARAM_STORAGE		= CaseFormat("storage",		[ "const", 		"", 				""])
-PARAM_PARAMETER 	= CaseFormat("parameter",	[ "in", 		"out", 				"inout" ])
-PARAM_PRECISION		= CaseFormat("precision",	[ "lowp", 		"mediump",			"highp" ])
+PARAM_STORAGE		= CaseFormat("storage",		[ "const",		"",					""])
+PARAM_PARAMETER		= CaseFormat("parameter",	[ "in",			"out",				"inout" ])
+PARAM_PRECISION		= CaseFormat("precision",	[ "lowp",		"mediump",			"highp" ])
 
 # Order of qualification tests
 
@@ -239,12 +239,12 @@ for f in paramFormats:
 
 qualificationOrderCases = [
 	CaseGroup("variables",	"Order of qualification in variable declarations.", children = [
-		CaseGroup("valid", 		"Valid orderings.", 	validDeclarationCases),
-		CaseGroup("invalid",	"Invalid orderings.", 	invalidDeclarationCases)
+		CaseGroup("valid",		"Valid orderings.",		validDeclarationCases),
+		CaseGroup("invalid",	"Invalid orderings.",	invalidDeclarationCases)
 	]),
 	CaseGroup("parameters", "Order of qualification in function parameters.", children = [
-		CaseGroup("valid", 		"Valid orderings.", 	validParameterCases),
-		CaseGroup("invalid",	"Invalid orderings.", 	invalidParameterCases)
+		CaseGroup("valid",		"Valid orderings.",		validParameterCases),
+		CaseGroup("invalid",	"Invalid orderings.",	invalidParameterCases)
 	])
 ]
 

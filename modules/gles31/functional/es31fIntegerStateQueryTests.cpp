@@ -86,7 +86,7 @@ MaxSamplesCase::MaxSamplesCase (Context& context, const char* name, const char* 
 
 MaxSamplesCase::IterateResult MaxSamplesCase::iterate (void)
 {
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
@@ -132,7 +132,7 @@ void TexBindingCase::init (void)
 
 TexBindingCase::IterateResult TexBindingCase::iterate (void)
 {
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
@@ -213,7 +213,7 @@ MinimumValueCase::IterateResult MinimumValueCase::iterate (void)
 	const int				value	= contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2))
 									? (m_target == GL_MAX_FRAGMENT_ATOMIC_COUNTER_BUFFERS	? MAX_FRAG_ATOMIC_COUNTER_BUFFERS_GLES32	// 1
 									: m_target == GL_MAX_FRAGMENT_ATOMIC_COUNTERS			? MAX_FRAG_ATOMIC_COUNTERS_GLES32			// 8
-									: m_target == GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS		? MAX_FRAG_SHADER_STORAGE_BLOCKS_GLES32 	// 4
+									: m_target == GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS		? MAX_FRAG_SHADER_STORAGE_BLOCKS_GLES32		// 4
 									: m_minValue)
 									: m_minValue;
 
@@ -513,13 +513,13 @@ CombinedUniformComponentsCase::IterateResult CombinedUniformComponentsCase::iter
 	glu::CallLogWrapper		gl							(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result						(m_testCtx.getLog(), " // ERROR: ");
 
-	const glw::GLenum 		maxUniformBlocksEnum		= (m_target == GL_MAX_COMBINED_COMPUTE_UNIFORM_COMPONENTS) ? GL_MAX_COMPUTE_UNIFORM_BLOCKS
+	const glw::GLenum		maxUniformBlocksEnum		= (m_target == GL_MAX_COMBINED_COMPUTE_UNIFORM_COMPONENTS) ? GL_MAX_COMPUTE_UNIFORM_BLOCKS
 														: (m_target == GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS) ? GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS
 														: (m_target == GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS) ? GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS
 														: (m_target == GL_MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS) ? GL_MAX_GEOMETRY_UNIFORM_BLOCKS
 														: -1;
 
-	const glw::GLenum 		maxUniformComponentsEnum	= (m_target == GL_MAX_COMBINED_COMPUTE_UNIFORM_COMPONENTS) ? GL_MAX_COMPUTE_UNIFORM_COMPONENTS
+	const glw::GLenum		maxUniformComponentsEnum	= (m_target == GL_MAX_COMBINED_COMPUTE_UNIFORM_COMPONENTS) ? GL_MAX_COMPUTE_UNIFORM_COMPONENTS
 														: (m_target == GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS) ? GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS
 														: (m_target == GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS) ? GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS
 														: (m_target == GL_MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS) ? GL_MAX_GEOMETRY_UNIFORM_COMPONENTS
@@ -917,9 +917,9 @@ void IntegerStateQueryTests::init (void)
 
 	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "texture_buffer_binding_" + verifierSuffix).c_str(),						"Test TEXTURE_BUFFER_BINDING",						GL_TEXTURE_BUFFER_BINDING,						0,		verifier,	glu::ApiType::es(3, 2)))
 
-	FOR_EACH_VERIFIER(new CombinedUniformComponentsCase	(m_context,	(std::string() + "max_combined_tess_control_uniform_components_" + verifierSuffix).c_str(),		"Test MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS",	GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS, 	verifier,	glu::ApiType::es(3, 2)))
+	FOR_EACH_VERIFIER(new CombinedUniformComponentsCase	(m_context,	(std::string() + "max_combined_tess_control_uniform_components_" + verifierSuffix).c_str(),		"Test MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS",	GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS,	verifier,	glu::ApiType::es(3, 2)))
 	FOR_EACH_VERIFIER(new CombinedUniformComponentsCase	(m_context,	(std::string() + "max_combined_tess_evaluation_uniform_components_" + verifierSuffix).c_str(),	"Test MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS",	GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS, verifier,	glu::ApiType::es(3, 2)))
-	FOR_EACH_VERIFIER(new CombinedUniformComponentsCase	(m_context,	(std::string() + "max_combined_geometry_uniform_components_" + verifierSuffix).c_str(),			"Test MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS",		GL_MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS, 		verifier,	glu::ApiType::es(3, 2)))
+	FOR_EACH_VERIFIER(new CombinedUniformComponentsCase	(m_context,	(std::string() + "max_combined_geometry_uniform_components_" + verifierSuffix).c_str(),			"Test MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS",		GL_MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS,		verifier,	glu::ApiType::es(3, 2)))
 
 #undef FOR_EACH_VERIFIER
 }

@@ -99,25 +99,25 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 		<< "OpDecorate %uniform_image_residency NonReadable\n"
 
 		// Declare data types
-		<< "%type_bool 						= OpTypeBool\n"
-		<< "%type_int 						= OpTypeInt 32 1\n"
-		<< "%type_uint 						= OpTypeInt 32 0\n"
-		<< "%type_ivec2 					= OpTypeVector %type_int  2\n"
-		<< "%type_ivec3 					= OpTypeVector %type_int  3\n"
-		<< "%type_uvec3 					= OpTypeVector %type_uint 3\n"
-		<< "%type_uvec4 					= OpTypeVector %type_uint 4\n"
+		<< "%type_bool						= OpTypeBool\n"
+		<< "%type_int						= OpTypeInt 32 1\n"
+		<< "%type_uint						= OpTypeInt 32 0\n"
+		<< "%type_ivec2						= OpTypeVector %type_int  2\n"
+		<< "%type_ivec3						= OpTypeVector %type_int  3\n"
+		<< "%type_uvec3						= OpTypeVector %type_uint 3\n"
+		<< "%type_uvec4						= OpTypeVector %type_uint 4\n"
 		<< "%type_img_comp					= " << getOpTypeImageComponent(m_format) << "\n"
-		<< "%type_img_comp_vec4 			= OpTypeVector %type_img_comp 4\n"
-		<< "%type_struct_int_img_comp_vec4 	= OpTypeStruct %type_int %type_img_comp_vec4\n"
+		<< "%type_img_comp_vec4				= OpTypeVector %type_img_comp 4\n"
+		<< "%type_struct_int_img_comp_vec4	= OpTypeStruct %type_int %type_img_comp_vec4\n"
 
-		<< "%type_input_uint 		= OpTypePointer Input %type_uint\n"
-		<< "%type_input_uvec3 		= OpTypePointer Input %type_uvec3\n"
+		<< "%type_input_uint		= OpTypePointer Input %type_uint\n"
+		<< "%type_input_uvec3		= OpTypePointer Input %type_uvec3\n"
 
 		<< "%type_function_int			 = OpTypePointer Function %type_int\n"
 		<< "%type_function_img_comp_vec4 = OpTypePointer Function %type_img_comp_vec4\n"
 
-		<< "%type_void 				= OpTypeVoid\n"
-		<< "%type_void_func 		= OpTypeFunction %type_void\n"
+		<< "%type_void				= OpTypeVoid\n"
+		<< "%type_void_func			= OpTypeFunction %type_void\n"
 
 		// Sparse image type declaration
 		<< sparseImageTypeDecl("%type_image_sparse", "%type_img_comp")
@@ -143,9 +143,9 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 		// Declare input variables
 		<< "%input_GlobalInvocationID = OpVariable %type_input_uvec3 Input\n"
 
-		<< "%constant_uint_grid_x 				= OpSpecConstant %type_uint 1\n"
-		<< "%constant_uint_grid_y 				= OpSpecConstant %type_uint 1\n"
-		<< "%constant_uint_grid_z 				= OpSpecConstant %type_uint 1\n"
+		<< "%constant_uint_grid_x				= OpSpecConstant %type_uint 1\n"
+		<< "%constant_uint_grid_y				= OpSpecConstant %type_uint 1\n"
+		<< "%constant_uint_grid_z				= OpSpecConstant %type_uint 1\n"
 
 		<< "%constant_uint_work_group_size_x	= OpSpecConstant %type_uint 1\n"
 		<< "%constant_uint_work_group_size_y	= OpSpecConstant %type_uint 1\n"
@@ -153,36 +153,36 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 		<< "%input_WorkGroupSize = OpSpecConstantComposite %type_uvec3 %constant_uint_work_group_size_x %constant_uint_work_group_size_y %constant_uint_work_group_size_z\n"
 
 		// Declare constants
-		<< "%constant_uint_0 				= OpConstant %type_uint 0\n"
-		<< "%constant_uint_1 				= OpConstant %type_uint 1\n"
-		<< "%constant_uint_2 				= OpConstant %type_uint 2\n"
-		<< "%constant_int_0  				= OpConstant %type_int 0\n"
-		<< "%constant_int_1  				= OpConstant %type_int 1\n"
-		<< "%constant_int_2  				= OpConstant %type_int 2\n"
+		<< "%constant_uint_0				= OpConstant %type_uint 0\n"
+		<< "%constant_uint_1				= OpConstant %type_uint 1\n"
+		<< "%constant_uint_2				= OpConstant %type_uint 2\n"
+		<< "%constant_int_0					= OpConstant %type_int 0\n"
+		<< "%constant_int_1					= OpConstant %type_int 1\n"
+		<< "%constant_int_2					= OpConstant %type_int 2\n"
 		<< "%constant_bool_true				= OpConstantTrue %type_bool\n"
-		<< "%constant_uint_resident 		= OpConstant %type_uint " << MEMORY_BLOCK_BOUND_VALUE << "\n"
+		<< "%constant_uint_resident			= OpConstant %type_uint " << MEMORY_BLOCK_BOUND_VALUE << "\n"
 		<< "%constant_uvec4_resident		= OpConstantComposite %type_uvec4 %constant_uint_resident %constant_uint_resident %constant_uint_resident %constant_uint_resident\n"
 		<< "%constant_uint_not_resident		= OpConstant %type_uint " << MEMORY_BLOCK_NOT_BOUND_VALUE << "\n"
 		<< "%constant_uvec4_not_resident	= OpConstantComposite %type_uvec4 %constant_uint_not_resident %constant_uint_not_resident %constant_uint_not_resident %constant_uint_not_resident\n"
 
 		// Call main function
-		<< "%func_main 		 = OpFunction %type_void None %type_void_func\n"
+		<< "%func_main		 = OpFunction %type_void None %type_void_func\n"
 		<< "%label_func_main = OpLabel\n"
 
 		// Load GlobalInvocationID.xyz into local variables
-		<< "%access_GlobalInvocationID_x 		= OpAccessChain %type_input_uint %input_GlobalInvocationID %constant_uint_0\n"
-		<< "%local_uint_GlobalInvocationID_x 	= OpLoad %type_uint %access_GlobalInvocationID_x\n"
-		<< "%local_int_GlobalInvocationID_x 	= OpBitcast %type_int %local_uint_GlobalInvocationID_x\n"
+		<< "%access_GlobalInvocationID_x		= OpAccessChain %type_input_uint %input_GlobalInvocationID %constant_uint_0\n"
+		<< "%local_uint_GlobalInvocationID_x	= OpLoad %type_uint %access_GlobalInvocationID_x\n"
+		<< "%local_int_GlobalInvocationID_x		= OpBitcast %type_int %local_uint_GlobalInvocationID_x\n"
 
-		<< "%access_GlobalInvocationID_y 		= OpAccessChain %type_input_uint %input_GlobalInvocationID %constant_uint_1\n"
-		<< "%local_uint_GlobalInvocationID_y 	= OpLoad %type_uint %access_GlobalInvocationID_y\n"
-		<< "%local_int_GlobalInvocationID_y 	= OpBitcast %type_int %local_uint_GlobalInvocationID_y\n"
+		<< "%access_GlobalInvocationID_y		= OpAccessChain %type_input_uint %input_GlobalInvocationID %constant_uint_1\n"
+		<< "%local_uint_GlobalInvocationID_y	= OpLoad %type_uint %access_GlobalInvocationID_y\n"
+		<< "%local_int_GlobalInvocationID_y		= OpBitcast %type_int %local_uint_GlobalInvocationID_y\n"
 
-		<< "%access_GlobalInvocationID_z 		= OpAccessChain %type_input_uint %input_GlobalInvocationID %constant_uint_2\n"
-		<< "%local_uint_GlobalInvocationID_z 	= OpLoad %type_uint %access_GlobalInvocationID_z\n"
-		<< "%local_int_GlobalInvocationID_z 	= OpBitcast %type_int %local_uint_GlobalInvocationID_z\n"
+		<< "%access_GlobalInvocationID_z		= OpAccessChain %type_input_uint %input_GlobalInvocationID %constant_uint_2\n"
+		<< "%local_uint_GlobalInvocationID_z	= OpLoad %type_uint %access_GlobalInvocationID_z\n"
+		<< "%local_int_GlobalInvocationID_z		= OpBitcast %type_int %local_uint_GlobalInvocationID_z\n"
 
-		<< "%local_ivec2_GlobalInvocationID_xy 	= OpCompositeConstruct %type_ivec2 %local_int_GlobalInvocationID_x %local_int_GlobalInvocationID_y\n"
+		<< "%local_ivec2_GlobalInvocationID_xy	= OpCompositeConstruct %type_ivec2 %local_int_GlobalInvocationID_x %local_int_GlobalInvocationID_y\n"
 		<< "%local_ivec3_GlobalInvocationID_xyz = OpCompositeConstruct %type_ivec3 %local_int_GlobalInvocationID_x %local_int_GlobalInvocationID_y %local_int_GlobalInvocationID_z\n"
 
 		<< "%comparison_range_x = OpULessThan %type_bool %local_uint_GlobalInvocationID_x %constant_uint_grid_x\n"

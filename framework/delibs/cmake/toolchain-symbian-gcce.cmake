@@ -37,7 +37,7 @@ set(CROSS_COMPILER_PREFIX	"${ARM_CC_BASE}/bin/arm-none-symbianelf-" CACHE STRING
 # CMAKE compiler executables
 set(CMAKE_C_COMPILER "${CROSS_COMPILER_PREFIX}gcc.exe")
 set(CMAKE_CXX_COMPILER "${CROSS_COMPILER_PREFIX}g++.exe")
-set(CMAKE_LINKER 		"${CROSS_COMPILER_PREFIX}ld.exe")
+set(CMAKE_LINKER		"${CROSS_COMPILER_PREFIX}ld.exe")
 
 # Some shortcut variables for later use. See CFlags.cmake
 # TODO: Should these be in CFlags.cmake instead?

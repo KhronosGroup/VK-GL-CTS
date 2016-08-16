@@ -202,7 +202,7 @@ void SyncTest::init (void)
 	};
 
 	m_eglDisplay	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
-	m_eglConfig 	= eglu::chooseSingleConfig(egl, m_eglDisplay, displayAttribList);
+	m_eglConfig		= eglu::chooseSingleConfig(egl, m_eglDisplay, displayAttribList);
 
 	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 

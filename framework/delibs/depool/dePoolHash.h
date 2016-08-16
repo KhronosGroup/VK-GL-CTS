@@ -84,7 +84,7 @@ typedef struct TYPENAME##_s    \
 	int					slotTableSize;		\
 	TYPENAME##Slot**	slotTable;			\
 	TYPENAME##Slot*		slotFreeList;		\
-} TYPENAME; /* NOLINT(TYPENAME) */  		\
+} TYPENAME; /* NOLINT(TYPENAME) */			\
 \
 typedef struct TYPENAME##Iter_s \
 {	\
@@ -94,12 +94,12 @@ typedef struct TYPENAME##Iter_s \
 	int						curElemIndex;	\
 } TYPENAME##Iter;	\
 \
-TYPENAME*	TYPENAME##_create	(deMemPool* pool);    										\
-void		TYPENAME##_reset	(DE_PTR_TYPE(TYPENAME) hash);    							\
-deBool		TYPENAME##_reserve	(DE_PTR_TYPE(TYPENAME) hash, int capacity);    				\
-VALUETYPE*	TYPENAME##_find		(const TYPENAME* hash, KEYTYPE key);    					\
+TYPENAME*	TYPENAME##_create	(deMemPool* pool);											\
+void		TYPENAME##_reset	(DE_PTR_TYPE(TYPENAME) hash);								\
+deBool		TYPENAME##_reserve	(DE_PTR_TYPE(TYPENAME) hash, int capacity);					\
+VALUETYPE*	TYPENAME##_find		(const TYPENAME* hash, KEYTYPE key);						\
 deBool		TYPENAME##_insert	(DE_PTR_TYPE(TYPENAME) hash, KEYTYPE key, VALUETYPE value);	\
-void		TYPENAME##_delete	(DE_PTR_TYPE(TYPENAME) hash, KEYTYPE key);    				\
+void		TYPENAME##_delete	(DE_PTR_TYPE(TYPENAME) hash, KEYTYPE key);					\
 \
 DE_INLINE int		TYPENAME##_getNumElements	(const TYPENAME* hash)							DE_UNUSED_FUNCTION;	\
 DE_INLINE void		TYPENAME##Iter_init			(const TYPENAME* hash, TYPENAME##Iter* iter)	DE_UNUSED_FUNCTION;	\

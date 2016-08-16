@@ -153,7 +153,7 @@ struct BufferParameters
 struct Buffer
 {
 	MovePtr<Allocation>				allocation;
-	vector<VkMemoryBarrier> 		memoryBarrier;
+	vector<VkMemoryBarrier>			memoryBarrier;
 	vk::Move<VkBuffer>				buffer;
 };
 
@@ -722,7 +722,7 @@ void generateWork (TestContext& testContext)
 	extent.height							= testContext.renderDimension.y();
 	extent.depth							= 1;
 
-	imageParameters.imageType 				= VK_IMAGE_TYPE_2D;
+	imageParameters.imageType				= VK_IMAGE_TYPE_2D;
 	imageParameters.format					= VK_FORMAT_R8G8B8A8_UNORM;
 	imageParameters.extent3D				= extent;
 	imageParameters.mipLevels				= 1;

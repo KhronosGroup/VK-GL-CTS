@@ -6439,7 +6439,7 @@ LimitQueryCase::IterateResult LimitQueryCase::iterate (void)
 {
 	checkTessellationSupport(m_context);
 
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
@@ -6538,7 +6538,7 @@ PatchVerticesStateCase::IterateResult PatchVerticesStateCase::iterate (void)
 {
 	checkTessellationSupport(m_context);
 
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
@@ -6587,7 +6587,7 @@ PrimitiveRestartForPatchesSupportedCase::IterateResult PrimitiveRestartForPatche
 {
 	checkTessellationSupport(m_context);
 
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 	QueriedState			state;
 
@@ -6701,7 +6701,7 @@ TessControlOutputVerticesCase::IterateResult TessControlOutputVerticesCase::iter
 		throw tcu::TestError("failed to build program");
 
 	{
-		glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+		glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 		tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 		gl.enableLogging(true);

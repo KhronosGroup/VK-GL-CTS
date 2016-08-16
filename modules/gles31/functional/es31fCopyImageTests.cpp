@@ -587,7 +587,7 @@ void genTextureImage (const glw::Functions&				gl,
 					  deUint32							moreRestrictiveFormat)
 {
 	const int		texelBlockSize			= getTexelBlockSize(info.getFormat());
-	const IVec3		texelBlockPixelSize 	= getTexelBlockPixelSize(info.getFormat());
+	const IVec3		texelBlockPixelSize		= getTexelBlockPixelSize(info.getFormat());
 
 	levels.resize(getLevelCount(info));
 
@@ -606,7 +606,7 @@ void genTextureImage (const glw::Functions&				gl,
 		const IVec3				levelPixelSize			= getLevelSize(info.getTarget(), info.getSize(), levelNdx);
 		const IVec3				levelTexelBlockSize		= divRoundUp(levelPixelSize, texelBlockPixelSize);
 		const int				levelTexelBlockCount	= levelTexelBlockSize.x() * levelTexelBlockSize.y() * levelTexelBlockSize.z();
-		const int				levelSize 				= levelTexelBlockCount * texelBlockSize;
+		const int				levelSize				= levelTexelBlockCount * texelBlockSize;
 
 		level.setStorage(levelSize * faceCount);
 
@@ -966,7 +966,7 @@ void verifyTexture2DView (tcu::TestContext&			testContext,
 
 void decompressTextureLevel (const tcu::TexDecompressionParams&		params,
 							 ArrayBuffer<deUint8>&					levelData,
-							 tcu::PixelBufferAccess& 				levelAccess,
+							 tcu::PixelBufferAccess&				levelAccess,
 							 const tcu::CompressedTexFormat&		compressedFormat,
 							 const tcu::TextureFormat&				decompressedFormat,
 							 const IVec3&							levelPixelSize,
@@ -979,7 +979,7 @@ void decompressTextureLevel (const tcu::TexDecompressionParams&		params,
 }
 
 void decompressTexture (vector<ArrayBuffer<deUint8> >&			levelDatas,
-						vector<tcu::PixelBufferAccess>& 		levelAccesses,
+						vector<tcu::PixelBufferAccess>&			levelAccesses,
 						glu::RenderContext&						renderContext,
 						const ImageInfo&						info,
 						const vector<ArrayBuffer<deUint8> >&	data)
@@ -1009,7 +1009,7 @@ void decompressTexture (vector<ArrayBuffer<deUint8> >&			levelDatas,
 	{
 		const IVec3					levelPixelSize	= getLevelSize(info.getTarget(), size, level);
 		de::ArrayBuffer<deUint8>&	levelData		= levelDatas[level];
-		tcu::PixelBufferAccess&		levelAccess 	= levelAccesses[level];
+		tcu::PixelBufferAccess&		levelAccess		= levelAccesses[level];
 
 		decompressTextureLevel(decompressParams, levelData, levelAccess, compressedFormat, decompressedFormat, levelPixelSize, data[level].getPtr());
 	}
@@ -1285,7 +1285,7 @@ void verifyTextureCubemap (tcu::TestContext&					testContext,
 				const IVec3				levelPixelSize			= getLevelSize(info.getTarget(), info.getSize(), level);
 				const IVec3				levelTexelBlockSize		= divRoundUp(levelPixelSize, texelBlockPixelSize);
 				const int				levelTexelBlockCount	= levelTexelBlockSize.x() * levelTexelBlockSize.y() * levelTexelBlockSize.z();
-				const int				levelSize 				= levelTexelBlockCount * texelBlockSize;
+				const int				levelSize				= levelTexelBlockCount * texelBlockSize;
 
 				const deUint8*			dataPtr					= data[level].getElementPtr(faceNdx * levelSize);
 				tcu::PixelBufferAccess& levelAccess				= levelAccesses[faceNdx][level];
@@ -1716,7 +1716,7 @@ void checkFormatSupport (glu::ContextInfo& info, deUint32 format, deUint32 targe
 void CopyImageTest::init (void)
 {
 	de::UniquePtr<glu::ContextInfo> ctxInfo(glu::ContextInfo::create(m_context.getRenderContext()));
-	const bool 						isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool						isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	if (!isES32 && !ctxInfo->isExtensionSupported("GL_EXT_copy_image"))
 		throw tcu::NotSupportedError("Extension GL_EXT_copy_image not supported.", "", __FILE__, __LINE__);

@@ -1347,7 +1347,7 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 	};
 
 
-	const VkImageSubresourceRange clearRange		= 
+	const VkImageSubresourceRange clearRange		=
 	{
 		aspectMask,										// VkImageAspectFlags	aspectMask;
 		0u,												// deUint32				baseMipLevel;

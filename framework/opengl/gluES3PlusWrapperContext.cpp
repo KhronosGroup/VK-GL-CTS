@@ -562,10 +562,10 @@ static void initFunctions (glw::Functions* dst, const glw::Functions& src)
 		extFuncMap["glDebugMessageInsertKHR"]		= (glw::GenericFuncType)src.debugMessageInsert;
 		extFuncMap["glDebugMessageCallbackKHR"]		= (glw::GenericFuncType)src.debugMessageCallback;
 		extFuncMap["glGetDebugMessageLogKHR"]		= (glw::GenericFuncType)src.getDebugMessageLog;
-		extFuncMap["glGetPointervKHR"] 				= (glw::GenericFuncType)src.getPointerv;
+		extFuncMap["glGetPointervKHR"]				= (glw::GenericFuncType)src.getPointerv;
 		extFuncMap["glPushDebugGroupKHR"]			= (glw::GenericFuncType)src.pushDebugGroup;
-		extFuncMap["glPopDebugGroupKHR"] 			= (glw::GenericFuncType)src.popDebugGroup;
-		extFuncMap["glObjectLabelKHR"] 				= (glw::GenericFuncType)src.objectLabel;
+		extFuncMap["glPopDebugGroupKHR"]			= (glw::GenericFuncType)src.popDebugGroup;
+		extFuncMap["glObjectLabelKHR"]				= (glw::GenericFuncType)src.objectLabel;
 		extFuncMap["glGetObjectLabelKHR"]			= (glw::GenericFuncType)src.getObjectLabel;
 		extFuncMap["glObjectPtrLabelKHR"]			= (glw::GenericFuncType)src.objectPtrLabel;
 		extFuncMap["glGetObjectPtrLabelKHR"]		= (glw::GenericFuncType)src.getObjectPtrLabel;

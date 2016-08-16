@@ -1624,8 +1624,8 @@ case uniform_struct_use_case_rip
 	    output float out0 = 2.0;
     }
 	vertex ""
-   		 struct Light
-   		 {
+		 struct Light
+		 {
 		     mediump vec3	color;
 			 highp vec4		position;
 			 highp vec3		direction;
@@ -1644,8 +1644,8 @@ case uniform_struct_use_case_rip
 	""
 	fragment ""
 	     precision mediump float;
-   		 struct Light
-   		 {
+		 struct Light
+		 {
 		     mediump vec3	color;
 			 highp vec4		position;
 			 highp vec3		direction;
@@ -1673,8 +1673,8 @@ case uniform_struct_use_case_rip_sans_highp
 	    output float out0 = 2.0;
     }
 	vertex ""
-   		 struct Light
-   		 {
+		 struct Light
+		 {
 		     mediump vec3	color;
 			 mediump vec4	position;
 			 mediump vec3	direction;
@@ -1693,8 +1693,8 @@ case uniform_struct_use_case_rip_sans_highp
 	""
 	fragment ""
 	     precision mediump float;
-   		 struct Light
-   		 {
+		 struct Light
+		 {
 		     mediump vec3	color;
 			 mediump vec4	position;
 			 mediump vec3	direction;

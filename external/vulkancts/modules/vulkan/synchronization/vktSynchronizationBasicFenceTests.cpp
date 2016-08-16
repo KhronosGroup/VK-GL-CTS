@@ -69,7 +69,7 @@ tcu::TestStatus basicOneFenceCase (Context& context)
 															0u,									// deUint32					signalSemaphoreCount;
 															DE_NULL,							// const VkSemaphore*		pSignalSemaphores;
 														};
-	
+
 	if (VK_NOT_READY != vk.getFenceStatus(device, *fence))
 		return tcu::TestStatus::fail("Created fence should be in unsignaled state");
 

@@ -167,8 +167,8 @@ EGLImageKHR GLImageSource::createImage (const Library& egl, EGLDisplay dpy, EGLC
 	attribMap[EGL_IMAGE_PRESERVED_KHR] = EGL_TRUE;
 
 	{
-		const vector<EGLint> 	attribs	= eglu::attribMapToList(attribMap);
-		const EGLImageKHR		image 	= egl.createImageKHR(dpy, ctx, getSource(),
+		const vector<EGLint>	attribs	= eglu::attribMapToList(attribMap);
+		const EGLImageKHR		image	= egl.createImageKHR(dpy, ctx, getSource(),
 															 clientBuffer, &attribs.front());
 		EGLU_CHECK_MSG(egl, "eglCreateImageKHR()");
 		return image;
@@ -331,7 +331,7 @@ class RenderbufferImageSource : public GLImageSource
 public:
 							RenderbufferImageSource	(GLenum format) : m_format(format) {}
 
-	string					getRequiredExtension	(void) const 	{ return "EGL_KHR_gl_renderbuffer_image"; }
+	string					getRequiredExtension	(void) const	{ return "EGL_KHR_gl_renderbuffer_image"; }
 	MovePtr<ClientBuffer>	createBuffer			(const glw::Functions& gl, Texture2D* reference) const;
 	GLenum					getEffectiveFormat		(void) const { return m_format; }
 

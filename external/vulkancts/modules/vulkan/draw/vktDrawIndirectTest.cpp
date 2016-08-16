@@ -149,10 +149,10 @@ IndirectDraw::IndirectDraw (Context &context, ShaderMap shaders, vk::VkPrimitive
 
 	// Check device for multidraw support:
 	if (m_context.getDeviceFeatures().multiDrawIndirect)
-		m_isMultiDrawEnabled = true;	
+		m_isMultiDrawEnabled = true;
 	else
 		m_isMultiDrawEnabled = false;
-	
+
 	m_drawIndirectMaxCount = m_context.getDeviceProperties().limits.maxDrawIndirectCount;
 
 }
@@ -548,7 +548,7 @@ void IndirectDrawTests::init (void)
 
 			noFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirtsInstanceNotSupported> >(m_testCtx, "triangle_list", "Draws an instanced triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
 			noFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirtsInstanceNotSupported> >(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
-		}		
+		}
 		indirectDrawInstancedGroup->addChild(noFirstInstanceGroup);
 
 		tcu::TestCaseGroup*	firstInstanceGroup		= new tcu::TestCaseGroup(m_testCtx, "first_instance", "Use drawIndirectFirstInstance optional feature");

@@ -1,5 +1,5 @@
-#ifndef _VKWSISURFACETESTS_HPP
-#define _VKWSISURFACETESTS_HPP
+#ifndef _VKTWSISURFACETESTS_HPP
+#define _VKTWSISURFACETESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -37,4 +37,4 @@ void	createSurfaceTests		(tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType);
 } // wsi
 } // vkt
 
-#endif // _VKWSISURFACETESTS_HPP
+#endif // _VKTWSISURFACETESTS_HPP
