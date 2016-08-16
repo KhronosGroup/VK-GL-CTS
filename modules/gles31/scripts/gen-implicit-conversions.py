@@ -276,7 +276,7 @@ VALID_ASSIGNMENTS = {
 }
 
 IN_TYPE_ORDER = [
-	"int", 	 "uint",
+	"int",	 "uint",
 	"ivec2", "uvec2", "ivec3",
 	"uvec3", "ivec4", "uvec4",
 

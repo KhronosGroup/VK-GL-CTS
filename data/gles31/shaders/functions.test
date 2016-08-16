@@ -25,7 +25,7 @@ group overloading "Function Overloading"
 			void main ()
 			{
 				${SETUP}
-				float[4][4] x = float[4][4] ( 	float[4] (0.0, 0.0, -1.0, 1.0),
+				float[4][4] x = float[4][4] (	float[4] (0.0, 0.0, -1.0, 1.0),
 												float[4] (-1.0, 1.0, 0.0, 0.0),
 												float[4] (0.0, 0.0, -1.0, 1.0),
 												float[4] (-1.0, 1.0, 0.0, 0.0) );

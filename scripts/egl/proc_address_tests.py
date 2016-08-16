@@ -126,8 +126,8 @@ def gen ():
 
 	writeInlFile(os.path.normpath(os.path.join(SCRIPTS_DIR, "..", "..", "modules", "egl", "teglGetProcAddressTests.inl")),
 				 chain(makeFunctionList		("EGL14",	eglCoreIface),
-				 	   makeFunctionList		("GLES10",	gles10CoreIface),
-				 	   makeFunctionList		("GLES20",	gles20CoreIface),
-				 	   makeFunctionList		("GLES30",	gles30CoreIface),
-#				 	   makeFunctionList		("GLES31",	gles31CoreIface),
-				 	   makeExtensionList	(allExtensions)))
+					   makeFunctionList		("GLES10",	gles10CoreIface),
+					   makeFunctionList		("GLES20",	gles20CoreIface),
+					   makeFunctionList		("GLES30",	gles30CoreIface),
+#					   makeFunctionList		("GLES31",	gles31CoreIface),
+					   makeExtensionList	(allExtensions)))

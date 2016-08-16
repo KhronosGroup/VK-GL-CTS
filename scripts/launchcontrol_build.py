@@ -29,7 +29,7 @@ from build_android_mustpass import *
 
 class LaunchControlConfig:
 	def __init__ (self, buildArgs, checkMustpassLists):
-		self.buildArgs 			= buildArgs
+		self.buildArgs			= buildArgs
 		self.checkMustpassLists = checkMustpassLists
 
 	def getBuildArgs (self):

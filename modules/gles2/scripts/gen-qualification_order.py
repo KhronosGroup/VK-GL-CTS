@@ -119,10 +119,10 @@ class DeclarationCase(ShaderCase):
 		var1 += 'float x1;\n'
 		var2 += 'float x2;'
 
-		self.variableVtx 	= (var0 + var1 + var2).strip()
-		self.variableFrg 	= (var0 + var1).strip()			# Omit 'attribute' in frag shader
-		self.variableVtx 	= self.variableVtx.replace("  ", " ")
-		self.variableFrg 	= self.variableFrg.replace("  ", " ")
+		self.variableVtx	= (var0 + var1 + var2).strip()
+		self.variableFrg	= (var0 + var1).strip()			# Omit 'attribute' in frag shader
+		self.variableVtx	= self.variableVtx.replace("  ", " ")
+		self.variableFrg	= self.variableFrg.replace("  ", " ")
 
 	def __str__(self):
 		params = {
@@ -171,13 +171,13 @@ class ParameterCase(ShaderCase):
 
 CaseFormat			= namedtuple('CaseFormat', 'name vars')
 
-DECL_INVARIANT		= CaseFormat("invariant",	["invariant", 	"",			""])
-DECL_STORAGE		= CaseFormat("storage", 	["varying", 	"uniform",	"attribute"])
-DECL_PRECISION		= CaseFormat("precision", 	["lowp", 		"mediump",	"mediump"])
+DECL_INVARIANT		= CaseFormat("invariant",	["invariant",	"",			""])
+DECL_STORAGE		= CaseFormat("storage",		["varying",		"uniform",	"attribute"])
+DECL_PRECISION		= CaseFormat("precision",	["lowp",		"mediump",	"mediump"])
 
-PARAM_STORAGE		= CaseFormat("storage",		[ "const", 		"", 				""])
-PARAM_PARAMETER 	= CaseFormat("parameter",	[ "in", 		"out", 				"inout" ])
-PARAM_PRECISION		= CaseFormat("precision",	[ "lowp", 		"mediump",			"mediump" ])
+PARAM_STORAGE		= CaseFormat("storage",		[ "const",		"",					""])
+PARAM_PARAMETER		= CaseFormat("parameter",	[ "in",			"out",				"inout" ])
+PARAM_PRECISION		= CaseFormat("precision",	[ "lowp",		"mediump",			"mediump" ])
 
 # Order of qualification tests
 
@@ -215,12 +215,12 @@ for f in paramFormats:
 
 qualificationOrderCases = [
 	CaseGroup("variables",	"Order of qualification in variable declarations.", children = [
-		CaseGroup("valid", 		"Valid orderings.", 	validDeclarationCases),
-		CaseGroup("invalid",	"Invalid orderings.", 	invalidDeclarationCases)
+		CaseGroup("valid",		"Valid orderings.",		validDeclarationCases),
+		CaseGroup("invalid",	"Invalid orderings.",	invalidDeclarationCases)
 	]),
 	CaseGroup("parameters", "Order of qualification in function parameters.", children = [
-		CaseGroup("valid", 		"Valid orderings.", 	validParameterCases),
-		CaseGroup("invalid",	"Invalid orderings.", 	invalidParameterCases)
+		CaseGroup("valid",		"Valid orderings.",		validParameterCases),
+		CaseGroup("invalid",	"Invalid orderings.",	invalidParameterCases)
 	])
 ]
 
