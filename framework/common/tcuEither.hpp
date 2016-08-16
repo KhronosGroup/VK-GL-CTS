@@ -32,9 +32,9 @@ namespace tcu
  * \brief Object containing Either First or Second type of object
  *
  * \note Type First and Second are always aligned to same alignment as
- * 		 deUint64.
+ *		 deUint64.
  * \note This type always uses at least sizeof(bool) + max(sizeof(First*),
- * 		 sizeof(Second*)) + sizeof(deUint64) of memory.
+ *		 sizeof(Second*)) + sizeof(deUint64) of memory.
  *//*--------------------------------------------------------------------*/
 template<typename First, typename Second>
 class Either

@@ -49,7 +49,7 @@ public:
 class BooleanPointerFmt
 {
 public:
-	const deUint8* const 	value;
+	const deUint8* const	value;
 	const deUint32			size;
 
 	BooleanPointerFmt (const deUint8* value_, deUint32 size_) : value(value_), size(size_) {}

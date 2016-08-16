@@ -383,7 +383,7 @@ void draw_arrays (NegativeTestContext& ctx)
 {
 	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
-	map<string, string> 		args;
+	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 
@@ -443,7 +443,7 @@ void draw_arrays_incomplete_primitive (NegativeTestContext& ctx)
 {
 	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
-	map<string, string> 		args;
+	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 
@@ -480,7 +480,7 @@ void draw_elements (NegativeTestContext& ctx)
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
 	GLfloat						vertices[1];
-	map<string, string> 		args;
+	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 
@@ -590,7 +590,7 @@ void draw_elements_incomplete_primitive (NegativeTestContext& ctx)
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
 	GLfloat						vertices[1];
-	map<string, string> 		args;
+	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 
@@ -698,7 +698,7 @@ void draw_arrays_instanced (NegativeTestContext& ctx)
 {
 	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
-	map<string, string> 		args;
+	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 
@@ -766,7 +766,7 @@ void draw_arrays_instanced_incomplete_primitive (NegativeTestContext& ctx)
 {
 	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
-	map<string, string> 		args;
+	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 
@@ -805,7 +805,7 @@ void draw_elements_instanced (NegativeTestContext& ctx)
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
 	GLfloat						vertices[1];
-	map<string, string> 		args;
+	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 
@@ -922,7 +922,7 @@ void draw_elements_instanced_incomplete_primitive (NegativeTestContext& ctx)
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
 	GLfloat						vertices[1];
-	map<string, string> 		args;
+	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 
@@ -1001,7 +1001,7 @@ void draw_elements_instanced_base_vertex (NegativeTestContext& ctx)
 	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	GLfloat						vertices[1];
-	map<string, string> 		args;
+	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 
@@ -1048,7 +1048,7 @@ void draw_range_elements (NegativeTestContext& ctx)
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
 	GLfloat						vertices[1];
-	map<string, string> 		args;
+	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 
@@ -1168,7 +1168,7 @@ void draw_range_elements_incomplete_primitive (NegativeTestContext& ctx)
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
 	GLfloat						vertices[1];
-	map<string, string> 		args;
+	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 
@@ -1249,7 +1249,7 @@ void draw_range_elements_base_vertex (NegativeTestContext& ctx)
 	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	GLfloat						vertices[1];
-	map<string, string> 		args;
+	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 

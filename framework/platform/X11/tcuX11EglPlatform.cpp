@@ -99,7 +99,7 @@ public:
 class Display : public NativeDisplay
 {
 public:
-	static const Capability CAPABILITIES 		= Capability(CAPABILITY_GET_DISPLAY_LEGACY |
+	static const Capability CAPABILITIES		= Capability(CAPABILITY_GET_DISPLAY_LEGACY |
 															 CAPABILITY_GET_DISPLAY_PLATFORM);
 
 								Display				(MovePtr<x11::Display> x11Display)
@@ -108,7 +108,7 @@ public:
 													 "EGL_EXT_platform_x11")
 									, m_display		(x11Display) {}
 
-	void*						getPlatformNative		(void) 	{ return m_display->getXDisplay(); }
+	void*						getPlatformNative		(void)	{ return m_display->getXDisplay(); }
 	eglw::EGLNativeDisplayType	getLegacyNative			(void)	{ return reinterpret_cast<eglw::EGLNativeDisplayType>(m_display->getXDisplay()); }
 
 	x11::Display&				getX11Display			(void)			{ return *m_display;	}

@@ -224,7 +224,7 @@ def die (msg):
 # Named filter lists
 FILTER_RULES = [
 	FilterRule("all",			"No filtering",											[]),
-	FilterRule("all-pass",		"All results must be 'Pass'", 							[lambda l: all(l, lambda r: r == 'Pass')]),
+	FilterRule("all-pass",		"All results must be 'Pass'",							[lambda l: all(l, lambda r: r == 'Pass')]),
 	FilterRule("any-pass",		"Any of results is 'Pass'",								[lambda l: any(l, lambda r: r == 'Pass')]),
 	FilterRule("any-fail",		"Any of results is not 'Pass' or 'NotSupported'",		[lambda l: not all(l, lambda r: r == 'Pass' or r == 'NotSupported')]),
 	FilterRule("prev-failing",	"Any except last result is failure",					[lambda l: l[-1] == 'Pass' and not all(l[:-1], lambda r: r == 'Pass')]),

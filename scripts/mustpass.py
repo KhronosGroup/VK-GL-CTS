@@ -30,7 +30,7 @@ from copy import copy
 import xml.etree.cElementTree as ElementTree
 import xml.dom.minidom as minidom
 
-APK_NAME 		= "com.drawelements.deqp.apk"
+APK_NAME		= "com.drawelements.deqp.apk"
 
 GENERATED_FILE_WARNING = """
      This file has been automatically generated. Edit with caution.

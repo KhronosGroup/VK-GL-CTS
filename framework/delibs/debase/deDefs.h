@@ -126,7 +126,7 @@
 #endif
 
 /* Endianness */
-#define DE_BIG_ENDIAN 		0
+#define DE_BIG_ENDIAN		0
 #define DE_LITTLE_ENDIAN	1
 
 #if defined(DE_ENDIANNESS)

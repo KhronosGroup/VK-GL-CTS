@@ -1,5 +1,5 @@
-#X1. Type: 					float[5] 								// An array type with 5 elements
-#X2. Return value:			float[5] func() { ... } 				// Function with a 5-element array return value
+#X1. Type:					float[5]								// An array type with 5 elements
+#X2. Return value:			float[5] func() { ... }					// Function with a 5-element array return value
 #X3. Array constructor:		float[3] (1.0, 2.0, 5.5)				// 3-element array with given elements
 #																	// Fails with array of matrices!
 #X4. As unnamed parameter:	void func(float[5]);
@@ -8,9 +8,9 @@
 #							float y[] = float[3] (1.0, 2.0, 3.0);	// Size of y is 3 (equivalent)
 #							float z[] = y;							// Size of z is 3
 #X7. Testing that 2-dimensional arrays don't work:	float a[5][3];	// Illegal
-#													float[5] a[3]; 	// Illegal
+#													float[5] a[3];	// Illegal
 #X8. Testing that array declaration with dynamic variables as array size won't work.
-#X9. Testing length() operator:	z.length(); 						// Returns 3 for z defined before
+#X9. Testing length() operator:	z.length();							// Returns 3 for z defined before
 #X10. Test C/C++ style {}-constructor
 #X11. Test struct arrays
 #X12. Test array element access at initialization with const/dynamic values
@@ -257,7 +257,7 @@ group constructor "Array constructors"
 				${SETUP}
 
 				vec3[3] x;
-				x = vec3[3] ( 	vec3(in0.x, in0.y, in0.z)	,
+				x = vec3[3] (	vec3(in0.x, in0.y, in0.z)	,
 								vec3(-in0.y, -in0.z, -in0.x),
 								vec3(in0.z, in0.x, in0.y)	);
 				out0 = vec3(x[0].x, x[1].y, x[2].z);
@@ -285,7 +285,7 @@ group constructor "Array constructors"
 				${SETUP}
 
 				ivec3[3] x;
-				x = ivec3[3] ( 	ivec3(in0.x, in0.y, in0.z)	,
+				x = ivec3[3] (	ivec3(in0.x, in0.y, in0.z)	,
 								ivec3(-in0.y, -in0.z, -in0.x),
 								ivec3(in0.z, in0.x, in0.y)	);
 				out0 = ivec3(x[0].x, x[1].y, x[2].z);
@@ -312,7 +312,7 @@ group constructor "Array constructors"
 				${SETUP}
 
 				bvec3[3] x;
-				x = bvec3[3] ( 	bvec3(in0.x, in0.y, in0.z)	,
+				x = bvec3[3] (	bvec3(in0.x, in0.y, in0.z)	,
 								bvec3(in0.y, in0.z, in0.x),
 								bvec3(in0.z, in0.x, in0.y)	);
 				out0 = bvec3(x[0].x, x[1].y, x[2].z);
@@ -450,7 +450,7 @@ group return "Arrays as return value"
 		version 300 es
 		values
 		{
-			input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+			input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
 			output vec3 out0 = [ vec3(2.0, -0.5, 1.0) | vec3(2.0, -7.4, -1.0) | vec3(-2.0, -3.0, 1.6) ];
 		}
 
@@ -507,7 +507,7 @@ group return "Arrays as return value"
 		version 300 es
 		values
 		{
-			input bvec3 in0 = 	[ bvec3(false, true, true) ];
+			input bvec3 in0 =	[ bvec3(false, true, true) ];
 			output bvec3 out0 = [ bvec3(true, false, true) ];
 		}
 
@@ -537,7 +537,7 @@ group return "Arrays as return value"
 		version 300 es
 		values
 		{
-			input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+			input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
 			output vec3 out0 = [ vec3(1.0, 0.5, -2.0) | vec3(11.2, -0.5, 1.0) ];
 		}
 
@@ -568,7 +568,7 @@ group return "Arrays as return value"
 		version 300 es
 		values
 		{
-			input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) ];
+			input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) ];
 			output vec3 out0 = [ vec3(-1.0, 2.0, 0.5) ];
 		}
 
@@ -609,7 +609,7 @@ group return "Arrays as return value"
 		version 300 es
 		values
 		{
-			input ivec3 in0 = 	[ ivec3(5, 1, 2) | ivec3(-5, 11, -1) ];
+			input ivec3 in0 =	[ ivec3(5, 1, 2) | ivec3(-5, 11, -1) ];
 			output ivec3 out0 = [ ivec3(1, 5, -2) | ivec3(11, -5, 1) ];
 		}
 
@@ -641,7 +641,7 @@ group return "Arrays as return value"
 		version 300 es
 		values
 		{
-			input bvec3 in0 = 	[ bvec3(true, false, false) ];
+			input bvec3 in0 =	[ bvec3(true, false, false) ];
 			output bvec3 out0 = [ bvec3(false, true, false) ];
 		}
 
@@ -834,7 +834,7 @@ group unnamed_parameter "Array type as unnamed parameter of a function prototype
 		version 300 es
 		values
 		{
-			input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+			input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
 			output vec3 out0 = [ vec3(2.0, 0.5, 1.0) | vec3(2.0, 7.4, -1.0) | vec3(-2.0, 3.0, 1.6) ];
 		}
 
@@ -866,7 +866,7 @@ group unnamed_parameter "Array type as unnamed parameter of a function prototype
 		version 300 es
 		values
 		{
-			input ivec3 in0 = 	[ ivec3(0, 1, 2) | ivec3(7, -1, 2) | ivec3(3, 1, -2) ];
+			input ivec3 in0 =	[ ivec3(0, 1, 2) | ivec3(7, -1, 2) | ivec3(3, 1, -2) ];
 			output ivec3 out0 = [ ivec3(2, 0, 1) | ivec3(2, 7, -1) | ivec3(-2, 3, 1) ];
 		}
 
@@ -899,7 +899,7 @@ group unnamed_parameter "Array type as unnamed parameter of a function prototype
 		version 300 es
 		values
 		{
-			input bvec3 in0 = 	[ bvec3(false, true, true) ];
+			input bvec3 in0 =	[ bvec3(false, true, true) ];
 			output bvec3 out0 = [ bvec3(true, false, true) ];
 		}
 
@@ -931,7 +931,7 @@ group unnamed_parameter "Array type as unnamed parameter of a function prototype
 		version 300 es
 		values
 		{
-			input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) ];
+			input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) ];
 			output vec3 out0 = [ vec3(-1.0, 2.0, 0.5) ];
 		}
 
@@ -974,7 +974,7 @@ group unnamed_parameter "Array type as unnamed parameter of a function prototype
 		version 300 es
 		values
 		{
-			input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+			input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
 			output vec3 out0 = [ vec3(1.0, 0.5, -2.0) | vec3(11.2, -0.5, 1.0) ];
 		}
 
@@ -1007,7 +1007,7 @@ group unnamed_parameter "Array type as unnamed parameter of a function prototype
 		version 300 es
 		values
 		{
-			input ivec3 in0 = 	[ ivec3(5, 1, 2) | ivec3(-5, 11, -1) ];
+			input ivec3 in0 =	[ ivec3(5, 1, 2) | ivec3(-5, 11, -1) ];
 			output ivec3 out0 = [ ivec3(1, 5, -2) | ivec3(11, -5, 1) ];
 		}
 
@@ -1041,7 +1041,7 @@ group unnamed_parameter "Array type as unnamed parameter of a function prototype
 		version 300 es
 		values
 		{
-			input bvec3 in0 = 	[ bvec3(true, false, false) ];
+			input bvec3 in0 =	[ bvec3(true, false, false) ];
 			output bvec3 out0 = [ bvec3(false, true, false) ];
 		}
 
@@ -1354,7 +1354,7 @@ group declaration "Declaring arrays"
 		version 300 es
 		values
 		{
-			input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+			input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
 			output vec3 out0 = [ vec3(0.5, -2.0, 1.0) | vec3(-0.5, 1.0, 11.2) ];
 		}
 
@@ -1380,7 +1380,7 @@ group declaration "Declaring arrays"
 		version 300 es
 		values
 		{
-			input ivec3 in0 = 	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
+			input ivec3 in0 =	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
 			output ivec3 out0 = [ ivec3(0, -2, 1) | ivec3(5, 1, 11) ];
 		}
 
@@ -1407,7 +1407,7 @@ group declaration "Declaring arrays"
 		version 300 es
 		values
 		{
-			input bvec3 in0 = 	[ bvec3(true, false, true) ];
+			input bvec3 in0 =	[ bvec3(true, false, true) ];
 			output bvec3 out0 = [ bvec3(true, true, false) ];
 		}
 

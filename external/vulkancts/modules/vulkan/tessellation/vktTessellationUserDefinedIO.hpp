@@ -1,5 +1,5 @@
-#ifndef _VKTTESSELLATIONUSERDEFINEDIOTESTS_HPP
-#define _VKTTESSELLATIONUSERDEFINEDIOTESTS_HPP
+#ifndef _VKTTESSELLATIONUSERDEFINEDIO_HPP
+#define _VKTTESSELLATIONUSERDEFINEDIO_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -37,4 +37,4 @@ tcu::TestCaseGroup* createUserDefinedIOTests (tcu::TestContext& testCtx);
 } // tessellation
 } // vkt
 
-#endif // _VKTTESSELLATIONUSERDEFINEDIOTESTS_HPP
+#endif // _VKTTESSELLATIONUSERDEFINEDIO_HPP

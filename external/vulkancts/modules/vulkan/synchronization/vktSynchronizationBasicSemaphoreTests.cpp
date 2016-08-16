@@ -98,7 +98,7 @@ tcu::TestStatus basicOneQueueCase (Context& context)
 															0u,									 // VkFenceCreateFlags	flags;
 														};
 	const Unique<VkFence>			fence				(createFence(vk, device, &fenceInfo));
-	
+
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &info));
 	endCommandBuffer(vk, *cmdBuffer);
 	VK_CHECK(vk.queueSubmit(queue, 2u, submitInfo, *fence));
@@ -236,15 +236,15 @@ tcu::TestStatus basicMultiQueueCase (Context& context)
 	submitInfo[FIRST].pSignalSemaphores		= &semaphore.get();
 
 	submitInfo[SECOND].sType					= VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo[SECOND].pNext					= DE_NULL;		
-	submitInfo[SECOND].waitSemaphoreCount		= 1u;	
-	submitInfo[SECOND].pWaitSemaphores			= &semaphore.get();	
-	submitInfo[SECOND].pWaitDstStageMask		= stageBits;	
-	submitInfo[SECOND].commandBufferCount		= 1u;		
-	submitInfo[SECOND].pCommandBuffers			= &cmdBuffer[SECOND].get();		
+	submitInfo[SECOND].pNext					= DE_NULL;
+	submitInfo[SECOND].waitSemaphoreCount		= 1u;
+	submitInfo[SECOND].pWaitSemaphores			= &semaphore.get();
+	submitInfo[SECOND].pWaitDstStageMask		= stageBits;
+	submitInfo[SECOND].commandBufferCount		= 1u;
+	submitInfo[SECOND].pCommandBuffers			= &cmdBuffer[SECOND].get();
 	submitInfo[SECOND].signalSemaphoreCount		= 0u;
-	submitInfo[SECOND].pSignalSemaphores		= DE_NULL;		
-																		
+	submitInfo[SECOND].pSignalSemaphores		= DE_NULL;
+
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer[FIRST], &info));
 	endCommandBuffer(vk, *cmdBuffer[FIRST]);
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer[SECOND], &info));
@@ -266,7 +266,7 @@ tcu::TestStatus basicMultiQueueCase (Context& context)
 		VkSubmitInfo swapInfo				= submitInfo[SECOND];
 		submitInfo[SECOND]					= submitInfo[FIRST];
 		submitInfo[FIRST]					= swapInfo;
-		submitInfo[SECOND].pCommandBuffers	= &cmdBuffer[SECOND].get();	
+		submitInfo[SECOND].pCommandBuffers	= &cmdBuffer[SECOND].get();
 		submitInfo[FIRST].pCommandBuffers	= &cmdBuffer[FIRST].get();
 	}
 

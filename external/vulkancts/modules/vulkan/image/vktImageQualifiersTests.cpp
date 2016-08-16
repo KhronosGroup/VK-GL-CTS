@@ -695,7 +695,7 @@ tcu::TestCaseGroup* createImageQualifiersTests (tcu::TestContext& testCtx)
 	{
 		ImageParams(const ImageType imageType, const tcu::UVec3& imageSize)
 			: m_imageType	(imageType)
-			, m_imageSize	(imageSize) 
+			, m_imageSize	(imageSize)
 		{
 		}
 		ImageType	m_imageType;

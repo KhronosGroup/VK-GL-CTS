@@ -818,7 +818,7 @@ TextureBuffer::TextureBuffer (const RenderContext& context, deUint32 internalFor
 void TextureBuffer::init (deUint32 internalFormat, size_t bufferSize, size_t offset, size_t size, const void* data)
 {
 	const glw::Functions&		gl		= m_context.getFunctions();
-	de::UniquePtr<ContextInfo>	info 	(ContextInfo::create(m_context));
+	de::UniquePtr<ContextInfo>	info	(ContextInfo::create(m_context));
 
 	if (offset != 0 || size != 0)
 	{

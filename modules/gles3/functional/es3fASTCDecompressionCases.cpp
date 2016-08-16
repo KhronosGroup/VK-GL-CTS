@@ -210,13 +210,13 @@ static inline ASTCSupportLevel getASTCSupportLevel (const glu::ContextInfo& cont
 		const string& ext = extensions[extNdx];
 		if (isES32)
 		{
-			maxLevel = 	de::max(maxLevel, ext == "GL_KHR_texture_compression_astc_hdr"	? ASTCSUPPORTLEVEL_HDR
+			maxLevel =	de::max(maxLevel, ext == "GL_KHR_texture_compression_astc_hdr"	? ASTCSUPPORTLEVEL_HDR
 										: ext == "GL_OES_texture_compression_astc"		? ASTCSUPPORTLEVEL_FULL
 										: ASTCSUPPORTLEVEL_LDR);
 		}
 		else
 		{
-			maxLevel = 	de::max(maxLevel, ext == "GL_KHR_texture_compression_astc_ldr"	? ASTCSUPPORTLEVEL_LDR
+			maxLevel =	de::max(maxLevel, ext == "GL_KHR_texture_compression_astc_ldr"	? ASTCSUPPORTLEVEL_LDR
 										: ext == "GL_KHR_texture_compression_astc_hdr"	? ASTCSUPPORTLEVEL_HDR
 										: ext == "GL_OES_texture_compression_astc"		? ASTCSUPPORTLEVEL_FULL
 										: ASTCSUPPORTLEVEL_NONE);

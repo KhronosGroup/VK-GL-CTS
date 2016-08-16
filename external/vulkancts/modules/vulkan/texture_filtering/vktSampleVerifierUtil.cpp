@@ -629,7 +629,7 @@ void convertFP16 (const void*	fp16Ptr,
 
 void convertNormalizedInt (deInt64		num,
 						   int			numBits,
-						   bool 		isSigned,
+						   bool			isSigned,
 						   FloatFormat	internalFormat,
 						   float&		resultMin,
 						   float&		resultMax)

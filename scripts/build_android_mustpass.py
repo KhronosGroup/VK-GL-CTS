@@ -207,7 +207,7 @@ NYC_EGL_PKG						= Package(module = EGL_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= NYC_EGL_COMMON_FILTERS,
-				      runtime 		= "24m"),
+				      runtime		= "24m"),
 	])
 
 NYC_GLES2_COMMON_FILTERS			= [
@@ -220,7 +220,7 @@ NYC_GLES2_PKG					= Package(module = GLES2_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= NYC_GLES2_COMMON_FILTERS,
-					  runtime 		= "40m"),
+					  runtime		= "40m"),
 	])
 
 NYC_GLES3_COMMON_FILTERS		= [
@@ -287,7 +287,7 @@ NYC_GLES31_PKG					= Package(module = GLES31_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= NYC_GLES31_COMMON_FILTERS,
-					  runtime 		= "7h30m"),
+					  runtime		= "7h30m"),
 
 		# Rotations
 		Configuration(name			= "rotate-portrait",
@@ -353,7 +353,7 @@ MASTER_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= MASTER_EGL_COMMON_FILTERS,
-				      runtime 		= "24m"),
+				      runtime		= "24m"),
 	])
 
 MASTER_GLES2_COMMON_FILTERS		= [
@@ -368,7 +368,7 @@ MASTER_GLES2_PKG				= Package(module = GLES2_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES2_COMMON_FILTERS,
-					  runtime 		= "40m"),
+					  runtime		= "40m"),
 	])
 
 MASTER_GLES3_COMMON_FILTERS		= [
@@ -445,7 +445,7 @@ MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES31_COMMON_FILTERS,
-					  runtime 		= "7h30m"),
+					  runtime		= "7h30m"),
 
 		# Rotations
 		Configuration(name			= "rotate-portrait",

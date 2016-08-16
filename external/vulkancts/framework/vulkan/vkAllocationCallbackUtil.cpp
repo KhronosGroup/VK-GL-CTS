@@ -390,7 +390,7 @@ void validateAllocationCallbacks (const AllocationCallbackRecorder& recorder, Al
 			case AllocationCallbackRecord::TYPE_ALLOCATION:
 			{
 				if (record.data.allocation.returnedPtr)
-				{ 
+				{
 					if (!de::contains(ptrToSlotIndex, record.data.allocation.returnedPtr))
 					{
 						ptrToSlotIndex[record.data.allocation.returnedPtr] = allocations.size();
@@ -399,7 +399,7 @@ void validateAllocationCallbacks (const AllocationCallbackRecorder& recorder, Al
 					else
 					{
 						const size_t		slotNdx		= ptrToSlotIndex[record.data.allocation.returnedPtr];
-						if (!allocations[slotNdx].isLive) 
+						if (!allocations[slotNdx].isLive)
 						{
 							allocations[slotNdx].isLive = true;
 							allocations[slotNdx].record = record;

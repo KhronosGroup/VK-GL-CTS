@@ -219,7 +219,7 @@ protected:
 	void				randomizeViewport		(void);
 	void				readImage				(tcu::Surface& dst) const;
 
-	IVec2				getRenderTargetSize		(void) const 				{ return IVec2(m_renderWidth, m_renderHeight); }
+	IVec2				getRenderTargetSize		(void) const				{ return IVec2(m_renderWidth, m_renderHeight); }
 
 	int					m_numSamples;
 
@@ -629,8 +629,8 @@ NumSamplesCase::IterateResult NumSamplesCase::iterate (void)
 
 		if (m_currentIteration >= m_maxNumIterations)
 		{
-			const IVec2 targetSize 			= getRenderTargetSize();
-			const int 	detectedNumSamples 	= (int)m_detectedColors.size() - 1; // One color is the background
+			const IVec2 targetSize			= getRenderTargetSize();
+			const int	detectedNumSamples	= (int)m_detectedColors.size() - 1; // One color is the background
 
 			log << TestLog::Message << "Failure: Number of distinct colors detected is lower than sample count+1" << TestLog::EndMessage;
 

@@ -2913,14 +2913,14 @@ public:
 		if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 			throw tcu::NotSupportedError("Test requires OES_shader_image_atomic extension");
 
-		if (m_type == TESTTYPE_DEPTH 				&&
+		if (m_type == TESTTYPE_DEPTH				&&
 			m_renderTarget == RENDERTARGET_DEFAULT	&&
 			m_context.getRenderTarget().getDepthBits() == 0)
 		{
 			throw tcu::NotSupportedError("Test requires depth buffer");
 		}
 
-		if (m_type == TESTTYPE_STENCIL 				&&
+		if (m_type == TESTTYPE_STENCIL				&&
 			m_renderTarget == RENDERTARGET_DEFAULT	&&
 			m_context.getRenderTarget().getStencilBits() == 0)
 		{
@@ -2935,11 +2935,11 @@ public:
 	IterateResult iterate (void);
 
 private:
-	static const int 		RENDER_SIZE;
+	static const int		RENDER_SIZE;
 
 	const TestType			m_type;
 	const bool				m_useEarlyTests;
-	const RenderTargetType 	m_renderTarget;
+	const RenderTargetType	m_renderTarget;
 };
 
 const int EarlyFragmentTestsCase::RENDER_SIZE = 32;
@@ -2957,8 +2957,8 @@ EarlyFragmentTestsCase::IterateResult EarlyFragmentTestsCase::iterate (void)
 	const int						viewportY			= (m_renderTarget == RENDERTARGET_DEFAULT) ? (rnd.getInt(0, renderCtx.getRenderTarget().getHeight() - viewportHeight))	: (0);
 	const glu::Texture				texture				(renderCtx);
 	de::MovePtr<glu::Framebuffer>	fbo;
-	de::MovePtr<glu::Renderbuffer> 	colorAttachment;
-	de::MovePtr<glu::Renderbuffer> 	testAttachment;
+	de::MovePtr<glu::Renderbuffer>	colorAttachment;
+	de::MovePtr<glu::Renderbuffer>	testAttachment;
 
 	glLog.enableLogging(true);
 
@@ -2981,7 +2981,7 @@ EarlyFragmentTestsCase::IterateResult EarlyFragmentTestsCase::iterate (void)
 	if (m_renderTarget == RENDERTARGET_FBO ||
 		m_renderTarget == RENDERTARGET_FBO_WITHOUT_TEST_ATTACHMENT)
 	{
-		fbo 			= de::MovePtr<glu::Framebuffer>(new glu::Framebuffer(renderCtx));
+		fbo				= de::MovePtr<glu::Framebuffer>(new glu::Framebuffer(renderCtx));
 		colorAttachment	= de::MovePtr<glu::Renderbuffer>(new glu::Renderbuffer(renderCtx));
 		testAttachment	= de::MovePtr<glu::Renderbuffer>(new glu::Renderbuffer(renderCtx));
 
@@ -3342,14 +3342,14 @@ void ShaderImageLoadStoreTests::init (void)
 		for (int testTypeI = 0; testTypeI < EarlyFragmentTestsCase::TESTTYPE_LAST; testTypeI++)
 		{
 			const EarlyFragmentTestsCase::RenderTargetType	targetType		= (EarlyFragmentTestsCase::RenderTargetType)testRenderTargetI;
-			const bool 										useEarlyTests 	= useEarlyTestsI != 0;
+			const bool										useEarlyTests	= useEarlyTestsI != 0;
 			const EarlyFragmentTestsCase::TestType			testType		= (EarlyFragmentTestsCase::TestType)testTypeI;
 
 			const string									testTypeName	= testType == EarlyFragmentTestsCase::TESTTYPE_DEPTH	? "depth"
 																			: testType == EarlyFragmentTestsCase::TESTTYPE_STENCIL	? "stencil"
 																			: DE_NULL;
 
-			const string									targetName		= targetType == EarlyFragmentTestsCase::RENDERTARGET_FBO 							? (std::string("_fbo"))
+			const string									targetName		= targetType == EarlyFragmentTestsCase::RENDERTARGET_FBO							? (std::string("_fbo"))
 																			: targetType == EarlyFragmentTestsCase::RENDERTARGET_FBO_WITHOUT_TEST_ATTACHMENT	? (std::string("_fbo_with_no_") + testTypeName)
 																			: std::string("");
 
@@ -3357,8 +3357,8 @@ void ShaderImageLoadStoreTests::init (void)
 
 			const string									caseDesc		= string(useEarlyTests ? "Specify" : "Don't specify")
 																			+ " early_fragment_tests, use the " + testTypeName + " test"
-																			+ ((targetType == EarlyFragmentTestsCase::RENDERTARGET_FBO) 							? (", render to fbo")
-																			   : (targetType == EarlyFragmentTestsCase::RENDERTARGET_FBO_WITHOUT_TEST_ATTACHMENT) 	? (", render to fbo without relevant buffer")
+																			+ ((targetType == EarlyFragmentTestsCase::RENDERTARGET_FBO)								? (", render to fbo")
+																			   : (targetType == EarlyFragmentTestsCase::RENDERTARGET_FBO_WITHOUT_TEST_ATTACHMENT)	? (", render to fbo without relevant buffer")
 																			   : (""));
 
 			earlyTestsGroup->addChild(new EarlyFragmentTestsCase(m_context, caseName.c_str(), caseDesc.c_str(), testType, useEarlyTests, targetType));

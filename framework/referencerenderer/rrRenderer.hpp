@@ -45,7 +45,7 @@ public:
 																 const MultisamplePixelBufferAccess& depthMultisampleBuffer		= MultisamplePixelBufferAccess(),
 																 const MultisamplePixelBufferAccess& stencilMultisampleBuffer	= MultisamplePixelBufferAccess());
 
-	int										getNumSamples 		(void) const;
+	int										getNumSamples		(void) const;
 
 	const MultisamplePixelBufferAccess&		getColorBuffer		(int ndx) const	{ DE_ASSERT(de::inRange(ndx, 0, m_numColorBuffers));	return m_colorBuffers[ndx];	}
 	int										getNumColorBuffers	(void) const	{ return m_numColorBuffers; }

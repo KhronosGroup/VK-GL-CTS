@@ -559,7 +559,7 @@ private:
 																					 const tcu::LodPrecision&						lodPrecision,
 																					 const tcu::LookupPrecision&					lookupPrecision);
 
-	bool 												verifyTextureCompareResult	(const tcu::ConstPixelBufferAccess&				renderedFrame,
+	bool												verifyTextureCompareResult	(const tcu::ConstPixelBufferAccess&				renderedFrame,
 																					 const float*									texCoord,
 																					 const gls::TextureTestUtil::ReferenceParams&	samplerParams,
 																					 const tcu::TexComparePrecision&				texComparePrecision,
@@ -960,9 +960,9 @@ void TextureBorderClampTest::verifyImage (const tcu::Surface&							renderedFram
 	}
 	else
 	{
-		tcu::TexComparePrecision 	texComparePrecision;
+		tcu::TexComparePrecision	texComparePrecision;
 		tcu::TexComparePrecision	lowQualityTexComparePrecision;
-		tcu::LodPrecision 			lowQualityLodPrecision			= lodPrecision;
+		tcu::LodPrecision			lowQualityLodPrecision			= lodPrecision;
 
 		texComparePrecision.coordBits					= tcu::IVec3(20,20,0);
 		texComparePrecision.uvwBits						= tcu::IVec3(7,7,0);
@@ -1286,7 +1286,7 @@ gls::TextureTestUtil::ReferenceParams TextureBorderClampTest::genSamplerParams (
 glu::ShaderProgram* TextureBorderClampTest::genGatherProgram (void) const
 {
 	const std::string	glslVersionDecl	= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType()));
-	const std::string	vtxSource 		= glslVersionDecl + "\n"
+	const std::string	vtxSource		= glslVersionDecl + "\n"
 										"in highp vec4 a_position;\n"
 										"in highp vec2 a_texcoord;\n"
 										"out highp vec2 v_texcoord;\n"
@@ -1295,8 +1295,8 @@ glu::ShaderProgram* TextureBorderClampTest::genGatherProgram (void) const
 										"	gl_Position = a_position;\n"
 										"	v_texcoord = a_texcoord;\n"
 										"}\n";
-	const char* 		samplerType;
-	const char* 		lookup;
+	const char*			samplerType;
+	const char*			lookup;
 	std::ostringstream	fragSource;
 
 	if (m_useShadowSampler)

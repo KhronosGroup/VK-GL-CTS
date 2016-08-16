@@ -1657,7 +1657,7 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 		&clearValue,									// const VkClearValue*	pClearValues;
 	};
 
-	// Add barrier for initializing image state 
+	// Add barrier for initializing image state
 	{
 		const vk::VkImageMemoryBarrier  initializeBarrier =
 		{

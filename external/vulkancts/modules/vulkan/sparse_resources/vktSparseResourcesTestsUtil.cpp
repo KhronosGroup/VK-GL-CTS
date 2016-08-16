@@ -762,20 +762,18 @@ deUint32 getImageMaxMipLevels (const VkImageFormatProperties& imageFormatPropert
 	return std::min(static_cast<deUint32>(deFloatLog2(static_cast<float>(widestEdge))) + 1u, imageFormatProperties.maxMipLevels);
 }
 
-deUint32 getImageMipLevelSizeInBytes (const VkExtent3D& baseExtents, const deUint32 layersCount, const tcu::TextureFormat& format, const deUint32 mipmapLevel)
+deUint32 getImageMipLevelSizeInBytes(const VkExtent3D& baseExtents, const deUint32 layersCount, const tcu::TextureFormat& format, const deUint32 mipmapLevel, const deUint32 mipmapMemoryAlignment)
 {
 	const VkExtent3D extents = mipLevelExtents(baseExtents, mipmapLevel);
 
-	return extents.width * extents.height * extents.depth * layersCount * tcu::getPixelSize(format);
+	return deAlign32(extents.width * extents.height * extents.depth * layersCount * tcu::getPixelSize(format), mipmapMemoryAlignment);
 }
 
-deUint32 getImageSizeInBytes (const VkExtent3D& baseExtents, const deUint32 layersCount, const tcu::TextureFormat& format, const deUint32 mipmapLevelsCount)
+deUint32 getImageSizeInBytes(const VkExtent3D& baseExtents, const deUint32 layersCount, const tcu::TextureFormat& format, const deUint32 mipmapLevelsCount, const deUint32 mipmapMemoryAlignment)
 {
 	deUint32 imageSizeInBytes = 0;
 	for (deUint32 mipmapLevel = 0; mipmapLevel < mipmapLevelsCount; ++mipmapLevel)
-	{
-		imageSizeInBytes += getImageMipLevelSizeInBytes(baseExtents, layersCount, format, mipmapLevel);
-	}
+		imageSizeInBytes += getImageMipLevelSizeInBytes(baseExtents, layersCount, format, mipmapLevel, mipmapMemoryAlignment);
 
 	return imageSizeInBytes;
 }
@@ -812,7 +810,7 @@ VkSparseImageMemoryBind	makeSparseImageMemoryBind  (const DeviceInterface&		vk,
 }
 
 VkSparseMemoryBind makeSparseMemoryBind	(const vk::DeviceInterface&	vk,
-										 const vk::VkDevice			device, 
+										 const vk::VkDevice			device,
 										 const vk::VkDeviceSize		allocationSize,
 										 const deUint32				memoryType,
 										 const vk::VkDeviceSize		resourceOffset)
@@ -1135,7 +1133,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 		0.0f, 1.0f
 	);
 
-	const VkRect2D scissor = 
+	const VkRect2D scissor =
 	{
 		makeOffset2D(0, 0),
 		makeExtent2D(m_renderSize.x(), m_renderSize.y()),
@@ -1193,7 +1191,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 		0u,						// compare mask
 		0u,						// write mask
 		0u						// reference
-	);					
+	);
 
 	const VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo =
 	{
