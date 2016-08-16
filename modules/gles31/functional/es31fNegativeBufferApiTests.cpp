@@ -617,7 +617,7 @@ void clear_bufferfv (NegativeTestContext& ctx)
 	std::vector<float>	data			(32*32);
 	deUint32			fbo				= 0x1234;
 	deUint32			texture			= 0x1234;
-	int 				maxDrawBuffers	= 0x1234;
+	int					maxDrawBuffers	= 0x1234;
 
 	ctx.glGenTextures			(1, &texture);
 	ctx.glBindTexture			(GL_TEXTURE_2D, texture);
@@ -763,9 +763,9 @@ void copy_buffer_sub_data (NegativeTestContext& ctx)
 
 void draw_buffers (NegativeTestContext& ctx)
 {
-	deUint32				fbo 					= 0x1234;
-	deUint32				texture 				= 0x1234;
-	int						maxDrawBuffers 			= 0x1234;
+	deUint32				fbo						= 0x1234;
+	deUint32				texture					= 0x1234;
+	int						maxDrawBuffers			= 0x1234;
 	int						maxColorAttachments		= -1;
 	ctx.glGetIntegerv		(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
 	ctx.glGetIntegerv		(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
@@ -1358,7 +1358,7 @@ void blit_framebuffer (NegativeTestContext& ctx)
 	deUint32					fbo[2];
 	deUint32					rbo[2];
 	deUint32					texture[2];
-	deUint32 					blankFrameBuffer;
+	deUint32					blankFrameBuffer;
 
 	ctx.glGenFramebuffers		(1, &blankFrameBuffer);
 	ctx.glGenFramebuffers		(2, fbo);
@@ -1560,8 +1560,8 @@ void framebuffer_texture_layer (NegativeTestContext& ctx)
 	int								max3DTexSize		= 0x1234;
 	int								maxTexSize			= 0x1234;
 	int								maxArrayTexLayers	= 0x1234;
-	int 							log2Max3DTexSize	= 0x1234;
-	int 							log2MaxTexSize		= 0x1234;
+	int								log2Max3DTexSize	= 0x1234;
+	int								log2MaxTexSize		= 0x1234;
 
 	ctx.glGetIntegerv				(GL_MAX_3D_TEXTURE_SIZE, &max3DTexSize);
 	ctx.glGetIntegerv				(GL_MAX_TEXTURE_SIZE, &maxTexSize);
@@ -1685,8 +1685,8 @@ void framebuffer_texture_layer (NegativeTestContext& ctx)
 void invalidate_framebuffer (NegativeTestContext& ctx)
 {
 	deUint32	attachments[3];
-	deUint32	fbo 				= 0x1234;
-	deUint32	texture 			= 0x1234;
+	deUint32	fbo					= 0x1234;
+	deUint32	texture				= 0x1234;
 	int			maxColorAttachments = 0x1234;
 
 	ctx.glGetIntegerv				(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);

@@ -1588,7 +1588,7 @@ static tcu::IVec4 getNBitSignedIntegerVec4MinValue (const tcu::IVec4& numBits)
 
 static tcu::Vec4 getTextureBorderColorFloat (const TextureFormat& format, const Sampler& sampler)
 {
-	const tcu::TextureChannelClass	channelClass 	= getTextureChannelClass(format.type);
+	const tcu::TextureChannelClass	channelClass	= getTextureChannelClass(format.type);
 	const TextureSwizzle::Channel*	channelMap		= getBorderColorReadSwizzle(format.order).components;
 	const bool						isFloat			= channelClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT;
 	const bool						isSigned		= channelClass != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
@@ -1624,7 +1624,7 @@ static tcu::Vec4 getTextureBorderColorFloat (const TextureFormat& format, const 
 
 static tcu::IVec4 getTextureBorderColorInt (const TextureFormat& format, const Sampler& sampler)
 {
-	const tcu::TextureChannelClass	channelClass 	= getTextureChannelClass(format.type);
+	const tcu::TextureChannelClass	channelClass	= getTextureChannelClass(format.type);
 	const TextureSwizzle::Channel*	channelMap		= getBorderColorReadSwizzle(format.order).components;
 	const IVec4						channelBits		= getChannelBitDepth(format.type);
 	const IVec4						valueMin		= getNBitSignedIntegerVec4MinValue(channelBits);
@@ -1653,7 +1653,7 @@ static tcu::IVec4 getTextureBorderColorInt (const TextureFormat& format, const S
 
 static tcu::UVec4 getTextureBorderColorUint (const TextureFormat& format, const Sampler& sampler)
 {
-	const tcu::TextureChannelClass	channelClass 	= getTextureChannelClass(format.type);
+	const tcu::TextureChannelClass	channelClass	= getTextureChannelClass(format.type);
 	const TextureSwizzle::Channel*	channelMap		= getBorderColorReadSwizzle(format.order).components;
 	const IVec4						channelBits		= getChannelBitDepth(format.type);
 	const UVec4						valueMax		= getNBitUnsignedIntegerVec4MaxValue(channelBits);

@@ -219,7 +219,7 @@ void FramebufferDefaultStateQueryTests::init (void)
 
 	FOR_EACH_VERIFIER(new FramebufferDimensionTest				(m_context, verifier, FramebufferDimensionTest::DIMENSION_WIDTH,	(std::string("framebuffer_default_width_") + verifierSuffix).c_str(),					"Test FRAMEBUFFER_DEFAULT_WIDTH"));
 	FOR_EACH_VERIFIER(new FramebufferDimensionTest				(m_context, verifier, FramebufferDimensionTest::DIMENSION_HEIGHT,	(std::string("framebuffer_default_height_") + verifierSuffix).c_str(),					"Test FRAMEBUFFER_DEFAULT_HEIGHT"));
-	FOR_EACH_VERIFIER(new FramebufferSamplesTest				(m_context, verifier, 												(std::string("framebuffer_default_samples_") + verifierSuffix).c_str(),					"Test FRAMEBUFFER_DEFAULT_SAMPLES"));
+	FOR_EACH_VERIFIER(new FramebufferSamplesTest				(m_context, verifier,												(std::string("framebuffer_default_samples_") + verifierSuffix).c_str(),					"Test FRAMEBUFFER_DEFAULT_SAMPLES"));
 	FOR_EACH_VERIFIER(new FramebufferFixedSampleLocationsTest	(m_context, verifier,												(std::string("framebuffer_default_fixed_sample_locations_") + verifierSuffix).c_str(),	"Test FRAMEBUFFER_DEFAULT_FIXED_SAMPLE_LOCATIONS"));
 
 #undef FOR_EACH_VERIFIER

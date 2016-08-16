@@ -63,7 +63,7 @@ private:
 	// \note Copy constructor and assignment operators are public and auto-generated
 
 	int							m_width;
-	int 						m_height;
+	int							m_height;
 	de::ArrayBuffer<deUint32>	m_pixels;
 } DE_WARN_UNUSED_TYPE;
 

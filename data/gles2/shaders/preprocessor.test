@@ -222,7 +222,7 @@ group definitions "Symbol Definition Tests"
 			${DECLARATIONS}
 			#define		FUNCTION(a,b) a+b
 			#undef		FUNCTION
-			#define 	FUNCTION(a,b) a-b
+			#define		FUNCTION(a,b) a-b
 
 			void main()
 			{
@@ -284,8 +284,8 @@ group object_redefinitions "Object Redefinition Tests"
 		expect compile_fail
 		both ""
 			precision mediump float;
-			# define AAA 		2.0
-			# define AAAA 		2.1
+			# define AAA		2.0
+			# define AAAA		2.1
 			# define VALUE (AAA - 1.0)
 			# define VALUE (AAAA - 1.0)
 
@@ -300,7 +300,7 @@ group object_redefinitions "Object Redefinition Tests"
 		expect compile_fail
 		both ""
 			precision mediump float;
-			# define AAA 		2.0
+			# define AAA		2.0
 			# define VALUE (AAA - 1.0)
 			# define VALUE (AAA- 1.0)
 
@@ -315,7 +315,7 @@ group object_redefinitions "Object Redefinition Tests"
 		expect compile_fail
 		both ""
 			precision mediump float;
-			# define AAA 		2.0
+			# define AAA		2.0
 			# define VALUE (AAA - 1.0)
 			# define VALUE (AAA + 1.0)
 
@@ -330,7 +330,7 @@ group object_redefinitions "Object Redefinition Tests"
 		expect compile_fail
 		both ""
 			precision mediump float;
-			# define AAA 		2.0
+			# define AAA		2.0
 			# define VALUE (AAA - 1.0)
 			# define VALUE (AAA - 1.1)
 
@@ -345,7 +345,7 @@ group object_redefinitions "Object Redefinition Tests"
 		expect compile_fail
 		both ""
 			precision mediump float;
-			# define AAA 		2.0
+			# define AAA		2.0
 			# define VALUE (AAA - 1.0)
 			# define VALUE (AAA - 1.0e-1)
 
@@ -360,7 +360,7 @@ group object_redefinitions "Object Redefinition Tests"
 		expect compile_fail
 		both ""
 			precision mediump float;
-			# define AAA 		2
+			# define AAA		2
 			# define VALUE (AAA - 1)
 			# define VALUE (AAA - 2)
 
@@ -375,7 +375,7 @@ group object_redefinitions "Object Redefinition Tests"
 		expect compile_fail
 		both ""
 			precision mediump float;
-			# define AAA 		2
+			# define AAA		2
 			# define VALUE (AAA - 1)
 			# define VALUE (AAA - 0x1)
 
@@ -393,7 +393,7 @@ group object_redefinitions "Object Redefinition Tests"
 			precision mediump float;
 			${DECLARATIONS}
 			#	define  VAL1 1.0
-			#define 	VAL2 2.0
+			#define		VAL2 2.0
 
 			#define RES2 (RES1 * VAL2)
 			#define RES1	(VAL2 / VAL1)
@@ -531,7 +531,7 @@ group object_redefinitions "Object Redefinition Tests"
 			precision mediump float;
 			${DECLARATIONS}
 			#	define  VAL1 1.0
-			#define 	VAL2 2.0
+			#define		VAL2 2.0
 
 			#define RES2 /* fdsjklfdsjkl dsfjkhfdsjkh fdsjklhfdsjkh */ (RES1 * VAL2)
 			#define RES1	(VAL2 / VAL1)
@@ -553,7 +553,7 @@ group object_redefinitions "Object Redefinition Tests"
 			precision mediump float;
 			${DECLARATIONS}
 			#	define  VAL1 1.0
-			#define 	VAL2 2.0
+			#define		VAL2 2.0
 
 			#define RES2 /* fdsjklfdsjkl
 							dsfjkhfdsjkh
@@ -733,7 +733,7 @@ group function_definitions "Function Definitions Tests"
 		both ""
 			precision mediump float;
 			${DECLARATIONS}
-			/* sdfljk */  	#/* sdfljk */define /* sdfljk */ FUNC( /* jklsfd*/a /*sfdjklh*/, /*sdfklj */b /*sdfklj*/)		a+b
+			/* sdfljk */	#/* sdfljk */define /* sdfljk */ FUNC( /* jklsfd*/a /*sfdjklh*/, /*sdfklj */b /*sdfklj*/)		a+b
 
 			void main()
 			{
@@ -765,7 +765,7 @@ group recursion "Recursions Tests"
 		both ""
 			precision mediump float;
 			# define AAA	BBB
-			#define BBB 	AAA
+			#define BBB		AAA
 
 			void main()
 			{
@@ -779,7 +779,7 @@ group recursion "Recursions Tests"
 		both ""
 			precision mediump float;
 			# define AAA	(1.0+BBB)
-			#define BBB 	(2.0+AAA)
+			#define BBB		(2.0+AAA)
 
 			void main()
 			{

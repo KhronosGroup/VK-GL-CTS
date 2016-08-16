@@ -307,7 +307,7 @@ void addMatchingCases (const xe::TestGroup& group, xe::TestSet& testSet, const c
 	{
 		const xe::TestNode* child		= group.getChild(childNdx);
 		const bool			isGroup		= child->getNodeType() == xe::TESTNODETYPE_GROUP;
-		const string	 	fullPath	= child->getFullPath();
+		const string		fullPath	= child->getFullPath();
 
 		if (checkCasePathPatternMatch(filter, fullPath.c_str(), isGroup))
 		{

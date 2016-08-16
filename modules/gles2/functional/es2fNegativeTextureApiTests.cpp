@@ -1972,7 +1972,7 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					const deInt32	glFormat 	= accepted[i];
+					const deInt32	glFormat	= accepted[i];
 
 					try
 					{
@@ -2022,7 +2022,7 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					const deInt32	glFormat 	= accepted[i];
+					const deInt32	glFormat	= accepted[i];
 
 					try
 					{
@@ -2073,7 +2073,7 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					const deInt32	glFormat 	= accepted[i];
+					const deInt32	glFormat	= accepted[i];
 
 					try
 					{
@@ -2144,7 +2144,7 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					const deInt32	glFormat 	= accepted[i];
+					const deInt32	glFormat	= accepted[i];
 
 					try
 					{
@@ -2196,7 +2196,7 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					const deInt32	glFormat 	= accepted[i];
+					const deInt32	glFormat	= accepted[i];
 
 					try
 					{
@@ -2272,7 +2272,7 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					const deInt32	glFormat 	= accepted[i];
+					const deInt32	glFormat	= accepted[i];
 
 					try
 					{
@@ -2331,7 +2331,7 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					const deInt32	glFormat 	= accepted[i];
+					const deInt32	glFormat	= accepted[i];
 
 					try
 					{
@@ -2391,7 +2391,7 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					const deInt32	glFormat 	= accepted[i];
+					const deInt32	glFormat	= accepted[i];
 
 					try
 					{
@@ -2450,7 +2450,7 @@ void NegativeTextureApiTests::init (void)
 			{
 				for (int i = 0; i < (int)accepted.size(); i++)
 				{
-					const deInt32	glFormat 	= accepted[i];
+					const deInt32	glFormat	= accepted[i];
 
 					try
 					{

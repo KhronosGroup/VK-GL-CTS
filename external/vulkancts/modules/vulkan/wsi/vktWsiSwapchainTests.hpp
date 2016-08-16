@@ -1,5 +1,5 @@
-#ifndef _VKWSISWAPCHAINTESTS_HPP
-#define _VKWSISWAPCHAINTESTS_HPP
+#ifndef _VKTWSISWAPCHAINTESTS_HPP
+#define _VKTWSISWAPCHAINTESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -37,4 +37,4 @@ void	createSwapchainTests	(tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 } // wsi
 } // vkt
 
-#endif // _VKWSISWAPCHAINTESTS_HPP
+#endif // _VKTWSISWAPCHAINTESTS_HPP

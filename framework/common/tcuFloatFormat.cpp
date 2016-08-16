@@ -308,7 +308,7 @@ class Test
 protected:
 
 							Test		(MovePtr<FloatFormat> fmt) : m_fmt(fmt) {}
-	double					p			(int e) const	 			{ return deLdExp(1.0, e); }
+	double					p			(int e) const				{ return deLdExp(1.0, e); }
 	void					check		(const string&	expr,
 										 double			result,
 										 double			reference) const;

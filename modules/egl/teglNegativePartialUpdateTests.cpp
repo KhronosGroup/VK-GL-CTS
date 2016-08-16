@@ -240,7 +240,7 @@ TestCase::IterateResult NotPostableTest::iterate (void)
 	const Library&			egl				= m_eglTestCtx.getLibrary();
 	TestLog&				log				= m_testCtx.getLog();
 	CallLogWrapper			wrapper			(egl, log);
-	EGLint 					damageRegion[]	= { 10, 10, 10, 10 };
+	EGLint					damageRegion[]	= { 10, 10, 10, 10 };
 	int						bufferAge		= -1;
 
 	wrapper.enableLogging(true);
@@ -367,7 +367,7 @@ TestCase::IterateResult BufferPreservedTest::iterate (void)
 	const Library&			egl				= m_eglTestCtx.getLibrary();
 	TestLog&				log				= m_testCtx.getLog();
 	CallLogWrapper			wrapper			(egl, log);
-	EGLint 					damageRegion[]	= { 10, 10, 10, 10 };
+	EGLint					damageRegion[]	= { 10, 10, 10, 10 };
 	int						bufferAge		= -1;
 
 	wrapper.enableLogging(true);
@@ -400,7 +400,7 @@ TestCase::IterateResult SetTwiceTest::iterate (void)
 	const Library&			egl				= m_eglTestCtx.getLibrary();
 	TestLog&				log				= m_testCtx.getLog();
 	CallLogWrapper			wrapper			(egl, log);
-	EGLint 					damageRegion[]	= { 10, 10, 10, 10 };
+	EGLint					damageRegion[]	= { 10, 10, 10, 10 };
 	int						bufferAge		= -1;
 
 	wrapper.enableLogging(true);
@@ -435,7 +435,7 @@ TestCase::IterateResult NoAgeTest::iterate (void)
 	const Library&			egl				= m_eglTestCtx.getLibrary();
 	TestLog&				log				= m_testCtx.getLog();
 	CallLogWrapper			wrapper			(egl, log);
-	EGLint 					damageRegion[]	= { 10, 10, 10, 10 };
+	EGLint					damageRegion[]	= { 10, 10, 10, 10 };
 
 	wrapper.enableLogging(true);
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");

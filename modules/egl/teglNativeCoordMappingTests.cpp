@@ -555,7 +555,7 @@ void NativeCoordMappingCase::executeForConfig (EGLDisplay display, EGLConfig con
 	DE_ASSERT(m_nativeType != NATIVETYPE_WINDOW || windowFactory);
 	DE_ASSERT((m_nativeType != NATIVETYPE_PIXMAP && m_nativeType != NATIVETYPE_PBUFFER_COPY_TO_PIXMAP) || pixmapFactory);
 
-	eglu::UniqueContext 	context		(egl, display, createGLES2Context(egl, display, config));
+	eglu::UniqueContext		context		(egl, display, createGLES2Context(egl, display, config));
 	glw::Functions			gl;
 
 	m_eglTestCtx.initGLFunctions(&gl, glu::ApiType::es(2,0));

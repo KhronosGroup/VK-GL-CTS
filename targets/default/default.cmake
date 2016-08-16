@@ -1,7 +1,7 @@
 
 message("*** Default target")
 
-set(DEQP_TARGET_NAME 	"Default")
+set(DEQP_TARGET_NAME	"Default")
 
 # OpenGL (ES) & EGL tests do not require any libraries or headers
 set(DEQP_SUPPORT_GLES2	ON)

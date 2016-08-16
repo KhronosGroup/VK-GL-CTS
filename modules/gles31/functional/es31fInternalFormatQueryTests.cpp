@@ -64,8 +64,8 @@ FormatSamplesCase::FormatSamplesCase (Context& ctx, const char* name, const char
 	, m_internalFormat	(internalFormat)
 	, m_type			(type)
 {
-	DE_ASSERT(m_target == GL_TEXTURE_2D_MULTISAMPLE 		||
-			  m_target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY 	||
+	DE_ASSERT(m_target == GL_TEXTURE_2D_MULTISAMPLE			||
+			  m_target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY	||
 			  m_target == GL_RENDERBUFFER);
 }
 
@@ -207,7 +207,7 @@ FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
 class NumSampleCountsBufferCase : public TestCase
 {
 public:
-					NumSampleCountsBufferCase 	(Context& ctx, const char* name, const char* desc);
+					NumSampleCountsBufferCase	(Context& ctx, const char* name, const char* desc);
 
 private:
 	IterateResult	iterate						(void);
@@ -220,7 +220,7 @@ NumSampleCountsBufferCase::NumSampleCountsBufferCase (Context& ctx, const char* 
 
 NumSampleCountsBufferCase::IterateResult NumSampleCountsBufferCase::iterate (void)
 {
-	const glw::GLint 		defaultValue 	= -123; // queries always return positive values
+	const glw::GLint		defaultValue	= -123; // queries always return positive values
 	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
 	bool					error			= false;
 
@@ -266,7 +266,7 @@ NumSampleCountsBufferCase::IterateResult NumSampleCountsBufferCase::iterate (voi
 class SamplesBufferCase : public TestCase
 {
 public:
-					SamplesBufferCase 	(Context& ctx, const char* name, const char* desc);
+					SamplesBufferCase	(Context& ctx, const char* name, const char* desc);
 
 private:
 	IterateResult	iterate				(void);
@@ -279,7 +279,7 @@ SamplesBufferCase::SamplesBufferCase (Context& ctx, const char* name, const char
 
 SamplesBufferCase::IterateResult SamplesBufferCase::iterate (void)
 {
-	const glw::GLint 		defaultValue 	= -123; // queries always return positive values
+	const glw::GLint		defaultValue	= -123; // queries always return positive values
 	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
 	bool					error			= false;
 
@@ -461,8 +461,8 @@ void InternalFormatQueryTests::init (void)
 
 		addChild(group);
 
-		group->addChild(new NumSampleCountsBufferCase	(m_context, "num_sample_counts", 	"Query GL_NUM_SAMPLE_COUNTS to too short a buffer"));
-		group->addChild(new SamplesBufferCase			(m_context, "samples", 				"Query GL_SAMPLES to too short a buffer"));
+		group->addChild(new NumSampleCountsBufferCase	(m_context, "num_sample_counts",	"Query GL_NUM_SAMPLE_COUNTS to too short a buffer"));
+		group->addChild(new SamplesBufferCase			(m_context, "samples",				"Query GL_SAMPLES to too short a buffer"));
 	}
 }
 

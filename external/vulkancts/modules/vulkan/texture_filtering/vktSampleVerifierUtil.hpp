@@ -42,7 +42,7 @@ float		addUlp						(float							num,
 
 deInt32		mod							(const deInt32					a,
 										 const deInt32					n);
-deInt32	    mirror						(const deInt32 					n);
+deInt32	    mirror						(const deInt32					n);
 
 tcu::Vec2	calcLodBounds				(const tcu::Vec3&				dPdx,
 										 const tcu::Vec3&				dPdy,
@@ -81,25 +81,25 @@ void		calcCubemapFaceCoords		(const tcu::Vec3&				r,
 										 tcu::Vec2&						coordFace,
 										 tcu::Vec2&						dPdxFace,
 										 tcu::Vec2&						dPdyFace);
-int 		calcCandidateCubemapFaces	(const tcu::Vec3& 				r);
-deInt32 	wrapTexelCoord				(const deInt32					coord,
+int			calcCandidateCubemapFaces	(const tcu::Vec3&				r);
+deInt32		wrapTexelCoord				(const deInt32					coord,
 										 const int						size,
 										 const vk::VkSamplerAddressMode wrap);
-void 		wrapCubemapEdge 			(const tcu::IVec2&				coord,
-										 const tcu::IVec2& 				size,
+void		wrapCubemapEdge				(const tcu::IVec2&				coord,
+										 const tcu::IVec2&				size,
 										 const int						faceNdx,
 										 tcu::IVec2&					newCoord,
 										 int&							newFaceNdx);
-void 		wrapCubemapCorner 			(const tcu::IVec2& 				coord,
-										 const tcu::IVec2& 				size,
-										 const int 						faceNdx,
-										 int& 							adjacentFace1,
-										 int& 							adjacentFace2,
+void		wrapCubemapCorner			(const tcu::IVec2&				coord,
+										 const tcu::IVec2&				size,
+										 const int						faceNdx,
+										 int&							adjacentFace1,
+										 int&							adjacentFace2,
 										 tcu::IVec2&					cornerCoord0,
 										 tcu::IVec2&					cornerCoord1,
 										 tcu::IVec2&					cornerCoord2);
 
-void 		convertFormat 				(const void*					pixelPtr,
+void		convertFormat				(const void*					pixelPtr,
 										 tcu::TextureFormat				texFormat,
 										 tcu::FloatFormat				internalFormat,
 										 tcu::Vec4&						resultMin,

@@ -148,7 +148,7 @@ static tcu::TextureLevel getPixels (const glu::RenderContext& renderCtx, const I
 			  isUIntFormatType(colorBufferFormat.type)))
 	{
 		// signed and unsigned integers must be read using 32-bit values
-		const bool 			isSigned 	= isSIntFormatType(colorBufferFormat.type);
+		const bool			isSigned	= isSIntFormatType(colorBufferFormat.type);
 		tcu::TextureLevel	readResult	(tcu::TextureFormat(tcu::TextureFormat::RGBA,
 														    (isSigned) ? (tcu::TextureFormat::SIGNED_INT32) : (tcu::TextureFormat::UNSIGNED_INT32)),
 										 size.x(),

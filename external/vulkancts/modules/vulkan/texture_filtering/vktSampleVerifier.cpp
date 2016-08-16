@@ -92,7 +92,7 @@ void SampleVerifier::fetchTexelWrapped (const IVec3&	coord,
 										int				layer,
 										int				level,
 										Vec4&			resultMin,
-										Vec4& 			resultMax) const
+										Vec4&			resultMax) const
 {
     const void* pixelPtr = DE_NULL;
 
@@ -117,7 +117,7 @@ void SampleVerifier::fetchTexel (const IVec3&	coordIn,
 								 int			level,
 								 VkFilter		filter,
 								 Vec4&			resultMin,
-								 Vec4& 			resultMax) const
+								 Vec4&			resultMax) const
 {
 	IVec3 coord = coordIn;
 
@@ -279,7 +279,7 @@ void SampleVerifier::getFilteredSample1D (const IVec3&	texelBase,
 										  int			layer,
 										  int			level,
 										  Vec4&			resultMin,
-										  Vec4& 		resultMax) const
+										  Vec4&			resultMax) const
 {
 	Vec4 texelsMin[2];
 	Vec4 texelsMax[2];
@@ -321,7 +321,7 @@ void SampleVerifier::getFilteredSample2D (const IVec3&	texelBase,
 										  int			layer,
 										  int			level,
 										  Vec4&			resultMin,
-										  Vec4& 		resultMax) const
+										  Vec4&			resultMax) const
 {
 	Vec4 texelsMin[4];
 	Vec4 texelsMax[4];
@@ -370,7 +370,7 @@ void SampleVerifier::getFilteredSample3D (const IVec3&	texelBase,
 										  int			layer,
 										  int			level,
 										  Vec4&			resultMin,
-										  Vec4& 		resultMax) const
+										  Vec4&			resultMax) const
 {
 	Vec4 texelsMin[8];
 	Vec4 texelsMax[8];
@@ -427,7 +427,7 @@ void SampleVerifier::getFilteredSample (const IVec3&	texelBase,
 										int				layer,
 										int				level,
 										Vec4&			resultMin,
-										Vec4& 			resultMax) const
+										Vec4&			resultMax) const
 {
 	DE_ASSERT(layer < m_imParams.arrayLayers);
 	DE_ASSERT(level < m_imParams.levels);
@@ -448,7 +448,7 @@ void SampleVerifier::getFilteredSample (const IVec3&	texelBase,
 
 void SampleVerifier::getMipmapStepBounds (const Vec2&	lodFracBounds,
 										  deInt32&		stepMin,
-										  deInt32& 		stepMax) const
+										  deInt32&		stepMax) const
 {
 	DE_ASSERT(m_mipmapBits < 32);
 	const int mipmapSteps = ((int)1) << m_mipmapBits;
@@ -922,7 +922,7 @@ bool SampleVerifier::verifySampleImpl (const SampleArguments&	args,
 
 bool SampleVerifier::verifySampleReport (const SampleArguments&	args,
 										 const Vec4&			result,
-										 std::string& 			report) const
+										 std::string&			report) const
 {
 	std::ostringstream reportStream;
 

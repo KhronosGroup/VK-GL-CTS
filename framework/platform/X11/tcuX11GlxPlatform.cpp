@@ -130,7 +130,7 @@ public:
 
 	virtual void			processEvents		(void) {}
 	virtual void			getDimensions		(int* width, int* height) = 0;
-	int		 				getWidth			(void);
+	int						getWidth			(void);
 	int						getHeight			(void);
 	void					swapBuffers			(void) { glXSwapBuffers(getXDisplay(), getGLXDrawable()); }
 
@@ -149,7 +149,7 @@ public:
 							~GlxWindow			(void);
 	void					processEvents		(void) { m_x11Window.processEvents(); }
 	::Display*				getXDisplay			(void) { return m_x11Display.getXDisplay(); }
-	void	 				getDimensions		(int* width, int* height);
+	void					getDimensions		(int* width, int* height);
 
 protected:
 	GLXDrawable				getGLXDrawable		() { return m_GLXDrawable; }
@@ -163,7 +163,7 @@ private:
 class GlxRenderContext : public RenderContext
 {
 public:
-										GlxRenderContext 	(const GlxContextFactory&	factory,
+										GlxRenderContext	(const GlxContextFactory&	factory,
 															 const RenderConfig&		config);
 										~GlxRenderContext	(void);
 	virtual ContextType					getType				(void) const;

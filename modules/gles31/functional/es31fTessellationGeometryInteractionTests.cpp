@@ -3233,7 +3233,7 @@ void TessellationGeometryInteractionTests::init (void)
 			PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_CONTROL_SET,
 			PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_EVALUATION_SET,
 			PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_DONT_SET,
-			PointSizeCase::FLAG_VERTEX_SET 	|															PointSizeCase::FLAG_GEOMETRY_SET,
+			PointSizeCase::FLAG_VERTEX_SET	|															PointSizeCase::FLAG_GEOMETRY_SET,
 			PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_EVALUATION_SET		|	PointSizeCase::FLAG_GEOMETRY_SET,
 			PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_ADD				|	PointSizeCase::FLAG_GEOMETRY_ADD,
 			PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_EVALUATION_SET		|	PointSizeCase::FLAG_GEOMETRY_DONT_SET,

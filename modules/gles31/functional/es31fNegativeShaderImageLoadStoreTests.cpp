@@ -107,16 +107,16 @@ std::string getShaderImageLayoutQualifier (const tcu::TextureFormat& format)
 
 	switch (format.type)
 	{
-		case tcu::TextureFormat::FLOAT: 			qualifier << "32f";			break;
-		case tcu::TextureFormat::HALF_FLOAT: 		qualifier << "16f";			break;
-		case tcu::TextureFormat::UNORM_INT8: 		qualifier << "8";			break;
-		case tcu::TextureFormat::SNORM_INT8: 		qualifier << "8_snorm";		break;
-		case tcu::TextureFormat::SIGNED_INT32: 		qualifier << "32i";			break;
-		case tcu::TextureFormat::SIGNED_INT16: 		qualifier << "16i";			break;
-		case tcu::TextureFormat::SIGNED_INT8: 		qualifier << "8i";			break;
-		case tcu::TextureFormat::UNSIGNED_INT32: 	qualifier << "32ui";		break;
-		case tcu::TextureFormat::UNSIGNED_INT16: 	qualifier << "16ui";		break;
-		case tcu::TextureFormat::UNSIGNED_INT8: 	qualifier << "8ui";			break;
+		case tcu::TextureFormat::FLOAT:				qualifier << "32f";			break;
+		case tcu::TextureFormat::HALF_FLOAT:		qualifier << "16f";			break;
+		case tcu::TextureFormat::UNORM_INT8:		qualifier << "8";			break;
+		case tcu::TextureFormat::SNORM_INT8:		qualifier << "8_snorm";		break;
+		case tcu::TextureFormat::SIGNED_INT32:		qualifier << "32i";			break;
+		case tcu::TextureFormat::SIGNED_INT16:		qualifier << "16i";			break;
+		case tcu::TextureFormat::SIGNED_INT8:		qualifier << "8i";			break;
+		case tcu::TextureFormat::UNSIGNED_INT32:	qualifier << "32ui";		break;
+		case tcu::TextureFormat::UNSIGNED_INT16:	qualifier << "16ui";		break;
+		case tcu::TextureFormat::UNSIGNED_INT8:		qualifier << "8ui";			break;
 		default:
 			DE_ASSERT(false);
 			return std::string("");
@@ -134,7 +134,7 @@ std::string getShaderImageTypeDeclaration (const tcu::TextureFormat& format, gls
 		case tcu::TextureFormat::FLOAT:
 		case tcu::TextureFormat::HALF_FLOAT:
 		case tcu::TextureFormat::UNORM_INT8:
-		case tcu::TextureFormat::SNORM_INT8: 		declaration << "";		break;
+		case tcu::TextureFormat::SNORM_INT8:		declaration << "";		break;
 
 		case tcu::TextureFormat::SIGNED_INT32:
 		case tcu::TextureFormat::SIGNED_INT16:
@@ -351,7 +351,7 @@ std::string getFunctionName (ImageOperation function)
 
 std::string generateShaderSource (ImageOperation function, MemoryQualifier memory, gls::TextureTestUtil::TextureType imageType, const tcu::TextureFormat& format, glu::ShaderType shaderType)
 {
-	const char* shaderTemplate = 	"${GLSL_VERSION_DECL}\n"
+	const char* shaderTemplate =	"${GLSL_VERSION_DECL}\n"
 									"${GLSL_TYPE_EXTENSION}\n"
 									"${GLSL_FUNCTION_EXTENSION}\n"
 									"${GEOMETRY_SHADER_LAYOUT}\n"
@@ -386,7 +386,7 @@ void testShader (NegativeTestContext& ctx, ImageOperation function, MemoryQualif
 		if (ctx.isShaderSupported(s_shaders[ndx]))
 		{
 			ctx.beginSection(std::string("Verify shader: ") + glu::getShaderTypeName(s_shaders[ndx]));
-			std::string 				shaderSource(generateShaderSource(function, memory, imageType, format, s_shaders[ndx]));
+			std::string					shaderSource(generateShaderSource(function, memory, imageType, format, s_shaders[ndx]));
 			const glu::ShaderProgram	program(ctx.getRenderContext(), glu::ProgramSources() << glu::ShaderSource(s_shaders[ndx], shaderSource));
 			if (program.getShaderInfo(s_shaders[ndx]).compileOk)
 			{

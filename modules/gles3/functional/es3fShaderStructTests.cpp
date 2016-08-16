@@ -185,7 +185,7 @@ void LocalStructTests::init (void)
 {
 	#define LOCAL_STRUCT_CASE(NAME, DESCRIPTION, SHADER_SRC, EVAL_FUNC_BODY)																	\
 		do {																																	\
-			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };	/* NOLINT(EVAL_FUNC_BODY) */ 						\
+			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };	/* NOLINT(EVAL_FUNC_BODY) */						\
 			addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, true, false, &Eval_##NAME::eval, DE_NULL, SHADER_SRC));			\
 			addChild(createStructCase(m_context, #NAME "_fragment", DESCRIPTION, false, false,&Eval_##NAME::eval, DE_NULL, SHADER_SRC));		\
 		} while (deGetFalse())

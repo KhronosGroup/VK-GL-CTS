@@ -213,26 +213,26 @@ void LightAmountTest::init (void)
 	addChild(new LightAmountCase(m_context, "12omni",			0,		12,		0	));
 	addChild(new LightAmountCase(m_context, "14omni",			0,		14,		0	));
 	addChild(new LightAmountCase(m_context, "16omni",			0,		16,		0	));
-// 	addChild(new LightAmountCase(m_context, "1spot",			0,		0,		1	));
-// 	addChild(new LightAmountCase(m_context, "2spot",			0,		0,		2	));
-// 	addChild(new LightAmountCase(m_context, "4spot",			0,		0,		4	));
-// 	addChild(new LightAmountCase(m_context, "6spot",			0,		0,		6	));
-// 	addChild(new LightAmountCase(m_context, "8spot",			0,		0,		8	));
-// 	addChild(new LightAmountCase(m_context, "1dir_1omni",		1,		1,		0	));
-// 	addChild(new LightAmountCase(m_context, "2dir_2omni",		2,		2,		0	));
-// 	addChild(new LightAmountCase(m_context, "4dir_4omni",		4,		4,		0	));
-// 	addChild(new LightAmountCase(m_context, "1dir_1spot",		1,		0,		1	));
-// 	addChild(new LightAmountCase(m_context, "2dir_2spot",		2,		0,		2	));
-// 	addChild(new LightAmountCase(m_context, "4dir_4spot",		4,		0,		4	));
-// 	addChild(new LightAmountCase(m_context, "1omni_1spot",		0,		1,		1	));
-// 	addChild(new LightAmountCase(m_context, "2omni_2spot",		0,		2,		2	));
-// 	addChild(new LightAmountCase(m_context, "4omni_4spot",		0,		4,		4	));
-// 	addChild(new LightAmountCase(m_context, "1dir_1omni_1spot",	1,		1,		1	));
-// 	addChild(new LightAmountCase(m_context, "2dir_2omni_2spot",	2,		2,		2	));
-// 	addChild(new LightAmountCase(m_context, "4dir_2omni_2spot",	4,		2,		2	));
-// 	addChild(new LightAmountCase(m_context, "2dir_4omni_2spot",	2,		4,		2	));
-// 	addChild(new LightAmountCase(m_context, "2dir_2omni_4spot",	2,		2,		4	));
-// 	addChild(new LightAmountCase(m_context, "4dir_4omni_4spot",	4,		4,		4	));
+//	addChild(new LightAmountCase(m_context, "1spot",			0,		0,		1	));
+//	addChild(new LightAmountCase(m_context, "2spot",			0,		0,		2	));
+//	addChild(new LightAmountCase(m_context, "4spot",			0,		0,		4	));
+//	addChild(new LightAmountCase(m_context, "6spot",			0,		0,		6	));
+//	addChild(new LightAmountCase(m_context, "8spot",			0,		0,		8	));
+//	addChild(new LightAmountCase(m_context, "1dir_1omni",		1,		1,		0	));
+//	addChild(new LightAmountCase(m_context, "2dir_2omni",		2,		2,		0	));
+//	addChild(new LightAmountCase(m_context, "4dir_4omni",		4,		4,		0	));
+//	addChild(new LightAmountCase(m_context, "1dir_1spot",		1,		0,		1	));
+//	addChild(new LightAmountCase(m_context, "2dir_2spot",		2,		0,		2	));
+//	addChild(new LightAmountCase(m_context, "4dir_4spot",		4,		0,		4	));
+//	addChild(new LightAmountCase(m_context, "1omni_1spot",		0,		1,		1	));
+//	addChild(new LightAmountCase(m_context, "2omni_2spot",		0,		2,		2	));
+//	addChild(new LightAmountCase(m_context, "4omni_4spot",		0,		4,		4	));
+//	addChild(new LightAmountCase(m_context, "1dir_1omni_1spot",	1,		1,		1	));
+//	addChild(new LightAmountCase(m_context, "2dir_2omni_2spot",	2,		2,		2	));
+//	addChild(new LightAmountCase(m_context, "4dir_2omni_2spot",	4,		2,		2	));
+//	addChild(new LightAmountCase(m_context, "2dir_4omni_2spot",	2,		4,		2	));
+//	addChild(new LightAmountCase(m_context, "2dir_2omni_4spot",	2,		2,		4	));
+//	addChild(new LightAmountCase(m_context, "4dir_4omni_4spot",	4,		4,		4	));
 }
 
 } // Functional

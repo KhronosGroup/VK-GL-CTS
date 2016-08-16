@@ -98,7 +98,7 @@ public:
 
 		Parameters (deUint32					baseMipLevel_		= 0,
 					vk::VkComponentMapping		componentMapping_	= vk::makeComponentMappingRGBA(),
-					vk::VkSampleCountFlagBits	samples_			= vk::VK_SAMPLE_COUNT_1_BIT, 
+					vk::VkSampleCountFlagBits	samples_			= vk::VK_SAMPLE_COUNT_1_BIT,
 					Init						initialization_		= INIT_UPLOAD_DATA)
 			: baseMipLevel		(baseMipLevel_)
 			, componentMapping	(componentMapping_)
