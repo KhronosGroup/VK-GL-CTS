@@ -47,8 +47,8 @@ struct qpWatchDog_s
 {
 	qpWatchDogFunc		timeOutFunc;
 	void*				timeOutUserPtr;
-	int					totalTimeLimit;			/* Total test case time limit in seconds 	*/
-	int					intervalTimeLimit;		/* Iteration length limit in seconds 		*/
+	int					totalTimeLimit;			/* Total test case time limit in seconds	*/
+	int					intervalTimeLimit;		/* Iteration length limit in seconds		*/
 
 	volatile deUint64	resetTime;
 	volatile deUint64	lastTouchTime;

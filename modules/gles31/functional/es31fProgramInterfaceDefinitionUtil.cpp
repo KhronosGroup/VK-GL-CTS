@@ -1233,7 +1233,7 @@ static int getFragmentOutputMaxLocation (const ProgramInterfaceDefinition::Shade
 		if (shader->getDefaultBlock().variables[ndx].storage == glu::STORAGE_OUT)
 		{
 			// missing location qualifier means location == 0
-			const int outputLocation 		= (shader->getDefaultBlock().variables[ndx].layout.location == -1)
+			const int outputLocation		= (shader->getDefaultBlock().variables[ndx].layout.location == -1)
 												? (0)
 												: (shader->getDefaultBlock().variables[ndx].layout.location);
 

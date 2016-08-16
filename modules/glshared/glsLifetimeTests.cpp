@@ -722,7 +722,7 @@ public:
 							LifeTest					(const char*	name,
 														 const char*	description,
 														 Type&			type,
-														 TestFunction 	test)
+														 TestFunction	test)
 								: TestBase		(name, description, type.getContext())
 								, m_type		(type)
 								, m_test		(test) {}

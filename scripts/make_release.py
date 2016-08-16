@@ -179,7 +179,7 @@ class FileTargetGroup:
 		fullDstPath		= os.path.normpath(os.path.join(packageBuildInfo.dstBasePath, self.dstBasePath))
 
 		allFiles		= getFileList(fullSrcPath)
-		targets		 	= createFileTargets(fullSrcPath, fullDstPath, allFiles, self.filters)
+		targets			= createFileTargets(fullSrcPath, fullDstPath, allFiles, self.filters)
 
 		# Make all file targets
 		for file in targets:
@@ -376,14 +376,14 @@ BASE = Module("Base", [
 	makeFileCopyGroup	("targets",									"src/targets",							TARGET_PATTERNS),
 	makeFileCopyGroup	("execserver",								"src/execserver",						SRC_FILE_PATTERNS),
 	makeFileCopyGroup	("executor",								"src/executor",							SRC_FILE_PATTERNS),
-	makeFileCopy		("modules/CMakeLists.txt", 					"src/modules/CMakeLists.txt"),
-	makeFileCopyGroup	("external", 								"src/external",							["CMakeLists.txt", "*.py"]),
+	makeFileCopy		("modules/CMakeLists.txt",					"src/modules/CMakeLists.txt"),
+	makeFileCopyGroup	("external",								"src/external",							["CMakeLists.txt", "*.py"]),
 
 	# Stylesheet for displaying test logs on browser
 	makeFileCopyGroup	("doc/testlog-stylesheet",					"doc/testlog-stylesheet",				["*"]),
 
 	# Non-optional parts of framework
-	makeFileCopy		("framework/CMakeLists.txt", 				"src/framework/CMakeLists.txt"),
+	makeFileCopy		("framework/CMakeLists.txt",				"src/framework/CMakeLists.txt"),
 	makeFileCopyGroup	("framework/delibs",						"src/framework/delibs",					SRC_FILE_PATTERNS),
 	makeFileCopyGroup	("framework/common",						"src/framework/common",					SRC_FILE_PATTERNS),
 	makeFileCopyGroup	("framework/qphelper",						"src/framework/qphelper",				SRC_FILE_PATTERNS),
@@ -424,19 +424,19 @@ GLSHARED = Module("Shared GL Tests", [
 
 GLES2 = Module("GLES2", [
 	makeFileCopyGroup	("modules/gles2",							"src/modules/gles2",					SRC_FILE_PATTERNS),
-	makeFileCopyGroup	("data/gles2",								"src/data/gles2", 						["*.*"]),
+	makeFileCopyGroup	("data/gles2",								"src/data/gles2",						["*.*"]),
 	makeFileCopyGroup	("doc/testspecs/GLES2",						"doc/testspecs/GLES2",					["*.txt"])
 ])
 
 GLES3 = Module("GLES3", [
 	makeFileCopyGroup	("modules/gles3",							"src/modules/gles3",					SRC_FILE_PATTERNS),
-	makeFileCopyGroup	("data/gles3",								"src/data/gles3", 						["*.*"]),
+	makeFileCopyGroup	("data/gles3",								"src/data/gles3",						["*.*"]),
 	makeFileCopyGroup	("doc/testspecs/GLES3",						"doc/testspecs/GLES3",					["*.txt"])
 ])
 
 GLES31 = Module("GLES31", [
 	makeFileCopyGroup	("modules/gles31",							"src/modules/gles31",					SRC_FILE_PATTERNS),
-	makeFileCopyGroup	("data/gles31",								"src/data/gles31", 						["*.*"]),
+	makeFileCopyGroup	("data/gles31",								"src/data/gles31",						["*.*"]),
 	makeFileCopyGroup	("doc/testspecs/GLES31",					"doc/testspecs/GLES31",					["*.txt"])
 ])
 
@@ -446,7 +446,7 @@ EGL = Module("EGL", [
 
 INTERNAL = Module("Internal", [
 	makeFileCopyGroup	("modules/internal",						"src/modules/internal",					SRC_FILE_PATTERNS),
-	makeFileCopyGroup	("data/internal",							"src/data/internal", 					["*.*"]),
+	makeFileCopyGroup	("data/internal",							"src/data/internal",					["*.*"]),
 ])
 
 EXTERNAL_SRCS = Module("External sources", [

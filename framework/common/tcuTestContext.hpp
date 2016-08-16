@@ -68,7 +68,7 @@ public:
 	void					setCurrentArchive	(Archive& archive)	{ m_curArchive = &archive;	}
 
 	void					setTerminateAfter	(bool terminate)	{ m_terminateAfter = terminate;	}
-	bool					getTerminateAfter	(void) const		{ return m_terminateAfter; 		}
+	bool					getTerminateAfter	(void) const		{ return m_terminateAfter;		}
 
 protected:
 							TestContext			(const TestContext&);

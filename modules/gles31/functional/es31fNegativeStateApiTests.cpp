@@ -538,7 +538,7 @@ void get_nuniformfv (NegativeTestContext& ctx)
 	GLfloat				params[4]		= { 0.0f, 0.0f, 0.0f, 0.0f };
 	GLuint				shader;
 	GLuint				programEmpty;
-	GLsizei 			bufferSize;
+	GLsizei				bufferSize;
 
 	ctx.glUseProgram(program.getProgram());
 
@@ -954,7 +954,7 @@ void get_uniform_indices (NegativeTestContext& ctx)
 {
 	GLuint				shader			= ctx.glCreateShader(GL_VERTEX_SHADER);
 	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
-	GLint 				numActiveBlocks	= -1;
+	GLint				numActiveBlocks	= -1;
 	const GLchar*		uniformName		= "Block.blockVar";
 	GLuint				uniformIndices	= -1;
 	GLuint				invalid			= -1;

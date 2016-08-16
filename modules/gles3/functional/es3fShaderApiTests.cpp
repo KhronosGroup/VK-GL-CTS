@@ -443,7 +443,7 @@ class SimpleProgramCase : public ApiCase
 {
 public:
 	SimpleProgramCase (Context& context, const char* name, const char* desc)
-		: ApiCase 		(context, name, desc)
+		: ApiCase		(context, name, desc)
 		, m_vertShader	(0)
 		, m_fragShader	(0)
 		, m_program		(0)

@@ -78,7 +78,7 @@ tcu::TestCaseGroup* createSparseResourcesShaderIntrinsicsTests (tcu::TestContext
 		for (deInt32 imageTypeNdx = 0; imageTypeNdx < DE_LENGTH_OF_ARRAY(imageParametersArray); ++imageTypeNdx)
 		{
 			const ImageType					imageType = imageParametersArray[imageTypeNdx].imageType;
-			de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, (getImageTypeName(imageType) + functions[functionNdx]).c_str(), "")); 
+			de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, (getImageTypeName(imageType) + functions[functionNdx]).c_str(), ""));
 
 			for (deInt32 formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); ++formatNdx)
 			{

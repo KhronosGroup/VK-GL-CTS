@@ -51,11 +51,11 @@ end
 
 class ReservedOperatorCase(ShaderCase):
 	def __init__(self, op):
-		self.name 		= op.name
+		self.name		= op.name
 		if op.operator == "~":
 			self.operation = 'value = ~value;'
 		else:
-			self.operation 	= 'value ' + op.operator + ' 1;'
+			self.operation	= 'value ' + op.operator + ' 1;'
 
 	def __str__(self):
 		params = {
@@ -67,8 +67,8 @@ class ReservedOperatorCase(ShaderCase):
 
 class Operator():
 	def __init__(self, operator, name):
-		self.operator 	= operator
-		self.name 		= name
+		self.operator	= operator
+		self.name		= name
 
 # Declarations
 
@@ -93,10 +93,10 @@ RESERVED_OPERATORS = [
 reservedOperatorCases = []
 
 for operator in RESERVED_OPERATORS:
-	reservedOperatorCases.append(ReservedOperatorCase(operator)) 		# Reserved operators
+	reservedOperatorCases.append(ReservedOperatorCase(operator))		# Reserved operators
 
 # Main program
 
 if __name__ == "__main__":
 	print "Generating shader case files."
-	writeAllCases("reserved_operators.test", 	reservedOperatorCases)
+	writeAllCases("reserved_operators.test",	reservedOperatorCases)

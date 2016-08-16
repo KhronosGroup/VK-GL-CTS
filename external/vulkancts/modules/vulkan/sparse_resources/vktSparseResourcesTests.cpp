@@ -49,7 +49,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	sparseTests->addChild(createBufferSparseMemoryAliasingTests(testCtx));
 	sparseTests->addChild(createImageSparseMemoryAliasingTests(testCtx));
 	sparseTests->addChild(createSparseResourcesShaderIntrinsicsTests(testCtx));
-	
+
 	return sparseTests.release();
 }
 

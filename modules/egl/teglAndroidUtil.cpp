@@ -103,7 +103,7 @@ class AndroidNativeImageSource : public ImageSource
 public:
 							AndroidNativeImageSource	(GLenum format) : m_format(format), m_libui(DE_NULL) {}
 							~AndroidNativeImageSource	(void);
-	MovePtr<ClientBuffer>	createBuffer 				(const glw::Functions&, Texture2D*) const;
+	MovePtr<ClientBuffer>	createBuffer				(const glw::Functions&, Texture2D*) const;
 	string					getRequiredExtension		(void) const { return "EGL_ANDROID_image_native_buffer"; }
 	EGLImageKHR				createImage					(const Library& egl, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
 	GLenum					getEffectiveFormat			(void) const { return m_format; }
@@ -163,7 +163,7 @@ MovePtr<ClientBuffer> AndroidNativeImageSource::createBuffer (const glw::Functio
 EGLImageKHR AndroidNativeImageSource::createImage (const Library& egl, EGLDisplay dpy, EGLContext, EGLClientBuffer clientBuffer) const
 {
 	static const EGLint attribs[] = { EGL_IMAGE_PRESERVED_KHR, EGL_TRUE, EGL_NONE };
-	const EGLImageKHR	image 		= egl.createImageKHR(dpy, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, clientBuffer, attribs);
+	const EGLImageKHR	image		= egl.createImageKHR(dpy, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, clientBuffer, attribs);
 
 	EGLU_CHECK_MSG(egl, "eglCreateImageKHR()");
 	return image;

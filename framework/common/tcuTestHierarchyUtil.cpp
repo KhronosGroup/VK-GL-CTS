@@ -137,7 +137,7 @@ void writeXmlCaselistsToFiles (TestPackageRoot& root, TestContext& testCtx, cons
 		DE_ASSERT(iter.getState() == TestHierarchyIterator::STATE_ENTER_NODE &&
 				  node->getNodeType() == NODETYPE_PACKAGE);
 
-		FILE* 			file 	= DE_NULL;
+		FILE*			file	= DE_NULL;
 		qpXmlWriter*	writer	= DE_NULL;
 
 		try

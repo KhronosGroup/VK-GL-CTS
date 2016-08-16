@@ -51,11 +51,11 @@ end
 
 class IdentifierCase(ShaderCase):
 	def __init__(self, name, identifier):
-		self.name 		= name
+		self.name		= name
 		self.identifier = identifier
 
 	def __str__(self):
-		params = { 	"NAME"			: self.name,
+		params = {	"NAME"			: self.name,
 					"IDENTIFIER"	: self.identifier }
 		return fillTemplate(identifierCaseTemplate, params)
 
@@ -80,33 +80,33 @@ RESERVED_KEYWORDS = [
 ]
 
 INVALID_IDENTIFIERS = [
-	("two_underscores_begin", 	"__invalid"),
-	("two_underscores_middle", 	"in__valid"),
+	("two_underscores_begin",	"__invalid"),
+	("two_underscores_middle",	"in__valid"),
 	("two_underscores_end",		"invalid__"),
-	("gl_begin", 				"gl_Invalid"),
-	("digit", 					"0123"),
+	("gl_begin",				"gl_Invalid"),
+	("digit",					"0123"),
 	("digit_begin",				"0invalid")
 ]
 
 # Keyword usage
 
-keywords 			= []
-reservedKeywords 	= []
-invalidIdentifiers 	= []
+keywords			= []
+reservedKeywords	= []
+invalidIdentifiers	= []
 
 for keyword in KEYWORDS:
-	keywords.append(IdentifierCase(keyword, keyword)) 			# Keywords
+	keywords.append(IdentifierCase(keyword, keyword))			# Keywords
 
 for keyword in RESERVED_KEYWORDS:
-	reservedKeywords.append(IdentifierCase(keyword, keyword)) 	# Reserved keywords
+	reservedKeywords.append(IdentifierCase(keyword, keyword))	# Reserved keywords
 
 for (name, identifier) in INVALID_IDENTIFIERS:
 	invalidIdentifiers.append(IdentifierCase(name, identifier)) # Invalid identifiers
 
 keywordCases = [
-	CaseGroup("keywords", 				"Usage of keywords as identifiers.", 			keywords),
-	CaseGroup("reserved_keywords",		"Usage of reserved keywords as identifiers.", 	reservedKeywords),
-	CaseGroup("invalid_identifiers",	"Usage of invalid identifiers.", 				invalidIdentifiers)
+	CaseGroup("keywords",				"Usage of keywords as identifiers.",			keywords),
+	CaseGroup("reserved_keywords",		"Usage of reserved keywords as identifiers.",	reservedKeywords),
+	CaseGroup("invalid_identifiers",	"Usage of invalid identifiers.",				invalidIdentifiers)
 ]
 
 # Main program

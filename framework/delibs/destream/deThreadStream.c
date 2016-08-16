@@ -145,7 +145,7 @@ void deThreadInStream_init (deInStream* stream, deInStream* input, int ringbuffe
 	deConsumerStream_init(&(threadStream->consumerStream), threadStream->ringbuffer);
 
 	threadStream->thread		= deThread_create(inStreamCopy, threadStream, DE_NULL);
-	stream->ioStream.vfTable 	= &threadInStreamVFTable;
+	stream->ioStream.vfTable	= &threadInStreamVFTable;
 	stream->ioStream.streamData = threadStream;
 }
 
@@ -201,7 +201,7 @@ void deThreadOutStream_init (deOutStream* stream, deOutStream* output, int ringb
 	deConsumerStream_init(&(threadStream->consumerStream), threadStream->ringbuffer);
 
 	threadStream->thread		= deStreamCpyThread_create(&(threadStream->consumerStream), output, ringbufferBlockSize);
-	stream->ioStream.vfTable 	= &threadOutStreamVFTable;
+	stream->ioStream.vfTable	= &threadOutStreamVFTable;
 	stream->ioStream.streamData = threadStream;
 }
 

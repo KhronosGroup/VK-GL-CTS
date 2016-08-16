@@ -1410,8 +1410,8 @@ void ComputeShaderGeneratedCase::createDrawData (void)
 		for (int y = 0; y < m_gridSize; ++y)
 		for (int x = 0; x < m_gridSize; ++x)
 		{
-			const float 		posX		= ((float)x / (float)m_gridSize) * 2.0f - 1.0f;
-			const float 		posY		= ((float)y / (float)m_gridSize) * 2.0f - 1.0f;
+			const float			posX		= ((float)x / (float)m_gridSize) * 2.0f - 1.0f;
+			const float			posY		= ((float)y / (float)m_gridSize) * 2.0f - 1.0f;
 			const float			cellSize	= 2.0f / (float)m_gridSize;
 			const tcu::Vec4&	color		= ((x + y)%2) ? (yellow) : (green);
 
@@ -1444,8 +1444,8 @@ void ComputeShaderGeneratedCase::createDrawData (void)
 		for (int y = 0; y < m_gridSize+1; ++y)
 		for (int x = 0; x < m_gridSize+1; ++x)
 		{
-			const float 		posX		= ((float)x / (float)m_gridSize) * 2.0f - 1.0f;
-			const float 		posY		= ((float)y / (float)m_gridSize) * 2.0f - 1.0f;
+			const float			posX		= ((float)x / (float)m_gridSize) * 2.0f - 1.0f;
+			const float			posY		= ((float)y / (float)m_gridSize) * 2.0f - 1.0f;
 
 			buffer[(y * (m_gridSize+1) + x) * 4 + 0] = tcu::Vec4(posX, posY, 0.0f, 1.0f);
 			buffer[(y * (m_gridSize+1) + x) * 4 + 1] = green;

@@ -193,7 +193,7 @@ struct DrawTestSpec
 		OutputType				outputType;
 		Storage					storage;
 		Usage					usage;
-		int 					componentCount;
+		int						componentCount;
 		int						offset;
 		int						stride;
 		bool					normalize;
@@ -211,7 +211,7 @@ struct DrawTestSpec
 		bool					isBufferStrideAligned	(void) const;
 	};
 
-	std::string 				getName				(void) const;
+	std::string					getName				(void) const;
 	std::string					getDesc				(void) const;
 	std::string					getMultilineDesc	(void) const;
 

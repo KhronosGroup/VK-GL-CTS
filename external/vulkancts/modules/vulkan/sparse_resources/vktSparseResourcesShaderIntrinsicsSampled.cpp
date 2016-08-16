@@ -136,7 +136,7 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "%type_void = OpTypeVoid\n"
 		<< "%type_void_func = OpTypeFunction %type_void\n"
 
-		<< "%type_bool 							= OpTypeBool\n"
+		<< "%type_bool							= OpTypeBool\n"
 		<< "%type_int							= OpTypeInt 32 1\n"
 		<< "%type_uint							= OpTypeInt 32 0\n"
 		<< "%type_float							= OpTypeFloat 32\n"
@@ -145,8 +145,8 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "%type_vec4							= OpTypeVector %type_float 4\n"
 		<< "%type_uniformblock_lod				= OpTypeStruct %type_uint\n"
 		<< "%type_img_comp						= " << getOpTypeImageComponent(m_format) << "\n"
-		<< "%type_img_comp_vec4 				= OpTypeVector %type_img_comp 4\n"
-		<< "%type_struct_int_img_comp_vec4 		= OpTypeStruct %type_int %type_img_comp_vec4\n"
+		<< "%type_img_comp_vec4					= OpTypeVector %type_img_comp 4\n"
+		<< "%type_struct_int_img_comp_vec4		= OpTypeStruct %type_int %type_img_comp_vec4\n"
 
 		<< "%type_input_vec3					= OpTypePointer Input %type_vec3\n"
 		<< "%type_input_float					= OpTypePointer Input %type_float\n"
@@ -154,7 +154,7 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "%type_output_img_comp_vec4			= OpTypePointer Output %type_img_comp_vec4\n"
 		<< "%type_output_uint					= OpTypePointer Output %type_uint\n"
 
-		<< "%type_function_int 					= OpTypePointer Function %type_int\n"
+		<< "%type_function_int					= OpTypePointer Function %type_int\n"
 		<< "%type_function_img_comp				= OpTypePointer Function %type_img_comp\n"
 		<< "%type_function_img_comp_vec4		= OpTypePointer Function %type_img_comp_vec4\n"
 		<< "%type_function_int_img_comp_vec4	= OpTypePointer Function %type_struct_int_img_comp_vec4\n"
@@ -177,18 +177,18 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 
 		// Declare constants
 		<< "%constant_uint_0				= OpConstant %type_uint 0\n"
-		<< "%constant_uint_1 				= OpConstant %type_uint 1\n"
-		<< "%constant_uint_2 				= OpConstant %type_uint 2\n"
-		<< "%constant_uint_3 				= OpConstant %type_uint 3\n"
-		<< "%constant_int_0  				= OpConstant %type_int  0\n"
-		<< "%constant_int_1  				= OpConstant %type_int  1\n"
-		<< "%constant_int_2  				= OpConstant %type_int  2\n"
-		<< "%constant_int_3  				= OpConstant %type_int  3\n"
-		<< "%constant_texel_resident 		= OpConstant %type_uint " << MEMORY_BLOCK_BOUND_VALUE << "\n"
+		<< "%constant_uint_1				= OpConstant %type_uint 1\n"
+		<< "%constant_uint_2				= OpConstant %type_uint 2\n"
+		<< "%constant_uint_3				= OpConstant %type_uint 3\n"
+		<< "%constant_int_0					= OpConstant %type_int  0\n"
+		<< "%constant_int_1					= OpConstant %type_int  1\n"
+		<< "%constant_int_2					= OpConstant %type_int  2\n"
+		<< "%constant_int_3					= OpConstant %type_int  3\n"
+		<< "%constant_texel_resident		= OpConstant %type_uint " << MEMORY_BLOCK_BOUND_VALUE << "\n"
 		<< "%constant_texel_not_resident	= OpConstant %type_uint " << MEMORY_BLOCK_NOT_BOUND_VALUE << "\n"
 
 		// Call main function
-		<< "%func_main 		 = OpFunction %type_void None %type_void_func\n"
+		<< "%func_main		 = OpFunction %type_void None %type_void_func\n"
 		<< "%label_func_main = OpLabel\n"
 
 		<< "%local_image_sparse = OpLoad %type_sampled_image_sparse %uniformconst_image_sparse\n"
@@ -197,7 +197,7 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "%local_texCoord_y = OpCompositeExtract %type_float %varying_texCoord 1\n"
 		<< "%local_texCoord_z = OpCompositeExtract %type_float %varying_texCoord 2\n"
 
-		<< "%local_texCoord_xy 	= OpCompositeConstruct %type_vec2 %local_texCoord_x %local_texCoord_y\n"
+		<< "%local_texCoord_xy	= OpCompositeConstruct %type_vec2 %local_texCoord_x %local_texCoord_y\n"
 		<< "%local_texCoord_xyz = OpCompositeConstruct %type_vec3 %local_texCoord_x %local_texCoord_y %local_texCoord_z\n"
 
 		<< "%access_uniformblock_member_uint_lod = OpAccessChain %type_pushconstant_uniformblock_member_lod %uniformblock_lod_instance %constant_int_0\n"
@@ -231,7 +231,7 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 
 		<< "OpBranch %branch_texel_resident\n"
 		<< "%branch_texel_resident = OpLabel\n"
-		
+
 		<< "OpReturn\n"
 		<< "OpFunctionEnd\n";
 
@@ -371,7 +371,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 	if (!checkImageFormatFeatureSupport(instance, physicalDevice, imageSparseInfo.format, VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
 		TCU_THROW(NotSupportedError, "Device does not support image format for sampled images");
 
-	// Check if device supports image format for color attachment 
+	// Check if device supports image format for color attachment
 	if (!checkImageFormatFeatureSupport(instance, physicalDevice, imageSparseInfo.format, VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT))
 		TCU_THROW(NotSupportedError, "Device does not support image format for color attachment");
 
@@ -384,7 +384,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 
 	vertexData.push_back(tcu::Vec2(-1.0f,-1.0f));
 	vertexData.push_back(tcu::Vec2( 0.0f, 0.0f));
-	
+
 	vertexData.push_back(tcu::Vec2(-1.0f, 1.0f));
 	vertexData.push_back(tcu::Vec2( 0.0f, 1.0f));
 
@@ -409,7 +409,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 
 	vertexBuffer = de::SharedPtr<Buffer>(new Buffer(deviceInterface, *m_logicalDevice, allocator, makeBufferCreateInfo(vertexDataSizeInBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 	const Allocation& vertexBufferAllocation = vertexBuffer->getAllocation();
-	
+
 	deMemcpy(vertexBufferAllocation.getHostPtr(), &vertexData[0], static_cast<std::size_t>(vertexDataSizeInBytes));
 	flushMappedMemoryRange(deviceInterface, *m_logicalDevice, vertexBufferAllocation.getMemory(), vertexBufferAllocation.getOffset(), vertexDataSizeInBytes);
 
@@ -630,8 +630,8 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 	for (deUint32 mipLevelNdx = 0u; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
 	{
 		const vk::VkExtent3D mipLevelSize = mipLevelExtents(imageSparseInfo.extent, mipLevelNdx);
-		
-		const vk::VkRect2D renderArea = 
+
+		const vk::VkRect2D renderArea =
 		{
 			makeOffset2D(0u, 0u),
 			makeExtent2D(mipLevelSize.width, mipLevelSize.height),
@@ -707,7 +707,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 
 		// Draw full screen quad
 		deviceInterface.cmdDraw(commandBuffer, 4u, 1u, 0u, 0u);
-		
+
 		// End render pass
 		endRenderPass(deviceInterface, commandBuffer);
 	}

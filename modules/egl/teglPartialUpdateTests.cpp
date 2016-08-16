@@ -103,7 +103,7 @@ protected:
 	const vector<DrawType>	    m_oddFrameDrawType;
 	const vector<DrawType>		m_evenFrameDrawType;
 
-	bool 						m_supportBufferAge;
+	bool						m_supportBufferAge;
 	EGLDisplay					m_eglDisplay;
 	EGLSurface					m_eglSurface;
 	glw::Functions				m_gl;
@@ -116,9 +116,9 @@ struct ColoredRect
 {
 public:
 								ColoredRect (const IVec2& bottomLeft_, const IVec2& topRight_, const Color& color_);
-	IVec2	 					bottomLeft;
-	IVec2	 					topRight;
-	Color 						color;
+	IVec2						bottomLeft;
+	IVec2						topRight;
+	Color						color;
 };
 
 ColoredRect::ColoredRect (const IVec2& bottomLeft_, const IVec2& topRight_, const Color& color_)
@@ -137,16 +137,16 @@ struct DrawCommand
 
 DrawCommand::DrawCommand (const PartialUpdateTest::DrawType drawType_, const ColoredRect& rect_)
 	: drawType	(drawType_)
-	, rect    	(rect_)
+	, rect		(rect_)
 {
 }
 
 struct Frame
 {
 								Frame (int width_, int height_);
-	int 						width;
+	int							width;
 	int							height;
-	vector<DrawCommand> 		draws;
+	vector<DrawCommand>			draws;
 };
 
 Frame::Frame (int width_, int height_)
@@ -186,7 +186,7 @@ void			clearColorReference				(tcu::Surface* ref, const tcu::Vec4& clearColor);
 void			readPixels						(const glw::Functions& gl, tcu::Surface* screen);
 float			windowToDeviceCoordinates		(int x, int length);
 bool			compareToReference				(tcu::TestLog& log, const tcu::Surface& reference, const tcu::Surface& buffer, int frameNdx, int bufferNum);
-vector<int> 	getFramesOnBuffer 				(const vector<int>& bufferAges, int frameNdx);
+vector<int>		getFramesOnBuffer				(const vector<int>& bufferAges, int frameNdx);
 
 class GLES2Renderer
 {
@@ -431,8 +431,8 @@ void PartialUpdateTest::initEGLSurface (EGLConfig config)
 
 void PartialUpdateTest::initEGLContext (EGLConfig config)
 {
-	const Library& 	egl 		 = m_eglTestCtx.getLibrary();
-	const EGLint 	attribList[] =
+	const Library&	egl			 = m_eglTestCtx.getLibrary();
+	const EGLint	attribList[] =
 	{
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
@@ -451,7 +451,7 @@ vector<int> getFramesOnBuffer (const vector<int>& bufferAges, int frameNdx)
 {
 	DE_ASSERT(frameNdx < (int)bufferAges.size());
 	vector<int> frameOnBuffer;
-	int 		age = bufferAges[frameNdx];
+	int			age = bufferAges[frameNdx];
 	while (age != 0)
 	{
 		frameNdx = frameNdx - age;
@@ -482,18 +482,18 @@ vector<EGLint> getDamageRegion (const Frame& frame, int marginLeft, int marginBo
 
 TestCase::IterateResult PartialUpdateTest::iterate (void)
 {
-	de::Random 		rnd				(m_seed);
+	de::Random		rnd				(m_seed);
 	const Library&	egl				= m_eglTestCtx.getLibrary();
-	tcu::TestLog& 	log				= m_testCtx.getLog();
-	const int 		width			= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_WIDTH);
-	const int 		height			= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_HEIGHT);
-	const float 	clearRed		= rnd.getFloat();
-	const float 	clearGreen		= rnd.getFloat();
-	const float 	clearBlue		= rnd.getFloat();
+	tcu::TestLog&	log				= m_testCtx.getLog();
+	const int		width			= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_WIDTH);
+	const int		height			= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_HEIGHT);
+	const float		clearRed		= rnd.getFloat();
+	const float		clearGreen		= rnd.getFloat();
+	const float		clearBlue		= rnd.getFloat();
 	const tcu::Vec4	clearColor		(clearRed, clearGreen, clearBlue, 1.0f);
-	const int 		numFrames		= 20;
-	FrameSequence 	frameSequence;
-	vector<int> 	bufferAges;
+	const int		numFrames		= 20;
+	FrameSequence	frameSequence;
+	vector<int>		bufferAges;
 	bool			hasPositiveAge  = false;
 
 	EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
@@ -809,8 +809,8 @@ void PartialUpdateTests::init (void)
 
 		for (size_t oddNdx = evenNdx; oddNdx < frameDrawTypes.size(); oddNdx++)
 		{
-			const vector<PartialUpdateTest::DrawType>& 	oddFrameDrawType = frameDrawTypes[oddNdx];
-			const std::string 							name 			 = generateTestName(oddFrameDrawType, evenFrameDrawType);
+			const vector<PartialUpdateTest::DrawType>&	oddFrameDrawType = frameDrawTypes[oddNdx];
+			const std::string							name			 = generateTestName(oddFrameDrawType, evenFrameDrawType);
 			if (oddFrameDrawType.size() == 0 && evenFrameDrawType.size() == 0)
 				continue;
 

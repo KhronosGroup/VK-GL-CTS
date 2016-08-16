@@ -244,7 +244,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 	const Unique<VkImage> imageRead(createImage(deviceInterface, *m_logicalDevice, &imageSparseInfo));
 	const Unique<VkImage> imageWrite(createImage(deviceInterface, *m_logicalDevice, &imageSparseInfo));
 
-	// Create semaphores to synchronize sparse binding operations with other operations on the sparse images 
+	// Create semaphores to synchronize sparse binding operations with other operations on the sparse images
 	const Unique<VkSemaphore> memoryBindSemaphoreTransfer(makeSemaphore(deviceInterface, *m_logicalDevice));
 	const Unique<VkSemaphore> memoryBindSemaphoreCompute(makeSemaphore(deviceInterface, *m_logicalDevice));
 
@@ -394,25 +394,33 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 	const Unique<VkCommandPool>	  commandPool  (makeCommandPool(deviceInterface, *m_logicalDevice, computeQueue.queueFamilyIndex));
 	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, *m_logicalDevice, *commandPool));
 
+	std::vector<VkBufferImageCopy> bufferImageCopy(imageSparseInfo.mipLevels);
+
+	{
+		deUint32 bufferOffset = 0u;
+		for (deUint32 mipLevelNdx = 0u; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
+		{
+			bufferImageCopy[mipLevelNdx] = makeBufferImageCopy(mipLevelExtents(imageSparseInfo.extent, mipLevelNdx), imageSparseInfo.arrayLayers, mipLevelNdx, bufferOffset);
+			bufferOffset += getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, mipLevelNdx, MEM_ALIGN_BUFFERIMAGECOPY_OFFSET);
+		}
+	}
+
 	// Start recording commands
 	beginCommandBuffer(deviceInterface, *commandBuffer);
 
-	const deUint32				imageSizeInBytes		= getImageSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, imageSparseInfo.mipLevels);
+	const deUint32				imageSizeInBytes		= getImageSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, imageSparseInfo.mipLevels, MEM_ALIGN_BUFFERIMAGECOPY_OFFSET);
 	const VkBufferCreateInfo	inputBufferCreateInfo	= makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
 	const de::UniquePtr<Buffer>	inputBuffer(new Buffer(deviceInterface, *m_logicalDevice, *allocator, inputBufferCreateInfo, MemoryRequirement::HostVisible));
 
-	std::vector<deUint8> referenceData;
-	referenceData.resize(imageSizeInBytes);
+	std::vector<deUint8> referenceData(imageSizeInBytes);
 
-	deUint32 bufferOffset = 0u;
 	for (deUint32 mipLevelNdx = 0u; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
 	{
-		const deUint32 mipLevelSizeInBytes = getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, mipLevelNdx);
+		const deUint32 mipLevelSizeInBytes	= getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, mipLevelNdx);
+		const deUint32 bufferOffset			= static_cast<deUint32>(bufferImageCopy[mipLevelNdx].bufferOffset);
 
 		deMemset(&referenceData[bufferOffset], mipLevelNdx + 1u, mipLevelSizeInBytes);
-
-		bufferOffset += mipLevelSizeInBytes;
 	}
 
 	deMemcpy(inputBuffer->getAllocation().getHostPtr(), &referenceData[0], imageSizeInBytes);
@@ -446,16 +454,6 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 		);
 
 		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageSparseTransferDstBarrier);
-	}
-
-	std::vector<VkBufferImageCopy> bufferImageCopy;
-	bufferImageCopy.resize(imageSparseInfo.mipLevels);
-
-	bufferOffset = 0u;
-	for (deUint32 mipLevelNdx = 0u; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
-	{
-		bufferImageCopy[mipLevelNdx] = makeBufferImageCopy(mipLevelExtents(imageSparseInfo.extent, mipLevelNdx), imageSparseInfo.arrayLayers, mipLevelNdx, bufferOffset);
-		bufferOffset += getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, mipLevelNdx);
 	}
 
 	deviceInterface.cmdCopyBufferToImage(*commandBuffer, inputBuffer->get(), *imageRead, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, static_cast<deUint32>(bufferImageCopy.size()), &bufferImageCopy[0]);
@@ -602,10 +600,10 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 	// Wait for sparse queue to become idle
 	deviceInterface.queueWaitIdle(sparseQueue.queueHandle);
 
-	bufferOffset = 0u;
 	for (deUint32 mipLevelNdx = 0; mipLevelNdx < aspectRequirements.imageMipTailFirstLod; ++mipLevelNdx)
 	{
 		const tcu::UVec3				  gridSize		= getShaderGridSize(m_imageType, m_imageSize, mipLevelNdx);
+		const deUint32					  bufferOffset	= static_cast<deUint32>(bufferImageCopy[mipLevelNdx].bufferOffset);
 		const tcu::ConstPixelBufferAccess pixelBuffer	= tcu::ConstPixelBufferAccess(m_format, gridSize.x(), gridSize.y(), gridSize.z(), outputData + bufferOffset);
 
 		for (deUint32 offsetZ = 0u; offsetZ < gridSize.z(); ++offsetZ)
@@ -619,14 +617,18 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 			if (deMemCmp(&outputValue, &referenceValue, sizeof(deUint32) * getNumUsedChannels(m_format.order)) != 0)
 				return tcu::TestStatus::fail("Failed");
 		}
-
-		bufferOffset += getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, mipLevelNdx);
 	}
 
-	if (deMemCmp(outputData + bufferOffset, &referenceData[bufferOffset], imageSizeInBytes - bufferOffset) != 0)
-		return tcu::TestStatus::fail("Failed");
-	else
-		return tcu::TestStatus::pass("Passed");
+	for (deUint32 mipLevelNdx = aspectRequirements.imageMipTailFirstLod; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
+	{
+		const deUint32 mipLevelSizeInBytes	= getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, mipLevelNdx);
+		const deUint32 bufferOffset			= static_cast<deUint32>(bufferImageCopy[mipLevelNdx].bufferOffset);
+
+		if (deMemCmp(outputData + bufferOffset, &referenceData[bufferOffset], mipLevelSizeInBytes) != 0)
+			return tcu::TestStatus::fail("Failed");
+	}
+
+	return tcu::TestStatus::pass("Passed");
 }
 
 void ImageSparseMemoryAliasingCase::initPrograms(SourceCollections&	sourceCollections) const

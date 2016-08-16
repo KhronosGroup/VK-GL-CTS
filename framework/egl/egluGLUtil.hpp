@@ -38,7 +38,7 @@ namespace eglu
 {
 
 glw::GLenum			getImageGLTarget		(eglw::EGLenum source);
-eglw::EGLint		apiRenderableType 		(glu::ApiType apiType);
+eglw::EGLint		apiRenderableType		(glu::ApiType apiType);
 eglw::EGLContext	createGLContext			(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig config, const glu::ContextType& contextType);
 eglw::EGLConfig		chooseConfig			(const eglw::Library& egl, eglw::EGLDisplay display, const glu::RenderConfig& config);
 

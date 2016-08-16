@@ -1546,7 +1546,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,
 			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
 		};
-			
+
 		MovePtr<tcu::TestCaseGroup> clipVolumeGroup(new tcu::TestCaseGroup(testCtx, "clip_volume", "clipping with the clip volume"));
 
 		// Fully inside the clip volume

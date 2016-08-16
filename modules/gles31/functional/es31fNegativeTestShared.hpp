@@ -49,7 +49,7 @@ class ErrorCase : public TestCase
 {
 public:
 								ErrorCase		(Context& ctx, const char* name, const char* desc);
-	virtual 					~ErrorCase		(void) {}
+	virtual						~ErrorCase		(void) {}
 
 	virtual void				expectError		(glw::GLenum error0, glw::GLenum error1) = 0;
 };
@@ -65,21 +65,21 @@ public:
 	void						fail					(const std::string& msg);
 	int							getInteger				(glw::GLenum pname) const;
 	const glu::RenderContext&	getRenderContext		(void) const { return m_renderCtx; }
-	const glu::ContextInfo& 	getContextInfo			(void) const { return m_ctxInfo; }
+	const glu::ContextInfo&		getContextInfo			(void) const { return m_ctxInfo; }
 	void						beginSection			(const std::string& desc);
 	void						endSection				(void);
 
 	void						expectError				(glw::GLenum error);
 	void						expectError				(glw::GLenum error0, glw::GLenum error1);
 	bool						isShaderSupported		(glu::ShaderType shaderType);
-	bool 						isExtensionSupported	(std::string extension);
+	bool						isExtensionSupported	(std::string extension);
 
 protected:
 	ErrorCase&					m_host;
 
 private:
 	glu::RenderContext&			m_renderCtx;
-	const glu::ContextInfo& 	m_ctxInfo;
+	const glu::ContextInfo&		m_ctxInfo;
 	tcu::ResultCollector&		m_results;
 	int							m_openSections;
 };
