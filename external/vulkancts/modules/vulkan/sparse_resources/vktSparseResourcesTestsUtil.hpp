@@ -169,22 +169,22 @@ std::string			getShaderImageCoordinates		(const ImageType			imageType,
 													 const std::string&			xy,
 													 const std::string&			xyz);
 //!< Size used for addresing image in a compute shader
-tcu::UVec3			getShaderGridSize				(const ImageType			imageType, 
-													 const tcu::UVec3&			imageSize, 
+tcu::UVec3			getShaderGridSize				(const ImageType			imageType,
+													 const tcu::UVec3&			imageSize,
 													 const deUint32				mipLevel = 0);
 //!< Size of a single image layer
-tcu::UVec3			getLayerSize					(const ImageType			imageType, 
+tcu::UVec3			getLayerSize					(const ImageType			imageType,
 													 const tcu::UVec3&			imageSize);
 //!< Number of array layers (for array and cube types)
-deUint32			getNumLayers					(const ImageType			imageType, 
+deUint32			getNumLayers					(const ImageType			imageType,
 													 const tcu::UVec3&			imageSize);
 //!< Number of texels in an image
-deUint32			getNumPixels					(const ImageType			imageType, 
+deUint32			getNumPixels					(const ImageType			imageType,
 													 const tcu::UVec3&			imageSize);
 //!< Coordinate dimension used for addressing (e.g. 3 (x,y,z) for 2d array)
 deUint32			getDimensions					(const ImageType			imageType);
 //!< Coordinate dimension used for addressing a single layer (e.g. 2 (x,y) for 2d array)
-deUint32			getLayerDimensions				(const ImageType			imageType);								
+deUint32			getLayerDimensions				(const ImageType			imageType);
 //!< Helper function for checking if requested image size does not exceed device limits
 bool				isImageSizeSupported			(const vk::InstanceInterface&		instance,
 													 const vk::VkPhysicalDevice			physicalDevice,
@@ -322,11 +322,11 @@ vk::VkSparseMemoryBind			makeSparseMemoryBind			(const vk::DeviceInterface&			vk
 																 const deUint32						memoryType,
 																 const vk::VkDeviceSize				resourceOffset);
 
-vk::Move<vk::VkRenderPass>		makeRenderPass					(const vk::DeviceInterface&			vk, 
-																 const vk::VkDevice					device, 
+vk::Move<vk::VkRenderPass>		makeRenderPass					(const vk::DeviceInterface&			vk,
+																 const vk::VkDevice					device,
 																 const vk::VkFormat					colorFormat);
 
-vk::Move<vk::VkRenderPass>		makeRenderPassWithoutAttachments(const vk::DeviceInterface&			vk, 
+vk::Move<vk::VkRenderPass>		makeRenderPassWithoutAttachments(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device);
 
 vk::Move<vk::VkFramebuffer>		makeFramebuffer					(const vk::DeviceInterface&			vk,

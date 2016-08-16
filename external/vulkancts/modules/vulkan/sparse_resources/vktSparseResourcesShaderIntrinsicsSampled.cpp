@@ -231,7 +231,7 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 
 		<< "OpBranch %branch_texel_resident\n"
 		<< "%branch_texel_resident = OpLabel\n"
-		
+
 		<< "OpReturn\n"
 		<< "OpFunctionEnd\n";
 
@@ -371,7 +371,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 	if (!checkImageFormatFeatureSupport(instance, physicalDevice, imageSparseInfo.format, VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
 		TCU_THROW(NotSupportedError, "Device does not support image format for sampled images");
 
-	// Check if device supports image format for color attachment 
+	// Check if device supports image format for color attachment
 	if (!checkImageFormatFeatureSupport(instance, physicalDevice, imageSparseInfo.format, VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT))
 		TCU_THROW(NotSupportedError, "Device does not support image format for color attachment");
 
@@ -384,7 +384,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 
 	vertexData.push_back(tcu::Vec2(-1.0f,-1.0f));
 	vertexData.push_back(tcu::Vec2( 0.0f, 0.0f));
-	
+
 	vertexData.push_back(tcu::Vec2(-1.0f, 1.0f));
 	vertexData.push_back(tcu::Vec2( 0.0f, 1.0f));
 
@@ -409,7 +409,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 
 	vertexBuffer = de::SharedPtr<Buffer>(new Buffer(deviceInterface, *m_logicalDevice, allocator, makeBufferCreateInfo(vertexDataSizeInBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 	const Allocation& vertexBufferAllocation = vertexBuffer->getAllocation();
-	
+
 	deMemcpy(vertexBufferAllocation.getHostPtr(), &vertexData[0], static_cast<std::size_t>(vertexDataSizeInBytes));
 	flushMappedMemoryRange(deviceInterface, *m_logicalDevice, vertexBufferAllocation.getMemory(), vertexBufferAllocation.getOffset(), vertexDataSizeInBytes);
 
@@ -630,8 +630,8 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 	for (deUint32 mipLevelNdx = 0u; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
 	{
 		const vk::VkExtent3D mipLevelSize = mipLevelExtents(imageSparseInfo.extent, mipLevelNdx);
-		
-		const vk::VkRect2D renderArea = 
+
+		const vk::VkRect2D renderArea =
 		{
 			makeOffset2D(0u, 0u),
 			makeExtent2D(mipLevelSize.width, mipLevelSize.height),
@@ -707,7 +707,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 
 		// Draw full screen quad
 		deviceInterface.cmdDraw(commandBuffer, 4u, 1u, 0u, 0u);
-		
+
 		// End render pass
 		endRenderPass(deviceInterface, commandBuffer);
 	}

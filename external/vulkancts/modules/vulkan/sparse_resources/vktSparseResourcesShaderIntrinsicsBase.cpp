@@ -202,9 +202,9 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 		TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
 
 	imageSparseInfo.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageSparseInfo.pNext					= DE_NULL;				
+	imageSparseInfo.pNext					= DE_NULL;
 	imageSparseInfo.flags					= VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
-	imageSparseInfo.imageType				= mapImageType(m_imageType);			
+	imageSparseInfo.imageType				= mapImageType(m_imageType);
 	imageSparseInfo.format					= mapTextureFormat(m_format);
 	imageSparseInfo.extent					= makeExtent3D(getLayerSize(m_imageType, m_imageSize));
 	imageSparseInfo.arrayLayers				= getNumLayers(m_imageType, m_imageSize);
@@ -289,7 +289,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 		aspectRequirements = sparseMemoryRequirements[colorAspectIndex];
 
 		DE_ASSERT((aspectRequirements.imageMipTailSize % imageMemoryRequirements.alignment) == 0);
-		
+
 		const VkImageAspectFlags aspectMask			= aspectRequirements.formatProperties.aspectMask;
 		const VkExtent3D		 imageGranularity	= aspectRequirements.formatProperties.imageGranularity;
 		const deUint32			 memoryType			= findMatchingMemoryType(instance, physicalDevice, imageMemoryRequirements, MemoryRequirement::Any);
@@ -506,7 +506,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 	// Copy reference data from input buffer to sparse image
 	std::vector <VkBufferImageCopy> bufferImageCopy;
 	bufferImageCopy.resize(imageSparseInfo.mipLevels);
-	
+
 	bufferOffset = 0u;
 	for (deUint32 mipLevelNdx = 0u; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
 	{
@@ -562,12 +562,12 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 
 		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 2u, bufferOutputHostReadBarriers, 0u, DE_NULL);
 	}
-	
+
 	// End recording commands
 	endCommandBuffer(deviceInterface, *commandBuffer);
-	
+
 	const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
-	
+
 	// Submit commands for execution and wait for completion
 	submitCommandsAndWait(deviceInterface, *m_logicalDevice, extractQueue.queueHandle, *commandBuffer, 1u, &memoryBindSemaphore.get(), stageBits);
 
@@ -582,7 +582,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 
 	if (deMemCmp(&bufferResidencyData[0], &residencyReferenceData[0], imageResidencySizeInBytes) != 0)
 		return tcu::TestStatus::fail("Failed");
-	
+
 
 	// Retrieve data from texels buffer to host memory
 	const Allocation& bufferTexelsAllocation = bufferTexels->getAllocation();

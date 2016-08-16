@@ -176,11 +176,11 @@ tcu::TestStatus BufferSparseMemoryAliasingInstance::iterate (void)
 	const Queue& sparseQueue	= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
 	const Queue& computeQueue	= getQueue(VK_QUEUE_COMPUTE_BIT, 0);
 
-	VkBufferCreateInfo bufferCreateInfo = 
+	VkBufferCreateInfo bufferCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
 		DE_NULL,								// const void*			pNext;
-		VK_BUFFER_CREATE_SPARSE_BINDING_BIT | 
+		VK_BUFFER_CREATE_SPARSE_BINDING_BIT |
 		VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,	// VkBufferCreateFlags	flags;
 		m_bufferSizeInBytes,					// VkDeviceSize			size;
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
@@ -212,7 +212,7 @@ tcu::TestStatus BufferSparseMemoryAliasingInstance::iterate (void)
 		TCU_THROW(NotSupportedError, "Required memory size for sparse resources exceeds device limits");
 
 	DE_ASSERT((bufferMemRequirements.size % bufferMemRequirements.alignment) == 0);
-	
+
 	const deUint32 memoryType = findMatchingMemoryType(instance, physicalDevice, bufferMemRequirements, MemoryRequirement::Any);
 
 	if (memoryType == NO_MATCH_FOUND)

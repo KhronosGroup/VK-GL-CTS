@@ -244,7 +244,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 	const Unique<VkImage> imageRead(createImage(deviceInterface, *m_logicalDevice, &imageSparseInfo));
 	const Unique<VkImage> imageWrite(createImage(deviceInterface, *m_logicalDevice, &imageSparseInfo));
 
-	// Create semaphores to synchronize sparse binding operations with other operations on the sparse images 
+	// Create semaphores to synchronize sparse binding operations with other operations on the sparse images
 	const Unique<VkSemaphore> memoryBindSemaphoreTransfer(makeSemaphore(deviceInterface, *m_logicalDevice));
 	const Unique<VkSemaphore> memoryBindSemaphoreCompute(makeSemaphore(deviceInterface, *m_logicalDevice));
 

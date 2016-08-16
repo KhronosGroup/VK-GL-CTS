@@ -163,7 +163,7 @@ public:
 						, m_binder		(binder_)
 						, m_genCreates	(genCreates_) {}
 
-	GLuint			gen 		(void);
+	GLuint			gen			(void);
 	void			release		(GLuint name)		{ (this->*m_deleteFunc)(1, &name); }
 	bool			exists		(GLuint name)		{ return (this->*m_existsFunc)(name) != GL_FALSE; }
 	Binder*			binder		(void) const		{ return m_binder; }
@@ -283,7 +283,7 @@ public:
 protected:
 					FboAttacher			(const Context& ctx,
 										 Type& elementType, Type& containerType)
-						: Attacher 		(ctx, elementType, containerType) {}
+						: Attacher		(ctx, elementType, containerType) {}
 	virtual void	initStorage			(void) = 0;
 };
 
@@ -291,7 +291,7 @@ class FboInputAttacher : public InputAttacher
 {
 public:
 			FboInputAttacher		(FboAttacher& attacher)
-				: InputAttacher 	(attacher) {}
+				: InputAttacher		(attacher) {}
 	void	drawContainer			(GLuint container, Surface& dst);
 };
 
@@ -299,7 +299,7 @@ class FboOutputAttacher : public OutputAttacher
 {
 public:
 			FboOutputAttacher			(FboAttacher& attacher)
-				: OutputAttacher 		(attacher) {}
+				: OutputAttacher		(attacher) {}
 	void	setupContainer				(GLuint seed, GLuint container);
 	void	drawAttachment				(GLuint attachment, Surface& dst);
 };

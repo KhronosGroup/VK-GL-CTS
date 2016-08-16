@@ -40,7 +40,7 @@ struct QueueFamilyQueuesCount
 	deUint32 queueCount;
 };
 
-SparseResourcesBaseInstance::SparseResourcesBaseInstance (Context &context) 
+SparseResourcesBaseInstance::SparseResourcesBaseInstance (Context &context)
 	: TestInstance(context)
 {
 }

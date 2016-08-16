@@ -503,7 +503,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_ACCESS_HOST_READ_BIT,
 			outputBuffer->get(),
-			0u, 
+			0u,
 			imageSizeInBytes
 		);
 

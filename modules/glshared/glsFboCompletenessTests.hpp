@@ -113,7 +113,7 @@ protected:
 };
 
 	// Utilities for building
-Image* 				makeImage			(GLenum bufType, ImageFormat format,
+Image*				makeImage			(GLenum bufType, ImageFormat format,
 										 GLsizei width, GLsizei height, FboBuilder& builder);
 Attachment*			makeAttachment		(GLenum bufType, ImageFormat format,
 										 GLsizei width, GLsizei height, FboBuilder& builder);

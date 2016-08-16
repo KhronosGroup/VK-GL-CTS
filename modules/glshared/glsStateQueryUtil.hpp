@@ -431,7 +431,7 @@ void verifyStateAttributeInteger				(tcu::ResultCollector& result, glu::CallLogW
 void verifyStateFramebufferInteger				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,		int expected,				QueryType type);
 void verifyStateFramebufferIntegerMin			(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,		int minValue,				QueryType type);
 void verifyStateProgramInteger					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint program,	glw::GLenum pname,		int expected,				QueryType type);
-void verifyStateProgramIntegerVec3				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint program, 	glw::GLenum pname,		const tcu::IVec3& expected,	QueryType type);
+void verifyStateProgramIntegerVec3				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint program,	glw::GLenum pname,		const tcu::IVec3& expected,	QueryType type);
 void verifyStatePipelineInteger					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint pipeline,	glw::GLenum pname,		int expected,				QueryType type);
 void verifyStateTextureParamInteger				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,		int expected,				QueryType type);
 void verifyStateTextureParamFloat				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,		float expected,				QueryType type);

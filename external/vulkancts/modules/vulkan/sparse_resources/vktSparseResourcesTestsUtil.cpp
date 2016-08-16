@@ -812,7 +812,7 @@ VkSparseImageMemoryBind	makeSparseImageMemoryBind  (const DeviceInterface&		vk,
 }
 
 VkSparseMemoryBind makeSparseMemoryBind	(const vk::DeviceInterface&	vk,
-										 const vk::VkDevice			device, 
+										 const vk::VkDevice			device,
 										 const vk::VkDeviceSize		allocationSize,
 										 const deUint32				memoryType,
 										 const vk::VkDeviceSize		resourceOffset)
@@ -1135,7 +1135,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 		0.0f, 1.0f
 	);
 
-	const VkRect2D scissor = 
+	const VkRect2D scissor =
 	{
 		makeOffset2D(0, 0),
 		makeExtent2D(m_renderSize.x(), m_renderSize.y()),
@@ -1193,7 +1193,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 		0u,						// compare mask
 		0u,						// write mask
 		0u						// reference
-	);					
+	);
 
 	const VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo =
 	{

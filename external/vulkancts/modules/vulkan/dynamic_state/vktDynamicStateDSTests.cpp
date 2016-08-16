@@ -331,12 +331,12 @@ protected:
 		memBarrier.srcAccessMask = vk::VK_ACCESS_TRANSFER_WRITE_BIT;
  		memBarrier.dstAccessMask = vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
 					   vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
- 
+
 		m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
 						      vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
 						      vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 						      0, 1, &memBarrier, 0, NULL, 0, NULL);
- 
+
 		const vk::VkRect2D renderArea = { { 0, 0 }, { WIDTH, HEIGHT } };
 		const RenderPassBeginInfo renderPassBegin(*m_renderPass, *m_framebuffer, renderArea);
 

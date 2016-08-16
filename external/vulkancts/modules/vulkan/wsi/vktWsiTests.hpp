@@ -1,5 +1,5 @@
-#ifndef _VKWSITESTS_HPP
-#define _VKWSITESTS_HPP
+#ifndef _VKTWSITESTS_HPP
+#define _VKTWSITESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -36,4 +36,4 @@ tcu::TestCaseGroup*		createTests		(tcu::TestContext& testCtx);
 } // wsi
 } // vkt
 
-#endif // _VKWSITESTS_HPP
+#endif // _VKTWSITESTS_HPP

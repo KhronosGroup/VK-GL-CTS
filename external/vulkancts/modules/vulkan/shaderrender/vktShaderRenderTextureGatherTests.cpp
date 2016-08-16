@@ -1503,7 +1503,7 @@ glu::FragmentSource genFragmentShaderSource (bool					requireGpuShader5,
 		// Texel declaration
 		frag << "\t" << outType << " texel;\n";
 		frag << "\tint success = " << funcCall << ";\n";
-		
+
 		// Check sparse validity, and handle each case
 		frag << "\tif (sparseTexelsResidentARB(success))\n"
 			 << "\t\to_color = texel;\n"
@@ -1514,7 +1514,7 @@ glu::FragmentSource genFragmentShaderSource (bool					requireGpuShader5,
 	{
 		frag << "\t\to_color = " << funcCall << ";\n";
 	}
-	
+
 	frag << "}\n";
 
 	return glu::FragmentSource(frag.str());
@@ -1567,7 +1567,7 @@ string genGatherFuncCall (GatherType				gatherType,
 				DE_ASSERT(false);
 		}
 	}
-	
+
 	result += "(u_sampler, v_texCoord";
 
 	if (isDepthFormat(textureFormat))
@@ -1614,7 +1614,7 @@ string genGatherFuncCall (GatherType				gatherType,
 
 	if (sparseCase == ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE)
 		result += ", texel";
-	
+
 	if (gatherArgs.componentNdx >= 0)
 	{
 		DE_ASSERT(gatherArgs.componentNdx < 4);

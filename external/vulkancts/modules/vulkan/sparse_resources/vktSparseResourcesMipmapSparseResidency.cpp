@@ -453,7 +453,7 @@ tcu::TestCaseGroup* createMipmapSparseResidencyTests (tcu::TestContext& testCtx)
 		ImageType	imageType;
 		tcu::UVec3	imageSizes[sizeCountPerImageType];
 	};
-	
+
 	static const ImageParameters imageParametersArray[] =
 	{
 		{ IMAGE_TYPE_2D,		 { tcu::UVec3(512u, 256u, 1u),  tcu::UVec3(1024u, 128u, 1u), tcu::UVec3(11u,  137u, 1u) } },
