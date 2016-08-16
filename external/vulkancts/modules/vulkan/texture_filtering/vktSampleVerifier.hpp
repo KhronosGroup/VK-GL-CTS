@@ -180,54 +180,54 @@ private:
 
 	bool coordOutOfRange				(const tcu::IVec3&									coord,
 										 int												compNdx,
-										 int 												level) const;
+										 int												level) const;
 
 	void fetchTexel						(const tcu::IVec3&									coordIn,
 										 int												layer,
 										 int												level,
 										 vk::VkFilter										filter,
-										 tcu::Vec4& 										resultMin,
-										 tcu::Vec4& 										resultMax) const;
+										 tcu::Vec4&											resultMin,
+										 tcu::Vec4&											resultMax) const;
 
 	void fetchTexelWrapped				(const tcu::IVec3&									coord,
 										 int												layer,
 										 int												level,
 										 tcu::Vec4&											resultMin,
-										 tcu::Vec4& 										resultMax) const;
+										 tcu::Vec4&											resultMax) const;
 
     void getFilteredSample1D			(const tcu::IVec3&									texelBase,
 										 float												weight,
 										 int												layer,
 										 int												level,
-										 tcu::Vec4& 										resultMin,
-										 tcu::Vec4& 										resultMax) const;
+										 tcu::Vec4&											resultMin,
+										 tcu::Vec4&											resultMax) const;
 
 	void getFilteredSample2D			(const tcu::IVec3&									texelBase,
 										 const tcu::Vec2&									weights,
 										 int												layer,
 										 int												level,
-										 tcu::Vec4& 										resultMin,
-										 tcu::Vec4& 										resultMax) const;
+										 tcu::Vec4&											resultMin,
+										 tcu::Vec4&											resultMax) const;
 
 	void getFilteredSample3D			(const tcu::IVec3&									texelBase,
 										 const tcu::Vec3&									weights,
 										 int												layer,
 										 int												level,
-										 tcu::Vec4& 										resultMin,
-										 tcu::Vec4& 										resultMax) const;
+										 tcu::Vec4&											resultMin,
+										 tcu::Vec4&											resultMax) const;
 
 	void getFilteredSample				(const tcu::IVec3&									texelBase,
 										 const tcu::Vec3&									weights,
 										 int												layer,
 										 int												level,
-										 tcu::Vec4& 										resultMin,
-										 tcu::Vec4& 										resultMax) const;
+										 tcu::Vec4&											resultMin,
+										 tcu::Vec4&											resultMax) const;
 
 	void getMipmapStepBounds			(const tcu::Vec2&									lodFracBounds,
 										 deInt32&											stepMin,
 										 deInt32&											stepMax) const;
 
-	const tcu::FloatFormat 							m_internalFormat;
+	const tcu::FloatFormat							m_internalFormat;
 
 	const ImageViewParameters&						m_imParams;
 	const SamplerParameters&						m_samplerParams;

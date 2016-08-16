@@ -64,13 +64,13 @@ typedef struct TYPENAME##_s																			\
 } TYPENAME;	 /* NOLINT(TYPENAME) */																	\
 																									\
 DE_INLINE TYPENAME*			TYPENAME##_create			(deMemPool* pool);							\
-DE_INLINE int				TYPENAME##_getNumElements	(const TYPENAME* hashSet)								 		DE_UNUSED_FUNCTION;	\
-DE_INLINE TYPENAME##Hash*	TYPENAME##_getHash			(const TYPENAME* hashSet)								 		DE_UNUSED_FUNCTION;	\
+DE_INLINE int				TYPENAME##_getNumElements	(const TYPENAME* hashSet)										DE_UNUSED_FUNCTION;	\
+DE_INLINE TYPENAME##Hash*	TYPENAME##_getHash			(const TYPENAME* hashSet)										DE_UNUSED_FUNCTION;	\
 DE_INLINE deBool			TYPENAME##_insert			(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)	DE_UNUSED_FUNCTION;	\
 DE_INLINE deBool			TYPENAME##_safeInsert		(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)	DE_UNUSED_FUNCTION;	\
-DE_INLINE TYPENAME##Set*	TYPENAME##_find				(const TYPENAME* hashSet, KEYTYPE key)					 		DE_UNUSED_FUNCTION;	\
-DE_INLINE void				TYPENAME##_delete			(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value) 	DE_UNUSED_FUNCTION;	\
-DE_INLINE deBool			TYPENAME##_exists			(const TYPENAME* hashSet, KEYTYPE key, VALUETYPE value)	 		DE_UNUSED_FUNCTION;	\
+DE_INLINE TYPENAME##Set*	TYPENAME##_find				(const TYPENAME* hashSet, KEYTYPE key)							DE_UNUSED_FUNCTION;	\
+DE_INLINE void				TYPENAME##_delete			(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)	DE_UNUSED_FUNCTION;	\
+DE_INLINE deBool			TYPENAME##_exists			(const TYPENAME* hashSet, KEYTYPE key, VALUETYPE value)			DE_UNUSED_FUNCTION;	\
 																									\
 DE_INLINE TYPENAME* TYPENAME##_create (deMemPool* pool)												\
 {																									\

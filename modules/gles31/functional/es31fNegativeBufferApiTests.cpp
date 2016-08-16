@@ -1560,8 +1560,8 @@ void framebuffer_texture_layer (NegativeTestContext& ctx)
 	int								max3DTexSize		= 0x1234;
 	int								maxTexSize			= 0x1234;
 	int								maxArrayTexLayers	= 0x1234;
-	int 							log2Max3DTexSize	= 0x1234;
-	int 							log2MaxTexSize		= 0x1234;
+	int								log2Max3DTexSize	= 0x1234;
+	int								log2MaxTexSize		= 0x1234;
 
 	ctx.glGetIntegerv				(GL_MAX_3D_TEXTURE_SIZE, &max3DTexSize);
 	ctx.glGetIntegerv				(GL_MAX_TEXTURE_SIZE, &maxTexSize);
