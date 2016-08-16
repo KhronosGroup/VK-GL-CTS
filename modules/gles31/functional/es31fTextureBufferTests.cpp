@@ -153,7 +153,7 @@ LimitQueryCase::IterateResult LimitQueryCase::iterate (void)
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
 
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
@@ -188,7 +188,7 @@ AlignmentQueryCase::IterateResult AlignmentQueryCase::iterate (void)
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
 
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
@@ -219,7 +219,7 @@ TextureBufferBindingQueryCase::IterateResult TextureBufferBindingQueryCase::iter
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
 
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
@@ -278,7 +278,7 @@ TextureBindingBufferQueryCase::IterateResult TextureBindingBufferQueryCase::iter
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
 
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
@@ -337,7 +337,7 @@ TextureBufferDataStoreQueryCase::IterateResult TextureBufferDataStoreQueryCase::
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
 
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
@@ -408,7 +408,7 @@ TextureBufferOffsetQueryCase::IterateResult TextureBufferOffsetQueryCase::iterat
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
 
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
@@ -489,7 +489,7 @@ TextureBufferSizeQueryCase::IterateResult TextureBufferSizeQueryCase::iterate (v
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
 
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);

@@ -774,7 +774,7 @@ private:
 									MultiVertexArrayStorageTests	(const MultiVertexArrayStorageTests& other);
 	MultiVertexArrayStorageTests&	operator=						(const MultiVertexArrayStorageTests& other);
 
-	void							addStorageCases 				(MultiVertexArrayTest::Spec spec, int depth);
+	void							addStorageCases					(MultiVertexArrayTest::Spec spec, int depth);
 	std::string						getTestName						(const MultiVertexArrayTest::Spec& spec);
 };
 
@@ -876,7 +876,7 @@ private:
 									MultiVertexArrayStrideTests		(const MultiVertexArrayStrideTests& other);
 	MultiVertexArrayStrideTests&	operator=						(const MultiVertexArrayStrideTests& other);
 
-	void							addStrideCases 					(MultiVertexArrayTest::Spec spec, int depth);
+	void							addStrideCases					(MultiVertexArrayTest::Spec spec, int depth);
 	std::string						getTestName						(const MultiVertexArrayTest::Spec& spec);
 };
 
@@ -967,7 +967,7 @@ private:
 										MultiVertexArrayOutputTests		(const MultiVertexArrayOutputTests& other);
 	MultiVertexArrayOutputTests&	operator=							(const MultiVertexArrayOutputTests& other);
 
-	void								addInputTypeCases 					(MultiVertexArrayTest::Spec spec, int depth);
+	void								addInputTypeCases					(MultiVertexArrayTest::Spec spec, int depth);
 	std::string							getTestName							(const MultiVertexArrayTest::Spec& spec);
 };
 

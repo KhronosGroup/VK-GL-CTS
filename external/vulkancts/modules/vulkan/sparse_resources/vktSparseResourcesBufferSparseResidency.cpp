@@ -158,7 +158,7 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate (void)
 	const Queue& sparseQueue	= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
 	const Queue& computeQueue	= getQueue(VK_QUEUE_COMPUTE_BIT, 0);
 
-	VkBufferCreateInfo bufferCreateInfo = 
+	VkBufferCreateInfo bufferCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
 		DE_NULL,								// const void*			pNext;
@@ -303,7 +303,7 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate (void)
 
 		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, DE_NULL, 1u, &inputBufferBarrier, 0u, DE_NULL);
 	}
-	
+
 	deviceInterface.cmdDispatch(*commandBuffer, 1u, 1u, 1u);
 
 	{

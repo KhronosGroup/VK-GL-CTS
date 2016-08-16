@@ -277,7 +277,7 @@ void MakeCurrentPerfCase::createWindow (void)
 
 	const eglu::NativeWindowFactory&	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
-	eglu::NativeWindow* 				window			= DE_NULL;
+	eglu::NativeWindow*					window			= DE_NULL;
 	EGLSurface							surface			= EGL_NO_SURFACE;
 
 	try
@@ -306,7 +306,7 @@ void MakeCurrentPerfCase::createPixmap (void)
 
 	const eglu::NativePixmapFactory&	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
-	eglu::NativePixmap* 				pixmap			= DE_NULL;
+	eglu::NativePixmap*					pixmap			= DE_NULL;
 	EGLSurface							surface			= EGL_NO_SURFACE;
 
 	try

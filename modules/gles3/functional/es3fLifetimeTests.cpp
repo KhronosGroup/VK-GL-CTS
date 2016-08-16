@@ -69,11 +69,11 @@ class ScaleProgram : public glu::ShaderProgram
 {
 public:
 							ScaleProgram	(lt::Context& ctx);
-	void 					draw			(GLuint vao, GLfloat scale, bool tf, Surface* dst);
+	void					draw			(GLuint vao, GLfloat scale, bool tf, Surface* dst);
 	void					setPos			(GLuint buffer, GLuint vao);
 
 private:
-	ProgramSources			getSources 		(void);
+	ProgramSources			getSources		(void);
 
 	const RenderContext&	m_renderCtx;
 	GLint					m_scaleLoc;

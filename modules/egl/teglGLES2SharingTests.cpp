@@ -108,7 +108,7 @@ protected:
 	glw::Functions	m_gl;
 
 	virtual void	createResource		(void)  { DE_ASSERT(false); }
-	virtual void 	destroyResource		(void)	{ DE_ASSERT(false); }
+	virtual void	destroyResource		(void)	{ DE_ASSERT(false); }
 	virtual void	renderResource		(tcu::Surface* screen, tcu::Surface* reference) { DE_UNREF(screen); DE_UNREF(reference); DE_ASSERT(false); }
 };
 
@@ -164,8 +164,8 @@ TestCase::IterateResult GLES2SharingTest::iterate (void)
 	{
 		const EGLint attribList[] =
 		{
-			EGL_RENDERABLE_TYPE, 	EGL_OPENGL_ES2_BIT,
-			EGL_SURFACE_TYPE,	 	EGL_WINDOW_BIT,
+			EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
+			EGL_SURFACE_TYPE,		EGL_WINDOW_BIT,
 			EGL_ALPHA_SIZE,			1,
 			EGL_NONE
 		};
@@ -301,7 +301,7 @@ private:
 	std::vector<GLubyte>	m_buffer;
 
 	virtual void	createResource		(void);
-	virtual void 	destroyResource		(void);
+	virtual void	destroyResource		(void);
 	virtual void	renderResource		(tcu::Surface* screen, tcu::Surface* reference);
 
 };
@@ -474,7 +474,7 @@ private:
 	tcu::Texture2D			m_texture;
 
 	virtual void	createResource		(void);
-	virtual void 	destroyResource		(void);
+	virtual void	destroyResource		(void);
 	virtual void	renderResource		(tcu::Surface* screen, tcu::Surface* reference);
 
 };
@@ -636,7 +636,7 @@ private:
 	glu::ShaderProgram*	m_program;
 
 	virtual void		createResource			(void);
-	virtual void 		destroyResource			(void);
+	virtual void		destroyResource			(void);
 	virtual void		renderResource			(tcu::Surface* screen, tcu::Surface* reference);
 
 };
@@ -788,7 +788,7 @@ private:
 	GLenum			m_shaderType;
 
 	virtual void	createResource		(void);
-	virtual void 	destroyResource		(void);
+	virtual void	destroyResource		(void);
 	virtual void	renderResource		(tcu::Surface* screen, tcu::Surface* reference);
 
 };

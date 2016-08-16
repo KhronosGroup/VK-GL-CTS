@@ -77,7 +77,7 @@ enum CompressedTexFormat
 	COMPRESSEDTEXFORMAT_LAST
 };
 
-int 				getBlockSize				(CompressedTexFormat format);
+int					getBlockSize				(CompressedTexFormat format);
 IVec3				getBlockPixelSize			(CompressedTexFormat format);
 
 bool				isEtcFormat					(CompressedTexFormat format);

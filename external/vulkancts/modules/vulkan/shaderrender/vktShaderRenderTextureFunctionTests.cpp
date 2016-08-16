@@ -1243,7 +1243,7 @@ static bool isValidCase (TextureType type, const tcu::IVec3& textureSize, int lo
 }
 
 static TextureBindingSp createEmptyTexture (deUint32				format,
-											TextureType 			type,
+											TextureType				type,
 											const tcu::IVec3&		textureSize,
 											int						numLevels,
 											int						lodBase,
@@ -2322,7 +2322,7 @@ void TextureQueryCase::initShaderSources (void)
 	std::ostringstream		vert;
 	std::ostringstream		frag;
 	std::ostringstream&		op			= m_isVertexCase ? vert : frag;
-	glu::GLSLVersion 		version		= glu::GLSL_VERSION_LAST;
+	glu::GLSLVersion		version		= glu::GLSL_VERSION_LAST;
 
 	DE_ASSERT(m_function != QUERYFUNCTION_TEXTUREQUERYLOD || !m_isVertexCase);
 
@@ -2527,7 +2527,7 @@ public:
 																TexEvalFunc					evalFunc,
 																bool						isVertexCase);
 
-	virtual 				~SparseShaderTextureFunctionCase	(void);
+	virtual					~SparseShaderTextureFunctionCase	(void);
 
 	virtual	TestInstance*	createInstance						(Context& context) const;
 protected:
@@ -2541,7 +2541,7 @@ SparseShaderTextureFunctionCase::SparseShaderTextureFunctionCase (tcu::TestConte
 																  const TextureSpec&			texture,
 																  TexEvalFunc					evalFunc,
 																  bool							isVertexCase)
-	: ShaderTextureFunctionCase 	(testCtx, name, desc, lookup, texture, evalFunc, isVertexCase)
+	: ShaderTextureFunctionCase		(testCtx, name, desc, lookup, texture, evalFunc, isVertexCase)
 {
 	initShaderSources();
 }

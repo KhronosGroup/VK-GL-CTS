@@ -143,13 +143,13 @@ public:
 		addChild(new SeedBuilderTest<deUint16>(m_testCtx, 1,		  3068621u, "uint16_one", "Seed from uint16 one."));
 		addChild(new SeedBuilderTest<deUint16>(m_testCtx, 65535,	120448140u, "uint16_max", "Seed from uint16 max."));
 
-		addChild(new SeedBuilderTest<deUint32>(m_testCtx, 0u, 			41006057u, "uint32_zero", "Seed from uint32 zero."));
+		addChild(new SeedBuilderTest<deUint32>(m_testCtx, 0u,			41006057u, "uint32_zero", "Seed from uint32 zero."));
 		addChild(new SeedBuilderTest<deUint32>(m_testCtx, 1u,			54665834u, "uint32_one", "Seed from uint32 one."));
 		addChild(new SeedBuilderTest<deUint32>(m_testCtx, 4294967295u,	43990167u, "uint32_max", "Seed from uint32 max."));
 
-		addChild(new SeedBuilderTest<float>(m_testCtx, 0.0f, 	 41165361u, "float_zero", "Seed from float zero."));
+		addChild(new SeedBuilderTest<float>(m_testCtx, 0.0f,	 41165361u, "float_zero", "Seed from float zero."));
 		addChild(new SeedBuilderTest<float>(m_testCtx, -0.0f,	112541574u, "float_negative_zero", "Seed from float negative zero."));
-		addChild(new SeedBuilderTest<float>(m_testCtx, 1.0f, 	 44355905u, "float_one", "Seed from float one."));
+		addChild(new SeedBuilderTest<float>(m_testCtx, 1.0f,	 44355905u, "float_one", "Seed from float one."));
 		addChild(new SeedBuilderTest<float>(m_testCtx, -1.0f,	107334902u, "float_negative_one", "Seed from float negative one."));
 
 		addChild(new SeedBuilderTest<double>(m_testCtx, 0.0,	133470681u, "double_zero", "Seed from double zero."));

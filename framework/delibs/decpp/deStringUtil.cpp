@@ -47,14 +47,14 @@ namespace
 struct ToLower
 {
 	const locale&	loc;
-					ToLower 	(void) : loc(locale::classic()) {}
+					ToLower		(void) : loc(locale::classic()) {}
 	char			operator()	(char c) { return std::tolower(c, loc); }
 };
 
 struct ToUpper
 {
 	const locale&	loc;
-					ToUpper 	(void) : loc(locale::classic()) {}
+					ToUpper		(void) : loc(locale::classic()) {}
 	char			operator()	(char c) { return std::toupper(c, loc); }
 };
 

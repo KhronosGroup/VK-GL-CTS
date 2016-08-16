@@ -86,7 +86,7 @@ public:
 				ColoredRect (const IVec2& bottomLeft_, const IVec2& topRight_, const Color& color_);
 	IVec2		bottomLeft;
 	IVec2		topRight;
-	Color 		color;
+	Color		color;
 };
 
 ColoredRect::ColoredRect (const IVec2& bottomLeft_, const IVec2& topRight_, const Color& color_)
@@ -112,7 +112,7 @@ DrawCommand::DrawCommand (DrawType drawType_, const ColoredRect& rect_)
 struct Frame
 {
 						Frame (int width_, int height_);
-	int 				width;
+	int					width;
 	int					height;
 	vector<DrawCommand> draws;
 };
@@ -376,8 +376,8 @@ void SwapBuffersWithDamageTest::initEGLSurface (EGLConfig config)
 
 void SwapBuffersWithDamageTest::initEGLContext (EGLConfig config)
 {
-	const Library& 	egl 		 = m_eglTestCtx.getLibrary();
-	const EGLint 	attribList[] =
+	const Library&	egl			 = m_eglTestCtx.getLibrary();
+	const EGLint	attribList[] =
 	{
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE

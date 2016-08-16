@@ -2148,7 +2148,7 @@ void GLES2SharingRandomTest::init (void)
 	};
 
 	m_eglDisplay	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
-	m_eglConfig 	= eglu::chooseSingleConfig(egl, m_eglDisplay, attribList);
+	m_eglConfig		= eglu::chooseSingleConfig(egl, m_eglDisplay, attribList);
 
 	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 
@@ -2868,7 +2868,7 @@ tcu::TestCase::IterateResult GLES2SharingRandomTest::iterate (void)
 
 		while (true)
 		{
-			int 		firstThread = -1;
+			int			firstThread = -1;
 
 			// Find first thread with messages
 			for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
@@ -3038,7 +3038,7 @@ void GLES2ThreadedSharingTest::init (void)
 	};
 
 	m_eglDisplay	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
-	m_eglConfig 	= eglu::chooseSingleConfig(egl, m_eglDisplay, attribList);
+	m_eglConfig		= eglu::chooseSingleConfig(egl, m_eglDisplay, attribList);
 
 	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 
@@ -3681,7 +3681,7 @@ tcu::TestCase::IterateResult GLES2ThreadedSharingTest::iterate (void)
 
 		while (true)
 		{
-			int 		firstThread = -1;
+			int			firstThread = -1;
 
 			// Find first thread with messages
 			for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)

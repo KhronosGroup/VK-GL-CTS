@@ -62,7 +62,7 @@ typedef struct deIOStreamVFTable_s
 	deIOStreamReadFunc		readFunc;
 	deIOStreamWriteFunc		writeFunc;
 	deIOStreamGetErrorFunc	getErrorFunc;
-	deIOStreamFlushFunc 	flushFunc;
+	deIOStreamFlushFunc		flushFunc;
 	deIOStreamDeinitFunc	deinitFunc;
 	deIOStreamStatusFunc	statusFunc;
 } deIOStreamVFTable;
@@ -76,7 +76,7 @@ typedef struct deIOStream_s
 
 DE_INLINE deStreamResult	deIOStream_read			(deIOStream* stream, void* buf, deInt32 bufSize, deInt32* numRead);
 DE_INLINE deStreamResult	deIOStream_write		(deIOStream* stream, const void* buf, deInt32 bufSize, deInt32* numWritten);
-DE_INLINE const char*		deIOStream_getError 	(deIOStream* stream);
+DE_INLINE const char*		deIOStream_getError		(deIOStream* stream);
 DE_INLINE deStreamStatus	deIOStream_getStatus	(deIOStream* stream);
 DE_INLINE deStreamResult	deIOStream_flush		(deIOStream* stream);
 DE_INLINE deStreamResult	deIOStream_deinit		(deIOStream* stream);

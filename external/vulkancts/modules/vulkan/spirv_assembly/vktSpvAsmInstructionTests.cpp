@@ -256,7 +256,7 @@ struct OpFUnordCase
 	const char*		opCode;
 	compareFuncType	compareFunc;
 
-					OpFUnordCase 			(const char* _name, const char* _opCode, compareFuncType _compareFunc)
+					OpFUnordCase			(const char* _name, const char* _opCode, compareFuncType _compareFunc)
 						: name				(_name)
 						, opCode			(_opCode)
 						, compareFunc		(_compareFunc) {}
@@ -384,7 +384,7 @@ struct OpAtomicCase
 	void			(*calculateExpected)(deInt32&, deInt32);
 	deInt32			numOutputElements;
 
-					OpAtomicCase 			(const char* _name, const char* _assembly, void (*_calculateExpected)(deInt32&, deInt32), deInt32 _numOutputElements)
+					OpAtomicCase			(const char* _name, const char* _assembly, void (*_calculateExpected)(deInt32&, deInt32), deInt32 _numOutputElements)
 						: name				(_name)
 						, assembly			(_assembly)
 						, calculateExpected	(_calculateExpected)
@@ -8566,9 +8566,9 @@ struct AssemblyStructInfo
 const string specializeInBoundsShaderTemplate (const NumberType type, const AssemblyStructInfo& structInfo, const map<string, string>& params)
 {
 	// Create the full index string
-	string 				fullIndex	= numberToString(structInfo.index) + " " + params.at("indexes");
+	string				fullIndex	= numberToString(structInfo.index) + " " + params.at("indexes");
 	// Convert it to list of indexes
-	vector<string> 		indexes		= de::splitString(fullIndex, ' ');
+	vector<string>		indexes		= de::splitString(fullIndex, ' ');
 
 	map<string, string>	parameters	(params);
 	parameters["typeDeclaration"]	= getAssemblyTypeDeclaration(type);

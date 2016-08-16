@@ -268,7 +268,7 @@ bool SupportedCombinationTest::tryCombination (const FormatCombination& comb)
 	FboBuilder builder(*fbo, GL_FRAMEBUFFER, fboc::gl(*this));
 
 	attachTargetToNew(GL_COLOR_ATTACHMENT0,		comb.colorKind,		comb.colorFmt,
-					  64, 						64,					builder);
+					  64,						64,					builder);
 	attachTargetToNew(GL_DEPTH_ATTACHMENT,		comb.depthKind,		comb.depthFmt,
 					  64,						64,					builder);
 	attachTargetToNew(GL_STENCIL_ATTACHMENT,	comb.stencilKind,	comb.stencilFmt,

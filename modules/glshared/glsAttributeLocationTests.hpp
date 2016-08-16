@@ -48,7 +48,7 @@ public:
 						AttribType		(const std::string& name, deUint32 locationSize, deUint32 typeEnum);
 
 	const std::string&	getName			(void) const { return m_name;			}
-	deUint32 			getLocationSize	(void) const { return m_locationSize;	}
+	deUint32			getLocationSize	(void) const { return m_locationSize;	}
 	deUint32			getGLTypeEnum	(void) const { return m_glTypeEnum;		}
 
 private:
@@ -95,7 +95,7 @@ public:
 
 						Attribute			(const AttribType&	type,
 											 const std::string&	name,
-											 deInt32			layoutLocation 	= LOC_UNDEF,
+											 deInt32			layoutLocation	= LOC_UNDEF,
 											 const Cond&		cond			= Cond::COND_ALWAYS,
 											 int				arraySize		= NOT_ARRAY);
 

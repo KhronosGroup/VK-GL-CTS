@@ -905,7 +905,7 @@ Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory(VkFormat        
 		// Remove storage usage if the optimal tiling feature does not support it
 		usage &= ~VK_IMAGE_USAGE_STORAGE_BIT;
 	}
-	
+
 	const VkImageCreateInfo colorImageParams =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                        // VkStructureType      sType;

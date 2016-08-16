@@ -65,7 +65,7 @@ typedef struct TYPENAME_s																			\
 {																									\
 	TYPENAME##Hash*		hash;																		\
 	TYPENAME##Array*	array;																		\
-} TYPENAME; /* NOLINT(TYPENAME) */  																\
+} TYPENAME; /* NOLINT(TYPENAME) */																	\
 																									\
 TYPENAME*		TYPENAME##_create		(deMemPool* pool);											\
 deBool			TYPENAME##_insert		(DE_PTR_TYPE(TYPENAME) hashArray, KEYTYPE key, VALUETYPE value);	\

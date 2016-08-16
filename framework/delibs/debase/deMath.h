@@ -87,7 +87,7 @@ DE_INLINE int		deFloatIntSign		(float a)					{ return (a == 0.0f) ? 0 : ((a > 0.
 DE_INLINE float		deFloatFloor		(float a)					{ return (float)floor(a); }
 DE_INLINE float		deFloatCeil			(float a)					{ return (float)ceil(a); }
 DE_INLINE float		deFloatRound		(float a)					{ return deFloatFloor(a + 0.5f); }
-DE_INLINE float 	deFloatFrac			(float a) 					{ return a - deFloatFloor(a); }
+DE_INLINE float		deFloatFrac			(float a)					{ return a - deFloatFloor(a); }
 DE_INLINE float		deFloatMod			(float a, float b)			{ return (float)fmod(a, b); }
 DE_INLINE float		deFloatModf			(float x, float* i)			{ double j = 0; double ret = modf(x, &j); *i = (float)j; return (float)ret; }
 DE_INLINE float		deFloatMadd			(float a, float b, float c)	{ return (a*b) + c; }
@@ -101,7 +101,7 @@ DE_INLINE int		deIntSign			(double x)						{ return (x > 0.0) - (x < 0.0); }
 DE_INLINE double	deFloor				(double a)						{ return floor(a); }
 DE_INLINE double	deCeil				(double a)						{ return ceil(a); }
 DE_INLINE double	deRound				(double a)						{ return floor(a + 0.5); }
-DE_INLINE double 	deFrac				(double a) 						{ return a - deFloor(a); }
+DE_INLINE double	deFrac				(double a)						{ return a - deFloor(a); }
 DE_INLINE double	deMod				(double a, double b)			{ return fmod(a, b); }
 DE_INLINE double	deModf				(double x, double* i)			{ return modf(x, i); }
 DE_INLINE double	deMadd				(double a, double b, double c)	{ return (a*b) + c; }
@@ -213,7 +213,7 @@ DE_INLINE deInt32	deFloorFloatToInt32	(float x)					{ return (deInt32)(deFloatFl
 DE_INLINE deInt32	deCeilFloatToInt32	(float x)					{ return (deInt32)(deFloatCeil(x)); }
 
 /* Arithmetic round */
-DE_INLINE deInt16 	deRoundFloatToInt16 (float x)				{ if(x >= 0.0f) return (deInt16)(x + 0.5f); else return (deInt16)(x - 0.5f); }
+DE_INLINE deInt16	deRoundFloatToInt16 (float x)				{ if(x >= 0.0f) return (deInt16)(x + 0.5f); else return (deInt16)(x - 0.5f); }
 DE_INLINE deInt32	deRoundFloatToInt32	(float x)				{ if(x >= 0.0f) return (deInt32)(x + 0.5f); else return (deInt32)(x - 0.5f); }
 DE_INLINE deInt64	deRoundFloatToInt64 (float x)				{ if(x >= 0.0f) return (deInt64)(x + 0.5f); else return (deInt64)(x - 0.5f); }
 

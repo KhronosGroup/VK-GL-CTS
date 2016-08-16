@@ -188,7 +188,7 @@ void MemoryAllocator::allocatePBuffer (void)
 	}
 	catch (const std::bad_alloc&)
 	{
-		m_errorString 	= "std::bad_alloc when allocating more space for testcase. Out of host memory.";
+		m_errorString	= "std::bad_alloc when allocating more space for testcase. Out of host memory.";
 		m_failed		= true;
 		return;
 	}
@@ -254,7 +254,7 @@ void MemoryAllocator::allocateContext (void)
 	}
 	catch (const std::bad_alloc&)
 	{
-		m_errorString 	= "std::bad_alloc when allocating more space for testcase. Out of host memory.";
+		m_errorString	= "std::bad_alloc when allocating more space for testcase. Out of host memory.";
 		m_failed		= true;
 		return;
 	}

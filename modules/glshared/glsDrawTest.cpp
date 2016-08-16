@@ -414,7 +414,7 @@ public:
 		inline bool					operator<=		(const WrappedType<Type>& other) const	{ return m_value <= other.m_value; }
 		inline bool					operator>=		(const WrappedType<Type>& other) const	{ return m_value >= other.m_value; }
 
-		inline 						operator Type	(void) const							{ return m_value; }
+		inline						operator Type	(void) const							{ return m_value; }
 		template<class T>
 		inline T					to				(void) const							{ return (T)m_value; }
 	private:
@@ -488,7 +488,7 @@ public:
 		inline bool			operator<=		(const Fixed& other) const	{ return m_value <= other.m_value; }
 		inline bool			operator>=		(const Fixed& other) const	{ return m_value >= other.m_value; }
 
-		inline 				operator deInt32 (void) const				{ return m_value; }
+		inline				operator deInt32 (void) const				{ return m_value; }
 		template<class T>
 		inline T			to				(void) const				{ return (T)m_value; }
 	private:
@@ -1841,9 +1841,9 @@ public:
 
 	void						newArray			(DrawTestSpec::Storage storage);
 	void						clearArrays			(void);
-	void 						updateProgram		(void);
+	void						updateProgram		(void);
 
-	void						render 				(DrawTestSpec::Primitive primitive, DrawTestSpec::DrawMethod drawMethod, int firstVertex, int vertexCount, DrawTestSpec::IndexType indexType, const void* indexOffset, int rangeStart, int rangeEnd, int instanceCount, int indirectOffset, int baseVertex, float coordScale, float colorScale, AttributeArray* indexArray);
+	void						render				(DrawTestSpec::Primitive primitive, DrawTestSpec::DrawMethod drawMethod, int firstVertex, int vertexCount, DrawTestSpec::IndexType indexType, const void* indexOffset, int rangeStart, int rangeEnd, int instanceCount, int indirectOffset, int baseVertex, float coordScale, float colorScale, AttributeArray* indexArray);
 
 	const tcu::Surface&			getSurface			(void) const { return m_screen; }
 private:

@@ -207,7 +207,7 @@ tcu::TestStatus BufferSparseBindingInstance::iterate (void)
 	referenceData.resize(m_bufferSize);
 
 	for (deUint32 valueNdx = 0; valueNdx < m_bufferSize; ++valueNdx)
-	{	
+	{
 		referenceData[valueNdx] = static_cast<deUint8>((valueNdx % bufferMemRequirement.alignment) + 1u);
 	}
 

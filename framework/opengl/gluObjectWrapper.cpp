@@ -70,14 +70,14 @@ ObjectWrapper::~ObjectWrapper (void)
 
 static const ObjectTraits s_objectTraits[OBJECTTYPE_LAST] =
 {
-	{ "texture",			&glw::Functions::genTextures, 			&glw::Functions::deleteTextures				},
-	{ "buffer",				&glw::Functions::genBuffers, 			&glw::Functions::deleteBuffers				},
-	{ "renderbuffer",		&glw::Functions::genRenderbuffers, 		&glw::Functions::deleteRenderbuffers		},
-	{ "framebuffer",		&glw::Functions::genFramebuffers, 		&glw::Functions::deleteFramebuffers			},
+	{ "texture",			&glw::Functions::genTextures,			&glw::Functions::deleteTextures				},
+	{ "buffer",				&glw::Functions::genBuffers,			&glw::Functions::deleteBuffers				},
+	{ "renderbuffer",		&glw::Functions::genRenderbuffers,		&glw::Functions::deleteRenderbuffers		},
+	{ "framebuffer",		&glw::Functions::genFramebuffers,		&glw::Functions::deleteFramebuffers			},
 	{ "transform feedback",	&glw::Functions::genTransformFeedbacks,	&glw::Functions::deleteTransformFeedbacks	},
-	{ "vertex array",		&glw::Functions::genVertexArrays, 		&glw::Functions::deleteVertexArrays			},
-	{ "query",				&glw::Functions::genQueries, 			&glw::Functions::deleteQueries				},
-	{ "sampler",			&glw::Functions::genSamplers, 			&glw::Functions::deleteSamplers				},
+	{ "vertex array",		&glw::Functions::genVertexArrays,		&glw::Functions::deleteVertexArrays			},
+	{ "query",				&glw::Functions::genQueries,			&glw::Functions::deleteQueries				},
+	{ "sampler",			&glw::Functions::genSamplers,			&glw::Functions::deleteSamplers				},
 };
 
 const ObjectTraits& objectTraits (ObjectType type)

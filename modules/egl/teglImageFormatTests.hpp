@@ -33,7 +33,7 @@ namespace egl
 namespace Image
 {
 
-TestCaseGroup* createSimpleCreationTests 		(EglTestContext& eglTestCtx, const std::string& name, const std::string& desc);
+TestCaseGroup* createSimpleCreationTests		(EglTestContext& eglTestCtx, const std::string& name, const std::string& desc);
 TestCaseGroup* createModifyTests				(EglTestContext& eglTestCtx, const std::string& name, const std::string& desc);
 TestCaseGroup* createMultiContextRenderTests	(EglTestContext& eglTestCtx, const std::string& name, const std::string& desc);
 
