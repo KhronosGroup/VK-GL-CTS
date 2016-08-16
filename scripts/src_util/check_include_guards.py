@@ -26,6 +26,7 @@ from fnmatch import fnmatch
 from optparse import OptionParser
 
 HEADER_PATTERNS		= ["*.hpp", "*.h"]
+IGNORE_FILES		= set(["tcuEAGLView.h", "tcuIOSAppDelegate.h", "tcuIOSViewController.h"])
 CHECK_END_COMMENT	= True
 
 def getIncludeGuardName (headerFile):
@@ -80,6 +81,9 @@ def fixIncludeGuard (headerFile):
 	f.close()
 
 def isHeader (filename):
+	if os.path.basename(filename) in IGNORE_FILES:
+		return False
+
 	for pattern in HEADER_PATTERNS:
 		if fnmatch(filename, pattern):
 			return True
