@@ -91,17 +91,17 @@ DE_END_EXTERN_C
 *//*--------------------------------------------------------------------*/
 #define DE_DECLARE_POOL_ARRAY(TYPENAME, VALUETYPE)		\
     \
-typedef struct TYPENAME##_s    				\
-{  											\
-	deMemPool*			pool;    			\
+typedef struct TYPENAME##_s					\
+{											\
+	deMemPool*			pool;				\
 											\
-	int					elementSize;    	\
-	int					numElements;    	\
-	int					capacity;    		\
+	int					elementSize;		\
+	int					numElements;		\
+	int					capacity;			\
 											\
 	int					pageTableCapacity;	\
-	DE_PTR_TYPE(VALUETYPE)*	pageTable;    	\
-} TYPENAME; /* NOLINT(TYPENAME) */  		\
+	DE_PTR_TYPE(VALUETYPE)*	pageTable;		\
+} TYPENAME; /* NOLINT(TYPENAME) */			\
 \
 DE_INLINE TYPENAME*	TYPENAME##_create			(deMemPool* pool);															\
 DE_INLINE int		TYPENAME##_getNumElements	(const TYPENAME* arr)									DE_UNUSED_FUNCTION;	\

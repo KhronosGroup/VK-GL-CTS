@@ -84,7 +84,7 @@ enum
 
 std::string generateVertexShader (ShaderType shaderType, const std::string& shaderUniformDeclarations, const std::string& shaderBody)
 {
-	static const char* const s_simpleVertexShaderSource	= 	"#version 310 es\n"
+	static const char* const s_simpleVertexShaderSource	=	"#version 310 es\n"
 															"in highp vec4 a_position;\n"
 															"void main (void)\n"
 															"{\n"
@@ -97,15 +97,15 @@ std::string generateVertexShader (ShaderType shaderType, const std::string& shad
 		case SHADERTYPE_BOTH:
 		{
 			std::ostringstream vertexShaderSource;
-			vertexShaderSource	<< 	"#version 310 es\n"
-								<< 	"in highp vec4 a_position;\n"
-								<< 	"out highp vec4 v_color;\n"
-								<< 	"uniform highp int u_arrayNdx;\n\n"
-								<< 	shaderUniformDeclarations << "\n"
-								<< 	"void main (void)\n"
+			vertexShaderSource	<<	"#version 310 es\n"
+								<<	"in highp vec4 a_position;\n"
+								<<	"out highp vec4 v_color;\n"
+								<<	"uniform highp int u_arrayNdx;\n\n"
+								<<	shaderUniformDeclarations << "\n"
+								<<	"void main (void)\n"
 								<<	"{\n"
 								<<	"	highp vec4 color;\n\n"
-								<< 	shaderBody << "\n"
+								<<	shaderBody << "\n"
 								<<	"	v_color = color;\n"
 								<<	"	gl_Position = a_position;\n"
 								<<	"}\n";
@@ -218,8 +218,8 @@ public:
 																		 const std::string& uniformName);
 	virtual								~LayoutBindingRenderCase		(void);
 
-	virtual void 						init							(void);
-	virtual void 						deinit							(void);
+	virtual void						init							(void);
+	virtual void						deinit							(void);
 
 	int									getRenderWidth					(void) const { return de::min((int)MAX_TEST_RENDER_WIDTH, m_context.getRenderTarget().getWidth()); }
 	int									getRenderHeight					(void) const { return de::min((int)MAX_TEST_RENDER_HEIGHT, m_context.getRenderTarget().getHeight()); }
@@ -381,7 +381,7 @@ void LayoutBindingRenderCase::init (void)
 	// Setup vertex and index buffers
 	{
 		// Get attribute and uniform locations
-		const deUint32 	program	= m_program->getProgram();
+		const deUint32	program	= m_program->getProgram();
 
 		m_shaderProgramPosLoc		= gl.getAttribLocation(program, "a_position");
 		m_shaderProgramArrayNdxLoc	= gl.getUniformLocation(program, "u_arrayNdx");
@@ -831,9 +831,9 @@ public:
 									SamplerBindingRenderCase		(Context& context, const char* name, const char* desc, ShaderType shaderType, TestType testType, glw::GLenum samplerType, glw::GLenum textureType);
 									~SamplerBindingRenderCase		(void);
 
-	void 							init							(void);
-	void 							deinit							(void);
-	IterateResult 					iterate							(void);
+	void							init							(void);
+	void							deinit							(void);
+	IterateResult					iterate							(void);
 
 private:
 	glu::ShaderProgram*				generateShaders					(void) const;
@@ -1129,9 +1129,9 @@ public:
 																			 glw::GLenum	textureType);
 											~ImageBindingRenderCase			(void);
 
-	void 									init							(void);
-	void 									deinit							(void);
-	IterateResult 							iterate							(void);
+	void									init							(void);
+	void									deinit							(void);
+	IterateResult							iterate							(void);
 
 private:
 	glu::ShaderProgram*						generateShaders					(void) const;
@@ -1427,9 +1427,9 @@ public:
 																		 TestType		testType);
 											~UBOBindingRenderCase		(void);
 
-	void 									init						(void);
-	void 									deinit						(void);
-	IterateResult 							iterate						(void);
+	void									init						(void);
+	void									deinit						(void);
+	IterateResult							iterate						(void);
 
 private:
 	glu::ShaderProgram*						generateShaders				(void) const;
@@ -1662,9 +1662,9 @@ public:
 																		 TestType		testType);
 											~SSBOBindingRenderCase		(void);
 
-	void 									init						(void);
-	void 									deinit						(void);
-	IterateResult 							iterate						(void);
+	void									init						(void);
+	void									deinit						(void);
+	IterateResult							iterate						(void);
 
 private:
 	glu::ShaderProgram*						generateShaders				(void) const;
@@ -1929,18 +1929,18 @@ void LayoutBindingTests::init (void)
 	static const struct RenderTestType
 	{
 		ShaderType				shaderType;
-		TestType			 	testType;
-		std::string 			name;
-		std::string 			descPostfix;
+		TestType				testType;
+		std::string				name;
+		std::string				descPostfix;
 	} s_renderTestTypes[] =
 	{
-		{ SHADERTYPE_VERTEX,	TESTTYPE_BINDING_SINGLE, 		"vertex_binding_single",	 	"a single instance" },
+		{ SHADERTYPE_VERTEX,	TESTTYPE_BINDING_SINGLE,		"vertex_binding_single",		"a single instance" },
 		{ SHADERTYPE_VERTEX,	TESTTYPE_BINDING_MAX,			"vertex_binding_max",			"maximum binding point"	},
 		{ SHADERTYPE_VERTEX,	TESTTYPE_BINDING_MULTIPLE,		"vertex_binding_multiple",		"multiple instances"},
 		{ SHADERTYPE_VERTEX,	TESTTYPE_BINDING_ARRAY,			"vertex_binding_array",			"an array instance" },
 		{ SHADERTYPE_VERTEX,	TESTTYPE_BINDING_MAX_ARRAY,		"vertex_binding_max_array",		"an array instance with maximum binding point" },
 
-		{ SHADERTYPE_FRAGMENT,	TESTTYPE_BINDING_SINGLE, 		"fragment_binding_single",	 	"a single instance" },
+		{ SHADERTYPE_FRAGMENT,	TESTTYPE_BINDING_SINGLE,		"fragment_binding_single",		"a single instance" },
 		{ SHADERTYPE_FRAGMENT,	TESTTYPE_BINDING_MAX,			"fragment_binding_max",			"maximum binding point"	},
 		{ SHADERTYPE_FRAGMENT,	TESTTYPE_BINDING_MULTIPLE,		"fragment_binding_multiple",	"multiple instances"},
 		{ SHADERTYPE_FRAGMENT,	TESTTYPE_BINDING_ARRAY,			"fragment_binding_array",		"an array instance" },

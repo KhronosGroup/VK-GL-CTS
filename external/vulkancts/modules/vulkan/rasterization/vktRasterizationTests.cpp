@@ -640,7 +640,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 	Move<VkBuffer>								vertexBuffer;
 	de::MovePtr<Allocation>						vertexBufferMemory;
 	const VkPhysicalDeviceProperties			properties				= m_context.getDeviceProperties();
-	
+
 	if (attributeBatchSize > properties.limits.maxVertexInputAttributeOffset)
 	{
 		std::stringstream message;

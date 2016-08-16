@@ -48,7 +48,7 @@ public:
 		RESULT_FAILED
 	};
 
-					Event 		(void);
+					Event		(void);
 					~Event		(void);
 	void			setResult	(Result result);
 	Result			waitReady	(void);
@@ -103,7 +103,7 @@ public:
 						EndToken			(void) {}
 	};
 
-	void 				operator<<			(const EndToken&);
+	void				operator<<			(const EndToken&);
 
 private:
 	Thread&				m_thread;

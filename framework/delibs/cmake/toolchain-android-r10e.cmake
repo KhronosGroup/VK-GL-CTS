@@ -110,7 +110,7 @@ endif ()
 # C++ library
 if (ANDROID_ABI STREQUAL "x86")
 	# Use gnu-libstc++, since libc++ is currently broken on x86, bug #22124988
-	set(ANDROID_CXX_LIBRARY 	"${ANDROID_NDK_PATH}/sources/cxx-stl/gnu-libstdc++/4.9/libs/${ANDROID_ABI}/libgnustl_static.a")
+	set(ANDROID_CXX_LIBRARY		"${ANDROID_NDK_PATH}/sources/cxx-stl/gnu-libstdc++/4.9/libs/${ANDROID_ABI}/libgnustl_static.a")
 	set(CXX_INCLUDES			"-I${ANDROID_NDK_PATH}/sources/cxx-stl/gnu-libstdc++/4.9/include -I${ANDROID_NDK_PATH}/sources/cxx-stl/gnu-libstdc++/4.9/libs/${ANDROID_ABI}/include")
 	set(CMAKE_FIND_ROOT_PATH	"${ANDROID_NDK_PATH}/sources/cxx-stl/gnu-libstdc++/4.9/libs/${ANDROID_ABI}" ${CMAKE_FIND_ROOT_PATH})
 else ()

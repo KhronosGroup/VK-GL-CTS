@@ -182,7 +182,7 @@ static const glu::DataType s_samplerTypes[] =
 
 void verifyShader (NegativeTestContext& ctx, glu::ShaderType shaderType, std::string shaderSource)
 {
-	tcu::TestLog& 	log 	= ctx.getLog();
+	tcu::TestLog&	log		= ctx.getLog();
 	const char*		source	= shaderSource.c_str();
 	const int		length	= (int) shaderSource.size();
 	glu::Shader		shader	(ctx.getRenderContext(), shaderType);
@@ -1704,7 +1704,7 @@ std::string genShaderSourceTextureSize_lod (NegativeTestContext& ctx, glu::Shade
 			<< "{\n"
 			<< "    " << declareAndInitializeShaderVariable(lodDataType, "lod")
 			<< "    textureSize(sampler, lod);\n"
-	 		<< "}\n";
+			<< "}\n";
 
 	return source.str();
 }

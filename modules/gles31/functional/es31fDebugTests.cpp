@@ -312,7 +312,7 @@ public:
 								BaseCase			(Context&					ctx,
 													 const char*				name,
 													 const char*				desc);
-	virtual 					~BaseCase			(void) {}
+	virtual						~BaseCase			(void) {}
 
 	virtual IterateResult		iterate				(void) = 0;
 
@@ -627,7 +627,7 @@ public:
 													 const char*			name,
 													 const char*			desc,
 													 TestFunctionWrapper	errorFunc);
-	virtual 					~CallbackErrorCase	(void) {}
+	virtual						~CallbackErrorCase	(void) {}
 
 	virtual IterateResult		iterate				(void);
 
@@ -698,7 +698,7 @@ public:
 												 const char*			name,
 												 const char*			desc,
 												 TestFunctionWrapper	errorFunc);
-	virtual		 				~LogErrorCase	(void) {}
+	virtual						~LogErrorCase	(void) {}
 
 	virtual IterateResult		iterate			(void);
 
@@ -806,7 +806,7 @@ public:
 												 const char*			name,
 												 const char*			desc,
 												 TestFunctionWrapper	errorFunc);
-	virtual 					~GetErrorCase	(void) {}
+	virtual						~GetErrorCase	(void) {}
 
 	virtual IterateResult		iterate			(void);
 
@@ -878,7 +878,7 @@ public:
 														 const char*						name,
 														 const char*						desc,
 														 const vector<TestFunctionWrapper>&	errorFuncs);
-	virtual 							~FilterCase		(void) {}
+	virtual								~FilterCase		(void) {}
 
 	virtual IterateResult				iterate			(void);
 
@@ -1223,7 +1223,7 @@ public:
 												 const char*						name,
 												 const char*						desc,
 												 const vector<TestFunctionWrapper>&	errorFuncs);
-	virtual 				~GroupFilterCase	(void) {}
+	virtual					~GroupFilterCase	(void) {}
 
 	virtual IterateResult	iterate				(void);
 };
@@ -3024,9 +3024,9 @@ void DebugTests::init (void)
 
 		FOR_ALL_TYPES(queries->addChild(new PositiveIntegerCase		(m_context, (std::string("debug_logged_messages") + postfix).c_str(),				"Test DEBUG_LOGGED_MESSAGES",				GL_DEBUG_LOGGED_MESSAGES,				queryType)));
 		FOR_ALL_TYPES(queries->addChild(new PositiveIntegerCase		(m_context, (std::string("debug_next_logged_message_length") + postfix).c_str(),	"Test DEBUG_NEXT_LOGGED_MESSAGE_LENGTH",	GL_DEBUG_NEXT_LOGGED_MESSAGE_LENGTH,	queryType)));
-		FOR_ALL_TYPES(queries->addChild(new GroupStackDepthQueryCase(m_context, (std::string("debug_group_stack_depth") + postfix).c_str(),				"Test DEBUG_GROUP_STACK_DEPTH", 			queryType)));
+		FOR_ALL_TYPES(queries->addChild(new GroupStackDepthQueryCase(m_context, (std::string("debug_group_stack_depth") + postfix).c_str(),				"Test DEBUG_GROUP_STACK_DEPTH",				queryType)));
 
-		queries->addChild(new DebugCallbackFunctionCase	(m_context, "debug_callback_function_getpointer", 	"Test DEBUG_CALLBACK_FUNCTION"));
+		queries->addChild(new DebugCallbackFunctionCase	(m_context, "debug_callback_function_getpointer",	"Test DEBUG_CALLBACK_FUNCTION"));
 		queries->addChild(new DebugCallbackUserParamCase(m_context, "debug_callback_user_param_getpointer", "Test DEBUG_CALLBACK_USER_PARAM"));
 
 		#undef FOR_ALL_TYPES

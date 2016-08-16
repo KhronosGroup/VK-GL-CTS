@@ -226,7 +226,7 @@ protected:
 	{
 	public:
 								UnmanagedSamplerUniform  (void) {}
-		virtual 				~UnmanagedSamplerUniform (void) {}
+		virtual					~UnmanagedSamplerUniform (void) {}
 		virtual UniformType		getType                  (void) const { return UNIFORM_TYPE_UNMANAGED_SAMPLER; }
 
 		VkImageView				imageView;

@@ -212,7 +212,7 @@ string genLookupCode(const ImageViewParameters&		imParams,
 	}
 
 	code += "(testSampler, ";
- 	code += arg;
+	code += arg;
 
 	if (samplerParams.isCompare && hasSeparateCompare)
 	{
@@ -560,12 +560,12 @@ VkImageViewType mapImageViewType (const ImageViewParameters& imParams)
 class DataGenerator
 {
 public:
-	virtual 									~DataGenerator	(void) {}
+	virtual										~DataGenerator	(void) {}
 
-	virtual bool 								generate		(void) = 0;
+	virtual bool								generate		(void) = 0;
 
 	virtual std::vector<ConstPixelBufferAccess> getPba			(void) const = 0;
-	virtual std::vector<SampleArguments> 		getSampleArgs	(void) const = 0;
+	virtual std::vector<SampleArguments>		getSampleArgs	(void) const = 0;
 
 protected:
 	DataGenerator (void) {}

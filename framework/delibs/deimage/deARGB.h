@@ -38,8 +38,8 @@ DE_INLINE deARGB	deARGB_set (int r, int g, int b, int a)
 	return (a<<24) | (r<<16) | (g<<8) | (b<<0);
 }
 
-DE_INLINE deARGB	deARGB_white 		(void) 			{ return deARGB_set(0xFF, 0xFF, 0xFF, 0xFF); }
-DE_INLINE deARGB	deARGB_black 		(void) 			{ return deARGB_set(0, 0, 0, 0xFF); }
+DE_INLINE deARGB	deARGB_white		(void)			{ return deARGB_set(0xFF, 0xFF, 0xFF, 0xFF); }
+DE_INLINE deARGB	deARGB_black		(void)			{ return deARGB_set(0, 0, 0, 0xFF); }
 
 DE_INLINE int		deARGB_getRed		(deARGB argb)	{ return (int)((argb >> 16) & 0xFF); }
 DE_INLINE int		deARGB_getGreen		(deARGB argb)	{ return (int)((argb >>  8) & 0xFF); }

@@ -75,7 +75,7 @@ public:
 	bool				operator>=		(const Version& v) const;
 
 private:
-	int 				m_major;
+	int					m_major;
 	int					m_minor;
 };
 

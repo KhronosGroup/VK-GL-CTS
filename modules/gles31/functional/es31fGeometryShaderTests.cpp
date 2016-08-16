@@ -159,16 +159,16 @@ std::string primitiveTypeToString (GLenum primitive)
 	switch (primitive)
 	{
 		case GL_POINTS:						 return "points";
-		case GL_LINES:					   	 return "lines";
-		case GL_LINE_LOOP:				   	 return "line_loop";
-		case GL_LINE_STRIP:				   	 return "line_strip";
-		case GL_LINES_ADJACENCY:		   	 return "lines_adjacency";
-		case GL_LINE_STRIP_ADJACENCY:	   	 return "line_strip_adjacency";
-		case GL_TRIANGLES:				   	 return "triangles";
-		case GL_TRIANGLE_STRIP:			   	 return "triangle_strip";
-		case GL_TRIANGLE_FAN:			   	 return "triangle_fan";
-		case GL_TRIANGLES_ADJACENCY:	   	 return "triangles_adjacency";
-		case GL_TRIANGLE_STRIP_ADJACENCY:  	 return "triangle_strip_adjacency";
+		case GL_LINES:						 return "lines";
+		case GL_LINE_LOOP:					 return "line_loop";
+		case GL_LINE_STRIP:					 return "line_strip";
+		case GL_LINES_ADJACENCY:			 return "lines_adjacency";
+		case GL_LINE_STRIP_ADJACENCY:		 return "line_strip_adjacency";
+		case GL_TRIANGLES:					 return "triangles";
+		case GL_TRIANGLE_STRIP:				 return "triangle_strip";
+		case GL_TRIANGLE_FAN:				 return "triangle_fan";
+		case GL_TRIANGLES_ADJACENCY:		 return "triangles_adjacency";
+		case GL_TRIANGLE_STRIP_ADJACENCY:	 return "triangle_strip_adjacency";
 		default:
 			DE_ASSERT(DE_FALSE);
 			return "error";
@@ -1799,13 +1799,13 @@ public:
 		FLAG_USE_RESTART_INDEX	= 4,
 	};
 
-									GeometryShaderRenderTest 	(Context& context, const char* name, const char* desc, GLenum inputPrimitives, GLenum outputPrimitives, const char* dataAttributeName, int flags = 0);
+									GeometryShaderRenderTest	(Context& context, const char* name, const char* desc, GLenum inputPrimitives, GLenum outputPrimitives, const char* dataAttributeName, int flags = 0);
 	virtual							~GeometryShaderRenderTest	(void);
 
 	void							init						(void);
 	void							deinit						(void);
 
-	IterateResult					iterate 					(void);
+	IterateResult					iterate						(void);
 	bool							compare						(void);
 
 	virtual sglr::ShaderProgram&	getProgram					(void) = 0;
@@ -2163,7 +2163,7 @@ void GeometryShaderRenderTest::postRender (sglr::Context& ctx, GLuint programID)
 class GeometryExpanderRenderTest : public GeometryShaderRenderTest
 {
 public:
-									GeometryExpanderRenderTest 	(Context& context, const char* name, const char* desc, GLenum inputPrimitives, GLenum outputPrimitives);
+									GeometryExpanderRenderTest	(Context& context, const char* name, const char* desc, GLenum inputPrimitives, GLenum outputPrimitives);
 	virtual							~GeometryExpanderRenderTest	(void);
 
 	sglr::ShaderProgram&			getProgram					(void);
@@ -2359,13 +2359,13 @@ void TriangleStripAdjacencyVertexCountTest::genVertexAttribData (void)
 class NegativeDrawCase : public TestCase
 {
 public:
-							NegativeDrawCase 	(Context& context, const char* name, const char* desc, GLenum inputType, GLenum inputPrimitives);
+							NegativeDrawCase	(Context& context, const char* name, const char* desc, GLenum inputType, GLenum inputPrimitives);
 							~NegativeDrawCase	(void);
 
 	void					init				(void);
 	void					deinit				(void);
 
-	IterateResult			iterate 			(void);
+	IterateResult			iterate				(void);
 
 private:
 	sglr::Context*			m_ctx;
@@ -4900,7 +4900,7 @@ void PrimitivesGeneratedQueryObjectQueryCase::init (void)
 
 PrimitivesGeneratedQueryObjectQueryCase::IterateResult PrimitivesGeneratedQueryObjectQueryCase::iterate (void)
 {
-	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);

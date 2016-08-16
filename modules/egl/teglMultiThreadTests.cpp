@@ -79,7 +79,7 @@ public:
 	ThreadLog&					operator<<	(const EndMessageToken&);
 
 	template<class T>
-	ThreadLog&					operator<< 	(const T& t)				{ m_message << t; return *this; }
+	ThreadLog&					operator<<	(const T& t)				{ m_message << t; return *this; }
 	const vector<Message>&		getMessages (void) const				{ return m_messages; }
 
 	static BeginMessageToken	BeginMessage;
@@ -1159,7 +1159,7 @@ void MultiThreadedObjectTest::createDestroyObjects (TestThread& thread, int coun
 				case TYPE_PIXMAP:
 				{
 					const eglu::NativePixmapFactory&	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
-					eglu::NativePixmap* 				pixmap			= DE_NULL;
+					eglu::NativePixmap*					pixmap			= DE_NULL;
 					EGLSurface							surface			= EGL_NO_SURFACE;
 
 					try

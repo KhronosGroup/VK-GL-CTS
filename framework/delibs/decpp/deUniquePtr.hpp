@@ -171,7 +171,7 @@ inline MovePtr<T> movePtr (T* ptr)					{ return MovePtr<T>(ptr); }
 
 //! Allocate and construct an object and return its address as a MovePtr.
 template<typename T>
-inline MovePtr<T> newMovePtr (void) 				{ return MovePtr<T>(new T()); }
+inline MovePtr<T> newMovePtr (void)					{ return MovePtr<T>(new T()); }
 template<typename T, typename P0>
 inline MovePtr<T> newMovePtr (P0 p0)				{ return MovePtr<T>(new T(p0)); }
 template<typename T, typename P0, typename P1>
@@ -194,7 +194,7 @@ inline MovePtr<T> newMovePtr (P0 p0, P1 p1, P2 p2)	{ return MovePtr<T>(new T(p0,
  * copied, direct initialization syntax must be used, i.e.:
  *
  *		MovePtr<Foo> createFoo (void);
- * 		UniquePtr<Foo> fooPtr(createFoo()); // NOT fooPtr = createFoo();
+ *		UniquePtr<Foo> fooPtr(createFoo()); // NOT fooPtr = createFoo();
  *
  *//*--------------------------------------------------------------------*/
 template<typename T, class Deleter = DefaultDeleter<T> >

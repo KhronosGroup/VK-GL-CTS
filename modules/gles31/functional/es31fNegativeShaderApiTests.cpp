@@ -935,7 +935,7 @@ void uniform_block_binding (NegativeTestContext& ctx)
 	GLint				maxUniformBufferBindings	= -1;
 	GLint				numActiveUniforms			= -1;
 	GLint				numActiveBlocks				= -1;
-	GLuint				shader 						= -1;
+	GLuint				shader						= -1;
 	glu::ShaderProgram	program(ctx.getRenderContext(), glu::makeVtxFragSources(uniformBlockVertSource, uniformTestFragSource));
 
 	shader = ctx.glCreateShader(GL_VERTEX_SHADER);
@@ -1963,10 +1963,10 @@ void bind_transform_feedback (NegativeTestContext& ctx)
 
 void delete_transform_feedbacks (NegativeTestContext& ctx)
 {
-	GLuint 				id 			= 0;
-	GLuint 				tfID[2];
-	deUint32 			buf 		= 0x1234;
-	const char* 		tfVarying	= "gl_Position";
+	GLuint				id			= 0;
+	GLuint				tfID[2];
+	deUint32			buf			= 0x1234;
+	const char*			tfVarying	= "gl_Position";
 	glu::ShaderProgram	program		(ctx.getRenderContext(), glu::makeVtxFragSources(vertexShaderSource, fragmentShaderSource));
 
 	ctx.glGenBuffers(1, &buf);

@@ -129,8 +129,8 @@ struct ColoredRect
 public:
 							ColoredRect (const IVec2& bottomLeft_, const IVec2& topRight_, const Color& color_);
 	IVec2					bottomLeft;
-	IVec2 					topRight;
-	Color 					color;
+	IVec2					topRight;
+	Color					color;
 };
 
 ColoredRect::ColoredRect (const IVec2& bottomLeft_, const IVec2& topRight_, const Color& color_)
@@ -156,7 +156,7 @@ DrawCommand::DrawCommand (const BufferAgeTest::DrawType drawType_, const Colored
 struct Frame
 {
 						Frame (int width_, int height_);
-	int 				width;
+	int					width;
 	int					height;
 	vector<DrawCommand> draws;
 };
@@ -198,7 +198,7 @@ void			clearColorReference				(tcu::Surface* ref, const tcu::Vec4& clearColor);
 void			readPixels						(const glw::Functions& gl, tcu::Surface* screen);
 float			windowToDeviceCoordinates		(int x, int length);
 bool			compareToReference				(tcu::TestLog& log, const tcu::Surface& reference, const tcu::Surface& buffer, int frameNdx, int bufferNum);
-vector<int> 	getFramesOnBuffer 				(const vector<int>& bufferAges, int frameNdx);
+vector<int>		getFramesOnBuffer				(const vector<int>& bufferAges, int frameNdx);
 
 class GLES2Renderer
 {
@@ -447,8 +447,8 @@ void BufferAgeTest::initEGLSurface (EGLConfig config)
 
 void BufferAgeTest::initEGLContext (EGLConfig config)
 {
-	const Library& 	egl 		 = m_eglTestCtx.getLibrary();
-	const EGLint 	attribList[] =
+	const Library&	egl			 = m_eglTestCtx.getLibrary();
+	const EGLint	attribList[] =
 	{
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
@@ -467,7 +467,7 @@ vector<int> getFramesOnBuffer (const vector<int>& bufferAges, int frameNdx)
 {
 	DE_ASSERT(frameNdx < (int)bufferAges.size());
 	vector<int> frameOnBuffer;
-	int 		age = bufferAges[frameNdx];
+	int			age = bufferAges[frameNdx];
 	while (age != 0)
 	{
 		frameNdx = frameNdx - age;
@@ -482,18 +482,18 @@ vector<int> getFramesOnBuffer (const vector<int>& bufferAges, int frameNdx)
 
 TestCase::IterateResult BufferAgeTest::iterate (void)
 {
-	de::Random 		rnd					(m_seed);
+	de::Random		rnd					(m_seed);
 	const Library&	egl					= m_eglTestCtx.getLibrary();
-	tcu::TestLog& 	log					= m_testCtx.getLog();
-	const int 		width				= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_WIDTH);
-	const int 		height				= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_HEIGHT);
-	const float 	clearRed			= rnd.getFloat();
-	const float 	clearGreen			= rnd.getFloat();
-	const float 	clearBlue			= rnd.getFloat();
+	tcu::TestLog&	log					= m_testCtx.getLog();
+	const int		width				= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_WIDTH);
+	const int		height				= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_HEIGHT);
+	const float		clearRed			= rnd.getFloat();
+	const float		clearGreen			= rnd.getFloat();
+	const float		clearBlue			= rnd.getFloat();
 	const tcu::Vec4	clearColor			(clearRed, clearGreen, clearBlue, 1.0f);
-	const int 		numFrames			= 20;
-	FrameSequence 	frameSequence;
-	vector<int> 	bufferAges;
+	const int		numFrames			= 20;
+	FrameSequence	frameSequence;
+	vector<int>		bufferAges;
 
 	if (m_preserveColorBuffer)
 		EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_PRESERVED));
@@ -504,7 +504,7 @@ TestCase::IterateResult BufferAgeTest::iterate (void)
 	{
 		tcu::Surface					currentBuffer			(width, height);
 		tcu::Surface					refBuffer				(width, height);
-		Frame			   				newFrame				(width, height);
+		Frame							newFrame				(width, height);
 		EGLint							currentBufferAge		= -1;
 
 		if (frameNdx % 2 == 0)
@@ -680,10 +680,10 @@ bool hasPreserveSwap (const eglu::CandidateConfig& c)
 EGLConfig getEGLConfig (const Library& egl, EGLDisplay eglDisplay, bool preserveColorBuffer)
 {
 	eglu::FilterList filters;
- 	filters << isWindow << isES2Renderable;
- 	if (preserveColorBuffer)
- 		filters << hasPreserveSwap;
- 	return eglu::chooseSingleConfig(egl, eglDisplay, filters);
+	filters << isWindow << isES2Renderable;
+	if (preserveColorBuffer)
+		filters << hasPreserveSwap;
+	return eglu::chooseSingleConfig(egl, eglDisplay, filters);
 }
 
 void clearColorScreen (const glw::Functions& gl, const tcu::Vec4& clearColor)
@@ -754,7 +754,7 @@ void BufferAgeTests::init (void)
 
 	for (int preserveNdx = 0; preserveNdx < 2; preserveNdx++)
 	{
-		const bool				preserve 		= (preserveNdx == 0);
+		const bool				preserve		= (preserveNdx == 0);
 		TestCaseGroup* const	preserveGroup	= new TestCaseGroup(m_eglTestCtx, (preserve ? "preserve" : "no_preserve"), "");
 
 		for (size_t resizeTypeNdx = 0; resizeTypeNdx < DE_LENGTH_OF_ARRAY(resizeTypes); resizeTypeNdx++)
@@ -769,7 +769,7 @@ void BufferAgeTests::init (void)
 				for (size_t oddNdx = evenNdx; oddNdx < frameDrawTypes.size(); oddNdx++)
 				{
 					const vector<BufferAgeTest::DrawType>&	oddFrameDrawType	= frameDrawTypes[oddNdx];
-					const std::string 						name 				= generateTestName(oddFrameDrawType, evenFrameDrawType);
+					const std::string						name				= generateTestName(oddFrameDrawType, evenFrameDrawType);
 					resizeGroup->addChild(new BufferAgeTest(m_eglTestCtx, preserve, oddFrameDrawType, evenFrameDrawType, BufferAgeTest::RESIZETYPE_NONE, name.c_str(), ""));
 				}
 			}

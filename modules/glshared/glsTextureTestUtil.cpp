@@ -1756,7 +1756,7 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 
 				const float		coord		= projectedTriInterpolate(triS[triNdx], triW[triNdx], triNx, triNy);
 				const float		coordDx		= triDerivateX(triS[triNdx], triW[triNdx], wx, dstW, triNy) * float(srcSize);
-				const float 	coordDy		= triDerivateY(triS[triNdx], triW[triNdx], wy, dstH, triNx) * float(srcSize);
+				const float		coordDy		= triDerivateY(triS[triNdx], triW[triNdx], wy, dstH, triNx) * float(srcSize);
 
 				tcu::Vec2		lodBounds	= tcu::computeLodBoundsFromDerivates(coordDx, coordDy, lodPrec);
 

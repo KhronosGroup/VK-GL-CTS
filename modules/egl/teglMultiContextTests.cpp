@@ -227,10 +227,10 @@ TestCaseGroup* createMultiContextTests (EglTestContext& eglTestCtx)
 	de::MovePtr<TestCaseGroup> group (new TestCaseGroup(eglTestCtx, "multicontext", "EGL multi context tests."));
 
 	group->addChild(new MultiContextTest(eglTestCtx, MultiContextTest::SHARING_NONE,	MultiContextTest::USE_NONE,			"non_shared",				"Create multiple non-shared contexts."));
-	group->addChild(new MultiContextTest(eglTestCtx, MultiContextTest::SHARING_SHARED,	MultiContextTest::USE_NONE, 		"shared",					"Create multiple shared contexts."));
+	group->addChild(new MultiContextTest(eglTestCtx, MultiContextTest::SHARING_SHARED,	MultiContextTest::USE_NONE,			"shared",					"Create multiple shared contexts."));
 
 	group->addChild(new MultiContextTest(eglTestCtx, MultiContextTest::SHARING_NONE,	MultiContextTest::USE_MAKECURRENT,	"non_shared_make_current",	"Create multiple non-shared contexts."));
-	group->addChild(new MultiContextTest(eglTestCtx, MultiContextTest::SHARING_SHARED,	MultiContextTest::USE_MAKECURRENT, 	"shared_make_current",		"Create multiple shared contexts."));
+	group->addChild(new MultiContextTest(eglTestCtx, MultiContextTest::SHARING_SHARED,	MultiContextTest::USE_MAKECURRENT,	"shared_make_current",		"Create multiple shared contexts."));
 
 	group->addChild(new MultiContextTest(eglTestCtx, MultiContextTest::SHARING_NONE,	MultiContextTest::USE_CLEAR,		"non_shared_clear",			"Create multiple non-shared contexts."));
 	group->addChild(new MultiContextTest(eglTestCtx, MultiContextTest::SHARING_SHARED,	MultiContextTest::USE_CLEAR,		"shared_clear",				"Create multiple shared contexts."));

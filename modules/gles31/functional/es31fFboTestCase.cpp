@@ -219,8 +219,8 @@ static bool isRequiredFormat (deUint32 format, glu::RenderContext& renderContext
 
 static std::vector<std::string> getEnablingExtensions (deUint32 format, glu::RenderContext& renderContext)
 {
-	const bool 					isES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
-	std::vector<std::string> 	out;
+	const bool					isES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	std::vector<std::string>	out;
 
 	DE_ASSERT(!isRequiredFormat(format, renderContext));
 

@@ -97,7 +97,7 @@ GeometryShaderCase::IterateResult GeometryShaderCase::iterate (void)
 														"layout(triangle_strip, max_vertices = 3) out;\n"
 														"void main()\n"
 														"{\n"
-											    		"   EndPrimitive();\n"
+														"   EndPrimitive();\n"
 														"}\n";
 
 	static const char* const	s_geometryTemplate2	=	"${GLSL_VERSION_STRING}\n"
@@ -106,7 +106,7 @@ GeometryShaderCase::IterateResult GeometryShaderCase::iterate (void)
 														"layout(line_strip, max_vertices = 5) out;\n"
 														"void main()\n"
 														"{\n"
-											    		"   EndPrimitive();\n"
+														"   EndPrimitive();\n"
 														"}\n";
 
 	static const char* const	s_geometryTemplate3	=	"${GLSL_VERSION_STRING}\n"
@@ -115,12 +115,12 @@ GeometryShaderCase::IterateResult GeometryShaderCase::iterate (void)
 														"layout(points, max_vertices = 50) out;\n"
 														"void main()\n"
 														"{\n"
-											    		"   EndPrimitive();\n"
+														"   EndPrimitive();\n"
 														"}\n";
 
-	map<string, string> 		args;
-	args["GLSL_VERSION_STRING"] 						= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_EXTENSION_STRING"] 						= isES32 ? "" : "#extension GL_EXT_geometry_shader : enable";
+	map<string, string>			args;
+	args["GLSL_VERSION_STRING"]							= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION_STRING"]						= isES32 ? "" : "#extension GL_EXT_geometry_shader : enable";
 
 	glu::CallLogWrapper			gl						(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector		result					(m_testCtx.getLog(), " // ERROR: ");
@@ -204,7 +204,7 @@ TessellationShaderCase::IterateResult TessellationShaderCase::iterate (void)
 		TCU_THROW(NotSupportedError, "Tessellation shader tests require GL_EXT_tessellation_shader extension or an OpenGL ES 3.2 or higher context.");
 
 
-	static const char* const	s_vtxFragTemplate 	=	"${GLSL_VERSION_STRING}\n"
+	static const char* const	s_vtxFragTemplate	=	"${GLSL_VERSION_STRING}\n"
 														"void main()\n"
 														"{\n"
 														"}\n";
@@ -216,7 +216,7 @@ TessellationShaderCase::IterateResult TessellationShaderCase::iterate (void)
 														"{\n"
 														"}\n";
 
-	static const char* const	s_tessEvalTemplate1	= 	"${GLSL_VERSION_STRING}\n"
+	static const char* const	s_tessEvalTemplate1	=	"${GLSL_VERSION_STRING}\n"
 														"${GLSL_EXTENSION_STRING}\n"
 														"layout(triangles, equal_spacing, cw) in;\n"
 														"void main()\n"
@@ -244,9 +244,9 @@ TessellationShaderCase::IterateResult TessellationShaderCase::iterate (void)
 														"{\n"
 														"}\n";
 
-	map<string, string> 		args;
-	args["GLSL_VERSION_STRING"] 						= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_EXTENSION_STRING"] 						= isES32 ? "" : "#extension GL_EXT_tessellation_shader : enable";
+	map<string, string>			args;
+	args["GLSL_VERSION_STRING"]							= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION_STRING"]						= isES32 ? "" : "#extension GL_EXT_tessellation_shader : enable";
 
 	glu::CallLogWrapper			gl						(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector		result					(m_testCtx.getLog(), " // ERROR: ");
@@ -332,9 +332,9 @@ ProgramSeparableCase::ProgramSeparableCase (Context& context, QueryType verifier
 
 ProgramSeparableCase::IterateResult ProgramSeparableCase::iterate (void)
 {
-	const bool 					isES32 			= 	glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool					isES32			=	glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	const string				vtxTemplate	= 	string(isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES)) + "\n"
+	const string				vtxTemplate	=	string(isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES)) + "\n"
 												"out highp vec4 v_color;\n"
 												"void main()\n"
 												"{\n"
@@ -445,7 +445,7 @@ ComputeWorkGroupSizeCase::ComputeWorkGroupSizeCase (Context& context, QueryType 
 
 ComputeWorkGroupSizeCase::IterateResult ComputeWorkGroupSizeCase::iterate (void)
 {
-	const bool 					isES32				=	glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool					isES32				=	glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 
 	static const char* const	s_computeTemplate1D =	"${GLSL_VERSION_STRING}\n"
@@ -485,8 +485,8 @@ ComputeWorkGroupSizeCase::IterateResult ComputeWorkGroupSizeCase::iterate (void)
 	glu::CallLogWrapper			gl						(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector		result					(m_testCtx.getLog(), " // ERROR: ");
 
-	map<string, string> 		args;
-	args["GLSL_VERSION_STRING"] 						= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	map<string, string>			args;
+	args["GLSL_VERSION_STRING"]							= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 
 	gl.enableLogging(true);
 
@@ -545,7 +545,7 @@ ActiveAtomicCounterBuffersCase::ActiveAtomicCounterBuffersCase (Context& context
 
 ActiveAtomicCounterBuffersCase::IterateResult ActiveAtomicCounterBuffersCase::iterate (void)
 {
-	const bool 					isES32				=	glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool					isES32				=	glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	static const char* const	s_computeTemplate0	=	"${GLSL_VERSION_STRING}\n"
 														"layout (local_size_x = 3) in;\n"
@@ -571,8 +571,8 @@ ActiveAtomicCounterBuffersCase::IterateResult ActiveAtomicCounterBuffersCase::it
 														"	sb_out.val = float(atomicCounterIncrement(u_counters[0])) + float(atomicCounterIncrement(u_counters[1]));\n"
 														"}\n";
 
-	map<string, string> 		args;
-	args["GLSL_VERSION_STRING"] 						= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	map<string, string>			args;
+	args["GLSL_VERSION_STRING"]							= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 
 	glu::CallLogWrapper			gl						(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector		result					(m_testCtx.getLog(), " // ERROR: ");
@@ -688,19 +688,19 @@ ProgramLogCase::IterateResult ProgramLogCase::iterate (void)
 
 glu::ProgramSources ProgramLogCase::getProgramSources (void) const
 {
-	const char* const	vertexTemplate1 = 	"${GLSL_VERSION_STRING}\n"
-						 					"in highp vec4 a_pos;\n"
-						 					"uniform highp vec4 u_uniform;\n"
-						 					"void main()\n"
-						 					"{\n"
-						 					"	gl_Position = a_pos + u_uniform;\n"
-						 					"}\n";
+	const char* const	vertexTemplate1 =	"${GLSL_VERSION_STRING}\n"
+											"in highp vec4 a_pos;\n"
+											"uniform highp vec4 u_uniform;\n"
+											"void main()\n"
+											"{\n"
+											"	gl_Position = a_pos + u_uniform;\n"
+											"}\n";
 	const char* const	vertexTemplate2 =	"${GLSL_VERSION_STRING}\n"
-	 										"in highp vec4 a_pos;\n"
-	 										"void main()\n"
-	 										"{\n"
-	 										"	gl_Position = a_pos;\n"
-	 										"}\n";
+											"in highp vec4 a_pos;\n"
+											"void main()\n"
+											"{\n"
+											"	gl_Position = a_pos;\n"
+											"}\n";
 	const char* const	fragmentTemplate1 =	"${GLSL_VERSION_STRING}\n"
 											"in highp vec4 v_missingVar;\n"
 											"uniform highp int u_uniform;\n"
@@ -711,11 +711,11 @@ glu::ProgramSources ProgramLogCase::getProgramSources (void) const
 											"}\n";
 
 	const char* const	fragmentTemplate2 =	"${GLSL_VERSION_STRING}\n"
-						   					"layout(location = 0) out mediump vec4 fragColor;\n"
-						   					"void main()\n"
-						   					"{\n"
-						   					"	fragColor = vec4(1.0);\n"
-						   					"}\n";
+											"layout(location = 0) out mediump vec4 fragColor;\n"
+											"void main()\n"
+											"{\n"
+											"	fragColor = vec4(1.0);\n"
+											"}\n";
 	const char* const	computeTemplate1 =	"${GLSL_VERSION_STRING}\n"
 											"layout (binding = 0) buffer IOBuffer { highp float buf_var; };\n"
 											"uniform highp vec4 u_uniform;\n"
@@ -735,17 +735,17 @@ glu::ProgramSources ProgramLogCase::getProgramSources (void) const
 											"	EmitVertex();\n"
 											"}\n";
 	const char* const	tessCtrlTemplate1 =	"${GLSL_VERSION_STRING}\n"
-					   						"${GLSL_TESSELLATION_EXT_STRING}\n"
-					   						"layout(vertices=2) out;"
-					   						"patch out highp vec2 vp_var;\n"
-					   						"void main()\n"
-					   						"{\n"
-					   						"	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position\n"
-					   						"	gl_TessLevelOuter[0] = 0.8;\n"
-					   						"	gl_TessLevelOuter[1] = 0.8;\n"
-					   						"	if (gl_InvocationID == 0)\n"
-					   						"		vp_var = gl_in[gl_InvocationID].gl_Position.xy;\n"
-					   						"}\n";
+											"${GLSL_TESSELLATION_EXT_STRING}\n"
+											"layout(vertices=2) out;"
+											"patch out highp vec2 vp_var;\n"
+											"void main()\n"
+											"{\n"
+											"	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position\n"
+											"	gl_TessLevelOuter[0] = 0.8;\n"
+											"	gl_TessLevelOuter[1] = 0.8;\n"
+											"	if (gl_InvocationID == 0)\n"
+											"		vp_var = gl_in[gl_InvocationID].gl_Position.xy;\n"
+											"}\n";
 	const char* const	tessEvalTemplate1 =	"${GLSL_VERSION_STRING}\n"
 											"${GLSL_TESSELLATION_EXT_STRING}\n"
 											"layout(isolines) in;"
@@ -755,11 +755,11 @@ glu::ProgramSources ProgramLogCase::getProgramSources (void) const
 											"	gl_Position = gl_in[gl_InvocationID].gl_Position + vec4(vp_var[1]);\n"
 											"}\n";
 
-	const bool 			isES32				=	glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool			isES32				=	glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	map<string, string>	args;
-	args["GLSL_VERSION_STRING"] 			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_GEOMETRY_EXT_STRING"] 		= isES32 ? "" : "#extension GL_EXT_geometry_shader : require";
-	args["GLSL_TESSELLATION_EXT_STRING"] 	= isES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
+	args["GLSL_VERSION_STRING"]				= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_GEOMETRY_EXT_STRING"]		= isES32 ? "" : "#extension GL_EXT_geometry_shader : require";
+	args["GLSL_TESSELLATION_EXT_STRING"]	= isES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
 
 	switch (m_buildErrorType)
 	{

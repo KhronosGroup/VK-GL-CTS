@@ -74,7 +74,7 @@ public:
 		bool	useDynamicBuffer;
 		int		dynamicAttributeCount;
 
-		int 	triangleCount;
+		int		triangleCount;
 		int		drawCallCount;
 
 		bool	useDrawElements;

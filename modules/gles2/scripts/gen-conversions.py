@@ -328,10 +328,10 @@ allConversionCases.append(CaseGroup("matrix_to_matrix", "Matrix to Matrix Conver
 	genConversionCases([inMat4, inMat3, inMat2], [toMat4, toMat3, toMat2])))
 
 # Vector-from-components, matrix-from-components.
-in2Comp 	= [[inFloat, inFloat], [inInt, inInt], [inBool, inBool], [inFloat, inInt], [inFloat, inBool], [inInt, inBool]]
-in3Comp 	= [[inFloat, inFloat, inFloat], [inInt, inInt, inInt], [inBool, inBool, inBool], [inBool, inFloat, inInt], [inVec2, inBool], [inBVec2, inFloat], [inBVec2, inInt], [inBool, inIVec2]]
-in4Comp 	= [[inVec2, inVec2], [inBVec2, inBVec2], [inFloat, inFloat, inFloat, inFloat], [inInt, inInt, inInt, inInt], [inBool, inBool, inBool, inBool], [inBool, inFloat, inInt, inBool], [inVec2, inIVec2], [inVec2, inBVec2], [inBVec3, inFloat], [inVec3, inFloat], [inInt, inIVec2, inInt], [inBool, inFloat, inIVec2]]
-in9Comp 	= [[inVec3, inVec3, inVec3], [inIVec3, inIVec3, inIVec3], [inVec2, inIVec2, inFloat, inFloat, inInt, inBool, inBool], [inBool, inFloat, inInt, inVec2, inBool, inBVec2, inFloat], [inBool, inBVec2, inInt, inVec4, inBool], [inFloat, inBVec4, inIVec2, inBool, inBool]]
+in2Comp		= [[inFloat, inFloat], [inInt, inInt], [inBool, inBool], [inFloat, inInt], [inFloat, inBool], [inInt, inBool]]
+in3Comp		= [[inFloat, inFloat, inFloat], [inInt, inInt, inInt], [inBool, inBool, inBool], [inBool, inFloat, inInt], [inVec2, inBool], [inBVec2, inFloat], [inBVec2, inInt], [inBool, inIVec2]]
+in4Comp		= [[inVec2, inVec2], [inBVec2, inBVec2], [inFloat, inFloat, inFloat, inFloat], [inInt, inInt, inInt, inInt], [inBool, inBool, inBool, inBool], [inBool, inFloat, inInt, inBool], [inVec2, inIVec2], [inVec2, inBVec2], [inBVec3, inFloat], [inVec3, inFloat], [inInt, inIVec2, inInt], [inBool, inFloat, inIVec2]]
+in9Comp		= [[inVec3, inVec3, inVec3], [inIVec3, inIVec3, inIVec3], [inVec2, inIVec2, inFloat, inFloat, inInt, inBool, inBool], [inBool, inFloat, inInt, inVec2, inBool, inBVec2, inFloat], [inBool, inBVec2, inInt, inVec4, inBool], [inFloat, inBVec4, inIVec2, inBool, inBool]]
 in16Comp	= [[inVec4, inVec4, inVec4, inVec4], [inIVec4, inIVec4, inIVec4, inIVec4], [inBVec4, inBVec4, inBVec4, inBVec4], [inFloat, inIVec3, inBVec3, inVec4, inIVec2, inFloat, inVec2]]
 
 allConversionCases.append(CaseGroup("vector_combine", "Vector Combine Constructors",

@@ -55,7 +55,7 @@ namespace
 struct ResultStats
 {
 	double		median;
-	double 		mean;
+	double		mean;
 	double		variance;
 
 	deUint64	min;
@@ -640,7 +640,7 @@ void StateChangePerformanceCase::callDraw (const glw::Functions& gl)
 // StateChangeCallPerformanceCase
 
 StateChangeCallPerformanceCase::StateChangeCallPerformanceCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description)
-	: tcu::TestCase 	(testCtx, tcu::NODETYPE_PERFORMANCE, name, description)
+	: tcu::TestCase		(testCtx, tcu::NODETYPE_PERFORMANCE, name, description)
 	, m_renderCtx		(renderCtx)
 	, m_iterationCount	(100)
 	, m_callCount		(1000)

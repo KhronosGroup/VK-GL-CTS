@@ -19,8 +19,8 @@
  * limitations under the License.
  *
  *//*!
- * \file  vktSparseResourcesBase.hpp	
- * \brief Sparse Resources Base Instance 
+ * \file  vktSparseResourcesBase.hpp
+ * \brief Sparse Resources Base Instance
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"

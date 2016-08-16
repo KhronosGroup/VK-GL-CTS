@@ -2065,9 +2065,9 @@ group uniform "Uniform"
 			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
 			values
 			{
-				uniform float val.vtxVal 	= 1.5;
-				uniform float val.tcVal 	= 2.5;
-				uniform float val.teVal 	= 6.0;
+				uniform float val.vtxVal	= 1.5;
+				uniform float val.tcVal		= 2.5;
+				uniform float val.teVal		= 6.0;
 				uniform float val.fragVal	= 11.0;
 				output float out0			= 68.5;
 			}

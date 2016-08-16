@@ -53,10 +53,10 @@ typedef enum qpTestResult_e
 {
 	QP_TEST_RESULT_PASS = 0,				/*!< Test case passed.																	*/
 	QP_TEST_RESULT_FAIL,					/*!< Implementation produced incorrect results											*/
-	QP_TEST_RESULT_QUALITY_WARNING,			/*!< Result is within specification, but is not of high quality 						*/
-	QP_TEST_RESULT_COMPATIBILITY_WARNING,	/*!< Result is within specification, but likely to cause fragmentation in the market 	*/
+	QP_TEST_RESULT_QUALITY_WARNING,			/*!< Result is within specification, but is not of high quality							*/
+	QP_TEST_RESULT_COMPATIBILITY_WARNING,	/*!< Result is within specification, but likely to cause fragmentation in the market	*/
 	QP_TEST_RESULT_PENDING,					/*!< The test is still running. Not a valid end result									*/
-	QP_TEST_RESULT_NOT_SUPPORTED,			/*!< Implementation does not support functionality needed by this test case 			*/
+	QP_TEST_RESULT_NOT_SUPPORTED,			/*!< Implementation does not support functionality needed by this test case				*/
 	QP_TEST_RESULT_RESOURCE_ERROR,			/*!< Implementation fails to pass the test due to lack of resources						*/
 	QP_TEST_RESULT_INTERNAL_ERROR,			/*!< Error occurred within Tester Core													*/
 	QP_TEST_RESULT_CRASH,					/*!< Crash occurred in test execution.													*/
@@ -195,30 +195,30 @@ deBool			qpTestLog_startCase				(qpTestLog* log, const char* testCasePath, qpTes
 deBool			qpTestLog_endCase				(qpTestLog* log, qpTestResult result, const char* description);
 deBool			qpTestLog_terminateCase			(qpTestLog* log, qpTestResult result);
 
-deBool 			qpTestLog_writeMessage			(qpTestLog* log, const char* format, ...) DE_PRINTF_FUNC_ATTR(2,3);
-deBool 			qpTestLog_startSection			(qpTestLog* log, const char* name, const char* description);
-deBool 			qpTestLog_endSection			(qpTestLog* log);
-deBool 			qpTestLog_writeText				(qpTestLog* log, const char* name, const char* description, qpKeyValueTag tag, const char* value);
-deBool 			qpTestLog_writeInteger			(qpTestLog* log, const char* name, const char* description, const char* unit, qpKeyValueTag tag, deInt64 value);
-deBool 			qpTestLog_writeFloat			(qpTestLog* log, const char* name, const char* description, const char* unit, qpKeyValueTag tag, float value);
+deBool			qpTestLog_writeMessage			(qpTestLog* log, const char* format, ...) DE_PRINTF_FUNC_ATTR(2,3);
+deBool			qpTestLog_startSection			(qpTestLog* log, const char* name, const char* description);
+deBool			qpTestLog_endSection			(qpTestLog* log);
+deBool			qpTestLog_writeText				(qpTestLog* log, const char* name, const char* description, qpKeyValueTag tag, const char* value);
+deBool			qpTestLog_writeInteger			(qpTestLog* log, const char* name, const char* description, const char* unit, qpKeyValueTag tag, deInt64 value);
+deBool			qpTestLog_writeFloat			(qpTestLog* log, const char* name, const char* description, const char* unit, qpKeyValueTag tag, float value);
 
-deBool 			qpTestLog_startImageSet			(qpTestLog* log, const char* name, const char* description);
-deBool 			qpTestLog_endImageSet			(qpTestLog* log);
-deBool 			qpTestLog_writeImage			(qpTestLog* log, const char* name, const char* description, qpImageCompressionMode compressionMode, qpImageFormat format, int width, int height, int stride, const void* data);
+deBool			qpTestLog_startImageSet			(qpTestLog* log, const char* name, const char* description);
+deBool			qpTestLog_endImageSet			(qpTestLog* log);
+deBool			qpTestLog_writeImage			(qpTestLog* log, const char* name, const char* description, qpImageCompressionMode compressionMode, qpImageFormat format, int width, int height, int stride, const void* data);
 
-deBool 			qpTestLog_startEglConfigSet		(qpTestLog* log, const char* key, const char* description);
-deBool 			qpTestLog_writeEglConfig		(qpTestLog* log, const qpEglConfigInfo* config);
-deBool 			qpTestLog_endEglConfigSet		(qpTestLog* log);
+deBool			qpTestLog_startEglConfigSet		(qpTestLog* log, const char* key, const char* description);
+deBool			qpTestLog_writeEglConfig		(qpTestLog* log, const qpEglConfigInfo* config);
+deBool			qpTestLog_endEglConfigSet		(qpTestLog* log);
 
 /* \todo [2013-08-26 pyry] Unify ShaderProgram & KernelSource & CompileInfo. */
 
 deBool			qpTestLog_startShaderProgram	(qpTestLog* log, deBool linkOk, const char* linkInfoLog);
 deBool			qpTestLog_endShaderProgram		(qpTestLog* log);
-deBool 			qpTestLog_writeShader			(qpTestLog* log, qpShaderType type, const char* source, deBool compileOk, const char* infoLog);
+deBool			qpTestLog_writeShader			(qpTestLog* log, qpShaderType type, const char* source, deBool compileOk, const char* infoLog);
 
-deBool 			qpTestLog_writeKernelSource		(qpTestLog* log, const char* source);
-deBool 			qpTestLog_writeSpirVAssemblySource	(qpTestLog* log, const char* source);
-deBool 			qpTestLog_writeCompileInfo		(qpTestLog* log, const char* name, const char* description, deBool compileOk, const char* infoLog);
+deBool			qpTestLog_writeKernelSource		(qpTestLog* log, const char* source);
+deBool			qpTestLog_writeSpirVAssemblySource	(qpTestLog* log, const char* source);
+deBool			qpTestLog_writeCompileInfo		(qpTestLog* log, const char* name, const char* description, deBool compileOk, const char* infoLog);
 
 deBool			qpTestLog_startSampleList		(qpTestLog* log, const char* name, const char* description);
 deBool			qpTestLog_startSampleInfo		(qpTestLog* log);

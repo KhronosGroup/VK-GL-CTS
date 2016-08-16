@@ -962,8 +962,8 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			descriptorPool = m_descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 		else
 		{
-			const VkDescriptorPoolSize 			poolSizeCount 	= { vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 };
-			const VkDescriptorPoolCreateInfo	createInfo 		=
+			const VkDescriptorPoolSize			poolSizeCount	= { vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 };
+			const VkDescriptorPoolCreateInfo	createInfo		=
 			{
 				VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 				DE_NULL,

@@ -222,7 +222,7 @@ BufferBindingCase::BufferBindingCase (Context& context, const char* name, const 
 
 BufferBindingCase::IterateResult BufferBindingCase::iterate (void)
 {
-	glu::CallLogWrapper 	gl			(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl			(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result		(m_testCtx.getLog(), " // ERROR: ");
 	int						maxBindings	= -1;
 
@@ -1484,7 +1484,7 @@ void IndexedStateQueryTests::init (void)
 		this->addChild(X);																		\
 	}
 
-	FOR_EACH_VERIFIER(new SampleMaskCase			(m_context, (std::string() + "sample_mask_value_" + verifierSuffix).c_str(), 				"Test SAMPLE_MASK_VALUE", verifier))
+	FOR_EACH_VERIFIER(new SampleMaskCase			(m_context, (std::string() + "sample_mask_value_" + verifierSuffix).c_str(),				"Test SAMPLE_MASK_VALUE", verifier))
 
 	FOR_EACH_VERIFIER(new MinValueIndexed3Case		(m_context, (std::string() + "max_compute_work_group_count_" + verifierSuffix).c_str(),		"Test MAX_COMPUTE_WORK_GROUP_COUNT",	GL_MAX_COMPUTE_WORK_GROUP_COUNT,	tcu::IVec3(65535,65535,65535),	verifier))
 	FOR_EACH_VERIFIER(new MinValueIndexed3Case		(m_context, (std::string() + "max_compute_work_group_size_" + verifierSuffix).c_str(),		"Test MAX_COMPUTE_WORK_GROUP_SIZE",		GL_MAX_COMPUTE_WORK_GROUP_SIZE,		tcu::IVec3(128, 128, 64),		verifier))

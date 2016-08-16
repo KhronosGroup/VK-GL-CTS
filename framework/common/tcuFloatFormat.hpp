@@ -65,13 +65,13 @@ public:
 	Interval			convert			(const Interval& x) const;
 
 	std::string			floatToHex		(double x) const;
-	std::string 		intervalToHex	(const Interval& interval) const;
+	std::string			intervalToHex	(const Interval& interval) const;
 
 	static FloatFormat	nativeFloat		(void);
 	static FloatFormat	nativeDouble	(void);
 
 private:
-	int					exponentShift 	(int exp) const;
+	int					exponentShift	(int exp) const;
 	Interval			clampValue		(double d) const;
 
 	int					m_minExp;			// Minimum exponent, inclusive

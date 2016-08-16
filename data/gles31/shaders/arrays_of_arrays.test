@@ -54,7 +54,7 @@ group constructor "Array of arrays constructors"
 				{
 					${SETUP}
 					float[3][4] x;
-					x = float[3][4] ( 	float[4] (in0.z, in0.x, in0.w, in0.y),
+					x = float[3][4] (	float[4] (in0.z, in0.x, in0.w, in0.y),
 										float[4] (in0.z, in0.x, in0.w, in0.y),
 										float[4] (in0.z, in0.x, in0.w, in0.y) );
 					out0 = vec4(x[0][0], x[1][1], x[2][2], x[2][3]);
@@ -856,18 +856,18 @@ group constructor "Array of arrays constructors"
 					${SETUP}
 
 					vec3[3] x[4];
-					x = vec3[][] ( 	vec3[] 	(	vec3(in0.x, in0.y, in0.z),
+					x = vec3[][] (	vec3[]	(	vec3(in0.x, in0.y, in0.z),
 												vec3(-in0.y, -in0.z, -in0.x),
 												vec3(in0.z, in0.x, in0.y)),
-									vec3[] 	(	vec3(in0.x, in0.y, in0.z),
-												vec3(-in0.y, -in0.z, -in0.x),
-												vec3(in0.z, in0.x, in0.y)),
-
-									vec3[] 	(	vec3(in0.x, in0.y, in0.z),
+									vec3[]	(	vec3(in0.x, in0.y, in0.z),
 												vec3(-in0.y, -in0.z, -in0.x),
 												vec3(in0.z, in0.x, in0.y)),
 
-									vec3[] 	(	vec3(in0.x, in0.y, in0.z),
+									vec3[]	(	vec3(in0.x, in0.y, in0.z),
+												vec3(-in0.y, -in0.z, -in0.x),
+												vec3(in0.z, in0.x, in0.y)),
+
+									vec3[]	(	vec3(in0.x, in0.y, in0.z),
 												vec3(-in0.y, -in0.z, -in0.x),
 												vec3(in0.z, in0.x, in0.y)) );
 
@@ -897,7 +897,7 @@ group constructor "Array of arrays constructors"
 					${SETUP}
 
 					ivec3 x[3][2][1];
-					x = ivec3[][][] ( 	ivec3[][] (	ivec3[] (ivec3(in0.x, in0.y, in0.z)),
+					x = ivec3[][][] (	ivec3[][] (	ivec3[] (ivec3(in0.x, in0.y, in0.z)),
 													ivec3[] (ivec3(-in0.y, -in0.z, -in0.x))),
 										ivec3[][] (	ivec3[] (ivec3(in0.z, in0.x, in0.y)),
 													ivec3[] (ivec3(in0.x, in0.y, in0.z))),
@@ -928,7 +928,7 @@ group constructor "Array of arrays constructors"
 					${SETUP}
 
 					bvec3[3] x[1][2];
-					x = bvec3[][][] ( 	bvec3[][] (	bvec3[] (bvec3(in0.x, in0.y, in0.z),
+					x = bvec3[][][] (	bvec3[][] (	bvec3[] (bvec3(in0.x, in0.y, in0.z),
 															 bvec3(in0.y, in0.z, in0.x),
 															 bvec3(in0.z, in0.x, in0.y)),
 
@@ -1023,15 +1023,15 @@ group constructor "Array of arrays constructors"
 									-in0.y, -in0.y, in0.y,
 									-in0.x, -in0.x, in0.x);
 
-					mat3[3][3][3] x = mat3[][][] (	mat3[][] ( 	mat3[] (a, a, a),
+					mat3[3][3][3] x = mat3[][][] (	mat3[][] (	mat3[] (a, a, a),
 																mat3[] (b, b, b),
 																mat3[] (c, c, c)),
 
-													mat3[][] ( 	mat3[] (b, b, b),
+													mat3[][] (	mat3[] (b, b, b),
 																mat3[] (a, a, a),
 																mat3[] (c, c, c)),
 
-													mat3[][] ( 	mat3[] (c, c, c),
+													mat3[][] (	mat3[] (c, c, c),
 																mat3[] (a, a, a),
 																mat3[] (b, b, b)) );
 
@@ -1201,7 +1201,7 @@ group return "Array of arrays as return value"
 			desc "Testing arrays of arrays as function return values with explicit array size"
 			values
 			{
-				input bvec3 in0 = 	[ bvec3(false, true, true) ];
+				input bvec3 in0 =	[ bvec3(false, true, true) ];
 				output bvec3 out0 = [ bvec3(true, false, true) ];
 			}
 
@@ -1236,7 +1236,7 @@ group return "Array of arrays as return value"
 			desc "Testing arrays of arrays as function return values with explicit array size"
 			values
 			{
-				input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
 				output vec3 out0 = [ vec3(1.0, 0.5, -2.0) | vec3(11.2, -0.5, 1.0) ];
 			}
 
@@ -1356,7 +1356,7 @@ group return "Array of arrays as return value"
 			desc "Testing arrays of arrays as function return values with explicit array size"
 			values
 			{
-				input bvec4 in0 = 	[ bvec4(true, false, false, true) ];
+				input bvec4 in0 =	[ bvec4(true, false, false, true) ];
 				output bvec4 out0 = [ bvec4(true, true, false, true) ];
 			}
 
@@ -1642,7 +1642,7 @@ group return "Array of arrays as return value"
 			desc "Testing arrays of arrays as function return values with implicit array size"
 			values
 			{
-				input bvec3 in0 = 	[ bvec3(false, true, true) ];
+				input bvec3 in0 =	[ bvec3(false, true, true) ];
 				output bvec3 out0 = [ bvec3(true, false, true) ];
 			}
 
@@ -1676,7 +1676,7 @@ group return "Array of arrays as return value"
 			desc "Testing arrays of arrays as function return values with implicit array size"
 			values
 			{
-				input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
 				output vec3 out0 = [ vec3(1.0, 0.5, -2.0) | vec3(11.2, -0.5, 1.0) ];
 			}
 
@@ -1694,7 +1694,7 @@ group return "Array of arrays as return value"
 															vec3(p.x, p.y, -p.z),
 															vec3(-p.z, p.x, p.y)) );
 
-					return vec3[][] ( 	vec3[] (a[0][1], a[0][2], a[0][0]),
+					return vec3[][] (	vec3[] (a[0][1], a[0][2], a[0][0]),
 										vec3[] (a[1][1], a[1][2], a[1][0]));
 				}
 
@@ -1795,7 +1795,7 @@ group return "Array of arrays as return value"
 			desc "Testing arrays of arrays as function return values with implicit array size"
 			values
 			{
-				input bvec4 in0 = 	[ bvec4(true, false, false, true) ];
+				input bvec4 in0 =	[ bvec4(true, false, false, true) ];
 				output bvec4 out0 = [ bvec4(true, true, false, true) ];
 			}
 
@@ -1812,7 +1812,7 @@ group return "Array of arrays as return value"
 											bvec4(p.z, p.w, p.x, p.y),
 											bvec4(p.y, p.x, p.z, p.w) );
 
-					return bvec4[][] ( 	bvec4[] (bvec4(x[0]),
+					return bvec4[][] (	bvec4[] (bvec4(x[0]),
 												 bvec4(x[1])),
 
 										bvec4[] (bvec4(x[2]),
@@ -2038,7 +2038,7 @@ group parameter "Array of arrays as a function parameter"
 				void main()
 				{
 					${SETUP}
-					float[3][3] x = float[3][3] ( 	float[3] (in0.z, 0.0, 0.0),
+					float[3][3] x = float[3][3] (	float[3] (in0.z, 0.0, 0.0),
 													float[3] (0.0, -in0.x, 0.0),
 													float[3] (0.0, 0.0, in0.y) );
 
@@ -2087,7 +2087,7 @@ group parameter "Array of arrays as a function parameter"
 			desc "Testing array of arrays as an in-function parameter"
 			values
 			{
-				input bvec3 in0 = 	[ bvec3(false, true, true) ];
+				input bvec3 in0 =	[ bvec3(false, true, true) ];
 				output bvec3 out0 = [ bvec3(true, false, true) ];
 			}
 
@@ -2122,7 +2122,7 @@ group parameter "Array of arrays as a function parameter"
 			desc "Testing array of arrays as an in-function parameter"
 			values
 			{
-				input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
 				output vec3 out0 = [ vec3(1.0, 0.5, -2.0) | vec3(11.2, -0.5, 1.0) ];
 			}
 
@@ -2243,7 +2243,7 @@ group parameter "Array of arrays as a function parameter"
 			desc "Testing array of arrays as an in-function parameter"
 			values
 			{
-				input bvec4 in0 = 	[ bvec4(true, false, false, true) ];
+				input bvec4 in0 =	[ bvec4(true, false, false, true) ];
 				output bvec4 out0 = [ bvec4(true, true, false, true) ];
 			}
 
@@ -2472,7 +2472,7 @@ group parameter "Array of arrays as a function parameter"
 
 				void func(out float[3][3] x, in vec3 p)
 				{
-					x = float[3][3] ( 	float[3] (p.z, 0.0, 0.0),
+					x = float[3][3] (	float[3] (p.z, 0.0, 0.0),
 										float[3] (0.0, -p.x, 0.0),
 										float[3] (0.0, 0.0, p.y) );
 				}
@@ -2527,7 +2527,7 @@ group parameter "Array of arrays as a function parameter"
 			desc "Testing array of arrays as an out-function parameter"
 			values
 			{
-				input bvec3 in0 = 	[ bvec3(false, true, true) ];
+				input bvec3 in0 =	[ bvec3(false, true, true) ];
 				output bvec3 out0 = [ bvec3(true, false, true) ];
 			}
 
@@ -2562,7 +2562,7 @@ group parameter "Array of arrays as a function parameter"
 			desc "Testing array of arrays as an out-function parameter"
 			values
 			{
-				input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
 				output vec3 out0 = [ vec3(1.0, 0.5, -2.0) | vec3(11.2, -0.5, 1.0) ];
 			}
 
@@ -2684,7 +2684,7 @@ group parameter "Array of arrays as a function parameter"
 			desc "Testing array of arrays as an out-function parameter"
 			values
 			{
-				input bvec4 in0 = 	[ bvec4(true, false, false, true) ];
+				input bvec4 in0 =	[ bvec4(true, false, false, true) ];
 				output bvec4 out0 = [ bvec4(true, true, false, true) ];
 			}
 
@@ -2975,7 +2975,7 @@ group parameter "Array of arrays as a function parameter"
 			desc "Testing array of arrays as unnamed parameter of a function prototype"
 			values
 			{
-				input bvec3 in0 = 	[ bvec3(false, true, true) ];
+				input bvec3 in0 =	[ bvec3(false, true, true) ];
 				output bvec3 out0 = [ bvec3(true, false, true) ];
 			}
 
@@ -3011,7 +3011,7 @@ group parameter "Array of arrays as a function parameter"
 			desc "Testing array of arrays as unnamed parameter of a function prototype"
 			values
 			{
-				input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
 				output vec3 out0 = [ vec3(1.0, 0.5, -2.0) | vec3(11.2, -0.5, 1.0) ];
 			}
 
@@ -3135,7 +3135,7 @@ group parameter "Array of arrays as a function parameter"
 			desc "Testing array of arrays as unnamed parameter of a function prototype"
 			values
 			{
-				input bvec4 in0 = 	[ bvec4(true, false, false, true) ];
+				input bvec4 in0 =	[ bvec4(true, false, false, true) ];
 				output bvec4 out0 = [ bvec4(true, true, false, true) ];
 			}
 
@@ -3374,7 +3374,7 @@ group implicit_size "Declaring arrays of arrays with implicit size"
 			void main()
 			{
 				${SETUP}
-				float x[][] = float[][] ( 	float[] (in0.z, in0.x, in0.y),
+				float x[][] = float[][] (	float[] (in0.z, in0.x, in0.y),
 											float[] (in0.z, in0.x, in0.y),
 											float[] (in0.z, in0.x, in0.y) );
 
@@ -3402,7 +3402,7 @@ group implicit_size "Declaring arrays of arrays with implicit size"
 			void main()
 			{
 				${SETUP}
-				int[][] x = int[][] ( 	int[] (in0.z, in0.x, in0.y),
+				int[][] x = int[][] (	int[] (in0.z, in0.x, in0.y),
 										int[] (in0.z, in0.x, in0.y) );;
 
 				out0 = ivec3(x[0][0], x[1][1], x[0][2]);
@@ -3515,7 +3515,7 @@ group implicit_size "Declaring arrays of arrays with implicit size"
 		desc "Testing declaring arrays of arrays with implicit size"
 		values
 		{
-			input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+			input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
 			output vec3 out0 = [ vec3(0.5, -2.0, 1.0) | vec3(-0.5, 1.0, 11.2) ];
 		}
 
@@ -3542,7 +3542,7 @@ group implicit_size "Declaring arrays of arrays with implicit size"
 		desc "Testing declaring arrays of arrays with implicit size"
 		values
 		{
-			input ivec3 in0 = 	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
+			input ivec3 in0 =	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
 			output ivec3 out0 = [ ivec3(0, -2, 1) | ivec3(5, 1, 11) ];
 		}
 
@@ -3578,7 +3578,7 @@ group implicit_size "Declaring arrays of arrays with implicit size"
 		desc "Testing declaring arrays of arrays with implicit size"
 		values
 		{
-			input bvec3 in0 = 	[ bvec3(true, false, true) ];
+			input bvec3 in0 =	[ bvec3(true, false, true) ];
 			output bvec3 out0 = [ bvec3(true, true, false) ];
 		}
 
@@ -3681,15 +3681,15 @@ group implicit_size "Declaring arrays of arrays with implicit size"
 								-in0.y, -in0.y, in0.y,
 								-in0.x, -in0.x, in0.x);
 
-				mat3[][][] x = mat3[][][] (	mat3[][] ( 	mat3[] (a, a, a),
+				mat3[][][] x = mat3[][][] (	mat3[][] (	mat3[] (a, a, a),
 														mat3[] (b, b, b),
 														mat3[] (c, c, c)),
 
-											mat3[][] ( 	mat3[] (b, b, b),
+											mat3[][] (	mat3[] (b, b, b),
 														mat3[] (a, a, a),
 														mat3[] (c, c, c)),
 
-											mat3[][] ( 	mat3[] (c, c, c),
+											mat3[][] (	mat3[] (c, c, c),
 														mat3[] (a, a, a),
 														mat3[] (b, b, b)) );
 
@@ -3778,7 +3778,7 @@ group assignment "Testing assignment of arrays of arrays"
 				void main()
 				{
 					${SETUP}
-					float x[3][3] = float[3][3] ( 	float[3] (in0.z, in0.x, in0.y),
+					float x[3][3] = float[3][3] (	float[3] (in0.z, in0.x, in0.y),
 													float[3] (in0.z, in0.x, in0.y),
 													float[3] (in0.z, in0.x, in0.y) );
 
@@ -3926,7 +3926,7 @@ group assignment "Testing assignment of arrays of arrays"
 			desc "Testing assignment of arrays of arrays with explicit size"
 			values
 			{
-				input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
 				output vec3 out0 = [ vec3(0.5, -2.0, 1.0) | vec3(-0.5, 1.0, 11.2) ];
 			}
 
@@ -3955,7 +3955,7 @@ group assignment "Testing assignment of arrays of arrays"
 			desc "Testing assignment of arrays of arrays with explicit size"
 			values
 			{
-				input ivec3 in0 = 	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
+				input ivec3 in0 =	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
 				output ivec3 out0 = [ ivec3(0, -2, 1) | ivec3(5, 1, 11) ];
 			}
 
@@ -3993,7 +3993,7 @@ group assignment "Testing assignment of arrays of arrays"
 			desc "Testing assignment of arrays of arrays with explicit size"
 			values
 			{
-				input bvec3 in0 = 	[ bvec3(true, false, true) ];
+				input bvec3 in0 =	[ bvec3(true, false, true) ];
 				output bvec3 out0 = [ bvec3(true, true, false) ];
 			}
 
@@ -4199,7 +4199,7 @@ group assignment "Testing assignment of arrays of arrays"
 				void main()
 				{
 					${SETUP}
-					float x[3][3] = float[3][3] ( 	float[3] (in0.z, in0.x, in0.y),
+					float x[3][3] = float[3][3] (	float[3] (in0.z, in0.x, in0.y),
 													float[3] (in0.z, in0.x, in0.y),
 													float[3] (in0.z, in0.x, in0.y) );
 
@@ -4229,7 +4229,7 @@ group assignment "Testing assignment of arrays of arrays"
 				void main()
 				{
 					${SETUP}
-					int[2][3] x = int[2][3] ( 	int[3] (in0.z, in0.x, in0.y),
+					int[2][3] x = int[2][3] (	int[3] (in0.z, in0.x, in0.y),
 												int[3] (in0.z, in0.x, in0.y) );;
 					int y[][] = x;
 
@@ -4347,7 +4347,7 @@ group assignment "Testing assignment of arrays of arrays"
 			desc "Testing assignment of arrays of arrays from explicitly sized to implicitly sized"
 			values
 			{
-				input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
 				output vec3 out0 = [ vec3(0.5, -2.0, 1.0) | vec3(-0.5, 1.0, 11.2) ];
 			}
 
@@ -4376,7 +4376,7 @@ group assignment "Testing assignment of arrays of arrays"
 			desc "Testing assignment of arrays of arrays from explicitly sized to implicitly sized"
 			values
 			{
-				input ivec3 in0 = 	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
+				input ivec3 in0 =	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
 				output ivec3 out0 = [ ivec3(0, -2, 1) | ivec3(5, 1, 11) ];
 			}
 
@@ -4414,7 +4414,7 @@ group assignment "Testing assignment of arrays of arrays"
 			desc "Testing assignment of arrays of arrays from explicitly sized to implicitly sized"
 			values
 			{
-				input bvec3 in0 = 	[ bvec3(true, false, true) ];
+				input bvec3 in0 =	[ bvec3(true, false, true) ];
 				output bvec3 out0 = [ bvec3(true, true, false) ];
 			}
 
@@ -4620,7 +4620,7 @@ group assignment "Testing assignment of arrays of arrays"
 				void main()
 				{
 					${SETUP}
-					float x[][] = float[][] ( 	float[] (in0.z, in0.x, in0.y),
+					float x[][] = float[][] (	float[] (in0.z, in0.x, in0.y),
 												float[] (in0.z, in0.x, in0.y),
 												float[] (in0.z, in0.x, in0.y) );
 
@@ -4650,7 +4650,7 @@ group assignment "Testing assignment of arrays of arrays"
 				void main()
 				{
 					${SETUP}
-					int[][] x = int[][] ( 	int[] (in0.z, in0.x, in0.y),
+					int[][] x = int[][] (	int[] (in0.z, in0.x, in0.y),
 											int[] (in0.z, in0.x, in0.y) );;
 					int y[2][3] = x;
 
@@ -4768,7 +4768,7 @@ group assignment "Testing assignment of arrays of arrays"
 			desc "Testing assignment of arrays of arrays from implicitly sized to explicitly sized"
 			values
 			{
-				input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
 				output vec3 out0 = [ vec3(0.5, -2.0, 1.0) | vec3(-0.5, 1.0, 11.2) ];
 			}
 
@@ -4797,7 +4797,7 @@ group assignment "Testing assignment of arrays of arrays"
 			desc "Testing assignment of arrays of arrays from implicitly sized to explicitly sized"
 			values
 			{
-				input ivec3 in0 = 	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
+				input ivec3 in0 =	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
 				output ivec3 out0 = [ ivec3(0, -2, 1) | ivec3(5, 1, 11) ];
 			}
 
@@ -4835,7 +4835,7 @@ group assignment "Testing assignment of arrays of arrays"
 			desc "Testing assignment of arrays of arrays from implicitly sized to explicitly sized"
 			values
 			{
-				input bvec3 in0 = 	[ bvec3(true, false, true) ];
+				input bvec3 in0 =	[ bvec3(true, false, true) ];
 				output bvec3 out0 = [ bvec3(true, true, false) ];
 			}
 
@@ -4942,15 +4942,15 @@ group assignment "Testing assignment of arrays of arrays"
 									-in0.y, -in0.y, in0.y,
 									-in0.x, -in0.x, in0.x);
 
-					mat3[][][] x = mat3[][][] (	mat3[][] ( 	mat3[] (a, a, a),
+					mat3[][][] x = mat3[][][] (	mat3[][] (	mat3[] (a, a, a),
 															mat3[] (b, b, b),
 															mat3[] (c, c, c)),
 
-												mat3[][] ( 	mat3[] (b, b, b),
+												mat3[][] (	mat3[] (b, b, b),
 															mat3[] (a, a, a),
 															mat3[] (c, c, c)),
 
-												mat3[][] ( 	mat3[] (c, c, c),
+												mat3[][] (	mat3[] (c, c, c),
 															mat3[] (a, a, a),
 															mat3[] (b, b, b)) );
 
@@ -5041,7 +5041,7 @@ group assignment "Testing assignment of arrays of arrays"
 				void main()
 				{
 					${SETUP}
-					float x[][] = float[][] ( 	float[] (in0.z, in0.x, in0.y),
+					float x[][] = float[][] (	float[] (in0.z, in0.x, in0.y),
 												float[] (in0.z, in0.x, in0.y),
 												float[] (in0.z, in0.x, in0.y) );
 
@@ -5071,7 +5071,7 @@ group assignment "Testing assignment of arrays of arrays"
 				void main()
 				{
 					${SETUP}
-					int[][] x = int[][] ( 	int[] (in0.z, in0.x, in0.y),
+					int[][] x = int[][] (	int[] (in0.z, in0.x, in0.y),
 											int[] (in0.z, in0.x, in0.y) );;
 					int y[][] = x;
 
@@ -5189,7 +5189,7 @@ group assignment "Testing assignment of arrays of arrays"
 			desc "Testing assignment of arrays of arrays with implicit sizes"
 			values
 			{
-				input vec3 in0 = 	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
 				output vec3 out0 = [ vec3(0.5, -2.0, 1.0) | vec3(-0.5, 1.0, 11.2) ];
 			}
 
@@ -5218,7 +5218,7 @@ group assignment "Testing assignment of arrays of arrays"
 			desc "Testing assignment of arrays of arrays with implicit sizes"
 			values
 			{
-				input ivec3 in0 = 	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
+				input ivec3 in0 =	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
 				output ivec3 out0 = [ ivec3(0, -2, 1) | ivec3(5, 1, 11) ];
 			}
 
@@ -5256,7 +5256,7 @@ group assignment "Testing assignment of arrays of arrays"
 			desc "Testing assignment of arrays of arrays with implicit sizes"
 			values
 			{
-				input bvec3 in0 = 	[ bvec3(true, false, true) ];
+				input bvec3 in0 =	[ bvec3(true, false, true) ];
 				output bvec3 out0 = [ bvec3(true, true, false) ];
 			}
 
@@ -5363,15 +5363,15 @@ group assignment "Testing assignment of arrays of arrays"
 									-in0.y, -in0.y, in0.y,
 									-in0.x, -in0.x, in0.x);
 
-					mat3[][][] x = mat3[][][] (	mat3[][] ( 	mat3[] (a, a, a),
+					mat3[][][] x = mat3[][][] (	mat3[][] (	mat3[] (a, a, a),
 															mat3[] (b, b, b),
 															mat3[] (c, c, c)),
 
-												mat3[][] ( 	mat3[] (b, b, b),
+												mat3[][] (	mat3[] (b, b, b),
 															mat3[] (a, a, a),
 															mat3[] (c, c, c)),
 
-												mat3[][] ( 	mat3[] (c, c, c),
+												mat3[][] (	mat3[] (c, c, c),
 															mat3[] (a, a, a),
 															mat3[] (b, b, b)) );
 
@@ -5519,7 +5519,7 @@ group length "Testing the array length property with arrays of arrays"
 				int[] x[] = int[][] (	int[] (in0.z, in0.x, in0.y, in0.x, in0.y, in0.z, in0.x),
 										int[] (in0.z, in0.x, in0.y, in0.x, in0.y, in0.z, in0.x) );
 
-				int[] y[][] = int[1][2][3] ( int[2][3] ( 	int[3] (in0.z, in0.x, in0.y),
+				int[] y[][] = int[1][2][3] ( int[2][3] (	int[3] (in0.z, in0.x, in0.y),
 															int[3] (in0.z, in0.x, in0.y) ));
 
 				int z[13][7][1];
@@ -5556,7 +5556,7 @@ group length "Testing the array length property with arrays of arrays"
 											bool[] (in0.z, in0.x, in0.y),
 											bool[] (in0.z, in0.x, in0.y) );
 
-				bool y[2][1][3] = bool[][][] ( 	bool[][] (	bool[] (in0.z, in0.x, in0.y) ),
+				bool y[2][1][3] = bool[][][] (	bool[][] (	bool[] (in0.z, in0.x, in0.y) ),
 												bool[][] (	bool[] (in0.z, in0.x, in0.y) ) );
 
 				int z[7][8][9];
@@ -5707,7 +5707,7 @@ group length "Testing the array length property with arrays of arrays"
 				int[] x[] = int[][] (	int[] (in0.z, in0.x, in0.y, in0.x, in0.y, in0.z, in0.x),
 										int[] (in0.z, in0.x, in0.y, in0.x, in0.y, in0.z, in0.x) );
 
-				int[] y[][] = int[1][2][3] ( int[2][3] ( 	int[3] (in0.z, in0.x, in0.y),
+				int[] y[][] = int[1][2][3] ( int[2][3] (	int[3] (in0.z, in0.x, in0.y),
 															int[3] (in0.z, in0.x, in0.y) ));
 
 				int z[13][7][1];
@@ -5746,7 +5746,7 @@ group array_access "Test accessing arrays of arrays"
 				float x = float[2][6] ( float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
 										float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) ) [a][a];
 
-				float y = float[][][] (	float[][] ( 	float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
+				float y = float[][][] (	float[][] (		float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
 														float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) ),
 										float[][] (		float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
 														float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) ),
@@ -5799,7 +5799,7 @@ group array_access "Test accessing arrays of arrays"
 										float[][] ( float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
 													float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) )) [in1.x+1][in1.y-1][in1.z+4];
 
-				float z = float[][] ( 	float[] (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+				float z = float[][] (	float[] (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
 										float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z),
 										float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x) ) [in1.x-in1.y][in1.z];
 

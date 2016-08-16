@@ -311,8 +311,8 @@ std::vector<VkPresentModeKHR> getPhysicalDeviceSurfacePresentModes (const Instan
 }
 
 std::vector<VkImage> getSwapchainImages (const DeviceInterface&			vkd,
-					 					 VkDevice						device,
-					 					 VkSwapchainKHR					swapchain)
+										 VkDevice						device,
+										 VkSwapchainKHR					swapchain)
 {
 	deUint32	numImages	= 0;
 

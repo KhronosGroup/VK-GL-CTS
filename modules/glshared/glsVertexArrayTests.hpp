@@ -221,11 +221,11 @@ public:
 	virtual Array*				getArray			(int i);
 	virtual int					getArrayCount		(void);
 	virtual	void				newArray			(Array::Storage storage);
-	virtual void				render 				(Array::Primitive primitive, int firstVertex, int vertexCount, bool useVao, float coordScale, float colorScale);
+	virtual void				render				(Array::Primitive primitive, int firstVertex, int vertexCount, bool useVao, float coordScale, float colorScale);
 
 	const tcu::Surface&			getSurface			(void) const { return m_screen; }
 private:
-	void 						updateProgram		(void);
+	void						updateProgram		(void);
 	glu::RenderContext&			m_renderCtx;
 	sglr::Context&				m_ctx;
 
@@ -263,7 +263,7 @@ public:
 		inline bool					operator<=		(const WrappedType<Type>& other) const	{ return m_value <= other.m_value; }
 		inline bool					operator>=		(const WrappedType<Type>& other) const	{ return m_value >= other.m_value; }
 
-		inline 						operator Type	(void) const							{ return m_value; }
+		inline						operator Type	(void) const							{ return m_value; }
 		template<class T>
 		inline T					to				(void) const							{ return (T)m_value; }
 	private:
@@ -374,7 +374,7 @@ public:
 		inline bool			operator<=		(const Fixed& other) const	{ return m_value <= other.m_value; }
 		inline bool			operator>=		(const Fixed& other) const	{ return m_value >= other.m_value; }
 
-		inline 				operator deInt32 (void) const				{ return m_value; }
+		inline				operator deInt32 (void) const				{ return m_value; }
 		template<class T>
 		inline T			to				(void) const				{ return (T)m_value; }
 	private:
@@ -460,7 +460,7 @@ public:
 			Array::OutputType	outputType;
 			Array::Storage		storage;
 			Array::Usage		usage;
-			int 				componentCount;
+			int					componentCount;
 			int					offset;
 			int					stride;
 			bool				normalize;
@@ -468,7 +468,7 @@ public:
 			GLValue				max;
 		};
 
-		std::string 			getName		(void) const;
+		std::string				getName		(void) const;
 		std::string				getDesc		(void) const;
 
 		Array::Primitive		primitive;

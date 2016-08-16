@@ -267,7 +267,7 @@ std::vector<FunctionContainer> getNegativeAdvancedBlendEquationTestFunctions (vo
 {
 	const FunctionContainer funcs[] =
 	{
-		{blend_qualifier_mismatch,    		"blend_qualifier_mismatch",			"Test blend qualifier mismatch."			},
+		{blend_qualifier_mismatch,			"blend_qualifier_mismatch",			"Test blend qualifier mismatch."			},
 		{attachment_advanced_equation,		"attachment_advanced_equation",		"Test draw buffer for other color outputs." },
 	};
 

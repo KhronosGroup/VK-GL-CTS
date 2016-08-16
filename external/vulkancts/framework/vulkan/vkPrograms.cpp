@@ -127,7 +127,7 @@ ProgramBinary* buildProgram (const glu::ProgramSources& program, ProgramFormat b
 
 			if (!validateSpirV(binary.size(), &binary[0], &validationLog))
 			{
-				buildInfo->program.linkOk 	 = false;
+				buildInfo->program.linkOk	 = false;
 				buildInfo->program.infoLog	+= "\n" + validationLog.str();
 
 				TCU_THROW(InternalError, "Validation failed for compiled SPIR-V binary");

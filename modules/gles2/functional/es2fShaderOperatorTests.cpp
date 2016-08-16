@@ -1233,7 +1233,7 @@ void ShaderOperatorTests::init (void)
 
 		for (int funcInfoNdx = 0; funcInfoNdx < (int)outerGroupInfo.funcInfos.size(); funcInfoNdx++)
 		{
-			const BuiltinFuncInfo&	funcInfo 		= outerGroupInfo.funcInfos[funcInfoNdx];
+			const BuiltinFuncInfo&	funcInfo		= outerGroupInfo.funcInfos[funcInfoNdx];
 			const char*				shaderFuncName	= funcInfo.shaderFuncName;
 			bool					isBoolCase		= (funcInfo.precisionMask == PRECMASK_NA);
 			bool					isIntCase		= (funcInfo.input0.valueType & (VALUE_INT | VALUE_INT_VEC | VALUE_INT_GENTYPE)) != 0;
