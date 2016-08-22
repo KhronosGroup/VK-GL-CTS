@@ -35,7 +35,10 @@ namespace Functional
 namespace NegativeTestShared
 {
 
-std::vector<FunctionContainer> getNegativeShaderImageLoadStoreTestFunctions (void);
+std::vector<FunctionContainer> getNegativeShaderImageLoadTestFunctions				(void);
+std::vector<FunctionContainer> getNegativeShaderImageStoreTestFunctions				(void);
+std::vector<FunctionContainer> getNegativeShaderImageAtomicTestFunctions			(void);
+std::vector<FunctionContainer> getNegativeShaderImageAtomicExchangeTestFunctions	(void);
 
 } // NegativeTestShared
 } // Functional
