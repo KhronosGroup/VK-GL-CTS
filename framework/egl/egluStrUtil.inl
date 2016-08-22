@@ -132,6 +132,33 @@ const char* getSurfaceAttribName (int value)
 	}
 }
 
+const char* getYuvOrderName (int value)
+{
+	switch (value)
+	{
+		case EGL_NONE:					return "EGL_NONE";
+		case EGL_YUV_ORDER_YUV_EXT:		return "EGL_YUV_ORDER_YUV_EXT";
+		case EGL_YUV_ORDER_YVU_EXT:		return "EGL_YUV_ORDER_YVU_EXT";
+		case EGL_YUV_ORDER_YUYV_EXT:	return "EGL_YUV_ORDER_YUYV_EXT";
+		case EGL_YUV_ORDER_UYVY_EXT:	return "EGL_YUV_ORDER_UYVY_EXT";
+		case EGL_YUV_ORDER_YVYU_EXT:	return "EGL_YUV_ORDER_YVYU_EXT";
+		case EGL_YUV_ORDER_VYUY_EXT:	return "EGL_YUV_ORDER_VYUY_EXT";
+		case EGL_YUV_ORDER_AYUV_EXT:	return "EGL_YUV_ORDER_AYUV_EXT";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getYuvPlaneBppName (int value)
+{
+	switch (value)
+	{
+		case EGL_YUV_PLANE_BPP_0_EXT:	return "EGL_YUV_PLANE_BPP_0_EXT";
+		case EGL_YUV_PLANE_BPP_8_EXT:	return "EGL_YUV_PLANE_BPP_8_EXT";
+		case EGL_YUV_PLANE_BPP_10_EXT:	return "EGL_YUV_PLANE_BPP_10_EXT";
+		default:						return DE_NULL;
+	}
+}
+
 const char* getSurfaceTargetName (int value)
 {
 	switch (value)
