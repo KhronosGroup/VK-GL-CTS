@@ -1113,7 +1113,7 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 																				m_params.src.image.extent.width,
 																				m_params.src.image.extent.height,
 																				m_params.src.image.extent.depth));
-	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth, FILL_MODE_RED);
+	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth);
 	m_destinationTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(m_textureFormat, (int)m_params.dst.buffer.size, 1));
 	generateBuffer(m_destinationTextureLevel->getAccess(), (int)m_params.dst.buffer.size, 1, 1);
 
@@ -3439,20 +3439,20 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 	// Copy image to buffer testcases.
 	{
-		TestParams			params;
+		TestParams	params;
 		params.src.image.imageType	= VK_IMAGE_TYPE_2D;
-		params.src.image.format		= VK_FORMAT_R8G8B8A8_UINT;
+		params.src.image.format		= VK_FORMAT_R8G8B8A8_UNORM;
 		params.src.image.extent		= defaultExtent;
 		params.dst.buffer.size		= defaultSize * defaultSize;
 
-		const VkBufferImageCopy			bufferImageCopy	=
+		const VkBufferImageCopy	bufferImageCopy	=
 		{
 			0u,											// VkDeviceSize				bufferOffset;
 			0u,											// uint32_t					bufferRowLength;
 			0u,											// uint32_t					bufferImageHeight;
 			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
 			{0, 0, 0},									// VkOffset3D				imageOffset;
-			{defaultFourthSize, defaultFourthSize, 1}	// VkExtent3D				imageExtent;
+			defaultExtent								// VkExtent3D				imageExtent;
 		};
 		CopyRegion	copyRegion;
 		copyRegion.bufferImageCopy	= bufferImageCopy;
@@ -3462,15 +3462,76 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 		imageToBufferTests->addChild(new CopyImageToBufferTestCase(testCtx, "whole", "Copy from image to buffer", params));
 	}
 
+	{
+		TestParams	params;
+		params.src.image.imageType	= VK_IMAGE_TYPE_2D;
+		params.src.image.format		= VK_FORMAT_R8G8B8A8_UNORM;
+		params.src.image.extent		= defaultExtent;
+		params.dst.buffer.size		= defaultSize * defaultSize;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			defaultSize * defaultHalfSize,				// VkDeviceSize				bufferOffset;
+			0u,											// uint32_t					bufferRowLength;
+			0u,											// uint32_t					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion	copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		imageToBufferTests->addChild(new CopyImageToBufferTestCase(testCtx, "buffer_offset", "Copy from image to buffer with buffer offset", params));
+	}
+
+	{
+		TestParams	params;
+		params.src.image.imageType	= VK_IMAGE_TYPE_2D;
+		params.src.image.format		= VK_FORMAT_R8G8B8A8_UNORM;
+		params.src.image.extent		= defaultExtent;
+		params.dst.buffer.size		= defaultSize * defaultSize;
+
+		const int			pixelSize	= tcu::getPixelSize(mapVkFormat(params.src.image.format));
+		const VkDeviceSize	bufferSize	= pixelSize * params.dst.buffer.size;
+		const VkDeviceSize	offsetSize	= pixelSize * defaultFourthSize * defaultFourthSize;
+		deUint32			divisor		= 1;
+		for (VkDeviceSize offset = 0; offset < bufferSize - offsetSize; offset += offsetSize, ++divisor)
+		{
+			const deUint32			bufferRowLength		= defaultFourthSize;
+			const deUint32			bufferImageHeight	= defaultFourthSize;
+			const VkExtent3D		imageExtent			= {defaultFourthSize / divisor, defaultFourthSize, 1};
+			DE_ASSERT(!bufferRowLength || bufferRowLength >= imageExtent.width);
+			DE_ASSERT(!bufferImageHeight || bufferImageHeight >= imageExtent.height);
+			DE_ASSERT(imageExtent.width * imageExtent.height *imageExtent.depth <= offsetSize);
+
+			CopyRegion				region;
+			const VkBufferImageCopy	bufferImageCopy		=
+			{
+				offset,						// VkDeviceSize				bufferOffset;
+				bufferRowLength,			// uint32_t					bufferRowLength;
+				bufferImageHeight,			// uint32_t					bufferImageHeight;
+				defaultSourceLayer,			// VkImageSubresourceLayers	imageSubresource;
+				{0, 0, 0},					// VkOffset3D				imageOffset;
+				imageExtent					// VkExtent3D				imageExtent;
+			};
+			region.bufferImageCopy	= bufferImageCopy;
+			params.regions.push_back(region);
+		}
+
+		imageToBufferTests->addChild(new CopyImageToBufferTestCase(testCtx, "regions", "Copy from image to buffer with multiple regions", params));
+	}
+
 	// Copy buffer to image testcases.
 	{
-		TestParams			params;
+		TestParams	params;
 		params.src.buffer.size		= defaultSize * defaultSize;
 		params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
 		params.dst.image.format		= VK_FORMAT_R8G8B8A8_UINT;
 		params.dst.image.extent		= defaultExtent;
 
-		const VkBufferImageCopy			bufferImageCopy	=
+		const VkBufferImageCopy	bufferImageCopy	=
 		{
 			0u,											// VkDeviceSize				bufferOffset;
 			0u,											// uint32_t					bufferRowLength;
@@ -3485,6 +3546,57 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 		params.regions.push_back(copyRegion);
 
 		bufferToImageTests->addChild(new CopyBufferToImageTestCase(testCtx, "whole", "Copy from buffer to image", params));
+	}
+
+	{
+		TestParams	params;
+		params.src.buffer.size		= defaultSize * defaultSize;
+		params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
+		params.dst.image.format		= VK_FORMAT_R8G8B8A8_UNORM;
+		params.dst.image.extent		= defaultExtent;
+
+		CopyRegion	region;
+		deUint32	divisor	= 1;
+		for (int offset = 0; (offset + defaultFourthSize / divisor < defaultSize) && (defaultFourthSize > divisor); offset += defaultFourthSize / divisor++)
+		{
+			const VkBufferImageCopy	bufferImageCopy	=
+			{
+				0u,																// VkDeviceSize				bufferOffset;
+				0u,																// uint32_t					bufferRowLength;
+				0u,																// uint32_t					bufferImageHeight;
+				defaultSourceLayer,												// VkImageSubresourceLayers	imageSubresource;
+				{offset, defaultHalfSize, 0},									// VkOffset3D				imageOffset;
+				{defaultFourthSize / divisor, defaultFourthSize / divisor, 1}	// VkExtent3D				imageExtent;
+			};
+			region.bufferImageCopy	= bufferImageCopy;
+			params.regions.push_back(region);
+		}
+
+		bufferToImageTests->addChild(new CopyBufferToImageTestCase(testCtx, "regions", "Copy from buffer to image with multiple regions", params));
+	}
+
+	{
+		TestParams	params;
+		params.src.buffer.size		= defaultSize * defaultSize;
+		params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
+		params.dst.image.format		= VK_FORMAT_R8G8B8A8_UNORM;
+		params.dst.image.extent		= defaultExtent;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			defaultFourthSize,							// VkDeviceSize				bufferOffset;
+			defaultHalfSize + defaultFourthSize,		// uint32_t					bufferRowLength;
+			defaultHalfSize + defaultFourthSize,		// uint32_t					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion	copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		bufferToImageTests->addChild(new CopyBufferToImageTestCase(testCtx, "buffer_offset", "Copy from buffer to image with buffer offset", params));
 	}
 
 	// Copy buffer to buffer testcases.
