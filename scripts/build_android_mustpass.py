@@ -352,6 +352,7 @@ MASTER_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
+					  required		= True,
 					  filters		= MASTER_EGL_COMMON_FILTERS,
 				      runtime		= "24m"),
 	])
@@ -367,6 +368,7 @@ MASTER_GLES2_PKG				= Package(module = GLES2_MODULE, configurations = [
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
+					  required		= True,
 					  filters		= MASTER_GLES2_COMMON_FILTERS,
 					  runtime		= "40m"),
 	])
@@ -384,6 +386,7 @@ MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
+					  required		= True,
 					  filters		= MASTER_GLES3_COMMON_FILTERS,
 					  runtime		= "1h15m"),
 		# Rotations
@@ -444,6 +447,7 @@ MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
+					  required		= True,
 					  filters		= MASTER_GLES31_COMMON_FILTERS,
 					  runtime		= "7h30m"),
 

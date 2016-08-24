@@ -407,7 +407,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         if (!pass) {
             mockListener.testFailed(testId,
-                    "=== with config {glformat=rgba8888d24s8,rotation=unspecified,surfacetype=window} ===\n"
+                    "=== with config {glformat=rgba8888d24s8,rotation=unspecified,surfacetype=window,required=false} ===\n"
                     + resultCode + ": Detail" + resultCode);
 
             EasyMock.expectLastCall().once();
@@ -931,7 +931,7 @@ public class DeqpTestRunnerTest extends TestCase {
             EasyMock.expectLastCall().once();
 
             mockListener.testFailed(EasyMock.eq(testIds[i]),
-                    EasyMock.eq("=== with config {glformat=rgba8888d24s8,rotation=unspecified,surfacetype=window} ===\n"
+                    EasyMock.eq("=== with config {glformat=rgba8888d24s8,rotation=unspecified,surfacetype=window,required=false} ===\n"
                     + "Abort: Test cannot be executed"));
             EasyMock.expectLastCall().once();
 
