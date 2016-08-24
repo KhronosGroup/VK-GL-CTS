@@ -115,6 +115,10 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             description="Surface type ('window', 'pbuffer', 'fbo'). Defaults to 'window'",
             importance=Option.Importance.NEVER)
     private String mSurfaceType = "window";
+    @Option(name="deqp-config-required",
+            description="Is current config required if API is supported? Defaults to false.",
+            importance=Option.Importance.NEVER)
+    private boolean mConfigRequired = false;
     @Option(name = "include-filter",
             description="Test include filter. '*' is zero or more letters. '.' has no special meaning.")
     private List<String> mIncludeFilters = new ArrayList<>();
@@ -254,19 +258,21 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         private final String mGlConfig;
         private final String mRotation;
         private final String mSurfaceType;
+        private final boolean mRequired;
 
-        public BatchRunConfiguration(String glConfig, String rotation, String surfaceType) {
+        public BatchRunConfiguration(String glConfig, String rotation, String surfaceType, boolean required) {
             mGlConfig = glConfig;
             mRotation = rotation;
             mSurfaceType = surfaceType;
+            mRequired = required;
         }
 
         /**
          * Get string that uniquely identifies this config
          */
         public String getId() {
-            return String.format("{glformat=%s,rotation=%s,surfacetype=%s}",
-                    mGlConfig, mRotation, mSurfaceType);
+            return String.format("{glformat=%s,rotation=%s,surfacetype=%s,required=%b}",
+                    mGlConfig, mRotation, mSurfaceType, mRequired);
         }
 
         /**
@@ -288,6 +294,13 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
          */
         public String getSurfaceType() {
             return mSurfaceType;
+        }
+
+        /**
+         * Is this configuration mandatory to support, if target API is supported?
+         */
+        public boolean isRequired() {
+            return mRequired;
         }
 
         @Override
@@ -1073,7 +1086,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     private static Map<TestIdentifier, Set<BatchRunConfiguration>> generateTestInstances(
-            Reader testlist, String configName, String screenRotation, String surfaceType) throws FileNotFoundException {
+            Reader testlist, String configName, String screenRotation, String surfaceType, boolean required) throws FileNotFoundException {
         // Note: This is specifically a LinkedHashMap to guarantee that tests are iterated
         // in the insertion order.
         final Map<TestIdentifier, Set<BatchRunConfiguration>> instances = new LinkedHashMap<>();
@@ -1083,7 +1096,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             while ((testName = testlistReader.readLine()) != null) {
                 // Test name -> testId -> only one config -> done.
                 final Set<BatchRunConfiguration> testInstanceSet = new LinkedHashSet<>();
-                BatchRunConfiguration config = new BatchRunConfiguration(configName, screenRotation, surfaceType);
+                BatchRunConfiguration config = new BatchRunConfiguration(configName, screenRotation, surfaceType, required);
                 testInstanceSet.add(config);
                 TestIdentifier test = pathToIdentifier(testName);
                 instances.put(test, testInstanceSet);
@@ -1329,7 +1342,11 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         if (isSupportedRunConfiguration(batch.config)) {
             executeTestRunBatch(batch);
         } else {
-            fakePassTestRunBatch(batch);
+            if (batch.config.isRequired()) {
+                fakeFailTestRunBatch(batch);
+            } else {
+                fakePassTestRunBatch(batch);
+            }
         }
     }
 
@@ -1633,9 +1650,20 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      */
     private void fakePassTestRunBatch(TestBatch batch) {
         for (TestIdentifier test : batch.tests) {
-            CLog.d("Skipping test '%s' invocation in config '%s'", test.toString(),
+            CLog.d("Marking '%s' invocation in config '%s' as passed without running", test.toString(),
                     batch.config.getId());
             mInstanceListerner.skipTest(test);
+        }
+    }
+
+    /**
+     * Fail given batch tests without running it
+     */
+    private void fakeFailTestRunBatch(TestBatch batch) {
+        for (TestIdentifier test : batch.tests) {
+            CLog.d("Marking '%s' invocation in config '%s' as failed without running", test.toString(),
+                    batch.config.getId());
+            mInstanceListerner.abortTest(test, "Required config not supported");
         }
     }
 
@@ -1960,7 +1988,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 }
                 reader = new FileReader(testlist);
             }
-            mTestInstances = generateTestInstances(reader, mConfigName, mScreenRotation, mSurfaceType);
+            mTestInstances = generateTestInstances(reader, mConfigName, mScreenRotation, mSurfaceType, mConfigRequired);
             mCaselistReader = null;
             reader.close();
         }
@@ -2083,6 +2111,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         destination.mCaselistFile = source.mCaselistFile;
         destination.mScreenRotation = source.mScreenRotation;
         destination.mSurfaceType = source.mSurfaceType;
+        destination.mConfigRequired = source.mConfigRequired;
         destination.mIncludeFilters = new ArrayList<>(source.mIncludeFilters);
         destination.mExcludeFilters = new ArrayList<>(source.mExcludeFilters);
         destination.mAbi = source.mAbi;
