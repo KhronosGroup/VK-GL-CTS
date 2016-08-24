@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuX11Platform.hpp"
+#include "vkWsiPlatform.hpp"
 
 #include "deUniquePtr.hpp"
 #include "gluPlatform.hpp"
@@ -29,7 +30,7 @@
 #include "tcuX11.hpp"
 #include "tcuFunctionLibrary.hpp"
 #include "deMemory.h"
-
+#include "tcuX11VulkanPlatform.hpp"
 #if defined (DEQP_SUPPORT_GLX)
 #	include "tcuX11GlxPlatform.hpp"
 #endif
@@ -38,6 +39,9 @@
 #endif
 
 #include <sys/utsname.h>
+
+using de::MovePtr;
+using de::UniquePtr;
 
 namespace tcu
 {
@@ -50,57 +54,6 @@ public:
 	void		registerFactory	(de::MovePtr<glu::ContextFactory> factory)
 	{
 		m_contextFactoryRegistry.registerFactory(factory.release());
-	}
-};
-
-class VulkanLibrary : public vk::Library
-{
-public:
-	VulkanLibrary (void)
-		: m_library	("libvulkan.so.1")
-		, m_driver	(m_library)
-	{
-	}
-
-	const vk::PlatformInterface& getPlatformInterface (void) const
-	{
-		return m_driver;
-	}
-
-private:
-	const tcu::DynamicFunctionLibrary	m_library;
-	const vk::PlatformDriver			m_driver;
-};
-
-class X11VulkanPlatform : public vk::Platform
-{
-public:
-	vk::Library* createLibrary (void) const
-	{
-		return new VulkanLibrary();
-	}
-
-	void describePlatform (std::ostream& dst) const
-	{
-		utsname		sysInfo;
-
-		deMemset(&sysInfo, 0, sizeof(sysInfo));
-
-		if (uname(&sysInfo) != 0)
-			throw std::runtime_error("uname() failed");
-
-		dst << "OS: " << sysInfo.sysname << " " << sysInfo.release << " " << sysInfo.version << "\n";
-		dst << "CPU: " << sysInfo.machine << "\n";
-	}
-
-	void getMemoryLimits (vk::PlatformMemoryLimits& limits) const
-	{
-		limits.totalSystemMemory					= 256*1024*1024;
-		limits.totalDeviceLocalMemory				= 128*1024*1024;
-		limits.deviceMemoryAllocationGranularity	= 64*1024;
-		limits.devicePageSize						= 4096;
-		limits.devicePageTableEntrySize				= 8;
-		limits.devicePageTableHierarchyLevels		= 3;
 	}
 };
 
@@ -119,16 +72,18 @@ public:
 
 private:
 	EventState				m_eventState;
+	x11::VulkanPlatform		m_vkPlatform;
 #if defined (DEQP_SUPPORT_EGL)
 	x11::egl::Platform		m_eglPlatform;
 #endif // DEQP_SPPORT_EGL
 	X11GLPlatform			m_glPlatform;
-	X11VulkanPlatform		m_vkPlatform;
 };
 
+
 X11Platform::X11Platform (void)
+	: m_vkPlatform	(m_eventState)
 #if defined (DEQP_SUPPORT_EGL)
-	: m_eglPlatform	(m_eventState)
+	, m_eglPlatform	(m_eventState)
 #endif // DEQP_SUPPORT_EGL
 {
 #if defined (DEQP_SUPPORT_GLX)
