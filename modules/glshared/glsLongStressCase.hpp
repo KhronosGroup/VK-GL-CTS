@@ -131,7 +131,7 @@ private:
 
 struct TextureSpec
 {
-	gls::TextureTestUtil::TextureType	textureType;
+	glu::TextureTestUtil::TextureType	textureType;
 	deUint32							textureUnit;
 	int									width;
 	int									height;
@@ -146,7 +146,7 @@ struct TextureSpec
 	tcu::Vec4							minValue;
 	tcu::Vec4							maxValue;
 
-	TextureSpec (const gls::TextureTestUtil::TextureType	texType,
+	TextureSpec (const glu::TextureTestUtil::TextureType	texType,
 				 const deUint32								unit,
 				 const int									width_,
 				 const int									height_,

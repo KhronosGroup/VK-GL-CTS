@@ -541,27 +541,27 @@ private:
 	IterateResult										iterate						(void);
 
 	void												logParams					(const IterationConfig&							config,
-																					 const gls::TextureTestUtil::ReferenceParams&	samplerParams);
+																					 const glu::TextureTestUtil::ReferenceParams&	samplerParams);
 
 	void												renderTo					(tcu::Surface&									surface,
 																					 const IterationConfig&							config,
-																					 const gls::TextureTestUtil::ReferenceParams&	samplerParams);
+																					 const glu::TextureTestUtil::ReferenceParams&	samplerParams);
 	void												renderQuad					(const float*									texCoord,
-																					 const gls::TextureTestUtil::ReferenceParams&	samplerParams);
+																					 const glu::TextureTestUtil::ReferenceParams&	samplerParams);
 
 	void												verifyImage					(const tcu::Surface&							image,
 																					 const IterationConfig&							config,
-																					 const gls::TextureTestUtil::ReferenceParams&	samplerParams);
+																					 const glu::TextureTestUtil::ReferenceParams&	samplerParams);
 
 	bool												verifyTextureSampleResult	(const tcu::ConstPixelBufferAccess&				renderedFrame,
 																					 const float*									texCoord,
-																					 const gls::TextureTestUtil::ReferenceParams&	samplerParams,
+																					 const glu::TextureTestUtil::ReferenceParams&	samplerParams,
 																					 const tcu::LodPrecision&						lodPrecision,
 																					 const tcu::LookupPrecision&					lookupPrecision);
 
 	bool												verifyTextureCompareResult	(const tcu::ConstPixelBufferAccess&				renderedFrame,
 																					 const float*									texCoord,
-																					 const gls::TextureTestUtil::ReferenceParams&	samplerParams,
+																					 const glu::TextureTestUtil::ReferenceParams&	samplerParams,
 																					 const tcu::TexComparePrecision&				texComparePrecision,
 																					 const tcu::TexComparePrecision&				lowQualityTexComparePrecision,
 																					 const tcu::LodPrecision&						lodPrecision,
@@ -569,17 +569,17 @@ private:
 
 	bool												verifyTextureGatherResult	(const tcu::ConstPixelBufferAccess&				renderedFrame,
 																					 const float*									texCoord,
-																					 const gls::TextureTestUtil::ReferenceParams&	samplerParams,
+																					 const glu::TextureTestUtil::ReferenceParams&	samplerParams,
 																					 const tcu::LookupPrecision&					lookupPrecision);
 
 	bool												verifyTextureGatherCmpResult(const tcu::ConstPixelBufferAccess&				renderedFrame,
 																					 const float*									texCoord,
-																					 const gls::TextureTestUtil::ReferenceParams&	samplerParams,
+																					 const glu::TextureTestUtil::ReferenceParams&	samplerParams,
 																					 const tcu::TexComparePrecision&				texComparePrecision,
 																					 const tcu::TexComparePrecision&				lowQualityTexComparePrecision);
 
 	deUint32											getIterationSeed			(const IterationConfig& config) const;
-	gls::TextureTestUtil::ReferenceParams				genSamplerParams			(const IterationConfig& config) const;
+	glu::TextureTestUtil::ReferenceParams				genSamplerParams			(const IterationConfig& config) const;
 	glu::ShaderProgram*									genGatherProgram			(void) const;
 
 	virtual int											getNumIterations			(void) const = 0;
@@ -714,7 +714,7 @@ TextureBorderClampTest::IterateResult TextureBorderClampTest::iterate (void)
 	const std::string							iterationDesc		= "Iteration " + de::toString(m_iterationNdx+1) + (iterationConfig.description.empty() ? ("") : (" - " + iterationConfig.description));
 	const tcu::ScopedLogSection					section				(m_testCtx.getLog(), "Iteration", iterationDesc);
 	tcu::Surface								renderedFrame		(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
-	const gls::TextureTestUtil::ReferenceParams	samplerParams		= genSamplerParams(iterationConfig);
+	const glu::TextureTestUtil::ReferenceParams	samplerParams		= genSamplerParams(iterationConfig);
 
 	logParams(iterationConfig, samplerParams);
 	renderTo(renderedFrame, iterationConfig, samplerParams);
@@ -728,7 +728,7 @@ TextureBorderClampTest::IterateResult TextureBorderClampTest::iterate (void)
 	return CONTINUE;
 }
 
-void TextureBorderClampTest::logParams (const IterationConfig& config, const gls::TextureTestUtil::ReferenceParams& samplerParams)
+void TextureBorderClampTest::logParams (const IterationConfig& config, const glu::TextureTestUtil::ReferenceParams& samplerParams)
 {
 	const std::string				borderColorString	= (m_channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)   ? (de::toString(config.borderColor.get<deInt32>()))
 														: (m_channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER) ? (de::toString(config.borderColor.get<deUint32>()))
@@ -761,14 +761,14 @@ void TextureBorderClampTest::logParams (const IterationConfig& config, const gls
 
 void TextureBorderClampTest::renderTo (tcu::Surface&								surface,
 									   const IterationConfig&						config,
-									   const gls::TextureTestUtil::ReferenceParams&	samplerParams)
+									   const glu::TextureTestUtil::ReferenceParams&	samplerParams)
 {
 	const glw::Functions&						gl			= m_context.getRenderContext().getFunctions();
 	const gls::TextureTestUtil::RandomViewport	viewport	(m_context.getRenderTarget(), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, getIterationSeed(config));
 	std::vector<float>							texCoord;
 	de::MovePtr<glu::Sampler>					sampler;
 
-	gls::TextureTestUtil::computeQuadTexCoord2D(texCoord, config.p0, config.p1);
+	glu::TextureTestUtil::computeQuadTexCoord2D(texCoord, config.p0, config.p1);
 
 	// Bind to unit 0.
 	gl.activeTexture(GL_TEXTURE0);
@@ -867,7 +867,7 @@ void TextureBorderClampTest::renderTo (tcu::Surface&								surface,
 	glu::readPixels(m_context.getRenderContext(), viewport.x, viewport.y, surface.getAccess());
 }
 
-void TextureBorderClampTest::renderQuad (const float* texCoord, const gls::TextureTestUtil::ReferenceParams& samplerParams)
+void TextureBorderClampTest::renderQuad (const float* texCoord, const glu::TextureTestUtil::ReferenceParams& samplerParams)
 {
 	// use TextureRenderer for basic rendering, use custom for gather
 	if (m_samplingFunction == SAMPLE_FILTER)
@@ -908,7 +908,7 @@ void TextureBorderClampTest::renderQuad (const float* texCoord, const gls::Textu
 
 void TextureBorderClampTest::verifyImage (const tcu::Surface&							renderedFrame,
 										  const IterationConfig&						config,
-										  const gls::TextureTestUtil::ReferenceParams&	samplerParams)
+										  const glu::TextureTestUtil::ReferenceParams&	samplerParams)
 {
 	const tcu::PixelFormat	pixelFormat		= m_context.getRenderTarget().getPixelFormat();
 
@@ -916,7 +916,7 @@ void TextureBorderClampTest::verifyImage (const tcu::Surface&							renderedFram
 	std::vector<float>		texCoord;
 	bool					verificationOk;
 
-	gls::TextureTestUtil::computeQuadTexCoord2D(texCoord, config.p0, config.p1);
+	glu::TextureTestUtil::computeQuadTexCoord2D(texCoord, config.p0, config.p1);
 
 	lodPrecision.derivateBits		= 18;
 	lodPrecision.lodBits			= 5;
@@ -929,13 +929,13 @@ void TextureBorderClampTest::verifyImage (const tcu::Surface&							renderedFram
 		const bool						isNearestOnly		= isNearestMinFilter && isNearestMagFilter;
 		const bool						isSRGB				= texFormat.order == tcu::TextureFormat::sRGB || texFormat.order == tcu::TextureFormat::sRGBA;
 		const int						colorErrorBits		= (isNearestOnly && !isSRGB) ? (1) : (2);
-		const tcu::IVec4				colorBits			= tcu::max(gls::TextureTestUtil::getBitsVec(pixelFormat) - tcu::IVec4(colorErrorBits), tcu::IVec4(0));
+		const tcu::IVec4				colorBits			= tcu::max(glu::TextureTestUtil::getBitsVec(pixelFormat) - tcu::IVec4(colorErrorBits), tcu::IVec4(0));
 		tcu::LookupPrecision			lookupPrecision;
 
 		lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(colorBits) / samplerParams.colorScale;
 		lookupPrecision.coordBits		= tcu::IVec3(20,20,0);
 		lookupPrecision.uvwBits			= tcu::IVec3(5,5,0);
-		lookupPrecision.colorMask		= gls::TextureTestUtil::getCompareMask(pixelFormat);
+		lookupPrecision.colorMask		= glu::TextureTestUtil::getCompareMask(pixelFormat);
 
 		if (m_samplingFunction == SAMPLE_FILTER)
 		{
@@ -1009,7 +1009,7 @@ void TextureBorderClampTest::verifyImage (const tcu::Surface&							renderedFram
 
 bool TextureBorderClampTest::verifyTextureSampleResult (const tcu::ConstPixelBufferAccess&				renderedFrame,
 														const float*									texCoord,
-														const gls::TextureTestUtil::ReferenceParams&	samplerParams,
+														const glu::TextureTestUtil::ReferenceParams&	samplerParams,
 														const tcu::LodPrecision&						lodPrecision,
 													    const tcu::LookupPrecision&						lookupPrecision)
 {
@@ -1018,9 +1018,9 @@ bool TextureBorderClampTest::verifyTextureSampleResult (const tcu::ConstPixelBuf
 	tcu::Surface					errorMask			(renderedFrame.getWidth(), renderedFrame.getHeight());
 	int								numFailedPixels;
 
-	gls::TextureTestUtil::sampleTexture(gls::TextureTestUtil::SurfaceAccess(reference, pixelFormat), m_texture->getRefTexture(), texCoord, samplerParams);
+	glu::TextureTestUtil::sampleTexture(tcu::SurfaceAccess(reference, pixelFormat), m_texture->getRefTexture(), texCoord, samplerParams);
 
-	numFailedPixels = gls::TextureTestUtil::computeTextureLookupDiff(renderedFrame, reference.getAccess(), errorMask.getAccess(), m_texture->getRefTexture(),
+	numFailedPixels = glu::TextureTestUtil::computeTextureLookupDiff(renderedFrame, reference.getAccess(), errorMask.getAccess(), m_texture->getRefTexture(),
 																	 texCoord, samplerParams, lookupPrecision, lodPrecision, m_testCtx.getWatchDog());
 
 	if (numFailedPixels > 0)
@@ -1039,7 +1039,7 @@ bool TextureBorderClampTest::verifyTextureSampleResult (const tcu::ConstPixelBuf
 
 bool TextureBorderClampTest::verifyTextureCompareResult (const tcu::ConstPixelBufferAccess&				renderedFrame,
 														 const float*									texCoord,
-														 const gls::TextureTestUtil::ReferenceParams&	samplerParams,
+														 const glu::TextureTestUtil::ReferenceParams&	samplerParams,
 													     const tcu::TexComparePrecision&				texComparePrecision,
 													     const tcu::TexComparePrecision&				lowQualityTexComparePrecision,
 														 const tcu::LodPrecision&						lodPrecision,
@@ -1047,7 +1047,7 @@ bool TextureBorderClampTest::verifyTextureCompareResult (const tcu::ConstPixelBu
 {
 	const tcu::PixelFormat						pixelFormat				= m_context.getRenderTarget().getPixelFormat();
 	const int									colorErrorBits			= 1;
-	const tcu::IVec4							nonShadowBits			= tcu::max(gls::TextureTestUtil::getBitsVec(pixelFormat) - tcu::IVec4(colorErrorBits), tcu::IVec4(0));
+	const tcu::IVec4							nonShadowBits			= tcu::max(glu::TextureTestUtil::getBitsVec(pixelFormat) - tcu::IVec4(colorErrorBits), tcu::IVec4(0));
 	const tcu::Vec3								nonShadowThreshold		= tcu::computeFixedPointThreshold(nonShadowBits).swizzle(1,2,3);
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
 	const tcu::Texture2DView					effectiveView			= tcu::getEffectiveTextureView(m_texture->getRefTexture(), srcLevelStorage, samplerParams.sampler);
@@ -1055,9 +1055,9 @@ bool TextureBorderClampTest::verifyTextureCompareResult (const tcu::ConstPixelBu
 	tcu::Surface								errorMask				(renderedFrame.getWidth(), renderedFrame.getHeight());
 	int											numFailedPixels;
 
-	gls::TextureTestUtil::sampleTexture(gls::TextureTestUtil::SurfaceAccess(reference, pixelFormat), effectiveView, texCoord, samplerParams);
+	glu::TextureTestUtil::sampleTexture(tcu::SurfaceAccess(reference, pixelFormat), effectiveView, texCoord, samplerParams);
 
-	numFailedPixels = gls::TextureTestUtil::computeTextureCompareDiff(renderedFrame, reference.getAccess(), errorMask.getAccess(), effectiveView,
+	numFailedPixels = glu::TextureTestUtil::computeTextureCompareDiff(renderedFrame, reference.getAccess(), errorMask.getAccess(), effectiveView,
 																	  texCoord, samplerParams, texComparePrecision, lodPrecision, nonShadowThreshold);
 
 	if (numFailedPixels > 0)
@@ -1066,7 +1066,7 @@ bool TextureBorderClampTest::verifyTextureCompareResult (const tcu::ConstPixelBu
 							<< "Warning: Verification assuming high-quality PCF filtering failed."
 							<< tcu::TestLog::EndMessage;
 
-		numFailedPixels = gls::TextureTestUtil::computeTextureCompareDiff(renderedFrame, reference.getAccess(), errorMask.getAccess(), effectiveView,
+		numFailedPixels = glu::TextureTestUtil::computeTextureCompareDiff(renderedFrame, reference.getAccess(), errorMask.getAccess(), effectiveView,
 																		  texCoord, samplerParams, lowQualityTexComparePrecision, lowQualityLodPrecision, nonShadowThreshold);
 
 		if (numFailedPixels > 0)
@@ -1100,7 +1100,7 @@ static inline T triQuadInterpolate (const T (&values)[4], float xFactor, float y
 
 bool TextureBorderClampTest::verifyTextureGatherResult (const tcu::ConstPixelBufferAccess&				renderedFrame,
 														const float*									texCoordArray,
-														const gls::TextureTestUtil::ReferenceParams&	samplerParams,
+														const glu::TextureTestUtil::ReferenceParams&	samplerParams,
 														const tcu::LookupPrecision&						lookupPrecision)
 {
 	const tcu::Vec2 texCoords[4] =
@@ -1112,7 +1112,7 @@ bool TextureBorderClampTest::verifyTextureGatherResult (const tcu::ConstPixelBuf
 	};
 
 	const tcu::PixelFormat						pixelFormat			= m_context.getRenderTarget().getPixelFormat();
-	const deUint8								fbColormask			= gls::TextureTestUtil::getColorMask(pixelFormat);
+	const deUint8								fbColormask			= tcu::getColorMask(pixelFormat);
 
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
 	const tcu::Texture2DView					effectiveView		= tcu::getEffectiveTextureView(m_texture->getRefTexture(), srcLevelStorage, samplerParams.sampler);
@@ -1133,7 +1133,7 @@ bool TextureBorderClampTest::verifyTextureGatherResult (const tcu::ConstPixelBuf
 		const tcu::Vec4			resultPixel		= renderedFrame.getPixel(px, py);
 		const tcu::Vec4			resultValue		= (resultPixel - samplerParams.colorBias) / samplerParams.colorScale;
 
-		reference.setPixel(px, py, gls::TextureTestUtil::toRGBAMasked(referenceValue, fbColormask));
+		reference.setPixel(px, py, tcu::toRGBAMasked(referenceValue, fbColormask));
 
 		if (tcu::boolAny(tcu::logicalAnd(lookupPrecision.colorMask,
 										 tcu::greaterThan(tcu::absDiff(resultPixel, referencePixel),
@@ -1163,7 +1163,7 @@ bool TextureBorderClampTest::verifyTextureGatherResult (const tcu::ConstPixelBuf
 
 bool TextureBorderClampTest::verifyTextureGatherCmpResult (const tcu::ConstPixelBufferAccess&			renderedFrame,
 														   const float*									texCoordArray,
-														   const gls::TextureTestUtil::ReferenceParams&	samplerParams,
+														   const glu::TextureTestUtil::ReferenceParams&	samplerParams,
 														   const tcu::TexComparePrecision&				texComparePrecision,
 														   const tcu::TexComparePrecision&				lowQualityTexComparePrecision)
 {
@@ -1179,8 +1179,8 @@ bool TextureBorderClampTest::verifyTextureGatherCmpResult (const tcu::ConstPixel
 	const tcu::Texture2DView					effectiveView		= tcu::getEffectiveTextureView(m_texture->getRefTexture(), srcLevelStorage, samplerParams.sampler);
 
 	const tcu::PixelFormat						pixelFormat			= m_context.getRenderTarget().getPixelFormat();
-	const tcu::BVec4							colorMask			= gls::TextureTestUtil::getCompareMask(pixelFormat);
-	const deUint8								fbColormask			= gls::TextureTestUtil::getColorMask(pixelFormat);
+	const tcu::BVec4							colorMask			= glu::TextureTestUtil::getCompareMask(pixelFormat);
+	const deUint8								fbColormask			= tcu::getColorMask(pixelFormat);
 	tcu::Surface								reference			(renderedFrame.getWidth(), renderedFrame.getHeight());
 	tcu::Surface								errorMask			(renderedFrame.getWidth(), renderedFrame.getHeight());
 	int											numFailedPixels		= 0;
@@ -1197,7 +1197,7 @@ bool TextureBorderClampTest::verifyTextureGatherCmpResult (const tcu::ConstPixel
 		const tcu::Vec4			referenceValue	= effectiveView.gatherOffsetsCompare(samplerParams.sampler, refZ, texCoord.x(), texCoord.y(), glu::getDefaultGatherOffsets());
 		const tcu::Vec4			resultValue		= renderedFrame.getPixel(px, py);
 
-		reference.setPixel(px, py, gls::TextureTestUtil::toRGBAMasked(referenceValue, fbColormask));
+		reference.setPixel(px, py, tcu::toRGBAMasked(referenceValue, fbColormask));
 
 		if (tcu::boolAny(tcu::logicalAnd(colorMask, tcu::notEqual(referenceValue, resultValue))))
 		{
@@ -1251,17 +1251,17 @@ deUint32 TextureBorderClampTest::getIterationSeed (const IterationConfig& config
 	return builder.get();
 }
 
-gls::TextureTestUtil::ReferenceParams TextureBorderClampTest::genSamplerParams (const IterationConfig& config) const
+glu::TextureTestUtil::ReferenceParams TextureBorderClampTest::genSamplerParams (const IterationConfig& config) const
 {
 	const tcu::TextureFormat				texFormat		= tcu::getEffectiveDepthStencilTextureFormat(m_texture->getRefTexture().getFormat(), m_sampleMode);
-	gls::TextureTestUtil::ReferenceParams	refParams		(gls::TextureTestUtil::TEXTURETYPE_2D);
+	glu::TextureTestUtil::ReferenceParams	refParams		(glu::TextureTestUtil::TEXTURETYPE_2D);
 
 	refParams.sampler					= glu::mapGLSampler(config.sWrapMode, config.tWrapMode, config.minFilter, config.magFilter);
 	refParams.sampler.borderColor		= config.borderColor;
 	refParams.sampler.compare			= (!m_useShadowSampler) ? (tcu::Sampler::COMPAREMODE_NONE) : (glu::mapGLCompareFunc(config.compareMode));
 	refParams.sampler.depthStencilMode	= m_sampleMode;
-	refParams.lodMode					= gls::TextureTestUtil::LODMODE_EXACT;
-	refParams.samplerType				= (!m_useShadowSampler) ? (gls::TextureTestUtil::getSamplerType(texFormat)) : (gls::TextureTestUtil::SAMPLERTYPE_SHADOW);
+	refParams.lodMode					= glu::TextureTestUtil::LODMODE_EXACT;
+	refParams.samplerType				= (!m_useShadowSampler) ? (glu::TextureTestUtil::getSamplerType(texFormat)) : (glu::TextureTestUtil::SAMPLERTYPE_SHADOW);
 	refParams.colorScale				= config.lookupScale;
 	refParams.colorBias					= config.lookupBias;
 	refParams.ref						= config.compareRef;
@@ -2012,14 +2012,14 @@ private:
 	IterateResult										iterate							(void);
 
 	void												renderTo						(tcu::Surface&									surface,
-																						 const gls::TextureTestUtil::ReferenceParams&	samplerParams);
+																						 const glu::TextureTestUtil::ReferenceParams&	samplerParams);
 
-	void												logParams						(const gls::TextureTestUtil::ReferenceParams&	samplerParams);
+	void												logParams						(const glu::TextureTestUtil::ReferenceParams&	samplerParams);
 
 	void												verifyImage						(const tcu::Surface&							image,
-																						 const gls::TextureTestUtil::ReferenceParams&	samplerParams);
+																						 const glu::TextureTestUtil::ReferenceParams&	samplerParams);
 
-	gls::TextureTestUtil::ReferenceParams				getSamplerParams				(void) const;
+	glu::TextureTestUtil::ReferenceParams				getSamplerParams				(void) const;
 	deUint32											getCaseSeed						(void) const;
 
 	enum
@@ -2133,7 +2133,7 @@ void TextureBorderClampPerAxisCase3D::deinit (void)
 TextureBorderClampPerAxisCase3D::IterateResult TextureBorderClampPerAxisCase3D::iterate (void)
 {
 	tcu::Surface								renderedFrame		(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
-	const gls::TextureTestUtil::ReferenceParams	samplerParams		= getSamplerParams();
+	const glu::TextureTestUtil::ReferenceParams	samplerParams		= getSamplerParams();
 
 	logParams(samplerParams);
 	renderTo(renderedFrame, samplerParams);
@@ -2142,7 +2142,7 @@ TextureBorderClampPerAxisCase3D::IterateResult TextureBorderClampPerAxisCase3D::
 	return STOP;
 }
 
-void TextureBorderClampPerAxisCase3D::logParams (const gls::TextureTestUtil::ReferenceParams& samplerParams)
+void TextureBorderClampPerAxisCase3D::logParams (const glu::TextureTestUtil::ReferenceParams& samplerParams)
 {
 	const std::string	borderColorString	= (m_channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)   ? (de::toString(m_borderColor.get<deInt32>()))
 											: (m_channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER) ? (de::toString(m_borderColor.get<deUint32>()))
@@ -2160,7 +2160,7 @@ void TextureBorderClampPerAxisCase3D::logParams (const gls::TextureTestUtil::Ref
 }
 
 void TextureBorderClampPerAxisCase3D::renderTo (tcu::Surface&									surface,
-												const gls::TextureTestUtil::ReferenceParams&	samplerParams)
+												const glu::TextureTestUtil::ReferenceParams&	samplerParams)
 {
 	const glw::Functions&						gl			= m_context.getRenderContext().getFunctions();
 	const gls::TextureTestUtil::RandomViewport	viewport	(m_context.getRenderTarget(), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, getCaseSeed());
@@ -2204,11 +2204,11 @@ void TextureBorderClampPerAxisCase3D::renderTo (tcu::Surface&									surface,
 }
 
 void TextureBorderClampPerAxisCase3D::verifyImage (const tcu::Surface&							renderedFrame,
-												   const gls::TextureTestUtil::ReferenceParams&	samplerParams)
+												   const glu::TextureTestUtil::ReferenceParams&	samplerParams)
 {
 	const tcu::PixelFormat			pixelFormat			= m_context.getRenderTarget().getPixelFormat();
 	const int						colorErrorBits		= 2;
-	const tcu::IVec4				colorBits			= tcu::max(gls::TextureTestUtil::getBitsVec(pixelFormat) - tcu::IVec4(colorErrorBits), tcu::IVec4(0));
+	const tcu::IVec4				colorBits			= tcu::max(glu::TextureTestUtil::getBitsVec(pixelFormat) - tcu::IVec4(colorErrorBits), tcu::IVec4(0));
 	tcu::Surface					reference			(renderedFrame.getWidth(), renderedFrame.getHeight());
 	tcu::Surface					errorMask			(renderedFrame.getWidth(), renderedFrame.getHeight());
 	tcu::LodPrecision				lodPrecision;
@@ -2221,11 +2221,11 @@ void TextureBorderClampPerAxisCase3D::verifyImage (const tcu::Surface&							ren
 	lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(colorBits) / samplerParams.colorScale;
 	lookupPrecision.coordBits		= tcu::IVec3(20,20,0);
 	lookupPrecision.uvwBits			= tcu::IVec3(5,5,0);
-	lookupPrecision.colorMask		= gls::TextureTestUtil::getCompareMask(pixelFormat);
+	lookupPrecision.colorMask		= glu::TextureTestUtil::getCompareMask(pixelFormat);
 
-	gls::TextureTestUtil::sampleTexture(gls::TextureTestUtil::SurfaceAccess(reference, pixelFormat), m_texture->getRefTexture(), &m_texCoords[0], samplerParams);
+	glu::TextureTestUtil::sampleTexture(tcu::SurfaceAccess(reference, pixelFormat), m_texture->getRefTexture(), &m_texCoords[0], samplerParams);
 
-	numFailedPixels = gls::TextureTestUtil::computeTextureLookupDiff(renderedFrame.getAccess(), reference.getAccess(), errorMask.getAccess(), m_texture->getRefTexture(),
+	numFailedPixels = glu::TextureTestUtil::computeTextureLookupDiff(renderedFrame.getAccess(), reference.getAccess(), errorMask.getAccess(), m_texture->getRefTexture(),
 																	 &m_texCoords[0], samplerParams, lookupPrecision, lodPrecision, m_testCtx.getWatchDog());
 
 	if (numFailedPixels > 0)
@@ -2245,15 +2245,15 @@ void TextureBorderClampPerAxisCase3D::verifyImage (const tcu::Surface&							ren
 		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Image verification failed");
 }
 
-gls::TextureTestUtil::ReferenceParams TextureBorderClampPerAxisCase3D::getSamplerParams (void) const
+glu::TextureTestUtil::ReferenceParams TextureBorderClampPerAxisCase3D::getSamplerParams (void) const
 {
 	const tcu::TextureFormat				texFormat		= m_texture->getRefTexture().getFormat();
-	gls::TextureTestUtil::ReferenceParams	refParams		(gls::TextureTestUtil::TEXTURETYPE_3D);
+	glu::TextureTestUtil::ReferenceParams	refParams		(glu::TextureTestUtil::TEXTURETYPE_3D);
 
 	refParams.sampler					= glu::mapGLSampler(m_sWrap, m_tWrap, m_rWrap, m_filter, m_filter);
 	refParams.sampler.borderColor		= m_borderColor;
-	refParams.lodMode					= gls::TextureTestUtil::LODMODE_EXACT;
-	refParams.samplerType				= gls::TextureTestUtil::getSamplerType(texFormat);
+	refParams.lodMode					= glu::TextureTestUtil::LODMODE_EXACT;
+	refParams.samplerType				= glu::TextureTestUtil::getSamplerType(texFormat);
 	refParams.colorScale				= m_lookupScale;
 	refParams.colorBias					= m_lookupBias;
 

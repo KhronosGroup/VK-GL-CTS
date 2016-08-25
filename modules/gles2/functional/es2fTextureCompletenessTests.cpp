@@ -58,8 +58,8 @@ using tcu::Sampler;
 using tcu::IVec2;
 using tcu::RGBA;
 using gls::TextureTestUtil::TextureRenderer;
-using gls::TextureTestUtil::computeQuadTexCoord2D;
-using gls::TextureTestUtil::computeQuadTexCoordCube;
+using glu::TextureTestUtil::computeQuadTexCoord2D;
+using glu::TextureTestUtil::computeQuadTexCoordCube;
 
 static const GLenum s_cubeTargets[] =
 {
@@ -161,7 +161,7 @@ Tex2DCompletenessCase::IterateResult Tex2DCompletenessCase::iterate (void)
 	glViewport				(offsetX, offsetY, viewportWidth, viewportHeight);
 
 	createTexture			();
-	renderer.renderQuad		(0, &texCoord[0], gls::TextureTestUtil::TEXTURETYPE_2D);
+	renderer.renderQuad		(0, &texCoord[0], glu::TextureTestUtil::TEXTURETYPE_2D);
 	glu::readPixels			(m_renderCtx, offsetX, offsetY, renderedFrame.getAccess());
 
 	bool isOk = compareToConstantColor(log, "Result", "Image comparison result", renderedFrame, tcu::COMPARE_LOG_RESULT, m_compareColor);
@@ -217,7 +217,7 @@ TexCubeCompletenessCase::IterateResult TexCubeCompletenessCase::iterate (void)
 
 		glViewport				(offsetX, offsetY, viewportWidth, viewportHeight);
 
-		renderer.renderQuad		(0, &texCoord[0], gls::TextureTestUtil::TEXTURETYPE_CUBE);
+		renderer.renderQuad		(0, &texCoord[0], glu::TextureTestUtil::TEXTURETYPE_CUBE);
 		glu::readPixels			(m_renderCtx, offsetX, offsetY, renderedFrame.getAccess());
 
 		bool isOk = compareToConstantColor(log, "Result", "Image comparison result", renderedFrame, tcu::COMPARE_LOG_RESULT, m_compareColor);

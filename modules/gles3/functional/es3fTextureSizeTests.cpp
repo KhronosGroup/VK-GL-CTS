@@ -46,6 +46,8 @@ using std::string;
 using tcu::Sampler;
 using namespace glu;
 using namespace gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
+
 
 class Texture2DSizeCase : public tcu::TestCase
 {
@@ -151,7 +153,7 @@ Texture2DSizeCase::IterateResult Texture2DSizeCase::iterate (void)
 	glu::readPixels(m_renderCtx, viewport.x, viewport.y, renderedFrame.getAccess());
 
 	// Compute reference.
-	sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], ReferenceParams(TEXTURETYPE_2D, mapGLSampler(wrapS, wrapT, minFilter, magFilter)));
+	sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], ReferenceParams(TEXTURETYPE_2D, mapGLSampler(wrapS, wrapT, minFilter, magFilter)));
 
 	// Compare and log.
 	bool isOk = compareImages(log, referenceFrame, renderedFrame, threshold);
@@ -295,7 +297,7 @@ bool TextureCubeSizeCase::testFace (tcu::CubeFace face)
 	// Compute reference.
 	Sampler sampler = mapGLSampler(wrapS, wrapT, minFilter, magFilter);
 	sampler.seamlessCubeMap = true;
-	sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], ReferenceParams(TEXTURETYPE_CUBE, sampler));
+	sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], ReferenceParams(TEXTURETYPE_CUBE, sampler));
 
 	// Compare and log.
 	return compareImages(log, referenceFrame, renderedFrame, threshold);
