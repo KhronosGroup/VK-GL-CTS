@@ -52,6 +52,7 @@ using std::vector;
 using std::string;
 using tcu::TestLog;
 using namespace gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
 
 static const char* getFaceDesc (const tcu::CubeFace face)
 {

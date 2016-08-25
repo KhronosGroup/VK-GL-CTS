@@ -64,10 +64,10 @@ using std::vector;
 namespace deqp
 {
 
-using gls::TextureTestUtil::TextureType;
-using gls::TextureTestUtil::TEXTURETYPE_2D;
-using gls::TextureTestUtil::TEXTURETYPE_2D_ARRAY;
-using gls::TextureTestUtil::TEXTURETYPE_CUBE;
+using glu::TextureTestUtil::TextureType;
+using glu::TextureTestUtil::TEXTURETYPE_2D;
+using glu::TextureTestUtil::TEXTURETYPE_2D_ARRAY;
+using glu::TextureTestUtil::TEXTURETYPE_CUBE;
 
 namespace gles31
 {
@@ -1477,7 +1477,7 @@ bool TextureGatherCase::verify (const ConstPixelBufferAccess&	rendered,
 
 		const MovePtr<PixelOffsets>		pixelOffsets	= makePixelOffsetsFunctor(m_gatherType, gatherArgs, getOffsetRange());
 		const tcu::PixelFormat			pixelFormat		= tcu::PixelFormat(8,8,8,8);
-		const IVec4						colorBits		= tcu::max(gls::TextureTestUtil::getBitsVec(pixelFormat) - 1, tcu::IVec4(0));
+		const IVec4						colorBits		= tcu::max(glu::TextureTestUtil::getBitsVec(pixelFormat) - 1, tcu::IVec4(0));
 		const IVec3						coordBits		= m_textureType == TEXTURETYPE_2D			? IVec3(20,20,0)
 														: m_textureType == TEXTURETYPE_CUBE			? IVec3(10,10,10)
 														: m_textureType == TEXTURETYPE_2D_ARRAY		? IVec3(20,20,20)
@@ -1511,7 +1511,7 @@ bool TextureGatherCase::verify (const ConstPixelBufferAccess&	rendered,
 				lookupPrec.colorThreshold	= tcu::computeFixedPointThreshold(colorBits);
 				lookupPrec.coordBits		= coordBits;
 				lookupPrec.uvwBits			= uvwBits;
-				lookupPrec.colorMask		= gls::TextureTestUtil::getCompareMask(pixelFormat);
+				lookupPrec.colorMask		= glu::TextureTestUtil::getCompareMask(pixelFormat);
 				return verifyGatherOffsets<float>(log, rendered, texture, texCoords, sampler, lookupPrec, componentNdx, *pixelOffsets);
 			}
 			else if (isUIntFormatType(m_textureFormat.type) || isSIntFormatType(m_textureFormat.type))
@@ -1520,7 +1520,7 @@ bool TextureGatherCase::verify (const ConstPixelBufferAccess&	rendered,
 				lookupPrec.colorThreshold	= UVec4(0);
 				lookupPrec.coordBits		= coordBits;
 				lookupPrec.uvwBits			= uvwBits;
-				lookupPrec.colorMask		= gls::TextureTestUtil::getCompareMask(pixelFormat);
+				lookupPrec.colorMask		= glu::TextureTestUtil::getCompareMask(pixelFormat);
 
 				if (isUIntFormatType(m_textureFormat.type))
 					return verifyGatherOffsets<deUint32>(log, rendered, texture, texCoords, sampler, lookupPrec, componentNdx, *pixelOffsets);
@@ -1656,7 +1656,7 @@ private:
 vector<float> TextureGather2DCase::computeQuadTexCoord (int /* iterationNdx */) const
 {
 	vector<float> res;
-	gls::TextureTestUtil::computeQuadTexCoord2D(res, Vec2(-0.3f, -0.4f), Vec2(1.5f, 1.6f));
+	glu::TextureTestUtil::computeQuadTexCoord2D(res, Vec2(-0.3f, -0.4f), Vec2(1.5f, 1.6f));
 	return res;
 }
 
@@ -1752,7 +1752,7 @@ private:
 vector<float> TextureGather2DArrayCase::computeQuadTexCoord (int iterationNdx) const
 {
 	vector<float> res;
-	gls::TextureTestUtil::computeQuadTexCoord2DArray(res, m_iterations[iterationNdx].layerNdx, Vec2(-0.3f, -0.4f), Vec2(1.5f, 1.6f));
+	glu::TextureTestUtil::computeQuadTexCoord2DArray(res, m_iterations[iterationNdx].layerNdx, Vec2(-0.3f, -0.4f), Vec2(1.5f, 1.6f));
 	return res;
 }
 
@@ -1887,7 +1887,7 @@ vector<float> TextureGatherCubeCase::computeQuadTexCoord (int iterationNdx) cons
 	const Vec2		minC	= corners ? Vec2(-1.2f) : Vec2(-0.6f, -1.2f);
 	const Vec2		maxC	= corners ? Vec2( 1.2f) : Vec2( 0.6f,  1.2f);
 	vector<float>	res;
-	gls::TextureTestUtil::computeQuadTexCoordCube(res, m_iterations[iterationNdx].face, minC, maxC);
+	glu::TextureTestUtil::computeQuadTexCoordCube(res, m_iterations[iterationNdx].face, minC, maxC);
 	return res;
 }
 

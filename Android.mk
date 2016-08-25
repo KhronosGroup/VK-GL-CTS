@@ -67,6 +67,7 @@ LOCAL_SRC_FILES := \
 	framework/common/tcuSeedBuilder.cpp \
 	framework/common/tcuStringTemplate.cpp \
 	framework/common/tcuSurface.cpp \
+	framework/common/tcuSurfaceAccess.cpp \
 	framework/common/tcuTestCase.cpp \
 	framework/common/tcuTestContext.cpp \
 	framework/common/tcuTestHierarchyIterator.cpp \
@@ -188,6 +189,7 @@ LOCAL_SRC_FILES := \
 	framework/opengl/gluStateReset.cpp \
 	framework/opengl/gluStrUtil.cpp \
 	framework/opengl/gluTexture.cpp \
+	framework/opengl/gluTextureTestUtil.cpp \
 	framework/opengl/gluTextureUtil.cpp \
 	framework/opengl/gluVarType.cpp \
 	framework/opengl/gluVarTypeUtil.cpp \

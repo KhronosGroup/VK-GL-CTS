@@ -150,7 +150,7 @@ STEPS = [
 					 "Release",
 					 "gcc",
 					 "g++",
-					 GCC_32BIT_CFLAGS),
+					 GCC_64BIT_CFLAGS),
 		  ANY_UNIX_GENERATOR),
 	Build("vs-64-debug",
 		  VSConfig("Debug"),

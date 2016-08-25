@@ -51,7 +51,7 @@ namespace Functional
 namespace
 {
 
-using gls::TextureTestUtil::computeLodFromDerivates;
+using glu::TextureTestUtil::computeLodFromDerivates;
 
 enum Function
 {
@@ -240,7 +240,7 @@ using tcu::IVec2;
 using tcu::IVec3;
 using tcu::IVec4;
 
-static const gls::TextureTestUtil::LodMode DEFAULT_LOD_MODE = gls::TextureTestUtil::LODMODE_EXACT;
+static const glu::TextureTestUtil::LodMode DEFAULT_LOD_MODE = glu::TextureTestUtil::LODMODE_EXACT;
 
 inline float computeLodFromGrad2D (const gls::ShaderEvalContext& c)
 {

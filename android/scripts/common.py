@@ -234,6 +234,7 @@ NATIVE_LIBS				= [
 		NativeLib(13,		"armeabi-v7a",	'android-arm'),		# ARM v7a ABI
 		NativeLib(13,		"x86",			'android-x86'),		# x86
 		NativeLib(21,		"arm64-v8a",	'android-arm64'),	# ARM64 v8a ABI
+		NativeLib(21,		"x86_64",		'android-x86_64'),	# x86_64
 	]
 
 ANDROID_JAVA_API		= "android-22"

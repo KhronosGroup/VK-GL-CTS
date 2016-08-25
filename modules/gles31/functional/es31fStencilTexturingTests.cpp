@@ -686,7 +686,7 @@ public:
 			tcu::clearStencil(texData.getLevelFace(0, face), stencilVal);
 		}
 
-		gls::TextureTestUtil::computeQuadTexCoordCube(texCoord, tcu::CUBEFACE_NEGATIVE_X, Vec2(-1.5f, -1.3f), Vec2(1.3f, 1.4f));
+		glu::TextureTestUtil::computeQuadTexCoordCube(texCoord, tcu::CUBEFACE_NEGATIVE_X, Vec2(-1.5f, -1.3f), Vec2(1.3f, 1.4f));
 
 		gl.bindTexture(GL_TEXTURE_CUBE_MAP, *depthStencilTex);
 		gl.texStorage2D(GL_TEXTURE_CUBE_MAP, 1, m_format, size, size);
@@ -707,7 +707,7 @@ public:
 		glu::readPixels(renderCtx, 0, 0, result);
 
 		{
-			using namespace gls::TextureTestUtil;
+			using namespace glu::TextureTestUtil;
 
 			tcu::TextureCube		redTex			(TextureFormat(TextureFormat::R, TextureFormat::UNORM_INT8), size);
 			const ReferenceParams	sampleParams	(TEXTURETYPE_CUBE, tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE,

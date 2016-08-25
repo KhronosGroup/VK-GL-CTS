@@ -57,6 +57,7 @@ using tcu::IVec2;
 using tcu::IVec4;
 using namespace glu;
 using namespace gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
 
 enum CoordType
 {
@@ -171,7 +172,7 @@ void Texture2DMipmapCase::init (void)
 		deUint32	color		= 0xff000000 | rgb;
 
 		m_texture->getRefTexture().allocLevel(levelNdx);
-		tcu::clear(m_texture->getRefTexture().getLevel(levelNdx), toVec4(tcu::RGBA(color)));
+		tcu::clear(m_texture->getRefTexture().getLevel(levelNdx), tcu::RGBA(color).toVec());
 	}
 }
 
@@ -278,7 +279,7 @@ Texture2DMipmapCase::IterateResult Texture2DMipmapCase::iterate (void)
 
 	// Sampling parameters.
 	sampleParams.sampler		= glu::mapGLSampler(m_wrapS, m_wrapT, m_minFilter, magFilter);
-	sampleParams.samplerType	= gls::TextureTestUtil::getSamplerType(m_texture->getRefTexture().getFormat());
+	sampleParams.samplerType	= glu::TextureTestUtil::getSamplerType(m_texture->getRefTexture().getFormat());
 	sampleParams.flags			= (isProjected ? ReferenceParams::PROJECTED : 0) | (useLodBias ? ReferenceParams::USE_BIAS : 0);
 	sampleParams.lodMode		= LODMODE_EXACT; // Use ideal lod.
 
@@ -386,7 +387,7 @@ Texture2DMipmapCase::IterateResult Texture2DMipmapCase::iterate (void)
 					sampleParams.bias = s_bias[cellNdx % DE_LENGTH_OF_ARRAY(s_bias)];
 
 				// Render ideal result
-				sampleTexture(SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
+				sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
 							  refTexture, &texCoord[0], sampleParams);
 
 				// Compare this cell
@@ -534,7 +535,7 @@ void TextureCubeMipmapCase::init (void)
 			deUint32	color		= 0xff000000 | rgb;
 
 			m_texture->getRefTexture().allocLevel((tcu::CubeFace)faceNdx, levelNdx);
-			tcu::clear(m_texture->getRefTexture().getLevelFace(levelNdx, (tcu::CubeFace)faceNdx), toVec4(tcu::RGBA(color)));
+			tcu::clear(m_texture->getRefTexture().getLevelFace(levelNdx, (tcu::CubeFace)faceNdx), tcu::RGBA(color).toVec());
 		}
 	}
 }
@@ -709,7 +710,7 @@ TextureCubeMipmapCase::IterateResult TextureCubeMipmapCase::iterate (void)
 
 			// Render ideal reference.
 			{
-				SurfaceAccess idealDst(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), curX, curY, curW, curH);
+				tcu::SurfaceAccess idealDst(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), curX, curY, curW, curH);
 				sampleTexture(idealDst, m_texture->getRefTexture(), &texCoord[0], params);
 			}
 

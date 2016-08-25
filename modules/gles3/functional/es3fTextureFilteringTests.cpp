@@ -46,6 +46,7 @@ using std::vector;
 using std::string;
 using tcu::TestLog;
 using namespace gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
 
 enum
 {
@@ -195,7 +196,7 @@ void Texture2DFilteringCase::init (void)
 				deUint32	colorB	= 0xff000000 | ~rgb;
 
 				m_textures[1]->getRefTexture().allocLevel(levelNdx);
-				tcu::fillWithGrid(m_textures[1]->getRefTexture().getLevel(levelNdx), 4, toVec4(tcu::RGBA(colorA))*cScale + cBias, toVec4(tcu::RGBA(colorB))*cScale + cBias);
+				tcu::fillWithGrid(m_textures[1]->getRefTexture().getLevel(levelNdx), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
 			}
 
 			// Upload.
@@ -484,7 +485,7 @@ void TextureCubeFilteringCase::init (void)
 					deUint32	colorB	= 0xff000000 | ~rgb;
 
 					m_textures[1]->getRefTexture().allocLevel((tcu::CubeFace)face, levelNdx);
-					tcu::fillWithGrid(m_textures[1]->getRefTexture().getLevelFace(levelNdx, (tcu::CubeFace)face), 4, toVec4(tcu::RGBA(colorA))*cScale + cBias, toVec4(tcu::RGBA(colorB))*cScale + cBias);
+					tcu::fillWithGrid(m_textures[1]->getRefTexture().getLevelFace(levelNdx, (tcu::CubeFace)face), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
 				}
 			}
 
