@@ -34,6 +34,7 @@
 #include "sglrContextUtil.hpp"
 #include "sglrReferenceContext.hpp"
 #include "sglrGLContext.hpp"
+#include "deMath.h"
 #include "deStringUtil.hpp"
 #include "deRandom.hpp"
 
@@ -713,7 +714,7 @@ void TextureUnitCase::init (void)
 					int curCellSize = deMax32(1, GRID_CELL_SIZE >> levelNdx); // \note Scale grid cell size for mipmaps.
 
 					tcu::PixelBufferAccess access = is2d ? m_textures2d.back()->getLevel(levelNdx) : m_texturesCube.back()->getLevelFace(levelNdx, (tcu::CubeFace)face);
-					tcu::fillWithGrid(access, curCellSize, toVec4(tcu::RGBA(colorA))*cScale + cBias, toVec4(tcu::RGBA(colorB))*cScale + cBias);
+					tcu::fillWithGrid(access, curCellSize, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
 				}
 			}
 		}

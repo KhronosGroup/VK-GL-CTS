@@ -35,6 +35,7 @@
 #include "sglrContextUtil.hpp"
 #include "sglrReferenceContext.hpp"
 #include "sglrGLContext.hpp"
+#include "deMath.h"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 
@@ -908,7 +909,7 @@ void TextureUnitCase::init (void)
 												  : is2dArrayTex	? m_textures2dArray.back()->getLevel(levelNdx)
 												  :					  m_textures3d.back()->getLevel(levelNdx);
 
-					tcu::fillWithGrid(access, curCellSize, toVec4(tcu::RGBA(colorA))*cScale + cBias, toVec4(tcu::RGBA(colorB))*cScale + cBias);
+					tcu::fillWithGrid(access, curCellSize, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
 				}
 			}
 		}

@@ -44,6 +44,8 @@ set(TCUTIL_SRCS
 	tcuResultCollector.hpp
 	tcuSurface.cpp
 	tcuSurface.hpp
+	tcuSurfaceAccess.cpp
+	tcuSurfaceAccess.hpp
 	tcuTestCase.cpp
 	tcuTestCase.hpp
 	tcuTestContext.cpp

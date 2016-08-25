@@ -57,6 +57,7 @@ using tcu::Vec3;
 using tcu::Vec4;
 using tcu::IVec4;
 using namespace gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
 
 static float getMinLodForCell (int cellNdx)
 {
@@ -215,7 +216,7 @@ void Texture2DMipmapCase::init (void)
 		deUint32	color		= 0xff000000 | rgb;
 
 		m_texture->getRefTexture().allocLevel(levelNdx);
-		tcu::clear(m_texture->getRefTexture().getLevel(levelNdx), toVec4(tcu::RGBA(color)));
+		tcu::clear(m_texture->getRefTexture().getLevel(levelNdx), tcu::RGBA(color).toVec());
 	}
 }
 
@@ -322,7 +323,7 @@ Texture2DMipmapCase::IterateResult Texture2DMipmapCase::iterate (void)
 
 	// Sampling parameters.
 	sampleParams.sampler		= glu::mapGLSampler(m_wrapS, m_wrapT, m_minFilter, magFilter);
-	sampleParams.samplerType	= gls::TextureTestUtil::getSamplerType(m_texture->getRefTexture().getFormat());
+	sampleParams.samplerType	= glu::TextureTestUtil::getSamplerType(m_texture->getRefTexture().getFormat());
 	sampleParams.flags			= (isProjected ? ReferenceParams::PROJECTED : 0) | (useLodBias ? ReferenceParams::USE_BIAS : 0);
 	sampleParams.lodMode		= LODMODE_EXACT; // Use ideal lod.
 
@@ -430,7 +431,7 @@ Texture2DMipmapCase::IterateResult Texture2DMipmapCase::iterate (void)
 					sampleParams.bias = s_bias[cellNdx % DE_LENGTH_OF_ARRAY(s_bias)];
 
 				// Render ideal result
-				sampleTexture(SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
+				sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
 							  refTexture, &texCoord[0], sampleParams);
 
 				// Compare this cell
@@ -573,7 +574,7 @@ void TextureCubeMipmapCase::init (void)
 			deUint32	color		= 0xff000000 | rgb;
 
 			m_texture->getRefTexture().allocLevel((tcu::CubeFace)faceNdx, levelNdx);
-			tcu::clear(m_texture->getRefTexture().getLevelFace(levelNdx, (tcu::CubeFace)faceNdx), toVec4(tcu::RGBA(color)));
+			tcu::clear(m_texture->getRefTexture().getLevelFace(levelNdx, (tcu::CubeFace)faceNdx), tcu::RGBA(color).toVec());
 		}
 	}
 }
@@ -748,7 +749,7 @@ TextureCubeMipmapCase::IterateResult TextureCubeMipmapCase::iterate (void)
 
 			// Render ideal reference.
 			{
-				SurfaceAccess idealDst(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), curX, curY, curW, curH);
+				tcu::SurfaceAccess idealDst(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), curX, curY, curW, curH);
 				sampleTexture(idealDst, m_texture->getRefTexture(), &texCoord[0], params);
 			}
 
@@ -1268,7 +1269,7 @@ Texture3DMipmapCase::IterateResult Texture3DMipmapCase::iterate (void)
 
 	// Sampling parameters.
 	sampleParams.sampler		= glu::mapGLSampler(m_wrapS, m_wrapT, m_wrapR, m_minFilter, magFilter);
-	sampleParams.samplerType	= gls::TextureTestUtil::getSamplerType(texFmt);
+	sampleParams.samplerType	= getSamplerType(texFmt);
 	sampleParams.colorBias		= fmtInfo.lookupBias;
 	sampleParams.colorScale		= fmtInfo.lookupScale;
 	sampleParams.flags			= (isProjected ? ReferenceParams::PROJECTED : 0) | (useLodBias ? ReferenceParams::USE_BIAS : 0);
@@ -1376,7 +1377,7 @@ Texture3DMipmapCase::IterateResult Texture3DMipmapCase::iterate (void)
 					sampleParams.bias = s_bias[cellNdx % DE_LENGTH_OF_ARRAY(s_bias)];
 
 				// Render ideal result
-				sampleTexture(SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
+				sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
 							  refTexture, &texCoord[0], sampleParams);
 
 				// Compare this cell
@@ -1501,7 +1502,7 @@ Texture2DLodControlCase::IterateResult Texture2DLodControlCase::iterate (void)
 	const tcu::RenderTarget&	renderTarget		= m_context.getRenderContext().getRenderTarget();
 	const RandomViewport		viewport			(renderTarget, texWidth*4, texHeight*4, deStringHash(getName()));
 
-	ReferenceParams				sampleParams		(gls::TextureTestUtil::TEXTURETYPE_2D, glu::mapGLSampler(wrapS, wrapT, m_minFilter, magFilter));
+	ReferenceParams				sampleParams		(TEXTURETYPE_2D, glu::mapGLSampler(wrapS, wrapT, m_minFilter, magFilter));
 	vector<float>				texCoord;
 	tcu::Surface				renderedFrame		(viewport.width, viewport.height);
 
@@ -1578,7 +1579,7 @@ Texture2DLodControlCase::IterateResult Texture2DLodControlCase::iterate (void)
 				getReferenceParams(sampleParams, cellNdx);
 
 				// Render ideal result
-				sampleTexture(SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
+				sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
 							  refTexture, &texCoord[0], sampleParams);
 
 				// Compare this cell
@@ -1844,7 +1845,7 @@ TextureCubeLodControlCase::IterateResult TextureCubeLodControlCase::iterate (voi
 		const tcu::CubeFace	cubeFace	= (tcu::CubeFace)(cellNdx % tcu::CUBEFACE_LAST);
 		RenderParams		params		(TEXTURETYPE_CUBE);
 
-		TextureTestUtil::computeQuadTexCoordCube(texCoord, cubeFace);
+		computeQuadTexCoordCube(texCoord, cubeFace);
 
 		setTextureParams(cellNdx);
 
@@ -1893,7 +1894,7 @@ TextureCubeLodControlCase::IterateResult TextureCubeLodControlCase::iterate (voi
 
 			// Render ideal reference.
 			{
-				SurfaceAccess idealDst(referenceFrame, m_context.getRenderTarget().getPixelFormat(), curX, curY, curW, curH);
+				tcu::SurfaceAccess idealDst(referenceFrame, m_context.getRenderTarget().getPixelFormat(), curX, curY, curW, curH);
 				sampleTexture(idealDst, m_texture->getRefTexture(), &texCoord[0], params);
 			}
 
@@ -2136,11 +2137,11 @@ Texture3DLodControlCase::IterateResult Texture3DLodControlCase::iterate (void)
 
 	tcu::Surface					renderedFrame		(viewport.width, viewport.height);
 	vector<float>					texCoord;
-	ReferenceParams					sampleParams		(gls::TextureTestUtil::TEXTURETYPE_3D);
+	ReferenceParams					sampleParams		(TEXTURETYPE_3D);
 
 	// Sampling parameters.
 	sampleParams.sampler		= glu::mapGLSampler(wrapS, wrapT, wrapR, m_minFilter, magFilter);
-	sampleParams.samplerType	= gls::TextureTestUtil::getSamplerType(texFmt);
+	sampleParams.samplerType	= getSamplerType(texFmt);
 	sampleParams.colorBias		= fmtInfo.lookupBias;
 	sampleParams.colorScale		= fmtInfo.lookupScale;
 
@@ -2210,7 +2211,7 @@ Texture3DLodControlCase::IterateResult Texture3DLodControlCase::iterate (void)
 				getReferenceParams(sampleParams, cellNdx);
 
 				// Render ideal result
-				sampleTexture(SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
+				sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
 							  refTexture, &texCoord[0], sampleParams);
 
 				// Compare this cell

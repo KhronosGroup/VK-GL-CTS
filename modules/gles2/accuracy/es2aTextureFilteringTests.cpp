@@ -27,6 +27,7 @@
 #include "gluStrUtil.hpp"
 #include "gluTextureUtil.hpp"
 #include "gluPixelTransfer.hpp"
+#include "tcuSurfaceAccess.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
 #include "deStringUtil.hpp"
@@ -49,6 +50,7 @@ using std::string;
 using tcu::Sampler;
 using namespace glu;
 using namespace gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
 
 class Texture2DFilteringCase : public tcu::TestCase
 {
@@ -164,7 +166,7 @@ void Texture2DFilteringCase::init (void)
 				deUint32	colorB	= 0xff000000 | ~rgb;
 
 				m_textures[1]->getRefTexture().allocLevel(levelNdx);
-				tcu::fillWithGrid(m_textures[1]->getRefTexture().getLevel(levelNdx), 4, toVec4(tcu::RGBA(colorA))*cScale + cBias, toVec4(tcu::RGBA(colorB))*cScale + cBias);
+				tcu::fillWithGrid(m_textures[1]->getRefTexture().getLevel(levelNdx), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
 			}
 
 			// Upload.
@@ -239,7 +241,7 @@ Texture2DFilteringCase::IterateResult Texture2DFilteringCase::iterate (void)
 		computeQuadTexCoord2D(texCoord, tcu::Vec2(-4.0f, -4.5f), tcu::Vec2(4.0f, 2.5f));
 
 		m_renderer.renderQuad(0, &texCoord[0], refParams);
-		sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), 0, 0, leftWidth, bottomHeight),
+		sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), 0, 0, leftWidth, bottomHeight),
 					  m_textures[curTexNdx]->getRefTexture(), &texCoord[0], refParams);
 	}
 
@@ -250,7 +252,7 @@ Texture2DFilteringCase::IterateResult Texture2DFilteringCase::iterate (void)
 		computeQuadTexCoord2D(texCoord, tcu::Vec2(-0.5f, 0.75f), tcu::Vec2(0.25f, 1.25f));
 
 		m_renderer.renderQuad(0, &texCoord[0], refParams);
-		sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), leftWidth, 0, rightWidth, bottomHeight),
+		sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), leftWidth, 0, rightWidth, bottomHeight),
 					  m_textures[curTexNdx]->getRefTexture(), &texCoord[0], refParams);
 	}
 
@@ -279,7 +281,7 @@ Texture2DFilteringCase::IterateResult Texture2DFilteringCase::iterate (void)
 		computeQuadTexCoord2D(texCoord, tcu::Vec2(sMin, tMin), tcu::Vec2(sMin+sRange, tMin+tRange));
 
 		m_renderer.renderQuad(0, &texCoord[0], refParams);
-		sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), 0, bottomHeight, leftWidth, topHeight),
+		sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), 0, bottomHeight, leftWidth, topHeight),
 					  m_textures[curTexNdx]->getRefTexture(), &texCoord[0], refParams);
 	}
 
@@ -290,7 +292,7 @@ Texture2DFilteringCase::IterateResult Texture2DFilteringCase::iterate (void)
 		computeQuadTexCoord2D(texCoord, tcu::Vec2(-0.5f, 0.75f), tcu::Vec2(0.25f, 1.25f));
 
 		m_renderer.renderQuad(0, &texCoord[0], refParams);
-		sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), leftWidth, bottomHeight, rightWidth, topHeight),
+		sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), leftWidth, bottomHeight, rightWidth, topHeight),
 					  m_textures[curTexNdx]->getRefTexture(), &texCoord[0], refParams);
 	}
 
@@ -436,7 +438,7 @@ void TextureCubeFilteringCase::init (void)
 					deUint32	colorB	= 0xff000000 | ~rgb;
 
 					m_textures[1]->getRefTexture().allocLevel((tcu::CubeFace)face, levelNdx);
-					tcu::fillWithGrid(m_textures[1]->getRefTexture().getLevelFace(levelNdx, (tcu::CubeFace)face), 4, toVec4(tcu::RGBA(colorA))*cScale + cBias, toVec4(tcu::RGBA(colorB))*cScale + cBias);
+					tcu::fillWithGrid(m_textures[1]->getRefTexture().getLevelFace(levelNdx, (tcu::CubeFace)face), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
 				}
 			}
 
@@ -464,7 +466,7 @@ void TextureCubeFilteringCase::deinit (void)
 
 static void renderFaces (
 	const glw::Functions&		gl,
-	const SurfaceAccess&		dstRef,
+	const tcu::SurfaceAccess&	dstRef,
 	const tcu::TextureCube&		refTexture,
 	const ReferenceParams&		params,
 	TextureRenderer&			renderer,
@@ -506,7 +508,7 @@ static void renderFaces (
 
 		renderer.renderQuad(0, &texCoord[0], params);
 
-		sampleTexture(SurfaceAccess(dstRef, curX, curY, curW, curH), refTexture, &texCoord[0], params);
+		sampleTexture(tcu::SurfaceAccess(dstRef, curX, curY, curW, curH), refTexture, &texCoord[0], params);
 	}
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Post render");
@@ -558,7 +560,7 @@ TextureCubeFilteringCase::IterateResult TextureCubeFilteringCase::iterate (void)
 
 	// Bottom left: Minification
 	renderFaces(gl,
-				SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), 0, 0, leftWidth, bottomHeight),
+				tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), 0, 0, leftWidth, bottomHeight),
 				m_textures[curTexNdx]->getRefTexture(), sampleParams,
 				m_renderer,
 				viewport.x, viewport.y, leftWidth, bottomHeight,
@@ -568,7 +570,7 @@ TextureCubeFilteringCase::IterateResult TextureCubeFilteringCase::iterate (void)
 
 	// Bottom right: Magnification
 	renderFaces(gl,
-				SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), leftWidth, 0, rightWidth, bottomHeight),
+				tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), leftWidth, 0, rightWidth, bottomHeight),
 				m_textures[curTexNdx]->getRefTexture(), sampleParams,
 				m_renderer,
 				viewport.x+leftWidth, viewport.y, rightWidth, bottomHeight,
@@ -589,7 +591,7 @@ TextureCubeFilteringCase::IterateResult TextureCubeFilteringCase::iterate (void)
 
 	// Top left: Minification
 	renderFaces(gl,
-				SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), 0, bottomHeight, leftWidth, topHeight),
+				tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), 0, bottomHeight, leftWidth, topHeight),
 				m_textures[curTexNdx]->getRefTexture(), sampleParams,
 				m_renderer,
 				viewport.x, viewport.y+bottomHeight, leftWidth, topHeight,
@@ -599,7 +601,7 @@ TextureCubeFilteringCase::IterateResult TextureCubeFilteringCase::iterate (void)
 
 	// Top right: Magnification
 	renderFaces(gl,
-				SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), leftWidth, bottomHeight, rightWidth, topHeight),
+				tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat(), leftWidth, bottomHeight, rightWidth, topHeight),
 				m_textures[curTexNdx]->getRefTexture(), sampleParams,
 				m_renderer,
 				viewport.x+leftWidth, viewport.y+bottomHeight, rightWidth, topHeight,

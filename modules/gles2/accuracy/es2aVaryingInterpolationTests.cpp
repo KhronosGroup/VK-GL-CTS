@@ -34,6 +34,7 @@
 #include "tcuFloat.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuRenderTarget.hpp"
+#include "tcuSurfaceAccess.hpp"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deString.h"
@@ -46,7 +47,7 @@ using tcu::Vec4;
 using std::string;
 using std::vector;
 using std::map;
-using deqp::gls::TextureTestUtil::SurfaceAccess;
+using tcu::SurfaceAccess;
 
 namespace deqp
 {
