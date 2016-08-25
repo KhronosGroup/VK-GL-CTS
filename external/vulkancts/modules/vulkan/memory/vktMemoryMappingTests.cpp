@@ -786,8 +786,8 @@ void MemoryObject::randomInvalidate (const DeviceInterface& vkd, VkDevice device
 
 enum
 {
-	// Use only 1/2 of each memory heap.
-	MAX_MEMORY_USAGE_DIV = 2
+	MAX_MEMORY_USAGE_DIV = 2, // Use only 1/2 of each memory heap.
+	MAX_MEMORY_ALLOC_DIV = 2, // Do not alloc more than 1/2 of available space.
 };
 
 template<typename T>
@@ -1067,14 +1067,14 @@ MemoryObject* MemoryHeap::allocateRandom (const DeviceInterface& vkd, VkDevice d
 	}
 
 	const MemoryType		type						= memoryTypeMaxSizePair.first;
-	const VkDeviceSize		maxAllocationSize			= memoryTypeMaxSizePair.second;
+	const VkDeviceSize		maxAllocationSize			= memoryTypeMaxSizePair.second / MAX_MEMORY_ALLOC_DIV;
 	const VkDeviceSize		atomSize					= (type.type.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0
 														? 1
 														: m_nonCoherentAtomSize;
 	const VkDeviceSize		allocationSizeGranularity	= de::max(atomSize, getMemoryClass() == MEMORY_CLASS_DEVICE ? m_limits.devicePageSize : getHostPageSize());
 	const VkDeviceSize		size						= randomSize(rng, atomSize, maxAllocationSize);
 	const VkDeviceSize		memoryUsage					= roundUpToMultiple(size, allocationSizeGranularity);
-	const VkDeviceSize		referenceMemoryUsage		= size + divRoundUp<VkDeviceSize>(size, 8) + divRoundUp(size, atomSize);
+	const VkDeviceSize		referenceMemoryUsage		= size + divRoundUp<VkDeviceSize>(size, 8) + divRoundUp<VkDeviceSize>(size / atomSize, 8);
 
 	DE_ASSERT(size <= maxAllocationSize);
 

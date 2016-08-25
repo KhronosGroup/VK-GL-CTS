@@ -49,7 +49,7 @@ using tcu::Vec4;
 using std::string;
 using std::vector;
 using std::map;
-using deqp::gls::TextureTestUtil::SurfaceAccess;
+using tcu::SurfaceAccess;
 
 namespace deqp
 {

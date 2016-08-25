@@ -398,6 +398,9 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		}
 	}
 
+	if (imageViewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !context.getDeviceFeatures().imageCubeArray)
+		TCU_THROW(NotSupportedError, "imageCubeArray feature is not supported");
+
 	// Create texture image, view and sampler
 	{
 		VkImageCreateFlags			imageFlags			= 0u;

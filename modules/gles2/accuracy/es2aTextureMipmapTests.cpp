@@ -29,6 +29,7 @@
 #include "gluPixelTransfer.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuTexVerifierUtil.hpp"
 #include "tcuVector.hpp"
 #include "tcuMatrix.hpp"
 #include "tcuMatrixUtil.hpp"
@@ -56,6 +57,7 @@ using tcu::IVec2;
 using tcu::IVec4;
 using namespace glu;
 using namespace gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
 
 enum CoordType
 {
@@ -167,7 +169,7 @@ void Texture2DMipmapCase::init (void)
 		deUint32	color		= 0xff000000 | rgb;
 
 		m_texture->getRefTexture().allocLevel(levelNdx);
-		tcu::clear(m_texture->getRefTexture().getLevel(levelNdx), toVec4(tcu::RGBA(color)));
+		tcu::clear(m_texture->getRefTexture().getLevel(levelNdx), tcu::RGBA(color).toVec());
 	}
 }
 
@@ -281,7 +283,7 @@ Texture2DMipmapCase::IterateResult Texture2DMipmapCase::iterate (void)
 
 	// Sampling parameters.
 	sampleParams.sampler		= glu::mapGLSampler(m_wrapS, m_wrapT, m_minFilter, magFilter);
-	sampleParams.samplerType	= gls::TextureTestUtil::getSamplerType(m_texture->getRefTexture().getFormat());
+	sampleParams.samplerType	= glu::TextureTestUtil::getSamplerType(m_texture->getRefTexture().getFormat());
 	sampleParams.colorBias		= fmtInfo.lookupBias;
 	sampleParams.colorScale		= fmtInfo.lookupScale;
 	sampleParams.flags			= (isProjected ? ReferenceParams::PROJECTED : 0) | (useLodBias ? ReferenceParams::USE_BIAS : 0);
@@ -346,7 +348,7 @@ Texture2DMipmapCase::IterateResult Texture2DMipmapCase::iterate (void)
 
 			// Render reference(s).
 			{
-				SurfaceAccess idealDst(idealFrame, m_renderCtx.getRenderTarget().getPixelFormat(), curX, curY, curW, curH);
+				tcu::SurfaceAccess idealDst(idealFrame, m_renderCtx.getRenderTarget().getPixelFormat(), curX, curY, curW, curH);
 				sampleParams.lodMode = LODMODE_EXACT;
 				sampleTexture(idealDst, m_texture->getRefTexture(), &texCoord[0], sampleParams);
 			}
@@ -477,7 +479,7 @@ void TextureCubeMipmapCase::init (void)
 			deUint32	color		= 0xff000000 | rgb;
 
 			m_texture->getRefTexture().allocLevel((tcu::CubeFace)faceNdx, levelNdx);
-			tcu::clear(m_texture->getRefTexture().getLevelFace(levelNdx, (tcu::CubeFace)faceNdx), toVec4(tcu::RGBA(color)));
+			tcu::clear(m_texture->getRefTexture().getLevelFace(levelNdx, (tcu::CubeFace)faceNdx), tcu::RGBA(color).toVec());
 		}
 	}
 }
@@ -614,7 +616,7 @@ TextureCubeMipmapCase::IterateResult TextureCubeMipmapCase::iterate (void)
 
 		// Render reference(s).
 		{
-			SurfaceAccess idealDst(idealFrame, m_renderCtx.getRenderTarget().getPixelFormat(), curX, curY, curW, curH);
+			tcu::SurfaceAccess idealDst(idealFrame, m_renderCtx.getRenderTarget().getPixelFormat(), curX, curY, curW, curH);
 			params.lodMode = LODMODE_EXACT;
 			sampleTexture(idealDst, m_texture->getRefTexture(), &texCoord[0], params);
 		}

@@ -115,7 +115,7 @@ std::string getShaderImageLayoutQualifier (const tcu::TextureFormat& format)
 	return qualifier.str();
 }
 
-std::string getShaderImageTypeDeclaration (const tcu::TextureFormat& format, gls::TextureTestUtil::TextureType imageType)
+std::string getShaderImageTypeDeclaration (const tcu::TextureFormat& format, glu::TextureTestUtil::TextureType imageType)
 {
 	std::ostringstream declaration;
 
@@ -143,12 +143,12 @@ std::string getShaderImageTypeDeclaration (const tcu::TextureFormat& format, gls
 
 	switch(imageType)
 	{
-		case gls::TextureTestUtil::TEXTURETYPE_2D:			declaration << "2D";			break;
-		case gls::TextureTestUtil::TEXTURETYPE_3D:			declaration << "3D";			break;
-		case gls::TextureTestUtil::TEXTURETYPE_CUBE:		declaration << "Cube";			break;
-		case gls::TextureTestUtil::TEXTURETYPE_2D_ARRAY:	declaration << "2DArray";		break;
-		case gls::TextureTestUtil::TEXTURETYPE_BUFFER:		declaration << "Buffer";		break;
-		case gls::TextureTestUtil::TEXTURETYPE_CUBE_ARRAY:	declaration << "CubeArray";		break;
+		case glu::TextureTestUtil::TEXTURETYPE_2D:			declaration << "2D";			break;
+		case glu::TextureTestUtil::TEXTURETYPE_3D:			declaration << "3D";			break;
+		case glu::TextureTestUtil::TEXTURETYPE_CUBE:		declaration << "Cube";			break;
+		case glu::TextureTestUtil::TEXTURETYPE_2D_ARRAY:	declaration << "2DArray";		break;
+		case glu::TextureTestUtil::TEXTURETYPE_BUFFER:		declaration << "Buffer";		break;
+		case glu::TextureTestUtil::TEXTURETYPE_CUBE_ARRAY:	declaration << "CubeArray";		break;
 		default:
 			DE_ASSERT(false);
 			return std::string("");
@@ -157,24 +157,24 @@ std::string getShaderImageTypeDeclaration (const tcu::TextureFormat& format, gls
 	return declaration.str();
 }
 
-std::string getShaderImageTypeExtensionString (gls::TextureTestUtil::TextureType imageType)
+std::string getShaderImageTypeExtensionString (glu::TextureTestUtil::TextureType imageType)
 {
 	std::string extension;
 
 	switch(imageType)
 	{
-		case gls::TextureTestUtil::TEXTURETYPE_2D:
-		case gls::TextureTestUtil::TEXTURETYPE_3D:
-		case gls::TextureTestUtil::TEXTURETYPE_CUBE:
-		case gls::TextureTestUtil::TEXTURETYPE_2D_ARRAY:
+		case glu::TextureTestUtil::TEXTURETYPE_2D:
+		case glu::TextureTestUtil::TEXTURETYPE_3D:
+		case glu::TextureTestUtil::TEXTURETYPE_CUBE:
+		case glu::TextureTestUtil::TEXTURETYPE_2D_ARRAY:
 			extension = "";
 			break;
 
-		case gls::TextureTestUtil::TEXTURETYPE_BUFFER:
+		case glu::TextureTestUtil::TEXTURETYPE_BUFFER:
 			extension = "#extension GL_EXT_texture_buffer : enable";
 			break;
 
-		case gls::TextureTestUtil::TEXTURETYPE_CUBE_ARRAY:
+		case glu::TextureTestUtil::TEXTURETYPE_CUBE_ARRAY:
 			extension = "#extension GL_EXT_texture_cube_map_array : enable";
 			break;
 
@@ -186,20 +186,20 @@ std::string getShaderImageTypeExtensionString (gls::TextureTestUtil::TextureType
 	return extension;
 }
 
-std::string getShaderImageParamP (gls::TextureTestUtil::TextureType imageType)
+std::string getShaderImageParamP (glu::TextureTestUtil::TextureType imageType)
 {
 	switch(imageType)
 	{
-		case gls::TextureTestUtil::TEXTURETYPE_2D:
+		case glu::TextureTestUtil::TEXTURETYPE_2D:
 			return "ivec2(1, 1)";
 
-		case gls::TextureTestUtil::TEXTURETYPE_3D:
-		case gls::TextureTestUtil::TEXTURETYPE_CUBE:
-		case gls::TextureTestUtil::TEXTURETYPE_2D_ARRAY:
-		case gls::TextureTestUtil::TEXTURETYPE_CUBE_ARRAY:
+		case glu::TextureTestUtil::TEXTURETYPE_3D:
+		case glu::TextureTestUtil::TEXTURETYPE_CUBE:
+		case glu::TextureTestUtil::TEXTURETYPE_2D_ARRAY:
+		case glu::TextureTestUtil::TEXTURETYPE_CUBE_ARRAY:
 			return "ivec3(1, 1, 1)";
 
-		case gls::TextureTestUtil::TEXTURETYPE_BUFFER:
+		case glu::TextureTestUtil::TEXTURETYPE_BUFFER:
 			return "1";
 
 		default:
@@ -339,7 +339,7 @@ std::string getFunctionName (ImageOperation function)
 	return std::string("");
 }
 
-std::string generateShaderSource (ImageOperation function, MemoryQualifier memory, gls::TextureTestUtil::TextureType imageType, const tcu::TextureFormat& format, glu::ShaderType shaderType)
+std::string generateShaderSource (ImageOperation function, MemoryQualifier memory, glu::TextureTestUtil::TextureType imageType, const tcu::TextureFormat& format, glu::ShaderType shaderType)
 {
 	const char* shaderTemplate =	"${GLSL_VERSION_DECL}\n"
 									"${GLSL_TYPE_EXTENSION}\n"
@@ -367,7 +367,7 @@ std::string generateShaderSource (ImageOperation function, MemoryQualifier memor
 	return tcu::StringTemplate(shaderTemplate).specialize(params);
 }
 
-void testShader (NegativeTestContext& ctx, ImageOperation function, MemoryQualifier memory, gls::TextureTestUtil::TextureType imageType, const tcu::TextureFormat& format)
+void testShader (NegativeTestContext& ctx, ImageOperation function, MemoryQualifier memory, glu::TextureTestUtil::TextureType imageType, const tcu::TextureFormat& format)
 {
 	tcu::TestLog& log = ctx.getLog();
 	ctx.beginSection(getFunctionName(function) + " " + getMemoryQualifier(memory) + " " + getShaderImageLayoutQualifier(format));
@@ -390,7 +390,7 @@ void testShader (NegativeTestContext& ctx, ImageOperation function, MemoryQualif
 	ctx.endSection();
 }
 
-void image_store (NegativeTestContext& ctx, gls::TextureTestUtil::TextureType imageType)
+void image_store (NegativeTestContext& ctx, glu::TextureTestUtil::TextureType imageType)
 {
 	const tcu::TextureFormat formats[] =
 	{
@@ -428,7 +428,7 @@ void image_store (NegativeTestContext& ctx, gls::TextureTestUtil::TextureType im
 	ctx.endSection();
 }
 
-void image_load (NegativeTestContext& ctx, gls::TextureTestUtil::TextureType imageType)
+void image_load (NegativeTestContext& ctx, glu::TextureTestUtil::TextureType imageType)
 {
 	const tcu::TextureFormat formats[] =
 	{
@@ -466,7 +466,7 @@ void image_load (NegativeTestContext& ctx, gls::TextureTestUtil::TextureType ima
 	ctx.endSection();
 }
 
-void image_atomic (NegativeTestContext& ctx, gls::TextureTestUtil::TextureType imageType)
+void image_atomic (NegativeTestContext& ctx, glu::TextureTestUtil::TextureType imageType)
 {
 	const tcu::TextureFormat formats[] =
 	{
@@ -513,7 +513,7 @@ void image_atomic (NegativeTestContext& ctx, gls::TextureTestUtil::TextureType i
 	ctx.endSection();
 }
 
-void image_atomic_exchange (NegativeTestContext& ctx, gls::TextureTestUtil::TextureType imageType)
+void image_atomic_exchange (NegativeTestContext& ctx, glu::TextureTestUtil::TextureType imageType)
 {
 	const tcu::TextureFormat formats[] =
 	{
@@ -558,25 +558,25 @@ void image_atomic_exchange (NegativeTestContext& ctx, gls::TextureTestUtil::Text
 template <int Type>
 void loadFuncWrapper (NegativeTestContext& ctx)
 {
-	image_load(ctx, (gls::TextureTestUtil::TextureType)Type);
+	image_load(ctx, (glu::TextureTestUtil::TextureType)Type);
 }
 
 template <int Type>
 void storeFuncWrapper (NegativeTestContext& ctx)
 {
-	image_store(ctx, (gls::TextureTestUtil::TextureType)Type);
+	image_store(ctx, (glu::TextureTestUtil::TextureType)Type);
 }
 
 template <int Type>
 void atomicFuncWrapper (NegativeTestContext& ctx)
 {
-	image_atomic(ctx, (gls::TextureTestUtil::TextureType)Type);
+	image_atomic(ctx, (glu::TextureTestUtil::TextureType)Type);
 }
 
 template <int Type>
 void atomicExchangeFuncWrapper (NegativeTestContext& ctx)
 {
-	image_atomic_exchange(ctx, (gls::TextureTestUtil::TextureType)Type);
+	image_atomic_exchange(ctx, (glu::TextureTestUtil::TextureType)Type);
 }
 
 } // anonymous
@@ -584,12 +584,12 @@ void atomicExchangeFuncWrapper (NegativeTestContext& ctx)
 // Set of texture types to create tests for.
 #define CREATE_TEST_FUNC_PER_TEXTURE_TYPE(NAME, FUNC) const FunctionContainer NAME[] =									\
 	{																													\
-		{FUNC<gls::TextureTestUtil::TEXTURETYPE_2D>,			"texture_2d",	"Texture2D negative tests."},			\
-		{FUNC<gls::TextureTestUtil::TEXTURETYPE_3D>,			"texture_3d",	"Texture3D negative tests."},			\
-		{FUNC<gls::TextureTestUtil::TEXTURETYPE_CUBE>,			"cube",			"Cube texture negative tests."},		\
-		{FUNC<gls::TextureTestUtil::TEXTURETYPE_2D_ARRAY>,		"2d_array",		"2D array texture negative tests."},	\
-		{FUNC<gls::TextureTestUtil::TEXTURETYPE_BUFFER>,		"buffer",		"Buffer negative tests."},				\
-		{FUNC<gls::TextureTestUtil::TEXTURETYPE_CUBE_ARRAY>,	"cube_array",	"Cube array texture negative tests."}	\
+		{FUNC<glu::TextureTestUtil::TEXTURETYPE_2D>,			"texture_2d",	"Texture2D negative tests."},			\
+		{FUNC<glu::TextureTestUtil::TEXTURETYPE_3D>,			"texture_3d",	"Texture3D negative tests."},			\
+		{FUNC<glu::TextureTestUtil::TEXTURETYPE_CUBE>,			"cube",			"Cube texture negative tests."},		\
+		{FUNC<glu::TextureTestUtil::TEXTURETYPE_2D_ARRAY>,		"2d_array",		"2D array texture negative tests."},	\
+		{FUNC<glu::TextureTestUtil::TEXTURETYPE_BUFFER>,		"buffer",		"Buffer negative tests."},				\
+		{FUNC<glu::TextureTestUtil::TEXTURETYPE_CUBE_ARRAY>,	"cube_array",	"Cube array texture negative tests."}	\
 	}
 
 std::vector<FunctionContainer> getNegativeShaderImageLoadTestFunctions (void)

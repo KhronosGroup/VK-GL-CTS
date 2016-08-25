@@ -36,6 +36,8 @@ set(GLUTIL_SRCS
 	gluTexture.hpp
 	gluTextureUtil.cpp
 	gluTextureUtil.hpp
+	gluTextureTestUtil.cpp
+	gluTextureTestUtil.hpp
 	gluVarType.cpp
 	gluVarType.hpp
 	gluVarTypeUtil.cpp

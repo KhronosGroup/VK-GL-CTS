@@ -58,6 +58,7 @@ namespace Functional
 
 using namespace deqp::gls;
 using namespace deqp::gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
 using tcu::Sampler;
 
 // Texture2DFormatCase
@@ -205,7 +206,7 @@ Texture2DFormatCase::IterateResult Texture2DFormatCase::iterate (void)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels()");
 
 	// Compute reference.
-	sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
+	sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
 
 	// Compare and log.
 	bool isOk = compareImages(log, referenceFrame, renderedFrame, threshold);
@@ -387,7 +388,7 @@ bool TextureCubeFormatCase::testFace (tcu::CubeFace face)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels()");
 
 	// Compute reference.
-	sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
+	sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
 
 	// Compare and log.
 	return compareImages(log, referenceFrame, renderedFrame, threshold);
@@ -544,7 +545,7 @@ bool Texture2DArrayFormatCase::testLayer (int layerNdx)
 	glu::readPixels(m_renderCtx, viewport.x, viewport.y, renderedFrame.getAccess());
 
 	// Compute reference.
-	sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
+	sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
 
 	// Compare and log.
 	return compareImages(log, (string("Layer" + de::toString(layerNdx))).c_str(), (string("Layer " + de::toString(layerNdx))).c_str(), referenceFrame, renderedFrame, threshold);
@@ -697,7 +698,7 @@ bool Texture3DFormatCase::testSlice (int sliceNdx)
 	glu::readPixels(m_renderCtx, viewport.x, viewport.y, renderedFrame.getAccess());
 
 	// Compute reference.
-	sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
+	sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
 
 	// Compare and log.
 	return compareImages(log, (string("Slice" + de::toString(sliceNdx))).c_str(), (string("Slice " + de::toString(sliceNdx))).c_str(), referenceFrame, renderedFrame, threshold);
@@ -840,7 +841,7 @@ Compressed2DFormatCase::IterateResult Compressed2DFormatCase::iterate (void)
 	glu::readPixels(m_renderCtx, viewport.x, viewport.y, renderedFrame.getAccess());
 
 	// Compute reference.
-	sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
+	sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
 
 	// Compare and log.
 	bool isOk = compareImages(log, referenceFrame, renderedFrame, threshold);
@@ -993,7 +994,7 @@ bool CompressedCubeFormatCase::testFace (tcu::CubeFace face)
 	glu::readPixels(m_renderCtx, viewport.x, viewport.y, renderedFrame.getAccess());
 
 	// Compute reference.
-	sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
+	sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], renderParams);
 
 	// Compare and log.
 	return compareImages(log, referenceFrame, renderedFrame, threshold);
@@ -1106,7 +1107,7 @@ Texture2DFileCase::IterateResult Texture2DFileCase::iterate (void)
 	// Compute reference.
 	ReferenceParams refParams(TEXTURETYPE_2D);
 	refParams.sampler = Sampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::NEAREST, Sampler::NEAREST);
-	sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], refParams);
+	sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], refParams);
 
 	// Compare and log.
 	bool isOk = compareImages(log, referenceFrame, renderedFrame, threshold);
@@ -1218,7 +1219,7 @@ bool TextureCubeFileCase::testFace (tcu::CubeFace face)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels()");
 
 	// Compute reference.
-	sampleTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], ReferenceParams(TEXTURETYPE_CUBE, sampler));
+	sampleTexture(tcu::SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], ReferenceParams(TEXTURETYPE_CUBE, sampler));
 
 	// Compare and log.
 	return compareImages(log, referenceFrame, renderedFrame, threshold);

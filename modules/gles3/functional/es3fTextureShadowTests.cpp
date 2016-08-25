@@ -30,6 +30,7 @@
 #include "tcuRenderTarget.hpp"
 #include "tcuTexCompareVerifier.hpp"
 #include "deString.h"
+#include "deMath.h"
 #include "deStringUtil.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
@@ -45,6 +46,7 @@ using std::vector;
 using std::string;
 using tcu::TestLog;
 using namespace deqp::gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
 
 enum
 {
@@ -121,14 +123,14 @@ bool verifyTexCompareResult (tcu::TestContext&						testCtx,
 
 		// sample clamped values
 
-		sampleTexture(SurfaceAccess(reference, pixelFormat), clampedSource, texCoord, sampleParams);
+		sampleTexture(tcu::SurfaceAccess(reference, pixelFormat), clampedSource, texCoord, sampleParams);
 		numFailedPixels = computeTextureCompareDiff(result, reference.getAccess(), errorMask.getAccess(), clampedSource, texCoord, sampleParams, comparePrec, lodPrec, nonShadowThreshold);
 	}
 	else
 	{
 		// sample raw values (they are guaranteed to be in [0, 1] range as the format cannot represent any other values)
 
-		sampleTexture(SurfaceAccess(reference, pixelFormat), src, texCoord, sampleParams);
+		sampleTexture(tcu::SurfaceAccess(reference, pixelFormat), src, texCoord, sampleParams);
 		numFailedPixels = computeTextureCompareDiff(result, reference.getAccess(), errorMask.getAccess(), src, texCoord, sampleParams, comparePrec, lodPrec, nonShadowThreshold);
 	}
 
@@ -249,7 +251,7 @@ void Texture2DShadowCase::init (void)
 			deUint32	colorB	= 0xff000000 | ~rgb;
 
 			m_textures[1]->getRefTexture().allocLevel(levelNdx);
-			tcu::fillWithGrid(m_textures[1]->getRefTexture().getLevel(levelNdx), 4, toVec4(tcu::RGBA(colorA)), toVec4(tcu::RGBA(colorB)));
+			tcu::fillWithGrid(m_textures[1]->getRefTexture().getLevel(levelNdx), 4, tcu::RGBA(colorA).toVec(), tcu::RGBA(colorB).toVec());
 		}
 
 		// Upload.
@@ -521,7 +523,7 @@ void TextureCubeShadowCase::init (void)
 				deUint32	colorB	= 0xff000000 | ~rgb;
 
 				m_gridTex->getRefTexture().allocLevel((tcu::CubeFace)face, levelNdx);
-				tcu::fillWithGrid(m_gridTex->getRefTexture().getLevelFace(levelNdx, (tcu::CubeFace)face), 4, toVec4(tcu::RGBA(colorA))*cScale + cBias, toVec4(tcu::RGBA(colorB))*cScale + cBias);
+				tcu::fillWithGrid(m_gridTex->getRefTexture().getLevelFace(levelNdx, (tcu::CubeFace)face), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
 			}
 		}
 
