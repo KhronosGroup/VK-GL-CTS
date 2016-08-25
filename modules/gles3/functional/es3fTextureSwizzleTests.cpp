@@ -44,6 +44,7 @@ using std::vector;
 using tcu::TestLog;
 using namespace deqp::gls;
 using namespace deqp::gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
 
 static int swizzle (const tcu::RGBA& c, deUint32 swz)
 {
@@ -193,7 +194,7 @@ Texture2DSwizzleCase::IterateResult Texture2DSwizzleCase::iterate (void)
 		const tcu::PixelFormat pixelFormat = m_context.getRenderTarget().getPixelFormat();
 
 		// Do initial rendering to RGBA8 in order to keep alpha
-		sampleTexture(SurfaceAccess(referenceFrame, tcu::PixelFormat(8,8,8,8)), m_texture->getRefTexture(), &texCoord[0], renderParams);
+		sampleTexture(tcu::SurfaceAccess(referenceFrame, tcu::PixelFormat(8,8,8,8)), m_texture->getRefTexture(), &texCoord[0], renderParams);
 
 		// Swizzle channels
 		swizzle(referenceFrame, m_swizzleR, m_swizzleG, m_swizzleB, m_swizzleA);

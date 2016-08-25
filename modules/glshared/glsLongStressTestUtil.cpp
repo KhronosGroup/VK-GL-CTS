@@ -167,7 +167,7 @@ gls::ProgramContext ProgramLibrary::generateTextureContext (const int numTexture
 	context.uniforms.push_back(gls::VarSpec("u_posTrans",		translationMat<4>(positionFactor-1.0f),		translationMat<4>(1.0f-positionFactor)));
 
 	for (int i = 0; i < numTextures; i++)
-		context.textureSpecs.push_back(gls::TextureSpec(gls::TextureTestUtil::TEXTURETYPE_2D, 0,
+		context.textureSpecs.push_back(gls::TextureSpec(glu::TextureTestUtil::TEXTURETYPE_2D, 0,
 														texWid, texHei, GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA, true,
 														GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT,
 														Vec4(0.0f), Vec4(1.0f)));
@@ -235,7 +235,7 @@ gls::ProgramContext ProgramLibrary::generateBufferAndTextureContext (const int n
 	{
 		context.attributes.push_back(gls::VarSpec("a_texCoord" + de::toString(i), Vec2(0.0f), Vec2(1.0f)));
 		context.uniforms.push_back(gls::VarSpec("u_sampler" + de::toString(i), i));
-		context.textureSpecs.push_back(gls::TextureSpec(gls::TextureTestUtil::TEXTURETYPE_2D, i,
+		context.textureSpecs.push_back(gls::TextureSpec(glu::TextureTestUtil::TEXTURETYPE_2D, i,
 														texWid, texHei, GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA, true,
 														GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT,
 														Vec4(0.0f), Vec4(1.0f / (float)numTextures)));
@@ -405,7 +405,7 @@ gls::ProgramContext ProgramLibrary::generateFragmentPointLightContext (const int
 
 	context.uniforms.push_back(gls::VarSpec("u_sampler0${NS}", 0));
 
-	context.textureSpecs.push_back(gls::TextureSpec(gls::TextureTestUtil::TEXTURETYPE_2D, 0,
+	context.textureSpecs.push_back(gls::TextureSpec(glu::TextureTestUtil::TEXTURETYPE_2D, 0,
 													texWid, texHei, GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA,
 													true, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT,
 													Vec4(0.0f), Vec4(1.0f)));
@@ -579,7 +579,7 @@ gls::ProgramContext ProgramLibrary::generateVertexUniformLoopLightContext (const
 
 	context.uniforms.push_back		(gls::VarSpec("u_sampler0${NS}",									0));
 
-	context.textureSpecs.push_back	(gls::TextureSpec(gls::TextureTestUtil::TEXTURETYPE_2D, 0,
+	context.textureSpecs.push_back	(gls::TextureSpec(glu::TextureTestUtil::TEXTURETYPE_2D, 0,
 													  texWid, texHei, GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA,
 													  true, GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT,
 													  Vec4(0.0f), Vec4(1.0f)));

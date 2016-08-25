@@ -78,6 +78,7 @@ namespace deqp
 {
 
 using namespace gls::TextureTestUtil;
+using namespace glu::TextureTestUtil;
 
 namespace gles31
 {
