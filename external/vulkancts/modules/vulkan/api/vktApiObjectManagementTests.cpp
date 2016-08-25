@@ -2124,18 +2124,12 @@ tcu::TestStatus createMaxConcurrentTest (Context& context, typename Object::Para
 	return tcu::TestStatus::pass("Ok");
 }
 
-template<typename Object>
-int getCreateCount (void)
-{
-	return 100;
-}
+// How many objects to create per thread
+template<typename Object>	int getCreateCount				(void) { return 100;	}
 
-template<>
-int getCreateCount<Device> (void)
-{
-	// Creating VkDevice can take significantly longer than other object types
-	return 20;
-}
+// Creating VkDevice and VkInstance can take significantly longer than other object types
+template<>					int getCreateCount<Instance>	(void) { return 20;		}
+template<>					int getCreateCount<Device>		(void) { return 20;		}
 
 template<typename Object>
 class CreateThread : public ThreadGroupThread
