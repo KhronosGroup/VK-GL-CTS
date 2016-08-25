@@ -99,6 +99,10 @@ if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
 	target_link_libraries(vk-build-programs deqp-vk-common)
 endif ()
 
+if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
+endif ()
+
 add_deqp_module(deqp-vk "${DEQP_VK_SRCS}" "${DEQP_VK_LIBS}" vktTestPackageEntry.cpp)
 
 add_data_dir(deqp-vk ../../data/vulkan	vulkan)
