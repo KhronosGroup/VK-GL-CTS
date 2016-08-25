@@ -607,7 +607,9 @@ tcu::TestStatus CreateSwapchainSimulateOOMTest::iterate (void)
 	if (m_numPassingAllocs <= 16*1024u)
 	{
 		AllocationCallbackRecorder	allocationRecorder	(getSystemAllocator());
-		DeterministicFailAllocator	failingAllocator	(allocationRecorder.getCallbacks(), m_numPassingAllocs);
+		DeterministicFailAllocator	failingAllocator	(allocationRecorder.getCallbacks(),
+														 m_numPassingAllocs,
+														 DeterministicFailAllocator::MODE_DO_NOT_COUNT);
 		bool						gotOOM				= false;
 
 		log << TestLog::Message << "Testing with " << m_numPassingAllocs << " first allocations succeeding" << TestLog::EndMessage;
@@ -624,6 +626,10 @@ tcu::TestStatus CreateSwapchainSimulateOOMTest::iterate (void)
 																			   failingAllocator.getCallbacks()));
 			const DeviceHelper						devHelper	(m_context, instHelper.vki, *instHelper.instance, *surface, failingAllocator.getCallbacks());
 			const vector<VkSwapchainCreateInfoKHR>	cases		(generateSwapchainParameterCases(m_params.wsiType, m_params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
+
+			// We don't care testing OOM paths in VkInstance, VkSurface, or VkDevice
+			// creation as they are tested elsewhere.
+			failingAllocator.setMode(DeterministicFailAllocator::MODE_COUNT_AND_FAIL);
 
 			for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 			{

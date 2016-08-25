@@ -277,9 +277,10 @@ void AllocationCallbackRecorder::notifyInternalFree (size_t size, VkInternalAllo
 
 // DeterministicFailAllocator
 
-DeterministicFailAllocator::DeterministicFailAllocator (const VkAllocationCallbacks* allocator, deUint32 numPassingAllocs)
+DeterministicFailAllocator::DeterministicFailAllocator (const VkAllocationCallbacks* allocator, deUint32 numPassingAllocs, Mode initialMode)
 	: ChainedAllocator	(allocator)
 	, m_numPassingAllocs(numPassingAllocs)
+	, m_mode			(initialMode)
 	, m_allocationNdx	(0)
 {
 }
@@ -288,9 +289,15 @@ DeterministicFailAllocator::~DeterministicFailAllocator (void)
 {
 }
 
+void DeterministicFailAllocator::setMode (Mode mode)
+{
+	m_mode = mode;
+}
+
 void* DeterministicFailAllocator::allocate (size_t size, size_t alignment, VkSystemAllocationScope allocationScope)
 {
-	if (deAtomicIncrementUint32(&m_allocationNdx) <= m_numPassingAllocs)
+	if ((m_mode == MODE_DO_NOT_COUNT) ||
+		(deAtomicIncrementUint32(&m_allocationNdx) <= m_numPassingAllocs))
 		return ChainedAllocator::allocate(size, alignment, allocationScope);
 	else
 		return DE_NULL;
@@ -298,7 +305,8 @@ void* DeterministicFailAllocator::allocate (size_t size, size_t alignment, VkSys
 
 void* DeterministicFailAllocator::reallocate (void* original, size_t size, size_t alignment, VkSystemAllocationScope allocationScope)
 {
-	if (deAtomicIncrementUint32(&m_allocationNdx) <= m_numPassingAllocs)
+	if ((m_mode == MODE_DO_NOT_COUNT) ||
+		(deAtomicIncrementUint32(&m_allocationNdx) <= m_numPassingAllocs))
 		return ChainedAllocator::reallocate(original, size, alignment, allocationScope);
 	else
 		return DE_NULL;
