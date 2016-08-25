@@ -3999,6 +3999,8 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 		"OpExecutionMode %tessc_main OutputVertices 3\n"
 
 		"OpExecutionMode %tesse_main Triangles\n"
+		"OpExecutionMode %tesse_main SpacingEqual\n"
+		"OpExecutionMode %tesse_main VertexOrderCcw\n"
 
 		"OpExecutionMode %frag_main OriginUpperLeft\n"
 
@@ -4545,7 +4547,11 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpEntryPoint TessellationEvaluation %tesse1_main \"tesse1\" %stream %gl_tessCoord %in_position %out_color %in_color \n"
 		"OpEntryPoint TessellationEvaluation %tesse2_main \"tesse2\" %stream %gl_tessCoord %in_position %out_color %in_color \n"
 		"OpExecutionMode %tesse1_main Triangles\n"
+		"OpExecutionMode %tesse1_main SpacingEqual\n"
+		"OpExecutionMode %tesse1_main VertexOrderCcw\n"
 		"OpExecutionMode %tesse2_main Triangles\n"
+		"OpExecutionMode %tesse2_main SpacingEqual\n"
+		"OpExecutionMode %tesse2_main VertexOrderCcw\n"
 		"OpName %tesse1_main \"tesse1\"\n"
 		"OpName %tesse2_main \"tesse2\"\n"
 		"OpName %per_vertex_out \"gl_PerVertex\"\n"
