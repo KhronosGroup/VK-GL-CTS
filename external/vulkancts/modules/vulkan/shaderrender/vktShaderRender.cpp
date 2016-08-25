@@ -2107,9 +2107,6 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 	Move<VkImage>					vkTexture;
 	de::MovePtr<Allocation>			allocation;
 
-	if (isShadowSampler)
-		imageUsageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-
 	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
 	{
 		checkSparseSupport(imageType);
