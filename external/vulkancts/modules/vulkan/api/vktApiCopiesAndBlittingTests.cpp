@@ -1575,7 +1575,7 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 			const VkImageCopy testCopy =
 			{
 				sourceLayer,			// VkImageSubresourceLayers	srcSubresource;
-				{0, 0, 0},				// VkOffset3D				srcOffset;
+				{i*16, 240-i*16, 0},	// VkOffset3D				srcOffset;
 				sourceLayer,			// VkImageSubresourceLayers	dstSubresource;
 				{i*16, 240-i*16, 0},	// VkOffset3D				dstOffset;
 				{16, 16, 1},			// VkExtent3D				extent;
