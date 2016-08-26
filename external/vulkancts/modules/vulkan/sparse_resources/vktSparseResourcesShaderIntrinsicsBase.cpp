@@ -201,6 +201,9 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 	if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
 		TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
 
+	if (!getPhysicalDeviceFeatures(instance, physicalDevice).shaderResourceResidency)
+		TCU_THROW(NotSupportedError, "Sparse resource residency information not supported in shader code.");
+
 	imageSparseInfo.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageSparseInfo.pNext					= DE_NULL;
 	imageSparseInfo.flags					= VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
