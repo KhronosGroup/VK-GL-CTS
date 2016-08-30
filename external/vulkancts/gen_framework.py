@@ -98,6 +98,15 @@ INSTANCE_FUNCTIONS	= [
 	"vkCreateWin32SurfaceKHR",
 	"vkGetPhysicalDeviceWin32PresentationSupportKHR",
 
+	# VK_KHR_get_physical_device_properties2
+	"vkGetPhysicalDeviceFeatures2KHR",
+	"vkGetPhysicalDeviceProperties2KHR",
+	"vkGetPhysicalDeviceFormatProperties2KHR",
+	"vkGetPhysicalDeviceQueueFamilyProperties2KHR",
+	"vkGetPhysicalDeviceImageFormatProperties2KHR",
+	"vkGetPhysicalDeviceMemoryProperties2KHR",
+	"vkGetPhysicalDeviceSparseImageFormatProperties2KHR",
+
 	# VK_EXT_debug_report
 	"vkCreateDebugReportCallbackEXT",
 	"vkDestroyDebugReportCallbackEXT",

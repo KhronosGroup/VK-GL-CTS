@@ -1363,6 +1363,77 @@ struct VkWin32SurfaceCreateInfoKHR
 	pt::Win32WindowHandle			hwnd;
 };
 
+struct VkPhysicalDeviceFeatures2KHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkPhysicalDeviceFeatures	features;
+};
+
+struct VkPhysicalDeviceProperties2KHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkPhysicalDeviceProperties	properties;
+};
+
+struct VkFormatProperties2KHR
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkFormatProperties	formatProperties;
+};
+
+struct VkImageFormatProperties2KHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageFormatProperties	imageFormatProperties;
+};
+
+struct VkPhysicalDeviceImageFormatInfo2KHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkFormat			format;
+	VkImageType			type;
+	VkImageTiling		tiling;
+	VkImageUsageFlags	usage;
+	VkImageCreateFlags	flags;
+};
+
+struct VkQueueFamilyProperties2KHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkQueueFamilyProperties	queueFamilyProperties;
+};
+
+struct VkPhysicalDeviceMemoryProperties2KHR
+{
+	VkStructureType						sType;
+	void*								pNext;
+	VkPhysicalDeviceMemoryProperties	memoryProperties;
+};
+
+struct VkSparseImageFormatProperties2KHR
+{
+	VkStructureType					sType;
+	void*							pNext;
+	VkSparseImageFormatProperties	properties;
+};
+
+struct VkPhysicalDeviceSparseImageFormatInfo2KHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkFormat				format;
+	VkImageType				type;
+	VkSampleCountFlagBits	samples;
+	VkImageUsageFlags		usage;
+	VkImageTiling			tiling;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;
