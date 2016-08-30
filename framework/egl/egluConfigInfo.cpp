@@ -25,6 +25,8 @@
 #include "egluDefs.hpp"
 #include "eglwLibrary.hpp"
 #include "eglwEnums.hpp"
+#include "egluUtil.hpp"
+#include "deSTLUtil.hpp"
 
 namespace eglu
 {
@@ -66,11 +68,20 @@ deInt32 ConfigInfo::getAttribute (deUint32 attribute) const
 		case EGL_TRANSPARENT_RED_VALUE:		return transparentRedValue;
 		case EGL_TRANSPARENT_GREEN_VALUE:	return transparentGreenValue;
 		case EGL_TRANSPARENT_BLUE_VALUE:	return transparentBlueValue;
-		default:							TCU_FAIL("Unknown attribute");
+
+		// EGL_EXT_yuv_surface
+		case EGL_YUV_ORDER_EXT:				return yuvOrder;
+		case EGL_YUV_NUMBER_OF_PLANES_EXT:	return yuvNumberOfPlanes;
+		case EGL_YUV_SUBSAMPLE_EXT:			return yuvSubsample;
+		case EGL_YUV_DEPTH_RANGE_EXT:		return yuvDepthRange;
+		case EGL_YUV_CSC_STANDARD_EXT:		return yuvCscStandard;
+		case EGL_YUV_PLANE_BPP_EXT:			return yuvPlaneBpp;
+
+		default:							TCU_THROW(InternalError, "Unknown attribute");
 	}
 }
 
-void queryConfigInfo (const Library& egl, EGLDisplay display, EGLConfig config, ConfigInfo* dst)
+void queryCoreConfigInfo (const Library& egl, EGLDisplay display, EGLConfig config, ConfigInfo* dst)
 {
 	egl.getConfigAttrib(display, config, EGL_BUFFER_SIZE,				&dst->bufferSize);
 	egl.getConfigAttrib(display, config, EGL_RED_SIZE,					&dst->redSize);
@@ -104,6 +115,23 @@ void queryConfigInfo (const Library& egl, EGLDisplay display, EGLConfig config, 
 	egl.getConfigAttrib(display, config, EGL_TRANSPARENT_GREEN_VALUE,	&dst->transparentGreenValue);
 	egl.getConfigAttrib(display, config, EGL_TRANSPARENT_BLUE_VALUE,	&dst->transparentBlueValue);
 	EGLU_CHECK_MSG(egl, "Failed to query config info");
+}
+
+void queryExtConfigInfo (const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig config, ConfigInfo* dst)
+{
+	const std::vector<std::string>	extensions	= getDisplayExtensions(egl, display);
+
+	if (de::contains(extensions.begin(), extensions.end(), "EGL_EXT_yuv_surface"))
+	{
+		egl.getConfigAttrib(display, config, EGL_YUV_ORDER_EXT,				(EGLint*)&dst->yuvOrder);
+		egl.getConfigAttrib(display, config, EGL_YUV_NUMBER_OF_PLANES_EXT,	(EGLint*)&dst->yuvNumberOfPlanes);
+		egl.getConfigAttrib(display, config, EGL_YUV_SUBSAMPLE_EXT,			(EGLint*)&dst->yuvSubsample);
+		egl.getConfigAttrib(display, config, EGL_YUV_DEPTH_RANGE_EXT,		(EGLint*)&dst->yuvDepthRange);
+		egl.getConfigAttrib(display, config, EGL_YUV_CSC_STANDARD_EXT,		(EGLint*)&dst->yuvCscStandard);
+		egl.getConfigAttrib(display, config, EGL_YUV_PLANE_BPP_EXT,			(EGLint*)&dst->yuvPlaneBpp);
+
+		EGLU_CHECK_MSG(egl, "Failed to query EGL_EXT_yuv_surface config attribs");
+	}
 }
 
 } // eglu
