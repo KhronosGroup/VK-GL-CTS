@@ -175,3 +175,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* DebugMarkerSetObjectNameEXTFunc)				
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDebugMarkerBeginEXTFunc)							(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDebugMarkerEndEXTFunc)								(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDebugMarkerInsertEXTFunc)							(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndirectCountAMDFunc)							(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndexedIndirectCountAMDFunc)					(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceExternalImageFormatPropertiesNVFunc)	(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkExternalMemoryHandleTypeFlagsNV externalHandleType, VkExternalImageFormatPropertiesNV* pExternalImageFormatProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryWin32HandleNVFunc)							(VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle);

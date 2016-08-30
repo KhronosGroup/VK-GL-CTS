@@ -158,6 +158,8 @@ tcu::Format::Bitfield<32>	getSurfaceTransformFlagsKHRStr				(VkSurfaceTransformF
 tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr				(VkCompositeAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr				(VkDisplayPlaneAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getDebugReportFlagsEXTStr					(VkDebugReportFlagsEXT value);
+tcu::Format::Bitfield<32>	getExternalMemoryHandleTypeFlagsNVStr		(VkExternalMemoryHandleTypeFlagsNV value);
+tcu::Format::Bitfield<32>	getExternalMemoryFeatureFlagsNVStr			(VkExternalMemoryFeatureFlagsNV value);
 tcu::Format::Bitfield<32>	getInstanceCreateFlagsStr					(VkInstanceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceCreateFlagsStr						(VkDeviceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceQueueCreateFlagsStr				(VkDeviceQueueCreateFlags value);
@@ -329,3 +331,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerMarkerInfoEXT& val
 std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationImageCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationBufferCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationMemoryAllocateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalImageFormatPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalMemoryImageCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExportMemoryAllocateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryWin32HandleInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExportMemoryWin32HandleInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkWin32KeyedMutexAcquireReleaseInfoNV& value);

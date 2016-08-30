@@ -2757,7 +2757,7 @@ void addCopyImageTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	};
 	const VkFormat	compatibleFormats16Bit[]		=
 	{
@@ -2783,7 +2783,7 @@ void addCopyImageTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 		VK_FORMAT_R16_SINT,
 		VK_FORMAT_R16_SFLOAT,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	 };
 	const VkFormat	compatibleFormats24Bit[]		=
 	{
@@ -2802,7 +2802,7 @@ void addCopyImageTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 		VK_FORMAT_B8G8R8_SINT,
 		VK_FORMAT_B8G8R8_SRGB,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	 };
 	const VkFormat	compatibleFormats32Bit[]		=
 	{
@@ -2850,7 +2850,7 @@ void addCopyImageTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 		VK_FORMAT_R32_SINT,
 		VK_FORMAT_R32_SFLOAT,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	 };
 	const VkFormat	compatibleFormats48Bit[]		=
 	{
@@ -2862,7 +2862,7 @@ void addCopyImageTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 		VK_FORMAT_R16G16B16_SINT,
 		VK_FORMAT_R16G16B16_SFLOAT,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	 };
 	const VkFormat	compatibleFormats64Bit[]		=
 	{
@@ -2880,7 +2880,7 @@ void addCopyImageTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 		VK_FORMAT_R64_SINT,
 		VK_FORMAT_R64_SFLOAT,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	 };
 	const VkFormat	compatibleFormats96Bit[]		=
 	{
@@ -2888,7 +2888,7 @@ void addCopyImageTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 		VK_FORMAT_R32G32B32_SINT,
 		VK_FORMAT_R32G32B32_SFLOAT,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	 };
 	const VkFormat	compatibleFormats128Bit[]		=
 	{
@@ -2899,7 +2899,7 @@ void addCopyImageTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 		VK_FORMAT_R64G64_SINT,
 		VK_FORMAT_R64G64_SFLOAT,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	 };
 	const VkFormat	compatibleFormats192Bit[]		=
 	{
@@ -2907,7 +2907,7 @@ void addCopyImageTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 		VK_FORMAT_R64G64B64_SINT,
 		VK_FORMAT_R64G64B64_SFLOAT,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	 };
 	const VkFormat	compatibleFormats256Bit[]		=
 	{
@@ -2915,7 +2915,7 @@ void addCopyImageTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 		VK_FORMAT_R64G64B64A64_SINT,
 		VK_FORMAT_R64G64B64A64_SFLOAT,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	};
 
 	const VkFormat*	colorImageFormatsToTest[]		=
@@ -2936,10 +2936,10 @@ void addCopyImageTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 	for (size_t compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest; ++compatibleFormatsIndex)
 	{
 		const VkFormat*	compatibleFormats	= colorImageFormatsToTest[compatibleFormatsIndex];
-		for (size_t srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_LAST; ++srcFormatIndex)
+		for (size_t srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
 		{
 			params.src.image.format	= compatibleFormats[srcFormatIndex];
-			for (size_t dstFormatIndex = 0; compatibleFormats[dstFormatIndex] != VK_FORMAT_LAST; ++dstFormatIndex)
+			for (size_t dstFormatIndex = 0; compatibleFormats[dstFormatIndex] != VK_FORMAT_UNDEFINED; ++dstFormatIndex)
 			{
 				params.dst.image.format	= compatibleFormats[dstFormatIndex];
 				std::ostringstream	testName;
@@ -2982,7 +2982,7 @@ void addBlittingTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 		VK_FORMAT_R64G64B64_UINT,
 		VK_FORMAT_R64G64B64A64_UINT,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	};
 	const VkFormat	compatibleFormatsSInts[]			=
 	{
@@ -3008,7 +3008,7 @@ void addBlittingTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 		VK_FORMAT_R64G64B64_SINT,
 		VK_FORMAT_R64G64B64A64_SINT,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	};
 	const VkFormat	compatibleFormatsFloats[]			=
 	{
@@ -3119,7 +3119,7 @@ void addBlittingTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 //		VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
 //		VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	};
 	const VkFormat	compatibleFormatsSrgb[]				=
 	{
@@ -3153,7 +3153,7 @@ void addBlittingTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 //		VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
 //		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
 
-		VK_FORMAT_LAST
+		VK_FORMAT_UNDEFINED
 	};
 
 	const struct {
@@ -3172,10 +3172,10 @@ void addBlittingTestsAllFormats (tcu::TestCaseGroup*	testCaseGroup,
 	{
 		const VkFormat*	compatibleFormats	= colorImageFormatsToTest[compatibleFormatsIndex].compatibleFormats;
 		const bool		onlyNearest			= colorImageFormatsToTest[compatibleFormatsIndex].onlyNearest;
-		for (size_t srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_LAST; ++srcFormatIndex)
+		for (size_t srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
 		{
 			params.src.image.format	= compatibleFormats[srcFormatIndex];
-			for (size_t dstFormatIndex = 0; compatibleFormats[dstFormatIndex] != VK_FORMAT_LAST; ++dstFormatIndex)
+			for (size_t dstFormatIndex = 0; compatibleFormats[dstFormatIndex] != VK_FORMAT_UNDEFINED; ++dstFormatIndex)
 			{
 				params.dst.image.format	= compatibleFormats[dstFormatIndex];
 				std::ostringstream	testName;
