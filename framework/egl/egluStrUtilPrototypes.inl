@@ -10,6 +10,8 @@ const char*							getErrorName				(int value);
 const char*							getContextAttribName		(int value);
 const char*							getConfigAttribName			(int value);
 const char*							getSurfaceAttribName		(int value);
+const char*							getYuvOrderName				(int value);
+const char*							getYuvPlaneBppName			(int value);
 const char*							getSurfaceTargetName		(int value);
 const char*							getColorBufferTypeName		(int value);
 const char*							getConfigCaveatName			(int value);
@@ -30,6 +32,8 @@ inline tcu::Format::Enum<int, 2>	getErrorStr					(int value)		{ return tcu::Form
 inline tcu::Format::Enum<int, 2>	getContextAttribStr			(int value)		{ return tcu::Format::Enum<int, 2>(getContextAttribName, value); }
 inline tcu::Format::Enum<int, 2>	getConfigAttribStr			(int value)		{ return tcu::Format::Enum<int, 2>(getConfigAttribName, value); }
 inline tcu::Format::Enum<int, 2>	getSurfaceAttribStr			(int value)		{ return tcu::Format::Enum<int, 2>(getSurfaceAttribName, value); }
+inline tcu::Format::Enum<int, 2>	getYuvOrderStr				(int value)		{ return tcu::Format::Enum<int, 2>(getYuvOrderName, value); }
+inline tcu::Format::Enum<int, 2>	getYuvPlaneBppStr			(int value)		{ return tcu::Format::Enum<int, 2>(getYuvPlaneBppName, value); }
 inline tcu::Format::Enum<int, 2>	getSurfaceTargetStr			(int value)		{ return tcu::Format::Enum<int, 2>(getSurfaceTargetName, value); }
 inline tcu::Format::Enum<int, 2>	getColorBufferTypeStr		(int value)		{ return tcu::Format::Enum<int, 2>(getColorBufferTypeName, value); }
 inline tcu::Format::Enum<int, 2>	getConfigCaveatStr			(int value)		{ return tcu::Format::Enum<int, 2>(getConfigCaveatName, value); }
