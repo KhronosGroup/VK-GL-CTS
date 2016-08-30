@@ -29,6 +29,8 @@
 #include "eglwLibrary.hpp"
 #include "eglwEnums.hpp"
 
+#include "deSTLUtil.hpp"
+
 #include <algorithm>
 #include <vector>
 #include <map>
@@ -111,6 +113,35 @@ private:
 		}
 	}
 
+	static int getYuvOrderRank (EGLenum order)
+	{
+		switch (order)
+		{
+			case EGL_NONE:					return 0;
+			case EGL_YUV_ORDER_YUV_EXT:		return 1;
+			case EGL_YUV_ORDER_YVU_EXT:		return 2;
+			case EGL_YUV_ORDER_YUYV_EXT:	return 3;
+			case EGL_YUV_ORDER_YVYU_EXT:	return 4;
+			case EGL_YUV_ORDER_UYVY_EXT:	return 5;
+			case EGL_YUV_ORDER_VYUY_EXT:	return 6;
+			case EGL_YUV_ORDER_AYUV_EXT:	return 7;
+			default:
+				TCU_THROW(TestError, (std::string("Unknown YUV order: ") + eglu::getYuvOrderStr(order).toString()).c_str());
+		}
+	}
+
+	static int getYuvPlaneBppValue (EGLenum bpp)
+	{
+		switch (bpp)
+		{
+			case EGL_YUV_PLANE_BPP_0_EXT:	return 0;
+			case EGL_YUV_PLANE_BPP_8_EXT:	return 8;
+			case EGL_YUV_PLANE_BPP_10_EXT:	return 10;
+			default:
+				TCU_THROW(TestError, (std::string("Unknown YUV plane BPP: ") + eglu::getYuvPlaneBppStr(bpp).toString()).c_str());
+		}
+	}
+
 	typedef bool (*CompareFunc) (const SurfaceConfig& a, const SurfaceConfig& b);
 
 	static bool compareCaveat (const SurfaceConfig& a, const SurfaceConfig& b)
@@ -123,7 +154,12 @@ private:
 		return getColorBufferTypeRank((EGLenum)a.m_info.colorBufferType) < getColorBufferTypeRank((EGLenum)b.m_info.colorBufferType);
 	}
 
-	static bool compareColorBufferBits (const SurfaceConfig& a, const SurfaceConfig& b, const tcu::BVec4& specifiedRGBColors, const tcu::BVec2& specifiedLuminanceColors)
+	static bool compareYuvOrder (const SurfaceConfig& a, const SurfaceConfig& b)
+	{
+		return getYuvOrderRank((EGLenum)a.m_info.yuvOrder) < getYuvOrderRank((EGLenum)b.m_info.yuvOrder);
+	}
+
+	static bool compareColorBufferBits (const SurfaceConfig& a, const SurfaceConfig& b, const tcu::BVec4& specifiedRGBColors, const tcu::BVec2& specifiedLuminanceColors, bool yuvPlaneBppSpecified)
 	{
 		DE_ASSERT(a.m_info.colorBufferType == b.m_info.colorBufferType);
 		switch (a.m_info.colorBufferType)
@@ -144,8 +180,7 @@ private:
 			}
 
 			case EGL_YUV_BUFFER_EXT:
-				// \todo [mika 2015-05-05] Sort YUV configs correctly. Currently all YUV configs are non-conformant and ordering can be relaxed.
-				return true;
+				return yuvPlaneBppSpecified ? (a.m_info.yuvPlaneBpp > b.m_info.yuvPlaneBpp) : false;
 
 			default:
 				DE_ASSERT(DE_FALSE);
@@ -177,7 +212,9 @@ public:
 
 	friend bool operator== (const SurfaceConfig& a, const SurfaceConfig& b)
 	{
-		for (std::map<EGLenum, AttribRule>::const_iterator iter = SurfaceConfig::defaultRules.begin(); iter != SurfaceConfig::defaultRules.end(); iter++)
+		const std::map<EGLenum, AttribRule> defaultRules = getDefaultRules();
+
+		for (std::map<EGLenum, AttribRule>::const_iterator iter = defaultRules.begin(); iter != defaultRules.end(); iter++)
 		{
 			const EGLenum attribute = iter->first;
 
@@ -186,7 +223,7 @@ public:
 		return true;
 	}
 
-	bool compareTo (const SurfaceConfig& b, const tcu::BVec4& specifiedRGBColors, const tcu::BVec2& specifiedLuminanceColors) const
+	bool compareTo (const SurfaceConfig& b, const tcu::BVec4& specifiedRGBColors, const tcu::BVec2& specifiedLuminanceColors, bool yuvPlaneBppSpecified) const
 	{
 		static const SurfaceConfig::CompareFunc compareFuncs[] =
 		{
@@ -199,6 +236,7 @@ public:
 			SurfaceConfig::compareAttributeSmaller<EGL_DEPTH_SIZE>,
 			SurfaceConfig::compareAttributeSmaller<EGL_STENCIL_SIZE>,
 			SurfaceConfig::compareAttributeSmaller<EGL_ALPHA_MASK_SIZE>,
+			SurfaceConfig::compareYuvOrder,
 			SurfaceConfig::compareAttributeSmaller<EGL_CONFIG_ID>
 		};
 
@@ -209,9 +247,9 @@ public:
 		{
 			if (!compareFuncs[ndx])
 			{
-				if (compareColorBufferBits(*this, b, specifiedRGBColors, specifiedLuminanceColors))
+				if (compareColorBufferBits(*this, b, specifiedRGBColors, specifiedLuminanceColors, yuvPlaneBppSpecified))
 					return true;
-				else if (compareColorBufferBits(b, *this, specifiedRGBColors, specifiedLuminanceColors))
+				else if (compareColorBufferBits(b, *this, specifiedRGBColors, specifiedLuminanceColors, yuvPlaneBppSpecified))
 					return false;
 
 				continue;
@@ -226,9 +264,7 @@ public:
 		TCU_FAIL("Unable to compare configs - duplicate ID?");
 	}
 
-	static const std::map<EGLenum, AttribRule> defaultRules;
-
-	static std::map<EGLenum, AttribRule> initAttribRules (void)
+	static std::map<EGLenum, AttribRule> getDefaultRules (void)
 	{
 		// \todo [2011-03-24 pyry] From EGL 1.4 spec - check that this is valid for other versions as well
 		std::map<EGLenum, AttribRule> rules;
@@ -263,6 +299,14 @@ public:
 		rules[EGL_TRANSPARENT_GREEN_VALUE]	= AttribRule(EGL_TRANSPARENT_GREEN_VALUE,	EGL_DONT_CARE,		CRITERIA_EXACT,		SORTORDER_NONE);
 		rules[EGL_TRANSPARENT_BLUE_VALUE]	= AttribRule(EGL_TRANSPARENT_BLUE_VALUE,	EGL_DONT_CARE,		CRITERIA_EXACT,		SORTORDER_NONE);
 
+		// EGL_EXT_yuv_surface
+		rules[EGL_YUV_ORDER_EXT]			= AttribRule(EGL_YUV_ORDER_EXT,				EGL_DONT_CARE,		CRITERIA_EXACT,		SORTORDER_SPECIAL);
+		rules[EGL_YUV_NUMBER_OF_PLANES_EXT]	= AttribRule(EGL_YUV_NUMBER_OF_PLANES_EXT,	EGL_DONT_CARE,		CRITERIA_EXACT,		SORTORDER_NONE);
+		rules[EGL_YUV_SUBSAMPLE_EXT]		= AttribRule(EGL_YUV_SUBSAMPLE_EXT,			EGL_DONT_CARE,		CRITERIA_EXACT,		SORTORDER_NONE);
+		rules[EGL_YUV_DEPTH_RANGE_EXT]		= AttribRule(EGL_YUV_DEPTH_RANGE_EXT,		EGL_DONT_CARE,		CRITERIA_EXACT,		SORTORDER_NONE);
+		rules[EGL_YUV_CSC_STANDARD_EXT]		= AttribRule(EGL_YUV_CSC_STANDARD_EXT,		EGL_DONT_CARE,		CRITERIA_EXACT,		SORTORDER_NONE);
+		rules[EGL_YUV_PLANE_BPP_EXT]		= AttribRule(EGL_YUV_PLANE_BPP_EXT,			EGL_DONT_CARE,		CRITERIA_AT_LEAST,	SORTORDER_SPECIAL);	//	3
+
 		return rules;
 	}
 private:
@@ -270,25 +314,25 @@ private:
 	ConfigInfo m_info;
 };
 
-const std::map<EGLenum, AttribRule> SurfaceConfig::defaultRules = SurfaceConfig::initAttribRules();
-
 class CompareConfigs
 {
 public:
-	CompareConfigs (const tcu::BVec4& specifiedRGBColors, const tcu::BVec2& specifiedLuminanceColors)
+	CompareConfigs (const tcu::BVec4& specifiedRGBColors, const tcu::BVec2& specifiedLuminanceColors, bool yuvPlaneBppSpecified)
 		: m_specifiedRGBColors			(specifiedRGBColors)
 		, m_specifiedLuminanceColors	(specifiedLuminanceColors)
+		, m_yuvPlaneBppSpecified		(yuvPlaneBppSpecified)
 	{
 	}
 
 	bool operator() (const SurfaceConfig& a, const SurfaceConfig& b)
 	{
-		return a.compareTo(b, m_specifiedRGBColors, m_specifiedLuminanceColors);
+		return a.compareTo(b, m_specifiedRGBColors, m_specifiedLuminanceColors, m_yuvPlaneBppSpecified);
 	}
 
 private:
 	const tcu::BVec4	m_specifiedRGBColors;
 	const tcu::BVec2	m_specifiedLuminanceColors;
+	const bool			m_yuvPlaneBppSpecified;
 };
 
 class ConfigFilter
@@ -297,13 +341,13 @@ private:
 	std::map<EGLenum, AttribRule> m_rules;
 public:
 	ConfigFilter ()
-		: m_rules(SurfaceConfig::defaultRules)
+		: m_rules(SurfaceConfig::getDefaultRules())
 	{
 	}
 
 	void setValue (EGLenum name, EGLint value)
 	{
-		DE_ASSERT(SurfaceConfig::defaultRules.find(name) != SurfaceConfig::defaultRules.end());
+		DE_ASSERT(de::contains(m_rules, name));
 		m_rules[name].value = value;
 	}
 
@@ -318,13 +362,13 @@ public:
 		}
 	}
 
-	AttribRule getAttribute (EGLenum name)
+	AttribRule getAttribute (EGLenum name) const
 	{
-		DE_ASSERT(SurfaceConfig::defaultRules.find(name) != SurfaceConfig::defaultRules.end());
-		return m_rules[name];
+		DE_ASSERT(de::contains(m_rules, name));
+		return m_rules.find(name)->second;
 	}
 
-	bool isMatch (const SurfaceConfig& config)
+	bool isMatch (const SurfaceConfig& config) const
 	{
 		for (std::map<EGLenum, AttribRule>::const_iterator iter = m_rules.begin(); iter != m_rules.end(); iter++)
 		{
@@ -366,7 +410,7 @@ public:
 		return true;
 	}
 
-	tcu::BVec4 getSpecifiedRGBColors (void)
+	tcu::BVec4 getSpecifiedRGBColors (void) const
 	{
 		const EGLenum bitAttribs[] =
 		{
@@ -392,7 +436,7 @@ public:
 		return result;
 	}
 
-	tcu::BVec2 getSpecifiedLuminanceColors (void)
+	tcu::BVec2 getSpecifiedLuminanceColors (void) const
 	{
 		const EGLenum bitAttribs[] =
 		{
@@ -416,7 +460,15 @@ public:
 		return result;
 	}
 
-	std::vector<SurfaceConfig> filter (const std::vector<SurfaceConfig>& configs)
+	bool isYuvPlaneBppSpecified (void) const
+	{
+		const EGLenum	attrib	= EGL_YUV_PLANE_BPP_EXT;
+		const EGLint	value	= getAttribute(attrib).value;
+
+		return (value != 0) && (value != EGL_DONT_CARE);
+	}
+
+	std::vector<SurfaceConfig> filter (const std::vector<SurfaceConfig>& configs) const
 	{
 		std::vector<SurfaceConfig> out;
 
@@ -434,11 +486,15 @@ void chooseConfigReference (const Library& egl, EGLDisplay display, std::vector<
 	// Get all configs
 	std::vector<EGLConfig> eglConfigs = eglu::getConfigs(egl, display);
 
-	// Config infos
+	// Config infos - including extension attributes
 	std::vector<ConfigInfo> configInfos;
 	configInfos.resize(eglConfigs.size());
+
 	for (size_t ndx = 0; ndx < eglConfigs.size(); ndx++)
-		eglu::queryConfigInfo(egl, display, eglConfigs[ndx], &configInfos[ndx]);
+	{
+		eglu::queryCoreConfigInfo(egl, display, eglConfigs[ndx], &configInfos[ndx]);
+		eglu::queryExtConfigInfo(egl, display, eglConfigs[ndx], &configInfos[ndx]);
+	}
 
 	// Pair configs with info
 	std::vector<SurfaceConfig> configs;
@@ -452,7 +508,7 @@ void chooseConfigReference (const Library& egl, EGLDisplay display, std::vector<
 	std::vector<SurfaceConfig> filteredConfigs = configFilter.filter(configs);
 
 	// Sort configs
-	std::sort(filteredConfigs.begin(), filteredConfigs.end(), CompareConfigs(configFilter.getSpecifiedRGBColors(), configFilter.getSpecifiedLuminanceColors()));
+	std::sort(filteredConfigs.begin(), filteredConfigs.end(), CompareConfigs(configFilter.getSpecifiedRGBColors(), configFilter.getSpecifiedLuminanceColors(), configFilter.isYuvPlaneBppSpecified()));
 
 	// Write to dst list
 	dst.resize(filteredConfigs.size());
