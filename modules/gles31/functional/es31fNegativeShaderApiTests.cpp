@@ -517,20 +517,24 @@ void program_binary (NegativeTestContext& ctx)
 	ctx.glGetProgramiv		(srcProgram.getProgram(), GL_LINK_STATUS,			&linkStatus);
 	ctx.getLog() << TestLog::Message << "// GL_PROGRAM_BINARY_LENGTH = " << bufSize << TestLog::EndMessage;
 	ctx.getLog() << TestLog::Message << "// GL_LINK_STATUS = " << linkStatus << TestLog::EndMessage;
-	TCU_CHECK(bufSize > 0);
-	binaryBuf.resize(bufSize);
-	ctx.glGetProgramBinary	(srcProgram.getProgram(), bufSize, &binaryLength, &binaryFormat, &binaryBuf[0]);
-	ctx.expectError		(GL_NO_ERROR);
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if program is not the name of an existing program object.");
-	ctx.glProgramBinary		(dummyShader, binaryFormat, &binaryBuf[0], binaryLength);
-	ctx.expectError		(GL_INVALID_OPERATION);
-	ctx.endSection();
+	TCU_CHECK(bufSize >= 0);
+	if (bufSize > 0)
+	{
+		binaryBuf.resize(bufSize);
+		ctx.glGetProgramBinary	(srcProgram.getProgram(), bufSize, &binaryLength, &binaryFormat, &binaryBuf[0]);
+		ctx.expectError			(GL_NO_ERROR);
 
-	ctx.beginSection("GL_INVALID_ENUM is generated if binaryFormat is not a value recognized by the implementation.");
-	ctx.glProgramBinary		(dstProgram, -1, &binaryBuf[0], binaryLength);
-	ctx.expectError		(GL_INVALID_ENUM);
-	ctx.endSection();
+		ctx.beginSection("GL_INVALID_OPERATION is generated if program is not the name of an existing program object.");
+		ctx.glProgramBinary		(dummyShader, binaryFormat, &binaryBuf[0], binaryLength);
+		ctx.expectError			(GL_INVALID_OPERATION);
+		ctx.endSection();
+
+		ctx.beginSection("GL_INVALID_ENUM is generated if binaryFormat is not a value recognized by the implementation.");
+		ctx.glProgramBinary		(dstProgram, -1, &binaryBuf[0], binaryLength);
+		ctx.expectError			(GL_INVALID_ENUM);
+		ctx.endSection();
+	}
 
 	ctx.glDeleteShader(dummyShader);
 	ctx.glDeleteProgram(dstProgram);
