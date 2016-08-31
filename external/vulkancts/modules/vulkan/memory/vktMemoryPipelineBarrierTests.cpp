@@ -44,8 +44,9 @@
 #include "deStringUtil.hpp"
 #include "deRandom.hpp"
 
-#include "deMemory.h"
+#include "deInt32.h"
 #include "deMath.h"
+#include "deMemory.h"
 
 #include <map>
 #include <set>
@@ -55,6 +56,8 @@
 
 using tcu::TestLog;
 using tcu::Maybe;
+
+using de::MovePtr;
 
 using std::string;
 using std::vector;
@@ -1055,7 +1058,7 @@ private:
 	const vk::VkDevice								m_device;
 	const vk::VkQueue								m_queue;
 	const deUint32									m_queueFamilyIndex;
-	const vector<pair<deUint32, vk::VkQueue> >&		m_queues;
+	const vector<pair<deUint32, vk::VkQueue> >		m_queues;
 	const vk::Unique<vk::VkCommandPool>				m_commandPool;
 	const vk::ProgramCollection<vk::ProgramBinary>&	m_binaryCollection;
 	vector<deUint32>								m_queueFamilies;
@@ -2017,7 +2020,6 @@ void PipelineBarrier::submit (SubmitContext& context)
 	const vk::DeviceInterface&	vkd	= context.getContext().getDeviceInterface();
 	const vk::VkCommandBuffer	cmd	= context.getCommandBuffer();
 
-	// \todo [2016-01-08 pyry] This could be cleaned up thanks to latest API changes
 	switch (m_type)
 	{
 		case TYPE_GLOBAL:
@@ -5752,12 +5754,12 @@ public:
 				RenderVertexStorageImage	(void) {}
 				~RenderVertexStorageImage	(void);
 
-	const char*	getName							(void) const { return "RenderVertexStorageImage"; }
-	void		logPrepare						(TestLog&, size_t) const;
-	void		logSubmit						(TestLog&, size_t) const;
-	void		prepare							(PrepareRenderPassContext&);
-	void		submit							(SubmitContext& context);
-	void		verify							(VerifyRenderPassContext&, size_t);
+	const char*	getName						(void) const { return "RenderVertexStorageImage"; }
+	void		logPrepare					(TestLog&, size_t) const;
+	void		logSubmit					(TestLog&, size_t) const;
+	void		prepare						(PrepareRenderPassContext&);
+	void		submit						(SubmitContext& context);
+	void		verify						(VerifyRenderPassContext&, size_t);
 
 private:
 	PipelineResources				m_resources;
@@ -7723,12 +7725,12 @@ void createCommands (vector<Command*>&			commands,
 					 deUint32					seed,
 					 const Memory&				memory,
 					 Usage						usage,
-					 vk::VkSharingMode			sharingMode)
+					 vk::VkSharingMode			sharingMode,
+					 size_t						opCount)
 {
-	const size_t		opCount		= 100;
-	State				state		(usage, seed);
+	State			state		(usage, seed);
 	// Used to select next operation only
-	de::Random			nextOpRng	(seed ^ 12930809);
+	de::Random		nextOpRng	(seed ^ 12930809);
 
 	commands.reserve(opCount);
 
@@ -7775,177 +7777,110 @@ void createCommands (vector<Command*>&			commands,
 	}
 }
 
-void testCommand (TestLog&											log,
-				  tcu::ResultCollector&								resultCollector,
-				  const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection,
-				  const vk::InstanceInterface&						vki,
-				  const vk::DeviceInterface&						vkd,
-				  vk::VkPhysicalDevice								physicalDevice,
-				  vk::VkDevice										device,
-				  vk::VkDeviceSize									size,
-				  deUint32											memoryTypeIndex,
-				  Usage												usage,
-				  vk::VkSharingMode									sharingMode,
-				  vk::VkQueue										executionQueue,
-				  deUint32											executionQueueFamily,
-				  const vector<deUint32>&							queueFamilies,
-				  const vk::VkDeviceSize							maxBufferSize,
-				  const IVec2										maxImageSize)
-{
-	const deUint32							seed			= 2830980989u;
-	Memory									memory			(vki, vkd, physicalDevice, device, size, memoryTypeIndex, maxBufferSize, maxImageSize[0], maxImageSize[1]);
-	vector<Command*>						commands;
-	vector<pair<deUint32, vk::VkQueue> >	queues;
-
-	try
-	{
-		log << TestLog::Message << "Create commands" << TestLog::EndMessage;
-		createCommands(commands, seed, memory, usage, sharingMode);
-
-		for (size_t queueNdx = 0; queueNdx < queueFamilies.size(); queueNdx++)
-		{
-			vk::VkQueue queue;
-
-			vkd.getDeviceQueue(device, queueFamilies[queueNdx], 0, &queue);
-			queues.push_back(std::make_pair(queueFamilies[queueNdx], queue));
-		}
-
-		{
-			const tcu::ScopedLogSection section (log, "LogPrepare", "LogPrepare");
-
-			for (size_t cmdNdx = 0; cmdNdx < commands.size(); cmdNdx++)
-				commands[cmdNdx]->logPrepare(log, cmdNdx);
-		}
-
-		{
-			const tcu::ScopedLogSection section (log, "LogExecute", "LogExecute");
-
-			for (size_t cmdNdx = 0; cmdNdx < commands.size(); cmdNdx++)
-				commands[cmdNdx]->logExecute(log, cmdNdx);
-		}
-
-		{
-			const Context context (vki, vkd, physicalDevice, device, executionQueue, executionQueueFamily, queues, binaryCollection);
-
-			try
-			{
-				{
-					PrepareContext	prepareContext	(context, memory);
-
-					log << TestLog::Message << "Begin prepare" << TestLog::EndMessage;
-
-					for (size_t cmdNdx = 0; cmdNdx < commands.size(); cmdNdx++)
-					{
-						Command& command = *commands[cmdNdx];
-
-						try
-						{
-							command.prepare(prepareContext);
-						}
-						catch (...)
-						{
-							resultCollector.fail(de::toString(cmdNdx) + ":" + command.getName() + " failed to prepare for execution");
-							throw;
-						}
-					}
-
-					ExecuteContext	executeContext	(context);
-
-					log << TestLog::Message << "Begin execution" << TestLog::EndMessage;
-
-					for (size_t cmdNdx = 0; cmdNdx < commands.size(); cmdNdx++)
-					{
-						Command& command = *commands[cmdNdx];
-
-						try
-						{
-							command.execute(executeContext);
-						}
-						catch (...)
-						{
-							resultCollector.fail(de::toString(cmdNdx) + ":" + command.getName() + " failed to execute");
-							throw;
-						}
-					}
-
-					VK_CHECK(vkd.deviceWaitIdle(device));
-				}
-
-				{
-					const tcu::ScopedLogSection	section			(log, "Verify", "Verify");
-					VerifyContext				verifyContext	(log, resultCollector, context, size);
-
-					log << TestLog::Message << "Begin verify" << TestLog::EndMessage;
-
-					for (size_t cmdNdx = 0; cmdNdx < commands.size(); cmdNdx++)
-					{
-						Command& command = *commands[cmdNdx];
-
-						try
-						{
-							command.verify(verifyContext, cmdNdx);
-						}
-						catch (...)
-						{
-							resultCollector.fail(de::toString(cmdNdx) + ":" + command.getName() + " failed verification");
-							throw;
-						}
-					}
-				}
-
-				for (size_t commandNdx = 0; commandNdx < commands.size(); commandNdx++)
-				{
-					delete commands[commandNdx];
-					commands[commandNdx] = DE_NULL;
-				}
-			}
-			catch (...)
-			{
-				for (size_t commandNdx = 0; commandNdx < commands.size(); commandNdx++)
-				{
-					delete commands[commandNdx];
-					commands[commandNdx] = DE_NULL;
-				}
-
-				throw;
-			}
-		}
-	}
-	catch (...)
-	{
-		for (size_t commandNdx = 0; commandNdx < commands.size(); commandNdx++)
-		{
-			delete commands[commandNdx];
-			commands[commandNdx] = DE_NULL;
-		}
-
-		throw;
-	}
-}
-
 class MemoryTestInstance : public TestInstance
 {
 public:
 
-						MemoryTestInstance	(::vkt::Context& context, const TestConfig& config);
+	typedef bool(MemoryTestInstance::*StageFunc)(void);
 
-	tcu::TestStatus		iterate				(void);
+												MemoryTestInstance	(::vkt::Context& context, const TestConfig& config);
+												~MemoryTestInstance	(void);
+
+	tcu::TestStatus								iterate				(void);
 
 private:
 	const TestConfig							m_config;
+	const size_t								m_iterationCount;
+	const size_t								m_opCount;
 	const vk::VkPhysicalDeviceMemoryProperties	m_memoryProperties;
 	deUint32									m_memoryTypeNdx;
+	size_t										m_iteration;
+	StageFunc									m_stage;
 	tcu::ResultCollector						m_resultCollector;
+
+	vector<Command*>							m_commands;
+	MovePtr<Memory>								m_memory;
+	MovePtr<Context>							m_renderContext;
+	MovePtr<PrepareContext>						m_prepareContext;
+
+	bool										nextIteration					(void);
+	bool										nextMemoryType					(void);
+
+	bool										createCommandsAndAllocateMemory	(void);
+	bool										prepare							(void);
+	bool										execute							(void);
+	bool										verify							(void);
+	void										resetResources					(void);
 };
+
+void MemoryTestInstance::resetResources (void)
+{
+	const vk::DeviceInterface&	vkd		= m_context.getDeviceInterface();
+	const vk::VkDevice			device	= m_context.getDevice();
+
+	VK_CHECK(vkd.deviceWaitIdle(device));
+
+	for (size_t commandNdx = 0; commandNdx < m_commands.size(); commandNdx++)
+	{
+		delete m_commands[commandNdx];
+		m_commands[commandNdx] = DE_NULL;
+	}
+
+	m_commands.clear();
+	m_prepareContext.clear();
+	m_memory.clear();
+}
+
+bool MemoryTestInstance::nextIteration (void)
+{
+	m_iteration++;
+
+	if (m_iteration < m_iterationCount)
+	{
+		resetResources();
+		m_stage = &MemoryTestInstance::createCommandsAndAllocateMemory;
+		return true;
+	}
+	else
+		return nextMemoryType();
+}
+
+bool MemoryTestInstance::nextMemoryType (void)
+{
+	resetResources();
+
+	DE_ASSERT(m_commands.empty());
+
+	m_memoryTypeNdx++;
+
+	if (m_memoryTypeNdx < m_memoryProperties.memoryTypeCount)
+	{
+		m_iteration	= 0;
+		m_stage		= &MemoryTestInstance::createCommandsAndAllocateMemory;
+
+		return true;
+	}
+	else
+	{
+		m_stage = DE_NULL;
+		return false;
+	}
+}
 
 MemoryTestInstance::MemoryTestInstance (::vkt::Context& context, const TestConfig& config)
 	: TestInstance			(context)
 	, m_config				(config)
+	, m_iterationCount		(5)
+	, m_opCount				(50)
 	, m_memoryProperties	(vk::getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
 	, m_memoryTypeNdx		(0)
+	, m_iteration			(0)
+	, m_stage				(&MemoryTestInstance::createCommandsAndAllocateMemory)
 	, m_resultCollector		(context.getTestContext().getLog())
+
+	, m_memory				(DE_NULL)
 {
-	TestLog&	log		= context.getTestContext().getLog();
+	TestLog&	log	= context.getTestContext().getLog();
 	{
 		const tcu::ScopedLogSection section (log, "TestCaseInfo", "Test Case Info");
 
@@ -7973,72 +7908,188 @@ MemoryTestInstance::MemoryTestInstance (::vkt::Context& context, const TestConfi
 			log << TestLog::Message << "Heap: " << m_memoryProperties.memoryTypes[memoryTypeNdx].heapIndex << TestLog::EndMessage;
 		}
 	}
+
+	{
+		const vk::InstanceInterface&			vki					= context.getInstanceInterface();
+		const vk::VkPhysicalDevice				physicalDevice		= context.getPhysicalDevice();
+		const vk::DeviceInterface&				vkd					= context.getDeviceInterface();
+		const vk::VkDevice						device				= context.getDevice();
+		const vk::VkQueue						queue				= context.getUniversalQueue();
+		const deUint32							queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+		vector<pair<deUint32, vk::VkQueue> >	queues;
+
+		queues.push_back(std::make_pair(queueFamilyIndex, queue));
+
+		m_renderContext = MovePtr<Context>(new Context(vki, vkd, physicalDevice, device, queue, queueFamilyIndex, queues, context.getBinaryCollection()));
+	}
+}
+
+MemoryTestInstance::~MemoryTestInstance (void)
+{
+	resetResources();
+}
+
+bool MemoryTestInstance::createCommandsAndAllocateMemory (void)
+{
+	const vk::VkDevice							device				= m_context.getDevice();
+	TestLog&									log					= m_context.getTestContext().getLog();
+	const vk::InstanceInterface&				vki					= m_context.getInstanceInterface();
+	const vk::VkPhysicalDevice					physicalDevice		= m_context.getPhysicalDevice();
+	const vk::DeviceInterface&					vkd					= m_context.getDeviceInterface();
+	const vk::VkPhysicalDeviceMemoryProperties	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+	const tcu::ScopedLogSection					section				(log, "MemoryType" + de::toString(m_memoryTypeNdx) + "CreateCommands" + de::toString(m_iteration),
+																		  "Memory type " + de::toString(m_memoryTypeNdx) + " create commands iteration " + de::toString(m_iteration));
+	const vector<deUint32>&						queues				= m_renderContext->getQueueFamilies();
+
+	DE_ASSERT(m_commands.empty());
+
+	if (m_config.usage & (USAGE_HOST_READ | USAGE_HOST_WRITE)
+		&& !(memoryProperties.memoryTypes[m_memoryTypeNdx].propertyFlags & vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
+	{
+		log << TestLog::Message << "Memory type not supported" << TestLog::EndMessage;
+
+		return nextMemoryType();
+	}
+	else
+	{
+		try
+		{
+			const vk::VkBufferUsageFlags	bufferUsage		= usageToBufferUsageFlags(m_config.usage);
+			const vk::VkImageUsageFlags		imageUsage		= usageToImageUsageFlags(m_config.usage);
+			const vk::VkDeviceSize			maxBufferSize	= bufferUsage != 0
+															? roundBufferSizeToWxHx4(findMaxBufferSize(vkd, device, bufferUsage, m_config.sharing, queues, m_config.size, m_memoryTypeNdx))
+															: 0;
+			const IVec2						maxImageSize	= imageUsage != 0
+															? findMaxRGBA8ImageSize(vkd, device, imageUsage, m_config.sharing, queues, m_config.size, m_memoryTypeNdx)
+															: IVec2(0, 0);
+
+			log << TestLog::Message << "Max buffer size: " << maxBufferSize << TestLog::EndMessage;
+			log << TestLog::Message << "Max RGBA8 image size: " << maxImageSize << TestLog::EndMessage;
+
+			// Skip tests if there are no supported operations
+			if (maxBufferSize == 0
+				&& maxImageSize[0] == 0
+				&& (m_config.usage & (USAGE_HOST_READ|USAGE_HOST_WRITE)) == 0)
+			{
+				log << TestLog::Message << "Skipping memory type. None of the usages are supported." << TestLog::EndMessage;
+
+				return nextMemoryType();
+			}
+			else
+			{
+				const deUint32	seed	= 2830980989u ^ deUint32Hash((deUint32)(m_iteration) * m_memoryProperties.memoryTypeCount +  m_memoryTypeNdx);
+
+				m_memory	= MovePtr<Memory>(new Memory(vki, vkd, physicalDevice, device, m_config.size, m_memoryTypeNdx, maxBufferSize, maxImageSize[0], maxImageSize[1]));
+
+				log << TestLog::Message << "Create commands" << TestLog::EndMessage;
+				createCommands(m_commands, seed, *m_memory, m_config.usage, m_config.sharing, m_opCount);
+
+				m_stage = &MemoryTestInstance::prepare;
+				return true;
+			}
+		}
+		catch (const tcu::TestError& e)
+		{
+			m_resultCollector.fail("Failed, got exception: " + string(e.getMessage()));
+			return nextMemoryType();
+		}
+	}
+}
+
+bool MemoryTestInstance::prepare (void)
+{
+	TestLog&					log				= m_context.getTestContext().getLog();
+	const tcu::ScopedLogSection	section			(log, "MemoryType" + de::toString(m_memoryTypeNdx) + "Prepare" + de::toString(m_iteration),
+													  "Memory type " + de::toString(m_memoryTypeNdx) + " prepare iteration" + de::toString(m_iteration));
+
+	m_prepareContext			= MovePtr<PrepareContext>(new PrepareContext(*m_renderContext, *m_memory));
+
+	DE_ASSERT(!m_commands.empty());
+
+	for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
+	{
+		Command& command = *m_commands[cmdNdx];
+
+		try
+		{
+			command.prepare(*m_prepareContext);
+		}
+		catch (const tcu::TestError& e)
+		{
+			m_resultCollector.fail(de::toString(cmdNdx) + ":" + command.getName() + " failed to prepare, got exception: " + string(e.getMessage()));
+			return nextMemoryType();
+		}
+	}
+
+	m_stage = &MemoryTestInstance::execute;
+	return true;
+}
+
+bool MemoryTestInstance::execute (void)
+{
+	TestLog&					log				= m_context.getTestContext().getLog();
+	const tcu::ScopedLogSection	section			(log, "MemoryType" + de::toString(m_memoryTypeNdx) + "Execute" + de::toString(m_iteration),
+													  "Memory type " + de::toString(m_memoryTypeNdx) + " execute iteration " + de::toString(m_iteration));
+	ExecuteContext				executeContext	(*m_renderContext);
+	const vk::VkDevice			device			= m_context.getDevice();
+	const vk::DeviceInterface&	vkd				= m_context.getDeviceInterface();
+
+	DE_ASSERT(!m_commands.empty());
+
+	for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
+	{
+		Command& command = *m_commands[cmdNdx];
+
+		try
+		{
+			command.execute(executeContext);
+		}
+		catch (const tcu::TestError& e)
+		{
+			m_resultCollector.fail(de::toString(cmdNdx) + ":" + command.getName() + " failed to execute, got exception: " + string(e.getMessage()));
+			return nextIteration();
+		}
+	}
+
+	VK_CHECK(vkd.deviceWaitIdle(device));
+
+	m_stage = &MemoryTestInstance::verify;
+	return true;
+}
+
+bool MemoryTestInstance::verify (void)
+{
+	DE_ASSERT(!m_commands.empty());
+
+	TestLog&					log				= m_context.getTestContext().getLog();
+	const tcu::ScopedLogSection	section			(log, "MemoryType" + de::toString(m_memoryTypeNdx) + "Verify" + de::toString(m_iteration),
+													  "Memory type " + de::toString(m_memoryTypeNdx) + " verify iteration " + de::toString(m_iteration));
+	VerifyContext				verifyContext	(log, m_resultCollector, *m_renderContext, m_config.size);
+
+	log << TestLog::Message << "Begin verify" << TestLog::EndMessage;
+
+	for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
+	{
+		Command& command = *m_commands[cmdNdx];
+
+		try
+		{
+			command.verify(verifyContext, cmdNdx);
+		}
+		catch (const tcu::TestError& e)
+		{
+			m_resultCollector.fail(de::toString(cmdNdx) + ":" + command.getName() + " failed to verify, got exception: " + string(e.getMessage()));
+			return nextIteration();
+		}
+	}
+
+	return nextIteration();
 }
 
 tcu::TestStatus MemoryTestInstance::iterate (void)
 {
-	// \todo [2016-03-09 mika] Split different stages over multiple iterations
-	if (m_memoryTypeNdx < m_memoryProperties.memoryTypeCount)
-	{
-		TestLog&									log					= m_context.getTestContext().getLog();
-		const tcu::ScopedLogSection					section				(log, "MemoryType" + de::toString(m_memoryTypeNdx), "Memory type " + de::toString(m_memoryTypeNdx));
-		const vk::InstanceInterface&				vki					= m_context.getInstanceInterface();
-		const vk::VkPhysicalDevice					physicalDevice		= m_context.getPhysicalDevice();
-		const vk::DeviceInterface&					vkd					= m_context.getDeviceInterface();
-		const vk::VkDevice							device				= m_context.getDevice();
-		const vk::VkQueue							queue				= m_context.getUniversalQueue();
-		const deUint32								queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-		const vk::VkPhysicalDeviceMemoryProperties	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice);
-		vector<deUint32>							queues;
-
-		queues.push_back(queueFamilyIndex);
-
-		// \todo [2016-08-04] Check that buffers / images are supported
-		if (m_config.usage & (USAGE_HOST_READ|USAGE_HOST_WRITE)
-			&& !(memoryProperties.memoryTypes[m_memoryTypeNdx].propertyFlags & vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
-		{
-			log << TestLog::Message << "Memory type not supported" << TestLog::EndMessage;
-
-			m_memoryTypeNdx++;
-			return tcu::TestStatus::incomplete();
-		}
-		else
-		{
-			try
-			{
-				const vk::VkBufferUsageFlags	bufferUsage		= usageToBufferUsageFlags(m_config.usage);
-				const vk::VkImageUsageFlags		imageUsage		= usageToImageUsageFlags(m_config.usage);
-				const vk::VkDeviceSize			maxBufferSize	= bufferUsage != 0
-																? roundBufferSizeToWxHx4(findMaxBufferSize(vkd, device, bufferUsage, m_config.sharing, queues, m_config.size, m_memoryTypeNdx))
-																: 0;
-				const IVec2						maxImageSize	= imageUsage != 0
-																? findMaxRGBA8ImageSize(vkd, device, imageUsage, m_config.sharing, queues, m_config.size, m_memoryTypeNdx)
-																: IVec2(0, 0);
-
-				log << TestLog::Message << "Max buffer size: " << maxBufferSize << TestLog::EndMessage;
-				log << TestLog::Message << "Max RGBA8 image size: " << maxImageSize << TestLog::EndMessage;
-
-				// Skip tests if there are no supported operations
-				if (maxBufferSize == 0
-					&& maxImageSize[0] == 0
-					&& (m_config.usage & (USAGE_HOST_READ|USAGE_HOST_WRITE)) == 0)
-				{
-					log << TestLog::Message << "Skipping memory type. None of the usages are supported." << TestLog::EndMessage;
-				}
-				else
-				{
-					testCommand(log, m_resultCollector, m_context.getBinaryCollection(), vki, vkd, physicalDevice, device, m_config.size, m_memoryTypeNdx, m_config.usage, m_config.sharing, queue, queueFamilyIndex, queues, maxBufferSize, maxImageSize);
-				}
-			}
-			catch (const tcu::TestError& e)
-			{
-				m_resultCollector.fail("Failed, got exception: " + string(e.getMessage()));
-			}
-
-			m_memoryTypeNdx++;
-			return tcu::TestStatus::incomplete();
-		}
-	}
+	if ((this->*m_stage)())
+		return tcu::TestStatus::incomplete();
 	else
 		return tcu::TestStatus(m_resultCollector.getResult(), m_resultCollector.getMessage());
 }
