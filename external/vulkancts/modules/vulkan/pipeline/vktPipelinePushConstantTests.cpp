@@ -87,6 +87,24 @@ struct PushConstantData
 	} update;
 };
 
+// These values will be loaded from push constants and used as an index
+static const deUint32 DYNAMIC_VEC_INDEX = 2u;
+static const deUint32 DYNAMIC_MAT_INDEX = 0u;
+static const deUint32 DYNAMIC_ARR_INDEX = 3u;
+
+// These reference values will be compared in the shader to ensure the correct index was read
+static const float DYNAMIC_VEC_CONSTANT = 0.25f;
+static const float DYNAMIC_MAT_CONSTANT = 0.50f;
+static const float DYNAMIC_ARR_CONSTANT = 0.75f;
+
+enum IndexType
+{
+	INDEX_TYPE_CONST_LITERAL = 0,
+	INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR,
+
+	INDEX_TYPE_LAST
+};
+
 class PushConstantGraphicsTest : public vkt::TestCase
 {
 public:
@@ -95,7 +113,8 @@ public:
 														 const std::string&			description,
 														 const deUint32				rangeCount,
 														 const PushConstantData		pushConstantRange[MAX_RANGE_COUNT],
-														 const deBool				multipleUpdate);
+														 const deBool				multipleUpdate,
+														 const IndexType			indexType);
 	virtual					~PushConstantGraphicsTest	(void);
 	virtual void			initPrograms				(SourceCollections& sourceCollections) const;
 	virtual TestInstance*	createInstance				(Context& context) const;
@@ -105,6 +124,7 @@ private:
 	const deUint32			m_rangeCount;
 	PushConstantData		m_pushConstantRange[MAX_RANGE_COUNT];
 	const deBool			m_multipleUpdate;
+	const IndexType			m_indexType;
 };
 
 class PushConstantGraphicsTestInstance : public vkt::TestInstance
@@ -113,7 +133,8 @@ public:
 								PushConstantGraphicsTestInstance	(Context&					context,
 																	 const deUint32				rangeCount,
 																	 const PushConstantData		pushConstantRange[MAX_RANGE_COUNT],
-																	 const deBool				multipleUpdate);
+																	 const deBool				multipleUpdate,
+																	 const IndexType			indexType);
 	virtual						~PushConstantGraphicsTestInstance	(void);
 	virtual tcu::TestStatus		iterate								(void);
 
@@ -134,6 +155,7 @@ private:
 	const deUint32									m_rangeCount;
 	PushConstantData								m_pushConstantRange[MAX_RANGE_COUNT];
 	const deBool									m_multipleUpdate;
+	const IndexType									m_indexType;
 
 	VkImageCreateInfo								m_colorImageCreateInfo;
 	Move<VkImage>									m_colorImage;
@@ -175,10 +197,12 @@ PushConstantGraphicsTest::PushConstantGraphicsTest (tcu::TestContext&			testCont
 													const std::string&			description,
 													const deUint32				rangeCount,
 													const PushConstantData		pushConstantRange[MAX_RANGE_COUNT],
-													const deBool				multipleUpdate)
+													const deBool				multipleUpdate,
+													const IndexType				indexType)
 	: vkt::TestCase		(testContext, name, description)
 	, m_rangeCount		(rangeCount)
 	, m_multipleUpdate	(multipleUpdate)
+	, m_indexType		(indexType)
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
 }
@@ -189,7 +213,7 @@ PushConstantGraphicsTest::~PushConstantGraphicsTest (void)
 
 TestInstance* PushConstantGraphicsTest::createInstance (Context& context) const
 {
-	return new PushConstantGraphicsTestInstance(context, m_rangeCount, m_pushConstantRange, m_multipleUpdate);
+	return new PushConstantGraphicsTestInstance(context, m_rangeCount, m_pushConstantRange, m_multipleUpdate, m_indexType);
 }
 
 RangeSizeCase PushConstantGraphicsTest::getRangeSizeCase (deUint32 rangeSize) const
@@ -231,35 +255,50 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 					  << "out gl_PerVertex { vec4 gl_Position; };\n"
 					  << "layout(push_constant) uniform Material {\n";
 
-			switch (getRangeSizeCase(m_pushConstantRange[rangeNdx].range.size))
+			switch (m_indexType)
 			{
-				case SIZE_CASE_4:
-					vertexSrc << "int kind;\n"
-							  << "} matInst;\n";
+				case INDEX_TYPE_CONST_LITERAL:
+					switch (getRangeSizeCase(m_pushConstantRange[rangeNdx].range.size))
+					{
+						case SIZE_CASE_4:
+							vertexSrc << "int kind;\n"
+									  << "} matInst;\n";
+							break;
+						case SIZE_CASE_16:
+							vertexSrc << "vec4 color;\n"
+									  << "} matInst;\n"
+									  << "layout(std140, binding = 0) uniform UniformBuf {\n"
+									  << "vec4 element;\n"
+									  << "} uniformBuf;\n";
+							break;
+						case SIZE_CASE_32:
+							vertexSrc << "vec4 color[2];\n"
+									  << "} matInst;\n";
+							break;
+						case SIZE_CASE_48:
+							vertexSrc << "int dummy1;\n"
+									  << "vec4 dummy2;\n"
+									  << "vec4 color;\n"
+									  << "} matInst;\n";
+							break;
+						case SIZE_CASE_128:
+							vertexSrc << "vec4 color[8];\n"
+									  << "} matInst;\n";
+							break;
+						default:
+							DE_FATAL("Not implemented yet");
+							break;
+					}
 					break;
-				case SIZE_CASE_16:
-					vertexSrc << "vec4 color;\n"
-							  << "} matInst;\n"
-							  << "layout(std140, binding = 0) uniform UniformBuf {\n"
-							  << "vec4 element;\n"
-							  << "} uniformBuf;\n";
-					break;
-				case SIZE_CASE_32:
-					vertexSrc << "vec4 color[2];\n"
-							  << "} matInst;\n";
-					break;
-				case SIZE_CASE_48:
-					vertexSrc << "int dummy1;\n"
-							  << "vec4 dummy2;\n"
-							  << "vec4 color;\n"
-							  << "} matInst;\n";
-					break;
-				case SIZE_CASE_128:
-					vertexSrc << "vec4 color[8];\n"
+				case INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR:
+					vertexSrc << "    layout(offset = 0)  vec4 index; \n"
+							  << "    layout(offset = 16) vec4 vecType; \n"
+							  << "    layout(offset = 32) mat2 matType; \n"
+							  << "    layout(offset = 48) float[4] arrType; \n"
 							  << "} matInst;\n";
 					break;
 				default:
-					DE_FATAL("Not implemented yet");
+					DE_FATAL("Unhandled IndexType");
 					break;
 			}
 
@@ -267,39 +306,76 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 					  << "{\n"
 					  << "	gl_Position = position;\n";
 
-			switch (getRangeSizeCase(m_pushConstantRange[rangeNdx].range.size))
+			switch (m_indexType)
 			{
-				case SIZE_CASE_4:
-					vertexSrc << "switch (matInst.kind) {\n"
-							  << "case 0: vtxColor = vec4(0.0, 1.0, 0, 1.0); break;\n"
-							  << "case 1: vtxColor = vec4(0.0, 0.0, 1.0, 1.0); break;\n"
-							  << "case 2: vtxColor = vec4(1.0, 0.0, 0, 1.0); break;\n"
-							  << "default: vtxColor = color; break;}\n"
-							  << "}\n";
+				case INDEX_TYPE_CONST_LITERAL:
+					switch (getRangeSizeCase(m_pushConstantRange[rangeNdx].range.size))
+					{
+						case SIZE_CASE_4:
+							vertexSrc << "switch (matInst.kind) {\n"
+									  << "case 0: vtxColor = vec4(0.0, 1.0, 0, 1.0); break;\n"
+									  << "case 1: vtxColor = vec4(0.0, 0.0, 1.0, 1.0); break;\n"
+									  << "case 2: vtxColor = vec4(1.0, 0.0, 0, 1.0); break;\n"
+									  << "default: vtxColor = color; break;}\n"
+									  << "}\n";
+							break;
+						case SIZE_CASE_16:
+							vertexSrc << "vtxColor = (matInst.color + uniformBuf.element) * 0.5;\n"
+									  << "}\n";
+							break;
+						case SIZE_CASE_32:
+							vertexSrc << "vtxColor = (matInst.color[0] + matInst.color[1]) * 0.5;\n"
+									  << "}\n";
+							break;
+						case SIZE_CASE_48:
+							vertexSrc << "vtxColor = matInst.color;\n"
+									  << "}\n";
+							break;
+						case SIZE_CASE_128:
+							vertexSrc << "vec4 color = vec4(0.0, 0, 0, 0.0);\n"
+									  << "for (int i = 0; i < 8; i++)\n"
+									  << "{\n"
+									  << "  color = color + matInst.color[i];\n"
+									  << "}\n"
+									  << "vtxColor = color * 0.125;\n"
+									  << "}\n";
+							break;
+						default:
+							DE_FATAL("Not implemented yet");
+							break;
+					}
 					break;
-				case SIZE_CASE_16:
-					vertexSrc << "vtxColor = (matInst.color + uniformBuf.element) * 0.5;\n"
-							  << "}\n";
-					break;
-				case SIZE_CASE_32:
-					vertexSrc << "vtxColor = (matInst.color[0] + matInst.color[1]) * 0.5;\n"
-							  << "}\n";
-					break;
-				case SIZE_CASE_48:
-					vertexSrc << "vtxColor = matInst.color;\n"
-							  << "}\n";
-					break;
-				case SIZE_CASE_128:
-					vertexSrc << "vec4 color = vec4(0.0, 0, 0, 0.0);\n"
-							  << "for (int i = 0; i < 8; i++)\n"
-							  << "{\n"
-							  << "  color = color + matInst.color[i];\n"
-							  << "}\n"
-							  << "vtxColor = color * 0.125;\n"
-							  << "}\n";
+				case INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR:
+					{
+						vertexSrc << "    vtxColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+								  // Mix in gl_Position to (hopefully) prevent optimizing our index away
+								  << "    int vec_selector = int(abs(gl_Position.x) * 0.0000001 + 0);\n"
+								  << "    int mat_selector = int(abs(gl_Position.x) * 0.0000001 + 1);\n"
+								  << "    int arr_selector = int(abs(gl_Position.x) * 0.0000001 + 2);\n";
+
+						// Use the dynamic index to pull our real index value from push constants
+						// Then use that value to index into three variable types
+						std::string vecValue = "matInst.vecType[int(matInst.index[vec_selector])]";
+						std::string matValue = "matInst.matType[int(matInst.index[mat_selector])][0]";
+						std::string arrValue = "matInst.arrType[int(matInst.index[arr_selector])]";
+
+						// Test vector indexing
+						vertexSrc << "    if (" << vecValue << " != " << DYNAMIC_VEC_CONSTANT << ")\n"
+								  << "        vtxColor += vec4(0.0, 0.5, 0.0, 1.0);\n";
+
+						// Test matrix indexing
+						vertexSrc << "    if (" << matValue << " != " << DYNAMIC_MAT_CONSTANT << ")\n"
+								  << "        vtxColor += vec4(0.0, 0.0, 0.5, 1.0);\n";
+
+						// Test array indexing
+						vertexSrc << "    if (" << arrValue << " != " << DYNAMIC_ARR_CONSTANT << ")\n"
+								  << "        vtxColor = vec4(0.0, 0.5, 0.5, 1.0);\n";
+
+						vertexSrc << "}\n";
+					}
 					break;
 				default:
-					DE_FATAL("Not implemented yet");
+					DE_FATAL("Unhandled IndexType");
 					break;
 			}
 
@@ -384,18 +460,21 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 						<< "layout(location = 0) out highp vec4 fragColor;\n"
 						<< "layout(push_constant) uniform Material {\n";
 
-			if (m_pushConstantRange[rangeNdx].range.shaderStage & VK_SHADER_STAGE_VERTEX_BIT)
+			switch (m_indexType)
 			{
-				fragmentSrc << "    layout(offset = 0) int kind;\n"
-							<< "} matInst;\n";
-			}
-			else
-			{
-				fragmentSrc << "    layout(offset = 16) int kind;\n"
-							<< "} matInst;\n";
-			}
+				case INDEX_TYPE_CONST_LITERAL:
+					if (m_pushConstantRange[rangeNdx].range.shaderStage & VK_SHADER_STAGE_VERTEX_BIT)
+					{
+						fragmentSrc << "    layout(offset = 0) int kind; \n"
+									<< "} matInst;\n";
+					}
+					else
+					{
+						fragmentSrc << "    layout(offset = 16) int kind;\n"
+									<< "} matInst;\n";
+					}
 
-			fragmentSrc << "void main (void)\n"
+					fragmentSrc << "void main (void)\n"
 						<< "{\n"
 						<< "    switch (matInst.kind) {\n"
 						<< "    case 0: fragColor = vec4(0, 1.0, 0, 1.0); break;\n"
@@ -403,6 +482,49 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 						<< "    case 2: fragColor = vtxColor; break;\n"
 						<< "    default: fragColor = vec4(1.0, 1.0, 1.0, 1.0); break;}\n"
 						<< "}\n";
+					break;
+				case INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR:
+					{
+						fragmentSrc << "    layout(offset = 0)  vec4 index; \n"
+									<< "    layout(offset = 16) vec4 vecType; \n"
+									<< "    layout(offset = 32) mat2 matType; \n"
+									<< "    layout(offset = 48) float[4] arrType; \n"
+									<< "} matInst;\n";
+
+						fragmentSrc << "void main (void)\n"
+									<< "{\n"
+									<< "    fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+
+									// Mix in gl_FragCoord to (hopefully) prevent optimizing our index away
+									<< "    int vec_selector = int(gl_FragCoord.x * 0.0000001 + 0);\n"
+									<< "    int mat_selector = int(gl_FragCoord.x * 0.0000001 + 1);\n"
+									<< "    int arr_selector = int(gl_FragCoord.x * 0.0000001 + 2);\n";
+
+						// Use the dynamic index to pull our real index value from push constants
+						// Then use that value to index into three variable types
+						std::string vecValue = "matInst.vecType[int(matInst.index[vec_selector])]";
+						std::string matValue = "matInst.matType[int(matInst.index[mat_selector])][0]";
+						std::string arrValue = "matInst.arrType[int(matInst.index[arr_selector])]";
+
+						// Test vector indexing
+						fragmentSrc << "    if (" << vecValue << " != " << DYNAMIC_VEC_CONSTANT << ")\n"
+									<< "        fragColor += vec4(0.0, 0.5, 0.0, 1.0);\n";
+
+						// Test matrix indexing
+						fragmentSrc << "    if (" << matValue << " != " << DYNAMIC_MAT_CONSTANT << ")\n"
+									<< "        fragColor += vec4(0.0, 0.0, 0.5, 1.0);\n";
+
+						// Test array indexing
+						fragmentSrc << "    if (" << arrValue << " != " << DYNAMIC_ARR_CONSTANT << ")\n"
+									<< "        fragColor = vec4(0.0, 0.5, 0.5, 1.0);\n";
+
+						fragmentSrc << "}\n";
+					}
+					break;
+				default:
+					DE_FATAL("Unhandled IndexType");
+					break;
+			}
 
 			sourceCollections.glslSources.add("color_frag") << glu::FragmentSource(fragmentSrc.str());
 		}
@@ -469,12 +591,14 @@ std::vector<Vertex4RGBA> PushConstantGraphicsTestInstance::createQuad(const floa
 PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&					context,
 																	const deUint32				rangeCount,
 																	const PushConstantData		pushConstantRange[MAX_RANGE_COUNT],
-																	deBool						multipleUpdate)
+																	deBool						multipleUpdate,
+																	IndexType					indexType)
 	: vkt::TestInstance		(context)
 	, m_renderSize			(32, 32)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_rangeCount			(rangeCount)
 	, m_multipleUpdate		(multipleUpdate)
+	, m_indexType			(indexType)
 	, m_shaderFlags			(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
 {
 	const DeviceInterface&		vk						= context.getDeviceInterface();
@@ -1019,6 +1143,40 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 		std::vector<tcu::Vec4> color(8, tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
 		std::vector<tcu::Vec4> allOnes(8, tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
+		switch (m_indexType)
+		{
+			case INDEX_TYPE_CONST_LITERAL:
+				// Do nothing
+				break;
+			case INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR:
+				// Stick our dynamic index at the beginning of a vector
+				color[0] = tcu::Vec4(	float(DYNAMIC_VEC_INDEX),
+										float(DYNAMIC_MAT_INDEX),
+										float(DYNAMIC_ARR_INDEX),
+										1.0f);
+
+				// Place our reference values at each type offset
+
+				// vec4[i]
+				DE_ASSERT(DYNAMIC_VEC_INDEX <= 3);
+				color[1] = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+				color[1][DYNAMIC_VEC_INDEX] = DYNAMIC_VEC_CONSTANT;
+
+				// mat2[i][0]
+				DE_ASSERT(DYNAMIC_MAT_INDEX <= 1);
+				color[2] = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+				color[2][DYNAMIC_MAT_INDEX * 2] = DYNAMIC_MAT_CONSTANT;
+
+				// float[i]
+				DE_ASSERT(DYNAMIC_ARR_INDEX <= 3);
+				color[3] = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+				color[3][DYNAMIC_ARR_INDEX] = DYNAMIC_ARR_CONSTANT;
+				break;
+			default:
+				DE_FATAL("Unhandled IndexType");
+				break;
+		}
+
 		const deUint32	kind	= 2u;
 		const void*		value	= DE_NULL;
 		for (size_t rangeNdx = 0; rangeNdx < m_rangeCount; rangeNdx++)
@@ -1465,6 +1623,7 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 		deUint32			count;
 		PushConstantData	range[MAX_RANGE_COUNT];
 		deBool				hasMultipleUpdates;
+		IndexType			indexType;
 	} graphicsParams[] =
 	{
 		// test range size from minimum valid size to maximum
@@ -1473,21 +1632,24 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 			"test range size is 4 bytes(minimum valid size)",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 4 } , { 0, 4 } } },
-			false
+			false,
+			INDEX_TYPE_CONST_LITERAL
 		},
 		{
 			"range_size_16",
 			"test range size is 16 bytes, and together with a normal uniform",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } } },
-			false
+			false,
+			INDEX_TYPE_CONST_LITERAL
 		},
 		{
 			"range_size_128",
 			"test range size is 128 bytes(maximum valid size)",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 128 }, { 0, 128 } } },
-			false
+			false,
+			INDEX_TYPE_CONST_LITERAL
 		},
 		// test range count, including all valid shader stage in graphics pipeline, and also multiple shader stages share one single range
 		{
@@ -1498,7 +1660,8 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
 				{ { VK_SHADER_STAGE_FRAGMENT_BIT, 16, 4 }, { 16, 4 } },
 			},
-			false
+			false,
+			INDEX_TYPE_CONST_LITERAL
 		},
 		{
 			"count_3_shaders_vert_geom_frag",
@@ -1509,7 +1672,8 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 				{ { VK_SHADER_STAGE_FRAGMENT_BIT, 16, 4 }, { 16, 4 } },
 				{ { VK_SHADER_STAGE_GEOMETRY_BIT, 20, 4 }, { 20, 4 } },
 			},
-			false
+			false,
+			INDEX_TYPE_CONST_LITERAL
 		},
 		{
 			"count_5_shaders_vert_tess_geom_frag",
@@ -1522,14 +1686,16 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 				{ { VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 24, 4 }, { 24, 4 } },
 				{ { VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 32, 16 }, { 32, 16 } },
 			},
-			false
+			false,
+			INDEX_TYPE_CONST_LITERAL
 		},
 		{
 			"count_1_shader_vert_frag",
 			"test range count is 1, vertex and fragment shaders share one range",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4 }, { 0, 4 } } },
-			false
+			false,
+			INDEX_TYPE_CONST_LITERAL
 		},
 		// test data partial update and multiple times update
 		{
@@ -1537,21 +1703,40 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 			"test partial update of the values",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 32 }, { 4, 24 } } },
-			false
+			false,
+			INDEX_TYPE_CONST_LITERAL
 		},
 		{
 			"data_update_partial_2",
 			"test partial update of the values",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 48 }, { 32, 16 } } },
-			false
+			false,
+			INDEX_TYPE_CONST_LITERAL
 		},
 		{
 			"data_update_multiple",
 			"test multiple times update of the values",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 4 }, { 0, 4 } } },
-			true
+			true,
+			INDEX_TYPE_CONST_LITERAL
+		},
+		{
+			"dynamic_index_vert",
+			"dynamically uniform indexing of vertex, matrix, and array in vertex shader",
+			1u,
+			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 64 }, { 0, 64 } } },
+			false,
+			INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR
+		},
+		{
+			"dynamic_index_frag",
+			"dynamically uniform indexing of vertex, matrix, and array in fragment shader",
+			1u,
+			{ { { VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 64 }, { 0, 64 } } },
+			false,
+			INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR
 		},
 	};
 
@@ -1574,7 +1759,7 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	graphicsTests	(new tcu::TestCaseGroup(testCtx, "graphics_pipeline", "graphics pipeline"));
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(graphicsParams); ndx++)
 	{
-		graphicsTests->addChild(new PushConstantGraphicsTest(testCtx, graphicsParams[ndx].name, graphicsParams[ndx].description, graphicsParams[ndx].count, graphicsParams[ndx].range, graphicsParams[ndx].hasMultipleUpdates));
+		graphicsTests->addChild(new PushConstantGraphicsTest(testCtx, graphicsParams[ndx].name, graphicsParams[ndx].description, graphicsParams[ndx].count, graphicsParams[ndx].range, graphicsParams[ndx].hasMultipleUpdates, graphicsParams[ndx].indexType));
 	}
 	pushConstantTests->addChild(graphicsTests.release());
 
