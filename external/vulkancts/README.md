@@ -26,10 +26,14 @@ Requirements
 
 ### Android
 
- * Android NDK r10e
+ * Android NDK r11
  * Android SDK with: SDK Tools, SDK Platform-tools, SDK Build-tools, and API 22
+ * Java Development Kit (JDK)
  * Apache Ant
  * Windows: either NMake or JOM in PATH
+
+See `android/scripts/common.py` for a list locations where the build system
+expects to find these.
 
 
 Building CTS

@@ -96,7 +96,7 @@ std::ostream& operator<< (std::ostream& str, const DebugReportMessage& message)
 		<< message.message
 		<< " (code " << tcu::toHex(message.messageCode);
 
-	if (message.layerPrefix.empty())
+	if (!message.layerPrefix.empty())
 		str << " from " << message.layerPrefix;
 
 	str << " at " << shortObjectTypeStr(message.objectType) << ":" << message.location << ")";

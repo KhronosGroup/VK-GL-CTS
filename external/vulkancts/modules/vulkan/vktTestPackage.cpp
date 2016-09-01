@@ -374,12 +374,12 @@ void TestPackage::init (void)
 {
 	addChild(createTestGroup				(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
 	addChild(api::createTests				(m_testCtx));
+	addChild(memory::createTests			(m_testCtx));
 	addChild(pipeline::createTests			(m_testCtx));
 	addChild(BindingModel::createTests		(m_testCtx));
 	addChild(SpirVAssembly::createTests		(m_testCtx));
 	addChild(createTestGroup				(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
 	addChild(createRenderPassTests			(m_testCtx));
-	addChild(memory::createTests			(m_testCtx));
 	addChild(ubo::createTests				(m_testCtx));
 	addChild(DynamicState::createTests		(m_testCtx));
 	addChild(ssbo::createTests				(m_testCtx));
