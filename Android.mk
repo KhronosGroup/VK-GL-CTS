@@ -697,6 +697,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkAllocationCallbackUtil.cpp \
 	external/vulkancts/framework/vulkan/vkApiVersion.cpp \
 	external/vulkancts/framework/vulkan/vkBinaryRegistry.cpp \
+	external/vulkancts/framework/vulkan/vkBufferWithMemory.cpp \
 	external/vulkancts/framework/vulkan/vkBuilderUtil.cpp \
 	external/vulkancts/framework/vulkan/vkDebugReportUtil.cpp \
 	external/vulkancts/framework/vulkan/vkDefs.cpp \
@@ -704,6 +705,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkGlslProgram.cpp \
 	external/vulkancts/framework/vulkan/vkGlslToSpirV.cpp \
 	external/vulkancts/framework/vulkan/vkImageUtil.cpp \
+	external/vulkancts/framework/vulkan/vkImageWithMemory.cpp \
 	external/vulkancts/framework/vulkan/vkMemUtil.cpp \
 	external/vulkancts/framework/vulkan/vkNullDriver.cpp \
 	external/vulkancts/framework/vulkan/vkPlatform.cpp \
@@ -738,7 +740,6 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingModelTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingShaderAccessTests.cpp \
 	external/vulkancts/modules/vulkan/clipping/vktClippingTests.cpp \
-	external/vulkancts/modules/vulkan/clipping/vktClippingUtil.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeBasicComputeShaderTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeIndirectComputeDispatchTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeShaderBuiltinVarTests.cpp \
@@ -911,6 +912,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockTests.cpp \
 	external/vulkancts/modules/vulkan/vktExternalMemoryUtil.cpp \
+	external/vulkancts/modules/vulkan/vktDrawUtil.cpp \
 	external/vulkancts/modules/vulkan/vktInfoTests.cpp \
 	external/vulkancts/modules/vulkan/vktShaderLibrary.cpp \
 	external/vulkancts/modules/vulkan/vktTestCase.cpp \
