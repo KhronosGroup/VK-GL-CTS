@@ -480,9 +480,9 @@ vk::VkAccessFlags usageToAccessFlags (Usage usage)
 
 struct TestConfig
 {
-	Usage					usage;
-	vk::VkDeviceSize		size;
-	vk::VkSharingMode		sharing;
+	Usage				usage;
+	vk::VkDeviceSize	size;
+	vk::VkSharingMode	sharing;
 };
 
 vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vkd,
@@ -4662,6 +4662,9 @@ void createPipelineWithResources (const vk::DeviceInterface&							vkd,
 								  const vector<vk::VkVertexInputBindingDescription>&	vertexBindingDescriptions,
 								  const vector<vk::VkVertexInputAttributeDescription>&	vertexAttributeDescriptions,
 								  const vector<vk::VkDescriptorSetLayoutBinding>&		bindings,
+								  const vk::VkPrimitiveTopology							topology,
+								  deUint32												pushConstantRangeCount,
+								  const vk::VkPushConstantRange*						pushConstantRanges,
 								  PipelineResources&									resources)
 {
 	if (!bindings.empty())
@@ -4690,8 +4693,8 @@ void createPipelineWithResources (const vk::DeviceInterface&							vkd,
 			resources.descriptorSetLayout ? 1u : 0u,
 			resources.descriptorSetLayout ? &descriptorSetLayout_ : DE_NULL,
 
-			0,
-			DE_NULL
+			pushConstantRangeCount,
+			pushConstantRanges
 		};
 
 		resources.pipelineLayout = vk::createPipelineLayout(vkd, device, &createInfo);
@@ -4767,7 +4770,7 @@ void createPipelineWithResources (const vk::DeviceInterface&							vkd,
 			vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 			DE_NULL,
 			0,
-			vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+			topology,
 			VK_FALSE
 		};
 		const vk::VkViewport								viewports[]						=
@@ -4914,7 +4917,7 @@ void RenderIndexBuffer::prepare (PrepareRenderPassContext& context)
 	const vk::Unique<vk::VkShaderModule>	fragmentShaderModule	(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("render-white.frag"), 0));
 
 	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
-								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), vector<vk::VkDescriptorSetLayoutBinding>(), m_resources);
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), vector<vk::VkDescriptorSetLayoutBinding>(), vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
 	m_bufferSize = context.getBufferSize();
 }
 
@@ -5001,7 +5004,7 @@ void RenderVertexBuffer::prepare (PrepareRenderPassContext& context)
 		vertexAttributeDescriptions.push_back(vertexAttributeDescription);
 	}
 	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
-								vertexBindingDescriptions, vertexAttributeDescriptions, vector<vk::VkDescriptorSetLayoutBinding>(), m_resources);
+								vertexBindingDescriptions, vertexAttributeDescriptions, vector<vk::VkDescriptorSetLayoutBinding>(), vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
 
 	m_bufferSize = context.getBufferSize();
 }
@@ -5090,7 +5093,7 @@ void RenderVertexUniformBuffer::prepare (PrepareRenderPassContext& context)
 	}
 
 	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
-								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, m_resources);
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
 
 	{
 		const deUint32							descriptorCount	= (deUint32)(divRoundUp(m_bufferSize, (vk::VkDeviceSize)MAX_UNIFORM_BUFFER_SIZE));
@@ -5274,7 +5277,7 @@ void RenderVertexUniformTexelBuffer::prepare (PrepareRenderPassContext& context)
 	}
 
 	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
-								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, m_resources);
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
 
 	{
 		const deUint32							descriptorCount	= (deUint32)(divRoundUp(m_bufferSize, (vk::VkDeviceSize)m_maxUniformTexelCount * 2));
@@ -5451,7 +5454,7 @@ void RenderVertexStorageBuffer::prepare (PrepareRenderPassContext& context)
 	}
 
 	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
-								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, m_resources);
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
 
 	{
 		const deUint32							descriptorCount	= (deUint32)(divRoundUp(m_bufferSize, (vk::VkDeviceSize)MAX_STORAGE_BUFFER_SIZE));
@@ -5631,7 +5634,7 @@ void RenderVertexStorageTexelBuffer::prepare (PrepareRenderPassContext& context)
 	}
 
 	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
-								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, m_resources);
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
 
 	{
 		const deUint32							descriptorCount	= (deUint32)(divRoundUp(m_bufferSize, (vk::VkDeviceSize)m_maxStorageTexelCount * 4));
@@ -5806,7 +5809,7 @@ void RenderVertexStorageImage::prepare (PrepareRenderPassContext& context)
 	}
 
 	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
-								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, m_resources);
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
 
 	{
 		const vk::VkDescriptorPoolSize			poolSizes		=
@@ -5975,7 +5978,7 @@ void RenderVertexSampledImage::prepare (PrepareRenderPassContext& context)
 	}
 
 	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
-								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, m_resources);
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
 
 	{
 		const vk::VkDescriptorPoolSize			poolSizes		=
@@ -6113,6 +6116,211 @@ void RenderVertexSampledImage::verify (VerifyRenderPassContext& context, size_t)
 	}
 }
 
+class RenderFragmentUniformBuffer : public RenderPassCommand
+{
+public:
+									RenderFragmentUniformBuffer		(void) {}
+									~RenderFragmentUniformBuffer	(void);
+
+	const char*						getName							(void) const { return "RenderFragmentUniformBuffer"; }
+	void							logPrepare						(TestLog&, size_t) const;
+	void							logSubmit						(TestLog&, size_t) const;
+	void							prepare							(PrepareRenderPassContext&);
+	void							submit							(SubmitContext& context);
+	void							verify							(VerifyRenderPassContext&, size_t);
+
+private:
+	PipelineResources				m_resources;
+	vk::Move<vk::VkDescriptorPool>	m_descriptorPool;
+	vector<vk::VkDescriptorSet>		m_descriptorSets;
+
+	vk::VkDeviceSize				m_bufferSize;
+	size_t							m_targetWidth;
+	size_t							m_targetHeight;
+};
+
+RenderFragmentUniformBuffer::~RenderFragmentUniformBuffer (void)
+{
+}
+
+void RenderFragmentUniformBuffer::logPrepare (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Create pipeline for render buffer as uniform buffer." << TestLog::EndMessage;
+}
+
+void RenderFragmentUniformBuffer::logSubmit (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Render using buffer as uniform buffer." << TestLog::EndMessage;
+}
+
+void RenderFragmentUniformBuffer::prepare (PrepareRenderPassContext& context)
+{
+	const vk::DeviceInterface&					vkd						= context.getContext().getDeviceInterface();
+	const vk::VkDevice							device					= context.getContext().getDevice();
+	const vk::VkRenderPass						renderPass				= context.getRenderPass();
+	const deUint32								subpass					= 0;
+	const vk::Unique<vk::VkShaderModule>		vertexShaderModule		(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("render-quad.vert"), 0));
+	const vk::Unique<vk::VkShaderModule>		fragmentShaderModule	(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("uniform-buffer.frag"), 0));
+	vector<vk::VkDescriptorSetLayoutBinding>	bindings;
+
+	m_bufferSize	= context.getBufferSize();
+	m_targetWidth	= context.getTargetWidth();
+	m_targetHeight	= context.getTargetHeight();
+
+	{
+		const vk::VkDescriptorSetLayoutBinding binding =
+		{
+			0u,
+			vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			1,
+			vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+			DE_NULL
+		};
+
+		bindings.push_back(binding);
+	}
+	const vk::VkPushConstantRange pushConstantRange =
+	{
+		vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+		0u,
+		8u
+	};
+
+	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 1u, &pushConstantRange, m_resources);
+
+	{
+		const deUint32							descriptorCount	= (deUint32)(divRoundUp(m_bufferSize, (vk::VkDeviceSize)MAX_UNIFORM_BUFFER_SIZE));
+		const vk::VkDescriptorPoolSize			poolSizes		=
+		{
+			vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			descriptorCount
+		};
+		const vk::VkDescriptorPoolCreateInfo	createInfo		=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			DE_NULL,
+			vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+
+			descriptorCount,
+			1u,
+			&poolSizes,
+		};
+
+		m_descriptorPool = vk::createDescriptorPool(vkd, device, &createInfo);
+		m_descriptorSets.resize(descriptorCount);
+	}
+
+	for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
+	{
+		const vk::VkDescriptorSetLayout			layout			= *m_resources.descriptorSetLayout;
+		const vk::VkDescriptorSetAllocateInfo	allocateInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+
+			*m_descriptorPool,
+			1,
+			&layout
+		};
+
+		m_descriptorSets[descriptorSetNdx] = vk::allocateDescriptorSet(vkd, device, &allocateInfo).disown();
+
+		{
+			const vk::VkDescriptorBufferInfo		bufferInfo	=
+			{
+				context.getBuffer(),
+				(vk::VkDeviceSize)(descriptorSetNdx * (size_t)MAX_UNIFORM_BUFFER_SIZE),
+				m_bufferSize < (descriptorSetNdx + 1) * (vk::VkDeviceSize)MAX_UNIFORM_BUFFER_SIZE
+					? m_bufferSize - descriptorSetNdx * (vk::VkDeviceSize)MAX_UNIFORM_BUFFER_SIZE
+					: (vk::VkDeviceSize)MAX_UNIFORM_BUFFER_SIZE
+			};
+			const vk::VkWriteDescriptorSet			write		=
+			{
+				vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				DE_NULL,
+				m_descriptorSets[descriptorSetNdx],
+				0u,
+				0u,
+				1u,
+				vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				DE_NULL,
+				&bufferInfo,
+				DE_NULL,
+			};
+
+			vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+		}
+	}
+}
+
+void RenderFragmentUniformBuffer::submit (SubmitContext& context)
+{
+	const vk::DeviceInterface&	vkd				= context.getContext().getDeviceInterface();
+	const vk::VkCommandBuffer	commandBuffer	= context.getCommandBuffer();
+
+	vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
+
+	for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
+	{
+		const struct
+		{
+			const deUint32	callId;
+			const deUint32	valuesPerPixel;
+		} callParams = {
+			(deUint32)descriptorSetNdx,
+			(deUint32)divRoundUp<size_t>(m_descriptorSets.size() * (MAX_UNIFORM_BUFFER_SIZE / 4), m_targetWidth * m_targetHeight)
+		};
+
+		vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u, 1u, &m_descriptorSets[descriptorSetNdx], 0u, DE_NULL);
+		vkd.cmdPushConstants(commandBuffer, *m_resources.pipelineLayout, vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u, (deUint32)sizeof(callParams), &callParams);
+		vkd.cmdDraw(commandBuffer, 6, 1, 0, 0);
+	}
+}
+
+void RenderFragmentUniformBuffer::verify (VerifyRenderPassContext& context, size_t)
+{
+	const deUint32	valuesPerPixel	= (deUint32)divRoundUp<size_t>(m_descriptorSets.size() * (MAX_UNIFORM_BUFFER_SIZE / 4), m_targetWidth * m_targetHeight);
+	const size_t	arraySize		= MAX_UNIFORM_BUFFER_SIZE / (sizeof(deUint32) * 4);
+	const size_t	arrayIntSize	= arraySize * 4;
+
+	for (int y = 0; y < context.getReferenceTarget().getSize().y(); y++)
+	for (int x = 0; x < context.getReferenceTarget().getSize().x(); x++)
+	{
+		const size_t firstDescriptorSetNdx = de::min<size_t>((y * 256u + x) / (arrayIntSize / valuesPerPixel), m_descriptorSets.size() - 1);
+
+		for (size_t descriptorSetNdx = firstDescriptorSetNdx; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
+		{
+			const size_t	offset	= descriptorSetNdx * MAX_UNIFORM_BUFFER_SIZE;
+			const deUint32	callId	= (deUint32)descriptorSetNdx;
+
+			const deUint32	id		= callId * ((deUint32)arrayIntSize / valuesPerPixel) + (deUint32)y * 256u + (deUint32)x;
+
+			if (y * 256u + x < callId * (arrayIntSize / valuesPerPixel))
+				continue;
+			else
+			{
+				deUint32 value = id;
+
+				for (deUint32 i = 0; i < valuesPerPixel; i++)
+				{
+					value	= ((deUint32)context.getReference().get(offset + (value % (MAX_UNIFORM_BUFFER_SIZE / sizeof(deUint32))) * 4 + 0))
+							| (((deUint32)context.getReference().get(offset + (value % (MAX_UNIFORM_BUFFER_SIZE / sizeof(deUint32))) * 4 + 1)) << 8u)
+							| (((deUint32)context.getReference().get(offset + (value % (MAX_UNIFORM_BUFFER_SIZE / sizeof(deUint32))) * 4 + 2)) << 16u)
+							| (((deUint32)context.getReference().get(offset + (value % (MAX_UNIFORM_BUFFER_SIZE / sizeof(deUint32))) * 4 + 3)) << 24u);
+
+				}
+				const UVec4	vec	((value >>  0u) & 0xFFu,
+								 (value >>  8u) & 0xFFu,
+								 (value >> 16u) & 0xFFu,
+								 (value >> 24u) & 0xFFu);
+
+				context.getReferenceTarget().getAccess().setPixel(vec.asFloat() / Vec4(255.0f), x, y);
+			}
+		}
+	}
+}
+
 enum Op
 {
 	OP_MAP,
@@ -6181,7 +6389,9 @@ enum Op
 	OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER,
 
 	OP_RENDER_VERTEX_STORAGE_IMAGE,
-	OP_RENDER_VERTEX_SAMPLED_IMAGE
+	OP_RENDER_VERTEX_SAMPLED_IMAGE,
+
+	OP_RENDER_FRAGMENT_UNIFORM_BUFFER,
 };
 
 enum Stage
@@ -6985,7 +7195,8 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 				|| ((usage & USAGE_INDEX_BUFFER)
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, vk::VK_ACCESS_INDEX_READ_BIT))
 				|| ((usage & USAGE_UNIFORM_BUFFER)
-					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
+					&& (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT)
+						|| state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT)))
 				|| ((usage & USAGE_UNIFORM_TEXEL_BUFFER)
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
 				|| ((usage & USAGE_STORAGE_BUFFER)
@@ -7030,10 +7241,13 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 
 		if ((usage & USAGE_UNIFORM_BUFFER) != 0
 			&& state.memoryDefined
-			&& state.hasBoundBufferMemory
-			&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
+			&& state.hasBoundBufferMemory)
 		{
-			ops.push_back(OP_RENDER_VERTEX_UNIFORM_BUFFER);
+			if (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
+				ops.push_back(OP_RENDER_VERTEX_UNIFORM_BUFFER);
+
+			if (state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
+				ops.push_back(OP_RENDER_FRAGMENT_UNIFORM_BUFFER);
 		}
 
 		if ((usage & USAGE_UNIFORM_TEXEL_BUFFER) != 0
@@ -7407,6 +7621,15 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 			break;
 		}
 
+		case OP_RENDER_FRAGMENT_UNIFORM_BUFFER:
+		{
+			DE_ASSERT(state.stage == STAGE_RENDER_PASS);
+
+			state.renderPassIsEmpty = false;
+			state.cache.perform(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT);
+			break;
+		}
+
 		case OP_RENDER_VERTEX_STORAGE_BUFFER:
 		case OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER:
 		{
@@ -7598,7 +7821,10 @@ de::MovePtr<RenderPassCommand> createRenderPassCommand (de::Random&,
 	{
 		case OP_RENDER_VERTEX_BUFFER:				return de::MovePtr<RenderPassCommand>(new RenderVertexBuffer());
 		case OP_RENDER_INDEX_BUFFER:				return de::MovePtr<RenderPassCommand>(new RenderIndexBuffer());
+
 		case OP_RENDER_VERTEX_UNIFORM_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderVertexUniformBuffer());
+		case OP_RENDER_FRAGMENT_UNIFORM_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderFragmentUniformBuffer());
+
 		case OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderVertexUniformTexelBuffer());
 		case OP_RENDER_VERTEX_STORAGE_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderVertexStorageBuffer());
 		case OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderVertexStorageTexelBuffer());
@@ -8131,37 +8357,82 @@ struct AddPrograms
 
 		if (config.usage & USAGE_UNIFORM_BUFFER)
 		{
-			std::ostringstream vertexShader;
+			{
+				std::ostringstream vertexShader;
 
-			vertexShader <<
-				"#version 310 es\n"
-				"highp float;\n"
-				"layout(set=0, binding=0) uniform Block\n"
-				"{\n"
-				"\thighp uvec4 values[" << de::toString<size_t>(MAX_UNIFORM_BUFFER_SIZE / (sizeof(deUint32) * 4)) << "];\n"
-				"} block;\n"
-				"void main (void) {\n"
-				"\tgl_PointSize = 1.0;\n"
-				"\thighp uvec4 vecVal = block.values[gl_VertexIndex / 8];\n"
-				"\thighp uint val;\n"
-				"\tif (((gl_VertexIndex / 2) % 4 == 0))\n"
-				"\t\tval = vecVal.x;\n"
-				"\telse if (((gl_VertexIndex / 2) % 4 == 1))\n"
-				"\t\tval = vecVal.y;\n"
-				"\telse if (((gl_VertexIndex / 2) % 4 == 2))\n"
-				"\t\tval = vecVal.z;\n"
-				"\telse if (((gl_VertexIndex / 2) % 4 == 3))\n"
-				"\t\tval = vecVal.w;\n"
-				"\tif ((gl_VertexIndex % 2) == 0)\n"
-				"\t\tval = val & 0xFFFFu;\n"
-				"\telse\n"
-				"\t\tval = val >> 16u;\n"
-				"\thighp vec2 pos = vec2(val & 0xFFu, val >> 8u) / vec2(255.0);\n"
-				"\tgl_Position = vec4(1.998 * pos - vec2(0.999), 0.0, 1.0);\n"
-				"}\n";
+				vertexShader <<
+					"#version 310 es\n"
+					"highp float;\n"
+					"layout(set=0, binding=0) uniform Block\n"
+					"{\n"
+					"\thighp uvec4 values[" << de::toString<size_t>(MAX_UNIFORM_BUFFER_SIZE / (sizeof(deUint32) * 4)) << "];\n"
+					"} block;\n"
+					"void main (void) {\n"
+					"\tgl_PointSize = 1.0;\n"
+					"\thighp uvec4 vecVal = block.values[gl_VertexIndex / 8];\n"
+					"\thighp uint val;\n"
+					"\tif (((gl_VertexIndex / 2) % 4 == 0))\n"
+					"\t\tval = vecVal.x;\n"
+					"\telse if (((gl_VertexIndex / 2) % 4 == 1))\n"
+					"\t\tval = vecVal.y;\n"
+					"\telse if (((gl_VertexIndex / 2) % 4 == 2))\n"
+					"\t\tval = vecVal.z;\n"
+					"\telse if (((gl_VertexIndex / 2) % 4 == 3))\n"
+					"\t\tval = vecVal.w;\n"
+					"\tif ((gl_VertexIndex % 2) == 0)\n"
+					"\t\tval = val & 0xFFFFu;\n"
+					"\telse\n"
+					"\t\tval = val >> 16u;\n"
+					"\thighp vec2 pos = vec2(val & 0xFFu, val >> 8u) / vec2(255.0);\n"
+					"\tgl_Position = vec4(1.998 * pos - vec2(0.999), 0.0, 1.0);\n"
+					"}\n";
 
-			sources.glslSources.add("uniform-buffer.vert")
-				<< glu::VertexSource(vertexShader.str());
+				sources.glslSources.add("uniform-buffer.vert")
+					<< glu::VertexSource(vertexShader.str());
+			}
+
+			{
+				const size_t		arraySize		= MAX_UNIFORM_BUFFER_SIZE / (sizeof(deUint32) * 4);
+				const size_t		arrayIntSize	= arraySize * 4;
+				std::ostringstream	fragmentShader;
+
+				fragmentShader <<
+					"#version 310 es\n"
+					"highp float;\n"
+					"layout(location = 0) out highp vec4 o_color;\n"
+					"layout(set=0, binding=0) uniform Block\n"
+					"{\n"
+					"\thighp uvec4 values[" << arraySize << "];\n"
+					"} block;\n"
+					"layout(push_constant) uniform PushC\n"
+					"{\n"
+					"\tuint callId;\n"
+					"\tuint valuesPerPixel;\n"
+					"} pushC;\n"
+					"void main (void) {\n"
+					"\thighp uint id = pushC.callId * (" << arrayIntSize << "u / pushC.valuesPerPixel) + uint(gl_FragCoord.y) * 256u + uint(gl_FragCoord.x);\n"
+					"\tif (uint(gl_FragCoord.y) * 256u + uint(gl_FragCoord.x) < pushC.callId * (" << arrayIntSize  << "u / pushC.valuesPerPixel))\n"
+					"\t\tdiscard;\n"
+					"\thighp uint value = id;\n"
+					"\tfor (uint i = 0u; i < pushC.valuesPerPixel; i++)\n"
+					"\t{\n"
+					"\t\thighp uvec4 vecVal = block.values[(value / 4u) % " << arraySize << "u];\n"
+					"\t\tif ((value % 4u) == 0u)\n"
+					"\t\t\tvalue = vecVal.x;\n"
+					"\t\telse if ((value % 4u) == 1u)\n"
+					"\t\t\tvalue = vecVal.y;\n"
+					"\t\telse if ((value % 4u) == 2u)\n"
+					"\t\t\tvalue = vecVal.z;\n"
+					"\t\telse if ((value % 4u) == 3u)\n"
+					"\t\t\tvalue = vecVal.w;\n"
+					"\t}\n"
+					"\tuvec4 valueOut = uvec4(value & 0xFFu, (value >> 8u) & 0xFFu, (value >> 16u) & 0xFFu, (value >> 24u) & 0xFFu);\n"
+					"\to_color = vec4(valueOut) / vec4(255.0);\n"
+					"}\n";
+
+				sources.glslSources.add("uniform-buffer.frag")
+					<< glu::FragmentSource(fragmentShader.str());
+			}
 		}
 
 		if (config.usage & USAGE_STORAGE_BUFFER)
@@ -8297,6 +8568,22 @@ struct AddPrograms
 		}
 
 		{
+			const char* const vertexShader =
+				"#version 450\n"
+				"out gl_PerVertex {\n"
+				"\tvec4 gl_Position;\n"
+				"};\n"
+				"highp float;\n"
+				"void main (void) {\n"
+				"\tgl_Position = vec4(((gl_VertexIndex + 2) / 3) % 2 == 0 ? -1.0 : 1.0,\n"
+				"\t                   ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 1.0, 0.0, 1.0);\n"
+				"}\n";
+
+			sources.glslSources.add("render-quad.vert")
+				<< glu::VertexSource(vertexShader);
+		}
+
+		{
 			const char* const fragmentShader =
 				"#version 310 es\n"
 				"layout(location = 0) out highp vec4 o_color;\n"
@@ -8317,10 +8604,10 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "pipeline_barrier", "Pipeline barrier tests."));
 	const vk::VkDeviceSize			sizes[]			=
 	{
-		1024,			// 1K
-		8*1024,			// 8K
-		64*1024,		// 64K
-		1024*1024,		// 1M
+		1024,		// 1K
+		8*1024,		// 8K
+		64*1024,	// 64K
+		1024*1024,	// 1M
 	};
 	const Usage						usages[]		=
 	{
