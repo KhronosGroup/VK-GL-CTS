@@ -45,6 +45,10 @@ set(VKUTIL_SRCS
 	vkWsiUtil.hpp
 	vkDebugReportUtil.cpp
 	vkDebugReportUtil.hpp
+	vkBufferWithMemory.cpp
+	vkBufferWithMemory.hpp
+	vkImageWithMemory.cpp
+	vkImageWithMemory.hpp
 	)
 
 set(VKUTIL_LIBS

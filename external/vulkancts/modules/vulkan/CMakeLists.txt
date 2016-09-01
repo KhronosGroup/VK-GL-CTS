@@ -65,6 +65,8 @@ set(DEQP_VK_SRCS
 	vktTestGroupUtil.hpp
 	vktInfoTests.cpp
 	vktInfoTests.hpp
+	vktDrawUtil.cpp
+	vktDrawUtil.hpp
 	)
 
 set(DEQP_VK_LIBS
