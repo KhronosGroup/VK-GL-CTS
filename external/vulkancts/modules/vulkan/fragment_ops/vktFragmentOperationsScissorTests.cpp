@@ -23,7 +23,9 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktFragmentOperationsScissorTests.hpp"
+#include "vktFragmentOperationsScissorMultiViewportTests.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vktFragmentOperationsMakeUtil.hpp"
 
 #include "vkDefs.hpp"
@@ -297,9 +299,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		1.0f,															// float									maxDepthBounds;
 	};
 
-	const VkColorComponentFlags colorComponentsAll = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	// Number of blend attachments must equal the number of color attachments during any subpass.
-	const VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState =
+	const VkColorComponentFlags					colorComponentsAll					= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	const VkPipelineColorBlendAttachmentState	pipelineColorBlendAttachmentState	=
 	{
 		VK_FALSE,						// VkBool32					blendEnable;
 		VK_BLEND_FACTOR_ONE,			// VkBlendFactor			srcColorBlendFactor;
@@ -622,7 +623,7 @@ public:
 					VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
 					VK_QUEUE_FAMILY_IGNORED,									// deUint32					destQueueFamilyIndex;
 					*m_colorImage,												// VkImage					image;
-					m_colorSubresourceRange,										// VkImageSubresourceRange	subresourceRange;
+					m_colorSubresourceRange,									// VkImageSubresourceRange	subresourceRange;
 				},
 			};
 
@@ -638,7 +639,7 @@ public:
 				0u,																			// uint32_t                    bufferImageHeight;
 				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),			// VkImageSubresourceLayers    imageSubresource;
 				makeOffset3D(0, 0, 0),														// VkOffset3D                  imageOffset;
-				makeExtent3D(m_renderSize.x(), m_renderSize.y(), 1u),							// VkExtent3D                  imageExtent;
+				makeExtent3D(m_renderSize.x(), m_renderSize.y(), 1u),						// VkExtent3D                  imageExtent;
 			};
 
 			vk.cmdCopyImageToBuffer(*m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorBuffer, 1u, &region);
@@ -745,13 +746,11 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	return tcu::TestStatus::pass("OK");
 }
 
-} // anonymous
-
 //! \note The ES 2.0 scissoring tests included color/depth/stencil clear cases, but these operations are not affected by scissor test in Vulkan.
 //!       Scissor is part of the pipeline state and pipeline only affects the drawing commands.
-tcu::TestCaseGroup* createScissorTests (tcu::TestContext& testCtx)
+void createTestsInGroup (tcu::TestCaseGroup* scissorGroup)
 {
-	MovePtr<tcu::TestCaseGroup> scissorGroup(new tcu::TestCaseGroup(testCtx, "scissor", "Scissor tests"));
+	tcu::TestContext& testCtx = scissorGroup->getTestContext();
 
 	struct TestSpec
 	{
@@ -819,7 +818,17 @@ tcu::TestCaseGroup* createScissorTests (tcu::TestContext& testCtx)
 		scissorGroup->addChild(primitiveGroup.release());
 	}
 
-	return scissorGroup.release();
+	// Mulit-viewport scissor
+	{
+		scissorGroup->addChild(createScissorMultiViewportTests(testCtx));
+	}
+}
+
+} // anonymous
+
+tcu::TestCaseGroup* createScissorTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "scissor", "Scissor tests", createTestsInGroup);
 }
 
 } // FragmentOperations
