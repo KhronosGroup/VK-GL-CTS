@@ -56,7 +56,6 @@ struct DrawState
 {
 	const vk::VkPrimitiveTopology	topology;
 	const vk::VkFormat				colorFormat;
-	const vk::VkFormat				depthFormat;
 	tcu::UVec2						renderSize;
 	bool							depthClampEnable;
 	bool							blendEnable;
@@ -148,10 +147,8 @@ private:
 	Context&									m_context;
 	VulkanProgram								m_program;
 	de::MovePtr<vk::ImageWithMemory>			m_colorImage;
-	de::MovePtr<vk::ImageWithMemory>			m_depthImage;
 	de::MovePtr<vk::BufferWithMemory>			m_colorAttachmentBuffer;
 	vk::refdetails::Move<vk::VkImageView>		m_colorImageView;
-	vk::refdetails::Move<vk::VkImageView>		m_depthImageView;
 	vk::refdetails::Move<vk::VkRenderPass>		m_renderPass;
 	vk::refdetails::Move<vk::VkFramebuffer>		m_framebuffer;
 	vk::refdetails::Move<vk::VkPipelineLayout>	m_pipelineLayout;

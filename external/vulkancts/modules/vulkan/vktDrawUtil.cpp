@@ -287,7 +287,6 @@ std::string getPrimitiveTopologyShortName (const VkPrimitiveTopology topology)
 DrawState::DrawState(const vk::VkPrimitiveTopology topology_, deUint32 renderWidth_, deUint32 renderHeight_)
 	: topology				(topology_)
 	, colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
-	, depthFormat			(VK_FORMAT_D32_SFLOAT)
 	, renderSize			(tcu::UVec2(renderWidth_, renderHeight_))
 	, depthClampEnable		(false)
 	, blendEnable			(false)
@@ -349,7 +348,6 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 	const VkDevice			device					= m_context.getDevice();
 	Allocator&				allocator				= m_context.getDefaultAllocator();
 	VkImageSubresourceRange	colorSubresourceRange;
-	VkImageSubresourceRange	depthSubresourceRange;
 
 	// Command buffer
 	{
@@ -394,32 +392,6 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 			deMemset(alloc.getHostPtr(), 0, (size_t)bitmapSize);
 			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), bitmapSize);
 		}
-	}
-
-	// Depth attachment image
-	{
-		depthSubresourceRange					= makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
-		const VkImageCreateInfo imageCreateInfo	=
-		{
-			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,						// VkStructureType			sType
-			DE_NULL,													// const void*				pNext
-			0u,															// VkImageCreateFlags		flags
-			VK_IMAGE_TYPE_2D,											// VkImageType				imageType
-			m_drawState.depthFormat,									// VkFormat					depthFormat
-			{ m_drawState.renderSize.x(), m_drawState.renderSize.y(), 1u },		// VkExtent3D				externt
-			1u,															// deUint32					mipLevels
-			1u,															// deUint32					arrayLayers
-			VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits	samples
-			VK_IMAGE_TILING_OPTIMAL,									// VkImageTiling			tiling
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,				// VkImageUsageFlags		usage
-			VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode			sharingMode
-			0u,															// deUint32					queueFamilyIndexCount
-			DE_NULL,													// const deUint32*			pQueueFamilyIndices
-			VK_IMAGE_LAYOUT_UNDEFINED									// VkImageLayout			initialLayout
-		};
-
-		m_depthImage = MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any));
-		m_depthImageView = makeImageView(vk, device, **m_depthImage, VK_IMAGE_VIEW_TYPE_2D, m_drawState.depthFormat, depthSubresourceRange);
 	}
 
 	// Vertex buffer
@@ -499,8 +471,7 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 	{
 		const VkImageView attachmentBindInfos[] =
 		{
-			m_colorImageView.get(),
-			m_depthImageView.get()
+			m_colorImageView.get()
 		};
 
 		const VkFramebufferCreateInfo framebufferInfo = {
@@ -755,7 +726,7 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(**m_vertexBuffer), &zeroOffset);
 
-		vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_drawCallData.vertices.size()), 1u, 0u, 1u);
+		vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_drawCallData.vertices.size()), 1u, 0u, 0u);
 		vk.cmdEndRenderPass(*m_cmdBuffer);
 
 		// Barrier: draw -> copy from image

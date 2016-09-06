@@ -24,11 +24,14 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktShaderRenderBuiltinVarTests.hpp"
+
+#include "vkDefs.hpp"
 #include "vktShaderRender.hpp"
 #include "gluShaderUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuStringTemplate.hpp"
 #include "tcuTextureUtil.hpp"
+#include "vktDrawUtil.hpp"
 #include "tcuTestLog.hpp"
 
 #include "deMath.h"
@@ -42,83 +45,156 @@ using namespace vk;
 
 namespace vkt
 {
+using namespace drawutil;
+
 namespace sr
 {
 
 namespace
 {
 
+enum
+{
+	FRONTFACE_RENDERWIDTH			= 16,
+	FRONTFACE_RENDERHEIGHT			= 16
+};
+
+class FrontFacingVertexShader : public rr::VertexShader
+{
+public:
+	FrontFacingVertexShader (void)
+		: rr::VertexShader(1, 0)
+	{
+		m_inputs[0].type = rr::GENERICVECTYPE_FLOAT;
+	}
+
+	void shadeVertices (const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const
+	{
+		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
+		{
+			packets[packetNdx]->position = rr::readVertexAttribFloat(inputs[0],
+																	 packets[packetNdx]->instanceNdx,
+																	 packets[packetNdx]->vertexNdx);
+		}
+	}
+};
+
+class FrontFacingFragmentShader : public rr::FragmentShader
+{
+public:
+	FrontFacingFragmentShader (void)
+		: rr::FragmentShader(0, 1)
+	{
+		m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
+	}
+
+	void shadeFragments (rr::FragmentPacket* , const int numPackets, const rr::FragmentShadingContext& context) const
+	{
+		tcu::Vec4 color;
+		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
+		{
+			for (int fragNdx = 0; fragNdx < rr::NUM_FRAGMENTS_PER_PACKET; ++fragNdx)
+			{
+				if (context.visibleFace == rr::FACETYPE_FRONT)
+					color = tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
+				else
+					color = tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
+				rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, color);
+			}
+		}
+	}
+};
+
 class BuiltinGlFrontFacingCaseInstance : public ShaderRenderCaseInstance
 {
 public:
-					BuiltinGlFrontFacingCaseInstance	(Context& context);
+					BuiltinGlFrontFacingCaseInstance	(Context& context, VkPrimitiveTopology topology);
 
 	TestStatus		iterate								(void);
-	virtual void	setupDefaultInputs					(void);
+private:
+	const VkPrimitiveTopology							m_topology;
 };
 
-BuiltinGlFrontFacingCaseInstance::BuiltinGlFrontFacingCaseInstance (Context& context)
+BuiltinGlFrontFacingCaseInstance::BuiltinGlFrontFacingCaseInstance (Context& context, VkPrimitiveTopology topology)
 	: ShaderRenderCaseInstance	(context)
+	, m_topology				(topology)
 {
 }
+
 
 TestStatus BuiltinGlFrontFacingCaseInstance::iterate (void)
 {
-	const UVec2		viewportSize	= getViewportSize();
-	const int		width			= viewportSize.x();
-	const int		height			= viewportSize.y();
-	const RGBA		threshold		(2, 2, 2, 2);
-	Surface			resImage		(width, height);
-	Surface			refImage		(width, height);
-	bool			compareOk		= false;
-	const deUint16	indices[12]		=
+	TestLog&					log				= m_context.getTestContext().getLog();
+	std::vector<Vec4>			vertices;
+	std::vector<Shader>			shaders;
+	FrontFacingVertexShader		vertexShader;
+	FrontFacingFragmentShader	fragmentShader;
+	std::string					testDesc;
+
+	vertices.push_back(Vec4( -0.75f,	-0.75f,	0.0f,	1.0f));
+	vertices.push_back(Vec4(  0.0f,		-0.75f,	0.0f,	1.0f));
+	vertices.push_back(Vec4( -0.37f,	0.75f,	0.0f,	1.0f));
+	vertices.push_back(Vec4(  0.37f,	0.75f,	0.0f,	1.0f));
+	vertices.push_back(Vec4(  0.75f,	-0.75f,	0.0f,	1.0f));
+	vertices.push_back(Vec4(  0.0f,		-0.75f,	0.0f,	1.0f));
+
+	shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert")));
+	shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("frag")));
+
+	testDesc = "gl_FrontFacing " + getPrimitiveTopologyShortName(m_topology) + " ";
+
+	DrawState					drawState		(m_topology, FRONTFACE_RENDERWIDTH, FRONTFACE_RENDERHEIGHT);
+	DrawCallData				drawCallData	(vertices);
+	VulkanProgram				vulkanProgram	(shaders);
+
+	VulkanDrawContext			dc(m_context, drawState, drawCallData, vulkanProgram);
+	dc.draw();
+
+	ReferenceDrawContext		refDrawContext(drawState, drawCallData, vertexShader, fragmentShader);
+	refDrawContext.draw();
+
+	log << TestLog::Image( "reference",
+							"reference",
+							tcu::ConstPixelBufferAccess(tcu::TextureFormat(
+									refDrawContext.getColorPixels().getFormat()),
+									refDrawContext.getColorPixels().getWidth(),
+									refDrawContext.getColorPixels().getHeight(),
+									1,
+									refDrawContext.getColorPixels().getDataPtr()));
+
+	log << TestLog::Image(	"result",
+							"result",
+							tcu::ConstPixelBufferAccess(tcu::TextureFormat(
+									dc.getColorPixels().getFormat()),
+									dc.getColorPixels().getWidth(),
+									dc.getColorPixels().getHeight(),
+									1,
+									dc.getColorPixels().getDataPtr()));
+
+	if (tcu::intThresholdPositionDeviationCompare(m_context.getTestContext().getLog(),
+												  "ComparisonResult",
+												  "Image comparison result",
+												  refDrawContext.getColorPixels(),
+												  dc.getColorPixels(),
+												  UVec4(0u),
+												  IVec3(1,1,0),
+												  false,
+												  tcu::COMPARE_LOG_RESULT))
 	{
-		0, 4, 1,
-		0, 5, 4,
-		1, 2, 3,
-		1, 3, 4
-	};
-
-	setup();
-	render(6, 4, indices);
-	copy(resImage.getAccess(), getResultImage().getAccess());
-
-	for (int y = 0; y < refImage.getHeight(); y++)
-	{
-		for (int x = 0; x < refImage.getWidth()/2; x++)
-			refImage.setPixel(x, y, RGBA::green());
-
-		for (int x = refImage.getWidth()/2; x < refImage.getWidth(); x++)
-			refImage.setPixel(x, y, RGBA::blue());
+		testDesc += "passed";
+		return tcu::TestStatus::pass(testDesc.c_str());
 	}
-
-	compareOk = pixelThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", refImage, resImage, threshold, COMPARE_LOG_RESULT);
-
-	if (compareOk)
-		return TestStatus::pass("Result image matches reference");
 	else
-		return TestStatus::fail("Image mismatch");
-}
-
-void BuiltinGlFrontFacingCaseInstance::setupDefaultInputs (void)
-{
-	const float vertices[] =
 	{
-		-1.0f, -1.0f, 0.0f, 1.0f,
-		 0.0f, -1.0f, 0.0f, 1.0f,
-		 1.0f, -1.0f, 0.0f, 1.0f,
-		 1.0f,  1.0f, 0.0f, 1.0f,
-		 0.0f,  1.0f, 0.0f, 1.0f,
-		-1.0f,  1.0f, 0.0f, 1.0f
-	};
-
-	addAttribute(0u, VK_FORMAT_R32G32B32A32_SFLOAT, deUint32(sizeof(float) * 4), 6, vertices);
+		testDesc += "failed";
+		return tcu::TestStatus::fail(testDesc.c_str());
+	}
 }
 
 class BuiltinGlFrontFacingCase : public TestCase
 {
 public:
-								BuiltinGlFrontFacingCase	(TestContext& testCtx, const string& name, const string& description);
+								BuiltinGlFrontFacingCase	(TestContext& testCtx, VkPrimitiveTopology topology, const char* name, const char* description);
 	virtual						~BuiltinGlFrontFacingCase	(void);
 
 	void						initPrograms				(SourceCollections& dst) const;
@@ -127,10 +203,13 @@ public:
 private:
 								BuiltinGlFrontFacingCase	(const BuiltinGlFrontFacingCase&);	// not allowed!
 	BuiltinGlFrontFacingCase&	operator=					(const BuiltinGlFrontFacingCase&);	// not allowed!
+
+	const VkPrimitiveTopology	m_topology;
 };
 
-BuiltinGlFrontFacingCase::BuiltinGlFrontFacingCase (TestContext& testCtx, const string& name, const string& description)
-	: TestCase(testCtx, name, description)
+BuiltinGlFrontFacingCase::BuiltinGlFrontFacingCase (TestContext& testCtx, VkPrimitiveTopology topology, const char* name, const char* description)
+	: TestCase					(testCtx, name, description)
+	, m_topology				(topology)
 {
 }
 
@@ -138,31 +217,40 @@ BuiltinGlFrontFacingCase::~BuiltinGlFrontFacingCase (void)
 {
 }
 
-void BuiltinGlFrontFacingCase::initPrograms (SourceCollections& dst) const
+void BuiltinGlFrontFacingCase::initPrograms (SourceCollections& programCollection) const
 {
-	dst.glslSources.add("vert") << glu::VertexSource(
-		"#version 310 es\n"
-		"layout(location = 0) in highp vec4 a_position;\n"
-		"void main (void)\n"
-		"{\n"
-		"       gl_Position = a_position;\n"
-		"}\n");
+	{
+		std::ostringstream vertexSource;
+		vertexSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in highp vec4 position;\n"
+			<< "void main()\n"
+			<< "{\n"
+			<< "gl_Position = position;\n"
+			<< "gl_PointSize = 1.0;\n"
+			<< "}\n";
+		programCollection.glslSources.add("vert") << glu::VertexSource(vertexSource.str());
+	}
 
-	dst.glslSources.add("frag") << glu::FragmentSource(
-		"#version 310 es\n"
-		"layout(location = 0) out lowp vec4 o_color;\n"
-		"void main (void)\n"
-		"{\n"
-		"       if (gl_FrontFacing)\n"
-		"               o_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
-		"       else\n"
-		"               o_color = vec4(0.0, 0.0, 1.0, 1.0);\n"
-		"}\n");
+	{
+		std::ostringstream fragmentSource;
+		fragmentSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+			<< "\n"
+			<< "layout(location = 0) out mediump vec4 color;\n"
+			<< "void main()\n"
+			<< "{\n"
+			<< "if (gl_FrontFacing)\n"
+			<< "	color = vec4(1.0, 0.0, 0.0, 1.0);\n"
+			<< "else\n"
+			<< "	color = vec4(0.0, 1.0, 0.0, 1.0);\n"
+			<< "}\n";
+		programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSource.str());
+	}
 }
 
 TestInstance* BuiltinGlFrontFacingCase::createInstance (Context& context) const
 {
-	return new BuiltinGlFrontFacingCaseInstance(context);
+	return new BuiltinGlFrontFacingCaseInstance(context, m_topology);
 }
 
 class BuiltinGlFragCoordXYZCaseInstance : public ShaderRenderCaseInstance
@@ -811,12 +899,33 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 	de::MovePtr<TestCaseGroup> builtinGroup			(new TestCaseGroup(testCtx, "builtin_var", "Shader builtin variable tests."));
 	de::MovePtr<TestCaseGroup> simpleGroup			(new TestCaseGroup(testCtx, "simple", "Simple cases."));
 	de::MovePtr<TestCaseGroup> inputVariationsGroup	(new TestCaseGroup(testCtx, "input_variations", "Input type variation tests."));
+	de::MovePtr<TestCaseGroup> frontFacingGroup		(new TestCaseGroup(testCtx, "frontfacing", "Test gl_Frontfacing keyword."));
 
-	simpleGroup->addChild(new BuiltinGlFrontFacingCase(testCtx, "frontfacing", "FrontFacing test"));
 	simpleGroup->addChild(new BuiltinGlFragCoordXYZCase(testCtx, "fragcoord_xyz", "FragCoord xyz test"));
 	simpleGroup->addChild(new BuiltinGlFragCoordWCase(testCtx, "fragcoord_w", "FragCoord w test"));
 	simpleGroup->addChild(new BuiltinGlPointCoordCase(testCtx, "pointcoord", "PointCoord test"));
 
+	// gl_FrontFacing tests
+	{
+		static const struct PrimitiveTable
+		{
+			const char*				name;
+			const char*				desc;
+			VkPrimitiveTopology		primitive;
+		} frontfacingCases[] =
+		{
+			{ "point_list",		"Test that points are frontfacing",							VK_PRIMITIVE_TOPOLOGY_POINT_LIST },
+			{ "line_list",		"Test that lines are frontfacing",							VK_PRIMITIVE_TOPOLOGY_LINE_LIST },
+			{ "triangle_list",	"Test that triangles can be frontfacing or backfacing",		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST },
+			{ "triangle_strip",	"Test that traiangle strips can be front or back facing",	VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP },
+			{ "triangle_fan",	"Test that triangle fans can be front or back facing",		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN },
+		};
+
+		for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(frontfacingCases); ndx++)
+			frontFacingGroup->addChild(new BuiltinGlFrontFacingCase(testCtx, frontfacingCases[ndx].primitive, frontfacingCases[ndx].name, frontfacingCases[ndx].desc));
+	}
+
+	builtinGroup->addChild(frontFacingGroup.release());
 	builtinGroup->addChild(simpleGroup.release());
 
 	for (deUint16 shaderType = 0; shaderType <= (SHADER_INPUT_BUILTIN_BIT | SHADER_INPUT_VARYING_BIT | SHADER_INPUT_CONSTANT_BIT); ++shaderType)
