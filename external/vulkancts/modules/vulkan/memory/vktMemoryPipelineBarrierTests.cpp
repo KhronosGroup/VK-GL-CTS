@@ -6743,6 +6743,248 @@ void RenderFragmentUniformTexelBuffer::verify (VerifyRenderPassContext& context,
 	}
 }
 
+class RenderFragmentStorageTexelBuffer : public RenderPassCommand
+{
+public:
+									RenderFragmentStorageTexelBuffer	(void) {}
+									~RenderFragmentStorageTexelBuffer	(void);
+
+	const char*						getName								(void) const { return "RenderFragmentStorageTexelBuffer"; }
+	void							logPrepare							(TestLog&, size_t) const;
+	void							logSubmit							(TestLog&, size_t) const;
+	void							prepare								(PrepareRenderPassContext&);
+	void							submit								(SubmitContext& context);
+	void							verify								(VerifyRenderPassContext&, size_t);
+
+private:
+	PipelineResources				m_resources;
+	vk::Move<vk::VkDescriptorPool>	m_descriptorPool;
+	vector<vk::VkDescriptorSet>		m_descriptorSets;
+	vector<vk::VkBufferView>		m_bufferViews;
+
+	const vk::DeviceInterface*		m_vkd;
+	vk::VkDevice					m_device;
+	vk::VkDeviceSize				m_bufferSize;
+	deUint32						m_maxStorageTexelCount;
+	size_t							m_targetWidth;
+	size_t							m_targetHeight;
+};
+
+RenderFragmentStorageTexelBuffer::~RenderFragmentStorageTexelBuffer (void)
+{
+	for (size_t bufferViewNdx = 0; bufferViewNdx < m_bufferViews.size(); bufferViewNdx++)
+	{
+		if (!!m_bufferViews[bufferViewNdx])
+		{
+			m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], DE_NULL);
+			m_bufferViews[bufferViewNdx] = (vk::VkBufferView)0;
+		}
+	}
+}
+
+void RenderFragmentStorageTexelBuffer::logPrepare (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Create pipeline for render buffer as storage buffer." << TestLog::EndMessage;
+}
+
+void RenderFragmentStorageTexelBuffer::logSubmit (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Render using buffer as storage buffer." << TestLog::EndMessage;
+}
+
+void RenderFragmentStorageTexelBuffer::prepare (PrepareRenderPassContext& context)
+{
+	const vk::InstanceInterface&				vki						= context.getContext().getInstanceInterface();
+	const vk::VkPhysicalDevice					physicalDevice			= context.getContext().getPhysicalDevice();
+	const vk::DeviceInterface&					vkd						= context.getContext().getDeviceInterface();
+	const vk::VkDevice							device					= context.getContext().getDevice();
+	const vk::VkRenderPass						renderPass				= context.getRenderPass();
+	const deUint32								subpass					= 0;
+	const vk::Unique<vk::VkShaderModule>		vertexShaderModule		(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("render-quad.vert"), 0));
+	const vk::Unique<vk::VkShaderModule>		fragmentShaderModule	(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("storage-texel-buffer.frag"), 0));
+	vector<vk::VkDescriptorSetLayoutBinding>	bindings;
+
+	m_device				= device;
+	m_vkd					= &vkd;
+	m_bufferSize			= context.getBufferSize();
+	m_maxStorageTexelCount	= vk::getPhysicalDeviceProperties(vki, physicalDevice).limits.maxTexelBufferElements;
+	m_targetWidth			= context.getTargetWidth();
+	m_targetHeight			= context.getTargetHeight();
+
+	{
+		const vk::VkDescriptorSetLayoutBinding binding =
+		{
+			0u,
+			vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+			1,
+			vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+			DE_NULL
+		};
+
+		bindings.push_back(binding);
+	}
+	const vk::VkPushConstantRange pushConstantRange =
+	{
+		vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+		0u,
+		16u
+	};
+
+	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 1u, &pushConstantRange, m_resources);
+
+	{
+		const deUint32							descriptorCount	= (deUint32)(divRoundUp(m_bufferSize, (vk::VkDeviceSize)m_maxStorageTexelCount * 4));
+		const vk::VkDescriptorPoolSize			poolSizes		=
+		{
+			vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+			descriptorCount
+		};
+		const vk::VkDescriptorPoolCreateInfo	createInfo		=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			DE_NULL,
+			vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+
+			descriptorCount,
+			1u,
+			&poolSizes,
+		};
+
+		m_descriptorPool = vk::createDescriptorPool(vkd, device, &createInfo);
+		m_descriptorSets.resize(descriptorCount, (vk::VkDescriptorSet)0);
+		m_bufferViews.resize(descriptorCount, (vk::VkBufferView)0);
+	}
+
+	for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
+	{
+		const deUint32							count			= (deUint32)(m_bufferSize < (descriptorSetNdx + 1) * m_maxStorageTexelCount * 4
+																? m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * 4
+																: m_maxStorageTexelCount * 4) / 4;
+		const vk::VkDescriptorSetLayout			layout			= *m_resources.descriptorSetLayout;
+		const vk::VkDescriptorSetAllocateInfo	allocateInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+
+			*m_descriptorPool,
+			1,
+			&layout
+		};
+
+		m_descriptorSets[descriptorSetNdx] = vk::allocateDescriptorSet(vkd, device, &allocateInfo).disown();
+
+		{
+			const vk::VkBufferViewCreateInfo createInfo =
+			{
+				vk::VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,
+				DE_NULL,
+				0u,
+
+				context.getBuffer(),
+				vk::VK_FORMAT_R32_UINT,
+				descriptorSetNdx * m_maxStorageTexelCount * 4,
+				count * 4
+			};
+
+			VK_CHECK(vkd.createBufferView(device, &createInfo, DE_NULL, &m_bufferViews[descriptorSetNdx]));
+		}
+
+		{
+			const vk::VkWriteDescriptorSet			write		=
+			{
+				vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				DE_NULL,
+				m_descriptorSets[descriptorSetNdx],
+				0u,
+				0u,
+				1u,
+				vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+				DE_NULL,
+				DE_NULL,
+				&m_bufferViews[descriptorSetNdx]
+			};
+
+			vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+		}
+	}
+}
+
+void RenderFragmentStorageTexelBuffer::submit (SubmitContext& context)
+{
+	const vk::DeviceInterface&	vkd				= context.getContext().getDeviceInterface();
+	const vk::VkCommandBuffer	commandBuffer	= context.getCommandBuffer();
+
+	vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
+
+	for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
+	{
+		const struct
+		{
+			const deUint32	callId;
+			const deUint32	valuesPerPixel;
+			const deUint32	maxStorageTexelCount;
+			const deUint32	width;
+		} callParams =
+		{
+			(deUint32)descriptorSetNdx,
+			(deUint32)divRoundUp<size_t>(m_descriptorSets.size() * de::min<size_t>(m_maxStorageTexelCount, (size_t)m_bufferSize / 4), m_targetWidth * m_targetHeight),
+			m_maxStorageTexelCount,
+			(deUint32)(m_bufferSize < (descriptorSetNdx + 1u) * m_maxStorageTexelCount * 4u
+								? m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * 4u
+								: m_maxStorageTexelCount * 4u) / 4u
+		};
+
+		vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u, 1u, &m_descriptorSets[descriptorSetNdx], 0u, DE_NULL);
+		vkd.cmdPushConstants(commandBuffer, *m_resources.pipelineLayout, vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u, (deUint32)sizeof(callParams), &callParams);
+		vkd.cmdDraw(commandBuffer, 6, 1, 0, 0);
+	}
+}
+
+void RenderFragmentStorageTexelBuffer::verify (VerifyRenderPassContext& context, size_t)
+{
+	const deUint32	valuesPerPixel	= (deUint32)divRoundUp<size_t>(m_descriptorSets.size() * de::min<size_t>(m_maxStorageTexelCount, (size_t)m_bufferSize / 4), m_targetWidth * m_targetHeight);
+
+	for (int y = 0; y < context.getReferenceTarget().getSize().y(); y++)
+	for (int x = 0; x < context.getReferenceTarget().getSize().x(); x++)
+	{
+		const size_t firstDescriptorSetNdx = de::min<size_t>((y * 256u + x) / (m_maxStorageTexelCount / valuesPerPixel), m_descriptorSets.size() - 1);
+
+		for (size_t descriptorSetNdx = firstDescriptorSetNdx; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
+		{
+			const size_t	offset	= descriptorSetNdx * m_maxStorageTexelCount * 4;
+			const deUint32	callId	= (deUint32)descriptorSetNdx;
+
+			const deUint32	id		= (deUint32)y * 256u + (deUint32)x;
+			const deUint32	count	= (deUint32)(m_bufferSize < (descriptorSetNdx + 1) * m_maxStorageTexelCount * 4
+									? m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * 4
+									: m_maxStorageTexelCount * 4) / 4;
+
+			if (y * 256u + x < callId * (m_maxStorageTexelCount / valuesPerPixel))
+				continue;
+			else
+			{
+				deUint32 value = id;
+
+				for (deUint32 i = 0; i < valuesPerPixel; i++)
+				{
+					value	= ((deUint32)context.getReference().get( offset + (value % count) * 4 + 0))
+							| (((deUint32)context.getReference().get(offset + (value % count) * 4 + 1)) << 8u)
+							| (((deUint32)context.getReference().get(offset + (value % count) * 4 + 2)) << 16u)
+							| (((deUint32)context.getReference().get(offset + (value % count) * 4 + 3)) << 24u);
+
+				}
+				const UVec4	vec	((value >>  0u) & 0xFFu,
+								 (value >>  8u) & 0xFFu,
+								 (value >> 16u) & 0xFFu,
+								 (value >> 24u) & 0xFFu);
+
+				context.getReferenceTarget().getAccess().setPixel(vec.asFloat() / Vec4(255.0f), x, y);
+			}
+		}
+	}
+}
+
 enum Op
 {
 	OP_MAP,
@@ -6814,6 +7056,7 @@ enum Op
 	OP_RENDER_FRAGMENT_STORAGE_BUFFER,
 
 	OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER,
+	OP_RENDER_FRAGMENT_STORAGE_TEXEL_BUFFER,
 
 	OP_RENDER_VERTEX_STORAGE_IMAGE,
 	OP_RENDER_VERTEX_SAMPLED_IMAGE,
@@ -7701,10 +7944,13 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 
 		if ((usage & USAGE_STORAGE_TEXEL_BUFFER) != 0
 			&& state.memoryDefined
-			&& state.hasBoundBufferMemory
-			&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
+			&& state.hasBoundBufferMemory)
 		{
-			ops.push_back(OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER);
+			if (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
+				ops.push_back(OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER);
+
+			if (state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
+				ops.push_back(OP_RENDER_FRAGMENT_STORAGE_TEXEL_BUFFER);
 		}
 
 		if ((usage & USAGE_STORAGE_IMAGE) != 0
@@ -8075,6 +8321,7 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 		}
 
 		case OP_RENDER_FRAGMENT_STORAGE_BUFFER:
+		case OP_RENDER_FRAGMENT_STORAGE_TEXEL_BUFFER:
 		{
 			DE_ASSERT(state.stage == STAGE_RENDER_PASS);
 
@@ -8275,6 +8522,8 @@ de::MovePtr<RenderPassCommand> createRenderPassCommand (de::Random&,
 		case OP_RENDER_FRAGMENT_STORAGE_BUFFER:			return de::MovePtr<RenderPassCommand>(new RenderFragmentStorageBuffer());
 
 		case OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderVertexStorageTexelBuffer());
+		case OP_RENDER_FRAGMENT_STORAGE_TEXEL_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderFragmentStorageTexelBuffer());
+
 		case OP_RENDER_VERTEX_STORAGE_IMAGE:			return de::MovePtr<RenderPassCommand>(new RenderVertexStorageImage());
 		case OP_RENDER_VERTEX_SAMPLED_IMAGE:			return de::MovePtr<RenderPassCommand>(new RenderVertexSampledImage());
 
@@ -9012,29 +9261,62 @@ struct AddPrograms
 
 		if (config.usage & USAGE_STORAGE_TEXEL_BUFFER)
 		{
-			// Vertex storage texel buffer rendering
-			const char* const vertexShader =
-				"#version 450\n"
-				"#extension GL_EXT_texture_buffer : require\n"
-				"highp float;\n"
-				"layout(set=0, binding=0, r32ui) uniform readonly highp uimageBuffer u_sampler;\n"
-				"out gl_PerVertex {\n"
-				"\tvec4 gl_Position;\n"
-				"\tfloat gl_PointSize;\n"
-				"};\n"
-				"void main (void) {\n"
-				"\tgl_PointSize = 1.0;\n"
-				"\thighp uint val = imageLoad(u_sampler, gl_VertexIndex / 2).x;\n"
-				"\tif (gl_VertexIndex % 2 == 0)\n"
-				"\t\tval = val & 0xFFFFu;\n"
-				"\telse\n"
-				"\t\tval = val >> 16;\n"
-				"\thighp vec2 pos = vec2(val & 0xFFu, val >> 8u) / vec2(255.0);\n"
-				"\tgl_Position = vec4(1.998 * pos - vec2(0.999), 0.0, 1.0);\n"
-				"}\n";
+			{
+				// Vertex storage texel buffer rendering
+				const char* const vertexShader =
+					"#version 450\n"
+					"#extension GL_EXT_texture_buffer : require\n"
+					"highp float;\n"
+					"layout(set=0, binding=0, r32ui) uniform readonly highp uimageBuffer u_sampler;\n"
+					"out gl_PerVertex {\n"
+					"\tvec4 gl_Position;\n"
+					"\tfloat gl_PointSize;\n"
+					"};\n"
+					"void main (void) {\n"
+					"\tgl_PointSize = 1.0;\n"
+					"\thighp uint val = imageLoad(u_sampler, gl_VertexIndex / 2).x;\n"
+					"\tif (gl_VertexIndex % 2 == 0)\n"
+					"\t\tval = val & 0xFFFFu;\n"
+					"\telse\n"
+					"\t\tval = val >> 16;\n"
+					"\thighp vec2 pos = vec2(val & 0xFFu, val >> 8u) / vec2(255.0);\n"
+					"\tgl_Position = vec4(1.998 * pos - vec2(0.999), 0.0, 1.0);\n"
+					"}\n";
 
-			sources.glslSources.add("storage-texel-buffer.vert")
-				<< glu::VertexSource(vertexShader);
+				sources.glslSources.add("storage-texel-buffer.vert")
+					<< glu::VertexSource(vertexShader);
+			}
+			{
+				// Fragment storage texel buffer rendering
+				const char* const fragmentShader =
+					"#version 310 es\n"
+					"#extension GL_EXT_texture_buffer : require\n"
+					"highp float;\n"
+					"layout(set=0, binding=0, r32ui) uniform readonly highp uimageBuffer u_sampler;\n"
+					"layout(location = 0) out highp vec4 o_color;\n"
+					"layout(push_constant) uniform PushC\n"
+					"{\n"
+					"\tuint callId;\n"
+					"\tuint valuesPerPixel;\n"
+					"\tuint maxTexelCount;\n"
+					"\tuint width;\n"
+					"} pushC;\n"
+					"void main (void) {\n"
+					"\thighp uint id = uint(gl_FragCoord.y) * 256u + uint(gl_FragCoord.x);\n"
+					"\thighp uint value = id;\n"
+					"\tif (uint(gl_FragCoord.y) * 256u + uint(gl_FragCoord.x) < pushC.callId * (pushC.maxTexelCount / pushC.valuesPerPixel))\n"
+					"\t\tdiscard;\n"
+					"\tfor (uint i = 0u; i < pushC.valuesPerPixel; i++)\n"
+					"\t{\n"
+					"\t\tvalue = imageLoad(u_sampler, int(value % pushC.width)).x;\n"
+					"\t}\n"
+					"\tuvec4 valueOut = uvec4(value & 0xFFu, (value >> 8u) & 0xFFu, (value >> 16u) & 0xFFu, (value >> 24u) & 0xFFu);\n"
+					"\to_color = vec4(valueOut) / vec4(255.0);\n"
+					"}\n";
+
+				sources.glslSources.add("storage-texel-buffer.frag")
+					<< glu::FragmentSource(fragmentShader);
+			}
 		}
 
 		if (config.usage & USAGE_STORAGE_IMAGE)
