@@ -852,8 +852,8 @@ vk::VkDeviceSize findMaxBufferSize (const vk::DeviceInterface&		vkd,
 									vk::VkDeviceSize				memorySize,
 									deUint32						memoryTypeIndex)
 {
-	vk::VkDeviceSize lastSuccess = 0;
-	vk::VkDeviceSize currentSize = memorySize / 2;
+	vk::VkDeviceSize	lastSuccess	= 0;
+	vk::VkDeviceSize	currentSize	= memorySize / 2;
 
 	{
 		const vk::Unique<vk::VkBuffer>  buffer			(createBuffer(vkd, device, memorySize, usage, sharingMode, queueFamilies));
@@ -1018,14 +1018,14 @@ Memory::Memory (const vk::InstanceInterface&	vki,
 class Context
 {
 public:
-												Context					(const vk::InstanceInterface&						vki,
-																		 const vk::DeviceInterface&							vkd,
-																		 vk::VkPhysicalDevice								physicalDevice,
-																		 vk::VkDevice										device,
-																		 vk::VkQueue										queue,
-																		 deUint32											queueFamilyIndex,
-																		 const vector<pair<deUint32, vk::VkQueue> >&		queues,
-																		 const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection)
+													Context					(const vk::InstanceInterface&						vki,
+																			 const vk::DeviceInterface&							vkd,
+																			 vk::VkPhysicalDevice								physicalDevice,
+																			 vk::VkDevice										device,
+																			 vk::VkQueue										queue,
+																			 deUint32											queueFamilyIndex,
+																			 const vector<pair<deUint32, vk::VkQueue> >&		queues,
+																			 const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection)
 		: m_vki					(vki)
 		, m_vkd					(vkd)
 		, m_physicalDevice		(physicalDevice)
@@ -1067,8 +1067,8 @@ private:
 class PrepareContext
 {
 public:
-							PrepareContext	(const Context&	context,
-											 const Memory&	memory)
+													PrepareContext			(const Context&	context,
+																			 const Memory&	memory)
 		: m_context	(context)
 		, m_memory	(memory)
 	{
@@ -1078,8 +1078,8 @@ public:
 	const Context&									getContext				(void) const { return m_context; }
 	const vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection		(void) const { return m_context.getBinaryCollection(); }
 
-	void					setBuffer		(vk::Move<vk::VkBuffer>	buffer,
-											 vk::VkDeviceSize		size)
+	void				setBuffer		(vk::Move<vk::VkBuffer>	buffer,
+										 vk::VkDeviceSize		size)
 	{
 		DE_ASSERT(!m_currentImage);
 		DE_ASSERT(!m_currentBuffer);
@@ -1088,20 +1088,20 @@ public:
 		m_currentBufferSize	= size;
 	}
 
-	vk::VkBuffer			getBuffer		(void) const { return *m_currentBuffer; }
-	vk::VkDeviceSize		getBufferSize	(void) const
+	vk::VkBuffer		getBuffer		(void) const { return *m_currentBuffer; }
+	vk::VkDeviceSize	getBufferSize	(void) const
 	{
 		DE_ASSERT(m_currentBuffer);
 		return m_currentBufferSize;
 	}
 
-	void					releaseBuffer	(void) { m_currentBuffer.disown(); }
+	void				releaseBuffer	(void) { m_currentBuffer.disown(); }
 
-	void					setImage		(vk::Move<vk::VkImage>	image,
-											 vk::VkImageLayout		layout,
-											 vk::VkDeviceSize		memorySize,
-											 deInt32				width,
-											 deInt32				height)
+	void				setImage		(vk::Move<vk::VkImage>	image,
+										 vk::VkImageLayout		layout,
+										 vk::VkDeviceSize		memorySize,
+										 deInt32				width,
+										 deInt32				height)
 	{
 		DE_ASSERT(!m_currentImage);
 		DE_ASSERT(!m_currentBuffer);
@@ -1136,9 +1136,9 @@ public:
 		return m_currentImageMemorySize;
 	}
 
-	void					releaseImage	(void) { m_currentImage.disown(); }
+	void				releaseImage	(void) { m_currentImage.disown(); }
 
-	vk::VkImageLayout		getImageLayout	(void) const
+	vk::VkImageLayout	getImageLayout	(void) const
 	{
 		DE_ASSERT(m_currentImage);
 		return m_currentImageLayout;
@@ -1375,7 +1375,6 @@ public:
 	void			logExecute			(TestLog& log, size_t commandIndex) const;
 	void			prepare				(PrepareContext& context);
 	void			execute				(ExecuteContext& context);
-
 	void			verify				(VerifyContext& context, size_t commandIndex);
 
 private:
@@ -6267,7 +6266,8 @@ void RenderFragmentUniformBuffer::submit (SubmitContext& context)
 		{
 			const deUint32	callId;
 			const deUint32	valuesPerPixel;
-		} callParams = {
+		} callParams =
+		{
 			(deUint32)descriptorSetNdx,
 			(deUint32)divRoundUp<size_t>(m_descriptorSets.size() * (MAX_UNIFORM_BUFFER_SIZE / 4), m_targetWidth * m_targetHeight)
 		};
@@ -6430,13 +6430,13 @@ void RenderFragmentStorageBuffer::prepare (PrepareRenderPassContext& context)
 		m_descriptorSet = vk::allocateDescriptorSet(vkd, device, &allocateInfo);
 
 		{
-			const vk::VkDescriptorBufferInfo		bufferInfo	=
+			const vk::VkDescriptorBufferInfo	bufferInfo	=
 			{
 				context.getBuffer(),
 				0u,
 				m_bufferSize
 			};
-			const vk::VkWriteDescriptorSet			write		=
+			const vk::VkWriteDescriptorSet		write		=
 			{
 				vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				DE_NULL,
@@ -6466,7 +6466,8 @@ void RenderFragmentStorageBuffer::submit (SubmitContext& context)
 	{
 		const deUint32	valuesPerPixel;
 		const deUint32	bufferSize;
-	} callParams = {
+	} callParams =
+	{
 		(deUint32)divRoundUp<vk::VkDeviceSize>(m_bufferSize / 4, m_targetWidth * m_targetHeight),
 		(deUint32)m_bufferSize
 	};
@@ -6501,6 +6502,244 @@ void RenderFragmentStorageBuffer::verify (VerifyRenderPassContext& context, size
 						 (value >> 24u) & 0xFFu);
 
 		context.getReferenceTarget().getAccess().setPixel(vec.asFloat() / Vec4(255.0f), x, y);
+	}
+}
+
+class RenderFragmentUniformTexelBuffer : public RenderPassCommand
+{
+public:
+									RenderFragmentUniformTexelBuffer	(void) {}
+									~RenderFragmentUniformTexelBuffer	(void);
+
+	const char*						getName								(void) const { return "RenderFragmentUniformTexelBuffer"; }
+	void							logPrepare							(TestLog&, size_t) const;
+	void							logSubmit							(TestLog&, size_t) const;
+	void							prepare								(PrepareRenderPassContext&);
+	void							submit								(SubmitContext& context);
+	void							verify								(VerifyRenderPassContext&, size_t);
+
+private:
+	PipelineResources				m_resources;
+	vk::Move<vk::VkDescriptorPool>	m_descriptorPool;
+	vector<vk::VkDescriptorSet>		m_descriptorSets;
+	vector<vk::VkBufferView>		m_bufferViews;
+
+	const vk::DeviceInterface*		m_vkd;
+	vk::VkDevice					m_device;
+	vk::VkDeviceSize				m_bufferSize;
+	deUint32						m_maxUniformTexelCount;
+	size_t							m_targetWidth;
+	size_t							m_targetHeight;
+};
+
+RenderFragmentUniformTexelBuffer::~RenderFragmentUniformTexelBuffer (void)
+{
+	for (size_t bufferViewNdx = 0; bufferViewNdx < m_bufferViews.size(); bufferViewNdx++)
+	{
+		if (!!m_bufferViews[bufferViewNdx])
+		{
+			m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], DE_NULL);
+			m_bufferViews[bufferViewNdx] = (vk::VkBufferView)0;
+		}
+	}
+}
+
+void RenderFragmentUniformTexelBuffer::logPrepare (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Create pipeline for render buffer as uniform buffer." << TestLog::EndMessage;
+}
+
+void RenderFragmentUniformTexelBuffer::logSubmit (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Render using buffer as uniform buffer." << TestLog::EndMessage;
+}
+
+void RenderFragmentUniformTexelBuffer::prepare (PrepareRenderPassContext& context)
+{
+	const vk::InstanceInterface&				vki						= context.getContext().getInstanceInterface();
+	const vk::VkPhysicalDevice					physicalDevice			= context.getContext().getPhysicalDevice();
+	const vk::DeviceInterface&					vkd						= context.getContext().getDeviceInterface();
+	const vk::VkDevice							device					= context.getContext().getDevice();
+	const vk::VkRenderPass						renderPass				= context.getRenderPass();
+	const deUint32								subpass					= 0;
+	const vk::Unique<vk::VkShaderModule>		vertexShaderModule		(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("render-quad.vert"), 0));
+	const vk::Unique<vk::VkShaderModule>		fragmentShaderModule	(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("uniform-texel-buffer.frag"), 0));
+	vector<vk::VkDescriptorSetLayoutBinding>	bindings;
+
+	m_device				= device;
+	m_vkd					= &vkd;
+	m_bufferSize			= context.getBufferSize();
+	m_maxUniformTexelCount	= vk::getPhysicalDeviceProperties(vki, physicalDevice).limits.maxTexelBufferElements;
+	m_targetWidth			= context.getTargetWidth();
+	m_targetHeight			= context.getTargetHeight();
+
+	{
+		const vk::VkDescriptorSetLayoutBinding binding =
+		{
+			0u,
+			vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+			1,
+			vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+			DE_NULL
+		};
+
+		bindings.push_back(binding);
+	}
+	const vk::VkPushConstantRange pushConstantRange =
+	{
+		vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+		0u,
+		12u
+	};
+
+	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 1u, &pushConstantRange, m_resources);
+
+	{
+		const deUint32							descriptorCount	= (deUint32)(divRoundUp(m_bufferSize, (vk::VkDeviceSize)m_maxUniformTexelCount * 4));
+		const vk::VkDescriptorPoolSize			poolSizes		=
+		{
+			vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+			descriptorCount
+		};
+		const vk::VkDescriptorPoolCreateInfo	createInfo		=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			DE_NULL,
+			vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+
+			descriptorCount,
+			1u,
+			&poolSizes,
+		};
+
+		m_descriptorPool = vk::createDescriptorPool(vkd, device, &createInfo);
+		m_descriptorSets.resize(descriptorCount, (vk::VkDescriptorSet)0);
+		m_bufferViews.resize(descriptorCount, (vk::VkBufferView)0);
+	}
+
+	for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
+	{
+		const deUint32							count			= (deUint32)(m_bufferSize < (descriptorSetNdx + 1) * m_maxUniformTexelCount * 4
+																? m_bufferSize - descriptorSetNdx * m_maxUniformTexelCount * 4
+																: m_maxUniformTexelCount * 4) / 4;
+		const vk::VkDescriptorSetLayout			layout			= *m_resources.descriptorSetLayout;
+		const vk::VkDescriptorSetAllocateInfo	allocateInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+
+			*m_descriptorPool,
+			1,
+			&layout
+		};
+
+		m_descriptorSets[descriptorSetNdx] = vk::allocateDescriptorSet(vkd, device, &allocateInfo).disown();
+
+		{
+			const vk::VkBufferViewCreateInfo createInfo =
+			{
+				vk::VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,
+				DE_NULL,
+				0u,
+
+				context.getBuffer(),
+				vk::VK_FORMAT_R32_UINT,
+				descriptorSetNdx * m_maxUniformTexelCount * 4,
+				count * 4
+			};
+
+			VK_CHECK(vkd.createBufferView(device, &createInfo, DE_NULL, &m_bufferViews[descriptorSetNdx]));
+		}
+
+		{
+			const vk::VkWriteDescriptorSet			write		=
+			{
+				vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				DE_NULL,
+				m_descriptorSets[descriptorSetNdx],
+				0u,
+				0u,
+				1u,
+				vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+				DE_NULL,
+				DE_NULL,
+				&m_bufferViews[descriptorSetNdx]
+			};
+
+			vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+		}
+	}
+}
+
+void RenderFragmentUniformTexelBuffer::submit (SubmitContext& context)
+{
+	const vk::DeviceInterface&	vkd				= context.getContext().getDeviceInterface();
+	const vk::VkCommandBuffer	commandBuffer	= context.getCommandBuffer();
+
+	vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
+
+	for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
+	{
+		const struct
+		{
+			const deUint32	callId;
+			const deUint32	valuesPerPixel;
+			const deUint32	maxUniformTexelCount;
+		} callParams =
+		{
+			(deUint32)descriptorSetNdx,
+			(deUint32)divRoundUp<size_t>(m_descriptorSets.size() * de::min<size_t>((size_t)m_bufferSize / 4, m_maxUniformTexelCount), m_targetWidth * m_targetHeight),
+			m_maxUniformTexelCount
+		};
+
+		vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u, 1u, &m_descriptorSets[descriptorSetNdx], 0u, DE_NULL);
+		vkd.cmdPushConstants(commandBuffer, *m_resources.pipelineLayout, vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u, (deUint32)sizeof(callParams), &callParams);
+		vkd.cmdDraw(commandBuffer, 6, 1, 0, 0);
+	}
+}
+
+void RenderFragmentUniformTexelBuffer::verify (VerifyRenderPassContext& context, size_t)
+{
+	const deUint32	valuesPerPixel	= (deUint32)divRoundUp<size_t>(m_descriptorSets.size() * de::min<size_t>((size_t)m_bufferSize / 4, m_maxUniformTexelCount), m_targetWidth * m_targetHeight);
+
+	for (int y = 0; y < context.getReferenceTarget().getSize().y(); y++)
+	for (int x = 0; x < context.getReferenceTarget().getSize().x(); x++)
+	{
+		const size_t firstDescriptorSetNdx = de::min<size_t>((y * 256u + x) / (m_maxUniformTexelCount / valuesPerPixel), m_descriptorSets.size() - 1);
+
+		for (size_t descriptorSetNdx = firstDescriptorSetNdx; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
+		{
+			const size_t	offset	= descriptorSetNdx * m_maxUniformTexelCount * 4;
+			const deUint32	callId	= (deUint32)descriptorSetNdx;
+
+			const deUint32	id		= (deUint32)y * 256u + (deUint32)x;
+			const deUint32	count	= (deUint32)(m_bufferSize < (descriptorSetNdx + 1) * m_maxUniformTexelCount * 4
+									? m_bufferSize - descriptorSetNdx * m_maxUniformTexelCount * 4
+									: m_maxUniformTexelCount * 4) / 4;
+
+			if (y * 256u + x < callId * (m_maxUniformTexelCount / valuesPerPixel))
+				continue;
+			else
+			{
+				deUint32 value = id;
+
+				for (deUint32 i = 0; i < valuesPerPixel; i++)
+				{
+					value	= ((deUint32)context.getReference().get( offset + (value % count) * 4 + 0))
+							| (((deUint32)context.getReference().get(offset + (value % count) * 4 + 1)) << 8u)
+							| (((deUint32)context.getReference().get(offset + (value % count) * 4 + 2)) << 16u)
+							| (((deUint32)context.getReference().get(offset + (value % count) * 4 + 3)) << 24u);
+
+				}
+				const UVec4	vec	((value >>  0u) & 0xFFu,
+								 (value >>  8u) & 0xFFu,
+								 (value >> 16u) & 0xFFu,
+								 (value >> 24u) & 0xFFu);
+
+				context.getReferenceTarget().getAccess().setPixel(vec.asFloat() / Vec4(255.0f), x, y);
+			}
+		}
 	}
 }
 
@@ -6566,7 +6805,10 @@ enum Op
 	OP_RENDER_INDEX_BUFFER,
 
 	OP_RENDER_VERTEX_UNIFORM_BUFFER,
+	OP_RENDER_FRAGMENT_UNIFORM_BUFFER,
+
 	OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER,
+	OP_RENDER_FRAGMENT_UNIFORM_TEXEL_BUFFER,
 
 	OP_RENDER_VERTEX_STORAGE_BUFFER,
 	OP_RENDER_FRAGMENT_STORAGE_BUFFER,
@@ -6575,8 +6817,6 @@ enum Op
 
 	OP_RENDER_VERTEX_STORAGE_IMAGE,
 	OP_RENDER_VERTEX_SAMPLED_IMAGE,
-
-	OP_RENDER_FRAGMENT_UNIFORM_BUFFER,
 };
 
 enum Stage
@@ -7383,7 +7623,8 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 					&& (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT)
 						|| state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT)))
 				|| ((usage & USAGE_UNIFORM_TEXEL_BUFFER)
-					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
+					&& (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT)
+						|| state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT)))
 				|| ((usage & USAGE_STORAGE_BUFFER)
 					&& (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT)
 						|| state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT)))
@@ -7438,10 +7679,13 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 
 		if ((usage & USAGE_UNIFORM_TEXEL_BUFFER) != 0
 			&& state.memoryDefined
-			&& state.hasBoundBufferMemory
-			&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
+			&& state.hasBoundBufferMemory)
 		{
-			ops.push_back(OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER);
+			if (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
+				ops.push_back(OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER);
+
+			if (state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
+				ops.push_back(OP_RENDER_FRAGMENT_UNIFORM_TEXEL_BUFFER);
 		}
 
 		if ((usage & USAGE_STORAGE_BUFFER) != 0
@@ -7811,6 +8055,7 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 		}
 
 		case OP_RENDER_FRAGMENT_UNIFORM_BUFFER:
+		case OP_RENDER_FRAGMENT_UNIFORM_TEXEL_BUFFER:
 		{
 			DE_ASSERT(state.stage == STAGE_RENDER_PASS);
 
@@ -8017,20 +8262,21 @@ de::MovePtr<RenderPassCommand> createRenderPassCommand (de::Random&,
 {
 	switch (op)
 	{
-		case OP_RENDER_VERTEX_BUFFER:				return de::MovePtr<RenderPassCommand>(new RenderVertexBuffer());
-		case OP_RENDER_INDEX_BUFFER:				return de::MovePtr<RenderPassCommand>(new RenderIndexBuffer());
+		case OP_RENDER_VERTEX_BUFFER:					return de::MovePtr<RenderPassCommand>(new RenderVertexBuffer());
+		case OP_RENDER_INDEX_BUFFER:					return de::MovePtr<RenderPassCommand>(new RenderIndexBuffer());
 
-		case OP_RENDER_VERTEX_UNIFORM_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderVertexUniformBuffer());
-		case OP_RENDER_FRAGMENT_UNIFORM_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderFragmentUniformBuffer());
+		case OP_RENDER_VERTEX_UNIFORM_BUFFER:			return de::MovePtr<RenderPassCommand>(new RenderVertexUniformBuffer());
+		case OP_RENDER_FRAGMENT_UNIFORM_BUFFER:			return de::MovePtr<RenderPassCommand>(new RenderFragmentUniformBuffer());
 
-		case OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderVertexUniformTexelBuffer());
+		case OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderVertexUniformTexelBuffer());
+		case OP_RENDER_FRAGMENT_UNIFORM_TEXEL_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderFragmentUniformTexelBuffer());
 
-		case OP_RENDER_VERTEX_STORAGE_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderVertexStorageBuffer());
-		case OP_RENDER_FRAGMENT_STORAGE_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderFragmentStorageBuffer());
+		case OP_RENDER_VERTEX_STORAGE_BUFFER:			return de::MovePtr<RenderPassCommand>(new RenderVertexStorageBuffer());
+		case OP_RENDER_FRAGMENT_STORAGE_BUFFER:			return de::MovePtr<RenderPassCommand>(new RenderFragmentStorageBuffer());
 
-		case OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER:	return de::MovePtr<RenderPassCommand>(new RenderVertexStorageTexelBuffer());
-		case OP_RENDER_VERTEX_STORAGE_IMAGE:		return de::MovePtr<RenderPassCommand>(new RenderVertexStorageImage());
-		case OP_RENDER_VERTEX_SAMPLED_IMAGE:		return de::MovePtr<RenderPassCommand>(new RenderVertexSampledImage());
+		case OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER:		return de::MovePtr<RenderPassCommand>(new RenderVertexStorageTexelBuffer());
+		case OP_RENDER_VERTEX_STORAGE_IMAGE:			return de::MovePtr<RenderPassCommand>(new RenderVertexStorageImage());
+		case OP_RENDER_VERTEX_SAMPLED_IMAGE:			return de::MovePtr<RenderPassCommand>(new RenderVertexSampledImage());
 
 		default:
 			DE_FATAL("Unknown op");
@@ -8148,12 +8394,12 @@ de::MovePtr<Command> createCmdCommands (const Memory&	memory,
 	}
 }
 
-void createCommands (vector<Command*>&			commands,
-					 deUint32					seed,
-					 const Memory&				memory,
-					 Usage						usage,
-					 vk::VkSharingMode			sharingMode,
-					 size_t						opCount)
+void createCommands (vector<Command*>&	commands,
+					 deUint32			seed,
+					 const Memory&		memory,
+					 Usage				usage,
+					 vk::VkSharingMode	sharingMode,
+					 size_t				opCount)
 {
 	State			state		(usage, seed);
 	// Used to select next operation only
@@ -8210,10 +8456,10 @@ public:
 
 	typedef bool(MemoryTestInstance::*StageFunc)(void);
 
-												MemoryTestInstance	(::vkt::Context& context, const TestConfig& config);
-												~MemoryTestInstance	(void);
+												MemoryTestInstance				(::vkt::Context& context, const TestConfig& config);
+												~MemoryTestInstance				(void);
 
-	tcu::TestStatus								iterate				(void);
+	tcu::TestStatus								iterate							(void);
 
 private:
 	const TestConfig							m_config;
@@ -8425,11 +8671,11 @@ bool MemoryTestInstance::createCommandsAndAllocateMemory (void)
 
 bool MemoryTestInstance::prepare (void)
 {
-	TestLog&					log				= m_context.getTestContext().getLog();
-	const tcu::ScopedLogSection	section			(log, "MemoryType" + de::toString(m_memoryTypeNdx) + "Prepare" + de::toString(m_iteration),
-													  "Memory type " + de::toString(m_memoryTypeNdx) + " prepare iteration" + de::toString(m_iteration));
+	TestLog&					log		= m_context.getTestContext().getLog();
+	const tcu::ScopedLogSection	section	(log, "MemoryType" + de::toString(m_memoryTypeNdx) + "Prepare" + de::toString(m_iteration),
+											  "Memory type " + de::toString(m_memoryTypeNdx) + " prepare iteration" + de::toString(m_iteration));
 
-	m_prepareContext			= MovePtr<PrepareContext>(new PrepareContext(*m_renderContext, *m_memory));
+	m_prepareContext = MovePtr<PrepareContext>(new PrepareContext(*m_renderContext, *m_memory));
 
 	DE_ASSERT(!m_commands.empty());
 
@@ -8714,21 +8960,54 @@ struct AddPrograms
 
 		if (config.usage & USAGE_UNIFORM_TEXEL_BUFFER)
 		{
-			// Vertex uniform texel buffer rendering
-			const char* const vertexShader =
-				"#version 310 es\n"
-				"#extension GL_EXT_texture_buffer : require\n"
-				"highp float;\n"
-				"layout(set=0, binding=0) uniform highp usamplerBuffer u_sampler;\n"
-				"void main (void) {\n"
-				"\tgl_PointSize = 1.0;\n"
-				"\thighp uint val = texelFetch(u_sampler, gl_VertexIndex).x;\n"
-				"\thighp vec2 pos = vec2(val & 0xFFu, val >> 8u) / vec2(255.0);\n"
-				"\tgl_Position = vec4(1.998 * pos - vec2(0.999), 0.0, 1.0);\n"
-				"}\n";
+			{
+				// Vertex uniform texel buffer rendering
+				const char* const vertexShader =
+					"#version 310 es\n"
+					"#extension GL_EXT_texture_buffer : require\n"
+					"highp float;\n"
+					"layout(set=0, binding=0) uniform highp usamplerBuffer u_sampler;\n"
+					"void main (void) {\n"
+					"\tgl_PointSize = 1.0;\n"
+					"\thighp uint val = texelFetch(u_sampler, gl_VertexIndex).x;\n"
+					"\thighp vec2 pos = vec2(val & 0xFFu, val >> 8u) / vec2(255.0);\n"
+					"\tgl_Position = vec4(1.998 * pos - vec2(0.999), 0.0, 1.0);\n"
+					"}\n";
 
-			sources.glslSources.add("uniform-texel-buffer.vert")
-				<< glu::VertexSource(vertexShader);
+				sources.glslSources.add("uniform-texel-buffer.vert")
+					<< glu::VertexSource(vertexShader);
+			}
+
+			{
+				// Fragment uniform texel buffer rendering
+				const char* const fragmentShader =
+					"#version 310 es\n"
+					"#extension GL_EXT_texture_buffer : require\n"
+					"highp float;\n"
+					"layout(set=0, binding=0) uniform highp usamplerBuffer u_sampler;\n"
+					"layout(location = 0) out highp vec4 o_color;\n"
+					"layout(push_constant) uniform PushC\n"
+					"{\n"
+					"\tuint callId;\n"
+					"\tuint valuesPerPixel;\n"
+					"\tuint maxTexelCount;\n"
+					"} pushC;\n"
+					"void main (void) {\n"
+					"\thighp uint id = uint(gl_FragCoord.y) * 256u + uint(gl_FragCoord.x);\n"
+					"\thighp uint value = id;\n"
+					"\tif (uint(gl_FragCoord.y) * 256u + uint(gl_FragCoord.x) < pushC.callId * (pushC.maxTexelCount / pushC.valuesPerPixel))\n"
+					"\t\tdiscard;\n"
+					"\tfor (uint i = 0u; i < pushC.valuesPerPixel; i++)\n"
+					"\t{\n"
+					"\t\tvalue = texelFetch(u_sampler, int(value % uint(textureSize(u_sampler)))).x;\n"
+					"\t}\n"
+					"\tuvec4 valueOut = uvec4(value & 0xFFu, (value >> 8u) & 0xFFu, (value >> 16u) & 0xFFu, (value >> 24u) & 0xFFu);\n"
+					"\to_color = vec4(valueOut) / vec4(255.0);\n"
+					"}\n";
+
+				sources.glslSources.add("uniform-texel-buffer.frag")
+					<< glu::FragmentSource(fragmentShader);
+			}
 		}
 
 		if (config.usage & USAGE_STORAGE_TEXEL_BUFFER)
