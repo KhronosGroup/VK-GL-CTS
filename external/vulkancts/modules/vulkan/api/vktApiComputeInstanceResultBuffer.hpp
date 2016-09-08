@@ -45,9 +45,12 @@ public:
 
 											ComputeInstanceResultBuffer (const vk::DeviceInterface &vki,
 																				vk::VkDevice device,
-																				vk::Allocator &allocator);
+																				vk::Allocator &allocator,
+																				float initValue = -1.0f);
 
 	void									readResultContentsTo(tcu::Vec4 (* results)[4]) const;
+
+	void									readResultContentsTo(deUint32* result) const;
 
 	inline vk::VkBuffer						getBuffer(void) const { return *m_buffer; }
 
@@ -57,7 +60,8 @@ private:
 	static vk::Move<vk::VkBuffer>			createResultBuffer(const vk::DeviceInterface &vki,
 														vk::VkDevice device,
 														vk::Allocator &allocator,
-														de::MovePtr<vk::Allocation>* outAllocation);
+														de::MovePtr<vk::Allocation>* outAllocation,
+														float initValue = -1.0f);
 
 	static vk::VkBufferMemoryBarrier		createResultBufferBarrier(vk::VkBuffer buffer);
 
