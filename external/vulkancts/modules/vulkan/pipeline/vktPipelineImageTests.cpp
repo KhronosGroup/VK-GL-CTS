@@ -336,9 +336,18 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx,
 			imageSizes.push_back(IVec3(2, 2, 2));
 			imageSizes.push_back(IVec3(16, 16, 16));
 
+			// NPOT cube
+			imageSizes.push_back(IVec3(3, 3, 3));
+			imageSizes.push_back(IVec3(5, 5, 5));
+			imageSizes.push_back(IVec3(11, 11, 11));
+
 			// POT non-cube
 			imageSizes.push_back(IVec3(32, 16, 8));
 			imageSizes.push_back(IVec3(8, 16, 32));
+
+			// NPOT non-cube
+			imageSizes.push_back(IVec3(17, 11, 5));
+			imageSizes.push_back(IVec3(5, 11, 17));
 			break;
 
 		case VK_IMAGE_VIEW_TYPE_CUBE:
