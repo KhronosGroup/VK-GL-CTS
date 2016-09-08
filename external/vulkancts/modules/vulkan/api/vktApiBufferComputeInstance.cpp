@@ -33,6 +33,54 @@ namespace api
 
 using namespace vk;
 
+Move<VkBuffer> createDataBuffer (vkt::Context&				context,
+								 deUint32					offset,
+								 deUint32					bufferSize,
+								 deUint32					initData,
+								 deUint32					initDataSize,
+								 deUint32					uninitData,
+								 de::MovePtr<Allocation>*	outAllocation)
+{
+	const DeviceInterface&					vki             = context.getDeviceInterface();
+	const VkDevice							device          = context.getDevice();
+	Allocator&								allocator       = context.getDefaultAllocator();
+
+	DE_ASSERT(offset + initDataSize <= bufferSize);
+
+	const VkBufferUsageFlags				usageFlags      = (VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+	const VkBufferCreateInfo				createInfo      =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		DE_NULL,
+		0u,															// flags
+		(VkDeviceSize)bufferSize,									// size
+		usageFlags,													// usage
+		VK_SHARING_MODE_EXCLUSIVE,									// sharingMode
+		0u,															// queueFamilyCount
+		DE_NULL,													// pQueueFamilyIndices
+	};
+	Move<VkBuffer>							buffer(createBuffer(vki, device, &createInfo));
+
+	const VkMemoryRequirements				requirements    = getBufferMemoryRequirements(vki, device, *buffer);
+	de::MovePtr<Allocation>					allocation      = allocator.allocate(requirements, MemoryRequirement::HostVisible);
+
+	VK_CHECK(vki.bindBufferMemory(device, *buffer, allocation->getMemory(), allocation->getOffset()));
+
+	void* const								mapPtr          = allocation->getHostPtr();
+
+	if (offset)
+		deMemset(mapPtr, uninitData, (size_t)offset);
+
+	deMemset((deUint8 *)mapPtr + offset, initData, initDataSize);
+	deMemset((deUint8 *)mapPtr + offset + initDataSize, uninitData,
+		(size_t)bufferSize - (size_t)offset - initDataSize);
+
+	flushMappedMemoryRange(vki, device, allocation->getMemory(), allocation->getOffset(), bufferSize);
+
+	*outAllocation = allocation;
+	return buffer;
+}
+
 Move<VkBuffer> createColorDataBuffer (deUint32 offset,
 									  deUint32 bufferSize,
 									  const tcu::Vec4& color1,
@@ -64,7 +112,6 @@ Move<VkBuffer> createColorDataBuffer (deUint32 offset,
 	de::MovePtr<Allocation>					allocation				= allocator.allocate(requirements, MemoryRequirement::HostVisible);
 
 	VK_CHECK(vki.bindBufferMemory(device, *buffer, allocation->getMemory(), allocation->getOffset()));
-
 
 	void*									mapPtr					= allocation->getHostPtr();
 
@@ -105,6 +152,41 @@ Move<VkDescriptorPool> createDescriptorPool (vkt::Context& context)
 		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,1u)
 		.build(vki, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
+}
+
+Move<VkDescriptorSet> createDescriptorSet (vkt::Context& context,
+											VkDescriptorPool pool,
+											VkDescriptorSetLayout layout,
+											VkBuffer buffer,
+											deUint32 offset,
+											VkBuffer resBuf)
+{
+	const DeviceInterface&					vki             = context.getDeviceInterface();
+	const VkDevice							device          = context.getDevice();
+
+	const vk::VkDescriptorBufferInfo		resultInfo      = makeDescriptorBufferInfo(resBuf, 0u, (vk::VkDeviceSize) ComputeInstanceResultBuffer::DATA_SIZE);
+	const vk::VkDescriptorBufferInfo		bufferInfo      = makeDescriptorBufferInfo(buffer, (vk::VkDeviceSize)offset, (vk::VkDeviceSize)sizeof(tcu::Vec4[2]));
+
+	const vk::VkDescriptorSetAllocateInfo	allocInfo       =
+	{
+		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		DE_NULL,
+		pool,
+		1u,
+		&layout
+	};
+	vk::Move<vk::VkDescriptorSet>			descriptorSet   = allocateDescriptorSet(vki, device, &allocInfo);
+
+	DescriptorSetUpdateBuilder builder;
+
+	// result
+	builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultInfo);
+
+	// buffer
+	builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo);
+
+	builder.update(vki, device);
+	return descriptorSet;
 }
 
 Move<VkDescriptorSet> createDescriptorSet (VkDescriptorPool pool,

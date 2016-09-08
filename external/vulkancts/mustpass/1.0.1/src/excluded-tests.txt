@@ -331,10 +331,4 @@ dEQP-VK.api.copy_and_blit.blit_image.all_formats.a1r5g5b5_unorm_pack16_r32g32b32
 dEQP-VK.spirv_assembly.instruction.compute.opfunord.*
 
 # New tests from AOSP
-dEQP-VK.memory.pipeline_barrier.*_uniform_buffer.*
-dEQP-VK.memory.pipeline_barrier.*_uniform_texel_buffer.*
-dEQP-VK.memory.pipeline_barrier.*_storage_buffer.*
-dEQP-VK.memory.pipeline_barrier.*_storage_texel_buffer.*
-dEQP-VK.memory.pipeline_barrier.*_storage_image.*
-dEQP-VK.memory.pipeline_barrier.*_image_sampled.*
 dEQP-VK.texture_filtering.*
