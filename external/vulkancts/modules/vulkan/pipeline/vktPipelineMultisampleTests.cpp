@@ -38,6 +38,7 @@
 #include "vkRefUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "deUniquePtr.hpp"
+#include "deSharedPtr.hpp"
 #include "deStringUtil.hpp"
 #include "deMemory.h"
 
@@ -60,16 +61,29 @@ enum GeometryType
 	GEOMETRY_TYPE_OPAQUE_LINE,
 	GEOMETRY_TYPE_OPAQUE_POINT,
 	GEOMETRY_TYPE_OPAQUE_QUAD,
+	GEOMETRY_TYPE_OPAQUE_QUAD_NONZERO_DEPTH,	//!< placed at z = 0.5
 	GEOMETRY_TYPE_TRANSLUCENT_QUAD,
+	GEOMETRY_TYPE_INVISIBLE_TRIANGLE,
 	GEOMETRY_TYPE_INVISIBLE_QUAD,
 	GEOMETRY_TYPE_GRADIENT_QUAD
 };
 
+enum TestModeBits
+{
+	TEST_MODE_DEPTH_BIT		= 1u,
+	TEST_MODE_STENCIL_BIT	= 2u,
+};
+typedef deUint32 TestModeFlags;
 
+void									initMultisamplePrograms				(SourceCollections& sources, GeometryType geometryType);
 bool									isSupportedSampleCount				(const InstanceInterface& instanceInterface, VkPhysicalDevice physicalDevice, VkSampleCountFlagBits rasterizationSamples);
+bool									isSupportedDepthStencilFormat		(const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkFormat format);
 VkPipelineColorBlendAttachmentState		getDefaultColorBlendAttachmentState	(void);
 deUint32								getUniqueColorsCount				(const tcu::ConstPixelBufferAccess& image);
-void									initMultisamplePrograms				(SourceCollections& sources, GeometryType geometryType);
+VkImageAspectFlags						getImageAspectFlags					(const VkFormat format);
+VkPrimitiveTopology						getPrimitiveTopology				(const GeometryType geometryType);
+std::vector<Vertex4RGBA>				generateVertices					(const GeometryType geometryType);
+VkFormat								findSupportedDepthStencilFormat		(Context& context, const bool useDepth, const bool useStencil);
 
 class MultisampleTest : public vkt::TestCase
 {
@@ -81,7 +95,7 @@ public:
 																					 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																					 const VkPipelineColorBlendAttachmentState&		blendState,
 																					 GeometryType									geometryType);
-	virtual										~MultisampleTest					(void);
+	virtual										~MultisampleTest					(void) {}
 
 	virtual void								initPrograms						(SourceCollections& programCollection) const;
 	virtual TestInstance*						createInstance						(Context& context) const;
@@ -105,7 +119,8 @@ public:
 																					 const std::string&		name,
 																					 const std::string&		description,
 																					 VkSampleCountFlagBits	rasterizationSamples,
-																					 GeometryType			geometryType);
+																					 GeometryType			geometryType,
+																					 TestModeFlags			modeFlags				= 0u);
 	virtual										~RasterizationSamplesTest			(void) {}
 
 protected:
@@ -116,6 +131,8 @@ protected:
 																					 const VkPipelineColorBlendAttachmentState&		colorBlendState) const;
 
 	static VkPipelineMultisampleStateCreateInfo	getRasterizationSamplesStateParams	(VkSampleCountFlagBits rasterizationSamples);
+
+	const TestModeFlags							m_modeFlags;
 };
 
 class MinSampleShadingTest : public MultisampleTest
@@ -205,14 +222,28 @@ protected:
 	GeometryType								m_geometryType;
 };
 
+typedef de::SharedPtr<Unique<VkPipeline> > VkPipelineSp;
+
 class MultisampleRenderer
 {
 public:
 												MultisampleRenderer			(Context&										context,
-																			 VkFormat										colorFormat,
+																			 const VkFormat									colorFormat,
 																			 const tcu::IVec2&								renderSize,
-																			 VkPrimitiveTopology							topology,
+																			 const VkPrimitiveTopology						topology,
 																			 const std::vector<Vertex4RGBA>&				vertices,
+																			 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
+																			 const VkPipelineColorBlendAttachmentState&		blendState);
+
+												MultisampleRenderer			(Context&										context,
+																			 const VkFormat									colorFormat,
+																			 const VkFormat									depthStencilFormat,
+																			 const tcu::IVec2&								renderSize,
+																			 const bool										useDepth,
+																			 const bool										useStencil,
+																			 const deUint32									numTopologies,
+																			 const VkPrimitiveTopology*						pTopology,
+																			 const std::vector<Vertex4RGBA>*				pVertices,
 																			 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																			 const VkPipelineColorBlendAttachmentState&		blendState);
 
@@ -221,10 +252,18 @@ public:
 	de::MovePtr<tcu::TextureLevel>				render						(void);
 
 protected:
+	void										initialize					(Context&										context,
+																			 const deUint32									numTopologies,
+																			 const VkPrimitiveTopology*						pTopology,
+																			 const std::vector<Vertex4RGBA>*				pVertices);
+
 	Context&									m_context;
 
 	const VkFormat								m_colorFormat;
+	const VkFormat								m_depthStencilFormat;
 	tcu::IVec2									m_renderSize;
+	const bool									m_useDepth;
+	const bool									m_useStencil;
 
 	const VkPipelineMultisampleStateCreateInfo	m_multisampleStateParams;
 	const VkPipelineColorBlendAttachmentState	m_colorBlendState;
@@ -237,6 +276,10 @@ protected:
 	de::MovePtr<Allocation>						m_resolveImageAlloc;
 	Move<VkImageView>							m_resolveAttachmentView;
 
+	Move<VkImage>								m_depthStencilImage;
+	de::MovePtr<Allocation>						m_depthStencilImageAlloc;
+	Move<VkImageView>							m_depthStencilAttachmentView;
+
 	Move<VkRenderPass>							m_renderPass;
 	Move<VkFramebuffer>							m_framebuffer;
 
@@ -247,7 +290,7 @@ protected:
 	de::MovePtr<Allocation>						m_vertexBufferAlloc;
 
 	Move<VkPipelineLayout>						m_pipelineLayout;
-	Move<VkPipeline>							m_graphicsPipeline;
+	std::vector<VkPipelineSp>					m_graphicsPipelines;
 
 	Move<VkCommandPool>							m_cmdPool;
 	Move<VkCommandBuffer>						m_cmdBuffer;
@@ -258,23 +301,26 @@ protected:
 class RasterizationSamplesInstance : public vkt::TestInstance
 {
 public:
-									RasterizationSamplesInstance	(Context&										context,
-																	 VkPrimitiveTopology							topology,
-																	 const std::vector<Vertex4RGBA>&				vertices,
-																	 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
-																	 const VkPipelineColorBlendAttachmentState&		blendState);
-	virtual							~RasterizationSamplesInstance	(void) {}
+										RasterizationSamplesInstance	(Context&										context,
+																		 VkPrimitiveTopology							topology,
+																		 const std::vector<Vertex4RGBA>&				vertices,
+																		 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
+																		 const VkPipelineColorBlendAttachmentState&		blendState,
+																		 const TestModeFlags							modeFlags);
+	virtual								~RasterizationSamplesInstance	(void) {}
 
-	virtual tcu::TestStatus			iterate							(void);
+	virtual tcu::TestStatus				iterate							(void);
 
 protected:
-	virtual tcu::TestStatus			verifyImage						(const tcu::ConstPixelBufferAccess& result);
+	virtual tcu::TestStatus				verifyImage						(const tcu::ConstPixelBufferAccess& result);
 
-	const VkFormat					m_colorFormat;
-	const tcu::IVec2				m_renderSize;
-	const VkPrimitiveTopology		m_primitiveTopology;
-	const std::vector<Vertex4RGBA>	m_vertices;
-	MultisampleRenderer				m_multisampleRenderer;
+	const VkFormat						m_colorFormat;
+	const tcu::IVec2					m_renderSize;
+	const VkPrimitiveTopology			m_primitiveTopology;
+	const std::vector<Vertex4RGBA>		m_vertices;
+	const std::vector<Vertex4RGBA>		m_fullQuadVertices;			//!< used by depth/stencil case
+	const TestModeFlags					m_modeFlags;
+	de::MovePtr<MultisampleRenderer>	m_multisampleRenderer;
 };
 
 class MinSampleShadingInstance : public vkt::TestInstance
@@ -452,6 +498,188 @@ deUint32 getUniqueColorsCount (const tcu::ConstPixelBufferAccess& image)
 	return (deUint32)histogram.size();
 }
 
+VkImageAspectFlags getImageAspectFlags (const VkFormat format)
+{
+	const tcu::TextureFormat tcuFormat = mapVkFormat(format);
+
+	if      (tcuFormat.order == tcu::TextureFormat::DS)		return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	else if (tcuFormat.order == tcu::TextureFormat::D)		return VK_IMAGE_ASPECT_DEPTH_BIT;
+	else if (tcuFormat.order == tcu::TextureFormat::S)		return VK_IMAGE_ASPECT_STENCIL_BIT;
+
+	DE_ASSERT(false);
+	return 0u;
+}
+
+std::vector<Vertex4RGBA> generateVertices (const GeometryType geometryType)
+{
+	std::vector<Vertex4RGBA> vertices;
+
+	switch (geometryType)
+	{
+		case GEOMETRY_TYPE_OPAQUE_TRIANGLE:
+		case GEOMETRY_TYPE_INVISIBLE_TRIANGLE:
+		{
+			Vertex4RGBA vertexData[3] =
+			{
+				{
+					tcu::Vec4(-0.75f, 0.0f, 0.0f, 1.0f),
+					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
+				},
+				{
+					tcu::Vec4(0.75f, 0.125f, 0.0f, 1.0f),
+					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
+				},
+				{
+					tcu::Vec4(0.75f, -0.125f, 0.0f, 1.0f),
+					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
+				}
+			};
+
+			if (geometryType == GEOMETRY_TYPE_INVISIBLE_TRIANGLE)
+			{
+				for (int i = 0; i < 3; i++)
+					vertexData[i].color = tcu::Vec4();
+			}
+
+			vertices = std::vector<Vertex4RGBA>(vertexData, vertexData + 3);
+			break;
+		}
+
+		case GEOMETRY_TYPE_OPAQUE_LINE:
+		{
+			const Vertex4RGBA vertexData[2] =
+			{
+				{
+					tcu::Vec4(-0.75f, 0.25f, 0.0f, 1.0f),
+					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
+				},
+				{
+					tcu::Vec4(0.75f, -0.25f, 0.0f, 1.0f),
+					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
+				}
+			};
+
+			vertices = std::vector<Vertex4RGBA>(vertexData, vertexData + 2);
+			break;
+		}
+
+		case GEOMETRY_TYPE_OPAQUE_POINT:
+		{
+			const Vertex4RGBA vertex =
+			{
+				tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f),
+				tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
+			};
+
+			vertices = std::vector<Vertex4RGBA>(1, vertex);
+			break;
+		}
+
+		case GEOMETRY_TYPE_OPAQUE_QUAD:
+		case GEOMETRY_TYPE_OPAQUE_QUAD_NONZERO_DEPTH:
+		case GEOMETRY_TYPE_TRANSLUCENT_QUAD:
+		case GEOMETRY_TYPE_INVISIBLE_QUAD:
+		case GEOMETRY_TYPE_GRADIENT_QUAD:
+		{
+			Vertex4RGBA vertexData[4] =
+			{
+				{
+					tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
+				},
+				{
+					tcu::Vec4(1.0f, -1.0f, 0.0f, 1.0f),
+					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
+				},
+				{
+					tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f),
+					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
+				},
+				{
+					tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
+				}
+			};
+
+			if (geometryType == GEOMETRY_TYPE_TRANSLUCENT_QUAD)
+			{
+				for (int i = 0; i < 4; i++)
+					vertexData[i].color.w() = 0.25f;
+			}
+			else if (geometryType == GEOMETRY_TYPE_INVISIBLE_QUAD)
+			{
+				for (int i = 0; i < 4; i++)
+					vertexData[i].color.w() = 0.0f;
+			}
+			else if (geometryType == GEOMETRY_TYPE_GRADIENT_QUAD)
+			{
+				vertexData[0].color.w() = 0.0f;
+				vertexData[2].color.w() = 0.0f;
+			}
+			else if (geometryType == GEOMETRY_TYPE_OPAQUE_QUAD_NONZERO_DEPTH)
+			{
+				for (int i = 0; i < 4; i++)
+					vertexData[i].position.z() = 0.5f;
+			}
+
+			vertices = std::vector<Vertex4RGBA>(vertexData, vertexData + 4);
+			break;
+		}
+
+		default:
+			DE_ASSERT(false);
+	}
+	return vertices;
+}
+
+VkPrimitiveTopology getPrimitiveTopology (const GeometryType geometryType)
+{
+	switch (geometryType)
+	{
+		case GEOMETRY_TYPE_OPAQUE_TRIANGLE:
+		case GEOMETRY_TYPE_INVISIBLE_TRIANGLE:			return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+		case GEOMETRY_TYPE_OPAQUE_LINE:					return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+		case GEOMETRY_TYPE_OPAQUE_POINT:				return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+
+		case GEOMETRY_TYPE_OPAQUE_QUAD:
+		case GEOMETRY_TYPE_OPAQUE_QUAD_NONZERO_DEPTH:
+		case GEOMETRY_TYPE_TRANSLUCENT_QUAD:
+		case GEOMETRY_TYPE_INVISIBLE_QUAD:
+		case GEOMETRY_TYPE_GRADIENT_QUAD:				return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+		default:
+			DE_ASSERT(false);
+			return VK_PRIMITIVE_TOPOLOGY_LAST;
+	}
+}
+
+bool isSupportedDepthStencilFormat (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkFormat format)
+{
+	VkFormatProperties formatProps;
+	vki.getPhysicalDeviceFormatProperties(physDevice, format, &formatProps);
+	return (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0;
+}
+
+VkFormat findSupportedDepthStencilFormat (Context& context, const bool useDepth, const bool useStencil)
+{
+	if (useDepth && !useStencil)
+		return VK_FORMAT_D16_UNORM;		// must be supported
+
+	const InstanceInterface&	vki			= context.getInstanceInterface();
+	const VkPhysicalDevice		physDevice	= context.getPhysicalDevice();
+
+	// One of these formats must be supported.
+
+	if (isSupportedDepthStencilFormat(vki, physDevice, VK_FORMAT_D24_UNORM_S8_UINT))
+		return VK_FORMAT_D24_UNORM_S8_UINT;
+
+	if (isSupportedDepthStencilFormat(vki, physDevice, VK_FORMAT_D32_SFLOAT_S8_UINT))
+		return VK_FORMAT_D32_SFLOAT_S8_UINT;
+
+	return VK_FORMAT_UNDEFINED;
+}
+
 
 // MultisampleTest
 
@@ -479,10 +707,6 @@ MultisampleTest::MultisampleTest (tcu::TestContext&								testContext,
 	}
 }
 
-MultisampleTest::~MultisampleTest (void)
-{
-}
-
 void MultisampleTest::initPrograms (SourceCollections& programCollection) const
 {
 	initMultisamplePrograms(programCollection, m_geometryType);
@@ -490,121 +714,7 @@ void MultisampleTest::initPrograms (SourceCollections& programCollection) const
 
 TestInstance* MultisampleTest::createInstance (Context& context) const
 {
-	VkPrimitiveTopology			topology;
-	std::vector<Vertex4RGBA>	vertices;
-
-	switch (m_geometryType)
-	{
-		case GEOMETRY_TYPE_OPAQUE_TRIANGLE:
-		{
-			topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-			const Vertex4RGBA vertexData[3] =
-			{
-				{
-					tcu::Vec4(-0.75f, 0.0f, 0.0f, 1.0f),
-					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
-				},
-				{
-					tcu::Vec4(0.75f, 0.125f, 0.0f, 1.0f),
-					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
-				},
-				{
-					tcu::Vec4(0.75f, -0.125f, 0.0f, 1.0f),
-					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
-				}
-			};
-
-			vertices = std::vector<Vertex4RGBA>(vertexData, vertexData + 3);
-			break;
-		}
-
-		case GEOMETRY_TYPE_OPAQUE_LINE:
-		{
-			topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-
-			const Vertex4RGBA vertexData[2] =
-			{
-				{
-					tcu::Vec4(-0.75f, 0.25f, 0.0f, 1.0f),
-					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
-				},
-				{
-					tcu::Vec4(0.75f, -0.25f, 0.0f, 1.0f),
-					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
-				}
-			};
-
-			vertices = std::vector<Vertex4RGBA>(vertexData, vertexData + 2);
-			break;
-		}
-
-		case GEOMETRY_TYPE_OPAQUE_POINT:
-		{
-			topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-
-			const Vertex4RGBA vertex =
-			{
-				tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f),
-				tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
-			};
-
-			vertices = std::vector<Vertex4RGBA>(1, vertex);
-			break;
-		}
-
-		case GEOMETRY_TYPE_OPAQUE_QUAD:
-		case GEOMETRY_TYPE_TRANSLUCENT_QUAD:
-		case GEOMETRY_TYPE_INVISIBLE_QUAD:
-		case GEOMETRY_TYPE_GRADIENT_QUAD:
-		{
-			topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-
-			Vertex4RGBA vertexData[4] =
-			{
-				{
-					tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
-					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
-				},
-				{
-					tcu::Vec4(1.0f, -1.0f, 0.0f, 1.0f),
-					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
-				},
-				{
-					tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f),
-					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
-				},
-				{
-					tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
-					tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
-				}
-			};
-
-			if (m_geometryType == GEOMETRY_TYPE_TRANSLUCENT_QUAD)
-			{
-				for (int i = 0; i < 4; i++)
-					vertexData[i].color.w() = 0.25f;
-			}
-			else if (m_geometryType == GEOMETRY_TYPE_INVISIBLE_QUAD)
-			{
-				for (int i = 0; i < 4; i++)
-					vertexData[i].color.w() = 0.0f;
-			}
-			else if (m_geometryType == GEOMETRY_TYPE_GRADIENT_QUAD)
-			{
-				vertexData[0].color.w() = 0.0f;
-				vertexData[2].color.w() = 0.0f;
-			}
-
-			vertices = std::vector<Vertex4RGBA>(vertexData, vertexData + 4);
-			break;
-		}
-
-		default:
-			topology = VK_PRIMITIVE_TOPOLOGY_LAST;
-			DE_ASSERT(false);
-	}
-
-	return createMultisampleTestInstance(context, topology, vertices, m_multisampleStateParams, m_colorBlendState);
+	return createMultisampleTestInstance(context, getPrimitiveTopology(m_geometryType), generateVertices(m_geometryType), m_multisampleStateParams, m_colorBlendState);
 }
 
 
@@ -614,8 +724,10 @@ RasterizationSamplesTest::RasterizationSamplesTest (tcu::TestContext&		testConte
 													const std::string&		name,
 													const std::string&		description,
 													VkSampleCountFlagBits	rasterizationSamples,
-													GeometryType			geometryType)
+													GeometryType			geometryType,
+													TestModeFlags			modeFlags)
 	: MultisampleTest	(testContext, name, description, getRasterizationSamplesStateParams(rasterizationSamples), getDefaultColorBlendAttachmentState(), geometryType)
+	, m_modeFlags		(modeFlags)
 {
 }
 
@@ -643,7 +755,7 @@ TestInstance* RasterizationSamplesTest::createMultisampleTestInstance (Context&	
 																	   const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																	   const VkPipelineColorBlendAttachmentState&	colorBlendState) const
 {
-	return new RasterizationSamplesInstance(context, topology, vertices, multisampleStateParams, colorBlendState);
+	return new RasterizationSamplesInstance(context, topology, vertices, multisampleStateParams, colorBlendState, m_modeFlags);
 }
 
 
@@ -828,19 +940,42 @@ RasterizationSamplesInstance::RasterizationSamplesInstance (Context&										co
 															VkPrimitiveTopology								topology,
 															const std::vector<Vertex4RGBA>&					vertices,
 															const VkPipelineMultisampleStateCreateInfo&		multisampleStateParams,
-															const VkPipelineColorBlendAttachmentState&		blendState)
+															const VkPipelineColorBlendAttachmentState&		blendState,
+															const TestModeFlags								modeFlags)
 	: vkt::TestInstance		(context)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_renderSize			(32, 32)
 	, m_primitiveTopology	(topology)
 	, m_vertices			(vertices)
-	, m_multisampleRenderer	(context, m_colorFormat, m_renderSize, topology, vertices, multisampleStateParams, blendState)
+	, m_fullQuadVertices	(generateVertices(GEOMETRY_TYPE_OPAQUE_QUAD_NONZERO_DEPTH))
+	, m_modeFlags			(modeFlags)
 {
+	if (m_modeFlags != 0)
+	{
+		const bool		useDepth			= (m_modeFlags & TEST_MODE_DEPTH_BIT) != 0;
+		const bool		useStencil			= (m_modeFlags & TEST_MODE_STENCIL_BIT) != 0;
+		const VkFormat	depthStencilFormat	= findSupportedDepthStencilFormat(context, useDepth, useStencil);
+
+		if (depthStencilFormat == VK_FORMAT_UNDEFINED)
+			TCU_THROW(NotSupportedError, "Required depth/stencil format is not supported");
+
+		const VkPrimitiveTopology		pTopology[2] = { m_primitiveTopology, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP };
+		const std::vector<Vertex4RGBA>	pVertices[2] = { m_vertices, m_fullQuadVertices };
+
+		m_multisampleRenderer = de::MovePtr<MultisampleRenderer>(
+			new MultisampleRenderer(
+				context, m_colorFormat, depthStencilFormat, m_renderSize, useDepth, useStencil, 2u, pTopology, pVertices, multisampleStateParams, blendState));
+	}
+	else
+	{
+		m_multisampleRenderer = de::MovePtr<MultisampleRenderer>(
+			new MultisampleRenderer(context, m_colorFormat, m_renderSize, topology, vertices, multisampleStateParams, blendState));
+	}
 }
 
 tcu::TestStatus RasterizationSamplesInstance::iterate (void)
 {
-	de::MovePtr<tcu::TextureLevel> level(m_multisampleRenderer.render());
+	de::MovePtr<tcu::TextureLevel> level(m_multisampleRenderer->render());
 	return verifyImage(level->getAccess());
 }
 
@@ -882,12 +1017,20 @@ tcu::TestStatus RasterizationSamplesInstance::verifyImage (const tcu::ConstPixel
 			renderState.point.pointSize = deFloatMin(3.0f, deviceProperties.limits.pointSizeRange[1]);
 		}
 
-		refRenderer.colorClear(tcu::Vec4(0.0f));
-		refRenderer.draw(renderState, mapVkPrimitiveTopology(m_primitiveTopology), m_vertices);
+		if (m_modeFlags == 0)
+		{
+			refRenderer.colorClear(tcu::Vec4(0.0f));
+			refRenderer.draw(renderState, mapVkPrimitiveTopology(m_primitiveTopology), m_vertices);
+		}
+		else
+		{
+			// For depth/stencil case the primitive is invisible and the surroundings are filled red.
+			refRenderer.colorClear(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+			refRenderer.draw(renderState, mapVkPrimitiveTopology(m_primitiveTopology), m_vertices);
+		}
 
 		if (!tcu::fuzzyCompare(m_context.getTestContext().getLog(), "FuzzyImageCompare", "Image comparison", refRenderer.getAccess(), result, 0.05f, tcu::COMPARE_LOG_RESULT))
 			return tcu::TestStatus::fail("Primitive has unexpected shape");
-
 	}
 
 	return tcu::TestStatus::pass("Primitive rendered, unique colors within expected bounds");
@@ -1266,20 +1409,53 @@ tcu::TestStatus AlphaToCoverageInstance::verifyImage (const tcu::ConstPixelBuffe
 // MultisampleRenderer
 
 MultisampleRenderer::MultisampleRenderer (Context&										context,
-										  VkFormat										colorFormat,
+										  const VkFormat								colorFormat,
 										  const tcu::IVec2&								renderSize,
-										  VkPrimitiveTopology							topology,
+										  const VkPrimitiveTopology						topology,
 										  const std::vector<Vertex4RGBA>&				vertices,
 										  const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 										  const VkPipelineColorBlendAttachmentState&	blendState)
-
 	: m_context					(context)
 	, m_colorFormat				(colorFormat)
+	, m_depthStencilFormat		(VK_FORMAT_UNDEFINED)
 	, m_renderSize				(renderSize)
+	, m_useDepth				(false)
+	, m_useStencil				(false)
 	, m_multisampleStateParams	(multisampleStateParams)
 	, m_colorBlendState			(blendState)
 {
-	if (!isSupportedSampleCount(context.getInstanceInterface(), context.getPhysicalDevice(), multisampleStateParams.rasterizationSamples))
+	initialize(context, 1u, &topology, &vertices);
+}
+
+MultisampleRenderer::MultisampleRenderer (Context&										context,
+										  const VkFormat								colorFormat,
+										  const VkFormat								depthStencilFormat,
+										  const tcu::IVec2&								renderSize,
+										  const bool									useDepth,
+										  const bool									useStencil,
+										  const deUint32								numTopologies,
+										  const VkPrimitiveTopology*					pTopology,
+										  const std::vector<Vertex4RGBA>*				pVertices,
+										  const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
+										  const VkPipelineColorBlendAttachmentState&	blendState)
+	: m_context					(context)
+	, m_colorFormat				(colorFormat)
+	, m_depthStencilFormat		(depthStencilFormat)
+	, m_renderSize				(renderSize)
+	, m_useDepth				(useDepth)
+	, m_useStencil				(useStencil)
+	, m_multisampleStateParams	(multisampleStateParams)
+	, m_colorBlendState			(blendState)
+{
+	initialize(context, numTopologies, pTopology, pVertices);
+}
+
+void MultisampleRenderer::initialize (Context&									context,
+									  const deUint32							numTopologies,
+									  const VkPrimitiveTopology*				pTopology,
+									  const std::vector<Vertex4RGBA>*			pVertices)
+{
+	if (!isSupportedSampleCount(context.getInstanceInterface(), context.getPhysicalDevice(), m_multisampleStateParams.rasterizationSamples))
 		throw tcu::NotSupportedError("Unsupported number of rasterization samples");
 
 	const DeviceInterface&		vk						= context.getDeviceInterface();
@@ -1345,6 +1521,35 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_resolveImage, m_resolveImageAlloc->getMemory(), m_resolveImageAlloc->getOffset()));
 	}
 
+	// Create a depth/stencil image
+	if (m_useDepth || m_useStencil)
+	{
+		const VkImageCreateInfo depthStencilImageParams =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,											// VkStructureType			sType;
+			DE_NULL,																		// const void*				pNext;
+			0u,																				// VkImageCreateFlags		flags;
+			VK_IMAGE_TYPE_2D,																// VkImageType				imageType;
+			m_depthStencilFormat,															// VkFormat					format;
+			{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y(), 1u },					// VkExtent3D				extent;
+			1u,																				// deUint32					mipLevels;
+			1u,																				// deUint32					arrayLayers;
+			m_multisampleStateParams.rasterizationSamples,									// VkSampleCountFlagBits	samples;
+			VK_IMAGE_TILING_OPTIMAL,														// VkImageTiling			tiling;
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,									// VkImageUsageFlags		usage;
+			VK_SHARING_MODE_EXCLUSIVE,														// VkSharingMode			sharingMode;
+			1u,																				// deUint32					queueFamilyIndexCount;
+			&queueFamilyIndex,																// const deUint32*			pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED														// VkImageLayout			initialLayout;
+		};
+
+		m_depthStencilImage = createImage(vk, vkDevice, &depthStencilImageParams);
+
+		// Allocate and bind depth/stencil image memory
+		m_depthStencilImageAlloc = memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_depthStencilImage), MemoryRequirement::Any);
+		VK_CHECK(vk.bindImageMemory(vkDevice, *m_depthStencilImage, m_depthStencilImageAlloc->getMemory(), m_depthStencilImageAlloc->getOffset()));
+	}
+
 	// Create color attachment view
 	{
 		const VkImageViewCreateInfo colorAttachmentViewParams =
@@ -1379,9 +1584,32 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 		m_resolveAttachmentView = createImageView(vk, vkDevice, &resolveAttachmentViewParams);
 	}
 
+	VkImageAspectFlags	depthStencilAttachmentAspect	= (VkImageAspectFlagBits)0;
+	const deUint32		numUsedAttachments				= (m_useDepth || m_useStencil ? 3u : 2u);
+
+	// Create depth/stencil attachment view
+	if (m_useDepth || m_useStencil)
+	{
+		depthStencilAttachmentAspect = getImageAspectFlags(m_depthStencilFormat);
+
+		const VkImageViewCreateInfo depthStencilAttachmentViewParams =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,			// VkStructureType			sType;
+			DE_NULL,											// const void*				pNext;
+			0u,													// VkImageViewCreateFlags	flags;
+			*m_depthStencilImage,								// VkImage					image;
+			VK_IMAGE_VIEW_TYPE_2D,								// VkImageViewType			viewType;
+			m_depthStencilFormat,								// VkFormat					format;
+			componentMappingRGBA,								// VkComponentMapping		components;
+			{ depthStencilAttachmentAspect, 0u, 1u, 0u, 1u }	// VkImageSubresourceRange	subresourceRange;
+		};
+
+		m_depthStencilAttachmentView = createImageView(vk, vkDevice, &depthStencilAttachmentViewParams);
+	}
+
 	// Create render pass
 	{
-		const VkAttachmentDescription attachmentDescriptions[2] =
+		const VkAttachmentDescription attachmentDescriptions[3] =
 		{
 			{
 				0u,													// VkAttachmentDescriptionFlags		flags;
@@ -1404,7 +1632,18 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					initialLayout;
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout					finalLayout;
-			}
+			},
+			{
+				0u,																					// VkAttachmentDescriptionFlags		flags;
+				m_depthStencilFormat,																// VkFormat							format;
+				m_multisampleStateParams.rasterizationSamples,										// VkSampleCountFlagBits			samples;
+				(m_useDepth ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE),		// VkAttachmentLoadOp				loadOp;
+				(m_useDepth ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE),		// VkAttachmentStoreOp				storeOp;
+				(m_useStencil ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE),		// VkAttachmentStoreOp				stencilLoadOp;
+				(m_useStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE),	// VkAttachmentStoreOp				stencilStoreOp;
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,									// VkImageLayout					initialLayout;
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL									// VkImageLayout					finalLayout;
+			},
 		};
 
 		const VkAttachmentReference colorAttachmentReference =
@@ -1419,18 +1658,24 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout	layout;
 		};
 
+		const VkAttachmentReference depthStencilAttachmentReference =
+		{
+			2u,													// deUint32			attachment;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout	layout;
+		};
+
 		const VkSubpassDescription subpassDescription =
 		{
-			0u,														// VkSubpassDescriptionFlags	flags;
-			VK_PIPELINE_BIND_POINT_GRAPHICS,						// VkPipelineBindPoint			pipelineBindPoint;
-			0u,														// deUint32						inputAttachmentCount;
-			DE_NULL,												// const VkAttachmentReference*	pInputAttachments;
-			1u,														// deUint32						colorAttachmentCount;
-			&colorAttachmentReference,								// const VkAttachmentReference*	pColorAttachments;
-			&resolveAttachmentReference,							// const VkAttachmentReference*	pResolveAttachments;
-			DE_NULL,												// const VkAttachmentReference*	pDepthStencilAttachment;
-			0u,														// deUint32						preserveAttachmentCount;
-			DE_NULL													// const VkAttachmentReference*	pPreserveAttachments;
+			0u,																			// VkSubpassDescriptionFlags	flags;
+			VK_PIPELINE_BIND_POINT_GRAPHICS,											// VkPipelineBindPoint			pipelineBindPoint;
+			0u,																			// deUint32						inputAttachmentCount;
+			DE_NULL,																	// const VkAttachmentReference*	pInputAttachments;
+			1u,																			// deUint32						colorAttachmentCount;
+			&colorAttachmentReference,													// const VkAttachmentReference*	pColorAttachments;
+			&resolveAttachmentReference,												// const VkAttachmentReference*	pResolveAttachments;
+			(m_useDepth || m_useStencil ? &depthStencilAttachmentReference : DE_NULL),	// const VkAttachmentReference*	pDepthStencilAttachment;
+			0u,																			// deUint32						preserveAttachmentCount;
+			DE_NULL																		// const VkAttachmentReference*	pPreserveAttachments;
 		};
 
 		const VkRenderPassCreateInfo renderPassParams =
@@ -1438,7 +1683,7 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
 			0u,													// VkRenderPassCreateFlags			flags;
-			2u,													// deUint32							attachmentCount;
+			numUsedAttachments,									// deUint32							attachmentCount;
 			attachmentDescriptions,								// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
 			&subpassDescription,								// const VkSubpassDescription*		pSubpasses;
@@ -1451,10 +1696,11 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 
 	// Create framebuffer
 	{
-		const VkImageView attachments[2] =
+		const VkImageView attachments[3] =
 		{
 			*m_colorAttachmentView,
-			*m_resolveAttachmentView
+			*m_resolveAttachmentView,
+			*m_depthStencilAttachmentView
 		};
 
 		const VkFramebufferCreateInfo framebufferParams =
@@ -1463,7 +1709,7 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 			DE_NULL,											// const void*					pNext;
 			0u,													// VkFramebufferCreateFlags		flags;
 			*m_renderPass,										// VkRenderPass					renderPass;
-			2u,													// deUint32						attachmentCount;
+			numUsedAttachments,									// deUint32						attachmentCount;
 			attachments,										// const VkImageView*			pAttachments;
 			(deUint32)m_renderSize.x(),							// deUint32						width;
 			(deUint32)m_renderSize.y(),							// deUint32						height;
@@ -1550,12 +1796,13 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
-		const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
+		// Topology is set before the pipeline creation.
+		VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
 			0u,																// VkPipelineInputAssemblyStateCreateFlags	flags;
-			topology,														// VkPrimitiveTopology						topology;
+			VK_PRIMITIVE_TOPOLOGY_LAST,										// VkPrimitiveTopology						topology;
 			false															// VkBool32									primitiveRestartEnable;
 		};
 
@@ -1615,36 +1862,29 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4];
 		};
 
+		const VkStencilOpState stencilOpState =
+		{
+			VK_STENCIL_OP_KEEP,						// VkStencilOp	failOp;
+			VK_STENCIL_OP_REPLACE,					// VkStencilOp	passOp;
+			VK_STENCIL_OP_KEEP,						// VkStencilOp	depthFailOp;
+			VK_COMPARE_OP_GREATER,					// VkCompareOp	compareOp;
+			1u,										// deUint32		compareMask;
+			1u,										// deUint32		writeMask;
+			1u,										// deUint32		reference;
+		};
+
 		const VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType							sType;
 			DE_NULL,													// const void*								pNext;
 			0u,															// VkPipelineDepthStencilStateCreateFlags	flags;
-			false,														// VkBool32									depthTestEnable;
-			false,														// VkBool32									depthWriteEnable;
+			m_useDepth,													// VkBool32									depthTestEnable;
+			m_useDepth,													// VkBool32									depthWriteEnable;
 			VK_COMPARE_OP_LESS,											// VkCompareOp								depthCompareOp;
 			false,														// VkBool32									depthBoundsTestEnable;
-			false,														// VkBool32									stencilTestEnable;
-			// VkStencilOpState	front;
-			{
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	failOp;
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	passOp;
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	depthFailOp;
-				VK_COMPARE_OP_NEVER,	// VkCompareOp	compareOp;
-				0u,						// deUint32		compareMask;
-				0u,						// deUint32		writeMask;
-				0u,						// deUint32		reference;
-			},
-			// VkStencilOpState	back;
-			{
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	failOp;
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	passOp;
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	depthFailOp;
-				VK_COMPARE_OP_NEVER,	// VkCompareOp	compareOp;
-				0u,						// deUint32		compareMask;
-				0u,						// deUint32		writeMask;
-				0u,						// deUint32		reference;
-			},
+			m_useStencil,												// VkBool32									stencilTestEnable;
+			stencilOpState,												// VkStencilOpState	front;
+			stencilOpState,												// VkStencilOpState	back;
 			0.0f,														// float			minDepthBounds;
 			1.0f,														// float			maxDepthBounds;
 		};
@@ -1672,7 +1912,11 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 			0u													// deInt32											basePipelineIndex;
 		};
 
-		m_graphicsPipeline	= createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams);
+		for (deUint32 i = 0u; i < numTopologies; ++i)
+		{
+			inputAssemblyStateParams.topology = pTopology[i];
+			m_graphicsPipelines.push_back(VkPipelineSp(new Unique<VkPipeline>(createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams))));
+		}
 	}
 
 	// Create vertex buffer
@@ -1695,7 +1939,14 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_vertexBuffer, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset()));
 
 		// Load vertices into vertex buffer
-		deMemcpy(m_vertexBufferAlloc->getHostPtr(), vertices.data(), vertices.size() * sizeof(Vertex4RGBA));
+		{
+			Vertex4RGBA* pDst = static_cast<Vertex4RGBA*>(m_vertexBufferAlloc->getHostPtr());
+			for (deUint32 i = 0u; i < numTopologies; ++i)
+			{
+				deMemcpy(pDst, &pVertices[i][0], pVertices[i].size() * sizeof(Vertex4RGBA));
+				pDst += pVertices[i].size();
+			}
+		}
 		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferParams.size);
 	}
 
@@ -1737,10 +1988,15 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 		colorClearValue.color.float32[2] = 0.0f;
 		colorClearValue.color.float32[3] = 0.0f;
 
-		const VkClearValue clearValues[2] =
+		VkClearValue depthStencilClearValue;
+		depthStencilClearValue.depthStencil.depth = 1.0f;
+		depthStencilClearValue.depthStencil.stencil = 0u;
+
+		const VkClearValue clearValues[3] =
 		{
 			colorClearValue,
-			colorClearValue
+			colorClearValue,
+			depthStencilClearValue
 		};
 
 		const VkRenderPassBeginInfo renderPassBeginInfo =
@@ -1753,7 +2009,7 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 				{ 0, 0 },
 				{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() }
 			},														// VkRect2D				renderArea;
-			2,														// deUint32				clearValueCount;
+			numUsedAttachments,										// deUint32				clearValueCount;
 			clearValues												// const VkClearValue*	pClearValues;
 		};
 
@@ -1785,6 +2041,19 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 				*m_resolveImage,								// VkImage					image;
 				{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange	subresourceRange;
 			},
+			// depth/stencil attachment image
+			{
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType			sType;
+				DE_NULL,											// const void*				pNext;
+				0u,													// VkAccessFlags			srcAccessMask;
+				VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
+				VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			oldLayout;
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout			newLayout;
+				VK_QUEUE_FAMILY_IGNORED,							// deUint32					srcQueueFamilyIndex;
+				VK_QUEUE_FAMILY_IGNORED,							// deUint32					dstQueueFamilyIndex;
+				*m_depthStencilImage,								// VkImage					image;
+				{ depthStencilAttachmentAspect, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange	subresourceRange;
+			},
 		};
 
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
@@ -1792,15 +2061,20 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,
-			0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(imageLayoutBarriers), imageLayoutBarriers);
+			0u, DE_NULL, 0u, DE_NULL, numUsedAttachments, imageLayoutBarriers);
 
 		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		VkDeviceSize vertexBufferOffset = 0u;
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
-		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
-		vk.cmdDraw(*m_cmdBuffer, (deUint32)vertices.size(), 1, 0, 0);
+		for (deUint32 i = 0u; i < numTopologies; ++i)
+		{
+			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **m_graphicsPipelines[i]);
+			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+			vk.cmdDraw(*m_cmdBuffer, (deUint32)pVertices[i].size(), 1, 0, 0);
+
+			vertexBufferOffset += static_cast<VkDeviceSize>(pVertices[i].size() * sizeof(Vertex4RGBA));
+		}
 
 		vk.cmdEndRenderPass(*m_cmdBuffer);
 
@@ -1878,9 +2152,13 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 
 			de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
-			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_triangle", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_TRIANGLE));
-			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_line", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_LINE));
-			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_point", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_POINT));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_triangle", "",	samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_TRIANGLE));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_line", "",		samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_LINE));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_point", "",		samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_POINT));
+
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "depth", "",			samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, TEST_MODE_DEPTH_BIT));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "stencil", "",			samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, TEST_MODE_STENCIL_BIT));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "depth_stencil", "",	samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, TEST_MODE_DEPTH_BIT | TEST_MODE_STENCIL_BIT));
 
 			rasterizationSamplesTests->addChild(samplesTests.release());
 		}
