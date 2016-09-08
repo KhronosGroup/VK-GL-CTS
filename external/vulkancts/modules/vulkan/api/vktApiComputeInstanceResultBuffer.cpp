@@ -33,11 +33,12 @@ using namespace vk;
 
 ComputeInstanceResultBuffer::ComputeInstanceResultBuffer (const DeviceInterface &vki,
 																	  VkDevice device,
-																	  Allocator &allocator)
+																	  Allocator &allocator,
+																	  float initValue)
 		: m_vki(vki),
 		m_device(device),
 		m_bufferMem(DE_NULL),
-		m_buffer(createResultBuffer(m_vki, m_device, allocator, &m_bufferMem)),
+		m_buffer(createResultBuffer(m_vki, m_device, allocator, &m_bufferMem, initValue)),
 		m_bufferBarrier(createResultBufferBarrier(*m_buffer))
 {
 }
@@ -48,10 +49,17 @@ void ComputeInstanceResultBuffer::readResultContentsTo(tcu::Vec4 (*results)[4]) 
 	deMemcpy(*results, m_bufferMem->getHostPtr(), sizeof(*results));
 }
 
+void ComputeInstanceResultBuffer::readResultContentsTo(deUint32 *result) const
+{
+	invalidateMappedMemoryRange(m_vki, m_device, m_bufferMem->getMemory(), m_bufferMem->getOffset(), sizeof(*result));
+	deMemcpy(result, m_bufferMem->getHostPtr(), sizeof(*result));
+}
+
 Move<VkBuffer> ComputeInstanceResultBuffer::createResultBuffer(const DeviceInterface &vki,
 																	 VkDevice device,
 																	 Allocator &allocator,
-																	 de::MovePtr<Allocation> *outAllocation)
+																	 de::MovePtr<Allocation> *outAllocation,
+																	 float initValue)
 {
 	const VkBufferCreateInfo createInfo =
 	{
@@ -72,7 +80,7 @@ Move<VkBuffer> ComputeInstanceResultBuffer::createResultBuffer(const DeviceInter
 
 	VK_CHECK(vki.bindBufferMemory(device, *buffer, allocation->getMemory(), allocation->getOffset()));
 
-	const float								clearValue				= -1.0f;
+	const float								clearValue				= initValue;
 	void*									mapPtr					= allocation->getHostPtr();
 
 	for (size_t offset = 0; offset < DATA_SIZE; offset += sizeof(float))

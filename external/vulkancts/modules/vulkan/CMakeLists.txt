@@ -21,6 +21,7 @@ add_subdirectory(tessellation)
 add_subdirectory(rasterization)
 add_subdirectory(synchronization)
 add_subdirectory(clipping)
+add_subdirectory(fragment_ops)
 
 include_directories(
 	api
@@ -44,6 +45,7 @@ include_directories(
 	rasterization
 	synchronization
 	clipping
+	fragment_ops
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -88,6 +90,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-rasterization
 	deqp-vk-synchronization
 	deqp-vk-clipping
+	deqp-vk-fragment-ops
 	)
 
 add_library(deqp-vk-common STATIC ${DEQP_VK_COMMON_SRCS})
