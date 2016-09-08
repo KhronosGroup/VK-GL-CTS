@@ -164,7 +164,10 @@ void precise_as_variable_name (NegativeTestContext& ctx)
 
 	ctx.beginSection("Test that precise cannot be used as a variable name.");
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_shaderTypes); ++ndx)
-		generateAndVerifyShader(ctx, s_shaderTypes[ndx], TEST_PRECISE_AS_VARIABLE_NAME);
+	{
+		if (ctx.isShaderSupported(s_shaderTypes[ndx]))
+			generateAndVerifyShader(ctx, s_shaderTypes[ndx], TEST_PRECISE_AS_VARIABLE_NAME);
+	}
 	ctx.endSection();
 }
 
@@ -176,7 +179,10 @@ void precise_as_function_name (NegativeTestContext& ctx)
 
 	ctx.beginSection("Test that precise cannot be used as a function name.");
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_shaderTypes); ++ndx)
-		generateAndVerifyShader(ctx, s_shaderTypes[ndx], TEST_PRECISE_AS_FUNCTION_NAME);
+	{
+		if (ctx.isShaderSupported(s_shaderTypes[ndx]))
+			generateAndVerifyShader(ctx, s_shaderTypes[ndx], TEST_PRECISE_AS_FUNCTION_NAME);
+	}
 	ctx.endSection();
 }
 
@@ -188,7 +194,10 @@ void precise_as_function_argument (NegativeTestContext& ctx)
 
 	ctx.beginSection("Test that precise cannot be used as a argument name.");
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_shaderTypes); ++ndx)
-		generateAndVerifyShader(ctx, s_shaderTypes[ndx], TEST_PRECISE_AS_ARGUMENT_NAME);
+	{
+		if (ctx.isShaderSupported(s_shaderTypes[ndx]))
+			generateAndVerifyShader(ctx, s_shaderTypes[ndx], TEST_PRECISE_AS_ARGUMENT_NAME);
+	}
 	ctx.endSection();
 }
 
