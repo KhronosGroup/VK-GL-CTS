@@ -85,6 +85,13 @@ class UnixMakefileGenerator(CMakeGenerator):
 	def isAvailable (self):
 		return which('make') != None
 
+class NMakeGenerator(CMakeGenerator):
+	def __init__(self):
+		CMakeGenerator.__init__(self, "NMake Makefiles")
+
+	def isAvailable (self):
+		return which('nmake.exe') != None
+
 class NinjaGenerator(CMakeGenerator):
 	def __init__(self):
 		CMakeGenerator.__init__(self, "Ninja")
@@ -156,6 +163,7 @@ class VSProjectGenerator(CMakeGenerator):
 # Pre-defined generators
 
 MAKEFILE_GENERATOR		= UnixMakefileGenerator()
+NMAKE_GENERATOR			= NMakeGenerator()
 NINJA_GENERATOR			= NinjaGenerator()
 VS2010_X32_GENERATOR	= VSProjectGenerator(10, VSProjectGenerator.ARCH_32BIT)
 VS2010_X64_GENERATOR	= VSProjectGenerator(10, VSProjectGenerator.ARCH_64BIT)
@@ -187,6 +195,7 @@ ANY_VS_X64_GENERATOR	= selectFirstAvailableGenerator([
 ANY_UNIX_GENERATOR		= selectFirstAvailableGenerator([
 								NINJA_GENERATOR,
 								MAKEFILE_GENERATOR,
+								NMAKE_GENERATOR,
 							])
 ANY_GENERATOR			= selectFirstAvailableGenerator([
 								VS2015_X64_GENERATOR,
@@ -199,4 +208,5 @@ ANY_GENERATOR			= selectFirstAvailableGenerator([
 								VS2010_X32_GENERATOR,
 								NINJA_GENERATOR,
 								MAKEFILE_GENERATOR,
+								NMAKE_GENERATOR,
 							])
