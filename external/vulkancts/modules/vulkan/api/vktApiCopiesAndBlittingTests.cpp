@@ -1363,7 +1363,7 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 																					m_params.dst.image.extent.height,
 																					m_params.dst.image.extent.depth));
 
-	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.image.extent.width, m_params.dst.image.extent.height, m_params.dst.image.extent.depth, FILL_MODE_WHITE);
+	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.image.extent.width, m_params.dst.image.extent.height, m_params.dst.image.extent.depth);
 
 	generateExpectedResult();
 
@@ -3430,7 +3430,7 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 	{
 		TestParams			params;
 		params.src.buffer.size	= defaultSize * defaultSize;
-		params.dst.image.format	= VK_FORMAT_R8G8B8A8_UINT;
+		params.dst.image.format	= VK_FORMAT_R8G8B8A8_UNORM;
 		params.dst.image.extent	= defaultExtent;
 
 		const VkBufferImageCopy			bufferImageCopy	=
@@ -3440,7 +3440,7 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 			0u,											// uint32_t					bufferImageHeight;
 			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
 			{0, 0, 0},									// VkOffset3D				imageOffset;
-			{defaultFourthSize, defaultFourthSize, 1}	// VkExtent3D				imageExtent;
+			defaultExtent								// VkExtent3D				imageExtent;
 		};
 		CopyRegion	copyRegion;
 		copyRegion.bufferImageCopy	= bufferImageCopy;

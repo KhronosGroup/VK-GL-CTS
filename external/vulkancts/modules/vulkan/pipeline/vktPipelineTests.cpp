@@ -33,6 +33,7 @@
 #include "vktPipelinePushConstantTests.hpp"
 #include "vktPipelineSpecConstantTests.hpp"
 #include "vktPipelineMultisampleTests.hpp"
+#include "vktPipelineMultisampleInterpolationTests.hpp"
 #include "vktPipelineVertexInputTests.hpp"
 #include "vktPipelineTimestampTests.hpp"
 #include "vktPipelineEarlyFragmentTests.hpp"
@@ -51,20 +52,21 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 {
 	tcu::TestContext&	testCtx	= pipelineTests->getTestContext();
 
-	pipelineTests->addChild(createStencilTests		(testCtx));
-	pipelineTests->addChild(createBlendTests		(testCtx));
-	pipelineTests->addChild(createDepthTests		(testCtx));
-	pipelineTests->addChild(createImageTests		(testCtx));
-	pipelineTests->addChild(createSamplerTests		(testCtx));
-	pipelineTests->addChild(createImageViewTests	(testCtx));
-	pipelineTests->addChild(createPushConstantTests	(testCtx));
-	pipelineTests->addChild(createSpecConstantTests	(testCtx));
-	pipelineTests->addChild(createMultisampleTests	(testCtx));
-	pipelineTests->addChild(createVertexInputTests	(testCtx));
-	pipelineTests->addChild(createInputAssemblyTests(testCtx));
-	pipelineTests->addChild(createTimestampTests	(testCtx));
-	pipelineTests->addChild(createEarlyFragmentTests(testCtx));
-	pipelineTests->addChild(createCacheTests		(testCtx));
+	pipelineTests->addChild(createStencilTests					(testCtx));
+	pipelineTests->addChild(createBlendTests					(testCtx));
+	pipelineTests->addChild(createDepthTests					(testCtx));
+	pipelineTests->addChild(createImageTests					(testCtx));
+	pipelineTests->addChild(createSamplerTests					(testCtx));
+	pipelineTests->addChild(createImageViewTests				(testCtx));
+	pipelineTests->addChild(createPushConstantTests				(testCtx));
+	pipelineTests->addChild(createSpecConstantTests				(testCtx));
+	pipelineTests->addChild(createMultisampleTests				(testCtx));
+	pipelineTests->addChild(createMultisampleInterpolationTests	(testCtx));
+	pipelineTests->addChild(createVertexInputTests				(testCtx));
+	pipelineTests->addChild(createInputAssemblyTests			(testCtx));
+	pipelineTests->addChild(createTimestampTests				(testCtx));
+	pipelineTests->addChild(createEarlyFragmentTests			(testCtx));
+	pipelineTests->addChild(createCacheTests					(testCtx));
 }
 
 } // anonymous

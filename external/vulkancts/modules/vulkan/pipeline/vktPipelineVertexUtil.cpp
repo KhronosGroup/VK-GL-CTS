@@ -929,7 +929,10 @@ std::vector<Vertex4Tex4> createTestQuadMosaic (vk::VkImageViewType viewType)
 
 			// Use z between 0.0 and 1.0.
 			for (size_t vertexNdx = 0; vertexNdx < vertices.size(); vertexNdx++)
+			{
 				vertices[vertexNdx].texCoord.z() /= 5.0f;
+				vertices[vertexNdx].texCoord.z() -= 0.001f; // Substract small value to correct floating-point errors at the boundaries between slices
+			}
 
 			break;
 
