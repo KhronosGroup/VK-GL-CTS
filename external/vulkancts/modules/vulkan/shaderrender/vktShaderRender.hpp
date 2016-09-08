@@ -469,6 +469,8 @@ public:
 																					deUint32				textureId);
 
 	static const tcu::Vec4								getDefaultConstCoords		(void) { return tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f); }
+	void												setPushConstantRanges		(const deUint32 rangeCount, const vk::VkPushConstantRange* const pcRanges);
+	virtual void										updatePushConstants			(vk::VkCommandBuffer commandBuffer, vk::VkPipelineLayout pipelineLayout);
 
 protected:
 														ShaderRenderCaseInstance	(Context&					context,
@@ -485,6 +487,12 @@ protected:
 	void												render						(deUint32					numVertices,
 																					 deUint32					numTriangles,
 																					 const deUint16*			indices,
+																					 const tcu::Vec4&			constCoords		= getDefaultConstCoords());
+
+	void												render						(deUint32					numVertices,
+																					 deUint32					numIndices,
+																					 const deUint16*			indices,
+																					 vk::VkPrimitiveTopology	topology,
 																					 const tcu::Vec4&			constCoords		= getDefaultConstCoords());
 
 	const tcu::TextureLevel&							getResultImage				(void) const { return m_resultImage; }
@@ -642,6 +650,7 @@ private:
 	std::vector<AllocationSp>							m_vertexBufferAllocs;
 
 	vk::VkSampleCountFlagBits							m_sampleCount;
+	std::vector<vk::VkPushConstantRange>				m_pushConstantRanges;
 
 	// Wrapper functions around m_context calls to support sparse cases.
 	vk::VkDevice										getDevice						(void) const;
