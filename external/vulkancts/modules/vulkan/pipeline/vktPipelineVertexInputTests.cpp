@@ -134,8 +134,15 @@ public:
 
 	enum BindingMapping
 	{
-		BINDING_MAPPING_ONE_TO_ONE,	// Vertex input bindings will not contain data for more than one attribute.
-		BINDING_MAPPING_ONE_TO_MANY	// Vertex input bindings can contain data for more than one attribute.
+		BINDING_MAPPING_ONE_TO_ONE,		//!< Vertex input bindings will not contain data for more than one attribute.
+		BINDING_MAPPING_ONE_TO_MANY		//!< Vertex input bindings can contain data for more than one attribute.
+	};
+
+	enum AttributeLayout
+	{
+		ATTRIBUTE_LAYOUT_INTERLEAVED,	//!< Attribute data is bundled together as if in a structure: [pos 0][color 0][pos 1][color 1]...
+		ATTRIBUTE_LAYOUT_SEQUENTIAL		//!< Data for each attribute is laid out separately: [pos 0][pos 1]...[color 0][color 1]...
+										//   Sequential only makes a difference if ONE_TO_MANY mapping is used (more than one attribute in a binding).
 	};
 
 	struct AttributeInfo
@@ -159,7 +166,8 @@ public:
 																		 const std::string&					name,
 																		 const std::string&					description,
 																		 const std::vector<AttributeInfo>&	attributeInfos,
-																		 BindingMapping						bindingMapping);
+																		 BindingMapping						bindingMapping,
+																		 AttributeLayout					attributeLayout);
 
 	virtual									~VertexInputTest			(void) {}
 	virtual void							initPrograms				(SourceCollections& programCollection) const;
@@ -174,6 +182,7 @@ private:
 
 	const std::vector<AttributeInfo>		m_attributeInfos;
 	const BindingMapping					m_bindingMapping;
+	const AttributeLayout					m_attributeLayout;
 	bool									m_usesDoubleType;
 };
 
@@ -277,12 +286,16 @@ VertexInputTest::VertexInputTest (tcu::TestContext&						testContext,
 								  const std::string&					name,
 								  const std::string&					description,
 								  const std::vector<AttributeInfo>&		attributeInfos,
-								  BindingMapping						bindingMapping)
+								  BindingMapping						bindingMapping,
+								  AttributeLayout						attributeLayout)
 
 	: vkt::TestCase			(testContext, name, description)
 	, m_attributeInfos		(attributeInfos)
 	, m_bindingMapping		(bindingMapping)
+	, m_attributeLayout		(attributeLayout)
 {
+	DE_ASSERT(m_attributeLayout == ATTRIBUTE_LAYOUT_INTERLEAVED || m_bindingMapping == BINDING_MAPPING_ONE_TO_MANY);
+
 	m_usesDoubleType = false;
 
 	for (size_t attributeNdx = 0; attributeNdx < m_attributeInfos.size(); attributeNdx++)
@@ -295,104 +308,136 @@ VertexInputTest::VertexInputTest (tcu::TestContext&						testContext,
 	}
 }
 
+deUint32 getAttributeBinding (const VertexInputTest::BindingMapping bindingMapping, const VkVertexInputRate inputRate, const deUint32 attributeNdx)
+{
+	if (bindingMapping == VertexInputTest::BINDING_MAPPING_ONE_TO_ONE)
+	{
+		if (inputRate == VK_VERTEX_INPUT_RATE_VERTEX)
+			return attributeNdx * 2;		// Even binding number
+		else // inputRate == VK_VERTEX_INPUT_STEP_RATE_INSTANCE
+			return attributeNdx * 2 + 1;	// Odd binding number
+	}
+	else // bindingMapping == BINDING_MAPPING_ONE_TO_MANY
+	{
+		if (inputRate == VK_VERTEX_INPUT_RATE_VERTEX)
+			return 0u;
+		else // inputRate == VK_VERTEX_INPUT_STEP_RATE_INSTANCE
+			return 1u;
+	}
+}
+
+//! Number of locations used up by an attribute.
+deUint32 getConsumedLocations (const VertexInputTest::AttributeInfo& attributeInfo)
+{
+	// double formats with more than 2 components will take 2 locations
+	const VertexInputTest::GlslType type = attributeInfo.glslType;
+	if ((type == VertexInputTest::GLSL_TYPE_DMAT2 || type == VertexInputTest::GLSL_TYPE_DMAT3 || type == VertexInputTest::GLSL_TYPE_DMAT4) &&
+		(attributeInfo.vkType == VK_FORMAT_R64G64B64_SFLOAT || attributeInfo.vkType == VK_FORMAT_R64G64B64A64_SFLOAT))
+	{
+		return 2u;
+	}
+	else
+		return 1u;
+}
+
 TestInstance* VertexInputTest::createInstance (Context& context) const
 {
+	typedef VertexInputInstance::VertexInputAttributeDescription VertexInputAttributeDescription;
+
 	// Create enough binding descriptions with random offsets
 	std::vector<VkVertexInputBindingDescription>	bindingDescriptions;
 	std::vector<VkDeviceSize>						bindingOffsets;
 
-	for (size_t bindingNdx = 0; bindingNdx < m_attributeInfos.size() * 2; bindingNdx++)
+	for (size_t bindingNdx = 0; bindingNdx < m_attributeInfos.size() * 2; ++bindingNdx)
 	{
 		// Use STEP_RATE_VERTEX in even bindings and STEP_RATE_INSTANCE in odd bindings
 		const VkVertexInputRate						inputRate			= (bindingNdx % 2 == 0) ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
 
-		// .strideInBytes will be updated when creating the attribute descriptions
-		const VkVertexInputBindingDescription	bindingDescription	=
+		// Stride will be updated when creating the attribute descriptions
+		const VkVertexInputBindingDescription		bindingDescription	=
 		{
-			(deUint32)bindingNdx,	// deUint32				binding;
-			0,						// deUint32				stride;
-			inputRate				// VkVertexInputRate	inputRate;
+			static_cast<deUint32>(bindingNdx),		// deUint32				binding;
+			0u,										// deUint32				stride;
+			inputRate								// VkVertexInputRate	inputRate;
 		};
 
 		bindingDescriptions.push_back(bindingDescription);
 		bindingOffsets.push_back(4 * bindingNdx);
 	}
 
-	// Create attribute descriptions, assign them to bindings and update .strideInBytes
-	std::vector<VertexInputInstance::VertexInputAttributeDescription>	attributeDescriptions;
-	deUint32															attributeLocation		= 0;
-	std::vector<deUint32>												attributeOffsets		(bindingDescriptions.size(), 0);
-	std::vector<deUint32>												attributeMaxSizes		(bindingDescriptions.size(), 0);
+	std::vector<VertexInputAttributeDescription>	attributeDescriptions;
+	deUint32										attributeLocation		= 0;
+	std::vector<deUint32>							attributeOffsets		(bindingDescriptions.size(), 0);
+	std::vector<deUint32>							attributeMaxSizes		(bindingDescriptions.size(), 0);	// max component or vector size, depending on which layout we are using
 
-	for (size_t attributeNdx = 0; attributeNdx < m_attributeInfos.size(); attributeNdx++)
+	// To place the attributes sequentially we need to know the largest attribute and use its size in stride and offset calculations.
+	if (m_attributeLayout == ATTRIBUTE_LAYOUT_SEQUENTIAL)
+		for (size_t attributeNdx = 0; attributeNdx < m_attributeInfos.size(); ++attributeNdx)
+		{
+			const AttributeInfo&	attributeInfo			= m_attributeInfos[attributeNdx];
+			const deUint32			attributeBinding		= getAttributeBinding(m_bindingMapping, attributeInfo.inputRate, static_cast<deUint32>(attributeNdx));
+			const deUint32			inputSize				= getVertexFormatSize(attributeInfo.vkType);
+
+			attributeMaxSizes[attributeBinding]				= de::max(attributeMaxSizes[attributeBinding], inputSize);
+		}
+
+	// Create attribute descriptions, assign them to bindings and update stride.
+	for (size_t attributeNdx = 0; attributeNdx < m_attributeInfos.size(); ++attributeNdx)
 	{
 		const AttributeInfo&		attributeInfo			= m_attributeInfos[attributeNdx];
 		const GlslTypeDescription&	glslTypeDescription		= s_glslTypeDescriptions[attributeInfo.glslType];
 		const deUint32				inputSize				= getVertexFormatSize(attributeInfo.vkType);
-		deUint32					attributeBinding;
+		const deUint32				attributeBinding		= getAttributeBinding(m_bindingMapping, attributeInfo.inputRate, static_cast<deUint32>(attributeNdx));
+		const deUint32				vertexCount				= (attributeInfo.inputRate == VK_VERTEX_INPUT_RATE_VERTEX) ? (4 * 2) : 2;
 
-		if (m_bindingMapping == BINDING_MAPPING_ONE_TO_ONE)
+		VertexInputAttributeDescription attributeDescription =
 		{
-			if (attributeInfo.inputRate == VK_VERTEX_INPUT_RATE_VERTEX)
+			attributeInfo.glslType,							// GlslType		glslType;
+			0,												// int			vertexInputIndex;
 			{
-				attributeBinding = (deUint32)attributeNdx * 2; // Odd binding number
-			}
-			else // attributeInfo.inputRate == VK_VERTEX_INPUT_STEP_RATE_INSTANCE
-			{
-				attributeBinding = (deUint32)attributeNdx * 2 + 1; // Even binding number
-			}
-		}
-		else // m_bindingMapping == BINDING_MAPPING_ONE_TO_MANY
+				0u,											// uint32_t    location;
+				attributeBinding,							// uint32_t    binding;
+				attributeInfo.vkType,						// VkFormat    format;
+				0u,											// uint32_t    offset;
+			},
+		};
+
+		// Matrix types add each column as a separate attribute.
+		for (int descNdx = 0; descNdx < glslTypeDescription.vertexInputCount; ++descNdx)
 		{
-			if (attributeInfo.inputRate == VK_VERTEX_INPUT_RATE_VERTEX)
+			attributeDescription.vertexInputIndex		= descNdx;
+			attributeDescription.vkDescription.location	= attributeLocation;
+
+			if (m_attributeLayout == ATTRIBUTE_LAYOUT_INTERLEAVED)
 			{
-				attributeBinding = 0;
+				const deUint32	offsetToComponentAlignment		 = getNextMultipleOffset(getVertexFormatComponentSize(attributeInfo.vkType),
+																						 (deUint32)bindingOffsets[attributeBinding] + attributeOffsets[attributeBinding]);
+				attributeOffsets[attributeBinding]				+= offsetToComponentAlignment;
+
+				attributeDescription.vkDescription.offset		 = attributeOffsets[attributeBinding];
+				attributeDescriptions.push_back(attributeDescription);
+
+				bindingDescriptions[attributeBinding].stride	+= offsetToComponentAlignment + inputSize;
+				attributeOffsets[attributeBinding]				+= inputSize;
+				attributeMaxSizes[attributeBinding]				 = de::max(attributeMaxSizes[attributeBinding], getVertexFormatComponentSize(attributeInfo.vkType));
 			}
-			else // attributeInfo.inputRate == VK_VERTEX_INPUT_STEP_RATE_INSTANCE
+			else // m_attributeLayout == ATTRIBUTE_LAYOUT_SEQUENTIAL
 			{
-				attributeBinding = 1;
+				attributeDescription.vkDescription.offset		 = attributeOffsets[attributeBinding];
+				attributeDescriptions.push_back(attributeDescription);
+
+				attributeOffsets[attributeBinding]				+= vertexCount * attributeMaxSizes[attributeBinding];
 			}
+
+			attributeLocation += getConsumedLocations(attributeInfo);
 		}
 
-		for (int descNdx = 0; descNdx < glslTypeDescription.vertexInputCount; descNdx++)
-		{
-			const deUint32	offsetToComponentAlignment	= getNextMultipleOffset(getVertexFormatComponentSize(attributeInfo.vkType),
-																				(deUint32)bindingOffsets[attributeBinding] + attributeOffsets[attributeBinding]);
-
-			attributeOffsets[attributeBinding] += offsetToComponentAlignment;
-
-			const VertexInputInstance::VertexInputAttributeDescription attributeDescription =
-			{
-				attributeInfo.glslType,							// GlslType	glslType;
-				descNdx,										// int		index;
-				{
-					attributeLocation,							// deUint32	location;
-					attributeBinding,							// deUint32	binding;
-					attributeInfo.vkType,						// VkFormat	format;
-					attributeOffsets[attributeBinding],			// deUint32	offset;
-				},
-			};
-
-			bindingDescriptions[attributeBinding].stride	+= offsetToComponentAlignment + inputSize;
-			attributeOffsets[attributeBinding]				+= inputSize;
-			attributeMaxSizes[attributeBinding]				 = de::max(attributeMaxSizes[attributeBinding], getVertexFormatComponentSize(attributeInfo.vkType));
-
-			//double formats with more than 2 components will take 2 locations
-			const GlslType type = attributeInfo.glslType;
-			if ((type == GLSL_TYPE_DMAT2 || type == GLSL_TYPE_DMAT3 || type == GLSL_TYPE_DMAT4) &&
-				(attributeInfo.vkType == VK_FORMAT_R64G64B64_SFLOAT || attributeInfo.vkType == VK_FORMAT_R64G64B64A64_SFLOAT))
-			{
-				attributeLocation += 2;
-			}
-			else
-				attributeLocation++;
-
-			attributeDescriptions.push_back(attributeDescription);
-		}
+		if (m_attributeLayout == ATTRIBUTE_LAYOUT_SEQUENTIAL)
+			bindingDescriptions[attributeBinding].stride = attributeMaxSizes[attributeBinding];
 	}
 
 	// Make sure the stride results in aligned access
-	for (deUint32 bindingNdx = 0; bindingNdx < bindingDescriptions.size(); ++bindingNdx)
+	for (size_t bindingNdx = 0; bindingNdx < bindingDescriptions.size(); ++bindingNdx)
 	{
 		if (attributeMaxSizes[bindingNdx] > 0)
 			bindingDescriptions[bindingNdx].stride += getNextMultipleOffset(attributeMaxSizes[bindingNdx], bindingDescriptions[bindingNdx].stride);
@@ -1572,7 +1617,8 @@ de::MovePtr<tcu::TestCaseGroup> createSingleAttributeTests (tcu::TestContext& te
 																   getAttributeInfoCaseName(attributeInfo),
 																   getAttributeInfoDescription(attributeInfo),
 																   std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
-																   VertexInputTest::BINDING_MAPPING_ONE_TO_ONE));
+																   VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
+																   VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
 
 				// Create test case for RATE_INSTANCE
 				attributeInfo.inputRate	= VK_VERTEX_INPUT_RATE_INSTANCE;
@@ -1581,7 +1627,8 @@ de::MovePtr<tcu::TestCaseGroup> createSingleAttributeTests (tcu::TestContext& te
 																   getAttributeInfoCaseName(attributeInfo),
 																   getAttributeInfoDescription(attributeInfo),
 																   std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
-																   VertexInputTest::BINDING_MAPPING_ONE_TO_ONE));
+																   VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
+																   VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
 			}
 		}
 	}
@@ -1651,10 +1698,11 @@ de::MovePtr<tcu::TestCaseGroup> createMultipleAttributeTests (tcu::TestContext& 
 		}
 	}
 
-	de::Random						randomFunc				(102030);
-	GlslTypeCombinationsIterator	glslTypeCombinationsItr	(VertexInputTest::GLSL_TYPE_DOUBLE, 3); // Exclude double values, which are not included in vertexFormats
-	de::MovePtr<tcu::TestCaseGroup> oneToOneAttributeTests	(new tcu::TestCaseGroup(testCtx, "attributes", ""));
-	de::MovePtr<tcu::TestCaseGroup> oneToManyAttributeTests	(new tcu::TestCaseGroup(testCtx, "attributes", ""));
+	de::Random						randomFunc							(102030);
+	GlslTypeCombinationsIterator	glslTypeCombinationsItr				(VertexInputTest::GLSL_TYPE_DOUBLE, 3); // Exclude double values, which are not included in vertexFormats
+	de::MovePtr<tcu::TestCaseGroup> oneToOneAttributeTests				(new tcu::TestCaseGroup(testCtx, "attributes", ""));
+	de::MovePtr<tcu::TestCaseGroup> oneToManyAttributeTests				(new tcu::TestCaseGroup(testCtx, "attributes", ""));
+	de::MovePtr<tcu::TestCaseGroup> oneToManySequentialAttributeTests	(new tcu::TestCaseGroup(testCtx, "attributes_sequential", ""));
 
 	while (glslTypeCombinationsItr.hasNext())
 	{
@@ -1677,8 +1725,9 @@ de::MovePtr<tcu::TestCaseGroup> createMultipleAttributeTests (tcu::TestContext& 
 		const std::string	caseName	= getAttributeInfosCaseName(attributeInfos);
 		const std::string	caseDesc	= getAttributeInfosDescription(attributeInfos);
 
-		oneToOneAttributeTests->addChild(new VertexInputTest(testCtx, caseName, caseDesc, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_ONE));
-		oneToManyAttributeTests->addChild(new VertexInputTest(testCtx, caseName, caseDesc, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_MANY));
+		oneToOneAttributeTests->addChild(new VertexInputTest(testCtx, caseName, caseDesc, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_ONE, VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
+		oneToManyAttributeTests->addChild(new VertexInputTest(testCtx, caseName, caseDesc, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_MANY, VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
+		oneToManySequentialAttributeTests->addChild(new VertexInputTest(testCtx, caseName, caseDesc, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_MANY, VertexInputTest::ATTRIBUTE_LAYOUT_SEQUENTIAL));
 	}
 
 	de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests	(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
@@ -1687,6 +1736,7 @@ de::MovePtr<tcu::TestCaseGroup> createMultipleAttributeTests (tcu::TestContext& 
 
 	de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests	(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
 	bindingOneToManyTests->addChild(oneToManyAttributeTests.release());
+	bindingOneToManyTests->addChild(oneToManySequentialAttributeTests.release());
 	multipleAttributeTests->addChild(bindingOneToManyTests.release());
 
 	return multipleAttributeTests;
