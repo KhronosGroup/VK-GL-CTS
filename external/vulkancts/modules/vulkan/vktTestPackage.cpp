@@ -74,6 +74,7 @@
 #include "vktTessellationTests.hpp"
 #include "vktRasterizationTests.hpp"
 #include "vktClippingTests.hpp"
+#include "vktFragmentOperationsTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -394,6 +395,7 @@ void TestPackage::init (void)
 	addChild(rasterization::createTests		(m_testCtx));
 	addChild(clipping::createTests			(m_testCtx));
 	addChild(texture_filtering::createTests	(m_testCtx));
+	addChild(FragmentOperations::createTests(m_testCtx));
 }
 
 } // vkt

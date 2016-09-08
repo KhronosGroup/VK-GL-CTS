@@ -33,6 +33,14 @@ namespace vkt
 namespace api
 {
 
+vk::Move<vk::VkBuffer>					createDataBuffer		(vkt::Context&					context,
+																 deUint32						offset,
+																 deUint32						bufferSize,
+																 deUint32						initData,
+																 deUint32						initDataSize,
+																 deUint32						uninitData,
+																 de::MovePtr<vk::Allocation>*	outAllocation);
+
 vk::Move<vk::VkBuffer>					createColorDataBuffer (	deUint32 offset,
 																deUint32 bufferSize,
 																const tcu::Vec4& color1,
@@ -43,6 +51,13 @@ vk::Move<vk::VkBuffer>					createColorDataBuffer (	deUint32 offset,
 vk::Move<vk::VkDescriptorSetLayout>		createDescriptorSetLayout (vkt::Context& context);
 
 vk::Move<vk::VkDescriptorPool>			createDescriptorPool (vkt::Context& context);
+
+vk::Move<vk::VkDescriptorSet>			createDescriptorSet		(vkt::Context&				context,
+																 vk::VkDescriptorPool		pool,
+																 vk::VkDescriptorSetLayout	layout,
+																 vk::VkBuffer				buffer,
+																 deUint32					offset,
+																 vk::VkBuffer				resBuf);
 
 vk::Move<vk::VkDescriptorSet>			createDescriptorSet (vk::VkDescriptorPool pool,
 															  vk::VkDescriptorSetLayout layout,

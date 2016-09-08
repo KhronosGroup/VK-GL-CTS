@@ -8741,6 +8741,195 @@ tcu::TestCaseGroup* createOpInBoundsAccessChainGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+// If the params missing, uninitialized case
+const string specializeDefaultOutputShaderTemplate (const NumberType type, const map<string, string>& params = map<string, string>())
+{
+	map<string, string> parameters(params);
+
+	parameters["typeDeclaration"] = getAssemblyTypeDeclaration(type);
+
+	// Declare the const value, and use it in the initializer
+	if (params.find("constValue") != params.end())
+	{
+		parameters["constDeclaration"]		= "%const      = OpConstant %in_type " + params.at("constValue") + "\n";
+		parameters["variableInitializer"]	= "%const";
+	}
+	// Uninitialized case
+	else
+	{
+		parameters["constDeclaration"]		= "";
+		parameters["variableInitializer"]	= "";
+	}
+
+	return StringTemplate(
+		"OpCapability Shader\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+		// Decorators
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %indata DescriptorSet 0\n"
+		"OpDecorate %indata Binding 0\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 1\n"
+		"OpDecorate %in_arr ArrayStride 4\n"
+		"OpDecorate %in_buf BufferBlock\n"
+		"OpMemberDecorate %in_buf 0 Offset 0\n"
+		// Base types
+		"%void       = OpTypeVoid\n"
+		"%voidf      = OpTypeFunction %void\n"
+		"%u32        = OpTypeInt 32 0\n"
+		"%i32        = OpTypeInt 32 1\n"
+		"%uvec3      = OpTypeVector %u32 3\n"
+		"%uvec3ptr   = OpTypePointer Input %uvec3\n"
+		// Custom types
+		"%in_type    = ${typeDeclaration}\n"
+		// "%const      = OpConstant %in_type ${constValue}\n"
+		"${constDeclaration}\n"
+		// Derived types
+		"%in_ptr     = OpTypePointer Uniform %in_type\n"
+		"%in_arr     = OpTypeRuntimeArray %in_type\n"
+		"%in_buf     = OpTypeStruct %in_arr\n"
+		"%in_bufptr  = OpTypePointer Uniform %in_buf\n"
+		"%indata     = OpVariable %in_bufptr Uniform\n"
+		"%outdata    = OpVariable %in_bufptr Uniform\n"
+		"%id         = OpVariable %uvec3ptr Input\n"
+		"%var_ptr    = OpTypePointer Function %in_type\n"
+		// Constants
+		"%zero       = OpConstant %i32 0\n"
+		// Main function
+		"%main       = OpFunction %void None %voidf\n"
+		"%label      = OpLabel\n"
+		"%idval      = OpLoad %uvec3 %id\n"
+		"%x          = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc      = OpAccessChain %in_ptr %indata %zero %x\n"
+		"%outloc     = OpAccessChain %in_ptr %outdata %zero %x\n"
+
+		"%out_var    = OpVariable %var_ptr Function ${variableInitializer}\n"
+		"%outval     = OpLoad %in_type %out_var\n"
+		"              OpStore %outloc %outval\n"
+		"              OpReturn\n"
+		"              OpFunctionEnd\n"
+	).specialize(parameters);
+}
+
+bool compareFloats (const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, TestLog& log)
+{
+	DE_ASSERT(outputAllocs.size() != 0);
+	DE_ASSERT(outputAllocs.size() == expectedOutputs.size());
+
+	// Use custom epsilon because of the float->string conversion
+	const float	epsilon	= 0.00001f;
+
+	for (size_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
+	{
+		float expected;
+		memcpy(&expected, expectedOutputs[outputNdx]->data(), expectedOutputs[outputNdx]->getNumBytes());
+
+		float actual;
+		memcpy(&actual, outputAllocs[outputNdx]->getHostPtr(), expectedOutputs[outputNdx]->getNumBytes());
+
+		// Test with epsilon
+		if (fabs(expected - actual) > epsilon)
+		{
+			log << TestLog::Message << "Error: The actual and expected values not matching."
+				<< " Expected: " << expected << " Actual: " << actual << " Epsilon: " << epsilon << TestLog::EndMessage;
+			return false;
+		}
+	}
+	return true;
+}
+
+// Checks if the driver crash with uninitialized cases
+bool passthruVerify (const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, TestLog&)
+{
+	DE_ASSERT(outputAllocs.size() != 0);
+	DE_ASSERT(outputAllocs.size() == expectedOutputs.size());
+
+	// Copy and discard the result.
+	for (size_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
+	{
+		size_t width = expectedOutputs[outputNdx]->getNumBytes();
+
+		vector<char> data(width);
+		memcpy(&data[0], outputAllocs[outputNdx]->getHostPtr(), width);
+	}
+	return true;
+}
+
+tcu::TestCaseGroup* createShaderDefaultOutputGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "shader_default_output", "Test shader default output."));
+	de::Random						rnd		(deStringHash(group->getName()));
+
+	for (int type = TYPE_INT; type != TYPE_END; ++type)
+	{
+		NumberType						numberType	= NumberType(type);
+		const string					typeName	= getNumberTypeName(numberType);
+		const string					description	= "Test the OpVariable initializer with " + typeName + ".";
+		de::MovePtr<tcu::TestCaseGroup>	subGroup	(new tcu::TestCaseGroup(testCtx, typeName.c_str(), description.c_str()));
+
+		// 2 similar subcases (initialized and uninitialized)
+		for (int subCase = 0; subCase < 2; ++subCase)
+		{
+			ComputeShaderSpec spec;
+			spec.numWorkGroups = IVec3(1, 1, 1);
+
+			map<string, string>				params;
+
+			switch (numberType)
+			{
+				case TYPE_INT:
+				{
+					deInt32 number = getInt(rnd);
+					spec.inputs.push_back(createCompositeBuffer<deInt32>(number));
+					spec.outputs.push_back(createCompositeBuffer<deInt32>(number));
+					params["constValue"] = numberToString(number);
+					break;
+				}
+				case TYPE_UINT:
+				{
+					deUint32 number = rnd.getUint32();
+					spec.inputs.push_back(createCompositeBuffer<deUint32>(number));
+					spec.outputs.push_back(createCompositeBuffer<deUint32>(number));
+					params["constValue"] = numberToString(number);
+					break;
+				}
+				case TYPE_FLOAT:
+				{
+					float number = rnd.getFloat();
+					spec.inputs.push_back(createCompositeBuffer<float>(number));
+					spec.outputs.push_back(createCompositeBuffer<float>(number));
+					spec.verifyIO = &compareFloats;
+					params["constValue"] = numberToString(number);
+					break;
+				}
+				default:
+					DE_ASSERT(false);
+			}
+
+			// Initialized subcase
+			if (!subCase)
+			{
+				spec.assembly = specializeDefaultOutputShaderTemplate(numberType, params);
+				subGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "initialized", "OpVariable initializer tests.", spec));
+			}
+			// Uninitialized subcase
+			else
+			{
+				spec.assembly = specializeDefaultOutputShaderTemplate(numberType);
+				spec.verifyIO = &passthruVerify;
+				subGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "uninitialized", "OpVariable initializer tests.", spec));
+			}
+		}
+		group->addChild(subGroup.release());
+	}
+	return group.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> instructionTests	(new tcu::TestCaseGroup(testCtx, "instruction", "Instructions with special opcodes/operands"));
@@ -8777,6 +8966,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createUConvertTests(testCtx));
 	computeTests->addChild(createOpCompositeInsertGroup(testCtx));
 	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
+	computeTests->addChild(createShaderDefaultOutputGroup(testCtx));
 
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
