@@ -282,71 +282,6 @@ def prettifyXML (doc):
 	reparsed	= minidom.parseString(uglyString)
 	return reparsed.toprettyxml(indent='\t', encoding='utf-8')
 
-def genCTSPackageXML (mustpass, package, root):
-	def isLeafGroup (testGroup):
-		numGroups	= 0
-		numTests	= 0
-
-		for child in testGroup.children:
-			if isinstance(child, TestCase):
-				numTests += 1
-			else:
-				numGroups += 1
-
-		assert numGroups + numTests > 0
-
-		if numGroups > 0 and numTests > 0:
-			die("Mixed groups and cases in %s" % testGroup.name)
-
-		return numGroups == 0
-
-	def makeConfiguration (parentElem, config):
-		attributes = {}
-
-		if config.glconfig != None:
-			attributes['glconfig'] = config.glconfig
-
-		if config.rotation != None:
-			attributes['rotation'] = config.rotation
-
-		if config.surfacetype != None:
-			attributes['surfacetype'] = config.surfacetype
-
-		return ElementTree.SubElement(parentElem, "TestInstance", attributes)
-
-	def makeTestCase (parentElem, testCase):
-		caseElem = ElementTree.SubElement(parentElem, "Test", name=testCase.name)
-		for config in testCase.configurations:
-			makeConfiguration(caseElem, config)
-		return caseElem
-
-	def makeTestGroup (parentElem, testGroup):
-		groupElem = ElementTree.SubElement(parentElem, "TestCase" if isLeafGroup(testGroup) else "TestSuite", name=testGroup.name)
-		for child in testGroup.children:
-			if isinstance(child, TestCase):
-				makeTestCase(groupElem, child)
-			else:
-				makeTestGroup(groupElem, child)
-		return groupElem
-
-	pkgElem = ElementTree.Element("TestPackage",
-								  name				= package.module.name,
-								  appPackageName	= getCTSPackageName(package),
-								  testType			= "deqpTest")
-
-	pkgElem.set("xmlns:deqp", "http://drawelements.com/deqp")
-	insertXMLHeaders(mustpass, pkgElem)
-
-	glesVersion = getModuleGLESVersion(package.module)
-
-	if glesVersion != None:
-		pkgElem.set("deqp:glesVersion", str(glesVersion.encode()))
-
-	for child in root.children:
-		makeTestGroup(pkgElem, child)
-
-	return pkgElem
-
 def genSpecXML (mustpass):
 	mustpassElem = ElementTree.Element("Mustpass", version = mustpass.version)
 	insertXMLHeaders(mustpass, mustpassElem)
@@ -401,9 +336,7 @@ def genMustpass (mustpass, moduleCaseLists):
 	patternLists = readPatternLists(mustpass)
 
 	for package in mustpass.packages:
-		allCasesInPkg		= moduleCaseLists[package.module]
-		matchingByConfig	= {}
-		allMatchingSet		= set()
+		allCasesInPkg	= moduleCaseLists[package.module]
 
 		for config in package.configurations:
 			filtered	= applyFilters(allCasesInPkg, patternLists, config.filters)
@@ -411,24 +344,6 @@ def genMustpass (mustpass, moduleCaseLists):
 
 			print "  Writing deqp caselist: " + dstFile
 			writeFile(dstFile, "\n".join(filtered) + "\n")
-
-			matchingByConfig[config]	= filtered
-			allMatchingSet				= allMatchingSet | set(filtered)
-
-		allMatchingCases	= [c for c in allCasesInPkg if c in allMatchingSet] # To preserve ordering
-		root				= buildTestHierachy(allMatchingCases)
-		testCaseMap			= buildTestCaseMap(root)
-
-		for config in package.configurations:
-			for case in matchingByConfig[config]:
-				testCaseMap[case].configurations.append(config)
-
-		# NOTE: CTS v2 does not need package XML files. Remove when transition is complete.
-		packageXml	= genCTSPackageXML(mustpass, package, root)
-		xmlFilename	= os.path.join(mustpass.project.path, mustpass.version, getCTSPackageName(package) + ".xml")
-
-		print "  Writing CTS caselist: " + xmlFilename
-		writeFile(xmlFilename, prettifyXML(packageXml))
 
 	specXML			= genSpecXML(mustpass)
 	specFilename	= os.path.join(mustpass.project.path, mustpass.version, "mustpass.xml")
