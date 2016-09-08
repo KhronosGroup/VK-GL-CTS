@@ -28,6 +28,7 @@
 #include "vktDrawIndexedTest.hpp"
 #include "vktDrawIndirectTest.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktBasicDrawTests.hpp"
 
 namespace vkt
 {
@@ -44,6 +45,7 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(new SimpleDrawTests(testCtx));
 	group->addChild(new DrawIndexedTests(testCtx));
 	group->addChild(new IndirectDrawTests(testCtx));
+	group->addChild(createBasicDrawTests(testCtx));
 }
 
 } // anonymous

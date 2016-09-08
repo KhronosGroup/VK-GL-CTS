@@ -48,17 +48,25 @@ namespace vkt
 namespace Draw
 {
 
-struct VertexElementData
+struct PositionColorVertex
 {
-				VertexElementData (tcu::Vec4 position_, tcu::Vec4 color_, deUint32 refVertexIndex_)
-					: position			(position_)
-					, color				(color_)
-					, refVertexIndex	(refVertexIndex_)
-				{
-				}
+				PositionColorVertex (tcu::Vec4 position_, tcu::Vec4 color_)
+					: position	(position_)
+					, color		(color_)
+				{}
 
 	tcu::Vec4	position;
 	tcu::Vec4	color;
+};
+
+struct VertexElementData : public PositionColorVertex
+{
+				VertexElementData (tcu::Vec4 position_, tcu::Vec4 color_, deUint32 refVertexIndex_)
+					: PositionColorVertex	(position_, color_)
+					, refVertexIndex		(refVertexIndex_)
+				{
+				}
+
 	deUint32	refVertexIndex;
 };
 

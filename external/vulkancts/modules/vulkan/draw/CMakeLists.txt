@@ -18,6 +18,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawBufferObjectUtil.hpp
 	vktDrawBufferObjectUtil.cpp
 	vktDrawTestCaseUtil.hpp
+	vktBasicDrawTests.hpp
+	vktBasicDrawTests.cpp
 )
 
 set(DEQP_VK_DRAW_LIBS
