@@ -973,7 +973,7 @@ LOCAL_STATIC_LIBRARIES := \
 LOCAL_CFLAGS += \
 	$(deqp_compile_flags)
 
-LOCAL_SDK_VERSION := 9
+LOCAL_SDK_VERSION := 22
 LOCAL_CPPFLAGS += -Wno-non-virtual-dtor -fwrapv
 LOCAL_NDK_STL_VARIANT := gnustl_static
 LOCAL_RTTI_FLAG := -frtti -fexceptions
