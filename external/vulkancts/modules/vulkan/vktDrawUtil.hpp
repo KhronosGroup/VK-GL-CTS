@@ -32,23 +32,13 @@
 #include "vkImageUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vktTestCase.hpp"
+#include "vkTypeUtil.hpp"
+#include "rrRenderer.hpp"
 
 namespace vkt
 {
 namespace drawutil
 {
-
-enum Constants
-{
-	RENDER_SIZE								= 16,
-	RENDER_SIZE_LARGE						= 128,
-	NUM_RENDER_PIXELS						= RENDER_SIZE * RENDER_SIZE,
-	NUM_PATCH_CONTROL_POINTS				= 3,
-	MAX_NUM_SHADER_MODULES					= 5,
-	MAX_CLIP_DISTANCES						= 8,
-	MAX_CULL_DISTANCES						= 8,
-	MAX_COMBINED_CLIP_AND_CULL_DISTANCES	= 8,
-};
 
 struct Shader
 {
@@ -61,39 +51,102 @@ struct Shader
 	{
 	}
 };
+
+struct DrawState
+{
+	const vk::VkPrimitiveTopology	topology;
+	const vk::VkFormat				colorFormat;
+	const vk::VkFormat				depthFormat;
+	tcu::UVec2						renderSize;
+	bool							depthClampEnable;
+	bool							blendEnable;
+	float							lineWidth;
+	deUint32						numPatchControlPoints;
+
+	DrawState (const vk::VkPrimitiveTopology topology_, deUint32 renderWidth_, deUint32 renderHeight_);
+};
+
+struct DrawCallData
+{
+	const std::vector<tcu::Vec4>&	vertices;
+
+	DrawCallData		(const std::vector<tcu::Vec4>&	vertices_)
+		: vertices		(vertices_)
+	{
+	}
+};
+
 //! Sets up a graphics pipeline and enables simple draw calls to predefined attachments.
 //! Clip volume uses wc = 1.0, which gives clip coord ranges: x = [-1, 1], y = [-1, 1], z = [0, 1]
 //! Clip coords (-1,-1) map to viewport coords (0, 0).
 class DrawContext
 {
 public:
-									DrawContext		(Context&						context,
-													 const std::vector<Shader>&		shaders,
-													 const std::vector<tcu::Vec4>&	vertices,
-													 const vk::VkPrimitiveTopology	primitiveTopology,
-													 const deUint32					renderSize			= static_cast<deUint32>(RENDER_SIZE),
-													 const bool						depthClampEnable	= false,
-													 const bool						blendEnable			= false,
-													 const float					lineWidth			= 1.0f);
+											DrawContext				(const DrawState&		drawState,
+																	 const DrawCallData&	drawCallData)
+		: m_drawState						(drawState)
+		, m_drawCallData					(drawCallData)
+	{
+	}
+	virtual									~DrawContext			(void)
+	{
+	}
 
-	void							draw			(void);
-	tcu::ConstPixelBufferAccess		getColorPixels	(void) const;
+	virtual void							draw					(void) = 0;
+	virtual tcu::ConstPixelBufferAccess		getColorPixels			(void) const = 0;
+protected:
+		const DrawState						m_drawState;
+		const DrawCallData					m_drawCallData;
+};
 
+class ReferenceDrawContext : public DrawContext
+{
+public:
+											ReferenceDrawContext	(const DrawState&			drawState,
+																	 const DrawCallData&		drawCallData,
+																	 const rr::VertexShader&	vertexShader,
+																	 const rr::FragmentShader&	fragmentShader)
+		: DrawContext						(drawState, drawCallData)
+		, m_vertexShader					(vertexShader)
+		, m_fragmentShader					(fragmentShader)
+	{
+	}
+	virtual									~ReferenceDrawContext	(void);
+	virtual void							draw					(void);
+	virtual tcu::ConstPixelBufferAccess		getColorPixels			(void) const;
 private:
+	const rr::VertexShader&					m_vertexShader;
+	const rr::FragmentShader&				m_fragmentShader;
+	tcu::TextureLevel						m_refImage;
+};
+
+struct VulkanProgram
+{
+	const std::vector<Shader>&				shaders;
+
+	VulkanProgram		(const std::vector<Shader>&			shaders_)
+		: shaders		(shaders_)
+	{
+	}
+};
+
+class VulkanDrawContext : public DrawContext
+{
+public:
+											VulkanDrawContext	(Context&				context,
+																 const DrawState&		drawState,
+																 const DrawCallData&	drawCallData,
+																 const VulkanProgram&	vulkanProgram);
+	virtual									~VulkanDrawContext	(void);
+	virtual void							draw				(void);
+	virtual tcu::ConstPixelBufferAccess		getColorPixels		(void) const;
+private:
+	enum Contants
+	{
+		MAX_NUM_SHADER_MODULES					= 5,
+	};
 	Context&									m_context;
-	const vk::VkFormat							m_colorFormat;
-	const vk::VkFormat							m_depthFormat;
-	const vk::VkImageSubresourceRange			m_colorSubresourceRange;
-	const vk::VkImageSubresourceRange			m_depthSubresourceRange;
-	const tcu::UVec2							m_renderSize;
-	const vk::VkExtent3D						m_imageExtent;
-	const vk::VkPrimitiveTopology				m_primitiveTopology;
-	const bool									m_depthClampEnable;
-	const bool									m_blendEnable;
-	const deUint32								m_numVertices;
-	const float									m_lineWidth;
-	const deUint32								m_numPatchControlPoints;
-	de::MovePtr<vk::BufferWithMemory>			m_vertexBuffer;
+	VulkanProgram								m_program;
 	de::MovePtr<vk::ImageWithMemory>			m_colorImage;
 	de::MovePtr<vk::ImageWithMemory>			m_depthImage;
 	de::MovePtr<vk::BufferWithMemory>			m_colorAttachmentBuffer;
@@ -106,10 +159,9 @@ private:
 	vk::refdetails::Move<vk::VkCommandPool>		m_cmdPool;
 	vk::refdetails::Move<vk::VkCommandBuffer>	m_cmdBuffer;
 	vk::refdetails::Move<vk::VkShaderModule>	m_shaderModules[MAX_NUM_SHADER_MODULES];
-
-									DrawContext		(const DrawContext&);	// "deleted"
-	DrawContext&					operator=		(const DrawContext&);	// "deleted"
+	de::MovePtr<vk::BufferWithMemory>			m_vertexBuffer;
 };
+
 std::string getPrimitiveTopologyShortName (const vk::VkPrimitiveTopology topology);
 
 } // drwwutil

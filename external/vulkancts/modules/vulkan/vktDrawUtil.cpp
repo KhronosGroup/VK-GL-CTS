@@ -23,9 +23,14 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktDrawUtil.hpp"
+#include "rrMultisamplePixelBufferAccess.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkTypeUtil.hpp"
+#include "rrRenderer.hpp"
+#include "rrPrimitiveTypes.hpp"
+#include "tcuTextureUtil.hpp"
+#include "deArrayUtil.hpp"
 #include "tcuTestLog.hpp"
 
 namespace vkt
@@ -36,6 +41,25 @@ namespace drawutil
 using namespace de;
 using namespace tcu;
 using namespace vk;
+
+rr::PrimitiveType mapVkPrimitiveToRRPrimitive(const vk::VkPrimitiveTopology& primitiveTopology)
+{
+	static const rr::PrimitiveType primitiveTypeTable[] =
+	{
+		rr::PRIMITIVETYPE_POINTS,
+		rr::PRIMITIVETYPE_LINES,
+		rr::PRIMITIVETYPE_LINE_STRIP,
+		rr::PRIMITIVETYPE_TRIANGLES,
+		rr::PRIMITIVETYPE_TRIANGLE_STRIP,
+		rr::PRIMITIVETYPE_TRIANGLE_FAN,
+		rr::PRIMITIVETYPE_LINES_ADJACENCY,
+		rr::PRIMITIVETYPE_LINE_STRIP_ADJACENCY,
+		rr::PRIMITIVETYPE_TRIANGLES_ADJACENCY,
+		rr::PRIMITIVETYPE_TRIANGLE_STRIP_ADJACENCY
+	};
+
+	return de::getSizedArrayElement<vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST>(primitiveTypeTable, primitiveTopology);
+}
 
 VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			bufferSize,
 										 const VkBufferUsageFlags	usage)
@@ -212,10 +236,10 @@ void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer comman
 {
 	const VkCommandBufferBeginInfo info =
 	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType                          sType;
-		DE_NULL,										// const void*                              pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags                flags;
-		DE_NULL,										// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType							sType;
+		DE_NULL,										// const void*								pNext;
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags				flags;
+		DE_NULL,										// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
 	};
 	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &info));
 }
@@ -240,15 +264,15 @@ void submitCommandsAndWait (const DeviceInterface&	vk,
 
 	const VkSubmitInfo submitInfo =
 	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType                sType;
-		DE_NULL,							// const void*                    pNext;
-		0u,									// uint32_t                       waitSemaphoreCount;
-		DE_NULL,							// const VkSemaphore*             pWaitSemaphores;
-		DE_NULL,							// const VkPipelineStageFlags*    pWaitDstStageMask;
-		1u,									// uint32_t                       commandBufferCount;
-		&commandBuffer,						// const VkCommandBuffer*         pCommandBuffers;
-		0u,									// uint32_t                       signalSemaphoreCount;
-		DE_NULL,							// const VkSemaphore*             pSignalSemaphores;
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType					sType;
+		DE_NULL,							// const void*						pNext;
+		0u,									// uint32_t							waitSemaphoreCount;
+		DE_NULL,							// const VkSemaphore*				pWaitSemaphores;
+		DE_NULL,							// const VkPipelineStageFlags*		pWaitDstStageMask;
+		1u,									// uint32_t							commandBufferCount;
+		&commandBuffer,						// const VkCommandBuffer*			pCommandBuffers;
+		0u,									// uint32_t							signalSemaphoreCount;
+		DE_NULL,							// const VkSemaphore*				pSignalSemaphores;
 	};
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
 	VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
@@ -259,66 +283,109 @@ std::string getPrimitiveTopologyShortName (const VkPrimitiveTopology topology)
 	std::string name(getPrimitiveTopologyName(topology));
 	return de::toLower(name.substr(22));
 }
-DrawContext::DrawContext (Context&						context,
-						  const std::vector<Shader>&	shaders,
-						  const std::vector<Vec4>&		vertices,
-						  const VkPrimitiveTopology		primitiveTopology,
-						  const deUint32				renderSize,
-						  const bool					depthClampEnable,
-						  const bool					blendEnable,
-						  const float					lineWidth)
-	: m_context					(context)
-	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_depthFormat				(VK_FORMAT_D32_SFLOAT)
-	, m_colorSubresourceRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u))
-	, m_depthSubresourceRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u))
-	, m_renderSize				(renderSize, renderSize)
-	, m_imageExtent				(makeExtent3D(m_renderSize.x(), m_renderSize.y(), 1u))
-	, m_primitiveTopology		(primitiveTopology)
-	, m_depthClampEnable		(depthClampEnable)
-	, m_blendEnable				(blendEnable)
-	, m_numVertices				(static_cast<deUint32>(vertices.size()))
-	, m_lineWidth				(lineWidth)
-	, m_numPatchControlPoints	(NUM_PATCH_CONTROL_POINTS)		// we're treating patches as triangles
+
+DrawState::DrawState(const vk::VkPrimitiveTopology topology_, deUint32 renderWidth_, deUint32 renderHeight_)
+	: topology				(topology_)
+	, colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
+	, depthFormat			(VK_FORMAT_D32_SFLOAT)
+	, renderSize			(tcu::UVec2(renderWidth_, renderHeight_))
+	, depthClampEnable		(false)
+	, blendEnable			(false)
+	, lineWidth				(1.0)
+	, numPatchControlPoints	(0)
 {
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			device		= m_context.getDevice();
-	Allocator&				allocator	= m_context.getDefaultAllocator();
+	DE_ASSERT(renderSize.x() != 0 && renderSize.y() != 0);
+}
+
+ReferenceDrawContext::~ReferenceDrawContext (void)
+{
+}
+
+void ReferenceDrawContext::draw (void)
+{
+	m_refImage.setStorage(vk::mapVkFormat(m_drawState.colorFormat), m_drawState.renderSize.x(), m_drawState.renderSize.y());
+	tcu::clear(m_refImage.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+	{
+		const rr::Program						program(&m_vertexShader, &m_fragmentShader);
+		const rr::MultisamplePixelBufferAccess	referenceColorBuffer = rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(m_refImage.getAccess());
+		const rr::RenderTarget					renderTarget(referenceColorBuffer);
+		const rr::RenderState					renderState((rr::ViewportState(referenceColorBuffer)), rr::VIEWPORTORIENTATION_UPPER_LEFT);
+		const rr::Renderer						renderer;
+		const rr::VertexAttrib					vertexAttrib[] =
+		{
+			rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0, &m_drawCallData.vertices[0])
+		};
+
+		renderer.draw(rr::DrawCommand(	renderState,
+										renderTarget,
+										program,
+										DE_LENGTH_OF_ARRAY(vertexAttrib),
+										&vertexAttrib[0],
+										rr::PrimitiveList(mapVkPrimitiveToRRPrimitive(m_drawState.topology), (int)m_drawCallData.vertices.size(), 0)));
+
+	}
+
+}
+
+tcu::ConstPixelBufferAccess ReferenceDrawContext::getColorPixels (void) const
+{
+	return tcu::ConstPixelBufferAccess( m_refImage.getAccess().getFormat(),
+										m_refImage.getAccess().getWidth(),
+										m_refImage.getAccess().getHeight(),
+										m_refImage.getAccess().getDepth(),
+										m_refImage.getAccess().getDataPtr());
+}
+
+VulkanDrawContext::VulkanDrawContext (  Context&				context,
+										const DrawState&		drawState,
+										const DrawCallData&		drawCallData,
+										const VulkanProgram&	vulkanProgram)
+	: DrawContext						(drawState, drawCallData)
+	, m_context							(context)
+	, m_program							(vulkanProgram)
+{
+	const DeviceInterface&	vk						= m_context.getDeviceInterface();
+	const VkDevice			device					= m_context.getDevice();
+	Allocator&				allocator				= m_context.getDefaultAllocator();
+	VkImageSubresourceRange	colorSubresourceRange;
+	VkImageSubresourceRange	depthSubresourceRange;
 
 	// Command buffer
 	{
-		m_cmdPool	= makeCommandPool(vk, device, m_context.getUniversalQueueFamilyIndex());
-		m_cmdBuffer	= makeCommandBuffer(vk, device, *m_cmdPool);
+		m_cmdPool			= makeCommandPool(vk, device, m_context.getUniversalQueueFamilyIndex());
+		m_cmdBuffer			= makeCommandBuffer(vk, device, *m_cmdPool);
 	}
 
 	// Color attachment image
 	{
 		const VkImageUsageFlags usage			= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		colorSubresourceRange					= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 		const VkImageCreateInfo	imageCreateInfo	=
 		{
-			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType          sType;
-			DE_NULL,									// const void*              pNext;
-			(VkImageCreateFlags)0,						// VkImageCreateFlags       flags;
-			VK_IMAGE_TYPE_2D,							// VkImageType              imageType;
-			m_colorFormat,								// VkFormat                 format;
-			m_imageExtent,								// VkExtent3D               extent;
-			1u,											// uint32_t                 mipLevels;
-			1u,											// uint32_t                 arrayLayers;
-			VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits    samples;
-			VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling            tiling;
-			usage,										// VkImageUsageFlags        usage;
-			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode            sharingMode;
-			VK_QUEUE_FAMILY_IGNORED,					// uint32_t                 queueFamilyIndexCount;
-			DE_NULL,									// const uint32_t*          pQueueFamilyIndices;
-			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout            initialLayout;
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType			sType;
+			DE_NULL,																	// const void*				pNext;
+			(VkImageCreateFlags)0,														// VkImageCreateFlags		flags;
+			VK_IMAGE_TYPE_2D,															// VkImageType				imageType;
+			m_drawState.colorFormat,													// VkFormat					format;
+			makeExtent3D(m_drawState.renderSize.x(), m_drawState.renderSize.y(), 1u),	// VkExtent3D				extent;
+			1u,																			// uint32_t					mipLevels;
+			1u,																			// uint32_t					arrayLayers;
+			VK_SAMPLE_COUNT_1_BIT,														// VkSampleCountFlagBits	samples;
+			VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling			tiling;
+			usage,																		// VkImageUsageFlags		usage;
+			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode			sharingMode;
+			VK_QUEUE_FAMILY_IGNORED,													// uint32_t					queueFamilyIndexCount;
+			DE_NULL,																	// const uint32_t*			pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout			initialLayout;
 		};
 
 		m_colorImage = MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any));
-		m_colorImageView = makeImageView(vk, device, **m_colorImage, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat, m_colorSubresourceRange);
+		m_colorImageView = makeImageView(vk, device, **m_colorImage, VK_IMAGE_VIEW_TYPE_2D, m_drawState.colorFormat, colorSubresourceRange);
 
 		// Buffer to copy attachment data after rendering
 
-		const VkDeviceSize bitmapSize = tcu::getPixelSize(mapVkFormat(m_colorFormat)) * m_renderSize.x() * m_renderSize.y();
+		const VkDeviceSize bitmapSize = tcu::getPixelSize(mapVkFormat(m_drawState.colorFormat)) * m_drawState.renderSize.x() * m_drawState.renderSize.y();
 		m_colorAttachmentBuffer = MovePtr<BufferWithMemory>(new BufferWithMemory(
 			vk, device, allocator, makeBufferCreateInfo(bitmapSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible));
 
@@ -331,37 +398,38 @@ DrawContext::DrawContext (Context&						context,
 
 	// Depth attachment image
 	{
+		depthSubresourceRange					= makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
 		const VkImageCreateInfo imageCreateInfo	=
 		{
-			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,			// VkStructureType			sType
-			DE_NULL,										// const void*				pNext
-			0u,												// VkImageCreateFlags		flags
-			VK_IMAGE_TYPE_2D,								// VkImageType				imageType
-			m_depthFormat,									// VkFormat					depthFormat
-			{ m_renderSize.x(), m_renderSize.y(), 1u },		// VkExtent3D				externt
-			1u,												// deUint32					mipLevels
-			1u,												// deUint32					arrayLayers
-			VK_SAMPLE_COUNT_1_BIT,							// VkSampleCountFlagBits	samples
-			VK_IMAGE_TILING_OPTIMAL,						// VkImageTiling			tiling
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,	// VkImageUsageFlags		usage
-			VK_SHARING_MODE_EXCLUSIVE,						// VkSharingMode			sharingMode
-			0u,												// deUint32					queueFamilyIndexCount
-			DE_NULL,										// const deUint32*			pQueueFamilyIndices
-			VK_IMAGE_LAYOUT_UNDEFINED						// VkImageLayout			initialLayout
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,						// VkStructureType			sType
+			DE_NULL,													// const void*				pNext
+			0u,															// VkImageCreateFlags		flags
+			VK_IMAGE_TYPE_2D,											// VkImageType				imageType
+			m_drawState.depthFormat,									// VkFormat					depthFormat
+			{ m_drawState.renderSize.x(), m_drawState.renderSize.y(), 1u },		// VkExtent3D				externt
+			1u,															// deUint32					mipLevels
+			1u,															// deUint32					arrayLayers
+			VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits	samples
+			VK_IMAGE_TILING_OPTIMAL,									// VkImageTiling			tiling
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,				// VkImageUsageFlags		usage
+			VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode			sharingMode
+			0u,															// deUint32					queueFamilyIndexCount
+			DE_NULL,													// const deUint32*			pQueueFamilyIndices
+			VK_IMAGE_LAYOUT_UNDEFINED									// VkImageLayout			initialLayout
 		};
 
-		m_depthImage = MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, allocator, imageCreateInfo, MemoryRequirement::HostVisible));
-		m_depthImageView = makeImageView(vk, device, **m_depthImage, VK_IMAGE_VIEW_TYPE_2D, m_depthFormat, m_depthSubresourceRange);
+		m_depthImage = MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any));
+		m_depthImageView = makeImageView(vk, device, **m_depthImage, VK_IMAGE_VIEW_TYPE_2D, m_drawState.depthFormat, depthSubresourceRange);
 	}
 
 	// Vertex buffer
 	{
-		const VkDeviceSize bufferSize = vertices.size() * sizeof(vertices[0]);
+		const VkDeviceSize bufferSize = m_drawCallData.vertices.size() * sizeof(m_drawCallData.vertices[0]);
 		m_vertexBuffer = MovePtr<BufferWithMemory>(new BufferWithMemory(
 			vk, device, allocator, makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 
 		const Allocation& alloc = m_vertexBuffer->getAllocation();
-		deMemcpy(alloc.getHostPtr(), &vertices[0], (size_t)bufferSize);
+		deMemcpy(alloc.getHostPtr(), &m_drawCallData.vertices[0], (size_t)bufferSize);
 		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), bufferSize);
 	}
 
@@ -375,7 +443,7 @@ DrawContext::DrawContext (Context&						context,
 		const VkAttachmentDescription colorAttachmentDescription =
 		{
 			(VkAttachmentDescriptionFlags)0,					// VkAttachmentDescriptionFlags		flags;
-			m_colorFormat,										// VkFormat							format;
+			m_drawState.colorFormat,							// VkFormat							format;
 			VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
 			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
 			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
@@ -436,15 +504,15 @@ DrawContext::DrawContext (Context&						context,
 		};
 
 		const VkFramebufferCreateInfo framebufferInfo = {
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType                             sType;
-			DE_NULL,										// const void*                                 pNext;
-			(VkFramebufferCreateFlags)0,					// VkFramebufferCreateFlags                    flags;
-			*m_renderPass,									// VkRenderPass                                renderPass;
-			DE_LENGTH_OF_ARRAY(attachmentBindInfos),		// uint32_t                                    attachmentCount;
-			attachmentBindInfos,							// const VkImageView*                          pAttachments;
-			m_renderSize.x(),								// uint32_t                                    width;
-			m_renderSize.y(),								// uint32_t                                    height;
-			1u,												// uint32_t                                    layers;
+			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType						sType;
+			DE_NULL,										// const void*							pNext;
+			(VkFramebufferCreateFlags)0,					// VkFramebufferCreateFlags				flags;
+			*m_renderPass,									// VkRenderPass							renderPass;
+			DE_LENGTH_OF_ARRAY(attachmentBindInfos),		// uint32_t								attachmentCount;
+			attachmentBindInfos,							// const VkImageView*					pAttachments;
+			m_drawState.renderSize.x(),						// uint32_t								width;
+			m_drawState.renderSize.y(),						// uint32_t								height;
+			1u,												// uint32_t								layers;
 		};
 
 		m_framebuffer = createFramebuffer(vk, device, &framebufferInfo);
@@ -454,6 +522,8 @@ DrawContext::DrawContext (Context&						context,
 	{
 		const deUint32	vertexStride	= sizeof(Vec4);
 		const VkFormat	vertexFormat	= VK_FORMAT_R32G32B32A32_SFLOAT;
+
+		DE_ASSERT(m_drawState.topology != VK_PRIMITIVE_TOPOLOGY_PATCH_LIST || m_drawState.numPatchControlPoints > 0);
 
 		const VkVertexInputBindingDescription bindingDesc =
 		{
@@ -471,60 +541,60 @@ DrawContext::DrawContext (Context&						context,
 
 		const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType                             sType;
-			DE_NULL,														// const void*                                 pNext;
-			(VkPipelineVertexInputStateCreateFlags)0,						// VkPipelineVertexInputStateCreateFlags       flags;
-			1u,																// uint32_t                                    vertexBindingDescriptionCount;
-			&bindingDesc,													// const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
-			1u,																// uint32_t                                    vertexAttributeDescriptionCount;
-			&attributeDesc,													// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType								sType;
+			DE_NULL,														// const void*									pNext;
+			(VkPipelineVertexInputStateCreateFlags)0,						// VkPipelineVertexInputStateCreateFlags		flags;
+			1u,																// uint32_t										vertexBindingDescriptionCount;
+			&bindingDesc,													// const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+			1u,																// uint32_t										vertexAttributeDescriptionCount;
+			&attributeDesc,													// const VkVertexInputAttributeDescription*		pVertexAttributeDescriptions;
 		};
 
 		const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                             sType;
-			DE_NULL,														// const void*                                 pNext;
-			(VkPipelineInputAssemblyStateCreateFlags)0,						// VkPipelineInputAssemblyStateCreateFlags     flags;
-			m_primitiveTopology,											// VkPrimitiveTopology                         topology;
-			VK_FALSE,														// VkBool32                                    primitiveRestartEnable;
+			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType								sType;
+			DE_NULL,														// const void*									pNext;
+			(VkPipelineInputAssemblyStateCreateFlags)0,						// VkPipelineInputAssemblyStateCreateFlags		flags;
+			m_drawState.topology,											// VkPrimitiveTopology							topology;
+			VK_FALSE,														// VkBool32										primitiveRestartEnable;
 		};
 
 		const VkPipelineTessellationStateCreateInfo pipelineTessellationStateInfo =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,		// VkStructureType                             sType;
-			DE_NULL,														// const void*                                 pNext;
-			(VkPipelineTessellationStateCreateFlags)0,						// VkPipelineTessellationStateCreateFlags      flags;
-			m_numPatchControlPoints,										// uint32_t                                    patchControlPoints;
+			VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,		// VkStructureType								sType;
+			DE_NULL,														// const void*									pNext;
+			(VkPipelineTessellationStateCreateFlags)0,						// VkPipelineTessellationStateCreateFlags		flags;
+			m_drawState.numPatchControlPoints,								// uint32_t										patchControlPoints;
 		};
 
 		const VkViewport viewport = makeViewport(
 			0.0f, 0.0f,
-			static_cast<float>(m_renderSize.x()), static_cast<float>(m_renderSize.y()),
+			static_cast<float>(m_drawState.renderSize.x()), static_cast<float>(m_drawState.renderSize.y()),
 			0.0f, 1.0f);
 
 		const VkRect2D scissor = {
 			makeOffset2D(0, 0),
-			makeExtent2D(m_renderSize.x(), m_renderSize.y()),
+			makeExtent2D(m_drawState.renderSize.x(), m_drawState.renderSize.y()),
 		};
 
 		const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType                             sType;
-			DE_NULL,												// const void*                                 pNext;
-			(VkPipelineViewportStateCreateFlags)0,					// VkPipelineViewportStateCreateFlags          flags;
-			1u,														// uint32_t                                    viewportCount;
-			&viewport,												// const VkViewport*                           pViewports;
-			1u,														// uint32_t                                    scissorCount;
-			&scissor,												// const VkRect2D*                             pScissors;
+			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType									sType;
+			DE_NULL,												// const void*										pNext;
+			(VkPipelineViewportStateCreateFlags)0,					// VkPipelineViewportStateCreateFlags				flags;
+			1u,														// uint32_t											viewportCount;
+			&viewport,												// const VkViewport*								pViewports;
+			1u,														// uint32_t											scissorCount;
+			&scissor,												// const VkRect2D*									pScissors;
 		};
 
 		const VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateInfo =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType                          sType;
-			DE_NULL,														// const void*                              pNext;
-			(VkPipelineRasterizationStateCreateFlags)0,						// VkPipelineRasterizationStateCreateFlags  flags;
-			m_depthClampEnable,												// VkBool32                                 depthClampEnable;
-			VK_FALSE,														// VkBool32                                 rasterizerDiscardEnable;
+			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType							sType;
+			DE_NULL,														// const void*								pNext;
+			(VkPipelineRasterizationStateCreateFlags)0,						// VkPipelineRasterizationStateCreateFlags	flags;
+			m_drawState.depthClampEnable,									// VkBool32									depthClampEnable;
+			VK_FALSE,														// VkBool32									rasterizerDiscardEnable;
 			VK_POLYGON_MODE_FILL,											// VkPolygonMode							polygonMode;
 			VK_CULL_MODE_NONE,												// VkCullModeFlags							cullMode;
 			VK_FRONT_FACE_COUNTER_CLOCKWISE,								// VkFrontFace								frontFace;
@@ -532,7 +602,7 @@ DrawContext::DrawContext (Context&						context,
 			0.0f,															// float									depthBiasConstantFactor;
 			0.0f,															// float									depthBiasClamp;
 			0.0f,															// float									depthBiasSlopeFactor;
-			m_lineWidth,													// float									lineWidth;
+			m_drawState.lineWidth,											// float									lineWidth;
 		};
 
 		const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo =
@@ -576,7 +646,7 @@ DrawContext::DrawContext (Context&						context,
 		const VkColorComponentFlags colorComponentsAll = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		const VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState =
 		{
-			m_blendEnable,						// VkBool32					blendEnable;
+			m_drawState.blendEnable,			// VkBool32					blendEnable;
 			VK_BLEND_FACTOR_SRC_ALPHA,			// VkBlendFactor			srcColorBlendFactor;
 			VK_BLEND_FACTOR_ONE,				// VkBlendFactor			dstColorBlendFactor;
 			VK_BLEND_OP_ADD,					// VkBlendOp				colorBlendOp;
@@ -603,31 +673,31 @@ DrawContext::DrawContext (Context&						context,
 		std::vector<VkPipelineShaderStageCreateInfo>	shaderStages;
 		VkShaderStageFlags								stageFlags = (VkShaderStageFlags)0;
 
-		DE_ASSERT(shaders.size() <= MAX_NUM_SHADER_MODULES);
-		for (deUint32 shaderNdx = 0; shaderNdx < shaders.size(); ++shaderNdx)
+		DE_ASSERT(m_program.shaders.size() <= MAX_NUM_SHADER_MODULES);
+		for (deUint32 shaderNdx = 0; shaderNdx < m_program.shaders.size(); ++shaderNdx)
 		{
-			m_shaderModules[shaderNdx] = createShaderModule(vk, device, *shaders[shaderNdx].binary, (VkShaderModuleCreateFlags)0);
+			m_shaderModules[shaderNdx] = createShaderModule(vk, device, *m_program.shaders[shaderNdx].binary, (VkShaderModuleCreateFlags)0);
 
 			const VkPipelineShaderStageCreateInfo pipelineShaderStageInfo =
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
 				DE_NULL,												// const void*							pNext;
 				(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags		flags;
-				shaders[shaderNdx].stage,								// VkShaderStageFlagBits				stage;
+				m_program.shaders[shaderNdx].stage,						// VkShaderStageFlagBits				stage;
 				*m_shaderModules[shaderNdx],							// VkShaderModule						module;
 				"main",													// const char*							pName;
 				DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
 			};
 
 			shaderStages.push_back(pipelineShaderStageInfo);
-			stageFlags |= shaders[shaderNdx].stage;
+			stageFlags |= m_program.shaders[shaderNdx].stage;
 		}
 
 		DE_ASSERT(
-			(m_primitiveTopology != VK_PRIMITIVE_TOPOLOGY_PATCH_LIST) ||
+			(m_drawState.topology != VK_PRIMITIVE_TOPOLOGY_PATCH_LIST) ||
 			(stageFlags & (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)));
 
-		const bool tessellationEnabled = (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
+		const bool tessellationEnabled = (m_drawState.topology == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
 		const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,						// VkStructureType									sType;
@@ -666,17 +736,17 @@ DrawContext::DrawContext (Context&						context,
 			const VkRect2D		renderArea =
 			{
 				makeOffset2D(0, 0),
-				makeExtent2D(m_renderSize.x(), m_renderSize.y())
+				makeExtent2D(m_drawState.renderSize.x(), m_drawState.renderSize.y())
 			};
 
 			const VkRenderPassBeginInfo renderPassBeginInfo = {
-				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
-				DE_NULL,										// const void*             pNext;
-				*m_renderPass,									// VkRenderPass            renderPass;
-				*m_framebuffer,									// VkFramebuffer           framebuffer;
-				renderArea,										// VkRect2D                renderArea;
-				1u,												// uint32_t                clearValueCount;
-				&clearValue,									// const VkClearValue*     pClearValues;
+				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,							// VkStructureType								sType;
+				DE_NULL,															// const void*									pNext;
+				*m_renderPass,														// VkRenderPass									renderPass;
+				*m_framebuffer,														// VkFramebuffer								framebuffer;
+				renderArea,															// VkRect2D										renderArea;
+				1u,																	// uint32_t										clearValueCount;
+				&clearValue,														// const VkClearValue*							pClearValues;
 			};
 
 			vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -685,7 +755,7 @@ DrawContext::DrawContext (Context&						context,
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(**m_vertexBuffer), &zeroOffset);
 
-		vk.cmdDraw(*m_cmdBuffer, m_numVertices, 1u, 0u, 1u);
+		vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_drawCallData.vertices.size()), 1u, 0u, 1u);
 		vk.cmdEndRenderPass(*m_cmdBuffer);
 
 		// Barrier: draw -> copy from image
@@ -693,14 +763,15 @@ DrawContext::DrawContext (Context&						context,
 			const VkImageMemoryBarrier barrier = makeImageMemoryBarrier(
 				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				**m_colorImage, m_colorSubresourceRange);
+				**m_colorImage, colorSubresourceRange);
 
 			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
 				0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
 		}
 
 		{
-			const VkBufferImageCopy copyRegion = makeBufferImageCopy(makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u), m_imageExtent);
+			const VkBufferImageCopy copyRegion = makeBufferImageCopy(makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),
+					makeExtent3D(m_drawState.renderSize.x(), m_drawState.renderSize.y(), 1u));
 			vk.cmdCopyImageToBuffer(*m_cmdBuffer, **m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_colorAttachmentBuffer, 1u, &copyRegion);
 		}
 
@@ -718,7 +789,11 @@ DrawContext::DrawContext (Context&						context,
 	}
 }
 
-void DrawContext::draw (void)
+VulkanDrawContext::~VulkanDrawContext (void)
+{
+}
+
+void VulkanDrawContext::draw (void)
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
@@ -730,7 +805,7 @@ void DrawContext::draw (void)
 	log << tcu::LogImageSet("attachments", "") << tcu::LogImage("color0", "", getColorPixels()) << tcu::TestLog::EndImageSet;
 }
 
-tcu::ConstPixelBufferAccess DrawContext::getColorPixels (void) const
+tcu::ConstPixelBufferAccess VulkanDrawContext::getColorPixels (void) const
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
@@ -738,7 +813,7 @@ tcu::ConstPixelBufferAccess DrawContext::getColorPixels (void) const
 	const Allocation& alloc = m_colorAttachmentBuffer->getAllocation();
 	invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), VK_WHOLE_SIZE);
 
-	return tcu::ConstPixelBufferAccess(mapVkFormat(m_colorFormat), m_imageExtent.width, m_imageExtent.height, m_imageExtent.depth, alloc.getHostPtr());
+	return tcu::ConstPixelBufferAccess(mapVkFormat(m_drawState.colorFormat), m_drawState.renderSize.x(), m_drawState.renderSize.y(), 1u, alloc.getHostPtr());
 }
 } // drawutil
 } // vkt

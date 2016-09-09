@@ -47,6 +47,17 @@ using tcu::Vec4;
 using tcu::IVec2;
 using namespace drawutil;
 
+enum TestConstants
+{
+	RENDER_SIZE								= 16,
+	RENDER_SIZE_LARGE						= 128,
+	NUM_RENDER_PIXELS						= RENDER_SIZE * RENDER_SIZE,
+	NUM_PATCH_CONTROL_POINTS				= 3,
+	MAX_CLIP_DISTANCES						= 8,
+	MAX_CULL_DISTANCES						= 8,
+	MAX_COMBINED_CLIP_AND_CULL_DISTANCES	= 8,
+};
+
 enum FeatureFlagBits
 {
 	FEATURE_TESSELLATION_SHADER							= 1u << 0,
@@ -407,7 +418,11 @@ tcu::TestStatus testPrimitivesInside (Context& context, const VkPrimitiveTopolog
 		log << tcu::TestLog::Message << cases[caseNdx].desc << tcu::TestLog::EndMessage;
 
 		const std::vector<Vec4> vertices = genVertices(topology, Vec4(0.0f, 0.0f, cases[caseNdx].zPos, 0.0f), 0.0f);
-		DrawContext drawContext(context, shaders, vertices, topology);
+		DrawState			drawState		(topology, RENDER_SIZE, RENDER_SIZE);
+		DrawCallData		drawCallData	(vertices);
+		VulkanProgram		vulkanProgram	(shaders);
+
+		VulkanDrawContext	drawContext(context, drawState, drawCallData, vulkanProgram);
 		drawContext.draw();
 
 		const int numBlackPixels = countPixels(drawContext.getColorPixels(), Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
@@ -445,7 +460,11 @@ tcu::TestStatus testPrimitivesOutside (Context& context, const VkPrimitiveTopolo
 		log << tcu::TestLog::Message << cases[caseNdx].desc << tcu::TestLog::EndMessage;
 
 		const std::vector<Vec4> vertices = genVertices(topology, Vec4(0.0f, 0.0f, cases[caseNdx].zPos, 0.0f), 0.0f);
-		DrawContext drawContext(context, shaders, vertices, topology);
+		DrawState				drawState		(topology, RENDER_SIZE, RENDER_SIZE);
+		DrawCallData			drawCallData	(vertices);
+		VulkanProgram			vulkanProgram	(shaders);
+
+		VulkanDrawContext		drawContext(context, drawState, drawCallData, vulkanProgram);
 		drawContext.draw();
 
 		// All pixels must be black -- nothing is drawn.
@@ -525,7 +544,13 @@ tcu::TestStatus testPrimitivesDepthClamp (Context& context, const VkPrimitiveTop
 		log << tcu::TestLog::Message << cases[caseNdx].desc << tcu::TestLog::EndMessage;
 
 		const std::vector<Vec4> vertices = genVertices(topology, Vec4(0.0f, 0.0f, cases[caseNdx].zPos, 0.0f), 1.0f);
-		DrawContext drawContext(context, shaders, vertices, topology, static_cast<deUint32>(RENDER_SIZE), cases[caseNdx].depthClampEnable);
+
+		DrawState					drawState		(topology, RENDER_SIZE, RENDER_SIZE);
+		DrawCallData				drawCallData	(vertices);
+		VulkanProgram				vulkanProgram	(shaders);
+		drawState.depthClampEnable = cases[caseNdx].depthClampEnable;
+
+		VulkanDrawContext			drawContext(context, drawState, drawCallData, vulkanProgram);
 		drawContext.draw();
 
 		const int numPixels = countPixels(drawContext.getColorPixels(), cases[caseNdx].regionOffset, regionSize, cases[caseNdx].color, Vec4());
@@ -590,7 +615,11 @@ tcu::TestStatus testLargePoints (Context& context)
 
 	log << tcu::TestLog::Message << "Drawing several large points just outside the clip volume. Expecting an empty image." << tcu::TestLog::EndMessage;
 
-	DrawContext drawContext(context, shaders, vertices, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+	DrawState			drawState		(VK_PRIMITIVE_TOPOLOGY_POINT_LIST, RENDER_SIZE, RENDER_SIZE);
+	DrawCallData		drawCallData	(vertices);
+	VulkanProgram		vulkanProgram	(shaders);
+
+	VulkanDrawContext	drawContext(context, drawState, drawCallData, vulkanProgram);
 	drawContext.draw();
 
 	const int	numBlackPixels	= countPixels(drawContext.getColorPixels(), Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
@@ -664,7 +693,12 @@ tcu::TestStatus testWideLines (Context& context, const LineOrientation lineOrien
 	log << tcu::TestLog::Message << "Drawing several wide lines just outside the clip volume. Expecting an empty image." << tcu::TestLog::EndMessage
 		<< tcu::TestLog::Message << "Line width is " << lineWidth << "." << tcu::TestLog::EndMessage;
 
-	DrawContext drawContext(context, shaders, vertices, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, static_cast<deUint32>(RENDER_SIZE), false, false, lineWidth);
+	DrawState					drawState		(VK_PRIMITIVE_TOPOLOGY_LINE_LIST, RENDER_SIZE, RENDER_SIZE);
+	DrawCallData				drawCallData	(vertices);
+	VulkanProgram				vulkanProgram	(shaders);
+	drawState.lineWidth			= lineWidth;
+
+	VulkanDrawContext			drawContext(context, drawState, drawCallData, vulkanProgram);
 	drawContext.draw();
 
 	// All pixels must be black -- nothing is drawn.
@@ -988,7 +1022,14 @@ tcu::TestStatus testClipDistance (Context& context, const CaseDefinition caseDef
 		<< tcu::TestLog::Message << "Using " << caseDef.numClipDistances << " ClipDistance(s) and " << caseDef.numCullDistances << " CullDistance(s)" << tcu::TestLog::EndMessage
 		<< tcu::TestLog::Message << "Expecting upper half of the clipped bars to be black." << tcu::TestLog::EndMessage;
 
-	DrawContext drawContext(context, shaders, vertices, caseDef.topology);
+	DrawState			drawState		(caseDef.topology, RENDER_SIZE, RENDER_SIZE);
+	DrawCallData		drawCallData	(vertices);
+	VulkanProgram		vulkanProgram	(shaders);
+
+	if (caseDef.enableTessellation)
+		drawState.numPatchControlPoints = NUM_PATCH_CONTROL_POINTS;
+
+	VulkanDrawContext	drawContext(context, drawState, drawCallData, vulkanProgram);
 	drawContext.draw();
 
 	// Count black pixels in the whole image.
@@ -1109,7 +1150,12 @@ tcu::TestStatus testComplementarity (Context& context, const int numClipDistance
 		<< tcu::TestLog::Message << "Using " << numClipDistances << " clipping plane(s), one of them possibly having negative values." << tcu::TestLog::EndMessage
 		<< tcu::TestLog::Message << "Expecting a uniform gray area, no missing (black) nor overlapped (white) pixels." << tcu::TestLog::EndMessage;
 
-	DrawContext drawContext(context, shaders, vertices, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, static_cast<deUint32>(RENDER_SIZE_LARGE), false, true);
+	DrawState					drawState		(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, RENDER_SIZE_LARGE, RENDER_SIZE_LARGE);
+	DrawCallData				drawCallData	(vertices);
+	VulkanProgram				vulkanProgram	(shaders);
+	drawState.blendEnable		= true;
+
+	VulkanDrawContext			drawContext(context, drawState, drawCallData, vulkanProgram);
 	drawContext.draw();
 
 	const int numGrayPixels		= countPixels(drawContext.getColorPixels(), Vec4(0.5f, 0.5f, 0.5f, 1.0f), Vec4(0.02f, 0.02f, 0.02f, 0.0f));
