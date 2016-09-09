@@ -1117,7 +1117,7 @@ void rasterizePrimitive (const RenderState&					state,
 		return;
 
 	// Shading context
-	FragmentShadingContext shadingContext(triangle.v0->outputs, triangle.v1->outputs, triangle.v2->outputs, &buffers.shaderOutputs[0], buffers.fragmentDepthBuffer, triangle.v2->primitiveID, (int)program.fragmentShader->getOutputs().size(), numSamples);
+	FragmentShadingContext shadingContext(triangle.v0->outputs, triangle.v1->outputs, triangle.v2->outputs, &buffers.shaderOutputs[0], buffers.fragmentDepthBuffer, triangle.v2->primitiveID, (int)program.fragmentShader->getOutputs().size(), numSamples, rasterizer.getVisibleFace());
 
 	// Polygon offset
 	if (buffers.fragmentDepthBuffer && state.fragOps.polygonOffsetEnabled)
@@ -1174,7 +1174,7 @@ void rasterizePrimitive (const RenderState&					state,
 	const float					depthClampMin		= de::min(state.viewport.zn, state.viewport.zf);
 	const float					depthClampMax		= de::max(state.viewport.zn, state.viewport.zf);
 	const bool					msaa				= numSamples > 1;
-	FragmentShadingContext		shadingContext		(line.v0->outputs, line.v1->outputs, DE_NULL, &buffers.shaderOutputs[0], buffers.fragmentDepthBuffer, line.v1->primitiveID, (int)program.fragmentShader->getOutputs().size(), numSamples);
+	FragmentShadingContext		shadingContext		(line.v0->outputs, line.v1->outputs, DE_NULL, &buffers.shaderOutputs[0], buffers.fragmentDepthBuffer, line.v1->primitiveID, (int)program.fragmentShader->getOutputs().size(), numSamples, FACETYPE_FRONT);
 	SingleSampleLineRasterizer	aliasedRasterizer	(renderTargetRect);
 	MultiSampleLineRasterizer	msaaRasterizer		(numSamples, renderTargetRect);
 
@@ -1240,7 +1240,7 @@ void rasterizePrimitive (const RenderState&					state,
 	rasterizer2.init(w0, w2, w3);
 
 	// Shading context
-	FragmentShadingContext shadingContext(point.v0->outputs, DE_NULL, DE_NULL, &buffers.shaderOutputs[0], buffers.fragmentDepthBuffer, point.v0->primitiveID, (int)program.fragmentShader->getOutputs().size(), numSamples);
+	FragmentShadingContext shadingContext(point.v0->outputs, DE_NULL, DE_NULL, &buffers.shaderOutputs[0], buffers.fragmentDepthBuffer, point.v0->primitiveID, (int)program.fragmentShader->getOutputs().size(), numSamples, FACETYPE_FRONT);
 
 	// Execute rasterize - shade - write loop
 	for (;;)
