@@ -36,7 +36,6 @@
 #include "vktPipelineMultisampleInterpolationTests.hpp"
 #include "vktPipelineVertexInputTests.hpp"
 #include "vktPipelineTimestampTests.hpp"
-#include "vktPipelineEarlyFragmentTests.hpp"
 #include "vktPipelineCacheTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
@@ -65,7 +64,6 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createVertexInputTests				(testCtx));
 	pipelineTests->addChild(createInputAssemblyTests			(testCtx));
 	pipelineTests->addChild(createTimestampTests				(testCtx));
-	pipelineTests->addChild(createEarlyFragmentTests			(testCtx));
 	pipelineTests->addChild(createCacheTests					(testCtx));
 }
 

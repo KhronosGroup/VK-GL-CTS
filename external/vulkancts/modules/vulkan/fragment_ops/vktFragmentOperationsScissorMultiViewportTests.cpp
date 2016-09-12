@@ -68,7 +68,7 @@ inline VkDeviceSize sizeInBytes(const std::vector<T>& vec)
 	return vec.size() * sizeof(vec[0]);
 }
 
-Move<VkImage> makeImage (const DeviceInterface& vk, const VkDevice device, const VkFormat format, const IVec2& size, VkImageUsageFlags usage)
+VkImageCreateInfo makeImageCreateInfo (const VkFormat format, const IVec2& size, VkImageUsageFlags usage)
 {
 	const VkImageCreateInfo imageParams =
 	{
@@ -88,13 +88,7 @@ Move<VkImage> makeImage (const DeviceInterface& vk, const VkDevice device, const
 		DE_NULL,										// const deUint32*			pQueueFamilyIndices;
 		VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			initialLayout;
 	};
-	return createImage(vk, device, &imageParams);
-}
-
-inline Move<VkBuffer> makeBuffer (const DeviceInterface& vk, const VkDevice device, const VkDeviceSize bufferSize, const VkBufferUsageFlags usage)
-{
-	const VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(bufferSize, usage);
-	return createBuffer(vk, device, &bufferCreateInfo);
+	return imageParams;
 }
 
 //! A single-attachment, single-subpass render pass.
@@ -569,11 +563,11 @@ public:
 		const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 		Allocator&					allocator			= context.getDefaultAllocator();
 
-		m_colorImage		= makeImage				(vk, device, m_colorFormat, m_renderSize, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+		m_colorImage		= makeImage				(vk, device, makeImageCreateInfo(m_colorFormat, m_renderSize, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT));
 		m_colorImageAlloc	= bindImage				(vk, device, allocator, *m_colorImage, MemoryRequirement::Any);
 		m_colorAttachment	= makeImageView			(vk, device, *m_colorImage, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat, m_colorSubresourceRange);
 
-		m_vertexBuffer		= makeBuffer			(vk, device, m_vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+		m_vertexBuffer		= makeBuffer			(vk, device, makeBufferCreateInfo(m_vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 		m_vertexBufferAlloc	= bindBuffer			(vk, device, allocator, *m_vertexBuffer, MemoryRequirement::HostVisible);
 
 		{
@@ -731,7 +725,7 @@ tcu::TestStatus test (Context& context, const int numViewports)
 	const std::vector<IVec4>		scissors			= generateScissors(numViewports, renderSize);
 
 	const VkDeviceSize				colorBufferSize		= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
-	const Unique<VkBuffer>			colorBuffer			(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+	const Unique<VkBuffer>			colorBuffer			(makeBuffer(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
 	const UniquePtr<Allocation>		colorBufferAlloc	(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
 	zeroBuffer(vk, device, *colorBufferAlloc, colorBufferSize);

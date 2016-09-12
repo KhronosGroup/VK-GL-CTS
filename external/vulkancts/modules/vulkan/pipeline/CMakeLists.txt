@@ -50,8 +50,6 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineTimestampTests.hpp
 	vktPipelineVertexUtil.cpp
 	vktPipelineVertexUtil.hpp
-	vktPipelineEarlyFragmentTests.cpp
-	vktPipelineEarlyFragmentTests.hpp
 	vktPipelineCacheTests.cpp
 	vktPipelineCacheTests.hpp
 	vktPipelineMakeUtil.cpp

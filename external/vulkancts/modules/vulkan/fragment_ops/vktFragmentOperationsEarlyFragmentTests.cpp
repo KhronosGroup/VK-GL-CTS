@@ -22,8 +22,8 @@
  * \brief Early fragment tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktPipelineEarlyFragmentTests.hpp"
-#include "vktPipelineMakeUtil.hpp"
+#include "vktFragmentOperationsEarlyFragmentTests.hpp"
+#include "vktFragmentOperationsMakeUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include "vkDefs.hpp"
@@ -43,14 +43,14 @@
 
 #include <string>
 
-using namespace vk;
-
 namespace vkt
 {
-namespace pipeline
+namespace FragmentOperations
 {
 namespace
 {
+using namespace vk;
+using de::UniquePtr;
 
 //! Basic 2D image.
 inline VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat format, const VkImageUsageFlags usage)
@@ -586,11 +586,12 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 
 	// Color attachment
 
-	const tcu::IVec2			  renderSize			= tcu::IVec2(32, 32);
-	const VkFormat				  colorFormat			= VK_FORMAT_R8G8B8A8_UNORM;
-	const VkImageSubresourceRange colorSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const Image					  colorImage			(vk, device, allocator, makeImageCreateInfo(renderSize, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT), MemoryRequirement::Any);
-	const Unique<VkImageView>	  colorImageView		(makeImageView(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange));
+	const tcu::IVec2				renderSize			= tcu::IVec2(32, 32);
+	const VkFormat					colorFormat			= VK_FORMAT_R8G8B8A8_UNORM;
+	const VkImageSubresourceRange	colorSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const Unique<VkImage>			colorImage			(makeImage(vk, device, makeImageCreateInfo(renderSize, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)));
+	const UniquePtr<Allocation>		colorImageAlloc		(bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any));
+	const Unique<VkImageView>		colorImageView		(makeImageView(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange));
 
 	// Test attachment (depth or stencil)
 	static const VkFormat stencilFormats[] =
@@ -610,21 +611,22 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 	if (m_useTestAttachment)
 		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Using depth/stencil format " << getFormatName(testFormat) << tcu::TestLog::EndMessage;
 
-	const VkImageSubresourceRange testSubresourceRange	  = makeImageSubresourceRange(getImageAspectFlags(testFormat), 0u, 1u, 0u, 1u);
-	const Image					  testImage				  (vk, device, allocator, makeImageCreateInfo(renderSize, testFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT), MemoryRequirement::Any);
-	const Unique<VkImageView>	  testImageView			  (makeImageView(vk, device, *testImage, VK_IMAGE_VIEW_TYPE_2D, testFormat, testSubresourceRange));
-	const VkImageView			  attachmentImages[]	  = { *colorImageView, *testImageView };
-	const deUint32				  numUsedAttachmentImages = (m_useTestAttachment ? 2u : 1u);
+	const VkImageSubresourceRange	testSubresourceRange	= makeImageSubresourceRange(getImageAspectFlags(testFormat), 0u, 1u, 0u, 1u);
+	const Unique<VkImage>			testImage				(makeImage(vk, device, makeImageCreateInfo(renderSize, testFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)));
+	const UniquePtr<Allocation>		testImageAlloc			(bindImage(vk, device, allocator, *testImage, MemoryRequirement::Any));
+	const Unique<VkImageView>		testImageView			(makeImageView(vk, device, *testImage, VK_IMAGE_VIEW_TYPE_2D, testFormat, testSubresourceRange));
+	const VkImageView				attachmentImages[]		= { *colorImageView, *testImageView };
+	const deUint32					numUsedAttachmentImages = (m_useTestAttachment ? 2u : 1u);
 
 	// Vertex buffer
 
-	const deUint32	   numVertices			 = 6;
-	const VkDeviceSize vertexBufferSizeBytes = sizeof(tcu::Vec4) * numVertices;
-	const Buffer	   vertexBuffer			 (vk, device, allocator, makeBufferCreateInfo(vertexBufferSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const deUint32					numVertices				= 6;
+	const VkDeviceSize				vertexBufferSizeBytes	= sizeof(tcu::Vec4) * numVertices;
+	const Unique<VkBuffer>			vertexBuffer			(makeBuffer(vk, device, makeBufferCreateInfo(vertexBufferSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)));
+	const UniquePtr<Allocation>		vertexBufferAlloc		(bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible));
 
 	{
-		const Allocation& alloc = vertexBuffer.getAllocation();
-		tcu::Vec4* const pVertices = reinterpret_cast<tcu::Vec4*>(alloc.getHostPtr());
+		tcu::Vec4* const pVertices = reinterpret_cast<tcu::Vec4*>(vertexBufferAlloc->getHostPtr());
 
 		pVertices[0] = tcu::Vec4( 1.0f, -1.0f,  0.5f,  1.0f);
 		pVertices[1] = tcu::Vec4(-1.0f, -1.0f,  0.0f,  1.0f);
@@ -634,27 +636,28 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 		pVertices[4] = tcu::Vec4( 1.0f,  1.0f,  1.0f,  1.0f);
 		pVertices[5] = tcu::Vec4( 1.0f, -1.0f,  0.5f,  1.0f);
 
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), vertexBufferSizeBytes);
+		flushMappedMemoryRange(vk, device, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexBufferSizeBytes);
 		// No barrier needed, flushed memory is automatically visible
 	}
 
 	// Result buffer
 
-	const VkDeviceSize resultBufferSizeBytes = sizeof(deUint32);
-	const Buffer resultBuffer(vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const VkDeviceSize				resultBufferSizeBytes	= sizeof(deUint32);
+	const Unique<VkBuffer>			resultBuffer			(makeBuffer(vk, device, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)));
+	const UniquePtr<Allocation>		resultBufferAlloc		(bindBuffer(vk, device, allocator, *resultBuffer, MemoryRequirement::HostVisible));
 
 	{
-		const Allocation& alloc = resultBuffer.getAllocation();
-		deUint32* const pData = static_cast<deUint32*>(alloc.getHostPtr());
+		deUint32* const pData = static_cast<deUint32*>(resultBufferAlloc->getHostPtr());
 
 		*pData = 0;
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), resultBufferSizeBytes);
+		flushMappedMemoryRange(vk, device, resultBufferAlloc->getMemory(), resultBufferAlloc->getOffset(), resultBufferSizeBytes);
 	}
 
 	// Render result buffer (to retrieve color attachment contents)
 
-	const VkDeviceSize colorBufferSizeBytes = tcu::getPixelSize(mapVkFormat(colorFormat)) * renderSize.x() * renderSize.y();
-	const Buffer	   colorBuffer			(vk, device, allocator, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
+	const VkDeviceSize				colorBufferSizeBytes	= tcu::getPixelSize(mapVkFormat(colorFormat)) * renderSize.x() * renderSize.y();
+	const Unique<VkBuffer>			colorBuffer				(makeBuffer(vk, device, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const UniquePtr<Allocation>		colorBufferAlloc		(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
 	// Descriptors
 
@@ -758,10 +761,9 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 
 	// Log result image
 	{
-		const Allocation& alloc = colorBuffer.getAllocation();
-		invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), colorBufferSizeBytes);
+		invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), colorBufferSizeBytes);
 
-		const tcu::ConstPixelBufferAccess imagePixelAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, alloc.getHostPtr());
+		const tcu::ConstPixelBufferAccess imagePixelAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAlloc->getHostPtr());
 
 		tcu::TestLog& log = m_context.getTestContext().getLog();
 		log << tcu::TestLog::Image("color0", "Rendered image", imagePixelAccess);
@@ -769,10 +771,9 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 
 	// Verify results
 	{
-		const Allocation& alloc = resultBuffer.getAllocation();
-		invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), resultBufferSizeBytes);
+		invalidateMappedMemoryRange(vk, device, resultBufferAlloc->getMemory(), resultBufferAlloc->getOffset(), resultBufferSizeBytes);
 
-		const int  actualCounter	   = *static_cast<deInt32*>(alloc.getHostPtr());
+		const int  actualCounter	   = *static_cast<deInt32*>(resultBufferAlloc->getHostPtr());
 		const bool expectPartialResult = (m_useEarlyTests && m_useTestAttachment);
 		const int  expectedCounter	   = expectPartialResult ? renderSize.x() * renderSize.y() / 2 : renderSize.x() * renderSize.y();
 		const int  tolerance		   = expectPartialResult ? de::max(renderSize.x(), renderSize.y()) * 3	: 0;
@@ -835,5 +836,5 @@ tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx)
 	return testGroup.release();
 }
 
-} // pipeline
+} // FragmentOperations
 } // vkt

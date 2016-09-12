@@ -1,14 +1,16 @@
 include_directories(..)
 
 set(DEQP_VK_FRAGMENT_OPS_SRCS
-	vktFragmentOperationsTests.cpp
-	vktFragmentOperationsTests.hpp
-	vktFragmentOperationsScissorTests.cpp
-	vktFragmentOperationsScissorTests.hpp
-	vktFragmentOperationsScissorMultiViewportTests.cpp
-	vktFragmentOperationsScissorMultiViewportTests.hpp
+	vktFragmentOperationsEarlyFragmentTests.cpp
+	vktFragmentOperationsEarlyFragmentTests.hpp
 	vktFragmentOperationsMakeUtil.cpp
 	vktFragmentOperationsMakeUtil.hpp
+	vktFragmentOperationsScissorMultiViewportTests.cpp
+	vktFragmentOperationsScissorMultiViewportTests.hpp
+	vktFragmentOperationsScissorTests.cpp
+	vktFragmentOperationsScissorTests.hpp
+	vktFragmentOperationsTests.cpp
+	vktFragmentOperationsTests.hpp
 	)
 
 set(DEQP_VK_FRAGMENT_OPS_LIBS

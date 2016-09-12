@@ -1,5 +1,5 @@
-#ifndef _VKTPIPELINEEARLYFRAGMENTTESTS_HPP
-#define _VKTPIPELINEEARLYFRAGMENTTESTS_HPP
+#ifndef _VKTFRAGMENTOPERATIONSEARLYFRAGMENTTESTS_HPP
+#define _VKTFRAGMENTOPERATIONSEARLYFRAGMENTTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -29,12 +29,12 @@
 
 namespace vkt
 {
-namespace pipeline
+namespace FragmentOperations
 {
 
 tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx);
 
-} // pipeline
+} // FragmentOperations
 } // vkt
 
-#endif // _VKTPIPELINEEARLYFRAGMENTTESTS_HPP
+#endif // _VKTFRAGMENTOPERATIONSEARLYFRAGMENTTESTS_HPP
