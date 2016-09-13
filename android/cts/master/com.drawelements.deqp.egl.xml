@@ -3116,16 +3116,10 @@
 					<Test name="tex_rgba4_tex_subimage_rgba4">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="tex_rgba4_renderbuffer_clear_color">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="renderbuffer_rgba4_tex_subimage_rgba8">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="renderbuffer_rgba4_tex_subimage_rgba4">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="renderbuffer_rgba4_renderbuffer_clear_color">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="renderbuffer_rgb5_a1_tex_subimage_rgb5_a1">
