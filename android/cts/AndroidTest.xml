@@ -25,6 +25,7 @@
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="unspecified"/>
 		<option name="runtime-hint" value="24m"/>
+		<option name="deqp-config-required" value="true"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-GLES2"/>
@@ -33,6 +34,7 @@
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="unspecified"/>
 		<option name="runtime-hint" value="40m"/>
+		<option name="deqp-config-required" value="true"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-GLES3"/>
@@ -41,6 +43,7 @@
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="unspecified"/>
 		<option name="runtime-hint" value="1h15m"/>
+		<option name="deqp-config-required" value="true"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-GLES3"/>
@@ -97,6 +100,7 @@
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="unspecified"/>
 		<option name="runtime-hint" value="7h30m"/>
+		<option name="deqp-config-required" value="true"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-GLES31"/>
