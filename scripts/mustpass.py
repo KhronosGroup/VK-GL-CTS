@@ -42,13 +42,14 @@ class Project:
 		self.copyright	= copyright
 
 class Configuration:
-	def __init__ (self, name, filters, glconfig = None, rotation = None, surfacetype = None, runtime = None):
-		self.name			 = name
-		self.glconfig		 = glconfig
-		self.rotation		 = rotation
-		self.surfacetype	 = surfacetype
-		self.filters		 = filters
-		self.expectedRuntime = runtime
+	def __init__ (self, name, filters, glconfig = None, rotation = None, surfacetype = None, required = False, runtime = None):
+		self.name				= name
+		self.glconfig			= glconfig
+		self.rotation			= rotation
+		self.surfacetype		= surfacetype
+		self.required			= required
+		self.filters			= filters
+		self.expectedRuntime	= runtime
 
 class Package:
 	def __init__ (self, module, configurations):
@@ -386,6 +387,9 @@ def genAndroidTestXml (mustpass):
 
 			if config.expectedRuntime != None:
 				addOptionElement(testElement, "runtime-hint", config.expectedRuntime)
+
+			if config.required:
+				addOptionElement(testElement, "deqp-config-required", "true")
 
 	insertXMLHeaders(mustpass, configElement)
 
