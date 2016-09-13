@@ -980,10 +980,8 @@ dEQP-EGL.functional.image.modify.tex_rgb5_a1_tex_subimage_rgb5_a1
 dEQP-EGL.functional.image.modify.tex_rgb5_a1_renderbuffer_clear_color
 dEQP-EGL.functional.image.modify.tex_rgba4_tex_subimage_rgba8
 dEQP-EGL.functional.image.modify.tex_rgba4_tex_subimage_rgba4
-dEQP-EGL.functional.image.modify.tex_rgba4_renderbuffer_clear_color
 dEQP-EGL.functional.image.modify.renderbuffer_rgba4_tex_subimage_rgba8
 dEQP-EGL.functional.image.modify.renderbuffer_rgba4_tex_subimage_rgba4
-dEQP-EGL.functional.image.modify.renderbuffer_rgba4_renderbuffer_clear_color
 dEQP-EGL.functional.image.modify.renderbuffer_rgb5_a1_tex_subimage_rgb5_a1
 dEQP-EGL.functional.image.modify.renderbuffer_rgb5_a1_renderbuffer_clear_color
 dEQP-EGL.functional.image.modify.renderbuffer_rgb565_tex_subimage_rgb8
