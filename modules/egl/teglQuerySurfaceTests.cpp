@@ -309,7 +309,7 @@ public:
 		const eglu::NativeWindowFactory&	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 		ConfigInfo							info;
 
-		eglu::queryConfigInfo(egl, display, config, &info);
+		eglu::queryCoreConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating window surface with config ID " << info.configId << TestLog::EndMessage;
 		EGLU_CHECK_MSG(egl, "before queries");
@@ -340,7 +340,7 @@ public:
 		const eglu::NativePixmapFactory&	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 		ConfigInfo							info;
 
-		eglu::queryConfigInfo(egl, display, config, &info);
+		eglu::queryCoreConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating pixmap surface with config ID " << info.configId << TestLog::EndMessage;
 		EGLU_CHECK_MSG(egl, "before queries");
@@ -370,7 +370,7 @@ public:
 		int				height	= 64;
 		ConfigInfo		info;
 
-		eglu::queryConfigInfo(egl, display, config, &info);
+		eglu::queryCoreConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating pbuffer surface with config ID " << info.configId << TestLog::EndMessage;
 		EGLU_CHECK_MSG(egl, "before queries");
@@ -582,7 +582,7 @@ public:
 		const eglu::NativeWindowFactory&	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 		ConfigInfo							info;
 
-		eglu::queryConfigInfo(egl, display, config, &info);
+		eglu::queryCoreConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating window surface with config ID " << info.configId << TestLog::EndMessage;
 		EGLU_CHECK_MSG(egl, "before queries");
@@ -611,7 +611,7 @@ public:
 		const eglu::NativePixmapFactory&	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 		ConfigInfo							info;
 
-		eglu::queryConfigInfo(egl, display, config, &info);
+		eglu::queryCoreConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating pixmap surface with config ID " << info.configId << TestLog::EndMessage;
 		EGLU_CHECK_MSG(egl, "before queries");
@@ -639,7 +639,7 @@ public:
 		int				height	= 64;
 		ConfigInfo		info;
 
-		eglu::queryConfigInfo(egl, display, config, &info);
+		eglu::queryCoreConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating pbuffer surface with config ID " << info.configId << TestLog::EndMessage;
 		EGLU_CHECK_MSG(egl, "before queries");

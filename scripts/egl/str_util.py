@@ -126,6 +126,21 @@ ENUM_GROUPS = [
 		"ALPHA_FORMAT",
 		"COLORSPACE"
 		]),
+	("YuvOrder", [
+		"NONE",
+		"YUV_ORDER_YUV_EXT",
+		"YUV_ORDER_YVU_EXT",
+		"YUV_ORDER_YUYV_EXT",
+		"YUV_ORDER_UYVY_EXT",
+		"YUV_ORDER_YVYU_EXT",
+		"YUV_ORDER_VYUY_EXT",
+		"YUV_ORDER_AYUV_EXT",
+		]),
+	("YuvPlaneBpp", [
+		"YUV_PLANE_BPP_0_EXT",
+		"YUV_PLANE_BPP_8_EXT",
+		"YUV_PLANE_BPP_10_EXT",
+		]),
 	("SurfaceTarget",		["READ", "DRAW"]),
 
 	# ConfigAttrib values
