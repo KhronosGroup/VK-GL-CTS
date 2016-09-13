@@ -2299,23 +2299,27 @@ tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Objec
 	return tcu::TestStatus::pass("Ok");
 }
 
+template<typename Object>	deUint32	getOomIterLimit			(void) { return 1024;	}
+template<>					deUint32	getOomIterLimit<Device>	(void) { return 20;		}
+
 template<typename Object>
 tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parameters params)
 {
-	AllocationCallbackRecorder			resCallbacks	(getSystemAllocator(), 128);
-	const Environment					rootEnv			(context.getPlatformInterface(),
-														 context.getDeviceInterface(),
-														 context.getDevice(),
-														 context.getUniversalQueueFamilyIndex(),
-														 context.getBinaryCollection(),
-														 resCallbacks.getCallbacks(),
-														 1u);
+	AllocationCallbackRecorder			resCallbacks		(getSystemAllocator(), 128);
+	const Environment					rootEnv				(context.getPlatformInterface(),
+															 context.getDeviceInterface(),
+															 context.getDevice(),
+															 context.getUniversalQueueFamilyIndex(),
+															 context.getBinaryCollection(),
+															 resCallbacks.getCallbacks(),
+															 1u);
+	deUint32							numPassingAllocs	= 0;
+	const deUint32						cmdLineIterCount	= (deUint32)context.getTestContext().getCommandLine().getTestIterationCount();
+	const deUint32						maxTries			= cmdLineIterCount != 0 ? cmdLineIterCount : getOomIterLimit<Object>();
 
 	{
-		const EnvClone						resEnv				(rootEnv, getDefaulDeviceParameters(context), 1u);
-		const typename Object::Resources	res					(resEnv.env, params);
-		deUint32							numPassingAllocs	= 0;
-		const deUint32						maxTries			= 1u<<10;
+		const EnvClone						resEnv	(rootEnv, getDefaulDeviceParameters(context), 1u);
+		const typename Object::Resources	res		(resEnv.env, params);
 
 		// Iterate over test until object allocation succeeds
 		for (; numPassingAllocs < maxTries; ++numPassingAllocs)
@@ -2367,7 +2371,12 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 	if (!validateAndLog(context.getTestContext().getLog(), resCallbacks, 0u))
 		return tcu::TestStatus::fail("Invalid allocation callback");
 
-	return tcu::TestStatus::pass("Ok");
+	if (numPassingAllocs == 0)
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks not called");
+	else if (numPassingAllocs == maxTries)
+		return tcu::TestStatus(QP_TEST_RESULT_COMPATIBILITY_WARNING, "Max iter count reached; OOM testing incomplete");
+	else
+		return tcu::TestStatus::pass("Ok");
 }
 
 // Utilities for creating groups
