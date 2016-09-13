@@ -16,7 +16,6 @@
 package com.drawelements.deqp.runner;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
-import com.android.compatibility.common.util.AbiUtils;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
 import com.android.ddmlib.ShellCommandUnresponsiveException;
@@ -31,6 +30,7 @@ import com.android.tradefed.testtype.Abi;
 import com.android.tradefed.testtype.IAbi;
 import com.android.tradefed.testtype.IRemoteTest;
 import com.android.tradefed.testtype.IRuntimeHintProvider;
+import com.android.tradefed.util.AbiUtils;
 import com.android.tradefed.util.IRunUtil;
 import com.android.tradefed.util.RunInterruptedException;
 
