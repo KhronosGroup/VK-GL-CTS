@@ -1340,7 +1340,7 @@ void SampleMaskCountCase::preDraw (void)
 		// Worst case: all but one shader invocations get one sample, one shader invocation the rest of the samples
 		const int minInvocationCount = ((m_numTargetSamples + 1) / 2);
 		const int minBitCount = 1;
-		const int maxBitCount = (m_numTargetSamples <= 2) ? (1) : (m_numTargetSamples - ((minInvocationCount-1) * minBitCount));
+		const int maxBitCount = m_numTargetSamples - ((minInvocationCount-1) * minBitCount);
 
 		if (maxLoc == -1)
 			throw tcu::TestError("Location of u_maxBitCount was -1");
