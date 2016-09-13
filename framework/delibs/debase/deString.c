@@ -29,10 +29,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#if (DE_COMPILER == DE_COMPILER_MSC)
-#	include <varargs.h>
-#endif
-
 DE_BEGIN_EXTERN_C
 
 /*--------------------------------------------------------------------*//*!
