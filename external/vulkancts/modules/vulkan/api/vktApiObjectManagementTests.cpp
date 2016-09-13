@@ -2326,7 +2326,9 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 		// Iterate over test until object allocation succeeds
 		for (; numPassingAllocs < maxTries; ++numPassingAllocs)
 		{
-			DeterministicFailAllocator			objAllocator(getSystemAllocator(), numPassingAllocs);
+			DeterministicFailAllocator			objAllocator(getSystemAllocator(),
+															 numPassingAllocs,
+															 DeterministicFailAllocator::MODE_COUNT_AND_FAIL);
 			AllocationCallbackRecorder			recorder	(objAllocator.getCallbacks(), 128);
 			const Environment					objEnv		(resEnv.env.vkp,
 															 resEnv.env.vkd,
