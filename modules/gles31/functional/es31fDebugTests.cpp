@@ -2939,19 +2939,22 @@ vector<FunctionContainer> wrapCoreFunctions (const vector<NegativeTestShared::Fu
 
 void DebugTests::init (void)
 {
-	const vector<FunctionContainer> bufferFuncs					= wrapCoreFunctions(NegativeTestShared::getNegativeBufferApiTestFunctions());
-	const vector<FunctionContainer> textureFuncs				= wrapCoreFunctions(NegativeTestShared::getNegativeTextureApiTestFunctions());
-	const vector<FunctionContainer> shaderFuncs					= wrapCoreFunctions(NegativeTestShared::getNegativeShaderApiTestFunctions());
-	const vector<FunctionContainer> fragmentFuncs				= wrapCoreFunctions(NegativeTestShared::getNegativeFragmentApiTestFunctions());
-	const vector<FunctionContainer> vaFuncs						= wrapCoreFunctions(NegativeTestShared::getNegativeVertexArrayApiTestFunctions());
-	const vector<FunctionContainer> stateFuncs					= wrapCoreFunctions(NegativeTestShared::getNegativeStateApiTestFunctions());
-	const vector<FunctionContainer> atomicCounterFuncs			= wrapCoreFunctions(NegativeTestShared::getNegativeAtomicCounterTestFunctions());
-	const vector<FunctionContainer> shaderImageLoadStoreFuncs	= wrapCoreFunctions(NegativeTestShared::getNegativeShaderImageLoadStoreTestFunctions());
-	const vector<FunctionContainer> shaderFunctionFuncs			= wrapCoreFunctions(NegativeTestShared::getNegativeShaderFunctionTestFunctions());
-	const vector<FunctionContainer> shaderDirectiveFuncs		= wrapCoreFunctions(NegativeTestShared::getNegativeShaderDirectiveTestFunctions());
-	const vector<FunctionContainer> preciseFuncs				= wrapCoreFunctions(NegativeTestShared::getNegativePreciseTestFunctions());
-	const vector<FunctionContainer> advancedBlendFuncs			= wrapCoreFunctions(NegativeTestShared::getNegativeAdvancedBlendEquationTestFunctions());
-	const vector<FunctionContainer> externalFuncs				= getUserMessageFuncs();
+	const vector<FunctionContainer> bufferFuncs				 = wrapCoreFunctions(NegativeTestShared::getNegativeBufferApiTestFunctions());
+	const vector<FunctionContainer> textureFuncs			 = wrapCoreFunctions(NegativeTestShared::getNegativeTextureApiTestFunctions());
+	const vector<FunctionContainer> shaderFuncs				 = wrapCoreFunctions(NegativeTestShared::getNegativeShaderApiTestFunctions());
+	const vector<FunctionContainer> fragmentFuncs			 = wrapCoreFunctions(NegativeTestShared::getNegativeFragmentApiTestFunctions());
+	const vector<FunctionContainer> vaFuncs					 = wrapCoreFunctions(NegativeTestShared::getNegativeVertexArrayApiTestFunctions());
+	const vector<FunctionContainer> stateFuncs				 = wrapCoreFunctions(NegativeTestShared::getNegativeStateApiTestFunctions());
+	const vector<FunctionContainer> atomicCounterFuncs		 = wrapCoreFunctions(NegativeTestShared::getNegativeAtomicCounterTestFunctions());
+	const vector<FunctionContainer> imageLoadFuncs			 = wrapCoreFunctions(NegativeTestShared::getNegativeShaderImageLoadTestFunctions());
+	const vector<FunctionContainer> imageStoreFuncs			 = wrapCoreFunctions(NegativeTestShared::getNegativeShaderImageStoreTestFunctions());
+	const vector<FunctionContainer> imageAtomicFuncs		 = wrapCoreFunctions(NegativeTestShared::getNegativeShaderImageAtomicTestFunctions());
+	const vector<FunctionContainer> imageAtomicExchangeFuncs = wrapCoreFunctions(NegativeTestShared::getNegativeShaderImageAtomicExchangeTestFunctions());
+	const vector<FunctionContainer> shaderFunctionFuncs		 = wrapCoreFunctions(NegativeTestShared::getNegativeShaderFunctionTestFunctions());
+	const vector<FunctionContainer> shaderDirectiveFuncs	 = wrapCoreFunctions(NegativeTestShared::getNegativeShaderDirectiveTestFunctions());
+	const vector<FunctionContainer> preciseFuncs			 = wrapCoreFunctions(NegativeTestShared::getNegativePreciseTestFunctions());
+	const vector<FunctionContainer> advancedBlendFuncs		 = wrapCoreFunctions(NegativeTestShared::getNegativeAdvancedBlendEquationTestFunctions());
+	const vector<FunctionContainer> externalFuncs			 = getUserMessageFuncs();
 
 	{
 		using namespace gls::StateQueryUtil;
@@ -3037,7 +3040,6 @@ void DebugTests::init (void)
 		tcu::TestCaseGroup* const	negative	= new tcu::TestCaseGroup(m_testCtx, "negative_coverage", "API error coverage with various reporting methods");
 
 		addChild(negative);
-
 		{
 			tcu::TestCaseGroup* const	host	= new tcu::TestCaseGroup(m_testCtx, "callbacks", "Reporting of standard API errors via callback");
 
@@ -3049,7 +3051,10 @@ void DebugTests::init (void)
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "vertex_array",				"Negative Vertex Array API Cases",					vaFuncs));
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "state",						"Negative GL State API Cases",						stateFuncs));
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "atomic_counter",				"Negative Atomic Counter API Cases",				atomicCounterFuncs));
-			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_image_load_store",	"Negative Shader Image Load and Store API Cases",	shaderImageLoadStoreFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_image_load",			"Negative Shader Image Load API Cases",				imageLoadFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_image_store",			"Negative Shader Image Store API Cases",			imageStoreFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_image_atomic",		"Negative Shader Image Atomic API Cases",			imageAtomicFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_image_exchange",		"Negative Shader Image Atomic Exchange API Cases",	imageAtomicExchangeFuncs));
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_function",			"Negative Shader Function Cases",					shaderFunctionFuncs));
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "shader_directive",			"Negative Shader Directive Cases",					shaderDirectiveFuncs));
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "precise",					"Negative Precise Cases",							preciseFuncs));
@@ -3068,7 +3073,10 @@ void DebugTests::init (void)
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "vertex_array",			"Negative Vertex Array API Cases",					vaFuncs));
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "state",					"Negative GL State API Cases",						stateFuncs));
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "atomic_counter",			"Negative Atomic Counter API Cases",				atomicCounterFuncs));
-			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_image_load_store",	"Negative Shader Image Load and Store API Cases",	shaderImageLoadStoreFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_image_load",		"Negative Shader Image Load API Cases",				imageLoadFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_image_store",		"Negative Shader Image Store API Cases",			imageStoreFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_image_atomic",		"Negative Shader Image Atomic API Cases",			imageAtomicFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_image_exchange",	"Negative Shader Image Atomic Exchange API Cases",	imageAtomicExchangeFuncs));
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_function",			"Negative Shader Function Cases",					shaderFunctionFuncs));
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "shader_directive",		"Negative Shader Directive Cases",					shaderDirectiveFuncs));
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "precise",					"Negative Precise Cases",							preciseFuncs));
@@ -3087,7 +3095,10 @@ void DebugTests::init (void)
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "vertex_array",				"Negative Vertex Array API Cases",					vaFuncs));
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "state",						"Negative GL State API Cases",						stateFuncs));
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "atomic_counter",				"Negative Atomic Counter API Cases",				atomicCounterFuncs));
-			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_image_load_store",	"Negative Shader Image Load and Store API Cases",	shaderImageLoadStoreFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_image_load",			"Negative Shader Image Load API Cases",				imageLoadFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_image_store",			"Negative Shader Image Store API Cases",			imageStoreFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_image_atomic",		"Negative Shader Image Atomic API Cases",			imageAtomicFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_image_exchange",		"Negative Shader Image Atomic Exchange API Cases",	imageAtomicExchangeFuncs));
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_function",			"Negative Shader Function Cases",					shaderFunctionFuncs));
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "shader_directive",			"Negative Shader Directive Cases",					shaderDirectiveFuncs));
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "precise",					"Negative Precise Cases",							preciseFuncs));

@@ -82,16 +82,6 @@ static const glu::ShaderType s_shaders[] =
 	glu::SHADERTYPE_COMPUTE
 };
 
-static const gls::TextureTestUtil::TextureType s_imageTypes[] =
-{
-	gls::TextureTestUtil::TEXTURETYPE_2D,
-	gls::TextureTestUtil::TEXTURETYPE_3D,
-	gls::TextureTestUtil::TEXTURETYPE_CUBE,
-	gls::TextureTestUtil::TEXTURETYPE_2D_ARRAY,
-	gls::TextureTestUtil::TEXTURETYPE_BUFFER,
-	gls::TextureTestUtil::TEXTURETYPE_CUBE_ARRAY
-};
-
 std::string getShaderImageLayoutQualifier (const tcu::TextureFormat& format)
 {
 	std::ostringstream qualifier;
@@ -400,7 +390,7 @@ void testShader (NegativeTestContext& ctx, ImageOperation function, MemoryQualif
 	ctx.endSection();
 }
 
-void image_store (NegativeTestContext& ctx)
+void image_store (NegativeTestContext& ctx, gls::TextureTestUtil::TextureType imageType)
 {
 	const tcu::TextureFormat formats[] =
 	{
@@ -432,16 +422,13 @@ void image_store (NegativeTestContext& ctx)
 	{
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(formats); ++fmtNdx)
 		{
-			for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_imageTypes); ++typeNdx)
-			{
-				testShader(ctx, IMAGE_OPERATION_STORE, memoryOptions[memoryNdx], s_imageTypes[typeNdx], formats[fmtNdx]);
-			}
+			testShader(ctx, IMAGE_OPERATION_STORE, memoryOptions[memoryNdx], imageType, formats[fmtNdx]);
 		}
 	}
 	ctx.endSection();
 }
 
-void image_load (NegativeTestContext& ctx)
+void image_load (NegativeTestContext& ctx, gls::TextureTestUtil::TextureType imageType)
 {
 	const tcu::TextureFormat formats[] =
 	{
@@ -473,16 +460,13 @@ void image_load (NegativeTestContext& ctx)
 	{
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(formats); ++fmtNdx)
 		{
-			for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_imageTypes); ++typeNdx)
-			{
-				testShader(ctx, IMAGE_OPERATION_LOAD, memoryOptions[memoryNdx], s_imageTypes[typeNdx], formats[fmtNdx]);
-			}
+			testShader(ctx, IMAGE_OPERATION_LOAD, memoryOptions[memoryNdx], imageType, formats[fmtNdx]);
 		}
 	}
 	ctx.endSection();
 }
 
-void image_atomic (NegativeTestContext& ctx)
+void image_atomic (NegativeTestContext& ctx, gls::TextureTestUtil::TextureType imageType)
 {
 	const tcu::TextureFormat formats[] =
 	{
@@ -520,19 +504,16 @@ void image_atomic (NegativeTestContext& ctx)
 	{
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(formats); ++fmtNdx)
 		{
-			for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_imageTypes); ++typeNdx)
+			for (int functionNdx = 0; functionNdx < DE_LENGTH_OF_ARRAY(imageOperations); ++functionNdx)
 			{
-				for (int functionNdx = 0; functionNdx < DE_LENGTH_OF_ARRAY(imageOperations); ++functionNdx)
-				{
-					testShader(ctx, imageOperations[functionNdx], memoryOptions[memoryNdx], s_imageTypes[typeNdx], formats[fmtNdx]);
-				}
+				testShader(ctx, imageOperations[functionNdx], memoryOptions[memoryNdx], imageType, formats[fmtNdx]);
 			}
 		}
 	}
 	ctx.endSection();
 }
 
-void image_atomic_exchange (NegativeTestContext& ctx)
+void image_atomic_exchange (NegativeTestContext& ctx, gls::TextureTestUtil::TextureType imageType)
 {
 	const tcu::TextureFormat formats[] =
 	{
@@ -565,27 +546,73 @@ void image_atomic_exchange (NegativeTestContext& ctx)
 	{
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(formats); ++fmtNdx)
 		{
-			for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_imageTypes); ++typeNdx)
-			{
-				testShader(ctx, IMAGE_OPERATION_ATOMIC_EXCHANGE, memoryOptions[memoryNdx], s_imageTypes[typeNdx], formats[fmtNdx]);
-			}
+			testShader(ctx, IMAGE_OPERATION_ATOMIC_EXCHANGE, memoryOptions[memoryNdx], imageType, formats[fmtNdx]);
 		}
 	}
 	ctx.endSection();
 }
 
+// Re-routing function template for generating the standard negative
+// test function signature with texture type added.
+
+template <int Type>
+void loadFuncWrapper (NegativeTestContext& ctx)
+{
+	image_load(ctx, (gls::TextureTestUtil::TextureType)Type);
+}
+
+template <int Type>
+void storeFuncWrapper (NegativeTestContext& ctx)
+{
+	image_store(ctx, (gls::TextureTestUtil::TextureType)Type);
+}
+
+template <int Type>
+void atomicFuncWrapper (NegativeTestContext& ctx)
+{
+	image_atomic(ctx, (gls::TextureTestUtil::TextureType)Type);
+}
+
+template <int Type>
+void atomicExchangeFuncWrapper (NegativeTestContext& ctx)
+{
+	image_atomic_exchange(ctx, (gls::TextureTestUtil::TextureType)Type);
+}
+
 } // anonymous
 
-std::vector<FunctionContainer> getNegativeShaderImageLoadStoreTestFunctions (void)
-{
-	const FunctionContainer funcs[] =
-	{
-		{image_store,				"image_store",				"Test incorrect usage of imageStore()"			},
-		{image_load,				"image_load",				"Test incorrect usage of imageLoad()"			},
-		{image_atomic,				"image_atomic",				"Test incorrect usage of imageAtomic*()"		},
-		{image_atomic_exchange,		"image_atomic_exchange",	"Test incorrect usage of imageAtomicExchange()"	},
-	};
+// Set of texture types to create tests for.
+#define CREATE_TEST_FUNC_PER_TEXTURE_TYPE(NAME, FUNC) const FunctionContainer NAME[] =									\
+	{																													\
+		{FUNC<gls::TextureTestUtil::TEXTURETYPE_2D>,			"texture_2d",	"Texture2D negative tests."},			\
+		{FUNC<gls::TextureTestUtil::TEXTURETYPE_3D>,			"texture_3d",	"Texture3D negative tests."},			\
+		{FUNC<gls::TextureTestUtil::TEXTURETYPE_CUBE>,			"cube",			"Cube texture negative tests."},		\
+		{FUNC<gls::TextureTestUtil::TEXTURETYPE_2D_ARRAY>,		"2d_array",		"2D array texture negative tests."},	\
+		{FUNC<gls::TextureTestUtil::TEXTURETYPE_BUFFER>,		"buffer",		"Buffer negative tests."},				\
+		{FUNC<gls::TextureTestUtil::TEXTURETYPE_CUBE_ARRAY>,	"cube_array",	"Cube array texture negative tests."}	\
+	}
 
+std::vector<FunctionContainer> getNegativeShaderImageLoadTestFunctions (void)
+{
+	CREATE_TEST_FUNC_PER_TEXTURE_TYPE(funcs, loadFuncWrapper);
+	return std::vector<FunctionContainer>(DE_ARRAY_BEGIN(funcs), DE_ARRAY_END(funcs));
+}
+
+std::vector<FunctionContainer> getNegativeShaderImageStoreTestFunctions (void)
+{
+	CREATE_TEST_FUNC_PER_TEXTURE_TYPE(funcs, storeFuncWrapper);
+	return std::vector<FunctionContainer>(DE_ARRAY_BEGIN(funcs), DE_ARRAY_END(funcs));
+}
+
+std::vector<FunctionContainer> getNegativeShaderImageAtomicTestFunctions (void)
+{
+	CREATE_TEST_FUNC_PER_TEXTURE_TYPE(funcs, atomicFuncWrapper);
+	return std::vector<FunctionContainer>(DE_ARRAY_BEGIN(funcs), DE_ARRAY_END(funcs));
+}
+
+std::vector<FunctionContainer> getNegativeShaderImageAtomicExchangeTestFunctions (void)
+{
+	CREATE_TEST_FUNC_PER_TEXTURE_TYPE(funcs, atomicExchangeFuncWrapper);
 	return std::vector<FunctionContainer>(DE_ARRAY_BEGIN(funcs), DE_ARRAY_END(funcs));
 }
 
