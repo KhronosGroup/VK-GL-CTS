@@ -7,6 +7,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawIndexedTest.cpp
 	vktDrawIndirectTest.hpp
 	vktDrawIndirectTest.cpp
+	vktDrawInstancedTests.hpp
+	vktDrawInstancedTests.cpp
 	vktDrawSimpleTest.hpp
 	vktDrawSimpleTest.cpp
 	vktDrawBaseClass.hpp
