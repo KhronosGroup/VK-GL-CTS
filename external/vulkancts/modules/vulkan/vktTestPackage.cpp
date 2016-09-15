@@ -59,7 +59,6 @@
 #include "vktShaderRenderTextureGatherTests.hpp"
 #include "vktShaderBuiltinTests.hpp"
 #include "vktOpaqueTypeIndexingTests.hpp"
-#include "vktTextureFilteringTests.hpp"
 #include "vktUniformBlockTests.hpp"
 #include "vktDynamicStateTests.hpp"
 #include "vktSSBOLayoutTests.hpp"
@@ -395,7 +394,6 @@ void TestPackage::init (void)
 	addChild(tessellation::createTests		(m_testCtx));
 	addChild(rasterization::createTests		(m_testCtx));
 	addChild(clipping::createTests			(m_testCtx));
-	addChild(texture_filtering::createTests	(m_testCtx));
 	addChild(FragmentOperations::createTests(m_testCtx));
 	addChild(texture::createTests			(m_testCtx));
 }

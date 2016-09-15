@@ -34,7 +34,7 @@ namespace vkt
 namespace texture
 {
 
-void createTextureMipmappingTests (tcu::TestCaseGroup* textureTests);
+tcu::TestCaseGroup*	createTextureMipmappingTests	(tcu::TestContext& testCtx);
 
 } // texture
 } // vkt

@@ -53,7 +53,7 @@
 
 namespace vkt
 {
-namespace texture_filtering
+namespace texture
 {
 
 using namespace tcu;
@@ -1523,5 +1523,5 @@ TestCaseGroup* createExplicitLodTests (TestContext& testCtx)
 	return tests.release();
 }
 
-} // texture_filtering
+} // texture
 } // vkt

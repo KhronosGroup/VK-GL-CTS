@@ -1,10 +1,21 @@
-include_directories(..)
+# dEQP-VK.texture
+
+include_directories(
+	..
+	../shaderexecutor
+	)
 
 set(DEQP_VK_TEXTURE_SRCS
+	vktSampleVerifier.cpp
+	vktSampleVerifier.hpp
+	vktSampleVerifierUtil.cpp
+	vktSampleVerifierUtil.hpp
 	vktTextureTests.cpp
 	vktTextureTests.hpp
 	vktTextureTestUtil.cpp
 	vktTextureTestUtil.hpp
+	vktTextureFilteringExplicitLodTests.cpp
+	vktTextureFilteringExplicitLodTests.hpp
 	vktTextureFilteringTests.cpp
 	vktTextureFilteringTests.hpp
 	vktTextureMipmapTests.cpp
@@ -13,6 +24,7 @@ set(DEQP_VK_TEXTURE_SRCS
 
 set(DEQP_VK_TEXTURE_LIBS
 	deqp-vk-common
+	deqp-vk-shaderexecutor
 	tcutil
 	vkutil
 	)

@@ -36,6 +36,7 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vktTextureTestUtil.hpp"
 
 using namespace vk;
@@ -1697,12 +1698,9 @@ protected:
 	}
 };
 
-} // anonymous
-
-void createTextureMipmappingTests (tcu::TestCaseGroup* textureTests)
+void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 {
-	tcu::TestContext&				testCtx					= textureTests->getTestContext();
-	de::MovePtr<tcu::TestCaseGroup>	textureMipmappingTests	(new tcu::TestCaseGroup(testCtx, "mipmap", "Texture mipmapping tests."));
+	tcu::TestContext&	testCtx		= textureMipmappingTests->getTestContext();
 
 	static const struct
 	{
@@ -2146,8 +2144,13 @@ void createTextureMipmappingTests (tcu::TestCaseGroup* textureTests)
 
 		textureMipmappingTests->addChild(group3D.release());
 	}
+}
 
-	textureTests->addChild(textureMipmappingTests.release());
+} // anonymous
+
+tcu::TestCaseGroup* createTextureMipmappingTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "mipmap", "Texture mipmapping tests.", populateTextureMipmappingTests);
 }
 
 } // texture

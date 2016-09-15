@@ -33,7 +33,7 @@
 
 namespace vkt
 {
-namespace texture_filtering
+namespace texture
 {
 namespace util
 {
@@ -948,5 +948,5 @@ void convertFormat (const void*		pixelPtr,
 }
 
 } // util
-} // texture_filtering
+} // texture
 } // vkt

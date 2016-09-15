@@ -34,7 +34,7 @@
 
 namespace vkt
 {
-namespace texture_filtering
+namespace texture
 {
 
 using namespace vk;
@@ -942,5 +942,5 @@ bool SampleVerifier::verifySample (const SampleArguments&	args,
 	return verifySampleImpl(args, result, nullStream);
 }
 
-} // texture_filtering
+} // texture
 } // vkt

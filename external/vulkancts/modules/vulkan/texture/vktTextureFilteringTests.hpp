@@ -33,7 +33,7 @@ namespace vkt
 namespace texture
 {
 
-void createTextureFilteringTests (tcu::TestCaseGroup* textureTests);
+tcu::TestCaseGroup*	createTextureFilteringTests	(tcu::TestContext& testCtx);
 
 } // texture
 } // vkt

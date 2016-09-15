@@ -20,13 +20,14 @@
  *
  *//*!
  * \file
- * \brief Functional rasterization tests.
+ * \brief Texture tests.
  *//*--------------------------------------------------------------------*/
 
+#include "vktTextureTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktTextureFilteringTests.hpp"
 #include "vktTextureMipmapTests.hpp"
-#include "vktTextureTests.hpp"
+#include "vktTextureFilteringExplicitLodTests.hpp"
 
 namespace vkt
 {
@@ -35,10 +36,13 @@ namespace texture
 namespace
 {
 
-void createTextureTests (tcu::TestCaseGroup* imageTests)
+void createTextureTests (tcu::TestCaseGroup* textureTests)
 {
-	createTextureFilteringTests(imageTests);
-	createTextureMipmappingTests(imageTests);
+	tcu::TestContext&	testCtx	= textureTests->getTestContext();
+
+	textureTests->addChild(createTextureFilteringTests	(testCtx));
+	textureTests->addChild(createTextureMipmappingTests	(testCtx));
+	textureTests->addChild(createExplicitLodTests		(testCtx));
 }
 
 } // anonymous

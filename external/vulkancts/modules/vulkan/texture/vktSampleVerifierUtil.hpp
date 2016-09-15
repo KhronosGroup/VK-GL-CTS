@@ -32,7 +32,7 @@
 
 namespace vkt
 {
-namespace texture_filtering
+namespace texture
 {
 namespace util
 {
@@ -173,7 +173,7 @@ tcu::Vector<float, Size> abs (const tcu::Vector<float, Size>& v)
 }
 
 } // util
-} // texture_filtering
+} // texture
 } // vkt
 
 #endif // _VKTSAMPLEVERIFIERUTIL_HPP

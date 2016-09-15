@@ -37,7 +37,7 @@
 
 namespace vkt
 {
-namespace texture_filtering
+namespace texture
 {
 
 struct SampleArguments
@@ -241,7 +241,7 @@ private:
 	const std::vector<tcu::ConstPixelBufferAccess>&	m_pba;
 };
 
-} // texture_filtering
+} // texture
 } // vkt
 
 #endif // _VKTSAMPLEVERIFIER_HPP

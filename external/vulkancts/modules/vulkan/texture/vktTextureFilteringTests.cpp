@@ -32,6 +32,7 @@
 #include "vkRefUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vktTextureFilteringTests.hpp"
 #include "vktTextureTestUtil.hpp"
 #include <string>
@@ -859,12 +860,9 @@ bool verifierCanBeUsed(const VkFormat format, const Sampler::FilterMode minFilte
 			  (tcu::TexVerifierUtil::isLinearFilter(minFilter) || tcu::TexVerifierUtil::isLinearFilter(magFilter)));
 }
 
-} // anonymous
-
-void createTextureFilteringTests (tcu::TestCaseGroup* textureTests)
+void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 {
-	tcu::TestContext&				testCtx					= textureTests->getTestContext();
-	de::MovePtr<tcu::TestCaseGroup>	textureFilteringTests	(new tcu::TestCaseGroup(testCtx, "filtering", "Texture filtering tests."));
+	tcu::TestContext&	testCtx		= textureFilteringTests->getTestContext();
 
 	static const struct
 	{
@@ -1409,8 +1407,13 @@ void createTextureFilteringTests (tcu::TestCaseGroup* textureTests)
 
 		textureFilteringTests->addChild(group3D.release());
 	}
+}
 
-	textureTests->addChild(textureFilteringTests.release());
+} // anonymous
+
+tcu::TestCaseGroup*	createTextureFilteringTests	(tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "filtering", "Texture filtering tests.", populateTextureFilteringTests);
 }
 
 } // texture
