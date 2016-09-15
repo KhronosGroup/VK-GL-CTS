@@ -53,7 +53,7 @@ enum ImageType
 vk::VkImageType			mapImageType					(const ImageType imageType);
 vk::VkImageViewType		mapImageViewType				(const ImageType imageType);
 std::string				getImageTypeName				(const ImageType imageType);
-std::string				getShaderImageType				(const tcu::TextureFormat& format, const ImageType imageType);
+std::string				getShaderImageType				(const tcu::TextureFormat& format, const ImageType imageType, const bool multisample = false);
 std::string				getShaderImageFormatQualifier	(const tcu::TextureFormat& format);
 
 class Buffer
@@ -175,6 +175,8 @@ inline vk::VkDeviceSize getImageSizeBytes (const tcu::IVec3& imageSize, const vk
 {
 	return tcu::getPixelSize(vk::mapVkFormat(format)) * imageSize.x() * imageSize.y() * imageSize.z();
 }
+
+std::string	getFormatShortString	(const vk::VkFormat format);
 
 } // image
 } // vkt
