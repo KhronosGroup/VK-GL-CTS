@@ -93,6 +93,8 @@ private:
 
 #include "vkBasicTypes.inl"
 
+#define VK_CORE_FORMAT_LAST		((vk::VkFormat)(vk::VK_FORMAT_ASTC_12x12_SRGB_BLOCK+1))
+
 namespace wsi
 {
 

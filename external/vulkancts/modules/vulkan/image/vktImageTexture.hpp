@@ -35,20 +35,25 @@ namespace image
 class Texture
 {
 public:
-						Texture			(const ImageType type, const tcu::IVec3& layerSize, const int layers);
+						Texture			(const ImageType imageType, const tcu::IVec3& imageLayerSize, const int layers, const int samples = 1);
+						Texture			(const Texture& other, const int samples);
 
 	ImageType			type			(void) const { return m_type; }			//!< Texture type
 	tcu::IVec3			layerSize		(void) const { return m_layerSize; }	//!< Size of a single layer
 	int					numLayers		(void) const { return m_numLayers; }	//!< Number of array layers (for array and cube types)
+	int					numSamples		(void) const { return m_numSamples; }	//!< Number of samples per texel (multisampled texture)
 
 	tcu::IVec3			size			(void) const;	//!< Size including number of layers in additional dimension (e.g. z in 2d texture)
 	int					dimension		(void) const;	//!< Coordinate dimension used for addressing (e.g. 3 (x,y,z) for 2d array)
 	int					layerDimension	(void) const;	//!< Coordinate dimension used for addressing a single layer (e.g. 2 (x,y) for 2d array)
 
 private:
+	void				checkInvariants	(void) const;
+
 	const tcu::IVec3	m_layerSize;
 	const ImageType		m_type;
 	const int			m_numLayers;
+	const int			m_numSamples;
 };
 
 inline bool isCube (const Texture& texture)

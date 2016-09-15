@@ -1147,6 +1147,50 @@ VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerInsertEXT (VkCommandBuffer commandBuffe
 	DE_UNREF(pMarkerInfo);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(countBuffer);
+	DE_UNREF(countBufferOffset);
+	DE_UNREF(maxDrawCount);
+	DE_UNREF(stride);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(countBuffer);
+	DE_UNREF(countBufferOffset);
+	DE_UNREF(maxDrawCount);
+	DE_UNREF(stride);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceExternalImageFormatPropertiesNV (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkExternalMemoryHandleTypeFlagsNV externalHandleType, VkExternalImageFormatPropertiesNV* pExternalImageFormatProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(format);
+	DE_UNREF(type);
+	DE_UNREF(tiling);
+	DE_UNREF(usage);
+	DE_UNREF(flags);
+	DE_UNREF(externalHandleType);
+	DE_UNREF(pExternalImageFormatProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandleNV (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(memory);
+	DE_UNREF(handleType);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -1196,6 +1240,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,						createDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,						destroyDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,								debugReportMessageEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalImageFormatPropertiesNV,	getPhysicalDeviceExternalImageFormatPropertiesNV),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -1331,5 +1376,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,			cmdDebugMarkerBeginEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerEndEXT,				cmdDebugMarkerEndEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerInsertEXT,			cmdDebugMarkerInsertEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountAMD,			cmdDrawIndirectCountAMD),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountAMD,	cmdDrawIndexedIndirectCountAMD),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleNV,			getMemoryWin32HandleNV),
 };
 

@@ -25,6 +25,7 @@
 
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
+#include "vkRefUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "tcuVector.hpp"
@@ -49,6 +50,16 @@ de::MovePtr<vk::Allocation>		bindImage				(const vk::DeviceInterface& vk, const 
 de::MovePtr<vk::Allocation>		bindBuffer				(const vk::DeviceInterface& vk, const vk::VkDevice device, vk::Allocator& allocator, const vk::VkBuffer buffer, const vk::MemoryRequirement requirement);
 void							beginCommandBuffer		(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
 void							submitCommandsAndWait	(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkQueue queue, const vk::VkCommandBuffer commandBuffer);
+
+inline vk::Move<vk::VkBuffer> makeBuffer (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkBufferCreateInfo& createInfo)
+{
+	return createBuffer(vk, device, &createInfo);
+}
+
+inline vk::Move<vk::VkImage> makeImage (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkImageCreateInfo& createInfo)
+{
+	return createImage(vk, device, &createInfo);
+}
 
 } // FragmentOperations
 } // vkt

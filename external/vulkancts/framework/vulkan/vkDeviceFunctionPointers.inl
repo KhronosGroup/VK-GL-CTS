@@ -132,3 +132,6 @@ DebugMarkerSetObjectNameEXTFunc			debugMarkerSetObjectNameEXT;
 CmdDebugMarkerBeginEXTFunc				cmdDebugMarkerBeginEXT;
 CmdDebugMarkerEndEXTFunc				cmdDebugMarkerEndEXT;
 CmdDebugMarkerInsertEXTFunc				cmdDebugMarkerInsertEXT;
+CmdDrawIndirectCountAMDFunc				cmdDrawIndirectCountAMD;
+CmdDrawIndexedIndirectCountAMDFunc		cmdDrawIndexedIndirectCountAMD;
+GetMemoryWin32HandleNVFunc				getMemoryWin32HandleNV;

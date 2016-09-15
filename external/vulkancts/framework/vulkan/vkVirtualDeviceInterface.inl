@@ -132,3 +132,6 @@ virtual VkResult	debugMarkerSetObjectNameEXT			(VkDevice device, VkDebugMarkerOb
 virtual void		cmdDebugMarkerBeginEXT				(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const = 0;
 virtual void		cmdDebugMarkerEndEXT				(VkCommandBuffer commandBuffer) const = 0;
 virtual void		cmdDebugMarkerInsertEXT				(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const = 0;
+virtual void		cmdDrawIndirectCountAMD				(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const = 0;
+virtual void		cmdDrawIndexedIndirectCountAMD		(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const = 0;
+virtual VkResult	getMemoryWin32HandleNV				(VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle) const = 0;
