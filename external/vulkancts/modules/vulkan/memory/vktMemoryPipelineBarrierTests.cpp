@@ -5873,7 +5873,7 @@ void RenderVertexStorageImage::prepare (PrepareRenderPassContext& context)
 			{
 				0,
 				*m_imageView,
-				vk::VK_IMAGE_LAYOUT_GENERAL
+				context.getImageLayout()
 			};
 			const vk::VkWriteDescriptorSet			write		=
 			{
@@ -6070,7 +6070,7 @@ void RenderVertexSampledImage::prepare (PrepareRenderPassContext& context)
 			{
 				*m_sampler,
 				*m_imageView,
-				vk::VK_IMAGE_LAYOUT_GENERAL
+				context.getImageLayout()
 			};
 			const vk::VkWriteDescriptorSet			write		=
 			{
@@ -6106,8 +6106,8 @@ void RenderVertexSampledImage::verify (VerifyRenderPassContext& context, size_t)
 {
 	for (int pos = 0; pos < (int)(context.getReferenceImage().getWidth() * context.getReferenceImage().getHeight() * 2); pos++)
 	{
-		const tcu::IVec3		size	= context.getReferenceImage().getAccess().getSize();
-		const tcu::UVec4		pixel	= context.getReferenceImage().getAccess().getPixelUint((pos / 2) / size.x(), (pos / 2) % size.x());
+		const tcu::IVec3	size	= context.getReferenceImage().getAccess().getSize();
+		const tcu::UVec4	pixel	= context.getReferenceImage().getAccess().getPixelUint((pos / 2) / size.x(), (pos / 2) % size.x());
 
 		if (pos % 2 == 0)
 			context.getReferenceTarget().getAccess().setPixel(Vec4(1.0f, 1.0f, 1.0f, 1.0f), pixel.x(), pixel.y());
@@ -7108,7 +7108,7 @@ void RenderFragmentStorageImage::prepare (PrepareRenderPassContext& context)
 			{
 				0,
 				*m_imageView,
-				vk::VK_IMAGE_LAYOUT_GENERAL
+				context.getImageLayout()
 			};
 			const vk::VkWriteDescriptorSet			write		=
 			{
@@ -7161,6 +7161,215 @@ void RenderFragmentStorageImage::verify (VerifyRenderPassContext& context, size_
 						  (deUint32)(floatValue.w() * 255.0f));
 
 		}
+		context.getReferenceTarget().getAccess().setPixel(value.asFloat() / Vec4(255.0f), x, y);
+	}
+}
+
+class RenderFragmentSampledImage : public RenderPassCommand
+{
+public:
+				RenderFragmentSampledImage	(void) {}
+				~RenderFragmentSampledImage	(void);
+
+	const char*	getName						(void) const { return "RenderFragmentSampledImage"; }
+	void		logPrepare					(TestLog&, size_t) const;
+	void		logSubmit					(TestLog&, size_t) const;
+	void		prepare						(PrepareRenderPassContext&);
+	void		submit						(SubmitContext& context);
+	void		verify						(VerifyRenderPassContext&, size_t);
+
+private:
+	PipelineResources				m_resources;
+	vk::Move<vk::VkDescriptorPool>	m_descriptorPool;
+	vk::Move<vk::VkDescriptorSet>	m_descriptorSet;
+	vk::Move<vk::VkImageView>		m_imageView;
+	vk::Move<vk::VkSampler>			m_sampler;
+};
+
+RenderFragmentSampledImage::~RenderFragmentSampledImage (void)
+{
+}
+
+void RenderFragmentSampledImage::logPrepare (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Create pipeline for render storage image." << TestLog::EndMessage;
+}
+
+void RenderFragmentSampledImage::logSubmit (TestLog& log, size_t commandIndex) const
+{
+	log << TestLog::Message << commandIndex << ":" << getName() << " Render using storage image." << TestLog::EndMessage;
+}
+
+void RenderFragmentSampledImage::prepare (PrepareRenderPassContext& context)
+{
+	const vk::DeviceInterface&					vkd						= context.getContext().getDeviceInterface();
+	const vk::VkDevice							device					= context.getContext().getDevice();
+	const vk::VkRenderPass						renderPass				= context.getRenderPass();
+	const deUint32								subpass					= 0;
+	const vk::Unique<vk::VkShaderModule>		vertexShaderModule		(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("render-quad.vert"), 0));
+	const vk::Unique<vk::VkShaderModule>		fragmentShaderModule	(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("sampled-image.frag"), 0));
+	vector<vk::VkDescriptorSetLayoutBinding>	bindings;
+
+	{
+		const vk::VkDescriptorSetLayoutBinding binding =
+		{
+			0u,
+			vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			1,
+			vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+			DE_NULL
+		};
+
+		bindings.push_back(binding);
+	}
+
+	createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(), context.getTargetHeight(),
+								vector<vk::VkVertexInputBindingDescription>(), vector<vk::VkVertexInputAttributeDescription>(), bindings, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, DE_NULL, m_resources);
+
+	{
+		const vk::VkDescriptorPoolSize			poolSizes		=
+		{
+			vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			1
+		};
+		const vk::VkDescriptorPoolCreateInfo	createInfo		=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			DE_NULL,
+			vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+
+			1u,
+			1u,
+			&poolSizes,
+		};
+
+		m_descriptorPool = vk::createDescriptorPool(vkd, device, &createInfo);
+	}
+
+	{
+		const vk::VkDescriptorSetLayout			layout			= *m_resources.descriptorSetLayout;
+		const vk::VkDescriptorSetAllocateInfo	allocateInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+
+			*m_descriptorPool,
+			1,
+			&layout
+		};
+
+		m_descriptorSet = vk::allocateDescriptorSet(vkd, device, &allocateInfo);
+
+		{
+			const vk::VkImageViewCreateInfo createInfo =
+			{
+				vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+				DE_NULL,
+				0u,
+
+				context.getImage(),
+				vk::VK_IMAGE_VIEW_TYPE_2D,
+				vk::VK_FORMAT_R8G8B8A8_UNORM,
+				vk::makeComponentMappingRGBA(),
+				{
+					vk::VK_IMAGE_ASPECT_COLOR_BIT,
+					0u,
+					1u,
+					0u,
+					1u
+				}
+			};
+
+			m_imageView = vk::createImageView(vkd, device, &createInfo);
+		}
+
+		{
+			const vk::VkSamplerCreateInfo createInfo =
+			{
+				vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+				DE_NULL,
+				0u,
+
+				vk::VK_FILTER_NEAREST,
+				vk::VK_FILTER_NEAREST,
+
+				vk::VK_SAMPLER_MIPMAP_MODE_LINEAR,
+				vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+				vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+				vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+				0.0f,
+				VK_FALSE,
+				1.0f,
+				VK_FALSE,
+				vk::VK_COMPARE_OP_ALWAYS,
+				0.0f,
+				0.0f,
+				vk::VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+				VK_FALSE
+			};
+
+			m_sampler = vk::createSampler(vkd, device, &createInfo);
+		}
+
+		{
+			const vk::VkDescriptorImageInfo			imageInfo	=
+			{
+				*m_sampler,
+				*m_imageView,
+				context.getImageLayout()
+			};
+			const vk::VkWriteDescriptorSet			write		=
+			{
+				vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				DE_NULL,
+				*m_descriptorSet,
+				0u,
+				0u,
+				1u,
+				vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				&imageInfo,
+				DE_NULL,
+				DE_NULL,
+			};
+
+			vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+		}
+	}
+}
+
+void RenderFragmentSampledImage::submit (SubmitContext& context)
+{
+	const vk::DeviceInterface&	vkd				= context.getContext().getDeviceInterface();
+	const vk::VkCommandBuffer	commandBuffer	= context.getCommandBuffer();
+
+	vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
+
+	vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u, 1u, &(*m_descriptorSet), 0u, DE_NULL);
+	vkd.cmdDraw(commandBuffer, 6u, 1u, 0u, 0u);
+}
+
+void RenderFragmentSampledImage::verify (VerifyRenderPassContext& context, size_t)
+{
+	const UVec2		size			= UVec2(context.getReferenceImage().getWidth(), context.getReferenceImage().getHeight());
+	const deUint32	valuesPerPixel	= de::max<deUint32>(1u, (size.x() * size.y()) / (256u * 256u));
+
+	for (int y = 0; y < context.getReferenceTarget().getSize().y(); y++)
+	for (int x = 0; x < context.getReferenceTarget().getSize().x(); x++)
+	{
+		UVec4	value	= UVec4(x, y, 0u, 0u);
+
+		for (deUint32 i = 0; i < valuesPerPixel; i++)
+		{
+			const UVec2	pos			= UVec2(value.z() * 256u + (value.x() ^ value.z()), value.w() * 256u + (value.y() ^ value.w()));
+			const Vec4	floatValue	= context.getReferenceImage().getAccess().getPixel(pos.x() % size.x(), pos.y() % size.y());
+
+			value = UVec4((deUint32)(floatValue.x() * 255.0f),
+						  (deUint32)(floatValue.y() * 255.0f),
+						  (deUint32)(floatValue.z() * 255.0f),
+						  (deUint32)(floatValue.w() * 255.0f));
+
+		}
+
 		context.getReferenceTarget().getAccess().setPixel(value.asFloat() / Vec4(255.0f), x, y);
 	}
 }
@@ -7242,6 +7451,7 @@ enum Op
 	OP_RENDER_FRAGMENT_STORAGE_IMAGE,
 
 	OP_RENDER_VERTEX_SAMPLED_IMAGE,
+	OP_RENDER_FRAGMENT_SAMPLED_IMAGE,
 };
 
 enum Stage
@@ -8059,11 +8269,13 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 				&& state.hasBoundImageMemory
 				&& (((usage & USAGE_STORAGE_IMAGE)
 						&& state.imageLayout == vk::VK_IMAGE_LAYOUT_GENERAL
-						&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
+						&& (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT)
+							|| state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT)))
 					|| ((usage & USAGE_SAMPLED_IMAGE)
 						&& (state.imageLayout == vk::VK_IMAGE_LAYOUT_GENERAL
 							|| state.imageLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-						&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT)))))
+						&& (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT)
+							|| state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))))))
 		{
 			ops.push_back(OP_RENDERPASS_BEGIN);
 		}
@@ -8151,10 +8363,13 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 			&& state.imageDefined
 			&& state.hasBoundImageMemory
 			&& (state.imageLayout == vk::VK_IMAGE_LAYOUT_GENERAL
-				|| state.imageLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-			&& state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
+				|| state.imageLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
 		{
-			ops.push_back(OP_RENDER_VERTEX_SAMPLED_IMAGE);
+			if (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
+				ops.push_back(OP_RENDER_VERTEX_SAMPLED_IMAGE);
+
+			if (state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
+				ops.push_back(OP_RENDER_FRAGMENT_SAMPLED_IMAGE);
 		}
 
 		if (!state.renderPassIsEmpty)
@@ -8516,6 +8731,7 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 		}
 
 		case OP_RENDER_FRAGMENT_STORAGE_IMAGE:
+		case OP_RENDER_FRAGMENT_SAMPLED_IMAGE:
 		{
 			DE_ASSERT(state.stage == STAGE_RENDER_PASS);
 
@@ -8722,6 +8938,7 @@ de::MovePtr<RenderPassCommand> createRenderPassCommand (de::Random&,
 		case OP_RENDER_FRAGMENT_STORAGE_IMAGE:			return de::MovePtr<RenderPassCommand>(new RenderFragmentStorageImage());
 
 		case OP_RENDER_VERTEX_SAMPLED_IMAGE:			return de::MovePtr<RenderPassCommand>(new RenderVertexSampledImage());
+		case OP_RENDER_FRAGMENT_SAMPLED_IMAGE:			return de::MovePtr<RenderPassCommand>(new RenderFragmentSampledImage());
 
 		default:
 			DE_FATAL("Unknown op");
@@ -9568,28 +9785,53 @@ struct AddPrograms
 
 		if (config.usage & USAGE_SAMPLED_IMAGE)
 		{
-			// Vertex storage image
-			const char* const vertexShader =
-				"#version 450\n"
-				"highp float;\n"
-				"layout(set=0, binding=0) uniform sampler2D u_sampler;\n"
-				"out gl_PerVertex {\n"
-				"\tvec4 gl_Position;\n"
-				"\tfloat gl_PointSize;\n"
-				"};\n"
-				"void main (void) {\n"
-				"\tgl_PointSize = 1.0;\n"
-				"\thighp vec4 val = texelFetch(u_sampler, ivec2((gl_VertexIndex / 2) / textureSize(u_sampler, 0).x, (gl_VertexIndex / 2) % textureSize(u_sampler, 0).x), 0);\n"
-				"\thighp vec2 pos;\n"
-				"\tif (gl_VertexIndex % 2 == 0)\n"
-				"\t\tpos = val.xy;\n"
-				"\telse\n"
-				"\t\tpos = val.zw;\n"
-				"\tgl_Position = vec4(1.998 * pos - vec2(0.999), 0.0, 1.0);\n"
-				"}\n";
+			{
+				// Vertex storage image
+				const char* const vertexShader =
+					"#version 450\n"
+					"highp float;\n"
+					"layout(set=0, binding=0) uniform sampler2D u_sampler;\n"
+					"out gl_PerVertex {\n"
+					"\tvec4 gl_Position;\n"
+					"\tfloat gl_PointSize;\n"
+					"};\n"
+					"void main (void) {\n"
+					"\tgl_PointSize = 1.0;\n"
+					"\thighp vec4 val = texelFetch(u_sampler, ivec2((gl_VertexIndex / 2) / textureSize(u_sampler, 0).x, (gl_VertexIndex / 2) % textureSize(u_sampler, 0).x), 0);\n"
+					"\thighp vec2 pos;\n"
+					"\tif (gl_VertexIndex % 2 == 0)\n"
+					"\t\tpos = val.xy;\n"
+					"\telse\n"
+					"\t\tpos = val.zw;\n"
+					"\tgl_Position = vec4(1.998 * pos - vec2(0.999), 0.0, 1.0);\n"
+					"}\n";
 
-			sources.glslSources.add("sampled-image.vert")
-				<< glu::VertexSource(vertexShader);
+				sources.glslSources.add("sampled-image.vert")
+					<< glu::VertexSource(vertexShader);
+			}
+			{
+				// Fragment storage image
+				const char* const fragmentShader =
+					"#version 450\n"
+					"#extension GL_EXT_texture_buffer : require\n"
+					"highp float;\n"
+					"layout(set=0, binding=0) uniform sampler2D u_sampler;\n"
+					"layout(location = 0) out highp vec4 o_color;\n"
+					"void main (void) {\n"
+					"\thighp uvec2 size = uvec2(textureSize(u_sampler, 0).x, textureSize(u_sampler, 0).y);\n"
+					"\thighp uint valuesPerPixel = max(1u, (size.x * size.y) / (256u * 256u));\n"
+					"\thighp uvec4 value = uvec4(uint(gl_FragCoord.x), uint(gl_FragCoord.y), 0u, 0u);\n"
+					"\tfor (uint i = 0u; i < valuesPerPixel; i++)\n"
+					"\t{\n"
+					"\t\thighp vec4 floatValue = texelFetch(u_sampler, ivec2(int((value.z *  256u + (value.x ^ value.z)) % size.x), int((value.w * 256u + (value.y ^ value.w)) % size.y)), 0);\n"
+					"\t\tvalue = uvec4(uint(floatValue.x * 255.0), uint(floatValue.y * 255.0), uint(floatValue.z * 255.0), uint(floatValue.w * 255.0));\n"
+					"\t}\n"
+					"\to_color = vec4(value) / vec4(255.0);\n"
+					"}\n";
+
+				sources.glslSources.add("sampled-image.frag")
+					<< glu::FragmentSource(fragmentShader);
+			}
 		}
 
 		{
