@@ -213,7 +213,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests	(new tcu::TestCaseGroup(testCtx, "create", "BufferView Construction Tests"));
 
 	const VkDeviceSize range = VK_WHOLE_SIZE;
-	for (deUint32 format = VK_FORMAT_UNDEFINED + 1; format < VK_FORMAT_LAST; format++)
+	for (deUint32 format = VK_FORMAT_UNDEFINED + 1; format < VK_CORE_FORMAT_LAST; format++)
 	{
 		std::ostringstream	testName;
 		std::ostringstream	testDescription;

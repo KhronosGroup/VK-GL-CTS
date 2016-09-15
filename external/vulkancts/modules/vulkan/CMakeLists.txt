@@ -6,7 +6,6 @@ add_subdirectory(binding_model)
 add_subdirectory(spirv_assembly)
 add_subdirectory(shaderrender)
 add_subdirectory(shaderexecutor)
-add_subdirectory(texture_filtering)
 add_subdirectory(memory)
 add_subdirectory(ubo)
 add_subdirectory(dynamic_state)
@@ -22,6 +21,7 @@ add_subdirectory(rasterization)
 add_subdirectory(synchronization)
 add_subdirectory(clipping)
 add_subdirectory(fragment_ops)
+add_subdirectory(texture)
 
 include_directories(
 	api
@@ -30,7 +30,6 @@ include_directories(
 	spirv_assembly
 	shaderrender
 	shaderexecutor
-	texture_filtering
 	memory
 	ubo
 	dynamic_state
@@ -46,6 +45,7 @@ include_directories(
 	synchronization
 	clipping
 	fragment_ops
+	texture
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -75,7 +75,6 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-spirv-assembly
 	deqp-vk-shaderrender
 	deqp-vk-shaderexecutor
-	deqp-vk-texture-filtering
 	deqp-vk-memory
 	deqp-vk-ubo
 	deqp-vk-dynamic-state
@@ -91,6 +90,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-synchronization
 	deqp-vk-clipping
 	deqp-vk-fragment-ops
+	deqp-vk-texture
 	)
 
 add_library(deqp-vk-common STATIC ${DEQP_VK_COMMON_SRCS})

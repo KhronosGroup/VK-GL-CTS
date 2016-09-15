@@ -102,6 +102,9 @@ INSTANCE_FUNCTIONS	= [
 	"vkCreateDebugReportCallbackEXT",
 	"vkDestroyDebugReportCallbackEXT",
 	"vkDebugReportMessageEXT",
+
+	# VK_NV_external_memory_capabilities
+	"vkGetPhysicalDeviceExternalImageFormatPropertiesNV"
 ]
 
 DEFINITIONS			= [
@@ -122,31 +125,51 @@ DEFINITIONS			= [
 
 PLATFORM_TYPES		= [
 	# VK_KHR_xlib_surface
-	("Display*",			"XlibDisplayPtr",			"void*"),
-	("Window",				"XlibWindow",				"deUintptr",),
-	("VisualID",			"XlibVisualID",				"deUint32"),
+	("Display*",					"XlibDisplayPtr",				"void*"),
+	("Window",						"XlibWindow",					"deUintptr",),
+	("VisualID",					"XlibVisualID",					"deUint32"),
 
 	# VK_KHR_xcb_surface
-	("xcb_connection_t*",	"XcbConnectionPtr",			"void*"),
-	("xcb_window_t",		"XcbWindow",				"deUintptr"),
-	("xcb_visualid_t",		"XcbVisualid",				"deUint32"),
+	("xcb_connection_t*",			"XcbConnectionPtr",				"void*"),
+	("xcb_window_t",				"XcbWindow",					"deUintptr"),
+	("xcb_visualid_t",				"XcbVisualid",					"deUint32"),
 
 	# VK_KHR_wayland_surface
-	("struct wl_display*",	"WaylandDisplayPtr",		"void*"),
-	("struct wl_surface*",	"WaylandSurfacePtr",		"void*"),
+	("struct wl_display*",			"WaylandDisplayPtr",			"void*"),
+	("struct wl_surface*",			"WaylandSurfacePtr",			"void*"),
 
 	# VK_KHR_mir_surface
-	("MirConnection*",		"MirConnectionPtr",			"void*"),
-	("MirSurface*",			"MirSurfacePtr",			"void*"),
+	("MirConnection*",				"MirConnectionPtr",				"void*"),
+	("MirSurface*",					"MirSurfacePtr",				"void*"),
 
 	# VK_KHR_android_surface
-	("ANativeWindow*",		"AndroidNativeWindowPtr",	"void*"),
+	("ANativeWindow*",				"AndroidNativeWindowPtr",		"void*"),
 
 	# VK_KHR_win32_surface
-	("HINSTANCE",			"Win32InstanceHandle",		"void*"),
-	("HWND",				"Win32WindowHandle",		"void*")
+	("HINSTANCE",					"Win32InstanceHandle",			"void*"),
+	("HWND",						"Win32WindowHandle",			"void*"),
+	("HANDLE",						"Win32Handle",					"void*"),
+	("const SECURITY_ATTRIBUTES*",	"Win32SecurityAttributesPtr",	"const void*"),
 ]
 PLATFORM_TYPE_NAMESPACE	= "pt"
+TYPE_SUBSTITUTIONS		= [
+	("uint8_t",		"deUint8"),
+	("uint16_t",	"deUint16"),
+	("uint32_t",	"deUint32"),
+	("uint64_t",	"deUint64"),
+	("int8_t",		"deInt8"),
+	("int16_t",		"deInt16"),
+	("int32_t",		"deInt32"),
+	("int64_t",		"deInt64"),
+	("bool32_t",	"deUint32"),
+	("size_t",		"deUintptr"),
+
+	# Platform-specific
+	("DWORD",		"deUint32"),
+	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*")
+]
+
+EXTENSION_POSTFIXES		= ["KHR", "EXT", "NV"]
 
 class Handle:
 	TYPE_DISP		= 0
@@ -236,20 +259,7 @@ def fixupType (type):
 		if type == platformType:
 			return PLATFORM_TYPE_NAMESPACE + "::" + substitute
 
-	replacements = [
-			("uint8_t",		"deUint8"),
-			("uint16_t",	"deUint16"),
-			("uint32_t",	"deUint32"),
-			("uint64_t",	"deUint64"),
-			("int8_t",		"deInt8"),
-			("int16_t",		"deInt16"),
-			("int32_t",		"deInt32"),
-			("int64_t",		"deInt64"),
-			("bool32_t",	"deUint32"),
-			("size_t",		"deUintptr"),
-		]
-
-	for src, dst in replacements:
+	for src, dst in TYPE_SUBSTITUTIONS:
 		type = type.replace(src, dst)
 
 	return type
@@ -272,7 +282,7 @@ def endsWith (str, postfix):
 	return str[-len(postfix):] == postfix
 
 def splitNameExtPostfix (name):
-	knownExtPostfixes = ["KHR", "EXT"]
+	knownExtPostfixes = EXTENSION_POSTFIXES
 	for postfix in knownExtPostfixes:
 		if endsWith(name, postfix):
 			return (name[:-len(postfix)], postfix)

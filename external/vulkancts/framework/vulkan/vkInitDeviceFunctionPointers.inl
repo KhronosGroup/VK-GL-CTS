@@ -132,3 +132,6 @@ m_vk.debugMarkerSetObjectNameEXT		= (DebugMarkerSetObjectNameEXTFunc)			GET_PROC
 m_vk.cmdDebugMarkerBeginEXT				= (CmdDebugMarkerBeginEXTFunc)				GET_PROC_ADDR("vkCmdDebugMarkerBeginEXT");
 m_vk.cmdDebugMarkerEndEXT				= (CmdDebugMarkerEndEXTFunc)				GET_PROC_ADDR("vkCmdDebugMarkerEndEXT");
 m_vk.cmdDebugMarkerInsertEXT			= (CmdDebugMarkerInsertEXTFunc)				GET_PROC_ADDR("vkCmdDebugMarkerInsertEXT");
+m_vk.cmdDrawIndirectCountAMD			= (CmdDrawIndirectCountAMDFunc)				GET_PROC_ADDR("vkCmdDrawIndirectCountAMD");
+m_vk.cmdDrawIndexedIndirectCountAMD		= (CmdDrawIndexedIndirectCountAMDFunc)		GET_PROC_ADDR("vkCmdDrawIndexedIndirectCountAMD");
+m_vk.getMemoryWin32HandleNV				= (GetMemoryWin32HandleNVFunc)				GET_PROC_ADDR("vkGetMemoryWin32HandleNV");
