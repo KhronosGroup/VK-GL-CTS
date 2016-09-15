@@ -24,7 +24,6 @@
 #include "vktFragmentOperationsMakeUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPrograms.hpp"
-#include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include <vector>
 

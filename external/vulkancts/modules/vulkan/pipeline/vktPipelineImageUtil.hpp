@@ -112,6 +112,9 @@ public:
 	virtual std::vector<vk::VkBufferImageCopy>	getBufferCopyRegions		(void) const;
 	virtual void								write						(deUint8* destPtr) const;
 
+	virtual const tcu::TextureFormat&			getTextureFormat			(void) const = 0;
+	virtual tcu::UVec3							getTextureDimension			(void) const = 0;
+
 protected:
 	void										populateLevels				(const std::vector<tcu::PixelBufferAccess>& levels);
 	void										populateCompressedLevels	(tcu::CompressedTexFormat format, const std::vector<tcu::PixelBufferAccess>& decompressedLevels);
@@ -128,14 +131,17 @@ private:
 	tcu::Texture1D								m_texture;
 
 public:
-												TestTexture1D	(const tcu::TextureFormat& format, int width);
-												TestTexture1D	(const tcu::CompressedTexFormat& format, int width);
-	virtual										~TestTexture1D	(void);
+												TestTexture1D		(const tcu::TextureFormat& format, int width);
+												TestTexture1D		(const tcu::CompressedTexFormat& format, int width);
+	virtual										~TestTexture1D		(void);
 
 	virtual int getNumLevels (void) const;
-	virtual tcu::PixelBufferAccess				getLevel		(int level, int layer);
-	virtual const tcu::ConstPixelBufferAccess	getLevel		(int level, int layer) const;
-	virtual const tcu::Texture1D&				getTexture		(void) const;
+	virtual tcu::PixelBufferAccess				getLevel			(int level, int layer);
+	virtual const tcu::ConstPixelBufferAccess	getLevel			(int level, int layer) const;
+	virtual const tcu::Texture1D&				getTexture			(void) const;
+	virtual tcu::Texture1D&						getTexture			(void);
+	virtual const tcu::TextureFormat&			getTextureFormat	(void) const { return m_texture.getFormat(); }
+	virtual tcu::UVec3							getTextureDimension	(void) const { return tcu::UVec3(m_texture.getWidth(), 1, 1); }
 };
 
 class TestTexture1DArray : public TestTexture
@@ -152,7 +158,10 @@ public:
 	virtual tcu::PixelBufferAccess				getLevel			(int level, int layer);
 	virtual const tcu::ConstPixelBufferAccess	getLevel			(int level, int layer) const;
 	virtual const tcu::Texture1DArray&			getTexture			(void) const;
+	virtual tcu::Texture1DArray&				getTexture			(void);
 	virtual int									getArraySize		(void) const;
+	virtual const tcu::TextureFormat&			getTextureFormat	(void) const { return m_texture.getFormat(); }
+	virtual tcu::UVec3							getTextureDimension	(void) const { return tcu::UVec3(m_texture.getWidth(), 1, 1); }
 };
 
 class TestTexture2D : public TestTexture
@@ -169,6 +178,9 @@ public:
 	virtual tcu::PixelBufferAccess				getLevel			(int level, int layer);
 	virtual const tcu::ConstPixelBufferAccess	getLevel			(int level, int layer) const;
 	virtual const tcu::Texture2D&				getTexture			(void) const;
+	virtual tcu::Texture2D&						getTexture			(void);
+	virtual const tcu::TextureFormat&			getTextureFormat	(void) const { return m_texture.getFormat(); }
+	virtual tcu::UVec3							getTextureDimension	(void) const { return tcu::UVec3(m_texture.getWidth(), m_texture.getHeight(), 1); }
 };
 
 class TestTexture2DArray : public TestTexture
@@ -185,7 +197,10 @@ public:
 	virtual tcu::PixelBufferAccess				getLevel			(int level, int layer);
 	virtual const tcu::ConstPixelBufferAccess	getLevel			(int level, int layer) const;
 	virtual const tcu::Texture2DArray&			getTexture			(void) const;
+	virtual tcu::Texture2DArray&				getTexture			(void);
 	virtual int									getArraySize		(void) const;
+	virtual const tcu::TextureFormat&			getTextureFormat	(void) const { return m_texture.getFormat(); }
+	virtual tcu::UVec3							getTextureDimension	(void) const { return tcu::UVec3(m_texture.getWidth(), m_texture.getHeight(), 1); }
 };
 
 class TestTexture3D : public TestTexture
@@ -202,6 +217,9 @@ public:
 	virtual tcu::PixelBufferAccess				getLevel			(int level, int layer);
 	virtual const tcu::ConstPixelBufferAccess	getLevel			(int level, int layer) const;
 	virtual const tcu::Texture3D&				getTexture			(void) const;
+	virtual tcu::Texture3D&						getTexture			(void);
+	virtual const tcu::TextureFormat&			getTextureFormat	(void) const { return m_texture.getFormat(); }
+	virtual tcu::UVec3							getTextureDimension	(void) const { return tcu::UVec3(m_texture.getWidth(), m_texture.getHeight(), m_texture.getDepth()); }
 };
 
 class TestTextureCube : public TestTexture
@@ -219,6 +237,9 @@ public:
 	virtual const tcu::ConstPixelBufferAccess	getLevel				(int level, int layer) const;
 	virtual int									getArraySize			(void) const;
 	virtual const tcu::TextureCube&				getTexture				(void) const;
+	virtual tcu::TextureCube&					getTexture				(void);
+	virtual const tcu::TextureFormat&			getTextureFormat		(void) const { return m_texture.getFormat(); }
+	virtual tcu::UVec3							getTextureDimension		(void) const { return tcu::UVec3(m_texture.getSize(), m_texture.getSize(), 1); }
 };
 
 class TestTextureCubeArray: public TestTexture
@@ -236,6 +257,9 @@ public:
 	virtual const tcu::ConstPixelBufferAccess	getLevel				(int level, int layer) const;
 	virtual int									getArraySize			(void) const;
 	virtual const tcu::TextureCubeArray&		getTexture				(void) const;
+	virtual tcu::TextureCubeArray&				getTexture				(void);
+	virtual const tcu::TextureFormat&			getTextureFormat		(void) const { return m_texture.getFormat(); }
+	virtual tcu::UVec3							getTextureDimension		(void) const { return tcu::UVec3(m_texture.getSize(), m_texture.getSize(), 1); }
 };
 
 } // pipeline

@@ -28,23 +28,24 @@ namespace vkt
 namespace image
 {
 
-Texture::Texture (const ImageType type_, const tcu::IVec3& layerSize_, const int layers)
-	: m_layerSize	(layerSize_)
-	, m_type		(type_)
-	, m_numLayers	(layers)
+void Texture::checkInvariants (void) const
 {
+	DE_ASSERT((m_numSamples == 1)  || (m_numSamples == 2)  || (m_numSamples == 4) || (m_numSamples == 8) ||
+			  (m_numSamples == 16) || (m_numSamples == 32) || (m_numSamples == 64));
 	DE_ASSERT(m_numLayers >= 1);
 	DE_ASSERT(m_layerSize.x() >= 1 && m_layerSize.y() >= 1 && m_layerSize.z() >= 1);
 
-	switch (type_)
+	switch (m_type)
 	{
 		case IMAGE_TYPE_1D:
 		case IMAGE_TYPE_BUFFER:
 			DE_ASSERT(m_numLayers == 1);
+			DE_ASSERT(m_numSamples == 1);
 			DE_ASSERT(m_layerSize.y() == 1 && m_layerSize.z() == 1);
 			break;
 
 		case IMAGE_TYPE_1D_ARRAY:
+			DE_ASSERT(m_numSamples == 1);
 			DE_ASSERT(m_layerSize.y() == 1 && m_layerSize.z() == 1);
 			break;
 
@@ -58,16 +59,19 @@ Texture::Texture (const ImageType type_, const tcu::IVec3& layerSize_, const int
 			break;
 
 		case IMAGE_TYPE_CUBE:
+			DE_ASSERT(m_numSamples == 1);
 			DE_ASSERT(m_numLayers == 6);
 			DE_ASSERT(m_layerSize.z() == 1);
 			break;
 
 		case IMAGE_TYPE_CUBE_ARRAY:
+			DE_ASSERT(m_numSamples == 1);
 			DE_ASSERT(m_numLayers >= 6 && m_numLayers % 6 == 0);
 			DE_ASSERT(m_layerSize.z() == 1);
 			break;
 
 		case IMAGE_TYPE_3D:
+			DE_ASSERT(m_numSamples == 1);
 			DE_ASSERT(m_numLayers == 1);
 			break;
 
@@ -75,6 +79,24 @@ Texture::Texture (const ImageType type_, const tcu::IVec3& layerSize_, const int
 			DE_FATAL("Internal error");
 			break;
 	}
+}
+
+Texture::Texture (const ImageType imageType, const tcu::IVec3& imageLayerSize, const int layers, const int samples)
+	: m_layerSize	(imageLayerSize)
+	, m_type		(imageType)
+	, m_numLayers	(layers)
+	, m_numSamples	(samples)
+{
+	checkInvariants();
+}
+
+Texture::Texture (const Texture& other, const int samples)
+	: m_layerSize	(other.m_layerSize)
+	, m_type		(other.m_type)
+	, m_numLayers	(other.m_numLayers)
+	, m_numSamples	(samples)
+{
+	checkInvariants();
 }
 
 tcu::IVec3 Texture::size (void) const
