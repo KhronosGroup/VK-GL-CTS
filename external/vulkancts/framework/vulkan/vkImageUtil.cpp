@@ -83,7 +83,7 @@ bool isSrgbFormat (VkFormat format)
 bool isCompressedFormat (VkFormat format)
 {
 	// update this mapping if VkFormat changes
-	DE_STATIC_ASSERT(VK_FORMAT_LAST == 185);
+	DE_STATIC_ASSERT(VK_CORE_FORMAT_LAST == 185);
 
 	switch (format)
 	{
@@ -141,6 +141,14 @@ bool isCompressedFormat (VkFormat format)
 		case VK_FORMAT_ASTC_12x10_SRGB_BLOCK:
 		case VK_FORMAT_ASTC_12x12_UNORM_BLOCK:
 		case VK_FORMAT_ASTC_12x12_SRGB_BLOCK:
+		case VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG:
+		case VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG:
+		case VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG:
+		case VK_FORMAT_PVRTC2_4BPP_UNORM_BLOCK_IMG:
+		case VK_FORMAT_PVRTC1_2BPP_SRGB_BLOCK_IMG:
+		case VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG:
+		case VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG:
+		case VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG:
 			return true;
 
 		default:
@@ -157,7 +165,7 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 #define FMT_CASE(ORDER, TYPE) PACK_FMT(tcu::TextureFormat::ORDER, tcu::TextureFormat::TYPE)
 
 	// update this mapping if VkFormat changes
-	DE_STATIC_ASSERT(VK_FORMAT_LAST == 185);
+	DE_STATIC_ASSERT(VK_CORE_FORMAT_LAST == 185);
 
 	switch (PACK_FMT(format.order, format.type))
 	{
@@ -289,7 +297,7 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 	using tcu::TextureFormat;
 
 	// update this mapping if VkFormat changes
-	DE_STATIC_ASSERT(VK_FORMAT_LAST == 185);
+	DE_STATIC_ASSERT(VK_CORE_FORMAT_LAST == 185);
 
 	switch (format)
 	{
@@ -455,7 +463,7 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 tcu::CompressedTexFormat mapVkCompressedFormat (VkFormat format)
 {
 	// update this mapping if VkFormat changes
-	DE_STATIC_ASSERT(VK_FORMAT_LAST == 185);
+	DE_STATIC_ASSERT(VK_CORE_FORMAT_LAST == 185);
 
 	switch (format)
 	{
@@ -507,7 +515,7 @@ tcu::CompressedTexFormat mapVkCompressedFormat (VkFormat format)
 static bool isScaledFormat (VkFormat format)
 {
 	// update this mapping if VkFormat changes
-	DE_STATIC_ASSERT(VK_FORMAT_LAST == 185);
+	DE_STATIC_ASSERT(VK_CORE_FORMAT_LAST == 185);
 
 	switch (format)
 	{
@@ -593,7 +601,7 @@ static bool fullTextureFormatRoundTripSupported (VkFormat format)
 
 void imageUtilSelfTest (void)
 {
-	for (int formatNdx = 0; formatNdx < VK_FORMAT_LAST; formatNdx++)
+	for (int formatNdx = 0; formatNdx < VK_CORE_FORMAT_LAST; formatNdx++)
 	{
 		const VkFormat	format	= (VkFormat)formatNdx;
 
@@ -726,7 +734,7 @@ static VkBorderColor mapBorderColor (tcu::TextureChannelClass channelClass, cons
 	return VK_BORDER_COLOR_LAST;
 }
 
-VkSamplerCreateInfo mapSampler (const tcu::Sampler& sampler, const tcu::TextureFormat& format)
+VkSamplerCreateInfo mapSampler (const tcu::Sampler& sampler, const tcu::TextureFormat& format, float minLod, float maxLod)
 {
 	const bool					compareEnabled	= (sampler.compare != tcu::Sampler::COMPAREMODE_NONE);
 	const VkCompareOp			compareOp		= (compareEnabled) ? (mapCompareMode(sampler.compare)) : (VK_COMPARE_OP_ALWAYS);
@@ -749,8 +757,8 @@ VkSamplerCreateInfo mapSampler (const tcu::Sampler& sampler, const tcu::TextureF
 		1.0f,														// maxAnisotropy
 		(VkBool32)(compareEnabled ? VK_TRUE : VK_FALSE),			// compareEnable
 		compareOp,													// compareOp
-		0.0f,														// minLod
-		(isMipmapEnabled ? 1000.0f : 0.25f),						// maxLod
+		(isMipmapEnabled ? minLod : 0.0f),							// minLod
+		(isMipmapEnabled ? maxLod : 0.25f),							// maxLod
 		borderColor,												// borderColor
 		(VkBool32)(sampler.normalizedCoords ? VK_FALSE : VK_TRUE),	// unnormalizedCoords
 	};

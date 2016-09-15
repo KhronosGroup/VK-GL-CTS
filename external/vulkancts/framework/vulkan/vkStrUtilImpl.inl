@@ -34,19 +34,21 @@ template<> const char*	getTypeName<VkDebugReportCallbackEXT>	(void) { return "Vk
 
 namespace pt
 {
-std::ostream& operator<< (std::ostream& s, XlibDisplayPtr			v) { return s << tcu::toHex(v.internal); }
-std::ostream& operator<< (std::ostream& s, XlibWindow				v) { return s << tcu::toHex(v.internal); }
-std::ostream& operator<< (std::ostream& s, XlibVisualID				v) { return s << tcu::toHex(v.internal); }
-std::ostream& operator<< (std::ostream& s, XcbConnectionPtr			v) { return s << tcu::toHex(v.internal); }
-std::ostream& operator<< (std::ostream& s, XcbWindow				v) { return s << tcu::toHex(v.internal); }
-std::ostream& operator<< (std::ostream& s, XcbVisualid				v) { return s << tcu::toHex(v.internal); }
-std::ostream& operator<< (std::ostream& s, WaylandDisplayPtr		v) { return s << tcu::toHex(v.internal); }
-std::ostream& operator<< (std::ostream& s, WaylandSurfacePtr		v) { return s << tcu::toHex(v.internal); }
-std::ostream& operator<< (std::ostream& s, MirConnectionPtr			v) { return s << tcu::toHex(v.internal); }
-std::ostream& operator<< (std::ostream& s, MirSurfacePtr			v) { return s << tcu::toHex(v.internal); }
-std::ostream& operator<< (std::ostream& s, AndroidNativeWindowPtr	v) { return s << tcu::toHex(v.internal); }
-std::ostream& operator<< (std::ostream& s, Win32InstanceHandle		v) { return s << tcu::toHex(v.internal); }
-std::ostream& operator<< (std::ostream& s, Win32WindowHandle		v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XlibDisplayPtr				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XlibWindow					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XlibVisualID					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XcbConnectionPtr				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XcbWindow					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, XcbVisualid					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, WaylandDisplayPtr			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, WaylandSurfacePtr			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, MirConnectionPtr				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, MirSurfacePtr				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, AndroidNativeWindowPtr		v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, Win32InstanceHandle			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, Win32WindowHandle			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, Win32Handle					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, Win32SecurityAttributesPtr	v) { return s << tcu::toHex(v.internal); }
 }
 
 const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion value)
@@ -163,6 +165,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV:				return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_BUFFER_CREATE_INFO_NV:				return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_BUFFER_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV:			return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV:					return "VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_NV:							return "VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV:						return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV";
+		case VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_NV:						return "VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_NV";
+		case VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_NV:				return "VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_NV";
 		default:																		return DE_NULL;
 	}
 }
@@ -378,6 +385,14 @@ const char* getFormatName (VkFormat value)
 		case VK_FORMAT_ASTC_12x10_SRGB_BLOCK:		return "VK_FORMAT_ASTC_12x10_SRGB_BLOCK";
 		case VK_FORMAT_ASTC_12x12_UNORM_BLOCK:		return "VK_FORMAT_ASTC_12x12_UNORM_BLOCK";
 		case VK_FORMAT_ASTC_12x12_SRGB_BLOCK:		return "VK_FORMAT_ASTC_12x12_SRGB_BLOCK";
+		case VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG:	return "VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG";
+		case VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG:	return "VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG";
+		case VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG:	return "VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG";
+		case VK_FORMAT_PVRTC2_4BPP_UNORM_BLOCK_IMG:	return "VK_FORMAT_PVRTC2_4BPP_UNORM_BLOCK_IMG";
+		case VK_FORMAT_PVRTC1_2BPP_SRGB_BLOCK_IMG:	return "VK_FORMAT_PVRTC1_2BPP_SRGB_BLOCK_IMG";
+		case VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG:	return "VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG";
+		case VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG:	return "VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG";
+		case VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG:	return "VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG";
 		default:									return DE_NULL;
 	}
 }
@@ -1291,6 +1306,29 @@ tcu::Format::Bitfield<32> getDebugReportFlagsEXTStr (VkDebugReportFlagsEXT value
 		tcu::Format::BitDesc(VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT,	"VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DEBUG_REPORT_ERROR_BIT_EXT,					"VK_DEBUG_REPORT_ERROR_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DEBUG_REPORT_DEBUG_BIT_EXT,					"VK_DEBUG_REPORT_DEBUG_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsNVStr (VkExternalMemoryHandleTypeFlagsNV value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_NV,		"VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_NV"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_NV,	"VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_NV"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_IMAGE_BIT_NV,			"VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_IMAGE_BIT_NV"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_IMAGE_KMT_BIT_NV,		"VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_IMAGE_KMT_BIT_NV"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getExternalMemoryFeatureFlagsNVStr (VkExternalMemoryFeatureFlagsNV value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_NV,	"VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_NV"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_NV,		"VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_NV"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_NV,		"VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_NV"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3303,6 +3341,75 @@ std::ostream& operator<< (std::ostream& s, const VkDedicatedAllocationMemoryAllo
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\timage = " << value.image << '\n';
 	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalImageFormatPropertiesNV& value)
+{
+	s << "VkExternalImageFormatPropertiesNV = {\n";
+	s << "\timageFormatProperties = " << value.imageFormatProperties << '\n';
+	s << "\texternalMemoryFeatures = " << getExternalMemoryFeatureFlagsNVStr(value.externalMemoryFeatures) << '\n';
+	s << "\texportFromImportedHandleTypes = " << getExternalMemoryHandleTypeFlagsNVStr(value.exportFromImportedHandleTypes) << '\n';
+	s << "\tcompatibleHandleTypes = " << getExternalMemoryHandleTypeFlagsNVStr(value.compatibleHandleTypes) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalMemoryImageCreateInfoNV& value)
+{
+	s << "VkExternalMemoryImageCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleTypes = " << getExternalMemoryHandleTypeFlagsNVStr(value.handleTypes) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportMemoryAllocateInfoNV& value)
+{
+	s << "VkExportMemoryAllocateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleTypes = " << getExternalMemoryHandleTypeFlagsNVStr(value.handleTypes) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportMemoryWin32HandleInfoNV& value)
+{
+	s << "VkImportMemoryWin32HandleInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleType = " << getExternalMemoryHandleTypeFlagsNVStr(value.handleType) << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportMemoryWin32HandleInfoNV& value)
+{
+	s << "VkExportMemoryWin32HandleInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpAttributes = " << value.pAttributes << '\n';
+	s << "\tdwAccess = " << value.dwAccess << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkWin32KeyedMutexAcquireReleaseInfoNV& value)
+{
+	s << "VkWin32KeyedMutexAcquireReleaseInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tacquireCount = " << value.acquireCount << '\n';
+	s << "\tpAcquireSyncs = " << value.pAcquireSyncs << '\n';
+	s << "\tpAcquireKeys = " << value.pAcquireKeys << '\n';
+	s << "\tpAcquireTimeoutMilliseconds = " << value.pAcquireTimeoutMilliseconds << '\n';
+	s << "\treleaseCount = " << value.releaseCount << '\n';
+	s << "\tpReleaseSyncs = " << value.pReleaseSyncs << '\n';
+	s << "\tpReleaseKeys = " << value.pReleaseKeys << '\n';
 	s << '}';
 	return s;
 }

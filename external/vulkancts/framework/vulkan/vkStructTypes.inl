@@ -1429,3 +1429,54 @@ struct VkDedicatedAllocationMemoryAllocateInfoNV
 	VkBuffer		buffer;
 };
 
+struct VkExternalImageFormatPropertiesNV
+{
+	VkImageFormatProperties				imageFormatProperties;
+	VkExternalMemoryFeatureFlagsNV		externalMemoryFeatures;
+	VkExternalMemoryHandleTypeFlagsNV	exportFromImportedHandleTypes;
+	VkExternalMemoryHandleTypeFlagsNV	compatibleHandleTypes;
+};
+
+struct VkExternalMemoryImageCreateInfoNV
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkExternalMemoryHandleTypeFlagsNV	handleTypes;
+};
+
+struct VkExportMemoryAllocateInfoNV
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkExternalMemoryHandleTypeFlagsNV	handleTypes;
+};
+
+struct VkImportMemoryWin32HandleInfoNV
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkExternalMemoryHandleTypeFlagsNV	handleType;
+	pt::Win32Handle						handle;
+};
+
+struct VkExportMemoryWin32HandleInfoNV
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	pt::Win32SecurityAttributesPtr	pAttributes;
+	deUint32						dwAccess;
+};
+
+struct VkWin32KeyedMutexAcquireReleaseInfoNV
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	deUint32				acquireCount;
+	const VkDeviceMemory*	pAcquireSyncs;
+	const deUint64*			pAcquireKeys;
+	const deUint32*			pAcquireTimeoutMilliseconds;
+	deUint32				releaseCount;
+	const VkDeviceMemory*	pReleaseSyncs;
+	const deUint64*			pReleaseKeys;
+};
+

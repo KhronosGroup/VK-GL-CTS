@@ -754,11 +754,15 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateRSTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateVPTests.cpp \
+	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsEarlyFragmentTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsMakeUtil.cpp \
+	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsScissorMultiViewportTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsScissorTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageAtomicOperationTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageLoadStoreTests.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageLoadStoreUtil.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageMultisampleLoadStoreTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageQualifiersTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageSizeTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageTests.cpp \
@@ -772,7 +776,6 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineCacheTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineClearUtil.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineDepthTests.cpp \
-	external/vulkancts/modules/vulkan/pipeline/vktPipelineEarlyFragmentTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageSamplingInstance.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageUtil.cpp \
@@ -861,10 +864,13 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/tessellation/vktTessellationUserDefinedIO.cpp \
 	external/vulkancts/modules/vulkan/tessellation/vktTessellationUtil.cpp \
 	external/vulkancts/modules/vulkan/tessellation/vktTessellationWindingTests.cpp \
-	external/vulkancts/modules/vulkan/texture_filtering/vktSampleVerifier.cpp \
-	external/vulkancts/modules/vulkan/texture_filtering/vktSampleVerifierUtil.cpp \
-	external/vulkancts/modules/vulkan/texture_filtering/vktTextureFilteringTests.cpp \
-	external/vulkancts/modules/vulkan/texture_filtering/vktTextureFilteringExplicitLodTests.cpp \
+	external/vulkancts/modules/vulkan/texture/vktSampleVerifier.cpp \
+	external/vulkancts/modules/vulkan/texture/vktSampleVerifierUtil.cpp \
+	external/vulkancts/modules/vulkan/texture/vktTextureFilteringExplicitLodTests.cpp \
+	external/vulkancts/modules/vulkan/texture/vktTextureFilteringTests.cpp \
+	external/vulkancts/modules/vulkan/texture/vktTextureMipmapTests.cpp \
+	external/vulkancts/modules/vulkan/texture/vktTextureTestUtil.cpp \
+	external/vulkancts/modules/vulkan/texture/vktTextureTests.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktRandomUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockTests.cpp \
@@ -939,7 +945,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ssbo \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/synchronization \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/tessellation \
-	$(deqp_dir)/external/vulkancts/modules/vulkan/texture_filtering \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/texture \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi
 

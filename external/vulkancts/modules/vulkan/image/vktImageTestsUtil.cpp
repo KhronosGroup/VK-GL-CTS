@@ -500,25 +500,39 @@ std::string getImageTypeName (const ImageType imageType)
 	}
 }
 
-std::string getShaderImageType (const tcu::TextureFormat& format, const ImageType imageType)
+std::string getShaderImageType (const tcu::TextureFormat& format, const ImageType imageType, const bool multisample)
 {
 	std::string formatPart = tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ? "u" :
 							 tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER   ? "i" : "";
 
 	std::string imageTypePart;
-	switch (imageType)
+	if (multisample)
 	{
-		case IMAGE_TYPE_1D:			imageTypePart = "1D";			break;
-		case IMAGE_TYPE_1D_ARRAY:	imageTypePart = "1DArray";		break;
-		case IMAGE_TYPE_2D:			imageTypePart = "2D";			break;
-		case IMAGE_TYPE_2D_ARRAY:	imageTypePart = "2DArray";		break;
-		case IMAGE_TYPE_3D:			imageTypePart = "3D";			break;
-		case IMAGE_TYPE_CUBE:		imageTypePart = "Cube";			break;
-		case IMAGE_TYPE_CUBE_ARRAY:	imageTypePart = "CubeArray";	break;
-		case IMAGE_TYPE_BUFFER:		imageTypePart = "Buffer";		break;
+		switch (imageType)
+		{
+			case IMAGE_TYPE_2D:			imageTypePart = "2DMS";			break;
+			case IMAGE_TYPE_2D_ARRAY:	imageTypePart = "2DMSArray";	break;
 
-		default:
-			DE_ASSERT(false);
+			default:
+				DE_ASSERT(false);
+		}
+	}
+	else
+	{
+		switch (imageType)
+		{
+			case IMAGE_TYPE_1D:			imageTypePart = "1D";			break;
+			case IMAGE_TYPE_1D_ARRAY:	imageTypePart = "1DArray";		break;
+			case IMAGE_TYPE_2D:			imageTypePart = "2D";			break;
+			case IMAGE_TYPE_2D_ARRAY:	imageTypePart = "2DArray";		break;
+			case IMAGE_TYPE_3D:			imageTypePart = "3D";			break;
+			case IMAGE_TYPE_CUBE:		imageTypePart = "Cube";			break;
+			case IMAGE_TYPE_CUBE_ARRAY:	imageTypePart = "CubeArray";	break;
+			case IMAGE_TYPE_BUFFER:		imageTypePart = "Buffer";		break;
+
+			default:
+				DE_ASSERT(false);
+		}
 	}
 
 	return formatPart + "image" + imageTypePart;
@@ -566,6 +580,15 @@ std::string getShaderImageFormatQualifier (const tcu::TextureFormat& format)
 	}
 
 	return std::string() + orderPart + typePart;
+}
+
+std::string getFormatShortString (const VkFormat format)
+{
+	const std::string fullName = getFormatName(format);
+
+	DE_ASSERT(de::beginsWith(fullName, "VK_FORMAT_"));
+
+	return de::toLower(fullName.substr(10));
 }
 
 } // image

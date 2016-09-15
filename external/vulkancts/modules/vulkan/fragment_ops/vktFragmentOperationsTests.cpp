@@ -24,6 +24,7 @@
 #include "vktFragmentOperationsTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktFragmentOperationsScissorTests.hpp"
+#include "vktFragmentOperationsEarlyFragmentTests.hpp"
 
 namespace vkt
 {
@@ -36,7 +37,8 @@ void addFragmentOperationsTests (tcu::TestCaseGroup* fragmentOperationsTestsGrou
 {
 	tcu::TestContext& testCtx = fragmentOperationsTestsGroup->getTestContext();
 
-	fragmentOperationsTestsGroup->addChild(createScissorTests(testCtx));
+	fragmentOperationsTestsGroup->addChild(createScissorTests		(testCtx));
+	fragmentOperationsTestsGroup->addChild(createEarlyFragmentTests	(testCtx));
 }
 
 } // anonymous

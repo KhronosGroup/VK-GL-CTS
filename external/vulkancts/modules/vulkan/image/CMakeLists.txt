@@ -15,6 +15,10 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageSizeTests.hpp
 	vktImageTexture.cpp
 	vktImageTexture.hpp
+	vktImageMultisampleLoadStoreTests.cpp
+	vktImageMultisampleLoadStoreTests.hpp
+	vktImageLoadStoreUtil.cpp
+	vktImageLoadStoreUtil.hpp
 	)
 
 set(DEQP_VK_IMAGE_LIBS
