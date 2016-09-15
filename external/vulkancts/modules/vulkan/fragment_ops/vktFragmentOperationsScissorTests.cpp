@@ -23,7 +23,9 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktFragmentOperationsScissorTests.hpp"
+#include "vktFragmentOperationsScissorMultiViewportTests.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vktFragmentOperationsMakeUtil.hpp"
 
 #include "vkDefs.hpp"
@@ -85,7 +87,7 @@ inline VkDeviceSize sizeInBytes(const std::vector<T>& vec)
 	return vec.size() * sizeof(vec[0]);
 }
 
-Move<VkImage> makeImage (const DeviceInterface& vk, const VkDevice device, const VkFormat format, const IVec2& size, VkImageUsageFlags usage)
+VkImageCreateInfo makeImageCreateInfo (const VkFormat format, const IVec2& size, VkImageUsageFlags usage)
 {
 	const VkImageCreateInfo imageParams =
 	{
@@ -105,13 +107,7 @@ Move<VkImage> makeImage (const DeviceInterface& vk, const VkDevice device, const
 		DE_NULL,										// const deUint32*			pQueueFamilyIndices;
 		VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			initialLayout;
 	};
-	return createImage(vk, device, &imageParams);
-}
-
-inline Move<VkBuffer> makeBuffer (const DeviceInterface& vk, const VkDevice device, const VkDeviceSize bufferSize, const VkBufferUsageFlags usage)
-{
-	const VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(bufferSize, usage);
-	return createBuffer(vk, device, &bufferCreateInfo);
+	return imageParams;
 }
 
 //! A single-attachment, single-subpass render pass.
@@ -297,9 +293,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		1.0f,															// float									maxDepthBounds;
 	};
 
-	const VkColorComponentFlags colorComponentsAll = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	// Number of blend attachments must equal the number of color attachments during any subpass.
-	const VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState =
+	const VkColorComponentFlags					colorComponentsAll					= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	const VkPipelineColorBlendAttachmentState	pipelineColorBlendAttachmentState	=
 	{
 		VK_FALSE,						// VkBool32					blendEnable;
 		VK_BLEND_FACTOR_ONE,			// VkBlendFactor			srcColorBlendFactor;
@@ -546,11 +541,11 @@ public:
 		const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 		Allocator&					allocator			= context.getDefaultAllocator();
 
-		m_colorImage			= makeImage(vk, device, m_colorFormat, m_renderSize, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+		m_colorImage			= makeImage(vk, device, makeImageCreateInfo(m_colorFormat, m_renderSize, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT));
 		m_colorImageAlloc		= bindImage(vk, device, allocator, *m_colorImage, MemoryRequirement::Any);
 		m_colorAttachment		= makeImageView(vk, device, *m_colorImage, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat, m_colorSubresourceRange);
 
-		m_vertexBuffer			= makeBuffer(vk, device, m_vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+		m_vertexBuffer			= makeBuffer(vk, device, makeBufferCreateInfo(m_vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 		m_vertexBufferAlloc		= bindBuffer(vk, device, allocator, *m_vertexBuffer, MemoryRequirement::HostVisible);
 
 		{
@@ -622,7 +617,7 @@ public:
 					VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
 					VK_QUEUE_FAMILY_IGNORED,									// deUint32					destQueueFamilyIndex;
 					*m_colorImage,												// VkImage					image;
-					m_colorSubresourceRange,										// VkImageSubresourceRange	subresourceRange;
+					m_colorSubresourceRange,									// VkImageSubresourceRange	subresourceRange;
 				},
 			};
 
@@ -638,7 +633,7 @@ public:
 				0u,																			// uint32_t                    bufferImageHeight;
 				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),			// VkImageSubresourceLayers    imageSubresource;
 				makeOffset3D(0, 0, 0),														// VkOffset3D                  imageOffset;
-				makeExtent3D(m_renderSize.x(), m_renderSize.y(), 1u),							// VkExtent3D                  imageExtent;
+				makeExtent3D(m_renderSize.x(), m_renderSize.y(), 1u),						// VkExtent3D                  imageExtent;
 			};
 
 			vk.cmdCopyImageToBuffer(*m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorBuffer, 1u, &region);
@@ -709,10 +704,10 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	const Vec4						clearColor					(0.5f, 0.5f, 1.0f, 1.0f);
 
 	const VkDeviceSize				colorBufferSize				= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
-	const Unique<VkBuffer>			colorBufferFull				(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+	const Unique<VkBuffer>			colorBufferFull				(makeBuffer(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
 	const UniquePtr<Allocation>		colorBufferFullAlloc		(bindBuffer(vk, device, allocator, *colorBufferFull, MemoryRequirement::HostVisible));
 
-	const Unique<VkBuffer>			colorBufferScissored		(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+	const Unique<VkBuffer>			colorBufferScissored		(makeBuffer(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
 	const UniquePtr<Allocation>		colorBufferScissoredAlloc	(bindBuffer(vk, device, allocator, *colorBufferScissored, MemoryRequirement::HostVisible));
 
 	zeroBuffer(vk, device, *colorBufferFullAlloc, colorBufferSize);
@@ -745,13 +740,11 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	return tcu::TestStatus::pass("OK");
 }
 
-} // anonymous
-
 //! \note The ES 2.0 scissoring tests included color/depth/stencil clear cases, but these operations are not affected by scissor test in Vulkan.
 //!       Scissor is part of the pipeline state and pipeline only affects the drawing commands.
-tcu::TestCaseGroup* createScissorTests (tcu::TestContext& testCtx)
+void createTestsInGroup (tcu::TestCaseGroup* scissorGroup)
 {
-	MovePtr<tcu::TestCaseGroup> scissorGroup(new tcu::TestCaseGroup(testCtx, "scissor", "Scissor tests"));
+	tcu::TestContext& testCtx = scissorGroup->getTestContext();
 
 	struct TestSpec
 	{
@@ -819,7 +812,17 @@ tcu::TestCaseGroup* createScissorTests (tcu::TestContext& testCtx)
 		scissorGroup->addChild(primitiveGroup.release());
 	}
 
-	return scissorGroup.release();
+	// Mulit-viewport scissor
+	{
+		scissorGroup->addChild(createScissorMultiViewportTests(testCtx));
+	}
+}
+
+} // anonymous
+
+tcu::TestCaseGroup* createScissorTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "scissor", "Scissor tests", createTestsInGroup);
 }
 
 } // FragmentOperations

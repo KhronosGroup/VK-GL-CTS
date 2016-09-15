@@ -1619,7 +1619,7 @@ void createFormatTests (tcu::TestCaseGroup* testGroup)
 {
 	DE_STATIC_ASSERT(VK_FORMAT_UNDEFINED == 0);
 
-	for (deUint32 formatNdx = VK_FORMAT_UNDEFINED+1; formatNdx < VK_FORMAT_LAST; ++formatNdx)
+	for (deUint32 formatNdx = VK_FORMAT_UNDEFINED+1; formatNdx < VK_CORE_FORMAT_LAST; ++formatNdx)
 	{
 		const VkFormat		format			= (VkFormat)formatNdx;
 		const char* const	enumName		= getFormatName(format);
@@ -1770,7 +1770,7 @@ struct ImageFormatPropertyCase
 	{}
 
 	ImageFormatPropertyCase (void)
-		: format	(VK_FORMAT_LAST)
+		: format	(VK_FORMAT_UNDEFINED)
 		, imageType	(VK_IMAGE_TYPE_LAST)
 		, tiling	(VK_IMAGE_TILING_LAST)
 	{}
@@ -1923,9 +1923,9 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 
 void createImageFormatTypeTilingTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyCase params)
 {
-	DE_ASSERT(params.format == VK_FORMAT_LAST);
+	DE_ASSERT(params.format == VK_FORMAT_UNDEFINED);
 
-	for (deUint32 formatNdx = VK_FORMAT_UNDEFINED+1; formatNdx < VK_FORMAT_LAST; ++formatNdx)
+	for (deUint32 formatNdx = VK_FORMAT_UNDEFINED+1; formatNdx < VK_CORE_FORMAT_LAST; ++formatNdx)
 	{
 		const VkFormat		format			= (VkFormat)formatNdx;
 		const char* const	enumName		= getFormatName(format);
@@ -1941,15 +1941,15 @@ void createImageFormatTypeTests (tcu::TestCaseGroup* testGroup, ImageFormatPrope
 {
 	DE_ASSERT(params.tiling == VK_IMAGE_TILING_LAST);
 
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "optimal",	"",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(VK_FORMAT_LAST, params.imageType, VK_IMAGE_TILING_OPTIMAL)));
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "linear",	"",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(VK_FORMAT_LAST, params.imageType, VK_IMAGE_TILING_LINEAR)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "optimal",	"",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_OPTIMAL)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "linear",	"",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_LINEAR)));
 }
 
 void createImageFormatTests (tcu::TestCaseGroup* testGroup)
 {
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "1d", "", createImageFormatTypeTests, ImageFormatPropertyCase(VK_FORMAT_LAST, VK_IMAGE_TYPE_1D, VK_IMAGE_TILING_LAST)));
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "2d", "", createImageFormatTypeTests, ImageFormatPropertyCase(VK_FORMAT_LAST, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_LAST)));
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "3d", "", createImageFormatTypeTests, ImageFormatPropertyCase(VK_FORMAT_LAST, VK_IMAGE_TYPE_3D, VK_IMAGE_TILING_LAST)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "1d", "", createImageFormatTypeTests, ImageFormatPropertyCase(VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_1D, VK_IMAGE_TILING_LAST)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "2d", "", createImageFormatTypeTests, ImageFormatPropertyCase(VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_LAST)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "3d", "", createImageFormatTypeTests, ImageFormatPropertyCase(VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_3D, VK_IMAGE_TILING_LAST)));
 }
 
 } // anonymous
