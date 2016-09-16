@@ -604,6 +604,27 @@ tcu::TestStatus resizeSurfaceTest (Context& context, Type wsiType)
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+tcu::TestStatus destroyNullHandleSurfaceTest (Context& context, Type wsiType)
+{
+	const InstanceHelper	instHelper	(context, wsiType);
+	const VkSurfaceKHR		nullHandle	= DE_NULL;
+
+	// Default allocator
+	instHelper.vki.destroySurfaceKHR(*instHelper.instance, nullHandle, DE_NULL);
+
+	// Custom allocator
+	{
+		AllocationCallbackRecorder	recordingAllocator	(getSystemAllocator(), 1u);
+
+		instHelper.vki.destroySurfaceKHR(*instHelper.instance, nullHandle, recordingAllocator.getCallbacks());
+
+		if (recordingAllocator.getNumRecords() != 0u)
+			return tcu::TestStatus::fail("Implementation allocated/freed the memory");
+	}
+
+	return tcu::TestStatus::pass("Destroying a VK_NULL_HANDLE surface has no effect");
+}
+
 } // anonymous
 
 void createSurfaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
@@ -617,6 +638,7 @@ void createSurfaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 	addFunctionCase(testGroup, "query_capabilities",		"Query surface capabilities",			querySurfaceCapabilitiesTest,		wsiType);
 	addFunctionCase(testGroup, "query_formats",				"Query surface formats",				querySurfaceFormatsTest,			wsiType);
 	addFunctionCase(testGroup, "query_present_modes",		"Query surface present modes",			querySurfacePresentModesTest,		wsiType);
+	addFunctionCase(testGroup, "destroy_null_handle",		"Destroy VK_NULL_HANDLE surface",		destroyNullHandleSurfaceTest,		wsiType);
 
 	if ((platformProperties.features & PlatformProperties::FEATURE_INITIAL_WINDOW_SIZE) != 0)
 		addFunctionCase(testGroup, "initial_size",	"Create surface with initial window size set",	createSurfaceInitialSizeTest,	wsiType);

@@ -1675,6 +1675,30 @@ tcu::TestStatus resizeSwapchainTest (Context& context, Type wsiType)
 	return tcu::TestStatus::pass("Resizing tests suceeded");
 }
 
+tcu::TestStatus destroyNullHandleSwapchainTest (Context& context, Type wsiType)
+{
+	const InstanceHelper		instHelper	(context, wsiType);
+	const NativeObjects			native		(context, instHelper.supportedExtensions, wsiType);
+	const Unique<VkSurfaceKHR>	surface		(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
+	const DeviceHelper			devHelper	(context, instHelper.vki, *instHelper.instance, *surface);
+	const VkSwapchainKHR		nullHandle	= DE_NULL;
+
+	// Default allocator
+	devHelper.vkd.destroySwapchainKHR(*devHelper.device, nullHandle, DE_NULL);
+
+	// Custom allocator
+	{
+		AllocationCallbackRecorder	recordingAllocator	(getSystemAllocator(), 1u);
+
+		devHelper.vkd.destroySwapchainKHR(*devHelper.device, nullHandle, recordingAllocator.getCallbacks());
+
+		if (recordingAllocator.getNumRecords() != 0u)
+			return tcu::TestStatus::fail("Implementation allocated/freed the memory");
+	}
+
+	return tcu::TestStatus::pass("Destroying a VK_NULL_HANDLE surface has no effect");
+}
+
 void getBasicRenderPrograms (SourceCollections& dst, Type)
 {
 	TriangleRenderer::getPrograms(dst);
@@ -1697,6 +1721,11 @@ void populateModifyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 	// \todo [2016-05-30 jesse] Add tests for modifying preTransform, compositeAlpha, presentMode
 }
 
+void populateDestroyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
+{
+	addFunctionCase(testGroup, "null_handle", "Destroying a VK_NULL_HANDLE swapchain", destroyNullHandleSwapchainTest, wsiType);
+}
+
 } // anonymous
 
 void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
@@ -1705,6 +1734,7 @@ void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 	addTestGroup(testGroup, "simulate_oom",		"Simulate OOM using callbacks during swapchain construction",	populateSwapchainOOMGroup,	wsiType);
 	addTestGroup(testGroup, "render",			"Rendering Tests",												populateRenderGroup,		wsiType);
 	addTestGroup(testGroup, "modify",			"Modify VkSwapchain",											populateModifyGroup,		wsiType);
+	addTestGroup(testGroup, "destroy",			"Destroy VkSwapchain",											populateDestroyGroup,		wsiType);
 }
 
 } // wsi
