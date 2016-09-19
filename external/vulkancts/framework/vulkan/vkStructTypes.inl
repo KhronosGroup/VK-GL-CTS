@@ -1480,3 +1480,11 @@ struct VkWin32KeyedMutexAcquireReleaseInfoNV
 	const deUint64*			pReleaseKeys;
 };
 
+struct VkValidationFlagsEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	deUint32				disabledValidationCheckCount;
+	VkValidationCheckEXT*	pDisabledValidationChecks;
+};
+
