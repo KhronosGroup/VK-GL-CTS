@@ -89,6 +89,56 @@ enum
 	SURFACE_EXTENT_DETERMINED_BY_SWAPCHAIN_MAGIC	= 0xffffffff
 };
 
+template<typename T>
+class CheckIncompleteResult
+{
+public:
+	virtual			~CheckIncompleteResult	(void) {}
+	virtual void	getResult				(const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkSurfaceKHR surface, T* data) = 0;
+
+	void operator() (tcu::ResultCollector&		results,
+					 const InstanceInterface&	vki,
+					 const VkPhysicalDevice		physDevice,
+					 const VkSurfaceKHR			surface,
+					 const std::size_t			expectedCompleteSize)
+	{
+		if (expectedCompleteSize == 0)
+			return;
+
+		vector<T>		outputData	(expectedCompleteSize);
+		const deUint32	usedSize	= static_cast<deUint32>(expectedCompleteSize / 3);
+
+		ValidateQueryBits::fillBits(outputData.begin(), outputData.end());	// unused entries should have this pattern intact
+		m_count		= usedSize;
+		m_result	= VK_SUCCESS;
+
+		getResult(vki, physDevice, surface, &outputData[0]);				// update m_count and m_result
+
+		if (m_count != usedSize || m_result != VK_INCOMPLETE || !ValidateQueryBits::checkBits(outputData.begin() + m_count, outputData.end()))
+			results.fail("Query didn't return VK_INCOMPLETE");
+	}
+
+protected:
+	deUint32	m_count;
+	VkResult	m_result;
+};
+
+struct CheckPhysicalDeviceSurfaceFormatsIncompleteResult : public CheckIncompleteResult<VkSurfaceFormatKHR>
+{
+	void getResult (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkSurfaceKHR surface, VkSurfaceFormatKHR* data)
+	{
+		m_result = vki.getPhysicalDeviceSurfaceFormatsKHR(physDevice, surface, &m_count, data);
+	}
+};
+
+struct CheckPhysicalDeviceSurfacePresentModesIncompleteResult : public CheckIncompleteResult<VkPresentModeKHR>
+{
+	void getResult (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkSurfaceKHR surface, VkPresentModeKHR* data)
+	{
+		m_result = vki.getPhysicalDeviceSurfacePresentModesKHR(physDevice, surface, &m_count, data);
+	}
+};
+
 typedef vector<VkExtensionProperties> Extensions;
 
 void checkAllSupported (const Extensions& supportedExtensions, const vector<string>& requiredExtensions)
@@ -462,6 +512,7 @@ tcu::TestStatus querySurfaceFormatsTest (Context& context, Type wsiType)
 			log << TestLog::Message << "Device " << deviceNdx << ": " << tcu::formatArray(formats.begin(), formats.end()) << TestLog::EndMessage;
 
 			validateSurfaceFormats(results, wsiType, formats);
+			CheckPhysicalDeviceSurfaceFormatsIncompleteResult()(results, instHelper.vki, physicalDevices[deviceNdx], *surface, formats.size());
 		}
 		// else skip query as surface is not supported by the device
 	}
@@ -498,6 +549,7 @@ tcu::TestStatus querySurfacePresentModesTest (Context& context, Type wsiType)
 			log << TestLog::Message << "Device " << deviceNdx << ": " << tcu::formatArray(modes.begin(), modes.end()) << TestLog::EndMessage;
 
 			validateSurfacePresentModes(results, wsiType, modes);
+			CheckPhysicalDeviceSurfacePresentModesIncompleteResult()(results, instHelper.vki, physicalDevices[deviceNdx], *surface, modes.size());
 		}
 		// else skip query as surface is not supported by the device
 	}

@@ -103,7 +103,8 @@ template<typename LayerIterator>
 bool										isLayerSupported						(LayerIterator begin, LayerIterator end, const RequiredLayer& required);
 bool										isLayerSupported						(const std::vector<VkLayerProperties>& layers, const RequiredLayer& required);
 
-// Return variable initialization validation
+namespace ValidateQueryBits
+{
 
 typedef struct
 {
@@ -112,6 +113,7 @@ typedef struct
 } QueryMemberTableEntry;
 
 template <typename Context, typename Interface, typename Type>
+//!< Return variable initialization validation
 bool validateInitComplete(Context context, void (Interface::*Function)(Context, Type*)const, const Interface& interface, const QueryMemberTableEntry* queryMemberTableEntry)
 {
 	const QueryMemberTableEntry	*iterator;
@@ -130,6 +132,32 @@ bool validateInitComplete(Context context, void (Interface::*Function)(Context, 
 
 	return true;
 }
+
+template<typename IterT>
+//! Overwrite a range of objects with an 8-bit pattern.
+inline void fillBits (IterT beg, const IterT end, const deUint8 pattern = 0xdeu)
+{
+	for (; beg < end; ++beg)
+		deMemset(&(*beg), static_cast<int>(pattern), sizeof(*beg));
+}
+
+template<typename IterT>
+//! Verify that each byte of a range of objects is equal to an 8-bit pattern.
+bool checkBits (IterT beg, const IterT end, const deUint8 pattern = 0xdeu)
+{
+	for (; beg < end; ++beg)
+	{
+		const deUint8* elementBytes = reinterpret_cast<const deUint8*>(&(*beg));
+		for (std::size_t i = 0u; i < sizeof(*beg); ++i)
+		{
+			if (elementBytes[i] != pattern)
+				return false;
+		}
+	}
+	return true;
+}
+
+} // ValidateQueryBits
 
 // Template implementations
 
