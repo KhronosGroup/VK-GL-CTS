@@ -34,6 +34,9 @@ def checkFileWhitespace (file):
         if " \t" in line:
             error = True
             print "%s:%i merged <space><tab>" % (file, lineNum+1)
+        if line.endswith("\r") or line.endswith("\r\n"):
+            error = True
+            print "%s:%i incorrect line ending" % (file, lineNum+1)
     f.close()
 
     return not error
