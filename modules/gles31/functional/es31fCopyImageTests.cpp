@@ -995,7 +995,7 @@ void decompressTexture (vector<ArrayBuffer<deUint8> >&			levelDatas,
 
 	if (tcu::isAstcFormat(compressedFormat))
 	{
-		if (ctxInfo->isExtensionSupported("GL_KHR_texture_compression_astc_hdr"))
+		if (ctxInfo->isExtensionSupported("GL_KHR_texture_compression_astc_hdr") && !tcu::isAstcSRGBFormat(compressedFormat))
 			decompressParams = tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_HDR);
 		else if (isES32 || ctxInfo->isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
 			decompressParams = tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_LDR);
@@ -1265,7 +1265,7 @@ void verifyTextureCubemap (tcu::TestContext&					testContext,
 
 		if (tcu::isAstcFormat(compressedFormat))
 		{
-			if (ctxInfo->isExtensionSupported("GL_KHR_texture_compression_astc_hdr"))
+			if (ctxInfo->isExtensionSupported("GL_KHR_texture_compression_astc_hdr") && !tcu::isAstcSRGBFormat(compressedFormat))
 				decompressParams = tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_HDR);
 			else if (isES32 || ctxInfo->isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
 				decompressParams = tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_LDR);
