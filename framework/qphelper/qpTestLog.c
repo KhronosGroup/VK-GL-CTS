@@ -340,6 +340,8 @@ qpTestLog* qpTestLog_createFileLog (const char* fileName, deUint32 flags)
 	ContainerStack_reset(&log->containerStack);
 #endif
 
+	qpPrintf("Writing test log into %s\n", fileName);
+
 	/* Create output file. */
 	log->outputFile = fopen(fileName, "wb");
 	if (!log->outputFile)

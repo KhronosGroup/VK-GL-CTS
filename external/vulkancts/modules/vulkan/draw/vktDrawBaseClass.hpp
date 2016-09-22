@@ -48,14 +48,18 @@ namespace vkt
 namespace Draw
 {
 
-struct PositionColorVertex
+struct VertexElementData
 {
-	PositionColorVertex(tcu::Vec4 position_, tcu::Vec4 color_)
-		: position(position_)
-		, color(color_)
-	{}
-	tcu::Vec4 position;
-	tcu::Vec4 color;
+				VertexElementData (tcu::Vec4 position_, tcu::Vec4 color_, deUint32 refVertexIndex_)
+					: position			(position_)
+					, color				(color_)
+					, refVertexIndex	(refVertexIndex_)
+				{
+				}
+
+	tcu::Vec4	position;
+	tcu::Vec4	color;
+	deUint32	refVertexIndex;
 };
 
 struct ReferenceImageCoordinates
@@ -93,7 +97,7 @@ struct ReferenceImageInstancedCoordinates
 class DrawTestsBaseClass : public TestInstance
 {
 public:
-								DrawTestsBaseClass	(Context& context, const char* vertexShaderName, const char* fragmentShaderName);
+								DrawTestsBaseClass	(Context& context, const char* vertexShaderName, const char* fragmentShaderName, vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 
 protected:
 	void						initialize			(void);
@@ -109,7 +113,7 @@ protected:
 
 	vk::VkFormat									m_colorAttachmentFormat;
 
-	vk::VkPrimitiveTopology							m_topology;
+	const vk::VkPrimitiveTopology					m_topology;
 
 	const vk::DeviceInterface&						m_vk;
 
@@ -119,7 +123,12 @@ protected:
 	de::SharedPtr<Image>							m_colorTargetImage;
 	vk::Move<vk::VkImageView>						m_colorTargetView;
 
+	// vertex buffer for vertex colors & position
 	de::SharedPtr<Buffer>							m_vertexBuffer;
+
+	// vertex buffer with reference data used in VS
+	de::SharedPtr<Buffer>							m_vertexRefDataBuffer;
+
 	PipelineCreateInfo::VertexInputState			m_vertexInputState;
 
 	vk::Move<vk::VkCommandPool>						m_cmdPool;
@@ -131,9 +140,7 @@ protected:
 	const std::string								m_vertexShaderName;
 	const std::string								m_fragmentShaderName;
 
-	std::vector<PositionColorVertex>				m_data;
-	std::vector<deUint32>							m_indexes;
-	de::SharedPtr<Buffer>							m_indexBuffer;
+	std::vector<VertexElementData>					m_data;
 };
 
 }	// Draw

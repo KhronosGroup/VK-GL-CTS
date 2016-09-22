@@ -41,6 +41,7 @@ const char*	getPresentModeKHRName				(VkPresentModeKHR value);
 const char*	getDebugReportObjectTypeEXTName		(VkDebugReportObjectTypeEXT value);
 const char*	getDebugReportErrorEXTName			(VkDebugReportErrorEXT value);
 const char*	getRasterizationOrderAMDName		(VkRasterizationOrderAMD value);
+const char*	getValidationCheckEXTName			(VkValidationCheckEXT value);
 
 inline tcu::Format::Enum<VkPipelineCacheHeaderVersion>	getPipelineCacheHeaderVersionStr	(VkPipelineCacheHeaderVersion value)	{ return tcu::Format::Enum<VkPipelineCacheHeaderVersion>(getPipelineCacheHeaderVersionName, value);	}
 inline tcu::Format::Enum<VkResult>						getResultStr						(VkResult value)						{ return tcu::Format::Enum<VkResult>(getResultName, value);											}
@@ -82,6 +83,7 @@ inline tcu::Format::Enum<VkPresentModeKHR>				getPresentModeKHRStr				(VkPresent
 inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>	getDebugReportObjectTypeEXTStr		(VkDebugReportObjectTypeEXT value)		{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);		}
 inline tcu::Format::Enum<VkDebugReportErrorEXT>			getDebugReportErrorEXTStr			(VkDebugReportErrorEXT value)			{ return tcu::Format::Enum<VkDebugReportErrorEXT>(getDebugReportErrorEXTName, value);				}
 inline tcu::Format::Enum<VkRasterizationOrderAMD>		getRasterizationOrderAMDStr			(VkRasterizationOrderAMD value)			{ return tcu::Format::Enum<VkRasterizationOrderAMD>(getRasterizationOrderAMDName, value);			}
+inline tcu::Format::Enum<VkValidationCheckEXT>			getValidationCheckEXTStr			(VkValidationCheckEXT value)			{ return tcu::Format::Enum<VkValidationCheckEXT>(getValidationCheckEXTName, value);					}
 
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineCacheHeaderVersion value)	{ return s << getPipelineCacheHeaderVersionStr(value);	}
 inline std::ostream&	operator<<	(std::ostream& s, VkResult value)						{ return s << getResultStr(value);						}
@@ -123,6 +125,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkPresentModeKHR value)				{ r
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)		{ return s << getDebugReportObjectTypeEXTStr(value);	}
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportErrorEXT value)			{ return s << getDebugReportErrorEXTStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkRasterizationOrderAMD value)		{ return s << getRasterizationOrderAMDStr(value);		}
+inline std::ostream&	operator<<	(std::ostream& s, VkValidationCheckEXT value)			{ return s << getValidationCheckEXTStr(value);			}
 
 tcu::Format::Bitfield<32>	getFormatFeatureFlagsStr					(VkFormatFeatureFlags value);
 tcu::Format::Bitfield<32>	getImageUsageFlagsStr						(VkImageUsageFlags value);
@@ -337,3 +340,4 @@ std::ostream&	operator<<	(std::ostream& s, const VkExportMemoryAllocateInfoNV& v
 std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryWin32HandleInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExportMemoryWin32HandleInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkWin32KeyedMutexAcquireReleaseInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkValidationFlagsEXT& value);

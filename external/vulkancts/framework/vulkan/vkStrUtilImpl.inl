@@ -170,6 +170,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV:						return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV";
 		case VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_NV:						return "VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_NV";
 		case VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_NV:				return "VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_NV";
+		case VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT:									return "VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT";
 		default:																		return DE_NULL;
 	}
 }
@@ -866,6 +867,15 @@ const char* getRasterizationOrderAMDName (VkRasterizationOrderAMD value)
 		case VK_RASTERIZATION_ORDER_STRICT_AMD:		return "VK_RASTERIZATION_ORDER_STRICT_AMD";
 		case VK_RASTERIZATION_ORDER_RELAXED_AMD:	return "VK_RASTERIZATION_ORDER_RELAXED_AMD";
 		default:									return DE_NULL;
+	}
+}
+
+const char* getValidationCheckEXTName (VkValidationCheckEXT value)
+{
+	switch (value)
+	{
+		case VK_VALIDATION_CHECK_ALL_EXT:	return "VK_VALIDATION_CHECK_ALL_EXT";
+		default:							return DE_NULL;
 	}
 }
 
@@ -3410,6 +3420,17 @@ std::ostream& operator<< (std::ostream& s, const VkWin32KeyedMutexAcquireRelease
 	s << "\treleaseCount = " << value.releaseCount << '\n';
 	s << "\tpReleaseSyncs = " << value.pReleaseSyncs << '\n';
 	s << "\tpReleaseKeys = " << value.pReleaseKeys << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkValidationFlagsEXT& value)
+{
+	s << "VkValidationFlagsEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdisabledValidationCheckCount = " << value.disabledValidationCheckCount << '\n';
+	s << "\tpDisabledValidationChecks = " << value.pDisabledValidationChecks << '\n';
 	s << '}';
 	return s;
 }
