@@ -118,6 +118,8 @@ DEFINITIONS			= [
 	("VK_ATTACHMENT_UNUSED",				"deUint32"),
 	("VK_SUBPASS_EXTERNAL",					"deUint32"),
 	("VK_QUEUE_FAMILY_IGNORED",				"deUint32"),
+	("VK_REMAINING_MIP_LEVELS",				"deUint32"),
+	("VK_REMAINING_ARRAY_LAYERS",			"deUint32"),
 	("VK_WHOLE_SIZE",						"vk::VkDeviceSize"),
 	("VK_TRUE",								"vk::VkBool32"),
 	("VK_FALSE",							"vk::VkBool32"),

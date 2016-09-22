@@ -46,44 +46,43 @@ namespace
 class SimpleDraw : public DrawTestsBaseClass
 {
 public:
-							SimpleDraw				(Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology);
+	typedef TestSpecBase	TestSpec;
+							SimpleDraw				(Context &context, TestSpec testSpec);
 	virtual tcu::TestStatus iterate					(void);
 };
 
 class SimpleDrawInstanced : public SimpleDraw
 {
 public:
-							SimpleDrawInstanced		(Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology);
+	typedef TestSpec		TestSpec;
+							SimpleDrawInstanced		(Context &context, TestSpec testSpec);
 	tcu::TestStatus			iterate					(void);
 };
 
-SimpleDraw::SimpleDraw (Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology)
-	: DrawTestsBaseClass	(context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+SimpleDraw::SimpleDraw (Context &context, TestSpec testSpec)
+	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.topology)
 {
-	m_topology = topology;
+	m_data.push_back(VertexElementData(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
+	m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
+
+	int refVertexIndex = 2;
 
 	switch (m_topology)
 	{
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	 1.0f,	-1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
 			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	 1.0f,	-1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
-			m_data.push_back(PositionColorVertex(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
 			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
@@ -101,6 +100,9 @@ SimpleDraw::SimpleDraw (Context &context, ShaderMap shaders, vk::VkPrimitiveTopo
 			DE_FATAL("Unknown topology");
 			break;
 	}
+
+	m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
+
 	initialize();
 }
 
@@ -205,8 +207,8 @@ tcu::TestStatus SimpleDraw::iterate (void)
 
 }
 
-SimpleDrawInstanced::SimpleDrawInstanced (Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology)
-	: SimpleDraw	(context, shaders, topology) {}
+SimpleDrawInstanced::SimpleDrawInstanced (Context &context, TestSpec testSpec)
+	: SimpleDraw	(context, testSpec) {}
 
 tcu::TestStatus SimpleDrawInstanced::iterate (void)
 {
@@ -325,18 +327,26 @@ SimpleDrawTests::~SimpleDrawTests (void) {}
 
 void SimpleDrawTests::init (void)
 {
-	ShaderMap shaderPaths;
-	shaderPaths[glu::SHADERTYPE_VERTEX]		= "vulkan/draw/VertexFetch.vert";
-	shaderPaths[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
+	{
+		SimpleDraw::TestSpec testSpec;
+		testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetch.vert";
+		testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
 
-	addChild(new InstanceFactory<SimpleDraw>(m_testCtx, "simple_draw_triangle_list", "Draws triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
-	addChild(new InstanceFactory<SimpleDraw>(m_testCtx, "simple_draw_triangle_strip", "Draws triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
+		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		addChild(new InstanceFactory<SimpleDraw>(m_testCtx, "simple_draw_triangle_list", "Draws triangle list", testSpec));
+		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+		addChild(new InstanceFactory<SimpleDraw>(m_testCtx, "simple_draw_triangle_strip", "Draws triangle strip", testSpec));
+	}
+	{
+		SimpleDrawInstanced::TestSpec testSpec;
+		testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstancedFirstInstance.vert";
+		testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
 
-	shaderPaths[glu::SHADERTYPE_VERTEX]		= "vulkan/draw/VertexFetchInstancedFirstInstance.vert";
-	shaderPaths[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
-
-	addChild(new InstanceFactory<SimpleDrawInstanced>(m_testCtx, "simple_draw_instanced_triangle_list", "Draws an instanced triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
-	addChild(new InstanceFactory<SimpleDrawInstanced>(m_testCtx, "simple_draw_instanced_triangle_strip", "Draws an instanced triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
+		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		addChild(new InstanceFactory<SimpleDrawInstanced>(m_testCtx, "simple_draw_instanced_triangle_list", "Draws an instanced triangle list", testSpec));
+		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+		addChild(new InstanceFactory<SimpleDrawInstanced>(m_testCtx, "simple_draw_instanced_triangle_strip", "Draws an instanced triangle strip", testSpec));
+	}
 }
 
 }	// DrawTests

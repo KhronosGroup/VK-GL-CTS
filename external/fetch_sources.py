@@ -185,12 +185,16 @@ PACKAGES = [
 		postExtract = postExtractLibpng),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
-		"d12a10d2dd0cc4236ef227707c11f991b9c0d544",
+		"f18e1f293b7cf8f24a42587b48f35bc49912a5dd",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
-		"b8d2a006d1688a8590b5ae2a8df1aba1e6fbed0b",
+		"a1e2d4952e0bf6ec809d243e01e0c602797bbfd2",
 		"glslang"),
+	GitRepo(
+		"https://github.com/KhronosGroup/SPIRV-Headers.git",
+		"e4e22fd832810c45f46d542c67910b0c6bf4ca2d",
+		"spirv-headers"),
 ]
 
 def parseArgs ():

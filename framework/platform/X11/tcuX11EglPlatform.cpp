@@ -102,7 +102,7 @@ public:
 	static const Capability CAPABILITIES		= Capability(CAPABILITY_GET_DISPLAY_LEGACY |
 															 CAPABILITY_GET_DISPLAY_PLATFORM);
 
-								Display				(MovePtr<x11::Display> x11Display)
+								Display				(MovePtr<XlibDisplay> x11Display)
 									: NativeDisplay	(CAPABILITIES,
 													 EGL_PLATFORM_X11_EXT,
 													 "EGL_EXT_platform_x11")
@@ -111,12 +111,12 @@ public:
 	void*						getPlatformNative		(void)	{ return m_display->getXDisplay(); }
 	eglw::EGLNativeDisplayType	getLegacyNative			(void)	{ return reinterpret_cast<eglw::EGLNativeDisplayType>(m_display->getXDisplay()); }
 
-	x11::Display&				getX11Display			(void)			{ return *m_display;	}
+	XlibDisplay&				getX11Display			(void)			{ return *m_display;	}
 	const eglw::Library&		getLibrary				(void) const	{ return m_library;		}
 	const eglw::EGLAttrib*		getPlatformAttributes	(void) const	{ return DE_NULL;		}
 
 private:
-	UniquePtr<x11::Display>		m_display;
+	UniquePtr<XlibDisplay>		m_display;
 	Library						m_library;
 };
 
@@ -141,7 +141,7 @@ public:
 	IVec2						getScreenSize		(void) const { return getSurfaceSize(); }
 
 private:
-	x11::Window					m_window;
+	XlibWindow					m_window;
 };
 
 Window::Window (Display& display, const WindowParams& params, Visual* visual)
@@ -281,7 +281,7 @@ NativeDisplay* DisplayFactory::createDisplay (const eglw::EGLAttrib* attribList)
 	DE_UNREF(attribList);
 
 	//! \todo [2014-03-18 lauri] Somehow make the display configurable from command line
-	MovePtr<x11::Display>	x11Display	(new x11::Display(m_eventState, DE_NULL));
+	MovePtr<XlibDisplay>	x11Display	(new XlibDisplay(m_eventState, DE_NULL));
 
 	return new Display(x11Display);
 }

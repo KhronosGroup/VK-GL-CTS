@@ -37,74 +37,112 @@ namespace tcu
 {
 namespace x11
 {
+enum
+{
+	DEFAULT_WINDOW_WIDTH	= 400,
+	DEFAULT_WINDOW_HEIGHT	= 300
+};
 
 class EventState
 {
 public:
-							EventState				(void);
-	virtual					~EventState				(void);
-
-	void					setQuitFlag				(bool quit);
-	bool					getQuitFlag				(void);
+				EventState	(void);
+	virtual		~EventState	(void);
+	void		setQuitFlag	(bool quit);
+	bool		getQuitFlag	(void);
 
 protected:
-	de::Mutex				m_mutex;
-	bool					m_quit;
+	de::Mutex	m_mutex;
+	bool		m_quit;
 
 private:
-							EventState				(const EventState&);
-	EventState&				operator=				(const EventState&);
+				EventState	(const EventState&);
+	EventState&	operator=	(const EventState&);
 };
 
-class Display
+class DisplayBase
 {
 public:
-							Display					(EventState& platform, const char* name);
-	virtual					~Display				(void);
-
-	::Display*				getXDisplay				(void) { return m_display;		}
-	Atom					getDeleteAtom			(void) { return m_deleteAtom;	}
-
-	::Visual*				getVisual				(VisualID visualID);
-	bool					getVisualInfo			(VisualID visualID, XVisualInfo& dst);
-	void					processEvents			(void);
+					DisplayBase		(EventState& platform);
+	virtual			~DisplayBase	(void);
+	virtual void	processEvents	(void) = 0;
 
 protected:
-	EventState&				m_eventState;
-	::Display*				m_display;
-	Atom					m_deleteAtom;
+	EventState&		m_eventState;
 
 private:
-							Display					(const Display&);
-	Display&				operator=				(const Display&);
+					DisplayBase		(const DisplayBase&);
+	DisplayBase&	operator=		(const DisplayBase&);
 };
 
-class Window
+class WindowBase
 {
 public:
-							Window					(Display& display, int width, int height,
-													 ::Visual* visual);
-							~Window					(void);
+							WindowBase		(void);
+	virtual					~WindowBase		(void);
 
-	void					setVisibility			(bool visible);
+	virtual void			setVisibility	(bool visible) = 0;
 
-	void					processEvents			(void);
-	Display&				getDisplay				(void) { return m_display; }
-	::Window&				getXID					(void) { return m_window; }
+	virtual void			processEvents	(void) = 0;
+	virtual DisplayBase&	getDisplay		(void) = 0;
 
-	void					getDimensions			(int* width, int* height) const;
-	void					setDimensions			(int width, int height);
+	virtual void			getDimensions	(int* width, int* height) const = 0;
+	virtual void			setDimensions	(int width, int height) = 0;
 
 protected:
-
-	Display&				m_display;
-	::Colormap				m_colormap;
-	::Window				m_window;
 	bool					m_visible;
 
 private:
-							Window					(const Window&);
-	Window&					operator=				(const Window&);
+							WindowBase		(const WindowBase&);
+	WindowBase&				operator=		(const WindowBase&);
+};
+
+class XlibDisplay : public DisplayBase
+{
+public:
+					XlibDisplay		(EventState& platform, const char* name);
+	virtual			~XlibDisplay	(void);
+
+	::Display*		getXDisplay		(void) { return m_display;		}
+	Atom			getDeleteAtom	(void) { return m_deleteAtom;	}
+
+	::Visual*		getVisual		(VisualID visualID);
+	bool			getVisualInfo	(VisualID visualID, XVisualInfo& dst);
+	void			processEvents	(void);
+
+protected:
+	::Display*		m_display;
+	Atom			m_deleteAtom;
+
+private:
+					XlibDisplay		(const XlibDisplay&);
+	XlibDisplay&	operator=		(const XlibDisplay&);
+};
+
+class XlibWindow : public WindowBase
+{
+public:
+					XlibWindow			(XlibDisplay& display, int width, int height,
+										::Visual* visual);
+					~XlibWindow			(void);
+
+	void			setVisibility	(bool visible);
+
+	void			processEvents	(void);
+	DisplayBase&	getDisplay		(void) { return (DisplayBase&)m_display; }
+	::Window&		getXID			(void) { return m_window; }
+
+	void			getDimensions	(int* width, int* height) const;
+	void			setDimensions	(int width, int height);
+
+protected:
+	XlibDisplay&	m_display;
+	::Colormap		m_colormap;
+	::Window		m_window;
+
+private:
+					XlibWindow		(const XlibWindow&);
+	XlibWindow&		operator=		(const XlibWindow&);
 };
 
 } // x11
