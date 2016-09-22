@@ -508,38 +508,83 @@ void collectDuplicates (set<T>& duplicates, const vector<T>& values)
 	}
 }
 
-bool checkDuplicates (TestLog& log, const char* what, const vector<string>& values)
+void checkDuplicates (tcu::ResultCollector& results, const char* what, const vector<string>& values)
 {
 	set<string> duplicates;
 
 	collectDuplicates(duplicates, values);
 
-	if (duplicates.empty())
+	for (set<string>::const_iterator iter = duplicates.begin(); iter != duplicates.end(); ++iter)
 	{
-		return true;
-	}
-	else
-	{
-		for (set<string>::const_iterator iter = duplicates.begin(); iter != duplicates.end(); ++iter)
-			log << TestLog::Message << "Duplicate " << what << ": " << *iter << TestLog::EndMessage;
-
-		return false;
+		std::ostringstream msg;
+		msg << "Duplicate " << what << ": " << *iter;
+		results.fail(msg.str());
 	}
 }
 
-bool checkDuplicateExtensions (TestLog& log, const vector<string>& extensions)
+void checkDuplicateExtensions (tcu::ResultCollector& results, const vector<string>& extensions)
 {
-	return checkDuplicates(log, "extension", extensions);
+	checkDuplicates(results, "extension", extensions);
 }
 
-bool checkDuplicateLayers (TestLog& log, const vector<string>& layers)
+void checkDuplicateLayers (tcu::ResultCollector& results, const vector<string>& layers)
 {
-	return checkDuplicates(log, "layer", layers);
+	checkDuplicates(results, "layer", layers);
+}
+
+void checkKhrExtensions (tcu::ResultCollector&		results,
+						 const vector<string>&		extensions,
+						 const int					numAllowedKhrExtensions,
+						 const char* const*			allowedKhrExtensions)
+{
+	const set<string>	allowedExtSet		(allowedKhrExtensions, allowedKhrExtensions+numAllowedKhrExtensions);
+
+	for (vector<string>::const_iterator extIter = extensions.begin(); extIter != extensions.end(); ++extIter)
+	{
+		// Only Khronos-controlled extensions are checked
+		if ((de::beginsWith(*extIter, "VK_KHR_") || de::beginsWith(*extIter, "VK_KHX_")) &&
+			!de::contains(allowedExtSet, *extIter))
+		{
+			results.fail("Unknown KHR extension " + *extIter);
+		}
+	}
+}
+
+void checkInstanceExtensions (tcu::ResultCollector& results, const vector<string>& extensions)
+{
+	static const char* s_allowedInstanceKhrExtensions[] =
+	{
+		"VK_KHR_surface",
+		"VK_KHR_display",
+		"VK_KHR_android_surface",
+		"VK_KHR_mir_surface",
+		"VK_KHR_wayland_surface",
+		"VK_KHR_win32_surface",
+		"VK_KHR_xcb_surface",
+		"VK_KHR_xlib_surface",
+	};
+
+	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedInstanceKhrExtensions), s_allowedInstanceKhrExtensions);
+	checkDuplicateExtensions(results, extensions);
+}
+
+void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>& extensions)
+{
+	static const char* s_allowedInstanceKhrExtensions[] =
+	{
+		"VK_KHR_swapchain",
+		"VK_KHR_display_swapchain",
+		"VK_KHR_sampler_mirror_clamp_to_edge"
+	};
+
+	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedInstanceKhrExtensions), s_allowedInstanceKhrExtensions);
+	checkDuplicateExtensions(results, extensions);
 }
 
 tcu::TestStatus enumerateInstanceLayers (Context& context)
 {
 	TestLog&						log					= context.getTestContext().getLog();
+	tcu::ResultCollector			results				(log);
 	const vector<VkLayerProperties>	properties			= enumerateInstanceLayerProperties(context.getPlatformInterface());
 	vector<string>					layerNames;
 
@@ -550,16 +595,15 @@ tcu::TestStatus enumerateInstanceLayers (Context& context)
 		layerNames.push_back(properties[ndx].layerName);
 	}
 
-	if (checkDuplicateLayers(log, layerNames))
-		return tcu::TestStatus::pass("Enumerating layers succeeded");
-	else
-		return tcu::TestStatus::fail("Duplicate layers");
+	checkDuplicateLayers(results, layerNames);
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 tcu::TestStatus enumerateInstanceExtensions (Context& context)
 {
-	TestLog&	log						= context.getTestContext().getLog();
-	bool		hasDuplicateExtensions	= false;
+	TestLog&				log		= context.getTestContext().getLog();
+	tcu::ResultCollector	results	(log);
 
 	{
 		const ScopedLogSection				section		(log, "Global", "Global Extensions");
@@ -573,8 +617,7 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 			extensionNames.push_back(properties[ndx].extensionName);
 		}
 
-		if (!checkDuplicateExtensions(log, extensionNames))
-			hasDuplicateExtensions = true;
+		checkInstanceExtensions(results, extensionNames);
 	}
 
 	{
@@ -593,20 +636,17 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 				extensionNames.push_back(properties[extNdx].extensionName);
 			}
 
-			if (!checkDuplicateExtensions(log, extensionNames))
-				hasDuplicateExtensions = true;
+			checkInstanceExtensions(results, extensionNames);
 		}
 	}
 
-	if (hasDuplicateExtensions)
-		return tcu::TestStatus::fail("Duplicate extensions");
-	else
-		return tcu::TestStatus::pass("Enumerating extensions succeeded");
+	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 tcu::TestStatus enumerateDeviceLayers (Context& context)
 {
 	TestLog&						log			= context.getTestContext().getLog();
+	tcu::ResultCollector			results		(log);
 	const vector<VkLayerProperties>	properties	= vk::enumerateDeviceLayerProperties(context.getInstanceInterface(), context.getPhysicalDevice());
 	vector<string>					layerNames;
 
@@ -617,16 +657,15 @@ tcu::TestStatus enumerateDeviceLayers (Context& context)
 		layerNames.push_back(properties[ndx].layerName);
 	}
 
-	if (checkDuplicateLayers(log, layerNames))
-		return tcu::TestStatus::pass("Enumerating layers succeeded");
-	else
-		return tcu::TestStatus::fail("Duplicate layers");
+	checkDuplicateLayers(results, layerNames);
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 tcu::TestStatus enumerateDeviceExtensions (Context& context)
 {
-	TestLog&	log						= context.getTestContext().getLog();
-	bool		hasDuplicateExtensions	= false;
+	TestLog&				log		= context.getTestContext().getLog();
+	tcu::ResultCollector	results	(log);
 
 	{
 		const ScopedLogSection				section		(log, "Global", "Global Extensions");
@@ -640,8 +679,7 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 			extensionNames.push_back(properties[ndx].extensionName);
 		}
 
-		if (!checkDuplicateExtensions(log, extensionNames))
-			hasDuplicateExtensions = true;
+		checkDeviceExtensions(results, extensionNames);
 	}
 
 	{
@@ -661,15 +699,11 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 				extensionNames.push_back(properties[extNdx].extensionName);
 			}
 
-			if (!checkDuplicateExtensions(log, extensionNames))
-				hasDuplicateExtensions = true;
+			checkDeviceExtensions(results, extensionNames);
 		}
 	}
 
-	if (hasDuplicateExtensions)
-		return tcu::TestStatus::fail("Duplicate extensions");
-	else
-		return tcu::TestStatus::pass("Enumerating extensions succeeded");
+	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 #define VK_SIZE_OF(STRUCT, MEMBER)					(sizeof(((STRUCT*)0)->MEMBER))

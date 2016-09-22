@@ -8654,6 +8654,7 @@ const string specializeInBoundsShaderTemplate (const NumberType type, const Asse
 		"%zero      = OpConstant %u32 0\n"
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
+		"%struct_v  = OpVariable %struct_p Function\n"
 		"%idval     = OpLoad %uvec3 %id\n"
 		"%x         = OpCompositeExtract %u32 %idval 0\n"
 		// Create the input/output type
@@ -8668,7 +8669,6 @@ const string specializeInBoundsShaderTemplate (const NumberType type, const Asse
 		// Insert the value
 		"%comp_obj  = OpCompositeInsert %struct_t %inval %struct ${insertIndexes}\n"
 		// Store the object
-		"%struct_v  = OpVariable %struct_p Function\n"
 		"             OpStore %struct_v %comp_obj\n"
 		// Get deepest possible composite pointer
 		"%inner_ptr = OpInBoundsAccessChain %composite_p %struct_v${accessChainIndexes}\n"

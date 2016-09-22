@@ -29,10 +29,10 @@ namespace vkt
 namespace Draw
 {
 
-DrawTestsBaseClass::DrawTestsBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName)
+DrawTestsBaseClass::DrawTestsBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName, vk::VkPrimitiveTopology topology)
 	: TestInstance				(context)
 	, m_colorAttachmentFormat	(vk::VK_FORMAT_R8G8B8A8_UNORM)
-	, m_topology				(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+	, m_topology				(topology)
 	, m_vk						(context.getDeviceInterface())
 	, m_vertexShaderName		(vertexShaderName)
 	, m_fragmentShaderName		(fragmentShaderName)
@@ -96,32 +96,38 @@ void DrawTestsBaseClass::initialize (void)
 	const vk::VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
 		0,
-		(deUint32)sizeof(tcu::Vec4) * 2,
+		sizeof(VertexElementData),
 		vk::VK_VERTEX_INPUT_RATE_VERTEX,
 	};
 
-	const vk::VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
+	const vk::VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] =
 	{
 		{
 			0u,
 			0u,
 			vk::VK_FORMAT_R32G32B32A32_SFLOAT,
 			0u
-		},
+		},	// VertexElementData::position
 		{
 			1u,
 			0u,
 			vk::VK_FORMAT_R32G32B32A32_SFLOAT,
-			(deUint32)(sizeof(float)* 4),
-		}
+			static_cast<deUint32>(sizeof(tcu::Vec4))
+		},  // VertexElementData::color
+		{
+			2u,
+			0u,
+			vk::VK_FORMAT_R32_SINT,
+			static_cast<deUint32>(sizeof(tcu::Vec4)) * 2
+		}   // VertexElementData::refVertexIndex
 	};
 
 	m_vertexInputState = PipelineCreateInfo::VertexInputState(1,
 															  &vertexInputBindingDescription,
-															  2,
+															  DE_LENGTH_OF_ARRAY(vertexInputAttributeDescriptions),
 															  vertexInputAttributeDescriptions);
 
-	const vk::VkDeviceSize dataSize = m_data.size() * sizeof(PositionColorVertex);
+	const vk::VkDeviceSize dataSize = m_data.size() * sizeof(VertexElementData);
 	m_vertexBuffer = Buffer::createAndAlloc(m_vk, device, BufferCreateInfo(dataSize,
 		vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 

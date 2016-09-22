@@ -41,4 +41,15 @@ if (DE_OS_IS_UNIX)
 
 	set(DEQP_PLATFORM_LIBRARIES ${X11_LIBRARIES})
 	include_directories(${X11_INCLUDE_DIR})
+
+	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/targets/default")
+
+	# Use XCB target if available
+	set(DEQP_USE_XCB OFF)
+	find_package(XCB)
+	if (XCB_FOUND)
+		set(DEQP_USE_XCB ON)
+		set(DEQP_PLATFORM_LIBRARIES ${XCB_LIBRARIES})
+		include_directories(${XCB_INCLUDE_DIR})
+	endif ()
 endif ()
