@@ -59,6 +59,10 @@ bool							isLinearFilteringSupported	(const vk::InstanceInterface&	instanceInte
 
 vk::VkBorderColor				getFormatBorderColor		(BorderColor color, vk::VkFormat format);
 
+void							getLookupScaleBias			(vk::VkFormat					format,
+															 tcu::Vec4&						lookupScale,
+															 tcu::Vec4&						lookupBias);
+
 /*--------------------------------------------------------------------*//*!
  * Gets a tcu::TextureLevel initialized with data from a VK color
  * attachment.

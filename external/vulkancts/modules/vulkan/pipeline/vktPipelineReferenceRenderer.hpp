@@ -162,76 +162,19 @@ public:
 	}
 };
 
-template<typename TextureType>
-class SamplerFragmentShader : public rr::FragmentShader
+class CoordinateCaptureFragmentShader : public rr::FragmentShader
 {
-private:
-	const tcu::TextureFormat		m_colorFormat;
-	const tcu::TextureFormatInfo	m_colorFormatInfo;
-	const TextureType				m_texture;
-	const tcu::Sampler				m_sampler;
-	const float						m_lod;
-	const tcu::Vec4					m_lookupScale;
-	const tcu::Vec4					m_lookupBias;
-	const tcu::UVec4				m_swizzle;
-
 public:
-	SamplerFragmentShader (const tcu::TextureFormat& colorFormat, const TextureType& texture, const tcu::Sampler& sampler, float lod, const tcu::Vec4& lookupScale, const tcu::Vec4& lookupBias, const tcu::UVec4& swizzle)
-		: rr::FragmentShader	(2, 1)
-		, m_colorFormat			(colorFormat)
-		, m_colorFormatInfo		(tcu::getTextureFormatInfo(m_colorFormat))
-		, m_texture				(texture)
-		, m_sampler				(sampler)
-		, m_lod					(lod)
-		, m_lookupScale			(lookupScale)
-		, m_lookupBias			(lookupBias)
-		, m_swizzle				(swizzle)
+	CoordinateCaptureFragmentShader (void)
+		: rr::FragmentShader(2, 1)
 	{
-		const tcu::TextureChannelClass channelClass = tcu::getTextureChannelClass(m_colorFormat.type);
 		m_inputs[0].type	= rr::GENERICVECTYPE_FLOAT;
 		m_inputs[1].type	= rr::GENERICVECTYPE_FLOAT;
-		m_outputs[0].type	= (channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)? rr::GENERICVECTYPE_INT32 :
-							  (channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)? rr::GENERICVECTYPE_UINT32
-							  : rr::GENERICVECTYPE_FLOAT;
+		m_outputs[0].type	= rr::GENERICVECTYPE_FLOAT;
 	}
 
-	virtual ~SamplerFragmentShader (void)
+	virtual ~CoordinateCaptureFragmentShader (void)
 	{
-	}
-
-	static tcu::Vec4 sampleTexture (const tcu::Texture1D& texture, const tcu::Sampler& sampler, const tcu::Vec4& texCoord, float lod)
-	{
-		return texture.sample(sampler, texCoord.x(), lod);
-	}
-
-	static tcu::Vec4 sampleTexture (const tcu::Texture1DArray& texture, const tcu::Sampler& sampler, const tcu::Vec4& texCoord, float lod)
-	{
-		return texture.sample(sampler, texCoord.x(), texCoord.y(), lod);
-	}
-
-	static tcu::Vec4 sampleTexture (const tcu::Texture2D& texture, const tcu::Sampler& sampler, const tcu::Vec4& texCoord, float lod)
-	{
-		return texture.sample(sampler, texCoord.x(), texCoord.y(), lod);
-	}
-
-	static tcu::Vec4 sampleTexture (const tcu::Texture2DArray& texture, const tcu::Sampler& sampler, const tcu::Vec4& texCoord, float lod)
-	{
-		return texture.sample(sampler, texCoord.x(), texCoord.y(), texCoord.z(), lod);
-	}
-
-	static tcu::Vec4 sampleTexture (const tcu::Texture3D& texture, const tcu::Sampler& sampler, const tcu::Vec4& texCoord, float lod)
-	{
-		return texture.sample(sampler, texCoord.x(), texCoord.y(), texCoord.z(), lod);
-	}
-
-	static tcu::Vec4 sampleTexture (const tcu::TextureCube& texture, const tcu::Sampler& sampler, const tcu::Vec4& texCoord, float lod)
-	{
-		return texture.sample(sampler, texCoord.x(), texCoord.y(), texCoord.z(), lod);
-	}
-
-	static tcu::Vec4 sampleTexture (const tcu::TextureCubeArray& texture, const tcu::Sampler& sampler, const tcu::Vec4& texCoord, float lod)
-	{
-		return texture.sample(sampler, texCoord.x(), texCoord.y(), texCoord.z(), texCoord.w(), lod);
 	}
 
 	virtual void shadeFragments (rr::FragmentPacket*				packets,
@@ -245,11 +188,7 @@ public:
 			for (int fragNdx = 0; fragNdx < 4; fragNdx++)
 			{
 				const tcu::Vec4	vtxTexCoord	= rr::readVarying<float>(packet, context, 1, fragNdx);
-				const tcu::Vec4	texColor	= sampleTexture(m_texture, m_sampler, vtxTexCoord, m_lod);
-				const tcu::Vec4	normColor	= texColor * m_lookupScale + m_lookupBias;
-				const tcu::Vec4 swizColor	= swizzle(normColor, m_swizzle);
-				const tcu::Vec4	color		= (swizColor + m_colorFormatInfo.lookupBias) / m_colorFormatInfo.lookupScale;
-				rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, color);
+				rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, vtxTexCoord);
 			}
 		}
 	}
@@ -263,20 +202,17 @@ public:
 	virtual rr::Program getReferenceProgram (void) const = 0;
 };
 
-template<typename TextureType>
-class SamplerProgram: public Program
+class CoordinateCaptureProgram : public Program
 {
 private:
-	TexCoordVertexShader				m_vertexShader;
-	SamplerFragmentShader<TextureType>	m_fragmentShader;
+	TexCoordVertexShader			m_vertexShader;
+	CoordinateCaptureFragmentShader	m_fragmentShader;
 public:
-	SamplerProgram (const tcu::TextureFormat& colorFormat, const TextureType& texture, const tcu::Sampler& sampler, float lod, const tcu::Vec4& lookupScale, const tcu::Vec4& lookupBias, const tcu::UVec4& swizzle)
-		: m_vertexShader	()
-		, m_fragmentShader	(colorFormat, texture, sampler, lod, lookupScale, lookupBias, swizzle)
+	CoordinateCaptureProgram (void)
 	{
 	}
 
-	virtual ~SamplerProgram (void) { }
+	virtual ~CoordinateCaptureProgram (void) { }
 
 	virtual rr::Program getReferenceProgram (void) const
 	{
