@@ -25,7 +25,16 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			X11/tcuX11.hpp
 			X11/tcuX11Platform.hpp
 			X11/tcuX11Platform.cpp
+			X11/tcuX11VulkanPlatform.hpp
+			X11/tcuX11VulkanPlatform.cpp
 			)
+		if (DEQP_USE_XCB)
+			set(TCUTIL_PLATFORM_SRCS
+				${TCUTIL_PLATFORM_SRCS}
+				X11/tcuX11Xcb.hpp
+				X11/tcuX11Xcb.cpp
+				)
+		endif()
 		if (DEQP_SUPPORT_EGL)
 			set(TCUTIL_PLATFORM_SRCS
 				${TCUTIL_PLATFORM_SRCS}
@@ -111,6 +120,11 @@ target_link_libraries(tcutil-platform eglutil)
 if (DEQP_USE_X11)
 	find_package(X11 REQUIRED)
 	target_link_libraries(tcutil-platform ${X11_LIBRARIES})
+	if (DEQP_USE_XCB)
+		find_package(XCB REQUIRED)
+		target_link_libraries(tcutil-platform ${XCB_LIBRARIES})
+                add_definitions(-DDEQP_SUPPORT_XCB=1)
+	endif ()
 	if (DEQP_SUPPORT_GLX)
 	  # GLX functions don't currently have wrappers, so link directly to libGL.
 	  target_link_libraries(tcutil-platform GL)

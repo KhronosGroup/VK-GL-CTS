@@ -252,7 +252,7 @@ protected:
 		vk::flushMappedMemoryRange(m_vk, device,
 								   m_vertexBuffer->getBoundMemory().getMemory(),
 								   m_vertexBuffer->getBoundMemory().getOffset(),
-								   sizeof(dataSize));
+								   dataSize);
 
 		const CmdPoolCreateInfo cmdPoolCreateInfo(m_context.getUniversalQueueFamilyIndex());
 		m_cmdPool = vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);

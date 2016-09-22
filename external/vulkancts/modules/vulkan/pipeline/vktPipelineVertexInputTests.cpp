@@ -487,7 +487,7 @@ std::string VertexInputTest::getGlslInputDeclarations (void) const
 	{
 		const GlslTypeDescription& glslTypeDesc = s_glslTypeDescriptions[m_attributeInfos[attributeNdx].glslType];
 
-		glslInputs << "layout(location = " << location << ") in highp " << glslTypeDesc.name << " attr" << attributeNdx << ";\n";
+		glslInputs << "layout(location = " << location << ") in " << glslTypeDesc.name << " attr" << attributeNdx << ";\n";
 		location += glslTypeDesc.vertexInputCount;
 	}
 

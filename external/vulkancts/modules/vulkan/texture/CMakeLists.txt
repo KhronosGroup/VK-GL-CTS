@@ -20,6 +20,8 @@ set(DEQP_VK_TEXTURE_SRCS
 	vktTextureFilteringTests.hpp
 	vktTextureMipmapTests.cpp
 	vktTextureMipmapTests.hpp
+	vktTextureShadowTests.cpp
+	vktTextureShadowTests.hpp
 	)
 
 set(DEQP_VK_TEXTURE_LIBS

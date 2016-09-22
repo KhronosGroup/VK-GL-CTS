@@ -11,6 +11,8 @@
 #define VK_ATTACHMENT_UNUSED				(static_cast<deUint32>			((~0U)))
 #define VK_SUBPASS_EXTERNAL					(static_cast<deUint32>			((~0U)))
 #define VK_QUEUE_FAMILY_IGNORED				(static_cast<deUint32>			((~0U)))
+#define VK_REMAINING_MIP_LEVELS				(static_cast<deUint32>			((~0U)))
+#define VK_REMAINING_ARRAY_LAYERS			(static_cast<deUint32>			((~0U)))
 #define VK_WHOLE_SIZE						(static_cast<vk::VkDeviceSize>	((~0ULL)))
 #define VK_TRUE								(static_cast<vk::VkBool32>		(1))
 #define VK_FALSE							(static_cast<vk::VkBool32>		(0))
@@ -155,6 +157,7 @@ enum VkStructureType
 	VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV					= 1000057000,
 	VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_NV					= 1000057001,
 	VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_NV				= 1000058000,
+	VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT									= 1000061000,
 };
 
 enum VkSystemAllocationScope
@@ -770,6 +773,13 @@ enum VkRasterizationOrderAMD
 	VK_RASTERIZATION_ORDER_RELAXED_AMD	= 1,
 
 	VK_RASTERIZATION_ORDER_AMD_LAST
+};
+
+enum VkValidationCheckEXT
+{
+	VK_VALIDATION_CHECK_ALL_EXT	= 0,
+
+	VK_VALIDATION_CHECK_EXT_LAST
 };
 
 enum VkFormatFeatureFlagBits
