@@ -28,6 +28,7 @@
 #include "vktTextureFilteringTests.hpp"
 #include "vktTextureMipmapTests.hpp"
 #include "vktTextureFilteringExplicitLodTests.hpp"
+#include "vktTextureShadowTests.hpp"
 
 namespace vkt
 {
@@ -43,6 +44,7 @@ void createTextureTests (tcu::TestCaseGroup* textureTests)
 	textureTests->addChild(createTextureFilteringTests	(testCtx));
 	textureTests->addChild(createTextureMipmappingTests	(testCtx));
 	textureTests->addChild(createExplicitLodTests		(testCtx));
+	textureTests->addChild(createTextureShadowTests		(testCtx));
 }
 
 } // anonymous

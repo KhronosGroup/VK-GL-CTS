@@ -361,14 +361,13 @@ void CommandPool::free (VkCommandBuffer buffer)
 {
 	CommandBuffer* const	impl	= reinterpret_cast<CommandBuffer*>(buffer);
 
-	delete impl;
-
 	for (size_t ndx = 0; ndx < m_buffers.size(); ++ndx)
 	{
 		if (m_buffers[ndx] == impl)
 		{
 			std::swap(m_buffers[ndx], m_buffers.back());
 			m_buffers.pop_back();
+			delete impl;
 			return;
 		}
 	}
@@ -430,14 +429,13 @@ void DescriptorPool::free (VkDescriptorSet set)
 	DE_ASSERT(m_flags & VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
 	DE_UNREF(m_flags);
 
-	delete impl;
-
 	for (size_t ndx = 0; ndx < m_managedSets.size(); ++ndx)
 	{
 		if (m_managedSets[ndx] == impl)
 		{
 			std::swap(m_managedSets[ndx], m_managedSets.back());
 			m_managedSets.pop_back();
+			delete impl;
 			return;
 		}
 	}

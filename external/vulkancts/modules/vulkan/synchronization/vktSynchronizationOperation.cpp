@@ -1347,7 +1347,7 @@ public:
 					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 					*m_srcImage, m_resource.getImage().subresourceRange);
 
-				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_pipelineStage, (VkDependencyFlags)0,
+				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
 					0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
 			}
 
@@ -1361,7 +1361,7 @@ public:
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 					*m_srcImage, m_resource.getImage().subresourceRange);
 
-				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_pipelineStage, (VkDependencyFlags)0,
+				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_pipelineStage, (VkDependencyFlags)0,
 					0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
 			}
 		}
