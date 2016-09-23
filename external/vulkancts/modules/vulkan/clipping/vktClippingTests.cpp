@@ -731,11 +731,11 @@ enum LineOrientation
 	LINE_ORIENTATION_DIAGONAL,
 };
 
-void addProgramsWithPointSize (SourceCollections& programCollection, const float pointSize)
+void addSimplePrograms (SourceCollections& programCollection, const float pointSize = 0.0f)
 {
 	// Vertex shader
 	{
-		const bool usePointSize = pointSize > 1.0f;
+		const bool usePointSize = pointSize > 0.0f;
 
 		std::ostringstream src;
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
@@ -774,19 +774,19 @@ void addProgramsWithPointSize (SourceCollections& programCollection, const float
 
 void initPrograms (SourceCollections& programCollection, const VkPrimitiveTopology topology)
 {
-	DE_UNREF(topology);
-	addProgramsWithPointSize(programCollection, 1.0f);
+	const float pointSize = (topology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST ? 1.0f : 0.0f);
+	addSimplePrograms(programCollection, pointSize);
 }
 
 void initPrograms (SourceCollections& programCollection, const LineOrientation lineOrientation)
 {
 	DE_UNREF(lineOrientation);
-	addProgramsWithPointSize(programCollection, 1.0f);
+	addSimplePrograms(programCollection);
 }
 
 void initProgramsPointSize (SourceCollections& programCollection)
 {
-	addProgramsWithPointSize(programCollection, 0.75f * RENDER_SIZE);
+	addSimplePrograms(programCollection, 0.75f * RENDER_SIZE);
 }
 
 //! Primitives fully inside the clip volume.
