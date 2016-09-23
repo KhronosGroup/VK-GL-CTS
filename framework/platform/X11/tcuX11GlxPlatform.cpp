@@ -88,7 +88,7 @@ private:
 	EventState&				m_eventState;
 };
 
-class GlxDisplay : public x11::Display
+class GlxDisplay : public XlibDisplay
 {
 public:
 							GlxDisplay				(EventState&	eventState,
@@ -155,8 +155,8 @@ protected:
 	GLXDrawable				getGLXDrawable		() { return m_GLXDrawable; }
 
 private:
-	x11::Display&			m_x11Display;
-	x11::Window				m_x11Window;
+	XlibDisplay&			m_x11Display;
+	XlibWindow				m_x11Window;
 	const GLXDrawable		m_GLXDrawable;
 };
 
@@ -220,7 +220,7 @@ GlxContextFactory::~GlxContextFactory (void)
 }
 
 GlxDisplay::GlxDisplay (EventState& eventState, const char* name)
-	: x11::Display	(eventState, name)
+	: XlibDisplay	(eventState, name)
 {
 	const Bool supported = glXQueryExtension(m_display, &m_errorBase, &m_eventBase);
 	if (!supported)
