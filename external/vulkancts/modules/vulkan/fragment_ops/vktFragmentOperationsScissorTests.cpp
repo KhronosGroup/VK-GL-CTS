@@ -486,6 +486,8 @@ void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
 
 	// Vertex shader
 	{
+		const bool usePointSize = (caseDef.primitive == TEST_PRIMITIVE_POINTS);
+
 		std::ostringstream src;
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
 			<< "\n"
@@ -494,13 +496,15 @@ void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
 			<< "layout(location = 0) out vec4 o_color;\n"
 			<< "\n"
 			<< "out gl_PerVertex {\n"
-			<< "    vec4 gl_Position;\n"
+			<< "    vec4  gl_Position;\n"
+			<< (usePointSize ? "    float gl_PointSize;\n" : "")
 			<< "};\n"
 			<< "\n"
 			<< "void main(void)\n"
 			<< "{\n"
-			<< "    gl_Position = in_position;\n"
-			<< "    o_color     = in_color;\n"
+			<< "    gl_Position  = in_position;\n"
+			<< (usePointSize ? "    gl_PointSize = 1.0;\n" : "")
+			<< "    o_color      = in_color;\n"
 			<< "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
