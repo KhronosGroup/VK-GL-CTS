@@ -265,7 +265,7 @@ void ContainerFormatParser::parseContainerLine (void)
 			{
 				m_value.clear();
 
-				// \note Candy produces timestamps in very stupid fashion.
+				// \note Candy produces unescaped timestamps.
 				for (;;)
 				{
 					const int	curChar	= offset < m_elementLen ? getChar(offset) : 0;
