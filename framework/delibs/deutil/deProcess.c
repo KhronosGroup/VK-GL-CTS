@@ -401,7 +401,7 @@ deBool deProcess_waitForFinish (deProcess* process)
 		return DE_FALSE;
 	}
 
-	/* \note [pyry] Crazy hack for OS X Lion. Stupid Apple. */
+	/* \note [pyry] HACK, apparently needed by some versions of OS X. */
 	while ((waitResult = waitpid(process->pid, &status, 0)) != process->pid)
 		if (errno != ENOENT) break;
 
