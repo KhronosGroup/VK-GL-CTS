@@ -81,7 +81,7 @@ static void writeSessionInfo (const SessionInfo& info, std::ostream& stream)
 	if (!info.resultName.empty())
 		stream << "#sessionInfo resultName " << ContainerValue(info.resultName) << "\n";
 
-	// \note Current format uses unescaped timestamps for some stupid reason.
+	// \note Current format uses unescaped timestamps for some strange reason.
 	if (!info.timestamp.empty())
 		stream << "#sessionInfo timestamp " << info.timestamp << "\n";
 }
