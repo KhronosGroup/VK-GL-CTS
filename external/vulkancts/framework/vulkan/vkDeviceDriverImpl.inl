@@ -677,6 +677,36 @@ VkResult DeviceDriver::getMemoryWin32HandleNV (VkDevice device, VkDeviceMemory m
 	return m_vk.getMemoryWin32HandleNV(device, memory, handleType, pHandle);
 }
 
+VkResult DeviceDriver::getMemoryWin32HandleKHX (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, pt::Win32Handle* pHandle) const
+{
+	return m_vk.getMemoryWin32HandleKHX(device, memory, handleType, pHandle);
+}
+
+VkResult DeviceDriver::getMemoryFdKHX (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, int* pFd) const
+{
+	return m_vk.getMemoryFdKHX(device, memory, handleType, pFd);
+}
+
+VkResult DeviceDriver::importSemaphoreWin32HandleKHX (VkDevice device, const VkImportSemaphoreWin32HandleInfoKHX* pImportSemaphoreWin32HandleInfo) const
+{
+	return m_vk.importSemaphoreWin32HandleKHX(device, pImportSemaphoreWin32HandleInfo);
+}
+
+VkResult DeviceDriver::getSemaphoreWin32HandleKHX (VkDevice device, VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, pt::Win32Handle* pHandle) const
+{
+	return m_vk.getSemaphoreWin32HandleKHX(device, semaphore, handleType, pHandle);
+}
+
+VkResult DeviceDriver::importSemaphoreFdKHX (VkDevice device, const VkImportSemaphoreFdInfoKHX* pImportSemaphoreFdInfo) const
+{
+	return m_vk.importSemaphoreFdKHX(device, pImportSemaphoreFdInfo);
+}
+
+VkResult DeviceDriver::getSemaphoreFdKHX (VkDevice device, VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, int* pFd) const
+{
+	return m_vk.getSemaphoreFdKHX(device, semaphore, handleType, pFd);
+}
+
 void DeviceDriver::cmdProcessCommandsNVX (VkCommandBuffer commandBuffer, const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo) const
 {
 	m_vk.cmdProcessCommandsNVX(commandBuffer, pProcessCommandsInfo);

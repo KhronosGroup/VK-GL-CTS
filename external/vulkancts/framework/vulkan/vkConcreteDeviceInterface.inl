@@ -136,6 +136,12 @@ virtual void		cmdDebugMarkerInsertEXT				(VkCommandBuffer commandBuffer, VkDebug
 virtual void		cmdDrawIndirectCountAMD				(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const;
 virtual void		cmdDrawIndexedIndirectCountAMD		(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const;
 virtual VkResult	getMemoryWin32HandleNV				(VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle) const;
+virtual VkResult	getMemoryWin32HandleKHX				(VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, pt::Win32Handle* pHandle) const;
+virtual VkResult	getMemoryFdKHX						(VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, int* pFd) const;
+virtual VkResult	importSemaphoreWin32HandleKHX		(VkDevice device, const VkImportSemaphoreWin32HandleInfoKHX* pImportSemaphoreWin32HandleInfo) const;
+virtual VkResult	getSemaphoreWin32HandleKHX			(VkDevice device, VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, pt::Win32Handle* pHandle) const;
+virtual VkResult	importSemaphoreFdKHX				(VkDevice device, const VkImportSemaphoreFdInfoKHX* pImportSemaphoreFdInfo) const;
+virtual VkResult	getSemaphoreFdKHX					(VkDevice device, VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, int* pFd) const;
 virtual void		cmdProcessCommandsNVX				(VkCommandBuffer commandBuffer, const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo) const;
 virtual void		cmdReserveSpaceForCommandsNVX		(VkCommandBuffer commandBuffer, const VkCmdReserveSpaceForCommandsInfoNVX* pReserveSpaceInfo) const;
 virtual VkResult	createIndirectCommandsLayoutNVX		(VkDevice device, const VkIndirectCommandsLayoutCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNVX* pIndirectCommandsLayout) const;

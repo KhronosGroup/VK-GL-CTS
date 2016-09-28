@@ -54,14 +54,6 @@ private:
 	void* const					m_ptr;
 };
 
-void* mapMemory (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags)
-{
-	void* hostPtr = DE_NULL;
-	VK_CHECK(vkd.mapMemory(device, mem, offset, size, flags, &hostPtr));
-	TCU_CHECK(hostPtr);
-	return hostPtr;
-}
-
 HostPtr::HostPtr (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags)
 	: m_vkd		(vkd)
 	, m_device	(device)
@@ -208,6 +200,14 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memRe
 	}
 
 	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr));
+}
+
+void* mapMemory (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags)
+{
+	void* hostPtr = DE_NULL;
+	VK_CHECK(vkd.mapMemory(device, mem, offset, size, flags, &hostPtr));
+	TCU_CHECK(hostPtr);
+	return hostPtr;
 }
 
 void flushMappedMemoryRange (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size)

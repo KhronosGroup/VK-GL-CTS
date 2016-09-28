@@ -1282,6 +1282,70 @@ VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandleNV (VkDevice device, VkDevice
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalBufferPropertiesKHX (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfoKHX* pExternalBufferInfo, VkExternalBufferPropertiesKHX* pExternalBufferProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pExternalBufferInfo);
+	DE_UNREF(pExternalBufferProperties);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandleKHX (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, pt::Win32Handle* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(memory);
+	DE_UNREF(handleType);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryFdKHX (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, int* pFd)
+{
+	DE_UNREF(device);
+	DE_UNREF(memory);
+	DE_UNREF(handleType);
+	DE_UNREF(pFd);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalSemaphorePropertiesKHX (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalSemaphoreInfoKHX* pExternalSemaphoreInfo, VkExternalSemaphorePropertiesKHX* pExternalSemaphoreProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pExternalSemaphoreInfo);
+	DE_UNREF(pExternalSemaphoreProperties);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL importSemaphoreWin32HandleKHX (VkDevice device, const VkImportSemaphoreWin32HandleInfoKHX* pImportSemaphoreWin32HandleInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pImportSemaphoreWin32HandleInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreWin32HandleKHX (VkDevice device, VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, pt::Win32Handle* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(semaphore);
+	DE_UNREF(handleType);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL importSemaphoreFdKHX (VkDevice device, const VkImportSemaphoreFdInfoKHX* pImportSemaphoreFdInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pImportSemaphoreFdInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreFdKHX (VkDevice device, VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, int* pFd)
+{
+	DE_UNREF(device);
+	DE_UNREF(semaphore);
+	DE_UNREF(handleType);
+	DE_UNREF(pFd);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdProcessCommandsNVX (VkCommandBuffer commandBuffer, const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo)
 {
 	DE_UNREF(commandBuffer);
@@ -1405,6 +1469,8 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,						destroyDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,								debugReportMessageEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalImageFormatPropertiesNV,	getPhysicalDeviceExternalImageFormatPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferPropertiesKHX,		getPhysicalDeviceExternalBufferPropertiesKHX),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphorePropertiesKHX,	getPhysicalDeviceExternalSemaphorePropertiesKHX),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX,	getPhysicalDeviceGeneratedCommandsPropertiesNVX),
 };
 
@@ -1545,6 +1611,12 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountAMD,				cmdDrawIndirectCountAMD),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountAMD,		cmdDrawIndexedIndirectCountAMD),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleNV,				getMemoryWin32HandleNV),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHX,				getMemoryWin32HandleKHX),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryFdKHX,						getMemoryFdKHX),
+	VK_NULL_FUNC_ENTRY(vkImportSemaphoreWin32HandleKHX,			importSemaphoreWin32HandleKHX),
+	VK_NULL_FUNC_ENTRY(vkGetSemaphoreWin32HandleKHX,			getSemaphoreWin32HandleKHX),
+	VK_NULL_FUNC_ENTRY(vkImportSemaphoreFdKHX,					importSemaphoreFdKHX),
+	VK_NULL_FUNC_ENTRY(vkGetSemaphoreFdKHX,						getSemaphoreFdKHX),
 	VK_NULL_FUNC_ENTRY(vkCmdProcessCommandsNVX,					cmdProcessCommandsNVX),
 	VK_NULL_FUNC_ENTRY(vkCmdReserveSpaceForCommandsNVX,			cmdReserveSpaceForCommandsNVX),
 	VK_NULL_FUNC_ENTRY(vkCreateIndirectCommandsLayoutNVX,		createIndirectCommandsLayoutNVX),

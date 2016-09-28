@@ -392,6 +392,15 @@ inline VkPresentRegionKHR makePresentRegionKHR (deUint32 rectangleCount, const V
 	return res;
 }
 
+inline VkExternalMemoryPropertiesKHX makeExternalMemoryPropertiesKHX (VkExternalMemoryFeatureFlagsKHX externalMemoryFeatures, VkExternalMemoryHandleTypeFlagsKHX exportFromImportedHandleTypes, VkExternalMemoryHandleTypeFlagsKHX compatibleHandleTypes)
+{
+	VkExternalMemoryPropertiesKHX res;
+	res.externalMemoryFeatures			= externalMemoryFeatures;
+	res.exportFromImportedHandleTypes	= exportFromImportedHandleTypes;
+	res.compatibleHandleTypes			= compatibleHandleTypes;
+	return res;
+}
+
 inline VkIndirectCommandsTokenNVX makeIndirectCommandsTokenNVX (VkIndirectCommandsTokenTypeNVX tokenType, VkBuffer buffer, VkDeviceSize offset)
 {
 	VkIndirectCommandsTokenNVX res;
