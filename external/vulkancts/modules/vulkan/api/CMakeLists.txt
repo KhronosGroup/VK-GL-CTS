@@ -37,10 +37,11 @@ set(DEQP_VK_API_SRCS
 	vktApiNullHandleTests.hpp
 	vktApiGranularityTests.cpp
 	vktApiGranularityTests.hpp
+	vktApiExternalMemoryTests.cpp
+	vktApiExternalMemoryTests.hpp
 	)
 
 set(DEQP_VK_API_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	)

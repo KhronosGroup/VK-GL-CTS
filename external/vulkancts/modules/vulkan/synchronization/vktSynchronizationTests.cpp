@@ -30,6 +30,7 @@
 #include "vktSynchronizationOperationSingleQueueTests.hpp"
 #include "vktSynchronizationOperationMultiQueueTests.hpp"
 #include "vktSynchronizationInternallySynchronizedObjectsTests.hpp"
+#include "vktSynchronizationCrossInstanceSharingTests.hpp"
 #include "vktSynchronizationUtil.hpp"
 
 #include "deUniquePtr.hpp"
@@ -77,6 +78,7 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(createTestGroup	(testCtx, "basic", "Basic synchronization tests", createBasicTests));
 	group->addChild(new OperationTests(testCtx));
 	group->addChild(createInternallySynchronizedObjects(testCtx));
+	group->addChild(synchronization::createCrossInstanceSharingTest(testCtx));
 }
 
 } // anonymous

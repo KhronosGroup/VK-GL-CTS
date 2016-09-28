@@ -189,5 +189,15 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageSparseMemoryRequirements2KHRFun
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDebugReportCallbackEXTFunc)						(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDebugReportCallbackEXTFunc)						(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DebugReportMessageEXTFunc)								(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceExternalBufferPropertiesKHRFunc)		(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfoKHR* pExternalBufferInfo, VkExternalBufferPropertiesKHR* pExternalBufferProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryWin32HandleKHRFunc)							(VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryWin32HandlePropertiesKHRFunc)					(VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHR handleType, pt::Win32Handle handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryFdKHRFunc)									(VkDevice device, const VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryFdPropertiesKHRFunc)							(VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHR handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceExternalSemaphorePropertiesKHRFunc)	(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalSemaphoreInfoKHR* pExternalSemaphoreInfo, VkExternalSemaphorePropertiesKHR* pExternalSemaphoreProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportSemaphoreWin32HandleKHRFunc)						(VkDevice device, const VkImportSemaphoreWin32HandleInfoKHR* pImportSemaphoreWin32HandleInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSemaphoreWin32HandleKHRFunc)						(VkDevice device, const VkSemaphoreGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportSemaphoreFdKHRFunc)								(VkDevice device, const VkImportSemaphoreFdInfoKHR* pImportSemaphoreFdInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSemaphoreFdKHRFunc)									(VkDevice device, const VkSemaphoreGetFdInfoKHR* pGetFdInfo, int* pFd);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetRefreshCycleDurationGOOGLEFunc)						(VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPastPresentationTimingGOOGLEFunc)					(VkDevice device, VkSwapchainKHR swapchain, deUint32* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings);

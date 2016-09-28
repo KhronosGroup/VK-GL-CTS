@@ -65,6 +65,8 @@ set(DEQP_VK_COMMON_SRCS
 	vktTestGroupUtil.hpp
 	vktInfoTests.cpp
 	vktInfoTests.hpp
+	vktExternalMemoryUtil.cpp
+	vktExternalMemoryUtil.hpp
 	)
 
 set(DEQP_VK_COMMON_LIBS
