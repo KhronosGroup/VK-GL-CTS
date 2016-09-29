@@ -1520,7 +1520,7 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 		throw;
 	}
 
-	return tcu::TestStatus::pass("Rendering tests suceeded");
+	return tcu::TestStatus::pass("Rendering tests succeeded");
 }
 
 vector<tcu::UVec2> getSwapchainSizeSequence (const VkSurfaceCapabilitiesKHR& capabilities, const tcu::UVec2& defaultSize)
@@ -1672,7 +1672,55 @@ tcu::TestStatus resizeSwapchainTest (Context& context, Type wsiType)
 		}
 	}
 
-	return tcu::TestStatus::pass("Resizing tests suceeded");
+	return tcu::TestStatus::pass("Resizing tests succeeded");
+}
+
+tcu::TestStatus getImagesIncompleteResultTest (Context& context, Type wsiType)
+{
+	const tcu::UVec2				desiredSize		(256, 256);
+	const InstanceHelper			instHelper		(context, wsiType);
+	const NativeObjects				native			(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
+	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
+	const DeviceHelper				devHelper		(context, instHelper.vki, *instHelper.instance, *surface);
+	const VkSwapchainCreateInfoKHR	swapchainInfo	= getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
+	const Unique<VkSwapchainKHR>	swapchain		(createSwapchainKHR(devHelper.vkd, *devHelper.device, &swapchainInfo));
+
+	vector<VkImage>		swapchainImages	= getSwapchainImages(devHelper.vkd, *devHelper.device, *swapchain);
+
+	ValidateQueryBits::fillBits(swapchainImages.begin(), swapchainImages.end());
+
+	const deUint32		usedCount		= static_cast<deUint32>(swapchainImages.size() / 2);
+	deUint32			count			= usedCount;
+	const VkResult		result			= devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, *swapchain, &count, &swapchainImages[0]);
+
+	if (count != usedCount || result != VK_INCOMPLETE || !ValidateQueryBits::checkBits(swapchainImages.begin() + count, swapchainImages.end()))
+		return tcu::TestStatus::fail("Get swapchain images didn't return VK_INCOMPLETE");
+	else
+		return tcu::TestStatus::pass("Get swapchain images tests succeeded");
+}
+
+tcu::TestStatus destroyNullHandleSwapchainTest (Context& context, Type wsiType)
+{
+	const InstanceHelper		instHelper	(context, wsiType);
+	const NativeObjects			native		(context, instHelper.supportedExtensions, wsiType);
+	const Unique<VkSurfaceKHR>	surface		(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
+	const DeviceHelper			devHelper	(context, instHelper.vki, *instHelper.instance, *surface);
+	const VkSwapchainKHR		nullHandle	= DE_NULL;
+
+	// Default allocator
+	devHelper.vkd.destroySwapchainKHR(*devHelper.device, nullHandle, DE_NULL);
+
+	// Custom allocator
+	{
+		AllocationCallbackRecorder	recordingAllocator	(getSystemAllocator(), 1u);
+
+		devHelper.vkd.destroySwapchainKHR(*devHelper.device, nullHandle, recordingAllocator.getCallbacks());
+
+		if (recordingAllocator.getNumRecords() != 0u)
+			return tcu::TestStatus::fail("Implementation allocated/freed the memory");
+	}
+
+	return tcu::TestStatus::pass("Destroying a VK_NULL_HANDLE surface has no effect");
 }
 
 void getBasicRenderPrograms (SourceCollections& dst, Type)
@@ -1683,6 +1731,11 @@ void getBasicRenderPrograms (SourceCollections& dst, Type)
 void populateRenderGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 {
 	addFunctionCaseWithPrograms(testGroup, "basic", "Basic Rendering Test", getBasicRenderPrograms, basicRenderTest, wsiType);
+}
+
+void populateGetImagesGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
+{
+	addFunctionCase(testGroup, "incomplete", "Test VK_INCOMPLETE return code", getImagesIncompleteResultTest, wsiType);
 }
 
 void populateModifyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
@@ -1697,6 +1750,11 @@ void populateModifyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 	// \todo [2016-05-30 jesse] Add tests for modifying preTransform, compositeAlpha, presentMode
 }
 
+void populateDestroyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
+{
+	addFunctionCase(testGroup, "null_handle", "Destroying a VK_NULL_HANDLE swapchain", destroyNullHandleSwapchainTest, wsiType);
+}
+
 } // anonymous
 
 void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
@@ -1705,6 +1763,8 @@ void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 	addTestGroup(testGroup, "simulate_oom",		"Simulate OOM using callbacks during swapchain construction",	populateSwapchainOOMGroup,	wsiType);
 	addTestGroup(testGroup, "render",			"Rendering Tests",												populateRenderGroup,		wsiType);
 	addTestGroup(testGroup, "modify",			"Modify VkSwapchain",											populateModifyGroup,		wsiType);
+	addTestGroup(testGroup, "destroy",			"Destroy VkSwapchain",											populateDestroyGroup,		wsiType);
+	addTestGroup(testGroup, "get_images",		"Get swapchain images",											populateGetImagesGroup,		wsiType);
 }
 
 } // wsi

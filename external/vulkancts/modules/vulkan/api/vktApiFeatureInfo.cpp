@@ -110,7 +110,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		LimitFormat		format;
 		LimitType		type;
 		deInt32			unsuppTableNdx;
-	} featureLimitTable[] =   //!< From gitlab.khronos.org/vulkan/vulkan.git:doc/specs/vulkan/chapters/features.txt@63b23f3bb3ecd211cd6e448e2001ce1088dacd35
+	} featureLimitTable[] =   //!< Based on 1.0.28 Vulkan spec
 	{
 		{ LIMIT(maxImageDimension1D),								4096, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxImageDimension2D),								4096, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
@@ -123,6 +123,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(maxPushConstantsSize),								128, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxMemoryAllocationCount),							4096, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
 		{ LIMIT(maxSamplerAllocationCount),							0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE , -1 },
+		{ LIMIT(bufferImageGranularity),							0, 0, 1, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(bufferImageGranularity),							0, 0, 131072, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1 },
 		{ LIMIT(sparseAddressSpaceSize),							0, 0, 2UL*1024*1024*1024, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxBoundDescriptorSets),							4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
@@ -185,9 +186,12 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(viewportBoundsRange[1]),							0, 0, 0, 8191.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(viewportSubPixelBits),								0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(minMemoryMapAlignment),								64, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
-		{ LIMIT(minTexelBufferOffsetAlignment),						256, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MAX, -1 },
-		{ LIMIT(minUniformBufferOffsetAlignment),					256, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MAX, -1 },
-		{ LIMIT(minStorageBufferOffsetAlignment),					256, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(minTexelBufferOffsetAlignment),						0, 0, 1, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(minTexelBufferOffsetAlignment),						0, 0, 256, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(minUniformBufferOffsetAlignment),					0, 0, 1, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(minUniformBufferOffsetAlignment),					0, 0, 256, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(minStorageBufferOffsetAlignment),					0, 0, 1, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(minStorageBufferOffsetAlignment),					0, 0, 256, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1 },
 		{ LIMIT(minTexelOffset),									0, -8, 0, 0.0f, LIMIT_FORMAT_SIGNED_INT, LIMIT_TYPE_MAX, -1 },
 		{ LIMIT(maxTexelOffset),									7, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(minTexelGatherOffset),								0, -8, 0, 0.0f, LIMIT_FORMAT_SIGNED_INT, LIMIT_TYPE_MAX, -1 },
@@ -215,21 +219,20 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(maxCullDistances),									8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxCombinedClipAndCullDistances),					8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(discreteQueuePriorities),							8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
-		{ LIMIT(pointSizeRange[0]),									0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
-		{ LIMIT(pointSizeRange[1]),									0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(pointSizeRange[0]),									0, 0, 0, 0.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(pointSizeRange[0]),									0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
 		{ LIMIT(pointSizeRange[1]),									0, 0, 0, 64.0f - limits->pointSizeGranularity , LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
-		{ LIMIT(lineWidthRange[0]),									0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
-		{ LIMIT(lineWidthRange[1]),									0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(lineWidthRange[0]),									0, 0, 0, 0.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(lineWidthRange[0]),									0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
 		{ LIMIT(lineWidthRange[1]),									0, 0, 0, 8.0f - limits->lineWidthGranularity, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(pointSizeGranularity),								0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
 		{ LIMIT(lineWidthGranularity),								0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
-		{ LIMIT(strictLines),										0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_NONE, -1 },
-		{ LIMIT(standardSampleLocations),							0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_NONE, -1 },
-		{ LIMIT(optimalBufferCopyOffsetAlignment),					0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_NONE, -1 },
-		{ LIMIT(optimalBufferCopyRowPitchAlignment),				0, 0, 0, 1.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_NONE, -1 },
-		{ LIMIT(nonCoherentAtomSize),								0, 0, 128, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(strictLines),										0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(standardSampleLocations),							0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(optimalBufferCopyOffsetAlignment),					0, 0, 0, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(optimalBufferCopyRowPitchAlignment),				0, 0, 0, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_NONE, -1 },
+		{ LIMIT(nonCoherentAtomSize),								0, 0, 1, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(nonCoherentAtomSize),								0, 0, 256, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1 },
 	};
 
 	const struct UnsupportedFeatureLimitTable
@@ -481,9 +484,92 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 	return limitsOk;
 }
 
+template<typename T>
+class CheckIncompleteResult
+{
+public:
+	virtual			~CheckIncompleteResult	(void) {}
+	virtual void	getResult				(Context& context, T* data) = 0;
+
+	void operator() (Context& context, tcu::ResultCollector& results, const std::size_t expectedCompleteSize)
+	{
+		if (expectedCompleteSize == 0)
+			return;
+
+		vector<T>		outputData	(expectedCompleteSize);
+		const deUint32	usedSize	= static_cast<deUint32>(expectedCompleteSize / 3);
+
+		ValidateQueryBits::fillBits(outputData.begin(), outputData.end());	// unused entries should have this pattern intact
+		m_count		= usedSize;
+		m_result	= VK_SUCCESS;
+
+		getResult(context, &outputData[0]);									// update m_count and m_result
+
+		if (m_count != usedSize || m_result != VK_INCOMPLETE || !ValidateQueryBits::checkBits(outputData.begin() + m_count, outputData.end()))
+			results.fail("Query didn't return VK_INCOMPLETE");
+	}
+
+protected:
+	deUint32	m_count;
+	VkResult	m_result;
+};
+
+struct CheckEnumeratePhysicalDevicesIncompleteResult : public CheckIncompleteResult<VkPhysicalDevice>
+{
+	void getResult (Context& context, VkPhysicalDevice* data)
+	{
+		m_result = context.getInstanceInterface().enumeratePhysicalDevices(context.getInstance(), &m_count, data);
+	}
+};
+
+struct CheckEnumerateInstanceLayerPropertiesIncompleteResult : public CheckIncompleteResult<VkLayerProperties>
+{
+	void getResult (Context& context, VkLayerProperties* data)
+	{
+		m_result = context.getPlatformInterface().enumerateInstanceLayerProperties(&m_count, data);
+	}
+};
+
+struct CheckEnumerateDeviceLayerPropertiesIncompleteResult : public CheckIncompleteResult<VkLayerProperties>
+{
+	void getResult (Context& context, VkLayerProperties* data)
+	{
+		m_result = context.getInstanceInterface().enumerateDeviceLayerProperties(context.getPhysicalDevice(), &m_count, data);
+	}
+};
+
+struct CheckEnumerateInstanceExtensionPropertiesIncompleteResult : public CheckIncompleteResult<VkExtensionProperties>
+{
+	CheckEnumerateInstanceExtensionPropertiesIncompleteResult (std::string layerName = std::string()) : m_layerName(layerName) {}
+
+	void getResult (Context& context, VkExtensionProperties* data)
+	{
+		const char* pLayerName = (m_layerName.length() != 0 ? m_layerName.c_str() : DE_NULL);
+		m_result = context.getPlatformInterface().enumerateInstanceExtensionProperties(pLayerName, &m_count, data);
+	}
+
+private:
+	const std::string	m_layerName;
+};
+
+struct CheckEnumerateDeviceExtensionPropertiesIncompleteResult : public CheckIncompleteResult<VkExtensionProperties>
+{
+	CheckEnumerateDeviceExtensionPropertiesIncompleteResult (std::string layerName = std::string()) : m_layerName(layerName) {}
+
+	void getResult (Context& context, VkExtensionProperties* data)
+	{
+		const char* pLayerName = (m_layerName.length() != 0 ? m_layerName.c_str() : DE_NULL);
+		m_result = context.getInstanceInterface().enumerateDeviceExtensionProperties(context.getPhysicalDevice(), pLayerName, &m_count, data);
+	}
+
+private:
+	const std::string	m_layerName;
+};
+
 tcu::TestStatus enumeratePhysicalDevices (Context& context)
 {
 	TestLog&						log		= context.getTestContext().getLog();
+	tcu::ResultCollector			results	(log);
 	const vector<VkPhysicalDevice>	devices	= enumeratePhysicalDevices(context.getInstanceInterface(), context.getInstance());
 
 	log << TestLog::Integer("NumDevices", "Number of devices", "", QP_KEY_TAG_NONE, deInt64(devices.size()));
@@ -491,7 +577,9 @@ tcu::TestStatus enumeratePhysicalDevices (Context& context)
 	for (size_t ndx = 0; ndx < devices.size(); ndx++)
 		log << TestLog::Message << ndx << ": " << devices[ndx] << TestLog::EndMessage;
 
-	return tcu::TestStatus::pass("Enumerating devices succeeded");
+	CheckEnumeratePhysicalDevicesIncompleteResult()(context, results, devices.size());
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 template<typename T>
@@ -596,6 +684,7 @@ tcu::TestStatus enumerateInstanceLayers (Context& context)
 	}
 
 	checkDuplicateLayers(results, layerNames);
+	CheckEnumerateInstanceLayerPropertiesIncompleteResult()(context, results, layerNames.size());
 
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
@@ -618,6 +707,7 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 		}
 
 		checkInstanceExtensions(results, extensionNames);
+		CheckEnumerateInstanceExtensionPropertiesIncompleteResult()(context, results, properties.size());
 	}
 
 	{
@@ -637,6 +727,7 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 			}
 
 			checkInstanceExtensions(results, extensionNames);
+			CheckEnumerateInstanceExtensionPropertiesIncompleteResult(layer->layerName)(context, results, properties.size());
 		}
 	}
 
@@ -647,7 +738,7 @@ tcu::TestStatus enumerateDeviceLayers (Context& context)
 {
 	TestLog&						log			= context.getTestContext().getLog();
 	tcu::ResultCollector			results		(log);
-	const vector<VkLayerProperties>	properties	= vk::enumerateDeviceLayerProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+	const vector<VkLayerProperties>	properties	= enumerateDeviceLayerProperties(context.getInstanceInterface(), context.getPhysicalDevice());
 	vector<string>					layerNames;
 
 	for (size_t ndx = 0; ndx < properties.size(); ndx++)
@@ -658,6 +749,7 @@ tcu::TestStatus enumerateDeviceLayers (Context& context)
 	}
 
 	checkDuplicateLayers(results, layerNames);
+	CheckEnumerateDeviceLayerPropertiesIncompleteResult()(context, results, layerNames.size());
 
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
@@ -680,6 +772,7 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 		}
 
 		checkDeviceExtensions(results, extensionNames);
+		CheckEnumerateDeviceExtensionPropertiesIncompleteResult()(context, results, properties.size());
 	}
 
 	{
@@ -700,6 +793,7 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 			}
 
 			checkDeviceExtensions(results, extensionNames);
+			CheckEnumerateDeviceExtensionPropertiesIncompleteResult(layer->layerName)(context, results, properties.size());
 		}
 	}
 
@@ -711,6 +805,8 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 
 tcu::TestStatus deviceFeatures (Context& context)
 {
+	using namespace ValidateQueryBits;
+
 	TestLog&						log			= context.getTestContext().getLog();
 	VkPhysicalDeviceFeatures*		features;
 	deUint8							buffer[sizeof(VkPhysicalDeviceFeatures) + GUARD_SIZE];
@@ -808,6 +904,8 @@ tcu::TestStatus deviceFeatures (Context& context)
 
 tcu::TestStatus deviceProperties (Context& context)
 {
+	using namespace ValidateQueryBits;
+
 	TestLog&						log			= context.getTestContext().getLog();
 	VkPhysicalDeviceProperties*		props;
 	VkPhysicalDeviceFeatures		features;
@@ -1693,7 +1791,10 @@ bool isValidImageUsageFlagCombination (VkImageUsageFlags usage)
 {
 	if (usage & vk::VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT)
 	{
-		const VkImageUsageFlags		allowedFlags	= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+		const VkImageUsageFlags		allowedFlags	= vk::VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT
+													| vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+													| vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+													| vk::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 		return (usage & ~allowedFlags) == 0;
 	}
 	return usage != 0;

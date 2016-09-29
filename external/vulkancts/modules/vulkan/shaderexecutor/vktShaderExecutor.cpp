@@ -3177,7 +3177,8 @@ void ShaderExecutor::uploadImage (const VkDevice&				vkDevice,
 								  const VkImageAspectFlags		aspectMask,
 								  VkImage						destImage)
 {
-	deUint32						textureSize			= texSize.x() * texSize.y() * texSize.z() * texFormat.getPixelSize();
+	const deUint32					unalignedTextureSize		= texSize.x() * texSize.y() * texSize.z() * texFormat.getPixelSize();
+	const deUint32					alignedTextureSize			= deAlign32(unalignedTextureSize, 4u);
 	deUint32						bufferSize;
 	Move<VkBuffer>					buffer;
 	de::MovePtr<Allocation>			bufferAlloc;
@@ -3187,7 +3188,7 @@ void ShaderExecutor::uploadImage (const VkDevice&				vkDevice,
 	std::vector<deUint32>			levelDataSizes;
 
 	// Calculate buffer size
-	bufferSize = arraySize * textureSize;
+	bufferSize = arraySize * alignedTextureSize;
 
 	// Create source buffer
 	{
@@ -3333,7 +3334,7 @@ void ShaderExecutor::uploadImage (const VkDevice&				vkDevice,
 			};
 
 			copyRegions.push_back(layerRegion);
-			layerDataOffset += textureSize;
+			layerDataOffset += alignedTextureSize;
 		}
 	}
 
@@ -3348,7 +3349,7 @@ void ShaderExecutor::uploadImage (const VkDevice&				vkDevice,
 			tcu::PixelBufferAccess			destAccess	(texFormat, texSize, destPtr + levelOffset);
 
 			tcu::copy(destAccess, access);
-			levelOffset += textureSize;
+			levelOffset += alignedTextureSize;
 		}
 	}
 
