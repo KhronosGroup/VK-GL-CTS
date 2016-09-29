@@ -147,6 +147,7 @@ public:
 
 	RecordIterator			getRecordsBegin				(void) const { return m_records.begin();	}
 	RecordIterator			getRecordsEnd				(void) const { return m_records.end();		}
+	std::size_t				getNumRecords				(void) const { return m_records.size();		}
 
 private:
 	typedef de::AppendList<AllocationCallbackRecord> Records;

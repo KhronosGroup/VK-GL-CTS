@@ -32,6 +32,7 @@
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorType.hpp"
+#include "tcuVectorUtil.hpp"
 
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -1112,7 +1113,7 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 																				m_params.src.image.extent.width,
 																				m_params.src.image.extent.height,
 																				m_params.src.image.extent.depth));
-	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth, FILL_MODE_RED);
+	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth);
 	m_destinationTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(m_textureFormat, (int)m_params.dst.buffer.size, 1));
 	generateBuffer(m_destinationTextureLevel->getAccess(), (int)m_params.dst.buffer.size, 1, 1);
 
@@ -1643,38 +1644,28 @@ tcu::TestStatus BlittingImages::iterate (void)
 	return checkTestResult(resultTextureLevel->getAccess());
 }
 
-tcu::Vec4 getFloatFormatThreshold (const tcu::TextureFormat& format)
+static float calculateFloatConversionError (int srcBits)
 {
-	tcu::Vec4 threshold(0.01f);
-
-	switch (format.type)
+	if (srcBits > 0)
 	{
-		case tcu::TextureFormat::HALF_FLOAT:
-			threshold = tcu::Vec4(0.005f);
-			break;
+		const int	clampedBits	= de::clamp<int>(srcBits, 0, 32);
+		const float	srcMaxValue	= de::max((float)(1ULL<<clampedBits) - 1.0f, 1.0f);
+		const float	error		= deFloatCeil(1.0f / srcMaxValue);
 
-		case tcu::TextureFormat::FLOAT:
-		case tcu::TextureFormat::FLOAT64:
-			threshold = tcu::Vec4(0.001f);
-			break;
-
-		case tcu::TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
-			threshold = tcu::Vec4(0.02f, 0.02f, 0.0625f, 1.0f);
-			break;
-
-		case tcu::TextureFormat::UNSIGNED_INT_999_E5_REV:
-			threshold = tcu::Vec4(0.05f, 0.05f, 0.05f, 1.0f);
-			break;
-
-		default:
-			DE_ASSERT(false);
+		return de::clamp<float>(error, 0.0f, 1.0f);
 	}
-
-	// Return value matching the channel order specified by the format
-	if (format.order == tcu::TextureFormat::BGR || format.order == tcu::TextureFormat::BGRA)
-		return threshold.swizzle(2, 1, 0, 3);
 	else
-		return threshold;
+		return 1.0f;
+}
+
+tcu::Vec4 getFormatThreshold (const tcu::TextureFormat& format)
+{
+	const tcu::IVec4 bits = tcu::getTextureFormatMantissaBitDepth(format);
+
+	return tcu::Vec4(calculateFloatConversionError(bits.x()),
+			 calculateFloatConversionError(bits.y()),
+			 calculateFloatConversionError(bits.z()),
+			 calculateFloatConversionError(bits.w()));
 }
 
 bool BlittingImages::checkClampedAndUnclampedResult(const tcu::ConstPixelBufferAccess& result,
@@ -1683,15 +1674,19 @@ bool BlittingImages::checkClampedAndUnclampedResult(const tcu::ConstPixelBufferA
 {
 	tcu::TestLog&				log			(m_context.getTestContext().getLog());
 	const bool					isLinear	= m_params.filter == VK_FILTER_LINEAR;
-	const tcu::TextureFormat	format		= result.getFormat();
+	const tcu::TextureFormat	srcFormat	= clampedExpected.getFormat();
+	const tcu::TextureFormat	dstFormat	= result.getFormat();
 	bool						isOk		= false;
 
 	if (isLinear)
 		log << tcu::TestLog::Section("ClampedSourceImage", "Region with clamped edges on source image.");
 
-	if (isFloatFormat(mapTextureFormat(format)))
+	if (isFloatFormat(mapTextureFormat(dstFormat)))
 	{
-		const tcu::Vec4	threshold	= getFloatFormatThreshold(format);
+		const bool		srcIsSRGB	= tcu::isSRGB(srcFormat);
+		const tcu::Vec4	srcMaxDiff	= getFormatThreshold(srcFormat) * tcu::Vec4(srcIsSRGB ? 2 : 1);
+		const tcu::Vec4	dstMaxDiff	= getFormatThreshold(dstFormat);
+		const tcu::Vec4	threshold	= tcu::max(srcMaxDiff, dstMaxDiff);
 
 		isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", clampedExpected, result, threshold, tcu::COMPARE_LOG_RESULT);
 
@@ -1709,7 +1704,7 @@ bool BlittingImages::checkClampedAndUnclampedResult(const tcu::ConstPixelBufferA
 	{
 		tcu::UVec4	threshold;
 		// Calculate threshold depending on channel width of destination format.
-		tcu::IVec4	bitDepth	= tcu::getTextureFormatBitDepth(format);
+		const tcu::IVec4	bitDepth	= tcu::getTextureFormatBitDepth(dstFormat);
 		for (deUint32 i = 0; i < 4; ++i)
 			threshold[i] = de::max( (0x1 << bitDepth[i]) / 256, 1);
 
@@ -3444,20 +3439,20 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 	// Copy image to buffer testcases.
 	{
-		TestParams			params;
+		TestParams	params;
 		params.src.image.imageType	= VK_IMAGE_TYPE_2D;
-		params.src.image.format		= VK_FORMAT_R8G8B8A8_UINT;
+		params.src.image.format		= VK_FORMAT_R8G8B8A8_UNORM;
 		params.src.image.extent		= defaultExtent;
 		params.dst.buffer.size		= defaultSize * defaultSize;
 
-		const VkBufferImageCopy			bufferImageCopy	=
+		const VkBufferImageCopy	bufferImageCopy	=
 		{
 			0u,											// VkDeviceSize				bufferOffset;
 			0u,											// uint32_t					bufferRowLength;
 			0u,											// uint32_t					bufferImageHeight;
 			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
 			{0, 0, 0},									// VkOffset3D				imageOffset;
-			{defaultFourthSize, defaultFourthSize, 1}	// VkExtent3D				imageExtent;
+			defaultExtent								// VkExtent3D				imageExtent;
 		};
 		CopyRegion	copyRegion;
 		copyRegion.bufferImageCopy	= bufferImageCopy;
@@ -3467,15 +3462,76 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 		imageToBufferTests->addChild(new CopyImageToBufferTestCase(testCtx, "whole", "Copy from image to buffer", params));
 	}
 
+	{
+		TestParams	params;
+		params.src.image.imageType	= VK_IMAGE_TYPE_2D;
+		params.src.image.format		= VK_FORMAT_R8G8B8A8_UNORM;
+		params.src.image.extent		= defaultExtent;
+		params.dst.buffer.size		= defaultSize * defaultSize;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			defaultSize * defaultHalfSize,				// VkDeviceSize				bufferOffset;
+			0u,											// uint32_t					bufferRowLength;
+			0u,											// uint32_t					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion	copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		imageToBufferTests->addChild(new CopyImageToBufferTestCase(testCtx, "buffer_offset", "Copy from image to buffer with buffer offset", params));
+	}
+
+	{
+		TestParams	params;
+		params.src.image.imageType	= VK_IMAGE_TYPE_2D;
+		params.src.image.format		= VK_FORMAT_R8G8B8A8_UNORM;
+		params.src.image.extent		= defaultExtent;
+		params.dst.buffer.size		= defaultSize * defaultSize;
+
+		const int			pixelSize	= tcu::getPixelSize(mapVkFormat(params.src.image.format));
+		const VkDeviceSize	bufferSize	= pixelSize * params.dst.buffer.size;
+		const VkDeviceSize	offsetSize	= pixelSize * defaultFourthSize * defaultFourthSize;
+		deUint32			divisor		= 1;
+		for (VkDeviceSize offset = 0; offset < bufferSize - offsetSize; offset += offsetSize, ++divisor)
+		{
+			const deUint32			bufferRowLength		= defaultFourthSize;
+			const deUint32			bufferImageHeight	= defaultFourthSize;
+			const VkExtent3D		imageExtent			= {defaultFourthSize / divisor, defaultFourthSize, 1};
+			DE_ASSERT(!bufferRowLength || bufferRowLength >= imageExtent.width);
+			DE_ASSERT(!bufferImageHeight || bufferImageHeight >= imageExtent.height);
+			DE_ASSERT(imageExtent.width * imageExtent.height *imageExtent.depth <= offsetSize);
+
+			CopyRegion				region;
+			const VkBufferImageCopy	bufferImageCopy		=
+			{
+				offset,						// VkDeviceSize				bufferOffset;
+				bufferRowLength,			// uint32_t					bufferRowLength;
+				bufferImageHeight,			// uint32_t					bufferImageHeight;
+				defaultSourceLayer,			// VkImageSubresourceLayers	imageSubresource;
+				{0, 0, 0},					// VkOffset3D				imageOffset;
+				imageExtent					// VkExtent3D				imageExtent;
+			};
+			region.bufferImageCopy	= bufferImageCopy;
+			params.regions.push_back(region);
+		}
+
+		imageToBufferTests->addChild(new CopyImageToBufferTestCase(testCtx, "regions", "Copy from image to buffer with multiple regions", params));
+	}
+
 	// Copy buffer to image testcases.
 	{
-		TestParams			params;
+		TestParams	params;
 		params.src.buffer.size		= defaultSize * defaultSize;
 		params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
 		params.dst.image.format		= VK_FORMAT_R8G8B8A8_UINT;
 		params.dst.image.extent		= defaultExtent;
 
-		const VkBufferImageCopy			bufferImageCopy	=
+		const VkBufferImageCopy	bufferImageCopy	=
 		{
 			0u,											// VkDeviceSize				bufferOffset;
 			0u,											// uint32_t					bufferRowLength;
@@ -3490,6 +3546,57 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 		params.regions.push_back(copyRegion);
 
 		bufferToImageTests->addChild(new CopyBufferToImageTestCase(testCtx, "whole", "Copy from buffer to image", params));
+	}
+
+	{
+		TestParams	params;
+		params.src.buffer.size		= defaultSize * defaultSize;
+		params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
+		params.dst.image.format		= VK_FORMAT_R8G8B8A8_UNORM;
+		params.dst.image.extent		= defaultExtent;
+
+		CopyRegion	region;
+		deUint32	divisor	= 1;
+		for (int offset = 0; (offset + defaultFourthSize / divisor < defaultSize) && (defaultFourthSize > divisor); offset += defaultFourthSize / divisor++)
+		{
+			const VkBufferImageCopy	bufferImageCopy	=
+			{
+				0u,																// VkDeviceSize				bufferOffset;
+				0u,																// uint32_t					bufferRowLength;
+				0u,																// uint32_t					bufferImageHeight;
+				defaultSourceLayer,												// VkImageSubresourceLayers	imageSubresource;
+				{offset, defaultHalfSize, 0},									// VkOffset3D				imageOffset;
+				{defaultFourthSize / divisor, defaultFourthSize / divisor, 1}	// VkExtent3D				imageExtent;
+			};
+			region.bufferImageCopy	= bufferImageCopy;
+			params.regions.push_back(region);
+		}
+
+		bufferToImageTests->addChild(new CopyBufferToImageTestCase(testCtx, "regions", "Copy from buffer to image with multiple regions", params));
+	}
+
+	{
+		TestParams	params;
+		params.src.buffer.size		= defaultSize * defaultSize;
+		params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
+		params.dst.image.format		= VK_FORMAT_R8G8B8A8_UNORM;
+		params.dst.image.extent		= defaultExtent;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			defaultFourthSize,							// VkDeviceSize				bufferOffset;
+			defaultHalfSize + defaultFourthSize,		// uint32_t					bufferRowLength;
+			defaultHalfSize + defaultFourthSize,		// uint32_t					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion	copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		bufferToImageTests->addChild(new CopyBufferToImageTestCase(testCtx, "buffer_offset", "Copy from buffer to image with buffer offset", params));
 	}
 
 	// Copy buffer to buffer testcases.
