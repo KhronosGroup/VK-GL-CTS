@@ -32,6 +32,7 @@
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorType.hpp"
+#include "tcuVectorUtil.hpp"
 
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -1643,38 +1644,28 @@ tcu::TestStatus BlittingImages::iterate (void)
 	return checkTestResult(resultTextureLevel->getAccess());
 }
 
-tcu::Vec4 getFloatFormatThreshold (const tcu::TextureFormat& format)
+static float calculateFloatConversionError (int srcBits)
 {
-	tcu::Vec4 threshold(0.01f);
-
-	switch (format.type)
+	if (srcBits > 0)
 	{
-		case tcu::TextureFormat::HALF_FLOAT:
-			threshold = tcu::Vec4(0.005f);
-			break;
+		const int	clampedBits	= de::clamp<int>(srcBits, 0, 32);
+		const float	srcMaxValue	= de::max((float)(1ULL<<clampedBits) - 1.0f, 1.0f);
+		const float	error		= deFloatCeil(1.0f / srcMaxValue);
 
-		case tcu::TextureFormat::FLOAT:
-		case tcu::TextureFormat::FLOAT64:
-			threshold = tcu::Vec4(0.001f);
-			break;
-
-		case tcu::TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
-			threshold = tcu::Vec4(0.02f, 0.02f, 0.0625f, 1.0f);
-			break;
-
-		case tcu::TextureFormat::UNSIGNED_INT_999_E5_REV:
-			threshold = tcu::Vec4(0.05f, 0.05f, 0.05f, 1.0f);
-			break;
-
-		default:
-			DE_ASSERT(false);
+		return de::clamp<float>(error, 0.0f, 1.0f);
 	}
-
-	// Return value matching the channel order specified by the format
-	if (format.order == tcu::TextureFormat::BGR || format.order == tcu::TextureFormat::BGRA)
-		return threshold.swizzle(2, 1, 0, 3);
 	else
-		return threshold;
+		return 1.0f;
+}
+
+tcu::Vec4 getFormatThreshold (const tcu::TextureFormat& format)
+{
+	const tcu::IVec4 bits = tcu::getTextureFormatMantissaBitDepth(format);
+
+	return tcu::Vec4(calculateFloatConversionError(bits.x()),
+			 calculateFloatConversionError(bits.y()),
+			 calculateFloatConversionError(bits.z()),
+			 calculateFloatConversionError(bits.w()));
 }
 
 bool BlittingImages::checkClampedAndUnclampedResult(const tcu::ConstPixelBufferAccess& result,
@@ -1683,15 +1674,19 @@ bool BlittingImages::checkClampedAndUnclampedResult(const tcu::ConstPixelBufferA
 {
 	tcu::TestLog&				log			(m_context.getTestContext().getLog());
 	const bool					isLinear	= m_params.filter == VK_FILTER_LINEAR;
-	const tcu::TextureFormat	format		= result.getFormat();
+	const tcu::TextureFormat	srcFormat	= clampedExpected.getFormat();
+	const tcu::TextureFormat	dstFormat	= result.getFormat();
 	bool						isOk		= false;
 
 	if (isLinear)
 		log << tcu::TestLog::Section("ClampedSourceImage", "Region with clamped edges on source image.");
 
-	if (isFloatFormat(mapTextureFormat(format)))
+	if (isFloatFormat(mapTextureFormat(dstFormat)))
 	{
-		const tcu::Vec4	threshold	= getFloatFormatThreshold(format);
+		const bool		srcIsSRGB	= tcu::isSRGB(srcFormat);
+		const tcu::Vec4	srcMaxDiff	= getFormatThreshold(srcFormat) * tcu::Vec4(srcIsSRGB ? 2 : 1);
+		const tcu::Vec4	dstMaxDiff	= getFormatThreshold(dstFormat);
+		const tcu::Vec4	threshold	= tcu::max(srcMaxDiff, dstMaxDiff);
 
 		isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", clampedExpected, result, threshold, tcu::COMPARE_LOG_RESULT);
 
@@ -1709,7 +1704,7 @@ bool BlittingImages::checkClampedAndUnclampedResult(const tcu::ConstPixelBufferA
 	{
 		tcu::UVec4	threshold;
 		// Calculate threshold depending on channel width of destination format.
-		tcu::IVec4	bitDepth	= tcu::getTextureFormatBitDepth(format);
+		const tcu::IVec4	bitDepth	= tcu::getTextureFormatBitDepth(dstFormat);
 		for (deUint32 i = 0; i < 4; ++i)
 			threshold[i] = de::max( (0x1 << bitDepth[i]) / 256, 1);
 

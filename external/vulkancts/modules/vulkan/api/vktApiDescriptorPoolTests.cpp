@@ -29,7 +29,6 @@
 #include "vkRefUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkDeviceUtil.hpp"
-#include "vkAllocationCallbackUtil.hpp"
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
@@ -50,27 +49,11 @@ namespace
 using namespace std;
 using namespace vk;
 
-size_t checkAndLogMemoryUsage (tcu::TestLog& log, AllocationCallbackRecorder& allocRecorder, const char* prefix)
-{
-	size_t								memoryUsage;
-	AllocationCallbackValidationResults validationResults;
-
-	validateAllocationCallbacks(allocRecorder, &validationResults);
-	memoryUsage = getLiveSystemAllocationTotal(validationResults);
-
-	log << tcu::TestLog::Message << prefix << ": " << memoryUsage << tcu::TestLog::EndMessage;
-
-	return memoryUsage;
-}
-
 tcu::TestStatus resetDescriptorPoolTest (Context& context, deUint32 numIterations)
 {
-	AllocationCallbackRecorder	allocRecorder(getSystemAllocator());
-
 	const deUint32				numDescriptorSetsPerIter = 2048;
 	const DeviceInterface&		vkd						 = context.getDeviceInterface();
 	const VkDevice				device					 = context.getDevice();
-	tcu::TestLog&				log						 = context.getTestContext().getLog();
 
 	const VkDescriptorPoolSize descriptorPoolSize =
 	{
@@ -92,10 +75,7 @@ tcu::TestStatus resetDescriptorPoolTest (Context& context, deUint32 numIteration
 	{
 		const Unique<VkDescriptorPool> descriptorPool(
 			createDescriptorPool(vkd, device,
-								 &descriptorPoolInfo,
-								 allocRecorder.getCallbacks()));
-
-		checkAndLogMemoryUsage(log, allocRecorder, "Memory usage after vkCreateDescriptorPool");
+								 &descriptorPoolInfo));
 
 		const VkDescriptorSetLayoutBinding descriptorSetLayoutBinding =
 		{
@@ -127,8 +107,7 @@ tcu::TestStatus resetDescriptorPoolTest (Context& context, deUint32 numIteration
 					DescriptorSetLayoutPtr(
 						new Unique<VkDescriptorSetLayout>(
 							createDescriptorSetLayout(vkd, device,
-													  &descriptorSetLayoutInfo,
-													  allocRecorder.getCallbacks()))));
+													  &descriptorSetLayoutInfo))));
 			}
 
 			vector<VkDescriptorSetLayout> descriptorSetLayoutsRaw(numDescriptorSetsPerIter);
@@ -137,8 +116,6 @@ tcu::TestStatus resetDescriptorPoolTest (Context& context, deUint32 numIteration
 			{
 				descriptorSetLayoutsRaw[ndx] = **descriptorSetLayouts[ndx];
 			}
-
-			checkAndLogMemoryUsage(log, allocRecorder, "Memory usage after vkCreateDescriptorSetLayout");
 
 			const VkDescriptorSetAllocateInfo descriptorSetInfo =
 			{
@@ -159,12 +136,7 @@ tcu::TestStatus resetDescriptorPoolTest (Context& context, deUint32 numIteration
 			}
 
 		}
-
-		checkAndLogMemoryUsage(log, allocRecorder, "Memory usage after vkDestroyDescriptorSetLayout");
-
 	}
-
-	checkAndLogMemoryUsage(log, allocRecorder, "Memory usage after vkDestroyDescriptorPool");
 
 	// If it didn't crash, pass
 	return tcu::TestStatus::pass("Pass");
