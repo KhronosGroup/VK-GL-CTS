@@ -869,7 +869,15 @@ public:
 		de::Random rnd(0xabcdef);
 
 		GLint maxViewportDimensions[2] = {0};
+		GLfloat viewportBoundsRange[2] = {0.0f};
+		GLboolean hasViewportArray = false;
 		glGetIntegerv(GL_MAX_VIEWPORT_DIMS, maxViewportDimensions);
+		hasViewportArray = m_context.getContextInfo().isExtensionSupported("GL_OES_viewport_array") ||
+						   m_context.getContextInfo().isExtensionSupported("GL_NV_viewport_array");
+		if (hasViewportArray)
+		{
+			glGetFloatv(GL_VIEWPORT_BOUNDS_RANGE, viewportBoundsRange);
+		}
 
 		// verify initial value of first two values
 		m_verifier->verifyInteger4(m_testCtx, GL_VIEWPORT, 0, 0, m_context.getRenderTarget().getWidth(), m_context.getRenderTarget().getHeight());
@@ -884,7 +892,19 @@ public:
 			GLsizei height	= rnd.getInt(0, maxViewportDimensions[1]);
 
 			glViewport(x, y, width, height);
-			m_verifier->verifyInteger4(m_testCtx, GL_VIEWPORT, x, y, width, height);
+
+			if (hasViewportArray)
+			{
+				m_verifier->verifyInteger4(m_testCtx, GL_VIEWPORT,
+										   de::clamp(x, deFloorFloatToInt32(viewportBoundsRange[0]), deFloorFloatToInt32(viewportBoundsRange[1])),
+										   de::clamp(y, deFloorFloatToInt32(viewportBoundsRange[0]), deFloorFloatToInt32(viewportBoundsRange[1])),
+										   width, height);
+			}
+			else
+			{
+				m_verifier->verifyInteger4(m_testCtx, GL_VIEWPORT, x, y, width, height);
+			}
+
 			expectError(GL_NO_ERROR);
 		}
 	}
