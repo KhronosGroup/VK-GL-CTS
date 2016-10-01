@@ -48,12 +48,15 @@ class PoolArrayIterator;
  *       to access next element(s) doesn't work.
  * \todo [2013-02-11 pyry] Make elements per page template argument.
  *//*--------------------------------------------------------------------*/
-template<typename T, deUint32 Alignment = (sizeof(T) > 4 ? 4 : (deUint32)sizeof(T))>
+template<typename T, deUint32 Alignment = (sizeof(T) > sizeof(void*) ? (deUint32)sizeof(void*) : (deUint32)sizeof(T))>
 class PoolArray
 {
 public:
 	typedef PoolArrayIterator<T, Alignment>			Iterator;
 	typedef PoolArrayConstIterator<T, Alignment>	ConstIterator;
+
+	typedef Iterator								iterator;
+	typedef ConstIterator							const_iterator;
 
 	explicit		PoolArray			(MemPool* pool);
 					PoolArray			(MemPool* pool, const PoolArray<T, Alignment>& other);
@@ -82,6 +85,12 @@ public:
 
 	ConstIterator	begin				(void) const			{ return ConstIterator(this, 0);						}
 	ConstIterator	end					(void) const			{ return ConstIterator(this, (deIntptr)m_numElements);	}
+
+	const T&		front				(void) const			{ return at(0); }
+	T&				front				(void)					{ return at(0); }
+
+	const T&		back				(void) const			{ return at(m_numElements-1); }
+	T&				back				(void)					{ return at(m_numElements-1); }
 
 private:
 	enum
@@ -129,7 +138,7 @@ public:
 	const PoolArray<T, Alignment>*			getArray	(void) const throw() { return m_array;	}
 
 	// De-reference operators.
-	const T*								operator->	(void) const throw()			{ return (*m_array)[this->m_ndx];		}
+	const T*								operator->	(void) const throw()			{ return &(*m_array)[this->m_ndx];		}
 	const T&								operator*	(void) const throw()			{ return (*m_array)[this->m_ndx];		}
 	const T&								operator[]	(deUintptr offs) const throw()	{ return (*m_array)[this->m_ndx+offs];	}
 
@@ -165,7 +174,7 @@ public:
 	PoolArray<T, Alignment>*			getArray	(void) const throw() { return m_array;	}
 
 	// De-reference operators.
-	T*									operator->	(void) const throw()			{ return (*m_array)[this->m_ndx];		}
+	T*									operator->	(void) const throw()			{ return &(*m_array)[this->m_ndx];		}
 	T&									operator*	(void) const throw()			{ return (*m_array)[this->m_ndx];		}
 	T&									operator[]	(deUintptr offs) const throw()	{ return (*m_array)[this->m_ndx+offs];	}
 
