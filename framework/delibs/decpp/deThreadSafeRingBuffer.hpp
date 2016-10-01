@@ -27,6 +27,8 @@
 #include "deMutex.hpp"
 #include "deSemaphore.hpp"
 
+#include <vector>
+
 namespace de
 {
 
@@ -37,57 +39,59 @@ template <typename T>
 class ThreadSafeRingBuffer
 {
 public:
-				ThreadSafeRingBuffer	(int size);
-				~ThreadSafeRingBuffer	(void) {}
+					ThreadSafeRingBuffer	(size_t size);
+					~ThreadSafeRingBuffer	(void) {}
 
-	void		pushFront				(const T& elem);
-	bool		tryPushFront			(const T& elem);
-	T			popBack					(void);
-	bool		tryPopBack				(T& dst);
+	void			pushFront				(const T& elem);
+	bool			tryPushFront			(const T& elem);
+	T				popBack					(void);
+	bool			tryPopBack				(T& dst);
 
 protected:
-	void		pushFrontInternal		(const T& elem);
-	T			popBackInternal			(void);
+	void			pushFrontInternal		(const T& elem);
+	T				popBackInternal			(void);
 
-	int			m_front;
-	int			m_back;
-	T*			m_buffer;
-	int			m_size;
+	const size_t	m_size;
+	std::vector<T>	m_elements;
 
-	Mutex		m_writeMutex;
-	Mutex		m_readMutex;
+	size_t			m_front;
+	size_t			m_back;
 
-	Semaphore	m_fill;
-	Semaphore	m_empty;
+	Mutex			m_writeMutex;
+	Mutex			m_readMutex;
+
+	Semaphore		m_fill;
+	Semaphore		m_empty;
 };
 
 // ThreadSafeRingBuffer implementation.
 
 template <typename T>
-ThreadSafeRingBuffer<T>::ThreadSafeRingBuffer (int size)
-	: m_front		(0)
+ThreadSafeRingBuffer<T>::ThreadSafeRingBuffer (size_t size)
+	: m_size		(size+1)
+	, m_elements	(m_size)
+	, m_front		(0)
 	, m_back		(0)
-	, m_size		(size+1)
 	, m_fill		(0)
-	, m_empty		(size)
+	, m_empty		((int)size)
 {
-	DE_ASSERT(size > 0);
-	m_buffer = new T[m_size];
+	// Semaphores currently only support INT_MAX
+	DE_ASSERT(size > 0 && size < 0x7fffffff);
 }
 
 template <typename T>
 inline void ThreadSafeRingBuffer<T>::pushFrontInternal (const T& elem)
 {
-	m_buffer[m_front] = elem;
+	m_elements[m_front] = elem;
 	m_front = (m_front + 1) % m_size;
 }
 
 template <typename T>
 inline T ThreadSafeRingBuffer<T>::popBackInternal ()
 {
-	int ndx = m_back;
+	const size_t ndx = m_back;
 	m_back = (m_back + 1) % m_size;
-	return m_buffer[ndx];
+	return m_elements[ndx];
 }
 
 template <typename T>
@@ -105,12 +109,15 @@ bool ThreadSafeRingBuffer<T>::tryPushFront (const T& elem)
 {
 	if (!m_writeMutex.tryLock())
 		return false;
-	bool success = m_empty.tryDecrement();
+
+	const bool success = m_empty.tryDecrement();
+
 	if (success)
 	{
 		pushFrontInternal(elem);
 		m_fill.increment();
 	}
+
 	m_writeMutex.unlock();
 	return success;
 }
