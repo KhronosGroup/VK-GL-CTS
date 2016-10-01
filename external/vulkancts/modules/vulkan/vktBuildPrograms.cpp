@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2016 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,9 @@
 #include "deUniquePtr.hpp"
 #include "deCommandLine.hpp"
 #include "deSharedPtr.hpp"
+#include "deThread.hpp"
+#include "deThreadSafeRingBuffer.hpp"
+#include "dePoolArray.hpp"
 
 #include <iostream>
 
@@ -47,27 +50,168 @@ using de::SharedPtr;
 namespace vkt
 {
 
-tcu::TestPackageRoot* createRoot (tcu::TestContext& testCtx)
-{
-	vector<tcu::TestNode*>	children;
-	children.push_back(new TestPackage(testCtx));
-	return new tcu::TestPackageRoot(testCtx, children);
-}
-
-struct BuildStats
-{
-	int		numSucceeded;
-	int		numFailed;
-
-	BuildStats (void)
-		: numSucceeded	(0)
-		, numFailed		(0)
-	{
-	}
-};
-
 namespace // anonymous
 {
+
+typedef de::SharedPtr<glu::ProgramSources>	ProgramSourcesSp;
+typedef de::SharedPtr<vk::SpirVAsmSource>	SpirVAsmSourceSp;
+typedef de::SharedPtr<vk::ProgramBinary>	ProgramBinarySp;
+
+class Task
+{
+public:
+	virtual void	execute		(void) = 0;
+};
+
+typedef de::ThreadSafeRingBuffer<Task*>	TaskQueue;
+
+class TaskExecutorThread : public de::Thread
+{
+public:
+	TaskExecutorThread (TaskQueue& tasks)
+		: m_tasks(tasks)
+	{
+		start();
+	}
+
+	void run (void)
+	{
+		for (;;)
+		{
+			Task* const	task	= m_tasks.popBack();
+
+			if (task)
+				task->execute();
+			else
+				break; // End of tasks - time to terminate
+		}
+	}
+
+private:
+	TaskQueue&	m_tasks;
+};
+
+class TaskExecutor
+{
+public:
+								TaskExecutor		(deUint32 numThreads);
+								~TaskExecutor		(void);
+
+	void						submit				(Task* task);
+	void						waitForComplete		(void);
+
+private:
+	typedef de::SharedPtr<TaskExecutorThread>	ExecThreadSp;
+
+	std::vector<ExecThreadSp>	m_threads;
+	TaskQueue					m_tasks;
+};
+
+TaskExecutor::TaskExecutor (deUint32 numThreads)
+	: m_threads	(numThreads)
+	, m_tasks	(m_threads.size() * 1024u)
+{
+	for (size_t ndx = 0; ndx < m_threads.size(); ++ndx)
+		m_threads[ndx] = ExecThreadSp(new TaskExecutorThread(m_tasks));
+}
+
+TaskExecutor::~TaskExecutor (void)
+{
+	for (size_t ndx = 0; ndx < m_threads.size(); ++ndx)
+		m_tasks.pushFront(DE_NULL);
+
+	for (size_t ndx = 0; ndx < m_threads.size(); ++ndx)
+		m_threads[ndx]->join();
+}
+
+void TaskExecutor::submit (Task* task)
+{
+	DE_ASSERT(task);
+	m_tasks.pushFront(task);
+}
+
+class SyncTask : public Task
+{
+public:
+	SyncTask (de::Semaphore* enterBarrier, de::Semaphore* inBarrier, de::Semaphore* leaveBarrier)
+		: m_enterBarrier	(enterBarrier)
+		, m_inBarrier		(inBarrier)
+		, m_leaveBarrier	(leaveBarrier)
+	{}
+
+	SyncTask (void)
+		: m_enterBarrier	(DE_NULL)
+		, m_inBarrier		(DE_NULL)
+		, m_leaveBarrier	(DE_NULL)
+	{}
+
+	void execute (void)
+	{
+		m_enterBarrier->increment();
+		m_inBarrier->decrement();
+		m_leaveBarrier->increment();
+	}
+
+private:
+	de::Semaphore*	m_enterBarrier;
+	de::Semaphore*	m_inBarrier;
+	de::Semaphore*	m_leaveBarrier;
+};
+
+void TaskExecutor::waitForComplete (void)
+{
+	de::Semaphore			enterBarrier	(0);
+	de::Semaphore			inBarrier		(0);
+	de::Semaphore			leaveBarrier	(0);
+	std::vector<SyncTask>	syncTasks		(m_threads.size());
+
+	for (size_t ndx = 0; ndx < m_threads.size(); ++ndx)
+	{
+		syncTasks[ndx] = SyncTask(&enterBarrier, &inBarrier, &leaveBarrier);
+		submit(&syncTasks[ndx]);
+	}
+
+	for (size_t ndx = 0; ndx < m_threads.size(); ++ndx)
+		enterBarrier.decrement();
+
+	for (size_t ndx = 0; ndx < m_threads.size(); ++ndx)
+		inBarrier.increment();
+
+	for (size_t ndx = 0; ndx < m_threads.size(); ++ndx)
+		leaveBarrier.decrement();
+}
+
+struct Program
+{
+	enum Status
+	{
+		STATUS_NOT_COMPLETED = 0,
+		STATUS_FAILED,
+		STATUS_PASSED,
+
+		STATUS_LAST
+	};
+
+	vk::ProgramIdentifier	id;
+
+	Status					buildStatus;
+	std::string				buildLog;
+	ProgramBinarySp			binary;
+
+	Status					validationStatus;
+	std::string				validationLog;
+
+	explicit				Program		(const vk::ProgramIdentifier& id_)
+								: id				(id_)
+								, buildStatus		(STATUS_NOT_COMPLETED)
+								, validationStatus	(STATUS_NOT_COMPLETED)
+							{}
+							Program		(void)
+								: id				("", "")
+								, buildStatus		(STATUS_NOT_COMPLETED)
+								, validationStatus	(STATUS_NOT_COMPLETED)
+							{}
+};
 
 void writeBuildLogs (const glu::ShaderProgramInfo& buildInfo, std::ostream& dst)
 {
@@ -92,6 +236,43 @@ void writeBuildLogs (const glu::ShaderProgramInfo& buildInfo, std::ostream& dst)
 		<< "---\n";
 }
 
+class BuildGlslTask : public Task
+{
+public:
+
+	BuildGlslTask (const glu::ProgramSources& source, Program* program)
+		: m_source	(source)
+		, m_program	(program)
+	{}
+
+	BuildGlslTask (void) : m_program(DE_NULL) {}
+
+	void execute (void)
+	{
+		glu::ShaderProgramInfo buildInfo;
+
+		try
+		{
+			m_program->binary		= ProgramBinarySp(vk::buildProgram(m_source, vk::PROGRAM_FORMAT_SPIRV, &buildInfo));
+			m_program->buildStatus	= Program::STATUS_PASSED;
+		}
+		catch (const tcu::Exception&)
+		{
+			std::ostringstream log;
+
+			writeBuildLogs(buildInfo, log);
+
+			m_program->buildStatus	= Program::STATUS_FAILED;
+			m_program->buildLog		= log.str();
+
+		}
+	}
+
+private:
+	glu::ProgramSources	m_source;
+	Program*			m_program;
+};
+
 void writeBuildLogs (const vk::SpirVProgramInfo& buildInfo, std::ostream& dst)
 {
 	dst << "source:\n"
@@ -100,158 +281,200 @@ void writeBuildLogs (const vk::SpirVProgramInfo& buildInfo, std::ostream& dst)
 		<< "---\n";
 }
 
-vk::ProgramBinary* compileProgram (const glu::ProgramSources& source, std::ostream& buildLog)
+class BuildSpirVAsmTask : public Task
 {
-	glu::ShaderProgramInfo	buildInfo;
+public:
+	BuildSpirVAsmTask (const vk::SpirVAsmSource& source, Program* program)
+		: m_source	(source)
+		, m_program	(program)
+	{}
 
-	try
-	{
-		return vk::buildProgram(source, vk::PROGRAM_FORMAT_SPIRV, &buildInfo);
-	}
-	catch (const tcu::Exception&)
-	{
-		writeBuildLogs(buildInfo, buildLog);
-		throw;
-	}
-}
+	BuildSpirVAsmTask (void) : m_program(DE_NULL) {}
 
-vk::ProgramBinary* compileProgram (const vk::SpirVAsmSource& source, std::ostream& buildLog)
-{
-	vk::SpirVProgramInfo	buildInfo;
-
-	try
+	void execute (void)
 	{
-		return vk::assembleProgram(source, &buildInfo);
-	}
-	catch (const tcu::Exception&)
-	{
-		writeBuildLogs(buildInfo, buildLog);
-		throw;
-	}
-}
+		vk::SpirVProgramInfo buildInfo;
 
-struct BuiltProgram
-{
-	vk::ProgramIdentifier			id;
-	bool							buildOk;
-	UniquePtr<vk::ProgramBinary>	binary;		// Null if build failed
-	std::string						buildLog;
+		try
+		{
+			m_program->binary		= ProgramBinarySp(vk::assembleProgram(m_source, &buildInfo));
+			m_program->buildStatus	= Program::STATUS_PASSED;
+		}
+		catch (const tcu::Exception&)
+		{
+			std::ostringstream log;
 
-	BuiltProgram (const vk::ProgramIdentifier&	id_,
-				  bool							buildOk_,
-				  MovePtr<vk::ProgramBinary>	binary_,
-				  const std::string&			buildLog_)
-		: id		(id_)
-		, buildOk	(buildOk_)
-		, binary	(binary_)
-		, buildLog	(buildLog_)
-	{
+			writeBuildLogs(buildInfo, log);
+
+			m_program->buildStatus	= Program::STATUS_FAILED;
+			m_program->buildLog		= log.str();
+		}
 	}
+
+private:
+	vk::SpirVAsmSource	m_source;
+	Program*			m_program;
 };
 
-typedef SharedPtr<BuiltProgram> BuiltProgramSp;
-
-template<typename IteratorType>
-BuiltProgramSp buildProgram (IteratorType progIter, const std::string& casePath)
+class ValidateBinaryTask : public Task
 {
-	std::ostringstream			buildLog;
-	MovePtr<vk::ProgramBinary>	programBinary;
-	bool						buildOk			= false;
+public:
+	ValidateBinaryTask (Program* program)
+		: m_program(program)
+	{}
 
-	try
+	void execute (void)
 	{
-		programBinary	= MovePtr<vk::ProgramBinary>(compileProgram(progIter.getProgram(), buildLog));
-		buildOk			= true;
-	}
-	catch (const std::exception&)
-	{
-		// Ignore, buildOk = false
-		DE_ASSERT(!programBinary);
+		DE_ASSERT(m_program->buildStatus == Program::STATUS_PASSED);
+
+		std::ostringstream validationLog;
+
+		if (vk::validateProgram(*m_program->binary, &validationLog))
+			m_program->validationStatus = Program::STATUS_PASSED;
+		else
+			m_program->validationStatus = Program::STATUS_FAILED;
 	}
 
-	return BuiltProgramSp(new BuiltProgram(vk::ProgramIdentifier(casePath, progIter.getName()),
-										   buildOk,
-										   programBinary,
-										   buildLog.str()));
+private:
+	Program*	m_program;
+};
+
+tcu::TestPackageRoot* createRoot (tcu::TestContext& testCtx)
+{
+	vector<tcu::TestNode*>	children;
+	children.push_back(new TestPackage(testCtx));
+	return new tcu::TestPackageRoot(testCtx, children);
 }
 
 } // anonymous
 
+struct BuildStats
+{
+	int		numSucceeded;
+	int		numFailed;
+
+	BuildStats (void)
+		: numSucceeded	(0)
+		, numFailed		(0)
+	{
+	}
+};
+
 BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath, bool validateBinaries)
 {
-	const UniquePtr<tcu::TestPackageRoot>	root		(createRoot(testCtx));
-	tcu::DefaultHierarchyInflater			inflater	(testCtx);
-	tcu::TestHierarchyIterator				iterator	(*root, inflater, testCtx.getCommandLine());
-	const tcu::DirArchive					srcArchive	(dstPath.c_str());
-	UniquePtr<vk::BinaryRegistryWriter>		writer		(new vk::BinaryRegistryWriter(dstPath));
-	BuildStats								stats;
+	const deUint32						numThreads			= deGetNumAvailableLogicalCores();
 
-	while (iterator.getState() != tcu::TestHierarchyIterator::STATE_FINISHED)
+	TaskExecutor						executor			(numThreads);
+
+	// de::PoolArray<> is faster to build than std::vector
+	de::MemPool							programPool;
+	de::PoolArray<Program>				programs			(&programPool);
+
 	{
-		if (iterator.getState() == tcu::TestHierarchyIterator::STATE_ENTER_NODE &&
-			tcu::isTestNodeTypeExecutable(iterator.getNode()->getNodeType()))
+		// \todo [2016-09-30 pyry] Use main executor when glslang no longer requires global lock
+		TaskExecutor						buildGlslExecutor	(1);
+		de::MemPool							tmpPool;
+		de::PoolArray<BuildGlslTask>		buildGlslTasks		(&tmpPool);
+		de::PoolArray<BuildSpirVAsmTask>	buildSpirvAsmTasks	(&tmpPool);
+
+		// Collect build tasks
 		{
-			const TestCase* const		testCase	= dynamic_cast<TestCase*>(iterator.getNode());
-			const string				casePath	= iterator.getNodePath();
-			vk::SourceCollections		sourcePrograms;
-			vector<BuiltProgramSp>		builtPrograms;
+			const UniquePtr<tcu::TestPackageRoot>	root		(createRoot(testCtx));
+			tcu::DefaultHierarchyInflater			inflater	(testCtx);
+			tcu::TestHierarchyIterator				iterator	(*root, inflater, testCtx.getCommandLine());
 
-			tcu::print("%s\n", casePath.c_str());
-
-			testCase->initPrograms(sourcePrograms);
-
-			for (vk::GlslSourceCollection::Iterator progIter = sourcePrograms.glslSources.begin();
-				 progIter != sourcePrograms.glslSources.end();
-				 ++progIter)
+			while (iterator.getState() != tcu::TestHierarchyIterator::STATE_FINISHED)
 			{
-				builtPrograms.push_back(buildProgram(progIter, casePath));
-			}
-
-			for (vk::SpirVAsmCollection::Iterator progIter = sourcePrograms.spirvAsmSources.begin();
-				 progIter != sourcePrograms.spirvAsmSources.end();
-				 ++progIter)
-			{
-				builtPrograms.push_back(buildProgram(progIter, casePath));
-			}
-
-			// Process programs
-			for (vector<BuiltProgramSp>::const_iterator progIter = builtPrograms.begin();
-				 progIter != builtPrograms.end();
-				 ++progIter)
-			{
-				const BuiltProgram&	program	= **progIter;
-
-				if (program.buildOk)
+				if (iterator.getState() == tcu::TestHierarchyIterator::STATE_ENTER_NODE &&
+					tcu::isTestNodeTypeExecutable(iterator.getNode()->getNodeType()))
 				{
-					std::ostringstream	validationLog;
+					const TestCase* const		testCase	= dynamic_cast<TestCase*>(iterator.getNode());
+					const string				casePath	= iterator.getNodePath();
+					vk::SourceCollections		sourcePrograms;
 
-					writer->storeProgram(program.id, *program.binary);
+					testCase->initPrograms(sourcePrograms);
 
-					if (validateBinaries &&
-						!vk::validateProgram(*program.binary, &validationLog))
+					for (vk::GlslSourceCollection::Iterator progIter = sourcePrograms.glslSources.begin();
+						 progIter != sourcePrograms.glslSources.end();
+						 ++progIter)
 					{
-						tcu::print("ERROR: validation failed for %s\n", program.id.programName.c_str());
-						tcu::print("%s\n", validationLog.str().c_str());
-						stats.numFailed += 1;
+						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName())));
+						buildGlslTasks.pushBack(BuildGlslTask(progIter.getProgram(), &programs.back()));
+						buildGlslExecutor.submit(&buildGlslTasks.back());
 					}
-					else
-						stats.numSucceeded += 1;
+
+					for (vk::SpirVAsmCollection::Iterator progIter = sourcePrograms.spirvAsmSources.begin();
+						 progIter != sourcePrograms.spirvAsmSources.end();
+						 ++progIter)
+					{
+						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName())));
+						buildSpirvAsmTasks.pushBack(BuildSpirVAsmTask(progIter.getProgram(), &programs.back()));
+						executor.submit(&buildSpirvAsmTasks.back());
+					}
 				}
-				else
-				{
-					tcu::print("ERROR: failed to build %s\n", program.id.programName.c_str());
-					tcu::print("%s\n", program.buildLog.c_str());
-					stats.numFailed += 1;
-				}
+
+				iterator.next();
 			}
 		}
 
-		iterator.next();
+		// Need to wait until tasks completed before freeing task memory
+		buildGlslExecutor.waitForComplete();
+		executor.waitForComplete();
 	}
 
-	writer->writeIndex();
+	if (validateBinaries)
+	{
+		std::vector<ValidateBinaryTask>	validationTasks;
 
-	return stats;
+		validationTasks.reserve(programs.size());
+
+		for (de::PoolArray<Program>::iterator progIter = programs.begin(); progIter != programs.end(); ++progIter)
+		{
+			if (progIter->buildStatus == Program::STATUS_PASSED)
+			{
+				validationTasks.push_back(ValidateBinaryTask(&*progIter));
+				executor.submit(&validationTasks.back());
+			}
+		}
+
+		executor.waitForComplete();
+	}
+
+	{
+		vk::BinaryRegistryWriter	registryWriter		(dstPath);
+
+		for (de::PoolArray<Program>::iterator progIter = programs.begin(); progIter != programs.end(); ++progIter)
+		{
+			if (progIter->buildStatus == Program::STATUS_PASSED)
+				registryWriter.storeProgram(progIter->id, *progIter->binary);
+		}
+
+		registryWriter.writeIndex();
+	}
+
+	{
+		BuildStats	stats;
+
+		for (de::PoolArray<Program>::iterator progIter = programs.begin(); progIter != programs.end(); ++progIter)
+		{
+			const bool	buildOk			= progIter->buildStatus == Program::STATUS_PASSED;
+			const bool	validationOk	= progIter->validationStatus != Program::STATUS_FAILED;
+
+			if (buildOk && validationOk)
+				stats.numSucceeded += 1;
+			else
+			{
+				stats.numFailed += 1;
+				tcu::print("ERROR: %s / %s: %s failed\n",
+						   progIter->id.testCasePath.c_str(),
+						   progIter->id.programName.c_str(),
+						   (buildOk ? "validation" : "build"));
+				tcu::print("%s\n", (buildOk ? progIter->validationLog.c_str() : progIter->buildLog.c_str()));
+			}
+		}
+
+		return stats;
+	}
 }
 
 } // vkt
