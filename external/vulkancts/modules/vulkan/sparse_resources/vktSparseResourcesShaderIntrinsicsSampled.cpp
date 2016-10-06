@@ -116,9 +116,10 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "OpName %output_texel \"out_texel\"\n"
 		<< "OpName %output_residency \"out_residency\"\n"
 
-		<< "OpName %type_uniformblock_lod \"LodBlock\"\n"
-		<< "OpMemberName %type_uniformblock_lod 0 \"lod\"\n"
-		<< "OpName %uniformblock_lod_instance \"lodInstance\"\n"
+		<< "OpName %type_uniformblock \"LodBlock\"\n"
+		<< "OpMemberName %type_uniformblock 0 \"lod\"\n"
+		<< "OpMemberName %type_uniformblock 1 \"size\"\n"
+		<< "OpName %uniformblock_instance \"lodInstance\"\n"
 
 		<< "OpName %uniformconst_image_sparse \"u_imageSparse\"\n"
 
@@ -127,8 +128,9 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "OpDecorate %output_texel	 Location 0\n"
 		<< "OpDecorate %output_residency Location 1\n"
 
-		<< "OpDecorate		 %type_uniformblock_lod Block\n"
-		<< "OpMemberDecorate %type_uniformblock_lod 0 Offset 0\n"
+		<< "OpDecorate		 %type_uniformblock Block\n"
+		<< "OpMemberDecorate %type_uniformblock 0 Offset 0\n"
+		<< "OpMemberDecorate %type_uniformblock 1 Offset 8\n"
 
 		<< "OpDecorate %uniformconst_image_sparse DescriptorSet 0\n"
 		<< "OpDecorate %uniformconst_image_sparse Binding " << BINDING_IMAGE_SPARSE << "\n"
@@ -143,7 +145,7 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "%type_vec2							= OpTypeVector %type_float 2\n"
 		<< "%type_vec3							= OpTypeVector %type_float 3\n"
 		<< "%type_vec4							= OpTypeVector %type_float 4\n"
-		<< "%type_uniformblock_lod				= OpTypeStruct %type_uint\n"
+		<< "%type_uniformblock					= OpTypeStruct %type_uint %type_vec2\n"
 		<< "%type_img_comp						= " << getOpTypeImageComponent(m_format) << "\n"
 		<< "%type_img_comp_vec4					= OpTypeVector %type_img_comp 4\n"
 		<< "%type_struct_int_img_comp_vec4		= OpTypeStruct %type_int %type_img_comp_vec4\n"
@@ -159,8 +161,9 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "%type_function_img_comp_vec4		= OpTypePointer Function %type_img_comp_vec4\n"
 		<< "%type_function_int_img_comp_vec4	= OpTypePointer Function %type_struct_int_img_comp_vec4\n"
 
-		<< "%type_pushconstant_uniformblock_lod			= OpTypePointer PushConstant %type_uniformblock_lod\n"
+		<< "%type_pushconstant_uniformblock				= OpTypePointer PushConstant %type_uniformblock\n"
 		<< "%type_pushconstant_uniformblock_member_lod  = OpTypePointer PushConstant %type_uint\n"
+		<< "%type_pushconstant_uniformblock_member_size = OpTypePointer PushConstant %type_vec2\n"
 
 		<< "%type_image_sparse				= " << getOpTypeImageSparse(m_imageType, m_format, "%type_img_comp", true) << "\n"
 		<< "%type_sampled_image_sparse		= OpTypeSampledImage %type_image_sparse\n"
@@ -173,7 +176,7 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 
 		<< "%uniformconst_image_sparse	= OpVariable %type_uniformconst_image_sparse UniformConstant\n"
 
-		<< "%uniformblock_lod_instance  = OpVariable %type_pushconstant_uniformblock_lod PushConstant\n"
+		<< "%uniformblock_instance  = OpVariable %type_pushconstant_uniformblock PushConstant\n"
 
 		// Declare constants
 		<< "%constant_uint_0				= OpConstant %type_uint 0\n"
@@ -184,6 +187,8 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "%constant_int_1					= OpConstant %type_int  1\n"
 		<< "%constant_int_2					= OpConstant %type_int  2\n"
 		<< "%constant_int_3					= OpConstant %type_int  3\n"
+		<< "%constant_float_0				= OpConstant %type_float 0.0\n"
+		<< "%constant_float_half			= OpConstant %type_float 0.5\n"
 		<< "%constant_texel_resident		= OpConstant %type_uint " << MEMORY_BLOCK_BOUND_VALUE << "\n"
 		<< "%constant_texel_not_resident	= OpConstant %type_uint " << MEMORY_BLOCK_NOT_BOUND_VALUE << "\n"
 
@@ -200,9 +205,11 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "%local_texCoord_xy	= OpCompositeConstruct %type_vec2 %local_texCoord_x %local_texCoord_y\n"
 		<< "%local_texCoord_xyz = OpCompositeConstruct %type_vec3 %local_texCoord_x %local_texCoord_y %local_texCoord_z\n"
 
-		<< "%access_uniformblock_member_uint_lod = OpAccessChain %type_pushconstant_uniformblock_member_lod %uniformblock_lod_instance %constant_int_0\n"
+		<< "%access_uniformblock_member_uint_lod = OpAccessChain %type_pushconstant_uniformblock_member_lod %uniformblock_instance %constant_int_0\n"
 		<< "%local_uniformblock_member_uint_lod  = OpLoad %type_uint %access_uniformblock_member_uint_lod\n"
 		<< "%local_uniformblock_member_float_lod = OpConvertUToF %type_float %local_uniformblock_member_uint_lod\n"
+		<< "%access_uniformblock_member_size	 = OpAccessChain %type_pushconstant_uniformblock_member_size %uniformblock_instance %constant_int_1\n"
+		<< "%local_uniformblock_member_size		 = OpLoad %type_vec2 %access_uniformblock_member_size\n"
 
 		<< sparseImageOpString("%local_sparse_op_result", "%type_struct_int_img_comp_vec4", "%local_image_sparse", coordString, "%local_uniformblock_member_float_lod") << "\n"
 
@@ -276,10 +283,19 @@ std::string	SparseCaseOpImageSparseGather::sparseImageOpString (const std::strin
 
 	std::ostringstream	src;
 
-	src << "%local_sparse_gather_result_x = OpImageSparseGather " << resultType << " " << image << " " << coord << " %constant_int_0\n";
-	src << "%local_sparse_gather_result_y = OpImageSparseGather " << resultType << " " << image << " " << coord << " %constant_int_1\n";
-	src << "%local_sparse_gather_result_z = OpImageSparseGather " << resultType << " " << image << " " << coord << " %constant_int_2\n";
-	src << "%local_sparse_gather_result_w = OpImageSparseGather " << resultType << " " << image << " " << coord << " %constant_int_3\n";
+	// Bias the coord value by half a texel, so we sample from center of 2x2 gather rectangle
+
+	src << "%local_image_width	= OpCompositeExtract %type_float %local_uniformblock_member_size 0\n";
+	src << "%local_image_height	= OpCompositeExtract %type_float %local_uniformblock_member_size 1\n";
+	src << "%local_coord_x_bias	= OpFDiv %type_float %constant_float_half %local_image_width\n";
+	src << "%local_coord_y_bias	= OpFDiv %type_float %constant_float_half %local_image_height\n";
+	src << "%local_coord_bias	= OpCompositeConstruct %type_vec3 %local_coord_x_bias %local_coord_y_bias %constant_float_0\n";
+	src << "%local_coord_biased	= OpFAdd %type_vec3 " << coord << " %local_coord_bias\n";
+
+	src << "%local_sparse_gather_result_x = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_0\n";
+	src << "%local_sparse_gather_result_y = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_1\n";
+	src << "%local_sparse_gather_result_z = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_2\n";
+	src << "%local_sparse_gather_result_w = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_3\n";
 
 	src << "%local_gather_residency_code = OpCompositeExtract %type_int %local_sparse_gather_result_x 0\n";
 
@@ -510,12 +526,20 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 	const VkSamplerCreateInfo	samplerCreateInfo = mapSampler(samplerObject, m_format);
 	sampler = createSampler(deviceInterface, *m_logicalDevice, &samplerCreateInfo);
 
+	struct PushConstants
+	{
+		deUint32	lod;
+		deUint32	padding;			// padding needed to satisfy std430 rules
+		float		lodWidth;
+		float		lodHeight;
+	};
+
 	// Create pipeline layout
 	const VkPushConstantRange lodConstantRange =
 	{
 		VK_SHADER_STAGE_FRAGMENT_BIT,	// VkShaderStageFlags	stageFlags;
 		0u,								// deUint32			offset;
-		sizeof(deUint32),				// deUint32			size;
+		sizeof(PushConstants),			// deUint32			size;
 	};
 
 	const VkPipelineLayoutCreateInfo pipelineLayoutParams =
@@ -702,8 +726,16 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 		// Bind Scissor Rectangle
 		deviceInterface.cmdSetScissor(commandBuffer, 0u, 1u, &renderArea);
 
+		const PushConstants pushConstants =
+		{
+			mipLevelNdx,
+			0u,											// padding
+			static_cast<float>(mipLevelSize.width),
+			static_cast<float>(mipLevelSize.height)
+		};
+
 		// Update push constants
-		deviceInterface.cmdPushConstants(commandBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(deUint32), &mipLevelNdx);
+		deviceInterface.cmdPushConstants(commandBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(PushConstants), &pushConstants);
 
 		// Draw full screen quad
 		deviceInterface.cmdDraw(commandBuffer, 4u, 1u, 0u, 0u);
