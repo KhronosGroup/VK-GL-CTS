@@ -198,9 +198,11 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 
 		<< "%local_image_sparse = OpLoad %type_sampled_image_sparse %uniformconst_image_sparse\n"
 
-		<< "%local_texCoord_x = OpCompositeExtract %type_float %varying_texCoord 0\n"
-		<< "%local_texCoord_y = OpCompositeExtract %type_float %varying_texCoord 1\n"
-		<< "%local_texCoord_z = OpCompositeExtract %type_float %varying_texCoord 2\n"
+		<< "%texCoord = OpLoad %type_vec3 %varying_texCoord\n"
+
+		<< "%local_texCoord_x = OpCompositeExtract %type_float %texCoord 0\n"
+		<< "%local_texCoord_y = OpCompositeExtract %type_float %texCoord 1\n"
+		<< "%local_texCoord_z = OpCompositeExtract %type_float %texCoord 2\n"
 
 		<< "%local_texCoord_xy	= OpCompositeConstruct %type_vec2 %local_texCoord_x %local_texCoord_y\n"
 		<< "%local_texCoord_xyz = OpCompositeConstruct %type_vec3 %local_texCoord_x %local_texCoord_y %local_texCoord_z\n"
