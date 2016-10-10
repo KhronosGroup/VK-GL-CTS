@@ -1694,14 +1694,22 @@ VkImageUsageFlags getValidImageUsageFlags (VkFormat, VkFormatFeatureFlags suppor
 
 bool isValidImageUsageFlagCombination (VkImageUsageFlags usage)
 {
-	if (usage & vk::VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT)
+	if ((usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) != 0)
 	{
-		const VkImageUsageFlags		allowedFlags	= vk::VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT
-													| vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-													| vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
-													| vk::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-		return (usage & ~allowedFlags) == 0;
+		const VkImageUsageFlags		allowedFlags	= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT
+													| VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+													| VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+													| VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+
+		// Only *_ATTACHMENT_BIT flags can be combined with TRANSIENT_ATTACHMENT_BIT
+		if ((usage & ~allowedFlags) != 0)
+			return false;
+
+		// TRANSIENT_ATTACHMENT_BIT is not valid without COLOR_ or DEPTH_STENCIL_ATTACHMENT_BIT
+		if ((usage & (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)) == 0)
+			return false;
 	}
+
 	return usage != 0;
 }
 
