@@ -1772,26 +1772,55 @@ VkSampleCountFlags getRequiredOptimalTilingSampleCounts (const VkPhysicalDeviceL
 {
 	if (!isCompressedFormat(format))
 	{
-		const tcu::TextureFormat		tcuFormat	= mapVkFormat(format);
+		const tcu::TextureFormat		tcuFormat		= mapVkFormat(format);
+		const bool						hasDepthComp	= (tcuFormat.order == tcu::TextureFormat::D || tcuFormat.order == tcu::TextureFormat::DS);
+		const bool						hasStencilComp	= (tcuFormat.order == tcu::TextureFormat::S || tcuFormat.order == tcu::TextureFormat::DS);
+		const bool						isColorFormat	= !hasDepthComp && !hasStencilComp;
+		VkSampleCountFlags				sampleCounts	= ~(VkSampleCountFlags)0;
 
-		if (usageFlags & VK_IMAGE_USAGE_STORAGE_BIT)
-			return deviceLimits.storageImageSampleCounts;
-		else if (tcuFormat.order == tcu::TextureFormat::D)
-			return deviceLimits.sampledImageDepthSampleCounts;
-		else if (tcuFormat.order == tcu::TextureFormat::S)
-			return deviceLimits.sampledImageStencilSampleCounts;
-		else if (tcuFormat.order == tcu::TextureFormat::DS)
-			return deviceLimits.sampledImageDepthSampleCounts & deviceLimits.sampledImageStencilSampleCounts;
-		else
+		DE_ASSERT((hasDepthComp || hasStencilComp) != isColorFormat);
+
+		if ((usageFlags & VK_IMAGE_USAGE_STORAGE_BIT) != 0)
+			sampleCounts &= deviceLimits.storageImageSampleCounts;
+
+		if ((usageFlags & VK_IMAGE_USAGE_SAMPLED_BIT) != 0)
 		{
-			const tcu::TextureChannelClass	chnClass	= tcu::getTextureChannelClass(tcuFormat.type);
+			if (hasDepthComp)
+				sampleCounts &= deviceLimits.sampledImageDepthSampleCounts;
 
-			if (chnClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ||
-				chnClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
-				return deviceLimits.sampledImageIntegerSampleCounts;
-			else
-				return deviceLimits.sampledImageColorSampleCounts;
+			if (hasStencilComp)
+				sampleCounts &= deviceLimits.sampledImageStencilSampleCounts;
+
+			if (isColorFormat)
+			{
+				const tcu::TextureChannelClass	chnClass	= tcu::getTextureChannelClass(tcuFormat.type);
+
+				if (chnClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ||
+					chnClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
+					sampleCounts &= deviceLimits.sampledImageIntegerSampleCounts;
+				else
+					sampleCounts &= deviceLimits.sampledImageColorSampleCounts;
+			}
 		}
+
+		if ((usageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) != 0)
+			sampleCounts &= deviceLimits.framebufferColorSampleCounts;
+
+		if ((usageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0)
+		{
+			if (hasDepthComp)
+				sampleCounts &= deviceLimits.framebufferDepthSampleCounts;
+
+			if (hasStencilComp)
+				sampleCounts &= deviceLimits.framebufferStencilSampleCounts;
+		}
+
+		// If there is no usage flag set that would have corresponding device limit,
+		// only VK_SAMPLE_COUNT_1_BIT is required.
+		if (sampleCounts == ~(VkSampleCountFlags)0)
+			sampleCounts &= VK_SAMPLE_COUNT_1_BIT;
+
+		return sampleCounts;
 	}
 	else
 		return VK_SAMPLE_COUNT_1_BIT;
