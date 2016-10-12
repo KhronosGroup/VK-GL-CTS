@@ -41,6 +41,7 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/Initialize.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/Intermediate.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/intermOut.cpp
+		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/iomapper.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/IntermTraverse.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/limits.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/linkValidate.cpp
