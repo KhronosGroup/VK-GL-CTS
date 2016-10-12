@@ -1722,7 +1722,7 @@ static float calculateFloatConversionError (int srcBits)
 	{
 		const int	clampedBits	= de::clamp<int>(srcBits, 0, 32);
 		const float	srcMaxValue	= de::max((float)(1ULL<<clampedBits) - 1.0f, 1.0f);
-		const float	error		= deFloatCeil(1.0f / srcMaxValue);
+		const float	error		= 1.0f / srcMaxValue;
 
 		return de::clamp<float>(error, 0.0f, 1.0f);
 	}
@@ -1746,7 +1746,7 @@ bool BlittingImages::checkClampedAndUnclampedResult(const tcu::ConstPixelBufferA
 {
 	tcu::TestLog&				log			(m_context.getTestContext().getLog());
 	const bool					isLinear	= m_params.filter == VK_FILTER_LINEAR;
-	const tcu::TextureFormat	srcFormat	= clampedExpected.getFormat();
+	const tcu::TextureFormat	srcFormat	= m_sourceTextureLevel->getFormat();
 	const tcu::TextureFormat	dstFormat	= result.getFormat();
 	bool						isOk		= false;
 
