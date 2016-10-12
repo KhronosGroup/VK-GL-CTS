@@ -103,6 +103,8 @@ set(DEQP_EGL_LIBS
 	tcutil
 	eglutil
 	referencerenderer
+	glutil
+	glutil-sglr
 	${DEQP_EGL_LIBRARIES}
 	)
 
@@ -110,10 +112,6 @@ if (DE_OS_IS_ANDROID)
 	# EGL tests require headers from Android port directory
 	include_directories(${CMAKE_SOURCE_DIR}/framework/platform/android)
 	set(DEQP_EGL_LIBS ${DEQP_EGL_LIBS} tcutil-platform)
-endif ()
-
-if (DEQP_SUPPORT_GLES2)
-	set(DEQP_EGL_LIBS ${DEQP_EGL_LIBS} glutil glutil-sglr ${DEQP_GLES2_LIBRARIES})
 endif ()
 
 if (DEQP_SUPPORT_GLES1)

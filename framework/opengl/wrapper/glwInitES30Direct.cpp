@@ -25,7 +25,7 @@
 
 #include <stdexcept>
 
-#if defined(DEQP_SUPPORT_GLES3) && !defined(DEQP_GLES3_RUNTIME_LOAD)
+#if !defined(DEQP_GLES3_RUNTIME_LOAD)
 #	if (DE_OS == DE_OS_IOS)
 #		include <OpenGLES/ES3/gl.h>
 #	else
@@ -38,7 +38,7 @@ namespace glw
 
 void initES30Direct (Functions* gl)
 {
-#if defined(DEQP_SUPPORT_GLES3) && !defined(DEQP_GLES3_RUNTIME_LOAD)
+#if !defined(DEQP_GLES3_RUNTIME_LOAD)
 #	include "glwInitES30Direct.inl"
 #else
 	DE_UNREF(gl);

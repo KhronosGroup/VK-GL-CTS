@@ -954,10 +954,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi
 
 deqp_compile_flags := \
-	-DDEQP_SUPPORT_EGL=1 \
 	-DDEQP_SUPPORT_GLES1=1 \
-	-DDEQP_SUPPORT_GLES2=1 \
-	-DDEQP_SUPPORT_GLES3=1 \
 	-DDE_ANDROID_API=9 \
 	-D_XOPEN_SOURCE=600 \
 	-DDEQP_TARGET_NAME=\"android\" \

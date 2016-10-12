@@ -15,28 +15,19 @@ add_definitions(-DDE_ASSERT_FAILURE_CALLBACK)
 # dEQP-specific configuration. Target file should override these.
 set(DEQP_TARGET_NAME		"UNKNOWN")		# Target name
 
-set(DEQP_SUPPORT_GLES1		OFF)			# Is GLESv1 supported
-set(DEQP_GLES1_LIBRARIES	)				# GLESv1 libraries
-
-set(DEQP_SUPPORT_GLES2		OFF)			# Is GLESv2 supported
 set(DEQP_GLES2_LIBRARIES	)				# GLESv2 libraries. If empty, run-time linking is used
-
-set(DEQP_SUPPORT_GLES3		OFF)			# Is GLESv3 supported
 set(DEQP_GLES3_LIBRARIES	)				# GLESv3 libraries. If empty, run-time linking is used
-
-set(DEQP_SUPPORT_VG			OFF)			# Is VG supported
-set(DEQP_VG_LIBRARIES		)				# VG libraries
-
-set(DEQP_SUPPORT_EGL		OFF)			# Is EGL supported
 set(DEQP_EGL_LIBRARIES		)				# EGL libraries
 
-set(DEQP_SUPPORT_GLX		OFF)			# Is GLX supported
-set(DEQP_SUPPORT_WGL		OFF)			# Is WGL supported
+# Legacy APIs that don't use run-time loading
+set(DEQP_SUPPORT_GLES1		OFF)			# Is GLESv1 supported
+set(DEQP_GLES1_LIBRARIES	)				# GLESv1 libraries
+set(DEQP_SUPPORT_VG			OFF)			# Is OpenVG supported
+set(DEQP_VG_LIBRARIES		)				# VG libraries
+
+set(DEQP_SUPPORT_GLX		OFF)			# Is GLX supported \todo [2016-10-12 pyry] X11 specific - move to framework/platform/
 
 set(DEQP_PLATFORM_LIBRARIES	)				# Other platform libraries
-
-set(DEQP_SUPPORT_OPENGL		OFF)			# Is OpenGL supported on platform
-											# \note OpenGL is always loaded on run-time
 
 set(DEQP_PLATFORM_COPY_LIBRARIES	)		# Libraries / binaries that need to be copied to binary directory
 
@@ -86,18 +77,12 @@ include_directories(${PNG_INCLUDE_PATH})
 message(STATUS "DEQP_TARGET_NAME        = ${DEQP_TARGET_NAME}")
 message(STATUS "DEQP_SUPPORT_GLES1      = ${DEQP_SUPPORT_GLES1}")
 message(STATUS "DEQP_GLES1_LIBRARIES    = ${DEQP_GLES1_LIBRARIES}")
-message(STATUS "DEQP_SUPPORT_GLES2      = ${DEQP_SUPPORT_GLES2}")
 message(STATUS "DEQP_GLES2_LIBRARIES    = ${DEQP_GLES2_LIBRARIES}")
-message(STATUS "DEQP_SUPPORT_GLES3      = ${DEQP_SUPPORT_GLES3}")
 message(STATUS "DEQP_GLES3_LIBRARIES    = ${DEQP_GLES3_LIBRARIES}")
 message(STATUS "DEQP_SUPPORT_VG         = ${DEQP_SUPPORT_VG}")
 message(STATUS "DEQP_VG_LIBRARIES       = ${DEQP_VG_LIBRARIES}")
-message(STATUS "DEQP_SUPPORT_EGL        = ${DEQP_SUPPORT_EGL}")
 message(STATUS "DEQP_EGL_LIBRARIES      = ${DEQP_EGL_LIBRARIES}")
-message(STATUS "DEQP_SUPPORT_OPENGL     = ${DEQP_SUPPORT_OPENGL}")
 message(STATUS "DEQP_PLATFORM_LIBRARIES = ${DEQP_PLATFORM_LIBRARIES}")
-message(STATUS "DEQP_SUPPORT_WGL        = ${DEQP_SUPPORT_WGL}")
-message(STATUS "DEQP_SUPPORT_GLX        = ${DEQP_SUPPORT_GLX}")
 
 # Defines
 add_definitions(-DDEQP_TARGET_NAME="${DEQP_TARGET_NAME}")
@@ -106,58 +91,33 @@ if (DEQP_SUPPORT_GLES1)
 	add_definitions(-DDEQP_SUPPORT_GLES1=1)
 endif ()
 
-if (DEQP_SUPPORT_GLES2)
-	add_definitions(-DDEQP_SUPPORT_GLES2=1)
-endif ()
-
-if (DEQP_SUPPORT_GLES3)
-	add_definitions(-DDEQP_SUPPORT_GLES3=1)
-endif ()
-
 if (DEQP_SUPPORT_VG)
 	add_definitions(-DDEQP_SUPPORT_VG=1)
 endif ()
 
-if (DEQP_SUPPORT_EGL)
-	add_definitions(-DDEQP_SUPPORT_EGL=1)
+# Entry points loaded on run-time?
+if (NOT DEFINED DEQP_GLES2_LIBRARIES)
+	add_definitions(-DDEQP_GLES2_RUNTIME_LOAD=1)
 endif ()
 
-if (DEQP_SUPPORT_OPENGL)
-	add_definitions(-DDEQP_SUPPORT_OPENGL=1)
+if (NOT DEFINED DEQP_GLES3_LIBRARIES)
+	add_definitions(-DDEQP_GLES3_RUNTIME_LOAD=1)
 endif ()
 
-if (DEQP_SUPPORT_WGL)
-	add_definitions(-DDEQP_SUPPORT_WGL=1)
+if (NOT DEFINED DEQP_EGL_LIBRARIES)
+	add_definitions(-DDEQP_EGL_RUNTIME_LOAD=1)
 endif ()
 
-if (DEQP_SUPPORT_GLX)
-	add_definitions(-DDEQP_SUPPORT_GLX=1)
-endif ()
+# OpenGL entry points are always loaded on run-time
+add_definitions(-DDEQP_OPENGL_RUNTIME_LOAD=1)
 
-# Check runtime linking support
+# Legacy APIs that don't support run-time loading
 if (DEQP_SUPPORT_GLES1 AND NOT DEFINED DEQP_GLES1_LIBRARIES)
 	message(FATAL_ERROR "Run-time loading of GLES1 is not supported (DEQP_GLES1_LIBRARIES is not set)")
 endif ()
 
-if (DEQP_SUPPORT_GLES2 AND NOT DEFINED DEQP_GLES2_LIBRARIES)
-	add_definitions(-DDEQP_GLES2_RUNTIME_LOAD=1)
-endif ()
-
-if (DEQP_SUPPORT_GLES3 AND NOT DEFINED DEQP_GLES3_LIBRARIES)
-	add_definitions(-DDEQP_GLES3_RUNTIME_LOAD=1)
-endif ()
-
 if (DEQP_SUPPORT_VG AND NOT DEFINED DEQP_VG_LIBRARIES)
 	message(FATAL_ERROR "Run-time loading of VG is not supported (DEQP_VG_LIBRARIES is not set)")
-endif ()
-
-if (DEQP_SUPPORT_EGL AND NOT DEFINED DEQP_EGL_LIBRARIES)
-	add_definitions(-DDEQP_EGL_RUNTIME_LOAD=1)
-endif ()
-
-# OpenGL is always loaded on run-time
-if (DEQP_SUPPORT_OPENGL)
-	add_definitions(-DDEQP_OPENGL_RUNTIME_LOAD=1)
 endif ()
 
 if (DE_COMPILER_IS_MSC)
