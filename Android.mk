@@ -740,12 +740,14 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/compute/vktComputeShaderBuiltinVarTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeTestsUtil.cpp \
+	external/vulkancts/modules/vulkan/draw/vktBasicDrawTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawBaseClass.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawBufferObjectUtil.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawCreateInfoUtil.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawImageObjectUtil.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawIndexedTest.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawIndirectTest.cpp \
+	external/vulkancts/modules/vulkan/draw/vktDrawInstancedTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawSimpleTest.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateBaseClass.cpp \
