@@ -1694,8 +1694,10 @@ TextureSamplesInstance::TextureSamplesInstance (Context&				context,
 																					&properties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
 			TCU_THROW(NotSupportedError, "Format not supported");
 
+		// Integer pixel formats do not support multisampling, so need to add 1 MS in the list
 		static const vk::VkSampleCountFlagBits	sampleFlags[]	=
 		{
+			vk::VK_SAMPLE_COUNT_1_BIT,
 			vk::VK_SAMPLE_COUNT_2_BIT,
 			vk::VK_SAMPLE_COUNT_4_BIT,
 			vk::VK_SAMPLE_COUNT_8_BIT,
