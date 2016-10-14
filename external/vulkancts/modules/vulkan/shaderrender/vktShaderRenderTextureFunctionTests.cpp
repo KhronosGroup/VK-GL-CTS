@@ -1694,8 +1694,10 @@ TextureSamplesInstance::TextureSamplesInstance (Context&				context,
 																					&properties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
 			TCU_THROW(NotSupportedError, "Format not supported");
 
+		// Integer pixel formats do not support multisampling, so need to add 1 MS in the list
 		static const vk::VkSampleCountFlagBits	sampleFlags[]	=
 		{
+			vk::VK_SAMPLE_COUNT_1_BIT,
 			vk::VK_SAMPLE_COUNT_2_BIT,
 			vk::VK_SAMPLE_COUNT_4_BIT,
 			vk::VK_SAMPLE_COUNT_8_BIT,
@@ -2003,13 +2005,13 @@ protected:
 
 private:
 	void						initTexture						(void);
-	float						computeAccessedLod				(float computedLod) const;
+	float						computeLevelFromLod				(float computedLod) const;
 	vector<float>				computeQuadTexCoord				(void) const;
 
 	tcu::Vec4					m_minCoord;
 	tcu::Vec4					m_maxCoord;
-	float						m_level;
-	float						m_lod;
+	tcu::Vec2					m_lodBounds;
+	tcu::Vec2					m_levelBounds;
 };
 
 TextureQueryLodInstance::TextureQueryLodInstance (Context&					context,
@@ -2018,8 +2020,8 @@ TextureQueryLodInstance::TextureQueryLodInstance (Context&					context,
 	: TextureQueryInstance		(context, isVertexCase, textureSpec)
 	, m_minCoord				()
 	, m_maxCoord				()
-	, m_level					(0)
-	, m_lod						(0)
+	, m_lodBounds				()
+	, m_levelBounds				()
 {
 	// setup texture
 	initTexture();
@@ -2058,27 +2060,28 @@ TextureQueryLodInstance::TextureQueryLodInstance (Context&					context,
 	// calculate lod and accessed level
 	{
 		const tcu::UVec2&		viewportSize		= getViewportSize();
+		const float				lodEps				= (1.0f / float(1u << m_context.getDeviceProperties().limits.mipmapPrecisionBits)) + 0.008f;
 
 		switch (m_textureSpec.type)
 		{
 			case TEXTURETYPE_1D:
 			case TEXTURETYPE_1D_ARRAY:
 			{
-				float	dudx	= (m_maxCoord[0]-m_minCoord[0])*(float)m_textureSpec.width	/ (float)viewportSize[0];
+				const float	dudx	= (m_maxCoord[0]-m_minCoord[0])*(float)m_textureSpec.width	/ (float)viewportSize[0];
 
-				m_lod	= computeLodFromDerivates(DEFAULT_LOD_MODE, dudx, 0.0f);
-				m_level	= computeAccessedLod(m_lod);
+				m_lodBounds[0]		= computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f)-lodEps;
+				m_lodBounds[1]		= computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f)+lodEps;
 				break;
 			}
 
 			case TEXTURETYPE_2D:
 			case TEXTURETYPE_2D_ARRAY:
 			{
-				float	dudx	= (m_maxCoord[0]-m_minCoord[0])*(float)m_textureSpec.width	/ (float)viewportSize[0];
-				float	dvdy	= (m_maxCoord[1]-m_minCoord[1])*(float)m_textureSpec.height	/ (float)viewportSize[1];
+				const float	dudx	= (m_maxCoord[0]-m_minCoord[0])*(float)m_textureSpec.width	/ (float)viewportSize[0];
+				const float	dvdy	= (m_maxCoord[1]-m_minCoord[1])*(float)m_textureSpec.height	/ (float)viewportSize[1];
 
-				m_lod	= computeLodFromDerivates(DEFAULT_LOD_MODE, dudx, 0.0f, 0.0f, dvdy);
-				m_level	= computeAccessedLod(m_lod);
+				m_lodBounds[0]		= computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, 0.0f, dvdy)-lodEps;
+				m_lodBounds[1]		= computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, 0.0f, dvdy)+lodEps;
 				break;
 			}
 
@@ -2096,20 +2099,20 @@ TextureQueryLodInstance::TextureQueryLodInstance (Context&					context,
 				float						dudx	= (c10.s - c00.s)*(float)m_textureSpec.width	/ (float)viewportSize[0];
 				float						dvdy	= (c01.t - c00.t)*(float)m_textureSpec.height	/ (float)viewportSize[1];
 
-				m_lod	= computeLodFromDerivates(DEFAULT_LOD_MODE, dudx, 0.0f, 0.0f, dvdy);
-				m_level	= computeAccessedLod(m_lod);
+				m_lodBounds[0]		= computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, 0.0f, dvdy)-lodEps;
+				m_lodBounds[1]		= computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, 0.0f, dvdy)+lodEps;
 				break;
 			}
 
 			case TEXTURETYPE_3D:
 			{
-				float	dudx	= (m_maxCoord[0]-m_minCoord[0])*(float)m_textureSpec.width		/ (float)viewportSize[0];
-				float	dvdy	= (m_maxCoord[1]-m_minCoord[1])*(float)m_textureSpec.height		/ (float)viewportSize[1];
-				float	dwdx	= (m_maxCoord[2]-m_minCoord[2])*0.5f*(float)m_textureSpec.depth	/ (float)viewportSize[0];
-				float	dwdy	= (m_maxCoord[2]-m_minCoord[2])*0.5f*(float)m_textureSpec.depth	/ (float)viewportSize[1];
+				const float	dudx	= (m_maxCoord[0]-m_minCoord[0])*(float)m_textureSpec.width		/ (float)viewportSize[0];
+				const float	dvdy	= (m_maxCoord[1]-m_minCoord[1])*(float)m_textureSpec.height		/ (float)viewportSize[1];
+				const float	dwdx	= (m_maxCoord[2]-m_minCoord[2])*0.5f*(float)m_textureSpec.depth	/ (float)viewportSize[0];
+				const float	dwdy	= (m_maxCoord[2]-m_minCoord[2])*0.5f*(float)m_textureSpec.depth	/ (float)viewportSize[1];
 
-				m_lod	= computeLodFromDerivates(DEFAULT_LOD_MODE, dudx, 0.0f, dwdx, 0.0f, dvdy, dwdy);
-				m_level	= computeAccessedLod(m_lod);
+				m_lodBounds[0]		= computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, dwdx, 0.0f, dvdy, dwdy)-lodEps;
+				m_lodBounds[1]		= computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, dwdx, 0.0f, dvdy, dwdy)+lodEps;
 				break;
 			}
 
@@ -2117,6 +2120,9 @@ TextureQueryLodInstance::TextureQueryLodInstance (Context&					context,
 				DE_ASSERT(false);
 				break;
 		}
+
+		m_levelBounds[0] = computeLevelFromLod(m_lodBounds[0]);
+		m_levelBounds[1] = computeLevelFromLod(m_lodBounds[1]);
 	}
 }
 
@@ -2128,18 +2134,19 @@ tcu::TestStatus TextureQueryLodInstance::iterate (void)
 {
 	tcu::TestLog&		log		= m_context.getTestContext().getLog();
 
-	log << tcu::TestLog::Message << "Expected: level: " << m_level << ", lod: " << m_lod << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Expected: level in range " << m_levelBounds << ", lod in range " << m_lodBounds << tcu::TestLog::EndMessage;
 
 	// render
 	TextureQueryInstance::render();
 
 	// test
 	{
-		const float					tolerance			= 0.01f;
-		const tcu::TextureLevel&	result				= getResultImage();
-		tcu::Vec4					output				= result.getAccess().getPixel(0, 0);
+		const tcu::TextureLevel&	result		= getResultImage();
+		const tcu::Vec4				output		= result.getAccess().getPixel(0, 0);
+		const float					resLevel	= output.x();
+		const float					resLod		= output.y();
 
-		if ((de::abs(output.x() - m_level) < tolerance) && (de::abs(output.y() - m_lod) < tolerance))
+		if (de::inRange(resLevel, m_levelBounds[0], m_levelBounds[1]) && de::inRange(resLod, m_lodBounds[0], m_lodBounds[1]))
 		{
 			// success
 			log << tcu::TestLog::Message << "Passed" << tcu::TestLog::EndMessage;
@@ -2148,7 +2155,7 @@ tcu::TestStatus TextureQueryLodInstance::iterate (void)
 		else
 		{
 			// failure
-			log << tcu::TestLog::Message << "Result: level: " << output.x() << ", lod: " << output.y() << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Result: level: " << resLevel << ", lod: " << resLod << tcu::TestLog::EndMessage;
 			log << tcu::TestLog::Message << "Failed" << tcu::TestLog::EndMessage;
 			return tcu::TestStatus::fail("Got unexpected result");
 		}
@@ -2190,7 +2197,7 @@ void TextureQueryLodInstance::initTexture (void)
 	m_textures.push_back(textureBinding);
 }
 
-float TextureQueryLodInstance::computeAccessedLod (float computedLod) const
+float TextureQueryLodInstance::computeLevelFromLod (float computedLod) const
 {
 	const int	maxAccessibleLevel	= m_textureSpec.numLevels - 1;
 

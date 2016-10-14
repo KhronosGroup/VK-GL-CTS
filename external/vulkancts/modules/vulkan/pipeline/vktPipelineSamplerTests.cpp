@@ -184,13 +184,10 @@ void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 	const char*						texCoordSwizzle	= DE_NULL;
 	tcu::TextureFormat				format			= (isCompressedFormat(m_imageFormat)) ? tcu::getUncompressedFormat(mapVkCompressedFormat(m_imageFormat))
 																						  : mapVkFormat(m_imageFormat);
+	tcu::Vec4						lookupScale;
+	tcu::Vec4						lookupBias;
 
-	// \note We don't want to perform normalization on any compressed formats.
-	//		 In case of non-sRGB LDR ASTC it would lead to lack of coverage
-	//		 as uncompressed format for that is f16 but values will be in range
-	//		 0..1 already.
-	const tcu::TextureFormatInfo	formatInfo		= (!isCompressedFormat(m_imageFormat) ? tcu::getTextureFormatInfo(format)
-																						  : tcu::getTextureFormatInfo(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)));
+	getLookupScaleBias(m_imageFormat, lookupScale, lookupBias);
 
 	switch (m_imageViewType)
 	{
@@ -240,7 +237,7 @@ void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 	else
 		fragmentSrc << "texture(texSampler, vtxTexCoords." << texCoordSwizzle << ")" << std::fixed;
 
-	fragmentSrc << " * vec4" << std::scientific << formatInfo.lookupScale << " + vec4" << formatInfo.lookupBias << ";\n"
+	fragmentSrc << " * vec4" << std::scientific << lookupScale << " + vec4" << lookupBias << ";\n"
 				<< "}\n";
 
 	sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());

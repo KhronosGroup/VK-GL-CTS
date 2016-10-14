@@ -23,12 +23,6 @@ message("*** Default target")
 
 set(DEQP_TARGET_NAME	"Default")
 
-# OpenGL (ES) & EGL tests do not require any libraries or headers
-set(DEQP_SUPPORT_GLES2	ON)
-set(DEQP_SUPPORT_GLES3	ON)
-set(DEQP_SUPPORT_OPENGL	ON)
-set(DEQP_SUPPORT_EGL	ON)
-
 # For static linking
 find_library(GLES2_LIBRARY		NAMES libGLESv2 GLESv2)
 find_library(EGL_LIBRARY		NAMES libEGL EGL)
