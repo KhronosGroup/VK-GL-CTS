@@ -482,6 +482,8 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate (void)
 	const vk::VkImageType			imageType			= getVkImageType(texType);
 	const vk::VkImageViewType		imageViewType		= getVkImageViewType(texType);
 	const tcu::Sampler::FilterMode	filterMode			= (isShadowSampler(m_samplerType) || isIntegerFormat(texFormat)) ? tcu::Sampler::NEAREST : tcu::Sampler::LINEAR;
+
+	// The shadow sampler with unnormalized coordinates is only used with the reference texture. Actual samplers in shaders use normalized coords.
 	const tcu::Sampler				refSampler			= isShadowSampler(m_samplerType)
 																? tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE,
 																				filterMode, filterMode, 0.0f, false /* non-normalized */,
@@ -536,7 +538,12 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate (void)
 
 		inputs.push_back(&coords[0]);
 
-		m_uniformSetup->addData(new SamplerUniformData(bindingLocation++, (deUint32)numSamplers, refSampler, texFormat, tcu::IVec3(1, 1, 1), imageType, imageViewType, &texData[0]));
+		{
+			tcu::Sampler sampler		= refSampler;
+			sampler.normalizedCoords	= true;
+
+			m_uniformSetup->addData(new SamplerUniformData(bindingLocation++, (deUint32)numSamplers, sampler, texFormat, tcu::IVec3(1, 1, 1), imageType, imageViewType, &texData[0]));
+		}
 
 		if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
 		{
