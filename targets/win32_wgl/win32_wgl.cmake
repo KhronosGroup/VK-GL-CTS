@@ -19,8 +19,4 @@
 #-------------------------------------------------------------------------
 
 message("*** Using WGL")
-set(DEQP_TARGET_NAME	"WGL")
-set(DEQP_SUPPORT_GLES2	ON)
-set(DEQP_SUPPORT_GLES3	ON)
-set(DEQP_SUPPORT_OPENGL	ON)
-set(DEQP_SUPPORT_EGL	ON)
+set(DEQP_TARGET_NAME "WGL")

@@ -20,9 +20,6 @@
 # iOS Target
 
 set(DEQP_TARGET_NAME	"iOS")
-set(DEQP_SUPPORT_GLES2	ON)
-set(DEQP_SUPPORT_GLES3	ON)
-set(DEQP_SUPPORT_EGL	OFF)
 
 # Libraries
 find_library(GLES2_LIBRARY			NAMES	OpenGLES		PATHS /System/Library/Frameworks)

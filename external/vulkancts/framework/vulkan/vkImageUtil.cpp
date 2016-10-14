@@ -899,37 +899,6 @@ tcu::Sampler::FilterMode mapVkMagTexFilter (VkFilter filter)
 	return tcu::Sampler::FILTERMODE_LAST;
 }
 
-
-int mapVkComponentSwizzle (const vk::VkComponentSwizzle& channelSwizzle)
-{
-	switch (channelSwizzle)
-	{
-		case vk::VK_COMPONENT_SWIZZLE_ZERO:	return 0;
-		case vk::VK_COMPONENT_SWIZZLE_ONE:	return 1;
-		case vk::VK_COMPONENT_SWIZZLE_R:	return 2;
-		case vk::VK_COMPONENT_SWIZZLE_G:	return 3;
-		case vk::VK_COMPONENT_SWIZZLE_B:	return 4;
-		case vk::VK_COMPONENT_SWIZZLE_A:	return 5;
-		default:
-			break;
-	}
-
-	DE_ASSERT(false);
-	return 0;
-}
-
-tcu::UVec4 mapVkComponentMapping (const vk::VkComponentMapping& mapping)
-{
-	tcu::UVec4 swizzle;
-
-	swizzle.x() = mapVkComponentSwizzle(mapping.r);
-	swizzle.y() = mapVkComponentSwizzle(mapping.g);
-	swizzle.z() = mapVkComponentSwizzle(mapping.b);
-	swizzle.w() = mapVkComponentSwizzle(mapping.a);
-
-	return swizzle;
-}
-
 //! Get a format the matches the layout in buffer memory used for a
 //! buffer<->image copy on a depth/stencil format.
 tcu::TextureFormat getDepthCopyFormat (VkFormat combinedFormat)
