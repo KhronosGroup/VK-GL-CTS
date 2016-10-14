@@ -27,7 +27,6 @@
 
 #include "vkDefs.hpp"
 #include "vkPlatform.hpp"
-
 #include "vkRef.hpp"
 
 namespace vkt
@@ -36,11 +35,10 @@ namespace synchronization
 {
 namespace
 {
-
 using namespace vk;
 
-#define SHORT_FENCE_WAIT	1000ull
-#define LONG_FENCE_WAIT		~0ull
+static const deUint64	SHORT_FENCE_WAIT	= 1000ull;
+static const deUint64	LONG_FENCE_WAIT		= ~0ull;
 
 tcu::TestStatus basicOneFenceCase (Context& context)
 {
@@ -114,8 +112,8 @@ tcu::TestStatus basicMultiFenceCase (Context& context)
 															DE_NULL,							 // const void*			pNext;
 															0u,									 // VkFenceCreateFlags	flags;
 														};
-	const Move<VkFence>				ptrFence[2]			= {createFence(vk, device, &fenceInfo),createFence(vk, device, &fenceInfo)};
-	const VkFence					fence[2]			= {*ptrFence[FISRT_FENCE],*ptrFence[SECOND_FENCE]};
+	const Move<VkFence>				ptrFence[2]			= { createFence(vk, device, &fenceInfo), createFence(vk, device, &fenceInfo) };
+	const VkFence					fence[2]			= { *ptrFence[FISRT_FENCE], *ptrFence[SECOND_FENCE] };
 	const VkCommandBufferBeginInfo	info				=
 														{
 															VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType                          sType;
@@ -161,13 +159,35 @@ tcu::TestStatus basicMultiFenceCase (Context& context)
 	return tcu::TestStatus::pass("Basic multi fence tests passed");
 }
 
+tcu::TestStatus emptySubmitCase (Context& context)
+{
+	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkDevice					device				= context.getDevice();
+	const VkQueue					queue				= context.getUniversalQueue();
+	const VkFenceCreateInfo			fenceCreateInfo		=
+														{
+															VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,		// VkStructureType       sType;
+															DE_NULL,									// const void*           pNext;
+															(VkFenceCreateFlags)0,						// VkFenceCreateFlags    flags;
+														};
+	const Unique<VkFence>			fence				(createFence(vk, device, &fenceCreateInfo));
+
+	VK_CHECK(vk.queueSubmit(queue, 0u, DE_NULL, *fence));
+
+	if (VK_SUCCESS != vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, LONG_FENCE_WAIT))
+		return tcu::TestStatus::fail("vkWaitForFences should return VK_SUCCESS");
+
+	return tcu::TestStatus::pass("OK");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createBasicFenceTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> basicFenceTests(new tcu::TestCaseGroup(testCtx, "fence", "Basic fence tests"));
-	addFunctionCase(basicFenceTests.get(), "one",   "Basic one fence tests",   basicOneFenceCase);
-	addFunctionCase(basicFenceTests.get(), "multi", "Basic multi fence tests", basicMultiFenceCase);
+	addFunctionCase(basicFenceTests.get(),	 "one",				"Basic one fence tests",							basicOneFenceCase);
+	addFunctionCase(basicFenceTests.get(),	 "multi",			"Basic multi fence tests",							basicMultiFenceCase);
+	addFunctionCase(basicFenceTests.get(),	 "empty_submit",	"Signal a fence after an empty queue submission",	emptySubmitCase);
 
 	return basicFenceTests.release();
 }
