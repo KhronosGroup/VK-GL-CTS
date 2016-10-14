@@ -164,6 +164,42 @@ VkBorderColor getFormatBorderColor (BorderColor color, VkFormat format)
 	return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 }
 
+void getLookupScaleBias (vk::VkFormat format, tcu::Vec4& lookupScale, tcu::Vec4& lookupBias)
+{
+	if (!isCompressedFormat(format))
+	{
+		const tcu::TextureFormatInfo	fmtInfo	= tcu::getTextureFormatInfo(mapVkFormat(format));
+
+		// Needed to normalize various formats to 0..1 range for writing into RT
+		lookupScale	= fmtInfo.lookupScale;
+		lookupBias	= fmtInfo.lookupBias;
+	}
+	else
+	{
+		switch (format)
+		{
+			case VK_FORMAT_EAC_R11_SNORM_BLOCK:
+				lookupScale	= tcu::Vec4(0.5f, 1.0f, 1.0f, 1.0f);
+				lookupBias	= tcu::Vec4(0.5f, 0.0f, 0.0f, 0.0f);
+				break;
+
+			case VK_FORMAT_EAC_R11G11_SNORM_BLOCK:
+				lookupScale	= tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f);
+				lookupBias	= tcu::Vec4(0.5f, 0.5f, 0.0f, 0.0f);
+				break;
+
+			default:
+				// else: All supported compressed formats are fine with no normalization.
+				//		 ASTC LDR blocks decompress to f16 so querying normalization parameters
+				//		 based on uncompressed formats would actually lead to massive precision loss
+				//		 and complete lack of coverage in case of R8G8B8A8_UNORM RT.
+				lookupScale	= tcu::Vec4(1.0f);
+				lookupBias	= tcu::Vec4(0.0f);
+				break;
+		}
+	}
+}
+
 de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	vk,
 													vk::VkDevice				device,
 													vk::VkQueue					queue,
