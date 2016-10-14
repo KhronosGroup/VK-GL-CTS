@@ -21,9 +21,7 @@
 # Raspberry Pi target
 message("*** Using Raspberry Pi")
 set(DEQP_TARGET_NAME	"Raspberry Pi")
-set(DEQP_SUPPORT_GLES2	ON)
 set(DEQP_SUPPORT_VG		ON)
-set(DEQP_SUPPORT_EGL	ON)
 
 find_path(SYSTEM_INCLUDE bcm_host.h PATHS /usr/include /opt/vc/include)
 include_directories(

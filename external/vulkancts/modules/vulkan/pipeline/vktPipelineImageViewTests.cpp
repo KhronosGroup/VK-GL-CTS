@@ -127,15 +127,13 @@ void ImageViewTest::initPrograms (SourceCollections& sourceCollections) const
 	const tcu::TextureFormat		format			= (isCompressedFormat(m_imageFormat)) ? tcu::getUncompressedFormat(mapVkCompressedFormat(m_imageFormat))
 																						  : mapVkFormat(m_imageFormat);
 
-	// \note We don't want to perform normalization on any compressed formats.
-	//		 In case of non-sRGB LDR ASTC it would lead to lack of coverage
-	//		 as uncompressed format for that is f16 but values will be in range
-	//		 0..1 already.
-	const tcu::TextureFormatInfo	formatInfo		= (!isCompressedFormat(m_imageFormat) ? tcu::getTextureFormatInfo(format)
-																						  : tcu::getTextureFormatInfo(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)));
+	tcu::Vec4						lookupScale;
+	tcu::Vec4						lookupBias;
 
-	tcu::Vec4						swizzledScale	= swizzle(formatInfo.lookupScale, m_componentMapping);
-	tcu::Vec4						swizzledBias	= swizzle(formatInfo.lookupBias, m_componentMapping);
+	getLookupScaleBias(m_imageFormat, lookupScale, lookupBias);
+
+	tcu::Vec4						swizzledScale	= swizzle(lookupScale, m_componentMapping);
+	tcu::Vec4						swizzledBias	= swizzle(lookupBias, m_componentMapping);
 
 	switch (m_imageViewType)
 	{

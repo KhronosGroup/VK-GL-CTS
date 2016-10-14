@@ -51,8 +51,6 @@ tcu::Sampler::CompareMode	mapVkSamplerCompareOp		(VkCompareOp compareOp);
 tcu::Sampler::WrapMode		mapVkSamplerAddressMode		(VkSamplerAddressMode addressMode);
 tcu::Sampler::FilterMode	mapVkMinTexFilter			(VkFilter filter, VkSamplerMipmapMode mipMode);
 tcu::Sampler::FilterMode	mapVkMagTexFilter			(VkFilter filter);
-int							mapVkComponentSwizzle		(const VkComponentSwizzle& channelSwizzle);
-tcu::UVec4					mapVkComponentMapping		(const vk::VkComponentMapping& mapping);
 
 VkFilter					mapFilterMode				(tcu::Sampler::FilterMode filterMode);
 VkSamplerMipmapMode			mapMipmapMode				(tcu::Sampler::FilterMode filterMode);

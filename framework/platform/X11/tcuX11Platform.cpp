@@ -31,11 +31,10 @@
 #include "tcuFunctionLibrary.hpp"
 #include "deMemory.h"
 #include "tcuX11VulkanPlatform.hpp"
+#include "tcuX11EglPlatform.hpp"
+
 #if defined (DEQP_SUPPORT_GLX)
 #	include "tcuX11GlxPlatform.hpp"
-#endif
-#if defined (DEQP_SUPPORT_EGL)
-#	include "tcuX11EglPlatform.hpp"
 #endif
 
 #include <sys/utsname.h>
@@ -62,36 +61,27 @@ class X11Platform : public tcu::Platform
 public:
 							X11Platform			(void);
 	bool					processEvents		(void) { return !m_eventState.getQuitFlag(); }
-	const glu::Platform&	getGLPlatform		(void) const { return m_glPlatform; }
-
-#if defined (DEQP_SUPPORT_EGL)
-	const eglu::Platform&	getEGLPlatform		(void) const { return m_eglPlatform; }
-#endif // DEQP_SUPPORT_EGL
 
 	const vk::Platform&		getVulkanPlatform	(void) const { return m_vkPlatform; }
+	const eglu::Platform&	getEGLPlatform		(void) const { return m_eglPlatform; }
+	const glu::Platform&	getGLPlatform		(void) const { return m_glPlatform; }
 
 private:
 	EventState				m_eventState;
 	x11::VulkanPlatform		m_vkPlatform;
-#if defined (DEQP_SUPPORT_EGL)
 	x11::egl::Platform		m_eglPlatform;
-#endif // DEQP_SPPORT_EGL
 	X11GLPlatform			m_glPlatform;
 };
 
-
 X11Platform::X11Platform (void)
 	: m_vkPlatform	(m_eventState)
-#if defined (DEQP_SUPPORT_EGL)
 	, m_eglPlatform	(m_eventState)
-#endif // DEQP_SUPPORT_EGL
 {
 #if defined (DEQP_SUPPORT_GLX)
 	m_glPlatform.registerFactory(glx::createContextFactory(m_eventState));
 #endif // DEQP_SUPPORT_GLX
-#if defined (DEQP_SUPPORT_EGL)
+
 	m_glPlatform.registerFactory(m_eglPlatform.createContextFactory());
-#endif // DEQP_SUPPORT_EGL
 }
 
 } // x11

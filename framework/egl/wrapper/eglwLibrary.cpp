@@ -25,7 +25,7 @@
 #include "tcuFunctionLibrary.hpp"
 #include "deDynamicLibrary.hpp"
 
-#if defined(DEQP_SUPPORT_EGL) && !defined(DEQP_EGL_RUNTIME_LOAD)
+#if !defined(DEQP_EGL_RUNTIME_LOAD)
 #	include <EGL/egl.h>
 #endif
 
@@ -47,7 +47,7 @@ namespace
 
 tcu::FunctionLibrary* createStaticLibrary (void)
 {
-#if defined(DEQP_SUPPORT_EGL) && !defined(DEQP_EGL_RUNTIME_LOAD)
+#if !defined(DEQP_EGL_RUNTIME_LOAD)
 	static tcu::StaticFunctionLibrary::Entry s_staticEntries[] =
 	{
 #	if defined(EGL_VERSION_1_5)

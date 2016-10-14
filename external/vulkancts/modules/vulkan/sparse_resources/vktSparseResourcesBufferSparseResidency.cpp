@@ -162,6 +162,7 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate (void)
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
 		DE_NULL,								// const void*			pNext;
+		VK_BUFFER_CREATE_SPARSE_BINDING_BIT |
 		VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,	// VkBufferCreateFlags	flags;
 		m_bufferSize,							// VkDeviceSize			size;
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
