@@ -143,8 +143,7 @@ public:
 
 	virtual vk::VkQueueFlags			getQueueFlags			(void) const = 0;
 
-	virtual void						recordCommands			(vk::Allocator&					allocator,
-																 const vk::VkCommandBuffer		commandBuffer,
+	virtual void						recordCommands			(const vk::VkCommandBuffer		commandBuffer,
 																 const vk::VkImageCreateInfo&	imageSparseInfo,
 																 const vk::VkImage				imageSparse,
 																 const vk::VkImage				imageTexels,

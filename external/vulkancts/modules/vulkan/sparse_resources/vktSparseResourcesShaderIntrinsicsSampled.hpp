@@ -39,7 +39,7 @@ public:
 												 const ImageType			imageType,
 												 const tcu::UVec3&			imageSize,
 												 const tcu::TextureFormat&	format)
-	: SparseShaderIntrinsicsCaseBase(testCtx, name, function, imageType, imageSize, format) {}
+												 : SparseShaderIntrinsicsCaseBase (testCtx, name, function, imageType, imageSize, format) {}
 
 	void				initPrograms			(vk::SourceCollections&		programCollection) const;
 
@@ -59,9 +59,9 @@ public:
 												 const ImageType			imageType,
 												 const tcu::UVec3&			imageSize,
 												 const tcu::TextureFormat&	format)
-	: SparseShaderIntrinsicsCaseSampledBase(testCtx, name, function, imageType, imageSize, format) {}
+												 : SparseShaderIntrinsicsCaseSampledBase (testCtx, name, function, imageType, imageSize, format) {}
 
-	TestInstance*		createInstance			(Context&					context) const;
+	TestInstance*	createInstance				(Context&					context) const;
 };
 
 class SparseCaseOpImageSparseSampleExplicitLod : public SparseShaderIntrinsicsCaseSampledExplicit
@@ -73,9 +73,13 @@ public:
 												 const ImageType			imageType,
 												 const tcu::UVec3&			imageSize,
 												 const tcu::TextureFormat&	format)
-	: SparseShaderIntrinsicsCaseSampledExplicit(testCtx, name, function, imageType, imageSize, format) {}
+												 : SparseShaderIntrinsicsCaseSampledExplicit (testCtx, name, function, imageType, imageSize, format) {}
 
-	std::string	sparseImageOpString(const std::string& resultVariable, const std::string& resultType, const std::string& image, const std::string& coord, const std::string& miplevel) const;
+	std::string	sparseImageOpString				(const std::string&			resultVariable,
+												 const std::string&			resultType,
+												 const std::string&			image,
+												 const std::string&			coord,
+												 const std::string&			miplevel) const;
 };
 
 class SparseShaderIntrinsicsCaseSampledImplicit : public SparseShaderIntrinsicsCaseSampledBase
@@ -87,9 +91,9 @@ public:
 												 const ImageType			imageType,
 												 const tcu::UVec3&			imageSize,
 												 const tcu::TextureFormat&	format)
-	: SparseShaderIntrinsicsCaseSampledBase(testCtx, name, function, imageType, imageSize, format) {}
+												 : SparseShaderIntrinsicsCaseSampledBase (testCtx, name, function, imageType, imageSize, format) {}
 
-	TestInstance*		createInstance			(Context&					context) const;
+	TestInstance*	createInstance				(Context&					context) const;
 };
 
 class SparseCaseOpImageSparseSampleImplicitLod : public SparseShaderIntrinsicsCaseSampledImplicit
@@ -101,23 +105,31 @@ public:
 												 const ImageType			imageType,
 												 const tcu::UVec3&			imageSize,
 												 const tcu::TextureFormat&	format)
-	: SparseShaderIntrinsicsCaseSampledImplicit(testCtx, name, function, imageType, imageSize, format) {}
+												 : SparseShaderIntrinsicsCaseSampledImplicit (testCtx, name, function, imageType, imageSize, format) {}
 
-	std::string	sparseImageOpString(const std::string& resultVariable, const std::string& resultType, const std::string& image, const std::string& coord, const std::string& miplevel) const;
+	std::string	sparseImageOpString				(const std::string&			resultVariable,
+												 const std::string&			resultType,
+												 const std::string&			image,
+												 const std::string&			coord,
+												 const std::string&			miplevel) const;
 };
 
 class SparseCaseOpImageSparseGather : public SparseShaderIntrinsicsCaseSampledImplicit
 {
 public:
-	SparseCaseOpImageSparseGather	(tcu::TestContext&			testCtx,
-									 const std::string&			name,
-									 const SpirVFunction		function,
-									 const ImageType			imageType,
-									 const tcu::UVec3&			imageSize,
-									 const tcu::TextureFormat&	format)
-		: SparseShaderIntrinsicsCaseSampledImplicit(testCtx, name, function, imageType, imageSize, format) {}
+	SparseCaseOpImageSparseGather				(tcu::TestContext&			testCtx,
+												 const std::string&			name,
+												 const SpirVFunction		function,
+												 const ImageType			imageType,
+												 const tcu::UVec3&			imageSize,
+												 const tcu::TextureFormat&	format)
+												 : SparseShaderIntrinsicsCaseSampledImplicit (testCtx, name, function, imageType, imageSize, format) {}
 
-	std::string	sparseImageOpString(const std::string& resultVariable, const std::string& resultType, const std::string& image, const std::string& coord, const std::string& miplevel) const;
+	std::string	sparseImageOpString				(const std::string&			resultVariable,
+												 const std::string&			resultType,
+												 const std::string&			image,
+												 const std::string&			coord,
+												 const std::string&			miplevel) const;
 };
 
 } // sparse
