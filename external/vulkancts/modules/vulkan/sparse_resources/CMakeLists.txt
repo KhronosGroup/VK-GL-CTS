@@ -17,6 +17,8 @@ set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesImageSparseResidency.hpp
 	vktSparseResourcesMipmapSparseResidency.cpp
 	vktSparseResourcesMipmapSparseResidency.hpp
+	vktSparseResourcesQueueBindSparseTests.cpp
+	vktSparseResourcesQueueBindSparseTests.hpp
 	vktSparseResourcesShaderIntrinsics.cpp
 	vktSparseResourcesShaderIntrinsics.hpp
 	vktSparseResourcesShaderIntrinsicsBase.cpp

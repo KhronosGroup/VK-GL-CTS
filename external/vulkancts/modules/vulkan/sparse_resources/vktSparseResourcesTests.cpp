@@ -30,6 +30,7 @@
 #include "vktSparseResourcesBufferMemoryAliasing.hpp"
 #include "vktSparseResourcesImageMemoryAliasing.hpp"
 #include "vktSparseResourcesShaderIntrinsics.hpp"
+#include "vktSparseResourcesQueueBindSparseTests.hpp"
 #include "deUniquePtr.hpp"
 
 namespace vkt
@@ -49,6 +50,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	sparseTests->addChild(createBufferSparseMemoryAliasingTests		(testCtx));
 	sparseTests->addChild(createImageSparseMemoryAliasingTests		(testCtx));
 	sparseTests->addChild(createSparseResourcesShaderIntrinsicsTests(testCtx));
+	sparseTests->addChild(createQueueBindSparseTests				(testCtx));
 
 	return sparseTests.release();
 }
