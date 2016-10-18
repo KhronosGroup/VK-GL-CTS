@@ -92,8 +92,8 @@ enum LimitType
 	LIMIT_TYPE_LAST
 };
 
-#define LIMIT(_X_)		(deUint32)DE_OFFSET_OF(VkPhysicalDeviceLimits, _X_), (const char*)(#_X_)
-#define FEATURE(_X_)	(deUint32)DE_OFFSET_OF(VkPhysicalDeviceFeatures, _X_)
+#define LIMIT(_X_)		DE_OFFSET_OF(VkPhysicalDeviceLimits, _X_), (const char*)(#_X_)
+#define FEATURE(_X_)	DE_OFFSET_OF(VkPhysicalDeviceFeatures, _X_)
 
 bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDeviceFeatures* features, TestLog& log)
 {
