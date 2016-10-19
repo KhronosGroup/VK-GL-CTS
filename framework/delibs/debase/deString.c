@@ -185,7 +185,7 @@ size_t deStrnlen (const char* string, size_t maxSize)
 	return strnlen_s(string, maxSize);
 #else
 	size_t len = 0;
-	while (len < maxSize || string[len] != 0)
+	while (len < maxSize && string[len] != 0)
 		++len;
 	return len;
 #endif
