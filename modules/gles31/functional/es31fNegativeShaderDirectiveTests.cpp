@@ -109,8 +109,9 @@ void verifyShader(NegativeTestContext& ctx, glu::ShaderType shaderType, std::str
 
 void primitive_bounding_box (NegativeTestContext& ctx)
 {
-	ctx.beginSection("GL_EXT_primitive_bounding_box features require enabling the extension in 310 es shaders.");
+	if (ctx.isShaderSupported(glu::SHADERTYPE_TESSELLATION_CONTROL))
 	{
+		ctx.beginSection("GL_EXT_primitive_bounding_box features require enabling the extension in 310 es shaders.");
 		std::ostringstream source;
 		source <<	"#version 310 es\n"
 					"void main()\n"
@@ -119,8 +120,8 @@ void primitive_bounding_box (NegativeTestContext& ctx)
 					"	gl_BoundingBoxEXT[1] = vec4(1.0, 1.0, 1.0, 1.0);\n"
 					"}\n";
 		verifyShader(ctx, glu::SHADERTYPE_TESSELLATION_CONTROL, source.str(), EXPECT_RESULT_FAIL);
+		ctx.endSection();
 	}
-	ctx.endSection();
 
 	if (contextSupports(ctx.getRenderContext().getType() , glu::ApiType::es(3, 2)))
 	{
@@ -303,22 +304,25 @@ void texture_storage_multisample_2d_array (NegativeTestContext& ctx)
 
 void geometry_shader (NegativeTestContext& ctx)
 {
-	const std::string	simpleVtxFrag	=	"#version 310 es\n"
-											"void main()\n"
-											"{\n"
-											"}\n";
-	const std::string	geometry		=	"#version 310 es\n"
-											"layout(points, invocations = 1) in;\n"
-											"layout(points, max_vertices = 3) out;\n"
-											"precision mediump float;\n"
-											"void main()\n"
-											"{\n"
-											"	EmitVertex();\n"
-											"	EndPrimitive();\n"
-											"}\n";
-	ctx.beginSection("GL_EXT_geometry_shader features require enabling the extension in 310 es shaders.");
-	verifyProgram(ctx, glu::ProgramSources() << glu::VertexSource(simpleVtxFrag) << glu::GeometrySource(geometry) << glu::FragmentSource(simpleVtxFrag), EXPECT_RESULT_FAIL);
-	ctx.endSection();
+	if (ctx.isShaderSupported(glu::SHADERTYPE_GEOMETRY))
+	{
+		const std::string	simpleVtxFrag	=	"#version 310 es\n"
+												"void main()\n"
+												"{\n"
+												"}\n";
+		const std::string	geometry		=	"#version 310 es\n"
+												"layout(points, invocations = 1) in;\n"
+												"layout(points, max_vertices = 3) out;\n"
+												"precision mediump float;\n"
+												"void main()\n"
+												"{\n"
+												"	EmitVertex();\n"
+												"	EndPrimitive();\n"
+												"}\n";
+		ctx.beginSection("GL_EXT_geometry_shader features require enabling the extension in 310 es shaders.");
+		verifyProgram(ctx, glu::ProgramSources() << glu::VertexSource(simpleVtxFrag) << glu::GeometrySource(geometry) << glu::FragmentSource(simpleVtxFrag), EXPECT_RESULT_FAIL);
+		ctx.endSection();
+	}
 }
 
 void gpu_shader_5 (NegativeTestContext& ctx)
@@ -389,28 +393,31 @@ void shader_io_blocks (NegativeTestContext& ctx)
 
 void tessellation_shader (NegativeTestContext& ctx)
 {
-	const std::string	simpleVtxFrag	=	"#version 310 es\n"
-											"void main()\n"
-											"{\n"
-											"}\n";
-	const std::string	tessControl		=	"#version 310 es\n"
-											"layout(vertices = 3) out;\n"
-											"void main()\n"
-											"{\n"
-											"}\n";
-	const std::string	tessEvaluation	=	"#version 310 es\n"
-											"layout(triangles, equal_spacing, cw) in;\n"
-											"void main()\n"
-											"{\n"
-											"}\n";
-	ctx.beginSection("GL_EXT_tessellation_shader features require enabling the extension in 310 es shaders.");
-	glu::ProgramSources sources;
-	sources << glu::VertexSource(simpleVtxFrag)
-			<< glu::TessellationControlSource(tessControl)
-			<< glu::TessellationEvaluationSource(tessEvaluation)
-			<< glu::FragmentSource(simpleVtxFrag);
-	verifyProgram(ctx, sources, EXPECT_RESULT_FAIL);
-	ctx.endSection();
+	if (ctx.isShaderSupported(glu::SHADERTYPE_TESSELLATION_CONTROL))
+	{
+		const std::string	simpleVtxFrag	=	"#version 310 es\n"
+												"void main()\n"
+												"{\n"
+												"}\n";
+		const std::string	tessControl		=	"#version 310 es\n"
+												"layout(vertices = 3) out;\n"
+												"void main()\n"
+												"{\n"
+												"}\n";
+		const std::string	tessEvaluation	=	"#version 310 es\n"
+												"layout(triangles, equal_spacing, cw) in;\n"
+												"void main()\n"
+												"{\n"
+												"}\n";
+		ctx.beginSection("GL_EXT_tessellation_shader features require enabling the extension in 310 es shaders.");
+		glu::ProgramSources sources;
+		sources << glu::VertexSource(simpleVtxFrag)
+				<< glu::TessellationControlSource(tessControl)
+				<< glu::TessellationEvaluationSource(tessEvaluation)
+				<< glu::FragmentSource(simpleVtxFrag);
+		verifyProgram(ctx, sources, EXPECT_RESULT_FAIL);
+		ctx.endSection();
+	}
 }
 
 void texture_buffer (NegativeTestContext& ctx)
