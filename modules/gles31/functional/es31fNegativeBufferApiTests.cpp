@@ -309,13 +309,17 @@ void read_pixels_fbo_format_mismatch (NegativeTestContext& ctx)
 	ctx.glReadPixels			(0, 0, 1, 1, GL_RGBA, GL_FLOAT, &floatData[0]);
 	ctx.expectError				(GL_INVALID_OPERATION);
 
-	ctx.glTexImage2D			(GL_TEXTURE_2D, 0, GL_RGBA32F, 32, 32, 0, GL_RGBA, GL_FLOAT, NULL);
-	ctx.expectError				(GL_NO_ERROR);
-	ctx.glFramebufferTexture2D	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.expectError				(GL_NO_ERROR);
-	ctx.glReadPixels			(0, 0, 1, 1, GL_RGBA, GL_INT, &floatData[0]);
-	ctx.expectError				(GL_INVALID_OPERATION);
+	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+		ctx.isExtensionSupported("GL_EXT_color_buffer_float"))
+	{
+		ctx.glTexImage2D			(GL_TEXTURE_2D, 0, GL_RGBA32F, 32, 32, 0, GL_RGBA, GL_FLOAT, NULL);
+		ctx.expectError				(GL_NO_ERROR);
+		ctx.glFramebufferTexture2D	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+		ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		ctx.expectError				(GL_NO_ERROR);
+		ctx.glReadPixels			(0, 0, 1, 1, GL_RGBA, GL_INT, &floatData[0]);
+		ctx.expectError				(GL_INVALID_OPERATION);
+	}
 
 	ctx.endSection();
 
