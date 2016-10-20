@@ -57,13 +57,10 @@ enum Constants
 enum FlagBits
 {
 	FLAG_VERTEX_SET						= 1u << 0,		// !< set gl_PointSize in vertex shader
-	FLAG_TESSELLATION_CONTROL_SET		= 1u << 1,		// !< set gl_PointSize in tessellation evaluation shader
-	FLAG_TESSELLATION_EVALUATION_SET	= 1u << 2,		// !< set gl_PointSize in tessellation control shader
-	FLAG_TESSELLATION_ADD				= 1u << 3,		// !< read and add to gl_PointSize in tessellation shader pair
-	FLAG_TESSELLATION_DONT_SET			= 1u << 4,		// !< don't set gl_PointSize in tessellation shader
-	FLAG_GEOMETRY_SET					= 1u << 5,		// !< set gl_PointSize in geometry shader
-	FLAG_GEOMETRY_ADD					= 1u << 6,		// !< read and add to gl_PointSize in geometry shader
-	FLAG_GEOMETRY_DONT_SET				= 1u << 7,		// !< don't set gl_PointSize in geometry shader
+	FLAG_TESSELLATION_EVALUATION_SET	= 1u << 1,		// !< set gl_PointSize in tessellation evaluation shader
+	FLAG_TESSELLATION_ADD				= 1u << 2,		// !< read and add to gl_PointSize in tessellation shader pair
+	FLAG_GEOMETRY_SET					= 1u << 3,		// !< set gl_PointSize in geometry shader
+	FLAG_GEOMETRY_ADD					= 1u << 4,		// !< read and add to gl_PointSize in geometry shader
 };
 typedef deUint32 Flags;
 
@@ -80,9 +77,7 @@ int getExpectedPointSize (const Flags flags)
 	int addition = 0;
 
 	// geometry
-	if (flags & FLAG_GEOMETRY_DONT_SET)
-		return 1;
-	else if (flags & FLAG_GEOMETRY_SET)
+	if (flags & FLAG_GEOMETRY_SET)
 		return 6;
 	else if (flags & FLAG_GEOMETRY_ADD)
 		addition += 2;
@@ -92,11 +87,6 @@ int getExpectedPointSize (const Flags flags)
 		return 4 + addition;
 	else if (flags & FLAG_TESSELLATION_ADD)
 		addition += 2;
-	else if (flags & (FLAG_TESSELLATION_CONTROL_SET | FLAG_TESSELLATION_DONT_SET))
-	{
-		DE_ASSERT((flags & FLAG_GEOMETRY_ADD) == 0); // reading pointSize undefined
-		return 1;
-	}
 
 	// vertex
 	if (flags & FLAG_VERTEX_SET)
@@ -109,12 +99,12 @@ int getExpectedPointSize (const Flags flags)
 
 inline bool isTessellationStage (const Flags flags)
 {
-	return (flags & (FLAG_TESSELLATION_CONTROL_SET | FLAG_TESSELLATION_EVALUATION_SET | FLAG_TESSELLATION_ADD | FLAG_TESSELLATION_DONT_SET)) != 0;
+	return (flags & (FLAG_TESSELLATION_EVALUATION_SET | FLAG_TESSELLATION_ADD)) != 0;
 }
 
 inline bool isGeometryStage (const Flags flags)
 {
-	return (flags & (FLAG_GEOMETRY_SET | FLAG_GEOMETRY_ADD | FLAG_GEOMETRY_DONT_SET)) != 0;
+	return (flags & (FLAG_GEOMETRY_SET | FLAG_GEOMETRY_ADD)) != 0;
 }
 
 bool verifyImage (tcu::TestLog& log, const tcu::ConstPixelBufferAccess image, const int expectedSize)
@@ -210,7 +200,7 @@ void initPrograms (vk::SourceCollections& programCollection, const Flags flags)
 			std::ostringstream src;
 			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
 				<< "#extension GL_EXT_tessellation_shader : require\n"
-				<< ((flags & FLAG_TESSELLATION_DONT_SET) ? "" : "#extension GL_EXT_tessellation_point_size : require\n")
+				<< "#extension GL_EXT_tessellation_point_size : require\n"
 				<< "layout(vertices = 1) out;\n"
 				<< "\n"
 				<< "void main (void)\n"
@@ -225,9 +215,6 @@ void initPrograms (vk::SourceCollections& programCollection, const Flags flags)
 			if (flags & FLAG_TESSELLATION_ADD)
 				src << "    // pass as is to eval\n"
 					<< "    gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n";
-			else if (flags & FLAG_TESSELLATION_CONTROL_SET)
-				src << "    // thrown away\n"
-					<< "    gl_out[gl_InvocationID].gl_PointSize = 4.0;\n";
 
 			src << "}\n";
 
@@ -239,7 +226,7 @@ void initPrograms (vk::SourceCollections& programCollection, const Flags flags)
 			std::ostringstream src;
 			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
 				<< "#extension GL_EXT_tessellation_shader : require\n"
-				<< (flags & FLAG_TESSELLATION_DONT_SET ? "" : "#extension GL_EXT_tessellation_point_size : require\n")
+				<< "#extension GL_EXT_tessellation_point_size : require\n"
 				<< "layout(triangles, point_mode) in;\n"
 				<< "\n"
 				<< "void main (void)\n"
@@ -271,21 +258,18 @@ void initPrograms (vk::SourceCollections& programCollection, const Flags flags)
 		std::ostringstream src;
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
 			<< "#extension GL_EXT_geometry_shader : require\n"
-			<< (flags & FLAG_GEOMETRY_DONT_SET ? "" : "#extension GL_EXT_geometry_point_size : require\n")
+			<< "#extension GL_EXT_geometry_point_size : require\n"
 			<< "layout(points) in;\n"
 			<< "layout(points, max_vertices = 1) out;\n"
 			<< "\n"
 			<< "void main (void)\n"
-			<< "{\n";
+			<< "{\n"
+			<< "    gl_Position  = gl_in[0].gl_Position;\n";
 
 		if (flags & FLAG_GEOMETRY_SET)
-			src << "    gl_Position  = gl_in[0].gl_Position;\n"
-				<< "    gl_PointSize = 6.0;\n";
+			src << "    gl_PointSize = 6.0;\n";
 		else if (flags & FLAG_GEOMETRY_ADD)
-			src << "    gl_Position  = gl_in[0].gl_Position;\n"
-				<< "    gl_PointSize = gl_in[0].gl_PointSize + 2.0;\n";
-		else if (flags & FLAG_GEOMETRY_DONT_SET)
-			src << "    gl_Position = gl_in[0].gl_Position;\n";
+			src << "    gl_PointSize = gl_in[0].gl_PointSize + 2.0;\n";
 
 		src << "\n"
 			<< "    EmitVertex();\n"
@@ -310,20 +294,14 @@ tcu::TestStatus test (Context& context, const Flags flags)
 
 		if (flags & FLAG_VERTEX_SET)
 			log << tcu::TestLog::Message << "Setting point size in vertex shader to 2.0." << tcu::TestLog::EndMessage;
-		if (flags & FLAG_TESSELLATION_CONTROL_SET)
-			log << tcu::TestLog::Message << "Setting point size in tessellation control shader to 4.0. (And ignoring it in evaluation)." << tcu::TestLog::EndMessage;
 		if (flags & FLAG_TESSELLATION_EVALUATION_SET)
 			log << tcu::TestLog::Message << "Setting point size in tessellation evaluation shader to 4.0." << tcu::TestLog::EndMessage;
 		if (flags & FLAG_TESSELLATION_ADD)
 			log << tcu::TestLog::Message << "Reading point size in tessellation control shader and adding 2.0 to it in evaluation." << tcu::TestLog::EndMessage;
-		if (flags & FLAG_TESSELLATION_DONT_SET)
-			log << tcu::TestLog::Message << "Not setting point size in tessellation evaluation shader (resulting in the default point size)." << tcu::TestLog::EndMessage;
 		if (flags & FLAG_GEOMETRY_SET)
 			log << tcu::TestLog::Message << "Setting point size in geometry shader to 6.0." << tcu::TestLog::EndMessage;
 		if (flags & FLAG_GEOMETRY_ADD)
 			log << tcu::TestLog::Message << "Reading point size in geometry shader and adding 2.0." << tcu::TestLog::EndMessage;
-		if (flags & FLAG_GEOMETRY_DONT_SET)
-			log << tcu::TestLog::Message << "Not setting point size in geometry shader (resulting in the default point size)." << tcu::TestLog::EndMessage;
 	}
 
 	const DeviceInterface&	vk					= context.getDeviceInterface();
@@ -452,13 +430,10 @@ std::string getTestCaseName (const Flags flags)
 
 	// join per-bit descriptions into a single string with '_' separator
 	if (flags & FLAG_VERTEX_SET)					buf																		<< "vertex_set";
-	if (flags & FLAG_TESSELLATION_CONTROL_SET)		buf << ((flags & (FLAG_TESSELLATION_CONTROL_SET-1))		? ("_") : (""))	<< "control_set";
 	if (flags & FLAG_TESSELLATION_EVALUATION_SET)	buf << ((flags & (FLAG_TESSELLATION_EVALUATION_SET-1))	? ("_") : (""))	<< "evaluation_set";
 	if (flags & FLAG_TESSELLATION_ADD)				buf << ((flags & (FLAG_TESSELLATION_ADD-1))				? ("_") : (""))	<< "control_pass_eval_add";
-	if (flags & FLAG_TESSELLATION_DONT_SET)			buf << ((flags & (FLAG_TESSELLATION_DONT_SET-1))		? ("_") : (""))	<< "eval_default";
 	if (flags & FLAG_GEOMETRY_SET)					buf << ((flags & (FLAG_GEOMETRY_SET-1))					? ("_") : (""))	<< "geometry_set";
 	if (flags & FLAG_GEOMETRY_ADD)					buf << ((flags & (FLAG_GEOMETRY_ADD-1))					? ("_") : (""))	<< "geometry_add";
-	if (flags & FLAG_GEOMETRY_DONT_SET)				buf << ((flags & (FLAG_GEOMETRY_DONT_SET-1))			? ("_") : (""))	<< "geometry_default";
 
 	return buf.str();
 }
@@ -469,13 +444,10 @@ std::string getTestCaseDescription (const Flags flags)
 
 	// join per-bit descriptions into a single string with ", " separator
 	if (flags & FLAG_VERTEX_SET)					buf																			<< "set point size in vertex shader";
-	if (flags & FLAG_TESSELLATION_CONTROL_SET)		buf << ((flags & (FLAG_TESSELLATION_CONTROL_SET-1))		? (", ") : (""))	<< "set point size in tessellation control shader";
 	if (flags & FLAG_TESSELLATION_EVALUATION_SET)	buf << ((flags & (FLAG_TESSELLATION_EVALUATION_SET-1))	? (", ") : (""))	<< "set point size in tessellation evaluation shader";
 	if (flags & FLAG_TESSELLATION_ADD)				buf << ((flags & (FLAG_TESSELLATION_ADD-1))				? (", ") : (""))	<< "add to point size in tessellation shader";
-	if (flags & FLAG_TESSELLATION_DONT_SET)			buf << ((flags & (FLAG_TESSELLATION_DONT_SET-1))		? (", ") : (""))	<< "don't set point size in tessellation evaluation shader";
 	if (flags & FLAG_GEOMETRY_SET)					buf << ((flags & (FLAG_GEOMETRY_SET-1))					? (", ") : (""))	<< "set point size in geometry shader";
 	if (flags & FLAG_GEOMETRY_ADD)					buf << ((flags & (FLAG_GEOMETRY_ADD-1))					? (", ") : (""))	<< "add to point size in geometry shader";
-	if (flags & FLAG_GEOMETRY_DONT_SET)				buf << ((flags & (FLAG_GEOMETRY_DONT_SET-1))			? (", ") : (""))	<< "don't set point size in geometry shader";
 
 	return buf.str();
 }
@@ -483,6 +455,7 @@ std::string getTestCaseDescription (const Flags flags)
 } // anonymous
 
 //! Ported from dEQP-GLES31.functional.tessellation_geometry_interaction.point_size.*
+//! with the exception of the default 1.0 point size cases (not valid in Vulkan).
 tcu::TestCaseGroup* createGeometryPointSizeTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "point_size", "Test point size"));
@@ -492,13 +465,10 @@ tcu::TestCaseGroup* createGeometryPointSizeTests (tcu::TestContext& testCtx)
 		FLAG_VERTEX_SET,
 							FLAG_TESSELLATION_EVALUATION_SET,
 																	FLAG_GEOMETRY_SET,
-		FLAG_VERTEX_SET	|	FLAG_TESSELLATION_CONTROL_SET,
 		FLAG_VERTEX_SET	|	FLAG_TESSELLATION_EVALUATION_SET,
-		FLAG_VERTEX_SET	|	FLAG_TESSELLATION_DONT_SET,
 		FLAG_VERTEX_SET |											FLAG_GEOMETRY_SET,
 		FLAG_VERTEX_SET	|	FLAG_TESSELLATION_EVALUATION_SET	|	FLAG_GEOMETRY_SET,
 		FLAG_VERTEX_SET	|	FLAG_TESSELLATION_ADD				|	FLAG_GEOMETRY_ADD,
-		FLAG_VERTEX_SET	|	FLAG_TESSELLATION_EVALUATION_SET	|	FLAG_GEOMETRY_DONT_SET,
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(caseFlags); ++ndx)
