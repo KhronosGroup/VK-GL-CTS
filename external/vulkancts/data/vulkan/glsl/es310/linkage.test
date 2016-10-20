@@ -319,7 +319,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 2) in highp float fragVarA;
 				layout(location = 0) in highp float fragVarB;
@@ -356,7 +356,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 2) in highp float varA;
 				layout(location = 0) in highp float varB;
