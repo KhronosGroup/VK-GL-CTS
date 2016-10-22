@@ -1107,8 +1107,7 @@ TestStatus ClearDepthStencilAttachmentTestInstance::iterate (void)
 {
 	const VkClearAttachment			clearAttachment		=
 	{
-		VK_IMAGE_ASPECT_DEPTH_BIT |
-		VK_IMAGE_ASPECT_STENCIL_BIT,					// kImageAspectFlags	aspectMask;
+		getImageAspectFlags(m_params.imageFormat),		// kImageAspectFlags	aspectMask;
 		0u,												// deUint32				colorAttachment;
 		m_params.clearValue								// VkClearValue			clearValue;
 	};
@@ -1293,8 +1292,7 @@ TestStatus PartialClearDepthStencilAttachmentTestInstance::iterate (void)
 {
 	const VkClearAttachment			clearAttachment		=
 	{
-		VK_IMAGE_ASPECT_DEPTH_BIT |
-		VK_IMAGE_ASPECT_STENCIL_BIT,					// kImageAspectFlags	aspectMask;
+		getImageAspectFlags(m_params.imageFormat),		// kImageAspectFlags	aspectMask;
 		0u,												// deUint32				colorAttachment;
 		m_params.clearValue								// VkClearValue			clearValue;
 	};
