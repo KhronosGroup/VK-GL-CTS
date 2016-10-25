@@ -756,7 +756,8 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFormatProperties (VkPhysicalDevice, 
 											| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
 											| VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
 											| VK_FORMAT_FEATURE_BLIT_SRC_BIT
-											| VK_FORMAT_FEATURE_BLIT_DST_BIT;
+											| VK_FORMAT_FEATURE_BLIT_DST_BIT
+											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
 
 	pFormatProperties->linearTilingFeatures		= allFeatures;
 	pFormatProperties->optimalTilingFeatures	= allFeatures;

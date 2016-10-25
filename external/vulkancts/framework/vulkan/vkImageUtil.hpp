@@ -40,6 +40,8 @@ bool						isUintFormat				(VkFormat format);
 bool						isDepthStencilFormat		(VkFormat format);
 bool						isCompressedFormat			(VkFormat format);
 
+bool						isSupportedByFramework		(VkFormat format);
+
 tcu::TextureFormat			mapVkFormat					(VkFormat format);
 tcu::CompressedTexFormat	mapVkCompressedFormat		(VkFormat format);
 tcu::TextureFormat			getDepthCopyFormat			(VkFormat combinedFormat);
