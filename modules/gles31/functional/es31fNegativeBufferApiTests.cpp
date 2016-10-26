@@ -446,15 +446,19 @@ void bind_buffer_range (NegativeTestContext& ctx)
 		ctx.endSection();
 
 		ctx.beginSection("GL_INVALID_VALUE is generated if target is GL_ATOMIC_COUNTER_BUFFER and offset is not multiples of 4.");
-		ctx.glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, bufTF, 5, 0);
+		ctx.glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, bufTF, 5, 4);
 		ctx.expectError(GL_INVALID_VALUE);
 		ctx.endSection();
 
-		ctx.beginSection("GL_INVALID_VALUE is generated if target is GL_SHADER_STORAGE_BUFFER and offset is not a multiple of the value of GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT.");
 		ctx.glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &ssAlignment);
-		ctx.glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, bufTF, ssAlignment+1, 0);
-		ctx.expectError(GL_INVALID_VALUE);
-		ctx.endSection();
+
+		if (ssAlignment != 1)
+		{
+			ctx.beginSection("GL_INVALID_VALUE is generated if target is GL_SHADER_STORAGE_BUFFER and offset is not a multiple of the value of GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT.");
+			ctx.glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, bufTF, ssAlignment+1, 4);
+			ctx.expectError(GL_INVALID_VALUE);
+			ctx.endSection();
+		}
 	}
 
 	ctx.glDeleteBuffers(1, &bufU);
@@ -496,24 +500,6 @@ void bind_buffer_base (NegativeTestContext& ctx)
 	ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, maxTFSize, bufTF);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
-
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
-	{
-		int maxACize = 0x1234;
-		int maxSSize = 0x1234;
-
-		ctx.beginSection("GL_INVALID_VALUE is generated if target is GL_ATOMIC_COUNTER_BUFFER and index is greater than or equal to GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS.");
-		ctx.glGetIntegerv(GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS, &maxACize);
-		ctx.glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, maxACize, bufU, 0, 4);
-		ctx.expectError(GL_INVALID_VALUE);
-		ctx.endSection();
-
-		ctx.beginSection("GL_INVALID_VALUE is generated if target is GL_SHADER_STORAGE_BUFFER and index is greater than or equal to GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS.");
-		ctx.glGetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &maxSSize);
-		ctx.glBindBufferRange(GL_SHADER_STORAGE_BUFFER, maxSSize, bufU, 0, 4);
-		ctx.expectError(GL_INVALID_VALUE);
-		ctx.endSection();
-	}
 
 	ctx.glDeleteBuffers(1, &bufU);
 	ctx.glDeleteBuffers(1, &bufTF);
