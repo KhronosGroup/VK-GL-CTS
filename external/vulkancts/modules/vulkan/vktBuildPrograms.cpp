@@ -446,10 +446,10 @@ BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath,
 		for (de::PoolArray<Program>::iterator progIter = programs.begin(); progIter != programs.end(); ++progIter)
 		{
 			if (progIter->buildStatus == Program::STATUS_PASSED)
-				registryWriter.storeProgram(progIter->id, *progIter->binary);
+				registryWriter.addProgram(progIter->id, *progIter->binary);
 		}
 
-		registryWriter.writeIndex();
+		registryWriter.write();
 	}
 
 	{
