@@ -1706,3 +1706,34 @@ struct VkObjectTablePushConstantEntryNVX
 	VkShaderStageFlags			stageFlags;
 };
 
+struct VkPhysicalDevicePushDescriptorPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		maxPushDescriptors;
+};
+
+struct VkDescriptorUpdateTemplateEntryKHR
+{
+	deUint32			dstBinding;
+	deUint32			dstArrayElement;
+	deUint32			descriptorCount;
+	VkDescriptorType	descriptorType;
+	deUintptr			offset;
+	deUintptr			stride;
+};
+
+struct VkDescriptorUpdateTemplateCreateInfoKHR
+{
+	VkStructureType								sType;
+	void*										pNext;
+	VkDescriptorUpdateTemplateCreateFlagsKHR	flags;
+	deUint32									descriptorUpdateEntryCount;
+	const VkDescriptorUpdateTemplateEntryKHR*	pDescriptorUpdateEntries;
+	VkDescriptorUpdateTemplateTypeKHR			templateType;
+	VkDescriptorSetLayout						descriptorSetLayout;
+	VkPipelineBindPoint							pipelineBindPoint;
+	VkPipelineLayout							pipelineLayout;
+	deUint32									set;
+};
+

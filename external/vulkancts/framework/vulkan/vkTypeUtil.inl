@@ -465,3 +465,15 @@ inline VkObjectTablePushConstantEntryNVX makeObjectTablePushConstantEntryNVX (Vk
 	res.stageFlags		= stageFlags;
 	return res;
 }
+
+inline VkDescriptorUpdateTemplateEntryKHR makeDescriptorUpdateTemplateEntryKHR (deUint32 dstBinding, deUint32 dstArrayElement, deUint32 descriptorCount, VkDescriptorType descriptorType, deUintptr offset, deUintptr stride)
+{
+	VkDescriptorUpdateTemplateEntryKHR res;
+	res.dstBinding		= dstBinding;
+	res.dstArrayElement	= dstArrayElement;
+	res.descriptorCount	= descriptorCount;
+	res.descriptorType	= descriptorType;
+	res.offset			= offset;
+	res.stride			= stride;
+	return res;
+}

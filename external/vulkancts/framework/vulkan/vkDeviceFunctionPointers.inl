@@ -144,3 +144,8 @@ CreateObjectTableNVXFunc				createObjectTableNVX;
 DestroyObjectTableNVXFunc				destroyObjectTableNVX;
 RegisterObjectsNVXFunc					registerObjectsNVX;
 UnregisterObjectsNVXFunc				unregisterObjectsNVX;
+CmdPushDescriptorSetKHRFunc				cmdPushDescriptorSetKHR;
+CreateDescriptorUpdateTemplateKHRFunc	createDescriptorUpdateTemplateKHR;
+DestroyDescriptorUpdateTemplateKHRFunc	destroyDescriptorUpdateTemplateKHR;
+UpdateDescriptorSetWithTemplateKHRFunc	updateDescriptorSetWithTemplateKHR;
+CmdPushDescriptorSetWithTemplateKHRFunc	cmdPushDescriptorSetWithTemplateKHR;
