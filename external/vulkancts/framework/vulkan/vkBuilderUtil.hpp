@@ -41,7 +41,7 @@ public:
 																			 VkShaderStageFlags	stageFlags,
 																			 const VkSampler*	pImmutableSamplers);
 
-	Move<VkDescriptorSetLayout>					build						(const DeviceInterface& vk, VkDevice device) const;
+	Move<VkDescriptorSetLayout>					build						(const DeviceInterface& vk, VkDevice device, VkDescriptorSetLayoutCreateFlags extraFlags = 0) const;
 
 	// helpers
 
@@ -133,6 +133,7 @@ public:
 	};
 
 										DescriptorSetUpdateBuilder	(void);
+										/* DescriptorSetUpdateBuilder	(const DescriptorSetUpdateBuilder&); // do not delete */
 
 	DescriptorSetUpdateBuilder&			write						(VkDescriptorSet				destSet,
 																	 deUint32						destBinding,
@@ -152,6 +153,7 @@ public:
 																	 deUint32			count);
 
 	void								update						(const DeviceInterface& vk, VkDevice device) const;
+	void								updateWithPush				(const DeviceInterface& vk, VkCommandBuffer cmd, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout, deUint32 setIdx) const;
 
 	// helpers
 
@@ -224,7 +226,6 @@ public:
 	}
 
 private:
-										DescriptorSetUpdateBuilder	(const DescriptorSetUpdateBuilder&); // delete
 	DescriptorSetUpdateBuilder&			operator=					(const DescriptorSetUpdateBuilder&); // delete
 
 	struct WriteDescriptorInfo
