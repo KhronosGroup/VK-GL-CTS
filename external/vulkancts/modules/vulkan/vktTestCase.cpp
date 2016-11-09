@@ -91,7 +91,8 @@ vector<string> filterExtensions(const vector<VkExtensionProperties>& deviceExten
 	const char*		extensionGroups[] =
 	{
 		"VK_KHR_",
-		"VK_EXT_"
+		"VK_EXT_",
+		"VK_KHX_"
 	};
 
 	for (size_t deviceExtNdx = 0; deviceExtNdx < deviceExtensions.size(); deviceExtNdx++)
