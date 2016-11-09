@@ -30,6 +30,7 @@
 #include "vktDrawInstancedTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktBasicDrawTests.hpp"
+#include "vktDrawShaderDrawParametersTests.hpp"
 
 namespace vkt
 {
@@ -43,11 +44,12 @@ void createChildren (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext&	testCtx		= group->getTestContext();
 
-	group->addChild(new SimpleDrawTests(testCtx));
-	group->addChild(new DrawIndexedTests(testCtx));
-	group->addChild(new IndirectDrawTests(testCtx));
-	group->addChild(createBasicDrawTests(testCtx));
-	group->addChild(new InstancedTests(testCtx));
+	group->addChild(new SimpleDrawTests				(testCtx));
+	group->addChild(new DrawIndexedTests			(testCtx));
+	group->addChild(new IndirectDrawTests			(testCtx));
+	group->addChild(createBasicDrawTests			(testCtx));
+	group->addChild(new InstancedTests				(testCtx));
+	group->addChild(new ShaderDrawParametersTests	(testCtx));
 }
 
 } // anonymous

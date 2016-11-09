@@ -663,7 +663,8 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 	{
 		"VK_KHR_swapchain",
 		"VK_KHR_display_swapchain",
-		"VK_KHR_sampler_mirror_clamp_to_edge"
+		"VK_KHR_sampler_mirror_clamp_to_edge",
+		"VK_KHR_shader_draw_parameters",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedInstanceKhrExtensions), s_allowedInstanceKhrExtensions);
