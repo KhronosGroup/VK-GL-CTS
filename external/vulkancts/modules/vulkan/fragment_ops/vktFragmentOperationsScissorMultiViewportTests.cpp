@@ -373,6 +373,9 @@ void requireFeatureMultiViewport (const InstanceInterface& vki, const VkPhysical
 	const VkPhysicalDeviceFeatures	features	= getPhysicalDeviceFeatures(vki, physDevice);
 	const VkPhysicalDeviceLimits	limits		= getPhysicalDeviceProperties(vki, physDevice).limits;
 
+	if (!features.geometryShader)
+		TCU_THROW(NotSupportedError, "Required feature is not supported: geometryShader");
+
 	if (!features.multiViewport)
 		TCU_THROW(NotSupportedError, "Required feature is not supported: multiViewport");
 

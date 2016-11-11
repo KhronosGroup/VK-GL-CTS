@@ -9453,7 +9453,7 @@ struct AddPrograms
 		{
 			const char* const vertexShader =
 				"#version 310 es\n"
-				"highp float;\n"
+				"precision highp float;\n"
 				"void main (void) {\n"
 				"\tgl_PointSize = 1.0;\n"
 				"\thighp vec2 pos = vec2(gl_VertexIndex % 256, gl_VertexIndex / 256) / vec2(255.0);\n"
@@ -9471,7 +9471,7 @@ struct AddPrograms
 
 				vertexShader <<
 					"#version 310 es\n"
-					"highp float;\n"
+					"precision highp float;\n"
 					"layout(set=0, binding=0) uniform Block\n"
 					"{\n"
 					"\thighp uvec4 values[" << de::toString<size_t>(MAX_UNIFORM_BUFFER_SIZE / (sizeof(deUint32) * 4)) << "];\n"
@@ -9507,7 +9507,7 @@ struct AddPrograms
 
 				fragmentShader <<
 					"#version 310 es\n"
-					"highp float;\n"
+					"precision highp float;\n"
 					"layout(location = 0) out highp vec4 o_color;\n"
 					"layout(set=0, binding=0) uniform Block\n"
 					"{\n"
@@ -9550,7 +9550,7 @@ struct AddPrograms
 				// Vertex storage buffer rendering
 				const char* const vertexShader =
 					"#version 310 es\n"
-					"highp float;\n"
+					"precision highp float;\n"
 					"layout(set=0, binding=0) buffer Block\n"
 					"{\n"
 					"\thighp uvec4 values[];\n"
@@ -9584,7 +9584,8 @@ struct AddPrograms
 
 				fragmentShader <<
 					"#version 310 es\n"
-					"highp float;\n"
+					"precision highp float;\n"
+					"precision highp int;\n"
 					"layout(location = 0) out highp vec4 o_color;\n"
 					"layout(set=0, binding=0) buffer Block\n"
 					"{\n"
@@ -9627,7 +9628,7 @@ struct AddPrograms
 				const char* const vertexShader =
 					"#version 310 es\n"
 					"#extension GL_EXT_texture_buffer : require\n"
-					"highp float;\n"
+					"precision highp float;\n"
 					"layout(set=0, binding=0) uniform highp usamplerBuffer u_sampler;\n"
 					"void main (void) {\n"
 					"\tgl_PointSize = 1.0;\n"
@@ -9645,7 +9646,7 @@ struct AddPrograms
 				const char* const fragmentShader =
 					"#version 310 es\n"
 					"#extension GL_EXT_texture_buffer : require\n"
-					"highp float;\n"
+					"precision highp float;\n"
 					"layout(set=0, binding=0) uniform highp usamplerBuffer u_sampler;\n"
 					"layout(location = 0) out highp vec4 o_color;\n"
 					"layout(push_constant) uniform PushC\n"
@@ -9679,7 +9680,7 @@ struct AddPrograms
 				const char* const vertexShader =
 					"#version 450\n"
 					"#extension GL_EXT_texture_buffer : require\n"
-					"highp float;\n"
+					"precision highp float;\n"
 					"layout(set=0, binding=0, r32ui) uniform readonly highp uimageBuffer u_sampler;\n"
 					"out gl_PerVertex {\n"
 					"\tvec4 gl_Position;\n"
@@ -9704,7 +9705,7 @@ struct AddPrograms
 				const char* const fragmentShader =
 					"#version 310 es\n"
 					"#extension GL_EXT_texture_buffer : require\n"
-					"highp float;\n"
+					"precision highp float;\n"
 					"layout(set=0, binding=0, r32ui) uniform readonly highp uimageBuffer u_sampler;\n"
 					"layout(location = 0) out highp vec4 o_color;\n"
 					"layout(push_constant) uniform PushC\n"
@@ -9738,7 +9739,7 @@ struct AddPrograms
 				// Vertex storage image
 				const char* const vertexShader =
 					"#version 450\n"
-					"highp float;\n"
+					"precision highp float;\n"
 					"layout(set=0, binding=0, rgba8) uniform image2D u_image;\n"
 					"out gl_PerVertex {\n"
 					"\tvec4 gl_Position;\n"
@@ -9763,7 +9764,7 @@ struct AddPrograms
 				const char* const fragmentShader =
 					"#version 450\n"
 					"#extension GL_EXT_texture_buffer : require\n"
-					"highp float;\n"
+					"precision highp float;\n"
 					"layout(set=0, binding=0, rgba8) uniform image2D u_image;\n"
 					"layout(location = 0) out highp vec4 o_color;\n"
 					"void main (void) {\n"
@@ -9789,7 +9790,7 @@ struct AddPrograms
 				// Vertex storage image
 				const char* const vertexShader =
 					"#version 450\n"
-					"highp float;\n"
+					"precision highp float;\n"
 					"layout(set=0, binding=0) uniform sampler2D u_sampler;\n"
 					"out gl_PerVertex {\n"
 					"\tvec4 gl_Position;\n"
@@ -9814,7 +9815,7 @@ struct AddPrograms
 				const char* const fragmentShader =
 					"#version 450\n"
 					"#extension GL_EXT_texture_buffer : require\n"
-					"highp float;\n"
+					"precision highp float;\n"
 					"layout(set=0, binding=0) uniform sampler2D u_sampler;\n"
 					"layout(location = 0) out highp vec4 o_color;\n"
 					"void main (void) {\n"
@@ -9840,7 +9841,7 @@ struct AddPrograms
 				"out gl_PerVertex {\n"
 				"\tvec4 gl_Position;\n"
 				"};\n"
-				"highp float;\n"
+				"precision highp float;\n"
 				"void main (void) {\n"
 				"\tgl_Position = vec4(((gl_VertexIndex + 2) / 3) % 2 == 0 ? -1.0 : 1.0,\n"
 				"\t                   ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 1.0, 0.0, 1.0);\n"

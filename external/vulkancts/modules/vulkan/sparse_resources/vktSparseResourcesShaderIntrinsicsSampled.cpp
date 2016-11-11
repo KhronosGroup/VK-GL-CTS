@@ -29,6 +29,242 @@ namespace vkt
 {
 namespace sparse
 {
+namespace
+{
+
+Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&			vk,
+									   const VkDevice					device,
+									   const VkPipelineLayout			pipelineLayout,
+									   const VkRenderPass				renderPass,
+									   const VkShaderModule				vertexModule,
+									   const VkShaderModule				fragmentModule,
+									   const VkShaderModule				geometryModule)
+{
+	const VkFormat		vertexFormatPosition		= VK_FORMAT_R32G32_SFLOAT;
+	const VkFormat		vertexFormatTexCoord		= VK_FORMAT_R32G32_SFLOAT;
+	const deUint32		vertexSizePosition			= tcu::getPixelSize(mapVkFormat(vertexFormatPosition));
+	const deUint32		vertexSizeTexCoord			= tcu::getPixelSize(mapVkFormat(vertexFormatTexCoord));
+	const deUint32		vertexBufferOffsetPosition	= 0u;
+	const deUint32		vertexBufferOffsetTexCoord	= vertexSizePosition;
+	const deUint32		vertexDataStride			= vertexSizePosition + vertexSizeTexCoord;
+
+	const VkVertexInputBindingDescription vertexBinding =
+	{
+		0u,							// deUint32				binding;
+		vertexDataStride,			// deUint32				stride;
+		VK_VERTEX_INPUT_RATE_VERTEX	// VkVertexInputRate	inputRate;
+	};
+
+	const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] =
+	{
+		// position
+		{
+			0u,							// deUint32	location;
+			0u,							// deUint32	binding;
+			vertexFormatPosition,		// VkFormat	format;
+			vertexBufferOffsetPosition,	// deUint32	offset;
+		},
+		// texture coordinates
+		{
+			1u,							// deUint32	location;
+			0u,							// deUint32	binding;
+			vertexFormatTexCoord,		// VkFormat	format;
+			vertexBufferOffsetTexCoord,	// deUint32	offset;
+		},
+	};
+
+	const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType                             sType;
+		DE_NULL,														// const void*                                 pNext;
+		(VkPipelineVertexInputStateCreateFlags)0,						// VkPipelineVertexInputStateCreateFlags       flags;
+		1u,																// uint32_t                                    vertexBindingDescriptionCount;
+		&vertexBinding,													// const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+		DE_LENGTH_OF_ARRAY(vertexInputAttributeDescriptions),			// uint32_t                                    vertexAttributeDescriptionCount;
+		vertexInputAttributeDescriptions,								// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+	};
+
+	const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                             sType;
+		DE_NULL,														// const void*                                 pNext;
+		(VkPipelineInputAssemblyStateCreateFlags)0,						// VkPipelineInputAssemblyStateCreateFlags     flags;
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,							// VkPrimitiveTopology                         topology;
+		VK_FALSE,														// VkBool32                                    primitiveRestartEnable;
+	};
+
+	const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType                             sType;
+		DE_NULL,														// const void*                                 pNext;
+		(VkPipelineViewportStateCreateFlags)0,							// VkPipelineViewportStateCreateFlags          flags;
+		1u,																// uint32_t                                    viewportCount;
+		DE_NULL, // dynamic state										// const VkViewport*                           pViewports;
+		1u,																// uint32_t                                    scissorCount;
+		DE_NULL, // dynamic state										// const VkRect2D*                             pScissors;
+	};
+
+	const VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType                          sType;
+		DE_NULL,														// const void*                              pNext;
+		(VkPipelineRasterizationStateCreateFlags)0,						// VkPipelineRasterizationStateCreateFlags  flags;
+		VK_FALSE,														// VkBool32                                 depthClampEnable;
+		VK_FALSE,														// VkBool32                                 rasterizerDiscardEnable;
+		VK_POLYGON_MODE_FILL,											// VkPolygonMode							polygonMode;
+		VK_CULL_MODE_NONE,												// VkCullModeFlags							cullMode;
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,								// VkFrontFace								frontFace;
+		VK_FALSE,														// VkBool32									depthBiasEnable;
+		0.0f,															// float									depthBiasConstantFactor;
+		0.0f,															// float									depthBiasClamp;
+		0.0f,															// float									depthBiasSlopeFactor;
+		1.0f,															// float									lineWidth;
+	};
+
+	const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType							sType;
+		DE_NULL,														// const void*								pNext;
+		(VkPipelineMultisampleStateCreateFlags)0,						// VkPipelineMultisampleStateCreateFlags	flags;
+		VK_SAMPLE_COUNT_1_BIT,											// VkSampleCountFlagBits					rasterizationSamples;
+		VK_FALSE,														// VkBool32									sampleShadingEnable;
+		0.0f,															// float									minSampleShading;
+		DE_NULL,														// const VkSampleMask*						pSampleMask;
+		VK_FALSE,														// VkBool32									alphaToCoverageEnable;
+		VK_FALSE														// VkBool32									alphaToOneEnable;
+	};
+
+	const VkStencilOpState stencilOpState = makeStencilOpState(
+		VK_STENCIL_OP_KEEP,				// stencil fail
+		VK_STENCIL_OP_KEEP,				// depth & stencil pass
+		VK_STENCIL_OP_KEEP,				// depth only fail
+		VK_COMPARE_OP_ALWAYS,			// compare op
+		0u,								// compare mask
+		0u,								// write mask
+		0u);							// reference
+
+	VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,		// VkStructureType							sType;
+		DE_NULL,														// const void*								pNext;
+		(VkPipelineDepthStencilStateCreateFlags)0,						// VkPipelineDepthStencilStateCreateFlags	flags;
+		VK_FALSE,														// VkBool32									depthTestEnable;
+		VK_FALSE,														// VkBool32									depthWriteEnable;
+		VK_COMPARE_OP_LESS,												// VkCompareOp								depthCompareOp;
+		VK_FALSE,														// VkBool32									depthBoundsTestEnable;
+		VK_FALSE,														// VkBool32									stencilTestEnable;
+		stencilOpState,													// VkStencilOpState							front;
+		stencilOpState,													// VkStencilOpState							back;
+		0.0f,															// float									minDepthBounds;
+		1.0f,															// float									maxDepthBounds;
+	};
+
+	const VkColorComponentFlags					colorComponentsAll					= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	const VkPipelineColorBlendAttachmentState	defaultColorBlendAttachmentState	=
+	{
+		VK_FALSE,						// VkBool32					blendEnable;
+		VK_BLEND_FACTOR_ONE,			// VkBlendFactor			srcColorBlendFactor;
+		VK_BLEND_FACTOR_ZERO,			// VkBlendFactor			dstColorBlendFactor;
+		VK_BLEND_OP_ADD,				// VkBlendOp				colorBlendOp;
+		VK_BLEND_FACTOR_ONE,			// VkBlendFactor			srcAlphaBlendFactor;
+		VK_BLEND_FACTOR_ZERO,			// VkBlendFactor			dstAlphaBlendFactor;
+		VK_BLEND_OP_ADD,				// VkBlendOp				alphaBlendOp;
+		colorComponentsAll,				// VkColorComponentFlags	colorWriteMask;
+	};
+
+	const VkPipelineColorBlendAttachmentState	colorBlendAttachmentStates[] =
+	{
+		defaultColorBlendAttachmentState,
+		defaultColorBlendAttachmentState,
+	};
+
+	const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// VkStructureType								sType;
+		DE_NULL,														// const void*									pNext;
+		(VkPipelineColorBlendStateCreateFlags)0,						// VkPipelineColorBlendStateCreateFlags			flags;
+		VK_FALSE,														// VkBool32										logicOpEnable;
+		VK_LOGIC_OP_COPY,												// VkLogicOp									logicOp;
+		DE_LENGTH_OF_ARRAY(colorBlendAttachmentStates),					// deUint32										attachmentCount;
+		colorBlendAttachmentStates,										// const VkPipelineColorBlendAttachmentState*	pAttachments;
+		{ 0.0f, 0.0f, 0.0f, 0.0f },										// float										blendConstants[4];
+	};
+
+	const VkDynamicState dynamicStates[] =
+	{
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR,
+	};
+
+	const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	// VkStructureType						sType;
+		DE_NULL,												// const void*							pNext;
+		(VkPipelineDynamicStateCreateFlags)0,					// VkPipelineDynamicStateCreateFlags	flags;
+		DE_LENGTH_OF_ARRAY(dynamicStates),						// deUint32								dynamicStateCount;
+		dynamicStates,											// const VkDynamicState*				pDynamicStates;
+	};
+
+	const VkPipelineShaderStageCreateInfo pShaderStages[] =
+	{
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType;
+			DE_NULL,													// const void*							pNext;
+			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
+			VK_SHADER_STAGE_VERTEX_BIT,									// VkShaderStageFlagBits				stage;
+			vertexModule,												// VkShaderModule						module;
+			"main",														// const char*							pName;
+			DE_NULL,													// const VkSpecializationInfo*			pSpecializationInfo;
+		},
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType;
+			DE_NULL,													// const void*							pNext;
+			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
+			VK_SHADER_STAGE_FRAGMENT_BIT,								// VkShaderStageFlagBits				stage;
+			fragmentModule,												// VkShaderModule						module;
+			"main",														// const char*							pName;
+			DE_NULL,													// const VkSpecializationInfo*			pSpecializationInfo;
+		},
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType;
+			DE_NULL,													// const void*							pNext;
+			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
+			VK_SHADER_STAGE_GEOMETRY_BIT,								// VkShaderStageFlagBits				stage;
+			geometryModule,												// VkShaderModule						module;
+			"main",														// const char*							pName;
+			DE_NULL,													// const VkSpecializationInfo*			pSpecializationInfo;
+		},
+	};
+
+	const deUint32 numActiveShaderStages = DE_LENGTH_OF_ARRAY(pShaderStages) - (geometryModule == DE_NULL ? 1u : 0u);
+
+	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
+	{
+		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
+		DE_NULL,											// const void*										pNext;
+		(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags							flags;
+		numActiveShaderStages,								// deUint32											stageCount;
+		pShaderStages,										// const VkPipelineShaderStageCreateInfo*			pStages;
+		&vertexInputStateInfo,								// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
+		&pipelineInputAssemblyStateInfo,					// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
+		DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
+		&pipelineViewportStateInfo,							// const VkPipelineViewportStateCreateInfo*			pViewportState;
+		&pipelineRasterizationStateInfo,					// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
+		&pipelineMultisampleStateInfo,						// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
+		&pipelineDepthStencilStateInfo,						// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
+		&pipelineColorBlendStateInfo,						// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
+		&dynamicStateCreateInfo,							// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+		pipelineLayout,										// VkPipelineLayout									layout;
+		renderPass,											// VkRenderPass										renderPass;
+		0u,													// deUint32											subpass;
+		DE_NULL,											// VkPipeline										basePipelineHandle;
+		0,													// deInt32											basePipelineIndex;
+	};
+
+	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
+}
+
+} // anonymous
 
 void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections& programCollection) const
 {
@@ -332,8 +568,7 @@ public:
 
 	VkQueueFlags			getQueueFlags			(void) const;
 
-	void					recordCommands			(vk::Allocator&				allocator,
-													 const VkCommandBuffer		commandBuffer,
+	void					recordCommands			(const VkCommandBuffer		commandBuffer,
 													 const VkImageCreateInfo&	imageSparseInfo,
 													 const VkImage				imageSparse,
 													 const VkImage				imageTexels,
@@ -342,13 +577,13 @@ public:
 	virtual VkImageSubresourceRange	sampledImageRangeToBind(const VkImageCreateInfo& imageSparseInfo, const deUint32 mipLevel) const = 0;
 
 private:
+	typedef de::SharedPtr< vk::Unique<vk::VkFramebuffer> > VkFramebufferSp;
 
-	typedef de::SharedPtr< vk::Unique<vk::VkFramebuffer> > SharedVkFramebuffer;
-
-	de::SharedPtr<Buffer>				vertexBuffer;
-	std::vector<SharedVkFramebuffer>	framebuffers;
-	Move<VkRenderPass>					renderPass;
-	Move<VkSampler>						sampler;
+	Move<VkBuffer>					m_vertexBuffer;
+	de::MovePtr<Allocation>			m_vertexBufferAlloc;
+	std::vector<VkFramebufferSp>	m_framebuffers;
+	Move<VkRenderPass>				m_renderPass;
+	Move<VkSampler>					m_sampler;
 };
 
 VkImageUsageFlags SparseShaderIntrinsicsInstanceSampledBase::imageSparseUsageFlags (void) const
@@ -366,8 +601,7 @@ VkQueueFlags SparseShaderIntrinsicsInstanceSampledBase::getQueueFlags (void) con
 	return VK_QUEUE_GRAPHICS_BIT;
 }
 
-void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&				allocator,
-																const VkCommandBuffer		commandBuffer,
+void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (const VkCommandBuffer		commandBuffer,
 																const VkImageCreateInfo&	imageSparseInfo,
 																const VkImage				imageSparse,
 																const VkImage				imageTexels,
@@ -412,24 +646,14 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 	vertexData.push_back(tcu::Vec2( 1.0f, 1.0f));
 	vertexData.push_back(tcu::Vec2( 1.0f, 1.0f));
 
-	const VkFormat		vertexFormatPosition		= VK_FORMAT_R32G32_SFLOAT;
-	const VkFormat		vertexFormatTexCoord		= VK_FORMAT_R32G32_SFLOAT;
+	const VkDeviceSize			vertexDataSizeInBytes	= sizeInBytes(vertexData);
+	const VkBufferCreateInfo	vertexBufferCreateInfo	= makeBufferCreateInfo(vertexDataSizeInBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
-	const deUint32		vertexSizePosition			= tcu::getPixelSize(mapVkFormat(vertexFormatPosition));
-	const deUint32		vertexSizeTexCoord			= tcu::getPixelSize(mapVkFormat(vertexFormatTexCoord));
+	m_vertexBuffer		= createBuffer(deviceInterface, getDevice(), &vertexBufferCreateInfo);
+	m_vertexBufferAlloc	= bindBuffer(deviceInterface, getDevice(), getAllocator(), *m_vertexBuffer, MemoryRequirement::HostVisible);
 
-	const VkDeviceSize	vertexBufferStartOffset		= 0ull;
-	const deUint32		vertexBufferOffsetPosition	= 0ull;
-	const deUint32		vertexBufferOffsetTexCoord	= vertexSizePosition;
-
-	const deUint32		vertexDataStride			= vertexSizePosition + vertexSizeTexCoord;
-	const VkDeviceSize	vertexDataSizeInBytes		= sizeInBytes(vertexData);
-
-	vertexBuffer = de::SharedPtr<Buffer>(new Buffer(deviceInterface, *m_logicalDevice, allocator, makeBufferCreateInfo(vertexDataSizeInBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
-	const Allocation& vertexBufferAllocation = vertexBuffer->getAllocation();
-
-	deMemcpy(vertexBufferAllocation.getHostPtr(), &vertexData[0], static_cast<std::size_t>(vertexDataSizeInBytes));
-	flushMappedMemoryRange(deviceInterface, *m_logicalDevice, vertexBufferAllocation.getMemory(), vertexBufferAllocation.getOffset(), vertexDataSizeInBytes);
+	deMemcpy(m_vertexBufferAlloc->getHostPtr(), &vertexData[0], static_cast<std::size_t>(vertexDataSizeInBytes));
+	flushMappedMemoryRange(deviceInterface, getDevice(), m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexDataSizeInBytes);
 
 	// Create render pass
 	const VkAttachmentDescription texelsAttachmentDescription =
@@ -507,26 +731,26 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 		DE_NULL												// const VkSubpassDependency*		pDependencies;
 	};
 
-	renderPass = createRenderPass(deviceInterface, *m_logicalDevice, &renderPassInfo);
+	m_renderPass = createRenderPass(deviceInterface, getDevice(), &renderPassInfo);
 
 	// Create descriptor set layout
 	DescriptorSetLayoutBuilder descriptorLayerBuilder;
 
 	descriptorLayerBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-	const Unique<VkDescriptorSetLayout> descriptorSetLayout(descriptorLayerBuilder.build(deviceInterface, *m_logicalDevice));
+	const Unique<VkDescriptorSetLayout> descriptorSetLayout(descriptorLayerBuilder.build(deviceInterface, getDevice()));
 
 	// Create descriptor pool
 	DescriptorPoolBuilder descriptorPoolBuilder;
 
 	descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageSparseInfo.mipLevels);
 
-	descriptorPool = descriptorPoolBuilder.build(deviceInterface, *m_logicalDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, imageSparseInfo.mipLevels);
+	descriptorPool = descriptorPoolBuilder.build(deviceInterface, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, imageSparseInfo.mipLevels);
 
 	// Create sampler object
 	const tcu::Sampler			samplerObject(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::NEAREST_MIPMAP_NEAREST, tcu::Sampler::NEAREST);
 	const VkSamplerCreateInfo	samplerCreateInfo = mapSampler(samplerObject, m_format);
-	sampler = createSampler(deviceInterface, *m_logicalDevice, &samplerCreateInfo);
+	m_sampler = createSampler(deviceInterface, getDevice(), &samplerCreateInfo);
 
 	struct PushConstants
 	{
@@ -555,52 +779,22 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 		&lodConstantRange,									// const VkPushConstantRange*		pPushConstantRanges;
 	};
 
-	const Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(deviceInterface, *m_logicalDevice, &pipelineLayoutParams));
+	const Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(deviceInterface, getDevice(), &pipelineLayoutParams));
 
 	// Create graphics pipeline
-	const VkVertexInputBindingDescription vertexBinding =
 	{
-		0u,							// deUint32				binding;
-		vertexDataStride,			// deUint32				stride;
-		VK_VERTEX_INPUT_RATE_VERTEX	// VkVertexInputRate	inputRate;
-	};
-
-	const VkVertexInputAttributeDescription vertexAttributePosition =
-	{
-		0u,							// deUint32	location;
-		0u,							// deUint32	binding;
-		vertexFormatPosition,		// VkFormat	format;
-		vertexBufferOffsetPosition,	// deUint32	offset;
-	};
-
-	const VkVertexInputAttributeDescription vertexAttributeTexCoord =
-	{
-		1u,							// deUint32	location;
-		0u,							// deUint32	binding;
-		vertexFormatTexCoord,		// VkFormat	format;
-		vertexBufferOffsetTexCoord,	// deUint32	offset;
-	};
-
-	{
-		GraphicsPipelineBuilder graphicPipelineBuilder;
-
-		graphicPipelineBuilder.addVertexBinding(vertexBinding);
-		graphicPipelineBuilder.addVertexAttribute(vertexAttributePosition);
-		graphicPipelineBuilder.addVertexAttribute(vertexAttributeTexCoord);
-		graphicPipelineBuilder.setPrimitiveTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
-		graphicPipelineBuilder.addDynamicState(VK_DYNAMIC_STATE_VIEWPORT);
-		graphicPipelineBuilder.addDynamicState(VK_DYNAMIC_STATE_SCISSOR);
-		graphicPipelineBuilder.setAttachmentsCount(2u);
-		graphicPipelineBuilder.setShader(deviceInterface, *m_logicalDevice, VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vertex_shader"), DE_NULL);
-		graphicPipelineBuilder.setShader(deviceInterface, *m_logicalDevice, VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("fragment_shader"), DE_NULL);
+		Move<VkShaderModule> vertexModule	= createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get("vertex_shader"), (VkShaderModuleCreateFlags)0);
+		Move<VkShaderModule> fragmentModule	= createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get("fragment_shader"), (VkShaderModuleCreateFlags)0);
+		Move<VkShaderModule> geometryModule;
 
 		if (imageSparseInfo.arrayLayers > 1u)
 		{
 			requireFeatures(instance, physicalDevice, FEATURE_GEOMETRY_SHADER);
-			graphicPipelineBuilder.setShader(deviceInterface, *m_logicalDevice, VK_SHADER_STAGE_GEOMETRY_BIT, m_context.getBinaryCollection().get("geometry_shader"), DE_NULL);
+			geometryModule = createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get("geometry_shader"), (VkShaderModuleCreateFlags)0);
 		}
 
-		pipelines.push_back(makeVkSharedPtr(graphicPipelineBuilder.build(deviceInterface, *m_logicalDevice, *pipelineLayout, *renderPass)));
+		pipelines.push_back(makeVkSharedPtr(makeGraphicsPipeline(
+			deviceInterface, getDevice(), *pipelineLayout, *m_renderPass, *vertexModule, *fragmentModule, *geometryModule)));
 	}
 
 	const VkPipeline graphicsPipeline = **pipelines[0];
@@ -646,7 +840,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 	imageSparseViews.resize(imageSparseInfo.mipLevels);
 	imageTexelsViews.resize(imageSparseInfo.mipLevels);
 	imageResidencyViews.resize(imageSparseInfo.mipLevels);
-	framebuffers.resize(imageSparseInfo.mipLevels);
+	m_framebuffers.resize(imageSparseInfo.mipLevels);
 	descriptorSets.resize(imageSparseInfo.mipLevels);
 
 	std::vector<VkClearValue> clearValues;
@@ -673,8 +867,8 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 		const VkImageSubresourceRange mipLevelRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipLevelNdx, 1u, 0u, imageSparseInfo.arrayLayers);
 
 		// Create color attachments image views
-		imageTexelsViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, *m_logicalDevice, imageTexels, mapImageViewType(m_imageType), imageSparseInfo.format, mipLevelRange));
-		imageResidencyViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, *m_logicalDevice, imageResidency, mapImageViewType(m_imageType), mapTextureFormat(m_residencyFormat), mipLevelRange));
+		imageTexelsViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageTexels, mapImageViewType(m_imageType), imageSparseInfo.format, mipLevelRange));
+		imageResidencyViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageResidency, mapImageViewType(m_imageType), mapTextureFormat(m_residencyFormat), mipLevelRange));
 
 		const VkImageView attachmentsViews[] = { **imageTexelsViews[mipLevelNdx], **imageResidencyViews[mipLevelNdx] };
 
@@ -684,7 +878,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType                             sType;
 			DE_NULL,									// const void*                                 pNext;
 			(VkFramebufferCreateFlags)0,				// VkFramebufferCreateFlags                    flags;
-			*renderPass,								// VkRenderPass                                renderPass;
+			*m_renderPass,								// VkRenderPass                                renderPass;
 			2u,											// uint32_t                                    attachmentCount;
 			attachmentsViews,							// const VkImageView*                          pAttachments;
 			mipLevelSize.width,							// uint32_t                                    width;
@@ -692,26 +886,39 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 			imageSparseInfo.arrayLayers,				// uint32_t                                    layers;
 		};
 
-		framebuffers[mipLevelNdx] = makeVkSharedPtr(createFramebuffer(deviceInterface, *m_logicalDevice, &framebufferInfo));
+		m_framebuffers[mipLevelNdx] = makeVkSharedPtr(createFramebuffer(deviceInterface, getDevice(), &framebufferInfo));
 
 		// Create descriptor set
-		descriptorSets[mipLevelNdx] = makeVkSharedPtr(makeDescriptorSet(deviceInterface, *m_logicalDevice, *descriptorPool, *descriptorSetLayout));
+		descriptorSets[mipLevelNdx] = makeVkSharedPtr(makeDescriptorSet(deviceInterface, getDevice(), *descriptorPool, *descriptorSetLayout));
 		const VkDescriptorSet descriptorSet = **descriptorSets[mipLevelNdx];
 
 		// Update descriptor set
 		const VkImageSubresourceRange sparseImageSubresourceRange = sampledImageRangeToBind(imageSparseInfo, mipLevelNdx);
 
-		imageSparseViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, *m_logicalDevice, imageSparse, mapImageViewType(m_imageType), imageSparseInfo.format, sparseImageSubresourceRange));
+		imageSparseViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageSparse, mapImageViewType(m_imageType), imageSparseInfo.format, sparseImageSubresourceRange));
 
-		const VkDescriptorImageInfo imageSparseDescInfo = makeDescriptorImageInfo(*sampler, **imageSparseViews[mipLevelNdx], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		const VkDescriptorImageInfo imageSparseDescInfo = makeDescriptorImageInfo(*m_sampler, **imageSparseViews[mipLevelNdx], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		DescriptorSetUpdateBuilder descriptorUpdateBuilder;
 
 		descriptorUpdateBuilder.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(BINDING_IMAGE_SPARSE), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSparseDescInfo);
-		descriptorUpdateBuilder.update(deviceInterface, *m_logicalDevice);
+		descriptorUpdateBuilder.update(deviceInterface, getDevice());
 
 		// Begin render pass
-		beginRenderPass(deviceInterface, commandBuffer, *renderPass, **framebuffers[mipLevelNdx], renderArea, clearValues);
+		{
+			const VkRenderPassBeginInfo renderPassBeginInfo =
+			{
+				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
+				DE_NULL,										// const void*             pNext;
+				*m_renderPass,									// VkRenderPass            renderPass;
+				**m_framebuffers[mipLevelNdx],					// VkFramebuffer           framebuffer;
+				renderArea,										// VkRect2D                renderArea;
+				static_cast<deUint32>(clearValues.size()),		// deUint32                clearValueCount;
+				&clearValues[0],								// const VkClearValue*     pClearValues;
+			};
+
+			deviceInterface.cmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		}
 
 		// Bind graphics pipeline
 		deviceInterface.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
@@ -720,7 +927,10 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 		deviceInterface.cmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
 
 		// Bind vertex buffer
-		deviceInterface.cmdBindVertexBuffers(commandBuffer, 0u, 1u, &vertexBuffer->get(), &vertexBufferStartOffset);
+		{
+			const VkDeviceSize offset = 0ull;
+			deviceInterface.cmdBindVertexBuffers(commandBuffer, 0u, 1u, &m_vertexBuffer.get(), &offset);
+		}
 
 		// Bind Viewport
 		deviceInterface.cmdSetViewport(commandBuffer, 0u, 1u, &viewport);
@@ -743,7 +953,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (vk::Allocator&		
 		deviceInterface.cmdDraw(commandBuffer, 4u, 1u, 0u, 0u);
 
 		// End render pass
-		endRenderPass(deviceInterface, commandBuffer);
+		deviceInterface.cmdEndRenderPass(commandBuffer);
 	}
 
 	{
@@ -785,15 +995,13 @@ public:
 													 const tcu::TextureFormat&	format)
 	: SparseShaderIntrinsicsInstanceSampledBase(context, function, imageType, imageSize, format) {}
 
-	VkImageSubresourceRange	sampledImageRangeToBind(const VkImageCreateInfo& imageSparseInfo, const deUint32 mipLevel) const;
+	VkImageSubresourceRange sampledImageRangeToBind (const VkImageCreateInfo&	imageSparseInfo,
+													 const deUint32				mipLevel) const
+	{
+		DE_UNREF(mipLevel);
+		return makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, imageSparseInfo.mipLevels, 0u, imageSparseInfo.arrayLayers);
+	}
 };
-
-VkImageSubresourceRange SparseShaderIntrinsicsInstanceSampledExplicit::sampledImageRangeToBind (const VkImageCreateInfo& imageSparseInfo, const deUint32 mipLevel) const
-{
-	DE_UNREF(mipLevel);
-
-	return makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, imageSparseInfo.mipLevels, 0u, imageSparseInfo.arrayLayers);
-}
 
 TestInstance* SparseShaderIntrinsicsCaseSampledExplicit::createInstance (Context& context) const
 {
@@ -810,13 +1018,12 @@ public:
 													 const tcu::TextureFormat&	format)
 	: SparseShaderIntrinsicsInstanceSampledBase(context, function, imageType, imageSize, format) {}
 
-	VkImageSubresourceRange	sampledImageRangeToBind(const VkImageCreateInfo& imageSparseInfo, const deUint32 mipLevel) const;
+	VkImageSubresourceRange	sampledImageRangeToBind	(const VkImageCreateInfo&	imageSparseInfo,
+													 const deUint32				mipLevel) const
+	{
+		return makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipLevel, 1u, 0u, imageSparseInfo.arrayLayers);
+	}
 };
-
-VkImageSubresourceRange SparseShaderIntrinsicsInstanceSampledImplicit::sampledImageRangeToBind (const VkImageCreateInfo& imageSparseInfo, const deUint32 mipLevel) const
-{
-	return makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipLevel, 1u, 0u, imageSparseInfo.arrayLayers);
-}
 
 TestInstance* SparseShaderIntrinsicsCaseSampledImplicit::createInstance (Context& context) const
 {

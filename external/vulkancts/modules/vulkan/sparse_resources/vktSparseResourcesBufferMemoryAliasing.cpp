@@ -171,8 +171,6 @@ tcu::TestStatus BufferSparseMemoryAliasingInstance::iterate (void)
 		createDeviceSupportingQueues(queueRequirements);
 	}
 
-	const de::UniquePtr<Allocator> allocator(new SimpleAllocator(deviceInterface, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
-
 	const Queue& sparseQueue	= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
 	const Queue& computeQueue	= getQueue(VK_QUEUE_COMPUTE_BIT, 0);
 
@@ -200,13 +198,13 @@ tcu::TestStatus BufferSparseMemoryAliasingInstance::iterate (void)
 	}
 
 	// Create sparse buffers
-	const Unique<VkBuffer> sparseBufferWrite(createBuffer(deviceInterface, *m_logicalDevice, &bufferCreateInfo));
-	const Unique<VkBuffer> sparseBufferRead	(createBuffer(deviceInterface, *m_logicalDevice, &bufferCreateInfo));
+	const Unique<VkBuffer> sparseBufferWrite(createBuffer(deviceInterface, getDevice(), &bufferCreateInfo));
+	const Unique<VkBuffer> sparseBufferRead	(createBuffer(deviceInterface, getDevice(), &bufferCreateInfo));
 
 	// Create sparse buffers memory bind semaphore
-	const Unique<VkSemaphore> bufferMemoryBindSemaphore(makeSemaphore(deviceInterface, *m_logicalDevice));
+	const Unique<VkSemaphore> bufferMemoryBindSemaphore(makeSemaphore(deviceInterface, getDevice()));
 
-	const VkMemoryRequirements	bufferMemRequirements = getBufferMemoryRequirements(deviceInterface, *m_logicalDevice, *sparseBufferWrite);
+	const VkMemoryRequirements	bufferMemRequirements = getBufferMemoryRequirements(deviceInterface, getDevice(), *sparseBufferWrite);
 
 	if (bufferMemRequirements.size > getPhysicalDeviceProperties(instance, physicalDevice).limits.sparseAddressSpaceSize)
 		TCU_THROW(NotSupportedError, "Required memory size for sparse resources exceeds device limits");
@@ -218,9 +216,9 @@ tcu::TestStatus BufferSparseMemoryAliasingInstance::iterate (void)
 	if (memoryType == NO_MATCH_FOUND)
 		return tcu::TestStatus::fail("No matching memory type found");
 
-	const VkSparseMemoryBind sparseMemoryBind = makeSparseMemoryBind(deviceInterface, *m_logicalDevice, bufferMemRequirements.size, memoryType, 0u);
+	const VkSparseMemoryBind sparseMemoryBind = makeSparseMemoryBind(deviceInterface, getDevice(), bufferMemRequirements.size, memoryType, 0u);
 
-	Move<VkDeviceMemory> deviceMemoryPtr(check<VkDeviceMemory>(sparseMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, *m_logicalDevice, DE_NULL));
+	Move<VkDeviceMemory> deviceMemoryPtr(check<VkDeviceMemory>(sparseMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL));
 
 	{
 		const VkSparseBufferMemoryBindInfo sparseBufferMemoryBindInfo[2] =
@@ -259,12 +257,13 @@ tcu::TestStatus BufferSparseMemoryAliasingInstance::iterate (void)
 	}
 
 	// Create output buffer
-	const VkBufferCreateInfo outputBufferCreateInfo = makeBufferCreateInfo(m_bufferSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-	de::UniquePtr<Buffer>	 outputBuffer(new Buffer(deviceInterface, *m_logicalDevice, *allocator, outputBufferCreateInfo, MemoryRequirement::HostVisible));
+	const VkBufferCreateInfo		outputBufferCreateInfo	= makeBufferCreateInfo(m_bufferSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	const Unique<VkBuffer>			outputBuffer			(createBuffer(deviceInterface, getDevice(), &outputBufferCreateInfo));
+	const de::UniquePtr<Allocation>	outputBufferAlloc		(bindBuffer(deviceInterface, getDevice(), getAllocator(), *outputBuffer, MemoryRequirement::HostVisible));
 
 	// Create command buffer for compute and data transfer oparations
-	const Unique<VkCommandPool>	  commandPool(makeCommandPool(deviceInterface, *m_logicalDevice, computeQueue.queueFamilyIndex));
-	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, *m_logicalDevice, *commandPool));
+	const Unique<VkCommandPool>	  commandPool(makeCommandPool(deviceInterface, getDevice(), computeQueue.queueFamilyIndex));
+	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, getDevice(), *commandPool));
 
 	// Start recording commands
 	beginCommandBuffer(deviceInterface, *commandBuffer);
@@ -273,12 +272,12 @@ tcu::TestStatus BufferSparseMemoryAliasingInstance::iterate (void)
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(
 		DescriptorSetLayoutBuilder()
 		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
-		.build(deviceInterface, *m_logicalDevice));
+		.build(deviceInterface, getDevice()));
 
 	// Create compute pipeline
-	const Unique<VkShaderModule>	shaderModule(createShaderModule(deviceInterface, *m_logicalDevice, m_context.getBinaryCollection().get("comp"), DE_NULL));
-	const Unique<VkPipelineLayout>	pipelineLayout(makePipelineLayout(deviceInterface, *m_logicalDevice, *descriptorSetLayout));
-	const Unique<VkPipeline>		computePipeline(makeComputePipeline(deviceInterface, *m_logicalDevice, *pipelineLayout, *shaderModule));
+	const Unique<VkShaderModule>	shaderModule(createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get("comp"), DE_NULL));
+	const Unique<VkPipelineLayout>	pipelineLayout(makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout));
+	const Unique<VkPipeline>		computePipeline(makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, *shaderModule));
 
 	deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
 
@@ -286,16 +285,16 @@ tcu::TestStatus BufferSparseMemoryAliasingInstance::iterate (void)
 	const Unique<VkDescriptorPool> descriptorPool(
 		DescriptorPoolBuilder()
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u)
-		.build(deviceInterface, *m_logicalDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+		.build(deviceInterface, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(deviceInterface, *m_logicalDevice, *descriptorPool, *descriptorSetLayout));
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(deviceInterface, getDevice(), *descriptorPool, *descriptorSetLayout));
 
 	{
 		const VkDescriptorBufferInfo sparseBufferInfo = makeDescriptorBufferInfo(*sparseBufferWrite, 0u, m_bufferSizeInBytes);
 
 		DescriptorSetUpdateBuilder()
 			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &sparseBufferInfo)
-			.update(deviceInterface, *m_logicalDevice);
+			.update(deviceInterface, getDevice());
 	}
 
 	deviceInterface.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
@@ -334,14 +333,14 @@ tcu::TestStatus BufferSparseMemoryAliasingInstance::iterate (void)
 	{
 		const VkBufferCopy bufferCopy = makeBufferCopy(0u, 0u, m_bufferSizeInBytes);
 
-		deviceInterface.cmdCopyBuffer(*commandBuffer, *sparseBufferRead, outputBuffer->get(), 1u, &bufferCopy);
+		deviceInterface.cmdCopyBuffer(*commandBuffer, *sparseBufferRead, *outputBuffer, 1u, &bufferCopy);
 	}
 
 	{
 		const VkBufferMemoryBarrier outputBufferHostBarrier
 			= makeBufferMemoryBarrier(	VK_ACCESS_TRANSFER_WRITE_BIT,
 										VK_ACCESS_HOST_READ_BIT,
-										outputBuffer->get(),
+										*outputBuffer,
 										0ull,
 										m_bufferSizeInBytes);
 
@@ -355,13 +354,12 @@ tcu::TestStatus BufferSparseMemoryAliasingInstance::iterate (void)
 	const VkPipelineStageFlags waitStageBits[] = { VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT };
 
 	// Submit commands for execution and wait for completion
-	submitCommandsAndWait(deviceInterface, *m_logicalDevice, computeQueue.queueHandle, *commandBuffer, 1u, &bufferMemoryBindSemaphore.get(), waitStageBits);
+	submitCommandsAndWait(deviceInterface, getDevice(), computeQueue.queueHandle, *commandBuffer, 1u, &bufferMemoryBindSemaphore.get(), waitStageBits);
 
 	// Retrieve data from output buffer to host memory
-	const Allocation& allocation = outputBuffer->getAllocation();
-	invalidateMappedMemoryRange(deviceInterface, *m_logicalDevice, allocation.getMemory(), allocation.getOffset(), m_bufferSizeInBytes);
+	invalidateMappedMemoryRange(deviceInterface, getDevice(), outputBufferAlloc->getMemory(), outputBufferAlloc->getOffset(), m_bufferSizeInBytes);
 
-	const deUint8* outputData = static_cast<const deUint8*>(allocation.getHostPtr());
+	const deUint8* outputData = static_cast<const deUint8*>(outputBufferAlloc->getHostPtr());
 
 	// Wait for sparse queue to become idle
 	deviceInterface.queueWaitIdle(sparseQueue.queueHandle);
