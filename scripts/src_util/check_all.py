@@ -25,6 +25,7 @@ from argparse import ArgumentParser
 from common import getChangedFiles, getAllProjectFiles
 from check_include_guards import checkIncludeGuards
 from check_whitespace import checkWhitespace
+from check_license import checkLicense
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -41,6 +42,7 @@ if __name__ == "__main__":
     error = not all([
         checkWhitespace(files),
         checkIncludeGuards(files),
+        checkLicense(files),
         #todo checkRedundantIncludeGuards(files),
         ])
 

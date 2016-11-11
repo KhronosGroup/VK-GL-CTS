@@ -871,7 +871,6 @@ tcu::TestStatus deviceFeatures (Context& context)
 		{ 0, 0 }
 	};
 
-
 	deMemset(buffer, GUARD_VALUE, sizeof(buffer));
 	features = reinterpret_cast<VkPhysicalDeviceFeatures*>(buffer);
 
@@ -880,8 +879,15 @@ tcu::TestStatus deviceFeatures (Context& context)
 	log << TestLog::Message << "device = " << context.getPhysicalDevice() << TestLog::EndMessage
 		<< TestLog::Message << *features << TestLog::EndMessage;
 
-	if (!features->robustBufferAccess)
-		return tcu::TestStatus::fail("robustBufferAccess is not supported");
+	// Requirements and dependencies
+	{
+		if (!features->robustBufferAccess)
+			return tcu::TestStatus::fail("robustBufferAccess is not supported");
+
+		// multiViewport requires MultiViewport (SPIR-V capability) support, which depends on Geometry
+		if (features->multiViewport && !features->geometryShader)
+			return tcu::TestStatus::fail("multiViewport is supported but geometryShader is not");
+	}
 
 	for (int ndx = 0; ndx < GUARD_SIZE; ndx++)
 	{
@@ -897,7 +903,6 @@ tcu::TestStatus deviceFeatures (Context& context)
 		log << TestLog::Message << "deviceFeatures - VkPhysicalDeviceFeatures not completely initialized" << TestLog::EndMessage;
 		return tcu::TestStatus::fail("deviceFeatures incomplete initialization");
 	}
-
 
 	return tcu::TestStatus::pass("Query succeeded");
 }

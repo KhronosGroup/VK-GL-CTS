@@ -384,6 +384,8 @@ void uploadTestTextureInternal (const DeviceInterface&			vk,
 								deUint32						queueFamilyIndex,
 								Allocator&						allocator,
 								const TestTexture&				srcTexture,
+								const TestTexture*				srcStencilTexture,
+								tcu::TextureFormat				format,
 								VkImage							destImage)
 {
 	deUint32						bufferSize;
@@ -392,10 +394,22 @@ void uploadTestTextureInternal (const DeviceInterface&			vk,
 	Move<VkCommandPool>				cmdPool;
 	Move<VkCommandBuffer>			cmdBuffer;
 	Move<VkFence>					fence;
-	const VkImageAspectFlags		imageAspectFlags	= getImageAspectFlags(srcTexture.getTextureFormat());
+	const VkImageAspectFlags		imageAspectFlags	= getImageAspectFlags(format);
+	deUint32						stencilOffset		= 0u;
 
 	// Calculate buffer size
 	bufferSize =  (srcTexture.isCompressed())? srcTexture.getCompressedSize(): srcTexture.getSize();
+
+	// Stencil texture should be provided if (and only if) the image has combined DS format
+	DE_ASSERT(tcu::isCombinedDepthStencilType(format.type) == (srcStencilTexture != DE_NULL));
+
+	if (srcStencilTexture != DE_NULL)
+	{
+		const deInt32 stencilAlignment = deMin32(4, srcTexture.getTextureFormat().getPixelSize());
+
+		stencilOffset	= static_cast<deUint32>(deAlign32(static_cast<deInt32>(bufferSize), stencilAlignment));
+		bufferSize		= stencilOffset + srcStencilTexture->getSize();
+	}
 
 	// Create source buffer
 	{
@@ -514,10 +528,27 @@ void uploadTestTextureInternal (const DeviceInterface&			vk,
 		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
-	const std::vector<VkBufferImageCopy>	copyRegions		= srcTexture.getBufferCopyRegions();
+	std::vector<VkBufferImageCopy>	copyRegions		= srcTexture.getBufferCopyRegions();
 
 	// Write buffer data
 	srcTexture.write(reinterpret_cast<deUint8*>(bufferAlloc->getHostPtr()));
+
+	if (srcStencilTexture != DE_NULL)
+	{
+		DE_ASSERT(stencilOffset != 0u);
+
+		srcStencilTexture->write(reinterpret_cast<deUint8*>(bufferAlloc->getHostPtr()) + stencilOffset);
+
+		std::vector<VkBufferImageCopy>	stencilCopyRegions = srcStencilTexture->getBufferCopyRegions();
+		for (size_t regionIdx = 0; regionIdx < stencilCopyRegions.size(); regionIdx++)
+		{
+			VkBufferImageCopy region = stencilCopyRegions[regionIdx];
+			region.bufferOffset += stencilOffset;
+
+			copyRegions.push_back(region);
+		}
+	}
+
 	flushMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), bufferSize);
 
 	// Copy buffer to image
@@ -555,6 +586,9 @@ void uploadTestTexture (const DeviceInterface&			vk,
 {
 	if (tcu::isCombinedDepthStencilType(srcTexture.getTextureFormat().type))
 	{
+		de::MovePtr<TestTexture> srcDepthTexture;
+		de::MovePtr<TestTexture> srcStencilTexture;
+
 		if (tcu::hasDepthComponent(srcTexture.getTextureFormat().order))
 		{
 			tcu::TextureFormat format;
@@ -571,18 +605,18 @@ void uploadTestTexture (const DeviceInterface&			vk,
 			default:
 				DE_ASSERT(0);
 			}
-			de::MovePtr<TestTexture> depthTexture	= srcTexture.copy(format);
-			uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, *depthTexture, destImage);
+			srcDepthTexture = srcTexture.copy(format);
 		}
 
 		if (tcu::hasStencilComponent(srcTexture.getTextureFormat().order))
 		{
-			de::MovePtr<TestTexture> stencilTexture	= srcTexture.copy(tcu::getEffectiveDepthStencilTextureFormat(srcTexture.getTextureFormat(), tcu::Sampler::MODE_STENCIL));
-			uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, *stencilTexture, destImage);
+			srcStencilTexture = srcTexture.copy(tcu::getEffectiveDepthStencilTextureFormat(srcTexture.getTextureFormat(), tcu::Sampler::MODE_STENCIL));
 		}
+
+		uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, srcTexture, srcDepthTexture.get(), srcTexture.getTextureFormat(), destImage);
 	}
 	else
-		uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, srcTexture, destImage);
+		uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, srcTexture, DE_NULL, srcTexture.getTextureFormat(), destImage);
 }
 
 // Utilities for test textures

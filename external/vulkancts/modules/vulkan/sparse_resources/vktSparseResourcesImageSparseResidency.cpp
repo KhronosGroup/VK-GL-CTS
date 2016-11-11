@@ -202,7 +202,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 	VkImageCreateInfo					imageCreateInfo;
 	VkSparseImageMemoryRequirements		aspectRequirements;
 	VkExtent3D							imageGranularity;
-	std::vector<DeviceMemoryUniquePtr>	deviceMemUniquePtrVec;
+	std::vector<DeviceMemorySp>			deviceMemUniquePtrVec;
 
 	// Check if image size does not exceed device limits
 	if (!isImageSizeSupported(instance, physicalDevice, m_imageType, m_imageSize))
@@ -247,20 +247,18 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 		createDeviceSupportingQueues(queueRequirements);
 	}
 
-	const de::UniquePtr<Allocator> allocator(new SimpleAllocator(deviceInterface, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
-
 	const Queue& sparseQueue	= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
 	const Queue& computeQueue	= getQueue(VK_QUEUE_COMPUTE_BIT, 0);
 
 	// Create sparse image
-	const Unique<VkImage> sparseImage(createImage(deviceInterface, *m_logicalDevice, &imageCreateInfo));
+	const Unique<VkImage> sparseImage(createImage(deviceInterface, getDevice(), &imageCreateInfo));
 
 	// Create sparse image memory bind semaphore
-	const Unique<VkSemaphore> imageMemoryBindSemaphore(makeSemaphore(deviceInterface, *m_logicalDevice));
+	const Unique<VkSemaphore> imageMemoryBindSemaphore(makeSemaphore(deviceInterface, getDevice()));
 
 	{
 		// Get image general memory requirements
-		const VkMemoryRequirements imageMemoryRequirements = getImageMemoryRequirements(deviceInterface, *m_logicalDevice, *sparseImage);
+		const VkMemoryRequirements imageMemoryRequirements = getImageMemoryRequirements(deviceInterface, getDevice(), *sparseImage);
 
 		if (imageMemoryRequirements.size > physicalDeviceProperties.limits.sparseAddressSpaceSize)
 			TCU_THROW(NotSupportedError, "Required memory size for sparse resource exceeds device limits");
@@ -268,7 +266,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 		DE_ASSERT((imageMemoryRequirements.size % imageMemoryRequirements.alignment) == 0);
 
 		// Get sparse image sparse memory requirements
-		const std::vector<VkSparseImageMemoryRequirements> sparseMemoryRequirements = getImageSparseMemoryRequirements(deviceInterface, *m_logicalDevice, *sparseImage);
+		const std::vector<VkSparseImageMemoryRequirements> sparseMemoryRequirements = getImageSparseMemoryRequirements(deviceInterface, getDevice(), *sparseImage);
 
 		DE_ASSERT(sparseMemoryRequirements.size() != 0);
 
@@ -324,10 +322,10 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 					extent.height = (y == numSparseBinds.y() - 1) ? lastBlockExtent.y() : imageGranularity.height;
 					extent.depth  = (z == numSparseBinds.z() - 1) ? lastBlockExtent.z() : imageGranularity.depth;
 
-					const VkSparseImageMemoryBind imageMemoryBind = makeSparseImageMemoryBind(deviceInterface, *m_logicalDevice,
+					const VkSparseImageMemoryBind imageMemoryBind = makeSparseImageMemoryBind(deviceInterface, getDevice(),
 						imageMemoryRequirements.alignment, memoryType, subresource, offset, extent);
 
-					deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, *m_logicalDevice, DE_NULL))));
+					deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
 
 					imageResidencyMemoryBinds.push_back(imageMemoryBind);
 				}
@@ -335,10 +333,10 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 
 			if (!(aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) && aspectRequirements.imageMipTailFirstLod < imageCreateInfo.mipLevels)
 			{
-				const VkSparseMemoryBind imageMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, *m_logicalDevice,
+				const VkSparseMemoryBind imageMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, getDevice(),
 					aspectRequirements.imageMipTailSize, memoryType, aspectRequirements.imageMipTailOffset + layerNdx * aspectRequirements.imageMipTailStride);
 
-				deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, *m_logicalDevice, DE_NULL))));
+				deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
 
 				imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
 			}
@@ -346,10 +344,10 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 
 		if ((aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) && aspectRequirements.imageMipTailFirstLod < imageCreateInfo.mipLevels)
 		{
-			const VkSparseMemoryBind imageMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, *m_logicalDevice,
+			const VkSparseMemoryBind imageMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, getDevice(),
 				aspectRequirements.imageMipTailSize, memoryType, aspectRequirements.imageMipTailOffset);
 
-			deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, *m_logicalDevice, DE_NULL))));
+			deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
 
 			imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
 		}
@@ -398,8 +396,8 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 	}
 
 	// Create command buffer for compute and transfer oparations
-	const Unique<VkCommandPool>	  commandPool(makeCommandPool(deviceInterface, *m_logicalDevice, computeQueue.queueFamilyIndex));
-	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, *m_logicalDevice, *commandPool));
+	const Unique<VkCommandPool>	  commandPool(makeCommandPool(deviceInterface, getDevice(), computeQueue.queueFamilyIndex));
+	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, getDevice(), *commandPool));
 
 	// Start recording commands
 	beginCommandBuffer(deviceInterface, *commandBuffer);
@@ -408,12 +406,12 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(
 		DescriptorSetLayoutBuilder()
 		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-		.build(deviceInterface, *m_logicalDevice));
+		.build(deviceInterface, getDevice()));
 
 	// Create and bind compute pipeline
-	const Unique<VkShaderModule>	shaderModule(createShaderModule(deviceInterface, *m_logicalDevice, m_context.getBinaryCollection().get("comp"), DE_NULL));
-	const Unique<VkPipelineLayout>	pipelineLayout(makePipelineLayout(deviceInterface, *m_logicalDevice, *descriptorSetLayout));
-	const Unique<VkPipeline>		computePipeline(makeComputePipeline(deviceInterface, *m_logicalDevice, *pipelineLayout, *shaderModule));
+	const Unique<VkShaderModule>	shaderModule(createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get("comp"), DE_NULL));
+	const Unique<VkPipelineLayout>	pipelineLayout(makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout));
+	const Unique<VkPipeline>		computePipeline(makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, *shaderModule));
 
 	deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
 
@@ -421,17 +419,17 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 	const Unique<VkDescriptorPool> descriptorPool(
 		DescriptorPoolBuilder()
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1u)
-		.build(deviceInterface, *m_logicalDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+		.build(deviceInterface, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet>	descriptorSet(makeDescriptorSet(deviceInterface, *m_logicalDevice, *descriptorPool, *descriptorSetLayout));
+	const Unique<VkDescriptorSet>	descriptorSet(makeDescriptorSet(deviceInterface, getDevice(), *descriptorPool, *descriptorSetLayout));
 
 	const VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
-	const Unique<VkImageView>		imageView(makeImageView(deviceInterface, *m_logicalDevice, *sparseImage, mapImageViewType(m_imageType), mapTextureFormat(m_format), subresourceRange));
+	const Unique<VkImageView>		imageView(makeImageView(deviceInterface, getDevice(), *sparseImage, mapImageViewType(m_imageType), mapTextureFormat(m_format), subresourceRange));
 	const VkDescriptorImageInfo		sparseImageInfo  = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
 	DescriptorSetUpdateBuilder()
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &sparseImageInfo)
-		.update(deviceInterface, *m_logicalDevice);
+		.update(deviceInterface, getDevice());
 
 	deviceInterface.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
@@ -486,15 +484,15 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &sparseImageTrasferBarrier);
 	}
 
-	const deUint32			 imageSizeInBytes		= getNumPixels(m_imageType, m_imageSize) * tcu::getPixelSize(m_format);
-	const VkBufferCreateInfo outputBufferCreateInfo = makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-
-	const de::UniquePtr<Buffer>	outputBuffer(new Buffer(deviceInterface, *m_logicalDevice, *allocator, outputBufferCreateInfo, MemoryRequirement::HostVisible));
+	const deUint32					imageSizeInBytes		= getNumPixels(m_imageType, m_imageSize) * tcu::getPixelSize(m_format);
+	const VkBufferCreateInfo		outputBufferCreateInfo	= makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	const Unique<VkBuffer>			outputBuffer			(createBuffer(deviceInterface, getDevice(), &outputBufferCreateInfo));
+	const de::UniquePtr<Allocation>	outputBufferAlloc		(bindBuffer(deviceInterface, getDevice(), getAllocator(), *outputBuffer, MemoryRequirement::HostVisible));
 
 	{
 		const VkBufferImageCopy bufferImageCopy = makeBufferImageCopy(imageCreateInfo.extent, imageCreateInfo.arrayLayers);
 
-		deviceInterface.cmdCopyImageToBuffer(*commandBuffer, *sparseImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outputBuffer->get(), 1u, &bufferImageCopy);
+		deviceInterface.cmdCopyImageToBuffer(*commandBuffer, *sparseImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *outputBuffer, 1u, &bufferImageCopy);
 	}
 
 	{
@@ -502,7 +500,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 		(
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_ACCESS_HOST_READ_BIT,
-			outputBuffer->get(),
+			*outputBuffer,
 			0u,
 			imageSizeInBytes
 		);
@@ -517,13 +515,12 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 	const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT };
 
 	// Submit commands for execution and wait for completion
-	submitCommandsAndWait(deviceInterface, *m_logicalDevice, computeQueue.queueHandle, *commandBuffer, 1u, &imageMemoryBindSemaphore.get(), stageBits);
+	submitCommandsAndWait(deviceInterface, getDevice(), computeQueue.queueHandle, *commandBuffer, 1u, &imageMemoryBindSemaphore.get(), stageBits);
 
 	// Retrieve data from buffer to host memory
-	const Allocation& allocation = outputBuffer->getAllocation();
-	invalidateMappedMemoryRange(deviceInterface, *m_logicalDevice, allocation.getMemory(), allocation.getOffset(), imageSizeInBytes);
+	invalidateMappedMemoryRange(deviceInterface, getDevice(), outputBufferAlloc->getMemory(), outputBufferAlloc->getOffset(), imageSizeInBytes);
 
-	const deUint8* outputData = static_cast<const deUint8*>(allocation.getHostPtr());
+	const deUint8* outputData = static_cast<const deUint8*>(outputBufferAlloc->getHostPtr());
 	const tcu::ConstPixelBufferAccess pixelBuffer = tcu::ConstPixelBufferAccess(m_format, gridSize.x(), gridSize.y(), gridSize.z(), outputData);
 
 	// Wait for sparse queue to become idle

@@ -39,14 +39,14 @@ public:
 											 const ImageType			imageType,
 											 const tcu::UVec3&			imageSize,
 											 const tcu::TextureFormat&	format)
-		: SparseShaderIntrinsicsCaseBase(testCtx, name, function, imageType, imageSize, format) {}
+											 : SparseShaderIntrinsicsCaseBase (testCtx, name, function, imageType, imageSize, format) {}
 
 	void				initPrograms		(vk::SourceCollections&		programCollection) const;
 
-	virtual std::string sparseImageTypeDecl(const std::string&			imageType,
-											const std::string&			componentType) const = 0;
+	virtual std::string sparseImageTypeDecl	(const std::string&			imageType,
+											 const std::string&			componentType) const = 0;
 
-	virtual std::string	sparseImageOpString (const std::string&			resultVariable,
+	virtual std::string	sparseImageOpString	(const std::string&			resultVariable,
 											 const std::string&			resultType,
 											 const std::string&			image,
 											 const std::string&			coord,
@@ -56,37 +56,47 @@ public:
 class SparseCaseOpImageSparseFetch : public SparseShaderIntrinsicsCaseStorage
 {
 public:
-	SparseCaseOpImageSparseFetch	(tcu::TestContext&			testCtx,
-									 const std::string&			name,
-									 const SpirVFunction		function,
-									 const ImageType			imageType,
-									 const tcu::UVec3&			imageSize,
-									 const tcu::TextureFormat&	format)
-		: SparseShaderIntrinsicsCaseStorage(testCtx, name, function, imageType, imageSize, format) {}
+	SparseCaseOpImageSparseFetch			(tcu::TestContext&			testCtx,
+											 const std::string&			name,
+											 const SpirVFunction		function,
+											 const ImageType			imageType,
+											 const tcu::UVec3&			imageSize,
+											 const tcu::TextureFormat&	format)
+											 : SparseShaderIntrinsicsCaseStorage (testCtx, name, function, imageType, imageSize, format) {}
 
-	TestInstance* createInstance(Context& context) const;
+	TestInstance* createInstance			(Context& context) const;
 
-	std::string sparseImageTypeDecl(const std::string& imageType, const std::string& componentType) const;
+	std::string sparseImageTypeDecl			(const std::string&			imageType,
+											 const std::string&			componentType) const;
 
-	std::string	sparseImageOpString(const std::string& resultVariable, const std::string& resultType, const std::string& image, const std::string& coord, const std::string& mipLevel) const;
+	std::string	sparseImageOpString			(const std::string&			resultVariable,
+											 const std::string&			resultType,
+											 const std::string&			image,
+											 const std::string&			coord,
+											 const std::string&			mipLevel) const;
 };
 
 class SparseCaseOpImageSparseRead : public SparseShaderIntrinsicsCaseStorage
 {
 public:
-	SparseCaseOpImageSparseRead		(tcu::TestContext&			testCtx,
-									 const std::string&			name,
-									 const SpirVFunction		function,
-									 const ImageType			imageType,
-									 const tcu::UVec3&			imageSize,
-									 const tcu::TextureFormat&	format)
-	: SparseShaderIntrinsicsCaseStorage(testCtx, name, function, imageType, imageSize, format) {}
+	SparseCaseOpImageSparseRead				(tcu::TestContext&			testCtx,
+											 const std::string&			name,
+											 const SpirVFunction		function,
+											 const ImageType			imageType,
+											 const tcu::UVec3&			imageSize,
+											 const tcu::TextureFormat&	format)
+											 : SparseShaderIntrinsicsCaseStorage (testCtx, name, function, imageType, imageSize, format) {}
 
-	TestInstance* createInstance(Context& context) const;
+	TestInstance* createInstance			(Context& context) const;
 
-	std::string sparseImageTypeDecl(const std::string& imageType, const std::string& componentType) const;
+	std::string sparseImageTypeDecl			(const std::string& imageType,
+											 const std::string& componentType) const;
 
-	std::string	sparseImageOpString(const std::string& resultVariable, const std::string& resultType, const std::string& image, const std::string& coord, const std::string& mipLevel) const;
+	std::string	sparseImageOpString			(const std::string& resultVariable,
+											 const std::string& resultType,
+											 const std::string& image,
+											 const std::string& coord,
+											 const std::string& mipLevel) const;
 };
 
 } // sparse

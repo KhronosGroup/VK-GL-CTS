@@ -30,6 +30,7 @@
 #include "vktSparseResourcesBufferMemoryAliasing.hpp"
 #include "vktSparseResourcesImageMemoryAliasing.hpp"
 #include "vktSparseResourcesShaderIntrinsics.hpp"
+#include "vktSparseResourcesQueueBindSparseTests.hpp"
 #include "deUniquePtr.hpp"
 
 namespace vkt
@@ -41,14 +42,15 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> sparseTests (new tcu::TestCaseGroup(testCtx, "sparse_resources", "Sparse Resources Tests"));
 
-	sparseTests->addChild(createBufferSparseBindingTests(testCtx));
-	sparseTests->addChild(createImageSparseBindingTests(testCtx));
-	sparseTests->addChild(createBufferSparseResidencyTests(testCtx));
-	sparseTests->addChild(createImageSparseResidencyTests(testCtx));
-	sparseTests->addChild(createMipmapSparseResidencyTests(testCtx));
-	sparseTests->addChild(createBufferSparseMemoryAliasingTests(testCtx));
-	sparseTests->addChild(createImageSparseMemoryAliasingTests(testCtx));
+	sparseTests->addChild(createBufferSparseBindingTests			(testCtx));
+	sparseTests->addChild(createImageSparseBindingTests				(testCtx));
+	sparseTests->addChild(createBufferSparseResidencyTests			(testCtx));
+	sparseTests->addChild(createImageSparseResidencyTests			(testCtx));
+	sparseTests->addChild(createMipmapSparseResidencyTests			(testCtx));
+	sparseTests->addChild(createBufferSparseMemoryAliasingTests		(testCtx));
+	sparseTests->addChild(createImageSparseMemoryAliasingTests		(testCtx));
 	sparseTests->addChild(createSparseResourcesShaderIntrinsicsTests(testCtx));
+	sparseTests->addChild(createQueueBindSparseTests				(testCtx));
 
 	return sparseTests.release();
 }
