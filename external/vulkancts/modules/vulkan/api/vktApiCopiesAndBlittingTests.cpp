@@ -1676,12 +1676,40 @@ static float calculateFloatConversionError (int srcBits)
 
 tcu::Vec4 getFormatThreshold (const tcu::TextureFormat& format)
 {
-	const tcu::IVec4 bits = tcu::getTextureFormatMantissaBitDepth(format);
+	tcu::Vec4 threshold(0.01f);
 
-	return tcu::Vec4(calculateFloatConversionError(bits.x()),
-			 calculateFloatConversionError(bits.y()),
-			 calculateFloatConversionError(bits.z()),
-			 calculateFloatConversionError(bits.w()));
+	switch (format.type)
+	{
+	case tcu::TextureFormat::HALF_FLOAT:
+		threshold = tcu::Vec4(0.005f);
+		break;
+
+	case tcu::TextureFormat::FLOAT:
+	case tcu::TextureFormat::FLOAT64:
+		threshold = tcu::Vec4(0.001f);
+		break;
+
+	case tcu::TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
+		threshold = tcu::Vec4(0.02f, 0.02f, 0.0625f, 1.0f);
+		break;
+
+	case tcu::TextureFormat::UNSIGNED_INT_999_E5_REV:
+		threshold = tcu::Vec4(0.05f, 0.05f, 0.05f, 1.0f);
+		break;
+
+	default:
+		const tcu::IVec4 bits = tcu::getTextureFormatMantissaBitDepth(format);
+		threshold = tcu::Vec4(calculateFloatConversionError(bits.x()),
+				      calculateFloatConversionError(bits.y()),
+				      calculateFloatConversionError(bits.z()),
+				      calculateFloatConversionError(bits.w()));
+	}
+
+	// Return value matching the channel order specified by the format
+	if (format.order == tcu::TextureFormat::BGR || format.order == tcu::TextureFormat::BGRA)
+		return threshold.swizzle(2, 1, 0, 3);
+	else
+		return threshold;
 }
 
 bool BlittingImages::checkClampedAndUnclampedResult(const tcu::ConstPixelBufferAccess& result,

@@ -75,6 +75,7 @@
 #include "vktClippingTests.hpp"
 #include "vktFragmentOperationsTests.hpp"
 #include "vktTextureTests.hpp"
+#include "vktGeometryTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -396,6 +397,7 @@ void TestPackage::init (void)
 	addChild(clipping::createTests			(m_testCtx));
 	addChild(FragmentOperations::createTests(m_testCtx));
 	addChild(texture::createTests			(m_testCtx));
+	addChild(geometry::createTests			(m_testCtx));
 }
 
 } // vkt

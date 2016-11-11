@@ -21,6 +21,7 @@ add_subdirectory(rasterization)
 add_subdirectory(synchronization)
 add_subdirectory(clipping)
 add_subdirectory(fragment_ops)
+add_subdirectory(geometry)
 add_subdirectory(texture)
 
 include_directories(
@@ -46,6 +47,7 @@ include_directories(
 	clipping
 	fragment_ops
 	texture
+	geometry
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -91,6 +93,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-clipping
 	deqp-vk-fragment-ops
 	deqp-vk-texture
+	deqp-vk-geometry
 	)
 
 add_library(deqp-vk-common STATIC ${DEQP_VK_COMMON_SRCS})
