@@ -1668,7 +1668,7 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 	{
 		0u,															// location
 		0u,															// binding
-		VK_FORMAT_R32G32B32A32_SFLOAT,								// format
+		VK_FORMAT_R32G32_SFLOAT,									// format
 		0u,															// offsetInBytes
 	};
 	const VkPipelineVertexInputStateCreateInfo vertexInputState =

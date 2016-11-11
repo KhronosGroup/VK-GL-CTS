@@ -616,6 +616,117 @@ tcu::TestStatus resetPoolNoFlagsTest(Context& context)
 	return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
 
+bool executeCommandBuffer (const VkDevice			device,
+						   const DeviceInterface&	vk,
+						   const VkQueue			queue,
+						   const VkCommandBuffer	commandBuffer,
+						   const bool				exitBeforeEndCommandBuffer = false)
+{
+	const VkEventCreateInfo			eventCreateInfo			=
+	{
+		VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,			//VkStructureType		sType;
+		DE_NULL,										//const void*			pNext;
+		0u												//VkEventCreateFlags	flags;
+	};
+	const Unique<VkEvent>			event					(createEvent(vk, device, &eventCreateInfo));
+	const VkCommandBufferBeginInfo	commandBufferBeginInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	//VkStructureType						sType;
+		DE_NULL,										//const void*							pNext;
+		0u,												//VkCommandBufferUsageFlags				flags;
+		(const VkCommandBufferInheritanceInfo*)DE_NULL	//const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+	};
+
+	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
+	{
+		const VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+		vk.cmdSetEvent(commandBuffer, *event, stageMask);
+		if (exitBeforeEndCommandBuffer)
+			return exitBeforeEndCommandBuffer;
+	}
+	VK_CHECK(vk.endCommandBuffer(commandBuffer));
+
+	{
+		const VkFenceCreateInfo					fenceCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	//VkStructureType		sType;
+			DE_NULL,								//const void*			pNext;
+			0u										//VkFenceCreateFlags	flags;
+		};
+		const Unique<VkFence>					fence			(createFence(vk, device, &fenceCreateInfo));
+		const VkSubmitInfo						submitInfo		=
+		{
+			VK_STRUCTURE_TYPE_SUBMIT_INFO,			// sType
+			DE_NULL,								// pNext
+			0u,										// waitSemaphoreCount
+			DE_NULL,								// pWaitSemaphores
+			(const VkPipelineStageFlags*)DE_NULL,	// pWaitDstStageMask
+			1u,										// commandBufferCount
+			&commandBuffer,							// pCommandBuffers
+			0u,										// signalSemaphoreCount
+			DE_NULL									// pSignalSemaphores
+		};
+
+		// Submit the command buffer to the queue
+		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
+		// wait for end of execution of queue
+		VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), 0u, INFINITE_TIMEOUT));
+	}
+	// check if buffer has been executed
+	const VkResult result = vk.getEventStatus(device, *event);
+	return result == VK_EVENT_SET;
+}
+
+tcu::TestStatus resetPoolReuseTest (Context& context)
+{
+	const VkDevice						vkDevice			= context.getDevice();
+	const DeviceInterface&				vk					= context.getDeviceInterface();
+	const deUint32						queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkQueue						queue				= context.getUniversalQueue();
+
+	const VkCommandPoolCreateInfo		cmdPoolParams		=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,	// sType;
+		DE_NULL,									// pNext;
+		0u,											// flags;
+		queueFamilyIndex							// queueFamilyIndex;
+	};
+	const Unique<VkCommandPool>			cmdPool				(createCommandPool(vk, vkDevice, &cmdPoolParams, DE_NULL));
+	const VkCommandBufferAllocateInfo	cmdBufParams		=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// sType;
+		DE_NULL,										// pNext;
+		*cmdPool,										// commandPool;
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// level;
+		1u												// bufferCount;
+	};
+	const Move<VkCommandBuffer>			commandBuffers[]	=
+	{
+		allocateCommandBuffer(vk, vkDevice, &cmdBufParams),
+		allocateCommandBuffer(vk, vkDevice, &cmdBufParams)
+	};
+
+	if (!executeCommandBuffer(vkDevice, vk, queue, *(commandBuffers[0])))
+		return tcu::TestStatus::fail("Failed");
+	if (!executeCommandBuffer(vkDevice, vk, queue, *(commandBuffers[1]), true))
+		return tcu::TestStatus::fail("Failed");
+
+	VK_CHECK(vk.resetCommandPool(vkDevice, *cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
+
+	if (!executeCommandBuffer(vkDevice, vk, queue, *(commandBuffers[0])))
+		return tcu::TestStatus::fail("Failed");
+	if (!executeCommandBuffer(vkDevice, vk, queue, *(commandBuffers[1])))
+		return tcu::TestStatus::fail("Failed");
+
+	{
+		const Unique<VkCommandBuffer> afterResetCommandBuffers(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
+		if (!executeCommandBuffer(vkDevice, vk, queue, *afterResetCommandBuffers))
+			return tcu::TestStatus::fail("Failed");
+	}
+
+	return tcu::TestStatus::pass("Passed");
+}
+
 /******** 19.2. Command Buffer Lifetime (5.2 in VK 1.0 Spec) ******************/
 tcu::TestStatus allocatePrimaryBufferTest(Context& context)
 {
@@ -4311,6 +4422,7 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	addFunctionCase				(commandBuffersTests.get(), "pool_create_reset_bit",			"",	createPoolResetBitTest);
 	addFunctionCase				(commandBuffersTests.get(), "pool_reset_release_res",			"",	resetPoolReleaseResourcesBitTest);
 	addFunctionCase				(commandBuffersTests.get(), "pool_reset_no_flags_res",			"",	resetPoolNoFlagsTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_reset_reuse",					"",	resetPoolReuseTest);
 	/* 19.2. Command Buffer Lifetime (5.2 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "allocate_single_primary",			"", allocatePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "allocate_many_primary",			"",	allocateManyPrimaryBuffersTest);

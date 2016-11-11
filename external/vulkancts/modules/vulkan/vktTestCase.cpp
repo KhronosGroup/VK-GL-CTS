@@ -85,17 +85,37 @@ vector<string> getValidationLayers (const InstanceInterface& vki, VkPhysicalDevi
 	return getValidationLayers(enumerateDeviceLayerProperties(vki, physicalDevice));
 }
 
+vector<string> filterExtensions(const vector<VkExtensionProperties>& deviceExtensions)
+{
+	vector<string>	enabledExtensions;
+	const char*		extensionGroups[] =
+	{
+		"VK_KHR_",
+		"VK_EXT_"
+	};
+
+	for (size_t deviceExtNdx = 0; deviceExtNdx < deviceExtensions.size(); deviceExtNdx++)
+	{
+		for (int extGroupNdx = 0; extGroupNdx < DE_LENGTH_OF_ARRAY(extensionGroups); extGroupNdx++)
+		{
+			if (deStringBeginsWith(deviceExtensions[deviceExtNdx].extensionName, extensionGroups[extGroupNdx]))
+				enabledExtensions.push_back(deviceExtensions[deviceExtNdx].extensionName);
+		}
+	}
+
+	return enabledExtensions;
+}
+
 Move<VkInstance> createInstance (const PlatformInterface& vkp, const tcu::CommandLine& cmdLine)
 {
-	const bool		isValidationEnabled	= cmdLine.isValidationEnabled();
-	vector<string>	enabledExtensions;
-	vector<string>	enabledLayers;
+	const bool							isValidationEnabled	= cmdLine.isValidationEnabled();
+	vector<string>						enabledLayers;
+	const vector<VkExtensionProperties>	extensionProperties	= enumerateInstanceExtensionProperties(vkp, DE_NULL);
+	const vector<string>				enabledExtensions	= filterExtensions(extensionProperties);
 
 	if (isValidationEnabled)
 	{
-		if (isDebugReportSupported(vkp))
-			enabledExtensions.push_back("VK_EXT_debug_report");
-		else
+		if (!isDebugReportSupported(vkp))
 			TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
 
 		enabledLayers = getValidationLayers(vkp);
@@ -246,16 +266,7 @@ VkPhysicalDeviceFeatures DefaultDevice::filterDefaultDeviceFeatures (const VkPhy
 
 vector<string> DefaultDevice::filterDefaultDeviceExtensions (const vector<VkExtensionProperties>& deviceExtensions)
 {
-	vector<string> enabledExtensions;
-
-	// The only extension we enable always (when supported) is
-	// VK_KHR_sampler_mirror_clamp_to_edge that is defined in
-	// the core spec and supported widely.
-	const char* const	mirrorClampToEdgeExt	= "VK_KHR_sampler_mirror_clamp_to_edge";
-	if (vk::isExtensionSupported(deviceExtensions, vk::RequiredExtension(mirrorClampToEdgeExt)))
-		enabledExtensions.push_back(mirrorClampToEdgeExt);
-
-	return enabledExtensions;
+	return filterExtensions(deviceExtensions);
 }
 
 // Allocator utilities

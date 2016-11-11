@@ -172,7 +172,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 	const deUint32						maxWorkGroupInvocations	= 128u;
 	VkImageCreateInfo					imageSparseInfo;
 	VkSparseImageMemoryRequirements		aspectRequirements;
-	std::vector<DeviceMemoryUniquePtr>	deviceMemUniquePtrVec;
+	std::vector<DeviceMemorySp>			deviceMemUniquePtrVec;
 
 	// Check if image size does not exceed device limits
 	if (!isImageSizeSupported(instance, physicalDevice, m_imageType, m_imageSize))
@@ -238,15 +238,13 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 	const Queue& sparseQueue	= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
 	const Queue& computeQueue	= getQueue(VK_QUEUE_COMPUTE_BIT, 0);
 
-	const de::UniquePtr<Allocator> allocator(new SimpleAllocator(deviceInterface, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
-
 	// Create sparse image
-	const Unique<VkImage> imageRead(createImage(deviceInterface, *m_logicalDevice, &imageSparseInfo));
-	const Unique<VkImage> imageWrite(createImage(deviceInterface, *m_logicalDevice, &imageSparseInfo));
+	const Unique<VkImage> imageRead(createImage(deviceInterface, getDevice(), &imageSparseInfo));
+	const Unique<VkImage> imageWrite(createImage(deviceInterface, getDevice(), &imageSparseInfo));
 
 	// Create semaphores to synchronize sparse binding operations with other operations on the sparse images
-	const Unique<VkSemaphore> memoryBindSemaphoreTransfer(makeSemaphore(deviceInterface, *m_logicalDevice));
-	const Unique<VkSemaphore> memoryBindSemaphoreCompute(makeSemaphore(deviceInterface, *m_logicalDevice));
+	const Unique<VkSemaphore> memoryBindSemaphoreTransfer(makeSemaphore(deviceInterface, getDevice()));
+	const Unique<VkSemaphore> memoryBindSemaphoreCompute(makeSemaphore(deviceInterface, getDevice()));
 
 	const VkSemaphore imageMemoryBindSemaphores[] = { memoryBindSemaphoreTransfer.get(), memoryBindSemaphoreCompute.get() };
 
@@ -256,7 +254,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 		std::vector<VkSparseMemoryBind>		 imageWriteMipTailBinds;
 
 		// Get sparse image general memory requirements
-		const VkMemoryRequirements imageMemoryRequirements = getImageMemoryRequirements(deviceInterface, *m_logicalDevice, *imageRead);
+		const VkMemoryRequirements imageMemoryRequirements = getImageMemoryRequirements(deviceInterface, getDevice(), *imageRead);
 
 		// Check if required image memory size does not exceed device limits
 		if (imageMemoryRequirements.size > getPhysicalDeviceProperties(instance, physicalDevice).limits.sparseAddressSpaceSize)
@@ -265,7 +263,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 		DE_ASSERT((imageMemoryRequirements.size % imageMemoryRequirements.alignment) == 0);
 
 		// Get sparse image sparse memory requirements
-		const std::vector<VkSparseImageMemoryRequirements> sparseMemoryRequirements = getImageSparseMemoryRequirements(deviceInterface, *m_logicalDevice, *imageRead);
+		const std::vector<VkSparseImageMemoryRequirements> sparseMemoryRequirements = getImageSparseMemoryRequirements(deviceInterface, getDevice(), *imageRead);
 
 		DE_ASSERT(sparseMemoryRequirements.size() != 0);
 
@@ -296,27 +294,27 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 				const deUint32				numSparseBlocks = sparseBlocks.x() * sparseBlocks.y() * sparseBlocks.z();
 				const VkImageSubresource	subresource		= { aspectMask, mipLevelNdx, layerNdx };
 
-				const VkSparseImageMemoryBind imageMemoryBind = makeSparseImageMemoryBind(deviceInterface, *m_logicalDevice,
+				const VkSparseImageMemoryBind imageMemoryBind = makeSparseImageMemoryBind(deviceInterface, getDevice(),
 					imageMemoryRequirements.alignment * numSparseBlocks, memoryType, subresource, makeOffset3D(0u, 0u, 0u), mipExtent);
 
-				deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, *m_logicalDevice, DE_NULL))));
+				deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
 
 				imageResidencyMemoryBinds.push_back(imageMemoryBind);
 			}
 
 			if (!(aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) && aspectRequirements.imageMipTailFirstLod < imageSparseInfo.mipLevels)
 			{
-				const VkSparseMemoryBind imageReadMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, *m_logicalDevice,
+				const VkSparseMemoryBind imageReadMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, getDevice(),
 					aspectRequirements.imageMipTailSize, memoryType, aspectRequirements.imageMipTailOffset + layerNdx * aspectRequirements.imageMipTailStride);
 
-				deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageReadMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, *m_logicalDevice, DE_NULL))));
+				deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageReadMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
 
 				imageReadMipTailBinds.push_back(imageReadMipTailMemoryBind);
 
-				const VkSparseMemoryBind imageWriteMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, *m_logicalDevice,
+				const VkSparseMemoryBind imageWriteMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, getDevice(),
 					aspectRequirements.imageMipTailSize, memoryType, aspectRequirements.imageMipTailOffset + layerNdx * aspectRequirements.imageMipTailStride);
 
-				deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageWriteMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, *m_logicalDevice, DE_NULL))));
+				deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageWriteMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
 
 				imageWriteMipTailBinds.push_back(imageWriteMipTailMemoryBind);
 			}
@@ -324,17 +322,17 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 
 		if ((aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) && aspectRequirements.imageMipTailFirstLod < imageSparseInfo.mipLevels)
 		{
-			const VkSparseMemoryBind imageReadMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, *m_logicalDevice,
+			const VkSparseMemoryBind imageReadMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, getDevice(),
 				aspectRequirements.imageMipTailSize, memoryType, aspectRequirements.imageMipTailOffset);
 
-			deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageReadMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, *m_logicalDevice, DE_NULL))));
+			deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageReadMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
 
 			imageReadMipTailBinds.push_back(imageReadMipTailMemoryBind);
 
-			const VkSparseMemoryBind imageWriteMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, *m_logicalDevice,
+			const VkSparseMemoryBind imageWriteMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, getDevice(),
 				aspectRequirements.imageMipTailSize, memoryType, aspectRequirements.imageMipTailOffset);
 
-			deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageWriteMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, *m_logicalDevice, DE_NULL))));
+			deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageWriteMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
 
 			imageWriteMipTailBinds.push_back(imageWriteMipTailMemoryBind);
 		}
@@ -391,8 +389,8 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 	}
 
 	// Create command buffer for compute and transfer oparations
-	const Unique<VkCommandPool>	  commandPool  (makeCommandPool(deviceInterface, *m_logicalDevice, computeQueue.queueFamilyIndex));
-	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, *m_logicalDevice, *commandPool));
+	const Unique<VkCommandPool>	  commandPool  (makeCommandPool(deviceInterface, getDevice(), computeQueue.queueFamilyIndex));
+	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, getDevice(), *commandPool));
 
 	std::vector<VkBufferImageCopy> bufferImageCopy(imageSparseInfo.mipLevels);
 
@@ -401,17 +399,17 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 		for (deUint32 mipLevelNdx = 0u; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
 		{
 			bufferImageCopy[mipLevelNdx] = makeBufferImageCopy(mipLevelExtents(imageSparseInfo.extent, mipLevelNdx), imageSparseInfo.arrayLayers, mipLevelNdx, bufferOffset);
-			bufferOffset += getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, mipLevelNdx, MEM_ALIGN_BUFFERIMAGECOPY_OFFSET);
+			bufferOffset += getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, mipLevelNdx, BUFFER_IMAGE_COPY_OFFSET_GRANULARITY);
 		}
 	}
 
 	// Start recording commands
 	beginCommandBuffer(deviceInterface, *commandBuffer);
 
-	const deUint32				imageSizeInBytes		= getImageSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, imageSparseInfo.mipLevels, MEM_ALIGN_BUFFERIMAGECOPY_OFFSET);
-	const VkBufferCreateInfo	inputBufferCreateInfo	= makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-
-	const de::UniquePtr<Buffer>	inputBuffer(new Buffer(deviceInterface, *m_logicalDevice, *allocator, inputBufferCreateInfo, MemoryRequirement::HostVisible));
+	const deUint32					imageSizeInBytes		= getImageSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_format, imageSparseInfo.mipLevels, BUFFER_IMAGE_COPY_OFFSET_GRANULARITY);
+	const VkBufferCreateInfo		inputBufferCreateInfo	= makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+	const Unique<VkBuffer>			inputBuffer				(createBuffer(deviceInterface, getDevice(), &inputBufferCreateInfo));
+	const de::UniquePtr<Allocation>	inputBufferAlloc		(bindBuffer(deviceInterface, getDevice(), getAllocator(), *inputBuffer, MemoryRequirement::HostVisible));
 
 	std::vector<deUint8> referenceData(imageSizeInBytes);
 
@@ -423,16 +421,16 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 		deMemset(&referenceData[bufferOffset], mipLevelNdx + 1u, mipLevelSizeInBytes);
 	}
 
-	deMemcpy(inputBuffer->getAllocation().getHostPtr(), &referenceData[0], imageSizeInBytes);
+	deMemcpy(inputBufferAlloc->getHostPtr(), &referenceData[0], imageSizeInBytes);
 
-	flushMappedMemoryRange(deviceInterface, *m_logicalDevice, inputBuffer->getAllocation().getMemory(), inputBuffer->getAllocation().getOffset(), imageSizeInBytes);
+	flushMappedMemoryRange(deviceInterface, getDevice(), inputBufferAlloc->getMemory(), inputBufferAlloc->getOffset(), imageSizeInBytes);
 
 	{
 		const VkBufferMemoryBarrier inputBufferBarrier = makeBufferMemoryBarrier
 		(
 			VK_ACCESS_HOST_WRITE_BIT,
 			VK_ACCESS_TRANSFER_READ_BIT,
-			inputBuffer->get(),
+			*inputBuffer,
 			0u,
 			imageSizeInBytes
 		);
@@ -456,7 +454,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageSparseTransferDstBarrier);
 	}
 
-	deviceInterface.cmdCopyBufferToImage(*commandBuffer, inputBuffer->get(), *imageRead, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, static_cast<deUint32>(bufferImageCopy.size()), &bufferImageCopy[0]);
+	deviceInterface.cmdCopyBufferToImage(*commandBuffer, *inputBuffer, *imageRead, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, static_cast<deUint32>(bufferImageCopy.size()), &bufferImageCopy[0]);
 
 	{
 		const VkImageMemoryBarrier imageSparseTransferSrcBarrier = makeImageMemoryBarrier
@@ -490,14 +488,14 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(
 		DescriptorSetLayoutBuilder()
 		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-		.build(deviceInterface, *m_logicalDevice));
+		.build(deviceInterface, getDevice()));
 
-	Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(deviceInterface, *m_logicalDevice, *descriptorSetLayout));
+	Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout));
 
 	Unique<VkDescriptorPool> descriptorPool(
 		DescriptorPoolBuilder()
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, imageSparseInfo.mipLevels)
-		.build(deviceInterface, *m_logicalDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, imageSparseInfo.mipLevels));
+		.build(deviceInterface, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, imageSparseInfo.mipLevels));
 
 	typedef de::SharedPtr< Unique<VkImageView> >		SharedVkImageView;
 	std::vector<SharedVkImageView>						imageViews;
@@ -517,28 +515,28 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 		name << "comp" << mipLevelNdx;
 
 		// Create and bind compute pipeline
-		Unique<VkShaderModule> shaderModule(createShaderModule(deviceInterface, *m_logicalDevice, m_context.getBinaryCollection().get(name.str()), DE_NULL));
+		Unique<VkShaderModule> shaderModule(createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get(name.str()), DE_NULL));
 
-		computePipelines[mipLevelNdx]	= makeVkSharedPtr(makeComputePipeline(deviceInterface, *m_logicalDevice, *pipelineLayout, *shaderModule));
+		computePipelines[mipLevelNdx]	= makeVkSharedPtr(makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, *shaderModule));
 		VkPipeline computePipeline		= **computePipelines[mipLevelNdx];
 
 		deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
 
 		// Create and bind descriptor set
-		descriptorSets[mipLevelNdx]		= makeVkSharedPtr(makeDescriptorSet(deviceInterface, *m_logicalDevice, *descriptorPool, *descriptorSetLayout));
+		descriptorSets[mipLevelNdx]		= makeVkSharedPtr(makeDescriptorSet(deviceInterface, getDevice(), *descriptorPool, *descriptorSetLayout));
 		VkDescriptorSet descriptorSet	= **descriptorSets[mipLevelNdx];
 
 		// Select which mipmap level to bind
 		const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipLevelNdx, 1u, 0u, imageSparseInfo.arrayLayers);
 
-		imageViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, *m_logicalDevice, *imageWrite, mapImageViewType(m_imageType), imageSparseInfo.format, subresourceRange));
+		imageViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), *imageWrite, mapImageViewType(m_imageType), imageSparseInfo.format, subresourceRange));
 		VkImageView imageView	= **imageViews[mipLevelNdx];
 
 		const VkDescriptorImageInfo sparseImageInfo = makeDescriptorImageInfo(DE_NULL, imageView, VK_IMAGE_LAYOUT_GENERAL);
 
 		DescriptorSetUpdateBuilder()
 			.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &sparseImageInfo)
-			.update(deviceInterface, *m_logicalDevice);
+			.update(deviceInterface, getDevice());
 
 		deviceInterface.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
 
@@ -565,17 +563,18 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 1u, &memoryBarrier, 0u, DE_NULL, 0u, DE_NULL);
 	}
 
-	const VkBufferCreateInfo	outputBufferCreateInfo	= makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-	const de::UniquePtr<Buffer>	outputBuffer			(new Buffer(deviceInterface, *m_logicalDevice, *allocator, outputBufferCreateInfo, MemoryRequirement::HostVisible));
+	const VkBufferCreateInfo		outputBufferCreateInfo	= makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	const Unique<VkBuffer>			outputBuffer			(createBuffer(deviceInterface, getDevice(), &outputBufferCreateInfo));
+	const de::UniquePtr<Allocation>	outputBufferAlloc		(bindBuffer(deviceInterface, getDevice(), getAllocator(), *outputBuffer, MemoryRequirement::HostVisible));
 
-	deviceInterface.cmdCopyImageToBuffer(*commandBuffer, *imageRead, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outputBuffer->get(), static_cast<deUint32>(bufferImageCopy.size()), &bufferImageCopy[0]);
+	deviceInterface.cmdCopyImageToBuffer(*commandBuffer, *imageRead, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *outputBuffer, static_cast<deUint32>(bufferImageCopy.size()), &bufferImageCopy[0]);
 
 	{
 		const VkBufferMemoryBarrier outputBufferBarrier = makeBufferMemoryBarrier
 		(
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_ACCESS_HOST_READ_BIT,
-			outputBuffer->get(),
+			*outputBuffer,
 			0u,
 			imageSizeInBytes
 		);
@@ -589,13 +588,12 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 	const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT };
 
 	// Submit commands for execution and wait for completion
-	submitCommandsAndWait(deviceInterface, *m_logicalDevice, computeQueue.queueHandle, *commandBuffer, 2u, imageMemoryBindSemaphores, stageBits);
+	submitCommandsAndWait(deviceInterface, getDevice(), computeQueue.queueHandle, *commandBuffer, 2u, imageMemoryBindSemaphores, stageBits);
 
 	// Retrieve data from buffer to host memory
-	const Allocation& allocation = outputBuffer->getAllocation();
-	invalidateMappedMemoryRange(deviceInterface, *m_logicalDevice, allocation.getMemory(), allocation.getOffset(), imageSizeInBytes);
+	invalidateMappedMemoryRange(deviceInterface, getDevice(), outputBufferAlloc->getMemory(), outputBufferAlloc->getOffset(), imageSizeInBytes);
 
-	const deUint8* outputData = static_cast<const deUint8*>(allocation.getHostPtr());
+	const deUint8* outputData = static_cast<const deUint8*>(outputBufferAlloc->getHostPtr());
 
 	// Wait for sparse queue to become idle
 	deviceInterface.queueWaitIdle(sparseQueue.queueHandle);
