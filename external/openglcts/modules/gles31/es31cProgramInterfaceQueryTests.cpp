@@ -226,7 +226,7 @@ protected:
 	virtual inline void VerifyGetProgramResourceName(GLuint program, GLenum programInterface, GLuint index,
 													 const std::string& expected, long& error)
 	{
-		GLchar  name[1024];
+		GLchar  name[1024] = { '\0' };
 		GLsizei len;
 		glGetProgramResourceName(program, programInterface, index, 1024, &len, name);
 		if (len <= 0 || len > 1023 || name[len - 1] == '\0')
@@ -1892,9 +1892,9 @@ class InvalidValueTest : public SimpleShaders
 		long error = NO_ERROR;
 
 		GLint   res;
-		GLsizei len = 0;
-		GLchar  name[100];
-		GLenum  props[1] = { GL_NAME_LENGTH };
+		GLsizei len		  = 0;
+		GLchar  name[100] = { '\0' };
+		GLenum  props[1]  = { GL_NAME_LENGTH };
 
 		Output("Case 1: <program> not a name of shader/program object\n");
 		glGetProgramInterfaceiv(1337u, GL_PROGRAM_INPUT, GL_ACTIVE_RESOURCES, &res);
@@ -1988,7 +1988,7 @@ class InvalidEnumTest : public SimpleShaders
 
 		GLint   res;
 		GLsizei len		  = 0;
-		GLchar  name[100] = { 0 };
+		GLchar  name[100] = { '\0' };
 		GLenum  props[1]  = { GL_TEXTURE_1D };
 
 		Output("Case 1: <programInterface> is ATOMIC_COUNTER_BUFFER in GetProgramResourceIndex or "
@@ -2045,9 +2045,9 @@ class InvalidOperationTest : public SimpleShaders
 
 		const GLuint sh = glCreateShader(GL_FRAGMENT_SHADER);
 		GLint		 res;
-		GLsizei		 len = 0;
-		GLchar		 name[100];
-		GLenum		 props[1] = { GL_OFFSET };
+		GLsizei		 len	   = 0;
+		GLchar		 name[100] = { '\0' };
+		GLenum		 props[1]  = { GL_OFFSET };
 
 		Output("Case 1: <program> is the name of a shader object\n");
 		glGetProgramInterfaceiv(sh, GL_PROGRAM_INPUT, GL_ACTIVE_RESOURCES, &res);
@@ -2368,9 +2368,9 @@ class NullLength : public SimpleShaders
 		glBindAttribLocation(program, 0, "position");
 		LinkProgram(program);
 
-		GLchar name[1024];
-		GLuint index = glGetProgramResourceIndex(program, GL_PROGRAM_OUTPUT, "color");
-		GLenum prop  = GL_ARRAY_SIZE;
+		GLchar name[1024] = { '\0' };
+		GLuint index	  = glGetProgramResourceIndex(program, GL_PROGRAM_OUTPUT, "color");
+		GLenum prop		  = GL_ARRAY_SIZE;
 		GLint  res;
 		glGetProgramResourceName(program, GL_PROGRAM_OUTPUT, 0, 1024, NULL, name);
 		glGetProgramResourceiv(program, GL_PROGRAM_OUTPUT, index, 1, &prop, 1, NULL, &res);
