@@ -762,6 +762,15 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsScissorMultiViewportTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsScissorTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsTests.cpp \
+	external/vulkancts/modules/vulkan/geometry/vktGeometryBasicClass.cpp \
+	external/vulkancts/modules/vulkan/geometry/vktGeometryBasicGeometryShaderTests.cpp \
+	external/vulkancts/modules/vulkan/geometry/vktGeometryEmitGeometryShaderTests.cpp \
+	external/vulkancts/modules/vulkan/geometry/vktGeometryInputGeometryShaderTests.cpp \
+	external/vulkancts/modules/vulkan/geometry/vktGeometryInstancedRenderingTests.cpp \
+	external/vulkancts/modules/vulkan/geometry/vktGeometryLayeredRenderingTests.cpp \
+	external/vulkancts/modules/vulkan/geometry/vktGeometryTests.cpp \
+	external/vulkancts/modules/vulkan/geometry/vktGeometryTestsUtil.cpp \
+	external/vulkancts/modules/vulkan/geometry/vktGeometryVaryingGeometryShaderTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageAtomicOperationTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageLoadStoreTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageLoadStoreUtil.cpp \
@@ -830,8 +839,9 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageSparseBinding.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageSparseResidency.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesMipmapSparseResidency.cpp \
-	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesShaderIntrinsicsBase.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesQueueBindSparseTests.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesShaderIntrinsics.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesShaderIntrinsicsBase.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesShaderIntrinsicsSampled.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesShaderIntrinsicsStorage.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesTests.cpp \
@@ -937,6 +947,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/draw \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/dynamic_state \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/fragment_ops \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/geometry \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/image \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/memory \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/pipeline \

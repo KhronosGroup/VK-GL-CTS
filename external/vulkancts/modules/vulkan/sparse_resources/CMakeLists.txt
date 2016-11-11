@@ -1,6 +1,24 @@
 include_directories(..)
 
-set(DEQP_VK_IMAGE_SRCS
+set(DEQP_VK_SPARSE_RESOURCES_SRCS
+	vktSparseResourcesBase.cpp
+	vktSparseResourcesBase.hpp
+	vktSparseResourcesBufferMemoryAliasing.cpp
+	vktSparseResourcesBufferMemoryAliasing.hpp
+	vktSparseResourcesBufferSparseBinding.cpp
+	vktSparseResourcesBufferSparseBinding.hpp
+	vktSparseResourcesBufferSparseResidency.cpp
+	vktSparseResourcesBufferSparseResidency.hpp
+	vktSparseResourcesImageMemoryAliasing.cpp
+	vktSparseResourcesImageMemoryAliasing.hpp
+	vktSparseResourcesImageSparseBinding.cpp
+	vktSparseResourcesImageSparseBinding.hpp
+	vktSparseResourcesImageSparseResidency.cpp
+	vktSparseResourcesImageSparseResidency.hpp
+	vktSparseResourcesMipmapSparseResidency.cpp
+	vktSparseResourcesMipmapSparseResidency.hpp
+	vktSparseResourcesQueueBindSparseTests.cpp
+	vktSparseResourcesQueueBindSparseTests.hpp
 	vktSparseResourcesShaderIntrinsics.cpp
 	vktSparseResourcesShaderIntrinsics.hpp
 	vktSparseResourcesShaderIntrinsicsBase.cpp
@@ -9,32 +27,16 @@ set(DEQP_VK_IMAGE_SRCS
 	vktSparseResourcesShaderIntrinsicsSampled.hpp
 	vktSparseResourcesShaderIntrinsicsStorage.cpp
 	vktSparseResourcesShaderIntrinsicsStorage.hpp
-	vktSparseResourcesImageMemoryAliasing.cpp
-	vktSparseResourcesImageMemoryAliasing.hpp
-	vktSparseResourcesBufferMemoryAliasing.cpp
-	vktSparseResourcesBufferMemoryAliasing.hpp
-	vktSparseResourcesMipmapSparseResidency.cpp
-	vktSparseResourcesMipmapSparseResidency.hpp
-	vktSparseResourcesImageSparseResidency.cpp
-	vktSparseResourcesImageSparseResidency.hpp
-	vktSparseResourcesBufferSparseResidency.cpp
-	vktSparseResourcesBufferSparseResidency.hpp
-	vktSparseResourcesImageSparseBinding.cpp
-	vktSparseResourcesImageSparseBinding.hpp
-	vktSparseResourcesBufferSparseBinding.cpp
-	vktSparseResourcesBufferSparseBinding.hpp
-	vktSparseResourcesBase.cpp
-	vktSparseResourcesBase.hpp
 	vktSparseResourcesTests.cpp
 	vktSparseResourcesTests.hpp
 	vktSparseResourcesTestsUtil.cpp
 	vktSparseResourcesTestsUtil.hpp
 	)
 
-set(DEQP_VK_IMAGE_LIBS
+set(DEQP_VK_SPARSE_RESOURCES_LIBS
 	tcutil
 	vkutil
 	)
 
-add_library(deqp-vk-sparse-resources STATIC ${DEQP_VK_IMAGE_SRCS})
-target_link_libraries(deqp-vk-sparse-resources ${DEQP_VK_IMAGE_LIBS})
+add_library(deqp-vk-sparse-resources STATIC ${DEQP_VK_SPARSE_RESOURCES_SRCS})
+target_link_libraries(deqp-vk-sparse-resources ${DEQP_VK_SPARSE_RESOURCES_LIBS})

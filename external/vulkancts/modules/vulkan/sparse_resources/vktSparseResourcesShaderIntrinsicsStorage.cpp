@@ -315,8 +315,7 @@ public:
 
 	VkQueueFlags					getQueueFlags			(void) const;
 
-	void							recordCommands			(vk::Allocator&				allocator,
-															 const VkCommandBuffer		commandBuffer,
+	void							recordCommands			(const VkCommandBuffer		commandBuffer,
 															 const VkImageCreateInfo&	imageSparseInfo,
 															 const VkImage				imageSparse,
 															 const VkImage				imageTexels,
@@ -335,8 +334,7 @@ VkQueueFlags SparseShaderIntrinsicsInstanceStorage::getQueueFlags (void) const
 	return VK_QUEUE_COMPUTE_BIT;
 }
 
-void SparseShaderIntrinsicsInstanceStorage::recordCommands (vk::Allocator&				allocator,
-															const VkCommandBuffer		commandBuffer,
+void SparseShaderIntrinsicsInstanceStorage::recordCommands (const VkCommandBuffer		commandBuffer,
 															const VkImageCreateInfo&	imageSparseInfo,
 															const VkImage				imageSparse,
 															const VkImage				imageTexels,
@@ -345,8 +343,6 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (vk::Allocator&				al
 	const InstanceInterface&	instance		= m_context.getInstanceInterface();
 	const DeviceInterface&		deviceInterface = m_context.getDeviceInterface();
 	const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
-
-	DE_UNREF(allocator);
 
 	// Check if device supports image format for storage image
 	if (!checkImageFormatFeatureSupport(instance, physicalDevice, imageSparseInfo.format, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
@@ -369,10 +365,10 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (vk::Allocator&				al
 	descriptorLayerBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT);
 	descriptorLayerBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT);
 
-	const Unique<VkDescriptorSetLayout> descriptorSetLayout(descriptorLayerBuilder.build(deviceInterface, *m_logicalDevice));
+	const Unique<VkDescriptorSetLayout> descriptorSetLayout(descriptorLayerBuilder.build(deviceInterface, getDevice()));
 
 	// Create pipeline layout
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(deviceInterface, *m_logicalDevice, *descriptorSetLayout));
+	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout));
 
 	// Create descriptor pool
 	DescriptorPoolBuilder descriptorPoolBuilder;
@@ -381,7 +377,7 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (vk::Allocator&				al
 	descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, imageSparseInfo.mipLevels);
 	descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, imageSparseInfo.mipLevels);
 
-	descriptorPool = descriptorPoolBuilder.build(deviceInterface, *m_logicalDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, imageSparseInfo.mipLevels);
+	descriptorPool = descriptorPoolBuilder.build(deviceInterface, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, imageSparseInfo.mipLevels);
 
 	const VkImageSubresourceRange fullImageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, imageSparseInfo.mipLevels, 0u, imageSparseInfo.arrayLayers);
 
@@ -431,7 +427,7 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (vk::Allocator&				al
 		{ 6u, 5u * (deUint32)sizeof(deUint32), sizeof(deUint32) }, // WorkGroupSize.z
 	};
 
-	Unique<VkShaderModule> shaderModule(createShaderModule(deviceInterface, *m_logicalDevice, m_context.getBinaryCollection().get("compute"), 0u));
+	Unique<VkShaderModule> shaderModule(createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get("compute"), 0u));
 
 	for (deUint32 mipLevelNdx = 0u; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
 	{
@@ -448,25 +444,25 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (vk::Allocator&				al
 		};
 
 		// Create and bind compute pipeline
-		pipelines[mipLevelNdx] = makeVkSharedPtr(makeComputePipeline(deviceInterface, *m_logicalDevice, *pipelineLayout, *shaderModule, &specializationInfo));
+		pipelines[mipLevelNdx] = makeVkSharedPtr(makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, *shaderModule, &specializationInfo));
 		const VkPipeline computePipeline = **pipelines[mipLevelNdx];
 
 		deviceInterface.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
 
 		// Create descriptor set
-		descriptorSets[mipLevelNdx] = makeVkSharedPtr(makeDescriptorSet(deviceInterface, *m_logicalDevice, *descriptorPool, *descriptorSetLayout));
+		descriptorSets[mipLevelNdx] = makeVkSharedPtr(makeDescriptorSet(deviceInterface, getDevice(), *descriptorPool, *descriptorSetLayout));
 		const VkDescriptorSet descriptorSet = **descriptorSets[mipLevelNdx];
 
 		// Bind resources
 		const VkImageSubresourceRange mipLevelRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipLevelNdx, 1u, 0u, imageSparseInfo.arrayLayers);
 
-		imageSparseViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, *m_logicalDevice, imageSparse, mapImageViewType(m_imageType), imageSparseInfo.format, mipLevelRange));
+		imageSparseViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageSparse, mapImageViewType(m_imageType), imageSparseInfo.format, mipLevelRange));
 		const VkDescriptorImageInfo imageSparseDescInfo = makeDescriptorImageInfo(DE_NULL, **imageSparseViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
 
-		imageTexelsViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, *m_logicalDevice, imageTexels, mapImageViewType(m_imageType), imageSparseInfo.format, mipLevelRange));
+		imageTexelsViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageTexels, mapImageViewType(m_imageType), imageSparseInfo.format, mipLevelRange));
 		const VkDescriptorImageInfo imageTexelsDescInfo = makeDescriptorImageInfo(DE_NULL, **imageTexelsViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
 
-		imageResidencyViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, *m_logicalDevice, imageResidency, mapImageViewType(m_imageType), mapTextureFormat(m_residencyFormat), mipLevelRange));
+		imageResidencyViews[mipLevelNdx] = makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageResidency, mapImageViewType(m_imageType), mapTextureFormat(m_residencyFormat), mipLevelRange));
 		const VkDescriptorImageInfo imageResidencyDescInfo = makeDescriptorImageInfo(DE_NULL, **imageResidencyViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
 
 		DescriptorSetUpdateBuilder descriptorUpdateBuilder;
@@ -474,7 +470,7 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (vk::Allocator&				al
 		descriptorUpdateBuilder.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(BINDING_IMAGE_TEXELS), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageTexelsDescInfo);
 		descriptorUpdateBuilder.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(BINDING_IMAGE_RESIDENCY), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageResidencyDescInfo);
 
-		descriptorUpdateBuilder.update(deviceInterface, *m_logicalDevice);
+		descriptorUpdateBuilder.update(deviceInterface, getDevice());
 
 		deviceInterface.cmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
 
@@ -523,26 +519,16 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (vk::Allocator&				al
 class SparseShaderIntrinsicsInstanceFetch : public SparseShaderIntrinsicsInstanceStorage
 {
 public:
-	SparseShaderIntrinsicsInstanceFetch		(Context&					context,
-											 const SpirVFunction		function,
-											 const ImageType			imageType,
-											 const tcu::UVec3&			imageSize,
-											 const tcu::TextureFormat&	format)
-		: SparseShaderIntrinsicsInstanceStorage(context, function, imageType, imageSize, format) {}
+	SparseShaderIntrinsicsInstanceFetch			(Context&					context,
+												 const SpirVFunction		function,
+												 const ImageType			imageType,
+												 const tcu::UVec3&			imageSize,
+												 const tcu::TextureFormat&	format)
+	: SparseShaderIntrinsicsInstanceStorage (context, function, imageType, imageSize, format) {}
 
-	VkImageUsageFlags		imageSparseUsageFlags	(void) const;
-	VkDescriptorType		imageSparseDescType		(void) const;
+	VkImageUsageFlags	imageSparseUsageFlags	(void) const { return VK_IMAGE_USAGE_SAMPLED_BIT; }
+	VkDescriptorType	imageSparseDescType		(void) const { return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE; }
 };
-
-VkImageUsageFlags SparseShaderIntrinsicsInstanceFetch::imageSparseUsageFlags (void) const
-{
-	return VK_IMAGE_USAGE_SAMPLED_BIT;
-}
-
-VkDescriptorType SparseShaderIntrinsicsInstanceFetch::imageSparseDescType (void) const
-{
-	return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-}
 
 TestInstance* SparseCaseOpImageSparseFetch::createInstance (Context& context) const
 {
@@ -552,26 +538,16 @@ TestInstance* SparseCaseOpImageSparseFetch::createInstance (Context& context) co
 class SparseShaderIntrinsicsInstanceRead : public SparseShaderIntrinsicsInstanceStorage
 {
 public:
-	SparseShaderIntrinsicsInstanceRead		(Context&					context,
-											 const SpirVFunction		function,
-											 const ImageType			imageType,
-											 const tcu::UVec3&			imageSize,
-											 const tcu::TextureFormat&	format)
-		: SparseShaderIntrinsicsInstanceStorage(context, function, imageType, imageSize, format) {}
+	SparseShaderIntrinsicsInstanceRead			(Context&					context,
+												 const SpirVFunction		function,
+												 const ImageType			imageType,
+												 const tcu::UVec3&			imageSize,
+												 const tcu::TextureFormat&	format)
+	: SparseShaderIntrinsicsInstanceStorage (context, function, imageType, imageSize, format) {}
 
-	VkImageUsageFlags		imageSparseUsageFlags	(void) const;
-	VkDescriptorType		imageSparseDescType		(void) const;
+	VkImageUsageFlags	imageSparseUsageFlags	(void) const { return VK_IMAGE_USAGE_STORAGE_BIT; }
+	VkDescriptorType	imageSparseDescType		(void) const { return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE; }
 };
-
-VkImageUsageFlags SparseShaderIntrinsicsInstanceRead::imageSparseUsageFlags (void) const
-{
-	return VK_IMAGE_USAGE_STORAGE_BIT;
-}
-
-VkDescriptorType SparseShaderIntrinsicsInstanceRead::imageSparseDescType (void) const
-{
-	return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-}
 
 TestInstance* SparseCaseOpImageSparseRead::createInstance (Context& context) const
 {
