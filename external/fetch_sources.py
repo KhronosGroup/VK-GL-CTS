@@ -185,7 +185,7 @@ PACKAGES = [
 		postExtract = postExtractLibpng),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
-		"f18e1f293b7cf8f24a42587b48f35bc49912a5dd",
+		"38036a7203ca604c0f25b0dc33da169ac58e2900",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
@@ -193,7 +193,7 @@ PACKAGES = [
 		"glslang"),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
-		"e4e22fd832810c45f46d542c67910b0c6bf4ca2d",
+		"bd47a9abaefac00be692eae677daed1b977e625c",
 		"spirv-headers"),
 ]
 

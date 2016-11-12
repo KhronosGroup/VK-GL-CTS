@@ -34,12 +34,6 @@ namespace tcu
 namespace wayland
 {
 
-enum
-{
-	DEFAULT_WINDOW_WIDTH	= 400,
-	DEFAULT_WINDOW_HEIGHT	= 300
-};
-
 EventState::EventState (void)
 	: m_quit(false)
 {
@@ -95,6 +89,9 @@ void Display::handleGlobalRemove (void* data, struct wl_registry* registry, uint
 Display::Display (EventState& eventState, const char* name)
 	: m_eventState	(eventState)
 	, m_display		(DE_NULL)
+	, m_registry	(DE_NULL)
+	, m_compositor	(DE_NULL)
+	, m_shell		(DE_NULL)
 {
 	try
 	{
