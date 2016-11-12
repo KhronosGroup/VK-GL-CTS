@@ -38,6 +38,12 @@ namespace tcu
 namespace wayland
 {
 
+enum
+{
+	DEFAULT_WINDOW_WIDTH	= 400,
+	DEFAULT_WINDOW_HEIGHT	= 300
+};
+
 class EventState
 {
 public:
@@ -95,6 +101,7 @@ public:
 
 	void					processEvents			(void);
 	Display&				getDisplay				(void) { return m_display; }
+	void*					getSurface				(void) { return m_surface; }
 	void*					getWindow				(void) { return m_window; }
 
 	void					getDimensions			(int* width, int* height) const;
