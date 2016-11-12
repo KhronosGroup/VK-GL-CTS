@@ -170,8 +170,6 @@ void LazyResource<Element>::makePageResident (size_t pageNdx)
 
 typedef LazyResource<BinaryIndexNode> BinaryIndexAccess;
 
-DE_DECLARE_POOL_HASH(BinaryHash, const ProgramBinary*, deUint32);
-
 class BinaryRegistryReader
 {
 public:
@@ -189,37 +187,78 @@ private:
 	mutable BinaryIndexPtr	m_binaryIndex;
 };
 
+struct ProgramIdentifierIndex
+{
+	ProgramIdentifier	id;
+	deUint32			index;
+
+	ProgramIdentifierIndex (const ProgramIdentifier&	id_,
+							deUint32					index_)
+		: id	(id_)
+		, index	(index_)
+	{}
+};
+
+DE_DECLARE_POOL_HASH(BinaryIndexHashImpl, const ProgramBinary*, deUint32);
+
+class BinaryIndexHash
+{
+public:
+								BinaryIndexHash		(void);
+								~BinaryIndexHash	(void);
+
+	deUint32*					find				(const ProgramBinary* binary) const;
+	void						insert				(const ProgramBinary* binary, deUint32 index);
+
+private:
+								BinaryIndexHash		(const BinaryIndexHash&);
+	BinaryIndexHash&			operator=			(const BinaryIndexHash&);
+
+	de::MemPool					m_memPool;
+	BinaryIndexHashImpl* const	m_hash;
+};
+
 class BinaryRegistryWriter
 {
 public:
 						BinaryRegistryWriter	(const std::string& dstPath);
 						~BinaryRegistryWriter	(void);
 
-	void				storeProgram			(const ProgramIdentifier& id, const ProgramBinary& binary);
-	void				writeIndex				(void) const;
+	void				addProgram				(const ProgramIdentifier& id, const ProgramBinary& binary);
+	void				write					(void) const;
 
 private:
-	struct BinaryIndex
-	{
-		ProgramIdentifier	id;
-		deUint32			index;
+	void				initFromPath			(const std::string& srcPath);
+	void				writeToPath				(const std::string& dstPath) const;
 
-		BinaryIndex (const ProgramIdentifier&	id_,
-					 deUint32					index_)
-			: id	(id_)
-			, index	(index_)
+	deUint32*			findBinary				(const ProgramBinary& binary) const;
+	deUint32			getNextSlot				(void) const;
+	void				addBinary				(deUint32 index, const ProgramBinary& binary);
+
+	struct BinarySlot
+	{
+		ProgramBinary*	binary;
+		size_t			referenceCount;
+
+		BinarySlot (ProgramBinary* binary_, size_t referenceCount_)
+			: binary		(binary_)
+			, referenceCount(referenceCount_)
+		{}
+
+		BinarySlot (void)
+			: binary		(DE_NULL)
+			, referenceCount(0)
 		{}
 	};
 
-	typedef std::vector<ProgramBinary*>	BinaryVector;
-	typedef std::vector<BinaryIndex>	BinaryIndexVector;
+	typedef std::vector<BinarySlot>				BinaryVector;
+	typedef std::vector<ProgramIdentifierIndex>	ProgIdIndexVector;
 
 	const std::string&	m_dstPath;
 
-	de::MemPool			m_memPool;
-	BinaryHash*			m_binaryIndexMap;		//!< ProgramBinary -> slot in m_compactedBinaries
-	BinaryVector		m_compactedBinaries;
-	BinaryIndexVector	m_binaryIndices;		//!< ProgramIdentifier -> slot in m_compactedBinaries
+	ProgIdIndexVector	m_binaryIndices;		//!< ProgramIdentifier -> slot in m_binaries
+	BinaryIndexHash		m_binaryHash;			//!< ProgramBinary -> slot in m_binaries
+	BinaryVector		m_binaries;
 };
 
 } // BinaryRegistryDetail

@@ -26,8 +26,10 @@
 #include "tcuFormatUtil.hpp"
 #include "deFilePath.hpp"
 #include "deStringUtil.hpp"
+#include "deDirectoryIterator.hpp"
 #include "deString.h"
 #include "deInt32.h"
+#include "deFile.h"
 
 #include <sstream>
 #include <fstream>
@@ -45,9 +47,57 @@ using std::vector;
 namespace
 {
 
+string getProgramFileName (deUint32 index)
+{
+	return de::toString(tcu::toHex(index)) + ".spv";
+}
+
 string getProgramPath (const std::string& dirName, deUint32 index)
 {
-	return de::FilePath::join(dirName, de::toString(tcu::toHex(index)) + ".spv").getPath();
+	return de::FilePath::join(dirName, getProgramFileName(index)).getPath();
+}
+
+bool isHexChr (char c)
+{
+	return de::inRange(c, '0', '9') || de::inRange(c, 'a', 'f') || de::inRange(c, 'A', 'F');
+}
+
+bool isProgramFileName (const std::string& name)
+{
+	// 0x + 00000000 + .spv
+	if (name.length() != (2 + 8 + 4))
+		return false;
+
+	if (name[0] != '0' ||
+		name[1] != 'x' ||
+		name[10] != '.' ||
+		name[11] != 's' ||
+		name[12] != 'p' ||
+		name[13] != 'v')
+		return false;
+
+	for (size_t ndx = 2; ndx < 10; ++ndx)
+	{
+		if (!isHexChr(name[ndx]))
+			return false;
+	}
+
+	return true;
+}
+
+deUint32 getProgramIndexFromName (const std::string& name)
+{
+	DE_ASSERT(isProgramFileName(name));
+
+	deUint32			index	= ~0u;
+	std::stringstream	str;
+
+	str << std::hex << name.substr(2,10);
+	str >> index;
+
+	DE_ASSERT(getProgramFileName(index) == name);
+
+	return index;
 }
 
 string getIndexPath (const std::string& dirName)
@@ -55,21 +105,49 @@ string getIndexPath (const std::string& dirName)
 	return de::FilePath::join(dirName, "index.bin").getPath();
 }
 
-void writeBinary (const std::string& dstDir, deUint32 index, const ProgramBinary& binary)
+void writeBinary (const ProgramBinary& binary, const std::string& dstPath)
 {
-	const de::FilePath	fullPath	= getProgramPath(dstDir, index);
+	const de::FilePath	filePath(dstPath);
 
-	if (!de::FilePath(fullPath.getDirName()).exists())
-		de::createDirectoryAndParents(fullPath.getDirName().c_str());
+	if (!de::FilePath(filePath.getDirName()).exists())
+		de::createDirectoryAndParents(filePath.getDirName().c_str());
 
 	{
-		std::ofstream	out		(fullPath.getPath(), std::ios_base::binary);
+		std::ofstream	out		(dstPath.c_str(), std::ios_base::binary);
 
 		if (!out.is_open() || !out.good())
-			throw tcu::Exception("Failed to open " + string(fullPath.getPath()));
+			throw tcu::Exception("Failed to open " + dstPath);
 
 		out.write((const char*)binary.getBinary(), binary.getSize());
 		out.close();
+	}
+}
+
+void writeBinary (const std::string& dstDir, deUint32 index, const ProgramBinary& binary)
+{
+	writeBinary(binary, getProgramPath(dstDir, index));
+}
+
+ProgramBinary* readBinary (const std::string& srcPath)
+{
+	std::ifstream	in		(srcPath.c_str(), std::ios::binary | std::ios::ate);
+	const size_t	size	= (size_t)in.tellg();
+
+	if (!in.is_open() || !in.good())
+		throw tcu::Exception("Failed to open " + srcPath);
+
+	if (size == 0)
+		throw tcu::Exception("Malformed binary, size = 0");
+
+	in.seekg(0, std::ios::beg);
+
+	{
+		std::vector<deUint8>	bytes	(size);
+
+		in.read((char*)&bytes[0], size);
+		DE_ASSERT(bytes[0] != 0);
+
+		return new ProgramBinary(vk::PROGRAM_FORMAT_SPIRV, bytes.size(), &bytes[0]);
 	}
 }
 
@@ -291,94 +369,195 @@ void buildFinalIndex (std::vector<BinaryIndexNode>* dst, const SparseIndexNode* 
 	}
 }
 
+void buildBinaryIndex (std::vector<BinaryIndexNode>* dst, size_t numEntries, const ProgramIdentifierIndex* entries)
+{
+	de::UniquePtr<SparseIndexNode>	sparseIndex	(new SparseIndexNode());
+
+	for (size_t ndx = 0; ndx < numEntries; ndx++)
+	{
+		const std::vector<deUint32>	searchPath	= getSearchPath(entries[ndx].id);
+		addToSparseIndex(sparseIndex.get(), &searchPath[0], searchPath.size(), entries[ndx].index);
+	}
+
+	normalizeSparseIndex(sparseIndex.get());
+	buildFinalIndex(dst, sparseIndex.get());
+}
+
 } // anonymous
+
+// BinaryIndexHash
+
+DE_IMPLEMENT_POOL_HASH(BinaryIndexHashImpl, const ProgramBinary*, deUint32, binaryHash, binaryEqual);
+
+BinaryIndexHash::BinaryIndexHash (void)
+	: m_hash(BinaryIndexHashImpl_create(m_memPool.getRawPool()))
+{
+	if (!m_hash)
+		throw std::bad_alloc();
+}
+
+BinaryIndexHash::~BinaryIndexHash (void)
+{
+}
+
+deUint32* BinaryIndexHash::find (const ProgramBinary* binary) const
+{
+	return BinaryIndexHashImpl_find(m_hash, binary);
+}
+
+void BinaryIndexHash::insert (const ProgramBinary* binary, deUint32 index)
+{
+	if (!BinaryIndexHashImpl_insert(m_hash, binary, index))
+		throw std::bad_alloc();
+}
 
 // BinaryRegistryWriter
 
-DE_IMPLEMENT_POOL_HASH(BinaryHash, const ProgramBinary*, deUint32, binaryHash, binaryEqual);
-
 BinaryRegistryWriter::BinaryRegistryWriter (const std::string& dstPath)
-	: m_dstPath			(dstPath)
-	, m_binaryIndexMap	(DE_NULL)
+	: m_dstPath(dstPath)
 {
-	m_binaryIndexMap = BinaryHash_create(m_memPool.getRawPool());
-
-	if (!m_binaryIndexMap)
-		throw std::bad_alloc();
+	if (de::FilePath(dstPath).exists())
+		initFromPath(dstPath);
 }
 
 BinaryRegistryWriter::~BinaryRegistryWriter (void)
 {
-	for (BinaryVector::const_iterator binaryIter = m_compactedBinaries.begin();
-		 binaryIter != m_compactedBinaries.end();
+	for (BinaryVector::const_iterator binaryIter = m_binaries.begin();
+		 binaryIter != m_binaries.end();
 		 ++binaryIter)
-		delete *binaryIter;
+		delete binaryIter->binary;
 }
 
-void BinaryRegistryWriter::storeProgram (const ProgramIdentifier& id, const ProgramBinary& binary)
+void BinaryRegistryWriter::initFromPath (const std::string& srcPath)
 {
-	const deUint32* const	indexPtr	= BinaryHash_find(m_binaryIndexMap, &binary);
-	deUint32				index		= indexPtr ? *indexPtr : ~0u;
+	DE_ASSERT(m_binaries.empty());
 
-	DE_ASSERT(binary.getFormat() == vk::PROGRAM_FORMAT_SPIRV);
+	for (de::DirectoryIterator iter(srcPath); iter.hasItem(); iter.next())
+	{
+		const de::FilePath	path		= iter.getItem();
+		const std::string	baseName	= path.getBaseName();
+
+		if (isProgramFileName(baseName))
+		{
+			const deUint32						index	= getProgramIndexFromName(baseName);
+			const de::UniquePtr<ProgramBinary>	binary	(readBinary(path.getPath()));
+
+			addBinary(index, *binary);
+			// \note referenceCount is left to 0 and will only be incremented
+			//		 if binary is reused (added via addProgram()).
+		}
+	}
+}
+
+void BinaryRegistryWriter::addProgram (const ProgramIdentifier& id, const ProgramBinary& binary)
+{
+	const deUint32* const	indexPtr	= findBinary(binary);
+	deUint32				index		= indexPtr ? *indexPtr : ~0u;
 
 	if (!indexPtr)
 	{
-		ProgramBinary* const	binaryClone		= new ProgramBinary(binary);
-
-		try
-		{
-			index = (deUint32)m_compactedBinaries.size();
-			m_compactedBinaries.push_back(binaryClone);
-		}
-		catch (...)
-		{
-			delete binaryClone;
-			throw;
-		}
-
-		writeBinary(m_dstPath, index, binary);
-
-		if (!BinaryHash_insert(m_binaryIndexMap, binaryClone, index))
-			throw std::bad_alloc();
+		index = getNextSlot();
+		addBinary(index, binary);
 	}
 
-	DE_ASSERT((size_t)index < m_compactedBinaries.size());
-
-	m_binaryIndices.push_back(BinaryIndex(id, index));
+	m_binaries[index].referenceCount += 1;
+	m_binaryIndices.push_back(ProgramIdentifierIndex(id, index));
 }
 
-void BinaryRegistryWriter::writeIndex (void) const
+deUint32* BinaryRegistryWriter::findBinary (const ProgramBinary& binary) const
 {
-	const de::FilePath				indexPath	= getIndexPath(m_dstPath);
-	std::vector<BinaryIndexNode>	index;
+	return m_binaryHash.find(&binary);
+}
 
+deUint32 BinaryRegistryWriter::getNextSlot (void) const
+{
+	const deUint32	index	= (deUint32)m_binaries.size();
+
+	if ((size_t)index != m_binaries.size())
+		throw std::bad_alloc(); // Overflow
+
+	return index;
+}
+
+void BinaryRegistryWriter::addBinary (deUint32 index, const ProgramBinary& binary)
+{
+	DE_ASSERT(binary.getFormat() == vk::PROGRAM_FORMAT_SPIRV);
+	DE_ASSERT(findBinary(binary) == DE_NULL);
+
+	ProgramBinary* const	binaryClone		= new ProgramBinary(binary);
+
+	try
 	{
-		de::UniquePtr<SparseIndexNode>	sparseIndex	(new SparseIndexNode());
+		if (m_binaries.size() < (size_t)index+1)
+			m_binaries.resize(index+1);
 
-		for (size_t progNdx = 0; progNdx < m_binaryIndices.size(); progNdx++)
-		{
-			const std::vector<deUint32>	searchPath	= getSearchPath(m_binaryIndices[progNdx].id);
-			addToSparseIndex(sparseIndex.get(), &searchPath[0], searchPath.size(), m_binaryIndices[progNdx].index);
-		}
+		DE_ASSERT(!m_binaries[index].binary);
+		DE_ASSERT(m_binaries[index].referenceCount == 0);
 
-		normalizeSparseIndex(sparseIndex.get());
-		buildFinalIndex(&index, sparseIndex.get());
+		m_binaries[index].binary = binaryClone;
+		// \note referenceCount is not incremented here
+	}
+	catch (...)
+	{
+		delete binaryClone;
+		throw;
 	}
 
-	// Even in empty index there is always terminating node for the root group
-	DE_ASSERT(!index.empty());
+	m_binaryHash.insert(binaryClone, index);
+}
 
-	if (!de::FilePath(indexPath.getDirName()).exists())
-		de::createDirectoryAndParents(indexPath.getDirName().c_str());
+void BinaryRegistryWriter::write (void) const
+{
+	writeToPath(m_dstPath);
+}
 
+void BinaryRegistryWriter::writeToPath (const std::string& dstPath) const
+{
+	if (!de::FilePath(dstPath).exists())
+		de::createDirectoryAndParents(dstPath.c_str());
+
+	DE_ASSERT(m_binaries.size() <= 0xffffffffu);
+	for (size_t binaryNdx = 0; binaryNdx < m_binaries.size(); ++binaryNdx)
 	{
-		std::ofstream indexOut(indexPath.getPath(), std::ios_base::binary);
+		const BinarySlot&	slot	= m_binaries[binaryNdx];
 
-		if (!indexOut.is_open() || !indexOut.good())
-			throw tcu::InternalError(string("Failed to open program binary index file ") + indexPath.getPath());
+		if (slot.referenceCount > 0)
+		{
+			DE_ASSERT(slot.binary);
+			writeBinary(dstPath, (deUint32)binaryNdx, *slot.binary);
+		}
+		else
+		{
+			// Delete stale binary if such exists
+			const std::string	progPath	= getProgramPath(dstPath, (deUint32)binaryNdx);
 
-		indexOut.write((const char*)&index[0], index.size()*sizeof(BinaryIndexNode));
+			if (de::FilePath(progPath).exists())
+				deDeleteFile(progPath.c_str());
+		}
+
+	}
+
+	// Write index
+	{
+		const de::FilePath				indexPath	= getIndexPath(dstPath);
+		std::vector<BinaryIndexNode>	index;
+
+		buildBinaryIndex(&index, m_binaryIndices.size(), !m_binaryIndices.empty() ? &m_binaryIndices[0] : DE_NULL);
+
+		// Even in empty index there is always terminating node for the root group
+		DE_ASSERT(!index.empty());
+
+		if (!de::FilePath(indexPath.getDirName()).exists())
+			de::createDirectoryAndParents(indexPath.getDirName().c_str());
+
+		{
+			std::ofstream indexOut(indexPath.getPath(), std::ios_base::binary);
+
+			if (!indexOut.is_open() || !indexOut.good())
+				throw tcu::InternalError(string("Failed to open program binary index file ") + indexPath.getPath());
+
+			indexOut.write((const char*)&index[0], index.size()*sizeof(BinaryIndexNode));
+		}
 	}
 }
 

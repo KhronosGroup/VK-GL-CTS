@@ -23,7 +23,6 @@
 
 #include "vkGlslToSpirV.hpp"
 #include "deArrayUtil.hpp"
-#include "deMutex.hpp"
 #include "deSingleton.h"
 #include "deMemory.h"
 #include "deClock.h"
@@ -66,7 +65,6 @@ EShLanguage getGlslangStage (glu::ShaderType type)
 }
 
 static volatile deSingletonState	s_glslangInitState	= DE_SINGLETON_STATE_NOT_INITIALIZED;
-static de::Mutex					s_glslangLock;
 
 void initGlslang (void*)
 {
@@ -223,7 +221,6 @@ bool compileGlslToSpirV (const glu::ProgramSources& program, std::vector<deUint3
 	{
 		if (!program.sources[shaderType].empty())
 		{
-			const de::ScopedLock	compileLock			(s_glslangLock);
 			const std::string&		srcText				= program.sources[shaderType][0];
 			const char*				srcPtrs[]			= { srcText.c_str() };
 			const int				srcLengths[]		= { (int)srcText.size() };

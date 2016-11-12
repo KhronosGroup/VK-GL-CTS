@@ -43,4 +43,6 @@ set(TCUTIL_PLATFORM_SRCS
 	wayland/tcuWaylandPlatform.hpp
 	wayland/tcuWaylandEglPlatform.cpp
 	wayland/tcuWaylandEglPlatform.hpp
+	wayland/tcuWaylandVulkanPlatform.cpp
+	wayland/tcuWaylandVulkanPlatform.hpp
 	)

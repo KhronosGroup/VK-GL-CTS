@@ -25,6 +25,7 @@
 
 #include "deThread.h"
 #include "deThreadLocal.h"
+#include "deMutex.h"
 
 namespace glslang
 {
@@ -56,18 +57,24 @@ void* OS_GetTLSValue (OS_TLSIndex nIndex)
 	return deThreadLocal_get((deThreadLocal)nIndex);
 }
 
-// Global lock - not used
+// Global lock
+
+static deMutex s_globalLock = 0;
 
 void InitGlobalLock (void)
 {
+	DE_ASSERT(s_globalLock == 0);
+	s_globalLock = deMutex_create(DE_NULL);
 }
 
 void GetGlobalLock (void)
 {
+	deMutex_lock(s_globalLock);
 }
 
 void ReleaseGlobalLock (void)
 {
+	deMutex_unlock(s_globalLock);
 }
 
 // Threading

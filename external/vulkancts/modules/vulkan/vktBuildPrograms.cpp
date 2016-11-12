@@ -371,8 +371,6 @@ BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath,
 	de::PoolArray<Program>				programs			(&programPool);
 
 	{
-		// \todo [2016-09-30 pyry] Use main executor when glslang no longer requires global lock
-		TaskExecutor						buildGlslExecutor	(1);
 		de::MemPool							tmpPool;
 		de::PoolArray<BuildGlslTask>		buildGlslTasks		(&tmpPool);
 		de::PoolArray<BuildSpirVAsmTask>	buildSpirvAsmTasks	(&tmpPool);
@@ -400,7 +398,7 @@ BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath,
 					{
 						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName())));
 						buildGlslTasks.pushBack(BuildGlslTask(progIter.getProgram(), &programs.back()));
-						buildGlslExecutor.submit(&buildGlslTasks.back());
+						executor.submit(&buildGlslTasks.back());
 					}
 
 					for (vk::SpirVAsmCollection::Iterator progIter = sourcePrograms.spirvAsmSources.begin();
@@ -418,7 +416,6 @@ BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath,
 		}
 
 		// Need to wait until tasks completed before freeing task memory
-		buildGlslExecutor.waitForComplete();
 		executor.waitForComplete();
 	}
 
@@ -446,10 +443,10 @@ BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath,
 		for (de::PoolArray<Program>::iterator progIter = programs.begin(); progIter != programs.end(); ++progIter)
 		{
 			if (progIter->buildStatus == Program::STATUS_PASSED)
-				registryWriter.storeProgram(progIter->id, *progIter->binary);
+				registryWriter.addProgram(progIter->id, *progIter->binary);
 		}
 
-		registryWriter.writeIndex();
+		registryWriter.write();
 	}
 
 	{
