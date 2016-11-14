@@ -185,6 +185,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT:									return "VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR:										return "VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR:				return "VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX:							return "VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX:				return "VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX";
@@ -3473,6 +3474,36 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSparseImageForm
 	s << "\tsamples = " << value.samples << '\n';
 	s << "\tusage = " << getImageUsageFlagsStr(value.usage) << '\n';
 	s << "\ttiling = " << value.tiling << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRectLayerKHR& value)
+{
+	s << "VkRectLayerKHR = {\n";
+	s << "\toffset = " << value.offset << '\n';
+	s << "\textent = " << value.extent << '\n';
+	s << "\tlayer = " << value.layer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentRegionKHR& value)
+{
+	s << "VkPresentRegionKHR = {\n";
+	s << "\trectangleCount = " << value.rectangleCount << '\n';
+	s << "\tpRectangles = " << value.pRectangles << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentRegionsKHR& value)
+{
+	s << "VkPresentRegionsKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchainCount = " << value.swapchainCount << '\n';
+	s << "\tpRegions = " << value.pRegions << '\n';
 	s << '}';
 	return s;
 }
