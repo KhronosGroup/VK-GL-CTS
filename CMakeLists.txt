@@ -254,6 +254,7 @@ endif ()
 
 add_subdirectory(modules)
 add_subdirectory(external/vulkancts/modules/vulkan)
+add_subdirectory(external/openglcts)
 
 # Single-binary targets
 if (DE_OS_IS_ANDROID)

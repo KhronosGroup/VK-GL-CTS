@@ -1,0 +1,2 @@
+#Tests run in KHR variant
+dEQP-GLES31.functional.copy_image.*

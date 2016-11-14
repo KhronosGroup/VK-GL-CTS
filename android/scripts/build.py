@@ -51,7 +51,7 @@ def getNativeBuildDir (buildRoot, nativeLib, buildType):
 def getAssetsDir (buildRoot, nativeLib, buildType):
 	return os.path.join(getNativeBuildDir(buildRoot, nativeLib, buildType), "assets")
 
-def buildNative (buildRoot, libTargetDir, nativeLib, buildType):
+def buildNative (buildRoot, libTargetDir, nativeLib, buildType, gtfTarget):
 	deqpDir		= os.path.normpath(os.path.join(common.ANDROID_DIR, ".."))
 	buildDir	= getNativeBuildDir(buildRoot, nativeLib, buildType)
 	libsDir		= os.path.join(libTargetDir, nativeLib.abiVersion)
@@ -66,11 +66,14 @@ def buildNative (buildRoot, libTargetDir, nativeLib, buildType):
 				'cmake',
 				'-G%s' % common.CMAKE_GENERATOR,
 				'-DCMAKE_TOOLCHAIN_FILE=%s' % toolchainFile,
+				'-DCMAKE_C_FLAGS=-Werror',
+				'-DCMAKE_CXX_FLAGS=-Werror',
 				'-DANDROID_NDK_HOST_OS=%s' % common.ANDROID_NDK_HOST_OS,
 				'-DANDROID_NDK_PATH=%s' % common.ANDROID_NDK_PATH,
 				'-DANDROID_ABI=%s' % nativeLib.abiVersion,
 				'-DDE_ANDROID_API=%s' % nativeLib.apiVersion,
 				'-DCMAKE_BUILD_TYPE=%s' % buildType,
+				'-DGLCTS_GTF_TARGET=%s' % gtfTarget,
 				'-DDEQP_TARGET=android',
 				deqpDir
 			], buildDir)
@@ -94,13 +97,13 @@ def buildNative (buildRoot, libTargetDir, nativeLib, buildType):
 	else:
 		assert not os.path.exists(os.path.join(libsDir, "gdbserver"))
 
-def buildApp (buildRoot, androidBuildType, javaApi):
-	appDir	= os.path.join(buildRoot, "package")
+def buildApp (buildRoot, androidBuildType, javaApi, package):
+	appDir	= os.path.join(buildRoot, package)
 
 	# Set up app
 	os.chdir(appDir)
 
-	manifestSrcPath = os.path.normpath(os.path.join(common.ANDROID_DIR, "package", "AndroidManifest.xml"))
+	manifestSrcPath = os.path.normpath(os.path.join(common.ANDROID_DIR, package, "AndroidManifest.xml"))
 	manifestDstPath = os.path.normpath(os.path.join(appDir, "AndroidManifest.xml"))
 
 	# Build dir can be the Android dir, in which case the copy is not needed.
@@ -119,12 +122,12 @@ def buildApp (buildRoot, androidBuildType, javaApi):
 	common.execArgs([
 			common.ANT_BIN,
 			androidBuildType,
-			"-Dsource.dir=" + os.path.join(common.ANDROID_DIR, "package", "src"),
-			"-Dresource.absolute.dir=" + os.path.join(common.ANDROID_DIR, "package", "res")
+			"-Dsource.dir=" + os.path.join(common.ANDROID_DIR, package, "src"),
+			"-Dresource.absolute.dir=" + os.path.join(common.ANDROID_DIR,package, "res")
 		])
 
-def signApp (keystore, keyname, storepass, keypass):
-	os.chdir(os.path.join(common.ANDROID_DIR, "package"))
+def signApp (keystore, keyname, storepass, keypass, package):
+	os.chdir(os.path.join(common.ANDROID_DIR, package))
 	common.execArgs([
 			common.JARSIGNER_BIN,
 			'-keystore', keystore,
@@ -144,12 +147,12 @@ def signApp (keystore, keyname, storepass, keypass):
 			'bin/dEQP-release.apk'
 		])
 
-def build (buildRoot=common.ANDROID_DIR, androidBuildType='debug', nativeBuildType="Release", javaApi=common.ANDROID_JAVA_API, doParallelBuild=False):
+def build (buildRoot=common.ANDROID_DIR, androidBuildType='debug', nativeBuildType="Release", javaApi=common.ANDROID_JAVA_API, doParallelBuild=False, package="package", gtfTarget='gles32'):
 	curDir = os.getcwd()
 
 	try:
 		assetsSrcDir = getAssetsDir(buildRoot, common.NATIVE_LIBS[0], nativeBuildType)
-		assetsDstDir = os.path.join(buildRoot, "package", "assets")
+		assetsDstDir = os.path.join(buildRoot, package, "assets")
 
 		# Remove assets from the first build dir where we copy assets from
 		# to avoid collecting cruft there.
@@ -160,12 +163,12 @@ def build (buildRoot=common.ANDROID_DIR, androidBuildType='debug', nativeBuildTy
 
 		# Remove old libs dir to avoid collecting out-of-date versions
 		# of libs for ABIs not built this time.
-		libTargetDir = os.path.join(buildRoot, "package", "libs")
+		libTargetDir = os.path.join(buildRoot, package, "libs")
 		if os.path.exists(libTargetDir):
 			shutil.rmtree(libTargetDir)
 
 		# Build native code
-		nativeBuildArgs = [(buildRoot, libTargetDir, nativeLib, nativeBuildType) for nativeLib in common.NATIVE_LIBS]
+		nativeBuildArgs = [(buildRoot, libTargetDir, nativeLib, nativeBuildType, gtfTarget) for nativeLib in common.NATIVE_LIBS]
 		if doParallelBuild:
 			common.parallelApply(buildNative, nativeBuildArgs)
 		else:
@@ -176,7 +179,7 @@ def build (buildRoot=common.ANDROID_DIR, androidBuildType='debug', nativeBuildTy
 			shutil.copytree(assetsSrcDir, assetsDstDir)
 
 		# Build java code and .apk
-		buildApp(buildRoot, androidBuildType, javaApi)
+		buildApp(buildRoot, androidBuildType, javaApi, package)
 
 	finally:
 		# Restore working dir
@@ -198,6 +201,8 @@ if __name__ == "__main__":
 	parser.add_argument('--build-root', dest='buildRoot', default=common.ANDROID_DIR, help="Root directory for storing build results.")
 	parser.add_argument('--dump-config', dest='dumpConfig', action='store_true', help="Print out all configurations variables")
 	parser.add_argument('--java-api', dest='javaApi', default=common.ANDROID_JAVA_API, help="Set the API signature for the java build.")
+	parser.add_argument('--apk-package', dest='package', default='package', choices=['package', 'openglcts'], help="Folder with AndroidManifest.xml.")
+	parser.add_argument('--glcts-gtf-target', dest='gtfTarget', default='gles32', choices=['gles32', 'gles31', 'gles3', 'gles2'], help="Build GLCTS GTF module for the given API.")
 	parser.add_argument('-p', '--parallel-build', dest='parallelBuild', action="store_true", help="Build native libraries in parallel.")
 
 	args = parser.parse_args()
@@ -205,4 +210,4 @@ if __name__ == "__main__":
 	if args.dumpConfig:
 		dumpConfig()
 
-	build(buildRoot=os.path.abspath(args.buildRoot), androidBuildType=args.androidBuildType, nativeBuildType=args.nativeBuildType, javaApi=args.javaApi, doParallelBuild=args.parallelBuild)
+	build(buildRoot=os.path.abspath(args.buildRoot), androidBuildType=args.androidBuildType, nativeBuildType=args.nativeBuildType, javaApi=args.javaApi, doParallelBuild=args.parallelBuild, package=args.package, gtfTarget=args.gtfTarget)

@@ -132,14 +132,16 @@ public:
 										RenderContext			(const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config);
 	virtual								~RenderContext			(void);
 
-	virtual glu::ContextType			getType					(void) const { return m_renderConfig.type;	}
-	virtual const glw::Functions&		getFunctions			(void) const { return m_glFunctions;		}
-	virtual const tcu::RenderTarget&	getRenderTarget			(void) const { return m_glRenderTarget;		}
+	virtual glu::ContextType			getType					(void) const { return m_renderConfig.type;		}
+	virtual const glw::Functions&		getFunctions			(void) const { return m_glFunctions;			}
+	virtual const tcu::RenderTarget&	getRenderTarget			(void) const { return m_glRenderTarget;			}
 	virtual void						postIterate				(void);
 
-	virtual EGLDisplay					getEGLDisplay			(void) const { return m_eglDisplay;			}
-	virtual EGLContext					getEGLContext			(void) const { return m_eglContext;			}
-	virtual EGLConfig					getEGLConfig			(void) const { return m_eglConfig;			}
+	virtual EGLDisplay					getEGLDisplay			(void) const { return m_eglDisplay;				}
+	virtual EGLContext					getEGLContext			(void) const { return m_eglContext;				}
+	virtual EGLConfig					getEGLConfig			(void) const { return m_eglConfig;				}
+	virtual const eglw::Library&		getLibrary				(void) const { return m_display->getLibrary();	}
+
 	virtual eglw::GenericFuncType		getProcAddress			(const char* name) const;
 
 	virtual void						makeCurrent				(void);

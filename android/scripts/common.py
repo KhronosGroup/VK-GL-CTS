@@ -231,8 +231,8 @@ ANDROID_DIR				= os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(_
 # Build configuration
 NATIVE_LIBS				= [
 		#		  API		ABI				prebuiltsDir
-		NativeLib(13,		"armeabi-v7a",	'android-arm'),		# ARM v7a ABI
-		NativeLib(13,		"x86",			'android-x86'),		# x86
+		NativeLib(21,		"armeabi-v7a",	'android-arm'),		# ARM v7a ABI
+		NativeLib(21,		"x86",			'android-x86'),		# x86
 		NativeLib(21,		"arm64-v8a",	'android-arm64'),	# ARM64 v8a ABI
 		NativeLib(21,		"x86_64",		'android-x86_64'),	# x86_64
 	]
@@ -298,6 +298,7 @@ JARSIGNER_BIN			= which('jarsigner')
 
 # Apache ant
 ANT_BIN					= selectFirstExistingBinary([
+		which('ant.bat'),
 		which('ant'),
 		"C:/android/apache-ant-1.8.4/bin/ant.bat",
 		"C:/android/apache-ant-1.9.2/bin/ant.bat",
