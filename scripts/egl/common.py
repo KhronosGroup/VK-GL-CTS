@@ -39,8 +39,8 @@ EGL_WRAPPER_DIR		= os.path.normpath(os.path.join(EGL_DIR, "wrapper"))
 
 EGL_SOURCE			= khr_util.registry_cache.RegistrySource(
 						"egl.xml",
-						32725,
-						"3464385212ae9b816d121c77bc4191ed3dfb32ce7bfca1a02b42fcefa3ec2354")
+						33216,
+						"4d2f754c07c47469da0f16636282d1ec8d438b46eff5cca4fa796bbfb95609ce")
 
 VERSION				= '1.5'
 

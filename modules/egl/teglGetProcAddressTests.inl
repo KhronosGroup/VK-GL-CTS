@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 32725.
+ * Generated from Khronos EGL API description (egl.xml) revision 33216.
  */
 
 static const char* s_EGL14[] =
@@ -449,9 +449,19 @@ static const char* s_EGL_ANDROID_blob_cache[] =
 	"eglSetBlobCacheFuncsANDROID",
 };
 
+static const char* s_EGL_ANDROID_create_native_client_buffer[] =
+{
+	"eglCreateNativeClientBufferANDROID",
+};
+
 static const char* s_EGL_ANDROID_native_fence_sync[] =
 {
 	"eglDupNativeFenceFDANDROID",
+};
+
+static const char* s_EGL_ANDROID_presentation_time[] =
+{
+	"eglPresentationTimeANDROID",
 };
 
 static const char* s_EGL_ANGLE_query_surface_pointer[] =
@@ -579,6 +589,15 @@ static const char* s_EGL_KHR_stream[] =
 	"eglQueryStreamKHR",
 	"eglQueryStreamu64KHR",
 	"eglStreamAttribKHR",
+};
+
+static const char* s_EGL_KHR_stream_attrib[] =
+{
+	"eglCreateStreamAttribKHR",
+	"eglQueryStreamAttribKHR",
+	"eglSetStreamAttribKHR",
+	"eglStreamConsumerAcquireAttribKHR",
+	"eglStreamConsumerReleaseAttribKHR",
 };
 
 static const char* s_EGL_KHR_stream_consumer_gltexture[] =
@@ -1660,7 +1679,9 @@ static const struct
 } s_extensions[] =
 {
 	{ "EGL_ANDROID_blob_cache",								DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_blob_cache),							s_EGL_ANDROID_blob_cache							},
+	{ "EGL_ANDROID_create_native_client_buffer",			DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_create_native_client_buffer),			s_EGL_ANDROID_create_native_client_buffer			},
 	{ "EGL_ANDROID_native_fence_sync",						DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_native_fence_sync),					s_EGL_ANDROID_native_fence_sync						},
+	{ "EGL_ANDROID_presentation_time",						DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_presentation_time),					s_EGL_ANDROID_presentation_time						},
 	{ "EGL_ANGLE_query_surface_pointer",					DE_LENGTH_OF_ARRAY(s_EGL_ANGLE_query_surface_pointer),					s_EGL_ANGLE_query_surface_pointer					},
 	{ "EGL_EXT_device_base",								DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_base),								s_EGL_EXT_device_base								},
 	{ "EGL_EXT_device_enumeration",							DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_enumeration),						s_EGL_EXT_device_enumeration						},
@@ -1680,6 +1701,7 @@ static const struct
 	{ "EGL_KHR_partial_update",								DE_LENGTH_OF_ARRAY(s_EGL_KHR_partial_update),							s_EGL_KHR_partial_update							},
 	{ "EGL_KHR_reusable_sync",								DE_LENGTH_OF_ARRAY(s_EGL_KHR_reusable_sync),							s_EGL_KHR_reusable_sync								},
 	{ "EGL_KHR_stream",										DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream),									s_EGL_KHR_stream									},
+	{ "EGL_KHR_stream_attrib",								DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream_attrib),							s_EGL_KHR_stream_attrib								},
 	{ "EGL_KHR_stream_consumer_gltexture",					DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream_consumer_gltexture),				s_EGL_KHR_stream_consumer_gltexture					},
 	{ "EGL_KHR_stream_cross_process_fd",					DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream_cross_process_fd),					s_EGL_KHR_stream_cross_process_fd					},
 	{ "EGL_KHR_stream_fifo",								DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream_fifo),								s_EGL_KHR_stream_fifo								},
