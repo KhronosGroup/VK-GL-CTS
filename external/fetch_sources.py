@@ -163,9 +163,9 @@ PACKAGES = [
 		"36658cb768a54c1d4dec43c3116c27ed893e88b02ecfcb44f2166f9c0b7f2a0d",
 		"zlib"),
 	SourcePackage(
-		"http://prdownloads.sourceforge.net/libpng/libpng-1.6.17.tar.gz",
-		"libpng-1.6.17.tar.gz",
-		"a18233c99e1dc59a256180e6871d9305a42e91b3f98799b3ceb98e87e9ec5e31",
+		"http://prdownloads.sourceforge.net/libpng/libpng-1.6.26.tar.gz",
+		"libpng-1.6.26.tar.gz",
+		"81bfc8f16ed125622c0c5ad44eeffda19e7a7c7e32f47e43c8932bf32deae7cc",
 		"libpng",
 		postExtract = postExtractLibpng),
 	GitRepo(
