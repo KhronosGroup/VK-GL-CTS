@@ -1434,6 +1434,27 @@ struct VkPhysicalDeviceSparseImageFormatInfo2KHR
 	VkImageTiling			tiling;
 };
 
+struct VkRectLayerKHR
+{
+	VkOffset2D	offset;
+	VkExtent2D	extent;
+	deUint32	layer;
+};
+
+struct VkPresentRegionKHR
+{
+	deUint32				rectangleCount;
+	const VkRectLayerKHR*	pRectangles;
+};
+
+struct VkPresentRegionsKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	deUint32					swapchainCount;
+	const VkPresentRegionKHR*	pRegions;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;

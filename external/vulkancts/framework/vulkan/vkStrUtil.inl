@@ -344,6 +344,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyProperties2KHR& va
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMemoryProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSparseImageFormatProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSparseImageFormatInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRectLayerKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionsKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateRasterizationOrderAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);

@@ -384,6 +384,14 @@ inline VkDisplayPlanePropertiesKHR makeDisplayPlanePropertiesKHR (VkDisplayKHR c
 	return res;
 }
 
+inline VkPresentRegionKHR makePresentRegionKHR (deUint32 rectangleCount, const VkRectLayerKHR* pRectangles)
+{
+	VkPresentRegionKHR res;
+	res.rectangleCount	= rectangleCount;
+	res.pRectangles		= pRectangles;
+	return res;
+}
+
 inline VkIndirectCommandsTokenNVX makeIndirectCommandsTokenNVX (VkIndirectCommandsTokenTypeNVX tokenType, VkBuffer buffer, VkDeviceSize offset)
 {
 	VkIndirectCommandsTokenNVX res;
