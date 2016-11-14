@@ -61,6 +61,12 @@ enum UniformFlags
 	UNUSED_BOTH			= UNUSED_VERTEX|UNUSED_FRAGMENT
 };
 
+enum MatrixLoadFlags
+{
+	LOAD_FULL_MATRIX		= 0,
+	LOAD_MATRIX_COMPONENTS	= 1,
+};
+
 class StructType;
 
 class VarType

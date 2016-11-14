@@ -45,12 +45,6 @@ struct SourceCollections;
 namespace vkt
 {
 
-enum MatrixLoadFlags
-{
-	LOAD_FULL_MATRIX		= 0,
-	LOAD_MATRIX_COMPONENTS	= 1,
-};
-
 class DefaultDevice;
 
 class Context
