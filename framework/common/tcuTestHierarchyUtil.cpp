@@ -124,9 +124,11 @@ static void writeXmlCaselist (TestHierarchyIterator& iter, qpXmlWriter* writer)
  *//*--------------------------------------------------------------------*/
 void writeXmlCaselistsToFiles (TestPackageRoot& root, TestContext& testCtx, const CommandLine& cmdLine)
 {
-	DefaultHierarchyInflater	inflater		(testCtx);
-	TestHierarchyIterator		iter			(root, inflater, cmdLine);
-	const char* const			filenamePattern = cmdLine.getCaseListExportFile();
+	DefaultHierarchyInflater			inflater		(testCtx);
+	de::MovePtr<const CaseListFilter>	caseListFilter	(testCtx.getCommandLine().createCaseListFilter(testCtx.getArchive()));
+
+	TestHierarchyIterator				iter			(root, inflater, *caseListFilter);
+	const char* const					filenamePattern = cmdLine.getCaseListExportFile();
 
 	while (iter.getState() != TestHierarchyIterator::STATE_FINISHED)
 	{
@@ -180,9 +182,11 @@ void writeXmlCaselistsToFiles (TestPackageRoot& root, TestContext& testCtx, cons
  *//*--------------------------------------------------------------------*/
 void writeTxtCaselistsToFiles (TestPackageRoot& root, TestContext& testCtx, const CommandLine& cmdLine)
 {
-	DefaultHierarchyInflater	inflater		(testCtx);
-	TestHierarchyIterator		iter			(root, inflater, cmdLine);
-	const char* const			filenamePattern = cmdLine.getCaseListExportFile();
+	DefaultHierarchyInflater			inflater		(testCtx);
+	de::MovePtr<const CaseListFilter>	caseListFilter	(testCtx.getCommandLine().createCaseListFilter(testCtx.getArchive()));
+
+	TestHierarchyIterator				iter			(root, inflater, *caseListFilter);
+	const char* const					filenamePattern = cmdLine.getCaseListExportFile();
 
 	while (iter.getState() != TestHierarchyIterator::STATE_FINISHED)
 	{

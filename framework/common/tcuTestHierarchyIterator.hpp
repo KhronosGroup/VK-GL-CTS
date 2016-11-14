@@ -33,7 +33,7 @@
 namespace tcu
 {
 
-class CommandLine;
+class CaseListFilter;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Test hierarchy inflater
@@ -107,7 +107,7 @@ protected:
 class TestHierarchyIterator
 {
 public:
-							TestHierarchyIterator	(TestPackageRoot& rootNode, TestHierarchyInflater& inflater, const CommandLine& cmdLine);
+							TestHierarchyIterator	(TestPackageRoot& rootNode, TestHierarchyInflater& inflater, const CaseListFilter& caseListFilter);
 							~TestHierarchyIterator	(void);
 
 	enum State
@@ -190,7 +190,7 @@ private:
 	static std::string		buildNodePath			(const std::vector<NodeIter>& nodeStack);
 
 	TestHierarchyInflater&	m_inflater;
-	const CommandLine&		m_cmdLine;
+	const CaseListFilter&	m_caseListFilter;
 
 	// Current session state.
 	std::vector<NodeIter>	m_sessionStack;

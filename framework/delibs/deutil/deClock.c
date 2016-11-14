@@ -28,7 +28,7 @@
 #if (DE_OS == DE_OS_WIN32)
 #   define WIN32_LEAN_AND_MEAN
 #   include <windows.h>
-#elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_SYMBIAN)
+#elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_SYMBIAN) || (DE_OS == DE_OS_QNX)
 #   include <time.h>
 #elif (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS)
 #	include <sys/time.h>
@@ -55,7 +55,7 @@ deUint64 deGetMicroseconds (void)
 		return count.QuadPart / (freq.QuadPart / 1000000);
 	}
 
-#elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID)
+#elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_QNX)
 	struct timespec currTime;
 	clock_gettime(CLOCK_MONOTONIC, &currTime);
 	return (deUint64)currTime.tv_sec*1000000 + ((deUint64)currTime.tv_nsec/1000);

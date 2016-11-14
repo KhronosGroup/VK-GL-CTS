@@ -39,6 +39,8 @@
 #include "deRandom.hpp"
 #include "deArrayUtil.hpp"
 
+#include <stdexcept>
+
 namespace dit
 {
 
@@ -81,9 +83,10 @@ public:
 
 	IterateResult iterate (void)
 	{
-		TestLog&			log		= m_testCtx.getLog();
-		tcu::CommandLine	cmdLine;
-		int					numPass	= 0;
+		TestLog&							log		= m_testCtx.getLog();
+		tcu::CommandLine					cmdLine;
+		de::MovePtr<tcu::CaseListFilter>	caseListFilter;
+		int									numPass	= 0;
 
 		log << TestLog::Message << "Input:\n\"" << m_caseList << "\"" << TestLog::EndMessage;
 
@@ -96,8 +99,10 @@ public:
 			};
 
 			if (!cmdLine.parse(DE_LENGTH_OF_ARRAY(argv), argv))
-				TCU_FAIL("Failed to parse case list");
+				TCU_FAIL("Failed to parse command line");
 		}
+
+		caseListFilter = cmdLine.createCaseListFilter(m_testCtx.getArchive());
 
 		for (int subCaseNdx = 0; subCaseNdx < m_numSubCases; subCaseNdx++)
 		{
@@ -109,8 +114,8 @@ public:
 									<< ", expecting " << getMatchCaseExpectedDesc(curCase.expected)
 				<< TestLog::EndMessage;
 
-			matchGroup	= cmdLine.checkTestGroupName(curCase.path);
-			matchCase	= cmdLine.checkTestCaseName(curCase.path);
+			matchGroup	= caseListFilter->checkTestGroupName(curCase.path);
+			matchCase	= caseListFilter->checkTestCaseName(curCase.path);
 
 			if ((matchGroup	== (curCase.expected == MatchCase::MATCH_GROUP)) &&
 				(matchCase	== (curCase.expected == MatchCase::MATCH_CASE)))
@@ -158,10 +163,19 @@ public:
 				m_caseList
 			};
 
-			if (cmdLine.parse(DE_LENGTH_OF_ARRAY(argv), argv))
+			TCU_CHECK(cmdLine.parse(DE_LENGTH_OF_ARRAY(argv), argv));
+
+			try
+			{
+				de::UniquePtr<tcu::CaseListFilter>	filter	(cmdLine.createCaseListFilter(m_testCtx.getArchive()));
+
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Parsing passed, should have failed");
-			else
+			}
+			catch (const std::invalid_argument& e)
+			{
+				log << TestLog::Message << e.what() << TestLog::EndMessage;
 				m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Parsing failed as expected");
+			}
 		}
 
 		return STOP;

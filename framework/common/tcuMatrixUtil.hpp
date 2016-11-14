@@ -33,6 +33,9 @@ namespace tcu
 template <typename T, int Size>
 Matrix<T, Size+1, Size+1>		translationMatrix		(const Vector<T, Size>& translation);
 
+template <typename T, int Rows, int Cols>
+Matrix<T, Cols, Rows>			transpose				(const Matrix<T, Rows, Cols>& mat);
+
 // 2D affine transformations.
 Matrix<float, 2, 2>				rotationMatrix			(float radians);
 Matrix<float, 2, 2>				shearMatrix				(const Vector<float, 2>& shear);
@@ -51,6 +54,16 @@ inline Matrix<T, Len+1, Len+1> translationMatrix (const Vector<T, Len>& translat
 	Matrix<T, Len+1, Len+1> res =  Matrix<T, Len+1, Len+1>();
 	for (int row = 0; row < Len; row++)
 		res(row, Len) = translation.m_data[row];
+	return res;
+}
+
+template <typename T, int Rows, int Cols>
+inline Matrix<T, Cols, Rows> transpose (const Matrix<T, Rows, Cols>& mat)
+{
+	Matrix<T, Cols, Rows> res;
+	for (int row = 0; row < Rows; row++)
+		for (int col = 0; col < Cols; col++)
+			res(col, row) = mat(row, col);
 	return res;
 }
 

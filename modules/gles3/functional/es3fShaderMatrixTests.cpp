@@ -632,20 +632,6 @@ tcu::Matrix<T, Rows, Cols> matrixCompMult (const tcu::Matrix<T, Rows, Cols>& a, 
 	return retVal;
 }
 
-// transpose
-
-template <typename T, int Rows, int Cols>
-tcu::Matrix<T, Cols, Rows> transpose (const tcu::Matrix<T, Rows, Cols>& mat)
-{
-	tcu::Matrix<T, Cols, Rows> retVal;
-
-	for (int r = 0; r < Rows; ++r)
-		for (int c = 0; c < Cols; ++c)
-			retVal(c, r) = mat(r, c);
-
-	return retVal;
-}
-
 // outerProduct
 
 template <typename T, int Rows, int Cols>

@@ -30,7 +30,7 @@ DE_BEGIN_EXTERN_C
 /* Thread-local qualifier for variable - not defined if not supported. */
 #if (DE_OS == DE_OS_WIN32) && (DE_COMPILER == DE_COMPILER_MSC)
 #	define DE_THREAD_LOCAL __declspec(thread)
-#elif (DE_OS == DE_OS_UNIX && (DE_COMPILER == DE_COMPILER_GCC || DE_COMPILER == DE_COMPILER_CLANG))
+#elif ((DE_OS == DE_OS_UNIX || DE_OS == DE_OS_QNX) && (DE_COMPILER == DE_COMPILER_GCC || DE_COMPILER == DE_COMPILER_CLANG))
 #	define DE_THREAD_LOCAL __thread
 #else
 	/* Not supported - not defined. */

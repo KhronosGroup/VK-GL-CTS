@@ -41,6 +41,7 @@ class TestSessionExecutor;
 class CommandLine;
 class TestLog;
 class TestPackageRoot;
+class TestRunStatus;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Test application
@@ -65,6 +66,7 @@ public:
 	virtual					~App				(void);
 
 	bool					iterate				(void);
+	const TestRunStatus&	getResult			(void) const;
 
 protected:
 	void					cleanup				(void);

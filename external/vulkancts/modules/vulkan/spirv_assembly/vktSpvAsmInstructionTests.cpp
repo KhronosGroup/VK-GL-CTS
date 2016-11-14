@@ -45,6 +45,7 @@
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
+#include "deMath.h"
 #include "tcuStringTemplate.hpp"
 
 #include <cmath>
@@ -2531,7 +2532,7 @@ bool compareNan (const std::vector<BufferSp>&, const vector<AllocationSp>& outpu
 
 	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(float); ++idx)
 	{
-		if (!isnan(output_as_float[idx]))
+		if (!deFloatIsNaN(output_as_float[idx]))
 		{
 			return false;
 		}

@@ -377,9 +377,10 @@ BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath,
 
 		// Collect build tasks
 		{
-			const UniquePtr<tcu::TestPackageRoot>	root		(createRoot(testCtx));
-			tcu::DefaultHierarchyInflater			inflater	(testCtx);
-			tcu::TestHierarchyIterator				iterator	(*root, inflater, testCtx.getCommandLine());
+			const UniquePtr<tcu::TestPackageRoot>	root			(createRoot(testCtx));
+			tcu::DefaultHierarchyInflater			inflater		(testCtx);
+			de::MovePtr<tcu::CaseListFilter>		caseListFilter	(testCtx.getCommandLine().createCaseListFilter(testCtx.getArchive()));
+			tcu::TestHierarchyIterator				iterator		(*root, inflater, *caseListFilter);
 
 			while (iterator.getState() != tcu::TestHierarchyIterator::STATE_FINISHED)
 			{

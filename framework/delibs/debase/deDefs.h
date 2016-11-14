@@ -77,6 +77,7 @@
 #define DE_OS_ANDROID	5			/*!< Android									*/
 #define DE_OS_SYMBIAN	6			/*!< Symbian OS									*/
 #define DE_OS_IOS		7			/*!< iOS										*/
+#define DE_OS_QNX       8           /*!< QNX                                        */
 
 /* OS detection (set to one of DE_OS_*). */
 #if defined(DE_OS)
@@ -93,6 +94,8 @@
 #	define DE_OS DE_OS_OSX
 #elif defined(__EPOC32__)
 #	define DE_OS DE_OS_SYMBIAN
+#elif defined(__QNX__)
+#   define DE_OS DE_OS_QNX
 #else
 #	error Unknown operating system.
 #endif
@@ -320,7 +323,9 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 #	define DE_BREAKPOINT() do { printf("Software breakpoint encountered in %s, line %d\n", __FILE__, __LINE__); __debugbreak(); } while (deGetFalse())
 #elif (DE_CPU == DE_CPU_ARM) && (DE_COMPILER == DE_COMPILER_GCC)
 #	define DE_BREAKPOINT() do { printf("Software breakpoint encountered in %s, line %d\n", __FILE__, __LINE__); __asm__ __volatile__ ( "bkpt #3" ); } while (deGetFalse())
-#elif (DE_CPU == DE_CPU_ARM) && (DE_COMPILER == DE_COMPILER_MSC)
+#elif (DE_CPU == DE_CPU_ARM_64) && (DE_COMPILER == DE_COMPILER_GCC)
+#	define DE_BREAKPOINT() do { printf("Software breakpoint encountered in %s, line %d\n", __FILE__, __LINE__); __asm__ __volatile__ ( "brk #3" ); } while (deGetFalse())
+#elif ((DE_CPU == DE_CPU_ARM) || (DE_CPU == DE_CPU_ARM_64)) && (DE_COMPILER == DE_COMPILER_MSC)
 #	define DE_BREAKPOINT() do { printf("Software breakpoint encountered in %s, line %d\n", __FILE__, __LINE__); DebugBreak(); } while (deGetFalse())
 #else
 #	define DE_BREAKPOINT() DE_FATAL("Software breakpoint encountered!")

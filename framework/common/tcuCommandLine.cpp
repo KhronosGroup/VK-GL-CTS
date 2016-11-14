@@ -24,6 +24,7 @@
 #include "tcuCommandLine.hpp"
 #include "tcuPlatform.hpp"
 #include "tcuTestCase.hpp"
+#include "tcuResource.hpp"
 #include "deFilePath.hpp"
 #include "deStringUtil.hpp"
 #include "deString.h"
@@ -57,6 +58,7 @@ namespace opt
 DE_DECLARE_COMMAND_LINE_OPT(CasePath,					std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CaseList,					std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CaseListFile,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(CaseListResource,			std::string);
 DE_DECLARE_COMMAND_LINE_OPT(StdinCaseList,				bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogFilename,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(RunMode,					tcu::RunMode);
@@ -143,6 +145,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<CasePath>				("n",		"deqp-case",					"Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)")
 		<< Option<CaseList>				(DE_NULL,	"deqp-caselist",				"Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})")
 		<< Option<CaseListFile>			(DE_NULL,	"deqp-caselist-file",			"Read case list (in trie format) from given file")
+		<< Option<CaseListResource>		(DE_NULL,	"deqp-caselist-resource",		"Read case list (in trie format) from given file located application's assets")
 		<< Option<StdinCaseList>		(DE_NULL,	"deqp-stdin-caselist",			"Read case list (in trie format) from stdin")
 		<< Option<LogFilename>			(DE_NULL,	"deqp-log-filename",			"Write test results to given file",					"TestResults.qpa")
 		<< Option<RunMode>				(DE_NULL,	"deqp-runmode",					"Execute tests, or write list of test cases into a file",
@@ -639,7 +642,6 @@ bool CasePaths::matches (const string& caseName, bool allowPrefix) const
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (void)
 	: m_logFlags	(0)
-	, m_caseTree	(DE_NULL)
 {
 }
 
@@ -647,12 +649,12 @@ CommandLine::CommandLine (void)
  * \brief Construct command line from standard argc, argv pair.
  *
  * Calls parse() with given arguments
+ * \param archive application's assets
  * \param argc Number of arguments
  * \param argv Command line arguments
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (int argc, const char* const* argv)
 	: m_logFlags	(0)
-	, m_caseTree	(DE_NULL)
 {
 	if (!parse(argc, argv))
 		throw Exception("Failed to parse command line");
@@ -662,11 +664,10 @@ CommandLine::CommandLine (int argc, const char* const* argv)
  * \brief Construct command line from string.
  *
  * Calls parse() with given argument.
+ * \param archive application's assets
  * \param cmdLine Full command line string.
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (const std::string& cmdLine)
-	: m_logFlags	(0)
-	, m_caseTree	(DE_NULL)
 {
 	if (!parse(cmdLine))
 		throw Exception("Failed to parse command line");
@@ -674,16 +675,12 @@ CommandLine::CommandLine (const std::string& cmdLine)
 
 CommandLine::~CommandLine (void)
 {
-	delete m_caseTree;
 }
 
 void CommandLine::clear (void)
 {
 	m_cmdLine.clear();
 	m_logFlags = 0;
-
-	delete m_caseTree;
-	m_caseTree = DE_NULL;
 }
 
 const de::cmdline::CommandLine& CommandLine::getCommandLine (void) const
@@ -735,40 +732,10 @@ bool CommandLine::parse (int argc, const char* const* argv)
 	if ((m_cmdLine.hasOption<opt::CasePath>()?1:0) +
 		(m_cmdLine.hasOption<opt::CaseList>()?1:0) +
 		(m_cmdLine.hasOption<opt::CaseListFile>()?1:0) +
+		(m_cmdLine.hasOption<opt::CaseListResource>()?1:0) +
 		(m_cmdLine.getOption<opt::StdinCaseList>()?1:0) > 1)
 	{
 		debugOut << "ERROR: multiple test case list options given!\n" << std::endl;
-		clear();
-		return false;
-	}
-
-	try
-	{
-		if (m_cmdLine.hasOption<opt::CaseList>())
-		{
-			std::istringstream str(m_cmdLine.getOption<opt::CaseList>());
-
-			m_caseTree = parseCaseList(str);
-		}
-		else if (m_cmdLine.hasOption<opt::CaseListFile>())
-		{
-			std::ifstream in(m_cmdLine.getOption<opt::CaseListFile>().c_str(), std::ios_base::binary);
-
-			if (!in.is_open() || !in.good())
-				throw Exception("Failed to open case list file '" + m_cmdLine.getOption<opt::CaseListFile>() + "'");
-
-			m_caseTree = parseCaseList(in);
-		}
-		else if (m_cmdLine.getOption<opt::StdinCaseList>())
-		{
-			m_caseTree = parseCaseList(std::cin);
-		}
-		else if (m_cmdLine.hasOption<opt::CasePath>())
-			m_casePaths = de::MovePtr<const CasePaths>(new CasePaths(m_cmdLine.getOption<opt::CasePath>()));
-	}
-	catch (const std::exception& e)
-	{
-		debugOut << "ERROR: Failed to parse test case list: " << e.what() << "\n";
 		clear();
 		return false;
 	}
@@ -889,7 +856,12 @@ static bool checkTestCaseName (const CaseTreeNode* root, const char* casePath)
 	return node && !node->hasChildren();
 }
 
-bool CommandLine::checkTestGroupName (const char* groupName) const
+de::MovePtr<CaseListFilter> CommandLine::createCaseListFilter (const tcu::Archive& archive) const
+{
+	return de::MovePtr<CaseListFilter>(new CaseListFilter(m_cmdLine, archive));
+}
+
+bool CaseListFilter::checkTestGroupName (const char* groupName) const
 {
 	if (m_casePaths)
 		return m_casePaths->matches(groupName, true);
@@ -899,7 +871,7 @@ bool CommandLine::checkTestGroupName (const char* groupName) const
 		return true;
 }
 
-bool CommandLine::checkTestCaseName (const char* caseName) const
+bool CaseListFilter::checkTestCaseName (const char* caseName) const
 {
 	if (m_casePaths)
 		return m_casePaths->matches(caseName, false);
@@ -907,6 +879,61 @@ bool CommandLine::checkTestCaseName (const char* caseName) const
 		return tcu::checkTestCaseName(m_caseTree, caseName);
 	else
 		return true;
+}
+
+CaseListFilter::CaseListFilter (void)
+	: m_caseTree(DE_NULL)
+{
+}
+
+CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const tcu::Archive& archive)
+	: m_caseTree(DE_NULL)
+{
+	if (cmdLine.hasOption<opt::CaseList>())
+	{
+		std::istringstream str(cmdLine.getOption<opt::CaseList>());
+
+		m_caseTree = parseCaseList(str);
+	}
+	else if (cmdLine.hasOption<opt::CaseListFile>())
+	{
+		std::ifstream in(cmdLine.getOption<opt::CaseListFile>().c_str(), std::ios_base::binary);
+
+		if (!in.is_open() || !in.good())
+			throw Exception("Failed to open case list file '" + cmdLine.getOption<opt::CaseListFile>() + "'");
+
+		m_caseTree = parseCaseList(in);
+	}
+	else if (cmdLine.hasOption<opt::CaseListResource>())
+	{
+		// \todo [2016-11-14 pyry] We are cloning potentially large buffers here. Consider writing
+		//						   istream adaptor for tcu::Resource.
+		de::UniquePtr<Resource>	caseListResource	(archive.getResource(cmdLine.getOption<opt::CaseListResource>().c_str()));
+		const int				bufferSize			= caseListResource->getSize();
+		std::vector<char>		buffer				((size_t)bufferSize);
+
+		if (buffer.empty())
+			throw Exception("Empty case list resource");
+
+		caseListResource->read(reinterpret_cast<deUint8*>(&buffer[0]), bufferSize);
+
+		{
+			std::istringstream	in	(std::string(&buffer[0], (size_t)bufferSize));
+
+			m_caseTree = parseCaseList(in);
+		}
+	}
+	else if (cmdLine.getOption<opt::StdinCaseList>())
+	{
+		m_caseTree = parseCaseList(std::cin);
+	}
+	else if (cmdLine.hasOption<opt::CasePath>())
+		m_casePaths = de::MovePtr<const CasePaths>(new CasePaths(cmdLine.getOption<opt::CasePath>()));
+}
+
+CaseListFilter::~CaseListFilter (void)
+{
+	delete m_caseTree;
 }
 
 } // tcu
