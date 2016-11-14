@@ -237,6 +237,7 @@ void initCoreFunctions (glw::Functions* dst, const glw::FunctionLoader* loader, 
 		{ ApiType::core(4,2),	glw::initGL42Core	},
 		{ ApiType::core(4,3),	glw::initGL43Core	},
 		{ ApiType::core(4,4),	glw::initGL44Core	},
+		{ ApiType::core(4,5),	glw::initGL45Core	},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_initFuncs); ndx++)

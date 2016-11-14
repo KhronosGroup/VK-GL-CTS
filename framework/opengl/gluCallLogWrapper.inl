@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 32093.
+ * Generated from Khronos GL API description (gl.xml) revision 33216.
  */
 
 void CallLogWrapper::glActiveShaderProgram (glw::GLuint pipeline, glw::GLuint program)
@@ -128,6 +128,13 @@ void CallLogWrapper::glBindImageTextures (glw::GLuint first, glw::GLsizei count,
 	if (m_enableLog)
 		m_log << TestLog::Message << "glBindImageTextures(" << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(textures))) << ");" << TestLog::EndMessage;
 	m_gl.bindImageTextures(first, count, textures);
+}
+
+void CallLogWrapper::glBindMultiTextureEXT (glw::GLenum texunit, glw::GLenum target, glw::GLuint texture)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glBindMultiTextureEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << texture << ");" << TestLog::EndMessage;
+	m_gl.bindMultiTextureEXT(texunit, target, texture);
 }
 
 void CallLogWrapper::glBindProgramPipeline (glw::GLuint pipeline)
@@ -298,6 +305,13 @@ void CallLogWrapper::glBufferData (glw::GLenum target, glw::GLsizeiptr size, con
 	m_gl.bufferData(target, size, data, usage);
 }
 
+void CallLogWrapper::glBufferPageCommitmentARB (glw::GLenum target, glw::GLintptr offset, glw::GLsizeiptr size, glw::GLboolean commit)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glBufferPageCommitmentARB(" << toHex(target) << ", " << offset << ", " << size << ", " << getBooleanStr(commit) << ");" << TestLog::EndMessage;
+	m_gl.bufferPageCommitmentARB(target, offset, size, commit);
+}
+
 void CallLogWrapper::glBufferStorage (glw::GLenum target, glw::GLsizeiptr size, const void *data, glw::GLbitfield flags)
 {
 	if (m_enableLog)
@@ -423,11 +437,11 @@ void CallLogWrapper::glClearNamedBufferSubData (glw::GLuint buffer, glw::GLenum 
 	m_gl.clearNamedBufferSubData(buffer, internalformat, offset, size, format, type, data);
 }
 
-void CallLogWrapper::glClearNamedFramebufferfi (glw::GLuint framebuffer, glw::GLenum buffer, const glw::GLfloat depth, glw::GLint stencil)
+void CallLogWrapper::glClearNamedFramebufferfi (glw::GLuint framebuffer, glw::GLenum buffer, glw::GLint drawbuffer, glw::GLfloat depth, glw::GLint stencil)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glClearNamedFramebufferfi(" << framebuffer << ", " << toHex(buffer) << ", " << depth << ", " << stencil << ");" << TestLog::EndMessage;
-	m_gl.clearNamedFramebufferfi(framebuffer, buffer, depth, stencil);
+		m_log << TestLog::Message << "glClearNamedFramebufferfi(" << framebuffer << ", " << toHex(buffer) << ", " << drawbuffer << ", " << depth << ", " << stencil << ");" << TestLog::EndMessage;
+	m_gl.clearNamedFramebufferfi(framebuffer, buffer, drawbuffer, depth, stencil);
 }
 
 void CallLogWrapper::glClearNamedFramebufferfv (glw::GLuint framebuffer, glw::GLenum buffer, glw::GLint drawbuffer, const glw::GLfloat *value)
@@ -472,6 +486,13 @@ void CallLogWrapper::glClearTexSubImage (glw::GLuint texture, glw::GLint level, 
 	m_gl.clearTexSubImage(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
 }
 
+void CallLogWrapper::glClientAttribDefaultEXT (glw::GLbitfield mask)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glClientAttribDefaultEXT(" << toHex(mask) << ");" << TestLog::EndMessage;
+	m_gl.clientAttribDefaultEXT(mask);
+}
+
 glw::GLenum CallLogWrapper::glClientWaitSync (glw::GLsync sync, glw::GLbitfield flags, glw::GLuint64 timeout)
 {
 	if (m_enableLog)
@@ -510,6 +531,48 @@ void CallLogWrapper::glCompileShader (glw::GLuint shader)
 	m_gl.compileShader(shader);
 }
 
+void CallLogWrapper::glCompressedMultiTexImage1DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLint border, glw::GLsizei imageSize, const void *bits)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedMultiTexImage1DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << width << ", " << border << ", " << imageSize << ", " << bits << ");" << TestLog::EndMessage;
+	m_gl.compressedMultiTexImage1DEXT(texunit, target, level, internalformat, width, border, imageSize, bits);
+}
+
+void CallLogWrapper::glCompressedMultiTexImage2DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLint border, glw::GLsizei imageSize, const void *bits)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedMultiTexImage2DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << width << ", " << height << ", " << border << ", " << imageSize << ", " << bits << ");" << TestLog::EndMessage;
+	m_gl.compressedMultiTexImage2DEXT(texunit, target, level, internalformat, width, height, border, imageSize, bits);
+}
+
+void CallLogWrapper::glCompressedMultiTexImage3DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLsizei imageSize, const void *bits)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedMultiTexImage3DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << width << ", " << height << ", " << depth << ", " << border << ", " << imageSize << ", " << bits << ");" << TestLog::EndMessage;
+	m_gl.compressedMultiTexImage3DEXT(texunit, target, level, internalformat, width, height, depth, border, imageSize, bits);
+}
+
+void CallLogWrapper::glCompressedMultiTexSubImage1DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLsizei width, glw::GLenum format, glw::GLsizei imageSize, const void *bits)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedMultiTexSubImage1DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << width << ", " << toHex(format) << ", " << imageSize << ", " << bits << ");" << TestLog::EndMessage;
+	m_gl.compressedMultiTexSubImage1DEXT(texunit, target, level, xoffset, width, format, imageSize, bits);
+}
+
+void CallLogWrapper::glCompressedMultiTexSubImage2DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLsizei width, glw::GLsizei height, glw::GLenum format, glw::GLsizei imageSize, const void *bits)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedMultiTexSubImage2DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << width << ", " << height << ", " << toHex(format) << ", " << imageSize << ", " << bits << ");" << TestLog::EndMessage;
+	m_gl.compressedMultiTexSubImage2DEXT(texunit, target, level, xoffset, yoffset, width, height, format, imageSize, bits);
+}
+
+void CallLogWrapper::glCompressedMultiTexSubImage3DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLsizei imageSize, const void *bits)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedMultiTexSubImage3DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << toHex(format) << ", " << imageSize << ", " << bits << ");" << TestLog::EndMessage;
+	m_gl.compressedMultiTexSubImage3DEXT(texunit, target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, bits);
+}
+
 void CallLogWrapper::glCompressedTexImage1D (glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLint border, glw::GLsizei imageSize, const void *data)
 {
 	if (m_enableLog)
@@ -529,6 +592,13 @@ void CallLogWrapper::glCompressedTexImage3D (glw::GLenum target, glw::GLint leve
 	if (m_enableLog)
 		m_log << TestLog::Message << "glCompressedTexImage3D(" << getTextureTargetStr(target) << ", " << level << ", " << getCompressedTextureFormatStr(internalformat) << ", " << width << ", " << height << ", " << depth << ", " << border << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.compressedTexImage3D(target, level, internalformat, width, height, depth, border, imageSize, data);
+}
+
+void CallLogWrapper::glCompressedTexImage3DOES (glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLsizei imageSize, const void *data)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedTexImage3DOES(" << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << width << ", " << height << ", " << depth << ", " << border << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
+	m_gl.compressedTexImage3DOES(target, level, internalformat, width, height, depth, border, imageSize, data);
 }
 
 void CallLogWrapper::glCompressedTexSubImage1D (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLsizei width, glw::GLenum format, glw::GLsizei imageSize, const void *data)
@@ -552,11 +622,46 @@ void CallLogWrapper::glCompressedTexSubImage3D (glw::GLenum target, glw::GLint l
 	m_gl.compressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
 }
 
+void CallLogWrapper::glCompressedTexSubImage3DOES (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLsizei imageSize, const void *data)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedTexSubImage3DOES(" << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << toHex(format) << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
+	m_gl.compressedTexSubImage3DOES(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
+}
+
+void CallLogWrapper::glCompressedTextureImage1DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLint border, glw::GLsizei imageSize, const void *bits)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedTextureImage1DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << width << ", " << border << ", " << imageSize << ", " << bits << ");" << TestLog::EndMessage;
+	m_gl.compressedTextureImage1DEXT(texture, target, level, internalformat, width, border, imageSize, bits);
+}
+
+void CallLogWrapper::glCompressedTextureImage2DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLint border, glw::GLsizei imageSize, const void *bits)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedTextureImage2DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << width << ", " << height << ", " << border << ", " << imageSize << ", " << bits << ");" << TestLog::EndMessage;
+	m_gl.compressedTextureImage2DEXT(texture, target, level, internalformat, width, height, border, imageSize, bits);
+}
+
+void CallLogWrapper::glCompressedTextureImage3DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLsizei imageSize, const void *bits)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedTextureImage3DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << width << ", " << height << ", " << depth << ", " << border << ", " << imageSize << ", " << bits << ");" << TestLog::EndMessage;
+	m_gl.compressedTextureImage3DEXT(texture, target, level, internalformat, width, height, depth, border, imageSize, bits);
+}
+
 void CallLogWrapper::glCompressedTextureSubImage1D (glw::GLuint texture, glw::GLint level, glw::GLint xoffset, glw::GLsizei width, glw::GLenum format, glw::GLsizei imageSize, const void *data)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glCompressedTextureSubImage1D(" << texture << ", " << level << ", " << xoffset << ", " << width << ", " << toHex(format) << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.compressedTextureSubImage1D(texture, level, xoffset, width, format, imageSize, data);
+}
+
+void CallLogWrapper::glCompressedTextureSubImage1DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLsizei width, glw::GLenum format, glw::GLsizei imageSize, const void *bits)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedTextureSubImage1DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << width << ", " << toHex(format) << ", " << imageSize << ", " << bits << ");" << TestLog::EndMessage;
+	m_gl.compressedTextureSubImage1DEXT(texture, target, level, xoffset, width, format, imageSize, bits);
 }
 
 void CallLogWrapper::glCompressedTextureSubImage2D (glw::GLuint texture, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLsizei width, glw::GLsizei height, glw::GLenum format, glw::GLsizei imageSize, const void *data)
@@ -566,11 +671,25 @@ void CallLogWrapper::glCompressedTextureSubImage2D (glw::GLuint texture, glw::GL
 	m_gl.compressedTextureSubImage2D(texture, level, xoffset, yoffset, width, height, format, imageSize, data);
 }
 
+void CallLogWrapper::glCompressedTextureSubImage2DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLsizei width, glw::GLsizei height, glw::GLenum format, glw::GLsizei imageSize, const void *bits)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedTextureSubImage2DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << width << ", " << height << ", " << toHex(format) << ", " << imageSize << ", " << bits << ");" << TestLog::EndMessage;
+	m_gl.compressedTextureSubImage2DEXT(texture, target, level, xoffset, yoffset, width, height, format, imageSize, bits);
+}
+
 void CallLogWrapper::glCompressedTextureSubImage3D (glw::GLuint texture, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLsizei imageSize, const void *data)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glCompressedTextureSubImage3D(" << texture << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << toHex(format) << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.compressedTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
+}
+
+void CallLogWrapper::glCompressedTextureSubImage3DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLsizei imageSize, const void *bits)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedTextureSubImage3DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << toHex(format) << ", " << imageSize << ", " << bits << ");" << TestLog::EndMessage;
+	m_gl.compressedTextureSubImage3DEXT(texture, target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, bits);
 }
 
 void CallLogWrapper::glCopyBufferSubData (glw::GLenum readTarget, glw::GLenum writeTarget, glw::GLintptr readOffset, glw::GLintptr writeOffset, glw::GLsizeiptr size)
@@ -585,6 +704,41 @@ void CallLogWrapper::glCopyImageSubData (glw::GLuint srcName, glw::GLenum srcTar
 	if (m_enableLog)
 		m_log << TestLog::Message << "glCopyImageSubData(" << srcName << ", " << toHex(srcTarget) << ", " << srcLevel << ", " << srcX << ", " << srcY << ", " << srcZ << ", " << dstName << ", " << toHex(dstTarget) << ", " << dstLevel << ", " << dstX << ", " << dstY << ", " << dstZ << ", " << srcWidth << ", " << srcHeight << ", " << srcDepth << ");" << TestLog::EndMessage;
 	m_gl.copyImageSubData(srcName, srcTarget, srcLevel, srcX, srcY, srcZ, dstName, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth, srcHeight, srcDepth);
+}
+
+void CallLogWrapper::glCopyMultiTexImage1DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLint border)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCopyMultiTexImage1DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << x << ", " << y << ", " << width << ", " << border << ");" << TestLog::EndMessage;
+	m_gl.copyMultiTexImage1DEXT(texunit, target, level, internalformat, x, y, width, border);
+}
+
+void CallLogWrapper::glCopyMultiTexImage2DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height, glw::GLint border)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCopyMultiTexImage2DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << x << ", " << y << ", " << width << ", " << height << ", " << border << ");" << TestLog::EndMessage;
+	m_gl.copyMultiTexImage2DEXT(texunit, target, level, internalformat, x, y, width, height, border);
+}
+
+void CallLogWrapper::glCopyMultiTexSubImage1DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint x, glw::GLint y, glw::GLsizei width)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCopyMultiTexSubImage1DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << x << ", " << y << ", " << width << ");" << TestLog::EndMessage;
+	m_gl.copyMultiTexSubImage1DEXT(texunit, target, level, xoffset, x, y, width);
+}
+
+void CallLogWrapper::glCopyMultiTexSubImage2DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCopyMultiTexSubImage2DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << x << ", " << y << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+	m_gl.copyMultiTexSubImage2DEXT(texunit, target, level, xoffset, yoffset, x, y, width, height);
+}
+
+void CallLogWrapper::glCopyMultiTexSubImage3DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCopyMultiTexSubImage3DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << x << ", " << y << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+	m_gl.copyMultiTexSubImage3DEXT(texunit, target, level, xoffset, yoffset, zoffset, x, y, width, height);
 }
 
 void CallLogWrapper::glCopyNamedBufferSubData (glw::GLuint readBuffer, glw::GLuint writeBuffer, glw::GLintptr readOffset, glw::GLintptr writeOffset, glw::GLsizeiptr size)
@@ -629,11 +783,39 @@ void CallLogWrapper::glCopyTexSubImage3D (glw::GLenum target, glw::GLint level, 
 	m_gl.copyTexSubImage3D(target, level, xoffset, yoffset, zoffset, x, y, width, height);
 }
 
+void CallLogWrapper::glCopyTexSubImage3DOES (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCopyTexSubImage3DOES(" << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << x << ", " << y << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+	m_gl.copyTexSubImage3DOES(target, level, xoffset, yoffset, zoffset, x, y, width, height);
+}
+
+void CallLogWrapper::glCopyTextureImage1DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLint border)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCopyTextureImage1DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << x << ", " << y << ", " << width << ", " << border << ");" << TestLog::EndMessage;
+	m_gl.copyTextureImage1DEXT(texture, target, level, internalformat, x, y, width, border);
+}
+
+void CallLogWrapper::glCopyTextureImage2DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height, glw::GLint border)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCopyTextureImage2DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << x << ", " << y << ", " << width << ", " << height << ", " << border << ");" << TestLog::EndMessage;
+	m_gl.copyTextureImage2DEXT(texture, target, level, internalformat, x, y, width, height, border);
+}
+
 void CallLogWrapper::glCopyTextureSubImage1D (glw::GLuint texture, glw::GLint level, glw::GLint xoffset, glw::GLint x, glw::GLint y, glw::GLsizei width)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glCopyTextureSubImage1D(" << texture << ", " << level << ", " << xoffset << ", " << x << ", " << y << ", " << width << ");" << TestLog::EndMessage;
 	m_gl.copyTextureSubImage1D(texture, level, xoffset, x, y, width);
+}
+
+void CallLogWrapper::glCopyTextureSubImage1DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint x, glw::GLint y, glw::GLsizei width)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCopyTextureSubImage1DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << x << ", " << y << ", " << width << ");" << TestLog::EndMessage;
+	m_gl.copyTextureSubImage1DEXT(texture, target, level, xoffset, x, y, width);
 }
 
 void CallLogWrapper::glCopyTextureSubImage2D (glw::GLuint texture, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height)
@@ -643,11 +825,25 @@ void CallLogWrapper::glCopyTextureSubImage2D (glw::GLuint texture, glw::GLint le
 	m_gl.copyTextureSubImage2D(texture, level, xoffset, yoffset, x, y, width, height);
 }
 
+void CallLogWrapper::glCopyTextureSubImage2DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCopyTextureSubImage2DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << x << ", " << y << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+	m_gl.copyTextureSubImage2DEXT(texture, target, level, xoffset, yoffset, x, y, width, height);
+}
+
 void CallLogWrapper::glCopyTextureSubImage3D (glw::GLuint texture, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glCopyTextureSubImage3D(" << texture << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << x << ", " << y << ", " << width << ", " << height << ");" << TestLog::EndMessage;
 	m_gl.copyTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, x, y, width, height);
+}
+
+void CallLogWrapper::glCopyTextureSubImage3DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCopyTextureSubImage3DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << x << ", " << y << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+	m_gl.copyTextureSubImage3DEXT(texture, target, level, xoffset, yoffset, zoffset, x, y, width, height);
 }
 
 void CallLogWrapper::glCreateBuffers (glw::GLsizei n, glw::GLuint *buffers)
@@ -911,11 +1107,39 @@ void CallLogWrapper::glDisable (glw::GLenum cap)
 	m_gl.disable(cap);
 }
 
+void CallLogWrapper::glDisableClientStateIndexedEXT (glw::GLenum array, glw::GLuint index)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glDisableClientStateIndexedEXT(" << toHex(array) << ", " << index << ");" << TestLog::EndMessage;
+	m_gl.disableClientStateIndexedEXT(array, index);
+}
+
+void CallLogWrapper::glDisableClientStateiEXT (glw::GLenum array, glw::GLuint index)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glDisableClientStateiEXT(" << toHex(array) << ", " << index << ");" << TestLog::EndMessage;
+	m_gl.disableClientStateiEXT(array, index);
+}
+
+void CallLogWrapper::glDisableIndexedEXT (glw::GLenum target, glw::GLuint index)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glDisableIndexedEXT(" << toHex(target) << ", " << index << ");" << TestLog::EndMessage;
+	m_gl.disableIndexedEXT(target, index);
+}
+
 void CallLogWrapper::glDisableVertexArrayAttrib (glw::GLuint vaobj, glw::GLuint index)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glDisableVertexArrayAttrib(" << vaobj << ", " << index << ");" << TestLog::EndMessage;
 	m_gl.disableVertexArrayAttrib(vaobj, index);
+}
+
+void CallLogWrapper::glDisableVertexArrayEXT (glw::GLuint vaobj, glw::GLenum array)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glDisableVertexArrayEXT(" << vaobj << ", " << toHex(array) << ");" << TestLog::EndMessage;
+	m_gl.disableVertexArrayEXT(vaobj, array);
 }
 
 void CallLogWrapper::glDisableVertexAttribArray (glw::GLuint index)
@@ -1100,11 +1324,39 @@ void CallLogWrapper::glEnable (glw::GLenum cap)
 	m_gl.enable(cap);
 }
 
+void CallLogWrapper::glEnableClientStateIndexedEXT (glw::GLenum array, glw::GLuint index)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glEnableClientStateIndexedEXT(" << toHex(array) << ", " << index << ");" << TestLog::EndMessage;
+	m_gl.enableClientStateIndexedEXT(array, index);
+}
+
+void CallLogWrapper::glEnableClientStateiEXT (glw::GLenum array, glw::GLuint index)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glEnableClientStateiEXT(" << toHex(array) << ", " << index << ");" << TestLog::EndMessage;
+	m_gl.enableClientStateiEXT(array, index);
+}
+
+void CallLogWrapper::glEnableIndexedEXT (glw::GLenum target, glw::GLuint index)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glEnableIndexedEXT(" << toHex(target) << ", " << index << ");" << TestLog::EndMessage;
+	m_gl.enableIndexedEXT(target, index);
+}
+
 void CallLogWrapper::glEnableVertexArrayAttrib (glw::GLuint vaobj, glw::GLuint index)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glEnableVertexArrayAttrib(" << vaobj << ", " << index << ");" << TestLog::EndMessage;
 	m_gl.enableVertexArrayAttrib(vaobj, index);
+}
+
+void CallLogWrapper::glEnableVertexArrayEXT (glw::GLuint vaobj, glw::GLenum array)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glEnableVertexArrayEXT(" << vaobj << ", " << toHex(array) << ");" << TestLog::EndMessage;
+	m_gl.enableVertexArrayEXT(vaobj, array);
 }
 
 void CallLogWrapper::glEnableVertexAttribArray (glw::GLuint index)
@@ -1187,11 +1439,32 @@ void CallLogWrapper::glFlushMappedNamedBufferRange (glw::GLuint buffer, glw::GLi
 	m_gl.flushMappedNamedBufferRange(buffer, offset, length);
 }
 
+void CallLogWrapper::glFramebufferDrawBufferEXT (glw::GLuint framebuffer, glw::GLenum mode)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glFramebufferDrawBufferEXT(" << framebuffer << ", " << toHex(mode) << ");" << TestLog::EndMessage;
+	m_gl.framebufferDrawBufferEXT(framebuffer, mode);
+}
+
+void CallLogWrapper::glFramebufferDrawBuffersEXT (glw::GLuint framebuffer, glw::GLsizei n, const glw::GLenum *bufs)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glFramebufferDrawBuffersEXT(" << framebuffer << ", " << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(bufs))) << ");" << TestLog::EndMessage;
+	m_gl.framebufferDrawBuffersEXT(framebuffer, n, bufs);
+}
+
 void CallLogWrapper::glFramebufferParameteri (glw::GLenum target, glw::GLenum pname, glw::GLint param)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glFramebufferParameteri(" << getFramebufferTargetStr(target) << ", " << getFramebufferParameterStr(pname) << ", " << param << ");" << TestLog::EndMessage;
 	m_gl.framebufferParameteri(target, pname, param);
+}
+
+void CallLogWrapper::glFramebufferReadBufferEXT (glw::GLuint framebuffer, glw::GLenum mode)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glFramebufferReadBufferEXT(" << framebuffer << ", " << toHex(mode) << ");" << TestLog::EndMessage;
+	m_gl.framebufferReadBufferEXT(framebuffer, mode);
 }
 
 void CallLogWrapper::glFramebufferRenderbuffer (glw::GLenum target, glw::GLenum attachment, glw::GLenum renderbuffertarget, glw::GLuint renderbuffer)
@@ -1227,6 +1500,13 @@ void CallLogWrapper::glFramebufferTexture3D (glw::GLenum target, glw::GLenum att
 	if (m_enableLog)
 		m_log << TestLog::Message << "glFramebufferTexture3D(" << toHex(target) << ", " << toHex(attachment) << ", " << toHex(textarget) << ", " << texture << ", " << level << ", " << zoffset << ");" << TestLog::EndMessage;
 	m_gl.framebufferTexture3D(target, attachment, textarget, texture, level, zoffset);
+}
+
+void CallLogWrapper::glFramebufferTexture3DOES (glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level, glw::GLint zoffset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glFramebufferTexture3DOES(" << toHex(target) << ", " << toHex(attachment) << ", " << toHex(textarget) << ", " << texture << ", " << level << ", " << zoffset << ");" << TestLog::EndMessage;
+	m_gl.framebufferTexture3DOES(target, attachment, textarget, texture, level, zoffset);
 }
 
 void CallLogWrapper::glFramebufferTextureLayer (glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLint layer)
@@ -1327,6 +1607,13 @@ void CallLogWrapper::glGenerateMipmap (glw::GLenum target)
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGenerateMipmap(" << getTextureTargetStr(target) << ");" << TestLog::EndMessage;
 	m_gl.generateMipmap(target);
+}
+
+void CallLogWrapper::glGenerateMultiTexMipmapEXT (glw::GLenum texunit, glw::GLenum target)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGenerateMultiTexMipmapEXT(" << toHex(texunit) << ", " << toHex(target) << ");" << TestLog::EndMessage;
+	m_gl.generateMultiTexMipmapEXT(texunit, target);
 }
 
 void CallLogWrapper::glGenerateTextureMipmap (glw::GLuint texture)
@@ -1432,6 +1719,13 @@ glw::GLint CallLogWrapper::glGetAttribLocation (glw::GLuint program, const glw::
 	return returnValue;
 }
 
+void CallLogWrapper::glGetBooleanIndexedvEXT (glw::GLenum target, glw::GLuint index, glw::GLboolean *data)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetBooleanIndexedvEXT(" << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+	m_gl.getBooleanIndexedvEXT(target, index, data);
+}
+
 void CallLogWrapper::glGetBooleani_v (glw::GLenum target, glw::GLuint index, glw::GLboolean *data)
 {
 	if (m_enableLog)
@@ -1478,6 +1772,13 @@ void CallLogWrapper::glGetBufferSubData (glw::GLenum target, glw::GLintptr offse
 	m_gl.getBufferSubData(target, offset, size, data);
 }
 
+void CallLogWrapper::glGetCompressedMultiTexImageEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint lod, void *img)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetCompressedMultiTexImageEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << lod << ", " << img << ");" << TestLog::EndMessage;
+	m_gl.getCompressedMultiTexImageEXT(texunit, target, lod, img);
+}
+
 void CallLogWrapper::glGetCompressedTexImage (glw::GLenum target, glw::GLint level, void *img)
 {
 	if (m_enableLog)
@@ -1509,6 +1810,13 @@ glw::GLuint CallLogWrapper::glGetDebugMessageLog (glw::GLuint count, glw::GLsize
 	return returnValue;
 }
 
+void CallLogWrapper::glGetDoubleIndexedvEXT (glw::GLenum target, glw::GLuint index, glw::GLdouble *data)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetDoubleIndexedvEXT(" << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+	m_gl.getDoubleIndexedvEXT(target, index, data);
+}
+
 void CallLogWrapper::glGetDoublei_v (glw::GLenum target, glw::GLuint index, glw::GLdouble *data)
 {
 	if (m_enableLog)
@@ -1531,6 +1839,13 @@ glw::GLenum CallLogWrapper::glGetError (void)
 	if (m_enableLog)
 		m_log << TestLog::Message << "// " << getErrorStr(returnValue) << " returned" << TestLog::EndMessage;
 	return returnValue;
+}
+
+void CallLogWrapper::glGetFloatIndexedvEXT (glw::GLenum target, glw::GLuint index, glw::GLfloat *data)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetFloatIndexedvEXT(" << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+	m_gl.getFloatIndexedvEXT(target, index, data);
 }
 
 void CallLogWrapper::glGetFloati_v (glw::GLenum target, glw::GLuint index, glw::GLfloat *data)
@@ -1615,6 +1930,13 @@ void CallLogWrapper::glGetInteger64v (glw::GLenum pname, glw::GLint64 *data)
 		m_log << TestLog::Message << "// data = " << getPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
 }
 
+void CallLogWrapper::glGetIntegerIndexedvEXT (glw::GLenum target, glw::GLuint index, glw::GLint *data)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetIntegerIndexedvEXT(" << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+	m_gl.getIntegerIndexedvEXT(target, index, data);
+}
+
 void CallLogWrapper::glGetIntegeri_v (glw::GLenum target, glw::GLuint index, glw::GLint *data)
 {
 	if (m_enableLog)
@@ -1633,6 +1955,13 @@ void CallLogWrapper::glGetIntegerv (glw::GLenum pname, glw::GLint *data)
 		m_log << TestLog::Message << "// data = " << getPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
 }
 
+void CallLogWrapper::glGetInternalformatSampleivNV (glw::GLenum target, glw::GLenum internalformat, glw::GLsizei samples, glw::GLenum pname, glw::GLsizei bufSize, glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetInternalformatSampleivNV(" << toHex(target) << ", " << toHex(internalformat) << ", " << samples << ", " << toHex(pname) << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getInternalformatSampleivNV(target, internalformat, samples, pname, bufSize, params);
+}
+
 void CallLogWrapper::glGetInternalformati64v (glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei bufSize, glw::GLint64 *params)
 {
 	if (m_enableLog)
@@ -1647,6 +1976,90 @@ void CallLogWrapper::glGetInternalformativ (glw::GLenum target, glw::GLenum inte
 	m_gl.getInternalformativ(target, internalformat, pname, bufSize, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, bufSize) << TestLog::EndMessage;
+}
+
+void CallLogWrapper::glGetMultiTexEnvfvEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLfloat *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetMultiTexEnvfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getMultiTexEnvfvEXT(texunit, target, pname, params);
+}
+
+void CallLogWrapper::glGetMultiTexEnvivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetMultiTexEnvivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getMultiTexEnvivEXT(texunit, target, pname, params);
+}
+
+void CallLogWrapper::glGetMultiTexGendvEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, glw::GLdouble *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetMultiTexGendvEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getMultiTexGendvEXT(texunit, coord, pname, params);
+}
+
+void CallLogWrapper::glGetMultiTexGenfvEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, glw::GLfloat *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetMultiTexGenfvEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getMultiTexGenfvEXT(texunit, coord, pname, params);
+}
+
+void CallLogWrapper::glGetMultiTexGenivEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetMultiTexGenivEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getMultiTexGenivEXT(texunit, coord, pname, params);
+}
+
+void CallLogWrapper::glGetMultiTexImageEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLenum format, glw::GLenum type, void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetMultiTexImageEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.getMultiTexImageEXT(texunit, target, level, format, type, pixels);
+}
+
+void CallLogWrapper::glGetMultiTexLevelParameterfvEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLenum pname, glw::GLfloat *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetMultiTexLevelParameterfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getMultiTexLevelParameterfvEXT(texunit, target, level, pname, params);
+}
+
+void CallLogWrapper::glGetMultiTexLevelParameterivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLenum pname, glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetMultiTexLevelParameterivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getMultiTexLevelParameterivEXT(texunit, target, level, pname, params);
+}
+
+void CallLogWrapper::glGetMultiTexParameterIivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetMultiTexParameterIivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getMultiTexParameterIivEXT(texunit, target, pname, params);
+}
+
+void CallLogWrapper::glGetMultiTexParameterIuivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLuint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetMultiTexParameterIuivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getMultiTexParameterIuivEXT(texunit, target, pname, params);
+}
+
+void CallLogWrapper::glGetMultiTexParameterfvEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLfloat *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetMultiTexParameterfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getMultiTexParameterfvEXT(texunit, target, pname, params);
+}
+
+void CallLogWrapper::glGetMultiTexParameterivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetMultiTexParameterivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getMultiTexParameterivEXT(texunit, target, pname, params);
 }
 
 void CallLogWrapper::glGetMultisamplefv (glw::GLenum pname, glw::GLuint index, glw::GLfloat *val)
@@ -1700,6 +2113,48 @@ void CallLogWrapper::glGetNamedFramebufferParameteriv (glw::GLuint framebuffer, 
 	m_gl.getNamedFramebufferParameteriv(framebuffer, pname, param);
 }
 
+void CallLogWrapper::glGetNamedProgramLocalParameterIivEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetNamedProgramLocalParameterIivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getNamedProgramLocalParameterIivEXT(program, target, index, params);
+}
+
+void CallLogWrapper::glGetNamedProgramLocalParameterIuivEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLuint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetNamedProgramLocalParameterIuivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getNamedProgramLocalParameterIuivEXT(program, target, index, params);
+}
+
+void CallLogWrapper::glGetNamedProgramLocalParameterdvEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLdouble *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetNamedProgramLocalParameterdvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getNamedProgramLocalParameterdvEXT(program, target, index, params);
+}
+
+void CallLogWrapper::glGetNamedProgramLocalParameterfvEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLfloat *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetNamedProgramLocalParameterfvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getNamedProgramLocalParameterfvEXT(program, target, index, params);
+}
+
+void CallLogWrapper::glGetNamedProgramStringEXT (glw::GLuint program, glw::GLenum target, glw::GLenum pname, void *string)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetNamedProgramStringEXT(" << program << ", " << toHex(target) << ", " << toHex(pname) << ", " << string << ");" << TestLog::EndMessage;
+	m_gl.getNamedProgramStringEXT(program, target, pname, string);
+}
+
+void CallLogWrapper::glGetNamedProgramivEXT (glw::GLuint program, glw::GLenum target, glw::GLenum pname, glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetNamedProgramivEXT(" << program << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getNamedProgramivEXT(program, target, pname, params);
+}
+
 void CallLogWrapper::glGetNamedRenderbufferParameteriv (glw::GLuint renderbuffer, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
@@ -1719,6 +2174,20 @@ void CallLogWrapper::glGetObjectPtrLabel (const void *ptr, glw::GLsizei bufSize,
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetObjectPtrLabel(" << ptr << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(label))) << ");" << TestLog::EndMessage;
 	m_gl.getObjectPtrLabel(ptr, bufSize, length, label);
+}
+
+void CallLogWrapper::glGetPointerIndexedvEXT (glw::GLenum target, glw::GLuint index, void **data)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetPointerIndexedvEXT(" << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+	m_gl.getPointerIndexedvEXT(target, index, data);
+}
+
+void CallLogWrapper::glGetPointeri_vEXT (glw::GLenum pname, glw::GLuint index, void **params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetPointeri_vEXT(" << toHex(pname) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getPointeri_vEXT(pname, index, params);
 }
 
 void CallLogWrapper::glGetPointerv (glw::GLenum pname, void **params)
@@ -2261,6 +2730,34 @@ void CallLogWrapper::glGetVertexArrayIndexediv (glw::GLuint vaobj, glw::GLuint i
 	m_gl.getVertexArrayIndexediv(vaobj, index, pname, param);
 }
 
+void CallLogWrapper::glGetVertexArrayIntegeri_vEXT (glw::GLuint vaobj, glw::GLuint index, glw::GLenum pname, glw::GLint *param)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetVertexArrayIntegeri_vEXT(" << vaobj << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+	m_gl.getVertexArrayIntegeri_vEXT(vaobj, index, pname, param);
+}
+
+void CallLogWrapper::glGetVertexArrayIntegervEXT (glw::GLuint vaobj, glw::GLenum pname, glw::GLint *param)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetVertexArrayIntegervEXT(" << vaobj << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+	m_gl.getVertexArrayIntegervEXT(vaobj, pname, param);
+}
+
+void CallLogWrapper::glGetVertexArrayPointeri_vEXT (glw::GLuint vaobj, glw::GLuint index, glw::GLenum pname, void **param)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetVertexArrayPointeri_vEXT(" << vaobj << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+	m_gl.getVertexArrayPointeri_vEXT(vaobj, index, pname, param);
+}
+
+void CallLogWrapper::glGetVertexArrayPointervEXT (glw::GLuint vaobj, glw::GLenum pname, void **param)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetVertexArrayPointervEXT(" << vaobj << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+	m_gl.getVertexArrayPointervEXT(vaobj, pname, param);
+}
+
 void CallLogWrapper::glGetVertexArrayiv (glw::GLuint vaobj, glw::GLenum pname, glw::GLint *param)
 {
 	if (m_enableLog)
@@ -2457,6 +2954,16 @@ glw::GLboolean CallLogWrapper::glIsEnabled (glw::GLenum cap)
 	return returnValue;
 }
 
+glw::GLboolean CallLogWrapper::glIsEnabledIndexedEXT (glw::GLenum target, glw::GLuint index)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glIsEnabledIndexedEXT(" << toHex(target) << ", " << index << ");" << TestLog::EndMessage;
+	glw::GLboolean returnValue = m_gl.isEnabledIndexedEXT(target, index);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
 glw::GLboolean CallLogWrapper::glIsEnabledi (glw::GLenum target, glw::GLuint index)
 {
 	if (m_enableLog)
@@ -2638,6 +3145,146 @@ void * CallLogWrapper::glMapNamedBufferRange (glw::GLuint buffer, glw::GLintptr 
 	return returnValue;
 }
 
+void CallLogWrapper::glMatrixFrustumEXT (glw::GLenum mode, glw::GLdouble left, glw::GLdouble right, glw::GLdouble bottom, glw::GLdouble top, glw::GLdouble zNear, glw::GLdouble zFar)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixFrustumEXT(" << toHex(mode) << ", " << left << ", " << right << ", " << bottom << ", " << top << ", " << zNear << ", " << zFar << ");" << TestLog::EndMessage;
+	m_gl.matrixFrustumEXT(mode, left, right, bottom, top, zNear, zFar);
+}
+
+void CallLogWrapper::glMatrixLoadIdentityEXT (glw::GLenum mode)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixLoadIdentityEXT(" << toHex(mode) << ");" << TestLog::EndMessage;
+	m_gl.matrixLoadIdentityEXT(mode);
+}
+
+void CallLogWrapper::glMatrixLoadTransposedEXT (glw::GLenum mode, const glw::GLdouble *m)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixLoadTransposedEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+	m_gl.matrixLoadTransposedEXT(mode, m);
+}
+
+void CallLogWrapper::glMatrixLoadTransposefEXT (glw::GLenum mode, const glw::GLfloat *m)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixLoadTransposefEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+	m_gl.matrixLoadTransposefEXT(mode, m);
+}
+
+void CallLogWrapper::glMatrixLoaddEXT (glw::GLenum mode, const glw::GLdouble *m)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixLoaddEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+	m_gl.matrixLoaddEXT(mode, m);
+}
+
+void CallLogWrapper::glMatrixLoadfEXT (glw::GLenum mode, const glw::GLfloat *m)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixLoadfEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+	m_gl.matrixLoadfEXT(mode, m);
+}
+
+void CallLogWrapper::glMatrixMultTransposedEXT (glw::GLenum mode, const glw::GLdouble *m)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixMultTransposedEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+	m_gl.matrixMultTransposedEXT(mode, m);
+}
+
+void CallLogWrapper::glMatrixMultTransposefEXT (glw::GLenum mode, const glw::GLfloat *m)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixMultTransposefEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+	m_gl.matrixMultTransposefEXT(mode, m);
+}
+
+void CallLogWrapper::glMatrixMultdEXT (glw::GLenum mode, const glw::GLdouble *m)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixMultdEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+	m_gl.matrixMultdEXT(mode, m);
+}
+
+void CallLogWrapper::glMatrixMultfEXT (glw::GLenum mode, const glw::GLfloat *m)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixMultfEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+	m_gl.matrixMultfEXT(mode, m);
+}
+
+void CallLogWrapper::glMatrixOrthoEXT (glw::GLenum mode, glw::GLdouble left, glw::GLdouble right, glw::GLdouble bottom, glw::GLdouble top, glw::GLdouble zNear, glw::GLdouble zFar)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixOrthoEXT(" << toHex(mode) << ", " << left << ", " << right << ", " << bottom << ", " << top << ", " << zNear << ", " << zFar << ");" << TestLog::EndMessage;
+	m_gl.matrixOrthoEXT(mode, left, right, bottom, top, zNear, zFar);
+}
+
+void CallLogWrapper::glMatrixPopEXT (glw::GLenum mode)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixPopEXT(" << toHex(mode) << ");" << TestLog::EndMessage;
+	m_gl.matrixPopEXT(mode);
+}
+
+void CallLogWrapper::glMatrixPushEXT (glw::GLenum mode)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixPushEXT(" << toHex(mode) << ");" << TestLog::EndMessage;
+	m_gl.matrixPushEXT(mode);
+}
+
+void CallLogWrapper::glMatrixRotatedEXT (glw::GLenum mode, glw::GLdouble angle, glw::GLdouble x, glw::GLdouble y, glw::GLdouble z)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixRotatedEXT(" << toHex(mode) << ", " << angle << ", " << x << ", " << y << ", " << z << ");" << TestLog::EndMessage;
+	m_gl.matrixRotatedEXT(mode, angle, x, y, z);
+}
+
+void CallLogWrapper::glMatrixRotatefEXT (glw::GLenum mode, glw::GLfloat angle, glw::GLfloat x, glw::GLfloat y, glw::GLfloat z)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixRotatefEXT(" << toHex(mode) << ", " << angle << ", " << x << ", " << y << ", " << z << ");" << TestLog::EndMessage;
+	m_gl.matrixRotatefEXT(mode, angle, x, y, z);
+}
+
+void CallLogWrapper::glMatrixScaledEXT (glw::GLenum mode, glw::GLdouble x, glw::GLdouble y, glw::GLdouble z)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixScaledEXT(" << toHex(mode) << ", " << x << ", " << y << ", " << z << ");" << TestLog::EndMessage;
+	m_gl.matrixScaledEXT(mode, x, y, z);
+}
+
+void CallLogWrapper::glMatrixScalefEXT (glw::GLenum mode, glw::GLfloat x, glw::GLfloat y, glw::GLfloat z)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixScalefEXT(" << toHex(mode) << ", " << x << ", " << y << ", " << z << ");" << TestLog::EndMessage;
+	m_gl.matrixScalefEXT(mode, x, y, z);
+}
+
+void CallLogWrapper::glMatrixTranslatedEXT (glw::GLenum mode, glw::GLdouble x, glw::GLdouble y, glw::GLdouble z)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixTranslatedEXT(" << toHex(mode) << ", " << x << ", " << y << ", " << z << ");" << TestLog::EndMessage;
+	m_gl.matrixTranslatedEXT(mode, x, y, z);
+}
+
+void CallLogWrapper::glMatrixTranslatefEXT (glw::GLenum mode, glw::GLfloat x, glw::GLfloat y, glw::GLfloat z)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMatrixTranslatefEXT(" << toHex(mode) << ", " << x << ", " << y << ", " << z << ");" << TestLog::EndMessage;
+	m_gl.matrixTranslatefEXT(mode, x, y, z);
+}
+
+void CallLogWrapper::glMaxShaderCompilerThreadsARB (glw::GLuint count)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMaxShaderCompilerThreadsARB(" << count << ");" << TestLog::EndMessage;
+	m_gl.maxShaderCompilerThreadsARB(count);
+}
+
 void CallLogWrapper::glMemoryBarrier (glw::GLbitfield barriers)
 {
 	if (m_enableLog)
@@ -2694,11 +3341,200 @@ void CallLogWrapper::glMultiDrawElementsIndirect (glw::GLenum mode, glw::GLenum 
 	m_gl.multiDrawElementsIndirect(mode, type, indirect, drawcount, stride);
 }
 
+void CallLogWrapper::glMultiTexBufferEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum internalformat, glw::GLuint buffer)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexBufferEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(internalformat) << ", " << buffer << ");" << TestLog::EndMessage;
+	m_gl.multiTexBufferEXT(texunit, target, internalformat, buffer);
+}
+
+void CallLogWrapper::glMultiTexCoordPointerEXT (glw::GLenum texunit, glw::GLint size, glw::GLenum type, glw::GLsizei stride, const void *pointer)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexCoordPointerEXT(" << toHex(texunit) << ", " << size << ", " << toHex(type) << ", " << stride << ", " << pointer << ");" << TestLog::EndMessage;
+	m_gl.multiTexCoordPointerEXT(texunit, size, type, stride, pointer);
+}
+
+void CallLogWrapper::glMultiTexEnvfEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLfloat param)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexEnvfEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << param << ");" << TestLog::EndMessage;
+	m_gl.multiTexEnvfEXT(texunit, target, pname, param);
+}
+
+void CallLogWrapper::glMultiTexEnvfvEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, const glw::GLfloat *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexEnvfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.multiTexEnvfvEXT(texunit, target, pname, params);
+}
+
+void CallLogWrapper::glMultiTexEnviEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLint param)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexEnviEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << param << ");" << TestLog::EndMessage;
+	m_gl.multiTexEnviEXT(texunit, target, pname, param);
+}
+
+void CallLogWrapper::glMultiTexEnvivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, const glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexEnvivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.multiTexEnvivEXT(texunit, target, pname, params);
+}
+
+void CallLogWrapper::glMultiTexGendEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, glw::GLdouble param)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexGendEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << param << ");" << TestLog::EndMessage;
+	m_gl.multiTexGendEXT(texunit, coord, pname, param);
+}
+
+void CallLogWrapper::glMultiTexGendvEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, const glw::GLdouble *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexGendvEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.multiTexGendvEXT(texunit, coord, pname, params);
+}
+
+void CallLogWrapper::glMultiTexGenfEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, glw::GLfloat param)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexGenfEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << param << ");" << TestLog::EndMessage;
+	m_gl.multiTexGenfEXT(texunit, coord, pname, param);
+}
+
+void CallLogWrapper::glMultiTexGenfvEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, const glw::GLfloat *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexGenfvEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.multiTexGenfvEXT(texunit, coord, pname, params);
+}
+
+void CallLogWrapper::glMultiTexGeniEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, glw::GLint param)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexGeniEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << param << ");" << TestLog::EndMessage;
+	m_gl.multiTexGeniEXT(texunit, coord, pname, param);
+}
+
+void CallLogWrapper::glMultiTexGenivEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, const glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexGenivEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.multiTexGenivEXT(texunit, coord, pname, params);
+}
+
+void CallLogWrapper::glMultiTexImage1DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLint internalformat, glw::GLsizei width, glw::GLint border, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexImage1DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << internalformat << ", " << width << ", " << border << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.multiTexImage1DEXT(texunit, target, level, internalformat, width, border, format, type, pixels);
+}
+
+void CallLogWrapper::glMultiTexImage2DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLint internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLint border, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexImage2DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << internalformat << ", " << width << ", " << height << ", " << border << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.multiTexImage2DEXT(texunit, target, level, internalformat, width, height, border, format, type, pixels);
+}
+
+void CallLogWrapper::glMultiTexImage3DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLint internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexImage3DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << internalformat << ", " << width << ", " << height << ", " << depth << ", " << border << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.multiTexImage3DEXT(texunit, target, level, internalformat, width, height, depth, border, format, type, pixels);
+}
+
+void CallLogWrapper::glMultiTexParameterIivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, const glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexParameterIivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.multiTexParameterIivEXT(texunit, target, pname, params);
+}
+
+void CallLogWrapper::glMultiTexParameterIuivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, const glw::GLuint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexParameterIuivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.multiTexParameterIuivEXT(texunit, target, pname, params);
+}
+
+void CallLogWrapper::glMultiTexParameterfEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLfloat param)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexParameterfEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << param << ");" << TestLog::EndMessage;
+	m_gl.multiTexParameterfEXT(texunit, target, pname, param);
+}
+
+void CallLogWrapper::glMultiTexParameterfvEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, const glw::GLfloat *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexParameterfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.multiTexParameterfvEXT(texunit, target, pname, params);
+}
+
+void CallLogWrapper::glMultiTexParameteriEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLint param)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexParameteriEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << param << ");" << TestLog::EndMessage;
+	m_gl.multiTexParameteriEXT(texunit, target, pname, param);
+}
+
+void CallLogWrapper::glMultiTexParameterivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, const glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexParameterivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.multiTexParameterivEXT(texunit, target, pname, params);
+}
+
+void CallLogWrapper::glMultiTexRenderbufferEXT (glw::GLenum texunit, glw::GLenum target, glw::GLuint renderbuffer)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexRenderbufferEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << renderbuffer << ");" << TestLog::EndMessage;
+	m_gl.multiTexRenderbufferEXT(texunit, target, renderbuffer);
+}
+
+void CallLogWrapper::glMultiTexSubImage1DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLsizei width, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexSubImage1DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << width << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.multiTexSubImage1DEXT(texunit, target, level, xoffset, width, format, type, pixels);
+}
+
+void CallLogWrapper::glMultiTexSubImage2DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLsizei width, glw::GLsizei height, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexSubImage2DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << width << ", " << height << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.multiTexSubImage2DEXT(texunit, target, level, xoffset, yoffset, width, height, format, type, pixels);
+}
+
+void CallLogWrapper::glMultiTexSubImage3DEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiTexSubImage3DEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.multiTexSubImage3DEXT(texunit, target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+}
+
 void CallLogWrapper::glNamedBufferData (glw::GLuint buffer, glw::GLsizeiptr size, const void *data, glw::GLenum usage)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glNamedBufferData(" << buffer << ", " << size << ", " << data << ", " << toHex(usage) << ");" << TestLog::EndMessage;
 	m_gl.namedBufferData(buffer, size, data, usage);
+}
+
+void CallLogWrapper::glNamedBufferPageCommitmentARB (glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size, glw::GLboolean commit)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedBufferPageCommitmentARB(" << buffer << ", " << offset << ", " << size << ", " << getBooleanStr(commit) << ");" << TestLog::EndMessage;
+	m_gl.namedBufferPageCommitmentARB(buffer, offset, size, commit);
+}
+
+void CallLogWrapper::glNamedBufferPageCommitmentEXT (glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size, glw::GLboolean commit)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedBufferPageCommitmentEXT(" << buffer << ", " << offset << ", " << size << ", " << getBooleanStr(commit) << ");" << TestLog::EndMessage;
+	m_gl.namedBufferPageCommitmentEXT(buffer, offset, size, commit);
 }
 
 void CallLogWrapper::glNamedBufferStorage (glw::GLuint buffer, glw::GLsizeiptr size, const void *data, glw::GLbitfield flags)
@@ -2713,6 +3549,13 @@ void CallLogWrapper::glNamedBufferSubData (glw::GLuint buffer, glw::GLintptr off
 	if (m_enableLog)
 		m_log << TestLog::Message << "glNamedBufferSubData(" << buffer << ", " << offset << ", " << size << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.namedBufferSubData(buffer, offset, size, data);
+}
+
+void CallLogWrapper::glNamedCopyBufferSubDataEXT (glw::GLuint readBuffer, glw::GLuint writeBuffer, glw::GLintptr readOffset, glw::GLintptr writeOffset, glw::GLsizeiptr size)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedCopyBufferSubDataEXT(" << readBuffer << ", " << writeBuffer << ", " << readOffset << ", " << writeOffset << ", " << size << ");" << TestLog::EndMessage;
+	m_gl.namedCopyBufferSubDataEXT(readBuffer, writeBuffer, readOffset, writeOffset, size);
 }
 
 void CallLogWrapper::glNamedFramebufferDrawBuffer (glw::GLuint framebuffer, glw::GLenum buf)
@@ -2757,11 +3600,123 @@ void CallLogWrapper::glNamedFramebufferTexture (glw::GLuint framebuffer, glw::GL
 	m_gl.namedFramebufferTexture(framebuffer, attachment, texture, level);
 }
 
+void CallLogWrapper::glNamedFramebufferTexture1DEXT (glw::GLuint framebuffer, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedFramebufferTexture1DEXT(" << framebuffer << ", " << toHex(attachment) << ", " << toHex(textarget) << ", " << texture << ", " << level << ");" << TestLog::EndMessage;
+	m_gl.namedFramebufferTexture1DEXT(framebuffer, attachment, textarget, texture, level);
+}
+
+void CallLogWrapper::glNamedFramebufferTexture2DEXT (glw::GLuint framebuffer, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedFramebufferTexture2DEXT(" << framebuffer << ", " << toHex(attachment) << ", " << toHex(textarget) << ", " << texture << ", " << level << ");" << TestLog::EndMessage;
+	m_gl.namedFramebufferTexture2DEXT(framebuffer, attachment, textarget, texture, level);
+}
+
+void CallLogWrapper::glNamedFramebufferTexture3DEXT (glw::GLuint framebuffer, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level, glw::GLint zoffset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedFramebufferTexture3DEXT(" << framebuffer << ", " << toHex(attachment) << ", " << toHex(textarget) << ", " << texture << ", " << level << ", " << zoffset << ");" << TestLog::EndMessage;
+	m_gl.namedFramebufferTexture3DEXT(framebuffer, attachment, textarget, texture, level, zoffset);
+}
+
+void CallLogWrapper::glNamedFramebufferTextureFaceEXT (glw::GLuint framebuffer, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLenum face)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedFramebufferTextureFaceEXT(" << framebuffer << ", " << toHex(attachment) << ", " << texture << ", " << level << ", " << toHex(face) << ");" << TestLog::EndMessage;
+	m_gl.namedFramebufferTextureFaceEXT(framebuffer, attachment, texture, level, face);
+}
+
 void CallLogWrapper::glNamedFramebufferTextureLayer (glw::GLuint framebuffer, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLint layer)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glNamedFramebufferTextureLayer(" << framebuffer << ", " << toHex(attachment) << ", " << texture << ", " << level << ", " << layer << ");" << TestLog::EndMessage;
 	m_gl.namedFramebufferTextureLayer(framebuffer, attachment, texture, level, layer);
+}
+
+void CallLogWrapper::glNamedProgramLocalParameter4dEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLdouble x, glw::GLdouble y, glw::GLdouble z, glw::GLdouble w)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedProgramLocalParameter4dEXT(" << program << ", " << toHex(target) << ", " << index << ", " << x << ", " << y << ", " << z << ", " << w << ");" << TestLog::EndMessage;
+	m_gl.namedProgramLocalParameter4dEXT(program, target, index, x, y, z, w);
+}
+
+void CallLogWrapper::glNamedProgramLocalParameter4dvEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, const glw::GLdouble *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedProgramLocalParameter4dvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.namedProgramLocalParameter4dvEXT(program, target, index, params);
+}
+
+void CallLogWrapper::glNamedProgramLocalParameter4fEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLfloat x, glw::GLfloat y, glw::GLfloat z, glw::GLfloat w)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedProgramLocalParameter4fEXT(" << program << ", " << toHex(target) << ", " << index << ", " << x << ", " << y << ", " << z << ", " << w << ");" << TestLog::EndMessage;
+	m_gl.namedProgramLocalParameter4fEXT(program, target, index, x, y, z, w);
+}
+
+void CallLogWrapper::glNamedProgramLocalParameter4fvEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, const glw::GLfloat *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedProgramLocalParameter4fvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.namedProgramLocalParameter4fvEXT(program, target, index, params);
+}
+
+void CallLogWrapper::glNamedProgramLocalParameterI4iEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLint x, glw::GLint y, glw::GLint z, glw::GLint w)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedProgramLocalParameterI4iEXT(" << program << ", " << toHex(target) << ", " << index << ", " << x << ", " << y << ", " << z << ", " << w << ");" << TestLog::EndMessage;
+	m_gl.namedProgramLocalParameterI4iEXT(program, target, index, x, y, z, w);
+}
+
+void CallLogWrapper::glNamedProgramLocalParameterI4ivEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, const glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedProgramLocalParameterI4ivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.namedProgramLocalParameterI4ivEXT(program, target, index, params);
+}
+
+void CallLogWrapper::glNamedProgramLocalParameterI4uiEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLuint x, glw::GLuint y, glw::GLuint z, glw::GLuint w)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedProgramLocalParameterI4uiEXT(" << program << ", " << toHex(target) << ", " << index << ", " << x << ", " << y << ", " << z << ", " << w << ");" << TestLog::EndMessage;
+	m_gl.namedProgramLocalParameterI4uiEXT(program, target, index, x, y, z, w);
+}
+
+void CallLogWrapper::glNamedProgramLocalParameterI4uivEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, const glw::GLuint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedProgramLocalParameterI4uivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.namedProgramLocalParameterI4uivEXT(program, target, index, params);
+}
+
+void CallLogWrapper::glNamedProgramLocalParameters4fvEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLsizei count, const glw::GLfloat *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedProgramLocalParameters4fvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.namedProgramLocalParameters4fvEXT(program, target, index, count, params);
+}
+
+void CallLogWrapper::glNamedProgramLocalParametersI4ivEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLsizei count, const glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedProgramLocalParametersI4ivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.namedProgramLocalParametersI4ivEXT(program, target, index, count, params);
+}
+
+void CallLogWrapper::glNamedProgramLocalParametersI4uivEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLsizei count, const glw::GLuint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedProgramLocalParametersI4uivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.namedProgramLocalParametersI4uivEXT(program, target, index, count, params);
+}
+
+void CallLogWrapper::glNamedProgramStringEXT (glw::GLuint program, glw::GLenum target, glw::GLenum format, glw::GLsizei len, const void *string)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedProgramStringEXT(" << program << ", " << toHex(target) << ", " << toHex(format) << ", " << len << ", " << string << ");" << TestLog::EndMessage;
+	m_gl.namedProgramStringEXT(program, target, format, len, string);
 }
 
 void CallLogWrapper::glNamedRenderbufferStorage (glw::GLuint renderbuffer, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height)
@@ -2776,6 +3731,13 @@ void CallLogWrapper::glNamedRenderbufferStorageMultisample (glw::GLuint renderbu
 	if (m_enableLog)
 		m_log << TestLog::Message << "glNamedRenderbufferStorageMultisample(" << renderbuffer << ", " << samples << ", " << toHex(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
 	m_gl.namedRenderbufferStorageMultisample(renderbuffer, samples, internalformat, width, height);
+}
+
+void CallLogWrapper::glNamedRenderbufferStorageMultisampleCoverageEXT (glw::GLuint renderbuffer, glw::GLsizei coverageSamples, glw::GLsizei colorSamples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedRenderbufferStorageMultisampleCoverageEXT(" << renderbuffer << ", " << coverageSamples << ", " << colorSamples << ", " << toHex(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+	m_gl.namedRenderbufferStorageMultisampleCoverageEXT(renderbuffer, coverageSamples, colorSamples, internalformat, width, height);
 }
 
 void CallLogWrapper::glObjectLabel (glw::GLenum identifier, glw::GLuint name, glw::GLsizei length, const glw::GLchar *label)
@@ -3275,6 +4237,13 @@ void CallLogWrapper::glProvokingVertex (glw::GLenum mode)
 	m_gl.provokingVertex(mode);
 }
 
+void CallLogWrapper::glPushClientAttribDefaultEXT (glw::GLbitfield mask)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glPushClientAttribDefaultEXT(" << toHex(mask) << ");" << TestLog::EndMessage;
+	m_gl.pushClientAttribDefaultEXT(mask);
+}
+
 void CallLogWrapper::glPushDebugGroup (glw::GLenum source, glw::GLuint id, glw::GLsizei length, const glw::GLchar *message)
 {
 	if (m_enableLog)
@@ -3541,6 +4510,20 @@ void CallLogWrapper::glTexImage3DMultisample (glw::GLenum target, glw::GLsizei s
 	m_gl.texImage3DMultisample(target, samples, internalformat, width, height, depth, fixedsamplelocations);
 }
 
+void CallLogWrapper::glTexImage3DOES (glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTexImage3DOES(" << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << width << ", " << height << ", " << depth << ", " << border << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.texImage3DOES(target, level, internalformat, width, height, depth, border, format, type, pixels);
+}
+
+void CallLogWrapper::glTexPageCommitmentARB (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLboolean commit)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTexPageCommitmentARB(" << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << getBooleanStr(commit) << ");" << TestLog::EndMessage;
+	m_gl.texPageCommitmentARB(target, level, xoffset, yoffset, zoffset, width, height, depth, commit);
+}
+
 void CallLogWrapper::glTexParameterIiv (glw::GLenum target, glw::GLenum pname, const glw::GLint *params)
 {
 	if (m_enableLog)
@@ -3590,11 +4573,25 @@ void CallLogWrapper::glTexStorage1D (glw::GLenum target, glw::GLsizei levels, gl
 	m_gl.texStorage1D(target, levels, internalformat, width);
 }
 
+void CallLogWrapper::glTexStorage1DEXT (glw::GLenum target, glw::GLsizei levels, glw::GLenum internalformat, glw::GLsizei width)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTexStorage1DEXT(" << toHex(target) << ", " << levels << ", " << toHex(internalformat) << ", " << width << ");" << TestLog::EndMessage;
+	m_gl.texStorage1DEXT(target, levels, internalformat, width);
+}
+
 void CallLogWrapper::glTexStorage2D (glw::GLenum target, glw::GLsizei levels, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glTexStorage2D(" << getTextureTargetStr(target) << ", " << levels << ", " << getTextureFormatStr(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
 	m_gl.texStorage2D(target, levels, internalformat, width, height);
+}
+
+void CallLogWrapper::glTexStorage2DEXT (glw::GLenum target, glw::GLsizei levels, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTexStorage2DEXT(" << toHex(target) << ", " << levels << ", " << toHex(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+	m_gl.texStorage2DEXT(target, levels, internalformat, width, height);
 }
 
 void CallLogWrapper::glTexStorage2DMultisample (glw::GLenum target, glw::GLsizei samples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLboolean fixedsamplelocations)
@@ -3609,6 +4606,13 @@ void CallLogWrapper::glTexStorage3D (glw::GLenum target, glw::GLsizei levels, gl
 	if (m_enableLog)
 		m_log << TestLog::Message << "glTexStorage3D(" << getTextureTargetStr(target) << ", " << levels << ", " << getTextureFormatStr(internalformat) << ", " << width << ", " << height << ", " << depth << ");" << TestLog::EndMessage;
 	m_gl.texStorage3D(target, levels, internalformat, width, height, depth);
+}
+
+void CallLogWrapper::glTexStorage3DEXT (glw::GLenum target, glw::GLsizei levels, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTexStorage3DEXT(" << toHex(target) << ", " << levels << ", " << toHex(internalformat) << ", " << width << ", " << height << ", " << depth << ");" << TestLog::EndMessage;
+	m_gl.texStorage3DEXT(target, levels, internalformat, width, height, depth);
 }
 
 void CallLogWrapper::glTexStorage3DMultisample (glw::GLenum target, glw::GLsizei samples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLboolean fixedsamplelocations)
@@ -3639,6 +4643,13 @@ void CallLogWrapper::glTexSubImage3D (glw::GLenum target, glw::GLint level, glw:
 	m_gl.texSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 }
 
+void CallLogWrapper::glTexSubImage3DOES (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTexSubImage3DOES(" << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.texSubImage3DOES(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+}
+
 void CallLogWrapper::glTextureBarrier (void)
 {
 	if (m_enableLog)
@@ -3658,6 +4669,34 @@ void CallLogWrapper::glTextureBufferRange (glw::GLuint texture, glw::GLenum inte
 	if (m_enableLog)
 		m_log << TestLog::Message << "glTextureBufferRange(" << texture << ", " << toHex(internalformat) << ", " << buffer << ", " << offset << ", " << size << ");" << TestLog::EndMessage;
 	m_gl.textureBufferRange(texture, internalformat, buffer, offset, size);
+}
+
+void CallLogWrapper::glTextureImage1DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLint internalformat, glw::GLsizei width, glw::GLint border, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTextureImage1DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << internalformat << ", " << width << ", " << border << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.textureImage1DEXT(texture, target, level, internalformat, width, border, format, type, pixels);
+}
+
+void CallLogWrapper::glTextureImage2DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLint internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLint border, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTextureImage2DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << internalformat << ", " << width << ", " << height << ", " << border << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.textureImage2DEXT(texture, target, level, internalformat, width, height, border, format, type, pixels);
+}
+
+void CallLogWrapper::glTextureImage3DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLint internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTextureImage3DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << internalformat << ", " << width << ", " << height << ", " << depth << ", " << border << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.textureImage3DEXT(texture, target, level, internalformat, width, height, depth, border, format, type, pixels);
+}
+
+void CallLogWrapper::glTexturePageCommitmentEXT (glw::GLuint texture, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLboolean commit)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTexturePageCommitmentEXT(" << texture << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << getBooleanStr(commit) << ");" << TestLog::EndMessage;
+	m_gl.texturePageCommitmentEXT(texture, level, xoffset, yoffset, zoffset, width, height, depth, commit);
 }
 
 void CallLogWrapper::glTextureParameterIiv (glw::GLuint texture, glw::GLenum pname, const glw::GLint *params)
@@ -3702,6 +4741,13 @@ void CallLogWrapper::glTextureParameteriv (glw::GLuint texture, glw::GLenum pnam
 	m_gl.textureParameteriv(texture, pname, param);
 }
 
+void CallLogWrapper::glTextureRenderbufferEXT (glw::GLuint texture, glw::GLenum target, glw::GLuint renderbuffer)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTextureRenderbufferEXT(" << texture << ", " << toHex(target) << ", " << renderbuffer << ");" << TestLog::EndMessage;
+	m_gl.textureRenderbufferEXT(texture, target, renderbuffer);
+}
+
 void CallLogWrapper::glTextureStorage1D (glw::GLuint texture, glw::GLsizei levels, glw::GLenum internalformat, glw::GLsizei width)
 {
 	if (m_enableLog)
@@ -3709,11 +4755,25 @@ void CallLogWrapper::glTextureStorage1D (glw::GLuint texture, glw::GLsizei level
 	m_gl.textureStorage1D(texture, levels, internalformat, width);
 }
 
+void CallLogWrapper::glTextureStorage1DEXT (glw::GLuint texture, glw::GLenum target, glw::GLsizei levels, glw::GLenum internalformat, glw::GLsizei width)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTextureStorage1DEXT(" << texture << ", " << toHex(target) << ", " << levels << ", " << toHex(internalformat) << ", " << width << ");" << TestLog::EndMessage;
+	m_gl.textureStorage1DEXT(texture, target, levels, internalformat, width);
+}
+
 void CallLogWrapper::glTextureStorage2D (glw::GLuint texture, glw::GLsizei levels, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glTextureStorage2D(" << texture << ", " << levels << ", " << toHex(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
 	m_gl.textureStorage2D(texture, levels, internalformat, width, height);
+}
+
+void CallLogWrapper::glTextureStorage2DEXT (glw::GLuint texture, glw::GLenum target, glw::GLsizei levels, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTextureStorage2DEXT(" << texture << ", " << toHex(target) << ", " << levels << ", " << toHex(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+	m_gl.textureStorage2DEXT(texture, target, levels, internalformat, width, height);
 }
 
 void CallLogWrapper::glTextureStorage2DMultisample (glw::GLuint texture, glw::GLsizei samples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLboolean fixedsamplelocations)
@@ -3730,6 +4790,13 @@ void CallLogWrapper::glTextureStorage3D (glw::GLuint texture, glw::GLsizei level
 	m_gl.textureStorage3D(texture, levels, internalformat, width, height, depth);
 }
 
+void CallLogWrapper::glTextureStorage3DEXT (glw::GLuint texture, glw::GLenum target, glw::GLsizei levels, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTextureStorage3DEXT(" << texture << ", " << toHex(target) << ", " << levels << ", " << toHex(internalformat) << ", " << width << ", " << height << ", " << depth << ");" << TestLog::EndMessage;
+	m_gl.textureStorage3DEXT(texture, target, levels, internalformat, width, height, depth);
+}
+
 void CallLogWrapper::glTextureStorage3DMultisample (glw::GLuint texture, glw::GLsizei samples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLboolean fixedsamplelocations)
 {
 	if (m_enableLog)
@@ -3744,6 +4811,13 @@ void CallLogWrapper::glTextureSubImage1D (glw::GLuint texture, glw::GLint level,
 	m_gl.textureSubImage1D(texture, level, xoffset, width, format, type, pixels);
 }
 
+void CallLogWrapper::glTextureSubImage1DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLsizei width, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTextureSubImage1DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << width << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.textureSubImage1DEXT(texture, target, level, xoffset, width, format, type, pixels);
+}
+
 void CallLogWrapper::glTextureSubImage2D (glw::GLuint texture, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLsizei width, glw::GLsizei height, glw::GLenum format, glw::GLenum type, const void *pixels)
 {
 	if (m_enableLog)
@@ -3751,11 +4825,25 @@ void CallLogWrapper::glTextureSubImage2D (glw::GLuint texture, glw::GLint level,
 	m_gl.textureSubImage2D(texture, level, xoffset, yoffset, width, height, format, type, pixels);
 }
 
+void CallLogWrapper::glTextureSubImage2DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLsizei width, glw::GLsizei height, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTextureSubImage2DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << width << ", " << height << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.textureSubImage2DEXT(texture, target, level, xoffset, yoffset, width, height, format, type, pixels);
+}
+
 void CallLogWrapper::glTextureSubImage3D (glw::GLuint texture, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLenum type, const void *pixels)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glTextureSubImage3D(" << texture << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
 	m_gl.textureSubImage3D(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+}
+
+void CallLogWrapper::glTextureSubImage3DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTextureSubImage3DEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.textureSubImage3DEXT(texture, target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 }
 
 void CallLogWrapper::glTextureView (glw::GLuint texture, glw::GLenum target, glw::GLuint origtexture, glw::GLenum internalformat, glw::GLuint minlevel, glw::GLuint numlevels, glw::GLuint minlayer, glw::GLuint numlayers)
@@ -4226,6 +5314,13 @@ void CallLogWrapper::glVertexArrayAttribLFormat (glw::GLuint vaobj, glw::GLuint 
 	m_gl.vertexArrayAttribLFormat(vaobj, attribindex, size, type, relativeoffset);
 }
 
+void CallLogWrapper::glVertexArrayBindVertexBufferEXT (glw::GLuint vaobj, glw::GLuint bindingindex, glw::GLuint buffer, glw::GLintptr offset, glw::GLsizei stride)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayBindVertexBufferEXT(" << vaobj << ", " << bindingindex << ", " << buffer << ", " << offset << ", " << stride << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayBindVertexBufferEXT(vaobj, bindingindex, buffer, offset, stride);
+}
+
 void CallLogWrapper::glVertexArrayBindingDivisor (glw::GLuint vaobj, glw::GLuint bindingindex, glw::GLuint divisor)
 {
 	if (m_enableLog)
@@ -4233,11 +5328,130 @@ void CallLogWrapper::glVertexArrayBindingDivisor (glw::GLuint vaobj, glw::GLuint
 	m_gl.vertexArrayBindingDivisor(vaobj, bindingindex, divisor);
 }
 
+void CallLogWrapper::glVertexArrayColorOffsetEXT (glw::GLuint vaobj, glw::GLuint buffer, glw::GLint size, glw::GLenum type, glw::GLsizei stride, glw::GLintptr offset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayColorOffsetEXT(" << vaobj << ", " << buffer << ", " << size << ", " << toHex(type) << ", " << stride << ", " << offset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayColorOffsetEXT(vaobj, buffer, size, type, stride, offset);
+}
+
+void CallLogWrapper::glVertexArrayEdgeFlagOffsetEXT (glw::GLuint vaobj, glw::GLuint buffer, glw::GLsizei stride, glw::GLintptr offset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayEdgeFlagOffsetEXT(" << vaobj << ", " << buffer << ", " << stride << ", " << offset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayEdgeFlagOffsetEXT(vaobj, buffer, stride, offset);
+}
+
 void CallLogWrapper::glVertexArrayElementBuffer (glw::GLuint vaobj, glw::GLuint buffer)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glVertexArrayElementBuffer(" << vaobj << ", " << buffer << ");" << TestLog::EndMessage;
 	m_gl.vertexArrayElementBuffer(vaobj, buffer);
+}
+
+void CallLogWrapper::glVertexArrayFogCoordOffsetEXT (glw::GLuint vaobj, glw::GLuint buffer, glw::GLenum type, glw::GLsizei stride, glw::GLintptr offset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayFogCoordOffsetEXT(" << vaobj << ", " << buffer << ", " << toHex(type) << ", " << stride << ", " << offset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayFogCoordOffsetEXT(vaobj, buffer, type, stride, offset);
+}
+
+void CallLogWrapper::glVertexArrayIndexOffsetEXT (glw::GLuint vaobj, glw::GLuint buffer, glw::GLenum type, glw::GLsizei stride, glw::GLintptr offset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayIndexOffsetEXT(" << vaobj << ", " << buffer << ", " << toHex(type) << ", " << stride << ", " << offset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayIndexOffsetEXT(vaobj, buffer, type, stride, offset);
+}
+
+void CallLogWrapper::glVertexArrayMultiTexCoordOffsetEXT (glw::GLuint vaobj, glw::GLuint buffer, glw::GLenum texunit, glw::GLint size, glw::GLenum type, glw::GLsizei stride, glw::GLintptr offset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayMultiTexCoordOffsetEXT(" << vaobj << ", " << buffer << ", " << toHex(texunit) << ", " << size << ", " << toHex(type) << ", " << stride << ", " << offset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayMultiTexCoordOffsetEXT(vaobj, buffer, texunit, size, type, stride, offset);
+}
+
+void CallLogWrapper::glVertexArrayNormalOffsetEXT (glw::GLuint vaobj, glw::GLuint buffer, glw::GLenum type, glw::GLsizei stride, glw::GLintptr offset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayNormalOffsetEXT(" << vaobj << ", " << buffer << ", " << toHex(type) << ", " << stride << ", " << offset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayNormalOffsetEXT(vaobj, buffer, type, stride, offset);
+}
+
+void CallLogWrapper::glVertexArraySecondaryColorOffsetEXT (glw::GLuint vaobj, glw::GLuint buffer, glw::GLint size, glw::GLenum type, glw::GLsizei stride, glw::GLintptr offset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArraySecondaryColorOffsetEXT(" << vaobj << ", " << buffer << ", " << size << ", " << toHex(type) << ", " << stride << ", " << offset << ");" << TestLog::EndMessage;
+	m_gl.vertexArraySecondaryColorOffsetEXT(vaobj, buffer, size, type, stride, offset);
+}
+
+void CallLogWrapper::glVertexArrayTexCoordOffsetEXT (glw::GLuint vaobj, glw::GLuint buffer, glw::GLint size, glw::GLenum type, glw::GLsizei stride, glw::GLintptr offset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayTexCoordOffsetEXT(" << vaobj << ", " << buffer << ", " << size << ", " << toHex(type) << ", " << stride << ", " << offset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayTexCoordOffsetEXT(vaobj, buffer, size, type, stride, offset);
+}
+
+void CallLogWrapper::glVertexArrayVertexAttribBindingEXT (glw::GLuint vaobj, glw::GLuint attribindex, glw::GLuint bindingindex)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayVertexAttribBindingEXT(" << vaobj << ", " << attribindex << ", " << bindingindex << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayVertexAttribBindingEXT(vaobj, attribindex, bindingindex);
+}
+
+void CallLogWrapper::glVertexArrayVertexAttribDivisorEXT (glw::GLuint vaobj, glw::GLuint index, glw::GLuint divisor)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayVertexAttribDivisorEXT(" << vaobj << ", " << index << ", " << divisor << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayVertexAttribDivisorEXT(vaobj, index, divisor);
+}
+
+void CallLogWrapper::glVertexArrayVertexAttribFormatEXT (glw::GLuint vaobj, glw::GLuint attribindex, glw::GLint size, glw::GLenum type, glw::GLboolean normalized, glw::GLuint relativeoffset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayVertexAttribFormatEXT(" << vaobj << ", " << attribindex << ", " << size << ", " << toHex(type) << ", " << getBooleanStr(normalized) << ", " << relativeoffset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayVertexAttribFormatEXT(vaobj, attribindex, size, type, normalized, relativeoffset);
+}
+
+void CallLogWrapper::glVertexArrayVertexAttribIFormatEXT (glw::GLuint vaobj, glw::GLuint attribindex, glw::GLint size, glw::GLenum type, glw::GLuint relativeoffset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayVertexAttribIFormatEXT(" << vaobj << ", " << attribindex << ", " << size << ", " << toHex(type) << ", " << relativeoffset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayVertexAttribIFormatEXT(vaobj, attribindex, size, type, relativeoffset);
+}
+
+void CallLogWrapper::glVertexArrayVertexAttribIOffsetEXT (glw::GLuint vaobj, glw::GLuint buffer, glw::GLuint index, glw::GLint size, glw::GLenum type, glw::GLsizei stride, glw::GLintptr offset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayVertexAttribIOffsetEXT(" << vaobj << ", " << buffer << ", " << index << ", " << size << ", " << toHex(type) << ", " << stride << ", " << offset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayVertexAttribIOffsetEXT(vaobj, buffer, index, size, type, stride, offset);
+}
+
+void CallLogWrapper::glVertexArrayVertexAttribLFormatEXT (glw::GLuint vaobj, glw::GLuint attribindex, glw::GLint size, glw::GLenum type, glw::GLuint relativeoffset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayVertexAttribLFormatEXT(" << vaobj << ", " << attribindex << ", " << size << ", " << toHex(type) << ", " << relativeoffset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayVertexAttribLFormatEXT(vaobj, attribindex, size, type, relativeoffset);
+}
+
+void CallLogWrapper::glVertexArrayVertexAttribLOffsetEXT (glw::GLuint vaobj, glw::GLuint buffer, glw::GLuint index, glw::GLint size, glw::GLenum type, glw::GLsizei stride, glw::GLintptr offset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayVertexAttribLOffsetEXT(" << vaobj << ", " << buffer << ", " << index << ", " << size << ", " << toHex(type) << ", " << stride << ", " << offset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayVertexAttribLOffsetEXT(vaobj, buffer, index, size, type, stride, offset);
+}
+
+void CallLogWrapper::glVertexArrayVertexAttribOffsetEXT (glw::GLuint vaobj, glw::GLuint buffer, glw::GLuint index, glw::GLint size, glw::GLenum type, glw::GLboolean normalized, glw::GLsizei stride, glw::GLintptr offset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayVertexAttribOffsetEXT(" << vaobj << ", " << buffer << ", " << index << ", " << size << ", " << toHex(type) << ", " << getBooleanStr(normalized) << ", " << stride << ", " << offset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayVertexAttribOffsetEXT(vaobj, buffer, index, size, type, normalized, stride, offset);
+}
+
+void CallLogWrapper::glVertexArrayVertexBindingDivisorEXT (glw::GLuint vaobj, glw::GLuint bindingindex, glw::GLuint divisor)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayVertexBindingDivisorEXT(" << vaobj << ", " << bindingindex << ", " << divisor << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayVertexBindingDivisorEXT(vaobj, bindingindex, divisor);
 }
 
 void CallLogWrapper::glVertexArrayVertexBuffer (glw::GLuint vaobj, glw::GLuint bindingindex, glw::GLuint buffer, glw::GLintptr offset, glw::GLsizei stride)
@@ -4252,6 +5466,13 @@ void CallLogWrapper::glVertexArrayVertexBuffers (glw::GLuint vaobj, glw::GLuint 
 	if (m_enableLog)
 		m_log << TestLog::Message << "glVertexArrayVertexBuffers(" << vaobj << ", " << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(buffers))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(offsets))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(strides))) << ");" << TestLog::EndMessage;
 	m_gl.vertexArrayVertexBuffers(vaobj, first, count, buffers, offsets, strides);
+}
+
+void CallLogWrapper::glVertexArrayVertexOffsetEXT (glw::GLuint vaobj, glw::GLuint buffer, glw::GLint size, glw::GLenum type, glw::GLsizei stride, glw::GLintptr offset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glVertexArrayVertexOffsetEXT(" << vaobj << ", " << buffer << ", " << size << ", " << toHex(type) << ", " << stride << ", " << offset << ");" << TestLog::EndMessage;
+	m_gl.vertexArrayVertexOffsetEXT(vaobj, buffer, size, type, stride, offset);
 }
 
 void CallLogWrapper::glVertexAttrib1d (glw::GLuint index, glw::GLdouble x)

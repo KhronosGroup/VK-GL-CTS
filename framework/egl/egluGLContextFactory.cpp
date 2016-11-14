@@ -42,6 +42,8 @@
 #include "glwInitFunctions.hpp"
 #include "glwInitES20Direct.hpp"
 #include "glwInitES30Direct.hpp"
+#include "glwInitES31Direct.hpp"
+#include "glwInitES32Direct.hpp"
 
 #include "deDynamicLibrary.hpp"
 #include "deSTLUtil.hpp"
@@ -367,16 +369,28 @@ void RenderContext::create (const NativeDisplayFactory* displayFactory, const Na
 		GetProcFuncLoader funcLoader(egl);
 		glu::initCoreFunctions(&m_glFunctions, &funcLoader, config.type.getAPI());
 	}
-#if !defined(DEQP_GLES2_RUNTIME_LOAD)
+#if defined(DEQP_GLES2_DIRECT_LINK)
 	else if (config.type.getAPI() == glu::ApiType::es(2,0))
 	{
 		glw::initES20Direct(&m_glFunctions);
 	}
 #endif
-#if !defined(DEQP_GLES3_RUNTIME_LOAD)
+#if defined(DEQP_GLES3_DIRECT_LINK)
 	else if (config.type.getAPI() == glu::ApiType::es(3,0))
 	{
 		glw::initES30Direct(&m_glFunctions);
+	}
+#endif
+#if defined(DEQP_GLES31_DIRECT_LINK)
+	else if (config.type.getAPI() == glu::ApiType::es(3,1))
+	{
+		glw::initES31Direct(&m_glFunctions);
+	}
+#endif
+#if defined(DEQP_GLES32_DIRECT_LINK)
+	else if (config.type.getAPI() == glu::ApiType::es(3,2))
+	{
+		glw::initES32Direct(&m_glFunctions);
 	}
 #endif
 	else

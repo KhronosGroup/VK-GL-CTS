@@ -969,8 +969,6 @@ deqp_compile_flags := \
 	-DDE_ANDROID_API=9 \
 	-D_XOPEN_SOURCE=600 \
 	-DDEQP_TARGET_NAME=\"android\" \
-	-DDEQP_GLES3_RUNTIME_LOAD=1 \
-	-DDEQP_GLES2_RUNTIME_LOAD=1 \
 	-DQP_SUPPORT_PNG=1 \
 	-Wconversion \
 	-Wno-sign-conversion

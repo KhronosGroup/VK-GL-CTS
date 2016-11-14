@@ -12,6 +12,10 @@ set(GLWRAPPER_SRCS
 	glwInitES20Direct.cpp
 	glwInitES30Direct.hpp
 	glwInitES30Direct.cpp
+	glwInitES31Direct.hpp
+	glwInitES31Direct.cpp
+	glwInitES32Direct.hpp
+	glwInitES32Direct.cpp
 	glwInitFunctions.hpp
 	glwInitFunctions.cpp
 	glwWrapper.hpp
@@ -24,6 +28,8 @@ set(GLWRAPPER_LIBS
 	decpp
 	${DEQP_GLES2_LIBRARIES}
 	${DEQP_GLES3_LIBRARIES}
+	${DEQP_GLES31_LIBRARIES}
+	${DEQP_GLES32_LIBRARIES}
 	)
 
 add_library(glwrapper STATIC ${GLWRAPPER_SRCS})

@@ -21,28 +21,28 @@
  * \brief Function table initialization.
  *//*--------------------------------------------------------------------*/
 
-#include "glwInitES20Direct.hpp"
+#include "glwInitES32Direct.hpp"
 
 #include <stdexcept>
 
-#if defined(DEQP_GLES2_DIRECT_LINK)
+#if defined(DEQP_GLES32_DIRECT_LINK)
 #	if (DE_OS == DE_OS_IOS)
-#		include <OpenGLES/ES2/gl.h>
+#		include <OpenGLES/ES3/gl.h>
 #	else
-#		include <GLES2/gl2.h>
+#		include <GLES3/gl32.h>
 #	endif
 #endif
 
 namespace glw
 {
 
-void initES20Direct (Functions* gl)
+void initES32Direct (Functions* gl)
 {
-#if defined(DEQP_GLES2_DIRECT_LINK)
-#	include "glwInitES20Direct.inl"
+#if defined(DEQP_GLES32_DIRECT_LINK)
+#	include "glwInitES32Direct.inl"
 #else
 	DE_UNREF(gl);
-	throw std::runtime_error("Binaries were compiled without ES2 direct loading support");
+	throw std::runtime_error("Binaries were compiled without ES32 direct loading support");
 #endif
 }
 

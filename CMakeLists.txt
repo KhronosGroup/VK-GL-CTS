@@ -79,6 +79,8 @@ message(STATUS "DEQP_SUPPORT_GLES1      = ${DEQP_SUPPORT_GLES1}")
 message(STATUS "DEQP_GLES1_LIBRARIES    = ${DEQP_GLES1_LIBRARIES}")
 message(STATUS "DEQP_GLES2_LIBRARIES    = ${DEQP_GLES2_LIBRARIES}")
 message(STATUS "DEQP_GLES3_LIBRARIES    = ${DEQP_GLES3_LIBRARIES}")
+message(STATUS "DEQP_GLES31_LIBRARIES   = ${DEQP_GLES31_LIBRARIES}")
+message(STATUS "DEQP_GLES332_LIBRARIES  = ${DEQP_GLES32_LIBRARIES}")
 message(STATUS "DEQP_SUPPORT_VG         = ${DEQP_SUPPORT_VG}")
 message(STATUS "DEQP_VG_LIBRARIES       = ${DEQP_VG_LIBRARIES}")
 message(STATUS "DEQP_EGL_LIBRARIES      = ${DEQP_EGL_LIBRARIES}")
@@ -87,37 +89,42 @@ message(STATUS "DEQP_PLATFORM_LIBRARIES = ${DEQP_PLATFORM_LIBRARIES}")
 # Defines
 add_definitions(-DDEQP_TARGET_NAME="${DEQP_TARGET_NAME}")
 
+# Entry points loaded directly by linking to libGL*?
+if (DEFINED DEQP_GLES2_LIBRARIES)
+	add_definitions(-DDEQP_GLES2_DIRECT_LINK=1)
+endif ()
+
+if (DEFINED DEQP_GLES3_LIBRARIES)
+	add_definitions(-DDEQP_GLES3_DIRECT_LINK=1)
+endif ()
+
+if (DEFINED DEQP_GLES31_LIBRARIES)
+	add_definitions(-DDEQP_GLES31_DIRECT_LINK=1)
+endif ()
+
+if (DEFINED DEQP_GLES32_LIBRARIES)
+	add_definitions(-DDEQP_GLES32_DIRECT_LINK=1)
+endif ()
+
+if (DEFINED DEQP_EGL_LIBRARIES)
+	add_definitions(-DDEQP_EGL_DIRECT_LINK=1)
+endif ()
+
+# Legacy APIs that don't support run-time loading
 if (DEQP_SUPPORT_GLES1)
 	add_definitions(-DDEQP_SUPPORT_GLES1=1)
+
+	if (NOT DEFINED DEQP_GLES1_LIBRARIES)
+		message(FATAL_ERROR "Run-time loading of GLES1 is not supported (DEQP_GLES1_LIBRARIES is not set)")
+	endif ()
 endif ()
 
 if (DEQP_SUPPORT_VG)
 	add_definitions(-DDEQP_SUPPORT_VG=1)
-endif ()
 
-# Entry points loaded on run-time?
-if (NOT DEFINED DEQP_GLES2_LIBRARIES)
-	add_definitions(-DDEQP_GLES2_RUNTIME_LOAD=1)
-endif ()
-
-if (NOT DEFINED DEQP_GLES3_LIBRARIES)
-	add_definitions(-DDEQP_GLES3_RUNTIME_LOAD=1)
-endif ()
-
-if (NOT DEFINED DEQP_EGL_LIBRARIES)
-	add_definitions(-DDEQP_EGL_RUNTIME_LOAD=1)
-endif ()
-
-# OpenGL entry points are always loaded on run-time
-add_definitions(-DDEQP_OPENGL_RUNTIME_LOAD=1)
-
-# Legacy APIs that don't support run-time loading
-if (DEQP_SUPPORT_GLES1 AND NOT DEFINED DEQP_GLES1_LIBRARIES)
-	message(FATAL_ERROR "Run-time loading of GLES1 is not supported (DEQP_GLES1_LIBRARIES is not set)")
-endif ()
-
-if (DEQP_SUPPORT_VG AND NOT DEFINED DEQP_VG_LIBRARIES)
-	message(FATAL_ERROR "Run-time loading of VG is not supported (DEQP_VG_LIBRARIES is not set)")
+	if (NOT DEFINED DEQP_VG_LIBRARIES)
+		message(FATAL_ERROR "Run-time loading of VG is not supported (DEQP_VG_LIBRARIES is not set)")
+	endif ()
 endif ()
 
 if (DE_COMPILER_IS_MSC)
