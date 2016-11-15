@@ -47,16 +47,17 @@ namespace glu
 class DummyRenderContext : public RenderContext
 {
 public:
-										DummyRenderContext	(void) {}
+	explicit							DummyRenderContext	(ContextType ctxType = ContextType()) : m_ctxType(ctxType) {}
 
-	virtual ContextType					getType				(void) const { return ContextType();			}
+	virtual ContextType					getType				(void) const { return m_ctxType;				}
 	virtual const glw::Functions&		getFunctions		(void) const { return m_functions;				}
 	virtual const tcu::RenderTarget&	getRenderTarget		(void) const { return m_renderTarget;			}
 	virtual void						postIterate			(void) {}
 
 private:
-	tcu::RenderTarget	m_renderTarget;
-	glw::Functions		m_functions;
+	const ContextType					m_ctxType;
+	tcu::RenderTarget					m_renderTarget;
+	glw::Functions						m_functions;
 };
 
 } // glu
