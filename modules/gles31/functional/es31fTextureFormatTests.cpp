@@ -110,7 +110,7 @@ TextureCubeArrayFormatCase::TextureCubeArrayFormatCase (tcu::TestContext& testCt
 	, m_size			(size)
 	, m_depth			(depth)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::getContextTypeGLSLVersion(renderCtx.getType()), glu::PRECISION_HIGHP)
 	, m_curLayerFace	(0)
 {
 }
@@ -124,7 +124,7 @@ TextureCubeArrayFormatCase::TextureCubeArrayFormatCase (tcu::TestContext& testCt
 	, m_size			(size)
 	, m_depth			(depth)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::getContextTypeGLSLVersion(renderCtx.getType()), glu::PRECISION_HIGHP)
 	, m_curLayerFace	(0)
 {
 }
@@ -168,7 +168,8 @@ void TextureCubeArrayFormatCase::deinit (void)
 
 bool TextureCubeArrayFormatCase::checkSupport (void)
 {
-	return m_renderCtxInfo.isExtensionSupported("GL_EXT_texture_cube_map_array");
+	const bool supportsES32 = glu::contextSupports(m_renderCtx.getType(), glu::ApiType::es(3, 2));
+	return supportsES32 || m_renderCtxInfo.isExtensionSupported("GL_EXT_texture_cube_map_array");
 }
 
 bool TextureCubeArrayFormatCase::testLayerFace (int layerFaceNdx)
@@ -273,7 +274,7 @@ TextureBufferFormatCase::TextureBufferFormatCase (Context& ctx, glu::RenderConte
 	, m_width					(width)
 	, m_maxTextureBufferSize	(0)
 	, m_texture					(DE_NULL)
-	, m_renderer				(renderCtx, ctx.getTestContext().getLog(), glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
+	, m_renderer				(renderCtx, ctx.getTestContext().getLog(), glu::getContextTypeGLSLVersion(renderCtx.getType()), glu::PRECISION_HIGHP)
 {
 }
 
@@ -284,13 +285,15 @@ TextureBufferFormatCase::~TextureBufferFormatCase (void)
 
 void TextureBufferFormatCase::init (void)
 {
-	TestLog&				log		= m_testCtx.getLog();
-	tcu::TextureFormat		fmt		= glu::mapGLInternalFormat(m_format);
-	tcu::TextureFormatInfo	spec	= tcu::getTextureFormatInfo(fmt);
-	tcu::Vec4				colorA	(spec.valueMin.x(), spec.valueMax.y(), spec.valueMin.z(), spec.valueMax.w());
-	tcu::Vec4				colorB	(spec.valueMax.x(), spec.valueMin.y(), spec.valueMax.z(), spec.valueMin.w());
+	TestLog&				log				= m_testCtx.getLog();
+	tcu::TextureFormat		fmt				= glu::mapGLInternalFormat(m_format);
+	tcu::TextureFormatInfo	spec			= tcu::getTextureFormatInfo(fmt);
+	tcu::Vec4				colorA			(spec.valueMin.x(), spec.valueMax.y(), spec.valueMin.z(), spec.valueMax.w());
+	tcu::Vec4				colorB			(spec.valueMax.x(), spec.valueMin.y(), spec.valueMax.z(), spec.valueMin.w());
+	const bool				supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_texture_buffer")
+	if (!supportsES32
+		&& !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_buffer")
 		&& !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"))
 	{
 		TCU_THROW(NotSupportedError, "Texture buffers not supported");

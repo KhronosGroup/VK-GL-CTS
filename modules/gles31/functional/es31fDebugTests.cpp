@@ -105,8 +105,8 @@ static const GLenum s_debugSeverities[] =
 
 static bool isKHRDebugSupported (Context& ctx)
 {
-	const bool isES32 = glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	return isES32 || ctx.getContextInfo().isExtensionSupported("GL_KHR_debug");
+	const bool supportsES32 = glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	return supportsES32 || ctx.getContextInfo().isExtensionSupported("GL_KHR_debug");
 }
 
 class BaseCase;

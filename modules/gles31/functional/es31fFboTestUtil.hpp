@@ -85,7 +85,7 @@ private:
 class TextureCubeArrayShader : public sglr::ShaderProgram
 {
 public:
-						TextureCubeArrayShader	(glu::DataType samplerType, glu::DataType outputType);
+						TextureCubeArrayShader	(glu::DataType samplerType, glu::DataType outputType, glu::GLSLVersion glslVersion);
 						~TextureCubeArrayShader	(void) {}
 
 	void				setLayer				(int layer);

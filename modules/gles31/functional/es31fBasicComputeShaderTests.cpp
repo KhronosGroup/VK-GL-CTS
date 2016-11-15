@@ -90,12 +90,15 @@ public:
 
 	IterateResult iterate (void)
 	{
+		const GLSLVersion	glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		std::ostringstream	src;
+
+		src << getGLSLVersionDeclaration(glslVersion) << "\n"
+			<< "layout (local_size_x = 1) in;\n"
+			   "void main (void) {}\n";
+
 		const ShaderProgram program(m_context.getRenderContext(),
-			ProgramSources() << ShaderSource(SHADERTYPE_COMPUTE,
-				"#version 310 es\n"
-				"layout (local_size_x = 1) in;\n"
-				"void main (void) {}\n"
-				));
+			ProgramSources() << ShaderSource(SHADERTYPE_COMPUTE, src.str()));
 
 		const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
@@ -126,8 +129,10 @@ public:
 
 	IterateResult iterate (void)
 	{
-		std::ostringstream src;
-		src << "#version 310 es\n"
+		const GLSLVersion	glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		std::ostringstream	src;
+
+		src << getGLSLVersionDeclaration(glslVersion) << "\n"
 			<< "layout (local_size_x = " << m_localSize[0] << ", local_size_y = " << m_localSize[1] << ", local_size_z = " << m_localSize[2] << ") in;\n"
 			<< "uniform Input {\n"
 			<< "    uint values[" << m_numValues << "];\n"
@@ -246,8 +251,10 @@ public:
 
 	IterateResult iterate (void)
 	{
-		std::ostringstream src;
-		src << "#version 310 es\n"
+		const GLSLVersion	glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		std::ostringstream	src;
+
+		src << getGLSLVersionDeclaration(glslVersion) << "\n"
 			<< "layout (local_size_x = " << m_localSize[0] << ", local_size_y = " << m_localSize[1] << ", local_size_z = " << m_localSize[2] << ") in;\n"
 			<< "layout(binding = 0) buffer Input {\n"
 			<< "    uint values[" << m_numValues << "];\n"
@@ -368,8 +375,10 @@ public:
 
 	IterateResult iterate (void)
 	{
-		std::ostringstream src;
-		src << "#version 310 es\n"
+		const GLSLVersion	glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		std::ostringstream	src;
+
+		src << getGLSLVersionDeclaration(glslVersion) << "\n"
 			<< "layout (local_size_x = " << m_localSize[0] << ", local_size_y = " << m_localSize[1] << ", local_size_z = " << m_localSize[2] << ") in;\n"
 			<< "layout(binding = 0) buffer InOut {\n"
 			<< "    uint values[" << (m_isSized ? de::toString(m_numValues) : string("")) << "];\n"
@@ -470,8 +479,10 @@ public:
 
 	IterateResult iterate (void)
 	{
-		std::ostringstream src;
-		src << "#version 310 es\n"
+		const GLSLVersion	glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		std::ostringstream	src;
+
+		src << getGLSLVersionDeclaration(glslVersion) << "\n"
 			<< "layout (local_size_x = " << m_localSize[0] << ", local_size_y = " << m_localSize[1] << ", local_size_z = " << m_localSize[2] << ") in;\n"
 			<< "layout(binding = 0) buffer Out0 {\n"
 			<< "    uint values[" << (m_isSized ? de::toString(m_numValues) : string("")) << "];\n"
@@ -599,8 +610,10 @@ public:
 		const int					workGroupCount	= m_workSize[0]*m_workSize[1]*m_workSize[2];
 		const int					numValues		= workGroupSize*workGroupCount;
 
-		std::ostringstream src;
-		src << "#version 310 es\n"
+		const GLSLVersion			glslVersion		= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		std::ostringstream			src;
+
+		src << getGLSLVersionDeclaration(glslVersion) << "\n"
 			<< "layout (local_size_x = " << m_localSize[0] << ", local_size_y = " << m_localSize[1] << ", local_size_z = " << m_localSize[2] << ") in;\n"
 			<< "layout(binding = 0) buffer Output {\n"
 			<< "    coherent uint values[" << numValues << "];\n"
@@ -690,9 +703,12 @@ public:
 
 	IterateResult iterate (void)
 	{
-		const ShaderProgram program0(m_context.getRenderContext(), ProgramSources() <<
-			ComputeSource("#version 310 es\n"
-						  "layout (local_size_x = 1) in;\n"
+		const GLSLVersion	glslVersion				= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		const char* const	glslVersionDeclaration	= getGLSLVersionDeclaration(glslVersion);
+
+		std::ostringstream src0;
+		src0 << glslVersionDeclaration << "\n"
+			 << "layout (local_size_x = 1) in;\n"
 						  "uniform uint u_baseVal;\n"
 						  "layout(binding = 1) buffer Output {\n"
 						  "    uint values[];\n"
@@ -700,10 +716,11 @@ public:
 						  "void main (void) {\n"
 						  "    uint offset = gl_NumWorkGroups.x*gl_NumWorkGroups.y*gl_WorkGroupID.z + gl_NumWorkGroups.x*gl_WorkGroupID.y + gl_WorkGroupID.x;\n"
 						  "    values[offset] = u_baseVal+offset;\n"
-						  "}\n"));
-		const ShaderProgram program1(m_context.getRenderContext(), ProgramSources() <<
-			ComputeSource("#version 310 es\n"
-						  "layout (local_size_x = 1) in;\n"
+				"}\n";
+
+		std::ostringstream src1;
+		src1 << glslVersionDeclaration << "\n"
+			 << "layout (local_size_x = 1) in;\n"
 						  "uniform uint u_baseVal;\n"
 						  "layout(binding = 1) buffer Input {\n"
 						  "    uint values[];\n"
@@ -715,7 +732,10 @@ public:
 						  "    uint offset = gl_NumWorkGroups.x*gl_NumWorkGroups.y*gl_WorkGroupID.z + gl_NumWorkGroups.x*gl_WorkGroupID.y + gl_WorkGroupID.x;\n"
 						  "    uint value  = values[offset];\n"
 						  "    atomicAdd(sum, value);\n"
-						  "}\n"));
+				"}\n";
+
+		const ShaderProgram			program0		(m_context.getRenderContext(), ProgramSources() << ComputeSource(src0.str()));
+		const ShaderProgram			program1		(m_context.getRenderContext(), ProgramSources() << ComputeSource(src1.str()));
 
 		const glw::Functions&		gl				= m_context.getRenderContext().getFunctions();
 		const Buffer				tempBuffer		(m_context.getRenderContext());
@@ -813,8 +833,10 @@ public:
 		const int					workGroupCount	= m_workSize[0]*m_workSize[1]*m_workSize[2];
 		const int					numValues		= workGroupSize*workGroupCount;
 
-		std::ostringstream src;
-		src << "#version 310 es\n"
+		const GLSLVersion			glslVersion		= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		std::ostringstream			src;
+
+		src << getGLSLVersionDeclaration(glslVersion) << "\n"
 			<< "layout (local_size_x = " << m_localSize[0] << ", local_size_y = " << m_localSize[1] << ", local_size_z = " << m_localSize[2] << ") in;\n"
 			<< "layout(binding = 0) buffer Output {\n"
 			<< "    uint values[" << numValues << "];\n"
@@ -905,8 +927,10 @@ public:
 		const int					workGroupCount	= m_workSize[0]*m_workSize[1]*m_workSize[2];
 		const int					numValues		= workGroupSize*workGroupCount;
 
-		std::ostringstream src;
-		src << "#version 310 es\n"
+		const GLSLVersion			glslVersion		= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		std::ostringstream			src;
+
+		src << getGLSLVersionDeclaration(glslVersion) << "\n"
 			<< "layout (local_size_x = " << m_localSize[0] << ", local_size_y = " << m_localSize[1] << ", local_size_z = " << m_localSize[2] << ") in;\n"
 			<< "layout(binding = 0) buffer Output {\n"
 			<< "    uint values[" << numValues << "];\n"
@@ -993,9 +1017,10 @@ public:
 
 	IterateResult iterate (void)
 	{
+		const GLSLVersion			glslVersion		= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		std::ostringstream			src;
 
-		std::ostringstream src;
-		src << "#version 310 es\n"
+		src << getGLSLVersionDeclaration(glslVersion) << "\n"
 			<< "layout (local_size_x = " << m_localSize[0] << ", local_size_y = " << m_localSize[1] << ") in;\n"
 			<< "layout(r32ui, binding = 1) readonly uniform highp uimage2D u_srcImg;\n"
 			<< "layout(binding = 0) buffer Output {\n"
@@ -1097,9 +1122,10 @@ public:
 
 	IterateResult iterate (void)
 	{
+		const GLSLVersion			glslVersion		= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		std::ostringstream			src;
 
-		std::ostringstream src;
-		src << "#version 310 es\n"
+		src << getGLSLVersionDeclaration(glslVersion) << "\n"
 			<< "layout (local_size_x = " << m_localSize[0] << ", local_size_y = " << m_localSize[1] << ") in;\n"
 			<< "layout(r32ui, binding = 1) writeonly uniform highp uimage2D u_dstImg;\n"
 			<< "buffer Input {\n"
@@ -1214,16 +1240,19 @@ public:
 
 	void init (void)
 	{
-		if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
-			throw tcu::NotSupportedError("Test requires OES_shader_image_atomic extension");
+		if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+			if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
+				throw tcu::NotSupportedError("Test requires OES_shader_image_atomic extension");
 	}
 
 	IterateResult iterate (void)
 	{
+		const GLSLVersion			glslVersion		= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		const bool					supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+		std::ostringstream			src;
 
-		std::ostringstream src;
-		src << "#version 310 es\n"
-			<< "#extension GL_OES_shader_image_atomic : require\n"
+		src << getGLSLVersionDeclaration(glslVersion) << "\n"
+			<< (supportsES32 ? "\n" : "#extension GL_OES_shader_image_atomic : require\n")
 			<< "layout (local_size_x = " << m_localSize << ") in;\n"
 			<< "layout(r32ui, binding = 1) uniform highp uimage2D u_dstImg;\n"
 			<< "buffer Input {\n"
@@ -1343,18 +1372,22 @@ public:
 
 	IterateResult iterate (void)
 	{
-		const ShaderProgram program0(m_context.getRenderContext(), ProgramSources() <<
-			ComputeSource("#version 310 es\n"
-						  "layout (local_size_x = 1) in;\n"
+		const GLSLVersion			glslVersion				= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		const char* const			glslVersionDeclaration	= getGLSLVersionDeclaration(glslVersion);
+
+		std::ostringstream src0;
+		src0 << glslVersionDeclaration << "\n"
+			 << "layout (local_size_x = 1) in;\n"
 						  "uniform uint u_baseVal;\n"
 						  "layout(r32ui, binding = 2) writeonly uniform highp uimage2D u_img;\n"
 						  "void main (void) {\n"
 						  "    uint offset = gl_NumWorkGroups.x*gl_NumWorkGroups.y*gl_WorkGroupID.z + gl_NumWorkGroups.x*gl_WorkGroupID.y + gl_WorkGroupID.x;\n"
 						  "    imageStore(u_img, ivec2(gl_WorkGroupID.xy), uvec4(offset+u_baseVal, 0, 0, 0));\n"
-						  "}\n"));
-		const ShaderProgram program1(m_context.getRenderContext(), ProgramSources() <<
-			ComputeSource("#version 310 es\n"
-						  "layout (local_size_x = 1) in;\n"
+				"}\n";
+
+		std::ostringstream src1;
+		src1 << glslVersionDeclaration << "\n"
+			 << "layout (local_size_x = 1) in;\n"
 						  "layout(r32ui, binding = 2) readonly uniform highp uimage2D u_img;\n"
 						  "layout(binding = 0) buffer Output {\n"
 						  "    coherent uint sum;\n"
@@ -1362,7 +1395,10 @@ public:
 						  "void main (void) {\n"
 						  "    uint value = imageLoad(u_img, ivec2(gl_WorkGroupID.xy)).x;\n"
 						  "    atomicAdd(sum, value);\n"
-						  "}\n"));
+				"}\n";
+
+		const ShaderProgram			program0		(m_context.getRenderContext(), ProgramSources() << ComputeSource(src0.str()));
+		const ShaderProgram			program1		(m_context.getRenderContext(), ProgramSources() << ComputeSource(src1.str()));
 
 		const glw::Functions&		gl				= m_context.getRenderContext().getFunctions();
 		const Texture				tempTexture		(m_context.getRenderContext());
@@ -1460,8 +1496,10 @@ public:
 		const int					workGroupCount	= m_workSize[0]*m_workSize[1]*m_workSize[2];
 		const int					numValues		= workGroupSize*workGroupCount;
 
-		std::ostringstream src;
-		src << "#version 310 es\n"
+		const GLSLVersion			glslVersion		= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+		std::ostringstream			src;
+
+		src << getGLSLVersionDeclaration(glslVersion) << "\n"
 			<< "layout (local_size_x = " << m_localSize[0] << ", local_size_y = " << m_localSize[1] << ", local_size_z = " << m_localSize[2] << ") in;\n"
 			<< "layout(binding = 0) buffer Output {\n"
 			<< "    uint values[" << numValues << "];\n"

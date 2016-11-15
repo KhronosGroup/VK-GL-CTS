@@ -4038,12 +4038,12 @@ std::string genShaderSourceInterpolateAt (NegativeTestContext& ctx, glu::ShaderT
 {
 	DE_ASSERT(function >= SHADER_FUNCTION_INTERPOLATED_AT_CENTROID && function <= SHADER_FUNCTION_INTERPOLATED_AT_OFFSET);
 
-	const bool			isES32 = contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool			supportsES32 = contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	std::ostringstream	source;
 
-	source	<< (isES32 ? glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES)) << "\n"
+	source	<< (supportsES32 ? glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES)) << "\n"
 			<< getShaderInitialization(ctx, shaderType)
-			<< (isES32 ? "" : getShaderExtensionDeclaration("GL_OES_shader_multisample_interpolation"))
+			<< (supportsES32 ? "" : getShaderExtensionDeclaration("GL_OES_shader_multisample_interpolation"))
 			<< declareShaderInput(interpolantDataType, "interpolant")
 			<< "void main()\n"
 			<< "{\n";

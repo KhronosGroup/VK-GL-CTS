@@ -262,7 +262,7 @@ void Texture2DShader::shadeFragments (rr::FragmentPacket* packets, const int num
 	}
 }
 
-TextureCubeArrayShader::TextureCubeArrayShader (glu::DataType samplerType, glu::DataType outputType)
+TextureCubeArrayShader::TextureCubeArrayShader (glu::DataType samplerType, glu::DataType outputType, glu::GLSLVersion glslVersion)
 	: sglr::ShaderProgram(sglr::pdec::ShaderProgramDeclaration()
 							<< sglr::pdec::VertexAttribute("a_position", rr::GENERICVECTYPE_FLOAT)
 							<< sglr::pdec::VertexAttribute("a_coord", rr::GENERICVECTYPE_FLOAT)
@@ -274,8 +274,11 @@ TextureCubeArrayShader::TextureCubeArrayShader (glu::DataType samplerType, glu::
 							<< sglr::pdec::Uniform("u_bias", glu::TYPE_FLOAT_VEC4)
 							<< sglr::pdec::Uniform("u_layer", glu::TYPE_INT)
 							<< sglr::pdec::VertexSource(
+									string("") +
+									((glslVersion == glu::GLSL_VERSION_310_ES) ?
 									"#version 310 es\n"
 									"#extension GL_EXT_texture_cube_map_array : require\n"
+									 : "#version 320 es\n") +
 									"in highp vec4 a_position;\n"
 									"in mediump vec2 a_coord;\n"
 									"uniform mat3 u_coordMat;\n"
@@ -287,8 +290,10 @@ TextureCubeArrayShader::TextureCubeArrayShader (glu::DataType samplerType, glu::
 									"}\n")
 							<< sglr::pdec::FragmentSource(
 									string("") +
+									((glslVersion == glu::GLSL_VERSION_310_ES) ?
 									"#version 310 es\n"
 									"#extension GL_EXT_texture_cube_map_array : require\n"
+									 : "#version 320 es\n") +
 									"uniform highp " + glu::getDataTypeName(samplerType) + " u_sampler0;\n"
 									"uniform highp vec4 u_scale;\n"
 									"uniform highp vec4 u_bias;\n"
@@ -304,6 +309,7 @@ TextureCubeArrayShader::TextureCubeArrayShader (glu::DataType samplerType, glu::
 	, m_layer		(0)
 	, m_outputType	(outputType)
 {
+	TCU_CHECK_INTERNAL(glslVersion == glu::GLSL_VERSION_310_ES || glslVersion == glu::GLSL_VERSION_320_ES);
 }
 
 void TextureCubeArrayShader::setLayer (int layer)

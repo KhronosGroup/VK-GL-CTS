@@ -131,8 +131,8 @@ glw::GLenum getEquation (BlendEquation equation)
 
 std::string generateVertexShaderSource (NegativeTestContext& ctx)
 {
-	const bool				isES32	= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	const glu::GLSLVersion	version	= isES32 ? glu::GLSL_VERSION_320_ES : glu::GLSL_VERSION_310_ES;
+	const bool				supportsES32	= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::GLSLVersion	version	= supportsES32 ? glu::GLSL_VERSION_320_ES : glu::GLSL_VERSION_310_ES;
 	std::ostringstream		source;
 
 	source	<< glu::getGLSLVersionDeclaration(version) << "\n"
@@ -146,12 +146,12 @@ std::string generateVertexShaderSource (NegativeTestContext& ctx)
 
 std::string generateFragmentShaderSource (NegativeTestContext& ctx, BlendEquation equation)
 {
-	const bool				isES32	= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	const glu::GLSLVersion	version	= isES32 ? glu::GLSL_VERSION_320_ES : glu::GLSL_VERSION_310_ES;
+	const bool				supportsES32	= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::GLSLVersion	version	= supportsES32 ? glu::GLSL_VERSION_320_ES : glu::GLSL_VERSION_310_ES;
 	std::ostringstream		source;
 
 	source	<< glu::getGLSLVersionDeclaration(version) << "\n"
-			<< (isES32 ? "" : "#extension GL_KHR_blend_equation_advanced : enable\n")
+			<< (supportsES32 ? "" : "#extension GL_KHR_blend_equation_advanced : enable\n")
 			<< "layout(" << getShaderLayoutEquation(equation) << ") out;\n"
 			<< "layout(location=0) out mediump vec4 o_color;\n"
 			<< "void main ()\n"

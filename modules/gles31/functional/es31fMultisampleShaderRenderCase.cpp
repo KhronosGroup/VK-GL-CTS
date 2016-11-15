@@ -98,9 +98,10 @@ void MultisampleRenderCase::init (void)
 {
 	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
 	deInt32					queriedSampleCount	= -1;
-	const bool				isES32				= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool				supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	map<string, string>		args;
-	args["GLSL_VERSION_DECL"]					= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+
+	args["GLSL_VERSION_DECL"] = supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 
 	// requirements
 
@@ -670,9 +671,10 @@ void MultisampleRenderCase::drawOneIteration (void)
 
 std::string	MultisampleRenderCase::genVertexSource (int numTargetSamples) const
 {
-	const bool				isES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool				supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	map<string, string>		args;
-	args["GLSL_VERSION_DECL"]		= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+
+	args["GLSL_VERSION_DECL"] = supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 
 	DE_UNREF(numTargetSamples);
 	return std::string(tcu::StringTemplate(s_vertexSource).specialize(args));
@@ -690,11 +692,12 @@ std::string	MultisampleRenderCase::genMSTextureResolverSource (int numTargetSamp
 {
 	// default behavior: average
 
-	const bool				isES32					= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool				supportsES32			= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	map<string, string>		args;
-	args["GLSL_VERSION_DECL"]						= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	const bool				isSingleSampleTarget	= (m_numRequestedSamples == 0);
 	std::ostringstream		buf;
+
+	args["GLSL_VERSION_DECL"] = supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 
 	buf <<	"${GLSL_VERSION_DECL}\n"
 			"in mediump vec4 v_position;\n"
@@ -726,11 +729,12 @@ std::string MultisampleRenderCase::genMSTextureLayerFetchSource (int numTargetSa
 {
 	DE_UNREF(numTargetSamples);
 
-	const bool				isES32					= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool				supportsES32			= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	map<string, string>		args;
-	args["GLSL_VERSION_DECL"]						= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	const bool				isSingleSampleTarget	= (m_numRequestedSamples == 0);
 	std::ostringstream		buf;
+
+	args["GLSL_VERSION_DECL"] = supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 
 	buf <<	"${GLSL_VERSION_DECL}\n"
 			"in mediump vec4 v_position;\n"

@@ -117,11 +117,11 @@ static const char* const s_expandShaderSourceGeometryBody =	"in highp vec4 v_geo
 
 static std::string specializeShader (const std::string& shaderSource, const glu::ContextType& contextType)
 {
-	const bool							isES32	= glu::contextSupports(contextType, glu::ApiType::es(3, 2));
+	const bool							supportsES32	= glu::contextSupports(contextType, glu::ApiType::es(3, 2));
 	std::map<std::string, std::string>	args;
 	args["GLSL_VERSION_DECL"]					= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(contextType));
-	args["GLSL_EXT_GEOMETRY_SHADER"]			= isES32 ? "" : "#extension GL_EXT_geometry_shader : require\n";
-	args["GLSL_OES_TEXTURE_STORAGE_MULTISAMPLE"]= isES32 ? "" : "#extension GL_OES_texture_storage_multisample_2d_array : require\n";
+	args["GLSL_EXT_GEOMETRY_SHADER"]			= supportsES32 ? "" : "#extension GL_EXT_geometry_shader : require\n";
+	args["GLSL_OES_TEXTURE_STORAGE_MULTISAMPLE"]= supportsES32 ? "" : "#extension GL_OES_texture_storage_multisample_2d_array : require\n";
 
 	return tcu::StringTemplate(shaderSource).specialize(args);
 }
@@ -218,7 +218,7 @@ VertexExpanderShader::VertexExpanderShader (const glu::ContextType& contextType,
 							<< sglr::pdec::VertexSource(specializeShader(s_commonShaderSourceVertex, contextType))
 							<< sglr::pdec::FragmentSource(specializeShader(s_commonShaderSourceFragment, contextType))
 							<< sglr::pdec::GeometryShaderDeclaration(inputType, outputType, calcOutputVertices(inputType))
-							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, inputType, outputType).c_str()))
+							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, inputType, outputType)))
 {
 }
 
@@ -321,7 +321,7 @@ VertexEmitterShader::VertexEmitterShader (const glu::ContextType& contextType, i
 							<< sglr::pdec::VertexSource(specializeShader(s_commonShaderSourceVertex, contextType))
 							<< sglr::pdec::FragmentSource(specializeShader(s_commonShaderSourceFragment, contextType))
 							<< sglr::pdec::GeometryShaderDeclaration(rr::GEOMETRYSHADERINPUTTYPE_POINTS, outputType, emitCountA + emitCountB)
-							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, emitCountA, endCountA, emitCountB, endCountB, outputType).c_str()))
+							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, emitCountA, endCountA, emitCountB, endCountB, outputType)))
 	, m_emitCountA		(emitCountA)
 	, m_endCountA		(endCountA)
 	, m_emitCountB		(emitCountB)
@@ -772,9 +772,9 @@ sglr::pdec::ShaderProgramDeclaration VertexVaryingShader::genProgramDeclaration	
 						"}\n";
 
 	decl
-		<< sglr::pdec::VertexSource(specializeShader(vertexSource.str(), contextType).c_str())
-		<< sglr::pdec::FragmentSource(specializeShader(fragmentSource.str(), contextType).c_str())
-		<< sglr::pdec::GeometrySource(specializeShader(geometrySource.str(), contextType).c_str());
+		<< sglr::pdec::VertexSource(specializeShader(vertexSource.str(), contextType))
+		<< sglr::pdec::FragmentSource(specializeShader(fragmentSource.str(), contextType))
+		<< sglr::pdec::GeometrySource(specializeShader(geometrySource.str(), contextType));
 	return decl;
 }
 
@@ -806,7 +806,7 @@ OutputCountShader::OutputCountShader (const glu::ContextType& contextType, const
 							<< sglr::pdec::VertexSource(specializeShader(s_commonShaderSourceVertex, contextType))
 							<< sglr::pdec::FragmentSource(specializeShader(s_commonShaderSourceFragment, contextType))
 							<< sglr::pdec::GeometryShaderDeclaration(rr::GEOMETRYSHADERINPUTTYPE_POINTS, rr::GEOMETRYSHADEROUTPUTTYPE_TRIANGLE_STRIP, getPatternEmitCount(spec))
-							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, spec).c_str()))
+							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, spec)))
 	, m_patternLength		((int)spec.pattern.size())
 	, m_patternMaxEmitCount	((int)getPatternEmitCount(spec))
 	, m_spec				(spec)
@@ -943,7 +943,7 @@ BuiltinVariableShader::BuiltinVariableShader (const glu::ContextType& contextTyp
 							<< sglr::pdec::GeometryShaderDeclaration(rr::GEOMETRYSHADERINPUTTYPE_POINTS,
 																	 ((test == TEST_POINT_SIZE) ? (rr::GEOMETRYSHADEROUTPUTTYPE_POINTS) : (rr::GEOMETRYSHADEROUTPUTTYPE_TRIANGLE_STRIP)),
 																	 ((test == TEST_POINT_SIZE) ? (1) : (3)))
-							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, test).c_str()))
+							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, test)))
 	, m_test				(test)
 {
 }
@@ -1239,7 +1239,7 @@ VaryingOutputCountShader::VaryingOutputCountShader (const glu::ContextType& cont
 																	 rr::GEOMETRYSHADEROUTPUTTYPE_TRIANGLE_STRIP,
 																	 maxEmitCount,
 																	 (instanced) ? (4) : (1))
-							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, source, maxEmitCount, instanced).c_str()))
+							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, source, maxEmitCount, instanced)))
 	, m_test				(source)
 	, m_sampler				(getUniformByName("u_sampler"))
 	, m_emitCount			(getUniformByName("u_emitCount"))
@@ -1512,7 +1512,7 @@ InvocationCountShader::InvocationCountShader (const glu::ContextType& contextTyp
 																	 rr::GEOMETRYSHADEROUTPUTTYPE_TRIANGLE_STRIP,
 																	 getNumVertices(numInvocations, testCase),
 																	 numInvocations)
-							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, numInvocations, testCase).c_str()))
+							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, numInvocations, testCase)))
 	, m_numInvocations		(numInvocations)
 	, m_testCase			(testCase)
 {
@@ -1693,7 +1693,7 @@ InstancedExpansionShader::InstancedExpansionShader (const glu::ContextType& cont
 																	 rr::GEOMETRYSHADEROUTPUTTYPE_TRIANGLE_STRIP,
 																	 4,
 																	 numInvocations)
-							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, numInvocations).c_str()))
+							<< sglr::pdec::GeometrySource(genGeometrySource(contextType, numInvocations)))
 	, m_numInvocations		(numInvocations)
 {
 }
@@ -2600,7 +2600,7 @@ void BuiltinVariableRenderTest::init (void)
 
 		tcu::Vec2 range = tcu::Vec2(1.0f, 1.0f);
 
-		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_point_size"))
+		if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 4)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_point_size"))
 			TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_point_size extension.");
 
 		m_context.getRenderContext().getFunctions().getFloatv(GL_ALIASED_POINT_SIZE_RANGE, range.getPtr());
@@ -3953,24 +3953,24 @@ void GeometryProgramQueryCase::init (void)
 
 GeometryProgramQueryCase::IterateResult GeometryProgramQueryCase::iterate (void)
 {
-	const bool			isES32			=	glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool			supportsES32			= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	static std::string	s_vertexSource	=	std::string(glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType()))) + "\n"
-											"void main ()\n"
-											"{\n"
-											"	gl_Position = vec4(0.0, 0.0, 0.0, 0.0);\n"
-											"}\n";
-	static std::string	s_fragmentSource =	std::string(glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType()))) + "\n"
-											"layout(location = 0) out mediump vec4 fragColor;\n"
-											"void main ()\n"
-											"{\n"
-											"	fragColor = vec4(0.0, 0.0, 0.0, 0.0);\n"
-											"}\n";
-	static std::string	s_geometryBody =	"void main ()\n"
-											"{\n"
-											"	gl_Position = vec4(0.0, 0.0, 0.0, 0.0);\n"
-											"	EmitVertex();\n"
-											"}\n";
+	const std::string	vertexSource			= std::string(glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType()))) + "\n"
+												  "void main ()\n"
+												  "{\n"
+												  "	gl_Position = vec4(0.0, 0.0, 0.0, 0.0);\n"
+												  "}\n";
+	const std::string	fragmentSource			= std::string(glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType()))) + "\n"
+												  "layout(location = 0) out mediump vec4 fragColor;\n"
+												  "void main ()\n"
+												  "{\n"
+												  "	fragColor = vec4(0.0, 0.0, 0.0, 0.0);\n"
+												  "}\n";
+	static const char*	s_geometryBody			="void main ()\n"
+												  "{\n"
+												  "	gl_Position = vec4(0.0, 0.0, 0.0, 0.0);\n"
+												  "	EmitVertex();\n"
+												  "}\n";
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
@@ -3981,8 +3981,8 @@ GeometryProgramQueryCase::IterateResult GeometryProgramQueryCase::iterate (void)
 		const std::string			geometrySource	= m_cases[ndx].header + std::string(s_geometryBody);
 		const glu::ShaderProgram	program			(m_context.getRenderContext(),
 														glu::ProgramSources()
-														<< glu::VertexSource(s_vertexSource)
-														<< glu::FragmentSource(s_fragmentSource)
+														<< glu::VertexSource(vertexSource)
+														<< glu::FragmentSource(fragmentSource)
 														<< glu::GeometrySource(specializeShader(geometrySource, m_context.getRenderContext().getType())));
 
 		m_testCtx.getLog() << program;
@@ -3994,8 +3994,8 @@ GeometryProgramQueryCase::IterateResult GeometryProgramQueryCase::iterate (void)
 		const tcu::ScopedLogSection section			(m_testCtx.getLog(), "NoGeometryShader", "No geometry shader");
 		const glu::ShaderProgram	program			(m_context.getRenderContext(),
 														glu::ProgramSources()
-														<< glu::VertexSource(s_vertexSource)
-														<< glu::FragmentSource(s_fragmentSource));
+														<< glu::VertexSource(vertexSource)
+														<< glu::FragmentSource(fragmentSource));
 
 		m_testCtx.getLog() << program;
 		expectQueryError(program.getProgram());
@@ -4004,24 +4004,25 @@ GeometryProgramQueryCase::IterateResult GeometryProgramQueryCase::iterate (void)
 	// not linked -case (INVALID OP)
 	{
 		const tcu::ScopedLogSection section				(m_testCtx.getLog(), "NotLinkedProgram", "Shader program not linked");
-		static const std::string	geometrySource		= std::string(glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType()))) + "\n"
-														+ std::string(isES32 ? "" : "#extension GL_EXT_geometry_shader : require\n")
+		const std::string	geometrySource				= std::string(glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType()))) + "\n"
+														+ std::string(supportsES32 ? "" : "#extension GL_EXT_geometry_shader : require\n")
 														+ "layout (triangles) in;\n"
 														"layout (points, max_vertices = 3) out;\n"
 														+ std::string(s_geometryBody);
 
-		static const char* const	s_vtxSource = s_vertexSource.c_str();
-		static const char* const	s_fragSource = s_fragmentSource.c_str();
-		static const char* const	s_geomSource = geometrySource.c_str();
+
+		const char* const			vtxSourcePtr	= vertexSource.c_str();
+		const char* const			fragSourcePtr	= fragmentSource.c_str();
+		const char* const			geomSourcePtr	= geometrySource.c_str();
 
 		glu::Shader					vertexShader	(m_context.getRenderContext(), glu::SHADERTYPE_VERTEX);
 		glu::Shader					fragmentShader	(m_context.getRenderContext(), glu::SHADERTYPE_FRAGMENT);
 		glu::Shader					geometryShader	(m_context.getRenderContext(), glu::SHADERTYPE_GEOMETRY);
 		glu::Program				program			(m_context.getRenderContext());
 
-		vertexShader.setSources(1, &s_vtxSource, DE_NULL);
-		fragmentShader.setSources(1, &s_fragSource, DE_NULL);
-		geometryShader.setSources(1, &s_geomSource, DE_NULL);
+		vertexShader.setSources(1, &vtxSourcePtr, DE_NULL);
+		fragmentShader.setSources(1, &fragSourcePtr, DE_NULL);
+		geometryShader.setSources(1, &geomSourcePtr, DE_NULL);
 
 		vertexShader.compile();
 		fragmentShader.compile();

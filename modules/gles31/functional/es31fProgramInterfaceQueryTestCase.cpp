@@ -203,6 +203,8 @@ std::string PropValidator::getHumanReadablePropertyString (glw::GLint propVal) c
 
 bool PropValidator::isSupported (void) const
 {
+	if(glu::contextSupports(m_renderContext.getType(), glu::ApiType::es(3, 2)))
+		return true;
 	return m_extension == DE_NULL || m_contextInfo.isExtensionSupported(m_extension);
 }
 
@@ -2084,10 +2086,12 @@ const ProgramInterfaceDefinition::Program* ProgramInterfaceQueryTestCase::getAnd
 	const ProgramInterfaceDefinition::Program* programDefinition = getProgramDefinition();
 	DE_ASSERT(programDefinition->isValid());
 
+	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
 	if (programDefinition->hasStage(glu::SHADERTYPE_TESSELLATION_CONTROL) ||
 		programDefinition->hasStage(glu::SHADERTYPE_TESSELLATION_EVALUATION))
 	{
-		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+		if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 			throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
 	}
 
@@ -2095,19 +2099,19 @@ const ProgramInterfaceDefinition::Program* ProgramInterfaceQueryTestCase::getAnd
 	// before query. However, we don't want IS_PER_PATCH-specific tests to become noop and pass.
 	if (m_queryTarget.propFlags == PROGRAMRESOURCEPROP_IS_PER_PATCH)
 	{
-		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+		if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 			throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
 	}
 
 	if (programDefinition->hasStage(glu::SHADERTYPE_GEOMETRY))
 	{
-		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+		if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
 			throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
 	}
 
 	if (programContainsIOBlocks(programDefinition))
 	{
-		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_shader_io_blocks"))
+		if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_shader_io_blocks"))
 			throw tcu::NotSupportedError("Test requires GL_EXT_shader_io_blocks extension");
 	}
 

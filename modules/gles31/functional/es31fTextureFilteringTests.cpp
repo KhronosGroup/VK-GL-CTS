@@ -197,7 +197,9 @@ TextureCubeArrayFilteringCase::~TextureCubeArrayFilteringCase (void)
 
 void TextureCubeArrayFilteringCase::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_cube_map_array"))
+	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
+	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_cube_map_array"))
 		throw tcu::NotSupportedError("GL_EXT_texture_cube_map_array not supported");
 
 	try

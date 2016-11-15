@@ -62,12 +62,12 @@ static const glu::ShaderType s_shaderTypes[] =
 
 std::string generateShaderSource (NegativeTestContext& ctx, glu::ShaderType shaderType, TestPrecise test)
 {
-	const bool				isES32	= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	const glu::GLSLVersion	version	= isES32 ? glu::GLSL_VERSION_320_ES : glu::GLSL_VERSION_310_ES;
+	const bool				supportsES32	= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::GLSLVersion	version	= supportsES32 ? glu::GLSL_VERSION_320_ES : glu::GLSL_VERSION_310_ES;
 	std::ostringstream		source;
 
 	source	<< glu::getGLSLVersionDeclaration(version) << "\n"
-			<< (isES32 ? "" : "#extension GL_EXT_gpu_shader5 : enable\n");
+			<< (supportsES32 ? "" : "#extension GL_EXT_gpu_shader5 : enable\n");
 
 	switch (test)
 	{
@@ -83,17 +83,17 @@ std::string generateShaderSource (NegativeTestContext& ctx, glu::ShaderType shad
     switch (shaderType)
     {
         case glu::SHADERTYPE_GEOMETRY:
-            source  << (isES32 ? "" : "#extension GL_EXT_geometry_shader : enable\n")
+            source  << (supportsES32 ? "" : "#extension GL_EXT_geometry_shader : enable\n")
                     << "layout(max_vertices = 5) out;\n";
             break;
 
         case glu::SHADERTYPE_TESSELLATION_CONTROL:
-            source  << (isES32 ? "" : "#extension GL_EXT_tessellation_shader : enable\n")
+            source  << (supportsES32 ? "" : "#extension GL_EXT_tessellation_shader : enable\n")
                     << "layout(vertices = 3) out;\n";
             break;
 
         case glu::SHADERTYPE_TESSELLATION_EVALUATION:
-            source  << (isES32 ? "" : "#extension GL_EXT_tessellation_shader : enable\n")
+            source  << (supportsES32 ? "" : "#extension GL_EXT_tessellation_shader : enable\n")
                     << "layout(triangles, equal_spacing, cw) in;\n";
             break;
 

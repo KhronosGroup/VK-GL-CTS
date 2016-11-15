@@ -192,7 +192,7 @@ IntegerFunctionCase::IntegerFunctionCase (Context& context, const char* name, co
 	, m_numValues	(100)
 	, m_executor	(DE_NULL)
 {
-	m_spec.version = glu::GLSL_VERSION_310_ES;
+	m_spec.version = glu::getContextTypeGLSLVersion(context.getRenderContext().getType());
 }
 
 IntegerFunctionCase::~IntegerFunctionCase (void)

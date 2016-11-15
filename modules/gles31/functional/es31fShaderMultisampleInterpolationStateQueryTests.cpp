@@ -78,9 +78,9 @@ InterpolationOffsetCase::~InterpolationOffsetCase (void)
 
 void InterpolationOffsetCase::init (void)
 {
-	const bool isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (!isES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
+	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
 		throw tcu::NotSupportedError("Test requires GL_OES_shader_multisample_interpolation extension");
 }
 
@@ -126,9 +126,9 @@ FragmentInterpolationOffsetBitsCase::~FragmentInterpolationOffsetBitsCase (void)
 
 void FragmentInterpolationOffsetBitsCase::init (void)
 {
-	const bool isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (!isES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
+	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
 		throw tcu::NotSupportedError("Test requires GL_OES_shader_multisample_interpolation extension");
 }
 
