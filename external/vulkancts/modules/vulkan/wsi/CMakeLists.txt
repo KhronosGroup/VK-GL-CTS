@@ -12,7 +12,6 @@ set(DEQP_VK_WSI_SRCS
 	)
 
 set(DEQP_VK_WSI_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	)

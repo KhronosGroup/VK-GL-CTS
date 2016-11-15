@@ -8,7 +8,6 @@ set(DEQP_VK_CLIPPING_SRCS
 	)
 
 set(DEQP_VK_CLIPPING_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	)

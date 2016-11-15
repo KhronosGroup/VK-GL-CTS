@@ -14,7 +14,6 @@ set(DEQP_VK_COMPUTE_SRCS
 	)
 
 set(DEQP_VK_COMPUTE_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	)

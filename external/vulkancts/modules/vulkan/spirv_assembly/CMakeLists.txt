@@ -14,7 +14,6 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	)

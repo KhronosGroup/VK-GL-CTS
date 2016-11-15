@@ -32,7 +32,6 @@ set(DEQP_VK_SHADERRENDER_SRCS
 	)
 
 set(DEQP_VK_SHADERRENDER_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	)

@@ -25,7 +25,6 @@ set(DEQP_VK_SYNCHRONIZATION_SRCS
 	)
 
 set(DEQP_VK_SYNCHRONIZATION_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	)

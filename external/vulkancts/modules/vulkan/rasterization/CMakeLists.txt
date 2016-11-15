@@ -6,7 +6,6 @@ set(DEQP_VK_RASTERIZATION_SRCS
 	)
 
 set(DEQP_VK_RASTERIZATION_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	)

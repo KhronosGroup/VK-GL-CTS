@@ -57,7 +57,6 @@ set(DEQP_VK_PIPELINE_SRCS
 	)
 
 set(DEQP_VK_PIPELINE_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	referencerenderer

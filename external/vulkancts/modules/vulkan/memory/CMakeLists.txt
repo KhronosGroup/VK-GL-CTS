@@ -14,7 +14,6 @@ set(DEQP_VK_MEMORY_SRCS
 	)
 
 set(DEQP_VK_MEMORY_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	)

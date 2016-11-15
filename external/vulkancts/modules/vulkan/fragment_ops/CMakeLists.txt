@@ -14,7 +14,6 @@ set(DEQP_VK_FRAGMENT_OPS_SRCS
 	)
 
 set(DEQP_VK_FRAGMENT_OPS_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	)

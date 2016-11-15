@@ -25,7 +25,6 @@ set(DEQP_VK_TEXTURE_SRCS
 	)
 
 set(DEQP_VK_TEXTURE_LIBS
-	deqp-vk-common
 	deqp-vk-shaderexecutor
 	tcutil
 	vkutil
