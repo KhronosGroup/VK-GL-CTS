@@ -47,7 +47,7 @@ JARS="
     hosttestlib\
     CtsDeqpTestCases\
     CtsDeqpRunnerTests\
-    tradefed-prebuilt"
+    tradefed"
 JAR_PATH=
 for JAR in $JARS; do
     checkFile ${JAR_DIR}/${JAR}.jar
