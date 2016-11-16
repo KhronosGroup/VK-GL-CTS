@@ -107,12 +107,10 @@ vector<string> filterExtensions(const vector<VkExtensionProperties>& deviceExten
 	return enabledExtensions;
 }
 
-Move<VkInstance> createInstance (const PlatformInterface& vkp, const tcu::CommandLine& cmdLine)
+Move<VkInstance> createInstance (const PlatformInterface& vkp, const vector<string>& enabledExtensions, const tcu::CommandLine& cmdLine)
 {
 	const bool							isValidationEnabled	= cmdLine.isValidationEnabled();
 	vector<string>						enabledLayers;
-	const vector<VkExtensionProperties>	extensionProperties	= enumerateInstanceExtensionProperties(vkp, DE_NULL);
-	const vector<string>				enabledExtensions	= filterExtensions(extensionProperties);
 
 	if (isValidationEnabled)
 	{
@@ -202,6 +200,7 @@ public:
 
 	VkInstance							getInstance						(void) const	{ return *m_instance;					}
 	const InstanceInterface&			getInstanceInterface			(void) const	{ return m_instanceInterface;			}
+	const vector<string>&				getInstanceExtensions			(void) const	{ return m_instanceExtensions;			}
 
 	VkPhysicalDevice					getPhysicalDevice				(void) const	{ return m_physicalDevice;				}
 	const VkPhysicalDeviceFeatures&		getDeviceFeatures				(void) const	{ return m_deviceFeatures;				}
@@ -215,8 +214,8 @@ public:
 
 private:
 	static VkPhysicalDeviceFeatures		filterDefaultDeviceFeatures		(const VkPhysicalDeviceFeatures& deviceFeatures);
-	static vector<string>				filterDefaultDeviceExtensions	(const vector<VkExtensionProperties>& deviceExtensions);
 
+	const vector<string>				m_instanceExtensions;
 	const Unique<VkInstance>			m_instance;
 	const InstanceDriver				m_instanceInterface;
 
@@ -232,13 +231,14 @@ private:
 };
 
 DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine)
-	: m_instance					(createInstance(vkPlatform, cmdLine))
+	: m_instanceExtensions			(filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, DE_NULL)))
+	, m_instance					(createInstance(vkPlatform, m_instanceExtensions, cmdLine))
 	, m_instanceInterface			(vkPlatform, *m_instance)
 	, m_physicalDevice				(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
 	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
 	, m_deviceFeatures				(filterDefaultDeviceFeatures(getPhysicalDeviceFeatures(m_instanceInterface, m_physicalDevice)))
 	, m_deviceProperties			(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice))
-	, m_deviceExtensions			(filterDefaultDeviceExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, DE_NULL)))
+	, m_deviceExtensions			(filterExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, DE_NULL)))
 	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_deviceFeatures, m_deviceExtensions, cmdLine))
 	, m_deviceInterface				(m_instanceInterface, *m_device)
 {
@@ -263,11 +263,6 @@ VkPhysicalDeviceFeatures DefaultDevice::filterDefaultDeviceFeatures (const VkPhy
 	enabledDeviceFeatures.robustBufferAccess = false;
 
 	return enabledDeviceFeatures;
-}
-
-vector<string> DefaultDevice::filterDefaultDeviceExtensions (const vector<VkExtensionProperties>& deviceExtensions)
-{
-	return filterExtensions(deviceExtensions);
 }
 
 // Allocator utilities
@@ -297,6 +292,7 @@ Context::~Context (void)
 {
 }
 
+const vector<string>&					Context::getInstanceExtensions			(void) const { return m_device->getInstanceExtensions();		}
 vk::VkInstance							Context::getInstance					(void) const { return m_device->getInstance();					}
 const vk::InstanceInterface&			Context::getInstanceInterface			(void) const { return m_device->getInstanceInterface();			}
 vk::VkPhysicalDevice					Context::getPhysicalDevice				(void) const { return m_device->getPhysicalDevice();			}
