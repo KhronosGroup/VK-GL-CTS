@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
+#include "gluRenderConfig.hpp"
 #include "gluRenderContext.hpp"
 #include "deDynamicLibrary.h"
 #include "tcuWin32API.h"
@@ -81,12 +82,12 @@ public:
 	// From WGL_ARB_pixel_format
 	deUint32		surfaceTypes;
 	Acceleration	acceleration;
-//	bool			needPalette;
-//	bool			needSystemPalette;
+	bool			needPalette;
+	bool			needSystemPalette;
 //	bool			swapLayerBuffers;
 //	SwapMethod		swapMethod; { EXCHANGE, UNDEFINED }
-//	int				numOverlays;
-//	int				numUnderlays;
+	int				numOverlays;
+	int				numUnderlays;
 //	bool			transparent;
 //	int				transparentRedValue;
 //	int				transparentGreenValue;
@@ -99,7 +100,7 @@ public:
 //	bool			supportGDI;
 	bool			supportOpenGL;
 	bool			doubleBuffer;
-//	bool			stereo;
+	bool			stereo;
 	PixelType		pixelType;
 
 //	int				colorBits;
@@ -112,7 +113,7 @@ public:
 	int				alphaBits;
 //	int				alphaShift;
 
-//	int				accumBits;
+	int				accumBits;
 //	int				accumRedBits;
 //	int				accumGreenBits;
 //	int				accumBlueBits;
@@ -121,7 +122,7 @@ public:
 	int				depthBits;
 	int				stencilBits;
 
-//	int				numAuxBuffers;
+	int				numAuxBuffers;
 
 	// From WGL_ARB_multisample
 	int				sampleBuffers;
@@ -130,20 +131,27 @@ public:
 	// \todo [2013-04-14 pyry] Version bits?
 
 	PixelFormatInfo (void)
-		: pixelFormat	(0)
-		, surfaceTypes	(0)
-		, acceleration	(ACCELERATION_LAST)
-		, supportOpenGL	(false)
-		, doubleBuffer	(false)
-		, pixelType		(PIXELTYPE_LAST)
-		, redBits		(0)
-		, greenBits		(0)
-		, blueBits		(0)
-		, alphaBits		(0)
-		, depthBits		(0)
-		, stencilBits	(0)
-		, sampleBuffers	(0)
-		, samples		(0)
+		: pixelFormat		(0)
+		, surfaceTypes		(0)
+		, acceleration		(ACCELERATION_LAST)
+		, needPalette		(false)
+		, needSystemPalette	(false)
+		, numOverlays		(0)
+		, numUnderlays		(0)
+		, supportOpenGL		(false)
+		, doubleBuffer		(false)
+		, stereo			(false)
+		, pixelType			(PIXELTYPE_LAST)
+		, redBits			(0)
+		, greenBits			(0)
+		, blueBits			(0)
+		, alphaBits			(0)
+		, accumBits			(0)
+		, depthBits			(0)
+		, stencilBits		(0)
+		, numAuxBuffers		(0)
+		, sampleBuffers		(0)
+		, samples			(0)
 	{
 	}
 };
@@ -187,11 +195,16 @@ typedef void (__stdcall* FunctionPtr) (void);
 class Context
 {
 public:
-						Context				(const Core* core, HDC deviceCtx, glu::ContextType ctxType, int pixelFormat);
+						Context				(const Core*					core,
+											 HDC							deviceCtx,
+											 glu::ContextType				ctxType,
+											 int							pixelFormat,
+											 glu::ResetNotificationStrategy	resetNotificationStrategy);
 						~Context			(void);
 
 	FunctionPtr			getGLFunction		(const char* name) const;
 
+	void				makeCurrent			(void);
 	void				swapBuffers			(void) const;
 
 	HDC					getDeviceContext	(void) const { return m_deviceCtx;	}
@@ -208,6 +221,9 @@ private:
 
 //! Utility for selecting config. Returns -1 if no matching pixel format was found.
 int		choosePixelFormat	(const Core& wgl, HDC deviceCtx, const glu::RenderConfig& config);
+
+//! Is pixel format in general supported by dEQP tests?
+bool	isSupportedByTests	(const PixelFormatInfo& pixelFormatInfo);
 
 } // wgl
 } // tcu

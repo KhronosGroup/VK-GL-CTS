@@ -1003,13 +1003,30 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 
 	// Framebuffer state.
 	{
-		// \todo [2013-04-05 pyry] Single-buffered rendering: use GL_FRONT
-		deUint32	framebuffer		= renderCtx.getDefaultFramebuffer();
-		deUint32	drawReadBuffer	= framebuffer == 0 ? GL_BACK : GL_COLOR_ATTACHMENT0;
+		const deUint32	framebuffer	= renderCtx.getDefaultFramebuffer();
 
-		gl.bindFramebuffer	(GL_FRAMEBUFFER, renderCtx.getDefaultFramebuffer());
-		gl.drawBuffer		(drawReadBuffer);
-		gl.readBuffer		(drawReadBuffer);
+		gl.bindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+		if (framebuffer == 0)
+		{
+			gl.drawBuffer(GL_BACK);
+			gl.readBuffer(GL_BACK);
+
+			// This is a workaround for supporting single-buffered configurations.
+			// Since there is no other place where we need to know if we are dealing
+			// with single-buffered config, it is not worthwhile to add additional
+			// state into RenderContext for that.
+			if (gl.getError() != GL_NO_ERROR)
+			{
+				gl.drawBuffer(GL_FRONT);
+				gl.readBuffer(GL_FRONT);
+			}
+		}
+		else
+		{
+			gl.drawBuffer(GL_COLOR_ATTACHMENT0);
+			gl.readBuffer(GL_COLOR_ATTACHMENT0);
+		}
 
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Framebuffer state reset failed");
 	}

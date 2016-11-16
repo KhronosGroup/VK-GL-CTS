@@ -76,7 +76,11 @@ EGLint apiRenderableType (glu::ApiType apiType)
 	return 0;
 }
 
-EGLContext createGLContext (const Library& egl, EGLDisplay display, EGLContext eglConfig, const glu::ContextType& contextType)
+EGLContext createGLContext (const Library&					egl,
+							EGLDisplay						display,
+							EGLContext						eglConfig,
+							const glu::ContextType&			contextType,
+							glu::ResetNotificationStrategy	resetNotificationStrategy)
 {
 	const bool			khrCreateContextSupported	= hasExtension(egl, display, "EGL_KHR_create_context");
 	EGLContext			context						= EGL_NO_CONTEXT;
@@ -95,7 +99,7 @@ EGLContext createGLContext (const Library& egl, EGLDisplay display, EGLContext e
 		else
 		{
 			if (!khrCreateContextSupported)
-				throw tcu::NotSupportedError("EGL_KHR_create_context is required for OpenGL ES 3.0 and newer", DE_NULL, __FILE__, __LINE__);
+				TCU_THROW(NotSupportedError, "EGL_KHR_create_context is required for OpenGL ES 3.0 and newer");
 
 			attribList.push_back(EGL_CONTEXT_MAJOR_VERSION_KHR);
 			attribList.push_back(contextType.getMajorVersion());
@@ -108,7 +112,7 @@ EGLContext createGLContext (const Library& egl, EGLDisplay display, EGLContext e
 		DE_ASSERT(glu::isContextTypeGLCore(contextType) || glu::isContextTypeGLCompatibility(contextType));
 
 		if (!khrCreateContextSupported)
-			throw tcu::NotSupportedError("EGL_KHR_create_context is required for OpenGL context creation", DE_NULL, __FILE__, __LINE__);
+			TCU_THROW(NotSupportedError, "EGL_KHR_create_context is required for OpenGL context creation");
 
 		api = EGL_OPENGL_API;
 
@@ -126,24 +130,50 @@ EGLContext createGLContext (const Library& egl, EGLDisplay display, EGLContext e
 		EGLint flags = 0;
 
 		if (!khrCreateContextSupported)
-			throw tcu::NotSupportedError("EGL_KHR_create_context is required for creating robust/debug/forward-compatible contexts");
+			TCU_THROW(NotSupportedError, "EGL_KHR_create_context is required for creating robust/debug/forward-compatible contexts");
 
 		if ((contextType.getFlags() & glu::CONTEXT_DEBUG) != 0)
 			flags |= EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR;
 
 		if ((contextType.getFlags() & glu::CONTEXT_ROBUST) != 0)
-			flags |= EGL_CONTEXT_OPENGL_ROBUST_ACCESS_BIT_KHR;
+		{
+			if (glu::isContextTypeES(contextType))
+			{
+				if (!hasExtension(egl, display, "EGL_EXT_create_context_robustness") && (getVersion(egl, display) < Version(1, 5)))
+					TCU_THROW(NotSupportedError, "EGL_EXT_create_context_robustness is required for creating robust context");
+
+				attribList.push_back(EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT);
+				attribList.push_back(EGL_TRUE);
+			}
+			else
+				flags |= EGL_CONTEXT_OPENGL_ROBUST_ACCESS_BIT_KHR;
+		}
 
 		if ((contextType.getFlags() & glu::CONTEXT_FORWARD_COMPATIBLE) != 0)
 		{
 			if (!glu::isContextTypeGLCore(contextType))
-				throw tcu::NotSupportedError("Only OpenGL core contexts can be forward-compatible");
+				TCU_THROW(InternalError, "Only OpenGL core contexts can be forward-compatible");
 
 			flags |= EGL_CONTEXT_OPENGL_FORWARD_COMPATIBLE_BIT_KHR;
 		}
 
 		attribList.push_back(EGL_CONTEXT_FLAGS_KHR);
 		attribList.push_back(flags);
+
+		if (resetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
+		{
+			if (glu::isContextTypeES(contextType))
+				TCU_THROW(InternalError, "Specifying reset notification strategy is not allowed when creating OpenGL ES contexts");
+
+			attribList.push_back(EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_KHR);
+
+			if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)
+				attribList.push_back(EGL_NO_RESET_NOTIFICATION_KHR);
+			else if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_LOSE_CONTEXT_ON_RESET)
+				attribList.push_back(EGL_LOSE_CONTEXT_ON_RESET_KHR);
+			else
+				TCU_THROW(InternalError, "Unknown reset notification strategy");
+		}
 	}
 
 	attribList.push_back(EGL_NONE);

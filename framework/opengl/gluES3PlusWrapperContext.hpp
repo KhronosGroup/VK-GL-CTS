@@ -61,6 +61,8 @@ public:
 	virtual deUint32					getDefaultFramebuffer	(void) const	{ return m_context->getDefaultFramebuffer();	}
 	virtual void						postIterate				(void)			{ m_context->postIterate();						}
 
+	virtual void						makeCurrent				(void)			{ m_context->makeCurrent();						}
+
 private:
 	RenderContext*						m_context;				//!< Actual GL 4.3 core context.
 	glw::Functions						m_functions;

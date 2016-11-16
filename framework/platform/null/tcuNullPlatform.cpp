@@ -26,6 +26,7 @@
 #include "tcuNullRenderContext.hpp"
 #include "egluNativeDisplay.hpp"
 #include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 #include "vkNullDriver.hpp"
 
 namespace tcu
@@ -45,6 +46,11 @@ public:
 	const eglw::Library& getLibrary (void) const
 	{
 		return m_library;
+	}
+
+	eglw::EGLNativeDisplayType getLegacyNative (void)
+	{
+		return EGL_DEFAULT_DISPLAY;
 	}
 
 private:
