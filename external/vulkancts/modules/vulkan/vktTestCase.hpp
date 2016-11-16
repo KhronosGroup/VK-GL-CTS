@@ -60,6 +60,7 @@ public:
 	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection				(void) const { return m_progCollection;		}
 
 	// Default instance & device, selected with --deqp-vk-device-id=N
+	const std::vector<std::string>&				getInstanceExtensions			(void) const;
 	vk::VkInstance								getInstance						(void) const;
 	const vk::InstanceInterface&				getInstanceInterface			(void) const;
 	vk::VkPhysicalDevice						getPhysicalDevice				(void) const;
