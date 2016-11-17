@@ -170,7 +170,7 @@ class BatchResultParser:
 			statusCode		= resultItems[0].getAttributeNode('StatusCode').nodeValue
 			statusDetails	= getNodeText(resultItems[0])
 		except Exception as e:
-			statusCode		= TestStatusCode.INTERNAL_ERROR
+			statusCode		= StatusCode.INTERNAL_ERROR
 			statusDetails	= "XML parsing failed: %s" % str(e)
 
 		self.testCaseResults.append(TestCaseResult(name, statusCode, statusDetails, log))
