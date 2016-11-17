@@ -1562,7 +1562,6 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 
 		std::vector<VkSparseImageMemoryBind>		imageResidencyMemoryBinds;
 		std::vector<VkSparseMemoryBind>				imageMipTailMemoryBinds;
-		std::vector< de::SharedPtr<Allocation> >	allocations;
 
 		for (deUint32 layerNdx = 0; layerNdx < arrayLayers; ++ layerNdx)
 		{
@@ -1595,7 +1594,7 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 
 					de::SharedPtr<Allocation> allocation(m_memAlloc.allocate(allocRequirements, MemoryRequirement::Any).release());
 
-					allocations.push_back(allocation);
+					m_allocations.push_back(allocation);
 
 					VkOffset3D offset;
 					offset.x = x*imageGranularity.width;
@@ -1625,28 +1624,35 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 				}
 			}
 
-			// Handle MIP tail for each layer
+			// Handle MIP tail. There are two cases to consider here:
+			//
+			// 1) VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT is requested by the driver: each layer needs a separate tail.
+			// 2) otherwise:                                                            only one tail is needed.
 			{
-				const VkMemoryRequirements allocRequirements =
+				if ( imageMipTailMemoryBinds.size() == 0                                                                                                   ||
+					(imageMipTailMemoryBinds.size() != 0 && (aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) == 0))
 				{
-					aspectRequirements.imageMipTailSize,	// VkDeviceSize	size;
-					memoryRequirements.alignment,			// VkDeviceSize	alignment;
-					memoryRequirements.memoryTypeBits,		// uint32_t		memoryTypeBits;
-				};
+					const VkMemoryRequirements allocRequirements =
+					{
+						aspectRequirements.imageMipTailSize,	// VkDeviceSize	size;
+						memoryRequirements.alignment,			// VkDeviceSize	alignment;
+						memoryRequirements.memoryTypeBits,		// uint32_t		memoryTypeBits;
+					};
 
-				const de::SharedPtr<Allocation> allocation(m_memAlloc.allocate(allocRequirements, MemoryRequirement::Any).release());
+					const de::SharedPtr<Allocation> allocation(m_memAlloc.allocate(allocRequirements, MemoryRequirement::Any).release());
 
-				const VkSparseMemoryBind imageMipTailMemoryBind =
-				{
-					aspectRequirements.imageMipTailOffset + layerNdx * aspectRequirements.imageMipTailStride,	// VkDeviceSize					resourceOffset;
-					aspectRequirements.imageMipTailSize,														// VkDeviceSize					size;
-					allocation->getMemory(),																	// VkDeviceMemory				memory;
-					allocation->getOffset(),																	// VkDeviceSize					memoryOffset;
-					0u,																							// VkSparseMemoryBindFlags		flags;
-				};
+					const VkSparseMemoryBind imageMipTailMemoryBind =
+					{
+						aspectRequirements.imageMipTailOffset + layerNdx * aspectRequirements.imageMipTailStride,	// VkDeviceSize					resourceOffset;
+						aspectRequirements.imageMipTailSize,														// VkDeviceSize					size;
+						allocation->getMemory(),																	// VkDeviceMemory				memory;
+						allocation->getOffset(),																	// VkDeviceSize					memoryOffset;
+						0u,																							// VkSparseMemoryBindFlags		flags;
+					};
 
-				allocations.push_back(allocation);
-				imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
+					m_allocations.push_back(allocation);
+					imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
+				}
 			}
 		}
 
@@ -2199,7 +2205,7 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 	{
 		sampler.get(),								// VkSampler				sampler;
 		imageView.get(),							// VkImageView				imageView;
-		VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			imageLayout;
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,	// VkImageLayout			imageLayout;
 	};
 
 	de::MovePtr<SamplerUniform> uniform(new SamplerUniform());
