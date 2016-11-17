@@ -193,7 +193,7 @@ PACKAGES = [
 		"glslang"),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
-		"e4e22fd832810c45f46d542c67910b0c6bf4ca2d",
+		"bd47a9abaefac00be692eae677daed1b977e625c",
 		"spirv-headers"),
 ]
 
