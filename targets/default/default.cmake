@@ -68,3 +68,8 @@ if (DE_OS_IS_UNIX)
 		include_directories(${XCB_INCLUDE_DIR})
 	endif ()
 endif ()
+
+# Win32?
+if (DE_OS_IS_WIN32)
+	set(DEQP_SUPPORT_WGL ON)
+endif ()

@@ -1,6 +1,6 @@
 # dEQP cmake file
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 
 # dEQP Target.
 set(DEQP_TARGET "default" CACHE STRING "dEQP Target (default, android...)")
@@ -25,6 +25,7 @@ set(DEQP_GLES1_LIBRARIES	)				# GLESv1 libraries
 set(DEQP_SUPPORT_VG			OFF)			# Is OpenVG supported
 set(DEQP_VG_LIBRARIES		)				# VG libraries
 
+set(DEQP_SUPPORT_WGL		OFF)
 set(DEQP_SUPPORT_GLX		OFF)			# Is GLX supported \todo [2016-10-12 pyry] X11 specific - move to framework/platform/
 
 set(DEQP_PLATFORM_LIBRARIES	)				# Other platform libraries
@@ -168,10 +169,6 @@ if (DE_OS_IS_ANDROID OR DE_OS_IS_IOS)
 	set(DEQP_MODULE_ENTRY_POINTS )
 endif ()
 
-if (DE_OS_IS_WIN32)
-	include_directories(framework/platform/win32)
-endif ()
-
 # Macro for adding targets for copying binaries (usually target libraries) to the target destination dir
 macro (target_copy_files target dep_name files)
 	if (NOT "${files}" STREQUAL "")
@@ -262,8 +259,26 @@ add_subdirectory(external/vulkancts/modules/vulkan)
 if (DE_OS_IS_ANDROID)
 	include_directories(executor)
 
-	add_library(deqp SHARED framework/platform/android/tcuAndroidMain.cpp framework/platform/android/tcuAndroidJNI.cpp framework/platform/android/tcuAndroidPlatformCapabilityQueryJNI.cpp framework/platform/android/tcuTestLogParserJNI.cpp ${DEQP_MODULE_ENTRY_POINTS})
-	target_link_libraries(deqp tcutil-platform xecore ${DEQP_MODULE_LIBRARIES})
+	set(DEQP_SRCS
+		framework/platform/android/tcuAndroidMain.cpp
+		framework/platform/android/tcuAndroidJNI.cpp
+		framework/platform/android/tcuAndroidPlatformCapabilityQueryJNI.cpp
+		framework/platform/android/tcuTestLogParserJNI.cpp
+		${DEQP_MODULE_ENTRY_POINTS}
+		)
+
+	set(DEQP_LIBS
+		tcutil-platform
+		xecore
+		${DEQP_MODULE_LIBRARIES}
+		)
+
+	add_library(deqp SHARED ${DEQP_SRCS})
+	target_link_libraries(deqp ${DEQP_LIBS})
+
+	# Needed by OpenGL CTS that defines its own activity but depends on
+	# common Android support code.
+	target_include_directories(deqp PRIVATE framework/platform/android)
 
 elseif (DE_OS_IS_IOS)
 	# Code sign identity
