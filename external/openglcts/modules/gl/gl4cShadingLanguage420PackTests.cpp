@@ -16787,6 +16787,7 @@ bool ScalarSwizzlersInvalidTest::prepareNextTestCase(glw::GLuint test_case_index
 	case INVALID_B:
 	case INVALID_Q:
 	case INVALID_XY:
+	case INVALID_XRS:
 	case WRONG:
 	case MISSING_PARENTHESIS:
 		m_case = (TESTED_CASES)test_case_index;
@@ -16832,6 +16833,12 @@ void ScalarSwizzlersInvalidTest::prepareShaderSource(Utils::SHADER_STAGES in_sta
 												   "    {\n"
 												   "        result = vec4(1, 0, 0, 1);\n"
 												   "    }\n";
+
+	static const GLchar* verification_invalid_xrs = "\n"
+													"    if (vec3(0.125, 0.125, 0.25) != variable.xrs) )\n"
+													"    {\n"
+													"        result = vec4(1, 0, 0, 1);\n"
+													"    }\n";
 
 	static const GLchar* verification_wrong_u = "\n"
 												"    if (0.125 != variable.u) )\n"
@@ -17033,6 +17040,9 @@ void ScalarSwizzlersInvalidTest::prepareShaderSource(Utils::SHADER_STAGES in_sta
 		break;
 	case INVALID_XY:
 		verification_snippet = verification_invalid_xy;
+		break;
+	case INVALID_XRS:
+		verification_snippet = verification_invalid_xrs;
 		break;
 	case WRONG:
 		verification_snippet = verification_wrong_u;
