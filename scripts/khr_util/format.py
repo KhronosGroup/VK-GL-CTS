@@ -20,6 +20,7 @@
 #
 #-------------------------------------------------------------------------
 
+import os
 from itertools import chain
 
 INL_HEADER_TMPL = """\
@@ -77,8 +78,7 @@ def readFile (filename):
 	return data
 
 def writeFileIfChanged (filename, data):
-	oldData = readFile(filename)
-	if data != oldData:
+	if not os.path.exists(filename) or readFile(filename) != data:
 		f = open(filename, 'wb')
 		f.write(data)
 		f.close()
