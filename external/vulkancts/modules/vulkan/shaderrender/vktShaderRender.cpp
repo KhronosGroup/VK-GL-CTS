@@ -1578,13 +1578,6 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 				for (deUint32 y = 0; y < numSparseBinds.y(); ++y)
 				for (deUint32 x = 0; x < numSparseBinds.x(); ++x)
 				{
-					const deUint32 linearIndex = x + y*numSparseBinds.x() + z*numSparseBinds.x()*numSparseBinds.y() + layerNdx*numSparseBinds.x()*numSparseBinds.y()*numSparseBinds.z();
-
-					if (linearIndex % 2 == 1)
-					{
-						continue;
-					}
-
 					const VkMemoryRequirements allocRequirements =
 					{
 						// 28.7.5 alignment shows the block size in bytes
