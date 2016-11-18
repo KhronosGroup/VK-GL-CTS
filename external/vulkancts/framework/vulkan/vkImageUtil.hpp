@@ -59,6 +59,7 @@ VkSamplerMipmapMode			mapMipmapMode				(tcu::Sampler::FilterMode filterMode);
 VkSamplerAddressMode		mapWrapMode					(tcu::Sampler::WrapMode wrapMode);
 VkCompareOp					mapCompareMode				(tcu::Sampler::CompareMode mode);
 VkFormat					mapTextureFormat			(const tcu::TextureFormat& format);
+VkFormat					mapCompressedTextureFormat	(const tcu::CompressedTexFormat format);
 VkSamplerCreateInfo			mapSampler					(const tcu::Sampler& sampler, const tcu::TextureFormat& format, float minLod = 0.0f, float maxLod = 1000.0f);
 
 void						imageUtilSelfTest			(void);
