@@ -240,52 +240,77 @@ CopiesAndBlittingTestInstance::CopiesAndBlittingTestInstance (Context& context, 
 
 void CopiesAndBlittingTestInstance::generateBuffer (tcu::PixelBufferAccess buffer, int width, int height, int depth, FillMode mode)
 {
+	const tcu::TextureChannelClass	channelClass	= tcu::getTextureChannelClass(buffer.getFormat().type);
+	tcu::Vec4						maxValue		(1.0f);
+
+	if (buffer.getFormat().order == tcu::TextureFormat::S)
+	{
+		// Stencil-only is stored in the first component. Stencil is always 8 bits.
+		maxValue.x() = 1 << 8;
+	}
+	else if (buffer.getFormat().order == tcu::TextureFormat::DS)
+	{
+		// In a combined format, fillWithComponentGradients expects stencil in the fourth component.
+		maxValue.w() = 1 << 8;
+	}
+	else if (channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER || channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
+	{
+		// The tcu::Vectors we use as pixels are 32-bit, so clamp to that.
+		const tcu::IVec4	bits	= tcu::min(tcu::getTextureFormatBitDepth(buffer.getFormat()), tcu::IVec4(32));
+		const int			signBit	= (channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ? 1 : 0);
+
+		for (int i = 0; i < 4; ++i)
+		{
+			if (bits[i] != 0)
+				maxValue[i] = static_cast<float>((1 << (bits[i] - signBit)) - 1);
+		}
+	}
+
 	if (mode == FILL_MODE_GRADIENT)
 	{
-		tcu::fillWithComponentGradients(buffer, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		tcu::fillWithComponentGradients(buffer, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f), maxValue);
 		return;
 	}
 
-	const tcu::Vec4		redColor	(1.0, 0.0, 0.0, 1.0);
-	const tcu::Vec4		greenColor	(0.0, 1.0, 0.0, 1.0);
-	const tcu::Vec4		blueColor	(0.0, 0.0, 1.0, 1.0);
-	const tcu::Vec4		whiteColor	(1.0, 1.0, 1.0, 1.0);
+	const tcu::Vec4		redColor	(maxValue.x(),	0.0,			0.0,			maxValue.w());
+	const tcu::Vec4		greenColor	(0.0,			maxValue.y(),	0.0,			maxValue.w());
+	const tcu::Vec4		blueColor	(0.0,			0.0,			maxValue.z(),	maxValue.w());
+	const tcu::Vec4		whiteColor	(maxValue.x(),	maxValue.y(),	maxValue.z(),	maxValue.w());
 
-	for (int z = 0; z < depth; z++)
+	for (int z = 0; z < depth;  ++z)
+	for (int y = 0; y < height; ++y)
+	for (int x = 0; x < width;  ++x)
 	{
-		for (int y = 0; y < height; y++)
+		switch (mode)
 		{
-			for (int x = 0; x < width; x++)
-			{
-				switch (mode)
+			case FILL_MODE_WHITE:
+				if (tcu::isCombinedDepthStencilType(buffer.getFormat().type))
 				{
-					case FILL_MODE_WHITE:
-						if (tcu::isCombinedDepthStencilType(buffer.getFormat().type))
-						{
-							buffer.setPixDepth(1.0f, x, y, z);
-							if (tcu::hasStencilComponent(buffer.getFormat().order))
-								buffer.setPixStencil(255, x, y, z);
-						}
-						else
-							buffer.setPixel(whiteColor, x, y, z);
-						break;
-					case FILL_MODE_RED:
-						if (tcu::isCombinedDepthStencilType(buffer.getFormat().type))
-						{
-							buffer.setPixDepth(redColor[x % 4], x, y, z);
-							if (tcu::hasStencilComponent(buffer.getFormat().order))
-								buffer.setPixStencil(255 * (int)redColor[y % 4], x, y, z);
-						}
-						else
-							buffer.setPixel(redColor, x, y, z);
-						break;
-					case FILL_MODE_MULTISAMPLE:
-						buffer.setPixel((x == y) ? tcu::Vec4(0.0, 0.5, 0.5, 1.0) : ((x > y) ? greenColor : blueColor), x, y, z);
-						break;
-					default:
-						break;
+					buffer.setPixDepth(1.0f, x, y, z);
+					if (tcu::hasStencilComponent(buffer.getFormat().order))
+						buffer.setPixStencil(255, x, y, z);
 				}
-			}
+				else
+					buffer.setPixel(whiteColor, x, y, z);
+				break;
+
+			case FILL_MODE_RED:
+				if (tcu::isCombinedDepthStencilType(buffer.getFormat().type))
+				{
+					buffer.setPixDepth(redColor[x % 4], x, y, z);
+					if (tcu::hasStencilComponent(buffer.getFormat().order))
+						buffer.setPixStencil(255 * (int)redColor[y % 4], x, y, z);
+				}
+				else
+					buffer.setPixel(redColor, x, y, z);
+				break;
+
+			case FILL_MODE_MULTISAMPLE:
+				buffer.setPixel((x == y) ? tcu::Vec4(0.0, 0.5, 0.5, 1.0) : ((x > y) ? greenColor : blueColor), x, y, z);
+				break;
+
+			default:
+				break;
 		}
 	}
 }
