@@ -783,6 +783,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/memory/vktMemoryAllocationTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryMappingTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryPipelineBarrierTests.cpp \
+	external/vulkancts/modules/vulkan/memory/vktMemoryRequirementsTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineCacheTests.cpp \
@@ -879,6 +880,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/tessellation/vktTessellationWindingTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktSampleVerifier.cpp \
 	external/vulkancts/modules/vulkan/texture/vktSampleVerifierUtil.cpp \
+	external/vulkancts/modules/vulkan/texture/vktTextureFilteringAnisotropyTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureFilteringExplicitLodTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureFilteringTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureMipmapTests.cpp \
