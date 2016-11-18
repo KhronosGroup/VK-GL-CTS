@@ -10,7 +10,7 @@ group if "If Statements"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{
@@ -33,7 +33,7 @@ group if "If Statements"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{
@@ -60,7 +60,7 @@ group if "If Statements"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{
@@ -84,7 +84,7 @@ group if "If Statements"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{
@@ -108,7 +108,7 @@ group if "If Statements"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{
@@ -131,7 +131,7 @@ group if "If Statements"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{
@@ -154,7 +154,7 @@ group if "If Statements"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{
@@ -178,7 +178,7 @@ group if "If Statements"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{
@@ -203,7 +203,7 @@ group if "If Statements"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{

@@ -50,15 +50,22 @@ enum UniformFlags
 	LAYOUT_STD140		= (1<<5),
 	LAYOUT_ROW_MAJOR	= (1<<6),
 	LAYOUT_COLUMN_MAJOR	= (1<<7),	//!< \note Lack of both flags means column-major matrix.
-	LAYOUT_MASK			= LAYOUT_SHARED|LAYOUT_PACKED|LAYOUT_STD140|LAYOUT_ROW_MAJOR|LAYOUT_COLUMN_MAJOR,
+	LAYOUT_OFFSET		= (1<<8),
+	LAYOUT_MASK			= LAYOUT_SHARED|LAYOUT_PACKED|LAYOUT_STD140|LAYOUT_ROW_MAJOR|LAYOUT_COLUMN_MAJOR|LAYOUT_OFFSET,
 
-	DECLARE_VERTEX		= (1<<8),
-	DECLARE_FRAGMENT	= (1<<9),
+	DECLARE_VERTEX		= (1<<9),
+	DECLARE_FRAGMENT	= (1<<10),
 	DECLARE_BOTH		= DECLARE_VERTEX|DECLARE_FRAGMENT,
 
-	UNUSED_VERTEX		= (1<<10),	//!< Uniform or struct member is not read in vertex shader.
-	UNUSED_FRAGMENT		= (1<<11),	//!< Uniform or struct member is not read in fragment shader.
+	UNUSED_VERTEX		= (1<<11),	//!< Uniform or struct member is not read in vertex shader.
+	UNUSED_FRAGMENT		= (1<<12),	//!< Uniform or struct member is not read in fragment shader.
 	UNUSED_BOTH			= UNUSED_VERTEX|UNUSED_FRAGMENT
+};
+
+enum MatrixLoadFlags
+{
+	LOAD_FULL_MATRIX		= 0,
+	LOAD_MATRIX_COMPONENTS	= 1,
 };
 
 class StructType;
@@ -70,7 +77,7 @@ public:
 						VarType			(const VarType& other);
 						VarType			(glu::DataType basicType, deUint32 flags);
 						VarType			(const VarType& elementType, int arraySize);
-	explicit			VarType			(const StructType* structPtr);
+	explicit			VarType			(const StructType* structPtr, deUint32 flags = 0u);
 						~VarType		(void);
 
 	bool				isBasicType		(void) const	{ return m_type == TYPE_BASIC;	}
@@ -299,7 +306,8 @@ public:
 															 const std::string&	name,
 															 const std::string&	description,
 															 BufferMode			bufferMode,
-															 MatrixLoadFlags	matrixLoadFlag);
+															 MatrixLoadFlags	matrixLoadFlag,
+															 bool				shuffleUniformMembers = false);
 								~UniformBlockCase			(void);
 
 	virtual	void				initPrograms				(vk::SourceCollections& programCollection) const;
@@ -311,14 +319,15 @@ protected:
 	BufferMode					m_bufferMode;
 	ShaderInterface				m_interface;
 	MatrixLoadFlags				m_matrixLoadFlag;
+	const bool					m_shuffleUniformMembers;	//!< Used with explicit offsets to test out of order member offsets
 
 private:
 	std::string					m_vertShaderSource;
 	std::string					m_fragShaderSource;
 
-	std::vector<deUint8>		m_data;				//!< Data.
-	std::map<int, void*>		m_blockPointers;	//!< Reference block pointers.
-	UniformLayout				m_uniformLayout;	//!< std140 layout.
+	std::vector<deUint8>		m_data;						//!< Data.
+	std::map<int, void*>		m_blockPointers;			//!< Reference block pointers.
+	UniformLayout				m_uniformLayout;			//!< std140 layout.
 };
 
 } // ubo

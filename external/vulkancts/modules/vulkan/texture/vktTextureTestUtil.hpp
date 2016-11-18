@@ -165,6 +165,12 @@ public:
 
 	void								renderQuad					(tcu::Surface& result, int texUnit, const float* texCoord, glu::TextureTestUtil::TextureType texType);
 	void								renderQuad					(tcu::Surface& result, int texUnit, const float* texCoord, const glu::TextureTestUtil::ReferenceParams& params);
+	void								renderQuad					(tcu::Surface&									result,
+																	 const float*									positions,
+																	 const int										texUnit,
+																	 const float*									texCoord,
+																	 const glu::TextureTestUtil::ReferenceParams&	params,
+																	 const float									maxAnisotropy);
 
 	void								clearImage					(vk::VkImage image);
 	void								add2DTexture				(const TestTexture2DSp& texture);
