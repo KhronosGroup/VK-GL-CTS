@@ -33,7 +33,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#if DE_OS == DE_OS_UNIX
+#if (DE_OS == DE_OS_UNIX)
 #	include <unistd.h>
 #	include <execinfo.h>
 #	include <errno.h>
@@ -137,7 +137,12 @@ static void defaultCrashHandler (qpCrashHandler* crashHandler, void* userPtr)
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
+/* DbgHelp.h generates C4091 */
+#pragma warning (push)
+#pragma warning (disable: 4091)
 #include <DbgHelp.h>
+#pragma warning (pop)
 
 struct qpCrashHandler_s
 {

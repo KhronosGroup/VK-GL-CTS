@@ -971,6 +971,24 @@ void TextureRenderer::renderQuad (tcu::Surface& result, int texUnit, const float
 
 void TextureRenderer::renderQuad (tcu::Surface& result, int texUnit, const float* texCoord, const ReferenceParams& params)
 {
+	const float	maxAnisotropy = 1.0f;
+	float		positions[]	=
+	{
+		-1.0,	-1.0f,	0.0f,	1.0f,
+		-1.0f,	+1.0f,	0.0f,	1.0f,
+		+1.0f,	-1.0f,	0.0f,	1.0f,
+		+1.0f,	+1.0f,	0.0f,	1.0f
+	};
+	renderQuad(result, positions, texUnit, texCoord, params, maxAnisotropy);
+}
+
+void TextureRenderer::renderQuad (tcu::Surface&									result,
+								  const float*									positions,
+								  int											texUnit,
+								  const float*									texCoord,
+								  const glu::TextureTestUtil::ReferenceParams&	params,
+								  const float									maxAnisotropy)
+{
 	const DeviceInterface&		vkd						= m_context.getDeviceInterface();
 	const VkDevice				vkDevice				= m_context.getDevice();
 	const VkQueue				queue					= m_context.getUniversalQueue();
@@ -984,10 +1002,10 @@ void TextureRenderer::renderQuad (tcu::Surface& result, int texUnit, const float
 	// Render quad with texture.
 	float						position[]				=
 	{
-		-1.0f*wCoord.x(), -1.0f*wCoord.x(), 0.0f, wCoord.x(),
-		-1.0f*wCoord.y(), +1.0f*wCoord.y(), 0.0f, wCoord.y(),
-		+1.0f*wCoord.z(), -1.0f*wCoord.z(), 0.0f, wCoord.z(),
-		+1.0f*wCoord.w(), +1.0f*wCoord.w(), 0.0f, wCoord.w()
+		positions[0]*wCoord.x(),	positions[1]*wCoord.x(),	positions[2],	positions[3]*wCoord.x(),
+		positions[4]*wCoord.y(),	positions[5]*wCoord.y(),	positions[6],	positions[7]*wCoord.y(),
+		positions[8]*wCoord.z(),	positions[9]*wCoord.z(),	positions[10],	positions[11]*wCoord.z(),
+		positions[12]*wCoord.w(),	positions[13]*wCoord.w(),	positions[14],	positions[15]*wCoord.w()
 	};
 
 	Program						progSpec				= PROGRAM_LAST;
@@ -1300,7 +1318,13 @@ void TextureRenderer::renderQuad (tcu::Surface& result, int texUnit, const float
 			{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConst[4];
 		};
 
-		const VkSamplerCreateInfo					samplerCreateInfo			= mapSampler(params.sampler, m_textureBindings[texUnit]->getTestTexture().getTextureFormat(), params.minLod, params.maxLod);
+		VkSamplerCreateInfo					samplerCreateInfo			= mapSampler(params.sampler, m_textureBindings[texUnit]->getTestTexture().getTextureFormat(), params.minLod, params.maxLod);
+
+		if (maxAnisotropy > 1.0f)
+		{
+			samplerCreateInfo.anisotropyEnable = VK_TRUE;
+			samplerCreateInfo.maxAnisotropy = maxAnisotropy;
+		}
 
 		if (samplerCreateInfo.magFilter == VK_FILTER_LINEAR || samplerCreateInfo.minFilter == VK_FILTER_LINEAR || samplerCreateInfo.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR)
 		{
