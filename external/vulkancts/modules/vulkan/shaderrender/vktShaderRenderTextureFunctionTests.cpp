@@ -1694,10 +1694,22 @@ TextureSamplesInstance::TextureSamplesInstance (Context&				context,
 																					&properties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
 			TCU_THROW(NotSupportedError, "Format not supported");
 
-		// Integer pixel formats do not support multisampling, so need to add 1 MS in the list
+		// NOTE: The test case initializes MS images (for all supported N of samples), runs a program
+		//       which invokes OpImageQuerySamples against the image and checks the result.
+		//
+		//       Now, in the SPIR-V spec for the very operation we have the following language:
+		//
+		//       OpImageQuerySamples
+		//       Query the number of samples available per texel fetch in a multisample image.
+		//       Result Type must be a scalar integer type.
+		//       The result is the number of samples.
+		//       Image must be an object whose type is OpTypeImage.
+		//       Its Dim operand must be one of 2D and **MS of 1(multisampled).
+		//
+		//       "MS of 1" implies the image must not be single-sample, meaning we must exclude
+		//       VK_SAMPLE_COUNT_1_BIT in the sampleFlags array below.
 		static const vk::VkSampleCountFlagBits	sampleFlags[]	=
 		{
-			vk::VK_SAMPLE_COUNT_1_BIT,
 			vk::VK_SAMPLE_COUNT_2_BIT,
 			vk::VK_SAMPLE_COUNT_4_BIT,
 			vk::VK_SAMPLE_COUNT_8_BIT,
