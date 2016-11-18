@@ -11,6 +11,8 @@ set(DEQP_VK_MEMORY_SRCS
 	vktMemoryMappingTests.hpp
 	vktMemoryPipelineBarrierTests.hpp
 	vktMemoryPipelineBarrierTests.cpp
+	vktMemoryRequirementsTests.cpp
+	vktMemoryRequirementsTests.hpp
 	)
 
 set(DEQP_VK_MEMORY_LIBS

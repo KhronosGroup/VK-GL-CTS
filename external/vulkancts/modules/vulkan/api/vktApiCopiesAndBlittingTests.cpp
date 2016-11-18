@@ -1728,7 +1728,7 @@ bool BlittingImages::checkClampedAndUnclampedResult(const tcu::ConstPixelBufferA
 	if (isFloatFormat(mapTextureFormat(dstFormat)))
 	{
 		const bool		srcIsSRGB	= tcu::isSRGB(srcFormat);
-		const tcu::Vec4	srcMaxDiff	= getFormatThreshold(srcFormat) * tcu::Vec4(srcIsSRGB ? 2 : 1);
+		const tcu::Vec4	srcMaxDiff	= getFormatThreshold(srcFormat) * tcu::Vec4(srcIsSRGB ? 2.0f : 1.0f);
 		const tcu::Vec4	dstMaxDiff	= getFormatThreshold(dstFormat);
 		const tcu::Vec4	threshold	= tcu::max(srcMaxDiff, dstMaxDiff);
 

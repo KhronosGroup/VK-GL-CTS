@@ -513,6 +513,10 @@ public:
 private:
 	tcu::TestStatus					iterate							(void);
 
+	bool							hasSeparateResetCmdBuf			(void) const;
+	bool							hasSeparateCopyCmdBuf			(void) const;
+
+	vk::Move<vk::VkCommandBuffer>	recordQueryPoolReset			(vk::VkCommandPool commandPool);
 	vk::Move<vk::VkCommandBuffer>	recordRender					(vk::VkCommandPool commandPool);
 	vk::Move<vk::VkCommandBuffer>	recordCopyResults				(vk::VkCommandPool commandPool);
 
@@ -550,6 +554,7 @@ private:
 	de::SharedPtr<Buffer>			m_queryPoolResultsBuffer;
 
 	vk::Move<vk::VkCommandPool>		m_commandPool;
+	vk::Move<vk::VkCommandBuffer>	m_queryPoolResetCommandBuffer;
 	vk::Move<vk::VkCommandBuffer>	m_renderCommandBuffer;
 	vk::Move<vk::VkCommandBuffer>	m_copyResultsCommandBuffer;
 };
@@ -591,7 +596,12 @@ OcclusionQueryTestInstance::OcclusionQueryTestInstance (vkt::Context &context, c
 							m_commandPool			= vk::createCommandPool(vk, device, &cmdPoolCreateInfo);
 							m_renderCommandBuffer	= recordRender(*m_commandPool);
 
-	if (m_testVector.queryWait == WAIT_QUEUE && m_testVector.queryResultsMode == RESULTS_MODE_COPY)
+	if (hasSeparateResetCmdBuf())
+	{
+		m_queryPoolResetCommandBuffer	= recordQueryPoolReset(*m_commandPool);
+	}
+
+	if (hasSeparateCopyCmdBuf())
 	{
 		m_copyResultsCommandBuffer = recordCopyResults(*m_commandPool);
 	}
@@ -633,8 +643,31 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 
 	m_stateObjects->setVertices(vk, vertices);
 
+	if (hasSeparateResetCmdBuf())
 	{
-		const vk::VkSubmitInfo submitInfo =
+		const vk::VkSubmitInfo		submitInfoReset =
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			0u,											// deUint32					waitSemaphoreCount;
+			DE_NULL,									// const VkSemaphore*		pWaitSemaphores;
+			(const vk::VkPipelineStageFlags*)DE_NULL,
+			1u,											// deUint32					commandBufferCount;
+			&m_queryPoolResetCommandBuffer.get(),		// const VkCommandBuffer*	pCommandBuffers;
+			0u,											// deUint32					signalSemaphoreCount;
+			DE_NULL										// const VkSemaphore*		pSignalSemaphores;
+		};
+
+		vk.queueSubmit(queue, 1, &submitInfoReset, DE_NULL);
+
+		// Trivially wait for reset to complete. This is to ensure the query pool is in reset state before
+		// host accesses, so as to not insert any synchronization before capturing the results needed for WAIT_NONE
+		// variant of test.
+		VK_CHECK(vk.queueWaitIdle(queue));
+	}
+
+	{
+		const vk::VkSubmitInfo submitInfoRender =
 		{
 			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 			DE_NULL,							// const void*				pNext;
@@ -646,34 +679,34 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 			0,									// deUint32					signalSemaphoreCount;
 			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 		};
-		vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
+		vk.queueSubmit(queue, 1, &submitInfoRender, DE_NULL);
 	}
 
 	if (m_testVector.queryWait == WAIT_QUEUE)
 	{
 		VK_CHECK(vk.queueWaitIdle(queue));
+	}
 
-		if (m_testVector.queryResultsMode == RESULTS_MODE_COPY)
+	if (hasSeparateCopyCmdBuf())
+	{
+		// In case of WAIT_QUEUE test variant, the previously submitted m_renderCommandBuffer did not
+		// contain vkCmdCopyQueryResults, so additional cmd buffer is needed.
+
+		// In the case of WAIT_NONE or WAIT_QUERY, vkCmdCopyQueryResults is stored in m_renderCommandBuffer.
+
+		const vk::VkSubmitInfo submitInfo =
 		{
-			// In case of WAIT_QUEUE test variant, the previously submitted m_renderCommandBuffer did not
-			// contain vkCmdCopyQueryResults, so additional cmd buffer is needed.
-
-			// In the case of WAIT_NONE or WAIT_QUERY, vkCmdCopyQueryResults is stored in m_renderCommandBuffer.
-
-			const vk::VkSubmitInfo submitInfo =
-			{
-				vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-				DE_NULL,							// const void*				pNext;
-				0,									// deUint32					waitSemaphoreCount;
-				DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-				(const vk::VkPipelineStageFlags*)DE_NULL,
-				1,									// deUint32					commandBufferCount;
-				&m_copyResultsCommandBuffer.get(),	// const VkCommandBuffer*	pCommandBuffers;
-				0,									// deUint32					signalSemaphoreCount;
-				DE_NULL								// const VkSemaphore*		pSignalSemaphores;
-			};
-			vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
-		}
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+			DE_NULL,							// const void*				pNext;
+			0,									// deUint32					waitSemaphoreCount;
+			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			(const vk::VkPipelineStageFlags*)DE_NULL,
+			1,									// deUint32					commandBufferCount;
+			&m_copyResultsCommandBuffer.get(),	// const VkCommandBuffer*	pCommandBuffers;
+			0,									// deUint32					signalSemaphoreCount;
+			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
+		};
+		vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
 	}
 
 	if (m_testVector.queryResultsMode == RESULTS_MODE_COPY)
@@ -711,6 +744,59 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 	return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Query result verification failed");
 }
 
+bool OcclusionQueryTestInstance::hasSeparateResetCmdBuf (void) const
+{
+	// Determine if resetting query pool should be performed in separate command buffer
+	// to avoid race condition between host query access and device query reset.
+
+	if (m_testVector.queryResultsMode == RESULTS_MODE_COPY)
+	{
+		// We copy query results on device, so there is no race condition between
+		// host and device
+		return false;
+	}
+	if (m_testVector.queryWait == WAIT_QUEUE)
+	{
+		// We wait for queue to be complete before accessing query results
+		return false;
+	}
+
+	// Separate command buffer with reset must be submitted & completed before
+	// host accesses the query results
+	return true;
+}
+
+bool OcclusionQueryTestInstance::hasSeparateCopyCmdBuf (void) const
+{
+	// Copy query results must go into separate command buffer, if we want to wait on queue before that
+	return (m_testVector.queryResultsMode == RESULTS_MODE_COPY && m_testVector.queryWait == WAIT_QUEUE);
+}
+
+vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordQueryPoolReset (vk::VkCommandPool cmdPool)
+{
+	const vk::VkDevice				device		= m_context.getDevice();
+	const vk::DeviceInterface&		vk			= m_context.getDeviceInterface();
+
+	DE_ASSERT(hasSeparateResetCmdBuf());
+
+	const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
+		DE_NULL,											// const void*				pNext;
+		cmdPool,											// VkCommandPool			commandPool;
+		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
+		1u,													// deUint32					bufferCount;
+	};
+	vk::Move<vk::VkCommandBuffer>	cmdBuffer	(vk::allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
+	CmdBufferBeginInfo				beginInfo	(0u);
+
+	vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
+	vk.cmdResetQueryPool(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL);
+	vk.endCommandBuffer(*cmdBuffer);
+
+	return cmdBuffer;
+}
+
 vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCommandPool cmdPool)
 {
 	const vk::VkDevice				device		= m_context.getDevice();
@@ -743,7 +829,10 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCo
 
 	RenderPassBeginInfo renderPassBegin(*m_stateObjects->m_renderPass, *m_stateObjects->m_framebuffer, renderArea, renderPassClearValues);
 
-	vk.cmdResetQueryPool(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL);
+	if (!hasSeparateResetCmdBuf())
+	{
+		vk.cmdResetQueryPool(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL);
+	}
 
 	vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBegin, vk::VK_SUBPASS_CONTENTS_INLINE);
 
@@ -776,13 +865,9 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCo
 
 	vk.cmdEndRenderPass(*cmdBuffer);
 
-	if (m_testVector.queryWait != WAIT_QUEUE )
+	if (m_testVector.queryResultsMode == RESULTS_MODE_COPY && !hasSeparateCopyCmdBuf())
 	{
-		//For WAIT_QUEUE another cmdBuffer is issued with cmdCopyQueryPoolResults
-		if (m_testVector.queryResultsMode == RESULTS_MODE_COPY)
-		{
-			vk.cmdCopyQueryPoolResults(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL, m_queryPoolResultsBuffer->object(), /*dstOffset*/ 0, m_testVector.queryResultsStride, m_queryResultFlags);
-		}
+		vk.cmdCopyQueryPoolResults(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL, m_queryPoolResultsBuffer->object(), /*dstOffset*/ 0, m_testVector.queryResultsStride, m_queryResultFlags);
 	}
 
 	transition2DImage(vk, *cmdBuffer, m_stateObjects->m_colorAttachmentImage->object(), vk::VK_IMAGE_ASPECT_COLOR_BIT, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT);

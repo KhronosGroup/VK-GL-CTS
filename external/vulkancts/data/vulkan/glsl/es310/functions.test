@@ -19,7 +19,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -45,7 +45,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (vec2 a)
@@ -71,7 +71,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (vec3 a)
@@ -97,7 +97,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (vec4 a)
@@ -123,7 +123,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (mat2 a)
@@ -149,7 +149,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (mat3 a)
@@ -175,7 +175,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (mat4 a)
@@ -201,8 +201,8 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int func (int a)
@@ -229,8 +229,8 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int func (ivec2 a)
@@ -257,8 +257,8 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int func (ivec3 a)
@@ -285,8 +285,8 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int func (ivec4 a)
@@ -313,8 +313,8 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			uint func (uint a)
@@ -341,8 +341,8 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			uint func (uvec2 a)
@@ -369,8 +369,8 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			uint func (uvec3 a)
@@ -397,8 +397,8 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			uint func (uvec4 a)
@@ -425,7 +425,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			bool func (bool a)
@@ -452,7 +452,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			bool func (bvec2 a)
@@ -479,7 +479,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			bool func (bvec3 a)
@@ -506,7 +506,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			bool func (bvec4 a)
@@ -533,7 +533,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			mat2 func (mat2 a)
@@ -561,7 +561,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			mat2x3 func (mat2x3 a)
@@ -589,7 +589,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			mat2x4 func (mat2x4 a)
@@ -617,7 +617,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			mat3x2 func (mat3x2 a)
@@ -645,7 +645,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			mat3 func (mat3 a)
@@ -673,7 +673,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			mat3x4 func (mat3x4 a)
@@ -701,7 +701,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			mat4x2 func (mat4x2 a)
@@ -729,7 +729,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			mat4x3 func (mat4x3 a)
@@ -757,7 +757,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			mat4 func (mat4 a)
@@ -784,7 +784,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			struct Pos { float a, b, c; };
@@ -813,7 +813,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			struct Pos { float a, b, c; };
@@ -843,7 +843,7 @@ group datatypes "Function Parameter Data Types"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			struct Pos { float a, b, c; };
@@ -884,8 +884,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			float func (in float a)
@@ -915,8 +915,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (out float a)
@@ -945,8 +945,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (inout float a)
@@ -975,8 +975,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			float func (in lowp float a)
@@ -1006,8 +1006,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (out lowp float a)
@@ -1036,8 +1036,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (inout lowp float a)
@@ -1066,8 +1066,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			float func (in highp float a)
@@ -1097,8 +1097,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (out highp float a)
@@ -1127,8 +1127,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (inout highp float a)
@@ -1157,8 +1157,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			float func (const float a)
@@ -1188,8 +1188,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			float func (const in float a)
@@ -1219,8 +1219,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int func (in int a)
@@ -1250,8 +1250,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (out int a)
@@ -1280,8 +1280,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (inout int a)
@@ -1310,8 +1310,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int func (in lowp int a)
@@ -1341,8 +1341,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (out lowp int a)
@@ -1371,8 +1371,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (inout lowp int a)
@@ -1401,8 +1401,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int func (in highp int a)
@@ -1432,8 +1432,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (out highp int a)
@@ -1462,8 +1462,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (inout highp int a)
@@ -1492,8 +1492,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int func (const int a)
@@ -1523,8 +1523,8 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int func (const in int a)
@@ -1554,7 +1554,7 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			bool func (in bool a)
@@ -1584,7 +1584,7 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			void func (out bool a)
@@ -1613,7 +1613,7 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			void func (inout bool a)
@@ -1642,7 +1642,7 @@ group qualifiers "Function Parameter Qualifiers"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			bool func (const bool a)
@@ -1676,7 +1676,7 @@ group declarations "Function Declarations"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (void);
@@ -1704,7 +1704,7 @@ group declarations "Function Declarations"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float f);
@@ -1732,7 +1732,7 @@ group declarations "Function Declarations"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (void);
@@ -1760,7 +1760,7 @@ group declarations "Function Declarations"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (void);
@@ -1790,7 +1790,7 @@ group declarations "Function Declarations"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (void)
@@ -1818,7 +1818,7 @@ group declarations "Function Declarations"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func ();
@@ -1846,7 +1846,7 @@ group declarations "Function Declarations"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float f);
@@ -1874,10 +1874,14 @@ group declarations "Function Declarations"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
+			precision mediump float;
+
 			float func (float f);
+
+			precision highp float;
 
 			void main()
 			{
@@ -1907,8 +1911,8 @@ group overloading "Function Overloading"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -1939,8 +1943,8 @@ group overloading "Function Overloading"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			float func (float a) { return -a; }
@@ -1966,8 +1970,8 @@ group overloading "Function Overloading"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int func (int a) { return -a; }
@@ -1994,7 +1998,7 @@ group overloading "Function Overloading"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			bool func (bool a) { return !a; }
@@ -2021,8 +2025,8 @@ group overloading "Function Overloading"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			float func (float a) { return -a; }
@@ -2060,8 +2064,8 @@ group overloading "Function Overloading"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			struct Pos { float a, b, c; };
@@ -2109,7 +2113,7 @@ group overloading "Function Overloading"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -2139,7 +2143,7 @@ group overloading "Function Overloading"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float f[3])
@@ -2176,7 +2180,7 @@ group array_arguments "Arrays as Arguments"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (in float a[4])
@@ -2211,7 +2215,7 @@ group array_arguments "Arrays as Arguments"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (in float a[4])
@@ -2247,8 +2251,8 @@ group array_arguments "Arrays as Arguments"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int func (in int a[4])
@@ -2284,8 +2288,8 @@ group array_arguments "Arrays as Arguments"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int func (in int a[4])
@@ -2323,7 +2327,7 @@ group array_arguments "Arrays as Arguments"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			bool func (in bool a[4])
@@ -2359,7 +2363,7 @@ group array_arguments "Arrays as Arguments"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			bool func (in bool a[4])
@@ -2397,7 +2401,7 @@ group array_arguments "Arrays as Arguments"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			vec4 get (in float arr[4]);
@@ -2435,7 +2439,7 @@ group array_arguments "Arrays as Arguments"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			vec4 get (in float arr[4]);
@@ -2479,7 +2483,7 @@ group array_arguments "Arrays as Arguments"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			vec4 get (in float arr[4]);
@@ -2524,7 +2528,7 @@ group array_arguments "Arrays as Arguments"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			vec4 get (in float arr[4]);
@@ -2569,7 +2573,7 @@ group array_arguments "Arrays as Arguments"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			vec4 get (in float arr[4]);
@@ -2635,7 +2639,7 @@ group control_flow "Control Flow In Functions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -2664,7 +2668,7 @@ group control_flow "Control Flow In Functions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -2693,7 +2697,7 @@ group control_flow "Control Flow In Functions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -2724,7 +2728,7 @@ group control_flow "Control Flow In Functions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -2753,7 +2757,7 @@ group control_flow "Control Flow In Functions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -2788,7 +2792,7 @@ group control_flow "Control Flow In Functions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -2817,7 +2821,7 @@ group control_flow "Control Flow In Functions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -2850,7 +2854,7 @@ group control_flow "Control Flow In Functions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -2883,7 +2887,7 @@ group control_flow "Control Flow In Functions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -2922,7 +2926,7 @@ group control_flow "Control Flow In Functions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -2966,7 +2970,7 @@ group control_flow "Control Flow In Functions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float func (float a)
@@ -3012,7 +3016,7 @@ group misc "Miscellaneous"
 
 		both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 
 			float sum(vec4 v) { return (v.x + v.y + v.z + v.w); }
@@ -3041,8 +3045,8 @@ group misc "Miscellaneous"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int sum(ivec4 v) { return (v.x + v.y + v.z + v.w); }
