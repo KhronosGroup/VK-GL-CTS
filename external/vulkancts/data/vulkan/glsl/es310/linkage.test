@@ -184,7 +184,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in mediump float var;
 				void main()
@@ -217,7 +217,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in lowp vec2 var;
 				void main()
@@ -250,7 +250,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in mediump vec4 var;
 				void main()
@@ -283,7 +283,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) centroid in mediump float var;
 				void main()
@@ -390,7 +390,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in float var;
 				void main()
@@ -421,7 +421,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in vec2 var;
 				void main()
@@ -452,7 +452,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in vec3 var;
 				void main()
@@ -483,7 +483,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in vec4 var;
 				void main()
@@ -514,7 +514,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in mat2 var;
 				void main()
@@ -545,7 +545,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in mat2x3 var;
 				void main()
@@ -576,7 +576,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in mat2x4 var;
 				void main()
@@ -607,7 +607,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in mat3x2 var;
 				void main()
@@ -638,7 +638,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in mat3 var;
 				void main()
@@ -669,7 +669,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in mat3x4 var;
 				void main()
@@ -700,7 +700,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in mat4x2 var;
 				void main()
@@ -731,7 +731,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in mat4x3 var;
 				void main()
@@ -762,7 +762,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in mat4 var;
 				void main()
@@ -1044,7 +1044,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump float a; };
 				layout(location = 0) in S var;
@@ -1077,7 +1077,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump vec2 a; };
 				layout(location = 0) in S var;
@@ -1110,7 +1110,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump vec3 a; };
 				layout(location = 0) in S var;
@@ -1143,7 +1143,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump vec4 a; };
 				layout(location = 0) in S var;
@@ -1176,7 +1176,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump mat2 a; };
 				layout(location = 0) in S var;
@@ -1209,7 +1209,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump mat2x3 a; };
 				layout(location = 0) in S var;
@@ -1242,7 +1242,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump mat2x4 a; };
 				layout(location = 0) in S var;
@@ -1275,7 +1275,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump mat3x2 a; };
 				layout(location = 0) in S var;
@@ -1308,7 +1308,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump mat3 a; };
 				layout(location = 0) in S var;
@@ -1341,7 +1341,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump mat3x4 a; };
 				layout(location = 0) in S var;
@@ -1374,7 +1374,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump mat4x2 a; };
 				layout(location = 0) in S var;
@@ -1407,7 +1407,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump mat4x3 a; };
 				layout(location = 0) in S var;
@@ -1440,7 +1440,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump mat4 a; };
 				layout(location = 0) in S var;
@@ -1740,7 +1740,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump float a; highp vec3 b; };
 				layout(location = 0) in S var;
@@ -1781,7 +1781,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				struct S { mediump float a; highp uvec2 b; highp vec3 c; };
 				layout(location = 0) flat in S var;
@@ -1817,7 +1817,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) smooth in vec4 var;
 				void main()
@@ -1848,7 +1848,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) centroid in vec4 var;
 				void main()
@@ -1879,7 +1879,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) flat in vec4 var;
 				void main()
@@ -1902,7 +1902,7 @@ group varying "Varying linkage"
 			}
 			vertex ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${VERTEX_DECLARATIONS}
 				layout(location = 0) out float var1;
 				layout(location = 1) out float var2;
@@ -1916,7 +1916,7 @@ group varying "Varying linkage"
 			""
 			fragment ""
 				#version 310 es
-				precision mediump float;
+				precision highp float;
 				${FRAGMENT_DECLARATIONS}
 				layout(location = 0) in float var1;
 				layout(location = 1) in float var2;
