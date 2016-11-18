@@ -789,7 +789,7 @@ VKAPI_ATTR void VKAPI_CALL getDeviceQueue (VkDevice device, deUint32 queueFamily
 	DE_UNREF(queueFamilyIndex);
 
 	if (pQueue)
-		*pQueue = reinterpret_cast<VkQueue>(queueIndex + 1);
+		*pQueue = reinterpret_cast<VkQueue>((deUint64)queueIndex + 1);
 }
 
 VKAPI_ATTR void VKAPI_CALL getBufferMemoryRequirements (VkDevice, VkBuffer bufferHandle, VkMemoryRequirements* requirements)

@@ -58,7 +58,7 @@ RandomUniformBlockCase::RandomUniformBlockCase (tcu::TestContext&	testCtx,
 												BufferMode			bufferMode,
 												deUint32			features,
 												deUint32			seed)
-	: UniformBlockCase		(testCtx, name, description, bufferMode, LOAD_FULL_MATRIX)
+	: UniformBlockCase		(testCtx, name, description, bufferMode, LOAD_FULL_MATRIX, (features & FEATURE_OUT_OF_ORDER_OFFSETS) != 0u)
 	, m_features			(features)
 	, m_maxVertexBlocks		((features & FEATURE_VERTEX_BLOCKS)		? 4 : 0)
 	, m_maxFragmentBlocks	((features & FEATURE_FRAGMENT_BLOCKS)	? 4 : 0)
@@ -177,7 +177,7 @@ VarType RandomUniformBlockCase::generateType (de::Random& rnd, int typeDepth, bo
 			structType.addMember(std::string("m") + (char)('A' + ndx), memberTypes[ndx], flags);
 		}
 
-		return VarType(&structType);
+		return VarType(&structType, m_shuffleUniformMembers ? static_cast<deUint32>(LAYOUT_OFFSET) : 0u);
 	}
 	else if (m_maxArrayLength > 0 && arrayOk && rnd.getFloat() < arrayWeight)
 	{
@@ -224,7 +224,7 @@ VarType RandomUniformBlockCase::generateType (de::Random& rnd, int typeDepth, bo
 		}
 
 		glu::DataType	type	= rnd.choose<glu::DataType>(typeCandidates.begin(), typeCandidates.end());
-		deUint32		flags	= 0;
+		deUint32		flags	= (m_shuffleUniformMembers ? static_cast<deUint32>(LAYOUT_OFFSET) : 0u);
 
 		if (!glu::isDataTypeBoolOrBVec(type))
 		{

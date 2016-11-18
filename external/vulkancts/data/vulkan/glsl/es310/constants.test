@@ -178,7 +178,7 @@ case float_f_suffix_0
 	values { output float out0 = 1.0; }
 	both ""
 		#version 310 es
-		precision mediump float;
+		precision highp float;
 		${DECLARATIONS}
 		void main ()
 		{
@@ -195,7 +195,7 @@ case float_f_suffix_1
 	values { output float out0 = 1.0; }
 	both ""
 		#version 310 es
-		precision mediump float;
+		precision highp float;
 		${DECLARATIONS}
 		void main ()
 		{
@@ -318,7 +318,7 @@ case const_float_global
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			const float theConstant = 1000.0;
 			void main()
@@ -335,7 +335,7 @@ case const_float_main
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{
@@ -352,7 +352,7 @@ case const_float_function
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			float func()
 			{
@@ -373,7 +373,7 @@ case const_float_scope
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{
@@ -392,7 +392,7 @@ case const_float_scope_shawdowing_1
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{
@@ -412,7 +412,7 @@ case const_float_scope_shawdowing_2
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			const float theConstant = 100.0;
 			void main()
@@ -432,7 +432,7 @@ case const_float_scope_shawdowing_3
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			const float theConstant = 100.0;
 			void main()
@@ -453,7 +453,7 @@ case const_float_scope_shawdowing_4
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			const float theConstant = 100.0;
 			float func()
@@ -479,7 +479,7 @@ case const_float_operations_with_const
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			const float theGlobalConstant = 10.0;
 			float func()
@@ -505,7 +505,7 @@ case const_float_assignment_1
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{
@@ -523,7 +523,7 @@ case const_float_assignment_2
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			void main()
 			{
@@ -543,7 +543,7 @@ case const_float_assignment_3
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			const float theConstant1 = 10.0;
 			void main()
@@ -561,7 +561,7 @@ case const_float_assignment_4
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			const float theConstant1 = 10.0;
 			float func()
@@ -583,7 +583,7 @@ case const_float_from_int
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			const float theConstant = float(10);
 			void main()
@@ -600,7 +600,7 @@ case const_float_from_vec2
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			const float theConstant = vec2(1.0, 10.0).y;
 			void main()
@@ -617,7 +617,7 @@ case const_float_from_vec3
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			const float theConstant = vec3(1.0, 10.0, 20.0).y;
 			void main()
@@ -634,7 +634,7 @@ case const_float_from_vec4
 
 	 both ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${DECLARATIONS}
 			const float theConstant = vec4(1.0, 10.0, 20.0, -10.0).y;
 			void main()

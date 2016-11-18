@@ -196,7 +196,6 @@ protected:
 	Move<VkBuffer>									m_resultBuffer;
 	de::MovePtr<Allocation>							m_resultBufferMemory;
 	const VkDeviceSize								m_resultBufferSize;
-
 };
 
 BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderSize)
@@ -2045,11 +2044,13 @@ protected:
 class CullingTestInstance : public BaseRenderingTestInstance
 {
 public:
-													CullingTestInstance				(Context& context, VkCullModeFlags cullMode, VkPrimitiveTopology primitiveTopology, VkFrontFace frontFace)
+													CullingTestInstance				(Context& context, VkCullModeFlags cullMode, VkPrimitiveTopology primitiveTopology, VkFrontFace frontFace, VkPolygonMode polygonMode)
 														: BaseRenderingTestInstance		(context, VK_SAMPLE_COUNT_1_BIT, DEFAULT_RENDER_SIZE)
 														, m_cullMode					(cullMode)
 														, m_primitiveTopology			(primitiveTopology)
 														, m_frontFace					(frontFace)
+														, m_polygonMode					(polygonMode)
+														, m_multisampling				(true)
 													{}
 	virtual
 	const VkPipelineRasterizationStateCreateInfo*	getRasterizationStateCreateInfo (void) const;
@@ -2059,22 +2060,43 @@ public:
 private:
 	void											generateVertices				(std::vector<tcu::Vec4>& outData) const;
 	void											extractTriangles				(std::vector<TriangleSceneSpec::SceneTriangle>& outTriangles, const std::vector<tcu::Vec4>& vertices) const;
+	void											extractLines					(std::vector<TriangleSceneSpec::SceneTriangle>& outTriangles, std::vector<LineSceneSpec::SceneLine>& outLines) const;
+	void											extractPoints					(std::vector<TriangleSceneSpec::SceneTriangle>& outTriangles, std::vector<PointSceneSpec::ScenePoint>& outPoints) const;
 	bool											triangleOrder					(const tcu::Vec4& v0, const tcu::Vec4& v1, const tcu::Vec4& v2) const;
 
 	const VkCullModeFlags							m_cullMode;
 	const VkPrimitiveTopology						m_primitiveTopology;
 	const VkFrontFace								m_frontFace;
+	const VkPolygonMode								m_polygonMode;
+	const bool										m_multisampling;
 };
+
 
 tcu::TestStatus CullingTestInstance::iterate (void)
 {
+	DE_ASSERT(m_polygonMode < VK_POLYGON_MODE_LAST);
+
 	tcu::Surface									resultImage						(m_renderSize, m_renderSize);
 	std::vector<tcu::Vec4>							drawBuffer;
 	std::vector<TriangleSceneSpec::SceneTriangle>	triangles;
+	std::vector<PointSceneSpec::ScenePoint>			points;
+	std::vector<LineSceneSpec::SceneLine>			lines;
+
+	const InstanceInterface&						vk				= m_context.getInstanceInterface();
+	const VkPhysicalDevice							physicalDevice	= m_context.getPhysicalDevice();
+	const VkPhysicalDeviceFeatures					deviceFeatures	= getPhysicalDeviceFeatures(vk, physicalDevice);
+
+	if (!(deviceFeatures.fillModeNonSolid) && (m_polygonMode == VK_POLYGON_MODE_LINE || m_polygonMode == VK_POLYGON_MODE_POINT))
+		TCU_THROW(NotSupportedError, "Wireframe fill modes are not supported");
 
 	// generate scene
 	generateVertices(drawBuffer);
 	extractTriangles(triangles, drawBuffer);
+
+	if (m_polygonMode == VK_POLYGON_MODE_LINE)
+		extractLines(triangles ,lines);
+	else if (m_polygonMode == VK_POLYGON_MODE_POINT)
+		extractPoints(triangles, points);
 
 	// draw image
 	{
@@ -2088,8 +2110,8 @@ tcu::TestStatus CullingTestInstance::iterate (void)
 	// compare
 	{
 		RasterizationArguments	args;
-		TriangleSceneSpec		scene;
 		tcu::IVec4				colorBits	= tcu::getTextureFormatBitDepth(getTextureFormat());
+		bool					isCompareOk	= false;
 
 		args.numSamples		= m_multisampling ? 1 : 0;
 		args.subpixelBits	= m_subpixelBits;
@@ -2097,9 +2119,33 @@ tcu::TestStatus CullingTestInstance::iterate (void)
 		args.greenBits		= colorBits[1];
 		args.blueBits		= colorBits[2];
 
-		scene.triangles.swap(triangles);
+		switch (m_polygonMode)
+		{
+			case VK_POLYGON_MODE_LINE:
+			{
+				LineSceneSpec scene;
+				scene.lineWidth = 0;
+				scene.lines.swap(lines);
+				isCompareOk = verifyLineGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog());
+				break;
+			}
+			case VK_POLYGON_MODE_POINT:
+			{
+				PointSceneSpec scene;
+				scene.points.swap(points);
+				isCompareOk = verifyPointGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog());
+				break;
+			}
+			default:
+			{
+				TriangleSceneSpec scene;
+				scene.triangles.swap(triangles);
+				isCompareOk = verifyTriangleGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog(), tcu::VERIFICATIONMODE_WEAK);
+				break;
+			}
+		}
 
-		if (verifyTriangleGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog(), tcu::VERIFICATIONMODE_WEAK))
+		if (isCompareOk)
 			return tcu::TestStatus::pass("Pass");
 		else
 			return tcu::TestStatus::fail("Incorrect rendering");
@@ -2198,6 +2244,42 @@ void CullingTestInstance::extractTriangles (std::vector<TriangleSceneSpec::Scene
 	}
 }
 
+void CullingTestInstance::extractLines (std::vector<TriangleSceneSpec::SceneTriangle>&	outTriangles,
+										std::vector<LineSceneSpec::SceneLine>&			outLines) const
+{
+	for (int triNdx = 0; triNdx < (int)outTriangles.size(); ++triNdx)
+	{
+		for (int vrtxNdx = 0; vrtxNdx < 2; ++vrtxNdx)
+		{
+			LineSceneSpec::SceneLine line;
+			line.positions[0] = outTriangles.at(triNdx).positions[vrtxNdx];
+			line.positions[1] = outTriangles.at(triNdx).positions[vrtxNdx + 1];
+
+			outLines.push_back(line);
+		}
+		LineSceneSpec::SceneLine line;
+		line.positions[0] = outTriangles.at(triNdx).positions[2];
+		line.positions[1] = outTriangles.at(triNdx).positions[0];
+		outLines.push_back(line);
+	}
+}
+
+void CullingTestInstance::extractPoints (std::vector<TriangleSceneSpec::SceneTriangle>	&outTriangles,
+										std::vector<PointSceneSpec::ScenePoint>			&outPoints) const
+{
+	for (int triNdx = 0; triNdx < (int)outTriangles.size(); ++triNdx)
+	{
+		for (int vrtxNdx = 0; vrtxNdx < 3; ++vrtxNdx)
+		{
+			PointSceneSpec::ScenePoint point;
+			point.position = outTriangles.at(triNdx).positions[vrtxNdx];
+			point.pointSize = 1.0f;
+
+			outPoints.push_back(point);
+		}
+	}
+}
+
 bool CullingTestInstance::triangleOrder (const tcu::Vec4& v0, const tcu::Vec4& v1, const tcu::Vec4& v2) const
 {
 	const tcu::Vec2 s0 = v0.swizzle(0, 1) / v0.w();
@@ -2228,9 +2310,10 @@ const VkPipelineRasterizationStateCreateInfo* CullingTestInstance::getRasterizat
 		getLineWidth(),													// float									lineWidth;
 	};
 
-	rasterizationStateCreateInfo.lineWidth = getLineWidth();
-	rasterizationStateCreateInfo.cullMode  = m_cullMode;
-	rasterizationStateCreateInfo.frontFace = m_frontFace;
+	rasterizationStateCreateInfo.lineWidth		= getLineWidth();
+	rasterizationStateCreateInfo.cullMode		= m_cullMode;
+	rasterizationStateCreateInfo.frontFace		= m_frontFace;
+	rasterizationStateCreateInfo.polygonMode	= m_polygonMode;
 
 	return &rasterizationStateCreateInfo;
 }
@@ -2238,21 +2321,23 @@ const VkPipelineRasterizationStateCreateInfo* CullingTestInstance::getRasterizat
 class CullingTestCase : public BaseRenderingTestCase
 {
 public:
-								CullingTestCase		(tcu::TestContext& context, const std::string& name, const std::string& description, VkCullModeFlags cullMode, VkPrimitiveTopology primitiveTopology, VkFrontFace frontFace, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
+								CullingTestCase		(tcu::TestContext& context, const std::string& name, const std::string& description, VkCullModeFlags cullMode, VkPrimitiveTopology primitiveTopology, VkFrontFace frontFace, VkPolygonMode polygonMode, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
 									: BaseRenderingTestCase	(context, name, description, sampleCount)
 									, m_cullMode			(cullMode)
 									, m_primitiveTopology	(primitiveTopology)
 									, m_frontFace			(frontFace)
+									, m_polygonMode			(polygonMode)
 								{}
 
 	virtual TestInstance*		createInstance		(Context& context) const
 								{
-									return new CullingTestInstance(context, m_cullMode, m_primitiveTopology, m_frontFace);
+									return new CullingTestInstance(context, m_cullMode, m_primitiveTopology, m_frontFace, m_polygonMode);
 								}
 protected:
 	const VkCullModeFlags		m_cullMode;
 	const VkPrimitiveTopology	m_primitiveTopology;
 	const VkFrontFace			m_frontFace;
+	const VkPolygonMode			m_polygonMode;
 };
 
 class TriangleInterpolationTestInstance : public BaseRenderingTestInstance
@@ -2808,17 +2893,31 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			{ VK_FRONT_FACE_CLOCKWISE,			"_reverse"	},
 		};
 
+		static const struct PolygonMode
+		{
+			VkPolygonMode	mode;
+			const char*		name;
+		} polygonModes[] =
+		{
+			{ VK_POLYGON_MODE_FILL,		""		},
+			{ VK_POLYGON_MODE_LINE,		"_line"		},
+			{ VK_POLYGON_MODE_POINT,	"_point"	}
+		};
+
 		tcu::TestCaseGroup* const culling = new tcu::TestCaseGroup(testCtx, "culling", "Culling");
 
 		rasterizationTests->addChild(culling);
 
-		for (int cullModeNdx   = 0; cullModeNdx   < DE_LENGTH_OF_ARRAY(cullModes);      ++cullModeNdx)
-		for (int primitiveNdx  = 0; primitiveNdx  < DE_LENGTH_OF_ARRAY(primitiveTypes); ++primitiveNdx)
-		for (int frontOrderNdx = 0; frontOrderNdx < DE_LENGTH_OF_ARRAY(frontOrders);    ++frontOrderNdx)
+		for (int cullModeNdx	= 0; cullModeNdx	< DE_LENGTH_OF_ARRAY(cullModes);		++cullModeNdx)
+		for (int primitiveNdx	= 0; primitiveNdx	< DE_LENGTH_OF_ARRAY(primitiveTypes);	++primitiveNdx)
+		for (int frontOrderNdx	= 0; frontOrderNdx	< DE_LENGTH_OF_ARRAY(frontOrders);		++frontOrderNdx)
+		for (int polygonModeNdx = 0; polygonModeNdx	< DE_LENGTH_OF_ARRAY(polygonModes);		++polygonModeNdx)
 		{
-			const std::string name = std::string(cullModes[cullModeNdx].prefix) + primitiveTypes[primitiveNdx].name + frontOrders[frontOrderNdx].postfix;
-
-			culling->addChild(new CullingTestCase(testCtx, name, "Test primitive culling.", cullModes[cullModeNdx].mode, primitiveTypes[primitiveNdx].type, frontOrders[frontOrderNdx].mode));
+			if (!(cullModes[cullModeNdx].mode == VK_CULL_MODE_FRONT_AND_BACK && polygonModes[polygonModeNdx].mode != VK_POLYGON_MODE_FILL))
+			{
+				const std::string name = std::string(cullModes[cullModeNdx].prefix) + primitiveTypes[primitiveNdx].name + frontOrders[frontOrderNdx].postfix + polygonModes[polygonModeNdx].name;
+				culling->addChild(new CullingTestCase(testCtx, name, "Test primitive culling.", cullModes[cullModeNdx].mode, primitiveTypes[primitiveNdx].type, frontOrders[frontOrderNdx].mode, polygonModes[polygonModeNdx].mode));
+			}
 		}
 	}
 

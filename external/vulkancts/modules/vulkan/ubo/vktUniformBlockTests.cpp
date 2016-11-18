@@ -845,7 +845,7 @@ void UniformBlockTests::init (void)
 		const deUint32	allBasicTypes	= FEATURE_VECTORS|FEATURE_MATRICES;
 		const deUint32	unused			= FEATURE_UNUSED_MEMBERS|FEATURE_UNUSED_UNIFORMS;
 		const deUint32	matFlags		= FEATURE_MATRIX_LAYOUT;
-		const deUint32	allFeatures		= ~FEATURE_ARRAYS_OF_ARRAYS;
+		const deUint32	allFeatures		= ~FEATURE_OUT_OF_ORDER_OFFSETS;  // OOO offsets handled in a dedicated case group
 
 		tcu::TestCaseGroup* randomGroup = new tcu::TestCaseGroup(m_testCtx, "random", "Random Uniform Block cases");
 		addChild(randomGroup);
@@ -864,6 +864,8 @@ void UniformBlockTests::init (void)
 
 		createRandomCaseGroup(randomGroup, m_testCtx, "all_per_block_buffers",	"All random features, per-block buffers",	UniformBlockCase::BUFFERMODE_PER_BLOCK,	allFeatures,	50, 200);
 		createRandomCaseGroup(randomGroup, m_testCtx, "all_shared_buffer",		"All random features, shared buffer",		UniformBlockCase::BUFFERMODE_SINGLE,	allFeatures,	50, 250);
+
+		createRandomCaseGroup(randomGroup, m_testCtx, "all_out_of_order_offsets",	"All random features, out of order member offsets",		UniformBlockCase::BUFFERMODE_PER_BLOCK,	allFeatures | FEATURE_OUT_OF_ORDER_OFFSETS,	50, 300);
 	}
 }
 
