@@ -56,7 +56,8 @@ using de::SharedPtr;
 using tcu::IVec2;
 using tcu::Vec4;
 
-typedef SharedPtr<Unique<VkImageView> > SharedPtrVkImageView;
+typedef SharedPtr<Unique<VkImageView> >	ImageViewSp;
+typedef SharedPtr<Unique<VkPipeline> >	PipelineSp;
 
 //! Test case parameters
 struct CaseDef
@@ -79,15 +80,17 @@ inline VkDeviceSize sizeInBytes(const std::vector<T>& vec)
 	return vec.size() * sizeof(vec[0]);
 }
 
-Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
-									   const VkDevice				device,
-									   const VkPipelineLayout		pipelineLayout,
-									   const VkRenderPass			renderPass,
-									   const VkShaderModule			vertexModule,
-									   const VkShaderModule			fragmentModule,
-									   const IVec2					renderSize,
-									   const VkSampleCountFlagBits	numSamples,
-									   const VkPrimitiveTopology	topology)
+//! Create a vector of derived pipelines, each with an increasing subpass index
+std::vector<PipelineSp> makeGraphicsPipelines (const DeviceInterface&		vk,
+											   const VkDevice				device,
+											   const deUint32				numSubpasses,
+											   const VkPipelineLayout		pipelineLayout,
+											   const VkRenderPass			renderPass,
+											   const VkShaderModule			vertexModule,
+											   const VkShaderModule			fragmentModule,
+											   const IVec2					renderSize,
+											   const VkSampleCountFlagBits	numSamples,
+											   const VkPrimitiveTopology	topology)
 {
 	const VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
@@ -256,30 +259,58 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		}
 	};
 
-	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
-		DE_NULL,											// const void*										pNext;
-		(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags							flags;
-		DE_LENGTH_OF_ARRAY(pShaderStages),					// deUint32											stageCount;
-		pShaderStages,										// const VkPipelineShaderStageCreateInfo*			pStages;
-		&vertexInputStateInfo,								// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-		&pipelineInputAssemblyStateInfo,					// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-		DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-		&pipelineViewportStateInfo,							// const VkPipelineViewportStateCreateInfo*			pViewportState;
-		&pipelineRasterizationStateInfo,					// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
-		&pipelineMultisampleStateInfo,						// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-		&pipelineDepthStencilStateInfo,						// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
-		&pipelineColorBlendStateInfo,						// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		DE_NULL,											// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-		pipelineLayout,										// VkPipelineLayout									layout;
-		renderPass,											// VkRenderPass										renderPass;
-		0u,													// deUint32											subpass;
-		DE_NULL,											// VkPipeline										basePipelineHandle;
-		0,													// deInt32											basePipelineIndex;
-	};
+	DE_ASSERT(numSubpasses > 0u);
 
-	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
+	std::vector<VkGraphicsPipelineCreateInfo>	graphicsPipelineInfos	(0);
+	std::vector<VkPipeline>						rawPipelines			(numSubpasses, DE_NULL);
+
+	{
+		const VkPipelineCreateFlags firstPipelineFlags = (numSubpasses > 1u ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
+																			: (VkPipelineCreateFlagBits)0);
+
+		VkGraphicsPipelineCreateInfo createInfo =
+		{
+			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
+			DE_NULL,											// const void*										pNext;
+			firstPipelineFlags,									// VkPipelineCreateFlags							flags;
+			DE_LENGTH_OF_ARRAY(pShaderStages),					// deUint32											stageCount;
+			pShaderStages,										// const VkPipelineShaderStageCreateInfo*			pStages;
+			&vertexInputStateInfo,								// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
+			&pipelineInputAssemblyStateInfo,					// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
+			DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
+			&pipelineViewportStateInfo,							// const VkPipelineViewportStateCreateInfo*			pViewportState;
+			&pipelineRasterizationStateInfo,					// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
+			&pipelineMultisampleStateInfo,						// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
+			&pipelineDepthStencilStateInfo,						// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
+			&pipelineColorBlendStateInfo,						// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
+			DE_NULL,											// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+			pipelineLayout,										// VkPipelineLayout									layout;
+			renderPass,											// VkRenderPass										renderPass;
+			0u,													// deUint32											subpass;
+			DE_NULL,											// VkPipeline										basePipelineHandle;
+			-1,													// deInt32											basePipelineIndex;
+		};
+
+		graphicsPipelineInfos.push_back(createInfo);
+
+		createInfo.flags				= VK_PIPELINE_CREATE_DERIVATIVE_BIT;
+		createInfo.basePipelineIndex	= 0;
+
+		for (deUint32 subpassNdx = 1u; subpassNdx < numSubpasses; ++subpassNdx)
+		{
+			createInfo.subpass = subpassNdx;
+			graphicsPipelineInfos.push_back(createInfo);
+		}
+	}
+
+	VK_CHECK(vk.createGraphicsPipelines(device, DE_NULL, static_cast<deUint32>(graphicsPipelineInfos.size()), &graphicsPipelineInfos[0], DE_NULL, &rawPipelines[0]));
+
+	std::vector<PipelineSp>	pipelines;
+
+	for (std::vector<VkPipeline>::const_iterator it = rawPipelines.begin(); it != rawPipelines.end(); ++it)
+		pipelines.push_back(makeSharedPtr(Move<VkPipeline>(check<VkPipeline>(*it), Deleter<VkPipeline>(vk, device, DE_NULL))));
+
+	return pipelines;
 }
 
 //! Make a render pass with one subpass per color attachment and one attachment per image layer.
@@ -750,8 +781,8 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 
 	{
 		// Create an image view (attachment) for each layer of the image
-		std::vector<SharedPtrVkImageView>	colorAttachments;
-		std::vector<VkImageView>			attachmentHandles;
+		std::vector<ImageViewSp>	colorAttachments;
+		std::vector<VkImageView>	attachmentHandles;
 		for (int i = 0; i < caseDef.numLayers; ++i)
 		{
 			colorAttachments.push_back(makeSharedPtr(makeImageView(
@@ -776,7 +807,7 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 		const Unique<VkFramebuffer>		framebuffer		(makeFramebuffer			(vk, device, *renderPass, caseDef.numLayers, &attachmentHandles[0],
 																					 static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y())));
 		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout			(vk, device));
-		const Unique<VkPipeline>		pipeline		(makeGraphicsPipeline		(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+		const std::vector<PipelineSp>	pipelines		(makeGraphicsPipelines		(vk, device, caseDef.numLayers, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
 																					 caseDef.renderSize, caseDef.numSamples, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
 
 		beginCommandBuffer(vk, *cmdBuffer);
@@ -794,7 +825,6 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 		};
 		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		{
 			const VkDeviceSize vertexBufferOffset = 0ull;
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
@@ -804,6 +834,8 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 		{
 			if (layerNdx != 0)
 				vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[layerNdx]);
 
 			vk.cmdDraw(*cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
 		}
@@ -984,7 +1016,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		const Unique<VkFramebuffer>		framebuffer		(makeFramebuffer		(vk, device, *renderPass, 1u, &checksumImageView.get(),
 																				 static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y())));
 		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout		(vk, device, *descriptorSetLayout));
-		const Unique<VkPipeline>		pipeline		(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+		const std::vector<PipelineSp>	pipelines		(makeGraphicsPipelines	(vk, device, 1u, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
 																				 caseDef.renderSize, VK_SAMPLE_COUNT_1_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
 
 		beginCommandBuffer(vk, *cmdBuffer);
@@ -1024,7 +1056,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		};
 		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines.back());
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 		{
 			const VkDeviceSize vertexBufferOffset = 0ull;

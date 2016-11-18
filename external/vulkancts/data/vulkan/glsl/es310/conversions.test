@@ -13,8 +13,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -37,8 +37,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -61,8 +61,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -85,8 +85,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -109,8 +109,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -133,8 +133,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -157,8 +157,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -181,8 +181,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -205,8 +205,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -229,8 +229,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -253,8 +253,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -277,8 +277,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -301,8 +301,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -325,8 +325,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -349,8 +349,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -373,8 +373,8 @@ group scalar_to_scalar "Scalar to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -401,8 +401,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -425,8 +425,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -449,8 +449,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -473,8 +473,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -497,8 +497,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -521,8 +521,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -545,8 +545,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -569,8 +569,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -593,8 +593,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -617,8 +617,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -641,8 +641,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -665,8 +665,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -689,8 +689,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -713,8 +713,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -737,8 +737,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -761,8 +761,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -785,8 +785,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -809,8 +809,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -833,8 +833,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -857,8 +857,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -881,8 +881,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -905,8 +905,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -929,8 +929,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -953,8 +953,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -977,8 +977,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1001,8 +1001,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1025,8 +1025,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1049,8 +1049,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1073,8 +1073,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1097,8 +1097,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1121,8 +1121,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1145,8 +1145,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1169,8 +1169,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1193,8 +1193,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1217,8 +1217,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1241,8 +1241,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1265,8 +1265,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1289,8 +1289,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1313,8 +1313,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1337,8 +1337,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1361,8 +1361,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1385,8 +1385,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1409,8 +1409,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1433,8 +1433,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1457,8 +1457,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1481,8 +1481,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1505,8 +1505,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1529,8 +1529,8 @@ group scalar_to_vector "Scalar to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1557,8 +1557,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1581,8 +1581,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1605,8 +1605,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1629,8 +1629,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1653,8 +1653,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1677,8 +1677,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1701,8 +1701,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1725,8 +1725,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1749,8 +1749,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1773,8 +1773,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1797,8 +1797,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1821,8 +1821,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1845,8 +1845,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1869,8 +1869,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1893,8 +1893,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1917,8 +1917,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1941,8 +1941,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1965,8 +1965,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -1989,8 +1989,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2013,8 +2013,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2037,8 +2037,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2061,8 +2061,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2085,8 +2085,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2109,8 +2109,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2133,8 +2133,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2157,8 +2157,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2181,8 +2181,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2205,8 +2205,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2229,8 +2229,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2253,8 +2253,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2277,8 +2277,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2301,8 +2301,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2325,8 +2325,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2349,8 +2349,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2373,8 +2373,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2397,8 +2397,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2421,8 +2421,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2445,8 +2445,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2469,8 +2469,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2493,8 +2493,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2517,8 +2517,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2541,8 +2541,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2565,8 +2565,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2589,8 +2589,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2613,8 +2613,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2637,8 +2637,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2661,8 +2661,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2685,8 +2685,8 @@ group vector_to_scalar "Vector to Scalar Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2713,8 +2713,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2737,8 +2737,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2761,8 +2761,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2785,8 +2785,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2809,8 +2809,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2833,8 +2833,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2857,8 +2857,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2881,8 +2881,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2905,8 +2905,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2929,8 +2929,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2953,8 +2953,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -2977,8 +2977,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3001,8 +3001,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3025,8 +3025,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3049,8 +3049,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3073,8 +3073,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3097,8 +3097,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3121,8 +3121,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3145,8 +3145,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3169,8 +3169,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3193,8 +3193,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3217,8 +3217,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3241,8 +3241,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3265,8 +3265,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3289,8 +3289,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3313,8 +3313,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3337,8 +3337,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3361,8 +3361,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3385,8 +3385,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3409,8 +3409,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3433,8 +3433,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3457,8 +3457,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3481,8 +3481,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3505,8 +3505,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3529,8 +3529,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3553,8 +3553,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3577,8 +3577,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3601,8 +3601,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3625,8 +3625,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3649,8 +3649,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3673,8 +3673,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3697,8 +3697,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3721,8 +3721,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3745,8 +3745,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3769,8 +3769,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3793,8 +3793,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3817,8 +3817,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3841,8 +3841,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3865,8 +3865,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3889,8 +3889,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3913,8 +3913,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3937,8 +3937,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3961,8 +3961,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -3985,8 +3985,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4009,8 +4009,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4033,8 +4033,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4057,8 +4057,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4081,8 +4081,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4105,8 +4105,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4129,8 +4129,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4153,8 +4153,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4177,8 +4177,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4201,8 +4201,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4225,8 +4225,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4249,8 +4249,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4273,8 +4273,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4297,8 +4297,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4321,8 +4321,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4345,8 +4345,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4369,8 +4369,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4393,8 +4393,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4417,8 +4417,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4441,8 +4441,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4465,8 +4465,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4489,8 +4489,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4513,8 +4513,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4537,8 +4537,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4561,8 +4561,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4585,8 +4585,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4609,8 +4609,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4633,8 +4633,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4657,8 +4657,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4681,8 +4681,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4705,8 +4705,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4729,8 +4729,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4753,8 +4753,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4777,8 +4777,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4801,8 +4801,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4825,8 +4825,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4849,8 +4849,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4873,8 +4873,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4897,8 +4897,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4921,8 +4921,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4945,8 +4945,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4969,8 +4969,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -4993,8 +4993,8 @@ group vector_to_vector "Vector to Vector Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5021,8 +5021,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5045,8 +5045,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5069,8 +5069,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5093,8 +5093,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5117,8 +5117,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5141,8 +5141,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5165,8 +5165,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5189,8 +5189,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5213,8 +5213,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5237,8 +5237,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5261,8 +5261,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5285,8 +5285,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5309,8 +5309,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5333,8 +5333,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5357,8 +5357,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5381,8 +5381,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5405,8 +5405,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5429,8 +5429,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5453,8 +5453,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5477,8 +5477,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5501,8 +5501,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5525,8 +5525,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5549,8 +5549,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5573,8 +5573,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5597,8 +5597,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5621,8 +5621,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5645,8 +5645,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5669,8 +5669,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5693,8 +5693,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5717,8 +5717,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5741,8 +5741,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5765,8 +5765,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5789,8 +5789,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5813,8 +5813,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5837,8 +5837,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5861,8 +5861,8 @@ group scalar_to_matrix "Scalar to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5889,8 +5889,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5913,8 +5913,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5937,8 +5937,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5961,8 +5961,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -5985,8 +5985,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6009,8 +6009,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6033,8 +6033,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6057,8 +6057,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6081,8 +6081,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6105,8 +6105,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6129,8 +6129,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6153,8 +6153,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6177,8 +6177,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6201,8 +6201,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6225,8 +6225,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6249,8 +6249,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6273,8 +6273,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6297,8 +6297,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6321,8 +6321,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6345,8 +6345,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6369,8 +6369,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6393,8 +6393,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6417,8 +6417,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6441,8 +6441,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6465,8 +6465,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6489,8 +6489,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6513,8 +6513,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6537,8 +6537,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6561,8 +6561,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6585,8 +6585,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6609,8 +6609,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6633,8 +6633,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6657,8 +6657,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6681,8 +6681,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6705,8 +6705,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6729,8 +6729,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6753,8 +6753,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6777,8 +6777,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6801,8 +6801,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6825,8 +6825,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6849,8 +6849,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6873,8 +6873,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6897,8 +6897,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6921,8 +6921,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6945,8 +6945,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6969,8 +6969,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -6993,8 +6993,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7017,8 +7017,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7041,8 +7041,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7065,8 +7065,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7089,8 +7089,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7113,8 +7113,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7137,8 +7137,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7161,8 +7161,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7185,8 +7185,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7209,8 +7209,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7233,8 +7233,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7257,8 +7257,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7281,8 +7281,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7305,8 +7305,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7329,8 +7329,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7353,8 +7353,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7377,8 +7377,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7401,8 +7401,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7425,8 +7425,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7449,8 +7449,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7473,8 +7473,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7497,8 +7497,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7521,8 +7521,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7545,8 +7545,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7569,8 +7569,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7593,8 +7593,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7617,8 +7617,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7641,8 +7641,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7665,8 +7665,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7689,8 +7689,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7713,8 +7713,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7737,8 +7737,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7761,8 +7761,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7785,8 +7785,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7809,8 +7809,8 @@ group matrix_to_matrix "Matrix to Matrix Conversions"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7838,8 +7838,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7863,8 +7863,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7888,8 +7888,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7913,8 +7913,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7938,8 +7938,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7963,8 +7963,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -7990,8 +7990,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8017,8 +8017,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8044,8 +8044,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8071,8 +8071,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8098,8 +8098,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8125,8 +8125,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8152,8 +8152,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8179,8 +8179,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8206,8 +8206,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8233,8 +8233,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8260,8 +8260,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8287,8 +8287,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8314,8 +8314,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8341,8 +8341,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8368,8 +8368,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8393,8 +8393,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8418,8 +8418,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8443,8 +8443,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8468,8 +8468,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8493,8 +8493,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8518,8 +8518,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8543,8 +8543,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8568,8 +8568,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8593,8 +8593,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8618,8 +8618,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8643,8 +8643,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8668,8 +8668,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8694,8 +8694,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8720,8 +8720,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8746,8 +8746,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8772,8 +8772,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8798,8 +8798,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8824,8 +8824,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8849,8 +8849,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8874,8 +8874,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8899,8 +8899,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8925,8 +8925,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8951,8 +8951,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -8977,8 +8977,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9002,8 +9002,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9027,8 +9027,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9054,8 +9054,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9081,8 +9081,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9108,8 +9108,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9135,8 +9135,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9162,8 +9162,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9187,8 +9187,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9212,8 +9212,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9237,8 +9237,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9262,8 +9262,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9288,8 +9288,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9314,8 +9314,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9339,8 +9339,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9365,8 +9365,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9391,8 +9391,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9417,8 +9417,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9443,8 +9443,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9469,8 +9469,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9495,8 +9495,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9521,8 +9521,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9547,8 +9547,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9573,8 +9573,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9599,8 +9599,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9625,8 +9625,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9651,8 +9651,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9677,8 +9677,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9703,8 +9703,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9729,8 +9729,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9755,8 +9755,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9780,8 +9780,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9805,8 +9805,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9830,8 +9830,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9855,8 +9855,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9880,8 +9880,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9905,8 +9905,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9930,8 +9930,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9955,8 +9955,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -9980,8 +9980,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10005,8 +10005,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10030,8 +10030,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10055,8 +10055,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10080,8 +10080,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10105,8 +10105,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10130,8 +10130,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10156,8 +10156,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10182,8 +10182,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10208,8 +10208,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10234,8 +10234,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10260,8 +10260,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10285,8 +10285,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10310,8 +10310,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10335,8 +10335,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10360,8 +10360,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10385,8 +10385,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10410,8 +10410,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10435,8 +10435,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10460,8 +10460,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10485,8 +10485,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10510,8 +10510,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10535,8 +10535,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10560,8 +10560,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10585,8 +10585,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10610,8 +10610,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10635,8 +10635,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10660,8 +10660,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10685,8 +10685,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10710,8 +10710,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10735,8 +10735,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10760,8 +10760,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10785,8 +10785,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10810,8 +10810,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10835,8 +10835,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10860,8 +10860,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10885,8 +10885,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10910,8 +10910,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10935,8 +10935,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10960,8 +10960,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -10985,8 +10985,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11010,8 +11010,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11035,8 +11035,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11060,8 +11060,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11085,8 +11085,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11110,8 +11110,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11135,8 +11135,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11160,8 +11160,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11185,8 +11185,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11210,8 +11210,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11235,8 +11235,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11260,8 +11260,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11285,8 +11285,8 @@ group vector_combine "Vector Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11314,8 +11314,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11339,8 +11339,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11366,8 +11366,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11393,8 +11393,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11420,8 +11420,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11447,8 +11447,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11474,8 +11474,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11499,8 +11499,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11524,8 +11524,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11549,8 +11549,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11574,8 +11574,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11600,8 +11600,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11626,8 +11626,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11651,8 +11651,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11677,8 +11677,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11702,8 +11702,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11727,8 +11727,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11756,8 +11756,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11785,8 +11785,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11814,8 +11814,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11843,8 +11843,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11868,8 +11868,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11893,8 +11893,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11919,8 +11919,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11945,8 +11945,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11971,8 +11971,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -11997,8 +11997,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12026,8 +12026,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12055,8 +12055,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12082,8 +12082,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12109,8 +12109,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12134,8 +12134,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12159,8 +12159,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12188,8 +12188,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12217,8 +12217,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12246,8 +12246,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12275,8 +12275,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12300,8 +12300,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12325,8 +12325,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12351,8 +12351,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12377,8 +12377,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12403,8 +12403,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12429,8 +12429,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12459,8 +12459,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12489,8 +12489,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12517,8 +12517,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12545,8 +12545,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12571,8 +12571,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12597,8 +12597,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12630,8 +12630,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12661,8 +12661,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12690,8 +12690,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12719,8 +12719,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12745,8 +12745,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12771,8 +12771,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12800,8 +12800,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12829,8 +12829,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12856,8 +12856,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12883,8 +12883,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12909,8 +12909,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12935,8 +12935,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12968,8 +12968,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -12999,8 +12999,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -13028,8 +13028,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -13057,8 +13057,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -13084,8 +13084,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -13111,8 +13111,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -13138,8 +13138,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
@@ -13168,8 +13168,8 @@ group matrix_combine "Matrix Combine Constructors"
 
 		both ""
 			#version 310 es
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			${DECLARATIONS}
 
