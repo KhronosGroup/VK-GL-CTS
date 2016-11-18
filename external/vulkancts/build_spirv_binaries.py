@@ -105,9 +105,7 @@ if __name__ == "__main__":
 
 	build(buildCfg, generator, ["vk-build-programs"])
 
-	if os.path.exists(args.dstPath):
-		cleanDstDir(args.dstPath)
-	else:
+	if not os.path.exists(args.dstPath):
 		os.makedirs(args.dstPath)
 
 	execBuildPrograms(buildCfg, generator, module, args.dstPath)
