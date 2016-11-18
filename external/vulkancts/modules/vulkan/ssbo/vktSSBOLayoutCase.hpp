@@ -54,6 +54,12 @@ enum BufferVarFlags
 	ACCESS_WRITE		= (1<<10),	//!< Buffer variable is written in the shader.
 };
 
+enum MatrixLoadFlags
+{
+	LOAD_FULL_MATRIX		= 0,
+	LOAD_MATRIX_COMPONENTS	= 1,
+};
+
 class BufferVar
 {
 public:

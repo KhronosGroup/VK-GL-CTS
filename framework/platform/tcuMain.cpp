@@ -34,7 +34,7 @@
 // Implement this in your platform port.
 tcu::Platform* createPlatform (void);
 
-int main (int argc, const char* argv[])
+int main (int argc, char** argv)
 {
 #if (DE_OS != DE_OS_WIN32)
 	// Set stdout to line-buffered mode (will be fully buffered by default if stdout is pipe).

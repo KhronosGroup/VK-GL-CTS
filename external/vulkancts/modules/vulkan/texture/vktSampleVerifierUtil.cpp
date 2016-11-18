@@ -608,7 +608,7 @@ namespace
 
 deInt64 signExtend (deUint64 src, int bits)
 {
-	const deUint64 signBit = 1u << (bits-1);
+	const deUint64 signBit = 1ull << (bits-1);
 
 	src |= ~((src & signBit) - 1);
 

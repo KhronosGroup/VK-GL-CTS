@@ -26,6 +26,7 @@
 #include "vktMemoryAllocationTests.hpp"
 #include "vktMemoryMappingTests.hpp"
 #include "vktMemoryPipelineBarrierTests.hpp"
+#include "vktMemoryRequirementsTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -43,6 +44,7 @@ void createChildren (tcu::TestCaseGroup* memoryTests)
 	memoryTests->addChild(createAllocationTests			(testCtx));
 	memoryTests->addChild(createMappingTests			(testCtx));
 	memoryTests->addChild(createPipelineBarrierTests	(testCtx));
+	memoryTests->addChild(createRequirementsTests		(testCtx));
 }
 
 } // anonymous

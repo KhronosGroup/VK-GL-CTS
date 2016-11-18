@@ -132,8 +132,8 @@ tcu::TestStatus basicMultiQueueCase (Context& context)
 	VkDeviceQueueCreateInfo					queueInfos[COUNT];
 	Queues									queues[COUNT]				=
 																		{
-																			{DE_NULL, NO_MATCH_FOUND},
-																			{DE_NULL, NO_MATCH_FOUND}
+																			{DE_NULL, (deUint32)NO_MATCH_FOUND},
+																			{DE_NULL, (deUint32)NO_MATCH_FOUND}
 																		};
 	const VkCommandBufferBeginInfo			info						=
 																		{
