@@ -2422,7 +2422,7 @@ std::string QuadrantRendederCase::genTessEvalSource (void) const
 			<< "layout(triangles) in;\n"
 			<< genResourceDeclarations(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 0)
 			<< "layout(location = 1) flat in highp int tes_quadrant_id[];\n"
-			<< "layout(location = 0) out highp vec4 frag_color;\n"
+			<< "layout(location = 0) out mediump vec4 frag_color;\n"
 			<< genPerVertexBlock(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_glslVersion)
 			<< "void main (void)\n"
 			<< "{\n"
@@ -2444,7 +2444,7 @@ std::string QuadrantRendederCase::genTessEvalSource (void) const
 			<< tessExtDecl
 			<< "layout(triangles) in;\n"
 			<< "layout(location = 0) in highp vec4 tes_color[];\n"
-			<< "layout(location = 0) out highp vec4 frag_color;\n"
+			<< "layout(location = 0) out mediump vec4 frag_color;\n"
 			<< genPerVertexBlock(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_glslVersion)
 			<< "void main (void)\n"
 			<< "{\n"
@@ -2481,7 +2481,7 @@ std::string QuadrantRendederCase::genGeometrySource (void) const
 			<< "layout(triangle_strip, max_vertices=4) out;\n"
 			<< genResourceDeclarations(vk::VK_SHADER_STAGE_GEOMETRY_BIT, 0)
 			<< "layout(location = 1) flat in highp int geo_quadrant_id[];\n"
-			<< "layout(location = 0) out highp vec4 frag_color;\n"
+			<< "layout(location = 0) out mediump vec4 frag_color;\n"
 			<< genPerVertexBlock(vk::VK_SHADER_STAGE_GEOMETRY_BIT, m_glslVersion)
 			<< "void main (void)\n"
 			<< "{\n"
