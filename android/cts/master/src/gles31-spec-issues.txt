@@ -1,5 +1,5 @@
 # Khronos bugs 11207, 12408, internal bug 20699693
-dEQP-GLES31.functional.shaders.arrays_of_arrays.invalid.empty_declaration_without_var_name_*
+dEQP-GLES31.functional.shaders.arrays_of_arrays.*.invalid.empty_declaration_without_var_name_*
 
 # Khronos bug 14442, internal bug 27909189
 dEQP-GLES31.functional.texture.border_clamp.range_clamp.nearest_float_depth_uint_stencil_sample_stencil

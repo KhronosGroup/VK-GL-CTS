@@ -1046,14 +1046,31 @@ void UniformLocationTests::init (void)
 
 	// Negative
 	{
-		gls::ShaderLibrary			shaderLibrary    (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
-		const vector<TestNode*>     negativeCases    = shaderLibrary.loadShaderFile("shaders/uniform_location.test");
-		tcu::TestCaseGroup* const	group			 = new tcu::TestCaseGroup(m_testCtx, "negative", "Negative tests");
+		de::MovePtr<tcu::TestCaseGroup>	negativeGroup			(new tcu::TestCaseGroup(m_testCtx, "negative", "Negative tests"));
 
-		addChild(group);
+		{
+			de::MovePtr<tcu::TestCaseGroup>	es31Group		(new tcu::TestCaseGroup(m_testCtx, "es31", "GLSL ES 3.1 Negative tests"));
+			gls::ShaderLibrary				shaderLibrary   (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
+			const vector<TestNode*>			negativeCases    = shaderLibrary.loadShaderFile("shaders/es31/uniform_location.test");
 
-		for (int ndx = 0; ndx < int(negativeCases.size()); ndx++)
-			group->addChild(negativeCases[ndx]);
+			for (int ndx = 0; ndx < int(negativeCases.size()); ndx++)
+				es31Group->addChild(negativeCases[ndx]);
+
+			negativeGroup->addChild(es31Group.release());
+		}
+
+		{
+			de::MovePtr<tcu::TestCaseGroup>	es32Group		(new tcu::TestCaseGroup(m_testCtx, "es32", "GLSL ES 3.2 Negative tests"));
+			gls::ShaderLibrary				shaderLibrary   (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
+			const vector<TestNode*>			negativeCases    = shaderLibrary.loadShaderFile("shaders/es32/uniform_location.test");
+
+			for (int ndx = 0; ndx < int(negativeCases.size()); ndx++)
+				es32Group->addChild(negativeCases[ndx]);
+
+			negativeGroup->addChild(es32Group.release());
+		}
+
+		addChild(negativeGroup.release());
 	}
 }
 

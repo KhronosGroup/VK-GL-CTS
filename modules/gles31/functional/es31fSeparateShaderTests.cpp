@@ -1836,11 +1836,25 @@ TestCaseGroup* createSeparateShaderTests (Context& ctx)
 	group->addChild(interfaceMismatchGroup);
 
 	{
+		TestCaseGroup*						es31Group		= new TestCaseGroup(ctx, "es31", "GLSL ES 3.1 pipeline interface matching");
 		gls::ShaderLibrary					shaderLibrary	(ctx.getTestContext(), ctx.getRenderContext(), ctx.getContextInfo());
-		const std::vector<tcu::TestNode*>	children		= shaderLibrary.loadShaderFile("shaders/separate_shader_validation.test");
+		const std::vector<tcu::TestNode*>	children		= shaderLibrary.loadShaderFile("shaders/es31/separate_shader_validation.test");
 
 		for (int i = 0; i < (int)children.size(); i++)
-			interfaceMismatchGroup->addChild(children[i]);
+			es31Group->addChild(children[i]);
+
+		interfaceMismatchGroup->addChild(es31Group);
+	}
+
+	{
+		TestCaseGroup*						es32Group		= new TestCaseGroup(ctx, "es32", "GLSL ES 3.2 pipeline interface matching");
+		gls::ShaderLibrary					shaderLibrary	(ctx.getTestContext(), ctx.getRenderContext(), ctx.getContextInfo());
+		const std::vector<tcu::TestNode*>	children		= shaderLibrary.loadShaderFile("shaders/es32/separate_shader_validation.test");
+
+		for (int i = 0; i < (int)children.size(); i++)
+			es32Group->addChild(children[i]);
+
+		interfaceMismatchGroup->addChild(es32Group);
 	}
 
 	return group;

@@ -47,6 +47,7 @@
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deSharedPtr.hpp"
+#include "deUniquePtr.hpp"
 #include "deString.h"
 #include "deMath.h"
 
@@ -7648,14 +7649,31 @@ void TessellationTests::init (void)
 		}
 
 		{
-			TestCaseGroup* const				negativeGroup	= new TestCaseGroup(m_context, "negative", "Negative cases");
-			gls::ShaderLibrary					shaderLibrary	(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
-			const std::vector<tcu::TestNode*>	children		= shaderLibrary.loadShaderFile("shaders/tessellation_negative_user_defined_io.test");
+			de::MovePtr<TestCaseGroup>	negativeGroup	(new TestCaseGroup(m_context, "negative", "Negative cases"));
 
-			userDefinedIOGroup->addChild(negativeGroup);
+			{
+				de::MovePtr<TestCaseGroup>			es31Group		(new TestCaseGroup(m_context, "es31", "GLSL ES 3.1 Negative cases"));
+				gls::ShaderLibrary					shaderLibrary	(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
+				const std::vector<tcu::TestNode*>	children		= shaderLibrary.loadShaderFile("shaders/es31/tessellation_negative_user_defined_io.test");
 
-			for (int i = 0; i < (int)children.size(); i++)
-				negativeGroup->addChild(children[i]);
+				for (int i = 0; i < (int)children.size(); i++)
+					es31Group->addChild(children[i]);
+
+				negativeGroup->addChild(es31Group.release());
+			}
+
+			{
+				de::MovePtr<TestCaseGroup>			es32Group		(new TestCaseGroup(m_context, "es32", "GLSL ES 3.2 Negative cases"));
+				gls::ShaderLibrary					shaderLibrary	(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
+				const std::vector<tcu::TestNode*>	children		= shaderLibrary.loadShaderFile("shaders/es32/tessellation_negative_user_defined_io.test");
+
+				for (int i = 0; i < (int)children.size(); i++)
+					es32Group->addChild(children[i]);
+
+				negativeGroup->addChild(es32Group.release());
+			}
+
+			userDefinedIOGroup->addChild(negativeGroup.release());
 		}
 	}
 }

@@ -257,8 +257,21 @@ void AndroidExtensionPackES31ATests::init (void)
 	// .shaders
 	{
 		gls::ShaderLibrary					shaderLibrary	(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
-		const std::vector<tcu::TestNode*>&	children		= shaderLibrary.loadShaderFile("shaders/android_extension_pack.test");
-		tcu::TestCaseGroup* const			group			= new tcu::TestCaseGroup(m_testCtx, "shaders", "Shader tests", children);
+		tcu::TestCaseGroup* const			group			= new tcu::TestCaseGroup(m_testCtx, "shaders", "Shader tests");
+
+		{
+			const std::vector<tcu::TestNode*>&	children		= shaderLibrary.loadShaderFile("shaders/es31/android_extension_pack.test");
+			tcu::TestCaseGroup* const			groupES31		= new tcu::TestCaseGroup(m_testCtx, "es31", "GLSL ES 3.1 Shader tests", children);
+
+			group->addChild(groupES31);
+		}
+
+		{
+			const std::vector<tcu::TestNode*>&	children		= shaderLibrary.loadShaderFile("shaders/es32/android_extension_pack.test");
+			tcu::TestCaseGroup* const			groupES32		= new tcu::TestCaseGroup(m_testCtx, "es32", "GLSL ES 3.2 Shader tests", children);
+
+			group->addChild(groupES32);
+		}
 
 		addChild(group);
 	}
