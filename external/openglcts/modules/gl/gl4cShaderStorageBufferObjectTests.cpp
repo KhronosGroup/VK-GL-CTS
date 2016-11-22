@@ -5070,6 +5070,7 @@ class BasicNoBindingLayout : public ShaderStorageBufferObjectBase
 
 		int data;
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_ssbo);
+		glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
 		glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 4, &data);
 		if (data != 1)
 			return ERROR;

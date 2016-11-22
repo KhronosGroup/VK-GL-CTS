@@ -3762,6 +3762,7 @@ void TextureCubeMapArraySamplingTest::testTexture(const formatDefinition& format
 				gl.viewport(0, 0, 3 * resolution.m_depth, 3);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "viewport");
 
+				gl.memoryBarrier(GL_PIXEL_BUFFER_BARRIER_BIT);
 				gl.readPixels(0 /* x */, 0 /* y */, image_width, image_height, format.m_destination.m_format,
 							  format.m_destination.m_type, &result_image[0]);
 

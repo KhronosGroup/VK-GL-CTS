@@ -18562,6 +18562,9 @@ void Utils::texture::get(glw::GLenum format, glw::GLenum type, glw::GLvoid* out_
 
 	bind();
 
+	gl.memoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "MemoryBarrier");
+
 	if (TEX_CUBE != m_texture_type)
 	{
 		gl.getTexImage(target, 0 /* level */, format, type, out_data);

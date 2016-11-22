@@ -200,6 +200,9 @@ tcu::TestNode::IterateResult GPUShader5ImagesArrayIndexing::iterate(void)
 	const glw::GLuint dataSize = m_texture_width * m_texture_height * m_texture_n_components * 4;
 	m_data_buffer			   = new glw::GLuint[dataSize];
 
+	gl.memoryBarrier(GL_PIXEL_BUFFER_BARRIER_BIT);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "Could not set memory barrier!");
+
 	for (unsigned int i = 0; i < m_array_size; ++i)
 	{
 		/* Attach texture to framebuffer's color attachment 0 */

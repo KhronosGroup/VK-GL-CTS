@@ -5625,6 +5625,7 @@ class AdvancedAllStagesOneImage : public ShaderImageLoadStoreBase
 		glDrawElementsInstancedBaseVertex(GL_PATCHES, 1, GL_UNSIGNED_SHORT, 0, 1, 0);
 		glDrawElementsInstanced(GL_PATCHES, 1, GL_UNSIGNED_SHORT, 0, 1);
 
+		glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
 		glBindBuffer(GL_TEXTURE_BUFFER, m_buffer);
 		glGetBufferSubData(GL_TEXTURE_BUFFER, 0, 4, &i32);
 		if (i32 < 20 || i32 > 50)
@@ -6121,6 +6122,7 @@ class AdvancedSSOSubroutine : public ShaderImageLoadStoreBase
 		glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 3, 1, 0);
 
 		std::vector<vec4> data(getWindowWidth() * getWindowHeight() * 3);
+		glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
 		glGetTexImage(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, GL_FLOAT, &data[0]);
 
 		for (int layer = 0; layer < 3; ++layer)
@@ -6152,6 +6154,7 @@ class AdvancedSSOSubroutine : public ShaderImageLoadStoreBase
 		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &indices[1]);
 		glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 3, 1, 0);
 
+		glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
 		glGetTexImage(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, GL_FLOAT, &data[0]);
 
 		for (int layer = 0; layer < 3; ++layer)
@@ -6516,6 +6519,7 @@ class AdvancedCast : public ShaderImageLoadStoreBase
 
 		std::vector<GLubyte> data(getWindowWidth() * getWindowHeight() * 4);
 		glBindTexture(GL_TEXTURE_2D, m_texture[0]);
+		glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
 		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
 
 		for (int h = 0; h < getWindowHeight(); ++h)
