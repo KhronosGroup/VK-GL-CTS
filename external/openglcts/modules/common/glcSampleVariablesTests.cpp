@@ -21,7 +21,7 @@
  * \brief
  */ /*-------------------------------------------------------------------*/
 
-#include "es31cSampleVariablesTests.hpp"
+#include "glcSampleVariablesTests.hpp"
 #include "deMath.h"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
@@ -55,13 +55,12 @@ static bool operator<(tcu::Vec4 const& k1, tcu::Vec4 const& k2)
 }
 }
 
-namespace glcts
+namespace deqp
 {
 
 using tcu::TestLog;
 using std::string;
 using std::vector;
-using glcts::Context;
 
 static std::string specializeVersion(std::string const& source, glu::GLSLVersion version,
 									 std::string const& sampler = "", std::string const& outType = "")
@@ -225,9 +224,10 @@ SampleShadingMaskCase::~SampleShadingMaskCase()
 
 SampleShadingMaskCase::IterateResult SampleShadingMaskCase::iterate()
 {
-	TestLog&			  log  = m_testCtx.getLog();
-	const glw::Functions& gl   = m_context.getRenderContext().getFunctions();
-	bool				  isOk = true;
+	TestLog&			  log			  = m_testCtx.getLog();
+	const glw::Functions& gl			  = m_context.getRenderContext().getFunctions();
+	bool				  isOk			  = true;
+	bool				  supportsRgba32f = false;
 
 	if (m_glslVersion == glu::GLSL_VERSION_310_ES &&
 		!m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
@@ -236,11 +236,14 @@ SampleShadingMaskCase::IterateResult SampleShadingMaskCase::iterate()
 		return STOP;
 	}
 
-	if ((!m_context.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_float")) &&
-		(m_internalFormat == GL_RGBA32F))
+	supportsRgba32f = isContextTypeGLCore(m_context.getRenderContext().getType()) ?
+						  true :
+						  (m_context.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_float") ||
+						   m_context.getContextInfo().isExtensionSupported("GL_ARB_color_buffer_float"));
+
+	if (m_internalFormat == GL_RGBA32F && !supportsRgba32f)
 	{
-		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED,
-								"Required extension GL_EXT_color_buffer_float is not supported");
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Internalformat rgba32f not supported");
 		return STOP;
 	}
 

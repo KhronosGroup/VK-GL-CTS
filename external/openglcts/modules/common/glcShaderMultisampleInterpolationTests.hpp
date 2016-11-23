@@ -1,5 +1,5 @@
-#ifndef _ES31CSAMPLEVARIABLESTESTS_HPP
-#define _ES31CSAMPLEVARIABLESTESTS_HPP
+#ifndef _GLCSHADERMULTISAMPLEINTERPOLATIONTESTS_HPP
+#define _GLCSHADERMULTISAMPLEINTERPOLATIONTESTS_HPP
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
@@ -26,31 +26,25 @@
 #include "glcTestCase.hpp"
 #include "gluShaderUtil.hpp"
 #include "tcuDefs.hpp"
-#include "tes31TestCase.hpp"
 
-namespace glcts
+namespace deqp
 {
 
-class SampleVariablesTests : public glcts::TestCaseGroup
+class ShaderMultisampleInterpolationTests : public TestCaseGroup
 {
 public:
-	SampleVariablesTests(glcts::Context& context, glu::GLSLVersion glslVersion);
-	~SampleVariablesTests();
+	ShaderMultisampleInterpolationTests(Context& context, glu::GLSLVersion glslVersion);
+	~ShaderMultisampleInterpolationTests();
 
 	void init();
 
 private:
-	SampleVariablesTests(const SampleVariablesTests& other);
-	SampleVariablesTests& operator=(const SampleVariablesTests& other);
-
-	enum
-	{
-		SAMPLE_MASKS = 8
-	};
+	ShaderMultisampleInterpolationTests(const ShaderMultisampleInterpolationTests& other);
+	ShaderMultisampleInterpolationTests& operator=(const ShaderMultisampleInterpolationTests& other);
 
 	glu::GLSLVersion m_glslVersion;
 };
 
-} // glcts
+} // deqp
 
-#endif // _ES31CSAMPLEVARIABLESTESTS_HPP
+#endif // _GLCSHADERMULTISAMPLEINTERPOLATIONTESTS_HPP

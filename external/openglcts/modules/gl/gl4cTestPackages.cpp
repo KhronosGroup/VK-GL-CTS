@@ -62,7 +62,9 @@
 #include "gl4cVertexAttribBindingTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcRobustBufferAccessBehaviorTests.hpp"
+#include "glcSampleVariablesTests.hpp"
 #include "glcShaderLibrary.hpp"
+#include "glcShaderMultisampleInterpolationTests.hpp"
 #include "glcViewportArrayTests.hpp"
 
 #include "../gles31/es31cArrayOfArraysTests.hpp"
@@ -71,10 +73,8 @@
 #include "../gles31/es31cExplicitUniformLocationTest.hpp"
 #include "../gles31/es31cLayoutBindingTests.hpp"
 #include "../gles31/es31cSampleShadingTests.hpp"
-#include "../gles31/es31cSampleVariablesTests.hpp"
 #include "../gles31/es31cSeparateShaderObjsTests.hpp"
 #include "../gles31/es31cShaderBitfieldOperationTests.hpp"
-#include "../gles31/es31cShaderMultisampleInterpolationTests.hpp"
 #include "../glesext/geometry_shader/esextcGeometryShaderTests.hpp"
 #include "../glesext/gpu_shader5/esextcGPUShader5Tests.hpp"
 #include "../glesext/tessellation_shader/esextcTessellationShaderTests.hpp"
@@ -273,8 +273,8 @@ void GL44TestPackage::init(void)
 		addChild(new gl4cts::MultiBindTests(getContext()));
 		addChild(new glcts::SeparateShaderObjsTests(getContext(), glu::GLSL_VERSION_440));
 		addChild(new glcts::SampleShadingTests(getContext(), glu::GLSL_VERSION_440));
-		addChild(new glcts::SampleVariablesTests(getContext(), glu::GLSL_VERSION_440));
-		addChild(new glcts::ShaderMultisampleInterpolationTests(getContext(), glu::GLSL_VERSION_440));
+		addChild(new deqp::SampleVariablesTests(getContext(), glu::GLSL_VERSION_440));
+		addChild(new deqp::ShaderMultisampleInterpolationTests(getContext(), glu::GLSL_VERSION_440));
 		addChild(new glcts::ShaderTextureImageSamplesTests(getContext()));
 
 		glcts::ExtParameters extParams(glu::GLSL_VERSION_440, glcts::EXTENSIONTYPE_NONE);

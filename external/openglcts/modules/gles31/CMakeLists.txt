@@ -19,8 +19,6 @@ set(GLCTS_ES31_SRCS
 	es31cProgramInterfaceQueryTests.hpp
 	es31cSampleShadingTests.cpp
 	es31cSampleShadingTests.hpp
-	es31cSampleVariablesTests.cpp
-	es31cSampleVariablesTests.hpp
 	es31cSeparateShaderObjsTests.cpp
 	es31cSeparateShaderObjsTests.hpp
 	es31cShaderAtomicCountersTests.cpp
@@ -31,8 +29,6 @@ set(GLCTS_ES31_SRCS
 	es31cShaderImageLoadStoreTests.hpp
 	es31cShaderImageSizeTests.cpp
 	es31cShaderImageSizeTests.hpp
-	es31cShaderMultisampleInterpolationTests.cpp
-	es31cShaderMultisampleInterpolationTests.hpp
 	es31cShaderStorageBufferObjectTests.cpp
 	es31cShaderStorageBufferObjectTests.hpp
 	es31cTestPackage.cpp

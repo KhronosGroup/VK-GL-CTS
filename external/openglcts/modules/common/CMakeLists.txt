@@ -36,12 +36,16 @@ set(GLCTS_COMMON_SRCS
 	glcShaderLoopTests.hpp
 	glcShaderNegativeTests.hpp
 	glcShaderNegativeTests.cpp
+	glcShaderMultisampleInterpolationTests.cpp
+	glcShaderMultisampleInterpolationTests.hpp
 	glcShaderRenderCase.cpp
 	glcShaderRenderCase.hpp
 	glcShaderStructTests.cpp
 	glcShaderStructTests.hpp
 	glcShaderSwitchTests.cpp
 	glcShaderSwitchTests.hpp
+	glcSampleVariablesTests.cpp
+	glcSampleVariablesTests.hpp
 	glcTestCase.cpp
 	glcTestCase.hpp
 	glcTestCaseWrapper.cpp

@@ -33,20 +33,22 @@
 #include "es31cLayoutBindingTests.hpp"
 #include "es31cProgramInterfaceQueryTests.hpp"
 #include "es31cSampleShadingTests.hpp"
-#include "es31cSampleVariablesTests.hpp"
+
 #include "es31cSeparateShaderObjsTests.hpp"
 #include "es31cShaderAtomicCountersTests.hpp"
 #include "es31cShaderBitfieldOperationTests.hpp"
 #include "es31cShaderImageLoadStoreTests.hpp"
 #include "es31cShaderImageSizeTests.hpp"
-#include "es31cShaderMultisampleInterpolationTests.hpp"
 #include "es31cShaderStorageBufferObjectTests.hpp"
 #include "es31cTextureGatherTests.hpp"
 #include "es31cTextureStorageMultisampleTests.hpp"
 #include "es31cVertexAttribBindingTests.hpp"
 #include "glcInfoTests.hpp"
+#include "glcSampleVariablesTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
+#include "glcShaderMultisampleInterpolationTests.hpp"
 #include "glcShaderNegativeTests.hpp"
+
 #include "gluStateReset.hpp"
 
 #include "../glesext/draw_buffers_indexed/esextcDrawBuffersIndexedTests.hpp"
@@ -167,10 +169,10 @@ void ES31TestPackage::init(void)
 		coreGroup->addChild(new glcts::ShaderAtomicCountersTests(getContext()));
 		coreGroup->addChild(new glcts::TextureGatherTests(getContext()));
 		coreGroup->addChild(new glcts::SampleShadingTests(getContext(), glu::GLSL_VERSION_310_ES));
-		coreGroup->addChild(new glcts::SampleVariablesTests(getContext(), glu::GLSL_VERSION_310_ES));
+		coreGroup->addChild(new deqp::SampleVariablesTests(getContext(), glu::GLSL_VERSION_310_ES));
 		coreGroup->addChild(new glcts::SeparateShaderObjsTests(getContext(), glu::GLSL_VERSION_310_ES));
 		coreGroup->addChild(new glcts::ShaderBitfieldOperationTests(getContext(), glu::GLSL_VERSION_310_ES));
-		coreGroup->addChild(new glcts::ShaderMultisampleInterpolationTests(getContext(), glu::GLSL_VERSION_310_ES));
+		coreGroup->addChild(new deqp::ShaderMultisampleInterpolationTests(getContext(), glu::GLSL_VERSION_310_ES));
 		coreGroup->addChild(new glcts::LayoutBindingTests(getContext(), glu::GLSL_VERSION_310_ES));
 		coreGroup->addChild(new deqp::ShaderIntegerMixTests(getContext(), glu::GLSL_VERSION_310_ES));
 		coreGroup->addChild(new glcts::BlendEquationAdvancedTests(getContext(), glu::GLSL_VERSION_310_ES));
