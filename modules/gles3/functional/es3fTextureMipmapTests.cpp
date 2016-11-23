@@ -394,7 +394,7 @@ Texture2DMipmapCase::IterateResult Texture2DMipmapCase::iterate (void)
 		tcu::Surface			referenceFrame	(viewport.width, viewport.height);
 		tcu::Surface			errorMask		(viewport.width, viewport.height);
 		tcu::LookupPrecision	lookupPrec;
-		tcu::LodPrecision		lodPrec;
+		tcu::LodPrecision		lodPrec			(tcu::LodPrecision::RULE_OPENGL);
 		int						numFailedPixels	= 0;
 
 		lookupPrec.coordBits		= tcu::IVec3(20, 20, 0);
@@ -709,7 +709,7 @@ TextureCubeMipmapCase::IterateResult TextureCubeMipmapCase::iterate (void)
 		int						numFailedPixels		= 0;
 		ReferenceParams			params				(TEXTURETYPE_CUBE);
 		tcu::LookupPrecision	lookupPrec;
-		tcu::LodPrecision		lodPrec;
+		tcu::LodPrecision		lodPrec				(tcu::LodPrecision::RULE_OPENGL);
 
 		// Params for rendering reference
 		params.sampler					= glu::mapGLSampler(m_wrapS, m_wrapT, m_minFilter, magFilter);
@@ -1341,7 +1341,7 @@ Texture3DMipmapCase::IterateResult Texture3DMipmapCase::iterate (void)
 		tcu::Surface			referenceFrame	(viewport.width, viewport.height);
 		tcu::Surface			errorMask		(viewport.width, viewport.height);
 		tcu::LookupPrecision	lookupPrec;
-		tcu::LodPrecision		lodPrec;
+		tcu::LodPrecision		lodPrec			(tcu::LodPrecision::RULE_OPENGL);
 		int						numFailedPixels	= 0;
 
 		lookupPrec.coordBits		= tcu::IVec3(20, 20, 20);
@@ -1555,7 +1555,7 @@ Texture2DLodControlCase::IterateResult Texture2DLodControlCase::iterate (void)
 		tcu::Surface			referenceFrame	(viewport.width, viewport.height);
 		tcu::Surface			errorMask		(viewport.width, viewport.height);
 		tcu::LookupPrecision	lookupPrec;
-		tcu::LodPrecision		lodPrec;
+		tcu::LodPrecision		lodPrec			(tcu::LodPrecision::RULE_OPENGL);
 		int						numFailedPixels	= 0;
 
 		lookupPrec.coordBits		= tcu::IVec3(20, 20, 0);
@@ -1866,7 +1866,7 @@ TextureCubeLodControlCase::IterateResult TextureCubeLodControlCase::iterate (voi
 		int						numFailedPixels		= 0;
 		ReferenceParams			params				(TEXTURETYPE_CUBE);
 		tcu::LookupPrecision	lookupPrec;
-		tcu::LodPrecision		lodPrec;
+		tcu::LodPrecision		lodPrec				(tcu::LodPrecision::RULE_OPENGL);
 
 		// Params for rendering reference
 		params.sampler					= glu::mapGLSampler(wrapS, wrapT, m_minFilter, magFilter);
@@ -2187,7 +2187,7 @@ Texture3DLodControlCase::IterateResult Texture3DLodControlCase::iterate (void)
 		tcu::Surface			referenceFrame	(viewport.width, viewport.height);
 		tcu::Surface			errorMask		(viewport.width, viewport.height);
 		tcu::LookupPrecision	lookupPrec;
-		tcu::LodPrecision		lodPrec;
+		tcu::LodPrecision		lodPrec			(tcu::LodPrecision::RULE_OPENGL);
 		int						numFailedPixels	= 0;
 
 		lookupPrec.coordBits		= tcu::IVec3(20, 20, 20);

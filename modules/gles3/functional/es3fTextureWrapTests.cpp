@@ -334,7 +334,7 @@ TextureWrapCase::IterateResult TextureWrapCase::iterate (void)
 		const bool						isSRGB			= tcu::isSRGB(texFormat);
 		const tcu::PixelFormat			pixelFormat		= m_renderCtx.getRenderTarget().getPixelFormat();
 		const tcu::IVec4				colorBits		= tcu::max(getBitsVec(pixelFormat) - (isNearestOnly && !isSRGB ? 1 : 2), tcu::IVec4(0));
-		tcu::LodPrecision				lodPrecision;
+		tcu::LodPrecision				lodPrecision	(tcu::LodPrecision::RULE_OPENGL);
 		tcu::LookupPrecision			lookupPrecision;
 
 		lodPrecision.derivateBits		= 18;
