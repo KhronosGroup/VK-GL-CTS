@@ -1600,6 +1600,11 @@ tcu::Format::Bitfield<32> getWin32SurfaceCreateFlagsKHRStr (VkWin32SurfaceCreate
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
+tcu::Format::Bitfield<32> getCommandPoolTrimFlagsKHRStr (VkCommandPoolTrimFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
 std::ostream& operator<< (std::ostream& s, const VkApplicationInfo& value)
 {
 	s << "VkApplicationInfo = {\n";

@@ -1274,6 +1274,8 @@ typedef deUint32 VkAndroidSurfaceCreateFlagsKHR;
 
 typedef deUint32 VkWin32SurfaceCreateFlagsKHR;
 
+typedef deUint32 VkCommandPoolTrimFlagsKHR;
+
 VK_DEFINE_PLATFORM_TYPE(XlibDisplayPtr,				void*);
 VK_DEFINE_PLATFORM_TYPE(XlibWindow,					deUintptr);
 VK_DEFINE_PLATFORM_TYPE(XlibVisualID,				deUint32);

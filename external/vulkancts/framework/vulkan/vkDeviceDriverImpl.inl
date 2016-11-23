@@ -632,6 +632,11 @@ VkResult DeviceDriver::createSharedSwapchainsKHR (VkDevice device, deUint32 swap
 	return m_vk.createSharedSwapchainsKHR(device, swapchainCount, pCreateInfos, pAllocator, pSwapchains);
 }
 
+void DeviceDriver::trimCommandPoolKHR (VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlagsKHR flags) const
+{
+	m_vk.trimCommandPoolKHR(device, commandPool, flags);
+}
+
 VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, VkDebugMarkerObjectTagInfoEXT* pTagInfo) const
 {
 	return m_vk.debugMarkerSetObjectTagEXT(device, pTagInfo);
