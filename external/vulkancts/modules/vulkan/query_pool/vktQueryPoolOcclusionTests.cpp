@@ -1005,9 +1005,10 @@ private:
 																	   "}\n");
 
 		programCollection.glslSources.add("vert") << glu::VertexSource("#version 430\n"
-																		 "layout(location = 0) in vec4 in_Postion;\n"
+																		 "layout(location = 0) in vec4 in_Position;\n"
+																		 "out gl_PerVertex { vec4 gl_Position; float gl_PointSize; };\n"
 																		 "void main() {\n"
-																		 "	gl_Position  = in_Postion;\n"
+																		 "	gl_Position  = in_Position;\n"
 																		 "	gl_PointSize = 1.0;\n"
 																		 "}\n");
 	}
