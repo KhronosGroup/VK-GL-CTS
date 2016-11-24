@@ -1672,6 +1672,8 @@
 #define GL_NEGATIVE_ONE_TO_ONE											0x935E
 #define GL_ZERO_TO_ONE													0x935F
 #define GL_CLEAR_TEXTURE												0x9365
+#define GL_TEXTURE_REDUCTION_MODE_ARB									0x9366
+#define GL_WEIGHTED_AVERAGE_ARB											0x9367
 #define GL_MULTISAMPLES_NV												0x9371
 #define GL_SUPERSAMPLE_SCALE_X_NV										0x9372
 #define GL_SUPERSAMPLE_SCALE_Y_NV										0x9373

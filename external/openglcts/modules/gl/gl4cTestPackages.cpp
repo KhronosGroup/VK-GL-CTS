@@ -56,6 +56,7 @@
 #include "gl4cStencilTexturingTests.hpp"
 #include "gl4cSyncTests.hpp"
 #include "gl4cTextureBarrierTests.hpp"
+#include "gl4cTextureFilterMinmaxTests.hpp"
 #include "gl4cTextureGatherTests.hpp"
 #include "gl4cTextureViewTests.hpp"
 #include "gl4cVertexAttrib64BitTest.hpp"
@@ -326,6 +327,7 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::ParallelShaderCompileTests(getContext()));
 		addChild(new gl4cts::PostDepthCoverage(getContext()));
 		addChild(new gl4cts::SparseTexture2Tests(getContext()));
+		addChild(new gl4cts::TextureFilterMinmax(getContext()));
 	}
 	catch (...)
 	{

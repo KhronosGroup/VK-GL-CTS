@@ -101,6 +101,7 @@ EXTENSIONS			= [
 	'GL_ARB_sparse_texture',
 	'GL_ARB_tessellation_shader',
 	'GL_ARB_texture_barrier',
+	'GL_ARB_texture_filter_minmax',
 	'GL_ARB_texture_storage',
 	'GL_ARB_texture_storage_multisample',
 	'GL_ARB_texture_multisample',

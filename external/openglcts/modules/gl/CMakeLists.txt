@@ -88,6 +88,8 @@ set(GLCTS_GL_SRCS
 	gl4cShaderImageSizeTests.cpp
 	gl4cSyncTests.cpp
 	gl4cSyncTests.hpp
+	gl4cTextureFilterMinmaxTests.cpp
+	gl4cTextureFilterMinmaxTests.hpp
 	gl4cTextureViewTests.cpp
 	gl4cTextureViewTests.hpp
 	gl4cTextureBarrierTests.cpp
