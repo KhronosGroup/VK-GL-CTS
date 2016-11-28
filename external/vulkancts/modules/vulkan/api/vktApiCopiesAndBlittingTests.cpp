@@ -337,8 +337,12 @@ void CopiesAndBlittingTestInstance::generateBuffer (tcu::PixelBufferAccess buffe
 				break;
 
 			case FILL_MODE_MULTISAMPLE:
-				buffer.setPixel((x == y) ? tcu::Vec4(0.0, 0.5, 0.5, 1.0) : ((x > y) ? greenColor : blueColor), x, y, z);
+			{
+				float xScaled = static_cast<float>(x) / static_cast<float>(width);
+				float yScaled = static_cast<float>(y) / static_cast<float>(height);
+				buffer.setPixel((xScaled == yScaled) ? tcu::Vec4(0.0, 0.5, 0.5, 1.0) : ((xScaled > yScaled) ? greenColor : blueColor), x, y, z);
 				break;
+			}
 
 			default:
 				break;
@@ -5367,6 +5371,77 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 			std::ostringstream caseName;
 			caseName << testName << "_" << getSampleCountCaseName(samples[samplesIndex]);
 			resolveImageTests->addChild(new ResolveImageToImageTestCase(testCtx, caseName.str(), description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+		}
+	}
+
+	{
+		const std::string	description	("Resolve from image to image of different size");
+		const std::string	testName	("diff_image_size");
+
+		TestParams			params;
+		params.src.image.imageType		=	VK_IMAGE_TYPE_2D;
+		params.src.image.format			=	VK_FORMAT_R8G8B8A8_UNORM;
+		params.dst.image.imageType		=	VK_IMAGE_TYPE_2D;
+		params.dst.image.format			=	VK_FORMAT_R8G8B8A8_UNORM;
+
+		{
+			const VkImageSubresourceLayers	sourceLayer	=
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+				0u,							// uint32_t				mipLevel;
+				0u,							// uint32_t				baseArrayLayer;
+				1u							// uint32_t				layerCount;
+			};
+			const VkImageResolve			testResolve	=
+			{
+				sourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{0, 0, 0},		// VkOffset3D				srcOffset;
+				sourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{0, 0, 0},		// VkOffset3D				dstOffset;
+				resolveExtent,	// VkExtent3D				extent;
+			};
+
+			CopyRegion	imageResolve;
+			imageResolve.imageResolve	= testResolve;
+			params.regions.push_back(imageResolve);
+		}
+
+		const VkExtent3D imageExtents[]		=
+		{
+			{ resolveExtent.width + 10,	resolveExtent.height,		resolveExtent.depth },
+			{ resolveExtent.width,		resolveExtent.height * 2,	resolveExtent.depth },
+			{ resolveExtent.width,		resolveExtent.height,		resolveExtent.depth + 10 }
+		};
+
+		for (int srcImageExtentIndex = 0; srcImageExtentIndex < DE_LENGTH_OF_ARRAY(imageExtents); ++srcImageExtentIndex)
+		{
+			const VkExtent3D&	srcImageSize	= imageExtents[srcImageExtentIndex];
+
+			params.src.image.extent				= srcImageSize;
+			params.dst.image.extent				= resolveExtent;
+
+			for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
+			{
+				params.samples = samples[samplesIndex];
+				std::ostringstream caseName;
+				caseName << testName << "_src_" << srcImageSize.width << "_" << srcImageSize.height << "_" << srcImageSize.depth << "_" << getSampleCountCaseName(samples[samplesIndex]);
+				resolveImageTests->addChild(new ResolveImageToImageTestCase(testCtx, caseName.str(), description, params));
+			}
+		}
+
+		for (int dstImageExtentIndex = 0; dstImageExtentIndex < DE_LENGTH_OF_ARRAY(imageExtents); ++dstImageExtentIndex)
+		{
+			const VkExtent3D&	dstImageSize	= imageExtents[dstImageExtentIndex];
+			params.src.image.extent				= resolveExtent;
+			params.dst.image.extent				= dstImageSize;
+
+			for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
+			{
+				params.samples = samples[samplesIndex];
+				std::ostringstream caseName;
+				caseName << testName << "_dst_" << dstImageSize.width << "_" << dstImageSize.height << "_" << dstImageSize.depth << "_" << getSampleCountCaseName(samples[samplesIndex]);
+				resolveImageTests->addChild(new ResolveImageToImageTestCase(testCtx, caseName.str(), description, params));
+			}
 		}
 	}
 
