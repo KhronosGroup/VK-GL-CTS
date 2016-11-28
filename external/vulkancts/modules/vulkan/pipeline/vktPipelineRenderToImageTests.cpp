@@ -548,6 +548,10 @@ tcu::PixelBufferAccess getExpectedData (tcu::TextureLevel& textureLevel, const C
 
 tcu::TestStatus test (Context& context, const CaseDef caseDef)
 {
+	if (VK_IMAGE_VIEW_TYPE_3D == caseDef.imageType &&
+		(!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1")))
+		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
+
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const VkDevice					device				= context.getDevice();
 	const VkQueue					queue				= context.getUniversalQueue();
@@ -563,13 +567,14 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		Vec4(0.1f, 0.0f, 1.0f, 1.0f)
 	};
 
+	const int						numLayers			= (VK_IMAGE_VIEW_TYPE_3D == caseDef.imageType ? caseDef.renderSize.z() : caseDef.numLayers);
 	const VkDeviceSize				colorBufferSize		= caseDef.renderSize.x() * caseDef.renderSize.y() * caseDef.renderSize.z() * caseDef.numLayers * tcu::getPixelSize(mapVkFormat(caseDef.colorFormat));
 	const Unique<VkBuffer>			colorBuffer			(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>		colorBufferAlloc	(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
 	const Unique<VkShaderModule>	vertexModule		(createShaderModule			(vk, device, context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>	fragmentModule		(createShaderModule			(vk, device, context.getBinaryCollection().get("frag"), 0u));
-	const Unique<VkRenderPass>		renderPass			(makeRenderPass				(vk, device, caseDef.colorFormat, static_cast<deUint32>(caseDef.numLayers)));
+	const Unique<VkRenderPass>		renderPass			(makeRenderPass				(vk, device, caseDef.colorFormat, static_cast<deUint32>(numLayers)));
 	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout			(vk, device));
 	vector<SharedPtrVkPipeline>		pipeline;
 	const Unique<VkCommandPool>		cmdPool				(makeCommandPool  (vk, device, queueFamilyIndex));
@@ -583,14 +588,15 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 	//create colorImage
 	{
+		const VkImageViewCreateFlags	flags			= (VK_IMAGE_VIEW_TYPE_3D == caseDef.imageType ? (VkImageViewCreateFlags)VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR : (VkImageViewCreateFlags)0);
 		const VkImageUsageFlags			colorImageUsage	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-		colorImage = makeImage(vk, device, VkImageViewCreateFlags(0), getImageType(caseDef.imageType), caseDef.colorFormat, caseDef.renderSize, caseDef.numLayers, colorImageUsage);
+		colorImage = makeImage(vk, device, flags, getImageType(caseDef.imageType), caseDef.colorFormat, caseDef.renderSize, caseDef.numLayers, colorImageUsage);
 		colorImageAlloc = bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any);
 	}
 
 	//create vertexBuffer
 	{
-		const vector<Vertex4RGBA>	vertices			= genFullQuadVertices(caseDef.numLayers, vector<Vec4>(color, color + DE_LENGTH_OF_ARRAY(color)));
+		const vector<Vertex4RGBA>	vertices			= genFullQuadVertices(numLayers, vector<Vec4>(color, color + DE_LENGTH_OF_ARRAY(color)));
 		const VkDeviceSize			vertexBufferSize	= sizeInBytes(vertices);
 
 		vertexBuffer		= makeBuffer(vk, device, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
@@ -600,22 +606,24 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	}
 
 	//create attachmentHandles and pipelines
-	for (int layerNdx = 0; layerNdx < caseDef.numLayers; ++layerNdx)
+	for (int layerNdx = 0; layerNdx < numLayers; ++layerNdx)
 	{
-		colorAttachments.push_back(makeSharedPtr(makeImageView(vk, device, *colorImage,
-															  (caseDef.imageType == VK_IMAGE_VIEW_TYPE_CUBE || caseDef.imageType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY ? VK_IMAGE_VIEW_TYPE_2D : caseDef.imageType),
-															  caseDef.colorFormat, makeColorSubresourceRange(layerNdx, 1))));
+		const VkImageViewType	imageType = (VK_IMAGE_VIEW_TYPE_3D == caseDef.imageType ? VK_IMAGE_VIEW_TYPE_2D_ARRAY :
+											(VK_IMAGE_VIEW_TYPE_CUBE == caseDef.imageType || VK_IMAGE_VIEW_TYPE_CUBE_ARRAY == caseDef.imageType ? VK_IMAGE_VIEW_TYPE_2D :
+											caseDef.imageType));
+
+		colorAttachments.push_back(makeSharedPtr(makeImageView(vk, device, *colorImage, imageType, caseDef.colorFormat, makeColorSubresourceRange(layerNdx, 1))));
 		attachmentHandles.push_back(**colorAttachments.back());
 
 		pipeline.push_back(makeSharedPtr(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
 															  caseDef.renderSize, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, static_cast<deUint32>(layerNdx))));
 	}
 
-	framebuffer = makeFramebuffer(vk, device, *renderPass, caseDef.numLayers, &attachmentHandles[0], static_cast<deUint32>(caseDef.renderSize.x()), static_cast<deUint32>(caseDef.renderSize.y()));
+	framebuffer = makeFramebuffer(vk, device, *renderPass, numLayers, &attachmentHandles[0], static_cast<deUint32>(caseDef.renderSize.x()), static_cast<deUint32>(caseDef.renderSize.y()));
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
-		const vector<VkClearValue>	clearValues			(caseDef.numLayers, getClearValue(caseDef.colorFormat));
+		const vector<VkClearValue>	clearValues			(numLayers, getClearValue(caseDef.colorFormat));
 		const VkRect2D				renderArea			=
 		{
 			makeOffset2D(0, 0),
@@ -638,7 +646,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	}
 
 	//cmdDraw
-	for (deUint32 layerNdx = 0; layerNdx < static_cast<deUint32>(caseDef.numLayers); ++layerNdx)
+	for (deUint32 layerNdx = 0; layerNdx < static_cast<deUint32>(numLayers); ++layerNdx)
 	{
 		if (layerNdx != 0)
 			vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
@@ -757,6 +765,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group)
 		{ VK_IMAGE_VIEW_TYPE_1D_ARRAY,		IVec3(54,  1, 1),	4,		VK_FORMAT_UNDEFINED},
 		{ VK_IMAGE_VIEW_TYPE_2D,			IVec3(22, 64, 1),	1,		VK_FORMAT_UNDEFINED},
 		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		IVec3(22, 64, 1),	4,		VK_FORMAT_UNDEFINED},
+		{ VK_IMAGE_VIEW_TYPE_3D,			IVec3(22, 64, 7),	1,		VK_FORMAT_UNDEFINED},
 		{ VK_IMAGE_VIEW_TYPE_CUBE,			IVec3(35, 35, 1),	6,		VK_FORMAT_UNDEFINED},
 		{ VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(35, 35, 1),	2*6,	VK_FORMAT_UNDEFINED},
 	};
