@@ -140,15 +140,6 @@ GLCTS_GLES3_PKG						= Package(module = ES3CTS_MODULE, configurations = [
 									   include("gles3-pixelformat.txt"),
 									   exclude("gles3-pixelformat-issues.txt")]),
 	])
-GLCTS_GLES31_KHR_PKG				= Package(module = ES31CTS_MODULE, configurations = [
-		# Copy Image
-		Configuration(name			= "copy-image",
-					glconfig		= "rgba8888d24s8ms0",
-					rotation		= "unspecified",
-					surfacewidth	= "256",
-					surfaceheight	= "256",
-					filters			= [include("gles31-copy-image.txt")]),
-	])
 GLCTS_GLES31_PKG					= Package(module = ES31CTS_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
@@ -156,7 +147,7 @@ GLCTS_GLES31_PKG					= Package(module = ES31CTS_MODULE, configurations = [
 					rotation		= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
-					filters			= [include("gles31-master.txt"), exclude("gles31-run-in-khr.txt")]),
+					filters			= [include("gles31-master.txt")]),
 		# Rotations
 		Configuration(name			= "rotate-portrait",
 					glconfig		= "rgba8888d24s8ms0",
@@ -198,66 +189,6 @@ GLCTS_GLES31_PKG					= Package(module = ES31CTS_MODULE, configurations = [
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					filters			= [include("gles31-master.txt"), include("gles31-pixelformat.txt")]),
-	])
-GLCTS_GLES32_KHR_PKG				= Package(module = ES31CTS_MODULE, configurations = [
-		# Copy Image
-		Configuration(name			= "copy-image",
-					glconfig		= "rgba8888d24s8ms0",
-					rotation		= "unspecified",
-					surfacewidth	= "256",
-					surfaceheight	= "256",
-					filters			= [include("gles31-copy-image.txt")]),
-	])
-GLCTS_GLES32_PKG					= Package(module = ES31CTS_MODULE, configurations = [
-		# Master
-		Configuration(name			= "master",
-					glconfig		= "rgba8888d24s8ms0",
-					rotation		= "unspecified",
-					surfacewidth	= "256",
-					surfaceheight	= "256",
-					filters			= [include("gles32-master.txt"), exclude("gles32-run-in-khr.txt")]),
-
-		# Rotations
-		Configuration(name			= "rotate-portrait",
-					glconfig		= "rgba8888d24s8ms0",
-					rotation		= "0",
-					surfacewidth	= "256",
-					surfaceheight	= "256",
-					filters		= [include("gles32-master.txt"), include("gles32-rotation.txt")]),
-		Configuration(name			= "rotate-landscape",
-					glconfig		= "rgba8888d24s8ms0",
-					rotation		= "90",
-					surfacewidth	= "256",
-					surfaceheight	= "256",
-					filters		= [include("gles32-master.txt"), include("gles32-rotation.txt")]),
-		Configuration(name			= "rotate-reverse-portrait",
-					glconfig		= "rgba8888d24s8ms0",
-					rotation		= "180",
-					surfacewidth	= "256",
-					surfaceheight	= "256",
-					filters		= [include("gles32-master.txt"), include("gles32-rotation.txt")]),
-		Configuration(name			= "rotate-reverse-landscape",
-					glconfig		= "rgba8888d24s8ms0",
-					rotation		= "270",
-					surfacewidth	= "256",
-					surfaceheight	= "256",
-					filters			= [include("gles32-master.txt"), include("gles32-rotation.txt")]),
-
-		# MSAA
-		Configuration(name			= "multisample",
-					glconfig		= "rgba8888d24s8ms4",
-					rotation		= "unspecified",
-					surfacewidth	= "256",
-					surfaceheight	= "256",
-					filters		= [include("gles32-master.txt"), include("gles32-multisample.txt")]),
-
-		# Pixel format
-		Configuration(name			= "565-no-depth-no-stencil",
-					glconfig		= "rgb565d0s0ms0",
-					rotation		= "unspecified",
-					surfacewidth	= "256",
-					surfaceheight	= "256",
-					filters			= [include("gles32-master.txt"), include("gles32-pixelformat.txt")]),
 	])
 
 GLCTS_GLES2_KHR_PKG_1CFG			= Package(module = ES2KHR_MODULE, configurations = [
@@ -682,9 +613,6 @@ MUSTPASS_LISTS				= [
 			packages = [GLCTS_GLES2_PKG,
 						GLCTS_GLES3_PKG,
 						GLCTS_GLES31_PKG,
-						GLCTS_GLES31_KHR_PKG,
-						GLCTS_GLES32_PKG,
-						GLCTS_GLES32_KHR_PKG,
 						])
 	]
 

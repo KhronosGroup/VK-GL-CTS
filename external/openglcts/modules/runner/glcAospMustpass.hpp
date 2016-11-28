@@ -65,23 +65,6 @@ static const RunParams aosp_mustpass_first_cfg[] = {
 #endif // DE_OS == DE_OS_ANDROID
 	{ glu::ApiType::es(3, 1), "multisample", "rgba8888d24s8ms4", "unspecified", -1, DE_NULL, 256, 256 },
 	{ glu::ApiType::es(3, 1), "565-no-depth-no-stencil", "rgb565d0s0ms0", "unspecified", -1, DE_NULL, 256, 256 },
-	{ glu::ApiType::es(3, 1), "copy-image", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
-	{ glu::ApiType::es(3, 1), "master", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
-#if DE_OS == DE_OS_ANDROID
-	{ glu::ApiType::es(3, 1), "rotate-portrait", "rgba8888d24s8ms0", "0", -1, DE_NULL, 256, 256 },
-#endif // DE_OS == DE_OS_ANDROID
-#if DE_OS == DE_OS_ANDROID
-	{ glu::ApiType::es(3, 1), "rotate-landscape", "rgba8888d24s8ms0", "90", -1, DE_NULL, 256, 256 },
-#endif // DE_OS == DE_OS_ANDROID
-#if DE_OS == DE_OS_ANDROID
-	{ glu::ApiType::es(3, 1), "rotate-reverse-portrait", "rgba8888d24s8ms0", "180", -1, DE_NULL, 256, 256 },
-#endif // DE_OS == DE_OS_ANDROID
-#if DE_OS == DE_OS_ANDROID
-	{ glu::ApiType::es(3, 1), "rotate-reverse-landscape", "rgba8888d24s8ms0", "270", -1, DE_NULL, 256, 256 },
-#endif // DE_OS == DE_OS_ANDROID
-	{ glu::ApiType::es(3, 1), "multisample", "rgba8888d24s8ms4", "unspecified", -1, DE_NULL, 256, 256 },
-	{ glu::ApiType::es(3, 1), "565-no-depth-no-stencil", "rgb565d0s0ms0", "unspecified", -1, DE_NULL, 256, 256 },
-	{ glu::ApiType::es(3, 1), "copy-image", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
 };
 
 #endif // _GLCAOSPMUSTPASS_HPP
