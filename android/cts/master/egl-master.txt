@@ -2371,6 +2371,7 @@ dEQP-EGL.functional.get_proc_address.extension.egl_angle_query_surface_pointer
 dEQP-EGL.functional.get_proc_address.extension.egl_ext_device_base
 dEQP-EGL.functional.get_proc_address.extension.egl_ext_device_enumeration
 dEQP-EGL.functional.get_proc_address.extension.egl_ext_device_query
+dEQP-EGL.functional.get_proc_address.extension.egl_ext_image_dma_buf_import_modifiers
 dEQP-EGL.functional.get_proc_address.extension.egl_ext_output_base
 dEQP-EGL.functional.get_proc_address.extension.egl_ext_platform_base
 dEQP-EGL.functional.get_proc_address.extension.egl_ext_stream_consumer_egloutput
@@ -2401,6 +2402,7 @@ dEQP-EGL.functional.get_proc_address.extension.egl_nv_native_query
 dEQP-EGL.functional.get_proc_address.extension.egl_nv_post_sub_buffer
 dEQP-EGL.functional.get_proc_address.extension.egl_nv_stream_consumer_gltexture_yuv
 dEQP-EGL.functional.get_proc_address.extension.egl_nv_stream_metadata
+dEQP-EGL.functional.get_proc_address.extension.egl_nv_stream_reset
 dEQP-EGL.functional.get_proc_address.extension.egl_nv_stream_sync
 dEQP-EGL.functional.get_proc_address.extension.egl_nv_sync
 dEQP-EGL.functional.get_proc_address.extension.egl_nv_system_time
@@ -2451,6 +2453,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_buffers
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_buffers_indexed
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_elements_base_vertex
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_instanced
+dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_transform_feedback
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_geometry_shader
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_instanced_arrays
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_multi_draw_indirect

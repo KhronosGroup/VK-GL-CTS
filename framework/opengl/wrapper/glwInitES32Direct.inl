@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 33216.
+ * Generated from Khronos GL API description (gl.xml) revision 33312.
  */
 gl->activeShaderProgram					= &glActiveShaderProgram;
 gl->activeTexture						= &glActiveTexture;
