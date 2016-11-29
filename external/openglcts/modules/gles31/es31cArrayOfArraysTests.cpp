@@ -2588,7 +2588,7 @@ void ConstructorsAndUnsizedDeclUnsizedArrays1<API>::test_shader_compilation(
 		DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
 		/* Execute test */
-		EXECUTE_SHADER_TEST(API::ALLOW_UNSIZED_DECLARATION, tested_shader_type, shader_source);
+		this->execute_negative_test(tested_shader_type, shader_source);
 	} /* for (int max_dimension_index = 2; ...) */
 }
 
