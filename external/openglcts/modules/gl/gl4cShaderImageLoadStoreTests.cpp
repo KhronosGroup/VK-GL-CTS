@@ -8423,7 +8423,7 @@ private:
 		verificationRoutine m_verification_routine;
 	};
 
-	template <typename T, GLuint SIZE, GLuint OFFSET, bool = (sizeof(T) * CHAR_BIT < OFFSET)>
+	template <typename T, GLuint SIZE, GLuint OFFSET, bool = (OFFSET < sizeof(T) * CHAR_BIT)>
 	struct Masks
 	{
 		/** Get mask of bits used to store in bit-field
