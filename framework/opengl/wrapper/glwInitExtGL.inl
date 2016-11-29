@@ -1,8 +1,13 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 33216.
+ * Generated from Khronos GL API description (gl.xml) revision 33312.
  */
+
+if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
+{
+	gl->blendBarrier	= (glBlendBarrierFunc)	loader->get("glBlendBarrierKHR");
+}
 
 if (de::contains(extSet, "GL_KHR_debug"))
 {
@@ -25,6 +30,13 @@ if (de::contains(extSet, "GL_KHR_robustness"))
 	gl->getnUniformiv			= (glGetnUniformivFunc)				loader->get("glGetnUniformiv");
 	gl->getnUniformuiv			= (glGetnUniformuivFunc)			loader->get("glGetnUniformuiv");
 	gl->readnPixels				= (glReadnPixelsFunc)				loader->get("glReadnPixels");
+}
+
+if (de::contains(extSet, "GL_EXT_debug_marker"))
+{
+	gl->insertEventMarkerEXT	= (glInsertEventMarkerEXTFunc)	loader->get("glInsertEventMarkerEXT");
+	gl->popGroupMarkerEXT		= (glPopGroupMarkerEXTFunc)		loader->get("glPopGroupMarkerEXT");
+	gl->pushGroupMarkerEXT		= (glPushGroupMarkerEXTFunc)	loader->get("glPushGroupMarkerEXT");
 }
 
 if (de::contains(extSet, "GL_ARB_clip_control"))
@@ -334,4 +346,9 @@ if (de::contains(extSet, "GL_ARB_vertex_attrib_binding"))
 	gl->vertexAttribIFormat		= (glVertexAttribIFormatFunc)	loader->get("glVertexAttribIFormat");
 	gl->vertexAttribLFormat		= (glVertexAttribLFormatFunc)	loader->get("glVertexAttribLFormat");
 	gl->vertexBindingDivisor	= (glVertexBindingDivisorFunc)	loader->get("glVertexBindingDivisor");
+}
+
+if (de::contains(extSet, "GL_NV_internalformat_sample_query"))
+{
+	gl->getInternalformatSampleivNV	= (glGetInternalformatSampleivNVFunc)	loader->get("glGetInternalformatSampleivNV");
 }

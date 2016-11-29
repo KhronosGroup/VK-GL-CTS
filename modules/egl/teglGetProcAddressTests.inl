@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 33216.
+ * Generated from Khronos EGL API description (egl.xml) revision 33312.
  */
 
 static const char* s_EGL14[] =
@@ -489,6 +489,12 @@ static const char* s_EGL_EXT_device_query[] =
 	"eglQueryDisplayAttribEXT",
 };
 
+static const char* s_EGL_EXT_image_dma_buf_import_modifiers[] =
+{
+	"eglQueryDmaBufFormatsEXT",
+	"eglQueryDmaBufModifiersEXT",
+};
+
 static const char* s_EGL_EXT_output_base[] =
 {
 	"eglGetOutputLayersEXT",
@@ -677,6 +683,11 @@ static const char* s_EGL_NV_stream_metadata[] =
 	"eglQueryDisplayAttribNV",
 	"eglQueryStreamMetadataNV",
 	"eglSetStreamMetadataNV",
+};
+
+static const char* s_EGL_NV_stream_reset[] =
+{
+	"eglResetStreamNV",
 };
 
 static const char* s_EGL_NV_stream_sync[] =
@@ -1096,6 +1107,12 @@ static const char* s_GL_EXT_draw_instanced[] =
 {
 	"glDrawArraysInstancedEXT",
 	"glDrawElementsInstancedEXT",
+};
+
+static const char* s_GL_EXT_draw_transform_feedback[] =
+{
+	"glDrawTransformFeedbackEXT",
+	"glDrawTransformFeedbackInstancedEXT",
 };
 
 static const char* s_GL_EXT_geometry_shader[] =
@@ -1686,6 +1703,7 @@ static const struct
 	{ "EGL_EXT_device_base",								DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_base),								s_EGL_EXT_device_base								},
 	{ "EGL_EXT_device_enumeration",							DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_enumeration),						s_EGL_EXT_device_enumeration						},
 	{ "EGL_EXT_device_query",								DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_query),								s_EGL_EXT_device_query								},
+	{ "EGL_EXT_image_dma_buf_import_modifiers",				DE_LENGTH_OF_ARRAY(s_EGL_EXT_image_dma_buf_import_modifiers),			s_EGL_EXT_image_dma_buf_import_modifiers			},
 	{ "EGL_EXT_output_base",								DE_LENGTH_OF_ARRAY(s_EGL_EXT_output_base),								s_EGL_EXT_output_base								},
 	{ "EGL_EXT_platform_base",								DE_LENGTH_OF_ARRAY(s_EGL_EXT_platform_base),							s_EGL_EXT_platform_base								},
 	{ "EGL_EXT_stream_consumer_egloutput",					DE_LENGTH_OF_ARRAY(s_EGL_EXT_stream_consumer_egloutput),				s_EGL_EXT_stream_consumer_egloutput					},
@@ -1716,6 +1734,7 @@ static const struct
 	{ "EGL_NV_post_sub_buffer",								DE_LENGTH_OF_ARRAY(s_EGL_NV_post_sub_buffer),							s_EGL_NV_post_sub_buffer							},
 	{ "EGL_NV_stream_consumer_gltexture_yuv",				DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_consumer_gltexture_yuv),				s_EGL_NV_stream_consumer_gltexture_yuv				},
 	{ "EGL_NV_stream_metadata",								DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_metadata),							s_EGL_NV_stream_metadata							},
+	{ "EGL_NV_stream_reset",								DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_reset),								s_EGL_NV_stream_reset								},
 	{ "EGL_NV_stream_sync",									DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_sync),								s_EGL_NV_stream_sync								},
 	{ "EGL_NV_sync",										DE_LENGTH_OF_ARRAY(s_EGL_NV_sync),										s_EGL_NV_sync										},
 	{ "EGL_NV_system_time",									DE_LENGTH_OF_ARRAY(s_EGL_NV_system_time),								s_EGL_NV_system_time								},
@@ -1766,6 +1785,7 @@ static const struct
 	{ "GL_EXT_draw_buffers_indexed",						DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_buffers_indexed),						s_GL_EXT_draw_buffers_indexed						},
 	{ "GL_EXT_draw_elements_base_vertex",					DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_elements_base_vertex),					s_GL_EXT_draw_elements_base_vertex					},
 	{ "GL_EXT_draw_instanced",								DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_instanced),							s_GL_EXT_draw_instanced								},
+	{ "GL_EXT_draw_transform_feedback",						DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_transform_feedback),					s_GL_EXT_draw_transform_feedback					},
 	{ "GL_EXT_geometry_shader",								DE_LENGTH_OF_ARRAY(s_GL_EXT_geometry_shader),							s_GL_EXT_geometry_shader							},
 	{ "GL_EXT_instanced_arrays",							DE_LENGTH_OF_ARRAY(s_GL_EXT_instanced_arrays),							s_GL_EXT_instanced_arrays							},
 	{ "GL_EXT_multi_draw_indirect",							DE_LENGTH_OF_ARRAY(s_GL_EXT_multi_draw_indirect),						s_GL_EXT_multi_draw_indirect						},
