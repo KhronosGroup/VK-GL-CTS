@@ -17,10 +17,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief CTS rendering configuration list utility.
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "deUniquePtr.hpp"
 #include "glcConfigList.hpp"
@@ -28,9 +28,9 @@
 #include <typeinfo>
 
 #if defined(GLCTS_SUPPORT_WGL)
-#	include "tcuWGL.hpp"
-#	include "tcuWin32Platform.hpp"
-#	include "tcuWin32Window.hpp"
+#include "tcuWGL.hpp"
+#include "tcuWin32Platform.hpp"
+#include "tcuWin32Window.hpp"
 #endif
 
 namespace glcts
@@ -40,17 +40,17 @@ namespace glcts
 
 static void getDefaultWglConfigList(tcu::win32::Platform& wglPlatform, glu::ApiType type, ConfigList& configList)
 {
-	const HINSTANCE				instance		= GetModuleHandle(DE_NULL);
-	const tcu::wgl::Core&		wgl				(instance);
-	const tcu::win32::Window	tmpWindow		(instance, 1, 1);
-	const std::vector<int>		pixelFormats	= wgl.getPixelFormats(tmpWindow.getDeviceContext());
+	const HINSTANCE			 instance = GetModuleHandle(DE_NULL);
+	const tcu::wgl::Core&	wgl(instance);
+	const tcu::win32::Window tmpWindow(instance, 1, 1);
+	const std::vector<int>   pixelFormats = wgl.getPixelFormats(tmpWindow.getDeviceContext());
 
 	DE_UNREF(type); // \todo [2013-09-16 pyry] Check for support.
 
 	for (std::vector<int>::const_iterator fmtIter = pixelFormats.begin(); fmtIter != pixelFormats.end(); ++fmtIter)
 	{
 		const int						pixelFormat = *fmtIter;
-		const tcu::wgl::PixelFormatInfo fmtInfo = wgl.getPixelFormatInfo(tmpWindow.getDeviceContext(), pixelFormat);
+		const tcu::wgl::PixelFormatInfo fmtInfo		= wgl.getPixelFormatInfo(tmpWindow.getDeviceContext(), pixelFormat);
 
 		if (!tcu::wgl::isSupportedByTests(fmtInfo))
 			continue;

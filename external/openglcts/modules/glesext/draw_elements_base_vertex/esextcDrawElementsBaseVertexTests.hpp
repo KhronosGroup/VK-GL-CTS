@@ -18,10 +18,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
@@ -29,7 +29,7 @@
  * \brief Declares test classes that verify conformance of the
  *        "draw elements base vertex" functionality for both
  *        ES and GL.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 #include <memory.h>
 
 #include "glcTestCase.hpp"

@@ -18,15 +18,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file esextcGPUShader5SamplerArrayIndexing.hpp
  * \brief  gpu_shader5 extension - Sampler Array Indexing (Test 1)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "../esextcTestCaseBase.hpp"
 

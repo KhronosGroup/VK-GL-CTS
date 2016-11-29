@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file  esextcDrawBuffersIndexedCoverage.hpp
  * \brief Draw Buffers Indexed tests 1. Coverage
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcDrawBuffersIndexedCoverage.hpp"
 #include "glwEnums.hpp"

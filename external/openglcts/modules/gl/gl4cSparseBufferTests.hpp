@@ -18,16 +18,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
  * \file  gl4cSparseBufferTests.hpp
  * \brief Conformance tests for the GL_ARB_sparse_buffer functionality.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 #include "glcTestCase.hpp"
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"

@@ -19,10 +19,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief OpenGL ES Extensions Test Package.
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "glcContext.hpp"
 #include "glcTestCase.hpp"

@@ -18,15 +18,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file esextcTextureBorderClampParameterBorderColorError.hpp
  * \brief Texture Border Clamp Border Color Error (Test 1)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcTextureBorderClampBase.hpp"
 

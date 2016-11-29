@@ -16,16 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
  * \file  gl4cPipelineStatisticsQueryTests.cpp
  * \brief Implements conformance tests for GL_ARB_pipeline_statistics_query functionality
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "gl4cPipelineStatisticsQueryTests.hpp"
 #include "gluContextInfo.hpp"

@@ -16,10 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "es32cContextFlagsTests.hpp"
 #include "gluRenderContext.hpp"
@@ -56,7 +56,7 @@ public:
 
 void ContextFlagsCase::createContextWithFlags(glu::ContextFlags ctxFlags)
 {
-	glu::RenderConfig	renderCfg	(glu::ContextType(m_context.getRenderContext().getType().getAPI(), ctxFlags));
+	glu::RenderConfig renderCfg(glu::ContextType(m_context.getRenderContext().getType().getAPI(), ctxFlags));
 
 	glu::parseRenderConfig(&renderCfg, m_context.getTestContext().getCommandLine());
 

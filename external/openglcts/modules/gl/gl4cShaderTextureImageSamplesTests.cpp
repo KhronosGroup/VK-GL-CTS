@@ -16,16 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
  * \file  gl4cShaderTextureImageSamplesTests.cpp
  * \brief Implements conformance tests for GL_ARB_shader_texture_image_samples functionality
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "gl4cShaderTextureImageSamplesTests.hpp"
 #include "gluContextInfo.hpp"

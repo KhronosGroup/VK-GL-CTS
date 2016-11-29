@@ -16,17 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
  * \file  es31cTextureStorageMultisampleGetTexLevelParameterifvTests.cpp
  * \brief Verifies glGetTexLevelParameter(if)v() entry points work correctly.
  *        (ES3.1 only)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "es31cTextureStorageMultisampleGetTexLevelParameterifvTests.hpp"
 #include "gluContextInfo.hpp"

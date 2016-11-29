@@ -17,10 +17,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief OpenGL test context.
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "glcContext.hpp"
 #include "gluContextInfo.hpp"
@@ -52,7 +52,7 @@ void Context::createRenderContext(glu::ContextType& contextType, glu::ContextFla
 
 	try
 	{
-		glu::RenderConfig	renderCfg	(glu::ContextType(contextType.getAPI(), contextType.getFlags() | ctxFlags));
+		glu::RenderConfig renderCfg(glu::ContextType(contextType.getAPI(), contextType.getFlags() | ctxFlags));
 
 		glu::parseRenderConfig(&renderCfg, m_testCtx.getCommandLine());
 
@@ -63,8 +63,8 @@ void Context::createRenderContext(glu::ContextType& contextType, glu::ContextFla
 			renderCfg.surfaceType = glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
 		}
 
-		m_renderCtx		= glu::createRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), renderCfg);
-		m_contextInfo	= glu::ContextInfo::create(*m_renderCtx);
+		m_renderCtx   = glu::createRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), renderCfg);
+		m_contextInfo = glu::ContextInfo::create(*m_renderCtx);
 
 		glw::setCurrentThreadFunctions(&m_renderCtx->getFunctions());
 	}

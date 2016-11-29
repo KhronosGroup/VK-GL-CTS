@@ -18,15 +18,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file  esextcDrawBuffersIndexedSetGet.hpp
  * \brief Draw Buffers Indexed tests 3. Set and get
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcDrawBuffersIndexedBase.hpp"
 

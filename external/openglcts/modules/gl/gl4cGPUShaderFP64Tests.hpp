@@ -18,15 +18,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  * \file  gl4cGPUShaderFP64Tests.hpp
  * \brief Declares test classes for "GPU Shader FP64" functionality.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "glcTestCase.hpp"
 #include "glwDefs.hpp"

@@ -18,15 +18,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file esextcTextureBorderClampSamplingTextureGroup.hpp
  * \brief Test Group for Texture Border Clamp Sampling Texture Tests (Test 7)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "../esextcTestCaseBase.hpp"
 #include "glcTestCase.hpp"

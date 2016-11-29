@@ -18,15 +18,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file  esextcTextureCubeMapArrayGetterCalls.hpp
  * \brief Texture Cube Map Array Getter Calls (Test 6)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "../esextcTestCaseBase.hpp"
 #include <map>

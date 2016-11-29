@@ -18,15 +18,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file  esextcTextureCubeMapArrayFBOIncompleteness.hpp
  * \brief texture_cube_map_array extenstion - FBO incompleteness (Test 9)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "../esextcTestCaseBase.hpp"
 

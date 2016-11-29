@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  * \file  gl3GPUShader5Tests.cpp
  * \brief Implements conformance tests for "GPU Shader 5" functionality.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "gl3cGPUShader5Tests.hpp"
 #include "gluContextInfo.hpp"

@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file esextcGPUShader5TextureGatherOffset.cpp
  * \brief gpu_shader5 extension - texture gather offset tests (Test 9 and 10)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcGPUShader5TextureGatherOffset.hpp"
 

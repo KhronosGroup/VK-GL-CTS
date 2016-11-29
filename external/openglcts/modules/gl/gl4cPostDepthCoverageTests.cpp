@@ -16,16 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
  * \file  gl4cPostDepthCoverageTests.cpp
  * \brief Conformance tests for the GL_ARB_post_depth_coverage functionality.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "gl4cPostDepthCoverageTests.hpp"
 #include "gluContextInfo.hpp"

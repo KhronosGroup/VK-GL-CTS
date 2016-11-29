@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file esextcTextureBorderClampBase.cpp
  * \brief Base Class for Texture Border Clamp extension tests 1-6.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcTextureBorderClampBase.hpp"
 #include "gluContextInfo.hpp"

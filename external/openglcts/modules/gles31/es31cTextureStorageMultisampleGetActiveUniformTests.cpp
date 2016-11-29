@@ -16,17 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
  * \file  es31cTextureStorageMultisampleGetActiveUniformTests.cpp
  * \brief Implements conformance tests that check whether glGetActiveUniform()
  *        works correctly with multisample texture samplers. (ES3.1 only)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "es31cTextureStorageMultisampleGetActiveUniformTests.hpp"
 #include "gluContextInfo.hpp"

@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file  esextcDrawBuffersIndexedBlending.hpp
  * \brief Draw Buffers Indexed tests 5. Blending
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcDrawBuffersIndexedBlending.hpp"
 #include "gluPixelTransfer.hpp"

@@ -18,15 +18,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  * \file  gl3cGLSLnoperspectiveTests.hpp
  * \brief Declares test classes for "GLSL no perspective" functionality.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "glcTestCase.hpp"
 #include "glwDefs.hpp"

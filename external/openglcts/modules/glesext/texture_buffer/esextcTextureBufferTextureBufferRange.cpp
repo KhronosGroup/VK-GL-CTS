@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file  esextcTextureBufferTextureBufferRange.cpp
  * \brief Texture Buffer Range Test (Test 3)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcTextureBufferTextureBufferRange.hpp"
 #include "gluContextInfo.hpp"

@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file  esextcTextureBufferAtomicFunctions.cpp
  * \brief Texture Buffer Atomic Functions (Test 5)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcTextureBufferAtomicFunctions.hpp"
 #include "gluContextInfo.hpp"

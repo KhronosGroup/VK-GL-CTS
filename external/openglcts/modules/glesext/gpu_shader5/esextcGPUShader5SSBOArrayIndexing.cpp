@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file esextcGPUShader5SSBOArrayIndexing.cpp
  * \brief GPUShader5 SSBO Array Indexing (Test 5)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcGPUShader5SSBOArrayIndexing.hpp"
 #include "gluContextInfo.hpp"

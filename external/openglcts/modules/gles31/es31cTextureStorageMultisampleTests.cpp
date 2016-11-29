@@ -16,17 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
  * \file  es31cTextureStorageMultisampleTests.cpp
  * \brief Implements test group consisting of all the tests verifying
  *        multisample texture functionality. (ES3.1 only)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "es31cTextureStorageMultisampleTests.hpp"
 #include "es31cTextureStorageMultisampleDependenciesTests.hpp"

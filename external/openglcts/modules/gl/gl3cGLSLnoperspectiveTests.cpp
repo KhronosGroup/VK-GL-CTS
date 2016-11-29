@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  * \file  gl3cGLSLnoperspectiveTests.cpp
  * \brief Implements conformance tests for "GLSL no perspective" functionality.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "gl3cGLSLnoperspectiveTests.hpp"
 #include "gluContextInfo.hpp"

@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file esextcDrawBuffersIndexedTests.cpp
  * \brief Test group for Draw Buffers Indexed tests
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcDrawBuffersIndexedTests.hpp"
 #include "esextcDrawBuffersIndexedBlending.hpp"

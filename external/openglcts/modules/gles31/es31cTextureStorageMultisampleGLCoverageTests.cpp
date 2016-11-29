@@ -16,16 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
  * \file  es31cTextureStorageMultisampleGLCoverageTests.cpp
  * \brief Implements coverage tests for multisample textures. (ES3.1 only)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "es31cTextureStorageMultisampleGLCoverageTests.hpp"
 #include "gluContextInfo.hpp"

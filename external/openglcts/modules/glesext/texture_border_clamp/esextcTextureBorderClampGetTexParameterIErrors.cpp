@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file esextcTextureBorderClampGetTexParameterIErrors.cpp
  * \brief Texture Border Clamp glGetTexParameterIivEXT(), glGetTexParameterIuivEXT() Errors (Test 3)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcTextureBorderClampGetTexParameterIErrors.hpp"
 #include "gluContextInfo.hpp"

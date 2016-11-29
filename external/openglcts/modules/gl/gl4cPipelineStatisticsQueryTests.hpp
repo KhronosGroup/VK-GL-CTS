@@ -18,10 +18,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
@@ -29,7 +29,7 @@
  * \brief Declares test classes that verify conformance of the
  *        GL implementation with GL_ARB_pipeline_statistics_query
  *        extension specification.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "glcTestCase.hpp"
 #include "glwDefs.hpp"

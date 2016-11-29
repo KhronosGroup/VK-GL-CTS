@@ -16,10 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
@@ -27,7 +27,7 @@
  * \brief Implements conformance tests that verify dependencies of
  *        multisample textures on other parts of core ES3.1 API
  *        (ES3.1 only)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "es31cTextureStorageMultisampleDependenciesTests.hpp"
 #include "gluContextInfo.hpp"

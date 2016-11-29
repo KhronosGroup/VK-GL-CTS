@@ -16,10 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
@@ -27,7 +27,7 @@
  * \brief Short conformance tests which verify functionality which has either
  *        been found to be broken on one publically available driver, or whose
  *        behavior varies between vendors.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "gl3cCommonBugsTests.hpp"
 #include "gluContextInfo.hpp"

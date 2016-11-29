@@ -18,15 +18,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  * \file  es32cRobustBufferAccessBehaviorTests.hpp
  * \brief Declares test classes for "Robust Buffer Access Behavior" functionality.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcTestCase.hpp"

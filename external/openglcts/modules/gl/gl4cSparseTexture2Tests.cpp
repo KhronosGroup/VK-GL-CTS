@@ -16,16 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
  * \file  gl4cSparseTexture2Tests.cpp
  * \brief Conformance tests for the GL_ARB_sparse_texture2 functionality.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "gl4cSparseTexture2Tests.hpp"
 #include "gl4cSparseTextureTests.hpp"

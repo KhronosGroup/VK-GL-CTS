@@ -16,10 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "gl4cVertexAttribBindingTests.hpp"
 #include "glwEnums.hpp"
@@ -2406,19 +2406,19 @@ class BasicState2 : public VertexAttribBindingBase
 class VertexAttribState : public deqp::GLWrapper
 {
 public:
-	int			array_enabled;
-	int			array_size;
-	int			array_stride;
-	int			array_type;
-	int			array_normalized;
-	int			array_integer;
-	int			array_long;
-	int			array_divisor;
-	deUintptr	array_pointer;
-	int			array_buffer_binding;
-	int			binding;
-	int			relative_offset;
-	int			index;
+	int		  array_enabled;
+	int		  array_size;
+	int		  array_stride;
+	int		  array_type;
+	int		  array_normalized;
+	int		  array_integer;
+	int		  array_long;
+	int		  array_divisor;
+	deUintptr array_pointer;
+	int		  array_buffer_binding;
+	int		  binding;
+	int		  relative_offset;
+	int		  index;
 
 	VertexAttribState(int attribindex)
 		: array_enabled(0)

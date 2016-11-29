@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file esextcGPUShader5AtomicCountersArrayIndexing.cpp
  * \brief GPUShader5 Atomic Counters Array Indexing (Test 3)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcGPUShader5AtomicCountersArrayIndexing.hpp"
 #include "gluContextInfo.hpp"

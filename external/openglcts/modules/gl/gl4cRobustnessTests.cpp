@@ -16,10 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "gl4cRobustnessTests.hpp"
 #include "gluContextInfo.hpp"
@@ -76,11 +76,11 @@ public:
 
 void RobustnessBase::createRobustContext(glu::ResetNotificationStrategy reset)
 {
-	glu::RenderConfig	renderCfg	(glu::ContextType(m_context.getRenderContext().getType().getAPI(), glu::CONTEXT_ROBUST));
+	glu::RenderConfig renderCfg(glu::ContextType(m_context.getRenderContext().getType().getAPI(), glu::CONTEXT_ROBUST));
 
 	glu::parseRenderConfig(&renderCfg, m_context.getTestContext().getCommandLine());
 
-	renderCfg.resetNotificationStrategy	= reset;
+	renderCfg.resetNotificationStrategy = reset;
 	renderCfg.surfaceType				= glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
 
 	m_robustContext = glu::createRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), renderCfg);

@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file  esextcTextureCubeMapArraySampling.cpp
  * \brief Texture Cube Map Array Sampling (Test 1)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /* Control logging of positive results. 0 disabled, 1 enabled */
 #define TEXTURECUBEMAPARRAYSAMPLINGTEST_IS_PASS_LOG 0

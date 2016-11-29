@@ -18,16 +18,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
  * \file  gl4cParallelShaderCompileTests.hpp
  * \brief Conformance tests for the GL_ARB_parallel_shader_compile functionality.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 #include "glcTestCase.hpp"
 #include "glwDefs.hpp"
 #include "tcuDefs.hpp"

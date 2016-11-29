@@ -19,10 +19,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief OpenGL ES 2 Test Package.
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #ifndef _TCUDEFS_HPP
 #include "tcuDefs.hpp"

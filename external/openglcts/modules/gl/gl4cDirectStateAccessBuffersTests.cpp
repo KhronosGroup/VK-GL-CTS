@@ -16,10 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
@@ -1797,8 +1797,8 @@ bool MapRangeReadBitTest::CompareWithReference(glw::GLuint* data, glw::GLintptr 
 		for (glw::GLuint i = start; i < end; ++i)
 		{
 #if (DE_COMPILER == DE_COMPILER_GCC)
-#	pragma GCC diagnostic push
-#	pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 #endif
 			if (data[i - start] != s_reference[i])
 			{
@@ -1811,7 +1811,7 @@ bool MapRangeReadBitTest::CompareWithReference(glw::GLuint* data, glw::GLintptr 
 				return false;
 			}
 #if (DE_COMPILER == DE_COMPILER_GCC)
-#	pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 #endif
 		}
 	}

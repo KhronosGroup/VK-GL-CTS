@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file esextcGPUShader5ImagesArrayIndexing.cpp
  * \brief GPUShader5 Images Array Indexing (Test 2)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcGPUShader5ImagesArrayIndexing.hpp"
 #include "gluContextInfo.hpp"

@@ -16,17 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file  esextcTextureBorderClampSamplerParameterIError.cpp
  * \brief Verifies glGetSamplerParameterI*() and glSamplerParameterI*()
  *        entry-points generate errors for non-generated sampler objects
  *        as per extension specification. (Test 4)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcTextureBorderClampSamplerParameterIError.hpp"
 #include "esextcTextureBorderClampBase.hpp"

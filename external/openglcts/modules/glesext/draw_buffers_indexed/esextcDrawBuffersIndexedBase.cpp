@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file esextcDrawBuffersIndexedBase.cpp
  * \brief Base class for Draw Buffers Indexed extension tests 1-6
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcDrawBuffersIndexedBase.hpp"
 #include "tcuTestLog.hpp"

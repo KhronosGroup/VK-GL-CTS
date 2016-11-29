@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file esextcGPUShader5UniformBlocksArrayIndexing.cpp
  * \brief GPUShader5 Uniform Blocks Array Indexing Test (Test Group 4)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcGPUShader5UniformBlocksArrayIndexing.hpp"
 #include "gluContextInfo.hpp"

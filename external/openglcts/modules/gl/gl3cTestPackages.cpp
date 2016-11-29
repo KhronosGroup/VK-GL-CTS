@@ -17,10 +17,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief OpenGL 3.x Test Packages.
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "gl3cTestPackages.hpp"
 #include "../glesext/draw_elements_base_vertex/esextcDrawElementsBaseVertexTests.hpp"

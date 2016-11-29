@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  * \file  gl4cBufferStorageTests.cpp
  * \brief Implements conformance tests for "Buffer storage" functionality.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "gl4cBufferStorageTests.hpp"
 
@@ -74,13 +74,12 @@ public:
 	// compiler, and not crash.
 	struct MoveMapOwner
 	{
-		MoveMapOwner (Buffer* buffer_, glw::GLvoid* data_)
-			: buffer(buffer_)
-			, data	(data_)
-		{}
+		MoveMapOwner(Buffer* buffer_, glw::GLvoid* data_) : buffer(buffer_), data(data_)
+		{
+		}
 
-		Buffer*			buffer;
-		glw::GLvoid*	data;
+		Buffer*		 buffer;
+		glw::GLvoid* data;
 	};
 
 	/* Public classes */
@@ -835,9 +834,7 @@ Buffer::MapOwner::MapOwner(Buffer& buffer, glw::GLvoid* data) : m_data(data), m_
 	/* Nothing to be done */
 }
 
-Buffer::MapOwner::MapOwner(const Buffer::MoveMapOwner& moveOwner)
-	: m_data	(moveOwner.data)
-	, m_buffer	(moveOwner.buffer)
+Buffer::MapOwner::MapOwner(const Buffer::MoveMapOwner& moveOwner) : m_data(moveOwner.data), m_buffer(moveOwner.buffer)
 {
 }
 
@@ -2476,7 +2473,8 @@ tcu::TestNode::IterateResult MapPersistentBufferSubDataTest::iterate()
 	 */
 	{
 		{
-			Buffer::MapOwner tmp(buffer.MapRange(mapped_region_offset, mapped_region_size, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
+			Buffer::MapOwner tmp(
+				buffer.MapRange(mapped_region_offset, mapped_region_size, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
 		}
 
 		for (size_t i = 0; i < n_test_cases; ++i)
@@ -2612,7 +2610,8 @@ tcu::TestNode::IterateResult MapPersistentTextureTest::iterate()
 		const TESTED_OPERATION operation = (TESTED_OPERATION)i;
 
 		{
-			Buffer::MapOwner tmp(buffer.MapRange(0 /* offset */, data_size, GL_MAP_PERSISTENT_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
+			Buffer::MapOwner tmp(
+				buffer.MapRange(0 /* offset */, data_size, GL_MAP_PERSISTENT_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
 		}
 		Buffer::Bind(gl, 0 /* id */, GL_PIXEL_UNPACK_BUFFER);
 
@@ -3067,8 +3066,9 @@ tcu::TestNode::IterateResult MapPersistentDispatchTest::iterate()
 			0 /* offset */, data_size * sizeof(GLuint), GL_MAP_COHERENT_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_READ_BIT));
 
 		source.Bind();
-		const Buffer::MapOwner source_map(source.MapRange(
-			0 /* offset */, data_size * sizeof(GLuint), GL_MAP_COHERENT_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT));
+		const Buffer::MapOwner source_map(
+			source.MapRange(0 /* offset */, data_size * sizeof(GLuint),
+							GL_MAP_COHERENT_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT));
 
 		/* Clear binding point */
 		Buffer::Bind(gl, 0, GL_SHADER_STORAGE_BUFFER);

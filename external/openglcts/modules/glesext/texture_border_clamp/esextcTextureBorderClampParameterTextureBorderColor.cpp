@@ -16,16 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /*!
  * \file  esextcTextureBorderClampParameterTextureBorderColor.cpp
  * \brief Verify that GL_TEXTURE_BORDER_COLOR_EXT state is correctly retrieved
  *        by glGetSamplerParameter*() and glGetTexParameter*() functions. (Test 6)
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcTextureBorderClampParameterTextureBorderColor.hpp"
 #include "gluContextInfo.hpp"

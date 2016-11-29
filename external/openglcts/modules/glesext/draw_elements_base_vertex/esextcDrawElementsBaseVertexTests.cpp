@@ -16,17 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  */ /*!
  * \file  esextcDrawElementsBaseVertexTests.cpp
  * \brief Implements conformance tests for "draw elements base vertex" functionality
  *        for both ES and GL.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "esextcDrawElementsBaseVertexTests.hpp"
 #include "gluContextInfo.hpp"

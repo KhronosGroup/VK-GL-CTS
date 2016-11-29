@@ -19,15 +19,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief OpenGL context.
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
-#include "tcuDefs.hpp"
-#include "tcuTestContext.hpp"
 #include "gluRenderConfig.hpp"
 #include "gluRenderContext.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestContext.hpp"
 
 namespace glu
 {
@@ -67,8 +67,8 @@ public:
 	const tcu::RenderTarget& getRenderTarget(void) const;
 
 	glu::RenderContext* createSharedContext(
-		glu::ContextFlags				ctxFlags = (glu::ContextFlags)0,
-		glu::ResetNotificationStrategy	ctxReset = glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED);
+		glu::ContextFlags			   ctxFlags = (glu::ContextFlags)0,
+		glu::ResetNotificationStrategy ctxReset = glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED);
 
 private:
 	Context(const Context& other);

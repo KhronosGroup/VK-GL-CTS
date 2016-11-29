@@ -16,21 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
+ */ /*!
  * \file
  * \brief
- *//*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 /**
  * \file  gl4cKHRDebugTests.cpp
  * \brief Implements conformance tests for "KHR Debug" functionality.
- */ /*--------------------------------------------------------------------*/
+ */ /*-------------------------------------------------------------------*/
 
 #include "gl4cKHRDebugTests.hpp"
 
 #include "gluPlatform.hpp"
-#include "gluRenderContext.hpp"
 #include "gluRenderConfig.hpp"
+#include "gluRenderContext.hpp"
 #include "gluStrUtil.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -186,8 +186,9 @@ void TestBase::init()
  **/
 void TestBase::initDebug()
 {
-	tcu::Platform&		platform	= m_test_base_context.getTestContext().getPlatform();
-	glu::RenderConfig	renderCfg	(glu::ContextType(m_test_base_context.getRenderContext().getType().getAPI(), glu::CONTEXT_DEBUG));
+	tcu::Platform&	platform = m_test_base_context.getTestContext().getPlatform();
+	glu::RenderConfig renderCfg(
+		glu::ContextType(m_test_base_context.getRenderContext().getType().getAPI(), glu::CONTEXT_DEBUG));
 
 	parseRenderConfig(&renderCfg, m_test_base_context.getTestContext().getCommandLine());
 
@@ -201,8 +202,9 @@ void TestBase::initDebug()
  **/
 void TestBase::initNonDebug()
 {
-	tcu::Platform&		platform	= m_test_base_context.getTestContext().getPlatform();
-	glu::RenderConfig	renderCfg	(glu::ContextType(m_test_base_context.getRenderContext().getType().getAPI(), glu::ContextFlags(0)));
+	tcu::Platform&	platform = m_test_base_context.getTestContext().getPlatform();
+	glu::RenderConfig renderCfg(
+		glu::ContextType(m_test_base_context.getRenderContext().getType().getAPI(), glu::ContextFlags(0)));
 
 	parseRenderConfig(&renderCfg, m_test_base_context.getTestContext().getCommandLine());
 
