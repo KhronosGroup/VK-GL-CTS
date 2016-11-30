@@ -156,7 +156,7 @@ STEPS = [
 		  VSConfig("Debug"),
 		  ANY_VS_X64_GENERATOR),
 	RunScript(os.path.join("scripts", "build_android_mustpass.py")),
-	RunScript(os.path.join("external", "vulkancts", "build_mustpass.py")),
+	RunScript(os.path.join("external", "vulkancts", "scripts", "build_mustpass.py")),
 	RunScript(os.path.join("scripts", "gen_egl.py")),
 	RunScript(os.path.join("scripts", "opengl", "gen_all.py")),
 	RunScript(os.path.join("scripts", "src_util", "check_all.py")),

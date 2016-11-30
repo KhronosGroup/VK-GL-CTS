@@ -28,7 +28,7 @@ import tempfile
 import shutil
 import fnmatch
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
 from build.common import *
 from build.config import *

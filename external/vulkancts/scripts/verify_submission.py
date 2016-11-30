@@ -26,8 +26,8 @@ import sys
 
 from fnmatch import fnmatch
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "scripts", "log"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts", "log"))
 
 from build.common import readFile
 from log_parser import StatusCode, BatchResultParser

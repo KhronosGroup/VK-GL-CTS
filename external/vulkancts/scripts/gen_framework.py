@@ -24,12 +24,12 @@ import os
 import re
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
 from build.common import DEQP_DIR
 from khr_util.format import indentLines, writeInlFile
 
-VULKAN_DIR = os.path.join(os.path.dirname(__file__), "framework", "vulkan")
+VULKAN_DIR = os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
 
 INL_HEADER = """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
