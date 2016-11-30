@@ -527,8 +527,32 @@ std::string	SparseCaseOpImageSparseGather::sparseImageOpString (const std::strin
 	src << "%local_image_height	= OpCompositeExtract %type_float %local_uniformblock_member_size 1\n";
 	src << "%local_coord_x_bias	= OpFDiv %type_float %constant_float_half %local_image_width\n";
 	src << "%local_coord_y_bias	= OpFDiv %type_float %constant_float_half %local_image_height\n";
-	src << "%local_coord_bias	= OpCompositeConstruct %type_vec3 %local_coord_x_bias %local_coord_y_bias %constant_float_0\n";
-	src << "%local_coord_biased	= OpFAdd %type_vec3 " << coord << " %local_coord_bias\n";
+
+	switch (m_imageType)
+	{
+		case IMAGE_TYPE_2D:
+		{
+			src << "%local_coord_bias	= OpCompositeConstruct %type_vec2 %local_coord_x_bias %local_coord_y_bias\n";
+			src << "%local_coord_biased	= OpFAdd %type_vec2 " << coord << " %local_coord_bias\n";
+
+			break;
+		}
+
+		case IMAGE_TYPE_2D_ARRAY:
+		case IMAGE_TYPE_3D:
+		{
+			src << "%local_coord_bias	= OpCompositeConstruct %type_vec3 %local_coord_x_bias %local_coord_y_bias %constant_float_0\n";
+			src << "%local_coord_biased	= OpFAdd %type_vec3 " << coord << " %local_coord_bias\n";
+
+			break;
+		}
+
+		default:
+		{
+			/* This can't be happening. */
+			DE_ASSERT(DE_FALSE);
+		}
+	}
 
 	src << "%local_sparse_gather_result_x = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_0\n";
 	src << "%local_sparse_gather_result_y = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_1\n";

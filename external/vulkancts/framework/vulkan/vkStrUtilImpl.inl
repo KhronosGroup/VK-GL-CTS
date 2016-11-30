@@ -1,36 +1,38 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
-template<> const char*	getTypeName<VkInstance>					(void) { return "VkInstance";				}
-template<> const char*	getTypeName<VkPhysicalDevice>			(void) { return "VkPhysicalDevice";			}
-template<> const char*	getTypeName<VkDevice>					(void) { return "VkDevice";					}
-template<> const char*	getTypeName<VkQueue>					(void) { return "VkQueue";					}
-template<> const char*	getTypeName<VkSemaphore>				(void) { return "VkSemaphore";				}
-template<> const char*	getTypeName<VkCommandBuffer>			(void) { return "VkCommandBuffer";			}
-template<> const char*	getTypeName<VkFence>					(void) { return "VkFence";					}
-template<> const char*	getTypeName<VkDeviceMemory>				(void) { return "VkDeviceMemory";			}
-template<> const char*	getTypeName<VkBuffer>					(void) { return "VkBuffer";					}
-template<> const char*	getTypeName<VkImage>					(void) { return "VkImage";					}
-template<> const char*	getTypeName<VkEvent>					(void) { return "VkEvent";					}
-template<> const char*	getTypeName<VkQueryPool>				(void) { return "VkQueryPool";				}
-template<> const char*	getTypeName<VkBufferView>				(void) { return "VkBufferView";				}
-template<> const char*	getTypeName<VkImageView>				(void) { return "VkImageView";				}
-template<> const char*	getTypeName<VkShaderModule>				(void) { return "VkShaderModule";			}
-template<> const char*	getTypeName<VkPipelineCache>			(void) { return "VkPipelineCache";			}
-template<> const char*	getTypeName<VkPipelineLayout>			(void) { return "VkPipelineLayout";			}
-template<> const char*	getTypeName<VkRenderPass>				(void) { return "VkRenderPass";				}
-template<> const char*	getTypeName<VkPipeline>					(void) { return "VkPipeline";				}
-template<> const char*	getTypeName<VkDescriptorSetLayout>		(void) { return "VkDescriptorSetLayout";	}
-template<> const char*	getTypeName<VkSampler>					(void) { return "VkSampler";				}
-template<> const char*	getTypeName<VkDescriptorPool>			(void) { return "VkDescriptorPool";			}
-template<> const char*	getTypeName<VkDescriptorSet>			(void) { return "VkDescriptorSet";			}
-template<> const char*	getTypeName<VkFramebuffer>				(void) { return "VkFramebuffer";			}
-template<> const char*	getTypeName<VkCommandPool>				(void) { return "VkCommandPool";			}
-template<> const char*	getTypeName<VkSurfaceKHR>				(void) { return "VkSurfaceKHR";				}
-template<> const char*	getTypeName<VkSwapchainKHR>				(void) { return "VkSwapchainKHR";			}
-template<> const char*	getTypeName<VkDisplayKHR>				(void) { return "VkDisplayKHR";				}
-template<> const char*	getTypeName<VkDisplayModeKHR>			(void) { return "VkDisplayModeKHR";			}
-template<> const char*	getTypeName<VkDebugReportCallbackEXT>	(void) { return "VkDebugReportCallbackEXT";	}
+template<> const char*	getTypeName<VkInstance>						(void) { return "VkInstance";					}
+template<> const char*	getTypeName<VkPhysicalDevice>				(void) { return "VkPhysicalDevice";				}
+template<> const char*	getTypeName<VkDevice>						(void) { return "VkDevice";						}
+template<> const char*	getTypeName<VkQueue>						(void) { return "VkQueue";						}
+template<> const char*	getTypeName<VkSemaphore>					(void) { return "VkSemaphore";					}
+template<> const char*	getTypeName<VkCommandBuffer>				(void) { return "VkCommandBuffer";				}
+template<> const char*	getTypeName<VkFence>						(void) { return "VkFence";						}
+template<> const char*	getTypeName<VkDeviceMemory>					(void) { return "VkDeviceMemory";				}
+template<> const char*	getTypeName<VkBuffer>						(void) { return "VkBuffer";						}
+template<> const char*	getTypeName<VkImage>						(void) { return "VkImage";						}
+template<> const char*	getTypeName<VkEvent>						(void) { return "VkEvent";						}
+template<> const char*	getTypeName<VkQueryPool>					(void) { return "VkQueryPool";					}
+template<> const char*	getTypeName<VkBufferView>					(void) { return "VkBufferView";					}
+template<> const char*	getTypeName<VkImageView>					(void) { return "VkImageView";					}
+template<> const char*	getTypeName<VkShaderModule>					(void) { return "VkShaderModule";				}
+template<> const char*	getTypeName<VkPipelineCache>				(void) { return "VkPipelineCache";				}
+template<> const char*	getTypeName<VkPipelineLayout>				(void) { return "VkPipelineLayout";				}
+template<> const char*	getTypeName<VkRenderPass>					(void) { return "VkRenderPass";					}
+template<> const char*	getTypeName<VkPipeline>						(void) { return "VkPipeline";					}
+template<> const char*	getTypeName<VkDescriptorSetLayout>			(void) { return "VkDescriptorSetLayout";		}
+template<> const char*	getTypeName<VkSampler>						(void) { return "VkSampler";					}
+template<> const char*	getTypeName<VkDescriptorPool>				(void) { return "VkDescriptorPool";				}
+template<> const char*	getTypeName<VkDescriptorSet>				(void) { return "VkDescriptorSet";				}
+template<> const char*	getTypeName<VkFramebuffer>					(void) { return "VkFramebuffer";				}
+template<> const char*	getTypeName<VkCommandPool>					(void) { return "VkCommandPool";				}
+template<> const char*	getTypeName<VkSurfaceKHR>					(void) { return "VkSurfaceKHR";					}
+template<> const char*	getTypeName<VkSwapchainKHR>					(void) { return "VkSwapchainKHR";				}
+template<> const char*	getTypeName<VkDisplayKHR>					(void) { return "VkDisplayKHR";					}
+template<> const char*	getTypeName<VkDisplayModeKHR>				(void) { return "VkDisplayModeKHR";				}
+template<> const char*	getTypeName<VkDebugReportCallbackEXT>		(void) { return "VkDebugReportCallbackEXT";		}
+template<> const char*	getTypeName<VkObjectTableNVX>				(void) { return "VkObjectTableNVX";				}
+template<> const char*	getTypeName<VkIndirectCommandsLayoutNVX>	(void) { return "VkIndirectCommandsLayoutNVX";	}
 
 namespace pt
 {
@@ -180,6 +182,12 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR:					return "VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT:									return "VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT";
+		case VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX:							return "VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX";
+		case VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX:				return "VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX";
+		case VK_STRUCTURE_TYPE_CMD_PROCESS_COMMANDS_INFO_NVX:							return "VK_STRUCTURE_TYPE_CMD_PROCESS_COMMANDS_INFO_NVX";
+		case VK_STRUCTURE_TYPE_CMD_RESERVE_SPACE_FOR_COMMANDS_INFO_NVX:					return "VK_STRUCTURE_TYPE_CMD_RESERVE_SPACE_FOR_COMMANDS_INFO_NVX";
+		case VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_LIMITS_NVX:					return "VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_LIMITS_NVX";
+		case VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_FEATURES_NVX:					return "VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_FEATURES_NVX";
 		default:																		return DE_NULL;
 	}
 }
@@ -888,6 +896,35 @@ const char* getValidationCheckEXTName (VkValidationCheckEXT value)
 	}
 }
 
+const char* getIndirectCommandsTokenTypeNVXName (VkIndirectCommandsTokenTypeNVX value)
+{
+	switch (value)
+	{
+		case VK_INDIRECT_COMMANDS_TOKEN_PIPELINE_NVX:		return "VK_INDIRECT_COMMANDS_TOKEN_PIPELINE_NVX";
+		case VK_INDIRECT_COMMANDS_TOKEN_DESCRIPTOR_SET_NVX:	return "VK_INDIRECT_COMMANDS_TOKEN_DESCRIPTOR_SET_NVX";
+		case VK_INDIRECT_COMMANDS_TOKEN_INDEX_BUFFER_NVX:	return "VK_INDIRECT_COMMANDS_TOKEN_INDEX_BUFFER_NVX";
+		case VK_INDIRECT_COMMANDS_TOKEN_VERTEX_BUFFER_NVX:	return "VK_INDIRECT_COMMANDS_TOKEN_VERTEX_BUFFER_NVX";
+		case VK_INDIRECT_COMMANDS_TOKEN_PUSH_CONSTANT_NVX:	return "VK_INDIRECT_COMMANDS_TOKEN_PUSH_CONSTANT_NVX";
+		case VK_INDIRECT_COMMANDS_TOKEN_DRAW_INDEXED_NVX:	return "VK_INDIRECT_COMMANDS_TOKEN_DRAW_INDEXED_NVX";
+		case VK_INDIRECT_COMMANDS_TOKEN_DRAW_NVX:			return "VK_INDIRECT_COMMANDS_TOKEN_DRAW_NVX";
+		case VK_INDIRECT_COMMANDS_TOKEN_DISPATCH_NVX:		return "VK_INDIRECT_COMMANDS_TOKEN_DISPATCH_NVX";
+		default:											return DE_NULL;
+	}
+}
+
+const char* getObjectEntryTypeNVXName (VkObjectEntryTypeNVX value)
+{
+	switch (value)
+	{
+		case VK_OBJECT_ENTRY_DESCRIPTOR_SET_NVX:	return "VK_OBJECT_ENTRY_DESCRIPTOR_SET_NVX";
+		case VK_OBJECT_ENTRY_PIPELINE_NVX:			return "VK_OBJECT_ENTRY_PIPELINE_NVX";
+		case VK_OBJECT_ENTRY_INDEX_BUFFER_NVX:		return "VK_OBJECT_ENTRY_INDEX_BUFFER_NVX";
+		case VK_OBJECT_ENTRY_VERTEX_BUFFER_NVX:		return "VK_OBJECT_ENTRY_VERTEX_BUFFER_NVX";
+		case VK_OBJECT_ENTRY_PUSH_CONSTANT_NVX:		return "VK_OBJECT_ENTRY_PUSH_CONSTANT_NVX";
+		default:									return DE_NULL;
+	}
+}
+
 tcu::Format::Bitfield<32> getFormatFeatureFlagsStr (VkFormatFeatureFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -1009,6 +1046,7 @@ tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_HOST_BIT,							"VK_PIPELINE_STAGE_HOST_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,					"VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,					"VK_PIPELINE_STAGE_ALL_COMMANDS_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMMAND_PROCESS_BIT_NVX,				"VK_PIPELINE_STAGE_COMMAND_PROCESS_BIT_NVX"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1348,6 +1386,28 @@ tcu::Format::Bitfield<32> getExternalMemoryFeatureFlagsNVStr (VkExternalMemoryFe
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_NV,	"VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_NV"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_NV,		"VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_NV"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_NV,		"VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_NV"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getIndirectCommandsLayoutUsageFlagsNVXStr (VkIndirectCommandsLayoutUsageFlagsNVX value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_UNORDERED_SEQUENCES_BIT_NVX,	"VK_INDIRECT_COMMANDS_LAYOUT_USAGE_UNORDERED_SEQUENCES_BIT_NVX"),
+		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_SPARSE_SEQUENCES_BIT_NVX,	"VK_INDIRECT_COMMANDS_LAYOUT_USAGE_SPARSE_SEQUENCES_BIT_NVX"),
+		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_EMPTY_EXECUTIONS_BIT_NVX,	"VK_INDIRECT_COMMANDS_LAYOUT_USAGE_EMPTY_EXECUTIONS_BIT_NVX"),
+		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_INDEXED_SEQUENCES_BIT_NVX,	"VK_INDIRECT_COMMANDS_LAYOUT_USAGE_INDEXED_SEQUENCES_BIT_NVX"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getObjectEntryUsageFlagsNVXStr (VkObjectEntryUsageFlagsNVX value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_OBJECT_ENTRY_USAGE_GRAPHICS_BIT_NVX,	"VK_OBJECT_ENTRY_USAGE_GRAPHICS_BIT_NVX"),
+		tcu::Format::BitDesc(VK_OBJECT_ENTRY_USAGE_COMPUTE_BIT_NVX,		"VK_OBJECT_ENTRY_USAGE_COMPUTE_BIT_NVX"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3538,6 +3598,174 @@ std::ostream& operator<< (std::ostream& s, const VkValidationFlagsEXT& value)
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tdisabledValidationCheckCount = " << value.disabledValidationCheckCount << '\n';
 	s << "\tpDisabledValidationChecks = " << value.pDisabledValidationChecks << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceGeneratedCommandsFeaturesNVX& value)
+{
+	s << "VkDeviceGeneratedCommandsFeaturesNVX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcomputeBindingPointSupport = " << value.computeBindingPointSupport << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceGeneratedCommandsLimitsNVX& value)
+{
+	s << "VkDeviceGeneratedCommandsLimitsNVX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxIndirectCommandsLayoutTokenCount = " << value.maxIndirectCommandsLayoutTokenCount << '\n';
+	s << "\tmaxObjectEntryCounts = " << value.maxObjectEntryCounts << '\n';
+	s << "\tminSequenceCountBufferOffsetAlignment = " << value.minSequenceCountBufferOffsetAlignment << '\n';
+	s << "\tminSequenceIndexBufferOffsetAlignment = " << value.minSequenceIndexBufferOffsetAlignment << '\n';
+	s << "\tminCommandsTokenBufferOffsetAlignment = " << value.minCommandsTokenBufferOffsetAlignment << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectCommandsTokenNVX& value)
+{
+	s << "VkIndirectCommandsTokenNVX = {\n";
+	s << "\ttokenType = " << value.tokenType << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << "\toffset = " << value.offset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectCommandsLayoutTokenNVX& value)
+{
+	s << "VkIndirectCommandsLayoutTokenNVX = {\n";
+	s << "\ttokenType = " << value.tokenType << '\n';
+	s << "\tbindingUnit = " << value.bindingUnit << '\n';
+	s << "\tdynamicCount = " << value.dynamicCount << '\n';
+	s << "\tdivisor = " << value.divisor << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectCommandsLayoutCreateInfoNVX& value)
+{
+	s << "VkIndirectCommandsLayoutCreateInfoNVX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipelineBindPoint = " << value.pipelineBindPoint << '\n';
+	s << "\tflags = " << getIndirectCommandsLayoutUsageFlagsNVXStr(value.flags) << '\n';
+	s << "\ttokenCount = " << value.tokenCount << '\n';
+	s << "\tpTokens = " << value.pTokens << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCmdProcessCommandsInfoNVX& value)
+{
+	s << "VkCmdProcessCommandsInfoNVX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tobjectTable = " << value.objectTable << '\n';
+	s << "\tindirectCommandsLayout = " << value.indirectCommandsLayout << '\n';
+	s << "\tindirectCommandsTokenCount = " << value.indirectCommandsTokenCount << '\n';
+	s << "\tpIndirectCommandsTokens = " << value.pIndirectCommandsTokens << '\n';
+	s << "\tmaxSequencesCount = " << value.maxSequencesCount << '\n';
+	s << "\ttargetCommandBuffer = " << value.targetCommandBuffer << '\n';
+	s << "\tsequencesCountBuffer = " << value.sequencesCountBuffer << '\n';
+	s << "\tsequencesCountOffset = " << value.sequencesCountOffset << '\n';
+	s << "\tsequencesIndexBuffer = " << value.sequencesIndexBuffer << '\n';
+	s << "\tsequencesIndexOffset = " << value.sequencesIndexOffset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCmdReserveSpaceForCommandsInfoNVX& value)
+{
+	s << "VkCmdReserveSpaceForCommandsInfoNVX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tobjectTable = " << value.objectTable << '\n';
+	s << "\tindirectCommandsLayout = " << value.indirectCommandsLayout << '\n';
+	s << "\tmaxSequencesCount = " << value.maxSequencesCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkObjectTableCreateInfoNVX& value)
+{
+	s << "VkObjectTableCreateInfoNVX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tobjectCount = " << value.objectCount << '\n';
+	s << "\tpObjectEntryTypes = " << value.pObjectEntryTypes << '\n';
+	s << "\tpObjectEntryCounts = " << value.pObjectEntryCounts << '\n';
+	s << "\tpObjectEntryUsageFlags = " << value.pObjectEntryUsageFlags << '\n';
+	s << "\tmaxUniformBuffersPerDescriptor = " << value.maxUniformBuffersPerDescriptor << '\n';
+	s << "\tmaxStorageBuffersPerDescriptor = " << value.maxStorageBuffersPerDescriptor << '\n';
+	s << "\tmaxStorageImagesPerDescriptor = " << value.maxStorageImagesPerDescriptor << '\n';
+	s << "\tmaxSampledImagesPerDescriptor = " << value.maxSampledImagesPerDescriptor << '\n';
+	s << "\tmaxPipelineLayouts = " << value.maxPipelineLayouts << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkObjectTableEntryNVX& value)
+{
+	s << "VkObjectTableEntryNVX = {\n";
+	s << "\ttype = " << value.type << '\n';
+	s << "\tflags = " << getObjectEntryUsageFlagsNVXStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkObjectTablePipelineEntryNVX& value)
+{
+	s << "VkObjectTablePipelineEntryNVX = {\n";
+	s << "\ttype = " << value.type << '\n';
+	s << "\tflags = " << getObjectEntryUsageFlagsNVXStr(value.flags) << '\n';
+	s << "\tpipeline = " << value.pipeline << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkObjectTableDescriptorSetEntryNVX& value)
+{
+	s << "VkObjectTableDescriptorSetEntryNVX = {\n";
+	s << "\ttype = " << value.type << '\n';
+	s << "\tflags = " << getObjectEntryUsageFlagsNVXStr(value.flags) << '\n';
+	s << "\tpipelineLayout = " << value.pipelineLayout << '\n';
+	s << "\tdescriptorSet = " << value.descriptorSet << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkObjectTableVertexBufferEntryNVX& value)
+{
+	s << "VkObjectTableVertexBufferEntryNVX = {\n";
+	s << "\ttype = " << value.type << '\n';
+	s << "\tflags = " << getObjectEntryUsageFlagsNVXStr(value.flags) << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkObjectTableIndexBufferEntryNVX& value)
+{
+	s << "VkObjectTableIndexBufferEntryNVX = {\n";
+	s << "\ttype = " << value.type << '\n';
+	s << "\tflags = " << getObjectEntryUsageFlagsNVXStr(value.flags) << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkObjectTablePushConstantEntryNVX& value)
+{
+	s << "VkObjectTablePushConstantEntryNVX = {\n";
+	s << "\ttype = " << value.type << '\n';
+	s << "\tflags = " << getObjectEntryUsageFlagsNVXStr(value.flags) << '\n';
+	s << "\tpipelineLayout = " << value.pipelineLayout << '\n';
+	s << "\tstageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
 	s << '}';
 	return s;
 }

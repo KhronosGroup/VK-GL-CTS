@@ -24,12 +24,13 @@ import os
 import re
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
 from build.common import DEQP_DIR
 from khr_util.format import indentLines, writeInlFile
 
-VULKAN_DIR = os.path.join(os.path.dirname(__file__), "framework", "vulkan")
+VULKAN_H	= os.path.join(os.path.dirname(__file__), "src", "vulkan.h.in")
+VULKAN_DIR	= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
 
 INL_HEADER = """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
@@ -180,7 +181,7 @@ TYPE_SUBSTITUTIONS		= [
 	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*")
 ]
 
-EXTENSION_POSTFIXES		= ["KHR", "EXT", "NV"]
+EXTENSION_POSTFIXES		= ["KHR", "EXT", "NV", "NVX"]
 
 class Handle:
 	TYPE_DISP		= 0
@@ -906,7 +907,7 @@ def writeTypeUtil (api, filename):
 	writeInlFile(filename, INL_HEADER, gen())
 
 if __name__ == "__main__":
-	src				= readFile(sys.argv[1])
+	src				= readFile(VULKAN_H)
 	api				= parseAPI(src)
 	platformFuncs	= set([Function.TYPE_PLATFORM])
 	instanceFuncs	= set([Function.TYPE_INSTANCE])

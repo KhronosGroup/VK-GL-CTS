@@ -42,90 +42,96 @@ const char*	getDebugReportObjectTypeEXTName		(VkDebugReportObjectTypeEXT value);
 const char*	getDebugReportErrorEXTName			(VkDebugReportErrorEXT value);
 const char*	getRasterizationOrderAMDName		(VkRasterizationOrderAMD value);
 const char*	getValidationCheckEXTName			(VkValidationCheckEXT value);
+const char*	getIndirectCommandsTokenTypeNVXName	(VkIndirectCommandsTokenTypeNVX value);
+const char*	getObjectEntryTypeNVXName			(VkObjectEntryTypeNVX value);
 
-inline tcu::Format::Enum<VkPipelineCacheHeaderVersion>	getPipelineCacheHeaderVersionStr	(VkPipelineCacheHeaderVersion value)	{ return tcu::Format::Enum<VkPipelineCacheHeaderVersion>(getPipelineCacheHeaderVersionName, value);	}
-inline tcu::Format::Enum<VkResult>						getResultStr						(VkResult value)						{ return tcu::Format::Enum<VkResult>(getResultName, value);											}
-inline tcu::Format::Enum<VkStructureType>				getStructureTypeStr					(VkStructureType value)					{ return tcu::Format::Enum<VkStructureType>(getStructureTypeName, value);							}
-inline tcu::Format::Enum<VkSystemAllocationScope>		getSystemAllocationScopeStr			(VkSystemAllocationScope value)			{ return tcu::Format::Enum<VkSystemAllocationScope>(getSystemAllocationScopeName, value);			}
-inline tcu::Format::Enum<VkInternalAllocationType>		getInternalAllocationTypeStr		(VkInternalAllocationType value)		{ return tcu::Format::Enum<VkInternalAllocationType>(getInternalAllocationTypeName, value);			}
-inline tcu::Format::Enum<VkFormat>						getFormatStr						(VkFormat value)						{ return tcu::Format::Enum<VkFormat>(getFormatName, value);											}
-inline tcu::Format::Enum<VkImageType>					getImageTypeStr						(VkImageType value)						{ return tcu::Format::Enum<VkImageType>(getImageTypeName, value);									}
-inline tcu::Format::Enum<VkImageTiling>					getImageTilingStr					(VkImageTiling value)					{ return tcu::Format::Enum<VkImageTiling>(getImageTilingName, value);								}
-inline tcu::Format::Enum<VkPhysicalDeviceType>			getPhysicalDeviceTypeStr			(VkPhysicalDeviceType value)			{ return tcu::Format::Enum<VkPhysicalDeviceType>(getPhysicalDeviceTypeName, value);					}
-inline tcu::Format::Enum<VkQueryType>					getQueryTypeStr						(VkQueryType value)						{ return tcu::Format::Enum<VkQueryType>(getQueryTypeName, value);									}
-inline tcu::Format::Enum<VkSharingMode>					getSharingModeStr					(VkSharingMode value)					{ return tcu::Format::Enum<VkSharingMode>(getSharingModeName, value);								}
-inline tcu::Format::Enum<VkImageLayout>					getImageLayoutStr					(VkImageLayout value)					{ return tcu::Format::Enum<VkImageLayout>(getImageLayoutName, value);								}
-inline tcu::Format::Enum<VkImageViewType>				getImageViewTypeStr					(VkImageViewType value)					{ return tcu::Format::Enum<VkImageViewType>(getImageViewTypeName, value);							}
-inline tcu::Format::Enum<VkComponentSwizzle>			getComponentSwizzleStr				(VkComponentSwizzle value)				{ return tcu::Format::Enum<VkComponentSwizzle>(getComponentSwizzleName, value);						}
-inline tcu::Format::Enum<VkVertexInputRate>				getVertexInputRateStr				(VkVertexInputRate value)				{ return tcu::Format::Enum<VkVertexInputRate>(getVertexInputRateName, value);						}
-inline tcu::Format::Enum<VkPrimitiveTopology>			getPrimitiveTopologyStr				(VkPrimitiveTopology value)				{ return tcu::Format::Enum<VkPrimitiveTopology>(getPrimitiveTopologyName, value);					}
-inline tcu::Format::Enum<VkPolygonMode>					getPolygonModeStr					(VkPolygonMode value)					{ return tcu::Format::Enum<VkPolygonMode>(getPolygonModeName, value);								}
-inline tcu::Format::Enum<VkFrontFace>					getFrontFaceStr						(VkFrontFace value)						{ return tcu::Format::Enum<VkFrontFace>(getFrontFaceName, value);									}
-inline tcu::Format::Enum<VkCompareOp>					getCompareOpStr						(VkCompareOp value)						{ return tcu::Format::Enum<VkCompareOp>(getCompareOpName, value);									}
-inline tcu::Format::Enum<VkStencilOp>					getStencilOpStr						(VkStencilOp value)						{ return tcu::Format::Enum<VkStencilOp>(getStencilOpName, value);									}
-inline tcu::Format::Enum<VkLogicOp>						getLogicOpStr						(VkLogicOp value)						{ return tcu::Format::Enum<VkLogicOp>(getLogicOpName, value);										}
-inline tcu::Format::Enum<VkBlendFactor>					getBlendFactorStr					(VkBlendFactor value)					{ return tcu::Format::Enum<VkBlendFactor>(getBlendFactorName, value);								}
-inline tcu::Format::Enum<VkBlendOp>						getBlendOpStr						(VkBlendOp value)						{ return tcu::Format::Enum<VkBlendOp>(getBlendOpName, value);										}
-inline tcu::Format::Enum<VkDynamicState>				getDynamicStateStr					(VkDynamicState value)					{ return tcu::Format::Enum<VkDynamicState>(getDynamicStateName, value);								}
-inline tcu::Format::Enum<VkFilter>						getFilterStr						(VkFilter value)						{ return tcu::Format::Enum<VkFilter>(getFilterName, value);											}
-inline tcu::Format::Enum<VkSamplerMipmapMode>			getSamplerMipmapModeStr				(VkSamplerMipmapMode value)				{ return tcu::Format::Enum<VkSamplerMipmapMode>(getSamplerMipmapModeName, value);					}
-inline tcu::Format::Enum<VkSamplerAddressMode>			getSamplerAddressModeStr			(VkSamplerAddressMode value)			{ return tcu::Format::Enum<VkSamplerAddressMode>(getSamplerAddressModeName, value);					}
-inline tcu::Format::Enum<VkBorderColor>					getBorderColorStr					(VkBorderColor value)					{ return tcu::Format::Enum<VkBorderColor>(getBorderColorName, value);								}
-inline tcu::Format::Enum<VkDescriptorType>				getDescriptorTypeStr				(VkDescriptorType value)				{ return tcu::Format::Enum<VkDescriptorType>(getDescriptorTypeName, value);							}
-inline tcu::Format::Enum<VkAttachmentLoadOp>			getAttachmentLoadOpStr				(VkAttachmentLoadOp value)				{ return tcu::Format::Enum<VkAttachmentLoadOp>(getAttachmentLoadOpName, value);						}
-inline tcu::Format::Enum<VkAttachmentStoreOp>			getAttachmentStoreOpStr				(VkAttachmentStoreOp value)				{ return tcu::Format::Enum<VkAttachmentStoreOp>(getAttachmentStoreOpName, value);					}
-inline tcu::Format::Enum<VkPipelineBindPoint>			getPipelineBindPointStr				(VkPipelineBindPoint value)				{ return tcu::Format::Enum<VkPipelineBindPoint>(getPipelineBindPointName, value);					}
-inline tcu::Format::Enum<VkCommandBufferLevel>			getCommandBufferLevelStr			(VkCommandBufferLevel value)			{ return tcu::Format::Enum<VkCommandBufferLevel>(getCommandBufferLevelName, value);					}
-inline tcu::Format::Enum<VkIndexType>					getIndexTypeStr						(VkIndexType value)						{ return tcu::Format::Enum<VkIndexType>(getIndexTypeName, value);									}
-inline tcu::Format::Enum<VkSubpassContents>				getSubpassContentsStr				(VkSubpassContents value)				{ return tcu::Format::Enum<VkSubpassContents>(getSubpassContentsName, value);						}
-inline tcu::Format::Enum<VkColorSpaceKHR>				getColorSpaceKHRStr					(VkColorSpaceKHR value)					{ return tcu::Format::Enum<VkColorSpaceKHR>(getColorSpaceKHRName, value);							}
-inline tcu::Format::Enum<VkPresentModeKHR>				getPresentModeKHRStr				(VkPresentModeKHR value)				{ return tcu::Format::Enum<VkPresentModeKHR>(getPresentModeKHRName, value);							}
-inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>	getDebugReportObjectTypeEXTStr		(VkDebugReportObjectTypeEXT value)		{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);		}
-inline tcu::Format::Enum<VkDebugReportErrorEXT>			getDebugReportErrorEXTStr			(VkDebugReportErrorEXT value)			{ return tcu::Format::Enum<VkDebugReportErrorEXT>(getDebugReportErrorEXTName, value);				}
-inline tcu::Format::Enum<VkRasterizationOrderAMD>		getRasterizationOrderAMDStr			(VkRasterizationOrderAMD value)			{ return tcu::Format::Enum<VkRasterizationOrderAMD>(getRasterizationOrderAMDName, value);			}
-inline tcu::Format::Enum<VkValidationCheckEXT>			getValidationCheckEXTStr			(VkValidationCheckEXT value)			{ return tcu::Format::Enum<VkValidationCheckEXT>(getValidationCheckEXTName, value);					}
+inline tcu::Format::Enum<VkPipelineCacheHeaderVersion>		getPipelineCacheHeaderVersionStr	(VkPipelineCacheHeaderVersion value)	{ return tcu::Format::Enum<VkPipelineCacheHeaderVersion>(getPipelineCacheHeaderVersionName, value);		}
+inline tcu::Format::Enum<VkResult>							getResultStr						(VkResult value)						{ return tcu::Format::Enum<VkResult>(getResultName, value);												}
+inline tcu::Format::Enum<VkStructureType>					getStructureTypeStr					(VkStructureType value)					{ return tcu::Format::Enum<VkStructureType>(getStructureTypeName, value);								}
+inline tcu::Format::Enum<VkSystemAllocationScope>			getSystemAllocationScopeStr			(VkSystemAllocationScope value)			{ return tcu::Format::Enum<VkSystemAllocationScope>(getSystemAllocationScopeName, value);				}
+inline tcu::Format::Enum<VkInternalAllocationType>			getInternalAllocationTypeStr		(VkInternalAllocationType value)		{ return tcu::Format::Enum<VkInternalAllocationType>(getInternalAllocationTypeName, value);				}
+inline tcu::Format::Enum<VkFormat>							getFormatStr						(VkFormat value)						{ return tcu::Format::Enum<VkFormat>(getFormatName, value);												}
+inline tcu::Format::Enum<VkImageType>						getImageTypeStr						(VkImageType value)						{ return tcu::Format::Enum<VkImageType>(getImageTypeName, value);										}
+inline tcu::Format::Enum<VkImageTiling>						getImageTilingStr					(VkImageTiling value)					{ return tcu::Format::Enum<VkImageTiling>(getImageTilingName, value);									}
+inline tcu::Format::Enum<VkPhysicalDeviceType>				getPhysicalDeviceTypeStr			(VkPhysicalDeviceType value)			{ return tcu::Format::Enum<VkPhysicalDeviceType>(getPhysicalDeviceTypeName, value);						}
+inline tcu::Format::Enum<VkQueryType>						getQueryTypeStr						(VkQueryType value)						{ return tcu::Format::Enum<VkQueryType>(getQueryTypeName, value);										}
+inline tcu::Format::Enum<VkSharingMode>						getSharingModeStr					(VkSharingMode value)					{ return tcu::Format::Enum<VkSharingMode>(getSharingModeName, value);									}
+inline tcu::Format::Enum<VkImageLayout>						getImageLayoutStr					(VkImageLayout value)					{ return tcu::Format::Enum<VkImageLayout>(getImageLayoutName, value);									}
+inline tcu::Format::Enum<VkImageViewType>					getImageViewTypeStr					(VkImageViewType value)					{ return tcu::Format::Enum<VkImageViewType>(getImageViewTypeName, value);								}
+inline tcu::Format::Enum<VkComponentSwizzle>				getComponentSwizzleStr				(VkComponentSwizzle value)				{ return tcu::Format::Enum<VkComponentSwizzle>(getComponentSwizzleName, value);							}
+inline tcu::Format::Enum<VkVertexInputRate>					getVertexInputRateStr				(VkVertexInputRate value)				{ return tcu::Format::Enum<VkVertexInputRate>(getVertexInputRateName, value);							}
+inline tcu::Format::Enum<VkPrimitiveTopology>				getPrimitiveTopologyStr				(VkPrimitiveTopology value)				{ return tcu::Format::Enum<VkPrimitiveTopology>(getPrimitiveTopologyName, value);						}
+inline tcu::Format::Enum<VkPolygonMode>						getPolygonModeStr					(VkPolygonMode value)					{ return tcu::Format::Enum<VkPolygonMode>(getPolygonModeName, value);									}
+inline tcu::Format::Enum<VkFrontFace>						getFrontFaceStr						(VkFrontFace value)						{ return tcu::Format::Enum<VkFrontFace>(getFrontFaceName, value);										}
+inline tcu::Format::Enum<VkCompareOp>						getCompareOpStr						(VkCompareOp value)						{ return tcu::Format::Enum<VkCompareOp>(getCompareOpName, value);										}
+inline tcu::Format::Enum<VkStencilOp>						getStencilOpStr						(VkStencilOp value)						{ return tcu::Format::Enum<VkStencilOp>(getStencilOpName, value);										}
+inline tcu::Format::Enum<VkLogicOp>							getLogicOpStr						(VkLogicOp value)						{ return tcu::Format::Enum<VkLogicOp>(getLogicOpName, value);											}
+inline tcu::Format::Enum<VkBlendFactor>						getBlendFactorStr					(VkBlendFactor value)					{ return tcu::Format::Enum<VkBlendFactor>(getBlendFactorName, value);									}
+inline tcu::Format::Enum<VkBlendOp>							getBlendOpStr						(VkBlendOp value)						{ return tcu::Format::Enum<VkBlendOp>(getBlendOpName, value);											}
+inline tcu::Format::Enum<VkDynamicState>					getDynamicStateStr					(VkDynamicState value)					{ return tcu::Format::Enum<VkDynamicState>(getDynamicStateName, value);									}
+inline tcu::Format::Enum<VkFilter>							getFilterStr						(VkFilter value)						{ return tcu::Format::Enum<VkFilter>(getFilterName, value);												}
+inline tcu::Format::Enum<VkSamplerMipmapMode>				getSamplerMipmapModeStr				(VkSamplerMipmapMode value)				{ return tcu::Format::Enum<VkSamplerMipmapMode>(getSamplerMipmapModeName, value);						}
+inline tcu::Format::Enum<VkSamplerAddressMode>				getSamplerAddressModeStr			(VkSamplerAddressMode value)			{ return tcu::Format::Enum<VkSamplerAddressMode>(getSamplerAddressModeName, value);						}
+inline tcu::Format::Enum<VkBorderColor>						getBorderColorStr					(VkBorderColor value)					{ return tcu::Format::Enum<VkBorderColor>(getBorderColorName, value);									}
+inline tcu::Format::Enum<VkDescriptorType>					getDescriptorTypeStr				(VkDescriptorType value)				{ return tcu::Format::Enum<VkDescriptorType>(getDescriptorTypeName, value);								}
+inline tcu::Format::Enum<VkAttachmentLoadOp>				getAttachmentLoadOpStr				(VkAttachmentLoadOp value)				{ return tcu::Format::Enum<VkAttachmentLoadOp>(getAttachmentLoadOpName, value);							}
+inline tcu::Format::Enum<VkAttachmentStoreOp>				getAttachmentStoreOpStr				(VkAttachmentStoreOp value)				{ return tcu::Format::Enum<VkAttachmentStoreOp>(getAttachmentStoreOpName, value);						}
+inline tcu::Format::Enum<VkPipelineBindPoint>				getPipelineBindPointStr				(VkPipelineBindPoint value)				{ return tcu::Format::Enum<VkPipelineBindPoint>(getPipelineBindPointName, value);						}
+inline tcu::Format::Enum<VkCommandBufferLevel>				getCommandBufferLevelStr			(VkCommandBufferLevel value)			{ return tcu::Format::Enum<VkCommandBufferLevel>(getCommandBufferLevelName, value);						}
+inline tcu::Format::Enum<VkIndexType>						getIndexTypeStr						(VkIndexType value)						{ return tcu::Format::Enum<VkIndexType>(getIndexTypeName, value);										}
+inline tcu::Format::Enum<VkSubpassContents>					getSubpassContentsStr				(VkSubpassContents value)				{ return tcu::Format::Enum<VkSubpassContents>(getSubpassContentsName, value);							}
+inline tcu::Format::Enum<VkColorSpaceKHR>					getColorSpaceKHRStr					(VkColorSpaceKHR value)					{ return tcu::Format::Enum<VkColorSpaceKHR>(getColorSpaceKHRName, value);								}
+inline tcu::Format::Enum<VkPresentModeKHR>					getPresentModeKHRStr				(VkPresentModeKHR value)				{ return tcu::Format::Enum<VkPresentModeKHR>(getPresentModeKHRName, value);								}
+inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>		getDebugReportObjectTypeEXTStr		(VkDebugReportObjectTypeEXT value)		{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);			}
+inline tcu::Format::Enum<VkDebugReportErrorEXT>				getDebugReportErrorEXTStr			(VkDebugReportErrorEXT value)			{ return tcu::Format::Enum<VkDebugReportErrorEXT>(getDebugReportErrorEXTName, value);					}
+inline tcu::Format::Enum<VkRasterizationOrderAMD>			getRasterizationOrderAMDStr			(VkRasterizationOrderAMD value)			{ return tcu::Format::Enum<VkRasterizationOrderAMD>(getRasterizationOrderAMDName, value);				}
+inline tcu::Format::Enum<VkValidationCheckEXT>				getValidationCheckEXTStr			(VkValidationCheckEXT value)			{ return tcu::Format::Enum<VkValidationCheckEXT>(getValidationCheckEXTName, value);						}
+inline tcu::Format::Enum<VkIndirectCommandsTokenTypeNVX>	getIndirectCommandsTokenTypeNVXStr	(VkIndirectCommandsTokenTypeNVX value)	{ return tcu::Format::Enum<VkIndirectCommandsTokenTypeNVX>(getIndirectCommandsTokenTypeNVXName, value);	}
+inline tcu::Format::Enum<VkObjectEntryTypeNVX>				getObjectEntryTypeNVXStr			(VkObjectEntryTypeNVX value)			{ return tcu::Format::Enum<VkObjectEntryTypeNVX>(getObjectEntryTypeNVXName, value);						}
 
-inline std::ostream&	operator<<	(std::ostream& s, VkPipelineCacheHeaderVersion value)	{ return s << getPipelineCacheHeaderVersionStr(value);	}
-inline std::ostream&	operator<<	(std::ostream& s, VkResult value)						{ return s << getResultStr(value);						}
-inline std::ostream&	operator<<	(std::ostream& s, VkStructureType value)				{ return s << getStructureTypeStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkSystemAllocationScope value)		{ return s << getSystemAllocationScopeStr(value);		}
-inline std::ostream&	operator<<	(std::ostream& s, VkInternalAllocationType value)		{ return s << getInternalAllocationTypeStr(value);		}
-inline std::ostream&	operator<<	(std::ostream& s, VkFormat value)						{ return s << getFormatStr(value);						}
-inline std::ostream&	operator<<	(std::ostream& s, VkImageType value)					{ return s << getImageTypeStr(value);					}
-inline std::ostream&	operator<<	(std::ostream& s, VkImageTiling value)					{ return s << getImageTilingStr(value);					}
-inline std::ostream&	operator<<	(std::ostream& s, VkPhysicalDeviceType value)			{ return s << getPhysicalDeviceTypeStr(value);			}
-inline std::ostream&	operator<<	(std::ostream& s, VkQueryType value)					{ return s << getQueryTypeStr(value);					}
-inline std::ostream&	operator<<	(std::ostream& s, VkSharingMode value)					{ return s << getSharingModeStr(value);					}
-inline std::ostream&	operator<<	(std::ostream& s, VkImageLayout value)					{ return s << getImageLayoutStr(value);					}
-inline std::ostream&	operator<<	(std::ostream& s, VkImageViewType value)				{ return s << getImageViewTypeStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkComponentSwizzle value)				{ return s << getComponentSwizzleStr(value);			}
-inline std::ostream&	operator<<	(std::ostream& s, VkVertexInputRate value)				{ return s << getVertexInputRateStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkPrimitiveTopology value)			{ return s << getPrimitiveTopologyStr(value);			}
-inline std::ostream&	operator<<	(std::ostream& s, VkPolygonMode value)					{ return s << getPolygonModeStr(value);					}
-inline std::ostream&	operator<<	(std::ostream& s, VkFrontFace value)					{ return s << getFrontFaceStr(value);					}
-inline std::ostream&	operator<<	(std::ostream& s, VkCompareOp value)					{ return s << getCompareOpStr(value);					}
-inline std::ostream&	operator<<	(std::ostream& s, VkStencilOp value)					{ return s << getStencilOpStr(value);					}
-inline std::ostream&	operator<<	(std::ostream& s, VkLogicOp value)						{ return s << getLogicOpStr(value);						}
-inline std::ostream&	operator<<	(std::ostream& s, VkBlendFactor value)					{ return s << getBlendFactorStr(value);					}
-inline std::ostream&	operator<<	(std::ostream& s, VkBlendOp value)						{ return s << getBlendOpStr(value);						}
-inline std::ostream&	operator<<	(std::ostream& s, VkDynamicState value)					{ return s << getDynamicStateStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkFilter value)						{ return s << getFilterStr(value);						}
-inline std::ostream&	operator<<	(std::ostream& s, VkSamplerMipmapMode value)			{ return s << getSamplerMipmapModeStr(value);			}
-inline std::ostream&	operator<<	(std::ostream& s, VkSamplerAddressMode value)			{ return s << getSamplerAddressModeStr(value);			}
-inline std::ostream&	operator<<	(std::ostream& s, VkBorderColor value)					{ return s << getBorderColorStr(value);					}
-inline std::ostream&	operator<<	(std::ostream& s, VkDescriptorType value)				{ return s << getDescriptorTypeStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkAttachmentLoadOp value)				{ return s << getAttachmentLoadOpStr(value);			}
-inline std::ostream&	operator<<	(std::ostream& s, VkAttachmentStoreOp value)			{ return s << getAttachmentStoreOpStr(value);			}
-inline std::ostream&	operator<<	(std::ostream& s, VkPipelineBindPoint value)			{ return s << getPipelineBindPointStr(value);			}
-inline std::ostream&	operator<<	(std::ostream& s, VkCommandBufferLevel value)			{ return s << getCommandBufferLevelStr(value);			}
-inline std::ostream&	operator<<	(std::ostream& s, VkIndexType value)					{ return s << getIndexTypeStr(value);					}
-inline std::ostream&	operator<<	(std::ostream& s, VkSubpassContents value)				{ return s << getSubpassContentsStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkColorSpaceKHR value)				{ return s << getColorSpaceKHRStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkPresentModeKHR value)				{ return s << getPresentModeKHRStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)		{ return s << getDebugReportObjectTypeEXTStr(value);	}
-inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportErrorEXT value)			{ return s << getDebugReportErrorEXTStr(value);			}
-inline std::ostream&	operator<<	(std::ostream& s, VkRasterizationOrderAMD value)		{ return s << getRasterizationOrderAMDStr(value);		}
-inline std::ostream&	operator<<	(std::ostream& s, VkValidationCheckEXT value)			{ return s << getValidationCheckEXTStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkPipelineCacheHeaderVersion value)	{ return s << getPipelineCacheHeaderVersionStr(value);		}
+inline std::ostream&	operator<<	(std::ostream& s, VkResult value)						{ return s << getResultStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, VkStructureType value)				{ return s << getStructureTypeStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkSystemAllocationScope value)		{ return s << getSystemAllocationScopeStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkInternalAllocationType value)		{ return s << getInternalAllocationTypeStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkFormat value)						{ return s << getFormatStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, VkImageType value)					{ return s << getImageTypeStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkImageTiling value)					{ return s << getImageTilingStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkPhysicalDeviceType value)			{ return s << getPhysicalDeviceTypeStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkQueryType value)					{ return s << getQueryTypeStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkSharingMode value)					{ return s << getSharingModeStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkImageLayout value)					{ return s << getImageLayoutStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkImageViewType value)				{ return s << getImageViewTypeStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkComponentSwizzle value)				{ return s << getComponentSwizzleStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkVertexInputRate value)				{ return s << getVertexInputRateStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkPrimitiveTopology value)			{ return s << getPrimitiveTopologyStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkPolygonMode value)					{ return s << getPolygonModeStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkFrontFace value)					{ return s << getFrontFaceStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkCompareOp value)					{ return s << getCompareOpStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkStencilOp value)					{ return s << getStencilOpStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkLogicOp value)						{ return s << getLogicOpStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, VkBlendFactor value)					{ return s << getBlendFactorStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkBlendOp value)						{ return s << getBlendOpStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, VkDynamicState value)					{ return s << getDynamicStateStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkFilter value)						{ return s << getFilterStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, VkSamplerMipmapMode value)			{ return s << getSamplerMipmapModeStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkSamplerAddressMode value)			{ return s << getSamplerAddressModeStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkBorderColor value)					{ return s << getBorderColorStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkDescriptorType value)				{ return s << getDescriptorTypeStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkAttachmentLoadOp value)				{ return s << getAttachmentLoadOpStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkAttachmentStoreOp value)			{ return s << getAttachmentStoreOpStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkPipelineBindPoint value)			{ return s << getPipelineBindPointStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkCommandBufferLevel value)			{ return s << getCommandBufferLevelStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkIndexType value)					{ return s << getIndexTypeStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkSubpassContents value)				{ return s << getSubpassContentsStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkColorSpaceKHR value)				{ return s << getColorSpaceKHRStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkPresentModeKHR value)				{ return s << getPresentModeKHRStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)		{ return s << getDebugReportObjectTypeEXTStr(value);		}
+inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportErrorEXT value)			{ return s << getDebugReportErrorEXTStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkRasterizationOrderAMD value)		{ return s << getRasterizationOrderAMDStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkValidationCheckEXT value)			{ return s << getValidationCheckEXTStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkIndirectCommandsTokenTypeNVX value)	{ return s << getIndirectCommandsTokenTypeNVXStr(value);	}
+inline std::ostream&	operator<<	(std::ostream& s, VkObjectEntryTypeNVX value)			{ return s << getObjectEntryTypeNVXStr(value);				}
 
 tcu::Format::Bitfield<32>	getFormatFeatureFlagsStr					(VkFormatFeatureFlags value);
 tcu::Format::Bitfield<32>	getImageUsageFlagsStr						(VkImageUsageFlags value);
@@ -163,6 +169,8 @@ tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr				(VkDisplayPlaneAlph
 tcu::Format::Bitfield<32>	getDebugReportFlagsEXTStr					(VkDebugReportFlagsEXT value);
 tcu::Format::Bitfield<32>	getExternalMemoryHandleTypeFlagsNVStr		(VkExternalMemoryHandleTypeFlagsNV value);
 tcu::Format::Bitfield<32>	getExternalMemoryFeatureFlagsNVStr			(VkExternalMemoryFeatureFlagsNV value);
+tcu::Format::Bitfield<32>	getIndirectCommandsLayoutUsageFlagsNVXStr	(VkIndirectCommandsLayoutUsageFlagsNVX value);
+tcu::Format::Bitfield<32>	getObjectEntryUsageFlagsNVXStr				(VkObjectEntryUsageFlagsNVX value);
 tcu::Format::Bitfield<32>	getInstanceCreateFlagsStr					(VkInstanceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceCreateFlagsStr						(VkDeviceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceQueueCreateFlagsStr				(VkDeviceQueueCreateFlags value);
@@ -350,3 +358,17 @@ std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryWin32HandleInfoNV
 std::ostream&	operator<<	(std::ostream& s, const VkExportMemoryWin32HandleInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkWin32KeyedMutexAcquireReleaseInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkValidationFlagsEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceGeneratedCommandsFeaturesNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceGeneratedCommandsLimitsNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsTokenNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsLayoutTokenNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsLayoutCreateInfoNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCmdProcessCommandsInfoNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCmdReserveSpaceForCommandsInfoNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkObjectTableCreateInfoNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkObjectTableEntryNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkObjectTablePipelineEntryNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkObjectTableDescriptorSetEntryNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkObjectTableVertexBufferEntryNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkObjectTableIndexBufferEntryNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkObjectTablePushConstantEntryNVX& value);
