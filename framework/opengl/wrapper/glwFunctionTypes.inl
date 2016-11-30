@@ -150,6 +150,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glDeleteSyncFunc)										(GLsync syn
 typedef GLW_APICALL void			(GLW_APIENTRY* glDeleteTexturesFunc)									(GLsizei n, const GLuint *textures);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDeleteTransformFeedbacksFunc)							(GLsizei n, const GLuint *ids);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDeleteVertexArraysFunc)								(GLsizei n, const GLuint *arrays);
+typedef GLW_APICALL void			(GLW_APIENTRY* glDepthBoundsEXTFunc)									(GLclampd zmin, GLclampd zmax);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthFuncFunc)											(GLenum func);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthMaskFunc)											(GLboolean flag);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthRangeFunc)										(GLdouble near, GLdouble far);

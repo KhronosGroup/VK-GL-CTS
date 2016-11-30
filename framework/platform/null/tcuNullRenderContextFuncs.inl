@@ -1412,6 +1412,13 @@ GLW_APICALL void GLW_APIENTRY glDeleteVertexArrays (GLsizei n, const GLuint *arr
 
 }
 
+GLW_APICALL void GLW_APIENTRY glDepthBoundsEXT (GLclampd zmin, GLclampd zmax)
+{
+	DE_UNREF(zmin);
+	DE_UNREF(zmax);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glDepthFunc (GLenum func)
 {
 	DE_UNREF(func);

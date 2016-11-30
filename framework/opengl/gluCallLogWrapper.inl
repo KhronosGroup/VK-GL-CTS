@@ -1051,6 +1051,13 @@ void CallLogWrapper::glDeleteVertexArrays (glw::GLsizei n, const glw::GLuint *ar
 	m_gl.deleteVertexArrays(n, arrays);
 }
 
+void CallLogWrapper::glDepthBoundsEXT (glw::GLclampd zmin, glw::GLclampd zmax)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glDepthBoundsEXT(" << zmin << ", " << zmax << ");" << TestLog::EndMessage;
+	m_gl.depthBoundsEXT(zmin, zmax);
+}
+
 void CallLogWrapper::glDepthFunc (glw::GLenum func)
 {
 	if (m_enableLog)

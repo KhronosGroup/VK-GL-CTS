@@ -150,6 +150,7 @@ void					glDeleteSync										(glw::GLsync sync);
 void					glDeleteTextures									(glw::GLsizei n, const glw::GLuint *textures);
 void					glDeleteTransformFeedbacks							(glw::GLsizei n, const glw::GLuint *ids);
 void					glDeleteVertexArrays								(glw::GLsizei n, const glw::GLuint *arrays);
+void					glDepthBoundsEXT									(glw::GLclampd zmin, glw::GLclampd zmax);
 void					glDepthFunc											(glw::GLenum func);
 void					glDepthMask											(glw::GLboolean flag);
 void					glDepthRange										(glw::GLdouble near, glw::GLdouble far);

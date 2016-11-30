@@ -150,6 +150,7 @@ gl->deleteSync										= glDeleteSync;
 gl->deleteTextures									= glDeleteTextures;
 gl->deleteTransformFeedbacks						= glDeleteTransformFeedbacks;
 gl->deleteVertexArrays								= glDeleteVertexArrays;
+gl->depthBoundsEXT									= glDepthBoundsEXT;
 gl->depthFunc										= glDepthFunc;
 gl->depthMask										= glDepthMask;
 gl->depthRange										= glDepthRange;

@@ -57,6 +57,7 @@ EXTENSIONS			= [
 	'GL_EXT_texture_compression_s3tc',
 	'GL_EXT_texture_type_2_10_10_10_REV',
 	'GL_EXT_copy_image',
+	'GL_EXT_depth_bounds_test',
 	'GL_EXT_draw_buffers_indexed',
 	'GL_EXT_draw_elements_base_vertex',
 	'GL_EXT_direct_state_access',

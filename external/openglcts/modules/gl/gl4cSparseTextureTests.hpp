@@ -28,30 +28,54 @@
  * \file  gl4cSparseTextureTests.hpp
  * \brief Conformance tests for the GL_ARB_sparse_texture functionality.
  */ /*-------------------------------------------------------------------*/
+
 #include "glcTestCase.hpp"
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
 #include "tcuDefs.hpp"
+#include <sstream>
 #include <vector>
 
 #include "gluTextureUtil.hpp"
 #include "tcuTextureUtil.hpp"
 
+using namespace glw;
+using namespace glu;
+
 namespace gl4cts
 {
+
+struct TextureState
+{
+	GLint			   width;
+	GLint			   height;
+	GLint			   depth;
+	GLint			   levels;
+	GLint			   samples;
+	tcu::TextureFormat format;
+
+	GLint minDepth;
+
+	GLint pageSizeX;
+	GLint pageSizeY;
+	GLint pageSizeZ;
+};
+
 class SparseTextureUtils
 {
 public:
-	static bool verifyQueryError(tcu::TestContext& testCtx, const char* funcName, glw::GLint target, glw::GLint pname,
-								 glw::GLint error, glw::GLint expectedError);
+	static bool verifyQueryError(std::stringstream& log, const char* funcName, GLint target, GLint pname, GLint error,
+								 GLint expectedError);
 
-	static bool verifyError(tcu::TestContext& testCtx, const char* funcName, glw::GLint error,
-							glw::GLint expectedError);
+	static bool verifyError(std::stringstream& log, const char* funcName, GLint error, GLint expectedError);
 
-	static glw::GLint getTargetDepth(glw::GLint target);
+	static GLint getTargetDepth(GLint target);
 
-	static void getTexturePageSizes(const glw::Functions& gl, glw::GLint target, glw::GLint format,
-									glw::GLint& pageSizeX, glw::GLint& pageSizeY, glw::GLint& pageSizeZ);
+	static void getTexturePageSizes(const Functions& gl, GLint target, GLint format, GLint& pageSizeX, GLint& pageSizeY,
+									GLint& pageSizeZ);
+
+	static void getTextureLevelSize(GLint target, TextureState& state, GLint level, GLint& width, GLint& height,
+									GLint& depth);
 };
 
 /** Represents texture static helper
@@ -61,24 +85,25 @@ class Texture
 public:
 	/* Public static routines */
 	/* Functionality */
-	static void Bind(const glw::Functions& gl, glw::GLuint id, glw::GLenum target);
+	static void Bind(const Functions& gl, GLuint id, GLenum target);
 
-	static void Generate(const glw::Functions& gl, glw::GLuint& out_id);
+	static void Generate(const Functions& gl, GLuint& out_id);
 
-	static void Delete(const glw::Functions& gl, glw::GLuint& id);
+	static void Delete(const Functions& gl, GLuint& id);
 
-	static void Storage(const glw::Functions& gl, glw::GLenum target, glw::GLsizei levels, glw::GLenum internal_format,
-						glw::GLuint width, glw::GLuint height, glw::GLuint depth);
+	static void Storage(const Functions& gl, GLenum target, GLsizei levels, GLenum internal_format, GLuint width,
+						GLuint height, GLuint depth);
 
-	static void SubImage(const glw::Functions& gl, glw::GLenum target, glw::GLint level, glw::GLint x, glw::GLint y,
-						 glw::GLint z, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
-						 glw::GLenum type, const glw::GLvoid* pixels);
+	static void GetData(const Functions& gl, GLint level, GLenum target, GLenum format, GLenum type, GLvoid* out_data);
+
+	static void SubImage(const Functions& gl, GLenum target, GLint level, GLint x, GLint y, GLint z, GLsizei width,
+						 GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid* pixels);
 
 	/* Public fields */
-	glw::GLuint m_id;
+	GLuint m_id;
 
 	/* Public constants */
-	static const glw::GLuint m_invalid_id;
+	static const GLuint m_invalid_id;
 };
 
 /** Test verifies TexParameter{if}{v}, TexParameterI{u}v, GetTexParameter{if}v
@@ -99,16 +124,17 @@ public:
 
 private:
 	/* Private members */
-	std::vector<glw::GLint> mSupportedTargets;
-	std::vector<glw::GLint> mNotSupportedTargets;
+	std::stringstream mLog;
+
+	std::vector<GLint> mSupportedTargets;
+	std::vector<GLint> mNotSupportedTargets;
 
 	/* Private methods */
-	bool testTextureSparseARB(const glw::Functions& gl, glw::GLint target, glw::GLint expectedError = GL_NO_ERROR);
-	bool testVirtualPageSizeIndexARB(const glw::Functions& gl, glw::GLint target,
-									 glw::GLint expectedError = GL_NO_ERROR);
-	bool testNumSparseLevelsARB(const glw::Functions& gl, glw::GLint target);
+	bool testTextureSparseARB(const Functions& gl, GLint target, GLint expectedError = GL_NO_ERROR);
+	bool testVirtualPageSizeIndexARB(const Functions& gl, GLint target, GLint expectedError = GL_NO_ERROR);
+	bool testNumSparseLevelsARB(const Functions& gl, GLint target);
 
-	bool checkGetTexParameter(const glw::Functions& gl, glw::GLint target, glw::GLint pname, glw::GLint expected);
+	bool checkGetTexParameter(const Functions& gl, GLint target, GLint pname, GLint expected);
 };
 
 /** Test verifies GetInternalformativ query for formats from Table 8.12 and <pname>:
@@ -128,8 +154,10 @@ public:
 
 private:
 	/* Private methods */
-	std::vector<glw::GLint> mSupportedTargets;
-	std::vector<glw::GLint> mSupportedInternalFormats;
+	std::stringstream mLog;
+
+	std::vector<GLint> mSupportedTargets;
+	std::vector<GLint> mSupportedInternalFormats;
 
 	/* Private members */
 };
@@ -152,7 +180,7 @@ public:
 private:
 	/* Private methods */
 	/* Private members */
-	void testSipmleQueries(const glw::Functions& gl, glw::GLint pname);
+	void testSipmleQueries(const Functions& gl, GLint pname);
 };
 
 /** Test verifies glTexStorage* functionality added by ARB_sparse_texture extension
@@ -170,16 +198,18 @@ public:
 
 protected:
 	/* Protected methods */
-	std::vector<glw::GLint> mSupportedTargets;
-	std::vector<glw::GLint> mFullArrayTargets;
-	std::vector<glw::GLint> mSupportedInternalFormats;
+	std::stringstream mLog;
+
+	std::vector<GLint> mSupportedTargets;
+	std::vector<GLint> mFullArrayTargets;
+	std::vector<GLint> mSupportedInternalFormats;
 
 	/* Protected members */
-	void positiveTesting(const glw::Functions& gl, glw::GLint target, glw::GLint format);
-	bool verifyTexParameterErrors(const glw::Functions& gl, glw::GLint target, glw::GLint format);
-	bool verifyTexStorageVirtualPageSizeIndexError(const glw::Functions& gl, glw::GLint target, glw::GLint format);
-	bool verifyTexStorageFullArrayCubeMipmapsError(const glw::Functions& gl, glw::GLint target, glw::GLint format);
-	bool verifyTexStorageInvalidValueErrors(const glw::Functions& gl, glw::GLint target, glw::GLint format);
+	bool positiveTesting(const Functions& gl, GLint target, GLint format);
+	bool verifyTexParameterErrors(const Functions& gl, GLint target, GLint format);
+	bool verifyTexStorageVirtualPageSizeIndexError(const Functions& gl, GLint target, GLint format);
+	bool verifyTexStorageFullArrayCubeMipmapsError(const Functions& gl, GLint target, GLint format);
+	bool verifyTexStorageInvalidValueErrors(const Functions& gl, GLint target, GLint format);
 };
 
 /** Test verifies glTexPageCommitmentARB functionality added by ARB_sparse_texture extension
@@ -197,29 +227,32 @@ public:
 
 protected:
 	/* Protected members */
-	std::vector<glw::GLint> mSupportedTargets;
-	std::vector<glw::GLint> mSupportedInternalFormats;
+	std::stringstream mLog;
 
-	glw::GLint		   mWidthStored;
-	glw::GLint		   mHeightStored;
-	glw::GLint		   mDepthStored;
-	tcu::TextureFormat mTextureFormatStored;
+	std::vector<GLint> mSupportedTargets;
+	std::vector<GLint> mSupportedInternalFormats;
+
+	TextureState mState;
 
 	/* Protected methods */
-	void texPageCommitment(const glw::Functions& gl, glw::GLint target, glw::GLint format, glw::GLuint& texture,
-						   glw::GLint level, glw::GLint xOffset, glw::GLint yOffset, glw::GLint zOffset,
-						   glw::GLint width, glw::GLint height, glw::GLint depth, glw::GLboolean committ);
+	virtual void texPageCommitment(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level,
+								   GLint xOffset, GLint yOffset, GLint zOffset, GLint width, GLint height, GLint depth,
+								   GLboolean committ);
 
-	bool prepareTexture(const glw::Functions& gl, glw::GLint target, glw::GLint format, glw::GLuint& texture);
-	bool sparseAllocateTexture(const glw::Functions& gl, glw::GLint target, glw::GLint format, glw::GLuint& texture);
-	bool allocateTexture(const glw::Functions& gl, glw::GLint target, glw::GLint format, glw::GLuint& texture);
-	bool writeDataToTexture(const glw::Functions& gl, glw::GLint target, glw::GLint format, glw::GLuint& texture);
-	bool verifyTextureData(const glw::Functions& gl, glw::GLint target, glw::GLint format, glw::GLuint& texture);
-	bool commitTexturePage(const glw::Functions& gl, glw::GLint target, glw::GLint format, glw::GLuint& texture);
+	virtual bool caseAllowed(GLint target, GLint format);
 
-	bool verifyInvalidOperationErrors(const glw::Functions& gl, glw::GLint target, glw::GLint format,
-									  glw::GLuint& texture);
-	bool verifyInvalidValueErrors(const glw::Functions& gl, glw::GLint target, glw::GLint format, glw::GLuint& texture);
+	virtual bool prepareTexture(const Functions& gl, GLint target, GLint format, GLuint& texture);
+	virtual bool sparseAllocateTexture(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint levels);
+	virtual bool allocateTexture(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint levels);
+	virtual bool writeDataToTexture(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level);
+	virtual bool verifyTextureData(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level);
+	virtual bool commitTexturePage(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level);
+
+	virtual bool isInPageSizesRange(GLint target, GLint level);
+	virtual bool isPageSizesMultiplication(GLint target, GLint level);
+
+	virtual bool verifyInvalidOperationErrors(const Functions& gl, GLint target, GLint format, GLuint& texture);
+	virtual bool verifyInvalidValueErrors(const Functions& gl, GLint target, GLint format, GLuint& texture);
 };
 
 /** Test verifies glTexturePageCommitmentEXT functionality added by ARB_sparse_texture extension
@@ -234,9 +267,9 @@ public:
 
 private:
 	/* Private methods */
-	virtual void texPageCommitment(const glw::Functions& gl, glw::GLint target, glw::GLint format, glw::GLuint& texture,
-								   glw::GLint level, glw::GLint xOffset, glw::GLint yOffset, glw::GLint zOffset,
-								   glw::GLint width, glw::GLint height, glw::GLint depth, glw::GLboolean committ);
+	virtual void texPageCommitment(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level,
+								   GLint xOffset, GLint yOffset, GLint zOffset, GLint width, GLint height, GLint depth,
+								   GLboolean committ);
 };
 
 /** Test group which encapsulates all sparse texture conformance tests */

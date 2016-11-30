@@ -45,6 +45,142 @@ using namespace glu;
 namespace gl4cts
 {
 
+const char* compute_textureFill = "#version 430 core\n"
+								  "\n"
+								  "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+								  "\n"
+								  "layout (location = 1) writeonly uniform highp <INIMAGE_TYPE> uni_image;\n"
+								  "\n"
+								  "void main()\n"
+								  "{\n"
+								  "    <POINT_TYPE> point = <POINT_TYPE>(<POINT_DEF>);\n"
+								  "    memoryBarrier();\n"
+								  "    <INCOLOR_TYPE> color = <INCOLOR_TYPE><INIMAGE_COLOR>;\n"
+								  "    imageStore(uni_image, point<SAMPLE_DEF>, color);\n"
+								  "}\n";
+
+const char* compute_textureVerify = "#version 430 core\n"
+									"\n"
+									"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+									"\n"
+									"layout (location = 1, r8ui) writeonly uniform <OUTIMAGE_TYPE> uni_out_image;\n"
+									"layout (location = 2, <FORMAT>) readonly uniform <INIMAGE_TYPE> uni_in_image;\n"
+									"\n"
+									"void main()\n"
+									"{\n"
+									"    <POINT_TYPE> point = <POINT_TYPE>(<POINT_DEF>);\n"
+									"    memoryBarrier();\n"
+									"    highp <INCOLOR_TYPE> color,\n"
+									"                         expected,\n"
+									"                         epsilon;\n"
+									"    color = imageLoad(uni_in_image, point<SAMPLE_DEF>);\n"
+									"    expected = <INCOLOR_TYPE><INCOLOR_EXPECTED>;\n"
+									"    epsilon = <INCOLOR_TYPE>(<EPSILON>);\n"
+									"\n"
+									"    if (all(lessThanEqual(color, expected + epsilon)) &&\n"
+									"        all(greaterThanEqual(color, expected - epsilon)))\n"
+									"    {\n"
+									"        imageStore(uni_out_image, point, uvec4(255));\n"
+									"    }\n"
+									"    else {\n"
+									"        imageStore(uni_out_image, point, uvec4(0));\n"
+									"    }\n"
+									"}\n";
+
+const char* compute_atomicVerify =
+	"#version 430 core\n"
+	"\n"
+	"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+	"\n"
+	"layout (location = 1, r8ui) writeonly uniform <OUTIMAGE_TYPE> uni_out_image;\n"
+	"layout (location = 2, <FORMAT>) uniform <INIMAGE_TYPE> uni_in_image;\n"
+	"\n"
+	"layout (location = 3) uniform int widthCommitted;\n"
+	"\n"
+	"void main()\n"
+	"{\n"
+	"    <POINT_TYPE> point,\n"
+	"                 offset;\n"
+	"    point = <POINT_TYPE>(<POINT_DEF>);\n"
+	"    offset = <POINT_TYPE>(0);\n"
+	"    offset.x = widthCommitted;\n"
+	"    memoryBarrier();\n"
+	"    if (point.x >= widthCommitted) {\n"
+	"        uint index = ((point.x - widthCommitted) + point.y * 8) % 8;\n"
+	"        <DATA_TYPE> value = 127;\n"
+	"        if (index == 0)\n"
+	"            value = imageAtomicExchange(uni_in_image, point<SAMPLE_DEF>, <DATA_TYPE>(0x0F));\n"
+	"        else if (index == 1)\n"
+	"            value = imageAtomicCompSwap(uni_in_image, point<SAMPLE_DEF>, <DATA_TYPE>(0), <DATA_TYPE>(0x0F));\n"
+	"        else if (index == 2)\n"
+	"            value = imageAtomicAdd(uni_in_image, point<SAMPLE_DEF>, <DATA_TYPE>(0x0F));\n"
+	"        else if (index == 3)\n"
+	"            value = imageAtomicAnd(uni_in_image, point<SAMPLE_DEF>, <DATA_TYPE>(0x0F));\n"
+	"        else if (index == 4)\n"
+	"            value = imageAtomicOr(uni_in_image, point<SAMPLE_DEF>, <DATA_TYPE>(0x0F));\n"
+	"        else if (index == 5)\n"
+	"            value = imageAtomicXor(uni_in_image, point<SAMPLE_DEF>, <DATA_TYPE>(0x0F));\n"
+	"        else if (index == 6)\n"
+	"            value = imageAtomicMin(uni_in_image, point<SAMPLE_DEF>, <DATA_TYPE>(0x0F));\n"
+	"        else if (index == 7)\n"
+	"            value = imageAtomicMax(uni_in_image, point<SAMPLE_DEF>, <DATA_TYPE>(0x0F));\n"
+	"\n"
+	"        <INCOLOR_TYPE> color = imageLoad(uni_in_image, point<SAMPLE_DEF>);\n"
+	"\n"
+	"        if (value == 0)\n"
+	"            imageStore(uni_out_image, point - offset, uvec4(0));\n"
+	"        else\n"
+	"            imageStore(uni_out_image, point - offset, uvec4(value));\n"
+	"\n"
+	"        if (color.r == 0)\n"
+	"            imageStore(uni_out_image, point, uvec4(0));\n"
+	"        else\n"
+	"            imageStore(uni_out_image, point, uvec4(1));\n"
+	"    }\n"
+	"}\n";
+
+const char* vertex_drawBuffer = "#version 430 core\n"
+								"\n"
+								"in vec3 vertex;\n"
+								"in vec2 inTexCoord;\n"
+								"out vec2 texCoord;\n"
+								"\n"
+								"void main()\n"
+								"{\n"
+								"    texCoord = inTexCoord;\n"
+								"    gl_Position = vec4(vertex, 1);\n"
+								"}\n";
+
+const char* fragment_drawBuffer = "#version 430 core\n"
+								  "\n"
+								  "layout (location = 1) uniform sampler2D uni_sampler;\n"
+								  "\n"
+								  "in vec2 texCoord;\n"
+								  "out vec4 fragColor;\n"
+								  "\n"
+								  "void main()\n"
+								  "{\n"
+								  "    fragColor = texture(uni_sampler, texCoord);\n"
+								  "}\n";
+
+/** Replace first occurance of <token> with <text> in <string> starting at <search_posistion>
+ *
+ * @param token           Token string
+ * @param search_position Position at which find will start, it is updated to position at which replaced text ends
+ * @param text            String that will be used as replacement for <token>
+ * @param string          String to work on
+ **/
+void replaceToken(const GLchar* token, size_t& search_position, const GLchar* text, std::string& string)
+{
+	const size_t text_length	= strlen(text);
+	const size_t token_length   = strlen(token);
+	const size_t token_position = string.find(token, search_position);
+
+	string.replace(token_position, token_length, text, text_length);
+
+	search_position = token_position + text_length;
+}
+
 /** Constructor.
  *
  *  @param context     Rendering context
@@ -118,6 +254,12 @@ void StandardPageSizesTestCase::init()
  */
 tcu::TestNode::IterateResult StandardPageSizesTestCase::iterate()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture2"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Testing getInternalformativ" << tcu::TestLog::EndMessage;
@@ -167,54 +309,1712 @@ SparseTexture2AllocationTestCase::SparseTexture2AllocationTestCase(deqp::Context
 	/* Left blank intentionally */
 }
 
+/** Constructor.
+ *
+ *  @param context     Rendering context
+ *  @param name        Test name
+ *  @param description Test description
+ */
+SparseTexture2CommitmentTestCase::SparseTexture2CommitmentTestCase(deqp::Context& context, const char* name,
+																   const char* description)
+	: SparseTextureCommitmentTestCase(context, name, description)
+{
+	/* Left blank intentionally */
+}
+
 /** Initializes the test group contents. */
 void SparseTexture2AllocationTestCase::init()
 {
+	SparseTextureAllocationTestCase::init();
+
+	mSupportedTargets.clear();
 	mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
 	mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
 
+	mFullArrayTargets.clear();
 	mFullArrayTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
+}
 
-	mSupportedInternalFormats.push_back(GL_R8);
-	mSupportedInternalFormats.push_back(GL_R8_SNORM);
-	mSupportedInternalFormats.push_back(GL_R16);
-	mSupportedInternalFormats.push_back(GL_R16_SNORM);
-	mSupportedInternalFormats.push_back(GL_RG8);
-	mSupportedInternalFormats.push_back(GL_RG8_SNORM);
-	mSupportedInternalFormats.push_back(GL_RG16);
-	mSupportedInternalFormats.push_back(GL_RG16_SNORM);
-	mSupportedInternalFormats.push_back(GL_RGB565);
-	mSupportedInternalFormats.push_back(GL_RGBA8);
-	mSupportedInternalFormats.push_back(GL_RGBA8_SNORM);
-	mSupportedInternalFormats.push_back(GL_RGB10_A2);
-	mSupportedInternalFormats.push_back(GL_RGB10_A2UI);
-	mSupportedInternalFormats.push_back(GL_RGBA16);
-	mSupportedInternalFormats.push_back(GL_RGBA16_SNORM);
-	mSupportedInternalFormats.push_back(GL_R16F);
-	mSupportedInternalFormats.push_back(GL_RG16F);
-	mSupportedInternalFormats.push_back(GL_RGBA16F);
-	mSupportedInternalFormats.push_back(GL_R32F);
-	mSupportedInternalFormats.push_back(GL_RG32F);
-	mSupportedInternalFormats.push_back(GL_RGBA32F);
-	mSupportedInternalFormats.push_back(GL_R11F_G11F_B10F);
-	mSupportedInternalFormats.push_back(GL_RGB9_E5);
-	mSupportedInternalFormats.push_back(GL_R8I);
-	mSupportedInternalFormats.push_back(GL_R8UI);
-	mSupportedInternalFormats.push_back(GL_R16I);
-	mSupportedInternalFormats.push_back(GL_R16UI);
-	mSupportedInternalFormats.push_back(GL_R32I);
-	mSupportedInternalFormats.push_back(GL_R32UI);
-	mSupportedInternalFormats.push_back(GL_RG8I);
-	mSupportedInternalFormats.push_back(GL_RG8UI);
-	mSupportedInternalFormats.push_back(GL_RG16I);
-	mSupportedInternalFormats.push_back(GL_RG16UI);
-	mSupportedInternalFormats.push_back(GL_RG32I);
-	mSupportedInternalFormats.push_back(GL_RG32UI);
-	mSupportedInternalFormats.push_back(GL_RGBA8I);
-	mSupportedInternalFormats.push_back(GL_RGBA8UI);
-	mSupportedInternalFormats.push_back(GL_RGBA16I);
-	mSupportedInternalFormats.push_back(GL_RGBA16UI);
-	mSupportedInternalFormats.push_back(GL_RGBA32I);
+/** Executes test iteration.
+ *
+ *  @return Returns STOP when test has finished executing, CONTINUE if more iterations are needed.
+ */
+tcu::TestNode::IterateResult SparseTexture2AllocationTestCase::iterate()
+{
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture2"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
+	return SparseTextureAllocationTestCase::iterate();
+}
+
+/** Constructor.
+ *
+ *  @param context     Rendering context
+ */
+SparseTexture2CommitmentTestCase::SparseTexture2CommitmentTestCase(deqp::Context& context)
+	: SparseTextureCommitmentTestCase(
+		  context, "SparseTexture2Commitment",
+		  "Verifies glTexPageCommitmentARB functionality added by ARB_sparse_texture2 extension")
+{
+	/* Left blank intentionally */
+}
+
+/** Initializes the test group contents. */
+void SparseTexture2CommitmentTestCase::init()
+{
+	SparseTextureCommitmentTestCase::init();
+
+	//Verify all targets once again and multisample targets as it was added in ARB_sparse_texture2 extension
+	mSupportedTargets.clear();
+	mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
+	mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
+}
+
+/** Executes test iteration.
+ *
+ *  @return Returns STOP when test has finished executing, CONTINUE if more iterations are needed.
+ */
+tcu::TestNode::IterateResult SparseTexture2CommitmentTestCase::iterate()
+{
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture2"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
+	return SparseTextureCommitmentTestCase::iterate();
+}
+
+/** Sets proper strings that will be used to tekenize shaders depending on target and format.
+ *
+ * @param target     Target for which texture is binded
+ * @param format     Texture internal format
+ * @param sample     Multisample texture sample number
+
+ * @return target    Structure of token strings
+ */
+TokenStrings SparseTexture2CommitmentTestCase::setupShaderTokens(GLint target, GLint format, GLint sample)
+{
+	std::stringstream stemp;
+
+	TokenStrings s;
+	std::string  prefix;
+
+	if (format == GL_R8)
+	{
+		s.format		  = "r8";
+		s.inColorExpected = "(0.1, 0, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+	}
+	else if (format == GL_R8_SNORM)
+	{
+		s.format		  = "r8_snorm";
+		s.inColorExpected = "(0.1, 0, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+	}
+	else if (format == GL_R16)
+	{
+		s.format		  = "r16";
+		s.inColorExpected = "(0.1, 0, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+	}
+	else if (format == GL_R16_SNORM)
+	{
+		s.format		  = "r16_snorm";
+		s.inColorExpected = "(0.1, 0, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+	}
+	else if (format == GL_RG8)
+	{
+		s.format		  = "rg8";
+		s.inColorExpected = "(0.1, 0.1, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+	}
+	else if (format == GL_RG8_SNORM)
+	{
+		s.format		  = "rg8_snorm";
+		s.inColorExpected = "(0.1, 0.1, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+	}
+	else if (format == GL_RG16)
+	{
+		s.format		  = "rg16";
+		s.inColorExpected = "(0.1, 0.1, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+	}
+	else if (format == GL_RG16_SNORM)
+	{
+		s.format		  = "rg16_snorm";
+		s.inColorExpected = "(0.1, 0.1, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+	}
+	else if (format == GL_RGBA8)
+	{
+		s.format		  = "rgba8";
+		s.inColorExpected = "(0.1, 0.1, 0.1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 0)";
+	}
+	else if (format == GL_RGBA8_SNORM)
+	{
+		s.format		  = "rgba8_snorm";
+		s.inColorExpected = "(0.1, 0.1, 0.1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 0)";
+	}
+	else if (format == GL_RGB10_A2)
+	{
+		s.format		  = "rgb10_a2";
+		s.inColorExpected = "(0.1, 0.1, 0.1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 0)";
+	}
+	else if (format == GL_RGB10_A2UI)
+	{
+		s.format		  = "rgb10_a2ui";
+		s.inColorExpected = "(1, 1, 1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 0)";
+		prefix			  = "u";
+	}
+	else if (format == GL_RGBA16)
+	{
+		s.format		  = "rgba16";
+		s.inColorExpected = "(0.1, 0.1, 0.1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 0)";
+	}
+	else if (format == GL_RGBA16_SNORM)
+	{
+		s.format		  = "rgba16_snorm";
+		s.inColorExpected = "(0.1, 0.1, 0.1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 0)";
+	}
+	else if (format == GL_R16F)
+	{
+		s.format		  = "r16f";
+		s.inColorExpected = "(1, 0, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+	}
+	else if (format == GL_RG16F)
+	{
+		s.format		  = "rg16f";
+		s.inColorExpected = "(0.1, 0.1, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+	}
+	else if (format == GL_RGBA16F)
+	{
+		s.format		  = "rgba16f";
+		s.inColorExpected = "(0.1, 0.1, 0.1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 0)";
+	}
+	else if (format == GL_R32F)
+	{
+		s.format		  = "r32f";
+		s.inColorExpected = "(0.1, 0, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+	}
+	else if (format == GL_RG32F)
+	{
+		s.format		  = "rg32f";
+		s.inColorExpected = "(0.1, 0.1, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+	}
+	else if (format == GL_RGBA32F)
+	{
+		s.format		  = "rgba32f";
+		s.inColorExpected = "(0.1, 0.1, 0.1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 0)";
+	}
+	else if (format == GL_R11F_G11F_B10F)
+	{
+		s.format		  = "r11f_g11f_b10f";
+		s.inColorExpected = "(0.1, 0.1, 0.1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+	}
+	else if (format == GL_R8I)
+	{
+		s.format		  = "r8i";
+		s.inColorExpected = "(1, 0, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+		prefix			  = "i";
+	}
+	else if (format == GL_R8UI)
+	{
+		s.format		  = "r8ui";
+		s.inColorExpected = "(1, 0, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+		prefix			  = "u";
+	}
+	else if (format == GL_R16I)
+	{
+		s.format		  = "r16i";
+		s.inColorExpected = "(1, 0, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+		prefix			  = "i";
+	}
+	else if (format == GL_R16UI)
+	{
+		s.format		  = "r16ui";
+		s.inColorExpected = "(1, 0, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+		prefix			  = "u";
+	}
+	else if (format == GL_R32I)
+	{
+		s.format		  = "r32i";
+		s.inColorExpected = "(1, 0, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+		prefix			  = "i";
+	}
+	else if (format == GL_R32UI)
+	{
+		s.format		  = "r32ui";
+		s.inColorExpected = "(1, 0, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+		prefix			  = "u";
+	}
+	else if (format == GL_RG8I)
+	{
+		s.format		  = "rg8i";
+		s.inColorExpected = "(1, 1, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+		prefix			  = "i";
+	}
+	else if (format == GL_RG8UI)
+	{
+		s.format		  = "rg8ui";
+		s.inColorExpected = "(1, 1, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+		prefix			  = "u";
+	}
+	else if (format == GL_RG16I)
+	{
+		s.format		  = "rg16i";
+		s.inColorExpected = "(1, 1, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+		prefix			  = "i";
+	}
+	else if (format == GL_RG16UI)
+	{
+		s.format		  = "rg16ui";
+		s.inColorExpected = "(1, 1, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+		prefix			  = "u";
+	}
+	else if (format == GL_RG32I)
+	{
+		s.format		  = "rg32i";
+		s.inColorExpected = "(1, 1, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+		prefix			  = "i";
+	}
+	else if (format == GL_RG32UI)
+	{
+		s.format		  = "rg32ui";
+		s.inColorExpected = "(1, 1, 0, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 1)";
+		prefix			  = "u";
+	}
+	else if (format == GL_RGBA8I)
+	{
+		s.format		  = "rgba8i";
+		s.inColorExpected = "(1, 1, 1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 0)";
+		prefix			  = "i";
+	}
+	else if (format == GL_RGBA8UI)
+	{
+		s.format		  = "rgba8ui";
+		s.inColorExpected = "(1, 1, 1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 0)";
+		prefix			  = "u";
+	}
+	else if (format == GL_RGBA16I)
+	{
+		s.format		  = "rgba16i";
+		s.inColorExpected = "(1, 1, 1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 0)";
+		prefix			  = "i";
+	}
+	else if (format == GL_RGBA16UI)
+	{
+		s.format		  = "rgba16ui";
+		s.inColorExpected = "(1, 1, 1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 0)";
+		prefix			  = "u";
+	}
+	else if (format == GL_RGBA32I)
+	{
+		s.format		  = "rgba32i";
+		s.inColorExpected = "(1, 1, 1, 1)";
+		s.inEmptyColor	= "(0, 0, 0, 0)";
+		prefix			  = "i";
+	}
+
+	s.inColorType  = prefix + "vec4";
+	s.outImageType = "uimage2D";
+	s.inImageType  = prefix + "image2D";
+	s.pointType	= "ivec2";
+	s.pointDef	 = "gl_WorkGroupID.x, gl_WorkGroupID.y";
+
+	if (s.inColorType == "vec4")
+		s.epsilon = "0.008";
+	else
+		s.epsilon = "0";
+
+	if (target == GL_TEXTURE_2D_ARRAY)
+	{
+		s.outImageType = "uimage2DArray";
+		s.inImageType  = prefix + "image2DArray";
+		s.pointType	= "ivec3";
+		s.pointDef	 = "gl_WorkGroupID.x, gl_WorkGroupID.y, gl_WorkGroupID.z";
+	}
+	else if (target == GL_TEXTURE_3D)
+	{
+		s.outImageType = "uimage2DArray";
+		s.inImageType  = prefix + "image3D";
+		s.pointType	= "ivec3";
+		s.pointDef	 = "gl_WorkGroupID.x, gl_WorkGroupID.y, gl_WorkGroupID.z";
+	}
+	else if (target == GL_TEXTURE_CUBE_MAP)
+	{
+		s.outImageType = "uimage2DArray";
+		s.inImageType  = prefix + "imageCube";
+		s.pointType	= "ivec3";
+		s.pointDef	 = "gl_WorkGroupID.x, gl_WorkGroupID.y, gl_WorkGroupID.z";
+	}
+	else if (target == GL_TEXTURE_CUBE_MAP_ARRAY)
+	{
+		s.outImageType = "uimage2DArray";
+		s.inImageType  = prefix + "imageCubeArray";
+		s.pointType	= "ivec3";
+		s.pointDef	 = "gl_WorkGroupID.x, gl_WorkGroupID.y, gl_WorkGroupID.z";
+	}
+	else if (target == GL_TEXTURE_RECTANGLE)
+	{
+		s.inImageType = prefix + "image2DRect";
+	}
+	else if (target == GL_TEXTURE_2D_MULTISAMPLE)
+	{
+		s.inImageType = prefix + "image2DMS";
+		stemp.str("");
+		stemp << ", " << sample;
+		s.sampleDef = stemp.str();
+	}
+	else if (target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+	{
+		s.outImageType = "uimage2DArray";
+		s.inImageType  = prefix + "image2DMSArray";
+		s.pointType	= "ivec3";
+		s.pointDef	 = "gl_WorkGroupID.x, gl_WorkGroupID.y, gl_WorkGroupID.z";
+		stemp.str("");
+		stemp << ", " << sample;
+		s.sampleDef = stemp.str();
+	}
+
+	return s;
+}
+
+/** Check if specific combination of target and format is allowed
+ *
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ *
+ * @return Returns true if target/format combination is allowed, false otherwise.
+ */
+bool SparseTexture2CommitmentTestCase::caseAllowed(GLint target, GLint format)
+{
+	// Multisample textures are filling with data and verifying using compute shader.
+	// As shaders do not support some texture formats it is necessary to exclude them.
+	if ((target == GL_TEXTURE_2D_MULTISAMPLE || target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY) &&
+		(format == GL_RGB565 || format == GL_RGB10_A2UI || format == GL_RGB9_E5))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+/** Allocating sparse texture memory using texStorage* function
+ *
+ * @param gl           GL API functions
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ * @param texture      Texture object
+ * @param levels       Texture mipmaps level
+ *
+ * @return Returns true if no error occurred, otherwise throws an exception.
+ */
+bool SparseTexture2CommitmentTestCase::sparseAllocateTexture(const Functions& gl, GLint target, GLint format,
+															 GLuint& texture, GLint levels)
+{
+	mLog << "Sparse Allocate [levels: " << levels << "] - ";
+
+	prepareTexture(gl, target, format, texture);
+
+	gl.texParameteri(target, GL_TEXTURE_SPARSE_ARB, GL_TRUE);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "texParameteri error occurred for GL_TEXTURE_SPARSE_ARB");
+
+	//GL_TEXTURE_RECTANGLE, GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D_MULTISAMPLE_ARRAY can have only one level
+	if (target != GL_TEXTURE_RECTANGLE && target != GL_TEXTURE_2D_MULTISAMPLE &&
+		target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+	{
+		gl.getTexParameteriv(target, GL_NUM_SPARSE_LEVELS_ARB, &mState.levels);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexParameteriv");
+
+		mState.levels = deMin32(mState.levels, levels);
+	}
+	else
+		mState.levels = 1;
+
+	if (target != GL_TEXTURE_2D_MULTISAMPLE && target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+	{
+		mState.samples = 1;
+	}
+	else
+		mState.samples = 2;
+
+	Texture::Storage(gl, target, deMax32(mState.levels, mState.samples), format, mState.width, mState.height,
+					 mState.depth);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "TexStorage");
+
+	return true;
+}
+
+/** Allocating texture memory using texStorage* function
+ *
+ * @param gl           GL API functions
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ * @param texture      Texture object
+ * @param levels       Texture mipmaps level
+ *
+ * @return Returns true if no error occurred, otherwise throws an exception.
+ */
+bool SparseTexture2CommitmentTestCase::allocateTexture(const Functions& gl, GLint target, GLint format, GLuint& texture,
+													   GLint levels)
+{
+	mLog << "Allocate [levels: " << levels << "] - ";
+
+	prepareTexture(gl, target, format, texture);
+
+	// GL_TEXTURE_RECTANGLE, GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D_MULTISAMPLE_ARRAY can have only one level
+	if (target != GL_TEXTURE_RECTANGLE && target != GL_TEXTURE_2D_MULTISAMPLE &&
+		target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+	{
+		mState.levels = levels;
+	}
+	else
+		mState.levels = 1;
+
+	// GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D_MULTISAMPLE_ARRAY can use multiple samples
+	if (target != GL_TEXTURE_2D_MULTISAMPLE && target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+	{
+		mState.samples = 1;
+	}
+	else
+		mState.samples = 2;
+
+	Texture::Storage(gl, target, deMax32(mState.levels, mState.samples), format, mState.width, mState.height,
+					 mState.depth);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "TexStorage");
+
+	return true;
+}
+
+/** Writing data to generated texture
+ *
+ * @param gl           GL API functions
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ * @param texture      Texture object
+ *
+ * @return Returns true if no error occurred, otherwise throws an exception.
+ */
+bool SparseTexture2CommitmentTestCase::writeDataToTexture(const Functions& gl, GLint target, GLint format,
+														  GLuint& texture, GLint level)
+{
+	mLog << "Fill Texture [level: " << level << "] - ";
+
+	if (level > mState.levels - 1)
+		TCU_FAIL("Invalid level");
+
+	TransferFormat transferFormat = glu::getTransferFormat(mState.format);
+
+	GLint width;
+	GLint height;
+	GLint depth;
+	SparseTextureUtils::getTextureLevelSize(target, mState, level, width, height, depth);
+
+	if (width > 0 && height > 0 && depth >= mState.minDepth)
+	{
+		GLint texSize = width * height * depth * mState.format.getPixelSize();
+
+		std::vector<GLubyte> vecData;
+		vecData.resize(texSize);
+		GLubyte* data = vecData.data();
+
+		deMemset(data, 255, texSize);
+
+		if (target != GL_TEXTURE_2D_MULTISAMPLE && target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+		{
+			Texture::SubImage(gl, target, level, 0, 0, 0, width, height, depth, transferFormat.format,
+							  transferFormat.dataType, (GLvoid*)data);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "SubImage");
+		}
+		// For multisample texture use compute shader to store image data
+		else
+		{
+			for (GLint sample = 0; sample < mState.samples; ++sample)
+			{
+				std::string shader = compute_textureFill;
+
+				// Adjust shader source to texture format
+				TokenStrings s = setupShaderTokens(target, format, sample);
+
+				size_t pos = 0;
+				replaceToken("<INIMAGE_TYPE>", pos, s.inImageType.c_str(), shader);
+				replaceToken("<POINT_TYPE>", pos, s.pointType.c_str(), shader);
+				replaceToken("<POINT_TYPE>", pos, s.pointType.c_str(), shader);
+				replaceToken("<POINT_DEF>", pos, s.pointDef.c_str(), shader);
+				replaceToken("<INCOLOR_TYPE>", pos, s.inColorType.c_str(), shader);
+				replaceToken("<INCOLOR_TYPE>", pos, s.inColorType.c_str(), shader);
+				replaceToken("<INIMAGE_COLOR>", pos, s.inColorExpected.c_str(), shader);
+				replaceToken("<SAMPLE_DEF>", pos, s.sampleDef.c_str(), shader);
+
+				ProgramSources sources;
+				sources << ComputeSource(shader);
+
+				// Build and run shader
+				ShaderProgram program(m_context.getRenderContext(), sources);
+				if (program.isOk())
+				{
+					gl.useProgram(program.getProgram());
+					GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
+					gl.bindImageTexture(0 /* unit */, texture, level /* level */, GL_FALSE /* layered */, 0 /* layer */,
+										GL_WRITE_ONLY, format);
+					GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
+					gl.uniform1i(1, 0 /* image_unit */);
+					GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i");
+					gl.dispatchCompute(width, height, depth);
+					GLU_EXPECT_NO_ERROR(gl.getError(), "glDispatchCompute");
+					gl.memoryBarrier(GL_ALL_BARRIER_BITS);
+					GLU_EXPECT_NO_ERROR(gl.getError(), "glMemoryBarrier");
+				}
+				else
+				{
+					mLog << "Compute shader compilation failed (writing) for target: " << target
+						 << ", format: " << format << ", sample: " << sample
+						 << ", infoLog: " << program.getShaderInfo(SHADERTYPE_COMPUTE).infoLog
+						 << ", shaderSource: " << shader.c_str() << " - ";
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+/** Verify if data stored in texture is as expected
+ *
+ * @param gl           GL API functions
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ * @param texture      Texture object
+ * @param level        Texture mipmap level
+ *
+ * @return Returns true if data is as expected, false if not, throws an exception if error occurred.
+ */
+bool SparseTexture2CommitmentTestCase::verifyTextureData(const Functions& gl, GLint target, GLint format,
+														 GLuint& texture, GLint level)
+{
+	mLog << "Verify Texture [level: " << level << "] - ";
+
+	if (level > mState.levels - 1)
+		TCU_FAIL("Invalid level");
+
+	TransferFormat transferFormat = glu::getTransferFormat(mState.format);
+
+	GLint width;
+	GLint height;
+	GLint depth;
+	SparseTextureUtils::getTextureLevelSize(target, mState, level, width, height, depth);
+
+	//Committed region is limited to 1/2 of width
+	GLint widthCommitted = width / 2;
+
+	if (widthCommitted == 0 || height == 0 || depth < mState.minDepth)
+		return true;
+
+	bool result = true;
+
+	if (target != GL_TEXTURE_CUBE_MAP && target != GL_TEXTURE_2D_MULTISAMPLE &&
+		target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+	{
+		GLint texSize = width * height * depth * mState.format.getPixelSize();
+
+		std::vector<GLubyte> vecExpData;
+		std::vector<GLubyte> vecOutData;
+		vecExpData.resize(texSize);
+		vecOutData.resize(texSize);
+		GLubyte* exp_data = vecExpData.data();
+		GLubyte* out_data = vecOutData.data();
+
+		deMemset(exp_data, 255, texSize);
+		deMemset(out_data, 127, texSize);
+
+		Texture::GetData(gl, level, target, transferFormat.format, transferFormat.dataType, (GLvoid*)out_data);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
+
+		//Verify only committed region
+		for (GLint x = 0; x < widthCommitted; ++x)
+			for (GLint y = 0; y < height; ++y)
+				for (GLint z = 0; z < depth; ++z)
+				{
+					int		 pixelSize	 = mState.format.getPixelSize();
+					GLubyte* dataRegion	= exp_data + ((x + y * width) * pixelSize);
+					GLubyte* outDataRegion = out_data + ((x + y * width) * pixelSize);
+					if (deMemCmp(dataRegion, outDataRegion, pixelSize) != 0)
+						result = false;
+				}
+	}
+	else if (target == GL_TEXTURE_CUBE_MAP)
+	{
+		std::vector<GLint> subTargets;
+
+		subTargets.push_back(GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+		subTargets.push_back(GL_TEXTURE_CUBE_MAP_NEGATIVE_X);
+		subTargets.push_back(GL_TEXTURE_CUBE_MAP_POSITIVE_Y);
+		subTargets.push_back(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y);
+		subTargets.push_back(GL_TEXTURE_CUBE_MAP_POSITIVE_Z);
+		subTargets.push_back(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z);
+
+		GLint texSize = width * height * mState.format.getPixelSize();
+
+		std::vector<GLubyte> vecExpData;
+		std::vector<GLubyte> vecOutData;
+		vecExpData.resize(texSize);
+		vecOutData.resize(texSize);
+		GLubyte* exp_data = vecExpData.data();
+		GLubyte* out_data = vecOutData.data();
+
+		deMemset(exp_data, 255, texSize);
+
+		for (size_t i = 0; i < subTargets.size(); ++i)
+		{
+			GLint subTarget = subTargets[i];
+
+			mLog << "Verify Subtarget [subtarget: " << subTarget << "] - ";
+
+			deMemset(out_data, 127, texSize);
+
+			Texture::GetData(gl, level, subTarget, transferFormat.format, transferFormat.dataType, (GLvoid*)out_data);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
+
+			//Verify only committed region
+			for (GLint x = 0; x < widthCommitted; ++x)
+				for (GLint y = 0; y < height; ++y)
+					for (GLint z = 0; z < depth; ++z)
+					{
+						int		 pixelSize	 = mState.format.getPixelSize();
+						GLubyte* dataRegion	= exp_data + ((x + y * width) * pixelSize);
+						GLubyte* outDataRegion = out_data + ((x + y * width) * pixelSize);
+						if (deMemCmp(dataRegion, outDataRegion, pixelSize) != 0)
+							result = false;
+					}
+
+			if (!result)
+				break;
+		}
+	}
+	// For multisample texture use compute shader to verify image data
+	else if (target == GL_TEXTURE_2D_MULTISAMPLE || target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+	{
+		GLint texSize = width * height * depth;
+
+		std::vector<GLubyte> vecExpData;
+		std::vector<GLubyte> vecOutData;
+		vecExpData.resize(texSize);
+		vecOutData.resize(texSize);
+		GLubyte* exp_data = vecExpData.data();
+		GLubyte* out_data = vecOutData.data();
+
+		deMemset(exp_data, 255, texSize);
+
+		// Create verifying texture
+		GLint verifyTarget;
+		if (target == GL_TEXTURE_2D_MULTISAMPLE)
+			verifyTarget = GL_TEXTURE_2D;
+		else
+			verifyTarget = GL_TEXTURE_2D_ARRAY;
+
+		GLuint verifyTexture;
+		Texture::Generate(gl, verifyTexture);
+		Texture::Bind(gl, verifyTexture, verifyTarget);
+		Texture::Storage(gl, verifyTarget, 1, GL_R8, width, height, depth);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::Storage");
+
+		for (int sample = 0; sample < mState.samples; ++sample)
+		{
+			deMemset(out_data, 0, texSize);
+
+			Texture::Bind(gl, verifyTexture, verifyTarget);
+			Texture::SubImage(gl, verifyTarget, 0, 0, 0, 0, width, height, depth, GL_RED, GL_UNSIGNED_BYTE,
+							  (GLvoid*)out_data);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::SubImage");
+
+			std::string shader = compute_textureVerify;
+
+			// Adjust shader source to texture format
+			TokenStrings s = setupShaderTokens(target, format, sample);
+
+			size_t		pos = 0;
+			std::string imageType;
+
+			replaceToken("<OUTIMAGE_TYPE>", pos, s.outImageType.c_str(), shader);
+			replaceToken("<FORMAT>", pos, s.format.c_str(), shader);
+			replaceToken("<INIMAGE_TYPE>", pos, s.inImageType.c_str(), shader);
+			replaceToken("<POINT_TYPE>", pos, s.pointType.c_str(), shader);
+			replaceToken("<POINT_TYPE>", pos, s.pointType.c_str(), shader);
+			replaceToken("<POINT_DEF>", pos, s.pointDef.c_str(), shader);
+			replaceToken("<INCOLOR_TYPE>", pos, s.inColorType.c_str(), shader);
+			replaceToken("<SAMPLE_DEF>", pos, s.sampleDef.c_str(), shader);
+			replaceToken("<INCOLOR_TYPE>", pos, s.inColorType.c_str(), shader);
+			replaceToken("<INCOLOR_EXPECTED>", pos, s.inColorExpected.c_str(), shader);
+			replaceToken("<INCOLOR_TYPE>", pos, s.inColorType.c_str(), shader);
+			replaceToken("<EPSILON>", pos, s.epsilon.c_str(), shader);
+
+			ProgramSources sources;
+			sources << ComputeSource(shader);
+
+			// Build and run shader
+			ShaderProgram program(m_context.getRenderContext(), sources);
+			if (program.isOk())
+			{
+				gl.useProgram(program.getProgram());
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
+				gl.bindImageTexture(0, //unit
+									verifyTexture,
+									level,	//level
+									GL_FALSE, //layered
+									0,		  //layer
+									GL_WRITE_ONLY, GL_R8UI);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
+				gl.bindImageTexture(1, //unit
+									texture,
+									level,	//level
+									GL_FALSE, //layered
+									0,		  //layer
+									GL_READ_ONLY, format);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
+				gl.uniform1i(1, 0 /* image_unit */);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i");
+				gl.uniform1i(2, 1 /* image_unit */);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i");
+				gl.dispatchCompute(width, height, depth);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glDispatchCompute");
+				gl.memoryBarrier(GL_ALL_BARRIER_BITS);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glMemoryBarrier");
+
+				Texture::GetData(gl, 0, verifyTarget, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)out_data);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
+
+				//Verify only committed region
+				for (GLint x = 0; x < widthCommitted; ++x)
+					for (GLint y = 0; y < height; ++y)
+						for (GLint z = 0; z < depth; ++z)
+						{
+							GLubyte* dataRegion	= exp_data + ((x + y * width) + z * width * height);
+							GLubyte* outDataRegion = out_data + ((x + y * width) + z * width * height);
+							if (dataRegion[0] != outDataRegion[0])
+								result = false;
+						}
+			}
+			else
+			{
+				mLog << "Compute shader compilation failed (reading) for target: " << target << ", format: " << format
+					 << ", infoLog: " << program.getShaderInfo(SHADERTYPE_COMPUTE).infoLog
+					 << ", shaderSource: " << shader.c_str() << " - ";
+
+				result = false;
+			}
+		}
+
+		Texture::Delete(gl, verifyTexture);
+	}
+
+	return result;
+}
+
+const GLfloat texCoord[] = {
+	0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+};
+
+const GLfloat vertices[] = {
+	-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, -1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+};
+
+const GLuint indices[] = { 0, 1, 2, 1, 2, 3 };
+
+/** Constructor.
+ *
+ *  @param context     Rendering context
+ */
+UncommittedRegionsAccessTestCase::UncommittedRegionsAccessTestCase(deqp::Context& context)
+	: SparseTexture2CommitmentTestCase(context, "UncommittedRegionsAccessTest",
+									   "Verifies if access to uncommitted regions of sparse texture works as expected")
+{
+	/* Left blank intentionally */
+}
+
+/** Stub init method */
+void UncommittedRegionsAccessTestCase::init()
+{
+	SparseTextureCommitmentTestCase::init();
+
+	mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
+	mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
+}
+
+/** Executes test iteration.
+ *
+ *  @return Returns STOP when test has finished executing, CONTINUE if more iterations are needed.
+ */
+tcu::TestNode::IterateResult UncommittedRegionsAccessTestCase::iterate()
+{
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture2"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
+	const Functions& gl = m_context.getRenderContext().getFunctions();
+
+	bool result = true;
+
+	GLuint texture;
+
+	for (std::vector<glw::GLint>::const_iterator iter = mSupportedTargets.begin(); iter != mSupportedTargets.end();
+		 ++iter)
+	{
+		const GLint& target = *iter;
+
+		for (std::vector<glw::GLint>::const_iterator formIter = mSupportedInternalFormats.begin();
+			 formIter != mSupportedInternalFormats.end(); ++formIter)
+		{
+			const GLint& format = *formIter;
+
+			if (!caseAllowed(target, format))
+				continue;
+
+			mLog.str("");
+			mLog << "Testing uncommitted regions access for target: " << target << ", format: " << format << " - ";
+
+			sparseAllocateTexture(gl, target, format, texture, 3);
+			for (int l = 0; l < mState.levels; ++l)
+			{
+				if (commitTexturePage(gl, target, format, texture, l))
+				{
+					writeDataToTexture(gl, target, format, texture, l);
+					result = result && UncommittedReads(gl, target, format, texture, l);
+					result = result && UncommittedAtomicOperations(gl, target, format, texture, l);
+					result = result && UncommittedDepthStencil(gl, target, format, texture, l);
+				}
+
+				if (!result)
+					break;
+			}
+
+			Texture::Delete(gl, texture);
+
+			if (!result)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail" << tcu::TestLog::EndMessage;
+				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+				return STOP;
+			}
+		}
+	}
+
+	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	return STOP;
+}
+
+/** Check if reads from uncommitted regions are allowed
+ *
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ *
+ * @return Returns true if allowed, false otherwise.
+ */
+bool UncommittedRegionsAccessTestCase::readsAllowed(GLint target, GLint format, bool shaderOnly)
+{
+	DE_UNREF(target);
+
+	if (shaderOnly && (format == GL_RGB565 || format == GL_RGB10_A2UI || format == GL_RGB9_E5))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+/** Check if atomic operations on uncommitted regions are allowed
+ *
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ *
+ * @return Returns true if allowed, false otherwise.
+ */
+bool UncommittedRegionsAccessTestCase::atomicAllowed(GLint target, GLint format)
+{
+	DE_UNREF(target);
+
+	if (format == GL_R32I || format == GL_R32UI)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+/** Check if depth and stencil test on uncommitted regions are allowed
+ *
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ *
+ * @return Returns true if allowed, false otherwise.
+ */
+bool UncommittedRegionsAccessTestCase::depthStencilAllowed(GLint target, GLint format)
+{
+	if (target == GL_TEXTURE_2D && format == GL_RGBA8)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+/** Verify reads from uncommitted texture regions works as expected
+ *
+ * @param gl           GL API functions
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ * @param texture      Texture object
+ * @param level        Texture mipmap level
+ *
+ * @return Returns true if data is as expected, false otherwise.
+ */
+bool UncommittedRegionsAccessTestCase::UncommittedReads(const Functions& gl, GLint target, GLint format,
+														GLuint& texture, GLint level)
+{
+	bool result = true;
+
+	// Verify using API glGetTexImage*
+	if (readsAllowed(target, format, false))
+	{
+		mLog << "API Reads - ";
+		result = result && verifyTextureDataExtended(gl, target, format, texture, level, false);
+	}
+
+	// Verify using shader imageLoad function
+	if (result && readsAllowed(target, format, true))
+	{
+		mLog << "Shader Reads - ";
+		result = result && verifyTextureDataExtended(gl, target, format, texture, level, true);
+	}
+
+	// Verify mipmap generating
+	if (result && level == 0 && target != GL_TEXTURE_RECTANGLE && target != GL_TEXTURE_2D_MULTISAMPLE &&
+		target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+	{
+		mLog << "Mipmap Generate - ";
+		Texture::Bind(gl, texture, target);
+		gl.generateMipmap(target);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGenerateMipmap");
+
+		for (int l = 1; l < mState.levels; ++l)
+			result = result && verifyTextureDataExtended(gl, target, format, texture, level, false);
+	}
+
+	return result;
+}
+
+/** Verify atomic operations on uncommitted texture pixels works as expected
+ *
+ * @param gl           GL API functions
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ * @param texture      Texture object
+ * @param level        Texture mipmap level
+ *
+ * @return Returns true if data is as expected, false otherwise.
+ */
+bool UncommittedRegionsAccessTestCase::UncommittedAtomicOperations(const Functions& gl, GLint target, GLint format,
+																   GLuint& texture, GLint level)
+{
+	bool result = true;
+
+	if (atomicAllowed(target, format))
+	{
+		mLog << "Atomic Operations - ";
+		result = result && verifyAtomicOperations(gl, target, format, texture, level);
+	}
+
+	return result;
+}
+
+/** Verify depth and stencil tests on uncommitted texture pixels works as expected
+ *
+ * @param gl           GL API functions
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ * @param texture      Texture object
+ * @param level        Texture mipmap level
+ *
+ * @return Returns true if data is as expected, false otherwise.
+ */
+bool UncommittedRegionsAccessTestCase::UncommittedDepthStencil(const Functions& gl, GLint target, GLint format,
+															   GLuint& texture, GLint level)
+{
+	if (!depthStencilAllowed(target, format))
+		return true;
+
+	mLog << "Depth Stencil - ";
+
+	bool result = true;
+
+	GLint width;
+	GLint height;
+	GLint depth;
+	SparseTextureUtils::getTextureLevelSize(target, mState, level, width, height, depth);
+
+	//Committed region is limited to 1/2 of width
+	GLuint widthCommitted = width / 2;
+
+	if (widthCommitted == 0 || height == 0 || depth < mState.minDepth)
+		return true;
+
+	//Prepare shaders
+	std::string vertexSource   = vertex_drawBuffer;
+	std::string fragmentSource = fragment_drawBuffer;
+
+	ShaderProgram program(gl, glu::makeVtxFragSources(vertexSource, fragmentSource));
+	if (!program.isOk())
+	{
+		mLog << "Shader compilation failed (depth_stencil) for target: " << target << ", format: " << format
+			 << ", vertex_infoLog: " << program.getShaderInfo(SHADERTYPE_VERTEX).infoLog
+			 << ", fragment_infoLog: " << program.getShaderInfo(SHADERTYPE_FRAGMENT).infoLog
+			 << ", vertexSource: " << vertexSource.c_str() << "\n"
+			 << ", fragmentSource: " << fragmentSource.c_str() << " - ";
+
+		return false;
+	}
+
+	prepareDepthStencilFramebuffer(gl, width, height);
+
+	gl.useProgram(program.getProgram());
+
+	gl.activeTexture(GL_TEXTURE0);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glActiveTexture");
+	Texture::Bind(gl, texture, target);
+	gl.uniform1i(1, 0);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i");
+
+	// Stencil test
+	result = result && verifyStencilTest(gl, program, width, height, widthCommitted);
+
+	// Depth test
+	result = result && verifyDepthTest(gl, program, width, height, widthCommitted);
+
+	// Depth bounds test
+	if (m_context.getContextInfo().isExtensionSupported("GL_EXT_depth_bounds_test"))
+		result = result && verifyDepthBoundsTest(gl, program, width, height, widthCommitted);
+
+	// Resources cleaning
+	cleanupDepthStencilFramebuffer(gl);
+
+	return result;
+}
+
+/** Prepare gl depth and stencil test resources
+ *
+ * @param gl      GL API functions
+ * @param width   Framebuffer width
+ * @param height  Framebuffer height
+ */
+void UncommittedRegionsAccessTestCase::prepareDepthStencilFramebuffer(const Functions& gl, GLint width, GLint height)
+{
+	gl.genRenderbuffers(1, &mRenderbuffer);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenRenderbuffers");
+	gl.bindRenderbuffer(GL_RENDERBUFFER, mRenderbuffer);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindRenderbuffer");
+	if (mState.samples == 1)
+	{
+		gl.renderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, width, height);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glRenderbufferStorage");
+	}
+	else
+	{
+		gl.renderbufferStorageMultisample(GL_RENDERBUFFER, mState.samples, GL_DEPTH_STENCIL, width, height);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glRenderbufferStorageMultisample");
+	}
+
+	gl.genFramebuffers(1, &mFramebuffer);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenFramebuffers");
+	gl.bindFramebuffer(GL_FRAMEBUFFER, mFramebuffer);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer");
+	gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mRenderbuffer);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferRenderbuffer");
+	gl.viewport(0, 0, width, height);
+}
+
+/** Cleanup gl depth and stencil test resources
+ *
+ * @param gl   GL API functions
+ */
+void UncommittedRegionsAccessTestCase::cleanupDepthStencilFramebuffer(const Functions& gl)
+{
+	gl.deleteFramebuffers(1, &mFramebuffer);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteFramebuffers");
+	gl.deleteRenderbuffers(1, &mRenderbuffer);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteRenderbuffers");
+
+	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer");
+}
+
+/** Verify if data stored in texture in uncommitted regions is as expected
+ *
+ * @param gl           GL API functions
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ * @param texture      Texture object
+ * @param level        Texture mipmap level
+ * @param shaderOnly   Shader texture filling flag, default false
+ *
+ * @return Returns true if data is as expected, false if not, throws an exception if error occurred.
+ */
+bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions& gl, GLint target, GLint format,
+																 GLuint& texture, GLint level, bool shaderOnly)
+{
+	mLog << "Verify Texture [level: " << level << "] - ";
+
+	if (level > mState.levels - 1)
+		TCU_FAIL("Invalid level");
+
+	TransferFormat transferFormat = glu::getTransferFormat(mState.format);
+
+	GLint width;
+	GLint height;
+	GLint depth;
+	SparseTextureUtils::getTextureLevelSize(target, mState, level, width, height, depth);
+
+	//Committed region is limited to 1/2 of width
+	GLint widthCommitted = width / 2;
+
+	if (widthCommitted == 0 || height == 0 || depth < mState.minDepth)
+		return true;
+
+	bool result = true;
+
+	// Verify texture using API glGetTexImage* (Skip multisample textures as it can not be verified using API)
+	if (!shaderOnly && target != GL_TEXTURE_CUBE_MAP && target != GL_TEXTURE_2D_MULTISAMPLE &&
+		target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+	{
+		GLint texSize = width * height * depth * mState.format.getPixelSize();
+
+		std::vector<GLubyte> vecExpData;
+		std::vector<GLubyte> vecOutData;
+		vecExpData.resize(texSize);
+		vecOutData.resize(texSize);
+		GLubyte* exp_data = vecExpData.data();
+		GLubyte* out_data = vecOutData.data();
+
+		deMemset(exp_data, 0, texSize);
+		deMemset(out_data, 127, texSize);
+
+		Texture::GetData(gl, level, target, transferFormat.format, transferFormat.dataType, (GLvoid*)out_data);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
+
+		//Verify only committed region
+		for (GLint x = widthCommitted; x < width; ++x)
+			for (GLint y = 0; y < height; ++y)
+				for (GLint z = 0; z < depth; ++z)
+				{
+					int		 pixelSize	 = mState.format.getPixelSize();
+					GLubyte* dataRegion	= exp_data + ((x + y * width) * pixelSize);
+					GLubyte* outDataRegion = out_data + ((x + y * width) * pixelSize);
+					if (deMemCmp(dataRegion, outDataRegion, pixelSize) != 0)
+						result = false;
+				}
+	}
+	// Verify texture using API glGetTexImage* (Only cube map as it has to be verified for subtargets)
+	else if (!shaderOnly && target == GL_TEXTURE_CUBE_MAP)
+	{
+		std::vector<GLint> subTargets;
+
+		subTargets.push_back(GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+		subTargets.push_back(GL_TEXTURE_CUBE_MAP_NEGATIVE_X);
+		subTargets.push_back(GL_TEXTURE_CUBE_MAP_POSITIVE_Y);
+		subTargets.push_back(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y);
+		subTargets.push_back(GL_TEXTURE_CUBE_MAP_POSITIVE_Z);
+		subTargets.push_back(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z);
+
+		GLint texSize = width * height * mState.format.getPixelSize();
+
+		std::vector<GLubyte> vecExpData;
+		std::vector<GLubyte> vecOutData;
+		vecExpData.resize(texSize);
+		vecOutData.resize(texSize);
+		GLubyte* exp_data = vecExpData.data();
+		GLubyte* out_data = vecOutData.data();
+
+		deMemset(exp_data, 0, texSize);
+
+		for (size_t i = 0; i < subTargets.size(); ++i)
+		{
+			GLint subTarget = subTargets[i];
+
+			mLog << "Verify Subtarget [subtarget: " << subTarget << "] - ";
+
+			deMemset(out_data, 127, texSize);
+
+			Texture::GetData(gl, level, subTarget, transferFormat.format, transferFormat.dataType, (GLvoid*)out_data);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
+
+			//Verify only committed region
+			for (GLint x = widthCommitted; x < width; ++x)
+				for (GLint y = 0; y < height; ++y)
+					for (GLint z = 0; z < depth; ++z)
+					{
+						int		 pixelSize	 = mState.format.getPixelSize();
+						GLubyte* dataRegion	= exp_data + ((x + y * width) * pixelSize);
+						GLubyte* outDataRegion = out_data + ((x + y * width) * pixelSize);
+						if (deMemCmp(dataRegion, outDataRegion, pixelSize) != 0)
+							result = false;
+					}
+
+			if (!result)
+				break;
+		}
+	}
+	// Verify texture using shader imageLoad function
+	else if (shaderOnly)
+	{
+		// Create verifying texture
+		GLint verifyTarget;
+		if (target == GL_TEXTURE_2D_MULTISAMPLE)
+			verifyTarget = GL_TEXTURE_2D;
+		else
+			verifyTarget = GL_TEXTURE_2D_ARRAY;
+
+		if (target == GL_TEXTURE_CUBE_MAP)
+			depth = depth * 6;
+
+		GLint texSize = width * height * depth;
+
+		std::vector<GLubyte> vecExpData;
+		std::vector<GLubyte> vecOutData;
+		vecExpData.resize(texSize);
+		vecOutData.resize(texSize);
+		GLubyte* exp_data = vecExpData.data();
+		GLubyte* out_data = vecOutData.data();
+
+		// Expected value in this case is 255 because shader fills output texture with 255 if in texture is filled with zeros
+		deMemset(exp_data, 255, texSize);
+
+		GLuint verifyTexture;
+		Texture::Generate(gl, verifyTexture);
+		Texture::Bind(gl, verifyTexture, verifyTarget);
+		Texture::Storage(gl, verifyTarget, 1, GL_R8, width, height, depth);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::Storage");
+
+		for (GLint sample = 0; sample < mState.samples; ++sample)
+		{
+			deMemset(out_data, 0, texSize);
+
+			Texture::Bind(gl, verifyTexture, verifyTarget);
+			Texture::SubImage(gl, verifyTarget, 0, 0, 0, 0, width, height, depth, GL_RED, GL_UNSIGNED_BYTE,
+							  (GLvoid*)out_data);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::SubImage");
+
+			std::string shader = compute_textureVerify;
+
+			// Adjust shader source to texture format
+			TokenStrings s = setupShaderTokens(target, format, sample);
+
+			size_t pos = 0;
+			replaceToken("<OUTIMAGE_TYPE>", pos, s.outImageType.c_str(), shader);
+			replaceToken("<FORMAT>", pos, s.format.c_str(), shader);
+			replaceToken("<INIMAGE_TYPE>", pos, s.inImageType.c_str(), shader);
+			replaceToken("<POINT_TYPE>", pos, s.pointType.c_str(), shader);
+			replaceToken("<POINT_TYPE>", pos, s.pointType.c_str(), shader);
+			replaceToken("<POINT_DEF>", pos, s.pointDef.c_str(), shader);
+			replaceToken("<INCOLOR_TYPE>", pos, s.inColorType.c_str(), shader);
+			replaceToken("<SAMPLE_DEF>", pos, s.sampleDef.c_str(), shader);
+			replaceToken("<INCOLOR_TYPE>", pos, s.inColorType.c_str(), shader);
+			replaceToken("<INCOLOR_EXPECTED>", pos, s.inEmptyColor.c_str(), shader);
+			replaceToken("<INCOLOR_TYPE>", pos, s.inColorType.c_str(), shader);
+			replaceToken("<EPSILON>", pos, s.epsilon.c_str(), shader);
+
+			ProgramSources sources;
+			sources << ComputeSource(shader);
+
+			// Build and run shader
+			ShaderProgram program(m_context.getRenderContext(), sources);
+			if (program.isOk())
+			{
+				gl.useProgram(program.getProgram());
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
+				gl.bindImageTexture(0, //unit
+									verifyTexture,
+									level,	//level
+									GL_FALSE, //layered
+									0,		  //layer
+									GL_WRITE_ONLY, GL_R8UI);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
+				gl.bindImageTexture(1, //unit
+									texture,
+									level,	//level
+									GL_FALSE, //layered
+									0,		  //layer
+									GL_READ_ONLY, format);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
+				gl.uniform1i(1, 0 /* image_unit */);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i");
+				gl.uniform1i(2, 1 /* image_unit */);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i");
+				gl.dispatchCompute(width, height, depth);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glDispatchCompute");
+				gl.memoryBarrier(GL_ALL_BARRIER_BITS);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glMemoryBarrier");
+
+				Texture::GetData(gl, 0, verifyTarget, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)out_data);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
+
+				//Verify only committed region
+				for (GLint x = widthCommitted; x < width; ++x)
+					for (GLint y = 0; y < height; ++y)
+						for (GLint z = 0; z < depth; ++z)
+						{
+							GLubyte* dataRegion	= exp_data + ((x + y * width) + z * width * height);
+							GLubyte* outDataRegion = out_data + ((x + y * width) + z * width * height);
+							if (dataRegion[0] != outDataRegion[0])
+								result = false;
+						}
+			}
+			else
+			{
+				mLog << "Compute shader compilation failed (reading) for target: " << target << ", format: " << format
+					 << ", sample: " << sample << ", infoLog: " << program.getShaderInfo(SHADERTYPE_COMPUTE).infoLog
+					 << ", shaderSource: " << shader.c_str() << " - ";
+
+				result = false;
+			}
+		}
+
+		Texture::Delete(gl, verifyTexture);
+	}
+
+	return result;
+}
+
+/** Verify if atomic operations on uncommitted regions returns zeros and has no effect on texture
+ *
+ * @param gl           GL API functions
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ * @param texture      Texture object
+ * @param level        Texture mipmap level
+ *
+ * @return Returns true if data is as expected, false if not, throws an exception if error occurred.
+ */
+bool UncommittedRegionsAccessTestCase::verifyAtomicOperations(const Functions& gl, GLint target, GLint format,
+															  GLuint& texture, GLint level)
+{
+	mLog << "Verify Atomic Operations [level: " << level << "] - ";
+
+	if (level > mState.levels - 1)
+		TCU_FAIL("Invalid level");
+
+	GLint width;
+	GLint height;
+	GLint depth;
+	SparseTextureUtils::getTextureLevelSize(target, mState, level, width, height, depth);
+
+	//Committed region is limited to 1/2 of width
+	GLint widthCommitted = width / 2;
+
+	if (widthCommitted == 0 || height == 0 || depth < mState.minDepth)
+		return true;
+
+	bool result = true;
+
+	// Create verifying texture
+	GLint verifyTarget;
+	if (target == GL_TEXTURE_2D_MULTISAMPLE)
+		verifyTarget = GL_TEXTURE_2D;
+	else
+		verifyTarget = GL_TEXTURE_2D_ARRAY;
+
+	GLint texSize = width * height * depth;
+
+	std::vector<GLubyte> vecExpData;
+	std::vector<GLubyte> vecOutData;
+	vecExpData.resize(texSize);
+	vecOutData.resize(texSize);
+	GLubyte* exp_data = vecExpData.data();
+	GLubyte* out_data = vecOutData.data();
+
+	// Expected value in this case is 255 because shader fills output texture with 255 if in texture is filled with zeros
+	deMemset(exp_data, 0, texSize);
+
+	GLuint verifyTexture;
+	Texture::Generate(gl, verifyTexture);
+	Texture::Bind(gl, verifyTexture, verifyTarget);
+	Texture::Storage(gl, verifyTarget, 1, GL_R8, width, height, depth);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::Storage");
+
+	for (GLint sample = 0; sample < mState.samples; ++sample)
+	{
+		deMemset(out_data, 255, texSize);
+
+		Texture::Bind(gl, verifyTexture, verifyTarget);
+		Texture::SubImage(gl, verifyTarget, 0, 0, 0, 0, width, height, depth, GL_RED, GL_UNSIGNED_BYTE,
+						  (GLvoid*)out_data);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::SubImage");
+
+		std::string shader = compute_atomicVerify;
+
+		// Adjust shader source to texture format
+		TokenStrings s		  = setupShaderTokens(target, format, sample);
+		std::string  dataType = (s.inColorType == "ivec4" ? "int" : "uint");
+
+		size_t pos = 0;
+		replaceToken("<OUTIMAGE_TYPE>", pos, s.outImageType.c_str(), shader);
+		replaceToken("<FORMAT>", pos, s.format.c_str(), shader);
+		replaceToken("<INIMAGE_TYPE>", pos, s.inImageType.c_str(), shader);
+		replaceToken("<POINT_TYPE>", pos, s.pointType.c_str(), shader);
+		replaceToken("<POINT_TYPE>", pos, s.pointType.c_str(), shader);
+		replaceToken("<POINT_DEF>", pos, s.pointDef.c_str(), shader);
+		replaceToken("<POINT_TYPE>", pos, s.pointType.c_str(), shader);
+		replaceToken("<DATA_TYPE>", pos, dataType.c_str(), shader);
+		replaceToken("<SAMPLE_DEF>", pos, s.sampleDef.c_str(), shader);
+		replaceToken("<DATA_TYPE>", pos, dataType.c_str(), shader);
+		replaceToken("<SAMPLE_DEF>", pos, s.sampleDef.c_str(), shader);
+		replaceToken("<DATA_TYPE>", pos, dataType.c_str(), shader);
+		replaceToken("<DATA_TYPE>", pos, dataType.c_str(), shader);
+		replaceToken("<SAMPLE_DEF>", pos, s.sampleDef.c_str(), shader);
+		replaceToken("<DATA_TYPE>", pos, dataType.c_str(), shader);
+		replaceToken("<SAMPLE_DEF>", pos, s.sampleDef.c_str(), shader);
+		replaceToken("<DATA_TYPE>", pos, dataType.c_str(), shader);
+		replaceToken("<SAMPLE_DEF>", pos, s.sampleDef.c_str(), shader);
+		replaceToken("<DATA_TYPE>", pos, dataType.c_str(), shader);
+		replaceToken("<SAMPLE_DEF>", pos, s.sampleDef.c_str(), shader);
+		replaceToken("<DATA_TYPE>", pos, dataType.c_str(), shader);
+		replaceToken("<SAMPLE_DEF>", pos, s.sampleDef.c_str(), shader);
+		replaceToken("<DATA_TYPE>", pos, dataType.c_str(), shader);
+		replaceToken("<SAMPLE_DEF>", pos, s.sampleDef.c_str(), shader);
+		replaceToken("<DATA_TYPE>", pos, dataType.c_str(), shader);
+		replaceToken("<INCOLOR_TYPE>", pos, s.inColorType.c_str(), shader);
+		replaceToken("<SAMPLE_DEF>", pos, s.sampleDef.c_str(), shader);
+
+		ProgramSources sources;
+		sources << ComputeSource(shader);
+
+		// Build and run shader
+		ShaderProgram program(m_context.getRenderContext(), sources);
+		if (program.isOk())
+		{
+			gl.useProgram(program.getProgram());
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
+			gl.bindImageTexture(0, //unit
+								verifyTexture,
+								level,	//level
+								GL_FALSE, //layered
+								0,		  //layer
+								GL_WRITE_ONLY, GL_R8UI);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
+			gl.bindImageTexture(1, //unit
+								texture,
+								level,	//level
+								GL_FALSE, //layered
+								0,		  //layer
+								GL_READ_ONLY, format);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
+			gl.uniform1i(1, 0 /* image_unit */);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i");
+			gl.uniform1i(2, 1 /* image_unit */);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i");
+			gl.uniform1i(3, widthCommitted /* committed width */);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i");
+			gl.dispatchCompute(width, height, depth);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glDispatchCompute");
+			gl.memoryBarrier(GL_ALL_BARRIER_BITS);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glMemoryBarrier");
+
+			Texture::GetData(gl, 0, verifyTarget, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)out_data);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
+
+			//Verify only committed region
+			for (GLint x = 0; x < width; ++x)
+				for (GLint y = 0; y < height; ++y)
+					for (GLint z = 0; z < depth; ++z)
+					{
+						GLubyte* dataRegion	= exp_data + ((x + y * width) + z * width * height);
+						GLubyte* outDataRegion = out_data + ((x + y * width) + z * width * height);
+						if (dataRegion[0] != outDataRegion[0])
+						{
+							result = false;
+						}
+					}
+		}
+		else
+		{
+			mLog << "Compute shader compilation failed (atomic) for target: " << target << ", format: " << format
+				 << ", sample: " << sample << ", infoLog: " << program.getShaderInfo(SHADERTYPE_COMPUTE).infoLog
+				 << ", shaderSource: " << shader.c_str() << " - ";
+
+			result = false;
+		}
+	}
+
+	Texture::Delete(gl, verifyTexture);
+
+	return result;
+}
+
+/** Verify if stencil test on uncommitted texture region works as expected texture
+ *
+ * @param gl              GL API functions
+ * @param program         Shader program
+ * @param width           Texture width
+ * @param height          Texture height
+ * @param widthCommitted  Committed region width
+ *
+ * @return Returns true if stencil data is as expected, false otherwise.
+ */
+bool UncommittedRegionsAccessTestCase::verifyStencilTest(const Functions& gl, ShaderProgram& program, GLint width,
+														 GLint height, GLint widthCommitted)
+{
+	glu::VertexArrayBinding vertexArrays[] = { glu::va::Float("vertex", 3, 4, 0, vertices),
+											   glu::va::Float("inTexCoord", 2, 4, 0, texCoord) };
+
+	mLog << "Perform Stencil Test - ";
+
+	gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	gl.enable(GL_STENCIL_TEST);
+	gl.stencilFunc(GL_GREATER, 1, 0xFF);
+	gl.stencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+	glu::draw(m_context.getRenderContext(), program.getProgram(), DE_LENGTH_OF_ARRAY(vertexArrays), vertexArrays,
+			  glu::pr::TriangleStrip(DE_LENGTH_OF_ARRAY(indices), indices));
+
+	std::vector<GLubyte> dataStencil;
+	dataStencil.resize(width * height);
+	GLubyte* dataStencilPtr = dataStencil.data();
+
+	gl.readPixels(0, 0, width, height, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, (GLvoid*)dataStencilPtr);
+	for (int x = widthCommitted; x < width; ++x)
+		for (int y = 0; y < height; ++y)
+		{
+			if (dataStencilPtr[x + y * width] != 0x00)
+			{
+				gl.disable(GL_STENCIL_TEST);
+				return false;
+			}
+		}
+
+	gl.disable(GL_STENCIL_TEST);
+	return true;
+}
+
+/** Verify if depth test on uncommitted texture region works as expected texture
+ *
+ * @param gl              GL API functions
+ * @param program         Shader program
+ * @param width           Texture width
+ * @param height          Texture height
+ * @param widthCommitted  Committed region width
+ *
+ * @return Returns true if depth data is as expected, false otherwise.
+ */
+bool UncommittedRegionsAccessTestCase::verifyDepthTest(const Functions& gl, ShaderProgram& program, GLint width,
+													   GLint height, GLint widthCommitted)
+{
+	glu::VertexArrayBinding vertexArrays[] = { glu::va::Float("vertex", 3, 4, 0, vertices),
+											   glu::va::Float("inTexCoord", 2, 4, 0, texCoord) };
+
+	mLog << "Perform Depth Test - ";
+
+	gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	gl.enable(GL_DEPTH_TEST);
+	gl.depthFunc(GL_LESS);
+
+	glu::draw(m_context.getRenderContext(), program.getProgram(), DE_LENGTH_OF_ARRAY(vertexArrays), vertexArrays,
+			  glu::pr::TriangleStrip(DE_LENGTH_OF_ARRAY(indices), indices));
+
+	std::vector<GLuint> dataDepth;
+	dataDepth.resize(width * height);
+	GLuint* dataDepthPtr = dataDepth.data();
+
+	gl.readPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, (GLvoid*)dataDepthPtr);
+	for (int x = widthCommitted; x < width; ++x)
+		for (int y = 0; y < height; ++y)
+		{
+			if (dataDepthPtr[x + y * width] != 0xFFFFFFFF)
+			{
+				gl.disable(GL_DEPTH_TEST);
+				return false;
+			}
+		}
+
+	gl.disable(GL_DEPTH_TEST);
+	return true;
+}
+
+/** Verify if depth bounds test on uncommitted texture region works as expected texture
+ *
+ * @param gl              GL API functions
+ * @param program         Shader program
+ * @param width           Texture width
+ * @param height          Texture height
+ * @param widthCommitted  Committed region width
+ *
+ * @return Returns true if depth data is as expected, false otherwise.
+ */
+bool UncommittedRegionsAccessTestCase::verifyDepthBoundsTest(const Functions& gl, ShaderProgram& program, GLint width,
+															 GLint height, GLint widthCommitted)
+{
+	glu::VertexArrayBinding vertexArrays[] = { glu::va::Float("vertex", 3, 4, 0, vertices),
+											   glu::va::Float("inTexCoord", 2, 4, 0, texCoord) };
+
+	mLog << "Perform Depth Bounds Test - ";
+
+	gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	gl.enable(GL_DEPTH_BOUNDS_TEST_EXT);
+	gl.depthFunc(GL_LESS);
+
+	glu::draw(m_context.getRenderContext(), program.getProgram(), DE_LENGTH_OF_ARRAY(vertexArrays), vertexArrays,
+			  glu::pr::TriangleStrip(DE_LENGTH_OF_ARRAY(indices), indices));
+
+	std::vector<GLuint> dataDepth;
+	dataDepth.resize(width * height);
+	GLuint* dataDepthPtr = dataDepth.data();
+
+	gl.readPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, (GLvoid*)dataDepthPtr);
+	for (int x = widthCommitted; x < width; ++x)
+		for (int y = 0; y < height; ++y)
+		{
+			if (dataDepthPtr[x + y * width] != 0xFFFFFFFF)
+			{
+				gl.disable(GL_DEPTH_BOUNDS_TEST_EXT);
+				return false;
+			}
+		}
+
+	gl.disable(GL_DEPTH_BOUNDS_TEST_EXT);
+	return true;
 }
 
 /** Constructor.
@@ -230,6 +2030,9 @@ SparseTexture2Tests::SparseTexture2Tests(deqp::Context& context)
 void SparseTexture2Tests::init()
 {
 	addChild(new StandardPageSizesTestCase(m_context));
-	addChild(new SparseTextureAllocationTestCase(m_context));
+	addChild(new SparseTexture2AllocationTestCase(m_context));
+	addChild(new SparseTexture2CommitmentTestCase(m_context));
+	addChild(new UncommittedRegionsAccessTestCase(m_context));
 }
+
 } /* gl4cts namespace */

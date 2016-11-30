@@ -1180,6 +1180,14 @@ void glwDeleteVertexArrays (GLsizei n, const GLuint *arrays)
 	gl->deleteVertexArrays(n, arrays);
 }
 
+void glwDepthBoundsEXT (GLclampd zmin, GLclampd zmax)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->depthBoundsEXT(zmin, zmax);
+}
+
 void glwDepthFunc (GLenum func)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();

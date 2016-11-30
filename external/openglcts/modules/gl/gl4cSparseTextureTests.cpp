@@ -34,6 +34,7 @@
 #include "glwFunctions.hpp"
 #include "tcuTestLog.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <string.h>
@@ -57,14 +58,14 @@ typedef std::pair<GLint, GLint> IntPair;
  *
  * @return Returns true if queried value is as expected, returns false otherwise
  */
-bool SparseTextureUtils::verifyQueryError(tcu::TestContext& testCtx, const char* funcName, GLint target, GLint pname,
+bool SparseTextureUtils::verifyQueryError(std::stringstream& log, const char* funcName, GLint target, GLint pname,
 										  GLint error, GLint expectedError)
 {
 	if (error != expectedError)
 	{
-		testCtx.getLog() << tcu::TestLog::Message << funcName << " return wrong error code"
-						 << ", target: " << target << ", pname: " << pname << ", expected: " << expectedError
-						 << ", returned: " << error << tcu::TestLog::EndMessage;
+		log << "QueryError [" << funcName << " return wrong error code"
+			<< ", target: " << target << ", pname: " << pname << ", expected: " << expectedError
+			<< ", returned: " << error << "] - ";
 
 		return false;
 	}
@@ -81,13 +82,12 @@ bool SparseTextureUtils::verifyQueryError(tcu::TestContext& testCtx, const char*
  *
  * @return Returns true if queried value is as expected, returns false otherwise
  */
-bool SparseTextureUtils::verifyError(tcu::TestContext& testCtx, const char* funcName, GLint error, GLint expectedError)
+bool SparseTextureUtils::verifyError(std::stringstream& log, const char* funcName, GLint error, GLint expectedError)
 {
 	if (error != expectedError)
 	{
-		testCtx.getLog() << tcu::TestLog::Message << funcName << " return wrong error code "
-						 << ", expectedError: " << expectedError << ", returnedError: " << error
-						 << tcu::TestLog::EndMessage;
+		log << "Error [" << funcName << " return wrong error code "
+			<< ", expectedError: " << expectedError << ", returnedError: " << error << "] - ";
 
 		return false;
 	}
@@ -105,12 +105,15 @@ GLint SparseTextureUtils::getTargetDepth(GLint target)
 {
 	GLint depth;
 
-	if (target == GL_TEXTURE_3D || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY)
+	if (target == GL_TEXTURE_3D || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY ||
+		target == GL_TEXTURE_CUBE_MAP)
 	{
-		depth = 6;
-	}
-	else
 		depth = 1;
+	}
+	else if (target == GL_TEXTURE_CUBE_MAP_ARRAY)
+		depth = 6;
+	else
+		depth = 0;
 
 	return depth;
 }
@@ -135,6 +138,29 @@ void SparseTextureUtils::getTexturePageSizes(const glw::Functions& gl, glw::GLin
 
 	gl.getInternalformativ(target, format, GL_VIRTUAL_PAGE_SIZE_Z_ARB, sizeof(pageSizeZ), &pageSizeZ);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getInternalformativ error occurred for GL_VIRTUAL_PAGE_SIZE_Z_ARB");
+}
+
+/** Calculate texture size for specific mipmap
+ *
+ * @param target  GL functions
+ * @param state   Texture current state
+ * @param level   Texture mipmap level
+ * @param width   Texture output width
+ * @param height  Texture output height
+ * @param depth   Texture output depth
+ **/
+void SparseTextureUtils::getTextureLevelSize(GLint target, TextureState& state, GLint level, GLint& width,
+											 GLint& height, GLint& depth)
+{
+	width  = state.width / (int)pow(2, level);
+	height = state.height / (int)pow(2, level);
+
+	if (target == GL_TEXTURE_3D || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY)
+	{
+		depth = state.depth / (int)pow(2, level);
+	}
+	else
+		depth = 1;
 }
 
 /* Texture static fields */
@@ -207,18 +233,35 @@ void Texture::Storage(const Functions& gl, GLenum target, GLsizei levels, GLenum
 	case GL_TEXTURE_CUBE_MAP:
 		gl.texStorage2D(target, levels, internal_format, width, height);
 		break;
-	case GL_TEXTURE_2D_MULTISAMPLE:
-		gl.texStorage2DMultisample(target, levels, internal_format, width, height, GL_FALSE);
-		break;
 	case GL_TEXTURE_3D:
 	case GL_TEXTURE_2D_ARRAY:
 	case GL_TEXTURE_CUBE_MAP_ARRAY:
 		gl.texStorage3D(target, levels, internal_format, width, height, depth);
 		break;
+	case GL_TEXTURE_2D_MULTISAMPLE:
+		gl.texStorage2DMultisample(target, levels /* samples */, internal_format, width, height, GL_TRUE);
+		break;
+	case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+		gl.texStorage3DMultisample(target, levels /* samples */, internal_format, width, height, depth, GL_TRUE);
+		break;
 	default:
 		TCU_FAIL("Invliad enum");
 		break;
 	}
+}
+
+/** Get texture data
+ *
+ * @param gl       GL functions
+ * @param target   Texture target
+ * @param format   Format of data
+ * @param type     Type of data
+ * @param out_data Buffer for data
+ **/
+void Texture::GetData(const glw::Functions& gl, glw::GLint level, glw::GLenum target, glw::GLenum format,
+					  glw::GLenum type, glw::GLvoid* out_data)
+{
+	gl.getTexImage(target, level, format, type, out_data);
 }
 
 /** Set contents of texture
@@ -311,6 +354,12 @@ void TextureParameterQueriesTestCase::init()
  */
 tcu::TestNode::IterateResult TextureParameterQueriesTestCase::iterate()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
 	bool result = true;
@@ -324,6 +373,8 @@ tcu::TestNode::IterateResult TextureParameterQueriesTestCase::iterate()
 	{
 		const GLint& target = *iter;
 
+		mLog.str("");
+
 		Texture::Generate(gl, texture);
 		Texture::Bind(gl, texture, target);
 
@@ -334,7 +385,9 @@ tcu::TestNode::IterateResult TextureParameterQueriesTestCase::iterate()
 
 		if (!result)
 		{
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail on positive tests");
+			m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail [positive tests]"
+							   << tcu::TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 			return STOP;
 		}
 	}
@@ -345,6 +398,8 @@ tcu::TestNode::IterateResult TextureParameterQueriesTestCase::iterate()
 	{
 		const GLint& target = *iter;
 
+		mLog.str("");
+
 		Texture::Generate(gl, texture);
 		Texture::Bind(gl, texture, target);
 
@@ -354,6 +409,8 @@ tcu::TestNode::IterateResult TextureParameterQueriesTestCase::iterate()
 
 		if (!result)
 		{
+			m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail [positive tests]"
+							   << tcu::TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail on negative tests");
 			return STOP;
 		}
@@ -381,8 +438,7 @@ bool TextureParameterQueriesTestCase::testTextureSparseARB(const Functions& gl, 
 	GLuint  testValueUInt;
 	GLfloat testValueFloat;
 
-	m_testCtx.getLog() << tcu::TestLog::Message << "Testing TEXTURE_SPARSE_ARB for target: " << target
-					   << ", expected error: " << expectedError << tcu::TestLog::EndMessage;
+	mLog << "Testing TEXTURE_SPARSE_ARB for target: " << target << " - ";
 
 	//Check getTexParameter* default value
 	if (expectedError == GL_NO_ERROR)
@@ -403,7 +459,7 @@ bool TextureParameterQueriesTestCase::testTextureSparseARB(const Functions& gl, 
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri error occurred.");
 		}
 		else
-			result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameteri", target, pname, gl.getError(),
+			result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameteri", target, pname, gl.getError(),
 														  expectedError);
 	}
 
@@ -419,7 +475,7 @@ bool TextureParameterQueriesTestCase::testTextureSparseARB(const Functions& gl, 
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri error occurred.");
 		}
 		else
-			result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameterf", target, pname, gl.getError(),
+			result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameterf", target, pname, gl.getError(),
 														  expectedError);
 	}
 
@@ -436,7 +492,7 @@ bool TextureParameterQueriesTestCase::testTextureSparseARB(const Functions& gl, 
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri error occurred.");
 		}
 		else
-			result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameteriv", target, pname, gl.getError(),
+			result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameteriv", target, pname, gl.getError(),
 														  expectedError);
 	}
 
@@ -453,7 +509,7 @@ bool TextureParameterQueriesTestCase::testTextureSparseARB(const Functions& gl, 
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri error occurred.");
 		}
 		else
-			result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameterfv", target, pname, gl.getError(),
+			result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameterfv", target, pname, gl.getError(),
 														  expectedError);
 	}
 
@@ -470,7 +526,7 @@ bool TextureParameterQueriesTestCase::testTextureSparseARB(const Functions& gl, 
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri error occurred.");
 		}
 		else
-			result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameterIiv", target, pname, gl.getError(),
+			result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameterIiv", target, pname, gl.getError(),
 														  expectedError);
 	}
 
@@ -487,7 +543,7 @@ bool TextureParameterQueriesTestCase::testTextureSparseARB(const Functions& gl, 
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri error occurred.");
 		}
 		else
-			result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameterIuiv", target, pname, gl.getError(),
+			result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameterIuiv", target, pname, gl.getError(),
 														  expectedError);
 	}
 
@@ -513,8 +569,7 @@ bool TextureParameterQueriesTestCase::testVirtualPageSizeIndexARB(const Function
 	GLuint  testValueUInt;
 	GLfloat testValueFloat;
 
-	m_testCtx.getLog() << tcu::TestLog::Message << "Testing VIRTUAL_PAGE_SIZE_INDEX_ARB for target: " << target
-					   << ", expected error: " << expectedError << tcu::TestLog::EndMessage;
+	mLog << "Testing VIRTUAL_PAGE_SIZE_INDEX_ARB for target: " << target << " - ";
 
 	//Check getTexParameter* default value
 	if (expectedError == GL_NO_ERROR)
@@ -534,7 +589,7 @@ bool TextureParameterQueriesTestCase::testVirtualPageSizeIndexARB(const Function
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri error occurred");
 		}
 		else
-			result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameteri", target, pname, gl.getError(),
+			result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameteri", target, pname, gl.getError(),
 														  expectedError);
 	}
 
@@ -550,7 +605,7 @@ bool TextureParameterQueriesTestCase::testVirtualPageSizeIndexARB(const Function
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri error occurred");
 		}
 		else
-			result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameterf", target, pname, gl.getError(),
+			result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameterf", target, pname, gl.getError(),
 														  expectedError);
 	}
 
@@ -567,7 +622,7 @@ bool TextureParameterQueriesTestCase::testVirtualPageSizeIndexARB(const Function
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri error occurred");
 		}
 		else
-			result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameteriv", target, pname, gl.getError(),
+			result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameteriv", target, pname, gl.getError(),
 														  expectedError);
 	}
 
@@ -584,7 +639,7 @@ bool TextureParameterQueriesTestCase::testVirtualPageSizeIndexARB(const Function
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri error occurred");
 		}
 		else
-			result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameterfv", target, pname, gl.getError(),
+			result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameterfv", target, pname, gl.getError(),
 														  expectedError);
 	}
 
@@ -601,7 +656,7 @@ bool TextureParameterQueriesTestCase::testVirtualPageSizeIndexARB(const Function
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri error occurred");
 		}
 		else
-			result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameterIiv", target, pname, gl.getError(),
+			result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameterIiv", target, pname, gl.getError(),
 														  expectedError);
 	}
 
@@ -618,7 +673,7 @@ bool TextureParameterQueriesTestCase::testVirtualPageSizeIndexARB(const Function
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri error occurred");
 		}
 		else
-			result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameterIuiv", target, pname, gl.getError(),
+			result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameterIuiv", target, pname, gl.getError(),
 														  expectedError);
 	}
 
@@ -637,26 +692,36 @@ bool TextureParameterQueriesTestCase::testNumSparseLevelsARB(const Functions& gl
 {
 	const GLint pname = GL_NUM_SPARSE_LEVELS_ARB;
 
+	bool result = true;
+
 	GLint   value_int;
 	GLuint  value_uint;
 	GLfloat value_float;
 
-	m_testCtx.getLog() << tcu::TestLog::Message << "Testing NUM_SPARSE_LEVELS_ARB for target: " << target
-					   << tcu::TestLog::EndMessage;
+	mLog << "Testing NUM_SPARSE_LEVELS_ARB for target: " << target << " - ";
 
 	gl.getTexParameteriv(target, pname, &value_int);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexParameteriv error occurred");
+	result = SparseTextureUtils::verifyError(mLog, "glGetTexParameteriv", gl.getError(), GL_NO_ERROR);
 
-	gl.getTexParameterfv(target, pname, &value_float);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexParameterfv error occurred");
+	if (result)
+	{
+		gl.getTexParameterfv(target, pname, &value_float);
+		result = SparseTextureUtils::verifyError(mLog, "glGetTexParameterfv", gl.getError(), GL_NO_ERROR);
 
-	gl.getTexParameterIiv(target, pname, &value_int);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetGexParameterIiv error occurred");
+		if (result)
+		{
+			gl.getTexParameterIiv(target, pname, &value_int);
+			result = SparseTextureUtils::verifyError(mLog, "glGetGexParameterIiv", gl.getError(), GL_NO_ERROR);
 
-	gl.getTexParameterIuiv(target, pname, &value_uint);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetGexParameterIui error occurred");
+			if (result)
+			{
+				gl.getTexParameterIuiv(target, pname, &value_uint);
+				result = SparseTextureUtils::verifyError(mLog, "getTexParameterIuiv", gl.getError(), GL_NO_ERROR);
+			}
+		}
+	}
 
-	return true;
+	return result;
 }
 
 /** Checking if getTexParameter* for binded texture returns value as expected
@@ -677,13 +742,15 @@ bool TextureParameterQueriesTestCase::checkGetTexParameter(const Functions& gl, 
 	GLuint  value_uint;
 	GLfloat value_float;
 
+	mLog << "Testing GetTexParameter for target: " << target << " - ";
+
 	gl.getTexParameteriv(target, pname, &value_int);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexParameteriv error occurred");
 	if (value_int != expected)
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "glGetTexParameteriv return wrong value"
-						   << ", target: " << target << ", pname: " << pname << ", expected: " << expected
-						   << ", returned: " << value_int << tcu::TestLog::EndMessage;
+		mLog << "glGetTexParameteriv return wrong value"
+			 << ", target: " << target << ", pname: " << pname << ", expected: " << expected
+			 << ", returned: " << value_int << " - ";
 
 		result = false;
 	}
@@ -692,9 +759,9 @@ bool TextureParameterQueriesTestCase::checkGetTexParameter(const Functions& gl, 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexParameterfv error occurred");
 	if ((GLint)value_float != expected)
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "glGetTexParameterfv return wrong value"
-						   << ", target: " << target << ", pname: " << pname << ", expected: " << expected
-						   << ", returned: " << (GLint)value_float << tcu::TestLog::EndMessage;
+		mLog << "glGetTexParameterfv return wrong value"
+			 << ", target: " << target << ", pname: " << pname << ", expected: " << expected
+			 << ", returned: " << (GLint)value_float << " - ";
 
 		result = false;
 	}
@@ -703,9 +770,9 @@ bool TextureParameterQueriesTestCase::checkGetTexParameter(const Functions& gl, 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetGexParameterIiv error occurred");
 	if (value_int != expected)
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "glGetGexParameterIiv return wrong value"
-						   << ", target: " << target << ", pname: " << pname << ", expected: " << expected
-						   << ", returned: " << value_int << tcu::TestLog::EndMessage;
+		mLog << "glGetGexParameterIiv return wrong value"
+			 << ", target: " << target << ", pname: " << pname << ", expected: " << expected
+			 << ", returned: " << value_int << " - ";
 
 		result = false;
 	}
@@ -714,9 +781,9 @@ bool TextureParameterQueriesTestCase::checkGetTexParameter(const Functions& gl, 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetGexParameterIui error occurred");
 	if ((GLint)value_uint != expected)
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "glGetGexParameterIui return wrong value"
-						   << ", target: " << target << ", pname: " << pname << ", expected: " << expected
-						   << ", returned: " << (GLint)value_uint << tcu::TestLog::EndMessage;
+		mLog << "glGetGexParameterIui return wrong value"
+			 << ", target: " << target << ", pname: " << pname << ", expected: " << expected
+			 << ", returned: " << (GLint)value_uint << " - ";
 
 		result = false;
 	}
@@ -799,11 +866,17 @@ void InternalFormatQueriesTestCase::init()
  */
 tcu::TestNode::IterateResult InternalFormatQueriesTestCase::iterate()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
 	bool result = true;
 
-	m_testCtx.getLog() << tcu::TestLog::Message << "Testing getInternalformativ" << tcu::TestLog::EndMessage;
+	mLog << "Testing getInternalformativ - ";
 
 	for (std::vector<glw::GLint>::const_iterator iter = mSupportedTargets.begin(); iter != mSupportedTargets.end();
 		 ++iter)
@@ -820,10 +893,8 @@ tcu::TestNode::IterateResult InternalFormatQueriesTestCase::iterate()
 			GLU_EXPECT_NO_ERROR(gl.getError(), "getInternalformativ error occurred for GL_NUM_VIRTUAL_PAGE_SIZES_ARB");
 			if (value == 0)
 			{
-				m_testCtx.getLog() << tcu::TestLog::Message
-								   << "getInternalformativ for GL_NUM_VIRTUAL_PAGE_SIZES_ARB, target: " << target
-								   << ", format: " << format << " returns wrong value: " << value
-								   << tcu::TestLog::EndMessage;
+				mLog << "getInternalformativ for GL_NUM_VIRTUAL_PAGE_SIZES_ARB, target: " << target
+					 << ", format: " << format << " returns wrong value: " << value << " - ";
 
 				result = false;
 			}
@@ -837,6 +908,7 @@ tcu::TestNode::IterateResult InternalFormatQueriesTestCase::iterate()
 			}
 			else
 			{
+				m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail" << tcu::TestLog::EndMessage;
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 				return STOP;
 			}
@@ -864,6 +936,12 @@ SimpleQueriesTestCase::SimpleQueriesTestCase(deqp::Context& context)
  */
 tcu::TestNode::IterateResult SimpleQueriesTestCase::iterate()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
 	testSipmleQueries(gl, GL_MAX_SPARSE_TEXTURE_SIZE_ARB);
@@ -877,8 +955,10 @@ tcu::TestNode::IterateResult SimpleQueriesTestCase::iterate()
 
 void SimpleQueriesTestCase::testSipmleQueries(const Functions& gl, GLint pname)
 {
-	m_testCtx.getLog() << tcu::TestLog::Message << "Testing simple queries for pname: " << pname
-					   << tcu::TestLog::EndMessage;
+	std::stringstream log;
+	log << "Testing simple query for pname: " << pname << " - ";
+
+	bool result = true;
 
 	GLint	 value_int;
 	GLint64   value_int64;
@@ -887,19 +967,36 @@ void SimpleQueriesTestCase::testSipmleQueries(const Functions& gl, GLint pname)
 	GLboolean value_bool;
 
 	gl.getIntegerv(pname, &value_int);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv error occurred");
+	result = SparseTextureUtils::verifyError(log, "getIntegerv", gl.getError(), GL_NO_ERROR);
 
-	gl.getInteger64v(pname, &value_int64);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "getInteger64v error occurred");
+	if (result)
+	{
+		gl.getInteger64v(pname, &value_int64);
+		result = SparseTextureUtils::verifyError(log, "getInteger64v", gl.getError(), GL_NO_ERROR);
 
-	gl.getFloatv(pname, &value_float);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "getFloatv error occurred");
+		if (result)
+		{
+			gl.getFloatv(pname, &value_float);
+			result = SparseTextureUtils::verifyError(log, "getFloatv", gl.getError(), GL_NO_ERROR);
 
-	gl.getDoublev(pname, &value_double);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "getDoublev error occurred");
+			if (result)
+			{
+				gl.getDoublev(pname, &value_double);
+				result = SparseTextureUtils::verifyError(log, "getDoublev", gl.getError(), GL_NO_ERROR);
 
-	gl.getBooleanv(pname, &value_bool);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "getBooleanv error occurred");
+				if (result)
+				{
+					gl.getBooleanv(pname, &value_bool);
+					result = SparseTextureUtils::verifyError(log, "getBooleanv", gl.getError(), GL_NO_ERROR);
+				}
+			}
+		}
+	}
+
+	if (!result)
+	{
+		TCU_FAIL(log.str().c_str());
+	}
 }
 
 /** Constructor.
@@ -986,6 +1083,12 @@ void SparseTextureAllocationTestCase::init()
  */
 tcu::TestNode::IterateResult SparseTextureAllocationTestCase::iterate()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
 	bool result = true;
@@ -1000,18 +1103,17 @@ tcu::TestNode::IterateResult SparseTextureAllocationTestCase::iterate()
 		{
 			const GLint& format = *formIter;
 
-			m_testCtx.getLog() << tcu::TestLog::Message << "Testing sparse texture allocation for target: " << target
-							   << ", format: " << format << tcu::TestLog::EndMessage;
+			mLog.str("");
+			mLog << "Testing sparse texture allocation for target: " << target << ", format: " << format << " - ";
 
-			positiveTesting(gl, target, format);
-
-			result = verifyTexParameterErrors(gl, target, format) &&
+			result = positiveTesting(gl, target, format) && verifyTexParameterErrors(gl, target, format) &&
 					 verifyTexStorageVirtualPageSizeIndexError(gl, target, format) &&
 					 verifyTexStorageFullArrayCubeMipmapsError(gl, target, format) &&
 					 verifyTexStorageInvalidValueErrors(gl, target, format);
 
 			if (!result)
 			{
+				m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail" << tcu::TestLog::EndMessage;
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 				return STOP;
 			}
@@ -1028,14 +1130,16 @@ tcu::TestNode::IterateResult SparseTextureAllocationTestCase::iterate()
 		{
 			const GLint& format = *formIter;
 
-			m_testCtx.getLog() << tcu::TestLog::Message << "Testing sparse texture allocation for target: " << target
-							   << ", format: " << format << tcu::TestLog::EndMessage;
+			mLog.str("");
+			mLog << "Testing sparse texture allocation for target [full array]: " << target << ", format: " << format
+				 << " - ";
 
 			result = verifyTexStorageFullArrayCubeMipmapsError(gl, target, format) &&
 					 verifyTexStorageInvalidValueErrors(gl, target, format);
 
 			if (!result)
 			{
+				m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail" << tcu::TestLog::EndMessage;
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 				return STOP;
 			}
@@ -1051,9 +1155,13 @@ tcu::TestNode::IterateResult SparseTextureAllocationTestCase::iterate()
  * @param gl           GL API functions
  * @param target       Target for which texture is binded
  * @param format       Texture internal format
+ *
+ * @return Returns true if no errors occurred, false otherwise.
  **/
-void SparseTextureAllocationTestCase::positiveTesting(const Functions& gl, GLint target, GLint format)
+bool SparseTextureAllocationTestCase::positiveTesting(const Functions& gl, GLint target, GLint format)
 {
+	mLog << "Positive Testing - ";
+
 	GLuint texture;
 
 	Texture::Generate(gl, texture);
@@ -1066,7 +1174,11 @@ void SparseTextureAllocationTestCase::positiveTesting(const Functions& gl, GLint
 	SparseTextureUtils::getTexturePageSizes(gl, target, format, pageSizeX, pageSizeY, pageSizeZ);
 
 	gl.texParameteri(target, GL_TEXTURE_SPARSE_ARB, GL_TRUE);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "texParameteri error occurred for GL_TEXTURE_SPARSE_ARB");
+	if (!SparseTextureUtils::verifyError(mLog, "texParameteri", gl.getError(), GL_NO_ERROR))
+	{
+		Texture::Delete(gl, texture);
+		return false;
+	}
 
 	//The <width> and <height> has to be equal for cube map textures
 	if (target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_CUBE_MAP_ARRAY)
@@ -1078,9 +1190,14 @@ void SparseTextureAllocationTestCase::positiveTesting(const Functions& gl, GLint
 	}
 
 	Texture::Storage(gl, target, 1, format, pageSizeX, pageSizeY, depth * pageSizeZ);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "TexStorage");
+	if (!SparseTextureUtils::verifyError(mLog, "Texture::Storage", gl.getError(), GL_NO_ERROR))
+	{
+		Texture::Delete(gl, texture);
+		return false;
+	}
 
 	Texture::Delete(gl, texture);
+	return true;
 }
 
 /** Verifies if texParameter* generate proper errors for given target and internal format.
@@ -1093,6 +1210,8 @@ void SparseTextureAllocationTestCase::positiveTesting(const Functions& gl, GLint
  */
 bool SparseTextureAllocationTestCase::verifyTexParameterErrors(const Functions& gl, GLint target, GLint format)
 {
+	mLog << "Verify TexParameter errors - ";
+
 	bool result = true;
 
 	GLuint texture;
@@ -1104,12 +1223,21 @@ bool SparseTextureAllocationTestCase::verifyTexParameterErrors(const Functions& 
 	depth = SparseTextureUtils::getTargetDepth(target);
 
 	Texture::Storage(gl, target, 1, format, 8, 8, depth);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "TexStorage");
+	if (!SparseTextureUtils::verifyError(mLog, "TexStorage", gl.getError(), GL_NO_ERROR))
+	{
+		Texture::Delete(gl, texture);
+		return false;
+	}
 
 	GLint immutableFormat;
 
 	gl.getTexParameteriv(target, GL_TEXTURE_IMMUTABLE_FORMAT, &immutableFormat);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "getTexParameteriv error occurred for GL_TEXTURE_IMMUTABLE_FORMAT");
+	if (!SparseTextureUtils::verifyQueryError(mLog, "getTexParameteriv", target, GL_TEXTURE_IMMUTABLE_FORMAT,
+											  gl.getError(), GL_NO_ERROR))
+	{
+		Texture::Delete(gl, texture);
+		return false;
+	}
 
 	// Test error only if texture is immutable format, otherwise skip
 	if (immutableFormat == GL_TRUE)
@@ -1125,14 +1253,14 @@ bool SparseTextureAllocationTestCase::verifyTexParameterErrors(const Functions& 
 			if (result)
 			{
 				gl.texParameteri(target, param.first, param.second);
-				result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameteri", target, param.first,
+				result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameteri", target, param.first,
 															  gl.getError(), GL_INVALID_OPERATION);
 			}
 
 			if (result)
 			{
 				gl.texParameterf(target, param.first, (GLfloat)param.second);
-				result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameterf", target, param.first,
+				result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameterf", target, param.first,
 															  gl.getError(), GL_INVALID_OPERATION);
 			}
 
@@ -1140,7 +1268,7 @@ bool SparseTextureAllocationTestCase::verifyTexParameterErrors(const Functions& 
 			{
 				GLint value = param.second;
 				gl.texParameteriv(target, param.first, &value);
-				result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameteriv", target, param.first,
+				result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameteriv", target, param.first,
 															  gl.getError(), GL_INVALID_OPERATION);
 			}
 
@@ -1148,7 +1276,7 @@ bool SparseTextureAllocationTestCase::verifyTexParameterErrors(const Functions& 
 			{
 				GLfloat value = (GLfloat)param.second;
 				gl.texParameterfv(target, param.first, &value);
-				result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameterfv", target, param.first,
+				result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameterfv", target, param.first,
 															  gl.getError(), GL_INVALID_OPERATION);
 			}
 
@@ -1156,7 +1284,7 @@ bool SparseTextureAllocationTestCase::verifyTexParameterErrors(const Functions& 
 			{
 				GLint value = param.second;
 				gl.texParameterIiv(target, param.first, &value);
-				result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameterIiv", target, param.first,
+				result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameterIiv", target, param.first,
 															  gl.getError(), GL_INVALID_OPERATION);
 			}
 
@@ -1164,14 +1292,13 @@ bool SparseTextureAllocationTestCase::verifyTexParameterErrors(const Functions& 
 			{
 				GLuint value = param.second;
 				gl.texParameterIuiv(target, param.first, &value);
-				result = SparseTextureUtils::verifyQueryError(m_testCtx, "glTexParameterIuiv", target, param.first,
+				result = SparseTextureUtils::verifyQueryError(mLog, "glTexParameterIuiv", target, param.first,
 															  gl.getError(), GL_INVALID_OPERATION);
 			}
 		}
 	}
 
 	Texture::Delete(gl, texture);
-
 	return result;
 }
 
@@ -1187,7 +1314,7 @@ bool SparseTextureAllocationTestCase::verifyTexParameterErrors(const Functions& 
 bool SparseTextureAllocationTestCase::verifyTexStorageVirtualPageSizeIndexError(const Functions& gl, GLint target,
 																				GLint format)
 {
-	bool result = true;
+	mLog << "Verify VirtualPageSizeIndex errors - ";
 
 	GLuint texture;
 	GLint  depth;
@@ -1197,23 +1324,41 @@ bool SparseTextureAllocationTestCase::verifyTexStorageVirtualPageSizeIndexError(
 	Texture::Bind(gl, texture, target);
 
 	gl.texParameteri(target, GL_TEXTURE_SPARSE_ARB, GL_TRUE);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "texParameteri error occurred for GL_TEXTURE_SPARSE_ARB");
+	if (!SparseTextureUtils::verifyQueryError(mLog, "texParameteri", target, GL_TEXTURE_SPARSE_ARB, gl.getError(),
+											  GL_NO_ERROR))
+	{
+		Texture::Delete(gl, texture);
+		return false;
+	}
 
 	gl.getInternalformativ(target, format, GL_NUM_VIRTUAL_PAGE_SIZES_ARB, sizeof(numPageSizes), &numPageSizes);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "getTexParameteriv error occurred for GL_NUM_VIRTUAL_PAGE_SIZES_ARB");
+	if (!SparseTextureUtils::verifyQueryError(mLog, "getInternalformativ", target, GL_NUM_VIRTUAL_PAGE_SIZES_ARB,
+											  gl.getError(), GL_NO_ERROR))
+	{
+		Texture::Delete(gl, texture);
+		return false;
+	}
 
 	numPageSizes += 1;
 	gl.texParameteri(target, GL_VIRTUAL_PAGE_SIZE_INDEX_ARB, numPageSizes);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "texParameteri error occurred for GL_VIRTUAL_PAGE_SIZE_INDEX_ARB");
+	if (!SparseTextureUtils::verifyQueryError(mLog, "texParameteri", target, GL_VIRTUAL_PAGE_SIZE_INDEX_ARB,
+											  gl.getError(), GL_NO_ERROR))
+	{
+		Texture::Delete(gl, texture);
+		return false;
+	}
 
 	depth = SparseTextureUtils::getTargetDepth(target);
 
 	Texture::Storage(gl, target, 1, format, 8, 8, depth);
-	result = SparseTextureUtils::verifyError(m_testCtx, "TexStorage", gl.getError(), GL_INVALID_OPERATION);
+	if (!SparseTextureUtils::verifyError(mLog, "TexStorage", gl.getError(), GL_NO_ERROR))
+	{
+		Texture::Delete(gl, texture);
+		return false;
+	}
 
 	Texture::Delete(gl, texture);
-
-	return result;
+	return true;
 }
 
 /** Verifies if texStorage* generate proper errors for given target and internal format and
@@ -1228,6 +1373,8 @@ bool SparseTextureAllocationTestCase::verifyTexStorageVirtualPageSizeIndexError(
 bool SparseTextureAllocationTestCase::verifyTexStorageFullArrayCubeMipmapsError(const Functions& gl, GLint target,
 																				GLint format)
 {
+	mLog << "Verify FullArrayCubeMipmaps errors - ";
+
 	bool result = true;
 
 	GLuint texture;
@@ -1238,7 +1385,9 @@ bool SparseTextureAllocationTestCase::verifyTexStorageFullArrayCubeMipmapsError(
 	GLboolean fullArrayCubeMipmaps;
 
 	gl.getBooleanv(GL_SPARSE_TEXTURE_FULL_ARRAY_CUBE_MIPMAPS_ARB, &fullArrayCubeMipmaps);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "getBooleanv error occurred for GL_SPARSE_TEXTURE_FULL_ARRAY_CUBE_MIPMAPS_ARB");
+	if (!SparseTextureUtils::verifyQueryError(
+			mLog, "getBooleanv", target, GL_SPARSE_TEXTURE_FULL_ARRAY_CUBE_MIPMAPS_ARB, gl.getError(), GL_NO_ERROR))
+		return false;
 
 	if (fullArrayCubeMipmaps == GL_FALSE)
 	{
@@ -1250,45 +1399,46 @@ bool SparseTextureAllocationTestCase::verifyTexStorageFullArrayCubeMipmapsError(
 			Texture::Bind(gl, texture, target);
 
 			gl.texParameteri(target, GL_TEXTURE_SPARSE_ARB, GL_TRUE);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "texParameteri error occurred for GL_TEXTURE_SPARSE_ARB");
+			if (!SparseTextureUtils::verifyQueryError(mLog, "texParameteri", target, GL_TEXTURE_SPARSE_ARB,
+													  gl.getError(), GL_NO_ERROR))
+				return false;
 
 			Texture::Storage(gl, target, 1, format, 8, 8, depth);
-			result =
-				SparseTextureUtils::verifyError(m_testCtx, "TexStorage [case 1]", gl.getError(), GL_INVALID_OPERATION);
-
-			Texture::Delete(gl, texture);
+			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [sparse texture]", gl.getError(),
+												 GL_INVALID_OPERATION))
+			{
+				Texture::Delete(gl, texture);
+				return false;
+			}
 
 			// Case 2: test wrong texture size
+			Texture::Generate(gl, texture);
+			Texture::Bind(gl, texture, target);
+
+			GLint pageSizeX;
+			GLint pageSizeY;
+			GLint pageSizeZ;
+			SparseTextureUtils::getTexturePageSizes(gl, target, format, pageSizeX, pageSizeY, pageSizeZ);
+
+			GLint levels = 4;
+			GLint width  = pageSizeX * (int)pow(2, levels - 1);
+			GLint height = pageSizeY * (int)pow(2, levels - 1);
+
+			// Check 2 different cases:
+			// 1) wrong width
+			// 2) wrong height
+			Texture::Storage(gl, target, levels, format, width + pageSizeX, height, depth);
+			result =
+				SparseTextureUtils::verifyError(mLog, "TexStorage [wrong width]", gl.getError(), GL_INVALID_OPERATION);
+
 			if (result)
 			{
-				Texture::Generate(gl, texture);
-				Texture::Bind(gl, texture, target);
-
-				GLint pageSizeX;
-				GLint pageSizeY;
-				GLint pageSizeZ;
-				SparseTextureUtils::getTexturePageSizes(gl, target, format, pageSizeX, pageSizeY, pageSizeZ);
-
-				GLint levels = 4;
-				GLint width  = pageSizeX * (int)pow(2, levels - 1);
-				GLint height = pageSizeY * (int)pow(2, levels - 1);
-
-				// Check 2 different cases:
-				// 1) wrong width
-				// 2) wrong height
-				Texture::Storage(gl, target, levels, format, width + pageSizeX, height, depth);
-				result = SparseTextureUtils::verifyError(m_testCtx, "TexStorage [case 2 wrong width]", gl.getError(),
+				Texture::Storage(gl, target, levels, format, width, height + pageSizeY, depth);
+				result = SparseTextureUtils::verifyError(mLog, "TexStorage [wrong height]", gl.getError(),
 														 GL_INVALID_OPERATION);
-
-				if (result)
-				{
-					Texture::Storage(gl, target, levels, format, width, height + pageSizeY, depth);
-					result = SparseTextureUtils::verifyError(m_testCtx, "TexStorage [case 2 wrong height]",
-															 gl.getError(), GL_INVALID_OPERATION);
-				}
-
-				Texture::Delete(gl, texture);
 			}
+
+			Texture::Delete(gl, texture);
 		}
 		else
 		{
@@ -1301,8 +1451,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageFullArrayCubeMipmapsError(
 			else
 				Texture::Storage(gl, target, 1, format, 8, 8, depth);
 
-			result =
-				SparseTextureUtils::verifyError(m_testCtx, "TexStorage [case 3]", gl.getError(), GL_INVALID_OPERATION);
+			result = SparseTextureUtils::verifyError(mLog, "TexStorage [case 3]", gl.getError(), GL_INVALID_OPERATION);
 
 			Texture::Delete(gl, texture);
 		}
@@ -1323,6 +1472,8 @@ bool SparseTextureAllocationTestCase::verifyTexStorageFullArrayCubeMipmapsError(
 bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const Functions& gl, GLint target,
 																		 GLint format)
 {
+	mLog << "Verify Invalid Value errors - ";
+
 	GLuint texture;
 	GLint  pageSizeX;
 	GLint  pageSizeY;
@@ -1341,14 +1492,19 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 		GLint max3DTextureSize;
 
 		gl.getIntegerv(GL_MAX_SPARSE_3D_TEXTURE_SIZE_ARB, &max3DTextureSize);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegeriv error occurred for GL_MAX_SPARSE_3D_TEXTURE_SIZE_ARB");
+		if (!SparseTextureUtils::verifyQueryError(mLog, "getIntegerv", target, GL_MAX_SPARSE_3D_TEXTURE_SIZE_ARB,
+												  gl.getError(), GL_NO_ERROR))
+		{
+			Texture::Delete(gl, texture);
+			return false;
+		}
 
 		// Check 3 different cases:
 		// 1) wrong width
 		// 2) wrong height
 		// 3) wrong depth
 		Texture::Storage(gl, target, 1, format, width + max3DTextureSize, height, depth);
-		if (!SparseTextureUtils::verifyError(m_testCtx, "TexStorage [GL_TEXTURE_3D wrong width]", gl.getError(),
+		if (!SparseTextureUtils::verifyError(mLog, "TexStorage [GL_TEXTURE_3D wrong width]", gl.getError(),
 											 GL_INVALID_VALUE))
 		{
 			Texture::Delete(gl, texture);
@@ -1356,7 +1512,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 		}
 
 		Texture::Storage(gl, target, 1, format, width, height + max3DTextureSize, depth);
-		if (!SparseTextureUtils::verifyError(m_testCtx, "TexStorage [GL_TEXTURE_3D wrong height]", gl.getError(),
+		if (!SparseTextureUtils::verifyError(mLog, "TexStorage [GL_TEXTURE_3D wrong height]", gl.getError(),
 											 GL_INVALID_VALUE))
 		{
 			Texture::Delete(gl, texture);
@@ -1364,7 +1520,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 		}
 
 		Texture::Storage(gl, target, 1, format, width, height, depth + max3DTextureSize);
-		if (!SparseTextureUtils::verifyError(m_testCtx, "TexStorage [GL_TEXTURE_3D wrong depth]", gl.getError(),
+		if (!SparseTextureUtils::verifyError(mLog, "TexStorage [GL_TEXTURE_3D wrong depth]", gl.getError(),
 											 GL_INVALID_VALUE))
 		{
 			Texture::Delete(gl, texture);
@@ -1376,13 +1532,18 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 		GLint maxTextureSize;
 
 		gl.getIntegerv(GL_MAX_SPARSE_TEXTURE_SIZE_ARB, &maxTextureSize);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegeriv error occurred for GL_MAX_SPARSE_TEXTURE_SIZE_ARB");
+		if (!SparseTextureUtils::verifyQueryError(mLog, "getIntegerv", target, GL_MAX_SPARSE_TEXTURE_SIZE_ARB,
+												  gl.getError(), GL_NO_ERROR))
+		{
+			Texture::Delete(gl, texture);
+			return false;
+		}
 
 		// Check 3 different cases:
 		// 1) wrong width
 		// 2) wrong height
 		Texture::Storage(gl, target, 1, format, width + maxTextureSize, height, depth);
-		if (!SparseTextureUtils::verifyError(m_testCtx, "TexStorage [!GL_TEXTURE_3D wrong width]", gl.getError(),
+		if (!SparseTextureUtils::verifyError(mLog, "TexStorage [!GL_TEXTURE_3D wrong width]", gl.getError(),
 											 GL_INVALID_VALUE))
 		{
 			Texture::Delete(gl, texture);
@@ -1390,7 +1551,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 		}
 
 		Texture::Storage(gl, target, 1, format, width, height + maxTextureSize, depth);
-		if (!SparseTextureUtils::verifyError(m_testCtx, "TexStorage [!GL_TEXTURE_3D wrong height]", gl.getError(),
+		if (!SparseTextureUtils::verifyError(mLog, "TexStorage [!GL_TEXTURE_3D wrong height]", gl.getError(),
 											 GL_INVALID_VALUE))
 		{
 			Texture::Delete(gl, texture);
@@ -1400,12 +1561,17 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 		GLint maxArrayTextureLayers;
 
 		gl.getIntegerv(GL_MAX_SPARSE_ARRAY_TEXTURE_LAYERS_ARB, &maxArrayTextureLayers);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegeriv error occurred for GL_MAX_SPARSE_ARRAY_TEXTURE_LAYERS_ARB");
+		if (!SparseTextureUtils::verifyQueryError(mLog, "getIntegerv", target, GL_MAX_SPARSE_ARRAY_TEXTURE_LAYERS_ARB,
+												  gl.getError(), GL_NO_ERROR))
+		{
+			Texture::Delete(gl, texture);
+			return false;
+		}
 
 		if (target == GL_TEXTURE_1D_ARRAY)
 		{
 			Texture::Storage(gl, target, 1, format, width, height + maxArrayTextureLayers, 0);
-			if (!SparseTextureUtils::verifyError(m_testCtx, "TexStorage [ARRAY wrong height]", gl.getError(),
+			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [ARRAY wrong height]", gl.getError(),
 												 GL_INVALID_VALUE))
 			{
 				Texture::Delete(gl, texture);
@@ -1415,7 +1581,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 		else if ((target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY))
 		{
 			Texture::Storage(gl, target, 1, format, width, height, depth + maxArrayTextureLayers);
-			if (!SparseTextureUtils::verifyError(m_testCtx, "TexStorage [ARRAY wrong depth]", gl.getError(),
+			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [ARRAY wrong depth]", gl.getError(),
 												 GL_INVALID_VALUE))
 			{
 				Texture::Delete(gl, texture);
@@ -1429,8 +1595,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 		if (pageSizeX > 1)
 		{
 			Texture::Storage(gl, target, 1, format, 1, height, depth);
-			if (!SparseTextureUtils::verifyError(m_testCtx, "TexStorage [wrong width]", gl.getError(),
-												 GL_INVALID_VALUE))
+			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [wrong width]", gl.getError(), GL_INVALID_VALUE))
 			{
 				Texture::Delete(gl, texture);
 				return false;
@@ -1440,8 +1605,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 		if (pageSizeY > 1)
 		{
 			Texture::Storage(gl, target, 1, format, width, 1, depth);
-			if (!SparseTextureUtils::verifyError(m_testCtx, "TexStorage [wrong height]", gl.getError(),
-												 GL_INVALID_VALUE))
+			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [wrong height]", gl.getError(), GL_INVALID_VALUE))
 			{
 				Texture::Delete(gl, texture);
 				return false;
@@ -1451,8 +1615,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 		if (pageSizeZ > 1)
 		{
 			Texture::Storage(gl, target, 1, format, width, height, SparseTextureUtils::getTargetDepth(target));
-			if (!SparseTextureUtils::verifyError(m_testCtx, "TexStorage [wrong depth]", gl.getError(),
-												 GL_INVALID_VALUE))
+			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [wrong depth]", gl.getError(), GL_INVALID_VALUE))
 			{
 				Texture::Delete(gl, texture);
 				return false;
@@ -1471,9 +1634,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 SparseTextureCommitmentTestCase::SparseTextureCommitmentTestCase(deqp::Context& context)
 	: TestCase(context, "SparseTextureCommitment",
 			   "Verifies TexPageCommitmentARB functionality added in CTS_ARB_sparse_texture")
-	, mWidthStored(0)
-	, mHeightStored(0)
-	, mDepthStored(0)
+	, mState()
 {
 	/* Left blank intentionally */
 }
@@ -1486,12 +1647,12 @@ SparseTextureCommitmentTestCase::SparseTextureCommitmentTestCase(deqp::Context& 
  */
 SparseTextureCommitmentTestCase::SparseTextureCommitmentTestCase(deqp::Context& context, const char* name,
 																 const char* description)
-	: TestCase(context, name, description), mWidthStored(0), mHeightStored(0), mDepthStored(0)
+	: TestCase(context, name, description), mState()
 {
 	/* Left blank intentionally */
 }
 
-/** Initializes the test group contents. */
+/** Initializes the test case. */
 void SparseTextureCommitmentTestCase::init()
 {
 	mSupportedTargets.push_back(GL_TEXTURE_2D);
@@ -1549,6 +1710,12 @@ void SparseTextureCommitmentTestCase::init()
  */
 tcu::TestNode::IterateResult SparseTextureCommitmentTestCase::iterate()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
 	bool result = true;
@@ -1565,26 +1732,39 @@ tcu::TestNode::IterateResult SparseTextureCommitmentTestCase::iterate()
 		{
 			const GLint& format = *formIter;
 
-			m_testCtx.getLog() << tcu::TestLog::Message << "Testing sparse texture commitment for target: " << target
-							   << ", format: " << format << tcu::TestLog::EndMessage;
+			if (!caseAllowed(target, format))
+				continue;
+
+			mLog.str("");
+			mLog << "Testing sparse texture commitment for target: " << target << ", format: " << format << " - ";
 
 			//Checking if written data into not committed region generates no error
-			sparseAllocateTexture(gl, target, format, texture);
-			writeDataToTexture(gl, target, format, texture);
+			sparseAllocateTexture(gl, target, format, texture, 3);
+			for (int l = 0; l < mState.levels; ++l)
+				writeDataToTexture(gl, target, format, texture, l);
 
 			//Checking if written data into committed region is as expected
-			commitTexturePage(gl, target, format, texture);
-			writeDataToTexture(gl, target, format, texture);
-			result = verifyTextureData(gl, target, format, texture);
+			for (int l = 0; l < mState.levels; ++l)
+			{
+				if (commitTexturePage(gl, target, format, texture, l))
+				{
+					writeDataToTexture(gl, target, format, texture, l);
+					result = verifyTextureData(gl, target, format, texture, l);
+				}
+
+				if (!result)
+					break;
+			}
 
 			Texture::Delete(gl, texture);
 
 			//verify errors
-			result = verifyInvalidOperationErrors(gl, target, format, texture) &&
-					 verifyInvalidValueErrors(gl, target, format, texture);
+			result = result && verifyInvalidOperationErrors(gl, target, format, texture);
+			result = result && verifyInvalidValueErrors(gl, target, format, texture);
 
 			if (!result)
 			{
+				m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail" << tcu::TestLog::EndMessage;
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 				return STOP;
 			}
@@ -1620,6 +1800,20 @@ void SparseTextureCommitmentTestCase::texPageCommitment(const glw::Functions& gl
 	gl.texPageCommitmentARB(target, level, xOffset, yOffset, zOffset, width, height, depth, commit);
 }
 
+/** Check if specific combination of target and format is allowed
+ *
+ * @param target       Target for which texture is binded
+ * @param format       Texture internal format
+ *
+ * @return Returns true if target/format combination is allowed, false otherwise.
+ */
+bool SparseTextureCommitmentTestCase::caseAllowed(GLint target, GLint format)
+{
+	DE_UNREF(target);
+	DE_UNREF(format);
+	return true;
+}
+
 /** Preparing texture
  *
  * @param gl           GL API functions
@@ -1634,26 +1828,23 @@ bool SparseTextureCommitmentTestCase::prepareTexture(const Functions& gl, GLint 
 	Texture::Generate(gl, texture);
 	Texture::Bind(gl, texture, target);
 
-	GLint pageSizeX;
-	GLint pageSizeY;
-	GLint pageSizeZ;
-	GLint minDepth = SparseTextureUtils::getTargetDepth(target);
-	SparseTextureUtils::getTexturePageSizes(gl, target, format, pageSizeX, pageSizeY, pageSizeZ);
+	mState.minDepth = SparseTextureUtils::getTargetDepth(target);
+	SparseTextureUtils::getTexturePageSizes(gl, target, format, mState.pageSizeX, mState.pageSizeY, mState.pageSizeZ);
 
 	//The <width> and <height> has to be equal for cube map textures
 	if (target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_CUBE_MAP_ARRAY)
 	{
-		if (pageSizeX > pageSizeY)
-			pageSizeY = pageSizeX;
-		else if (pageSizeX < pageSizeY)
-			pageSizeX = pageSizeY;
+		if (mState.pageSizeX > mState.pageSizeY)
+			mState.pageSizeY = mState.pageSizeX;
+		else if (mState.pageSizeX < mState.pageSizeY)
+			mState.pageSizeX = mState.pageSizeY;
 	}
 
-	mWidthStored  = 2 * pageSizeX;
-	mHeightStored = 2 * pageSizeY;
-	mDepthStored  = minDepth * pageSizeZ;
+	mState.width  = 2 * mState.pageSizeX;
+	mState.height = 2 * mState.pageSizeY;
+	mState.depth  = mState.minDepth * mState.pageSizeZ;
 
-	mTextureFormatStored = glu::mapGLInternalFormat(format);
+	mState.format = glu::mapGLInternalFormat(format);
 
 	return true;
 }
@@ -1664,18 +1855,32 @@ bool SparseTextureCommitmentTestCase::prepareTexture(const Functions& gl, GLint 
  * @param target       Target for which texture is binded
  * @param format       Texture internal format
  * @param texture      Texture object
+ * @param levels       Texture mipmaps level
  *
  * @return Returns true if no error occurred, otherwise throws an exception.
  */
 bool SparseTextureCommitmentTestCase::sparseAllocateTexture(const Functions& gl, GLint target, GLint format,
-															GLuint& texture)
+															GLuint& texture, GLint levels)
 {
+	mLog << "Sparse Allocate [levels: " << levels << "] - ";
+
 	prepareTexture(gl, target, format, texture);
 
 	gl.texParameteri(target, GL_TEXTURE_SPARSE_ARB, GL_TRUE);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "texParameteri error occurred for GL_TEXTURE_SPARSE_ARB");
 
-	Texture::Storage(gl, target, 1, format, mWidthStored, mHeightStored, mDepthStored);
+	// GL_TEXTURE_RECTANGLE can have only one level
+	if (target != GL_TEXTURE_RECTANGLE)
+	{
+		gl.getTexParameteriv(target, GL_NUM_SPARSE_LEVELS_ARB, &mState.levels);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexParameteriv");
+
+		mState.levels = deMin32(mState.levels, levels);
+	}
+	else
+		mState.levels = 1;
+
+	Texture::Storage(gl, target, mState.levels, format, mState.width, mState.height, mState.depth);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "TexStorage");
 
 	return true;
@@ -1687,14 +1892,24 @@ bool SparseTextureCommitmentTestCase::sparseAllocateTexture(const Functions& gl,
  * @param target       Target for which texture is binded
  * @param format       Texture internal format
  * @param texture      Texture object
+ * @param levels       Texture mipmaps level
  *
  * @return Returns true if no error occurred, otherwise throws an exception.
  */
-bool SparseTextureCommitmentTestCase::allocateTexture(const Functions& gl, GLint target, GLint format, GLuint& texture)
+bool SparseTextureCommitmentTestCase::allocateTexture(const Functions& gl, GLint target, GLint format, GLuint& texture,
+													  GLint levels)
 {
+	mLog << "Allocate [levels: " << levels << "] - ";
+
 	prepareTexture(gl, target, format, texture);
 
-	Texture::Storage(gl, target, 1, format, mWidthStored, mHeightStored, mDepthStored);
+	//GL_TEXTURE_RECTANGLE can have only one level
+	if (target != GL_TEXTURE_RECTANGLE)
+		mState.levels = levels;
+	else
+		mState.levels = 1;
+
+	Texture::Storage(gl, target, mState.levels, format, mState.width, mState.height, mState.depth);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "TexStorage");
 
 	return true;
@@ -1710,25 +1925,39 @@ bool SparseTextureCommitmentTestCase::allocateTexture(const Functions& gl, GLint
  * @return Returns true if no error occurred, otherwise throws an exception.
  */
 bool SparseTextureCommitmentTestCase::writeDataToTexture(const Functions& gl, GLint target, GLint format,
-														 GLuint& texture)
+														 GLuint& texture, GLint level)
 {
 	DE_UNREF(format);
 	DE_UNREF(texture);
 
-	TransferFormat transferFormat = glu::getTransferFormat(mTextureFormatStored);
+	mLog << "Fill texture [level: " << level << "] - ";
 
-	GLuint texSize = mWidthStored * mHeightStored * mDepthStored;
+	if (level > mState.levels - 1)
+		TCU_FAIL("Invalid level");
 
-	GLubyte* data = (GLubyte*)malloc(texSize * mTextureFormatStored.getPixelSize());
+	TransferFormat transferFormat = glu::getTransferFormat(mState.format);
 
-	deMemset(data, 128, texSize * mTextureFormatStored.getPixelSize());
+	GLint width;
+	GLint height;
+	GLint depth;
+	SparseTextureUtils::getTextureLevelSize(target, mState, level, width, height, depth);
 
-	Texture::SubImage(gl, target, 0, 0, 0, 0, mWidthStored, mHeightStored, mDepthStored, transferFormat.format,
-					  transferFormat.dataType, (GLvoid*)data);
+	if (width > 0 && height > 0 && depth >= mState.minDepth)
+	{
+		GLint texSize = width * height * depth * mState.format.getPixelSize();
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "SubImage");
+		std::vector<GLubyte> vecData;
+		vecData.resize(texSize);
+		GLubyte* data = vecData.data();
 
-	free(data);
+		deMemset(data, 16 + 16 * level, texSize);
+
+		Texture::SubImage(gl, target, level, 0, 0, 0, width, height, depth, transferFormat.format,
+						  transferFormat.dataType, (GLvoid*)data);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "SubImage");
+
+		delete[] data;
+	}
 
 	return true;
 }
@@ -1739,37 +1968,64 @@ bool SparseTextureCommitmentTestCase::writeDataToTexture(const Functions& gl, GL
  * @param target       Target for which texture is binded
  * @param format       Texture internal format
  * @param texture      Texture object
+ * @param level        Texture mipmap level
  *
  * @return Returns true if data is as expected, false if not, throws an exception if error occurred.
  */
 bool SparseTextureCommitmentTestCase::verifyTextureData(const Functions& gl, GLint target, GLint format,
-														GLuint& texture)
+														GLuint& texture, GLint level)
 {
 	DE_UNREF(format);
 	DE_UNREF(texture);
 
-	TransferFormat transferFormat = glu::getTransferFormat(mTextureFormatStored);
+	mLog << "Verify Texture [level: " << level << "] - ";
 
-	GLuint texSize = mWidthStored * mHeightStored * mDepthStored;
+	if (level > mState.levels - 1)
+		TCU_FAIL("Invalid level");
 
-	GLubyte* data	 = (GLubyte*)malloc(texSize * mTextureFormatStored.getPixelSize());
-	GLubyte* out_data = (GLubyte*)malloc(texSize * mTextureFormatStored.getPixelSize());
+	TransferFormat transferFormat = glu::getTransferFormat(mState.format);
 
-	deMemset(data, 128, texSize * mTextureFormatStored.getPixelSize());
+	GLint width;
+	GLint height;
+	GLint depth;
+	SparseTextureUtils::getTextureLevelSize(target, mState, level, width, height, depth);
+
+	//Committed region is limited to 1/2 of width
+	GLint widthCommitted = width / 2;
+
+	if (widthCommitted == 0 || height == 0 || depth < mState.minDepth)
+		return true;
 
 	bool result = true;
 
-	GLint error = GL_NO_ERROR;
-
 	if (target != GL_TEXTURE_CUBE_MAP)
 	{
-		deMemset(out_data, 255, texSize * mTextureFormatStored.getPixelSize());
+		GLint texSize = width * height * depth * mState.format.getPixelSize();
 
-		gl.getTexImage(target, 0, transferFormat.format, transferFormat.dataType, (GLvoid*)out_data);
-		error = gl.getError();
+		std::vector<GLubyte> vecExpData;
+		std::vector<GLubyte> vecOutData;
+		vecExpData.resize(texSize);
+		vecOutData.resize(texSize);
+		GLubyte* exp_data = vecExpData.data();
+		GLubyte* out_data = vecOutData.data();
 
-		if (deMemCmp(out_data, data, texSize * mTextureFormatStored.getPixelSize()) != 0)
-			result = false;
+		deMemset(exp_data, 16 + 16 * level, texSize);
+		deMemset(out_data, 255, texSize);
+
+		Texture::GetData(gl, level, target, transferFormat.format, transferFormat.dataType, (GLvoid*)out_data);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
+
+		//Verify only committed region
+		for (GLint x = 0; x < widthCommitted; ++x)
+			for (GLint y = 0; y < height; ++y)
+				for (GLint z = 0; z < depth; ++z)
+				{
+					int		 pixelSize	 = mState.format.getPixelSize();
+					GLubyte* dataRegion	= exp_data + ((x + y * width) * pixelSize);
+					GLubyte* outDataRegion = out_data + ((x + y * width) * pixelSize);
+					if (deMemCmp(dataRegion, outDataRegion, pixelSize) != 0)
+						result = false;
+				}
 	}
 	else
 	{
@@ -1782,30 +2038,45 @@ bool SparseTextureCommitmentTestCase::verifyTextureData(const Functions& gl, GLi
 		subTargets.push_back(GL_TEXTURE_CUBE_MAP_POSITIVE_Z);
 		subTargets.push_back(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z);
 
-		for (std::vector<glw::GLint>::const_iterator iter = subTargets.begin(); iter != subTargets.end(); ++iter)
+		GLint texSize = width * height * mState.format.getPixelSize();
+
+		std::vector<GLubyte> vecExpData;
+		std::vector<GLubyte> vecOutData;
+		vecExpData.resize(texSize);
+		vecOutData.resize(texSize);
+		GLubyte* exp_data = vecExpData.data();
+		GLubyte* out_data = vecOutData.data();
+
+		deMemset(exp_data, 16 + 16 * level, texSize);
+		deMemset(out_data, 255, texSize);
+
+		for (size_t i = 0; i < subTargets.size(); ++i)
 		{
-			const GLint& subTarget = *iter;
+			GLint subTarget = subTargets[i];
 
-			m_testCtx.getLog() << tcu::TestLog::Message << "Testing subTarget: " << subTarget
-							   << tcu::TestLog::EndMessage;
+			mLog << "Verify Subtarget [subtarget: " << subTarget << "] - ";
 
-			deMemset(out_data, 255, texSize * mTextureFormatStored.getPixelSize());
+			deMemset(out_data, 255, texSize);
 
-			gl.getTexImage(subTarget, 0, transferFormat.format, transferFormat.dataType, (GLvoid*)out_data);
-			error = gl.getError();
+			Texture::GetData(gl, level, subTarget, transferFormat.format, transferFormat.dataType, (GLvoid*)out_data);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
 
-			if (deMemCmp(out_data, data, texSize * mTextureFormatStored.getPixelSize()) != 0)
-				result = false;
+			//Verify only committed region
+			for (GLint x = 0; x < widthCommitted; ++x)
+				for (GLint y = 0; y < height; ++y)
+					for (GLint z = 0; z < depth; ++z)
+					{
+						int		 pixelSize	 = mState.format.getPixelSize();
+						GLubyte* dataRegion	= exp_data + ((x + y * width) * pixelSize);
+						GLubyte* outDataRegion = out_data + ((x + y * width) * pixelSize);
+						if (deMemCmp(dataRegion, outDataRegion, pixelSize) != 0)
+							result = false;
+					}
 
-			if (!result || error != GL_NO_ERROR)
+			if (!result)
 				break;
 		}
 	}
-
-	GLU_EXPECT_NO_ERROR(error, "glGetTexImage");
-
-	free(data);
-	free(out_data);
 
 	return result;
 }
@@ -1816,18 +2087,92 @@ bool SparseTextureCommitmentTestCase::verifyTextureData(const Functions& gl, GLi
  * @param target       Target for which texture is binded
  * @param format       Texture internal format
  * @param texture      Texture object
+ * @param level        Texture mipmap level
  *
- * @return Returns true if no error occurred, otherwise throws an exception.
+ * @return Returns true if commitment is done properly, false if commitment is not allowed or throws exception if error occurred.
  */
 bool SparseTextureCommitmentTestCase::commitTexturePage(const Functions& gl, GLint target, GLint format,
-														GLuint& texture)
+														GLuint& texture, GLint level)
 {
-	Texture::Bind(gl, texture, target);
+	mLog << "Commit Region [level: " << level << "] - ";
 
-	texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mWidthStored, mHeightStored, mDepthStored, GL_TRUE);
+	if (level > mState.levels - 1)
+		TCU_FAIL("Invalid level");
+
+	// Avoid not allowed commitments
+	if (!isInPageSizesRange(target, level) || !isPageSizesMultiplication(target, level))
+	{
+		mLog << "Skip commitment [level: " << level << "] - ";
+		return false;
+	}
+
+	GLint width;
+	GLint height;
+	GLint depth;
+	SparseTextureUtils::getTextureLevelSize(target, mState, level, width, height, depth);
+
+	if (target == GL_TEXTURE_CUBE_MAP)
+		depth = 6 * mState.minDepth;
+
+	GLint widthCommitted = width / 2;
+
+	Texture::Bind(gl, texture, target);
+	texPageCommitment(gl, target, format, texture, level, 0, 0, 0, widthCommitted, height, depth, GL_TRUE);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "texPageCommitment");
 
 	return true;
+}
+
+/** Check if current texture size for level is greater or equal page size in a corresponding direction
+ *
+ * @param target  Target for which texture is binded
+ * @param level   Texture mipmap level
+ *
+ * @return Returns true if the texture size condition is fulfilled, false otherwise.
+ */
+bool SparseTextureCommitmentTestCase::isInPageSizesRange(GLint target, GLint level)
+{
+	GLint width;
+	GLint height;
+	GLint depth;
+	SparseTextureUtils::getTextureLevelSize(target, mState, level, width, height, depth);
+
+	if (target == GL_TEXTURE_CUBE_MAP)
+		depth = 6 * mState.minDepth;
+
+	GLint widthCommitted = width / 2;
+	if (widthCommitted >= mState.pageSizeX && height >= mState.pageSizeY && depth >= mState.pageSizeZ)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+/** Check if current texture size for level is page size multiplication in a corresponding direction
+ *
+ * @param target  Target for which texture is binded
+ * @param level   Texture mipmap level
+ *
+ * @return Returns true if the texture size condition is fulfilled, false otherwise.
+ */
+bool SparseTextureCommitmentTestCase::isPageSizesMultiplication(GLint target, GLint level)
+{
+	GLint width;
+	GLint height;
+	GLint depth;
+	SparseTextureUtils::getTextureLevelSize(target, mState, level, width, height, depth);
+
+	if (target == GL_TEXTURE_CUBE_MAP)
+		depth = 6 * mState.minDepth;
+
+	GLint widthCommitted = width / 2;
+	if ((widthCommitted % mState.pageSizeX) == 0 && (height % mState.pageSizeY) == 0 && (depth % mState.pageSizeZ) == 0)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 /** Verifies if gltexPageCommitment generates INVALID_OPERATION error in expected use cases
@@ -1842,17 +2187,16 @@ bool SparseTextureCommitmentTestCase::commitTexturePage(const Functions& gl, GLi
 bool SparseTextureCommitmentTestCase::verifyInvalidOperationErrors(const Functions& gl, GLint target, GLint format,
 																   GLuint& texture)
 {
-	bool result = true;
+	mLog << "Verify INVALID_OPERATION Errors - ";
 
-	GLint pageSizeX;
-	GLint pageSizeY;
-	GLint pageSizeZ;
-	GLint minDepth = SparseTextureUtils::getTargetDepth(target);
-	SparseTextureUtils::getTexturePageSizes(gl, target, format, pageSizeX, pageSizeY, pageSizeZ);
+	bool result = true;
 
 	// Case 1 - texture is not GL_TEXTURE_IMMUTABLE_FORMAT
 	Texture::Generate(gl, texture);
 	Texture::Bind(gl, texture, target);
+
+	gl.texParameteri(target, GL_TEXTURE_SPARSE_ARB, GL_TRUE);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "texParameteri error occurred for GL_TEXTURE_SPARSE_ARB");
 
 	GLint immutableFormat;
 
@@ -1861,74 +2205,85 @@ bool SparseTextureCommitmentTestCase::verifyInvalidOperationErrors(const Functio
 
 	if (immutableFormat == GL_FALSE)
 	{
-		texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mWidthStored, mHeightStored, mDepthStored, GL_TRUE);
-		result =
-			SparseTextureUtils::verifyError(m_testCtx, "texPageCommitment [A1]", gl.getError(), GL_INVALID_OPERATION);
+		texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mState.pageSizeX, mState.pageSizeY, mState.pageSizeZ,
+						  GL_TRUE);
+		result = SparseTextureUtils::verifyError(mLog, "texPageCommitment [GL_TEXTURE_IMMUTABLE_FORMAT texture]",
+												 gl.getError(), GL_INVALID_OPERATION);
 		if (!result)
 			goto verifing_invalid_operation_end;
 	}
 
-	// Case 2 - texture is not TEXTURE_SPARSE_ARB
-	allocateTexture(gl, target, format, texture);
+	Texture::Delete(gl, texture);
 
-	texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mWidthStored, mHeightStored, mDepthStored, GL_TRUE);
-	result = SparseTextureUtils::verifyError(m_testCtx, "texPageCommitment [A2]", gl.getError(), GL_INVALID_OPERATION);
+	// Case 2 - texture is not TEXTURE_SPARSE_ARB
+	allocateTexture(gl, target, format, texture, 1);
+
+	texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mState.pageSizeX, mState.pageSizeY, mState.pageSizeZ,
+					  GL_TRUE);
+	result = SparseTextureUtils::verifyError(mLog, "texPageCommitment [not TEXTURE_SPARSE_ARB texture]", gl.getError(),
+											 GL_INVALID_OPERATION);
 	if (!result)
 		goto verifing_invalid_operation_end;
 
 	// Sparse allocate texture
 	Texture::Delete(gl, texture);
-	sparseAllocateTexture(gl, target, format, texture);
+	sparseAllocateTexture(gl, target, format, texture, 1);
 
 	// Case 3 - commitment sizes greater than expected
-	texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mWidthStored + pageSizeX, mHeightStored, mDepthStored,
-					  GL_TRUE);
-	result = SparseTextureUtils::verifyError(m_testCtx, "texPageCommitment [A3]", gl.getError(), GL_INVALID_OPERATION);
+	texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mState.width + mState.pageSizeX, mState.height,
+					  mState.depth, GL_TRUE);
+	result = SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment width greater than expected]",
+											 gl.getError(), GL_INVALID_OPERATION);
 	if (!result)
 		goto verifing_invalid_operation_end;
 
-	texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mWidthStored, mHeightStored + pageSizeY, mDepthStored,
-					  GL_TRUE);
-	result = SparseTextureUtils::verifyError(m_testCtx, "texPageCommitment [A4]", gl.getError(), GL_INVALID_OPERATION);
+	texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mState.width, mState.height + mState.pageSizeY,
+					  mState.depth, GL_TRUE);
+	result = SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment height greater than expected]",
+											 gl.getError(), GL_INVALID_OPERATION);
 	if (!result)
 		goto verifing_invalid_operation_end;
 
 	if (target == GL_TEXTURE_3D || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY)
 	{
-		texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mWidthStored, mHeightStored,
-						  mDepthStored + pageSizeZ, GL_TRUE);
-		result =
-			SparseTextureUtils::verifyError(m_testCtx, "texPageCommitment [A5]", gl.getError(), GL_INVALID_OPERATION);
+		texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mState.width, mState.height,
+						  mState.depth + mState.pageSizeZ, GL_TRUE);
+		result = SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment depth greater than expected]",
+												 gl.getError(), GL_INVALID_OPERATION);
 		if (!result)
 			goto verifing_invalid_operation_end;
 	}
 
 	// Case 4 - commitment sizes not multiple of corresponding page sizes
-	if (pageSizeX > 1)
+	if (mState.pageSizeX > 1)
 	{
-		texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, 1, mHeightStored, mDepthStored, GL_TRUE);
+		texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, 1, mState.pageSizeY, mState.pageSizeZ, GL_TRUE);
 		result =
-			SparseTextureUtils::verifyError(m_testCtx, "texPageCommitment [A6]", gl.getError(), GL_INVALID_OPERATION);
+			SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment width not multiple of page sizes X]",
+											gl.getError(), GL_INVALID_OPERATION);
 		if (!result)
 			goto verifing_invalid_operation_end;
 	}
 
-	if (pageSizeY > 1)
+	if (mState.pageSizeY > 1)
 	{
-		texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mWidthStored, 1, mDepthStored, GL_TRUE);
+		texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mState.pageSizeX, 1, mState.pageSizeZ, GL_TRUE);
 		result =
-			SparseTextureUtils::verifyError(m_testCtx, "texPageCommitment [A7]", gl.getError(), GL_INVALID_OPERATION);
+			SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment height not multiple of page sizes Y]",
+											gl.getError(), GL_INVALID_OPERATION);
 		if (!result)
 			goto verifing_invalid_operation_end;
 	}
 
-	if (pageSizeZ > 1)
+	if (mState.pageSizeZ > 1)
 	{
 		if (target == GL_TEXTURE_3D || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY)
 		{
-			texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mWidthStored, mHeightStored, minDepth, GL_TRUE);
-			result = SparseTextureUtils::verifyError(m_testCtx, "texPageCommitment [A8]", gl.getError(),
-													 GL_INVALID_OPERATION);
+			texPageCommitment(gl, target, format, texture, 0, 0, 0, 0, mState.pageSizeX, mState.pageSizeY,
+							  mState.minDepth, GL_TRUE);
+			result = SparseTextureUtils::verifyError(
+				mLog, "texPageCommitment [commitment depth not multiple of page sizes Z]", gl.getError(),
+				GL_INVALID_OPERATION);
 			if (!result)
 				goto verifing_invalid_operation_end;
 		}
@@ -1953,34 +2308,34 @@ verifing_invalid_operation_end:
 bool SparseTextureCommitmentTestCase::verifyInvalidValueErrors(const Functions& gl, GLint target, GLint format,
 															   GLuint& texture)
 {
+	mLog << "Verify INVALID_VALUE Errors - ";
+
 	bool result = true;
 
-	GLint pageSizeX;
-	GLint pageSizeY;
-	GLint pageSizeZ;
-	GLint minDepth = SparseTextureUtils::getTargetDepth(target);
-	SparseTextureUtils::getTexturePageSizes(gl, target, format, pageSizeX, pageSizeY, pageSizeZ);
+	sparseAllocateTexture(gl, target, format, texture, 1);
 
-	sparseAllocateTexture(gl, target, format, texture);
-
-	// Case 1 - commitment sizes greater than expected
-	texPageCommitment(gl, target, format, texture, 0, 1, 0, 0, mWidthStored + pageSizeX, mHeightStored, minDepth,
+	// Case 1 - commitment offset not multiple of page size in corresponding dimension
+	texPageCommitment(gl, target, format, texture, 0, 1, 0, 0, mState.pageSizeX, mState.pageSizeY, mState.pageSizeZ,
 					  GL_TRUE);
-	result = SparseTextureUtils::verifyError(m_testCtx, "texPageCommitment [B1]", gl.getError(), GL_INVALID_VALUE);
+	result = SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment offsetX not multiple of page size X]",
+											 gl.getError(), GL_INVALID_VALUE);
 	if (!result)
 		goto verifing_invalid_value_end;
 
-	texPageCommitment(gl, target, format, texture, 0, 0, 1, 0, mWidthStored, mHeightStored + pageSizeY, minDepth,
+	texPageCommitment(gl, target, format, texture, 0, 0, 1, 0, mState.pageSizeX, mState.pageSizeY, mState.pageSizeZ,
 					  GL_TRUE);
-	result = SparseTextureUtils::verifyError(m_testCtx, "texPageCommitment [B2]", gl.getError(), GL_INVALID_VALUE);
+	result = SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment offsetY not multiple of page size Y]",
+											 gl.getError(), GL_INVALID_VALUE);
 	if (!result)
 		goto verifing_invalid_value_end;
 
 	if (target == GL_TEXTURE_3D || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY)
 	{
-		texPageCommitment(gl, target, format, texture, 0, 0, 0, minDepth, mWidthStored, mHeightStored,
-						  mDepthStored + pageSizeZ, GL_TRUE);
-		result = SparseTextureUtils::verifyError(m_testCtx, "texPageCommitment [B3]", gl.getError(), GL_INVALID_VALUE);
+		texPageCommitment(gl, target, format, texture, 0, 0, 0, mState.minDepth, mState.pageSizeX, mState.pageSizeY,
+						  mState.pageSizeZ, GL_TRUE);
+		result =
+			SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment offsetZ not multiple of page size Z]",
+											gl.getError(), GL_INVALID_VALUE);
 		if (!result)
 			goto verifing_invalid_value_end;
 	}
@@ -2009,6 +2364,12 @@ SparseDSATextureCommitmentTestCase::SparseDSATextureCommitmentTestCase(deqp::Con
  */
 tcu::TestNode::IterateResult SparseDSATextureCommitmentTestCase::iterate()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
 	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_direct_state_access"))
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "GL_EXT_direct_state_access extension is not supported.");
@@ -2031,24 +2392,32 @@ tcu::TestNode::IterateResult SparseDSATextureCommitmentTestCase::iterate()
 		{
 			const GLint& format = *formIter;
 
-			m_testCtx.getLog() << tcu::TestLog::Message
-							   << "Testing DSA sparse texture commitment for target: " << target
-							   << ", format: " << format << tcu::TestLog::EndMessage;
+			mLog.str("");
+			mLog << "Testing DSA sparse texture commitment for target: " << target << ", format: " << format << " - ";
 
 			//Checking if written data into committed region is as expected
-			sparseAllocateTexture(gl, target, format, texture);
-			commitTexturePage(gl, target, format, texture);
-			writeDataToTexture(gl, target, format, texture);
-			result = verifyTextureData(gl, target, format, texture);
+			sparseAllocateTexture(gl, target, format, texture, 3);
+			for (int l = 0; l < mState.levels; ++l)
+			{
+				if (commitTexturePage(gl, target, format, texture, l))
+				{
+					writeDataToTexture(gl, target, format, texture, l);
+					result = verifyTextureData(gl, target, format, texture, l);
+				}
+
+				if (!result)
+					break;
+			}
 
 			Texture::Delete(gl, texture);
 
 			//verify errors
-			result = verifyInvalidOperationErrors(gl, target, format, texture) &&
-					 verifyInvalidValueErrors(gl, target, format, texture);
+			result = result && verifyInvalidOperationErrors(gl, target, format, texture);
+			result = result && verifyInvalidValueErrors(gl, target, format, texture);
 
 			if (!result)
 			{
+				m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail" << tcu::TestLog::EndMessage;
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 				return STOP;
 			}

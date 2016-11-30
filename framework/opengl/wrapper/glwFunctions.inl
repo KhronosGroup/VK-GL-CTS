@@ -150,6 +150,7 @@ glDeleteSyncFunc										deleteSync;
 glDeleteTexturesFunc									deleteTextures;
 glDeleteTransformFeedbacksFunc							deleteTransformFeedbacks;
 glDeleteVertexArraysFunc								deleteVertexArrays;
+glDepthBoundsEXTFunc									depthBoundsEXT;
 glDepthFuncFunc											depthFunc;
 glDepthMaskFunc											depthMask;
 glDepthRangeFunc										depthRange;
