@@ -351,7 +351,7 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 	VK_CHECK(vk.waitForFences(device, 1, &fence.get(), 0, ~(0ull) /* infinity */));
 
 	// Read buffer data
-	invalidateMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
+	invalidateMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), VK_WHOLE_SIZE);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), bufferAlloc->getHostPtr()));
 
 	return resultLevel;
@@ -400,14 +400,12 @@ void uploadTestTextureInternal (const DeviceInterface&			vk,
 	// Calculate buffer size
 	bufferSize =  (srcTexture.isCompressed())? srcTexture.getCompressedSize(): srcTexture.getSize();
 
-	// Stencil texture should be provided if (and only if) the image has combined DS format
+	// Stencil-only texture should be provided if (and only if) the image has a combined DS format
 	DE_ASSERT(tcu::isCombinedDepthStencilType(format.type) == (srcStencilTexture != DE_NULL));
 
 	if (srcStencilTexture != DE_NULL)
 	{
-		const deInt32 stencilAlignment = deMin32(4, srcTexture.getTextureFormat().getPixelSize());
-
-		stencilOffset	= static_cast<deUint32>(deAlign32(static_cast<deInt32>(bufferSize), stencilAlignment));
+		stencilOffset	= static_cast<deUint32>(deAlign32(static_cast<deInt32>(bufferSize), 4));
 		bufferSize		= stencilOffset + srcStencilTexture->getSize();
 	}
 
@@ -549,7 +547,7 @@ void uploadTestTextureInternal (const DeviceInterface&			vk,
 		}
 	}
 
-	flushMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), bufferSize);
+	flushMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), VK_WHOLE_SIZE);
 
 	// Copy buffer to image
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
@@ -604,16 +602,15 @@ void uploadTestTexture (const DeviceInterface&			vk,
 				break;
 			default:
 				DE_ASSERT(0);
+				break;
 			}
 			srcDepthTexture = srcTexture.copy(format);
 		}
 
 		if (tcu::hasStencilComponent(srcTexture.getTextureFormat().order))
-		{
 			srcStencilTexture = srcTexture.copy(tcu::getEffectiveDepthStencilTextureFormat(srcTexture.getTextureFormat(), tcu::Sampler::MODE_STENCIL));
-		}
 
-		uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, srcTexture, srcDepthTexture.get(), srcTexture.getTextureFormat(), destImage);
+		uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, *srcDepthTexture, srcStencilTexture.get(), srcTexture.getTextureFormat(), destImage);
 	}
 	else
 		uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, srcTexture, DE_NULL, srcTexture.getTextureFormat(), destImage);

@@ -668,7 +668,7 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexIndexBufferMemory->getHostPtr(), s_vertexIndices, s_vertexIndexBufferSize);
-		flushMappedMemoryRange(vkd, vkDevice, m_vertexIndexBufferMemory->getMemory(), m_vertexIndexBufferMemory->getOffset(), s_vertexIndexBufferSize);
+		flushMappedMemoryRange(vkd, vkDevice, m_vertexIndexBufferMemory->getMemory(), m_vertexIndexBufferMemory->getOffset(), VK_WHOLE_SIZE);
 	}
 
 	// FrameBuffer
@@ -1443,7 +1443,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 		// Load vertices into vertex buffer
 		deMemcpy(vertexBufferMemory->getHostPtr(), position, positionDataSize);
 		deMemcpy(reinterpret_cast<deUint8*>(vertexBufferMemory->getHostPtr()) +  positionDataSize, texCoord, textureCoordDataSize);
-		flushMappedMemoryRange(vkd, vkDevice, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset(), vertexBufferParams.size);
+		flushMappedMemoryRange(vkd, vkDevice, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset(), VK_WHOLE_SIZE);
 	}
 
 	// Create Command Buffer
@@ -1571,9 +1571,8 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 			params.colorScale,		// tcu::Vec4	colorScale;			//!< Scale for texture color values.
 			params.colorBias		// tcu::Vec4	colorBias;			//!< Bias for texture color values.
 		};
-		const deUint32		shaderParamsSize = sizeof(shaderParameters);
-		deMemcpy(m_uniformBufferMemory->getHostPtr(), &shaderParameters, shaderParamsSize);
-		flushMappedMemoryRange(vkd, vkDevice, m_uniformBufferMemory->getMemory(), m_uniformBufferMemory->getOffset(), shaderParamsSize);
+		deMemcpy(m_uniformBufferMemory->getHostPtr(), &shaderParameters, sizeof(shaderParameters));
+		flushMappedMemoryRange(vkd, vkDevice, m_uniformBufferMemory->getMemory(), m_uniformBufferMemory->getOffset(), VK_WHOLE_SIZE);
 
 		if (logUniforms)
 			m_log << TestLog::Message << "u_sampler = " << texUnit << TestLog::EndMessage;
@@ -1617,7 +1616,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 		VK_CHECK(vkd.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
 	}
 
-	invalidateMappedMemoryRange(vkd, vkDevice, m_resultBufferMemory->getMemory(), m_resultBufferMemory->getOffset(), m_resultBufferSize);
+	invalidateMappedMemoryRange(vkd, vkDevice, m_resultBufferMemory->getMemory(), m_resultBufferMemory->getOffset(), VK_WHOLE_SIZE);
 
 	tcu::copy(result.getAccess(), tcu::ConstPixelBufferAccess(m_textureFormat, tcu::IVec3(m_renderWidth, m_renderHeight, 1u), m_resultBufferMemory->getHostPtr()));
 }
