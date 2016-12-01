@@ -519,6 +519,7 @@ tcu::TestNode::IterateResult APIErrorsTest::iterate()
 		GLuint texture_id = 0;
 		GLuint invalid_id = 1;
 		m_gl->genTextures(1, &texture_id);
+		m_gl->bindTexture(GL_TEXTURE_2D, texture_id);
 		GLU_EXPECT_NO_ERROR(m_gl->getError(), "GenTextures");
 
 		try
@@ -874,12 +875,21 @@ tcu::TestNode::IterateResult LabelsTest::iterate()
  *
  * @return ID of created resource
  **/
-GLuint LabelsTest::createBuffer(const Functions* gl, const glu::RenderContext*)
+GLuint LabelsTest::createBuffer(const Functions* gl, const glu::RenderContext* rc)
 {
 	GLuint id = 0;
 
-	gl->createBuffers(1, &id);
-	GLU_EXPECT_NO_ERROR(gl->getError(), "CreateBuffers");
+	if (glu::contextSupports(rc->getType(), glu::ApiType::core(4, 5)))
+	{
+		gl->createBuffers(1, &id);
+		GLU_EXPECT_NO_ERROR(gl->getError(), "CreateBuffers");
+	}
+	else
+	{
+		gl->genBuffers(1, &id);
+		gl->bindBuffer(GL_ARRAY_BUFFER, id);
+		GLU_EXPECT_NO_ERROR(gl->getError(), "GenBuffers");
+	}
 
 	return id;
 }
