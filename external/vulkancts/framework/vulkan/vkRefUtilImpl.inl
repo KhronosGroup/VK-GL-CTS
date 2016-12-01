@@ -229,20 +229,6 @@ Move<VkPipelineCache> createPipelineCache (const DeviceInterface& vk, VkDevice d
 	return Move<VkPipelineCache>(check<VkPipelineCache>(object), Deleter<VkPipelineCache>(vk, device, pAllocator));
 }
 
-Move<VkPipeline> createGraphicsPipelines (const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, deUint32 createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator)
-{
-	VkPipeline object = 0;
-	VK_CHECK(vk.createGraphicsPipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, &object));
-	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
-}
-
-Move<VkPipeline> createComputePipelines (const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, deUint32 createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator)
-{
-	VkPipeline object = 0;
-	VK_CHECK(vk.createComputePipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, &object));
-	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
-}
-
 Move<VkPipelineLayout> createPipelineLayout (const DeviceInterface& vk, VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	VkPipelineLayout object = 0;
