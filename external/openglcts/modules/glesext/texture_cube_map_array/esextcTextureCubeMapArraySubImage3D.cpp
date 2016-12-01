@@ -293,8 +293,9 @@ void TextureCubeMapArraySubImage3D::configurePixelUnpackBuffer(const SubImage3DC
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Could not bind buffer object!");
 
 	/* fill buffer with data */
-	gl.bufferData(GL_PIXEL_UNPACK_BUFFER, copy_params.m_width * copy_params.m_height * copy_params.m_depth *
-											  m_n_components * sizeof(glw::GLuint),
+	gl.bufferData(GL_PIXEL_UNPACK_BUFFER,
+				  copy_params.m_width * copy_params.m_height * copy_params.m_depth * m_n_components *
+					  sizeof(glw::GLuint),
 				  &m_copy_data_buffer[0], GL_STATIC_READ);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Could not fill buffer object's data store with data!");
 

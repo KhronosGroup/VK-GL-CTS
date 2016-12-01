@@ -116,8 +116,9 @@ TestActivity::TestActivity(ANativeActivity* activity, glu::ApiType runType)
 										  tcu::Android::mapScreenRotation(m_cmdLine.getScreenRotation()));
 
 	// Set up window flags.
-	ANativeActivity_setWindowFlags(activity, AWINDOW_FLAG_KEEP_SCREEN_ON | AWINDOW_FLAG_TURN_SCREEN_ON |
-												 AWINDOW_FLAG_FULLSCREEN | AWINDOW_FLAG_SHOW_WHEN_LOCKED,
+	ANativeActivity_setWindowFlags(activity,
+								   AWINDOW_FLAG_KEEP_SCREEN_ON | AWINDOW_FLAG_TURN_SCREEN_ON | AWINDOW_FLAG_FULLSCREEN |
+									   AWINDOW_FLAG_SHOW_WHEN_LOCKED,
 								   0);
 }
 

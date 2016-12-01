@@ -2020,8 +2020,9 @@ class ExplicitUniformLocationCaseBase : public glcts::SubcaseBase
 					{
 						ret |= runQueryUniformSubroutineFunction(
 							program, program.stages[stage], subroutineUniforms[i].functions.fn[fn], usedIndices,
-							maxIndex, subroutineUniforms[i].defOccurence.occurs(program.stages[stage]) &&
-										  subroutineUniforms[i].used);
+							maxIndex,
+							subroutineUniforms[i].defOccurence.occurs(program.stages[stage]) &&
+								subroutineUniforms[i].used);
 					}
 				}
 			}

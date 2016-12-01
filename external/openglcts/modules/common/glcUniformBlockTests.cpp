@@ -657,9 +657,10 @@ void UniformBlockTests::init(void)
 					{
 						for (int precNdx = 0; precNdx < DE_LENGTH_OF_ARRAY(precisionFlags); precNdx++)
 							layoutGroup->addChild(new BlockBasicTypeCase(
-								m_context, (string(matrixFlags[matFlagNdx].name) + "_" + precisionFlags[precNdx].name +
-											"_" + typeName)
-											   .c_str(),
+								m_context,
+								(string(matrixFlags[matFlagNdx].name) + "_" + precisionFlags[precNdx].name + "_" +
+								 typeName)
+									.c_str(),
 								"", m_glslVersion, VarType(type, precisionFlags[precNdx].flags),
 								flags | matrixFlags[matFlagNdx].flags, 0 /* no instance array */));
 					}
