@@ -4366,8 +4366,8 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 			{
 				defaultSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
 				{
-					{defaultHalfSize, defaultHalfSize, 0},
-					{defaultHalfSize + 1, defaultHalfSize + 1, 1}
+					{defaultFourthSize, defaultFourthSize, 0},
+					{defaultFourthSize*3, defaultFourthSize*3, 1}
 				},					// VkOffset3D					srcOffsets[2];
 
 				defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;

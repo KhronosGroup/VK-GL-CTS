@@ -32,6 +32,7 @@
 #include "vktPipelineReferenceRenderer.hpp"
 #include "vktPipelineVertexUtil.hpp"
 #include "tcuVectorUtil.hpp"
+#include "deSharedPtr.hpp"
 
 namespace vkt
 {
@@ -51,7 +52,9 @@ public:
 																		 const vk::VkImageSubresourceRange&	subresourceRange,
 																		 const vk::VkSamplerCreateInfo&		samplerParams,
 																		 float								samplerLod,
-																		 const std::vector<Vertex4Tex4>&	vertices);
+																		 const std::vector<Vertex4Tex4>&	vertices,
+																		 vk::VkDescriptorType				samplingType = vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+																		 int								imageCount = 1);
 
 	virtual										~ImageSamplingInstance	(void);
 
@@ -61,19 +64,28 @@ protected:
 	tcu::TestStatus								verifyImage				(void);
 
 private:
+	typedef	vk::Unique<vk::VkImage>				UniqueImage;
+	typedef	vk::Unique<vk::VkImageView>			UniqueImageView;
+	typedef	de::UniquePtr<vk::Allocation>		UniqueAlloc;
+	typedef	de::SharedPtr<UniqueImage>			SharedImagePtr;
+	typedef	de::SharedPtr<UniqueImageView>		SharedImageViewPtr;
+	typedef	de::SharedPtr<UniqueAlloc>			SharedAllocPtr;
+
+	const vk::VkDescriptorType					m_samplingType;
 	const vk::VkImageViewType					m_imageViewType;
 	const vk::VkFormat							m_imageFormat;
 	const tcu::IVec3							m_imageSize;
 	const int									m_layerCount;
+	const int									m_imageCount;
 
 	const vk::VkComponentMapping				m_componentMapping;
 	const vk::VkImageSubresourceRange			m_subresourceRange;
 	const vk::VkSamplerCreateInfo				m_samplerParams;
 	const float									m_samplerLod;
 
-	vk::Move<vk::VkImage>						m_image;
-	de::MovePtr<vk::Allocation>					m_imageAlloc;
-	vk::Move<vk::VkImageView>					m_imageView;
+	std::vector<SharedImagePtr>					m_images;
+	std::vector<SharedAllocPtr>					m_imageAllocs;
+	std::vector<SharedImageViewPtr>				m_imageViews;
 	vk::Move<vk::VkSampler>						m_sampler;
 	de::MovePtr<TestTexture>					m_texture;
 
@@ -84,9 +96,9 @@ private:
 	vk::Move<vk::VkDescriptorSetLayout>			m_descriptorSetLayout;
 	vk::Move<vk::VkDescriptorSet>				m_descriptorSet;
 
-	vk::Move<vk::VkImage>						m_colorImage;
-	de::MovePtr<vk::Allocation>					m_colorImageAlloc;
-	vk::Move<vk::VkImageView>					m_colorAttachmentView;
+	std::vector<SharedImagePtr>					m_colorImages;
+	std::vector<SharedAllocPtr>					m_colorImageAllocs;
+	std::vector<SharedImageViewPtr>				m_colorAttachmentViews;
 	vk::Move<vk::VkRenderPass>					m_renderPass;
 	vk::Move<vk::VkFramebuffer>					m_framebuffer;
 
