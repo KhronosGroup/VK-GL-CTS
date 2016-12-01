@@ -41,6 +41,14 @@
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
 
+#if !defined(EGL_COLOR_COMPONENT_TYPE_EXT)
+#define EGL_COLOR_COMPONENT_TYPE_EXT 0x3339
+#endif
+
+#if !defined(EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT)
+#define EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT 0x333B
+#endif
+
 namespace glcts
 {
 
@@ -84,6 +92,7 @@ static void getDefaultEglConfigList(tcu::Platform& eglPlatform, glu::ApiType typ
 	const eglw::Library&		 library = nativeDisplay->getLibrary();
 	eglw::EGLDisplay			 display = eglu::getAndInitDisplay(*nativeDisplay);
 	std::vector<eglw::EGLConfig> configs = eglu::getConfigs(library, display);
+	bool supportFloatConfigs			 = eglu::hasExtension(library, display, "EGL_EXT_pixel_format_float");
 
 	for (std::vector<eglw::EGLConfig>::iterator cfgIter = configs.begin(); cfgIter != configs.end(); cfgIter++)
 	{
@@ -101,7 +110,11 @@ static void getDefaultEglConfigList(tcu::Platform& eglPlatform, glu::ApiType typ
 		bool isRenderable = (renderableBits & renderableMask) == renderableMask;
 		bool isConformant = (conformantBits & conformantMask) == conformantMask;
 		bool isAOSPOk	 = isRenderable && isConformant;
-		bool isOk		  = isRenderable && isConformant && (numSamples == 0);
+		bool isFloatType  = supportFloatConfigs ?
+							   (eglu::getConfigAttribInt(library, display, *cfgIter, EGL_COLOR_COMPONENT_TYPE_EXT) ==
+								EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT) :
+							   false;
+		bool isOk = isRenderable && isConformant && (numSamples == 0) && !isFloatType;
 
 		deUint32 surfaceBits  = eglu::getConfigAttribInt(library, display, *cfgIter, EGL_SURFACE_TYPE);
 		deUint32 surfaceTypes = ((surfaceBits & EGL_WINDOW_BIT) ? SURFACETYPE_WINDOW : 0) |
@@ -120,11 +133,12 @@ static void getDefaultEglConfigList(tcu::Platform& eglPlatform, glu::ApiType typ
 		}
 		else
 		{
-			DE_ASSERT(!isRenderable || !isConformant || (numSamples != 0));
-			configList.excludedConfigs.push_back(
-				ExcludedConfig(CONFIGTYPE_EGL, id,
-							   isRenderable ? (isConformant ? EXCLUDEREASON_MSAA : EXCLUDEREASON_NOT_CONFORMANT) :
-											  EXCLUDEREASON_NOT_COMPATIBLE));
+			DE_ASSERT(!isRenderable || !isConformant || (numSamples != 0) || isFloatType);
+			configList.excludedConfigs.push_back(ExcludedConfig(
+				CONFIGTYPE_EGL, id,
+				isRenderable ? (isConformant ? ((numSamples != 0) ? EXCLUDEREASON_MSAA : EXCLUDEREASON_FLOAT) :
+											   EXCLUDEREASON_NOT_CONFORMANT) :
+							   EXCLUDEREASON_NOT_COMPATIBLE));
 		}
 	}
 }

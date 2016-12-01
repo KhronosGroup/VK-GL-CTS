@@ -56,6 +56,7 @@ enum ExcludeReason
 	EXCLUDEREASON_NOT_COMPATIBLE = 0, //!< Not compatible with target API
 	EXCLUDEREASON_NOT_CONFORMANT,	 //!< Compatible but not conformant
 	EXCLUDEREASON_MSAA,				  //!< Compatible but not testable with current tests
+	EXCLUDEREASON_FLOAT,			  //!< Compatible but not testable with current tests
 	EXCLUDEREASON_LAST
 };
 
