@@ -681,7 +681,7 @@ class ConstructorFunction:
 def getConstructorFunctions (api):
 	funcs = []
 	for function in api.functions:
-		if (function.name[:8] == "vkCreate" or function.name == "vkAllocateMemory") and not "count" in [a.name for a in function.arguments]:
+		if (function.name[:8] == "vkCreate" or function.name == "vkAllocateMemory") and not "createInfoCount" in [a.name for a in function.arguments]:
 			if function.name == "vkCreateDisplayModeKHR":
 				continue # No way to delete display modes (bug?)
 

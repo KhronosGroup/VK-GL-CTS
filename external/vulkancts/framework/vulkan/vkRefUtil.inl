@@ -14,8 +14,6 @@ Move<VkImage>						createImage						(const DeviceInterface& vk, VkDevice device,
 Move<VkImageView>					createImageView					(const DeviceInterface& vk, VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkShaderModule>				createShaderModule				(const DeviceInterface& vk, VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkPipelineCache>				createPipelineCache				(const DeviceInterface& vk, VkDevice device, const VkPipelineCacheCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
-Move<VkPipeline>					createGraphicsPipelines			(const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, deUint32 createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator = DE_NULL);
-Move<VkPipeline>					createComputePipelines			(const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, deUint32 createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkPipelineLayout>				createPipelineLayout			(const DeviceInterface& vk, VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSampler>						createSampler					(const DeviceInterface& vk, VkDevice device, const VkSamplerCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkDescriptorSetLayout>			createDescriptorSetLayout		(const DeviceInterface& vk, VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);

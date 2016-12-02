@@ -73,6 +73,10 @@ using tcu::TestLog;
 using std::string;
 using std::vector;
 
+typedef SharedPtr<Move<VkPipeline> >			VkPipelineSp;		// Move so it's possible to disown the handle
+typedef SharedPtr<Move<VkDescriptorSet> >		VkDescriptorSetSp;
+typedef SharedPtr<Move<VkCommandBuffer> >		VkCommandBufferSp;
+
 class ThreadGroupThread;
 
 /*--------------------------------------------------------------------*//*!
@@ -1529,8 +1533,12 @@ struct GraphicsPipeline
 		ShaderModule::initPrograms(dst, ShaderModule::Parameters(VK_SHADER_STAGE_FRAGMENT_BIT, "frag"));
 	}
 
-	static Move<VkPipeline> create (const Environment& env, const Resources& res, const Parameters&)
+	static vector<VkPipelineSp> createMultiple (const Environment& env, const Resources& res, const Parameters&, vector<VkPipeline>* const pOutHandles, VkResult* const pOutResult)
 	{
+		DE_ASSERT(pOutResult);
+		DE_ASSERT(pOutHandles);
+		DE_ASSERT(pOutHandles->size() != 0);
+
 		const VkPipelineShaderStageCreateInfo			stages[]			=
 		{
 			{
@@ -1695,7 +1703,32 @@ struct GraphicsPipeline
 			0,										// basePipelineIndex
 		};
 
-		return createGraphicsPipeline(env.vkd, env.device, *res.pipelineCache.object, &pipelineInfo, env.allocationCallbacks);
+		const deUint32							numPipelines	= static_cast<deUint32>(pOutHandles->size());
+		VkPipeline*	const						pHandles		= &(*pOutHandles)[0];
+		vector<VkGraphicsPipelineCreateInfo>	pipelineInfos	(numPipelines, pipelineInfo);
+
+		*pOutResult = env.vkd.createGraphicsPipelines(env.device, *res.pipelineCache.object, numPipelines, &pipelineInfos[0], env.allocationCallbacks, pHandles);
+
+		vector<VkPipelineSp>	pipelines;
+
+		// Even if an error is returned, some pipelines may have been created successfully
+		for (deUint32 i = 0; i < numPipelines; ++i)
+		{
+			if (pHandles[i] != DE_NULL)
+				pipelines.push_back(VkPipelineSp(new Move<VkPipeline>(check<VkPipeline>(pHandles[i]), Deleter<VkPipeline>(env.vkd, env.device, env.allocationCallbacks))));
+		}
+
+		return pipelines;
+	}
+
+	static Move<VkPipeline> create (const Environment& env, const Resources& res, const Parameters&)
+	{
+		vector<VkPipeline>		handles			(1, DE_NULL);
+		VkResult				result			= VK_NOT_READY;
+		vector<VkPipelineSp>	scopedHandles	= createMultiple(env, res, Parameters(), &handles, &result);
+
+		VK_CHECK(result);
+		return Move<VkPipeline>(check<VkPipeline>(scopedHandles.front()->disown()), Deleter<VkPipeline>(env.vkd, env.device, env.allocationCallbacks));
 	}
 };
 
@@ -1766,6 +1799,49 @@ struct ComputePipeline
 		};
 
 		return createComputePipeline(env.vkd, env.device, *res.pipelineCache.object, &pipelineInfo, env.allocationCallbacks);
+	}
+
+	static vector<VkPipelineSp> createMultiple (const Environment& env, const Resources& res, const Parameters&, vector<VkPipeline>* const pOutHandles, VkResult* const pOutResult)
+	{
+		DE_ASSERT(pOutResult);
+		DE_ASSERT(pOutHandles);
+		DE_ASSERT(pOutHandles->size() != 0);
+
+		const VkComputePipelineCreateInfo	commonPipelineInfo	=
+		{
+			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+			DE_NULL,
+			(VkPipelineCreateFlags)0,
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+				DE_NULL,
+				(VkPipelineShaderStageCreateFlags)0,
+				VK_SHADER_STAGE_COMPUTE_BIT,
+				*res.shaderModule.object,
+				"main",
+				DE_NULL					// pSpecializationInfo
+			},
+			*res.layout.object,
+			(VkPipeline)0,				// basePipelineHandle
+			0u,							// basePipelineIndex
+		};
+
+		const deUint32						numPipelines	= static_cast<deUint32>(pOutHandles->size());
+		VkPipeline*	const					pHandles		= &(*pOutHandles)[0];
+		vector<VkComputePipelineCreateInfo>	pipelineInfos	(numPipelines, commonPipelineInfo);
+
+		*pOutResult = env.vkd.createComputePipelines(env.device, *res.pipelineCache.object, numPipelines, &pipelineInfos[0], env.allocationCallbacks, pHandles);
+
+		vector<VkPipelineSp>	pipelines;
+
+		// Even if an error is returned, some pipelines may have been created successfully
+		for (deUint32 i = 0; i < numPipelines; ++i)
+		{
+			if (pHandles[i] != DE_NULL)
+				pipelines.push_back(VkPipelineSp(new Move<VkPipeline>(check<VkPipeline>(pHandles[i]), Deleter<VkPipeline>(env.vkd, env.device, env.allocationCallbacks))));
+		}
+
+		return pipelines;
 	}
 };
 
@@ -1890,6 +1966,38 @@ struct DescriptorSet
 		};
 
 		return allocateDescriptorSet(env.vkd, env.device, &allocateInfo);
+	}
+
+	static vector<VkDescriptorSetSp> createMultiple (const Environment& env, const Resources& res, const Parameters&, vector<VkDescriptorSet>* const pOutHandles, VkResult* const pOutResult)
+	{
+		DE_ASSERT(pOutResult);
+		DE_ASSERT(pOutHandles);
+		DE_ASSERT(pOutHandles->size() != 0);
+
+		const deUint32						numDescriptorSets		= static_cast<deUint32>(pOutHandles->size());
+		VkDescriptorSet* const				pHandles				= &(*pOutHandles)[0];
+		const vector<VkDescriptorSetLayout>	descriptorSetLayouts	(numDescriptorSets, res.descriptorSetLayout.object.get());
+
+		const VkDescriptorSetAllocateInfo	allocateInfo			=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+			*res.descriptorPool.object,
+			numDescriptorSets,
+			&descriptorSetLayouts[0],
+		};
+
+		*pOutResult = env.vkd.allocateDescriptorSets(env.device, &allocateInfo, pHandles);
+
+		vector<VkDescriptorSetSp>	descriptorSets;
+
+		if (*pOutResult == VK_SUCCESS)
+		{
+			for (deUint32 i = 0; i < numDescriptorSets; ++i)
+				descriptorSets.push_back(VkDescriptorSetSp(new Move<VkDescriptorSet>(check<VkDescriptorSet>(pHandles[i]), Deleter<VkDescriptorSet>(env.vkd, env.device, *res.descriptorPool.object))));
+		}
+
+		return descriptorSets;
 	}
 };
 
@@ -2043,6 +2151,37 @@ struct CommandBuffer
 		};
 
 		return allocateCommandBuffer(env.vkd, env.device, &cmdBufferInfo);
+	}
+
+	static vector<VkCommandBufferSp> createMultiple (const Environment& env, const Resources& res, const Parameters& params, vector<VkCommandBuffer>* const pOutHandles, VkResult* const pOutResult)
+	{
+		DE_ASSERT(pOutResult);
+		DE_ASSERT(pOutHandles);
+		DE_ASSERT(pOutHandles->size() != 0);
+
+		const deUint32						numCommandBuffers	= static_cast<deUint32>(pOutHandles->size());
+		VkCommandBuffer* const				pHandles			= &(*pOutHandles)[0];
+
+		const VkCommandBufferAllocateInfo	cmdBufferInfo		=
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+			DE_NULL,
+			*res.commandPool.object,
+			params.level,
+			numCommandBuffers,
+		};
+
+		*pOutResult = env.vkd.allocateCommandBuffers(env.device, &cmdBufferInfo, pHandles);
+
+		vector<VkCommandBufferSp>	commandBuffers;
+
+		if (*pOutResult == VK_SUCCESS)
+		{
+			for (deUint32 i = 0; i < numCommandBuffers; ++i)
+				commandBuffers.push_back(VkCommandBufferSp(new Move<VkCommandBuffer>(check<VkCommandBuffer>(pHandles[i]), Deleter<VkCommandBuffer>(env.vkd, env.device, *res.commandPool.object))));
+		}
+
+		return commandBuffers;
 	}
 };
 
@@ -2375,6 +2514,85 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks not called");
 	else if (numPassingAllocs == maxTries)
 		return tcu::TestStatus(QP_TEST_RESULT_COMPATIBILITY_WARNING, "Max iter count reached; OOM testing incomplete");
+	else
+		return tcu::TestStatus::pass("Ok");
+}
+
+// Determine whether an API call sets the invalid handles to NULL (true) or leaves them undefined or not modified (false)
+template<typename T>
+inline bool isNullHandleOnAllocationFailure				(void)	{ return false; }
+
+template<>
+inline bool isNullHandleOnAllocationFailure<VkPipeline>	(void)	{ return true; }
+
+template<typename Object>
+tcu::TestStatus allocCallbackFailMultipleObjectsTest (Context& context, typename Object::Parameters params)
+{
+	typedef SharedPtr<Move<typename Object::Type> >	ObjectTypeSp;
+
+	static const deUint32	numObjects			= 4;
+	const bool				expectNullHandles	= isNullHandleOnAllocationFailure<typename Object::Type>();
+	deUint32				numPassingAllocs	= 0;
+
+	{
+		vector<typename Object::Type>	handles	(numObjects);
+		VkResult						result	= VK_NOT_READY;
+
+		for (; numPassingAllocs <= numObjects; ++numPassingAllocs)
+		{
+			ValidateQueryBits::fillBits(handles.begin(), handles.end());	// fill with garbage
+
+			// \note We have to use the same allocator for both resource dependencies and the object under test,
+			//       because pooled objects take memory from the pool.
+			DeterministicFailAllocator			objAllocator(getSystemAllocator(), numPassingAllocs, DeterministicFailAllocator::MODE_DO_NOT_COUNT);
+			AllocationCallbackRecorder			recorder	(objAllocator.getCallbacks(), 128);
+			const Environment					objEnv		(context.getPlatformInterface(),
+															 context.getDeviceInterface(),
+															 context.getDevice(),
+															 context.getUniversalQueueFamilyIndex(),
+															 context.getBinaryCollection(),
+															 recorder.getCallbacks(),
+															 numObjects);
+
+			context.getTestContext().getLog()
+				<< TestLog::Message
+				<< "Trying to create " << numObjects << " objects with " << numPassingAllocs << " allocation" << (numPassingAllocs != 1 ? "s" : "") << " passing"
+				<< TestLog::EndMessage;
+
+			{
+				const typename Object::Resources res (objEnv, params);
+
+				objAllocator.setMode(DeterministicFailAllocator::MODE_COUNT_AND_FAIL);
+				const vector<ObjectTypeSp> scopedHandles = Object::createMultiple(objEnv, res, params, &handles, &result);
+			}
+
+			if (result == VK_SUCCESS)
+			{
+				context.getTestContext().getLog() << TestLog::Message << "Construction of all objects succeeded! " << TestLog::EndMessage;
+				break;
+			}
+			else
+			{
+				if (expectNullHandles)
+				{
+					for (deUint32 nullNdx = numPassingAllocs; nullNdx < numObjects; ++nullNdx)
+					{
+						if (handles[nullNdx] != DE_NULL)
+							return tcu::TestStatus::fail("Some object handles weren't set to NULL");
+					}
+				}
+
+				if (result != VK_ERROR_OUT_OF_HOST_MEMORY)
+					return tcu::TestStatus::fail("Got invalid error code: " + de::toString(getResultName(result)));
+
+				if (!validateAndLog(context.getTestContext().getLog(), recorder, 0u))
+					return tcu::TestStatus::fail("Invalid allocation callback");
+			}
+		}
+	}
+
+	if (numPassingAllocs == 0)
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks not called");
 	else
 		return tcu::TestStatus::pass("Ok");
 }
@@ -2872,6 +3090,36 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(allocCallbackFailTest	<CommandBuffer>,			s_commandBufferCases),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail", "Allocation callback failure", s_allocCallbackFailGroup));
+
+	// \note Test objects that can be created in bulk
+	static const CaseDescriptions	s_allocCallbackFailMultipleObjectsGroup	=
+	{
+		EMPTY_CASE_DESC(Instance),			// most objects can be created one at a time only
+		EMPTY_CASE_DESC(Device),
+		EMPTY_CASE_DESC(DeviceMemory),
+		EMPTY_CASE_DESC(Buffer),
+		EMPTY_CASE_DESC(BufferView),
+		EMPTY_CASE_DESC(Image),
+		EMPTY_CASE_DESC(ImageView),
+		EMPTY_CASE_DESC(Semaphore),
+		EMPTY_CASE_DESC(Event),
+		EMPTY_CASE_DESC(Fence),
+		EMPTY_CASE_DESC(QueryPool),
+		EMPTY_CASE_DESC(ShaderModule),
+		EMPTY_CASE_DESC(PipelineCache),
+		EMPTY_CASE_DESC(PipelineLayout),
+		EMPTY_CASE_DESC(RenderPass),
+		CASE_DESC(allocCallbackFailMultipleObjectsTest <GraphicsPipeline>,		s_graphicsPipelineCases),
+		CASE_DESC(allocCallbackFailMultipleObjectsTest <ComputePipeline>,		s_computePipelineCases),
+		EMPTY_CASE_DESC(DescriptorSetLayout),
+		EMPTY_CASE_DESC(Sampler),
+		EMPTY_CASE_DESC(DescriptorPool),
+		CASE_DESC(allocCallbackFailMultipleObjectsTest <DescriptorSet>,			s_descriptorSetCases),
+		EMPTY_CASE_DESC(Framebuffer),
+		EMPTY_CASE_DESC(CommandPool),
+		CASE_DESC(allocCallbackFailMultipleObjectsTest <CommandBuffer>,			s_commandBufferCases),
+	};
+	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail_multiple", "Allocation callback failure creating multiple objects with one call", s_allocCallbackFailMultipleObjectsGroup));
 
 	return objectMgmtTests.release();
 }
