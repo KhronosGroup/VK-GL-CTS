@@ -400,18 +400,14 @@ TestInstance* BufferSparseMemoryAliasingCase::createInstance (Context& context) 
 
 } // anonymous ns
 
-tcu::TestCaseGroup* createBufferSparseMemoryAliasingTests (tcu::TestContext& testCtx)
+void addBufferSparseMemoryAliasingTests(tcu::TestCaseGroup* group)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "buffer_sparse_memory_aliasing", "Sparse Buffer Memory Aliasing"));
-
-	testGroup->addChild(new BufferSparseMemoryAliasingCase(testCtx, "buffer_size_2_10", "", 1 << 10, glu::GLSL_VERSION_440));
-	testGroup->addChild(new BufferSparseMemoryAliasingCase(testCtx, "buffer_size_2_12", "", 1 << 12, glu::GLSL_VERSION_440));
-	testGroup->addChild(new BufferSparseMemoryAliasingCase(testCtx, "buffer_size_2_16", "", 1 << 16, glu::GLSL_VERSION_440));
-	testGroup->addChild(new BufferSparseMemoryAliasingCase(testCtx, "buffer_size_2_17", "", 1 << 17, glu::GLSL_VERSION_440));
-	testGroup->addChild(new BufferSparseMemoryAliasingCase(testCtx, "buffer_size_2_20", "", 1 << 20, glu::GLSL_VERSION_440));
-	testGroup->addChild(new BufferSparseMemoryAliasingCase(testCtx, "buffer_size_2_24", "", 1 << 24, glu::GLSL_VERSION_440));
-
-	return testGroup.release();
+	group->addChild(new BufferSparseMemoryAliasingCase(group->getTestContext(), "buffer_size_2_10", "", 1 << 10, glu::GLSL_VERSION_440));
+	group->addChild(new BufferSparseMemoryAliasingCase(group->getTestContext(), "buffer_size_2_12", "", 1 << 12, glu::GLSL_VERSION_440));
+	group->addChild(new BufferSparseMemoryAliasingCase(group->getTestContext(), "buffer_size_2_16", "", 1 << 16, glu::GLSL_VERSION_440));
+	group->addChild(new BufferSparseMemoryAliasingCase(group->getTestContext(), "buffer_size_2_17", "", 1 << 17, glu::GLSL_VERSION_440));
+	group->addChild(new BufferSparseMemoryAliasingCase(group->getTestContext(), "buffer_size_2_20", "", 1 << 20, glu::GLSL_VERSION_440));
+	group->addChild(new BufferSparseMemoryAliasingCase(group->getTestContext(), "buffer_size_2_24", "", 1 << 24, glu::GLSL_VERSION_440));
 }
 
 } // sparse

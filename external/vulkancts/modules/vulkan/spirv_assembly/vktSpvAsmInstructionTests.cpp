@@ -8804,12 +8804,12 @@ const string specializeDefaultOutputShaderTemplate (const NumberType type, const
 		// Main function
 		"%main       = OpFunction %void None %voidf\n"
 		"%label      = OpLabel\n"
+		"%out_var    = OpVariable %var_ptr Function ${variableInitializer}\n"
 		"%idval      = OpLoad %uvec3 %id\n"
 		"%x          = OpCompositeExtract %u32 %idval 0\n"
 		"%inloc      = OpAccessChain %in_ptr %indata %zero %x\n"
 		"%outloc     = OpAccessChain %in_ptr %outdata %zero %x\n"
 
-		"%out_var    = OpVariable %var_ptr Function ${variableInitializer}\n"
 		"%outval     = OpLoad %in_type %out_var\n"
 		"              OpStore %outloc %outval\n"
 		"              OpReturn\n"
