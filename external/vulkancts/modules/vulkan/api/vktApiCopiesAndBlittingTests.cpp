@@ -588,6 +588,26 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 		pixelDataSize								// VkDeviceSize		size;
 	};
 
+	const VkImageMemoryBarrier				postImageBarrier		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+		image,										// VkImage					image;
+		{
+			aspect,									// VkImageAspectFlags	aspectMask;
+			0u,											// deUint32				baseMipLevel;
+			1u,											// deUint32				mipLevels;
+			0u,											// deUint32				baseArraySlice;
+			1u,											// deUint32				arraySize;
+		}											// VkImageSubresourceRange	subresourceRange;
+	};
+
 	// Copy image to buffer
 	const VkBufferImageCopy		copyRegion		=
 	{
@@ -615,7 +635,7 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 	vk.cmdCopyImageToBuffer(*m_cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1u, &copyRegion);
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT|VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 1, &postImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
 	submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
