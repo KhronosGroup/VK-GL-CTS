@@ -21,7 +21,7 @@
  * \brief
  */ /*-------------------------------------------------------------------*/
 
-#include "es31cBlendEquationAdvancedTests.hpp"
+#include "glcBlendEquationAdvancedTests.hpp"
 // de
 #include "deRandom.hpp"
 #include "deString.h"
@@ -144,7 +144,7 @@ static const char* GetLayoutQualifierStr(glw::GLenum mode)
 	}
 }
 
-static bool IsExtensionSupported(Context& context, const char* extension)
+static bool IsExtensionSupported(deqp::Context& context, const char* extension)
 {
 	const std::vector<std::string>& v = context.getContextInfo().getExtensions();
 	return std::find(v.begin(), v.end(), extension) != v.end();
@@ -569,10 +569,10 @@ void FBOSentry::init(int width, int height, glw::GLenum fmt0, glw::GLenum fmt1)
 	m_gl.scissor(0, 0, width, height);
 }
 
-class CoherentBlendTestCaseGroup : public TestCaseGroup
+class CoherentBlendTestCaseGroup : public deqp::TestCaseGroup
 {
 public:
-	CoherentBlendTestCaseGroup(Context& context, glu::GLSLVersion glslVersion)
+	CoherentBlendTestCaseGroup(deqp::Context& context, glu::GLSLVersion glslVersion)
 		: TestCaseGroup(context, "test_coherency", ""), m_glslVersion(glslVersion)
 	{
 	}
@@ -588,10 +588,10 @@ public:
 private:
 	struct BlendStep;
 
-	class CoherentBlendTest : public TestCase
+	class CoherentBlendTest : public deqp::TestCase
 	{
 	public:
-		CoherentBlendTest(Context& context, const char* name, glu::GLSLVersion glslVersion, int repeatCount,
+		CoherentBlendTest(deqp::Context& context, const char* name, glu::GLSLVersion glslVersion, int repeatCount,
 						  int numSteps, const BlendStep* steps)
 			: TestCase(context, name, "")
 			, m_glslVersion(glslVersion)
@@ -752,7 +752,7 @@ CoherentBlendTestCaseGroup::CoherentBlendTest::IterateResult CoherentBlendTestCa
 	return STOP;
 }
 
-class BlendTestCaseGroup : public TestCaseGroup
+class BlendTestCaseGroup : public deqp::TestCaseGroup
 {
 public:
 	enum QualifierType
@@ -761,7 +761,7 @@ public:
 		ALL_QUALIFIER		// Use "all_equations" qualifier.
 	};
 
-	BlendTestCaseGroup(Context& context, glu::GLSLVersion glslVersion, QualifierType qualifierType)
+	BlendTestCaseGroup(deqp::Context& context, glu::GLSLVersion glslVersion, QualifierType qualifierType)
 		: TestCaseGroup(context, (qualifierType == ALL_QUALIFIER) ? "blend_all" : "blend_specific",
 						"Test all added blends.")
 		, m_glslVersion(glslVersion)
@@ -784,11 +784,11 @@ private:
 	glu::GLSLVersion m_glslVersion;
 	bool			 m_useAllQualifier;
 
-	class BlendTest : public TestCase
+	class BlendTest : public deqp::TestCase
 	{
 	public:
-		BlendTest(Context& context, glu::GLSLVersion glslVersion, glw::GLenum mode, bool useAllQualifier, int numColors,
-				  const glw::GLfloat* colors)
+		BlendTest(deqp::Context& context, glu::GLSLVersion glslVersion, glw::GLenum mode, bool useAllQualifier,
+				  int numColors, const glw::GLfloat* colors)
 			: TestCase(context, (std::string(GetModeStr(mode)) + (useAllQualifier ? "_all_qualifier" : "")).c_str(),
 					   "Test new blend modes for correctness.")
 			, m_glslVersion(glslVersion)
@@ -953,6 +953,8 @@ BlendTestCaseGroup::BlendTest::IterateResult BlendTestCaseGroup::BlendTest::iter
 	gl.blendEquation(m_mode);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "BlendEquation failed");
 
+	bool needBarrier = !IsExtensionSupported(m_context, "GL_KHR_blend_equation_advanced_coherent");
+
 	// Render loop.
 	for (int colorIndex = 0; colorIndex < m_numColors; colorIndex++)
 	{
@@ -967,7 +969,8 @@ BlendTestCaseGroup::BlendTest::IterateResult BlendTestCaseGroup::BlendTest::iter
 		// Clear to destination color.
 		gl.clearColor(dstCol[0], dstCol[1], dstCol[2], dstCol[3]);
 		gl.clear(GL_COLOR_BUFFER_BIT);
-		gl.blendBarrier();
+		if (needBarrier)
+			gl.blendBarrier();
 
 		// Set source color.
 		gl.uniform4f(gl.getUniformLocation(p.getProgram(), "uSrcCol"), srcCol[0], srcCol[1], srcCol[2], srcCol[3]);
@@ -977,7 +980,8 @@ BlendTestCaseGroup::BlendTest::IterateResult BlendTestCaseGroup::BlendTest::iter
 		glu::draw(m_context.getRenderContext(), p.getProgram(), 1, &posBinding,
 				  glu::pr::Triangles(DE_LENGTH_OF_ARRAY(s_indices), &s_indices[0]));
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Draw failed");
-		gl.blendBarrier();
+		if (needBarrier)
+			gl.blendBarrier();
 	}
 
 	// Read the results.
@@ -1035,10 +1039,10 @@ BlendTestCaseGroup::BlendTest::IterateResult BlendTestCaseGroup::BlendTest::iter
  *             expect compile to fail with error.
  *
  */
-class ExtensionDirectiveTestCaseGroup : public TestCaseGroup
+class ExtensionDirectiveTestCaseGroup : public deqp::TestCaseGroup
 {
 public:
-	ExtensionDirectiveTestCaseGroup(Context& context, glu::GLSLVersion glslVersion)
+	ExtensionDirectiveTestCaseGroup(deqp::Context& context, glu::GLSLVersion glslVersion)
 		: TestCaseGroup(context, "extension_directive", "Test #extension directive."), m_glslVersion(glslVersion)
 	{
 	}
@@ -1051,10 +1055,10 @@ public:
 	}
 
 private:
-	class ExtensionDirectiveTestCase : public TestCase
+	class ExtensionDirectiveTestCase : public deqp::TestCase
 	{
 	public:
-		ExtensionDirectiveTestCase(Context& context, glu::GLSLVersion glslVersion, const char* behaviour)
+		ExtensionDirectiveTestCase(deqp::Context& context, glu::GLSLVersion glslVersion, const char* behaviour)
 			: TestCase(context, (std::string("extension_directive_") + behaviour).c_str(), "Test #extension directive.")
 			, m_glslVersion(glslVersion)
 			, m_behaviourStr(behaviour)
@@ -1182,7 +1186,7 @@ private:
  *     fragment shader. Expect INVALID_OPERATION GL error after calling
  *     DrawElements/Arrays."
  */
-class MissingQualifierTestGroup : public TestCaseGroup
+class MissingQualifierTestGroup : public deqp::TestCaseGroup
 {
 public:
 	enum MissingType
@@ -1191,7 +1195,7 @@ public:
 		MISSING,  // no qualifier at all.
 	};
 
-	MissingQualifierTestGroup(Context& context, glu::GLSLVersion glslVersion, MissingType missingType)
+	MissingQualifierTestGroup(deqp::Context& context, glu::GLSLVersion glslVersion, MissingType missingType)
 		: TestCaseGroup(context, missingType == MISMATCH ? "mismatching_qualifier" : "missing_qualifier", "")
 		, m_glslVersion(glslVersion)
 		, m_missingType(missingType)
@@ -1211,10 +1215,10 @@ public:
 	}
 
 private:
-	class MissingCase : public TestCase
+	class MissingCase : public deqp::TestCase
 	{
 	public:
-		MissingCase(Context& context, glu::GLSLVersion glslVersion, glw::GLenum mode, const char* layoutQualifier)
+		MissingCase(deqp::Context& context, glu::GLSLVersion glslVersion, glw::GLenum mode, const char* layoutQualifier)
 			: TestCase(context, GetModeStr(mode), "")
 			, m_glslVersion(glslVersion)
 			, m_mode(mode)
@@ -1306,10 +1310,10 @@ MissingQualifierTestGroup::MissingCase::IterateResult MissingQualifierTestGroup:
  *  3. Enable and check the state and test that rendering does not produce errors.
  */
 
-class CoherentEnableCaseGroup : public TestCaseGroup
+class CoherentEnableCaseGroup : public deqp::TestCaseGroup
 {
 public:
-	CoherentEnableCaseGroup(Context& context) : TestCaseGroup(context, "coherent", "")
+	CoherentEnableCaseGroup(deqp::Context& context) : TestCaseGroup(context, "coherent", "")
 	{
 	}
 
@@ -1319,10 +1323,10 @@ public:
 	}
 
 private:
-	class CoherentEnableCase : public TestCase
+	class CoherentEnableCase : public deqp::TestCase
 	{
 	public:
-		CoherentEnableCase(Context& context) : TestCase(context, "enableDisable", "")
+		CoherentEnableCase(deqp::Context& context) : TestCase(context, "enableDisable", "")
 		{
 		}
 		IterateResult iterate(void);
@@ -1374,10 +1378,10 @@ CoherentEnableCaseGroup::CoherentEnableCase::IterateResult CoherentEnableCaseGro
  *    "Test that rendering into more than one color buffers at once produces
  *     INVALID_OPERATION error when calling drawArrays/drawElements"
  */
-class MRTCaseGroup : public TestCaseGroup
+class MRTCaseGroup : public deqp::TestCaseGroup
 {
 public:
-	MRTCaseGroup(Context& context, glu::GLSLVersion glslVersion)
+	MRTCaseGroup(deqp::Context& context, glu::GLSLVersion glslVersion)
 		: TestCaseGroup(context, "MRT", "GL_KHR_blend_equation_advanced"), m_glslVersion(glslVersion)
 	{
 	}
@@ -1389,7 +1393,7 @@ public:
 	}
 
 private:
-	class MRTCase : public TestCase
+	class MRTCase : public deqp::TestCase
 	{
 	public:
 		enum DeclarationType
@@ -1398,7 +1402,7 @@ private:
 			SEPARATE
 		};
 
-		MRTCase(Context& context, glu::GLSLVersion glslVersion, DeclarationType declType)
+		MRTCase(deqp::Context& context, glu::GLSLVersion glslVersion, DeclarationType declType)
 			: TestCase(context, (declType == ARRAY ? "MRT_array" : "MRT_separate"), "GL_KHR_blend_equation_advanced")
 			, m_glslVersion(glslVersion)
 			, m_declarationType(declType)
@@ -1550,10 +1554,10 @@ MRTCaseGroup::MRTCase::IterateResult MRTCaseGroup::MRTCase::iterate(void)
  * Tests that BlendEquationSeparate does not accept extension's blending modes
  * either in rgb or alpha parameter.
  */
-class BlendEquationSeparateCase : public TestCaseGroup
+class BlendEquationSeparateCase : public deqp::TestCaseGroup
 {
 public:
-	BlendEquationSeparateCase(Context& context)
+	BlendEquationSeparateCase(deqp::Context& context)
 		: TestCaseGroup(context, "BlendEquationSeparate",
 						"Test that advanced blend modes are correctly rejected from glBlendEquationSeparate.")
 	{
@@ -1567,10 +1571,10 @@ public:
 	}
 
 private:
-	class ModeCase : public TestCase
+	class ModeCase : public deqp::TestCase
 	{
 	public:
-		ModeCase(Context& context, glw::GLenum mode)
+		ModeCase(deqp::Context& context, glw::GLenum mode)
 			: TestCase(context, GetModeStr(mode), "Test one mode"), m_mode(mode)
 		{
 		}
@@ -1620,10 +1624,10 @@ private:
  *  Test that regardless of extension directive the definition exists and has value 1.
  */
 
-class PreprocessorCaseGroup : public TestCaseGroup
+class PreprocessorCaseGroup : public deqp::TestCaseGroup
 {
 public:
-	PreprocessorCaseGroup(Context& context, glu::GLSLVersion glslVersion)
+	PreprocessorCaseGroup(deqp::Context& context, glu::GLSLVersion glslVersion)
 		: TestCaseGroup(context, "preprocessor", "GL_KHR_blend_equation_advanced"), m_glslVersion(glslVersion)
 	{
 	}
@@ -1638,10 +1642,10 @@ public:
 	}
 
 private:
-	class PreprocessorCase : public TestCase
+	class PreprocessorCase : public deqp::TestCase
 	{
 	public:
-		PreprocessorCase(Context& context, glu::GLSLVersion glslVersion, const char* behaviour)
+		PreprocessorCase(deqp::Context& context, glu::GLSLVersion glslVersion, const char* behaviour)
 			: TestCase(context, behaviour ? behaviour : "none", "GL_KHR_blend_equation_advanced")
 			, m_glslVersion(glslVersion)
 			, m_behaviour(behaviour)
@@ -1737,7 +1741,7 @@ PreprocessorCaseGroup::PreprocessorCase::IterateResult PreprocessorCaseGroup::Pr
 	return STOP;
 }
 
-BlendEquationAdvancedTests::BlendEquationAdvancedTests(Context& context, glu::GLSLVersion glslVersion)
+BlendEquationAdvancedTests::BlendEquationAdvancedTests(deqp::Context& context, glu::GLSLVersion glslVersion)
 	: TestCaseGroup(context, "blend_equation_advanced", "KHR_blend_equation_advanced tests"), m_glslVersion(glslVersion)
 {
 }

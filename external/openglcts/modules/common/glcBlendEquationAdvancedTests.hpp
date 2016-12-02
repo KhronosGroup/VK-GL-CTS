@@ -1,5 +1,5 @@
-#ifndef _ES31CBLENDEQUATIONADVANCEDTESTS_HPP
-#define _ES31CBLENDEQUATIONADVANCEDTESTS_HPP
+#ifndef _GLCBLENDEQUATIONADVANCEDTESTS_HPP
+#define _GLCBLENDEQUATIONADVANCEDTESTS_HPP
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
@@ -26,7 +26,6 @@
 #include "glcTestCase.hpp"
 #include "gluShaderUtil.hpp"
 #include "tcuDefs.hpp"
-#include "tes31TestCase.hpp"
 
 /*
  New Tests
@@ -87,10 +86,10 @@
 namespace glcts
 {
 
-class BlendEquationAdvancedTests : public TestCaseGroup
+class BlendEquationAdvancedTests : public deqp::TestCaseGroup
 {
 public:
-	BlendEquationAdvancedTests(Context& context, glu::GLSLVersion glslVersion);
+	BlendEquationAdvancedTests(deqp::Context& context, glu::GLSLVersion glslVersion);
 	~BlendEquationAdvancedTests();
 
 	void init(void);
@@ -101,4 +100,4 @@ private:
 
 } // glcts
 
-#endif // _ES31CBLENDEQUATIONADVANCEDTESTS_HPP
+#endif // _GLCBLENDEQUATIONADVANCEDTESTS_HPP

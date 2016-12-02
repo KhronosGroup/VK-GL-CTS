@@ -60,6 +60,7 @@
 #include "gl4cTextureViewTests.hpp"
 #include "gl4cVertexAttrib64BitTest.hpp"
 #include "gl4cVertexAttribBindingTests.hpp"
+#include "glcBlendEquationAdvancedTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcSampleVariablesTests.hpp"
@@ -68,7 +69,6 @@
 #include "glcViewportArrayTests.hpp"
 
 #include "../gles31/es31cArrayOfArraysTests.hpp"
-#include "../gles31/es31cBlendEquationAdvancedTests.hpp"
 #include "../gles31/es31cDrawIndirectTests.hpp"
 #include "../gles31/es31cExplicitUniformLocationTest.hpp"
 #include "../gles31/es31cLayoutBindingTests.hpp"

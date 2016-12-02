@@ -25,7 +25,6 @@
 #include "es31cTestPackage.hpp"
 
 #include "es31cArrayOfArraysTests.hpp"
-#include "es31cBlendEquationAdvancedTests.hpp"
 #include "es31cComputeShaderTests.hpp"
 #include "es31cDrawIndirectTests.hpp"
 #include "es31cExplicitUniformLocationTest.hpp"
@@ -43,6 +42,7 @@
 #include "es31cTextureGatherTests.hpp"
 #include "es31cTextureStorageMultisampleTests.hpp"
 #include "es31cVertexAttribBindingTests.hpp"
+#include "glcBlendEquationAdvancedTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcSampleVariablesTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"

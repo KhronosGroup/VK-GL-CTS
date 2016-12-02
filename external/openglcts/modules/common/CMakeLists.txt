@@ -6,6 +6,8 @@ if (DEQP_SUPPORT_WGL)
 endif ()
 
 set(GLCTS_COMMON_SRCS
+	glcBlendEquationAdvancedTests.cpp
+	glcBlendEquationAdvancedTests.hpp
 	glcConfigList.hpp
 	glcConfigList.cpp
 	glcConfigListCase.cpp

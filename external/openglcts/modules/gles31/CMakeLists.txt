@@ -3,8 +3,6 @@
 set(GLCTS_ES31_SRCS
 	es31cArrayOfArraysTests.cpp
 	es31cArrayOfArraysTests.hpp
-	es31cBlendEquationAdvancedTests.cpp
-	es31cBlendEquationAdvancedTests.hpp
 	es31cComputeShaderTests.cpp
 	es31cComputeShaderTests.hpp
 	es31cDrawIndirectTests.cpp
