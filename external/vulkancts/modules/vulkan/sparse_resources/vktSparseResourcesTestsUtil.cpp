@@ -280,13 +280,13 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 {
 	const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineLayoutCreateFlags		flags;
-		1u,													// deUint32							setLayoutCount;
-		&descriptorSetLayout,								// const VkDescriptorSetLayout*		pSetLayouts;
-		0u,													// deUint32							pushConstantRangeCount;
-		DE_NULL,											// const VkPushConstantRange*		pPushConstantRanges;
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,						// VkStructureType					sType;
+		DE_NULL,															// const void*						pNext;
+		0u,																	// VkPipelineLayoutCreateFlags		flags;
+		(descriptorSetLayout != DE_NULL ? 1u : 0u),							// deUint32							setLayoutCount;
+		(descriptorSetLayout != DE_NULL ? &descriptorSetLayout : DE_NULL),	// const VkDescriptorSetLayout*		pSetLayouts;
+		0u,																	// deUint32							pushConstantRangeCount;
+		DE_NULL,															// const VkPushConstantRange*		pPushConstantRanges;
 	};
 	return createPipelineLayout(vk, device, &pipelineLayoutParams);
 }
@@ -398,6 +398,31 @@ Move<VkFence> makeFence (const DeviceInterface& vk, const VkDevice device, const
 		flags,									// VkFenceCreateFlags    flags;
 	};
 	return createFence(vk, device, &fenceCreateInfo);
+}
+
+Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,
+									 const VkDevice				device,
+									 const VkRenderPass			renderPass,
+									 const deUint32				attachmentCount,
+									 const VkImageView*			pAttachments,
+									 const deUint32				width,
+									 const deUint32				height,
+									 const deUint32				layers)
+{
+	const VkFramebufferCreateInfo framebufferInfo =
+	{
+		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType                             sType;
+		DE_NULL,										// const void*                                 pNext;
+		(VkFramebufferCreateFlags)0,					// VkFramebufferCreateFlags                    flags;
+		renderPass,										// VkRenderPass                                renderPass;
+		attachmentCount,								// uint32_t                                    attachmentCount;
+		pAttachments,									// const VkImageView*                          pAttachments;
+		width,											// uint32_t                                    width;
+		height,											// uint32_t                                    height;
+		layers,											// uint32_t                                    layers;
+	};
+
+	return createFramebuffer(vk, device, &framebufferInfo);
 }
 
 VkBufferMemoryBarrier makeBufferMemoryBarrier (const VkAccessFlags	srcAccessMask,

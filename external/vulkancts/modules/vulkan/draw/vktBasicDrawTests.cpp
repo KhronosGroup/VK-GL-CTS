@@ -249,6 +249,21 @@ public:
 	}
 };
 
+inline bool imageCompare (tcu::TestLog& log, const tcu::ConstPixelBufferAccess& reference, const tcu::ConstPixelBufferAccess& result, const vk::VkPrimitiveTopology topology)
+{
+	if (topology == vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
+	{
+		return tcu::intThresholdPositionDeviationCompare(
+			log, "Result", "Image comparison result", reference, result,
+			tcu::UVec4(4u),					// color threshold
+			tcu::IVec3(1, 1, 0),			// position deviation tolerance
+			true,							// don't check the pixels at the boundary
+			tcu::COMPARE_LOG_RESULT);
+	}
+	else
+		return tcu::fuzzyCompare(log, "Result", "Image comparison result", reference, result, 0.05f, tcu::COMPARE_LOG_RESULT);
+}
+
 class DrawTestInstanceBase : public TestInstance
 {
 public:
@@ -391,7 +406,7 @@ void DrawTestInstanceBase::initialize (const DrawParamsBase& data)
 							   device,
 							   m_vertexBuffer->getBoundMemory().getMemory(),
 							   m_vertexBuffer->getBoundMemory().getOffset(),
-							   dataSize);
+							   VK_WHOLE_SIZE);
 
 	const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
 	m_cmdPool = vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
@@ -584,11 +599,13 @@ void DrawTestCase<T>::initShaderSources (void)
 				<< "layout(location = 0) out vec4 out_color;\n"
 
 				<< "out gl_PerVertex {\n"
-				<< "    vec4 gl_Position;\n"
+				<< "    vec4  gl_Position;\n"
+				<< "    float gl_PointSize;\n"
 				<< "};\n"
 				<< "void main() {\n"
-				<< "	gl_Position = in_position;\n"
-				<< "	out_color = in_color;\n"
+				<< "    gl_PointSize = 1.0;\n"
+				<< "    gl_Position  = in_position;\n"
+				<< "    out_color    = in_color;\n"
 				<< "}\n";
 
 	m_vertShaderSource = vertShader.str();
@@ -599,7 +616,7 @@ void DrawTestCase<T>::initShaderSources (void)
 				<< "layout(location = 0) out vec4 out_color;\n"
 				<< "void main()\n"
 				<< "{\n"
-				<< "	out_color = in_color;\n"
+				<< "    out_color = in_color;\n"
 				<< "}\n";
 
 	m_fragShaderSource = fragShader.str();
@@ -684,12 +701,9 @@ tcu::TestStatus DrawTestInstance<DrawParams>::iterate (void)
 
 	qpTestResult res = QP_TEST_RESULT_PASS;
 
-	if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
-						   refImage.getAccess(),
-						   renderedFrame, 0.05f,
-						   tcu::COMPARE_LOG_RESULT)) {
+	if (!imageCompare(log, refImage.getAccess(), renderedFrame, m_data.topology))
 		res = QP_TEST_RESULT_FAIL;
-	}
+
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
@@ -814,12 +828,9 @@ tcu::TestStatus DrawTestInstance<DrawIndexedParams>::iterate (void)
 
 	qpTestResult res = QP_TEST_RESULT_PASS;
 
-	if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
-						   refImage.getAccess(),
-						   renderedFrame, 0.05f,
-						   tcu::COMPARE_LOG_RESULT)) {
+	if (!imageCompare(log, refImage.getAccess(), renderedFrame, m_data.topology))
 		res = QP_TEST_RESULT_FAIL;
-	}
+
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
@@ -961,12 +972,9 @@ tcu::TestStatus DrawTestInstance<DrawIndirectParams>::iterate (void)
 
 	qpTestResult res = QP_TEST_RESULT_PASS;
 
-	if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
-						   refImage.getAccess(),
-						   renderedFrame, 0.05f,
-						   tcu::COMPARE_LOG_RESULT)) {
+	if (!imageCompare(log, refImage.getAccess(), renderedFrame, m_data.topology))
 		res = QP_TEST_RESULT_FAIL;
-	}
+
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
@@ -1152,12 +1160,9 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 
 	qpTestResult res = QP_TEST_RESULT_PASS;
 
-	if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
-						   refImage.getAccess(),
-						   renderedFrame, 0.05f,
-						   tcu::COMPARE_LOG_RESULT)) {
+	if (!imageCompare(log, refImage.getAccess(), renderedFrame, m_data.topology))
 		res = QP_TEST_RESULT_FAIL;
-	}
+
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 

@@ -136,7 +136,7 @@ de::SharedPtr<Buffer> createAndUploadBuffer(const std::vector<T> data, const vk:
 	vk::flushMappedMemoryRange(vk, context.getDevice(),
 							   vertexBuffer->getBoundMemory().getMemory(),
 							   vertexBuffer->getBoundMemory().getOffset(),
-							   dataSize);
+							   VK_WHOLE_SIZE);
 	return vertexBuffer;
 }
 
@@ -254,11 +254,13 @@ public:
 				"} params;\n"
 				"layout(location = 0) out vec4 out_color;\n"
 				"out gl_PerVertex {\n"
-				"    vec4 gl_Position;\n"
+				"    vec4  gl_Position;\n"
+				"    float gl_PointSize;\n"
 				"};\n"
 				"void main() {\n"
-				"	gl_Position = in_position + vec4(float(gl_InstanceIndex - params.firstInstance) * 2.0 / params.instanceCount, 0.0, 0.0, 0.0);\n"
-				"	out_color = in_color + vec4(float(gl_InstanceIndex) / params.instanceCount, 0.0, 0.0, 1.0) + in_color_2;\n"
+				"    gl_PointSize = 1.0;\n"
+				"    gl_Position  = in_position + vec4(float(gl_InstanceIndex - params.firstInstance) * 2.0 / params.instanceCount, 0.0, 0.0, 0.0);\n"
+				"    out_color    = in_color + vec4(float(gl_InstanceIndex) / params.instanceCount, 0.0, 0.0, 1.0) + in_color_2;\n"
 				"}\n";
 
 		m_fragmentShader = "#version 430\n"
@@ -266,7 +268,7 @@ public:
 				"layout(location = 0) out vec4 out_color;\n"
 				"void main()\n"
 				"{\n"
-				"  out_color = in_color;\n"
+				"    out_color = in_color;\n"
 				"}\n";
 	}
 
@@ -630,8 +632,24 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 
 			std::ostringstream resultDesc;
 			resultDesc << "Image comparison result. Instance count: " << instanceCount << " first instance index: " << firstInstance;
-			if (!tcu::fuzzyCompare(log, "Result", resultDesc.str().c_str(), refImage.getAccess(), renderedFrame, 0.05f, tcu::COMPARE_LOG_RESULT))
-				res = QP_TEST_RESULT_FAIL;
+
+			if (m_params.topology == vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
+			{
+				const bool ok = tcu::intThresholdPositionDeviationCompare(
+					log, "Result", resultDesc.str().c_str(), refImage.getAccess(), renderedFrame,
+					tcu::UVec4(4u),					// color threshold
+					tcu::IVec3(1, 1, 0),			// position deviation tolerance
+					true,							// don't check the pixels at the boundary
+					tcu::COMPARE_LOG_RESULT);
+
+				if (!ok)
+					res = QP_TEST_RESULT_FAIL;
+			}
+			else
+			{
+				if (!tcu::fuzzyCompare(log, "Result", resultDesc.str().c_str(), refImage.getAccess(), renderedFrame, 0.05f, tcu::COMPARE_LOG_RESULT))
+					res = QP_TEST_RESULT_FAIL;
+			}
 		}
 	}
 	return tcu::TestStatus(res, qpGetTestResultName(res));
