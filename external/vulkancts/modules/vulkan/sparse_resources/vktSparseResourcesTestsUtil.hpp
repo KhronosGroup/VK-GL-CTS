@@ -148,7 +148,7 @@ vk::Move<vk::VkCommandBuffer>	makeCommandBuffer					(const vk::DeviceInterface&	
 
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout					(const vk::DeviceInterface&			vk,
 																	 const vk::VkDevice					device,
-																	 const vk::VkDescriptorSetLayout	descriptorSetLayout);
+																	 const vk::VkDescriptorSetLayout	descriptorSetLayout = DE_NULL);
 
 vk::Move<vk::VkPipeline>		makeComputePipeline					(const vk::DeviceInterface&			vk,
 																	 const vk::VkDevice					device,
@@ -181,6 +181,15 @@ vk::Move<vk::VkSemaphore>		makeSemaphore						(const vk::DeviceInterface&			vk,
 vk::Move<vk::VkFence>			makeFence							(const vk::DeviceInterface&			vk,
 																	 const vk::VkDevice					device,
 																	 const vk::VkFenceCreateFlags		flags	= 0u);
+
+vk::Move<vk::VkFramebuffer>		makeFramebuffer						(const vk::DeviceInterface&			vk,
+																	 const vk::VkDevice					device,
+																	 const vk::VkRenderPass				renderPass,
+																	 const deUint32						attachmentCount,
+																	 const vk::VkImageView*				pAttachments,
+																	 const deUint32						width,
+																	 const deUint32						height,
+																	 const deUint32						layers = 1u);
 
 de::MovePtr<vk::Allocation>		bindImage							(const vk::DeviceInterface&			vk,
 																	 const vk::VkDevice					device,
@@ -291,10 +300,26 @@ bool							checkImageFormatFeatureSupport		(const vk::InstanceInterface&		instan
 deUint32						getSparseAspectRequirementsIndex	(const std::vector<vk::VkSparseImageMemoryRequirements>&	requirements,
 																	 const vk::VkImageAspectFlags								aspectFlags);
 
+inline vk::Move<vk::VkBuffer> makeBuffer (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkBufferCreateInfo& createInfo)
+{
+	return createBuffer(vk, device, &createInfo);
+}
+
+inline vk::Move<vk::VkImage> makeImage (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkImageCreateInfo& createInfo)
+{
+	return createImage(vk, device, &createInfo);
+}
+
 template<typename T>
 inline de::SharedPtr<vk::Unique<T> > makeVkSharedPtr (vk::Move<T> vkMove)
 {
 	return de::SharedPtr<vk::Unique<T> >(new vk::Unique<T>(vkMove));
+}
+
+template<typename T>
+inline de::SharedPtr<de::UniquePtr<T> > makeDeSharedPtr (de::MovePtr<T> deMove)
+{
+	return de::SharedPtr<de::UniquePtr<T> >(new de::UniquePtr<T>(deMove));
 }
 
 template<typename T>

@@ -106,6 +106,7 @@ static int findNumPositionDeviationFailingPixels (const PixelBufferAccess& error
 	const int			endZ				= (acceptOutOfBoundsAsAnyValue) ? (depth  - maxPositionDeviation.z()) : (depth);
 
 	TCU_CHECK_INTERNAL(result.getWidth() == width && result.getHeight() == height && result.getDepth() == depth);
+	DE_ASSERT(endX > 0 && endY > 0 && endZ > 0);	// most likely a bug
 
 	tcu::clear(errorMask, okColor);
 

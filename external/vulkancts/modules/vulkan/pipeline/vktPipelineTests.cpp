@@ -37,6 +37,7 @@
 #include "vktPipelineVertexInputTests.hpp"
 #include "vktPipelineTimestampTests.hpp"
 #include "vktPipelineCacheTests.hpp"
+#include "vktPipelineRenderToImageTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -65,6 +66,7 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createInputAssemblyTests			(testCtx));
 	pipelineTests->addChild(createTimestampTests				(testCtx));
 	pipelineTests->addChild(createCacheTests					(testCtx));
+	pipelineTests->addChild(createRenderToImageTests			(testCtx));
 }
 
 } // anonymous

@@ -9,6 +9,8 @@ set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesBufferSparseBinding.hpp
 	vktSparseResourcesBufferSparseResidency.cpp
 	vktSparseResourcesBufferSparseResidency.hpp
+	vktSparseResourcesBufferTests.cpp
+	vktSparseResourcesBufferTests.hpp
 	vktSparseResourcesImageMemoryAliasing.cpp
 	vktSparseResourcesImageMemoryAliasing.hpp
 	vktSparseResourcesImageSparseBinding.cpp
