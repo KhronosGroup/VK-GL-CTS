@@ -113,7 +113,7 @@ Pre-compiling SPIR-V binaries
 For distribution, and platforms that don't support GLSL to SPIR-V compilation,
 SPIR-V binaries can be pre-built with following command:
 
-	python external/vulkancts/build_spirv_binaries.py
+	python external/vulkancts/scripts/build_spirv_binaries.py
 
 Binaries will be written to `external/vulkancts/data/vulkan/prebuilt/`.
 
@@ -278,11 +278,11 @@ codes are allowed:
 	QualityWarning
 	CompatibilityWarning
 
-Submission package can be verified using `external/vulkancts/verify_submission.py`
+Submission package can be verified using `external/vulkancts/scripts/verify_submission.py`
 script. The script takes two arguments: path to extracted submission package
 and path to current mustpass list. For example:
 
-	python external/vulkancts/verify_submission.py VK_10_Khronos_1/ external/vulkancts/mustpass/1.0.1/vk-default.txt
+	python external/vulkancts/scripts/verify_submission.py VK_10_Khronos_1/ external/vulkancts/mustpass/1.0.1/vk-default.txt
 
 
 Vulkan platform port

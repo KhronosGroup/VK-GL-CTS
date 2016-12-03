@@ -1694,10 +1694,22 @@ TextureSamplesInstance::TextureSamplesInstance (Context&				context,
 																					&properties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
 			TCU_THROW(NotSupportedError, "Format not supported");
 
-		// Integer pixel formats do not support multisampling, so need to add 1 MS in the list
+		// NOTE: The test case initializes MS images (for all supported N of samples), runs a program
+		//       which invokes OpImageQuerySamples against the image and checks the result.
+		//
+		//       Now, in the SPIR-V spec for the very operation we have the following language:
+		//
+		//       OpImageQuerySamples
+		//       Query the number of samples available per texel fetch in a multisample image.
+		//       Result Type must be a scalar integer type.
+		//       The result is the number of samples.
+		//       Image must be an object whose type is OpTypeImage.
+		//       Its Dim operand must be one of 2D and **MS of 1(multisampled).
+		//
+		//       "MS of 1" implies the image must not be single-sample, meaning we must exclude
+		//       VK_SAMPLE_COUNT_1_BIT in the sampleFlags array below.
 		static const vk::VkSampleCountFlagBits	sampleFlags[]	=
 		{
-			vk::VK_SAMPLE_COUNT_1_BIT,
 			vk::VK_SAMPLE_COUNT_2_BIT,
 			vk::VK_SAMPLE_COUNT_4_BIT,
 			vk::VK_SAMPLE_COUNT_8_BIT,
@@ -3029,14 +3041,14 @@ void ShaderTextureFunctionTests::init (void)
 		CASE_SPEC(isampler2darray_bias,			FUNCTION_TEXTURE,	Vec4(-1.2f, -0.4f,  -0.5f,  0.0f),	Vec4( 1.5f,  2.3f,  3.5f,  0.0f),	true,	-2.0f,	2.0f,	true,	IVec3(-8, 7, 0),	tex2DArrayInt,			evalTexture2DArrayOffsetBias,	FRAGMENT),
 		CASE_SPEC(usampler2darray_bias,			FUNCTION_TEXTURE,	Vec4(-1.2f, -0.4f,  -0.5f,  0.0f),	Vec4( 1.5f,  2.3f,  3.5f,  0.0f),	true,	-2.0f,	2.0f,	true,	IVec3(7, -8, 0),	tex2DArrayUint,			evalTexture2DArrayOffsetBias,	FRAGMENT),
 
-		CASE_SPEC(sampler3d_fixed,				FUNCTION_TEXTURE,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(-8, 7, 3),	tex3DFixed,				evalTexture3DOffset,			VERTEX),
-		CASE_SPEC(sampler3d_fixed,				FUNCTION_TEXTURE,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(7, 3, -8),	tex3DMipmapFixed,		evalTexture3DOffset,			FRAGMENT),
-		CASE_SPEC(sampler3d_float,				FUNCTION_TEXTURE,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(3, -8, 7),	tex3DFloat,				evalTexture3DOffset,			VERTEX),
-		CASE_SPEC(sampler3d_float,				FUNCTION_TEXTURE,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(-8, 7, 3),	tex3DMipmapFloat,		evalTexture3DOffset,			FRAGMENT),
-		CASE_SPEC(isampler3d,					FUNCTION_TEXTURE,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(7, 3, -8),	tex3DInt,				evalTexture3DOffset,			VERTEX),
-		CASE_SPEC(isampler3d,					FUNCTION_TEXTURE,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(3, -8, 7),	tex3DMipmapInt,			evalTexture3DOffset,			FRAGMENT),
-		CASE_SPEC(usampler3d,					FUNCTION_TEXTURE,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(-8, 7, 3),	tex3DUint,				evalTexture3DOffset,			VERTEX),
-		CASE_SPEC(usampler3d,					FUNCTION_TEXTURE,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(7, 3, -8),	tex3DMipmapUint,		evalTexture3DOffset,			FRAGMENT),
+		CASE_SPEC(sampler3d_fixed,				FUNCTION_TEXTURE,	Vec4(-0.2f, -0.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(-8, 7, 3),	tex3DFixed,				evalTexture3DOffset,			VERTEX),
+		CASE_SPEC(sampler3d_fixed,				FUNCTION_TEXTURE,	Vec4(-0.2f, -0.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(7, 3, -8),	tex3DMipmapFixed,		evalTexture3DOffset,			FRAGMENT),
+		CASE_SPEC(sampler3d_float,				FUNCTION_TEXTURE,	Vec4(-0.2f, -0.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(3, -8, 7),	tex3DFloat,				evalTexture3DOffset,			VERTEX),
+		CASE_SPEC(sampler3d_float,				FUNCTION_TEXTURE,	Vec4(-0.2f, -0.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(-8, 7, 3),	tex3DMipmapFloat,		evalTexture3DOffset,			FRAGMENT),
+		CASE_SPEC(isampler3d,					FUNCTION_TEXTURE,	Vec4(-0.2f, -0.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(7, 3, -8),	tex3DInt,				evalTexture3DOffset,			VERTEX),
+		CASE_SPEC(isampler3d,					FUNCTION_TEXTURE,	Vec4(-0.2f, -0.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(3, -8, 7),	tex3DMipmapInt,			evalTexture3DOffset,			FRAGMENT),
+		CASE_SPEC(usampler3d,					FUNCTION_TEXTURE,	Vec4(-0.2f, -0.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(-8, 7, 3),	tex3DUint,				evalTexture3DOffset,			VERTEX),
+		CASE_SPEC(usampler3d,					FUNCTION_TEXTURE,	Vec4(-0.2f, -0.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3(7, 3, -8),	tex3DMipmapUint,		evalTexture3DOffset,			FRAGMENT),
 
 		CASE_SPEC(sampler3d_bias_fixed,			FUNCTION_TEXTURE,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	true,	-2.0f,	1.0f,	true,	IVec3(-8, 7, 3),	tex3DFixed,				evalTexture3DOffsetBias,		FRAGMENT),
 		CASE_SPEC(sampler3d_bias_float,			FUNCTION_TEXTURE,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	true,	-2.0f,	1.0f,	true,	IVec3(7, 3, -8),	tex3DFloat,				evalTexture3DOffsetBias,		FRAGMENT),
@@ -3135,14 +3147,14 @@ void ShaderTextureFunctionTests::init (void)
 		CASE_SPEC(isampler2d_vec4_bias,			FUNCTION_TEXTUREPROJ,	Vec4(-0.3f, -0.6f,  0.0f,  1.5f),	Vec4(2.25f, 3.45f,  0.0f,  1.5f),	true,	-2.0f,	2.0f,	true,	IVec3(-8, 7, 0),	tex2DInt,				evalTexture2DProjOffsetBias,	FRAGMENT),
 		CASE_SPEC(usampler2d_vec4_bias,			FUNCTION_TEXTUREPROJ,	Vec4(-0.3f, -0.6f,  0.0f,  1.5f),	Vec4(2.25f, 3.45f,  0.0f,  1.5f),	true,	-2.0f,	2.0f,	true,	IVec3(7, -8, 0),	tex2DUint,				evalTexture2DProjOffsetBias,	FRAGMENT),
 
-		CASE_SPEC(sampler3d_fixed,				FUNCTION_TEXTUREPROJ,	Vec4(0.9f, 1.05f, -0.08f, -0.75f),	Vec4(-1.13f, -1.7f, -1.7f, -0.75f),	false,	0.0f,	0.0f,	true,	IVec3(-8, 7, 3),	tex3DFixed,				evalTexture3DProjOffset,		VERTEX),
-		CASE_SPEC(sampler3d_fixed,				FUNCTION_TEXTUREPROJ,	Vec4(0.9f, 1.05f, -0.08f, -0.75f),	Vec4(-1.13f, -1.7f, -1.7f, -0.75f),	false,	0.0f,	0.0f,	true,	IVec3(7, 3, -8),	tex3DMipmapFixed,		evalTexture3DProjOffset,		FRAGMENT),
-		CASE_SPEC(sampler3d_float,				FUNCTION_TEXTUREPROJ,	Vec4(0.9f, 1.05f, -0.08f, -0.75f),	Vec4(-1.13f, -1.7f, -1.7f, -0.75f),	false,	0.0f,	0.0f,	true,	IVec3(3, -8, 7),	tex3DFloat,				evalTexture3DProjOffset,		VERTEX),
-		CASE_SPEC(sampler3d_float,				FUNCTION_TEXTUREPROJ,	Vec4(0.9f, 1.05f, -0.08f, -0.75f),	Vec4(-1.13f, -1.7f, -1.7f, -0.75f),	false,	0.0f,	0.0f,	true,	IVec3(-8, 7, 3),	tex3DMipmapFloat,		evalTexture3DProjOffset,		FRAGMENT),
-		CASE_SPEC(isampler3d,					FUNCTION_TEXTUREPROJ,	Vec4(0.9f, 1.05f, -0.08f, -0.75f),	Vec4(-1.13f, -1.7f, -1.7f, -0.75f),	false,	0.0f,	0.0f,	true,	IVec3(7, 3, -8),	tex3DInt,				evalTexture3DProjOffset,		VERTEX),
-		CASE_SPEC(isampler3d,					FUNCTION_TEXTUREPROJ,	Vec4(0.9f, 1.05f, -0.08f, -0.75f),	Vec4(-1.13f, -1.7f, -1.7f, -0.75f),	false,	0.0f,	0.0f,	true,	IVec3(3, -8, 7),	tex3DMipmapInt,			evalTexture3DProjOffset,		FRAGMENT),
-		CASE_SPEC(usampler3d,					FUNCTION_TEXTUREPROJ,	Vec4(0.9f, 1.05f, -0.08f, -0.75f),	Vec4(-1.13f, -1.7f, -1.7f, -0.75f),	false,	0.0f,	0.0f,	true,	IVec3(-8, 7, 3),	tex3DUint,				evalTexture3DProjOffset,		VERTEX),
-		CASE_SPEC(usampler3d,					FUNCTION_TEXTUREPROJ,	Vec4(0.9f, 1.05f, -0.08f, -0.75f),	Vec4(-1.13f, -1.7f, -1.7f, -0.75f),	false,	0.0f,	0.0f,	true,	IVec3(7, 3, -8),	tex3DMipmapUint,		evalTexture3DProjOffset,		FRAGMENT),
+		CASE_SPEC(sampler3d_fixed,				FUNCTION_TEXTUREPROJ,	Vec4(-0.3f, -0.6f,  0.0f,  1.5f),	Vec4(2.25f, 3.45f,  2.0f,  1.5f),	false,	0.0f,	0.0f,	true,	IVec3(-8, 7, 3),	tex3DFixed,				evalTexture3DProjOffset,		VERTEX),
+		CASE_SPEC(sampler3d_fixed,				FUNCTION_TEXTUREPROJ,	Vec4(-0.3f, -0.6f,  0.0f,  1.5f),	Vec4(2.25f, 3.45f,  2.0f,  1.5f),	false,	0.0f,	0.0f,	true,	IVec3(7, 3, -8),	tex3DMipmapFixed,		evalTexture3DProjOffset,		FRAGMENT),
+		CASE_SPEC(sampler3d_float,				FUNCTION_TEXTUREPROJ,	Vec4(-0.3f, -0.6f,  0.0f,  1.5f),	Vec4(2.25f, 3.45f,  2.0f,  1.5f),	false,	0.0f,	0.0f,	true,	IVec3(3, -8, 7),	tex3DFloat,				evalTexture3DProjOffset,		VERTEX),
+		CASE_SPEC(sampler3d_float,				FUNCTION_TEXTUREPROJ,	Vec4(-0.3f, -0.6f,  0.0f,  1.5f),	Vec4(2.25f, 3.45f,  2.0f,  1.5f),	false,	0.0f,	0.0f,	true,	IVec3(-8, 7, 3),	tex3DMipmapFloat,		evalTexture3DProjOffset,		FRAGMENT),
+		CASE_SPEC(isampler3d,					FUNCTION_TEXTUREPROJ,	Vec4(-0.3f, -0.6f,  0.0f,  1.5f),	Vec4(2.25f, 3.45f,  2.0f,  1.5f),	false,	0.0f,	0.0f,	true,	IVec3(7, 3, -8),	tex3DInt,				evalTexture3DProjOffset,		VERTEX),
+		CASE_SPEC(isampler3d,					FUNCTION_TEXTUREPROJ,	Vec4(-0.3f, -0.6f,  0.0f,  1.5f),	Vec4(2.25f, 3.45f,  2.0f,  1.5f),	false,	0.0f,	0.0f,	true,	IVec3(3, -8, 7),	tex3DMipmapInt,			evalTexture3DProjOffset,		FRAGMENT),
+		CASE_SPEC(usampler3d,					FUNCTION_TEXTUREPROJ,	Vec4(-0.3f, -0.6f,  0.0f,  1.5f),	Vec4(2.25f, 3.45f,  2.0f,  1.5f),	false,	0.0f,	0.0f,	true,	IVec3(-8, 7, 3),	tex3DUint,				evalTexture3DProjOffset,		VERTEX),
+		CASE_SPEC(usampler3d,					FUNCTION_TEXTUREPROJ,	Vec4(-0.3f, -0.6f,  0.0f,  1.5f),	Vec4(2.25f, 3.45f,  2.0f,  1.5f),	false,	0.0f,	0.0f,	true,	IVec3(7, 3, -8),	tex3DMipmapUint,		evalTexture3DProjOffset,		FRAGMENT),
 
 		CASE_SPEC(sampler3d_bias_fixed,			FUNCTION_TEXTUREPROJ,	Vec4(0.9f, 1.05f, -0.08f, -0.75f),	Vec4(-1.13f, -1.7f, -1.7f, -0.75f),	true,	-2.0f,	2.0f,	true,	IVec3(-8, 7, 3),	tex3DFixed,				evalTexture3DProjOffsetBias,	FRAGMENT),
 		CASE_SPEC(sampler3d_bias_float,			FUNCTION_TEXTUREPROJ,	Vec4(0.9f, 1.05f, -0.08f, -0.75f),	Vec4(-1.13f, -1.7f, -1.7f, -0.75f),	true,	-2.0f,	2.0f,	true,	IVec3(7, 3, -8),	tex3DFloat,				evalTexture3DProjOffsetBias,	FRAGMENT),

@@ -1488,3 +1488,129 @@ struct VkValidationFlagsEXT
 	VkValidationCheckEXT*	pDisabledValidationChecks;
 };
 
+struct VkDeviceGeneratedCommandsFeaturesNVX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		computeBindingPointSupport;
+};
+
+struct VkDeviceGeneratedCommandsLimitsNVX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		maxIndirectCommandsLayoutTokenCount;
+	deUint32		maxObjectEntryCounts;
+	deUint32		minSequenceCountBufferOffsetAlignment;
+	deUint32		minSequenceIndexBufferOffsetAlignment;
+	deUint32		minCommandsTokenBufferOffsetAlignment;
+};
+
+struct VkIndirectCommandsTokenNVX
+{
+	VkIndirectCommandsTokenTypeNVX	tokenType;
+	VkBuffer						buffer;
+	VkDeviceSize					offset;
+};
+
+struct VkIndirectCommandsLayoutTokenNVX
+{
+	VkIndirectCommandsTokenTypeNVX	tokenType;
+	deUint32						bindingUnit;
+	deUint32						dynamicCount;
+	deUint32						divisor;
+};
+
+struct VkIndirectCommandsLayoutCreateInfoNVX
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkPipelineBindPoint						pipelineBindPoint;
+	VkIndirectCommandsLayoutUsageFlagsNVX	flags;
+	deUint32								tokenCount;
+	const VkIndirectCommandsLayoutTokenNVX*	pTokens;
+};
+
+struct VkCmdProcessCommandsInfoNVX
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkObjectTableNVX					objectTable;
+	VkIndirectCommandsLayoutNVX			indirectCommandsLayout;
+	deUint32							indirectCommandsTokenCount;
+	const VkIndirectCommandsTokenNVX*	pIndirectCommandsTokens;
+	deUint32							maxSequencesCount;
+	VkCommandBuffer						targetCommandBuffer;
+	VkBuffer							sequencesCountBuffer;
+	VkDeviceSize						sequencesCountOffset;
+	VkBuffer							sequencesIndexBuffer;
+	VkDeviceSize						sequencesIndexOffset;
+};
+
+struct VkCmdReserveSpaceForCommandsInfoNVX
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkObjectTableNVX			objectTable;
+	VkIndirectCommandsLayoutNVX	indirectCommandsLayout;
+	deUint32					maxSequencesCount;
+};
+
+struct VkObjectTableCreateInfoNVX
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	deUint32							objectCount;
+	const VkObjectEntryTypeNVX*			pObjectEntryTypes;
+	const deUint32*						pObjectEntryCounts;
+	const VkObjectEntryUsageFlagsNVX*	pObjectEntryUsageFlags;
+	deUint32							maxUniformBuffersPerDescriptor;
+	deUint32							maxStorageBuffersPerDescriptor;
+	deUint32							maxStorageImagesPerDescriptor;
+	deUint32							maxSampledImagesPerDescriptor;
+	deUint32							maxPipelineLayouts;
+};
+
+struct VkObjectTableEntryNVX
+{
+	VkObjectEntryTypeNVX		type;
+	VkObjectEntryUsageFlagsNVX	flags;
+};
+
+struct VkObjectTablePipelineEntryNVX
+{
+	VkObjectEntryTypeNVX		type;
+	VkObjectEntryUsageFlagsNVX	flags;
+	VkPipeline					pipeline;
+};
+
+struct VkObjectTableDescriptorSetEntryNVX
+{
+	VkObjectEntryTypeNVX		type;
+	VkObjectEntryUsageFlagsNVX	flags;
+	VkPipelineLayout			pipelineLayout;
+	VkDescriptorSet				descriptorSet;
+};
+
+struct VkObjectTableVertexBufferEntryNVX
+{
+	VkObjectEntryTypeNVX		type;
+	VkObjectEntryUsageFlagsNVX	flags;
+	VkBuffer					buffer;
+};
+
+struct VkObjectTableIndexBufferEntryNVX
+{
+	VkObjectEntryTypeNVX		type;
+	VkObjectEntryUsageFlagsNVX	flags;
+	VkBuffer					buffer;
+};
+
+struct VkObjectTablePushConstantEntryNVX
+{
+	VkObjectEntryTypeNVX		type;
+	VkObjectEntryUsageFlagsNVX	flags;
+	VkPipelineLayout			pipelineLayout;
+	VkShaderStageFlags			stageFlags;
+};
+
