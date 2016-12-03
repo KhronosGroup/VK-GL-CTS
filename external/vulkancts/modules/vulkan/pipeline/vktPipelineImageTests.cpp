@@ -52,34 +52,50 @@ public:
 							ImageTest				(tcu::TestContext&	testContext,
 													 const char*		name,
 													 const char*		description,
+													 VkDescriptorType	samplingType,
 													 VkImageViewType	imageViewType,
 													 VkFormat			imageFormat,
 													 const tcu::IVec3&	imageSize,
+													 int				imageCount,
 													 int				arraySize);
 
 	virtual void			initPrograms			(SourceCollections& sourceCollections) const;
 	virtual TestInstance*	createInstance			(Context& context) const;
 	static std::string		getGlslSamplerType		(const tcu::TextureFormat& format, VkImageViewType type);
+	static std::string		getGlslTextureType		(const tcu::TextureFormat& format, VkImageViewType type);
+	static std::string		getGlslSamplerDecl		(int imageCount);
+	static std::string		getGlslTextureDecl		(int imageCount);
+	static std::string		getGlslFragColorDecl	(int imageCount);
+	static std::string		getGlslSampler			(const tcu::TextureFormat& format,
+													 VkImageViewType type,
+													 VkDescriptorType samplingType,
+													 int imageCount);
 
 private:
+	VkDescriptorType		m_samplingType;
 	VkImageViewType			m_imageViewType;
 	VkFormat				m_imageFormat;
 	tcu::IVec3				m_imageSize;
+	int						m_imageCount;
 	int						m_arraySize;
 };
 
 ImageTest::ImageTest (tcu::TestContext&	testContext,
 					  const char*		name,
 					  const char*		description,
+					  VkDescriptorType	samplingType,
 					  VkImageViewType	imageViewType,
 					  VkFormat			imageFormat,
 					  const tcu::IVec3&	imageSize,
+					  int				imageCount,
 					  int				arraySize)
 
 	: vkt::TestCase		(testContext, name, description)
+	, m_samplingType	(samplingType)
 	, m_imageViewType	(imageViewType)
 	, m_imageFormat		(imageFormat)
 	, m_imageSize		(imageSize)
+	, m_imageCount		(imageCount)
 	, m_arraySize		(arraySize)
 {
 }
@@ -132,14 +148,31 @@ void ImageTest::initPrograms (SourceCollections& sourceCollections) const
 			  << "	vtxTexCoords = texCoords;\n"
 			  << "}\n";
 
-	fragmentSrc << "#version 440\n"
-				<< "layout(set = 0, binding = 0) uniform highp " << getGlslSamplerType(format, m_imageViewType) << " texSampler;\n"
-				<< "layout(location = 0) in highp vec4 vtxTexCoords;\n"
-				<< "layout(location = 0) out highp vec4 fragColor;\n"
+	fragmentSrc << "#version 440\n";
+	switch (m_samplingType)
+	{
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+			fragmentSrc
+				<< "layout(set = 0, binding = 0) uniform highp sampler texSampler;\n"
+				<< "layout(set = 0, binding = 1) uniform highp " << getGlslTextureType(format, m_imageViewType) << " " << getGlslTextureDecl(m_imageCount) << ";\n";
+			break;
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+		default:
+			fragmentSrc
+				<< "layout(set = 0, binding = 0) uniform highp " << getGlslSamplerType(format, m_imageViewType) << " " << getGlslSamplerDecl(m_imageCount) << ";\n";
+	}
+	fragmentSrc << "layout(location = 0) in highp vec4 vtxTexCoords;\n"
+				<< "layout(location = 0) out highp vec4 " << getGlslFragColorDecl(m_imageCount) << ";\n"
 				<< "void main (void)\n"
-				<< "{\n"
-				<< "	fragColor = (texture(texSampler, vtxTexCoords." << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias << ";\n"
-				<< "}\n";
+				<< "{\n";
+	if (m_imageCount > 1)
+		fragmentSrc
+				<< "	for (uint i = 0; i < " << m_imageCount << "; ++i)\n"
+				<< "		fragColors[i] = (texture(" << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords." << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias << "; \n";
+	else
+		fragmentSrc
+				<< "	fragColor = (texture(" << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords." << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias << "; \n";
+	fragmentSrc << "}\n";
 
 	sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());
 	sourceCollections.glslSources.add("tex_frag") << glu::FragmentSource(fragmentSrc.str());
@@ -192,7 +225,7 @@ TestInstance* ImageTest::createInstance (Context& context) const
 		false																	// VkBool32					unnormalizedCoordinates;
 	};
 
-	return new ImageSamplingInstance(context, renderSize, m_imageViewType, m_imageFormat, m_imageSize, m_arraySize, componentMapping, subresourceRange, samplerParams, 0.0f, vertices);
+	return new ImageSamplingInstance(context, renderSize, m_imageViewType, m_imageFormat, m_imageSize, m_arraySize, componentMapping, subresourceRange, samplerParams, 0.0f, vertices, m_samplingType, m_imageCount);
 }
 
 std::string ImageTest::getGlslSamplerType (const tcu::TextureFormat& format, VkImageViewType type)
@@ -242,6 +275,91 @@ std::string ImageTest::getGlslSamplerType (const tcu::TextureFormat& format, VkI
 	return samplerType.str();
 }
 
+std::string ImageTest::getGlslTextureType (const tcu::TextureFormat& format, VkImageViewType type)
+{
+	std::ostringstream textureType;
+
+	if (tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
+		textureType << "u";
+	else if (tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
+		textureType << "i";
+
+	switch (type)
+	{
+		case VK_IMAGE_VIEW_TYPE_1D:
+			textureType << "texture1D";
+			break;
+
+		case VK_IMAGE_VIEW_TYPE_1D_ARRAY:
+			textureType << "texture1DArray";
+			break;
+
+		case VK_IMAGE_VIEW_TYPE_2D:
+			textureType << "texture2D";
+			break;
+
+		case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
+			textureType << "texture2DArray";
+			break;
+
+		case VK_IMAGE_VIEW_TYPE_3D:
+			textureType << "texture3D";
+			break;
+
+		case VK_IMAGE_VIEW_TYPE_CUBE:
+			textureType << "textureCube";
+			break;
+
+		case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:
+			textureType << "textureCubeArray";
+			break;
+
+		default:
+			DE_FATAL("Unknown image view type");
+	}
+
+	return textureType.str();
+}
+
+std::string ImageTest::getGlslSamplerDecl (int imageCount)
+{
+	std::ostringstream samplerArray;
+	samplerArray << "texSamplers[" << imageCount << "]";
+
+	return imageCount > 1 ? samplerArray.str() : "texSampler";
+}
+
+std::string ImageTest::getGlslTextureDecl (int imageCount)
+{
+	std::ostringstream textureArray;
+	textureArray << "texImages[" << imageCount << "]";
+
+	return imageCount > 1 ? textureArray.str() : "texImage";
+}
+
+std::string ImageTest::getGlslFragColorDecl (int imageCount)
+{
+	std::ostringstream samplerArray;
+	samplerArray << "fragColors[" << imageCount << "]";
+
+	return imageCount > 1 ? samplerArray.str() : "fragColor";
+}
+
+std::string ImageTest::getGlslSampler (const tcu::TextureFormat& format, VkImageViewType type, VkDescriptorType samplingType, int imageCount)
+{
+	std::string texSampler	= imageCount > 1 ? "texSamplers[i]" : "texSampler";
+	std::string texImage	= imageCount > 1 ? "texImages[i]" : "texImage";
+
+	switch (samplingType)
+	{
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+			return getGlslSamplerType(format, type) + "(" + texImage + ", texSampler)";
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+		default:
+			return texSampler;
+	}
+}
+
 std::string getFormatCaseName (const VkFormat format)
 {
 	const std::string	fullName	= getFormatName(format);
@@ -281,7 +399,7 @@ std::string getSizeName (VkImageViewType viewType, const tcu::IVec3& size, int a
 	return caseName.str();
 }
 
-de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx, VkImageViewType imageViewType, VkFormat imageFormat)
+de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx, VkDescriptorType samplingType, VkImageViewType imageViewType, VkFormat imageFormat, int imageCount)
 {
 	using tcu::IVec3;
 
@@ -295,57 +413,76 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx,
 		case VK_IMAGE_VIEW_TYPE_1D:
 		case VK_IMAGE_VIEW_TYPE_1D_ARRAY:
 			// POT
-			imageSizes.push_back(IVec3(1, 1, 1));
-			imageSizes.push_back(IVec3(2, 1, 1));
-			imageSizes.push_back(IVec3(32, 1, 1));
-			imageSizes.push_back(IVec3(128, 1, 1));
+			if (imageCount == 1)
+			{
+				imageSizes.push_back(IVec3(1, 1, 1));
+				imageSizes.push_back(IVec3(2, 1, 1));
+				imageSizes.push_back(IVec3(32, 1, 1));
+				imageSizes.push_back(IVec3(128, 1, 1));
+			}
 			imageSizes.push_back(IVec3(512, 1, 1));
 
 			// NPOT
-			imageSizes.push_back(IVec3(3, 1, 1));
-			imageSizes.push_back(IVec3(13, 1, 1));
-			imageSizes.push_back(IVec3(127, 1, 1));
+			if (imageCount == 1)
+			{
+				imageSizes.push_back(IVec3(3, 1, 1));
+				imageSizes.push_back(IVec3(13, 1, 1));
+				imageSizes.push_back(IVec3(127, 1, 1));
+			}
 			imageSizes.push_back(IVec3(443, 1, 1));
 			break;
 
 		case VK_IMAGE_VIEW_TYPE_2D:
 		case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
-			// POT
-			imageSizes.push_back(IVec3(1, 1, 1));
-			imageSizes.push_back(IVec3(2, 2, 1));
-			imageSizes.push_back(IVec3(32, 32, 1));
+			if (imageCount == 1)
+			{
+				// POT
+				imageSizes.push_back(IVec3(1, 1, 1));
+				imageSizes.push_back(IVec3(2, 2, 1));
+				imageSizes.push_back(IVec3(32, 32, 1));
 
-			// NPOT
-			imageSizes.push_back(IVec3(3, 3, 1));
-			imageSizes.push_back(IVec3(13, 13, 1));
+				// NPOT
+				imageSizes.push_back(IVec3(3, 3, 1));
+				imageSizes.push_back(IVec3(13, 13, 1));
+			}
 
 			// POT rectangular
-			imageSizes.push_back(IVec3(8, 16, 1));
+			if (imageCount == 1)
+				imageSizes.push_back(IVec3(8, 16, 1));
 			imageSizes.push_back(IVec3(32, 16, 1));
 
 			// NPOT rectangular
 			imageSizes.push_back(IVec3(13, 23, 1));
-			imageSizes.push_back(IVec3(23, 8, 1));
+			if (imageCount == 1)
+				imageSizes.push_back(IVec3(23, 8, 1));
 			break;
 
 		case VK_IMAGE_VIEW_TYPE_3D:
 			// POT cube
-			imageSizes.push_back(IVec3(1, 1, 1));
-			imageSizes.push_back(IVec3(2, 2, 2));
+			if (imageCount == 1)
+			{
+				imageSizes.push_back(IVec3(1, 1, 1));
+				imageSizes.push_back(IVec3(2, 2, 2));
+			}
 			imageSizes.push_back(IVec3(16, 16, 16));
 
 			// NPOT cube
-			imageSizes.push_back(IVec3(3, 3, 3));
-			imageSizes.push_back(IVec3(5, 5, 5));
+			if (imageCount == 1)
+			{
+				imageSizes.push_back(IVec3(3, 3, 3));
+				imageSizes.push_back(IVec3(5, 5, 5));
+			}
 			imageSizes.push_back(IVec3(11, 11, 11));
 
 			// POT non-cube
-			imageSizes.push_back(IVec3(32, 16, 8));
+			if (imageCount == 1)
+				imageSizes.push_back(IVec3(32, 16, 8));
 			imageSizes.push_back(IVec3(8, 16, 32));
 
 			// NPOT non-cube
 			imageSizes.push_back(IVec3(17, 11, 5));
-			imageSizes.push_back(IVec3(5, 11, 17));
+			if (imageCount == 1)
+				imageSizes.push_back(IVec3(5, 11, 17));
 			break;
 
 		case VK_IMAGE_VIEW_TYPE_CUBE:
@@ -367,7 +504,8 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx,
 	{
 		case VK_IMAGE_VIEW_TYPE_1D_ARRAY:
 		case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
-			arraySizes.push_back(3);
+			if (imageCount == 1)
+				arraySizes.push_back(3);
 			arraySizes.push_back(6);
 			break;
 
@@ -376,7 +514,8 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx,
 			break;
 
 		case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:
-			arraySizes.push_back(6);
+			if (imageCount == 1)
+				arraySizes.push_back(6);
 			arraySizes.push_back(6 * 6);
 			break;
 
@@ -392,9 +531,11 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx,
 			imageSizeTests->addChild(new ImageTest(testCtx,
 												   getSizeName(imageViewType, imageSizes[sizeNdx], arraySizes[arraySizeNdx]).c_str(),
 												   "",
+												   samplingType,
 												   imageViewType,
 												   imageFormat,
 												   imageSizes[sizeNdx],
+												   imageCount,
 												   arraySizes[arraySizeNdx]));
 		}
 	}
@@ -402,26 +543,24 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx,
 	return imageSizeTests;
 }
 
-} // anonymous
-
-tcu::TestCaseGroup* createImageTests (tcu::TestContext& testCtx)
+void createImageCountTests (tcu::TestCaseGroup* parentGroup, tcu::TestContext& testCtx, VkDescriptorType samplingType, VkImageViewType imageViewType, VkFormat imageFormat)
 {
-	const struct
-	{
-		VkImageViewType		type;
-		const char*			name;
-	}
-	imageViewTypes[] =
-	{
-		{ VK_IMAGE_VIEW_TYPE_1D,			"1d" },
-		{ VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array" },
-		{ VK_IMAGE_VIEW_TYPE_2D,			"2d" },
-		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array" },
-		{ VK_IMAGE_VIEW_TYPE_3D,			"3d" },
-		{ VK_IMAGE_VIEW_TYPE_CUBE,			"cube" },
-		{ VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array" }
-	};
+	const int imageCounts[] = { 1, 4, 8 };
 
+	for (size_t countNdx = 0; countNdx < DE_LENGTH_OF_ARRAY(imageCounts); countNdx++)
+	{
+		std::ostringstream	caseName;
+		caseName << "count_" << imageCounts[countNdx];
+		de::MovePtr<tcu::TestCaseGroup>	countGroup(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> sizeTests = createImageSizeTests(testCtx, samplingType, imageViewType, imageFormat, imageCounts[countNdx]);
+
+		countGroup->addChild(sizeTests.release());
+		parentGroup->addChild(countGroup.release());
+	}
+}
+
+de::MovePtr<tcu::TestCaseGroup> createImageFormatTests (tcu::TestContext& testCtx, VkDescriptorType samplingType, VkImageViewType imageViewType)
+{
 	// All supported dEQP formats that are not intended for depth or stencil.
 	const VkFormat formats[] =
 	{
@@ -546,41 +685,94 @@ tcu::TestCaseGroup* createImageTests (tcu::TestContext& testCtx)
 		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> imageTests			(new tcu::TestCaseGroup(testCtx, "image", "Image tests"));
-	de::MovePtr<tcu::TestCaseGroup> viewTypeTests		(new tcu::TestCaseGroup(testCtx, "view_type", ""));
+	de::MovePtr<tcu::TestCaseGroup>	imageFormatTests(new tcu::TestCaseGroup(testCtx, "format", "Tests samplable formats"));
+
+	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+	{
+		const VkFormat	format = formats[formatNdx];
+
+		if (isCompressedFormat(format))
+		{
+			// Do not use compressed formats with 1D and 1D array textures.
+			if (imageViewType == VK_IMAGE_VIEW_TYPE_1D || imageViewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY)
+				break;
+		}
+
+		de::MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(testCtx,
+			getFormatCaseName(format).c_str(),
+			(std::string("Samples a texture of format ") + getFormatName(format)).c_str()));
+		createImageCountTests(formatGroup.get(), testCtx, samplingType, imageViewType, format);
+
+		imageFormatTests->addChild(formatGroup.release());
+	}
+
+	return imageFormatTests;
+}
+
+de::MovePtr<tcu::TestCaseGroup> createImageViewTypeTests (tcu::TestContext& testCtx, VkDescriptorType samplingType)
+{
+	const struct
+	{
+		VkImageViewType		type;
+		const char*			name;
+	}
+	imageViewTypes[] =
+	{
+		{ VK_IMAGE_VIEW_TYPE_1D,			"1d" },
+		{ VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array" },
+		{ VK_IMAGE_VIEW_TYPE_2D,			"2d" },
+		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array" },
+		{ VK_IMAGE_VIEW_TYPE_3D,			"3d" },
+		{ VK_IMAGE_VIEW_TYPE_CUBE,			"cube" },
+		{ VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array" }
+	};
+
+	de::MovePtr<tcu::TestCaseGroup> imageViewTypeTests(new tcu::TestCaseGroup(testCtx, "view_type", ""));
 
 	for (int viewTypeNdx = 0; viewTypeNdx < DE_LENGTH_OF_ARRAY(imageViewTypes); viewTypeNdx++)
 	{
-		const VkImageViewType			viewType		= imageViewTypes[viewTypeNdx].type;
-		de::MovePtr<tcu::TestCaseGroup>	viewTypeGroup	(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name, (std::string("Uses a ") + imageViewTypes[viewTypeNdx].name + " view").c_str()));
-		de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, "format", "Tests samplable formats"));
-
-		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
-		{
-			const VkFormat	format	= formats[formatNdx];
-
-			if (isCompressedFormat(format))
-			{
-				// Do not use compressed formats with 1D and 1D array textures.
-				if (viewType == VK_IMAGE_VIEW_TYPE_1D || viewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY)
-					break;
-			}
-
-			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx,
-																				getFormatCaseName(format).c_str(),
-																				(std::string("Samples a texture of format ") + getFormatName(format)).c_str()));
-
-			de::MovePtr<tcu::TestCaseGroup> sizeTests = createImageSizeTests(testCtx, viewType, format);
-
-			formatGroup->addChild(sizeTests.release());
-			formatTests->addChild(formatGroup.release());
-		}
+		const VkImageViewType			viewType = imageViewTypes[viewTypeNdx].type;
+		de::MovePtr<tcu::TestCaseGroup>	viewTypeGroup(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name, (std::string("Uses a ") + imageViewTypes[viewTypeNdx].name + " view").c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	formatTests = createImageFormatTests(testCtx, samplingType, viewType);
 
 		viewTypeGroup->addChild(formatTests.release());
-		viewTypeTests->addChild(viewTypeGroup.release());
+		imageViewTypeTests->addChild(viewTypeGroup.release());
 	}
 
-	imageTests->addChild(viewTypeTests.release());
+	return imageViewTypeTests;
+}
+
+de::MovePtr<tcu::TestCaseGroup> createImageSamplingTypeTests (tcu::TestContext& testCtx)
+{
+	VkDescriptorType samplingTypes[] =
+	{
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+	};
+
+	de::MovePtr<tcu::TestCaseGroup> imageSamplingTypeTests(new tcu::TestCaseGroup(testCtx, "sampling_type", ""));
+
+	for (int smpTypeNdx = 0; smpTypeNdx < DE_LENGTH_OF_ARRAY(samplingTypes); smpTypeNdx++)
+	{
+		const char* smpTypeName = samplingTypes[smpTypeNdx] == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ? "combined" : "separate";
+		de::MovePtr<tcu::TestCaseGroup>	samplingTypeGroup(new tcu::TestCaseGroup(testCtx, smpTypeName, (std::string("Uses a ") + smpTypeName + " sampler").c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	viewTypeTests = createImageViewTypeTests(testCtx, samplingTypes[smpTypeNdx]);
+
+		samplingTypeGroup->addChild(viewTypeTests.release());
+		imageSamplingTypeTests->addChild(samplingTypeGroup.release());
+	}
+
+	return imageSamplingTypeTests;
+}
+
+} // anonymous
+
+tcu::TestCaseGroup* createImageTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> imageTests(new tcu::TestCaseGroup(testCtx, "image", "Image tests"));
+	de::MovePtr<tcu::TestCaseGroup> samplingTypeTests = createImageSamplingTypeTests(testCtx);
+
+	imageTests->addChild(samplingTypeTests.release());
 
 	return imageTests.release();
 }
