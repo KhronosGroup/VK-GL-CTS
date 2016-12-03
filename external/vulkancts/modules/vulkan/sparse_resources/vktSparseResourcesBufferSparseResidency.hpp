@@ -31,7 +31,7 @@ namespace vkt
 namespace sparse
 {
 
-tcu::TestCaseGroup* createBufferSparseResidencyTests(tcu::TestContext& testCtx);
+void addBufferSparseResidencyTests(tcu::TestCaseGroup* group);
 
 } // sparse
 } // vkt

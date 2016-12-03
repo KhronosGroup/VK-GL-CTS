@@ -132,12 +132,16 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 											  const VkImageSubresourceRange&	subresourceRange,
 											  const VkSamplerCreateInfo&		samplerParams,
 											  float								samplerLod,
-											  const std::vector<Vertex4Tex4>&	vertices)
+											  const std::vector<Vertex4Tex4>&	vertices,
+											  VkDescriptorType					samplingType,
+											  int								imageCount)
 	: vkt::TestInstance		(context)
+	, m_samplingType		(samplingType)
 	, m_imageViewType		(imageViewType)
 	, m_imageFormat			(imageFormat)
 	, m_imageSize			(imageSize)
 	, m_layerCount			(layerCount)
+	, m_imageCount			(imageCount)
 	, m_componentMapping	(componentMapping)
 	, m_subresourceRange	(subresourceRange)
 	, m_samplerParams		(samplerParams)
@@ -195,7 +199,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 	if (imageViewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !context.getDeviceFeatures().imageCubeArray)
 		TCU_THROW(NotSupportedError, "imageCubeArray feature is not supported");
 
-	// Create texture image, view and sampler
+	// Create texture images, views and samplers
 	{
 		VkImageCreateFlags			imageFlags			= 0u;
 
@@ -231,38 +235,51 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			VK_IMAGE_LAYOUT_UNDEFINED										// VkImageLayout			initialLayout;
 		};
 
-		m_image			= createImage(vk, vkDevice, &imageParams);
-		m_imageAlloc	= memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_image), MemoryRequirement::Any);
-		VK_CHECK(vk.bindImageMemory(vkDevice, *m_image, m_imageAlloc->getMemory(), m_imageAlloc->getOffset()));
+		m_images.resize(m_imageCount);
+		m_imageAllocs.resize(m_imageCount);
+		m_imageViews.resize(m_imageCount);
 
-		// Upload texture data
-		uploadTestTexture(vk, vkDevice, queue, queueFamilyIndex, memAlloc, *m_texture, *m_image);
-
-		// Create image view and sampler
-		const VkImageViewCreateInfo imageViewParams =
+		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
 		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			0u,											// VkImageViewCreateFlags	flags;
-			*m_image,									// VkImage					image;
-			m_imageViewType,							// VkImageViewType			viewType;
-			imageFormat,								// VkFormat					format;
-			m_componentMapping,							// VkComponentMapping		components;
-			m_subresourceRange,							// VkImageSubresourceRange	subresourceRange;
-		};
+			m_images[imgNdx] = SharedImagePtr(new UniqueImage(createImage(vk, vkDevice, &imageParams)));
+			m_imageAllocs[imgNdx] = SharedAllocPtr(new UniqueAlloc(memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, **m_images[imgNdx]), MemoryRequirement::Any)));
+			VK_CHECK(vk.bindImageMemory(vkDevice, **m_images[imgNdx], (*m_imageAllocs[imgNdx])->getMemory(), (*m_imageAllocs[imgNdx])->getOffset()));
 
-		m_imageView	= createImageView(vk, vkDevice, &imageViewParams);
+			// Upload texture data
+			uploadTestTexture(vk, vkDevice, queue, queueFamilyIndex, memAlloc, *m_texture, **m_images[imgNdx]);
+
+			// Create image view and sampler
+			const VkImageViewCreateInfo imageViewParams =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType			sType;
+				DE_NULL,									// const void*				pNext;
+				0u,											// VkImageViewCreateFlags	flags;
+				**m_images[imgNdx],							// VkImage					image;
+				m_imageViewType,							// VkImageViewType			viewType;
+				imageFormat,								// VkFormat					format;
+				m_componentMapping,							// VkComponentMapping		components;
+				m_subresourceRange,							// VkImageSubresourceRange	subresourceRange;
+			};
+
+			m_imageViews[imgNdx] = SharedImageViewPtr(new UniqueImageView(createImageView(vk, vkDevice, &imageViewParams)));
+		}
+
 		m_sampler	= createSampler(vk, vkDevice, &m_samplerParams);
 	}
 
-	// Create descriptor set for combined image and sampler
+	// Create descriptor set for image and sampler
 	{
 		DescriptorPoolBuilder descriptorPoolBuilder;
-		descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1u);
-		m_descriptorPool = descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+		if (m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+			descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_SAMPLER, 1u);
+		descriptorPoolBuilder.addType(m_samplingType, m_imageCount);
+		m_descriptorPool = descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+			m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? m_imageCount + 1u : m_imageCount);
 
 		DescriptorSetLayoutBuilder setLayoutBuilder;
-		setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+		if (m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+			setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+		setLayoutBuilder.addArrayBinding(m_samplingType, m_imageCount, VK_SHADER_STAGE_FRAGMENT_BIT);
 		m_descriptorSetLayout = setLayoutBuilder.build(vk, vkDevice);
 
 		const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo =
@@ -276,19 +293,33 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 
 		m_descriptorSet = allocateDescriptorSet(vk, vkDevice, &descriptorSetAllocateInfo);
 
-		const VkDescriptorImageInfo descriptorImageInfo =
+		const VkSampler sampler = m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? DE_NULL : *m_sampler;
+		std::vector<VkDescriptorImageInfo> descriptorImageInfo(m_imageCount);
+		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
 		{
-			*m_sampler,									// VkSampler		sampler;
-			*m_imageView,								// VkImageView		imageView;
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout	imageLayout;
-		};
+			descriptorImageInfo[imgNdx].sampler		= sampler;									// VkSampler		sampler;
+			descriptorImageInfo[imgNdx].imageView	= **m_imageViews[imgNdx];					// VkImageView		imageView;
+			descriptorImageInfo[imgNdx].imageLayout	= VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;	// VkImageLayout	imageLayout;
+		}
 
 		DescriptorSetUpdateBuilder setUpdateBuilder;
-		setUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descriptorImageInfo);
+		if (m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+		{
+			const VkDescriptorImageInfo descriptorSamplerInfo =
+			{
+				*m_sampler,									// VkSampler		sampler;
+				DE_NULL,									// VkImageView		imageView;
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout	imageLayout;
+			};
+			setUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_SAMPLER, &descriptorSamplerInfo);
+		}
+
+		const deUint32 binding = m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? 1u : 0u;
+		setUpdateBuilder.writeArray(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(binding), m_samplingType, m_imageCount, descriptorImageInfo.data());
 		setUpdateBuilder.update(vk, vkDevice);
 	}
 
-	// Create color image and view
+	// Create color images and views
 	{
 		const VkImageCreateInfo colorImageParams =
 		{
@@ -309,45 +340,52 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			VK_IMAGE_LAYOUT_UNDEFINED													// VkImageLayout			initialLayout;
 		};
 
-		m_colorImage			= createImage(vk, vkDevice, &colorImageParams);
-		m_colorImageAlloc		= memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_colorImage), MemoryRequirement::Any);
-		VK_CHECK(vk.bindImageMemory(vkDevice, *m_colorImage, m_colorImageAlloc->getMemory(), m_colorImageAlloc->getOffset()));
+		m_colorImages.resize(m_imageCount);
+		m_colorImageAllocs.resize(m_imageCount);
+		m_colorAttachmentViews.resize(m_imageCount);
 
-		const VkImageViewCreateInfo colorAttachmentViewParams =
+		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
 		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,			// VkStructureType			sType;
-			DE_NULL,											// const void*				pNext;
-			0u,													// VkImageViewCreateFlags	flags;
-			*m_colorImage,										// VkImage					image;
-			VK_IMAGE_VIEW_TYPE_2D,								// VkImageViewType			viewType;
-			m_colorFormat,										// VkFormat					format;
-			componentMappingRGBA,								// VkComponentMapping		components;
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }		// VkImageSubresourceRange	subresourceRange;
-		};
+			m_colorImages[imgNdx] = SharedImagePtr(new UniqueImage(createImage(vk, vkDevice, &colorImageParams)));
+			m_colorImageAllocs[imgNdx] = SharedAllocPtr(new UniqueAlloc(memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, **m_colorImages[imgNdx]), MemoryRequirement::Any)));
+			VK_CHECK(vk.bindImageMemory(vkDevice, **m_colorImages[imgNdx], (*m_colorImageAllocs[imgNdx])->getMemory(), (*m_colorImageAllocs[imgNdx])->getOffset()));
 
-		m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
+			const VkImageViewCreateInfo colorAttachmentViewParams =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,			// VkStructureType			sType;
+				DE_NULL,											// const void*				pNext;
+				0u,													// VkImageViewCreateFlags	flags;
+				**m_colorImages[imgNdx],							// VkImage					image;
+				VK_IMAGE_VIEW_TYPE_2D,								// VkImageViewType			viewType;
+				m_colorFormat,										// VkFormat					format;
+				componentMappingRGBA,								// VkComponentMapping		components;
+				{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }		// VkImageSubresourceRange	subresourceRange;
+			};
+
+			m_colorAttachmentViews[imgNdx] = SharedImageViewPtr(new UniqueImageView(createImageView(vk, vkDevice, &colorAttachmentViewParams)));
+		}
 	}
 
 	// Create render pass
 	{
-		const VkAttachmentDescription colorAttachmentDescription =
-		{
-			0u,													// VkAttachmentDescriptionFlags		flags;
-			m_colorFormat,										// VkFormat							format;
-			VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					initialLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout					finalLayout;
-		};
+		std::vector<VkAttachmentDescription>	colorAttachmentDescriptions(m_imageCount);
+		std::vector<VkAttachmentReference>		colorAttachmentReferences(m_imageCount);
 
-		const VkAttachmentReference colorAttachmentReference =
+		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
 		{
-			0u,													// deUint32			attachment;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout	layout;
-		};
+			colorAttachmentDescriptions[imgNdx].flags			= 0u;										// VkAttachmentDescriptionFlags		flags;
+			colorAttachmentDescriptions[imgNdx].format			= m_colorFormat;							// VkFormat							format;
+			colorAttachmentDescriptions[imgNdx].samples			= VK_SAMPLE_COUNT_1_BIT;					// VkSampleCountFlagBits			samples;
+			colorAttachmentDescriptions[imgNdx].loadOp			= VK_ATTACHMENT_LOAD_OP_CLEAR;				// VkAttachmentLoadOp				loadOp;
+			colorAttachmentDescriptions[imgNdx].storeOp			= VK_ATTACHMENT_STORE_OP_STORE;				// VkAttachmentStoreOp				storeOp;
+			colorAttachmentDescriptions[imgNdx].stencilLoadOp	= VK_ATTACHMENT_LOAD_OP_DONT_CARE;			// VkAttachmentLoadOp				stencilLoadOp;
+			colorAttachmentDescriptions[imgNdx].stencilStoreOp	= VK_ATTACHMENT_STORE_OP_DONT_CARE;			// VkAttachmentStoreOp				stencilStoreOp;
+			colorAttachmentDescriptions[imgNdx].initialLayout	= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;	// VkImageLayout					initialLayout;
+			colorAttachmentDescriptions[imgNdx].finalLayout		= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;	// VkImageLayout					finalLayout;
+
+			colorAttachmentReferences[imgNdx].attachment		= (deUint32)imgNdx;							// deUint32							attachment;
+			colorAttachmentReferences[imgNdx].layout			= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;	// VkImageLayout					layout;
+		}
 
 		const VkSubpassDescription subpassDescription =
 		{
@@ -355,8 +393,8 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,					// VkPipelineBindPoint			pipelineBindPoint;
 			0u,													// deUint32						inputAttachmentCount;
 			DE_NULL,											// const VkAttachmentReference*	pInputAttachments;
-			1u,													// deUint32						colorAttachmentCount;
-			&colorAttachmentReference,							// const VkAttachmentReference*	pColorAttachments;
+			(deUint32)m_imageCount,								// deUint32						colorAttachmentCount;
+			&colorAttachmentReferences[0],						// const VkAttachmentReference*	pColorAttachments;
 			DE_NULL,											// const VkAttachmentReference*	pResolveAttachments;
 			DE_NULL,											// const VkAttachmentReference*	pDepthStencilAttachment;
 			0u,													// deUint32						preserveAttachmentCount;
@@ -368,8 +406,8 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
 			0u,													// VkRenderPassCreateFlags			flags;
-			1u,													// deUint32							attachmentCount;
-			&colorAttachmentDescription,						// const VkAttachmentDescription*	pAttachments;
+			(deUint32)m_imageCount,								// deUint32							attachmentCount;
+			&colorAttachmentDescriptions[0],					// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
 			&subpassDescription,								// const VkSubpassDescription*		pSubpasses;
 			0u,													// deUint32							dependencyCount;
@@ -381,14 +419,18 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 
 	// Create framebuffer
 	{
+		std::vector<VkImageView> pAttachments(m_imageCount);
+		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+			pAttachments[imgNdx] = m_colorAttachmentViews[imgNdx]->get();
+
 		const VkFramebufferCreateInfo framebufferParams =
 		{
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType			sType;
 			DE_NULL,											// const void*				pNext;
 			0u,													// VkFramebufferCreateFlags	flags;
 			*m_renderPass,										// VkRenderPass				renderPass;
-			1u,													// deUint32					attachmentCount;
-			&m_colorAttachmentView.get(),						// const VkImageView*		pAttachments;
+			(deUint32)m_imageCount,								// deUint32					attachmentCount;
+			&pAttachments[0],									// const VkImageView*		pAttachments;
 			(deUint32)m_renderSize.x(),							// deUint32					width;
 			(deUint32)m_renderSize.y(),							// deUint32					height;
 			1u													// deUint32					layers;
@@ -523,18 +565,20 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			1.0f															// float									lineWidth;
 		};
 
-		const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
+		std::vector<VkPipelineColorBlendAttachmentState>	colorBlendAttachmentStates(m_imageCount);
+
+		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
 		{
-			false,														// VkBool32					blendEnable;
-			VK_BLEND_FACTOR_ONE,										// VkBlendFactor			srcColorBlendFactor;
-			VK_BLEND_FACTOR_ZERO,										// VkBlendFactor			dstColorBlendFactor;
-			VK_BLEND_OP_ADD,											// VkBlendOp				colorBlendOp;
-			VK_BLEND_FACTOR_ONE,										// VkBlendFactor			srcAlphaBlendFactor;
-			VK_BLEND_FACTOR_ZERO,										// VkBlendFactor			dstAlphaBlendFactor;
-			VK_BLEND_OP_ADD,											// VkBlendOp				alphaBlendOp;
-			VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |		// VkColorComponentFlags	colorWriteMask;
-				VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
-		};
+			colorBlendAttachmentStates[imgNdx].blendEnable			= false;												// VkBool32					blendEnable;
+			colorBlendAttachmentStates[imgNdx].srcColorBlendFactor	= VK_BLEND_FACTOR_ONE;									// VkBlendFactor			srcColorBlendFactor;
+			colorBlendAttachmentStates[imgNdx].dstColorBlendFactor	= VK_BLEND_FACTOR_ZERO;									// VkBlendFactor			dstColorBlendFactor;
+			colorBlendAttachmentStates[imgNdx].colorBlendOp			= VK_BLEND_OP_ADD;										// VkBlendOp				colorBlendOp;
+			colorBlendAttachmentStates[imgNdx].srcAlphaBlendFactor	= VK_BLEND_FACTOR_ONE;									// VkBlendFactor			srcAlphaBlendFactor;
+			colorBlendAttachmentStates[imgNdx].dstAlphaBlendFactor	= VK_BLEND_FACTOR_ZERO;									// VkBlendFactor			dstAlphaBlendFactor;
+			colorBlendAttachmentStates[imgNdx].alphaBlendOp			= VK_BLEND_OP_ADD;										// VkBlendOp				alphaBlendOp;
+			colorBlendAttachmentStates[imgNdx].colorWriteMask		= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |	// VkColorComponentFlags	colorWriteMask;
+																		VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		}
 
 		const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
 		{
@@ -543,8 +587,8 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			0u,															// VkPipelineColorBlendStateCreateFlags			flags;
 			false,														// VkBool32										logicOpEnable;
 			VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
-			1u,															// deUint32										attachmentCount;
-			&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState*	pAttachments;
+			(deUint32)m_imageCount,										// deUint32										attachmentCount;
+			&colorBlendAttachmentStates[0],								// const VkPipelineColorBlendAttachmentState*	pAttachments;
 			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4];
 		};
 
@@ -694,26 +738,32 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			&attachmentClearValue									// const VkClearValue*	pClearValues;
 		};
 
-		const VkImageMemoryBarrier preAttachmentBarrier =
+		std::vector<VkImageMemoryBarrier> preAttachmentBarriers(m_imageCount);
+
+		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
 		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			0u,												// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
-			*m_colorImage,									// VkImage					image;
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }	// VkImageSubresourceRange	subresourceRange;
-		};
+			preAttachmentBarriers[imgNdx].sType								= VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;	// VkStructureType			sType;
+			preAttachmentBarriers[imgNdx].pNext								= DE_NULL;									// const void*				pNext;
+			preAttachmentBarriers[imgNdx].srcAccessMask						= 0u;										// VkAccessFlags			srcAccessMask;
+			preAttachmentBarriers[imgNdx].dstAccessMask						= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;		// VkAccessFlags			dstAccessMask;
+			preAttachmentBarriers[imgNdx].oldLayout							= VK_IMAGE_LAYOUT_UNDEFINED;				// VkImageLayout			oldLayout;
+			preAttachmentBarriers[imgNdx].newLayout							= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;	// VkImageLayout			newLayout;
+			preAttachmentBarriers[imgNdx].srcQueueFamilyIndex				= VK_QUEUE_FAMILY_IGNORED;					// deUint32					srcQueueFamilyIndex;
+			preAttachmentBarriers[imgNdx].dstQueueFamilyIndex				= VK_QUEUE_FAMILY_IGNORED;					// deUint32					dstQueueFamilyIndex;
+			preAttachmentBarriers[imgNdx].image								= **m_colorImages[imgNdx];					// VkImage					image;
+			preAttachmentBarriers[imgNdx].subresourceRange.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;				// VkImageSubresourceRange	subresourceRange;
+			preAttachmentBarriers[imgNdx].subresourceRange.baseMipLevel		= 0u;
+			preAttachmentBarriers[imgNdx].subresourceRange.levelCount		= 1u;
+			preAttachmentBarriers[imgNdx].subresourceRange.baseArrayLayer	= 0u;
+			preAttachmentBarriers[imgNdx].subresourceRange.layerCount		= 1u;
+		}
 
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,
-			0u, DE_NULL, 0u, DE_NULL, 1u, &preAttachmentBarrier);
+			0u, DE_NULL, 0u, DE_NULL, (deUint32)m_imageCount, &preAttachmentBarriers[0]);
 
 		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1256,17 +1306,7 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 	const rr::Program					rrProgram				= coordCaptureProgram.getReferenceProgram();
 	ReferenceRenderer					refRenderer				(m_renderSize.x(), m_renderSize.y(), 1, colorFormat, depthStencilFormat, &rrProgram);
 
-	// Read back result image
-	UniquePtr<tcu::TextureLevel>		result					(readColorAttachment(m_context.getDeviceInterface(),
-																					 m_context.getDevice(),
-																					 m_context.getUniversalQueue(),
-																					 m_context.getUniversalQueueFamilyIndex(),
-																					 m_context.getDefaultAllocator(),
-																					 *m_colorImage,
-																					 m_colorFormat,
-																					 m_renderSize));
-
-	bool								compareOk				= true;
+	bool								compareOkAll			= true;
 
 	tcu::Vec4							lookupScale				(1.0f);
 	tcu::Vec4							lookupBias				(0.0f);
@@ -1284,10 +1324,9 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 		const tcu::Sampler					sampler			= mapVkSampler(m_samplerParams);
 		const float							referenceLod	= de::clamp(m_samplerParams.mipLodBias + m_samplerLod, m_samplerParams.minLod, m_samplerParams.maxLod);
 		const float							lodError		= 1.0f / 255.f;
-		const tcu::Vec2						lodBounds		(referenceLod-lodError, referenceLod+lodError);
+		const tcu::Vec2						lodBounds		(referenceLod - lodError, referenceLod + lodError);
 		const vk::VkImageSubresourceRange	subresource		= resolveSubresourceRange(*m_texture, m_subresourceRange);
 
-		const tcu::ConstPixelBufferAccess	resultAccess	= result->getAccess();
 		const tcu::ConstPixelBufferAccess	coordAccess		= refRenderer.getAccess();
 		tcu::TextureLevel					errorMask		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), (int)m_renderSize.x(), (int)m_renderSize.y());
 		const tcu::PixelBufferAccess		errorAccess		= errorMask.getAccess();
@@ -1299,87 +1338,105 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 		lookupPrecision.coordBits		= tcu::IVec3(17, 17, 17);
 		lookupPrecision.uvwBits			= tcu::IVec3(5, 5, 5);
 		lookupPrecision.colorMask		= tcu::BVec4(true);
-		lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(tcu::IVec4(8,8,8,8)) / swizzleScaleBias(lookupScale, m_componentMapping);
+		lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(tcu::IVec4(8, 8, 8, 8)) / swizzleScaleBias(lookupScale, m_componentMapping);
 
 		if (tcu::isSRGB(m_texture->getTextureFormat()))
 			lookupPrecision.colorThreshold += tcu::Vec4(4.f / 255.f);
 
-		switch (m_imageViewType)
+		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
 		{
-			case VK_IMAGE_VIEW_TYPE_1D:
-			{
-				std::vector<tcu::ConstPixelBufferAccess>	levels;
-				UniquePtr<tcu::Texture1DView>				texView	(getTexture1DView(*m_texture, subresource, levels));
+			// Read back result image
+			UniquePtr<tcu::TextureLevel>		result(readColorAttachment(m_context.getDeviceInterface(),
+				m_context.getDevice(),
+				m_context.getUniversalQueue(),
+				m_context.getUniversalQueueFamilyIndex(),
+				m_context.getDefaultAllocator(),
+				**m_colorImages[imgNdx],
+				m_colorFormat,
+				m_renderSize));
+			const tcu::ConstPixelBufferAccess	resultAccess = result->getAccess();
 
-				compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-				break;
+			bool								compareOk	 = true;
+
+			switch (m_imageViewType)
+			{
+				case VK_IMAGE_VIEW_TYPE_1D:
+				{
+					std::vector<tcu::ConstPixelBufferAccess>	levels;
+					UniquePtr<tcu::Texture1DView>				texView(getTexture1DView(*m_texture, subresource, levels));
+
+					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+					break;
+				}
+
+				case VK_IMAGE_VIEW_TYPE_1D_ARRAY:
+				{
+					std::vector<tcu::ConstPixelBufferAccess>	levels;
+					UniquePtr<tcu::Texture1DArrayView>			texView(getTexture1DArrayView(*m_texture, subresource, levels));
+
+					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+					break;
+				}
+
+				case VK_IMAGE_VIEW_TYPE_2D:
+				{
+					std::vector<tcu::ConstPixelBufferAccess>	levels;
+					UniquePtr<tcu::Texture2DView>				texView(getTexture2DView(*m_texture, subresource, levels));
+
+					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+					break;
+				}
+
+				case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
+				{
+					std::vector<tcu::ConstPixelBufferAccess>	levels;
+					UniquePtr<tcu::Texture2DArrayView>			texView(getTexture2DArrayView(*m_texture, subresource, levels));
+
+					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+					break;
+				}
+
+				case VK_IMAGE_VIEW_TYPE_CUBE:
+				{
+					std::vector<tcu::ConstPixelBufferAccess>	levels;
+					UniquePtr<tcu::TextureCubeView>				texView(getTextureCubeView(*m_texture, subresource, levels));
+
+					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+					break;
+				}
+
+				case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:
+				{
+					std::vector<tcu::ConstPixelBufferAccess>	levels;
+					UniquePtr<tcu::TextureCubeArrayView>		texView(getTextureCubeArrayView(*m_texture, subresource, levels));
+
+					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+					break;
+				}
+
+				case VK_IMAGE_VIEW_TYPE_3D:
+				{
+					std::vector<tcu::ConstPixelBufferAccess>	levels;
+					UniquePtr<tcu::Texture3DView>				texView(getTexture3DView(*m_texture, subresource, levels));
+
+					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+					break;
+				}
+
+				default:
+					DE_ASSERT(false);
 			}
 
-			case VK_IMAGE_VIEW_TYPE_1D_ARRAY:
-			{
-				std::vector<tcu::ConstPixelBufferAccess>	levels;
-				UniquePtr<tcu::Texture1DArrayView>			texView	(getTexture1DArrayView(*m_texture, subresource, levels));
-
-				compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-				break;
-			}
-
-			case VK_IMAGE_VIEW_TYPE_2D:
-			{
-				std::vector<tcu::ConstPixelBufferAccess>	levels;
-				UniquePtr<tcu::Texture2DView>				texView	(getTexture2DView(*m_texture, subresource, levels));
-
-				compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-				break;
-			}
-
-			case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
-			{
-				std::vector<tcu::ConstPixelBufferAccess>	levels;
-				UniquePtr<tcu::Texture2DArrayView>			texView	(getTexture2DArrayView(*m_texture, subresource, levels));
-
-				compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-				break;
-			}
-
-			case VK_IMAGE_VIEW_TYPE_CUBE:
-			{
-				std::vector<tcu::ConstPixelBufferAccess>	levels;
-				UniquePtr<tcu::TextureCubeView>				texView	(getTextureCubeView(*m_texture, subresource, levels));
-
-				compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-				break;
-			}
-
-			case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:
-			{
-				std::vector<tcu::ConstPixelBufferAccess>	levels;
-				UniquePtr<tcu::TextureCubeArrayView>		texView	(getTextureCubeArrayView(*m_texture, subresource, levels));
-
-				compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-				break;
-			}
-
-			case VK_IMAGE_VIEW_TYPE_3D:
-			{
-				std::vector<tcu::ConstPixelBufferAccess>	levels;
-				UniquePtr<tcu::Texture3DView>				texView	(getTexture3DView(*m_texture, subresource, levels));
-
-				compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-				break;
-			}
-
-			default:
-				DE_ASSERT(false);
-		}
-
-		if (!compareOk)
-			m_context.getTestContext().getLog()
+			if (!compareOk)
+				m_context.getTestContext().getLog()
 				<< tcu::TestLog::Image("Result", "Result Image", resultAccess)
 				<< tcu::TestLog::Image("ErrorMask", "Error Mask", errorAccess);
+
+			compareOkAll = compareOkAll && compareOk;
+		}
 	}
 
-	if (compareOk)
+	if (compareOkAll)
 		return tcu::TestStatus::pass("Result image matches reference");
 	else
 		return tcu::TestStatus::fail("Image mismatch");

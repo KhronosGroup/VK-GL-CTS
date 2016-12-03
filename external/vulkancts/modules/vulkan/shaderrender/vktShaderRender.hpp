@@ -32,6 +32,7 @@
 #include "deUniquePtr.hpp"
 
 #include "vkDefs.hpp"
+#include "vkRefUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkRef.hpp"
 #include "vkMemUtil.hpp"
@@ -642,6 +643,8 @@ private:
 
 	typedef de::SharedPtr<de::UniquePtr<UniformInfo> >	UniformInfoSp;
 	std::vector<UniformInfoSp>							m_uniformInfos;
+
+	std::vector< de::SharedPtr<vk::Allocation> >		m_allocations;
 
 	std::vector<vk::VkVertexInputBindingDescription>	m_vertexBindingDescription;
 	std::vector<vk::VkVertexInputAttributeDescription>	m_vertexAttributeDescription;

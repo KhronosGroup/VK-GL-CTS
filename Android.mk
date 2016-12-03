@@ -726,6 +726,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiDeviceInitializationTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiFeatureInfo.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiFillBufferTests.cpp \
+	external/vulkancts/modules/vulkan/api/vktApiGranularityTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiImageClearingTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiNullHandleTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiObjectManagementTests.cpp \
@@ -801,6 +802,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleTestsUtil.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelinePushConstantTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineReferenceRenderer.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineRenderToImageTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineSamplerTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineSpecConstantTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineSpecConstantUtil.cpp \
@@ -836,6 +838,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferMemoryAliasing.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferSparseBinding.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferSparseResidency.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferTests.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageMemoryAliasing.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageSparseBinding.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageSparseResidency.cpp \
