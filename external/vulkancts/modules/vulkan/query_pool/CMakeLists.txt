@@ -8,6 +8,8 @@ set(DEQP_VK_QUERY_POOL_SRCS
 	vktQueryPoolTests.cpp
 	vktQueryPoolOcclusionTests.hpp
 	vktQueryPoolOcclusionTests.cpp
+	vktQueryPoolStatisticsTests.hpp
+	vktQueryPoolStatisticsTests.cpp
 )
 
 set(DEQP_VK_QUERY_POOL_LIBS
