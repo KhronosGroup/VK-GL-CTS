@@ -579,7 +579,7 @@ ES2CTS_GTF_PKG_N1CFG				= Package(module = ES2GTF_MODULE, useforfirsteglconfig =
 	])
 
 MUSTPASS_LISTS				= [
-	Mustpass(project = CTS_KHR_MP_ES2_PROJECT,	version = "2.0.7.0",
+	Mustpass(project = CTS_KHR_MP_ES2_PROJECT,	version = "2.0.7.x",
 			packages = [ES2CTS_KHR_PKG_1CFG,
 						ES2CTS_DEQP_PKG_1CFG,
 						ES2CTS_GTF_PKG_1CFG,
@@ -587,7 +587,7 @@ MUSTPASS_LISTS				= [
 						ES2CTS_DEQP_PKG_N1CFG,
 						ES2CTS_GTF_PKG_N1CFG,
 						]),
-	Mustpass(project = CTS_KHR_MP_ES3x_PROJECT,	version = "3.2.2.0",
+	Mustpass(project = CTS_KHR_MP_ES3x_PROJECT,	version = "3.2.2.x",
 			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
 						GLCTS_GLES2_DEQP_PKG_1CFG,
 						GLCTS_GLES2_GTF_PKG_1CFG,
@@ -609,7 +609,7 @@ MUSTPASS_LISTS				= [
 						GLCTS_GLES32_KHR_PKG_1CFG,
 						GLCTS_GLES32_KHR_PKG_N1CFG,
 						]),
-		Mustpass(project = CTS_AOSP_MP_PROJECT,	version = "3.2.2.0",
+		Mustpass(project = CTS_AOSP_MP_PROJECT,	version = "3.2.2.x",
 			packages = [GLCTS_GLES2_PKG,
 						GLCTS_GLES3_PKG,
 						GLCTS_GLES31_PKG,

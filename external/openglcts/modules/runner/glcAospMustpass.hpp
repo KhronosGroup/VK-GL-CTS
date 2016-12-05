@@ -19,7 +19,7 @@
  * be lost! Modify the generating script instead.
  */
 
-const string mustpassDir = "gl_cts/data/aosp_mustpass/3.2.2.0/";
+const string mustpassDir = "gl_cts/data/aosp_mustpass/3.2.2.x/";
 
 struct RunParams
 {
