@@ -1088,10 +1088,11 @@ void DrawElementsBaseVertexTestBase::setUpFunctionalTestObjects(
 		gl.bindBuffer(GL_ARRAY_BUFFER, m_bo_id);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed.");
 
-		gl.bufferData(GL_ARRAY_BUFFER, m_bo_functional_data_index_size + m_bo_functional_data_vertex_size +
-										   m_bo_functional2_data_vertex_size + m_bo_functional2_data_index_size +
-										   m_bo_functional3_data_index_size + m_bo_functional4_data_index_size +
-										   m_bo_functional5_data_index_size + m_bo_functional_data_color_size,
+		gl.bufferData(GL_ARRAY_BUFFER,
+					  m_bo_functional_data_index_size + m_bo_functional_data_vertex_size +
+						  m_bo_functional2_data_vertex_size + m_bo_functional2_data_index_size +
+						  m_bo_functional3_data_index_size + m_bo_functional4_data_index_size +
+						  m_bo_functional5_data_index_size + m_bo_functional_data_color_size,
 					  DE_NULL, /* data */
 					  GL_STATIC_DRAW);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");

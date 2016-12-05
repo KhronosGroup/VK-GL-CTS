@@ -2012,10 +2012,10 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 				m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_sparse_bos[n_sparse_bo]);
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-				m_gl.bufferPageCommitmentARB(GL_COPY_WRITE_BUFFER, (is_dst_bo) ? test_case.dst_bo_commit_start_offset :
-																				 test_case.src_bo_commit_start_offset,
-											 (is_dst_bo) ? test_case.dst_bo_commit_size : test_case.src_bo_commit_size,
-											 GL_TRUE); /* commit */
+				m_gl.bufferPageCommitmentARB(
+					GL_COPY_WRITE_BUFFER,
+					(is_dst_bo) ? test_case.dst_bo_commit_start_offset : test_case.src_bo_commit_start_offset,
+					(is_dst_bo) ? test_case.dst_bo_commit_size : test_case.src_bo_commit_size, GL_TRUE); /* commit */
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
 
 				m_gl.bufferSubData(GL_COPY_READ_BUFFER, 0, /* offset */
@@ -4873,9 +4873,9 @@ bool SSBOStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBuffer() call failed.");
 
-		for (unsigned int n_invocation = 0; current_ssbo_offset < m_sparse_bo_size && result_local;
-			 ++n_invocation, current_ssbo_offset =
-								 static_cast<unsigned int>(current_ssbo_offset + (sizeof(int) * 4 /* std140 */)))
+		for (unsigned int n_invocation = 0; current_ssbo_offset < m_sparse_bo_size && result_local; ++n_invocation,
+						  current_ssbo_offset = static_cast<unsigned int>(current_ssbo_offset +
+																		  (sizeof(int) * 4 /* std140 */)))
 		{
 			const unsigned int n_page = current_ssbo_offset / m_page_size;
 

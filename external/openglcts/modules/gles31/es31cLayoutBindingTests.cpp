@@ -104,8 +104,9 @@ public:
 				m_context, glu::makeVtxFragSources(m_contextSupplier.getSource(VertexShader).c_str(),
 												   m_contextSupplier.getSource(FragmentShader).c_str()));
 		else
-			m_program = new glu::ShaderProgram(m_context, glu::ProgramSources() << glu::ComputeSource(
-															  m_contextSupplier.getSource(ComputeShader).c_str()));
+			m_program = new glu::ShaderProgram(
+				m_context,
+				glu::ProgramSources() << glu::ComputeSource(m_contextSupplier.getSource(ComputeShader).c_str()));
 	}
 	virtual ~LayoutBindingProgram()
 	{

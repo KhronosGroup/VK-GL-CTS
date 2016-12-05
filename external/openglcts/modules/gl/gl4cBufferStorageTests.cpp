@@ -3559,9 +3559,9 @@ tcu::TestNode::IterateResult MapPersistentDrawTest::iterate()
 
 		/* Map buffers */
 		atom.Bind();
-		const Buffer::MapOwner atom_map(
-			atom.MapRange(0 /* offset */, atom_data_size, GL_MAP_PERSISTENT_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT |
-															  (is_gl_45 ? GL_MAP_FLUSH_EXPLICIT_BIT : 0)));
+		const Buffer::MapOwner atom_map(atom.MapRange(0 /* offset */, atom_data_size,
+													  GL_MAP_PERSISTENT_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT |
+														  (is_gl_45 ? GL_MAP_FLUSH_EXPLICIT_BIT : 0)));
 
 		rectangles.Bind();
 		const Buffer::MapOwner rectangles_map(

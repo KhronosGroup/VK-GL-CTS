@@ -121,9 +121,10 @@ static void getDefaultEglConfigList(tcu::Platform& eglPlatform, glu::ApiType typ
 		else
 		{
 			DE_ASSERT(!isRenderable || !isConformant || (numSamples != 0));
-			configList.excludedConfigs.push_back(ExcludedConfig(
-				CONFIGTYPE_EGL, id, isRenderable ? (isConformant ? EXCLUDEREASON_MSAA : EXCLUDEREASON_NOT_CONFORMANT) :
-												   EXCLUDEREASON_NOT_COMPATIBLE));
+			configList.excludedConfigs.push_back(
+				ExcludedConfig(CONFIGTYPE_EGL, id,
+							   isRenderable ? (isConformant ? EXCLUDEREASON_MSAA : EXCLUDEREASON_NOT_CONFORMANT) :
+											  EXCLUDEREASON_NOT_COMPATIBLE));
 		}
 	}
 }
