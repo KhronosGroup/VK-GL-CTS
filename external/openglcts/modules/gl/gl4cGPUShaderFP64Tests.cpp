@@ -3472,6 +3472,21 @@ glw::GLuint GPUShaderFP64Test2::getMaxUniformComponents(shaderStage shader_stage
 	return max_uniform_components;
 }
 
+/** Get maximum size allowed for an uniform block
+ *
+ * @return Maxmimum uniform block size
+ **/
+glw::GLuint GPUShaderFP64Test2::getMaxUniformBlockSize() const
+{
+	const glw::Functions& gl					 = m_context.getRenderContext().getFunctions();
+	glw::GLint			  max_uniform_block_size = 0;
+
+	gl.getIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &max_uniform_block_size);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+	return max_uniform_block_size;
+}
+
 /** Get number of components required to store single uniform of given type
  *
  * @param uniform_type Tested uniform type
@@ -3493,6 +3508,41 @@ glw::GLuint GPUShaderFP64Test2::getRequiredComponentsNumber(const uniformTypeDet
 
 		return alignment * uniform_type.m_n_columns;
 	}
+}
+
+/** Get size used for each member of a uniform array of a given type in a std140 column-major layout
+ *
+ * @param uniform_type Tested uniform type
+ *
+ * @return Size of a single member
+ **/
+glw::GLuint GPUShaderFP64Test2::getUniformTypeMemberSize(const uniformTypeDetails& uniform_type) const
+{
+	static const glw::GLuint vec4_size	 = 4 * Utils::getBaseVariableTypeComponentSize(Utils::VARIABLE_TYPE_FLOAT);
+	const glw::GLuint		 column_length = uniform_type.m_n_rows;
+
+	/** Size for a layout(std140, column_major) uniform_type uniform[] **/
+	return vec4_size * ((column_length + 1) / 2) * uniform_type.m_n_columns;
+}
+
+/** Get the maximum amount of uniforms to be used in a shader stage for a given type
+ *
+ * @param shader_stage Tested shader stage id
+ * @param uniform_type Tested uniform type
+ *
+ * @return Number of components
+ **/
+glw::GLuint GPUShaderFP64Test2::getAmountUniforms(shaderStage				shader_stage,
+												  const uniformTypeDetails& uniform_type) const
+{
+	const glw::GLuint max_uniform_components   = getMaxUniformComponents(shader_stage);
+	const glw::GLuint required_components	  = getRequiredComponentsNumber(uniform_type);
+	const glw::GLuint n_uniforms			   = max_uniform_components / required_components;
+	const glw::GLuint max_uniform_block_size   = getMaxUniformBlockSize();
+	const glw::GLuint uniform_type_member_size = getUniformTypeMemberSize(uniform_type);
+	const glw::GLuint max_uniforms			   = max_uniform_block_size / uniform_type_member_size;
+
+	return max_uniforms < n_uniforms ? max_uniforms : n_uniforms;
 }
 
 /** Get name of shader stage
@@ -4055,19 +4105,17 @@ void GPUShaderFP64Test2::prepareTestComputeShader(const glw::GLchar* uniform_def
 void GPUShaderFP64Test2::prepareUniformDefinitions(shaderStage shader_stage, const uniformTypeDetails& uniform_type,
 												   std::string& out_source_code) const
 {
-	const glw::GLuint max_uniform_components = getMaxUniformComponents(shader_stage);
-	const glw::GLuint required_components	= getRequiredComponentsNumber(uniform_type);
-	const glw::GLuint n_uniforms			 = max_uniform_components / required_components;
+	const glw::GLuint n_uniforms = getAmountUniforms(shader_stage, uniform_type);
 	std::stringstream stream;
 
 	/*
-	 * uniform M_UNIFORM_BLOCK_NAME
+	 * layout(std140) uniform M_UNIFORM_BLOCK_NAME
 	 * {
 	 *     TYPE_NAME uniform_array[N_UNIFORMS];
 	 * };
 	 */
-	stream << "uniform " << m_uniform_block_name << "\n"
-													"{\n";
+	stream << "layout(std140) uniform " << m_uniform_block_name << "\n"
+																   "{\n";
 
 	stream << "    " << uniform_type.m_type_name << " uniform_array[" << n_uniforms << "];\n";
 
@@ -4085,17 +4133,15 @@ void GPUShaderFP64Test2::prepareUniformDefinitions(shaderStage shader_stage, con
 void GPUShaderFP64Test2::prepareUniforms(shaderStage shader_stage, const uniformTypeDetails& uniform_type,
 										 const Utils::programInfo& program_info) const
 {
-	glw::GLint				  buffer_size			 = 0;
-	glw::GLuint				  element_ordinal		 = 1;
-	const glw::Functions&	 gl					 = m_context.getRenderContext().getFunctions();
-	const glw::GLuint		  max_uniform_components = getMaxUniformComponents(shader_stage);
-	const glw::GLuint		  n_columns				 = uniform_type.m_n_columns;
-	const glw::GLuint		  n_rows				 = uniform_type.m_n_rows;
-	const glw::GLuint		  n_elements			 = n_columns * n_rows;
+	glw::GLint				  buffer_size	 = 0;
+	glw::GLuint				  element_ordinal = 1;
+	const glw::Functions&	 gl			  = m_context.getRenderContext().getFunctions();
+	const glw::GLuint		  n_columns		  = uniform_type.m_n_columns;
+	const glw::GLuint		  n_rows		  = uniform_type.m_n_rows;
+	const glw::GLuint		  n_elements	  = n_columns * n_rows;
 	uniformDetails			  uniform_details;
-	const glw::GLuint		  program_id		  = program_info.m_program_object_id;
-	const glw::GLuint		  required_components = getRequiredComponentsNumber(uniform_type);
-	const glw::GLint		  n_uniforms		  = max_uniform_components / required_components;
+	const glw::GLuint		  program_id = program_info.m_program_object_id;
+	const glw::GLint		  n_uniforms = getAmountUniforms(shader_stage, uniform_type);
 	std::vector<glw::GLubyte> uniform_buffer_data;
 	glw::GLuint				  uniform_block_index = 0;
 
@@ -4172,13 +4218,11 @@ void GPUShaderFP64Test2::prepareUniformTypes()
 void GPUShaderFP64Test2::prepareUniformVerification(shaderStage shader_stage, const uniformTypeDetails& uniform_type,
 													std::string& out_source_code) const
 {
-	glw::GLuint		  element_ordinal		 = 1;
-	const glw::GLuint max_uniform_components = getMaxUniformComponents(shader_stage);
-	const glw::GLuint required_components	= getRequiredComponentsNumber(uniform_type);
-	const glw::GLuint n_columns				 = uniform_type.m_n_columns;
-	const glw::GLuint n_rows				 = uniform_type.m_n_rows;
-	const glw::GLuint n_elements			 = n_columns * n_rows;
-	const glw::GLuint n_uniforms			 = max_uniform_components / required_components;
+	glw::GLuint		  element_ordinal = 1;
+	const glw::GLuint n_columns		  = uniform_type.m_n_columns;
+	const glw::GLuint n_rows		  = uniform_type.m_n_rows;
+	const glw::GLuint n_elements	  = n_columns * n_rows;
+	const glw::GLuint n_uniforms	  = getAmountUniforms(shader_stage, uniform_type);
 	std::stringstream stream;
 
 	/*
