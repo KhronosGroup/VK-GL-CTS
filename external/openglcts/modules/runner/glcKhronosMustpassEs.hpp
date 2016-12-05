@@ -1,6 +1,6 @@
-#ifndef _GLCKHRONOSMUSTPASSES3X_HPP
-#define _GLCKHRONOSMUSTPASSES3X_HPP
-/*     Copyright (C) 2016 The Khronos Group Inc
+#ifndef _GLCKHRONOSMUSTPASSES_HPP
+#define _GLCKHRONOSMUSTPASSES_HPP
+/*     Copyright (C) 2016-2017 The Khronos Group Inc
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ struct RunParams
 	int			 surfaceHeight;
 };
 
-static const RunParams khronos_mustpass_es3x_first_cfg[] = {
+static const RunParams khronos_mustpass_es_first_cfg[] = {
 	{ glu::ApiType::es(2, 0), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 	{ glu::ApiType::es(2, 0), "deqp-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 	{ glu::ApiType::es(2, 0), "gtf-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
@@ -60,7 +60,7 @@ static const RunParams khronos_mustpass_es3x_first_cfg[] = {
 	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
 };
 
-static const RunParams khronos_mustpass_es3x_other_cfg[] = {
+static const RunParams khronos_mustpass_es_other_cfg[] = {
 	{ glu::ApiType::es(2, 0), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 	{ glu::ApiType::es(2, 0), "deqp-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 	{ glu::ApiType::es(2, 0), "gtf-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
@@ -77,4 +77,4 @@ static const RunParams khronos_mustpass_es3x_other_cfg[] = {
 	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
 };
 
-#endif // _GLCKHRONOSMUSTPASSES3X_HPP
+#endif // _GLCKHRONOSMUSTPASSES_HPP

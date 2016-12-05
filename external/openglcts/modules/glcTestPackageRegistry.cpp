@@ -25,6 +25,8 @@
 #include "glcTestPackageRegistry.hpp"
 #include "glcConfigPackage.hpp"
 
+#include "teglTestPackage.hpp"
+
 #include "es2cTestPackage.hpp"
 #include "tes2TestPackage.hpp"
 
@@ -77,6 +79,13 @@ static tcu::TestPackage* createES2Package(tcu::TestContext& testCtx)
 {
 	return new es2cts::TestPackage(testCtx, "KHR-GLES2");
 }
+
+#if DE_OS != DE_OS_ANDROID
+static tcu::TestPackage* createdEQPEGLPackage(tcu::TestContext& testCtx)
+{
+	return new deqp::egl::TestPackage(testCtx);
+}
+#endif
 
 #if DE_OS != DE_OS_ANDROID
 static tcu::TestPackage* createdEQPES2Package(tcu::TestContext& testCtx)
@@ -230,6 +239,9 @@ void registerPackages(void)
 
 	registry->registerPackage("CTS-Configs", createConfigPackage);
 
+#if DE_OS != DE_OS_ANDROID
+	registry->registerPackage("dEQP-EGL", createdEQPEGLPackage);
+#endif
 	registry->registerPackage("KHR-GLES2", createES2Package);
 #if DE_OS != DE_OS_ANDROID
 	registry->registerPackage("dEQP-GLES2", createdEQPES2Package);

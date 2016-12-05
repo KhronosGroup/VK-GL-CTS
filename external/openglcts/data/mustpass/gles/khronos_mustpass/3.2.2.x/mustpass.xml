@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Mustpass version="3.2.2.x">
-	<!--/*     Copyright (C) 2016 The Khronos Group Inc
+	<!--/*     Copyright (C) 2016-2017 The Khronos Group Inc
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 	<!--/* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */-->
-	<TestPackage name="Khronos Mustpass ES3x">
+	<TestPackage name="Khronos Mustpass ES">
 		<Configuration caseListFile="gles2-khr-master.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-master" os="any" useForFirstEGLConfig="True"/>
 		<Configuration caseListFile="gles2-deqp-master.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="deqp-master" os="any" useForFirstEGLConfig="True"/>
 		<Configuration caseListFile="gles2-gtf-master.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="gtf-master" os="any" useForFirstEGLConfig="True"/>
