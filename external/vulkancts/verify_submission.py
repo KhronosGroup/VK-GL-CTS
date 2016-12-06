@@ -209,7 +209,7 @@ def verifyGitStatus (package):
 		statusPath	= os.path.join(package.basePath, package.gitStatus)
 		status		= readFile(statusPath)
 
-		if status.find("nothing to commit, working directory clean") < 0:
+		if status.find("nothing to commit, working directory clean") < 0 and status.find("nothing to commit, working tree clean") < 0:
 			messages.append(error(package.basePath, "Working directory is not clean"))
 	else:
 		messages.append(error(package.basePath, "Missing git-status.txt"))
