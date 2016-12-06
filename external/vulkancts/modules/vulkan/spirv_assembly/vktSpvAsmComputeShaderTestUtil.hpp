@@ -95,16 +95,20 @@ struct ComputeShaderSpec
 	std::vector<BufferSp>	outputs;
 	tcu::IVec3				numWorkGroups;
 	std::vector<deUint32>	specConstants;
+	qpTestResult			failResult;
+	std::string				failMessage;
 	// If null, a default verification will be performed by comparing the memory pointed to by outputAllocations
 	// and the contents of expectedOutputs. Otherwise the function pointed to by verifyIO will be called.
 	// If true is returned, then the test case is assumed to have passed, if false is returned, then the test
-	// case is assumed to have failed.
+	// case is assumed to have failed. Exact meaning of failure can be customized with failResult.
 	bool					(*verifyIO)(const std::vector<BufferSp>& inputs, const std::vector<AllocationSp>& outputAllocations, const std::vector<BufferSp>& expectedOutputs, tcu::TestLog& log);
-							ComputeShaderSpec()
+
+							ComputeShaderSpec (void)
 								: entryPoint	("main")
+								, failResult	(QP_TEST_RESULT_FAIL)
+								, failMessage	("Output doesn't match with expected")
 								, verifyIO		(DE_NULL)
 							{}
-
 };
 
 } // SpirVAssembly

@@ -404,7 +404,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	if (m_shaderSpec.verifyIO)
 	{
 		if (!(*m_shaderSpec.verifyIO)(m_shaderSpec.inputs, outputAllocs, m_shaderSpec.outputs, m_context.getTestContext().getLog()))
-			return tcu::TestStatus::fail("Output doesn't match with expected");
+			return tcu::TestStatus(m_shaderSpec.failResult, m_shaderSpec.failMessage);
 	}
 	else
 	{
@@ -412,11 +412,11 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		{
 			const BufferSp& expectedOutput = m_shaderSpec.outputs[outputNdx];
 			if (deMemCmp(expectedOutput->data(), outputAllocs[outputNdx]->getHostPtr(), expectedOutput->getNumBytes()))
-				return tcu::TestStatus::fail("Output doesn't match with expected");
+				return tcu::TestStatus(m_shaderSpec.failResult, m_shaderSpec.failMessage);
 		}
 	}
 
-	return tcu::TestStatus::pass("Ouput match with expected");
+	return tcu::TestStatus::pass("Output match with expected");
 }
 
 class ConvertTestInstance : public SpvAsmComputeShaderInstance
