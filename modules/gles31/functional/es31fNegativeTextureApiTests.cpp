@@ -1995,6 +1995,7 @@ void texparameterf (NegativeTestContext& ctx)
 void texparameteriv (NegativeTestContext& ctx)
 {
 	GLint params[1] = {GL_LINEAR};
+
 	GLuint texture = 0x1234;
 	ctx.glGenTextures(1, &texture);
 	ctx.glBindTexture(GL_TEXTURE_2D, texture);
@@ -3909,6 +3910,132 @@ void texstorage3d_invalid_levels (NegativeTestContext& ctx)
 	ctx.glDeleteTextures(2, textures);
 }
 
+void srgb_decode_texparameteri (NegativeTestContext& ctx)
+{
+	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+
+	GLuint	texture		= 0x1234;
+	GLint	textureMode	= -1;
+
+	ctx.glGenTextures(1, &texture);
+	ctx.glBindTexture(GL_TEXTURE_2D, texture);
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is GL_TEXTURE_SRGB_DECODE_EXT and the value of param(s) is not a valid value (one of DECODE_EXT, or SKIP_DECODE_EXT).");
+	ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SRGB_DECODE_EXT, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteTextures(1, &texture);
+}
+
+void srgb_decode_texparameterf (NegativeTestContext& ctx)
+{
+	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+
+	GLuint	texture		= 0x1234;
+	GLfloat	textureMode	= -1.0f;
+
+	ctx.glGenTextures(1, &texture);
+	ctx.glBindTexture(GL_TEXTURE_2D, texture);
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is GL_TEXTURE_SRGB_DECODE_EXT and the value of param(s) is not a valid value (one of DECODE_EXT, or SKIP_DECODE_EXT).");
+	ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_SRGB_DECODE_EXT, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteTextures(1, &texture);
+}
+
+void srgb_decode_texparameteriv (NegativeTestContext& ctx)
+{
+	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+
+	GLint	params[1]	= {GL_LINEAR};
+	GLuint	texture		= 0x1234;
+
+	ctx.glGenTextures(1, &texture);
+	ctx.glBindTexture(GL_TEXTURE_2D, texture);
+
+	params[0] = -1;
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is GL_TEXTURE_SRGB_DECODE_EXT and the value of param(s) is not a valid value (one of DECODE_EXT, or SKIP_DECODE_EXT).");
+	ctx.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SRGB_DECODE_EXT, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteTextures(1, &texture);
+}
+
+void srgb_decode_texparameterfv (NegativeTestContext& ctx)
+{
+	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+
+	GLfloat	params[1]	= {GL_LINEAR};
+	GLuint	texture		= 0x1234;
+
+	ctx.glGenTextures(1, &texture);
+	ctx.glBindTexture(GL_TEXTURE_2D, texture);
+
+	params[0] = -1.0f;
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is GL_TEXTURE_SRGB_DECODE_EXT and the value of param(s) is not a valid value (one of DECODE_EXT, or SKIP_DECODE_EXT).");
+	ctx.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_SRGB_DECODE_EXT, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteTextures(1, &texture);
+}
+
+void srgb_decode_texparameterIiv (NegativeTestContext& ctx)
+{
+	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		TCU_THROW(NotSupportedError,"glTexParameterIiv is not supported.");
+
+	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+
+	GLint	textureMode[]	= {GL_DEPTH_COMPONENT, GL_STENCIL_INDEX};
+	GLuint	texture			= 0x1234;
+
+	ctx.glGenTextures(1, &texture);
+	ctx.glBindTexture(GL_TEXTURE_2D, texture);
+
+	textureMode[0] = -1;
+	textureMode[1] = -1;
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is GL_TEXTURE_SRGB_DECODE_EXT and the value of param(s) is not a valid value (one of DECODE_EXT, or SKIP_DECODE_EXT).");
+	ctx.glTexParameterIiv(GL_TEXTURE_2D, GL_TEXTURE_SRGB_DECODE_EXT, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteTextures(1, &texture);
+}
+
+void srgb_decode_texparameterIuiv (NegativeTestContext& ctx)
+{
+	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		TCU_THROW(NotSupportedError,"glTexParameterIuiv is not supported.");
+
+	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+
+	GLuint	textureMode[]	= {GL_DEPTH_COMPONENT, GL_STENCIL_INDEX};
+	GLuint	texture			= 0x1234;
+
+	ctx.glGenTextures(1, &texture);
+	ctx.glBindTexture(GL_TEXTURE_2D, texture);
+
+	textureMode[0] = GL_DONT_CARE;
+	textureMode[1] = GL_DONT_CARE;
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is GL_TEXTURE_SRGB_DECODE_EXT and the value of param(s) is not a valid value (one of DECODE_EXT, or SKIP_DECODE_EXT).");
+	ctx.glTexParameterIuiv(GL_TEXTURE_2D, GL_TEXTURE_SRGB_DECODE_EXT, textureMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteTextures(1, &texture);
+}
+
 std::vector<FunctionContainer> getNegativeTextureApiTestFunctions()
 {
 	FunctionContainer funcs[] =
@@ -4021,6 +4148,12 @@ std::vector<FunctionContainer> getNegativeTextureApiTestFunctions()
 		{texstorage3d,									"texstorage3d",										"Invalid glTexStorage3D() usage"		   },
 		{texstorage3d_invalid_binding,					"texstorage3d_invalid_binding",						"Invalid glTexStorage3D() usage"		   },
 		{texstorage3d_invalid_levels,					"texstorage3d_invalid_levels",						"Invalid glTexStorage3D() usage"		   },
+		{srgb_decode_texparameteri,						"srgb_decode_texparameteri",						"Invalid texparameteri() usage srgb"	   },
+		{srgb_decode_texparameterf,						"srgb_decode_texparameterf",						"Invalid texparameterf() usage srgb"	   },
+		{srgb_decode_texparameteriv,					"srgb_decode_texparameteriv",						"Invalid texparameteriv() usage srgb"	   },
+		{srgb_decode_texparameterfv,					"srgb_decode_texparameterfv",						"Invalid texparameterfv() usage srgb"	   },
+		{srgb_decode_texparameterIiv,					"srgb_decode_texparameterIiv",						"Invalid texparameterIiv() usage srgb"	   },
+		{srgb_decode_texparameterIuiv,					"srgb_decode_texparameterIuiv",						"Invalid texparameterIuiv() usage srgb"	   },
 	};
 
 	return std::vector<FunctionContainer>(DE_ARRAY_BEGIN(funcs), DE_ARRAY_END(funcs));
