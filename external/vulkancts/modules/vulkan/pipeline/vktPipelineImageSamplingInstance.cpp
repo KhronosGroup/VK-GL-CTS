@@ -1249,6 +1249,7 @@ MovePtr<tcu::Texture3DView> getTexture3DView (const TestTexture& testTexture, co
 
 tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 {
+	const VkPhysicalDeviceLimits&		limits					= m_context.getDeviceProperties().limits;
 	// \note Color buffer is used to capture coordinates - not sampled texture values
 	const tcu::TextureFormat			colorFormat				(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT);
 	const tcu::TextureFormat			depthStencilFormat;		// Undefined depth/stencil format.
@@ -1283,8 +1284,8 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 	{
 		const tcu::Sampler					sampler			= mapVkSampler(m_samplerParams);
 		const float							referenceLod	= de::clamp(m_samplerParams.mipLodBias + m_samplerLod, m_samplerParams.minLod, m_samplerParams.maxLod);
-		const float							lodError		= 1.0f / 255.f;
-		const tcu::Vec2						lodBounds		(referenceLod-lodError, referenceLod+lodError);
+		const float							lodError		= 1.0f / static_cast<float>((1u << limits.mipmapPrecisionBits) - 1u);
+		const tcu::Vec2						lodBounds		(referenceLod - lodError, referenceLod + lodError);
 		const vk::VkImageSubresourceRange	subresource		= resolveSubresourceRange(*m_texture, m_subresourceRange);
 
 		const tcu::ConstPixelBufferAccess	resultAccess	= result->getAccess();
