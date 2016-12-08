@@ -202,7 +202,7 @@ if __name__ == "__main__":
 	parser.add_argument('--dump-config', dest='dumpConfig', action='store_true', help="Print out all configurations variables")
 	parser.add_argument('--java-api', dest='javaApi', default=common.ANDROID_JAVA_API, help="Set the API signature for the java build.")
 	parser.add_argument('--apk-package', dest='package', default='package', choices=['package', 'openglcts'], help="Folder with AndroidManifest.xml.")
-	parser.add_argument('--glcts-gtf-target', dest='gtfTarget', default='gles32', choices=['gles32', 'gles31', 'gles3', 'gles2'], help="Build GLCTS GTF module for the given API.")
+	parser.add_argument('--glcts-gtf-target', dest='gtfTarget', default='gles32', choices=['gles32', 'gles31', 'gles3', 'gles2', 'gl'], help="Build GLCTS GTF module for the given API.")
 	parser.add_argument('-p', '--parallel-build', dest='parallelBuild', action="store_true", help="Build native libraries in parallel.")
 
 	args = parser.parse_args()
