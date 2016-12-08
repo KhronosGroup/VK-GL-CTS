@@ -617,7 +617,7 @@ MUSTPASS_LISTS				= [
 	]
 
 buildPath                   = DEFAULT_BUILD_DIR.format(targetName = DEFAULT_TARGET, buildType = "Release")
-BUILD_CONFIG				= BuildConfig(buildPath, "Debug", ["-DDEQP_TARGET=%s" % DEFAULT_TARGET, "-DCMAKE_C_COMPILER=gcc", "-DCMAKE_CXX_COMPILER=g++", "-DGLCTS_GTF_TARGET=gles32"])
+BUILD_CONFIG				= BuildConfig(buildPath, "Debug", ["-DDEQP_TARGET=%s" % DEFAULT_TARGET, "-DGLCTS_GTF_TARGET=gles32"])
 
 if __name__ == "__main__":
 	gtfCMakeLists = os.path.join(DEQP_DIR, "external", "kc-cts", "src", "GTF_ES", "CMakeLists.txt")
