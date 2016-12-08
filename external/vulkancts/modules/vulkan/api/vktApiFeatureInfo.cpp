@@ -95,6 +95,11 @@ enum LimitType
 #define LIMIT(_X_)		DE_OFFSET_OF(VkPhysicalDeviceLimits, _X_), (const char*)(#_X_)
 #define FEATURE(_X_)	DE_OFFSET_OF(VkPhysicalDeviceFeatures, _X_)
 
+inline bool isExtensionSupported (const vector<string>& extensionStrings, const string& extensionName)
+{
+	return de::contains(extensionStrings.begin(), extensionStrings.end(), extensionName);
+}
+
 bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDeviceFeatures* features, TestLog& log)
 {
 	bool						limitsOk	= true;
@@ -663,7 +668,8 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 	{
 		"VK_KHR_swapchain",
 		"VK_KHR_display_swapchain",
-		"VK_KHR_sampler_mirror_clamp_to_edge"
+		"VK_KHR_sampler_mirror_clamp_to_edge",
+		"VK_KHR_shader_draw_parameters",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedInstanceKhrExtensions), s_allowedInstanceKhrExtensions);
@@ -1770,13 +1776,24 @@ void createFormatTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "compressed_formats",	"",	testCompressedFormatsSupported);
 }
 
-VkImageUsageFlags getValidImageUsageFlags (VkFormat, VkFormatFeatureFlags supportedFeatures)
+VkImageUsageFlags getValidImageUsageFlags (const VkFormatFeatureFlags supportedFeatures, const bool useKhrMaintenance1Semantics)
 {
 	VkImageUsageFlags	flags	= (VkImageUsageFlags)0;
 
-	// If format is supported at all, it must be valid transfer src+dst
-	if (supportedFeatures != 0)
-		flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	if (useKhrMaintenance1Semantics)
+	{
+		if ((supportedFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR) != 0)
+			flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+		if ((supportedFeatures & VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR) != 0)
+			flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	}
+	else
+	{
+		// If format is supported at all, it must be valid transfer src+dst
+		if (supportedFeatures != 0)
+			flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	}
 
 	if ((supportedFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0)
 		flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -2001,11 +2018,18 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 	const VkPhysicalDeviceFeatures&	deviceFeatures		= context.getDeviceFeatures();
 	const VkPhysicalDeviceLimits&	deviceLimits		= context.getDeviceProperties().limits;
 	const VkFormatProperties		formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+	const bool						hasKhrMaintenance1	= isExtensionSupported(context.getDeviceExtensions(), "VK_KHR_maintenance1");
 
 	const VkFormatFeatureFlags		supportedFeatures	= tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures : formatProperties.optimalTilingFeatures;
-	const VkImageUsageFlags			usageFlagSet		= getValidImageUsageFlags(format, supportedFeatures);
+	const VkImageUsageFlags			usageFlagSet		= getValidImageUsageFlags(supportedFeatures, hasKhrMaintenance1);
 
 	tcu::ResultCollector			results				(log, "ERROR: ");
+
+	if (hasKhrMaintenance1 && (supportedFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0)
+	{
+		results.check((supportedFeatures & (VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR | VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR)) != 0,
+					  "A sampled image format must have VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR and VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR format feature flags set");
+	}
 
 	for (VkImageUsageFlags curUsageFlags = 0; curUsageFlags <= usageFlagSet; curUsageFlags++)
 	{
