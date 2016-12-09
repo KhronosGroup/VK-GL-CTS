@@ -142,7 +142,7 @@ Following target files are provided with the package:
 | Name | Description  |
 |:---------|-----------------|
 |android | Used in Android build. Requires use of suitable toolchain file (see `cmake/` directory) |
-|default| Checks for presence of ES2, ES3, and EGL libraries and headers in default search paths and configures build accordingly|
+|default| Checks for presence of GL, ES2, ES3, and EGL libraries and headers in default search paths and configures build accordingly|
 |null | Nullbuild target |
 |nullws | NullWS build target |
 |x11_egl| X11 build for platforms with native EGL support|
@@ -249,14 +249,14 @@ command line examples in the next steps:
 
 Building GL, ES2, or ES3.x conformance tests:
 
-	cmake <path to openglcts> -DDEQP_TARGET=null -G"<Generator Name>"
+	cmake <path to openglcts> -DDEQP_TARGET=default -G"<Generator Name>"
 	cmake --build .
 
 Khronos Confidential CTS doesn't support run-time selection of API context.
 If you intend to run it you need to additionally supply `GLCTS_GTF_TARGET`
 option to you cmake command, e.g.:
 
-	cmake <path to openglcts> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=<target> -G"<Generator Name>"
+	cmake <path to openglcts> -DDEQP_TARGET=default -DGLCTS_GTF_TARGET=<target> -G"<Generator Name>"
 
 Available `<target>`s are `gles2`, `gles3`, `gles31`, `gles32`, and `gl`.
 The default `<target>` is `gles32`.
