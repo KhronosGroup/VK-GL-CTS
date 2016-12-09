@@ -2336,7 +2336,7 @@ public:
 			vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		}
 
-		if (m_drawCall == DRAW_CALL_DRAW_INDEXED || DRAW_CALL_DRAW_INDEXED_INDIRECT)
+		if (m_drawCall == DRAW_CALL_DRAW_INDEXED || m_drawCall == DRAW_CALL_DRAW_INDEXED_INDIRECT)
 			vk.cmdBindIndexBuffer(cmdBuffer, m_vertices.getIndexBuffer(), 0u, m_vertices.getIndexType());
 
 		switch (m_drawCall)
