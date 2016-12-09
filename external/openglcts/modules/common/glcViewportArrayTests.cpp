@@ -22,11 +22,11 @@
  */ /*-------------------------------------------------------------------*/
 
 /**
- * \file  gl4cViewportArrayTests.cpp
+ * \file  glcViewportArrayTests.cpp
  * \brief Implements conformance tests for "Viewport Array" functionality.
  */ /*-------------------------------------------------------------------*/
 
-#include "gl4cViewportArrayTests.hpp"
+#include "glcViewportArrayTests.hpp"
 
 #include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
@@ -43,7 +43,7 @@
 
 using namespace glw;
 
-namespace gl4cts
+namespace glcts
 {
 
 namespace ViewportArray
@@ -4650,4 +4650,4 @@ void ViewportArrayTests::init(void)
 	addChild(new ViewportArray::ProvokingVertex(m_context));
 }
 
-} /* gl4cts namespace */
+} /* glcts namespace */

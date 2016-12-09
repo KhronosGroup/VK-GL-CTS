@@ -84,8 +84,6 @@ set(GLCTS_GL_SRCS
 	gl4cVertexAttrib64BitTest.hpp
 	gl4cVertexAttribBindingTests.cpp
 	gl4cVertexAttribBindingTests.hpp
-	gl4cViewportArrayTests.cpp
-	gl4cViewportArrayTests.hpp
 	gl4cShaderImageSizeTests.hpp
 	gl4cShaderImageSizeTests.cpp
 	gl4cSyncTests.cpp

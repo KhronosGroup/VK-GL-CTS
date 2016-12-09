@@ -1,5 +1,5 @@
-#ifndef _GL4CVIEWPORTARRAYTESTS_HPP
-#define _GL4CVIEWPORTARRAYTESTS_HPP
+#ifndef _GLCVIEWPORTARRAYTESTS_HPP
+#define _GLCVIEWPORTARRAYTESTS_HPP
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
@@ -24,7 +24,7 @@
  */ /*-------------------------------------------------------------------*/
 
 /**
- * \file  gl4cViewportArrayTests.hpp
+ * \file  glcViewportArrayTests.hpp
  * \brief Declares test classes for "Viewport Array" functionality.
  */ /*-------------------------------------------------------------------*/
 
@@ -36,7 +36,7 @@ namespace tcu
 class MessageBuilder;
 } /* namespace tcu */
 
-namespace gl4cts
+namespace glcts
 {
 namespace ViewportArray
 {
@@ -1009,6 +1009,6 @@ private:
 	ViewportArrayTests& operator=(const ViewportArrayTests& other);
 };
 
-} // gl4cts
+} // glcts
 
-#endif // _GL4CVIEWPORTARRAYTESTS_HPP
+#endif // _GLCVIEWPORTARRAYTESTS_HPP

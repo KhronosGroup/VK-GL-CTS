@@ -60,10 +60,10 @@
 #include "gl4cTextureViewTests.hpp"
 #include "gl4cVertexAttrib64BitTest.hpp"
 #include "gl4cVertexAttribBindingTests.hpp"
-#include "gl4cViewportArrayTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcShaderLibrary.hpp"
+#include "glcViewportArrayTests.hpp"
 
 #include "../gles31/es31cArrayOfArraysTests.hpp"
 #include "../gles31/es31cBlendEquationAdvancedTests.hpp"
@@ -142,7 +142,7 @@ void GL41TestPackage::init(void)
 	try
 	{
 		addChild(new gl4cts::VertexAttrib64BitTests(getContext()));
-		addChild(new gl4cts::ViewportArrayTests(getContext()));
+		addChild(new glcts::ViewportArrayTests(getContext()));
 	}
 	catch (...)
 	{

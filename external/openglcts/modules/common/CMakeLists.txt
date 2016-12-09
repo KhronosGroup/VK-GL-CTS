@@ -52,6 +52,8 @@ set(GLCTS_COMMON_SRCS
 	glcUniformBlockCase.hpp
 	glcUniformBlockTests.cpp
 	glcUniformBlockTests.hpp
+	glcViewportArrayTests.cpp
+	glcViewportArrayTests.hpp
 	glcTestSubcase.cpp
 	glcTestSubcase.hpp
 	glcExtTokens.cpp
