@@ -163,7 +163,7 @@ class GitRepo (Source):
 
 			if proc.returncode != 0:
 				raise Exception("Failed to execute 'git ls-remote origin', got %d" % proc.returncode)
-			if stdout[:3] == 'ssh':
+			if (stdout[:3] == 'ssh') or (stdout[:3] == 'git'):
 				protocol = 'ssh'
 			else:
 				assert stdout[:5] == 'https'
