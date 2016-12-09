@@ -37,6 +37,7 @@ SHA1 = "c9a3540e50d7d407284d929b45c5fa2dd6b2fc8b"
 PACKAGES = [
 	GitRepo(
 		"https://gitlab.khronos.org/opengl/kc-cts.git",
+		"git@gitlab.khronos.org:opengl/kc-cts.git",
 		SHA1,
 		"kc-cts"),
 ]
@@ -48,4 +49,4 @@ if __name__ == "__main__":
 		if args.clean:
 			pkg.clean()
 		else:
-			pkg.update()
+			pkg.update(args.protocol)

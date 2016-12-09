@@ -61,7 +61,7 @@ class SourcePackage (Source):
 		Source.clean(self)
 		self.removeArchives()
 
-	def update (self):
+	def update (self, cmdProtocol = None):
 		if not self.isArchiveUpToDate():
 			self.fetchAndVerifyArchive()
 
@@ -149,20 +149,51 @@ class SourcePackage (Source):
 			self.postExtract(dstPath)
 
 class GitRepo (Source):
-	def __init__(self, url, revision, baseDir, extractDir = "src"):
+	def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src"):
 		Source.__init__(self, baseDir, extractDir)
-		self.url		= url
+		self.httpsUrl	= httpsUrl
+		self.sshUrl		= sshUrl
 		self.revision	= revision
 
-	def update (self):
+	def selectUrl(self, cmdProtocol = None):
+		if cmdProtocol == None:
+			# reuse parent repo protocol
+			proc = subprocess.Popen(['git', 'ls-remote', '--get-url', 'origin'], stdout=subprocess.PIPE)
+			(stdout, stderr) = proc.communicate()
+
+			if proc.returncode != 0:
+				raise Exception("Failed to execute 'git ls-remote origin', got %d" % proc.returncode)
+			if stdout[:3] == 'ssh':
+				protocol = 'ssh'
+			else:
+				assert stdout[:5] == 'https'
+				protocol = 'https'
+		else:
+			protocol = cmdProtocol
+
+		if protocol == 'ssh':
+			if self.sshUrl != None:
+				url = self.sshUrl
+			else:
+				assert self.httpsUrl != None
+				url = self.httpsUrl
+		else:
+			assert protocol == 'https'
+			url = self.httpsUrl
+
+		assert url != None
+		return url
+
+	def update (self, cmdProtocol = None):
 		fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
 
+		url = self.selectUrl(cmdProtocol)
 		if not os.path.exists(fullDstPath):
-			execute(["git", "clone", "--no-checkout", self.url, fullDstPath])
+			execute(["git", "clone", "--no-checkout", url, fullDstPath])
 
 		pushWorkingDir(fullDstPath)
 		try:
-			execute(["git", "fetch", self.url, "+refs/heads/*:refs/remotes/origin/*"])
+			execute(["git", "fetch", url, "+refs/heads/*:refs/remotes/origin/*"])
 			execute(["git", "checkout", self.revision])
 		finally:
 			popWorkingDir()
@@ -185,14 +216,17 @@ PACKAGES = [
 		postExtract = postExtractLibpng),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
+		None,
 		"5c19de25107d496a15c7869b3e1dab0a0f85913d",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
+		None,
 		"e3aa654c4b0c761b28d7864192ca8ceea6faf70a",
 		"glslang"),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
+		None,
 		"bd47a9abaefac00be692eae677daed1b977e625c",
 		"spirv-headers"),
 ]
@@ -201,6 +235,8 @@ def parseArgs ():
 	parser = argparse.ArgumentParser(description = "Fetch external sources")
 	parser.add_argument('--clean', dest='clean', action='store_true', default=False,
 						help='Remove sources instead of fetching')
+	parser.add_argument('--protocol', dest='protocol', default=None, choices=['ssh', 'https'],
+						help="Select protocol to checkout git repositories.")
 	return parser.parse_args()
 
 if __name__ == "__main__":
@@ -210,4 +246,4 @@ if __name__ == "__main__":
 		if args.clean:
 			pkg.clean()
 		else:
-			pkg.update()
+			pkg.update(args.protocol)
