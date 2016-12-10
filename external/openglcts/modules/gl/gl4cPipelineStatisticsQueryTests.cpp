@@ -3363,6 +3363,9 @@ void PipelineStatisticsQueryTestFunctional3::getExpectedVerticesSubmittedQueryRe
 	switch (current_primitive_type)
 	{
 	case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_POINTS:
+	case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_LINE_STRIP:
+	case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_TRIANGLE_FAN:
+	case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_TRIANGLE_STRIP:
 	{
 		out_results[(*out_results_written)++] = n_input_vertices;
 
@@ -3371,98 +3374,25 @@ void PipelineStatisticsQueryTestFunctional3::getExpectedVerticesSubmittedQueryRe
 
 	case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_LINE_LOOP:
 	{
-		if (n_input_vertices > 2)
-		{
-			out_results[(*out_results_written)++] = n_input_vertices;
-		}
-		else if (n_input_vertices > 1)
-		{
-			out_results[(*out_results_written)++] = 1;
-		}
-		else
-		{
-			out_results[(*out_results_written)++] = 0;
-		}
+		out_results[(*out_results_written)++] = n_input_vertices;
 
-		break;
-	} /* PRIMITIVE_TYPE_LINE_LOOP */
-
-	case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_TRIANGLE_FAN:
-	{
-		if (n_input_vertices > 2)
-		{
-			out_results[(*out_results_written)++] = n_input_vertices - 2;
-		}
-		else
-		{
-			out_results[(*out_results_written)++] = 0;
-
-			if (n_input_vertices >= 1)
-			{
-				/* If the submitted triangle fan is incomplete, also include the case
-				 * where the incomplete triangle fan's vertices are counted as a primitive.
-				 */
-				out_results[(*out_results_written)++] = 1;
-			}
-		}
-
-		break;
-	}
-
-	case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_LINE_STRIP:
-	{
-		if (n_input_vertices > 1)
-		{
-			out_results[(*out_results_written)++] = n_input_vertices - 1;
-		}
-		else
-		{
-			out_results[(*out_results_written)++] = 0;
-
-			if (n_input_vertices > 0)
-			{
-				/* If the submitted line strip is incomplete, also include the case
-				 * where the incomplete line's vertices are counted as a primitive.
-				 */
-				out_results[(*out_results_written)++] = 1;
-			}
-		}
-
-		break;
-	}
-
-	case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_TRIANGLE_STRIP:
-	{
-		if (n_input_vertices > 2)
-		{
-			out_results[(*out_results_written)++] = n_input_vertices - 2;
-		}
-		else
-		{
-			out_results[(*out_results_written)++] = 0;
-
-			if (n_input_vertices >= 1)
-			{
-				/* If the submitted triangle strip is incomplete, also include the case
-				 * where the incomplete triangle's vertices are counted as a primitive.
-				 */
-				out_results[(*out_results_written)++] = 1;
-			}
-		}
-
+		/* Allow line loops to count the first vertex twice as that vertex
+		 * is part of both the first and the last primitives.
+		 */
+		out_results[(*out_results_written)++] = n_input_vertices + 1;
 		break;
 	}
 
 	case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_LINES:
 	{
-		out_results[(*out_results_written)++] = n_input_vertices / 2;
+		out_results[(*out_results_written)++] = n_input_vertices;
 
 		/* If the submitted line is incomplete, also include the case where
-		 * the incomplete line's vertices are counted as a primitive.
+		 * the incomplete line's vertices are not counted.
 		 */
 		if (n_input_vertices > 0 && (n_input_vertices % 2) != 0)
 		{
-			out_results[(*out_results_written)++] = n_input_vertices / 2 + 1;
+			out_results[(*out_results_written)++] = n_input_vertices - 1;
 		}
 
 		break;
@@ -3470,14 +3400,19 @@ void PipelineStatisticsQueryTestFunctional3::getExpectedVerticesSubmittedQueryRe
 
 	case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_LINES_ADJACENCY:
 	{
-		out_results[(*out_results_written)++] = n_input_vertices / 4;
+		/* Allow implementations to both include or exclude the adjacency
+		 * vertices.
+		 */
+		out_results[(*out_results_written)++] = n_input_vertices;
+		out_results[(*out_results_written)++] = n_input_vertices / 2;
 
 		/* If the submitted line is incomplete, also include the case where
-		 * the incomplete line's vertices are counted as a primitive.
+		 * the incomplete line's vertices are not counted.
 		 */
 		if (n_input_vertices > 0 && (n_input_vertices % 4) != 0)
 		{
-			out_results[(*out_results_written)++] = n_input_vertices / 4 + 1;
+			out_results[(*out_results_written)++] = n_input_vertices - (n_input_vertices % 4);
+			out_results[(*out_results_written)++] = (n_input_vertices - (n_input_vertices % 4)) / 2;
 		}
 
 		break;
@@ -3485,14 +3420,14 @@ void PipelineStatisticsQueryTestFunctional3::getExpectedVerticesSubmittedQueryRe
 
 	case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_TRIANGLES:
 	{
-		out_results[(*out_results_written)++] = n_input_vertices / 3;
+		out_results[(*out_results_written)++] = n_input_vertices;
 
 		/* If the submitted triangle is incomplete, also include the case
-		 * when the incomplete triangle's vertices are counted as a primitive.
+		 * when the incomplete triangle's vertices are not counted.
 		 */
 		if (n_input_vertices > 0 && (n_input_vertices % 3) != 0)
 		{
-			out_results[(*out_results_written)++] = n_input_vertices / 3 + 1;
+			out_results[(*out_results_written)++] = n_input_vertices - (n_input_vertices % 3);
 		}
 
 		break;
@@ -3500,14 +3435,19 @@ void PipelineStatisticsQueryTestFunctional3::getExpectedVerticesSubmittedQueryRe
 
 	case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_TRIANGLES_ADJACENCY:
 	{
-		out_results[(*out_results_written)++] = n_input_vertices / 6;
+		/* Allow implementations to both include or exclude the adjacency
+		 * vertices.
+		 */
+		out_results[(*out_results_written)++] = n_input_vertices;
+		out_results[(*out_results_written)++] = n_input_vertices / 2;
 
 		/* If the submitted triangle is incomplete, also include the case
-		 * when the incomplete triangle's vertices are counted as a primitive.
+		 * when the incomplete triangle's vertices are not counted.
 		 */
 		if (n_input_vertices > 0 && (n_input_vertices % 6) != 0)
 		{
-			out_results[(*out_results_written)++] = n_input_vertices / 6 + 1;
+			out_results[(*out_results_written)++] = n_input_vertices - (n_input_vertices % 6);
+			out_results[(*out_results_written)++] = (n_input_vertices - (n_input_vertices % 6)) / 2;
 		}
 
 		break;
