@@ -117,6 +117,7 @@ public:
 	vk::Allocator&								getAllocator			(void) const { return m_allocator; }
 	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection		(void) const { return m_progCollection; }
 	PipelineCacheData&							getPipelineCacheData	(void) const { return m_pipelineCacheData; }
+	const std::vector<std::string>&				getDeviceExtensions		(void) const { return m_deviceExtensions;}
 
 	OperationContext (Context& context, PipelineCacheData& pipelineCacheData);
 	OperationContext (Context& context, PipelineCacheData& pipelineCacheData, const vk::DeviceInterface& vk, const vk::VkDevice device, vk::Allocator& allocator);
@@ -129,6 +130,7 @@ private:
 	vk::Allocator&								m_allocator;
 	vk::ProgramCollection<vk::ProgramBinary>&	m_progCollection;
 	PipelineCacheData&							m_pipelineCacheData;
+	const std::vector<std::string>&				m_deviceExtensions;
 
 	OperationContext (const OperationContext&);	// "deleted"
 	OperationContext& operator= (const OperationContext&);
@@ -198,7 +200,7 @@ public:
 	virtual							~OperationSupport		(void) {}
 
 	virtual deUint32				getResourceUsageFlags	(void) const = 0;
-	virtual vk::VkQueueFlags		getQueueFlags			(void) const = 0;
+	virtual vk::VkQueueFlags		getQueueFlags			(const OperationContext& context) const = 0;
 	virtual void					initPrograms			(vk::SourceCollections&) const {}	//!< empty by default
 
 	virtual de::MovePtr<Operation>	build					(OperationContext& context, Resource& resource) const = 0;
