@@ -213,15 +213,6 @@ public:
 	private:
 		deqp::Context& m_context;
 	};
-
-	static bool isExtensionSupported(deqp::Context& context, const glw::GLchar* extension_name);
-
-	static bool isGLVersionAtLeast(const glw::Functions& gl, glw::GLint required_major, glw::GLint required_minor);
-
-	static void replaceToken(const glw::GLchar* token, size_t& search_position, const glw::GLchar* text,
-							 std::string& string);
-
-	static void replaceAllTokens(const glw::GLchar* token, const glw::GLchar* text, std::string& string);
 };
 
 /** Implements test APIErrors, description follows:
