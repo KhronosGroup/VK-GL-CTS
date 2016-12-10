@@ -44,186 +44,199 @@ namespace synchronization
 namespace
 {
 using namespace vk;
+using de::MovePtr;
+using de::UniquePtr;
 
-enum QueueType {WRITE, READ, COUNT};
-enum {NO_MATCH_FOUND = ~((deUint32)0)};
+enum QueueType
+{
+	QUEUETYPE_WRITE,
+	QUEUETYPE_READ
+};
+
+struct QueuePair
+{
+	QueuePair	(const deUint32 familyWrite, const deUint32 familyRead, const VkQueue write, const VkQueue read)
+		: familyIndexWrite	(familyWrite)
+		, familyIndexRead	(familyRead)
+		, queueWrite		(write)
+		, queueRead			(read)
+	{}
+
+	deUint32	familyIndexWrite;
+	deUint32	familyIndexRead;
+	VkQueue		queueWrite;
+	VkQueue		queueRead;
+};
+
+bool checkQueueFlags (VkQueueFlags availableFlags, const VkQueueFlags neededFlags)
+{
+	if ((availableFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) != 0)
+		availableFlags |= VK_QUEUE_TRANSFER_BIT;
+
+	return (availableFlags & neededFlags) != 0;
+}
 
 class MultiQueues
 {
+	struct QueueData
+	{
+		VkQueueFlags			flags;
+		std::vector<VkQueue>	queue;
+	};
+
 public:
-	MultiQueues	(MultiQueues &obj)
-		: m_logicalDevice	(obj.m_logicalDevice)
-		, m_allocator		(obj.m_allocator)
+	MultiQueues	(const Context& context)
 	{
-		m_queues.resize(COUNT);
-		m_queueFamilyIndex.resize(COUNT);
-		for (int ndx = 0; ndx < COUNT; ++ndx)
-		{
-			m_queues[ndx]			= obj.m_queues[ndx];
-			m_queueFamilyIndex[ndx]	= obj.m_queueFamilyIndex[ndx];
-		}
-	}
-
-	MultiQueues	()
-	{
-		m_queues.resize(COUNT);
-		m_queueFamilyIndex.resize(COUNT);
-		for (int ndx = 0; ndx < COUNT; ++ndx)
-			m_queueFamilyIndex[ndx] = NO_MATCH_FOUND;
-	}
-
-	Move<VkDevice>			m_logicalDevice;
-	de::MovePtr<Allocator>	m_allocator;
-	std::vector<VkQueue>	m_queues;
-	std::vector<deUint32>	m_queueFamilyIndex;
-};
-
-de::MovePtr<Allocator> createAllocator (Context& context, VkDevice device)
-{
-	const DeviceInterface&					deviceInterface			= context.getDeviceInterface();
-	const InstanceInterface&				instance				= context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
-	const VkPhysicalDeviceMemoryProperties	deviceMemoryProperties	= getPhysicalDeviceMemoryProperties(instance, physicalDevice);
-
-	// Create memory allocator for device
-	return de::MovePtr<Allocator> (new SimpleAllocator(deviceInterface, device, deviceMemoryProperties));
-}
-
-bool checkQueueFlags (const vk::VkQueueFlags& availableFlag, const vk::VkQueueFlags& neededFlag)
-{
-	if (VK_QUEUE_TRANSFER_BIT == neededFlag)
-	{
-		if ( (availableFlag & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT ||
-			 (availableFlag & VK_QUEUE_COMPUTE_BIT)	 == VK_QUEUE_COMPUTE_BIT  ||
-			 (availableFlag & VK_QUEUE_TRANSFER_BIT) == VK_QUEUE_TRANSFER_BIT
-		   )
-			return true;
-	}
-	else if ((availableFlag & neededFlag) == neededFlag)
-	{
-		return true;
-	}
-	return false;
-}
-
-de::MovePtr<MultiQueues> createQueues (Context& context, const vk::VkQueueFlags& queueFlagWrite, const vk::VkQueueFlags& queueFlagRead)
-{
-	const DeviceInterface&					vk						= context.getDeviceInterface();
-	const InstanceInterface&				instance				= context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
-	const float								queuePriorities[COUNT]	= {1.0f, 1.0f};
-	VkDeviceCreateInfo						deviceInfo;
-	VkPhysicalDeviceFeatures				deviceFeatures;
-	std::vector<VkQueueFamilyProperties>	queueFamilyProperties;
-	VkDeviceQueueCreateInfo					queueInfos[COUNT];
-	VkQueueFlags							queueFlags[COUNT]		= {queueFlagWrite,queueFlagRead};
-	int										fisrtQueueToFind		= WRITE;
-	int										secondQueueToFind		= READ;
-	MultiQueues								queues;
-
-	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
-
-	{
-		int	counterWrite = 0;
-		int	counterRead	 = 0;
+		const DeviceInterface&						vk						= context.getDeviceInterface();
+		const InstanceInterface&					instance				= context.getInstanceInterface();
+		const VkPhysicalDevice						physicalDevice			= context.getPhysicalDevice();
+		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
 
 		for (deUint32 queuePropertiesNdx = 0; queuePropertiesNdx < queueFamilyProperties.size(); ++queuePropertiesNdx)
 		{
-			if (checkQueueFlags(queueFamilyProperties[queuePropertiesNdx].queueFlags, queueFlagWrite))
-				counterWrite++;
-
-			if (checkQueueFlags(queueFamilyProperties[queuePropertiesNdx].queueFlags, queueFlagRead))
-				counterRead++;
+			addQueueIndex(queuePropertiesNdx,
+						  std::min(2u, queueFamilyProperties[queuePropertiesNdx].queueCount),
+						  queueFamilyProperties[queuePropertiesNdx].queueFlags);
 		}
 
-		if (counterRead < counterWrite)
+		std::vector<VkDeviceQueueCreateInfo>	queueInfos;
+		const float								queuePriorities[2] = { 1.0f, 1.0f };	//get max 2 queues from one family
+
+		for (std::map<deUint32, QueueData>::iterator it = m_queues.begin(); it!= m_queues.end(); ++it)
 		{
-			fisrtQueueToFind	= READ;
-			secondQueueToFind	= WRITE;
+			const VkDeviceQueueCreateInfo queueInfo	=
+			{
+				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,		//VkStructureType			sType;
+				DE_NULL,										//const void*				pNext;
+				(VkDeviceQueueCreateFlags)0u,					//VkDeviceQueueCreateFlags	flags;
+				it->first,										//deUint32					queueFamilyIndex;
+				static_cast<deUint32>(it->second.queue.size()),	//deUint32					queueCount;
+				&queuePriorities[0]								//const float*				pQueuePriorities;
+			};
+			queueInfos.push_back(queueInfo);
+		}
+
+		{
+			const std::vector<std::string>&	deviceExtensions	= context.getDeviceExtensions();
+			std::vector<const char*>		charDevExtensions;
+
+			for (std::size_t ndx = 0; ndx < deviceExtensions.size(); ++ndx)
+				charDevExtensions.push_back(deviceExtensions[ndx].c_str());
+
+			const VkDeviceCreateInfo		deviceInfo		=
+			{
+				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//VkStructureType					sType;
+				DE_NULL,														//const void*						pNext;
+				0u,																//VkDeviceCreateFlags				flags;
+				static_cast<deUint32>(queueInfos.size()),						//deUint32							queueCreateInfoCount;
+				&queueInfos[0],													//const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+				0u,																//deUint32							enabledLayerCount;
+				DE_NULL,														//const char* const*				ppEnabledLayerNames;
+				static_cast<deUint32>(deviceExtensions.size()),					//deUint32							enabledExtensionCount;
+				charDevExtensions.empty() ? DE_NULL : &charDevExtensions[0],	//const char* const*				ppEnabledExtensionNames;
+				&context.getDeviceFeatures()									//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+			};
+
+			m_logicalDevice	= createDevice(instance, physicalDevice, &deviceInfo);
+			m_allocator		= MovePtr<Allocator>(new SimpleAllocator(vk, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
+
+			for (std::map<deUint32, QueueData>::iterator it = m_queues.begin(); it != m_queues.end(); ++it)
+			for (int queueNdx = 0; queueNdx < static_cast<int>(it->second.queue.size()); ++queueNdx)
+				vk.getDeviceQueue(*m_logicalDevice, it->first, queueNdx, &it->second.queue[queueNdx]);
 		}
 	}
 
-	for (deUint32 queuePropertiesNdx = 0; queuePropertiesNdx < queueFamilyProperties.size(); ++queuePropertiesNdx)
+	void addQueueIndex (const deUint32 queueFamilyIndex, const deUint32 count, const VkQueueFlags flags)
 	{
-		if (NO_MATCH_FOUND == queues.m_queueFamilyIndex[fisrtQueueToFind])
-		if (checkQueueFlags(queueFamilyProperties[queuePropertiesNdx].queueFlags, queueFlags[fisrtQueueToFind]))
+		QueueData dataToPush;
+		dataToPush.flags = flags;
+		dataToPush.queue.resize(count);
+		m_queues[queueFamilyIndex] = dataToPush;
+	}
+
+	std::vector<QueuePair> getQueuesPairs (const VkQueueFlags flagsWrite, const VkQueueFlags flagsRead)
+	{
+		std::map<deUint32, QueueData>	queuesWrite;
+		std::map<deUint32, QueueData>	queuesRead;
+		std::vector<QueuePair>			queuesPairs;
+
+		for (std::map<deUint32, QueueData>::iterator it = m_queues.begin(); it != m_queues.end(); ++it)
 		{
-			queues.m_queueFamilyIndex[fisrtQueueToFind] = queuePropertiesNdx;
+			const bool writeQueue	= checkQueueFlags(it->second.flags, flagsWrite);
+			const bool readQueue	= checkQueueFlags(it->second.flags, flagsRead);
+
+			if (!(writeQueue || readQueue))
+				continue;
+
+			if (writeQueue && readQueue)
+			{
+				queuesWrite[it->first]	= it->second;
+				queuesRead[it->first]	= it->second;
+			}
+			else if (writeQueue)
+				queuesWrite[it->first]	= it->second;
+			else if (readQueue)
+				queuesRead[it->first]	= it->second;
 		}
 
-		if (NO_MATCH_FOUND == queues.m_queueFamilyIndex[secondQueueToFind])
-		if (checkQueueFlags(queueFamilyProperties[queuePropertiesNdx].queueFlags, queueFlags[secondQueueToFind]))
+		for (std::map<deUint32, QueueData>::iterator write = queuesWrite.begin(); write != queuesWrite.end(); ++write)
+		for (std::map<deUint32, QueueData>::iterator read  = queuesRead.begin();  read  != queuesRead.end();  ++read)
 		{
-			if (queuePropertiesNdx != queues.m_queueFamilyIndex[fisrtQueueToFind] || queueFamilyProperties[queuePropertiesNdx].queueCount > 1u)
+			const int writeSize	= static_cast<int>(write->second.queue.size());
+			const int readSize	= static_cast<int>(read->second.queue.size());
+
+			for (int writeNdx = 0; writeNdx < writeSize; ++writeNdx)
+			for (int readNdx  = 0; readNdx  < readSize;  ++readNdx)
 			{
-				queues.m_queueFamilyIndex[secondQueueToFind] = queuePropertiesNdx;
+				if (write->second.queue[writeNdx] != read->second.queue[readNdx])
+				{
+					queuesPairs.push_back(QueuePair(write->first, read->first, write->second.queue[writeNdx], read->second.queue[readNdx]));
+					writeNdx = readNdx = std::max(writeSize, readSize);	//exit from the loops
+				}
 			}
 		}
+
+		if (queuesPairs.empty())
+			TCU_THROW(NotSupportedError, "Queue not found");
+
+		return queuesPairs;
 	}
 
-	if (NO_MATCH_FOUND == queues.m_queueFamilyIndex[WRITE] || NO_MATCH_FOUND == queues.m_queueFamilyIndex[READ])
+	VkDevice getDevice (void) const
 	{
-		TCU_THROW(NotSupportedError, "Queue not found");
+		return *m_logicalDevice;
 	}
 
-	for (int queueNdx = 0; queueNdx < COUNT; ++queueNdx)
+	Allocator& getAllocator (void)
 	{
-		VkDeviceQueueCreateInfo queueInfo;
-		deMemset(&queueInfo, 0, sizeof(queueInfo));
-
-		queueInfo.sType				= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueInfo.pNext				= DE_NULL;
-		queueInfo.flags				= (VkDeviceQueueCreateFlags)0u;
-		queueInfo.queueFamilyIndex	= queues.m_queueFamilyIndex[queueNdx];
-		queueInfo.queueCount		= (queues.m_queueFamilyIndex[WRITE] == queues.m_queueFamilyIndex[READ]) ? static_cast<deUint32>(COUNT) : 1u;
-		queueInfo.pQueuePriorities	= queuePriorities;
-
-		queueInfos[queueNdx]	= queueInfo;
-
-		if (queues.m_queueFamilyIndex[WRITE] == queues.m_queueFamilyIndex[READ])
-			break;
+		return *m_allocator;
 	}
 
-	deMemset(&deviceInfo, 0, sizeof(deviceInfo));
-	instance.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+private:
+	Move<VkDevice>					m_logicalDevice;
+	MovePtr<Allocator>				m_allocator;
+	std::map<deUint32, QueueData>	m_queues;
+};
 
-	deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext					= DE_NULL;
-	deviceInfo.enabledExtensionCount	= 0u;
-	deviceInfo.ppEnabledExtensionNames	= DE_NULL;
-	deviceInfo.enabledLayerCount		= 0u;
-	deviceInfo.ppEnabledLayerNames		= DE_NULL;
-	deviceInfo.pEnabledFeatures			= &deviceFeatures;
-	deviceInfo.queueCreateInfoCount		= (queues.m_queueFamilyIndex[WRITE] == queues.m_queueFamilyIndex[READ]) ? 1u : static_cast<deUint32>(COUNT);
-	deviceInfo.pQueueCreateInfos		= queueInfos;
-
-	queues.m_logicalDevice = vk::createDevice(instance, physicalDevice, &deviceInfo);
-
-
-	for (deUint32 queueReqNdx = 0; queueReqNdx < COUNT; ++queueReqNdx)
-	{
-		if (queues.m_queueFamilyIndex[WRITE] == queues.m_queueFamilyIndex[READ])
-			vk.getDeviceQueue(*queues.m_logicalDevice, queues.m_queueFamilyIndex[queueReqNdx], queueReqNdx, &queues.m_queues[queueReqNdx]);
-		else
-			vk.getDeviceQueue(*queues.m_logicalDevice, queues.m_queueFamilyIndex[queueReqNdx], 0u, &queues.m_queues[queueReqNdx]);
-	}
-	queues.m_allocator = createAllocator (context, *queues.m_logicalDevice);
-
-	return de::MovePtr<MultiQueues> (new MultiQueues(queues));
-}
-
-void createBarrierMultiQueue (const DeviceInterface& vk, const VkCommandBuffer& cmdBuffer, const SyncInfo& writeSync, const SyncInfo& readSync,
-							  const Resource& resource, const MultiQueues& queues, const vk::VkSharingMode sharingMode, const bool secondQueue=false)
+void createBarrierMultiQueue (const DeviceInterface&	vk,
+							  const VkCommandBuffer&	cmdBuffer,
+							  const SyncInfo&			writeSync,
+							  const SyncInfo&			readSync,
+							  const Resource&			resource,
+							  const deUint32			writeFamily,
+							  const deUint32			readFamily,
+							  const VkSharingMode		sharingMode,
+							  const bool				secondQueue = false)
 {
 	if (resource.getType() == RESOURCE_TYPE_IMAGE)
 	{
 		VkImageMemoryBarrier barrier = makeImageMemoryBarrier(writeSync.accessMask, readSync.accessMask,
 			writeSync.imageLayout, readSync.imageLayout, resource.getImage().handle, resource.getImage().subresourceRange);
 
-		if (queues.m_queueFamilyIndex[WRITE] != queues.m_queueFamilyIndex[READ] && vk::VK_SHARING_MODE_EXCLUSIVE == sharingMode)
+		if (writeFamily != readFamily && VK_SHARING_MODE_EXCLUSIVE == sharingMode)
 		{
-			barrier.srcQueueFamilyIndex = queues.m_queueFamilyIndex[WRITE];
-			barrier.dstQueueFamilyIndex = queues.m_queueFamilyIndex[READ];
+			barrier.srcQueueFamilyIndex = writeFamily;
+			barrier.dstQueueFamilyIndex = readFamily;
 			if (secondQueue)
 			{
 				barrier.oldLayout		= barrier.newLayout;
@@ -234,22 +247,22 @@ void createBarrierMultiQueue (const DeviceInterface& vk, const VkCommandBuffer& 
 		else if (!secondQueue)
 			vk.cmdPipelineBarrier(cmdBuffer, writeSync.stageMask, readSync.stageMask, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &barrier);
 	}
-	else if ((resource.getType() == RESOURCE_TYPE_BUFFER || isIndirectBuffer(resource.getType())) &&
-			 queues.m_queueFamilyIndex[WRITE] != queues.m_queueFamilyIndex[READ] &&
-			 vk::VK_SHARING_MODE_EXCLUSIVE == sharingMode)
+	else if ((resource.getType() == RESOURCE_TYPE_BUFFER || isIndirectBuffer(resource.getType()))	&&
+			 writeFamily != readFamily																&&
+			 VK_SHARING_MODE_EXCLUSIVE == sharingMode)
 	{
 		const VkBufferMemoryBarrier barrier =
-			{
-				VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-				DE_NULL,									// const void*		pNext;
-				writeSync.accessMask ,						// VkAccessFlags	srcAccessMask;
-				readSync.accessMask,						// VkAccessFlags	dstAccessMask;
-				queues.m_queueFamilyIndex[WRITE],			// deUint32			srcQueueFamilyIndex;
-				queues.m_queueFamilyIndex[READ],			// deUint32			destQueueFamilyIndex;
-				resource.getBuffer().handle,				// VkBuffer			buffer;
-				resource.getBuffer().offset,				// VkDeviceSize		offset;
-				resource.getBuffer().size,					// VkDeviceSize		size;
-			};
+		{
+			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+			DE_NULL,									// const void*		pNext;
+			writeSync.accessMask ,						// VkAccessFlags	srcAccessMask;
+			readSync.accessMask,						// VkAccessFlags	dstAccessMask;
+			writeFamily,								// deUint32			srcQueueFamilyIndex;
+			readFamily,									// deUint32			destQueueFamilyIndex;
+			resource.getBuffer().handle,				// VkBuffer			buffer;
+			resource.getBuffer().offset,				// VkDeviceSize		offset;
+			resource.getBuffer().size,					// VkDeviceSize		size;
+		};
 		vk.cmdPipelineBarrier(cmdBuffer, writeSync.stageMask, readSync.stageMask, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, (const VkBufferMemoryBarrier*)&barrier, 0u, (const VkImageMemoryBarrier *)DE_NULL);
 	}
 }
@@ -258,27 +271,27 @@ class BaseTestInstance : public TestInstance
 {
 public:
 	BaseTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData)
-		: TestInstance	(context)
-		, m_queues		(createQueues(context, writeOp.getQueueFlags(), readOp.getQueueFlags()))
-		, m_opContext	(new OperationContext(context, pipelineCacheData, m_context.getDeviceInterface(), (*(*m_queues).m_logicalDevice), (*(*m_queues).m_allocator)))
-		, m_resource	(new Resource(*m_opContext, resourceDesc, writeOp.getResourceUsageFlags() | readOp.getResourceUsageFlags()))
-		, m_writeOp		(writeOp.build(*m_opContext, *m_resource))
-		, m_readOp		(readOp.build(*m_opContext, *m_resource))
+		: TestInstance		(context)
+		, m_queues			(new MultiQueues(context))
+		, m_opContext		(new OperationContext(context, pipelineCacheData, m_context.getDeviceInterface(), m_queues->getDevice(), m_queues->getAllocator()))
+		, m_resourceDesc	(resourceDesc)
+		, m_writeOp			(writeOp)
+		, m_readOp			(readOp)
 	{
 	}
 
 protected:
-	de::UniquePtr<MultiQueues>		m_queues;
-	de::UniquePtr<OperationContext>	m_opContext;
-	de::UniquePtr<Resource>			m_resource;
-	de::MovePtr<Operation>			m_writeOp;
-	de::MovePtr<Operation>			m_readOp;
+	const UniquePtr<MultiQueues>		m_queues;
+	const UniquePtr<OperationContext>	m_opContext;
+	const ResourceDescription			m_resourceDesc;
+	const OperationSupport&				m_writeOp;
+	const OperationSupport&				m_readOp;
 };
 
 class SemaphoreTestInstance : public BaseTestInstance
 {
 public:
-	SemaphoreTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData, const vk::VkSharingMode sharingMode)
+	SemaphoreTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData, const VkSharingMode sharingMode)
 		: BaseTestInstance	(context, resourceDesc, writeOp, readOp, pipelineCacheData)
 		, m_sharingMode		(sharingMode)
 	{
@@ -286,79 +299,102 @@ public:
 
 	tcu::TestStatus	iterate (void)
 	{
-		const DeviceInterface&			vk					= (*m_opContext).getDeviceInterface();
-		const VkDevice					device				= (*m_opContext).getDevice();
-		const Move<VkCommandPool>		cmdPool[COUNT]		= {makeCommandPool(vk, device, (*m_queues).m_queueFamilyIndex[WRITE]), makeCommandPool(vk, device, (*m_queues).m_queueFamilyIndex[READ])};
-		const Move<VkCommandBuffer>		ptrCmdBuffer[COUNT]	= {makeCommandBuffer(vk, device, *cmdPool[WRITE]), makeCommandBuffer(vk, device, *cmdPool[READ])};
-		VkCommandBuffer					cmdBuffers[COUNT]	= {*ptrCmdBuffer[WRITE], *ptrCmdBuffer[READ]};
-		const VkSemaphoreCreateInfo		semaphoreInfo		=
-															{
-																VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,	//VkStructureType			sType;
-																DE_NULL,									//const void*				pNext;
-																0u											//VkSemaphoreCreateFlags	flags;
-															};
-		const Unique<VkSemaphore>		semaphore			(createSemaphore(vk, device, &semaphoreInfo, DE_NULL));
-		const VkPipelineStageFlags		stageBits[]			= { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
-		const VkSubmitInfo				submitInfo[COUNT]	=
-															{
-																{
-																	VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType			sType;
-																	DE_NULL,							// const void*				pNext;
-																	0u,									// deUint32					waitSemaphoreCount;
-																	DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-																	(const VkPipelineStageFlags*)DE_NULL,
-																	1u,									// deUint32					commandBufferCount;
-																	&cmdBuffers[WRITE],					// const VkCommandBuffer*	pCommandBuffers;
-																	1u,									// deUint32					signalSemaphoreCount;
-																	&semaphore.get(),					// const VkSemaphore*		pSignalSemaphores;
-																},
-																{
-																	VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType				sType;
-																	DE_NULL,							// const void*					pNext;
-																	1u,									// deUint32						waitSemaphoreCount;
-																	&semaphore.get(),					// const VkSemaphore*			pWaitSemaphores;
-																	stageBits,							// const VkPipelineStageFlags*	pWaitDstStageMask;
-																	1u,									// deUint32						commandBufferCount;
-																	&cmdBuffers[READ],					// const VkCommandBuffer*		pCommandBuffers;
-																	0u,									// deUint32						signalSemaphoreCount;
-																	DE_NULL,							// const VkSemaphore*			pSignalSemaphores;
-																}
-															};
-		const SyncInfo					writeSync			= m_writeOp->getSyncInfo();
-		const SyncInfo					readSync			= m_readOp->getSyncInfo();
+		const DeviceInterface&			vk			= m_opContext->getDeviceInterface();
+		const VkDevice					device		= m_opContext->getDevice();
+		const std::vector<QueuePair>	queuePairs	= m_queues->getQueuesPairs(m_writeOp.getQueueFlags(*m_opContext), m_readOp.getQueueFlags(*m_opContext));
 
-		beginCommandBuffer(vk, cmdBuffers[WRITE]);
-		m_writeOp->recordCommands(cmdBuffers[WRITE]);
-		createBarrierMultiQueue(vk,cmdBuffers[WRITE], writeSync, readSync, (*m_resource), (*m_queues), m_sharingMode);
-		endCommandBuffer(vk, cmdBuffers[WRITE]);
-
-		beginCommandBuffer(vk, cmdBuffers[READ]);
-		createBarrierMultiQueue(vk,cmdBuffers[READ], writeSync, readSync, (*m_resource), (*m_queues), m_sharingMode, true);
-		m_readOp->recordCommands(cmdBuffers[READ]);
-		endCommandBuffer(vk, cmdBuffers[READ]);
-
-		VK_CHECK(vk.queueSubmit((*m_queues).m_queues[WRITE], 1u, &submitInfo[WRITE], DE_NULL));
-		VK_CHECK(vk.queueSubmit((*m_queues).m_queues[READ], 1u, &submitInfo[READ], DE_NULL));
-		VK_CHECK(vk.queueWaitIdle((*m_queues).m_queues[WRITE]));
-		VK_CHECK(vk.queueWaitIdle((*m_queues).m_queues[READ]));
-
+		for (deUint32 pairNdx = 0; pairNdx < static_cast<deUint32>(queuePairs.size()); ++pairNdx)
 		{
-			const Data	expected = m_writeOp->getData();
-			const Data	actual	 = m_readOp->getData();
 
-			if (0 != deMemCmp(expected.data, actual.data, expected.size))
-				return tcu::TestStatus::fail("Memory contents don't match");
+			const UniquePtr<Resource>		resource		(new Resource(*m_opContext, m_resourceDesc, m_writeOp.getResourceUsageFlags() | m_readOp.getResourceUsageFlags()));
+			const UniquePtr<Operation>		writeOp			(m_writeOp.build(*m_opContext, *resource));
+			const UniquePtr<Operation>		readOp			(m_readOp.build (*m_opContext, *resource));
+
+			const Move<VkCommandPool>		cmdPool[]		=
+			{
+				makeCommandPool(vk, device, queuePairs[pairNdx].familyIndexWrite),
+				makeCommandPool(vk, device, queuePairs[pairNdx].familyIndexRead)
+			};
+			const Move<VkCommandBuffer>		ptrCmdBuffer[]	=
+			{
+				makeCommandBuffer(vk, device, *cmdPool[QUEUETYPE_WRITE]),
+				makeCommandBuffer(vk, device, *cmdPool[QUEUETYPE_READ])
+			};
+			const VkCommandBuffer			cmdBuffers[]	=
+			{
+				*ptrCmdBuffer[QUEUETYPE_WRITE],
+				*ptrCmdBuffer[QUEUETYPE_READ]
+			};
+			const VkSemaphoreCreateInfo		semaphoreInfo	=
+			{
+				VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,	//VkStructureType			sType;
+				DE_NULL,									//const void*				pNext;
+				0u											//VkSemaphoreCreateFlags	flags;
+			};
+			const Unique<VkSemaphore>		semaphore		(createSemaphore(vk, device, &semaphoreInfo, DE_NULL));
+			const VkPipelineStageFlags		stageBits[]		= { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
+			const VkSubmitInfo				submitInfo[]	=
+			{
+				{
+					VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType			sType;
+					DE_NULL,							// const void*				pNext;
+					0u,									// deUint32					waitSemaphoreCount;
+					DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+					(const VkPipelineStageFlags*)DE_NULL,
+					1u,									// deUint32					commandBufferCount;
+					&cmdBuffers[QUEUETYPE_WRITE],		// const VkCommandBuffer*	pCommandBuffers;
+					1u,									// deUint32					signalSemaphoreCount;
+					&semaphore.get(),					// const VkSemaphore*		pSignalSemaphores;
+				},
+				{
+					VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType				sType;
+					DE_NULL,							// const void*					pNext;
+					1u,									// deUint32						waitSemaphoreCount;
+					&semaphore.get(),					// const VkSemaphore*			pWaitSemaphores;
+					stageBits,							// const VkPipelineStageFlags*	pWaitDstStageMask;
+					1u,									// deUint32						commandBufferCount;
+					&cmdBuffers[QUEUETYPE_READ],		// const VkCommandBuffer*		pCommandBuffers;
+					0u,									// deUint32						signalSemaphoreCount;
+					DE_NULL,							// const VkSemaphore*			pSignalSemaphores;
+				}
+			};
+			const SyncInfo					writeSync		= writeOp->getSyncInfo();
+			const SyncInfo					readSync		= readOp->getSyncInfo();
+
+			beginCommandBuffer		(vk, cmdBuffers[QUEUETYPE_WRITE]);
+			writeOp->recordCommands	(cmdBuffers[QUEUETYPE_WRITE]);
+			createBarrierMultiQueue	(vk, cmdBuffers[QUEUETYPE_WRITE], writeSync, readSync, *resource, queuePairs[pairNdx].familyIndexWrite, queuePairs[pairNdx].familyIndexRead, m_sharingMode);
+			endCommandBuffer		(vk, cmdBuffers[QUEUETYPE_WRITE]);
+
+			beginCommandBuffer		(vk, cmdBuffers[QUEUETYPE_READ]);
+			createBarrierMultiQueue	(vk, cmdBuffers[QUEUETYPE_READ], writeSync, readSync, *resource, queuePairs[pairNdx].familyIndexWrite, queuePairs[pairNdx].familyIndexRead, m_sharingMode, true);
+			readOp->recordCommands	(cmdBuffers[QUEUETYPE_READ]);
+			endCommandBuffer		(vk, cmdBuffers[QUEUETYPE_READ]);
+
+			VK_CHECK(vk.queueSubmit(queuePairs[pairNdx].queueWrite, 1u, &submitInfo[QUEUETYPE_WRITE], DE_NULL));
+			VK_CHECK(vk.queueSubmit(queuePairs[pairNdx].queueRead, 1u, &submitInfo[QUEUETYPE_READ], DE_NULL));
+			VK_CHECK(vk.queueWaitIdle(queuePairs[pairNdx].queueWrite));
+			VK_CHECK(vk.queueWaitIdle(queuePairs[pairNdx].queueRead));
+
+			{
+				const Data	expected	= writeOp->getData();
+				const Data	actual		= readOp->getData();
+
+				if (0 != deMemCmp(expected.data, actual.data, expected.size))
+					return tcu::TestStatus::fail("Memory contents don't match");
+			}
 		}
 		return tcu::TestStatus::pass("OK");
 	}
+
 private:
-	const vk::VkSharingMode		m_sharingMode;
+	const VkSharingMode	m_sharingMode;
 };
 
 class FenceTestInstance : public BaseTestInstance
 {
 public:
-	FenceTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData, const vk::VkSharingMode sharingMode)
+	FenceTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData, const VkSharingMode sharingMode)
 		: BaseTestInstance	(context, resourceDesc, writeOp, readOp, pipelineCacheData)
 		, m_sharingMode		(sharingMode)
 	{
@@ -366,78 +402,74 @@ public:
 
 	tcu::TestStatus	iterate (void)
 	{
-		const DeviceInterface&			vk					= (*m_opContext).getDeviceInterface();
-		const VkDevice					device				= (*m_opContext).getDevice();
-		const Move<VkCommandPool>		cmdPool[COUNT]		= {makeCommandPool(vk, device, (*m_queues).m_queueFamilyIndex[WRITE]), makeCommandPool(vk, device, (*m_queues).m_queueFamilyIndex[READ])};
-		const Move<VkCommandBuffer>		ptrCmdBuffer[COUNT]	= {makeCommandBuffer(vk, device, *cmdPool[WRITE]), makeCommandBuffer(vk, device, *cmdPool[READ])};
-		VkCommandBuffer					cmdBuffers[COUNT]	= {*ptrCmdBuffer[WRITE], *ptrCmdBuffer[READ]};
-		const SyncInfo					writeSync			= m_writeOp->getSyncInfo();
-		const SyncInfo					readSync			= m_readOp->getSyncInfo();
+		const DeviceInterface&			vk			= m_opContext->getDeviceInterface();
+		const VkDevice					device		= m_opContext->getDevice();
+		const std::vector<QueuePair>	queuePairs	= m_queues->getQueuesPairs(m_writeOp.getQueueFlags(*m_opContext), m_readOp.getQueueFlags(*m_opContext));
 
-		beginCommandBuffer(vk, cmdBuffers[WRITE]);
-		m_writeOp->recordCommands(cmdBuffers[WRITE]);
-		createBarrierMultiQueue(vk,cmdBuffers[WRITE], writeSync, readSync, (*m_resource), (*m_queues), m_sharingMode);
-		endCommandBuffer(vk, cmdBuffers[WRITE]);
-
-		submitCommandsAndWait(vk, device, (*m_queues).m_queues[WRITE], cmdBuffers[WRITE]);
-
-		beginCommandBuffer(vk, cmdBuffers[READ]);
-		createBarrierMultiQueue(vk,cmdBuffers[READ], writeSync, readSync, (*m_resource), (*m_queues), m_sharingMode, true);
-		m_readOp->recordCommands(cmdBuffers[READ]);
-		endCommandBuffer(vk, cmdBuffers[READ]);
-
-		submitCommandsAndWait(vk, device, (*m_queues).m_queues[READ], cmdBuffers[READ]);
-
+		for (deUint32 pairNdx = 0; pairNdx < static_cast<deUint32>(queuePairs.size()); ++pairNdx)
 		{
-			const Data	expected = m_writeOp->getData();
-			const Data	actual	 = m_readOp->getData();
+			const UniquePtr<Resource>		resource		(new Resource(*m_opContext, m_resourceDesc, m_writeOp.getResourceUsageFlags() | m_readOp.getResourceUsageFlags()));
+			const UniquePtr<Operation>		writeOp			(m_writeOp.build(*m_opContext, *resource));
+			const UniquePtr<Operation>		readOp			(m_readOp.build(*m_opContext, *resource));
+			const Move<VkCommandPool>		cmdPool[]		=
+			{
+				makeCommandPool(vk, device, queuePairs[pairNdx].familyIndexWrite),
+				makeCommandPool(vk, device, queuePairs[pairNdx].familyIndexRead)
+			};
+			const Move<VkCommandBuffer>		ptrCmdBuffer[]	=
+			{
+				makeCommandBuffer(vk, device, *cmdPool[QUEUETYPE_WRITE]),
+				makeCommandBuffer(vk, device, *cmdPool[QUEUETYPE_READ])
+			};
+			const VkCommandBuffer			cmdBuffers[]	=
+			{
+				*ptrCmdBuffer[QUEUETYPE_WRITE],
+				*ptrCmdBuffer[QUEUETYPE_READ]
+			};
+			const SyncInfo					writeSync		= writeOp->getSyncInfo();
+			const SyncInfo					readSync		= readOp->getSyncInfo();
 
-			if (0 != deMemCmp(expected.data, actual.data, expected.size))
-				return tcu::TestStatus::fail("Memory contents don't match");
+			beginCommandBuffer		(vk, cmdBuffers[QUEUETYPE_WRITE]);
+			writeOp->recordCommands	(cmdBuffers[QUEUETYPE_WRITE]);
+			createBarrierMultiQueue	(vk, cmdBuffers[QUEUETYPE_WRITE], writeSync, readSync, *resource, queuePairs[pairNdx].familyIndexWrite, queuePairs[pairNdx].familyIndexRead, m_sharingMode);
+			endCommandBuffer		(vk, cmdBuffers[QUEUETYPE_WRITE]);
+
+			submitCommandsAndWait	(vk, device, queuePairs[pairNdx].queueWrite, cmdBuffers[QUEUETYPE_WRITE]);
+
+			beginCommandBuffer		(vk, cmdBuffers[QUEUETYPE_READ]);
+			createBarrierMultiQueue	(vk, cmdBuffers[QUEUETYPE_READ], writeSync, readSync, *resource, queuePairs[pairNdx].familyIndexWrite, queuePairs[pairNdx].familyIndexRead, m_sharingMode, true);
+			readOp->recordCommands	(cmdBuffers[QUEUETYPE_READ]);
+			endCommandBuffer		(vk, cmdBuffers[QUEUETYPE_READ]);
+
+			submitCommandsAndWait	(vk, device, queuePairs[pairNdx].queueRead, cmdBuffers[QUEUETYPE_READ]);
+
+			{
+				const Data	expected = writeOp->getData();
+				const Data	actual	 = readOp->getData();
+
+				if (0 != deMemCmp(expected.data, actual.data, expected.size))
+					return tcu::TestStatus::fail("Memory contents don't match");
+			}
 		}
 		return tcu::TestStatus::pass("OK");
 	}
 
 private:
-	const vk::VkSharingMode		m_sharingMode;
+	const VkSharingMode	m_sharingMode;
 };
 
 class BaseTestCase : public TestCase
 {
 public:
-	BaseTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description,
-					const ResourceDescription resourceDesc, const OperationName writeOp, const OperationName readOp)
-		: TestCase				(testCtx, name, description)
-		, m_resourceDesc		(resourceDesc)
-		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc))
-		, m_readOp				(makeOperationSupport(readOp, resourceDesc))
-	{
-	}
-
-	void initPrograms (SourceCollections& programCollection) const
-	{
-		m_writeOp->initPrograms(programCollection);
-		m_readOp->initPrograms(programCollection);
-	}
-
-protected:
-	const ResourceDescription				m_resourceDesc;
-	const de::UniquePtr<OperationSupport>	m_writeOp;
-	const de::UniquePtr<OperationSupport>	m_readOp;
-};
-
-class SyncTestCase : public TestCase
-{
-public:
-	SyncTestCase	(tcu::TestContext&			testCtx,
-					const std::string&			name,
-					const std::string&			description,
-					const SyncPrimitive			syncPrimitive,
-					const ResourceDescription	resourceDesc,
-					const OperationName			writeOp,
-					const OperationName			readOp,
-					const vk::VkSharingMode		sharingMode,
-					PipelineCacheData&			pipelineCacheData)
+	BaseTestCase (tcu::TestContext&			testCtx,
+				  const std::string&		name,
+				  const std::string&		description,
+				  const SyncPrimitive		syncPrimitive,
+				  const ResourceDescription	resourceDesc,
+				  const OperationName		writeOp,
+				  const OperationName		readOp,
+				  const VkSharingMode		sharingMode,
+				  PipelineCacheData&		pipelineCacheData)
 		: TestCase				(testCtx, name, description)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc))
@@ -462,7 +494,7 @@ public:
 				return new FenceTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData, m_sharingMode);
 			case SYNC_PRIMITIVE_SEMAPHORE:
 				return new SemaphoreTestInstance(context, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData, m_sharingMode);
-			default :
+			default:
 				DE_ASSERT(0);
 				return DE_NULL;
 		}
@@ -470,10 +502,10 @@ public:
 
 private:
 	const ResourceDescription				m_resourceDesc;
-	const de::UniquePtr<OperationSupport>	m_writeOp;
-	const de::UniquePtr<OperationSupport>	m_readOp;
+	const UniquePtr<OperationSupport>		m_writeOp;
+	const UniquePtr<OperationSupport>		m_readOp;
 	const SyncPrimitive						m_syncPrimitive;
-	const vk::VkSharingMode					m_sharingMode;
+	const VkSharingMode						m_sharingMode;
 	PipelineCacheData&						m_pipelineCacheData;
 };
 
@@ -494,44 +526,43 @@ void createTests (tcu::TestCaseGroup* group, PipelineCacheData* pipelineCacheDat
 
 	for (int groupNdx = 0; groupNdx < DE_LENGTH_OF_ARRAY(groups); ++groupNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> synchGroup (new tcu::TestCaseGroup(testCtx, groups[groupNdx].name, ""));
+		MovePtr<tcu::TestCaseGroup> synchGroup (new tcu::TestCaseGroup(testCtx, groups[groupNdx].name, ""));
 
 		for (int writeOpNdx = 0; writeOpNdx < DE_LENGTH_OF_ARRAY(s_writeOps); ++writeOpNdx)
-		for (int readOpNdx = 0; readOpNdx < DE_LENGTH_OF_ARRAY(s_readOps); ++readOpNdx)
+		for (int readOpNdx  = 0; readOpNdx  < DE_LENGTH_OF_ARRAY(s_readOps);  ++readOpNdx)
 		{
 			const OperationName	writeOp		= s_writeOps[writeOpNdx];
 			const OperationName	readOp		= s_readOps[readOpNdx];
 			const std::string	opGroupName = getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(testCtx, opGroupName.c_str(), ""));
+			MovePtr<tcu::TestCaseGroup> opGroup		(new tcu::TestCaseGroup(testCtx, opGroupName.c_str(), ""));
 
 			for (int optionNdx = 0; optionNdx <= groups[groupNdx].numOptions; ++optionNdx)
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
 				const ResourceDescription&	resource	= s_resources[resourceNdx];
 				std::string					name		= getResourceName(resource);
+				VkSharingMode				sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-				vk::VkSharingMode sharingMode = vk::VK_SHARING_MODE_EXCLUSIVE;
 				// queue family sharing mode used for resource
 				if (optionNdx)
 				{
 					name += "_concurrent";
-					sharingMode = vk::VK_SHARING_MODE_CONCURRENT;
+					sharingMode = VK_SHARING_MODE_CONCURRENT;
 				}
 				else
 					name += "_exclusive";
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new SyncTestCase(testCtx, name, "", groups[groupNdx].syncPrimitive, resource, writeOp, readOp, sharingMode, *pipelineCacheData));
+					opGroup->addChild(new BaseTestCase(testCtx, name, "", groups[groupNdx].syncPrimitive, resource, writeOp, readOp, sharingMode, *pipelineCacheData));
 					empty = false;
 				}
 			}
 			if (!empty)
 				synchGroup->addChild(opGroup.release());
 		}
-
 		group->addChild(synchGroup.release());
 	}
 }
