@@ -45,6 +45,7 @@
 #define SHADER_IMAGE_ATOMIC_EXTENSION_NOT_SUPPORTED "Shader image atomic functionality not supported, skipping"
 #define TEXTURE_BUFFER_EXTENSION_NOT_SUPPORTED "Texture buffer functionality not supported, skipping"
 #define DRAW_BUFFERS_INDEXED_NOT_SUPPORTED "Draw buffers indexed functionality not supported, skipping"
+#define VIEWPORT_ARRAY_NOT_SUPPORTED "Viewport array functionality not supported, skipping"
 
 namespace glcts
 {
@@ -67,6 +68,7 @@ enum ExtensionName
 	EXTENSIONNAME_TEXTURE_BUFFER,
 	EXTENSIONNAME_TEXTURE_CUBE_MAP_ARRAY,
 	EXTENSIONNAME_GPU_SHADER5,
+	EXTENSIONNAME_VIEWPORT_ARRAY,
 };
 
 /* Extension type */
@@ -221,6 +223,7 @@ protected:
 	bool m_is_texture_cube_map_array_supported;
 	bool m_is_texture_border_clamp_supported;
 	bool m_is_texture_buffer_supported;
+	bool m_is_viewport_array_supported;
 
 	/* Predefined shader strings */
 	static const char* m_boilerplate_vs_code;

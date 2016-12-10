@@ -71,6 +71,7 @@ TestCaseBase::TestCaseBase(Context& context, const ExtParameters& extParam, cons
 	, m_is_texture_cube_map_array_supported(false)
 	, m_is_texture_border_clamp_supported(false)
 	, m_is_texture_buffer_supported(false)
+	, m_is_viewport_array_supported(false)
 	, seed_value(1)
 {
 	m_glExtTokens.init(context.getRenderContext().getType());
@@ -92,8 +93,8 @@ void TestCaseBase::initExtensions()
 {
 	const glu::ContextType& context_type = m_context.getRenderContext().getType();
 
-	/* OpenGL 4.4 */
-	if (glu::contextSupports(context_type, glu::ApiType::core(4, 4)))
+	/* OpenGL 4.0 or higher is minimum expectation for any of these tests */
+	if (glu::contextSupports(context_type, glu::ApiType::core(4, 0)))
 	{
 		m_is_geometry_shader_extension_supported			= true;
 		m_is_geometry_shader_point_size_supported			= true;
@@ -103,8 +104,14 @@ void TestCaseBase::initExtensions()
 		m_is_texture_cube_map_array_supported				= true;
 		m_is_texture_border_clamp_supported					= true;
 		m_is_texture_buffer_supported						= true;
-		m_is_shader_image_atomic_supported					= true;
-		m_is_texture_storage_multisample_2d_array_supported = true;
+		m_is_shader_image_atomic_supported = glu::contextSupports(context_type, glu::ApiType::core(4, 2));
+		m_is_texture_storage_multisample_2d_array_supported =
+			glu::contextSupports(context_type, glu::ApiType::core(4, 3));
+		m_is_framebuffer_no_attachments_supported  = glu::contextSupports(context_type, glu::ApiType::core(4, 3));
+		m_is_program_interface_query_supported	 = glu::contextSupports(context_type, glu::ApiType::core(4, 3));
+		m_is_texture_storage_multisample_supported = glu::contextSupports(context_type, glu::ApiType::core(4, 3));
+		m_is_shader_image_load_store_supported	 = glu::contextSupports(context_type, glu::ApiType::core(4, 2));
+		m_is_viewport_array_supported			   = glu::contextSupports(context_type, glu::ApiType::core(4, 1));
 	}
 	else if (glu::contextSupports(context_type, glu::ApiType::es(3, 2)))
 	{
@@ -116,142 +123,63 @@ void TestCaseBase::initExtensions()
 		m_is_texture_buffer_supported						= true;
 		m_is_shader_image_atomic_supported					= true;
 		m_is_texture_storage_multisample_2d_array_supported = true;
-		if (isExtensionSupported("GL_OES_geometry_point_size") || isExtensionSupported("GL_EXT_geometry_point_size"))
-		{
-			m_is_geometry_shader_point_size_supported = true;
-		}
-		if (isExtensionSupported("GL_OES_tessellation_point_size") ||
-			isExtensionSupported("GL_EXT_tessellation_point_size"))
-		{
-			m_is_tessellation_shader_point_size_supported = true;
-		}
+		m_is_framebuffer_no_attachments_supported			= true;
+		m_is_program_interface_query_supported				= true;
+		m_is_texture_storage_multisample_supported			= true;
+		m_is_shader_image_load_store_supported				= true;
+		m_is_geometry_shader_point_size_supported =
+			isExtensionSupported("GL_OES_geometry_point_size") || isExtensionSupported("GL_EXT_geometry_point_size");
+		m_is_tessellation_shader_point_size_supported = isExtensionSupported("GL_OES_tessellation_point_size") ||
+														isExtensionSupported("GL_EXT_tessellation_point_size");
+		m_is_viewport_array_supported = isExtensionSupported("GL_OES_viewport_array");
 	}
 	else
 	{
+		/* ES3.1 core functionality is assumed*/
+		DE_ASSERT(isContextTypeES(context_type));
+		DE_ASSERT(glu::contextSupports(context_type, glu::ApiType::es(3, 1)));
+
+		/* these are part of ES 3.1 */
+		m_is_framebuffer_no_attachments_supported  = true;
+		m_is_program_interface_query_supported	 = true;
+		m_is_texture_storage_multisample_supported = true;
+		m_is_shader_image_load_store_supported	 = true;
+
+		/* AEP extensions - either test OES variants or EXT variants */
 		if (m_extType == EXTENSIONTYPE_OES)
 		{
-			/* GL_OES_geometry_shader is an ES3.1 extension */
-			if (isExtensionSupported("GL_OES_geometry_shader"))
-			{
-				m_is_geometry_shader_extension_supported = true;
-			}
-
-			/* GL_OES_geometry_point_size is an ES3.1 extension */
-			if (isExtensionSupported("GL_OES_geometry_point_size"))
-			{
-				m_is_geometry_shader_point_size_supported = true;
-			}
-
-			/* GL_OES_gpu_shader5 is an ES3.1 extension */
-			if (isExtensionSupported("GL_OES_gpu_shader5"))
-			{
-				m_is_gpu_shader5_supported = true;
-			}
-
-			/* GL_OES_tessellation_shader is an ES3.1 extension */
-			if (isExtensionSupported("GL_OES_tessellation_shader"))
-			{
-				m_is_tessellation_shader_supported = true;
-			}
-
-			/* GL_OES_tessellation_point_size is an ES3.1 extension */
-			if (isExtensionSupported("GL_OES_tessellation_point_size"))
-			{
-				m_is_tessellation_shader_point_size_supported = true;
-			}
-
-			/* GL_OES_texture_cube_map_array is an ES3.1 extension */
-			if (isExtensionSupported("GL_OES_texture_cube_map_array"))
-			{
-				m_is_texture_cube_map_array_supported = true;
-			}
-
-			/* GL_OES_texture_border_clamp is an ES3.1 extension */
-			if (isExtensionSupported("GL_OES_texture_border_clamp"))
-			{
-				m_is_texture_border_clamp_supported = true;
-			}
-
-			/* GL_OES_texture_buffer is an ES3.1 extension */
-			if (isExtensionSupported("GL_OES_texture_buffer"))
-			{
-				m_is_texture_buffer_supported = true;
-			}
+			/* These are all ES 3.1 extensions */
+			m_is_geometry_shader_extension_supported	  = isExtensionSupported("GL_OES_geometry_shader");
+			m_is_geometry_shader_point_size_supported	 = isExtensionSupported("GL_OES_geometry_point_size");
+			m_is_gpu_shader5_supported					  = isExtensionSupported("GL_OES_gpu_shader5");
+			m_is_tessellation_shader_supported			  = isExtensionSupported("GL_OES_tessellation_shader");
+			m_is_tessellation_shader_point_size_supported = isExtensionSupported("GL_OES_tessellation_point_size");
+			m_is_texture_cube_map_array_supported		  = isExtensionSupported("GL_OES_texture_cube_map_array");
+			m_is_texture_border_clamp_supported			  = isExtensionSupported("GL_OES_texture_border_clamp");
+			m_is_texture_buffer_supported				  = isExtensionSupported("GL_OES_texture_buffer");
 		}
 		else
 		{
 			DE_ASSERT(m_extType == EXTENSIONTYPE_EXT);
 
-			/* GL_EXT_geometry_shader is an ES3.1 extension */
-			if (isExtensionSupported("GL_EXT_geometry_shader"))
-			{
-				m_is_geometry_shader_extension_supported = true;
-			}
-
-			/* GL_EXT_geometry_point_size is an ES3.1 extension */
-			if (isExtensionSupported("GL_EXT_geometry_point_size"))
-			{
-				m_is_geometry_shader_point_size_supported = true;
-			}
-
-			/* GL_EXT_gpu_shader5 is an ES3.1 extension */
-			if (isExtensionSupported("GL_EXT_gpu_shader5"))
-			{
-				m_is_gpu_shader5_supported = true;
-			}
-
-			/* GL_EXT_tessellation_shader is an ES3.1 extension */
-			if (isExtensionSupported("GL_EXT_tessellation_shader"))
-			{
-				m_is_tessellation_shader_supported = true;
-			}
-
-			/* GL_EXT_tessellation_point_size is an ES3.1 extension */
-			if (isExtensionSupported("GL_EXT_tessellation_point_size"))
-			{
-				m_is_tessellation_shader_point_size_supported = true;
-			}
-
-			/* GL_EXT_texture_cube_map_array is an ES3.1 extension */
-			if (isExtensionSupported("GL_EXT_texture_cube_map_array"))
-			{
-				m_is_texture_cube_map_array_supported = true;
-			}
-
-			/* GL_EXT_texture_border_clamp is an ES3.1 extension */
-			if (isExtensionSupported("GL_EXT_texture_border_clamp"))
-			{
-				m_is_texture_border_clamp_supported = true;
-			}
-
-			/* GL_EXT_texture_buffer is an ES3.1 extension */
-			if (isExtensionSupported("GL_EXT_texture_buffer"))
-			{
-				m_is_texture_buffer_supported = true;
-			}
+			/* These are all ES 3.1 extensions */
+			m_is_geometry_shader_extension_supported	  = isExtensionSupported("GL_EXT_geometry_shader");
+			m_is_geometry_shader_point_size_supported	 = isExtensionSupported("GL_EXT_geometry_point_size");
+			m_is_gpu_shader5_supported					  = isExtensionSupported("GL_EXT_gpu_shader5");
+			m_is_tessellation_shader_supported			  = isExtensionSupported("GL_EXT_tessellation_shader");
+			m_is_tessellation_shader_point_size_supported = isExtensionSupported("GL_EXT_tessellation_point_size");
+			m_is_texture_cube_map_array_supported		  = isExtensionSupported("GL_EXT_texture_cube_map_array");
+			m_is_texture_border_clamp_supported			  = isExtensionSupported("GL_EXT_texture_border_clamp");
+			m_is_texture_buffer_supported				  = isExtensionSupported("GL_EXT_texture_buffer");
 		}
 
-		/* GL_OES_shader_image_atomic is an ES3.1 extension */
-		if (isExtensionSupported("GL_OES_shader_image_atomic"))
-		{
-			m_is_shader_image_atomic_supported = true;
-		}
-
-		/* GL_OES_texture_storage_multisample_2d_array is an ES3.1 extension */
-		if (isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
-		{
-			m_is_texture_storage_multisample_2d_array_supported = true;
-		}
-
-		/* ES3.1 core functionality */
-		DE_ASSERT(isContextTypeES(context_type));
-		DE_ASSERT(glu::contextSupports(context_type, glu::ApiType::es(3, 1)));
+		/* other ES 3.1 extensions */
+		m_is_shader_image_atomic_supported = isExtensionSupported("GL_OES_shader_image_atomic");
+		m_is_texture_storage_multisample_2d_array_supported =
+			isExtensionSupported("GL_OES_texture_storage_multisample_2d_array");
+		m_is_viewport_array_supported = isExtensionSupported("GL_OES_viewport_array");
 	}
 
-	m_is_framebuffer_no_attachments_supported  = true;
-	m_is_program_interface_query_supported	 = true;
-	m_is_texture_storage_multisample_supported = true;
-	m_is_shader_image_load_store_supported	 = true;
 }
 
 /** Initializes function pointers for ES3.1 extensions, as well as determines
@@ -296,6 +224,10 @@ void TestCaseBase::initGLSLSpecializationMap()
 		getGLSLExtDirective(m_extType, EXTENSIONNAME_SHADER_IMAGE_ATOMIC, EXTENSIONBEHAVIOR_ENABLE);
 	m_specializationMap["SHADER_IMAGE_ATOMIC_REQUIRE"] =
 		getGLSLExtDirective(m_extType, EXTENSIONNAME_SHADER_IMAGE_ATOMIC, EXTENSIONBEHAVIOR_REQUIRE);
+	m_specializationMap["VIEWPORT_ARRAY_ENABLE"] =
+		getGLSLExtDirective(m_extType, EXTENSIONNAME_VIEWPORT_ARRAY, EXTENSIONBEHAVIOR_ENABLE);
+	m_specializationMap["VIEWPORT_ARRAY_REQUIRE"] =
+		getGLSLExtDirective(m_extType, EXTENSIONNAME_VIEWPORT_ARRAY, EXTENSIONBEHAVIOR_REQUIRE);
 
 	if (glu::isContextTypeES(m_context.getRenderContext().getType()))
 	{
@@ -1164,6 +1096,9 @@ std::string TestCaseBase::getGLSLExtDirective(ExtensionType type, ExtensionName 
 		break;
 	case EXTENSIONNAME_GPU_SHADER5:
 		name_str = "gpu_shader5";
+		break;
+	case EXTENSIONNAME_VIEWPORT_ARRAY:
+		name_str = "viewport_array";
 		break;
 	default:
 		DE_ASSERT(0);
