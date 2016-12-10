@@ -142,7 +142,8 @@ void GL41TestPackage::init(void)
 	try
 	{
 		addChild(new gl4cts::VertexAttrib64BitTests(getContext()));
-		addChild(new glcts::ViewportArrayTests(getContext()));
+		glcts::ExtParameters extParams(glu::GLSL_VERSION_410, glcts::EXTENSIONTYPE_NONE);
+		addChild(new glcts::ViewportArrayTests(getContext(), extParams));
 	}
 	catch (...)
 	{

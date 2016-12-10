@@ -31,6 +31,8 @@
 #include "glcTestCase.hpp"
 #include "glwDefs.hpp"
 
+#include "esextcTestCaseBase.hpp"
+
 namespace tcu
 {
 class MessageBuilder;
@@ -251,11 +253,11 @@ public:
  *   * GetDoublei_v generates INVALID_VALUE when <target> is DEPTH_RANGE and
  *   <index> is greater than or equal to the value of MAX_VIEWPORTS;
  **/
-class APIErrors : public deqp::TestCase
+class APIErrors : public glcts::TestCaseBase
 {
 public:
 	/* Public methods */
-	APIErrors(deqp::Context& context);
+	APIErrors(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~APIErrors()
 	{
@@ -288,11 +290,11 @@ private:
  *   { FIRST_VERTEX_CONVENTION, LAST_VERTEX_CONVENTION, PROVOKING_VERTEX,
  *   UNDEFINED_VERTEX };
  **/
-class Queries : public deqp::TestCase
+class Queries : public glcts::TestCaseBase
 {
 public:
 	/* Public methods */
-	Queries(deqp::Context& context);
+	Queries(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~Queries()
 	{
@@ -321,11 +323,11 @@ public:
  *   - change location and dimensions of all indices at once with Viewport;
  *   - get VIEWPORT for all MAX_VIEWPORTS indices and verify results;
  **/
-class ViewportAPI : public deqp::TestCase
+class ViewportAPI : public glcts::TestCaseBase
 {
 public:
 	/* Public methods */
-	ViewportAPI(deqp::Context& context);
+	ViewportAPI(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~ViewportAPI()
 	{
@@ -364,11 +366,11 @@ private:
  *   - change location and dimensions of all indices at once with Scissor;
  *   - get SCISSOR_BOX for all MAX_VIEWPORTS indices and verify results;
  **/
-class ScissorAPI : public deqp::TestCase
+class ScissorAPI : public glcts::TestCaseBase
 {
 public:
 	/* Public methods */
-	ScissorAPI(deqp::Context& context);
+	ScissorAPI(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~ScissorAPI()
 	{
@@ -404,11 +406,11 @@ private:
  *   - change values of all indices at once with DepthRange;
  *   - get DEPTH_RANGE for all MAX_VIEWPORTS indices and verify results;
  **/
-class DepthRangeAPI : public deqp::TestCase
+class DepthRangeAPI : public glcts::TestCaseBase
 {
 public:
 	/* Public methods */
-	DepthRangeAPI(deqp::Context& context);
+	DepthRangeAPI(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~DepthRangeAPI()
 	{
@@ -446,11 +448,11 @@ private:
  *   - enable SCISSOR_TEST for all indices at once with Enable;
  *   - get state of SCISSOR_TEST for all MAX_VIEWPORTS indices and verify;
  **/
-class ScissorTestStateAPI : public deqp::TestCase
+class ScissorTestStateAPI : public glcts::TestCaseBase
 {
 public:
 	/* Public methods */
-	ScissorTestStateAPI(deqp::Context& context);
+	ScissorTestStateAPI(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~ScissorTestStateAPI()
 	{
@@ -467,11 +469,12 @@ private:
 	void getScissorTestStates(glw::GLint max_viewports, std::vector<glw::GLboolean>& out_data);
 };
 
-class DrawTestBase : public deqp::TestCase
+class DrawTestBase : public glcts::TestCaseBase
 {
 public:
 	/* Public methods */
-	DrawTestBase(deqp::Context& context, const glw::GLchar* test_name, const glw::GLchar* test_description);
+	DrawTestBase(deqp::Context& context, const glcts::ExtParameters& extParams, const glw::GLchar* test_name,
+				 const glw::GLchar* test_description);
 
 	virtual ~DrawTestBase()
 	{
@@ -603,7 +606,7 @@ class DrawToSingleLayerWithMultipleViewports : public DrawTestBase
 {
 public:
 	/* Public methods */
-	DrawToSingleLayerWithMultipleViewports(deqp::Context& context);
+	DrawToSingleLayerWithMultipleViewports(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~DrawToSingleLayerWithMultipleViewports()
 	{
@@ -633,7 +636,7 @@ class DynamicViewportIndex : public DrawTestBase
 {
 public:
 	/* Public methods */
-	DynamicViewportIndex(deqp::Context& context);
+	DynamicViewportIndex(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~DynamicViewportIndex()
 	{
@@ -664,7 +667,7 @@ class DrawMulitpleViewportsWithSingleInvocation : public DrawTestBase
 {
 public:
 	/* Public methods */
-	DrawMulitpleViewportsWithSingleInvocation(deqp::Context& context);
+	DrawMulitpleViewportsWithSingleInvocation(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~DrawMulitpleViewportsWithSingleInvocation()
 	{
@@ -697,7 +700,7 @@ class ViewportIndexSubroutine : public DrawTestBase
 {
 public:
 	/* Public methods */
-	ViewportIndexSubroutine(deqp::Context& context);
+	ViewportIndexSubroutine(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~ViewportIndexSubroutine()
 	{
@@ -729,9 +732,10 @@ class DrawMultipleLayers : public DrawTestBase
 {
 public:
 	/* Public methods */
-	DrawMultipleLayers(deqp::Context& context);
+	DrawMultipleLayers(deqp::Context& context, const glcts::ExtParameters& extParams);
 
-	DrawMultipleLayers(deqp::Context& context, const glw::GLchar* test_name, const glw::GLchar* test_description);
+	DrawMultipleLayers(deqp::Context& context, const glcts::ExtParameters& extParams, const glw::GLchar* test_name,
+					   const glw::GLchar* test_description);
 
 	virtual ~DrawMultipleLayers()
 	{
@@ -772,7 +776,7 @@ class Scissor : public DrawMultipleLayers
 {
 public:
 	/* Public methods */
-	Scissor(deqp::Context& context);
+	Scissor(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~Scissor()
 	{
@@ -794,7 +798,7 @@ class ScissorZeroDimension : public DrawMultipleLayers
 {
 public:
 	/* Public methods */
-	ScissorZeroDimension(deqp::Context& context);
+	ScissorZeroDimension(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~ScissorZeroDimension()
 	{
@@ -827,7 +831,7 @@ class ScissorClear : public DrawMultipleLayers
 {
 public:
 	/* Public methods */
-	ScissorClear(deqp::Context& context);
+	ScissorClear(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~ScissorClear()
 	{
@@ -880,7 +884,7 @@ class DepthRange : public DrawTestBase
 {
 public:
 	/* Public methods */
-	DepthRange(deqp::Context& context);
+	DepthRange(deqp::Context& context, const glcts::ExtParameters& extParams);
 	virtual ~DepthRange()
 	{
 	}
@@ -915,7 +919,7 @@ class DepthRangeDepthTest : public DrawTestBase
 {
 public:
 	/* Public methods */
-	DepthRangeDepthTest(deqp::Context& context);
+	DepthRangeDepthTest(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~DepthRangeDepthTest()
 	{
@@ -972,7 +976,7 @@ class ProvokingVertex : public DrawTestBase
 {
 public:
 	/* Public methods */
-	ProvokingVertex(deqp::Context& context);
+	ProvokingVertex(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~ProvokingVertex()
 	{
@@ -991,11 +995,11 @@ protected:
 } /* ViewportArray namespace */
 
 /** Group class for Shader Language 420Pack conformance tests */
-class ViewportArrayTests : public deqp::TestCaseGroup
+class ViewportArrayTests : public glcts::TestCaseGroupBase
 {
 public:
 	/* Public methods */
-	ViewportArrayTests(deqp::Context& context);
+	ViewportArrayTests(deqp::Context& context, const glcts::ExtParameters& extParams);
 
 	virtual ~ViewportArrayTests(void)
 	{
