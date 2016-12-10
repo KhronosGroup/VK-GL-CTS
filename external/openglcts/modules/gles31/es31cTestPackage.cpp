@@ -58,6 +58,7 @@
 #include "../glesext/texture_border_clamp/esextcTextureBorderClampTests.hpp"
 #include "../glesext/texture_buffer/esextcTextureBufferTests.hpp"
 #include "../glesext/texture_cube_map_array/esextcTextureCubeMapArrayTests.hpp"
+#include "glcViewportArrayTests.hpp"
 
 namespace es31cts
 {
@@ -195,6 +196,7 @@ void ES31TestPackage::init(void)
 		coreGroup->addChild(new glcts::TextureBorderClampTests(getContext(), extParams));
 		coreGroup->addChild(new glcts::TextureBufferTests(getContext(), extParams));
 		coreGroup->addChild(new glcts::DrawBuffersIndexedTests(getContext(), extParams));
+		coreGroup->addChild(new glcts::ViewportArrayTests(getContext(), extParams));
 
 		addChild(coreGroup);
 

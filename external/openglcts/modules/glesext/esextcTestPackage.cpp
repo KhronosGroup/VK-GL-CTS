@@ -32,6 +32,7 @@
 #include "texture_buffer/esextcTextureBufferTests.hpp"
 #include "texture_cube_map_array/esextcTextureCubeMapArrayTests.hpp"
 
+#include "glcViewportArrayTests.hpp"
 #include "gluStateReset.hpp"
 #include "tcuTestLog.hpp"
 
@@ -133,6 +134,8 @@ void ESEXTTestPackage::init(void)
 		addChild(new glcts::TextureBorderClampTests(getContext(), extParams));
 		addChild(new glcts::TextureBufferTests(getContext(), extParams));
 		addChild(new glcts::DrawElementsBaseVertexTests(getContext(), extParams));
+		glcts::ExtParameters viewportParams(glu::GLSL_VERSION_310_ES, glcts::EXTENSIONTYPE_OES);
+		addChild(new glcts::ViewportArrayTests(getContext(), viewportParams));
 	}
 	catch (...)
 	{
