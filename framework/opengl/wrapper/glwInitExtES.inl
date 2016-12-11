@@ -149,6 +149,22 @@ if (de::contains(extSet, "GL_OES_vertex_array_object"))
 	gl->isVertexArray		= (glIsVertexArrayFunc)			loader->get("glIsVertexArrayOES");
 }
 
+if (de::contains(extSet, "GL_OES_viewport_array"))
+{
+	gl->depthRangeArrayfvOES	= (glDepthRangeArrayfvOESFunc)	loader->get("glDepthRangeArrayfvOES");
+	gl->depthRangeIndexedfOES	= (glDepthRangeIndexedfOESFunc)	loader->get("glDepthRangeIndexedfOES");
+	gl->disablei				= (glDisableiFunc)				loader->get("glDisableiOES");
+	gl->enablei					= (glEnableiFunc)				loader->get("glEnableiOES");
+	gl->getFloati_v				= (glGetFloati_vFunc)			loader->get("glGetFloati_vOES");
+	gl->isEnabledi				= (glIsEnablediFunc)			loader->get("glIsEnablediOES");
+	gl->scissorArrayv			= (glScissorArrayvFunc)			loader->get("glScissorArrayvOES");
+	gl->scissorIndexed			= (glScissorIndexedFunc)		loader->get("glScissorIndexedOES");
+	gl->scissorIndexedv			= (glScissorIndexedvFunc)		loader->get("glScissorIndexedvOES");
+	gl->viewportArrayv			= (glViewportArrayvFunc)		loader->get("glViewportArrayvOES");
+	gl->viewportIndexedf		= (glViewportIndexedfFunc)		loader->get("glViewportIndexedfOES");
+	gl->viewportIndexedfv		= (glViewportIndexedfvFunc)		loader->get("glViewportIndexedfvOES");
+}
+
 if (de::contains(extSet, "GL_NV_internalformat_sample_query"))
 {
 	gl->getInternalformatSampleivNV	= (glGetInternalformatSampleivNVFunc)	loader->get("glGetInternalformatSampleivNV");

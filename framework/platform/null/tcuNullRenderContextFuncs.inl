@@ -1431,6 +1431,14 @@ GLW_APICALL void GLW_APIENTRY glDepthRange (GLdouble near, GLdouble far)
 
 }
 
+GLW_APICALL void GLW_APIENTRY glDepthRangeArrayfvOES (GLuint first, GLsizei count, const GLfloat *v)
+{
+	DE_UNREF(first);
+	DE_UNREF(count);
+	DE_UNREF(v);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glDepthRangeArrayv (GLuint first, GLsizei count, const GLdouble *v)
 {
 	DE_UNREF(first);
@@ -1440,6 +1448,14 @@ GLW_APICALL void GLW_APIENTRY glDepthRangeArrayv (GLuint first, GLsizei count, c
 }
 
 GLW_APICALL void GLW_APIENTRY glDepthRangeIndexed (GLuint index, GLdouble n, GLdouble f)
+{
+	DE_UNREF(index);
+	DE_UNREF(n);
+	DE_UNREF(f);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glDepthRangeIndexedfOES (GLuint index, GLfloat n, GLfloat f)
 {
 	DE_UNREF(index);
 	DE_UNREF(n);

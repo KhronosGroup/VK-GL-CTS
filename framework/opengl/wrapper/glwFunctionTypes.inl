@@ -153,8 +153,10 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glDeleteVertexArraysFunc)								(GLsi
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthFuncFunc)											(GLenum func);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthMaskFunc)											(GLboolean flag);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthRangeFunc)										(GLdouble near, GLdouble far);
+typedef GLW_APICALL void			(GLW_APIENTRY* glDepthRangeArrayfvOESFunc)								(GLuint first, GLsizei count, const GLfloat *v);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthRangeArrayvFunc)									(GLuint first, GLsizei count, const GLdouble *v);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthRangeIndexedFunc)									(GLuint index, GLdouble n, GLdouble f);
+typedef GLW_APICALL void			(GLW_APIENTRY* glDepthRangeIndexedfOESFunc)								(GLuint index, GLfloat n, GLfloat f);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthRangefFunc)										(GLfloat n, GLfloat f);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDetachShaderFunc)										(GLuint program, GLuint shader);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDisableFunc)											(GLenum cap);

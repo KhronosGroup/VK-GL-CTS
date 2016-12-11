@@ -153,8 +153,10 @@ void					glDeleteVertexArrays								(glw::GLsizei n, const glw::GLuint *arrays)
 void					glDepthFunc											(glw::GLenum func);
 void					glDepthMask											(glw::GLboolean flag);
 void					glDepthRange										(glw::GLdouble near, glw::GLdouble far);
+void					glDepthRangeArrayfvOES								(glw::GLuint first, glw::GLsizei count, const glw::GLfloat *v);
 void					glDepthRangeArrayv									(glw::GLuint first, glw::GLsizei count, const glw::GLdouble *v);
 void					glDepthRangeIndexed									(glw::GLuint index, glw::GLdouble n, glw::GLdouble f);
+void					glDepthRangeIndexedfOES								(glw::GLuint index, glw::GLfloat n, glw::GLfloat f);
 void					glDepthRangef										(glw::GLfloat n, glw::GLfloat f);
 void					glDetachShader										(glw::GLuint program, glw::GLuint shader);
 void					glDisable											(glw::GLenum cap);

@@ -1204,6 +1204,14 @@ void glwDepthRange (GLdouble near, GLdouble far)
 	gl->depthRange(near, far);
 }
 
+void glwDepthRangeArrayfvOES (GLuint first, GLsizei count, const GLfloat *v)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->depthRangeArrayfvOES(first, count, v);
+}
+
 void glwDepthRangeArrayv (GLuint first, GLsizei count, const GLdouble *v)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -1218,6 +1226,14 @@ void glwDepthRangeIndexed (GLuint index, GLdouble n, GLdouble f)
 	if (!gl)
 		return;
 	gl->depthRangeIndexed(index, n, f);
+}
+
+void glwDepthRangeIndexedfOES (GLuint index, GLfloat n, GLfloat f)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->depthRangeIndexedfOES(index, n, f);
 }
 
 void glwDepthRangef (GLfloat n, GLfloat f)

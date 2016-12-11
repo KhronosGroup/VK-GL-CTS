@@ -1072,6 +1072,13 @@ void CallLogWrapper::glDepthRange (glw::GLdouble near, glw::GLdouble far)
 	m_gl.depthRange(near, far);
 }
 
+void CallLogWrapper::glDepthRangeArrayfvOES (glw::GLuint first, glw::GLsizei count, const glw::GLfloat *v)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glDepthRangeArrayfvOES(" << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
+	m_gl.depthRangeArrayfvOES(first, count, v);
+}
+
 void CallLogWrapper::glDepthRangeArrayv (glw::GLuint first, glw::GLsizei count, const glw::GLdouble *v)
 {
 	if (m_enableLog)
@@ -1084,6 +1091,13 @@ void CallLogWrapper::glDepthRangeIndexed (glw::GLuint index, glw::GLdouble n, gl
 	if (m_enableLog)
 		m_log << TestLog::Message << "glDepthRangeIndexed(" << index << ", " << n << ", " << f << ");" << TestLog::EndMessage;
 	m_gl.depthRangeIndexed(index, n, f);
+}
+
+void CallLogWrapper::glDepthRangeIndexedfOES (glw::GLuint index, glw::GLfloat n, glw::GLfloat f)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glDepthRangeIndexedfOES(" << index << ", " << n << ", " << f << ");" << TestLog::EndMessage;
+	m_gl.depthRangeIndexedfOES(index, n, f);
 }
 
 void CallLogWrapper::glDepthRangef (glw::GLfloat n, glw::GLfloat f)

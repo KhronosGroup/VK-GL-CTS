@@ -82,6 +82,7 @@ EXTENSIONS			= [
 	'GL_OES_stencil4',
 	'GL_OES_mapbuffer',
 	'GL_OES_vertex_array_object',
+	'GL_OES_viewport_array',
 	'GL_ARB_clip_control',
 	'GL_ARB_buffer_storage',
 	'GL_ARB_compute_shader',
