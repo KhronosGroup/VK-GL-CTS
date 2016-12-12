@@ -938,6 +938,8 @@ std::string DrawElementsBaseVertexTestBase::getFunctionName(_function_type funct
  */
 void DrawElementsBaseVertexTestBase::init()
 {
+	TestCaseBase::init();
+
 	const glu::ContextInfo& context_info = m_context.getContextInfo();
 
 	if ((glu::isContextTypeES(m_context.getRenderContext().getType()) &&
