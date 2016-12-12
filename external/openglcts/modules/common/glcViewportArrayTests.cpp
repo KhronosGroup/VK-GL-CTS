@@ -1442,7 +1442,7 @@ tcu::TestNode::IterateResult Queries::iterate()
 
 		for (GLint i = 0; i < max_viewports; ++i)
 		{
-			gl.getIntegeri_v(GL_VIEWPORT, i, &data[i * 4]);
+			gl.getIntegeri_v(GL_SCISSOR_BOX, i, &data[i * 4]);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegeri_v");
 		}
 
@@ -1512,11 +1512,11 @@ tcu::TestNode::IterateResult Queries::iterate()
 	 *   at least [-32768, 32767];
 	 */
 	{
-		if ((-32768.0f < viewport_bounds_range[0]) || (32768.0f > viewport_bounds_range[1]))
+		if ((-32768.0f < viewport_bounds_range[0]) || (32767.0f > viewport_bounds_range[1]))
 		{
 			m_context.getTestContext().getLog()
 				<< tcu::TestLog::Message << "Invalid VIEWPORT_BOUNDS_RANGE: " << viewport_bounds_range[0] << " : "
-				<< viewport_bounds_range[1] << " expected at least: -32768.0f : 32768.0f" << tcu::TestLog::EndMessage;
+				<< viewport_bounds_range[1] << " expected at least: -32768.0f : 32767.0f" << tcu::TestLog::EndMessage;
 
 			test_result = false;
 		}
