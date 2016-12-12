@@ -194,6 +194,9 @@ public:
 					glw::GLvoid* data);
 
 		glw::GLuint m_id;
+		glw::GLuint m_width;
+		glw::GLuint m_height;
+		glw::GLuint m_depth;
 
 	private:
 		deqp::Context& m_context;
@@ -212,6 +215,61 @@ public:
 
 	private:
 		deqp::Context& m_context;
+	};
+
+	class DepthFuncWrapper
+	{
+	public:
+		DepthFuncWrapper(deqp::Context& context) : m_gl(context.getRenderContext().getFunctions()){};
+		~DepthFuncWrapper(){};
+
+		void depthRangeArray(glw::GLuint first, glw::GLsizei count, const glw::GLfloat* v)
+		{
+			m_gl.depthRangeArrayfvOES(first, count, v);
+		}
+
+		void depthRangeArray(glw::GLuint first, glw::GLsizei count, const glw::GLdouble* v)
+		{
+			m_gl.depthRangeArrayv(first, count, v);
+		}
+
+		void depthRangeIndexed(glw::GLuint index, glw::GLfloat n, glw::GLfloat f)
+		{
+			m_gl.depthRangeIndexedfOES(index, n, f);
+		}
+
+		void depthRangeIndexed(glw::GLuint index, glw::GLdouble n, glw::GLdouble f)
+		{
+			m_gl.depthRangeIndexed(index, n, f);
+		}
+
+		void depthRange(glw::GLfloat near, glw::GLfloat far)
+		{
+			m_gl.depthRangef(near, far);
+		}
+
+		void depthRange(glw::GLdouble near, glw::GLdouble far)
+		{
+			m_gl.depthRange(near, far);
+		}
+
+		void getDepthi_v(glw::GLenum target, glw::GLuint index, glw::GLfloat* data)
+		{
+			m_gl.getFloati_v(target, index, data);
+		}
+
+		void getDepthi_v(glw::GLenum target, glw::GLuint index, glw::GLdouble* data)
+		{
+			m_gl.getDoublei_v(target, index, data);
+		}
+
+		const glw::Functions& getFunctions()
+		{
+			return m_gl;
+		}
+
+	private:
+		const glw::Functions& m_gl;
 	};
 };
 
@@ -254,10 +312,22 @@ public:
 	{
 	}
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+	/* Public methods inherited from TestCaseBase */
+	virtual IterateResult iterate(void);
 
 private:
+	template <typename T>
+	void depthRangeArrayHelper(Utils::DepthFuncWrapper& depthFunc, glw::GLint max_viewports, bool& test_result,
+							   T* data = NULL);
+
+	template <typename T>
+	void depthRangeIndexedHelper(Utils::DepthFuncWrapper& depthFunc, glw::GLint max_viewports, bool& test_result,
+								 T* data = NULL);
+
+	template <typename T>
+	void getDepthHelper(Utils::DepthFuncWrapper& depthFunc, glw::GLint max_viewports, bool& test_result,
+						T* data = NULL);
+
 	void checkGLError(glw::GLenum expected_error, const glw::GLchar* description, bool& out_result);
 };
 
@@ -293,6 +363,11 @@ public:
 
 	/* Public methods inherited from TestCase */
 	virtual tcu::TestNode::IterateResult iterate(void);
+
+private:
+	template <typename T>
+	void depthRangeInitialValuesHelper(Utils::DepthFuncWrapper& depthFunc, glw::GLint max_viewports, bool& test_result,
+									   T* data = NULL);
 };
 
 /** Implements test ViewportAPI, description follows:
@@ -412,10 +487,15 @@ public:
 
 private:
 	/* Private methods */
-	void compareDepthRanges(std::vector<glw::GLdouble>& left, std::vector<glw::GLdouble>& right,
-							const glw::GLchar* description, bool& out_result);
+	template <typename T>
+	void compareDepthRanges(std::vector<T>& left, std::vector<T>& right, const glw::GLchar* description,
+							bool& out_result);
 
-	void getDepthRanges(glw::GLint max_viewports, std::vector<glw::GLdouble>& out_data);
+	template <typename T>
+	void getDepthRanges(Utils::DepthFuncWrapper& depthFunc, glw::GLint max_viewports, std::vector<T>& out_data);
+
+	template <typename T>
+	bool iterateHelper(T* data = NULL);
 
 	/* Private constants */
 	static const glw::GLuint m_n_elements;
@@ -510,7 +590,7 @@ protected:
 	virtual bool checkResults(Utils::texture& texture_0, Utils::texture& texture_1, glw::GLuint draw_call_index);
 
 	virtual void getClearSettings(bool& clear_depth_before_draw, glw::GLuint iteration_index,
-								  glw::GLdouble& depth_value);
+								  glw::GLfloat& depth_value);
 
 	virtual glw::GLuint getDrawCallsNumber();
 	virtual std::string getFragmentShader() = 0;
@@ -554,6 +634,9 @@ protected:
 private:
 	/* Private methods */
 	std::string getVertexShader();
+
+	template <typename T>
+	void setup16x2DepthsHelper(DEPTH_RANGE_METHOD method, T* data = NULL);
 };
 
 /** Implements test DrawToSingleLayerWithMultipleViewports, description follows:
@@ -696,6 +779,9 @@ public:
 	virtual ~ViewportIndexSubroutine()
 	{
 	}
+
+	/* Public methods inherited from TestCase/DrawTestBase */
+	virtual tcu::TestNode::IterateResult iterate(void);
 
 protected:
 	/* Protected methods inherited from DrawTestBase */
@@ -921,7 +1007,7 @@ protected:
 	virtual bool checkResults(Utils::texture& texture_0, Utils::texture& texture_1, glw::GLuint draw_call_index);
 
 	virtual void getClearSettings(bool& clear_depth_before_draw, glw::GLuint iteration_index,
-								  glw::GLdouble& depth_value);
+								  glw::GLfloat& depth_value);
 
 	virtual glw::GLuint getDrawCallsNumber();
 	virtual std::string getFragmentShader();

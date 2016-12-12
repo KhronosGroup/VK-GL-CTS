@@ -698,7 +698,8 @@ void Utils::program::printShaderSource(const GLchar* source, tcu::MessageBuilder
  *
  * @param context CTS context.
  **/
-Utils::texture::texture(deqp::Context& context) : m_id(0), m_context(context), m_is_array(false)
+Utils::texture::texture(deqp::Context& context)
+	: m_id(0), m_width(0), m_height(0), m_depth(0), m_context(context), m_is_array(false)
 {
 	/* Nothing to done here */
 }
@@ -742,6 +743,9 @@ void Utils::texture::create(GLuint width, GLuint height, GLenum internal_format)
 
 	release();
 
+	m_width	= width;
+	m_height   = height;
+	m_depth	= 1;
 	m_is_array = false;
 
 	gl.genTextures(1, &m_id);
@@ -766,6 +770,9 @@ void Utils::texture::create(GLuint width, GLuint height, GLuint depth, GLenum in
 
 	release();
 
+	m_width	= width;
+	m_height   = height;
+	m_depth	= depth;
 	m_is_array = true;
 
 	gl.genTextures(1, &m_id);
@@ -786,6 +793,7 @@ void Utils::texture::create(GLuint width, GLuint height, GLuint depth, GLenum in
 void Utils::texture::get(glw::GLenum format, glw::GLenum type, glw::GLvoid* out_data) const
 {
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glu::ContextType& context_type = m_context.getRenderContext().getType();
 
 	bind();
 
@@ -796,8 +804,67 @@ void Utils::texture::get(glw::GLenum format, glw::GLenum type, glw::GLvoid* out_
 		textarget = GL_TEXTURE_2D_ARRAY;
 	}
 
-	gl.getTexImage(textarget, 0 /* level */, format, type, out_data);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "GetTexImage");
+	if (glu::isContextTypeGLCore(context_type))
+	{
+		gl.getTexImage(textarget, 0 /* level */, format, type, out_data);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "GetTexImage");
+	}
+	else
+	{
+		DE_ASSERT(glu::isContextTypeES(context_type));
+
+		GLuint temp_fbo = 0;
+		gl.genFramebuffers(1, &temp_fbo);
+		gl.bindFramebuffer(GL_READ_FRAMEBUFFER, temp_fbo);
+
+		/* OpenGL ES only guarantees support for RGBA formats of each type.
+		Since the tests are only expecting single-channel formats, we read them back
+		in RGBA to a temporary buffer and then copy only the first component
+		to the actual output buffer */
+		GLenum read_format = format;
+		switch (format)
+		{
+		case GL_RED:
+			read_format = GL_RGBA;
+			break;
+		case GL_RED_INTEGER:
+			read_format = GL_RGBA_INTEGER;
+			break;
+		default:
+			TCU_FAIL("unexpected format");
+		}
+		/* we can get away just handling one type of data, as long as the components are the same size */
+		if (type != GL_INT && type != GL_FLOAT)
+		{
+			TCU_FAIL("unexpected type");
+		}
+		std::vector<GLint> read_data;
+		const GLuint	   layer_size = m_width * m_height * 4;
+		read_data.resize(layer_size * m_depth);
+
+		if (m_is_array)
+		{
+			for (GLuint layer = 0; layer < m_depth; ++layer)
+			{
+				gl.framebufferTextureLayer(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_id, 0, layer);
+				gl.readPixels(0, 0, m_width, m_height, read_format, type, &read_data[layer * layer_size]);
+			}
+		}
+		else
+		{
+			gl.framebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textarget, m_id, 0);
+			gl.readPixels(0, 0, m_width, m_height, read_format, type, &read_data[0]);
+		}
+		GLU_EXPECT_NO_ERROR(gl.getError(), "ReadPixels");
+		gl.deleteFramebuffers(1, &temp_fbo);
+
+		/* copy the first channel from the readback buffer to the output buffer */
+		GLint* out_data_int = (GLint*)out_data;
+		for (GLuint elem = 0; elem < (m_width * m_height * m_depth); ++elem)
+		{
+			out_data_int[elem] = read_data[elem * 4];
+		}
+	}
 }
 
 /** Delete texture
@@ -900,14 +967,74 @@ APIErrors::APIErrors(deqp::Context& context, const glcts::ExtParameters& extPara
 	/* Nothing to be done here */
 }
 
+template <typename T>
+void APIErrors::depthRangeArrayHelper(Utils::DepthFuncWrapper& depthFunc, GLint max_viewports, bool& test_result, T*)
+{
+	std::vector<T> data;
+	data.resize(max_viewports * 2 /* near + far */);
+
+	for (GLint i = 0; i < max_viewports; ++i)
+	{
+		data[i * 2]		= (T)0.0;
+		data[i * 2 + 1] = (T)1.0;
+	}
+
+	depthFunc.depthRangeArray(0, max_viewports - 1, &data[0]);
+	checkGLError(GL_NO_ERROR, "depthRangeArray, correct parameters", test_result);
+
+	depthFunc.depthRangeArray(max_viewports, 1, &data[0]);
+	checkGLError(GL_INVALID_VALUE, "depthRangeArray, <first> == GL_MAX_VIEWPORTS", test_result);
+
+	depthFunc.depthRangeArray(1, max_viewports - 1, &data[0]);
+	checkGLError(GL_NO_ERROR, "depthRangeArray, <first> + <count> == GL_MAX_VIEWPORTS", test_result);
+
+	depthFunc.depthRangeArray(1, max_viewports, &data[0]);
+	checkGLError(GL_INVALID_VALUE, "depthRangeArray, <first> + <count> > GL_MAX_VIEWPORTS", test_result);
+}
+
+template <typename T>
+void APIErrors::depthRangeIndexedHelper(Utils::DepthFuncWrapper& depthFunc, GLint max_viewports, bool& test_result, T*)
+{
+	depthFunc.depthRangeIndexed(0 /* index */, (T)0.0, (T)1.0);
+	checkGLError(GL_NO_ERROR, "depthRangeIndexed, <index> == 0", test_result);
+
+	depthFunc.depthRangeIndexed(max_viewports - 1 /* index */, (T)0.0, (T)1.0);
+	checkGLError(GL_NO_ERROR, "depthRangeIndexed, <index> == GL_MAX_VIEWPORTS - 1", test_result);
+
+	depthFunc.depthRangeIndexed(max_viewports /* index */, (T)0.0, (T)1.0);
+	checkGLError(GL_INVALID_VALUE, "depthRangeIndexed, <index> == GL_MAX_VIEWPORTS", test_result);
+
+	depthFunc.depthRangeIndexed(max_viewports + 1 /* index */, (T)0.0, (T)1.0);
+	checkGLError(GL_INVALID_VALUE, "depthRangeIndexed, <index> > GL_MAX_VIEWPORTS", test_result);
+}
+
+template <typename T>
+void APIErrors::getDepthHelper(Utils::DepthFuncWrapper& depthFunc, GLint max_viewports, bool& test_result, T*)
+{
+	T data[4];
+
+	depthFunc.getDepthi_v(GL_DEPTH_RANGE, max_viewports - 1, data);
+	checkGLError(GL_NO_ERROR, "getDouble/Floati_v, <index> == GL_MAX_VIEWPORTS - 1", test_result);
+
+	depthFunc.getDepthi_v(GL_DEPTH_RANGE, max_viewports, data);
+	checkGLError(GL_INVALID_VALUE, "getDouble/Floati_v, <index> == GL_MAX_VIEWPORTS", test_result);
+}
+
 /** Execute test
  *
  * @return tcu::TestNode::CONTINUE after executing test case, tcu::TestNode::STOP otherwise
  **/
 tcu::TestNode::IterateResult APIErrors::iterate()
 {
+	if (!m_is_viewport_array_supported)
+	{
+		throw tcu::NotSupportedError(VIEWPORT_ARRAY_NOT_SUPPORTED, "", __FILE__, __LINE__);
+	}
+
 	/* GL entry points */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glu::ContextType& context_type = m_context.getRenderContext().getType();
+	Utils::DepthFuncWrapper depthFunc(m_context);
 
 	/* Test result */
 	bool test_result = true;
@@ -920,45 +1047,28 @@ tcu::TestNode::IterateResult APIErrors::iterate()
 	 *   * DepthRangeArrayv generates INVALID_VALUE when <first> + <count> is greater
 	 *   than or equal to the value of MAX_VIEWPORTS;
 	 */
+	if (glu::isContextTypeGLCore(context_type))
 	{
-		std::vector<GLdouble> data;
-		data.resize(max_viewports * 2 /* near + far */);
-
-		for (GLint i = 0; i < max_viewports; ++i)
-		{
-			data[i * 2]		= 0.0;
-			data[i * 2 + 1] = 1.0;
-		}
-
-		gl.depthRangeArrayv(0, max_viewports - 1, &data[0]);
-		checkGLError(GL_NO_ERROR, "depthRangeArrayv, correct parameters", test_result);
-
-		gl.depthRangeArrayv(max_viewports, 1, &data[0]);
-		checkGLError(GL_INVALID_VALUE, "depthRangeArrayv, <first> == GL_MAX_VIEWPORTS", test_result);
-
-		gl.depthRangeArrayv(1, max_viewports - 1, &data[0]);
-		checkGLError(GL_NO_ERROR, "depthRangeArrayv, <first> + <count> == GL_MAX_VIEWPORTS", test_result);
-
-		gl.depthRangeArrayv(1, max_viewports, &data[0]);
-		checkGLError(GL_INVALID_VALUE, "depthRangeArrayv, <first> + <count> > GL_MAX_VIEWPORTS", test_result);
+		depthRangeArrayHelper<GLdouble>(depthFunc, max_viewports, test_result);
+	}
+	else
+	{
+		DE_ASSERT(glu::isContextTypeES(context_type));
+		depthRangeArrayHelper<GLfloat>(depthFunc, max_viewports, test_result);
 	}
 
 	/*
 	 *   * DepthRangeIndexed generates INVALID_VALUE when <index> is greater than or
 	 *   equal to the value of MAX_VIEWPORTS;
 	 */
+	if (glu::isContextTypeGLCore(context_type))
 	{
-		gl.depthRangeIndexed(0 /* index */, 0.0, 1.0);
-		checkGLError(GL_NO_ERROR, "depthRangeIndexed, <index> == 0", test_result);
-
-		gl.depthRangeIndexed(max_viewports - 1 /* index */, 0.0, 1.0);
-		checkGLError(GL_NO_ERROR, "depthRangeIndexed, <index> == GL_MAX_VIEWPORTS - 1", test_result);
-
-		gl.depthRangeIndexed(max_viewports /* index */, 0.0, 1.0);
-		checkGLError(GL_INVALID_VALUE, "depthRangeIndexed, <index> == GL_MAX_VIEWPORTS", test_result);
-
-		gl.depthRangeIndexed(max_viewports + 1 /* index */, 0.0, 1.0);
-		checkGLError(GL_INVALID_VALUE, "depthRangeIndexed, <index> > GL_MAX_VIEWPORTS", test_result);
+		depthRangeIndexedHelper<GLdouble>(depthFunc, max_viewports, test_result);
+	}
+	else
+	{
+		DE_ASSERT(glu::isContextTypeES(context_type));
+		depthRangeIndexedHelper<GLfloat>(depthFunc, max_viewports, test_result);
 	}
 
 	/*
@@ -1252,14 +1362,14 @@ tcu::TestNode::IterateResult APIErrors::iterate()
 	 *   * GetDoublei_v generates INVALID_VALUE when <target> is DEPTH_RANGE and
 	 *   <index> is greater than or equal to the value of MAX_VIEWPORTS;
 	 */
+	if (glu::isContextTypeGLCore(context_type))
 	{
-		GLdouble data[4];
-
-		gl.getDoublei_v(GL_DEPTH_RANGE, max_viewports - 1, data);
-		checkGLError(GL_NO_ERROR, "getDoublei_v, <index> == GL_MAX_VIEWPORTS - 1", test_result);
-
-		gl.getDoublei_v(GL_DEPTH_RANGE, max_viewports, data);
-		checkGLError(GL_INVALID_VALUE, "getDoublei_v, <index> == GL_MAX_VIEWPORTS", test_result);
+		getDepthHelper<GLdouble>(depthFunc, max_viewports, test_result);
+	}
+	else
+	{
+		DE_ASSERT(glu::isContextTypeES(context_type));
+		getDepthHelper<GLfloat>(depthFunc, max_viewports, test_result);
 	}
 
 	/* Set result */
@@ -1309,14 +1419,50 @@ Queries::Queries(deqp::Context& context, const glcts::ExtParameters& extParams)
 	/* Nothing to be done here */
 }
 
+template <typename T>
+void Queries::depthRangeInitialValuesHelper(Utils::DepthFuncWrapper& depthFunc, GLint max_viewports, bool& test_result,
+											T*)
+{
+	std::vector<T> data;
+	data.resize(max_viewports * 2 /* near + far */);
+
+	for (GLint i = 0; i < max_viewports; ++i)
+	{
+		depthFunc.getDepthi_v(GL_DEPTH_RANGE, i, &data[i * 2]);
+		GLU_EXPECT_NO_ERROR(depthFunc.getFunctions().getError(), "getDouble/Floati_v");
+	}
+
+	for (GLint i = 0; i < max_viewports; ++i)
+	{
+		GLint near = (GLint)data[2 * i + 0];
+		GLint far  = (GLint)data[2 * i + 1];
+
+		if ((0.0 != near) || (1.0 != far))
+		{
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid initial depth range [" << i
+												<< "]: " << near << " : " << far << " expected: 0.0 : 1.0"
+												<< tcu::TestLog::EndMessage;
+
+			test_result = false;
+			break;
+		}
+	}
+}
 /** Execute test
  *
  * @return tcu::TestNode::CONTINUE after executing test case, tcu::TestNode::STOP otherwise
  **/
 tcu::TestNode::IterateResult Queries::iterate()
 {
+	if (!m_is_viewport_array_supported)
+	{
+		throw tcu::NotSupportedError(VIEWPORT_ARRAY_NOT_SUPPORTED, "", __FILE__, __LINE__);
+	}
+
 	/* GL entry points */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glu::ContextType& context_type = m_context.getRenderContext().getType();
+	Utils::DepthFuncWrapper depthFunc(m_context);
 
 	/* Test result */
 	bool test_result = true;
@@ -1388,31 +1534,14 @@ tcu::TestNode::IterateResult Queries::iterate()
 	/*
 	 *   * Initial values of DEPTH_RANGE returned by GetDoublei_v are [0, 1];
 	 */
+	if (glu::isContextTypeGLCore(context_type))
 	{
-		std::vector<GLdouble> data;
-		data.resize(max_viewports * 2 /* near + far */);
-
-		for (GLint i = 0; i < max_viewports; ++i)
-		{
-			gl.getDoublei_v(GL_DEPTH_RANGE, i, &data[i * 2]);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "getDoublei_v");
-		}
-
-		for (GLint i = 0; i < max_viewports; ++i)
-		{
-			GLint near = (GLint)data[2 * i + 0];
-			GLint far  = (GLint)data[2 * i + 1];
-
-			if ((0.0 != near) || (1.0 != far))
-			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid initial depth range [" << i
-													<< "]: " << near << " : " << far << " expected: 0.0 : 1.0"
-													<< tcu::TestLog::EndMessage;
-
-				test_result = false;
-				break;
-			}
-		}
+		depthRangeInitialValuesHelper<GLdouble>(depthFunc, max_viewports, test_result);
+	}
+	else
+	{
+		DE_ASSERT(glu::isContextTypeES(context_type));
+		depthRangeInitialValuesHelper<GLfloat>(depthFunc, max_viewports, test_result);
 	}
 
 	/*
@@ -1593,6 +1722,11 @@ ViewportAPI::ViewportAPI(deqp::Context& context, const glcts::ExtParameters& ext
  **/
 tcu::TestNode::IterateResult ViewportAPI::iterate()
 {
+	if (!m_is_viewport_array_supported)
+	{
+		throw tcu::NotSupportedError(VIEWPORT_ARRAY_NOT_SUPPORTED, "", __FILE__, __LINE__);
+	}
+
 	/* GL entry points */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
@@ -1792,6 +1926,11 @@ ScissorAPI::ScissorAPI(deqp::Context& context, const glcts::ExtParameters& extPa
  **/
 tcu::TestNode::IterateResult ScissorAPI::iterate()
 {
+	if (!m_is_viewport_array_supported)
+	{
+		throw tcu::NotSupportedError(VIEWPORT_ARRAY_NOT_SUPPORTED, "", __FILE__, __LINE__);
+	}
+
 	/* GL entry points */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
@@ -1991,102 +2130,23 @@ DepthRangeAPI::DepthRangeAPI(deqp::Context& context, const glcts::ExtParameters&
  **/
 tcu::TestNode::IterateResult DepthRangeAPI::iterate()
 {
-	/* GL entry points */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Test result */
-	bool test_result = true;
-
-	GLint max_viewports = 0;
-
-	gl.getIntegerv(GL_MAX_VIEWPORTS, &max_viewports);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
-
-	std::vector<GLdouble> depth_range_data_a;
-	std::vector<GLdouble> depth_range_data_b;
-
-	depth_range_data_a.resize(max_viewports * m_n_elements);
-	depth_range_data_b.resize(max_viewports * m_n_elements);
-
-	/*
-	 *   - get initial values of DEPTH_RANGE for all MAX_VIEWPORTS indices;
-	 *   - change values of all indices at once with DepthRangeArrayv;
-	 *   - get DEPTH_RANGE for all MAX_VIEWPORTS indices and verify results;
-	 */
-	getDepthRanges(max_viewports, depth_range_data_a);
-
-	for (GLint i = 0; i < max_viewports; ++i)
+	if (!m_is_viewport_array_supported)
 	{
-		depth_range_data_a[i * m_n_elements + 0] += 0.125;
-		depth_range_data_a[i * m_n_elements + 1] -= 0.125;
+		throw tcu::NotSupportedError(VIEWPORT_ARRAY_NOT_SUPPORTED, "", __FILE__, __LINE__);
 	}
 
-	gl.depthRangeArrayv(0, max_viewports, &depth_range_data_a[0]);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "depthRangeArrayv");
+	bool					test_result;
+	const glu::ContextType& context_type = m_context.getRenderContext().getType();
 
-	getDepthRanges(max_viewports, depth_range_data_b);
-	compareDepthRanges(depth_range_data_a, depth_range_data_b, "depthRangeArrayv", test_result);
-
-	/*
-	 *   - for each index:
-	 *     * modify with DepthRangeIndexed,
-	 *     * get DEPTH_RANGE for all MAX_VIEWPORTS indices and verify results;
-	 */
-	for (GLint i = 0; i < max_viewports; ++i)
+	if (glu::isContextTypeGLCore(context_type))
 	{
-		depth_range_data_b[i * m_n_elements + 0] = 0.25;
-		depth_range_data_b[i * m_n_elements + 1] = 0.75;
-
-		gl.depthRangeIndexed(i, 0.25f, 0.75f);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "depthRangeIndexed");
-
-		getDepthRanges(max_viewports, depth_range_data_a);
-		compareDepthRanges(depth_range_data_a, depth_range_data_b, "depthRangeIndexed", test_result);
+		test_result = iterateHelper<GLdouble>();
 	}
-
-	/*
-	 *   - for each index:
-	 *     * modify all indices before and after current one with DepthRangeArrayv,
-	 *     * get DEPTH_RANGE for all MAX_VIEWPORTS indices and verify results;
-	 */
-	for (GLint i = 0; i < max_viewports; ++i)
+	else
 	{
-		const GLdouble value = (0 == i % 2) ? 1.0 : 0.25;
-
-		for (GLint j = 0; j < i; ++j)
-		{
-			depth_range_data_b[j * m_n_elements + 0] = value;
-			depth_range_data_b[j * m_n_elements + 1] = value;
-		}
-
-		for (GLint j = i + 1; j < max_viewports; ++j)
-		{
-			depth_range_data_b[j * m_n_elements + 0] = value;
-			depth_range_data_b[j * m_n_elements + 1] = value;
-		}
-
-		gl.depthRangeArrayv(0, max_viewports, &depth_range_data_b[0]);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "depthRangeArrayv");
-
-		getDepthRanges(max_viewports, depth_range_data_a);
-		compareDepthRanges(depth_range_data_a, depth_range_data_b, "depthRangeArrayv", test_result);
+		DE_ASSERT(glu::isContextTypeES(context_type));
+		test_result = iterateHelper<GLfloat>();
 	}
-
-	/*
-	 *   - change values of all indices at once with DepthRange;
-	 *   - get DEPTH_RANGE for all MAX_VIEWPORTS indices and verify results;
-	 */
-	for (GLint i = 0; i < max_viewports; ++i)
-	{
-		depth_range_data_a[i * m_n_elements + 0] = 0.0f;
-		depth_range_data_a[i * m_n_elements + 1] = 1.0f;
-	}
-
-	gl.depthRange(0.0, 1.0);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "depthRange");
-
-	getDepthRanges(max_viewports, depth_range_data_b);
-	compareDepthRanges(depth_range_data_a, depth_range_data_b, "depthRange", test_result);
 
 	/* Set result */
 	if (true == test_result)
@@ -2102,6 +2162,109 @@ tcu::TestNode::IterateResult DepthRangeAPI::iterate()
 	return tcu::TestNode::STOP;
 }
 
+template <typename T>
+bool DepthRangeAPI::iterateHelper(T*)
+{
+	/* GL entry points */
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	Utils::DepthFuncWrapper depthFunc(m_context);
+
+	bool test_result = true;
+
+	GLint max_viewports = 0;
+
+	gl.getIntegerv(GL_MAX_VIEWPORTS, &max_viewports);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+	std::vector<T> depth_range_data_a;
+	std::vector<T> depth_range_data_b;
+
+	depth_range_data_a.resize(max_viewports * m_n_elements);
+	depth_range_data_b.resize(max_viewports * m_n_elements);
+
+	/*
+	 *   - get initial values of DEPTH_RANGE for all MAX_VIEWPORTS indices;
+	 *   - change values of all indices at once with DepthRangeArrayv;
+	 *   - get DEPTH_RANGE for all MAX_VIEWPORTS indices and verify results;
+	 */
+	getDepthRanges(depthFunc, max_viewports, depth_range_data_a);
+
+	for (GLint i = 0; i < max_viewports; ++i)
+	{
+		depth_range_data_a[i * m_n_elements + 0] += 0.125;
+		depth_range_data_a[i * m_n_elements + 1] -= 0.125;
+	}
+
+	depthFunc.depthRangeArray(0, max_viewports, &depth_range_data_a[0]);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "depthRangeArray");
+
+	getDepthRanges(depthFunc, max_viewports, depth_range_data_b);
+	compareDepthRanges(depth_range_data_a, depth_range_data_b, "depthRangeArray", test_result);
+
+	/*
+	 *   - for each index:
+	 *     * modify with DepthRangeIndexed,
+	 *     * get DEPTH_RANGE for all MAX_VIEWPORTS indices and verify results;
+	 */
+	for (GLint i = 0; i < max_viewports; ++i)
+	{
+		depth_range_data_b[i * m_n_elements + 0] = 0.25;
+		depth_range_data_b[i * m_n_elements + 1] = 0.75;
+
+		depthFunc.depthRangeIndexed(i, (T)0.25, (T)0.75);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "depthRangeIndexed");
+
+		getDepthRanges(depthFunc, max_viewports, depth_range_data_a);
+		compareDepthRanges(depth_range_data_a, depth_range_data_b, "depthRangeIndexed", test_result);
+	}
+
+	/*
+	 *   - for each index:
+	 *     * modify all indices before and after current one with DepthRangeArrayv,
+	 *     * get DEPTH_RANGE for all MAX_VIEWPORTS indices and verify results;
+	 */
+	for (GLint i = 0; i < max_viewports; ++i)
+	{
+		const T value = (0 == i % 2) ? 1.0 : 0.25;
+
+		for (GLint j = 0; j < i; ++j)
+		{
+			depth_range_data_b[j * m_n_elements + 0] = value;
+			depth_range_data_b[j * m_n_elements + 1] = value;
+		}
+
+		for (GLint j = i + 1; j < max_viewports; ++j)
+		{
+			depth_range_data_b[j * m_n_elements + 0] = value;
+			depth_range_data_b[j * m_n_elements + 1] = value;
+		}
+
+		depthFunc.depthRangeArray(0, max_viewports, &depth_range_data_b[0]);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "depthRangeArray");
+
+		getDepthRanges(depthFunc, max_viewports, depth_range_data_a);
+		compareDepthRanges(depth_range_data_a, depth_range_data_b, "depthRangeArray", test_result);
+	}
+
+	/*
+	 *   - change values of all indices at once with DepthRange;
+	 *   - get DEPTH_RANGE for all MAX_VIEWPORTS indices and verify results;
+	 */
+	for (GLint i = 0; i < max_viewports; ++i)
+	{
+		depth_range_data_a[i * m_n_elements + 0] = 0.0f;
+		depth_range_data_a[i * m_n_elements + 1] = 1.0f;
+	}
+
+	depthFunc.depthRange((T)0.0, (T)1.0);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "depthRange");
+
+	getDepthRanges(depthFunc, max_viewports, depth_range_data_b);
+	compareDepthRanges(depth_range_data_a, depth_range_data_b, "depthRange", test_result);
+
+	return test_result;
+}
+
 /** Compare two sets of depth range data (simple vector comparison)
  *
  * @param left        Left set
@@ -2109,8 +2272,9 @@ tcu::TestNode::IterateResult DepthRangeAPI::iterate()
  * @param description Test case description
  * @param out_result  Set to false if sets are different, not modified otherwise
  **/
-void DepthRangeAPI::compareDepthRanges(std::vector<GLdouble>& left, std::vector<GLdouble>& right,
-									   const GLchar* description, bool& out_result)
+template <typename T>
+void DepthRangeAPI::compareDepthRanges(std::vector<T>& left, std::vector<T>& right, const GLchar* description,
+									   bool& out_result)
 {
 	for (size_t i = 0; i < left.size(); ++i)
 	{
@@ -2119,7 +2283,6 @@ void DepthRangeAPI::compareDepthRanges(std::vector<GLdouble>& left, std::vector<
 			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << description
 												<< " Invalid values [" << i << "] " << left[i] << " " << right[i]
 												<< tcu::TestLog::EndMessage;
-
 			out_result = false;
 		}
 	}
@@ -2130,14 +2293,13 @@ void DepthRangeAPI::compareDepthRanges(std::vector<GLdouble>& left, std::vector<
  * @param max_viewports Number of viewports to capture, MAX_VIEWPORTS
  * @param data          Memory buffer prepared for captured data
  **/
-void DepthRangeAPI::getDepthRanges(GLint max_viewports, std::vector<GLdouble>& out_data)
+template <typename T>
+void DepthRangeAPI::getDepthRanges(Utils::DepthFuncWrapper& depthFunc, GLint max_viewports, std::vector<T>& out_data)
 {
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
 	for (GLint i = 0; i < max_viewports; ++i)
 	{
-		gl.getDoublei_v(GL_DEPTH_RANGE, i, &out_data[i * m_n_elements]);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "getDoublei_v");
+		depthFunc.getDepthi_v(GL_DEPTH_RANGE, i, &out_data[i * m_n_elements]);
+		GLU_EXPECT_NO_ERROR(depthFunc.getFunctions().getError(), "getDouble/Floati_v");
 	}
 }
 
@@ -2158,6 +2320,11 @@ ScissorTestStateAPI::ScissorTestStateAPI(deqp::Context& context, const glcts::Ex
  **/
 tcu::TestNode::IterateResult ScissorTestStateAPI::iterate()
 {
+	if (!m_is_viewport_array_supported)
+	{
+		throw tcu::NotSupportedError(VIEWPORT_ARRAY_NOT_SUPPORTED, "", __FILE__, __LINE__);
+	}
+
 	/* GL entry points */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
@@ -2353,7 +2520,13 @@ DrawTestBase::DrawTestBase(deqp::Context& context, const glcts::ExtParameters& e
  **/
 tcu::TestNode::IterateResult DrawTestBase::iterate()
 {
+	if (!m_is_viewport_array_supported)
+	{
+		throw tcu::NotSupportedError(VIEWPORT_ARRAY_NOT_SUPPORTED, "", __FILE__, __LINE__);
+	}
+
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glu::ContextType& context_type = m_context.getRenderContext().getType();
 
 	/* Test result */
 	bool test_result = true;
@@ -2377,10 +2550,18 @@ tcu::TestNode::IterateResult DrawTestBase::iterate()
 		TCU_FAIL("Invalid enum");
 	}
 
-	/* Get shader sources */
-	const std::string& fragment = getFragmentShader();
-	const std::string& geometry = getGeometryShader();
-	const std::string& vertex   = getVertexShader();
+	/* Get shader sources and specialize them */
+	const std::string& frag = getFragmentShader();
+	const std::string& geom = getGeometryShader();
+	const std::string& vert = getVertexShader();
+
+	const GLchar* frag_template = frag.c_str();
+	const GLchar* geom_template = geom.c_str();
+	const GLchar* vert_template = vert.c_str();
+
+	std::string fragment = specializeShader(1, &frag_template);
+	std::string geometry = specializeShader(1, &geom_template);
+	std::string vertex   = specializeShader(1, &vert_template);
 
 	/* Prepare program */
 	Utils::program program(m_context);
@@ -2445,13 +2626,20 @@ tcu::TestNode::IterateResult DrawTestBase::iterate()
 				prepareUniforms(program, draw_call);
 
 				bool	 is_clear;
-				GLdouble depth_value;
+				GLfloat  depth_value;
 
 				getClearSettings(is_clear, draw_call, depth_value);
 
 				if (true == is_clear)
 				{
-					gl.clearDepth(depth_value);
+					if (glu::isContextTypeGLCore(context_type))
+					{
+						gl.clearDepth((GLdouble)depth_value);
+					}
+					else
+					{
+						gl.clearDepthf(depth_value);
+					}
 					GLU_EXPECT_NO_ERROR(gl.getError(), "ClearDepth");
 
 					gl.clear(GL_DEPTH_BUFFER_BIT);
@@ -2547,7 +2735,7 @@ end:
  * @param ignored
  **/
 void DrawTestBase::getClearSettings(bool& clear_depth_before_draw, GLuint /* iteration_index */,
-									GLdouble& /* depth_value */)
+									GLfloat& /* depth_value */)
 {
 	clear_depth_before_draw = false;
 }
@@ -2679,7 +2867,7 @@ end:
  **/
 std::string DrawTestBase::getVertexShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
 								  "\n"
 								  "void main()\n"
 								  "{\n"
@@ -2868,16 +3056,33 @@ void DrawTestBase::prepareTextureD32F(Utils::texture& texture)
  **/
 void DrawTestBase::setup16x2Depths(DEPTH_RANGE_METHOD method)
 {
-	static const GLdouble step = 1.0 / 16.0;
+	const glu::ContextType& context_type = m_context.getRenderContext().getType();
+
+	if (glu::isContextTypeGLCore(context_type))
+	{
+		setup16x2DepthsHelper<GLdouble>(method);
+	}
+	else
+	{
+		DE_ASSERT(glu::isContextTypeES(context_type));
+		setup16x2DepthsHelper<GLfloat>(method);
+	}
+}
+
+template <typename T>
+void DrawTestBase::setup16x2DepthsHelper(DEPTH_RANGE_METHOD method, T*)
+{
+	static const T step = 1.0 / 16.0;
 
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	Utils::DepthFuncWrapper depthFunc(m_context);
 
-	GLdouble depth_data[16 * 2];
+	T		 depth_data[16 * 2];
 	GLfloat  viewport_data[16 * 4];
 
 	for (GLuint i = 0; i < 16; ++i)
 	{
-		const GLdouble near = step * (GLdouble)i;
+		const T near = step * (T)i;
 
 		depth_data[i * 2 + 0] = near;
 		depth_data[i * 2 + 1] = 1.0 - near;
@@ -2896,14 +3101,14 @@ void DrawTestBase::setup16x2Depths(DEPTH_RANGE_METHOD method)
 	case DEPTHRANGEINDEXED:
 		for (GLuint i = 0; i < 16; ++i)
 		{
-			gl.depthRangeIndexed(i, depth_data[i * 2 + 0], depth_data[i * 2 + 1]);
+			depthFunc.depthRangeIndexed(i, depth_data[i * 2 + 0], depth_data[i * 2 + 1]);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "DepthRangeIndexed");
 		}
 		break;
 
 	case DEPTHRANGEARRAYV:
-		gl.depthRangeArrayv(0 /* first */, 16 /* count */, depth_data);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "DepthRangeArrayv");
+		depthFunc.depthRangeArray(0 /* first */, 16 /* count */, depth_data);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "DepthRangeArray");
 		break;
 
 	default:
@@ -3047,6 +3252,7 @@ void DrawTestBase::setup4x4Viewport(VIEWPORT_METHOD method)
 void DrawTestBase::setup2x2Viewport(PROVOKING_VERTEX provoking)
 {
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glu::ContextType& context_type = m_context.getRenderContext().getType();
 
 	GLint   index = 0;
 	GLfloat data[4 * 4 /* 4x4 * (x + y + w + h) */];
@@ -3070,21 +3276,30 @@ void DrawTestBase::setup2x2Viewport(PROVOKING_VERTEX provoking)
 	gl.viewportArrayv(0 /* first */, 4 /*count */, data);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "ViewportArrayv");
 
-	GLenum mode = 0;
-	switch (provoking)
+	if (glu::isContextTypeGLCore(context_type))
 	{
-	case FIRST:
-		mode = GL_FIRST_VERTEX_CONVENTION;
-		break;
-	case LAST:
-		mode = GL_LAST_VERTEX_CONVENTION;
-		break;
-	default:
-		TCU_FAIL("Invalid enum");
-	}
+		GLenum mode = 0;
+		switch (provoking)
+		{
+		case FIRST:
+			mode = GL_FIRST_VERTEX_CONVENTION;
+			break;
+		case LAST:
+			mode = GL_LAST_VERTEX_CONVENTION;
+			break;
+		default:
+			TCU_FAIL("Invalid enum");
+		}
 
-	gl.provokingVertex(mode);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "ProvokingVertex");
+		gl.provokingVertex(mode);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "ProvokingVertex");
+	}
+	else
+	{
+		/* can't control the provoking vertex in ES yet - it stays as LAST */
+		DE_ASSERT(glu::isContextTypeES(context_type));
+		DE_UNREF(provoking);
+	}
 }
 
 /** Constructor
@@ -3105,7 +3320,7 @@ DrawToSingleLayerWithMultipleViewports::DrawToSingleLayerWithMultipleViewports(d
  **/
 std::string DrawToSingleLayerWithMultipleViewports::getFragmentShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
 								  "\n"
 								  "flat in  int gs_fs_color;\n"
 								  "     out int fs_out_color;\n"
@@ -3127,7 +3342,10 @@ std::string DrawToSingleLayerWithMultipleViewports::getFragmentShader()
  **/
 std::string DrawToSingleLayerWithMultipleViewports::getGeometryShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
+								  "\n"
+								  "${GEOMETRY_SHADER_ENABLE}\n"
+								  "${VIEWPORT_ARRAY_ENABLE}\n"
 								  "\n"
 								  "layout(points, invocations = 16)         in;\n"
 								  "layout(triangle_strip, max_vertices = 4) out;\n"
@@ -3177,7 +3395,7 @@ DynamicViewportIndex::DynamicViewportIndex(deqp::Context& context, const glcts::
  **/
 std::string DynamicViewportIndex::getFragmentShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
 								  "\n"
 								  "flat in  int gs_fs_color;\n"
 								  "     out int fs_out_color;\n"
@@ -3199,7 +3417,10 @@ std::string DynamicViewportIndex::getFragmentShader()
  **/
 std::string DynamicViewportIndex::getGeometryShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
+								  "\n"
+								  "${GEOMETRY_SHADER_ENABLE}\n"
+								  "${VIEWPORT_ARRAY_ENABLE}\n"
 								  "\n"
 								  "layout(points, invocations = 1)          in;\n"
 								  "layout(triangle_strip, max_vertices = 4) out;\n"
@@ -3320,7 +3541,7 @@ DrawMulitpleViewportsWithSingleInvocation::DrawMulitpleViewportsWithSingleInvoca
  **/
 std::string DrawMulitpleViewportsWithSingleInvocation::getFragmentShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
 								  "\n"
 								  "flat in  int gs_fs_color;\n"
 								  "     out int fs_out_color;\n"
@@ -3342,7 +3563,10 @@ std::string DrawMulitpleViewportsWithSingleInvocation::getFragmentShader()
  **/
 std::string DrawMulitpleViewportsWithSingleInvocation::getGeometryShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
+								  "\n"
+								  "${GEOMETRY_SHADER_ENABLE}\n"
+								  "${VIEWPORT_ARRAY_ENABLE}\n"
 								  "\n"
 								  "layout(points, invocations = 1)           in;\n"
 								  "layout(triangle_strip, max_vertices = 64) out;\n"
@@ -3395,13 +3619,30 @@ ViewportIndexSubroutine::ViewportIndexSubroutine(deqp::Context& context, const g
 	/* Nothing to be done here */
 }
 
+/** Execute test
+ *
+ * @return tcu::TestNode::CONTINUE after executing test case, tcu::TestNode::STOP otherwise
+ **/
+tcu::TestNode::IterateResult ViewportIndexSubroutine::iterate()
+{
+	/* this exists solely to check for subroutine support, which is not supported in ES.
+	   The real work is done in DrawTestBase::iterate() */
+	const glu::ContextType& context_type = m_context.getRenderContext().getType();
+	if (!glu::isContextTypeGLCore(context_type))
+	{
+		throw tcu::NotSupportedError("Subroutines not supported", "", __FILE__, __LINE__);
+	}
+
+	return DrawTestBase::iterate();
+}
+
 /** Get string with fragment shader source code
  *
  * @return Fragment shader source
  **/
 std::string ViewportIndexSubroutine::getFragmentShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
 								  "\n"
 								  "flat in  int gs_fs_color;\n"
 								  "     out int fs_out_color;\n"
@@ -3423,7 +3664,10 @@ std::string ViewportIndexSubroutine::getFragmentShader()
  **/
 std::string ViewportIndexSubroutine::getGeometryShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
+								  "\n"
+								  "${GEOMETRY_SHADER_ENABLE}\n"
+								  "${VIEWPORT_ARRAY_ENABLE}\n"
 								  "\n"
 								  "layout(points, invocations = 1)          in;\n"
 								  "layout(triangle_strip, max_vertices = 4) out;\n"
@@ -3631,7 +3875,7 @@ DrawMultipleLayers::DrawMultipleLayers(deqp::Context& context, const glcts::ExtP
  **/
 std::string DrawMultipleLayers::getFragmentShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
 								  "\n"
 								  "flat in  int gs_fs_color;\n"
 								  "     out int fs_out_color;\n"
@@ -3653,7 +3897,10 @@ std::string DrawMultipleLayers::getFragmentShader()
  **/
 std::string DrawMultipleLayers::getGeometryShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
+								  "\n"
+								  "${GEOMETRY_SHADER_ENABLE}\n"
+								  "${VIEWPORT_ARRAY_ENABLE}\n"
 								  "\n"
 								  "layout(points, invocations = 16)         in;\n"
 								  "layout(triangle_strip, max_vertices = 4) out;\n"
@@ -4011,8 +4258,11 @@ bool DepthRange::checkResults(Utils::texture& texture_0, Utils::texture& /* text
  **/
 std::string DepthRange::getFragmentShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
 								  "\n"
+								  "#ifdef GL_ES\n"
+								  "precision highp float;\n"
+								  "#endif\n"
 								  "out float fs_out_color;\n"
 								  "\n"
 								  "void main()\n"
@@ -4032,7 +4282,10 @@ std::string DepthRange::getFragmentShader()
  **/
 std::string DepthRange::getGeometryShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
+								  "\n"
+								  "${GEOMETRY_SHADER_ENABLE}\n"
+								  "${VIEWPORT_ARRAY_ENABLE}\n"
 								  "\n"
 								  "layout(points, invocations = 16)         in;\n"
 								  "layout(triangle_strip, max_vertices = 8) out;\n"
@@ -4158,13 +4411,13 @@ bool DepthRangeDepthTest::checkResults(Utils::texture& texture_0, Utils::texture
  * @param iteration_index         Index of draw call
  * @param depth_value             Value that will be used to clear depth buffer
  **/
-void DepthRangeDepthTest::getClearSettings(bool& clear_depth_before_draw, GLuint iteration_index, GLdouble& depth_value)
+void DepthRangeDepthTest::getClearSettings(bool& clear_depth_before_draw, GLuint iteration_index, GLfloat& depth_value)
 {
-	static const GLdouble step = 1.0 / 16.0;
+	static const GLfloat step = 1.0 / 16.0;
 
 	clear_depth_before_draw = true;
 
-	depth_value = step * (GLdouble)iteration_index;
+	depth_value = step * (GLfloat)iteration_index;
 }
 
 /** Get number of draw call to be executed during test
@@ -4182,8 +4435,11 @@ GLuint DepthRangeDepthTest::getDrawCallsNumber()
  **/
 std::string DepthRangeDepthTest::getFragmentShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
 								  "\n"
+								  "#ifdef GL_ES\n"
+								  "precision highp float;\n"
+								  "#endif\n"
 								  "out float fs_out_color;\n"
 								  "\n"
 								  "void main()\n"
@@ -4203,7 +4459,10 @@ std::string DepthRangeDepthTest::getFragmentShader()
  **/
 std::string DepthRangeDepthTest::getGeometryShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
+								  "\n"
+								  "${GEOMETRY_SHADER_ENABLE}\n"
+								  "${VIEWPORT_ARRAY_ENABLE}\n"
 								  "\n"
 								  "layout(points, invocations = 16)         in;\n"
 								  "layout(triangle_strip, max_vertices = 8) out;\n"
@@ -4333,6 +4592,7 @@ bool ProvokingVertex::checkResults(Utils::texture& texture_0, Utils::texture& /*
 	static const GLuint layer_size = m_width * m_height;
 
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glu::ContextType& context_type = m_context.getRenderContext().getType();
 
 	GLint layer_mode	= 0;
 	GLint viewport_mode = 0;
@@ -4354,8 +4614,17 @@ bool ProvokingVertex::checkResults(Utils::texture& texture_0, Utils::texture& /*
 	texture_data.resize(layer_size * m_r32ix4_depth);
 	texture_0.get(GL_RED_INTEGER, GL_INT, &texture_data[0]);
 
-	gl.getIntegerv(GL_PROVOKING_VERTEX, &provoking);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+	if (glu::isContextTypeGLCore(context_type))
+	{
+		gl.getIntegerv(GL_PROVOKING_VERTEX, &provoking);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+	}
+	else
+	{
+		DE_ASSERT(glu::isContextTypeES(context_type));
+		/* ES doesn't have provoking vertex control, so it's always LAST */
+		provoking = GL_LAST_VERTEX_CONVENTION;
+	}
 
 	GLuint expected_layer	= 0;
 	GLint  expected_viewport = 0;
@@ -4416,7 +4685,7 @@ end:
  **/
 std::string ProvokingVertex::getFragmentShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
 								  "\n"
 								  "flat in  int gs_fs_color;\n"
 								  "     out int fs_out_color;\n"
@@ -4438,7 +4707,10 @@ std::string ProvokingVertex::getFragmentShader()
  **/
 std::string ProvokingVertex::getGeometryShader()
 {
-	static const GLchar* source = "#version 410 core\n"
+	static const GLchar* source = "${VERSION}\n"
+								  "\n"
+								  "${GEOMETRY_SHADER_ENABLE}\n"
+								  "${VIEWPORT_ARRAY_ENABLE}\n"
 								  "\n"
 								  "layout(points, invocations = 1)          in;\n"
 								  "layout(triangle_strip, max_vertices = 6) out;\n"
