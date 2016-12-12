@@ -60,6 +60,7 @@ public:
 protected:
 	/* Protected methods */
 	void init();
+	void done();
 
 	/* Protected fields */
 	const glw::Functions* m_gl;
@@ -72,7 +73,8 @@ private:
 	void initNonDebug();
 
 	/* Private fields */
-	deqp::Context& m_test_base_context;
+	deqp::Context&		m_test_base_context;
+	glu::RenderContext* m_orig_rc;
 };
 
 /** Implementation of test APIErrors. Description follows:

@@ -59,6 +59,11 @@ public:
 		return *m_renderCtx;
 	}
 
+	void setRenderContext(glu::RenderContext* renderCtx)
+	{
+		m_renderCtx = renderCtx;
+	}
+
 	const glu::ContextInfo& getContextInfo(void) const
 	{
 		return *m_contextInfo;

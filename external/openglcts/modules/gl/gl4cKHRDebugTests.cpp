@@ -145,7 +145,7 @@ void fillGroupStack(const Functions* gl)
  * @param is_debug Selects if debug or non-debug context should be created
  **/
 TestBase::TestBase(deqp::Context& context, bool is_debug)
-	: m_gl(0), m_is_debug(is_debug), m_rc(0), m_test_base_context(context)
+	: m_gl(0), m_is_debug(is_debug), m_rc(0), m_test_base_context(context), m_orig_rc(0)
 {
 	/* Nothing to be done here */
 }
@@ -155,16 +155,9 @@ TestBase::TestBase(deqp::Context& context, bool is_debug)
  **/
 TestBase::~TestBase()
 {
-	/* Delete context used by test */
 	if (0 != m_rc)
 	{
-		delete m_rc;
-
-		m_rc = 0;
-		m_gl = 0;
-
-		/* Switch back to original context */
-		m_test_base_context.getRenderContext().makeCurrent();
+		done();
 	}
 }
 
@@ -180,6 +173,12 @@ void TestBase::init()
 	{
 		initNonDebug();
 	}
+
+	m_orig_rc = &m_test_base_context.getRenderContext();
+	m_test_base_context.setRenderContext(m_rc);
+
+	/* Get functions */
+	m_gl = &m_rc->getFunctions();
 }
 
 /** Prepares debug context
@@ -193,9 +192,6 @@ void TestBase::initDebug()
 	parseRenderConfig(&renderCfg, m_test_base_context.getTestContext().getCommandLine());
 
 	m_rc = createRenderContext(platform, m_test_base_context.getTestContext().getCommandLine(), renderCfg);
-
-	/* Get functions */
-	m_gl = &m_rc->getFunctions();
 }
 
 /** Prepares non-debug context
@@ -209,9 +205,22 @@ void TestBase::initNonDebug()
 	parseRenderConfig(&renderCfg, m_test_base_context.getTestContext().getCommandLine());
 
 	m_rc = createRenderContext(platform, m_test_base_context.getTestContext().getCommandLine(), renderCfg);
+}
 
-	/* Get functions */
-	m_gl = &m_rc->getFunctions();
+/** Finalize rendering context
+ **/
+void TestBase::done()
+{
+	/* Delete context used by test */
+	m_test_base_context.setRenderContext(m_orig_rc);
+
+	delete m_rc;
+
+	/* Switch back to original context */
+	m_test_base_context.getRenderContext().makeCurrent();
+
+	m_rc = 0;
+	m_gl = 0;
 }
 
 /** Constructor
@@ -635,6 +644,8 @@ tcu::TestNode::IterateResult APIErrorsTest::iterate()
 	m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	/* Done */
+	TestBase::done();
+
 	return tcu::TestNode::STOP;
 }
 
@@ -852,6 +863,8 @@ tcu::TestNode::IterateResult LabelsTest::iterate()
 	m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	/* Done */
+	TestBase::done();
+
 	return tcu::TestNode::STOP;
 }
 
@@ -1747,6 +1760,8 @@ tcu::TestNode::IterateResult ReceiveingMessagesTest::iterate()
 	m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	/* Done */
+	TestBase::done();
+
 	return tcu::TestNode::STOP;
 }
 
@@ -2070,6 +2085,8 @@ tcu::TestNode::IterateResult GroupsTest::iterate()
 	m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	/* Done */
+	TestBase::done();
+
 	return tcu::TestNode::STOP;
 }
 
@@ -2344,6 +2361,8 @@ tcu::TestNode::IterateResult SynchronousCallsTest::iterate()
 	m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	/* Done */
+	TestBase::done();
+
 	return tcu::TestNode::STOP;
 }
 
