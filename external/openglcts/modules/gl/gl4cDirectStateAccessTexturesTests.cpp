@@ -12609,7 +12609,7 @@ tcu::TestNode::IterateResult ImageQueryErrorsTest::iterate()
 			m_context, GL_INVALID_OPERATION, "glGetTextureImage",
 			"format is DEPTH_COMPONENT and the base internal format is not DEPTH_COMPONENT or DEPTH_STENCIL.");
 
-		gl.getTextureImage(texture_2D, 0, GL_DEPTH_STENCIL, s_reference_type, s_reference_size, store);
+		gl.getTextureImage(texture_2D, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, s_reference_size, store);
 		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureImage",
 								  "format is DEPTH_STENCIL and the base internal format is not DEPTH_STENCIL.");
 
