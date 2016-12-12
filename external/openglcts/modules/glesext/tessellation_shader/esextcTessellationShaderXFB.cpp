@@ -366,7 +366,7 @@ void TessellationShaderXFB::initTest()
 						  "\n"
 						  "precision highp float;\n"
 						  "${IN_PER_VERTEX_DECL}"
-						  "${OUT_PER_VERTEX_DECL}"
+						  "${OUT_PER_VERTEX_TCS_DECL}"
 						  "in  BLOCK_INOUT { vec4 value; } user_in[];\n"
 						  "out BLOCK_INOUT { vec4 value; } user_out[];\n"
 						  "\n"
@@ -400,9 +400,13 @@ void TessellationShaderXFB::initTest()
 	{
 		tc_feedback_valid = true;
 	}
-	m_tc_program_id = createSeparableProgram(m_glExtTokens.TESS_CONTROL_SHADER, 1, /* n_strings */
-											 &tc_body, 1,						   /* n_varyings */
-											 &varying_name, tc_feedback_valid);	/* should_succeed */
+
+	const glw::GLchar* tcs_varying_names[4] = { "BLOCK_INOUT[0].value", "BLOCK_INOUT[1].value", "BLOCK_INOUT[2].value",
+												"BLOCK_INOUT[3].value" };
+
+	m_tc_program_id = createSeparableProgram(m_glExtTokens.TESS_CONTROL_SHADER, 1,  /* n_strings */
+											 &tc_body, 4,							/* n_varyings */
+											 tcs_varying_names, tc_feedback_valid); /* should_succeed */
 
 	if (glu::isContextTypeES(m_context.getRenderContext().getType()))
 	{

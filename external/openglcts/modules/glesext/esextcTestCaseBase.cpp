@@ -305,6 +305,7 @@ void TestCaseBase::initGLSLSpecializationMap()
 		m_specializationMap["IN_PER_VERTEX_DECL_POINT_SIZE"]  = "\n";
 		m_specializationMap["IN_DATA_DECL"]					  = "\n";
 		m_specializationMap["POSITION_WITH_IN_DATA"]		  = "gl_Position = gl_in[0].gl_Position;\n";
+		m_specializationMap["OUT_PER_VERTEX_TCS_DECL"]		  = "\n";
 	}
 	else
 	{
@@ -319,7 +320,10 @@ void TestCaseBase::initGLSLSpecializationMap()
 		m_specializationMap["IN_DATA_DECL"] = "in Data {\n"
 											  "    vec4 pos;\n"
 											  "} input_data[1];\n";
-		m_specializationMap["POSITION_WITH_IN_DATA"] = "gl_Position = input_data[0].pos;\n";
+		m_specializationMap["POSITION_WITH_IN_DATA"]   = "gl_Position = input_data[0].pos;\n";
+		m_specializationMap["OUT_PER_VERTEX_TCS_DECL"] = "out gl_PerVertex {\n"
+														 "    vec4 gl_Position;\n"
+														 "} gl_out[];\n";
 	}
 }
 
