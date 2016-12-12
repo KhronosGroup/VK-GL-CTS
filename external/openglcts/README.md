@@ -22,19 +22,26 @@ Contents
  - [Porting](#porting)
     - [Common Porting Changes](#common-porting-changes)
     - [Other Allowable Porting Changes](#other-allowable-porting-changes)
-    - [Waivers](#waivers)
  - [Running the Tests](#running-the-tests)
+    - [Conformance runs](#conformance-runs)
+       - [Linux and Windows](#linux-and-windows)
+       - [Android](#android-1)
     - [Running Subsets](#running-subsets)
-    - [Android](#android-1)
+       - [Command line options](#command-line-options)
     - [Understanding the Results](#understanding-the-results)
     - [Test Logs](#test-logs)
  - [Debugging Test Failures](#debugging-test-failures)
+ - [Waivers](#waivers)
  - [Creating a Submission Package](#creating-a-submission-package)
-    - [1) Statement of Conformance](#1-statement-of-conformance)
-    - [2) Conformant Products List](#2-conformant-products-list)
-    - [3) Result Logs](#3-result-logs)
-    - [4) Changes](#4-changes)
-    - [5) Explanation of Changes](#5-explanation-of-changes)
+    - [Obtaining the sources](#obtaining-the-sources)
+    - [Building and installing the CTS](#building-and-installing-the-cts)
+    - [Running the CTS](#running-the-cts)
+    - [Creating a package](#creating-a-package)
+        - [1) Statement of Conformance](#1-statement-of-conformance)
+        - [2) Conformant Products List](#2-conformant-products-list)
+        - [3) Result Logs](#3-result-logs)
+        - [4) Changes](#4-changes)
+        - [5) Explanation of Changes](#5-explanation-of-changes)
  - [Submission Update Package](#submission-update-package)
  - [Passing Criteria](#passing-criteria)
  - [Troubleshooting](#troubleshooting)
@@ -134,7 +141,7 @@ the target file can set.
 Porting to a new platform includes either creating a new target file, or
 modifying an existing target description.
 
-*NOTE*: All paths, except `TCUTIL_PLATFORM_SRCS` are relative to root source
+**NOTE**: All paths, except `TCUTIL_PLATFORM_SRCS` are relative to root source
 directory. `TCUTIL_PLATFORM_SRCS` is relative to `framework/platform` directory.
 
 Following target files are provided with the package:
@@ -143,7 +150,7 @@ Following target files are provided with the package:
 |:---------|-----------------|
 |android | Used in Android build. Requires use of suitable toolchain file (see `cmake/` directory) |
 |default| Checks for presence of GL, ES2, ES3, and EGL libraries and headers in default search paths and configures build accordingly|
-|null | Nullbuild target |
+|null | Null build target |
 |nullws | NullWS build target |
 |x11_egl| X11 build for platforms with native EGL support|
 |x11_glx| X11 build for platforms with native GLX support|
@@ -213,6 +220,7 @@ add_definitions(-DHKEMBEDDEDFILESYSTEM)
 ```
 
 ### Building the Tests
+
 To build the framework, you need first to download sources for zlib, libpng.
 
 To download sources, run:
@@ -226,7 +234,7 @@ To download Khronos Confidential Conformance Test Suite, run:
 The results for the tests included in this suite must be included in a
 conformance submission.
 
-*NOTE*: You need to be a Khronos Adopter and have an active account
+**NOTE**: You need to be a Khronos Adopter and have an active account
 at [Khronos Gitlab](https://gitlab.khronos.org/) to be able to download
 Khronos Confidential CTS.
 
@@ -239,7 +247,7 @@ using Cmake.
 Requirements:
 - Visual Studio (2010 or newer recommended) or Windows SDK
 - CMake 2.8.x Windows native version (i.e. not Cygwin version)
-- For ES2/ES3.x tests: OpenGL ES 2 or ES 3.x libraries and headers
+- For GL/ES2/ES3.x tests: OpengGL, OpenGL ES 2 or ES 3.x libraries and headers
 
 To choose the backend build system for CMake, choose one of the following Generator Names for the
 command line examples in the next steps:
@@ -264,14 +272,14 @@ The default `<target>` is `gles32`.
 It's also possible to build `GL-CTS.sln` in Visual Studio instead of running
 the `cmake --build .` command.
 
-*NOTE*: Do not create the build directory under the source directory
+**NOTE**: Do not create the build directory under the source directory
 (i.e anywhere under `<path to openglcts>`) on Windows, since it causes
 random build failures when copying data files around.
 
-*NOTE*: You can use the CMake for Windows GUI to do configuration and project
+**NOTE**: You can use the CMake for Windows GUI to do configuration and project
 file generation.
 
-*NOTE*: If using cygwin, you must install and ensure you use the Windows
+**NOTE**: If using cygwin, you must install and ensure you use the Windows
 version of cmake. The cygwin vesion does not contain the Visual Studio
 generators. Here is a shell function you can put in your cygwin `.bash_profile`
 to use it easily. With this you can simply type `wcmake` to run the Windows version.
@@ -288,7 +296,6 @@ Required tools:
 - Standard build utilities (make, gcc, etc.)
 - CMake 2.8.x
 - Necessary API libraries (OpenGL, GLES, EGL depending on configuration)
-
 
 Building ES2 or ES3.x conformance tests:
 
@@ -376,6 +383,10 @@ you will need to file a waiver as described below.
 Note that the conformance tests assume that the implementation supports EGL.
 However EGL is not required for OpenGL or OpenGL ES conformance.
 
+Most of the tests require at least 256x256 pixels resolution in order to run properly
+and produce stable results. It is, therefore, important to ensure that a port to a
+new platform can support surfaces that fulfill width and height requirements.
+
 ### Other Allowable Porting Changes
 
 Other than changes needed for porting, the only changes that are permitted are
@@ -383,21 +394,7 @@ changes to fix bugs in the conformance test. A bug in the conformance test is
 a behavior which causes clearly incorrect execution (e.g., hanging, crashing,
 or memory corruption), OR which requires behavior which contradicts or exceeds
 the requirements of the relevant OpenGL or OpenGL ES Specification. Changes
-required to address either of these issues typically require waivers.
-
-### Waivers
-
-The procedure for requesting a waiver is to report the issue by filing a bug
-report in the Gitlab OpenGL & OpenGL ES Conformance Test Suite project
-(https://gitlab.khronos.org/opengl/oss-cts). When you create your submission
-package, include references to the waivers as described in the adopters' agreement.
-[Fully-qualified links](https://en.wikipedia.org/wiki/Fully_qualified_domain_name)
-to bug reports are highly recommended.
-Including as much information as possible in your bug report will ensure the issue
-can be progressed as speedily as possible. Such bug report must
-include a link to suggested file changes. . Issues must be labeled `Waiver_OGLES`
-(for OpenGL ES submissions) or `Waiver_OGL` (for OpenGL submissions) and
-identify the CTS release tag and affected tests.
+required to address either of these issues typically require [waivers](#waivers).
 
 Running the Tests
 ------------------------
@@ -411,18 +408,30 @@ If the build instructions have been followed as-is, the correct path is:
 
 	cd <builddir>/external/openglcts/modules
 
+### Conformance runs
+A conformance run can be launched either by running the `cts-runner` binary with
+appropriate options on Linux/Windows or by running an Android application.
 
+### Linux and Windows
 Conformance run for OpenGL ES 3.2 on Windows:
 
 	Debug/cts-runner.exe --type=es32
 	  [For ES 3.1 use --type=es31; ES 3.0 use --type=es3; for ES 2.0, use --type=es2]
-
 
 Conformance run for OpenGL 3.0 - 4.4 on Windows:
 
 	Debug/cts-runner.exe --type=glxy
 	  [x and y are the major and minor specifiction versions]
 
+Full list of parameters for the `cts-runner` binary:
+```
+--type=[esN[M]|glNM] Conformance test run type. Choose from
+					 ES: es2, es3, es31, es32
+					 GL: gl30, gl31, gl32, gl33, gl40, gl41, gl42, gl43, gl44, gl45
+--logdir=[path]      Destination directory for log files
+--summary            Print summary without running the tests
+--verbose            Print out and log more information
+```
 
 The conformance run will create one or more `.qpa` files per tested config, a
 summary `.qpa` file containing run results and a summary `.xml` file containing
@@ -442,14 +451,53 @@ See Section [Test Logs](#test-logs) for instructions on how to view the images.
 
 To direct logs to a directory, add `--logdir=[path]` parameter.
 
+#### Android
+
+Once the CTS binary is built and installed on the device, a new application
+called `ES3.2 CTS`, `ES3.1 CTS`, `ES3 CTS`, or `ES2 CTS` (depending on the test
+version you built) should appear in the launcher. Conformance test runs can be
+done by launching the applications.
+
+Alternatively it is possible to start a conformance run from the command line,
+for example to start a GLES 3.2 conformance run use:
+
+	am start -n org.khronos.gl_cts/org.khronos.cts.ES32Activity -e logdir "/sdcard/logs"
+
+Test logs will be written to `/sdcard` by default. The log path can be
+customized by supplying a `logdir` string extra in launch intent. Verbose mode
+can be enabled by supplying a `verbose` = `"true"` string extra. See
+the following example:
+
+	am start -n org.khronos.gl_cts/org.khronos.cts.ES32Activity -e logdir "/sdcard/logs" -e verbose "true"
+
+Conformance run configuration can be generated by supplying a `summary` = `"true"`
+string extra. See the following example:
+
+	am start -n org.khronos.gl_cts/org.khronos.cts.ES32Activity -e logdir "/sdcard/logs" -e summary "true"
+
+**NOTE**: Supplying a `summary` = `"true"` string extra will result in the `cts-run-summary.xml` file
+being written out but no tests will be executed.
+
+Individual tests can be launched as well by targeting
+`org.khronos.gl_cts/android.app.NativeActivity` activity. Command line
+arguments must be supplied in a `cmdLine` string extra. See following example:
+
+	am start -n org.khronos.gl_cts/android.app.NativeActivity -e cmdLine "cts --deqp-case=KHR-GLES32.info.version --deqp-gl-config-id=1 --deqp-log-filename=/sdcard/ES32-egl-config-1.qpa --deqp-surface-width=128 --deqp-surface-height=128"
+
+In addition to the detailed `*.qpa` output files, the Android port of the CTS
+logs a summary of the test run, including the pass/fail status of each test.
+This summary can be viewed using the Android *logcat* utility.
+
+See Section [Running Subsets](#running-subsets) above for details on command
+line parameters.
+
 ### Running Subsets
 
 Run shader compiler loop test cases from the OpenGL ES 3.0 CTS using EGL config with ID 3:
 
-	Debug/glcts.exe --deqp-case=ES3-CTS.shaders.loops.* --deqp-gl-config-id=3
+	Debug/glcts.exe --deqp-case=KHR-GLES3.shaders.loops.* --deqp-gl-config-id=3
 
-
-Note that the GL context version is determined by the case name. `ES3-CTS` in
+Note that the GL context version is determined by the case name. `KHR-GLES3` in
 the example above selects OpenGL ES 3.0. The command to run the same test
 against OpenGL version 4.1 is:
 
@@ -463,7 +511,9 @@ The type of the run for cts-runner chooses a specific list of test cases to
 be run. The selected tests can be checked from the summary logs. To run
 the same tests, just give equivalent test selection parameters to the `glcts`.
 
-Full list of parameters for glcts.exe:
+#### Command line options
+
+Full list of parameters for the `glcts` binary:
 ```
   -h, --help
     Show this help
@@ -581,44 +631,6 @@ Full list of parameters for glcts.exe:
     Legacy name for --deqp-gl-config-name
 ```
 
-### Android
-
-Once the CTS binary is built and installed on the device, a new application
-called `ES3.2 CTS`, `ES3.1 CTS`, `ES3 CTS`, or `ES2 CTS` (depending on the test
-version you built) should appear in the launcher. Conformance test runs can be
-done by launching the applications. Note that a valid ES 3.2 submission is
-sufficient to prove ES 3.1 , ES 3.0 and ES 2.0 conformance; it is not
-necessary to make separate submissions for the older APIs. Similarly a
-valid ES 3.1 submission is proof of ES3.0 and ES 2.0 conformance.
-
-Test logs will be written to `/sdcard` by default. The log path can be
-customized by supplying a `logdir` string extra in launch intent. Verbose mode
-can be enabled by supplying a `verbose` = `"true"` string extra. See
-the following example:
-
-	am start -n org.khronos.gl_cts/org.khronos.cts.ES32Activity -e logdir "/sdcard/logs" -e verbose "true"
-
-
-Conformance run configuration can be generated by supplying a `summary` = `"true"`
-string extra. See the following example:
-
-	am start -n org.khronos.gl_cts/org.khronos.cts.ES32Activity -e logdir "/sdcard/logs" -e summary "true"
-
-
-Individual tests can be launched as well by targeting
-`org.khronos.gl_cts/android.app.NativeActivity` activity. Command line
-arguments must be supplied in a `cmdLine` string extra. See following example:
-
-	am start -n org.khronos.gl_cts/android.app.NativeActivity -e cmdLine "cts --deqp-case=ES31-CTS.info.version --deqp-gl-config-id=1 --deqp-log-filename=/sdcard/ES31-egl-config-1.qpa --deqp-surface-width=128 --deqp-surface-height=128"
-
-
-In addition to the detailed `*.qpa` output files, the Android port of the CTS
-logs a summary of the test run, including the pass/fail status of each test.
-This summary can be viewed using the Android *logcat* utility.
-
-See Section [Running Subsets](#running-subsets) above for details on command
-line parameters.
-
 ### Understanding the Results
 
 At the end of a completed test run, a file called `cts-run-summary.xml` is
@@ -684,24 +696,105 @@ If the visual inspection of the logs does not give sufficient hints on the
 nature of the issue, inspecting the test code and stepping through it in
 debugger should help.
 
+Waivers
+------------------------
+The procedure for requesting a waiver is to report the issue by filing a bug
+report in the Gitlab OpenGL & OpenGL ES Conformance Test Suite project
+(https://gitlab.khronos.org/opengl/oss-cts). When you create your submission
+package, include references to the waivers as described in the adopters' agreement.
+[Fully-qualified links](https://en.wikipedia.org/wiki/Fully_qualified_domain_name)
+to bug reports are highly recommended.
+Including as much information as possible in your bug report will ensure the issue
+can be progressed as speedily as possible. Such bug report must
+include a link to suggested file changes. Issues must be labeled `Waiver_OGLES`
+(for OpenGL ES submissions) or `Waiver_OGL` (for OpenGL submissions) and
+identify the CTS release tag and affected tests.
+
 Creating a Submission Package
 ------------------------
+
+### Obtaining the sources
+
+The CTS releases are git tags of form
+	`opengl-cts-<API>-<API major>.<API minor>.<CTS major>.<CTS minor>`
+where
+- `<API>` is either `es` for OpenGL ES releases or `gl` for OpenGL releases;
+- `<API major>` and `<API minor>` match OpenGL (ES) API version;
+- `<CTS major>.<CTS minor>` is the CTS version.
+
+To clone the repository and check out a specific release, run:
+
+	git clone https://github.com/KhronosGroup/<VK-GL-CTS>.git -b opengl-cts-<release>
+
+If you have existing clone of the repository you can check out specific release with:
+
+	git checkout opengl-cts-<release>
+
+### Building and installing the CTS
+
+Refer to [Building the tests](#building-the-tests) for detailed instructions.
+The essential steps are:
+1. Download zlib, libpng and other necessary sources by running
+```
+	python external/fetch_sources.py
+```
+2. Download Khronos Confidential Conformance Test Suite by running
+```
+	python external/fetch_kc_cts.py
+```
+3. Build the conformance tests by running
+  * Linux/Windows
+```
+	cmake <path to openglcts> -DDEQP_TARGET=<platform target> -DGLCTS_GTF_TARGET=<GTF target> -G"<Generator Name>"
+	cmake --build .
+```
+   The binaries and data files will be placed to
+```
+	<builddir>/external/openglcts/modules
+```
+  * Android
+```
+	python external/openglcts/scripts/build_android.py
+```
+   Run one of the following commands to install the binary on your device
+```
+	python android/scripts/install.py
+```
+   or
+```
+	adb install --abi <ABI name> android/openglcts/bin/dEQP-debug.apk /data/local/tmp/dEQP-debug.apk
+```
+
+### Running the CTS
+This section provides short summary on how to launch a conformance run for
+ detailed instruction srefer to [Runnnig the tests](#running-the-tests).
+
+1. Linux
+```
+	./cts-runner --type=<submission type>
+```
+
+2. Windows
+```
+	cts-runner.exe --type=<submission type>
+```
+
+3. Android
+```
+	am start -n org.khronos.gl_cts/org.khronos.cts.<Submission Acitivity Type> -e logdir "/sdcard/logs"
+```
+
+**NOTE**: A valid GLES 3.2 submission is sufficient to prove GLES 3.1 ,
+GLES 3.0 and GLES 2.0 conformance; it is not necessary to make separate
+submissions for the older APIs. Similarly a valid GLES 3.1 submission is proof
+of GLES3.0 and GLES 2.0 conformance.
+
+### Creating a package
 Once the tests are all passing or all observed failures have appropriate
 waivers, run the tests with the `cts-runner` executable or the Android
 conformance activity. The command must not include the parameters for verbose
 output. Refer to Section [Running Tests](#running-tests) its Subsection
 [Android](#android-1) to learn more.
-
-Here are two examples of proper commands for running the CTS. Conformance run
-for OpenGL ES 3.2 on Windows:
-
-	Debug/cts-runner.exe --type=es32
-
-
-Conformance run for OpenGL ES 3.2 on Android:
-
-	am start -n org.khronos.gl_cts/org.khronos.cts.ES32Activity -e logdir "/sdcard/logs"
-
 
 The actual submission package consists of a set of files, which should be
 bundled into a gzipped tar file named `ESMn_<adopter>_<info>.tgz`
@@ -728,7 +821,7 @@ where `<srcDirectory>` is the name of the directory containing the package
 files. A submission package should contain the files listed in the following
 five sections and only them.
 
-### 1) Statement of Conformance
+#### 1) Statement of Conformance
 
 Statement of Conformance: Include a file called `STATEMENT-<adopter>` that
 describes the Implementation for which you are claiming conformance based on
@@ -759,7 +852,7 @@ submission. It is permissible to identify a CPU by its instruction set
 If an implementation makes use of optional CPU features, they should be
 identified in the CPU name (e.g. ARMv7-NEON).
 
-### 2) Conformant Products List
+#### 2) Conformant Products List
 
 Conformant Products List: Optionally, include a file named `PRODUCTS-<adopter>`
 describing any Products other than the one identified in the
@@ -806,14 +899,14 @@ New Conformant Products may be added to the Conformant Products List of
 a previous submission using the Submission Update process
 ([see below](#submission-update-package)).
 
-### 3) Result Logs
+#### 3) Result Logs
 
 The submission package must contain all `.qpa` files produced by the
 conformance test run, without the `--verbose` flag. The verbose logs are
 large and the verbosity complicates the review process. The submission package
 must also contain the summary log file, `cts-run-summary.xml`.
 
-### 4) Changes
+#### 4) Changes
 
 The CTS build must always be done from clean git repository that doesn't have
 any uncommitted changes. Thus it is necessary to run and capture output of
@@ -836,10 +929,10 @@ as part of the submission package. This can be done by running:
 	git format-patch -o <submission pkg dir> <release tag>..HEAD
 
 
-*NOTE*: When cherry-picking patches on top of release tag, please use
+**NOTE**: When cherry-picking patches on top of release tag, please use
 `git cherry-pick -x` to include original commit hash in the commit message.
 
-### 5) Explanation of Changes
+#### 5) Explanation of Changes
 
 Explanation of Changes: A text file named `README-<adopter>` summarizing any
 changes you made beyond the make system and the files listed above under
@@ -1180,4 +1273,10 @@ Revision History
 - 2.0 - Alexander Galazin 2016/09/23
 
   Moved the contents to README.md.
-  Updated to refect new CTS structure and build instructions.
+  Updated to reflect new CTS structure and build instructions.
+
+- 2.1 - Alexander Galazin 2016/12/15
+
+  Updates in preparation for the new release.
+  Document restructuring, more detailed process of creating a submission package.
+  Incorporated OpenGL/CTS issue 39 and 40 in the Passing Criteria.

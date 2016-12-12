@@ -86,7 +86,7 @@ Before submitting your changes make sure that the changes are formatted properly
 A recommended way to do that is to run [`clang-format-diff.py`](https://llvm.org/svn/llvm-project/cfe/trunk/tools/clang-format/clang-format-diff.py)
 script on the changes, e.g.:
 
-	cd external/openglcts && git diff -U0 HEAD^ | python clang-format-diff.py  -i -p3 -binary clang-format-4.0
+	cd external/openglcts && git diff -U0 HEAD^ . | python clang-format-diff.py  -style=file -i -p3 -binary clang-format-4.0
 
 Submitting changes
 ------------------------
