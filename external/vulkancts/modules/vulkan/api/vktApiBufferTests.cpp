@@ -224,14 +224,16 @@ private:
 
 			const vk::Unique<vk::VkFence> fence(vk::createFence(vk, vkDevice, &fenceParams));
 
-			VK_CHECK(vk.resetFences(vkDevice, 1, &fence.get()));
 			if (vk.queueBindSparse(queue, 1, &bindSparseInfo, *fence) != VK_SUCCESS)
 				return tcu::TestStatus::fail("Bind sparse buffer memory failed! (requested memory size: " + de::toString(size) + ")");
 
 			VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), VK_TRUE, ~(0ull) /* infinity */));
-		} else
+		}
+		else
+		{
 			if (vk.bindBufferMemory(vkDevice, *testBuffer, *memory, 0) != VK_SUCCESS)
 				return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
+		}
 	}
 
 	return tcu::TestStatus::pass("Buffer test");
@@ -295,42 +297,34 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 		VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT
 	};
 
+	// \note SPARSE_RESIDENCY and SPARSE_ALIASED have to be used together with the SPARSE_BINDING flag.
 	const VkBufferCreateFlags bufferCreateFlags[] =
 	{
+		0,
 		VK_BUFFER_CREATE_SPARSE_BINDING_BIT,
-		VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,
-		VK_BUFFER_CREATE_SPARSE_ALIASED_BIT
+		VK_BUFFER_CREATE_SPARSE_BINDING_BIT	|	VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,
+		VK_BUFFER_CREATE_SPARSE_BINDING_BIT	|												VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
+		VK_BUFFER_CREATE_SPARSE_BINDING_BIT	|	VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT	|	VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
 	};
 
 	de::MovePtr<tcu::TestCaseGroup>	buffersTests	(new tcu::TestCaseGroup(testCtx, "buffer", "Buffer Tests"));
 
-	deUint32	numberOfBufferUsageFlags			= DE_LENGTH_OF_ARRAY(bufferUsageModes);
-	deUint32	numberOfBufferCreateFlags			= DE_LENGTH_OF_ARRAY(bufferCreateFlags);
-	deUint32	maximumValueOfBufferUsageFlags		= (1 << (numberOfBufferUsageFlags - 1)) - 1;
-	deUint32	maximumValueOfBufferCreateFlags		= (1 << (numberOfBufferCreateFlags)) - 1;
+	const deUint32 maximumValueOfBufferUsageFlags	= (1u << (DE_LENGTH_OF_ARRAY(bufferUsageModes) - 1)) - 1u;
 
-	for (deUint32 combinedBufferCreateFlags = 0; combinedBufferCreateFlags <= maximumValueOfBufferCreateFlags; combinedBufferCreateFlags++)
+	for (deUint32 bufferCreateFlagsNdx = 0u; bufferCreateFlagsNdx < DE_LENGTH_OF_ARRAY(bufferCreateFlags); bufferCreateFlagsNdx++)
+	for (deUint32 combinedBufferUsageFlags = 1u; combinedBufferUsageFlags <= maximumValueOfBufferUsageFlags; combinedBufferUsageFlags++)
 	{
-		for (deUint32 combinedBufferUsageFlags = 1; combinedBufferUsageFlags <= maximumValueOfBufferUsageFlags; combinedBufferUsageFlags++)
+		const BufferCaseParameters	testParams =
 		{
-			if (combinedBufferCreateFlags == VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)
-			{
-				// spec says: If flags contains VK_BUFFER_CREATE_SPARSE_ALIASED_BIT, it must also contain at least one of
-				// VK_BUFFER_CREATE_SPARSE_BINDING_BIT or VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT
-				continue;
-			}
-			BufferCaseParameters	testParams =
-			{
-				combinedBufferUsageFlags,
-				combinedBufferCreateFlags,
-				VK_SHARING_MODE_EXCLUSIVE
-			};
-			std::ostringstream	testName;
-			std::ostringstream	testDescription;
-			testName << "createBuffer_" << combinedBufferUsageFlags << "_" << combinedBufferCreateFlags;
-			testDescription << "vkCreateBuffer test " << combinedBufferUsageFlags << " " << combinedBufferCreateFlags;
-			buffersTests->addChild(new BuffersTestCase(testCtx, testName.str(), testDescription.str(), testParams));
-		}
+			combinedBufferUsageFlags,
+			bufferCreateFlags[bufferCreateFlagsNdx],
+			VK_SHARING_MODE_EXCLUSIVE
+		};
+		std::ostringstream	testName;
+		std::ostringstream	testDescription;
+		testName << "createBuffer_" << combinedBufferUsageFlags << "_" << testParams.flags;
+		testDescription << "vkCreateBuffer test " << combinedBufferUsageFlags << " " << testParams.flags;
+		buffersTests->addChild(new BuffersTestCase(testCtx, testName.str(), testDescription.str(), testParams));
 	}
 
 	return buffersTests.release();
