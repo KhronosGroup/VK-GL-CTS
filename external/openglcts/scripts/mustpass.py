@@ -49,8 +49,8 @@ class Project:
 		self.copyright	= copyright
 
 class Configuration:
-    def __init__ (self, name, filters, glconfig = None, rotation = "unspecified", surfacetype = None, surfacewidth = None, surfaceheight=None, baseseed= None, fboconfig = None, required = False, runtime = None):
-		self.name			= name
+    def __init__ (self, name, filters, glconfig = None, rotation = "unspecified", surfacetype = None, surfacewidth = None, surfaceheight = None, baseseed = None, fboconfig = None, required = False, runtime = None, os = "any"):
+		self.name				= name
 		self.glconfig			= glconfig
 		self.rotation			= rotation
 		self.surfacetype		= surfacetype
@@ -60,7 +60,8 @@ class Configuration:
 		self.baseseed			= baseseed
 		self.fboconfig			= fboconfig
 		self.filters			= filters
-		self.expectedRuntime		= runtime
+		self.expectedRuntime	= runtime
+		self.os					= os
 
 class Package:
 	def __init__ (self, module, configurations, useforfirsteglconfig = True):
@@ -243,7 +244,8 @@ def genSpecXML (mustpass):
 							useForFirstEGLConfig	= str(package.useforfirsteglconfig),
 							name					= config.name,
 							caseListFile			= getCaseListFileName(package, config),
-							commandLine				= getCommandLine(config))
+							commandLine				= getCommandLine(config),
+							os						= str(config.os))
 
 	return mustpassElem
 
@@ -331,12 +333,12 @@ def genSpecCPPIncludeFile (specFilename, mustpass):
 			if package.module.name[-3:] == "GTF":
 				elemFinal += gtf_wrapper_open
 
-			if config.rotation != "unspecified":
+			if config.os == "android":
 				elemFinal += android_wrapper_open
 
 			elemFinal += elem
 
-			if config.rotation != "unspecified":
+			if config.os == "android":
 				elemFinal += android_wrapper_close
 
 			if package.module.name[-3:] == "GTF":
