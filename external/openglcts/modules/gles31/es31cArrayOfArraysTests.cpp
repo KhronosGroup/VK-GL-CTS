@@ -7746,17 +7746,15 @@ void InteractionStorageBuffers3<API>::test_shader_compilation(
 	} /* for (int var_type_index = 0; ...) */
 }
 
-/* Generates the shader source code for the InteractionInterfaceArrays
- * array tests, and attempts to compile each test shader, for both
- * vertex and fragment shaders.
+/* Generates the shader source code for the InteractionInterfaceArrays1
+ * array test, and attempts to compile the test shader.
  *
  * @tparam API               Tested API descriptor
  *
- * @param tested_shader_type The type of shader that is being tested
- *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
+ * @param tested_shader_type The type of shader that is being tested.
  */
 template <class API>
-void InteractionInterfaceArrays<API>::test_shader_compilation(
+void InteractionInterfaceArrays1<API>::test_shader_compilation(
 	typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
 	/* Shader source with invalid buffer (buffer cannot be of arrays of arrays type). */
@@ -7768,63 +7766,6 @@ void InteractionInterfaceArrays<API>::test_shader_compilation(
 													 "} myBuffers[2][2];\n\n"
 													 "void main()\n"
 													 "{\n";
-	/* Shader source with invalid input (input cannot be of arrays of arrays type). */
-	const std::string invalid_input_shader_source[] = { "in  float input_variable", "[2][2];\n"
-																					"out float output_variable",
-														";\n\n"
-														"void main()\n"
-														"{\n"
-														"    output_variable",
-														" = input_variable", "[0][0];\n" };
-	/* Shader source with invalid output (output cannot be of arrays of arrays type). */
-	const std::string invalid_output_shader_source[] = { "out float output_variable", "[2][2];\n\n"
-																					  "void main()\n"
-																					  "{\n"
-																					  "    output_variable",
-														 "[0][0] = 0.0;\n"
-														 "    output_variable",
-														 "[0][1] = 1.0;\n"
-														 "    output_variable",
-														 "[1][0] = 2.0;\n"
-														 "    output_variable",
-														 "[1][1] = 3.0;\n" };
-	/* Shader source with invalid uniform block (uniform block cannot be of arrays of arrays type). */
-	const std::string invalid_uniform_block_shader_source = "layout(std140) uniform MyUniformBlock\n"
-															"{\n"
-															"    float f;\n"
-															"    int   i;\n"
-															"    uint  ui;\n"
-															"} myUniformBlocks[2][2];\n\n"
-															"void main()\n"
-															"{\n";
-	/* Shader source with invalid input (input cannot be of arrays of arrays type). */
-	const std::string input_block_shader_source[] = { "in  InBlock {\n"
-													  "    float input_variable;\n"
-													  "} in_block",
-
-													  "[2][2];\n"
-													  "out float output_variable;\n"
-													  "\n"
-													  "void main()\n"
-													  "{\n"
-													  "    output_variable = in_block",
-													  "[0][0].input_variable;\n" };
-	/* Shader source with invalid output (output cannot be of arrays of arrays type). */
-	const std::string output_block_shader_source[] = { "out OutBlock {\n"
-													   "    float output_variable;\n"
-													   "} out_block",
-													   "[2][2];\n"
-													   "\n"
-													   "void main()\n"
-													   "{\n"
-													   "    out_block",
-													   "[0][0].output_variable = 0.0;\n"
-													   "    out_block",
-													   "[0][1].output_variable = 1.0;\n"
-													   "    out_block",
-													   "[1][0].output_variable = 2.0;\n"
-													   "    out_block",
-													   "[1][1].output_variable = 3.0;\n" };
 
 	/* Verify that buffer arrays of arrays type is rejected. */
 	{
@@ -7834,6 +7775,27 @@ void InteractionInterfaceArrays<API>::test_shader_compilation(
 
 		EXECUTE_SHADER_TEST(API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS, tested_shader_type, source);
 	}
+}
+
+/* Generates the shader source code for the InteractionInterfaceArrays2
+ * array test, and attempts to compile the test shader.
+ *
+ * @tparam API               Tested API descriptor
+ *
+ * @param tested_shader_type The type of shader that is being tested.
+ */
+template <class API>
+void InteractionInterfaceArrays2<API>::test_shader_compilation(
+	typename TestCaseBase<API>::TestShaderType tested_shader_type)
+{
+	/* Shader source with invalid input (input cannot be of arrays of arrays type). */
+	const std::string invalid_input_shader_source[] = { "in  float input_variable", "[2][2];\n"
+																					"out float output_variable",
+														";\n\n"
+														"void main()\n"
+														"{\n"
+														"    output_variable",
+														" = input_variable", "[0][0];\n" };
 
 	/* Verify that INPUTs arrays of arrays type is rejected. */
 	if (TestCaseBase<API>::COMPUTE_SHADER_TYPE != tested_shader_type)
@@ -7882,6 +7844,32 @@ void InteractionInterfaceArrays<API>::test_shader_compilation(
 
 		EXECUTE_SHADER_TEST(API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS, tested_shader_type, source);
 	}
+}
+
+/* Generates the shader source code for the InteractionInterfaceArrays3
+ * array test, and attempts to compile the test shader.
+ *
+ * @tparam API               Tested API descriptor
+ *
+ * @param tested_shader_type The type of shader that is being tested.
+ */
+template <class API>
+void InteractionInterfaceArrays3<API>::test_shader_compilation(
+	typename TestCaseBase<API>::TestShaderType tested_shader_type)
+{
+	/* Shader source with invalid output (output cannot be of arrays of arrays type). */
+	const std::string invalid_output_shader_source[] = { "out float output_variable",
+														 "[2][2];\n\n"
+														 "void main()\n"
+														 "{\n"
+														 "    output_variable",
+														 "[0][0] = 0.0;\n"
+														 "    output_variable",
+														 "[0][1] = 1.0;\n"
+														 "    output_variable",
+														 "[1][0] = 2.0;\n"
+														 "    output_variable",
+														 "[1][1] = 3.0;\n" };
 
 	/* Verify that OUTPUTs arrays of arrays type is rejected. */
 	if (TestCaseBase<API>::COMPUTE_SHADER_TYPE != tested_shader_type)
@@ -7929,6 +7917,28 @@ void InteractionInterfaceArrays<API>::test_shader_compilation(
 
 		EXECUTE_SHADER_TEST(API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS, tested_shader_type, source);
 	}
+}
+
+/* Generates the shader source code for the InteractionInterfaceArrays4
+ * array test, and attempts to compile the test shader.
+ *
+ * @tparam API               Tested API descriptor
+ *
+ * @param tested_shader_type The type of shader that is being tested.
+ */
+template <class API>
+void InteractionInterfaceArrays4<API>::test_shader_compilation(
+	typename TestCaseBase<API>::TestShaderType tested_shader_type)
+{
+	/* Shader source with invalid uniform block (uniform block cannot be of arrays of arrays type). */
+	const std::string invalid_uniform_block_shader_source = "layout(std140) uniform MyUniformBlock\n"
+															"{\n"
+															"    float f;\n"
+															"    int   i;\n"
+															"    uint  ui;\n"
+															"} myUniformBlocks[2][2];\n\n"
+															"void main()\n"
+															"{\n";
 
 	/* Verify that uniform block arrays of arrays type is rejected. */
 	{
@@ -7938,6 +7948,30 @@ void InteractionInterfaceArrays<API>::test_shader_compilation(
 
 		EXECUTE_SHADER_TEST(API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS, tested_shader_type, source);
 	}
+}
+
+/* Generates the shader source code for the InteractionInterfaceArrays5
+ * array test, and attempts to compile the test shader.
+ *
+ * @tparam API               Tested API descriptor
+ *
+ * @param tested_shader_type The type of shader that is being tested.
+ */
+template <class API>
+void InteractionInterfaceArrays5<API>::test_shader_compilation(
+	typename TestCaseBase<API>::TestShaderType tested_shader_type)
+{
+	/* Shader source with invalid input (input cannot be of arrays of arrays type). */
+	const std::string input_block_shader_source[] = { "in  InBlock {\n"
+													  "    float input_variable;\n"
+													  "} in_block",
+													  "[2][2];\n"
+													  "out float output_variable;\n"
+													  "\n"
+													  "void main()\n"
+													  "{\n"
+													  "    output_variable = in_block",
+													  "[0][0].input_variable;\n" };
 
 	/* Verifies if arrays of arrays of input blocks are accepted */
 	if ((TestCaseBase<API>::VERTEX_SHADER_TYPE != tested_shader_type) &&
@@ -7970,6 +8004,35 @@ void InteractionInterfaceArrays<API>::test_shader_compilation(
 		EXECUTE_SHADER_TEST(API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS && API::ALLOW_IN_OUT_INTERFACE_BLOCKS,
 							tested_shader_type, source);
 	}
+}
+
+/* Generates the shader source code for the InteractionInterfaceArrays6
+ * array test, and attempts to compile the test shader.
+ *
+ * @tparam API               Tested API descriptor
+ *
+ * @param tested_shader_type The type of shader that is being tested.
+ */
+template <class API>
+void InteractionInterfaceArrays6<API>::test_shader_compilation(
+	typename TestCaseBase<API>::TestShaderType tested_shader_type)
+{
+	/* Shader source with invalid output (output cannot be of arrays of arrays type). */
+	const std::string output_block_shader_source[] = { "out OutBlock {\n"
+													   "    float output_variable;\n"
+													   "} out_block",
+													   "[2][2];\n"
+													   "\n"
+													   "void main()\n"
+													   "{\n"
+													   "    out_block",
+													   "[0][0].output_variable = 0.0;\n"
+													   "    out_block",
+													   "[0][1].output_variable = 1.0;\n"
+													   "    out_block",
+													   "[1][0].output_variable = 2.0;\n"
+													   "    out_block",
+													   "[1][1].output_variable = 3.0;\n" };
 
 	/* Verifies if arrays of arrays of output blocks are accepted */
 	if ((TestCaseBase<API>::FRAGMENT_SHADER_TYPE != tested_shader_type) &&
@@ -10553,7 +10616,12 @@ void initTests(TestCaseGroup& group, glcts::Context& context)
 	group.addChild(new glcts::ArraysOfArrays::InteractionUniformBuffers1<API>(context));
 	group.addChild(new glcts::ArraysOfArrays::InteractionUniformBuffers2<API>(context));
 	group.addChild(new glcts::ArraysOfArrays::InteractionUniformBuffers3<API>(context));
-	group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays<API>(context));
+	group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays1<API>(context));
+	group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays2<API>(context));
+	group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays3<API>(context));
+	group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays4<API>(context));
+	group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays5<API>(context));
+	group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays6<API>(context));
 
 	if (API::USE_STORAGE_BLOCK)
 	{

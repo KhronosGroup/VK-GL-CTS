@@ -2067,21 +2067,133 @@ protected:
 };
 
 template <class API>
-class InteractionInterfaceArrays : public TestCaseBase<API>
+class InteractionInterfaceArrays1 : public TestCaseBase<API>
 {
 public:
 	/* Public methods */
-	InteractionInterfaceArrays(Context& context)
-		: TestCaseBase<API>(context, "InteractionInterfaceArrays",
-							" Verifies that 2-dimensional arrays of all interface resources\n"
-							" available to a shader stage are correctly rejected. This includes,\n"
-							" where applicable, interface variables, interface blocks, and shader\n"
-							" storage buffer objects.\n")
+	InteractionInterfaceArrays1(Context& context)
+		: TestCaseBase<API>(context, "InteractionInterfaceArrays1", " Verifies that 2-dimensional arrays of shader\n"
+																	" storage buffer objects are correctly rejected.\n")
 	{
 		/* Left empty on purpose */
 	}
 
-	virtual ~InteractionInterfaceArrays()
+	virtual ~InteractionInterfaceArrays1()
+	{
+		/* Left empty on purpose */
+	}
+
+protected:
+	/* Protected methods */
+	void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+};
+
+template <class API>
+class InteractionInterfaceArrays2 : public TestCaseBase<API>
+{
+public:
+	/* Public methods */
+	InteractionInterfaceArrays2(Context& context)
+		: TestCaseBase<API>(context, "InteractionInterfaceArrays2",
+							" Verifies that 2-dimensional arrays of input variables\n"
+							" are correctly rejected.\n")
+	{
+		/* Left empty on purpose */
+	}
+
+	virtual ~InteractionInterfaceArrays2()
+	{
+		/* Left empty on purpose */
+	}
+
+protected:
+	/* Protected methods */
+	void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+};
+
+template <class API>
+class InteractionInterfaceArrays3 : public TestCaseBase<API>
+{
+public:
+	/* Public methods */
+	InteractionInterfaceArrays3(Context& context)
+		: TestCaseBase<API>(context, "InteractionInterfaceArrays3",
+							" Verifies that 2-dimensional arrays of output variables\n"
+							" are correctly rejected.\n")
+	{
+		/* Left empty on purpose */
+	}
+
+	virtual ~InteractionInterfaceArrays3()
+	{
+		/* Left empty on purpose */
+	}
+
+protected:
+	/* Protected methods */
+	void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+};
+
+template <class API>
+class InteractionInterfaceArrays4 : public TestCaseBase<API>
+{
+public:
+	/* Public methods */
+	InteractionInterfaceArrays4(Context& context)
+		: TestCaseBase<API>(context, "InteractionInterfaceArrays4",
+							" Verifies that 2-dimensional arrays of uniform interface blocks\n"
+							" are correctly rejected.\n")
+	{
+		/* Left empty on purpose */
+	}
+
+	virtual ~InteractionInterfaceArrays4()
+	{
+		/* Left empty on purpose */
+	}
+
+protected:
+	/* Protected methods */
+	void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+};
+
+template <class API>
+class InteractionInterfaceArrays5 : public TestCaseBase<API>
+{
+public:
+	/* Public methods */
+	InteractionInterfaceArrays5(Context& context)
+		: TestCaseBase<API>(context, "InteractionInterfaceArrays5",
+							" Verifies that 2-dimensional arrays of input interface blocks\n"
+							" are correctly rejected.\n")
+	{
+		/* Left empty on purpose */
+	}
+
+	virtual ~InteractionInterfaceArrays5()
+	{
+		/* Left empty on purpose */
+	}
+
+protected:
+	/* Protected methods */
+	void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+};
+
+template <class API>
+class InteractionInterfaceArrays6 : public TestCaseBase<API>
+{
+public:
+	/* Public methods */
+	InteractionInterfaceArrays6(Context& context)
+		: TestCaseBase<API>(context, "InteractionInterfaceArrays6",
+							" Verifies that 2-dimensional arrays of output interface blocks\n"
+							" are correctly rejected.\n")
+	{
+		/* Left empty on purpose */
+	}
+
+	virtual ~InteractionInterfaceArrays6()
 	{
 		/* Left empty on purpose */
 	}
