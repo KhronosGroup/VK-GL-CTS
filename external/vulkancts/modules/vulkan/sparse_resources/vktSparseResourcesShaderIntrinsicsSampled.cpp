@@ -632,7 +632,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (const VkCommandB
 																const VkImage				imageResidency)
 {
 	const InstanceInterface&		 instance			= m_context.getInstanceInterface();
-	const DeviceInterface&			 deviceInterface	= m_context.getDeviceInterface();
+	const DeviceInterface&			 deviceInterface	= getDeviceInterface();
 	const VkPhysicalDevice			 physicalDevice		= m_context.getPhysicalDevice();
 	const VkPhysicalDeviceProperties deviceProperties	= getPhysicalDeviceProperties(instance, physicalDevice);
 
