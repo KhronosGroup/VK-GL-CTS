@@ -77,10 +77,13 @@ static tcu::TestPackage* createES2Package(tcu::TestContext& testCtx)
 {
 	return new es2cts::TestPackage(testCtx, "KHR-GLES2");
 }
+
+#if DE_OS != DE_OS_ANDROID
 static tcu::TestPackage* createdEQPES2Package(tcu::TestContext& testCtx)
 {
 	return new deqp::gles2::TestPackage(testCtx);
 }
+#endif
 
 #if defined(DEQP_GTF_AVAILABLE)
 static tcu::TestPackage* createES2GTFPackage(tcu::TestContext& testCtx)
@@ -93,10 +96,13 @@ static tcu::TestPackage* createES30Package(tcu::TestContext& testCtx)
 {
 	return new es3cts::ES30TestPackage(testCtx, "KHR-GLES3");
 }
+
+#if DE_OS != DE_OS_ANDROID
 static tcu::TestPackage* createdEQPES30Package(tcu::TestContext& testCtx)
 {
 	return new deqp::gles3::TestPackage(testCtx);
 }
+#endif
 
 #if defined(DEQP_GTF_AVAILABLE)
 static tcu::TestPackage* createES30GTFPackage(tcu::TestContext& testCtx)
@@ -105,10 +111,12 @@ static tcu::TestPackage* createES30GTFPackage(tcu::TestContext& testCtx)
 }
 #endif
 
+#if DE_OS != DE_OS_ANDROID
 static tcu::TestPackage* createdEQPES31Package(tcu::TestContext& testCtx)
 {
 	return new deqp::gles31::TestPackage(testCtx);
 }
+#endif
 static tcu::TestPackage* createES31Package(tcu::TestContext& testCtx)
 {
 	return new es31cts::ES31TestPackage(testCtx, "KHR-GLES31");
@@ -223,20 +231,26 @@ void registerPackages(void)
 	registry->registerPackage("CTS-Configs", createConfigPackage);
 
 	registry->registerPackage("KHR-GLES2", createES2Package);
+#if DE_OS != DE_OS_ANDROID
 	registry->registerPackage("dEQP-GLES2", createdEQPES2Package);
+#endif
 
 #if defined(DEQP_GTF_AVAILABLE)
 	registry->registerPackage("GTF-GLES2", createES2GTFPackage);
 #endif
 
 	registry->registerPackage("KHR-GLES3", createES30Package);
+#if DE_OS != DE_OS_ANDROID
 	registry->registerPackage("dEQP-GLES3", createdEQPES30Package);
+#endif
 
 #if defined(DEQP_GTF_AVAILABLE)
 	registry->registerPackage("GTF-GLES3", createES30GTFPackage);
 #endif
 
+#if DE_OS != DE_OS_ANDROID
 	registry->registerPackage("dEQP-GLES31", createdEQPES31Package);
+#endif
 	registry->registerPackage("KHR-GLES31", createES31Package);
 	registry->registerPackage("KHR-GLESEXT", createESEXTPackage);
 
