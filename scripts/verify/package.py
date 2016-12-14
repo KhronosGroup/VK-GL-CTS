@@ -28,17 +28,20 @@ TEST_LOG_PATTERN	= "*.qpa"
 GIT_STATUS_PATTERN	= "*git-status.txt"
 GIT_LOG_PATTERN		= "*git-log.txt"
 PATCH_PATTERN		= "*.patch"
+SUMMARY_PATTERN		= "cts-run-summary.xml"
 
 class PackageDescription:
-	def __init__ (self, basePath, statement, testLogs, gitStatus, gitLog, patches, conformVersion, otherItems):
+	def __init__ (self, basePath, statement, testLogs, gitStatus, gitLog, patches, summary, conformVersion, conformOs, otherItems):
 		self.basePath		= basePath
 		self.statement		= statement
 		self.testLogs		= testLogs
 		self.gitStatus		= gitStatus
 		self.gitLog			= gitLog
 		self.patches		= patches
+		self.summary		= summary
 		self.otherItems		= otherItems
 		self.conformVersion	= conformVersion
+		self.conformOs		= conformOs
 
 def getPackageDescription (packagePath):
 	allItems	= os.listdir(packagePath)
@@ -47,8 +50,10 @@ def getPackageDescription (packagePath):
 	gitStatus	= []
 	gitLog		= []
 	patches		= []
+	summary		= None
 	otherItems	= []
 	conformVersion	= None
+	conformOs		= None
 
 	for item in allItems:
 		if fnmatch(item, STATEMENT_PATTERN):
@@ -62,7 +67,10 @@ def getPackageDescription (packagePath):
 			gitLog.append(item)
 		elif fnmatch(item, PATCH_PATTERN):
 			patches.append(item)
+		elif fnmatch(item, SUMMARY_PATTERN):
+			assert summary == None
+			summary = item
 		else:
 			otherItems.append(item)
 
-	return PackageDescription(packagePath, statement, testLogs, gitStatus, gitLog, patches, conformVersion, otherItems)
+	return PackageDescription(packagePath, statement, testLogs, gitStatus, gitLog, patches, summary, conformVersion, conformOs, otherItems)

@@ -110,6 +110,8 @@ def verifyStatement (package):
 				if hasVersion:
 					messages.append(error(statementPath, "Multiple CONFORM_VERSIONs"))
 				else:
+					assert len(line.split()) >= 2
+					package.conformVersion = line.split()[1]
 					hasVersion = True
 			elif beginsWith(line, "PRODUCT:"):
 				hasProduct = True # Multiple products allowed
@@ -122,6 +124,8 @@ def verifyStatement (package):
 				if hasOs:
 					messages.append(error(statementPath, "Multiple OSes"))
 				else:
+					assert len(line.split()) >= 2
+					package.conformOs = line.split()[1]
 					hasOs = True
 
 		if not hasVersion:
