@@ -30,6 +30,7 @@
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkPlatform.hpp"
 #include "deUniquePtr.hpp"
 #include "tcuTestLog.hpp"
 #include "vktSynchronizationUtil.hpp"
@@ -72,22 +73,12 @@ public:
 			m_queueFamilyIndex[ndx] = NO_MATCH_FOUND;
 	}
 
-	Move<VkDevice>			m_logicalDevice;
-	de::MovePtr<Allocator>	m_allocator;
-	std::vector<VkQueue>	m_queues;
-	std::vector<deUint32>	m_queueFamilyIndex;
+	Move<VkDevice>				m_logicalDevice;
+	de::MovePtr<DeviceDriver>	m_deviceDriver;
+	de::MovePtr<Allocator>		m_allocator;
+	std::vector<VkQueue>		m_queues;
+	std::vector<deUint32>		m_queueFamilyIndex;
 };
-
-de::MovePtr<Allocator> createAllocator (Context& context, VkDevice device)
-{
-	const DeviceInterface&					deviceInterface			= context.getDeviceInterface();
-	const InstanceInterface&				instance				= context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
-	const VkPhysicalDeviceMemoryProperties	deviceMemoryProperties	= getPhysicalDeviceMemoryProperties(instance, physicalDevice);
-
-	// Create memory allocator for device
-	return de::MovePtr<Allocator> (new SimpleAllocator(deviceInterface, device, deviceMemoryProperties));
-}
 
 bool checkQueueFlags (const vk::VkQueueFlags& availableFlag, const vk::VkQueueFlags& neededFlag)
 {
@@ -108,7 +99,6 @@ bool checkQueueFlags (const vk::VkQueueFlags& availableFlag, const vk::VkQueueFl
 
 de::MovePtr<MultiQueues> createQueues (Context& context, const vk::VkQueueFlags& queueFlagWrite, const vk::VkQueueFlags& queueFlagRead)
 {
-	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const InstanceInterface&				instance				= context.getInstanceInterface();
 	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
 	const float								queuePriorities[COUNT]	= {1.0f, 1.0f};
@@ -119,7 +109,8 @@ de::MovePtr<MultiQueues> createQueues (Context& context, const vk::VkQueueFlags&
 	VkQueueFlags							queueFlags[COUNT]		= {queueFlagWrite,queueFlagRead};
 	int										fisrtQueueToFind		= WRITE;
 	int										secondQueueToFind		= READ;
-	MultiQueues								queues;
+	de::MovePtr<MultiQueues>				queuesMovePtr			(new MultiQueues());
+	MultiQueues&							queues					= *queuesMovePtr;
 
 	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
 
@@ -197,19 +188,19 @@ de::MovePtr<MultiQueues> createQueues (Context& context, const vk::VkQueueFlags&
 	deviceInfo.queueCreateInfoCount		= (queues.m_queueFamilyIndex[WRITE] == queues.m_queueFamilyIndex[READ]) ? 1u : static_cast<deUint32>(COUNT);
 	deviceInfo.pQueueCreateInfos		= queueInfos;
 
-	queues.m_logicalDevice = vk::createDevice(instance, physicalDevice, &deviceInfo);
-
+	queues.m_logicalDevice	= createDevice(instance, physicalDevice, &deviceInfo);
+	queues.m_deviceDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(instance, *queues.m_logicalDevice));
+	queues.m_allocator		= de::MovePtr<Allocator>(new SimpleAllocator(*queues.m_deviceDriver, *queues.m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
 
 	for (deUint32 queueReqNdx = 0; queueReqNdx < COUNT; ++queueReqNdx)
 	{
 		if (queues.m_queueFamilyIndex[WRITE] == queues.m_queueFamilyIndex[READ])
-			vk.getDeviceQueue(*queues.m_logicalDevice, queues.m_queueFamilyIndex[queueReqNdx], queueReqNdx, &queues.m_queues[queueReqNdx]);
+			queues.m_deviceDriver->getDeviceQueue(*queues.m_logicalDevice, queues.m_queueFamilyIndex[queueReqNdx], queueReqNdx, &queues.m_queues[queueReqNdx]);
 		else
-			vk.getDeviceQueue(*queues.m_logicalDevice, queues.m_queueFamilyIndex[queueReqNdx], 0u, &queues.m_queues[queueReqNdx]);
+			queues.m_deviceDriver->getDeviceQueue(*queues.m_logicalDevice, queues.m_queueFamilyIndex[queueReqNdx], 0u, &queues.m_queues[queueReqNdx]);
 	}
-	queues.m_allocator = createAllocator (context, *queues.m_logicalDevice);
 
-	return de::MovePtr<MultiQueues> (new MultiQueues(queues));
+	return queuesMovePtr;
 }
 
 void createBarrierMultiQueue (const DeviceInterface& vk, const VkCommandBuffer& cmdBuffer, const SyncInfo& writeSync, const SyncInfo& readSync,
@@ -260,7 +251,7 @@ public:
 	BaseTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData)
 		: TestInstance	(context)
 		, m_queues		(createQueues(context, writeOp.getQueueFlags(), readOp.getQueueFlags()))
-		, m_opContext	(new OperationContext(context, pipelineCacheData, m_context.getDeviceInterface(), (*(*m_queues).m_logicalDevice), (*(*m_queues).m_allocator)))
+		, m_opContext	(new OperationContext(context, pipelineCacheData, *m_queues->m_deviceDriver, *m_queues->m_logicalDevice, *m_queues->m_allocator))
 		, m_resource	(new Resource(*m_opContext, resourceDesc, writeOp.getResourceUsageFlags() | readOp.getResourceUsageFlags()))
 		, m_writeOp		(writeOp.build(*m_opContext, *m_resource))
 		, m_readOp		(readOp.build(*m_opContext, *m_resource))
