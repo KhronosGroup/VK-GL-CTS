@@ -77,6 +77,9 @@ deInt32 ConfigInfo::getAttribute (deUint32 attribute) const
 		case EGL_YUV_CSC_STANDARD_EXT:		return yuvCscStandard;
 		case EGL_YUV_PLANE_BPP_EXT:			return yuvPlaneBpp;
 
+		// EGL_EXT_pixel_format_float
+		case EGL_COLOR_COMPONENT_TYPE_EXT:	return colorComponentType;
+
 		default:							TCU_THROW(InternalError, "Unknown attribute");
 	}
 }
@@ -132,6 +135,15 @@ void queryExtConfigInfo (const eglw::Library& egl, eglw::EGLDisplay display, egl
 
 		EGLU_CHECK_MSG(egl, "Failed to query EGL_EXT_yuv_surface config attribs");
 	}
+
+	if (de::contains(extensions.begin(), extensions.end(), "EGL_EXT_pixel_format_float"))
+	{
+		egl.getConfigAttrib(display, config, EGL_COLOR_COMPONENT_TYPE_EXT,	(EGLint*)&dst->colorComponentType);
+
+		EGLU_CHECK_MSG(egl, "Failed to query EGL_EXT_pixel_format_float config attribs");
+	}
+	else
+		dst->colorComponentType = EGL_COLOR_COMPONENT_TYPE_FIXED_EXT;
 }
 
 } // eglu
