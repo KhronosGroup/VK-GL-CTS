@@ -82,6 +82,7 @@ enum VkResult
 	VK_ERROR_INCOMPATIBLE_DISPLAY_KHR	= -1000003001,
 	VK_ERROR_VALIDATION_FAILED_EXT		= -1000011001,
 	VK_ERROR_INVALID_SHADER_NV			= -1000012000,
+	VK_ERROR_OUT_OF_POOL_MEMORY_KHR		= -1000069000,
 };
 
 enum VkStructureType
@@ -1272,6 +1273,8 @@ typedef deUint32 VkMirSurfaceCreateFlagsKHR;
 typedef deUint32 VkAndroidSurfaceCreateFlagsKHR;
 
 typedef deUint32 VkWin32SurfaceCreateFlagsKHR;
+
+typedef deUint32 VkCommandPoolTrimFlagsKHR;
 
 VK_DEFINE_PLATFORM_TYPE(XlibDisplayPtr,				void*);
 VK_DEFINE_PLATFORM_TYPE(XlibWindow,					deUintptr);

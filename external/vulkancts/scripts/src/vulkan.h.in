@@ -145,6 +145,7 @@ typedef enum VkResult {
     VK_ERROR_INCOMPATIBLE_DISPLAY_KHR = -1000003001,
     VK_ERROR_VALIDATION_FAILED_EXT = -1000011001,
     VK_ERROR_INVALID_SHADER_NV = -1000012000,
+    VK_ERROR_OUT_OF_POOL_MEMORY_KHR = -1000069000,
     VK_RESULT_BEGIN_RANGE = VK_ERROR_FRAGMENTED_POOL,
     VK_RESULT_END_RANGE = VK_INCOMPLETE,
     VK_RESULT_RANGE_SIZE = (VK_INCOMPLETE - VK_ERROR_FRAGMENTED_POOL + 1),
@@ -3858,6 +3859,21 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceSparseImageFormatProperties2KHR(
     const VkPhysicalDeviceSparseImageFormatInfo2KHR* pFormatInfo,
     uint32_t*                                   pPropertyCount,
     VkSparseImageFormatProperties2KHR*          pProperties);
+#endif
+
+#define VK_KHR_maintenance1 1
+#define VK_KHR_MAINTENANCE1_SPEC_VERSION  1
+#define VK_KHR_MAINTENANCE1_EXTENSION_NAME "VK_KHR_maintenance1"
+
+typedef VkFlags VkCommandPoolTrimFlagsKHR;
+
+typedef void (VKAPI_PTR *PFN_vkTrimCommandPoolKHR)(VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlagsKHR flags);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkTrimCommandPoolKHR(
+    VkDevice                                    device,
+    VkCommandPool                               commandPool,
+    VkCommandPoolTrimFlagsKHR                   flags);
 #endif
 
 #define VK_EXT_debug_report 1

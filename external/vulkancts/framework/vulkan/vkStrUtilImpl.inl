@@ -91,6 +91,7 @@ const char* getResultName (VkResult value)
 		case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:	return "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR";
 		case VK_ERROR_VALIDATION_FAILED_EXT:	return "VK_ERROR_VALIDATION_FAILED_EXT";
 		case VK_ERROR_INVALID_SHADER_NV:		return "VK_ERROR_INVALID_SHADER_NV";
+		case VK_ERROR_OUT_OF_POOL_MEMORY_KHR:	return "VK_ERROR_OUT_OF_POOL_MEMORY_KHR";
 		default:								return DE_NULL;
 	}
 }
@@ -1595,6 +1596,11 @@ tcu::Format::Bitfield<32> getAndroidSurfaceCreateFlagsKHRStr (VkAndroidSurfaceCr
 }
 
 tcu::Format::Bitfield<32> getWin32SurfaceCreateFlagsKHRStr (VkWin32SurfaceCreateFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getCommandPoolTrimFlagsKHRStr (VkCommandPoolTrimFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
