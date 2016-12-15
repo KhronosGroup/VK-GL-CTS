@@ -30,6 +30,7 @@
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkPlatform.hpp"
 #include "deUniquePtr.hpp"
 #include "tcuTestLog.hpp"
 #include "vktSynchronizationUtil.hpp"
@@ -87,7 +88,6 @@ class MultiQueues
 public:
 	MultiQueues	(const Context& context)
 	{
-		const DeviceInterface&						vk						= context.getDeviceInterface();
 		const InstanceInterface&					instance				= context.getInstanceInterface();
 		const VkPhysicalDevice						physicalDevice			= context.getPhysicalDevice();
 		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
@@ -138,11 +138,12 @@ public:
 			};
 
 			m_logicalDevice	= createDevice(instance, physicalDevice, &deviceInfo);
-			m_allocator		= MovePtr<Allocator>(new SimpleAllocator(vk, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
+			m_deviceDriver	= MovePtr<DeviceDriver>(new DeviceDriver(instance, *m_logicalDevice));
+			m_allocator		= MovePtr<Allocator>(new SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
 
 			for (std::map<deUint32, QueueData>::iterator it = m_queues.begin(); it != m_queues.end(); ++it)
 			for (int queueNdx = 0; queueNdx < static_cast<int>(it->second.queue.size()); ++queueNdx)
-				vk.getDeviceQueue(*m_logicalDevice, it->first, queueNdx, &it->second.queue[queueNdx]);
+				m_deviceDriver->getDeviceQueue(*m_logicalDevice, it->first, queueNdx, &it->second.queue[queueNdx]);
 		}
 	}
 
@@ -207,6 +208,11 @@ public:
 		return *m_logicalDevice;
 	}
 
+	const DeviceInterface& getDeviceInterface (void) const
+	{
+		return *m_deviceDriver;
+	}
+
 	Allocator& getAllocator (void)
 	{
 		return *m_allocator;
@@ -214,6 +220,7 @@ public:
 
 private:
 	Move<VkDevice>					m_logicalDevice;
+	MovePtr<DeviceDriver>			m_deviceDriver;
 	MovePtr<Allocator>				m_allocator;
 	std::map<deUint32, QueueData>	m_queues;
 };
@@ -273,7 +280,7 @@ public:
 	BaseTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData)
 		: TestInstance		(context)
 		, m_queues			(new MultiQueues(context))
-		, m_opContext		(new OperationContext(context, pipelineCacheData, m_context.getDeviceInterface(), m_queues->getDevice(), m_queues->getAllocator()))
+		, m_opContext		(new OperationContext(context, pipelineCacheData, m_queues->getDeviceInterface(), m_queues->getDevice(), m_queues->getAllocator()))
 		, m_resourceDesc	(resourceDesc)
 		, m_writeOp			(writeOp)
 		, m_readOp			(readOp)
