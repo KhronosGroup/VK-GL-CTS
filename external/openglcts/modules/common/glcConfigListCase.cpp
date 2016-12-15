@@ -59,6 +59,8 @@ static const char* getExcludeReasonName(ExcludeReason reason)
 		return "Multisampled: Not testable";
 	case EXCLUDEREASON_FLOAT:
 		return "Float configs: Not testable";
+	case EXCLUDEREASON_YUV:
+		return "YUV: Not testable";
 	default:
 		throw tcu::Exception("Unknown exclude reason");
 	}

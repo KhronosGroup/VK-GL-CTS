@@ -49,6 +49,10 @@
 #define EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT 0x333B
 #endif
 
+#if !defined(EGL_YUV_BUFFER_EXT)
+#define EGL_YUV_BUFFER_EXT 0x3300
+#endif
+
 namespace glcts
 {
 
@@ -93,6 +97,7 @@ static void getDefaultEglConfigList(tcu::Platform& eglPlatform, glu::ApiType typ
 	eglw::EGLDisplay			 display = eglu::getAndInitDisplay(*nativeDisplay);
 	std::vector<eglw::EGLConfig> configs = eglu::getConfigs(library, display);
 	bool supportFloatConfigs			 = eglu::hasExtension(library, display, "EGL_EXT_pixel_format_float");
+	bool supportYUVConfigs				 = eglu::hasExtension(library, display, "EGL_EXT_yuv_surface");
 
 	for (std::vector<eglw::EGLConfig>::iterator cfgIter = configs.begin(); cfgIter != configs.end(); cfgIter++)
 	{
@@ -114,7 +119,11 @@ static void getDefaultEglConfigList(tcu::Platform& eglPlatform, glu::ApiType typ
 							   (eglu::getConfigAttribInt(library, display, *cfgIter, EGL_COLOR_COMPONENT_TYPE_EXT) ==
 								EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT) :
 							   false;
-		bool isOk = isRenderable && isConformant && (numSamples == 0) && !isFloatType;
+		bool isYUV =
+			supportYUVConfigs ?
+				(eglu::getConfigAttribInt(library, display, *cfgIter, EGL_COLOR_BUFFER_TYPE) == EGL_YUV_BUFFER_EXT) :
+				false;
+		bool isOk = isRenderable && isConformant && (numSamples == 0) && !isFloatType && !isYUV;
 
 		deUint32 surfaceBits  = eglu::getConfigAttribInt(library, display, *cfgIter, EGL_SURFACE_TYPE);
 		deUint32 surfaceTypes = ((surfaceBits & EGL_WINDOW_BIT) ? SURFACETYPE_WINDOW : 0) |
@@ -133,12 +142,14 @@ static void getDefaultEglConfigList(tcu::Platform& eglPlatform, glu::ApiType typ
 		}
 		else
 		{
-			DE_ASSERT(!isRenderable || !isConformant || (numSamples != 0) || isFloatType);
-			configList.excludedConfigs.push_back(ExcludedConfig(
-				CONFIGTYPE_EGL, id,
-				isRenderable ? (isConformant ? ((numSamples != 0) ? EXCLUDEREASON_MSAA : EXCLUDEREASON_FLOAT) :
-											   EXCLUDEREASON_NOT_CONFORMANT) :
-							   EXCLUDEREASON_NOT_COMPATIBLE));
+			DE_ASSERT(!isRenderable || !isConformant || (numSamples != 0) || isFloatType || isYUV);
+			configList.excludedConfigs.push_back(
+				ExcludedConfig(CONFIGTYPE_EGL, id,
+							   !isRenderable ? EXCLUDEREASON_NOT_COMPATIBLE :
+											   !isConformant ? EXCLUDEREASON_NOT_CONFORMANT :
+															   (numSamples != 0) ?
+															   EXCLUDEREASON_MSAA :
+															   isFloatType ? EXCLUDEREASON_FLOAT : EXCLUDEREASON_YUV));
 		}
 	}
 }
