@@ -540,9 +540,10 @@ public:
 
 	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
-		DE_UNREF(context);
-		if (BUFFER_OP_FILL == m_bufferOp)
+		if (std::find(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1") == context.getDeviceExtensions().end() ||
+			BUFFER_OP_UPDATE != m_bufferOp)
 			return VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT;
+
 		return VK_QUEUE_TRANSFER_BIT;
 	}
 
