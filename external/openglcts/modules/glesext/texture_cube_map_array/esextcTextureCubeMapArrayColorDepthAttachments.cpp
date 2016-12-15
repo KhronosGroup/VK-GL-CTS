@@ -585,8 +585,9 @@ void TextureCubeMapArrayColorDepthAttachmentsTest::initTest()
 	 * we'll be using for the test.
 	 */
 	const glw::GLchar* const layered_geometry_shader_parts[] = { m_geometry_shader_code_preamble,
-																 m_geometry_shader_code_layered, "    float depth = ",
-																 depth_calculation_code, m_geometry_shader_code_body };
+																 m_geometry_shader_code_layered,
+																 "    float depth = ", depth_calculation_code,
+																 m_geometry_shader_code_body };
 
 	const glw::GLchar* const non_layered_geometry_shader_parts[] = { m_geometry_shader_code_preamble,
 																	 m_geometry_shader_code_non_layered,

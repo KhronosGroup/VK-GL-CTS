@@ -3262,10 +3262,12 @@ void ExpressionsIndexingArray2<API>::test_shader_compilation(
 {
 	std::string variable_initialiser = "    float[](float[](float(float(float(float(float(float(1.0))))))));\n";
 
-	std::string x_variable_initializaton = "    float x[2][2][2][2][2][2][2][1] = " +
-										   recursively_initialise("float", API::MAX_ARRAY_DIMENSIONS, "1.0") + ";\n";
-	std::string y_variable_initializaton = "    float y[2][2][2][2][2][2][2][1] = " +
-										   recursively_initialise("float", API::MAX_ARRAY_DIMENSIONS, "1.0") + ";\n";
+	std::string x_variable_initializaton =
+		"    float x[2][2][2][2][2][2][2][1] = " + recursively_initialise("float", API::MAX_ARRAY_DIMENSIONS, "1.0") +
+		";\n";
+	std::string y_variable_initializaton =
+		"    float y[2][2][2][2][2][2][2][1] = " + recursively_initialise("float", API::MAX_ARRAY_DIMENSIONS, "1.0") +
+		";\n";
 
 	std::string shader_code_common_part = shader_start + x_variable_initializaton + y_variable_initializaton;
 
@@ -4505,8 +4507,8 @@ void InteractionFunctionCalls1<API>::test_shader_compilation(
 
 		if (var_iterator != supported_variable_types_map.end())
 		{
-			std::string iterator_declaration = "    " + var_iterator->second.iterator_type + " iterator = " +
-											   var_iterator->second.iterator_initialization + ";\n";
+			std::string iterator_declaration = "    " + var_iterator->second.iterator_type +
+											   " iterator = " + var_iterator->second.iterator_initialization + ";\n";
 
 			std::string function_definition;
 			std::string function_use;
@@ -5519,8 +5521,9 @@ void InteractionArgumentAliasing2<API>::test_shader_compilation(
 			function_definition += var_iterator->second.type + " y[2][2][2][2][2][2][2][2])\n";
 			function_definition += "{\n";
 			function_definition += "    " + iteration_loop_start;
-			function_definition += "                                   y[a][b][c][d][e][f][g][h] = " +
-								   var_iterator->second.type + "(123);\n";
+			function_definition +=
+				"                                   y[a][b][c][d][e][f][g][h] = " + var_iterator->second.type +
+				"(123);\n";
 			function_definition += "    " + iteration_loop_end;
 			function_definition += "\n";
 			function_definition += "    " + iteration_loop_start;
@@ -5652,8 +5655,9 @@ void InteractionArgumentAliasing3<API>::test_shader_compilation(
 			function_definition += var_iterator->second.type + " y[2][2][2][2][2][2][2][2])\n";
 			function_definition += "{\n";
 			function_definition += "    " + iteration_loop_start;
-			function_definition += "                                   x[a][b][c][d][e][f][g][h] = " +
-								   var_iterator->second.type + "(123);\n";
+			function_definition +=
+				"                                   x[a][b][c][d][e][f][g][h] = " + var_iterator->second.type +
+				"(123);\n";
 			function_definition += "    " + iteration_loop_end;
 			function_definition += "\n";
 			function_definition += "    " + iteration_loop_start;
@@ -5785,8 +5789,9 @@ void InteractionArgumentAliasing4<API>::test_shader_compilation(
 			function_definition += "out " + var_iterator->second.type + " y[2][2][2][2][2][2][2][2])\n";
 			function_definition += "{\n";
 			function_definition += "    " + iteration_loop_start;
-			function_definition += "                                   y[a][b][c][d][e][f][g][h] = " +
-								   var_iterator->second.type + "(123);\n";
+			function_definition +=
+				"                                   y[a][b][c][d][e][f][g][h] = " + var_iterator->second.type +
+				"(123);\n";
 			function_definition += "    " + iteration_loop_end;
 			function_definition += "\n";
 			function_definition += "    " + iteration_loop_start;
@@ -5918,8 +5923,9 @@ void InteractionArgumentAliasing5<API>::test_shader_compilation(
 			function_definition += var_iterator->second.type + " y[2][2][2][2][2][2][2][2])\n";
 			function_definition += "{\n";
 			function_definition += "    " + iteration_loop_start;
-			function_definition += "                                   x[a][b][c][d][e][f][g][h] = " +
-								   var_iterator->second.type + "(123);\n";
+			function_definition +=
+				"                                   x[a][b][c][d][e][f][g][h] = " + var_iterator->second.type +
+				"(123);\n";
 			function_definition += "    " + iteration_loop_end;
 			function_definition += "\n";
 			function_definition += "    " + iteration_loop_start;
@@ -6051,8 +6057,9 @@ void InteractionArgumentAliasing6<API>::test_shader_compilation(
 			function_definition += "inout " + var_iterator->second.type + " y[2][2][2][2][2][2][2][2])\n";
 			function_definition += "{\n";
 			function_definition += "    " + iteration_loop_start;
-			function_definition += "                                   y[a][b][c][d][e][f][g][h] = " +
-								   var_iterator->second.type + "(123);\n";
+			function_definition +=
+				"                                   y[a][b][c][d][e][f][g][h] = " + var_iterator->second.type +
+				"(123);\n";
 			function_definition += "    " + iteration_loop_end;
 			function_definition += "\n";
 			function_definition += "    " + iteration_loop_start;
@@ -7252,8 +7259,8 @@ void InteractionUniformBuffers3<API>::test_shader_compilation(
 
 				shader_source = "layout (std140) uniform MyUniform {\n";
 				shader_source += "    " + var_iterator->second.type +
-								 invalid_size_declarations[invalid_size_declarations_index] + " my_variable = " +
-								 array_initializers[var_type_index];
+								 invalid_size_declarations[invalid_size_declarations_index] +
+								 " my_variable = " + array_initializers[var_type_index];
 
 				var_iterator->second.type + invalid_size_declarations[invalid_size_declarations_index] +
 					" my_variable = " + array_initializers[var_type_index];
@@ -7705,8 +7712,8 @@ void InteractionStorageBuffers3<API>::test_shader_compilation(
 
 				shader_source = "layout (std140) buffer MyStorage {\n";
 				shader_source += "    " + var_iterator->second.type +
-								 invalid_size_declarations[invalid_size_declarations_index] + " my_variable = " +
-								 array_initializers[var_type_index];
+								 invalid_size_declarations[invalid_size_declarations_index] +
+								 " my_variable = " + array_initializers[var_type_index];
 
 				var_iterator->second.type + invalid_size_declarations[invalid_size_declarations_index] +
 					" my_variable = " + array_initializers[var_type_index];
@@ -8800,8 +8807,8 @@ void SubroutineFunctionCalls1<API>::test_shader_compilation(
 
 		if (var_iterator != supported_variable_types_map.end())
 		{
-			std::string iterator_declaration = "    " + var_iterator->second.iterator_type + " iterator = " +
-											   var_iterator->second.iterator_initialization + ";\n";
+			std::string iterator_declaration = "    " + var_iterator->second.iterator_type +
+											   " iterator = " + var_iterator->second.iterator_initialization + ";\n";
 
 			std::string function_definition;
 			std::string function_use;

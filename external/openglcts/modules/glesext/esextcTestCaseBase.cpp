@@ -96,15 +96,15 @@ void TestCaseBase::initExtensions()
 	/* OpenGL 4.0 or higher is minimum expectation for any of these tests */
 	if (glu::contextSupports(context_type, glu::ApiType::core(4, 0)))
 	{
-		m_is_geometry_shader_extension_supported			= true;
-		m_is_geometry_shader_point_size_supported			= true;
-		m_is_gpu_shader5_supported							= true;
-		m_is_tessellation_shader_supported					= true;
-		m_is_tessellation_shader_point_size_supported		= true;
-		m_is_texture_cube_map_array_supported				= true;
-		m_is_texture_border_clamp_supported					= true;
-		m_is_texture_buffer_supported						= true;
-		m_is_shader_image_atomic_supported = glu::contextSupports(context_type, glu::ApiType::core(4, 2));
+		m_is_geometry_shader_extension_supported	  = true;
+		m_is_geometry_shader_point_size_supported	 = true;
+		m_is_gpu_shader5_supported					  = true;
+		m_is_tessellation_shader_supported			  = true;
+		m_is_tessellation_shader_point_size_supported = true;
+		m_is_texture_cube_map_array_supported		  = true;
+		m_is_texture_border_clamp_supported			  = true;
+		m_is_texture_buffer_supported				  = true;
+		m_is_shader_image_atomic_supported			  = glu::contextSupports(context_type, glu::ApiType::core(4, 2));
 		m_is_texture_storage_multisample_2d_array_supported =
 			glu::contextSupports(context_type, glu::ApiType::core(4, 3));
 		m_is_framebuffer_no_attachments_supported  = glu::contextSupports(context_type, glu::ApiType::core(4, 3));
@@ -179,7 +179,6 @@ void TestCaseBase::initExtensions()
 			isExtensionSupported("GL_OES_texture_storage_multisample_2d_array");
 		m_is_viewport_array_supported = isExtensionSupported("GL_OES_viewport_array");
 	}
-
 }
 
 /** Initializes function pointers for ES3.1 extensions, as well as determines

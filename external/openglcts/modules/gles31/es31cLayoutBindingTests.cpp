@@ -584,10 +584,7 @@ private:
 		m_drawTest =
 			(getStage() == ComputeShader) ? &LayoutBindingBaseCase::drawTestCompute : &LayoutBindingBaseCase::drawTest;
 
-#define MAKE_TEST_ENTRY(__subtest_name__)                               \
-	{                                                                   \
-		#__subtest_name__, "", &LayoutBindingBaseCase::__subtest_name__ \
-	}
+#define MAKE_TEST_ENTRY(__subtest_name__) { #__subtest_name__, "", &LayoutBindingBaseCase::__subtest_name__ }
 		LayoutBindingSubTest tests[] = {
 			MAKE_TEST_ENTRY(binding_basic_default),		 MAKE_TEST_ENTRY(binding_basic_explicit),
 			MAKE_TEST_ENTRY(binding_basic_multiple),	 MAKE_TEST_ENTRY(binding_basic_render),
