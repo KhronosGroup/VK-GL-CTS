@@ -792,7 +792,7 @@ void Utils::texture::create(GLuint width, GLuint height, GLuint depth, GLenum in
  **/
 void Utils::texture::get(glw::GLenum format, glw::GLenum type, glw::GLvoid* out_data) const
 {
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glw::Functions&   gl			 = m_context.getRenderContext().getFunctions();
 	const glu::ContextType& context_type = m_context.getRenderContext().getType();
 
 	bind();
@@ -1032,7 +1032,7 @@ tcu::TestNode::IterateResult APIErrors::iterate()
 	}
 
 	/* GL entry points */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glw::Functions&   gl			 = m_context.getRenderContext().getFunctions();
 	const glu::ContextType& context_type = m_context.getRenderContext().getType();
 	Utils::DepthFuncWrapper depthFunc(m_context);
 
@@ -1460,7 +1460,7 @@ tcu::TestNode::IterateResult Queries::iterate()
 	}
 
 	/* GL entry points */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glw::Functions&   gl			 = m_context.getRenderContext().getFunctions();
 	const glu::ContextType& context_type = m_context.getRenderContext().getType();
 	Utils::DepthFuncWrapper depthFunc(m_context);
 
@@ -2166,7 +2166,7 @@ template <typename T>
 bool DepthRangeAPI::iterateHelper(T*)
 {
 	/* GL entry points */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glw::Functions&   gl = m_context.getRenderContext().getFunctions();
 	Utils::DepthFuncWrapper depthFunc(m_context);
 
 	bool test_result = true;
@@ -2525,7 +2525,7 @@ tcu::TestNode::IterateResult DrawTestBase::iterate()
 		throw tcu::NotSupportedError(VIEWPORT_ARRAY_NOT_SUPPORTED, "", __FILE__, __LINE__);
 	}
 
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glw::Functions&   gl			 = m_context.getRenderContext().getFunctions();
 	const glu::ContextType& context_type = m_context.getRenderContext().getType();
 
 	/* Test result */
@@ -2625,8 +2625,8 @@ tcu::TestNode::IterateResult DrawTestBase::iterate()
 			{
 				prepareUniforms(program, draw_call);
 
-				bool	 is_clear;
-				GLfloat  depth_value;
+				bool	is_clear;
+				GLfloat depth_value;
 
 				getClearSettings(is_clear, draw_call, depth_value);
 
@@ -3074,11 +3074,11 @@ void DrawTestBase::setup16x2DepthsHelper(DEPTH_RANGE_METHOD method, T*)
 {
 	static const T step = 1.0 / 16.0;
 
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glw::Functions&   gl = m_context.getRenderContext().getFunctions();
 	Utils::DepthFuncWrapper depthFunc(m_context);
 
-	T		 depth_data[16 * 2];
-	GLfloat  viewport_data[16 * 4];
+	T		depth_data[16 * 2];
+	GLfloat viewport_data[16 * 4];
 
 	for (GLuint i = 0; i < 16; ++i)
 	{
@@ -3251,7 +3251,7 @@ void DrawTestBase::setup4x4Viewport(VIEWPORT_METHOD method)
  **/
 void DrawTestBase::setup2x2Viewport(PROVOKING_VERTEX provoking)
 {
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glw::Functions&   gl			 = m_context.getRenderContext().getFunctions();
 	const glu::ContextType& context_type = m_context.getRenderContext().getType();
 
 	GLint   index = 0;
@@ -4591,7 +4591,7 @@ bool ProvokingVertex::checkResults(Utils::texture& texture_0, Utils::texture& /*
 {
 	static const GLuint layer_size = m_width * m_height;
 
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glw::Functions&   gl			 = m_context.getRenderContext().getFunctions();
 	const glu::ContextType& context_type = m_context.getRenderContext().getType();
 
 	GLint layer_mode	= 0;
