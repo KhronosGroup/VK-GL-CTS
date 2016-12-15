@@ -165,7 +165,6 @@ ImageSparseMemoryAliasingInstance::ImageSparseMemoryAliasingInstance (Context&		
 tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 {
 	const InstanceInterface&			instance				= m_context.getInstanceInterface();
-	const DeviceInterface&				deviceInterface			= m_context.getDeviceInterface();
 	const VkPhysicalDevice				physicalDevice			= m_context.getPhysicalDevice();
 	const tcu::UVec3					maxWorkGroupSize		= tcu::UVec3(128u, 128u, 64u);
 	const tcu::UVec3					maxWorkGroupCount		= tcu::UVec3(65535u, 65535u, 65535u);
@@ -235,8 +234,9 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 		createDeviceSupportingQueues(queueRequirements);
 	}
 
-	const Queue& sparseQueue	= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
-	const Queue& computeQueue	= getQueue(VK_QUEUE_COMPUTE_BIT, 0);
+	const DeviceInterface&	deviceInterface	= getDeviceInterface();
+	const Queue&			sparseQueue		= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
+	const Queue&			computeQueue	= getQueue(VK_QUEUE_COMPUTE_BIT, 0);
 
 	// Create sparse image
 	const Unique<VkImage> imageRead(createImage(deviceInterface, getDevice(), &imageSparseInfo));

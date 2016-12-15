@@ -26,6 +26,7 @@
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
 #include "vkRef.hpp"
+#include "vkPlatform.hpp"
 #include "deUniquePtr.hpp"
 
 #include <map>
@@ -64,11 +65,13 @@ protected:
 
 	void												createDeviceSupportingQueues	(const QueueRequirementsVec& queueRequirements);
 	const Queue&										getQueue						(const vk::VkQueueFlags queueFlags, const deUint32 queueIndex) const;
+	const vk::DeviceInterface&							getDeviceInterface				(void) const { return *m_deviceDriver; }
 	vk::VkDevice										getDevice						(void) const { return *m_logicalDevice; }
 	vk::Allocator&										getAllocator					(void)		 { return *m_allocator; }
 
 private:
 	std::map<vk::VkQueueFlags, std::vector<Queue> >		m_queues;
+	de::MovePtr<vk::DeviceDriver>						m_deviceDriver;
 	vk::Move<vk::VkDevice>								m_logicalDevice;
 	de::MovePtr<vk::Allocator>							m_allocator;
 };
