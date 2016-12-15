@@ -459,9 +459,12 @@ version you built) should appear in the launcher. Conformance test runs can be
 done by launching the applications.
 
 Alternatively it is possible to start a conformance run from the command line,
-for example to start a GLES 3.2 conformance run use:
+for example to launch a GLES 3.2 conformance run use:
 
 	am start -n org.khronos.gl_cts/org.khronos.cts.ES32Activity -e logdir "/sdcard/logs"
+
+For GLES 2.0, GLES 3.0, or GLES 3.1 conformance runs, substitute the following
+activity name (respectively) ES2Activity, ES3Activity, or ES31Activity.
 
 Test logs will be written to `/sdcard` by default. The log path can be
 customized by supplying a `logdir` string extra in launch intent. Verbose mode
@@ -766,8 +769,8 @@ The essential steps are:
 ```
 
 ### Running the CTS
-This section provides short summary on how to launch a conformance run for
- detailed instruction srefer to [Runnnig the tests](#running-the-tests).
+This section provides a short summary on how to launch a conformance run. For
+ detailed instructions refer to [Runnnig the tests](#running-the-tests).
 
 1. Linux
 ```
@@ -781,7 +784,7 @@ This section provides short summary on how to launch a conformance run for
 
 3. Android
 ```
-	am start -n org.khronos.gl_cts/org.khronos.cts.<Submission Acitivity Type> -e logdir "/sdcard/logs"
+	am start -n org.khronos.gl_cts/org.khronos.cts.<Submission Activity Type> -e logdir "/sdcard/logs"
 ```
 
 **NOTE**: A valid GLES 3.2 submission is sufficient to prove GLES 3.1 ,
@@ -975,13 +978,11 @@ the [Running the Tests](#running-the-tests) section on a implementation where
 a default (window) framebuffer supports the following configuration:
    <ol type="a">
    <li>at least a 16-bit color buffer, at least a 15-bit depth buffer, and at
-   least a one-bit stencil buffer;</li>
-   <li>at least a 16-bit color buffer, at least a 15-bit depth buffer, and at
-   least a one-bit stencil buffer;</li>
+   least a 1-bit stencil buffer;</li>
    <li>exactly a RGBA color buffer with 8 bits per channel, a 24-bit depth buffer,
-   a eight-bit stencil buffer, and no multisample buffer;</li>
+   a 8-bit stencil buffer, and no multisample buffer;</li>
    <li>exactly a RGBA color buffer with 8 bits per channel, a 24-bit depth buffer,
-   a eight-bit stencil buffer, and a multisample buffer with 4 samples;</li>
+   a 8-bit stencil buffer, and a multisample buffer with 4 samples;</li>
    <li>exactly a RGB color buffer with 5 bits for the R and B channels and 6 bits
    for the G channel, no depth buffer, no stencil buffer, and no multisample buffer.</li>
    </ol>
