@@ -745,7 +745,6 @@ public:
 		, m_colorFormat					(VK_FORMAT_R8G8B8A8_UNORM)
 		, m_colorBufferSize				(m_renderSize.x() * m_renderSize.y() * tcu::getPixelSize(mapVkFormat(m_colorFormat)))
 	{
-		const DeviceInterface&			vk			= m_context.getDeviceInterface();
 		const VkPhysicalDeviceFeatures	features	= getPhysicalDeviceFeatures(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
 
 		if (!features.sparseBinding)
@@ -768,6 +767,7 @@ public:
 			createDeviceSupportingQueues(requirements);
 		}
 
+		const DeviceInterface& vk		= getDeviceInterface();
 		m_sparseQueue					= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0u);
 		m_universalQueue				= getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 0u);
 
@@ -817,15 +817,15 @@ protected:
 			   Renderer::SpecializationMap	specMap				= Renderer::SpecializationMap())
 	{
 		const UniquePtr<Renderer> renderer(new Renderer(
-			m_context.getDeviceInterface(), getDevice(), getAllocator(), m_universalQueue.queueFamilyIndex, descriptorSetLayout,
+			getDeviceInterface(), getDevice(), getAllocator(), m_universalQueue.queueFamilyIndex, descriptorSetLayout,
 			m_context.getBinaryCollection(), "vert", "frag", *m_colorBuffer, m_renderSize, m_colorFormat, Vec4(1.0f, 0.0f, 0.0f, 1.0f), topology, specMap));
 
-		renderer->draw(m_context.getDeviceInterface(), getDevice(), m_universalQueue.queueHandle, *this);
+		renderer->draw(getDeviceInterface(), getDevice(), m_universalQueue.queueHandle, *this);
 	}
 
 	tcu::TestStatus verifyDrawResult (void) const
 	{
-		invalidateMappedMemoryRange(m_context.getDeviceInterface(), getDevice(), m_colorBufferAlloc->getMemory(), 0ull, m_colorBufferSize);
+		invalidateMappedMemoryRange(getDeviceInterface(), getDevice(), m_colorBufferAlloc->getMemory(), 0ull, m_colorBufferSize);
 
 		const tcu::ConstPixelBufferAccess resultImage (mapVkFormat(m_colorFormat), m_renderSize.x(), m_renderSize.y(), 1u, m_colorBufferAlloc->getHostPtr());
 
@@ -950,7 +950,7 @@ public:
 
 	void rendererDraw (const VkPipelineLayout pipelineLayout, const VkCommandBuffer cmdBuffer) const
 	{
-		const DeviceInterface&	vk				= m_context.getDeviceInterface();
+		const DeviceInterface&	vk				= getDeviceInterface();
 		const VkDeviceSize		vertexOffset	= 0ull;
 
 		vk.cmdBindVertexBuffers	(cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &vertexOffset);
@@ -960,7 +960,7 @@ public:
 
 	tcu::TestStatus iterate (void)
 	{
-		const DeviceInterface&		vk					= m_context.getDeviceInterface();
+		const DeviceInterface&		vk					= getDeviceInterface();
 		MovePtr<SparseAllocation>	sparseAllocation;
 		Move<VkBuffer>				sparseBuffer;
 		Move<VkBuffer>				sparseBufferAliased;
@@ -1226,7 +1226,7 @@ public:
 	DrawGridTestInstance (Context& context, const TestFlags flags, const VkBufferUsageFlags usage, const VkDeviceSize minChunkSize)
 		: SparseBufferTestInstance	(context, flags)
 	{
-		const DeviceInterface&	vk							= m_context.getDeviceInterface();
+		const DeviceInterface&	vk							= getDeviceInterface();
 		VkBufferCreateInfo		referenceBufferCreateInfo	= getSparseBufferCreateInfo(usage);
 
 		{
@@ -1265,7 +1265,7 @@ public:
 	{
 		initializeBuffers();
 
-		const DeviceInterface&	vk	= m_context.getDeviceInterface();
+		const DeviceInterface&	vk	= getDeviceInterface();
 
 		// Upload to the sparse buffer
 		{
@@ -1341,7 +1341,7 @@ public:
 		m_context.getTestContext().getLog()
 			<< tcu::TestLog::Message << "Drawing a grid of triangles backed by a sparse vertex buffer. There should be no red pixels visible." << tcu::TestLog::EndMessage;
 
-		const DeviceInterface&	vk				= m_context.getDeviceInterface();
+		const DeviceInterface&	vk				= getDeviceInterface();
 		const deUint32			vertexCount		= 6 * (GRID_SIZE * GRID_SIZE) / 2;
 		VkDeviceSize			vertexOffset	= 0ull;
 
@@ -1385,7 +1385,7 @@ public:
 		m_context.getTestContext().getLog()
 			<< tcu::TestLog::Message << "Drawing a grid of triangles from a sparse index buffer. There should be no red pixels visible." << tcu::TestLog::EndMessage;
 
-		const DeviceInterface&	vk				= m_context.getDeviceInterface();
+		const DeviceInterface&	vk				= getDeviceInterface();
 		const VkDeviceSize		vertexOffset	= 0ull;
 		VkDeviceSize			indexOffset		= 0ull;
 
@@ -1403,7 +1403,7 @@ public:
 	void initializeBuffers (void)
 	{
 		// Vertex buffer
-		const DeviceInterface&	vk					= m_context.getDeviceInterface();
+		const DeviceInterface&	vk					= getDeviceInterface();
 		const VkDeviceSize		vertexBufferSize	= 2 * m_halfVertexCount * sizeof(Vec4);
 								m_vertexBuffer		= makeBuffer(vk, getDevice(), makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 								m_vertexBufferAlloc	= bindBuffer(vk, getDevice(), getAllocator(), *m_vertexBuffer, MemoryRequirement::HostVisible);
@@ -1453,7 +1453,7 @@ public:
 		m_context.getTestContext().getLog()
 			<< tcu::TestLog::Message << "Drawing two triangles covering the whole viewport. There should be no red pixels visible." << tcu::TestLog::EndMessage;
 
-		const DeviceInterface&	vk				= m_context.getDeviceInterface();
+		const DeviceInterface&	vk				= getDeviceInterface();
 		const VkDeviceSize		vertexOffset	= 0ull;
 		VkDeviceSize			indirectOffset	= 0ull;
 
@@ -1468,7 +1468,7 @@ public:
 	void initializeBuffers (void)
 	{
 		// Vertex buffer
-		const DeviceInterface&	vk					= m_context.getDeviceInterface();
+		const DeviceInterface&	vk					= getDeviceInterface();
 		const VkDeviceSize		vertexBufferSize	= 2 * 3 * sizeof(Vec4);
 								m_vertexBuffer		= makeBuffer(vk, getDevice(), makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 								m_vertexBufferAlloc	= bindBuffer(vk, getDevice(), getAllocator(), *m_vertexBuffer, MemoryRequirement::HostVisible);
