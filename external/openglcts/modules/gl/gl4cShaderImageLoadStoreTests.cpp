@@ -9034,9 +9034,11 @@ private:
 			"\n"
 			"precision highp float;\n"
 			"\n"
+			"layout(location = 0) in vec4 i_position;\n"
+			"\n"
 			"void main()\n"
 			"{\n"
-			"\n"
+			"  gl_Position = i_position;\n"
 			"}\n";
 
 		const char* fragment_shader_code			   = boilerplate_fragment_shader_code;
