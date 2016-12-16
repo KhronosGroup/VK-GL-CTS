@@ -1964,7 +1964,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         }
 
         mRemainingTests = new LinkedList<>(mTestInstances.keySet());
-        long startTime = System.currentTimeMillis();
+
         listener.testRunStarted(getId(), mRemainingTests.size());
 
         try {
@@ -1995,7 +1995,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             uninstallTestApk();
         }
 
-        listener.testRunEnded(System.currentTimeMillis() - startTime, emptyMap);
+        listener.testRunEnded(0, emptyMap);
     }
 
    /**
