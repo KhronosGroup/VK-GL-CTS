@@ -100,14 +100,29 @@ def verifyConfigFile (filename, type):
 
 	return messages
 
-def verifyMustpassCases(package, mustpassCases):
+def verifyMustpassCases(package, mustpassCases, type):
 	messages = []
+	apiToTest = { "es32" : ["gles32", "gles31", "gles3", "gles2"],
+				"es31" : ["gles31", "gles3", "gles2"],
+				"es3"  : ["gles3", "gles2"],
+				"es2"  : ["gles2"]}
+
 	for mustpass in mustpassCases:
 		mustpassXML = os.path.join(mustpass, "mustpass.xml")
 		doc = xml.dom.minidom.parse(mustpassXML)
 		testConfigs = doc.getElementsByTagName("Configuration")
+		# check that all configs that must be tested are present
 		for testConfig in testConfigs:
 			caseListFile = testConfig.getAttributeNode("caseListFile").nodeValue
+			# identify APIs that must be tested for the given type
+			apis = apiToTest[type]
+			# identify API tested by the current config
+			configAPI = caseListFile.split('-')[0]
+			if configAPI in apis:
+				# the API in this config is expected to be tested
+				mustTest = True
+			else:
+				mustTest = False
 			pattern = "config-" + os.path.splitext(caseListFile)[0] + "-cfg-[0-9]*"+"-run-[0-9]*"
 			cmdLine = testConfig.getAttributeNode("commandLine").nodeValue
 			cfgItems = {'height':None, 'width':None, 'seed':None, 'rotation':None}
@@ -127,7 +142,7 @@ def verifyMustpassCases(package, mustpassCases):
 			pattern += ".qpa"
 			p = re.compile(pattern)
 			matches = [m for l in mustpassCases[mustpass] for m in (p.match(l),) if m]
-			if len(matches) == 0:
+			if len(matches) == 0 and mustTest == True:
 					conformOs = testConfig.getAttributeNode("os").nodeValue
 					txt = "Configuration %s %s was not executed" % (caseListFile, cmdLine)
 					if conformOs == "any" or (package.conformOs != None and conformOs in package.conformOs.lower()):
@@ -135,6 +150,8 @@ def verifyMustpassCases(package, mustpassCases):
 					else:
 						msg = warning(mustpassXML, txt)
 					messages.append(msg)
+			elif len(matches) != 0 and mustTest == False:
+				messages.append(error(mustpassXML, "Configuration %s %s was not expected to be tested but present in cts-run-summary.xml" % (caseListFile, cmdLine)))
 
 	return messages
 
@@ -189,7 +206,7 @@ def verifyTestLogs (package):
 
 		messages += messages_log
 
-	messages += verifyMustpassCases(package, mustpassCases)
+	messages += verifyMustpassCases(package, mustpassCases, summary.type)
 
 	return messages
 
