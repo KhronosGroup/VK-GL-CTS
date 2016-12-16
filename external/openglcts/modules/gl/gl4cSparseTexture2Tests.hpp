@@ -31,8 +31,10 @@
 
 #include "glcTestCase.hpp"
 #include "glwDefs.hpp"
+#include "glwEnums.hpp"
 #include "tcuDefs.hpp"
 #include <map>
+#include <set>
 #include <vector>
 
 #include "gl4cSparseTextureTests.hpp"
@@ -63,18 +65,18 @@ struct PageSizeStruct
 
 typedef std::pair<GLint, PageSizeStruct> PageSizePair;
 
-struct TokenStrings
+/** Test verifies if GL_ARB_sparse_texture2 extension is available for GLSL
+ **/
+class ShaderExtensionTestCase : public deqp::TestCase
 {
-	std::string format;
-	std::string pointType;
-	std::string pointDef;
-	std::string outImageType;
-	std::string inImageType;
-	std::string inColorType;
-	std::string inColorExpected;
-	std::string inEmptyColor;
-	std::string epsilon;
-	std::string sampleDef;
+public:
+	/* Public methods */
+	ShaderExtensionTestCase(deqp::Context& context);
+
+	tcu::TestNode::IterateResult iterate();
+
+private:
+	/* Private members */
 };
 
 /** Test verifies if values returned by GetInternalFormat* query matches Standard Virtual Page Sizes for <pname>:
@@ -129,9 +131,23 @@ public:
 
 protected:
 	/* Protected members */
+	struct TokenStrings
+	{
+		std::string format;
+		std::string pointType;
+		std::string pointDef;
+		std::string outputType;
+		std::string inputType;
+		std::string returnType;
+		std::string resultExpected;
+		std::string resultDefault;
+		std::string epsilon;
+		std::string sampleDef;
+	};
 
 	/* Protected methods */
-	TokenStrings setupShaderTokens(GLint target, GLint format, GLint sample);
+	TokenStrings createShaderTokens(GLint target, GLint format, GLint sample, const std::string outputBase = "image",
+									const std::string inputBase = "image");
 
 	virtual bool caseAllowed(GLint target, GLint format);
 
@@ -176,6 +192,67 @@ private:
 	bool verifyDepthTest(const Functions& gl, ShaderProgram& program, GLint width, GLint height, GLint widthCommitted);
 	bool verifyDepthBoundsTest(const Functions& gl, ShaderProgram& program, GLint width, GLint height,
 							   GLint widthCommitted);
+};
+
+/** Test verifies if sparse texture lookup functions for GLSL works as expected
+ **/
+class SparseTexture2LookupTestCase : public SparseTexture2CommitmentTestCase
+{
+public:
+	/* Public methods */
+	SparseTexture2LookupTestCase(deqp::Context& context);
+
+	void						 init();
+	tcu::TestNode::IterateResult iterate();
+
+private:
+	/* Private types */
+	struct FunctionToken
+	{
+		std::string name;
+		std::string arguments;
+
+		std::set<GLint> allowedTargets;
+
+		FunctionToken()
+		{
+		}
+
+		FunctionToken(std::string fname, std::string fargs) : name(fname), arguments(fargs)
+		{
+		}
+	};
+
+	struct TokenStringsExt : public TokenStrings
+	{
+		std::string formatDef;
+		std::string sizeDef;
+		std::string lodDef;
+		std::string coordType;
+		std::string coordDef;
+		std::string cubeMapCoordDef;
+		std::string refZDef;
+		std::string offsetDim;
+		std::string componentDef;
+		std::string offsetArrayDef;
+		std::string pointCoord;
+	};
+
+	/* Private members */
+	std::vector<FunctionToken> mFunctions;
+
+	/* Private methods */
+	TokenStringsExt createLookupShaderTokens(GLint target, GLint format, GLint level, GLint sample,
+											 FunctionToken& funcToken);
+
+	virtual bool caseAllowed(GLint target, GLint format);
+	virtual bool funcAllowed(GLint target, GLint format, FunctionToken& funcToken);
+
+	virtual bool writeDataToTexture(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level);
+
+	virtual void setupDepthMode(const Functions& gl, GLint target, GLuint& texture);
+	virtual bool verifyLookupTextureData(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level,
+										 FunctionToken& funcToken);
 };
 
 /** Test group which encapsulates all sparse texture conformance tests */
