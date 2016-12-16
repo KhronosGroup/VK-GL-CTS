@@ -19,7 +19,7 @@
  * be lost! Modify the generating script instead.
  */
 
-const string mustpassDir = "gl_cts/data/khronos_mustpass/2.0.7.x/";
+const string mustpassDir = "gl_cts/data/mustpass/gles/khronos_mustpass/2.0.7.x/";
 
 struct RunParams
 {

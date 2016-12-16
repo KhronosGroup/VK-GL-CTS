@@ -244,14 +244,14 @@ static void getBaseOptions(std::vector<std::string>& args, const string mustpass
 
 static void getTestRunsForAOSP(vector<TestRunParams>& runs, const ConfigList& configs, const glu::ApiType apiType)
 {
-#include "glcAospMustpass.hpp"
+#include "glcAospMustpassEs.hpp"
 
-	for (int i = 0; i < DE_LENGTH_OF_ARRAY(aosp_mustpass_first_cfg); ++i)
+	for (int i = 0; i < DE_LENGTH_OF_ARRAY(aosp_mustpass_es_first_cfg); ++i)
 	{
-		if (!glu::contextSupports(glu::ContextType(apiType), aosp_mustpass_first_cfg[i].apiType))
+		if (!glu::contextSupports(glu::ContextType(apiType), aosp_mustpass_es_first_cfg[i].apiType))
 			continue;
 
-		configInfo cfgInfo = parseConfigBitsFromName(aosp_mustpass_first_cfg[i].glConfigName);
+		configInfo cfgInfo = parseConfigBitsFromName(aosp_mustpass_es_first_cfg[i].glConfigName);
 
 		vector<AOSPConfig>::const_iterator cfgIter;
 		for (cfgIter = configs.aospConfigs.begin(); cfgIter != configs.aospConfigs.end(); ++cfgIter)
@@ -269,21 +269,21 @@ static void getTestRunsForAOSP(vector<TestRunParams>& runs, const ConfigList& co
 		if (cfgIter == configs.aospConfigs.end())
 		{
 			TCU_FAIL(("No suitable configuration found for GL config " +
-					  de::toString(aosp_mustpass_first_cfg[i].glConfigName))
+					  de::toString(aosp_mustpass_es_first_cfg[i].glConfigName))
 						 .c_str());
 			return;
 		}
 
-		string	apiName = getApiName(aosp_mustpass_first_cfg[i].apiType);
-		const int width   = aosp_mustpass_first_cfg[i].surfaceWidth;
-		const int height  = aosp_mustpass_first_cfg[i].surfaceHeight;
+		string	apiName = getApiName(aosp_mustpass_es_first_cfg[i].apiType);
+		const int width   = aosp_mustpass_es_first_cfg[i].surfaceWidth;
+		const int height  = aosp_mustpass_es_first_cfg[i].surfaceHeight;
 
 		TestRunParams params;
-		params.logFilename = getLogFileName(apiName, aosp_mustpass_first_cfg[i].configName, 1, i, width, height, -1);
-		getBaseOptions(params.args, mustpassDir, apiName, aosp_mustpass_first_cfg[i].configName,
-					   aosp_mustpass_first_cfg[i].screenRotation, width, height);
+		params.logFilename = getLogFileName(apiName, aosp_mustpass_es_first_cfg[i].configName, 1, i, width, height, -1);
+		getBaseOptions(params.args, mustpassDir, apiName, aosp_mustpass_es_first_cfg[i].configName,
+					   aosp_mustpass_es_first_cfg[i].screenRotation, width, height);
 
-		params.args.push_back(string("--deqp-gl-config-name=") + string(aosp_mustpass_first_cfg[i].glConfigName));
+		params.args.push_back(string("--deqp-gl-config-name=") + string(aosp_mustpass_es_first_cfg[i].glConfigName));
 
 		//set surface type
 		if ((*cfgIter).surfaceTypes & SURFACETYPE_WINDOW)

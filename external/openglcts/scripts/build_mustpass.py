@@ -47,17 +47,17 @@ COPYRIGHT_DECLARATION = """\
  *     limitations under the License.
 */"""
 
-CTS_AOSP_MP_DATA_DIR					= os.path.join(DEQP_DIR, "external", "openglcts", "data", "aosp_mustpass")
+CTS_AOSP_MP_DATA_DIR					= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gles", "aosp_mustpass")
 
-CTS_AOSP_MP_DEVICE_DIR					= "gl_cts/data/aosp_mustpass"
+CTS_AOSP_MP_DEVICE_DIR					= "gl_cts/data/mustpass/gles/aosp_mustpass"
 
 CTS_MP_INC_DIR							= os.path.join(DEQP_DIR, "external", "openglcts", "modules", "runner")
 
-CTS_AOSP_MP_PROJECT						= Project(name = "AOSP Mustpass", path = CTS_AOSP_MP_DATA_DIR, incpath = CTS_MP_INC_DIR, devicepath = CTS_AOSP_MP_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
+CTS_AOSP_MP_PROJECT						= Project(name = "AOSP Mustpass ES", path = CTS_AOSP_MP_DATA_DIR, incpath = CTS_MP_INC_DIR, devicepath = CTS_AOSP_MP_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
 
-CTS_KHR_MP_DATA_DIR						= os.path.join(DEQP_DIR, "external", "openglcts", "data", "khronos_mustpass")
+CTS_KHR_MP_DATA_DIR						= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gles", "khronos_mustpass")
 
-CTS_KHR_MP_DEVICE_DIR					= "gl_cts/data/khronos_mustpass"
+CTS_KHR_MP_DEVICE_DIR					= "gl_cts/data/mustpass/gles/khronos_mustpass"
 
 CTS_KHR_MP_ES3x_PROJECT					= Project(name = "Khronos Mustpass ES3x", path = CTS_KHR_MP_DATA_DIR, incpath = CTS_MP_INC_DIR, devicepath = CTS_KHR_MP_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
 

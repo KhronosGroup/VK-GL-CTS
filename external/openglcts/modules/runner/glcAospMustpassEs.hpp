@@ -1,5 +1,5 @@
-#ifndef _GLCAOSPMUSTPASS_HPP
-#define _GLCAOSPMUSTPASS_HPP
+#ifndef _GLCAOSPMUSTPASSES_HPP
+#define _GLCAOSPMUSTPASSES_HPP
 /*     Copyright (C) 2016 The Khronos Group Inc
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,7 @@
  * be lost! Modify the generating script instead.
  */
 
-const string mustpassDir = "gl_cts/data/aosp_mustpass/3.2.2.x/";
+const string mustpassDir = "gl_cts/data/mustpass/gles/aosp_mustpass/3.2.2.x/";
 
 struct RunParams
 {
@@ -33,7 +33,7 @@ struct RunParams
 	int			 surfaceHeight;
 };
 
-static const RunParams aosp_mustpass_first_cfg[] = {
+static const RunParams aosp_mustpass_es_first_cfg[] = {
 	{ glu::ApiType::es(2, 0), "master", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
 	{ glu::ApiType::es(3, 0), "master", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
 #if DE_OS == DE_OS_ANDROID
@@ -67,4 +67,4 @@ static const RunParams aosp_mustpass_first_cfg[] = {
 	{ glu::ApiType::es(3, 1), "565-no-depth-no-stencil", "rgb565d0s0ms0", "unspecified", -1, DE_NULL, 256, 256 },
 };
 
-#endif // _GLCAOSPMUSTPASS_HPP
+#endif // _GLCAOSPMUSTPASSES_HPP
