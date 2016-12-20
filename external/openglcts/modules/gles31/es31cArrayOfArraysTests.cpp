@@ -7694,7 +7694,8 @@ void InteractionStorageBuffers3<API>::test_shader_compilation(
 				DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
 				/* Execute test */
-				EXECUTE_SHADER_TEST(API::ALLOW_UNSIZED_DECLARATION, tested_shader_type, shader_source);
+				EXECUTE_SHADER_TEST(API::ALLOW_UNSIZED_DECLARATION && invalid_size_declarations_index == 3,
+									tested_shader_type, shader_source);
 			} /* for (int invalid_size_declarations_index = 0; ...) */
 		}
 		else
