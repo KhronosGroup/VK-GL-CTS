@@ -173,7 +173,7 @@ def getDevices (adb):
 	if proc.returncode != 0:
 		raise Exception("adb devices -l failed, got %d" % proc.returncode)
 
-	ptrn = re.compile(r'^([a-zA-Z0-9]+)\s+.*product:([^\s]+)\s+model:([^\s]+)\s+device:([^\s]+)')
+	ptrn = re.compile(r'^([a-zA-Z0-9\.:]+)\s+.*product:([^\s]+)\s+model:([^\s]+)\s+device:([^\s]+)')
 	devices = []
 	for line in stdout.splitlines()[1:]:
 		if len(line.strip()) == 0:
