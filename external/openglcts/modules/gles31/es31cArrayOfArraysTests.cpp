@@ -6816,8 +6816,18 @@ void InteractionUniforms2<API>::test_shader_compilation(typename TestCaseBase<AP
 					/* End main */
 					DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-					/* Execute test */
-					EXECUTE_SHADER_TEST(API::ALLOW_UNSIZED_DECLARATION, tested_shader_type, shader_source);
+					/* Execute test:
+					 *
+					 * This will succeed in case of allowed unsized
+					 * declarations and when at least one of these is
+					 * true:
+					 *   1. There is an initialiser.
+					 *   2. Only the outermost dimension is unsized,
+					 *      as in [][2][2][2].
+					 */
+					EXECUTE_SHADER_TEST(API::ALLOW_UNSIZED_DECLARATION &&
+											(initialiser_selector == 0 || permutation_index == 7),
+										tested_shader_type, shader_source);
 				} /* for (int permutation_index = 14; ...) */
 			}	 /* for (int initialiser_selector  = 1; ...) */
 		}		  /* if var_type iterator found */
