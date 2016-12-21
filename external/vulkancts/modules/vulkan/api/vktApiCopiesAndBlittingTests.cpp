@@ -4116,11 +4116,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
 		}
 
 		// Filter is VK_FILTER_LINEAR.
@@ -4132,11 +4132,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 		}
 	}
 
@@ -4181,7 +4181,7 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
@@ -4508,11 +4508,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
 		}
 
 		// Filter is VK_FILTER_LINEAR.
@@ -4524,11 +4524,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 		}
 	}
 
@@ -4573,11 +4573,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
 		}
 
 		// Filter is VK_FILTER_LINEAR.
@@ -4589,11 +4589,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 		}
 	}
 
@@ -4638,11 +4638,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
 		}
 
 		// Filter is VK_FILTER_LINEAR.
@@ -4654,11 +4654,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 		}
 	}
 
@@ -4705,11 +4705,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
 		}
 
 		// Filter is VK_FILTER_LINEAR.
@@ -4721,11 +4721,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 		}
 	}
 
