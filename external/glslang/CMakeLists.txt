@@ -29,46 +29,59 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent
 		${GLSLANG_ABS_PATH}/glslang/GenericCodeGen
 		${GLSLANG_ABS_PATH}/glslang/OSDependent
+		${GLSLANG_ABS_PATH}/hlsl
 		${GLSLANG_ABS_PATH}/OGLCompilersDLL
 		${GLSLANG_ABS_PATH}/SPIRV
 		)
 
 	set(GLSLANG_SRCS
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/Constant.cpp
+		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/glslang_tab.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/InfoSink.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/Initialize.cpp
-		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/IntermTraverse.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/Intermediate.cpp
+		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/intermOut.cpp
+		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/IntermTraverse.cpp
+		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/limits.cpp
+		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/linkValidate.cpp
+		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/parseConst.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/ParseHelper.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/PoolAlloc.cpp
+		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/propagateNoContraction.cpp
+		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/reflection.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/RemoveTree.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/Scan.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/ShaderLang.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/SymbolTable.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/Versions.cpp
-		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/glslang_tab.cpp
-		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/intermOut.cpp
-		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/limits.cpp
-		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/linkValidate.cpp
-		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/parseConst.cpp
-		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/reflection.cpp
-		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/Pp.cpp
+
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/PpAtom.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/PpContext.cpp
+		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/Pp.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/PpMemory.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/PpScanner.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/PpSymbols.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/PpTokens.cpp
+
 		${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp
 		${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/Link.cpp
+
 		${GLSLANG_ABS_PATH}/OGLCompilersDLL/InitializeDll.cpp
 
+		${GLSLANG_ABS_PATH}/hlsl/hlslGrammar.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslOpMap.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslParseables.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslParseHelper.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslScanContext.cpp
+		${GLSLANG_ABS_PATH}/hlsl/hlslTokenStream.cpp
+
+		${GLSLANG_ABS_PATH}/SPIRV/disassemble.cpp
+		${GLSLANG_ABS_PATH}/SPIRV/doc.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/GlslangToSpv.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/InReadableOrder.cpp
+		${GLSLANG_ABS_PATH}/SPIRV/Logger.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/SpvBuilder.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/SPVRemapper.cpp
-		${GLSLANG_ABS_PATH}/SPIRV/doc.cpp
-		${GLSLANG_ABS_PATH}/SPIRV/disassemble.cpp
 
 		osinclude.cpp
 		)
