@@ -292,11 +292,11 @@ dEQP-VK.api.copy_and_blit.blit_image.all_formats*_nearest
 
 # Issue 431: Excluded copies and blitting tests
 dEQP-VK.api.copy_and_blit.blit_image.simple_tests.scaling_and_offset_nearest
-dEQP-VK.api.copy_and_blit.blit_image.simple_tests.scaling_and_offsetr32_sfloat_nearest
-dEQP-VK.api.copy_and_blit.blit_image.simple_tests.scaling_and_offsetb8g8r8a8_unorm_nearest
+dEQP-VK.api.copy_and_blit.blit_image.simple_tests.scaling_and_offset_r32_sfloat_nearest
+dEQP-VK.api.copy_and_blit.blit_image.simple_tests.scaling_and_offset_b8g8r8a8_unorm_nearest
 dEQP-VK.api.copy_and_blit.blit_image.simple_tests.scaling_and_offset_linear
-dEQP-VK.api.copy_and_blit.blit_image.simple_tests.scaling_and_offsetr32_sfloat_linear
-dEQP-VK.api.copy_and_blit.blit_image.simple_tests.scaling_and_offsetb8g8r8a8_unorm_linear
+dEQP-VK.api.copy_and_blit.blit_image.simple_tests.scaling_and_offset_r32_sfloat_linear
+dEQP-VK.api.copy_and_blit.blit_image.simple_tests.scaling_and_offset_b8g8r8a8_unorm_linear
 dEQP-VK.api.copy_and_blit.blit_image.all_formats.r5g6b5_unorm_pack16_r32_sfloat_linear
 dEQP-VK.api.copy_and_blit.blit_image.all_formats.r5g6b5_unorm_pack16_r32g32_sfloat_linear
 dEQP-VK.api.copy_and_blit.blit_image.all_formats.r5g6b5_unorm_pack16_r32g32b32a32_sfloat_linear
