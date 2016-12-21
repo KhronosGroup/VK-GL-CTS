@@ -1201,7 +1201,7 @@ string generateComputeShader (const ShaderInterface& interface, const BufferLayo
 {
 	std::ostringstream src;
 
-	src << "#version 450\n";
+	src << "#version 310 es\n";
 	src << "layout(local_size_x = 1) in;\n";
 	src << "\n";
 
