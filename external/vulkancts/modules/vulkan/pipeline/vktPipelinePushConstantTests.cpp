@@ -228,6 +228,7 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 					  << "layout(location = 0) in highp vec4 position;\n"
 					  << "layout(location = 1) in highp vec4 color;\n"
 					  << "layout(location = 0) out highp vec4 vtxColor;\n"
+					  << "out gl_PerVertex { vec4 gl_Position; };\n"
 					  << "layout(push_constant) uniform Material {\n";
 
 			switch (getRangeSizeCase(m_pushConstantRange[rangeNdx].range.size))
@@ -314,6 +315,8 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 						   << "} tessLevel;\n"
 						   << "layout(location = 0) in highp vec4 color[];\n"
 						   << "layout(location = 0) out highp vec4 vtxColor[];\n"
+						   << "in gl_PerVertex { vec4 gl_Position; } gl_in[gl_MaxPatchVertices];\n"
+						   << "out gl_PerVertex { vec4 gl_Position; } gl_out[];\n"
 						   << "void main()\n"
 						   << "{\n"
 						   << "  gl_TessLevelInner[0] = tessLevel.level;\n"
@@ -336,6 +339,8 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 							  << "} matInst;\n"
 							  << "layout(location = 0) in highp vec4 color[];\n"
 							  << "layout(location = 0) out highp vec4 vtxColor;\n"
+							  << "in gl_PerVertex { vec4 gl_Position; } gl_in[gl_MaxPatchVertices];\n"
+							  << "out gl_PerVertex { vec4 gl_Position; };\n"
 							  << "void main()\n"
 							  << "{\n"
 							  << "  gl_Position = gl_TessCoord.x * gl_in[0].gl_Position + gl_TessCoord.y * gl_in[1].gl_Position + gl_TessCoord.z * gl_in[2].gl_Position;\n"
@@ -355,6 +360,8 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 						<< "} matInst;\n"
 						<< "layout(location = 0) in highp vec4 color[];\n"
 						<< "layout(location = 0) out highp vec4 vtxColor;\n"
+						<< "in gl_PerVertex { vec4 gl_Position; } gl_in[];\n"
+						<< "out gl_PerVertex { vec4 gl_Position; };\n"
 						<< "void main()\n"
 						<< "{\n"
 						<< "  for(int i=0; i<3; i++)\n"
