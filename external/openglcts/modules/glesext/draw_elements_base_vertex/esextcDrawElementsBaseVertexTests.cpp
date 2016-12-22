@@ -1551,7 +1551,7 @@ void DrawElementsBaseVertexTestBase::setUpNegativeTestObjects(bool use_clientsid
 											  "{\n"
 											  "    result = vec4(1.0);\n"
 											  "}\n";
-		static const char* negative_vs_code = "${VERSION\n"
+		static const char* negative_vs_code = "${VERSION}\n"
 											  "\n"
 											  "in vec4 vertex;\n"
 											  "\n"
