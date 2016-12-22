@@ -123,9 +123,15 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     @Option(name = "include-filter",
             description="Test include filter. '*' is zero or more letters. '.' has no special meaning.")
     private List<String> mIncludeFilters = new ArrayList<>();
+    @Option(name = "include-filter-file",
+            description="Load list of includes from the files given.")
+    private List<String> mIncludeFilterFiles = new ArrayList<>();
     @Option(name = "exclude-filter",
             description="Test exclude filter. '*' is zero or more letters. '.' has no special meaning.")
     private List<String> mExcludeFilters = new ArrayList<>();
+    @Option(name = "exclude-filter-file",
+            description="Load list of excludes from the files given.")
+    private List<String> mExcludeFilterFiles = new ArrayList<>();
     @Option(name = "collect-tests-only",
             description = "Only invoke the instrumentation to collect list of applicable test "
                     + "cases. All test run callbacks will be triggered, but test execution will "
@@ -1857,7 +1863,17 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         Set<String> nonPatternFilters = new HashSet<String>();
         for (String filter : filters) {
             if (!filter.contains("*")) {
-                nonPatternFilters.add(filter);
+                // Deqp usesly only dots for separating between parts of the names
+                // Convert last dot to hash if needed.
+                if (!filter.contains("#")) {
+                    int lastSeparator = filter.lastIndexOf('.');
+                    String filterWithHash = filter.substring(0, lastSeparator) + "#" +
+                        filter.substring(lastSeparator + 1, filter.length());
+                    nonPatternFilters.add(filterWithHash);
+                }
+                else {
+                    nonPatternFilters.add(filter);
+                }
             }
         }
         return nonPatternFilters;
@@ -1906,6 +1922,48 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     /**
+     * Read a list of filters from a file.
+     *
+     * Note: Filters can be numerous so we prefer, for performance
+     * reasons, to add directly to the target list instead of using
+     * intermediate return value.
+     */
+    static private void readFilterFile(List<String> filterList, File file) throws FileNotFoundException {
+        if (!file.canRead()) {
+            CLog.e("Failed to read filter file '%s'", file.getPath());
+            throw new FileNotFoundException();
+        }
+        try (Reader plainReader = new FileReader(file);
+             BufferedReader reader = new BufferedReader(plainReader)) {
+            String filter = "";
+            while ((filter = reader.readLine()) != null) {
+                // TOOD: Sanity check filter
+                filterList.add(filter);
+            }
+            // Rely on try block to autoclose
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Failed to read filter list file '" + file.getPath() + "': " +
+                     e.getMessage());
+        }
+    }
+
+    /**
+     * Prints filters into debug log stream, limiting to 20 entries.
+     */
+    static private void printFilters(List<String> filters) {
+        int numPrinted = 0;
+        for (String filter : filters) {
+            CLog.d("    %s", filter);
+            if (++numPrinted == 20) {
+                CLog.d("    ... AND %d others", filters.size() - numPrinted);
+                break;
+            }
+        }
+    }
+
+    /**
      * Loads tests into mTestInstances based on the options. Assumes
      * that no tests have been loaded for this instance before.
      */
@@ -1931,13 +1989,28 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         catch (IOException e) {
             CLog.w("Failed to close test list reader.");
         }
-        CLog.d("Filters");
-        for (String filter : mIncludeFilters) {
-            CLog.d("Include: %s", filter);
+
+        try
+        {
+            for (String filterFile : mIncludeFilterFiles) {
+                CLog.d("Read include filter file '%s'", filterFile);
+                File file = new File(mBuildHelper.getTestsDir(), filterFile);
+                readFilterFile(mIncludeFilters, file);
+            }
+            for (String filterFile : mExcludeFilterFiles) {
+                CLog.d("Read exclude filter file '%s'", filterFile);
+                File file = new File(mBuildHelper.getTestsDir(), filterFile);
+                readFilterFile(mExcludeFilters, file);
+            }
         }
-        for (String filter : mExcludeFilters) {
-            CLog.d("Exclude: %s", filter);
+        catch (FileNotFoundException e) {
+            throw new RuntimeException("Cannot read deqp filter list file:" + e.getMessage());
         }
+
+        CLog.d("Include filters:");
+        printFilters(mIncludeFilters);
+        CLog.d("Exclude filters:");
+        printFilters(mExcludeFilters);
 
         long originalTestCount = mTestInstances.size();
         CLog.i("Num tests before filtering: %d", originalTestCount);
@@ -2046,7 +2119,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         destination.mSurfaceType = source.mSurfaceType;
         destination.mConfigRequired = source.mConfigRequired;
         destination.mIncludeFilters = new ArrayList<>(source.mIncludeFilters);
+        destination.mIncludeFilterFiles = new ArrayList<>(source.mIncludeFilterFiles);
         destination.mExcludeFilters = new ArrayList<>(source.mExcludeFilters);
+        destination.mExcludeFilterFiles = new ArrayList<>(source.mExcludeFilterFiles);
         destination.mAbi = source.mAbi;
         destination.mLogData = source.mLogData;
         destination.mCollectTestsOnly = source.mCollectTestsOnly;
