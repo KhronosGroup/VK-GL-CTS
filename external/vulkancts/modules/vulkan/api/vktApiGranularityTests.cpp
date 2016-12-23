@@ -282,7 +282,7 @@ void GranularityInstance::initRenderPass (void)
 			&imageViews[0],								// const VkImageView*		pAttachments;
 			1,											// deUint32					width;
 			1,											// deUint32					height;
-			0											// deUint32					layers;
+			1											// deUint32					layers;
 		};
 
 		m_frameBuffer	= createFramebuffer(vk, device, &framebufferParams);
