@@ -4387,12 +4387,12 @@ class AdvancedPipelineComputeChain : public ComputeShaderBase
 			mat4 data[2];
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_storage_buffer[3]);
 			glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(data), &data[0](0, 0));
-			if (data[1] != translationMatrix(vec3(10.0f, 20.0f, 30.0f)))
+			if (data[0] != translationMatrix(vec3(10.0f, 20.0f, 30.0f)))
 			{
 				Output("Data is incorrect.\n");
 				return ERROR;
 			}
-			if (data[0] != transpose(translationMatrix(vec3(10.0f, 20.0f, 30.0f))))
+			if (data[1] != transpose(translationMatrix(vec3(10.0f, 20.0f, 30.0f))))
 			{
 				Output("Data is incorrect.\n");
 				return ERROR;
