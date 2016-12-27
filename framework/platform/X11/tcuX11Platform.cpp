@@ -144,5 +144,13 @@ X11Platform::X11Platform (void)
 
 tcu::Platform* createPlatform (void)
 {
+	// From man:XinitThreads(3):
+	//
+	//     The XInitThreads function initializes Xlib support for concurrent
+	//     threads.  This function must be the first Xlib function
+	//     a multi-threaded program calls, and it must complete before any other
+	//     Xlib call is made.
+	DE_CHECK_RUNTIME_ERR(XInitThreads() != 0);
+
 	return new tcu::x11::X11Platform();
 }
