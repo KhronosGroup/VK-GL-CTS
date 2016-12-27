@@ -33,6 +33,7 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorType.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuTexLookupVerifier.hpp"
 
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -1597,10 +1598,13 @@ protected:
 	virtual void						copyRegionToTextureLevel		(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region);
 	virtual void						generateExpectedResult			(void);
 private:
-	bool								checkClampedAndUnclampedResult	(const tcu::ConstPixelBufferAccess&	result,
+	bool								checkLinearFilteredResult		(const tcu::ConstPixelBufferAccess&	result,
 																		 const tcu::ConstPixelBufferAccess&	clampedReference,
 																		 const tcu::ConstPixelBufferAccess&	unclampedReference,
-																		 VkImageAspectFlagBits				aspect);
+																		 const tcu::TextureFormat&			sourceFormat);
+	bool								checkNearestFilteredResult		(const tcu::ConstPixelBufferAccess&	result,
+																		 const tcu::ConstPixelBufferAccess& source);
+
 	Move<VkImage>						m_source;
 	de::MovePtr<Allocation>				m_sourceImageAlloc;
 	Move<VkImage>						m_destination;
@@ -1854,38 +1858,16 @@ tcu::Vec4 getFormatThreshold (const tcu::TextureFormat& format)
 		return threshold;
 }
 
-tcu::TextureFormat getFormatAspect (VkFormat format, VkImageAspectFlagBits aspect)
-{
-	const tcu::TextureFormat	baseFormat	= mapVkFormat(format);
-
-	if (isCombinedDepthStencilType(baseFormat.type))
-	{
-		if (aspect == VK_IMAGE_ASPECT_DEPTH_BIT)
-			return getEffectiveDepthStencilTextureFormat(baseFormat, tcu::Sampler::MODE_DEPTH);
-		else if (aspect == VK_IMAGE_ASPECT_STENCIL_BIT)
-			return getEffectiveDepthStencilTextureFormat(baseFormat, tcu::Sampler::MODE_STENCIL);
-		else
-			DE_FATAL("Invalid aspect");
-	}
-
-	return baseFormat;
-}
-
-bool BlittingImages::checkClampedAndUnclampedResult (const tcu::ConstPixelBufferAccess&	result,
-													 const tcu::ConstPixelBufferAccess& clampedExpected,
-													 const tcu::ConstPixelBufferAccess& unclampedExpected,
-													 VkImageAspectFlagBits				aspect)
+bool BlittingImages::checkLinearFilteredResult (const tcu::ConstPixelBufferAccess&	result,
+												const tcu::ConstPixelBufferAccess&	clampedExpected,
+												const tcu::ConstPixelBufferAccess&	unclampedExpected,
+												const tcu::TextureFormat&			srcFormat)
 {
 	tcu::TestLog&				log			(m_context.getTestContext().getLog());
-	const bool					isLinear	= m_params.filter == VK_FILTER_LINEAR;
-	const tcu::TextureFormat	srcFormat	= getFormatAspect(m_params.src.image.format, aspect);
 	const tcu::TextureFormat	dstFormat	= result.getFormat();
 	bool						isOk		= false;
 
-	DE_ASSERT(dstFormat == getFormatAspect(m_params.dst.image.format, aspect));
-
-	if (isLinear)
-		log << tcu::TestLog::Section("ClampedSourceImage", "Region with clamped edges on source image.");
+	log << tcu::TestLog::Section("ClampedSourceImage", "Region with clamped edges on source image.");
 
 	if (isFloatFormat(dstFormat))
 	{
@@ -1895,11 +1877,9 @@ bool BlittingImages::checkClampedAndUnclampedResult (const tcu::ConstPixelBuffer
 		const tcu::Vec4	threshold	= tcu::max(srcMaxDiff, dstMaxDiff);
 
 		isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", clampedExpected, result, threshold, tcu::COMPARE_LOG_RESULT);
+		log << tcu::TestLog::EndSection;
 
-		if (isLinear)
-			log << tcu::TestLog::EndSection;
-
-		if (!isOk && isLinear)
+		if (!isOk)
 		{
 			log << tcu::TestLog::Section("NonClampedSourceImage", "Region with non-clamped edges on source image.");
 			isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", unclampedExpected, result, threshold, tcu::COMPARE_LOG_RESULT);
@@ -1915,61 +1895,318 @@ bool BlittingImages::checkClampedAndUnclampedResult (const tcu::ConstPixelBuffer
 			threshold[i] = de::max( (0x1 << bitDepth[i]) / 256, 1);
 
 		isOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", clampedExpected, result, threshold, tcu::COMPARE_LOG_RESULT);
+		log << tcu::TestLog::EndSection;
 
-		if (isLinear)
-			log << tcu::TestLog::EndSection;
-
-		if (!isOk && isLinear)
+		if (!isOk)
 		{
 			log << tcu::TestLog::Section("NonClampedSourceImage", "Region with non-clamped edges on source image.");
 			isOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", unclampedExpected, result, threshold, tcu::COMPARE_LOG_RESULT);
 			log << tcu::TestLog::EndSection;
 		}
 	}
+
 	return isOk;
+}
+
+//! Utility to encapsulate coordinate computation and loops.
+struct CompareEachPixelInEachRegion
+{
+	virtual		 ~CompareEachPixelInEachRegion  (void) {}
+	virtual bool compare						(const void* pUserData, const int x, const int y, const tcu::Vec2& srcNormCoord) const = 0;
+
+	bool forEach (const void*						pUserData,
+				  const std::vector<CopyRegion>&	regions,
+				  const int							sourceWidth,
+				  const int							sourceHeight,
+				  const tcu::PixelBufferAccess&		errorMask) const
+	{
+		bool compareOk = true;
+
+		for (std::vector<CopyRegion>::const_iterator regionIter = regions.begin(); regionIter != regions.end(); ++regionIter)
+		{
+			const VkImageBlit& blit = regionIter->imageBlit;
+
+			const int	dx		= deSign32(blit.dstOffsets[1].x - blit.dstOffsets[0].x);
+			const int	dy		= deSign32(blit.dstOffsets[1].y - blit.dstOffsets[0].y);
+			const float	xScale	= static_cast<float>(blit.srcOffsets[1].x - blit.srcOffsets[0].x) / static_cast<float>(blit.dstOffsets[1].x - blit.dstOffsets[0].x);
+			const float	yScale	= static_cast<float>(blit.srcOffsets[1].y - blit.srcOffsets[0].y) / static_cast<float>(blit.dstOffsets[1].y - blit.dstOffsets[0].y);
+			const float srcInvW	= 1.0f / static_cast<float>(sourceWidth);
+			const float srcInvH	= 1.0f / static_cast<float>(sourceHeight);
+
+			for (int y = blit.dstOffsets[0].y; y < blit.dstOffsets[1].y; y += dy)
+			for (int x = blit.dstOffsets[0].x; x < blit.dstOffsets[1].x; x += dx)
+			{
+				const tcu::Vec2 srcNormCoord
+				(
+					(xScale * (static_cast<float>(x - blit.dstOffsets[0].x) + 0.5f) + static_cast<float>(blit.srcOffsets[0].x)) * srcInvW,
+					(yScale * (static_cast<float>(y - blit.dstOffsets[0].y) + 0.5f) + static_cast<float>(blit.srcOffsets[0].y)) * srcInvH
+				);
+
+				if (!compare(pUserData, x, y, srcNormCoord))
+				{
+					errorMask.setPixel(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f), x, y);
+					compareOk = false;
+				}
+			}
+		}
+		return compareOk;
+	}
+};
+
+tcu::Vec4 getFloatOrFixedPointFormatThreshold (const tcu::TextureFormat& format)
+{
+	const tcu::TextureChannelClass	channelClass	= tcu::getTextureChannelClass(format.type);
+	const tcu::IVec4				bitDepth		= tcu::getTextureFormatBitDepth(format);
+
+	if (channelClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT)
+	{
+		return getFormatThreshold(format);
+	}
+	else if (channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT ||
+			 channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT)
+	{
+		const bool	isSigned	= (channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT);
+		const float	range		= isSigned ? 1.0f - (-1.0f)
+										   : 1.0f -   0.0f;
+
+		tcu::Vec4 v;
+		for (int i = 0; i < 4; ++i)
+		{
+			if (bitDepth[i] == 0)
+				v[i] = 1.0f;
+			else
+				v[i] = range / static_cast<float>((1 << bitDepth[i]) - 1);
+		}
+		return v;
+	}
+	else
+	{
+		DE_ASSERT(0);
+		return tcu::Vec4();
+	}
+}
+
+bool floatNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
+							  const tcu::ConstPixelBufferAccess&	result,
+							  const tcu::PixelBufferAccess&			errorMask,
+							  const std::vector<CopyRegion>&		regions)
+{
+	const tcu::Sampler		sampler		(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST);
+	tcu::LookupPrecision	precision;
+
+	{
+		const tcu::IVec4	dstBitDepth	= tcu::getTextureFormatBitDepth(result.getFormat());
+		const tcu::Vec4		srcMaxDiff	= getFloatOrFixedPointFormatThreshold(source.getFormat());
+		const tcu::Vec4		dstMaxDiff	= getFloatOrFixedPointFormatThreshold(result.getFormat());
+
+		precision.colorMask		 = tcu::notEqual(dstBitDepth, tcu::IVec4(0));
+		precision.colorThreshold = tcu::max(srcMaxDiff, dstMaxDiff);
+	}
+
+	const struct Capture
+	{
+		const tcu::ConstPixelBufferAccess&	source;
+		const tcu::ConstPixelBufferAccess&	result;
+		const tcu::Sampler&					sampler;
+		const tcu::LookupPrecision&			precision;
+		const bool							isSRGB;
+	} capture =
+	{
+		source, result, sampler, precision, tcu::isSRGB(result.getFormat())
+	};
+
+	const struct Loop : CompareEachPixelInEachRegion
+	{
+		Loop (void) {}
+
+		bool compare (const void* pUserData, const int x, const int y, const tcu::Vec2& srcNormCoord) const
+		{
+			const Capture&					c					= *static_cast<const Capture*>(pUserData);
+			const tcu::TexLookupScaleMode	lookupScaleDontCare	= tcu::TEX_LOOKUP_SCALE_MINIFY;
+			tcu::Vec4						dstColor			= c.result.getPixel(x, y);
+
+			// TexLookupVerifier performs a conversion to linear space, so we have to as well
+			if (c.isSRGB)
+				dstColor = tcu::sRGBToLinear(dstColor);
+
+			return tcu::isLevel2DLookupResultValid(c.source, c.sampler, lookupScaleDontCare, c.precision, srcNormCoord, 0, dstColor);
+		}
+	} loop;
+
+	return loop.forEach(&capture, regions, source.getWidth(), source.getHeight(), errorMask);
+}
+
+bool intNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
+							const tcu::ConstPixelBufferAccess&	result,
+							const tcu::PixelBufferAccess&		errorMask,
+							const std::vector<CopyRegion>&		regions)
+{
+	const tcu::Sampler		sampler		(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST);
+	tcu::IntLookupPrecision	precision;
+
+	{
+		const tcu::IVec4	srcBitDepth	= tcu::getTextureFormatBitDepth(source.getFormat());
+		const tcu::IVec4	dstBitDepth	= tcu::getTextureFormatBitDepth(result.getFormat());
+
+		for (deUint32 i = 0; i < 4; ++i) {
+			precision.colorThreshold[i]	= de::max(de::max(srcBitDepth[i] / 8, dstBitDepth[i] / 8), 1);
+			precision.colorMask[i]		= dstBitDepth[i] != 0;
+		}
+	}
+
+	// Prepare a source image with a matching (converted) pixel format. Ideally, we would've used a wrapper that
+	// does the conversion on the fly without wasting memory, but this approach is more straightforward.
+	tcu::TextureLevel				convertedSourceTexture	(result.getFormat(), source.getWidth(), source.getHeight());
+	const tcu::PixelBufferAccess	convertedSource			= convertedSourceTexture.getAccess();
+
+	for (int y = 0; y < source.getHeight(); ++y)
+	for (int x = 0; x < source.getWidth();  ++x)
+		convertedSource.setPixel(source.getPixelInt(x, y), x, y);	// will be clamped to max. representable value
+
+	const struct Capture
+	{
+		const tcu::ConstPixelBufferAccess&	source;
+		const tcu::ConstPixelBufferAccess&	result;
+		const tcu::Sampler&					sampler;
+		const tcu::IntLookupPrecision&		precision;
+	} capture =
+	{
+		convertedSource, result, sampler, precision
+	};
+
+	const struct Loop : CompareEachPixelInEachRegion
+	{
+		Loop (void) {}
+
+		bool compare (const void* pUserData, const int x, const int y, const tcu::Vec2& srcNormCoord) const
+		{
+			const Capture&					c					= *static_cast<const Capture*>(pUserData);
+			const tcu::TexLookupScaleMode	lookupScaleDontCare	= tcu::TEX_LOOKUP_SCALE_MINIFY;
+			const tcu::IVec4				dstColor			= c.result.getPixelInt(x, y);
+
+			return tcu::isLevel2DLookupResultValid(c.source, c.sampler, lookupScaleDontCare, c.precision, srcNormCoord, 0, dstColor);
+		}
+	} loop;
+
+	return loop.forEach(&capture, regions, source.getWidth(), source.getHeight(), errorMask);
+}
+
+bool BlittingImages::checkNearestFilteredResult (const tcu::ConstPixelBufferAccess&	result,
+												 const tcu::ConstPixelBufferAccess& source)
+{
+	tcu::TestLog&					log				(m_context.getTestContext().getLog());
+	const tcu::TextureFormat		dstFormat		= result.getFormat();
+	const tcu::TextureChannelClass	dstChannelClass = tcu::getTextureChannelClass(dstFormat.type);
+
+	tcu::TextureLevel		errorMaskStorage	(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), result.getWidth(), result.getHeight());
+	tcu::PixelBufferAccess	errorMask			= errorMaskStorage.getAccess();
+	tcu::Vec4				pixelBias			(0.0f, 0.0f, 0.0f, 0.0f);
+	tcu::Vec4				pixelScale			(1.0f, 1.0f, 1.0f, 1.0f);
+	bool					ok					= false;
+
+	tcu::clear(errorMask, tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0));
+
+	if (dstChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
+		dstChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
+	{
+		ok = intNearestBlitCompare(source, result, errorMask, m_params.regions);
+	}
+	else
+		ok = floatNearestBlitCompare(source, result, errorMask, m_params.regions);
+
+	if (result.getFormat() != tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8))
+		tcu::computePixelScaleBias(result, pixelScale, pixelBias);
+
+	if (!ok)
+	{
+		log << tcu::TestLog::ImageSet("Compare", "Result comparsion")
+			<< tcu::TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
+			<< tcu::TestLog::Image("ErrorMask",	"Error mask", errorMask)
+			<< tcu::TestLog::EndImageSet;
+	}
+	else
+	{
+		log << tcu::TestLog::ImageSet("Compare", "Result comparsion")
+			<< tcu::TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
+			<< tcu::TestLog::EndImageSet;
+	}
+
+	return ok;
 }
 
 tcu::TestStatus BlittingImages::checkTestResult (tcu::ConstPixelBufferAccess result)
 {
 	DE_ASSERT(m_params.filter == VK_FILTER_NEAREST || m_params.filter == VK_FILTER_LINEAR);
+	const std::string failMessage("Result image is incorrect");
 
-	if (tcu::isCombinedDepthStencilType(result.getFormat().type))
+	if (m_params.filter == VK_FILTER_LINEAR)
 	{
-		if (tcu::hasDepthComponent(result.getFormat().order))
+		if (tcu::isCombinedDepthStencilType(result.getFormat().type))
 		{
-			const tcu::Sampler::DepthStencilMode	mode				= tcu::Sampler::MODE_DEPTH;
-			const tcu::ConstPixelBufferAccess		depthResult			= tcu::getEffectiveDepthStencilAccess(result, mode);
-			const tcu::ConstPixelBufferAccess		clampedExpected		= tcu::getEffectiveDepthStencilAccess(m_expectedTextureLevel->getAccess(), mode);
-			const tcu::ConstPixelBufferAccess		unclampedExpected	= m_params.filter == VK_FILTER_LINEAR ? tcu::getEffectiveDepthStencilAccess(m_unclampedExpectedTextureLevel->getAccess(), mode) : tcu::ConstPixelBufferAccess();
-
-			if (!checkClampedAndUnclampedResult(depthResult, clampedExpected, unclampedExpected, VK_IMAGE_ASPECT_DEPTH_BIT))
+			if (tcu::hasDepthComponent(result.getFormat().order))
 			{
-				return tcu::TestStatus::fail("CopiesAndBlitting test");
+				const tcu::Sampler::DepthStencilMode	mode				= tcu::Sampler::MODE_DEPTH;
+				const tcu::ConstPixelBufferAccess		depthResult			= tcu::getEffectiveDepthStencilAccess(result, mode);
+				const tcu::ConstPixelBufferAccess		clampedExpected		= tcu::getEffectiveDepthStencilAccess(m_expectedTextureLevel->getAccess(), mode);
+				const tcu::ConstPixelBufferAccess		unclampedExpected	= tcu::getEffectiveDepthStencilAccess(m_unclampedExpectedTextureLevel->getAccess(), mode);
+				const tcu::TextureFormat				sourceFormat		= tcu::getEffectiveDepthStencilTextureFormat(mapVkFormat(m_params.src.image.format), mode);
+
+				if (!checkLinearFilteredResult(depthResult, clampedExpected, unclampedExpected, sourceFormat))
+					return tcu::TestStatus::fail(failMessage);
+			}
+
+			if (tcu::hasStencilComponent(result.getFormat().order))
+			{
+				const tcu::Sampler::DepthStencilMode	mode				= tcu::Sampler::MODE_STENCIL;
+				const tcu::ConstPixelBufferAccess		stencilResult		= tcu::getEffectiveDepthStencilAccess(result, mode);
+				const tcu::ConstPixelBufferAccess		clampedExpected		= tcu::getEffectiveDepthStencilAccess(m_expectedTextureLevel->getAccess(), mode);
+				const tcu::ConstPixelBufferAccess		unclampedExpected	= tcu::getEffectiveDepthStencilAccess(m_unclampedExpectedTextureLevel->getAccess(), mode);
+				const tcu::TextureFormat				sourceFormat		= tcu::getEffectiveDepthStencilTextureFormat(mapVkFormat(m_params.src.image.format), mode);
+
+				if (!checkLinearFilteredResult(stencilResult, clampedExpected, unclampedExpected, sourceFormat))
+					return tcu::TestStatus::fail(failMessage);
 			}
 		}
-
-		if (tcu::hasStencilComponent(result.getFormat().order))
+		else
 		{
-			const tcu::Sampler::DepthStencilMode	mode				= tcu::Sampler::MODE_STENCIL;
-			const tcu::ConstPixelBufferAccess		stencilResult		= tcu::getEffectiveDepthStencilAccess(result, mode);
-			const tcu::ConstPixelBufferAccess		clampedExpected		= tcu::getEffectiveDepthStencilAccess(m_expectedTextureLevel->getAccess(), mode);
-			const tcu::ConstPixelBufferAccess		unclampedExpected	= m_params.filter == VK_FILTER_LINEAR ? tcu::getEffectiveDepthStencilAccess(m_unclampedExpectedTextureLevel->getAccess(), mode) : tcu::ConstPixelBufferAccess();
+			const tcu::TextureFormat	sourceFormat	= mapVkFormat(m_params.src.image.format);
 
-			if (!checkClampedAndUnclampedResult(stencilResult, clampedExpected, unclampedExpected, VK_IMAGE_ASPECT_STENCIL_BIT))
+			if (!checkLinearFilteredResult(result, m_expectedTextureLevel->getAccess(), m_unclampedExpectedTextureLevel->getAccess(), sourceFormat))
+				return tcu::TestStatus::fail(failMessage);
+		}
+	}
+	else // NEAREST filtering
+	{
+		if (tcu::isCombinedDepthStencilType(result.getFormat().type))
+		{
+			if (tcu::hasDepthComponent(result.getFormat().order))
 			{
-				return tcu::TestStatus::fail("CopiesAndBlitting test");
+				const tcu::Sampler::DepthStencilMode	mode			= tcu::Sampler::MODE_DEPTH;
+				const tcu::ConstPixelBufferAccess		depthResult		= tcu::getEffectiveDepthStencilAccess(result, mode);
+				const tcu::ConstPixelBufferAccess		depthSource		= tcu::getEffectiveDepthStencilAccess(m_sourceTextureLevel->getAccess(), mode);
+
+				if (!checkNearestFilteredResult(depthResult, depthSource))
+					return tcu::TestStatus::fail(failMessage);
+			}
+
+			if (tcu::hasStencilComponent(result.getFormat().order))
+			{
+				const tcu::Sampler::DepthStencilMode	mode			= tcu::Sampler::MODE_STENCIL;
+				const tcu::ConstPixelBufferAccess		stencilResult	= tcu::getEffectiveDepthStencilAccess(result, mode);
+				const tcu::ConstPixelBufferAccess		stencilSource	= tcu::getEffectiveDepthStencilAccess(m_sourceTextureLevel->getAccess(), mode);
+
+				if (!checkNearestFilteredResult(stencilResult, stencilSource))
+					return tcu::TestStatus::fail(failMessage);
 			}
 		}
-	}
-	else
-	{
-		if (!checkClampedAndUnclampedResult(result, m_expectedTextureLevel->getAccess(), m_params.filter == VK_FILTER_LINEAR ? m_unclampedExpectedTextureLevel->getAccess() : tcu::ConstPixelBufferAccess(), VK_IMAGE_ASPECT_COLOR_BIT))
+		else
 		{
-			return tcu::TestStatus::fail("CopiesAndBlitting test");
+			if (!checkNearestFilteredResult(result, m_sourceTextureLevel->getAccess()))
+				return tcu::TestStatus::fail(failMessage);
 		}
 	}
 
-	return tcu::TestStatus::pass("CopiesAndBlitting test");
+	return tcu::TestStatus::pass("Pass");
 }
 
 tcu::Vec4 linearToSRGBIfNeeded (const tcu::TextureFormat& format, const tcu::Vec4& color)
@@ -4730,9 +4967,6 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 	}
 
 	{
-		const std::string	description	("Blit with scaling (partial)");
-		const std::string	testName	("scaling_partial");
-
 		// Test Color formats.
 		{
 			TestParams	params;
@@ -4797,7 +5031,7 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 				params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
 				params.dst.image.format		= params.src.image.format;
 				std::ostringstream	oss;
-				oss << testName << "_" << getFormatCaseName(params.src.image.format) << "_" << getFormatCaseName(params.dst.image.format);
+				oss << getFormatCaseName(params.src.image.format) << "_" << getFormatCaseName(params.dst.image.format);
 
 				const VkImageSubresourceLayers	defaultDepthSourceLayer		= { VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u };
 				const VkImageSubresourceLayers	defaultStencilSourceLayer	= { VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u };
@@ -4869,7 +5103,7 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 				}
 
 				params.filter			= VK_FILTER_NEAREST;
-				blitImgAllFormatsTests->addChild(new BlittingTestCase(testCtx, oss.str() + "_nearest", description, params));
+				blitImgAllFormatsTests->addChild(new BlittingTestCase(testCtx, oss.str() + "_nearest", "Blit image between compatible depth/stencil formats", params));
 			}
 		}
 	}
