@@ -105,6 +105,7 @@ EXTENSIONS			= [
 	'GL_ARB_separate_shader_objects',
 	'GL_ARB_shader_ballot',
 	'GL_ARB_shader_image_load_store',
+	'GL_ARB_shader_viewport_layer_array',
 	'GL_ARB_sparse_buffer',
 	'GL_ARB_sparse_texture',
 	'GL_ARB_tessellation_shader',
