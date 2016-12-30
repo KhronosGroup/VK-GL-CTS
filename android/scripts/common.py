@@ -110,7 +110,7 @@ def execArgs (args):
 	if retcode != 0:
 		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
 
-def execArgsInDirectory (args, cwd, linePrefix=""):
+def execArgsInDirectory (args, cwd, linePrefix="", failOnNonZeroExit=True):
 
 	def readApplyPrefixAndPrint (source, prefix, sink):
 		while True:
@@ -125,7 +125,7 @@ def execArgsInDirectory (args, cwd, linePrefix=""):
 	stdoutJob.start()
 	stderrJob.start()
 	retcode = process.wait()
-	if retcode != 0:
+	if failOnNonZeroExit and retcode != 0:
 		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
 
 def serialApply(f, argsList):
