@@ -401,7 +401,7 @@ void uploadTestTextureInternal (const DeviceInterface&			vk,
 	bufferSize =  (srcTexture.isCompressed())? srcTexture.getCompressedSize(): srcTexture.getSize();
 
 	// Stencil-only texture should be provided if (and only if) the image has a combined DS format
-	DE_ASSERT(tcu::isCombinedDepthStencilType(format.type) == (srcStencilTexture != DE_NULL));
+	DE_ASSERT((tcu::hasDepthComponent(format.order) && tcu::hasStencilComponent(format.order)) == (srcStencilTexture != DE_NULL));
 
 	if (srcStencilTexture != DE_NULL)
 	{
