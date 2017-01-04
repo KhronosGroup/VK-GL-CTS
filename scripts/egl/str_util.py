@@ -141,6 +141,7 @@ ENUM_GROUPS = [
 		"YUV_PLANE_BPP_8_EXT",
 		"YUV_PLANE_BPP_10_EXT",
 		]),
+	("ColorComponentType",	["COLOR_COMPONENT_TYPE_FIXED_EXT", "COLOR_COMPONENT_TYPE_FLOAT_EXT"]),
 	("SurfaceTarget",		["READ", "DRAW"]),
 
 	# ConfigAttrib values

@@ -2364,11 +2364,14 @@ dEQP-EGL.functional.multithread.pbuffer_context
 dEQP-EGL.functional.multithread.single_window_context
 dEQP-EGL.functional.multithread.pbuffer_single_window_context
 dEQP-EGL.functional.get_proc_address.extension.egl_android_blob_cache
+dEQP-EGL.functional.get_proc_address.extension.egl_android_create_native_client_buffer
 dEQP-EGL.functional.get_proc_address.extension.egl_android_native_fence_sync
+dEQP-EGL.functional.get_proc_address.extension.egl_android_presentation_time
 dEQP-EGL.functional.get_proc_address.extension.egl_angle_query_surface_pointer
 dEQP-EGL.functional.get_proc_address.extension.egl_ext_device_base
 dEQP-EGL.functional.get_proc_address.extension.egl_ext_device_enumeration
 dEQP-EGL.functional.get_proc_address.extension.egl_ext_device_query
+dEQP-EGL.functional.get_proc_address.extension.egl_ext_image_dma_buf_import_modifiers
 dEQP-EGL.functional.get_proc_address.extension.egl_ext_output_base
 dEQP-EGL.functional.get_proc_address.extension.egl_ext_platform_base
 dEQP-EGL.functional.get_proc_address.extension.egl_ext_stream_consumer_egloutput
@@ -2384,6 +2387,7 @@ dEQP-EGL.functional.get_proc_address.extension.egl_khr_lock_surface3
 dEQP-EGL.functional.get_proc_address.extension.egl_khr_partial_update
 dEQP-EGL.functional.get_proc_address.extension.egl_khr_reusable_sync
 dEQP-EGL.functional.get_proc_address.extension.egl_khr_stream
+dEQP-EGL.functional.get_proc_address.extension.egl_khr_stream_attrib
 dEQP-EGL.functional.get_proc_address.extension.egl_khr_stream_consumer_gltexture
 dEQP-EGL.functional.get_proc_address.extension.egl_khr_stream_cross_process_fd
 dEQP-EGL.functional.get_proc_address.extension.egl_khr_stream_fifo
@@ -2398,6 +2402,7 @@ dEQP-EGL.functional.get_proc_address.extension.egl_nv_native_query
 dEQP-EGL.functional.get_proc_address.extension.egl_nv_post_sub_buffer
 dEQP-EGL.functional.get_proc_address.extension.egl_nv_stream_consumer_gltexture_yuv
 dEQP-EGL.functional.get_proc_address.extension.egl_nv_stream_metadata
+dEQP-EGL.functional.get_proc_address.extension.egl_nv_stream_reset
 dEQP-EGL.functional.get_proc_address.extension.egl_nv_stream_sync
 dEQP-EGL.functional.get_proc_address.extension.egl_nv_sync
 dEQP-EGL.functional.get_proc_address.extension.egl_nv_system_time
