@@ -8,3 +8,11 @@ dEQP-VK.glsl.linkage.varying.struct.uvec2
 dEQP-VK.glsl.linkage.varying.struct.uvec3
 dEQP-VK.glsl.linkage.varying.struct.uvec4
 dEQP-VK.glsl.linkage.varying.struct.float_uvec2_vec3
+dEQP-VK.api.buffer_view.access.*
+dEQP-VK.binding_model.shader_access.*.uniform_texel_buffer.vertex.*
+dEQP-VK.binding_model.shader_access.*.uniform_texel_buffer.tess_ctrl.*
+dEQP-VK.binding_model.shader_access.*.uniform_texel_buffer.tess_eval.*
+dEQP-VK.binding_model.shader_access.*.uniform_texel_buffer.geometry.*
+dEQP-VK.binding_model.shader_access.*.uniform_texel_buffer.fragment.*
+dEQP-VK.binding_model.shader_access.*.uniform_texel_buffer.compute.*
+dEQP-VK.binding_model.shader_access.*.uniform_texel_buffer.vertex_fragment.*
