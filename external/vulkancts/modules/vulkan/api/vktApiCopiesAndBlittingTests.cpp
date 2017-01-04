@@ -378,7 +378,9 @@ void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBuff
 		bufferSize										// VkDeviceSize		size;
 	};
 
-	const VkImageAspectFlags				aspect					= getAspectFlags(imageAccess.getFormat());
+	const VkImageAspectFlags				formatAspect			= getAspectFlags(mapVkFormat(parms.format));
+	const bool								skipPreImageBarrier		= formatAspect == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) &&
+																	  getAspectFlags(imageAccess.getFormat()) == VK_IMAGE_ASPECT_STENCIL_BIT;
 	const VkImageMemoryBarrier				preImageBarrier			=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
@@ -391,7 +393,7 @@ void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBuff
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
 		image,											// VkImage					image;
 		{												// VkImageSubresourceRange	subresourceRange;
-			aspect,			// VkImageAspectFlags	aspect;
+			formatAspect,	// VkImageAspectFlags	aspect;
 			0u,				// deUint32				baseMipLevel;
 			1u,				// deUint32				mipLevels;
 			0u,				// deUint32				baseArraySlice;
@@ -411,7 +413,7 @@ void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBuff
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
 		image,											// VkImage					image;
 		{												// VkImageSubresourceRange	subresourceRange;
-			aspect,						// VkImageAspectFlags	aspect;
+			formatAspect,				// VkImageAspectFlags	aspect;
 			0u,							// deUint32				baseMipLevel;
 			1u,							// deUint32				mipLevels;
 			0u,							// deUint32				baseArraySlice;
@@ -448,7 +450,8 @@ void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBuff
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
+						  1, &preBufferBarrier, (skipPreImageBarrier ? 0 : 1), (skipPreImageBarrier ? DE_NULL : &preImageBarrier));
 	vk.cmdCopyBufferToImage(*m_cmdBuffer, *buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -560,7 +563,7 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 	}
 
 	// Barriers for copying image to buffer
-	const VkImageAspectFlags				aspect					= getAspectFlags(dst.getFormat());
+	const VkImageAspectFlags				formatAspect			= getAspectFlags(mapVkFormat(imageParms.format));
 	const VkImageMemoryBarrier				imageBarrier			=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
@@ -573,7 +576,7 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
 		image,										// VkImage					image;
 		{											// VkImageSubresourceRange	subresourceRange;
-			aspect,					// VkImageAspectFlags	aspectMask;
+			formatAspect,			// VkImageAspectFlags	aspectMask;
 			0u,						// deUint32				baseMipLevel;
 			1u,						// deUint32				mipLevels;
 			0u,						// deUint32				baseArraySlice;
@@ -606,7 +609,7 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
 		image,										// VkImage					image;
 		{
-			aspect,									// VkImageAspectFlags	aspectMask;
+			formatAspect,								// VkImageAspectFlags	aspectMask;
 			0u,											// deUint32				baseMipLevel;
 			1u,											// deUint32				mipLevels;
 			0u,											// deUint32				baseArraySlice;
@@ -615,6 +618,7 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 	};
 
 	// Copy image to buffer
+	const VkImageAspectFlags	aspect			= getAspectFlags(dst.getFormat());
 	const VkBufferImageCopy		copyRegion		=
 	{
 		0u,									// VkDeviceSize				bufferOffset;
@@ -4112,11 +4116,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
 		}
 
 		// Filter is VK_FILTER_LINEAR.
@@ -4128,11 +4132,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 		}
 	}
 
@@ -4177,7 +4181,7 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
@@ -4504,11 +4508,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
 		}
 
 		// Filter is VK_FILTER_LINEAR.
@@ -4520,11 +4524,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 		}
 	}
 
@@ -4569,11 +4573,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
 		}
 
 		// Filter is VK_FILTER_LINEAR.
@@ -4585,11 +4589,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 		}
 	}
 
@@ -4634,11 +4638,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
 		}
 
 		// Filter is VK_FILTER_LINEAR.
@@ -4650,11 +4654,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 		}
 	}
 
@@ -4701,11 +4705,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
 		}
 
 		// Filter is VK_FILTER_LINEAR.
@@ -4717,11 +4721,11 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 			params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
 			const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
 
 			params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 			const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)" + " (VK_FILTER_LINEAR)");
-			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+			blitImgSimpleTests->addChild(new BlittingTestCase(testCtx, testName + "_" + getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 		}
 	}
 

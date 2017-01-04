@@ -1707,7 +1707,7 @@ TextureSamplesInstance::TextureSamplesInstance (Context&				context,
 		//       Its Dim operand must be one of 2D and **MS of 1(multisampled).
 		//
 		//       "MS of 1" implies the image must not be single-sample, meaning we must exclude
-		//       VK_SAMPLE_COUNT_1_BIT in the sampleFlags array below.
+		//       VK_SAMPLE_COUNT_1_BIT in the sampleFlags array below, and may have to skip further testing.
 		static const vk::VkSampleCountFlagBits	sampleFlags[]	=
 		{
 			vk::VK_SAMPLE_COUNT_2_BIT,
@@ -1726,7 +1726,17 @@ TextureSamplesInstance::TextureSamplesInstance (Context&				context,
 				m_iterations.push_back(flag);
 		}
 
-		DE_ASSERT(!m_iterations.empty());
+		if (m_iterations.empty())
+		{
+			// Sampled images of integer formats may support only 1 sample. Exit the test with "Not supported" in these cases.
+			if (tcu::getTextureChannelClass(mapVkFormat(format).type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ||
+				tcu::getTextureChannelClass(mapVkFormat(format).type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
+			{
+				TCU_THROW(NotSupportedError, "Skipping validation of integer formats as only VK_SAMPLE_COUNT_1_BIT is supported.");
+			}
+
+			DE_ASSERT(false);
+		}
 	}
 
 	// setup texture
