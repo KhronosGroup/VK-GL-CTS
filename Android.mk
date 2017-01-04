@@ -749,6 +749,8 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/draw/vktDrawIndexedTest.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawIndirectTest.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawInstancedTests.cpp \
+	external/vulkancts/modules/vulkan/draw/vktDrawNegativeViewportHeightTests.cpp \
+	external/vulkancts/modules/vulkan/draw/vktDrawShaderDrawParametersTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawSimpleTest.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateBaseClass.cpp \
