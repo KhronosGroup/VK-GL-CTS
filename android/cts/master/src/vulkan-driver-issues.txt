@@ -1,0 +1,10 @@
+# Bug: 33041922
+dEQP-VK.glsl.linkage.varying.struct.int
+dEQP-VK.glsl.linkage.varying.struct.ivec2
+dEQP-VK.glsl.linkage.varying.struct.ivec3
+dEQP-VK.glsl.linkage.varying.struct.ivec4
+dEQP-VK.glsl.linkage.varying.struct.uint
+dEQP-VK.glsl.linkage.varying.struct.uvec2
+dEQP-VK.glsl.linkage.varying.struct.uvec3
+dEQP-VK.glsl.linkage.varying.struct.uvec4
+dEQP-VK.glsl.linkage.varying.struct.float_uvec2_vec3
