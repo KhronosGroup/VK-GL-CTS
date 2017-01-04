@@ -341,7 +341,7 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (const VkCommandBuffe
 															const VkImage				imageResidency)
 {
 	const InstanceInterface&	instance		= m_context.getInstanceInterface();
-	const DeviceInterface&		deviceInterface = m_context.getDeviceInterface();
+	const DeviceInterface&		deviceInterface = getDeviceInterface();
 	const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
 
 	// Check if device supports image format for storage image
