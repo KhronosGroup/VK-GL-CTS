@@ -2519,11 +2519,12 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 }
 
 // Determine whether an API call sets the invalid handles to NULL (true) or leaves them undefined or not modified (false)
-template<typename T>
-inline bool isNullHandleOnAllocationFailure				(void)	{ return false; }
+template<typename T> inline bool isNullHandleOnAllocationFailure			 (void) { return false; }
+template<>			 inline bool isNullHandleOnAllocationFailure<VkPipeline> (void) { return true;  }
 
-template<>
-inline bool isNullHandleOnAllocationFailure<VkPipeline>	(void)	{ return true; }
+template<typename T> inline bool isPooledObject								 (void) { return false; };
+template<>			 inline bool isPooledObject<VkCommandBuffer>			 (void) { return true;  };
+template<>			 inline bool isPooledObject<VkDescriptorSet>			 (void) { return true;  };
 
 template<typename Object>
 tcu::TestStatus allocCallbackFailMultipleObjectsTest (Context& context, typename Object::Parameters params)
@@ -2592,7 +2593,12 @@ tcu::TestStatus allocCallbackFailMultipleObjectsTest (Context& context, typename
 	}
 
 	if (numPassingAllocs == 0)
-		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks not called");
+	{
+		if (isPooledObject<typename Object::Type>())
+			return tcu::TestStatus::pass("Not validated: pooled objects didn't seem to use host memory");
+		else
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks not called");
+	}
 	else
 		return tcu::TestStatus::pass("Ok");
 }

@@ -184,7 +184,6 @@ std::string getOpTypeImageResidency (const ImageType imageType)
 tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 {
 	const InstanceInterface&			instance				= m_context.getInstanceInterface();
-	const DeviceInterface&				deviceInterface			= m_context.getDeviceInterface();
 	const VkPhysicalDevice				physicalDevice			= m_context.getPhysicalDevice();
 	VkImageCreateInfo					imageSparseInfo;
 	VkImageCreateInfo					imageTexelsInfo;
@@ -251,9 +250,11 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 		createDeviceSupportingQueues(queueRequirements);
 	}
 
+	const DeviceInterface&	deviceInterface	= getDeviceInterface();
+
 	// Create queues supporting sparse binding operations and compute/graphics operations
-	const Queue& sparseQueue	= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
-	const Queue& extractQueue	= getQueue(getQueueFlags(), 0);
+	const Queue&			sparseQueue		= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
+	const Queue&			extractQueue	= getQueue(getQueueFlags(), 0);
 
 	// Create sparse image
 	const Unique<VkImage> imageSparse(createImage(deviceInterface, getDevice(), &imageSparseInfo));

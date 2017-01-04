@@ -67,7 +67,6 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 	typedef std::map<deUint32, std::vector<float> >				QueuePrioritiesMap;
 
 	const InstanceInterface&	instance		= m_context.getInstanceInterface();
-	const DeviceInterface&		deviceInterface = m_context.getDeviceInterface();
 	const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
 
 	deUint32 queueFamilyPropertiesCount = 0u;
@@ -156,7 +155,8 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 	};
 
 	m_logicalDevice = createDevice(instance, physicalDevice, &deviceInfo);
-	m_allocator		= de::MovePtr<Allocator>(new SimpleAllocator(deviceInterface, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
+	m_deviceDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(instance, *m_logicalDevice));
+	m_allocator		= de::MovePtr<Allocator>(new SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
 
 	for (QueuesMap::iterator queuesIter = m_queues.begin(); queuesIter != m_queues.end(); ++queuesIter)
 	{
@@ -165,7 +165,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 			Queue& queue = queuesIter->second[queueNdx];
 
 			VkQueue	queueHandle = 0;
-			deviceInterface.getDeviceQueue(*m_logicalDevice, queue.queueFamilyIndex, queue.queueIndex, &queueHandle);
+			m_deviceDriver->getDeviceQueue(*m_logicalDevice, queue.queueFamilyIndex, queue.queueIndex, &queueHandle);
 
 			queue.queueHandle = queueHandle;
 		}
