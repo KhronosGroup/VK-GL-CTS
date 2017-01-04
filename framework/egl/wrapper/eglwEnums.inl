@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 32725.
+ * Generated from Khronos EGL API description (egl.xml) revision 33315.
  */
 #define EGL_PBUFFER_BIT										0x0001
 #define EGL_PIXMAP_BIT										0x0002
@@ -264,3 +264,6 @@
 #define EGL_YUV_PLANE_BPP_0_EXT								0x331B
 #define EGL_YUV_PLANE_BPP_8_EXT								0x331C
 #define EGL_YUV_PLANE_BPP_10_EXT							0x331D
+#define EGL_COLOR_COMPONENT_TYPE_EXT						0x3339
+#define EGL_COLOR_COMPONENT_TYPE_FIXED_EXT					0x333A
+#define EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT					0x333B
