@@ -113,7 +113,6 @@ ImageSparseBindingInstance::ImageSparseBindingInstance (Context&					context,
 tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 {
 	const InstanceInterface&	instance		= m_context.getInstanceInterface();
-	const DeviceInterface&		deviceInterface = m_context.getDeviceInterface();
 	const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
 	VkImageCreateInfo			imageSparseInfo;
 	std::vector<DeviceMemorySp>	deviceMemUniquePtrVec;
@@ -135,8 +134,9 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 		createDeviceSupportingQueues(queueRequirements);
 	}
 
-	const Queue& sparseQueue	= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
-	const Queue& computeQueue	= getQueue(VK_QUEUE_COMPUTE_BIT, 0);
+	const DeviceInterface&	deviceInterface	= getDeviceInterface();
+	const Queue&			sparseQueue		= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
+	const Queue&			computeQueue	= getQueue(VK_QUEUE_COMPUTE_BIT, 0);
 
 	imageSparseInfo.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;					//VkStructureType		sType;
 	imageSparseInfo.pNext					= DE_NULL;												//const void*			pNext;
