@@ -154,7 +154,6 @@ public:
 
 	tcu::TestStatus iterate (void)
 	{
-		const DeviceInterface&		vk				= m_context.getDeviceInterface();
 		const InstanceInterface&	vki				= m_context.getInstanceInterface();
 		const VkPhysicalDevice		physDevice		= m_context.getPhysicalDevice();
 		const Queue*				sparseQueue		= DE_NULL;
@@ -181,6 +180,8 @@ public:
 					otherQueues.push_back(queue);
 			}
 		}
+
+		const DeviceInterface&				vk = getDeviceInterface();
 
 		std::vector<SemaphoreSp>			allSemaphores;
 		std::vector<VkSemaphore>			waitSemaphores;
