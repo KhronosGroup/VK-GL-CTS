@@ -538,8 +538,11 @@ public:
 		return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	}
 
-	VkQueueFlags getQueueFlags (void) const
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
+		DE_UNREF(context);
+		if (BUFFER_OP_FILL == m_bufferOp)
+			return VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT;
 		return VK_QUEUE_TRANSFER_BIT;
 	}
 
@@ -639,8 +642,9 @@ public:
 		return (m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_TRANSFER_SRC_BIT : VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	}
 
-	VkQueueFlags getQueueFlags (void) const
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
+		DE_UNREF(context);
 		return VK_QUEUE_TRANSFER_BIT;
 	}
 
@@ -917,8 +921,9 @@ public:
 		return (m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_TRANSFER_SRC_BIT : VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	}
 
-	VkQueueFlags getQueueFlags (void) const
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
+		DE_UNREF(context);
 		return m_requiredQueueFlags;
 	}
 
@@ -1631,8 +1636,9 @@ public:
 		return (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 	}
 
-	VkQueueFlags getQueueFlags (void) const
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
+		DE_UNREF(context);
 		return (m_stage == VK_SHADER_STAGE_COMPUTE_BIT ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT);
 	}
 
@@ -1706,8 +1712,9 @@ public:
 		return VK_IMAGE_USAGE_STORAGE_BIT;
 	}
 
-	VkQueueFlags getQueueFlags (void) const
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
+		DE_UNREF(context);
 		return (m_stage == VK_SHADER_STAGE_COMPUTE_BIT ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT);
 	}
 
@@ -1900,8 +1907,9 @@ public:
 			return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	}
 
-	VkQueueFlags getQueueFlags (void) const
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
+		DE_UNREF(context);
 		return m_requiredQueueFlags;
 	}
 
@@ -2082,8 +2090,9 @@ public:
 			return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	}
 
-	VkQueueFlags getQueueFlags (void) const
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
+		DE_UNREF(context);
 		return m_requiredQueueFlags;
 	}
 
@@ -2194,8 +2203,9 @@ public:
 		return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	}
 
-	VkQueueFlags getQueueFlags (void) const
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
+		DE_UNREF(context);
 		if (m_mode == CLEAR_MODE_COLOR)
 			return VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
 		else
@@ -2336,7 +2346,7 @@ public:
 			vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		}
 
-		if (m_drawCall == DRAW_CALL_DRAW_INDEXED || DRAW_CALL_DRAW_INDEXED_INDIRECT)
+		if (m_drawCall == DRAW_CALL_DRAW_INDEXED || m_drawCall == DRAW_CALL_DRAW_INDEXED_INDIRECT)
 			vk.cmdBindIndexBuffer(cmdBuffer, m_vertices.getIndexBuffer(), 0u, m_vertices.getIndexType());
 
 		switch (m_drawCall)
@@ -2464,8 +2474,9 @@ public:
 		return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	}
 
-	VkQueueFlags getQueueFlags (void) const
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
+		DE_UNREF(context);
 		return VK_QUEUE_GRAPHICS_BIT;
 	}
 
@@ -2693,9 +2704,10 @@ public:
 		return 0u;
 	}
 
-	VkQueueFlags getQueueFlags (void) const
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
-		return VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+		DE_UNREF(context);
+		return VK_QUEUE_GRAPHICS_BIT;
 	}
 
 	de::MovePtr<Operation> build (OperationContext& context, Resource& resource) const
@@ -3112,8 +3124,9 @@ public:
 		return VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 	}
 
-	VkQueueFlags getQueueFlags (void) const
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
+		DE_UNREF(context);
 		return (m_resourceDesc.type == RESOURCE_TYPE_INDIRECT_BUFFER_DISPATCH ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT);
 	}
 
@@ -3141,8 +3154,9 @@ public:
 		return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	}
 
-	VkQueueFlags getQueueFlags (void) const
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
+		DE_UNREF(context);
 		return VK_QUEUE_TRANSFER_BIT;
 	}
 
@@ -3340,8 +3354,9 @@ public:
 		return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	}
 
-	VkQueueFlags getQueueFlags (void) const
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
+		DE_UNREF(context);
 		return VK_QUEUE_GRAPHICS_BIT;
 	}
 
@@ -3366,6 +3381,7 @@ OperationContext::OperationContext (Context& context, PipelineCacheData& pipelin
 	, m_allocator			(context.getDefaultAllocator())
 	, m_progCollection		(context.getBinaryCollection())
 	, m_pipelineCacheData	(pipelineCacheData)
+	, m_deviceExtensions	(context.getDeviceExtensions())
 {
 }
 
@@ -3377,6 +3393,7 @@ OperationContext::OperationContext (Context& context, PipelineCacheData& pipelin
 	, m_allocator			(allocator)
 	, m_progCollection		(context.getBinaryCollection())
 	, m_pipelineCacheData	(pipelineCacheData)
+	, m_deviceExtensions	(context.getDeviceExtensions())
 {
 }
 

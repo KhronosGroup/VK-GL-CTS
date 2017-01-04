@@ -140,6 +140,11 @@ option may be used to disable frequent fflush() calls to the output logs:
 
 	--deqp-log-flush=disable
 
+By default, the test log will be written into the path "TestResults.qpa". If the
+platform requires a different path, it can be specified with:
+
+	--deqp-log-filename=<path>
+
 No other command line options are allowed.
 
 ### Win32
