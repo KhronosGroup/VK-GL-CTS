@@ -184,8 +184,9 @@ void get_integer64v (NegativeTestContext& ctx)
 
 void get_integeri_v (NegativeTestContext& ctx)
 {
-	GLint data						= -1;
-	GLint maxUniformBufferBindings	= 0;
+	GLint data								= -1;
+	GLint maxUniformBufferBindings			=  0;
+	GLint maxShaderStorageBufferBindings	=  0;
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if name is not an accepted value.");
 	ctx.glGetIntegeri_v(-1, 0, &data);
@@ -198,12 +199,20 @@ void get_integeri_v (NegativeTestContext& ctx)
 	ctx.glGetIntegeri_v(GL_UNIFORM_BUFFER_BINDING, maxUniformBufferBindings, &data);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if index is outside of the valid range for the indexed state target.");
+	ctx.glGetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &maxShaderStorageBufferBindings);
+	ctx.expectError(GL_NO_ERROR);
+	ctx.glGetIntegeri_v(GL_SHADER_STORAGE_BUFFER_BINDING, maxShaderStorageBufferBindings, &data);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
 }
 
 void get_integer64i_v (NegativeTestContext& ctx)
 {
-	GLint64	data						= (GLint64)-1;
-	GLint	maxUniformBufferBindings	= 0;
+	GLint64	data							= (GLint64)-1;
+	GLint	maxUniformBufferBindings		= 0;
+	GLint	maxShaderStorageBufferBindings	= 0;
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if name is not an accepted value.");
 	ctx.glGetInteger64i_v(-1, 0, &data);
@@ -214,6 +223,15 @@ void get_integer64i_v (NegativeTestContext& ctx)
 	ctx.glGetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &maxUniformBufferBindings);
 	ctx.expectError(GL_NO_ERROR);
 	ctx.glGetInteger64i_v(GL_UNIFORM_BUFFER_START, maxUniformBufferBindings, &data);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_VALUE is generated if index is outside of the valid range for the indexed state target.");
+	ctx.glGetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &maxShaderStorageBufferBindings);
+	ctx.expectError(GL_NO_ERROR);
+	ctx.glGetInteger64i_v(GL_SHADER_STORAGE_BUFFER_START, maxShaderStorageBufferBindings, &data);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glGetInteger64i_v(GL_SHADER_STORAGE_BUFFER_SIZE, maxShaderStorageBufferBindings, &data);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 }

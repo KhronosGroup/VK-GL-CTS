@@ -2130,11 +2130,11 @@ void addCopyTests (TestCaseGroup* root, deUint32 srcFormat, deUint32 dstFormat)
 
 			const string	targetTestName	= string(targetToName(srcTarget)) + "_to_" + targetToName(dstTarget);
 
-			const IVec3		targetSize2D	(128, 128, 1);
-			const IVec3		targetSize3D	(128, 128, 16);
-
-			const IVec3		srcSize			= getTestedSize(srcTarget, srcFormat, (srcIs3D ? targetSize3D : targetSize2D));
-			const IVec3		dstSize			= getTestedSize(dstTarget, dstFormat, (dstIs3D ? targetSize3D : targetSize2D));
+			// Compressed formats require more space to fit all block size combinations.
+			const bool		isCompressedCase	= glu::isCompressedFormat(srcFormat) || glu::isCompressedFormat(dstFormat);
+			const IVec3		targetSize			= isCompressedCase ? IVec3(128, 128, 16) : IVec3(64, 64, 8);
+			const IVec3		srcSize				= getTestedSize(srcTarget, srcFormat, targetSize);
+			const IVec3		dstSize				= getTestedSize(dstTarget, dstFormat, targetSize);
 
 			group->addChild(new CopyImageTest(root->getContext(),
 											ImageInfo(srcFormat, srcTarget, srcSize),

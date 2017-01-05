@@ -126,14 +126,42 @@ void primitive_bounding_box (NegativeTestContext& ctx)
 	if (contextSupports(ctx.getRenderContext().getType() , glu::ApiType::es(3, 2)))
 	{
 		ctx.beginSection("gl_BoundingBox does not require the OES/EXT suffix in a 320 es shader.");
-		const std::string source =	"#version 320 es\n"
-									"layout(vertices = 3) out;\n"
-									"void main()\n"
-									"{\n"
-									"	gl_BoundingBox[0] = vec4(0.0, 0.0, 0.0, 0.0);\n"
-									"	gl_BoundingBox[1] = vec4(0.0, 0.0, 0.0, 0.0);\n"
-									"}\n";
-		verifyShader(ctx, glu::SHADERTYPE_TESSELLATION_CONTROL, source, EXPECT_RESULT_PASS);
+		{
+			const std::string source =	"#version 320 es\n"
+										"layout(vertices = 3) out;\n"
+										"void main()\n"
+										"{\n"
+										"	gl_BoundingBox[0] = vec4(0.0, 0.0, 0.0, 0.0);\n"
+										"	gl_BoundingBox[1] = vec4(0.0, 0.0, 0.0, 0.0);\n"
+										"}\n";
+			verifyShader(ctx, glu::SHADERTYPE_TESSELLATION_CONTROL, source, EXPECT_RESULT_PASS);
+		}
+		ctx.endSection();
+
+		ctx.beginSection("Invalid index used when assigning to gl_BoundingBox in 320 es shader.");
+		{
+			const std::string source =	"#version 320 es\n"
+										"layout(vertices = 3) out;\n"
+										"void main()\n"
+										"{\n"
+										"	gl_BoundingBox[0] = vec4(0.0, 0.0, 0.0, 0.0);\n"
+										"	gl_BoundingBox[2] = vec4(0.0, 0.0, 0.0, 0.0);\n"
+										"}\n";
+			verifyShader(ctx, glu::SHADERTYPE_TESSELLATION_CONTROL, source, EXPECT_RESULT_FAIL);
+		}
+		ctx.endSection();
+
+		ctx.beginSection("Invalid type assignment to per-patch output array in 320 es shader.");
+		{
+			const std::string source =	"#version 320 es\n"
+										"layout(vertices = 3) out;\n"
+										"void main()\n"
+										"{\n"
+										"	gl_BoundingBox[0] = ivec4(0, 0, 0, 0);\n"
+										"	gl_BoundingBox[1] = ivec4(0, 0, 0, 0);\n"
+										"}\n";
+			verifyShader(ctx, glu::SHADERTYPE_TESSELLATION_CONTROL, source, EXPECT_RESULT_FAIL);
+		}
 		ctx.endSection();
 	}
 }

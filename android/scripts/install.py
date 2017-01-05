@@ -33,7 +33,7 @@ def install (buildRoot, extraArgs = [], printPrefix=""):
 	common.execArgsInDirectory([common.ADB_BIN] + extraArgs + [
 			'uninstall',
 			'com.drawelements.deqp'
-		], buildRoot, printPrefix)
+		], buildRoot, printPrefix, failOnNonZeroExit=False)
 	print printPrefix + "Remove complete\n",
 
 	print printPrefix + "Installing dEQP Package from %s...\n" %(buildRoot),
