@@ -204,14 +204,14 @@ def postExtractLibpng (path):
 
 PACKAGES = [
 	SourcePackage(
-		"http://zlib.net/zlib-1.2.8.tar.gz",
-		"zlib-1.2.8.tar.gz",
-		"36658cb768a54c1d4dec43c3116c27ed893e88b02ecfcb44f2166f9c0b7f2a0d",
+		"http://zlib.net/zlib-1.2.10.tar.gz",
+		"zlib-1.2.10.tar.gz",
+		"8d7e9f698ce48787b6e1c67e6bff79e487303e66077e25cb9784ac8835978017",
 		"zlib"),
 	SourcePackage(
-		"http://prdownloads.sourceforge.net/libpng/libpng-1.6.26.tar.gz",
-		"libpng-1.6.26.tar.gz",
-		"81bfc8f16ed125622c0c5ad44eeffda19e7a7c7e32f47e43c8932bf32deae7cc",
+		"http://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
+		"libpng-1.6.27.tar.gz",
+		"c9d164ec247f426a525a7b89936694aefbc91fb7a50182b198898b8fc91174b4",
 		"libpng",
 		postExtract = postExtractLibpng),
 	GitRepo(
