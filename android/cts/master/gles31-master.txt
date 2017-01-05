@@ -15875,7 +15875,6 @@ dEQP-GLES31.functional.separate_shader.validation.varying.mismatch_explicit_loca
 dEQP-GLES31.functional.separate_shader.validation.varying.mismatch_implicit_explicit_location_1
 dEQP-GLES31.functional.separate_shader.validation.varying.mismatch_implicit_explicit_location_2
 dEQP-GLES31.functional.separate_shader.validation.varying.mismatch_implicit_explicit_location_3
-dEQP-GLES31.functional.separate_shader.validation.varying.match_different_struct_names
 dEQP-GLES31.functional.separate_shader.validation.varying.mismatch_struct_member_name
 dEQP-GLES31.functional.separate_shader.validation.varying.mismatch_struct_member_type
 dEQP-GLES31.functional.separate_shader.validation.varying.mismatch_struct_member_precision
@@ -15897,7 +15896,6 @@ dEQP-GLES31.functional.separate_shader.validation.io_blocks.mismatch_member_name
 dEQP-GLES31.functional.separate_shader.validation.io_blocks.mismatch_member_precision
 dEQP-GLES31.functional.separate_shader.validation.io_blocks.mismatch_different_member_interpolation
 dEQP-GLES31.functional.separate_shader.validation.io_blocks.mismatch_member_array_size
-dEQP-GLES31.functional.separate_shader.validation.io_blocks.match_different_member_struct_names
 dEQP-GLES31.functional.separate_shader.validation.io_blocks.mismatch_member_struct_member_name
 dEQP-GLES31.functional.separate_shader.validation.io_blocks.mismatch_member_struct_member_type
 dEQP-GLES31.functional.separate_shader.validation.io_blocks.mismatch_member_struct_member_precision
@@ -16763,6 +16761,8 @@ dEQP-GLES31.functional.debug.negative_coverage.callbacks.precise.precise_as_func
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.precise.precise_as_function_argument
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.advanced_blend.blend_qualifier_mismatch
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.advanced_blend.attachment_advanced_equation
+dEQP-GLES31.functional.debug.negative_coverage.callbacks.shader_storage.block_number_limits
+dEQP-GLES31.functional.debug.negative_coverage.callbacks.shader_storage.max_combined_block_number_limit
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.bind_buffer
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.delete_buffers
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.gen_buffers
@@ -17209,6 +17209,8 @@ dEQP-GLES31.functional.debug.negative_coverage.log.precise.precise_as_function_n
 dEQP-GLES31.functional.debug.negative_coverage.log.precise.precise_as_function_argument
 dEQP-GLES31.functional.debug.negative_coverage.log.advanced_blend.blend_qualifier_mismatch
 dEQP-GLES31.functional.debug.negative_coverage.log.advanced_blend.attachment_advanced_equation
+dEQP-GLES31.functional.debug.negative_coverage.log.shader_storage.block_number_limits
+dEQP-GLES31.functional.debug.negative_coverage.log.shader_storage.max_combined_block_number_limit
 dEQP-GLES31.functional.debug.negative_coverage.get_error.buffer.bind_buffer
 dEQP-GLES31.functional.debug.negative_coverage.get_error.buffer.delete_buffers
 dEQP-GLES31.functional.debug.negative_coverage.get_error.buffer.gen_buffers
@@ -17653,6 +17655,8 @@ dEQP-GLES31.functional.debug.negative_coverage.get_error.precise.precise_as_func
 dEQP-GLES31.functional.debug.negative_coverage.get_error.precise.precise_as_function_argument
 dEQP-GLES31.functional.debug.negative_coverage.get_error.advanced_blend.blend_qualifier_mismatch
 dEQP-GLES31.functional.debug.negative_coverage.get_error.advanced_blend.attachment_advanced_equation
+dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_storage.block_number_limits
+dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_storage.max_combined_block_number_limit
 dEQP-GLES31.functional.debug.externally_generated.application_messages
 dEQP-GLES31.functional.debug.externally_generated.third_party_messages
 dEQP-GLES31.functional.debug.externally_generated.push_pop_stack

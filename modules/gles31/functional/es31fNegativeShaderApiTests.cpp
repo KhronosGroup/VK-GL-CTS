@@ -2334,7 +2334,7 @@ void link_compute_shader (NegativeTestContext& ctx)
 	}
 }
 
-void compile_compute_shader_helper (NegativeTestContext& ctx, const char** computeShaderSource, GLint* compileStatus)
+void compile_compute_shader_helper (NegativeTestContext& ctx, const char* const* computeShaderSource, GLint* compileStatus)
 {
 	GLuint shader = ctx.glCreateShader(GL_COMPUTE_SHADER);
 
@@ -2351,68 +2351,155 @@ void compile_compute_shader (NegativeTestContext& ctx)
 	ctx.beginSection("Compile Computer Shader");
 
 	{
-		const char* computeShaderSource		=	"#version 300 es\n"
-												"void main (void)\n"
-												"{\n"
-												"}\n\0";
+		const char* const computeShaderSource		=	"#version 300 es\n"
+														"void main (void)\n"
+														"{\n"
+														"}\n";
 
 		compile_compute_shader_helper(ctx, &computeShaderSource, &compileStatus);
 		if (compileStatus != GL_FALSE)
 			ctx.fail("Compute Shader should not have compiled with #version 300 es.");
 	}
 	{
-		const char* computeShaderSource		=	"#version 310 es\n"
-												"buffer SSBO { vec4 data }"
-												"void main (void)\n"
-												"{\n"
-												"}\n\0";
+		const char* const computeShaderSource		=	"#version 310 es\n"
+														"buffer SSBO { vec4 data }"
+														"void main (void)\n"
+														"{\n"
+														"}\n";
 
 		compile_compute_shader_helper(ctx, &computeShaderSource, &compileStatus);
 		if (compileStatus != GL_FALSE)
 			ctx.fail("Compute Shader should not have compiled: incorrect SSBO syntax.");
 	}
 	{
-		const char* computeShaderSource		=	"#version 310 es\n"
-												"buffer SSBO { vec4 data;};"
-												"uniform mat4 data;"
-												"void main (void)\n"
-												"{\n"
-												"}\n\0";
+		const char* const computeShaderSource		=	"#version 310 es\n"
+														"buffer SSBO { vec4 data;};"
+														"uniform mat4 data;"
+														"void main (void)\n"
+														"{\n"
+														"}\n";
 
 		compile_compute_shader_helper(ctx, &computeShaderSource, &compileStatus);
 		if (compileStatus != GL_FALSE)
 			ctx.fail("Compute Shader should not have compiled: buffer variable redefinition.");
 	}
 	{
-		const char* computeShaderSource		=	"#version 310 es\n"
-												"buffer SSBO { vec4 data[]; vec4 moreData;};"
-												"void main (void)\n"
-												"{\n"
-												"}\n\0";
+		const char* const computeShaderSource		=	"#version 310 es\n"
+														"buffer SSBO { vec4 data[]; vec4 moreData;};"
+														"void main (void)\n"
+														"{\n"
+														"}\n";
 
 		compile_compute_shader_helper(ctx, &computeShaderSource, &compileStatus);
 		if (compileStatus != GL_FALSE)
 			ctx.fail("Compute Shader should not have compiled: unspecified length buffer member not at the end.");
 	}
 	{
-		const char* computeShaderSource		=	"#version 310 es\n"
-												"in vec4 data;"
-												"void main (void)\n"
-												"{\n"
-												"}\n\0";
+		const char* const computeShaderSource		=	"#version 310 es\n"
+														"in vec4 data;"
+														"void main (void)\n"
+														"{\n"
+														"}\n";
 
 		compile_compute_shader_helper(ctx, &computeShaderSource, &compileStatus);
 		if (compileStatus != GL_FALSE)
 			ctx.fail("Compute Shader should not have compiled: input qualifier used.");
 	}
 	{
-		const char* computeShaderSource		=	"#version 310 es\n"
-												"shared uint data = 0;";
+		const char* const computeShaderSource		=	"#version 310 es\n"
+														"shared uint data = 0;";
 
 		compile_compute_shader_helper(ctx, &computeShaderSource, &compileStatus);
 		if (compileStatus != GL_FALSE)
 			ctx.fail("Compute Shader should not have compiled: shared-qualified variable initialized.");
 	}
+	{
+		const char* const computeShaderSource		=	"#version 310 es\n"
+														"buffer SSBO { vec4 data; vec4 moreData[];} ssbo;"
+														"void test (vec4 data[10]) {}"
+														"void main (void)\n"
+														"{\n"
+														"    test(ssbo.moreData);"
+														"}\n";
+
+		compile_compute_shader_helper(ctx, &computeShaderSource, &compileStatus);
+		if (compileStatus != GL_FALSE)
+			ctx.fail("Compute Shader should not have compiled: unspecified length buffer member passed as argument to function.");
+	}
+	{
+		const char* const computeShaderSource		=	"#version 310 es\n"
+														"buffer SSBO { vec4 data; vec4 moreData[];} ssbo;"
+														"void main (void)\n"
+														"{\n"
+														"    vec4 var = ssbo.moreData[-1];"
+														"}\n";
+
+		compile_compute_shader_helper(ctx, &computeShaderSource, &compileStatus);
+		if (compileStatus != GL_FALSE)
+			ctx.fail("Compute Shader should not have compiled: unspecified length buffer member indexed with negative constant expression.");
+	}
+	{
+		const char* const computeShaderSource		=	"#version 310 es\n"
+														"layout(binding=-1) buffer SSBO { vec4 data;};"
+														"void main (void)\n"
+														"{\n"
+														"}\n";
+
+		compile_compute_shader_helper(ctx, &computeShaderSource, &compileStatus);
+		if (compileStatus != GL_FALSE)
+			ctx.fail("Compute Shader should not have compiled: binding point less than zero.");
+	}
+	{
+		const char* const computeShaderSource		=	"#version 310 es\n"
+														"layout(binding=1) buffer;"
+														"layout(binding=2) buffer SSBO { vec4 data;};"
+														"void main (void)\n"
+														"{\n"
+														"}\n";
+
+		compile_compute_shader_helper(ctx, &computeShaderSource, &compileStatus);
+		if (compileStatus != GL_FALSE)
+			ctx.fail("Compute Shader should not have compiled: binding point specified for global scope.");
+	}
+	{
+		const char* const computeShaderSource		=	"#version 310 es\n"
+														"buffer SSBO {"
+														"	layout(binding=1) vec4 data;"
+														"	layout(binding=2) vec4 moreData[];"
+														"} ssbo;"
+														"void main (void)\n"
+														"{\n"
+														"}\n";
+
+		compile_compute_shader_helper(ctx, &computeShaderSource, &compileStatus);
+		if (compileStatus != GL_FALSE)
+			ctx.fail("Compute Shader should not have compiled: binding point specified for block member declarations.");
+	}
+	{
+		const char* const computeShaderSource		=	"#version 310 es\n"
+														"readonly buffer SSBO {vec4 data;} ssbo;"
+														"void main (void)\n"
+														"{\n"
+															"ssbo.data = vec4(1, 1, 1, 1);"
+														"}\n";
+
+		compile_compute_shader_helper(ctx, &computeShaderSource, &compileStatus);
+		if (compileStatus != GL_FALSE)
+			ctx.fail("Compute Shader should not have compiled: writing to buffer block qualified with readonly.");
+	}
+	{
+		const char* const computeShaderSource		=	"#version 310 es\n"
+														"writeonly buffer SSBO {vec4 data;} ssbo;"
+														"void main (void)\n"
+														"{\n"
+															"vec4 var = ssbo.data;"
+														"}\n";
+
+		compile_compute_shader_helper(ctx, &computeShaderSource, &compileStatus);
+		if (compileStatus != GL_FALSE)
+			ctx.fail("Compute Shader should not have compiled: reading from buffer block qualified with writeonly.");
+	}
+
 	ctx.endSection();
 }
 

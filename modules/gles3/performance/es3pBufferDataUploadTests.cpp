@@ -6018,7 +6018,7 @@ static float sumOfRanks (const std::vector<deUint64>& testSamples, const std::ve
 template <typename Comparer>
 static DistributionCompareResult distributionCompare (const std::vector<deUint64>& orderedObservationsA, const std::vector<deUint64>& orderedObservationsB, const Comparer& comparer)
 {
-	// Mann–Whitney U test
+	// Mann-Whitney U test
 
 	const int				n1			= (int)orderedObservationsA.size();
 	const int				n2			= (int)orderedObservationsB.size();

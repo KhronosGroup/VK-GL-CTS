@@ -110,7 +110,7 @@ def execArgs (args):
 	if retcode != 0:
 		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
 
-def execArgsInDirectory (args, cwd, linePrefix=""):
+def execArgsInDirectory (args, cwd, linePrefix="", failOnNonZeroExit=True):
 
 	def readApplyPrefixAndPrint (source, prefix, sink):
 		while True:
@@ -125,7 +125,7 @@ def execArgsInDirectory (args, cwd, linePrefix=""):
 	stdoutJob.start()
 	stderrJob.start()
 	retcode = process.wait()
-	if retcode != 0:
+	if failOnNonZeroExit and retcode != 0:
 		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
 
 def serialApply(f, argsList):
@@ -173,7 +173,7 @@ def getDevices (adb):
 	if proc.returncode != 0:
 		raise Exception("adb devices -l failed, got %d" % proc.returncode)
 
-	ptrn = re.compile(r'^([a-zA-Z0-9:]+)\s+.*product:([^\s]+)\s+model:([^\s]+)\s+device:([^\s]+)')
+	ptrn = re.compile(r'^([a-zA-Z0-9\.:]+)\s+.*product:([^\s]+)\s+model:([^\s]+)\s+device:([^\s]+)')
 	devices = []
 	for line in stdout.splitlines()[1:]:
 		if len(line.strip()) == 0:
