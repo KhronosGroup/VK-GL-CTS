@@ -589,6 +589,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fNegativeShaderDirectiveTests.cpp \
 	modules/gles31/functional/es31fNegativeShaderFunctionTests.cpp \
 	modules/gles31/functional/es31fNegativeShaderImageLoadStoreTests.cpp \
+	modules/gles31/functional/es31fNegativeShaderStorageTests.cpp \
 	modules/gles31/functional/es31fNegativeStateApiTests.cpp \
 	modules/gles31/functional/es31fNegativeTestShared.cpp \
 	modules/gles31/functional/es31fNegativeTextureApiTests.cpp \
