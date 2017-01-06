@@ -72,7 +72,12 @@ void Window::release (void)
 	de::ScopedLock lock(m_stateLock);
 
 	if (m_state == STATE_IN_USE)
+	{
+		// Reset buffer size and format back to initial state
+		ANativeWindow_setBuffersGeometry(m_window, 0, 0, 0);
+
 		m_state = STATE_AVAILABLE;
+	}
 	else if (m_state == STATE_PENDING_DESTROY)
 		m_state = STATE_READY_FOR_DESTROY;
 	else
