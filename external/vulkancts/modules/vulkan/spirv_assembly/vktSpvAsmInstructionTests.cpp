@@ -3,6 +3,7 @@
  * ------------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2016 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +49,6 @@
 #include "deMath.h"
 #include "tcuStringTemplate.hpp"
 
-#include <cmath>
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -58,6 +58,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <utility>
 
 namespace vkt
 {
@@ -94,6 +95,27 @@ static void fillRandomScalars (de::Random& rnd, T minValue, T maxValue, void* ds
 	T* const typedPtr = (T*)dst;
 	for (int ndx = 0; ndx < numValues; ndx++)
 		typedPtr[offset + ndx] = randomScalar<T>(rnd, minValue, maxValue);
+}
+
+// Filter is a function that returns true if a value should pass, false otherwise.
+template<typename T, typename FilterT>
+static void fillRandomScalars (de::Random& rnd, T minValue, T maxValue, void* dst, int numValues, FilterT filter, int offset = 0)
+{
+	T* const typedPtr = (T*)dst;
+	T value;
+	for (int ndx = 0; ndx < numValues; ndx++)
+	{
+		do
+			value = randomScalar<T>(rnd, minValue, maxValue);
+		while (!filter(value));
+
+		typedPtr[offset + ndx] = value;
+	}
+}
+
+inline bool filterNotZero (const deInt32 value)
+{
+	return value != 0;
 }
 
 static void floorAll (vector<float>& values)
@@ -837,6 +859,212 @@ tcu::TestCaseGroup* createOpFRemGroup (tcu::TestContext& testCtx)
 	spec.verifyIO = &compareFRem;
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "", spec));
+
+	return group.release();
+}
+
+tcu::TestCaseGroup* createOpSRemGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsrem", "Test the OpSRem instruction"));
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 200;
+
+	const struct CaseParams
+	{
+		const char*		name;
+		const char*		failMessage;		// customized status message
+		qpTestResult	failResult;			// override status on failure
+		int				op1Min, op1Max;		// operand ranges
+		int				op2Min, op2Max;
+	} cases[] =
+	{
+		{ "positive",	"Output doesn't match with expected",				QP_TEST_RESULT_FAIL,	0,		65536,	0,		100 },
+		{ "all",		"Inconsistent results, but within specification",	QP_TEST_RESULT_PASS,	-65536,	65536,	-100,	100 },	// see below
+	};
+	// If either operand is negative the result is undefined. Some implementations may still return correct values.
+
+	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
+	{
+		const CaseParams&	params		= cases[caseNdx];
+		ComputeShaderSpec	spec;
+		vector<deInt32>		inputInts1	(numElements, 0);
+		vector<deInt32>		inputInts2	(numElements, 0);
+		vector<deInt32>		outputInts	(numElements, 0);
+
+		fillRandomScalars(rnd, params.op1Min, params.op1Max, &inputInts1[0], numElements);
+		fillRandomScalars(rnd, params.op2Min, params.op2Max, &inputInts2[0], numElements, filterNotZero);
+
+		for (int ndx = 0; ndx < numElements; ++ndx)
+		{
+			// The return value of std::fmod() has the same sign as its first operand, which is how OpFRem spec'd.
+			outputInts[ndx] = inputInts1[ndx] % inputInts2[ndx];
+		}
+
+		spec.assembly =
+			string(s_ShaderPreamble) +
+
+			"OpName %main           \"main\"\n"
+			"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+			"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+			"OpDecorate %buf BufferBlock\n"
+			"OpDecorate %indata1 DescriptorSet 0\n"
+			"OpDecorate %indata1 Binding 0\n"
+			"OpDecorate %indata2 DescriptorSet 0\n"
+			"OpDecorate %indata2 Binding 1\n"
+			"OpDecorate %outdata DescriptorSet 0\n"
+			"OpDecorate %outdata Binding 2\n"
+			"OpDecorate %i32arr ArrayStride 4\n"
+			"OpMemberDecorate %buf 0 Offset 0\n"
+
+			+ string(s_CommonTypes) +
+
+			"%buf        = OpTypeStruct %i32arr\n"
+			"%bufptr     = OpTypePointer Uniform %buf\n"
+			"%indata1    = OpVariable %bufptr Uniform\n"
+			"%indata2    = OpVariable %bufptr Uniform\n"
+			"%outdata    = OpVariable %bufptr Uniform\n"
+
+			"%id        = OpVariable %uvec3ptr Input\n"
+			"%zero      = OpConstant %i32 0\n"
+
+			"%main      = OpFunction %void None %voidf\n"
+			"%label     = OpLabel\n"
+			"%idval     = OpLoad %uvec3 %id\n"
+			"%x         = OpCompositeExtract %u32 %idval 0\n"
+			"%inloc1    = OpAccessChain %i32ptr %indata1 %zero %x\n"
+			"%inval1    = OpLoad %i32 %inloc1\n"
+			"%inloc2    = OpAccessChain %i32ptr %indata2 %zero %x\n"
+			"%inval2    = OpLoad %i32 %inloc2\n"
+			"%rem       = OpSRem %i32 %inval1 %inval2\n"
+			"%outloc    = OpAccessChain %i32ptr %outdata %zero %x\n"
+			"             OpStore %outloc %rem\n"
+			"             OpReturn\n"
+			"             OpFunctionEnd\n";
+
+		spec.inputs.push_back	(BufferSp(new Int32Buffer(inputInts1)));
+		spec.inputs.push_back	(BufferSp(new Int32Buffer(inputInts2)));
+		spec.outputs.push_back	(BufferSp(new Int32Buffer(outputInts)));
+		spec.numWorkGroups		= IVec3(numElements, 1, 1);
+		spec.failResult			= params.failResult;
+		spec.failMessage		= params.failMessage;
+
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, params.name, "", spec));
+	}
+
+	return group.release();
+}
+
+tcu::TestCaseGroup* createOpSModGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsmod", "Test the OpSMod instruction"));
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 200;
+
+	const struct CaseParams
+	{
+		const char*		name;
+		const char*		failMessage;		// customized status message
+		qpTestResult	failResult;			// override status on failure
+		int				op1Min, op1Max;		// operand ranges
+		int				op2Min, op2Max;
+	} cases[] =
+	{
+		{ "positive",	"Output doesn't match with expected",				QP_TEST_RESULT_FAIL,	0,		65536,	0,		100 },
+		{ "all",		"Inconsistent results, but within specification",	QP_TEST_RESULT_PASS,	-65536,	65536,	-100,	100 },	// see below
+	};
+	// If either operand is negative the result is undefined. Some implementations may still return correct values.
+
+	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
+	{
+		const CaseParams&	params		= cases[caseNdx];
+
+		ComputeShaderSpec	spec;
+		vector<deInt32>		inputInts1	(numElements, 0);
+		vector<deInt32>		inputInts2	(numElements, 0);
+		vector<deInt32>		outputInts	(numElements, 0);
+
+		fillRandomScalars(rnd, params.op1Min, params.op1Max, &inputInts1[0], numElements);
+		fillRandomScalars(rnd, params.op2Min, params.op2Max, &inputInts2[0], numElements, filterNotZero);
+
+		for (int ndx = 0; ndx < numElements; ++ndx)
+		{
+			deInt32 rem = inputInts1[ndx] % inputInts2[ndx];
+			if (rem == 0)
+			{
+				outputInts[ndx] = 0;
+			}
+			else if ((inputInts1[ndx] >= 0) == (inputInts2[ndx] >= 0))
+			{
+				// They have the same sign
+				outputInts[ndx] = rem;
+			}
+			else
+			{
+				// They have opposite sign.  The remainder operation takes the
+				// sign inputInts1[ndx] but OpSMod is supposed to take ths sign
+				// of inputInts2[ndx].  Adding inputInts2[ndx] will ensure that
+				// the result has the correct sign and that it is still
+				// congruent to inputInts1[ndx] modulo inputInts2[ndx]
+				//
+				// See also http://mathforum.org/library/drmath/view/52343.html
+				outputInts[ndx] = rem + inputInts2[ndx];
+			}
+		}
+
+		spec.assembly =
+			string(s_ShaderPreamble) +
+
+			"OpName %main           \"main\"\n"
+			"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+			"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+			"OpDecorate %buf BufferBlock\n"
+			"OpDecorate %indata1 DescriptorSet 0\n"
+			"OpDecorate %indata1 Binding 0\n"
+			"OpDecorate %indata2 DescriptorSet 0\n"
+			"OpDecorate %indata2 Binding 1\n"
+			"OpDecorate %outdata DescriptorSet 0\n"
+			"OpDecorate %outdata Binding 2\n"
+			"OpDecorate %i32arr ArrayStride 4\n"
+			"OpMemberDecorate %buf 0 Offset 0\n"
+
+			+ string(s_CommonTypes) +
+
+			"%buf        = OpTypeStruct %i32arr\n"
+			"%bufptr     = OpTypePointer Uniform %buf\n"
+			"%indata1    = OpVariable %bufptr Uniform\n"
+			"%indata2    = OpVariable %bufptr Uniform\n"
+			"%outdata    = OpVariable %bufptr Uniform\n"
+
+			"%id        = OpVariable %uvec3ptr Input\n"
+			"%zero      = OpConstant %i32 0\n"
+
+			"%main      = OpFunction %void None %voidf\n"
+			"%label     = OpLabel\n"
+			"%idval     = OpLoad %uvec3 %id\n"
+			"%x         = OpCompositeExtract %u32 %idval 0\n"
+			"%inloc1    = OpAccessChain %i32ptr %indata1 %zero %x\n"
+			"%inval1    = OpLoad %i32 %inloc1\n"
+			"%inloc2    = OpAccessChain %i32ptr %indata2 %zero %x\n"
+			"%inval2    = OpLoad %i32 %inloc2\n"
+			"%rem       = OpSMod %i32 %inval1 %inval2\n"
+			"%outloc    = OpAccessChain %i32ptr %outdata %zero %x\n"
+			"             OpStore %outloc %rem\n"
+			"             OpReturn\n"
+			"             OpFunctionEnd\n";
+
+		spec.inputs.push_back	(BufferSp(new Int32Buffer(inputInts1)));
+		spec.inputs.push_back	(BufferSp(new Int32Buffer(inputInts2)));
+		spec.outputs.push_back	(BufferSp(new Int32Buffer(outputInts)));
+		spec.numWorkGroups		= IVec3(numElements, 1, 1);
+		spec.failResult			= params.failResult;
+		spec.failMessage		= params.failMessage;
+
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, params.name, "", spec));
+	}
 
 	return group.release();
 }
@@ -3497,12 +3725,16 @@ struct InstanceContext
 	StageToSpecConstantMap	specConstants;
 	bool					hasTessellation;
 	VkShaderStageFlagBits	requiredStages;
+	qpTestResult			failResult;
+	string					failMessageTemplate;	//!< ${reason} in the template will be replaced with a detailed failure message
 
 	InstanceContext (const RGBA (&inputs)[4], const RGBA (&outputs)[4], const map<string, string>& testCodeFragments_, const StageToSpecConstantMap& specConstants_)
 		: testCodeFragments		(testCodeFragments_)
 		, specConstants			(specConstants_)
 		, hasTessellation		(false)
 		, requiredStages		(static_cast<VkShaderStageFlagBits>(0))
+		, failResult			(QP_TEST_RESULT_FAIL)
+		, failMessageTemplate	("${reason}")
 	{
 		inputColors[0]		= inputs[0];
 		inputColors[1]		= inputs[1];
@@ -3516,11 +3748,13 @@ struct InstanceContext
 	}
 
 	InstanceContext (const InstanceContext& other)
-		: moduleMap			(other.moduleMap)
-		, testCodeFragments	(other.testCodeFragments)
-		, specConstants		(other.specConstants)
-		, hasTessellation	(other.hasTessellation)
-		, requiredStages    (other.requiredStages)
+		: moduleMap				(other.moduleMap)
+		, testCodeFragments		(other.testCodeFragments)
+		, specConstants			(other.specConstants)
+		, hasTessellation		(other.hasTessellation)
+		, requiredStages		(other.requiredStages)
+		, failResult			(other.failResult)
+		, failMessageTemplate	(other.failMessageTemplate)
 	{
 		inputColors[0]		= other.inputColors[0];
 		inputColors[1]		= other.inputColors[1];
@@ -3531,6 +3765,13 @@ struct InstanceContext
 		outputColors[1]		= other.outputColors[1];
 		outputColors[2]		= other.outputColors[2];
 		outputColors[3]		= other.outputColors[3];
+	}
+
+	string getSpecializedFailMessage (const string& failureReason)
+	{
+		map<string, string> parameters;
+		parameters["reason"] = failureReason;
+		return StringTemplate(failMessageTemplate).specialize(parameters);
 	}
 };
 
@@ -3582,7 +3823,13 @@ void getInvertedDefaultColors (RGBA (&colors)[4])
 // by setting up the mapping of modules to their contained shaders and stages.
 // The inputs and expected outputs are given by inputColors and outputColors
 template<size_t N>
-InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments, const StageToSpecConstantMap& specConstants)
+InstanceContext createInstanceContext (const ShaderElement				(&elements)[N],
+									   const RGBA						(&inputColors)[4],
+									   const RGBA						(&outputColors)[4],
+									   const map<string, string>&		testCodeFragments,
+									   const StageToSpecConstantMap&	specConstants,
+									   const qpTestResult				failResult			= QP_TEST_RESULT_FAIL,
+									   const string&					failMessageTemplate	= string())
 {
 	InstanceContext ctx (inputColors, outputColors, testCodeFragments, specConstants);
 	for (size_t i = 0; i < N; ++i)
@@ -3590,18 +3837,25 @@ InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const
 		ctx.moduleMap[elements[i].moduleName].push_back(std::make_pair(elements[i].entryName, elements[i].stage));
 		ctx.requiredStages = static_cast<VkShaderStageFlagBits>(ctx.requiredStages | elements[i].stage);
 	}
+	ctx.failResult				= failResult;
+	if (!failMessageTemplate.empty())
+		ctx.failMessageTemplate	= failMessageTemplate;
 	return ctx;
 }
 
 template<size_t N>
-inline InstanceContext createInstanceContext (const ShaderElement (&elements)[N], RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments)
+inline InstanceContext createInstanceContext (const ShaderElement			(&elements)[N],
+											  RGBA							(&inputColors)[4],
+											  const RGBA					(&outputColors)[4],
+											  const map<string, string>&	testCodeFragments)
 {
 	return createInstanceContext(elements, inputColors, outputColors, testCodeFragments, StageToSpecConstantMap());
 }
 
 // The same as createInstanceContext above, but with default colors.
 template<size_t N>
-InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const map<string, string>& testCodeFragments)
+InstanceContext createInstanceContext (const ShaderElement			(&elements)[N],
+									   const map<string, string>&	testCodeFragments)
 {
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
@@ -3642,6 +3896,7 @@ void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDev
 																								\
 	"%f32 = OpTypeFloat 32\n"																	\
 	"%v3f32 = OpTypeVector %f32 3\n"															\
+	"%v4i32 = OpTypeVector %i32 4\n"															\
 	"%v4f32 = OpTypeVector %f32 4\n"															\
 	"%v4bool = OpTypeVector %bool 4\n"															\
 																								\
@@ -5590,24 +5845,31 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	const RGBA threshold(1, 1, 1, 1);
 	const RGBA upperLeft(pixelBuffer.getPixel(1, 1));
 	if (!tcu::compareThreshold(upperLeft, instance.outputColors[0], threshold))
-		return TestStatus::fail("Upper left corner mismatch");
+		return TestStatus(instance.failResult, instance.getSpecializedFailMessage("Upper left corner mismatch"));
 
 	const RGBA upperRight(pixelBuffer.getPixel(pixelBuffer.getWidth() - 1, 1));
 	if (!tcu::compareThreshold(upperRight, instance.outputColors[1], threshold))
-		return TestStatus::fail("Upper right corner mismatch");
+		return TestStatus(instance.failResult, instance.getSpecializedFailMessage("Upper right corner mismatch"));
 
 	const RGBA lowerLeft(pixelBuffer.getPixel(1, pixelBuffer.getHeight() - 1));
 	if (!tcu::compareThreshold(lowerLeft, instance.outputColors[2], threshold))
-		return TestStatus::fail("Lower left corner mismatch");
+		return TestStatus(instance.failResult, instance.getSpecializedFailMessage("Lower left corner mismatch"));
 
 	const RGBA lowerRight(pixelBuffer.getPixel(pixelBuffer.getWidth() - 1, pixelBuffer.getHeight() - 1));
 	if (!tcu::compareThreshold(lowerRight, instance.outputColors[3], threshold))
-		return TestStatus::fail("Lower right corner mismatch");
+		return TestStatus(instance.failResult, instance.getSpecializedFailMessage("Lower right corner mismatch"));
 
 	return TestStatus::pass("Rendered output matches input");
 }
 
-void createTestsForAllStages (const std::string& name, const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments, const vector<deInt32>& specConstants, tcu::TestCaseGroup* tests)
+void createTestsForAllStages (const std::string&			name,
+							  const RGBA					(&inputColors)[4],
+							  const RGBA					(&outputColors)[4],
+							  const map<string, string>&	testCodeFragments,
+							  const vector<deInt32>&		specConstants,
+							  tcu::TestCaseGroup*			tests,
+							  const qpTestResult			failResult			= QP_TEST_RESULT_FAIL,
+							  const string&					failMessageTemplate	= string())
 {
 	const ShaderElement		vertFragPipelineStages[]		=
 	{
@@ -5634,33 +5896,39 @@ void createTestsForAllStages (const std::string& name, const RGBA (&inputColors)
 
 	specConstantMap[VK_SHADER_STAGE_VERTEX_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_vert", "", addShaderCodeCustomVertex, runAndVerifyDefaultPipeline,
-												 createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_tessc", "", addShaderCodeCustomTessControl, runAndVerifyDefaultPipeline,
-												 createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_tesse", "", addShaderCodeCustomTessEval, runAndVerifyDefaultPipeline,
-												 createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_GEOMETRY_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_geom", "", addShaderCodeCustomGeometry, runAndVerifyDefaultPipeline,
-												 createInstanceContext(geomPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(geomPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_FRAGMENT_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_frag", "", addShaderCodeCustomFragment, runAndVerifyDefaultPipeline,
-												 createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap, failResult, failMessageTemplate));
 }
 
-inline void createTestsForAllStages (const std::string& name, const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments, tcu::TestCaseGroup* tests)
+inline void createTestsForAllStages (const string&				name,
+									 const RGBA					(&inputColors)[4],
+									 const RGBA					(&outputColors)[4],
+									 const map<string, string>&	testCodeFragments,
+									 tcu::TestCaseGroup*		tests,
+									 const qpTestResult			failResult			= QP_TEST_RESULT_FAIL,
+									 const string&				failMessageTemplate	= string())
 {
 	vector<deInt32> noSpecConstants;
-	createTestsForAllStages(name, inputColors, outputColors, testCodeFragments, noSpecConstants, tests);
+	createTestsForAllStages(name, inputColors, outputColors, testCodeFragments, noSpecConstants, tests, failResult, failMessageTemplate);
 }
 
 } // anonymous
@@ -7917,6 +8185,172 @@ tcu::TestCaseGroup* createFRemTests(tcu::TestContext& testCtx)
 	return testGroup.release();
 }
 
+// Test for the OpSRem instruction.
+tcu::TestCaseGroup* createSRemTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "srem", "OpSRem"));
+	map<string, string>					fragments;
+
+	fragments["pre_main"]				 =
+		"%c_f32_255 = OpConstant %f32 255.0\n"
+		"%c_i32_128 = OpConstant %i32 128\n"
+		"%c_i32_255 = OpConstant %i32 255\n"
+		"%c_v4f32_255 = OpConstantComposite %v4f32 %c_f32_255 %c_f32_255 %c_f32_255 %c_f32_255 \n"
+		"%c_v4f32_0_5 = OpConstantComposite %v4f32 %c_f32_0_5 %c_f32_0_5 %c_f32_0_5 %c_f32_0_5 \n"
+		"%c_v4i32_128 = OpConstantComposite %v4i32 %c_i32_128 %c_i32_128 %c_i32_128 %c_i32_128 \n";
+
+	// The test does the following.
+	// ivec4 ints = int(param1 * 255.0 + 0.5) - 128;
+	// ivec4 result = ivec4(srem(ints.x, ints.y), srem(ints.y, ints.z), srem(ints.z, ints.x), 255);
+	// return float(result + 128) / 255.0;
+	fragments["testfun"]				 =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%div255 = OpFMul %v4f32 %param1 %c_v4f32_255\n"
+		"%add0_5 = OpFAdd %v4f32 %div255 %c_v4f32_0_5\n"
+		"%uints_in = OpConvertFToS %v4i32 %add0_5\n"
+		"%ints_in = OpISub %v4i32 %uints_in %c_v4i32_128\n"
+		"%x_in = OpCompositeExtract %i32 %ints_in 0\n"
+		"%y_in = OpCompositeExtract %i32 %ints_in 1\n"
+		"%z_in = OpCompositeExtract %i32 %ints_in 2\n"
+		"%x_out = OpSRem %i32 %x_in %y_in\n"
+		"%y_out = OpSRem %i32 %y_in %z_in\n"
+		"%z_out = OpSRem %i32 %z_in %x_in\n"
+		"%ints_out = OpCompositeConstruct %v4i32 %x_out %y_out %z_out %c_i32_255\n"
+		"%ints_offset = OpIAdd %v4i32 %ints_out %c_v4i32_128\n"
+		"%f_ints_offset = OpConvertSToF %v4f32 %ints_offset\n"
+		"%float_out = OpFDiv %v4f32 %f_ints_offset %c_v4f32_255\n"
+		"OpReturnValue %float_out\n"
+		"OpFunctionEnd\n";
+
+	const struct CaseParams
+	{
+		const char*		name;
+		const char*		failMessageTemplate;	// customized status message
+		qpTestResult	failResult;				// override status on failure
+		int				operands[4][3];			// four (x, y, z) vectors of operands
+		int				results[4][3];			// four (x, y, z) vectors of results
+	} cases[] =
+	{
+		{
+			"positive",
+			"${reason}",
+			QP_TEST_RESULT_FAIL,
+			{ { 5, 12, 17 }, { 5, 5, 7 }, { 75, 8, 81 }, { 25, 60, 100 } },			// operands
+			{ { 5, 12,  2 }, { 0, 5, 2 }, {  3, 8,  6 }, { 25, 60,   0 } },			// results
+		},
+		{
+			"all",
+			"Inconsistent results, but within specification: ${reason}",
+			QP_TEST_RESULT_PASS,													// negative operands, not required by the spec
+			{ { 5, 12, -17 }, { -5, -5, 7 }, { 75, 8, -81 }, { 25, -60, 100 } },	// operands
+			{ { 5, 12,  -2 }, {  0, -5, 2 }, {  3, 8,  -6 }, { 25, -60,   0 } },	// results
+		},
+	};
+	// If either operand is negative the result is undefined. Some implementations may still return correct values.
+
+	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
+	{
+		const CaseParams&	params			= cases[caseNdx];
+		RGBA				inputColors[4];
+		RGBA				outputColors[4];
+
+		for (int i = 0; i < 4; ++i)
+		{
+			inputColors [i] = RGBA(params.operands[i][0] + 128, params.operands[i][1] + 128, params.operands[i][2] + 128, 255);
+			outputColors[i] = RGBA(params.results [i][0] + 128, params.results [i][1] + 128, params.results [i][2] + 128, 255);
+		}
+
+		createTestsForAllStages(params.name, inputColors, outputColors, fragments, testGroup.get(), params.failResult, params.failMessageTemplate);
+	}
+
+	return testGroup.release();
+}
+
+// Test for the OpSMod instruction.
+tcu::TestCaseGroup* createSModTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "smod", "OpSMod"));
+	map<string, string>					fragments;
+
+	fragments["pre_main"]				 =
+		"%c_f32_255 = OpConstant %f32 255.0\n"
+		"%c_i32_128 = OpConstant %i32 128\n"
+		"%c_i32_255 = OpConstant %i32 255\n"
+		"%c_v4f32_255 = OpConstantComposite %v4f32 %c_f32_255 %c_f32_255 %c_f32_255 %c_f32_255 \n"
+		"%c_v4f32_0_5 = OpConstantComposite %v4f32 %c_f32_0_5 %c_f32_0_5 %c_f32_0_5 %c_f32_0_5 \n"
+		"%c_v4i32_128 = OpConstantComposite %v4i32 %c_i32_128 %c_i32_128 %c_i32_128 %c_i32_128 \n";
+
+	// The test does the following.
+	// ivec4 ints = int(param1 * 255.0 + 0.5) - 128;
+	// ivec4 result = ivec4(smod(ints.x, ints.y), smod(ints.y, ints.z), smod(ints.z, ints.x), 255);
+	// return float(result + 128) / 255.0;
+	fragments["testfun"]				 =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%div255 = OpFMul %v4f32 %param1 %c_v4f32_255\n"
+		"%add0_5 = OpFAdd %v4f32 %div255 %c_v4f32_0_5\n"
+		"%uints_in = OpConvertFToS %v4i32 %add0_5\n"
+		"%ints_in = OpISub %v4i32 %uints_in %c_v4i32_128\n"
+		"%x_in = OpCompositeExtract %i32 %ints_in 0\n"
+		"%y_in = OpCompositeExtract %i32 %ints_in 1\n"
+		"%z_in = OpCompositeExtract %i32 %ints_in 2\n"
+		"%x_out = OpSMod %i32 %x_in %y_in\n"
+		"%y_out = OpSMod %i32 %y_in %z_in\n"
+		"%z_out = OpSMod %i32 %z_in %x_in\n"
+		"%ints_out = OpCompositeConstruct %v4i32 %x_out %y_out %z_out %c_i32_255\n"
+		"%ints_offset = OpIAdd %v4i32 %ints_out %c_v4i32_128\n"
+		"%f_ints_offset = OpConvertSToF %v4f32 %ints_offset\n"
+		"%float_out = OpFDiv %v4f32 %f_ints_offset %c_v4f32_255\n"
+		"OpReturnValue %float_out\n"
+		"OpFunctionEnd\n";
+
+	const struct CaseParams
+	{
+		const char*		name;
+		const char*		failMessageTemplate;	// customized status message
+		qpTestResult	failResult;				// override status on failure
+		int				operands[4][3];			// four (x, y, z) vectors of operands
+		int				results[4][3];			// four (x, y, z) vectors of results
+	} cases[] =
+	{
+		{
+			"positive",
+			"${reason}",
+			QP_TEST_RESULT_FAIL,
+			{ { 5, 12, 17 }, { 5, 5, 7 }, { 75, 8, 81 }, { 25, 60, 100 } },				// operands
+			{ { 5, 12,  2 }, { 0, 5, 2 }, {  3, 8,  6 }, { 25, 60,   0 } },				// results
+		},
+		{
+			"all",
+			"Inconsistent results, but within specification: ${reason}",
+			QP_TEST_RESULT_PASS,														// negative operands, not required by the spec
+			{ { 5, 12, -17 }, { -5, -5,  7 }, { 75,   8, -81 }, {  25, -60, 100 } },	// operands
+			{ { 5, -5,   3 }, {  0,  2, -3 }, {  3, -73,  69 }, { -35,  40,   0 } },	// results
+		},
+	};
+	// If either operand is negative the result is undefined. Some implementations may still return correct values.
+
+	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
+	{
+		const CaseParams&	params			= cases[caseNdx];
+		RGBA				inputColors[4];
+		RGBA				outputColors[4];
+
+		for (int i = 0; i < 4; ++i)
+		{
+			inputColors [i] = RGBA(params.operands[i][0] + 128, params.operands[i][1] + 128, params.operands[i][2] + 128, 255);
+			outputColors[i] = RGBA(params.results [i][0] + 128, params.results [i][1] + 128, params.results [i][2] + 128, 255);
+		}
+
+		createTestsForAllStages(params.name, inputColors, outputColors, fragments, testGroup.get(), params.failResult, params.failMessageTemplate);
+	}
+
+	return testGroup.release();
+}
+
 enum IntegerType
 {
 	INTEGER_TYPE_SIGNED_16,
@@ -8963,6 +9397,8 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpUnreachableGroup(testCtx));
 	computeTests ->addChild(createOpQuantizeToF16Group(testCtx));
 	computeTests ->addChild(createOpFRemGroup(testCtx));
+	computeTests->addChild(createOpSRemGroup(testCtx));
+	computeTests->addChild(createOpSModGroup(testCtx));
 	computeTests->addChild(createSConvertTests(testCtx));
 	computeTests->addChild(createUConvertTests(testCtx));
 	computeTests->addChild(createOpCompositeInsertGroup(testCtx));
@@ -9020,6 +9456,8 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createBarrierTests(testCtx));
 	graphicsTests->addChild(createDecorationGroupTests(testCtx));
 	graphicsTests->addChild(createFRemTests(testCtx));
+	graphicsTests->addChild(createSRemTests(testCtx));
+	graphicsTests->addChild(createSModTests(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());

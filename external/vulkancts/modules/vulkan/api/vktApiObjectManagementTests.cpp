@@ -2464,8 +2464,8 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 		for (; numPassingAllocs < maxTries; ++numPassingAllocs)
 		{
 			DeterministicFailAllocator			objAllocator(getSystemAllocator(),
-															 numPassingAllocs,
-															 DeterministicFailAllocator::MODE_COUNT_AND_FAIL);
+															 DeterministicFailAllocator::MODE_COUNT_AND_FAIL,
+															 numPassingAllocs);
 			AllocationCallbackRecorder			recorder	(objAllocator.getCallbacks(), 128);
 			const Environment					objEnv		(resEnv.env.vkp,
 															 resEnv.env.vkd,
@@ -2545,7 +2545,7 @@ tcu::TestStatus allocCallbackFailMultipleObjectsTest (Context& context, typename
 
 			// \note We have to use the same allocator for both resource dependencies and the object under test,
 			//       because pooled objects take memory from the pool.
-			DeterministicFailAllocator			objAllocator(getSystemAllocator(), numPassingAllocs, DeterministicFailAllocator::MODE_DO_NOT_COUNT);
+			DeterministicFailAllocator			objAllocator(getSystemAllocator(), DeterministicFailAllocator::MODE_DO_NOT_COUNT, 0);
 			AllocationCallbackRecorder			recorder	(objAllocator.getCallbacks(), 128);
 			const Environment					objEnv		(context.getPlatformInterface(),
 															 context.getDeviceInterface(),
@@ -2563,7 +2563,7 @@ tcu::TestStatus allocCallbackFailMultipleObjectsTest (Context& context, typename
 			{
 				const typename Object::Resources res (objEnv, params);
 
-				objAllocator.setMode(DeterministicFailAllocator::MODE_COUNT_AND_FAIL);
+				objAllocator.reset(DeterministicFailAllocator::MODE_COUNT_AND_FAIL, numPassingAllocs);
 				const vector<ObjectTypeSp> scopedHandles = Object::createMultiple(objEnv, res, params, &handles, &result);
 			}
 
