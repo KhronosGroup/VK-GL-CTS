@@ -35,16 +35,11 @@
 
 namespace vkt
 {
-
-using namespace vk;
-
 namespace api
 {
-
 namespace
 {
-
-static const deUint32	MAX_BUFFER_SIZE_DIVISOR	= 16;
+using namespace vk;
 
 struct BufferCaseParameters
 {
@@ -204,155 +199,178 @@ private:
 	BufferCaseParameters		m_testCase;
 };
 
-
+inline VkDeviceSize alignDeviceSize (VkDeviceSize val, VkDeviceSize align)
+{
+	DE_ASSERT(deIsPowerOfTwo64(align));
+	DE_ASSERT(val + align >= val);				// crash on overflow
+	return (val + align - 1) & ~(align - 1);
+}
 
 tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest (VkDeviceSize size)
 {
-	const VkPhysicalDevice		vkPhysicalDevice	= getPhysicalDevice();
-	const InstanceInterface&	vkInstance			= getInstanceInterface();
-	const VkDevice				vkDevice			= getDevice();
-	const DeviceInterface&		vk					= getDeviceInterface();
-	Move<VkBuffer>				testBuffer;
-	VkMemoryRequirements		memReqs;
-	Move<VkDeviceMemory>		memory;
-	const deUint32				queueFamilyIndex	= getUniversalQueueFamilyIndex();
-	const VkPhysicalDeviceMemoryProperties	memoryProperties = getPhysicalDeviceMemoryProperties(vkInstance, vkPhysicalDevice);
+	const VkPhysicalDevice					vkPhysicalDevice	= getPhysicalDevice();
+	const InstanceInterface&				vkInstance			= getInstanceInterface();
+	const VkDevice							vkDevice			= getDevice();
+	const DeviceInterface&					vk					= getDeviceInterface();
+	const deUint32							queueFamilyIndex	= getUniversalQueueFamilyIndex();
+	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vkInstance, vkPhysicalDevice);
+	const VkPhysicalDeviceLimits			limits				= getPhysicalDeviceProperties(vkInstance, vkPhysicalDevice).limits;
+	Move<VkBuffer>							buffer;
+	Move<VkDeviceMemory>					memory;
+	VkMemoryRequirements					memReqs;
 
-	// Create buffer
+	if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) != 0)
+		size = std::min(size, limits.sparseAddressSpaceSize);
+
+	// Create the test buffer and a memory allocation for it
 	{
-		VkBufferCreateInfo		bufferParams		=
+		// Create a minimal buffer first to get the supported memory types
+		VkBufferCreateInfo bufferParams =
 		{
-			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-			DE_NULL,
-			m_testCase.flags,
-			size,
-			m_testCase.usage,
-			m_testCase.sharingMode,
-			1u,										//	deUint32			queueFamilyCount;
-			&queueFamilyIndex,
+			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType        sType;
+			DE_NULL,								// const void*            pNext;
+			m_testCase.flags,						// VkBufferCreateFlags    flags;
+			1u,										// VkDeviceSize           size;
+			m_testCase.usage,						// VkBufferUsageFlags     usage;
+			m_testCase.sharingMode,					// VkSharingMode          sharingMode;
+			1u,										// uint32_t               queueFamilyIndexCount;
+			&queueFamilyIndex,						// const uint32_t*        pQueueFamilyIndices;
 		};
 
-		try
-		{
-			testBuffer = createBuffer(vk, vkDevice, &bufferParams);
-		}
-		catch (const vk::Error& error)
-		{
-			return tcu::TestStatus::fail("Buffer creation failed! (requested memory size: " + de::toString(size) + ", Error code: " + de::toString(error.getMessage()) + ")");
-		}
-
-		vk.getBufferMemoryRequirements(vkDevice, *testBuffer, &memReqs);
+		buffer = createBuffer(vk, vkDevice, &bufferParams);
+		vk.getBufferMemoryRequirements(vkDevice, *buffer, &memReqs);
 
 		const deUint32		heapTypeIndex	= (deUint32)deCtz32(memReqs.memoryTypeBits);
 		const VkMemoryType	memoryType		= memoryProperties.memoryTypes[heapTypeIndex];
 		const VkMemoryHeap	memoryHeap		= memoryProperties.memoryHeaps[memoryType.heapIndex];
-		const VkDeviceSize	maxBufferSize	= memoryHeap.size / MAX_BUFFER_SIZE_DIVISOR;
-		// If the requested size is too large, clamp it based on the selected heap size
-		if (size > maxBufferSize)
-		{
-			size = maxBufferSize;
-			bufferParams.size = size;
-			try
-			{
-				// allocate a new buffer with the adjusted size, the old one will be destroyed by the smart pointer
-				testBuffer = createBuffer(vk, vkDevice, &bufferParams);
-			}
-			catch (const vk::Error& error)
-			{
-				return tcu::TestStatus::fail("Buffer creation failed! (requested memory size: " + de::toString(size) + ", Error code: " + de::toString(error.getMessage()) + ")");
-			}
-			vk.getBufferMemoryRequirements(vkDevice, *testBuffer, &memReqs);
-		}
+		const VkDeviceSize	maxBufferSize	= alignDeviceSize(memoryHeap.size >> 1, memReqs.alignment);
+		const deUint32		shrinkBits		= 4;	// number of bits to shift when reducing the size with each iteration
 
-		if (size > memReqs.size)
+		size = std::min(size, maxBufferSize);
+
+		while (*memory == DE_NULL)
 		{
-			std::ostringstream errorMsg;
-			errorMsg << "Requied memory size (" << memReqs.size << " bytes) smaller than the buffer's size (" << size << " bytes)!";
-			return tcu::TestStatus::fail(errorMsg.str());
-		}
+			// Create the buffer
+			{
+				VkResult result		= VK_ERROR_OUT_OF_HOST_MEMORY;
+				VkBuffer rawBuffer	= DE_NULL;
+
+				bufferParams.size	= size;
+				buffer				= Move<VkBuffer>();		// free the previous buffer, if any
+				result				= vk.createBuffer(vkDevice, &bufferParams, (VkAllocationCallbacks*)DE_NULL, &rawBuffer);
+
+				if (result != VK_SUCCESS)
+				{
+					size = alignDeviceSize(size >> shrinkBits, memReqs.alignment);
+
+					if (size == 0 || bufferParams.size == memReqs.alignment)
+						return tcu::TestStatus::fail("Buffer creation failed! (" + de::toString(getResultName(result)) + ")");
+
+					continue;	// didn't work, try with a smaller buffer
+				}
+
+				buffer = Move<VkBuffer>(check<VkBuffer>(rawBuffer), Deleter<VkBuffer>(vk, vkDevice, DE_NULL));
+			}
+
+			vk.getBufferMemoryRequirements(vkDevice, *buffer, &memReqs);	// get the proper size requirement
+
+			if (size > memReqs.size)
+			{
+				std::ostringstream errorMsg;
+				errorMsg << "Requied memory size (" << memReqs.size << " bytes) smaller than the buffer's size (" << size << " bytes)!";
+				return tcu::TestStatus::fail(errorMsg.str());
+			}
+
+			// Allocate the memory
+			{
+				VkResult		result			= VK_ERROR_OUT_OF_HOST_MEMORY;
+				VkDeviceMemory	rawMemory		= DE_NULL;
+
+				const VkMemoryAllocateInfo memAlloc =
+				{
+					VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,		// VkStructureType    sType;
+					NULL,										// const void*        pNext;
+					memReqs.size,								// VkDeviceSize       allocationSize;
+					heapTypeIndex,								// uint32_t           memoryTypeIndex;
+				};
+
+				result = vk.allocateMemory(vkDevice, &memAlloc, (VkAllocationCallbacks*)DE_NULL, &rawMemory);
+
+				if (result != VK_SUCCESS)
+				{
+					size = alignDeviceSize(size >> shrinkBits, memReqs.alignment);
+
+					if (size == 0 || memReqs.size == memReqs.alignment)
+						return tcu::TestStatus::fail("Unable to allocate " + de::toString(memReqs.size) + " bytes of memory");
+
+					continue;	// didn't work, try with a smaller allocation (and a smaller buffer)
+				}
+
+				memory = Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL));
+			}
+		} // while
 	}
 
-	// Allocate and bind memory
+	// Bind the memory
+	if ((m_testCase.flags & (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)) != 0)
 	{
-		const VkMemoryAllocateInfo memAlloc =
+		VkQueue								queue					= DE_NULL;
+
+		vk.getDeviceQueue(vkDevice, queueFamilyIndex, 0, &queue);
+
+		const VkSparseMemoryBind			sparseMemoryBind		=
 		{
-			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-			NULL,
-			memReqs.size,
-			(deUint32)deCtz32(memReqs.memoryTypeBits)	//	deUint32		memoryTypeIndex
+			0,										// VkDeviceSize								resourceOffset;
+			memReqs.size,							// VkDeviceSize								size;
+			*memory,								// VkDeviceMemory							memory;
+			0,										// VkDeviceSize								memoryOffset;
+			0										// VkSparseMemoryBindFlags					flags;
 		};
 
-		try
+		const VkSparseBufferMemoryBindInfo	sparseBufferMemoryBindInfo	=
 		{
-			memory = allocateMemory(vk, vkDevice, &memAlloc, (const VkAllocationCallbacks*)DE_NULL);
-		}
-		catch (const vk::Error& error)
+			*buffer,							// VkBuffer									buffer;
+			1u,										// deUint32									bindCount;
+			&sparseMemoryBind						// const VkSparseMemoryBind*				pBinds;
+		};
+
+		const VkBindSparseInfo				bindSparseInfo			=
 		{
-			return tcu::TestStatus::fail("Alloc memory failed! (requested memory size: " + de::toString(size) + ", Error code: " + de::toString(error.getMessage()) + ")");
-		}
+			VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,		// VkStructureType							sType;
+			DE_NULL,								// const void*								pNext;
+			0,										// deUint32									waitSemaphoreCount;
+			DE_NULL,								// const VkSemaphore*						pWaitSemaphores;
+			1u,										// deUint32									bufferBindCount;
+			&sparseBufferMemoryBindInfo,			// const VkSparseBufferMemoryBindInfo*		pBufferBinds;
+			0,										// deUint32									imageOpaqueBindCount;
+			DE_NULL,								// const VkSparseImageOpaqueMemoryBindInfo*	pImageOpaqueBinds;
+			0,										// deUint32									imageBindCount;
+			DE_NULL,								// const VkSparseImageMemoryBindInfo*		pImageBinds;
+			0,										// deUint32									signalSemaphoreCount;
+			DE_NULL,								// const VkSemaphore*						pSignalSemaphores;
+		};
 
-		if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) ||
-			(m_testCase.flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT) ||
-			(m_testCase.flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT))
+		const VkFenceCreateInfo fenceParams =
 		{
-			VkQueue queue												= 0;
+			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
+			DE_NULL,								// const void*			pNext;
+			0u										// VkFenceCreateFlags	flags;
+		};
 
-			vk.getDeviceQueue(vkDevice, queueFamilyIndex, 0, &queue);
+		const vk::Unique<vk::VkFence> fence(vk::createFence(vk, vkDevice, &fenceParams));
 
-			const VkSparseMemoryBind			sparseMemoryBind		=
-			{
-				0,										// VkDeviceSize								resourceOffset;
-				memReqs.size,							// VkDeviceSize								size;
-				*memory,								// VkDeviceMemory							memory;
-				0,										// VkDeviceSize								memoryOffset;
-				0										// VkSparseMemoryBindFlags					flags;
-			};
+		if (vk.queueBindSparse(queue, 1, &bindSparseInfo, *fence) != VK_SUCCESS)
+			return tcu::TestStatus::fail("Bind sparse buffer memory failed! (requested memory size: " + de::toString(size) + ")");
 
-			const VkSparseBufferMemoryBindInfo	sparseBufferMemoryBindInfo	=
-			{
-				*testBuffer,							// VkBuffer									buffer;
-				1u,										// deUint32									bindCount;
-				&sparseMemoryBind						// const VkSparseMemoryBind*				pBinds;
-			};
-
-			const VkBindSparseInfo				bindSparseInfo			=
-			{
-				VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,		// VkStructureType							sType;
-				DE_NULL,								// const void*								pNext;
-				0,										// deUint32									waitSemaphoreCount;
-				DE_NULL,								// const VkSemaphore*						pWaitSemaphores;
-				1u,										// deUint32									bufferBindCount;
-				&sparseBufferMemoryBindInfo,			// const VkSparseBufferMemoryBindInfo*		pBufferBinds;
-				0,										// deUint32									imageOpaqueBindCount;
-				DE_NULL,								// const VkSparseImageOpaqueMemoryBindInfo*	pImageOpaqueBinds;
-				0,										// deUint32									imageBindCount;
-				DE_NULL,								// const VkSparseImageMemoryBindInfo*		pImageBinds;
-				0,										// deUint32									signalSemaphoreCount;
-				DE_NULL,								// const VkSemaphore*						pSignalSemaphores;
-			};
-
-			const VkFenceCreateInfo fenceParams =
-			{
-				VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-				DE_NULL,								// const void*			pNext;
-				0u										// VkFenceCreateFlags	flags;
-			};
-
-			const vk::Unique<vk::VkFence> fence(vk::createFence(vk, vkDevice, &fenceParams));
-
-			if (vk.queueBindSparse(queue, 1, &bindSparseInfo, *fence) != VK_SUCCESS)
-				return tcu::TestStatus::fail("Bind sparse buffer memory failed! (requested memory size: " + de::toString(size) + ")");
-
-			VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), VK_TRUE, ~(0ull) /* infinity */));
-		}
-		else
-		{
-			if (vk.bindBufferMemory(vkDevice, *testBuffer, *memory, 0) != VK_SUCCESS)
-				return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
-		}
+		VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), VK_TRUE, ~(0ull) /* infinity */));
+	}
+	else
+	{
+		if (vk.bindBufferMemory(vkDevice, *buffer, *memory, 0) != VK_SUCCESS)
+			return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
 	}
 
-	return tcu::TestStatus::pass("Buffer test");
+	return tcu::TestStatus::pass("Pass");
 }
 
 tcu::TestStatus BufferTestInstance::iterate (void)
@@ -373,27 +391,19 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 		1,
 		1181,
 		15991,
-		16384
+		16384,
+		~0ull,		// try to exercise a very large buffer too (will be clamped to a sensible size later)
 	};
-	tcu::TestStatus					testStatus			= tcu::TestStatus::pass("Buffer test");
 
-	for (int i = 0; i < DE_LENGTH_OF_ARRAY(testSizes); i++)
+	for (int i = 0; i < DE_LENGTH_OF_ARRAY(testSizes); ++i)
 	{
-		if ((testStatus = bufferCreateAndAllocTest(testSizes[i])).getCode() != QP_TEST_RESULT_PASS)
+		const tcu::TestStatus testStatus = bufferCreateAndAllocTest(testSizes[i]);
+
+		if (testStatus.getCode() != QP_TEST_RESULT_PASS)
 			return testStatus;
 	}
 
-	if (m_testCase.usage & (VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT))
-	{
-		const VkPhysicalDevice					vkPhysicalDevice	= getPhysicalDevice();
-		const InstanceInterface&				vkInstance			= getInstanceInterface();
-		VkPhysicalDeviceProperties	props;
-
-		vkInstance.getPhysicalDeviceProperties(vkPhysicalDevice, &props);
-		testStatus = bufferCreateAndAllocTest((VkDeviceSize) props.limits.maxTexelBufferElements);
-	}
-
-	return testStatus;
+	return tcu::TestStatus::pass("Pass");
 }
 
 } // anonymous

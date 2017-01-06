@@ -200,6 +200,14 @@ void GranularityInstance::initImages (void)
 		if (!aspectFlags)
 			aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
 
+		VkFormatProperties formatProperties;
+		m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(),
+										   it->format, &formatProperties);
+
+		if ((formatProperties.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT |
+							       VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) == 0)
+			throw tcu::NotSupportedError("Format not supported as attachment");
+
 		const VkImageViewCreateInfo		createInfo	=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
@@ -282,7 +290,7 @@ void GranularityInstance::initRenderPass (void)
 			&imageViews[0],								// const VkImageView*		pAttachments;
 			1,											// deUint32					width;
 			1,											// deUint32					height;
-			0											// deUint32					layers;
+			1											// deUint32					layers;
 		};
 
 		m_frameBuffer	= createFramebuffer(vk, device, &framebufferParams);
