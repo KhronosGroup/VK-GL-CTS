@@ -248,6 +248,18 @@ DE_INLINE deBool deIsAligned32 (int a, int align)
 }
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Check if an integer is aligned to given power-of-two size.
+ * \param a		Input value.
+ * \param align	Alignment to check for.
+ * \return True if input is aligned, false otherwise.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deBool deIsAligned64 (deInt64 a, deInt64 align)
+{
+	DE_ASSERT(deIsPowerOfTwo64(align));
+	return ((a & (align-1)) == 0);
+}
+
+/*--------------------------------------------------------------------*//*!
  * \brief Check if a pointer is aligned to given power-of-two size.
  * \param ptr	Input pointer.
  * \param align	Alignment to check for (power-of-two).
@@ -268,6 +280,18 @@ DE_INLINE deBool deIsAlignedPtr (const void* ptr, deUintptr align)
 DE_INLINE deInt32 deAlign32 (deInt32 val, deInt32 align)
 {
 	DE_ASSERT(deIsPowerOfTwo32(align));
+	return (val + align - 1) & ~(align - 1);
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Align an integer to given power-of-two size.
+ * \param val	Input to align.
+ * \param align	Alignment to check for (power-of-two).
+ * \return The aligned value (larger or equal to input).
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deInt64 deAlign64 (deInt64 val, deInt64 align)
+{
+	DE_ASSERT(deIsPowerOfTwo64(align));
 	return (val + align - 1) & ~(align - 1);
 }
 
