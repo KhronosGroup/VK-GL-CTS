@@ -204,12 +204,6 @@ inline VkMemoryRequirements requirementsWithSize (VkMemoryRequirements requireme
 	return requirements;
 }
 
-inline VkDeviceSize alignSize (const VkDeviceSize val, const VkDeviceSize align)
-{
-	DE_ASSERT(deIsPowerOfTwo64(align));
-	return (val + align - 1) & ~(align - 1);
-}
-
 MovePtr<SparseAllocation> SparseAllocationBuilder::build (const DeviceInterface&	vk,
 														  const VkDevice			device,
 														  Allocator&				allocator,
@@ -222,7 +216,7 @@ MovePtr<SparseAllocation> SparseAllocationBuilder::build (const DeviceInterface&
 								referenceCreateInfo.size	= sizeof(deUint32);
 	const Unique<VkBuffer>		refBuffer					(createBuffer(vk, device, &referenceCreateInfo));
 	const VkMemoryRequirements	memoryRequirements			= getBufferMemoryRequirements(vk, device, *refBuffer);
-	const VkDeviceSize			chunkSize					= std::max(memoryRequirements.alignment, alignSize(minChunkSize, memoryRequirements.alignment));
+	const VkDeviceSize			chunkSize					= std::max(memoryRequirements.alignment, static_cast<VkDeviceSize>(deAlign64(minChunkSize, memoryRequirements.alignment)));
 
 	for (std::vector<deUint32>::const_iterator numChunksIter = m_chunksPerAllocation.begin(); numChunksIter != m_chunksPerAllocation.end(); ++numChunksIter)
 	{
