@@ -3068,6 +3068,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "single_alloc_callbacks", "Create single object", s_createSingleAllocCallbacksGroup));
 
+	// \note Skip pooled objects in this test group. They are properly handled by the "multiple" group farther down below.
 	static const CaseDescriptions	s_allocCallbackFailGroup	=
 	{
 		CASE_DESC(allocCallbackFailTest	<Instance>,					s_instanceCases),
@@ -3090,10 +3091,10 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(allocCallbackFailTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
 		CASE_DESC(allocCallbackFailTest	<Sampler>,					s_samplerCases),
 		CASE_DESC(allocCallbackFailTest	<DescriptorPool>,			s_descriptorPoolCases),
-		CASE_DESC(allocCallbackFailTest	<DescriptorSet>,			s_descriptorSetCases),
+		EMPTY_CASE_DESC(DescriptorSet),
 		CASE_DESC(allocCallbackFailTest	<Framebuffer>,				s_framebufferCases),
 		CASE_DESC(allocCallbackFailTest	<CommandPool>,				s_commandPoolCases),
-		CASE_DESC(allocCallbackFailTest	<CommandBuffer>,			s_commandBufferCases),
+		EMPTY_CASE_DESC(CommandBuffer),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail", "Allocation callback failure", s_allocCallbackFailGroup));
 
