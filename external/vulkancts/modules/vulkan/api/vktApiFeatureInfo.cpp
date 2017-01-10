@@ -630,7 +630,7 @@ void checkKhrExtensions (tcu::ResultCollector&		results,
 	for (vector<string>::const_iterator extIter = extensions.begin(); extIter != extensions.end(); ++extIter)
 	{
 		// Only Khronos-controlled extensions are checked
-		if ((de::beginsWith(*extIter, "VK_KHR_") || de::beginsWith(*extIter, "VK_KHX_")) &&
+		if (de::beginsWith(*extIter, "VK_KHR_") &&
 			!de::contains(allowedExtSet, *extIter))
 		{
 			results.fail("Unknown KHR extension " + *extIter);
