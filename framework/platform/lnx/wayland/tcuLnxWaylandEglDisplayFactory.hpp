@@ -1,5 +1,5 @@
-#ifndef _TCUWAYLANDPLATFORM_HPP
-#define _TCUWAYLANDPLATFORM_HPP
+#ifndef _TCULNXWAYLANDEGLDISPLAYFACTORY_HPP
+#define _TCULNXWAYLANDEGLDISPLAYFACTORY_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
@@ -22,11 +22,26 @@
  *
  *//*!
  * \file
- * \brief Wayland Platform.
+ * \brief wayland Egl Display Factory.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuPlatform.hpp"
+#include "tcuLnx.hpp"
+#include "egluNativeDisplay.hpp"
 
-tcu::Platform* createPlatform (void);
+namespace tcu
+{
+namespace lnx
+{
+namespace wayland
+{
+namespace egl
+{
 
-#endif // _TCUWAYLANDPLATFORM_HPP
+eglu::NativeDisplayFactory* createDisplayFactory (EventState& eventState);
+
+} // egl
+} // wayland
+} // lnx
+} // tcu
+
+#endif // _TCULNXWAYLANDEGLDISPLAYFACTORY_HPP

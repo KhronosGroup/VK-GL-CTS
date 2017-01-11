@@ -21,7 +21,7 @@
  * \brief X11 utilities.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuX11.hpp"
+#include "tcuLnxX11.hpp"
 #include "gluRenderConfig.hpp"
 #include "deMemory.h"
 
@@ -29,29 +29,10 @@
 
 namespace tcu
 {
+namespace lnx
+{
 namespace x11
 {
-
-EventState::EventState (void)
-	: m_quit(false)
-{
-}
-
-EventState::~EventState (void)
-{
-}
-
-void EventState::setQuitFlag (bool quit)
-{
-	de::ScopedLock lock(m_mutex);
-	m_quit = quit;
-}
-
-bool EventState::getQuitFlag (void)
-{
-	de::ScopedLock lock(m_mutex);
-	return m_quit;
-}
 
 DisplayBase::DisplayBase (EventState& platform)
 	: m_eventState	(platform)
@@ -263,4 +244,5 @@ XlibWindow::~XlibWindow (void)
 }
 
 } // x11
+} // lnx
 } // tcu

@@ -1,5 +1,5 @@
-#ifndef _TCUX11XCB_HPP
-#define _TCUX11XCB_HPP
+#ifndef _TCULNXX11XCB_HPP
+#define _TCULNXX11XCB_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
@@ -23,10 +23,12 @@
  * \brief X11 using XCB utilities.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuX11.hpp"
+#include "tcuLnxX11.hpp"
 #include <xcb/xcb.h>
 
 namespace tcu
+{
+namespace lnx
 {
 namespace x11
 {
@@ -78,6 +80,7 @@ private:
 };
 
 } // x11
+} // lnx
 } // tcu
 
-#endif // _TCUX11XCB_HPP
+#endif // _TCULNXX11XCB_HPP

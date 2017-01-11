@@ -1,12 +1,8 @@
-#ifndef _TCUWAYLANDEGLPLATFORM_HPP
-#define _TCUWAYLANDEGLPLATFORM_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
  *
- * Copyright (c) 2014 The Android Open Source Project
  * Copyright (c) 2016 The Khronos Group Inc.
- * Copyright (c) 2016 Mun Gwan-gyeong <elongbug@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,32 +18,46 @@
  *
  *//*!
  * \file
- * \brief wayland Egl Platform.
+ * \brief Linux EGL Platform.
  *//*--------------------------------------------------------------------*/
 
-#include "deUniquePtr.hpp"
-#include "egluPlatform.hpp"
-#include "gluContextFactory.hpp"
-#include "tcuWayland.hpp"
+#include "tcuLnxEglPlatform.hpp"
+
+#if defined (DEQP_SUPPORT_X11)
+#	include "tcuLnxX11EglDisplayFactory.hpp"
+#endif // DEQP_SUPPORT_X11
+
+#if defined (DEQP_SUPPORT_WAYLAND)
+#	include "tcuLnxWaylandEglDisplayFactory.hpp"
+#endif // DEQP_SUPPORT_WAYLAND
+
+#include "egluGLContextFactory.hpp"
 
 namespace tcu
 {
-namespace wayland
+namespace lnx
 {
 namespace egl
 {
 
-class Platform : public eglu::Platform
+Platform::Platform (EventState& eventState)
 {
-public:
-										Platform				(EventState& eventState);
-										~Platform				(void) {}
+#if defined (DEQP_SUPPORT_X11)
+	m_nativeDisplayFactoryRegistry.registerFactory(x11::egl::createDisplayFactory(eventState));
+#endif // DEQP_SUPPORT_X11
 
-	de::MovePtr<glu::ContextFactory>	createContextFactory	(void);
-};
+#if defined (DEQP_SUPPORT_WAYLAND)
+	m_nativeDisplayFactoryRegistry.registerFactory(wayland::egl::createDisplayFactory(eventState));
+#endif // DEQP_SUPPORT_WAYLAND
 
 }
-} // wayland
+
+de::MovePtr<glu::ContextFactory> Platform::createContextFactory (void)
+{
+	return de::MovePtr<glu::ContextFactory>(new eglu::GLContextFactory(m_nativeDisplayFactoryRegistry));
+}
+
+} // egl
+} // linux
 } // tcu
 
-#endif // _TCUWAYLANDEGLPLATFORM_HPP

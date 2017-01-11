@@ -1,10 +1,10 @@
-#ifndef _TCUX11GLXPLATFORM_HPP
-#define _TCUX11GLXPLATFORM_HPP
+#ifndef _TCULNXPLATFORM_HPP
+#define _TCULNXPLATFORM_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
  *
- * Copyright 2014 The Android Open Source Project
+ * Copyright 2017 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,24 +20,11 @@
  *
  *//*!
  * \file
- * \brief Platform that uses X11 via GLX.
+ * \brief Linux Platform.
  *//*--------------------------------------------------------------------*/
 
-#include "gluContextFactory.hpp"
-#include "deUniquePtr.hpp"
-#include "tcuX11.hpp"
+#include "tcuPlatform.hpp"
 
-namespace tcu
-{
-namespace x11
-{
-namespace glx
-{
+tcu::Platform* createPlatform (void);
 
-de::MovePtr<glu::ContextFactory> createContextFactory (EventState& eventState);
-
-} // glx
-} // x11
-} // tcu
-
-#endif // _TCUX11GLXPLATFORM_HPP
+#endif // _TCULNXPLATFORM_HPP

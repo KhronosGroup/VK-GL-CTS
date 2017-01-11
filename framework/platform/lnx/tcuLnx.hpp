@@ -1,10 +1,10 @@
-#ifndef _TCUWAYLANDVULKANPLATFORM_HPP
-#define _TCUWAYLANDVULKANPLATFORM_HPP
+#ifndef _TCULNX_HPP
+#define _TCULNX_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
  *
- * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright 2017 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,33 +20,42 @@
  *
  *//*!
  * \file
- * \brief Wayland Vulkan Platform.
+ * \brief Linux utilities.
  *//*--------------------------------------------------------------------*/
 
-#include "vkWsiPlatform.hpp"
-#include "vkPlatform.hpp"
-#include "tcuWayland.hpp"
+#include "tcuDefs.hpp"
+#include "deMutex.hpp"
 
 namespace tcu
 {
-namespace wayland
+// This namespace should be named 'linux', however some compilers still
+// define obsolete 'linux' macro alongside '__linux__'
+namespace lnx
 {
-
-class WaylandVulkanPlatform : public vk::Platform
+enum
 {
-public:
-						WaylandVulkanPlatform	(EventState& eventState);
-	vk::wsi::Display*	createWsiDisplay		(vk::wsi::Type wsiType) const;
-	vk::Library*		createLibrary			(void) const;
-	void				describePlatform		(std::ostream& dst) const;
-	void				getMemoryLimits			(vk::PlatformMemoryLimits& limits) const;
-
-private :
-	 EventState&		m_eventState;
+	DEFAULT_WINDOW_WIDTH	= 400,
+	DEFAULT_WINDOW_HEIGHT	= 300
 };
 
+class EventState
+{
+public:
+				EventState	(void);
+	virtual		~EventState	(void);
+	void		setQuitFlag	(bool quit);
+	bool		getQuitFlag	(void);
 
-} // wayland
+	protected:
+	de::Mutex	m_mutex;
+	bool		m_quit;
+
+private:
+				EventState	(const EventState&);
+	EventState&	operator=	(const EventState&);
+};
+
+} // lnx
 } // tcu
 
-#endif // _TCUWAYLANDVULKANPLATFORM_HPP
+#endif // _TCULNX_HPP

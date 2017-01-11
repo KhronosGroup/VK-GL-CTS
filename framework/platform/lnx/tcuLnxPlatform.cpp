@@ -2,7 +2,7 @@
  * drawElements Quality Program Tester Core
  * ----------------------------------------
  *
- * Copyright 2014 The Android Open Source Project
+ * Copyright 2017 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,36 +18,31 @@
  *
  *//*!
  * \file
- * \brief X11 Platform.
+ * \brief Linux Platform.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuX11Platform.hpp"
-#include "vkWsiPlatform.hpp"
+#include "tcuLnxPlatform.hpp"
+
+#include "tcuLnxVulkanPlatform.hpp"
+#include "tcuLnxEglPlatform.hpp"
 
 #include "deUniquePtr.hpp"
 #include "gluPlatform.hpp"
 #include "vkPlatform.hpp"
-#include "tcuX11.hpp"
-#include "tcuFunctionLibrary.hpp"
-#include "deMemory.h"
-#include "tcuX11VulkanPlatform.hpp"
-#include "tcuX11EglPlatform.hpp"
 
 #if defined (DEQP_SUPPORT_GLX)
-#	include "tcuX11GlxPlatform.hpp"
-#endif
-
-#include <sys/utsname.h>
+#	include "tcuLnxX11GlxPlatform.hpp"
+#endif // DEQP_SUPPORT_GLX
 
 using de::MovePtr;
 using de::UniquePtr;
 
 namespace tcu
 {
-namespace x11
+namespace lnx
 {
 
-class X11GLPlatform : public glu::Platform
+class LinuxGLPlatform : public glu::Platform
 {
 public:
 	void		registerFactory	(de::MovePtr<glu::ContextFactory> factory)
@@ -56,10 +51,10 @@ public:
 	}
 };
 
-class X11Platform : public tcu::Platform
+class LinuxPlatform : public tcu::Platform
 {
 public:
-							X11Platform			(void);
+							LinuxPlatform		(void);
 	bool					processEvents		(void) { return !m_eventState.getQuitFlag(); }
 
 	const vk::Platform&		getVulkanPlatform	(void) const { return m_vkPlatform; }
@@ -68,26 +63,26 @@ public:
 
 private:
 	EventState				m_eventState;
-	x11::VulkanPlatform		m_vkPlatform;
-	x11::egl::Platform		m_eglPlatform;
-	X11GLPlatform			m_glPlatform;
+	VulkanPlatform			m_vkPlatform;
+	egl::Platform			m_eglPlatform;
+	LinuxGLPlatform			m_glPlatform;
 };
 
-X11Platform::X11Platform (void)
+LinuxPlatform::LinuxPlatform (void)
 	: m_vkPlatform	(m_eventState)
 	, m_eglPlatform	(m_eventState)
 {
 #if defined (DEQP_SUPPORT_GLX)
-	m_glPlatform.registerFactory(glx::createContextFactory(m_eventState));
+	m_glPlatform.registerFactory(x11::glx::createContextFactory(m_eventState));
 #endif // DEQP_SUPPORT_GLX
 
 	m_glPlatform.registerFactory(m_eglPlatform.createContextFactory());
 }
 
-} // x11
+} // lnx
 } // tcu
 
 tcu::Platform* createPlatform (void)
 {
-	return new tcu::x11::X11Platform();
+	return new tcu::lnx::LinuxPlatform();
 }
