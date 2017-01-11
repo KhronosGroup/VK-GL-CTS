@@ -40,6 +40,8 @@ static const RunParams khronos_mustpass_es3x_first_cfg[] = {
 	{ glu::ApiType::es(2, 0), "gtf-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
 	{ glu::ApiType::es(2, 0), "gtf-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
 	{ glu::ApiType::es(2, 0), "gtf-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::es(2, 0), "gtf-egl", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+	{ glu::ApiType::es(2, 0), "gtf-egl", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
 	{ glu::ApiType::es(3, 0), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 	{ glu::ApiType::es(3, 0), "deqp-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 	{ glu::ApiType::es(3, 0), "gtf-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
