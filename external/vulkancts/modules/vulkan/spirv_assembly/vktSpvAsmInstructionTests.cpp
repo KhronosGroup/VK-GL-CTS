@@ -863,7 +863,7 @@ tcu::TestCaseGroup* createOpFRemGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
-tcu::TestCaseGroup* createOpSRemGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createOpSRemComputeGroup (tcu::TestContext& testCtx, qpTestResult negFailResult)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsrem", "Test the OpSRem instruction"));
 	de::Random						rnd				(deStringHash(group->getName()));
@@ -879,7 +879,7 @@ tcu::TestCaseGroup* createOpSRemGroup (tcu::TestContext& testCtx)
 	} cases[] =
 	{
 		{ "positive",	"Output doesn't match with expected",				QP_TEST_RESULT_FAIL,	0,		65536,	0,		100 },
-		{ "all",		"Inconsistent results, but within specification",	QP_TEST_RESULT_PASS,	-65536,	65536,	-100,	100 },	// see below
+		{ "all",		"Inconsistent results, but within specification",	negFailResult,			-65536,	65536,	-100,	100 },	// see below
 	};
 	// If either operand is negative the result is undefined. Some implementations may still return correct values.
 
@@ -956,7 +956,7 @@ tcu::TestCaseGroup* createOpSRemGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
-tcu::TestCaseGroup* createOpSModGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createOpSModComputeGroup (tcu::TestContext& testCtx, qpTestResult negFailResult)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsmod", "Test the OpSMod instruction"));
 	de::Random						rnd				(deStringHash(group->getName()));
@@ -972,7 +972,7 @@ tcu::TestCaseGroup* createOpSModGroup (tcu::TestContext& testCtx)
 	} cases[] =
 	{
 		{ "positive",	"Output doesn't match with expected",				QP_TEST_RESULT_FAIL,	0,		65536,	0,		100 },
-		{ "all",		"Inconsistent results, but within specification",	QP_TEST_RESULT_PASS,	-65536,	65536,	-100,	100 },	// see below
+		{ "all",		"Inconsistent results, but within specification",	negFailResult,			-65536,	65536,	-100,	100 },	// see below
 	};
 	// If either operand is negative the result is undefined. Some implementations may still return correct values.
 
@@ -8193,7 +8193,7 @@ tcu::TestCaseGroup* createFRemTests(tcu::TestContext& testCtx)
 }
 
 // Test for the OpSRem instruction.
-tcu::TestCaseGroup* createSRemTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createOpSRemGraphicsTests(tcu::TestContext& testCtx, qpTestResult negFailResult)
 {
 	de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "srem", "OpSRem"));
 	map<string, string>					fragments;
@@ -8250,7 +8250,7 @@ tcu::TestCaseGroup* createSRemTests(tcu::TestContext& testCtx)
 		{
 			"all",
 			"Inconsistent results, but within specification: ${reason}",
-			QP_TEST_RESULT_PASS,													// negative operands, not required by the spec
+			negFailResult,															// negative operands, not required by the spec
 			{ { 5, 12, -17 }, { -5, -5, 7 }, { 75, 8, -81 }, { 25, -60, 100 } },	// operands
 			{ { 5, 12,  -2 }, {  0, -5, 2 }, {  3, 8,  -6 }, { 25, -60,   0 } },	// results
 		},
@@ -8276,7 +8276,7 @@ tcu::TestCaseGroup* createSRemTests(tcu::TestContext& testCtx)
 }
 
 // Test for the OpSMod instruction.
-tcu::TestCaseGroup* createSModTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createOpSModGraphicsTests(tcu::TestContext& testCtx, qpTestResult negFailResult)
 {
 	de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "smod", "OpSMod"));
 	map<string, string>					fragments;
@@ -8333,7 +8333,7 @@ tcu::TestCaseGroup* createSModTests(tcu::TestContext& testCtx)
 		{
 			"all",
 			"Inconsistent results, but within specification: ${reason}",
-			QP_TEST_RESULT_PASS,														// negative operands, not required by the spec
+			negFailResult,																// negative operands, not required by the spec
 			{ { 5, 12, -17 }, { -5, -5,  7 }, { 75,   8, -81 }, {  25, -60, 100 } },	// operands
 			{ { 5, -5,   3 }, {  0,  2, -3 }, {  3, -73,  69 }, { -35,  40,   0 } },	// results
 		},
@@ -9439,13 +9439,22 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpUnreachableGroup(testCtx));
 	computeTests ->addChild(createOpQuantizeToF16Group(testCtx));
 	computeTests ->addChild(createOpFRemGroup(testCtx));
-	computeTests->addChild(createOpSRemGroup(testCtx));
-	computeTests->addChild(createOpSModGroup(testCtx));
+	computeTests->addChild(createOpSRemComputeGroup(testCtx, QP_TEST_RESULT_PASS));
+	computeTests->addChild(createOpSModComputeGroup(testCtx, QP_TEST_RESULT_PASS));
 	computeTests->addChild(createSConvertTests(testCtx));
 	computeTests->addChild(createUConvertTests(testCtx));
 	computeTests->addChild(createOpCompositeInsertGroup(testCtx));
 	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
 	computeTests->addChild(createShaderDefaultOutputGroup(testCtx));
+
+	{
+		de::MovePtr<tcu::TestCaseGroup>	computeAndroidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
+
+		computeAndroidTests->addChild(createOpSRemComputeGroup(testCtx, QP_TEST_RESULT_QUALITY_WARNING));
+		computeAndroidTests->addChild(createOpSModComputeGroup(testCtx, QP_TEST_RESULT_QUALITY_WARNING));
+
+		computeTests->addChild(computeAndroidTests.release());
+	}
 
 	graphicsTests->addChild(createOpNopTests(testCtx));
 	graphicsTests->addChild(createOpSourceTests(testCtx));
@@ -9468,8 +9477,17 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createBarrierTests(testCtx));
 	graphicsTests->addChild(createDecorationGroupTests(testCtx));
 	graphicsTests->addChild(createFRemTests(testCtx));
-	graphicsTests->addChild(createSRemTests(testCtx));
-	graphicsTests->addChild(createSModTests(testCtx));
+	graphicsTests->addChild(createOpSRemGraphicsTests(testCtx, QP_TEST_RESULT_PASS));
+	graphicsTests->addChild(createOpSModGraphicsTests(testCtx, QP_TEST_RESULT_PASS));
+
+	{
+		de::MovePtr<tcu::TestCaseGroup>	graphicsAndroidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
+
+		graphicsAndroidTests->addChild(createOpSRemGraphicsTests(testCtx, QP_TEST_RESULT_QUALITY_WARNING));
+		graphicsAndroidTests->addChild(createOpSModGraphicsTests(testCtx, QP_TEST_RESULT_QUALITY_WARNING));
+
+		graphicsTests->addChild(graphicsAndroidTests.release());
+	}
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());

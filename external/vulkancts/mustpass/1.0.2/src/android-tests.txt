@@ -4,3 +4,5 @@
 # requirements.
 
 dEQP-VK.api.info.android.*
+dEQP-VK.spirv_assembly.instruction.compute.android.*
+dEQP-VK.spirv_assembly.instruction.graphics.android.*
