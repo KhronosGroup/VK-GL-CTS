@@ -86,6 +86,20 @@ XlibDisplay::~XlibDisplay (void)
 	XCloseDisplay(m_display);
 }
 
+void XlibDisplay::processEvent (XEvent& event)
+{
+	switch (event.type)
+	{
+		case ClientMessage:
+			if ((unsigned)event.xclient.data.l[0] == m_deleteAtom)
+				m_eventState.setQuitFlag(true);
+			break;
+		// note: ConfigureNotify for window is handled in setDimensions()
+		default:
+			break;
+	}
+}
+
 void XlibDisplay::processEvents (void)
 {
 	XEvent	event;
@@ -93,10 +107,7 @@ void XlibDisplay::processEvents (void)
 	while (XPending(m_display))
 	{
 		XNextEvent(m_display, &event);
-
-		// \todo [2010-10-27 pyry] Handle ConfigureNotify?
-		if (event.type == ClientMessage && (unsigned)event.xclient.data.l[0] == m_deleteAtom)
-			m_eventState.setQuitFlag(true);
+		processEvent(event);
 	}
 }
 
@@ -244,8 +255,13 @@ void XlibWindow::setDimensions (int width, int height)
 	for(;;)
 	{
 		XNextEvent(dpy, &myevent);
-		if (myevent.type == ConfigureNotify)
-			break;
+		if (myevent.type == ConfigureNotify) {
+			XConfigureEvent e = myevent.xconfigure;
+			if (e.width == width && e.height == height)
+				break;
+		}
+		else
+			m_display.processEvent(myevent);
 	}
 }
 

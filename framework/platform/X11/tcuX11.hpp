@@ -109,6 +109,7 @@ public:
 	::Visual*		getVisual		(VisualID visualID);
 	bool			getVisualInfo	(VisualID visualID, XVisualInfo& dst);
 	void			processEvents	(void);
+	void			processEvent	(XEvent& event);
 
 protected:
 	::Display*		m_display;
