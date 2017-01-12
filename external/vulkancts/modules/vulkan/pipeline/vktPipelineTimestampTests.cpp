@@ -1367,7 +1367,8 @@ void AdvGraphicsTest::initPrograms(SourceCollections& programCollection) const
 	BasicGraphicsTest::initPrograms(programCollection);
 
 	programCollection.glslSources.add("dummy_geo") << glu::GeometrySource(
-		"#version 450 \n"
+		"#version 310 es\n"
+		"#extension GL_EXT_geometry_shader : enable\n"
 		"layout(triangles) in;\n"
 		"layout(triangle_strip, max_vertices = 3) out;\n"
 		"layout(location = 0) in highp vec4 in_vtxColor[];\n"
@@ -1384,7 +1385,8 @@ void AdvGraphicsTest::initPrograms(SourceCollections& programCollection) const
 		"}\n");
 
 	programCollection.glslSources.add("basic_tcs") << glu::TessellationControlSource(
-		"#version 450 \n"
+		"#version 310 es\n"
+		"#extension GL_EXT_tessellation_shader : enable\n"
 		"layout(vertices = 3) out;\n"
 		"layout(location = 0) in highp vec4 color[];\n"
 		"layout(location = 0) out highp vec4 vtxColor[];\n"
@@ -1399,7 +1401,8 @@ void AdvGraphicsTest::initPrograms(SourceCollections& programCollection) const
 		"}\n");
 
 	programCollection.glslSources.add("basic_tes") << glu::TessellationEvaluationSource(
-		"#version 450 \n"
+		"#version 310 es\n"
+		"#extension GL_EXT_tessellation_shader : enable\n"
 		"layout(triangles, fractional_even_spacing, ccw) in;\n"
 		"layout(location = 0) in highp vec4 colors[];\n"
 		"layout(location = 0) out highp vec4 vtxColor;\n"

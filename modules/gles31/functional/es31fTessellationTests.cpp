@@ -7230,7 +7230,7 @@ void TessellationTests::init (void)
 		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_evaluation_texture_image_units",			"Test MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS",			GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS,		16));
 		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_output_components",				"Test MAX_TESS_CONTROL_OUTPUT_COMPONENTS",				GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS,			64));
 		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_patch_components",							"Test MAX_TESS_PATCH_COMPONENTS",						GL_MAX_TESS_PATCH_COMPONENTS,					120));
-		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_total_output_components",			"Test MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS",		GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS,	4096));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_total_output_components",			"Test MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS",		GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS,	2048));
 		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_evaluation_output_components",				"Test MAX_TESS_EVALUATION_OUTPUT_COMPONENTS",			GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS,		64));
 		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_uniform_blocks",					"Test MAX_TESS_CONTROL_UNIFORM_BLOCKS",					GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS,				12));
 		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_evaluation_uniform_blocks",				"Test MAX_TESS_EVALUATION_UNIFORM_BLOCKS",				GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS,			12));
