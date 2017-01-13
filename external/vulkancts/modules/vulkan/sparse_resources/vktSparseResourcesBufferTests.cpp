@@ -202,12 +202,6 @@ inline VkMemoryRequirements requirementsWithSize (VkMemoryRequirements requireme
 	return requirements;
 }
 
-inline VkDeviceSize alignSize (const VkDeviceSize val, const VkDeviceSize align)
-{
-	DE_ASSERT(deIsPowerOfTwo64(align));
-	return (val + align - 1) & ~(align - 1);
-}
-
 MovePtr<SparseAllocation> SparseAllocationBuilder::build (const DeviceInterface&	vk,
 														  const VkDevice			device,
 														  Allocator&				allocator,
@@ -220,7 +214,7 @@ MovePtr<SparseAllocation> SparseAllocationBuilder::build (const DeviceInterface&
 								referenceCreateInfo.size	= sizeof(deUint32);
 	const Unique<VkBuffer>		refBuffer					(createBuffer(vk, device, &referenceCreateInfo));
 	const VkMemoryRequirements	memoryRequirements			= getBufferMemoryRequirements(vk, device, *refBuffer);
-	const VkDeviceSize			chunkSize					= std::max(memoryRequirements.alignment, alignSize(minChunkSize, memoryRequirements.alignment));
+	const VkDeviceSize			chunkSize					= std::max(memoryRequirements.alignment, static_cast<VkDeviceSize>(deAlign64(minChunkSize, memoryRequirements.alignment)));
 
 	for (std::vector<deUint32>::const_iterator numChunksIter = m_chunksPerAllocation.begin(); numChunksIter != m_chunksPerAllocation.end(); ++numChunksIter)
 	{
@@ -740,7 +734,6 @@ public:
 		, m_aliased						((flags & TEST_FLAG_ALIASED)   != 0)
 		, m_residency					((flags & TEST_FLAG_RESIDENCY) != 0)
 		, m_nonResidentStrict			((flags & TEST_FLAG_NON_RESIDENT_STRICT) != 0)
-		, m_deviceProperties			(getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()))
 		, m_renderSize					(RENDER_SIZE, RENDER_SIZE)
 		, m_colorFormat					(VK_FORMAT_R8G8B8A8_UNORM)
 		, m_colorBufferSize				(m_renderSize.x() * m_renderSize.y() * tcu::getPixelSize(mapVkFormat(m_colorFormat)))
@@ -756,7 +749,7 @@ public:
 		if (m_aliased && !features.sparseResidencyAliased)
 			TCU_THROW(NotSupportedError, "Missing feature: sparseResidencyAliased");
 
-		if (m_nonResidentStrict && !m_deviceProperties.sparseProperties.residencyNonResidentStrict)
+		if (m_nonResidentStrict && !m_context.getDeviceProperties().sparseProperties.residencyNonResidentStrict)
 			TCU_THROW(NotSupportedError, "Missing sparse property: residencyNonResidentStrict");
 
 		{
@@ -841,7 +834,6 @@ protected:
 	const bool							m_aliased;
 	const bool							m_residency;
 	const bool							m_nonResidentStrict;
-	const VkPhysicalDeviceProperties	m_deviceProperties;
 
 	Queue								m_sparseQueue;
 	Queue								m_universalQueue;
@@ -977,10 +969,7 @@ public:
 					.addMemoryBind()
 					.build(vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize));
 
-				if (minAllocation->resourceSize > m_deviceProperties.limits.maxUniformBufferRange)
-					return tcu::TestStatus::fail("The smallest sparse UBO size exceeds maxUniformBufferRange limit");
-
-				numMaxChunks = static_cast<deUint32>(m_deviceProperties.limits.maxUniformBufferRange / minAllocation->resourceSize);
+				numMaxChunks = deMaxu32(static_cast<deUint32>(m_context.getDeviceProperties().limits.maxUniformBufferRange / minAllocation->resourceSize), 1u);
 			}
 
 			if (numMaxChunks < 4)
@@ -1007,7 +996,7 @@ public:
 					builder.addAliasedMemoryBind(0u, 0u);
 
 				sparseAllocation = builder.build(vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize);
-				DE_ASSERT(sparseAllocation->resourceSize <= m_deviceProperties.limits.maxUniformBufferRange);
+				DE_ASSERT(sparseAllocation->resourceSize <= m_context.getDeviceProperties().limits.maxUniformBufferRange);
 			}
 
 			// Create the buffer
@@ -1059,6 +1048,9 @@ public:
 			}
 		}
 
+		// Make sure that we don't try to access a larger range than is allowed. This only applies to a single chunk case.
+		const deUint32 maxBufferRange = deMinu32(static_cast<deUint32>(sparseAllocation->resourceSize), m_context.getDeviceProperties().limits.maxUniformBufferRange);
+
 		// Descriptor sets
 		{
 			m_descriptorSetLayout = DescriptorSetLayoutBuilder()
@@ -1072,7 +1064,7 @@ public:
 			m_descriptorSet = makeDescriptorSet(vk, getDevice(), *m_descriptorPool, *m_descriptorSetLayout);
 
 			const VkBuffer					buffer				= (m_aliased ? *sparseBufferAliased : *sparseBuffer);
-			const VkDescriptorBufferInfo	sparseBufferInfo	= makeDescriptorBufferInfo(buffer, 0ull, sparseAllocation->resourceSize);
+			const VkDescriptorBufferInfo	sparseBufferInfo	= makeDescriptorBufferInfo(buffer, 0ull, maxBufferRange);
 
 			DescriptorSetUpdateBuilder()
 				.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &sparseBufferInfo)
@@ -1102,7 +1094,7 @@ public:
 		{
 			std::vector<deInt32> specializationData;
 			{
-				const deUint32	numBufferEntries	= static_cast<deUint32>(sparseAllocation->resourceSize / sizeof(IVec4));
+				const deUint32	numBufferEntries	= maxBufferRange / static_cast<deUint32>(sizeof(IVec4));
 				const deUint32	numEntriesPerChunk	= numBufferEntries / sparseAllocation->numResourceChunks;
 
 				specializationData.push_back(numBufferEntries);
