@@ -241,6 +241,16 @@ GLCTS_GLES2_GTF_PKG_1CFG			= Package(module = ES2GTF_MODULE, configurations = [
 					baseseed		= "3",
 					fboconfig		= "rgba8888d24s8",
 					filters			= [include("gles2-gtf-master.txt")]),
+		Configuration(name			= "gtf-egl",
+					surfacewidth	= "64",
+					surfaceheight	= "64",
+					baseseed		= "1",
+					filters			= [include("gles2-gtf-egl.txt")]),
+		Configuration(name			= "gtf-egl",
+					surfacewidth	= "113",
+					surfaceheight	= "47",
+					baseseed		= "2",
+					filters			= [include("gles2-gtf-egl.txt")]),
 	])
 
 GLCTS_GLES2_KHR_PKG_N1CFG			= Package(module = ES2KHR_MODULE, useforfirsteglconfig = False, configurations = [
@@ -543,6 +553,16 @@ ES2CTS_GTF_PKG_1CFG					= Package(module = ES2GTF_MODULE, configurations = [
 					baseseed		= "3",
 					fboconfig		= "rgb565d16s0",
 					filters			= [include("gles2-gtf-master.txt")]),
+		Configuration(name			= "gtf-egl",
+					surfacewidth	= "64",
+					surfaceheight	= "64",
+					baseseed		= "1",
+					filters			= [include("gles2-gtf-egl.txt")]),
+		Configuration(name			= "gtf-egl",
+					surfacewidth	= "113",
+					surfaceheight	= "47",
+					baseseed		= "2",
+					filters			= [include("gles2-gtf-egl.txt")]),
 	])
 
 ES2CTS_KHR_PKG_N1CFG				= Package(module = ES2KHR_MODULE, useforfirsteglconfig = False, configurations = [

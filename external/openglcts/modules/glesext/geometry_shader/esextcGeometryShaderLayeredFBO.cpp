@@ -821,7 +821,7 @@ tcu::TestNode::IterateResult GeometryShaderFramebufferTextureInvalidAttachment::
 							  0 /* level */);
 		errorEnum = gl.getError();
 
-		if (errorEnum == GL_INVALID_ENUM)
+		if (errorEnum == GL_INVALID_OPERATION)
 		{
 			result = true;
 		}
@@ -829,7 +829,7 @@ tcu::TestNode::IterateResult GeometryShaderFramebufferTextureInvalidAttachment::
 		{
 			result = false;
 
-			m_testCtx.getLog() << tcu::TestLog::Message << "Error different than GL_INVALID_ENUM was generated."
+			m_testCtx.getLog() << tcu::TestLog::Message << "Error different than GL_INVALID_OPERATION was generated."
 							   << tcu::TestLog::EndMessage;
 
 			break;
