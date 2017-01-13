@@ -199,13 +199,6 @@ private:
 	BufferCaseParameters		m_testCase;
 };
 
-inline VkDeviceSize alignDeviceSize (VkDeviceSize val, VkDeviceSize align)
-{
-	DE_ASSERT(deIsPowerOfTwo64(align));
-	DE_ASSERT(val + align >= val);				// crash on overflow
-	return (val + align - 1) & ~(align - 1);
-}
-
 tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest (VkDeviceSize size)
 {
 	const VkPhysicalDevice					vkPhysicalDevice	= getPhysicalDevice();
@@ -243,7 +236,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest (VkDeviceSize size)
 		const deUint32		heapTypeIndex	= (deUint32)deCtz32(memReqs.memoryTypeBits);
 		const VkMemoryType	memoryType		= memoryProperties.memoryTypes[heapTypeIndex];
 		const VkMemoryHeap	memoryHeap		= memoryProperties.memoryHeaps[memoryType.heapIndex];
-		const VkDeviceSize	maxBufferSize	= alignDeviceSize(memoryHeap.size >> 1, memReqs.alignment);
+		const VkDeviceSize	maxBufferSize	= deAlign64(memoryHeap.size >> 1, memReqs.alignment);
 		const deUint32		shrinkBits		= 4;	// number of bits to shift when reducing the size with each iteration
 
 		size = std::min(size, maxBufferSize);
@@ -261,7 +254,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest (VkDeviceSize size)
 
 				if (result != VK_SUCCESS)
 				{
-					size = alignDeviceSize(size >> shrinkBits, memReqs.alignment);
+					size = deAlign64(size >> shrinkBits, memReqs.alignment);
 
 					if (size == 0 || bufferParams.size == memReqs.alignment)
 						return tcu::TestStatus::fail("Buffer creation failed! (" + de::toString(getResultName(result)) + ")");
@@ -298,7 +291,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest (VkDeviceSize size)
 
 				if (result != VK_SUCCESS)
 				{
-					size = alignDeviceSize(size >> shrinkBits, memReqs.alignment);
+					size = deAlign64(size >> shrinkBits, memReqs.alignment);
 
 					if (size == 0 || memReqs.size == memReqs.alignment)
 						return tcu::TestStatus::fail("Unable to allocate " + de::toString(memReqs.size) + " bytes of memory");
