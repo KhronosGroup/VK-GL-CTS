@@ -150,3 +150,5 @@ virtual VkResult	createDescriptorUpdateTemplateKHR				(VkDevice device, const Vk
 virtual void		destroyDescriptorUpdateTemplateKHR				(VkDevice device, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const VkAllocationCallbacks* pAllocator) const;
 virtual void		updateDescriptorSetWithTemplateKHR				(VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const void* pData) const;
 virtual void		cmdPushDescriptorSetWithTemplateKHR				(VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, VkPipelineLayout layout, deUint32 set, const void* pData) const;
+virtual VkResult	getRefreshCycleDurationGOOGLE					(VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties) const;
+virtual VkResult	getPastPresentationTimingGOOGLE					(VkDevice device, VkSwapchainKHR swapchain, deUint32* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings) const;

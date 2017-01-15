@@ -150,3 +150,5 @@ CreateDescriptorUpdateTemplateKHRFunc				createDescriptorUpdateTemplateKHR;
 DestroyDescriptorUpdateTemplateKHRFunc				destroyDescriptorUpdateTemplateKHR;
 UpdateDescriptorSetWithTemplateKHRFunc				updateDescriptorSetWithTemplateKHR;
 CmdPushDescriptorSetWithTemplateKHRFunc				cmdPushDescriptorSetWithTemplateKHR;
+GetRefreshCycleDurationGOOGLEFunc					getRefreshCycleDurationGOOGLE;
+GetPastPresentationTimingGOOGLEFunc					getPastPresentationTimingGOOGLE;

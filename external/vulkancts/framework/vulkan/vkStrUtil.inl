@@ -380,3 +380,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkObjectTablePushConstantEntryN
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushDescriptorPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorUpdateTemplateEntryKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorUpdateTemplateCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRefreshCycleDurationGOOGLE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPastPresentationTimingGOOGLE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPresentTimeGOOGLE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPresentTimesInfoGOOGLE& value);

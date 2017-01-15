@@ -27,6 +27,7 @@
 
 #include "vktWsiSurfaceTests.hpp"
 #include "vktWsiSwapchainTests.hpp"
+#include "vktWsiDisplayTimingTests.hpp"
 
 namespace vkt
 {
@@ -38,8 +39,9 @@ namespace
 
 void createTypeSpecificTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	addTestGroup(testGroup, "surface",		"VkSurface Tests",		createSurfaceTests,		wsiType);
-	addTestGroup(testGroup, "swapchain",	"VkSwapchain Tests",	createSwapchainTests,	wsiType);
+	addTestGroup(testGroup, "surface",				"VkSurface Tests",				createSurfaceTests,				wsiType);
+	addTestGroup(testGroup, "swapchain",			"VkSwapchain Tests",			createSwapchainTests,			wsiType);
+	addTestGroup(testGroup, "display_timing",		"Display Timing Tests",			createDisplayTimingTests,		wsiType);
 }
 
 void createWsiTests (tcu::TestCaseGroup* apiTests)
