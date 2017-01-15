@@ -486,3 +486,29 @@ inline VkDescriptorUpdateTemplateEntryKHR makeDescriptorUpdateTemplateEntryKHR (
 	res.stride			= stride;
 	return res;
 }
+
+inline VkRefreshCycleDurationGOOGLE makeRefreshCycleDurationGOOGLE (deUint64 refreshDuration)
+{
+	VkRefreshCycleDurationGOOGLE res;
+	res.refreshDuration	= refreshDuration;
+	return res;
+}
+
+inline VkPastPresentationTimingGOOGLE makePastPresentationTimingGOOGLE (deUint32 presentID, deUint64 desiredPresentTime, deUint64 actualPresentTime, deUint64 earliestPresentTime, deUint64 presentMargin)
+{
+	VkPastPresentationTimingGOOGLE res;
+	res.presentID			= presentID;
+	res.desiredPresentTime	= desiredPresentTime;
+	res.actualPresentTime	= actualPresentTime;
+	res.earliestPresentTime	= earliestPresentTime;
+	res.presentMargin		= presentMargin;
+	return res;
+}
+
+inline VkPresentTimeGOOGLE makePresentTimeGOOGLE (deUint32 presentID, deUint64 desiredPresentTime)
+{
+	VkPresentTimeGOOGLE res;
+	res.presentID			= presentID;
+	res.desiredPresentTime	= desiredPresentTime;
+	return res;
+}

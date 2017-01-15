@@ -1412,6 +1412,23 @@ VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetWithTemplateKHR (VkCommandBuffer 
 	DE_UNREF(pData);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getRefreshCycleDurationGOOGLE (VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pDisplayTimingProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPastPresentationTimingGOOGLE (VkDevice device, VkSwapchainKHR swapchain, deUint32* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pPresentationTimingCount);
+	DE_UNREF(pPresentationTimings);
+	return VK_SUCCESS;
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -1630,5 +1647,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorUpdateTemplateKHR,	destroyDescriptorUpdateTemplateKHR),
 	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplateKHR,	updateDescriptorSetWithTemplateKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetWithTemplateKHR,	cmdPushDescriptorSetWithTemplateKHR),
+	VK_NULL_FUNC_ENTRY(vkGetRefreshCycleDurationGOOGLE,			getRefreshCycleDurationGOOGLE),
+	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingGOOGLE,		getPastPresentationTimingGOOGLE),
 };
 

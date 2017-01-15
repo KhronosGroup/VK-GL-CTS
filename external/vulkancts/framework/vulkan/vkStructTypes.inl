@@ -1903,3 +1903,31 @@ struct VkDescriptorUpdateTemplateCreateInfoKHR
 	deUint32									set;
 };
 
+struct VkRefreshCycleDurationGOOGLE
+{
+	deUint64	refreshDuration;
+};
+
+struct VkPastPresentationTimingGOOGLE
+{
+	deUint32	presentID;
+	deUint64	desiredPresentTime;
+	deUint64	actualPresentTime;
+	deUint64	earliestPresentTime;
+	deUint64	presentMargin;
+};
+
+struct VkPresentTimeGOOGLE
+{
+	deUint32	presentID;
+	deUint64	desiredPresentTime;
+};
+
+struct VkPresentTimesInfoGOOGLE
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	deUint32					swapchainCount;
+	const VkPresentTimeGOOGLE*	pTimes;
+};
+
