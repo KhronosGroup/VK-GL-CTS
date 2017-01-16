@@ -102,6 +102,7 @@ EXTENSIONS			= [
 	'GL_ARB_parallel_shader_compile',
 	'GL_ARB_program_interface_query',
 	'GL_ARB_separate_shader_objects',
+	'GL_ARB_shader_ballot',
 	'GL_ARB_shader_image_load_store',
 	'GL_ARB_sparse_buffer',
 	'GL_ARB_sparse_texture',

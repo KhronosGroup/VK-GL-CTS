@@ -46,6 +46,7 @@
 #include "gl4cRobustnessTests.hpp"
 #include "gl4cShaderAtomicCounterOpsTests.hpp"
 #include "gl4cShaderAtomicCountersTests.hpp"
+#include "gl4cShaderBallotTests.hpp"
 #include "gl4cShaderGroupVoteTests.hpp"
 #include "gl4cShaderImageLoadStoreTests.hpp"
 #include "gl4cShaderImageSizeTests.hpp"
@@ -233,6 +234,7 @@ void GL43TestPackage::init(void)
 		addChild(new gl4cts::SparseBufferTests(getContext()));
 		addChild(new gl4cts::SparseTextureTests(getContext()));
 		addChild(new gl4cts::IndirectParametersTests(getContext()));
+		addChild(new gl4cts::ShaderBallotTests(getContext()));
 	}
 	catch (...)
 	{

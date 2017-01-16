@@ -74,6 +74,8 @@ set(GLCTS_GL_SRCS
 	gl4cIncompleteTextureAccessTests.hpp
 	gl4cShaderAtomicCounterOpsTests.cpp
 	gl4cShaderAtomicCounterOpsTests.hpp
+	gl4cShaderBallotTests.cpp
+	gl4cShaderBallotTests.hpp
 	gl4cShaderStorageBufferObjectTests.cpp
 	gl4cShaderStorageBufferObjectTests.hpp
 	gl4cShaderSubroutineTests.cpp
