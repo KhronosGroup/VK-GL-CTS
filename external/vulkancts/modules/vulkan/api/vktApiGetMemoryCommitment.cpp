@@ -114,7 +114,7 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
 	Move<VkShaderModule>					fragmentShaderModule;
 	Move<VkPipeline>						graphicsPipelines;
 
-	if(memoryTypeIndex == -1u)
+	if (memoryTypeIndex == static_cast<deUint32>(-1))
 		TCU_THROW(NotSupportedError, "Lazily allocated bit is not supported");
 
 	const VkImageCreateInfo	imageParams			=
@@ -677,7 +677,8 @@ deUint32 MemoryCommitmentTestInstance::getMemoryTypeIndex(VkMemoryPropertyFlags 
 		if((pMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags & propertyFlag) == propertyFlag)
 			return memoryTypeIndex;
 	}
-	return -1u;
+
+	return static_cast<deUint32>(-1);
 }
 
 void MemoryCommitmentTestCase::initPrograms (SourceCollections& programCollection) const
