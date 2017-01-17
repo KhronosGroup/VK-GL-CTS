@@ -2607,6 +2607,28 @@ tcu::TestStatus testNoUnknownExtensions (Context& context)
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+tcu::TestStatus testNoLayers (Context& context)
+{
+	TestLog&				log		= context.getTestContext().getLog();
+	tcu::ResultCollector	results	(log);
+
+	{
+		const vector<VkLayerProperties>	layers	= enumerateInstanceLayerProperties(context.getPlatformInterface());
+
+		for (vector<VkLayerProperties>::const_iterator layer = layers.begin(); layer != layers.end(); ++layer)
+			results.fail(string("Instance layer enumerated: ") + layer->layerName);
+	}
+
+	{
+		const vector<VkLayerProperties>	layers	= enumerateDeviceLayerProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+
+		for (vector<VkLayerProperties>::const_iterator layer = layers.begin(); layer != layers.end(); ++layer)
+			results.fail(string("Device layer enumerated: ") + layer->layerName);
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
 } // android
 
 } // anonymous
@@ -2660,6 +2682,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		de::MovePtr<tcu::TestCaseGroup>	androidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
 
 		addFunctionCase(androidTests.get(), "no_unknown_extensions",	"Test for unknown device or instance extensions",	android::testNoUnknownExtensions);
+		addFunctionCase(androidTests.get(), "no_layers",				"Test that no layers are enumerated",				android::testNoLayers);
 
 		infoTests->addChild(androidTests.release());
 	}
