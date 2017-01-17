@@ -336,6 +336,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceSparseImageFormatInf
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceSubgroupProperties> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevicePushDescriptorPropertiesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR;

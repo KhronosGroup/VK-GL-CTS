@@ -1434,6 +1434,16 @@ struct VkPhysicalDeviceSparseImageFormatInfo2KHR
 	VkImageTiling			tiling;
 };
 
+struct VkPhysicalDeviceSubgroupProperties
+{
+	VkStructureType			sType;
+	void*					pNext;
+	deUint32				subgroupSize;
+	VkShaderStageFlags		supportedStages;
+	VkSubgroupFeatureFlags	supportedOperations;
+	VkBool32				quadOperationsInAllStages;
+};
+
 struct VkPhysicalDevicePushDescriptorPropertiesKHR
 {
 	VkStructureType	sType;

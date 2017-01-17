@@ -222,6 +222,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR:											return "VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR:					return "VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE:									return "VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES";
 		case VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR:						return "VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES_KHR:								return "VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES_KHR";
@@ -1573,6 +1574,22 @@ tcu::Format::Bitfield<32> getDisplayPlaneAlphaFlagsKHRStr (VkDisplayPlaneAlphaFl
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR,						"VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR,					"VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR,	"VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getSubgroupFeatureFlagsStr (VkSubgroupFeatureFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_BASIC_BIT,				"VK_SUBGROUP_FEATURE_BASIC_BIT"),
+		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_VOTE_BIT,				"VK_SUBGROUP_FEATURE_VOTE_BIT"),
+		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_ARITHMETIC_BIT,		"VK_SUBGROUP_FEATURE_ARITHMETIC_BIT"),
+		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_BALLOT_BIT,			"VK_SUBGROUP_FEATURE_BALLOT_BIT"),
+		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_SHUFFLE_BIT,			"VK_SUBGROUP_FEATURE_SHUFFLE_BIT"),
+		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT,	"VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT"),
+		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_CLUSTERED_BIT,			"VK_SUBGROUP_FEATURE_CLUSTERED_BIT"),
+		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_QUAD_BIT,				"VK_SUBGROUP_FEATURE_QUAD_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3724,6 +3741,19 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSparseImageForm
 	s << "\tsamples = " << value.samples << '\n';
 	s << "\tusage = " << getImageUsageFlagsStr(value.usage) << '\n';
 	s << "\ttiling = " << value.tiling << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSubgroupProperties& value)
+{
+	s << "VkPhysicalDeviceSubgroupProperties = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsubgroupSize = " << value.subgroupSize << '\n';
+	s << "\tsupportedStages = " << getShaderStageFlagsStr(value.supportedStages) << '\n';
+	s << "\tsupportedOperations = " << getSubgroupFeatureFlagsStr(value.supportedOperations) << '\n';
+	s << "\tquadOperationsInAllStages = " << value.quadOperationsInAllStages << '\n';
 	s << '}';
 	return s;
 }

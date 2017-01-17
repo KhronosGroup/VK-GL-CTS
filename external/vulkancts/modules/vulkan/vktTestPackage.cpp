@@ -79,6 +79,7 @@
 #include "vktGeometryTests.hpp"
 #include "vktRobustnessTests.hpp"
 #include "vktMultiViewTests.hpp"
+#include "vktSubgroupsTests.hpp"
 #include "vktYCbCrTests.hpp"
 
 #include <vector>
@@ -405,6 +406,7 @@ void TestPackage::init (void)
 	addChild(geometry::createTests			(m_testCtx));
 	addChild(robustness::createTests		(m_testCtx));
 	addChild(MultiView::createTests			(m_testCtx));
+	addChild(subgroups::createTests			(m_testCtx));
 	addChild(ycbcr::createTests				(m_testCtx));
 }
 

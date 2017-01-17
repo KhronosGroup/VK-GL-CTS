@@ -224,6 +224,20 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmVariablePointersTests.cpp \
 	external/vulkancts/modules/vulkan/ssbo/vktSSBOLayoutCase.cpp \
 	external/vulkancts/modules/vulkan/ssbo/vktSSBOLayoutTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsArithmeticTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsBallotBroadcastTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsBallotOtherTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsBallotTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsBasicTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsBuiltinMaskVarTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsBuiltinVarTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsClusteredTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsQuadTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsShapeTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsShuffleTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsTestsUtils.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsVoteTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicEventTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicFenceTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicSemaphoreTests.cpp \
@@ -990,6 +1004,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/sparse_resources \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/spirv_assembly \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ssbo \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/subgroups \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/synchronization \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/tessellation \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/texture \

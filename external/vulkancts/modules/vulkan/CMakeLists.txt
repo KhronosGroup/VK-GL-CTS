@@ -26,6 +26,7 @@ add_subdirectory(texture)
 add_subdirectory(robustness)
 add_subdirectory(renderpass)
 add_subdirectory(multiview)
+add_subdirectory(subgroups)
 add_subdirectory(ycbcr)
 
 include_directories(
@@ -55,6 +56,7 @@ include_directories(
 	robustness
 	renderpass
 	multiview
+	subgroups
 	ycbcr
 	)
 
@@ -109,6 +111,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-robustness
 	deqp-vk-render-pass
 	deqp-vk-multiview
+	deqp-vk-subgroups
 	deqp-vk-ycbcr
 	)
 

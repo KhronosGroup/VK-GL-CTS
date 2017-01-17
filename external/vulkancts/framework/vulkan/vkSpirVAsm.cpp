@@ -39,7 +39,7 @@ using std::vector;
 
 #if defined(DEQP_HAVE_SPIRV_TOOLS)
 
-static const spv_target_env s_defaultEnvironment = SPV_ENV_VULKAN_1_0;
+static const spv_target_env s_defaultEnvironment = SPV_ENV_VULKAN_1_1;
 
 bool assembleSpirV (const SpirVAsmSource* program, std::vector<deUint32>* dst, SpirVProgramInfo* buildInfo)
 {

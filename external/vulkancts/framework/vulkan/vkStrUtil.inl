@@ -178,6 +178,7 @@ tcu::Format::Bitfield<32>	getSurfaceTransformFlagsKHRStr					(VkSurfaceTransform
 tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr					(VkCompositeAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getSwapchainCreateFlagsKHRStr					(VkSwapchainCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr					(VkDisplayPlaneAlphaFlagsKHR value);
+tcu::Format::Bitfield<32>	getSubgroupFeatureFlagsStr						(VkSubgroupFeatureFlags value);
 tcu::Format::Bitfield<32>	getExternalFenceHandleTypeFlagsKHRStr			(VkExternalFenceHandleTypeFlagsKHR value);
 tcu::Format::Bitfield<32>	getExternalFenceFeatureFlagsKHRStr				(VkExternalFenceFeatureFlagsKHR value);
 tcu::Format::Bitfield<32>	getFenceImportFlagsKHRStr						(VkFenceImportFlagsKHR value);
@@ -361,6 +362,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyProperties2KHR& va
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMemoryProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSparseImageFormatProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSparseImageFormatInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubgroupProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushDescriptorPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice16BitStorageFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRectLayerKHR& value);
