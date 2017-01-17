@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2017 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,18 @@ enum Constants
 	MASK_WHD				= (1 | 2 | 4 | 0),
 };
 
-static const float REFERENCE_DEPTH_VALUE = 1.0f;
+static const float	REFERENCE_DEPTH_VALUE	= 1.0f;
+static const Vec4	COLOR_TABLE[]			=
+{
+	Vec4(0.9f, 0.0f, 0.0f, 1.0f),
+	Vec4(0.6f, 1.0f, 0.0f, 1.0f),
+	Vec4(0.3f, 0.0f, 1.0f, 1.0f),
+	Vec4(0.1f, 1.0f, 1.0f, 1.0f),
+	Vec4(0.8f, 1.0f, 0.0f, 1.0f),
+	Vec4(0.5f, 0.0f, 1.0f, 1.0f),
+	Vec4(0.2f, 0.0f, 0.0f, 1.0f),
+	Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+};
 
 struct CaseDef
 {
@@ -114,6 +125,39 @@ inline bool isCube (const VkImageViewType viewType)
 inline VkDeviceSize product (const IVec4& v)
 {
 	return ((static_cast<VkDeviceSize>(v.x()) * v.y()) * v.z()) * v.w();
+}
+
+template<typename T>
+inline T sum (const vector<T>& v)
+{
+	T total = static_cast<T>(0);
+	for (typename vector<T>::const_iterator it = v.begin(); it != v.end(); ++it)
+		total += *it;
+	return total;
+}
+
+template <typename T, int Size>
+int findIndexOfMaxComponent (const tcu::Vector<T, Size>& vec)
+{
+	int index	= 0;
+	T	value	= vec[0];
+
+	for (int i = 1; i < Size; ++i)
+	{
+		if (vec[i] > value)
+		{
+			index	= i;
+			value	= vec[i];
+		}
+	}
+
+	return index;
+}
+
+inline int maxLayersOrDepth (const IVec4& size)
+{
+	// This is safe because 3D images must have layers (w) = 1
+	return deMax32(size.z(), size.w());
 }
 
 // This is very test specific, so be careful if you want to reuse this code.
@@ -332,7 +376,9 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 								   const VkDevice				device,
 								   const VkFormat				colorFormat,
 								   const VkFormat				depthStencilFormat,
-								   const deUint32				numLayers)
+								   const deUint32				numLayers,
+								   const VkImageLayout			initialColorImageLayout			= VK_IMAGE_LAYOUT_UNDEFINED,
+								   const VkImageLayout			initialDepthStencilImageLayout	= VK_IMAGE_LAYOUT_UNDEFINED)
 {
 	const VkAttachmentDescription colorAttachmentDescription =
 	{
@@ -343,7 +389,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
 		VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
-		VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					initialLayout;
+		initialColorImageLayout,							// VkImageLayout					initialLayout;
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					finalLayout;
 	};
 	vector<VkAttachmentDescription> attachmentDescriptions(numLayers, colorAttachmentDescription);
@@ -357,7 +403,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				storeOp;
 		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				stencilLoadOp;
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
-		VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					initialLayout;
+		initialDepthStencilImageLayout,						// VkImageLayout					initialLayout;
 		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout					finalLayout;
 	};
 
@@ -425,6 +471,7 @@ Move<VkImage> makeImage (const DeviceInterface&		vk,
 						 VkImageType				imageType,
 						 const VkFormat				format,
 						 const IVec3&				size,
+						 const deUint32				numMipLevels,
 						 const deUint32				numLayers,
 						 const VkImageUsageFlags	usage)
 {
@@ -436,7 +483,7 @@ Move<VkImage> makeImage (const DeviceInterface&		vk,
 		imageType,								// VkImageType				imageType;
 		format,									// VkFormat					format;
 		makeExtent3D(size),						// VkExtent3D				extent;
-		1u,										// deUint32					mipLevels;
+		numMipLevels,							// deUint32					mipLevels;
 		numLayers,								// deUint32					arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
@@ -481,7 +528,7 @@ std::string getColorFormatStr (const int numComponents, const bool isUint, const
 }
 
 //! A half-viewport quad. Use with TRIANGLE_STRIP topology.
-vector<Vertex4RGBA> genFullQuadVertices (const int subpassCount, const vector<Vec4>& color)
+vector<Vertex4RGBA> genFullQuadVertices (const int subpassCount)
 {
 	vector<Vertex4RGBA>	vectorData;
 	for (int subpassNdx = 0; subpassNdx < subpassCount; ++subpassNdx)
@@ -489,7 +536,7 @@ vector<Vertex4RGBA> genFullQuadVertices (const int subpassCount, const vector<Ve
 		Vertex4RGBA data =
 		{
 			Vec4(0.0f, -1.0f, 0.0f, 1.0f),
-			color[subpassNdx % color.size()],
+			COLOR_TABLE[subpassNdx % DE_LENGTH_OF_ARRAY(COLOR_TABLE)],
 		};
 		vectorData.push_back(data);
 		data.position	= Vec4(0.0f,  1.0f, 0.0f, 1.0f);
@@ -557,62 +604,7 @@ VkImageCreateFlags getImageCreateFlags (const VkImageViewType viewType)
 	return flags;
 }
 
-void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
-{
-	const int	numComponents	= getNumUsedChannels(mapVkFormat(caseDef.colorFormat).order);
-	const bool	isUint			= isUintFormat(caseDef.colorFormat);
-	const bool	isSint			= isIntFormat(caseDef.colorFormat);
-
-	// Vertex shader
-	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-			<< "\n"
-			<< "layout(location = 0) in  vec4 in_position;\n"
-			<< "layout(location = 1) in  vec4 in_color;\n"
-			<< "layout(location = 0) out vec4 out_color;\n"
-			<< "\n"
-			<< "out gl_PerVertex {\n"
-			<< "	vec4 gl_Position;\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main(void)\n"
-			<< "{\n"
-			<< "	gl_Position	= in_position;\n"
-			<< "	out_color	= in_color;\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
-	}
-
-	// Fragment shader
-	{
-		std::ostringstream colorValue;
-		colorValue << REFERENCE_COLOR_VALUE;
-		const std::string colorFormat	= getColorFormatStr(numComponents, isUint, isSint);
-		const std::string colorInteger	= (isUint || isSint ? " * "+colorFormat+"("+colorValue.str()+")" :"");
-
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-			<< "\n"
-			<< "layout(location = 0) in  vec4 in_color;\n"
-			<< "layout(location = 0) out " << colorFormat << " o_color;\n"
-			<< "\n"
-			<< "void main(void)\n"
-			<< "{\n"
-			<< "    o_color = " << colorFormat << "("
-			<< (numComponents == 1 ? "in_color.r"   :
-				numComponents == 2 ? "in_color.rg"  :
-				numComponents == 3 ? "in_color.rgb" : "in_color")
-			<< colorInteger
-			<< ");\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
-	}
-}
-
-void generateExpectedImage (const tcu::PixelBufferAccess& outputImage, const IVec2& renderSize, const int colorDepthOffset, const Vec4* color, const int numColors)
+void generateExpectedImage (const tcu::PixelBufferAccess& outputImage, const IVec2& renderSize, const int colorDepthOffset)
 {
 	const tcu::TextureChannelClass	channelClass	= tcu::getTextureChannelClass(outputImage.getFormat().type);
 	const bool						isInt			= (channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER || channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER);
@@ -625,7 +617,7 @@ void generateExpectedImage (const tcu::PixelBufferAccess& outputImage, const IVe
 
 	for (int z = 0; z < outputImage.getDepth(); ++z)
 	{
-		const Vec4& setColor	= color[(z + colorDepthOffset) % numColors];
+		const Vec4& setColor	= COLOR_TABLE[(z + colorDepthOffset) % DE_LENGTH_OF_ARRAY(COLOR_TABLE)];
 		const IVec4 setColorInt	= (static_cast<float>(REFERENCE_COLOR_VALUE) * setColor).cast<deInt32>();
 
 		for (int y = 0;					y < renderSize.y(); ++y)
@@ -637,24 +629,6 @@ void generateExpectedImage (const tcu::PixelBufferAccess& outputImage, const IVe
 				outputImage.setPixel(setColor, x, y, z);
 		}
 	}
-}
-
-template <typename T, int Size>
-int findIndexOfMaxComponent (const tcu::Vector<T, Size>& vec)
-{
-	int index	= 0;
-	T	value	= vec[0];
-
-	for (int i = 1; i < Size; ++i)
-	{
-		if (vec[i] > value)
-		{
-			index	= i;
-			value	= vec[i];
-		}
-	}
-
-	return index;
 }
 
 VkDeviceSize getMaxDeviceHeapSize (const InstanceInterface& vki, const VkPhysicalDevice physDevice)
@@ -767,7 +741,62 @@ VkImageAspectFlags getFormatAspectFlags (const VkFormat format)
 	}
 }
 
-//! See testAttachmentSize description
+void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
+{
+	const int	numComponents	= getNumUsedChannels(mapVkFormat(caseDef.colorFormat).order);
+	const bool	isUint			= isUintFormat(caseDef.colorFormat);
+	const bool	isSint			= isIntFormat(caseDef.colorFormat);
+
+	// Vertex shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in  vec4 in_position;\n"
+			<< "layout(location = 1) in  vec4 in_color;\n"
+			<< "layout(location = 0) out vec4 out_color;\n"
+			<< "\n"
+			<< "out gl_PerVertex {\n"
+			<< "	vec4 gl_Position;\n"
+			<< "};\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "	gl_Position	= in_position;\n"
+			<< "	out_color	= in_color;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+	}
+
+	// Fragment shader
+	{
+		std::ostringstream colorValue;
+		colorValue << REFERENCE_COLOR_VALUE;
+		const std::string colorFormat	= getColorFormatStr(numComponents, isUint, isSint);
+		const std::string colorInteger	= (isUint || isSint ? " * "+colorFormat+"("+colorValue.str()+")" :"");
+
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in  vec4 in_color;\n"
+			<< "layout(location = 0) out " << colorFormat << " o_color;\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    o_color = " << colorFormat << "("
+			<< (numComponents == 1 ? "in_color.r"   :
+				numComponents == 2 ? "in_color.rg"  :
+				numComponents == 3 ? "in_color.rgb" : "in_color")
+			<< colorInteger
+			<< ");\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+	}
+}
+
+//! See testAttachmentSize() description
 tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef, const int sizeReductionIndex)
 {
 	const DeviceInterface&			vk					= context.getDeviceInterface();
@@ -777,13 +806,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 	const VkQueue					queue				= context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&						allocator			= context.getDefaultAllocator();
-	const Vec4						color[]				=
-	{
-		Vec4(0.9f, 0.0f, 0.0f, 1.0f),
-		Vec4(0.6f, 1.0f, 0.0f, 1.0f),
-		Vec4(0.3f, 0.0f, 1.0f, 1.0f),
-		Vec4(0.1f, 0.0f, 1.0f, 1.0f)
-	};
+
 	// The memory might be too small to allocate a largest possible attachment, so try to account for that.
 	const bool						useDepthStencil		= (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED);
 	const VkDeviceSize				deviceMemoryBudget	= getMaxDeviceHeapSize(vki, physDevice) >> 2;
@@ -802,7 +825,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 		<< tcu::TestLog::Message << "Using an image with size (width, height, depth, layers) = " << imageSize << tcu::TestLog::EndMessage;
 
 	// "Slices" is either the depth of a 3D image, or the number of layers of an arrayed image
-	const deInt32					numSlices			= (VK_IMAGE_VIEW_TYPE_3D == caseDef.viewType ? imageSize.z() : imageSize.w());
+	const deInt32					numSlices			= maxLayersOrDepth(imageSize);
 	const VkDeviceSize				colorSize			= product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.colorFormat));
 	const VkDeviceSize				depthStencilSize	= (useDepthStencil ? product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.depthStencilFormat)) : 0ull);
 
@@ -823,6 +846,11 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 	const VkDeviceSize				colorBufferSize		= product(checkSize) * tcu::getPixelSize(mapVkFormat(caseDef.colorFormat));
 	const Unique<VkBuffer>			colorBuffer			(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>		colorBufferAlloc	(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
+
+	{
+		deMemset(colorBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
+		flushMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+	}
 
 	const Unique<VkShaderModule>	vertexModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>	fragmentModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("frag"), 0u));
@@ -846,7 +874,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 		const VkImageUsageFlags	imageUsage	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
 		colorImage		= makeImage(vk, device, getImageCreateFlags(caseDef.viewType), getImageType(caseDef.viewType), caseDef.colorFormat,
-									imageSize.swizzle(0, 1, 2), imageSize.w(), imageUsage);
+									imageSize.swizzle(0, 1, 2), 1u, imageSize.w(), imageUsage);
 		colorImageAlloc	= bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any);
 	}
 
@@ -856,13 +884,13 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 		const VkImageUsageFlags	imageUsage	= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
 		depthStencilImage		= makeImage(vk, device, (VkImageCreateFlags)0, VK_IMAGE_TYPE_2D, caseDef.depthStencilFormat,
-											IVec3(imageSize.x(), imageSize.y(), 1), numSlices, imageUsage);
+											IVec3(imageSize.x(), imageSize.y(), 1), 1u, numSlices, imageUsage);
 		depthStencilImageAlloc	= bindImage(vk, device, allocator, *depthStencilImage, MemoryRequirement::Any);
 	}
 
 	// Create a vertex buffer
 	{
-		const vector<Vertex4RGBA>	vertices			= genFullQuadVertices(numSlices, vector<Vec4>(color, color + DE_LENGTH_OF_ARRAY(color)));
+		const vector<Vertex4RGBA>	vertices			= genFullQuadVertices(numSlices);
 		const VkDeviceSize			vertexBufferSize	= sizeInBytes(vertices);
 
 		vertexBuffer		= makeBuffer(vk, device, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
@@ -906,7 +934,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 	framebuffer = makeFramebuffer(vk, device, *renderPass, static_cast<deUint32>(attachmentHandles.size()), &attachmentHandles[0], static_cast<deUint32>(imageSize.x()), static_cast<deUint32>(imageSize.y()));
 
 	{
-		const Unique<VkCommandPool>		cmdPool		(createCommandPool  (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+		const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 		const Unique<VkCommandBuffer>	cmdBuffer	(makeCommandBuffer(vk, device, *cmdPool));
 
 		beginCommandBuffer(vk, *cmdBuffer);
@@ -1019,14 +1047,14 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 		invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
 
 		const tcu::TextureFormat			format			= mapVkFormat(caseDef.colorFormat);
-		const int							checkDepth		= deMax32(checkSize.z(), checkSize.w());
-		const int							depthOffset		= deMax32(checkOffset.z(), checkOffset.w());
+		const int							checkDepth		= maxLayersOrDepth(checkSize);
+		const int							depthOffset		= maxLayersOrDepth(checkOffset);
 		const tcu::ConstPixelBufferAccess	resultImage		(format, checkSize.x(), checkSize.y(), checkDepth, colorBufferAlloc->getHostPtr());
 		tcu::TextureLevel					textureLevel	(format, checkSize.x(), checkSize.y(), checkDepth);
 		const tcu::PixelBufferAccess		expectedImage	= textureLevel.getAccess();
 		bool								ok				= false;
 
-		generateExpectedImage(expectedImage, checkSize.swizzle(0, 1), depthOffset, color, DE_LENGTH_OF_ARRAY(color));
+		generateExpectedImage(expectedImage, checkSize.swizzle(0, 1), depthOffset);
 
 		if (isFloatFormat(caseDef.colorFormat))
 			ok = tcu::floatThresholdCompare(context.getTestContext().getLog(), "Image Comparison", "", expectedImage, resultImage, tcu::Vec4(0.01f), tcu::COMPARE_LOG_RESULT);
@@ -1037,17 +1065,22 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 	}
 }
 
+void checkImageViewTypeRequirements (Context& context, const VkImageViewType viewType)
+{
+	if (viewType == VK_IMAGE_VIEW_TYPE_3D &&
+		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1"))
+		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
+
+	if (viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !context.getDeviceFeatures().imageCubeArray)
+		TCU_THROW(NotSupportedError, "Missing feature: imageCubeArray");
+}
+
 //! A test that can exercise very big color and depth/stencil attachment sizes.
 //! If the total memory consumed by images is too large, or if the implementation returns OUT_OF_MEMORY error somewhere,
 //! the test can be retried with a next increment of size reduction index, making the attachments smaller.
 tcu::TestStatus testAttachmentSize (Context& context, const CaseDef caseDef)
 {
-	if (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D &&
-		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1"))
-		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
-
-	if (caseDef.viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !context.getDeviceFeatures().imageCubeArray)
-		TCU_THROW(NotSupportedError, "Missing feature: imageCubeArray");
+	checkImageViewTypeRequirements(context, caseDef.viewType);
 
 	int sizeReductionIndex = 0;
 
@@ -1066,6 +1099,402 @@ tcu::TestStatus testAttachmentSize (Context& context, const CaseDef caseDef)
 		}
 	}
 	// Never reached
+}
+
+vector<IVec4> getMipLevelSizes (IVec4 baseSize)
+{
+	vector<IVec4> levels;
+	levels.push_back(baseSize);
+
+	while (baseSize.x() != 1 || baseSize.y() != 1 || baseSize.z() != 1)
+	{
+		baseSize.x() = deMax32(baseSize.x() >> 1, 1);
+		baseSize.y() = deMax32(baseSize.y() >> 1, 1);
+		baseSize.z() = deMax32(baseSize.z() >> 1, 1);
+		levels.push_back(baseSize);
+	}
+
+	return levels;
+}
+
+//! Compute memory consumed by each mip level, including all layers. Sizes include a padding for alignment.
+vector<VkDeviceSize> getPerMipLevelStorageSize (const vector<IVec4>& mipLevelSizes, const VkDeviceSize pixelSize)
+{
+	const deInt64			levelAlignment	= 16;
+	vector<VkDeviceSize>	storageSizes;
+
+	for (vector<IVec4>::const_iterator it = mipLevelSizes.begin(); it != mipLevelSizes.end(); ++it)
+		storageSizes.push_back(deAlign64(pixelSize * product(*it), levelAlignment));
+
+	return storageSizes;
+}
+
+void drawToMipLevel (const Context&				context,
+					 const CaseDef&				caseDef,
+					 const int					mipLevel,
+					 const IVec4&				mipSize,
+					 const int					numSlices,
+					 const VkImage				colorImage,
+					 const VkImage				depthStencilImage,
+					 const VkBuffer				vertexBuffer,
+					 const VkPipelineLayout		pipelineLayout,
+					 const VkShaderModule		vertexModule,
+					 const VkShaderModule		fragmentModule)
+{
+	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkDevice					device				= context.getDevice();
+	const VkQueue					queue				= context.getUniversalQueue();
+	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkImageAspectFlags		depthStencilAspect	= getFormatAspectFlags(caseDef.depthStencilFormat);
+	const bool						useDepth			= (depthStencilAspect & VK_IMAGE_ASPECT_DEPTH_BIT)   != 0;
+	const bool						useStencil			= (depthStencilAspect & VK_IMAGE_ASPECT_STENCIL_BIT) != 0;
+	const Unique<VkRenderPass>		renderPass			(makeRenderPass(vk, device, caseDef.colorFormat, caseDef.depthStencilFormat, static_cast<deUint32>(numSlices),
+																		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+	vector<SharedPtrVkPipeline>		pipelines;
+	vector<SharedPtrVkImageView>	colorAttachments;
+	vector<SharedPtrVkImageView>	depthStencilAttachments;
+	vector<VkImageView>				attachmentHandles;			// all attachments (color and d/s)
+
+	// For each image layer or slice (3D), create an attachment and a pipeline
+	{
+		VkPipeline					basePipeline			= DE_NULL;
+
+		// Color attachments are first in the framebuffer
+		for (int subpassNdx = 0; subpassNdx < numSlices; ++subpassNdx)
+		{
+			colorAttachments.push_back(makeSharedPtr(makeImageView(
+				vk, device, colorImage, getImageViewSliceType(caseDef.viewType), caseDef.colorFormat,
+				makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipLevel, 1u, subpassNdx, 1u))));
+			attachmentHandles.push_back(**colorAttachments.back());
+
+			// We also have to create pipelines for each subpass
+			pipelines.push_back(makeSharedPtr(makeGraphicsPipeline(
+				vk, device, basePipeline, pipelineLayout, *renderPass, vertexModule, fragmentModule, mipSize.swizzle(0, 1), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+				static_cast<deUint32>(subpassNdx), useDepth, useStencil)));
+
+			basePipeline = **pipelines.front();
+		}
+
+		// Then D/S attachments, if any
+		if (useDepth || useStencil)
+		for (int subpassNdx = 0; subpassNdx < numSlices; ++subpassNdx)
+		{
+			depthStencilAttachments.push_back(makeSharedPtr(makeImageView(
+				vk, device, depthStencilImage, VK_IMAGE_VIEW_TYPE_2D, caseDef.depthStencilFormat,
+				makeImageSubresourceRange(depthStencilAspect, mipLevel, 1u, subpassNdx, 1u))));
+			attachmentHandles.push_back(**depthStencilAttachments.back());
+		}
+	}
+
+	const Unique<VkFramebuffer>			framebuffer (makeFramebuffer(vk, device, *renderPass, static_cast<deUint32>(attachmentHandles.size()), &attachmentHandles[0],
+																	 static_cast<deUint32>(mipSize.x()), static_cast<deUint32>(mipSize.y())));
+
+	{
+		const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+		const Unique<VkCommandBuffer>	cmdBuffer	(makeCommandBuffer(vk, device, *cmdPool));
+
+		beginCommandBuffer(vk, *cmdBuffer);
+		{
+			vector<VkClearValue>	clearValues	(numSlices, getClearValue(caseDef.colorFormat));
+
+			if (useDepth || useStencil)
+				clearValues.insert(clearValues.end(), numSlices, makeClearValueDepthStencil(REFERENCE_DEPTH_VALUE, REFERENCE_STENCIL_VALUE));
+
+			const VkRect2D			renderArea	=
+			{
+				makeOffset2D(0, 0),
+				makeExtent2D(mipSize.x(), mipSize.y()),
+			};
+			const VkRenderPassBeginInfo	renderPassBeginInfo	=
+			{
+				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
+				DE_NULL,									// const void*             pNext;
+				*renderPass,								// VkRenderPass            renderPass;
+				*framebuffer,								// VkFramebuffer           framebuffer;
+				renderArea,									// VkRect2D                renderArea;
+				static_cast<deUint32>(clearValues.size()),	// uint32_t                clearValueCount;
+				&clearValues[0],							// const VkClearValue*     pClearValues;
+			};
+			const VkDeviceSize		vertexBufferOffset	= 0ull;
+
+			vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+		}
+
+		// Draw
+		for (deUint32 subpassNdx = 0; subpassNdx < static_cast<deUint32>(numSlices); ++subpassNdx)
+		{
+			if (subpassNdx != 0)
+				vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
+			vk.cmdDraw(*cmdBuffer, 4u, 1u, subpassNdx*4u, 0u);
+		}
+
+		vk.cmdEndRenderPass(*cmdBuffer);
+
+		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	}
+}
+
+//! Use image mip levels as attachments
+tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
+{
+	checkImageViewTypeRequirements(context, caseDef.viewType);
+
+	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const InstanceInterface&		vki					= context.getInstanceInterface();
+	const VkDevice					device				= context.getDevice();
+	const VkPhysicalDevice			physDevice			= context.getPhysicalDevice();
+	const VkQueue					queue				= context.getUniversalQueue();
+	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&						allocator			= context.getDefaultAllocator();
+
+	const IVec4						imageSize				= caseDef.imageSizeHint;	// MAX_SIZE is not used in this test
+	const deInt32					numSlices				= maxLayersOrDepth(imageSize);
+	const vector<IVec4>				mipLevelSizes			= getMipLevelSizes(imageSize);
+	const vector<VkDeviceSize>		mipLevelStorageSizes	= getPerMipLevelStorageSize(mipLevelSizes, tcu::getPixelSize(mapVkFormat(caseDef.colorFormat)));
+	const int						numMipLevels			= static_cast<int>(mipLevelSizes.size());
+	const bool						useDepthStencil			= (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED);
+
+	if (useDepthStencil && !isDepthStencilFormatSupported(vki, physDevice, caseDef.depthStencilFormat))
+		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");
+
+	// Create a color buffer big enough to hold all layers and mip levels
+	const VkDeviceSize				colorBufferSize		= sum(mipLevelStorageSizes);
+	const Unique<VkBuffer>			colorBuffer			(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+	const UniquePtr<Allocation>		colorBufferAlloc	(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
+
+	{
+		deMemset(colorBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
+		flushMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+	}
+
+	const Unique<VkShaderModule>	vertexModule		(createShaderModule	(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkShaderModule>	fragmentModule		(createShaderModule	(vk, device, context.getBinaryCollection().get("frag"), 0u));
+	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout	(vk, device));
+
+	Move<VkImage>					colorImage;
+	MovePtr<Allocation>				colorImageAlloc;
+	Move<VkImage>					depthStencilImage;
+	MovePtr<Allocation>				depthStencilImageAlloc;
+	Move<VkBuffer>					vertexBuffer;
+	MovePtr<Allocation>				vertexBufferAlloc;
+
+	// Create a color image
+	{
+		const VkImageUsageFlags	imageUsage	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+		colorImage		= makeImage(vk, device, getImageCreateFlags(caseDef.viewType), getImageType(caseDef.viewType), caseDef.colorFormat,
+									imageSize.swizzle(0, 1, 2), numMipLevels, imageSize.w(), imageUsage);
+		colorImageAlloc	= bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any);
+	}
+
+	// Create a depth/stencil image (always a 2D image, optionally layered)
+	if (useDepthStencil)
+	{
+		const VkImageUsageFlags	imageUsage	= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+		depthStencilImage		= makeImage(vk, device, (VkImageCreateFlags)0, VK_IMAGE_TYPE_2D, caseDef.depthStencilFormat,
+											IVec3(imageSize.x(), imageSize.y(), 1), numMipLevels, numSlices, imageUsage);
+		depthStencilImageAlloc	= bindImage(vk, device, allocator, *depthStencilImage, MemoryRequirement::Any);
+	}
+
+	// Create a vertex buffer
+	{
+		const vector<Vertex4RGBA>	vertices			= genFullQuadVertices(numSlices);
+		const VkDeviceSize			vertexBufferSize	= sizeInBytes(vertices);
+
+		vertexBuffer		= makeBuffer(vk, device, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+		vertexBufferAlloc	= bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible);
+		deMemcpy(vertexBufferAlloc->getHostPtr(), &vertices[0], static_cast<std::size_t>(vertexBufferSize));
+		flushMappedMemoryRange(vk, device, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexBufferSize);
+	}
+
+	// Prepare images
+	{
+		const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+		const Unique<VkCommandBuffer>	cmdBuffer	(makeCommandBuffer(vk, device, *cmdPool));
+
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		const VkImageMemoryBarrier	imageBarriers[]	=
+		{
+			{
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType            sType;
+				DE_NULL,											// const void*                pNext;
+				(VkAccessFlags)0,									// VkAccessFlags              srcAccessMask;
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags              dstAccessMask;
+				VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout              oldLayout;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout              newLayout;
+				VK_QUEUE_FAMILY_IGNORED,							// uint32_t                   srcQueueFamilyIndex;
+				VK_QUEUE_FAMILY_IGNORED,							// uint32_t                   dstQueueFamilyIndex;
+				*colorImage,										// VkImage                    image;
+				{													// VkImageSubresourceRange    subresourceRange;
+					VK_IMAGE_ASPECT_COLOR_BIT,							// VkImageAspectFlags    aspectMask;
+					0u,													// uint32_t              baseMipLevel;
+					static_cast<deUint32>(numMipLevels),				// uint32_t              levelCount;
+					0u,													// uint32_t              baseArrayLayer;
+					static_cast<deUint32>(imageSize.w()),				// uint32_t              layerCount;
+				},
+			},
+			{
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType            sType;
+				DE_NULL,											// const void*                pNext;
+				(VkAccessFlags)0,									// VkAccessFlags              srcAccessMask;
+				VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,		// VkAccessFlags              dstAccessMask;
+				VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout              oldLayout;
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout              newLayout;
+				VK_QUEUE_FAMILY_IGNORED,							// uint32_t                   srcQueueFamilyIndex;
+				VK_QUEUE_FAMILY_IGNORED,							// uint32_t                   dstQueueFamilyIndex;
+				*depthStencilImage,									// VkImage                    image;
+				{													// VkImageSubresourceRange    subresourceRange;
+					getFormatAspectFlags(caseDef.depthStencilFormat),	// VkImageAspectFlags    aspectMask;
+					0u,													// uint32_t              baseMipLevel;
+					static_cast<deUint32>(numMipLevels),				// uint32_t              levelCount;
+					0u,													// uint32_t              baseArrayLayer;
+					static_cast<deUint32>(numSlices),					// uint32_t              layerCount;
+				},
+			}
+		};
+
+		const deUint32	numImageBarriers = static_cast<deUint32>(DE_LENGTH_OF_ARRAY(imageBarriers) - (useDepthStencil ? 0 : 1));
+
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u,
+								0u, DE_NULL, 0u, DE_NULL, numImageBarriers, imageBarriers);
+
+		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	}
+
+	// Draw
+	for (int mipLevel = 0; mipLevel < numMipLevels; ++mipLevel)
+	{
+		const IVec4&	mipSize		= mipLevelSizes[mipLevel];
+		const int		levelSlices	= maxLayersOrDepth(mipSize);
+
+		drawToMipLevel (context, caseDef, mipLevel, mipSize, levelSlices, *colorImage, *depthStencilImage, *vertexBuffer, *pipelineLayout,
+						*vertexModule, *fragmentModule);
+	}
+
+	// Copy results: colorImage -> host visible colorBuffer
+	{
+		const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+		const Unique<VkCommandBuffer>	cmdBuffer	(makeCommandBuffer(vk, device, *cmdPool));
+
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		{
+			const VkImageMemoryBarrier	imageBarriers[]	=
+			{
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType            sType;
+					DE_NULL,										// const void*                pNext;
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags              srcAccessMask;
+					VK_ACCESS_TRANSFER_READ_BIT,					// VkAccessFlags              dstAccessMask;
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// VkImageLayout              oldLayout;
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,			// VkImageLayout              newLayout;
+					VK_QUEUE_FAMILY_IGNORED,						// uint32_t                   srcQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,						// uint32_t                   dstQueueFamilyIndex;
+					*colorImage,									// VkImage                    image;
+					{												// VkImageSubresourceRange    subresourceRange;
+						VK_IMAGE_ASPECT_COLOR_BIT,							// VkImageAspectFlags    aspectMask;
+						0u,													// uint32_t              baseMipLevel;
+						static_cast<deUint32>(numMipLevels),				// uint32_t              levelCount;
+						0u,													// uint32_t              baseArrayLayer;
+						static_cast<deUint32>(imageSize.w()),				// uint32_t              layerCount;
+					},
+				}
+			};
+
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+									0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
+		}
+		{
+			vector<VkBufferImageCopy>	regions;
+			VkDeviceSize				levelOffset = 0ull;
+			VkBufferImageCopy			workRegion	=
+			{
+				0ull,																				// VkDeviceSize                bufferOffset;
+				0u,																					// uint32_t                    bufferRowLength;
+				0u,																					// uint32_t                    bufferImageHeight;
+				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, imageSize.w()),		// VkImageSubresourceLayers    imageSubresource;
+				makeOffset3D(0, 0, 0),																// VkOffset3D                  imageOffset;
+				makeExtent3D(0, 0, 0),																// VkExtent3D                  imageExtent;
+			};
+
+			for (int mipLevel = 0; mipLevel < numMipLevels; ++mipLevel)
+			{
+				workRegion.bufferOffset					= levelOffset;
+				workRegion.imageSubresource.mipLevel	= static_cast<deUint32>(mipLevel);
+				workRegion.imageExtent					= makeExtent3D(mipLevelSizes[mipLevel].swizzle(0, 1, 2));
+
+				regions.push_back(workRegion);
+
+				levelOffset += mipLevelStorageSizes[mipLevel];
+			}
+
+			vk.cmdCopyImageToBuffer(*cmdBuffer, *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorBuffer, static_cast<deUint32>(regions.size()), &regions[0]);
+		}
+		{
+			const VkBufferMemoryBarrier	bufferBarriers[] =
+			{
+				{
+					VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType    sType;
+					DE_NULL,									// const void*        pNext;
+					VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags      srcAccessMask;
+					VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags      dstAccessMask;
+					VK_QUEUE_FAMILY_IGNORED,					// uint32_t           srcQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,					// uint32_t           dstQueueFamilyIndex;
+					*colorBuffer,								// VkBuffer           buffer;
+					0ull,										// VkDeviceSize       offset;
+					VK_WHOLE_SIZE,								// VkDeviceSize       size;
+				},
+			};
+
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u,
+									0u, DE_NULL, DE_LENGTH_OF_ARRAY(bufferBarriers), bufferBarriers, 0u, DE_NULL);
+		}
+
+		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	}
+
+	// Verify results (per mip level)
+	{
+		invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+
+		const tcu::TextureFormat			format			= mapVkFormat(caseDef.colorFormat);
+
+		VkDeviceSize						levelOffset		= 0ull;
+		bool								allOk			= true;
+
+		for (int mipLevel = 0; mipLevel < numMipLevels; ++mipLevel)
+		{
+			const IVec4&						mipSize			= mipLevelSizes[mipLevel];
+			const void*	const					pLevelData		= static_cast<const deUint8*>(colorBufferAlloc->getHostPtr()) + levelOffset;
+			const int							levelDepth		= maxLayersOrDepth(mipSize);
+			const tcu::ConstPixelBufferAccess	resultImage		(format, mipSize.x(), mipSize.y(), levelDepth, pLevelData);
+			tcu::TextureLevel					textureLevel	(format, mipSize.x(), mipSize.y(), levelDepth);
+			const tcu::PixelBufferAccess		expectedImage	= textureLevel.getAccess();
+			const std::string					comparisonName	= "Mip level " + de::toString(mipLevel);
+			bool								ok				= false;
+
+			generateExpectedImage(expectedImage, mipSize.swizzle(0, 1), 0);
+
+			if (isFloatFormat(caseDef.colorFormat))
+				ok = tcu::floatThresholdCompare(context.getTestContext().getLog(), "Image Comparison", comparisonName.c_str(), expectedImage, resultImage, tcu::Vec4(0.01f), tcu::COMPARE_LOG_RESULT);
+			else
+				ok = tcu::intThresholdCompare(context.getTestContext().getLog(), "Image Comparison", comparisonName.c_str(), expectedImage, resultImage, tcu::UVec4(2), tcu::COMPARE_LOG_RESULT);
+
+			allOk		=  allOk && ok;	// keep testing all levels, even if we know it's a fail overall
+			levelOffset += mipLevelStorageSizes[mipLevel];
+		}
+
+		return allOk ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Fail");
+	}
 }
 
 std::string getSizeDescription (const IVec4& size)
@@ -1126,9 +1555,9 @@ inline BVec4 bvecFromMask (deUint32 mask)
 				 (mask >> 3) & 1);
 }
 
-std::vector<IVec4> genSizeCombinations (const IVec4& baselineSize, const deUint32 sizeMask, const VkImageViewType imageViewType)
+vector<IVec4> genSizeCombinations (const IVec4& baselineSize, const deUint32 sizeMask, const VkImageViewType imageViewType)
 {
-	std::vector<IVec4>	sizes;
+	vector<IVec4>		sizes;
 	std::set<deUint32>	masks;
 
 	for (deUint32 i = 0; i < (1u << 4); ++i)
@@ -1181,12 +1610,13 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group)
 		VK_FORMAT_D32_SFLOAT_S8_UINT,
 	};
 
-	// Generate attachment size cases for all render targets
 	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(testCase); ++caseNdx)
 	{
 		MovePtr<tcu::TestCaseGroup>	imageGroup(new tcu::TestCaseGroup(group->getTestContext(), getShortImageViewTypeName(testCase[caseNdx].viewType).c_str(), ""));
+
+		// Generate attachment size cases
 		{
-			const std::vector<IVec4> sizes = genSizeCombinations(testCase[caseNdx].baselineSize, testCase[caseNdx].sizeMask, testCase[caseNdx].viewType);
+			const vector<IVec4> sizes = genSizeCombinations(testCase[caseNdx].baselineSize, testCase[caseNdx].sizeMask, testCase[caseNdx].viewType);
 
 			MovePtr<tcu::TestCaseGroup>	smallGroup(new tcu::TestCaseGroup(group->getTestContext(), "small", ""));
 			MovePtr<tcu::TestCaseGroup>	hugeGroup (new tcu::TestCaseGroup(group->getTestContext(), "huge",  ""));
@@ -1194,7 +1624,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group)
 			imageGroup->addChild(smallGroup.get());
 			imageGroup->addChild(hugeGroup.get());
 
-			for (std::vector<IVec4>::const_iterator sizeIter = sizes.begin(); sizeIter != sizes.end(); ++sizeIter)
+			for (vector<IVec4>::const_iterator sizeIter = sizes.begin(); sizeIter != sizes.end(); ++sizeIter)
 			{
 				// The first size is the baseline size, put it in a dedicated group
 				if (sizeIter == sizes.begin())
@@ -1235,6 +1665,26 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group)
 			smallGroup.release();
 			hugeGroup.release();
 		}
+
+		// Generate mip map cases
+		{
+			MovePtr<tcu::TestCaseGroup>	mipmapGroup(new tcu::TestCaseGroup(group->getTestContext(), "mipmap", ""));
+
+			for (int dsFormatNdx = 0; dsFormatNdx < DE_LENGTH_OF_ARRAY(depthStencilFormat); ++dsFormatNdx)
+			for (int formatNdx   = 0; formatNdx   < DE_LENGTH_OF_ARRAY(format);             ++formatNdx)
+			{
+				const CaseDef caseDef =
+				{
+					testCase[caseNdx].viewType,			// VkImageViewType	imageType;
+					testCase[caseNdx].baselineSize,		// IVec4			imageSizeHint;
+					format[formatNdx],					// VkFormat			colorFormat;
+					depthStencilFormat[dsFormatNdx],	// VkFormat			depthStencilFormat;
+				};
+				addFunctionCaseWithPrograms(mipmapGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", initPrograms, testRenderToMipMaps, caseDef);
+			}
+			imageGroup->addChild(mipmapGroup.release());
+		}
+
 		group->addChild(imageGroup.release());
 	}
 }
