@@ -293,3 +293,6 @@ dEQP-VK.texture.explicit_lod.*
 
 # Exclude tests which are not on the Android CTS mustpass list
 dEQP-VK.texture.mipmap.2d.projected.*
+
+#VK-GL-CTS 526
+dEQP-VK.pipeline.render_to_image.*.huge.*
