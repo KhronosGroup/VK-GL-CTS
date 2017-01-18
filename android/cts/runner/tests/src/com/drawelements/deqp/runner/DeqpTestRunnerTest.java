@@ -36,6 +36,10 @@ import com.android.tradefed.util.RunInterruptedException;
 
 import junit.framework.TestCase;
 
+import org.easymock.EasyMock;
+import org.easymock.IAnswer;
+import org.easymock.IMocksControl;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -51,10 +55,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
-import org.easymock.EasyMock;
-import org.easymock.IAnswer;
-import org.easymock.IMocksControl;
 
 /**
  * Unit tests for {@link DeqpTestRunner}.
@@ -805,11 +805,18 @@ public class DeqpTestRunnerTest extends TestCase {
             allTests.add(id);
         }
 
-        String expectedTrie = "";
-
         DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
         deqpTest.addExcludeFilter("*");
-        testFiltering(deqpTest, expectedTrie, new ArrayList<TestIdentifier>());
+        ITestInvocationListener mockListener
+                = EasyMock.createStrictMock(ITestInvocationListener.class);
+        mockListener.testRunStarted(getTestId(deqpTest), 0);
+        EasyMock.expectLastCall().once();
+        mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.<Map<String, String>>notNull());
+        EasyMock.expectLastCall().once();
+
+        EasyMock.replay(mockListener);
+        deqpTest.run(mockListener);
+        EasyMock.verify(mockListener);
     }
 
     /**
@@ -1719,6 +1726,8 @@ public class DeqpTestRunnerTest extends TestCase {
 
         mockListener.testRunStarted(getTestId(deqpTest), 1);
         EasyMock.expectLastCall().once();
+        mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.anyObject());
+        EasyMock.expectLastCall().once();
 
         EasyMock.replay(mockDevice, mockIDevice);
         EasyMock.replay(mockListener);
@@ -1933,6 +1942,8 @@ public class DeqpTestRunnerTest extends TestCase {
         mockListener.testFailed(EasyMock.eq(testId), EasyMock.<String>notNull());
         EasyMock.expectLastCall().andThrow(new RunInterruptedException());
 
+        mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.anyObject());
+        EasyMock.expectLastCall().once();
         EasyMock.replay(mockDevice, mockIDevice);
         EasyMock.replay(mockListener);
         EasyMock.replay(mockRunUtil);
@@ -2184,6 +2195,50 @@ public class DeqpTestRunnerTest extends TestCase {
             j++;
         }
         assertEquals(TEST_COUNT, j);
+    }
+
+    /**
+     * Test that strict shardable is creating an empty shard of the runner when too many shards
+     * are requested.
+     */
+    public void testGetTestShard_tooManyShardRequested() throws Exception {
+        final int TEST_COUNT = 2;
+        final int SHARD_COUNT = 3;
+
+        ArrayList<TestIdentifier> testIds = new ArrayList<>(TEST_COUNT);
+        for (int i = 0; i < TEST_COUNT; i++) {
+            testIds.add(new TestIdentifier("dEQP-GLES3.funny.group", String.valueOf(i)));
+        }
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, testIds, mTestsDir);
+        OptionSetter setter = new OptionSetter(deqpTest);
+        final long fullRuntimeMs = testIds.size()*100;
+        setter.setOptionValue("runtime-hint", String.valueOf(fullRuntimeMs));
+        DeqpTestRunner shard1 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 0);
+        assertEquals(1, shard1.getTestInstance().size());
+        int j = 0;
+        // Ensure numbers, and that order is stable
+        for (TestIdentifier t : shard1.getTestInstance().keySet()) {
+            assertEquals(String.format("dEQP-GLES3.funny.group#%s", j),
+                    String.format("%s#%s", t.getClassName(), t.getTestName()));
+            j++;
+        }
+        DeqpTestRunner shard2 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 1);
+        assertEquals(1, shard2.getTestInstance().size());
+        for (TestIdentifier t : shard2.getTestInstance().keySet()) {
+            assertEquals(String.format("dEQP-GLES3.funny.group#%s", j),
+                    String.format("%s#%s", t.getClassName(), t.getTestName()));
+            j++;
+        }
+        DeqpTestRunner shard3 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 2);
+        assertTrue(shard3.getTestInstance().isEmpty());
+        assertEquals(TEST_COUNT, j);
+        ITestInvocationListener mockListener
+                = EasyMock.createStrictMock(ITestInvocationListener.class);
+        mockListener.testRunStarted(EasyMock.anyObject(), EasyMock.eq(0));
+        mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.anyObject());
+        EasyMock.replay(mockListener);
+        shard3.run(mockListener);
+        EasyMock.verify(mockListener);
     }
 
     public void testRuntimeHint_optionNotSet() throws Exception {
