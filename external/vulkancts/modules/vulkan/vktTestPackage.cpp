@@ -77,6 +77,7 @@
 #include "vktTextureTests.hpp"
 #include "vktGeometryTests.hpp"
 #include "vktRobustnessTests.hpp"
+#include "vktMultiViewTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -400,6 +401,7 @@ void TestPackage::init (void)
 	addChild(texture::createTests			(m_testCtx));
 	addChild(geometry::createTests			(m_testCtx));
 	addChild(robustness::createTests		(m_testCtx));
+	addChild(MultiView::createTests			(m_testCtx));
 }
 
 } // vkt

@@ -363,6 +363,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerMarkerInfoEXT& val
 std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationImageCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationBufferCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationMemoryAllocateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderPassMultiviewCreateInfoKHX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewFeaturesKHX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewPropertiesKHX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalImageFormatPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalMemoryImageCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExportMemoryAllocateInfoNV& value);

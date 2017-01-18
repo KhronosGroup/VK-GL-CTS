@@ -24,6 +24,7 @@ add_subdirectory(fragment_ops)
 add_subdirectory(geometry)
 add_subdirectory(texture)
 add_subdirectory(robustness)
+add_subdirectory(multiview)
 
 include_directories(
 	api
@@ -50,6 +51,7 @@ include_directories(
 	texture
 	geometry
 	robustness
+	multiview
 	)
 
 set(DEQP_VK_SRCS
@@ -101,6 +103,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-texture
 	deqp-vk-geometry
 	deqp-vk-robustness
+	deqp-vk-multiview
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

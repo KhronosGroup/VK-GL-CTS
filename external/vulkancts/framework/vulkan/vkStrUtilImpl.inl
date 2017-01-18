@@ -169,6 +169,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV:				return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_BUFFER_CREATE_INFO_NV:				return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_BUFFER_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV:			return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHX:					return "VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHX";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHX:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHX";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHX:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHX";
 		case VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV:					return "VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_NV:							return "VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV:						return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV";
@@ -1206,9 +1209,10 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,	"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,		"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,				"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,				"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,					"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,							"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHX,	"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHX"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1309,7 +1313,8 @@ tcu::Format::Bitfield<32> getDependencyFlagsStr (VkDependencyFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_DEPENDENCY_BY_REGION_BIT,	"VK_DEPENDENCY_BY_REGION_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_BY_REGION_BIT,		"VK_DEPENDENCY_BY_REGION_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_VIEW_LOCAL_BIT_KHX,	"VK_DEPENDENCY_VIEW_LOCAL_BIT_KHX"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3662,6 +3667,44 @@ std::ostream& operator<< (std::ostream& s, const VkDedicatedAllocationMemoryAllo
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\timage = " << value.image << '\n';
 	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassMultiviewCreateInfoKHX& value)
+{
+	s << "VkRenderPassMultiviewCreateInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsubpassCount = " << value.subpassCount << '\n';
+	s << "\tpViewMasks = " << value.pViewMasks << '\n';
+	s << "\tdependencyCount = " << value.dependencyCount << '\n';
+	s << "\tpViewOffsets = " << value.pViewOffsets << '\n';
+	s << "\tcorrelationMaskCount = " << value.correlationMaskCount << '\n';
+	s << "\tpCorrelationMasks = " << value.pCorrelationMasks << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewFeaturesKHX& value)
+{
+	s << "VkPhysicalDeviceMultiviewFeaturesKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmultiview = " << value.multiview << '\n';
+	s << "\tmultiviewGeometryShader = " << value.multiviewGeometryShader << '\n';
+	s << "\tmultiviewTessellationShader = " << value.multiviewTessellationShader << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewPropertiesKHX& value)
+{
+	s << "VkPhysicalDeviceMultiviewPropertiesKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxMultiviewViewCount = " << value.maxMultiviewViewCount << '\n';
+	s << "\tmaxMultiviewInstanceIndex = " << value.maxMultiviewInstanceIndex << '\n';
 	s << '}';
 	return s;
 }

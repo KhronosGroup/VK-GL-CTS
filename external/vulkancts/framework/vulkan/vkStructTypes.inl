@@ -1521,6 +1521,35 @@ struct VkDedicatedAllocationMemoryAllocateInfoNV
 	VkBuffer		buffer;
 };
 
+struct VkRenderPassMultiviewCreateInfoKHX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		subpassCount;
+	const deUint32*	pViewMasks;
+	deUint32		dependencyCount;
+	const deInt32*	pViewOffsets;
+	deUint32		correlationMaskCount;
+	const deUint32*	pCorrelationMasks;
+};
+
+struct VkPhysicalDeviceMultiviewFeaturesKHX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multiview;
+	VkBool32		multiviewGeometryShader;
+	VkBool32		multiviewTessellationShader;
+};
+
+struct VkPhysicalDeviceMultiviewPropertiesKHX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		maxMultiviewViewCount;
+	deUint32		maxMultiviewInstanceIndex;
+};
+
 struct VkExternalImageFormatPropertiesNV
 {
 	VkImageFormatProperties				imageFormatProperties;

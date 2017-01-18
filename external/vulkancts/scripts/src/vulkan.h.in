@@ -221,6 +221,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV = 1000026000,
     VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_BUFFER_CREATE_INFO_NV = 1000026001,
     VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV = 1000026002,
+    VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHX = 1000053000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHX = 1000053001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHX = 1000053002,
     VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV = 1000056000,
     VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_NV = 1000056001,
     VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV = 1000057000,
@@ -1053,6 +1056,7 @@ typedef enum VkPipelineCreateFlagBits {
     VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT = 0x00000001,
     VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT = 0x00000002,
     VK_PIPELINE_CREATE_DERIVATIVE_BIT = 0x00000004,
+    VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHX = 0x00000008,
     VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkPipelineCreateFlagBits;
 typedef VkFlags VkPipelineCreateFlags;
@@ -1146,6 +1150,7 @@ typedef VkFlags VkAccessFlags;
 
 typedef enum VkDependencyFlagBits {
     VK_DEPENDENCY_BY_REGION_BIT = 0x00000001,
+    VK_DEPENDENCY_VIEW_LOCAL_BIT_KHX = 0x00000002,
     VK_DEPENDENCY_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkDependencyFlagBits;
 typedef VkFlags VkDependencyFlags;
@@ -4220,6 +4225,38 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirectCountAMD(
 #define VK_AMD_shader_ballot 1
 #define VK_AMD_SHADER_BALLOT_SPEC_VERSION 1
 #define VK_AMD_SHADER_BALLOT_EXTENSION_NAME "VK_AMD_shader_ballot"
+
+
+#define VK_KHX_multiview 1
+#define VK_KHX_MULTIVIEW_SPEC_VERSION     1
+#define VK_KHX_MULTIVIEW_EXTENSION_NAME   "VK_KHX_multiview"
+
+typedef struct VkRenderPassMultiviewCreateInfoKHX {
+    VkStructureType    sType;
+    const void*        pNext;
+    uint32_t           subpassCount;
+    const uint32_t*    pViewMasks;
+    uint32_t           dependencyCount;
+    const int32_t*     pViewOffsets;
+    uint32_t           correlationMaskCount;
+    const uint32_t*    pCorrelationMasks;
+} VkRenderPassMultiviewCreateInfoKHX;
+
+typedef struct VkPhysicalDeviceMultiviewFeaturesKHX {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           multiview;
+    VkBool32           multiviewGeometryShader;
+    VkBool32           multiviewTessellationShader;
+} VkPhysicalDeviceMultiviewFeaturesKHX;
+
+typedef struct VkPhysicalDeviceMultiviewPropertiesKHX {
+    VkStructureType    sType;
+    void*              pNext;
+    uint32_t           maxMultiviewViewCount;
+    uint32_t           maxMultiviewInstanceIndex;
+} VkPhysicalDeviceMultiviewPropertiesKHX;
+
 
 
 #define VK_IMG_format_pvrtc 1
