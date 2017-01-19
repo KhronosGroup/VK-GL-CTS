@@ -187,28 +187,7 @@ public:
 	IterateResult				iterate						(void);
 
 protected:
-	bool						compare						(float in0, float in1, double reference, float result)
-#if (DE_COMPILER == DE_COMPILER_GCC) && (DE_CPU == DE_CPU_ARM_64)
-#	if (__GNUC__ == 4) && (__GNUC_MINOR__ == 9) && (__GNUC_PATCHLEVEL__ == 0)
-		// Some prerelease GCC 4.9 versions have a bug in shift right when
-		// targeting ARMv8.
-		//
-		// If compiler wants to perform logical shift by variable/register
-		// in fp/vector registers it uses USHL that selects shift direction
-		// based on shift operand value. Thus for right shifts the shift
-		// operand needs to be negated.
-		//
-		// The bug is in right shift pattern; it doesn't mark shift operand
-		// as clobbered and thus later code using that same register may
-		// see the negated value.
-		//
-		// Workaround is to disable optimization for this function.
-		//
-		// See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61633
-		__attribute__((optimize(0)))
-#	endif
-#endif
-	;
+	bool						compare						(float in0, float in1, double reference, float result);
 
 private:
 								ShaderFloatPrecisionCase	(const ShaderFloatPrecisionCase& other);
