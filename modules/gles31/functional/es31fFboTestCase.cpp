@@ -205,12 +205,10 @@ static bool isRequiredFormat (deUint32 format, glu::RenderContext& renderContext
 
 		// Float format
 		case GL_RGBA32F:
-		case GL_RGB32F:
 		case GL_R11F_G11F_B10F:
 		case GL_RG32F:
 		case GL_R32F:
 		case GL_RGBA16F:
-		case GL_RGB16F:
 		case GL_RG16F:
 		case GL_R16F:
 			return supportsES32;
@@ -229,8 +227,15 @@ static std::vector<std::string> getEnablingExtensions (deUint32 format, glu::Ren
 
 	switch (format)
 	{
-		case GL_RGBA16F:
 		case GL_RGB16F:
+			out.push_back("GL_EXT_color_buffer_half_float");
+			break;
+
+		case GL_RGB32F:
+			out.push_back("GL_EXT_color_buffer_float");
+			break;
+
+		case GL_RGBA16F:
 		case GL_RG16F:
 		case GL_R16F:
 			if (!supportsES32)
@@ -238,7 +243,6 @@ static std::vector<std::string> getEnablingExtensions (deUint32 format, glu::Ren
 			break;
 
 		case GL_RGBA32F:
-		case GL_RGB32F:
 		case GL_R11F_G11F_B10F:
 		case GL_RG32F:
 		case GL_R32F:
