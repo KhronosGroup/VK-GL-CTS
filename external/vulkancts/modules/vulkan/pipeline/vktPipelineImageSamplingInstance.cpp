@@ -722,7 +722,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
-		const VkClearValue attachmentClearValue = defaultClearValue(m_colorFormat);
+		const std::vector<VkClearValue> attachmentClearValues (m_imageCount, defaultClearValue(m_colorFormat));
 
 		const VkRenderPassBeginInfo renderPassBeginInfo =
 		{
@@ -734,8 +734,8 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 				{ 0, 0 },
 				{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() }
 			},														// VkRect2D				renderArea;
-			1,														// deUint32				clearValueCount;
-			&attachmentClearValue									// const VkClearValue*	pClearValues;
+			static_cast<deUint32>(attachmentClearValues.size()),	// deUint32				clearValueCount;
+			&attachmentClearValues[0]								// const VkClearValue*	pClearValues;
 		};
 
 		std::vector<VkImageMemoryBarrier> preAttachmentBarriers(m_imageCount);
