@@ -75,8 +75,8 @@ deUint32			getDimensions					(const ImageType imageType);
 deUint32			getLayerDimensions				(const ImageType imageType);
 vk::VkExtent3D		mipLevelExtents					(const vk::VkExtent3D& baseExtents, const deUint32 mipLevel);
 tcu::UVec3			mipLevelExtents					(const tcu::UVec3&	   baseExtents, const deUint32 mipLevel);
-deUint32			getImageMipLevelSizeInBytes		(const vk::VkExtent3D& baseExtents, const deUint32 layersCount, const tcu::TextureFormat& format, const deUint32 mipmapLevel);
-deUint32			getImageSizeInBytes				(const vk::VkExtent3D& baseExtents, const deUint32 layersCount, const tcu::TextureFormat& format, const deUint32 mipmapLevelsCount = 1u);
+deUint32			getImageMipLevelSizeInBytes		(const vk::VkExtent3D& baseExtents, const deUint32 layersCount, const tcu::TextureFormat& format, const deUint32 mipmapLevel, const deUint32 numSamples = 1u);
+deUint32			getImageSizeInBytes				(const vk::VkExtent3D& baseExtents, const deUint32 layersCount, const tcu::TextureFormat& format, const deUint32 mipmapLevelsCount = 1u, const deUint32 numSamples = 1u);
 deUint32			getImageMaxMipLevels			(const vk::VkImageFormatProperties& imageFormatProperties, const vk::VkExtent3D& extent);
 
 enum FeatureFlagBits

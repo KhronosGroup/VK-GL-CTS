@@ -77,11 +77,21 @@ struct IntLookupPrecision
  *//*--------------------------------------------------------------------*/
 struct LodPrecision
 {
+	enum Rule
+	{
+		RULE_OPENGL		= 0,	//!< OpenGL LOD
+		RULE_VULKAN,			//!< Vulkan LOD
+
+		RULE_LAST
+	};
+
+	Rule		rule;			//!< LOD computation rule (Vulkan or OpenGL)
 	int			derivateBits;	//!< Number of bits in derivates. (Floating-point)
 	int			lodBits;		//!< Number of bits in final lod (accuracy of log2()). (Fixed-point)
 
-	LodPrecision (void)
-		: derivateBits	(22)
+	LodPrecision (Rule rule_)
+		: rule			(rule_)
+		, derivateBits	(22)
 		, lodBits		(16)
 	{
 	}

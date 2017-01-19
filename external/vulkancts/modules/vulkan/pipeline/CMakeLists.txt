@@ -29,8 +29,16 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineMultisampleTestsUtil.hpp
 	vktPipelineMultisampleTests.cpp
 	vktPipelineMultisampleTests.hpp
+	vktPipelineMultisampleBase.cpp
+	vktPipelineMultisampleBase.hpp
+	vktPipelineMultisampleBaseResolve.cpp
+	vktPipelineMultisampleBaseResolve.hpp
+	vktPipelineMultisampleBaseResolveAndPerSampleFetch.cpp
+	vktPipelineMultisampleBaseResolveAndPerSampleFetch.hpp
 	vktPipelineMultisampleInterpolationTests.cpp
 	vktPipelineMultisampleInterpolationTests.hpp
+	vktPipelineMultisampleShaderBuiltInTests.cpp
+	vktPipelineMultisampleShaderBuiltInTests.hpp
 	vktPipelineMultisampleImageTests.cpp
 	vktPipelineMultisampleImageTests.hpp
 	vktPipelineInputAssemblyTests.cpp
