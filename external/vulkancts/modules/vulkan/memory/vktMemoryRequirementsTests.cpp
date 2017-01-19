@@ -181,8 +181,8 @@ void verifyBufferRequirements (tcu::ResultCollector&					result,
 		result.check((bufferFlags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) || hostVisibleCoherentMemoryFound,
 			"Required memory type doesn't include VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT and VK_MEMORY_PROPERTY_HOST_COHERENT_BIT");
 
-		result.check((requirements.memoryTypeBits & allUsageFlagsRequirements.memoryTypeBits) == requirements.memoryTypeBits,
-			"Memory type bits aren't a subset of memory type bits for all usage flags combined");
+		result.check((requirements.memoryTypeBits & allUsageFlagsRequirements.memoryTypeBits) == allUsageFlagsRequirements.memoryTypeBits,
+			"Memory type bits aren't a superset of memory type bits for all usage flags combined");
 	}
 }
 

@@ -4162,8 +4162,8 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 				defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
 				{
-					{defaultSize, defaultSize, 1},
-					{0, 0, 0}
+					{defaultSize, defaultSize, 0},
+					{0, 0, 1}
 				}					// VkOffset3D				dstOffset[2];
 			};
 
@@ -4292,8 +4292,8 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 				defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
 				{
-					{0, defaultSize, 1},
-					{defaultSize, 0, 0}
+					{0, defaultSize, 0},
+					{defaultSize, 0, 1}
 				}					// VkOffset3D				dstOffset[2];
 			};
 
