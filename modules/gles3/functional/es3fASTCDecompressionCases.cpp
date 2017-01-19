@@ -568,9 +568,12 @@ ASTCBlockSizeRemainderCase2D::IterateResult ASTCBlockSizeRemainderCase2D::iterat
 
 	// Create texture and render.
 
-	Surface			renderedFrame	(imageWidth, imageHeight);
-	Surface			referenceFrame	(imageWidth, imageHeight);
-	glu::Texture2D	texture			(renderCtx, m_context.getContextInfo(), 1, &compressed, tcu::TexDecompressionParams(m_renderer->getASTCSupport() == ASTCSUPPORTLEVEL_LDR ? tcu::TexDecompressionParams::ASTCMODE_LDR : tcu::TexDecompressionParams::ASTCMODE_HDR));
+	const tcu::TexDecompressionParams::AstcMode	decompressionMode	= (m_renderer->getASTCSupport() == ASTCSUPPORTLEVEL_LDR || tcu::isAstcSRGBFormat(m_format))
+																	? tcu::TexDecompressionParams::ASTCMODE_LDR
+																	: tcu::TexDecompressionParams::ASTCMODE_HDR;
+	Surface										renderedFrame		(imageWidth, imageHeight);
+	Surface										referenceFrame		(imageWidth, imageHeight);
+	glu::Texture2D								texture				(renderCtx, m_context.getContextInfo(), 1, &compressed, tcu::TexDecompressionParams(decompressionMode));
 
 	m_renderer->render(referenceFrame, renderedFrame, texture, getUncompressedFormat(compressed.getFormat()));
 
