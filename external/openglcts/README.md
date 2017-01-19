@@ -228,6 +228,9 @@ conformance submission.
 **NOTE**: You need to be a Khronos Adopter and have an active account
 at [Khronos Gitlab](https://gitlab.khronos.org/) to be able to download
 Khronos Confidential CTS.
+It is possible to run and build the CTS without the Khronos Confidential CTS.
+Khronos Confidential CTS is mandatory only if you plan to make a
+conformance submission (see [Creating a Submission Package](#creating-a-submission-package)).
 
 With CMake out-of-source builds are always recommended. Create a build directory
 of your choosing, and in that directory generate Makefiles or IDE project
@@ -298,6 +301,12 @@ Building OpenGL conformance tests:
 	cmake <path to openglcts> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=gl
 	cmake --build .
 
+Khronos Confidential CTS doesn't support run-time selection of API context.
+If you intend to run it then the `GLCTS_GTF_TARGET` option is necessary.
+
+Available values for `GLCTS_GTF_TARGET` are `gles2`, `gles3`, `gles31`, `gles32`, and `gl`.
+The default value is `gles32`.
+
 CMake chooses to generate Makefiles by default. Other generators can be used
 as well. See CMake help for more details.
 
@@ -313,6 +322,15 @@ are needed in order to build an Android binary:
 An Android binary can be built using command:
 
 	python external/openglcts/scripts/build_android.py
+
+If Khronos Confidential CTS is present then the script will set `GLCTS_GTF_TARGET`
+to `gles32` by default.
+It is possible to specify a different `GLCTS_GTF_TARGET` target by invoking the script
+with `--glcts-gtf-target` option, e.g.:
+
+	python external/openglcts/scripts/build_android.py --glcts-gtf-target=gles31
+
+Available values for `--glcts-gtf-target` are `gles32`, `gles31`, `gles3` and `gles2`.
 
 The package can be installed by either running:
 
@@ -441,6 +459,10 @@ the logs. Images will be embedded as PNG data into the`.qpa` log files.
 See Section [Test Logs](#test-logs) for instructions on how to view the images.
 
 To direct logs to a directory, add `--logdir=[path]` parameter.
+
+**NOTE**: Due to the lack of support for run-time selection of API context in the
+Khronos Confidential CTS, a conformance run may fail if it is executed for an API
+version that doesn't match the `GLCTS_GTF_TARGET` value used during the build step.
 
 #### Android
 
