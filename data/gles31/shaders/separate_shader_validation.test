@@ -327,10 +327,10 @@ group varying "Default block varying matching"
 		end
 	end
 
-	case match_different_struct_names
+	case mismatch_different_struct_names
 		version 310 es
 		desc "Variable struct names different but otherwise identical"
-		expect pass
+		expect validation_fail
 
 		pipeline_program
 			active_stages {vertex}
@@ -1150,10 +1150,10 @@ group io_blocks "shader io blocks"
 		end
 	end
 
-	case match_different_member_struct_names
+	case mismatch_different_member_struct_names
 		version 310 es
 		desc "IO-blocks match with structs with different names"
-		expect pass
+		expect validation_fail
 
 		pipeline_program
 			active_stages {vertex}
