@@ -301,3 +301,6 @@ dEQP-VK.memory.pipeline_barrier.transfer_dst_uniform_texel_buffer.1048576
 dEQP-VK.memory.pipeline_barrier.transfer_dst_storage_texel_buffer.1048576
 dEQP-VK.memory.pipeline_barrier.all.1048576
 dEQP-VK.memory.pipeline_barrier.all_device.1048576
+
+# Vulkan CTS issue 582
+dEQP-VK.glsl.builtin_var.simple.pointcoord
