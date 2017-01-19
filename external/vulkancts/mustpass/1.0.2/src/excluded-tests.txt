@@ -293,3 +293,11 @@ dEQP-VK.texture.explicit_lod.*
 
 # Exclude tests which are not on the Android CTS mustpass list
 dEQP-VK.texture.mipmap.2d.projected.*
+
+# Vulkan CTS issue 583
+dEQP-VK.memory.pipeline_barrier.host_write_uniform_texel_buffer.1048576
+dEQP-VK.memory.pipeline_barrier.host_write_storage_texel_buffer.1048576
+dEQP-VK.memory.pipeline_barrier.transfer_dst_uniform_texel_buffer.1048576
+dEQP-VK.memory.pipeline_barrier.transfer_dst_storage_texel_buffer.1048576
+dEQP-VK.memory.pipeline_barrier.all.1048576
+dEQP-VK.memory.pipeline_barrier.all_device.1048576
