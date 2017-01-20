@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 31042.
+ * Generated from Khronos EGL API description (egl.xml) revision 33315.
  */
 typedef EGLW_APICALL EGLBoolean									(EGLW_APIENTRY* eglBindAPIFunc)							(EGLenum api);
 typedef EGLW_APICALL EGLBoolean									(EGLW_APIENTRY* eglBindTexImageFunc)					(EGLDisplay dpy, EGLSurface surface, EGLint buffer);

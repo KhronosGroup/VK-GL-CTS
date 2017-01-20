@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 31042.
+ * Generated from Khronos EGL API description (egl.xml) revision 33315.
  */
 
 static const char* s_EGL14[] =
@@ -449,9 +449,19 @@ static const char* s_EGL_ANDROID_blob_cache[] =
 	"eglSetBlobCacheFuncsANDROID",
 };
 
+static const char* s_EGL_ANDROID_create_native_client_buffer[] =
+{
+	"eglCreateNativeClientBufferANDROID",
+};
+
 static const char* s_EGL_ANDROID_native_fence_sync[] =
 {
 	"eglDupNativeFenceFDANDROID",
+};
+
+static const char* s_EGL_ANDROID_presentation_time[] =
+{
+	"eglPresentationTimeANDROID",
 };
 
 static const char* s_EGL_ANGLE_query_surface_pointer[] =
@@ -477,6 +487,12 @@ static const char* s_EGL_EXT_device_query[] =
 	"eglQueryDeviceAttribEXT",
 	"eglQueryDeviceStringEXT",
 	"eglQueryDisplayAttribEXT",
+};
+
+static const char* s_EGL_EXT_image_dma_buf_import_modifiers[] =
+{
+	"eglQueryDmaBufFormatsEXT",
+	"eglQueryDmaBufModifiersEXT",
 };
 
 static const char* s_EGL_EXT_output_base[] =
@@ -516,6 +532,13 @@ static const char* s_EGL_HI_clientpixmap[] =
 static const char* s_EGL_KHR_cl_event2[] =
 {
 	"eglCreateSync64KHR",
+};
+
+static const char* s_EGL_KHR_debug[] =
+{
+	"eglDebugMessageControlKHR",
+	"eglLabelObjectKHR",
+	"eglQueryDebugKHR",
 };
 
 static const char* s_EGL_KHR_fence_sync[] =
@@ -572,6 +595,15 @@ static const char* s_EGL_KHR_stream[] =
 	"eglQueryStreamKHR",
 	"eglQueryStreamu64KHR",
 	"eglStreamAttribKHR",
+};
+
+static const char* s_EGL_KHR_stream_attrib[] =
+{
+	"eglCreateStreamAttribKHR",
+	"eglQueryStreamAttribKHR",
+	"eglSetStreamAttribKHR",
+	"eglStreamConsumerAcquireAttribKHR",
+	"eglStreamConsumerReleaseAttribKHR",
 };
 
 static const char* s_EGL_KHR_stream_consumer_gltexture[] =
@@ -639,6 +671,23 @@ static const char* s_EGL_NV_native_query[] =
 static const char* s_EGL_NV_post_sub_buffer[] =
 {
 	"eglPostSubBufferNV",
+};
+
+static const char* s_EGL_NV_stream_consumer_gltexture_yuv[] =
+{
+	"eglStreamConsumerGLTextureExternalAttribsNV",
+};
+
+static const char* s_EGL_NV_stream_metadata[] =
+{
+	"eglQueryDisplayAttribNV",
+	"eglQueryStreamMetadataNV",
+	"eglSetStreamMetadataNV",
+};
+
+static const char* s_EGL_NV_stream_reset[] =
+{
+	"eglResetStreamNV",
 };
 
 static const char* s_EGL_NV_stream_sync[] =
@@ -815,7 +864,6 @@ static const char* s_GL_OES_fixed_point[] =
 	"glPointSizexOES",
 	"glPolygonOffsetxOES",
 	"glRotatexOES",
-	"glSampleCoverageOES",
 	"glSampleCoveragexOES",
 	"glScalexOES",
 	"glTexEnvxOES",
@@ -978,6 +1026,19 @@ static const char* s_GL_EXT_base_instance[] =
 	"glDrawElementsInstancedBaseVertexBaseInstanceEXT",
 };
 
+static const char* s_GL_EXT_blend_func_extended[] =
+{
+	"glBindFragDataLocationEXT",
+	"glBindFragDataLocationIndexedEXT",
+	"glGetFragDataIndexEXT",
+	"glGetProgramResourceLocationIndexEXT",
+};
+
+static const char* s_GL_EXT_buffer_storage[] =
+{
+	"glBufferStorageEXT",
+};
+
 static const char* s_GL_EXT_copy_image[] =
 {
 	"glCopyImageSubDataEXT",
@@ -1083,6 +1144,11 @@ static const char* s_GL_EXT_primitive_bounding_box[] =
 	"glPrimitiveBoundingBoxEXT",
 };
 
+static const char* s_GL_EXT_raster_multisample[] =
+{
+	"glRasterSamplesEXT",
+};
+
 static const char* s_GL_EXT_separate_shader_objects[] =
 {
 	"glActiveShaderProgramEXT",
@@ -1131,6 +1197,11 @@ static const char* s_GL_EXT_separate_shader_objects[] =
 	"glValidateProgramPipelineEXT",
 };
 
+static const char* s_GL_EXT_sparse_texture[] =
+{
+	"glTexPageCommitmentEXT",
+};
+
 static const char* s_GL_EXT_tessellation_shader[] =
 {
 	"glPatchParameteriEXT",
@@ -1154,9 +1225,19 @@ static const char* s_GL_EXT_texture_buffer[] =
 	"glTexBufferRangeEXT",
 };
 
+static const char* s_GL_EXT_texture_filter_minmax[] =
+{
+	"glRasterSamplesEXT",
+};
+
 static const char* s_GL_EXT_texture_view[] =
 {
 	"glTextureViewEXT",
+};
+
+static const char* s_GL_INTEL_framebuffer_CMAA[] =
+{
+	"glApplyFramebufferAttachmentCMAAINTEL",
 };
 
 static const char* s_GL_INTEL_performance_query[] =
@@ -1231,6 +1312,11 @@ static const char* s_GL_NV_conditional_render[] =
 	"glEndConditionalRenderNV",
 };
 
+static const char* s_GL_NV_conservative_raster[] =
+{
+	"glSubpixelPrecisionBiasNV",
+};
+
 static const char* s_GL_NV_copy_buffer[] =
 {
 	"glCopyBufferSubDataNV",
@@ -1253,9 +1339,22 @@ static const char* s_GL_NV_draw_instanced[] =
 	"glDrawElementsInstancedNV",
 };
 
+static const char* s_GL_NV_fragment_coverage_to_color[] =
+{
+	"glFragmentCoverageColorNV",
+};
+
 static const char* s_GL_NV_framebuffer_blit[] =
 {
 	"glBlitFramebufferNV",
+};
+
+static const char* s_GL_NV_framebuffer_mixed_samples[] =
+{
+	"glCoverageModulationNV",
+	"glCoverageModulationTableNV",
+	"glGetCoverageModulationTableNV",
+	"glRasterSamplesEXT",
 };
 
 static const char* s_GL_NV_framebuffer_multisample[] =
@@ -1344,9 +1443,21 @@ static const char* s_GL_NV_path_rendering[] =
 	"glWeightPathsNV",
 };
 
+static const char* s_GL_NV_polygon_mode[] =
+{
+	"glPolygonModeNV",
+};
+
 static const char* s_GL_NV_read_buffer[] =
 {
 	"glReadBufferNV",
+};
+
+static const char* s_GL_NV_sample_locations[] =
+{
+	"glFramebufferSampleLocationsfvNV",
+	"glNamedFramebufferSampleLocationsfvNV",
+	"glResolveDepthValuesNV",
 };
 
 static const char* s_GL_NV_viewport_array[] =
@@ -1454,6 +1565,11 @@ static const char* s_GL_OES_texture_view[] =
 	"glTextureViewOES",
 };
 
+static const char* s_GL_OVR_multiview[] =
+{
+	"glFramebufferTextureMultiviewOVR",
+};
+
 static const char* s_GL_QCOM_alpha_test[] =
 {
 	"glAlphaFuncQCOM",
@@ -1467,17 +1583,21 @@ static const struct
 } s_extensions[] =
 {
 	{ "EGL_ANDROID_blob_cache",							DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_blob_cache),						s_EGL_ANDROID_blob_cache						},
+	{ "EGL_ANDROID_create_native_client_buffer",		DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_create_native_client_buffer),		s_EGL_ANDROID_create_native_client_buffer		},
 	{ "EGL_ANDROID_native_fence_sync",					DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_native_fence_sync),				s_EGL_ANDROID_native_fence_sync					},
+	{ "EGL_ANDROID_presentation_time",					DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_presentation_time),				s_EGL_ANDROID_presentation_time					},
 	{ "EGL_ANGLE_query_surface_pointer",				DE_LENGTH_OF_ARRAY(s_EGL_ANGLE_query_surface_pointer),				s_EGL_ANGLE_query_surface_pointer				},
 	{ "EGL_EXT_device_base",							DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_base),							s_EGL_EXT_device_base							},
 	{ "EGL_EXT_device_enumeration",						DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_enumeration),					s_EGL_EXT_device_enumeration					},
 	{ "EGL_EXT_device_query",							DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_query),							s_EGL_EXT_device_query							},
+	{ "EGL_EXT_image_dma_buf_import_modifiers",			DE_LENGTH_OF_ARRAY(s_EGL_EXT_image_dma_buf_import_modifiers),		s_EGL_EXT_image_dma_buf_import_modifiers		},
 	{ "EGL_EXT_output_base",							DE_LENGTH_OF_ARRAY(s_EGL_EXT_output_base),							s_EGL_EXT_output_base							},
 	{ "EGL_EXT_platform_base",							DE_LENGTH_OF_ARRAY(s_EGL_EXT_platform_base),						s_EGL_EXT_platform_base							},
 	{ "EGL_EXT_stream_consumer_egloutput",				DE_LENGTH_OF_ARRAY(s_EGL_EXT_stream_consumer_egloutput),			s_EGL_EXT_stream_consumer_egloutput				},
 	{ "EGL_EXT_swap_buffers_with_damage",				DE_LENGTH_OF_ARRAY(s_EGL_EXT_swap_buffers_with_damage),				s_EGL_EXT_swap_buffers_with_damage				},
 	{ "EGL_HI_clientpixmap",							DE_LENGTH_OF_ARRAY(s_EGL_HI_clientpixmap),							s_EGL_HI_clientpixmap							},
 	{ "EGL_KHR_cl_event2",								DE_LENGTH_OF_ARRAY(s_EGL_KHR_cl_event2),							s_EGL_KHR_cl_event2								},
+	{ "EGL_KHR_debug",									DE_LENGTH_OF_ARRAY(s_EGL_KHR_debug),								s_EGL_KHR_debug									},
 	{ "EGL_KHR_fence_sync",								DE_LENGTH_OF_ARRAY(s_EGL_KHR_fence_sync),							s_EGL_KHR_fence_sync							},
 	{ "EGL_KHR_image",									DE_LENGTH_OF_ARRAY(s_EGL_KHR_image),								s_EGL_KHR_image									},
 	{ "EGL_KHR_image_base",								DE_LENGTH_OF_ARRAY(s_EGL_KHR_image_base),							s_EGL_KHR_image_base							},
@@ -1486,6 +1606,7 @@ static const struct
 	{ "EGL_KHR_partial_update",							DE_LENGTH_OF_ARRAY(s_EGL_KHR_partial_update),						s_EGL_KHR_partial_update						},
 	{ "EGL_KHR_reusable_sync",							DE_LENGTH_OF_ARRAY(s_EGL_KHR_reusable_sync),						s_EGL_KHR_reusable_sync							},
 	{ "EGL_KHR_stream",									DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream),								s_EGL_KHR_stream								},
+	{ "EGL_KHR_stream_attrib",							DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream_attrib),						s_EGL_KHR_stream_attrib							},
 	{ "EGL_KHR_stream_consumer_gltexture",				DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream_consumer_gltexture),			s_EGL_KHR_stream_consumer_gltexture				},
 	{ "EGL_KHR_stream_cross_process_fd",				DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream_cross_process_fd),				s_EGL_KHR_stream_cross_process_fd				},
 	{ "EGL_KHR_stream_fifo",							DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream_fifo),							s_EGL_KHR_stream_fifo							},
@@ -1498,6 +1619,9 @@ static const struct
 	{ "EGL_NOK_swap_region2",							DE_LENGTH_OF_ARRAY(s_EGL_NOK_swap_region2),							s_EGL_NOK_swap_region2							},
 	{ "EGL_NV_native_query",							DE_LENGTH_OF_ARRAY(s_EGL_NV_native_query),							s_EGL_NV_native_query							},
 	{ "EGL_NV_post_sub_buffer",							DE_LENGTH_OF_ARRAY(s_EGL_NV_post_sub_buffer),						s_EGL_NV_post_sub_buffer						},
+	{ "EGL_NV_stream_consumer_gltexture_yuv",			DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_consumer_gltexture_yuv),			s_EGL_NV_stream_consumer_gltexture_yuv			},
+	{ "EGL_NV_stream_metadata",							DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_metadata),						s_EGL_NV_stream_metadata						},
+	{ "EGL_NV_stream_reset",							DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_reset),							s_EGL_NV_stream_reset							},
 	{ "EGL_NV_stream_sync",								DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_sync),							s_EGL_NV_stream_sync							},
 	{ "EGL_NV_sync",									DE_LENGTH_OF_ARRAY(s_EGL_NV_sync),									s_EGL_NV_sync									},
 	{ "EGL_NV_system_time",								DE_LENGTH_OF_ARRAY(s_EGL_NV_system_time),							s_EGL_NV_system_time							},
@@ -1537,6 +1661,8 @@ static const struct
 	{ "GL_ANGLE_instanced_arrays",						DE_LENGTH_OF_ARRAY(s_GL_ANGLE_instanced_arrays),					s_GL_ANGLE_instanced_arrays						},
 	{ "GL_ANGLE_translated_shader_source",				DE_LENGTH_OF_ARRAY(s_GL_ANGLE_translated_shader_source),			s_GL_ANGLE_translated_shader_source				},
 	{ "GL_EXT_base_instance",							DE_LENGTH_OF_ARRAY(s_GL_EXT_base_instance),							s_GL_EXT_base_instance							},
+	{ "GL_EXT_blend_func_extended",						DE_LENGTH_OF_ARRAY(s_GL_EXT_blend_func_extended),					s_GL_EXT_blend_func_extended					},
+	{ "GL_EXT_buffer_storage",							DE_LENGTH_OF_ARRAY(s_GL_EXT_buffer_storage),						s_GL_EXT_buffer_storage							},
 	{ "GL_EXT_copy_image",								DE_LENGTH_OF_ARRAY(s_GL_EXT_copy_image),							s_GL_EXT_copy_image								},
 	{ "GL_EXT_debug_label",								DE_LENGTH_OF_ARRAY(s_GL_EXT_debug_label),							s_GL_EXT_debug_label							},
 	{ "GL_EXT_debug_marker",							DE_LENGTH_OF_ARRAY(s_GL_EXT_debug_marker),							s_GL_EXT_debug_marker							},
@@ -1551,11 +1677,15 @@ static const struct
 	{ "GL_EXT_multiview_draw_buffers",					DE_LENGTH_OF_ARRAY(s_GL_EXT_multiview_draw_buffers),				s_GL_EXT_multiview_draw_buffers					},
 	{ "GL_EXT_occlusion_query_boolean",					DE_LENGTH_OF_ARRAY(s_GL_EXT_occlusion_query_boolean),				s_GL_EXT_occlusion_query_boolean				},
 	{ "GL_EXT_primitive_bounding_box",					DE_LENGTH_OF_ARRAY(s_GL_EXT_primitive_bounding_box),				s_GL_EXT_primitive_bounding_box					},
+	{ "GL_EXT_raster_multisample",						DE_LENGTH_OF_ARRAY(s_GL_EXT_raster_multisample),					s_GL_EXT_raster_multisample						},
 	{ "GL_EXT_separate_shader_objects",					DE_LENGTH_OF_ARRAY(s_GL_EXT_separate_shader_objects),				s_GL_EXT_separate_shader_objects				},
+	{ "GL_EXT_sparse_texture",							DE_LENGTH_OF_ARRAY(s_GL_EXT_sparse_texture),						s_GL_EXT_sparse_texture							},
 	{ "GL_EXT_tessellation_shader",						DE_LENGTH_OF_ARRAY(s_GL_EXT_tessellation_shader),					s_GL_EXT_tessellation_shader					},
 	{ "GL_EXT_texture_border_clamp",					DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_border_clamp),					s_GL_EXT_texture_border_clamp					},
 	{ "GL_EXT_texture_buffer",							DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_buffer),						s_GL_EXT_texture_buffer							},
+	{ "GL_EXT_texture_filter_minmax",					DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_filter_minmax),					s_GL_EXT_texture_filter_minmax					},
 	{ "GL_EXT_texture_view",							DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_view),							s_GL_EXT_texture_view							},
+	{ "GL_INTEL_framebuffer_CMAA",						DE_LENGTH_OF_ARRAY(s_GL_INTEL_framebuffer_CMAA),					s_GL_INTEL_framebuffer_CMAA						},
 	{ "GL_INTEL_performance_query",						DE_LENGTH_OF_ARRAY(s_GL_INTEL_performance_query),					s_GL_INTEL_performance_query					},
 	{ "GL_KHR_blend_equation_advanced",					DE_LENGTH_OF_ARRAY(s_GL_KHR_blend_equation_advanced),				s_GL_KHR_blend_equation_advanced				},
 	{ "GL_KHR_debug",									DE_LENGTH_OF_ARRAY(s_GL_KHR_debug),									s_GL_KHR_debug									},
@@ -1563,17 +1693,22 @@ static const struct
 	{ "GL_NV_bindless_texture",							DE_LENGTH_OF_ARRAY(s_GL_NV_bindless_texture),						s_GL_NV_bindless_texture						},
 	{ "GL_NV_blend_equation_advanced",					DE_LENGTH_OF_ARRAY(s_GL_NV_blend_equation_advanced),				s_GL_NV_blend_equation_advanced					},
 	{ "GL_NV_conditional_render",						DE_LENGTH_OF_ARRAY(s_GL_NV_conditional_render),						s_GL_NV_conditional_render						},
+	{ "GL_NV_conservative_raster",						DE_LENGTH_OF_ARRAY(s_GL_NV_conservative_raster),					s_GL_NV_conservative_raster						},
 	{ "GL_NV_copy_buffer",								DE_LENGTH_OF_ARRAY(s_GL_NV_copy_buffer),							s_GL_NV_copy_buffer								},
 	{ "GL_NV_coverage_sample",							DE_LENGTH_OF_ARRAY(s_GL_NV_coverage_sample),						s_GL_NV_coverage_sample							},
 	{ "GL_NV_draw_buffers",								DE_LENGTH_OF_ARRAY(s_GL_NV_draw_buffers),							s_GL_NV_draw_buffers							},
 	{ "GL_NV_draw_instanced",							DE_LENGTH_OF_ARRAY(s_GL_NV_draw_instanced),							s_GL_NV_draw_instanced							},
+	{ "GL_NV_fragment_coverage_to_color",				DE_LENGTH_OF_ARRAY(s_GL_NV_fragment_coverage_to_color),				s_GL_NV_fragment_coverage_to_color				},
 	{ "GL_NV_framebuffer_blit",							DE_LENGTH_OF_ARRAY(s_GL_NV_framebuffer_blit),						s_GL_NV_framebuffer_blit						},
+	{ "GL_NV_framebuffer_mixed_samples",				DE_LENGTH_OF_ARRAY(s_GL_NV_framebuffer_mixed_samples),				s_GL_NV_framebuffer_mixed_samples				},
 	{ "GL_NV_framebuffer_multisample",					DE_LENGTH_OF_ARRAY(s_GL_NV_framebuffer_multisample),				s_GL_NV_framebuffer_multisample					},
 	{ "GL_NV_instanced_arrays",							DE_LENGTH_OF_ARRAY(s_GL_NV_instanced_arrays),						s_GL_NV_instanced_arrays						},
 	{ "GL_NV_internalformat_sample_query",				DE_LENGTH_OF_ARRAY(s_GL_NV_internalformat_sample_query),			s_GL_NV_internalformat_sample_query				},
 	{ "GL_NV_non_square_matrices",						DE_LENGTH_OF_ARRAY(s_GL_NV_non_square_matrices),					s_GL_NV_non_square_matrices						},
 	{ "GL_NV_path_rendering",							DE_LENGTH_OF_ARRAY(s_GL_NV_path_rendering),							s_GL_NV_path_rendering							},
+	{ "GL_NV_polygon_mode",								DE_LENGTH_OF_ARRAY(s_GL_NV_polygon_mode),							s_GL_NV_polygon_mode							},
 	{ "GL_NV_read_buffer",								DE_LENGTH_OF_ARRAY(s_GL_NV_read_buffer),							s_GL_NV_read_buffer								},
+	{ "GL_NV_sample_locations",							DE_LENGTH_OF_ARRAY(s_GL_NV_sample_locations),						s_GL_NV_sample_locations						},
 	{ "GL_NV_viewport_array",							DE_LENGTH_OF_ARRAY(s_GL_NV_viewport_array),							s_GL_NV_viewport_array							},
 	{ "GL_OES_copy_image",								DE_LENGTH_OF_ARRAY(s_GL_OES_copy_image),							s_GL_OES_copy_image								},
 	{ "GL_OES_draw_buffers_indexed",					DE_LENGTH_OF_ARRAY(s_GL_OES_draw_buffers_indexed),					s_GL_OES_draw_buffers_indexed					},
@@ -1588,5 +1723,6 @@ static const struct
 	{ "GL_OES_texture_buffer",							DE_LENGTH_OF_ARRAY(s_GL_OES_texture_buffer),						s_GL_OES_texture_buffer							},
 	{ "GL_OES_texture_storage_multisample_2d_array",	DE_LENGTH_OF_ARRAY(s_GL_OES_texture_storage_multisample_2d_array),	s_GL_OES_texture_storage_multisample_2d_array	},
 	{ "GL_OES_texture_view",							DE_LENGTH_OF_ARRAY(s_GL_OES_texture_view),							s_GL_OES_texture_view							},
+	{ "GL_OVR_multiview",								DE_LENGTH_OF_ARRAY(s_GL_OVR_multiview),								s_GL_OVR_multiview								},
 	{ "GL_QCOM_alpha_test",								DE_LENGTH_OF_ARRAY(s_GL_QCOM_alpha_test),							s_GL_QCOM_alpha_test							},
 };
