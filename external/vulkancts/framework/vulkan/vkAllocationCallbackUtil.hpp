@@ -166,18 +166,17 @@ public:
 		MODE_LAST
 	};
 
-							DeterministicFailAllocator	(const VkAllocationCallbacks* allocator, deUint32 numPassingAllocs, Mode initialMode);
+							DeterministicFailAllocator	(const VkAllocationCallbacks* allocator, Mode mode, deUint32 numPassingAllocs);
 							~DeterministicFailAllocator	(void);
 
-	void					setMode						(Mode mode);
+	void					reset						(Mode mode, deUint32 numPassingAllocs);
 
 	void*					allocate					(size_t size, size_t alignment, VkSystemAllocationScope allocationScope);
 	void*					reallocate					(void* original, size_t size, size_t alignment, VkSystemAllocationScope allocationScope);
 
 private:
-	const deUint32			m_numPassingAllocs;
-
 	Mode					m_mode;
+	deUint32				m_numPassingAllocs;
 	volatile deUint32		m_allocationNdx;
 };
 
