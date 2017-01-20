@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 31042.
+ * Generated from Khronos EGL API description (egl.xml) revision 33315.
  */
 
 const char* getBooleanName (int value)
@@ -156,6 +156,16 @@ const char* getYuvPlaneBppName (int value)
 		case EGL_YUV_PLANE_BPP_8_EXT:	return "EGL_YUV_PLANE_BPP_8_EXT";
 		case EGL_YUV_PLANE_BPP_10_EXT:	return "EGL_YUV_PLANE_BPP_10_EXT";
 		default:						return DE_NULL;
+	}
+}
+
+const char* getColorComponentTypeName (int value)
+{
+	switch (value)
+	{
+		case EGL_COLOR_COMPONENT_TYPE_FIXED_EXT:	return "EGL_COLOR_COMPONENT_TYPE_FIXED_EXT";
+		case EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT:	return "EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT";
+		default:									return DE_NULL;
 	}
 }
 

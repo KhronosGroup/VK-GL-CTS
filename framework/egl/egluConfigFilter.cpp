@@ -25,6 +25,7 @@
 #include "egluUtil.hpp"
 #include "egluConfigInfo.hpp"
 #include "eglwEnums.hpp"
+#include "deSTLUtil.hpp"
 
 #include <algorithm>
 
@@ -55,19 +56,32 @@ int CandidateConfig::get (deUint32 attrib) const
 	if (m_type == TYPE_CONFIG_INFO)
 		return m_cfg.configInfo->getAttribute(attrib);
 	else
-		return getConfigAttribInt(*m_cfg.object.egl, m_cfg.object.display, m_cfg.object.config, attrib);
+	{
+		if (attrib == EGL_COLOR_COMPONENT_TYPE_EXT)
+		{
+			const std::vector<std::string>	extensions	= getDisplayExtensions(*m_cfg.object.egl, m_cfg.object.display);
+
+			if (de::contains(extensions.begin(), extensions.end(), "EGL_EXT_pixel_format_float"))
+				return getConfigAttribInt(*m_cfg.object.egl, m_cfg.object.display, m_cfg.object.config, attrib);
+			else
+				return EGL_COLOR_COMPONENT_TYPE_FIXED_EXT;
+		}
+		else
+			return getConfigAttribInt(*m_cfg.object.egl, m_cfg.object.display, m_cfg.object.config, attrib);
+	}
 }
 
-int			CandidateConfig::id				(void) const { return get(EGL_CONFIG_ID);					}
-int			CandidateConfig::redSize		(void) const { return get(EGL_RED_SIZE);					}
-int			CandidateConfig::greenSize		(void) const { return get(EGL_GREEN_SIZE);					}
-int			CandidateConfig::blueSize		(void) const { return get(EGL_BLUE_SIZE);					}
-int			CandidateConfig::alphaSize		(void) const { return get(EGL_ALPHA_SIZE);					}
-int			CandidateConfig::depthSize		(void) const { return get(EGL_DEPTH_SIZE);					}
-int			CandidateConfig::stencilSize	(void) const { return get(EGL_STENCIL_SIZE);				}
-int			CandidateConfig::samples		(void) const { return get(EGL_SAMPLES);						}
-deUint32	CandidateConfig::renderableType	(void) const { return (deUint32)get(EGL_RENDERABLE_TYPE);	}
-deUint32	CandidateConfig::surfaceType	(void) const { return (deUint32)get(EGL_SURFACE_TYPE);		}
+int			CandidateConfig::id					(void) const { return get(EGL_CONFIG_ID);							}
+int			CandidateConfig::redSize			(void) const { return get(EGL_RED_SIZE);							}
+int			CandidateConfig::greenSize			(void) const { return get(EGL_GREEN_SIZE);							}
+int			CandidateConfig::blueSize			(void) const { return get(EGL_BLUE_SIZE);							}
+int			CandidateConfig::alphaSize			(void) const { return get(EGL_ALPHA_SIZE);							}
+int			CandidateConfig::depthSize			(void) const { return get(EGL_DEPTH_SIZE);							}
+int			CandidateConfig::stencilSize		(void) const { return get(EGL_STENCIL_SIZE);						}
+int			CandidateConfig::samples			(void) const { return get(EGL_SAMPLES);								}
+deUint32	CandidateConfig::renderableType		(void) const { return (deUint32)get(EGL_RENDERABLE_TYPE);			}
+deUint32	CandidateConfig::surfaceType		(void) const { return (deUint32)get(EGL_SURFACE_TYPE);				}
+deUint32	CandidateConfig::colorComponentType	(void) const { return (deUint32)get(EGL_COLOR_COMPONENT_TYPE_EXT);	}
 
 FilterList& FilterList::operator<< (ConfigFilter filter)
 {

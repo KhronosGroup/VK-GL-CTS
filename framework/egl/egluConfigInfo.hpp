@@ -81,6 +81,9 @@ public:
 	deUint32		yuvCscStandard;
 	deInt32			yuvPlaneBpp;
 
+	// EGL_EXT_pixel_format_float
+	deUint32		colorComponentType;
+
 	ConfigInfo (void)
 		: bufferSize			(0)
 		, redSize				(0)
@@ -119,6 +122,7 @@ public:
 		, yuvDepthRange			(EGL_NONE)
 		, yuvCscStandard		(EGL_NONE)
 		, yuvPlaneBpp			(EGL_YUV_PLANE_BPP_0_EXT)
+		, colorComponentType	(EGL_NONE)
 	{
 	}
 
