@@ -171,3 +171,8 @@ dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_fragme
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_fragment.vec4
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_vertex.vec3
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_fragment.vec3
+
+# Bug 34349411
+dEQP-GLES3.functional.state_query.integers.viewport_getfloat
+dEQP-GLES3.functional.state_query.integers.viewport_getinteger
+dEQP-GLES3.functional.state_query.integers.viewport_getinteger64
