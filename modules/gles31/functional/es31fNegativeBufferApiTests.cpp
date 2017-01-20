@@ -1658,18 +1658,6 @@ void framebuffer_texture_layer (NegativeTestContext& ctx)
 		ctx.glBindTexture				(GL_TEXTURE_BUFFER, texBuffer);
 		ctx.expectError					(GL_NO_ERROR);
 
-		ctx.beginSection("GL_INVALID_VALUE is generated if texture is a 2D multisample array texture and layer not 0.");
-		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex2DMSArray, 0, -1);
-		ctx.expectError					(GL_INVALID_VALUE);
-		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex2DMSArray, 0, 1);
-		ctx.expectError					(GL_INVALID_VALUE);
-		ctx.endSection();
-
-		ctx.beginSection("GL_INVALID_VALUE is generated if texture is a cube map array texture and layer is larger than the value of MAX_CUBE_MAP_TEXTURE_SIZE-1 minus one.");
-		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texCube, 0, maxCubeTexSize);
-		ctx.expectError					(GL_INVALID_VALUE);
-		ctx.endSection();
-
 		ctx.beginSection("GL_INVALID_OPERATION is generated if texture is the name of a buffer texture.");
 		ctx.glFramebufferTextureLayer	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texBuffer, 0, 0);
 		ctx.expectError					(GL_INVALID_OPERATION);
