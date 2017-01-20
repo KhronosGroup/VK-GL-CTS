@@ -277,21 +277,21 @@ void AllocationCallbackRecorder::notifyInternalFree (size_t size, VkInternalAllo
 
 // DeterministicFailAllocator
 
-DeterministicFailAllocator::DeterministicFailAllocator (const VkAllocationCallbacks* allocator, deUint32 numPassingAllocs, Mode initialMode)
+DeterministicFailAllocator::DeterministicFailAllocator (const VkAllocationCallbacks* allocator, Mode mode, deUint32 numPassingAllocs)
 	: ChainedAllocator	(allocator)
-	, m_numPassingAllocs(numPassingAllocs)
-	, m_mode			(initialMode)
-	, m_allocationNdx	(0)
 {
+	reset(mode, numPassingAllocs);
 }
 
 DeterministicFailAllocator::~DeterministicFailAllocator (void)
 {
 }
 
-void DeterministicFailAllocator::setMode (Mode mode)
+void DeterministicFailAllocator::reset (Mode mode, deUint32 numPassingAllocs)
 {
-	m_mode = mode;
+	m_mode				= mode;
+	m_numPassingAllocs	= numPassingAllocs;
+	m_allocationNdx		= 0;
 }
 
 void* DeterministicFailAllocator::allocate (size_t size, size_t alignment, VkSystemAllocationScope allocationScope)

@@ -231,8 +231,8 @@ tcu::TestStatus createSurfaceSimulateOOMTest (Context& context, Type wsiType)
 	{
 		AllocationCallbackRecorder	allocationRecorder	(getSystemAllocator());
 		DeterministicFailAllocator	failingAllocator	(allocationRecorder.getCallbacks(),
-														 numPassingAllocs,
-														 DeterministicFailAllocator::MODE_DO_NOT_COUNT);
+														 DeterministicFailAllocator::MODE_DO_NOT_COUNT,
+														 0);
 		bool						gotOOM				= false;
 
 		log << TestLog::Message << "Testing with " << numPassingAllocs << " first allocations succeeding" << TestLog::EndMessage;
@@ -243,7 +243,7 @@ tcu::TestStatus createSurfaceSimulateOOMTest (Context& context, Type wsiType)
 
 			// OOM is not simulated for VkInstance as we don't want to spend time
 			// testing OOM paths inside instance creation.
-			failingAllocator.setMode(DeterministicFailAllocator::MODE_COUNT_AND_FAIL);
+			failingAllocator.reset(DeterministicFailAllocator::MODE_COUNT_AND_FAIL, numPassingAllocs);
 
 			const NativeObjects			native		(context, instHelper.supportedExtensions, wsiType);
 			const Unique<VkSurfaceKHR>	surface		(createSurface(instHelper.vki,
