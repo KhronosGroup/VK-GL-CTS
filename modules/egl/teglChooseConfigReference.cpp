@@ -142,6 +142,17 @@ private:
 		}
 	}
 
+	static int getColorComponentTypeRank (EGLenum compType)
+	{
+		switch (compType)
+		{
+			case EGL_COLOR_COMPONENT_TYPE_FIXED_EXT:	return 0;
+			case EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT:	return 1;
+			default:
+				TCU_THROW(TestError, (std::string("Unknown color component type: ") + eglu::getColorComponentTypeStr(compType).toString()).c_str());
+		}
+	}
+
 	typedef bool (*CompareFunc) (const SurfaceConfig& a, const SurfaceConfig& b);
 
 	static bool compareCaveat (const SurfaceConfig& a, const SurfaceConfig& b)
@@ -157,6 +168,11 @@ private:
 	static bool compareYuvOrder (const SurfaceConfig& a, const SurfaceConfig& b)
 	{
 		return getYuvOrderRank((EGLenum)a.m_info.yuvOrder) < getYuvOrderRank((EGLenum)b.m_info.yuvOrder);
+	}
+
+	static bool compareColorComponentType (const SurfaceConfig& a, const SurfaceConfig& b)
+	{
+		return getColorComponentTypeRank((EGLenum)a.m_info.colorComponentType) < getColorComponentTypeRank((EGLenum)b.m_info.colorComponentType);
 	}
 
 	static bool compareColorBufferBits (const SurfaceConfig& a, const SurfaceConfig& b, const tcu::BVec4& specifiedRGBColors, const tcu::BVec2& specifiedLuminanceColors, bool yuvPlaneBppSpecified)
@@ -229,6 +245,7 @@ public:
 		{
 			SurfaceConfig::compareCaveat,
 			SurfaceConfig::compareColorBufferType,
+			SurfaceConfig::compareColorComponentType,
 			DE_NULL, // SurfaceConfig::compareColorBufferBits,
 			SurfaceConfig::compareAttributeSmaller<EGL_BUFFER_SIZE>,
 			SurfaceConfig::compareAttributeSmaller<EGL_SAMPLE_BUFFERS>,
@@ -306,6 +323,9 @@ public:
 		rules[EGL_YUV_DEPTH_RANGE_EXT]		= AttribRule(EGL_YUV_DEPTH_RANGE_EXT,		EGL_DONT_CARE,		CRITERIA_EXACT,		SORTORDER_NONE);
 		rules[EGL_YUV_CSC_STANDARD_EXT]		= AttribRule(EGL_YUV_CSC_STANDARD_EXT,		EGL_DONT_CARE,		CRITERIA_EXACT,		SORTORDER_NONE);
 		rules[EGL_YUV_PLANE_BPP_EXT]		= AttribRule(EGL_YUV_PLANE_BPP_EXT,			EGL_DONT_CARE,		CRITERIA_AT_LEAST,	SORTORDER_SPECIAL);	//	3
+
+		// EGL_EXT_pixel_format_float
+		rules[EGL_COLOR_COMPONENT_TYPE_EXT]	= AttribRule(EGL_COLOR_COMPONENT_TYPE_EXT,	EGL_COLOR_COMPONENT_TYPE_FIXED_EXT,		CRITERIA_EXACT,		SORTORDER_SPECIAL);	//	2
 
 		return rules;
 	}
