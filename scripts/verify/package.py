@@ -64,7 +64,7 @@ def getPackageDescription (packagePath):
 		elif fnmatch(item, GIT_STATUS_PATTERN):
 			gitStatus.append(item)
 		elif fnmatch(item, GIT_LOG_PATTERN):
-			gitLog.append(item)
+			gitLog.append((item, '.'))
 		elif fnmatch(item, PATCH_PATTERN):
 			patches.append(item)
 		elif fnmatch(item, SUMMARY_PATTERN):
