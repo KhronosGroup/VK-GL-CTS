@@ -39191,9 +39191,6 @@ dEQP-GLES3.functional.state_query.integers.front_face_mode_getinteger
 dEQP-GLES3.functional.state_query.integers.front_face_mode_getinteger64
 dEQP-GLES3.functional.state_query.integers.front_face_mode_getfloat
 dEQP-GLES3.functional.state_query.integers.viewport_getboolean
-dEQP-GLES3.functional.state_query.integers.viewport_getinteger
-dEQP-GLES3.functional.state_query.integers.viewport_getinteger64
-dEQP-GLES3.functional.state_query.integers.viewport_getfloat
 dEQP-GLES3.functional.state_query.integers.scissor_box_getboolean
 dEQP-GLES3.functional.state_query.integers.scissor_box_getinteger
 dEQP-GLES3.functional.state_query.integers.scissor_box_getinteger64
