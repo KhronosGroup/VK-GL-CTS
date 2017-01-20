@@ -478,7 +478,7 @@ tcu::Vec4 UsageDisplacementTestCase::genRandomVec4 (de::Random& rnd) const
 
 	retVal.x() = rnd.getFloat(-1, 1);
 	retVal.y() = rnd.getFloat(-1, 1);
-	retVal.z() = rnd.getFloat(-0.9f, 0.9f);
+	retVal.z() = 0.5f;
 	retVal.w() = 1.0f + rnd.getFloat();
 
 	return retVal;
