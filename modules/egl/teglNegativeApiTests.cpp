@@ -122,11 +122,12 @@ void NegativeApiTests::init (void)
 	using namespace eglw;
 	using namespace eglu;
 
-	static const EGLint s_emptyAttribList[]			= { EGL_NONE };
-	static const EGLint s_es1ContextAttribList[]	= { EGL_CONTEXT_CLIENT_VERSION, 1, EGL_NONE };
-	static const EGLint s_es2ContextAttribList[]	= { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
+	static const EGLint				s_emptyAttribList[]			= { EGL_NONE };
+	static const EGLint				s_es1ContextAttribList[]	= { EGL_CONTEXT_CLIENT_VERSION, 1, EGL_NONE };
+	static const EGLint				s_es2ContextAttribList[]	= { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
 
-	static const EGLenum s_renderAPIs[]				= { EGL_OPENGL_API, EGL_OPENGL_ES_API, EGL_OPENVG_API };
+	static const EGLenum			s_renderAPIs[]				= { EGL_OPENGL_API, EGL_OPENGL_ES_API, EGL_OPENVG_API };
+	static const eglu::ConfigFilter	s_renderAPIFilters[]		= { renderable<EGL_OPENGL_BIT>, renderable<EGL_OPENGL_ES_BIT>, renderable<EGL_OPENVG_BIT> };
 
 	TEGL_ADD_API_CASE(bind_api, "eglBindAPI() negative tests",
 		{
@@ -144,14 +145,19 @@ void NegativeApiTests::init (void)
 
 			log << TestLog::EndSection;
 
-			log << TestLog::Section("Test2", "EGL_BAD_PARAMETER is generated if the specified client API is not supported by the EGL implementation");
+			log << TestLog::Section("Test2", "EGL_BAD_PARAMETER is generated if the specified client API is not supported by the EGL display, or no configuration is provided for the specified API.");
 
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_renderAPIs); ndx++)
 			{
 				if (!isAPISupported(s_renderAPIs[ndx]))
 				{
-					expectFalse(eglBindAPI(s_renderAPIs[ndx]));
-					expectError(EGL_BAD_PARAMETER);
+					if (!eglBindAPI(s_renderAPIs[ndx]))
+						expectError(EGL_BAD_PARAMETER);
+					else
+					{
+						EGLConfig eglConfig;
+						expectFalse(getConfig(&eglConfig, FilterList() << s_renderAPIFilters[ndx]));
+					}
 				}
 			}
 
