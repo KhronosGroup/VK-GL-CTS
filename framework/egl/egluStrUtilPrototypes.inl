@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 31042.
+ * Generated from Khronos EGL API description (egl.xml) revision 33315.
  */
 const char*							getBooleanName				(int value);
 const char*							getBoolDontCareName			(int value);
@@ -12,6 +12,7 @@ const char*							getConfigAttribName			(int value);
 const char*							getSurfaceAttribName		(int value);
 const char*							getYuvOrderName				(int value);
 const char*							getYuvPlaneBppName			(int value);
+const char*							getColorComponentTypeName	(int value);
 const char*							getSurfaceTargetName		(int value);
 const char*							getColorBufferTypeName		(int value);
 const char*							getConfigCaveatName			(int value);
@@ -34,6 +35,7 @@ inline tcu::Format::Enum<int, 2>	getConfigAttribStr			(int value)		{ return tcu:
 inline tcu::Format::Enum<int, 2>	getSurfaceAttribStr			(int value)		{ return tcu::Format::Enum<int, 2>(getSurfaceAttribName, value); }
 inline tcu::Format::Enum<int, 2>	getYuvOrderStr				(int value)		{ return tcu::Format::Enum<int, 2>(getYuvOrderName, value); }
 inline tcu::Format::Enum<int, 2>	getYuvPlaneBppStr			(int value)		{ return tcu::Format::Enum<int, 2>(getYuvPlaneBppName, value); }
+inline tcu::Format::Enum<int, 2>	getColorComponentTypeStr	(int value)		{ return tcu::Format::Enum<int, 2>(getColorComponentTypeName, value); }
 inline tcu::Format::Enum<int, 2>	getSurfaceTargetStr			(int value)		{ return tcu::Format::Enum<int, 2>(getSurfaceTargetName, value); }
 inline tcu::Format::Enum<int, 2>	getColorBufferTypeStr		(int value)		{ return tcu::Format::Enum<int, 2>(getColorBufferTypeName, value); }
 inline tcu::Format::Enum<int, 2>	getConfigCaveatStr			(int value)		{ return tcu::Format::Enum<int, 2>(getConfigCaveatName, value); }
