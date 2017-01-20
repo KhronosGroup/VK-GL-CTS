@@ -12929,8 +12929,6 @@ dEQP-GLES2.functional.state_query.integers.front_face_mode_getboolean
 dEQP-GLES2.functional.state_query.integers.front_face_mode_getinteger
 dEQP-GLES2.functional.state_query.integers.front_face_mode_getfloat
 dEQP-GLES2.functional.state_query.integers.viewport_getboolean
-dEQP-GLES2.functional.state_query.integers.viewport_getinteger
-dEQP-GLES2.functional.state_query.integers.viewport_getfloat
 dEQP-GLES2.functional.state_query.integers.scissor_box_getboolean
 dEQP-GLES2.functional.state_query.integers.scissor_box_getinteger
 dEQP-GLES2.functional.state_query.integers.scissor_box_getfloat
