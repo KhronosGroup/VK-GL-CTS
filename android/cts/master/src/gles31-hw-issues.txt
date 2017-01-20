@@ -66,15 +66,6 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.sin.mediump_*
 dEQP-GLES31.functional.shaders.builtin_functions.precision.cos.mediump_*
 dEQP-GLES31.functional.shaders.builtin_functions.precision.tan.mediump_*
 
-# Bug 22713865
-dEQP-GLES31.functional.primitive_bounding_box.*lines*default_framebuffer_bbox*
-dEQP-GLES31.functional.primitive_bounding_box.lines.global_state.vertex_geometry_fragment.fbo_bbox_equal
-dEQP-GLES31.functional.primitive_bounding_box.lines.global_state.vertex_geometry_fragment.fbo_bbox_larger
-dEQP-GLES31.functional.primitive_bounding_box.lines.global_state.vertex_geometry_fragment.fbo_bbox_smaller
-dEQP-GLES31.functional.primitive_bounding_box.wide_lines.global_state.vertex_geometry_fragment.fbo_bbox_equal
-dEQP-GLES31.functional.primitive_bounding_box.wide_lines.global_state.vertex_geometry_fragment.fbo_bbox_larger
-dEQP-GLES31.functional.primitive_bounding_box.wide_lines.global_state.vertex_geometry_fragment.fbo_bbox_smaller
-
 # Bug 23288315
 dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawelements_separate_grid_1000x1000_drawcount_1
 dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawelements_separate_grid_1200x1200_drawcount_1
