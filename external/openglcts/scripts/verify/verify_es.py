@@ -24,6 +24,7 @@ import os
 import sys
 import xml.dom.minidom
 import re
+import subprocess
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 sys.path.append(os.path.join(ROOT_DIR, "scripts", "verify"))
@@ -220,13 +221,61 @@ def verifyGitStatusFiles (package):
 
 	return messages
 
+def isGitLogFileEmpty (package, modulePath, gitLog):
+	logPath	= os.path.join(package.basePath, gitLog)
+	log		= readFile(logPath)
+
+	args = ['git', 'log', '-1', package.conformVersion]
+	process = subprocess.Popen(args, cwd=modulePath, stdout=subprocess.PIPE)
+	output = process.communicate()[0]
+	if process.returncode != 0:
+		raise Exception("Failed to execute '%s', got %d" % (str(args), process.returncode))
+
+	return log == output
+
+def verifyGitLogFile (package):
+	messages = []
+
+	if len(package.gitLog) > 0:
+		for log, path in package.gitLog:
+			try:
+				isEmpty = isGitLogFileEmpty(package, path, log)
+			except Exception, e:
+				print str(e)
+				isEmpty = False
+
+			if not isEmpty:
+				messages.append(warning(os.path.join(package.basePath, log), "Log is not empty"))
+	else:
+		messages.append(error(package.basePath, "Missing git log files"))
+
+	return messages
+
+def verifyPatchFiles (package):
+	messages	= []
+	hasPatches	= len(package.patches)
+	logEmpty	= True
+	for log, path in package.gitLog:
+		logEmpty &= isGitLogFileEmpty(package, path, log)
+
+	if hasPatches and logEmpty:
+		messages.append(error(package.basePath, "Package includes patches but log is empty"))
+	elif not hasPatches and not logEmpty:
+		messages.append(error(package.basePath, "Test log is not empty but package doesn't contain patches"))
+
+	return messages
+
 def verifyGitLogFiles (package):
 	messages = []
 
 	if len(package.gitLog) != 2:
 		messages.append(error(package.basePath, "Exactly two git log file must be present, found %s" % len(package.gitLog)))
 
-	messages += verifyGitLog(package)
+	for i, gitLog in enumerate(package.gitLog):
+		if "kc-cts" in gitLog[0]:
+			package.gitLog[i] = gitLog[:1] + ("external/kc-cts/src",) + gitLog[2:]
+
+	messages += verifyGitLogFile(package)
 
 	return messages
 
@@ -236,7 +285,7 @@ def verifyPackage (package):
 	messages += verifyStatement(package)
 	messages += verifyGitStatusFiles(package)
 	messages += verifyGitLogFiles(package)
-	messages += verifyPatches(package)
+	messages += verifyPatchFiles(package)
 
 	for item in package.otherItems:
 		messages.append(warning(os.path.join(package.basePath, item), "Unknown file"))

@@ -166,7 +166,7 @@ def verifyGitLog (package):
 	messages = []
 
 	if len(package.gitLog) > 0:
-		for log in package.gitLog:
+		for log, path in package.gitLog:
 			if not isGitLogEmpty(package, log):
 				messages.append(warning(os.path.join(package.basePath, log), "Log is not empty"))
 	else:
@@ -178,7 +178,7 @@ def verifyPatches (package):
 	messages	= []
 	hasPatches	= len(package.patches)
 	logEmpty	= True
-	for log in package.gitLog:
+	for log, path in package.gitLog:
 		logEmpty &= isGitLogEmpty(package, log)
 
 	if hasPatches and logEmpty:
