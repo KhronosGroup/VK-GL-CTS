@@ -24,6 +24,7 @@ dEQP-EGL.functional.create_context.rgba8888_no_depth_stencil
 dEQP-EGL.functional.create_context.rgba8888_depth_no_stencil
 dEQP-EGL.functional.create_context.rgba8888_depth_stencil
 dEQP-EGL.functional.create_context.other
+dEQP-EGL.functional.create_context.no_config
 dEQP-EGL.functional.query_context.simple.query_api
 dEQP-EGL.functional.query_context.get_current_context.rgb565_window
 dEQP-EGL.functional.query_context.get_current_context.rgb565_pixmap
