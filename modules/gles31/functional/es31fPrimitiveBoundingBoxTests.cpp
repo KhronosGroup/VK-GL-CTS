@@ -1402,6 +1402,8 @@ private:
 	{
 		SCANRESULT_NUM_LINES_OK_BIT		= (1 << 0),
 		SCANRESULT_LINE_WIDTH_OK_BIT	= (1 << 1),
+		SCANRESULT_LINE_WIDTH_WARN_BIT	= (1 << 2),
+		SCANRESULT_LINE_WIDTH_ERR_BIT	= (1 << 3),
 	};
 
 	void				init							(void);
@@ -1422,7 +1424,7 @@ private:
 	deUint8				scanColumn						(const tcu::ConstPixelBufferAccess& access, int column, int columnBegin, int columnEnd, const tcu::IVec2& numLines, int& floodCounter) const;
 	bool				checkAreaNumLines				(const tcu::ConstPixelBufferAccess& access, const tcu::IVec4& area, int& floodCounter, int componentNdx, const tcu::IVec2& numLines) const;
 	tcu::IVec2			getNumMinimaMaxima				(const tcu::ConstPixelBufferAccess& access, int componentNdx) const;
-	bool				checkLineWidths					(const tcu::ConstPixelBufferAccess& access, const tcu::IVec2& begin, const tcu::IVec2& end, int componentNdx, int& floodCounter) const;
+	deUint8				checkLineWidths					(const tcu::ConstPixelBufferAccess& access, const tcu::IVec2& begin, const tcu::IVec2& end, int componentNdx, int& floodCounter) const;
 	void				printLineWidthError				(const tcu::IVec2& pos, int detectedLineWidth, const tcu::IVec2& lineWidthRange, bool isHorizontal, int& floodCounter) const;
 
 	const int			m_patternSide;
@@ -1787,23 +1789,24 @@ void LineRenderCase::renderTestPattern (const IterationConfig& config)
 
 void LineRenderCase::verifyRenderResult (const IterationConfig& config)
 {
-	const glw::Functions&	gl						= m_context.getRenderContext().getFunctions();
-	const bool				isMsaa					= m_context.getRenderTarget().getNumSamples() > 1;
-	const ProjectedBBox		projectedBBox			= projectBoundingBox(config.bbox);
-	const float				lineWidth				= (m_isWideLineCase) ? ((float)m_wideLineLineWidth) : (1.0f);
-	const tcu::IVec4		viewportBBoxArea		= getViewportBoundingBoxArea(projectedBBox, config.viewportSize, lineWidth);
-	const tcu::IVec4		viewportPatternArea		= getViewportPatternArea(config.patternPos, config.patternSize, config.viewportSize, ROUND_INWARDS);
-	const tcu::IVec2		expectedHorizontalLines	= getNumberOfLinesRange(viewportBBoxArea.y(), viewportBBoxArea.w(), config.patternPos.y(), config.patternSize.y(), config.viewportSize.y(), DIRECTION_VERTICAL);
-	const tcu::IVec2		expectedVerticalLines	= getNumberOfLinesRange(viewportBBoxArea.x(), viewportBBoxArea.z(), config.patternPos.x(), config.patternSize.x(), config.viewportSize.x(), DIRECTION_HORIZONTAL);
-	const tcu::IVec4		verificationArea		= tcu::IVec4(de::max(viewportBBoxArea.x(), 0),
-																 de::max(viewportBBoxArea.y(), 0),
-																 de::min(viewportBBoxArea.z(), config.viewportSize.x()),
-																 de::min(viewportBBoxArea.w(), config.viewportSize.y()));
+	const glw::Functions&	gl							= m_context.getRenderContext().getFunctions();
+	const bool				isMsaa						= m_context.getRenderTarget().getNumSamples() > 1;
+	const ProjectedBBox		projectedBBox				= projectBoundingBox(config.bbox);
+	const float				lineWidth					= (m_isWideLineCase) ? ((float)m_wideLineLineWidth) : (1.0f);
+	const tcu::IVec4		viewportBBoxArea			= getViewportBoundingBoxArea(projectedBBox, config.viewportSize, lineWidth);
+	const tcu::IVec4		viewportPatternArea			= getViewportPatternArea(config.patternPos, config.patternSize, config.viewportSize, ROUND_INWARDS);
+	const tcu::IVec2		expectedHorizontalLines		= getNumberOfLinesRange(viewportBBoxArea.y(), viewportBBoxArea.w(), config.patternPos.y(), config.patternSize.y(), config.viewportSize.y(), DIRECTION_VERTICAL);
+	const tcu::IVec2		expectedVerticalLines		= getNumberOfLinesRange(viewportBBoxArea.x(), viewportBBoxArea.z(), config.patternPos.x(), config.patternSize.x(), config.viewportSize.x(), DIRECTION_HORIZONTAL);
+	const tcu::IVec4		verificationArea			= tcu::IVec4(de::max(viewportBBoxArea.x(), 0),
+																	 de::max(viewportBBoxArea.y(), 0),
+																	 de::min(viewportBBoxArea.z(), config.viewportSize.x()),
+																	 de::min(viewportBBoxArea.w(), config.viewportSize.y()));
 
-	tcu::Surface			viewportSurface			(config.viewportSize.x(), config.viewportSize.y());
-	bool					anyError				= false;
-	bool					msaaRelaxationRequired	= false;
-	int						messageLimitCounter		= 8;
+	tcu::Surface			viewportSurface				(config.viewportSize.x(), config.viewportSize.y());
+	bool					anyError					= false;
+	bool					msaaRelaxationRequired		= false;
+	bool					hwIssueRelaxationRequired	= false;
+	int						messageLimitCounter			= 8;
 
 	if (!m_calcPerPrimitiveBBox)
 		m_testCtx.getLog()
@@ -1853,6 +1856,11 @@ void LineRenderCase::verifyRenderResult (const IterationConfig& config)
 				// multisampled wide lines might not be supported
 				msaaRelaxationRequired = true;
 			}
+			else if ((result & SCANRESULT_LINE_WIDTH_ERR_BIT) == 0 &&
+					 (result & SCANRESULT_LINE_WIDTH_WARN_BIT) != 0)
+			{
+				hwIssueRelaxationRequired = true;
+			}
 			else
 				anyError = true;
 		}
@@ -1877,12 +1885,16 @@ void LineRenderCase::verifyRenderResult (const IterationConfig& config)
 				// multisampled wide lines might not be supported
 				msaaRelaxationRequired = true;
 			}
+			else if ((result & SCANRESULT_LINE_WIDTH_WARN_BIT) != 0)
+			{
+				hwIssueRelaxationRequired = true;
+			}
 			else
 				anyError = true;
 		}
 	}
 
-	if (anyError || msaaRelaxationRequired)
+	if (anyError || msaaRelaxationRequired || hwIssueRelaxationRequired)
 	{
 		if (messageLimitCounter < 0)
 			m_testCtx.getLog() << tcu::TestLog::Message << "Omitted " << (-messageLimitCounter) << " row/column error descriptions." << tcu::TestLog::EndMessage;
@@ -1897,6 +1909,11 @@ void LineRenderCase::verifyRenderResult (const IterationConfig& config)
 
 		if (anyError)
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Image verification failed");
+		else if (hwIssueRelaxationRequired)
+		{
+			// Line width hw issue
+			m_testCtx.setTestResult(QP_TEST_RESULT_QUALITY_WARNING, "Line width verification failed");
+		}
 		else
 		{
 			// MSAA wide lines are optional
@@ -1949,20 +1966,36 @@ tcu::IVec2 LineRenderCase::getNumberOfLinesRange (int queryAreaBegin, int queryA
 
 deUint8 LineRenderCase::scanRow (const tcu::ConstPixelBufferAccess& access, int row, int rowBegin, int rowEnd, const tcu::IVec2& numLines, int& messageLimitCounter) const
 {
-	const bool numLinesOk	= checkAreaNumLines(access, tcu::IVec4(rowBegin, row, rowEnd - rowBegin, 1), messageLimitCounter, SCAN_ROW_COMPONENT_NDX, numLines);
-	const bool lineWidthOk	= checkLineWidths(access, tcu::IVec2(rowBegin, row), tcu::IVec2(rowEnd, row), SCAN_ROW_COMPONENT_NDX, messageLimitCounter);
+	const bool		numLinesOk		= checkAreaNumLines(access, tcu::IVec4(rowBegin, row, rowEnd - rowBegin, 1), messageLimitCounter, SCAN_ROW_COMPONENT_NDX, numLines);
+	const deUint8	lineWidthRes	= checkLineWidths(access, tcu::IVec2(rowBegin, row), tcu::IVec2(rowEnd, row), SCAN_ROW_COMPONENT_NDX, messageLimitCounter);
+	deUint8			result			= 0;
 
-	return	(deUint8)((numLinesOk	? (deUint8)SCANRESULT_NUM_LINES_OK_BIT	: 0u) |
-					  (lineWidthOk	? (deUint8)SCANRESULT_LINE_WIDTH_OK_BIT	: 0u));
+	if (numLinesOk)
+		result |= (deUint8)SCANRESULT_NUM_LINES_OK_BIT;
+
+	if (lineWidthRes == 0)
+		result |= (deUint8)SCANRESULT_LINE_WIDTH_OK_BIT;
+	else
+		result |= lineWidthRes;
+
+	return result;
 }
 
 deUint8 LineRenderCase::scanColumn (const tcu::ConstPixelBufferAccess& access, int column, int columnBegin, int columnEnd, const tcu::IVec2& numLines, int& messageLimitCounter) const
 {
-	const bool numLinesOk	= checkAreaNumLines(access, tcu::IVec4(column, columnBegin, 1, columnEnd - columnBegin), messageLimitCounter, SCAN_COL_COMPONENT_NDX, numLines);
-	const bool lineWidthOk	= checkLineWidths(access, tcu::IVec2(column, columnBegin), tcu::IVec2(column, columnEnd), SCAN_COL_COMPONENT_NDX, messageLimitCounter);
+	const bool		numLinesOk		= checkAreaNumLines(access, tcu::IVec4(column, columnBegin, 1, columnEnd - columnBegin), messageLimitCounter, SCAN_COL_COMPONENT_NDX, numLines);
+	const deUint8	lineWidthRes	= checkLineWidths(access, tcu::IVec2(column, columnBegin), tcu::IVec2(column, columnEnd), SCAN_COL_COMPONENT_NDX, messageLimitCounter);
+	deUint8			result			= 0;
 
-	return	(deUint8)((numLinesOk	? (deUint8)SCANRESULT_NUM_LINES_OK_BIT	: 0u) |
-					  (lineWidthOk	? (deUint8)SCANRESULT_LINE_WIDTH_OK_BIT	: 0u));
+	if (numLinesOk)
+		result |= (deUint8)SCANRESULT_NUM_LINES_OK_BIT;
+
+	if (lineWidthRes == 0)
+		result |= (deUint8)SCANRESULT_LINE_WIDTH_OK_BIT;
+	else
+		result |= lineWidthRes;
+
+	return result;
 }
 
 bool LineRenderCase::checkAreaNumLines (const tcu::ConstPixelBufferAccess& access, const tcu::IVec4& area, int& messageLimitCounter, int componentNdx, const tcu::IVec2& numLines) const
@@ -2052,19 +2085,20 @@ tcu::IVec2 LineRenderCase::getNumMinimaMaxima (const tcu::ConstPixelBufferAccess
 	return tcu::IVec2(numMinima, numMaxima);
 }
 
-bool LineRenderCase::checkLineWidths (const tcu::ConstPixelBufferAccess& access, const tcu::IVec2& begin, const tcu::IVec2& end, int componentNdx, int& messageLimitCounter) const
+deUint8 LineRenderCase::checkLineWidths (const tcu::ConstPixelBufferAccess& access, const tcu::IVec2& begin, const tcu::IVec2& end, int componentNdx, int& messageLimitCounter) const
 {
-	const bool			multisample		= m_context.getRenderTarget().getNumSamples() > 1;
-	const int			lineRenderWidth	= (m_isWideLineCase) ? (m_wideLineLineWidth) : 1;
-	const tcu::IVec2	lineWidthRange	= (multisample)
-											? (tcu::IVec2(lineRenderWidth, lineRenderWidth+1))	// multisampled "smooth" lines may spread to neighboring pixel
-											: (tcu::IVec2(lineRenderWidth, lineRenderWidth));
+	const bool			multisample				= m_context.getRenderTarget().getNumSamples() > 1;
+	const int			lineRenderWidth			= (m_isWideLineCase) ? (m_wideLineLineWidth) : 1;
+	const tcu::IVec2	lineWidthRange			= (multisample)
+													? (tcu::IVec2(lineRenderWidth, lineRenderWidth+1))	// multisampled "smooth" lines may spread to neighboring pixel
+													: (tcu::IVec2(lineRenderWidth, lineRenderWidth));
+	const tcu::IVec2	relaxedLineWidthRange	= (tcu::IVec2(lineRenderWidth-1, lineRenderWidth+1));
 
-	int					lineWidth		= 0;
-	bool				bboxLimitedLine	= false;
-	bool				anyError		= false;
+	int					lineWidth				= 0;
+	bool				bboxLimitedLine			= false;
+	deUint8				errorMask				= 0;
 
-	const tcu::IVec2	advance			= (begin.x() == end.x()) ? (tcu::IVec2(0, 1)) : (tcu::IVec2(1, 0));
+	const tcu::IVec2	advance					= (begin.x() == end.x()) ? (tcu::IVec2(0, 1)) : (tcu::IVec2(1, 0));
 
 	// fragments before begin?
 	if (access.getPixelInt(begin.x(), begin.y())[componentNdx] != 0)
@@ -2099,7 +2133,13 @@ bool LineRenderCase::checkLineWidths (const tcu::ConstPixelBufferAccess& access,
 
 			if (incorrectLineWidth)
 			{
-				anyError = true;
+				const bool incorrectRelaxedLineWidth = (lineWidth < relaxedLineWidthRange.x() && !bboxLimitedLine) || (lineWidth > relaxedLineWidthRange.y());
+
+				if (incorrectRelaxedLineWidth)
+					errorMask |= SCANRESULT_LINE_WIDTH_ERR_BIT;
+				else
+					errorMask |= SCANRESULT_LINE_WIDTH_WARN_BIT;
+
 				printLineWidthError(cursor, lineWidth, lineWidthRange, advance.x() == 0, messageLimitCounter);
 			}
 
@@ -2117,7 +2157,11 @@ bool LineRenderCase::checkLineWidths (const tcu::ConstPixelBufferAccess& access,
 			{
 				if (lineWidth > lineWidthRange.y())
 				{
-					anyError = true;
+					if (lineWidth > relaxedLineWidthRange.y())
+						errorMask |= SCANRESULT_LINE_WIDTH_ERR_BIT;
+					else
+						errorMask |= SCANRESULT_LINE_WIDTH_WARN_BIT;
+
 					printLineWidthError(cursor, lineWidth, lineWidthRange, advance.x() == 0, messageLimitCounter);
 				}
 
@@ -2135,7 +2179,13 @@ bool LineRenderCase::checkLineWidths (const tcu::ConstPixelBufferAccess& access,
 
 				if (incorrectLineWidth)
 				{
-					anyError = true;
+					const bool incorrectRelaxedLineWidth = (lineWidth > relaxedLineWidthRange.y());
+
+					if (incorrectRelaxedLineWidth)
+						errorMask |= SCANRESULT_LINE_WIDTH_ERR_BIT;
+					else
+						errorMask |= SCANRESULT_LINE_WIDTH_WARN_BIT;
+
 					printLineWidthError(cursor, lineWidth, lineWidthRange, advance.x() == 0, messageLimitCounter);
 				}
 
@@ -2144,7 +2194,7 @@ bool LineRenderCase::checkLineWidths (const tcu::ConstPixelBufferAccess& access,
 		}
 	}
 
-	return !anyError;
+	return errorMask;
 }
 
 void LineRenderCase::printLineWidthError (const tcu::IVec2& pos, int detectedLineWidth, const tcu::IVec2& lineWidthRange, bool isHorizontal, int& messageLimitCounter) const
