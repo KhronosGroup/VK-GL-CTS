@@ -397,6 +397,11 @@ static bool isConformant (const eglu::CandidateConfig& c)
 	return c.get(EGL_CONFIG_CAVEAT) != EGL_NON_CONFORMANT_CONFIG;
 }
 
+static bool notFloat (const eglu::CandidateConfig& c)
+{
+	return c.colorComponentType() != EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT;
+}
+
 void getDefaultRenderFilterLists (vector<RenderFilterList>& filterLists, const eglu::FilterList& baseFilters)
 {
 	static const struct
@@ -450,7 +455,8 @@ void getDefaultRenderFilterLists (vector<RenderFilterList>& filterLists, const e
 				<< notColorBits<4, 4, 4, 4>
 				<< notColorBits<5, 5, 5, 1>
 				<< notColorBits<8, 8, 8, 8>
-				<< isConformant;
+				<< isConformant
+				<< notFloat;
 
 		filterLists.push_back(filters);
 	}
