@@ -578,99 +578,84 @@ tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 	return tcu::TestStatus::pass("Creating swapchain succeeded");
 }
 
-class CreateSwapchainSimulateOOMTest : public TestInstance
+tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters params)
 {
-public:
-							CreateSwapchainSimulateOOMTest	(Context& context, TestParameters params)
-			: TestInstance			(context)
-			, m_params				(params)
-			, m_numPassingAllocs	(0)
+	const size_t				maxCases			= 300u;
+	const deUint32				maxAllocs			= 1024u;
+
+	tcu::TestLog&				log					= context.getTestContext().getLog();
+	tcu::ResultCollector		results				(log);
+
+	AllocationCallbackRecorder	allocationRecorder	(getSystemAllocator());
+	DeterministicFailAllocator	failingAllocator	(allocationRecorder.getCallbacks(),
+													 DeterministicFailAllocator::MODE_DO_NOT_COUNT,
+													 0);
 	{
-	}
+		const InstanceHelper					instHelper	(context, params.wsiType, failingAllocator.getCallbacks());
+		const NativeObjects						native		(context, instHelper.supportedExtensions, params.wsiType);
+		const Unique<VkSurfaceKHR>				surface		(createSurface(instHelper.vki,
+																			*instHelper.instance,
+																			params.wsiType,
+																			*native.display,
+																			*native.window,
+																			failingAllocator.getCallbacks()));
+		const DeviceHelper						devHelper	(context, instHelper.vki, *instHelper.instance, *surface, failingAllocator.getCallbacks());
+		const vector<VkSwapchainCreateInfoKHR>	allCases	(generateSwapchainParameterCases(params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
 
-	tcu::TestStatus			iterate							(void);
+		if (maxCases < allCases.size())
+			log << TestLog::Message << "Note: Will only test first " << maxCases << " cases out of total of " << allCases.size() << " parameter combinations" << TestLog::EndMessage;
 
-private:
-	const TestParameters	m_params;
-	deUint32				m_numPassingAllocs;
-};
-
-tcu::TestStatus CreateSwapchainSimulateOOMTest::iterate (void)
-{
-	tcu::TestLog&	log	= m_context.getTestContext().getLog();
-
-	// \note This is a little counter-intuitive order (iterating on callback count until all cases pass)
-	//		 but since cases depend on what device reports, it is the only easy way. In practice
-	//		 we should see same number of total callbacks (and executed code) regardless of the
-	//		 loop order.
-
-	if (m_numPassingAllocs <= 16*1024u)
-	{
-		AllocationCallbackRecorder	allocationRecorder	(getSystemAllocator());
-		DeterministicFailAllocator	failingAllocator	(allocationRecorder.getCallbacks(),
-														 m_numPassingAllocs,
-														 DeterministicFailAllocator::MODE_DO_NOT_COUNT);
-		bool						gotOOM				= false;
-
-		log << TestLog::Message << "Testing with " << m_numPassingAllocs << " first allocations succeeding" << TestLog::EndMessage;
-
-		try
+		for (size_t caseNdx = 0; caseNdx < de::min(maxCases, allCases.size()); ++caseNdx)
 		{
-			const InstanceHelper					instHelper	(m_context, m_params.wsiType, failingAllocator.getCallbacks());
-			const NativeObjects						native		(m_context, instHelper.supportedExtensions, m_params.wsiType);
-			const Unique<VkSurfaceKHR>				surface		(createSurface(instHelper.vki,
-																			   *instHelper.instance,
-																			   m_params.wsiType,
-																			   *native.display,
-																			   *native.window,
-																			   failingAllocator.getCallbacks()));
-			const DeviceHelper						devHelper	(m_context, instHelper.vki, *instHelper.instance, *surface, failingAllocator.getCallbacks());
-			const vector<VkSwapchainCreateInfoKHR>	cases		(generateSwapchainParameterCases(m_params.wsiType, m_params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
+			log << TestLog::Message << "Testing parameter case " << caseNdx << ": " << allCases[caseNdx] << TestLog::EndMessage;
 
-			// We don't care testing OOM paths in VkInstance, VkSurface, or VkDevice
-			// creation as they are tested elsewhere.
-			failingAllocator.setMode(DeterministicFailAllocator::MODE_COUNT_AND_FAIL);
-
-			for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
+			for (deUint32 numPassingAllocs = 0; numPassingAllocs <= maxAllocs; ++numPassingAllocs)
 			{
-				VkSwapchainCreateInfoKHR	curParams	= cases[caseNdx];
+				bool	gotOOM	= false;
 
-				curParams.surface				= *surface;
-				curParams.queueFamilyIndexCount	= 1u;
-				curParams.pQueueFamilyIndices	= &devHelper.queueFamilyIndex;
+				failingAllocator.reset(DeterministicFailAllocator::MODE_COUNT_AND_FAIL, numPassingAllocs);
 
-				log
-					<< TestLog::Message << "Sub-case " << (caseNdx+1) << " / " << cases.size() << TestLog::EndMessage;
+				log << TestLog::Message << "Testing with " << numPassingAllocs << " first allocations succeeding" << TestLog::EndMessage;
 
+				try
 				{
-					const Unique<VkSwapchainKHR>	swapchain	(createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams, failingAllocator.getCallbacks()));
+					VkSwapchainCreateInfoKHR	curParams	= allCases[caseNdx];
+
+					curParams.surface				= *surface;
+					curParams.queueFamilyIndexCount	= 1u;
+					curParams.pQueueFamilyIndices	= &devHelper.queueFamilyIndex;
+
+					{
+						const Unique<VkSwapchainKHR>	swapchain	(createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams, failingAllocator.getCallbacks()));
+					}
 				}
+				catch (const OutOfMemoryError& e)
+				{
+					log << TestLog::Message << "Got " << e.getError() << TestLog::EndMessage;
+					gotOOM = true;
+				}
+
+				if (!gotOOM)
+				{
+					log << TestLog::Message << "Creating swapchain succeeded!" << TestLog::EndMessage;
+
+					if (numPassingAllocs == 0)
+						results.addResult(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks were not used");
+
+					break;
+				}
+				else if (numPassingAllocs == maxAllocs)
+					results.addResult(QP_TEST_RESULT_QUALITY_WARNING, "Creating swapchain did not succeed, callback limit exceeded");
 			}
 		}
-		catch (const OutOfMemoryError& e)
-		{
-			log << TestLog::Message << "Got " << e.getError() << TestLog::EndMessage;
-			gotOOM = true;
-		}
 
-		if (!validateAndLog(log, allocationRecorder, 0u))
-			return tcu::TestStatus::fail("Detected invalid system allocation callback");
-
-		if (!gotOOM)
-		{
-			log << TestLog::Message << "Creating surface succeeded!" << TestLog::EndMessage;
-
-			if (m_numPassingAllocs == 0)
-				return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks were not used");
-			else
-				return tcu::TestStatus::pass("OOM simulation completed");
-		}
-
-		m_numPassingAllocs++;
-		return tcu::TestStatus::incomplete();
+		context.getTestContext().touchWatchdog();
 	}
-	else
-		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Creating swapchain did not succeed, callback limit exceeded");
+
+	if (!validateAndLog(log, allocationRecorder, 0u))
+		results.fail("Detected invalid system allocation callback");
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 struct GroupParameters
@@ -698,16 +683,6 @@ void populateSwapchainGroup (tcu::TestCaseGroup* testGroup, GroupParameters para
 		const TestDimension		testDimension	= (TestDimension)dimensionNdx;
 
 		addFunctionCase(testGroup, getTestDimensionName(testDimension), "", params.function, TestParameters(params.wsiType, testDimension));
-	}
-}
-
-void populateSwapchainOOMGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
-{
-	for (int dimensionNdx = 0; dimensionNdx < TEST_DIMENSION_LAST; ++dimensionNdx)
-	{
-		const TestDimension		testDimension	= (TestDimension)dimensionNdx;
-
-		testGroup->addChild(new InstanceFactory1<CreateSwapchainSimulateOOMTest, TestParameters>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, getTestDimensionName(testDimension), "", TestParameters(wsiType, testDimension)));
 	}
 }
 
@@ -1701,7 +1676,7 @@ void populateModifyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
 	addTestGroup(testGroup, "create",			"Create VkSwapchain with various parameters",					populateSwapchainGroup,		GroupParameters(wsiType, createSwapchainTest));
-	addTestGroup(testGroup, "simulate_oom",		"Simulate OOM using callbacks during swapchain construction",	populateSwapchainOOMGroup,	wsiType);
+	addTestGroup(testGroup, "simulate_oom",		"Simulate OOM using callbacks during swapchain construction",	populateSwapchainGroup,		GroupParameters(wsiType, createSwapchainSimulateOOMTest));
 	addTestGroup(testGroup, "render",			"Rendering Tests",												populateRenderGroup,		wsiType);
 	addTestGroup(testGroup, "modify",			"Modify VkSwapchain",											populateModifyGroup,		wsiType);
 }
