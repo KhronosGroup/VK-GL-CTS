@@ -65,3 +65,7 @@ dEQP-GLES2.functional.texture.wrap.repeat_mirror_nearest_pot_l8
 dEQP-GLES2.functional.texture.wrap.mirror_clamp_nearest_pot_rgba8888
 dEQP-GLES2.functional.texture.wrap.mirror_repeat_nearest_pot_rgba8888
 dEQP-GLES2.functional.texture.wrap.mirror_mirror_nearest_pot_rgba8888
+
+# Bug 34349411
+dEQP-GLES2.functional.state_query.integers.viewport_getfloat
+dEQP-GLES2.functional.state_query.integers.viewport_getinteger
