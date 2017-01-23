@@ -222,7 +222,7 @@ void XlibWindow::setVisibility (bool visible)
 
 	do
 	{
-		XNextEvent(dpy, &event);
+		XWindowEvent(dpy, m_window, ExposureMask | StructureNotifyMask, &event);
 	} while (event.type != eventType);
 
 	m_visible = visible;
