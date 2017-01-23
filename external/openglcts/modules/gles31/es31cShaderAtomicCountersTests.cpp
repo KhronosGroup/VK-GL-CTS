@@ -934,8 +934,8 @@ public:
 		GLuint* data;
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_buffer);
 		glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
-		data =
-			static_cast<GLuint*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 512 * sizeof(GLuint), GL_MAP_READ_BIT));
+		data = static_cast<GLuint*>(
+			glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 512 * sizeof(GLuint), GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
 
 		std::sort(data, data + 512);
 		for (int i = 0; i < 512; i += 2)
@@ -1800,14 +1800,17 @@ class BasicUsageVS : public SACSubcaseBase
 		// validate
 		GLuint* data;
 		glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, xfb_buffer_[0]);
-		data = static_cast<GLuint*>(glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 32 * 4, GL_MAP_READ_BIT));
+		// CheckCounterValues will sort in place, so map buffer for both read and write
+		data = static_cast<GLuint*>(
+			glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 32 * 4, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
 		if (!CheckCounterValues(32, data, 7))
 			return ERROR;
 		glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
 		glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, 0);
 
 		glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, xfb_buffer_[1]);
-		data = static_cast<GLuint*>(glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 32 * 4, GL_MAP_READ_BIT));
+		data = static_cast<GLuint*>(
+			glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 32 * 4, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
 		if (!CheckCounterValues(32, data, 45))
 			return ERROR;
 		glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
@@ -3059,8 +3062,8 @@ class BasicUsageNoOffset : public BasicUsageCS
 		GLuint* data;
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_buffer);
 		glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
-		data =
-			static_cast<GLuint*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 512 * sizeof(GLuint), GL_MAP_READ_BIT));
+		data = static_cast<GLuint*>(
+			glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 512 * sizeof(GLuint), GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
 
 		std::sort(data, data + 512);
 		for (int i = 0; i < 512; i += 2)
@@ -3384,7 +3387,8 @@ class AdvancedManyDrawCalls2 : public SACSubcaseBase
 
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_ssbo);
 			glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
-			data = static_cast<GLuint*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 100 * 4, GL_MAP_READ_BIT));
+			data = static_cast<GLuint*>(
+				glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 100 * 4, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
 			std::sort(data, data + 100);
 			for (GLuint i = 0; i < 100; ++i)
 			{
@@ -3475,7 +3479,8 @@ class AdvancedUsageMultipleComputeDispatches : public SACSubcaseBase
 
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_ssbo);
 			glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
-			data = static_cast<GLuint*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 100 * 4, GL_MAP_READ_BIT));
+			data = static_cast<GLuint*>(
+				glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 100 * 4, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
 			std::sort(data, data + 100);
 			for (GLuint i = 0; i < 100; ++i)
 			{
