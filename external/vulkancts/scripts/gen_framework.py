@@ -114,7 +114,10 @@ INSTANCE_FUNCTIONS	= [
 	"vkDebugReportMessageEXT",
 
 	# VK_NV_external_memory_capabilities
-	"vkGetPhysicalDeviceExternalImageFormatPropertiesNV"
+	"vkGetPhysicalDeviceExternalImageFormatPropertiesNV",
+
+	# VK_NVX_device_generated_commands
+	"vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX",
 ]
 
 DEFINITIONS			= [

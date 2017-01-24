@@ -1840,29 +1840,33 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
-		"%ivec3     = OpTypeVector %i32 3\n"
-		"%buf     = OpTypeStruct %i32arr\n"
-		"%bufptr  = OpTypePointer Uniform %buf\n"
-		"%indata    = OpVariable %bufptr Uniform\n"
-		"%outdata   = OpVariable %bufptr Uniform\n"
+		"%ivec3       = OpTypeVector %i32 3\n"
+		"%buf         = OpTypeStruct %i32arr\n"
+		"%bufptr      = OpTypePointer Uniform %buf\n"
+		"%indata      = OpVariable %bufptr Uniform\n"
+		"%outdata     = OpVariable %bufptr Uniform\n"
 
-		"%id        = OpVariable %uvec3ptr Input\n"
-		"%zero      = OpConstant %i32 0\n"
-		"%ivec3_0   = OpConstantComposite %ivec3 %zero %zero %zero\n"
+		"%id          = OpVariable %uvec3ptr Input\n"
+		"%zero        = OpConstant %i32 0\n"
+		"%ivec3_0     = OpConstantComposite %ivec3 %zero %zero %zero\n"
+		"%vec3_undef  = OpUndef %ivec3\n"
 
 		"%sc_0        = OpSpecConstant %i32 0\n"
 		"%sc_1        = OpSpecConstant %i32 0\n"
 		"%sc_2        = OpSpecConstant %i32 0\n"
-		"%sc_vec3_0   = OpSpecConstantOp %ivec3 CompositeInsert  %sc_0        %ivec3_0   0\n"     // (sc_0, 0, 0)
-		"%sc_vec3_1   = OpSpecConstantOp %ivec3 CompositeInsert  %sc_1        %ivec3_0   1\n"     // (0, sc_1, 0)
-		"%sc_vec3_2   = OpSpecConstantOp %ivec3 CompositeInsert  %sc_2        %ivec3_0   2\n"     // (0, 0, sc_2)
-		"%sc_vec3_01  = OpSpecConstantOp %ivec3 VectorShuffle    %sc_vec3_0   %sc_vec3_1 1 0 4\n" // (0,    sc_0, sc_1)
-		"%sc_vec3_012 = OpSpecConstantOp %ivec3 VectorShuffle    %sc_vec3_01  %sc_vec3_2 5 1 2\n" // (sc_2, sc_0, sc_1)
-		"%sc_ext_0    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012            0\n"     // sc_2
-		"%sc_ext_1    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012            1\n"     // sc_0
-		"%sc_ext_2    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012            2\n"     // sc_1
-		"%sc_sub      = OpSpecConstantOp %i32   ISub             %sc_ext_0    %sc_ext_1\n"        // (sc_2 - sc_0)
-		"%sc_final    = OpSpecConstantOp %i32   IMul             %sc_sub      %sc_ext_2\n"        // (sc_2 - sc_0) * sc_1
+		"%sc_vec3_0   = OpSpecConstantOp %ivec3 CompositeInsert  %sc_0        %ivec3_0     0\n"							// (sc_0, 0, 0)
+		"%sc_vec3_1   = OpSpecConstantOp %ivec3 CompositeInsert  %sc_1        %ivec3_0     1\n"							// (0, sc_1, 0)
+		"%sc_vec3_2   = OpSpecConstantOp %ivec3 CompositeInsert  %sc_2        %ivec3_0     2\n"							// (0, 0, sc_2)
+		"%sc_vec3_0_s = OpSpecConstantOp %ivec3 VectorShuffle    %sc_vec3_0   %vec3_undef  0          0xFFFFFFFF 2\n"	// (sc_0, ???,  0)
+		"%sc_vec3_1_s = OpSpecConstantOp %ivec3 VectorShuffle    %sc_vec3_1   %vec3_undef  0xFFFFFFFF 1          0\n"	// (???,  sc_1, 0)
+		"%sc_vec3_2_s = OpSpecConstantOp %ivec3 VectorShuffle    %vec3_undef  %sc_vec3_2   5          0xFFFFFFFF 5\n"	// (sc_2, ???,  sc_2)
+		"%sc_vec3_01  = OpSpecConstantOp %ivec3 VectorShuffle    %sc_vec3_0_s %sc_vec3_1_s 1 0 4\n"						// (0,    sc_0, sc_1)
+		"%sc_vec3_012 = OpSpecConstantOp %ivec3 VectorShuffle    %sc_vec3_01  %sc_vec3_2_s 5 1 2\n"						// (sc_2, sc_0, sc_1)
+		"%sc_ext_0    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012              0\n"							// sc_2
+		"%sc_ext_1    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012              1\n"							// sc_0
+		"%sc_ext_2    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012              2\n"							// sc_1
+		"%sc_sub      = OpSpecConstantOp %i32   ISub             %sc_ext_0    %sc_ext_1\n"								// (sc_2 - sc_0)
+		"%sc_final    = OpSpecConstantOp %i32   IMul             %sc_sub      %sc_ext_2\n"								// (sc_2 - sc_0) * sc_1
 
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
@@ -6830,23 +6834,26 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		"OpDecorate %sc_2  SpecId 2\n";
 
 	const char	typesAndConstants2[]	=
-		"%v3i32     = OpTypeVector %i32 3\n"
-
-		"%sc_0      = OpSpecConstant %i32 0\n"
-		"%sc_1      = OpSpecConstant %i32 0\n"
-		"%sc_2      = OpSpecConstant %i32 0\n"
-
+		"%v3i32       = OpTypeVector %i32 3\n"
 		"%vec3_0      = OpConstantComposite %v3i32 %c_i32_0 %c_i32_0 %c_i32_0\n"
-		"%sc_vec3_0   = OpSpecConstantOp %v3i32 CompositeInsert  %sc_0        %vec3_0    0\n"     // (sc_0, 0, 0)
-		"%sc_vec3_1   = OpSpecConstantOp %v3i32 CompositeInsert  %sc_1        %vec3_0    1\n"     // (0, sc_1, 0)
-		"%sc_vec3_2   = OpSpecConstantOp %v3i32 CompositeInsert  %sc_2        %vec3_0    2\n"     // (0, 0, sc_2)
-		"%sc_vec3_01  = OpSpecConstantOp %v3i32 VectorShuffle    %sc_vec3_0   %sc_vec3_1 1 0 4\n" // (0,    sc_0, sc_1)
-		"%sc_vec3_012 = OpSpecConstantOp %v3i32 VectorShuffle    %sc_vec3_01  %sc_vec3_2 5 1 2\n" // (sc_2, sc_0, sc_1)
-		"%sc_ext_0    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012            0\n"     // sc_2
-		"%sc_ext_1    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012            1\n"     // sc_0
-		"%sc_ext_2    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012            2\n"     // sc_1
-		"%sc_sub      = OpSpecConstantOp %i32   ISub             %sc_ext_0    %sc_ext_1\n"        // (sc_2 - sc_0)
-		"%sc_final    = OpSpecConstantOp %i32   IMul             %sc_sub      %sc_ext_2\n";       // (sc_2 - sc_0) * sc_1
+		"%vec3_undef  = OpUndef %v3i32\n"
+
+		"%sc_0        = OpSpecConstant %i32 0\n"
+		"%sc_1        = OpSpecConstant %i32 0\n"
+		"%sc_2        = OpSpecConstant %i32 0\n"
+		"%sc_vec3_0   = OpSpecConstantOp %v3i32 CompositeInsert  %sc_0        %vec3_0      0\n"							// (sc_0, 0,    0)
+		"%sc_vec3_1   = OpSpecConstantOp %v3i32 CompositeInsert  %sc_1        %vec3_0      1\n"							// (0,    sc_1, 0)
+		"%sc_vec3_2   = OpSpecConstantOp %v3i32 CompositeInsert  %sc_2        %vec3_0      2\n"							// (0,    0,    sc_2)
+		"%sc_vec3_0_s = OpSpecConstantOp %v3i32 VectorShuffle    %sc_vec3_0   %vec3_undef  0          0xFFFFFFFF 2\n"	// (sc_0, ???,  0)
+		"%sc_vec3_1_s = OpSpecConstantOp %v3i32 VectorShuffle    %sc_vec3_1   %vec3_undef  0xFFFFFFFF 1          0\n"	// (???,  sc_1, 0)
+		"%sc_vec3_2_s = OpSpecConstantOp %v3i32 VectorShuffle    %vec3_undef  %sc_vec3_2   5          0xFFFFFFFF 5\n"	// (sc_2, ???,  sc_2)
+		"%sc_vec3_01  = OpSpecConstantOp %v3i32 VectorShuffle    %sc_vec3_0_s %sc_vec3_1_s 1 0 4\n"						// (0,    sc_0, sc_1)
+		"%sc_vec3_012 = OpSpecConstantOp %v3i32 VectorShuffle    %sc_vec3_01  %sc_vec3_2_s 5 1 2\n"						// (sc_2, sc_0, sc_1)
+		"%sc_ext_0    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012              0\n"							// sc_2
+		"%sc_ext_1    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012              1\n"							// sc_0
+		"%sc_ext_2    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012              2\n"							// sc_1
+		"%sc_sub      = OpSpecConstantOp %i32   ISub             %sc_ext_0    %sc_ext_1\n"								// (sc_2 - sc_0)
+		"%sc_final    = OpSpecConstantOp %i32   IMul             %sc_sub      %sc_ext_2\n";								// (sc_2 - sc_0) * sc_1
 
 	const char	function2[]				=
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
@@ -9364,6 +9371,41 @@ tcu::TestCaseGroup* createShaderDefaultOutputGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+tcu::TestCaseGroup* createOpNopTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "opnop", "Test OpNop"));
+	RGBA							defaultColors[4];
+	map<string, string>				opNopFragments;
+
+	getDefaultColors(defaultColors);
+
+	opNopFragments["testfun"]		=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"%a = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"%b = OpFAdd %f32 %a %a\n"
+		"OpNop\n"
+		"%c = OpFSub %f32 %b %a\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %param1 %c %c_i32_0\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+
+	createTestsForAllStages("opnop", defaultColors, defaultColors, opNopFragments, testGroup.get());
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> instructionTests	(new tcu::TestCaseGroup(testCtx, "instruction", "Instructions with special opcodes/operands"));
@@ -9404,37 +9446,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
 	computeTests->addChild(createShaderDefaultOutputGroup(testCtx));
 
-	RGBA defaultColors[4];
-	getDefaultColors(defaultColors);
-
-	de::MovePtr<tcu::TestCaseGroup> opnopTests (new tcu::TestCaseGroup(testCtx, "opnop", "Test OpNop"));
-	map<string, string> opNopFragments;
-	opNopFragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
-		"%param1 = OpFunctionParameter %v4f32\n"
-		"%label_testfun = OpLabel\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpNop\n"
-		"%a = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
-		"%b = OpFAdd %f32 %a %a\n"
-		"OpNop\n"
-		"%c = OpFSub %f32 %b %a\n"
-		"%ret = OpVectorInsertDynamic %v4f32 %param1 %c %c_i32_0\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpReturnValue %ret\n"
-		"OpFunctionEnd\n"
-		;
-	createTestsForAllStages("opnop", defaultColors, defaultColors, opNopFragments, opnopTests.get());
-
-
-	graphicsTests->addChild(opnopTests.release());
+	graphicsTests->addChild(createOpNopTests(testCtx));
 	graphicsTests->addChild(createOpSourceTests(testCtx));
 	graphicsTests->addChild(createOpSourceContinuedTests(testCtx));
 	graphicsTests->addChild(createOpLineTests(testCtx));

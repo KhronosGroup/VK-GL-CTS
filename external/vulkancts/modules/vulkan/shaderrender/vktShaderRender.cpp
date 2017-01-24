@@ -58,7 +58,7 @@ using namespace vk;
 namespace
 {
 
-static const int		GRID_SIZE			= 64;
+static const int		GRID_SIZE			= 90;
 static const deUint32	MAX_RENDER_WIDTH	= 128;
 static const deUint32	MAX_RENDER_HEIGHT	= 128;
 static const tcu::Vec4	DEFAULT_CLEAR_COLOR	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
@@ -541,7 +541,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context)
 	, m_isVertexCase		(false)
 	, m_vertexShaderName	("vert")
 	, m_fragmentShaderName	("frag")
-	, m_renderSize			(128, 128)
+	, m_renderSize			(MAX_RENDER_WIDTH, MAX_RENDER_HEIGHT)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_evaluator			(DE_NULL)
 	, m_uniformSetup		(DE_NULL)
@@ -565,7 +565,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 	, m_isVertexCase		(isVertexCase)
 	, m_vertexShaderName	("vert")
 	, m_fragmentShaderName	("frag")
-	, m_renderSize			(128, 128)
+	, m_renderSize			(MAX_RENDER_WIDTH, MAX_RENDER_HEIGHT)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_evaluator			(&evaluator)
 	, m_uniformSetup		(&uniformSetup)
@@ -588,7 +588,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 	, m_isVertexCase		(isVertexCase)
 	, m_vertexShaderName	("vert")
 	, m_fragmentShaderName	("frag")
-	, m_renderSize			(128, 128)
+	, m_renderSize			(MAX_RENDER_WIDTH, MAX_RENDER_HEIGHT)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_evaluator			(evaluator)
 	, m_uniformSetup		(uniformSetup)
@@ -753,7 +753,7 @@ tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 		computeFragmentReference(refImage, *m_quadGrid);
 
 	// Compare.
-	const bool			compareOk		= compareImages(resImage, refImage, 0.1f);
+	const bool			compareOk		= compareImages(resImage, refImage, 0.2f);
 
 	if (compareOk)
 		return tcu::TestStatus::pass("Result image matches reference");
@@ -3245,7 +3245,7 @@ void ShaderRenderCaseInstance::computeFragmentReference (tcu::Surface& result, c
 
 bool ShaderRenderCaseInstance::compareImages (const tcu::Surface& resImage, const tcu::Surface& refImage, float errorThreshold)
 {
-	return tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ComparisonResult", "Image comparison result", refImage, resImage, errorThreshold, tcu::COMPARE_LOG_RESULT);
+	return tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ComparisonResult", "Image comparison result", refImage, resImage, errorThreshold, tcu::COMPARE_LOG_EVERYTHING);
 }
 
 } // sr
