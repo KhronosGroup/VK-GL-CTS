@@ -155,21 +155,28 @@ class GitRepo (Source):
 		self.sshUrl		= sshUrl
 		self.revision	= revision
 
-	def selectUrl(self, cmdProtocol = None):
-		if cmdProtocol == None:
-			# reuse parent repo protocol
-			proc = subprocess.Popen(['git', 'ls-remote', '--get-url', 'origin'], stdout=subprocess.PIPE)
-			(stdout, stderr) = proc.communicate()
+	def detectProtocol(self, cmdProtocol = None):
+		# reuse parent repo protocol
+		proc = subprocess.Popen(['git', 'ls-remote', '--get-url', 'origin'], stdout=subprocess.PIPE)
+		(stdout, stderr) = proc.communicate()
 
-			if proc.returncode != 0:
-				raise Exception("Failed to execute 'git ls-remote origin', got %d" % proc.returncode)
-			if (stdout[:3] == 'ssh') or (stdout[:3] == 'git'):
-				protocol = 'ssh'
-			else:
-				assert stdout[:5] == 'https'
-				protocol = 'https'
+		if proc.returncode != 0:
+			raise Exception("Failed to execute 'git ls-remote origin', got %d" % proc.returncode)
+		if (stdout[:3] == 'ssh') or (stdout[:3] == 'git'):
+			protocol = 'ssh'
 		else:
-			protocol = cmdProtocol
+			# remote 'origin' doesn't exist, assume 'https' as checkout protocol
+			protocol = 'https'
+
+	def selectUrl(self, cmdProtocol = None):
+		try:
+			if cmdProtocol == None:
+				protocol = detectProtocol(self, cmdProtocol)
+			else:
+				protocol = cmdProtocol
+		except:
+			# fallback to https on any issues
+			protocol = 'https'
 
 		if protocol == 'ssh':
 			if self.sshUrl != None:
