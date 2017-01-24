@@ -127,6 +127,7 @@ m_vk.getSwapchainImagesKHR								= (GetSwapchainImagesKHRFunc)							GET_PROC_A
 m_vk.acquireNextImageKHR								= (AcquireNextImageKHRFunc)								GET_PROC_ADDR("vkAcquireNextImageKHR");
 m_vk.queuePresentKHR									= (QueuePresentKHRFunc)									GET_PROC_ADDR("vkQueuePresentKHR");
 m_vk.createSharedSwapchainsKHR							= (CreateSharedSwapchainsKHRFunc)						GET_PROC_ADDR("vkCreateSharedSwapchainsKHR");
+m_vk.trimCommandPoolKHR									= (TrimCommandPoolKHRFunc)								GET_PROC_ADDR("vkTrimCommandPoolKHR");
 m_vk.debugMarkerSetObjectTagEXT							= (DebugMarkerSetObjectTagEXTFunc)						GET_PROC_ADDR("vkDebugMarkerSetObjectTagEXT");
 m_vk.debugMarkerSetObjectNameEXT						= (DebugMarkerSetObjectNameEXTFunc)						GET_PROC_ADDR("vkDebugMarkerSetObjectNameEXT");
 m_vk.cmdDebugMarkerBeginEXT								= (CmdDebugMarkerBeginEXTFunc)							GET_PROC_ADDR("vkCmdDebugMarkerBeginEXT");

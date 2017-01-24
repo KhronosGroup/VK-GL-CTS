@@ -1186,6 +1186,220 @@ tcu::TestStatus resetBufferImplicitlyTest(Context& context)
 		return tcu::TestStatus::fail("Buffer was not reset correctly.");
 }
 
+using  de::SharedPtr;
+typedef SharedPtr<Unique<VkEvent> >			VkEventShared;
+
+template<typename T>
+inline SharedPtr<Unique<T> > makeSharedPtr (Move<T> move)
+{
+	return SharedPtr<Unique<T> >(new Unique<T>(move));
+}
+
+bool submitAndCheck (Context& context, std::vector<VkCommandBuffer>& cmdBuffers, std::vector <VkEventShared>& events)
+{
+	const VkDevice							vkDevice	= context.getDevice();
+	const DeviceInterface&					vk			= context.getDeviceInterface();
+	const VkQueue							queue		= context.getUniversalQueue();
+
+	const VkFenceCreateInfo				fenceCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,		// sType;
+		DE_NULL,									// pNext;
+		0u,											// flags
+	};
+	const Unique<VkFence>				fence			(createFence(vk, vkDevice, &fenceCreateInfo));
+
+	const VkSubmitInfo					submitInfo		=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,				// sType
+		DE_NULL,									// pNext
+		0u,											// waitSemaphoreCount
+		DE_NULL,									// pWaitSemaphores
+		(const VkPipelineStageFlags*)DE_NULL,		// pWaitDstStageMask
+		static_cast<deUint32>(cmdBuffers.size()),	// commandBufferCount
+		&cmdBuffers[0],								// pCommandBuffers
+		0u,											// signalSemaphoreCount
+		DE_NULL,									// pSignalSemaphores
+	};
+
+	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence.get()));
+	VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), 0u, INFINITE_TIMEOUT));
+
+	for(int eventNdx = 0; eventNdx < static_cast<int>(events.size()); ++eventNdx)
+	{
+		if (vk.getEventStatus(vkDevice, **events[eventNdx]) != VK_EVENT_SET)
+			return false;
+		vk.resetEvent(vkDevice, **events[eventNdx]);
+	}
+
+	return true;
+}
+
+void createCommadBuffers (const DeviceInterface&		vk,
+						  const VkDevice				vkDevice,
+						  deUint32						bufferCount,
+						  VkCommandPool					pool,
+						  const VkCommandBufferLevel	cmdBufferLevel,
+						  VkCommandBuffer*				pCommandBuffers)
+{
+	const VkCommandBufferAllocateInfo		cmdBufParams	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	//	VkStructureType				sType;
+		DE_NULL,										//	const void*					pNext;
+		pool,											//	VkCommandPool				pool;
+		cmdBufferLevel,									//	VkCommandBufferLevel		level;
+		bufferCount,									//	uint32_t					bufferCount;
+	};
+	VK_CHECK(vk.allocateCommandBuffers(vkDevice, &cmdBufParams, pCommandBuffers));
+}
+
+void addCommandsToBuffer (const DeviceInterface& vk, std::vector<VkCommandBuffer>& cmdBuffers, std::vector <VkEventShared>& events)
+{
+	const VkCommandBufferInheritanceInfo	secCmdBufInheritInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
+		(VkRenderPass)0u,								// renderPass
+		0u,												// subpass
+		(VkFramebuffer)0u,								// framebuffer
+		VK_FALSE,										// occlusionQueryEnable
+		(VkQueryControlFlags)0u,						// queryFlags
+		(VkQueryPipelineStatisticFlags)0u,				// pipelineStatistics
+	};
+
+	const VkCommandBufferBeginInfo		cmdBufBeginInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// sType
+		DE_NULL,										// pNext
+		0u,												// flags
+		&secCmdBufInheritInfo,							// pInheritanceInfo;
+	};
+
+	for(int bufferNdx = 0; bufferNdx < static_cast<int>(cmdBuffers.size()); ++bufferNdx)
+	{
+		VK_CHECK(vk.beginCommandBuffer(cmdBuffers[bufferNdx], &cmdBufBeginInfo));
+		vk.cmdSetEvent(cmdBuffers[bufferNdx], **events[bufferNdx % events.size()], VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+		VK_CHECK(vk.endCommandBuffer(cmdBuffers[bufferNdx]));
+	}
+}
+
+bool executeSecondaryCmdBuffer (Context&						context,
+								VkCommandPool					pool,
+								std::vector<VkCommandBuffer>&	cmdBuffersSecondary,
+								std::vector <VkEventShared>&	events)
+{
+	const VkDevice					vkDevice		= context.getDevice();
+	const DeviceInterface&			vk				= context.getDeviceInterface();
+	std::vector<VkCommandBuffer>	cmdBuffer		(1);
+	const VkCommandBufferBeginInfo	cmdBufBeginInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// sType
+		DE_NULL,										// pNext
+		0u,												// flags
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,	// pInheritanceInfo;
+	};
+
+	createCommadBuffers(vk, vkDevice, 1u, pool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, &cmdBuffer[0]);
+	VK_CHECK(vk.beginCommandBuffer(cmdBuffer[0], &cmdBufBeginInfo));
+	vk.cmdExecuteCommands(cmdBuffer[0], static_cast<deUint32>(cmdBuffersSecondary.size()), &cmdBuffersSecondary[0]);
+	VK_CHECK(vk.endCommandBuffer(cmdBuffer[0]));
+
+	bool returnValue = submitAndCheck(context, cmdBuffer, events);
+	vk.freeCommandBuffers(vkDevice, pool, 1u, &cmdBuffer[0]);
+	return returnValue;
+}
+
+tcu::TestStatus trimCommandPoolTest (Context& context, const VkCommandBufferLevel cmdBufferLevel)
+{
+	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1"))
+		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
+
+	const VkDevice							vkDevice				= context.getDevice();
+	const DeviceInterface&					vk						= context.getDeviceInterface();
+	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+
+	//test parameters
+	const deUint32							cmdBufferIterationCount	= 300u;
+	const deUint32							cmdBufferCount			= 10u;
+
+	const VkCommandPoolCreateInfo			cmdPoolParams			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					// sType;
+		DE_NULL,													// pNext;
+		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			// flags;
+		queueFamilyIndex,											// queueFamilyIndex;
+	};
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
+
+	const VkEventCreateInfo					eventCreateInfo			=
+	{
+		VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,						// sType;
+		DE_NULL,													// pNext;
+		0u,															// flags;
+	};
+
+	std::vector <VkEventShared>				events;
+	for (deUint32 ndx = 0u; ndx < cmdBufferCount; ++ndx)
+		events.push_back(makeSharedPtr(createEvent(vk, vkDevice, &eventCreateInfo)));
+
+	{
+		std::vector<VkCommandBuffer> cmdBuffers(cmdBufferCount);
+		createCommadBuffers(vk, vkDevice, cmdBufferCount, *cmdPool, cmdBufferLevel, &cmdBuffers[0]);
+
+		for (deUint32 cmdBufferIterationrNdx = 0; cmdBufferIterationrNdx < cmdBufferIterationCount; ++cmdBufferIterationrNdx)
+		{
+			addCommandsToBuffer(vk, cmdBuffers, events);
+
+			//Peak, situation when we use a lot more command buffers
+			if (cmdBufferIterationrNdx % 10u == 0)
+			{
+				std::vector<VkCommandBuffer> cmdBuffersPeak(cmdBufferCount * 10u);
+				createCommadBuffers(vk, vkDevice, static_cast<deUint32>(cmdBuffersPeak.size()), *cmdPool, cmdBufferLevel, &cmdBuffersPeak[0]);
+				addCommandsToBuffer(vk, cmdBuffersPeak, events);
+
+				switch(cmdBufferLevel)
+				{
+					case VK_COMMAND_BUFFER_LEVEL_PRIMARY:
+						if (!submitAndCheck(context, cmdBuffersPeak, events))
+							return tcu::TestStatus::fail("Fail");
+						break;
+					case VK_COMMAND_BUFFER_LEVEL_SECONDARY:
+						if (!executeSecondaryCmdBuffer(context, *cmdPool, cmdBuffersPeak, events))
+							return tcu::TestStatus::fail("Fail");
+						break;
+					default:
+						DE_ASSERT(0);
+				}
+				vk.freeCommandBuffers(vkDevice, *cmdPool, static_cast<deUint32>(cmdBuffersPeak.size()), &cmdBuffersPeak[0]);
+			}
+
+			vk.trimCommandPoolKHR(vkDevice, *cmdPool, (VkCommandPoolTrimFlagsKHR)0);
+
+			switch(cmdBufferLevel)
+			{
+				case VK_COMMAND_BUFFER_LEVEL_PRIMARY:
+					if (!submitAndCheck(context, cmdBuffers, events))
+						return tcu::TestStatus::fail("Fail");
+					break;
+				case VK_COMMAND_BUFFER_LEVEL_SECONDARY:
+					if (!executeSecondaryCmdBuffer(context, *cmdPool, cmdBuffers, events))
+						return tcu::TestStatus::fail("Fail");
+					break;
+				default:
+					DE_ASSERT(0);
+			}
+
+			for (deUint32 bufferNdx = cmdBufferIterationrNdx % 3u; bufferNdx < cmdBufferCount; bufferNdx+=2u)
+			{
+				vk.freeCommandBuffers(vkDevice, *cmdPool, 1u, &cmdBuffers[bufferNdx]);
+				createCommadBuffers(vk, vkDevice, 1u, *cmdPool, cmdBufferLevel, &cmdBuffers[bufferNdx]);
+			}
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 /******** 19.3. Command Buffer Recording (5.3 in VK 1.0 Spec) *****************/
 tcu::TestStatus recordSinglePrimaryBufferTest(Context& context)
 {
@@ -4431,6 +4645,8 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	addFunctionCase				(commandBuffersTests.get(), "execute_small_primary",			"",	executePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "execute_large_primary",			"",	executeLargePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "reset_implicit",					"", resetBufferImplicitlyTest);
+	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool",				"", trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool_secondary",		"", trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 	/* 19.3. Command Buffer Recording (5.3 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "record_single_primary",			"",	recordSinglePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "record_many_primary",				"", recordLargePrimaryBufferTest);

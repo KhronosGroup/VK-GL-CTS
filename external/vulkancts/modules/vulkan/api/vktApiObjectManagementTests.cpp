@@ -302,6 +302,11 @@ T alignToPowerOfTwo (T value, T align)
 	return (value + align - T(1)) & ~(align - T(1));
 }
 
+inline bool hasDeviceExtension (Context& context, const string& name)
+{
+	return de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), name);
+}
+
 VkDeviceSize getPageTableSize (const PlatformMemoryLimits& limits, VkDeviceSize allocationSize)
 {
 	VkDeviceSize	totalSize	= 0;
@@ -316,8 +321,6 @@ VkDeviceSize getPageTableSize (const PlatformMemoryLimits& limits, VkDeviceSize 
 
 	return totalSize;
 }
-
-
 
 size_t getCurrentSystemMemoryUsage (const AllocationCallbackRecorder& allocRecoder)
 {
@@ -2519,12 +2522,14 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 }
 
 // Determine whether an API call sets the invalid handles to NULL (true) or leaves them undefined or not modified (false)
-template<typename T> inline bool isNullHandleOnAllocationFailure			 (void) { return false; }
-template<>			 inline bool isNullHandleOnAllocationFailure<VkPipeline> (void) { return true;  }
+template<typename T> inline bool isNullHandleOnAllocationFailure				  (Context&)		 { return false; }
+template<>			 inline bool isNullHandleOnAllocationFailure<VkCommandBuffer> (Context& context) { return hasDeviceExtension(context, "VK_KHR_maintenance1"); }
+template<>			 inline bool isNullHandleOnAllocationFailure<VkDescriptorSet> (Context& context) { return hasDeviceExtension(context, "VK_KHR_maintenance1"); }
+template<>			 inline bool isNullHandleOnAllocationFailure<VkPipeline>	  (Context&)		 { return true;  }
 
-template<typename T> inline bool isPooledObject								 (void) { return false; };
-template<>			 inline bool isPooledObject<VkCommandBuffer>			 (void) { return true;  };
-template<>			 inline bool isPooledObject<VkDescriptorSet>			 (void) { return true;  };
+template<typename T> inline bool isPooledObject					 (void) { return false; };
+template<>			 inline bool isPooledObject<VkCommandBuffer> (void) { return true;  };
+template<>			 inline bool isPooledObject<VkDescriptorSet> (void) { return true;  };
 
 template<typename Object>
 tcu::TestStatus allocCallbackFailMultipleObjectsTest (Context& context, typename Object::Parameters params)
@@ -2532,7 +2537,7 @@ tcu::TestStatus allocCallbackFailMultipleObjectsTest (Context& context, typename
 	typedef SharedPtr<Move<typename Object::Type> >	ObjectTypeSp;
 
 	static const deUint32	numObjects			= 4;
-	const bool				expectNullHandles	= isNullHandleOnAllocationFailure<typename Object::Type>();
+	const bool				expectNullHandles	= isNullHandleOnAllocationFailure<typename Object::Type>(context);
 	deUint32				numPassingAllocs	= 0;
 
 	{
