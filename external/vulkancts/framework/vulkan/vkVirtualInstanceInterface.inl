@@ -37,6 +37,13 @@ virtual VkBool32			getPhysicalDeviceMirPresentationSupportKHR			(VkPhysicalDevic
 virtual VkResult			createAndroidSurfaceKHR								(VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const = 0;
 virtual VkResult			createWin32SurfaceKHR								(VkInstance instance, const VkWin32SurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const = 0;
 virtual VkBool32			getPhysicalDeviceWin32PresentationSupportKHR		(VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex) const = 0;
+virtual void				getPhysicalDeviceFeatures2KHR						(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2KHR* pFeatures) const = 0;
+virtual void				getPhysicalDeviceProperties2KHR						(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2KHR* pProperties) const = 0;
+virtual void				getPhysicalDeviceFormatProperties2KHR				(VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties2KHR* pFormatProperties) const = 0;
+virtual VkResult			getPhysicalDeviceImageFormatProperties2KHR			(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceImageFormatInfo2KHR* pImageFormatInfo, VkImageFormatProperties2KHR* pImageFormatProperties) const = 0;
+virtual void				getPhysicalDeviceQueueFamilyProperties2KHR			(VkPhysicalDevice physicalDevice, deUint32* pQueueFamilyPropertyCount, VkQueueFamilyProperties2KHR* pQueueFamilyProperties) const = 0;
+virtual void				getPhysicalDeviceMemoryProperties2KHR				(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2KHR* pMemoryProperties) const = 0;
+virtual void				getPhysicalDeviceSparseImageFormatProperties2KHR	(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSparseImageFormatInfo2KHR* pFormatInfo, deUint32* pPropertyCount, VkSparseImageFormatProperties2KHR* pProperties) const = 0;
 virtual VkResult			createDebugReportCallbackEXT						(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) const = 0;
 virtual void				destroyDebugReportCallbackEXT						(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual void				debugReportMessageEXT								(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage) const = 0;

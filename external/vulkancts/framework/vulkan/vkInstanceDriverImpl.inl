@@ -182,6 +182,41 @@ VkBool32 InstanceDriver::getPhysicalDeviceWin32PresentationSupportKHR (VkPhysica
 	return m_vk.getPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, queueFamilyIndex);
 }
 
+void InstanceDriver::getPhysicalDeviceFeatures2KHR (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2KHR* pFeatures) const
+{
+	m_vk.getPhysicalDeviceFeatures2KHR(physicalDevice, pFeatures);
+}
+
+void InstanceDriver::getPhysicalDeviceProperties2KHR (VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2KHR* pProperties) const
+{
+	m_vk.getPhysicalDeviceProperties2KHR(physicalDevice, pProperties);
+}
+
+void InstanceDriver::getPhysicalDeviceFormatProperties2KHR (VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties2KHR* pFormatProperties) const
+{
+	m_vk.getPhysicalDeviceFormatProperties2KHR(physicalDevice, format, pFormatProperties);
+}
+
+VkResult InstanceDriver::getPhysicalDeviceImageFormatProperties2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceImageFormatInfo2KHR* pImageFormatInfo, VkImageFormatProperties2KHR* pImageFormatProperties) const
+{
+	return m_vk.getPhysicalDeviceImageFormatProperties2KHR(physicalDevice, pImageFormatInfo, pImageFormatProperties);
+}
+
+void InstanceDriver::getPhysicalDeviceQueueFamilyProperties2KHR (VkPhysicalDevice physicalDevice, deUint32* pQueueFamilyPropertyCount, VkQueueFamilyProperties2KHR* pQueueFamilyProperties) const
+{
+	m_vk.getPhysicalDeviceQueueFamilyProperties2KHR(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
+}
+
+void InstanceDriver::getPhysicalDeviceMemoryProperties2KHR (VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2KHR* pMemoryProperties) const
+{
+	m_vk.getPhysicalDeviceMemoryProperties2KHR(physicalDevice, pMemoryProperties);
+}
+
+void InstanceDriver::getPhysicalDeviceSparseImageFormatProperties2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSparseImageFormatInfo2KHR* pFormatInfo, deUint32* pPropertyCount, VkSparseImageFormatProperties2KHR* pProperties) const
+{
+	m_vk.getPhysicalDeviceSparseImageFormatProperties2KHR(physicalDevice, pFormatInfo, pPropertyCount, pProperties);
+}
+
 VkResult InstanceDriver::createDebugReportCallbackEXT (VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) const
 {
 	return m_vk.createDebugReportCallbackEXT(instance, pCreateInfo, pAllocator, pCallback);
