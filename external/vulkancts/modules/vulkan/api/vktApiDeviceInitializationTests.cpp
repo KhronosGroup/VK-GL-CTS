@@ -631,6 +631,72 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
+Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, const char* extensionName)
+{
+	const vector<VkExtensionProperties>	instanceExts	= enumerateInstanceExtensionProperties(vkp, DE_NULL);
+	vector<string>						enabledExts;
+
+	if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
+		TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
+
+	enabledExts.push_back(extensionName);
+
+	return createDefaultInstance(vkp, vector<string>() /* layers */, enabledExts);
+}
+
+tcu::TestStatus createDeviceFeatures2Test (Context& context)
+{
+	const PlatformInterface&		vkp						= context.getPlatformInterface();
+	const Unique<VkInstance>		instance				(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver			vki						(vkp, instance.get());
+	const VkPhysicalDevice			physicalDevice			= chooseDevice(vki, instance.get(), context.getTestContext().getCommandLine());
+	const deUint32					queueFamilyIndex		= 0;
+	const deUint32					queueCount				= 1;
+	const deUint32					queueIndex				= 0;
+	const float						queuePriority			= 1.0f;
+
+	VkPhysicalDeviceFeatures2KHR	enabledFeatures;
+	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+		DE_NULL,
+		(VkDeviceQueueCreateFlags)0u,
+		queueFamilyIndex,
+		queueCount,
+		&queuePriority,
+	};
+	const VkDeviceCreateInfo		deviceCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		&enabledFeatures,
+		(VkDeviceCreateFlags)0u,
+		1,
+		&deviceQueueCreateInfo,
+		0,
+		DE_NULL,
+		0,
+		DE_NULL,
+		DE_NULL,
+	};
+
+	// Populate enabledFeatures
+	enabledFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+	enabledFeatures.pNext		= DE_NULL;
+
+	vki.getPhysicalDeviceFeatures2KHR(physicalDevice, &enabledFeatures);
+
+	{
+		const Unique<VkDevice>	device		(createDevice(vki, physicalDevice, &deviceCreateInfo));
+		const DeviceDriver		vkd			(vki, device.get());
+		VkQueue					queue;
+
+		vkd.getDeviceQueue(device.get(), queueFamilyIndex, queueIndex, &queue);
+		VK_CHECK(vkd.queueWaitIdle(queue));
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
@@ -645,6 +711,7 @@ tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 	addFunctionCase(deviceInitializationTests.get(), "create_multiple_devices",					"", createMultipleDevicesTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_extensions",	"", createDeviceWithUnsupportedExtensionsTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_various_queue_counts",		"", createDeviceWithVariousQueueCountsTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_features2",					"", createDeviceFeatures2Test);
 
 	return deviceInitializationTests.release();
 }

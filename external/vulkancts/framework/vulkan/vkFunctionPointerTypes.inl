@@ -167,6 +167,14 @@ typedef VKAPI_ATTR VkBool32				(VKAPI_CALL* GetPhysicalDeviceMirPresentationSupp
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateAndroidSurfaceKHRFunc)							(VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateWin32SurfaceKHRFunc)								(VkInstance instance, const VkWin32SurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR VkBool32				(VKAPI_CALL* GetPhysicalDeviceWin32PresentationSupportKHRFunc)		(VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceFeatures2KHRFunc)						(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2KHR* pFeatures);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceProperties2KHRFunc)					(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2KHR* pProperties);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceFormatProperties2KHRFunc)				(VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties2KHR* pFormatProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceImageFormatProperties2KHRFunc)		(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceImageFormatInfo2KHR* pImageFormatInfo, VkImageFormatProperties2KHR* pImageFormatProperties);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceQueueFamilyProperties2KHRFunc)		(VkPhysicalDevice physicalDevice, deUint32* pQueueFamilyPropertyCount, VkQueueFamilyProperties2KHR* pQueueFamilyProperties);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceMemoryProperties2KHRFunc)				(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2KHR* pMemoryProperties);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceSparseImageFormatProperties2KHRFunc)	(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSparseImageFormatInfo2KHR* pFormatInfo, deUint32* pPropertyCount, VkSparseImageFormatProperties2KHR* pProperties);
+typedef VKAPI_ATTR void					(VKAPI_CALL* TrimCommandPoolKHRFunc)								(VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlagsKHR flags);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDebugReportCallbackEXTFunc)						(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDebugReportCallbackEXTFunc)						(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DebugReportMessageEXTFunc)								(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage);

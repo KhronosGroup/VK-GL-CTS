@@ -37,6 +37,13 @@ GetPhysicalDeviceMirPresentationSupportKHRFunc			getPhysicalDeviceMirPresentatio
 CreateAndroidSurfaceKHRFunc								createAndroidSurfaceKHR;
 CreateWin32SurfaceKHRFunc								createWin32SurfaceKHR;
 GetPhysicalDeviceWin32PresentationSupportKHRFunc		getPhysicalDeviceWin32PresentationSupportKHR;
+GetPhysicalDeviceFeatures2KHRFunc						getPhysicalDeviceFeatures2KHR;
+GetPhysicalDeviceProperties2KHRFunc						getPhysicalDeviceProperties2KHR;
+GetPhysicalDeviceFormatProperties2KHRFunc				getPhysicalDeviceFormatProperties2KHR;
+GetPhysicalDeviceImageFormatProperties2KHRFunc			getPhysicalDeviceImageFormatProperties2KHR;
+GetPhysicalDeviceQueueFamilyProperties2KHRFunc			getPhysicalDeviceQueueFamilyProperties2KHR;
+GetPhysicalDeviceMemoryProperties2KHRFunc				getPhysicalDeviceMemoryProperties2KHR;
+GetPhysicalDeviceSparseImageFormatProperties2KHRFunc	getPhysicalDeviceSparseImageFormatProperties2KHR;
 CreateDebugReportCallbackEXTFunc						createDebugReportCallbackEXT;
 DestroyDebugReportCallbackEXTFunc						destroyDebugReportCallbackEXT;
 DebugReportMessageEXTFunc								debugReportMessageEXT;

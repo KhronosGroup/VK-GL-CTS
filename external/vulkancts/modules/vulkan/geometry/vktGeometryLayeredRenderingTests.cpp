@@ -653,16 +653,18 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 
 	// Geometry shader
 	{
-		const int maxVertices = (params.testType == TEST_TYPE_DIFFERENT_CONTENT)									? (params.image.numLayers + 1) * params.image.numLayers :
-								(params.testType == TEST_TYPE_ALL_LAYERS || params.testType == TEST_TYPE_LAYER_ID)	? params.image.numLayers * 4 :
-								(params.testType == TEST_TYPE_MULTIPLE_LAYERS_PER_INVOCATION)						? 6 : 4;
+		const int numLayers		= static_cast<int>(params.image.viewType == VK_IMAGE_VIEW_TYPE_3D ? params.image.size.depth : params.image.numLayers);
+
+		const int maxVertices	= (params.testType == TEST_TYPE_DIFFERENT_CONTENT)										? (numLayers + 1) * numLayers :
+								  (params.testType == TEST_TYPE_ALL_LAYERS || params.testType == TEST_TYPE_LAYER_ID)	? numLayers * 4 :
+								  (params.testType == TEST_TYPE_MULTIPLE_LAYERS_PER_INVOCATION)							? 6 : 4;
 
 		std::ostringstream src;
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
 			<< "\n";
 
 		if (params.testType == TEST_TYPE_INVOCATION_PER_LAYER || params.testType == TEST_TYPE_MULTIPLE_LAYERS_PER_INVOCATION)
-			src << "layout(points, invocations = " << params.image.numLayers << ") in;\n";
+			src << "layout(points, invocations = " << numLayers << ") in;\n";
 		else
 			src << "layout(points) in;\n";
 
@@ -728,7 +730,7 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 		{
 			src << colorTable.str()
 				<< "\n"
-				<< "    for (int layerNdx = 0; layerNdx < " << params.image.numLayers << "; ++layerNdx) {\n"
+				<< "    for (int layerNdx = 0; layerNdx < " << numLayers << "; ++layerNdx) {\n"
 				<< "        const int colorNdx = layerNdx % " << DE_LENGTH_OF_ARRAY(s_colors) << ";\n"
 				<< "\n"
 				<< "        gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
@@ -755,7 +757,7 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 		}
 		else if (params.testType == TEST_TYPE_LAYER_ID)
 		{
-			src << "    for (int layerNdx = 0; layerNdx < " << params.image.numLayers << "; ++layerNdx) {\n"
+			src << "    for (int layerNdx = 0; layerNdx < " << numLayers << "; ++layerNdx) {\n"
 				<< "        gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
 				<< "        gl_Layer    = layerNdx;\n"
 				<< "        EmitVertex();\n"
@@ -776,9 +778,9 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 		}
 		else if (params.testType == TEST_TYPE_DIFFERENT_CONTENT)
 		{
-			src << "    for (int layerNdx = 0; layerNdx < " << params.image.numLayers << "; ++layerNdx) {\n"
+			src << "    for (int layerNdx = 0; layerNdx < " << numLayers << "; ++layerNdx) {\n"
 				<< "        for (int colNdx = 0; colNdx <= layerNdx; ++colNdx) {\n"
-				<< "            const float posX = float(colNdx) / float(" << params.image.numLayers << ") * 2.0 - 1.0;\n"
+				<< "            const float posX = float(colNdx) / float(" << numLayers << ") * 2.0 - 1.0;\n"
 				<< "\n"
 				<< "            gl_Position = vec4(posX,  1.0, 0.0, 1.0);\n"
 				<< "            gl_Layer    = layerNdx;\n"
@@ -820,9 +822,9 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 		else if (params.testType == TEST_TYPE_MULTIPLE_LAYERS_PER_INVOCATION)
 		{
 			src << "    const int   layerA = gl_InvocationID;\n"
-				<< "    const int   layerB = (gl_InvocationID + 1) % " << params.image.numLayers << ";\n"
-				<< "    const float aEnd   = float(layerA) / float(" << params.image.numLayers << ") * 2.0 - 1.0;\n"
-				<< "    const float bEnd   = float(layerB) / float(" << params.image.numLayers << ") * 2.0 - 1.0;\n"
+				<< "    const int   layerB = (gl_InvocationID + 1) % " << numLayers << ";\n"
+				<< "    const float aEnd   = float(layerA) / float(" << numLayers << ") * 2.0 - 1.0;\n"
+				<< "    const float bEnd   = float(layerB) / float(" << numLayers << ") * 2.0 - 1.0;\n"
 				<< "\n"
 				<< "    gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
 				<< "    gl_Layer    = layerA;\n"
@@ -890,40 +892,47 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 
 tcu::TestStatus test (Context& context, const TestParams params)
 {
-	const DeviceInterface&			vk					= context.getDeviceInterface();
-	const InstanceInterface&		vki					= context.getInstanceInterface();
-	const VkDevice					device				= context.getDevice();
-	const VkPhysicalDevice			physDevice			= context.getPhysicalDevice();
-	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	const VkQueue					queue				= context.getUniversalQueue();
-	Allocator&						allocator			= context.getDefaultAllocator();
+	if (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType &&
+		(!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1")))
+		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
+
+	const DeviceInterface&			vk						= context.getDeviceInterface();
+	const InstanceInterface&		vki						= context.getInstanceInterface();
+	const VkDevice					device					= context.getDevice();
+	const VkPhysicalDevice			physDevice				= context.getPhysicalDevice();
+	const deUint32					queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	const VkQueue					queue					= context.getUniversalQueue();
+	Allocator&						allocator				= context.getDefaultAllocator();
 
 	checkGeometryShaderSupport(vki, physDevice);
 
 	const VkFormat					colorFormat				= VK_FORMAT_R8G8B8A8_UNORM;
-	const VkImageSubresourceRange	colorSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, params.image.numLayers);
+	const deUint32					numLayers				= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? params.image.size.depth : params.image.numLayers);
 	const Vec4						clearColor				= Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	const VkDeviceSize				colorBufferSize			= params.image.size.width * params.image.size.height * params.image.size.depth * params.image.numLayers * tcu::getPixelSize(mapVkFormat(colorFormat));
-	const VkImageCreateFlags		imageCreateFlags		= (isCubeImageViewType(params.image.viewType) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (VkImageCreateFlagBits)0);
+	const VkImageCreateFlags		imageCreateFlags		= (isCubeImageViewType(params.image.viewType) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (VkImageCreateFlagBits)0) |
+															  (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR : (VkImageCreateFlagBits)0);
+	const VkImageViewType			viewType				= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : params.image.viewType);
 
-	const Unique<VkImage>			colorImage			(makeImage				(vk, device, makeImageCreateInfo(imageCreateFlags, getImageType(params.image.viewType), colorFormat, params.image.size,
-																				 params.image.numLayers, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)));
-	const UniquePtr<Allocation>		colorImageAlloc		(bindImage				(vk, device, allocator, *colorImage, MemoryRequirement::Any));
-	const Unique<VkImageView>		colorAttachment		(makeImageView			(vk, device, *colorImage, params.image.viewType, colorFormat, colorSubresourceRange));
-	const Unique<VkBuffer>			colorBuffer			(makeBuffer				(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
-	const UniquePtr<Allocation>		colorBufferAlloc	(bindBuffer				(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
+	const Unique<VkImage>			colorImage				(makeImage				(vk, device, makeImageCreateInfo(imageCreateFlags, getImageType(params.image.viewType), colorFormat, params.image.size,
+																					 params.image.numLayers, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)));
+	const UniquePtr<Allocation>		colorImageAlloc			(bindImage				(vk, device, allocator, *colorImage, MemoryRequirement::Any));
+	const Unique<VkImageView>		colorAttachment			(makeImageView			(vk, device, *colorImage, viewType, colorFormat, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers)));
 
-	const Unique<VkShaderModule>	vertexModule		(createShaderModule		(vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>	geometryModule		(createShaderModule		(vk, device, context.getBinaryCollection().get("geom"), 0u));
-	const Unique<VkShaderModule>	fragmentModule		(createShaderModule		(vk, device, context.getBinaryCollection().get("frag"), 0u));
+	const Unique<VkBuffer>			colorBuffer				(makeBuffer				(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const UniquePtr<Allocation>		colorBufferAlloc		(bindBuffer				(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
-	const Unique<VkRenderPass>		renderPass			(makeRenderPass			(vk, device, colorFormat));
-	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer		(vk, device, *renderPass, *colorAttachment, params.image.size.width,  params.image.size.height, params.image.numLayers));
-	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout		(vk, device));
-	const Unique<VkPipeline>		pipeline			(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, *geometryModule, *fragmentModule,
-																				 makeExtent2D(params.image.size.width, params.image.size.height)));
-	const Unique<VkCommandPool>		cmdPool				(makeCommandPool		(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer		(vk, device, *cmdPool));
+	const Unique<VkShaderModule>	vertexModule			(createShaderModule		(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkShaderModule>	geometryModule			(createShaderModule		(vk, device, context.getBinaryCollection().get("geom"), 0u));
+	const Unique<VkShaderModule>	fragmentModule			(createShaderModule		(vk, device, context.getBinaryCollection().get("frag"), 0u));
+
+	const Unique<VkRenderPass>		renderPass				(makeRenderPass			(vk, device, colorFormat));
+	const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer		(vk, device, *renderPass, *colorAttachment, params.image.size.width,  params.image.size.height, numLayers));
+	const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout		(vk, device));
+	const Unique<VkPipeline>		pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, *geometryModule, *fragmentModule,
+																					 makeExtent2D(params.image.size.width, params.image.size.height)));
+	const Unique<VkCommandPool>		cmdPool					(makeCommandPool		(vk, device, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer				(makeCommandBuffer		(vk, device, *cmdPool));
 
 	zeroBuffer(vk, device, *colorBufferAlloc, colorBufferSize);
 
@@ -953,7 +962,8 @@ tcu::TestStatus test (Context& context, const TestParams params)
 
 	// Prepare color image for copy
 	{
-		const VkImageMemoryBarrier barriers[] =
+		const VkImageSubresourceRange	colorSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, params.image.numLayers);
+		const VkImageMemoryBarrier		barriers[] =
 		{
 			{
 				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
@@ -1042,11 +1052,11 @@ tcu::TestCaseGroup* createLayeredRenderingTests (tcu::TestContext& testCtx)
 
 	const ImageParams imageParams[] =
 	{
-		{ VK_IMAGE_VIEW_TYPE_1D_ARRAY,		{ 64,  1,  1 },		4	},
-		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		{ 64, 64,  1 },		4	},
-		{ VK_IMAGE_VIEW_TYPE_CUBE,			{ 64, 64,  1 },		6	},
-		{ VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	{ 64, 64,  1 },		2*6	},
-		// No support for rendering to 3d image slices in Vulkan 1.0
+		{ VK_IMAGE_VIEW_TYPE_1D_ARRAY,		{ 64,  1, 1 },	4	},
+		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		{ 64, 64, 1 },	4	},
+		{ VK_IMAGE_VIEW_TYPE_CUBE,			{ 64, 64, 1 },	6	},
+		{ VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	{ 64, 64, 1 },	2*6	},
+		{ VK_IMAGE_VIEW_TYPE_3D,			{ 64, 64, 8 },	1	}
 	};
 
 	for (int imageParamNdx = 0; imageParamNdx < DE_LENGTH_OF_ARRAY(imageParams); ++imageParamNdx)
