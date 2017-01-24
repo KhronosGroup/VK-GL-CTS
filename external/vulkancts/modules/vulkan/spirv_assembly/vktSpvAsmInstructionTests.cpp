@@ -9372,6 +9372,41 @@ tcu::TestCaseGroup* createShaderDefaultOutputGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+tcu::TestCaseGroup* createOpNopTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "opnop", "Test OpNop"));
+	RGBA							defaultColors[4];
+	map<string, string>				opNopFragments;
+
+	getDefaultColors(defaultColors);
+
+	opNopFragments["testfun"]		=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"%a = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"%b = OpFAdd %f32 %a %a\n"
+		"OpNop\n"
+		"%c = OpFSub %f32 %b %a\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %param1 %c %c_i32_0\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+
+	createTestsForAllStages("opnop", defaultColors, defaultColors, opNopFragments, testGroup.get());
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> instructionTests	(new tcu::TestCaseGroup(testCtx, "instruction", "Instructions with special opcodes/operands"));
@@ -9412,37 +9447,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
 	computeTests->addChild(createShaderDefaultOutputGroup(testCtx));
 
-	RGBA defaultColors[4];
-	getDefaultColors(defaultColors);
-
-	de::MovePtr<tcu::TestCaseGroup> opnopTests (new tcu::TestCaseGroup(testCtx, "opnop", "Test OpNop"));
-	map<string, string> opNopFragments;
-	opNopFragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
-		"%param1 = OpFunctionParameter %v4f32\n"
-		"%label_testfun = OpLabel\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpNop\n"
-		"%a = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
-		"%b = OpFAdd %f32 %a %a\n"
-		"OpNop\n"
-		"%c = OpFSub %f32 %b %a\n"
-		"%ret = OpVectorInsertDynamic %v4f32 %param1 %c %c_i32_0\n"
-		"OpNop\n"
-		"OpNop\n"
-		"OpReturnValue %ret\n"
-		"OpFunctionEnd\n"
-		;
-	createTestsForAllStages("opnop", defaultColors, defaultColors, opNopFragments, opnopTests.get());
-
-
-	graphicsTests->addChild(opnopTests.release());
+	graphicsTests->addChild(createOpNopTests(testCtx));
 	graphicsTests->addChild(createOpSourceTests(testCtx));
 	graphicsTests->addChild(createOpSourceContinuedTests(testCtx));
 	graphicsTests->addChild(createOpLineTests(testCtx));

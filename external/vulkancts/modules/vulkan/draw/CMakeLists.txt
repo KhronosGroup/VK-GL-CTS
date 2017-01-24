@@ -9,8 +9,12 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawIndirectTest.cpp
 	vktDrawInstancedTests.hpp
 	vktDrawInstancedTests.cpp
+	vktDrawShaderDrawParametersTests.hpp
+	vktDrawShaderDrawParametersTests.cpp
 	vktDrawSimpleTest.hpp
 	vktDrawSimpleTest.cpp
+	vktDrawNegativeViewportHeightTests.hpp
+	vktDrawNegativeViewportHeightTests.cpp
 	vktDrawBaseClass.hpp
 	vktDrawBaseClass.cpp
 	vktDrawCreateInfoUtil.hpp
