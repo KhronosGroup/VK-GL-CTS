@@ -91,6 +91,7 @@ const char* getResultName (VkResult value)
 		case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:	return "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR";
 		case VK_ERROR_VALIDATION_FAILED_EXT:	return "VK_ERROR_VALIDATION_FAILED_EXT";
 		case VK_ERROR_INVALID_SHADER_NV:		return "VK_ERROR_INVALID_SHADER_NV";
+		case VK_ERROR_OUT_OF_POOL_MEMORY_KHR:	return "VK_ERROR_OUT_OF_POOL_MEMORY_KHR";
 		default:								return DE_NULL;
 	}
 }
@@ -172,6 +173,15 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV:						return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV";
 		case VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_NV:						return "VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_NV";
 		case VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_NV:				return "VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR";
+		case VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2_KHR:									return "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2_KHR";
+		case VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2_KHR:							return "VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2_KHR:							return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2_KHR";
+		case VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR:					return "VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT:									return "VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT";
 		case VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX:							return "VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX:				return "VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX";
@@ -934,6 +944,8 @@ tcu::Format::Bitfield<32> getFormatFeatureFlagsStr (VkFormatFeatureFlags value)
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_BLIT_DST_BIT,						"VK_FORMAT_FEATURE_BLIT_DST_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT,		"VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG,	"VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR,				"VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR,				"VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -958,11 +970,12 @@ tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_BINDING_BIT,	"VK_IMAGE_CREATE_SPARSE_BINDING_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,	"VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_ALIASED_BIT,	"VK_IMAGE_CREATE_SPARSE_ALIASED_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,	"VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,	"VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_BINDING_BIT,			"VK_IMAGE_CREATE_SPARSE_BINDING_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,			"VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_ALIASED_BIT,			"VK_IMAGE_CREATE_SPARSE_ALIASED_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,			"VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,			"VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR,	"VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1584,6 +1597,11 @@ tcu::Format::Bitfield<32> getAndroidSurfaceCreateFlagsKHRStr (VkAndroidSurfaceCr
 }
 
 tcu::Format::Bitfield<32> getWin32SurfaceCreateFlagsKHRStr (VkWin32SurfaceCreateFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getCommandPoolTrimFlagsKHRStr (VkCommandPoolTrimFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -3321,6 +3339,104 @@ std::ostream& operator<< (std::ostream& s, const VkWin32SurfaceCreateInfoKHR& va
 	s << "\tflags = " << getWin32SurfaceCreateFlagsKHRStr(value.flags) << '\n';
 	s << "\thinstance = " << value.hinstance << '\n';
 	s << "\thwnd = " << value.hwnd << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFeatures2KHR& value)
+{
+	s << "VkPhysicalDeviceFeatures2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfeatures = " << value.features << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProperties2KHR& value)
+{
+	s << "VkPhysicalDeviceProperties2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tproperties = " << value.properties << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFormatProperties2KHR& value)
+{
+	s << "VkFormatProperties2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tformatProperties = " << value.formatProperties << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageFormatProperties2KHR& value)
+{
+	s << "VkImageFormatProperties2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageFormatProperties = " << value.imageFormatProperties << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageFormatInfo2KHR& value)
+{
+	s << "VkPhysicalDeviceImageFormatInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << "\ttype = " << value.type << '\n';
+	s << "\ttiling = " << value.tiling << '\n';
+	s << "\tusage = " << getImageUsageFlagsStr(value.usage) << '\n';
+	s << "\tflags = " << getImageCreateFlagsStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkQueueFamilyProperties2KHR& value)
+{
+	s << "VkQueueFamilyProperties2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tqueueFamilyProperties = " << value.queueFamilyProperties << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMemoryProperties2KHR& value)
+{
+	s << "VkPhysicalDeviceMemoryProperties2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryProperties = " << value.memoryProperties << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSparseImageFormatProperties2KHR& value)
+{
+	s << "VkSparseImageFormatProperties2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tproperties = " << value.properties << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSparseImageFormatInfo2KHR& value)
+{
+	s << "VkPhysicalDeviceSparseImageFormatInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << "\ttype = " << value.type << '\n';
+	s << "\tsamples = " << value.samples << '\n';
+	s << "\tusage = " << getImageUsageFlagsStr(value.usage) << '\n';
+	s << "\ttiling = " << value.tiling << '\n';
 	s << '}';
 	return s;
 }

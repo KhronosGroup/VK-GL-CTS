@@ -1128,6 +1128,61 @@ VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWin32PresentationSupportKHR (VkP
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFeatures2KHR (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2KHR* pFeatures)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pFeatures);
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceProperties2KHR (VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2KHR* pProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pProperties);
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFormatProperties2KHR (VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties2KHR* pFormatProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(format);
+	DE_UNREF(pFormatProperties);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceImageFormatProperties2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceImageFormatInfo2KHR* pImageFormatInfo, VkImageFormatProperties2KHR* pImageFormatProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pImageFormatInfo);
+	DE_UNREF(pImageFormatProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyProperties2KHR (VkPhysicalDevice physicalDevice, deUint32* pQueueFamilyPropertyCount, VkQueueFamilyProperties2KHR* pQueueFamilyProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pQueueFamilyPropertyCount);
+	DE_UNREF(pQueueFamilyProperties);
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceMemoryProperties2KHR (VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2KHR* pMemoryProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pMemoryProperties);
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceSparseImageFormatProperties2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSparseImageFormatInfo2KHR* pFormatInfo, deUint32* pPropertyCount, VkSparseImageFormatProperties2KHR* pProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pFormatInfo);
+	DE_UNREF(pPropertyCount);
+	DE_UNREF(pProperties);
+}
+
+VKAPI_ATTR void VKAPI_CALL trimCommandPoolKHR (VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlagsKHR flags)
+{
+	DE_UNREF(device);
+	DE_UNREF(commandPool);
+	DE_UNREF(flags);
+}
+
 VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage)
 {
 	DE_UNREF(instance);
@@ -1300,6 +1355,13 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateAndroidSurfaceKHR,							createAndroidSurfaceKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateWin32SurfaceKHR,								createWin32SurfaceKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWin32PresentationSupportKHR,		getPhysicalDeviceWin32PresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures2KHR,						getPhysicalDeviceFeatures2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties2KHR,					getPhysicalDeviceProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties2KHR,				getPhysicalDeviceFormatProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties2KHR,		getPhysicalDeviceImageFormatProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties2KHR,		getPhysicalDeviceQueueFamilyProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties2KHR,				getPhysicalDeviceMemoryProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties2KHR,	getPhysicalDeviceSparseImageFormatProperties2KHR),
 	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,						createDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,						destroyDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,								debugReportMessageEXT),
@@ -1434,6 +1496,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkAcquireNextImageKHR,								acquireNextImageKHR),
 	VK_NULL_FUNC_ENTRY(vkQueuePresentKHR,									queuePresentKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateSharedSwapchainsKHR,							createSharedSwapchainsKHR),
+	VK_NULL_FUNC_ENTRY(vkTrimCommandPoolKHR,								trimCommandPoolKHR),
 	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectTagEXT,						debugMarkerSetObjectTagEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectNameEXT,						debugMarkerSetObjectNameEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,							cmdDebugMarkerBeginEXT),

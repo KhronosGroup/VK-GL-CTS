@@ -208,6 +208,7 @@ tcu::Format::Bitfield<32>	getWaylandSurfaceCreateFlagsKHRStr			(VkWaylandSurface
 tcu::Format::Bitfield<32>	getMirSurfaceCreateFlagsKHRStr				(VkMirSurfaceCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getAndroidSurfaceCreateFlagsKHRStr			(VkAndroidSurfaceCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getWin32SurfaceCreateFlagsKHRStr			(VkWin32SurfaceCreateFlagsKHR value);
+tcu::Format::Bitfield<32>	getCommandPoolTrimFlagsKHRStr				(VkCommandPoolTrimFlagsKHR value);
 
 std::ostream&	operator<<	(std::ostream& s, const VkApplicationInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkInstanceCreateInfo& value);
@@ -334,6 +335,15 @@ std::ostream&	operator<<	(std::ostream& s, const VkWaylandSurfaceCreateInfoKHR& 
 std::ostream&	operator<<	(std::ostream& s, const VkMirSurfaceCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidSurfaceCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkWin32SurfaceCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFeatures2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProperties2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkFormatProperties2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageFormatProperties2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageFormatInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyProperties2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMemoryProperties2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSparseImageFormatProperties2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSparseImageFormatInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateRasterizationOrderAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);
