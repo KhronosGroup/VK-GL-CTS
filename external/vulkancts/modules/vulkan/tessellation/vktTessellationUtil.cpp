@@ -609,15 +609,17 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 		makeExtent2D(m_renderSize.x(), m_renderSize.y()),
 	};
 
+	const bool haveRenderSize = m_renderSize.x() > 0 && m_renderSize.y() > 0;
+
 	const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType                             sType;
 		DE_NULL,												// const void*                                 pNext;
 		(VkPipelineViewportStateCreateFlags)0,					// VkPipelineViewportStateCreateFlags          flags;
 		1u,														// uint32_t                                    viewportCount;
-		&viewport,												// const VkViewport*                           pViewports;
+		haveRenderSize ? &viewport : DE_NULL,					// const VkViewport*                           pViewports;
 		1u,														// uint32_t                                    scissorCount;
-		&scissor,												// const VkRect2D*                             pScissors;
+		haveRenderSize ? &scissor : DE_NULL,					// const VkRect2D*                             pScissors;
 	};
 
 	const bool isRasterizationDisabled = ((m_shaderStageFlags & VK_SHADER_STAGE_FRAGMENT_BIT) == 0);
@@ -701,6 +703,22 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 		{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConstants[4];
 	};
 
+	std::vector<VkDynamicState> dynamicStates;
+	if (!haveRenderSize)
+	{
+		dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+		dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
+	}
+
+	const VkPipelineDynamicStateCreateInfo pipelineDynamicStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	// VkStructureType						sType;
+		DE_NULL,												// const void*							pNext;
+		0,														// VkPipelineDynamicStateCreateFlags	flags;
+		static_cast<deUint32>(dynamicStates.size()),			// uint32_t								dynamicStateCount;
+		(dynamicStates.empty() ? DE_NULL : &dynamicStates[0]),	// const VkDynamicState*				pDynamicStates;
+	};
+
 	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,						// VkStructureType									sType;
@@ -716,7 +734,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 		(isRasterizationDisabled ? DE_NULL : &pipelineMultisampleStateInfo),	// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 		(isRasterizationDisabled ? DE_NULL : &pipelineDepthStencilStateInfo),	// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 		(isRasterizationDisabled ? DE_NULL : &pipelineColorBlendStateInfo),		// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		DE_NULL,																// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+		&pipelineDynamicStateInfo,												// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 		pipelineLayout,															// VkPipelineLayout									layout;
 		renderPass,																// VkRenderPass										renderPass;
 		0u,																		// deUint32											subpass;
