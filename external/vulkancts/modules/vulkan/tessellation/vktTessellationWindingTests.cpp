@@ -48,10 +48,12 @@ using namespace vk;
 namespace
 {
 
-std::string getCaseName (const TessPrimitiveType primitiveType, const Winding winding)
+std::string getCaseName (const TessPrimitiveType primitiveType, const Winding winding, bool yFlip)
 {
 	std::ostringstream str;
 	str << getTessPrimitiveTypeShaderName(primitiveType) << "_" << getWindingShaderName(winding);
+	if (yFlip)
+		str << "_yflip";
 	return str.str();
 }
 
@@ -72,6 +74,7 @@ bool verifyResultImage (tcu::TestLog&						log,
 						const tcu::ConstPixelBufferAccess	image,
 						const TessPrimitiveType				primitiveType,
 						const Winding						winding,
+						bool								yFlip,
 						const Winding						frontFaceWinding)
 {
 	const int totalNumPixels	= image.getWidth()*image.getHeight();
@@ -102,7 +105,7 @@ bool verifyResultImage (tcu::TestLog&						log,
 		return false;
 	}
 
-	if (frontFaceWinding == winding)
+	if ((frontFaceWinding == winding) != yFlip)
 	{
 		if (primitiveType == TESSPRIMITIVETYPE_TRIANGLES)
 		{
@@ -111,6 +114,41 @@ bool verifyResultImage (tcu::TestLog&						log,
 				log << tcu::TestLog::Message << "Failure: wrong number of white pixels; expected approximately " << totalNumPixels/2 << tcu::TestLog::EndMessage;
 				return false;
 			}
+
+			// Check number of filled pixels (from left) in top and bottom rows to
+			// determine if triangle is in right orientation.
+			{
+				const tcu::IVec2	expectedStart	(0, 1);
+				const tcu::IVec2	expectedEnd		(image.getWidth()-1, image.getWidth());
+				const tcu::IVec2	expectedTop		= yFlip ? expectedStart : expectedEnd;
+				const tcu::IVec2	expectedBottom	= yFlip ? expectedEnd : expectedStart;
+				int					numTopFilled	= 0;
+				int					numBottomFilled	= 0;
+
+				for (int x = 0; x < image.getWidth(); ++x)
+				{
+					if (image.getPixel(x, 0) == white)
+						numTopFilled += 1;
+					else
+						break;
+				}
+
+				for (int x = 0; x < image.getWidth(); ++x)
+				{
+					if (image.getPixel(x, image.getHeight()-1) == white)
+						numBottomFilled += 1;
+					else
+						break;
+				}
+
+				if (!de::inBounds(numTopFilled, expectedTop[0], expectedTop[1]) ||
+					!de::inBounds(numBottomFilled, expectedBottom[0], expectedBottom[1]))
+				{
+					log << tcu::TestLog::Message << "Failure: triangle orientation is incorrect" << tcu::TestLog::EndMessage;
+					return false;
+				}
+			}
+
 		}
 		else if (primitiveType == TESSPRIMITIVETYPE_QUADS)
 		{
@@ -140,7 +178,8 @@ class WindingTest : public TestCase
 public:
 								WindingTest		(tcu::TestContext&			testCtx,
 												 const TessPrimitiveType	primitiveType,
-												 const Winding				winding);
+												 const Winding				winding,
+												 bool						yFlip);
 
 	void						initPrograms	(SourceCollections&			programCollection) const;
 	TestInstance*				createInstance	(Context&					context) const;
@@ -148,14 +187,17 @@ public:
 private:
 	const TessPrimitiveType		m_primitiveType;
 	const Winding				m_winding;
+	const bool					m_yFlip;
 };
 
 WindingTest::WindingTest (tcu::TestContext&			testCtx,
 						  const TessPrimitiveType	primitiveType,
-						  const Winding				winding)
-	: TestCase			(testCtx, getCaseName(primitiveType, winding), "")
+						  const Winding				winding,
+						  bool						yFlip)
+	: TestCase			(testCtx, getCaseName(primitiveType, winding, yFlip), "")
 	, m_primitiveType	(primitiveType)
 	, m_winding			(winding)
+	, m_yFlip			(yFlip)
 {
 }
 
@@ -233,26 +275,33 @@ class WindingTestInstance : public TestInstance
 public:
 								WindingTestInstance (Context&					context,
 													 const TessPrimitiveType	primitiveType,
-													 const Winding				winding);
+													 const Winding				winding,
+													 bool						yFlip);
 
 	tcu::TestStatus				iterate				(void);
 
 private:
 	const TessPrimitiveType		m_primitiveType;
 	const Winding				m_winding;
+	const bool					m_yFlip;
 };
 
 WindingTestInstance::WindingTestInstance (Context&					context,
 										  const TessPrimitiveType	primitiveType,
-										  const Winding				winding)
+										  const Winding				winding,
+										  bool						yFlip)
 	: TestInstance		(context)
 	, m_primitiveType	(primitiveType)
 	, m_winding			(winding)
+	, m_yFlip			(yFlip)
 {
 }
 
 tcu::TestStatus WindingTestInstance::iterate (void)
 {
+	if (m_yFlip && !de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), "VK_KHR_maintenance1"))
+		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
+
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 	const VkDevice			device				= m_context.getDevice();
 	const VkQueue			queue				= m_context.getUniversalQueue();
@@ -285,7 +334,6 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 	// Front face is static state, so we have to create two pipelines.
 
 	const Unique<VkPipeline> pipelineCounterClockwise(GraphicsPipelineBuilder()
-		.setRenderSize	 (renderSize)
 		.setCullModeFlags(cullMode)
 		.setFrontFace	 (VK_FRONT_FACE_COUNTER_CLOCKWISE)
 		.setShader		 (vk, device, VK_SHADER_STAGE_VERTEX_BIT,				   m_context.getBinaryCollection().get("vert"), DE_NULL)
@@ -295,7 +343,6 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 		.build			 (vk, device, *pipelineLayout, *renderPass));
 
 	const Unique<VkPipeline> pipelineClockwise(GraphicsPipelineBuilder()
-		.setRenderSize   (renderSize)
 		.setCullModeFlags(cullMode)
 		.setFrontFace    (VK_FRONT_FACE_CLOCKWISE)
 		.setShader		 (vk, device, VK_SHADER_STAGE_VERTEX_BIT,				   m_context.getBinaryCollection().get("vert"), DE_NULL)
@@ -359,6 +406,24 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
 		}
 
+		const VkViewport viewport =
+		{
+			0.0f,															// float	x;
+			m_yFlip ? static_cast<float>(renderSize.y()) : 0.0f,			// float	y;
+			static_cast<float>(renderSize.x()),								// float	width;
+			static_cast<float>(m_yFlip ? -renderSize.y() : renderSize.y()),	// float	height;
+			0.0f,															// float	minDepth;
+			1.0f,															// float	maxDepth;
+		};
+		vk.cmdSetViewport(*cmdBuffer, 0, 1, &viewport);
+
+		const VkRect2D scissor =
+		{
+			makeOffset2D(0, 0),
+			makeExtent2D(renderSize.x(), renderSize.y()),
+		};
+		vk.cmdSetScissor(*cmdBuffer, 0, 1, &scissor);
+
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, testCases[caseNdx].pipeline);
 
 		// Process a single abstract vertex.
@@ -399,7 +464,7 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 			log << tcu::TestLog::Image("color0", "Rendered image", imagePixelAccess);
 
 			// Verify case result
-			success = success && verifyResultImage(log, imagePixelAccess, m_primitiveType, m_winding, frontFaceWinding);
+			success = success && verifyResultImage(log, imagePixelAccess, m_primitiveType, m_winding, m_yFlip, frontFaceWinding);
 		}
 	}  // for windingNdx
 
@@ -410,7 +475,7 @@ TestInstance* WindingTest::createInstance (Context& context) const
 {
 	requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_TESSELLATION_SHADER);
 
-	return new WindingTestInstance(context, m_primitiveType, m_winding);
+	return new WindingTestInstance(context, m_primitiveType, m_winding, m_yFlip);
 }
 
 } // anonymous
@@ -428,7 +493,10 @@ tcu::TestCaseGroup* createWindingTests (tcu::TestContext& testCtx)
 
 	for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitivesNoIsolines); ++primitiveTypeNdx)
 	for (int windingNdx = 0; windingNdx < WINDING_LAST; ++windingNdx)
-		group->addChild(new WindingTest(testCtx, primitivesNoIsolines[primitiveTypeNdx], (Winding)windingNdx));
+	{
+		group->addChild(new WindingTest(testCtx, primitivesNoIsolines[primitiveTypeNdx], (Winding)windingNdx, false));
+		group->addChild(new WindingTest(testCtx, primitivesNoIsolines[primitiveTypeNdx], (Winding)windingNdx, true));
+	}
 
 	return group.release();
 }
