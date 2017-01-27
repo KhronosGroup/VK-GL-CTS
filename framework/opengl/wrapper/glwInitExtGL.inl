@@ -324,6 +324,12 @@ if (de::contains(extSet, "GL_ARB_transform_feedback3"))
 	gl->getQueryIndexediv			= (glGetQueryIndexedivFunc)				loader->get("glGetQueryIndexediv");
 }
 
+if (de::contains(extSet, "GL_ARB_transform_feedback_instanced"))
+{
+	gl->drawTransformFeedbackInstanced			= (glDrawTransformFeedbackInstancedFunc)		loader->get("glDrawTransformFeedbackInstanced");
+	gl->drawTransformFeedbackStreamInstanced	= (glDrawTransformFeedbackStreamInstancedFunc)	loader->get("glDrawTransformFeedbackStreamInstanced");
+}
+
 if (de::contains(extSet, "GL_ARB_vertex_attrib_64bit"))
 {
 	gl->getVertexAttribLdv		= (glGetVertexAttribLdvFunc)	loader->get("glGetVertexAttribLdv");
