@@ -28,7 +28,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scrip
 from build.common import DEQP_DIR
 from build.config import ANY_GENERATOR
 from build_caselists import Module, getModuleByName, getBuildConfig, DEFAULT_BUILD_DIR, DEFAULT_TARGET
-from mustpass import Project, Package, Mustpass, Configuration, include, exclude, genMustpassLists
+from mustpass import Project, Package, Mustpass, Configuration, include, exclude, genMustpassLists, parseBuildConfigFromCmdLineArgs
 
 COPYRIGHT_DECLARATION = """
 	 Licensed under the Apache License, Version 2.0 (the "License");
@@ -83,4 +83,4 @@ MUSTPASS_LISTS		= [
 	]
 
 if __name__ == "__main__":
-	genMustpassLists(MUSTPASS_LISTS, ANY_GENERATOR, BUILD_CONFIG)
+	genMustpassLists(MUSTPASS_LISTS, ANY_GENERATOR, parseBuildConfigFromCmdLineArgs())

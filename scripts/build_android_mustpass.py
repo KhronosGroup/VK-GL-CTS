@@ -23,7 +23,7 @@
 from build.common import DEQP_DIR
 from build.config import ANY_GENERATOR
 from build_caselists import Module, getModuleByName, getBuildConfig, DEFAULT_BUILD_DIR, DEFAULT_TARGET
-from mustpass import Project, Package, Mustpass, Configuration, include, exclude, genMustpassLists
+from mustpass import Project, Package, Mustpass, Configuration, include, exclude, genMustpassLists, parseBuildConfigFromCmdLineArgs
 
 import os
 
@@ -514,7 +514,5 @@ MUSTPASS_LISTS				= [
 		Mustpass(project = CTS_PROJECT, version = "master",		packages = [MASTER_EGL_PKG, MASTER_GLES2_PKG, MASTER_GLES3_PKG, MASTER_GLES31_PKG, MASTER_VULKAN_PKG])
 	]
 
-BUILD_CONFIG				= getBuildConfig(DEFAULT_BUILD_DIR, DEFAULT_TARGET, "Debug")
-
 if __name__ == "__main__":
-	genMustpassLists(MUSTPASS_LISTS, ANY_GENERATOR, BUILD_CONFIG)
+	genMustpassLists(MUSTPASS_LISTS, ANY_GENERATOR, parseBuildConfigFromCmdLineArgs())
