@@ -65,18 +65,19 @@ struct PageSizeStruct
 
 typedef std::pair<GLint, PageSizeStruct> PageSizePair;
 
-/** Test verifies if GL_ARB_sparse_texture2 extension is available for GLSL
+/** Test verifies if extension is available for GLSL
  **/
 class ShaderExtensionTestCase : public deqp::TestCase
 {
 public:
 	/* Public methods */
-	ShaderExtensionTestCase(deqp::Context& context);
+	ShaderExtensionTestCase(deqp::Context& context, const std::string extension);
 
 	tcu::TestNode::IterateResult iterate();
 
 private:
 	/* Private members */
+	std::string mExtension;
 };
 
 /** Test verifies if values returned by GetInternalFormat* query matches Standard Virtual Page Sizes for <pname>:
@@ -202,11 +203,13 @@ public:
 	/* Public methods */
 	SparseTexture2LookupTestCase(deqp::Context& context);
 
+	SparseTexture2LookupTestCase(deqp::Context& context, const char* name, const char* description);
+
 	void						 init();
 	tcu::TestNode::IterateResult iterate();
 
-private:
-	/* Private types */
+protected:
+	/* Protected types */
 	struct FunctionToken
 	{
 		std::string name;
@@ -227,21 +230,25 @@ private:
 	{
 		std::string formatDef;
 		std::string sizeDef;
+		std::string lod;
 		std::string lodDef;
 		std::string coordType;
+		std::string iCoordType;
 		std::string coordDef;
 		std::string cubeMapCoordDef;
 		std::string refZDef;
 		std::string offsetDim;
+		std::string offsetType;
+		std::string nOffsetType;
 		std::string componentDef;
 		std::string offsetArrayDef;
 		std::string pointCoord;
 	};
 
-	/* Private members */
+	/* Protected members */
 	std::vector<FunctionToken> mFunctions;
 
-	/* Private methods */
+	/* Protected methods */
 	TokenStringsExt createLookupShaderTokens(GLint target, GLint format, GLint level, GLint sample,
 											 FunctionToken& funcToken);
 
@@ -268,6 +275,8 @@ private:
 	SparseTexture2Tests(const SparseTexture2Tests& other);
 	SparseTexture2Tests& operator=(const SparseTexture2Tests& other);
 };
+
+void replaceToken(const GLchar* token, const GLchar* text, std::string& string);
 
 } /* glcts namespace */
 

@@ -52,6 +52,7 @@
 #include "gl4cShadingLanguage420PackTests.hpp"
 #include "gl4cSparseBufferTests.hpp"
 #include "gl4cSparseTexture2Tests.hpp"
+#include "gl4cSparseTextureClampTests.hpp"
 #include "gl4cSparseTextureTests.hpp"
 #include "gl4cStencilTexturingTests.hpp"
 #include "gl4cSyncTests.hpp"
@@ -330,6 +331,7 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::ParallelShaderCompileTests(getContext()));
 		addChild(new gl4cts::PostDepthCoverage(getContext()));
 		addChild(new gl4cts::SparseTexture2Tests(getContext()));
+		addChild(new gl4cts::SparseTextureClampTests(getContext()));
 		addChild(new gl4cts::TextureFilterMinmax(getContext()));
 	}
 	catch (...)

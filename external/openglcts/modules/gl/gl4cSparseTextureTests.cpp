@@ -105,8 +105,8 @@ GLint SparseTextureUtils::getTargetDepth(GLint target)
 {
 	GLint depth;
 
-	if (target == GL_TEXTURE_3D || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY ||
-		target == GL_TEXTURE_CUBE_MAP)
+	if (target == GL_TEXTURE_3D || target == GL_TEXTURE_1D_ARRAY || target == GL_TEXTURE_2D_ARRAY ||
+		target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY || target == GL_TEXTURE_CUBE_MAP)
 	{
 		depth = 1;
 	}
@@ -152,13 +152,16 @@ void SparseTextureUtils::getTexturePageSizes(const glw::Functions& gl, glw::GLin
 void SparseTextureUtils::getTextureLevelSize(GLint target, TextureState& state, GLint level, GLint& width,
 											 GLint& height, GLint& depth)
 {
-	width  = state.width / (int)pow(2, level);
-	height = state.height / (int)pow(2, level);
+	width = state.width / (int)pow(2, level);
+	if (target == GL_TEXTURE_1D || target == GL_TEXTURE_1D_ARRAY)
+		height = 1;
+	else
+		height = state.height / (int)pow(2, level);
 
-	if (target == GL_TEXTURE_3D || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY)
-	{
+	if (target == GL_TEXTURE_3D)
 		depth = state.depth / (int)pow(2, level);
-	}
+	else if (target == GL_TEXTURE_1D_ARRAY || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY)
+		depth = state.depth;
 	else
 		depth = 1;
 }
@@ -228,6 +231,8 @@ void Texture::Storage(const Functions& gl, GLenum target, GLsizei levels, GLenum
 		gl.texStorage1D(target, levels, internal_format, width);
 		break;
 	case GL_TEXTURE_1D_ARRAY:
+		gl.texStorage2D(target, levels, internal_format, width, depth);
+		break;
 	case GL_TEXTURE_2D:
 	case GL_TEXTURE_RECTANGLE:
 	case GL_TEXTURE_CUBE_MAP:
@@ -289,6 +294,8 @@ void Texture::SubImage(const glw::Functions& gl, glw::GLenum target, glw::GLint 
 		gl.texSubImage1D(target, level, x, width, format, type, pixels);
 		break;
 	case GL_TEXTURE_1D_ARRAY:
+		gl.texSubImage2D(target, level, x, y, width, depth, format, type, pixels);
+		break;
 	case GL_TEXTURE_2D:
 	case GL_TEXTURE_RECTANGLE:
 		gl.texSubImage2D(target, level, x, y, width, height, format, type, pixels);
@@ -1842,7 +1849,7 @@ bool SparseTextureCommitmentTestCase::prepareTexture(const Functions& gl, GLint 
 
 	mState.width  = 2 * mState.pageSizeX;
 	mState.height = 2 * mState.pageSizeY;
-	mState.depth  = mState.minDepth * mState.pageSizeZ;
+	mState.depth  = 2 * mState.pageSizeZ * mState.minDepth;
 
 	mState.format = glu::mapGLInternalFormat(format);
 
@@ -1955,8 +1962,6 @@ bool SparseTextureCommitmentTestCase::writeDataToTexture(const Functions& gl, GL
 		Texture::SubImage(gl, target, level, 0, 0, 0, width, height, depth, transferFormat.format,
 						  transferFormat.dataType, (GLvoid*)data);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "SubImage");
-
-		delete[] data;
 	}
 
 	return true;
@@ -2112,7 +2117,7 @@ bool SparseTextureCommitmentTestCase::commitTexturePage(const Functions& gl, GLi
 	SparseTextureUtils::getTextureLevelSize(target, mState, level, width, height, depth);
 
 	if (target == GL_TEXTURE_CUBE_MAP)
-		depth = 6 * mState.minDepth;
+		depth = 6 * depth;
 
 	GLint widthCommitted = width / 2;
 
@@ -2138,10 +2143,11 @@ bool SparseTextureCommitmentTestCase::isInPageSizesRange(GLint target, GLint lev
 	SparseTextureUtils::getTextureLevelSize(target, mState, level, width, height, depth);
 
 	if (target == GL_TEXTURE_CUBE_MAP)
-		depth = 6 * mState.minDepth;
+		depth = 6 * depth;
 
 	GLint widthCommitted = width / 2;
-	if (widthCommitted >= mState.pageSizeX && height >= mState.pageSizeY && depth >= mState.pageSizeZ)
+	if (widthCommitted >= mState.pageSizeX && height >= mState.pageSizeY &&
+		(mState.minDepth == 0 || depth >= mState.pageSizeZ))
 	{
 		return true;
 	}
@@ -2164,7 +2170,7 @@ bool SparseTextureCommitmentTestCase::isPageSizesMultiplication(GLint target, GL
 	SparseTextureUtils::getTextureLevelSize(target, mState, level, width, height, depth);
 
 	if (target == GL_TEXTURE_CUBE_MAP)
-		depth = 6 * mState.minDepth;
+		depth = 6 * depth;
 
 	GLint widthCommitted = width / 2;
 	if ((widthCommitted % mState.pageSizeX) == 0 && (height % mState.pageSizeY) == 0 && (depth % mState.pageSizeZ) == 0)
