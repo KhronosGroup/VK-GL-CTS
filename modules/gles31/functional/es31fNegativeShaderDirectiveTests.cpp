@@ -502,6 +502,107 @@ void texture_cube_map_array (NegativeTestContext& ctx)
 	ctx.endSection();
 }
 
+void executeAccessingBoundingBoxType (NegativeTestContext& ctx, const std::string builtInTypeName, glu::GLSLVersion glslVersion)
+{
+	std::ostringstream	sourceStream;
+	std::string			version;
+	std::string			extensionPrim;
+	std::string			extensionTess;
+
+	if (glslVersion == glu::GLSL_VERSION_310_ES)
+	{
+		version = "#version 310 es\n";
+		extensionPrim = "#extension GL_EXT_primitive_bounding_box : require\n";
+		extensionTess = "#extension GL_EXT_tessellation_shader : require\n";
+	}
+	else if (glslVersion >= glu::GLSL_VERSION_320_ES)
+	{
+		version = "#version 320 es\n";
+		extensionPrim = "";
+		extensionTess = "";
+	}
+	else
+	{
+		DE_FATAL("error: context below 3.1 and not supported");
+	}
+
+	ctx.beginSection("cannot access built-in type " + builtInTypeName + "[]" + " in vertex shader");
+	sourceStream	<< version
+					<< extensionPrim
+					<< "void main()\n"
+					<< "{\n"
+					<< "	" + builtInTypeName + "[0] = vec4(1.0, 1.0, 1.0, 1.0);\n"
+					<< "	gl_Position = " + builtInTypeName + "[0];\n"
+					<< "}\n";
+	verifyShader(ctx, glu::SHADERTYPE_VERTEX, sourceStream.str(), EXPECT_RESULT_FAIL);
+	ctx.endSection();
+
+	sourceStream.str(std::string());
+
+	ctx.beginSection("cannot access built-in type " + builtInTypeName + "[]" + " in tessellation evaluation shader");
+	sourceStream	<< version
+					<< extensionPrim
+					<< extensionTess
+					<< "layout (triangles, equal_spacing, ccw) in;\n"
+					<< "void main()\n"
+					<< "{\n"
+					<< "	" + builtInTypeName + "[0] = vec4(1.0, 1.0, 1.0, 1.0);\n"
+					<< "	gl_Position = (	gl_TessCoord.x * " +  builtInTypeName + "[0] +\n"
+					<< "					gl_TessCoord.y * " +  builtInTypeName + "[0] +\n"
+					<< "					gl_TessCoord.z * " +  builtInTypeName + "[0]);\n"
+					<< "}\n";
+	verifyShader(ctx, glu::SHADERTYPE_TESSELLATION_EVALUATION, sourceStream.str(), EXPECT_RESULT_FAIL);
+	ctx.endSection();
+
+	sourceStream.str(std::string());
+
+	ctx.beginSection("cannot access built-in type " + builtInTypeName + "[]" + " in geometry shader");
+	sourceStream	<< version
+					<< extensionPrim
+					<< "layout (triangles) in;\n"
+					<< "layout (triangle_strip, max_vertices = 3) out;\n"
+					<< "void main()\n"
+					<< "{\n"
+					<< "	" + builtInTypeName + "[0] = vec4(1.0, 1.0, 1.0, 1.0);\n"
+					<< "	for (int idx = 0; idx < 3; idx++)\n"
+					<< "	{\n"
+					<< "		gl_Position = gl_in[idx].gl_Position * " + builtInTypeName + "[0];\n"
+					<< "		EmitVertex();\n"
+					<< "	}\n"
+					<< "	EndPrimitive();\n"
+					<< "}\n";
+	verifyShader(ctx, glu::SHADERTYPE_GEOMETRY, sourceStream.str(), EXPECT_RESULT_FAIL);
+	ctx.endSection();
+
+	sourceStream.str(std::string());
+
+	ctx.beginSection("cannot access built-in type " + builtInTypeName + "[]" + " in fragment shader");
+	sourceStream	<< version
+					<< extensionPrim
+					<< "layout (location = 0) out mediump vec4 fs_colour;\n"
+					<< "void main()\n"
+					<< "{\n"
+					<< "	" + builtInTypeName + "[0] = vec4(1.0, 1.0, 1.0, 1.0);\n"
+					<< "	fs_colour = " + builtInTypeName + "[0];\n"
+					<< "}\n";
+	verifyShader(ctx, glu::SHADERTYPE_FRAGMENT, sourceStream.str(), EXPECT_RESULT_FAIL);
+	ctx.endSection();
+}
+
+void accessing_bounding_box_type (NegativeTestContext& ctx)
+{
+	// Extension requirements and name differences depending on the context
+	if ((ctx.getRenderContext().getType().getMajorVersion() == 3) && (ctx.getRenderContext().getType().getMinorVersion() == 1))
+	{
+		executeAccessingBoundingBoxType(ctx, "gl_BoundingBoxEXT", glu::GLSL_VERSION_310_ES);
+	}
+	else
+	{
+		executeAccessingBoundingBoxType(ctx, "gl_BoundingBox", glu::GLSL_VERSION_320_ES);
+	}
+
+}
+
 } // anonymous
 
 std::vector<FunctionContainer> getNegativeShaderDirectiveTestFunctions (void)
@@ -520,6 +621,7 @@ std::vector<FunctionContainer> getNegativeShaderDirectiveTestFunctions (void)
 		{tessellation_shader,					"tessellation_shader",					"GL_EXT_tessellation_shader is required in 310 es shaders to use AEP features"													},
 		{texture_buffer,						"texture_buffer",						"GL_EXT_texture_buffer is required in 310 es shaders to use AEP features"														},
 		{texture_cube_map_array,				"texture_cube_map_array",				"GL_EXT_texture_cube_map_array is required in 310 es shaders to use AEP features"												},
+		{accessing_bounding_box_type,			"accessing_bounding_box_type",			"Should not be able to access gl_BoundingBoxEXT[] and gl_BoundingBox[] in shaders other than tess control and evaluation"		},
 	};
 
 	return std::vector<FunctionContainer>(DE_ARRAY_BEGIN(funcs), DE_ARRAY_END(funcs));
