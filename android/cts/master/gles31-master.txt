@@ -16769,6 +16769,7 @@ dEQP-GLES31.functional.debug.negative_coverage.callbacks.shader_directive.shader
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.shader_directive.tessellation_shader
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.shader_directive.texture_buffer
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.shader_directive.texture_cube_map_array
+dEQP-GLES31.functional.debug.negative_coverage.callbacks.shader_directive.accessing_bounding_box_type
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.ssbo_block.ssbo_block_interface_matching_tests
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.ssbo_block.ssbo_using_shared_qualifier_tests
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.precise.precise_as_variable_name
@@ -17226,6 +17227,7 @@ dEQP-GLES31.functional.debug.negative_coverage.log.shader_directive.shader_io_bl
 dEQP-GLES31.functional.debug.negative_coverage.log.shader_directive.tessellation_shader
 dEQP-GLES31.functional.debug.negative_coverage.log.shader_directive.texture_buffer
 dEQP-GLES31.functional.debug.negative_coverage.log.shader_directive.texture_cube_map_array
+dEQP-GLES31.functional.debug.negative_coverage.log.shader_directive.accessing_bounding_box_type
 dEQP-GLES31.functional.debug.negative_coverage.log.ssbo_block.ssbo_block_interface_matching_tests
 dEQP-GLES31.functional.debug.negative_coverage.log.ssbo_block.ssbo_using_shared_qualifier_tests
 dEQP-GLES31.functional.debug.negative_coverage.log.precise.precise_as_variable_name
@@ -17681,6 +17683,7 @@ dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_directive.shader
 dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_directive.tessellation_shader
 dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_directive.texture_buffer
 dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_directive.texture_cube_map_array
+dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_directive.accessing_bounding_box_type
 dEQP-GLES31.functional.debug.negative_coverage.get_error.ssbo_block.ssbo_block_interface_matching_tests
 dEQP-GLES31.functional.debug.negative_coverage.get_error.ssbo_block.ssbo_using_shared_qualifier_tests
 dEQP-GLES31.functional.debug.negative_coverage.get_error.precise.precise_as_variable_name
