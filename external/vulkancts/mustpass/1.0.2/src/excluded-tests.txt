@@ -293,6 +293,3 @@ dEQP-VK.texture.explicit_lod.*
 
 # Exclude tests which are not on the Android CTS mustpass list
 dEQP-VK.texture.mipmap.2d.projected.*
-
-# Vulkan CTS issue 582
-dEQP-VK.glsl.builtin_var.simple.pointcoord
