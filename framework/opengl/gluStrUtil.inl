@@ -14,6 +14,7 @@ const char* getErrorName (int value)
 		case GL_INVALID_OPERATION:				return "GL_INVALID_OPERATION";
 		case GL_OUT_OF_MEMORY:					return "GL_OUT_OF_MEMORY";
 		case GL_INVALID_FRAMEBUFFER_OPERATION:	return "GL_INVALID_FRAMEBUFFER_OPERATION";
+		case GL_CONTEXT_LOST:					return "GL_CONTEXT_LOST";
 		default:								return DE_NULL;
 	}
 }
@@ -1784,6 +1785,18 @@ const char* getTextureFormatName (int value)
 		case GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG:			return "GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG";
 		case GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG:			return "GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG";
 		default:											return DE_NULL;
+	}
+}
+
+const char* getGraphicsResetStatusName (int value)
+{
+	switch (value)
+	{
+		case GL_NO_ERROR:				return "GL_NO_ERROR";
+		case GL_GUILTY_CONTEXT_RESET:	return "GL_GUILTY_CONTEXT_RESET";
+		case GL_INNOCENT_CONTEXT_RESET:	return "GL_INNOCENT_CONTEXT_RESET";
+		case GL_UNKNOWN_CONTEXT_RESET:	return "GL_UNKNOWN_CONTEXT_RESET";
+		default:						return DE_NULL;
 	}
 }
 

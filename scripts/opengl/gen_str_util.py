@@ -75,7 +75,7 @@ ENUM_GROUPS = [
 
 	# ErrorCode
 	("Error",				["NO_ERROR", "INVALID_ENUM", "INVALID_VALUE", "INVALID_OPERATION", "OUT_OF_MEMORY",
-							 "INVALID_FRAMEBUFFER_OPERATION"]),
+							 "INVALID_FRAMEBUFFER_OPERATION", "CONTEXT_LOST"]),
 	# PixelType, partially
 	("Type", [
 		# GLES2 types
@@ -937,6 +937,14 @@ ENUM_GROUPS = [
 
 	("TextureFormat", [
 		# generated: UncompressedTextureFormat + CompressedTextureFormat
+	]),
+
+	# GraphicsResetStatus
+	("GraphicsResetStatus", [
+		"NO_ERROR",
+		"GUILTY_CONTEXT_RESET",
+		"INNOCENT_CONTEXT_RESET",
+		"UNKNOWN_CONTEXT_RESET",
 	]),
 ]
 

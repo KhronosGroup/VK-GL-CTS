@@ -296,6 +296,7 @@ LOCAL_SRC_FILES := \
 	modules/egl/teglQuerySurfaceTests.cpp \
 	modules/egl/teglRenderCase.cpp \
 	modules/egl/teglRenderTests.cpp \
+	modules/egl/teglRobustnessTests.cpp \
 	modules/egl/teglResizeTests.cpp \
 	modules/egl/teglSimpleConfigCase.cpp \
 	modules/egl/teglSurfacelessContextTests.cpp \

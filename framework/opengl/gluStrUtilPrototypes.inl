@@ -74,6 +74,7 @@ const char*							getDebugMessageSeverityName				(int value);
 const char*							getPipelineParamName					(int value);
 const char*							getPatchParamName						(int value);
 const char*							getTextureFormatName					(int value);
+const char*							getGraphicsResetStatusName				(int value);
 tcu::Format::Bitfield<16>			getBufferMaskStr						(int value);
 tcu::Format::Bitfield<16>			getBufferMapFlagsStr					(int value);
 tcu::Format::Bitfield<16>			getMemoryBarrierFlagsStr				(int value);
@@ -149,4 +150,5 @@ inline tcu::Format::Enum<int, 2>	getDebugMessageSeverityStr				(int value)		{ re
 inline tcu::Format::Enum<int, 2>	getPipelineParamStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPipelineParamName, value); }
 inline tcu::Format::Enum<int, 2>	getPatchParamStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPatchParamName, value); }
 inline tcu::Format::Enum<int, 2>	getTextureFormatStr						(int value)		{ return tcu::Format::Enum<int, 2>(getTextureFormatName, value); }
+inline tcu::Format::Enum<int, 2>	getGraphicsResetStatusStr				(int value)		{ return tcu::Format::Enum<int, 2>(getGraphicsResetStatusName, value); }
 inline tcu::Format::Enum<int, 1>	getBooleanStr							(deUint8 value)	{ return tcu::Format::Enum<int, 1>(getBooleanName, (int)value); }
