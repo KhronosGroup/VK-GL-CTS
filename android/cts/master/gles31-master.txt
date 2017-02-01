@@ -35550,3 +35550,17 @@ dEQP-GLES31.functional.draw_buffers_indexed.random.max_implementation_draw_buffe
 dEQP-GLES31.functional.draw_buffers_indexed.random.max_implementation_draw_buffers.18
 dEQP-GLES31.functional.draw_buffers_indexed.random.max_implementation_draw_buffers.19
 dEQP-GLES31.functional.default_vertex_array_object.vertex_attrib_divisor
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.srgba8.skipped
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.srgba8.enabled
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.srgba8.texel_fetch
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.srgba8.conversion_gpu
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.srgba8.toggled
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.srgba8.multiple_textures
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.srgba8.using_sampler
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.sr8.skipped
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.sr8.enabled
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.sr8.texel_fetch
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.sr8.conversion_gpu
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.sr8.toggled
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.sr8.multiple_textures
+dEQP-GLES31.functional.srgb_texture_decode.skip_decode.sr8.using_sampler
