@@ -24,7 +24,9 @@ import os
 import re
 import sys
 import shutil
+import string
 import argparse
+import time
 
 import common
 
@@ -188,6 +190,51 @@ def dumpConfig ():
 		print "%-30s : %s" % (entry[0], entry[1])
 	print " "
 
+# Return NDK version as [<major>,<minor>] or None if cannot be figured out.
+def getNdkVersion (path):
+	if path == None:
+		return None
+
+	propFilePath = os.path.join(path, "source.properties")
+	try:
+		with open(propFilePath) as propFile:
+			for line in propFile:
+				keyValue = map(lambda x: string.strip(x), line.split("="))
+				if keyValue[0] == "Pkg.Revision":
+					versionParts = keyValue[1].split(".")
+					return tuple(map(int, versionParts[0:2]))
+	except:
+		print("Could not read source prop file '%s'" % propFilePath)
+
+	return None
+
+def checkConfig ():
+	HOST_OS_TO_DOWNLOAD_STRING = {
+			"linux-x86_64"		: "linux-x86_64",
+			"windows"			: "windows-x86",
+			"windows-x86_64"	: "windows-x86_64"
+		}
+
+	version = getNdkVersion(common.ANDROID_NDK_PATH)
+	# Note: NDK currently maintains compatibility between minor
+	# versions. Error out only on major version mismatch.
+	if version == None or version[0] != common.ANDROID_NDK_VERSION[0]:
+		print("**** WARNING! Deqp requires NDK version %s" % common.ANDROID_NDK_VERSION_STRING)
+		print("**** NDK Path %s does not appear to have that version." % common.ANDROID_NDK_PATH)
+
+		# Download hint will use the version encored in common.py, not
+		# the latest minor version available
+		versionString = common.ANDROID_NDK_VERSION_STRING
+		if common.ANDROID_NDK_HOST_OS in HOST_OS_TO_DOWNLOAD_STRING:
+			osString = HOST_OS_TO_DOWNLOAD_STRING[common.ANDROID_NDK_HOST_OS]
+			print("**** Please install from https://dl.google.com/android/repository/android-ndk-%s-%s.zip" % (versionString, osString))
+		else:
+			print("**** Please download version", versionString, "from https://developer.android.com/ndk/downloads/index.html")
+
+		return False
+
+	return True
+
 if __name__ == "__main__":
 	nativeBuildTypes = ['Release', 'Debug', 'MinSizeRel', 'RelWithAsserts', 'RelWithDebInfo']
 	androidBuildTypes = ['debug', 'release']
@@ -199,10 +246,15 @@ if __name__ == "__main__":
 	parser.add_argument('--dump-config', dest='dumpConfig', action='store_true', help="Print out all configurations variables")
 	parser.add_argument('--java-api', dest='javaApi', default=common.ANDROID_JAVA_API, help="Set the API signature for the java build.")
 	parser.add_argument('-p', '--parallel-build', dest='parallelBuild', action="store_true", help="Build native libraries in parallel.")
+	parser.add_argument('--skip-config-check', dest='skipConfigCheck', action="store_true", default=False, help="Skips config check. Warranty void.")
 
 	args = parser.parse_args()
 
 	if args.dumpConfig:
 		dumpConfig()
+
+	if not args.skipConfigCheck and not checkConfig():
+		print "Config check failed, exit"
+		exit(-1)
 
 	build(buildRoot=os.path.abspath(args.buildRoot), androidBuildType=args.androidBuildType, nativeBuildType=args.nativeBuildType, javaApi=args.javaApi, doParallelBuild=args.parallelBuild)
