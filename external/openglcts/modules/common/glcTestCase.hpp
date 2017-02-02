@@ -86,4 +86,11 @@ inline TestCase::TestCase(Context& context, tcu::TestNodeType nodeType, const ch
 
 } // deqp
 
+namespace glcts
+{
+
+using deqp::TestCaseGroup;
+
+} // glcts
+
 #endif // _GLCTESTCASE_HPP

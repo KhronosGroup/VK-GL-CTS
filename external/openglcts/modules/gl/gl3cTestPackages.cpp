@@ -23,7 +23,6 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "gl3cTestPackages.hpp"
-#include "../glesext/draw_elements_base_vertex/esextcDrawElementsBaseVertexTests.hpp"
 #include "gl3cClipDistance.hpp"
 #include "gl3cCommonBugsTests.hpp"
 #include "gl3cCullDistanceTests.hpp"
@@ -209,10 +208,8 @@ void GL32TestPackage::init(void)
 
 	try
 	{
-		glcts::ExtParameters extParams(glu::GLSL_VERSION_330, glcts::EXTENSIONTYPE_NONE);
 		addChild(new gl3cts::TransformFeedbackOverflowQueryTests(
 			getContext(), gl3cts::TransformFeedbackOverflowQueryTests::API_GL_ARB_transform_feedback_overflow_query));
-		addChild(new glcts::DrawElementsBaseVertexTests(getContext(), extParams));
 	}
 	catch (...)
 	{
