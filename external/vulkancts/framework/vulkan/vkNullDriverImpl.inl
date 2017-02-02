@@ -1212,6 +1212,13 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceFormats2KHR (VkPhysicalDe
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getSwapchainStatusKHR (VkDevice device, VkSwapchainKHR swapchain)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage)
 {
 	DE_UNREF(instance);
@@ -1572,6 +1579,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkQueuePresentKHR,									queuePresentKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateSharedSwapchainsKHR,							createSharedSwapchainsKHR),
 	VK_NULL_FUNC_ENTRY(vkTrimCommandPoolKHR,								trimCommandPoolKHR),
+	VK_NULL_FUNC_ENTRY(vkGetSwapchainStatusKHR,								getSwapchainStatusKHR),
 	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectTagEXT,						debugMarkerSetObjectTagEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectNameEXT,						debugMarkerSetObjectNameEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,							cmdDebugMarkerBeginEXT),

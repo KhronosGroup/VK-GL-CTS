@@ -1476,6 +1476,13 @@ struct VkSurfaceFormat2KHR
 	VkSurfaceFormatKHR	surfaceFormat;
 };
 
+struct VkSharedPresentSurfaceCapabilitiesKHR
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkImageUsageFlags	sharedPresentSupportedUsageFlags;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;
