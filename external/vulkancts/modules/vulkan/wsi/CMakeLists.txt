@@ -13,6 +13,8 @@ set(DEQP_VK_WSI_SRCS
 	vktWsiIncrementalPresentTests.hpp
 	vktWsiDisplayTimingTests.cpp
 	vktWsiDisplayTimingTests.hpp
+	vktWsiSharedPresentableImageTests.cpp
+	vktWsiSharedPresentableImageTests.hpp
 	)
 
 set(DEQP_VK_WSI_LIBS

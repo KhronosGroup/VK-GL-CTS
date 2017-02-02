@@ -358,6 +358,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionsKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSurfaceInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceCapabilities2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceFormat2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSharedPresentSurfaceCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateRasterizationOrderAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);
