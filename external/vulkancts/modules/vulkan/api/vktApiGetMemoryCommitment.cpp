@@ -24,7 +24,9 @@
 
 #include "vktApiGetMemoryCommitment.hpp"
 
-#include "vkDeviceUtil.cpp"
+#include "vkDeviceUtil.hpp"
+#include "vkQueryUtil.hpp"
+#include "vkRefUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
