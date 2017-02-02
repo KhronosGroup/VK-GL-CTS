@@ -1411,7 +1411,7 @@ ShaderMatrixInstance::ShaderMatrixInstance (Context&				context,
 											const ShaderInput		in0,
 											const ShaderInput		in1,
 											const MatrixOp			op)
-	: ShaderRenderCaseInstance	(context, isVertex, evaluator, DE_NULL, DE_NULL)
+	: ShaderRenderCaseInstance	(context, isVertex, evaluator, DE_NULL, DE_NULL, IMAGE_BACKING_MODE_REGULAR, isVertex && op == OP_INVERSE ? 64 : GRID_SIZE_DEFAULTS)
 	, m_in0						(in0)
 	, m_in1						(in1)
 	, m_op						(op)

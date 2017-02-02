@@ -58,7 +58,6 @@ using namespace vk;
 namespace
 {
 
-static const int		GRID_SIZE			= 90;
 static const deUint32	MAX_RENDER_WIDTH	= 128;
 static const deUint32	MAX_RENDER_HEIGHT	= 128;
 static const tcu::Vec4	DEFAULT_CLEAR_COLOR	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
@@ -535,6 +534,7 @@ TestInstance* ShaderRenderCase::createInstance (Context& context) const
 ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context)
 	: vkt::TestInstance		(context)
 	, m_imageBackingMode	(IMAGE_BACKING_MODE_REGULAR)
+	, m_quadGridSize		(static_cast<deUint32>(GRID_SIZE_DEFAULT_FRAGMENT))
 	, m_sparseContext		(createSparseContext())
 	, m_memAlloc			(getAllocator())
 	, m_clearColor			(DEFAULT_CLEAR_COLOR)
@@ -556,9 +556,15 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 													const ShaderEvaluator&		evaluator,
 													const UniformSetup&			uniformSetup,
 													const AttributeSetupFunc	attribFunc,
-													const ImageBackingMode		imageBackingMode)
+													const ImageBackingMode		imageBackingMode,
+													const deUint32				gridSize)
 	: vkt::TestInstance		(context)
 	, m_imageBackingMode	(imageBackingMode)
+	, m_quadGridSize		(gridSize == static_cast<deUint32>(GRID_SIZE_DEFAULTS)
+							 ? (isVertexCase
+								? static_cast<deUint32>(GRID_SIZE_DEFAULT_VERTEX)
+								: static_cast<deUint32>(GRID_SIZE_DEFAULT_FRAGMENT))
+							 : gridSize)
 	, m_sparseContext		(createSparseContext())
 	, m_memAlloc			(getAllocator())
 	, m_clearColor			(DEFAULT_CLEAR_COLOR)
@@ -579,9 +585,15 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 													const ShaderEvaluator*		evaluator,
 													const UniformSetup*			uniformSetup,
 													const AttributeSetupFunc	attribFunc,
-													const ImageBackingMode		imageBackingMode)
+													const ImageBackingMode		imageBackingMode,
+													const deUint32				gridSize)
 	: vkt::TestInstance		(context)
 	, m_imageBackingMode	(imageBackingMode)
+	, m_quadGridSize		(gridSize == static_cast<deUint32>(GRID_SIZE_DEFAULTS)
+							 ? (isVertexCase
+								? static_cast<deUint32>(GRID_SIZE_DEFAULT_VERTEX)
+								: static_cast<deUint32>(GRID_SIZE_DEFAULT_FRAGMENT))
+							 : gridSize)
 	, m_sparseContext		(createSparseContext())
 	, m_memAlloc			(getAllocator())
 	, m_clearColor			(DEFAULT_CLEAR_COLOR)
@@ -737,7 +749,7 @@ tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 	const int			width			= viewportSize.x();
 	const int			height			= viewportSize.y();
 
-	m_quadGrid							= de::MovePtr<QuadGrid>(new QuadGrid(m_isVertexCase ? GRID_SIZE : 4, width, height, getDefaultConstCoords(), m_userAttribTransforms, m_textures));
+	m_quadGrid							= de::MovePtr<QuadGrid>(new QuadGrid(m_quadGridSize, width, height, getDefaultConstCoords(), m_userAttribTransforms, m_textures));
 
 	// Render result.
 	tcu::Surface		resImage		(width, height);
