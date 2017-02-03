@@ -769,6 +769,35 @@ public:
 	virtual tcu::TestNode::IterateResult iterate();
 };
 
+/** Implements Negative Test III. For clarity, the description is included below:
+ *
+ *  (note: the description below refers to ES entry-points, but these are
+ *         replaced with GL equivalents under GL contexts)
+ *
+ *  III.1.   Check if proper error code is generated when element array buffer
+ *           object is mapped for the draw call.
+ *  III.1.a. Call glMapBufferRange() to map the element array buffer object
+ *           that stores vertex indices used in the draw call. Execute
+ *           glDrawElementsBaseVertexEXT() as shown in the description using
+ *           element array buffer object as a vertex indices data source
+ *           (the buffer object which is currently mapped). The client-side
+ *           memory should be used to store vertex coordinates. Expect
+ *           GL_INVALID_OPERATION to be generated.
+ *  III.1.b. Repeat the test (III.1.a.) for glDrawRangeElementsBaseVertexEXT().
+ *  III.1.c. Repeat the test (III.1.a.) for glDrawElementsInstancedBaseVertexEXT().
+ *  III.1.d. Repeat the test (III.1.a - III.1.c) with buffer object holding
+ *           vertex coordinates attached to GL_ARRAY_BUFFER buffer binding point.
+ *
+ */
+class DrawElementsBaseVertexNegativeMappedBufferObjectsTest : public DrawElementsBaseVertexTestBase
+{
+public:
+	/* Public methods */
+	DrawElementsBaseVertexNegativeMappedBufferObjectsTest(Context& context, const ExtParameters& extParams);
+
+	virtual tcu::TestNode::IterateResult iterate();
+};
+
 /** Test group which encapsulates all conformance tests for "draw elements base vertex"
  *  functionality.
  */
