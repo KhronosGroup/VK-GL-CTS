@@ -2549,6 +2549,73 @@ tcu::TestStatus sparseImageFormatProperties2 (Context& context, const VkFormat f
 	return tcu::TestStatus::pass("Querying sparse image format properties succeeded");
 }
 
+// Android CTS -specific tests
+
+namespace android
+{
+
+void checkExtensions (tcu::ResultCollector& results, const set<string>& allowedExtensions, const vector<VkExtensionProperties>& reportedExtensions)
+{
+	for (vector<VkExtensionProperties>::const_iterator extension = reportedExtensions.begin(); extension != reportedExtensions.end(); ++extension)
+	{
+		const string	extensionName	(extension->extensionName);
+		const bool		mustBeKnown		= de::beginsWith(extensionName, "VK_KHX_")		||
+										  de::beginsWith(extensionName, "VK_GOOGLE_")	||
+										  de::beginsWith(extensionName, "VK_ANDROID_");
+
+		if (mustBeKnown && !de::contains(allowedExtensions, extensionName))
+			results.fail("Unknown extension: " + extensionName);
+	}
+}
+
+tcu::TestStatus testNoUnknownExtensions (Context& context)
+{
+	TestLog&				log					= context.getTestContext().getLog();
+	tcu::ResultCollector	results				(log);
+	set<string>				allowedExtensions;
+
+	// All known extensions should be added to allowedExtensions:
+	// allowedExtensions.insert("VK_GOOGLE_extension1");
+
+	// Instance extensions
+	checkExtensions(results,
+					allowedExtensions,
+					enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL));
+
+	// Extensions exposed by instance layers
+	{
+		const vector<VkLayerProperties>	layers	= enumerateInstanceLayerProperties(context.getPlatformInterface());
+
+		for (vector<VkLayerProperties>::const_iterator layer = layers.begin(); layer != layers.end(); ++layer)
+		{
+			checkExtensions(results,
+							allowedExtensions,
+							enumerateInstanceExtensionProperties(context.getPlatformInterface(), layer->layerName));
+		}
+	}
+
+	// Device extensions
+	checkExtensions(results,
+					allowedExtensions,
+					enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL));
+
+	// Extensions exposed by device layers
+	{
+		const vector<VkLayerProperties>	layers	= enumerateDeviceLayerProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+
+		for (vector<VkLayerProperties>::const_iterator layer = layers.begin(); layer != layers.end(); ++layer)
+		{
+			checkExtensions(results,
+							allowedExtensions,
+							enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), layer->layerName));
+		}
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
+} // android
+
 } // anonymous
 
 tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
@@ -2595,6 +2662,14 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 
 	infoTests->addChild(createTestGroup(testCtx, "image_format_properties2",		"VkGetPhysicalDeviceImageFormatProperties2KHR() Tests",			createImageFormatTests, imageFormatProperties2));
 	infoTests->addChild(createTestGroup(testCtx, "sparse_image_format_properties2",	"VkGetPhysicalDeviceSparseImageFormatProperties2KHR() Tests",	createImageFormatTests, sparseImageFormatProperties2));
+
+	{
+		de::MovePtr<tcu::TestCaseGroup>	androidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
+
+		addFunctionCase(androidTests.get(), "no_unknown_extensions",	"Test for unknown device or instance extensions",	android::testNoUnknownExtensions);
+
+		infoTests->addChild(androidTests.release());
+	}
 
 	return infoTests.release();
 }
