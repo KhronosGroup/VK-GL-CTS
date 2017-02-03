@@ -2620,6 +2620,44 @@ tcu::TestStatus testNoLayers (Context& context)
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+tcu::TestStatus testMandatoryExtensions (Context& context)
+{
+	TestLog&				log		= context.getTestContext().getLog();
+	tcu::ResultCollector	results	(log);
+
+	// Instance extensions
+	{
+		static const char*					mandatoryExtensions[]	=
+		{
+			"VK_KHR_get_physical_device_properties2",
+		};
+		const vector<VkExtensionProperties>	extensions				= enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL);
+
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(mandatoryExtensions); ++ndx)
+		{
+			if (!isExtensionSupported(extensions, RequiredExtension(mandatoryExtensions[ndx])))
+				results.fail(string(mandatoryExtensions[ndx]) + " is not supported");
+		}
+	}
+
+	// Device extensions
+	{
+		static const char*					mandatoryExtensions[]	=
+		{
+			"VK_KHR_maintenance1",
+		};
+		const vector<VkExtensionProperties>	extensions				= enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
+
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(mandatoryExtensions); ++ndx)
+		{
+			if (!isExtensionSupported(extensions, RequiredExtension(mandatoryExtensions[ndx])))
+				results.fail(string(mandatoryExtensions[ndx]) + " is not supported");
+		}
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
 } // android
 
 } // anonymous
@@ -2672,6 +2710,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup>	androidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
 
+		addFunctionCase(androidTests.get(),	"mandatory_extensions",		"Test that all mandatory extensions are supported",	android::testMandatoryExtensions);
 		addFunctionCase(androidTests.get(), "no_unknown_extensions",	"Test for unknown device or instance extensions",	android::testNoUnknownExtensions);
 		addFunctionCase(androidTests.get(), "no_layers",				"Test that no layers are enumerated",				android::testNoLayers);
 
