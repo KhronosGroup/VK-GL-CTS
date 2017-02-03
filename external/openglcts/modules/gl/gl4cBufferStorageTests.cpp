@@ -2105,9 +2105,7 @@ tcu::TestNode::IterateResult GetBufferParameterTest::iterate()
 		{
 			GLint queried_access = -1;
 
-			{
-				Buffer::MapOwner tmp(buffer.MapRange(0 /* offset */, data_size, access));
-			}
+			Buffer::MapOwner tmp(buffer.MapRange(0 /* offset */, data_size, access));
 
 			if (0 != gl.getNamedBufferParameteriv)
 			{
@@ -2472,10 +2470,8 @@ tcu::TestNode::IterateResult MapPersistentBufferSubDataTest::iterate()
 	 * No error should be generated for other cases.
 	 */
 	{
-		{
-			Buffer::MapOwner tmp(
-				buffer.MapRange(mapped_region_offset, mapped_region_size, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
-		}
+		Buffer::MapOwner tmp(
+			buffer.MapRange(mapped_region_offset, mapped_region_size, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
 
 		for (size_t i = 0; i < n_test_cases; ++i)
 		{
@@ -2907,9 +2903,7 @@ tcu::TestNode::IterateResult MapPersistentReadPixelsTest::iterate()
 	 * INVALID_OPERATION error should be generated.
 	 */
 	{
-		{
-			Buffer::MapOwner tmp(buffer.MapRange(0 /* offset */, data_size, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
-		}
+		Buffer::MapOwner tmp(buffer.MapRange(0 /* offset */, data_size, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
 
 		buffer.Bind();
 		gl.readPixels(0 /* x */, 0 /* y */, width, height, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
