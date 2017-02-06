@@ -118,6 +118,12 @@ enum ViewClass
 	VIEWCLASS_ASTC_12x12_RGBA
 };
 
+enum Verify
+{
+	VERIFY_NONE = 0,
+	VERIFY_COMPARE_REFERENCE
+};
+
 const char* viewClassToName (ViewClass viewClass)
 {
 	switch (viewClass)
@@ -891,14 +897,15 @@ void copyImage (const glw::Functions&					gl,
 				  srcImageData, srcImageInfo, srcLevel, srcPos, copySize);
 }
 
-void verifyTexture2DView (tcu::TestContext&			testContext,
+void renderTexture2DView (tcu::TestContext&			testContext,
 						  glu::RenderContext&		renderContext,
 						  TextureRenderer&			renderer,
 						  tcu::ResultCollector&		results,
 						  de::Random&				rng,
 						  deUint32					name,
 						  const ImageInfo&			info,
-						  const tcu::Texture2DView&	refTexture)
+						  const tcu::Texture2DView&	refTexture,
+						  Verify					verify)
 {
 	tcu::TestLog&					log				= testContext.getLog();
 	const glw::Functions&			gl				= renderContext.getFunctions();
@@ -929,8 +936,6 @@ void verifyTexture2DView (tcu::TestContext&			testContext,
 		const RandomViewport	viewport		(renderContext.getRenderTarget(), levelSize.x(), levelSize.y(), rng.getUint32());
 
 		vector<float>			texCoord;
-		tcu::Surface			renderedFrame	(viewport.width, viewport.height);
-		tcu::Surface			referenceFrame	(viewport.width, viewport.height);
 
 		renderParams.baseLevel	= level;
 		renderParams.maxLevel	= level;
@@ -945,17 +950,25 @@ void verifyTexture2DView (tcu::TestContext&			testContext,
 
 		// Draw.
 		renderer.renderQuad(0, &texCoord[0], renderParams);
-		glu::readPixels(renderContext, viewport.x, viewport.y, renderedFrame.getAccess());
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render and read pixels.");
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render.");
 
-		// Compute reference.
-		sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
+		if (verify == VERIFY_COMPARE_REFERENCE)
+		{
+			tcu::Surface renderedFrame	(viewport.width, viewport.height);
+			tcu::Surface referenceFrame	(viewport.width, viewport.height);
 
-		// Compare and log.
-		if (!pixelThresholdCompare(log, ("Level" + de::toString(level)).c_str(), ("Render level " + de::toString(level)).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
-			results.fail("Image comparison of level " + de::toString(level) + " failed.");
-		else
-			log << TestLog::Message << "Image comparison of level " << level << " passed." << TestLog::EndMessage;
+			glu::readPixels(renderContext, viewport.x, viewport.y, renderedFrame.getAccess());
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to read pixels.");
+
+			// Compute reference.
+			sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
+
+			// Compare and log.
+			if (!pixelThresholdCompare(log, ("Level" + de::toString(level)).c_str(), ("Render level " + de::toString(level)).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
+				results.fail("Image comparison of level " + de::toString(level) + " failed.");
+			else
+				log << TestLog::Message << "Image comparison of level " << level << " passed." << TestLog::EndMessage;
+		}
 	}
 
 	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
@@ -1016,14 +1029,15 @@ void decompressTexture (vector<ArrayBuffer<deUint8> >&			levelDatas,
 	}
 }
 
-void verifyTexture2D (tcu::TestContext&						testContext,
+void renderTexture2D (tcu::TestContext&						testContext,
 					  glu::RenderContext&					renderContext,
 					  TextureRenderer&						textureRenderer,
 					  tcu::ResultCollector&					results,
 					  de::Random&							rng,
 					  deUint32								name,
 					  const vector<ArrayBuffer<deUint8> >&	data,
-					  const ImageInfo&						info)
+					  const ImageInfo&						info,
+					  Verify								verify)
 {
 	if (glu::isCompressedFormat(info.getFormat()))
 	{
@@ -1035,7 +1049,7 @@ void verifyTexture2D (tcu::TestContext&						testContext,
 		{
 			const tcu::Texture2DView refTexture((int)levelAccesses.size(), &(levelAccesses[0]));
 
-			verifyTexture2DView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
+			renderTexture2DView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture, verify);
 		}
 	}
 	else
@@ -1043,18 +1057,19 @@ void verifyTexture2D (tcu::TestContext&						testContext,
 		const vector<tcu::ConstPixelBufferAccess>	levelAccesses	= getLevelAccesses(data, info);
 		const tcu::Texture2DView					refTexture		((int)levelAccesses.size(), &(levelAccesses[0]));
 
-		verifyTexture2DView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
+		renderTexture2DView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture, verify);
 	}
 }
 
-void verifyTexture3DView (tcu::TestContext&			testContext,
+void renderTexture3DView (tcu::TestContext&			testContext,
 						  glu::RenderContext&		renderContext,
 						  TextureRenderer&			renderer,
 						  tcu::ResultCollector&		results,
 						  de::Random&				rng,
 						  deUint32					name,
 						  const ImageInfo&			info,
-						  const tcu::Texture3DView&	refTexture)
+						  const tcu::Texture3DView&	refTexture,
+						  Verify					verify)
 {
 	tcu::TestLog&					log				= testContext.getLog();
 	const glw::Functions&			gl				= renderContext.getFunctions();
@@ -1094,8 +1109,6 @@ void verifyTexture3DView (tcu::TestContext&			testContext,
 		{
 			const RandomViewport	viewport		(renderContext.getRenderTarget(), levelSize.x(), levelSize.y(), rng.getUint32());
 			const float				r				= (float(slice) + 0.5f) / (float)levelSize.z();
-			tcu::Surface			renderedFrame	(viewport.width, viewport.height);
-			tcu::Surface			referenceFrame	(viewport.width, viewport.height);
 			vector<float>			texCoord;
 
 			computeQuadTexCoord3D(texCoord, tcu::Vec3(0.0f, 0.0f, r), tcu::Vec3(1.0f, 1.0f, r), tcu::IVec3(0, 1, 2));
@@ -1105,17 +1118,24 @@ void verifyTexture3DView (tcu::TestContext&			testContext,
 
 			// Draw.
 			renderer.renderQuad(0, &texCoord[0], renderParams);
-			glu::readPixels(renderContext, viewport.x, viewport.y, renderedFrame.getAccess());
-			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render and read pixels.");
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render.");
 
-			// Compute reference.
-			sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
+			if (verify == VERIFY_COMPARE_REFERENCE)
+			{
+				tcu::Surface renderedFrame	(viewport.width, viewport.height);
+				tcu::Surface referenceFrame	(viewport.width, viewport.height);
+				glu::readPixels(renderContext, viewport.x, viewport.y, renderedFrame.getAccess());
+				GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to read pixels.");
 
-			// Compare and log.
-			if (!pixelThresholdCompare(log, ("Level" + de::toString(level) + "Slice" + de::toString(slice)).c_str(), ("Render level " + de::toString(level) + ", Slice" + de::toString(slice)).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
-				results.fail("Image comparison of level " + de::toString(level) + " and slice " + de::toString(slice) + " failed.");
-			else
-				log << TestLog::Message << "Image comparison of level " << level << " and slice " << slice << " passed." << TestLog::EndMessage;;
+				// Compute reference.
+				sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
+
+				// Compare and log.
+				if (!pixelThresholdCompare(log, ("Level" + de::toString(level) + "Slice" + de::toString(slice)).c_str(), ("Render level " + de::toString(level) + ", Slice" + de::toString(slice)).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
+					results.fail("Image comparison of level " + de::toString(level) + " and slice " + de::toString(slice) + " failed.");
+				else
+					log << TestLog::Message << "Image comparison of level " << level << " and slice " << slice << " passed." << TestLog::EndMessage;;
+			}
 		}
 	}
 
@@ -1126,14 +1146,15 @@ void verifyTexture3DView (tcu::TestContext&			testContext,
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unbind texture.");
 }
 
-void verifyTexture3D (tcu::TestContext&						testContext,
+void renderTexture3D (tcu::TestContext&						testContext,
 					  glu::RenderContext&					renderContext,
 					  TextureRenderer&						textureRenderer,
 					  tcu::ResultCollector&					results,
 					  de::Random&							rng,
 					  deUint32								name,
 					  const vector<ArrayBuffer<deUint8> >&	data,
-					  const ImageInfo&						info)
+					  const ImageInfo&						info,
+				      Verify								verify)
 {
 	if (glu::isCompressedFormat(info.getFormat()))
 	{
@@ -1145,7 +1166,7 @@ void verifyTexture3D (tcu::TestContext&						testContext,
 		{
 			const tcu::Texture3DView refTexture((int)levelAccesses.size(), &(levelAccesses[0]));
 
-			verifyTexture3DView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
+			renderTexture3DView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture, verify);
 		}
 	}
 	else
@@ -1153,18 +1174,19 @@ void verifyTexture3D (tcu::TestContext&						testContext,
 		const vector<tcu::ConstPixelBufferAccess>	levelAccesses	= getLevelAccesses(data, info);
 		const tcu::Texture3DView					refTexture		((int)levelAccesses.size(), &(levelAccesses[0]));
 
-		verifyTexture3DView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
+		renderTexture3DView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture, verify);
 	}
 }
 
-void verifyTextureCubemapView (tcu::TestContext&			testContext,
+void renderTextureCubemapView (tcu::TestContext&			testContext,
 							   glu::RenderContext&			renderContext,
 							   TextureRenderer&				renderer,
 							   tcu::ResultCollector&		results,
 							   de::Random&					rng,
 							   deUint32						name,
 							   const ImageInfo&				info,
-							   const tcu::TextureCubeView&	refTexture)
+							   const tcu::TextureCubeView&	refTexture,
+							   Verify						verify)
 {
 	tcu::TestLog&					log				= testContext.getLog();
 	const glw::Functions&			gl				= renderContext.getFunctions();
@@ -1207,8 +1229,6 @@ void verifyTextureCubemapView (tcu::TestContext&			testContext,
 		{
 			const RandomViewport	viewport		(renderContext.getRenderTarget(), levelSize.x(), levelSize.y(), rng.getUint32());
 			const string			cubemapFaceName	= glu::getCubeMapFaceStr(mapFaceNdxToFace(face)).toString();
-			tcu::Surface			renderedFrame	(viewport.width, viewport.height);
-			tcu::Surface			referenceFrame	(viewport.width, viewport.height);
 			vector<float>			texCoord;
 
 			computeQuadTexCoordCube(texCoord, glu::getCubeFaceFromGL(mapFaceNdxToFace(face)));
@@ -1218,17 +1238,25 @@ void verifyTextureCubemapView (tcu::TestContext&			testContext,
 
 			// Draw.
 			renderer.renderQuad(0, &texCoord[0], renderParams);
-			glu::readPixels(renderContext, viewport.x, viewport.y, renderedFrame.getAccess());
-			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render and read pixels.");
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render.");
 
-			// Compute reference.
-			sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
+			if (verify == VERIFY_COMPARE_REFERENCE)
+			{
+				tcu::Surface renderedFrame	(viewport.width, viewport.height);
+				tcu::Surface referenceFrame	(viewport.width, viewport.height);
 
-			// Compare and log.
-			if (!pixelThresholdCompare(log, ("Level" + de::toString(level) + "Face" + cubemapFaceName).c_str(), ("Render level " + de::toString(level) + ", Face " + cubemapFaceName).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
-				results.fail("Image comparison of level " + de::toString(level) + " and face " + cubemapFaceName + " failed.");
-			else
-				log << TestLog::Message << "Image comparison of level " << level << " and face " << cubemapFaceName << " passed." << TestLog::EndMessage;
+				glu::readPixels(renderContext, viewport.x, viewport.y, renderedFrame.getAccess());
+				GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to read pixels.");
+
+				// Compute reference.
+				sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
+
+				// Compare and log.
+				if (!pixelThresholdCompare(log, ("Level" + de::toString(level) + "Face" + cubemapFaceName).c_str(), ("Render level " + de::toString(level) + ", Face " + cubemapFaceName).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
+					results.fail("Image comparison of level " + de::toString(level) + " and face " + cubemapFaceName + " failed.");
+				else
+					log << TestLog::Message << "Image comparison of level " << level << " and face " << cubemapFaceName << " passed." << TestLog::EndMessage;
+			}
 		}
 	}
 
@@ -1239,14 +1267,15 @@ void verifyTextureCubemapView (tcu::TestContext&			testContext,
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unbind texture.");
 }
 
-void verifyTextureCubemap (tcu::TestContext&					testContext,
+void renderTextureCubemap (tcu::TestContext&					testContext,
 						   glu::RenderContext&					renderContext,
 						   TextureRenderer&						textureRenderer,
 						   tcu::ResultCollector&				results,
 						   de::Random&							rng,
 						   deUint32								name,
 						   const vector<ArrayBuffer<deUint8> >&	data,
-						   const ImageInfo&						info)
+						   const ImageInfo&						info,
+						   Verify								verify)
 {
 	if (glu::isCompressedFormat(info.getFormat()))
 	{
@@ -1304,7 +1333,7 @@ void verifyTextureCubemap (tcu::TestContext&					testContext,
 		{
 			const tcu::TextureCubeView refTexture(getLevelCount(info), levels);
 
-			verifyTextureCubemapView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
+			renderTextureCubemapView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture, verify);
 		}
 	}
 	else
@@ -1327,19 +1356,20 @@ void verifyTextureCubemap (tcu::TestContext&					testContext,
 		{
 			const tcu::TextureCubeView refTexture(getLevelCount(info), levels);
 
-			verifyTextureCubemapView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
+			renderTextureCubemapView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture, verify);
 		}
 	}
 }
 
-void verifyTexture2DArrayView (tcu::TestContext&				testContext,
+void renderTexture2DArrayView (tcu::TestContext&				testContext,
 							   glu::RenderContext&				renderContext,
 							   TextureRenderer&					renderer,
 							   tcu::ResultCollector&			results,
 							   de::Random&						rng,
 							   deUint32							name,
 							   const ImageInfo&					info,
-							   const tcu::Texture2DArrayView&	refTexture)
+							   const tcu::Texture2DArrayView&	refTexture,
+							   Verify							verify)
 {
 	tcu::TestLog&					log				= testContext.getLog();
 	const glw::Functions&			gl				= renderContext.getFunctions();
@@ -1377,8 +1407,6 @@ void verifyTexture2DArrayView (tcu::TestContext&				testContext,
 		for (int layer = 0; layer < levelSize.z(); layer++)
 		{
 			const RandomViewport	viewport		(renderContext.getRenderTarget(), levelSize.x(), levelSize.y(), rng.getUint32());
-			tcu::Surface			renderedFrame	(viewport.width, viewport.height);
-			tcu::Surface			referenceFrame	(viewport.width, viewport.height);
 			vector<float>			texCoord;
 
 			computeQuadTexCoord2DArray(texCoord, layer, tcu::Vec2(0.0f, 0.0f), tcu::Vec2(1.0f, 1.0f));
@@ -1388,17 +1416,25 @@ void verifyTexture2DArrayView (tcu::TestContext&				testContext,
 
 			// Draw.
 			renderer.renderQuad(0, &texCoord[0], renderParams);
-			glu::readPixels(renderContext, viewport.x, viewport.y, renderedFrame.getAccess());
-			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render and read pixels.");
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render.");
 
-			// Compute reference.
-			sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
+			if (verify == VERIFY_COMPARE_REFERENCE)
+			{
+				tcu::Surface renderedFrame	(viewport.width, viewport.height);
+				tcu::Surface referenceFrame	(viewport.width, viewport.height);
 
-			// Compare and log.
-			if (!pixelThresholdCompare(log, ("Level" + de::toString(level) + "Layer" + de::toString(layer)).c_str(), ("Render level " + de::toString(level) + ", Layer" + de::toString(layer)).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
-				results.fail("Image comparison of level " + de::toString(level) + " and layer " + de::toString(layer) + " failed.");
-			else
-				log << TestLog::Message << "Image comparison of level " << level << " and layer " << layer << " passed." << TestLog::EndMessage;
+				glu::readPixels(renderContext, viewport.x, viewport.y, renderedFrame.getAccess());
+				GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to read pixels.");
+
+				// Compute reference.
+				sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
+
+				// Compare and log.
+				if (!pixelThresholdCompare(log, ("Level" + de::toString(level) + "Layer" + de::toString(layer)).c_str(), ("Render level " + de::toString(level) + ", Layer" + de::toString(layer)).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
+					results.fail("Image comparison of level " + de::toString(level) + " and layer " + de::toString(layer) + " failed.");
+				else
+					log << TestLog::Message << "Image comparison of level " << level << " and layer " << layer << " passed." << TestLog::EndMessage;
+			}
 		}
 	}
 
@@ -1409,14 +1445,15 @@ void verifyTexture2DArrayView (tcu::TestContext&				testContext,
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unbind texture.");
 }
 
-void verifyTexture2DArray (tcu::TestContext&					testContext,
+void renderTexture2DArray (tcu::TestContext&					testContext,
 						   glu::RenderContext&					renderContext,
 						   TextureRenderer&						textureRenderer,
 						   tcu::ResultCollector&				results,
 						   de::Random&							rng,
 						   deUint32								name,
 						   const vector<ArrayBuffer<deUint8> >&	data,
-						   const ImageInfo&						info)
+						   const ImageInfo&						info,
+						   Verify								verify)
 {
 	if (glu::isCompressedFormat(info.getFormat()))
 	{
@@ -1428,7 +1465,7 @@ void verifyTexture2DArray (tcu::TestContext&					testContext,
 		{
 			const tcu::Texture2DArrayView refTexture((int)levelAccesses.size(), &(levelAccesses[0]));
 
-			verifyTexture2DArrayView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
+			renderTexture2DArrayView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture, verify);
 		}
 	}
 	else
@@ -1436,7 +1473,7 @@ void verifyTexture2DArray (tcu::TestContext&					testContext,
 		const vector<tcu::ConstPixelBufferAccess>	levelAccesses	= getLevelAccesses(data, info);
 		const tcu::Texture2DArrayView				refTexture		((int)levelAccesses.size(), &(levelAccesses[0]));
 
-		verifyTexture2DArrayView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
+		renderTexture2DArrayView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture, verify);
 	}
 }
 
@@ -1480,12 +1517,13 @@ Vec4 calculateThreshold (const tcu::TextureFormat& sourceFormat, const tcu::Text
 	}
 }
 
-void verifyRenderbuffer (tcu::TestContext&						testContext,
+void renderRenderbuffer (tcu::TestContext&						testContext,
 						 glu::RenderContext&					renderContext,
 						 tcu::ResultCollector&					results,
 						 deUint32								name,
 						 const vector<ArrayBuffer<deUint8> >&	data,
-						 const ImageInfo&						info)
+						 const ImageInfo&						info,
+						 Verify									verify)
 {
 	const glw::Functions&				gl					= renderContext.getFunctions();
 	TestLog&							log					= testContext.getLog();
@@ -1509,71 +1547,76 @@ void verifyRenderbuffer (tcu::TestContext&						testContext,
 		gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, name);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to bind and attach renderbuffer to framebuffer.");
 
-		glu::readPixels(renderContext, 0, 0, renderbuffer.getAccess());
+		if (verify)
+			glu::readPixels(renderContext, 0, 0, renderbuffer.getAccess());
 
 		gl.bindRenderbuffer(GL_RENDERBUFFER, 0);
 		gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unbind renderbuffer and framebuffer.");
 	}
 
-	if (isFloatFormat(info.getFormat()))
+	if (verify == VERIFY_COMPARE_REFERENCE)
 	{
-		const tcu::UVec4 threshold (2, 2, 2, 2);
+		if (isFloatFormat(info.getFormat()))
+		{
+			const tcu::UVec4 threshold (2, 2, 2, 2);
 
-		if (!(tcu::floatUlpThresholdCompare(log, "Image comparison", "Image comparison", refRenderbuffer, renderbuffer.getAccess(), threshold, tcu::COMPARE_LOG_ON_ERROR)))
-			results.fail("Image comparison failed.");
-		else
-			log << TestLog::Message << "Image comarison passed." << TestLog::EndMessage;
-	}
-	else if (isIntFormat(info.getFormat()) || isUintFormat(info.getFormat()))
-	{
-		const tcu::UVec4 threshold (1, 1, 1, 1);
+			if (!(tcu::floatUlpThresholdCompare(log, "Image comparison", "Image comparison", refRenderbuffer, renderbuffer.getAccess(), threshold, tcu::COMPARE_LOG_ON_ERROR)))
+				results.fail("Image comparison failed.");
+			else
+				log << TestLog::Message << "Image comarison passed." << TestLog::EndMessage;
+		}
+		else if (isIntFormat(info.getFormat()) || isUintFormat(info.getFormat()))
+		{
+			const tcu::UVec4 threshold (1, 1, 1, 1);
 
-		if (!(tcu::intThresholdCompare(log, "Image comparison", "Image comparison", refRenderbuffer, renderbuffer.getAccess(), threshold, tcu::COMPARE_LOG_ON_ERROR)))
-			results.fail("Image comparison failed.");
+			if (!(tcu::intThresholdCompare(log, "Image comparison", "Image comparison", refRenderbuffer, renderbuffer.getAccess(), threshold, tcu::COMPARE_LOG_ON_ERROR)))
+				results.fail("Image comparison failed.");
+			else
+				log << TestLog::Message << "Image comarison passed." << TestLog::EndMessage;
+		}
 		else
-			log << TestLog::Message << "Image comarison passed." << TestLog::EndMessage;
-	}
-	else
-	{
-		const Vec4 threshold = calculateThreshold(format, readPixelsFormat);
+		{
+			const Vec4 threshold = calculateThreshold(format, readPixelsFormat);
 
-		if (!(tcu::floatThresholdCompare(log, "Image comparison", "Image comparison", refRenderbuffer, renderbuffer.getAccess(), threshold, tcu::COMPARE_LOG_ON_ERROR)))
-			results.fail("Image comparison failed.");
-		else
-			log << TestLog::Message << "Image comarison passed." << TestLog::EndMessage;
+			if (!(tcu::floatThresholdCompare(log, "Image comparison", "Image comparison", refRenderbuffer, renderbuffer.getAccess(), threshold, tcu::COMPARE_LOG_ON_ERROR)))
+				results.fail("Image comparison failed.");
+			else
+				log << TestLog::Message << "Image comarison passed." << TestLog::EndMessage;
+		}
 	}
 }
 
-void verify (tcu::TestContext&						testContext,
+void render (tcu::TestContext&						testContext,
 			 glu::RenderContext&					renderContext,
 			 TextureRenderer&						textureRenderer,
 			 tcu::ResultCollector&					results,
 			 de::Random&							rng,
 			 deUint32								name,
 			 const vector<ArrayBuffer<deUint8> >&	data,
-			 const ImageInfo&						info)
+			 const ImageInfo&						info,
+			 Verify									verify)
 {
 	switch (info.getTarget())
 	{
 		case GL_TEXTURE_2D:
-			verifyTexture2D(testContext, renderContext, textureRenderer, results, rng, name, data, info);
+			renderTexture2D(testContext, renderContext, textureRenderer, results, rng, name, data, info, verify);
 			break;
 
 		case GL_TEXTURE_3D:
-			verifyTexture3D(testContext, renderContext, textureRenderer, results, rng, name, data, info);
+			renderTexture3D(testContext, renderContext, textureRenderer, results, rng, name, data, info, verify);
 			break;
 
 		case GL_TEXTURE_CUBE_MAP:
-			verifyTextureCubemap(testContext, renderContext, textureRenderer, results, rng, name, data, info);
+			renderTextureCubemap(testContext, renderContext, textureRenderer, results, rng, name, data, info, verify);
 			break;
 
 		case GL_TEXTURE_2D_ARRAY:
-			verifyTexture2DArray(testContext, renderContext, textureRenderer, results, rng, name, data, info);
+			renderTexture2DArray(testContext, renderContext, textureRenderer, results, rng, name, data, info, verify);
 			break;
 
 		case GL_RENDERBUFFER:
-			verifyRenderbuffer(testContext, renderContext, results, name, data, info);
+			renderRenderbuffer(testContext, renderContext, results, name, data, info, verify);
 			break;
 
 		default:
@@ -1631,6 +1674,8 @@ private:
 	void					destroyImagesIter		(void);
 	void					verifySourceIter		(void);
 	void					verifyDestinationIter	(void);
+	void					renderSourceIter		(void);
+	void					renderDestinationIter	(void);
 	void					copyImageIter			(void);
 
 	struct State
@@ -1807,7 +1852,7 @@ void CopyImageTest::verifySourceIter (void)
 
 	log << TestLog::Message << "Verifying source image." << TestLog::EndMessage;
 
-	verify(m_testCtx, m_context.getRenderContext(), m_state->textureRenderer, results, rng, *srcImage, srcImageLevels, m_srcImageInfo);
+	render(m_testCtx, m_context.getRenderContext(), m_state->textureRenderer, results, rng, *srcImage, srcImageLevels, m_srcImageInfo, VERIFY_COMPARE_REFERENCE);
 }
 
 void CopyImageTest::verifyDestinationIter (void)
@@ -1822,7 +1867,37 @@ void CopyImageTest::verifyDestinationIter (void)
 
 	log << TestLog::Message << "Verifying destination image." << TestLog::EndMessage;
 
-	verify(m_testCtx, m_context.getRenderContext(), m_state->textureRenderer, results, rng, *dstImage, dstImageLevels, m_dstImageInfo);
+	render(m_testCtx, m_context.getRenderContext(), m_state->textureRenderer, results, rng, *dstImage, dstImageLevels, m_dstImageInfo, VERIFY_COMPARE_REFERENCE);
+}
+
+void CopyImageTest::renderSourceIter (void)
+{
+	TestLog&						log					= m_testCtx.getLog();
+	const tcu::ScopedLogSection		sourceSection		(log, "Source image verify.", "Source image verify.");
+
+	de::Random&						rng					= m_state->rng;
+	tcu::ResultCollector&			results				= m_state->results;
+	glu::ObjectWrapper&				srcImage			= *m_state->srcImage;
+	vector<ArrayBuffer<deUint8> >&	srcImageLevels		= m_state->srcImageLevels;
+
+	log << TestLog::Message << "Verifying source image." << TestLog::EndMessage;
+
+	render(m_testCtx, m_context.getRenderContext(), m_state->textureRenderer, results, rng, *srcImage, srcImageLevels, m_srcImageInfo, VERIFY_NONE);
+}
+
+void CopyImageTest::renderDestinationIter (void)
+{
+	TestLog&						log					= m_testCtx.getLog();
+	const tcu::ScopedLogSection		destinationSection	(log, "Destination image verify.", "Destination image verify.");
+
+	de::Random&						rng					= m_state->rng;
+	tcu::ResultCollector&			results				= m_state->results;
+	glu::ObjectWrapper&				dstImage			= *m_state->dstImage;
+	vector<ArrayBuffer<deUint8> >&	dstImageLevels		= m_state->dstImageLevels;
+
+	log << TestLog::Message << "Verifying destination image." << TestLog::EndMessage;
+
+	render(m_testCtx, m_context.getRenderContext(), m_state->textureRenderer, results, rng, *dstImage, dstImageLevels, m_dstImageInfo, VERIFY_NONE);
 }
 
 struct Copy
@@ -1989,8 +2064,8 @@ TestCase::IterateResult CopyImageTest::iterate (void)
 
 		// Render both images and then copy and verify again.
 		&CopyImageTest::createImagesIter,
-		&CopyImageTest::verifySourceIter,
-		&CopyImageTest::verifyDestinationIter,
+		&CopyImageTest::renderSourceIter,
+		&CopyImageTest::renderDestinationIter,
 		&CopyImageTest::copyImageIter,
 		&CopyImageTest::verifySourceIter,
 		&CopyImageTest::verifyDestinationIter,
