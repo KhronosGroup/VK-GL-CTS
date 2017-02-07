@@ -122,6 +122,10 @@ INSTANCE_FUNCTIONS	= [
 	# VK_KHR_external_*
 	"vkGetPhysicalDeviceExternalBufferPropertiesKHX",
 	"vkGetPhysicalDeviceExternalSemaphorePropertiesKHX",
+
+        # VK_KHR_get_surface_capabilities2
+	"vkGetPhysicalDeviceSurfaceCapabilities2KHR",
+        "vkGetPhysicalDeviceSurfaceFormats2KHR",
 ]
 
 DEFINITIONS			= [

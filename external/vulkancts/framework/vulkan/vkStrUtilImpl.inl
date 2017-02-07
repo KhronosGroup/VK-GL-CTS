@@ -216,6 +216,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_LIMITS_NVX:					return "VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_LIMITS_NVX";
 		case VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_FEATURES_NVX:					return "VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_FEATURES_NVX";
 		case VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE:								return "VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR:								return "VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR";
+		case VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR:									return "VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR";
 		default:																		return DE_NULL;
 	}
 }
@@ -3577,6 +3580,36 @@ std::ostream& operator<< (std::ostream& s, const VkPresentRegionsKHR& value)
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tswapchainCount = " << value.swapchainCount << '\n';
 	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSurfaceInfo2KHR& value)
+{
+	s << "VkPhysicalDeviceSurfaceInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsurface = " << value.surface << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSurfaceCapabilities2KHR& value)
+{
+	s << "VkSurfaceCapabilities2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsurfaceCapabilities = " << value.surfaceCapabilities << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSurfaceFormat2KHR& value)
+{
+	s << "VkSurfaceFormat2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsurfaceFormat = " << value.surfaceFormat << '\n';
 	s << '}';
 	return s;
 }
