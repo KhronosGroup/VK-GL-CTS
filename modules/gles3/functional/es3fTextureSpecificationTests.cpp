@@ -1080,14 +1080,13 @@ protected:
 		int						pixelSize		= m_texFormat.getPixelSize();
 		int						rowLength		= m_rowLength > 0 ? m_rowLength : m_width;
 		int						rowPitch		= deAlign32(rowLength*pixelSize, m_alignment);
-		int						height			= m_height + m_skipRows;
 		deUint32				tex				= 0;
 		vector<deUint8>			data;
 
 		DE_ASSERT(m_numLevels == 1);
 
 		// Fill data with grid.
-		data.resize(rowPitch*height);
+		data.resize(pixelSize * m_skipPixels + rowPitch * (m_height + m_skipRows));
 		{
 			Vec4	cScale		= m_texFormatInfo.valueMax-m_texFormatInfo.valueMin;
 			Vec4	cBias		= m_texFormatInfo.valueMin;
@@ -1157,7 +1156,7 @@ protected:
 		DE_ASSERT(m_numLevels == 1);
 
 		// Fill data with grid.
-		data.resize(slicePitch*(m_depth+m_skipImages));
+		data.resize(pixelSize * m_skipPixels + rowPitch * m_skipRows + slicePitch * (m_skipImages + m_depth));
 		{
 			Vec4	cScale		= m_texFormatInfo.valueMax-m_texFormatInfo.valueMin;
 			Vec4	cBias		= m_texFormatInfo.valueMin;
