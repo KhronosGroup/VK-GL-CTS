@@ -656,6 +656,7 @@ void checkInstanceExtensions (tcu::ResultCollector& results, const vector<string
 		"VK_KHR_xcb_surface",
 		"VK_KHR_xlib_surface",
 		"VK_KHR_get_physical_device_properties2",
+		"VK_KHR_get_surface_capabilities2",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedInstanceKhrExtensions), s_allowedInstanceKhrExtensions);
