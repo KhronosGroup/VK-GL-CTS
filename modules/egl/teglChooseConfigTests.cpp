@@ -30,6 +30,8 @@
 #include "eglwEnums.hpp"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
+#include "deUniquePtr.hpp"
+#include "deSTLUtil.hpp"
 
 #include <vector>
 #include <algorithm>
@@ -469,6 +471,42 @@ private:
 	int					m_iterNdx;
 };
 
+class ColorComponentTypeCase : public ChooseConfigCase
+{
+
+public:
+	ColorComponentTypeCase (EglTestContext& eglTestCtx, const char* name, EGLenum value)
+		: ChooseConfigCase	(eglTestCtx, name, "", true /* sorting order is validated */)
+		, m_value			(value)
+	{
+	}
+
+	TestCase::IterateResult iterate (void)
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		{
+			const std::vector<std::string>	extensions	= eglu::getDisplayExtensions(m_eglTestCtx.getLibrary(), m_display);
+
+			if (!de::contains(extensions.begin(), extensions.end(), "EGL_EXT_pixel_format_float"))
+				TCU_THROW(NotSupportedError, "EGL_EXT_pixel_format_float is not supported");
+		}
+
+		{
+			std::vector<std::pair<EGLenum, EGLint> > attributes;
+
+			attributes.push_back(std::pair<EGLenum, EGLint>(EGL_COLOR_COMPONENT_TYPE_EXT, m_value));
+			fillDontCare(attributes);
+
+			executeTest(attributes, m_checkOrder);
+		}
+
+		return STOP;
+	}
+private:
+	const EGLenum	m_value;
+};
+
 ChooseConfigTests::ChooseConfigTests (EglTestContext& eglTestCtx)
 	: TestCaseGroup(eglTestCtx, "choose_config", "eglChooseConfig() tests")
 {
@@ -630,6 +668,17 @@ void ChooseConfigTests::init (void)
 //			EGL_TRANSPARENT_BLUE_VALUE
 		};
 		randomGroup->addChild(new ChooseConfigRandomCase(m_eglTestCtx, "all", "All attributes", toSet(allAttribs)));
+	}
+
+	// EGL_EXT_pixel_format_float
+	{
+		de::MovePtr<tcu::TestCaseGroup>	colorComponentTypeGroup	(new tcu::TestCaseGroup(m_testCtx, "color_component_type_ext", "EGL_EXT_pixel_format_float tests"));
+
+		colorComponentTypeGroup->addChild(new ColorComponentTypeCase(m_eglTestCtx, "dont_care",	EGL_DONT_CARE));
+		colorComponentTypeGroup->addChild(new ColorComponentTypeCase(m_eglTestCtx, "fixed",		EGL_COLOR_COMPONENT_TYPE_FIXED_EXT));
+		colorComponentTypeGroup->addChild(new ColorComponentTypeCase(m_eglTestCtx, "float",		EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT));
+
+		addChild(colorComponentTypeGroup.release());
 	}
 }
 

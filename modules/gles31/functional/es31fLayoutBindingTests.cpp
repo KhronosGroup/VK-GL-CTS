@@ -26,6 +26,7 @@
 #include "gluShaderProgram.hpp"
 #include "gluPixelTransfer.hpp"
 #include "gluTextureUtil.hpp"
+#include "gluContextInfo.hpp"
 
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
@@ -71,7 +72,9 @@ enum ShaderType
 {
 	SHADERTYPE_VERTEX = 0,
 	SHADERTYPE_FRAGMENT,
-	SHADERTYPE_BOTH,
+	SHADERTYPE_TESS_CONTROL,
+	SHADERTYPE_TESS_EVALUATION,
+	SHADERTYPE_ALL,
 
 	SHADERTYPE_LAST,
 };
@@ -94,7 +97,7 @@ std::string generateVertexShader (ShaderType shaderType, const std::string& shad
 	switch (shaderType)
 	{
 		case SHADERTYPE_VERTEX:
-		case SHADERTYPE_BOTH:
+		case SHADERTYPE_ALL:
 		{
 			std::ostringstream vertexShaderSource;
 			vertexShaderSource	<<	"#version 310 es\n"
@@ -114,6 +117,8 @@ std::string generateVertexShader (ShaderType shaderType, const std::string& shad
 		}
 
 		case SHADERTYPE_FRAGMENT:
+		case SHADERTYPE_TESS_CONTROL:
+		case SHADERTYPE_TESS_EVALUATION:
 			return s_simpleVertexShaderSource;
 
 		default:
@@ -135,6 +140,8 @@ std::string generateFragmentShader (ShaderType shaderType, const std::string& sh
 	switch (shaderType)
 	{
 		case SHADERTYPE_VERTEX:
+		case SHADERTYPE_TESS_CONTROL:
+		case SHADERTYPE_TESS_EVALUATION:
 			return s_simpleFragmentShaderSource;
 
 		case SHADERTYPE_FRAGMENT:
@@ -153,7 +160,7 @@ std::string generateFragmentShader (ShaderType shaderType, const std::string& sh
 
 			return fragmentShaderSource.str();
 		}
-		case SHADERTYPE_BOTH:
+		case SHADERTYPE_ALL:
 		{
 			std::ostringstream fragmentShaderSource;
 			fragmentShaderSource	<<	"#version 310 es\n"
@@ -170,6 +177,96 @@ std::string generateFragmentShader (ShaderType shaderType, const std::string& sh
 									<<	"}\n";
 
 			return fragmentShaderSource.str();
+		}
+
+		default:
+			DE_ASSERT(false);
+			return "";
+	}
+}
+
+std::string generateTessControlShader (ShaderType shaderType, const std::string& shaderUniformDeclarations, const std::string& shaderBody)
+{
+	static const char* const s_simpleTessContorlShaderSource =	"#version 310 es\n"
+																"#extension GL_EXT_tessellation_shader : require\n"
+																"layout (vertices=3) out;\n"
+																"\n"
+																"void main (void)\n"
+																"{\n"
+																"	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+																"}\n";
+
+	switch (shaderType)
+	{
+		case SHADERTYPE_VERTEX:
+		case SHADERTYPE_FRAGMENT:
+		case SHADERTYPE_TESS_EVALUATION:
+			return s_simpleTessContorlShaderSource;
+
+		case SHADERTYPE_TESS_CONTROL:
+		case SHADERTYPE_ALL:
+		{
+			std::ostringstream tessControlShaderSource;
+			tessControlShaderSource <<	"#version 310 es\n"
+									<<	"#extension GL_EXT_tessellation_shader : require\n"
+									<<	"layout (vertices=3) out;\n"
+									<<	"\n"
+									<<	"uniform highp int u_arrayNdx;\n\n"
+									<<	shaderUniformDeclarations << "\n"
+									<<	"void main (void)\n"
+									<<	"{\n"
+									<<	"	highp vec4 color;\n\n"
+									<<	shaderBody << "\n"
+									<<	"	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+									<<	"}\n";
+
+			return tessControlShaderSource.str();
+		}
+
+		default:
+			DE_ASSERT(false);
+			return "";
+	}
+}
+
+std::string generateTessEvaluationShader (ShaderType shaderType, const std::string& shaderUniformDeclarations, const std::string& shaderBody)
+{
+	static const char* const s_simpleTessEvaluationShaderSource =	"#version 310 es\n"
+																	"#extension GL_EXT_tessellation_shader : require\n"
+																	"layout (triangles) in;\n"
+																	"\n"
+																	"void main (void)\n"
+																	"{\n"
+																	"	gl_Position = gl_TessCoord[0] * gl_in[0].gl_Position + gl_TessCoord[1] * gl_in[1].gl_Position + gl_TessCoord[2] * gl_in[2].gl_Position;\n"
+																	"}\n";
+
+	switch (shaderType)
+	{
+		case SHADERTYPE_VERTEX:
+		case SHADERTYPE_FRAGMENT:
+		case SHADERTYPE_TESS_CONTROL:
+			return s_simpleTessEvaluationShaderSource;
+
+		case SHADERTYPE_TESS_EVALUATION:
+		case SHADERTYPE_ALL:
+		{
+			std::ostringstream tessEvaluationShaderSource;
+			tessEvaluationShaderSource	<< "#version 310 es\n"
+										<< "#extension GL_EXT_tessellation_shader : require\n"
+										<< "layout (triangles) in;\n"
+										<< "\n"
+										<< "uniform highp int u_arrayNdx;\n\n"
+										<< shaderUniformDeclarations << "\n"
+										<< "out mediump vec4 v_color;\n"
+										<< "void main (void)\n"
+										<< "{\n"
+										<< "	highp vec4 color;\n\n"
+										<<	shaderBody << "\n"
+										<< "	v_color = color;\n"
+										<< "	gl_Position = gl_TessCoord[0] * gl_in[0].gl_Position + gl_TessCoord[1] * gl_in[1].gl_Position + gl_TessCoord[2] * gl_in[2].gl_Position;\n"
+										<< "}\n";
+
+			return tessEvaluationShaderSource.str();
 		}
 
 		default:
@@ -320,7 +417,7 @@ void LayoutBindingRenderCase::init (void)
 				maxUnits = maxFragmentUnits;
 				break;
 
-			case SHADERTYPE_BOTH:
+			case SHADERTYPE_ALL:
 				maxUnits = maxCombinedUnits/2;
 				break;
 
@@ -354,11 +451,11 @@ void LayoutBindingRenderCase::init (void)
 		}
 
 		// Check that we have enough uniforms in different shaders to perform the tests
-		if ( ((m_shaderType == SHADERTYPE_VERTEX) || (m_shaderType == SHADERTYPE_BOTH)) && (maxVertexUnits < m_numBindings) )
+		if ( ((m_shaderType == SHADERTYPE_VERTEX) || (m_shaderType == SHADERTYPE_ALL)) && (maxVertexUnits < m_numBindings) )
 			throw tcu::NotSupportedError("Vertex shader: not enough uniforms available for test");
-		if ( ((m_shaderType == SHADERTYPE_FRAGMENT) || (m_shaderType == SHADERTYPE_BOTH)) && (maxFragmentUnits < m_numBindings) )
+		if ( ((m_shaderType == SHADERTYPE_FRAGMENT) || (m_shaderType == SHADERTYPE_ALL)) && (maxFragmentUnits < m_numBindings) )
 			throw tcu::NotSupportedError("Fragment shader: not enough uniforms available for test");
-		if ( (m_shaderType == SHADERTYPE_BOTH) && (maxCombinedUnits < m_numBindings*2) )
+		if ( (m_shaderType == SHADERTYPE_ALL) && (maxCombinedUnits < m_numBindings*2) )
 			throw tcu::NotSupportedError("Not enough uniforms available for test");
 
 		// Check that we have enough binding points to perform the tests
@@ -590,6 +687,8 @@ public:
 																		 glw::GLenum		maxBindingPointEnum,
 																		 glw::GLenum		maxVertexUnitsEnum,
 																		 glw::GLenum		maxFragmentUnitsEnum,
+																		 glw::GLenum		maxTessCtrlUnitsEnum,
+																		 glw::GLenum		maxTessEvalUnitsEnum,
 																		 glw::GLenum		maxCombinedUnitsEnum,
 																		 const std::string& uniformName);
 	virtual								~LayoutBindingNegativeCase		(void);
@@ -608,11 +707,16 @@ protected:
 	const glw::GLenum					m_maxBindingPointEnum;
 	const glw::GLenum					m_maxVertexUnitsEnum;
 	const glw::GLenum					m_maxFragmentUnitsEnum;
+	const glw::GLenum					m_maxTessCtrlUnitsEnum;
+	const glw::GLenum					m_maxTessEvalUnitsEnum;
 	const glw::GLenum					m_maxCombinedUnitsEnum;
 	const std::string					m_uniformName;
 	glw::GLint							m_numBindings;
 	std::vector<glw::GLint>				m_vertexShaderBinding;
 	std::vector<glw::GLint>				m_fragmentShaderBinding;
+	std::vector<glw::GLint>				m_tessCtrlShaderBinding;
+	std::vector<glw::GLint>				m_tessEvalShaderBinding;
+	bool								m_tessSupport;
 
 private:
 	void								initBindingPoints				(int minBindingPoint, int numBindingPoints);
@@ -626,6 +730,8 @@ LayoutBindingNegativeCase::LayoutBindingNegativeCase (Context&				context,
 													  ErrorType				errorType,
 													  glw::GLenum			maxBindingPointEnum,
 													  glw::GLenum			maxVertexUnitsEnum,
+													  glw::GLenum			maxTessCtrlUnitsEnum,
+													  glw::GLenum			maxTessEvalUnitsEnum,
 													  glw::GLenum			maxFragmentUnitsEnum,
 													  glw::GLenum			maxCombinedUnitsEnum,
 													  const std::string&	uniformName)
@@ -637,9 +743,12 @@ LayoutBindingNegativeCase::LayoutBindingNegativeCase (Context&				context,
 	, m_maxBindingPointEnum		(maxBindingPointEnum)
 	, m_maxVertexUnitsEnum		(maxVertexUnitsEnum)
 	, m_maxFragmentUnitsEnum	(maxFragmentUnitsEnum)
+	, m_maxTessCtrlUnitsEnum	(maxTessCtrlUnitsEnum)
+	, m_maxTessEvalUnitsEnum	(maxTessEvalUnitsEnum)
 	, m_maxCombinedUnitsEnum	(maxCombinedUnitsEnum)
 	, m_uniformName				(uniformName)
 	, m_numBindings				(0)
+	, m_tessSupport				(false)
 {
 }
 
@@ -657,16 +766,27 @@ void LayoutBindingNegativeCase::init (void)
 	glw::GLint				maxVertexUnits		= 0;	// Available uniforms in the vertex shader
 	glw::GLint				maxFragmentUnits	= 0;	// Available uniforms in the fragment shader
 	glw::GLint				maxCombinedUnits	= 0;	// Available uniforms in all the shader stages combined
+	glw::GLint				maxTessCtrlUnits	= 0;	// Available uniforms in tessellation control shader
+	glw::GLint				maxTessEvalUnits	= 0;	// Available uniforms in tessellation evaluation shader
 	glw::GLint				maxUnits			= 0;	// Maximum available uniforms for this test
+
+	m_tessSupport = m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader")
+					|| contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
+	int numShaderStages = (!m_tessSupport) ? 2 : 4;
 
 	gl.getIntegerv(m_maxVertexUnitsEnum, &maxVertexUnits);
 	gl.getIntegerv(m_maxFragmentUnitsEnum, &maxFragmentUnits);
+	gl.getIntegerv(m_maxTessCtrlUnitsEnum, &maxTessCtrlUnits);
+	gl.getIntegerv(m_maxTessEvalUnitsEnum, &maxTessEvalUnits);
 	gl.getIntegerv(m_maxCombinedUnitsEnum, &maxCombinedUnits);
 	gl.getIntegerv(m_maxBindingPointEnum, &numBindingPoints);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Querying available uniform numbers failed");
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Maximum units for uniform type in the vertex shader: " << maxVertexUnits << tcu::TestLog::EndMessage;
 	m_testCtx.getLog() << tcu::TestLog::Message << "Maximum units for uniform type in the fragment shader: " << maxFragmentUnits << tcu::TestLog::EndMessage;
+	m_testCtx.getLog() << tcu::TestLog::Message << "Maximum units for uniform type in the tessellation control shader: " << maxTessCtrlUnits << tcu::TestLog::EndMessage;
+	m_testCtx.getLog() << tcu::TestLog::Message << "Maximum units for uniform type in the tessellation evaluation shader: " << maxTessCtrlUnits << tcu::TestLog::EndMessage;
 	m_testCtx.getLog() << tcu::TestLog::Message << "Maximum combined units for uniform type: " << maxCombinedUnits << tcu::TestLog::EndMessage;
 	m_testCtx.getLog() << tcu::TestLog::Message << "Maximum binding point for uniform type: " << numBindingPoints-1 << tcu::TestLog::EndMessage;
 
@@ -681,8 +801,16 @@ void LayoutBindingNegativeCase::init (void)
 			maxUnits = maxFragmentUnits;
 			break;
 
-		case SHADERTYPE_BOTH:
-			maxUnits = de::min(de::min(maxVertexUnits, maxFragmentUnits), maxCombinedUnits/2);
+		case SHADERTYPE_ALL:
+			maxUnits = de::min(de::min(de::min(maxVertexUnits, maxFragmentUnits), de::min(maxTessCtrlUnits, maxTessEvalUnits)), maxCombinedUnits/numShaderStages);
+			break;
+
+		case SHADERTYPE_TESS_CONTROL:
+			maxUnits = maxTessCtrlUnits;
+			break;
+
+		case SHADERTYPE_TESS_EVALUATION:
+			maxUnits = maxTessEvalUnits;
 			break;
 
 		default:
@@ -720,11 +848,16 @@ void LayoutBindingNegativeCase::init (void)
 	}
 
 	// Check that we have enough uniforms in different shaders to perform the tests
-	if ( ((m_shaderType == SHADERTYPE_VERTEX) || (m_shaderType == SHADERTYPE_BOTH)) && (maxVertexUnits < m_numBindings) )
+	if ( ((m_shaderType == SHADERTYPE_VERTEX) || (m_shaderType == SHADERTYPE_ALL)) && (maxVertexUnits < m_numBindings) )
 		throw tcu::NotSupportedError("Vertex shader: not enough uniforms available for test");
-	if ( ((m_shaderType == SHADERTYPE_FRAGMENT) || (m_shaderType == SHADERTYPE_BOTH)) && (maxFragmentUnits < m_numBindings) )
+	if ( ((m_shaderType == SHADERTYPE_FRAGMENT) || (m_shaderType == SHADERTYPE_ALL)) && (maxFragmentUnits < m_numBindings) )
 		throw tcu::NotSupportedError("Fragment shader: not enough uniforms available for test");
-	if ( (m_shaderType == SHADERTYPE_BOTH) && (maxCombinedUnits < m_numBindings*2) )
+	if ( (m_tessSupport) && ((m_shaderType == SHADERTYPE_TESS_CONTROL) || (m_shaderType == SHADERTYPE_ALL)) && (maxTessCtrlUnits < m_numBindings) )
+		throw tcu::NotSupportedError("Tessellation control shader: not enough uniforms available for test");
+	if ( (m_tessSupport) && ((m_shaderType == SHADERTYPE_TESS_EVALUATION) || (m_shaderType == SHADERTYPE_ALL)) && (maxTessEvalUnits < m_numBindings) )
+		throw tcu::NotSupportedError("Tessellation evaluation shader: not enough uniforms available for test");
+
+	if ( (m_shaderType == SHADERTYPE_ALL) && (maxCombinedUnits < m_numBindings*numShaderStages) )
 		throw tcu::NotSupportedError("Not enough uniforms available for test");
 
 	// Check that we have enough binding points to perform the tests
@@ -767,8 +900,21 @@ TestCase::IterateResult LayoutBindingNegativeCase::iterate (void)
 
 		case ERRORTYPE_LESS_THAN_ZERO:		// Out of bounds binding points should cause a compile-time error
 		case ERRORTYPE_OVER_MAX_UNITS:
-			if (!(m_program->getShaderInfo(glu::SHADERTYPE_VERTEX)).compileOk || !(m_program->getShaderInfo(glu::SHADERTYPE_FRAGMENT)).compileOk)
-				pass = true;
+			if (m_tessSupport)
+			{
+				if (!(m_program->getShaderInfo(glu::SHADERTYPE_VERTEX)).compileOk
+					|| !(m_program->getShaderInfo(glu::SHADERTYPE_FRAGMENT).compileOk)
+					|| !(m_program->getShaderInfo(glu::SHADERTYPE_TESSELLATION_CONTROL).compileOk)
+					|| !(m_program->getShaderInfo(glu::SHADERTYPE_TESSELLATION_EVALUATION)).compileOk)
+					pass = true;
+			}
+			else
+			{
+				if (!(m_program->getShaderInfo(glu::SHADERTYPE_VERTEX)).compileOk
+					|| !(m_program->getShaderInfo(glu::SHADERTYPE_FRAGMENT).compileOk))
+					pass = true;
+			}
+
 			failMessage = "Test failed - expected a compile-time error";
 			break;
 
@@ -794,6 +940,8 @@ void LayoutBindingNegativeCase::initBindingPoints (int minBindingPoint, int numB
 		{
 			m_vertexShaderBinding.push_back(numBindingPoints+1-m_numBindings);
 			m_fragmentShaderBinding.push_back(numBindingPoints+1-m_numBindings);
+			m_tessCtrlShaderBinding.push_back(numBindingPoints+1-m_numBindings);
+			m_tessEvalShaderBinding.push_back(numBindingPoints+1-m_numBindings);
 			break;
 		}
 
@@ -802,6 +950,8 @@ void LayoutBindingNegativeCase::initBindingPoints (int minBindingPoint, int numB
 			const glw::GLint binding = -rnd.getInt(1, m_numBindings);
 			m_vertexShaderBinding.push_back(binding);
 			m_fragmentShaderBinding.push_back(binding);
+			m_tessCtrlShaderBinding.push_back(binding);
+			m_tessEvalShaderBinding.push_back(binding);
 			break;
 		}
 
@@ -809,7 +959,15 @@ void LayoutBindingNegativeCase::initBindingPoints (int minBindingPoint, int numB
 		{
 			m_vertexShaderBinding.push_back(minBindingPoint);
 			m_fragmentShaderBinding.push_back((minBindingPoint+1)%numBindingPoints);
-			DE_ASSERT(m_vertexShaderBinding.back() != m_fragmentShaderBinding.back());
+			m_tessCtrlShaderBinding.push_back((minBindingPoint+2)%numBindingPoints);
+			m_tessEvalShaderBinding.push_back((minBindingPoint+3)%numBindingPoints);
+
+			DE_ASSERT(m_vertexShaderBinding.back()		!= m_fragmentShaderBinding.back());
+			DE_ASSERT(m_fragmentShaderBinding.back()	!= m_tessEvalShaderBinding.back());
+			DE_ASSERT(m_tessEvalShaderBinding.back()	!= m_tessCtrlShaderBinding.back());
+			DE_ASSERT(m_tessCtrlShaderBinding.back()	!= m_vertexShaderBinding.back());
+			DE_ASSERT(m_vertexShaderBinding.back()		!= m_tessEvalShaderBinding.back());
+			DE_ASSERT(m_tessCtrlShaderBinding.back()	!= m_fragmentShaderBinding.back());
 			break;
 		}
 
@@ -822,6 +980,8 @@ void LayoutBindingNegativeCase::initBindingPoints (int minBindingPoint, int numB
 	{
 		m_vertexShaderBinding.push_back(m_vertexShaderBinding.front()+ndx);
 		m_fragmentShaderBinding.push_back(m_fragmentShaderBinding.front()+ndx);
+		m_tessCtrlShaderBinding.push_back(m_tessCtrlShaderBinding.front()+ndx);
+		m_tessEvalShaderBinding.push_back(m_tessCtrlShaderBinding.front()+ndx);
 	}
 }
 
@@ -1052,7 +1212,19 @@ SamplerBindingNegativeCase::SamplerBindingNegativeCase (Context&		context,
 														TestType		testType,
 														ErrorType		errorType,
 														glw::GLenum		samplerType)
-	: LayoutBindingNegativeCase		(context, name, desc, shaderType, testType, errorType, GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, GL_MAX_TEXTURE_IMAGE_UNITS, GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, "u_sampler")
+	: LayoutBindingNegativeCase		(context,
+									 name,
+									 desc,
+									 shaderType,
+									 testType,
+									 errorType,
+									 GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
+									 GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS,
+									 GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS,
+									 GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS,
+									 GL_MAX_TEXTURE_IMAGE_UNITS,
+									 GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
+									 "u_sampler")
 	, m_samplerType					(samplerType)
 {
 }
@@ -1066,6 +1238,8 @@ glu::ShaderProgram*	SamplerBindingNegativeCase::generateShaders	(void) const
 {
 	std::ostringstream		vertexUniformDecl;
 	std::ostringstream		fragmentUniformDecl;
+	std::ostringstream		tessCtrlUniformDecl;
+	std::ostringstream		tessEvalUniformDecl;
 	std::ostringstream		shaderBody;
 
 	const std::string		texCoordType	= glu::getDataTypeName(getSamplerTexCoordType());
@@ -1079,6 +1253,10 @@ glu::ShaderProgram*	SamplerBindingNegativeCase::generateShaders	(void) const
 		vertexUniformDecl << "layout(binding = " << m_vertexShaderBinding[declNdx] << ") uniform highp " << samplerType
 			<< " " << (arrayInstance ? getUniformName(m_uniformName, declNdx, m_numBindings) : getUniformName(m_uniformName, declNdx)) << ";\n";
 		fragmentUniformDecl << "layout(binding = " << m_fragmentShaderBinding[declNdx] << ") uniform highp " << samplerType
+			<< " " << (arrayInstance ? getUniformName(m_uniformName, declNdx, m_numBindings) : getUniformName(m_uniformName, declNdx)) << ";\n";
+		tessCtrlUniformDecl << "layout(binding = " << m_tessCtrlShaderBinding[declNdx] << ") uniform highp " << samplerType
+			<< " " << (arrayInstance ? getUniformName(m_uniformName, declNdx, m_numBindings) : getUniformName(m_uniformName, declNdx)) << ";\n";
+		tessEvalUniformDecl << "layout(binding = " << m_tessEvalShaderBinding[declNdx] << ") uniform highp " << samplerType
 			<< " " << (arrayInstance ? getUniformName(m_uniformName, declNdx, m_numBindings) : getUniformName(m_uniformName, declNdx)) << ";\n";
 	}
 
@@ -1096,9 +1274,16 @@ glu::ShaderProgram*	SamplerBindingNegativeCase::generateShaders	(void) const
 				<< "		color = vec4(0.0, 0.0, 0.0, 1.0);\n"
 				<< "	}\n";
 
-	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+	glu::ProgramSources sources = glu::ProgramSources()
 				<< glu::VertexSource(generateVertexShader(m_shaderType, vertexUniformDecl.str(), shaderBody.str()))
-				<< glu::FragmentSource(generateFragmentShader(m_shaderType, fragmentUniformDecl.str(), shaderBody.str())));
+				<< glu::FragmentSource(generateFragmentShader(m_shaderType, fragmentUniformDecl.str(), shaderBody.str()));
+
+	if (m_tessSupport)
+		sources << glu::TessellationControlSource(generateTessControlShader(m_shaderType, tessCtrlUniformDecl.str(), shaderBody.str()))
+				<< glu::TessellationEvaluationSource(generateTessEvaluationShader(m_shaderType, tessEvalUniformDecl.str(), shaderBody.str()));
+
+	return new glu::ShaderProgram(m_context.getRenderContext(), sources);
+
 }
 
 glu::DataType SamplerBindingNegativeCase::getSamplerTexCoordType(void) const
@@ -1351,7 +1536,19 @@ ImageBindingNegativeCase::ImageBindingNegativeCase (Context&		context,
 													TestType		testType,
 													ErrorType		errorType,
 													glw::GLenum		imageType)
-	: LayoutBindingNegativeCase		(context, name, desc, shaderType, testType, errorType, GL_MAX_IMAGE_UNITS, GL_MAX_VERTEX_IMAGE_UNIFORMS, GL_MAX_FRAGMENT_IMAGE_UNIFORMS, GL_MAX_COMBINED_IMAGE_UNIFORMS, "u_image")
+	: LayoutBindingNegativeCase		(context,
+									 name,
+									 desc,
+									 shaderType,
+									 testType,
+									 errorType,
+									 GL_MAX_IMAGE_UNITS,
+									 GL_MAX_VERTEX_IMAGE_UNIFORMS,
+									 GL_MAX_TESS_CONTROL_IMAGE_UNIFORMS,
+									 GL_MAX_TESS_EVALUATION_IMAGE_UNIFORMS,
+									 GL_MAX_FRAGMENT_IMAGE_UNIFORMS,
+									 GL_MAX_COMBINED_IMAGE_UNIFORMS,
+									 "u_image")
 	, m_imageType					(imageType)
 {
 }
@@ -1365,6 +1562,8 @@ glu::ShaderProgram* ImageBindingNegativeCase::generateShaders (void) const
 {
 	std::ostringstream		vertexUniformDecl;
 	std::ostringstream		fragmentUniformDecl;
+	std::ostringstream		tessCtrlUniformDecl;
+	std::ostringstream		tessEvalUniformDecl;
 	std::ostringstream		shaderBody;
 
 	const std::string		texCoordType	= glu::getDataTypeName(getImageTexCoordType());
@@ -1378,6 +1577,10 @@ glu::ShaderProgram* ImageBindingNegativeCase::generateShaders (void) const
 		vertexUniformDecl << "layout(rgba8, binding = " << m_vertexShaderBinding[declNdx] << ") uniform readonly highp " << imageType
 			<< " " << (arrayInstance ? getUniformName(m_uniformName, declNdx, m_numBindings) : getUniformName(m_uniformName, declNdx)) << ";\n";
 		fragmentUniformDecl << "layout(rgba8, binding = " << m_fragmentShaderBinding[declNdx] << ") uniform readonly highp " << imageType
+			<< " " << (arrayInstance ? getUniformName(m_uniformName, declNdx, m_numBindings) : getUniformName(m_uniformName, declNdx)) << ";\n";
+		tessCtrlUniformDecl << "layout(rgba8, binding = " << m_tessCtrlShaderBinding[declNdx] << ") uniform readonly highp " << imageType
+			<< " " << (arrayInstance ? getUniformName(m_uniformName, declNdx, m_numBindings) : getUniformName(m_uniformName, declNdx)) << ";\n";
+		tessEvalUniformDecl << "layout(rgba8, binding = " << m_tessEvalShaderBinding[declNdx] << ") uniform readonly highp " << imageType
 			<< " " << (arrayInstance ? getUniformName(m_uniformName, declNdx, m_numBindings) : getUniformName(m_uniformName, declNdx)) << ";\n";
 	}
 
@@ -1395,9 +1598,15 @@ glu::ShaderProgram* ImageBindingNegativeCase::generateShaders (void) const
 				<< "		color = vec4(0.0, 0.0, 0.0, 1.0);\n"
 				<< "	}\n";
 
-	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-					<< glu::VertexSource(generateVertexShader(m_shaderType, vertexUniformDecl.str(), shaderBody.str()))
-					<< glu::FragmentSource(generateFragmentShader(m_shaderType, fragmentUniformDecl.str(), shaderBody.str())));
+	glu::ProgramSources sources = glu::ProgramSources()
+				<< glu::VertexSource(generateVertexShader(m_shaderType, vertexUniformDecl.str(), shaderBody.str()))
+				<< glu::FragmentSource(generateFragmentShader(m_shaderType, fragmentUniformDecl.str(), shaderBody.str()));
+
+	if (m_tessSupport)
+		sources << glu::TessellationControlSource(generateTessControlShader(m_shaderType, tessCtrlUniformDecl.str(), shaderBody.str()))
+				<< glu::TessellationEvaluationSource(generateTessEvaluationShader(m_shaderType, tessEvalUniformDecl.str(), shaderBody.str()));
+
+	return new glu::ShaderProgram(m_context.getRenderContext(), sources);
 }
 
 glu::DataType ImageBindingNegativeCase::getImageTexCoordType(void) const
@@ -1596,7 +1805,19 @@ UBOBindingNegativeCase::UBOBindingNegativeCase (Context&		context,
 												ShaderType		shaderType,
 												TestType		testType,
 												ErrorType		errorType)
-	: LayoutBindingNegativeCase(context, name, desc, shaderType, testType, errorType, GL_MAX_UNIFORM_BUFFER_BINDINGS, GL_MAX_VERTEX_UNIFORM_BLOCKS, GL_MAX_FRAGMENT_UNIFORM_BLOCKS, GL_MAX_COMBINED_UNIFORM_BLOCKS, "ColorBlock")
+	: LayoutBindingNegativeCase(context,
+								name,
+								desc,
+								shaderType,
+								testType,
+								errorType,
+								GL_MAX_UNIFORM_BUFFER_BINDINGS,
+								GL_MAX_VERTEX_UNIFORM_BLOCKS,
+								GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS,
+								GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS,
+								GL_MAX_FRAGMENT_UNIFORM_BLOCKS,
+								GL_MAX_COMBINED_UNIFORM_BLOCKS,
+								"ColorBlock")
 {
 }
 
@@ -1609,6 +1830,8 @@ glu::ShaderProgram* UBOBindingNegativeCase::generateShaders (void) const
 {
 	std::ostringstream		vertexUniformDecl;
 	std::ostringstream		fragmentUniformDecl;
+	std::ostringstream		tessCtrlUniformDecl;
+	std::ostringstream		tessEvalUniformDecl;
 	std::ostringstream		shaderBody;
 	const bool				arrayInstance	= (m_testType == TESTTYPE_BINDING_ARRAY || m_testType == TESTTYPE_BINDING_MAX_ARRAY);
 	const int				numDeclarations = (arrayInstance ? 1 : m_numBindings);
@@ -1624,6 +1847,20 @@ glu::ShaderProgram* UBOBindingNegativeCase::generateShaders (void) const
 			<< "} " << (arrayInstance ? getUniformName("colors", declNdx, m_numBindings) : getUniformName("colors", declNdx)) << ";\n";
 
 		fragmentUniformDecl << "layout(std140, binding = " << m_fragmentShaderBinding[declNdx] << ") uniform "
+			<< getUniformName(m_uniformName, declNdx) << "\n"
+			<< "{\n"
+			<< "	highp vec4 color1;\n"
+			<< "	highp vec4 color2;\n"
+			<< "} " << (arrayInstance ? getUniformName("colors", declNdx, m_numBindings) : getUniformName("colors", declNdx)) << ";\n";
+
+		tessCtrlUniformDecl << "layout(std140, binding = " << m_tessCtrlShaderBinding[declNdx] << ") uniform "
+			<< getUniformName(m_uniformName, declNdx) << "\n"
+			<< "{\n"
+			<< "	highp vec4 color1;\n"
+			<< "	highp vec4 color2;\n"
+			<< "} " << (arrayInstance ? getUniformName("colors", declNdx, m_numBindings) : getUniformName("colors", declNdx)) << ";\n";
+
+		tessEvalUniformDecl << "layout(std140, binding = " << m_tessCtrlShaderBinding[declNdx] << ") uniform "
 			<< getUniformName(m_uniformName, declNdx) << "\n"
 			<< "{\n"
 			<< "	highp vec4 color1;\n"
@@ -1646,9 +1883,15 @@ glu::ShaderProgram* UBOBindingNegativeCase::generateShaders (void) const
 				<< "		color = vec4(0.0, 0.0, 0.0, 1.0);\n"
 				<< "	}\n";
 
-	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-					<< glu::VertexSource(generateVertexShader(m_shaderType, vertexUniformDecl.str(), shaderBody.str()))
-					<< glu::FragmentSource(generateFragmentShader(m_shaderType, fragmentUniformDecl.str(), shaderBody.str())));
+	glu::ProgramSources sources = glu::ProgramSources()
+				<< glu::VertexSource(generateVertexShader(m_shaderType, vertexUniformDecl.str(), shaderBody.str()))
+				<< glu::FragmentSource(generateFragmentShader(m_shaderType, fragmentUniformDecl.str(), shaderBody.str()));
+
+	if (m_tessSupport)
+		sources << glu::TessellationControlSource(generateTessControlShader(m_shaderType, tessCtrlUniformDecl.str(), shaderBody.str()))
+				<< glu::TessellationEvaluationSource(generateTessEvaluationShader(m_shaderType, tessEvalUniformDecl.str(), shaderBody.str()));
+
+	return new glu::ShaderProgram(m_context.getRenderContext(), sources);
 }
 
 
@@ -1831,7 +2074,19 @@ SSBOBindingNegativeCase::SSBOBindingNegativeCase (Context& context,
 												  ShaderType shaderType,
 												  TestType testType,
 												  ErrorType errorType)
-	: LayoutBindingNegativeCase(context, name, desc, shaderType, testType, errorType, GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS, GL_MAX_COMBINED_SHADER_STORAGE_BLOCKS, "ColorBuffer")
+	: LayoutBindingNegativeCase(context,
+								name,
+								desc,
+								shaderType,
+								testType,
+								errorType,
+								GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,
+								GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS,
+								GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS,
+								GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS,
+								GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS,
+								GL_MAX_COMBINED_SHADER_STORAGE_BLOCKS,
+								"ColorBuffer")
 {
 }
 
@@ -1844,6 +2099,8 @@ glu::ShaderProgram* SSBOBindingNegativeCase::generateShaders (void) const
 {
 	std::ostringstream		vertexUniformDecl;
 	std::ostringstream		fragmentUniformDecl;
+	std::ostringstream		tessCtrlUniformDecl;
+	std::ostringstream		tessEvalUniformDecl;
 	std::ostringstream		shaderBody;
 	const bool				arrayInstance	= (m_testType == TESTTYPE_BINDING_ARRAY || m_testType == TESTTYPE_BINDING_MAX_ARRAY);
 	const int				numDeclarations = (arrayInstance ? 1 : m_numBindings);
@@ -1859,6 +2116,20 @@ glu::ShaderProgram* SSBOBindingNegativeCase::generateShaders (void) const
 			<< "} " << (arrayInstance ? getUniformName("colors", declNdx, m_numBindings) : getUniformName("colors", declNdx)) << ";\n";
 
 		fragmentUniformDecl << "layout(std140, binding = " << m_fragmentShaderBinding[declNdx] << ") buffer "
+			<< getUniformName(m_uniformName, declNdx) << "\n"
+			<< "{\n"
+			<< "	highp vec4 color1;\n"
+			<< "	highp vec4 color2;\n"
+			<< "} " << (arrayInstance ? getUniformName("colors", declNdx, m_numBindings) : getUniformName("colors", declNdx)) << ";\n";
+
+		tessCtrlUniformDecl << "layout(std140, binding = " << m_tessCtrlShaderBinding[declNdx] << ") buffer "
+			<< getUniformName(m_uniformName, declNdx) << "\n"
+			<< "{\n"
+			<< "	highp vec4 color1;\n"
+			<< "	highp vec4 color2;\n"
+			<< "} " << (arrayInstance ? getUniformName("colors", declNdx, m_numBindings) : getUniformName("colors", declNdx)) << ";\n";
+
+		tessEvalUniformDecl << "layout(std140, binding = " << m_tessEvalShaderBinding[declNdx] << ") buffer "
 			<< getUniformName(m_uniformName, declNdx) << "\n"
 			<< "{\n"
 			<< "	highp vec4 color1;\n"
@@ -1881,9 +2152,15 @@ glu::ShaderProgram* SSBOBindingNegativeCase::generateShaders (void) const
 				<< "		color = vec4(0.0, 0.0, 0.0, 1.0);\n"
 				<< "	}\n";
 
-	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-					<< glu::VertexSource(generateVertexShader(m_shaderType, vertexUniformDecl.str(), shaderBody.str()))
-					<< glu::FragmentSource(generateFragmentShader(m_shaderType, fragmentUniformDecl.str(), shaderBody.str())));
+	glu::ProgramSources sources = glu::ProgramSources()
+				<< glu::VertexSource(generateVertexShader(m_shaderType, vertexUniformDecl.str(), shaderBody.str()))
+				<< glu::FragmentSource(generateFragmentShader(m_shaderType, fragmentUniformDecl.str(), shaderBody.str()));
+
+	if (m_tessSupport)
+		sources << glu::TessellationControlSource(generateTessControlShader(m_shaderType, tessCtrlUniformDecl.str(), shaderBody.str()))
+				<< glu::TessellationEvaluationSource(generateTessEvaluationShader(m_shaderType, tessEvalUniformDecl.str(), shaderBody.str()));
+
+	return new glu::ShaderProgram(m_context.getRenderContext(), sources);
 }
 
 
@@ -1956,18 +2233,26 @@ void LayoutBindingTests::init (void)
 		std::string								descPostfix;
 	} s_negativeTestTypes[] =
 	{
-		{ SHADERTYPE_VERTEX,	TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_OVER_MAX_UNITS,	"vertex_binding_over_max",			"over maximum binding point"},
-		{ SHADERTYPE_FRAGMENT,	TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_OVER_MAX_UNITS,	"fragment_binding_over_max",		"over maximum binding point"},
-		{ SHADERTYPE_VERTEX,	TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_LESS_THAN_ZERO,	"vertex_binding_neg",				"negative binding point"},
-		{ SHADERTYPE_FRAGMENT,	TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_LESS_THAN_ZERO,	"fragment_binding_neg",				"negative binding point"},
+		{ SHADERTYPE_VERTEX,			TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_OVER_MAX_UNITS,	"vertex_binding_over_max",					"over maximum binding point"   },
+		{ SHADERTYPE_FRAGMENT,			TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_OVER_MAX_UNITS,	"fragment_binding_over_max",				"over maximum binding point"   },
+		{ SHADERTYPE_TESS_CONTROL,		TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_OVER_MAX_UNITS,	"tess_control_binding_over_max",			"over maximum binding point"   },
+		{ SHADERTYPE_TESS_EVALUATION,	TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_OVER_MAX_UNITS,	"tess_evaluation_binding_over_max",			"over maximum binding point"   },
+		{ SHADERTYPE_VERTEX,			TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_LESS_THAN_ZERO,	"vertex_binding_neg",						"negative binding point"	   },
+		{ SHADERTYPE_FRAGMENT,			TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_LESS_THAN_ZERO,	"fragment_binding_neg",						"negative binding point"	   },
+		{ SHADERTYPE_TESS_CONTROL,		TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_LESS_THAN_ZERO,	"tess_control_binding_neg",					"negative binding point"	   },
+		{ SHADERTYPE_TESS_EVALUATION,	TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_LESS_THAN_ZERO,	"tess_evaluation_binding_neg",				"negative binding point"	   },
 
-		{ SHADERTYPE_VERTEX,	TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_OVER_MAX_UNITS,	"vertex_binding_over_max_array",	"over maximum binding point"},
-		{ SHADERTYPE_FRAGMENT,	TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_OVER_MAX_UNITS,	"fragment_binding_over_max_array",	"over maximum binding point"},
-		{ SHADERTYPE_VERTEX,	TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_LESS_THAN_ZERO,	"vertex_binding_neg_array",			"negative binding point"},
-		{ SHADERTYPE_FRAGMENT,	TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_LESS_THAN_ZERO,	"fragment_binding_neg_array",		"negative binding point"},
+		{ SHADERTYPE_VERTEX,			TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_OVER_MAX_UNITS,	"vertex_binding_over_max_array",			"over maximum binding point"   },
+		{ SHADERTYPE_FRAGMENT,			TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_OVER_MAX_UNITS,	"fragment_binding_over_max_array",			"over maximum binding point"   },
+		{ SHADERTYPE_TESS_CONTROL,		TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_OVER_MAX_UNITS,	"tess_control_binding_over_max_array",		"over maximum binding point"   },
+		{ SHADERTYPE_TESS_EVALUATION,	TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_OVER_MAX_UNITS,	"tess_evaluation_binding_over_max_array",	"over maximum binding point"   },
+		{ SHADERTYPE_VERTEX,			TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_LESS_THAN_ZERO,	"vertex_binding_neg_array",					"negative binding point"	   },
+		{ SHADERTYPE_FRAGMENT,			TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_LESS_THAN_ZERO,	"fragment_binding_neg_array",				"negative binding point"	   },
+		{ SHADERTYPE_TESS_CONTROL,		TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_LESS_THAN_ZERO,	"tess_control_binding_neg_array",			"negative binding point"	   },
+		{ SHADERTYPE_TESS_EVALUATION,	TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_LESS_THAN_ZERO,	"tess_evaluation_binding_neg_array",		"negative binding point"	   },
 
-		{ SHADERTYPE_BOTH,		TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_CONTRADICTORY,		"binding_contradictory",			"contradictory binding points"},
-		{ SHADERTYPE_BOTH,		TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_CONTRADICTORY,		"binding_contradictory_array",		"contradictory binding points"},
+		{ SHADERTYPE_ALL,				TESTTYPE_BINDING_SINGLE,		LayoutBindingNegativeCase::ERRORTYPE_CONTRADICTORY,		"binding_contradictory",					"contradictory binding points" },
+		{ SHADERTYPE_ALL,				TESTTYPE_BINDING_ARRAY,			LayoutBindingNegativeCase::ERRORTYPE_CONTRADICTORY,		"binding_contradictory_array",				"contradictory binding points" },
 	};
 
 	// Render tests
