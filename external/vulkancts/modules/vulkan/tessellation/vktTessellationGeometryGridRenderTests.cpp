@@ -556,7 +556,7 @@ tcu::TestStatus GridRenderTestInstance::iterate (void)
 	const Unique<VkFramebuffer>		framebuffer		   (makeFramebuffer						(vk, device, *renderPass, *colorAttachmentView, renderSize.x(), renderSize.y(), m_params.numLayers));
 	const Unique<VkPipelineLayout>	pipelineLayout	   (makePipelineLayoutWithoutDescriptors(vk, device));
 	const Unique<VkCommandPool>		cmdPool			   (makeCommandPool						(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>	cmdBuffer		   (makeCommandBuffer					(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer>	cmdBuffer		   (allocateCommandBuffer				(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const Unique<VkPipeline> pipeline (GraphicsPipelineBuilder()
 		.setRenderSize	(renderSize)

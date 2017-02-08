@@ -515,7 +515,7 @@ private:
 		const deUint32						m_queueFamilyIndex;
 		vk::Unique<vk::VkDevice>			m_device;
 		vk::DeviceDriver					m_deviceInterface;
-		vk::VkQueue							m_queue;
+		const vk::VkQueue					m_queue;
 		const de::UniquePtr<vk::Allocator>	m_allocator;
 	private:
 		vk::Move<vk::VkDevice>				createDevice	(void) const;

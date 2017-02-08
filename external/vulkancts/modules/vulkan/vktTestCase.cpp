@@ -250,9 +250,7 @@ DefaultDevice::~DefaultDevice (void)
 
 VkQueue DefaultDevice::getUniversalQueue (void) const
 {
-	VkQueue	queue	= 0;
-	m_deviceInterface.getDeviceQueue(*m_device, m_universalQueueFamilyIndex, 0, &queue);
-	return queue;
+	return getDeviceQueue(m_deviceInterface, *m_device, m_universalQueueFamilyIndex, 0);
 }
 
 VkPhysicalDeviceFeatures DefaultDevice::filterDefaultDeviceFeatures (const VkPhysicalDeviceFeatures& deviceFeatures)

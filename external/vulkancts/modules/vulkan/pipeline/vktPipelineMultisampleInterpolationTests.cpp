@@ -601,7 +601,7 @@ tcu::TestStatus MSInterpolationInstanceBase::iterate (void)
 	const Unique<VkPipeline> graphicsPipeline(createGraphicsPipeline(deviceInterface, device, DE_NULL, &graphicsPipelineInfo));
 
 	// Create command buffer for compute and transfer oparations
-	const Unique<VkCommandPool>	  commandPool(makeCommandPool(deviceInterface, device, queueFamilyIndex));
+	const Unique<VkCommandPool>	  commandPool(createCommandPool(deviceInterface, device, (VkCommandPoolCreateFlags)VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, device, *commandPool));
 
 	// Start recording commands

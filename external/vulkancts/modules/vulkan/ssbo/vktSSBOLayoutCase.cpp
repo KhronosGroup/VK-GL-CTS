@@ -2103,24 +2103,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	};
 	vk::Move<vk::VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
 
-	const vk::VkCommandPoolCreateInfo cmdPoolParams =
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// VkStructureType		sType;
-		DE_NULL,												// const void*			pNext;
-		vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// VkCmdPoolCreateFlags	flags;
-		queueFamilyIndex,										// deUint32				queueFamilyIndex;
-	};
-	vk::Move<vk::VkCommandPool> cmdPool (createCommandPool(vk, device, &cmdPoolParams));
-
-	const vk::VkCommandBufferAllocateInfo cmdBufParams =
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		*cmdPool,											// VkCmdPool				pool;
-		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel		level;
-		1u,													// deUint32					bufferCount;
-	};
-	vk::Move<vk::VkCommandBuffer> cmdBuffer (allocateCommandBuffer(vk, device, &cmdBufParams));
+	vk::Move<vk::VkCommandPool> cmdPool (createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	vk::Move<vk::VkCommandBuffer> cmdBuffer (allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const vk::VkCommandBufferBeginInfo cmdBufBeginParams =
 	{
@@ -2186,13 +2170,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const vk::VkFenceCreateInfo	fenceParams =
-	{
-		vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		0u,											// VkFenceCreateFlags	flags;
-	};
-	vk::Move<vk::VkFence> fence (createFence(vk, device, &fenceParams));
+	vk::Move<vk::VkFence> fence (createFence(vk, device));
 
 	const vk::VkSubmitInfo  submitInfo  =
 	{

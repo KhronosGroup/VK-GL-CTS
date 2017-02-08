@@ -228,7 +228,7 @@ tcu::TestStatus SharedVarTestInstance::iterate (void)
 	const VkBufferMemoryBarrier computeFinishBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 
 	const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 
@@ -399,7 +399,7 @@ tcu::TestStatus SharedVarAtomicOpTestInstance::iterate (void)
 	const VkBufferMemoryBarrier computeFinishBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 
 	const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 
@@ -572,7 +572,7 @@ tcu::TestStatus SSBOLocalBarrierTestInstance::iterate (void)
 	const VkBufferMemoryBarrier computeFinishBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 
 	const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 
@@ -783,7 +783,7 @@ tcu::TestStatus CopyImageToSSBOTestInstance::iterate (void)
 		// Prepare the command buffer
 
 		const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-		const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+		const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		// Start recording commands
 
@@ -993,7 +993,7 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 		// Prepare the command buffer
 
 		const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-		const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+		const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		// Start recording commands
 
@@ -1262,7 +1262,7 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate (void)
 	const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0ull, bufferSizeBytes);
 
 	const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 
@@ -1453,7 +1453,7 @@ tcu::TestStatus InvertSSBOInPlaceTestInstance::iterate (void)
 	const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 
 	const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 
@@ -1646,7 +1646,7 @@ tcu::TestStatus WriteToMultipleSSBOTestInstance::iterate (void)
 	};
 
 	const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 
@@ -1868,7 +1868,7 @@ tcu::TestStatus SSBOBarrierTestInstance::iterate (void)
 	const VkBufferMemoryBarrier afterComputeBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0ull, outputBufferSizeBytes);
 
 	const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 
@@ -2084,7 +2084,7 @@ tcu::TestStatus ImageAtomicOpTestInstance::iterate (void)
 		// Prepare the command buffer
 
 		const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-		const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+		const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		// Start recording commands
 
@@ -2303,7 +2303,7 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 	const VkBufferMemoryBarrier afterComputeBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0ull, outputBufferSizeBytes);
 
 	const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 
@@ -2376,7 +2376,7 @@ tcu::TestStatus createTest (Context& context)
 	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
 
 	const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 

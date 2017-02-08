@@ -214,13 +214,6 @@ struct InstanceHelper
 	{}
 };
 
-VkQueue getDeviceQueue (const DeviceInterface& vkd, VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex)
-{
-	VkQueue queue = (VkQueue)0;
-	vkd.getDeviceQueue(device, queueFamilyIndex, queueIndex, &queue);
-	return queue;
-}
-
 struct DeviceHelper
 {
 	const VkPhysicalDevice	physicalDevice;
@@ -1307,18 +1300,6 @@ typedef de::SharedPtr<Unique<VkCommandBuffer> >	CommandBufferSp;
 typedef de::SharedPtr<Unique<VkFence> >			FenceSp;
 typedef de::SharedPtr<Unique<VkSemaphore> >		SemaphoreSp;
 
-Move<VkFence> createFence (const DeviceInterface&	vkd,
-						   const VkDevice			device)
-{
-	const VkFenceCreateInfo	fenceParams	=
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		DE_NULL,
-		(VkFenceCreateFlags)0,
-	};
-	return vk::createFence(vkd, device, &fenceParams);
-}
-
 vector<FenceSp> createFences (const DeviceInterface&	vkd,
 							  const VkDevice			device,
 							  size_t					numFences)
@@ -1329,18 +1310,6 @@ vector<FenceSp> createFences (const DeviceInterface&	vkd,
 		fences[ndx] = FenceSp(new Unique<VkFence>(createFence(vkd, device)));
 
 	return fences;
-}
-
-Move<VkSemaphore> createSemaphore (const DeviceInterface&	vkd,
-								   const VkDevice			device)
-{
-	const VkSemaphoreCreateInfo	semaphoreParams	=
-	{
-		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-		DE_NULL,
-		(VkSemaphoreCreateFlags)0,
-	};
-	return vk::createSemaphore(vkd, device, &semaphoreParams);
 }
 
 vector<SemaphoreSp> createSemaphores (const DeviceInterface&	vkd,
@@ -1355,41 +1324,16 @@ vector<SemaphoreSp> createSemaphores (const DeviceInterface&	vkd,
 	return semaphores;
 }
 
-Move<VkCommandPool> createCommandPool (const DeviceInterface&	vkd,
-									   const VkDevice			device,
-									   VkCommandPoolCreateFlags	flags,
-									   deUint32					queueFamilyIndex)
-{
-	const VkCommandPoolCreateInfo	commandPoolParams	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-		DE_NULL,
-		flags,
-		queueFamilyIndex
-	};
-
-	return createCommandPool(vkd, device, &commandPoolParams);
-}
-
 vector<CommandBufferSp> allocateCommandBuffers (const DeviceInterface&		vkd,
 												const VkDevice				device,
 												const VkCommandPool			commandPool,
 												const VkCommandBufferLevel	level,
 												const size_t				numCommandBuffers)
 {
-	const VkCommandBufferAllocateInfo	allocInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		DE_NULL,
-		commandPool,
-		level,
-		1u,
-	};
-
 	vector<CommandBufferSp>				buffers		(numCommandBuffers);
 
 	for (size_t ndx = 0; ndx < numCommandBuffers; ++ndx)
-		buffers[ndx] = CommandBufferSp(new Unique<VkCommandBuffer>(allocateCommandBuffer(vkd, device, &allocInfo)));
+		buffers[ndx] = CommandBufferSp(new Unique<VkCommandBuffer>(allocateCommandBuffer(vkd, device, commandPool, level)));
 
 	return buffers;
 }

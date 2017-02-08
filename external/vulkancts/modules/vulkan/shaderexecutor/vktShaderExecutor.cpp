@@ -1187,29 +1187,10 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 	}
 
 	// Create command pool
-	{
-		const VkCommandPoolCreateInfo cmdPoolParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// VkStructureType		sType;
-			DE_NULL,											// const void*			pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,				// VkCmdPoolCreateFlags	flags;
-			queueFamilyIndex,									// deUint32				queueFamilyIndex;
-		};
-
-		cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
-	}
+	cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
 	{
-		const VkCommandBufferAllocateInfo cmdBufferParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*cmdPool,										// VkCmdPool				cmdPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			1												// deUint32					bufferCount;
-		};
-
 		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 		{
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType				sType;
@@ -1229,7 +1210,7 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 			&attachmentClearValues[0]								// const VkClearValue*	pAttachmentClearValues;
 		};
 
-		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
+		cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
 
@@ -1273,16 +1254,7 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 	}
 
 	// Create fence
-	{
-		const VkFenceCreateInfo fenceParams =
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			0u										// VkFenceCreateFlags	flags;
-		};
-
-		fence = createFence(vk, vkDevice, &fenceParams);
-	}
+	fence = createFence(vk, vkDevice);
 
 	// Execute Draw
 	{
@@ -1321,25 +1293,7 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 		};
 
 		// constants for image copy
-
-		const VkCommandPoolCreateInfo cmdPoolParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,		// VkCmdPoolCreateFlags	flags;
-			queueFamilyIndex							// deUint32				queueFamilyIndex;
-		};
-
-		Move<VkCommandPool>	copyCmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
-
-		const VkCommandBufferAllocateInfo cmdBufferParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*copyCmdPool,									// VkCmdPool				cmdPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			1u												// deUint32					bufferCount;
-		};
+		Move<VkCommandPool>	copyCmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 		{
@@ -1387,7 +1341,7 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 				// Copy image to buffer
 				{
 
-					Move<VkCommandBuffer> copyCmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
+					Move<VkCommandBuffer> copyCmdBuffer = allocateCommandBuffer(vk, vkDevice, *copyCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 					const VkSubmitInfo submitInfo =
 					{
@@ -1974,28 +1928,9 @@ void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, v
 	uploadInputBuffer(inputs, numValues);
 
 	// Create command pool
-	{
-		const VkCommandPoolCreateInfo cmdPoolParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType		sType;
-			DE_NULL,										// const void*			pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCmdPoolCreateFlags	flags;
-			queueFamilyIndex								// deUint32				queueFamilyIndex;
-		};
-
-		cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
-	}
+	cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
-	const VkCommandBufferAllocateInfo cmdBufferParams =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		*cmdPool,										// VkCmdPool				cmdPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-		1u												// deUint32					bufferCount;
-	};
-
 	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
@@ -2079,15 +2014,7 @@ void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, v
 	}
 
 	// Create fence
-	{
-		const VkFenceCreateInfo fenceParams =
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			0u										// VkFenceCreateFlags	flags;
-		};
-		fence = createFence(vk, vkDevice, &fenceParams);
-	}
+	fence = createFence(vk, vkDevice);
 
 	const int			maxValuesPerInvocation	= m_context.getDeviceProperties().limits.maxComputeWorkGroupSize[0];
 	int					curOffset				= 0;
@@ -2127,7 +2054,7 @@ void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, v
 			descriptorSetUpdateBuilder.update(vk, vkDevice);
 		}
 
-		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
+		cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
 
@@ -2644,29 +2571,10 @@ void TessellationExecutor::renderTess (deUint32 numValues, deUint32 vertexCount,
 	}
 
 	// Create command pool
-	{
-		const VkCommandPoolCreateInfo cmdPoolParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType		sType;
-			DE_NULL,										// const void*			pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCmdPoolCreateFlags	flags;
-			queueFamilyIndex,								// deUint32				queueFamilyIndex;
-		};
-
-		cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
-	}
+	cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
 	{
-		const VkCommandBufferAllocateInfo cmdBufferParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*cmdPool,										// VkCmdPool				cmdPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			1u												// uint32_t					bufferCount;
-		};
-
 		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 		{
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
@@ -2691,7 +2599,7 @@ void TessellationExecutor::renderTess (deUint32 numValues, deUint32 vertexCount,
 			clearValues												// const VkClearValue*	pClearValues;
 		};
 
-		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
+		cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
 
@@ -2711,15 +2619,7 @@ void TessellationExecutor::renderTess (deUint32 numValues, deUint32 vertexCount,
 	}
 
 	// Create fence
-	{
-		const VkFenceCreateInfo fenceParams =
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			0u										// VkFenceCreateFlags	flags;
-		};
-		fence = createFence(vk, vkDevice, &fenceParams);
-	}
+	fence = createFence(vk, vkDevice);
 
 	// Execute Draw
 	{

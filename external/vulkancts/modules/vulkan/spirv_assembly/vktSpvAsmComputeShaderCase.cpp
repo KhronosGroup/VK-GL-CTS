@@ -222,15 +222,7 @@ Move<VkPipeline> createComputePipeline (const DeviceInterface& vkdi, const VkDev
  *//*--------------------------------------------------------------------*/
 Move<VkCommandPool> createCommandPool (const DeviceInterface& vkdi, VkDevice device, deUint32 queueFamilyIndex)
 {
-	const VkCommandPoolCreateInfo cmdPoolCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,	// sType
-		DE_NULL,									// pNext
-		0u,											// flags
-		queueFamilyIndex,							// queueFamilyIndex
-	};
-
-	return createCommandPool(vkdi, device, &cmdPoolCreateInfo);
+	return createCommandPool(vkdi, device, 0u, queueFamilyIndex);
 }
 
 } // anonymous
@@ -347,16 +339,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// Create command buffer and record commands
 
 	const Unique<VkCommandPool>			cmdPool				(createCommandPool(vkdi, device, m_context.getUniversalQueueFamilyIndex()));
-	const VkCommandBufferAllocateInfo	cmdBufferCreateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// sType
-		NULL,											// pNext
-		*cmdPool,										// cmdPool
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// level
-		1u												// count
-	};
-
-	Unique<VkCommandBuffer>				cmdBuffer			(allocateCommandBuffer(vkdi, device, &cmdBufferCreateInfo));
+	Unique<VkCommandBuffer>				cmdBuffer			(allocateCommandBuffer(vkdi, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkCommandBufferBeginInfo		cmdBufferBeginInfo	=
 	{
@@ -376,13 +359,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 	// Create fence and run.
 
-	const VkFenceCreateInfo			fenceCreateInfo		=
-	{
-		 VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,		// sType
-		 NULL,										// pNext
-		 0											// flags
-    };
-	const Unique<VkFence>			cmdCompleteFence	(createFence(vkdi, device, &fenceCreateInfo));
+	const Unique<VkFence>			cmdCompleteFence	(createFence(vkdi, device));
 	const deUint64					infiniteTimeout		= ~(deUint64)0u;
 	const VkSubmitInfo				submitInfo			=
 	{

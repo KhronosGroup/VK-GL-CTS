@@ -283,16 +283,7 @@ protected:
 
 		const CmdPoolCreateInfo cmdPoolCreateInfo(m_context.getUniversalQueueFamilyIndex());
 		m_cmdPool = vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
-
-		const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,											// const void*				pNext;
-			*m_cmdPool,											// VkCommandPool			commandPool;
-			vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,													// deUint32					bufferCount;
-		};
-		m_cmdBuffer = vk::allocateCommandBuffer(m_vk, device, &cmdBufferAllocateInfo);
+		m_cmdBuffer = vk::allocateCommandBuffer(m_vk, device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	}
 
 	virtual tcu::TestStatus iterate (void)

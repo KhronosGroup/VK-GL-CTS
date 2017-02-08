@@ -535,29 +535,12 @@ de::MovePtr<Allocation> ImageClearingTestInstance::allocateAndBindImageMemory (V
 
 Move<VkCommandPool> ImageClearingTestInstance::createCommandPool (VkCommandPoolCreateFlags commandPoolCreateFlags) const
 {
-	const VkCommandPoolCreateInfo			cmdPoolCreateInfo		=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					// VkStructureType             sType;
-		DE_NULL,													// const void*                 pNext;
-		commandPoolCreateFlags,										// VkCommandPoolCreateFlags    flags;
-		m_queueFamilyIndex											// deUint32                    queueFamilyIndex;
-	};
-
-	return vk::createCommandPool(m_vkd, m_device, &cmdPoolCreateInfo, DE_NULL);
+	return vk::createCommandPool(m_vkd, m_device, commandPoolCreateFlags, m_queueFamilyIndex);
 }
 
 Move<VkCommandBuffer> ImageClearingTestInstance::allocatePrimaryCommandBuffer (VkCommandPool commandPool) const
 {
-	const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// VkStructureType             sType;
-		DE_NULL,													// const void*                 pNext;
-		commandPool,												// VkCommandPool               commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							// VkCommandBufferLevel        level;
-		1															// deUint32                    commandBufferCount;
-	};
-
-	return vk::allocateCommandBuffer(m_vkd, m_device, &cmdBufferAllocateInfo);
+	return vk::allocateCommandBuffer(m_vkd, m_device, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
 Move<VkImage> ImageClearingTestInstance::createImage (VkImageType imageType, VkFormat format, VkExtent3D extent, VkImageUsageFlags usage) const
@@ -735,14 +718,7 @@ void ImageClearingTestInstance::endCommandBuffer (void) const
 
 void ImageClearingTestInstance::submitCommandBuffer (void) const
 {
-	const VkFenceCreateInfo fenceCreateInfo							=
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,					// VkStructureType       sType;
-		DE_NULL,												// const void*           pNext;
-		0u														// VkFenceCreateFlags    flags;
-	};
-
-	const Unique<VkFence>					fence					(createFence(m_vkd, m_device, &fenceCreateInfo));
+	const Unique<VkFence>					fence					(createFence(m_vkd, m_device));
 
 	const VkSubmitInfo						submitInfo				=
 	{
