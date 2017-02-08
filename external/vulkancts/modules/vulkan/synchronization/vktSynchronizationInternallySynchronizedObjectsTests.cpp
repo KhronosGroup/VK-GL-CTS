@@ -334,7 +334,7 @@ TestStatus executeComputePipeline (const Context& context, const VkPipeline& pip
 																.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 		Buffer							resultBuffer		(vk, device, *queues.m_allocator, makeBufferCreateInfo(BUFFER_SIZE, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 		const VkBufferMemoryBarrier		bufferBarrier		= makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, BUFFER_SIZE);
-		const Unique<VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
+		const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 		const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
 
 		{
@@ -417,7 +417,7 @@ TestStatus executeGraphicPipeline (const Context& context, const VkPipeline& pip
 																		MemoryRequirement::Any));
 		Move<VkImageView>				colorAttachmentView			= makeImageView(vk, device, **colorAttachmentImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorImageSubresourceRange);
 		Move<VkFramebuffer>				framebuffer					= makeFramebuffer(vk, device, renderPass, *colorAttachmentView, colorImageExtent.width, colorImageExtent.height, 1u);
-		const Unique<VkCommandPool>		cmdPool						(makeCommandPool(vk, device, queueFamilyIndex));
+		const Unique<VkCommandPool>		cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 		const Unique<VkCommandBuffer>	cmdBuffer					(makeCommandBuffer(vk, device, *cmdPool));
 		const VkDescriptorBufferInfo	outputBufferDescriptorInfo	= makeDescriptorBufferInfo(*resultBuffer, 0ull, BUFFER_SIZE);
 

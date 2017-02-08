@@ -152,19 +152,6 @@ BoolOp boolOpFromIndex (size_t index)
 	return ops[index % DE_LENGTH_OF_ARRAY(ops)];
 }
 
-// Utility functions using flattened structs
-Move<VkFence> createFence (const DeviceInterface& vk, VkDevice device, VkFenceCreateFlags flags)
-{
-	const VkFenceCreateInfo pCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		DE_NULL,
-
-		flags
-	};
-	return createFence(vk, device, &pCreateInfo);
-}
-
 Move<VkFramebuffer> createFramebuffer (const DeviceInterface&	vk,
 									   VkDevice					device,
 									   VkFramebufferCreateFlags	pCreateInfo_flags,
@@ -283,21 +270,6 @@ Move<VkBuffer> createBuffer (const DeviceInterface&	vk,
 	return createBuffer(vk, device, &pCreateInfo);
 }
 
-Move<VkCommandPool> createCommandPool (const DeviceInterface&	vk,
-									   VkDevice					device,
-									   VkCommandPoolCreateFlags	pCreateInfo_flags,
-									   deUint32					pCreateInfo_queueFamilyIndex)
-{
-	const VkCommandPoolCreateInfo pCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-		DE_NULL,
-		pCreateInfo_flags,
-		pCreateInfo_queueFamilyIndex,
-	};
-	return createCommandPool(vk, device, &pCreateInfo);
-}
-
 void cmdBeginRenderPass (const DeviceInterface&	vk,
 						 VkCommandBuffer		cmdBuffer,
 						 VkRenderPass			pRenderPassBegin_renderPass,
@@ -318,22 +290,6 @@ void cmdBeginRenderPass (const DeviceInterface&	vk,
 		pRenderPassBegin_pAttachmentClearValues,
 	};
 	vk.cmdBeginRenderPass(cmdBuffer, &pRenderPassBegin, contents);
-}
-
-Move<VkCommandBuffer> allocateCommandBuffer (const DeviceInterface&	vk,
-											 VkDevice				device,
-											 VkCommandPool			pCreateInfo_commandPool,
-											 VkCommandBufferLevel	pCreateInfo_level)
-{
-	const VkCommandBufferAllocateInfo pAllocateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		DE_NULL,
-		pCreateInfo_commandPool,
-		pCreateInfo_level,
-		1u,												// bufferCount
-	};
-	return allocateCommandBuffer(vk, device, &pAllocateInfo);
 }
 
 void beginCommandBuffer (const DeviceInterface&			vk,

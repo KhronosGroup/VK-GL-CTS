@@ -254,7 +254,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 	const Unique<VkImage> sparseImage(createImage(deviceInterface, getDevice(), &imageCreateInfo));
 
 	// Create sparse image memory bind semaphore
-	const Unique<VkSemaphore> imageMemoryBindSemaphore(makeSemaphore(deviceInterface, getDevice()));
+	const Unique<VkSemaphore> imageMemoryBindSemaphore(createSemaphore(deviceInterface, getDevice()));
 
 	{
 		// Get image general memory requirements
@@ -397,7 +397,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 
 	// Create command buffer for compute and transfer oparations
 	const Unique<VkCommandPool>	  commandPool(makeCommandPool(deviceInterface, getDevice(), computeQueue.queueFamilyIndex));
-	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, getDevice(), *commandPool));
+	const Unique<VkCommandBuffer> commandBuffer(allocateCommandBuffer(deviceInterface, getDevice(), *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 	beginCommandBuffer(deviceInterface, *commandBuffer);

@@ -365,15 +365,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest (const VkCommandPool
 		};
 		const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo));
 
-		const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType			sType;
-			DE_NULL,											// const void*				pNext;
-			cmdPool,											// VkCommandPool			commandPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,					// VkCommandBufferLevel		level;
-			1u,													// deUint32					bufferCount;
-		};
-		const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
+		const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		const Unique<VkQueryPool>		queryPool			(makeQueryPool(vk, device, VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT));
 
 		beginCommandBuffer(vk, *cmdBuffer);
@@ -504,25 +496,8 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest (const VkCo
 		pipeline.push_back(VkPipelineSp(new Unique<VkPipeline>(createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo))));
 	}
 
-	const VkCommandBufferAllocateInfo			cmdBufferAllocateInfo		=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		cmdPool,										// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,												// deUint32					bufferCount;
-	};
-	const Unique<VkCommandBuffer>			primaryCmdBuffer			(allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
-
-	const VkCommandBufferAllocateInfo			secondaryCmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		cmdPool,											// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_SECONDARY,					// VkCommandBufferLevel		level;
-		1u													// deUint32					commandBufferCount;
-	};
-	const Unique<VkCommandBuffer>				secondaryCmdBuffer			(allocateCommandBuffer(vk, device, &secondaryCmdBufferAllocateInfo));
+	const Unique<VkCommandBuffer>				primaryCmdBuffer			(allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>				secondaryCmdBuffer			(allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY));
 
 	const Unique<VkQueryPool>					queryPool					(makeQueryPool(vk, device, VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT));
 
@@ -679,25 +654,8 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest (c
 		pipeline.push_back(VkPipelineSp(new Unique<VkPipeline>(createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo))));
 	}
 
-	const VkCommandBufferAllocateInfo			cmdBufferAllocateInfo			=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType		sType;
-		DE_NULL,										// const void*			pNext;
-		cmdPool,										// VkCommandPool		commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel	level;
-		1u,												// deUint32				bufferCount;
-	};
-	const Unique<VkCommandBuffer>				primaryCmdBuffer				(allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
-
-	const VkCommandBufferAllocateInfo			secondaryCmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType		sType;
-		DE_NULL,										// const void*			pNext;
-		cmdPool,										// VkCommandPool		commandPool;
-		VK_COMMAND_BUFFER_LEVEL_SECONDARY,				// VkCommandBufferLevel	level;
-		1u												// deUint32				commandBufferCount;
-	};
-	const Unique<VkCommandBuffer>			secondaryCmdBuffer			(allocateCommandBuffer(vk, device, &secondaryCmdBufferAllocateInfo));
+	const Unique<VkCommandBuffer>				primaryCmdBuffer			(allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>				secondaryCmdBuffer			(allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY));
 
 	const Unique<VkQueryPool>					queryPool					(makeQueryPool(vk, device, VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT));
 
@@ -1058,15 +1016,7 @@ tcu::TestStatus VertexShaderTestInstance::executeTest (void)
 	const de::SharedPtr<Buffer>				vertexBufferSp			= creatAndFillVertexBuffer();
 	const VkBuffer							vertexBuffer			= vertexBufferSp->object();
 
-	const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		*cmdPool,										// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,												// deUint32					bufferCount;
-	};
-	const Unique<VkCommandBuffer>			cmdBuffer				(allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
+	const Unique<VkCommandBuffer>			cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
@@ -1218,25 +1168,8 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest (void)
 	const de::SharedPtr<Buffer>				vertexBufferSp			= creatAndFillVertexBuffer();
 	const VkBuffer							vertexBuffer			= vertexBufferSp->object();
 
-	const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		*cmdPool,										// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,												// deUint32					bufferCount;
-	};
-	const Unique<VkCommandBuffer>			primaryCmdBuffer			(allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
-
-	const VkCommandBufferAllocateInfo			secondaryCmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		*cmdPool,											// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_SECONDARY,					// VkCommandBufferLevel		level;
-		1u													// deUint32					commandBufferCount;
-	};
-	const Unique<VkCommandBuffer>			secondaryCmdBuffer			(allocateCommandBuffer(vk, device, &secondaryCmdBufferAllocateInfo));
+	const Unique<VkCommandBuffer>			primaryCmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>			secondaryCmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY));
 
 	beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, m_parametersGraphic.queryStatisticFlags, *m_renderPass, *m_framebuffer, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
 		vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
@@ -1306,25 +1239,8 @@ tcu::TestStatus VertexShaderSecondaryInheritedTestInstance::executeTest (void)
 	const de::SharedPtr<Buffer>				vertexBufferSp			= creatAndFillVertexBuffer();
 	const VkBuffer							vertexBuffer			= vertexBufferSp->object();
 
-	const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		*cmdPool,										// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,												// deUint32					bufferCount;
-	};
-	const Unique<VkCommandBuffer>			primaryCmdBuffer		(allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
-
-	const VkCommandBufferAllocateInfo		secondaryCmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		*cmdPool,											// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_SECONDARY,					// VkCommandBufferLevel		level;
-		1u													// deUint32					commandBufferCount;
-	};
-	const Unique<VkCommandBuffer>			secondaryCmdBuffer		(allocateCommandBuffer(vk, device, &secondaryCmdBufferAllocateInfo));
+	const Unique<VkCommandBuffer>			primaryCmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>			secondaryCmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY));
 
 	beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, m_parametersGraphic.queryStatisticFlags, *m_renderPass, *m_framebuffer, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
 		vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
@@ -1487,15 +1403,7 @@ tcu::TestStatus GeometryShaderTestInstance::executeTest (void)
 	const de::SharedPtr<Buffer>				vertexBufferSp			= creatAndFillVertexBuffer();
 	const VkBuffer							vertexBuffer			= vertexBufferSp->object();
 
-	const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		*cmdPool,										// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,												// deUint32					bufferCount;
-	};
-	const Unique<VkCommandBuffer>			cmdBuffer				(allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
+	const Unique<VkCommandBuffer>			cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
@@ -1626,25 +1534,8 @@ tcu::TestStatus GeometryShaderSecondaryTestInstance::executeTest (void)
 	const de::SharedPtr<Buffer>				vertexBufferSp			= creatAndFillVertexBuffer();
 	const VkBuffer							vertexBuffer			= vertexBufferSp->object();
 
-	const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		*cmdPool,										// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,												// deUint32					bufferCount;
-	};
-	const Unique<VkCommandBuffer>			primaryCmdBuffer		(allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
-
-	const VkCommandBufferAllocateInfo		secondaryCmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		*cmdPool,											// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_SECONDARY,					// VkCommandBufferLevel		level;
-		1u													// deUint32					commandBufferCount;
-	};
-	const Unique<VkCommandBuffer>			secondaryCmdBuffer		(allocateCommandBuffer(vk, device, &secondaryCmdBufferAllocateInfo));
+	const Unique<VkCommandBuffer>			primaryCmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>			secondaryCmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY));
 
 	beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, m_parametersGraphic.queryStatisticFlags, *m_renderPass, *m_framebuffer, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
 		vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
@@ -1714,25 +1605,8 @@ tcu::TestStatus GeometryShaderSecondaryInheritedTestInstance::executeTest (void)
 	const de::SharedPtr<Buffer>				vertexBufferSp			= creatAndFillVertexBuffer();
 	const VkBuffer							vertexBuffer			= vertexBufferSp->object();
 
-	const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		*cmdPool,										// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,												// deUint32					bufferCount;
-	};
-	const Unique<VkCommandBuffer>			primaryCmdBuffer		(allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
-
-	const VkCommandBufferAllocateInfo		secondaryCmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		*cmdPool,											// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_SECONDARY,					// VkCommandBufferLevel		level;
-		1u													// deUint32					commandBufferCount;
-	};
-	const Unique<VkCommandBuffer>			secondaryCmdBuffer		(allocateCommandBuffer(vk, device, &secondaryCmdBufferAllocateInfo));
+	const Unique<VkCommandBuffer>			primaryCmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>			secondaryCmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY));
 
 	beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, m_parametersGraphic.queryStatisticFlags, *m_renderPass, *m_framebuffer, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
 		vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
@@ -1894,15 +1768,7 @@ tcu::TestStatus	TessellationShaderTestInstance::executeTest (void)
 	const de::SharedPtr<Buffer>				vertexBufferSp			= creatAndFillVertexBuffer();
 	const VkBuffer							vertexBuffer			= vertexBufferSp->object();
 
-	const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		*cmdPool,										// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,												// deUint32					bufferCount;
-	};
-	const Unique<VkCommandBuffer>			cmdBuffer				(allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
+	const Unique<VkCommandBuffer>			cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
@@ -2002,25 +1868,8 @@ tcu::TestStatus	TessellationShaderSecondrayTestInstance::executeTest (void)
 	const de::SharedPtr<Buffer>				vertexBufferSp			= creatAndFillVertexBuffer();
 	const VkBuffer							vertexBuffer			= vertexBufferSp->object();
 
-	const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		*cmdPool,										// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,												// deUint32					bufferCount;
-	};
-	const Unique<VkCommandBuffer>			primaryCmdBuffer		(allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
-
-	const VkCommandBufferAllocateInfo		secondaryCmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		*cmdPool,											// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_SECONDARY,					// VkCommandBufferLevel		level;
-		1u													// deUint32					commandBufferCount;
-	};
-	const Unique<VkCommandBuffer>			secondaryCmdBuffer		(allocateCommandBuffer(vk, device, &secondaryCmdBufferAllocateInfo));
+	const Unique<VkCommandBuffer>			primaryCmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>			secondaryCmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY));
 
 	beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, m_parametersGraphic.queryStatisticFlags, *m_renderPass, *m_framebuffer, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
 		vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
@@ -2093,25 +1942,8 @@ tcu::TestStatus	TessellationShaderSecondrayInheritedTestInstance::executeTest (v
 	const de::SharedPtr<Buffer>				vertexBufferSp			= creatAndFillVertexBuffer();
 	const VkBuffer							vertexBuffer			= vertexBufferSp->object();
 
-	const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		*cmdPool,										// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,												// deUint32					bufferCount;
-	};
-	const Unique<VkCommandBuffer>			primaryCmdBuffer		(allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
-
-	const VkCommandBufferAllocateInfo		secondaryCmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		*cmdPool,											// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_SECONDARY,					// VkCommandBufferLevel		level;
-		1u													// deUint32					commandBufferCount;
-	};
-	const Unique<VkCommandBuffer>			secondaryCmdBuffer		(allocateCommandBuffer(vk, device, &secondaryCmdBufferAllocateInfo));
+	const Unique<VkCommandBuffer>			primaryCmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>			secondaryCmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY));
 
 	beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, m_parametersGraphic.queryStatisticFlags, *m_renderPass, *m_framebuffer, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
 		vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);

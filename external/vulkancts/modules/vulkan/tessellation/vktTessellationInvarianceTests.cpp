@@ -607,7 +607,7 @@ BaseTestInstance::BaseTestInstance (Context& context, const CaseDefinition caseD
 	, m_framebuffer							(makeFramebufferWithoutAttachments(m_context.getDeviceInterface(), m_context.getDevice(), *m_renderPass))
 	, m_pipelineLayout						(makePipelineLayout               (m_context.getDeviceInterface(), m_context.getDevice(), *m_descriptorSetLayout))
 	, m_cmdPool								(makeCommandPool                  (m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueueFamilyIndex()))
-	, m_cmdBuffer							(makeCommandBuffer                (m_context.getDeviceInterface(), m_context.getDevice(), *m_cmdPool))
+	, m_cmdBuffer							(allocateCommandBuffer            (m_context.getDeviceInterface(), m_context.getDevice(), *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY))
 {
 	requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(),
 					FEATURE_TESSELLATION_SHADER | FEATURE_GEOMETRY_SHADER | FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
@@ -1385,7 +1385,7 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 	const Unique<VkFramebuffer>    framebuffer   (makeFramebufferWithoutAttachments(vk, device, *renderPass));
 	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout               (vk, device, *descriptorSetLayout));
 	const Unique<VkCommandPool>    cmdPool       (makeCommandPool                  (vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>  cmdBuffer     (makeCommandBuffer                (vk, device, *cmdPool));
+	const Unique<VkCommandBuffer>  cmdBuffer     (allocateCommandBuffer            (vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	for (int tessLevelCaseNdx = 0; tessLevelCaseNdx < static_cast<int>(tessLevelCases.size()); ++tessLevelCaseNdx)
 	{
@@ -2035,7 +2035,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	const Unique<VkFramebuffer>    framebuffer   (makeFramebufferWithoutAttachments(vk, device, *renderPass));
 	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout               (vk, device, *descriptorSetLayout));
 	const Unique<VkCommandPool>    cmdPool       (makeCommandPool                  (vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>  cmdBuffer     (makeCommandBuffer                (vk, device, *cmdPool));
+	const Unique<VkCommandBuffer>  cmdBuffer     (allocateCommandBuffer            (vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const Unique<VkPipeline> pipeline(GraphicsPipelineBuilder()
 		.setPatchControlPoints        (NUM_TESS_LEVELS)

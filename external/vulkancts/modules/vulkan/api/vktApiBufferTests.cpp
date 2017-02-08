@@ -307,9 +307,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest (VkDeviceSize size)
 	// Bind the memory
 	if ((m_testCase.flags & (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)) != 0)
 	{
-		VkQueue								queue					= DE_NULL;
-
-		vk.getDeviceQueue(vkDevice, queueFamilyIndex, 0, &queue);
+		const VkQueue						queue					= getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
 
 		const VkSparseMemoryBind			sparseMemoryBind		=
 		{
@@ -343,14 +341,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest (VkDeviceSize size)
 			DE_NULL,								// const VkSemaphore*						pSignalSemaphores;
 		};
 
-		const VkFenceCreateInfo fenceParams =
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			0u										// VkFenceCreateFlags	flags;
-		};
-
-		const vk::Unique<vk::VkFence> fence(vk::createFence(vk, vkDevice, &fenceParams));
+		const vk::Unique<vk::VkFence> fence(vk::createFence(vk, vkDevice));
 
 		if (vk.queueBindSparse(queue, 1, &bindSparseInfo, *fence) != VK_SUCCESS)
 			return tcu::TestStatus::fail("Bind sparse buffer memory failed! (requested memory size: " + de::toString(size) + ")");

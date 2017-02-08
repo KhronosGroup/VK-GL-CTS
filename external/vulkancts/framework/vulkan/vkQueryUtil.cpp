@@ -291,4 +291,13 @@ bool isLayerSupported (const std::vector<VkLayerProperties>& layers, const Requi
 	return isLayerSupported(layers.begin(), layers.end(), required);
 }
 
+VkQueue getDeviceQueue (const DeviceInterface& vkd, VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex)
+{
+	VkQueue queue;
+
+	vkd.getDeviceQueue(device, queueFamilyIndex, queueIndex, &queue);
+
+	return queue;
+}
+
 } // vk

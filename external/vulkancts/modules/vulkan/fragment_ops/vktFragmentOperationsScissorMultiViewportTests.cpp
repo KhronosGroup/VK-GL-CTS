@@ -587,8 +587,8 @@ public:
 		m_pipelineLayout	= makePipelineLayout	(vk, device);
 		m_pipeline			= makeGraphicsPipeline	(vk, device, *m_pipelineLayout, *m_renderPass, *m_vertexModule, *m_geometryModule, *m_fragmentModule,
 													 m_renderSize, m_numViewports, scissors);
-		m_cmdPool			= makeCommandPool		(vk, device, queueFamilyIndex);
-		m_cmdBuffer			= makeCommandBuffer		(vk, device, *m_cmdPool);
+		m_cmdPool			= createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+		m_cmdBuffer			= allocateCommandBuffer	(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	}
 
 	void draw (Context& context, const VkBuffer colorBuffer) const
