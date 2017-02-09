@@ -2418,7 +2418,7 @@ tcu::TestStatus imageFormatProperties2 (Context& context, const VkFormat format,
 	{
 		const VkPhysicalDevice	physicalDevice	= devices[deviceNdx];
 
-		for (VkImageUsageFlags curUsageFlags = 0; curUsageFlags <= allUsageFlags; curUsageFlags++)
+		for (VkImageUsageFlags curUsageFlags = (VkImageUsageFlags)1; curUsageFlags <= allUsageFlags; curUsageFlags++)
 		{
 			for (VkImageCreateFlags curCreateFlags = 0; curCreateFlags <= allCreateFlags; curCreateFlags++)
 			{
@@ -2487,11 +2487,9 @@ tcu::TestStatus sparseImageFormatProperties2 (Context& context, const VkFormat f
 	{
 		const VkPhysicalDevice	physicalDevice	= devices[deviceNdx];
 
-		for (deUint32 sampleCount = 1; sampleCount <= 64; sampleCount++)
+		for (deUint32 sampleCountBit = VK_SAMPLE_COUNT_1_BIT; sampleCountBit <= VK_SAMPLE_COUNT_64_BIT; sampleCountBit = (sampleCountBit << 1u))
 		{
-			const VkSampleCountFlagBits	sampleCountFlagBit	= (VkSampleCountFlagBits)(1u<<sampleCount);
-
-			for (VkImageUsageFlags curUsageFlags = 0; curUsageFlags <= allUsageFlags; curUsageFlags++)
+			for (VkImageUsageFlags curUsageFlags = (VkImageUsageFlags)1; curUsageFlags <= allUsageFlags; curUsageFlags++)
 			{
 				const VkPhysicalDeviceSparseImageFormatInfo2KHR	imageFormatInfo	=
 				{
@@ -2499,7 +2497,7 @@ tcu::TestStatus sparseImageFormatProperties2 (Context& context, const VkFormat f
 					DE_NULL,
 					format,
 					imageType,
-					sampleCountFlagBit,
+					(VkSampleCountFlagBits)sampleCountBit,
 					curUsageFlags,
 					tiling,
 				};
