@@ -3101,7 +3101,7 @@ std::string ConcurrentSSBOAtomicCounterMixedCase::genSSBOComputeSource (void) co
 		<< "void main ()\n"
 		<< "{\n"
 		<< "	// flip high bits\n"
-		<< "	highp uint mask = uint(1) << (16u + (gl_GlobalInvocationID.x % 16u));\n"
+		<< "	highp uint mask = uint(1) << (24u + (gl_GlobalInvocationID.x % 8u));\n"
 		<< "	sb_work.dummy = atomicXor(sb_work.targetValue, mask);\n"
 		<< "}";
 
