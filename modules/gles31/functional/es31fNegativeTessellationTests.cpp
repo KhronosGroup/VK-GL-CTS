@@ -120,6 +120,23 @@ void single_tessellation_stage (NegativeTestContext& ctx)
 								   makeTessPipelineSources(tcu::StringTemplate(vertexShaderSource).specialize(args),
 														   tcu::StringTemplate(fragmentShaderSource).specialize(args),
 														   tcu::StringTemplate(tessControlShaderSource).specialize(args),
+														   "")); // missing tessEvalShaderSource
+		tcu::TestLog& log = ctx.getLog();
+		log << program;
+
+		ctx.beginSection("A link error is generated if a non-separable program has a tessellation control shader but no tessellation evaluation shader.");
+
+		if (program.isOk())
+			ctx.fail("Program was not expected to link");
+
+		ctx.endSection();
+	}
+
+	{
+		glu::ShaderProgram program(ctx.getRenderContext(),
+								   makeTessPipelineSources(tcu::StringTemplate(vertexShaderSource).specialize(args),
+														   tcu::StringTemplate(fragmentShaderSource).specialize(args),
+														   tcu::StringTemplate(tessControlShaderSource).specialize(args),
 														   "") // missing tessEvalShaderSource
 								   << glu::ProgramSeparable(true));
 		tcu::TestLog& log = ctx.getLog();
