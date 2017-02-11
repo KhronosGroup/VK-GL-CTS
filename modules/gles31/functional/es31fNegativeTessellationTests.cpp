@@ -120,9 +120,13 @@ void single_tessellation_stage (NegativeTestContext& ctx)
 								   makeTessPipelineSources(tcu::StringTemplate(vertexShaderSource).specialize(args),
 														   tcu::StringTemplate(fragmentShaderSource).specialize(args),
 														   tcu::StringTemplate(tessControlShaderSource).specialize(args),
-														   "")); // missing tessEvalShaderSource
+														   "") // missing tessEvalShaderSource
+								   << glu::ProgramSeparable(true));
 		tcu::TestLog& log = ctx.getLog();
 		log << program;
+
+		if (!program.isOk())
+			TCU_THROW(TestError, "failed to build program");
 
 		ctx.glUseProgram(program.getProgram());
 		ctx.expectError(GL_NO_ERROR);
