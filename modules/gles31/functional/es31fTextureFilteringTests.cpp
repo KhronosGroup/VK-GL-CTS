@@ -202,6 +202,9 @@ void TextureCubeArrayFilteringCase::init (void)
 	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_cube_map_array"))
 		throw tcu::NotSupportedError("GL_EXT_texture_cube_map_array not supported");
 
+	if (m_internalFormat == GL_SR8_EXT && !(m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_sRGB_R8")))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_R8 not supported");
+
 	try
 	{
 		const tcu::TextureFormat		texFmt		= glu::mapGLInternalFormat(m_internalFormat);
@@ -490,6 +493,7 @@ void TextureFilteringTests::init (void)
 		{ "rgb565",			GL_RGB565			},
 		{ "rgba4",			GL_RGBA4			},
 		{ "rgb5_a1",		GL_RGB5_A1			},
+		{ "sr8",			GL_SR8_EXT			},
 		{ "srgb8_alpha8",	GL_SRGB8_ALPHA8		},
 		{ "rgb10_a2",		GL_RGB10_A2			}
 	};

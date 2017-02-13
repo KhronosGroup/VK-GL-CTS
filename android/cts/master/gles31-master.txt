@@ -12125,6 +12125,12 @@ dEQP-GLES31.functional.texture.filtering.cube_array.formats.rgb5_a1_nearest_mipm
 dEQP-GLES31.functional.texture.filtering.cube_array.formats.rgb5_a1_linear_mipmap_nearest
 dEQP-GLES31.functional.texture.filtering.cube_array.formats.rgb5_a1_nearest_mipmap_linear
 dEQP-GLES31.functional.texture.filtering.cube_array.formats.rgb5_a1_linear_mipmap_linear
+dEQP-GLES31.functional.texture.filtering.cube_array.formats.sr8_nearest
+dEQP-GLES31.functional.texture.filtering.cube_array.formats.sr8_linear
+dEQP-GLES31.functional.texture.filtering.cube_array.formats.sr8_nearest_mipmap_nearest
+dEQP-GLES31.functional.texture.filtering.cube_array.formats.sr8_linear_mipmap_nearest
+dEQP-GLES31.functional.texture.filtering.cube_array.formats.sr8_nearest_mipmap_linear
+dEQP-GLES31.functional.texture.filtering.cube_array.formats.sr8_linear_mipmap_linear
 dEQP-GLES31.functional.texture.filtering.cube_array.formats.srgb8_alpha8_nearest
 dEQP-GLES31.functional.texture.filtering.cube_array.formats.srgb8_alpha8_linear
 dEQP-GLES31.functional.texture.filtering.cube_array.formats.srgb8_alpha8_nearest_mipmap_nearest
@@ -12311,6 +12317,8 @@ dEQP-GLES31.functional.texture.format.sized.cube_array.rgba8i_pot
 dEQP-GLES31.functional.texture.format.sized.cube_array.rgba8i_npot
 dEQP-GLES31.functional.texture.format.sized.cube_array.rgba8ui_pot
 dEQP-GLES31.functional.texture.format.sized.cube_array.rgba8ui_npot
+dEQP-GLES31.functional.texture.format.sized.cube_array.srgb_r8_pot
+dEQP-GLES31.functional.texture.format.sized.cube_array.srgb_r8_npot
 dEQP-GLES31.functional.texture.format.sized.cube_array.srgb8_alpha8_pot
 dEQP-GLES31.functional.texture.format.sized.cube_array.srgb8_alpha8_npot
 dEQP-GLES31.functional.texture.format.sized.cube_array.rgb10_a2_pot
