@@ -31,7 +31,7 @@ import build
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--glcts-gtf-target', dest='gtfTarget', default='gles32', choices=['gles32', 'gles31', 'gles3', 'gles2'], help="Build GLCTS GTF module for the given API.")
+	parser.add_argument('--glcts-gtf-target', dest='gtfTarget', default='gles32', choices=['gles32', 'gles31', 'gles3', 'gles2', 'gl'], help="Build GLCTS GTF module for the given API.")
 	args = parser.parse_args()
 
 	build.build(package='openglcts', gtfTarget=args.gtfTarget)

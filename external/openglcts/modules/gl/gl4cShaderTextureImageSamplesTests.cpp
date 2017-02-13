@@ -474,6 +474,18 @@ void ShaderTextureImageSamplesTestBase::executeFunctionalTest(const _sampler_typ
 	 * object storage contents into process space and validate the value */
 	for (int n_value = 0; n_value < m_internalformat_n_samples_count; ++n_value)
 	{
+		if (test_type == TEST_TYPE_IMAGE)
+		{
+			/* Shader images do not necessarily support all sample counts. */
+			int max_image_samples;
+
+			gl.getIntegerv(GL_MAX_IMAGE_SAMPLES, &max_image_samples);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv(GL_MAX_IMAGE_SAMPLES) call failed.");
+
+			if (m_internalformat_n_samples_data[n_value] > max_image_samples)
+				continue;
+		}
+
 		gl.genTextures(1, &m_to_id);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() call failed.");
 
