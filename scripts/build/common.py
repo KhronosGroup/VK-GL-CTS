@@ -27,7 +27,7 @@ import subprocess
 DEQP_DIR = os.path.realpath(os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 def die (msg):
-	print msg
+	print(msg)
 	exit(-1)
 
 def shellquote(s):
