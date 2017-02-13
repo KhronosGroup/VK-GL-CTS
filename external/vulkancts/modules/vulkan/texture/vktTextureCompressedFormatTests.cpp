@@ -165,6 +165,8 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 		testParameters.format		= etc2Formats[formatNdx].format;
 		testParameters.width		= sizes[sizeNdx].width;
 		testParameters.height		= sizes[sizeNdx].height;
+		testParameters.minFilter	= tcu::Sampler::NEAREST;
+		testParameters.magFilter	= tcu::Sampler::NEAREST;
 		testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
 		compressedTextureTests->addChild(new TextureTestCase<Compressed2DTestInstance>(testCtx, (nameBase + "_2d_" + sizes[sizeNdx].name).c_str(), (formatStr + ", TEXTURETYPE_2D").c_str(), testParameters));
