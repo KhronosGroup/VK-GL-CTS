@@ -43,6 +43,8 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fShaderAtomicOpTests.hpp
 	es31fShaderImageLoadStoreTests.cpp
 	es31fShaderImageLoadStoreTests.hpp
+	es31fSRGBDecodeTests.cpp
+	es31fSRGBDecodeTests.hpp
 	es31fSSBOLayoutCase.cpp
 	es31fSSBOLayoutCase.hpp
 	es31fSSBOLayoutTests.cpp
