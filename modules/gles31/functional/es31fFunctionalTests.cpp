@@ -88,6 +88,7 @@
 #include "es31fCopyImageTests.hpp"
 #include "es31fDrawBuffersIndexedTests.hpp"
 #include "es31fDefaultVertexArrayObjectTests.hpp"
+#include "es31fSRGBDecodeTests.hpp"
 
 namespace deqp
 {
@@ -296,6 +297,20 @@ public:
 	}
 };
 
+class SRGBTextureDecodeTests : public TestCaseGroup
+{
+public:
+	SRGBTextureDecodeTests (Context& context)
+		: TestCaseGroup (context, "srgb_texture_decode", "GL_EXT_texture_sRGB_decode tests")
+	{
+	}
+
+	void init (void)
+	{
+		addChild(new SRGBDecodeTests	(m_context));
+	}
+};
+
 FunctionalTests::FunctionalTests (Context& context)
 	: TestCaseGroup(context, "functional", "Functionality Tests")
 {
@@ -337,6 +352,7 @@ void FunctionalTests::init (void)
 	addChild(createCopyImageTests						(m_context));
 	addChild(createDrawBuffersIndexedTests				(m_context));
 	addChild(new DefaultVertexArrayObjectTests			(m_context));
+	addChild(new SRGBTextureDecodeTests					(m_context));
 }
 
 } // Functional
