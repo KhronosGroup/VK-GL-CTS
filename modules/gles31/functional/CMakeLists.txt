@@ -183,6 +183,8 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fNegativeShaderStorageTests.hpp
 	es31fNegativeSSBOBlockTests.cpp
 	es31fNegativeSSBOBlockTests.hpp
+	es31fDrawElementsBaseVertexTests.cpp
+	es31fDrawElementsBaseVertexTests.hpp
 	)
 
 add_library(deqp-gles31-functional STATIC ${DEQP_GLES31_FUNCTIONAL_SRCS})
