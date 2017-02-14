@@ -59,6 +59,13 @@ static const char* fragmentShaderSource		=	"${GLSL_VERSION_STRING}\n"
 												"	fragColor = vec4(0.0);\n"
 												"}\n\0";
 
+static const char* geometryShaderSource		=	"#version 320 es\n"
+												"layout(points) in;\n"
+												"layout(points, max_vertices = 3) out;\n"
+												"void main (void)\n"
+												"{\n"
+												"}\n";
+
 void vertex_attribf (NegativeTestContext& ctx)
 {
 	ctx.beginSection("GL_INVALID_VALUE is generated if index is greater than or equal to GL_MAX_VERTEX_ATTRIBS.");
@@ -663,8 +670,8 @@ void draw_elements_base_vertex (NegativeTestContext& ctx)
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
 
-	GLuint	fbo = 0;
-	GLfloat	vertices[1];
+	GLuint				fbo = 0;
+	GLfloat				vertices[1];
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
 	ctx.glDrawElementsBaseVertex(-1, 1, GL_UNSIGNED_INT, vertices, 1);
@@ -692,6 +699,38 @@ void draw_elements_base_vertex (NegativeTestContext& ctx)
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.endSection();
+}
+
+void draw_elements_base_vertex_invalid_map (NegativeTestContext& ctx)
+{
+	GLuint	buf = 0;
+	GLfloat	vertices[1];
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if a non-zero buffer object name is bound to an enabled array or the element array and the buffer object's data store is currently mapped.");
+	ctx.glGenBuffers(1, &buf);
+	ctx.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf);
+	ctx.glBufferData(GL_ELEMENT_ARRAY_BUFFER, 10, 0, GL_STATIC_DRAW);
+	ctx.glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, 5, GL_MAP_READ_BIT);
+	ctx.expectError(GL_NO_ERROR);
+	ctx.glDrawElementsBaseVertex(GL_POINTS, 1, GL_UNSIGNED_INT, vertices, 1);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+	ctx.glDeleteBuffers(1, &buf);
+	ctx.endSection();
+}
+
+void draw_elements_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
+{
+	GLfloat				vertices[1];
+	glu::ShaderProgram	program	(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::GeometrySource(geometryShaderSource));
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if a geometry shader is active and mode is incompatible with the input primitive type of the geometry shader in the currently installed program object.");
+	ctx.glUseProgram(program.getProgram());
+	ctx.glDrawElementsBaseVertex(GL_TRIANGLES, 1, GL_UNSIGNED_INT, vertices, 1);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.glUseProgram(0);
 }
 
 void draw_arrays_instanced (NegativeTestContext& ctx)
@@ -1003,7 +1042,7 @@ void draw_elements_instanced_base_vertex (NegativeTestContext& ctx)
 	GLfloat						vertices[1];
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	glu::ShaderProgram			program			(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 
 	ctx.glUseProgram(program.getProgram());
 	ctx.glVertexAttribDivisor(0, 1);
@@ -1036,6 +1075,39 @@ void draw_elements_instanced_base_vertex (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
+	ctx.endSection();
+
+	ctx.glUseProgram(0);
+}
+
+void draw_elements_instanced_base_vertex_invalid_map (NegativeTestContext& ctx)
+{
+	GLfloat						vertices[1];
+	GLuint						buf		= 0;
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if a non-zero buffer object name is bound to an enabled array or the element array and the buffer object's data store is currently mapped.");
+	ctx.glGenBuffers(1, &buf);
+	ctx.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf);
+	ctx.glBufferData(GL_ELEMENT_ARRAY_BUFFER, 10, 0, GL_STATIC_DRAW);
+	ctx.glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, 5, GL_MAP_READ_BIT);
+	ctx.expectError(GL_NO_ERROR);
+	ctx.glDrawElementsInstancedBaseVertex(GL_POINTS, 1, GL_UNSIGNED_INT, vertices, 1, 1);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+	ctx.glDeleteBuffers(1, &buf);
+	ctx.endSection();
+
+}
+
+void draw_elements_instanced_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
+{
+	GLfloat						vertices[1];
+	glu::ShaderProgram			geometryProgram	(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::GeometrySource(geometryShaderSource));
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if a geometry shader is active and mode is incompatible with the input primitive type of the geometry shader in the currently installed program object.");
+	ctx.glUseProgram(geometryProgram.getProgram());
+	ctx.glDrawElementsInstancedBaseVertex(GL_TRIANGLES, 1, GL_UNSIGNED_INT, vertices, 1, 1);
+	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 
 	ctx.glUseProgram(0);
@@ -1291,42 +1363,80 @@ void draw_range_elements_base_vertex (NegativeTestContext& ctx)
 	ctx.glUseProgram(0);
 }
 
+void draw_range_elements_base_vertex_invalid_map (NegativeTestContext& ctx)
+{
+	GLuint	buf		= 0;
+	GLfloat	vertices[1];
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if a non-zero buffer object name is bound to an enabled array or the element array and the buffer object's data store is currently mapped.");
+	ctx.glGenBuffers(1, &buf);
+	ctx.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf);
+	ctx.glBufferData(GL_ELEMENT_ARRAY_BUFFER, 10, 0, GL_STATIC_DRAW);
+	ctx.glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, 5, GL_MAP_READ_BIT);
+	ctx.expectError(GL_NO_ERROR);
+	ctx.glDrawRangeElementsBaseVertex(GL_POINTS, 0, 1, 1, GL_UNSIGNED_INT, vertices, 1);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+	ctx.glDeleteBuffers(1, &buf);
+	ctx.endSection();
+}
+
+void draw_range_elements_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
+{
+	GLfloat				vertices[1];
+	glu::ShaderProgram	geometryProgram	(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::GeometrySource(geometryShaderSource));
+
+	ctx.beginSection("GL_INVALID_OPERATION is generated if a geometry shader is active and mode is incompatible with the input primitive type of the geometry shader in the currently installed program object.");
+	ctx.glUseProgram(geometryProgram.getProgram());
+	ctx.glDrawRangeElementsBaseVertex(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_INT, vertices, 1);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.glUseProgram(0);
+}
+
 std::vector<FunctionContainer> getNegativeVertexArrayApiTestFunctions ()
 {
 	FunctionContainer funcs[] =
 	{
-		{vertex_attribf,								"vertex_attribf",								"Invalid glVertexAttrib{1234}f() usage"				},
-		{vertex_attribfv,								"vertex_attribfv",								"Invalid glVertexAttrib{1234}fv() usage"			},
-		{vertex_attribi4,								"vertex_attribi4",								"Invalid glVertexAttribI4{i|ui}f() usage"			},
-		{vertex_attribi4v,								"vertex_attribi4v",								"Invalid glVertexAttribI4{i|ui}fv() usage"			},
-		{vertex_attrib_pointer,							"vertex_attrib_pointer",						"Invalid glVertexAttribPointer() usage"				},
-		{vertex_attrib_i_pointer,						"vertex_attrib_i_pointer",						"Invalid glVertexAttribPointer() usage"				},
-		{vertex_attrib_format,							"vertex_attrib_format",							"Invalid glVertexAttribFormat() usage"				},
-		{vertex_attrib_i_format,						"vertex_attrib_i_format",						"Invalid glVertexAttribIFormat() usage"				},
-		{enable_vertex_attrib_array,					"enable_vertex_attrib_array",					"Invalid glEnableVertexAttribArray() usage"			},
-		{disable_vertex_attrib_array,					"disable_vertex_attrib_array",					"Invalid glDisableVertexAttribArray() usage"		},
-		{gen_vertex_arrays,								"gen_vertex_arrays",							"Invalid glGenVertexArrays() usage"					},
-		{bind_vertex_array,								"bind_vertex_array",							"Invalid glBindVertexArray() usage"					},
-		{delete_vertex_arrays,							"delete_vertex_arrays",							"Invalid glDeleteVertexArrays() usage"				},
-		{vertex_attrib_divisor,							"vertex_attrib_divisor",						"Invalid glVertexAttribDivisor() usage"				},
-		{draw_arrays,									"draw_arrays",									"Invalid glDrawArrays() usage"						},
-		{draw_arrays_invalid_program,					"draw_arrays_invalid_program",					"Invalid glDrawArrays() usage"						},
-		{draw_arrays_incomplete_primitive,				"draw_arrays_incomplete_primitive",				"Invalid glDrawArrays() usage"						},
-		{draw_elements,									"draw_elements",								"Invalid glDrawElements() usage"					},
-		{draw_elements_base_vertex,						"draw_elements_base_vertex",					"Invalid glDrawElementsBaseVertex() usage"			},
-		{draw_elements_invalid_program,					"draw_elements_invalid_program",				"Invalid glDrawElements() usage"					},
-		{draw_elements_incomplete_primitive,			"draw_elements_incomplete_primitive",			"Invalid glDrawElements() usage"					},
-		{draw_arrays_instanced,							"draw_arrays_instanced",						"Invalid glDrawArraysInstanced() usage"				},
-		{draw_arrays_instanced_invalid_program,			"draw_arrays_instanced_invalid_program",		"Invalid glDrawArraysInstanced() usage"				},
-		{draw_arrays_instanced_incomplete_primitive,	"draw_arrays_instanced_incomplete_primitive",	"Invalid glDrawArraysInstanced() usage"				},
-		{draw_elements_instanced,						"draw_elements_instanced",						"Invalid glDrawElementsInstanced() usage"			},
-		{draw_elements_instanced_invalid_program,		"draw_elements_instanced_invalid_program",		"Invalid glDrawElementsInstanced() usage"			},
-		{draw_elements_instanced_incomplete_primitive,	"draw_elements_instanced_incomplete_primitive",	"Invalid glDrawElementsInstanced() usage"			},
-		{draw_elements_instanced_base_vertex,			"draw_elements_instanced_base_vertex",			"Invalid glDrawElementsInstancedBaseVertex() usage"	},
-		{draw_range_elements,							"draw_range_elements",							"Invalid glDrawRangeElements() usage"				},
-		{draw_range_elements_invalid_program,			"draw_range_elements_invalid_program",			"Invalid glDrawRangeElements() usage"				},
-		{draw_range_elements_incomplete_primitive,		"draw_range_elements_incomplete_primitive",		"Invalid glDrawRangeElements() usage"				},
-		{draw_range_elements_base_vertex,				"draw_range_elements_base_vertex",				"Invalid glDrawRangeElementsBaseVertex() usage"		},
+		{vertex_attribf,												"vertex_attribf",												"Invalid glVertexAttrib{1234}f() usage"				},
+		{vertex_attribfv,												"vertex_attribfv",												"Invalid glVertexAttrib{1234}fv() usage"			},
+		{vertex_attribi4,												"vertex_attribi4",												"Invalid glVertexAttribI4{i|ui}f() usage"			},
+		{vertex_attribi4v,												"vertex_attribi4v",												"Invalid glVertexAttribI4{i|ui}fv() usage"			},
+		{vertex_attrib_pointer,											"vertex_attrib_pointer",										"Invalid glVertexAttribPointer() usage"				},
+		{vertex_attrib_i_pointer,										"vertex_attrib_i_pointer",										"Invalid glVertexAttribPointer() usage"				},
+		{vertex_attrib_format,											"vertex_attrib_format",											"Invalid glVertexAttribFormat() usage"				},
+		{vertex_attrib_i_format,										"vertex_attrib_i_format",										"Invalid glVertexAttribIFormat() usage"				},
+		{enable_vertex_attrib_array,									"enable_vertex_attrib_array",									"Invalid glEnableVertexAttribArray() usage"			},
+		{disable_vertex_attrib_array,									"disable_vertex_attrib_array",									"Invalid glDisableVertexAttribArray() usage"		},
+		{gen_vertex_arrays,												"gen_vertex_arrays",											"Invalid glGenVertexArrays() usage"					},
+		{bind_vertex_array,												"bind_vertex_array",											"Invalid glBindVertexArray() usage"					},
+		{delete_vertex_arrays,											"delete_vertex_arrays",											"Invalid glDeleteVertexArrays() usage"				},
+		{vertex_attrib_divisor,											"vertex_attrib_divisor",										"Invalid glVertexAttribDivisor() usage"				},
+		{draw_arrays,													"draw_arrays",													"Invalid glDrawArrays() usage"						},
+		{draw_arrays_invalid_program,									"draw_arrays_invalid_program",									"Invalid glDrawArrays() usage"						},
+		{draw_arrays_incomplete_primitive,								"draw_arrays_incomplete_primitive",								"Invalid glDrawArrays() usage"						},
+		{draw_elements,													"draw_elements",												"Invalid glDrawElements() usage"					},
+		{draw_elements_base_vertex,										"draw_elements_base_vertex",									"Invalid glDrawElementsBaseVertex() usage"			},
+		{draw_elements_base_vertex_invalid_map,							"draw_elements_base_vertex_invalid_map"	,						"Invalid glDrawElementsBaseVertex() usage"			},
+		{draw_elements_base_vertex_primitive_mode_mismatch,				"draw_elements_base_vertex_primitive_mode_mismatch",			"Invalid glDrawElementsBaseVertex() usage"			},
+		{draw_elements_invalid_program,									"draw_elements_invalid_program",								"Invalid glDrawElements() usage"					},
+		{draw_elements_incomplete_primitive,							"draw_elements_incomplete_primitive",							"Invalid glDrawElements() usage"					},
+		{draw_arrays_instanced,											"draw_arrays_instanced",										"Invalid glDrawArraysInstanced() usage"				},
+		{draw_arrays_instanced_invalid_program,							"draw_arrays_instanced_invalid_program",						"Invalid glDrawArraysInstanced() usage"				},
+		{draw_arrays_instanced_incomplete_primitive,					"draw_arrays_instanced_incomplete_primitive",					"Invalid glDrawArraysInstanced() usage"				},
+		{draw_elements_instanced,										"draw_elements_instanced",										"Invalid glDrawElementsInstanced() usage"			},
+		{draw_elements_instanced_invalid_program,						"draw_elements_instanced_invalid_program",						"Invalid glDrawElementsInstanced() usage"			},
+		{draw_elements_instanced_incomplete_primitive,					"draw_elements_instanced_incomplete_primitive",					"Invalid glDrawElementsInstanced() usage"			},
+		{draw_elements_instanced_base_vertex,							"draw_elements_instanced_base_vertex",							"Invalid glDrawElementsInstancedBaseVertex() usage"	},
+		{draw_elements_instanced_base_vertex_invalid_map,				"draw_elements_instanced_base_vertex_invalid_map",				"Invalid glDrawElementsInstancedBaseVertex() usage"	},
+		{draw_elements_instanced_base_vertex_primitive_mode_mismatch,	"draw_elements_instanced_base_vertex_primitive_mode_mismatch",	"Invalid glDrawElementsInstancedBaseVertex() usage"	},
+		{draw_range_elements,											"draw_range_elements",											"Invalid glDrawRangeElements() usage"				},
+		{draw_range_elements_invalid_program,							"draw_range_elements_invalid_program",							"Invalid glDrawRangeElements() usage"				},
+		{draw_range_elements_incomplete_primitive,						"draw_range_elements_incomplete_primitive",						"Invalid glDrawRangeElements() usage"				},
+		{draw_range_elements_base_vertex,								"draw_range_elements_base_vertex",								"Invalid glDrawRangeElementsBaseVertex() usage"		},
+		{draw_range_elements_base_vertex_invalid_map,					"draw_range_elements_base_vertex_invalid_map",					"Invalid glDrawRangeElementsBaseVertex() usage"		},
+		{draw_range_elements_base_vertex_primitive_mode_mismatch,		"draw_range_elements_base_vertex_primitive_mode_mismatch",		"Invalid glDrawRangeElementsBaseVertex() usage"		},
 	};
 
 	return std::vector<FunctionContainer>(DE_ARRAY_BEGIN(funcs), DE_ARRAY_END(funcs));

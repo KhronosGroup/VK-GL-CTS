@@ -643,6 +643,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fCopyImageTests.cpp \
 	modules/gles31/functional/es31fDrawBuffersIndexedTests.cpp \
 	modules/gles31/functional/es31fSRGBDecodeTests.cpp \
+	modules/gles31/functional/es31fDrawElementsBaseVertexTests.cpp \
 	modules/gles31/stress/es31sDrawTests.cpp \
 	modules/gles31/stress/es31sStressTests.cpp \
 	modules/gles31/stress/es31sTessellationGeometryInteractionTests.cpp \
