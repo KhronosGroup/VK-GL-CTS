@@ -167,11 +167,12 @@ class GitRepo (Source):
 		else:
 			# remote 'origin' doesn't exist, assume 'https' as checkout protocol
 			protocol = 'https'
+		return protocol
 
 	def selectUrl(self, cmdProtocol = None):
 		try:
 			if cmdProtocol == None:
-				protocol = detectProtocol(self, cmdProtocol)
+				protocol = self.detectProtocol(cmdProtocol)
 			else:
 				protocol = cmdProtocol
 		except:
