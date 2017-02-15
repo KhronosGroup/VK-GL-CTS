@@ -5072,19 +5072,19 @@ tcu::TestNode::IterateResult TextureAttachmentErrorsTest::iterate()
 		/********** NamedFramebufferTextureLayer **************/
 
 		/* Invalid Framebuffer ID. */
-		gl.namedFramebufferTextureLayer(m_fbo_invalid, GL_COLOR_ATTACHMENT0, m_to_valid, 0, 0);
+		gl.namedFramebufferTextureLayer(m_fbo_invalid, GL_COLOR_ATTACHMENT0, m_to_array_valid, 0, 0);
 
 		is_ok &=
 			ExpectError(GL_INVALID_OPERATION, "NamedFramebufferTextureLayer", false, true, false, true, true, "", true);
 
 		/* Invalid Color Attachment. */
-		gl.namedFramebufferTextureLayer(m_fbo_valid, m_color_attachment_invalid, m_to_valid, 0, 0);
+		gl.namedFramebufferTextureLayer(m_fbo_valid, m_color_attachment_invalid, m_to_array_valid, 0, 0);
 
 		is_ok &=
 			ExpectError(GL_INVALID_OPERATION, "NamedFramebufferTextureLayer", true, false, true, true, true, "", true);
 
 		/* Invalid Attachment. */
-		gl.namedFramebufferTextureLayer(m_fbo_valid, m_attachment_invalid, m_to_valid, 0, 0);
+		gl.namedFramebufferTextureLayer(m_fbo_valid, m_attachment_invalid, m_to_array_valid, 0, 0);
 
 		is_ok &= ExpectError(GL_INVALID_ENUM, "NamedFramebufferTextureLayer", true, false, false, true, true, "", true);
 
@@ -5095,7 +5095,7 @@ tcu::TestNode::IterateResult TextureAttachmentErrorsTest::iterate()
 			ExpectError(GL_INVALID_OPERATION, "NamedFramebufferTextureLayer", true, true, false, false, true, "", true);
 
 		/* Invalid Level. */
-		gl.namedFramebufferTextureLayer(m_fbo_valid, GL_COLOR_ATTACHMENT0, m_to_valid, m_level_invalid, 0);
+		gl.namedFramebufferTextureLayer(m_fbo_valid, GL_COLOR_ATTACHMENT0, m_to_array_valid, m_level_invalid, 0);
 
 		is_ok &=
 			ExpectError(GL_INVALID_VALUE, "NamedFramebufferTextureLayer", true, true, false, true, false, "", true);
