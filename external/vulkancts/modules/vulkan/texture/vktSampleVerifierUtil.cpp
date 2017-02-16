@@ -751,7 +751,7 @@ deUint64 unpackBits (const BaseType pack,
 
 	const BaseType mask = (BaseType) (((BaseType) 1 << (BaseType) numBits) - (BaseType) 1);
 
-    return mask & (pack >> (BaseType) (8 * (int) sizeof(BaseType) - bitOffset - numBits));
+	return mask & (pack >> (BaseType) (8 * (int) sizeof(BaseType) - bitOffset - numBits));
 }
 
 deUint64 readChannel (const void* ptr,

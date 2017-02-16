@@ -265,7 +265,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 
 	// Create command buffer
 	const vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(m_device_interface, m_device, m_queueFamilyIndex));
-	const vk::Unique<vk::VkCommandBuffer> cmdBuffer(makeCommandBuffer(m_device_interface, m_device, *cmdPool));
+	const vk::Unique<vk::VkCommandBuffer> cmdBuffer(allocateCommandBuffer(m_device_interface, m_device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Begin recording commands
 	beginCommandBuffer(m_device_interface, *cmdBuffer);

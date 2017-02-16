@@ -825,12 +825,12 @@ tcu::TestStatus UserDefinedIOTestInstance::iterate (void)
 
 	// Pipeline
 
-	const Unique<VkImageView>      colorAttachmentView(makeImageView     (vk, device, *colorAttachmentImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorImageSubresourceRange));
-	const Unique<VkRenderPass>     renderPass         (makeRenderPass    (vk, device, colorFormat));
-	const Unique<VkFramebuffer>    framebuffer        (makeFramebuffer   (vk, device, *renderPass, *colorAttachmentView, renderSize.x(), renderSize.y(), 1u));
+	const Unique<VkImageView>      colorAttachmentView(makeImageView(vk, device, *colorAttachmentImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorImageSubresourceRange));
+	const Unique<VkRenderPass>     renderPass         (makeRenderPass(vk, device, colorFormat));
+	const Unique<VkFramebuffer>    framebuffer        (makeFramebuffer(vk, device, *renderPass, *colorAttachmentView, renderSize.x(), renderSize.y(), 1u));
 	const Unique<VkPipelineLayout> pipelineLayout     (makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkCommandPool>    cmdPool            (makeCommandPool   (vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>  cmdBuffer          (makeCommandBuffer (vk, device, *cmdPool));
+	const Unique<VkCommandPool>    cmdPool            (makeCommandPool(vk, device, queueFamilyIndex));
+	const Unique<VkCommandBuffer>  cmdBuffer          (allocateCommandBuffer (vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const Unique<VkPipeline> pipeline(GraphicsPipelineBuilder()
 		.setRenderSize                (renderSize)

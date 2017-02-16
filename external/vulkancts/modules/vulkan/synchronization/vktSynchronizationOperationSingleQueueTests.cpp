@@ -78,9 +78,9 @@ public:
 		const VkDevice					device				= m_context.getDevice();
 		const VkQueue					queue				= m_context.getUniversalQueue();
 		const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-		const Unique<VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
+		const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 		const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
-		const Unique<VkEvent>			event				(makeEvent(vk, device));
+		const Unique<VkEvent>			event				(createEvent(vk, device));
 		const SyncInfo					writeSync			= m_writeOp->getSyncInfo();
 		const SyncInfo					readSync			= m_readOp->getSyncInfo();
 
@@ -133,7 +133,7 @@ public:
 		const VkDevice					device				= m_context.getDevice();
 		const VkQueue					queue				= m_context.getUniversalQueue();
 		const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-		const Unique<VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
+		const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 		const Move<VkCommandBuffer>		cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
 		const SyncInfo					writeSync			= m_writeOp->getSyncInfo();
 		const SyncInfo					readSync			= m_readOp->getSyncInfo();
@@ -188,14 +188,8 @@ public:
 		const VkDevice					device				= m_context.getDevice();
 		const VkQueue					queue				= m_context.getUniversalQueue();
 		const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-		const VkSemaphoreCreateInfo		semaphoreInfo		=
-															{
-																VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,	//VkStructureType			sType;
-																DE_NULL,									//const void*				pNext;
-																0u											//VkSemaphoreCreateFlags	flags;
-															};
-		const Unique<VkSemaphore>		semaphore			(createSemaphore (vk, device, &semaphoreInfo, DE_NULL));
-		const Unique<VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
+		const Unique<VkSemaphore>		semaphore			(createSemaphore (vk, device));
+		const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 		const Move<VkCommandBuffer>		ptrCmdBuffer[COUNT]	= {makeCommandBuffer(vk, device, *cmdPool), makeCommandBuffer(vk, device, *cmdPool)};
 		VkCommandBuffer					cmdBuffers[COUNT]	= {*ptrCmdBuffer[WRITE], *ptrCmdBuffer[READ]};
 		const VkPipelineStageFlags		stageBits[]			= { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
@@ -276,7 +270,7 @@ public:
 		const VkDevice					device				= m_context.getDevice();
 		const VkQueue					queue				= m_context.getUniversalQueue();
 		const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-		const Unique<VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
+		const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 		const Move<VkCommandBuffer>		ptrCmdBuffer[COUNT]	= {makeCommandBuffer(vk, device, *cmdPool), makeCommandBuffer(vk, device, *cmdPool)};
 		VkCommandBuffer					cmdBuffers[COUNT]	= {*ptrCmdBuffer[WRITE], *ptrCmdBuffer[READ]};
 		const SyncInfo					writeSync			= m_writeOp->getSyncInfo();

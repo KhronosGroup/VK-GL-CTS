@@ -296,30 +296,10 @@ void GranularityInstance::initRenderPass (void)
 		m_frameBuffer	= createFramebuffer(vk, device, &framebufferParams);
 	}
 
-	{	// Create CommandPool
-		const VkCommandPoolCreateInfo	cmdPoolParams	=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType		sType;
-			DE_NULL,										// const void*			pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCmdPoolCreateFlags	flags;
-			queueFamilyIndex,								// deUint32				queueFamilyIndex;
-		};
+	m_cmdPool	= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
-		m_cmdPool	= createCommandPool(vk, device, &cmdPoolParams);
-	}
-
-	{	// Create CommandBuffer
-		const VkCommandBufferAllocateInfo	bufferAllocInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*m_cmdPool,										// VkCmdPool				cmdPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			1u												// deUint32					count;
-		};
-
-		m_cmdBuffer		= allocateCommandBuffer(vk, device, &bufferAllocInfo);
-	}
+	// Create CommandBuffer
+	m_cmdBuffer	= allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	{	// Begin CommandBuffer
 		const VkCommandBufferBeginInfo	cmdBufferBeginInfo	=

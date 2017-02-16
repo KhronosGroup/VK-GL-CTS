@@ -5643,25 +5643,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	};
 	const Unique<VkFramebuffer>				framebuffer				(createFramebuffer(vk, vkDevice, &framebufferParams));
 
-	const VkCommandPoolCreateInfo			cmdPoolParams			=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					//	VkStructureType			sType;
-		DE_NULL,													//	const void*				pNext;
-		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,				//	VkCmdPoolCreateFlags	flags;
-		queueFamilyIndex,											//	deUint32				queueFamilyIndex;
-	};
-	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 
 	// Command buffer
-	const VkCommandBufferAllocateInfo		cmdBufParams			=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,			//	VkStructureType			sType;
-		DE_NULL,												//	const void*				pNext;
-		*cmdPool,												//	VkCmdPool				pool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,						//	VkCmdBufferLevel		level;
-		1u,														//	deUint32				count;
-	};
-	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
+	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkCommandBufferBeginInfo			cmdBufBeginParams		=
 	{
@@ -5804,13 +5789,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	// Submit & wait for completion
 	{
-		const VkFenceCreateInfo	fenceParams	=
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	//	VkStructureType		sType;
-			DE_NULL,								//	const void*			pNext;
-			0u,										//	VkFenceCreateFlags	flags;
-		};
-		const Unique<VkFence>	fence		(createFence(vk, vkDevice, &fenceParams));
+		const Unique<VkFence>	fence		(createFence(vk, vkDevice));
 		const VkSubmitInfo		submitInfo	=
 		{
 			VK_STRUCTURE_TYPE_SUBMIT_INFO,

@@ -306,16 +306,7 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 		//todo [scygan] get proper queueFamilyIndex
 		CmdPoolCreateInfo copyCmdPoolCreateInfo(0);
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
-
-		const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,											// const void*				pNext;
-			*copyCmdPool,										// VkCommandPool			commandPool;
-			vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,													// deUint32					bufferCount;
-		};
-		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, &cmdBufferAllocateInfo));
+		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, *copyCmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		CmdBufferBeginInfo beginInfo;
 		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));
@@ -440,16 +431,7 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 		//todo [scygan] get proper queueFamilyIndex
 		CmdPoolCreateInfo copyCmdPoolCreateInfo(0);
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
-
-		const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,											// const void*				pNext;
-			*copyCmdPool,										// VkCommandPool			commandPool;
-			vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,													// deUint32					bufferCount;
-		};
-		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, &cmdBufferAllocateInfo));
+		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, *copyCmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		CmdBufferBeginInfo beginInfo;
 		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));
@@ -591,17 +573,7 @@ void Image::upload (vk::VkQueue					queue,
 		//todo [scygan] get proper queueFamilyIndex
 		CmdPoolCreateInfo copyCmdPoolCreateInfo(0);
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
-
-		const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,											// const void*				pNext;
-			*copyCmdPool,										// VkCommandPool			commandPool;
-			vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,													// deUint32					bufferCount;
-		};
-
-		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, &cmdBufferAllocateInfo));
+		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, *copyCmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		CmdBufferBeginInfo beginInfo;
 		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));
@@ -713,16 +685,7 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 		//todo [scygan] get proper queueFamilyIndex
 		CmdPoolCreateInfo copyCmdPoolCreateInfo(0);
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
-
-		const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,											// const void*				pNext;
-			*copyCmdPool,										// VkCommandPool			commandPool;
-			vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,													// deUint32					bufferCount;
-		};
-		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, &cmdBufferAllocateInfo));
+		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, *copyCmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		CmdBufferBeginInfo beginInfo;
 		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));

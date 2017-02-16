@@ -367,15 +367,7 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 	const CmdPoolCreateInfo			cmdPoolCreateInfo	(m_context.getUniversalQueueFamilyIndex());
 	vk::Move<vk::VkCommandPool>		cmdPool				= vk::createCommandPool(vk, device, &cmdPoolCreateInfo);
 
-	const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		*cmdPool,											// VkCommandPool			commandPool;
-		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,													// deUint32					bufferCount;
-	};
-	vk::Unique<vk::VkCommandBuffer> cmdBuffer			(vk::allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
+	vk::Unique<vk::VkCommandBuffer> cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const CmdBufferBeginInfo		beginInfo			(0u);
 
 	vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
@@ -779,15 +771,7 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordQueryPoolReset (
 
 	DE_ASSERT(hasSeparateResetCmdBuf());
 
-	const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		cmdPool,											// VkCommandPool			commandPool;
-		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,													// deUint32					bufferCount;
-	};
-	vk::Move<vk::VkCommandBuffer>	cmdBuffer	(vk::allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
+	vk::Move<vk::VkCommandBuffer>	cmdBuffer	(vk::allocateCommandBuffer(vk, device, cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	CmdBufferBeginInfo				beginInfo	(0u);
 
 	vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
@@ -802,15 +786,7 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCo
 	const vk::VkDevice				device		= m_context.getDevice();
 	const vk::DeviceInterface&		vk			= m_context.getDeviceInterface();
 
-	const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		cmdPool,											// VkCommandPool			commandPool;
-		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,													// deUint32					bufferCount;
-	};
-	vk::Move<vk::VkCommandBuffer>	cmdBuffer	(vk::allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
+	vk::Move<vk::VkCommandBuffer>	cmdBuffer	(vk::allocateCommandBuffer(vk, device, cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	CmdBufferBeginInfo				beginInfo	(0u);
 
 	vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
@@ -882,15 +858,7 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordCopyResults (vk:
 	const vk::VkDevice				device		= m_context.getDevice();
 	const vk::DeviceInterface&		vk			= m_context.getDeviceInterface();
 
-	const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		cmdPool,											// VkCommandPool			commandPool;
-		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,													// deUint32					bufferCount;
-	};
-	vk::Move<vk::VkCommandBuffer>	cmdBuffer	(vk::allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
+	vk::Move<vk::VkCommandBuffer>	cmdBuffer	(vk::allocateCommandBuffer(vk, device, cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const CmdBufferBeginInfo		beginInfo	(0u);
 
 	vk.beginCommandBuffer(*cmdBuffer, &beginInfo);

@@ -563,8 +563,8 @@ public:
 		m_framebuffer				= makeFramebuffer		(vk, device, *m_renderPass, 1u, &m_colorAttachment.get(),
 															 static_cast<deUint32>(m_renderSize.x()),  static_cast<deUint32>(m_renderSize.y()));
 		m_pipelineLayout			= makePipelineLayout	(vk, device);
-		m_cmdPool					= makeCommandPool		(vk, device, queueFamilyIndex);
-		m_cmdBuffer					= makeCommandBuffer		(vk, device, *m_cmdPool);
+		m_cmdPool					= createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+		m_cmdBuffer					= allocateCommandBuffer	(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	}
 

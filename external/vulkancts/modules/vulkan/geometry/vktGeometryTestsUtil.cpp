@@ -566,31 +566,6 @@ Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
 	return createFramebuffer(vk, device, &framebufferInfo);
 }
 
-Move<VkCommandPool> makeCommandPool (const DeviceInterface& vk, const VkDevice device, const deUint32 queueFamilyIndex)
-{
-	const VkCommandPoolCreateInfo info =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// VkCommandPoolCreateFlags	flags;
-		queueFamilyIndex,									// deUint32					queueFamilyIndex;
-	};
-	return createCommandPool(vk, device, &info);
-}
-
-Move<VkCommandBuffer> makeCommandBuffer (const DeviceInterface& vk, const VkDevice device, const VkCommandPool commandPool)
-{
-	const VkCommandBufferAllocateInfo info =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType		sType;
-		DE_NULL,											// const void*			pNext;
-		commandPool,										// VkCommandPool		commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,					// VkCommandBufferLevel	level;
-		1u,													// deUint32				commandBufferCount;
-	};
-	return allocateCommandBuffer(vk, device, &info);
-}
-
 VkImageMemoryBarrier makeImageMemoryBarrier	(const VkAccessFlags			srcAccessMask,
 											 const VkAccessFlags			dstAccessMask,
 											 const VkImageLayout			oldLayout,
@@ -685,13 +660,7 @@ void submitCommandsAndWait (const DeviceInterface&	vk,
 							const VkQueue			queue,
 							const VkCommandBuffer	commandBuffer)
 {
-	const VkFenceCreateInfo fenceInfo =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		(VkFenceCreateFlags)0,					// VkFenceCreateFlags	flags;
-	};
-	const Unique<VkFence> fence(createFence(vk, device, &fenceInfo));
+	const Unique<VkFence> fence(createFence(vk, device));
 
 	const VkSubmitInfo submitInfo =
 	{

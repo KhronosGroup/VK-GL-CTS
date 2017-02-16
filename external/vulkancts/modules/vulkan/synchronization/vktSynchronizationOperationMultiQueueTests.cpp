@@ -319,8 +319,8 @@ public:
 
 			const Move<VkCommandPool>		cmdPool[]		=
 			{
-				makeCommandPool(vk, device, queuePairs[pairNdx].familyIndexWrite),
-				makeCommandPool(vk, device, queuePairs[pairNdx].familyIndexRead)
+				createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queuePairs[pairNdx].familyIndexWrite),
+				createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queuePairs[pairNdx].familyIndexRead)
 			};
 			const Move<VkCommandBuffer>		ptrCmdBuffer[]	=
 			{
@@ -332,13 +332,7 @@ public:
 				*ptrCmdBuffer[QUEUETYPE_WRITE],
 				*ptrCmdBuffer[QUEUETYPE_READ]
 			};
-			const VkSemaphoreCreateInfo		semaphoreInfo	=
-			{
-				VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,	//VkStructureType			sType;
-				DE_NULL,									//const void*				pNext;
-				0u											//VkSemaphoreCreateFlags	flags;
-			};
-			const Unique<VkSemaphore>		semaphore		(createSemaphore(vk, device, &semaphoreInfo, DE_NULL));
+			const Unique<VkSemaphore>		semaphore		(createSemaphore(vk, device));
 			const VkPipelineStageFlags		stageBits[]		= { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
 			const VkSubmitInfo				submitInfo[]	=
 			{
@@ -420,8 +414,8 @@ public:
 			const UniquePtr<Operation>		readOp			(m_readOp.build(*m_opContext, *resource));
 			const Move<VkCommandPool>		cmdPool[]		=
 			{
-				makeCommandPool(vk, device, queuePairs[pairNdx].familyIndexWrite),
-				makeCommandPool(vk, device, queuePairs[pairNdx].familyIndexRead)
+				createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queuePairs[pairNdx].familyIndexWrite),
+				createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queuePairs[pairNdx].familyIndexRead)
 			};
 			const Move<VkCommandBuffer>		ptrCmdBuffer[]	=
 			{

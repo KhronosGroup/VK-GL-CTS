@@ -577,7 +577,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	const Unique<VkRenderPass>		renderPass			(makeRenderPass				(vk, device, caseDef.colorFormat, static_cast<deUint32>(numLayers)));
 	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout			(vk, device));
 	vector<SharedPtrVkPipeline>		pipeline;
-	const Unique<VkCommandPool>		cmdPool				(makeCommandPool  (vk, device, queueFamilyIndex));
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool  (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
 
 	vector<SharedPtrVkImageView>	colorAttachments;

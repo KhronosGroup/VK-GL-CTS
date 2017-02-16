@@ -322,7 +322,7 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 	// Draw commands
 
 	const Unique<VkCommandPool>   cmdPool  (makeCommandPool  (vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(testCases); ++caseNdx)
 	{
