@@ -1030,7 +1030,7 @@ bool AtomicCounterBufferStorageTestCase::initTestCaseGlobal()
 									  "\n"
 									  "void main()\n"
 									  "{\n"
-									  "    for (unsigned int n = 0; n < N_COUNTERS; ++n)\n"
+									  "    for (uint n = 0; n < N_COUNTERS; ++n)\n"
 									  "    {\n"
 									  "        if (n == gl_VertexID)\n"
 									  "        {\n"
@@ -6437,14 +6437,14 @@ bool UniformBufferStorageTestCase::initTestCaseGlobal()
 	const char* vs_body_main = "\n"
 							   "uniform data\n"
 							   "{\n"
-							   "    uint input[N_UBO_UINTS];"
+							   "    uint data_input[N_UBO_UINTS];"
 							   "};\n"
 							   "\n"
 							   "out uint result;\n"
 							   "\n"
 							   "void main()\n"
 							   "{\n"
-							   "    result = (input[gl_VertexID] == uint(gl_VertexID) ) ? 1u : 0u;\n"
+							   "    result = (data_input[gl_VertexID] == uint(gl_VertexID) ) ? 1u : 0u;\n"
 							   "}";
 
 	vs_body_define_sstream << "#define N_UBO_UINTS (" << m_n_ubo_uints << ")\n";
