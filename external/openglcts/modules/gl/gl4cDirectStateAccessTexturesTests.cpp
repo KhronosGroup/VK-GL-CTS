@@ -13168,22 +13168,22 @@ tcu::TestNode::IterateResult ParameterErrorsTest::iterate()
 		 not one of the supported texture targets (eg. TEXTURE_BUFFER). */
 		gl.getTextureParameterfv(texture_buffer, GL_TEXTURE_TARGET, storef);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameterfv",
+			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameterfv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 
 		gl.getTextureParameterIiv(texture_buffer, GL_TEXTURE_TARGET, storei);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameterIiv",
+			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameterIiv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 
 		gl.getTextureParameterIuiv(texture_buffer, GL_TEXTURE_TARGET, storeu);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameterIuiv",
+			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameterIuiv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 
 		gl.getTextureParameteriv(texture_buffer, GL_TEXTURE_TARGET, storei);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameteriv",
+			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameteriv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 	}
 	catch (...)
