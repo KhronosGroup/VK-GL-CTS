@@ -354,6 +354,7 @@ SRGBTestSampler::SRGBTestSampler	(Context&						context,
 
 SRGBTestSampler::~SRGBTestSampler (void)
 {
+	m_gl->deleteSamplers(1, &m_samplerHandle);
 }
 
 void SRGBTestSampler::setDecode (const SRGBDecode decoding)
@@ -948,13 +949,14 @@ public:
 protected:
 	de::MovePtr<glu::Framebuffer>			m_framebuffer;
 	std::vector<SRGBTestTexture*>			m_textureSourceList;
-	std::vector<SRGBTestSampler>			m_samplerList;
+	std::vector<SRGBTestSampler*>			m_samplerList;
 	std::vector<glw::GLuint>				m_renderBufferList;
 	const tcu::Vec4							m_epsilonError;
 	std::vector<tcu::TextureLevel>			m_textureResultList;
 	int										m_resultOutputTotal;
 	tcu::TextureFormat						m_resultTextureFormat;
 	glw::GLuint								m_vaoID;
+	glw::GLuint								m_vertexDataID;
 	std::vector<FragmentShaderParameters>	m_shaderParametersList;
 	std::vector<SRGBTestProgram*>			m_shaderProgramList;
 	ShaderSamplingGroup						m_samplingGroup;
@@ -975,6 +977,8 @@ SRGBTestCase::SRGBTestCase	(Context& context, const char* name, const char* desc
 	: TestCase				(context, name, description)
 	, m_epsilonError		(EpsilonError::CPU)
 	, m_resultTextureFormat	(tcu::TextureFormat(tcu::TextureFormat::sRGBA, tcu::TextureFormat::UNORM_INT8))
+	, m_vaoID				((glw::GLuint)-1)
+	, m_vertexDataID		((glw::GLuint)-1)
 	, m_samplingGroup		(SHADERSAMPLINGGROUP_TEXTURE)
 	, m_internalFormat		(internalFormat)
 {
@@ -982,21 +986,7 @@ SRGBTestCase::SRGBTestCase	(Context& context, const char* name, const char* desc
 
 SRGBTestCase::~SRGBTestCase (void)
 {
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	m_framebuffer	= de::MovePtr<glu::Framebuffer>(DE_NULL);
-
-	for (std::size_t renderBufferIdx = 0; renderBufferIdx < m_renderBufferList.size(); renderBufferIdx++)
-	{
-		gl.deleteRenderbuffers(1, &m_renderBufferList[renderBufferIdx]);
-	}
-
-	for (std::size_t textureSourceIdx = 0; textureSourceIdx < m_textureSourceList.size(); textureSourceIdx++)
-	{
-		delete m_textureSourceList[textureSourceIdx];
-	}
-
-	SRGBTestCase::deinit();
+	deinit();
 }
 
 void SRGBTestCase::init (void)
@@ -1017,6 +1007,39 @@ void SRGBTestCase::init (void)
 
 void SRGBTestCase::deinit (void)
 {
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	m_framebuffer	= de::MovePtr<glu::Framebuffer>(DE_NULL);
+
+	for (std::size_t renderBufferIdx = 0; renderBufferIdx < m_renderBufferList.size(); renderBufferIdx++)
+	{
+		gl.deleteRenderbuffers(1, &m_renderBufferList[renderBufferIdx]);
+	}
+	m_renderBufferList.clear();
+
+	for (std::size_t textureSourceIdx = 0; textureSourceIdx < m_textureSourceList.size(); textureSourceIdx++)
+	{
+		delete m_textureSourceList[textureSourceIdx];
+	}
+	m_textureSourceList.clear();
+
+	for (std::size_t samplerIdx = 0; samplerIdx < m_samplerList.size(); samplerIdx++)
+	{
+		delete m_samplerList[samplerIdx];
+	}
+	m_samplerList.clear();
+
+	if (m_vaoID != (glw::GLuint)-1)
+	{
+		gl.deleteVertexArrays(1, &m_vaoID);
+		m_vaoID = (glw::GLuint)-1;
+	}
+
+	if (m_vertexDataID != (glw::GLuint)-1)
+	{
+		gl.deleteBuffers(1, &m_vertexDataID);
+		m_vertexDataID = (glw::GLuint)-1;
+	}
 }
 
 SRGBTestCase::IterateResult SRGBTestCase::iterate (void)
@@ -1042,13 +1065,14 @@ SRGBTestCase::IterateResult SRGBTestCase::iterate (void)
 		DE_FATAL("Error: Sampling group not defined");
 	}
 
+	this->initVertexData();
+	this->initFrameBuffer();
+
 	// loop through all sampling types in the required sampling group, performing individual tests for each
 	for (int samplingTypeIdx = startIdx; samplingTypeIdx < endIdx; samplingTypeIdx++)
 	{
 		this->genShaderPrograms(static_cast<ShaderSamplingType>(samplingTypeIdx));
 		this->uploadTextures();
-		this->initFrameBuffer();
-		this->initVertexData();
 		this->render();
 
 		result = this->verifyResult();
@@ -1126,7 +1150,7 @@ void SRGBTestCase::addSampler (	const tcu::Sampler::WrapMode	wrapS,
 								const tcu::Sampler::FilterMode	magFilter,
 								const SRGBDecode				decoding)
 {
-	SRGBTestSampler sampler(m_context, wrapS, wrapT, minFilter, magFilter, decoding);
+	SRGBTestSampler *sampler = new SRGBTestSampler(m_context, wrapS, wrapT, minFilter, magFilter, decoding);
 	m_samplerList.push_back(sampler);
 }
 
@@ -1240,12 +1264,12 @@ void SRGBTestCase::bindSamplerToTexture (const int samplerIdx, const int texture
 {
 	deUint32 enumConversion = textureUnit - GL_TEXTURE0;
 	m_textureSourceList[textureIdx]->setHasSampler(true);
-	m_samplerList[samplerIdx].setTextureUnit(enumConversion);
+	m_samplerList[samplerIdx]->setTextureUnit(enumConversion);
 }
 
 void SRGBTestCase::activateSampler (const int samplerIdx, const bool active)
 {
-	m_samplerList[samplerIdx].setIsActive(active);
+	m_samplerList[samplerIdx]->setIsActive(active);
 }
 
 void SRGBTestCase::logColor (const std::string& colorLogMessage, int colorIdx, tcu::Vec4 color) const
@@ -1285,10 +1309,6 @@ void SRGBTestCase::render (void)
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	// default rendering only uses one program
-	this->uploadTextures();
-	this->initFrameBuffer();
-	this->initVertexData();
-
 	gl.bindFramebuffer(GL_FRAMEBUFFER, **m_framebuffer);
 	gl.bindVertexArray(m_vaoID);
 
@@ -1305,9 +1325,9 @@ void SRGBTestCase::render (void)
 
 	for (int samplerIdx = 0; samplerIdx < (int)m_samplerList.size(); samplerIdx++)
 	{
-		if (m_samplerList[samplerIdx].getIsActive() == true)
+		if (m_samplerList[samplerIdx]->getIsActive() == true)
 		{
-			m_samplerList[samplerIdx].bindToTexture();
+			m_samplerList[samplerIdx]->bindToTexture();
 		}
 	}
 
@@ -1344,13 +1364,11 @@ void SRGBTestCase::initFrameBuffer (void)
 
 	gl.bindFramebuffer(GL_FRAMEBUFFER, **m_framebuffer);
 
-	if ((int)m_renderBufferList.size() != m_resultOutputTotal)
+	DE_ASSERT(m_renderBufferList.empty());
+	for (int outputIdx = 0; outputIdx < m_resultOutputTotal; outputIdx++)
 	{
-		for (int outputIdx = 0; outputIdx < m_resultOutputTotal; outputIdx++)
-		{
-			glw::GLuint renderBuffer = -1;
-			m_renderBufferList.push_back(renderBuffer);
-		}
+		glw::GLuint renderBuffer = -1;
+		m_renderBufferList.push_back(renderBuffer);
 	}
 
 	for (std::size_t renderBufferIdx = 0; renderBufferIdx < m_renderBufferList.size(); renderBufferIdx++)
@@ -1377,7 +1395,6 @@ void SRGBTestCase::initFrameBuffer (void)
 void SRGBTestCase::initVertexData (void)
 {
 	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
-	glw::GLuint				vertexDataID	= (glw::GLuint)-1;
 
 	static const glw::GLfloat squareVertexData[] =
 	{
@@ -1391,11 +1408,12 @@ void SRGBTestCase::initVertexData (void)
 		-1.0f, -1.0f, 0.0f,		0.0f, 0.0f  // bottom left corner
 	};
 
+	DE_ASSERT(m_vaoID == (glw::GLuint)-1);
 	gl.genVertexArrays(1, &m_vaoID);
 	gl.bindVertexArray(m_vaoID);
 
-	gl.genBuffers(1, &vertexDataID);
-	gl.bindBuffer(GL_ARRAY_BUFFER, vertexDataID);
+	gl.genBuffers(1, &m_vertexDataID);
+	gl.bindBuffer(GL_ARRAY_BUFFER, m_vertexDataID);
 	gl.bufferData(GL_ARRAY_BUFFER, (glw::GLsizei)sizeof(squareVertexData), squareVertexData, GL_STATIC_DRAW);
 
 	gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * (glw::GLsizei)sizeof(GL_FLOAT), (glw::GLvoid *)0);
@@ -1731,9 +1749,9 @@ void DecodeToggledCase::render (void)
 
 		for (int samplerIdx = 0; samplerIdx < (int)m_samplerList.size(); samplerIdx++)
 		{
-			if (m_samplerList[samplerIdx].getIsActive() == true)
+			if (m_samplerList[samplerIdx]->getIsActive() == true)
 			{
-				m_samplerList[samplerIdx].bindToTexture();
+				m_samplerList[samplerIdx]->bindToTexture();
 			}
 		}
 
