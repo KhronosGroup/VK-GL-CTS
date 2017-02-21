@@ -1669,6 +1669,7 @@ public:
 	TestCase::IterateResult	iterate					(void);
 
 private:
+
 	void					logTestInfoIter			(void);
 	void					createImagesIter		(void);
 	void					destroyImagesIter		(void);
@@ -1677,6 +1678,20 @@ private:
 	void					renderSourceIter		(void);
 	void					renderDestinationIter	(void);
 	void					copyImageIter			(void);
+
+	typedef void (CopyImageTest::*IterationFunc)(void);
+
+	struct Iteration
+	{
+		Iteration (int methodCount_, const IterationFunc* methods_)
+			: methodCount	(methodCount_)
+			, methods		(methods_)
+		{
+		}
+
+		int						methodCount;
+		const IterationFunc*	methods;
+	};
 
 	struct State
 	{
@@ -2058,31 +2073,65 @@ void CopyImageTest::copyImageIter (void)
 
 TestCase::IterateResult CopyImageTest::iterate (void)
 {
-	void(CopyImageTest::*methods[])(void) =
+	// Note: Returning from iterate() has two side-effects: it touches
+	// watchdog and calls eglSwapBuffers. For the first it's important
+	// to keep work per iteration reasonable to avoid
+	// timeouts. Because of the latter, it's prudent to do more than
+	// trivial amount of work. Otherwise we'll end up waiting for a
+	// new buffer in swap, it seems.
+
+	// The split below tries to combine trivial work with actually
+	// expensive rendering iterations without having too much
+	// rendering in one iteration to avoid timeouts.
+	const IterationFunc iteration1[] =
 	{
 		&CopyImageTest::logTestInfoIter,
-
-		// Render both images and then copy and verify again.
 		&CopyImageTest::createImagesIter,
-		&CopyImageTest::renderSourceIter,
-		&CopyImageTest::renderDestinationIter,
+		&CopyImageTest::renderSourceIter
+	};
+	const IterationFunc iteration2[] =
+	{
+		&CopyImageTest::renderDestinationIter
+	};
+	const IterationFunc iteration3[] =
+	{
 		&CopyImageTest::copyImageIter,
-		&CopyImageTest::verifySourceIter,
-		&CopyImageTest::verifyDestinationIter,
-		&CopyImageTest::destroyImagesIter,
-
-		// Create images and immediately copies between thew and verify.
-		&CopyImageTest::createImagesIter,
-		&CopyImageTest::copyImageIter,
-		&CopyImageTest::verifySourceIter,
+		&CopyImageTest::verifySourceIter
+	};
+	const IterationFunc iteration4[] =
+	{
 		&CopyImageTest::verifyDestinationIter,
 		&CopyImageTest::destroyImagesIter
 	};
-
-	if (m_iteration < DE_LENGTH_OF_ARRAY(methods))
+	const IterationFunc iteration5[] =
 	{
-		(this->*methods[m_iteration])();
-		m_iteration++;
+		&CopyImageTest::createImagesIter,
+		&CopyImageTest::copyImageIter,
+		&CopyImageTest::verifySourceIter
+	};
+	const IterationFunc iteration6[] =
+	{
+		&CopyImageTest::verifyDestinationIter,
+		&CopyImageTest::destroyImagesIter
+	};
+	const Iteration iterations[] =
+	{
+		Iteration(DE_LENGTH_OF_ARRAY(iteration1), iteration1),
+		Iteration(DE_LENGTH_OF_ARRAY(iteration2), iteration2),
+		Iteration(DE_LENGTH_OF_ARRAY(iteration3), iteration3),
+		Iteration(DE_LENGTH_OF_ARRAY(iteration4), iteration4),
+		Iteration(DE_LENGTH_OF_ARRAY(iteration5), iteration5),
+		Iteration(DE_LENGTH_OF_ARRAY(iteration6), iteration6)
+	};
+
+	DE_ASSERT(m_iteration < DE_LENGTH_OF_ARRAY(iterations));
+	for (int method = 0; method < iterations[m_iteration].methodCount; method++)
+		(this->*iterations[m_iteration].methods[method])();
+
+	m_iteration++;
+
+	if (m_iteration < DE_LENGTH_OF_ARRAY(iterations))
+	{
 		return CONTINUE;
 	}
 	else
