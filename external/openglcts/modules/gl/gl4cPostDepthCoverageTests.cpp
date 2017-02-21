@@ -121,7 +121,7 @@ void PostDepthShaderCase::init()
 					"    fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
 					"}\n";
 
-	m_fragShader3 = "#version 450\n"
+	m_fragShader4 = "#version 450\n"
 					"\n"
 					"#extension GL_ARB_post_depth_coverage : enable\n"
 					"\n"
