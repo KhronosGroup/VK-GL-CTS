@@ -232,6 +232,7 @@ void tessellation_not_active (NegativeTestContext& ctx)
 	checkTessellationSupport(ctx);
 
 	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glw::GLenum			tessErr = ctx.getContextInfo().isExtensionSupported("GL_NV_gpu_shader5") ? GL_NO_ERROR : GL_INVALID_OPERATION;
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	args["GLSL_TESS_EXTENSION_STRING"]	= isES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
@@ -247,9 +248,9 @@ void tessellation_not_active (NegativeTestContext& ctx)
 	ctx.glUseProgram(program.getProgram());
 	ctx.expectError(GL_NO_ERROR);
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if tessellation is not active and primitive mode is GL_PATCHES.");
+	ctx.beginSection("GL_INVALID_OPERATION is generated if tessellation is not active and primitive mode is GL_PATCHES, unless GL_NV_gpu_shader5 is supported.");
 	ctx.glDrawArrays(GL_PATCHES, 0, 3);
-	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.expectError(tessErr);
 	ctx.endSection();
 
 	ctx.glUseProgram(0);
