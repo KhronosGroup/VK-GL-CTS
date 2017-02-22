@@ -336,8 +336,8 @@ IVec2 RandomizedRenderGrid::getOrigin (void) const
 
 IVec4 RandomizedRenderGrid::getUsedAreaBoundingBox (void) const
 {
-	const IVec2 lastCell 	(de::min(m_currentCell + 1, m_grid.x()), ((m_currentCell + m_grid.x() - 1) / m_grid.x()));
-	const IVec2 size 		= lastCell * m_cellSize;
+	const IVec2 lastCell	(de::min(m_currentCell + 1, m_grid.x()), ((m_currentCell + m_grid.x() - 1) / m_grid.x()));
+	const IVec2 size		= lastCell * m_cellSize;
 
 	return IVec4(m_baseRandomOffset.x(), m_baseRandomOffset.y(), size.x(), size.y());
 }
