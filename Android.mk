@@ -270,6 +270,7 @@ LOCAL_SRC_FILES := \
 	modules/egl/teglCreateContextExtTests.cpp \
 	modules/egl/teglCreateContextTests.cpp \
 	modules/egl/teglCreateSurfaceTests.cpp \
+	modules/egl/teglGetFrameTimestampsTests.cpp \
 	modules/egl/teglGetProcAddressTests.cpp \
 	modules/egl/teglGLES1RenderUtil.cpp \
 	modules/egl/teglGLES2RenderUtil.cpp \
