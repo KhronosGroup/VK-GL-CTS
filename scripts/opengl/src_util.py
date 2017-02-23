@@ -51,6 +51,7 @@ EXTENSIONS			= [
 	'GL_EXT_geometry_point_size',
 	'GL_EXT_tessellation_shader',
 	'GL_EXT_geometry_shader',
+	'GL_EXT_robustness',
 	'GL_EXT_texture_buffer',
 	'GL_EXT_texture_cube_map_array',
 	'GL_EXT_texture_snorm',
