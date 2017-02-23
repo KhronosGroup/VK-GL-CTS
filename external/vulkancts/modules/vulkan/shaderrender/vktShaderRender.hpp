@@ -523,7 +523,7 @@ protected:
 
 	ImageBackingMode									m_imageBackingMode;
 
-	uint32_t											m_quadGridSize;
+	deUint32											m_quadGridSize;
 private:
 
 	struct SparseContext
