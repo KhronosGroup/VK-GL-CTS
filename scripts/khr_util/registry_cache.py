@@ -4,7 +4,7 @@
 # drawElements Quality Program utilities
 # --------------------------------------
 #
-# Copyright 2015 The Android Open Source Project
+# Copyright 2015-2017 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,22 +29,23 @@ import registry
 BASE_URL = ""
 
 class RegistrySource:
-	def __init__(self, filename, revision, checksum):
+	def __init__(self, repository, filename, revision, checksum):
+		self.repository	= repository
 		self.filename	= filename
 		self.revision	= revision
 		self.checksum	= checksum
 
 	def __hash__(self):
-		return hash((self.filename, self.revision, self.checksum))
+		return hash((self.repository, self.filename, self.revision, self.checksum))
 
 	def __eq__(self, other):
-		return (self.filename, self.revision, self.checksum) == (other.filename, other.revision, other.checksum)
+		return (self.repository, self.filename, self.revision, self.checksum) == (other.repository, other.filename, other.revision, other.checksum)
 
 	def getFilename (self):
-		return self.filename
+		return os.path.basename(self.filename)
 
 	def getCacheFilename (self):
-		return "r%d-%s" % (self.revision, self.filename)
+		return "r%s-%s" % (self.revision, self.getFilename())
 
 	def getChecksum (self):
 		return self.checksum
@@ -53,7 +54,7 @@ class RegistrySource:
 		return self.revision
 
 	def getSourceUrl (self):
-		return "https://cvs.khronos.org/svn/repos/ogl/trunk/doc/registry/public/api/%s?r=%d" % (self.filename, self.revision)
+		return "%s/%s/%s" % (self.repository, self.revision, self.filename)
 
 def computeChecksum (data):
 	return hashlib.sha256(data).hexdigest()

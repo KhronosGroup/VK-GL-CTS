@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 33315.
+ * Generated from Khronos EGL API description (egl.xml) revision 7fdf7d3a1ad50afa03968db889b68af211da6e27.
  */
 const char*							getBooleanName				(int value);
 const char*							getBoolDontCareName			(int value);

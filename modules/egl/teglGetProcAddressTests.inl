@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 33315.
+ * Generated from Khronos EGL API description (egl.xml) revision 7fdf7d3a1ad50afa03968db889b68af211da6e27.
  */
 
 static const char* s_EGL14[] =
@@ -1688,6 +1688,21 @@ static const char* s_GL_QCOM_alpha_test[] =
 	"glAlphaFuncQCOM",
 };
 
+static const char* s_GL_QCOM_framebuffer_foveated[] =
+{
+	"glFramebufferFoveationConfigQCOM",
+	"glFramebufferFoveationParametersQCOM",
+};
+
+static const char* s_GL_NV_draw_vulkan_image[] =
+{
+	"glDrawVkImageNV",
+	"glGetVkProcAddrNV",
+	"glWaitVkSemaphoreNV",
+	"glSignalVkSemaphoreNV",
+	"glSignalVkFenceNV",
+};
+
 static const struct
 {
 	const char*			name;
@@ -1850,4 +1865,6 @@ static const struct
 	{ "GL_OVR_multiview",									DE_LENGTH_OF_ARRAY(s_GL_OVR_multiview),									s_GL_OVR_multiview									},
 	{ "GL_OVR_multiview_multisampled_render_to_texture",	DE_LENGTH_OF_ARRAY(s_GL_OVR_multiview_multisampled_render_to_texture),	s_GL_OVR_multiview_multisampled_render_to_texture	},
 	{ "GL_QCOM_alpha_test",									DE_LENGTH_OF_ARRAY(s_GL_QCOM_alpha_test),								s_GL_QCOM_alpha_test								},
+	{ "GL_QCOM_framebuffer_foveated",						DE_LENGTH_OF_ARRAY(s_GL_QCOM_framebuffer_foveated),						s_GL_QCOM_framebuffer_foveated						},
+	{ "GL_NV_draw_vulkan_image",							DE_LENGTH_OF_ARRAY(s_GL_NV_draw_vulkan_image),							s_GL_NV_draw_vulkan_image							},
 };

@@ -4,7 +4,7 @@
 # drawElements Quality Program utilities
 # --------------------------------------
 #
-# Copyright 2015 The Android Open Source Project
+# Copyright 2015-2017 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,8 +38,9 @@ EGL_DIR				= os.path.normpath(os.path.join(SCRIPTS_DIR, "..", "..", "framework",
 EGL_WRAPPER_DIR		= os.path.normpath(os.path.join(EGL_DIR, "wrapper"))
 
 EGL_SOURCE			= khr_util.registry_cache.RegistrySource(
-						"egl.xml",
-						33315,
+						"https://raw.githubusercontent.com/KhronosGroup/EGL-Registry",
+						"api/egl.xml",
+						"7fdf7d3a1ad50afa03968db889b68af211da6e27",
 						"19f3b517f0dede56a6a94b820d08149ef5e1726f58202f47d69fa27f6f483bd2")
 
 VERSION				= '1.5'

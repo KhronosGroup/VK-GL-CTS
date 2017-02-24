@@ -2522,6 +2522,8 @@ dEQP-EGL.functional.get_proc_address.extension.gl_oes_viewport_array
 dEQP-EGL.functional.get_proc_address.extension.gl_ovr_multiview
 dEQP-EGL.functional.get_proc_address.extension.gl_ovr_multiview_multisampled_render_to_texture
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_alpha_test
+dEQP-EGL.functional.get_proc_address.extension.gl_qcom_framebuffer_foveated
+dEQP-EGL.functional.get_proc_address.extension.gl_nv_draw_vulkan_image
 dEQP-EGL.functional.get_proc_address.core.egl
 dEQP-EGL.functional.get_proc_address.core.gles
 dEQP-EGL.functional.get_proc_address.core.gles2
