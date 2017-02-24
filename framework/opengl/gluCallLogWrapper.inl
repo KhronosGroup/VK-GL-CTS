@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 32093.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 
 void CallLogWrapper::glActiveShaderProgram (glw::GLuint pipeline, glw::GLuint program)
@@ -423,11 +423,11 @@ void CallLogWrapper::glClearNamedBufferSubData (glw::GLuint buffer, glw::GLenum 
 	m_gl.clearNamedBufferSubData(buffer, internalformat, offset, size, format, type, data);
 }
 
-void CallLogWrapper::glClearNamedFramebufferfi (glw::GLuint framebuffer, glw::GLenum buffer, const glw::GLfloat depth, glw::GLint stencil)
+void CallLogWrapper::glClearNamedFramebufferfi (glw::GLuint framebuffer, glw::GLenum buffer, glw::GLint drawbuffer, glw::GLfloat depth, glw::GLint stencil)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glClearNamedFramebufferfi(" << framebuffer << ", " << toHex(buffer) << ", " << depth << ", " << stencil << ");" << TestLog::EndMessage;
-	m_gl.clearNamedFramebufferfi(framebuffer, buffer, depth, stencil);
+		m_log << TestLog::Message << "glClearNamedFramebufferfi(" << framebuffer << ", " << toHex(buffer) << ", " << drawbuffer << ", " << depth << ", " << stencil << ");" << TestLog::EndMessage;
+	m_gl.clearNamedFramebufferfi(framebuffer, buffer, drawbuffer, depth, stencil);
 }
 
 void CallLogWrapper::glClearNamedFramebufferfv (glw::GLuint framebuffer, glw::GLenum buffer, glw::GLint drawbuffer, const glw::GLfloat *value)

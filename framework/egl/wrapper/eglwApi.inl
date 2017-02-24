@@ -1,7 +1,11 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
+<<<<<<< HEAD
  * Generated from Khronos EGL API description (egl.xml) revision 28861.
+=======
+ * Generated from Khronos EGL API description (egl.xml) revision 7fdf7d3a1ad50afa03968db889b68af211da6e27.
+>>>>>>> 2528a63a9... Fetch gl.xml, egl.xml from Github repos
  */
 #define										eglBindAPI							eglwBindAPI
 #define										eglBindTexImage						eglwBindTexImage
