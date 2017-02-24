@@ -1030,7 +1030,7 @@ bool AtomicCounterBufferStorageTestCase::initTestCaseGlobal()
 									  "\n"
 									  "void main()\n"
 									  "{\n"
-									  "    for (unsigned int n = 0; n < N_COUNTERS; ++n)\n"
+									  "    for (uint n = 0; n < N_COUNTERS; ++n)\n"
 									  "    {\n"
 									  "        if (n == gl_VertexID)\n"
 									  "        {\n"
@@ -2910,9 +2910,6 @@ bool InvalidateBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flag
 	(void)sparse_bo_storage_flags;
 	bool result = true;
 
-	m_gl.bindBuffer(GL_ARRAY_BUFFER, m_sparse_bo);
-	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed");
-
 	/* Since we cannot really perform any validation related to whether buffer
 	 * storage invalidation works corectly, all this test can really do is to verify
 	 * if the implementation does not crash when both entry-points are used against
@@ -2928,12 +2925,12 @@ bool InvalidateBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flag
 		{
 			if (should_test_invalidate_buffer)
 			{
-				m_gl.invalidateBufferData(GL_ARRAY_BUFFER);
+				m_gl.invalidateBufferData(m_sparse_bo);
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glInvalidateBufferData() call failed.");
 			}
 			else
 			{
-				m_gl.invalidateBufferSubData(GL_ARRAY_BUFFER, 0, /* offset */
+				m_gl.invalidateBufferSubData(m_sparse_bo, 0, /* offset */
 											 m_sparse_bo_size_rounded * ((n_iteration == 0) ? 1 : 2));
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glInvalidateBufferSubData() call failed.");
 			}
@@ -6437,14 +6434,14 @@ bool UniformBufferStorageTestCase::initTestCaseGlobal()
 	const char* vs_body_main = "\n"
 							   "uniform data\n"
 							   "{\n"
-							   "    uint input[N_UBO_UINTS];"
+							   "    uint data_input[N_UBO_UINTS];"
 							   "};\n"
 							   "\n"
 							   "out uint result;\n"
 							   "\n"
 							   "void main()\n"
 							   "{\n"
-							   "    result = (input[gl_VertexID] == uint(gl_VertexID) ) ? 1u : 0u;\n"
+							   "    result = (data_input[gl_VertexID] == uint(gl_VertexID) ) ? 1u : 0u;\n"
 							   "}";
 
 	vs_body_define_sstream << "#define N_UBO_UINTS (" << m_n_ubo_uints << ")\n";

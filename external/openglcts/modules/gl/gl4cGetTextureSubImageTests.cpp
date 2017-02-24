@@ -73,7 +73,6 @@ gl4cts::GetTextureSubImage::Errors::Errors(deqp::Context& context)
 	, m_texture_2D(0)
 	, m_texture_rectangle(0)
 	, m_texture_2D_compressed(0)
-	, m_texture_rectangle_compressed(0)
 	, m_texture_2D_multisampled(0)
 	, m_destination_buffer(DE_NULL)
 	, m_gl_GetTextureSubImage(DE_NULL)
@@ -158,7 +157,7 @@ void gl4cts::GetTextureSubImage::Errors::prepare()
 
 	/* If already initialized throw exception. */
 	if (m_texture_1D || m_texture_1D_array || m_texture_2D || m_texture_rectangle || m_texture_2D_compressed ||
-		m_texture_rectangle_compressed || m_texture_2D_multisampled)
+		m_texture_2D_multisampled)
 	{
 		throw 0;
 	}
@@ -169,7 +168,6 @@ void gl4cts::GetTextureSubImage::Errors::prepare()
 	gl.genTextures(1, &m_texture_2D);
 	gl.genTextures(1, &m_texture_rectangle);
 	gl.genTextures(1, &m_texture_2D_compressed);
-	gl.genTextures(1, &m_texture_rectangle_compressed);
 	gl.genTextures(1, &m_texture_2D_multisampled);
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures call failed.");
@@ -213,14 +211,6 @@ void gl4cts::GetTextureSubImage::Errors::prepare()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture call failed.");
 
 	gl.compressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB8_ETC2, s_texture_data_compressed_width,
-							s_texture_data_compressed_height, 0, s_texture_data_compressed_size,
-							s_texture_data_compressed);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D call failed.");
-
-	gl.bindTexture(GL_TEXTURE_RECTANGLE, m_texture_rectangle_compressed);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture call failed.");
-
-	gl.compressedTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_COMPRESSED_RGB8_ETC2, s_texture_data_compressed_width,
 							s_texture_data_compressed_height, 0, s_texture_data_compressed_size,
 							s_texture_data_compressed);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D call failed.");
@@ -520,8 +510,7 @@ bool gl4cts::GetTextureSubImage::Errors::testTwoDimmensionalTextureErrors()
 		const glw::GLchar* target_name;
 	} test_textures[] = { { m_texture_1D, "GL_TEXTURE_1D" },
 						  { m_texture_1D_array, "GL_TEXTURE_1D_ARRAY" },
-						  { m_texture_2D, "GL_TEXTURE_2D" },
-						  { m_texture_rectangle, "GL_TEXTURE_RECTANGLE" } };
+						  { m_texture_2D, "GL_TEXTURE_2D" } };
 
 	static const glw::GLuint test_textures_size = sizeof(test_textures) / sizeof(test_textures[0]);
 
@@ -556,8 +545,7 @@ bool gl4cts::GetTextureSubImage::Errors::testTwoDimmensionalTextureErrors()
 	{
 		glw::GLuint		   id;
 		const glw::GLchar* target_name;
-	} test_compressed_textures[] = { { m_texture_2D_compressed, "GL_TEXTURE_2D" },
-									 { m_texture_rectangle_compressed, "GL_TEXTURE_RECTANGLE" } };
+	} test_compressed_textures[] = { { m_texture_2D_compressed, "GL_TEXTURE_2D" } };
 
 	static const glw::GLuint test_compressed_textures_size =
 		sizeof(test_compressed_textures) / sizeof(test_compressed_textures[0]);
@@ -685,12 +673,6 @@ void gl4cts::GetTextureSubImage::Errors::clean()
 	{
 		gl.deleteTextures(1, &m_texture_2D_compressed);
 		m_texture_2D_compressed = 0;
-	}
-
-	if (m_texture_rectangle_compressed)
-	{
-		gl.deleteTextures(1, &m_texture_rectangle_compressed);
-		m_texture_rectangle_compressed = 0;
 	}
 
 	if (m_texture_2D_multisampled)

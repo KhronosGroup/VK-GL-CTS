@@ -117,7 +117,6 @@ private:
 	glw::GLuint	m_texture_2D;
 	glw::GLuint	m_texture_rectangle;
 	glw::GLuint	m_texture_2D_compressed;
-	glw::GLuint	m_texture_rectangle_compressed;
 	glw::GLuint	m_texture_2D_multisampled;
 	glw::GLubyte*  m_destination_buffer;
 
