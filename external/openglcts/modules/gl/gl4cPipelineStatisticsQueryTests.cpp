@@ -2426,7 +2426,7 @@ bool PipelineStatisticsQueryTestFunctional1::executeTest(glw::GLenum current_que
 
 		result &= PipelineStatisticsQueryUtilities::verifyResultValues(
 			run_result, 1, &expected_value, m_qo_id != 0, /* should_check_qo_bo_values */
-			current_query_target, &m_current_draw_call_type, &m_current_primitive_type,
+			current_query_target, DE_NULL, DE_NULL,
 			false, /* is_primitive_restart_enabled */
 			m_testCtx, PipelineStatisticsQueryUtilities::VERIFICATION_TYPE_EXACT_MATCH);
 	} /* if (run results were obtained successfully) */
