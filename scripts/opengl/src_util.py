@@ -108,6 +108,7 @@ EXTENSIONS			= [
 	'GL_ARB_texture_view',
 	'GL_ARB_transform_feedback2',
 	'GL_ARB_transform_feedback3',
+	'GL_ARB_transform_feedback_instanced',
 	'GL_ARB_transform_feedback_overflow_query',
 	'GL_ARB_vertex_array_bgra',
 	'GL_ARB_vertex_attrib_64bit',
