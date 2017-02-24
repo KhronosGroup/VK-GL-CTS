@@ -28,9 +28,11 @@
 #include "vkImageWithMemory.hpp"
 #include "vkTypeUtil.hpp"
 #include "rrRenderer.hpp"
+#include "rrRenderState.hpp"
 #include "rrPrimitiveTypes.hpp"
 #include "tcuTextureUtil.hpp"
 #include "deArrayUtil.hpp"
+#include "vkBuilderUtil.hpp"
 #include "tcuTestLog.hpp"
 
 namespace vkt
@@ -41,6 +43,24 @@ namespace drawutil
 using namespace de;
 using namespace tcu;
 using namespace vk;
+
+static VkCompareOp mapCompareOp (rr::TestFunc compareFunc)
+{
+	switch (compareFunc)
+	{
+		case rr::TESTFUNC_NEVER:				return VK_COMPARE_OP_NEVER;
+		case rr::TESTFUNC_LESS:					return VK_COMPARE_OP_LESS;
+		case rr::TESTFUNC_EQUAL:				return VK_COMPARE_OP_EQUAL;
+		case rr::TESTFUNC_LEQUAL:				return VK_COMPARE_OP_LESS_OR_EQUAL;
+		case rr::TESTFUNC_GREATER:				return VK_COMPARE_OP_GREATER;
+		case rr::TESTFUNC_NOTEQUAL:				return VK_COMPARE_OP_NOT_EQUAL;
+		case rr::TESTFUNC_GEQUAL:				return VK_COMPARE_OP_GREATER_OR_EQUAL;
+		case rr::TESTFUNC_ALWAYS:				return VK_COMPARE_OP_ALWAYS;
+		default:
+			DE_ASSERT(false);
+	}
+	return VK_COMPARE_OP_LAST;
+}
 
 rr::PrimitiveType mapVkPrimitiveToRRPrimitive(const vk::VkPrimitiveTopology& primitiveTopology)
 {
@@ -289,9 +309,14 @@ DrawState::DrawState(const vk::VkPrimitiveTopology topology_, deUint32 renderWid
 	, colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, renderSize			(tcu::UVec2(renderWidth_, renderHeight_))
 	, depthClampEnable		(false)
+	, depthTestEnable		(false)
+	, depthWriteEnable		(false)
+	, compareOp				(rr::TESTFUNC_LESS)
 	, blendEnable			(false)
 	, lineWidth				(1.0)
 	, numPatchControlPoints	(0)
+	, numSamples			(VK_SAMPLE_COUNT_1_BIT)
+	, sampleShadingEnable	(false)
 {
 	DE_ASSERT(renderSize.x() != 0 && renderSize.y() != 0);
 }
@@ -339,7 +364,7 @@ tcu::ConstPixelBufferAccess ReferenceDrawContext::getColorPixels (void) const
 VulkanDrawContext::VulkanDrawContext (  Context&				context,
 										const DrawState&		drawState,
 										const DrawCallData&		drawCallData,
-										const VulkanProgram&	vulkanProgram)
+										VulkanProgram&	vulkanProgram)
 	: DrawContext						(drawState, drawCallData)
 	, m_context							(context)
 	, m_program							(vulkanProgram)
@@ -348,6 +373,7 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 	const VkDevice			device					= m_context.getDevice();
 	Allocator&				allocator				= m_context.getDefaultAllocator();
 	VkImageSubresourceRange	colorSubresourceRange;
+	Move<VkSampler>			sampler;
 
 	// Command buffer
 	{
@@ -369,11 +395,11 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 			makeExtent3D(m_drawState.renderSize.x(), m_drawState.renderSize.y(), 1u),	// VkExtent3D				extent;
 			1u,																			// uint32_t					mipLevels;
 			1u,																			// uint32_t					arrayLayers;
-			VK_SAMPLE_COUNT_1_BIT,														// VkSampleCountFlagBits	samples;
+			(VkSampleCountFlagBits)m_drawState.numSamples,								// VkSampleCountFlagBits	samples;
 			VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling			tiling;
 			usage,																		// VkImageUsageFlags		usage;
 			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode			sharingMode;
-			VK_QUEUE_FAMILY_IGNORED,													// uint32_t					queueFamilyIndexCount;
+			0u,																			// uint32_t					queueFamilyIndexCount;
 			DE_NULL,																	// const uint32_t*			pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout			initialLayout;
 		};
@@ -405,38 +431,65 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), bufferSize);
 	}
 
-	// Pipeline layout
+	// bind descriptor sets
 	{
-		m_pipelineLayout = makePipelineLayoutWithoutDescriptors(vk, device);
+		if (!vulkanProgram.descriptorSetLayout)
+			m_pipelineLayout = makePipelineLayoutWithoutDescriptors(vk, device);
+		else
+			m_pipelineLayout = makePipelineLayout(vk, device, vulkanProgram.descriptorSetLayout.get());
 	}
 
 	// Renderpass
 	{
-		const VkAttachmentDescription colorAttachmentDescription =
+		std::vector<VkAttachmentDescription> attachmentDescriptions;
+		const VkAttachmentDescription attachDescriptors[] =
 		{
-			(VkAttachmentDescriptionFlags)0,					// VkAttachmentDescriptionFlags		flags;
-			m_drawState.colorFormat,							// VkFormat							format;
-			VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
-			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					initialLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					finalLayout;
+			{
+				(VkAttachmentDescriptionFlags)0,					// VkAttachmentDescriptionFlags		flags;
+				m_drawState.colorFormat,							// VkFormat							format;
+				(VkSampleCountFlagBits)m_drawState.numSamples,		// VkSampleCountFlagBits			samples;
+				VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
+				VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
+				VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
+				VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
+				VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					initialLayout;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					finalLayout;
+			},
+			{
+				(VkAttachmentDescriptionFlags)0,					// VkAttachmentDescriptionFlags		flags
+				m_drawState.depthFormat,							// VkFormat							format
+				(VkSampleCountFlagBits)m_drawState.numSamples,		// VkSampleCountFlagBits			samples
+				VK_ATTACHMENT_LOAD_OP_LOAD,							// VkAttachmentLoadOp				loadOp
+				VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp
+				VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp
+				VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp
+				VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					initialLayout
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout					finalLayout
+
+			}
 		};
 
-		const VkAttachmentReference colorAttachmentReference =
+		const VkAttachmentReference attachmentReferences[] =
 		{
-			0u,													// deUint32			attachment;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout	layout;
+			{
+				0u,													// uint32_t			attachment
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout	layout
+			},
+			{
+				1u,													// uint32_t			attachment
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout	layout
+			},
+			{
+				VK_ATTACHMENT_UNUSED,								// deUint32         attachment;
+				VK_IMAGE_LAYOUT_UNDEFINED							// VkImageLayout    layout;
+			}
 		};
 
-		const VkAttachmentReference depthAttachmentReference =
-		{
-			VK_ATTACHMENT_UNUSED,								// deUint32			attachment;
-			VK_IMAGE_LAYOUT_UNDEFINED							// VkImageLayout	layout;
-		};
+		attachmentDescriptions.push_back(attachDescriptors[0]);
+		if (vulkanProgram.depthImageView)
+			attachmentDescriptions.push_back(attachDescriptors[1]);
 
+		deUint32 depthReferenceNdx = vulkanProgram.depthImageView ? 1 : 2;
 		const VkSubpassDescription subpassDescription =
 		{
 			(VkSubpassDescriptionFlags)0,						// VkSubpassDescriptionFlags		flags;
@@ -444,9 +497,9 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 			0u,													// deUint32							inputAttachmentCount;
 			DE_NULL,											// const VkAttachmentReference*		pInputAttachments;
 			1u,													// deUint32							colorAttachmentCount;
-			&colorAttachmentReference,							// const VkAttachmentReference*		pColorAttachments;
+			&attachmentReferences[0],							// const VkAttachmentReference*		pColorAttachments;
 			DE_NULL,											// const VkAttachmentReference*		pResolveAttachments;
-			&depthAttachmentReference,							// const VkAttachmentReference*		pDepthStencilAttachment;
+			&attachmentReferences[depthReferenceNdx],			// const VkAttachmentReference*		pDepthStencilAttachment;
 			0u,													// deUint32							preserveAttachmentCount;
 			DE_NULL												// const deUint32*					pPreserveAttachments;
 		};
@@ -456,8 +509,8 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
 			(VkRenderPassCreateFlags)0,							// VkRenderPassCreateFlags			flags;
-			1u,													// deUint32							attachmentCount;
-			&colorAttachmentDescription,						// const VkAttachmentDescription*	pAttachments;
+			(deUint32)attachmentDescriptions.size(),			// deUint32							attachmentCount;
+			&attachmentDescriptions[0],							// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
 			&subpassDescription,								// const VkSubpassDescription*		pSubpasses;
 			0u,													// deUint32							dependencyCount;
@@ -469,18 +522,20 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 
 	// Framebuffer
 	{
-		const VkImageView attachmentBindInfos[] =
-		{
-			m_colorImageView.get()
-		};
+		std::vector<VkImageView>	attachmentBindInfos;
+		deUint32					numAttachments;
+		attachmentBindInfos.push_back(*m_colorImageView);
+		if (vulkanProgram.depthImageView)
+			attachmentBindInfos.push_back(*vulkanProgram.depthImageView);
 
+		numAttachments = (deUint32)(attachmentBindInfos.size());
 		const VkFramebufferCreateInfo framebufferInfo = {
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType						sType;
 			DE_NULL,										// const void*							pNext;
 			(VkFramebufferCreateFlags)0,					// VkFramebufferCreateFlags				flags;
 			*m_renderPass,									// VkRenderPass							renderPass;
-			DE_LENGTH_OF_ARRAY(attachmentBindInfos),		// uint32_t								attachmentCount;
-			attachmentBindInfos,							// const VkImageView*					pAttachments;
+			numAttachments,									// uint32_t								attachmentCount;
+			&attachmentBindInfos[0],						// const VkImageView*					pAttachments;
 			m_drawState.renderSize.x(),						// uint32_t								width;
 			m_drawState.renderSize.y(),						// uint32_t								height;
 			1u,												// uint32_t								layers;
@@ -581,9 +636,9 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
 			DE_NULL,													// const void*								pNext;
 			(VkPipelineMultisampleStateCreateFlags)0,					// VkPipelineMultisampleStateCreateFlags	flags;
-			VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits					rasterizationSamples;
-			VK_FALSE,													// VkBool32									sampleShadingEnable;
-			0.0f,														// float									minSampleShading;
+			(VkSampleCountFlagBits)m_drawState.numSamples,				// VkSampleCountFlagBits					rasterizationSamples;
+			m_drawState.sampleShadingEnable ? VK_TRUE : VK_FALSE,		// VkBool32									sampleShadingEnable;
+			m_drawState.sampleShadingEnable ? 1.0f : 0.0f,				// float									minSampleShading;
 			DE_NULL,													// const VkSampleMask*						pSampleMask;
 			VK_FALSE,													// VkBool32									alphaToCoverageEnable;
 			VK_FALSE													// VkBool32									alphaToOneEnable;
@@ -603,10 +658,10 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 			VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType							sType;
 			DE_NULL,													// const void*								pNext;
 			(VkPipelineDepthStencilStateCreateFlags)0,					// VkPipelineDepthStencilStateCreateFlags	flags;
-			VK_FALSE,													// VkBool32									depthTestEnable;
-			VK_FALSE,													// VkBool32									depthWriteEnable;
-			VK_COMPARE_OP_LESS,											// VkCompareOp								depthCompareOp;
-			VK_FALSE,													// VkBool32									depthBoundsTestEnable;
+			m_drawState.depthTestEnable,								// VkBool32									depthTestEnable;
+			m_drawState.depthWriteEnable,								// VkBool32									depthWriteEnable;
+			mapCompareOp(m_drawState.compareOp),						// VkCompareOp								depthCompareOp;
+			VK_TRUE,													// VkBool32									depthBoundsTestEnable;
 			VK_FALSE,													// VkBool32									stencilTestEnable;
 			stencilOpState,												// VkStencilOpState							front;
 			stencilOpState,												// VkStencilOpState							back;
@@ -700,10 +755,13 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 		const VkDeviceSize zeroOffset = 0ull;
 
 		beginCommandBuffer(vk, *m_cmdBuffer);
+		if (vulkanProgram.descriptorSet)
+			vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &*vulkanProgram.descriptorSet, 0u, DE_NULL);
 
 		// Begin render pass
 		{
-			const VkClearValue	clearValue = makeClearValueColor(Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+			const VkClearValue	clearValue	= makeClearValueColor(Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
 			const VkRect2D		renderArea =
 			{
 				makeOffset2D(0, 0),
@@ -740,10 +798,67 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 				0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
 		}
 
+		// Resolve multisample image
 		{
+			if (m_drawState.numSamples != VK_SAMPLE_COUNT_1_BIT)
+			{
+				const VkImageResolve imageResolve =
+				{
+					makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),
+					{ 0, 0, 0},
+					makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),
+					{ 0, 0, 0},
+					makeExtent3D(m_drawState.renderSize.x(), m_drawState.renderSize.y(), 1u)
+				};
+
+				const VkImageCreateInfo resolveImageCreateInfo =
+				{
+					VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,				// VkStructureType			sType
+					DE_NULL,											// const void*				pNext
+					(VkImageCreateFlags)0,								// VkImageCreateFlags		flags
+					VK_IMAGE_TYPE_2D,									// VkImageType				imageType
+					m_drawState.colorFormat,							// VkFormat					format
+					makeExtent3D(m_drawState.renderSize.x(),			// VkExtent3D				extent;
+							m_drawState.renderSize.y(), 1u),
+					1u,													// uint32_t					mipLevels
+					1u,													// uint32_t					arrayLayers
+					VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits	samples
+					VK_IMAGE_TILING_OPTIMAL,							// VkImaageTiling			tiling
+					VK_IMAGE_USAGE_TRANSFER_DST_BIT |					// VkImageUsageFlags		usage
+					VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+					VK_SHARING_MODE_EXCLUSIVE,							// VkSharingModeExclusive	sharingMode
+					0u,													// uint32_t					queueFamilyIndexCount
+					DE_NULL,											// const uint32_t*			pQueueFamilyIndices
+					VK_IMAGE_LAYOUT_UNDEFINED							// VkImageLayout			initialLayout
+				};
+
+				m_resolveImage = MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, allocator, resolveImageCreateInfo, MemoryRequirement::Any));
+
+				const VkImageMemoryBarrier resolveBarrier = makeImageMemoryBarrier(
+						0u, VK_ACCESS_TRANSFER_READ_BIT,
+						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						**m_resolveImage, colorSubresourceRange);
+
+				vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
+						0u, DE_NULL, 0u, DE_NULL, 1u, &resolveBarrier);
+
+				vk.cmdResolveImage(*m_cmdBuffer, **m_colorImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+						**m_resolveImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &imageResolve);
+
+				const VkImageMemoryBarrier barrier = makeImageMemoryBarrier(
+					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+					**m_resolveImage, colorSubresourceRange);
+
+				vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
+					0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+			}
+			else
+				m_resolveImage = m_colorImage;
+
 			const VkBufferImageCopy copyRegion = makeBufferImageCopy(makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),
 					makeExtent3D(m_drawState.renderSize.x(), m_drawState.renderSize.y(), 1u));
-			vk.cmdCopyImageToBuffer(*m_cmdBuffer, **m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_colorAttachmentBuffer, 1u, &copyRegion);
+			vk.cmdCopyImageToBuffer(*m_cmdBuffer, **m_resolveImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_colorAttachmentBuffer, 1u, &copyRegion);
 		}
 
 		// Barrier: copy to buffer -> host read

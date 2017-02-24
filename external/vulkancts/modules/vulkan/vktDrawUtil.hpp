@@ -54,13 +54,19 @@ struct Shader
 
 struct DrawState
 {
-	const vk::VkPrimitiveTopology	topology;
-	const vk::VkFormat				colorFormat;
+	vk::VkPrimitiveTopology			topology;
+	vk::VkFormat					colorFormat;
+	vk::VkFormat					depthFormat;
 	tcu::UVec2						renderSize;
 	bool							depthClampEnable;
+	bool							depthTestEnable;
+	bool							depthWriteEnable;
+	rr::TestFunc					compareOp;
 	bool							blendEnable;
 	float							lineWidth;
 	deUint32						numPatchControlPoints;
+	deUint32						numSamples;
+	bool							sampleShadingEnable;
 
 	DrawState (const vk::VkPrimitiveTopology topology_, deUint32 renderWidth_, deUint32 renderHeight_);
 };
@@ -94,8 +100,8 @@ public:
 	virtual void							draw					(void) = 0;
 	virtual tcu::ConstPixelBufferAccess		getColorPixels			(void) const = 0;
 protected:
-		const DrawState						m_drawState;
-		const DrawCallData					m_drawCallData;
+		const DrawState&					m_drawState;
+		const DrawCallData&					m_drawCallData;
 };
 
 class ReferenceDrawContext : public DrawContext
@@ -121,7 +127,10 @@ private:
 
 struct VulkanProgram
 {
-	const std::vector<Shader>&				shaders;
+	const std::vector<Shader>&			shaders;
+	vk::Move<vk::VkImageView>			depthImageView;
+	vk::Move<vk::VkDescriptorSetLayout>	descriptorSetLayout;
+	vk::Move<vk::VkDescriptorSet>		descriptorSet;
 
 	VulkanProgram		(const std::vector<Shader>&			shaders_)
 		: shaders		(shaders_)
@@ -135,18 +144,19 @@ public:
 											VulkanDrawContext	(Context&				context,
 																 const DrawState&		drawState,
 																 const DrawCallData&	drawCallData,
-																 const VulkanProgram&	vulkanProgram);
+																 VulkanProgram&			vulkanProgram);
 	virtual									~VulkanDrawContext	(void);
 	virtual void							draw				(void);
 	virtual tcu::ConstPixelBufferAccess		getColorPixels		(void) const;
 private:
-	enum Contants
+	enum VulkanContants
 	{
 		MAX_NUM_SHADER_MODULES					= 5,
 	};
 	Context&									m_context;
-	VulkanProgram								m_program;
+	VulkanProgram&								m_program;
 	de::MovePtr<vk::ImageWithMemory>			m_colorImage;
+	de::MovePtr<vk::ImageWithMemory>			m_resolveImage;
 	de::MovePtr<vk::BufferWithMemory>			m_colorAttachmentBuffer;
 	vk::refdetails::Move<vk::VkImageView>		m_colorImageView;
 	vk::refdetails::Move<vk::VkRenderPass>		m_renderPass;
