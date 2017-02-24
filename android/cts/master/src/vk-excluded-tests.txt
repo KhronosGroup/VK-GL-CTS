@@ -328,3 +328,6 @@ dEQP-VK.pipeline.render_to_image.*.small.r32g32b32a32_sfloat_d32_sfloat_s8_uint
 
 #VK-GL-CTS 655
 dEQP-VK.glsl.builtin_var.fragdepth.*
+
+#VK-GL-CTS 656
+dEQP-VK.glsl.builtin_var.fragcoord_msaa.*
