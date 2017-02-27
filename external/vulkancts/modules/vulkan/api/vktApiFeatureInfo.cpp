@@ -671,6 +671,8 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_sampler_mirror_clamp_to_edge",
 		"VK_KHR_shader_draw_parameters",
 		"VK_KHR_maintenance1",
+		"VK_KHR_push_descriptor",
+		"VK_KHR_descriptor_update_template",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);
