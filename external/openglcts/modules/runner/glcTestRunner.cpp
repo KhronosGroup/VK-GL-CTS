@@ -194,7 +194,7 @@ static configInfo parseConfigBitsFromName(const char* configName)
 	return cfgInfo;
 }
 
-static string getApiName(glu::ApiType apiType)
+static const char* getApiName(glu::ApiType apiType)
 {
 	if (apiType == glu::ApiType::es(2, 0))
 		return "gles2";
@@ -228,7 +228,7 @@ static string getApiName(glu::ApiType apiType)
 		throw std::runtime_error("Unknown context type");
 }
 
-static const string getCaseListFileOption(const string mustpassDir, const string apiName, const string mustpassName)
+static const string getCaseListFileOption(const char* mustpassDir, const char* apiName, const char* mustpassName)
 {
 #if DE_OS == DE_OS_ANDROID
 	const string case_list_option = "--deqp-caselist-resource=";
@@ -238,7 +238,7 @@ static const string getCaseListFileOption(const string mustpassDir, const string
 	return case_list_option + mustpassDir + apiName + "-" + mustpassName + ".txt";
 }
 
-static const string getLogFileName(const string apiName, const string configName, const int iterId, const int runId,
+static const string getLogFileName(const char* apiName, const char* configName, const int iterId, const int runId,
 								   const int width, const int height, const int seed)
 {
 	string res = string("config-") + apiName + "-" + configName + "-cfg-" + de::toString(iterId) + "-run-" +
@@ -252,8 +252,8 @@ static const string getLogFileName(const string apiName, const string configName
 	return res;
 }
 
-static void getBaseOptions(std::vector<std::string>& args, const string mustpassDir, const string apiName,
-						   const string configName, const string screenRotation, int width, int height)
+static void getBaseOptions(std::vector<std::string>& args, const char* mustpassDir, const char* apiName,
+						   const char* configName, const char* screenRotation, int width, int height)
 {
 	args.push_back(getCaseListFileOption(mustpassDir, apiName, configName));
 	args.push_back(string("--deqp-screen-rotation=") + screenRotation);
@@ -294,7 +294,8 @@ static void getTestRunsForAOSPEGL(vector<TestRunParams>& runs, const ConfigList&
 			continue;
 		}
 
-		string	apiName = "egl";
+		const char* apiName = "egl";
+
 		const int width   = aosp_mustpass_egl_first_cfg[i].surfaceWidth;
 		const int height  = aosp_mustpass_egl_first_cfg[i].surfaceHeight;
 
@@ -339,7 +340,8 @@ static void getTestRunsForAOSPES(vector<TestRunParams>& runs, const ConfigList& 
 			return;
 		}
 
-		string	apiName = getApiName(aosp_mustpass_es_first_cfg[i].apiType);
+		const char* apiName = getApiName(aosp_mustpass_es_first_cfg[i].apiType);
+
 		const int width   = aosp_mustpass_es_first_cfg[i].surfaceWidth;
 		const int height  = aosp_mustpass_es_first_cfg[i].surfaceHeight;
 
@@ -361,10 +363,45 @@ static void getTestRunsForAOSPES(vector<TestRunParams>& runs, const ConfigList& 
 	}
 }
 
+static void getTestRunsForNoContext(vector<TestRunParams>& runs, const ConfigList& configs, const RunParams* runParams,
+									const int numRunParams, const char* mustpassDir)
+{
+	vector<Config>::const_iterator cfgIter = configs.configs.begin();
+
+	for (int i = 0; i < numRunParams; ++i)
+	{
+		const char* apiName = "noctx";
+
+		const int width  = runParams[i].surfaceWidth;
+		const int height = runParams[i].surfaceHeight;
+		const int seed   = runParams[i].baseSeed;
+
+		TestRunParams params;
+		params.logFilename = getLogFileName(apiName, runParams[i].configName, 1, i, width, height, seed);
+
+		getBaseOptions(params.args, mustpassDir, apiName, runParams[i].configName, runParams[i].screenRotation, width,
+					   height);
+
+		params.args.push_back(string("--deqp-base-seed=") + de::toString(seed));
+
+		appendConfigArgs(*cfgIter, params.args, runParams[i].fboConfig);
+
+		runs.push_back(params);
+	}
+}
+
+static void getTestRunsForNoContextES(vector<TestRunParams>& runs, const ConfigList& configs)
+{
+#include "glcKhronosMustpassEsNocontext.hpp"
+	getTestRunsForNoContext(runs, configs, khronos_mustpass_es_nocontext_first_cfg,
+							DE_LENGTH_OF_ARRAY(khronos_mustpass_es_nocontext_first_cfg), mustpassDir);
+}
+
 static void getTestRunsForES(glu::ApiType type, const ConfigList& configs, vector<TestRunParams>& runs)
 {
 	getTestRunsForAOSPEGL(runs, configs);
 	getTestRunsForAOSPES(runs, configs, type);
+	getTestRunsForNoContextES(runs, configs);
 
 #include "glcKhronosMustpassEs.hpp"
 
@@ -380,7 +417,8 @@ static void getTestRunsForES(glu::ApiType type, const ConfigList& configs, vecto
 			if (!glu::contextSupports(glu::ContextType(type), runParams[runNdx].apiType))
 				continue;
 
-			string	apiName = getApiName(runParams[runNdx].apiType);
+			const char* apiName = getApiName(runParams[runNdx].apiType);
+
 			const int width   = runParams[runNdx].surfaceWidth;
 			const int height  = runParams[runNdx].surfaceHeight;
 			const int seed	= runParams[runNdx].baseSeed;
@@ -401,8 +439,16 @@ static void getTestRunsForES(glu::ApiType type, const ConfigList& configs, vecto
 	}
 }
 
+static void getTestRunsForNoContextGL(vector<TestRunParams>& runs, const ConfigList& configs)
+{
+#include "glcKhronosMustpassGlNocontext.hpp"
+	getTestRunsForNoContext(runs, configs, khronos_mustpass_gl_nocontext_first_cfg,
+							DE_LENGTH_OF_ARRAY(khronos_mustpass_gl_nocontext_first_cfg), mustpassDir);
+}
+
 static void getTestRunsForGL(glu::ApiType type, const ConfigList& configs, vector<TestRunParams>& runs)
 {
+	getTestRunsForNoContextGL(runs, configs);
 #include "glcKhronosMustpassGl.hpp"
 
 	for (vector<Config>::const_iterator cfgIter = configs.configs.begin(); cfgIter != configs.configs.end(); ++cfgIter)
@@ -417,7 +463,8 @@ static void getTestRunsForGL(glu::ApiType type, const ConfigList& configs, vecto
 			if (type != runParams[runNdx].apiType)
 				continue;
 
-			string	apiName = getApiName(runParams[runNdx].apiType);
+			const char* apiName = getApiName(runParams[runNdx].apiType);
+
 			const int width   = runParams[runNdx].surfaceWidth;
 			const int height  = runParams[runNdx].surfaceHeight;
 			const int seed	= runParams[runNdx].baseSeed;

@@ -22,6 +22,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "glcNoDefaultContextPackage.hpp"
+#include "glcNoErrorTests.hpp"
 #include "gluRenderContext.hpp"
 
 namespace glcts
@@ -77,6 +78,16 @@ NoDefaultContextPackage::~NoDefaultContextPackage(void)
 tcu::TestCaseExecutor* NoDefaultContextPackage::createExecutor(void) const
 {
 	return new nodefaultcontext::TestCaseWrapper();
+}
+
+void NoDefaultContextPackage::init(void)
+{
+	tcu::TestCaseGroup* gl30Group = new tcu::TestCaseGroup(getTestContext(), "gl30", "");
+	gl30Group->addChild(new glcts::NoErrorTests(getTestContext(), glu::ApiType::core(3, 0)));
+	addChild(gl30Group);
+	tcu::TestCaseGroup* es2Group = new tcu::TestCaseGroup(getTestContext(), "es2", "");
+	es2Group->addChild(new glcts::NoErrorTests(getTestContext(), glu::ApiType::es(2, 0)));
+	addChild(es2Group);
 }
 
 } // glcts

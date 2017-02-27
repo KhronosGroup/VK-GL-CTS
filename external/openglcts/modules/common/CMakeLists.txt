@@ -24,8 +24,8 @@ set(GLCTS_COMMON_SRCS
 	glcFragDepthTests.hpp
 	glcInfoTests.cpp
 	glcInfoTests.hpp
-	glcNoDefaultContextPackage.cpp
-	glcNoDefaultContextPackage.hpp
+	glcNoErrorTests.cpp
+	glcNoErrorTests.hpp
 	glcRobustBufferAccessBehaviorTests.cpp
 	glcRobustBufferAccessBehaviorTests.hpp
 	glcShaderIndexingTests.cpp
@@ -78,3 +78,9 @@ set(GLCTS_COMMON_LIBS
 
 add_library(glcts-common STATIC ${GLCTS_COMMON_SRCS})
 target_link_libraries(glcts-common ${GLCTS_COMMON_LIBS})
+
+set(GLCTS_COMMON_NOCONTEXTPACKAGE_SRCS
+	glcNoDefaultContextPackage.cpp
+	glcNoDefaultContextPackage.hpp
+	)
+add_library(glcts-common-nocontext-package STATIC ${GLCTS_COMMON_NOCONTEXTPACKAGE_SRCS})

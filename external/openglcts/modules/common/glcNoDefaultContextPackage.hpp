@@ -34,9 +34,7 @@ public:
 	NoDefaultContextPackage(tcu::TestContext& testCtx, const char* name);
 	virtual ~NoDefaultContextPackage(void);
 
-	virtual void init(void)
-	{
-	}
+	void init(void);
 
 	tcu::Archive* getArchive(void)
 	{

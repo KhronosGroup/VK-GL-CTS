@@ -26,6 +26,7 @@
 #include "tcuRenderTarget.hpp"
 #include "glwInitFunctions.hpp"
 #include "deUniquePtr.hpp"
+#include "glwEnums.hpp"
 
 #include <sstream>
 #include <iterator>
@@ -352,6 +353,17 @@ GLXContext GlxVisual::createContext (const GlxContextFactory&		factory,
 
 		if ((contextType.getFlags() & glu::CONTEXT_ROBUST) != 0)
 			flags |= GLX_CONTEXT_ROBUST_ACCESS_BIT_ARB;
+
+		if ((contextType.getFlags() & glu::CONTEXT_NO_ERROR) != 0)
+		{
+			if (m_display.isGlxExtensionSupported("GLX_ARB_create_context_no_error"))
+			{
+				attribs.push_back(GLX_CONTEXT_OPENGL_NO_ERROR_ARB);
+				attribs.push_back(True);
+			}
+			else
+				TCU_THROW(NotSupportedError, "GLX_ARB_create_context_no_error is required for creating no-error contexts");
+		}
 
 		if (flags != 0)
 		{

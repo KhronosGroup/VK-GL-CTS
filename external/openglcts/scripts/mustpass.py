@@ -285,7 +285,7 @@ def getApiType(apiName):
 		return "glu::ApiType::core(3, 1)"
 	if apiName == "GL30":
 		return "glu::ApiType::core(3, 0)"
-	if apiName == "EGL":
+	if apiName == "EGL" or apiName == "NOCTX":
 		return "glu::ApiType()"
 
 	raise Exception("Unknown API %s" % apiName)
@@ -313,19 +313,7 @@ def genSpecCPPIncludeFile (specFilename, mustpass):
 	fileBody += "\n\n"
 	fileBody += GENERATED_FILE_WARNING
 	fileBody += "\n\n"
-	fileBody += 'const string mustpassDir = "' + mustpass.project.devicepath + '/' + mustpass.version + '/";\n\n'
-	fileBody += "struct RunParams\n"
-	fileBody += "{\n"
-	fileBody += "\tglu::ApiType apiType;\n"
-	fileBody += "\tconst string configName;\n"
-	fileBody += "\tconst char*  glConfigName;\n"
-	fileBody += "\tconst string screenRotation;\n"
-	fileBody += "\tint\t\t\t baseSeed;\n"
-	fileBody += "\tconst char*  fboConfig;\n"
-	fileBody += "\tint\t\t\t surfaceWidth;\n"
-	fileBody += "\tint\t\t\t surfaceHeight;\n"
-	fileBody += "};\n"
-	fileBody += "\n"
+	fileBody += 'const char* mustpassDir = "' + mustpass.project.devicepath + '/' + mustpass.version + '/";\n\n'
 
 	gtf_wrapper_open = "#if defined(DEQP_GTF_AVAILABLE)\n"
 	gtf_wrapper_close = "#endif // defined(DEQP_GTF_AVAILABLE)\n"

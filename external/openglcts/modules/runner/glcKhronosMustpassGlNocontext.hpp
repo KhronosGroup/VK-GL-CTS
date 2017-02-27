@@ -1,5 +1,5 @@
-#ifndef _GLCAOSPMUSTPASSEGL_HPP
-#define _GLCAOSPMUSTPASSEGL_HPP
+#ifndef _GLCKHRONOSMUSTPASSGLNOCONTEXT_HPP
+#define _GLCKHRONOSMUSTPASSGLNOCONTEXT_HPP
 /*     Copyright (C) 2016-2017 The Khronos Group Inc
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,10 +19,11 @@
  * be lost! Modify the generating script instead.
  */
 
-const char* mustpassDir = "gl_cts/data/mustpass/egl/aosp_mustpass/3.2.4.x/";
+const char* mustpassDir = "gl_cts/data/mustpass/gl/khronos_mustpass_noctx/4.5.5.x/";
 
-static const RunParams aosp_mustpass_egl_first_cfg[] = {
-	{ glu::ApiType(), "master", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
+static const RunParams khronos_mustpass_gl_nocontext_first_cfg[] = {
+	{ glu::ApiType(), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+	{ glu::ApiType(), "khr-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
 };
 
-#endif // _GLCAOSPMUSTPASSEGL_HPP
+#endif // _GLCKHRONOSMUSTPASSGLNOCONTEXT_HPP

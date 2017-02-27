@@ -47,6 +47,7 @@ EXTENSIONS			= [
 	'GL_KHR_blend_equation_advanced_coherent',
 	'GL_KHR_debug',
 	'GL_KHR_robustness',
+	'GL_KHR_no_error',
 	'GL_EXT_bgra',
 	'GL_EXT_geometry_point_size',
 	'GL_EXT_tessellation_shader',
