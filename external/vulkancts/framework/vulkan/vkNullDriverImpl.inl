@@ -187,6 +187,12 @@ VKAPI_ATTR VkResult VKAPI_CALL createObjectTableNVX (VkDevice device, const VkOb
 	VK_NULL_RETURN((*pObjectTable = allocateNonDispHandle<ObjectTableNVX, VkObjectTableNVX>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createDescriptorUpdateTemplateKHR (VkDevice device, const VkDescriptorUpdateTemplateCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorUpdateTemplateKHR* pDescriptorUpdateTemplate)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pDescriptorUpdateTemplate = allocateNonDispHandle<DescriptorUpdateTemplateKHR, VkDescriptorUpdateTemplateKHR>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR void VKAPI_CALL destroyInstance (VkInstance instance, const VkAllocationCallbacks* pAllocator)
 {
 	freeHandle<Instance, VkInstance>(instance, pAllocator);
@@ -339,6 +345,12 @@ VKAPI_ATTR void VKAPI_CALL destroyObjectTableNVX (VkDevice device, VkObjectTable
 {
 	DE_UNREF(device);
 	freeNonDispHandle<ObjectTableNVX, VkObjectTableNVX>(objectTable, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyDescriptorUpdateTemplateKHR (VkDevice device, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<DescriptorUpdateTemplateKHR, VkDescriptorUpdateTemplateKHR>(descriptorUpdateTemplate, pAllocator);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceExtensionProperties (const char* pLayerName, deUint32* pPropertyCount, VkExtensionProperties* pProperties)
@@ -1309,6 +1321,33 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceGeneratedCommandsPropertiesNVX (VkPh
 	DE_UNREF(pLimits);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetKHR (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, deUint32 set, deUint32 descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pipelineBindPoint);
+	DE_UNREF(layout);
+	DE_UNREF(set);
+	DE_UNREF(descriptorWriteCount);
+	DE_UNREF(pDescriptorWrites);
+}
+
+VKAPI_ATTR void VKAPI_CALL updateDescriptorSetWithTemplateKHR (VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const void* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(descriptorSet);
+	DE_UNREF(descriptorUpdateTemplate);
+	DE_UNREF(pData);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetWithTemplateKHR (VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, VkPipelineLayout layout, deUint32 set, const void* pData)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(descriptorUpdateTemplate);
+	DE_UNREF(layout);
+	DE_UNREF(set);
+	DE_UNREF(pData);
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -1514,5 +1553,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkRegisterObjectsNVX,								registerObjectsNVX),
 	VK_NULL_FUNC_ENTRY(vkUnregisterObjectsNVX,								unregisterObjectsNVX),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX,	getPhysicalDeviceGeneratedCommandsPropertiesNVX),
+	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetKHR,							cmdPushDescriptorSetKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDescriptorUpdateTemplateKHR,					createDescriptorUpdateTemplateKHR),
+	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorUpdateTemplateKHR,				destroyDescriptorUpdateTemplateKHR),
+	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplateKHR,				updateDescriptorSetWithTemplateKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetWithTemplateKHR,				cmdPushDescriptorSetWithTemplateKHR),
 };
 

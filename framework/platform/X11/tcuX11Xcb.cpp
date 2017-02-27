@@ -150,8 +150,12 @@ void XcbWindow::setDimensions (int width, int height)
 		{
 			if (XCB_PROPERTY_NOTIFY == (event->response_type & ~0x80))
 			{
-				deFree(event);
-				break;
+				const xcb_property_notify_event_t* pnEvent = (xcb_property_notify_event_t*)event;
+				if (pnEvent->atom == XCB_ATOM_RESOLUTION)
+				{
+					deFree(event);
+					break;
+				}
 			}
 			deFree(event);
 		}

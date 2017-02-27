@@ -329,6 +329,13 @@ public:
 						{}
 };
 
+class DescriptorUpdateTemplateKHR
+{
+public:
+	DescriptorUpdateTemplateKHR (VkDevice, const VkDescriptorUpdateTemplateCreateInfoKHR*) {}
+};
+
+
 class CommandPool
 {
 public:
