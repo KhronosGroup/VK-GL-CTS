@@ -1,38 +1,39 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
-template<> const char*	getTypeName<VkInstance>						(void) { return "VkInstance";					}
-template<> const char*	getTypeName<VkPhysicalDevice>				(void) { return "VkPhysicalDevice";				}
-template<> const char*	getTypeName<VkDevice>						(void) { return "VkDevice";						}
-template<> const char*	getTypeName<VkQueue>						(void) { return "VkQueue";						}
-template<> const char*	getTypeName<VkSemaphore>					(void) { return "VkSemaphore";					}
-template<> const char*	getTypeName<VkCommandBuffer>				(void) { return "VkCommandBuffer";				}
-template<> const char*	getTypeName<VkFence>						(void) { return "VkFence";						}
-template<> const char*	getTypeName<VkDeviceMemory>					(void) { return "VkDeviceMemory";				}
-template<> const char*	getTypeName<VkBuffer>						(void) { return "VkBuffer";						}
-template<> const char*	getTypeName<VkImage>						(void) { return "VkImage";						}
-template<> const char*	getTypeName<VkEvent>						(void) { return "VkEvent";						}
-template<> const char*	getTypeName<VkQueryPool>					(void) { return "VkQueryPool";					}
-template<> const char*	getTypeName<VkBufferView>					(void) { return "VkBufferView";					}
-template<> const char*	getTypeName<VkImageView>					(void) { return "VkImageView";					}
-template<> const char*	getTypeName<VkShaderModule>					(void) { return "VkShaderModule";				}
-template<> const char*	getTypeName<VkPipelineCache>				(void) { return "VkPipelineCache";				}
-template<> const char*	getTypeName<VkPipelineLayout>				(void) { return "VkPipelineLayout";				}
-template<> const char*	getTypeName<VkRenderPass>					(void) { return "VkRenderPass";					}
-template<> const char*	getTypeName<VkPipeline>						(void) { return "VkPipeline";					}
-template<> const char*	getTypeName<VkDescriptorSetLayout>			(void) { return "VkDescriptorSetLayout";		}
-template<> const char*	getTypeName<VkSampler>						(void) { return "VkSampler";					}
-template<> const char*	getTypeName<VkDescriptorPool>				(void) { return "VkDescriptorPool";				}
-template<> const char*	getTypeName<VkDescriptorSet>				(void) { return "VkDescriptorSet";				}
-template<> const char*	getTypeName<VkFramebuffer>					(void) { return "VkFramebuffer";				}
-template<> const char*	getTypeName<VkCommandPool>					(void) { return "VkCommandPool";				}
-template<> const char*	getTypeName<VkSurfaceKHR>					(void) { return "VkSurfaceKHR";					}
-template<> const char*	getTypeName<VkSwapchainKHR>					(void) { return "VkSwapchainKHR";				}
-template<> const char*	getTypeName<VkDisplayKHR>					(void) { return "VkDisplayKHR";					}
-template<> const char*	getTypeName<VkDisplayModeKHR>				(void) { return "VkDisplayModeKHR";				}
-template<> const char*	getTypeName<VkDebugReportCallbackEXT>		(void) { return "VkDebugReportCallbackEXT";		}
-template<> const char*	getTypeName<VkObjectTableNVX>				(void) { return "VkObjectTableNVX";				}
-template<> const char*	getTypeName<VkIndirectCommandsLayoutNVX>	(void) { return "VkIndirectCommandsLayoutNVX";	}
+template<> const char*	getTypeName<VkInstance>						(void) { return "VkInstance";						}
+template<> const char*	getTypeName<VkPhysicalDevice>				(void) { return "VkPhysicalDevice";					}
+template<> const char*	getTypeName<VkDevice>						(void) { return "VkDevice";							}
+template<> const char*	getTypeName<VkQueue>						(void) { return "VkQueue";							}
+template<> const char*	getTypeName<VkSemaphore>					(void) { return "VkSemaphore";						}
+template<> const char*	getTypeName<VkCommandBuffer>				(void) { return "VkCommandBuffer";					}
+template<> const char*	getTypeName<VkFence>						(void) { return "VkFence";							}
+template<> const char*	getTypeName<VkDeviceMemory>					(void) { return "VkDeviceMemory";					}
+template<> const char*	getTypeName<VkBuffer>						(void) { return "VkBuffer";							}
+template<> const char*	getTypeName<VkImage>						(void) { return "VkImage";							}
+template<> const char*	getTypeName<VkEvent>						(void) { return "VkEvent";							}
+template<> const char*	getTypeName<VkQueryPool>					(void) { return "VkQueryPool";						}
+template<> const char*	getTypeName<VkBufferView>					(void) { return "VkBufferView";						}
+template<> const char*	getTypeName<VkImageView>					(void) { return "VkImageView";						}
+template<> const char*	getTypeName<VkShaderModule>					(void) { return "VkShaderModule";					}
+template<> const char*	getTypeName<VkPipelineCache>				(void) { return "VkPipelineCache";					}
+template<> const char*	getTypeName<VkPipelineLayout>				(void) { return "VkPipelineLayout";					}
+template<> const char*	getTypeName<VkRenderPass>					(void) { return "VkRenderPass";						}
+template<> const char*	getTypeName<VkPipeline>						(void) { return "VkPipeline";						}
+template<> const char*	getTypeName<VkDescriptorSetLayout>			(void) { return "VkDescriptorSetLayout";			}
+template<> const char*	getTypeName<VkSampler>						(void) { return "VkSampler";						}
+template<> const char*	getTypeName<VkDescriptorPool>				(void) { return "VkDescriptorPool";					}
+template<> const char*	getTypeName<VkDescriptorSet>				(void) { return "VkDescriptorSet";					}
+template<> const char*	getTypeName<VkFramebuffer>					(void) { return "VkFramebuffer";					}
+template<> const char*	getTypeName<VkCommandPool>					(void) { return "VkCommandPool";					}
+template<> const char*	getTypeName<VkSurfaceKHR>					(void) { return "VkSurfaceKHR";						}
+template<> const char*	getTypeName<VkSwapchainKHR>					(void) { return "VkSwapchainKHR";					}
+template<> const char*	getTypeName<VkDisplayKHR>					(void) { return "VkDisplayKHR";						}
+template<> const char*	getTypeName<VkDisplayModeKHR>				(void) { return "VkDisplayModeKHR";					}
+template<> const char*	getTypeName<VkDebugReportCallbackEXT>		(void) { return "VkDebugReportCallbackEXT";			}
+template<> const char*	getTypeName<VkObjectTableNVX>				(void) { return "VkObjectTableNVX";					}
+template<> const char*	getTypeName<VkIndirectCommandsLayoutNVX>	(void) { return "VkIndirectCommandsLayoutNVX";		}
+template<> const char*	getTypeName<VkDescriptorUpdateTemplateKHR>	(void) { return "VkDescriptorUpdateTemplateKHR";	}
 
 namespace pt
 {
@@ -183,6 +184,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR:					return "VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT:									return "VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR:				return "VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX:							return "VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX:				return "VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_CMD_PROCESS_COMMANDS_INFO_NVX:							return "VK_STRUCTURE_TYPE_CMD_PROCESS_COMMANDS_INFO_NVX";
@@ -926,6 +929,16 @@ const char* getObjectEntryTypeNVXName (VkObjectEntryTypeNVX value)
 	}
 }
 
+const char* getDescriptorUpdateTemplateTypeKHRName (VkDescriptorUpdateTemplateTypeKHR value)
+{
+	switch (value)
+	{
+		case VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR:		return "VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR";
+		case VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR:	return "VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR";
+		default:														return DE_NULL;
+	}
+}
+
 tcu::Format::Bitfield<32> getFormatFeatureFlagsStr (VkFormatFeatureFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -1202,6 +1215,15 @@ tcu::Format::Bitfield<32> getColorComponentFlagsStr (VkColorComponentFlags value
 		tcu::Format::BitDesc(VK_COLOR_COMPONENT_G_BIT,	"VK_COLOR_COMPONENT_G_BIT"),
 		tcu::Format::BitDesc(VK_COLOR_COMPONENT_B_BIT,	"VK_COLOR_COMPONENT_B_BIT"),
 		tcu::Format::BitDesc(VK_COLOR_COMPONENT_A_BIT,	"VK_COLOR_COMPONENT_A_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getDescriptorSetLayoutCreateFlagsStr (VkDescriptorSetLayoutCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR,	"VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1531,11 +1553,6 @@ tcu::Format::Bitfield<32> getSamplerCreateFlagsStr (VkSamplerCreateFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getDescriptorSetLayoutCreateFlagsStr (VkDescriptorSetLayoutCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
 tcu::Format::Bitfield<32> getDescriptorPoolResetFlagsStr (VkDescriptorPoolResetFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
@@ -1602,6 +1619,11 @@ tcu::Format::Bitfield<32> getWin32SurfaceCreateFlagsKHRStr (VkWin32SurfaceCreate
 }
 
 tcu::Format::Bitfield<32> getCommandPoolTrimFlagsKHRStr (VkCommandPoolTrimFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getDescriptorUpdateTemplateCreateFlagsKHRStr (VkDescriptorUpdateTemplateCreateFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -3775,6 +3797,46 @@ std::ostream& operator<< (std::ostream& s, const VkObjectTablePushConstantEntryN
 	s << "\tflags = " << getObjectEntryUsageFlagsNVXStr(value.flags) << '\n';
 	s << "\tpipelineLayout = " << value.pipelineLayout << '\n';
 	s << "\tstageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePushDescriptorPropertiesKHR& value)
+{
+	s << "VkPhysicalDevicePushDescriptorPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxPushDescriptors = " << value.maxPushDescriptors << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorUpdateTemplateEntryKHR& value)
+{
+	s << "VkDescriptorUpdateTemplateEntryKHR = {\n";
+	s << "\tdstBinding = " << value.dstBinding << '\n';
+	s << "\tdstArrayElement = " << value.dstArrayElement << '\n';
+	s << "\tdescriptorCount = " << value.descriptorCount << '\n';
+	s << "\tdescriptorType = " << value.descriptorType << '\n';
+	s << "\toffset = " << value.offset << '\n';
+	s << "\tstride = " << value.stride << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorUpdateTemplateCreateInfoKHR& value)
+{
+	s << "VkDescriptorUpdateTemplateCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDescriptorUpdateTemplateCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tdescriptorUpdateEntryCount = " << value.descriptorUpdateEntryCount << '\n';
+	s << "\tpDescriptorUpdateEntries = " << value.pDescriptorUpdateEntries << '\n';
+	s << "\ttemplateType = " << value.templateType << '\n';
+	s << "\tdescriptorSetLayout = " << value.descriptorSetLayout << '\n';
+	s << "\tpipelineBindPoint = " << value.pipelineBindPoint << '\n';
+	s << "\tpipelineLayout = " << value.pipelineLayout << '\n';
+	s << "\tset = " << value.set << '\n';
 	s << '}';
 	return s;
 }

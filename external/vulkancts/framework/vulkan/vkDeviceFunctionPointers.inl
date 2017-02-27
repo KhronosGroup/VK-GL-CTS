@@ -145,3 +145,8 @@ DestroyObjectTableNVXFunc							destroyObjectTableNVX;
 RegisterObjectsNVXFunc								registerObjectsNVX;
 UnregisterObjectsNVXFunc							unregisterObjectsNVX;
 GetPhysicalDeviceGeneratedCommandsPropertiesNVXFunc	getPhysicalDeviceGeneratedCommandsPropertiesNVX;
+CmdPushDescriptorSetKHRFunc							cmdPushDescriptorSetKHR;
+CreateDescriptorUpdateTemplateKHRFunc				createDescriptorUpdateTemplateKHR;
+DestroyDescriptorUpdateTemplateKHRFunc				destroyDescriptorUpdateTemplateKHR;
+UpdateDescriptorSetWithTemplateKHRFunc				updateDescriptorSetWithTemplateKHR;
+CmdPushDescriptorSetWithTemplateKHRFunc				cmdPushDescriptorSetWithTemplateKHR;

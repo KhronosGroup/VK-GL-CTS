@@ -66,7 +66,7 @@ DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::addBinding (VkDescriptor
 	return *this;
 }
 
-Move<VkDescriptorSetLayout> DescriptorSetLayoutBuilder::build (const DeviceInterface& vk, VkDevice device) const
+Move<VkDescriptorSetLayout> DescriptorSetLayoutBuilder::build (const DeviceInterface& vk, VkDevice device, VkDescriptorSetLayoutCreateFlags extraFlags) const
 {
 	// Create new layout bindings with pImmutableSamplers updated
 	std::vector<VkDescriptorSetLayoutBinding>	bindings	= m_bindings;
@@ -82,7 +82,7 @@ Move<VkDescriptorSetLayout> DescriptorSetLayoutBuilder::build (const DeviceInter
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 		DE_NULL,
-		(VkDescriptorSetLayoutCreateFlags)0,					// flags
+		(VkDescriptorSetLayoutCreateFlags)extraFlags,			// flags
 		(deUint32)bindings.size(),								// bindingCount
 		(bindings.empty()) ? (DE_NULL) : (bindings.data()),		// pBinding
 	};
@@ -241,6 +241,30 @@ void DescriptorSetUpdateBuilder::update (const DeviceInterface& vk, VkDevice dev
 	const VkCopyDescriptorSet* const	copyPtr		= (m_copies.empty()) ? (DE_NULL) : (&m_copies[0]);
 
 	vk.updateDescriptorSets(device, (deUint32)writes.size(), writePtr, (deUint32)m_copies.size(), copyPtr);
+}
+
+void DescriptorSetUpdateBuilder::updateWithPush (const DeviceInterface& vk, VkCommandBuffer cmd, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout, deUint32 setIdx) const
+{
+	// Update VkWriteDescriptorSet structures with stored info
+	std::vector<VkWriteDescriptorSet> writes	= m_writes;
+
+	for (size_t writeNdx = 0; writeNdx < m_writes.size(); writeNdx++)
+	{
+		const WriteDescriptorInfo& writeInfo = m_writeDescriptorInfos[writeNdx];
+
+		if (!writeInfo.imageInfos.empty())
+			writes[writeNdx].pImageInfo			= &writeInfo.imageInfos[0];
+
+		if (!writeInfo.bufferInfos.empty())
+			writes[writeNdx].pBufferInfo		= &writeInfo.bufferInfos[0];
+
+		if (!writeInfo.texelBufferViews.empty())
+			writes[writeNdx].pTexelBufferView	= &writeInfo.texelBufferViews[0];
+	}
+
+	const VkWriteDescriptorSet* const	writePtr	= (m_writes.empty()) ? (DE_NULL) : (&writes[0]);
+
+	vk.cmdPushDescriptorSetKHR(cmd, bindPoint, pipelineLayout, setIdx, (deUint32)m_writes.size(), writePtr);
 }
 
 } // vk

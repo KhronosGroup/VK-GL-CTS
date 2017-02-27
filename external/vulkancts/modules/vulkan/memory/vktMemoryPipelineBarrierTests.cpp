@@ -9508,6 +9508,7 @@ struct AddPrograms
 				fragmentShader <<
 					"#version 310 es\n"
 					"precision highp float;\n"
+					"precision highp int;\n"
 					"layout(location = 0) out highp vec4 o_color;\n"
 					"layout(set=0, binding=0) uniform Block\n"
 					"{\n"
@@ -9647,6 +9648,7 @@ struct AddPrograms
 					"#version 310 es\n"
 					"#extension GL_EXT_texture_buffer : require\n"
 					"precision highp float;\n"
+					"precision highp int;\n"
 					"layout(set=0, binding=0) uniform highp usamplerBuffer u_sampler;\n"
 					"layout(location = 0) out highp vec4 o_color;\n"
 					"layout(push_constant) uniform PushC\n"
@@ -9706,6 +9708,7 @@ struct AddPrograms
 					"#version 310 es\n"
 					"#extension GL_EXT_texture_buffer : require\n"
 					"precision highp float;\n"
+					"precision highp int;\n"
 					"layout(set=0, binding=0, r32ui) uniform readonly highp uimageBuffer u_sampler;\n"
 					"layout(location = 0) out highp vec4 o_color;\n"
 					"layout(push_constant) uniform PushC\n"
