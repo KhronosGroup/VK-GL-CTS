@@ -136,6 +136,12 @@ void Deleter<VkObjectTableNVX>::operator() (VkObjectTableNVX obj) const
 	m_deviceIface->destroyObjectTableNVX(m_device, obj, m_allocator);
 }
 
+template<>
+void Deleter<VkDescriptorUpdateTemplateKHR>::operator() (VkDescriptorUpdateTemplateKHR obj) const
+{
+	m_deviceIface->destroyDescriptorUpdateTemplateKHR(m_device, obj, m_allocator);
+}
+
 } // refdetails
 
 Move<VkInstance> createInstance (const PlatformInterface& vk, const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
@@ -360,5 +366,12 @@ Move<VkObjectTableNVX> createObjectTableNVX (const DeviceInterface& vk, VkDevice
 	VkObjectTableNVX object = 0;
 	VK_CHECK(vk.createObjectTableNVX(device, pCreateInfo, pAllocator, &object));
 	return Move<VkObjectTableNVX>(check<VkObjectTableNVX>(object), Deleter<VkObjectTableNVX>(vk, device, pAllocator));
+}
+
+Move<VkDescriptorUpdateTemplateKHR> createDescriptorUpdateTemplateKHR (const DeviceInterface& vk, VkDevice device, const VkDescriptorUpdateTemplateCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkDescriptorUpdateTemplateKHR object = 0;
+	VK_CHECK(vk.createDescriptorUpdateTemplateKHR(device, pCreateInfo, pAllocator, &object));
+	return Move<VkDescriptorUpdateTemplateKHR>(check<VkDescriptorUpdateTemplateKHR>(object), Deleter<VkDescriptorUpdateTemplateKHR>(vk, device, pAllocator));
 }
 

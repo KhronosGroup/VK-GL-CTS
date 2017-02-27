@@ -145,3 +145,8 @@ virtual void		destroyObjectTableNVX							(VkDevice device, VkObjectTableNVX obj
 virtual VkResult	registerObjectsNVX								(VkDevice device, VkObjectTableNVX objectTable, deUint32 objectCount, const VkObjectTableEntryNVX* const* ppObjectTableEntries, const deUint32* pObjectIndices) const;
 virtual VkResult	unregisterObjectsNVX							(VkDevice device, VkObjectTableNVX objectTable, deUint32 objectCount, const VkObjectEntryTypeNVX* pObjectEntryTypes, const deUint32* pObjectIndices) const;
 virtual void		getPhysicalDeviceGeneratedCommandsPropertiesNVX	(VkPhysicalDevice physicalDevice, VkDeviceGeneratedCommandsFeaturesNVX* pFeatures, VkDeviceGeneratedCommandsLimitsNVX* pLimits) const;
+virtual void		cmdPushDescriptorSetKHR							(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, deUint32 set, deUint32 descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites) const;
+virtual VkResult	createDescriptorUpdateTemplateKHR				(VkDevice device, const VkDescriptorUpdateTemplateCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorUpdateTemplateKHR* pDescriptorUpdateTemplate) const;
+virtual void		destroyDescriptorUpdateTemplateKHR				(VkDevice device, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const VkAllocationCallbacks* pAllocator) const;
+virtual void		updateDescriptorSetWithTemplateKHR				(VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const void* pData) const;
+virtual void		cmdPushDescriptorSetWithTemplateKHR				(VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, VkPipelineLayout layout, deUint32 set, const void* pData) const;

@@ -181,7 +181,7 @@ TYPE_SUBSTITUTIONS		= [
 	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*")
 ]
 
-EXTENSION_POSTFIXES		= ["KHR", "EXT", "NV", "NVX"]
+EXTENSION_POSTFIXES		= ["KHR", "EXT", "NV", "NVX", "KHX"]
 
 class Handle:
 	TYPE_DISP		= 0

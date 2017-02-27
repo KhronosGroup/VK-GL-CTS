@@ -439,15 +439,21 @@ TestStatus BuiltinGlPointCoordCaseInstance::iterate (void)
 	Surface					resImage		(width, height);
 	Surface					refImage		(width, height);
 	bool					compareOk		= false;
-	VkPhysicalDeviceLimits	limits			= m_context.getDeviceProperties().limits;
 
 	// Compute coordinates.
 	{
+		const VkPhysicalDeviceLimits&	limits					= m_context.getDeviceProperties().limits;
+		const float						minPointSize			= limits.pointSizeRange[0];
+		const float						maxPointSize			= limits.pointSizeRange[1];
+		const int						pointSizeDeltaMultiples	= de::max(1, deCeilFloatToInt32((maxPointSize - minPointSize) / limits.pointSizeGranularity));
+
+		TCU_CHECK(minPointSize <= maxPointSize);
+
 		for (vector<Vec3>::iterator coord = coords.begin(); coord != coords.end(); ++coord)
 		{
 			coord->x() = rnd.getFloat(-0.9f, 0.9f);
 			coord->y() = rnd.getFloat(-0.9f, 0.9f);
-			coord->z() = limits.pointSizeRange[0] + float(rnd.getInt(0, int((limits.pointSizeRange[1] - limits.pointSizeRange[0]) / limits.pointSizeGranularity))) * limits.pointSizeGranularity;
+			coord->z() = de::min(maxPointSize, minPointSize + float(rnd.getInt(0, pointSizeDeltaMultiples)) * limits.pointSizeGranularity);
 		}
 	}
 
@@ -458,12 +464,16 @@ TestStatus BuiltinGlPointCoordCaseInstance::iterate (void)
 
 	// Draw reference
 	clear(refImage.getAccess(), m_clearColor);
+
 	for (vector<Vec3>::const_iterator pointIter = coords.begin(); pointIter != coords.end(); ++pointIter)
 	{
-		const int	x0		= deRoundFloatToInt32(float(width) *(pointIter->x()*0.5f + 0.5f) - pointIter->z()*0.5f);
-		const int	y0		= deRoundFloatToInt32(float(height)*(pointIter->y()*0.5f + 0.5f) - pointIter->z()*0.5f);
-		const int	x1		= deRoundFloatToInt32(float(width) *(pointIter->x()*0.5f + 0.5f) + pointIter->z()*0.5f);
-		const int	y1		= deRoundFloatToInt32(float(height)*(pointIter->y()*0.5f + 0.5f) + pointIter->z()*0.5f);
+		const float	centerX	= float(width) *(pointIter->x()*0.5f + 0.5f);
+		const float	centerY	= float(height)*(pointIter->y()*0.5f + 0.5f);
+		const float	size	= pointIter->z();
+		const int	x0		= deRoundFloatToInt32(centerX - size*0.5f);
+		const int	y0		= deRoundFloatToInt32(centerY - size*0.5f);
+		const int	x1		= deRoundFloatToInt32(centerX + size*0.5f);
+		const int	y1		= deRoundFloatToInt32(centerY + size*0.5f);
 		const int	w		= x1-x0;
 		const int	h		= y1-y0;
 
@@ -471,11 +481,13 @@ TestStatus BuiltinGlPointCoordCaseInstance::iterate (void)
 		{
 			for (int xo = 0; xo < w; xo++)
 			{
-				const float		xf		= (float(xo)+0.5f) / float(w);
-				const float		yf		= (float(yo)+0.5f) / float(h);
-				const Vec4		color	(xf, yf, 0.0f, 1.0f);
 				const int		dx		= x0+xo;
 				const int		dy		= y0+yo;
+				const float		fragX	= float(dx) + 0.5f;
+				const float		fragY	= float(dy) + 0.5f;
+				const float		s		= 0.5f + (fragX - centerX) / size;
+				const float		t		= 0.5f + (fragY - centerY) / size;
+				const Vec4		color	(s, t, 0.0f, 1.0f);
 
 				if (de::inBounds(dx, 0, refImage.getWidth()) && de::inBounds(dy, 0, refImage.getHeight()))
 					refImage.setPixel(dx, dy, RGBA(color));

@@ -301,31 +301,50 @@ void initPrograms (vk::SourceCollections& programCollection, const CaseDefinitio
 	}
 
 	// Tessellation evaluation shader
+	// When using point mode we need two variants of the shader, one for the case where
+	// shaderTessellationAndGeometryPointSize is enabled (in which the tessellation evaluation
+	// shader needs to write to gl_PointSize for it to be defined) and one for the case where
+	// it is disabled, in which we can't write to gl_PointSize but it has a default value
+	// of 1.0
 	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "#extension GL_EXT_tessellation_shader : require\n"
-			<< "\n"
-			<< "layout(" << getTessPrimitiveTypeShaderName(caseDef.primitiveType) << ", "
-						 << getSpacingModeShaderName(caseDef.spacingMode) << ", "
-						 << getWindingShaderName(caseDef.winding)
-						 << (caseDef.usePointMode ? ", point_mode" : "") << ") in;\n"
-			<< "\n"
-			<< "layout(location = 0) patch in highp vec2 in_te_positionScale;\n"
-			<< "layout(location = 1) patch in highp vec2 in_te_positionOffset;\n"
-			<< "\n"
-			<< "layout(set = 0, binding = 0, std430) coherent restrict buffer Output {\n"
-			<< "    int  numInvocations;\n"
-			<< "} sb_out;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    atomicAdd(sb_out.numInvocations, 1);\n"
-			<< "\n"
-			<< "    gl_Position = vec4(gl_TessCoord.xy*in_te_positionScale + in_te_positionOffset, 0.0, 1.0);\n"
-			<< "}\n";
+		const deUint32	numVariants			= caseDef.usePointMode ? 2 : 1;
+		for (deUint32 variant = 0; variant < numVariants; variant++)
+		{
+			const bool	needPointSizeWrite	= caseDef.usePointMode && variant == 1;
 
-		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "#extension GL_EXT_tessellation_shader : require\n";
+			if (needPointSizeWrite)
+			{
+				src << "#extension GL_EXT_tessellation_point_size : require\n";
+			}
+			src << "\n"
+				<< "layout(" << getTessPrimitiveTypeShaderName(caseDef.primitiveType) << ", "
+							 << getSpacingModeShaderName(caseDef.spacingMode) << ", "
+							 << getWindingShaderName(caseDef.winding)
+							 << (caseDef.usePointMode ? ", point_mode" : "") << ") in;\n"
+				<< "\n"
+				<< "layout(location = 0) patch in highp vec2 in_te_positionScale;\n"
+				<< "layout(location = 1) patch in highp vec2 in_te_positionOffset;\n"
+				<< "\n"
+				<< "layout(set = 0, binding = 0, std430) coherent restrict buffer Output {\n"
+				<< "    int  numInvocations;\n"
+				<< "} sb_out;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    atomicAdd(sb_out.numInvocations, 1);\n"
+				<< "\n"
+				<< "    gl_Position = vec4(gl_TessCoord.xy*in_te_positionScale + in_te_positionOffset, 0.0, 1.0);\n";
+			if (needPointSizeWrite)
+			{
+				src << "    gl_PointSize = 1.0;\n";
+			}
+			src << "}\n";
+
+			programCollection.glslSources.add(needPointSizeWrite ? "tese_psw" : "tese") << glu::TessellationEvaluationSource(src.str());
+		}
 	}
 
 	// Fragment shader
@@ -449,6 +468,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	const Unique<VkPipelineLayout> pipelineLayout	  (makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkCommandPool>	   cmdPool			  (makeCommandPool	 (vk, device, queueFamilyIndex));
 	const Unique<VkCommandBuffer>  cmdBuffer		  (makeCommandBuffer (vk, device, *cmdPool));
+	const bool					   needPointSizeWrite = getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice()).shaderTessellationAndGeometryPointSize && caseDef.usePointMode;
 
 	const Unique<VkPipeline> pipeline(GraphicsPipelineBuilder()
 		.setRenderSize				  (renderSize)
@@ -456,7 +476,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 		.setVertexInputSingleAttribute(vertexFormat, vertexStride)
 		.setShader					  (vk, device, VK_SHADER_STAGE_VERTEX_BIT,					context.getBinaryCollection().get("vert"), DE_NULL)
 		.setShader					  (vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,	context.getBinaryCollection().get("tesc"), DE_NULL)
-		.setShader					  (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, context.getBinaryCollection().get("tese"), DE_NULL)
+		.setShader					  (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, context.getBinaryCollection().get(needPointSizeWrite ? "tese_psw" : "tese"), DE_NULL)
 		.setShader					  (vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,				context.getBinaryCollection().get("frag"), DE_NULL)
 		.build						  (vk, device, *pipelineLayout, *renderPass));
 
