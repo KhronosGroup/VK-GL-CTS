@@ -48,9 +48,7 @@ VkPhysicalDeviceFeatures filterDefaultDeviceFeatures (const VkPhysicalDeviceFeat
 	return enabledDeviceFeatures;
 }
 
-} // anonymous
-
-bool is16BitStorageFeaturesSupported (const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions, Extension16BitStorageFeatures toCheck)
+VkPhysicalDevice16BitStorageFeaturesKHR	querySupported16BitStorageFeatures (const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions)
 {
 	VkPhysicalDevice16BitStorageFeaturesKHR	extensionFeatures	=
 	{
@@ -73,6 +71,15 @@ bool is16BitStorageFeaturesSupported (const InstanceInterface& vki, VkPhysicalDe
 		vki.getPhysicalDeviceFeatures2KHR(device, &features);
 	}
 
+	return extensionFeatures;
+}
+
+} // anonymous
+
+bool is16BitStorageFeaturesSupported (const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions, Extension16BitStorageFeatures toCheck)
+{
+	VkPhysicalDevice16BitStorageFeaturesKHR extensionFeatures	= querySupported16BitStorageFeatures(vki, device, instanceExtensions);
+
 	if ((toCheck & EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK) != 0 && extensionFeatures.storageUniformBufferBlock16 == VK_FALSE)
 		return false;
 
@@ -88,13 +95,15 @@ bool is16BitStorageFeaturesSupported (const InstanceInterface& vki, VkPhysicalDe
 	return true;
 }
 
-Move<VkDevice> createDeviceWithExtensions (const InstanceInterface&			vki,
-										   VkPhysicalDevice					physicalDevice,
+Move<VkDevice> createDeviceWithExtensions (Context&							context,
 										   const deUint32					queueFamilyIndex,
 										   const std::vector<std::string>&	supportedExtensions,
 										   const std::vector<std::string>&	requiredExtensions)
 {
-	std::vector<const char*>		extensions			(requiredExtensions.size());
+	const InstanceInterface&		vki								= context.getInstanceInterface();
+	const VkPhysicalDevice			physicalDevice					= context.getPhysicalDevice();
+	std::vector<const char*>		extensions						(requiredExtensions.size());
+	bool							requires16BitStorageExtension	= false;
 
 	for (deUint32 extNdx = 0; extNdx < requiredExtensions.size(); ++extNdx)
 	{
@@ -106,8 +115,18 @@ Move<VkDevice> createDeviceWithExtensions (const InstanceInterface&			vki,
 			TCU_THROW(NotSupportedError, (std::string("Device extension not supported: ") + ext).c_str());
 		}
 
+		if (ext == "VK_KHR_16bit_storage")
+		{
+			requires16BitStorageExtension = true;
+		}
+
 		extensions[extNdx] = ext.c_str();
 	}
+
+	// For the 16bit storage extension, we have four features to test. Requesting all features supported.
+	// Note that we don't throw NotImplemented errors here if a specific feature is not supported;
+	// that should be done when actually trying to use that specific feature.
+	VkPhysicalDevice16BitStorageFeaturesKHR	ext16BitStorageFeatures	= querySupported16BitStorageFeatures(vki, physicalDevice, context.getInstanceExtensions());
 
 	const float						queuePriorities[]	= { 1.0f };
 	const VkDeviceQueueCreateInfo	queueInfos[]		=
@@ -125,7 +144,7 @@ Move<VkDevice> createDeviceWithExtensions (const InstanceInterface&			vki,
 	const VkDeviceCreateInfo		deviceParams		=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		DE_NULL,
+		(requires16BitStorageExtension ? &ext16BitStorageFeatures : DE_NULL),
 		(VkDeviceCreateFlags)0,
 		DE_LENGTH_OF_ARRAY(queueInfos),
 		&queueInfos[0],

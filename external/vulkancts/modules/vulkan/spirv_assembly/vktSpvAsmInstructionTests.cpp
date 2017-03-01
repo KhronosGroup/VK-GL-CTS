@@ -48,6 +48,7 @@
 #include "deUniquePtr.hpp"
 #include "tcuStringTemplate.hpp"
 
+#include "vktSpvAsm16bitStorageTests.hpp"
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
@@ -3455,7 +3456,6 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 
 		return group.release();
 }
-
 } // anonymous
 
 tcu::TestCaseGroup* createOpSourceTests (tcu::TestContext& testCtx)
@@ -6766,6 +6766,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpCompositeInsertGroup(testCtx));
 	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
 	computeTests->addChild(createShaderDefaultOutputGroup(testCtx));
+	computeTests->addChild(create16BitStorageComputeGroup(testCtx));
 
 	graphicsTests->addChild(createOpNopTests(testCtx));
 	graphicsTests->addChild(createOpSourceTests(testCtx));
@@ -6788,6 +6789,8 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createBarrierTests(testCtx));
 	graphicsTests->addChild(createDecorationGroupTests(testCtx));
 	graphicsTests->addChild(createFRemTests(testCtx));
+
+	graphicsTests->addChild(create16BitStorageGraphicsGroup(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
