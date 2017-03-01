@@ -1506,6 +1506,7 @@ public:
 
 	deUint32						getInputAttachmentCount			(void) const { return (deUint32)m_inputAttachments.size(); }
 	deUint32						getInputAttachmentIndex			(deUint32 attachmentNdx) const { return m_inputAttachments[attachmentNdx].getAttachment(); }
+	VkImageLayout					getInputAttachmentLayout		(deUint32 attachmentNdx) const { return m_inputAttachments[attachmentNdx].getImageLayout(); }
 
 	deUint32						getColorAttachmentCount			(void) const { return (deUint32)m_colorAttachments.size(); }
 	VkImageLayout					getColorAttachmentLayout		(deUint32 attachmentNdx) const { return m_colorAttachments[attachmentNdx].getImageLayout(); }
@@ -1904,10 +1905,11 @@ public:
 
 					for (deUint32 inputAttachmentNdx = 0; inputAttachmentNdx < renderInfo.getInputAttachmentCount(); inputAttachmentNdx++)
 					{
-						const Attachment			attachmentInfo	= attachmentInfos[renderInfo.getInputAttachmentIndex(inputAttachmentNdx)];
-						const tcu::TextureFormat	format			= mapVkFormat(attachmentInfo.getFormat());
-						const bool					isDepthFormat	= tcu::hasDepthComponent(format.order);
-						const bool					isStencilFormat	= tcu::hasStencilComponent(format.order);
+						const Attachment			attachmentInfo			= attachmentInfos[renderInfo.getInputAttachmentIndex(inputAttachmentNdx)];
+						const tcu::TextureFormat	format					= mapVkFormat(attachmentInfo.getFormat());
+						const bool					isDepthFormat			= tcu::hasDepthComponent(format.order);
+						const bool					isStencilFormat			= tcu::hasStencilComponent(format.order);
+						const VkImageLayout			inputAttachmentLayout	= renderInfo.getInputAttachmentLayout(inputAttachmentNdx);
 
 						if (isDepthFormat && isStencilFormat)
 						{
@@ -1916,7 +1918,7 @@ public:
 								{
 									(VkSampler)0,
 									attachmentViews[renderInfo.getInputAttachmentIndex(inputAttachmentNdx)].first,
-									VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+									inputAttachmentLayout
 								};
 								imageInfos[bindingIndex] = imageInfo;
 
@@ -1945,7 +1947,7 @@ public:
 								{
 									(VkSampler)0,
 									attachmentViews[renderInfo.getInputAttachmentIndex(inputAttachmentNdx)].second,
-									VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+									inputAttachmentLayout
 								};
 								imageInfos[bindingIndex] = imageInfo;
 
@@ -1976,7 +1978,7 @@ public:
 							{
 								(VkSampler)0,
 								attachmentViews[renderInfo.getInputAttachmentIndex(inputAttachmentNdx)].first,
-								VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+								inputAttachmentLayout
 							};
 							imageInfos[bindingIndex] = imageInfo;
 

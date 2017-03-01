@@ -490,9 +490,18 @@ void validateAllocationCallbacks (const AllocationCallbackRecorder& recorder, Al
 
 					if (record.data.reallocation.returnedPtr)
 					{
-						DE_ASSERT(!de::contains(ptrToSlotIndex, record.data.reallocation.returnedPtr));
-						ptrToSlotIndex[record.data.reallocation.returnedPtr] = allocations.size();
-						allocations.push_back(AllocationSlot(record, true));
+						if (!de::contains(ptrToSlotIndex, record.data.reallocation.returnedPtr))
+						{
+							ptrToSlotIndex[record.data.reallocation.returnedPtr] = allocations.size();
+							allocations.push_back(AllocationSlot(record, true));
+						}
+						else
+						{
+							const size_t slotNdx = ptrToSlotIndex[record.data.reallocation.returnedPtr];
+							DE_ASSERT(!allocations[slotNdx].isLive);
+							allocations[slotNdx].isLive = true;
+							allocations[slotNdx].record = record;
+						}
 					}
 				}
 
