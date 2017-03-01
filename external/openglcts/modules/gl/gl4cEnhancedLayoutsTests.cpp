@@ -520,14 +520,23 @@ GLuint Type::GetLocations() const
 	return n_loc_per_column * m_n_columns;
 }
 
-/** Get size of the type in bytes. Note that this routine assumes tightly packing
+/** Get size of the type in bytes.
+ * Note that this routine doesn't consider arrays and assumes
+ * column_major matrices.
  *
- * @return Formula Number of columns * number of rows * sizeof(base_type)
+ * @return Formula:
+ *          - If std140 packaging and matrix; number of columns * base alignment
+ *          - Otherwise; number of elements * sizeof(base_type)
  **/
-GLuint Type::GetSize() const
+GLuint Type::GetSize(const bool is_std140) const
 {
 	const GLuint basic_type_size = GetTypeSize(m_basic_type);
 	const GLuint n_elements		 = m_n_columns * m_n_rows;
+
+	if (is_std140 && m_n_columns > 1)
+	{
+		return m_n_columns * GetBaseAlignment(false);
+	}
 
 	return basic_type_size * n_elements;
 }
@@ -9345,7 +9354,7 @@ void UniformBlockMemberInvalidOffsetAlignmentTest::testInit()
 	{
 		const Utils::Type& type		  = getType(i);
 		const GLuint	   alignment  = type.GetBaseAlignment(false);
-		const GLuint	   type_size  = type.GetSize();
+		const GLuint	   type_size  = type.GetSize(true);
 		const GLuint	   sec_to_end = max_size - 2 * type_size;
 
 		for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)

@@ -66,9 +66,9 @@ public:
 	std::string GetGLSLConstructor(const glw::GLvoid* data) const;
 	const glw::GLchar* GetGLSLTypeName() const;
 	glw::GLuint		   GetLocations() const;
-	glw::GLuint		   GetSize() const;
-	glw::GLenum		   GetTypeGLenum() const;
-	glw::GLuint		   GetNumComponents() const;
+	glw::GLuint GetSize(const bool is_std140 = false) const;
+	glw::GLenum GetTypeGLenum() const;
+	glw::GLuint GetNumComponents() const;
 
 	/* Public static routines */
 	/* Functionality */
