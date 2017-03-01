@@ -27,6 +27,7 @@
 #include "vkMemUtil.hpp"
 #include "vkRef.hpp"
 #include "vkTypeUtil.hpp"
+#include "vktTestCase.hpp"
 
 #include <string>
 #include <vector>
@@ -64,10 +65,9 @@ bool is16BitStorageFeaturesSupported (const vk::InstanceInterface&	vkInstance,
 									  Extension16BitStorageFeatures	toCheck);
 
 // Creates a Vulkan logical device with the requiredExtensions enabled and all other extensions disabled.
-// The logical device will be created from the given instance and physical device. A single queue will
-// be created from the given queue family.
-vk::Move<vk::VkDevice> createDeviceWithExtensions (const vk::InstanceInterface&		vki,
-												   vk::VkPhysicalDevice				physicalDevice,
+// The logical device will be created from the instance and physical device in the given context.
+// A single queue will be created from the given queue family.
+vk::Move<vk::VkDevice> createDeviceWithExtensions (Context&							context,
 												   deUint32							queueFamilyIndex,
 												   const std::vector<std::string>&	supportedExtensions,
 												   const std::vector<std::string>&	requiredExtensions);

@@ -3,6 +3,8 @@
 include_directories(..)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
+	vktSpvAsm16bitStorageTests.cpp
+	vktSpvAsm16bitStorageTests.hpp
 	vktSpvAsmComputeShaderCase.cpp
 	vktSpvAsmComputeShaderCase.hpp
 	vktSpvAsmComputeShaderTestUtil.cpp

@@ -308,7 +308,7 @@ TestInstance* SpvAsmComputeShaderCase::createInstance (Context& ctx) const
 
 SpvAsmComputeShaderInstance::SpvAsmComputeShaderInstance (Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features)
 	: TestInstance		(ctx)
-	, m_device			(createDeviceWithExtensions(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), ctx.getUniversalQueueFamilyIndex(), ctx.getDeviceExtensions(), spec.extensions))
+	, m_device			(createDeviceWithExtensions(ctx, ctx.getUniversalQueueFamilyIndex(), ctx.getDeviceExtensions(), spec.extensions))
 	, m_deviceInterface	(ctx.getInstanceInterface(), *m_device)
 	, m_queue			(getDeviceQueue(m_deviceInterface, *m_device, ctx.getUniversalQueueFamilyIndex(), 0))
 	, m_allocator		(createAllocator(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), m_deviceInterface, *m_device))

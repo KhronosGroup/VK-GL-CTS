@@ -183,6 +183,31 @@ VkBufferUsageFlagBits getMatchingBufferUsageFlagBit(VkDescriptorType dType)
 	return (VkBufferUsageFlagBits)0;
 }
 
+static void requireFormatUsageSupport(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, VkFormat format, VkImageUsageFlags requiredUsageFlags)
+{
+	VkFormatProperties	properties;
+
+	vki.getPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
+
+	if ((requiredUsageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) != 0)
+	{
+		if ((properties.bufferFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
+			TCU_THROW(NotSupportedError, "Image format cannot be used as color attachment");
+		requiredUsageFlags ^= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	}
+
+
+	if ((requiredUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) != 0)
+	{
+		if ((properties.bufferFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR) == 0)
+			TCU_THROW(NotSupportedError, "Image format cannot be used as transfer source");
+		requiredUsageFlags ^= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	}
+
+
+	DE_ASSERT(!requiredUsageFlags && "checking other image usage bits not supported yet");
+}
+
 InstanceContext::InstanceContext (const RGBA						(&inputs)[4],
 								  const RGBA						(&outputs)[4],
 								  const map<string, string>&		testCodeFragments_,
@@ -1067,7 +1092,8 @@ map<string, string> fillInterfacePlaceholderFrag (void)
 		" %IF_input = OpVariable %ip_${input_type} Input\n"
 		"%IF_output = OpVariable %op_${output_type} Output\n";
 	fragments["IF_decoration"]		=
-		"OpDecorate  %IF_input Location 2\n"
+		"OpDecorate %IF_input Flat\n"
+		"OpDecorate %IF_input Location 2\n"
 		"OpDecorate %IF_output Location 1\n";  // Fragment shader should write to location #1.
 	fragments["IF_carryforward"]	=
 		"%IF_input_val = OpLoad %${input_type} %IF_input\n"
@@ -2086,7 +2112,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	const VkPhysicalDevice						vkPhysicalDevice		= context.getPhysicalDevice();
 	const deUint32								queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	// Create a dedicated logic device with required extensions enabled for this test case.
-	const Unique<VkDevice>						vkDevice				(createDeviceWithExtensions(vkInstance, vkPhysicalDevice, queueFamilyIndex, context.getDeviceExtensions(), instance.requiredDeviceExtensions));
+	const Unique<VkDevice>						vkDevice				(createDeviceWithExtensions(context, queueFamilyIndex, context.getDeviceExtensions(), instance.requiredDeviceExtensions));
 	const DeviceDriver							vk						(vkInstance, *vkDevice);
 	const VkQueue								queue					= getDeviceQueue(vk, *vkDevice, queueFamilyIndex, 0);
 	const tcu::UVec2							renderSize				(256, 256);
@@ -2279,6 +2305,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		// Create an additional image and backing memory for attachment.
 		// Reuse the previous imageParams since we only need to change the image format.
 		imageParams.format		= instance.interfaces.getOutputType().getVkFormat();
+
+		// Check the usage bits on the given image format are supported.
+		requireFormatUsageSupport(vkInstance, vkPhysicalDevice, imageParams.format, imageParams.usage);
+
 		fragOutputImage			= createImage(vk, *vkDevice, &imageParams);
 		fragOutputImageMemory	= allocator.allocate(getImageMemoryRequirements(vk, *vkDevice, *fragOutputImage), MemoryRequirement::Any);
 
@@ -3253,6 +3283,21 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 		VK_CHECK(vk.invalidateMappedMemoryRanges(*vkDevice, 1u, &range));
 		context.getTestContext().getLog() << TestLog::Image("Result", "Result", pixelBuffer);
+	}
+
+	if (needInterface)
+	{
+		const VkDeviceSize			fragOutputImgSize	= (VkDeviceSize)(instance.interfaces.getOutputType().getNumBytes() * renderSize.x() * renderSize.y());
+		const VkMappedMemoryRange	range				=
+		{
+			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	//	VkStructureType	sType;
+			DE_NULL,								//	const void*		pNext;
+			fragOutputMemory->getMemory(),			//	VkDeviceMemory	mem;
+			0,										//	VkDeviceSize	offset;
+			fragOutputImgSize,						//	VkDeviceSize	size;
+		};
+
+		VK_CHECK(vk.invalidateMappedMemoryRanges(*vkDevice, 1u, &range));
 	}
 
 	{ // Make sure all output resources are ready.

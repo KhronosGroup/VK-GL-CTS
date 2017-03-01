@@ -49,6 +49,7 @@
 #include "deMath.h"
 #include "tcuStringTemplate.hpp"
 
+#include "vktSpvAsm16bitStorageTests.hpp"
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
@@ -3935,7 +3936,6 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 
 		return group.release();
 }
-
 } // anonymous
 
 tcu::TestCaseGroup* createOpSourceTests (tcu::TestContext& testCtx)
@@ -6340,9 +6340,9 @@ tcu::TestCaseGroup* createOpSModGraphicsTests(tcu::TestContext& testCtx, qpTestR
 
 		createTestsForAllStages(params.name, inputColors, outputColors, fragments, testGroup.get(), params.failResult, params.failMessageTemplate);
 	}
-
 	return testGroup.release();
 }
+
 
 enum IntegerType
 {
@@ -7419,6 +7419,8 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
 	computeTests->addChild(createShaderDefaultOutputGroup(testCtx));
 
+	computeTests->addChild(create16BitStorageComputeGroup(testCtx));
+
 	{
 		de::MovePtr<tcu::TestCaseGroup>	computeAndroidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
 
@@ -7460,6 +7462,8 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 		graphicsTests->addChild(graphicsAndroidTests.release());
 	}
+
+	graphicsTests->addChild(create16BitStorageGraphicsGroup(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
