@@ -43,8 +43,8 @@ public:
 
 	void				initPrograms		(vk::SourceCollections&		programCollection) const;
 
-	virtual std::string sparseImageTypeDecl(const std::string&			imageType,
-											const std::string&			componentType) const = 0;
+	virtual std::string	getSparseImageTypeName				(void) const = 0;
+	virtual std::string	getUniformConstSparseImageTypeName	(void) const = 0;
 
 	virtual std::string	sparseImageOpString (const std::string&			resultVariable,
 											 const std::string&			resultType,
@@ -66,7 +66,8 @@ public:
 
 	TestInstance* createInstance(Context& context) const;
 
-	std::string sparseImageTypeDecl(const std::string& imageType, const std::string& componentType) const;
+	std::string	getSparseImageTypeName				(void) const;
+	std::string	getUniformConstSparseImageTypeName	(void) const;
 
 	std::string	sparseImageOpString(const std::string& resultVariable, const std::string& resultType, const std::string& image, const std::string& coord, const std::string& mipLevel) const;
 };
@@ -84,7 +85,8 @@ public:
 
 	TestInstance* createInstance(Context& context) const;
 
-	std::string sparseImageTypeDecl(const std::string& imageType, const std::string& componentType) const;
+	std::string	getSparseImageTypeName				(void) const;
+	std::string	getUniformConstSparseImageTypeName	(void) const;
 
 	std::string	sparseImageOpString(const std::string& resultVariable, const std::string& resultType, const std::string& image, const std::string& coord, const std::string& mipLevel) const;
 };
