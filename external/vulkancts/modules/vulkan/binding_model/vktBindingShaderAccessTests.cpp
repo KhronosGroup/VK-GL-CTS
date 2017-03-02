@@ -391,7 +391,7 @@ void drawQuadrantReferenceResult (const tcu::PixelBufferAccess& dst, const tcu::
 	tcu::clear(tcu::getSubregion(dst, dst.getWidth() / 2,	dst.getHeight() / 2,	dst.getWidth() - dst.getWidth() / 2,	dst.getHeight() - dst.getHeight() / 2),	c4);
 }
 
-static const vk::VkDescriptorUpdateTemplateEntryKHR createTemplateBinding (uint32_t binding, uint32_t arrayElement, uint32_t descriptorCount, vk::VkDescriptorType descriptorType, size_t offset, size_t stride)
+static const vk::VkDescriptorUpdateTemplateEntryKHR createTemplateBinding (deUint32 binding, deUint32 arrayElement, deUint32 descriptorCount, vk::VkDescriptorType descriptorType, size_t offset, size_t stride)
 {
 	const vk::VkDescriptorUpdateTemplateEntryKHR updateBinding =
 	{
