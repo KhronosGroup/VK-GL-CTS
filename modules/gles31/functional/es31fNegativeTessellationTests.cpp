@@ -109,6 +109,7 @@ static glu::ProgramSources makeTessPipelineSources (const std::string& vertexSrc
 void single_tessellation_stage (NegativeTestContext& ctx)
 {
 	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool					requireTES = !ctx.getContextInfo().isExtensionSupported("GL_NV_gpu_shader5");
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	args["GLSL_TESS_EXTENSION_STRING"]	= isES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
@@ -124,10 +125,12 @@ void single_tessellation_stage (NegativeTestContext& ctx)
 		tcu::TestLog& log = ctx.getLog();
 		log << program;
 
-		ctx.beginSection("A link error is generated if a non-separable program has a tessellation control shader but no tessellation evaluation shader.");
+		ctx.beginSection("A link error is generated if a non-separable program has a tessellation control shader but no tessellation evaluation shader, unless GL_NV_gpu_shader5 is supported.");
 
-		if (program.isOk())
+		if (requireTES && program.isOk())
 			ctx.fail("Program was not expected to link");
+		else if (!requireTES && !program.isOk())
+			ctx.fail("Program was expected to link");
 
 		ctx.endSection();
 	}
@@ -148,9 +151,9 @@ void single_tessellation_stage (NegativeTestContext& ctx)
 		ctx.glUseProgram(program.getProgram());
 		ctx.expectError(GL_NO_ERROR);
 
-		ctx.beginSection("GL_INVALID_OPERATION is generated if current program state has tessellation control shader but no tessellation evaluation shader.");
+		ctx.beginSection("GL_INVALID_OPERATION is generated if current program state has tessellation control shader but no tessellation evaluation shader, unless GL_NV_gpu_shader5 is supported.");
 		ctx.glDrawArrays(GL_PATCHES, 0, 3);
-		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.expectError(requireTES ? GL_INVALID_OPERATION : GL_NO_ERROR);
 		ctx.endSection();
 
 		ctx.glUseProgram(0);
