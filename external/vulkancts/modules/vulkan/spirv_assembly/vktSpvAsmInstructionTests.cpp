@@ -107,7 +107,46 @@ static void fillRandomScalars (de::Random& rnd, T minValue, T maxValue, void* ds
 	}
 }
 
-inline bool filterNotZero (const deInt32 value)
+// Gets a 64-bit integer with a more logarithmic distribution
+deInt64 randomInt64LogDistributed (de::Random& rnd)
+{
+	deInt64 val = rnd.getUint64();
+	val &= (1ull << rnd.getInt(1, 63)) - 1;
+	if (rnd.getBool())
+		val = -val;
+	return val;
+}
+
+static void fillRandomInt64sLogDistributed (de::Random& rnd, vector<deInt64>& dst, int numValues)
+{
+	for (int ndx = 0; ndx < numValues; ndx++)
+		dst[ndx] = randomInt64LogDistributed(rnd);
+}
+
+template<typename FilterT>
+static void fillRandomInt64sLogDistributed (de::Random& rnd, vector<deInt64>& dst, int numValues, FilterT filter)
+{
+	for (int ndx = 0; ndx < numValues; ndx++)
+	{
+		deInt64 value;
+		do {
+			value = randomInt64LogDistributed(rnd);
+		} while (!filter(value));
+		dst[ndx] = value;
+	}
+}
+
+inline bool filterNonNegative (const deInt64 value)
+{
+	return value >= 0;
+}
+
+inline bool filterPositive (const deInt64 value)
+{
+	return value > 0;
+}
+
+inline bool filterNotZero (const deInt64 value)
 {
 	return value != 0;
 }
@@ -911,6 +950,109 @@ tcu::TestCaseGroup* createOpSRemComputeGroup (tcu::TestContext& testCtx, qpTestR
 	return group.release();
 }
 
+tcu::TestCaseGroup* createOpSRemComputeGroup64 (tcu::TestContext& testCtx, qpTestResult negFailResult)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsrem64", "Test the 64-bit OpSRem instruction"));
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 200;
+
+	const struct CaseParams
+	{
+		const char*		name;
+		const char*		failMessage;		// customized status message
+		qpTestResult	failResult;			// override status on failure
+		bool			positive;
+	} cases[] =
+	{
+		{ "positive",	"Output doesn't match with expected",				QP_TEST_RESULT_FAIL,	true },
+		{ "all",		"Inconsistent results, but within specification",	negFailResult,			false },	// see below
+	};
+	// If either operand is negative the result is undefined. Some implementations may still return correct values.
+
+	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
+	{
+		const CaseParams&	params		= cases[caseNdx];
+		ComputeShaderSpec	spec;
+		vector<deInt64>		inputInts1	(numElements, 0);
+		vector<deInt64>		inputInts2	(numElements, 0);
+		vector<deInt64>		outputInts	(numElements, 0);
+
+		if (params.positive)
+		{
+			fillRandomInt64sLogDistributed(rnd, inputInts1, numElements, filterNonNegative);
+			fillRandomInt64sLogDistributed(rnd, inputInts2, numElements, filterPositive);
+		}
+		else
+		{
+			fillRandomInt64sLogDistributed(rnd, inputInts1, numElements);
+			fillRandomInt64sLogDistributed(rnd, inputInts2, numElements, filterNotZero);
+		}
+
+		for (int ndx = 0; ndx < numElements; ++ndx)
+		{
+			// The return value of std::fmod() has the same sign as its first operand, which is how OpFRem spec'd.
+			outputInts[ndx] = inputInts1[ndx] % inputInts2[ndx];
+		}
+
+		spec.assembly =
+			"OpCapability Int64\n"
+
+			+ string(getComputeAsmShaderPreamble()) +
+
+			"OpName %main           \"main\"\n"
+			"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+			"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+			"OpDecorate %buf BufferBlock\n"
+			"OpDecorate %indata1 DescriptorSet 0\n"
+			"OpDecorate %indata1 Binding 0\n"
+			"OpDecorate %indata2 DescriptorSet 0\n"
+			"OpDecorate %indata2 Binding 1\n"
+			"OpDecorate %outdata DescriptorSet 0\n"
+			"OpDecorate %outdata Binding 2\n"
+			"OpDecorate %i64arr ArrayStride 8\n"
+			"OpMemberDecorate %buf 0 Offset 0\n"
+
+			+ string(getComputeAsmCommonTypes())
+			+ string(getComputeAsmCommonInt64Types()) +
+
+			"%buf        = OpTypeStruct %i64arr\n"
+			"%bufptr     = OpTypePointer Uniform %buf\n"
+			"%indata1    = OpVariable %bufptr Uniform\n"
+			"%indata2    = OpVariable %bufptr Uniform\n"
+			"%outdata    = OpVariable %bufptr Uniform\n"
+
+			"%id        = OpVariable %uvec3ptr Input\n"
+			"%zero      = OpConstant %i64 0\n"
+
+			"%main      = OpFunction %void None %voidf\n"
+			"%label     = OpLabel\n"
+			"%idval     = OpLoad %uvec3 %id\n"
+			"%x         = OpCompositeExtract %u32 %idval 0\n"
+			"%inloc1    = OpAccessChain %i64ptr %indata1 %zero %x\n"
+			"%inval1    = OpLoad %i64 %inloc1\n"
+			"%inloc2    = OpAccessChain %i64ptr %indata2 %zero %x\n"
+			"%inval2    = OpLoad %i64 %inloc2\n"
+			"%rem       = OpSRem %i64 %inval1 %inval2\n"
+			"%outloc    = OpAccessChain %i64ptr %outdata %zero %x\n"
+			"             OpStore %outloc %rem\n"
+			"             OpReturn\n"
+			"             OpFunctionEnd\n";
+
+		spec.inputs.push_back	(BufferSp(new Int64Buffer(inputInts1)));
+		spec.inputs.push_back	(BufferSp(new Int64Buffer(inputInts2)));
+		spec.outputs.push_back	(BufferSp(new Int64Buffer(outputInts)));
+		spec.numWorkGroups		= IVec3(numElements, 1, 1);
+		spec.failResult			= params.failResult;
+		spec.failMessage		= params.failMessage;
+
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, params.name, "", spec, COMPUTE_TEST_USES_INT64));
+	}
+
+	return group.release();
+}
+
 tcu::TestCaseGroup* createOpSModComputeGroup (tcu::TestContext& testCtx, qpTestResult negFailResult)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsmod", "Test the OpSMod instruction"));
@@ -1019,6 +1161,130 @@ tcu::TestCaseGroup* createOpSModComputeGroup (tcu::TestContext& testCtx, qpTestR
 		spec.failMessage		= params.failMessage;
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, params.name, "", spec));
+	}
+
+	return group.release();
+}
+
+tcu::TestCaseGroup* createOpSModComputeGroup64 (tcu::TestContext& testCtx, qpTestResult negFailResult)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsmod64", "Test the OpSMod instruction"));
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 200;
+
+	const struct CaseParams
+	{
+		const char*		name;
+		const char*		failMessage;		// customized status message
+		qpTestResult	failResult;			// override status on failure
+		bool			positive;
+	} cases[] =
+	{
+		{ "positive",	"Output doesn't match with expected",				QP_TEST_RESULT_FAIL,	true },
+		{ "all",		"Inconsistent results, but within specification",	negFailResult,			false },	// see below
+	};
+	// If either operand is negative the result is undefined. Some implementations may still return correct values.
+
+	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
+	{
+		const CaseParams&	params		= cases[caseNdx];
+
+		ComputeShaderSpec	spec;
+		vector<deInt64>		inputInts1	(numElements, 0);
+		vector<deInt64>		inputInts2	(numElements, 0);
+		vector<deInt64>		outputInts	(numElements, 0);
+
+
+		if (params.positive)
+		{
+			fillRandomInt64sLogDistributed(rnd, inputInts1, numElements, filterNonNegative);
+			fillRandomInt64sLogDistributed(rnd, inputInts2, numElements, filterPositive);
+		}
+		else
+		{
+			fillRandomInt64sLogDistributed(rnd, inputInts1, numElements);
+			fillRandomInt64sLogDistributed(rnd, inputInts2, numElements, filterNotZero);
+		}
+
+		for (int ndx = 0; ndx < numElements; ++ndx)
+		{
+			deInt64 rem = inputInts1[ndx] % inputInts2[ndx];
+			if (rem == 0)
+			{
+				outputInts[ndx] = 0;
+			}
+			else if ((inputInts1[ndx] >= 0) == (inputInts2[ndx] >= 0))
+			{
+				// They have the same sign
+				outputInts[ndx] = rem;
+			}
+			else
+			{
+				// They have opposite sign.  The remainder operation takes the
+				// sign inputInts1[ndx] but OpSMod is supposed to take ths sign
+				// of inputInts2[ndx].  Adding inputInts2[ndx] will ensure that
+				// the result has the correct sign and that it is still
+				// congruent to inputInts1[ndx] modulo inputInts2[ndx]
+				//
+				// See also http://mathforum.org/library/drmath/view/52343.html
+				outputInts[ndx] = rem + inputInts2[ndx];
+			}
+		}
+
+		spec.assembly =
+			"OpCapability Int64\n"
+
+			+ string(getComputeAsmShaderPreamble()) +
+
+			"OpName %main           \"main\"\n"
+			"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+			"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+			"OpDecorate %buf BufferBlock\n"
+			"OpDecorate %indata1 DescriptorSet 0\n"
+			"OpDecorate %indata1 Binding 0\n"
+			"OpDecorate %indata2 DescriptorSet 0\n"
+			"OpDecorate %indata2 Binding 1\n"
+			"OpDecorate %outdata DescriptorSet 0\n"
+			"OpDecorate %outdata Binding 2\n"
+			"OpDecorate %i64arr ArrayStride 8\n"
+			"OpMemberDecorate %buf 0 Offset 0\n"
+
+			+ string(getComputeAsmCommonTypes())
+			+ string(getComputeAsmCommonInt64Types()) +
+
+			"%buf        = OpTypeStruct %i64arr\n"
+			"%bufptr     = OpTypePointer Uniform %buf\n"
+			"%indata1    = OpVariable %bufptr Uniform\n"
+			"%indata2    = OpVariable %bufptr Uniform\n"
+			"%outdata    = OpVariable %bufptr Uniform\n"
+
+			"%id        = OpVariable %uvec3ptr Input\n"
+			"%zero      = OpConstant %i64 0\n"
+
+			"%main      = OpFunction %void None %voidf\n"
+			"%label     = OpLabel\n"
+			"%idval     = OpLoad %uvec3 %id\n"
+			"%x         = OpCompositeExtract %u32 %idval 0\n"
+			"%inloc1    = OpAccessChain %i64ptr %indata1 %zero %x\n"
+			"%inval1    = OpLoad %i64 %inloc1\n"
+			"%inloc2    = OpAccessChain %i64ptr %indata2 %zero %x\n"
+			"%inval2    = OpLoad %i64 %inloc2\n"
+			"%rem       = OpSMod %i64 %inval1 %inval2\n"
+			"%outloc    = OpAccessChain %i64ptr %outdata %zero %x\n"
+			"             OpStore %outloc %rem\n"
+			"             OpReturn\n"
+			"             OpFunctionEnd\n";
+
+		spec.inputs.push_back	(BufferSp(new Int64Buffer(inputInts1)));
+		spec.inputs.push_back	(BufferSp(new Int64Buffer(inputInts2)));
+		spec.outputs.push_back	(BufferSp(new Int64Buffer(outputInts)));
+		spec.numWorkGroups		= IVec3(numElements, 1, 1);
+		spec.failResult			= params.failResult;
+		spec.failMessage		= params.failMessage;
+
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, params.name, "", spec, COMPUTE_TEST_USES_INT64));
 	}
 
 	return group.release();
@@ -7134,7 +7400,9 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests ->addChild(createOpQuantizeToF16Group(testCtx));
 	computeTests ->addChild(createOpFRemGroup(testCtx));
 	computeTests->addChild(createOpSRemComputeGroup(testCtx, QP_TEST_RESULT_PASS));
+	computeTests->addChild(createOpSRemComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
 	computeTests->addChild(createOpSModComputeGroup(testCtx, QP_TEST_RESULT_PASS));
+	computeTests->addChild(createOpSModComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
 	computeTests->addChild(createSConvertTests(testCtx));
 	computeTests->addChild(createUConvertTests(testCtx));
 	computeTests->addChild(createOpCompositeInsertGroup(testCtx));
