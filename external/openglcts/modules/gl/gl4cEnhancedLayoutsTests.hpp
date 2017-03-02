@@ -1217,8 +1217,8 @@ private:
 									   const Utils::Variable::Descriptor& out_variable,
 									   Utils::Variable::FLAVOUR			  out_flavour);
 
-	std::string getVariableVerifcation(const std::string& parent_name, const glw::GLvoid* data,
-									   const Utils::Variable::Descriptor& variable, Utils::Variable::FLAVOUR flavour);
+	std::string getVariableVerification(const std::string& parent_name, const glw::GLvoid* data,
+										const Utils::Variable::Descriptor& variable, Utils::Variable::FLAVOUR flavour);
 
 	void prepareSSB(Utils::Program& program, Utils::Variable& variable, Utils::Buffer& buffer);
 
