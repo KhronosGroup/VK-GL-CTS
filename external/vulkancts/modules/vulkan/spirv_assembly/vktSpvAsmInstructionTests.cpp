@@ -2318,10 +2318,18 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
+		"%uvec2     = OpTypeVector %u32 2\n"
+		"%bvec3     = OpTypeVector %bool 3\n"
+		"%fvec4     = OpTypeVector %f32 4\n"
+		"%fmat33    = OpTypeMatrix %fvec3 3\n"
+		"%const100  = OpConstant %u32 100\n"
+		"%uarr100   = OpTypeArray %i32 %const100\n"
+		"%struct    = OpTypeStruct %f32 %i32 %u32\n"
+		"%pointer   = OpTypePointer Function %i32\n"
+		+ string(s_InputOutputBuffer) +
 
-		"${TYPE}\n"
-		"%null      = OpConstantNull %type\n"
+		"%null      = OpConstantNull ${TYPE}\n"
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -2338,18 +2346,17 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 		"             OpReturn\n"
 		"             OpFunctionEnd\n");
 
-	cases.push_back(CaseParameter("bool",			"%type = OpTypeBool"));
-	cases.push_back(CaseParameter("sint32",			"%type = OpTypeInt 32 1"));
-	cases.push_back(CaseParameter("uint32",			"%type = OpTypeInt 32 0"));
-	cases.push_back(CaseParameter("float32",		"%type = OpTypeFloat 32"));
-	cases.push_back(CaseParameter("vec4float32",	"%type = OpTypeVector %f32 4"));
-	cases.push_back(CaseParameter("vec3bool",		"%type = OpTypeVector %bool 3"));
-	cases.push_back(CaseParameter("vec2uint32",		"%type = OpTypeVector %u32 2"));
-	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %fvec3 3"));
-	cases.push_back(CaseParameter("array",			"%100 = OpConstant %u32 100\n"
-													"%type = OpTypeArray %i32 %100"));
-	cases.push_back(CaseParameter("struct",			"%type = OpTypeStruct %f32 %i32 %u32"));
-	cases.push_back(CaseParameter("pointer",		"%type = OpTypePointer Function %i32"));
+	cases.push_back(CaseParameter("bool",			"%bool"));
+	cases.push_back(CaseParameter("sint32",			"%i32"));
+	cases.push_back(CaseParameter("uint32",			"%u32"));
+	cases.push_back(CaseParameter("float32",		"%f32"));
+	cases.push_back(CaseParameter("vec4float32",	"%fvec4"));
+	cases.push_back(CaseParameter("vec3bool",		"%bvec3"));
+	cases.push_back(CaseParameter("vec2uint32",		"%uvec2"));
+	cases.push_back(CaseParameter("matrix",			"%fmat33"));
+	cases.push_back(CaseParameter("array",			"%uarr100"));
+	cases.push_back(CaseParameter("struct",			"%struct"));
+	cases.push_back(CaseParameter("pointer",		"%pointer"));
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
 
@@ -3416,17 +3423,25 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
-
-		"${TYPE}\n"
-
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
+		"%uvec2     = OpTypeVector %u32 2\n"
+		"%fvec4     = OpTypeVector %f32 4\n"
+		"%fmat33    = OpTypeMatrix %fvec3 3\n"
+		"%image     = OpTypeImage %f32 2D 0 0 0 1 Unknown\n"
+		"%sampler   = OpTypeSampler\n"
+		"%simage    = OpTypeSampledImage %image\n"
+		"%const100  = OpConstant %u32 100\n"
+		"%uarr100   = OpTypeArray %i32 %const100\n"
+		"%struct    = OpTypeStruct %f32 %i32 %u32\n"
+		"%pointer   = OpTypePointer Function %i32\n"
+		+ string(s_InputOutputBuffer) +
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
 
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
 
-		"%undef     = OpUndef %type\n"
+		"%undef     = OpUndef ${TYPE}\n"
 
 		"%idval     = OpLoad %uvec3 %id\n"
 		"%x         = OpCompositeExtract %u32 %idval 0\n"
@@ -3439,22 +3454,20 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 		"             OpReturn\n"
 		"             OpFunctionEnd\n");
 
-	cases.push_back(CaseParameter("bool",			"%type = OpTypeBool"));
-	cases.push_back(CaseParameter("sint32",			"%type = OpTypeInt 32 1"));
-	cases.push_back(CaseParameter("uint32",			"%type = OpTypeInt 32 0"));
-	cases.push_back(CaseParameter("float32",		"%type = OpTypeFloat 32"));
-	cases.push_back(CaseParameter("vec4float32",	"%type = OpTypeVector %f32 4"));
-	cases.push_back(CaseParameter("vec2uint32",		"%type = OpTypeVector %u32 2"));
-	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %fvec3 3"));
-	cases.push_back(CaseParameter("image",			"%type = OpTypeImage %f32 2D 0 0 0 1 Unknown"));
-	cases.push_back(CaseParameter("sampler",		"%type = OpTypeSampler"));
-	cases.push_back(CaseParameter("sampledimage",	"%img = OpTypeImage %f32 2D 0 0 0 1 Unknown\n"
-													"%type = OpTypeSampledImage %img"));
-	cases.push_back(CaseParameter("array",			"%100 = OpConstant %u32 100\n"
-													"%type = OpTypeArray %i32 %100"));
-	cases.push_back(CaseParameter("runtimearray",	"%type = OpTypeRuntimeArray %f32"));
-	cases.push_back(CaseParameter("struct",			"%type = OpTypeStruct %f32 %i32 %u32"));
-	cases.push_back(CaseParameter("pointer",		"%type = OpTypePointer Function %i32"));
+	cases.push_back(CaseParameter("bool",			"%bool"));
+	cases.push_back(CaseParameter("sint32",			"%i32"));
+	cases.push_back(CaseParameter("uint32",			"%u32"));
+	cases.push_back(CaseParameter("float32",		"%f32"));
+	cases.push_back(CaseParameter("vec4float32",	"%fvec4"));
+	cases.push_back(CaseParameter("vec2uint32",		"%uvec2"));
+	cases.push_back(CaseParameter("matrix",			"%fmat33"));
+	cases.push_back(CaseParameter("image",			"%image"));
+	cases.push_back(CaseParameter("sampler",		"%sampler"));
+	cases.push_back(CaseParameter("sampledimage",	"%simage"));
+	cases.push_back(CaseParameter("array",			"%uarr100"));
+	cases.push_back(CaseParameter("runtimearray",	"%f32arr"));
+	cases.push_back(CaseParameter("struct",			"%struct"));
+	cases.push_back(CaseParameter("pointer",		"%pointer"));
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
 
@@ -6950,29 +6963,29 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	getDefaultColors(defaultColors);
 
 	// First, simple cases that don't do anything with the OpUndef result.
-	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
-		"%param1 = OpFunctionParameter %v4f32\n"
-		"%label_testfun = OpLabel\n"
-		"%undef = OpUndef %type\n"
-		"OpReturnValue %param1\n"
-		"OpFunctionEnd\n"
-		;
-	struct NameCodePair { string name, code; };
+	struct NameCodePair { string name, decl, type; };
 	const NameCodePair tests[] =
 	{
-		{"bool", "%type = OpTypeBool"},
-		{"vec2uint32", "%type = OpTypeVector %u32 2"},
-		{"image", "%type = OpTypeImage %f32 2D 0 0 0 1 Unknown"},
-		{"sampler", "%type = OpTypeSampler"},
-		{"sampledimage", "%img = OpTypeImage %f32 2D 0 0 0 1 Unknown\n" "%type = OpTypeSampledImage %img"},
-		{"pointer", "%type = OpTypePointer Function %i32"},
-		{"runtimearray", "%type = OpTypeRuntimeArray %f32"},
-		{"array", "%c_u32_100 = OpConstant %u32 100\n" "%type = OpTypeArray %i32 %c_u32_100"},
-		{"struct", "%type = OpTypeStruct %f32 %i32 %u32"}};
+		{"bool", "", "%bool"},
+		{"vec2uint32", "%type = OpTypeVector %u32 2", "%type"},
+		{"image", "%type = OpTypeImage %f32 2D 0 0 0 1 Unknown", "%type"},
+		{"sampler", "%type = OpTypeSampler", "%type"},
+		{"sampledimage", "%img = OpTypeImage %f32 2D 0 0 0 1 Unknown\n" "%type = OpTypeSampledImage %img", "%type"},
+		{"pointer", "", "%fp_i32"},
+		{"runtimearray", "%type = OpTypeRuntimeArray %f32", "%type"},
+		{"array", "%c_u32_100 = OpConstant %u32 100\n" "%type = OpTypeArray %i32 %c_u32_100", "%type"},
+		{"struct", "%type = OpTypeStruct %f32 %i32 %u32", "%type"}};
 	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(NameCodePair); ++testNdx)
 	{
-		fragments["pre_main"] = tests[testNdx].code;
+		fragments["undef_type"] = tests[testNdx].type;
+		fragments["testfun"] = StringTemplate(
+			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%param1 = OpFunctionParameter %v4f32\n"
+			"%label_testfun = OpLabel\n"
+			"%undef = OpUndef ${undef_type}\n"
+			"OpReturnValue %param1\n"
+			"OpFunctionEnd\n").specialize(fragments);
+		fragments["pre_main"] = tests[testNdx].decl;
 		createTestsForAllStages(tests[testNdx].name, defaultColors, defaultColors, fragments, opUndefTests.get());
 	}
 	fragments.clear();
