@@ -977,8 +977,8 @@ SRGBTestCase::SRGBTestCase	(Context& context, const char* name, const char* desc
 	: TestCase				(context, name, description)
 	, m_epsilonError		(EpsilonError::CPU)
 	, m_resultTextureFormat	(tcu::TextureFormat(tcu::TextureFormat::sRGBA, tcu::TextureFormat::UNORM_INT8))
-	, m_vaoID				((glw::GLuint)-1)
-	, m_vertexDataID		((glw::GLuint)-1)
+	, m_vaoID				(0)
+	, m_vertexDataID		(0)
 	, m_samplingGroup		(SHADERSAMPLINGGROUP_TEXTURE)
 	, m_internalFormat		(internalFormat)
 {
@@ -1029,16 +1029,16 @@ void SRGBTestCase::deinit (void)
 	}
 	m_samplerList.clear();
 
-	if (m_vaoID != (glw::GLuint)-1)
+	if (m_vaoID != 0)
 	{
 		gl.deleteVertexArrays(1, &m_vaoID);
-		m_vaoID = (glw::GLuint)-1;
+		m_vaoID = 0;
 	}
 
-	if (m_vertexDataID != (glw::GLuint)-1)
+	if (m_vertexDataID != 0)
 	{
 		gl.deleteBuffers(1, &m_vertexDataID);
-		m_vertexDataID = (glw::GLuint)-1;
+		m_vertexDataID = 0;
 	}
 }
 
@@ -1408,7 +1408,7 @@ void SRGBTestCase::initVertexData (void)
 		-1.0f, -1.0f, 0.0f,		0.0f, 0.0f  // bottom left corner
 	};
 
-	DE_ASSERT(m_vaoID == (glw::GLuint)-1);
+	DE_ASSERT(m_vaoID == 0);
 	gl.genVertexArrays(1, &m_vaoID);
 	gl.bindVertexArray(m_vaoID);
 
