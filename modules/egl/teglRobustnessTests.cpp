@@ -686,7 +686,7 @@ class InfiniteLoop : public ContextReset
 {
 public:
 						InfiniteLoop			(glw::Functions& gl, tcu::TestLog& log, ShaderType shaderType);
-						~InfiniteLoop			(void) {}
+						~InfiniteLoop			(void);
 
 	virtual void		setup					(void);
 	virtual void		draw					(void);
@@ -697,12 +697,31 @@ private:
 	glu::ProgramSources genNonComputeSource		(void);
 	glu::ProgramSources	genSources				(void);
 
+	glw::GLuint			m_outputBuffer;
+	glw::GLuint			m_coordinatesBuffer;
 	glw::GLint			m_coordLocation;
 };
 
 InfiniteLoop::InfiniteLoop (glw::Functions& gl, tcu::TestLog& log, ShaderType shaderType)
 	: ContextReset(gl, log, shaderType)
+	, m_outputBuffer		(0)
+	, m_coordinatesBuffer	(0)
+	, m_coordLocation		(0)
 {
+}
+
+InfiniteLoop::~InfiniteLoop (void)
+{
+	try
+	{
+		// Reset GL_CONTEXT_LOST error before destroying resources
+		m_gl.getGraphicsResetStatus();
+		teardown();
+	}
+	catch (...)
+	{
+		// Ignore GL errors from teardown()
+	}
 }
 
 glu::ProgramSources InfiniteLoop::genSources(void)
@@ -812,9 +831,9 @@ void InfiniteLoop::setup (void)
 	if (m_shaderType == SHADERTYPE_COMPUTE)
 	{
 		// Output buffer setup
-		glw::GLuint outputBuffer = 0;
-		GLU_CHECK_GLW_CALL(m_gl, genBuffers(1, &outputBuffer));
-		GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_SHADER_STORAGE_BUFFER, outputBuffer));
+		m_outputBuffer = 0;
+		GLU_CHECK_GLW_CALL(m_gl, genBuffers(1, &m_outputBuffer));
+		GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_SHADER_STORAGE_BUFFER, m_outputBuffer));
 		GLU_CHECK_GLW_CALL(m_gl, bufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int), DE_NULL, GL_DYNAMIC_DRAW));
 		GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
 	}
@@ -833,8 +852,12 @@ void InfiniteLoop::setup (void)
 		TCU_CHECK(m_coordLocation != (glw::GLint)-1);
 
 		// Load the vertex data
+		m_coordinatesBuffer = 0;
+		GLU_CHECK_GLW_CALL(m_gl, genBuffers(1, &m_coordinatesBuffer));
+		GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_ARRAY_BUFFER, m_coordinatesBuffer));
+		GLU_CHECK_GLW_CALL(m_gl, bufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)sizeof(coords), coords, GL_STATIC_DRAW));
 		GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(m_coordLocation));
-		GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(m_coordLocation, 2, GL_FLOAT, GL_FALSE, 0, coords));
+		GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(m_coordLocation, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL));
 	}
 
 	glw::GLint iterCountLocation = m_gl.getUniformLocation(program.getProgram(), "u_iterCount");
@@ -860,7 +883,25 @@ void InfiniteLoop::draw (void)
 void InfiniteLoop::teardown (void)
 {
 	if (m_shaderType != SHADERTYPE_COMPUTE)
-		GLU_CHECK_GLW_CALL(m_gl, disableVertexAttribArray(m_coordLocation));
+	{
+		if (m_coordLocation)
+		{
+			GLU_CHECK_GLW_CALL(m_gl, disableVertexAttribArray(m_coordLocation));
+			m_coordLocation = 0;
+		}
+	}
+
+	if (m_outputBuffer)
+	{
+		GLU_CHECK_GLW_CALL(m_gl, deleteBuffers(1, &m_outputBuffer));
+		m_outputBuffer = 0;
+	}
+
+	if (m_coordinatesBuffer)
+	{
+		GLU_CHECK_GLW_CALL(m_gl, deleteBuffers(1, &m_coordinatesBuffer));
+		m_coordinatesBuffer = 0;
+	}
 
 	GLU_CHECK_GLW_CALL(m_gl, useProgram(0));
 }
@@ -869,7 +910,7 @@ class FixedFunctionOOB : public ContextReset
 {
 public:
 							FixedFunctionOOB			(glw::Functions& gl, tcu::TestLog& log, FixedFunctionType fixedFunctionType);
-							~FixedFunctionOOB			(void) {}
+							~FixedFunctionOOB			(void);
 
 	struct TestConfig
 	{
@@ -883,12 +924,29 @@ public:
 
 private:
 	glu::ProgramSources		genSources					(void);
+	glw::GLuint				m_coordinatesBuffer;
 	glw::GLint				m_coordLocation;
 };
 
 FixedFunctionOOB::FixedFunctionOOB (glw::Functions& gl, tcu::TestLog& log, FixedFunctionType fixedFunctionType)
 	: ContextReset(gl, log, fixedFunctionType)
+	, m_coordinatesBuffer	(0)
+	, m_coordLocation		(0)
 {
+}
+
+FixedFunctionOOB::~FixedFunctionOOB (void)
+{
+	try
+	{
+		// Reset GL_CONTEXT_LOST error before destroying resources
+		m_gl.getGraphicsResetStatus();
+		teardown();
+	}
+	catch (...)
+	{
+		// Ignore GL errors from teardown()
+	}
 }
 
 glu::ProgramSources FixedFunctionOOB::genSources (void)
@@ -935,8 +993,13 @@ void FixedFunctionOOB::setup (void)
 	GLU_CHECK_GLW_MSG(m_gl, "glGetAttribLocation()");
 	TCU_CHECK(m_coordLocation != (glw::GLint)-1);
 
+	// Load the vertex data
+	m_coordinatesBuffer = 0;
+	GLU_CHECK_GLW_CALL(m_gl, genBuffers(1, &m_coordinatesBuffer));
+	GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_ARRAY_BUFFER, m_coordinatesBuffer));
+	GLU_CHECK_GLW_CALL(m_gl, bufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)sizeof(coords), coords, GL_STATIC_DRAW));
 	GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(m_coordLocation));
-	GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(m_coordLocation, 2, GL_FLOAT, GL_FALSE, 0, coords));
+	GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(m_coordLocation, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL));
 }
 
 void FixedFunctionOOB::draw (void)
@@ -953,45 +1016,74 @@ void FixedFunctionOOB::draw (void)
 
 void FixedFunctionOOB::teardown (void)
 {
-	GLU_CHECK_GLW_CALL(m_gl, disableVertexAttribArray(m_coordLocation));
+	if (m_coordLocation)
+	{
+		GLU_CHECK_GLW_CALL(m_gl, disableVertexAttribArray(m_coordLocation));
+		m_coordLocation = 0;
+	}
+
+	if (m_coordinatesBuffer)
+	{
+		GLU_CHECK_GLW_CALL(m_gl, deleteBuffers(1, &m_coordinatesBuffer));
+		m_coordinatesBuffer = 0;
+	}
+
 	GLU_CHECK_GLW_CALL(m_gl, useProgram(0));
 }
 
 class ShadersOOB : public ContextReset
 {
 public:
-						ShadersOOB					(glw::Functions& gl, tcu::TestLog& log, ShaderType shaderType, ResourceType resourceType, ReadWriteType readWriteType);
-						~ShadersOOB					(void) {}
+								ShadersOOB					(glw::Functions& gl, tcu::TestLog& log, ShaderType shaderType, ResourceType resourceType, ReadWriteType readWriteType);
+								~ShadersOOB					(void);
 
-	virtual void		setup						(void);
-	virtual void		draw						(void);
-	virtual void		teardown					(void);
+	virtual void				setup						(void);
+	virtual void				draw						(void);
+	virtual void				teardown					(void);
 
 private:
-	static const int	s_numBindings				= 3;
+	static const int			s_numBindings				= 3;
 
-	glw::GLint			m_coordLocation;
+	glw::GLuint					m_coordinatesBuffer;
+	glw::GLint					m_coordLocation;
 
-	bool				m_isUBO;
-	bool				m_isRead;
-	bool				m_isLocalArray;
+	bool						m_isUBO;
+	bool						m_isRead;
+	bool						m_isLocalArray;
+	std::vector<glw::GLuint>	m_buffers;
 
-	std::string			genVertexShader				(const std::string& shaderDecl, const std::string& shaderBody);
-	std::string			genFragmentShader			(const std::string& shaderDecl, const std::string& shaderBody);
-	std::string			genComputeShader			(const std::string& shaderDecl, const std::string& shaderBody);
+	std::string					genVertexShader				(const std::string& shaderDecl, const std::string& shaderBody);
+	std::string					genFragmentShader			(const std::string& shaderDecl, const std::string& shaderBody);
+	std::string					genComputeShader			(const std::string& shaderDecl, const std::string& shaderBody);
 
-	glu::ProgramSources genNonComputeSource			(void);
-	glu::ProgramSources genComputeSource			(void);
-	glu::ProgramSources genSources					(void);
-
+	glu::ProgramSources			genNonComputeSource			(void);
+	glu::ProgramSources			genComputeSource			(void);
+	glu::ProgramSources			genSources					(void);
 };
 
 ShadersOOB::ShadersOOB (glw::Functions& gl, tcu::TestLog& log, ShaderType shaderType, ResourceType resourceType, ReadWriteType readWriteType)
 	: ContextReset(gl, log, shaderType, resourceType, readWriteType)
+	, m_coordinatesBuffer	(0)
+	, m_coordLocation		(0)
+	, m_buffers				(s_numBindings, 0)
 {
 	m_isUBO			= (m_resourceType == RESOURCETYPE_UBO);
 	m_isLocalArray	= (m_resourceType == RESOURCETYPE_LOCAL_ARRAY);
 	m_isRead		= (m_readWriteType == READWRITETYPE_READ);
+}
+
+ShadersOOB::~ShadersOOB (void)
+{
+	try
+	{
+		// Reset GL_CONTEXT_LOST error before destroying resources
+		m_gl.getGraphicsResetStatus();
+		teardown();
+	}
+	catch (...)
+	{
+		// Ignore GL errors from teardown()
+	}
 }
 
 std::string ShadersOOB::genVertexShader (const std::string& shaderDecl, const std::string& shaderBody)
@@ -1223,8 +1315,13 @@ void ShadersOOB::setup (void)
 		GLU_CHECK_GLW_MSG(m_gl, "glGetAttribLocation()");
 		TCU_CHECK(m_coordLocation != (glw::GLint)-1);
 
+		// Load the vertex data
+		m_coordinatesBuffer = 0;
+		GLU_CHECK_GLW_CALL(m_gl, genBuffers(1, &m_coordinatesBuffer));
+		GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_ARRAY_BUFFER, m_coordinatesBuffer));
+		GLU_CHECK_GLW_CALL(m_gl, bufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)sizeof(coords), coords, GL_STATIC_DRAW));
 		GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(m_coordLocation));
-		GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(m_coordLocation, 2, GL_FLOAT, GL_FALSE, 0, coords));
+		GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(m_coordLocation, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL));
 	}
 
 	// Create dummy data for filling buffer objects
@@ -1234,14 +1331,13 @@ void ShadersOOB::setup (void)
 	if (!m_isLocalArray)
 	{
 		// Set up interface block of buffer bindings
-		std::vector<glw::GLuint> buffers(s_numBindings, 0);
-		GLU_CHECK_GLW_CALL(m_gl, genBuffers((glw::GLsizei)buffers.size(), &buffers[0]));
+		GLU_CHECK_GLW_CALL(m_gl, genBuffers((glw::GLsizei)m_buffers.size(), &m_buffers[0]));
 
-		for (int bufNdx = 0; bufNdx < (int)buffers.size(); ++bufNdx)
+		for (int bufNdx = 0; bufNdx < (int)m_buffers.size(); ++bufNdx)
 		{
-			GLU_CHECK_GLW_CALL(m_gl, bindBuffer(resType, buffers[bufNdx]));
+			GLU_CHECK_GLW_CALL(m_gl, bindBuffer(resType, m_buffers[bufNdx]));
 			GLU_CHECK_GLW_CALL(m_gl, bufferData(resType, sizeof(tcu::Vec4), &(refValues[bufNdx]), GL_STATIC_DRAW));
-			GLU_CHECK_GLW_CALL(m_gl, bindBufferBase(resType, bufNdx, buffers[bufNdx]));
+			GLU_CHECK_GLW_CALL(m_gl, bindBufferBase(resType, bufNdx, m_buffers[bufNdx]));
 		}
 	}
 }
@@ -1261,7 +1357,26 @@ void ShadersOOB::teardown (void)
 {
 	if (m_shaderType != SHADERTYPE_COMPUTE)
 	{
-		GLU_CHECK_GLW_CALL(m_gl, disableVertexAttribArray(m_coordLocation));
+		if (m_coordLocation)
+		{
+			GLU_CHECK_GLW_CALL(m_gl, disableVertexAttribArray(m_coordLocation));
+			m_coordLocation = 0;
+		}
+	}
+
+	if (m_coordinatesBuffer)
+	{
+		GLU_CHECK_GLW_CALL(m_gl, deleteBuffers(1, &m_coordinatesBuffer));
+		m_coordinatesBuffer = 0;
+	}
+
+	if (!m_isLocalArray)
+	{
+		if (!m_buffers.empty())
+		{
+			GLU_CHECK_GLW_CALL(m_gl, deleteBuffers((glw::GLsizei)m_buffers.size(), &m_buffers[0]));
+			m_buffers.clear();
+		}
 	}
 
 	GLU_CHECK_GLW_CALL(m_gl, useProgram(0));
@@ -1576,6 +1691,11 @@ public:
 
 	virtual void provokeReset (de::SharedPtr<ContextReset>& contextReset)
 	{
+		m_testCtx.getLog()	<< tcu::TestLog::Message
+							<< "Check the graphics reset status returned by glGetGraphicsResetStatus() equals "
+							<< "GL_GUILTY_CONTEXT_RESET after a context reset\n\n"
+							<< tcu::TestLog::EndMessage;
+
 		contextReset->setup();
 		contextReset->draw();
 	}
@@ -1588,20 +1708,13 @@ public:
 
 	virtual void passAndLog (de::SharedPtr<ContextReset>& contextReset)
 	{
-		TestLog& log = m_testCtx.getLog();
-
-		log << tcu::TestLog::Message
-			<< "Check the graphics reset status returned by glGetGraphicsResetStatus() equals "
-			<< "GL_GUILTY_CONTEXT_RESET after a context reset\n\n"
-			<< tcu::TestLog::EndMessage;
-
 		const glw::GLint status = contextReset->getGraphicsResetStatus();
 
 		if (status == GL_NO_ERROR)
 		{
-			log	<< tcu::TestLog::Message
-				<< "Test failed! glGetGraphicsResetStatus() returned wrong value [" << glu::getGraphicsResetStatusStr(status) << ", expected " << glu::getGraphicsResetStatusStr(GL_GUILTY_CONTEXT_RESET) << "]"
-				<< tcu::TestLog::EndMessage;
+			m_testCtx.getLog()	<< tcu::TestLog::Message
+								<< "Test failed! glGetGraphicsResetStatus() returned wrong value [" << glu::getGraphicsResetStatusStr(status) << ", expected " << glu::getGraphicsResetStatusStr(GL_GUILTY_CONTEXT_RESET) << "]"
+								<< tcu::TestLog::EndMessage;
 
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 		}
@@ -1623,6 +1736,10 @@ public:
 
 	virtual void provokeReset (de::SharedPtr<ContextReset>& contextReset)
 	{
+		m_testCtx.getLog()	<< tcu::TestLog::Message
+							<< "Check the status of a sync object after a context reset returned by glGetSynciv() equals GL_SIGNALED\n\n"
+							<< tcu::TestLog::EndMessage;
+
 		contextReset->setup();
 		contextReset->draw();
 	}
@@ -1636,18 +1753,12 @@ public:
 
 	virtual void passAndLog (de::SharedPtr<ContextReset>& contextReset)
 	{
-		TestLog& log = m_testCtx.getLog();
-
-		log << tcu::TestLog::Message
-			<< "Check the status of a sync object after a context reset returned by glGetSynciv() equals GL_SIGNALED\n\n"
-			<< tcu::TestLog::EndMessage;
-
 		const glw::GLint status = contextReset->getSyncStatus();
 		if (status != GL_SIGNALED)
 		{
-			log	<< tcu::TestLog::Message
-				<< "Test failed! glGetSynciv() returned wrong value [" << glu::getErrorStr(status) << ", expected " << glu::getErrorStr(GL_SIGNALED) << "]"
-				<< tcu::TestLog::EndMessage;
+			m_testCtx.getLog()	<< tcu::TestLog::Message
+								<< "Test failed! glGetSynciv() returned wrong value [" << glu::getErrorStr(status) << ", expected " << glu::getErrorStr(GL_SIGNALED) << "]"
+								<< tcu::TestLog::EndMessage;
 
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 		}
@@ -1664,6 +1775,10 @@ public:
 
 	virtual void provokeReset (de::SharedPtr<ContextReset>& contextReset)
 	{
+		m_testCtx.getLog()	<< tcu::TestLog::Message
+							<< "Check the status of a query object after a context reset returned by glGetQueryObjectuiv() equals GL_TRUE\n\n"
+							<< tcu::TestLog::EndMessage;
+
 		contextReset->setup();
 		contextReset->beginQuery();
 		contextReset->draw();
@@ -1678,18 +1793,12 @@ public:
 
 	virtual void passAndLog (de::SharedPtr<ContextReset>& contextReset)
 	{
-		TestLog& log = m_testCtx.getLog();
-
-		log << tcu::TestLog::Message
-			<< "Check the status of a query object after a context reset returned by glGetQueryObjectuiv() equals GL_TRUE\n\n"
-			<< tcu::TestLog::EndMessage;
-
 		const glw::GLuint queryReady = contextReset->getQueryAvailability();
 		if (queryReady != GL_TRUE)
 		{
-			log << tcu::TestLog::Message
-				<< "Test failed! glGetQueryObjectuiv() returned wrong value [" << glu::getErrorStr(queryReady) << ", expected " << glu::getErrorStr(GL_TRUE) << "]"
-				<< tcu::TestLog::EndMessage;
+			m_testCtx.getLog()	<< tcu::TestLog::Message
+								<< "Test failed! glGetQueryObjectuiv() returned wrong value [" << glu::getErrorStr(queryReady) << ", expected " << glu::getErrorStr(GL_TRUE) << "]"
+								<< tcu::TestLog::EndMessage;
 
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 		}
