@@ -723,19 +723,19 @@ tcu::TestNode::IterateResult CullDistance::APICoverageTest::iterate()
 				"    int result_value = (INPUT_GS_NAME[0] == TOKEN) ? TOKEN : -1;\n"
 				"\n"
 				/* Draw a full-screen quad */
-				"    gl_Position = vec4(-1.0, 1.0, 0.0, 0.0);\n"
+				"    gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
 				"    out_gs      = result_value;\n"
 				"    EmitVertex();\n"
 				"\n"
-				"    gl_Position = vec4(-1.0, -1.0, 0.0, 0.0);\n"
+				"    gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
 				"    out_gs      = result_value;\n"
 				"    EmitVertex();\n"
 				"\n"
-				"    gl_Position = vec4(1.0, 1.0, 0.0, 0.0);\n"
+				"    gl_Position = vec4(1.0, 1.0, 0.0, 1.0);\n"
 				"    out_gs      = result_value;\n"
 				"    EmitVertex();\n"
 				"\n"
-				"    gl_Position = vec4(1.0, -1.0, 0.0, 0.0);\n"
+				"    gl_Position = vec4(1.0, -1.0, 0.0, 1.0);\n"
 				"    out_gs      = result_value;\n"
 				"    EmitVertex();\n"
 				"    EndPrimitive();\n"
@@ -782,6 +782,8 @@ tcu::TestNode::IterateResult CullDistance::APICoverageTest::iterate()
 				"    int result_value = (INPUT_TE_NAME[0] == TOKEN) ? TOKEN : 0;\n"
 				"\n"
 				"    out_te = result_value;\n"
+				"\n"
+				"    gl_Position = vec4(0.0, 0.0, 0.0, 1.);\n"
 				"}\n";
 			std::string te_body = te_body_template;
 
