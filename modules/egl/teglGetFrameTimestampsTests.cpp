@@ -571,6 +571,10 @@ void GetFrameTimestampTest::executeForConfig (EGLDisplay display, EGLConfig conf
 			const EGLint compositorTimingCount = DE_LENGTH_OF_ARRAY(compositorTimingNames);
 			EGLnsecsANDROID compositorTimingValues[compositorTimingCount] = { -2 };
 
+			// Get the current time before making any API calls in case "now"
+			// just happens to get sampled near one of the composite deadlines.
+			EGLnsecsANDROID now = getNanoseconds();
+
 			// Get the frame id.
 			EGLuint64KHR nextFrameId = 0;
 			CHECK_NAKED_EGL_CALL(egl, m_eglGetNextFrameIdANDROID(display, *surface, &nextFrameId));
@@ -585,7 +589,6 @@ void GetFrameTimestampTest::executeForConfig (EGLDisplay display, EGLConfig conf
 			frame.compositeToPresentLatency	=	compositorTimingValues[2];
 
 			// Verify compositor timing is sane.
-			EGLnsecsANDROID now = getNanoseconds();
 			m_result.check(1000000 < frame.compositeInterval, "Reported refresh rate greater than 1kHz.");
 			m_result.check(frame.compositeInterval < 1000000000, "Reported refresh rate less than 1Hz.");
 			m_result.check(0 < frame.compositeToPresentLatency, "Composite to present latency must be greater than 0.");
