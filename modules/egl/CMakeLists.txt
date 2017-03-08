@@ -21,6 +21,8 @@ set(DEQP_EGL_SRCS
 	teglConfigList.hpp
 	teglCreateContextTests.cpp
 	teglCreateContextTests.hpp
+	teglGetFrameTimestampsTests.cpp
+	teglGetFrameTimestampsTests.hpp
 	teglQueryContextTests.cpp
 	teglQueryContextTests.hpp
 	teglCreateSurfaceTests.cpp
@@ -97,6 +99,8 @@ set(DEQP_EGL_SRCS
 	teglMultiContextTests.cpp
 	teglThreadCleanUpTests.hpp
 	teglThreadCleanUpTests.cpp
+	teglRobustnessTests.hpp
+	teglRobustnessTests.cpp
 	)
 
 set(DEQP_EGL_LIBS

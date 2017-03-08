@@ -109,6 +109,7 @@ static glu::ProgramSources makeTessPipelineSources (const std::string& vertexSrc
 void single_tessellation_stage (NegativeTestContext& ctx)
 {
 	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool					requireTES = !ctx.getContextInfo().isExtensionSupported("GL_NV_gpu_shader5");
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	args["GLSL_TESS_EXTENSION_STRING"]	= isES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
@@ -124,12 +125,35 @@ void single_tessellation_stage (NegativeTestContext& ctx)
 		tcu::TestLog& log = ctx.getLog();
 		log << program;
 
+		ctx.beginSection("A link error is generated if a non-separable program has a tessellation control shader but no tessellation evaluation shader, unless GL_NV_gpu_shader5 is supported.");
+
+		if (requireTES && program.isOk())
+			ctx.fail("Program was not expected to link");
+		else if (!requireTES && !program.isOk())
+			ctx.fail("Program was expected to link");
+
+		ctx.endSection();
+	}
+
+	{
+		glu::ShaderProgram program(ctx.getRenderContext(),
+								   makeTessPipelineSources(tcu::StringTemplate(vertexShaderSource).specialize(args),
+														   tcu::StringTemplate(fragmentShaderSource).specialize(args),
+														   tcu::StringTemplate(tessControlShaderSource).specialize(args),
+														   "") // missing tessEvalShaderSource
+								   << glu::ProgramSeparable(true));
+		tcu::TestLog& log = ctx.getLog();
+		log << program;
+
+		if (!program.isOk())
+			TCU_THROW(TestError, "failed to build program");
+
 		ctx.glUseProgram(program.getProgram());
 		ctx.expectError(GL_NO_ERROR);
 
-		ctx.beginSection("GL_INVALID_OPERATION is generated if current program state has tessellation control shader but no tessellation evaluation shader.");
+		ctx.beginSection("GL_INVALID_OPERATION is generated if current program state has tessellation control shader but no tessellation evaluation shader, unless GL_NV_gpu_shader5 is supported.");
 		ctx.glDrawArrays(GL_PATCHES, 0, 3);
-		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.expectError(requireTES ? GL_INVALID_OPERATION : GL_NO_ERROR);
 		ctx.endSection();
 
 		ctx.glUseProgram(0);
@@ -143,6 +167,27 @@ void single_tessellation_stage (NegativeTestContext& ctx)
 														   tcu::StringTemplate(tessEvalShaderSource).specialize(args)));
 		tcu::TestLog& log = ctx.getLog();
 		log << program;
+
+		ctx.beginSection("A link error is generated if a non-separable program has a tessellation evaluation shader but no tessellation control shader.");
+
+		if (program.isOk())
+			ctx.fail("Program was not expected to link");
+
+		ctx.endSection();
+	}
+
+	{
+		glu::ShaderProgram program(ctx.getRenderContext(),
+								   makeTessPipelineSources(tcu::StringTemplate(vertexShaderSource).specialize(args),
+														   tcu::StringTemplate(fragmentShaderSource).specialize(args),
+														   "", // missing tessControlShaderSource
+														   tcu::StringTemplate(tessEvalShaderSource).specialize(args))
+									<< glu::ProgramSeparable(true));
+		tcu::TestLog& log = ctx.getLog();
+		log << program;
+
+		if (!program.isOk())
+			TCU_THROW(TestError, "failed to build program");
 
 		ctx.glUseProgram(program.getProgram());
 		ctx.expectError(GL_NO_ERROR);
@@ -190,6 +235,7 @@ void tessellation_not_active (NegativeTestContext& ctx)
 	checkTessellationSupport(ctx);
 
 	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glw::GLenum			tessErr = ctx.getContextInfo().isExtensionSupported("GL_NV_gpu_shader5") ? GL_NO_ERROR : GL_INVALID_OPERATION;
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	args["GLSL_TESS_EXTENSION_STRING"]	= isES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
@@ -205,9 +251,9 @@ void tessellation_not_active (NegativeTestContext& ctx)
 	ctx.glUseProgram(program.getProgram());
 	ctx.expectError(GL_NO_ERROR);
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if tessellation is not active and primitive mode is GL_PATCHES.");
+	ctx.beginSection("GL_INVALID_OPERATION is generated if tessellation is not active and primitive mode is GL_PATCHES, unless GL_NV_gpu_shader5 is supported.");
 	ctx.glDrawArrays(GL_PATCHES, 0, 3);
-	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.expectError(tessErr);
 	ctx.endSection();
 
 	ctx.glUseProgram(0);
