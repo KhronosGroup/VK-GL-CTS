@@ -63,7 +63,9 @@ using namespace deqp::gls::TextureTestUtil;
 using namespace glu::TextureTestUtil;
 
 using tcu::Float;
+using tcu::IVec2;
 using tcu::IVec3;
+using tcu::IVec4;
 using tcu::Sampler;
 using tcu::ScopedLogSection;
 using tcu::TestLog;
@@ -255,6 +257,91 @@ int getTargetTexDims (deUint32 target)
 	}
 }
 
+class RandomizedRenderGrid
+{
+public:
+					RandomizedRenderGrid	(const IVec2& targetSize, const IVec2& cellSize, int maxCellCount, deUint32 seed);
+	bool			nextCell				(void);
+	IVec2			getOrigin				(void) const;
+
+	const IVec2&	getCellSize				(void) const { return m_cellSize; };
+	IVec4			getUsedAreaBoundingBox	(void) const;
+	int				getCellCount			(void) const { return m_cellCount; };
+
+private:
+	static IVec2	getRandomOffset			(deUint32 seed, IVec2 targetSize, IVec2 cellSize, IVec2 grid, int cellCount);
+
+	const IVec2		m_targetSize;
+	const IVec2		m_cellSize;
+	const IVec2		m_grid;
+	int				m_currentCell;
+	const int		m_cellCount;
+	const IVec2		m_baseRandomOffset;
+};
+
+RandomizedRenderGrid::RandomizedRenderGrid (const IVec2& targetSize, const IVec2& cellSize, int maxCellCount, deUint32 seed)
+	: m_targetSize			(targetSize)
+	, m_cellSize			(cellSize)
+	, m_grid				(targetSize / cellSize)
+	, m_currentCell			(0)
+	// If the grid exactly fits height, take one row for randomization.
+	, m_cellCount			(deMin32(maxCellCount, ((targetSize.y() % cellSize.y()) == 0) && m_grid.y() > 1 ? m_grid.x() * (m_grid.y() - 1) :  m_grid.x() * m_grid.y()))
+	, m_baseRandomOffset	(getRandomOffset(seed, targetSize, cellSize, m_grid, m_cellCount))
+{
+}
+
+IVec2 RandomizedRenderGrid::getRandomOffset (deUint32 seed, IVec2 targetSize, IVec2 cellSize, IVec2 grid, int cellCount)
+{
+	de::Random	rng			(seed);
+	IVec2		result;
+	IVec2		extraSpace = targetSize - (cellSize * grid);
+
+	// If there'll be unused rows, donate them into extra space.
+	// (Round the required rows to full cell row to find out how many rows are unused, multiply by size)
+	DE_ASSERT(deDivRoundUp32(cellCount, grid.x()) <= grid.y());
+	extraSpace.y() += (grid.y() - deDivRoundUp32(cellCount, grid.x())) * cellSize.y();
+
+	DE_ASSERT(targetSize.x() > cellSize.x() && targetSize.y() > cellSize.y());
+	// If grid fits perfectly just one row of cells, just give up on randomizing.
+	DE_ASSERT(extraSpace.x() > 0 || extraSpace.y() > 0 || grid.y() == 1);
+	DE_ASSERT(extraSpace.x() + grid.x() * cellSize.x() == targetSize.x());
+
+	// \note Putting these as ctor params would make evaluation order undefined, I think <sigh>. Hence,
+	// no direct return.
+	result.x() = rng.getInt(0, extraSpace.x());
+	result.y() = rng.getInt(0, extraSpace.y());
+	return result;
+}
+
+bool RandomizedRenderGrid::nextCell (void)
+{
+	if (m_currentCell >= getCellCount())
+		return false;
+
+	m_currentCell++;
+	return true;
+}
+
+IVec2 RandomizedRenderGrid::getOrigin (void) const
+{
+	const int	gridX		  = (m_currentCell - 1) % m_grid.x();
+	const int	gridY		  = (m_currentCell - 1) / m_grid.x();
+	const IVec2 currentOrigin = (IVec2(gridX, gridY) * m_cellSize) + m_baseRandomOffset;
+
+	DE_ASSERT(currentOrigin.x() >= 0 && (currentOrigin.x() + m_cellSize.x()) <= m_targetSize.x());
+	DE_ASSERT(currentOrigin.y() >= 0 && (currentOrigin.y() + m_cellSize.y()) <= m_targetSize.y());
+
+	return currentOrigin;
+}
+
+IVec4 RandomizedRenderGrid::getUsedAreaBoundingBox (void) const
+{
+	const IVec2 lastCell	(de::min(m_currentCell + 1, m_grid.x()), ((m_currentCell + m_grid.x() - 1) / m_grid.x()));
+	const IVec2 size		= lastCell * m_cellSize;
+
+	return IVec4(m_baseRandomOffset.x(), m_baseRandomOffset.y(), size.x(), size.y());
+}
+
 class ImageInfo
 {
 public:
@@ -315,6 +402,182 @@ int getLevelCount (const ImageInfo& info)
 	}
 }
 
+IVec3 getLevelSize (deUint32 target, const IVec3& baseSize, int level)
+{
+	IVec3 size;
+
+	if (target != GL_TEXTURE_2D_ARRAY)
+	{
+		for (int i = 0; i < 3; i++)
+			size[i] = de::max(baseSize[i] >> level, 1);
+	}
+	else
+	{
+		for (int i = 0; i < 2; i++)
+			size[i] = de::max(baseSize[i] >> level, 1);
+
+		size[2] = baseSize[2];
+	}
+
+	return size;
+}
+
+deUint32 mapFaceNdxToFace (int ndx)
+{
+	const deUint32 cubeFaces[] =
+	{
+		GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+		GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+
+		GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+		GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+
+		GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+		GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
+	};
+
+	return de::getSizedArrayElement<6>(cubeFaces, ndx);
+}
+
+// Class for iterating over mip levels and faces/slices/... of a texture.
+class TextureImageIterator
+{
+public:
+						TextureImageIterator	(const ImageInfo info, int levelCount);
+						~TextureImageIterator	(void)							{}
+
+	// Need to call next image once, newly constructed not readable, except for getSize
+	bool				nextImage				(void);
+	bool				hasNextImage			(void) const					{ return (m_currentLevel < (m_levelCount - 1)) || m_currentImage < (m_levelImageCount - 1); }
+
+	int					getMipLevel				(void) const					{ return m_currentLevel; }
+	int					getMipLevelCount		(void) const					{ return m_levelCount; }
+	int					getCurrentImage			(void) const					{ return m_currentImage;}
+	int					getLevelImageCount		(void) const					{ return m_levelImageCount; }
+	IVec2				getSize					(void) const					{ return m_levelSize.toWidth<2>(); }	// Assume that image sizes never grow over iteration
+	deUint32			getTarget				(void) const					{ return m_info.getTarget(); }
+
+private:
+	int					m_levelImageCount;		// Need to be defined in CTOR for the hasNextImage to work!
+	const ImageInfo		m_info;
+	int					m_currentLevel;
+	IVec3				m_levelSize;
+	int					m_currentImage;
+	const int			m_levelCount;
+};
+
+TextureImageIterator::TextureImageIterator (const ImageInfo info, int levelCount)
+	: m_levelImageCount	(info.getTarget() == GL_TEXTURE_CUBE_MAP ? 6 : getLevelSize(info.getTarget(), info.getSize(), 0).z())
+	, m_info			(info)
+	, m_currentLevel	(0)
+	, m_levelSize		(getLevelSize(info.getTarget(), info.getSize(), 0))
+	, m_currentImage	(-1)
+	, m_levelCount		(levelCount)
+{
+	DE_ASSERT(m_levelCount <= getLevelCount(info));
+}
+
+bool TextureImageIterator::nextImage (void)
+{
+	if (!hasNextImage())
+		return false;
+
+	m_currentImage++;
+	if (m_currentImage == m_levelImageCount)
+	{
+		m_currentLevel++;
+		m_currentImage		= 0;
+
+		m_levelSize			= getLevelSize(m_info.getTarget(), m_info.getSize(), m_currentLevel);
+
+		if (getTarget() == GL_TEXTURE_CUBE_MAP)
+			m_levelImageCount = 6;
+		else
+			m_levelImageCount = m_levelSize.z();
+	}
+	DE_ASSERT(m_currentLevel < m_levelCount);
+	DE_ASSERT(m_currentImage < m_levelImageCount);
+	return true;
+}
+
+// Get name
+string getTextureImageName (int textureTarget, int mipLevel, int imageIndex)
+{
+	std::ostringstream result;
+	result << "Level";
+	result << mipLevel;
+	switch (textureTarget)
+	{
+		case GL_TEXTURE_2D:			break;
+		case GL_TEXTURE_3D:			result << "Slice" << imageIndex; break;
+		case GL_TEXTURE_CUBE_MAP:	result << "Face" << imageIndex; break;
+		case GL_TEXTURE_2D_ARRAY:	result << "Layer" << imageIndex; break;
+		default:
+			DE_FATAL("Unsupported texture target");
+			break;
+	}
+	return result.str();
+}
+
+// Get description
+string getTextureImageDescription (int textureTarget, int mipLevel, int imageIndex)
+{
+	std::ostringstream result;
+	result << "level ";
+	result << mipLevel;
+
+	switch (textureTarget)
+	{
+		case GL_TEXTURE_2D:			break;
+		case GL_TEXTURE_3D:			result << " and Slice " << imageIndex; break;
+		case GL_TEXTURE_CUBE_MAP:	result << " and Face " << imageIndex; break;
+		case GL_TEXTURE_2D_ARRAY:	result << " and Layer " << imageIndex; break;
+		default:
+			DE_FATAL("Unsupported texture target");
+			break;
+	}
+	return result.str();
+}
+
+// Compute texture coordinates
+void computeQuadTexCoords(vector<float>& texCoord, const TextureImageIterator& iteration)
+{
+	const int currentImage = iteration.getCurrentImage();
+	switch (iteration.getTarget())
+	{
+		case GL_TEXTURE_2D:
+			computeQuadTexCoord2D(texCoord, tcu::Vec2(0.0f, 0.0f), tcu::Vec2(1.0f, 1.0f));
+			break;
+
+		case GL_TEXTURE_3D:
+		{
+			const float r = (float(currentImage) + 0.5f) / (float)iteration.getLevelImageCount();
+			computeQuadTexCoord3D(texCoord, tcu::Vec3(0.0f, 0.0f, r), tcu::Vec3(1.0f, 1.0f, r), tcu::IVec3(0, 1, 2));
+			break;
+		}
+
+		case GL_TEXTURE_CUBE_MAP:
+			computeQuadTexCoordCube(texCoord, glu::getCubeFaceFromGL(mapFaceNdxToFace(currentImage)));
+			break;
+
+		case GL_TEXTURE_2D_ARRAY:
+			computeQuadTexCoord2DArray(texCoord, currentImage, tcu::Vec2(0.0f, 0.0f), tcu::Vec2(1.0f, 1.0f));
+			break;
+
+		default:
+			DE_FATAL("Unsupported texture target");
+	}
+}
+
+// Struct for storing each reference image with necessary metadata.
+struct CellContents
+{
+	IVec2			origin;
+	tcu::Surface	reference;
+	std::string		name;
+	std::string		description;
+};
+
 // Return format that has more restrictions on texel data.
 deUint32 getMoreRestrictiveFormat (deUint32 formatA, deUint32 formatB)
 {
@@ -362,26 +625,6 @@ IVec3 getTexelBlockPixelSize (deUint32 format)
 		return tcu::getBlockPixelSize(glu::mapGLCompressedTexFormat(format));
 	else
 		return IVec3(1, 1, 1);
-}
-
-IVec3 getLevelSize (deUint32 target, const IVec3& baseSize, int level)
-{
-	IVec3 size;
-
-	if (target != GL_TEXTURE_2D_ARRAY)
-	{
-		for (int i = 0; i < 3; i++)
-			size[i] = de::max(baseSize[i] >> level, 1);
-	}
-	else
-	{
-		for (int i = 0; i < 2; i++)
-			size[i] = de::max(baseSize[i] >> level, 1);
-
-		size[2] = baseSize[2];
-	}
-
-	return size;
 }
 
 bool isColorRenderable (deUint32 format)
@@ -506,23 +749,6 @@ IVec3 divRoundUp (const IVec3& a, const IVec3& b)
 		res[i] = a[i] / b[i] + ((a[i] % b[i]) ? 1 : 0);
 
 	return res;
-}
-
-deUint32 mapFaceNdxToFace (int ndx)
-{
-	const deUint32 cubeFaces[] =
-	{
-		GL_TEXTURE_CUBE_MAP_POSITIVE_X,
-		GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-
-		GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
-		GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-
-		GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
-		GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
-	};
-
-	return de::getSizedArrayElement<6>(cubeFaces, ndx);
 }
 
 deUint32 getFormatForInternalFormat (deUint32 format)
@@ -897,6 +1123,102 @@ void copyImage (const glw::Functions&					gl,
 				  srcImageData, srcImageInfo, srcLevel, srcPos, copySize);
 }
 
+template<class TextureView>
+void renderTexture (glu::RenderContext&		renderContext,
+					TextureRenderer&		renderer,
+					ReferenceParams&		renderParams,
+					tcu::ResultCollector&	results,
+					de::Random&				rng,
+					const TextureView&		refTexture,
+					const Verify			verify,
+					TextureImageIterator&	imageIterator,
+					tcu::TestLog&			log)
+{
+	const tcu::RenderTarget&	renderTarget		= renderContext.getRenderTarget();
+	const tcu::RGBA				threshold			= renderTarget.getPixelFormat().getColorThreshold() + tcu::RGBA(1,1,1,1);
+	const glw::Functions&		gl					= renderContext.getFunctions();
+	const IVec2					renderTargetSize	= IVec2(renderTarget.getWidth(), renderTarget.getHeight());
+
+	while (imageIterator.hasNextImage())
+	{
+		// \note: Reserve space upfront to avoid assigning tcu::Surface, which incurs buffer mem copy. Using a
+		// conservative estimate for simplicity
+		const int				imagesOnLevel	= imageIterator.getLevelImageCount();
+		const int				imageEstimate	= (imageIterator.getMipLevelCount() - imageIterator.getMipLevel()) * imagesOnLevel;
+		RandomizedRenderGrid	renderGrid		(renderTargetSize, imageIterator.getSize(), imageEstimate, rng.getUint32());
+		vector<CellContents>	cellContents	(renderGrid.getCellCount());
+		int						cellsUsed		= 0;
+
+		// \note: Ordering of conditions is significant. If put the other way around, the code would skip one of the
+		// images if the grid runs out of cells before the texture runs out of images. Advancing one grid cell over the
+		// needed number has no negative impact.
+		while (renderGrid.nextCell() && imageIterator.nextImage())
+		{
+			const int		level	  = imageIterator.getMipLevel();
+			const IVec2		levelSize = imageIterator.getSize();
+			const IVec2		origin	  = renderGrid.getOrigin();
+			vector<float>	texCoord;
+
+			DE_ASSERT(imageIterator.getTarget() != GL_TEXTURE_CUBE_MAP || levelSize.x() >= 4 || levelSize.y() >= 4);
+
+			renderParams.baseLevel	= level;
+			renderParams.maxLevel	= level;
+
+			gl.texParameteri(imageIterator.getTarget(), GL_TEXTURE_BASE_LEVEL, level);
+			gl.texParameteri(imageIterator.getTarget(), GL_TEXTURE_MAX_LEVEL, level);
+
+			computeQuadTexCoords(texCoord, imageIterator);
+
+			// Setup base viewport.
+			gl.viewport(origin.x(), origin.y(), levelSize.x(), levelSize.y());
+
+			// Draw.
+			renderer.renderQuad(0, &texCoord[0], renderParams);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render.");
+
+			if (verify == VERIFY_COMPARE_REFERENCE)
+			{
+				const int	target					= imageIterator.getTarget();
+				const int	imageIndex				= imageIterator.getCurrentImage();
+
+				cellContents[cellsUsed].origin		= origin;
+				cellContents[cellsUsed].name		= getTextureImageName(target, level, imageIndex);
+				cellContents[cellsUsed].description	= getTextureImageDescription(target, level, imageIndex);
+
+				cellContents[cellsUsed].reference.setSize(levelSize.x(), levelSize.y());
+
+				// Compute reference.
+				sampleTexture(tcu::SurfaceAccess(cellContents[cellsUsed].reference, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
+				cellsUsed++;
+			}
+		}
+
+		if (cellsUsed > 0)
+		{
+			const IVec4		boundingBox		= renderGrid.getUsedAreaBoundingBox();
+			tcu::Surface	renderedFrame	(boundingBox[2], boundingBox[3]);
+
+			glu::readPixels(renderContext, boundingBox.x(), boundingBox.y(), renderedFrame.getAccess());
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to read pixels.");
+
+			for (int idx = 0; idx < cellsUsed; idx++)
+			{
+				const CellContents&					cell		 (cellContents[idx]);
+				const IVec2							cellOrigin	 = cell.origin - boundingBox.toWidth<2>();
+				const tcu::ConstPixelBufferAccess	resultAccess = getSubregion(renderedFrame.getAccess(), cellOrigin.x(), cellOrigin.y(), cell.reference.getWidth(), cell.reference.getHeight());
+
+				if (!intThresholdCompare(log, cell.name.c_str(), cell.description.c_str(), cell.reference.getAccess(), resultAccess, threshold.toIVec().cast<deUint32>(), tcu::COMPARE_LOG_ON_ERROR))
+					results.fail("Image comparison of " + cell.description + " failed.");
+				else
+					log << TestLog::Message << "Image comparison of " << cell.description << " passed." << TestLog::EndMessage;;
+			}
+		}
+	}
+
+	gl.texParameteri(imageIterator.getTarget(), GL_TEXTURE_BASE_LEVEL, 0);
+	gl.texParameteri(imageIterator.getTarget(), GL_TEXTURE_MAX_LEVEL, 1000);
+}
+
 void renderTexture2DView (tcu::TestContext&			testContext,
 						  glu::RenderContext&		renderContext,
 						  TextureRenderer&			renderer,
@@ -909,11 +1231,11 @@ void renderTexture2DView (tcu::TestContext&			testContext,
 {
 	tcu::TestLog&					log				= testContext.getLog();
 	const glw::Functions&			gl				= renderContext.getFunctions();
-	const tcu::RGBA					threshold		= renderContext.getRenderTarget().getPixelFormat().getColorThreshold() + tcu::RGBA(1,1,1,1);
 	const tcu::TextureFormat		format			= refTexture.getLevel(0).getFormat();
 	const tcu::TextureFormatInfo	spec			= tcu::getTextureFormatInfo(format);
 
 	ReferenceParams					renderParams	(TEXTURETYPE_2D);
+	TextureImageIterator			imageIterator	(info, getLevelCount(info));
 
 	renderParams.samplerType	= getSamplerType(format);
 	renderParams.sampler		= Sampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::NEAREST_MIPMAP_NEAREST, Sampler::NEAREST);
@@ -930,49 +1252,7 @@ void renderTexture2DView (tcu::TestContext&			testContext,
 	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to setup texture filtering state.");
 
-	for (int level = 0; level < getLevelCount(info); level++)
-	{
-		const IVec3				levelSize		= getLevelSize(info.getTarget(), info.getSize(), level);
-		const RandomViewport	viewport		(renderContext.getRenderTarget(), levelSize.x(), levelSize.y(), rng.getUint32());
-
-		vector<float>			texCoord;
-
-		renderParams.baseLevel	= level;
-		renderParams.maxLevel	= level;
-
-		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, level);
-		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, level);
-
-		computeQuadTexCoord2D(texCoord, tcu::Vec2(0.0f, 0.0f), tcu::Vec2(1.0f, 1.0f));
-
-		// Setup base viewport.
-		gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
-
-		// Draw.
-		renderer.renderQuad(0, &texCoord[0], renderParams);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render.");
-
-		if (verify == VERIFY_COMPARE_REFERENCE)
-		{
-			tcu::Surface renderedFrame	(viewport.width, viewport.height);
-			tcu::Surface referenceFrame	(viewport.width, viewport.height);
-
-			glu::readPixels(renderContext, viewport.x, viewport.y, renderedFrame.getAccess());
-			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to read pixels.");
-
-			// Compute reference.
-			sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
-
-			// Compare and log.
-			if (!pixelThresholdCompare(log, ("Level" + de::toString(level)).c_str(), ("Render level " + de::toString(level)).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
-				results.fail("Image comparison of level " + de::toString(level) + " failed.");
-			else
-				log << TestLog::Message << "Image comparison of level " << level << " passed." << TestLog::EndMessage;
-		}
-	}
-
-	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1000);
+	renderTexture<tcu::Texture2DView>(renderContext, renderer, renderParams, results, rng, refTexture, verify, imageIterator, log);
 
 	gl.bindTexture(GL_TEXTURE_2D, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unbind texture.");
@@ -1073,11 +1353,11 @@ void renderTexture3DView (tcu::TestContext&			testContext,
 {
 	tcu::TestLog&					log				= testContext.getLog();
 	const glw::Functions&			gl				= renderContext.getFunctions();
-	const tcu::RGBA					threshold		= renderContext.getRenderTarget().getPixelFormat().getColorThreshold() + tcu::RGBA(1,1,1,1);
 	const tcu::TextureFormat		format			= refTexture.getLevel(0).getFormat();
 	const tcu::TextureFormatInfo	spec			= tcu::getTextureFormatInfo(format);
 
 	ReferenceParams					renderParams	(TEXTURETYPE_3D);
+	TextureImageIterator			imageIterator	(info, getLevelCount(info));
 
 	renderParams.samplerType	= getSamplerType(format);
 	renderParams.sampler		= Sampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::NEAREST_MIPMAP_NEAREST, Sampler::NEAREST);
@@ -1095,52 +1375,7 @@ void renderTexture3DView (tcu::TestContext&			testContext,
 	gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to setup texture filtering state.");
 
-	for (int level = 0; level < getLevelCount(info); level++)
-	{
-		const IVec3 levelSize = getLevelSize(info.getTarget(), info.getSize(), level);
-
-		renderParams.baseLevel	= level;
-		renderParams.maxLevel	= level;
-
-		gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, level);
-		gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, level);
-
-		for (int slice = 0; slice < levelSize.z(); slice++)
-		{
-			const RandomViewport	viewport		(renderContext.getRenderTarget(), levelSize.x(), levelSize.y(), rng.getUint32());
-			const float				r				= (float(slice) + 0.5f) / (float)levelSize.z();
-			vector<float>			texCoord;
-
-			computeQuadTexCoord3D(texCoord, tcu::Vec3(0.0f, 0.0f, r), tcu::Vec3(1.0f, 1.0f, r), tcu::IVec3(0, 1, 2));
-
-			// Setup base viewport.
-			gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
-
-			// Draw.
-			renderer.renderQuad(0, &texCoord[0], renderParams);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render.");
-
-			if (verify == VERIFY_COMPARE_REFERENCE)
-			{
-				tcu::Surface renderedFrame	(viewport.width, viewport.height);
-				tcu::Surface referenceFrame	(viewport.width, viewport.height);
-				glu::readPixels(renderContext, viewport.x, viewport.y, renderedFrame.getAccess());
-				GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to read pixels.");
-
-				// Compute reference.
-				sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
-
-				// Compare and log.
-				if (!pixelThresholdCompare(log, ("Level" + de::toString(level) + "Slice" + de::toString(slice)).c_str(), ("Render level " + de::toString(level) + ", Slice" + de::toString(slice)).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
-					results.fail("Image comparison of level " + de::toString(level) + " and slice " + de::toString(slice) + " failed.");
-				else
-					log << TestLog::Message << "Image comparison of level " << level << " and slice " << slice << " passed." << TestLog::EndMessage;;
-			}
-		}
-	}
-
-	gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, 0);
-	gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, 1000);
+	renderTexture<tcu::Texture3DView>(renderContext, renderer, renderParams, results, rng, refTexture, verify, imageIterator, log);
 
 	gl.bindTexture(GL_TEXTURE_3D, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unbind texture.");
@@ -1190,11 +1425,12 @@ void renderTextureCubemapView (tcu::TestContext&			testContext,
 {
 	tcu::TestLog&					log				= testContext.getLog();
 	const glw::Functions&			gl				= renderContext.getFunctions();
-	const tcu::RGBA					threshold		= renderContext.getRenderTarget().getPixelFormat().getColorThreshold() + tcu::RGBA(1,1,1,1);
 	const tcu::TextureFormat		format			= refTexture.getLevelFace(0, tcu::CUBEFACE_POSITIVE_X).getFormat();
 	const tcu::TextureFormatInfo	spec			= tcu::getTextureFormatInfo(format);
 
 	ReferenceParams					renderParams	(TEXTURETYPE_CUBE);
+    // \note It seems we can't reliably sample two smallest texture levels with cubemaps
+	TextureImageIterator			imageIterator	(info, getLevelCount(info) - 2);
 
 	renderParams.samplerType	= getSamplerType(format);
 	renderParams.sampler		= Sampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::NEAREST_MIPMAP_NEAREST, Sampler::NEAREST);
@@ -1211,57 +1447,7 @@ void renderTextureCubemapView (tcu::TestContext&			testContext,
 	gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to setup texture filtering state.");
 
-	for (int level = 0; level < getLevelCount(info); level++)
-	{
-		const IVec3 levelSize = getLevelSize(info.getTarget(), info.getSize(), level);
-
-		// \note It seems we can't reliably sample two smallest texture levels with cubemaps
-		if (levelSize.x() < 4 && levelSize.y() < 4)
-			continue;
-
-		renderParams.baseLevel	= level;
-		renderParams.maxLevel	= level;
-
-		gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, level);
-		gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, level);
-
-		for (int face = 0; face < 6; face++)
-		{
-			const RandomViewport	viewport		(renderContext.getRenderTarget(), levelSize.x(), levelSize.y(), rng.getUint32());
-			const string			cubemapFaceName	= glu::getCubeMapFaceStr(mapFaceNdxToFace(face)).toString();
-			vector<float>			texCoord;
-
-			computeQuadTexCoordCube(texCoord, glu::getCubeFaceFromGL(mapFaceNdxToFace(face)));
-
-			// Setup base viewport.
-			gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
-
-			// Draw.
-			renderer.renderQuad(0, &texCoord[0], renderParams);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render.");
-
-			if (verify == VERIFY_COMPARE_REFERENCE)
-			{
-				tcu::Surface renderedFrame	(viewport.width, viewport.height);
-				tcu::Surface referenceFrame	(viewport.width, viewport.height);
-
-				glu::readPixels(renderContext, viewport.x, viewport.y, renderedFrame.getAccess());
-				GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to read pixels.");
-
-				// Compute reference.
-				sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
-
-				// Compare and log.
-				if (!pixelThresholdCompare(log, ("Level" + de::toString(level) + "Face" + cubemapFaceName).c_str(), ("Render level " + de::toString(level) + ", Face " + cubemapFaceName).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
-					results.fail("Image comparison of level " + de::toString(level) + " and face " + cubemapFaceName + " failed.");
-				else
-					log << TestLog::Message << "Image comparison of level " << level << " and face " << cubemapFaceName << " passed." << TestLog::EndMessage;
-			}
-		}
-	}
-
-	gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
-	gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 1000);
+	renderTexture<tcu::TextureCubeView>(renderContext, renderer, renderParams, results, rng, refTexture, verify, imageIterator, log);
 
 	gl.bindTexture(GL_TEXTURE_CUBE_MAP, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unbind texture.");
@@ -1373,11 +1559,11 @@ void renderTexture2DArrayView (tcu::TestContext&				testContext,
 {
 	tcu::TestLog&					log				= testContext.getLog();
 	const glw::Functions&			gl				= renderContext.getFunctions();
-	const tcu::RGBA					threshold		= renderContext.getRenderTarget().getPixelFormat().getColorThreshold() + tcu::RGBA(1,1,1,1);
 	const tcu::TextureFormat		format			= refTexture.getLevel(0).getFormat();
 	const tcu::TextureFormatInfo	spec			= tcu::getTextureFormatInfo(format);
 
 	ReferenceParams					renderParams	(TEXTURETYPE_2D_ARRAY);
+	TextureImageIterator			imageIterator	(info, getLevelCount(info));
 
 	renderParams.samplerType	= getSamplerType(format);
 	renderParams.sampler		= Sampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::NEAREST_MIPMAP_NEAREST, Sampler::NEAREST);
@@ -1394,52 +1580,7 @@ void renderTexture2DArrayView (tcu::TestContext&				testContext,
 	gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to setup texture filtering state.");
 
-	for (int level = 0; level < getLevelCount(info); level++)
-	{
-		const IVec3 levelSize = getLevelSize(info.getTarget(), info.getSize(), level);
-
-		renderParams.baseLevel	= level;
-		renderParams.maxLevel	= level;
-
-		gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, level);
-		gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, level);
-
-		for (int layer = 0; layer < levelSize.z(); layer++)
-		{
-			const RandomViewport	viewport		(renderContext.getRenderTarget(), levelSize.x(), levelSize.y(), rng.getUint32());
-			vector<float>			texCoord;
-
-			computeQuadTexCoord2DArray(texCoord, layer, tcu::Vec2(0.0f, 0.0f), tcu::Vec2(1.0f, 1.0f));
-
-			// Setup base viewport.
-			gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
-
-			// Draw.
-			renderer.renderQuad(0, &texCoord[0], renderParams);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render.");
-
-			if (verify == VERIFY_COMPARE_REFERENCE)
-			{
-				tcu::Surface renderedFrame	(viewport.width, viewport.height);
-				tcu::Surface referenceFrame	(viewport.width, viewport.height);
-
-				glu::readPixels(renderContext, viewport.x, viewport.y, renderedFrame.getAccess());
-				GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to read pixels.");
-
-				// Compute reference.
-				sampleTexture(tcu::SurfaceAccess(referenceFrame, renderContext.getRenderTarget().getPixelFormat()), refTexture, &texCoord[0], renderParams);
-
-				// Compare and log.
-				if (!pixelThresholdCompare(log, ("Level" + de::toString(level) + "Layer" + de::toString(layer)).c_str(), ("Render level " + de::toString(level) + ", Layer" + de::toString(layer)).c_str(), referenceFrame, renderedFrame, threshold, tcu::COMPARE_LOG_ON_ERROR))
-					results.fail("Image comparison of level " + de::toString(level) + " and layer " + de::toString(layer) + " failed.");
-				else
-					log << TestLog::Message << "Image comparison of level " << level << " and layer " << layer << " passed." << TestLog::EndMessage;
-			}
-		}
-	}
-
-	gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 0);
-	gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 1000);
+	renderTexture<tcu::Texture2DArrayView>(renderContext, renderer, renderParams, results, rng, refTexture, verify, imageIterator, log);
 
 	gl.bindTexture(GL_TEXTURE_2D_ARRAY, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unbind texture.");
@@ -1669,6 +1810,7 @@ public:
 	TestCase::IterateResult	iterate					(void);
 
 private:
+
 	void					logTestInfoIter			(void);
 	void					createImagesIter		(void);
 	void					destroyImagesIter		(void);
@@ -1677,6 +1819,20 @@ private:
 	void					renderSourceIter		(void);
 	void					renderDestinationIter	(void);
 	void					copyImageIter			(void);
+
+	typedef void (CopyImageTest::*IterationFunc)(void);
+
+	struct Iteration
+	{
+		Iteration (int methodCount_, const IterationFunc* methods_)
+			: methodCount	(methodCount_)
+			, methods		(methods_)
+		{
+		}
+
+		int						methodCount;
+		const IterationFunc*	methods;
+	};
 
 	struct State
 	{
@@ -2058,31 +2214,65 @@ void CopyImageTest::copyImageIter (void)
 
 TestCase::IterateResult CopyImageTest::iterate (void)
 {
-	void(CopyImageTest::*methods[])(void) =
+	// Note: Returning from iterate() has two side-effects: it touches
+	// watchdog and calls eglSwapBuffers. For the first it's important
+	// to keep work per iteration reasonable to avoid
+	// timeouts. Because of the latter, it's prudent to do more than
+	// trivial amount of work. Otherwise we'll end up waiting for a
+	// new buffer in swap, it seems.
+
+	// The split below tries to combine trivial work with actually
+	// expensive rendering iterations without having too much
+	// rendering in one iteration to avoid timeouts.
+	const IterationFunc iteration1[] =
 	{
 		&CopyImageTest::logTestInfoIter,
-
-		// Render both images and then copy and verify again.
 		&CopyImageTest::createImagesIter,
-		&CopyImageTest::renderSourceIter,
-		&CopyImageTest::renderDestinationIter,
+		&CopyImageTest::renderSourceIter
+	};
+	const IterationFunc iteration2[] =
+	{
+		&CopyImageTest::renderDestinationIter
+	};
+	const IterationFunc iteration3[] =
+	{
 		&CopyImageTest::copyImageIter,
-		&CopyImageTest::verifySourceIter,
-		&CopyImageTest::verifyDestinationIter,
-		&CopyImageTest::destroyImagesIter,
-
-		// Create images and immediately copies between thew and verify.
-		&CopyImageTest::createImagesIter,
-		&CopyImageTest::copyImageIter,
-		&CopyImageTest::verifySourceIter,
+		&CopyImageTest::verifySourceIter
+	};
+	const IterationFunc iteration4[] =
+	{
 		&CopyImageTest::verifyDestinationIter,
 		&CopyImageTest::destroyImagesIter
 	};
-
-	if (m_iteration < DE_LENGTH_OF_ARRAY(methods))
+	const IterationFunc iteration5[] =
 	{
-		(this->*methods[m_iteration])();
-		m_iteration++;
+		&CopyImageTest::createImagesIter,
+		&CopyImageTest::copyImageIter,
+		&CopyImageTest::verifySourceIter
+	};
+	const IterationFunc iteration6[] =
+	{
+		&CopyImageTest::verifyDestinationIter,
+		&CopyImageTest::destroyImagesIter
+	};
+	const Iteration iterations[] =
+	{
+		Iteration(DE_LENGTH_OF_ARRAY(iteration1), iteration1),
+		Iteration(DE_LENGTH_OF_ARRAY(iteration2), iteration2),
+		Iteration(DE_LENGTH_OF_ARRAY(iteration3), iteration3),
+		Iteration(DE_LENGTH_OF_ARRAY(iteration4), iteration4),
+		Iteration(DE_LENGTH_OF_ARRAY(iteration5), iteration5),
+		Iteration(DE_LENGTH_OF_ARRAY(iteration6), iteration6)
+	};
+
+	DE_ASSERT(m_iteration < DE_LENGTH_OF_ARRAY(iterations));
+	for (int method = 0; method < iterations[m_iteration].methodCount; method++)
+		(this->*iterations[m_iteration].methods[method])();
+
+	m_iteration++;
+
+	if (m_iteration < DE_LENGTH_OF_ARRAY(iterations))
+	{
 		return CONTINUE;
 	}
 	else

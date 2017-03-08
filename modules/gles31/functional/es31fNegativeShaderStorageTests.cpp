@@ -214,12 +214,18 @@ void block_number_limits (NegativeTestContext& ctx)
 	{
 		ctx.beginSection("maxShaderStorageBlocks: Exceed limits");
 
+		if (!ctx.isShaderSupported(static_cast<glu::ShaderType>(getGLUShaderType(glShaderTypes[ndx]))))
+		{
+			ctx.endSection();
+			continue;
+		}
+
 		int					maxSSBlocks			= getMaxSSBlockSize(ctx, glShaderTypes[ndx]);
 		std::string			source				= genBlockSource(ctx, maxSSBlocks+1, glShaderTypes[ndx]);
 
 		glu::ProgramSources sources;
 
-		if (maxSSBlocks == 0 || !ctx.isShaderSupported(static_cast<glu::ShaderType>(getGLUShaderType(glShaderTypes[ndx]))))
+		if (maxSSBlocks == 0)
 		{
 			ctx.endSection();
 			continue;

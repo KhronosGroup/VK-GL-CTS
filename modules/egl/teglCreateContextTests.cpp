@@ -128,11 +128,13 @@ public:
 		if (!eglu::hasExtension(egl, *display, "EGL_KHR_no_config_context"))
 			TCU_THROW(NotSupportedError, "EGL_KHR_no_config_context is not supported");
 
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "pass");
+
 		for (int apiNdx = 0; apiNdx < (int)DE_LENGTH_OF_ARRAY(s_apis); apiNdx++)
 		{
 			const EGLenum	api		= s_apis[apiNdx].api;
 
-			if (egl.bindAPI(api) != EGL_FALSE)
+			if (egl.bindAPI(api) == EGL_FALSE)
 			{
 				TCU_CHECK(egl.getError() == EGL_BAD_PARAMETER);
 				log << TestLog::Message << "eglBindAPI(" << eglu::getAPIStr(api) << ") failed, skipping" << TestLog::EndMessage;

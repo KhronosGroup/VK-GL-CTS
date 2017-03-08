@@ -240,10 +240,16 @@ NATIVE_LIBS				= [
 ANDROID_JAVA_API		= "android-22"
 NATIVE_LIB_NAME			= "libdeqp.so"
 
+def makeNdkVersionString (version):
+	minorVersionString = (chr(ord('a') + version[1]) if version[1] > 0 else "")
+	return "r%d%s" % (version[0], minorVersionString)
+
+ANDROID_NDK_VERSION			= (11,0)
+ANDROID_NDK_VERSION_STRING	= makeNdkVersionString(ANDROID_NDK_VERSION)
 def selectNDKPath ():
 	candidates =  [
-		os.path.expanduser("~/android-ndk-r11"),
-		"C:/android/android-ndk-r11",
+		os.path.expanduser("~/android-ndk-" + ANDROID_NDK_VERSION_STRING),
+		"C:/android/android-ndk-" + ANDROID_NDK_VERSION_STRING,
 		os.environ.get("ANDROID_NDK_PATH", None), # If not defined, return None
 	]
 

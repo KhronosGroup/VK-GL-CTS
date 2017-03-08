@@ -497,6 +497,7 @@ LOCAL_SRC_FILES := \
 	modules/egl/teglGLES2SharedRenderingPerfTests.cpp \
 	modules/egl/teglGLES2SharingTests.cpp \
 	modules/egl/teglGLES2SharingThreadedTests.cpp \
+	modules/egl/teglGetFrameTimestampsTests.cpp \
 	modules/egl/teglGetProcAddressTests.cpp \
 	modules/egl/teglImageFormatTests.cpp \
 	modules/egl/teglImageTests.cpp \
@@ -519,6 +520,7 @@ LOCAL_SRC_FILES := \
 	modules/egl/teglRenderCase.cpp \
 	modules/egl/teglRenderTests.cpp \
 	modules/egl/teglResizeTests.cpp \
+	modules/egl/teglRobustnessTests.cpp \
 	modules/egl/teglSimpleConfigCase.cpp \
 	modules/egl/teglSurfacelessContextTests.cpp \
 	modules/egl/teglSwapBuffersTests.cpp \
@@ -826,6 +828,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fProgramPipelineStateQueryTests.cpp \
 	modules/gles31/functional/es31fProgramStateQueryTests.cpp \
 	modules/gles31/functional/es31fProgramUniformTests.cpp \
+	modules/gles31/functional/es31fSRGBDecodeTests.cpp \
 	modules/gles31/functional/es31fSSBOArrayLengthTests.cpp \
 	modules/gles31/functional/es31fSSBOLayoutCase.cpp \
 	modules/gles31/functional/es31fSSBOLayoutTests.cpp \

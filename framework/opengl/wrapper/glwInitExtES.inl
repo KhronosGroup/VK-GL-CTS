@@ -43,6 +43,14 @@ if (de::contains(extSet, "GL_EXT_geometry_shader"))
 	gl->framebufferTexture	= (glFramebufferTextureFunc)	loader->get("glFramebufferTextureEXT");
 }
 
+if (de::contains(extSet, "GL_EXT_robustness"))
+{
+	gl->getGraphicsResetStatus	= (glGetGraphicsResetStatusFunc)	loader->get("glGetGraphicsResetStatusEXT");
+	gl->getnUniformfv			= (glGetnUniformfvFunc)				loader->get("glGetnUniformfvEXT");
+	gl->getnUniformiv			= (glGetnUniformivFunc)				loader->get("glGetnUniformivEXT");
+	gl->readnPixels				= (glReadnPixelsFunc)				loader->get("glReadnPixelsEXT");
+}
+
 if (de::contains(extSet, "GL_EXT_texture_buffer"))
 {
 	gl->texBuffer		= (glTexBufferFunc)			loader->get("glTexBufferEXT");

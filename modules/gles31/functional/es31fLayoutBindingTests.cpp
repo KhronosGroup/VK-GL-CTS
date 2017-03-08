@@ -773,20 +773,33 @@ void LayoutBindingNegativeCase::init (void)
 	m_tessSupport = m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader")
 					|| contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	int numShaderStages = (!m_tessSupport) ? 2 : 4;
+	if (!m_tessSupport && (m_shaderType == SHADERTYPE_TESS_EVALUATION || m_shaderType == SHADERTYPE_TESS_CONTROL))
+		TCU_THROW(NotSupportedError, "Tesselation shaders not supported");
+
+	int numShaderStages = m_tessSupport ? 4 : 2;
 
 	gl.getIntegerv(m_maxVertexUnitsEnum, &maxVertexUnits);
 	gl.getIntegerv(m_maxFragmentUnitsEnum, &maxFragmentUnits);
-	gl.getIntegerv(m_maxTessCtrlUnitsEnum, &maxTessCtrlUnits);
-	gl.getIntegerv(m_maxTessEvalUnitsEnum, &maxTessEvalUnits);
+
+	if (m_tessSupport)
+	{
+		gl.getIntegerv(m_maxTessCtrlUnitsEnum, &maxTessCtrlUnits);
+		gl.getIntegerv(m_maxTessEvalUnitsEnum, &maxTessEvalUnits);
+	}
+
 	gl.getIntegerv(m_maxCombinedUnitsEnum, &maxCombinedUnits);
 	gl.getIntegerv(m_maxBindingPointEnum, &numBindingPoints);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Querying available uniform numbers failed");
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Maximum units for uniform type in the vertex shader: " << maxVertexUnits << tcu::TestLog::EndMessage;
 	m_testCtx.getLog() << tcu::TestLog::Message << "Maximum units for uniform type in the fragment shader: " << maxFragmentUnits << tcu::TestLog::EndMessage;
-	m_testCtx.getLog() << tcu::TestLog::Message << "Maximum units for uniform type in the tessellation control shader: " << maxTessCtrlUnits << tcu::TestLog::EndMessage;
-	m_testCtx.getLog() << tcu::TestLog::Message << "Maximum units for uniform type in the tessellation evaluation shader: " << maxTessCtrlUnits << tcu::TestLog::EndMessage;
+
+	if (m_tessSupport)
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "Maximum units for uniform type in the tessellation control shader: " << maxTessCtrlUnits << tcu::TestLog::EndMessage;
+		m_testCtx.getLog() << tcu::TestLog::Message << "Maximum units for uniform type in the tessellation evaluation shader: " << maxTessCtrlUnits << tcu::TestLog::EndMessage;
+	}
+
 	m_testCtx.getLog() << tcu::TestLog::Message << "Maximum combined units for uniform type: " << maxCombinedUnits << tcu::TestLog::EndMessage;
 	m_testCtx.getLog() << tcu::TestLog::Message << "Maximum binding point for uniform type: " << numBindingPoints-1 << tcu::TestLog::EndMessage;
 
@@ -832,13 +845,13 @@ void LayoutBindingNegativeCase::init (void)
 			{
 				// leave room for contradictory case
 				if (maxUnits < 3)
-					throw tcu::NotSupportedError("Not enough uniforms available for test");
+					TCU_THROW(NotSupportedError, "Not enough uniforms available for test");
 				m_numBindings = rnd.getInt(2, deMin32(MAX_UNIFORM_ARRAY_SIZE, maxUnits-1));
 			}
 			else
 			{
 				if (maxUnits < 2)
-					throw tcu::NotSupportedError("Not enough uniforms available for test");
+					TCU_THROW(NotSupportedError, "Not enough uniforms available for test");
 				m_numBindings = rnd.getInt(2, deMin32(MAX_UNIFORM_ARRAY_SIZE, maxUnits));
 			}
 			break;
@@ -848,23 +861,27 @@ void LayoutBindingNegativeCase::init (void)
 	}
 
 	// Check that we have enough uniforms in different shaders to perform the tests
-	if ( ((m_shaderType == SHADERTYPE_VERTEX) || (m_shaderType == SHADERTYPE_ALL)) && (maxVertexUnits < m_numBindings) )
-		throw tcu::NotSupportedError("Vertex shader: not enough uniforms available for test");
-	if ( ((m_shaderType == SHADERTYPE_FRAGMENT) || (m_shaderType == SHADERTYPE_ALL)) && (maxFragmentUnits < m_numBindings) )
-		throw tcu::NotSupportedError("Fragment shader: not enough uniforms available for test");
-	if ( (m_tessSupport) && ((m_shaderType == SHADERTYPE_TESS_CONTROL) || (m_shaderType == SHADERTYPE_ALL)) && (maxTessCtrlUnits < m_numBindings) )
-		throw tcu::NotSupportedError("Tessellation control shader: not enough uniforms available for test");
-	if ( (m_tessSupport) && ((m_shaderType == SHADERTYPE_TESS_EVALUATION) || (m_shaderType == SHADERTYPE_ALL)) && (maxTessEvalUnits < m_numBindings) )
-		throw tcu::NotSupportedError("Tessellation evaluation shader: not enough uniforms available for test");
+	if (((m_shaderType == SHADERTYPE_VERTEX) || (m_shaderType == SHADERTYPE_ALL)) && (maxVertexUnits < m_numBindings) )
+		TCU_THROW(NotSupportedError, "Vertex shader: not enough uniforms available for test");
 
-	if ( (m_shaderType == SHADERTYPE_ALL) && (maxCombinedUnits < m_numBindings*numShaderStages) )
-		throw tcu::NotSupportedError("Not enough uniforms available for test");
+	if (((m_shaderType == SHADERTYPE_FRAGMENT) || (m_shaderType == SHADERTYPE_ALL)) && (maxFragmentUnits < m_numBindings) )
+		TCU_THROW(NotSupportedError, "Fragment shader: not enough uniforms available for test");
+
+	if (m_tessSupport && ((m_shaderType == SHADERTYPE_TESS_CONTROL) || (m_shaderType == SHADERTYPE_ALL)) && (maxTessCtrlUnits < m_numBindings) )
+		TCU_THROW(NotSupportedError, "Tessellation control shader: not enough uniforms available for test");
+
+	if (m_tessSupport && ((m_shaderType == SHADERTYPE_TESS_EVALUATION) || (m_shaderType == SHADERTYPE_ALL)) && (maxTessEvalUnits < m_numBindings) )
+		TCU_THROW(NotSupportedError, "Tessellation evaluation shader: not enough uniforms available for test");
+
+	if ((m_shaderType == SHADERTYPE_ALL) && (maxCombinedUnits < m_numBindings*numShaderStages) )
+		TCU_THROW(NotSupportedError, "Not enough uniforms available for test");
 
 	// Check that we have enough binding points to perform the tests
 	if (numBindingPoints < m_numBindings)
-		throw tcu::NotSupportedError("Not enough binding points available for test");
+		TCU_THROW(NotSupportedError, "Not enough binding points available for test");
+
 	if (m_errorType == ERRORTYPE_CONTRADICTORY && numBindingPoints == m_numBindings)
-		throw tcu::NotSupportedError("Not enough binding points available for test");
+		TCU_THROW(NotSupportedError, "Not enough binding points available for test");
 
 	// Initialize the binding points i.e. populate the two binding point vectors
 	initBindingPoints(0, numBindingPoints);

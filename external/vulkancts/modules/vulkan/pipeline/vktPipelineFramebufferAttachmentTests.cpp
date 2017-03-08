@@ -735,7 +735,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 				{
 					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,														// VkStructureType			sType;
 					DE_NULL,																					// const void*				pNext;
-					caseDef.multisample ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,	// VkAccessFlags			srcAccessMask;
+					(vk::VkAccessFlags)(caseDef.multisample ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
 					VK_ACCESS_TRANSFER_READ_BIT,																// VkAccessFlags			dstAccessMask;
 					caseDef.multisample ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			oldLayout;
 					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,														// VkImageLayout			newLayout;

@@ -609,17 +609,22 @@ protected:
 		}
 	}
 
+	float LinesOffsetY(unsigned int i, float rasterSize)
+	{
+		// Offset lines slightly from the center of pixels so as not to hit rasterizer
+		// tie-break conditions (the right-edge of the screen at half-integer pixel
+		// heights is the right corner of a diamond). rasterSize/16 is the smallest
+		// offset that the spec guarantees the rasterizer can resolve.
+		return -1.0f + rasterSize * static_cast<float>(i) + rasterSize / 2 + rasterSize / 16;
+	}
+
 	void LinesGen(unsigned int, unsigned int drawSizeY, CColorArray& output)
 	{
 		output.reserve(drawSizeY * 2);
 		float rasterSize = 2.0f / static_cast<float>(getWindowHeight());
 		for (unsigned int i = 0; i < drawSizeY; ++i)
 		{
-			// Offset lines slightly from the center of pixels so as not to hit rasterizer
-			// tie-break conditions (the right-edge of the screen at half-integer pixel
-			// heights is the right corner of a diamond). rasterSize/16 is the smallest
-			// offset that the spec guarantees the rasterizer can resolve.
-			float offsetY = -1.0f + rasterSize * static_cast<float>(i) + rasterSize / 2 + rasterSize / 16;
+			float offsetY = LinesOffsetY(i, rasterSize);
 			output.push_back(tcu::Vec4(-1.0f, offsetY, 0.0f, 1.0f));
 			output.push_back(tcu::Vec4(1.0f, offsetY, 0.0f, 1.0f));
 		}
@@ -630,7 +635,7 @@ protected:
 		float rasterSize = 2.0f / static_cast<float>(getWindowHeight());
 		for (unsigned int i = 0; i < drawSizeY; ++i)
 		{
-			float offsetY = -1.0f + rasterSize * static_cast<float>(i) + rasterSize / 2;
+			float offsetY = LinesOffsetY(i, rasterSize);
 			output.push_back(tcu::Vec4(-1.5f, -1.0f + offsetY, 0.0f, 1.0f)); //adj
 			output.push_back(tcu::Vec4(-1.0f, offsetY, 0.0f, 1.0f));
 			output.push_back(tcu::Vec4(1.0f, offsetY, 0.0f, 1.0f));
@@ -644,7 +649,7 @@ protected:
 		output.push_back(tcu::Vec4(-1.5f, rasterSize / 2, 0.0f, 1.0f));
 		for (unsigned int i = 0; i < drawSizeY; ++i)
 		{
-			float offsetY = -1.0f + rasterSize * static_cast<float>(i) + rasterSize / 2;
+			float offsetY = LinesOffsetY(i, rasterSize);
 			output.push_back(tcu::Vec4(-1.0f, offsetY, 0.0f, 1.0f));
 			output.push_back(tcu::Vec4(-1.0f, offsetY, 0.0f, 1.0f));
 			output.push_back(tcu::Vec4(1.0f, offsetY, 0.0f, 1.0f));

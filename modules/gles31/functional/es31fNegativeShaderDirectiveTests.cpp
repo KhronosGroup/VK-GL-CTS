@@ -539,42 +539,48 @@ void executeAccessingBoundingBoxType (NegativeTestContext& ctx, const std::strin
 
 	sourceStream.str(std::string());
 
-	ctx.beginSection("cannot access built-in type " + builtInTypeName + "[]" + " in tessellation evaluation shader");
-	sourceStream	<< version
-					<< extensionPrim
-					<< extensionTess
-					<< "layout (triangles, equal_spacing, ccw) in;\n"
-					<< "void main()\n"
-					<< "{\n"
-					<< "	" + builtInTypeName + "[0] = vec4(1.0, 1.0, 1.0, 1.0);\n"
-					<< "	gl_Position = (	gl_TessCoord.x * " +  builtInTypeName + "[0] +\n"
-					<< "					gl_TessCoord.y * " +  builtInTypeName + "[0] +\n"
-					<< "					gl_TessCoord.z * " +  builtInTypeName + "[0]);\n"
-					<< "}\n";
-	verifyShader(ctx, glu::SHADERTYPE_TESSELLATION_EVALUATION, sourceStream.str(), EXPECT_RESULT_FAIL);
-	ctx.endSection();
+	if (ctx.isShaderSupported(glu::SHADERTYPE_TESSELLATION_EVALUATION))
+	{
+		ctx.beginSection("cannot access built-in type " + builtInTypeName + "[]" + " in tessellation evaluation shader");
+		sourceStream	<< version
+						<< extensionPrim
+						<< extensionTess
+						<< "layout (triangles, equal_spacing, ccw) in;\n"
+						<< "void main()\n"
+						<< "{\n"
+						<< "	" + builtInTypeName + "[0] = vec4(1.0, 1.0, 1.0, 1.0);\n"
+						<< "	gl_Position = (	gl_TessCoord.x * " +  builtInTypeName + "[0] +\n"
+						<< "					gl_TessCoord.y * " +  builtInTypeName + "[0] +\n"
+						<< "					gl_TessCoord.z * " +  builtInTypeName + "[0]);\n"
+						<< "}\n";
+		verifyShader(ctx, glu::SHADERTYPE_TESSELLATION_EVALUATION, sourceStream.str(), EXPECT_RESULT_FAIL);
+		ctx.endSection();
 
-	sourceStream.str(std::string());
+		sourceStream.str(std::string());
+	}
 
-	ctx.beginSection("cannot access built-in type " + builtInTypeName + "[]" + " in geometry shader");
-	sourceStream	<< version
-					<< extensionPrim
-					<< "layout (triangles) in;\n"
-					<< "layout (triangle_strip, max_vertices = 3) out;\n"
-					<< "void main()\n"
-					<< "{\n"
-					<< "	" + builtInTypeName + "[0] = vec4(1.0, 1.0, 1.0, 1.0);\n"
-					<< "	for (int idx = 0; idx < 3; idx++)\n"
-					<< "	{\n"
-					<< "		gl_Position = gl_in[idx].gl_Position * " + builtInTypeName + "[0];\n"
-					<< "		EmitVertex();\n"
-					<< "	}\n"
-					<< "	EndPrimitive();\n"
-					<< "}\n";
-	verifyShader(ctx, glu::SHADERTYPE_GEOMETRY, sourceStream.str(), EXPECT_RESULT_FAIL);
-	ctx.endSection();
+	if (ctx.isShaderSupported(glu::SHADERTYPE_GEOMETRY))
+	{
+		ctx.beginSection("cannot access built-in type " + builtInTypeName + "[]" + " in geometry shader");
+		sourceStream	<< version
+						<< extensionPrim
+						<< "layout (triangles) in;\n"
+						<< "layout (triangle_strip, max_vertices = 3) out;\n"
+						<< "void main()\n"
+						<< "{\n"
+						<< "	" + builtInTypeName + "[0] = vec4(1.0, 1.0, 1.0, 1.0);\n"
+						<< "	for (int idx = 0; idx < 3; idx++)\n"
+						<< "	{\n"
+						<< "		gl_Position = gl_in[idx].gl_Position * " + builtInTypeName + "[0];\n"
+						<< "		EmitVertex();\n"
+						<< "	}\n"
+						<< "	EndPrimitive();\n"
+						<< "}\n";
+		verifyShader(ctx, glu::SHADERTYPE_GEOMETRY, sourceStream.str(), EXPECT_RESULT_FAIL);
+		ctx.endSection();
 
-	sourceStream.str(std::string());
+		sourceStream.str(std::string());
+	}
 
 	ctx.beginSection("cannot access built-in type " + builtInTypeName + "[]" + " in fragment shader");
 	sourceStream	<< version
