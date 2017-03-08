@@ -321,11 +321,10 @@ public:
 
 	virtual	void						initPrograms			(vk::SourceCollections& programCollection) const
 										{
-											m_executor->setShaderSources(programCollection);
+											generateSources(m_shaderType, m_spec, programCollection);
 										}
 
 	virtual TestInstance*				createInstance			(Context& context) const = 0;
-	virtual void						init					(void);
 
 protected:
 										IntegerFunctionCase		(const IntegerFunctionCase& other);
@@ -335,15 +334,12 @@ protected:
 
 	ShaderSpec							m_spec;
 
-	de::MovePtr<ShaderExecutor>			m_executor;
-
 	const int							m_numValues;
 };
 
 IntegerFunctionCase::IntegerFunctionCase (tcu::TestContext& testCtx, const char* name, const char* description, glu::ShaderType shaderType)
 	: TestCase		(testCtx, name, description)
 	, m_shaderType	(shaderType)
-	, m_executor	(DE_NULL)
 	, m_numValues	(100)
 {
 }
@@ -352,26 +348,18 @@ IntegerFunctionCase::~IntegerFunctionCase (void)
 {
 }
 
-void IntegerFunctionCase::init (void)
-{
-	DE_ASSERT(!m_executor);
-
-	m_executor = de::MovePtr<ShaderExecutor>(createExecutor(m_shaderType, m_spec));
-	m_testCtx.getLog() << *m_executor;
-}
-
 // IntegerFunctionTestInstance
 
 class IntegerFunctionTestInstance : public TestInstance
 {
 public:
-								IntegerFunctionTestInstance		(Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
+								IntegerFunctionTestInstance		(Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
 									: TestInstance	(context)
 									, m_shaderType	(shaderType)
 									, m_spec		(spec)
 									, m_numValues	(numValues)
 									, m_name		(name)
-									, m_executor	(executor)
+									, m_executor	(createExecutor(context, m_shaderType, m_spec))
 								{
 								}
 	virtual tcu::TestStatus		iterate							(void);
@@ -390,7 +378,7 @@ protected:
 
 	std::ostringstream					m_failMsg;				//!< Comparison failure help message.
 
-	ShaderExecutor&						m_executor;
+	de::UniquePtr<ShaderExecutor>		m_executor;
 };
 
 tcu::TestStatus IntegerFunctionTestInstance::iterate (void)
@@ -406,7 +394,7 @@ tcu::TestStatus IntegerFunctionTestInstance::iterate (void)
 	getInputValues(m_numValues, &inputPointers[0]);
 
 	// Execute shader.
-	m_executor.execute(m_context, m_numValues, &inputPointers[0], &outputPointers[0]);
+	m_executor->execute(m_numValues, &inputPointers[0], &outputPointers[0]);
 
 	// Compare results.
 	{
@@ -463,8 +451,8 @@ tcu::TestStatus IntegerFunctionTestInstance::iterate (void)
 class UaddCarryCaseInstance : public IntegerFunctionTestInstance
 {
 public:
-	UaddCarryCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: IntegerFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	UaddCarryCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: IntegerFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -562,20 +550,19 @@ public:
 		m_spec.outputs.push_back(Symbol("sum", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("carry", glu::VarType(baseType, glu::PRECISION_LOWP)));
 		m_spec.source = "sum = uaddCarry(x, y, carry);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new UaddCarryCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new UaddCarryCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class UsubBorrowCaseInstance : public IntegerFunctionTestInstance
 {
 public:
-	UsubBorrowCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: IntegerFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	UsubBorrowCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: IntegerFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -671,20 +658,19 @@ public:
 		m_spec.outputs.push_back(Symbol("diff", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("carry", glu::VarType(baseType, glu::PRECISION_LOWP)));
 		m_spec.source = "diff = usubBorrow(x, y, carry);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new UsubBorrowCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new UsubBorrowCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class UmulExtendedCaseInstance : public IntegerFunctionTestInstance
 {
 public:
-	UmulExtendedCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: IntegerFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	UmulExtendedCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: IntegerFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -776,20 +762,19 @@ public:
 		m_spec.outputs.push_back(Symbol("msb", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("lsb", glu::VarType(baseType, precision)));
 		m_spec.source = "umulExtended(x, y, msb, lsb);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new UmulExtendedCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new UmulExtendedCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class ImulExtendedCaseInstance : public IntegerFunctionTestInstance
 {
 public:
-	ImulExtendedCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: IntegerFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	ImulExtendedCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: IntegerFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -882,20 +867,19 @@ public:
 		m_spec.outputs.push_back(Symbol("msb", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("lsb", glu::VarType(baseType, precision)));
 		m_spec.source = "imulExtended(x, y, msb, lsb);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new ImulExtendedCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new ImulExtendedCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class BitfieldExtractCaseInstance : public IntegerFunctionTestInstance
 {
 public:
-	BitfieldExtractCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: IntegerFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	BitfieldExtractCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: IntegerFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -960,20 +944,19 @@ public:
 		m_spec.inputs.push_back(Symbol("bits", glu::VarType(glu::TYPE_INT, precision)));
 		m_spec.outputs.push_back(Symbol("extracted", glu::VarType(baseType, precision)));
 		m_spec.source = "extracted = bitfieldExtract(value, offset, bits);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new BitfieldExtractCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new BitfieldExtractCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class BitfieldInsertCaseInstance : public IntegerFunctionTestInstance
 {
 public:
-	BitfieldInsertCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: IntegerFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	BitfieldInsertCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: IntegerFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1043,20 +1026,19 @@ public:
 		m_spec.inputs.push_back(Symbol("bits", glu::VarType(glu::TYPE_INT, precision)));
 		m_spec.outputs.push_back(Symbol("result", glu::VarType(baseType, precision)));
 		m_spec.source = "result = bitfieldInsert(base, insert, offset, bits);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new BitfieldInsertCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new BitfieldInsertCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class BitfieldReverseCaseInstance : public IntegerFunctionTestInstance
 {
 public:
-	BitfieldReverseCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: IntegerFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	BitfieldReverseCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: IntegerFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1104,20 +1086,19 @@ public:
 		m_spec.inputs.push_back(Symbol("value", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("result", glu::VarType(baseType, glu::PRECISION_HIGHP)));
 		m_spec.source = "result = bitfieldReverse(value);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new BitfieldReverseCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new BitfieldReverseCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class BitCountCaseInstance : public IntegerFunctionTestInstance
 {
 public:
-	BitCountCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: IntegerFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	BitCountCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: IntegerFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1169,20 +1150,19 @@ public:
 		m_spec.inputs.push_back(Symbol("value", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("count", glu::VarType(intType, glu::PRECISION_MEDIUMP)));
 		m_spec.source = "count = bitCount(value);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new BitCountCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new BitCountCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class FindLSBCaseInstance : public IntegerFunctionTestInstance
 {
 public:
-	FindLSBCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: IntegerFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	FindLSBCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: IntegerFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1234,20 +1214,19 @@ public:
 		m_spec.inputs.push_back(Symbol("value", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("lsb", glu::VarType(intType, glu::PRECISION_LOWP)));
 		m_spec.source = "lsb = findLSB(value);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new FindLSBCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new FindLSBCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class findMSBCaseInstance : public IntegerFunctionTestInstance
 {
 public:
-	findMSBCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: IntegerFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	findMSBCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: IntegerFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1299,12 +1278,11 @@ public:
 		m_spec.inputs.push_back(Symbol("value", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("msb", glu::VarType(intType, glu::PRECISION_LOWP)));
 		m_spec.source = "msb = findMSB(value);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new findMSBCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new findMSBCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 

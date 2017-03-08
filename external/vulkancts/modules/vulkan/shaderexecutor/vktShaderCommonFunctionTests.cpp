@@ -447,28 +447,24 @@ public:
 										~CommonFunctionCase			(void);
 	virtual	void						initPrograms				(vk::SourceCollections& programCollection) const
 										{
-											m_executor->setShaderSources(programCollection);
+											generateSources(m_shaderType, m_spec, programCollection);
 										}
 
 	virtual TestInstance*				createInstance				(Context& context) const = 0;
 
-	void								init						(void);
-
 protected:
-										CommonFunctionCase			(const CommonFunctionCase& other);
-	CommonFunctionCase&					operator=					(const CommonFunctionCase& other);
+										CommonFunctionCase			(const CommonFunctionCase&);
+	CommonFunctionCase&					operator=					(const CommonFunctionCase&);
 
 	const glu::ShaderType				m_shaderType;
 	ShaderSpec							m_spec;
 	const int							m_numValues;
-	de::MovePtr<ShaderExecutor>			m_executor;
 };
 
 CommonFunctionCase::CommonFunctionCase (tcu::TestContext& testCtx, const char* name, const char* description, glu::ShaderType shaderType)
 	: TestCase		(testCtx, name, description)
 	, m_shaderType	(shaderType)
 	, m_numValues	(100)
-	, m_executor	(DE_NULL)
 {
 }
 
@@ -476,26 +472,18 @@ CommonFunctionCase::~CommonFunctionCase (void)
 {
 }
 
-void CommonFunctionCase::init (void)
-{
-	DE_ASSERT(!m_executor);
-
-	m_executor = de::MovePtr<ShaderExecutor>(createExecutor(m_shaderType, m_spec));
-	m_testCtx.getLog() << *m_executor;
-}
-
 // CommonFunctionTestInstance
 
 class CommonFunctionTestInstance : public TestInstance
 {
 public:
-										CommonFunctionTestInstance	(Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
+										CommonFunctionTestInstance	(Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
 											: TestInstance	(context)
 											, m_shaderType	(shaderType)
 											, m_spec		(spec)
 											, m_numValues	(numValues)
 											, m_name		(name)
-											, m_executor	(executor)
+											, m_executor	(createExecutor(context, shaderType, spec))
 										{
 										}
 	virtual tcu::TestStatus				iterate						(void);
@@ -505,14 +493,15 @@ protected:
 	virtual bool						compare						(const void* const* inputs, const void* const* outputs) = 0;
 
 	const glu::ShaderType				m_shaderType;
-	ShaderSpec							m_spec;
+	const ShaderSpec					m_spec;
 	const int							m_numValues;
 
+	// \todo [2017-03-07 pyry] Hack used to generate seeds for test cases - get rid of this.
 	const char*							m_name;
 
 	std::ostringstream					m_failMsg;					//!< Comparison failure help message.
 
-	ShaderExecutor&						m_executor;
+	de::UniquePtr<ShaderExecutor>		m_executor;
 };
 
 tcu::TestStatus CommonFunctionTestInstance::iterate (void)
@@ -528,7 +517,7 @@ tcu::TestStatus CommonFunctionTestInstance::iterate (void)
 	getInputValues(m_numValues, &inputPointers[0]);
 
 	// Execute shader.
-	m_executor.execute(m_context, m_numValues, &inputPointers[0], &outputPointers[0]);
+	m_executor->execute(m_numValues, &inputPointers[0], &outputPointers[0]);
 
 	// Compare results.
 	{
@@ -586,8 +575,8 @@ tcu::TestStatus CommonFunctionTestInstance::iterate (void)
 class AbsCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	AbsCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	AbsCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -671,20 +660,19 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, precision)));
 		m_spec.source = "out0 = abs(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new AbsCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new AbsCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class SignCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	SignCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	SignCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -781,12 +769,11 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, precision)));
 		m_spec.source = "out0 = sign(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new SignCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new SignCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
@@ -804,8 +791,8 @@ static float roundEven (float v)
 class RoundEvenCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	RoundEvenCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	RoundEvenCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -918,20 +905,19 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, precision)));
 		m_spec.source = "out0 = roundEven(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new RoundEvenCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new RoundEvenCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class ModfCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	ModfCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	ModfCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -999,20 +985,19 @@ public:
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out1", glu::VarType(baseType, precision)));
 		m_spec.source = "out0 = modf(in0, out1);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new ModfCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new ModfCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class IsnanCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	IsnanCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	IsnanCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1097,20 +1082,19 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(boolType, glu::PRECISION_LAST)));
 		m_spec.source = "out0 = isnan(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new IsnanCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new IsnanCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class IsinfCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	IsinfCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	IsinfCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1196,20 +1180,19 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(boolType, glu::PRECISION_LAST)));
 		m_spec.source = "out0 = isinf(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new IsinfCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new IsinfCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class FloatBitsToUintIntCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	FloatBitsToUintIntCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	FloatBitsToUintIntCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1271,20 +1254,19 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(intType, glu::PRECISION_HIGHP)));
 		m_spec.source = outIsSigned ? "out0 = floatBitsToInt(in0);" : "out0 = floatBitsToUint(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new FloatBitsToUintIntCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new FloatBitsToUintIntCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class FloatBitsToIntCaseInstance : public FloatBitsToUintIntCaseInstance
 {
 public:
-	FloatBitsToIntCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: FloatBitsToUintIntCaseInstance	(context, shaderType, spec, executor, numValues, name)
+	FloatBitsToIntCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: FloatBitsToUintIntCaseInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 };
@@ -1302,8 +1284,8 @@ public:
 class FloatBitsToUintCaseInstance : public FloatBitsToUintIntCaseInstance
 {
 public:
-	FloatBitsToUintCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: FloatBitsToUintIntCaseInstance	(context, shaderType, spec, executor, numValues, name)
+	FloatBitsToUintCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: FloatBitsToUintIntCaseInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 };
@@ -1320,8 +1302,8 @@ public:
 class BitsToFloatCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	BitsToFloatCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	BitsToFloatCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1373,20 +1355,19 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, glu::PRECISION_HIGHP)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(floatType, glu::PRECISION_HIGHP)));
 		m_spec.source = inIsSigned ? "out0 = intBitsToFloat(in0);" : "out0 = uintBitsToFloat(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new BitsToFloatCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new BitsToFloatCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class FloorCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	FloorCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	FloorCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1484,20 +1465,19 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, precision)));
 		m_spec.source = "out0 = floor(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new FloorCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new FloorCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class TruncCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	TruncCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	TruncCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1607,20 +1587,19 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, precision)));
 		m_spec.source = "out0 = trunc(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new TruncCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new TruncCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class RoundCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	RoundCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	RoundCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1750,20 +1729,19 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, precision)));
 		m_spec.source = "out0 = round(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new RoundCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new RoundCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class CeilCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	CeilCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	CeilCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1870,20 +1848,19 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, precision)));
 		m_spec.source = "out0 = ceil(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new CeilCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new CeilCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class FractCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	FractCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	FractCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -1997,20 +1974,19 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, precision)));
 		m_spec.source = "out0 = fract(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new FractCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new FractCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class FrexpCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	FrexpCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	FrexpCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -2104,20 +2080,19 @@ public:
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, glu::PRECISION_HIGHP)));
 		m_spec.outputs.push_back(Symbol("out1", glu::VarType(intType, glu::PRECISION_HIGHP)));
 		m_spec.source = "out0 = frexp(in0, out1);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new FrexpCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new FrexpCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class LdexpCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	LdexpCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	LdexpCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -2255,20 +2230,19 @@ public:
 		m_spec.inputs.push_back(Symbol("in1", glu::VarType(intType, glu::PRECISION_HIGHP)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, glu::PRECISION_HIGHP)));
 		m_spec.source = "out0 = ldexp(in0, in1);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new LdexpCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new LdexpCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 
 class FmaCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	FmaCaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, ShaderExecutor& executor, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, executor, numValues, name)
+	FmaCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
 	{
 	}
 
@@ -2397,11 +2371,6 @@ public:
 class FmaCase : public CommonFunctionCase
 {
 public:
-	void init (void)
-	{
-		CommonFunctionCase::init();
-	}
-
 	FmaCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
 		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision, shaderType).c_str(), "fma", shaderType)
 	{
@@ -2411,12 +2380,11 @@ public:
 		m_spec.outputs.push_back(Symbol("res", glu::VarType(baseType, precision)));
 		m_spec.source = "res = fma(a, b, c);";
 		m_spec.globalDeclarations = "#extension GL_EXT_gpu_shader5 : require\n";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new FmaCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new FmaCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
 	}
 };
 

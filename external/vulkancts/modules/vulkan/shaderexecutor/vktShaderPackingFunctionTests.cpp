@@ -104,15 +104,12 @@ public:
 
 	virtual	void						initPrograms						(vk::SourceCollections& programCollection) const
 										{
-											m_executor->setShaderSources(programCollection);
+											generateSources(m_shaderType, m_spec, programCollection);
 										}
-	virtual TestInstance*				createInstance						(Context& context) const = 0;
-	void								init								(void);
 
 protected:
 	const glu::ShaderType				m_shaderType;
 	ShaderSpec							m_spec;
-	de::SharedPtr<ShaderExecutor>		m_executor;
 
 private:
 										ShaderPackingFunctionCase			(const ShaderPackingFunctionCase& other);
@@ -122,7 +119,6 @@ private:
 ShaderPackingFunctionCase::ShaderPackingFunctionCase (tcu::TestContext& testCtx, const char* name, const char* description, glu::ShaderType shaderType)
 	: TestCase		(testCtx, name, description)
 	, m_shaderType	(shaderType)
-	, m_executor	(DE_NULL)
 {
 }
 
@@ -130,26 +126,18 @@ ShaderPackingFunctionCase::~ShaderPackingFunctionCase (void)
 {
 }
 
-void ShaderPackingFunctionCase::init (void)
-{
-	DE_ASSERT(!m_executor);
-
-	m_executor = de::SharedPtr<ShaderExecutor>(createExecutor(m_shaderType, m_spec));
-	m_testCtx.getLog() << *m_executor;
-}
-
 // ShaderPackingFunctionTestInstance
 
 class ShaderPackingFunctionTestInstance : public TestInstance
 {
 public:
-										ShaderPackingFunctionTestInstance	(Context& context, glu::ShaderType shaderType, ShaderSpec spec, de::SharedPtr<ShaderExecutor> executor, const char* name)
+										ShaderPackingFunctionTestInstance	(Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, const char* name)
 											: TestInstance	(context)
 											, m_testCtx		(context.getTestContext())
 											, m_shaderType	(shaderType)
 											, m_spec		(spec)
 											, m_name		(name)
-											, m_executor	(executor)
+											, m_executor	(createExecutor(context, m_shaderType, m_spec))
 										{
 										}
 	virtual tcu::TestStatus				iterate								(void) = 0;
@@ -158,7 +146,7 @@ protected:
 	const glu::ShaderType				m_shaderType;
 	ShaderSpec							m_spec;
 	const char*							m_name;
-	de::SharedPtr<ShaderExecutor>		m_executor;
+	de::UniquePtr<ShaderExecutor>		m_executor;
 };
 
 // Test cases
@@ -166,8 +154,8 @@ protected:
 class PackSnorm2x16CaseInstance: public ShaderPackingFunctionTestInstance
 {
 public:
-	PackSnorm2x16CaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, glu::Precision precision, de::SharedPtr<ShaderExecutor> executor, const char* name)
-		: ShaderPackingFunctionTestInstance	(context, shaderType, spec, executor, name)
+	PackSnorm2x16CaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, glu::Precision precision, const char* name)
+		: ShaderPackingFunctionTestInstance	(context, shaderType, spec, name)
 		, m_precision						(precision)
 	{
 	}
@@ -212,7 +200,7 @@ public:
 			const void*	in	= &inputs[0];
 			void*		out	= &outputs[0];
 
-			m_executor->execute(m_context, (int)inputs.size(), &in, &out);
+			m_executor->execute((int)inputs.size(), &in, &out);
 		}
 
 		// Verify
@@ -274,12 +262,11 @@ public:
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
 
 		m_spec.source = "out0 = packSnorm2x16(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new PackSnorm2x16CaseInstance(ctx, m_shaderType, m_spec, m_precision, m_executor, getName());
+		return new PackSnorm2x16CaseInstance(ctx, m_shaderType, m_spec, m_precision, getName());
 	}
 
 private:
@@ -289,8 +276,8 @@ private:
 class UnpackSnorm2x16CaseInstance : public ShaderPackingFunctionTestInstance
 {
 public:
-	UnpackSnorm2x16CaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, de::SharedPtr<ShaderExecutor> executor, const char* name)
-	: ShaderPackingFunctionTestInstance (context, shaderType, spec, executor, name)
+	UnpackSnorm2x16CaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, const char* name)
+	: ShaderPackingFunctionTestInstance (context, shaderType, spec, name)
 	{
 	}
 
@@ -319,7 +306,7 @@ public:
 			const void*	in	= &inputs[0];
 			void*		out	= &outputs[0];
 
-			m_executor->execute(m_context, (int)inputs.size(), &in, &out);
+			m_executor->execute((int)inputs.size(), &in, &out);
 		}
 
 		// Verify
@@ -379,20 +366,19 @@ public:
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_FLOAT_VEC2, glu::PRECISION_HIGHP)));
 
 		m_spec.source = "out0 = unpackSnorm2x16(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new UnpackSnorm2x16CaseInstance(ctx, m_shaderType, m_spec, m_executor, getName());
+		return new UnpackSnorm2x16CaseInstance(ctx, m_shaderType, m_spec, getName());
 	}
 };
 
 class PackUnorm2x16CaseInstance : public ShaderPackingFunctionTestInstance
 {
 public:
-	PackUnorm2x16CaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, glu::Precision precision, de::SharedPtr<ShaderExecutor> executor, const char* name)
-	: ShaderPackingFunctionTestInstance	(context, shaderType, spec, executor, name)
+	PackUnorm2x16CaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, glu::Precision precision, const char* name)
+	: ShaderPackingFunctionTestInstance	(context, shaderType, spec, name)
 	, m_precision						(precision)
 	{
 	}
@@ -437,7 +423,7 @@ public:
 			const void*	in	= &inputs[0];
 			void*		out	= &outputs[0];
 
-			m_executor->execute(m_context, (int)inputs.size(), &in, &out);
+			m_executor->execute((int)inputs.size(), &in, &out);
 		}
 
 		// Verify
@@ -499,12 +485,11 @@ public:
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
 
 		m_spec.source = "out0 = packUnorm2x16(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new PackUnorm2x16CaseInstance(ctx, m_shaderType, m_spec, m_precision, m_executor, getName());
+		return new PackUnorm2x16CaseInstance(ctx, m_shaderType, m_spec, m_precision, getName());
 	}
 
 private:
@@ -514,8 +499,8 @@ private:
 class UnpackUnorm2x16CaseInstance : public ShaderPackingFunctionTestInstance
 {
 public:
-	UnpackUnorm2x16CaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, de::SharedPtr<ShaderExecutor> executor, const char* name)
-		: ShaderPackingFunctionTestInstance (context, shaderType, spec, executor, name)
+	UnpackUnorm2x16CaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, const char* name)
+		: ShaderPackingFunctionTestInstance (context, shaderType, spec, name)
 	{
 	}
 
@@ -544,7 +529,7 @@ public:
 			const void*	in	= &inputs[0];
 			void*		out	= &outputs[0];
 
-			m_executor->execute(m_context, (int)inputs.size(), &in, &out);
+			m_executor->execute((int)inputs.size(), &in, &out);
 		}
 
 		// Verify
@@ -605,12 +590,11 @@ public:
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_FLOAT_VEC2, glu::PRECISION_HIGHP)));
 
 		m_spec.source = "out0 = unpackUnorm2x16(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new UnpackUnorm2x16CaseInstance(ctx, m_shaderType, m_spec, m_executor, getName());
+		return new UnpackUnorm2x16CaseInstance(ctx, m_shaderType, m_spec, getName());
 	}
 
 };
@@ -618,8 +602,8 @@ public:
 class PackHalf2x16CaseInstance : public ShaderPackingFunctionTestInstance
 {
 public:
-	PackHalf2x16CaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, de::SharedPtr<ShaderExecutor> executor, const char* name)
-	: ShaderPackingFunctionTestInstance (context, shaderType, spec, executor, name)
+	PackHalf2x16CaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, const char* name)
+	: ShaderPackingFunctionTestInstance (context, shaderType, spec, name)
 	{
 	}
 
@@ -669,7 +653,7 @@ public:
 			const void*	in	= &inputs[0];
 			void*		out	= &outputs[0];
 
-			m_executor->execute(m_context, (int)inputs.size(), &in, &out);
+			m_executor->execute((int)inputs.size(), &in, &out);
 		}
 
 		// Verify
@@ -727,12 +711,11 @@ public:
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
 
 		m_spec.source = "out0 = packHalf2x16(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new PackHalf2x16CaseInstance(ctx, m_shaderType, m_spec, m_executor, getName());
+		return new PackHalf2x16CaseInstance(ctx, m_shaderType, m_spec, getName());
 	}
 
 };
@@ -740,8 +723,8 @@ public:
 class UnpackHalf2x16CaseInstance : public ShaderPackingFunctionTestInstance
 {
 public:
-	UnpackHalf2x16CaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, de::SharedPtr<ShaderExecutor> executor, const char* name)
-	: ShaderPackingFunctionTestInstance (context, shaderType, spec, executor, name)
+	UnpackHalf2x16CaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, const char* name)
+	: ShaderPackingFunctionTestInstance (context, shaderType, spec, name)
 	{
 	}
 
@@ -788,7 +771,7 @@ public:
 			const void*	in	= &inputs[0];
 			void*		out	= &outputs[0];
 
-			m_executor->execute(m_context, (int)inputs.size(), &in, &out);
+			m_executor->execute((int)inputs.size(), &in, &out);
 		}
 
 		// Verify
@@ -853,12 +836,11 @@ public:
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_FLOAT_VEC2, glu::PRECISION_MEDIUMP)));
 
 		m_spec.source = "out0 = unpackHalf2x16(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new UnpackHalf2x16CaseInstance(ctx, m_shaderType, m_spec, m_executor, getName());
+		return new UnpackHalf2x16CaseInstance(ctx, m_shaderType, m_spec, getName());
 	}
 
 };
@@ -866,8 +848,8 @@ public:
 class PackSnorm4x8CaseInstance : public ShaderPackingFunctionTestInstance
 {
 public:
-	PackSnorm4x8CaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, glu::Precision precision, de::SharedPtr<ShaderExecutor> executor, const char* name)
-		: ShaderPackingFunctionTestInstance	(context, shaderType, spec, executor, name)
+	PackSnorm4x8CaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, glu::Precision precision, const char* name)
+		: ShaderPackingFunctionTestInstance	(context, shaderType, spec, name)
 		, m_precision						(precision)
 	{
 	}
@@ -916,7 +898,7 @@ public:
 			const void*	in	= &inputs[0];
 			void*		out	= &outputs[0];
 
-			m_executor->execute(m_context, (int)inputs.size(), &in, &out);
+			m_executor->execute((int)inputs.size(), &in, &out);
 		}
 
 		// Verify
@@ -984,12 +966,11 @@ public:
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
 
 		m_spec.source = "out0 = packSnorm4x8(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new PackSnorm4x8CaseInstance(ctx, m_shaderType, m_spec, m_precision, m_executor, getName());
+		return new PackSnorm4x8CaseInstance(ctx, m_shaderType, m_spec, m_precision, getName());
 	}
 
 private:
@@ -999,8 +980,8 @@ private:
 class UnpackSnorm4x8CaseInstance : public ShaderPackingFunctionTestInstance
 {
 public:
-	UnpackSnorm4x8CaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, de::SharedPtr<ShaderExecutor> executor, const char* name)
-		: ShaderPackingFunctionTestInstance	(context, shaderType, spec, executor, name)
+	UnpackSnorm4x8CaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, const char* name)
+		: ShaderPackingFunctionTestInstance	(context, shaderType, spec, name)
 	{
 	}
 
@@ -1029,7 +1010,7 @@ public:
 			const void*	in	= &inputs[0];
 			void*		out	= &outputs[0];
 
-			m_executor->execute(m_context, (int)inputs.size(), &in, &out);
+			m_executor->execute((int)inputs.size(), &in, &out);
 		}
 
 		// Verify
@@ -1098,12 +1079,11 @@ public:
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
 
 		m_spec.source = "out0 = unpackSnorm4x8(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new UnpackSnorm4x8CaseInstance(ctx, m_shaderType, m_spec, m_executor, getName());
+		return new UnpackSnorm4x8CaseInstance(ctx, m_shaderType, m_spec, getName());
 	}
 
 };
@@ -1111,8 +1091,8 @@ public:
 class PackUnorm4x8CaseInstance : public ShaderPackingFunctionTestInstance
 {
 public:
-	PackUnorm4x8CaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, glu::Precision precision, de::SharedPtr<ShaderExecutor> executor, const char* name)
-		: ShaderPackingFunctionTestInstance	(context, shaderType, spec, executor, name)
+	PackUnorm4x8CaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, glu::Precision precision, const char* name)
+		: ShaderPackingFunctionTestInstance	(context, shaderType, spec, name)
 		, m_precision						(precision)
 	{
 	}
@@ -1161,7 +1141,7 @@ public:
 			const void*	in	= &inputs[0];
 			void*		out	= &outputs[0];
 
-			m_executor->execute(m_context, (int)inputs.size(), &in, &out);
+			m_executor->execute((int)inputs.size(), &in, &out);
 		}
 
 		// Verify
@@ -1229,12 +1209,11 @@ public:
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
 
 		m_spec.source = "out0 = packUnorm4x8(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new PackUnorm4x8CaseInstance(ctx, m_shaderType, m_spec, m_precision, m_executor, getName());
+		return new PackUnorm4x8CaseInstance(ctx, m_shaderType, m_spec, m_precision, getName());
 	}
 
 private:
@@ -1244,8 +1223,8 @@ private:
 class UnpackUnorm4x8CaseInstance : public ShaderPackingFunctionTestInstance
 {
 public:
-	UnpackUnorm4x8CaseInstance (Context& context, glu::ShaderType shaderType, ShaderSpec spec, de::SharedPtr<ShaderExecutor> executor, const char* name)
-		: ShaderPackingFunctionTestInstance	(context, shaderType, spec, executor, name)
+	UnpackUnorm4x8CaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, const char* name)
+		: ShaderPackingFunctionTestInstance	(context, shaderType, spec, name)
 	{
 	}
 
@@ -1274,7 +1253,7 @@ public:
 			const void*	in	= &inputs[0];
 			void*		out	= &outputs[0];
 
-			m_executor->execute(m_context, (int)inputs.size(), &in, &out);
+			m_executor->execute((int)inputs.size(), &in, &out);
 		}
 
 		// Verify
@@ -1342,12 +1321,11 @@ public:
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
 
 		m_spec.source = "out0 = unpackUnorm4x8(in0);";
-		init();
 	}
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new UnpackUnorm4x8CaseInstance(ctx, m_shaderType, m_spec, m_executor, getName());
+		return new UnpackUnorm4x8CaseInstance(ctx, m_shaderType, m_spec, getName());
 	}
 
 };

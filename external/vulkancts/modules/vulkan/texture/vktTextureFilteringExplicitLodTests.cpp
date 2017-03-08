@@ -37,6 +37,7 @@
 #include "vkStrUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkMemUtil.hpp"
 
 #include "tcuTexLookupVerifier.hpp"
 #include "tcuTestLog.hpp"
@@ -661,7 +662,7 @@ class TextureFilteringTestInstance : public TestInstance
 public:
 										TextureFilteringTestInstance	(Context&					ctx,
 																		 const TestCaseData&		testCaseData,
-																		 ShaderExecutor&			shaderExecutor,
+																		 const ShaderSpec&			shaderSpec,
 																		 de::MovePtr<DataGenerator>	gen);
 
 	virtual TestStatus					iterate							(void) { return runTest(); }
@@ -675,6 +676,8 @@ protected:
 
 	tcu::Sampler						mapTcuSampler					(void) const;
 
+	const glu::ShaderType				m_shaderType;
+	const ShaderSpec					m_shaderSpec;
 	const ImageViewParameters			m_imParams;
 	const SamplerParameters				m_samplerParams;
 	const SampleLookupSettings			m_sampleLookupSettings;
@@ -682,12 +685,16 @@ protected:
 	std::vector<SampleArguments>		m_sampleArguments;
 	deUint32							m_numSamples;
 
-	ShaderExecutor&						m_shaderExecutor;
-
 	de::MovePtr<Allocation>				m_imAllocation;
 	Move<VkImage>						m_im;
 	Move<VkImageView>					m_imView;
 	Move<VkSampler>						m_sampler;
+
+	Move<VkDescriptorSetLayout>			m_extraResourcesLayout;
+	Move<VkDescriptorPool>				m_extraResourcesPool;
+	Move<VkDescriptorSet>				m_extraResourcesSet;
+
+	de::MovePtr<ShaderExecutor>			m_executor;
 
 	std::vector<ConstPixelBufferAccess> m_levels;
 	de::MovePtr<DataGenerator>			m_gen;
@@ -698,13 +705,14 @@ protected:
 
 TextureFilteringTestInstance::TextureFilteringTestInstance (Context&					ctx,
 															const TestCaseData&			testCaseData,
-															ShaderExecutor&				shaderExecutor,
+															const ShaderSpec&			shaderSpec,
 															de::MovePtr<DataGenerator>	gen)
 	: TestInstance				(ctx)
+	, m_shaderType				(testCaseData.shaderType)
+	, m_shaderSpec				(shaderSpec)
 	, m_imParams				(testCaseData.imParams)
 	, m_samplerParams			(testCaseData.samplerParams)
 	, m_sampleLookupSettings	(testCaseData.sampleLookupSettings)
-	, m_shaderExecutor			(shaderExecutor)
 	, m_levels					(testCaseData.pba)
 	, m_gen						(gen.release())
 {
@@ -725,8 +733,6 @@ TestStatus TextureFilteringTestInstance::runTest (void)
 
 	createResources();
 	initializeImage(m_context, m_im.get(), &m_levels[0], m_imParams);
-
-	m_shaderExecutor.addSamplerUniform(0, m_imView.get(), m_sampler.get());
 
 	deUint64 startTime, endTime;
 
@@ -854,7 +860,7 @@ void TextureFilteringTestInstance::execute (void)
 		reinterpret_cast<void*>(&resultCoordsTemp[0])
 	};
 
-	m_shaderExecutor.execute(m_context, m_numSamples, inputs, outputs);
+	m_executor->execute(m_numSamples, inputs, outputs, *m_extraResourcesSet);
 
 	m_resultSamples.resize(m_numSamples);
 	m_resultCoords .resize(m_numSamples);
@@ -951,6 +957,82 @@ void TextureFilteringTestInstance::createResources (void)
 
 	const VkSamplerCreateInfo samplerCreateInfo = mapSamplerCreateInfo(m_samplerParams);
 	m_sampler = createSampler(vkd, device, &samplerCreateInfo);
+
+	// Create additional descriptors
+
+	{
+		const VkDescriptorSetLayoutBinding		bindings[]	=
+		{
+			{ 0u,	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	1u,		VK_SHADER_STAGE_ALL,	DE_NULL		},
+		};
+		const VkDescriptorSetLayoutCreateInfo	layoutInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			DE_NULL,
+			(VkDescriptorSetLayoutCreateFlags)0u,
+			DE_LENGTH_OF_ARRAY(bindings),
+			bindings,
+		};
+
+		m_extraResourcesLayout = createDescriptorSetLayout(vkd, device, &layoutInfo);
+	}
+
+	{
+		const VkDescriptorPoolSize			poolSizes[]	=
+		{
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	1u	},
+		};
+		const VkDescriptorPoolCreateInfo	poolInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			DE_NULL,
+			(VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+			1u,		// maxSets
+			DE_LENGTH_OF_ARRAY(poolSizes),
+			poolSizes,
+		};
+
+		m_extraResourcesPool = createDescriptorPool(vkd, device, &poolInfo);
+	}
+
+	{
+		const VkDescriptorSetAllocateInfo	allocInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+			*m_extraResourcesPool,
+			1u,
+			&m_extraResourcesLayout.get(),
+		};
+
+		m_extraResourcesSet = allocateDescriptorSet(vkd, device, &allocInfo);
+	}
+
+	{
+		const VkDescriptorImageInfo		imageInfo			=
+		{
+			*m_sampler,
+			*m_imView,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		};
+		const VkWriteDescriptorSet		descriptorWrite		=
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			DE_NULL,
+			*m_extraResourcesSet,
+			0u,		// dstBinding
+			0u,		// dstArrayElement
+			1u,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			&imageInfo,
+			(const VkDescriptorBufferInfo*)DE_NULL,
+			(const VkBufferView*)DE_NULL,
+		};
+
+		vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+	}
+
+	m_executor = de::MovePtr<ShaderExecutor>(createExecutor(m_context, m_shaderType, m_shaderSpec, *m_extraResourcesLayout));
 }
 
 VkFormatFeatureFlags getRequiredFormatFeatures (const SamplerParameters& samplerParams)
@@ -999,52 +1081,46 @@ public:
 	{
 	}
 
-	void init (void);
+	void initSpec (void);
 
 	virtual void initPrograms (vk::SourceCollections& programCollection) const
 	{
-		DE_ASSERT(m_executor);
-		m_executor->setShaderSources(programCollection);
+		generateSources(m_testCaseData.shaderType, m_shaderSpec, programCollection);
 	}
 
 	virtual de::MovePtr<DataGenerator> createGenerator (void) const = 0;
 
 	virtual TestInstance* createInstance (Context& ctx) const
 	{
-		return new TextureFilteringTestInstance(ctx, m_testCaseData, *m_executor, createGenerator());
+		return new TextureFilteringTestInstance(ctx, m_testCaseData, m_shaderSpec, createGenerator());
 	}
 
 protected:
 	de::MovePtr<ShaderExecutor> m_executor;
 	TestCaseData				m_testCaseData;
+	ShaderSpec					m_shaderSpec;
 };
 
-void TextureFilteringTestCase::init (void)
+void TextureFilteringTestCase::initSpec (void)
 {
-	ShaderSpec shaderSpec;
-	shaderSpec.source = genLookupCode(m_testCaseData.imParams,
-									  m_testCaseData.samplerParams,
-									  m_testCaseData.sampleLookupSettings);
-	shaderSpec.source += "\nsampledCoord = coord;";
+	m_shaderSpec.source = genLookupCode(m_testCaseData.imParams,
+										m_testCaseData.samplerParams,
+										m_testCaseData.sampleLookupSettings);
+	m_shaderSpec.source += "\nsampledCoord = coord;";
 
-	shaderSpec.outputs.push_back(Symbol("result", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
-	shaderSpec.outputs.push_back(Symbol("sampledCoord", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
-	shaderSpec.inputs .push_back(Symbol("coord", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
-	shaderSpec.inputs .push_back(Symbol("layer", glu::VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP)));
-	shaderSpec.inputs .push_back(Symbol("dRef", glu::VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP)));
-	shaderSpec.inputs .push_back(Symbol("dPdx", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
-	shaderSpec.inputs .push_back(Symbol("dPdy", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
-	shaderSpec.inputs .push_back(Symbol("lod", glu::VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP)));
+	m_shaderSpec.outputs.push_back(Symbol("result", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+	m_shaderSpec.outputs.push_back(Symbol("sampledCoord", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+	m_shaderSpec.inputs .push_back(Symbol("coord", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+	m_shaderSpec.inputs .push_back(Symbol("layer", glu::VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP)));
+	m_shaderSpec.inputs .push_back(Symbol("dRef", glu::VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP)));
+	m_shaderSpec.inputs .push_back(Symbol("dPdx", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+	m_shaderSpec.inputs .push_back(Symbol("dPdy", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+	m_shaderSpec.inputs .push_back(Symbol("lod", glu::VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP)));
 
-	shaderSpec.globalDeclarations = "layout(set=0, binding=0) uniform highp ";
-	shaderSpec.globalDeclarations += genSamplerDeclaration(m_testCaseData.imParams,
+	m_shaderSpec.globalDeclarations = "layout(set=" + de::toString((int)EXTRA_RESOURCES_DESCRIPTOR_SET_INDEX) + ", binding=0) uniform highp ";
+	m_shaderSpec.globalDeclarations += genSamplerDeclaration(m_testCaseData.imParams,
 														   m_testCaseData.samplerParams);
-	shaderSpec.globalDeclarations += " testSampler;";
-
-	m_executor = de::MovePtr<ShaderExecutor>(createExecutor(m_testCaseData.shaderType, shaderSpec));
-	DE_ASSERT(m_executor);
-
-	m_testCtx.getLog() << *m_executor;
+	m_shaderSpec.globalDeclarations += " testSampler;";
 }
 
 class Texture2DGradientTestCase : public TextureFilteringTestCase
@@ -1071,7 +1147,7 @@ public:
 		, m_useDerivatives			(useDerivatives)
 	{
 		m_testCaseData = genTestCaseData();
-		init();
+		initSpec();
 	}
 
 protected:
