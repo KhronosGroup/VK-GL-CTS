@@ -30,6 +30,7 @@ endif ()
 
 # glcTestPackageRegistry.cpp includes dEQP modules directly
 include_directories(
+	${PROJECT_SOURCE_DIR}/modules/egl
 	${PROJECT_SOURCE_DIR}/modules/gles2
 	${PROJECT_SOURCE_DIR}/modules/gles3
 	${PROJECT_SOURCE_DIR}/modules/gles31
@@ -46,6 +47,7 @@ set(GLCTS_LIBS
 	glcts-es31
 	glcts-es32
 	glcts-esext
+	deqp-egl${MODULE_LIB_TARGET_POSTFIX}
 	deqp-gles2${MODULE_LIB_TARGET_POSTFIX}
 	deqp-gles3${MODULE_LIB_TARGET_POSTFIX}
 	deqp-gles31${MODULE_LIB_TARGET_POSTFIX}

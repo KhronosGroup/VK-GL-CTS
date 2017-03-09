@@ -70,10 +70,11 @@ class Package:
 		self.configurations			= configurations
 
 class Mustpass:
-	def __init__ (self, project, version, packages):
+	def __init__ (self, project, version, packages, isCurrent):
 		self.project		= project
 		self.version		= version
 		self.packages		= packages
+		self.isCurrent		= isCurrent
 
 class Filter:
 	TYPE_INCLUDE = 0
@@ -264,6 +265,8 @@ def getApiType(apiName):
 		return "glu::ApiType::es(3, 1)"
 	if apiName == "GLES32":
 		return "glu::ApiType::es(3, 2)"
+	if apiName == "EGL":
+		return "glu::ApiType()"
 
 	raise Exception("Unknown API %s" % apiName)
 	return "Unknown"
@@ -368,12 +371,13 @@ def genSpecCPPIncludeFile (specFilename, mustpass):
 
 def genSpecCPPIncludes (mustpassLists):
 	for mustpass in mustpassLists:
-		specFilename	= os.path.join(mustpass.project.incpath, "glc%s.hpp" % convertToCamelcase(mustpass.project.name.lower().replace(' ','_')))
-		hpp = genSpecCPPIncludeFile(specFilename, mustpass)
+		if mustpass.isCurrent == True:
+			specFilename	= os.path.join(mustpass.project.incpath, "glc%s.hpp" % convertToCamelcase(mustpass.project.name.lower().replace(' ','_')))
+			hpp = genSpecCPPIncludeFile(specFilename, mustpass)
 
-		print "  Writing spec: " + specFilename
-		writeFile(specFilename, hpp)
-		print "Done!"
+			print "  Writing spec: " + specFilename
+			writeFile(specFilename, hpp)
+			print "Done!"
 
 def genMustpass (mustpass, moduleCaseLists):
 	print "Generating mustpass '%s'" % mustpass.version

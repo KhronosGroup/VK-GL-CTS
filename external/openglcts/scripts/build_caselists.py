@@ -40,6 +40,7 @@ class Module:
 		self.api        = api
 
 MODULES = [
+	Module("dEQP-EGL",		"EGL"),
 	Module("dEQP-GLES2",	"GLES2"),
 	Module("dEQP-GLES3",	"GLES3"),
 	Module("dEQP-GLES31",	"GLES31"),

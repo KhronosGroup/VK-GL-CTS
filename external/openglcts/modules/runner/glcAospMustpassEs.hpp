@@ -1,6 +1,6 @@
 #ifndef _GLCAOSPMUSTPASSES_HPP
 #define _GLCAOSPMUSTPASSES_HPP
-/*     Copyright (C) 2016 The Khronos Group Inc
+/*     Copyright (C) 2016-2017 The Khronos Group Inc
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
  * be lost! Modify the generating script instead.
  */
 
-const string mustpassDir = "gl_cts/data/mustpass/gles/aosp_mustpass/3.2.2.x/";
+const string mustpassDir = "gl_cts/data/mustpass/gles/aosp_mustpass/3.2.3.x/";
 
 struct RunParams
 {

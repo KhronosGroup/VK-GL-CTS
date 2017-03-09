@@ -264,6 +264,7 @@ public:
 BuiltinGlFragCoordXYZCaseInstance::BuiltinGlFragCoordXYZCaseInstance (Context& context)
 	: ShaderRenderCaseInstance	(context)
 {
+	m_colorFormat = VK_FORMAT_R16G16B16A16_UNORM;
 }
 
 TestStatus BuiltinGlFragCoordXYZCaseInstance::iterate (void)
@@ -272,10 +273,7 @@ TestStatus BuiltinGlFragCoordXYZCaseInstance::iterate (void)
 	const int		width			= viewportSize.x();
 	const int		height			= viewportSize.y();
 	const tcu::Vec3	scale			(1.f / float(width), 1.f / float(height), 1.0f);
-	const tcu::RGBA	threshold		(2, 2, 2, 2);
-	Surface			resImage		(width, height);
-	Surface			refImage		(width, height);
-	bool			compareOk		= false;
+	const float		precision		= 0.00001f;
 	const deUint16	indices[6]		=
 	{
 		2, 1, 3,
@@ -286,30 +284,28 @@ TestStatus BuiltinGlFragCoordXYZCaseInstance::iterate (void)
 	addUniform(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, scale);
 
 	render(4, 2, indices);
-	copy(resImage.getAccess(), getResultImage().getAccess());
 
 	// Reference image
-	for (int y = 0; y < refImage.getHeight(); y++)
+	for (int y = 0; y < height; y++)
 	{
-		for (int x = 0; x < refImage.getWidth(); x++)
+		for (int x = 0; x < width; x++)
 		{
-			const float	xf			= (float(x)+.5f) / float(refImage.getWidth());
-			const float	yf			= (float(refImage.getHeight()-y-1)+.5f) / float(refImage.getHeight());
+			const float	xf			= (float(x) + .5f) / float(width);
+			const float	yf			= (float(height - y - 1) + .5f) / float(height);
 			const float	z			= (xf + yf) / 2.0f;
-			const Vec3	fragCoord	(float(x)+.5f, float(y)+.5f, z);
+			const Vec3	fragCoord	(float(x) + .5f, float(y) + .5f, z);
 			const Vec3	scaledFC	= fragCoord*scale;
 			const Vec4	color		(scaledFC.x(), scaledFC.y(), scaledFC.z(), 1.0f);
+			const Vec4	resultColor	= getResultImage().getAccess().getPixel(x, y);
 
-			refImage.setPixel(x, y, RGBA(color));
+			if (de::abs(color.x() - resultColor.x()) > precision ||
+				de::abs(color.y() - resultColor.y()) > precision ||
+				de::abs(color.z() - resultColor.z()) > precision)
+			return TestStatus::fail("Image mismatch");
 		}
 	}
 
-	compareOk = pixelThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", refImage, resImage, threshold, COMPARE_LOG_RESULT);
-
-	if (compareOk)
-		return TestStatus::pass("Result image matches reference");
-	else
-		return TestStatus::fail("Image mismatch");
+	return TestStatus::pass("Result image matches reference");
 }
 
 void BuiltinGlFragCoordXYZCaseInstance::setupDefaultInputs (void)
@@ -396,6 +392,7 @@ BuiltinGlFragCoordWCaseInstance::BuiltinGlFragCoordWCaseInstance (Context& conte
 	: ShaderRenderCaseInstance	(context)
 	, m_w						(1.7f, 2.0f, 1.2f, 1.0f)
 {
+	m_colorFormat = VK_FORMAT_R16G16B16A16_UNORM;
 }
 
 TestStatus BuiltinGlFragCoordWCaseInstance::iterate (void)
@@ -403,10 +400,7 @@ TestStatus BuiltinGlFragCoordWCaseInstance::iterate (void)
 	const UVec2		viewportSize	= getViewportSize();
 	const int		width			= viewportSize.x();
 	const int		height			= viewportSize.y();
-	const tcu::RGBA	threshold		(2, 2, 2, 2);
-	Surface			resImage		(width, height);
-	Surface			refImage		(width, height);
-	bool			compareOk		= false;
+	const float		precision		= 0.00001f;
 	const deUint16	indices[6]		=
 	{
 		2, 1, 3,
@@ -415,30 +409,28 @@ TestStatus BuiltinGlFragCoordWCaseInstance::iterate (void)
 
 	setup();
 	render(4, 2, indices);
-	copy(resImage.getAccess(), getResultImage().getAccess());
 
 	// Reference image
-	for (int y = 0; y < refImage.getHeight(); y++)
+	for (int y = 0; y < height; y++)
 	{
-		for (int x = 0; x < refImage.getWidth(); x++)
+		for (int x = 0; x < width; x++)
 		{
-			const float	xf			= (float(x)+.5f) / float(refImage.getWidth());
-			const float	yf			= (float(refImage.getHeight()-y-1)+.5f) / float(refImage.getHeight());
+			const float	xf			= (float(x) + .5f) / float(width);
+			const float	yf			= (float(height - y - 1) +.5f) / float(height);
 			const float	oow			= ((xf + yf) < 1.0f)
 										? projectedTriInterpolate(Vec3(m_w[0], m_w[1], m_w[2]), Vec3(m_w[0], m_w[1], m_w[2]), xf, yf)
-										: projectedTriInterpolate(Vec3(m_w[3], m_w[2], m_w[1]), Vec3(m_w[3], m_w[2], m_w[1]), 1.0f-xf, 1.0f-yf);
+										: projectedTriInterpolate(Vec3(m_w[3], m_w[2], m_w[1]), Vec3(m_w[3], m_w[2], m_w[1]), 1.0f - xf, 1.0f - yf);
 			const Vec4	color		(0.0f, oow - 1.0f, 0.0f, 1.0f);
+			const Vec4	resultColor	= getResultImage().getAccess().getPixel(x, y);
 
-			refImage.setPixel(x, y, RGBA(color));
+			if (de::abs(color.x() - resultColor.x()) > precision ||
+				de::abs(color.y() - resultColor.y()) > precision ||
+				de::abs(color.z() - resultColor.z()) > precision)
+			return TestStatus::fail("Image mismatch");
 		}
 	}
 
-	compareOk = pixelThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", refImage, resImage, threshold, COMPARE_LOG_RESULT);
-
-	if (compareOk)
-		return TestStatus::pass("Result image matches reference");
-	else
-		return TestStatus::fail("Image mismatch");
+	return TestStatus::pass("Result image matches reference");
 }
 
 void BuiltinGlFragCoordWCaseInstance::setupDefaultInputs (void)

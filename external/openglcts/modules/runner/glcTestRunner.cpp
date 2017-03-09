@@ -242,7 +242,55 @@ static void getBaseOptions(std::vector<std::string>& args, const string mustpass
 	args.push_back("--deqp-watchdog=disable");
 }
 
-static void getTestRunsForAOSP(vector<TestRunParams>& runs, const ConfigList& configs, const glu::ApiType apiType)
+static bool isGLConfigCompatible(configInfo cfgInfo, const AOSPConfig& config)
+{
+	return cfgInfo.redBits == config.redBits && cfgInfo.greenBits == config.greenBits &&
+		   cfgInfo.blueBits == config.blueBits && cfgInfo.alphaBits == config.alphaBits &&
+		   cfgInfo.depthBits == config.depthBits && cfgInfo.stencilBits == config.stencilBits &&
+		   cfgInfo.samples == config.samples;
+}
+
+static void getTestRunsForAOSPEGL(vector<TestRunParams>& runs, const ConfigList& configs)
+{
+#include "glcAospMustpassEgl.hpp"
+
+	for (int i = 0; i < DE_LENGTH_OF_ARRAY(aosp_mustpass_egl_first_cfg); ++i)
+	{
+		configInfo cfgInfo = parseConfigBitsFromName(aosp_mustpass_egl_first_cfg[i].glConfigName);
+
+		vector<AOSPConfig>::const_iterator cfgIter;
+		for (cfgIter = configs.aospConfigs.begin(); cfgIter != configs.aospConfigs.end(); ++cfgIter)
+		{
+			// find first compatible config
+			if ((*cfgIter).type == CONFIGTYPE_EGL && isGLConfigCompatible(cfgInfo, *cfgIter))
+			{
+				break;
+			}
+		}
+
+		if (cfgIter == configs.aospConfigs.end())
+		{
+			// No suitable configuration found. Skipping EGL tests
+			continue;
+		}
+
+		string	apiName = "egl";
+		const int width   = aosp_mustpass_egl_first_cfg[i].surfaceWidth;
+		const int height  = aosp_mustpass_egl_first_cfg[i].surfaceHeight;
+
+		TestRunParams params;
+		params.logFilename =
+			getLogFileName(apiName, aosp_mustpass_egl_first_cfg[i].configName, 1, i, width, height, -1);
+		getBaseOptions(params.args, mustpassDir, apiName, aosp_mustpass_egl_first_cfg[i].configName,
+					   aosp_mustpass_egl_first_cfg[i].screenRotation, width, height);
+
+		params.args.push_back(string("--deqp-gl-config-name=") + string(aosp_mustpass_egl_first_cfg[i].glConfigName));
+
+		runs.push_back(params);
+	}
+}
+
+static void getTestRunsForAOSPES(vector<TestRunParams>& runs, const ConfigList& configs, const glu::ApiType apiType)
 {
 #include "glcAospMustpassEs.hpp"
 
@@ -257,10 +305,7 @@ static void getTestRunsForAOSP(vector<TestRunParams>& runs, const ConfigList& co
 		for (cfgIter = configs.aospConfigs.begin(); cfgIter != configs.aospConfigs.end(); ++cfgIter)
 		{
 			// find first compatible config
-			if (cfgInfo.redBits == (*cfgIter).redBits && cfgInfo.greenBits == (*cfgIter).greenBits &&
-				cfgInfo.blueBits == (*cfgIter).blueBits && cfgInfo.alphaBits == (*cfgIter).alphaBits &&
-				cfgInfo.depthBits == (*cfgIter).depthBits && cfgInfo.stencilBits == (*cfgIter).stencilBits &&
-				cfgInfo.samples == (*cfgIter).samples)
+			if (isGLConfigCompatible(cfgInfo, *cfgIter))
 			{
 				break;
 			}
@@ -296,52 +341,19 @@ static void getTestRunsForAOSP(vector<TestRunParams>& runs, const ConfigList& co
 	}
 }
 
-static void getTestRunsForES2(const ConfigList& configs, vector<TestRunParams>& runs)
+static void getTestRunsForES(glu::ApiType type, const ConfigList& configs, vector<TestRunParams>& runs)
 {
-#include "glcKhronosMustpassEs2.hpp"
+	getTestRunsForAOSPEGL(runs, configs);
+	getTestRunsForAOSPES(runs, configs, type);
+
+#include "glcKhronosMustpassEs.hpp"
 
 	for (vector<Config>::const_iterator cfgIter = configs.configs.begin(); cfgIter != configs.configs.end(); ++cfgIter)
 	{
 		const bool isFirst		= cfgIter == configs.configs.begin();
-		const int  numRunParams = isFirst ? DE_LENGTH_OF_ARRAY(khronos_mustpass_es2_first_cfg) :
-										   DE_LENGTH_OF_ARRAY(khronos_mustpass_es2_other_cfg);
-		const RunParams* runParams = isFirst ? khronos_mustpass_es2_first_cfg : khronos_mustpass_es2_other_cfg;
-
-		for (int runNdx = 0; runNdx < numRunParams; runNdx++)
-		{
-			string	apiName = getApiName(runParams[runNdx].apiType);
-			const int width   = runParams[runNdx].surfaceWidth;
-			const int height  = runParams[runNdx].surfaceHeight;
-			const int seed	= runParams[runNdx].baseSeed;
-
-			TestRunParams params;
-
-			params.logFilename =
-				getLogFileName(apiName, runParams[runNdx].configName, cfgIter->id, runNdx, width, height, seed);
-
-			getBaseOptions(params.args, mustpassDir, apiName, runParams[runNdx].configName,
-						   runParams[runNdx].screenRotation, width, height);
-			params.args.push_back(string("--deqp-base-seed=") + de::toString(seed));
-
-			appendConfigArgs(*cfgIter, params.args, runParams[runNdx].fboConfig);
-
-			runs.push_back(params);
-		}
-	}
-
-	getTestRunsForAOSP(runs, configs, glu::ApiType::es(2, 0));
-}
-
-static void getTestRunsForES3x(glu::ApiType type, const ConfigList& configs, vector<TestRunParams>& runs)
-{
-#include "glcKhronosMustpassEs3x.hpp"
-
-	for (vector<Config>::const_iterator cfgIter = configs.configs.begin(); cfgIter != configs.configs.end(); ++cfgIter)
-	{
-		const bool isFirst		= cfgIter == configs.configs.begin();
-		const int  numRunParams = isFirst ? DE_LENGTH_OF_ARRAY(khronos_mustpass_es3x_first_cfg) :
-										   DE_LENGTH_OF_ARRAY(khronos_mustpass_es3x_other_cfg);
-		const RunParams* runParams = isFirst ? khronos_mustpass_es3x_first_cfg : khronos_mustpass_es3x_other_cfg;
+		const int  numRunParams = isFirst ? DE_LENGTH_OF_ARRAY(khronos_mustpass_es_first_cfg) :
+										   DE_LENGTH_OF_ARRAY(khronos_mustpass_es_other_cfg);
+		const RunParams* runParams = isFirst ? khronos_mustpass_es_first_cfg : khronos_mustpass_es_other_cfg;
 
 		for (int runNdx = 0; runNdx < numRunParams; runNdx++)
 		{
@@ -367,8 +379,6 @@ static void getTestRunsForES3x(glu::ApiType type, const ConfigList& configs, vec
 			runs.push_back(params);
 		}
 	}
-
-	getTestRunsForAOSP(runs, configs, type);
 }
 
 static void getTestRunsForGL(glu::ApiType type, const ConfigList& configs, vector<TestRunParams>& runs)
@@ -453,17 +463,8 @@ static void getTestRunParams(glu::ApiType type, const ConfigList& configs, vecto
 		getTestRunsForGL(type, configs, runs);
 		break;
 	case glu::PROFILE_ES:
-		if (type.getMajorVersion() == 2)
-		{
-			getTestRunsForES2(configs, runs);
-			break;
-		}
-		if (type.getMajorVersion() == 3)
-		{
-			getTestRunsForES3x(type, configs, runs);
-			break;
-		}
-
+		getTestRunsForES(type, configs, runs);
+		break;
 	default:
 		throw std::runtime_error("Unknown context type");
 	}
