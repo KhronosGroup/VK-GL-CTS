@@ -47,7 +47,6 @@
 #include "deUniquePtr.hpp"
 #include "tcuStringTemplate.hpp"
 
-#include <cmath>
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -2531,7 +2530,7 @@ bool compareNan (const std::vector<BufferSp>&, const vector<AllocationSp>& outpu
 
 	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(float); ++idx)
 	{
-		if (!isnan(output_as_float[idx]))
+		if (!deFloatIsNaN(output_as_float[idx]))
 		{
 			return false;
 		}
