@@ -111,6 +111,11 @@ struct ComputeShaderSpec
 							{}
 };
 
+extern const char* const s_ShaderPreamble;
+extern const char* const s_CommonTypes;
+extern const char* const s_InputOutputBuffer;
+extern const char* const s_InputOutputBufferTraits;
+
 } // SpirVAssembly
 } // vkt
 
