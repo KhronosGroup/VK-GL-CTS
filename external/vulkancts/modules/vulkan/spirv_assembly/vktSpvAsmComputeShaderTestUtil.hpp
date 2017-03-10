@@ -101,7 +101,10 @@ struct ComputeShaderSpec
 	// and the contents of expectedOutputs. Otherwise the function pointed to by verifyIO will be called.
 	// If true is returned, then the test case is assumed to have passed, if false is returned, then the test
 	// case is assumed to have failed. Exact meaning of failure can be customized with failResult.
-	bool					(*verifyIO)(const std::vector<BufferSp>& inputs, const std::vector<AllocationSp>& outputAllocations, const std::vector<BufferSp>& expectedOutputs, tcu::TestLog& log);
+	bool					(*verifyIO)(const std::vector<BufferSp>&		inputs,
+										const std::vector<AllocationSp>&	outputAllocations,
+										const std::vector<BufferSp>&		expectedOutputs,
+										tcu::TestLog&						log);
 
 							ComputeShaderSpec (void)
 								: entryPoint	("main")
@@ -111,10 +114,24 @@ struct ComputeShaderSpec
 							{}
 };
 
-extern const char* const s_ShaderPreamble;
-extern const char* const s_CommonTypes;
-extern const char* const s_InputOutputBuffer;
-extern const char* const s_InputOutputBufferTraits;
+/*--------------------------------------------------------------------*//*!
+ * \brief Helper functions for SPIR-V assembly shared by various tests
+ *//*--------------------------------------------------------------------*/
+
+const char* getComputeAsmShaderPreamble				(void);
+const char* getComputeAsmCommonTypes				(void);
+
+/*--------------------------------------------------------------------*//*!
+ * Declares two uniform variables (indata, outdata) of type
+ * "struct { float[] }". Depends on type "f32arr" (for "float[]").
+ *//*--------------------------------------------------------------------*/
+const char* getComputeAsmInputOutputBuffer			(void);
+/*--------------------------------------------------------------------*//*!
+ * Declares buffer type and layout for uniform variables indata and
+ * outdata. Both of them are SSBO bounded to descriptor set 0.
+ * indata is at binding point 0, while outdata is at 1.
+ *//*--------------------------------------------------------------------*/
+const char* getComputeAsmInputOutputBufferTraits	(void);
 
 } // SpirVAssembly
 } // vkt

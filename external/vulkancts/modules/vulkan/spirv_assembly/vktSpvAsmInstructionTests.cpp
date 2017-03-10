@@ -165,7 +165,7 @@ tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	spec.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main           \"main\"\n"
@@ -173,9 +173,9 @@ tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes)
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes())
 
-		+ string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBuffer()) +
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -255,7 +255,7 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 
 	const StringTemplate			shaderTemplate	(
 
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main           \"main\"\n"
@@ -276,7 +276,7 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 		"OpMemberDecorate %buf 0 Offset 0\n"
 		"OpMemberDecorate %buf2 0 Offset 0\n"
 
-		+ string(s_CommonTypes) +
+		+ string(getComputeAsmCommonTypes()) +
 
 		"%buf        = OpTypeStruct %f32arr\n"
 		"%bufptr     = OpTypePointer Uniform %buf\n"
@@ -378,7 +378,7 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx)
 
 	const StringTemplate			shaderTemplate	(
 
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main           \"main\"\n"
@@ -398,7 +398,7 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx)
 		"OpMemberDecorate %sumbuf 0 Coherent\n"
 		"OpMemberDecorate %sumbuf 0 Offset 0\n"
 
-		+ string(s_CommonTypes) +
+		+ string(getComputeAsmCommonTypes()) +
 
 		"%buf       = OpTypeStruct %i32arr\n"
 		"%bufptr    = OpTypePointer Uniform %buf\n"
@@ -493,7 +493,7 @@ tcu::TestCaseGroup* createOpLineGroup (tcu::TestContext& testCtx)
 		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	spec.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"%fname1 = OpString \"negateInputs.comp\"\n"
 		"%fname2 = OpString \"negateInputs\"\n"
@@ -504,11 +504,11 @@ tcu::TestCaseGroup* createOpLineGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) +
+		+ string(getComputeAsmInputOutputBufferTraits()) +
 
 		"OpLine %fname1 0 0\n" // At the earliest possible position
 
-		+ string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"OpLine %fname1 0 1\n" // Multiple OpLines in sequence
 		"OpLine %fname2 1 0\n" // Different filenames
@@ -557,7 +557,7 @@ tcu::TestCaseGroup* createOpNoLineGroup (tcu::TestContext& testCtx)
 		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	spec.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"%fname = OpString \"negateInputs.comp\"\n"
 
@@ -567,11 +567,11 @@ tcu::TestCaseGroup* createOpNoLineGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) +
+		+ string(getComputeAsmInputOutputBufferTraits()) +
 
 		"OpNoLine\n" // At the earliest possible position, without preceding OpLine
 
-		+ string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"OpLine %fname 0 1\n"
 		"OpNoLine\n" // Immediately following a preceding OpLine
@@ -638,7 +638,7 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 	vector<float>					inputFloats2	(numElements, 0);
 	vector<float>					outputFloats	(numElements, 0);
 	const StringTemplate			shaderTemplate	(
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -657,7 +657,7 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 		"OpDecorate %f32arr ArrayStride 4\n"
 		"OpMemberDecorate %buf 0 Offset 0\n"
 
-		+ string(s_CommonTypes) +
+		+ string(getComputeAsmCommonTypes()) +
 
 		"%buf        = OpTypeStruct %f32arr\n"
 		"%bufptr     = OpTypePointer Uniform %buf\n"
@@ -765,7 +765,7 @@ tcu::TestCaseGroup* createOpFRemGroup (tcu::TestContext& testCtx)
 	}
 
 	spec.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -782,7 +782,7 @@ tcu::TestCaseGroup* createOpFRemGroup (tcu::TestContext& testCtx)
 		"OpDecorate %f32arr ArrayStride 4\n"
 		"OpMemberDecorate %buf 0 Offset 0\n"
 
-		+ string(s_CommonTypes) +
+		+ string(getComputeAsmCommonTypes()) +
 
 		"%buf        = OpTypeStruct %f32arr\n"
 		"%bufptr     = OpTypePointer Uniform %buf\n"
@@ -856,7 +856,7 @@ tcu::TestCaseGroup* createOpSRemComputeGroup (tcu::TestContext& testCtx, qpTestR
 		}
 
 		spec.assembly =
-			string(s_ShaderPreamble) +
+			string(getComputeAsmShaderPreamble()) +
 
 			"OpName %main           \"main\"\n"
 			"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -873,7 +873,7 @@ tcu::TestCaseGroup* createOpSRemComputeGroup (tcu::TestContext& testCtx, qpTestR
 			"OpDecorate %i32arr ArrayStride 4\n"
 			"OpMemberDecorate %buf 0 Offset 0\n"
 
-			+ string(s_CommonTypes) +
+			+ string(getComputeAsmCommonTypes()) +
 
 			"%buf        = OpTypeStruct %i32arr\n"
 			"%bufptr     = OpTypePointer Uniform %buf\n"
@@ -969,7 +969,7 @@ tcu::TestCaseGroup* createOpSModComputeGroup (tcu::TestContext& testCtx, qpTestR
 		}
 
 		spec.assembly =
-			string(s_ShaderPreamble) +
+			string(getComputeAsmShaderPreamble()) +
 
 			"OpName %main           \"main\"\n"
 			"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -986,7 +986,7 @@ tcu::TestCaseGroup* createOpSModComputeGroup (tcu::TestContext& testCtx, qpTestR
 			"OpDecorate %i32arr ArrayStride 4\n"
 			"OpMemberDecorate %buf 0 Offset 0\n"
 
-			+ string(s_CommonTypes) +
+			+ string(getComputeAsmCommonTypes()) +
 
 			"%buf        = OpTypeStruct %i32arr\n"
 			"%bufptr     = OpTypePointer Uniform %buf\n"
@@ -1045,7 +1045,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		outputFloats1[ndx] = inputFloats1[ndx] + Vec4(0.f, 0.5f, 1.5f, 2.5f);
 
 	spec1.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -1053,7 +1053,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 		"OpDecorate %vec4arr ArrayStride 16\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
 
 		"%vec4       = OpTypeVector %f32 4\n"
 		"%vec4ptr_u  = OpTypePointer Uniform %vec4\n"
@@ -1103,7 +1103,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		outputFloats2[ndx] = inputFloats2[ndx];
 
 	spec2.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -1111,7 +1111,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 		"OpDecorate %f32arr100 ArrayStride 4\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
 
 		"%hundred        = OpConstant %u32 100\n"
 		"%f32arr100      = OpTypeArray %f32 %hundred\n"
@@ -1152,7 +1152,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		outputFloats3[ndx] = inputFloats3[ndx];
 
 	spec3.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -1163,7 +1163,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpMemberDecorate %buf 2 Offset 32\n"
 		"OpMemberDecorate %buf 3 Offset 48\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
 
 		"%vec4      = OpTypeVector %f32 4\n"
 		"%buf       = OpTypeStruct %vec4 %vec4 %vec4 %vec4\n"
@@ -1200,14 +1200,14 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		outputFloats4[ndx] = -inputFloats4[ndx];
 
 	spec4.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%f32ptr_f  = OpTypePointer Function %f32\n"
 		"%id        = OpVariable %uvec3ptr Input\n"
@@ -1254,21 +1254,21 @@ tcu::TestCaseGroup* createOpCopyObjectGroup (tcu::TestContext& testCtx)
 		outputFloats[ndx] = inputFloats[ndx] + 7.5f;
 
 	spec.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
 
 		"%fmat     = OpTypeMatrix %fvec3 3\n"
 		"%three    = OpConstant %u32 3\n"
 		"%farr     = OpTypeArray %f32 %three\n"
 		"%fst      = OpTypeStruct %f32 %f32\n"
 
-		+ string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBuffer()) +
 
 		"%id            = OpVariable %uvec3ptr Input\n"
 		"%zero          = OpConstant %i32 0\n"
@@ -1367,7 +1367,7 @@ tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	spec.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main            \"main\"\n"
@@ -1378,7 +1378,7 @@ tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
 
 		"%u32ptr    = OpTypePointer Function %u32\n"
 		"%uintfuint = OpTypeFunction %u32 %u32ptr\n"
@@ -1394,7 +1394,7 @@ tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 		"%hundred   = OpConstant %u32 100\n"
 		"%thousand  = OpConstant %u32 1000\n"
 
-		+ string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBuffer()) +
 
 		// Main()
 		"%main   = OpFunction %void None %voidf\n"
@@ -1521,7 +1521,7 @@ tcu::TestCaseGroup* createDecorationGroupGroup (tcu::TestContext& testCtx)
 		outputFloats[ndx] = inputFloats0[ndx] + inputFloats1[ndx] + inputFloats2[ndx] + inputFloats3[ndx] + inputFloats4[ndx];
 
 	spec.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main \"main\"\n"
@@ -1573,7 +1573,7 @@ tcu::TestCaseGroup* createDecorationGroupGroup (tcu::TestContext& testCtx)
 		"OpGroupDecorate %group3 %indata4\n"
 		"OpDecorate %indata4 Binding 4\n"
 
-		+ string(s_CommonTypes) +
+		+ string(getComputeAsmCommonTypes()) +
 
 		"%id   = OpVariable %uvec3ptr Input\n"
 		"%zero = OpConstant %i32 0\n"
@@ -1676,7 +1676,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	vector<deInt32>					outputInts3		(numElements, 0);
 	vector<deInt32>					outputInts4		(numElements, 0);
 	const StringTemplate			shaderTemplate	(
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -1686,7 +1686,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		"OpDecorate %sc_1  SpecId 1\n"
 		"OpDecorate %i32arr ArrayStride 4\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
 
 		"%buf     = OpTypeStruct %i32arr\n"
 		"%bufptr  = OpTypePointer Uniform %buf\n"
@@ -1783,7 +1783,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	ComputeShaderSpec				spec;
 
 	spec.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -1794,7 +1794,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		"OpDecorate %sc_2  SpecId 2\n"
 		"OpDecorate %i32arr ArrayStride 4\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
 
 		"%ivec3       = OpTypeVector %i32 3\n"
 		"%buf         = OpTypeStruct %i32arr\n"
@@ -1879,7 +1879,7 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	}
 
 	spec1.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main \"main\"\n"
@@ -1887,7 +1887,7 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%id = OpVariable %uvec3ptr Input\n"
 		"%zero       = OpConstant %i32 0\n"
@@ -1939,14 +1939,14 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "block", "out-of-order and unreachable blocks for OpPhi", spec1));
 
 	spec2.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main \"main\"\n"
 		"OpName %id \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%id         = OpVariable %uvec3ptr Input\n"
 		"%zero       = OpConstant %i32 0\n"
@@ -1983,14 +1983,14 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "induction", "The usual way induction variables are handled in LLVM IR", spec2));
 
 	spec3.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main \"main\"\n"
 		"OpName %id \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%f32ptr_f   = OpTypePointer Function %f32\n"
 		"%id         = OpVariable %uvec3ptr Input\n"
@@ -2085,7 +2085,7 @@ tcu::TestCaseGroup* createBlockOrderGroup (tcu::TestContext& testCtx)
 	}
 
 	spec.assembly =
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main \"main\"\n"
@@ -2093,12 +2093,12 @@ tcu::TestCaseGroup* createBlockOrderGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
 
 		"%u32ptr       = OpTypePointer Function %u32\n"
 		"%u32ptr_input = OpTypePointer Input %u32\n"
 
-		+ string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBuffer()) +
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -2242,7 +2242,7 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		"OpMemberDecorate %vert_builtin_st 1 BuiltIn PointSize\n"
 		"OpMemberDecorate %vert_builtin_st 2 BuiltIn ClipDistance\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%zero       = OpConstant %i32 0\n"
 		"%one        = OpConstant %u32 1\n"
@@ -2352,7 +2352,7 @@ tcu::TestCaseGroup* createOpSourceGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -2435,7 +2435,7 @@ tcu::TestCaseGroup* createOpSourceExtensionGroup (tcu::TestContext& testCtx)
 	vector<float>					inputFloats		(numElements, 0);
 	vector<float>					outputFloats	(numElements, 0);
 	const StringTemplate			shaderTemplate	(
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSourceExtension \"${EXTENSION}\"\n"
 
@@ -2444,7 +2444,7 @@ tcu::TestCaseGroup* createOpSourceExtensionGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -2499,7 +2499,7 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 	vector<float>					positiveFloats	(numElements, 0);
 	vector<float>					negativeFloats	(numElements, 0);
 	const StringTemplate			shaderTemplate	(
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main           \"main\"\n"
@@ -2507,7 +2507,7 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"${TYPE}\n"
 		"%null      = OpConstantNull %type\n"
@@ -2572,7 +2572,7 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 	vector<float>					positiveFloats	(numElements, 0);
 	vector<float>					negativeFloats	(numElements, 0);
 	const StringTemplate			shaderTemplate	(
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main           \"main\"\n"
@@ -2580,7 +2580,7 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -2734,7 +2734,7 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opquantize", "Tests the OpQuantizeToF16 instruction"));
 
 	const std::string shader (
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main           \"main\"\n"
@@ -2742,7 +2742,7 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -2925,7 +2925,7 @@ tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& te
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opspecconstantop_opquantize", "Tests the OpQuantizeToF16 opcode for the OpSpecConstantOp instruction"));
 
 	const std::string shader (
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -2939,7 +2939,7 @@ tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& te
 		"OpDecorate %sc_4  SpecId 4\n"
 		"OpDecorate %sc_5  SpecId 5\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -3155,14 +3155,14 @@ tcu::TestCaseGroup* createOpConstantUsageGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
 
 		"%fmat      = OpTypeMatrix %fvec3 3\n"
 		"%ten       = OpConstant %u32 10\n"
 		"%f32arr10  = OpTypeArray %f32 %ten\n"
 		"%fst       = OpTypeStruct %f32 %f32\n"
 
-		+ string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBuffer()) +
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -3242,7 +3242,7 @@ tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
 	vector<float>					inputFloats		(numElements, 0);
 	vector<float>					outputFloats	(numElements, 0);
 	const StringTemplate			shaderTemplate	(
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main \"main\"\n"
@@ -3250,7 +3250,7 @@ tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%u32ptr      = OpTypePointer Function %u32\n"
 
@@ -3344,7 +3344,7 @@ tcu::TestCaseGroup* createSelectionControlGroup (tcu::TestContext& testCtx)
 	vector<float>					inputFloats		(numElements, 0);
 	vector<float>					outputFloats	(numElements, 0);
 	const StringTemplate			shaderTemplate	(
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main \"main\"\n"
@@ -3352,7 +3352,7 @@ tcu::TestCaseGroup* createSelectionControlGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%id       = OpVariable %uvec3ptr Input\n"
 		"%zero     = OpConstant %i32 0\n"
@@ -3438,7 +3438,7 @@ tcu::TestCaseGroup* createFunctionControlGroup (tcu::TestContext& testCtx)
 	vector<float>					inputFloats		(numElements, 0);
 	vector<float>					outputFloats	(numElements, 0);
 	const StringTemplate			shaderTemplate	(
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main \"main\"\n"
@@ -3447,7 +3447,7 @@ tcu::TestCaseGroup* createFunctionControlGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%f32f = OpTypeFunction %f32\n"
 		"%id = OpVariable %uvec3ptr Input\n"
@@ -3516,7 +3516,7 @@ tcu::TestCaseGroup* createMemoryAccessGroup (tcu::TestContext& testCtx)
 	vector<float>					inputFloats		(numElements, 0);
 	vector<float>					outputFloats	(numElements, 0);
 	const StringTemplate			shaderTemplate	(
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main           \"main\"\n"
@@ -3524,7 +3524,7 @@ tcu::TestCaseGroup* createMemoryAccessGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%f32ptr_f  = OpTypePointer Function %f32\n"
 
@@ -3587,7 +3587,7 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 	vector<float>					positiveFloats	(numElements, 0);
 	vector<float>					negativeFloats	(numElements, 0);
 	const StringTemplate			shaderTemplate	(
-		string(s_ShaderPreamble) +
+		string(getComputeAsmShaderPreamble()) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main           \"main\"\n"
@@ -3595,7 +3595,7 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"${TYPE}\n"
 
