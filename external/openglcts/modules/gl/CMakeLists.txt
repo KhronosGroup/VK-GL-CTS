@@ -112,6 +112,8 @@ set(GLCTS_GL_SRCS
 	gl4cParallelShaderCompileTests.hpp
 	gl4cPostDepthCoverageTests.cpp
 	gl4cPostDepthCoverageTests.hpp
+	gl4cIndirectParametersTests.cpp
+	gl4cIndirectParametersTests.hpp
 	)
 
 set(GLCTS_GL_LIBS

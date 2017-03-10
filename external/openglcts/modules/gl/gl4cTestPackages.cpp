@@ -36,6 +36,7 @@
 #include "gl4cGPUShaderFP64Tests.hpp"
 #include "gl4cGetTextureSubImageTests.hpp"
 #include "gl4cIncompleteTextureAccessTests.hpp"
+#include "gl4cIndirectParametersTests.hpp"
 #include "gl4cKHRDebugTests.hpp"
 #include "gl4cMapBufferAlignmentTests.hpp"
 #include "gl4cMultiBindTests.hpp"
@@ -228,6 +229,7 @@ void GL43TestPackage::init(void)
 		addChild(new gl4cts::StencilTexturingTests(getContext()));
 		addChild(new gl4cts::SparseBufferTests(getContext()));
 		addChild(new gl4cts::SparseTextureTests(getContext()));
+		addChild(new gl4cts::IndirectParametersTests(getContext()));
 	}
 	catch (...)
 	{

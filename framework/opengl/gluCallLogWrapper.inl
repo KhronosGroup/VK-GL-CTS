@@ -3341,6 +3341,13 @@ void CallLogWrapper::glMultiDrawArraysIndirect (glw::GLenum mode, const void *in
 	m_gl.multiDrawArraysIndirect(mode, indirect, drawcount, stride);
 }
 
+void CallLogWrapper::glMultiDrawArraysIndirectCountARB (glw::GLenum mode, glw::GLintptr indirect, glw::GLintptr drawcount, glw::GLsizei maxdrawcount, glw::GLsizei stride)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiDrawArraysIndirectCountARB(" << toHex(mode) << ", " << indirect << ", " << drawcount << ", " << maxdrawcount << ", " << stride << ");" << TestLog::EndMessage;
+	m_gl.multiDrawArraysIndirectCountARB(mode, indirect, drawcount, maxdrawcount, stride);
+}
+
 void CallLogWrapper::glMultiDrawElements (glw::GLenum mode, const glw::GLsizei *count, glw::GLenum type, const void *const*indices, glw::GLsizei drawcount)
 {
 	if (m_enableLog)
@@ -3360,6 +3367,13 @@ void CallLogWrapper::glMultiDrawElementsIndirect (glw::GLenum mode, glw::GLenum 
 	if (m_enableLog)
 		m_log << TestLog::Message << "glMultiDrawElementsIndirect(" << toHex(mode) << ", " << toHex(type) << ", " << indirect << ", " << drawcount << ", " << stride << ");" << TestLog::EndMessage;
 	m_gl.multiDrawElementsIndirect(mode, type, indirect, drawcount, stride);
+}
+
+void CallLogWrapper::glMultiDrawElementsIndirectCountARB (glw::GLenum mode, glw::GLenum type, glw::GLintptr indirect, glw::GLintptr drawcount, glw::GLsizei maxdrawcount, glw::GLsizei stride)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glMultiDrawElementsIndirectCountARB(" << toHex(mode) << ", " << toHex(type) << ", " << indirect << ", " << drawcount << ", " << maxdrawcount << ", " << stride << ");" << TestLog::EndMessage;
+	m_gl.multiDrawElementsIndirectCountARB(mode, type, indirect, drawcount, maxdrawcount, stride);
 }
 
 void CallLogWrapper::glMultiTexBufferEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum internalformat, glw::GLuint buffer)
