@@ -2743,6 +2743,7 @@ std::string QuadrantRendederCase::genVertexSource (void) const
 										: ((m_exitingStages & vk::VK_SHADER_STAGE_GEOMETRY_BIT) != 0u)				? ("geo")
 										: ((m_exitingStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0u)				? ("frag")
 										: (DE_NULL);
+	const char* const	fragColorPrec	= ((m_exitingStages & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) != 0) ? "highp" : "mediump";
 	const char* const	versionDecl		= glu::getGLSLVersionDeclaration(m_glslVersion);
 	std::ostringstream	buf;
 
@@ -2754,7 +2755,7 @@ std::string QuadrantRendederCase::genVertexSource (void) const
 		buf << versionDecl << "\n"
 			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_VERTEX_BIT)
 			<< genResourceDeclarations(vk::VK_SHADER_STAGE_VERTEX_BIT, 0)
-			<< "layout(location = 0) out highp vec4 " << nextStageName << "_color;\n"
+			<< "layout(location = 0) out " << fragColorPrec << " vec4 " << nextStageName << "_color;\n"
 			<< (onlyVS ? "" : "layout(location = 1) flat out highp int " + de::toString(nextStageName) + "_quadrant_id;\n")
 			<< genPerVertexBlock(vk::VK_SHADER_STAGE_VERTEX_BIT, m_glslVersion)
 			<< "void main (void)\n"
