@@ -723,19 +723,19 @@ tcu::TestNode::IterateResult CullDistance::APICoverageTest::iterate()
 				"    int result_value = (INPUT_GS_NAME[0] == TOKEN) ? TOKEN : -1;\n"
 				"\n"
 				/* Draw a full-screen quad */
-				"    gl_Position = vec4(-1.0, 1.0, 0.0, 0.0);\n"
+				"    gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
 				"    out_gs      = result_value;\n"
 				"    EmitVertex();\n"
 				"\n"
-				"    gl_Position = vec4(-1.0, -1.0, 0.0, 0.0);\n"
+				"    gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
 				"    out_gs      = result_value;\n"
 				"    EmitVertex();\n"
 				"\n"
-				"    gl_Position = vec4(1.0, 1.0, 0.0, 0.0);\n"
+				"    gl_Position = vec4(1.0, 1.0, 0.0, 1.0);\n"
 				"    out_gs      = result_value;\n"
 				"    EmitVertex();\n"
 				"\n"
-				"    gl_Position = vec4(1.0, -1.0, 0.0, 0.0);\n"
+				"    gl_Position = vec4(1.0, -1.0, 0.0, 1.0);\n"
 				"    out_gs      = result_value;\n"
 				"    EmitVertex();\n"
 				"    EndPrimitive();\n"
@@ -782,6 +782,8 @@ tcu::TestNode::IterateResult CullDistance::APICoverageTest::iterate()
 				"    int result_value = (INPUT_TE_NAME[0] == TOKEN) ? TOKEN : 0;\n"
 				"\n"
 				"    out_te = result_value;\n"
+				"\n"
+				"    gl_Position = vec4(0.0, 0.0, 0.0, 1.);\n"
 				"}\n";
 			std::string te_body = te_body_template;
 
@@ -1116,19 +1118,23 @@ void CullDistance::FunctionalTest::buildPO(glw::GLuint clipdistances_array_size,
 		culldistances_array_size > 0 ? culldistances_array_size : 1; /* Avoid zero-sized array compilation error */
 	static const glw::GLchar* dynamic_array_setters =
 		"\n"
-		"        for (int n_clipdistance_entry = 0;\n"
-		"                 n_clipdistance_entry < TEMPLATE_N_GL_CLIPDISTANCE_ENTRIES;\n"
-		"               ++n_clipdistance_entry)\n"
-		"        {\n"
-		"            ASSIGN_CLIP_DISTANCE(n_clipdistance_entry);\n"
-		"        }\n"
+		"#if TEMPLATE_N_GL_CLIPDISTANCE_ENTRIES\n"
+		"	 for (int n_clipdistance_entry = 0;\n"
+		"		  n_clipdistance_entry < TEMPLATE_N_GL_CLIPDISTANCE_ENTRIES;\n"
+		"		++n_clipdistance_entry)\n"
+		"	 {\n"
+		"	     ASSIGN_CLIP_DISTANCE(n_clipdistance_entry);\n"
+		"	 }\n"
+		"#endif"
 		"\n"
-		"        for (int n_culldistance_entry = 0;\n"
-		"                 n_culldistance_entry < TEMPLATE_N_GL_CULLDISTANCE_ENTRIES;\n"
-		"               ++n_culldistance_entry)\n"
-		"        {\n"
-		"            ASSIGN_CULL_DISTANCE(n_culldistance_entry);\n"
-		"        }\n";
+		"#if TEMPLATE_N_GL_CULLDISTANCE_ENTRIES \n"
+		"	 for (int n_culldistance_entry = 0;\n"
+		"		  n_culldistance_entry < TEMPLATE_N_GL_CULLDISTANCE_ENTRIES;\n"
+		"		++n_culldistance_entry)\n"
+		"	 {\n"
+		"	     ASSIGN_CULL_DISTANCE(n_culldistance_entry);\n"
+		"	 }\n"
+		"#endif\n";
 
 	static const glw::GLchar* core_functionality = "#version 450\n";
 
@@ -1228,9 +1234,15 @@ void CullDistance::FunctionalTest::buildPO(glw::GLuint clipdistances_array_size,
 											"\n"
 											"TEMPLATE_LAYOUT_IN\n"
 											"\n"
+											"in gl_PerVertex {\n"
+											"TEMPLATE_REDECLARE_IN_CLIPDISTANCE\n"
+											"TEMPLATE_REDECLARE_IN_CULLDISTANCE\n"
+											"vec4 gl_Position;\n"
+											"} gl_in[];\n"
+											"\n"
 											"TEMPLATE_REDECLARE_CLIPDISTANCE\n"
 											"TEMPLATE_REDECLARE_CULLDISTANCE\n"
-											""
+											"\n"
 											"#define ASSIGN_CLIP_DISTANCE(IDX) TEMPLATE_ASSIGN_CLIP_DISTANCE\n"
 											"#define ASSIGN_CULL_DISTANCE(IDX) TEMPLATE_ASSIGN_CULL_DISTANCE\n"
 											"\n"
@@ -1306,6 +1318,8 @@ void CullDistance::FunctionalTest::buildPO(glw::GLuint clipdistances_array_size,
 			std::string  array_setters;
 			std::string  clipdistance_array_declaration;
 			std::string  culldistance_array_declaration;
+			std::string  clipdistance_in_array_declaration;
+			std::string  culldistance_in_array_declaration;
 			std::string& shader_source = shaders_configuration[n_shader_index].body;
 
 			/* Copy template into shader body source */
@@ -1568,10 +1582,15 @@ void CullDistance::FunctionalTest::buildPO(glw::GLuint clipdistances_array_size,
 					clipdistance_array_declaration = std::string("out float gl_ClipDistance[") +
 													 CullDistance::Utilities::intToString(clipdistances_array_size) +
 													 std::string("];");
+					clipdistance_in_array_declaration = std::string("in float gl_ClipDistance[") +
+														CullDistance::Utilities::intToString(clipdistances_array_size) +
+														std::string("];");
 				}
 			}
 			CullDistance::Utilities::replaceAll(shader_source, std::string("TEMPLATE_REDECLARE_CLIPDISTANCE"),
 												clipdistance_array_declaration);
+			CullDistance::Utilities::replaceAll(shader_source, std::string("TEMPLATE_REDECLARE_IN_CLIPDISTANCE"),
+												clipdistance_in_array_declaration);
 
 			/* Adjust culldistances declaration */
 			if (redeclare_culldistances && culldistances_array_size > 0)
@@ -1596,10 +1615,15 @@ void CullDistance::FunctionalTest::buildPO(glw::GLuint clipdistances_array_size,
 					culldistance_array_declaration = std::string("out float gl_CullDistance[") +
 													 CullDistance::Utilities::intToString(culldistances_array_size) +
 													 std::string("];");
+					culldistance_in_array_declaration = std::string("in float gl_CullDistance[") +
+														CullDistance::Utilities::intToString(culldistances_array_size) +
+														std::string("];");
 				}
 			}
 			CullDistance::Utilities::replaceAll(shader_source, std::string("TEMPLATE_REDECLARE_CULLDISTANCE"),
 												culldistance_array_declaration);
+			CullDistance::Utilities::replaceAll(shader_source, std::string("TEMPLATE_REDECLARE_IN_CULLDISTANCE"),
+												culldistance_in_array_declaration);
 
 			/* Adjust clip/cull distances setters */
 			if (dynamic_index_writes)
@@ -1794,7 +1818,7 @@ void CullDistance::FunctionalTest::configureVAO(glw::GLuint clipdistances_array_
 		1, sub_grid_cell_size - 2
 	}; /* pixel y offsets to subgrid cell origin for line primitive      */
 	const glw::GLuint offsets_point_draw_x[1] = {
-		2
+		1
 	}; /* vertex x offsets to subgrid cell origin for point primitive    */
 	const glw::GLuint offsets_point_draw_y[1] = {
 		2
@@ -2249,11 +2273,10 @@ void CullDistance::FunctionalTest::executeRenderTest(glw::GLuint	 clipdistances_
 		glw::GLuint base_index_of_vertex	  = base_index_of_primitive;
 		glw::GLuint checkpoint_position_index = base_index_of_vertex + clipdistances_array_size +
 												culldistances_array_size + 2 /* ignore vertex coordinates */;
-		glw::GLint checkpoint_x = glw::GLint(m_to_width * glw::GLint(m_bo_data[checkpoint_position_index]));
-		glw::GLint checkpoint_y = glw::GLint(m_to_height * glw::GLint(m_bo_data[checkpoint_position_index + 1]));
+		glw::GLint checkpoint_x = glw::GLint(glw::GLfloat(m_to_width) * m_bo_data[checkpoint_position_index]);
+		glw::GLint checkpoint_y = glw::GLint(glw::GLfloat(m_to_height) * m_bo_data[checkpoint_position_index + 1]);
 		glw::GLint origin_x		= checkpoint_x - 1;
 		glw::GLint origin_y		= checkpoint_y - 1;
-
 		for (glw::GLint pixel_offset = 0; pixel_offset < m_sub_grid_cell_size; pixel_offset++)
 		{
 			if (readRedPixelValue(origin_x + pixel_offset, origin_y) != 0)
@@ -2328,9 +2351,9 @@ void CullDistance::FunctionalTest::executeRenderTest(glw::GLuint	 clipdistances_
 																clipdistances_array_size + culldistances_array_size +
 																2 /* ignore vertex coordinates */;
 				glw::GLint checkpoint_x_internal =
-					glw::GLint(m_to_width * glw::GLint(m_bo_data[checkpoint_position_index_internal]));
+					glw::GLint(glw::GLfloat(m_to_width) * m_bo_data[checkpoint_position_index_internal]);
 				glw::GLint checkpoint_y_internal =
-					glw::GLint(m_to_height * glw::GLint(m_bo_data[checkpoint_position_index_internal + 1]));
+					glw::GLint(glw::GLfloat(m_to_height) * m_bo_data[checkpoint_position_index_internal + 1]);
 				glw::GLint vertex_color_red_value = readRedPixelValue(checkpoint_x_internal, checkpoint_y_internal);
 
 				/* Make sure vertex is invisible */
@@ -2358,10 +2381,10 @@ void CullDistance::FunctionalTest::executeRenderTest(glw::GLuint	 clipdistances_
 			glw::GLuint checkpoint_position_index_internal = base_index_of_vertex_internal + clipdistances_array_size +
 															 culldistances_array_size +
 															 2 /* ignore vertex coordinates */;
-			glw::GLuint checkpoint_x_internal =
-				glw::GLint(m_to_width * glw::GLint(m_bo_data[checkpoint_position_index_internal]));
-			glw::GLuint checkpoint_y_internal =
-				glw::GLint(m_to_height * glw::GLint(m_bo_data[checkpoint_position_index_internal + 1]));
+			glw::GLint checkpoint_x_internal =
+				glw::GLint(glw::GLfloat(m_to_width) * m_bo_data[checkpoint_position_index_internal]);
+			glw::GLint checkpoint_y_internal =
+				glw::GLint(glw::GLfloat(m_to_height) * m_bo_data[checkpoint_position_index_internal + 1]);
 			glw::GLfloat* vertex_clipdistance_array  = &m_bo_data[clipdistance_array_index];
 			bool		  vertex_clipped			 = false;
 			glw::GLint	vertex_clipped_by_distance = 0;
@@ -2432,10 +2455,10 @@ void CullDistance::FunctionalTest::executeRenderTest(glw::GLuint	 clipdistances_
 						base_index_of_vertex_internal + clipdistances_array_size + culldistances_array_size +
 						2 /* ignore vertex coordinates */;
 					glw::GLuint culldistances_index = base_index_of_vertex_internal + clipdistances_array_size;
-					glw::GLuint checkpoint_x_internal =
-						glw::GLint(m_to_width * glw::GLint(m_bo_data[checkpoint_position_index_internal]));
-					glw::GLuint checkpoint_y_internal =
-						glw::GLint(m_to_height * glw::GLint(m_bo_data[checkpoint_position_index_internal + 1]));
+					glw::GLint  checkpoint_x_internal =
+						glw::GLint(glw::GLfloat(m_to_width) * m_bo_data[checkpoint_position_index_internal]);
+					glw::GLint checkpoint_y_internal =
+						glw::GLint(glw::GLfloat(m_to_height) * m_bo_data[checkpoint_position_index_internal + 1]);
 					glw::GLint vertex_color_red_value = readRedPixelValue(checkpoint_x_internal, checkpoint_y_internal);
 
 					/* Calculate culldistances check sum hash */

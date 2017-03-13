@@ -4975,7 +4975,7 @@ private:
 	template <typename T, glw::GLint S, bool N>
 	bool Test(bool use_range_version);
 
-	void PrepareFramebuffer(const glw::GLenum internal_format);
+	bool PrepareFramebuffer(const glw::GLenum internal_format);
 	void PrepareProgram(const glw::GLchar* variable_declaration);
 	void PrepareVertexArray();
 	void Draw();

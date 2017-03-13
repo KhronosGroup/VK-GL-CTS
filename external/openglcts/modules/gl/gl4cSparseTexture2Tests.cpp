@@ -47,217 +47,216 @@ using namespace glu;
 namespace gl4cts
 {
 
-const char* compute_textureFill = "#version 430 core\n"
-								  "\n"
-								  "#extension GL_ARB_sparse_texture2 : enable\n"
-								  "\n"
-								  "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-								  "\n"
-								  "layout (location = 1) writeonly uniform highp <INPUT_TYPE> uni_image;\n"
-								  "\n"
-								  "void main()\n"
-								  "{\n"
-								  "    <POINT_TYPE> point = <POINT_TYPE>(<POINT_DEF>);\n"
-								  "    memoryBarrier();\n"
-								  "    <RETURN_TYPE> color = <RETURN_TYPE><RESULT_EXPECTED>;\n"
-								  "    imageStore(uni_image, point<SAMPLE_DEF>, color);\n"
-								  "}\n";
+const char* st2_compute_textureFill = "#version 430 core\n"
+									  "\n"
+									  "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+									  "\n"
+									  "layout (location = 1) writeonly uniform highp <INPUT_TYPE> uni_image;\n"
+									  "\n"
+									  "void main()\n"
+									  "{\n"
+									  "    <POINT_TYPE> point = <POINT_TYPE>(<POINT_DEF>);\n"
+									  "    memoryBarrier();\n"
+									  "    <RETURN_TYPE> color = <RETURN_TYPE><RESULT_EXPECTED>;\n"
+									  "    imageStore(uni_image, point<SAMPLE_DEF>, color);\n"
+									  "}\n";
 
-const char* compute_textureVerify = "#version 430 core\n"
+const char* st2_compute_textureVerify = "#version 430 core\n"
+										"\n"
+										"#extension GL_ARB_sparse_texture2 : enable\n"
+										"\n"
+										"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+										"\n"
+										"layout (location = 1, r8ui) writeonly uniform <OUTPUT_TYPE> uni_out_image;\n"
+										"layout (location = 2, <FORMAT>) readonly uniform <INPUT_TYPE> uni_in_image;\n"
+										"\n"
+										"void main()\n"
+										"{\n"
+										"    <POINT_TYPE> point = <POINT_TYPE>(<POINT_DEF>);\n"
+										"    memoryBarrier();\n"
+										"    highp <RETURN_TYPE> color,\n"
+										"                        expected,\n"
+										"                        epsilon;\n"
+										"    color = imageLoad(uni_in_image, point<SAMPLE_DEF>);\n"
+										"    expected = <RETURN_TYPE><RESULT_EXPECTED>;\n"
+										"    epsilon = <RETURN_TYPE>(<EPSILON>);\n"
+										"\n"
+										"    if (all(lessThanEqual(color, expected + epsilon)) &&\n"
+										"        all(greaterThanEqual(color, expected - epsilon)))\n"
+										"    {\n"
+										"        imageStore(uni_out_image, point, uvec4(255));\n"
+										"    }\n"
+										"    else {\n"
+										"        imageStore(uni_out_image, point, uvec4(0));\n"
+										"    }\n"
+										"}\n";
+
+const char* st2_compute_atomicVerify = "#version 430 core\n"
+									   "\n"
+									   "#extension GL_ARB_sparse_texture2 : enable\n"
+									   "\n"
+									   "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+									   "\n"
+									   "layout (location = 1, r8ui) writeonly uniform <OUTPUT_TYPE> uni_out_image;\n"
+									   "layout (location = 2, <FORMAT>) uniform <INPUT_TYPE> uni_in_image;\n"
+									   "\n"
+									   "layout (location = 3) uniform int widthCommitted;\n"
+									   "\n"
+									   "void main()\n"
+									   "{\n"
+									   "    <POINT_TYPE> point,\n"
+									   "                 offset;\n"
+									   "    point = <POINT_TYPE>(<POINT_DEF>);\n"
+									   "    offset = <POINT_TYPE>(0);\n"
+									   "    offset.x = widthCommitted;\n"
+									   "    memoryBarrier();\n"
+									   "    if (point.x >= widthCommitted) {\n"
+									   "        uint index = ((point.x - widthCommitted) + point.y * 8) % 8;\n"
+									   "        <DATA_TYPE> value = 127;\n"
+									   "        if (index == 0)\n"
+									   "            value = imageAtomicExchange(uni_in_image, point<SAMPLE_DEF>,\n"
+									   "                                        <DATA_TYPE>(0x0F));\n"
+									   "        else if (index == 1)\n"
+									   "            value = imageAtomicCompSwap(uni_in_image, point<SAMPLE_DEF>,\n"
+									   "                                        <DATA_TYPE>(0), <DATA_TYPE>(0x0F));\n"
+									   "        else if (index == 2)\n"
+									   "            value = imageAtomicAdd(uni_in_image, point<SAMPLE_DEF>,\n"
+									   "                                   <DATA_TYPE>(0x0F));\n"
+									   "        else if (index == 3)\n"
+									   "            value = imageAtomicAnd(uni_in_image, point<SAMPLE_DEF>,\n"
+									   "                                   <DATA_TYPE>(0x0F));\n"
+									   "        else if (index == 4)\n"
+									   "            value = imageAtomicOr(uni_in_image, point<SAMPLE_DEF>,\n"
+									   "                                  <DATA_TYPE>(0x0F));\n"
+									   "        else if (index == 5)\n"
+									   "            value = imageAtomicXor(uni_in_image, point<SAMPLE_DEF>,\n"
+									   "                                   <DATA_TYPE>(0x0F));\n"
+									   "        else if (index == 6)\n"
+									   "            value = imageAtomicMin(uni_in_image, point<SAMPLE_DEF>,\n"
+									   "                                   <DATA_TYPE>(0x0F));\n"
+									   "        else if (index == 7)\n"
+									   "            value = imageAtomicMax(uni_in_image, point<SAMPLE_DEF>,\n"
+									   "                                   <DATA_TYPE>(0x0F));\n"
+									   "\n"
+									   "        <RETURN_TYPE> color = imageLoad(uni_in_image, point<SAMPLE_DEF>);\n"
+									   "\n"
+									   "        if (value == 0)\n"
+									   "            imageStore(uni_out_image, point - offset, uvec4(0));\n"
+									   "        else\n"
+									   "            imageStore(uni_out_image, point - offset, uvec4(value));\n"
+									   "\n"
+									   "        if (color.r == 0)\n"
+									   "            imageStore(uni_out_image, point, uvec4(0));\n"
+									   "        else\n"
+									   "            imageStore(uni_out_image, point, uvec4(1));\n"
+									   "    }\n"
+									   "}\n";
+
+const char* st2_vertex_drawBuffer = "#version 430 core\n"
 									"\n"
 									"#extension GL_ARB_sparse_texture2 : enable\n"
 									"\n"
-									"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-									"\n"
-									"layout (location = 1, r8ui) writeonly uniform <OUTPUT_TYPE> uni_out_image;\n"
-									"layout (location = 2, <FORMAT>) readonly uniform <INPUT_TYPE> uni_in_image;\n"
+									"in vec3 vertex;\n"
+									"in vec2 inTexCoord;\n"
+									"out vec2 texCoord;\n"
 									"\n"
 									"void main()\n"
 									"{\n"
-									"    <POINT_TYPE> point = <POINT_TYPE>(<POINT_DEF>);\n"
-									"    memoryBarrier();\n"
-									"    highp <RETURN_TYPE> color,\n"
-									"                        expected,\n"
-									"                        epsilon;\n"
-									"    color = imageLoad(uni_in_image, point<SAMPLE_DEF>);\n"
-									"    expected = <RETURN_TYPE><RESULT_EXPECTED>;\n"
-									"    epsilon = <RETURN_TYPE>(<EPSILON>);\n"
-									"\n"
-									"    if (all(lessThanEqual(color, expected + epsilon)) &&\n"
-									"        all(greaterThanEqual(color, expected - epsilon)))\n"
-									"    {\n"
-									"        imageStore(uni_out_image, point, uvec4(255));\n"
-									"    }\n"
-									"    else {\n"
-									"        imageStore(uni_out_image, point, uvec4(0));\n"
-									"    }\n"
+									"    texCoord = inTexCoord;\n"
+									"    gl_Position = vec4(vertex, 1);\n"
 									"}\n";
 
-const char* compute_atomicVerify = "#version 430 core\n"
-								   "\n"
-								   "#extension GL_ARB_sparse_texture2 : enable\n"
-								   "\n"
-								   "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-								   "\n"
-								   "layout (location = 1, r8ui) writeonly uniform <OUTPUT_TYPE> uni_out_image;\n"
-								   "layout (location = 2, <FORMAT>) uniform <INPUT_TYPE> uni_in_image;\n"
-								   "\n"
-								   "layout (location = 3) uniform int widthCommitted;\n"
-								   "\n"
-								   "void main()\n"
-								   "{\n"
-								   "    <POINT_TYPE> point,\n"
-								   "                 offset;\n"
-								   "    point = <POINT_TYPE>(<POINT_DEF>);\n"
-								   "    offset = <POINT_TYPE>(0);\n"
-								   "    offset.x = widthCommitted;\n"
-								   "    memoryBarrier();\n"
-								   "    if (point.x >= widthCommitted) {\n"
-								   "        uint index = ((point.x - widthCommitted) + point.y * 8) % 8;\n"
-								   "        <DATA_TYPE> value = 127;\n"
-								   "        if (index == 0)\n"
-								   "            value = imageAtomicExchange(uni_in_image, point<SAMPLE_DEF>,\n"
-								   "                                        <DATA_TYPE>(0x0F));\n"
-								   "        else if (index == 1)\n"
-								   "            value = imageAtomicCompSwap(uni_in_image, point<SAMPLE_DEF>,\n"
-								   "                                        <DATA_TYPE>(0), <DATA_TYPE>(0x0F));\n"
-								   "        else if (index == 2)\n"
-								   "            value = imageAtomicAdd(uni_in_image, point<SAMPLE_DEF>,\n"
-								   "                                   <DATA_TYPE>(0x0F));\n"
-								   "        else if (index == 3)\n"
-								   "            value = imageAtomicAnd(uni_in_image, point<SAMPLE_DEF>,\n"
-								   "                                   <DATA_TYPE>(0x0F));\n"
-								   "        else if (index == 4)\n"
-								   "            value = imageAtomicOr(uni_in_image, point<SAMPLE_DEF>,\n"
-								   "                                  <DATA_TYPE>(0x0F));\n"
-								   "        else if (index == 5)\n"
-								   "            value = imageAtomicXor(uni_in_image, point<SAMPLE_DEF>,\n"
-								   "                                   <DATA_TYPE>(0x0F));\n"
-								   "        else if (index == 6)\n"
-								   "            value = imageAtomicMin(uni_in_image, point<SAMPLE_DEF>,\n"
-								   "                                   <DATA_TYPE>(0x0F));\n"
-								   "        else if (index == 7)\n"
-								   "            value = imageAtomicMax(uni_in_image, point<SAMPLE_DEF>,\n"
-								   "                                   <DATA_TYPE>(0x0F));\n"
-								   "\n"
-								   "        <RETURN_TYPE> color = imageLoad(uni_in_image, point<SAMPLE_DEF>);\n"
-								   "\n"
-								   "        if (value == 0)\n"
-								   "            imageStore(uni_out_image, point - offset, uvec4(0));\n"
-								   "        else\n"
-								   "            imageStore(uni_out_image, point - offset, uvec4(value));\n"
-								   "\n"
-								   "        if (color.r == 0)\n"
-								   "            imageStore(uni_out_image, point, uvec4(0));\n"
-								   "        else\n"
-								   "            imageStore(uni_out_image, point, uvec4(1));\n"
-								   "    }\n"
-								   "}\n";
+const char* st2_fragment_drawBuffer = "#version 430 core\n"
+									  "\n"
+									  "#extension GL_ARB_sparse_texture2 : enable\n"
+									  "\n"
+									  "layout (location = 1) uniform sampler2D uni_sampler;\n"
+									  "\n"
+									  "in vec2 texCoord;\n"
+									  "out vec4 fragColor;\n"
+									  "\n"
+									  "void main()\n"
+									  "{\n"
+									  "    fragColor = texture(uni_sampler, texCoord);\n"
+									  "}\n";
 
-const char* vertex_drawBuffer = "#version 430 core\n"
-								"\n"
-								"#extension GL_ARB_sparse_texture2 : enable\n"
-								"\n"
-								"in vec3 vertex;\n"
-								"in vec2 inTexCoord;\n"
-								"out vec2 texCoord;\n"
-								"\n"
-								"void main()\n"
-								"{\n"
-								"    texCoord = inTexCoord;\n"
-								"    gl_Position = vec4(vertex, 1);\n"
-								"}\n";
+const char* st2_compute_extensionCheck = "#version 450 core\n"
+										 "\n"
+										 "#extension <EXTENSION> : require\n"
+										 "\n"
+										 "#ifndef <EXTENSION>\n"
+										 "  #error <EXTENSION> not defined\n"
+										 "#else\n"
+										 "  #if (<EXTENSION> != 1)\n"
+										 "    #error <EXTENSION> wrong value\n"
+										 "  #endif\n"
+										 "#endif // <EXTENSION>\n"
+										 "\n"
+										 "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+										 "\n"
+										 "void main()\n"
+										 "{\n"
+										 "}\n";
 
-const char* fragment_drawBuffer = "#version 430 core\n"
-								  "\n"
-								  "#extension GL_ARB_sparse_texture2 : enable\n"
-								  "\n"
-								  "layout (location = 1) uniform sampler2D uni_sampler;\n"
-								  "\n"
-								  "in vec2 texCoord;\n"
-								  "out vec4 fragColor;\n"
-								  "\n"
-								  "void main()\n"
-								  "{\n"
-								  "    fragColor = texture(uni_sampler, texCoord);\n"
-								  "}\n";
-
-const char* compute_extensionCheck = "#version 450 core\n"
-									 "\n"
-									 "#extension GL_ARB_sparse_texture2 : require\n"
-									 "\n"
-									 "#ifndef GL_ARB_sparse_texture2\n"
-									 "  #error GL_ARB_sparse_texture2 not defined\n"
-									 "#else\n"
-									 "  #if (GL_ARB_sparse_texture2 != 1)\n"
-									 "    #error GL_ARB_sparse_texture2 wrong value\n"
-									 "  #endif\n"
-									 "#endif // GL_ARB_sparse_texture2\n"
-									 "\n"
-									 "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-									 "\n"
-									 "void main()\n"
-									 "{\n"
-									 "}\n";
-
-const char* compute_lookupVerify = "#version 450 core\n"
-								   "\n"
-								   "#extension GL_ARB_sparse_texture2 : enable\n"
-								   "\n"
-								   "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-								   "\n"
-								   "layout (location = 1, r8ui) writeonly uniform <OUTPUT_TYPE> uni_out;\n"
-								   "layout (location = 2<FORMAT_DEF>) uniform <INPUT_TYPE> uni_in;\n"
-								   "layout (location = 3) uniform int widthCommitted;\n"
-								   "\n"
-								   "void main()\n"
-								   "{\n"
-								   "    <POINT_TYPE> point = <POINT_TYPE>(<POINT_DEF>);\n"
-								   "    i<COORD_TYPE> texSize = i<COORD_TYPE>(<SIZE_DEF>);\n"
-								   "    i<COORD_TYPE> icoord = i<COORD_TYPE>(<COORD_DEF>);\n"
-								   "    <COORD_TYPE> coord = <COORD_TYPE>(<COORD_DEF>) / <COORD_TYPE>(texSize);\n"
-								   "    <RETURN_TYPE> retValue,\n"
-								   "                  expValue,\n"
-								   "                  epsilon;\n"
-								   "    retValue = <RETURN_TYPE>(0);\n"
-								   "    expValue = <RETURN_TYPE><RESULT_EXPECTED>;\n"
-								   "    epsilon = <RETURN_TYPE>(<EPSILON>);\n"
-								   "\n"
-								   "<CUBE_MAP_COORD_DEF>\n"
-								   "<OFFSET_ARRAY_DEF>\n"
-								   "\n"
-								   "    ivec2 corner1 = ivec2(1, 1);\n"
-								   "    ivec2 corner2 = ivec2(texSize.x - 1, texSize.y - 1);\n"
-								   "\n"
-								   "    int code = <FUNCTION>(uni_in,\n"
-								   "                          <POINT_COORD><SAMPLE_DEF><ARGUMENTS>,\n"
-								   "                          retValue<COMPONENT_DEF>);\n"
-								   "    memoryBarrier();\n"
-								   "\n"
-								   "    imageStore(uni_out, point, uvec4(255));\n"
-								   "\n"
-								   "    if (point.x > corner1.x && point.y > corner1.y &&\n"
-								   "        point.x < corner2.x && point.y < corner2.y &&\n"
-								   "        point.x < widthCommitted - 1)\n"
-								   "    {\n"
-								   "        if (!sparseTexelsResidentARB(code) ||\n"
-								   "            any(greaterThan(retValue, expValue + epsilon)) ||\n"
-								   "            any(lessThan(retValue, expValue - epsilon)))\n"
-								   "        {\n"
-								   "            imageStore(uni_out, point, uvec4(0));\n"
-								   "        }\n"
-								   "    }\n"
-								   "\n"
-								   "    if (point.x > corner1.x && point.y > corner1.y &&\n"
-								   "        point.x < corner2.x && point.y < corner2.y &&\n"
-								   "        point.x >= widthCommitted + 1)\n"
-								   "    {\n"
-								   "        if (sparseTexelsResidentARB(code))\n"
-								   "        {\n"
-								   "            imageStore(uni_out, point, uvec4(0));\n"
-								   "        }\n"
-								   "    }\n"
-								   "}\n";
+const char* st2_compute_lookupVerify = "#version 450 core\n"
+									   "\n"
+									   "#extension GL_ARB_sparse_texture2 : enable\n"
+									   "#extension GL_ARB_sparse_texture_clamp : enable\n"
+									   "\n"
+									   "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+									   "\n"
+									   "layout (location = 1, r8ui) writeonly uniform <OUTPUT_TYPE> uni_out;\n"
+									   "layout (location = 2<FORMAT_DEF>) uniform <INPUT_TYPE> uni_in;\n"
+									   "layout (location = 3) uniform int widthCommitted;\n"
+									   "\n"
+									   "void main()\n"
+									   "{\n"
+									   "    <POINT_TYPE> point = <POINT_TYPE>(<POINT_DEF>);\n"
+									   "    <ICOORD_TYPE> texSize = <ICOORD_TYPE>(<SIZE_DEF>);\n"
+									   "    <ICOORD_TYPE> icoord = <ICOORD_TYPE>(<COORD_DEF>);\n"
+									   "    <COORD_TYPE> coord = <COORD_TYPE>(<COORD_DEF>) / <COORD_TYPE>(texSize);\n"
+									   "    <RETURN_TYPE> retValue,\n"
+									   "                  expValue,\n"
+									   "                  epsilon;\n"
+									   "    retValue = <RETURN_TYPE>(0);\n"
+									   "    expValue = <RETURN_TYPE><RESULT_EXPECTED>;\n"
+									   "    epsilon = <RETURN_TYPE>(<EPSILON>);\n"
+									   "\n"
+									   "<CUBE_MAP_COORD_DEF>\n"
+									   "<OFFSET_ARRAY_DEF>\n"
+									   "\n"
+									   "    ivec2 corner1 = ivec2(1, 1);\n"
+									   "    ivec2 corner2 = ivec2(texSize.x - 1, texSize.y - 1);\n"
+									   "\n"
+									   "    int code = <FUNCTION>(uni_in,\n"
+									   "                          <POINT_COORD><SAMPLE_DEF><ARGUMENTS>,\n"
+									   "                          retValue<COMPONENT_DEF>);\n"
+									   "    memoryBarrier();\n"
+									   "\n"
+									   "    imageStore(uni_out, point, uvec4(255));\n"
+									   "\n"
+									   "    if (point.x > corner1.x && point.y > corner1.y &&\n"
+									   "        point.x < corner2.x && point.y < corner2.y &&\n"
+									   "        point.x < widthCommitted - 1)\n"
+									   "    {\n"
+									   "        if (!sparseTexelsResidentARB(code) ||\n"
+									   "            any(greaterThan(retValue, expValue + epsilon)) ||\n"
+									   "            any(lessThan(retValue, expValue - epsilon)))\n"
+									   "        {\n"
+									   "            imageStore(uni_out, point, uvec4(0));\n"
+									   "        }\n"
+									   "    }\n"
+									   "\n"
+									   "    if (point.x > corner1.x && point.y > corner1.y &&\n"
+									   "        point.x < corner2.x && point.y < corner2.y &&\n"
+									   "        point.x >= widthCommitted + 1)\n"
+									   "    {\n"
+									   "        if (sparseTexelsResidentARB(code))\n"
+									   "        {\n"
+									   "            imageStore(uni_out, point, uvec4(0));\n"
+									   "        }\n"
+									   "    }\n"
+									   "}\n";
 
 /** Replace all occurance of <token> with <text> in <string>
  *
@@ -281,8 +280,8 @@ void replaceToken(const GLchar* token, const GLchar* text, std::string& string)
  *
  *  @param context     Rendering context
  */
-ShaderExtensionTestCase::ShaderExtensionTestCase(deqp::Context& context)
-	: TestCase(context, "ShaderExtension", "Verifies if GL_ARB_sparse_texture2 extension is available for GLSL")
+ShaderExtensionTestCase::ShaderExtensionTestCase(deqp::Context& context, const std::string extension)
+	: TestCase(context, "ShaderExtension", "Verifies if extension is available for GLSL"), mExtension(extension)
 {
 	/* Left blank intentionally */
 }
@@ -293,7 +292,7 @@ ShaderExtensionTestCase::ShaderExtensionTestCase(deqp::Context& context)
  */
 tcu::TestNode::IterateResult ShaderExtensionTestCase::iterate()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture2"))
+	if (!m_context.getContextInfo().isExtensionSupported(mExtension.c_str()))
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
 		return STOP;
@@ -301,15 +300,18 @@ tcu::TestNode::IterateResult ShaderExtensionTestCase::iterate()
 
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
+	std::string shader = st2_compute_extensionCheck;
+	replaceToken("<EXTENSION>", mExtension.c_str(), shader);
+
 	ProgramSources sources;
-	sources << ComputeSource(compute_extensionCheck);
+	sources << ComputeSource(shader);
 	ShaderProgram program(gl, sources);
 
 	if (!program.isOk())
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 		m_testCtx.getLog() << tcu::TestLog::Message << "Checking shader preprocessor directives failed. Source:\n"
-						   << compute_extensionCheck << "InfoLog:\n"
+						   << shader.c_str() << "InfoLog:\n"
 						   << program.getShaderInfo(SHADERTYPE_COMPUTE).infoLog << "\n"
 						   << tcu::TestLog::EndMessage;
 		return STOP;
@@ -804,7 +806,21 @@ SparseTexture2CommitmentTestCase::TokenStrings SparseTexture2CommitmentTestCase:
 	else
 		s.epsilon = "0";
 
-	if (target == GL_TEXTURE_2D_ARRAY)
+	if (target == GL_TEXTURE_1D)
+	{
+		s.outputType = "u" + outputBase + "2D";
+		s.inputType  = prefix + inputBase + "1D";
+		s.pointType  = "int";
+		s.pointDef   = "gl_WorkGroupID.x";
+	}
+	else if (target == GL_TEXTURE_1D_ARRAY)
+	{
+		s.outputType = "u" + outputBase + "2D_ARRAY";
+		s.inputType  = prefix + inputBase + "1DArray";
+		s.pointType  = "ivec2";
+		s.pointDef   = "gl_WorkGroupID.x, gl_WorkGroupID.z";
+	}
+	else if (target == GL_TEXTURE_2D_ARRAY)
 	{
 		s.outputType = "u" + outputBase + "2DArray";
 		s.inputType  = prefix + inputBase + "2DArray";
@@ -1010,7 +1026,7 @@ bool SparseTexture2CommitmentTestCase::writeDataToTexture(const Functions& gl, G
 		{
 			for (GLint sample = 0; sample < mState.samples; ++sample)
 			{
-				std::string shader = compute_textureFill;
+				std::string shader = st2_compute_textureFill;
 
 				// Adjust shader source to texture format
 				TokenStrings s = createShaderTokens(target, format, sample);
@@ -1203,7 +1219,7 @@ bool SparseTexture2CommitmentTestCase::verifyTextureData(const Functions& gl, GL
 							  (GLvoid*)out_data);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::SubImage");
 
-			std::string shader = compute_textureVerify;
+			std::string shader = st2_compute_textureVerify;
 
 			// Adjust shader source to texture format
 			TokenStrings s = createShaderTokens(target, format, sample);
@@ -1530,8 +1546,8 @@ bool UncommittedRegionsAccessTestCase::UncommittedDepthStencil(const Functions& 
 		return true;
 
 	//Prepare shaders
-	std::string vertexSource   = vertex_drawBuffer;
-	std::string fragmentSource = fragment_drawBuffer;
+	std::string vertexSource   = st2_vertex_drawBuffer;
+	std::string fragmentSource = st2_fragment_drawBuffer;
 
 	ShaderProgram program(gl, glu::makeVtxFragSources(vertexSource, fragmentSource));
 	if (!program.isOk())
@@ -1774,7 +1790,7 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 							  (GLvoid*)out_data);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::SubImage");
 
-			std::string shader = compute_textureVerify;
+			std::string shader = st2_compute_textureVerify;
 
 			// Adjust shader source to texture format
 			TokenStrings s = createShaderTokens(target, format, sample);
@@ -1916,7 +1932,7 @@ bool UncommittedRegionsAccessTestCase::verifyAtomicOperations(const Functions& g
 						  (GLvoid*)out_data);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::SubImage");
 
-		std::string shader = compute_atomicVerify;
+		std::string shader = st2_compute_atomicVerify;
 
 		// Adjust shader source to texture format
 		TokenStrings s		  = createShaderTokens(target, format, sample);
@@ -2141,6 +2157,17 @@ SparseTexture2LookupTestCase::SparseTexture2LookupTestCase(deqp::Context& contex
 	/* Left blank intentionally */
 }
 
+/** Constructor.
+ *
+ *  @param context     Rendering context
+ */
+SparseTexture2LookupTestCase::SparseTexture2LookupTestCase(deqp::Context& context, const char* name,
+														   const char* description)
+	: SparseTexture2CommitmentTestCase(context, name, description)
+{
+	/* Left blank intentionally */
+}
+
 /** Initializes the test group contents. */
 void SparseTexture2LookupTestCase::init()
 {
@@ -2160,7 +2187,7 @@ void SparseTexture2LookupTestCase::init()
 	f.allowedTargets.insert(GL_TEXTURE_RECTANGLE);
 	mFunctions.push_back(f);
 
-	f = FunctionToken("sparseTextureLodARB", "<LOD_DEF>");
+	f = FunctionToken("sparseTextureLodARB", ", <LOD>");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_CUBE_MAP);
@@ -2168,7 +2195,7 @@ void SparseTexture2LookupTestCase::init()
 	f.allowedTargets.insert(GL_TEXTURE_3D);
 	mFunctions.push_back(f);
 
-	f = FunctionToken("sparseTextureOffsetARB", ", ivec<OFFSET_DIM>(0)");
+	f = FunctionToken("sparseTextureOffsetARB", ", <OFFSET_TYPE><OFFSET_DIM>(0)");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_3D);
@@ -2184,20 +2211,20 @@ void SparseTexture2LookupTestCase::init()
 	f.allowedTargets.insert(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
 	mFunctions.push_back(f);
 
-	f = FunctionToken("sparseTexelFetchOffsetARB", "<LOD_DEF>, ivec<OFFSET_DIM>(0)");
+	f = FunctionToken("sparseTexelFetchOffsetARB", "<LOD_DEF>, <OFFSET_TYPE><OFFSET_DIM>(0)");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_3D);
 	f.allowedTargets.insert(GL_TEXTURE_RECTANGLE);
 	mFunctions.push_back(f);
 
-	f = FunctionToken("sparseTextureLodOffsetARB", "<LOD_DEF>, ivec<OFFSET_DIM>(0)");
+	f = FunctionToken("sparseTextureLodOffsetARB", ", <LOD>, <OFFSET_TYPE><OFFSET_DIM>(0)");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_3D);
 	mFunctions.push_back(f);
 
-	f = FunctionToken("sparseTextureGradARB", ", vec<OFFSET_DIM>(0), vec<OFFSET_DIM>(0)");
+	f = FunctionToken("sparseTextureGradARB", ", <NOFFSET_TYPE><OFFSET_DIM>(0), <NOFFSET_TYPE><OFFSET_DIM>(0)");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_CUBE_MAP);
@@ -2206,7 +2233,8 @@ void SparseTexture2LookupTestCase::init()
 	f.allowedTargets.insert(GL_TEXTURE_RECTANGLE);
 	mFunctions.push_back(f);
 
-	f = FunctionToken("sparseTextureGradOffsetARB", ", vec<OFFSET_DIM>(0), vec<OFFSET_DIM>(0), ivec<OFFSET_DIM>(0)");
+	f = FunctionToken("sparseTextureGradOffsetARB",
+					  ", <NOFFSET_TYPE><OFFSET_DIM>(0), <NOFFSET_TYPE><OFFSET_DIM>(0), <OFFSET_TYPE><OFFSET_DIM>(0)");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_3D);
@@ -2221,7 +2249,7 @@ void SparseTexture2LookupTestCase::init()
 	f.allowedTargets.insert(GL_TEXTURE_RECTANGLE);
 	mFunctions.push_back(f);
 
-	f = FunctionToken("sparseTextureGatherOffsetARB", "<REFZ_DEF>, ivec<OFFSET_DIM>(0)");
+	f = FunctionToken("sparseTextureGatherOffsetARB", "<REFZ_DEF>, <OFFSET_TYPE><OFFSET_DIM>(0)");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_RECTANGLE);
@@ -2242,7 +2270,7 @@ void SparseTexture2LookupTestCase::init()
 	f.allowedTargets.insert(GL_TEXTURE_RECTANGLE);
 	f.allowedTargets.insert(GL_TEXTURE_2D_MULTISAMPLE);
 	f.allowedTargets.insert(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
-	mFunctions.push_back(f);
+	//mFunctions.push_back(f);
 }
 
 /** Executes test iteration.
@@ -2375,9 +2403,25 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 	}
 
 	// Set coord type, coord definition and offset vector dimensions
-	s.coordType = "vec2";
-	s.offsetDim = "2";
-	if (target == GL_TEXTURE_2D_ARRAY)
+	s.coordType   = "vec2";
+	s.offsetType  = "ivec";
+	s.nOffsetType = "vec";
+	s.offsetDim   = "2";
+	if (target == GL_TEXTURE_1D)
+	{
+		s.coordType   = "float";
+		s.offsetType  = "int";
+		s.nOffsetType = "float";
+		s.offsetDim   = "";
+	}
+	else if (target == GL_TEXTURE_1D_ARRAY)
+	{
+		s.coordType   = "vec2";
+		s.offsetType  = "int";
+		s.nOffsetType = "float";
+		s.offsetDim   = "";
+	}
+	else if (target == GL_TEXTURE_2D_ARRAY)
 	{
 		s.coordType = "vec3";
 	}
@@ -2421,11 +2465,11 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 	{
 		if (funcName.find("GatherOffsets", 0) != std::string::npos)
 		{
-			s.offsetArrayDef = "    ivec<OFFSET_DIM> offsetsArray[4];\n"
-							   "    offsetsArray[0] = ivec<OFFSET_DIM>(0);\n"
-							   "    offsetsArray[1] = ivec<OFFSET_DIM>(0);\n"
-							   "    offsetsArray[2] = ivec<OFFSET_DIM>(0);\n"
-							   "    offsetsArray[3] = ivec<OFFSET_DIM>(0);\n";
+			s.offsetArrayDef = "    <OFFSET_TYPE><OFFSET_DIM> offsetsArray[4];\n"
+							   "    offsetsArray[0] = <OFFSET_TYPE><OFFSET_DIM>(0);\n"
+							   "    offsetsArray[1] = <OFFSET_TYPE><OFFSET_DIM>(0);\n"
+							   "    offsetsArray[2] = <OFFSET_TYPE><OFFSET_DIM>(0);\n"
+							   "    offsetsArray[3] = <OFFSET_TYPE><OFFSET_DIM>(0);\n";
 		}
 
 		if (format != GL_DEPTH_COMPONENT16)
@@ -2454,6 +2498,7 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 	if (target != GL_TEXTURE_RECTANGLE && target != GL_TEXTURE_2D_MULTISAMPLE &&
 		target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
 	{
+		s.lod	= de::toString(level);
 		s.lodDef = ", " + de::toString(level);
 	}
 
@@ -2469,7 +2514,11 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 	// Set size vector definition
 	if (format != GL_DEPTH_COMPONENT16 || funcName.find("Gather", 0) != std::string::npos)
 	{
-		if (s.coordType == "vec2")
+		if (s.coordType == "float")
+			s.sizeDef = "<TEX_WIDTH>";
+		else if (s.coordType == "vec2" && target == GL_TEXTURE_1D_ARRAY)
+			s.sizeDef = "<TEX_WIDTH>, <TEX_DEPTH>";
+		else if (s.coordType == "vec2")
 			s.sizeDef = "<TEX_WIDTH>, <TEX_HEIGHT>";
 		else if (s.coordType == "vec3")
 			s.sizeDef = "<TEX_WIDTH>, <TEX_HEIGHT>, <TEX_DEPTH>";
@@ -2479,16 +2528,24 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 	// Set size vector for shadow samplers and non-gether functions selected
 	else
 	{
-		if (s.coordType == "vec3")
+		if (s.coordType == "vec3" && target == GL_TEXTURE_1D_ARRAY)
+			s.sizeDef = "<TEX_WIDTH>, <TEX_DEPTH>, 1";
+		else if (s.coordType == "vec3")
 			s.sizeDef = "<TEX_WIDTH>, <TEX_HEIGHT>, 1";
 		else if (s.coordType == "vec4")
 			s.sizeDef = "<TEX_WIDTH>, <TEX_HEIGHT>, <TEX_DEPTH>, 1";
 	}
 
+	if (s.coordType != "float")
+		s.iCoordType = "i" + s.coordType;
+	else
+		s.iCoordType = "int";
+
 	return s;
 }
 
-/** Check if specific combination of target and format is allowed
+/** Check if specific combination of target and format is
+
  *
  * @param target       Target for which texture is binded
  * @param format       Texture internal format
@@ -2518,7 +2575,6 @@ bool SparseTexture2LookupTestCase::caseAllowed(GLint target, GLint format)
  *
  * @param target       Target for which texture is binded
  * @param format       Texture internal format
- * @param sample     Multisample texture sample number
  * @param funcToken    Texture lookup function structure
  *
  * @return Returns true if target/format combination is allowed, false otherwise.
@@ -2598,7 +2654,7 @@ bool SparseTexture2LookupTestCase::writeDataToTexture(const Functions& gl, GLint
 
 		for (GLint sample = 0; sample < mState.samples; ++sample)
 		{
-			std::string shader = compute_textureFill;
+			std::string shader = st2_compute_textureFill;
 
 			// Adjust shader source to texture format
 			TokenStrings s = createShaderTokens(target, format, sample);
@@ -2732,7 +2788,7 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 						  (GLvoid*)out_data);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::SubImage");
 
-		std::string shader = compute_lookupVerify;
+		std::string shader = st2_compute_lookupVerify;
 
 		// Adjust shader source to texture format
 		TokenStringsExt s = createLookupShaderTokens(target, format, level, sample, f);
@@ -2743,8 +2799,10 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 		replaceToken("<OUTPUT_TYPE>", s.outputType.c_str(), shader);
 		replaceToken("<INPUT_TYPE>", s.inputType.c_str(), shader);
 		replaceToken("<SIZE_DEF>", s.sizeDef.c_str(), shader);
+		replaceToken("<LOD>", s.lod.c_str(), shader);
 		replaceToken("<LOD_DEF>", s.lodDef.c_str(), shader);
 		replaceToken("<COORD_TYPE>", s.coordType.c_str(), shader);
+		replaceToken("<ICOORD_TYPE>", s.iCoordType.c_str(), shader);
 		replaceToken("<COORD_DEF>", s.coordDef.c_str(), shader);
 		replaceToken("<POINT_TYPE>", s.pointType.c_str(), shader);
 		replaceToken("<POINT_DEF>", s.pointDef.c_str(), shader);
@@ -2758,6 +2816,8 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 		replaceToken("<CUBE_MAP_COORD_DEF>", s.cubeMapCoordDef.c_str(), shader);
 		replaceToken("<OFFSET_ARRAY_DEF>", s.offsetArrayDef.c_str(), shader);
 		replaceToken("<FORMAT_DEF>", s.formatDef.c_str(), shader);
+		replaceToken("<OFFSET_TYPE>", s.offsetType.c_str(), shader);
+		replaceToken("<NOFFSET_TYPE>", s.nOffsetType.c_str(), shader);
 		replaceToken("<OFFSET_DIM>", s.offsetDim.c_str(), shader);
 
 		replaceToken("<TEX_WIDTH>", de::toString(width).c_str(), shader);
@@ -2797,14 +2857,14 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 			}
 			else
 			{
-				gl.bindImageTexture(1, //unit
+				gl.bindImageTexture(0, //unit
 									texture,
 									level,	//level
 									GL_FALSE, //layered
 									0,		  //layer
 									GL_READ_ONLY, format);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
-				gl.uniform1i(1, 1 /* image_unit */);
+				gl.uniform1i(2, 0 /* image_unit */);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i");
 			}
 
@@ -2821,9 +2881,9 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
 
 			//Verify only committed region
-			for (GLint x = 0; x < width; ++x)
+			for (GLint z = 0; z < depth; ++z)
 				for (GLint y = 0; y < height; ++y)
-					for (GLint z = 0; z < depth; ++z)
+					for (GLint x = 0; x < width; ++x)
 					{
 						GLubyte* dataRegion	= exp_data + x + y * width + z * width * height;
 						GLubyte* outDataRegion = out_data + x + y * width + z * width * height;
@@ -2834,8 +2894,9 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 		else
 		{
 			mLog << "Compute shader compilation failed (lookup) for target: " << target << ", format: " << format
-				 << ", infoLog: " << program.getShaderInfo(SHADERTYPE_COMPUTE).infoLog
-				 << ", shaderSource: " << shader.c_str() << " - ";
+				 << ", shaderInfoLog: " << program.getShaderInfo(SHADERTYPE_COMPUTE).infoLog
+				 << ", programInfoLog: " << program.getProgramInfo().infoLog << ", shaderSource: " << shader.c_str()
+				 << " - ";
 
 			result = false;
 		}
@@ -2858,7 +2919,7 @@ SparseTexture2Tests::SparseTexture2Tests(deqp::Context& context)
 /** Initializes the test group contents. */
 void SparseTexture2Tests::init()
 {
-	addChild(new ShaderExtensionTestCase(m_context));
+	addChild(new ShaderExtensionTestCase(m_context, "GL_ARB_sparse_texture2"));
 	addChild(new StandardPageSizesTestCase(m_context));
 	addChild(new SparseTexture2AllocationTestCase(m_context));
 	addChild(new SparseTexture2CommitmentTestCase(m_context));

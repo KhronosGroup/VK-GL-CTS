@@ -236,7 +236,6 @@ group definitions "Symbol Definition Tests"
 
 	case undefine_version
 		version 330
-		expect compile_fail
 		values { output float out0 = 1.0; }
 		both ""
 			#version 330

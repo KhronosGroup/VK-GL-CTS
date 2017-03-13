@@ -1995,7 +1995,7 @@ void TransferTestInstance::configCommandBuffer(void)
 				const VkBufferImageCopy bufImageCopy =
 				{
 					0u,                                     // VkDeviceSize            bufferOffset;
-					(deUint32)m_bufSize,                    // deUint32                bufferRowLength;
+					(deUint32)m_imageWidth,                 // deUint32                bufferRowLength;
 					(deUint32)m_imageHeight,                // deUint32                bufferImageHeight;
 					imgSubResCopy,                          // VkImageSubresourceCopy  imageSubresource;
 					nullOffset,                             // VkOffset3D              imageOffset;
@@ -2009,7 +2009,7 @@ void TransferTestInstance::configCommandBuffer(void)
 				const VkBufferImageCopy imgBufferCopy =
 				{
 					0u,                                     // VkDeviceSize            bufferOffset;
-					(deUint32)m_bufSize,                    // deUint32                bufferRowLength;
+					(deUint32)m_imageWidth,                 // deUint32                bufferRowLength;
 					(deUint32)m_imageHeight,                // deUint32                bufferImageHeight;
 					imgSubResCopy,                          // VkImageSubresourceCopy  imageSubresource;
 					nullOffset,                             // VkOffset3D              imageOffset;
@@ -2119,7 +2119,7 @@ void TransferTestInstance::initialImageTransition (VkCommandBuffer cmdBuffer, Vk
 		subRange                                // VkImageSubresourceRange  subresourceRange;
 	};
 
-	vk.cmdPipelineBarrier(cmdBuffer, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageMemBarrier);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageMemBarrier);
 }
 
 } // anonymous
