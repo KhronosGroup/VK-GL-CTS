@@ -217,7 +217,7 @@ void GridRenderTestCase::initPrograms (SourceCollections& programCollection) con
 	{
 		std::ostringstream src;
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "layout(location = 0) flat in mediump vec4 v_color;\n"
+			<< "layout(location = 0) flat in highp   vec4 v_color;\n"
 			<< "layout(location = 0) out     mediump vec4 fragColor;\n"
 			<< "\n"
 			<< "void main (void)\n"
@@ -608,7 +608,7 @@ tcu::TestStatus GridRenderTestInstance::iterate (void)
 	}
 	{
 		const VkImageSubresourceLayers subresourceLayers = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, m_params.numLayers);
-		const VkBufferImageCopy		   copyRegion		 = makeBufferImageCopy(makeExtent3D(renderSize.x(), renderSize.y(), 0), subresourceLayers);
+		const VkBufferImageCopy		   copyRegion		 = makeBufferImageCopy(makeExtent3D(renderSize.x(), renderSize.y(), 1), subresourceLayers);
 		vk.cmdCopyImageToBuffer(*cmdBuffer, *colorAttachmentImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorBuffer, 1u, &copyRegion);
 	}
 	{

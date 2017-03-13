@@ -74,7 +74,7 @@ void addVertexAndFragmentShaders (vk::SourceCollections&  programCollection)
 		std::ostringstream src;
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
 			<< "\n"
-			<< "layout(location = 0) in  mediump vec4 v_fragment_color;\n"
+			<< "layout(location = 0) in  highp   vec4 v_fragment_color;\n"
 			<< "layout(location = 0) out mediump vec4 fragColor;\n"
 			<< "void main (void)\n"
 			<< "{\n"
@@ -579,7 +579,7 @@ tcu::TestStatus PassthroughTestInstance::iterate (void)
 				0u, DE_NULL, 0u, DE_NULL, 1u, &colorAttachmentPreCopyBarrier);
 		}
 		{
-			const VkBufferImageCopy copyRegion = makeBufferImageCopy(makeExtent3D(renderSize.x(), renderSize.y(), 0), makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
+			const VkBufferImageCopy copyRegion = makeBufferImageCopy(makeExtent3D(renderSize.x(), renderSize.y(), 1), makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
 			vk.cmdCopyImageToBuffer(*cmdBuffer, *colorAttachmentImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorBuffer[pipelineNdx]->get(), 1u, &copyRegion);
 		}
 		{
