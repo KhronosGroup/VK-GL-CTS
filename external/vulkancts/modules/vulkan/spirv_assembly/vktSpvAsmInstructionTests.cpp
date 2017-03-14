@@ -6164,22 +6164,22 @@ bool usesInt64 (IntegerType from, IntegerType to)
 			|| to == INTEGER_TYPE_SIGNED_64 || to == INTEGER_TYPE_UNSIGNED_64);
 }
 
-ConvertTestFeatures getUsedFeatures (IntegerType from, IntegerType to)
+ComputeTestFeatures getConversionUsedFeatures (IntegerType from, IntegerType to)
 {
 	if (usesInt16(from, to))
 	{
 		if (usesInt64(from, to))
 		{
-			return CONVERT_TEST_USES_INT16_INT64;
+			return COMPUTE_TEST_USES_INT16_INT64;
 		}
 		else
 		{
-			return CONVERT_TEST_USES_INT16;
+			return COMPUTE_TEST_USES_INT16;
 		}
 	}
 	else
 	{
-		return CONVERT_TEST_USES_INT64;
+		return COMPUTE_TEST_USES_INT64;
 	}
 }
 
@@ -6188,7 +6188,7 @@ struct ConvertCase
 	ConvertCase (IntegerType from, IntegerType to, deInt64 number)
 	: m_fromType		(from)
 	, m_toType			(to)
-	, m_features		(getUsedFeatures(from, to))
+	, m_features		(getConversionUsedFeatures(from, to))
 	, m_name			(getTestName(from, to))
 	, m_inputBuffer		(getBuffer(from, number))
 	, m_outputBuffer	(getBuffer(to, number))
@@ -6196,15 +6196,15 @@ struct ConvertCase
 		m_asmTypes["inputType"]		= getAsmTypeDeclaration(from);
 		m_asmTypes["outputType"]	= getAsmTypeDeclaration(to);
 
-		if (m_features == CONVERT_TEST_USES_INT16)
+		if (m_features == COMPUTE_TEST_USES_INT16)
 		{
 			m_asmTypes["int_capabilities"] = "OpCapability Int16\n";
 		}
-		else if (m_features == CONVERT_TEST_USES_INT64)
+		else if (m_features == COMPUTE_TEST_USES_INT64)
 		{
 			m_asmTypes["int_capabilities"] = "OpCapability Int64\n";
 		}
-		else if (m_features == CONVERT_TEST_USES_INT16_INT64)
+		else if (m_features == COMPUTE_TEST_USES_INT16_INT64)
 		{
 			m_asmTypes["int_capabilities"] = string("OpCapability Int16\n") +
 													"OpCapability Int64\n";
@@ -6217,7 +6217,7 @@ struct ConvertCase
 
 	IntegerType				m_fromType;
 	IntegerType				m_toType;
-	ConvertTestFeatures		m_features;
+	ComputeTestFeatures		m_features;
 	string					m_name;
 	map<string, string>		m_asmTypes;
 	BufferSp				m_inputBuffer;
@@ -6328,7 +6328,7 @@ tcu::TestCaseGroup* createSConvertTests (tcu::TestContext& testCtx)
 		spec.outputs.push_back(test->m_outputBuffer);
 		spec.numWorkGroups = IVec3(1, 1, 1);
 
-		group->addChild(new ConvertTestCase(testCtx, test->m_name.c_str(), "Convert integers with OpSConvert.", spec, test->m_features));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, test->m_name.c_str(), "Convert integers with OpSConvert.", spec, test->m_features));
 	}
 
 	return group.release();
@@ -6366,7 +6366,7 @@ tcu::TestCaseGroup* createUConvertTests (tcu::TestContext& testCtx)
 		spec.outputs.push_back(test->m_outputBuffer);
 		spec.numWorkGroups = IVec3(1, 1, 1);
 
-		group->addChild(new ConvertTestCase(testCtx, test->m_name.c_str(), "Convert integers with OpUConvert.", spec, test->m_features));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, test->m_name.c_str(), "Convert integers with OpUConvert.", spec, test->m_features));
 	}
 	return group.release();
 }
