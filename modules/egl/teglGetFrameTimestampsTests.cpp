@@ -487,26 +487,26 @@ void GetFrameTimestampTest::executeForConfig (EGLDisplay display, EGLConfig conf
 
 		for (size_t i = 0; i < requiredTimestampsCount; i++)
 		{
-			const bool supported = m_eglGetFrameTimestampSupportedANDROID(display, *surface, requiredTimestamps[i]);
+			const bool supported = m_eglGetFrameTimestampSupportedANDROID(display, *surface, requiredTimestamps[i]) != EGL_FALSE;
 			EGLU_CHECK_MSG(egl, "eglGetFrameTimestampSupportedANDROID failed.");
 			TCU_CHECK_MSG(supported, "Required timestamp not supported.");
 		}
 
 		// Verify either retire or present is supported.
-		const bool retireSupported = m_eglGetFrameTimestampSupportedANDROID(display, *surface, EGL_DISPLAY_RETIRE_TIME_ANDROID);
+		const bool retireSupported = m_eglGetFrameTimestampSupportedANDROID(display, *surface, EGL_DISPLAY_RETIRE_TIME_ANDROID) != EGL_FALSE;
 		EGLU_CHECK_MSG(egl, "eglGetFrameTimestampSupportedANDROID failed.");
-		const bool presentSupported = m_eglGetFrameTimestampSupportedANDROID(display, *surface, EGL_DISPLAY_PRESENT_TIME_ANDROID);
+		const bool presentSupported = m_eglGetFrameTimestampSupportedANDROID(display, *surface, EGL_DISPLAY_PRESENT_TIME_ANDROID) != EGL_FALSE;
 		EGLU_CHECK_MSG(egl, "eglGetFrameTimestampSupportedANDROID failed.");
 		TCU_CHECK_MSG(retireSupported != presentSupported, "DISPLAY_RETIRE or DISPLAY_PRESENT must be supported, but not both.");
 
 		// Verify compositor timings are supported.
-		const bool deadlineSupported = m_eglGetCompositorTimingSupportedANDROID(display, *surface, EGL_COMPOSITE_DEADLINE_ANDROID);
+		const bool deadlineSupported = m_eglGetCompositorTimingSupportedANDROID(display, *surface, EGL_COMPOSITE_DEADLINE_ANDROID) != EGL_FALSE;
 		EGLU_CHECK_MSG(egl, "eglGetCompositorTimingSupportedANDROID failed.");
 		TCU_CHECK_MSG(deadlineSupported, "EGL_COMPOSITE_DEADLINE_ANDROID not supported.");
-		const bool intervalSupported = m_eglGetCompositorTimingSupportedANDROID(display, *surface, EGL_COMPOSITE_INTERVAL_ANDROID);
+		const bool intervalSupported = m_eglGetCompositorTimingSupportedANDROID(display, *surface, EGL_COMPOSITE_INTERVAL_ANDROID) != EGL_FALSE;
 		EGLU_CHECK_MSG(egl, "eglGetCompositorTimingSupportedANDROID failed.");
 		TCU_CHECK_MSG(intervalSupported, "EGL_COMPOSITE_INTERVAL_ANDROID not supported.");
-		const bool latencySupported = m_eglGetCompositorTimingSupportedANDROID(display, *surface, EGL_COMPOSITE_TO_PRESENT_LATENCY_ANDROID);
+		const bool latencySupported = m_eglGetCompositorTimingSupportedANDROID(display, *surface, EGL_COMPOSITE_TO_PRESENT_LATENCY_ANDROID) != EGL_FALSE;
 		EGLU_CHECK_MSG(egl, "eglGetCompositorTimingSupportedANDROID failed.");
 		TCU_CHECK_MSG(latencySupported, "EGL_COMPOSITE_TO_PRESENT_LATENCY_ANDROID not supported.");
 
