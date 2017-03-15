@@ -2099,7 +2099,7 @@ public:
 			log << tcu::TestLog::Message << "Create context B" << tcu::TestLog::EndMessage;
 			RenderingContext contextB(m_eglTestCtx, attribList, m_eglConfig, m_eglDisplay, EGL_NO_CONTEXT);
 		}
-		catch (const glu::Error& error)
+		catch (const glu::Error&)
 		{
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Test failed! Could not create new context. glGetError() returned wrong value. Expected GL_NO_ERROR");
 			return STOP;
