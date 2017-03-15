@@ -398,7 +398,7 @@ de::MovePtr<Resource> createResource (const vk::DeviceInterface&				vkd,
 		{
 			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHX,
 			DE_NULL,
-			externalType
+			(vk::VkExternalMemoryHandleTypeFlagsKHX)externalType
 		};
 		const vk::VkImageCreateInfo			createInfo				=
 		{
@@ -435,7 +435,7 @@ de::MovePtr<Resource> createResource (const vk::DeviceInterface&				vkd,
 		{
 			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO_KHX,
 			DE_NULL,
-			externalType
+			(vk::VkExternalMemoryHandleTypeFlagsKHX)externalType
 		};
 		const vk::VkBufferCreateInfo					createInfo		=
 		{
@@ -520,7 +520,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 		{
 			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHX,
 			DE_NULL,
-			externalType
+			(vk::VkExternalMemoryHandleTypeFlagsKHX)externalType
 		};
 		const vk::VkImageCreateInfo			createInfo				=
 		{
@@ -557,7 +557,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 		{
 			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO_KHX,
 			DE_NULL,
-			externalType
+			(vk::VkExternalMemoryHandleTypeFlagsKHX)externalType
 		};
 		const vk::VkBufferCreateInfo					createInfo		=
 		{
