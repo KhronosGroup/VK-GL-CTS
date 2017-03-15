@@ -49,9 +49,9 @@ enum BufferVarFlags
 	QUALIFIER_RESTRICT	= (1<<6),
 	QUALIFIER_READONLY	= (1<<7),
 	QUALIFIER_WRITEONLY	= (1<<8),*/
-
 	ACCESS_READ			= (1<<9),	//!< Buffer variable is read in the shader.
 	ACCESS_WRITE		= (1<<10),	//!< Buffer variable is written in the shader.
+	LAYOUT_RELAXED		= (1<<11),	//!< Support VK_KHR_relaxed_block_layout extension
 };
 
 enum MatrixLoadFlags
@@ -65,14 +65,18 @@ class BufferVar
 public:
 						BufferVar		(const char* name, const glu::VarType& type, deUint32 flags);
 
-	const char*			getName			(void) const { return m_name.c_str();	}
-	const glu::VarType&	getType			(void) const { return m_type;			}
-	deUint32			getFlags		(void) const { return m_flags;			}
+	const char*			getName			(void) const		{ return m_name.c_str();	}
+	const glu::VarType&	getType			(void) const		{ return m_type;			}
+	deUint32			getFlags		(void) const		{ return m_flags;			}
+	deUint32			getOffset		(void) const		{ return m_offset;			}
+
+	void				setOffset		(deUint32 offset)	{ m_offset = offset;		}
 
 private:
 	std::string			m_name;
 	glu::VarType		m_type;
 	deUint32			m_flags;
+	deUint32			m_offset;
 };
 
 class BufferBlock
@@ -83,24 +87,24 @@ public:
 
 							BufferBlock				(const char* blockName);
 
-	const char*				getBlockName			(void) const { return m_blockName.c_str();		}
-	const char*				getInstanceName			(void) const { return m_instanceName.empty() ? DE_NULL : m_instanceName.c_str();	}
-	bool					isArray					(void) const { return m_arraySize > 0;			}
-	int						getArraySize			(void) const { return m_arraySize;				}
-	deUint32				getFlags				(void) const { return m_flags;					}
+	const char*				getBlockName			(void) const				{ return m_blockName.c_str();										}
+	const char*				getInstanceName			(void) const				{ return m_instanceName.empty() ? DE_NULL : m_instanceName.c_str();	}
+	bool					isArray					(void) const				{ return m_arraySize > 0;											}
+	int						getArraySize			(void) const				{ return m_arraySize;												}
+	deUint32				getFlags				(void) const				{ return m_flags;													}
 
-	void					setInstanceName			(const char* name)			{ m_instanceName = name;			}
-	void					setFlags				(deUint32 flags)			{ m_flags = flags;					}
-	void					addMember				(const BufferVar& var)		{ m_variables.push_back(var);		}
+	void					setInstanceName			(const char* name)			{ m_instanceName = name;											}
+	void					setFlags				(deUint32 flags)			{ m_flags = flags;													}
+	void					addMember				(const BufferVar& var)		{ m_variables.push_back(var);										}
 	void					setArraySize			(int arraySize);
 
-	int						getLastUnsizedArraySize	(int instanceNdx) const		{ return m_lastUnsizedArraySizes[instanceNdx];	}
-	void					setLastUnsizedArraySize	(int instanceNdx, int size)	{ m_lastUnsizedArraySizes[instanceNdx] = size;	}
+	int						getLastUnsizedArraySize	(int instanceNdx) const		{ return m_lastUnsizedArraySizes[instanceNdx];						}
+	void					setLastUnsizedArraySize	(int instanceNdx, int size)	{ m_lastUnsizedArraySizes[instanceNdx] = size;						}
 
-	inline iterator			begin					(void)			{ return m_variables.begin();	}
-	inline const_iterator	begin					(void) const	{ return m_variables.begin();	}
-	inline iterator			end						(void)			{ return m_variables.end();		}
-	inline const_iterator	end						(void) const	{ return m_variables.end();		}
+	inline iterator			begin					(void)						{ return m_variables.begin();										}
+	inline const_iterator	begin					(void) const				{ return m_variables.begin();										}
+	inline iterator			end						(void)						{ return m_variables.end();											}
+	inline const_iterator	end						(void) const				{ return m_variables.end();											}
 
 private:
 	std::string				m_blockName;
@@ -125,6 +129,7 @@ public:
 
 	int								getNumBlocks			(void) const	{ return (int)m_bufferBlocks.size();	}
 	const BufferBlock&				getBlock				(int ndx) const	{ return *m_bufferBlocks[ndx];			}
+	BufferBlock&					getBlock				(int ndx)		{ return *m_bufferBlocks[ndx];			}
 
 private:
 									ShaderInterface			(const ShaderInterface&);
@@ -230,11 +235,12 @@ public:
 	virtual TestInstance*		createInstance				(Context& context) const;
 
 protected:
-	void                        init                        (void);
+	void						init						(void);
 
 	BufferMode					m_bufferMode;
 	ShaderInterface				m_interface;
 	MatrixLoadFlags				m_matrixLoadFlag;
+	std::string					m_computeShaderSrc;
 
 private:
 								SSBOLayoutCase				(const SSBOLayoutCase&);
@@ -243,7 +249,6 @@ private:
 	BufferLayout				m_refLayout;
 	RefDataStorage				m_initialData;	// Initial data stored in buffer.
 	RefDataStorage				m_writeData;		// Data written by compute shader.
-	std::string					m_computeShaderSrc;
 };
 
 } // ssbo

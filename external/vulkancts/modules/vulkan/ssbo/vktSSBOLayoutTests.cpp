@@ -69,7 +69,8 @@ enum FeatureBits
 	FEATURE_STD430_LAYOUT		= (1<<9),
 	FEATURE_MATRIX_LAYOUT		= (1<<10),	//!< Matrix layout flags.
 	FEATURE_UNSIZED_ARRAYS		= (1<<11),
-	FEATURE_ARRAYS_OF_ARRAYS	= (1<<12)
+	FEATURE_ARRAYS_OF_ARRAYS	= (1<<12),
+	FEATURE_RELAXED_LAYOUT		= (1<<13)
 };
 
 class RandomSSBOLayoutCase : public SSBOLayoutCase
@@ -138,9 +139,17 @@ void RandomSSBOLayoutCase::generateBlock (de::Random& rnd, deUint32 layoutFlags)
 
 	// Layout flag candidates.
 	vector<deUint32> layoutFlagCandidates;
-	layoutFlagCandidates.push_back(0);
+
+	if (m_features & FEATURE_STD430_LAYOUT)
+		layoutFlagCandidates.push_back(LAYOUT_STD430);
+
 	if (m_features & FEATURE_STD140_LAYOUT)
 		layoutFlagCandidates.push_back(LAYOUT_STD140);
+
+	if (m_features & FEATURE_RELAXED_LAYOUT)
+		layoutFlagCandidates.push_back(LAYOUT_RELAXED);
+
+	DE_ASSERT(!layoutFlagCandidates.empty());
 
 	layoutFlags |= rnd.choose<deUint32>(layoutFlagCandidates.begin(), layoutFlagCandidates.end());
 
@@ -624,11 +633,11 @@ private:
 class BlockMultiBasicTypesCase : public SSBOLayoutCase
 {
 public:
-	BlockMultiBasicTypesCase (tcu::TestContext& testCtx, const char* name, const char* description, deUint32 flagsA, deUint32 flagsB, BufferMode bufferMode, int numInstances, MatrixLoadFlags matrixLoadFlag)
-		: SSBOLayoutCase	(testCtx, name, description, bufferMode, matrixLoadFlag)
-		, m_flagsA			(flagsA)
-		, m_flagsB			(flagsB)
-		, m_numInstances	(numInstances)
+	BlockMultiBasicTypesCase	(tcu::TestContext& testCtx, const char* name, const char* description, deUint32 flagsA, deUint32 flagsB, BufferMode bufferMode, int numInstances, MatrixLoadFlags matrixLoadFlag)
+		: SSBOLayoutCase		(testCtx, name, description, bufferMode, matrixLoadFlag)
+		, m_flagsA				(flagsA)
+		, m_flagsB				(flagsB)
+		, m_numInstances		(numInstances)
 	{
 		BufferBlock& blockA = m_interface.allocBlock("BlockA");
 		blockA.addMember(BufferVar("a", VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP), ACCESS_READ|ACCESS_WRITE));
@@ -1534,6 +1543,18 @@ void SSBOLayoutTests::init (void)
 					modeGroup->addChild(new BlockMultiBasicTypesCase(m_testCtx, (baseName + "_comp_access").c_str(), "", baseFlags, baseFlags, bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
 				}
 			}
+
+			for (int isArray = 0; isArray < 2; isArray++)
+			{
+				std::string	baseName	= "relaxed_block";
+				deUint32	baseFlags	= LAYOUT_RELAXED;
+
+				if (isArray)
+					baseName += "_instance_array";
+
+				modeGroup->addChild(new BlockMultiBasicTypesCase(m_testCtx, baseName.c_str(),					 "", baseFlags, baseFlags, bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
+				modeGroup->addChild(new BlockMultiBasicTypesCase(m_testCtx, (baseName + "_comp_access").c_str(), "", baseFlags, baseFlags, bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
+			}
 		}
 	}
 
@@ -1566,31 +1587,34 @@ void SSBOLayoutTests::init (void)
 
 	// ssbo.random
 	{
-		const deUint32	allLayouts		= FEATURE_STD140_LAYOUT;
+		const deUint32	allStdLayouts	= FEATURE_STD140_LAYOUT|FEATURE_STD430_LAYOUT;
 		const deUint32	allBasicTypes	= FEATURE_VECTORS|FEATURE_MATRICES;
 		const deUint32	unused			= FEATURE_UNUSED_MEMBERS|FEATURE_UNUSED_VARS;
 		const deUint32	unsized			= FEATURE_UNSIZED_ARRAYS;
 		const deUint32	matFlags		= FEATURE_MATRIX_LAYOUT;
+		const deUint32	allButRelaxed	= ~FEATURE_RELAXED_LAYOUT;
+		const deUint32	allRelaxed		= FEATURE_VECTORS|FEATURE_RELAXED_LAYOUT|FEATURE_INSTANCE_ARRAYS;
 
 		tcu::TestCaseGroup* randomGroup = new tcu::TestCaseGroup(m_testCtx, "random", "Random Uniform Block cases");
 		addChild(randomGroup);
 
 		// Basic types.
-		createRandomCaseGroup(randomGroup, m_testCtx, "scalar_types",		"Scalar types only, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allLayouts|unused,																			25, 0);
-		createRandomCaseGroup(randomGroup, m_testCtx, "vector_types",		"Scalar and vector types only, per-block buffers",	SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allLayouts|unused|FEATURE_VECTORS,															25, 25);
-		createRandomCaseGroup(randomGroup, m_testCtx, "basic_types",		"All basic types, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allLayouts|unused|allBasicTypes|matFlags,													25, 50);
-		createRandomCaseGroup(randomGroup, m_testCtx, "basic_arrays",		"Arrays, per-block buffers",						SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allLayouts|unused|allBasicTypes|matFlags|FEATURE_ARRAYS,									25, 50);
-		createRandomCaseGroup(randomGroup, m_testCtx, "unsized_arrays",		"Unsized arrays, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_ARRAYS,							25, 50);
-		createRandomCaseGroup(randomGroup, m_testCtx, "arrays_of_arrays",	"Arrays of arrays, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_ARRAYS|FEATURE_ARRAYS_OF_ARRAYS,	25, 950);
+		createRandomCaseGroup(randomGroup, m_testCtx, "scalar_types",		"Scalar types only, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allStdLayouts|unused,																			25, 0);
+		createRandomCaseGroup(randomGroup, m_testCtx, "vector_types",		"Scalar and vector types only, per-block buffers",	SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allStdLayouts|unused|FEATURE_VECTORS,															25, 25);
+		createRandomCaseGroup(randomGroup, m_testCtx, "basic_types",		"All basic types, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allStdLayouts|unused|allBasicTypes|matFlags,													25, 50);
+		createRandomCaseGroup(randomGroup, m_testCtx, "basic_arrays",		"Arrays, per-block buffers",						SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allStdLayouts|unused|allBasicTypes|matFlags|FEATURE_ARRAYS,									25, 50);
+		createRandomCaseGroup(randomGroup, m_testCtx, "unsized_arrays",		"Unsized arrays, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allStdLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_ARRAYS,							25, 50);
+		createRandomCaseGroup(randomGroup, m_testCtx, "arrays_of_arrays",	"Arrays of arrays, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allStdLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_ARRAYS|FEATURE_ARRAYS_OF_ARRAYS,	25, 950);
 
-		createRandomCaseGroup(randomGroup, m_testCtx, "basic_instance_arrays",					"Basic instance arrays, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_INSTANCE_ARRAYS,															25, 75);
-		createRandomCaseGroup(randomGroup, m_testCtx, "nested_structs",							"Nested structs, per-block buffers",					SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_STRUCTS,																	25, 100);
-		createRandomCaseGroup(randomGroup, m_testCtx, "nested_structs_arrays",					"Nested structs, arrays, per-block buffers",			SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_STRUCTS|FEATURE_ARRAYS|FEATURE_ARRAYS_OF_ARRAYS,							25, 150);
-		createRandomCaseGroup(randomGroup, m_testCtx, "nested_structs_instance_arrays",			"Nested structs, instance arrays, per-block buffers",	SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_STRUCTS|FEATURE_INSTANCE_ARRAYS,											25, 125);
-		createRandomCaseGroup(randomGroup, m_testCtx, "nested_structs_arrays_instance_arrays",	"Nested structs, instance arrays, per-block buffers",	SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_STRUCTS|FEATURE_ARRAYS|FEATURE_ARRAYS_OF_ARRAYS|FEATURE_INSTANCE_ARRAYS,	25, 175);
+		createRandomCaseGroup(randomGroup, m_testCtx, "basic_instance_arrays",					"Basic instance arrays, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allStdLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_INSTANCE_ARRAYS,															25, 75);
+		createRandomCaseGroup(randomGroup, m_testCtx, "nested_structs",							"Nested structs, per-block buffers",					SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allStdLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_STRUCTS,																	25, 100);
+		createRandomCaseGroup(randomGroup, m_testCtx, "nested_structs_arrays",					"Nested structs, arrays, per-block buffers",			SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allStdLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_STRUCTS|FEATURE_ARRAYS|FEATURE_ARRAYS_OF_ARRAYS,							25, 150);
+		createRandomCaseGroup(randomGroup, m_testCtx, "nested_structs_instance_arrays",			"Nested structs, instance arrays, per-block buffers",	SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allStdLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_STRUCTS|FEATURE_INSTANCE_ARRAYS,											25, 125);
+		createRandomCaseGroup(randomGroup, m_testCtx, "nested_structs_arrays_instance_arrays",	"Nested structs, instance arrays, per-block buffers",	SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allStdLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_STRUCTS|FEATURE_ARRAYS|FEATURE_ARRAYS_OF_ARRAYS|FEATURE_INSTANCE_ARRAYS,	25, 175);
+		createRandomCaseGroup(randomGroup, m_testCtx, "all_per_block_buffers",	"All random features, per-block buffers",	SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	allButRelaxed,	50, 200);
+		createRandomCaseGroup(randomGroup, m_testCtx, "all_shared_buffer",		"All random features, shared buffer",		SSBOLayoutCase::BUFFERMODE_SINGLE,		allButRelaxed,	50, 250);
 
-		createRandomCaseGroup(randomGroup, m_testCtx, "all_per_block_buffers",	"All random features, per-block buffers",	SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	~0u,	50, 200);
-		createRandomCaseGroup(randomGroup, m_testCtx, "all_shared_buffer",		"All random features, shared buffer",		SSBOLayoutCase::BUFFERMODE_SINGLE,		~0u,	50, 250);
+		createRandomCaseGroup(randomGroup, m_testCtx, "relaxed",			"VK_KHR_relaxed_block_layout",				SSBOLayoutCase::BUFFERMODE_SINGLE,		allRelaxed, 100, deInt32Hash(313));
 	}
 }
 

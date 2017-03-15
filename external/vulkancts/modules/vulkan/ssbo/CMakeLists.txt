@@ -6,7 +6,7 @@ set(DEQP_VK_SSBO_SRCS
 	vktSSBOLayoutCase.cpp
 	vktSSBOLayoutCase.hpp
 	vktSSBOLayoutTests.cpp
-	vktSSBOLayoutTests.cpp
+	vktSSBOLayoutTests.hpp
 )
 
 set(DEQP_VK_SSBO_LIBS

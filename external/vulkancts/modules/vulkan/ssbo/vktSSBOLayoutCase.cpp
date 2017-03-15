@@ -37,9 +37,6 @@
 #include "deMath.h"
 #include "deSharedPtr.hpp"
 
-#include <algorithm>
-#include <map>
-
 #include "vkBuilderUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
@@ -56,7 +53,6 @@ namespace ssbo
 using tcu::TestLog;
 using std::string;
 using std::vector;
-using std::map;
 using glu::VarType;
 using glu::StructType;
 using glu::StructMember;
@@ -102,15 +98,16 @@ BufferVar::BufferVar (const char* name, const VarType& type, deUint32 flags)
 	: m_name	(name)
 	, m_type	(type)
 	, m_flags	(flags)
+	, m_offset	(~0u)
 {
 }
 
 // BufferBlock implementation.
 
 BufferBlock::BufferBlock (const char* blockName)
-	: m_blockName	(blockName)
-	, m_arraySize	(-1)
-	, m_flags		(0)
+	: m_blockName		(blockName)
+	, m_arraySize		(-1)
+	, m_flags			(0)
 {
 	setArraySize(0);
 }
@@ -338,7 +335,6 @@ int computeStd430BaseAlignment (const VarType& type, deUint32 layoutFlags)
 			const int	vecSize		= isRowMajor ? glu::getDataTypeMatrixNumColumns(basicType)
 												 : glu::getDataTypeMatrixNumRows(basicType);
 			const int	vecAlign	= getDataTypeByteAlignment(glu::getDataTypeFloatVec(vecSize));
-
 			return vecAlign;
 		}
 		else
@@ -361,9 +357,43 @@ int computeStd430BaseAlignment (const VarType& type, deUint32 layoutFlags)
 	}
 }
 
+int computeRelaxedBlockBaseAlignment (const VarType& type, deUint32 layoutFlags)
+{
+	if (type.isBasicType())
+	{
+		glu::DataType basicType = type.getBasicType();
+
+		if (glu::isDataTypeVector(basicType))
+			return 4;
+
+		if (glu::isDataTypeMatrix(basicType))
+		{
+			const bool	isRowMajor	= !!(layoutFlags & LAYOUT_ROW_MAJOR);
+			const int	vecSize		= isRowMajor ? glu::getDataTypeMatrixNumColumns(basicType)
+												 : glu::getDataTypeMatrixNumRows(basicType);
+			const int	vecAlign	= getDataTypeByteAlignment(glu::getDataTypeFloatVec(vecSize));
+			return vecAlign;
+		}
+		else
+			return getDataTypeByteAlignment(basicType);
+	}
+	else if (type.isArrayType())
+		return computeStd430BaseAlignment(type.getElementType(), layoutFlags);
+	else
+	{
+		DE_ASSERT(type.isStructType());
+
+		int maxBaseAlignment = 0;
+		for (StructType::ConstIterator memberIter = type.getStructPtr()->begin(); memberIter != type.getStructPtr()->end(); memberIter++)
+			maxBaseAlignment = de::max(maxBaseAlignment, computeRelaxedBlockBaseAlignment(memberIter->getType(), layoutFlags));
+
+		return maxBaseAlignment;
+	}
+}
+
 inline deUint32 mergeLayoutFlags (deUint32 prevFlags, deUint32 newFlags)
 {
-	const deUint32	packingMask		= LAYOUT_STD430|LAYOUT_STD140;
+	const deUint32	packingMask		= LAYOUT_STD430|LAYOUT_STD140|LAYOUT_RELAXED;
 	const deUint32	matrixMask		= LAYOUT_ROW_MAJOR|LAYOUT_COLUMN_MAJOR;
 
 	deUint32 mergedFlags = 0;
@@ -372,6 +402,21 @@ inline deUint32 mergeLayoutFlags (deUint32 prevFlags, deUint32 newFlags)
 	mergedFlags |= ((newFlags & matrixMask)		? newFlags : prevFlags) & matrixMask;
 
 	return mergedFlags;
+}
+
+template <class T>
+bool isPow2(T powerOf2)
+{
+	if (powerOf2 <= 0)
+		return false;
+	return (powerOf2 & (powerOf2 - (T)1)) == (T)0;
+}
+
+template <class T>
+T roundToPow2(T number, int powerOf2)
+{
+	DE_ASSERT(isPow2(powerOf2));
+	return (number + (T)powerOf2 - (T)1) & (T)(~(powerOf2 - 1));
 }
 
 //! Appends all child elements to layout, returns value that should be appended to offset.
@@ -385,9 +430,9 @@ int computeReferenceLayout (
 {
 	// Reference layout uses std430 rules by default. std140 rules are
 	// choosen only for blocks that have std140 layout.
-	const bool	isStd140			= (layoutFlags & LAYOUT_STD140) != 0;
-	const int	baseAlignment		= isStd140 ? computeStd140BaseAlignment(type, layoutFlags)
-											   : computeStd430BaseAlignment(type, layoutFlags);
+	const int	baseAlignment		= (layoutFlags & LAYOUT_STD140)  != 0 ? computeStd140BaseAlignment(type, layoutFlags)		:
+									  (layoutFlags & LAYOUT_RELAXED) != 0 ? computeRelaxedBlockBaseAlignment(type, layoutFlags)	:
+									  computeStd430BaseAlignment(type, layoutFlags);
 	int			curOffset			= deAlign32(baseOffset, baseAlignment);
 	const int	topLevelArraySize	= 1; // Default values
 	const int	topLevelArrayStride	= 0;
@@ -421,6 +466,9 @@ int computeReferenceLayout (
 		}
 		else
 		{
+			if (glu::isDataTypeVector(basicType) && (getDataTypeByteSize(basicType) <= 16 ? curOffset / 16 != (curOffset +  getDataTypeByteSize(basicType) - 1) / 16 : curOffset % 16 != 0) && (layoutFlags & LAYOUT_RELAXED))
+				curOffset = roundToPow2(curOffset, 16);
+
 			// Scalar or vector.
 			entry.offset = curOffset;
 
@@ -513,8 +561,9 @@ int computeReferenceLayout (BufferLayout& layout, int curBlockNdx, const std::st
 		const string	prefix				= blockPrefix + bufVar.getName() + "[0]";
 		const bool		isStd140			= (blockLayoutFlags & LAYOUT_STD140) != 0;
 		const int		vec4Align			= (int)sizeof(deUint32)*4;
-		const int		baseAlignment		= isStd140 ? computeStd140BaseAlignment(varType, combinedFlags)
-													   : computeStd430BaseAlignment(varType, combinedFlags);
+		const int		baseAlignment		= isStd140									? computeStd140BaseAlignment(varType, combinedFlags)		:
+											(blockLayoutFlags & LAYOUT_RELAXED) != 0	? computeRelaxedBlockBaseAlignment(varType, combinedFlags)	:
+											computeStd430BaseAlignment(varType, combinedFlags);
 		int				curOffset			= deAlign32(baseOffset, baseAlignment);
 		const VarType&	elemType			= varType.getElementType();
 
@@ -598,23 +647,30 @@ int computeReferenceLayout (BufferLayout& layout, int curBlockNdx, const std::st
 		return computeReferenceLayout(layout, curBlockNdx, baseOffset, blockPrefix + bufVar.getName(), varType, combinedFlags);
 }
 
-void computeReferenceLayout (BufferLayout& layout, const ShaderInterface& interface)
+void computeReferenceLayout (BufferLayout& layout, ShaderInterface& interface)
 {
 	int numBlocks = interface.getNumBlocks();
 
 	for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
 	{
-		const BufferBlock&	block			= interface.getBlock(blockNdx);
+		BufferBlock&		block			= interface.getBlock(blockNdx);
 		bool				hasInstanceName	= block.getInstanceName() != DE_NULL;
 		std::string			blockPrefix		= hasInstanceName ? (std::string(block.getBlockName()) + ".") : std::string("");
 		int					curOffset		= 0;
 		int					activeBlockNdx	= (int)layout.blocks.size();
 		int					firstVarNdx		= (int)layout.bufferVars.size();
 
-		for (BufferBlock::const_iterator varIter = block.begin(); varIter != block.end(); varIter++)
+		size_t oldSize	= layout.bufferVars.size();
+		for (BufferBlock::iterator varIter = block.begin(); varIter != block.end(); varIter++)
 		{
-			const BufferVar& bufVar = *varIter;
+			BufferVar& bufVar = *varIter;
 			curOffset += computeReferenceLayout(layout, activeBlockNdx,  blockPrefix, curOffset, bufVar, block.getFlags());
+			if (block.getFlags() & LAYOUT_RELAXED)
+			{
+				DE_ASSERT(!(layout.bufferVars.size() <= oldSize));
+				bufVar.setOffset(layout.bufferVars[oldSize].offset);
+			}
+			oldSize	= layout.bufferVars.size();
 		}
 
 		int	varIndicesEnd	= (int)layout.bufferVars.size();
@@ -833,6 +889,17 @@ void generateCompareFuncs (std::ostream& str, const ShaderInterface& interface)
 	}
 }
 
+bool usesRelaxedLayout (const ShaderInterface& interface)
+{
+	//If any of blocks has LAYOUT_RELAXED flag
+	for (int ndx = 0; ndx < interface.getNumBlocks(); ++ndx)
+	{
+		if (interface.getBlock(ndx).getFlags() & LAYOUT_RELAXED)
+			return true;
+	}
+	return false;
+}
+
 struct Indent
 {
 	int level;
@@ -849,9 +916,10 @@ std::ostream& operator<< (std::ostream& str, const Indent& indent)
 void generateDeclaration (std::ostream& src, const BufferVar& bufferVar, int indentLevel)
 {
 	// \todo [pyry] Qualifiers
-
 	if ((bufferVar.getFlags() & LAYOUT_MASK) != 0)
 		src << "layout(" << LayoutFlagsFmt(bufferVar.getFlags() & LAYOUT_MASK) << ") ";
+	else if (bufferVar.getOffset()!= ~0u)
+		src << "layout(offset = "<<bufferVar.getOffset()<<") ";
 
 	src << glu::declare(bufferVar.getType(), bufferVar.getName(), indentLevel);
 }
@@ -859,7 +927,6 @@ void generateDeclaration (std::ostream& src, const BufferVar& bufferVar, int ind
 void generateDeclaration (std::ostream& src, const BufferBlock& block, int bindingPoint)
 {
 	src << "layout(";
-
 	if ((block.getFlags() & LAYOUT_MASK) != 0)
 		src << LayoutFlagsFmt(block.getFlags() & LAYOUT_MASK) << ", ";
 
@@ -873,6 +940,7 @@ void generateDeclaration (std::ostream& src, const BufferBlock& block, int bindi
 	for (BufferBlock::const_iterator varIter = block.begin(); varIter != block.end(); varIter++)
 	{
 		src << Indent(1);
+
 		generateDeclaration(src, *varIter, 1 /* indent level */);
 		src << ";\n";
 	}
@@ -1256,7 +1324,11 @@ string generateComputeShader (const ShaderInterface& interface, const BufferLayo
 {
 	std::ostringstream src;
 
-	src << "#version 310 es\n";
+	if (usesRelaxedLayout(interface))
+		src << "#version 450\n";
+	else
+		src << "#version 310 es\n";
+
 	src << "layout(local_size_x = 1) in;\n";
 	src << "\n";
 
@@ -2194,7 +2266,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		const int refCount = 1;
 		int resCount = 0;
 
-		resCount = *(const int*)((const deUint8*)acBufferAlloc->getHostPtr());
+		resCount = *((const int*)acBufferAlloc->getHostPtr());
 
 		counterOk = (refCount == resCount);
 		if (!counterOk)
@@ -2233,11 +2305,19 @@ void SSBOLayoutCase::initPrograms (vk::SourceCollections& programCollection) con
 {
 	DE_ASSERT(!m_computeShaderSrc.empty());
 
-	programCollection.glslSources.add("compute") << glu::ComputeSource(m_computeShaderSrc);
+	if (usesRelaxedLayout(m_interface))
+	{
+		programCollection.glslSources.add("compute") << glu::ComputeSource(m_computeShaderSrc)
+			<< vk::GlslBuildOptions(vk::SPIRV_VERSION_1_0, vk::GlslBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS);
+	}
+	else
+		programCollection.glslSources.add("compute") << glu::ComputeSource(m_computeShaderSrc);
 }
 
 TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 {
+	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_relaxed_block_layout") && usesRelaxedLayout(m_interface))
+		TCU_THROW(NotSupportedError, "VK_KHR_relaxed_block_layout not supported");
 	return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData);
 }
 
@@ -2251,7 +2331,6 @@ void SSBOLayoutCase::init ()
 	copyNonWrittenData		(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers);
 
 	m_computeShaderSrc = generateComputeShader(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers, m_matrixLoadFlag);
-
 }
 
 } // ssbo
