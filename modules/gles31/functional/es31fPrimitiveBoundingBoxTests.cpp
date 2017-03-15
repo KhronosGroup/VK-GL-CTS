@@ -2194,7 +2194,7 @@ deUint8 LineRenderCase::checkLineContinuity (const tcu::ConstPixelBufferAccess& 
 			<< "Missed pixels: " << missedPixels
 			<< tcu::TestLog::EndMessage;
 		// allow 10% missing pixels for warning
-		if (missedPixels <= deRoundFloatToInt32(totalPixels * 0.1f))
+		if (missedPixels <= deRoundFloatToInt32((float)totalPixels * 0.1f))
 			errorMask = SCANRESULT_LINE_CONT_WARN_BIT;
 		else
 			errorMask =  SCANRESULT_LINE_CONT_ERR_BIT;
