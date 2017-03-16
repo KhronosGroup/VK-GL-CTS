@@ -89,6 +89,10 @@ TestError::TestError (const char* message, const char* expr, const char* file, i
 	: TestException(message, expr, file, line, QP_TEST_RESULT_FAIL)
 {
 }
+TestError::TestError (const std::string& message, const char* expr, const char* file, int line)
+	: TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_FAIL)
+{
+}
 
 TestError::TestError (const std::string& message)
 	: TestException(message, QP_TEST_RESULT_FAIL)
