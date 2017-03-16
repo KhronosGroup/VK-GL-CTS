@@ -2225,7 +2225,7 @@ bool DepthRangeAPI::iterateHelper(T*)
 	 */
 	for (GLint i = 0; i < max_viewports; ++i)
 	{
-		const T value = (0 == i % 2) ? 1.0 : 0.25;
+		const T value = (0 == i % 2) ? T(1.0) : T(0.25);
 
 		for (GLint j = 0; j < i; ++j)
 		{
@@ -3085,7 +3085,7 @@ void DrawTestBase::setup16x2DepthsHelper(DEPTH_RANGE_METHOD method, T*)
 		const T near = step * (T)i;
 
 		depth_data[i * 2 + 0] = near;
-		depth_data[i * 2 + 1] = 1.0 - near;
+		depth_data[i * 2 + 1] = T(1.0) - near;
 
 		viewport_data[i * 4 + 0] = (GLfloat)i;
 		viewport_data[i * 4 + 1] = 0.0f;
