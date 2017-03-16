@@ -256,7 +256,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 							   m_context.getDevice(),
 							   m_indirectBuffer->getBoundMemory().getMemory(),
 							   m_indirectBuffer->getBoundMemory().getOffset(),
-							   dataSize);
+							   dataSize + m_offsetInBuffer);
 
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	if (m_isMultiDrawEnabled && m_drawCount <= m_drawIndirectMaxCount)
@@ -439,7 +439,7 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 							   m_context.getDevice(),
 							   m_indirectBuffer->getBoundMemory().getMemory(),
 							   m_indirectBuffer->getBoundMemory().getOffset(),
-							   dataSize);
+							   dataSize + m_offsetInBuffer);
 
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	if (m_isMultiDrawEnabled && m_drawCount <= m_drawIndirectMaxCount)
