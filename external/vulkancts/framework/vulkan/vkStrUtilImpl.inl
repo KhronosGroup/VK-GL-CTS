@@ -192,6 +192,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_CMD_RESERVE_SPACE_FOR_COMMANDS_INFO_NVX:					return "VK_STRUCTURE_TYPE_CMD_RESERVE_SPACE_FOR_COMMANDS_INFO_NVX";
 		case VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_LIMITS_NVX:					return "VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_LIMITS_NVX";
 		case VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_FEATURES_NVX:					return "VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_FEATURES_NVX";
+		case VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE:								return "VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE";
 		default:																		return DE_NULL;
 	}
 }
@@ -3837,6 +3838,46 @@ std::ostream& operator<< (std::ostream& s, const VkDescriptorUpdateTemplateCreat
 	s << "\tpipelineBindPoint = " << value.pipelineBindPoint << '\n';
 	s << "\tpipelineLayout = " << value.pipelineLayout << '\n';
 	s << "\tset = " << value.set << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRefreshCycleDurationGOOGLE& value)
+{
+	s << "VkRefreshCycleDurationGOOGLE = {\n";
+	s << "\trefreshDuration = " << value.refreshDuration << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPastPresentationTimingGOOGLE& value)
+{
+	s << "VkPastPresentationTimingGOOGLE = {\n";
+	s << "\tpresentID = " << value.presentID << '\n';
+	s << "\tdesiredPresentTime = " << value.desiredPresentTime << '\n';
+	s << "\tactualPresentTime = " << value.actualPresentTime << '\n';
+	s << "\tearliestPresentTime = " << value.earliestPresentTime << '\n';
+	s << "\tpresentMargin = " << value.presentMargin << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentTimeGOOGLE& value)
+{
+	s << "VkPresentTimeGOOGLE = {\n";
+	s << "\tpresentID = " << value.presentID << '\n';
+	s << "\tdesiredPresentTime = " << value.desiredPresentTime << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentTimesInfoGOOGLE& value)
+{
+	s << "VkPresentTimesInfoGOOGLE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchainCount = " << value.swapchainCount << '\n';
+	s << "\tpTimes = " << value.pTimes << '\n';
 	s << '}';
 	return s;
 }

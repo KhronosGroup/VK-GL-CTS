@@ -2581,14 +2581,16 @@ tcu::TestStatus testNoUnknownExtensions (Context& context)
 {
 	TestLog&				log					= context.getTestContext().getLog();
 	tcu::ResultCollector	results				(log);
-	set<string>				allowedExtensions;
+	set<string>				allowedInstanceExtensions;
+	set<string>				allowedDeviceExtensions;
 
 	// All known extensions should be added to allowedExtensions:
 	// allowedExtensions.insert("VK_GOOGLE_extension1");
+	allowedDeviceExtensions.insert("VK_GOOGLE_display_timing");
 
 	// Instance extensions
 	checkExtensions(results,
-					allowedExtensions,
+					allowedInstanceExtensions,
 					enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL));
 
 	// Extensions exposed by instance layers
@@ -2598,14 +2600,14 @@ tcu::TestStatus testNoUnknownExtensions (Context& context)
 		for (vector<VkLayerProperties>::const_iterator layer = layers.begin(); layer != layers.end(); ++layer)
 		{
 			checkExtensions(results,
-							allowedExtensions,
+							allowedInstanceExtensions,
 							enumerateInstanceExtensionProperties(context.getPlatformInterface(), layer->layerName));
 		}
 	}
 
 	// Device extensions
 	checkExtensions(results,
-					allowedExtensions,
+					allowedDeviceExtensions,
 					enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL));
 
 	// Extensions exposed by device layers
@@ -2615,7 +2617,7 @@ tcu::TestStatus testNoUnknownExtensions (Context& context)
 		for (vector<VkLayerProperties>::const_iterator layer = layers.begin(); layer != layers.end(); ++layer)
 		{
 			checkExtensions(results,
-							allowedExtensions,
+							allowedDeviceExtensions,
 							enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), layer->layerName));
 		}
 	}
