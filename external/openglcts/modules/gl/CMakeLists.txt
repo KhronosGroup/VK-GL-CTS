@@ -58,6 +58,8 @@ set(GLCTS_GL_SRCS
 	gl4cRobustnessTests.hpp
 	gl4cShaderAtomicCountersTests.cpp
 	gl4cShaderAtomicCountersTests.hpp
+	gl4cShaderGroupVoteTests.cpp
+	gl4cShaderGroupVoteTests.hpp
 	gl4cTextureGatherTests.hpp
 	gl4cTextureGatherTests.cpp
 	gl4cProgramInterfaceQueryTests.hpp
