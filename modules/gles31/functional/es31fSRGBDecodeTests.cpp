@@ -669,7 +669,7 @@ SRGBTestProgram::SRGBTestProgram	(Context& context, const FragmentShaderParamete
 	for (int idx = 0; idx < activeUniforms; idx++)
 	{
 		gl.getActiveUniform(this->getHandle(), idx, maxLen, NULL, &size, &type, &uniformName[0]);
-		location = gl.getUniformLocation(this->getHandle(), &uniformName[idx]);
+		location = gl.getUniformLocation(this->getHandle(), &uniformName[0]);
 
 		UniformData uniformData(location, std::string(&uniformName[0], strlen(&uniformName[0])));
 		m_uniformDataList.push_back(uniformData);

@@ -669,7 +669,7 @@ DepthStencilCase::IterateResult DepthStencilCase::iterate (void)
 		translateCommand(testCmd, refTestCmd, m_renderTarget);
 
 		// Base clears.
-		renderReference(m_baseClears, m_refColorBuffer->getAccess(), m_refStencilBuffer->getAccess(), m_renderTarget.depthBits);
+		renderReference(m_baseClears, m_refColorBuffer->getAccess(), m_refStencilBuffer->getAccess(), m_renderTarget.stencilBits);
 
 		// Base depths.
 		for (vector<RefRenderCommand>::const_iterator cmd = m_refBaseDepthRenders.begin(); cmd != m_refBaseDepthRenders.end(); ++cmd)
