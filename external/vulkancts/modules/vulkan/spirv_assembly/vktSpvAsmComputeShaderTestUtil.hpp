@@ -78,6 +78,7 @@ DE_STATIC_ASSERT(sizeof(tcu::Vec4) == 4 * sizeof(float));
 
 typedef Buffer<float>		Float32Buffer;
 typedef Buffer<deInt32>		Int32Buffer;
+typedef Buffer<deInt64>		Int64Buffer;
 typedef Buffer<tcu::Vec4>	Vec4Buffer;
 
 
@@ -120,6 +121,7 @@ struct ComputeShaderSpec
 
 const char* getComputeAsmShaderPreamble				(void);
 const char* getComputeAsmCommonTypes				(void);
+const char*	getComputeAsmCommonInt64Types			(void);
 
 /*--------------------------------------------------------------------*//*!
  * Declares two uniform variables (indata, outdata) of type

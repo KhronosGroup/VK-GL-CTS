@@ -55,6 +55,14 @@ const char* getComputeAsmCommonTypes (void)
 		"%f32arr    = OpTypeRuntimeArray %f32\n";
 }
 
+const char* getComputeAsmCommonInt64Types (void)
+{
+	return
+		"%i64       = OpTypeInt 64 1\n"
+		"%i64ptr    = OpTypePointer Uniform %i64\n"
+		"%i64arr    = OpTypeRuntimeArray %i64\n";
+}
+
 const char* getComputeAsmInputOutputBuffer (void)
 {
 	return
