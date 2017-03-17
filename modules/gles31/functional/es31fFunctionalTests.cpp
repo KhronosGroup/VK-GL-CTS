@@ -89,6 +89,7 @@
 #include "es31fDrawBuffersIndexedTests.hpp"
 #include "es31fDefaultVertexArrayObjectTests.hpp"
 #include "es31fSRGBDecodeTests.hpp"
+#include "es31fDrawElementsBaseVertexTests.hpp"
 
 namespace deqp
 {
@@ -430,6 +431,7 @@ void FunctionalTests::init (void)
 	addChild(createDrawBuffersIndexedTests				(m_context));
 	addChild(new DefaultVertexArrayObjectTests			(m_context));
 	addChild(new SRGBTextureDecodeTests					(m_context));
+	addChild(new DrawElementsBaseVertexTests			(m_context));
 }
 
 } // Functional

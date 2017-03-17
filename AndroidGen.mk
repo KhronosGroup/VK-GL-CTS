@@ -785,6 +785,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fDebugTests.cpp \
 	modules/gles31/functional/es31fDefaultVertexArrayObjectTests.cpp \
 	modules/gles31/functional/es31fDrawBuffersIndexedTests.cpp \
+	modules/gles31/functional/es31fDrawElementsBaseVertexTests.cpp \
 	modules/gles31/functional/es31fDrawTests.cpp \
 	modules/gles31/functional/es31fFboColorbufferTests.cpp \
 	modules/gles31/functional/es31fFboNoAttachmentTests.cpp \
@@ -804,6 +805,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fNegativeAdvancedBlendEquationTests.cpp \
 	modules/gles31/functional/es31fNegativeAtomicCounterTests.cpp \
 	modules/gles31/functional/es31fNegativeBufferApiTests.cpp \
+	modules/gles31/functional/es31fNegativeComputeTests.cpp \
 	modules/gles31/functional/es31fNegativeFragmentApiTests.cpp \
 	modules/gles31/functional/es31fNegativePreciseTests.cpp \
 	modules/gles31/functional/es31fNegativeSSBOBlockTests.cpp \
