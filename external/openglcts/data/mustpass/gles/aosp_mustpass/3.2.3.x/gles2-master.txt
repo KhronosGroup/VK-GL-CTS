@@ -12516,7 +12516,6 @@ dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.57
 dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.58
 dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.59
 dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.60
-dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.61
 dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.62
 dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.63
 dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.64

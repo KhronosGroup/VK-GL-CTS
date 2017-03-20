@@ -83,3 +83,6 @@ dEQP-GLES2.functional.shaders.random.texture.vertex.20
 dEQP-GLES2.functional.shaders.random.texture.vertex.28
 dEQP-GLES2.functional.shaders.random.texture.vertex.37
 dEQP-GLES2.functional.shaders.random.texture.vertex.39
+
+#VK-GL-CTS 249
+dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.61
