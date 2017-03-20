@@ -4,3 +4,6 @@ dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.line_2_fragment
 
 #VK-GL-CTS 244
 dEQP-GLES3.functional.shaders.fragdata.invalid_assign_to_1
+
+#VK-GL-CTS 254
+dEQP-GLES3.functional.shaders.fragdata.draw_buffers
