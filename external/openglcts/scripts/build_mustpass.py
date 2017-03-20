@@ -657,6 +657,7 @@ GLCTS_3_2_3_GLES2_GTF_PKG_1CFG			= Package(module = ES2GTF_MODULE, configuration
 
 
 MUSTPASS_LISTS				= [
+	# 3.2.2.x
 	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "3.2.2.x", isCurrent=False,
 			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
 						GLCTS_GLES2_DEQP_PKG_1CFG,
@@ -680,6 +681,10 @@ MUSTPASS_LISTS				= [
 						GLCTS_GLES32_KHR_PKG_N1CFG,
 						]),
 
+	Mustpass(project = CTS_AOSP_MP_ES_PROJECT,	version = "3.2.2.x", isCurrent=False,
+			packages = [GLCTS_GLES2_PKG, GLCTS_3_2_2_GLES3_PKG, GLCTS_3_2_2_GLES31_PKG]),
+
+	# 3.2.3.x
 	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "3.2.3.x", isCurrent=True,
 			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
 						GLCTS_3_2_3_GLES2_GTF_PKG_1CFG,
@@ -697,13 +702,36 @@ MUSTPASS_LISTS				= [
 						GLCTS_GLES32_KHR_PKG_N1CFG,
 						]),
 
-	Mustpass(project = CTS_AOSP_MP_ES_PROJECT,	version = "3.2.2.x", isCurrent=False,
-			packages = [GLCTS_GLES2_PKG, GLCTS_3_2_2_GLES3_PKG, GLCTS_3_2_2_GLES31_PKG]),
 	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "3.2.3.x", isCurrent=True,
 			packages = [MASTER_GLES2_PKG, MASTER_GLES3_PKG, MASTER_GLES31_PKG]),
 
 	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "3.2.3.x", isCurrent=True,
+			packages = [MASTER_EGL_PKG]),
+	# master
+
+	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "master", isCurrent=False,
+			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
+						GLCTS_3_2_3_GLES2_GTF_PKG_1CFG,
+						GLCTS_GLES2_KHR_PKG_N1CFG,
+						GLCTS_GLES2_GTF_PKG_N1CFG,
+						GLCTS_GLES3_KHR_PKG_1CFG,
+						GLCTS_GLES3_GTF_PKG_1CFG,
+						GLCTS_GLES3_KHR_PKG_N1CFG,
+						GLCTS_GLES3_GTF_PKG_N1CFG,
+						GLCTS_GLES31_KHR_PKG_1CFG,
+						GLCTS_GLES31_GTF_PKG_1CFG,
+						GLCTS_GLES31_KHR_PKG_N1CFG,
+						GLCTS_GLES31_GTF_PKG_N1CFG,
+						GLCTS_GLES32_KHR_PKG_1CFG,
+						GLCTS_GLES32_KHR_PKG_N1CFG,
+						]),
+
+	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "master", isCurrent=False,
+			packages = [MASTER_GLES2_PKG, MASTER_GLES3_PKG, MASTER_GLES31_PKG]),
+
+	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "master", isCurrent=False,
 			packages = [MASTER_EGL_PKG])
+
 	]
 
 buildPath                   = DEFAULT_BUILD_DIR.format(targetName = DEFAULT_TARGET, buildType = "Release")
