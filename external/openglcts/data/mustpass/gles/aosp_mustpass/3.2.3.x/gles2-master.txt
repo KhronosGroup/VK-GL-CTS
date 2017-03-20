@@ -708,8 +708,6 @@ dEQP-GLES2.functional.shaders.constants.const_float_assignment_4_fragment
 dEQP-GLES2.functional.shaders.constants.const_float_assign_uniform_vertex
 dEQP-GLES2.functional.shaders.constants.const_float_assign_uniform_fragment
 dEQP-GLES2.functional.shaders.constants.const_float_assign_varying
-dEQP-GLES2.functional.shaders.constants.const_float_function_gotcha_vertex
-dEQP-GLES2.functional.shaders.constants.const_float_function_gotcha_fragment
 dEQP-GLES2.functional.shaders.constants.const_float_from_int_vertex
 dEQP-GLES2.functional.shaders.constants.const_float_from_int_fragment
 dEQP-GLES2.functional.shaders.constants.const_float_from_vec2_vertex

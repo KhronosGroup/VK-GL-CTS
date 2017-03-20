@@ -13,3 +13,7 @@ dEQP-GLES2.functional.shaders.preprocessor.builtin.line_defined_1_vertex
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_defined_1_fragment
 dEQP-GLES2.functional.shaders.preprocessor.extensions.after_non_preprocessing_tokens_vertex
 dEQP-GLES2.functional.shaders.preprocessor.extensions.after_non_preprocessing_tokens_fragment
+
+#VK-GL-CTS 232
+dEQP-GLES2.functional.shaders.constants.const_float_function_gotcha_vertex
+dEQP-GLES2.functional.shaders.constants.const_float_function_gotcha_fragment
