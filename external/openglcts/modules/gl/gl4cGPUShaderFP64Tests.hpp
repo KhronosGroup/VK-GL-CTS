@@ -1643,6 +1643,7 @@ public:
 		glw::GLuint getResultOffset(glw::GLuint result) const;
 		virtual Utils::_variable_type getResultType(glw::GLuint result) const;
 		glw::GLuint getResultStride(glw::GLuint result) const;
+		glw::GLuint getBaseTypeSize(glw::GLuint result) const;
 		glw::GLuint getResultStride() const;
 
 	protected:
