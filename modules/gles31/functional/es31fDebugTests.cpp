@@ -41,6 +41,7 @@
 #include "es31fNegativeTessellationTests.hpp"
 #include "es31fNegativeComputeTests.hpp"
 #include "es31fNegativeSampleVariablesTests.hpp"
+#include "es31fNegativeShaderFramebufferFetchTests.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
@@ -2965,6 +2966,7 @@ void DebugTests::init (void)
 	const vector<FunctionContainer> shaderStorageFuncs		 = wrapCoreFunctions(NegativeTestShared::getNegativeShaderStorageTestFunctions());
 	const vector<FunctionContainer> sampleVariablesFuncs	 = wrapCoreFunctions(NegativeTestShared::getNegativeSampleVariablesTestFunctions());
 	const vector<FunctionContainer> computeFuncs			 = wrapCoreFunctions(NegativeTestShared::getNegativeComputeTestFunctions());
+	const vector<FunctionContainer> framebufferFetchFuncs    = wrapCoreFunctions(NegativeTestShared::getNegativeShaderFramebufferFetchTestFunctions());
 	const vector<FunctionContainer> externalFuncs			 = getUserMessageFuncs();
 
 	{
@@ -3075,6 +3077,7 @@ void DebugTests::init (void)
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "tessellation",				"Negative Tessellation Cases",						tessellationFuncs));
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "oes_sample_variables",		"Negative Sample Variables Cases",					sampleVariablesFuncs));
 			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "compute",					"Negative Compute Cases",							computeFuncs));
+			host->addChild(createChildCases(CASETYPE_CALLBACK, m_context, "framebuffer_fetch",			"Negative Framebuffer Fetch Cases",					framebufferFetchFuncs));
 		}
 
 		{
@@ -3102,6 +3105,7 @@ void DebugTests::init (void)
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "tessellation",			"Negative Tessellation Cases",						tessellationFuncs));
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "oes_sample_variables",	"Negative Sample Variables Cases",					sampleVariablesFuncs));
 			host->addChild(createChildCases(CASETYPE_LOG, m_context, "compute",					"Negative Compute Cases",							computeFuncs));
+			host->addChild(createChildCases(CASETYPE_LOG, m_context, "framebuffer_fetch",		"Negative Framebuffer Fetch Cases",					framebufferFetchFuncs));
 		}
 
 		{
@@ -3129,6 +3133,7 @@ void DebugTests::init (void)
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "tessellation",				"Negative Tessellation Cases",						tessellationFuncs));
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "oes_sample_variables",		"Negative Sample Variables Cases",					sampleVariablesFuncs));
 			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "compute",					"Negative Compute Cases",							computeFuncs));
+			host->addChild(createChildCases(CASETYPE_GETERROR, m_context, "framebuffer_fetch",			"Negative Framebuffer Fetch Cases",					framebufferFetchFuncs));
 		}
 	}
 

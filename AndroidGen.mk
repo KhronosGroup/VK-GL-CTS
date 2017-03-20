@@ -812,6 +812,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fNegativeSampleVariablesTests.cpp \
 	modules/gles31/functional/es31fNegativeShaderApiTests.cpp \
 	modules/gles31/functional/es31fNegativeShaderDirectiveTests.cpp \
+	modules/gles31/functional/es31fNegativeShaderFramebufferFetchTests.cpp \
 	modules/gles31/functional/es31fNegativeShaderFunctionTests.cpp \
 	modules/gles31/functional/es31fNegativeShaderImageLoadStoreTests.cpp \
 	modules/gles31/functional/es31fNegativeShaderStorageTests.cpp \
@@ -840,6 +841,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fShaderAtomicOpTests.cpp \
 	modules/gles31/functional/es31fShaderBuiltinConstantTests.cpp \
 	modules/gles31/functional/es31fShaderCommonFunctionTests.cpp \
+	modules/gles31/functional/es31fShaderFramebufferFetchTests.cpp \
 	modules/gles31/functional/es31fShaderHelperInvocationTests.cpp \
 	modules/gles31/functional/es31fShaderImageLoadStoreTests.cpp \
 	modules/gles31/functional/es31fShaderIntegerFunctionTests.cpp \
