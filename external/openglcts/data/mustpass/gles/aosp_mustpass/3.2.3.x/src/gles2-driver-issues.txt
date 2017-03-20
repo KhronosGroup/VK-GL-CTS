@@ -28,3 +28,7 @@ dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_1
 dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_2
 dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_3
 dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_4
+
+#VK-GL-CTS 234
+dEQP-GLES2.functional.shaders.declarations.invalid_declarations.invariant_attribute
+dEQP-GLES2.functional.shaders.declarations.invalid_declarations.invariant_uniform

@@ -1342,8 +1342,6 @@ dEQP-GLES2.functional.shaders.declarations.invalid_declarations.uniform_in_verte
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.uniform_in_fragment_main
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.varying_in_vertex_main
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.varying_in_fragment_main
-dEQP-GLES2.functional.shaders.declarations.invalid_declarations.invariant_attribute
-dEQP-GLES2.functional.shaders.declarations.invalid_declarations.invariant_uniform
 dEQP-GLES2.functional.shaders.swizzles.vector_swizzles.mediump_vec2_x_vertex
 dEQP-GLES2.functional.shaders.swizzles.vector_swizzles.mediump_vec2_x_fragment
 dEQP-GLES2.functional.shaders.swizzles.vector_swizzles.mediump_vec2_xx_vertex
