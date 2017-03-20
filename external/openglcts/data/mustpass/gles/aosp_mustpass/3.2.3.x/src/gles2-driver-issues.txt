@@ -1,0 +1,15 @@
+#VK-GL-CTS 231
+dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_invalid_object_1_vertex
+dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_invalid_object_1_fragment
+dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_invalid_object_2_vertex
+dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_invalid_object_2_fragment
+dEQP-GLES2.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_2_vertex
+dEQP-GLES2.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_2_fragment
+dEQP-GLES2.functional.shaders.preprocessor.predefined_macros.line_2_vertex
+dEQP-GLES2.functional.shaders.preprocessor.predefined_macros.line_2_fragment
+dEQP-GLES2.functional.shaders.preprocessor.builtin.line_vertex
+dEQP-GLES2.functional.shaders.preprocessor.builtin.line_fragment
+dEQP-GLES2.functional.shaders.preprocessor.builtin.line_defined_1_vertex
+dEQP-GLES2.functional.shaders.preprocessor.builtin.line_defined_1_fragment
+dEQP-GLES2.functional.shaders.preprocessor.extensions.after_non_preprocessing_tokens_vertex
+dEQP-GLES2.functional.shaders.preprocessor.extensions.after_non_preprocessing_tokens_fragment

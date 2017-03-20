@@ -143,10 +143,6 @@ dEQP-GLES2.functional.shaders.preprocessor.definitions.define_value_and_function
 dEQP-GLES2.functional.shaders.preprocessor.definitions.define_value_and_function_fragment
 dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_object_invalid_syntax_vertex
 dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_object_invalid_syntax_fragment
-dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_invalid_object_1_vertex
-dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_invalid_object_1_fragment
-dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_invalid_object_2_vertex
-dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_invalid_object_2_fragment
 dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_invalid_object_3_vertex
 dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_invalid_object_3_fragment
 dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_invalid_object_4_vertex
@@ -189,8 +185,6 @@ dEQP-GLES2.functional.shaders.preprocessor.object_redefinitions.redefine_object_
 dEQP-GLES2.functional.shaders.preprocessor.object_redefinitions.redefine_object_comment_fragment
 dEQP-GLES2.functional.shaders.preprocessor.object_redefinitions.redefine_object_multiline_comment_vertex
 dEQP-GLES2.functional.shaders.preprocessor.object_redefinitions.redefine_object_multiline_comment_fragment
-dEQP-GLES2.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_2_vertex
-dEQP-GLES2.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_2_fragment
 dEQP-GLES2.functional.shaders.preprocessor.comments.multiline_comment_define_vertex
 dEQP-GLES2.functional.shaders.preprocessor.comments.multiline_comment_define_fragment
 dEQP-GLES2.functional.shaders.preprocessor.comments.nested_comment_vertex
@@ -277,8 +271,6 @@ dEQP-GLES2.functional.shaders.preprocessor.predefined_macros.gl_es_2_vertex
 dEQP-GLES2.functional.shaders.preprocessor.predefined_macros.gl_es_2_fragment
 dEQP-GLES2.functional.shaders.preprocessor.predefined_macros.line_1_vertex
 dEQP-GLES2.functional.shaders.preprocessor.predefined_macros.line_1_fragment
-dEQP-GLES2.functional.shaders.preprocessor.predefined_macros.line_2_vertex
-dEQP-GLES2.functional.shaders.preprocessor.predefined_macros.line_2_fragment
 dEQP-GLES2.functional.shaders.preprocessor.predefined_macros.file_vertex
 dEQP-GLES2.functional.shaders.preprocessor.predefined_macros.file_fragment
 dEQP-GLES2.functional.shaders.preprocessor.predefined_macros.if_gl_es_vertex
@@ -445,16 +437,12 @@ dEQP-GLES2.functional.shaders.preprocessor.directive.error_with_no_tokens_vertex
 dEQP-GLES2.functional.shaders.preprocessor.directive.error_with_no_tokens_fragment
 dEQP-GLES2.functional.shaders.preprocessor.directive.error_vertex
 dEQP-GLES2.functional.shaders.preprocessor.directive.error_fragment
-dEQP-GLES2.functional.shaders.preprocessor.builtin.line_vertex
-dEQP-GLES2.functional.shaders.preprocessor.builtin.line_fragment
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_and_file_vertex
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_and_file_fragment
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_expression_vertex
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_expression_fragment
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_and_file_expression_vertex
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_and_file_expression_fragment
-dEQP-GLES2.functional.shaders.preprocessor.builtin.line_defined_1_vertex
-dEQP-GLES2.functional.shaders.preprocessor.builtin.line_defined_1_fragment
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_defined_2_vertex
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_defined_2_fragment
 dEQP-GLES2.functional.shaders.preprocessor.builtin.empty_line_vertex
@@ -497,8 +485,6 @@ dEQP-GLES2.functional.shaders.preprocessor.extensions.invalid_char_in_behavior_v
 dEQP-GLES2.functional.shaders.preprocessor.extensions.invalid_char_in_behavior_fragment
 dEQP-GLES2.functional.shaders.preprocessor.extensions.unterminated_comment_vertex
 dEQP-GLES2.functional.shaders.preprocessor.extensions.unterminated_comment_fragment
-dEQP-GLES2.functional.shaders.preprocessor.extensions.after_non_preprocessing_tokens_vertex
-dEQP-GLES2.functional.shaders.preprocessor.extensions.after_non_preprocessing_tokens_fragment
 dEQP-GLES2.functional.shaders.preprocessor.expressions.shift_left_vertex
 dEQP-GLES2.functional.shaders.preprocessor.expressions.shift_left_fragment
 dEQP-GLES2.functional.shaders.preprocessor.expressions.shift_right_vertex
