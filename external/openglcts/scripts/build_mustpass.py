@@ -708,33 +708,6 @@ GLCTS_GLES32_KHR_PKG_N1CFG			= Package(module = ES32KHR_MODULE, useforfirsteglco
 					filters			= [include("gles32-khr-master.txt")]),
 	])
 
-GLCTS_3_2_3_GLES2_GTF_PKG_1CFG			= Package(module = ES2GTF_MODULE, configurations = [
-		# Master
-		Configuration(name			= "gtf-master",
-					surfacewidth	= "64",
-					surfaceheight	= "64",
-					baseseed		= "1",
-					filters			= [include("gles2-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
-					surfacewidth	= "113",
-					surfaceheight	= "47",
-					baseseed		= "2",
-					filters			= [include("gles2-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
-					surfacewidth	= "64",
-					surfaceheight	= "-1",
-					baseseed		= "3",
-					fboconfig		= "rgba8888d24s8",
-					filters			= [include("gles2-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
-					surfacewidth	= "-1",
-					surfaceheight	= "64",
-					baseseed		= "3",
-					fboconfig		= "rgba8888d24s8",
-					filters			= [include("gles2-gtf-master.txt")]),
-	])
-
-
 MUSTPASS_LISTS				= [
 	# 3.2.2.x
 	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "3.2.2.x", isCurrent=False,
@@ -766,7 +739,7 @@ MUSTPASS_LISTS				= [
 	# 3.2.3.x
 	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "3.2.3.x", isCurrent=True,
 			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
-						GLCTS_3_2_3_GLES2_GTF_PKG_1CFG,
+						GLCTS_GLES2_GTF_PKG_1CFG,
 						GLCTS_GLES2_KHR_PKG_N1CFG,
 						GLCTS_GLES2_GTF_PKG_N1CFG,
 						GLCTS_GLES3_KHR_PKG_1CFG,
@@ -790,7 +763,7 @@ MUSTPASS_LISTS				= [
 
 	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "master", isCurrent=False,
 			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
-						GLCTS_3_2_3_GLES2_GTF_PKG_1CFG,
+						GLCTS_GLES2_GTF_PKG_1CFG,
 						GLCTS_GLES2_KHR_PKG_N1CFG,
 						GLCTS_GLES2_GTF_PKG_N1CFG,
 						GLCTS_GLES3_KHR_PKG_1CFG,
