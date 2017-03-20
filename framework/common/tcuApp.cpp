@@ -89,7 +89,7 @@ App::App (Platform& platform, Archive& archive, TestLog& log, const CommandLine&
 	print("dEQP Core %s (0x%08x) starting..\n", qpGetReleaseName(), qpGetReleaseId());
 	print("  target implementation = '%s'\n", qpGetTargetName());
 
-	if (!deSetRoundingMode(DE_ROUNDINGMODE_TO_NEAREST))
+	if (!deSetRoundingMode(DE_ROUNDINGMODE_TO_NEAREST_EVEN))
 		qpPrintf("WARNING: Failed to set floating-point rounding mode!\n");
 
 	try
