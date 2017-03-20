@@ -9249,6 +9249,7 @@ private:
 	{
 		GLint			  max_image_uniforms	= getMaximumImageUniformsForStage(stage);
 		const char*		  stage_specific_layout = "";
+		const char*		  stage_specific_predicate = "true";
 		std::stringstream stream;
 
 		if (m_min_required_image_uniforms > max_image_uniforms)
@@ -9296,6 +9297,7 @@ private:
 		case tesselationControlShaderStage:
 			stage_specific_layout = "layout(vertices = 4) out;\n"
 									"\n";
+			stage_specific_predicate = "gl_InvocationID == 0";
 			break;
 
 		case tesselationEvalutaionShaderStage:
@@ -9329,22 +9331,27 @@ private:
 				  "void main()\n"
 				  "{\n";
 
+		stream << "    if (" << stage_specific_predicate << ")\n";
+		stream << "    {\n";
+
 		/* imageLoad and imageStores for each uniform */
 		for (GLint i = 0; i < max_image_uniforms; ++i)
 		{
-			stream << "    " << coordinatesVariableDeclaration(i, 0) << "\n"
-				   << "    " << coordinatesVariableDeclaration(i, 1) << "\n"
+			stream << "        " << coordinatesVariableDeclaration(i, 0) << "\n"
+				   << "        " << coordinatesVariableDeclaration(i, 1) << "\n"
 				   << "\n"
-				   << "    " << imageLoadCall(i) << "\n"
+				   << "        " << imageLoadCall(i) << "\n"
 				   << "\n"
-				   << "    " << imageStoreCall(i, 0) << "\n"
-				   << "    " << imageStoreCall(i, 1) << "\n";
+				   << "        " << imageStoreCall(i, 0) << "\n"
+				   << "        " << imageStoreCall(i, 1) << "\n";
 
 			if (max_image_uniforms > i + 1)
 			{
 				stream << "\n";
 			}
 		}
+
+		stream << "    }\n";
 
 		/* Main closing */
 		stream << "}\n\n";
