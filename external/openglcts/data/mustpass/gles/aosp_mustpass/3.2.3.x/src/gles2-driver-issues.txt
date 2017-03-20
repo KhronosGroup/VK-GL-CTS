@@ -246,3 +246,6 @@ dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_ne
 dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_neg_y
 dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_neg_z
 dEQP-GLES2.functional.negative_api.texture.texsubimage2d_neg_wdt_hgt
+
+#VK-GL-CTS 253
+dEQP-GLES2.functional.flush_finish.finish
