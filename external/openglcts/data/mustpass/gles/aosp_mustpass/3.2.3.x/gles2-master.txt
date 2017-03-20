@@ -739,9 +739,7 @@ dEQP-GLES2.functional.shaders.linkage.varying_type_mat4
 dEQP-GLES2.functional.shaders.linkage.varying_differing_precision_1
 dEQP-GLES2.functional.shaders.linkage.varying_differing_precision_2
 dEQP-GLES2.functional.shaders.linkage.varying_differing_precision_3
-dEQP-GLES2.functional.shaders.linkage.varying_type_mismatch_1
 dEQP-GLES2.functional.shaders.linkage.varying_type_mismatch_2
-dEQP-GLES2.functional.shaders.linkage.varying_illegal_usage_1
 dEQP-GLES2.functional.shaders.linkage.invalid_varying_type_int
 dEQP-GLES2.functional.shaders.linkage.invalid_varying_type_bool
 dEQP-GLES2.functional.shaders.linkage.invalid_varying_type_struct
@@ -771,13 +769,6 @@ dEQP-GLES2.functional.shaders.linkage.uniform_struct_partial_int_float
 dEQP-GLES2.functional.shaders.linkage.uniform_struct_partial_bvec2_vec2
 dEQP-GLES2.functional.shaders.linkage.uniform_struct_partial_ivec2_vec2
 dEQP-GLES2.functional.shaders.linkage.uniform_struct_partial_ivec2_ivec2
-dEQP-GLES2.functional.shaders.linkage.uniform_struct_type_conflict_1
-dEQP-GLES2.functional.shaders.linkage.uniform_struct_type_conflict_2
-dEQP-GLES2.functional.shaders.linkage.uniform_struct_type_conflict_3
-dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_1
-dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_2
-dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_3
-dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_4
 dEQP-GLES2.functional.shaders.linkage.uniform_struct_use_case_rip
 dEQP-GLES2.functional.shaders.linkage.uniform_struct_use_case_rip_sans_highp
 dEQP-GLES2.functional.shaders.conversions.scalar_to_scalar.float_to_float_vertex

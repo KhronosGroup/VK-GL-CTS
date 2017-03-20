@@ -17,3 +17,14 @@ dEQP-GLES2.functional.shaders.preprocessor.extensions.after_non_preprocessing_to
 #VK-GL-CTS 232
 dEQP-GLES2.functional.shaders.constants.const_float_function_gotcha_vertex
 dEQP-GLES2.functional.shaders.constants.const_float_function_gotcha_fragment
+
+#VK-GL-CTS 233
+dEQP-GLES2.functional.shaders.linkage.varying_type_mismatch_1
+dEQP-GLES2.functional.shaders.linkage.varying_illegal_usage_1
+dEQP-GLES2.functional.shaders.linkage.uniform_struct_type_conflict_1
+dEQP-GLES2.functional.shaders.linkage.uniform_struct_type_conflict_2
+dEQP-GLES2.functional.shaders.linkage.uniform_struct_type_conflict_3
+dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_1
+dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_2
+dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_3
+dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_4
