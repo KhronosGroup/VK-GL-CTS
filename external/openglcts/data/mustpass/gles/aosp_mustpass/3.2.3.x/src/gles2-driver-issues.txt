@@ -141,3 +141,11 @@ dEQP-GLES2.functional.shaders.keywords.reserved_keywords.cast_vertex
 dEQP-GLES2.functional.shaders.keywords.reserved_keywords.cast_fragment
 dEQP-GLES2.functional.shaders.keywords.reserved_keywords.using_vertex
 dEQP-GLES2.functional.shaders.keywords.reserved_keywords.using_fragment
+
+#VK-GL-CTS 239
+dEQP-GLES2.functional.shaders.scoping.valid.local_variable_hides_function_parameter_vertex
+dEQP-GLES2.functional.shaders.scoping.valid.local_variable_hides_function_parameter_fragment
+dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_function_vertex
+dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_function_fragment
+dEQP-GLES2.functional.shaders.scoping.invalid.redefine_builtin_vertex
+dEQP-GLES2.functional.shaders.scoping.invalid.redefine_builtin_fragment

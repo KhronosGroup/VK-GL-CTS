@@ -2436,8 +2436,6 @@ dEQP-GLES2.functional.shaders.scoping.valid.function_parameter_hides_function_ve
 dEQP-GLES2.functional.shaders.scoping.valid.function_parameter_hides_function_fragment
 dEQP-GLES2.functional.shaders.scoping.valid.local_variable_in_inner_scope_hides_function_parameter_vertex
 dEQP-GLES2.functional.shaders.scoping.valid.local_variable_in_inner_scope_hides_function_parameter_fragment
-dEQP-GLES2.functional.shaders.scoping.valid.local_variable_hides_function_parameter_vertex
-dEQP-GLES2.functional.shaders.scoping.valid.local_variable_hides_function_parameter_fragment
 dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_global_variable_vertex
 dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_global_variable_fragment
 dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_local_variable_vertex
@@ -2450,14 +2448,10 @@ dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_for_init_statement_varia
 dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_for_init_statement_variable_in_for_condition_fragment
 dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_while_condition_variable_vertex
 dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_while_condition_variable_fragment
-dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_function_vertex
-dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_function_fragment
 dEQP-GLES2.functional.shaders.scoping.invalid.redefine_function_vertex
 dEQP-GLES2.functional.shaders.scoping.invalid.redefine_function_fragment
 dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_builtin_vertex
 dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_builtin_fragment
-dEQP-GLES2.functional.shaders.scoping.invalid.redefine_builtin_vertex
-dEQP-GLES2.functional.shaders.scoping.invalid.redefine_builtin_fragment
 dEQP-GLES2.functional.shaders.scoping.invalid.conflict_function_struct_vertex
 dEQP-GLES2.functional.shaders.scoping.invalid.conflict_function_struct_fragment
 dEQP-GLES2.functional.shaders.scoping.invalid.conflict_function_variable_vertex
