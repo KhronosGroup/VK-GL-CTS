@@ -9514,15 +9514,11 @@ dEQP-GLES2.functional.shaders.random.exponential.fragment.96
 dEQP-GLES2.functional.shaders.random.exponential.fragment.97
 dEQP-GLES2.functional.shaders.random.exponential.fragment.98
 dEQP-GLES2.functional.shaders.random.exponential.fragment.99
-dEQP-GLES2.functional.shaders.random.texture.vertex.0
 dEQP-GLES2.functional.shaders.random.texture.vertex.1
-dEQP-GLES2.functional.shaders.random.texture.vertex.2
-dEQP-GLES2.functional.shaders.random.texture.vertex.3
 dEQP-GLES2.functional.shaders.random.texture.vertex.4
 dEQP-GLES2.functional.shaders.random.texture.vertex.5
 dEQP-GLES2.functional.shaders.random.texture.vertex.6
 dEQP-GLES2.functional.shaders.random.texture.vertex.7
-dEQP-GLES2.functional.shaders.random.texture.vertex.8
 dEQP-GLES2.functional.shaders.random.texture.vertex.9
 dEQP-GLES2.functional.shaders.random.texture.vertex.10
 dEQP-GLES2.functional.shaders.random.texture.vertex.11
@@ -9534,7 +9530,6 @@ dEQP-GLES2.functional.shaders.random.texture.vertex.16
 dEQP-GLES2.functional.shaders.random.texture.vertex.17
 dEQP-GLES2.functional.shaders.random.texture.vertex.18
 dEQP-GLES2.functional.shaders.random.texture.vertex.19
-dEQP-GLES2.functional.shaders.random.texture.vertex.20
 dEQP-GLES2.functional.shaders.random.texture.vertex.21
 dEQP-GLES2.functional.shaders.random.texture.vertex.22
 dEQP-GLES2.functional.shaders.random.texture.vertex.23
@@ -9542,7 +9537,6 @@ dEQP-GLES2.functional.shaders.random.texture.vertex.24
 dEQP-GLES2.functional.shaders.random.texture.vertex.25
 dEQP-GLES2.functional.shaders.random.texture.vertex.26
 dEQP-GLES2.functional.shaders.random.texture.vertex.27
-dEQP-GLES2.functional.shaders.random.texture.vertex.28
 dEQP-GLES2.functional.shaders.random.texture.vertex.29
 dEQP-GLES2.functional.shaders.random.texture.vertex.30
 dEQP-GLES2.functional.shaders.random.texture.vertex.31
@@ -9551,9 +9545,7 @@ dEQP-GLES2.functional.shaders.random.texture.vertex.33
 dEQP-GLES2.functional.shaders.random.texture.vertex.34
 dEQP-GLES2.functional.shaders.random.texture.vertex.35
 dEQP-GLES2.functional.shaders.random.texture.vertex.36
-dEQP-GLES2.functional.shaders.random.texture.vertex.37
 dEQP-GLES2.functional.shaders.random.texture.vertex.38
-dEQP-GLES2.functional.shaders.random.texture.vertex.39
 dEQP-GLES2.functional.shaders.random.texture.vertex.40
 dEQP-GLES2.functional.shaders.random.texture.vertex.41
 dEQP-GLES2.functional.shaders.random.texture.vertex.42
