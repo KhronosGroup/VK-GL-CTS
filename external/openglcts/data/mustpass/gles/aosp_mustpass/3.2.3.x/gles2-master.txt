@@ -7505,9 +7505,6 @@ dEQP-GLES2.functional.shaders.texture_functions.fragment.texture2dproj_vec3_bias
 dEQP-GLES2.functional.shaders.texture_functions.fragment.texture2dproj_vec4_bias
 dEQP-GLES2.functional.shaders.texture_functions.fragment.texturecube
 dEQP-GLES2.functional.shaders.texture_functions.fragment.texturecube_bias
-dEQP-GLES2.functional.shaders.texture_functions.invalid.texture2d_bias_in_vertex
-dEQP-GLES2.functional.shaders.texture_functions.invalid.texturecube_bias_in_vertex
-dEQP-GLES2.functional.shaders.texture_functions.invalid.texture2dlod_in_fragment
 dEQP-GLES2.functional.shaders.texture_functions.invalid.texturecubelod_in_fragment
 dEQP-GLES2.functional.shaders.invariance.highp.common_subexpression_0
 dEQP-GLES2.functional.shaders.invariance.highp.common_subexpression_1
