@@ -13847,7 +13847,6 @@ dEQP-GLES2.functional.negative_api.state.get_vertex_attribfv
 dEQP-GLES2.functional.negative_api.state.get_vertex_attribiv
 dEQP-GLES2.functional.negative_api.state.get_vertex_attrib_pointerv
 dEQP-GLES2.functional.negative_api.state.get_buffer_parameteriv
-dEQP-GLES2.functional.negative_api.state.get_framebuffer_attachment_parameteriv
 dEQP-GLES2.functional.negative_api.state.get_renderbuffer_parameteriv
 dEQP-GLES2.functional.negative_api.state.get_is_enabled
 dEQP-GLES2.functional.negative_api.state.hint
@@ -13911,13 +13910,6 @@ dEQP-GLES2.functional.negative_api.texture.copyteximage2d_width_height_max_cube_
 dEQP-GLES2.functional.negative_api.texture.copyteximage2d_width_height_max_cube_neg_x
 dEQP-GLES2.functional.negative_api.texture.copyteximage2d_width_height_max_cube_neg_y
 dEQP-GLES2.functional.negative_api.texture.copyteximage2d_width_height_max_cube_neg_z
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_tex2d
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_pos_x
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_pos_y
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_pos_z
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_neg_x
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_neg_y
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_neg_z
 dEQP-GLES2.functional.negative_api.texture.copyteximage2d_incomplete_framebuffer
 dEQP-GLES2.functional.negative_api.texture.copytexsubimage2d_invalid_target
 dEQP-GLES2.functional.negative_api.texture.copytexsubimage2d_neg_level_tex2d
@@ -13972,7 +13964,6 @@ dEQP-GLES2.functional.negative_api.texture.texsubimage2d_level_max_tex2d
 dEQP-GLES2.functional.negative_api.texture.texsubimage2d_level_max_cube
 dEQP-GLES2.functional.negative_api.texture.texsubimage2d_neg_offset
 dEQP-GLES2.functional.negative_api.texture.texsubimage2d_offset_allowed
-dEQP-GLES2.functional.negative_api.texture.texsubimage2d_neg_wdt_hgt
 dEQP-GLES2.functional.negative_api.texture.texsubimage2d_type_format_mismatch
 dEQP-GLES2.functional.negative_api.texture.texparameteri
 dEQP-GLES2.functional.negative_api.texture.texparameteri_bind
