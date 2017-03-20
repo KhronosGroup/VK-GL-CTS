@@ -12948,19 +12948,12 @@ dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb_float
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb_unsigned_short_5_6_5
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb_unsigned_int_2_10_10_10_rev
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb_unsigned_int_10f_11f_11f_rev
-dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb_half_float_oes
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgba_unsigned_byte
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgba_float
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgba_unsigned_short_4_4_4_4
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgba_unsigned_short_5_5_5_1
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgba_unsigned_int_2_10_10_10_rev
-dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgba_half_float_oes
-dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb10
-dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgba4
-dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb5_a1
-dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgba8
-dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb10_a2
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.depth_component16
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.depth_component24
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.depth_component32
@@ -12980,7 +12973,6 @@ dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.srgb8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.srgb_alpha_unsigned_byte
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.srgb8_alpha8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.stencil_index8
-dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb565
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.sr8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.srg8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.depth_component_unsigned_short
@@ -13019,7 +13011,6 @@ dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.rg16f
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.depth_stencil_unsigned_int_24_8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.rgba16f
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.rgb16f
-dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.depth24_stencil8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.r11f_g11f_b10f
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.srgb_unsigned_byte
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.srgb8
@@ -13052,8 +13043,6 @@ dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.rgba4
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.rgb5_a1
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.rgba8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.rgb10_a2
-dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.depth_component16
-dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.depth_component24
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.depth_component32
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.rg_unsigned_byte
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.rg_float
@@ -13065,7 +13054,6 @@ dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.rg16f
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.depth_stencil_unsigned_int_24_8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.rgba16f
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.rgb16f
-dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.depth24_stencil8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.r11f_g11f_b10f
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.srgb_unsigned_byte
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.srgb8

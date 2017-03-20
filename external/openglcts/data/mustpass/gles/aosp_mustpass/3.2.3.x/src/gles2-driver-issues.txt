@@ -221,3 +221,17 @@ dEQP-GLES2.functional.texture.vertex.cube.wrap.mirror_mirror
 #VK-GL-CTS 250
 dEQP-GLES2.functional.fbo.api.valid_texcube_attachments
 dEQP-GLES2.functional.fbo.api.attachment_query_empty_fbo
+
+#VK-GL-CTS 251
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb_half_float_oes
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgba_half_float_oes
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb8
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgba4
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb5_a1
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgba8
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb10_a2
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb565
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.depth24_stencil8
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.depth_component16
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.depth_component24
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.depth24_stencil8
