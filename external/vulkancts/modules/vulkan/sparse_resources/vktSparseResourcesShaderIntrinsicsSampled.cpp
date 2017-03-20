@@ -333,6 +333,9 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 	// Create fragment shader
 	std::ostringstream fs;
 
+	const std::string	typeImgComp		= getImageComponentTypeName(m_format);
+	const std::string	typeImgCompVec4	= getImageComponentVec4TypeName(m_format);
+
 	fs	<< "OpCapability Shader\n"
 		<< "OpCapability SampledCubeArray\n"
 		<< "OpCapability ImageCubeArray\n"
@@ -381,27 +384,26 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "%type_vec2							= OpTypeVector %type_float 2\n"
 		<< "%type_vec3							= OpTypeVector %type_float 3\n"
 		<< "%type_vec4							= OpTypeVector %type_float 4\n"
+		<< "%type_ivec4						= OpTypeVector %type_int  4\n"
+		<< "%type_uvec4						= OpTypeVector %type_uint 4\n"
 		<< "%type_uniformblock					= OpTypeStruct %type_uint %type_vec2\n"
-		<< "%type_img_comp						= " << getOpTypeImageComponent(m_format) << "\n"
-		<< "%type_img_comp_vec4					= OpTypeVector %type_img_comp 4\n"
-		<< "%type_struct_int_img_comp_vec4		= OpTypeStruct %type_int %type_img_comp_vec4\n"
+		<< "%type_struct_int_img_comp_vec4	= OpTypeStruct %type_int " << typeImgCompVec4 << "\n"
 
 		<< "%type_input_vec3					= OpTypePointer Input %type_vec3\n"
 		<< "%type_input_float					= OpTypePointer Input %type_float\n"
 
-		<< "%type_output_img_comp_vec4			= OpTypePointer Output %type_img_comp_vec4\n"
+		<< "%type_output_img_comp_vec4			= OpTypePointer Output " << typeImgCompVec4 << "\n"
 		<< "%type_output_uint					= OpTypePointer Output %type_uint\n"
 
 		<< "%type_function_int					= OpTypePointer Function %type_int\n"
-		<< "%type_function_img_comp				= OpTypePointer Function %type_img_comp\n"
-		<< "%type_function_img_comp_vec4		= OpTypePointer Function %type_img_comp_vec4\n"
+		<< "%type_function_img_comp_vec4		= OpTypePointer Function " << typeImgCompVec4 << "\n"
 		<< "%type_function_int_img_comp_vec4	= OpTypePointer Function %type_struct_int_img_comp_vec4\n"
 
 		<< "%type_pushconstant_uniformblock				= OpTypePointer PushConstant %type_uniformblock\n"
 		<< "%type_pushconstant_uniformblock_member_lod  = OpTypePointer PushConstant %type_uint\n"
 		<< "%type_pushconstant_uniformblock_member_size = OpTypePointer PushConstant %type_vec2\n"
 
-		<< "%type_image_sparse				= " << getOpTypeImageSparse(m_imageType, m_format, "%type_img_comp", true) << "\n"
+		<< "%type_image_sparse				= " << getOpTypeImageSparse(m_imageType, m_format, typeImgComp, true) << "\n"
 		<< "%type_sampled_image_sparse		= OpTypeSampledImage %type_image_sparse\n"
 		<< "%type_uniformconst_image_sparse = OpTypePointer UniformConstant %type_sampled_image_sparse\n"
 
@@ -452,7 +454,7 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< sparseImageOpString("%local_sparse_op_result", "%type_struct_int_img_comp_vec4", "%local_image_sparse", coordString, "%local_uniformblock_member_float_lod") << "\n"
 
 		// Load texel value
-		<< "%local_img_comp_vec4 = OpCompositeExtract %type_img_comp_vec4 %local_sparse_op_result 1\n"
+		<< "%local_img_comp_vec4 = OpCompositeExtract " << typeImgCompVec4 << " %local_sparse_op_result 1\n"
 
 		<< "OpStore %output_texel %local_img_comp_vec4\n"
 
@@ -521,6 +523,9 @@ std::string	SparseCaseOpImageSparseGather::sparseImageOpString (const std::strin
 
 	std::ostringstream	src;
 
+	const std::string	typeImgComp		= getImageComponentTypeName(m_format);
+	const std::string	typeImgCompVec4	= getImageComponentVec4TypeName(m_format);
+
 	// Bias the coord value by half a texel, so we sample from center of 2x2 gather rectangle
 
 	src << "%local_image_width	= OpCompositeExtract %type_float %local_uniformblock_member_size 0\n";
@@ -561,17 +566,17 @@ std::string	SparseCaseOpImageSparseGather::sparseImageOpString (const std::strin
 
 	src << "%local_gather_residency_code = OpCompositeExtract %type_int %local_sparse_gather_result_x 0\n";
 
-	src << "%local_gather_texels_x = OpCompositeExtract %type_img_comp_vec4 %local_sparse_gather_result_x 1\n";
-	src << "%local_gather_texels_y = OpCompositeExtract %type_img_comp_vec4 %local_sparse_gather_result_y 1\n";
-	src << "%local_gather_texels_z = OpCompositeExtract %type_img_comp_vec4 %local_sparse_gather_result_z 1\n";
-	src << "%local_gather_texels_w = OpCompositeExtract %type_img_comp_vec4 %local_sparse_gather_result_w 1\n";
+	src << "%local_gather_texels_x = OpCompositeExtract " << typeImgCompVec4 << " %local_sparse_gather_result_x 1\n";
+	src << "%local_gather_texels_y = OpCompositeExtract " << typeImgCompVec4 << " %local_sparse_gather_result_y 1\n";
+	src << "%local_gather_texels_z = OpCompositeExtract " << typeImgCompVec4 << " %local_sparse_gather_result_z 1\n";
+	src << "%local_gather_texels_w = OpCompositeExtract " << typeImgCompVec4 << " %local_sparse_gather_result_w 1\n";
 
-	src << "%local_gather_primary_texel_x = OpCompositeExtract %type_img_comp %local_gather_texels_x 3\n";
-	src << "%local_gather_primary_texel_y = OpCompositeExtract %type_img_comp %local_gather_texels_y 3\n";
-	src << "%local_gather_primary_texel_z = OpCompositeExtract %type_img_comp %local_gather_texels_z 3\n";
-	src << "%local_gather_primary_texel_w = OpCompositeExtract %type_img_comp %local_gather_texels_w 3\n";
+	src << "%local_gather_primary_texel_x = OpCompositeExtract " << typeImgComp << " %local_gather_texels_x 3\n";
+	src << "%local_gather_primary_texel_y = OpCompositeExtract " << typeImgComp << " %local_gather_texels_y 3\n";
+	src << "%local_gather_primary_texel_z = OpCompositeExtract " << typeImgComp << " %local_gather_texels_z 3\n";
+	src << "%local_gather_primary_texel_w = OpCompositeExtract " << typeImgComp << " %local_gather_texels_w 3\n";
 
-	src << "%local_gather_primary_texel	= OpCompositeConstruct %type_img_comp_vec4 %local_gather_primary_texel_x %local_gather_primary_texel_y %local_gather_primary_texel_z %local_gather_primary_texel_w\n";
+	src << "%local_gather_primary_texel	= OpCompositeConstruct " << typeImgCompVec4 << " %local_gather_primary_texel_x %local_gather_primary_texel_y %local_gather_primary_texel_z %local_gather_primary_texel_w\n";
 	src << resultVariable << " = OpCompositeConstruct " << resultType << " %local_gather_residency_code %local_gather_primary_texel\n";
 
 	return src.str();
