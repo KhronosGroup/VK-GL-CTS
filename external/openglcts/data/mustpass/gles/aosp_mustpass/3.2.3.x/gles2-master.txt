@@ -12555,7 +12555,6 @@ dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.97
 dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.98
 dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.99
 dEQP-GLES2.functional.fbo.api.valid_tex2d_attachments
-dEQP-GLES2.functional.fbo.api.valid_texcube_attachments
 dEQP-GLES2.functional.fbo.api.valid_rbo_attachments
 dEQP-GLES2.functional.fbo.api.attach_to_default_fbo
 dEQP-GLES2.functional.fbo.api.invalid_tex2d_attachments
@@ -12564,7 +12563,6 @@ dEQP-GLES2.functional.fbo.api.invalid_rbo_attachments
 dEQP-GLES2.functional.fbo.api.attach_names
 dEQP-GLES2.functional.fbo.api.texture_levels
 dEQP-GLES2.functional.fbo.api.attachment_query_default_fbo
-dEQP-GLES2.functional.fbo.api.attachment_query_empty_fbo
 dEQP-GLES2.functional.fbo.api.attachment_query_tex2d
 dEQP-GLES2.functional.fbo.api.attachment_query_texcube
 dEQP-GLES2.functional.fbo.api.attachment_query_rbo

@@ -217,3 +217,7 @@ dEQP-GLES2.functional.texture.vertex.cube.wrap.repeat_mirror
 dEQP-GLES2.functional.texture.vertex.cube.wrap.mirror_clamp
 dEQP-GLES2.functional.texture.vertex.cube.wrap.mirror_repeat
 dEQP-GLES2.functional.texture.vertex.cube.wrap.mirror_mirror
+
+#VK-GL-CTS 250
+dEQP-GLES2.functional.fbo.api.valid_texcube_attachments
+dEQP-GLES2.functional.fbo.api.attachment_query_empty_fbo
