@@ -32,3 +32,17 @@ dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_4
 #VK-GL-CTS 234
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.invariant_attribute
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.invariant_uniform
+
+#VK-GL-CTS 235
+dEQP-GLES2.functional.shaders.functions.invalid.local_function_prototype_vertex
+dEQP-GLES2.functional.shaders.functions.invalid.local_function_prototype_fragment
+dEQP-GLES2.functional.shaders.functions.invalid.uniform_return_type_vertex
+dEQP-GLES2.functional.shaders.functions.invalid.uniform_return_type_fragment
+dEQP-GLES2.functional.shaders.functions.invalid.varying_return_type_vertex
+dEQP-GLES2.functional.shaders.functions.invalid.varying_return_type_fragment
+dEQP-GLES2.functional.shaders.functions.invalid.init_const_local_from_const_arg_vertex
+dEQP-GLES2.functional.shaders.functions.invalid.init_const_local_from_const_arg_fragment
+dEQP-GLES2.functional.shaders.functions.invalid.array_size_from_const_arg_vertex
+dEQP-GLES2.functional.shaders.functions.invalid.array_size_from_const_arg_fragment
+dEQP-GLES2.functional.shaders.functions.invalid.double_declare_vertex
+dEQP-GLES2.functional.shaders.functions.invalid.double_declare_fragment

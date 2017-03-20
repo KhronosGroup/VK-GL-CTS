@@ -2217,8 +2217,6 @@ dEQP-GLES2.functional.shaders.functions.invalid.return_type_const_overload_verte
 dEQP-GLES2.functional.shaders.functions.invalid.return_type_const_overload_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.return_without_value_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.return_without_value_fragment
-dEQP-GLES2.functional.shaders.functions.invalid.local_function_prototype_vertex
-dEQP-GLES2.functional.shaders.functions.invalid.local_function_prototype_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.local_function_definition_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.local_function_definition_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.name_type_conflict_vertex
@@ -2237,10 +2235,6 @@ dEQP-GLES2.functional.shaders.functions.invalid.varying_argument_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.varying_argument_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.attribute_argument_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.attribute_argument_fragment
-dEQP-GLES2.functional.shaders.functions.invalid.uniform_return_type_vertex
-dEQP-GLES2.functional.shaders.functions.invalid.uniform_return_type_fragment
-dEQP-GLES2.functional.shaders.functions.invalid.varying_return_type_vertex
-dEQP-GLES2.functional.shaders.functions.invalid.varying_return_type_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.attribute_return_type_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.attribute_return_type_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.main_invalid_return_type_vertex
@@ -2255,12 +2249,6 @@ dEQP-GLES2.functional.shaders.functions.invalid.write_const_array_arg_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.write_const_array_arg_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.modify_const_arg_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.modify_const_arg_fragment
-dEQP-GLES2.functional.shaders.functions.invalid.init_const_local_from_const_arg_vertex
-dEQP-GLES2.functional.shaders.functions.invalid.init_const_local_from_const_arg_fragment
-dEQP-GLES2.functional.shaders.functions.invalid.array_size_from_const_arg_vertex
-dEQP-GLES2.functional.shaders.functions.invalid.array_size_from_const_arg_fragment
-dEQP-GLES2.functional.shaders.functions.invalid.double_declare_vertex
-dEQP-GLES2.functional.shaders.functions.invalid.double_declare_fragment
 dEQP-GLES2.functional.shaders.keywords.keywords.attribute_vertex
 dEQP-GLES2.functional.shaders.keywords.keywords.attribute_fragment
 dEQP-GLES2.functional.shaders.keywords.keywords.const_vertex
