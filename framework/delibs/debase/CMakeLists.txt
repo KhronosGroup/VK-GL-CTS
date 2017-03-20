@@ -9,6 +9,7 @@ set(DEBASE_SRCS
 	deDefs.h
 	deFloat16.c
 	deFloat16.h
+	deFloat16Test.c
 	deInt32.c
 	deInt32.h
 	deInt32Test.c
