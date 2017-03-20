@@ -2346,8 +2346,6 @@ dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.digit_begin_vertex
 dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.digit_begin_fragment
 dEQP-GLES2.functional.shaders.reserved_operators.operator_modulo_vertex
 dEQP-GLES2.functional.shaders.reserved_operators.operator_modulo_fragment
-dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_not_vertex
-dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_not_fragment
 dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_shift_left_vertex
 dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_shift_left_fragment
 dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_shift_right_vertex

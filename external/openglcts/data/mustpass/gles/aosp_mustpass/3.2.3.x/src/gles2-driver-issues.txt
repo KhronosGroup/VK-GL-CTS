@@ -149,3 +149,7 @@ dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_function_vertex
 dEQP-GLES2.functional.shaders.scoping.invalid.redeclare_function_fragment
 dEQP-GLES2.functional.shaders.scoping.invalid.redefine_builtin_vertex
 dEQP-GLES2.functional.shaders.scoping.invalid.redefine_builtin_fragment
+
+#VK-GL-CTS 240
+dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_not_vertex
+dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_not_fragment
