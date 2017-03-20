@@ -162,3 +162,11 @@ dEQP-GLES2.functional.shaders.builtin_variable.max_draw_buffers_fragment
 
 #VK-GL-CTS 244
 dEQP-GLES2.functional.shaders.fragdata.invalid_assign_to_1
+
+#VK-GL-CTS 247
+dEQP-GLES2.functional.texture.mipmap.cube.basic.linear_nearest
+dEQP-GLES2.functional.texture.mipmap.cube.basic.linear_linear
+dEQP-GLES2.functional.texture.mipmap.cube.projected.linear_nearest
+dEQP-GLES2.functional.texture.mipmap.cube.projected.linear_linear
+dEQP-GLES2.functional.texture.mipmap.cube.bias.linear_nearest
+dEQP-GLES2.functional.texture.mipmap.cube.bias.linear_linear

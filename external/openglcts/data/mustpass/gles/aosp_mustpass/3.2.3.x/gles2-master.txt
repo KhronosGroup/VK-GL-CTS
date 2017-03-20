@@ -10364,17 +10364,11 @@ dEQP-GLES2.functional.texture.mipmap.2d.generate.rgba8888_nicest
 dEQP-GLES2.functional.texture.mipmap.2d.generate.rgba8888_non_square_fastest
 dEQP-GLES2.functional.texture.mipmap.2d.generate.rgba8888_non_square_nicest
 dEQP-GLES2.functional.texture.mipmap.cube.basic.nearest_nearest
-dEQP-GLES2.functional.texture.mipmap.cube.basic.linear_nearest
 dEQP-GLES2.functional.texture.mipmap.cube.basic.nearest_linear
-dEQP-GLES2.functional.texture.mipmap.cube.basic.linear_linear
 dEQP-GLES2.functional.texture.mipmap.cube.projected.nearest_nearest
-dEQP-GLES2.functional.texture.mipmap.cube.projected.linear_nearest
 dEQP-GLES2.functional.texture.mipmap.cube.projected.nearest_linear
-dEQP-GLES2.functional.texture.mipmap.cube.projected.linear_linear
 dEQP-GLES2.functional.texture.mipmap.cube.bias.nearest_nearest
-dEQP-GLES2.functional.texture.mipmap.cube.bias.linear_nearest
 dEQP-GLES2.functional.texture.mipmap.cube.bias.nearest_linear
-dEQP-GLES2.functional.texture.mipmap.cube.bias.linear_linear
 dEQP-GLES2.functional.texture.mipmap.cube.generate.a8_fastest
 dEQP-GLES2.functional.texture.mipmap.cube.generate.a8_nicest
 dEQP-GLES2.functional.texture.mipmap.cube.generate.l8_fastest
