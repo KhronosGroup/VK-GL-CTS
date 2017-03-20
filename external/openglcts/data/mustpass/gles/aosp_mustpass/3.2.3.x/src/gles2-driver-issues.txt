@@ -159,3 +159,6 @@ dEQP-GLES2.functional.shaders.builtin_variable.max_varying_vectors_vertex
 dEQP-GLES2.functional.shaders.builtin_variable.max_varying_vectors_fragment
 dEQP-GLES2.functional.shaders.builtin_variable.max_draw_buffers_vertex
 dEQP-GLES2.functional.shaders.builtin_variable.max_draw_buffers_fragment
+
+#VK-GL-CTS 244
+dEQP-GLES2.functional.shaders.fragdata.invalid_assign_to_1
