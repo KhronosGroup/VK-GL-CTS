@@ -24,6 +24,7 @@ add_subdirectory(fragment_ops)
 add_subdirectory(geometry)
 add_subdirectory(texture)
 add_subdirectory(robustness)
+add_subdirectory(renderpass)
 
 include_directories(
 	api
@@ -50,6 +51,7 @@ include_directories(
 	texture
 	geometry
 	robustness
+	renderpass
 	)
 
 set(DEQP_VK_SRCS
@@ -61,8 +63,6 @@ set(DEQP_VK_SRCS
 	vktTestPackage.hpp
 	vktShaderLibrary.cpp
 	vktShaderLibrary.hpp
-	vktRenderPassTests.cpp
-	vktRenderPassTests.hpp
 	vktTestGroupUtil.cpp
 	vktTestGroupUtil.hpp
 	vktInfoTests.cpp
@@ -99,6 +99,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-texture
 	deqp-vk-geometry
 	deqp-vk-robustness
+	deqp-vk-render-pass
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))
