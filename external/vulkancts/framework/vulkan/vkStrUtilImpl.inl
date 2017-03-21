@@ -5158,6 +5158,57 @@ std::ostream& operator<< (std::ostream& s, const VkSurfaceFormat2KHR& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkDisplayProperties2KHR& value)
+{
+	s << "VkDisplayProperties2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdisplayProperties = " << value.displayProperties << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayPlaneProperties2KHR& value)
+{
+	s << "VkDisplayPlaneProperties2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdisplayPlaneProperties = " << value.displayPlaneProperties << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayModeProperties2KHR& value)
+{
+	s << "VkDisplayModeProperties2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdisplayModeProperties = " << value.displayModeProperties << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayPlaneInfo2KHR& value)
+{
+	s << "VkDisplayPlaneInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmode = " << value.mode << '\n';
+	s << "\tplaneIndex = " << value.planeIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDisplayPlaneCapabilities2KHR& value)
+{
+	s << "VkDisplayPlaneCapabilities2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcapabilities = " << value.capabilities << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkImageFormatListCreateInfoKHR& value)
 {
 	s << "VkImageFormatListCreateInfoKHR = {\n";

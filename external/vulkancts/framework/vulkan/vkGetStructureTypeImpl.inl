@@ -771,6 +771,31 @@ template<> VkStructureType getStructureType<VkSurfaceFormat2KHR> (void)
 	return VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR;
 }
 
+template<> VkStructureType getStructureType<VkDisplayProperties2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDisplayPlaneProperties2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DISPLAY_PLANE_PROPERTIES_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDisplayModeProperties2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DISPLAY_MODE_PROPERTIES_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDisplayPlaneInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DISPLAY_PLANE_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDisplayPlaneCapabilities2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DISPLAY_PLANE_CAPABILITIES_2_KHR;
+}
+
 template<> VkStructureType getStructureType<VkImageFormatListCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR;

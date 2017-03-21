@@ -2192,6 +2192,42 @@ struct VkSurfaceFormat2KHR
 	VkSurfaceFormatKHR	surfaceFormat;
 };
 
+struct VkDisplayProperties2KHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkDisplayPropertiesKHR	displayProperties;
+};
+
+struct VkDisplayPlaneProperties2KHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkDisplayPlanePropertiesKHR	displayPlaneProperties;
+};
+
+struct VkDisplayModeProperties2KHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkDisplayModePropertiesKHR	displayModeProperties;
+};
+
+struct VkDisplayPlaneInfo2KHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkDisplayModeKHR	mode;
+	deUint32			planeIndex;
+};
+
+struct VkDisplayPlaneCapabilities2KHR
+{
+	VkStructureType					sType;
+	void*							pNext;
+	VkDisplayPlaneCapabilitiesKHR	capabilities;
+};
+
 struct VkImageFormatListCreateInfoKHR
 {
 	VkStructureType	sType;
