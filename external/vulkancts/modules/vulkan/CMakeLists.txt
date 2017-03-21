@@ -23,6 +23,7 @@ add_subdirectory(clipping)
 add_subdirectory(fragment_ops)
 add_subdirectory(geometry)
 add_subdirectory(texture)
+add_subdirectory(renderpass)
 
 include_directories(
 	api
@@ -48,6 +49,7 @@ include_directories(
 	fragment_ops
 	texture
 	geometry
+	renderpass
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -59,8 +61,6 @@ set(DEQP_VK_COMMON_SRCS
 	vktTestPackage.hpp
 	vktShaderLibrary.cpp
 	vktShaderLibrary.hpp
-	vktRenderPassTests.cpp
-	vktRenderPassTests.hpp
 	vktTestGroupUtil.cpp
 	vktTestGroupUtil.hpp
 	vktInfoTests.cpp
@@ -96,6 +96,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-fragment-ops
 	deqp-vk-texture
 	deqp-vk-geometry
+	deqp-vk-render-pass
 	)
 
 add_library(deqp-vk-common STATIC ${DEQP_VK_COMMON_SRCS})
