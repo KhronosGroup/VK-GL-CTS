@@ -71,6 +71,8 @@
 #define EGL_READS_DONE_TIME_ANDROID 0x3159
 typedef deInt64 EGLnsecsANDROID;
 typedef deUint64 EGLuint64KHR;
+#define EGL_TIMESTAMP_PENDING_ANDROID (-2)
+#define EGL_TIMESTAMP_INVALID_ANDROID (-1)
 typedef EGLW_APICALL eglw::EGLBoolean (EGLW_APIENTRY* eglGetNextFrameIdANDROIDFunc) (eglw::EGLDisplay dpy, eglw::EGLSurface surface, EGLuint64KHR *frameId);
 typedef EGLW_APICALL eglw::EGLBoolean (EGLW_APIENTRY* eglGetCompositorTimingANDROIDFunc) (eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLint numTimestamps, const eglw::EGLint *names, EGLnsecsANDROID *values);
 typedef EGLW_APICALL eglw::EGLBoolean (EGLW_APIENTRY* eglGetCompositorTimingSupportedANDROIDFunc) (eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLint name);
@@ -146,9 +148,14 @@ struct FrameTimes
 	EGLnsecsANDROID	readsDone;
 };
 
-bool timestampExists (EGLnsecsANDROID timestamp)
+bool timestampValid (EGLnsecsANDROID timestamp)
 {
-	return timestamp > 0;
+	return (timestamp >= 0) || (timestamp == EGL_TIMESTAMP_PENDING_ANDROID);
+}
+
+bool timestampPending (EGLnsecsANDROID timestamp)
+{
+	return timestamp == EGL_TIMESTAMP_PENDING_ANDROID;
 }
 
 void verifySingleFrame (const FrameTimes& frameTimes, tcu::ResultCollector& result, bool verifyReadsDone)
@@ -160,13 +167,13 @@ void verifySingleFrame (const FrameTimes& frameTimes, tcu::ResultCollector& resu
 	result.check(frameTimes.lastCompositionStart < frameTimes.dequeueReady, "Buffer composited after it was ready to be dequeued.");
 
 	// Verify GPU timeline is monotonic.
-	if (timestampExists(frameTimes.firstCompositionGpuFinished))
+	if (timestampValid(frameTimes.firstCompositionGpuFinished))
 		result.check(frameTimes.renderingComplete < frameTimes.firstCompositionGpuFinished, "Buffer rendering completed after compositor GPU work finished.");
 
-	if (timestampExists(frameTimes.displayPresent))
+	if (timestampValid(frameTimes.displayPresent))
 		result.check(frameTimes.renderingComplete < frameTimes.displayPresent, "Buffer displayed before rendering completed.");
 
-	if (timestampExists(frameTimes.firstCompositionGpuFinished) && timestampExists(frameTimes.displayPresent))
+	if (timestampValid(frameTimes.firstCompositionGpuFinished) && timestampValid(frameTimes.displayPresent))
 		result.check(frameTimes.firstCompositionGpuFinished < frameTimes.displayPresent, "Buffer displayed before compositor GPU work completed");
 
 	// Drivers may maintain shadow copies of the buffer, so the readsDone time
@@ -177,10 +184,10 @@ void verifySingleFrame (const FrameTimes& frameTimes, tcu::ResultCollector& resu
 
 	// Verify CPU/GPU dependencies
 	result.check(frameTimes.renderingComplete < frameTimes.latch, "Buffer latched before rendering completed.");
-	if (timestampExists(frameTimes.firstCompositionGpuFinished))
+	if (timestampValid(frameTimes.firstCompositionGpuFinished))
 		result.check(frameTimes.firstCompositionStart < frameTimes.firstCompositionGpuFinished, "Composition CPU work started after GPU work finished.");
 
-	if (timestampExists(frameTimes.displayPresent))
+	if (timestampValid(frameTimes.displayPresent))
 		result.check(frameTimes.firstCompositionStart < frameTimes.displayPresent, "Buffer displayed before it was composited.");
 }
 
@@ -196,13 +203,13 @@ void verifyNeighboringFrames (const FrameTimes& frame1, const FrameTimes& frame2
 	// GPU timeline.
 	result.check(frame1.renderingComplete < frame2.renderingComplete, "Rendering complete times not monotonic.");
 
-	if (timestampExists(frame1.firstCompositionGpuFinished) && timestampExists(frame2.firstCompositionGpuFinished))
+	if (timestampValid(frame1.firstCompositionGpuFinished) && timestampValid(frame2.firstCompositionGpuFinished))
 		result.check(frame1.firstCompositionGpuFinished < frame2.firstCompositionGpuFinished, "Composition GPU work complete times not monotonic.");
 
-	if (timestampExists(frame1.displayPresent) && timestampExists(frame2.displayPresent))
+	if (timestampValid(frame1.displayPresent) && timestampValid(frame2.displayPresent))
 		result.check(frame1.displayPresent < frame2.displayPresent, "Display present times not monotonic.");
 
-	if (verifyReadsDone && timestampExists(frame1.readsDone) && timestampExists(frame2.readsDone))
+	if (verifyReadsDone && timestampValid(frame1.readsDone) && timestampValid(frame2.readsDone))
 		result.check(frame1.readsDone < frame2.readsDone, "Reads done times not monotonic.");
 }
 
@@ -635,7 +642,7 @@ void GetFrameTimestampTest::executeForConfig (EGLDisplay display, EGLConfig conf
 			lastFrame.dequeueReady					=	frameTimestampValues[7];
 			lastFrame.readsDone						=	frameTimestampValues[8];
 
-			if (timestampExists(lastFrame.displayPresent))
+			if (!timestampPending(lastFrame.displayPresent))
 				finalTimestampAvaiable = true;
 
 			if (getNanoseconds() > pollingDeadline)
@@ -643,11 +650,11 @@ void GetFrameTimestampTest::executeForConfig (EGLDisplay display, EGLConfig conf
 		} while (!finalTimestampAvaiable);
 
 		m_result.check(finalTimestampAvaiable, "Timed out polling for timestamps of last swap.");
-		m_result.check(timestampExists(lastFrame.requestedPresent), "Rendering complete of last swap not avaiable.");
-		m_result.check(timestampExists(lastFrame.renderingComplete), "Rendering complete of last swap not avaiable.");
-		m_result.check(timestampExists(lastFrame.latch), "Latch of last swap not avaiable.");
-		m_result.check(timestampExists(lastFrame.firstCompositionStart), "First composite time of last swap not avaiable.");
-		m_result.check(timestampExists(lastFrame.lastCompositionStart), "Last composite time of last swap not avaiable.");
+		m_result.check((lastFrame.requestedPresent >= 0), "Rendering complete of last swap not avaiable.");
+		m_result.check((lastFrame.renderingComplete >= 0), "Rendering complete of last swap not avaiable.");
+		m_result.check((lastFrame.latch >= 0), "Latch of last swap not avaiable.");
+		m_result.check((lastFrame.firstCompositionStart >= 0), "First composite time of last swap not avaiable.");
+		m_result.check((lastFrame.lastCompositionStart >= 0), "Last composite time of last swap not avaiable.");
 
 		window->processEvents();
 		gl.disableVertexAttribArray(posLocation);
