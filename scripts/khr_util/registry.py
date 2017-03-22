@@ -239,6 +239,7 @@ class InterfaceSpec(Object):
 		self.enums = set()
 		self.types = set()
 		self.commands = set()
+		self.versions = set()
 
 	def addComponent(self, eComponent):
 		if eComponent.tag == 'require':
@@ -271,6 +272,7 @@ class InterfaceSpec(Object):
 			if not force: return
 			warnElem(eFeature, 'API %s is not supported', api)
 		self.addComponents(eFeature, api, profile)
+		self.versions.add(eFeature.get('name'))
 
 	def addExtension(self, eExtension, api=None, profile=None, force=False):
 		if not extensionSupports(eExtension, api, profile):
@@ -359,7 +361,8 @@ def createInterface(registry, spec, api=None):
 	enums = NameIndex(map(createEnum, spec.enums),
 					  createMissing=Enum, kind="enum")
 	commands = NameIndex(map(createCommand, spec.commands),
-						 createMissing=Command, kind="command")
+						createMissing=Command, kind="command")
+	versions = sorted(spec.versions)
 
 	# This is a mess because the registry contains alias chains whose
 	# midpoints might not be included in the interface even though
@@ -380,7 +383,8 @@ def createInterface(registry, spec, api=None):
 		types=sortedIndex(types),
 		enums=sortedIndex(enums),
 		groups=sortedIndex(groups),
-		commands=sortedIndex(commands))
+		commands=sortedIndex(commands),
+		versions=versions)
 
 
 def spec(registry, api, version=None, profile=None, extensionNames=[], protects=[], force=False):

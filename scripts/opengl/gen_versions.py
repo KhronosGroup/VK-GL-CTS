@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 #-------------------------------------------------------------------------
-# Khronos OpenGL CTS
-# ------------------
+# drawElements Quality Program utilities
+# --------------------------------------
 #
-# Copyright (c) 2016 The Khronos Group Inc.
+# Copyright 2017 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,32 +21,18 @@
 #-------------------------------------------------------------------------
 
 import os
-import sys
-import shutil
-import argparse
-import subprocess
+import string
 
-from fetch_sources import *
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
+from src_util import *
 
-from build.common import *
+def apiVersionDefinition(version):
+	return "#define %s\t1" % (version)
 
-EXTERNAL_DIR	= os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
-SHA1 = "6e8536f473773aa97edf3692609b8fae6d22be09"
-
-PACKAGES = [
-	GitRepo(
-		"https://gitlab.khronos.org/opengl/kc-cts.git",
-		"git@gitlab.khronos.org:opengl/kc-cts.git",
-		SHA1,
-		"kc-cts"),
-]
+def genVersions (iface):
+	src = indentLines(map(apiVersionDefinition, iface.versions))
+	writeInlFile(os.path.join(OPENGL_INC_DIR, "glwVersions.inl"), src)
 
 if __name__ == "__main__":
-	args = parseArgs()
-
-	for pkg in PACKAGES:
-		if args.clean:
-			pkg.clean()
-		else:
-			pkg.update(args.protocol)
+	import logging, sys
+	logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+	genVersions(getHybridInterface())

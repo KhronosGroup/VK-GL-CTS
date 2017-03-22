@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "deDefs.h"
+#include "deMath.h"
 
 DE_BEGIN_EXTERN_C
 
@@ -38,7 +39,9 @@ typedef		deFloat16			DEfloat16;
  * \param val32	Input value.
  * \return Converted 16-bit floating-point value.
  *//*--------------------------------------------------------------------*/
-deFloat16	deFloat32To16		(float val32);
+deFloat16	deFloat32To16				(float val32);
+deFloat16	deFloat32To16Round			(float val32, deRoundingMode mode);
+void		deFloat16_selfTest			(void);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Convert 16-bit floating point number to 32 bit.

@@ -300,6 +300,7 @@ LOCAL_SRC_FILES := \
 	framework/common/tcuThreadUtil.cpp \
 	framework/delibs/debase/deDefs.c \
 	framework/delibs/debase/deFloat16.c \
+	framework/delibs/debase/deFloat16Test.c \
 	framework/delibs/debase/deInt32.c \
 	framework/delibs/debase/deInt32Test.c \
 	framework/delibs/debase/deMath.c \

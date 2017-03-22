@@ -205,6 +205,21 @@ GLCTS_3_2_2_GLES31_PKG					= Package(module = ES31CTS_MODULE, configurations = [
 	])
 
 # 3.2.3.x
+GLCTS_3_2_3_EGL_COMMON_FILTERS			= [include("egl-master.txt"),
+		exclude("egl-test-issues.txt"),
+		exclude("egl-internal-api-tests.txt"),
+		exclude("egl-driver-issues.txt")
+	]
+GLCTS_3_2_3_EGL_PKG						= Package(module = EGL_MODULE, configurations = [
+		# Master
+		Configuration(name			= "master",
+					glconfig		= "rgba8888d24s8ms0",
+					rotation		= "unspecified",
+					surfacewidth    = "256",
+                    surfaceheight   = "256",
+					filters			= GLCTS_3_2_3_EGL_COMMON_FILTERS),
+	])
+
 GLCTS_3_2_3_GLES2_COMMON_FILTERS	= [
 				include("gles2-master.txt"),
 				exclude("gles2-test-issues.txt"),
@@ -280,6 +295,71 @@ GLCTS_3_2_3_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
 					surfaceheight	= "256",
 					filters		= GLCTS_3_2_3_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt")]),
 
+	])
+
+GLCTS_3_2_3_GLES31_COMMON_FILTERS	= [
+		include("gles31-master.txt"),
+		exclude("gles31-test-issues.txt"),
+		exclude("gles31-spec-issues.txt"),
+		exclude("gles31-driver-issues.txt")
+	]
+
+GLCTS_3_2_3_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
+		# Master
+		Configuration(name			= "master",
+					glconfig	= "rgba8888d24s8ms0",
+					rotation	= "unspecified",
+					surfacewidth	= "256",
+					surfaceheight	= "256",
+					filters		= GLCTS_3_2_3_GLES31_COMMON_FILTERS),
+
+		# Rotations
+		Configuration(name			= "rotate-portrait",
+					glconfig	= "rgba8888d24s8ms0",
+					rotation	= "0",
+					surfacewidth	= "256",
+					surfaceheight	= "256",
+					os				= "android",
+					filters		= GLCTS_3_2_3_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+		Configuration(name			= "rotate-landscape",
+					glconfig	= "rgba8888d24s8ms0",
+					rotation	= "90",
+					surfacewidth	= "256",
+					surfaceheight	= "256",
+					os				= "android",
+					filters		= GLCTS_3_2_3_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+		Configuration(name			= "rotate-reverse-portrait",
+					glconfig	= "rgba8888d24s8ms0",
+					rotation	= "180",
+					surfacewidth	= "256",
+					surfaceheight	= "256",
+					os				= "android",
+					filters		= GLCTS_3_2_3_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+		Configuration(name			= "rotate-reverse-landscape",
+					glconfig	= "rgba8888d24s8ms0",
+					rotation	= "270",
+					surfacewidth	= "256",
+					surfaceheight	= "256",
+					os				= "android",
+					filters		= GLCTS_3_2_3_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+
+		# MSAA
+		Configuration(name			= "multisample",
+					glconfig	= "rgba8888d24s8ms4",
+					rotation	= "unspecified",
+					surfacewidth	= "256",
+					surfaceheight	= "256",
+					filters		= [include("gles31-master.txt"),
+									include("gles31-multisample.txt"),
+									exclude("gles31-multisample-test-issues.txt")]),
+
+		# Pixel format
+		Configuration(name			= "565-no-depth-no-stencil",
+					glconfig	= "rgb565d0s0ms0",
+					rotation	= "unspecified",
+					surfacewidth	= "256",
+					surfaceheight	= "256",
+					filters		= GLCTS_3_2_3_GLES31_COMMON_FILTERS + [include("gles31-pixelformat.txt")]),
 	])
 
 # master
@@ -755,10 +835,10 @@ MUSTPASS_LISTS				= [
 						]),
 
 	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "3.2.3.x", isCurrent=True,
-			packages = [GLCTS_3_2_3_GLES2_PKG, GLCTS_3_2_3_GLES3_PKG, MASTER_GLES31_PKG]),
+			packages = [GLCTS_3_2_3_GLES2_PKG, GLCTS_3_2_3_GLES3_PKG, GLCTS_3_2_3_GLES31_PKG]),
 
 	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "3.2.3.x", isCurrent=True,
-			packages = [MASTER_EGL_PKG]),
+			packages = [GLCTS_3_2_3_EGL_PKG]),
 	# master
 
 	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "master", isCurrent=False,

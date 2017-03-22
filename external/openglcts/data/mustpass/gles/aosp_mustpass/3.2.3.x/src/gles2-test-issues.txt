@@ -65,3 +65,24 @@ dEQP-GLES2.functional.texture.wrap.repeat_mirror_nearest_pot_l8
 dEQP-GLES2.functional.texture.wrap.mirror_clamp_nearest_pot_rgba8888
 dEQP-GLES2.functional.texture.wrap.mirror_repeat_nearest_pot_rgba8888
 dEQP-GLES2.functional.texture.wrap.mirror_mirror_nearest_pot_rgba8888
+
+#VK-GL-CTS 242
+dEQP-GLES2.functional.shaders.texture_functions.vertex.texturecubelod
+
+#VK-GL-CTS 243
+dEQP-GLES2.functional.shaders.texture_functions.invalid.texture2d_bias_in_vertex
+dEQP-GLES2.functional.shaders.texture_functions.invalid.texturecube_bias_in_vertex
+dEQP-GLES2.functional.shaders.texture_functions.invalid.texture2dlod_in_fragment
+
+#VK-GL-CTS 245
+dEQP-GLES2.functional.shaders.random.texture.vertex.0
+dEQP-GLES2.functional.shaders.random.texture.vertex.2
+dEQP-GLES2.functional.shaders.random.texture.vertex.3
+dEQP-GLES2.functional.shaders.random.texture.vertex.8
+dEQP-GLES2.functional.shaders.random.texture.vertex.20
+dEQP-GLES2.functional.shaders.random.texture.vertex.28
+dEQP-GLES2.functional.shaders.random.texture.vertex.37
+dEQP-GLES2.functional.shaders.random.texture.vertex.39
+
+#VK-GL-CTS 249
+dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.61

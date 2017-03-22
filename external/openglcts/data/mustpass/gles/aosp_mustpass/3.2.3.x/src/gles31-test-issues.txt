@@ -49,3 +49,15 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.lowp_compute.
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.mediump_compute.vec3
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.mediump_compute.vec4
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.highp_compute.vec3
+
+#VK-GL-CTS 293
+dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawarrays_separate_grid_1000x1000_drawcount_5000
+dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawarrays_combined_grid_1000x1000_drawcount_5000
+dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawelements_separate_grid_1000x1000_drawcount_5000
+dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawelements_combined_grid_1000x1000_drawcount_5000
+
+#VK-GL-CTS 255
+dEQP-GLES31.functional.tessellation.user_defined_io.negative.es32.per_vertex_incorrect_control_explicit_output_array_size_1
+
+#VK-GL-CTS 256
+dEQP-GLES31.functional.android_extension_pack.shaders.es32.extension_directive.ext_primitive_bounding_box

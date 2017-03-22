@@ -951,8 +951,6 @@ dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.gl_es_2_vertex
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.gl_es_2_fragment
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.line_1_vertex
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.line_1_fragment
-dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.line_2_vertex
-dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.line_2_fragment
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.file_vertex
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.file_fragment
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.if_gl_es_vertex
@@ -18272,8 +18270,6 @@ dEQP-GLES3.functional.shaders.invariance.lowp.loop_4
 dEQP-GLES3.functional.shaders.fragdata.valid_static_index
 dEQP-GLES3.functional.shaders.fragdata.valid_uniform_index
 dEQP-GLES3.functional.shaders.fragdata.valid_dynamic_index
-dEQP-GLES3.functional.shaders.fragdata.draw_buffers
-dEQP-GLES3.functional.shaders.fragdata.invalid_assign_to_1
 dEQP-GLES3.functional.shaders.fragdata.write_fragcolor_and_fragdata_simple
 dEQP-GLES3.functional.shaders.fragdata.write_fragcolor_and_fragdata_static_if
 dEQP-GLES3.functional.shaders.fragdata.write_fragcolor_and_fragdata_unused_func
