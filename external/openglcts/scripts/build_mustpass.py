@@ -349,7 +349,9 @@ GLCTS_3_2_3_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
 					rotation	= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
-					filters		= GLCTS_3_2_3_GLES31_COMMON_FILTERS + [include("gles31-multisample.txt")]),
+					filters		= [include("gles31-master.txt"),
+									include("gles31-multisample.txt"),
+									exclude("gles31-multisample-test-issues.txt")]),
 
 		# Pixel format
 		Configuration(name			= "565-no-depth-no-stencil",
