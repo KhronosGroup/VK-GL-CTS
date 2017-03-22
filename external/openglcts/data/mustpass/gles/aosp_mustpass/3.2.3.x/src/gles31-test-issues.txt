@@ -55,3 +55,6 @@ dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawarrays_separate_g
 dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawarrays_combined_grid_1000x1000_drawcount_5000
 dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawelements_separate_grid_1000x1000_drawcount_5000
 dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawelements_combined_grid_1000x1000_drawcount_5000
+
+#VK-GL-CTS 255
+dEQP-GLES31.functional.tessellation.user_defined_io.negative.es32.per_vertex_incorrect_control_explicit_output_array_size_1
