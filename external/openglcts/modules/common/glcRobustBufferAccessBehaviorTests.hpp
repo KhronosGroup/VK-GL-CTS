@@ -392,9 +392,9 @@ protected:
 	{
 		R8,
 		RG8_SNORM,
+		R32UI_MULTISAMPLE,
 		RGBA32F,
 		R32UI_MIPMAP,
-		R32UI_MULTISAMPLE,
 		/* */
 		LAST
 	};

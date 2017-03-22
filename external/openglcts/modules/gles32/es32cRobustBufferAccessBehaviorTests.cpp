@@ -432,6 +432,10 @@ void TexelFetchTest::prepareTexture(bool is_source, glw::GLuint texture_id)
 
 		Texture::SubImage(gl, GL_TEXTURE_2D, 1 /* level */, 0 /* x */, 0 /* y */, 0 /* z */, image_width, image_height,
 						  0 /* depth */, GL_RED_INTEGER, GL_UNSIGNED_INT, source_pixels);
+
+		/* texelFetch() undefined if the computed level of detail is not the texture’s base level and the texture’s
+			minification filter is NEAREST or LINEAR */
+		gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 	}
 	else if (R32UI_MULTISAMPLE == m_test_case)
 	{
@@ -745,7 +749,7 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 ImageLoadStoreTest::ImageLoadStoreTest(deqp::Context& context)
 	: TexelFetchTest(context, "image_load_store", "Verifies that out-of-bound to image result in zero or is discarded")
 {
-	/* start from RGBA32F as R8 and R8_SNORM are not supported under GLES */
+	/* start from RGBA32F as R8, R32UI_MULTISAMPLE and R8_SNORM are not supported under GLES */
 	m_test_case = RGBA32F;
 }
 
@@ -899,16 +903,6 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
 		"}\n"
 		"\n";
 
-	static const GLchar* copy_multisampled =
-		"    TYPE color_0 = imageLoad(uni_source_image, point_source, 0 + OFFSET);\n"
-		"    TYPE color_1 = imageLoad(uni_source_image, point_source, 1 + OFFSET);\n"
-		"    TYPE color_2 = imageLoad(uni_source_image, point_source, 2 + OFFSET);\n"
-		"    TYPE color_3 = imageLoad(uni_source_image, point_source, 3 + OFFSET);\n"
-		"    imageStore(uni_destination_image, point_destination, 0 + OFFSET, color_0);\n"
-		"    imageStore(uni_destination_image, point_destination, 1 + OFFSET, color_1);\n"
-		"    imageStore(uni_destination_image, point_destination, 2 + OFFSET, color_2);\n"
-		"    imageStore(uni_destination_image, point_destination, 3 + OFFSET, color_3);\n";
-
 	static const GLchar* copy_regular = "    TYPE color = imageLoad(uni_source_image, point_source);\n"
 										"    imageStore(uni_destination_image, point_destination, color);\n";
 
@@ -918,11 +912,6 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
 	static const GLchar* image_vec4 = "image2D";
 
 	static const GLchar* image_uvec4 = "uimage2D";
-
-	static const GLchar* image_uvec4_ms = "uimage2DMS";
-
-	static const GLchar* offset_invalid = "4";
-	static const GLchar* offset_valid   = "0";
 
 	static const GLchar* point_invalid = "ivec2(gl_WorkGroupID.x + 16U, gl_WorkGroupID.y + 16U)";
 
@@ -934,8 +923,6 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
 	const GLchar* copy				 = copy_regular;
 	const GLchar* format			 = format_rgba32f;
 	const GLchar* image				 = image_vec4;
-	const GLchar* offset_destination = offset_valid;
-	const GLchar* offset_source		 = offset_valid;
 	const GLchar* point_destination  = point_valid;
 	const GLchar* point_source		 = point_valid;
 	const GLchar* type				 = type_vec4;
@@ -946,11 +933,9 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
 		break;
 	case SOURCE_INVALID:
 		point_source  = point_invalid;
-		offset_source = offset_invalid;
 		break;
 	case DESTINATION_INVALID:
 		point_destination  = point_invalid;
-		offset_destination = offset_invalid;
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
@@ -965,14 +950,6 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
 		format = format_r32ui;
 		image  = image_uvec4;
 		type   = type_uvec4;
-		break;
-	case R32UI_MULTISAMPLE:
-		copy			  = copy_multisampled;
-		format			  = format_r32ui;
-		image			  = image_uvec4_ms;
-		point_destination = point_valid;
-		point_source	  = point_valid;
-		type			  = type_uvec4;
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
@@ -997,20 +974,6 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
 	case RGBA32F:
 	case R32UI_MIPMAP:
 		replaceToken("TYPE", position, type, source);
-		break;
-	case R32UI_MULTISAMPLE:
-		replaceToken("TYPE", position, type, source);
-		replaceToken("OFFSET", position, offset_source, source);
-		replaceToken("TYPE", position, type, source);
-		replaceToken("OFFSET", position, offset_source, source);
-		replaceToken("TYPE", position, type, source);
-		replaceToken("OFFSET", position, offset_source, source);
-		replaceToken("TYPE", position, type, source);
-		replaceToken("OFFSET", position, offset_source, source);
-		replaceToken("OFFSET", position, offset_destination, source);
-		replaceToken("OFFSET", position, offset_destination, source);
-		replaceToken("OFFSET", position, offset_destination, source);
-		replaceToken("OFFSET", position, offset_destination, source);
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
@@ -1039,9 +1002,6 @@ void ImageLoadStoreTest::setTextures(glw::GLuint id_destination, glw::GLuint id_
 	case R32UI_MIPMAP:
 		format = GL_R32UI;
 		level  = 1;
-		break;
-	case R32UI_MULTISAMPLE:
-		format = GL_R32UI;
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
@@ -1154,90 +1114,6 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 		for (GLuint i = 0; i < n_pixels; ++i)
 		{
 			const GLuint expected_red = i;
-			const GLuint drawn_red	= pixels[i * n_channels];
-
-			if (expected_red != drawn_red)
-			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
-													<< ". Expected value: " << expected_red << " at offset: " << i
-													<< tcu::TestLog::EndMessage;
-
-				result = false;
-				break;
-			}
-		}
-	}
-	else if (R32UI_MULTISAMPLE == m_test_case)
-	{
-		static const GLuint n_channels = 4;
-
-		/* Compute Shader */
-		static const GLchar* cs =
-			"#version 320 es\n"
-			"\n"
-			"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-			"\n"
-			"layout (r32ui, location = 1, binding = 1) writeonly uniform highp uimage2D   uni_destination_image;\n"
-			"layout (r32ui, location = 0, binding = 0) readonly  uniform highp uimage2DMS uni_source_image;\n"
-			"\n"
-			"void main()\n"
-			"{\n"
-			"    ivec2 point = ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y);\n"
-			"    uint  index = gl_WorkGroupID.y * 16U + gl_WorkGroupID.x;\n"
-			"\n"
-			"    uvec4 color_0 = imageLoad(uni_source_image, point, 0);\n"
-			"    uvec4 color_1 = imageLoad(uni_source_image, point, 1);\n"
-			"    uvec4 color_2 = imageLoad(uni_source_image, point, 2);\n"
-			"    uvec4 color_3 = imageLoad(uni_source_image, point, 3);\n"
-			"\n"
-			"    if (any(equal(uvec4(color_0.r, color_1.r, color_2.r, color_3.r), uvec4(index + 3U))))\n"
-			"    {\n"
-			"        imageStore(uni_destination_image, point, uvec4(1U));\n"
-			"    }\n"
-			"    else\n"
-			"    {\n"
-			"        imageStore(uni_destination_image, point, uvec4(0U));\n"
-			"    }\n"
-			"}\n"
-			"\n";
-
-		Program program(m_context);
-		Texture destination_texture(m_context);
-
-		Texture::Generate(gl, destination_texture.m_id);
-		Texture::Bind(gl, destination_texture.m_id, GL_TEXTURE_2D);
-		Texture::Storage(gl, GL_TEXTURE_2D, 1, GL_R32UI, width, height, 0 /* depth */);
-
-		program.Init(cs, "", "", "", "", "");
-		program.Use();
-		gl.bindImageTexture(0 /* unit */, texture_id, 0 /* level */, GL_FALSE /* layered */, 0 /* layer */,
-							GL_READ_ONLY, GL_R32UI);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "BindImageTexture");
-		gl.bindImageTexture(1 /* unit */, destination_texture.m_id, 0 /* level */, GL_FALSE /* layered */,
-							0 /* layer */, GL_WRITE_ONLY, GL_R32UI);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "BindImageTexture");
-
-		gl.dispatchCompute(16, 16, 1);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
-
-		/* Pixels buffer initialization */
-		std::vector<GLuint> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels * n_channels; ++i)
-		{
-			pixels[i] = i;
-		}
-
-		Texture::GetData(gl, destination_texture.m_id, 0 /* level */, width, height, GL_RGBA_INTEGER, GL_UNSIGNED_INT,
-						 &pixels[0]);
-
-		/* Unbind */
-		Texture::Bind(gl, 0, GL_TEXTURE_2D);
-
-		/* Verify */
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			const GLuint expected_red = 1;
 			const GLuint drawn_red	= pixels[i * n_channels];
 
 			if (expected_red != drawn_red)
