@@ -260,3 +260,8 @@ dEQP-GLES2.functional.fbo.api.texture_levels
 #VK-GL-CTS 302
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.srgb8_alpha8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.srgb8_alpha8
+
+#VK-GL-CTS 305
+dEQP-GLES2.functional.negative_api.buffer.framebuffer_texture2d
+dEQP-GLES2.functional.negative_api.shader.shader_binary
+dEQP-GLES2.functional.negative_api.texture.generatemipmap_zero_level_array_compressed

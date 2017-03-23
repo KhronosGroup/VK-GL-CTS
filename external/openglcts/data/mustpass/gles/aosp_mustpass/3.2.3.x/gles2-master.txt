@@ -13768,7 +13768,6 @@ dEQP-GLES2.functional.negative_api.buffer.gen_renderbuffers
 dEQP-GLES2.functional.negative_api.buffer.delete_framebuffers
 dEQP-GLES2.functional.negative_api.buffer.delete_renderbuffers
 dEQP-GLES2.functional.negative_api.buffer.framebuffer_renderbuffer
-dEQP-GLES2.functional.negative_api.buffer.framebuffer_texture2d
 dEQP-GLES2.functional.negative_api.buffer.renderbuffer_storage
 dEQP-GLES2.functional.negative_api.fragment.scissor
 dEQP-GLES2.functional.negative_api.fragment.depth_func
@@ -13789,7 +13788,6 @@ dEQP-GLES2.functional.negative_api.shader.create_shader
 dEQP-GLES2.functional.negative_api.shader.shader_source
 dEQP-GLES2.functional.negative_api.shader.compile_shader
 dEQP-GLES2.functional.negative_api.shader.delete_shader
-dEQP-GLES2.functional.negative_api.shader.shader_binary
 dEQP-GLES2.functional.negative_api.shader.attach_shader
 dEQP-GLES2.functional.negative_api.shader.detach_shader
 dEQP-GLES2.functional.negative_api.shader.link_program
@@ -13919,7 +13917,6 @@ dEQP-GLES2.functional.negative_api.texture.deletetextures_invalid_number
 dEQP-GLES2.functional.negative_api.texture.deletetextures_invalid_number_bind
 dEQP-GLES2.functional.negative_api.texture.generatemipmap_invalid_target
 dEQP-GLES2.functional.negative_api.texture.generatemipmap_npot_wdt_hgt
-dEQP-GLES2.functional.negative_api.texture.generatemipmap_zero_level_array_compressed
 dEQP-GLES2.functional.negative_api.texture.generatemipmap_incomplete_cube
 dEQP-GLES2.functional.negative_api.texture.gentextures_invalid_size
 dEQP-GLES2.functional.negative_api.texture.pixelstorei_invalid_pname
