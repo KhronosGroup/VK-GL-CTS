@@ -253,3 +253,6 @@ dEQP-GLES2.functional.flush_finish.finish
 #VK-GL-CTS 300
 dEQP-GLES2.functional.shaders.functions.invalid.return_array_in_struct_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.return_array_in_struct_fragment
+
+#VK-GL-CTS 301
+dEQP-GLES2.functional.fbo.api.texture_levels

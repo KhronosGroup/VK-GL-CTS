@@ -12559,7 +12559,6 @@ dEQP-GLES2.functional.fbo.api.invalid_tex2d_attachments
 dEQP-GLES2.functional.fbo.api.invalid_texcube_attachments
 dEQP-GLES2.functional.fbo.api.invalid_rbo_attachments
 dEQP-GLES2.functional.fbo.api.attach_names
-dEQP-GLES2.functional.fbo.api.texture_levels
 dEQP-GLES2.functional.fbo.api.attachment_query_default_fbo
 dEQP-GLES2.functional.fbo.api.attachment_query_tex2d
 dEQP-GLES2.functional.fbo.api.attachment_query_texcube
