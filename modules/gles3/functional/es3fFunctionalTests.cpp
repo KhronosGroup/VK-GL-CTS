@@ -191,20 +191,21 @@ public:
 
 	void init (void)
 	{
-		addChild(new ShaderLibraryTest			(m_context, "preprocessor",			"Preprocessor Tests"));
-		addChild(new ShaderLibraryTest			(m_context, "constants",			"Constant Literal Tests"));
-		addChild(new ShaderLibraryTest			(m_context, "linkage",				"Linkage Tests"));
-		addChild(new ShaderLibraryTest			(m_context, "conversions",			"Type Conversion Tests"));
-		addChild(new ShaderLibraryTest			(m_context, "conditionals",			"Conditionals Tests"));
-		addChild(new ShaderLibraryTest			(m_context, "declarations",			"Declarations Tests"));
-		addChild(new ShaderLibraryTest			(m_context, "swizzles",				"Swizzle Tests"));
-		addChild(new ShaderLibraryTest			(m_context, "functions",			"Function Tests"));
-		addChild(new ShaderLibraryTest			(m_context, "arrays",				"Array Tests"));
-		addChild(new ShaderLibraryTest			(m_context, "keywords",				"Keyword Tests"));
-		addChild(new ShaderLibraryTest			(m_context, "qualification_order",	"Order Of Qualification Tests"));
-		addChild(new ShaderLibraryTest			(m_context, "scoping",				"Scoping of Declarations"));
-		addChild(new ShaderLibraryTest			(m_context, "negative",				"Miscellaneous Negative Shader Compilation Tests"));
-		addChild(new ShaderLibraryTest			(m_context, "uniform_block",		"Uniform block tests"));
+		addChild(new ShaderLibraryTest			(m_context, "preprocessor",				"Preprocessor Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "constants",				"Constant Literal Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "linkage",					"Linkage Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "conversions",				"Type Conversion Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "conditionals",				"Conditionals Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "declarations",				"Declarations Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "swizzles",					"Swizzle Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "swizzle_math_operations",	"Swizzle Math Operations Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "functions",				"Function Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "arrays",					"Array Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "keywords",					"Keyword Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "qualification_order",		"Order Of Qualification Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "scoping",					"Scoping of Declarations"));
+		addChild(new ShaderLibraryTest			(m_context, "negative",					"Miscellaneous Negative Shader Compilation Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "uniform_block",			"Uniform block tests"));
 
 		addChild(new ShaderDiscardTests			(m_context));
 		addChild(new ShaderIndexingTests		(m_context));
