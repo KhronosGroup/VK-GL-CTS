@@ -303,7 +303,8 @@ GLCTS_3_2_3_GLES31_COMMON_FILTERS	= [
 		include("gles31-master.txt"),
 		exclude("gles31-test-issues.txt"),
 		exclude("gles31-spec-issues.txt"),
-		exclude("gles31-driver-issues.txt")
+		exclude("gles31-driver-issues.txt"),
+		exclude("gles31-hw-issues.txt")
 	]
 
 GLCTS_3_2_3_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
