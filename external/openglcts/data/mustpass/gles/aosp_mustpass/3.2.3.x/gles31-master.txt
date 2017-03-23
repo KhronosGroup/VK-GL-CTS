@@ -2513,10 +2513,6 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.min.mediump_compute.s
 dEQP-GLES31.functional.shaders.builtin_functions.precision.min.mediump_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.min.mediump_compute.vec3
 dEQP-GLES31.functional.shaders.builtin_functions.precision.min.mediump_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.min.highp_compute.scalar
-dEQP-GLES31.functional.shaders.builtin_functions.precision.min.highp_compute.vec2
-dEQP-GLES31.functional.shaders.builtin_functions.precision.min.highp_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.min.highp_compute.vec4
 dEQP-GLES31.functional.shaders.builtin_functions.precision.max.lowp_compute.scalar
 dEQP-GLES31.functional.shaders.builtin_functions.precision.max.lowp_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.max.lowp_compute.vec3
@@ -2525,10 +2521,6 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.max.mediump_compute.s
 dEQP-GLES31.functional.shaders.builtin_functions.precision.max.mediump_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.max.mediump_compute.vec3
 dEQP-GLES31.functional.shaders.builtin_functions.precision.max.mediump_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.max.highp_compute.scalar
-dEQP-GLES31.functional.shaders.builtin_functions.precision.max.highp_compute.vec2
-dEQP-GLES31.functional.shaders.builtin_functions.precision.max.highp_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.max.highp_compute.vec4
 dEQP-GLES31.functional.shaders.builtin_functions.precision.clamp.lowp_compute.scalar
 dEQP-GLES31.functional.shaders.builtin_functions.precision.clamp.lowp_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.clamp.lowp_compute.vec3
@@ -2537,10 +2529,6 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.clamp.mediump_compute
 dEQP-GLES31.functional.shaders.builtin_functions.precision.clamp.mediump_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.clamp.mediump_compute.vec3
 dEQP-GLES31.functional.shaders.builtin_functions.precision.clamp.mediump_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.clamp.highp_compute.scalar
-dEQP-GLES31.functional.shaders.builtin_functions.precision.clamp.highp_compute.vec2
-dEQP-GLES31.functional.shaders.builtin_functions.precision.clamp.highp_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.clamp.highp_compute.vec4
 dEQP-GLES31.functional.shaders.builtin_functions.precision.mix.lowp_compute.scalar
 dEQP-GLES31.functional.shaders.builtin_functions.precision.mix.lowp_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.mix.lowp_compute.vec3
