@@ -704,7 +704,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 	};
 
 	std::vector<VkDynamicState> dynamicStates;
-	if (!haveRenderSize)
+	if (!haveRenderSize && !isRasterizationDisabled)
 	{
 		dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 		dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
