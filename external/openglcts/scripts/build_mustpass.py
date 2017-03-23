@@ -221,11 +221,12 @@ GLCTS_3_2_3_EGL_PKG						= Package(module = EGL_MODULE, configurations = [
 	])
 
 GLCTS_3_2_3_GLES2_COMMON_FILTERS	= [
-				include("gles2-master.txt"),
-				exclude("gles2-test-issues.txt"),
-				exclude("gles2-driver-issues.txt"),
-				exclude("gles2-hw-issues.txt")
-		]
+		include("gles2-master.txt"),
+		exclude("gles2-test-issues.txt"),
+		exclude("gles2-spec-issues.txt"),
+		exclude("gles2-driver-issues.txt"),
+		exclude("gles2-hw-issues.txt")
+	]
 GLCTS_3_2_3_GLES2_PKG         = Package(module = ES2CTS_MODULE, configurations = [
         # Master
         Configuration(name          = "master",
