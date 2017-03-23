@@ -1,0 +1,9 @@
+#VK-GL-CTS 309
+dEQP-GLES3.functional.polygon_offset.default_result_depth_clamp
+dEQP-GLES3.functional.polygon_offset.default_factor_1_slope
+dEQP-GLES3.functional.polygon_offset.fixed16_result_depth_clamp
+dEQP-GLES3.functional.polygon_offset.fixed16_factor_1_slope
+dEQP-GLES3.functional.polygon_offset.fixed24_result_depth_clamp
+dEQP-GLES3.functional.polygon_offset.fixed24_factor_1_slope
+dEQP-GLES3.functional.polygon_offset.float32_result_depth_clamp
+dEQP-GLES3.functional.polygon_offset.float32_factor_1_slope
