@@ -221,10 +221,12 @@ GLCTS_3_2_3_EGL_PKG						= Package(module = EGL_MODULE, configurations = [
 	])
 
 GLCTS_3_2_3_GLES2_COMMON_FILTERS	= [
-				include("gles2-master.txt"),
-				exclude("gles2-test-issues.txt"),
-				exclude("gles2-driver-issues.txt")
-		]
+		include("gles2-master.txt"),
+		exclude("gles2-test-issues.txt"),
+		exclude("gles2-spec-issues.txt"),
+		exclude("gles2-driver-issues.txt"),
+		exclude("gles2-hw-issues.txt")
+	]
 GLCTS_3_2_3_GLES2_PKG         = Package(module = ES2CTS_MODULE, configurations = [
         # Master
         Configuration(name          = "master",
@@ -239,8 +241,9 @@ GLCTS_3_2_3_GLES3_COMMON_FILTERS		= [
 		include("gles3-master.txt"),
 		exclude("gles3-test-issues.txt"),
 		exclude("gles3-spec-issues.txt"),
-		exclude("gles3-driver-issues.txt")
+		exclude("gles3-driver-issues.txt"),
 	]
+
 GLCTS_3_2_3_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
@@ -248,7 +251,7 @@ GLCTS_3_2_3_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
 					rotation	= "unspecified",
 					surfacewidth    = "256",
 					surfaceheight   = "256",
-					filters		= GLCTS_3_2_3_GLES3_COMMON_FILTERS),
+					filters		= GLCTS_3_2_3_GLES3_COMMON_FILTERS + [exclude("gles3-hw-issues.txt")]),
 		# Rotations
 		Configuration(name			= "rotate-portrait",
 					glconfig	= "rgba8888d24s8ms0",
@@ -285,7 +288,7 @@ GLCTS_3_2_3_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
 					rotation	= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
-					filters		= GLCTS_3_2_3_GLES3_COMMON_FILTERS + [include("gles3-multisample.txt")]),
+					filters		= GLCTS_3_2_3_GLES3_COMMON_FILTERS + [include("gles3-multisample.txt"), exclude("gles3-multisample-hw-issues.txt")]),
 
 		# Pixel format
 		Configuration(name			= "565-no-depth-no-stencil",
@@ -301,7 +304,8 @@ GLCTS_3_2_3_GLES31_COMMON_FILTERS	= [
 		include("gles31-master.txt"),
 		exclude("gles31-test-issues.txt"),
 		exclude("gles31-spec-issues.txt"),
-		exclude("gles31-driver-issues.txt")
+		exclude("gles31-driver-issues.txt"),
+		exclude("gles31-hw-issues.txt")
 	]
 
 GLCTS_3_2_3_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [

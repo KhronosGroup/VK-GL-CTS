@@ -249,3 +249,60 @@ dEQP-GLES2.functional.negative_api.texture.texsubimage2d_neg_wdt_hgt
 
 #VK-GL-CTS 253
 dEQP-GLES2.functional.flush_finish.finish
+
+#VK-GL-CTS 300
+dEQP-GLES2.functional.shaders.functions.invalid.return_array_in_struct_vertex
+dEQP-GLES2.functional.shaders.functions.invalid.return_array_in_struct_fragment
+
+#VK-GL-CTS 301
+dEQP-GLES2.functional.fbo.api.texture_levels
+
+#VK-GL-CTS 302
+dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.srgb8_alpha8
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.srgb8_alpha8
+
+#VK-GL-CTS 305
+dEQP-GLES2.functional.negative_api.buffer.framebuffer_texture2d
+dEQP-GLES2.functional.negative_api.shader.shader_binary
+dEQP-GLES2.functional.negative_api.texture.generatemipmap_zero_level_array_compressed
+
+#VK-GL-CTS 308
+dEQP-GLES2.functional.flush_finish.flush_wait
+
+#VK-GL-CTS 295
+dEQP-GLES2.functional.texture.mipmap.2d.basic.nearest_nearest_clamp
+dEQP-GLES2.functional.texture.mipmap.2d.basic.nearest_nearest_clamp_non_square
+dEQP-GLES2.functional.texture.mipmap.2d.basic.nearest_nearest_repeat
+dEQP-GLES2.functional.texture.mipmap.2d.basic.nearest_nearest_repeat_non_square
+dEQP-GLES2.functional.texture.mipmap.2d.basic.nearest_nearest_mirror
+dEQP-GLES2.functional.texture.mipmap.2d.basic.nearest_nearest_mirror_non_square
+dEQP-GLES2.functional.texture.mipmap.2d.basic.linear_nearest_clamp
+dEQP-GLES2.functional.texture.mipmap.2d.basic.linear_nearest_clamp_non_square
+dEQP-GLES2.functional.texture.mipmap.2d.basic.linear_nearest_repeat
+dEQP-GLES2.functional.texture.mipmap.2d.basic.linear_nearest_repeat_non_square
+dEQP-GLES2.functional.texture.mipmap.2d.basic.linear_nearest_mirror
+dEQP-GLES2.functional.texture.mipmap.2d.basic.linear_nearest_mirror_non_square
+dEQP-GLES2.functional.texture.mipmap.2d.basic.linear_linear_clamp
+dEQP-GLES2.functional.texture.mipmap.2d.basic.linear_linear_clamp_non_square
+dEQP-GLES2.functional.texture.mipmap.2d.basic.linear_linear_mirror
+dEQP-GLES2.functional.texture.mipmap.2d.basic.linear_linear_mirror_non_square
+dEQP-GLES2.functional.texture.mipmap.2d.affine.linear_linear_clamp
+dEQP-GLES2.functional.texture.mipmap.2d.affine.linear_linear_mirror
+dEQP-GLES2.functional.texture.mipmap.2d.projected.nearest_nearest_clamp
+dEQP-GLES2.functional.texture.mipmap.2d.projected.nearest_nearest_repeat
+dEQP-GLES2.functional.texture.mipmap.2d.projected.nearest_nearest_mirror
+dEQP-GLES2.functional.texture.mipmap.2d.projected.linear_nearest_clamp
+dEQP-GLES2.functional.texture.mipmap.2d.projected.linear_nearest_repeat
+dEQP-GLES2.functional.texture.mipmap.2d.projected.linear_nearest_mirror
+dEQP-GLES2.functional.texture.mipmap.2d.projected.linear_linear_clamp
+dEQP-GLES2.functional.texture.mipmap.2d.projected.linear_linear_mirror
+dEQP-GLES2.functional.texture.mipmap.2d.bias.nearest_nearest
+dEQP-GLES2.functional.texture.mipmap.2d.bias.linear_nearest
+dEQP-GLES2.functional.texture.mipmap.2d.bias.nearest_linear
+dEQP-GLES2.functional.texture.mipmap.2d.bias.linear_linear
+dEQP-GLES2.functional.texture.mipmap.cube.basic.nearest_nearest
+dEQP-GLES2.functional.texture.mipmap.cube.basic.nearest_linear
+dEQP-GLES2.functional.texture.mipmap.cube.projected.nearest_nearest
+dEQP-GLES2.functional.texture.mipmap.cube.projected.nearest_linear
+dEQP-GLES2.functional.texture.mipmap.cube.bias.nearest_nearest
+dEQP-GLES2.functional.texture.mipmap.cube.bias.nearest_linear
