@@ -249,3 +249,7 @@ dEQP-GLES2.functional.negative_api.texture.texsubimage2d_neg_wdt_hgt
 
 #VK-GL-CTS 253
 dEQP-GLES2.functional.flush_finish.finish
+
+#VK-GL-CTS 300
+dEQP-GLES2.functional.shaders.functions.invalid.return_array_in_struct_vertex
+dEQP-GLES2.functional.shaders.functions.invalid.return_array_in_struct_fragment

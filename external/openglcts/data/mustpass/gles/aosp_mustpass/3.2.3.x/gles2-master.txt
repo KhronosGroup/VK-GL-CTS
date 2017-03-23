@@ -2199,8 +2199,6 @@ dEQP-GLES2.functional.shaders.functions.invalid.missing_return_type_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.missing_return_type_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.call_before_definition_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.call_before_definition_fragment
-dEQP-GLES2.functional.shaders.functions.invalid.return_array_in_struct_vertex
-dEQP-GLES2.functional.shaders.functions.invalid.return_array_in_struct_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.argument_precision_overload_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.argument_precision_overload_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.argument_in_out_overload_vertex
