@@ -256,3 +256,7 @@ dEQP-GLES2.functional.shaders.functions.invalid.return_array_in_struct_fragment
 
 #VK-GL-CTS 301
 dEQP-GLES2.functional.fbo.api.texture_levels
+
+#VK-GL-CTS 302
+dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.srgb8_alpha8
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.srgb8_alpha8

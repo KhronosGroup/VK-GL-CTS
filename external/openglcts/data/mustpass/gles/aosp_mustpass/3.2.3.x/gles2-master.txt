@@ -12838,7 +12838,6 @@ dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.r11f_g11f_
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.srgb_unsigned_byte
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.srgb8
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.srgb_alpha_unsigned_byte
-dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.srgb8_alpha8
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.stencil_index8
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.rgb565
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.sr8_ext
@@ -12968,7 +12967,6 @@ dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.r11f_g11f_b10f
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.srgb_unsigned_byte
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.srgb8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.srgb_alpha_unsigned_byte
-dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.srgb8_alpha8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.stencil_index8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.sr8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.srg8_ext
