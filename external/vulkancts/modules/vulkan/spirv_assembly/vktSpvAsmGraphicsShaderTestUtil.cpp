@@ -330,6 +330,7 @@ void createPipelineShaderStages (const DeviceInterface&						vk,
 	"%v4bool = OpTypeVector %bool 4\n"															\
 																								\
 	"%v4f32_function = OpTypeFunction %v4f32 %v4f32\n"											\
+	"%bool_function = OpTypeFunction %bool\n"													\
 	"%fun = OpTypeFunction %void\n"																\
 																								\
 	"%ip_f32 = OpTypePointer Input %f32\n"														\
@@ -465,6 +466,14 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"OpReturn\n"
 		"OpFunctionEnd\n"
 		"${interface_op_func:opt}\n"
+
+		"%isUniqueIdZero = OpFunction %bool None %bool_function\n"
+		"%getId_label = OpLabel\n"
+		"%vert_id = OpLoad %i32 %BP_gl_VertexIndex\n"
+		"%is_id_0 = OpIEqual %bool %vert_id %c_i32_0\n"
+		"OpReturnValue %is_id_0\n"
+		"OpFunctionEnd\n"
+
 		"${testfun}\n";
 	return tcu::StringTemplate(vertexShaderBoilerplate).specialize(fragments);
 }
@@ -592,6 +601,14 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"OpReturn\n"
 		"OpFunctionEnd\n"
 		"${interface_op_func:opt}\n"
+
+		"%isUniqueIdZero = OpFunction %bool None %bool_function\n"
+		"%getId_label = OpLabel\n"
+		"%invocation_id = OpLoad %i32 %BP_gl_InvocationID\n"
+		"%is_id_0 = OpIEqual %bool %invocation_id %c_i32_0\n"
+		"OpReturnValue %is_id_0\n"
+		"OpFunctionEnd\n"
+
 		"${testfun}\n";
 	return tcu::StringTemplate(tessControlShaderBoilerplate).specialize(fragments);
 }
@@ -628,7 +645,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"${capability:opt}\n"
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint TessellationEvaluation %BP_main \"main\" %BP_stream %BP_gl_TessCoord %BP_gl_in %BP_out_color %BP_in_color ${IF_entrypoint:opt} \n"
+		"OpEntryPoint TessellationEvaluation %BP_main \"main\" %BP_stream %BP_gl_TessCoord %BP_gl_PrimitiveID %BP_gl_in %BP_out_color %BP_in_color ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main Triangles\n"
 		"OpExecutionMode %BP_main SpacingEqual\n"
 		"OpExecutionMode %BP_main VertexOrderCcw\n"
@@ -643,6 +660,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_stream \"\"\n"
 		"OpName %BP_gl_TessCoord \"gl_TessCoord\"\n"
 		"OpName %BP_gl_PerVertexIn \"gl_PerVertex\"\n"
+		"OpName %BP_gl_PrimitiveID \"gl_PrimitiveID\"\n"
 		"OpMemberName %BP_gl_PerVertexIn 0 \"gl_Position\"\n"
 		"OpMemberName %BP_gl_PerVertexIn 1 \"gl_PointSize\"\n"
 		"OpMemberName %BP_gl_PerVertexIn 2 \"gl_ClipDistance\"\n"
@@ -655,6 +673,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"OpMemberDecorate %BP_gl_PerVertexOut 2 BuiltIn ClipDistance\n"
 		"OpMemberDecorate %BP_gl_PerVertexOut 3 BuiltIn CullDistance\n"
 		"OpDecorate %BP_gl_PerVertexOut Block\n"
+		"OpDecorate %BP_gl_PrimitiveID BuiltIn PrimitiveId\n"
 		"OpDecorate %BP_gl_TessCoord BuiltIn TessCoord\n"
 		"OpMemberDecorate %BP_gl_PerVertexIn 0 BuiltIn Position\n"
 		"OpMemberDecorate %BP_gl_PerVertexIn 1 BuiltIn PointSize\n"
@@ -672,6 +691,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"%BP_op_gl_PerVertexOut = OpTypePointer Output %BP_gl_PerVertexOut\n"
 		"%BP_stream = OpVariable %BP_op_gl_PerVertexOut Output\n"
 		"%BP_gl_TessCoord = OpVariable %ip_v3f32 Input\n"
+		"%BP_gl_PrimitiveID = OpVariable %op_i32 Output\n"
 		"%BP_gl_PerVertexIn = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
 		"%BP_a32_gl_PerVertexIn = OpTypeArray %BP_gl_PerVertexIn %c_u32_32\n"
 		"%BP_ip_a32_gl_PerVertexIn = OpTypePointer Input %BP_a32_gl_PerVertexIn\n"
@@ -732,6 +752,14 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"OpReturn\n"
 		"OpFunctionEnd\n"
 		"${interface_op_func:opt}\n"
+
+		"%isUniqueIdZero = OpFunction %bool None %bool_function\n"
+		"%getId_label = OpLabel\n"
+		"%primitive_id = OpLoad %i32 %BP_gl_PrimitiveID\n"
+		"%is_id_0 = OpIEqual %bool %primitive_id %c_i32_0\n"
+		"OpReturnValue %is_id_0\n"
+		"OpFunctionEnd\n"
+
 		"${testfun}\n";
 	return tcu::StringTemplate(tessEvalBoilerplate).specialize(fragments);
 }
@@ -771,12 +799,13 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"${capability:opt}\n"
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_in %BP_out_color %BP_in_color ${IF_entrypoint:opt} \n"
+		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_PrimitiveID %BP_gl_in %BP_out_color %BP_in_color ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main Triangles\n"
 		"OpExecutionMode %BP_main OutputTriangleStrip\n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
 		"${debug:opt}\n"
 		"OpName %BP_main \"main\"\n"
+		"OpName %BP_gl_PrimitiveID \"gl_PrimitiveID\"\n"
 		"OpName %BP_per_vertex_in \"gl_PerVertex\"\n"
 		"OpMemberName %BP_per_vertex_in 0 \"gl_Position\"\n"
 		"OpMemberName %BP_per_vertex_in 1 \"gl_PointSize\"\n"
@@ -786,6 +815,7 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_out_color \"out_color\"\n"
 		"OpName %BP_in_color \"in_color\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
+		"OpDecorate %BP_gl_PrimitiveID BuiltIn PrimitiveId\n"
 		"OpDecorate %BP_out_gl_position BuiltIn Position\n"
 		"OpMemberDecorate %BP_per_vertex_in 0 BuiltIn Position\n"
 		"OpMemberDecorate %BP_per_vertex_in 1 BuiltIn PointSize\n"
@@ -806,6 +836,7 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"%BP_gl_in = OpVariable %BP_ip_a3_per_vertex_in Input\n"
 		"%BP_out_color = OpVariable %op_v4f32 Output\n"
 		"%BP_in_color = OpVariable %ip_a3v4f32 Input\n"
+		"%BP_gl_PrimitiveID = OpVariable %ip_i32 Input\n"
 		"%BP_out_gl_position = OpVariable %op_v4f32 Output\n"
 		"${pre_main:opt}\n"
 		"${IF_variable:opt}\n"
@@ -852,6 +883,14 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpReturn\n"
 		"OpFunctionEnd\n"
 		"${interface_op_func:opt}\n"
+
+		"%isUniqueIdZero = OpFunction %bool None %bool_function\n"
+		"%getId_label = OpLabel\n"
+		"%primitive_id = OpLoad %i32 %BP_gl_PrimitiveID\n"
+		"%is_id_0 = OpIEqual %bool %primitive_id %c_i32_0\n"
+		"OpReturnValue %is_id_0\n"
+		"OpFunctionEnd\n"
+
 		"${testfun}\n";
 	return tcu::StringTemplate(geometryShaderBoilerplate).specialize(fragments);
 }
@@ -877,20 +916,23 @@ string makeFragmentShaderAssembly(const map<string, string>& fragments)
 		"${capability:opt}\n"
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint Fragment %BP_main \"main\" %BP_vtxColor %BP_fragColor ${IF_entrypoint:opt} \n"
+		"OpEntryPoint Fragment %BP_main \"main\" %BP_vtxColor %BP_fragColor %BP_gl_FragCoord ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main OriginUpperLeft\n"
 		"${debug:opt}\n"
 		"OpName %BP_main \"main\"\n"
+		"OpName %BP_gl_FragCoord \"fragCoord\"\n"
 		"OpName %BP_fragColor \"fragColor\"\n"
 		"OpName %BP_vtxColor \"vtxColor\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
 		"OpDecorate %BP_fragColor Location 0\n"
 		"OpDecorate %BP_vtxColor Location 1\n"
+		"OpDecorate %BP_gl_FragCoord BuiltIn FragCoord\n"
 		"${IF_decoration:opt}\n"
 		"${decoration:opt}\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
 		SPIRV_ASSEMBLY_ARRAYS
+		"%BP_gl_FragCoord = OpVariable %ip_v4f32 Input\n"
 		"%BP_fragColor = OpVariable %op_v4f32 Output\n"
 		"%BP_vtxColor = OpVariable %ip_v4f32 Input\n"
 		"${pre_main:opt}\n"
@@ -904,6 +946,19 @@ string makeFragmentShaderAssembly(const map<string, string>& fragments)
 		"OpReturn\n"
 		"OpFunctionEnd\n"
 		"${interface_op_func:opt}\n"
+
+		"%isUniqueIdZero = OpFunction %bool None %bool_function\n"
+		"%getId_label = OpLabel\n"
+		"%loc_x_coord = OpAccessChain %ip_f32 %BP_gl_FragCoord %c_i32_0\n"
+		"%loc_y_coord = OpAccessChain %ip_f32 %BP_gl_FragCoord %c_i32_1\n"
+		"%x_coord = OpLoad %f32 %loc_x_coord\n"
+		"%y_coord = OpLoad %f32 %loc_y_coord\n"
+		"%is_x_idx0 = OpFOrdEqual %bool %x_coord %c_f32_0_5\n"
+		"%is_y_idx0 = OpFOrdEqual %bool %y_coord %c_f32_0_5\n"
+		"%is_frag_0 = OpLogicalAnd %bool %is_x_idx0 %is_y_idx0\n"
+		"OpReturnValue %is_frag_0\n"
+		"OpFunctionEnd\n"
+
 		"${testfun}\n";
 	return tcu::StringTemplate(fragmentShaderBoilerplate).specialize(fragments);
 }
