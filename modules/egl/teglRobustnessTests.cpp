@@ -853,7 +853,7 @@ void InfiniteLoop::setup (void)
 		GLU_CHECK_GLW_CALL(m_gl, genBuffers(1, &m_outputBuffer));
 		GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_SHADER_STORAGE_BUFFER, m_outputBuffer));
 		GLU_CHECK_GLW_CALL(m_gl, bufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int), DE_NULL, GL_DYNAMIC_DRAW));
-		GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
+		GLU_CHECK_GLW_CALL(m_gl, bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_outputBuffer));
 	}
 	else
 	{
