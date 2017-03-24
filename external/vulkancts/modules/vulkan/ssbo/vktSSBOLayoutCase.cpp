@@ -1953,8 +1953,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	vector<BlockDataPtr>  mappedBlockPtrs;
 
 	// Upload base buffers
+	const std::vector<int> bufferSizes	= computeBufferSizes(m_interface, m_refLayout);
 	{
-		const std::vector<int>			bufferSizes		= computeBufferSizes(m_interface, m_refLayout);
 		std::vector<void*>				mapPtrs;
 		std::vector<BlockLocation>		blockLocations	(numBlocks);
 
@@ -2135,6 +2135,50 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
+
+	// Add barriers for shader writes to storage buffers before host access
+	std::vector<vk::VkBufferMemoryBarrier> barriers;
+	if (m_bufferMode == SSBOLayoutCase::BUFFERMODE_PER_BLOCK)
+	{
+		for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+		{
+			const vk::VkBufferMemoryBarrier barrier	=
+			{
+				vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+				DE_NULL,
+				vk::VK_ACCESS_SHADER_WRITE_BIT,
+				vk::VK_ACCESS_HOST_READ_BIT,
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+				static_cast<vk::VkBuffer>(*m_uniformBuffers[blockNdx]),
+				0u,
+				static_cast<vk::VkDeviceSize>(bufferSizes[blockNdx])
+			};
+			barriers.push_back(barrier);
+		}
+	}
+	else
+	{
+		vk::VkDeviceSize totalSize	= 0;
+		for (size_t bufferNdx = 0; bufferNdx < bufferSizes.size(); bufferNdx++)
+			totalSize += bufferSizes[bufferNdx];
+
+		const vk::VkBufferMemoryBarrier barrier	=
+		{
+			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+			DE_NULL,
+			vk::VK_ACCESS_SHADER_WRITE_BIT,
+			vk::VK_ACCESS_HOST_READ_BIT,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			static_cast<vk::VkBuffer>(*m_uniformBuffers[0]),
+			0u,
+			totalSize
+		};
+		barriers.push_back(barrier);
+	}
+	vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0,
+						  0u, DE_NULL, static_cast<deUint32>(barriers.size()), &barriers[0], 0u, DE_NULL);
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
