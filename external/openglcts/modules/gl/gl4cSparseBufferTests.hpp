@@ -365,7 +365,7 @@ private:
 	{
 		glw::GLint		dst_bo_commit_size;
 		glw::GLint		dst_bo_commit_start_offset;
-		glw::GLuint		dst_bo_id;
+		glw::GLuint		dst_bo_sparse_id;
 		bool			dst_bo_is_sparse;
 		unsigned short* dst_bo_ref_data;
 		glw::GLint		dst_bo_start_offset;
@@ -374,7 +374,7 @@ private:
 
 		glw::GLint		src_bo_commit_size;
 		glw::GLint		src_bo_commit_start_offset;
-		glw::GLuint		src_bo_id;
+		glw::GLuint		src_bo_sparse_id;
 		bool			src_bo_is_sparse;
 		unsigned short* src_bo_ref_data;
 		glw::GLint		src_bo_start_offset;

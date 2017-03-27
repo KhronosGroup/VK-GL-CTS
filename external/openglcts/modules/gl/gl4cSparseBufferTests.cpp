@@ -1991,9 +1991,13 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 	{
 		bool			  result_local = true;
 		const _test_case& test_case	= *test_iterator;
+		const glw::GLuint dst_bo_id =
+			test_case.dst_bo_is_sparse ? m_sparse_bos[test_case.dst_bo_sparse_id] : m_immutable_bo;
+		const glw::GLuint src_bo_id =
+			test_case.src_bo_is_sparse ? m_sparse_bos[test_case.src_bo_sparse_id] : m_immutable_bo;
 
 		/* Initialize immutable BO data (if used) */
-		if (test_case.dst_bo_id == m_immutable_bo || test_case.src_bo_id == m_immutable_bo)
+		if (dst_bo_id == m_immutable_bo || src_bo_id == m_immutable_bo)
 		{
 			m_gl.bindBuffer(GL_ARRAY_BUFFER, m_immutable_bo);
 			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
@@ -2006,35 +2010,43 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 		/* Initialize sparse BO data storage */
 		for (unsigned int n_sparse_bo = 0; n_sparse_bo < sizeof(m_sparse_bos) / sizeof(m_sparse_bos[0]); ++n_sparse_bo)
 		{
-			const bool is_dst_bo = (test_case.dst_bo_id == m_sparse_bos[n_sparse_bo]);
-			const bool is_src_bo = (test_case.src_bo_id == m_sparse_bos[n_sparse_bo]);
+			const bool is_dst_bo = (dst_bo_id == m_sparse_bos[n_sparse_bo]);
+			const bool is_src_bo = (src_bo_id == m_sparse_bos[n_sparse_bo]);
 
-			if (is_dst_bo || is_src_bo)
+			if (!is_dst_bo && !is_src_bo)
+				continue;
+
+			m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
+			m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_sparse_bos[n_sparse_bo]);
+			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call(s) failed.");
+
+			if (is_dst_bo)
 			{
-				m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
-				m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_sparse_bos[n_sparse_bo]);
-				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
-
-				m_gl.bufferPageCommitmentARB(
-					GL_COPY_WRITE_BUFFER,
-					(is_dst_bo) ? test_case.dst_bo_commit_start_offset : test_case.src_bo_commit_start_offset,
-					(is_dst_bo) ? test_case.dst_bo_commit_size : test_case.src_bo_commit_size, GL_TRUE); /* commit */
+				m_gl.bufferPageCommitmentARB(GL_COPY_WRITE_BUFFER, test_case.dst_bo_commit_start_offset,
+											 test_case.dst_bo_commit_size, GL_TRUE); /* commit */
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
-
-				m_gl.bufferSubData(GL_COPY_READ_BUFFER, 0, /* offset */
-								   m_sparse_bo_size_rounded, m_ref_data[1 + n_sparse_bo]);
-				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferSubData() call failed.");
-
-				m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
-									   0,											 /* writeOffset */
-									   m_sparse_bo_size_rounded);
-				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
 			}
+
+			if (is_src_bo)
+			{
+				m_gl.bufferPageCommitmentARB(GL_COPY_WRITE_BUFFER, test_case.src_bo_commit_start_offset,
+											 test_case.src_bo_commit_size, GL_TRUE); /* commit */
+				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
+			}
+
+			m_gl.bufferSubData(GL_COPY_READ_BUFFER, 0, /* offset */
+							   m_sparse_bo_size_rounded, m_ref_data[1 + n_sparse_bo]);
+			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferSubData() call failed.");
+
+			m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
+								   0,											 /* writeOffset */
+								   m_sparse_bo_size_rounded);
+			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
 		} /* for (both sparse BOs) */
 
 		/* Set up the bindings */
-		m_gl.bindBuffer(GL_COPY_READ_BUFFER, test_case.src_bo_id);
-		m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, test_case.dst_bo_id);
+		m_gl.bindBuffer(GL_COPY_READ_BUFFER, src_bo_id);
+		m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, dst_bo_id);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
 		/* Issue the copy op */
@@ -2046,7 +2058,7 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 		 * been a sparse BO, so copy its storage to a helper immutable BO */
 		const unsigned short* dst_bo_data_ptr = NULL;
 
-		m_gl.bindBuffer(GL_COPY_READ_BUFFER, test_case.dst_bo_id);
+		m_gl.bindBuffer(GL_COPY_READ_BUFFER, dst_bo_id);
 		m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_helper_bo);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
@@ -2089,13 +2101,13 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 						m_testCtx.getLog()
 							<< tcu::TestLog::Message << "Malformed data found in the copy op's destination BO, "
 														"preceding the region modified by the copy op. "
-							<< "Destination BO id:" << test_case.dst_bo_id << " ("
+							<< "Destination BO id:" << dst_bo_id << " ("
 							<< ((test_case.dst_bo_is_sparse) ? "sparse buffer)" : "immutable buffer)")
 							<< ", commited region: " << test_case.dst_bo_commit_start_offset << ":"
 							<< (test_case.dst_bo_commit_start_offset + test_case.dst_bo_commit_size)
 							<< ", copy region: " << test_case.dst_bo_start_offset << ":"
 							<< (test_case.dst_bo_start_offset + test_case.n_bytes_to_copy)
-							<< ". Source BO id:" << test_case.src_bo_id << " ("
+							<< ". Source BO id:" << src_bo_id << " ("
 							<< ((test_case.src_bo_is_sparse) ? "sparse buffer)" : "immutable buffer)")
 							<< ", commited region: " << test_case.src_bo_commit_start_offset << ":"
 							<< (test_case.src_bo_commit_start_offset + test_case.src_bo_commit_size)
@@ -2133,13 +2145,13 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 				{
 					m_testCtx.getLog() << tcu::TestLog::Message
 									   << "Malformed data found in the copy op's destination BO. "
-									   << "Destination BO id:" << test_case.dst_bo_id << " ("
+									   << "Destination BO id:" << dst_bo_id << " ("
 									   << ((test_case.dst_bo_is_sparse) ? "sparse buffer)" : "immutable buffer)")
 									   << ", commited region: " << test_case.dst_bo_commit_start_offset << ":"
 									   << (test_case.dst_bo_commit_start_offset + test_case.dst_bo_commit_size)
 									   << ", copy region: " << test_case.dst_bo_start_offset << ":"
 									   << (test_case.dst_bo_start_offset + test_case.n_bytes_to_copy)
-									   << ". Source BO id:" << test_case.src_bo_id << " ("
+									   << ". Source BO id:" << src_bo_id << " ("
 									   << ((test_case.src_bo_is_sparse) ? "sparse buffer)" : "immutable buffer)")
 									   << ", commited region: " << test_case.src_bo_commit_start_offset << ":"
 									   << (test_case.src_bo_commit_start_offset + test_case.src_bo_commit_size)
@@ -2183,13 +2195,13 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 						m_testCtx.getLog()
 							<< tcu::TestLog::Message << "Malformed data found in the copy op's destination BO, "
 														"following the region modified by the copy op. "
-							<< "Destination BO id:" << test_case.dst_bo_id << " ("
+							<< "Destination BO id:" << dst_bo_id << " ("
 							<< ((test_case.dst_bo_is_sparse) ? "sparse buffer)" : "immutable buffer)")
 							<< ", commited region: " << test_case.dst_bo_commit_start_offset << ":"
 							<< (test_case.dst_bo_commit_start_offset + test_case.dst_bo_commit_size)
 							<< ", copy region: " << test_case.dst_bo_start_offset << ":"
 							<< (test_case.dst_bo_start_offset + test_case.n_bytes_to_copy)
-							<< ". Source BO id:" << test_case.src_bo_id << " ("
+							<< ". Source BO id:" << src_bo_id << " ("
 							<< ((test_case.src_bo_is_sparse) ? "sparse buffer)" : "immutable buffer)")
 							<< ", commited region: " << test_case.src_bo_commit_start_offset << ":"
 							<< (test_case.src_bo_commit_start_offset + test_case.src_bo_commit_size)
@@ -2211,8 +2223,8 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 		/* Clean up */
 		for (unsigned int n_sparse_bo = 0; n_sparse_bo < sizeof(m_sparse_bos) / sizeof(m_sparse_bos[0]); ++n_sparse_bo)
 		{
-			const bool is_dst_bo = (test_case.dst_bo_id == m_sparse_bos[n_sparse_bo]);
-			const bool is_src_bo = (test_case.src_bo_id == m_sparse_bos[n_sparse_bo]);
+			const bool is_dst_bo = (dst_bo_id == m_sparse_bos[n_sparse_bo]);
+			const bool is_src_bo = (src_bo_id == m_sparse_bos[n_sparse_bo]);
 
 			if (is_dst_bo || is_src_bo)
 			{
@@ -2310,9 +2322,7 @@ bool CopyOpsBufferStorageTestCase::initTestCaseIteration(glw::GLuint sparse_bo)
 {
 	bool result = true;
 
-	/* Cache the BO id, if not cached already */
-	DE_ASSERT(m_sparse_bos[0] == 0 || m_sparse_bos[0] == sparse_bo);
-
+	/* Remember the BO id */
 	m_sparse_bos[0] = sparse_bo;
 
 	/* Initialize test cases, if this is the first call to initTestCaseIteration() */
@@ -2354,10 +2364,10 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 	for (unsigned int n_bo_configuration = 0; n_bo_configuration < 4; /* as per the comment */
 		 ++n_bo_configuration, ++n_test_case)
 	{
-		glw::GLuint		dst_bo_id		 = 0;
+		glw::GLuint		dst_bo_sparse_id = 0;
 		bool			dst_bo_is_sparse = false;
 		unsigned short* dst_bo_ref_data  = DE_NULL;
-		glw::GLuint		src_bo_id		 = 0;
+		glw::GLuint		src_bo_sparse_id = 0;
 		bool			src_bo_is_sparse = false;
 		unsigned short* src_bo_ref_data  = DE_NULL;
 
@@ -2365,10 +2375,10 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 		{
 		case 0:
 		{
-			dst_bo_id		 = m_sparse_bos[0];
+			dst_bo_sparse_id = 0;
 			dst_bo_is_sparse = true;
 			dst_bo_ref_data  = m_ref_data[1];
-			src_bo_id		 = m_sparse_bos[1];
+			src_bo_sparse_id = 1;
 			src_bo_is_sparse = true;
 			src_bo_ref_data  = m_ref_data[2];
 
@@ -2377,10 +2387,9 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 
 		case 1:
 		{
-			dst_bo_id		 = m_sparse_bos[0];
+			dst_bo_sparse_id = 0;
 			dst_bo_is_sparse = true;
 			dst_bo_ref_data  = m_ref_data[1];
-			src_bo_id		 = m_immutable_bo;
 			src_bo_is_sparse = false;
 			src_bo_ref_data  = m_ref_data[0];
 
@@ -2389,10 +2398,9 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 
 		case 2:
 		{
-			dst_bo_id		 = m_immutable_bo;
 			dst_bo_is_sparse = false;
 			dst_bo_ref_data  = m_ref_data[0];
-			src_bo_id		 = m_sparse_bos[0];
+			src_bo_sparse_id = 0;
 			src_bo_is_sparse = true;
 			src_bo_ref_data  = m_ref_data[1];
 
@@ -2401,10 +2409,10 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 
 		case 3:
 		{
-			dst_bo_id		 = m_sparse_bos[0];
+			dst_bo_sparse_id = 0;
 			dst_bo_is_sparse = true;
 			dst_bo_ref_data  = m_ref_data[1];
-			src_bo_id		 = m_sparse_bos[0];
+			src_bo_sparse_id = 0;
 			src_bo_is_sparse = true;
 			src_bo_ref_data  = m_ref_data[1];
 
@@ -2518,7 +2526,7 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 
 				test_case.dst_bo_commit_size		 = dst_bo_commit_size;
 				test_case.dst_bo_commit_start_offset = dst_bo_commit_start_offset;
-				test_case.dst_bo_id					 = dst_bo_id;
+				test_case.dst_bo_sparse_id			 = dst_bo_sparse_id;
 				test_case.dst_bo_is_sparse			 = dst_bo_is_sparse;
 				test_case.dst_bo_ref_data			 = dst_bo_ref_data;
 				test_case.dst_bo_start_offset		 = static_cast<glw::GLint>(sizeof(short) * n_test_case);
@@ -2526,20 +2534,18 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 					m_sparse_bo_size_rounded / 2 - test_case.dst_bo_start_offset - sizeof(short) * n_test_case);
 				test_case.src_bo_commit_size		 = src_bo_commit_size;
 				test_case.src_bo_commit_start_offset = src_bo_commit_start_offset;
-				test_case.src_bo_id					 = src_bo_id;
+				test_case.src_bo_sparse_id			 = src_bo_sparse_id;
 				test_case.src_bo_is_sparse			 = src_bo_is_sparse;
 				test_case.src_bo_ref_data			 = src_bo_ref_data;
 				test_case.src_bo_start_offset		 = m_sparse_bo_size_rounded / 2;
 
 				DE_ASSERT(test_case.dst_bo_commit_size >= 0);
 				DE_ASSERT(test_case.dst_bo_commit_start_offset >= 0);
-				DE_ASSERT(test_case.dst_bo_id != 0);
 				DE_ASSERT(test_case.dst_bo_ref_data != DE_NULL);
 				DE_ASSERT(test_case.dst_bo_start_offset >= 0);
 				DE_ASSERT(test_case.n_bytes_to_copy >= 0);
 				DE_ASSERT(test_case.src_bo_commit_size >= 0);
 				DE_ASSERT(test_case.src_bo_commit_start_offset >= 0);
-				DE_ASSERT(test_case.src_bo_id != 0);
 				DE_ASSERT(test_case.src_bo_ref_data != DE_NULL);
 				DE_ASSERT(test_case.src_bo_start_offset >= 0);
 
