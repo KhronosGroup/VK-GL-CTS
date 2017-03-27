@@ -42,7 +42,7 @@ def initBuildDir (config, generator):
 	pushWorkingDir(config.getBuildDir())
 
 	try:
-		execute(["cmake", config.getSrcPath()] + cfgArgs)
+		execute([config.getCMakePath(), config.getSrcPath()] + cfgArgs)
 	finally:
 		popWorkingDir()
 
@@ -58,7 +58,7 @@ def build (config, generator, targets = None):
 	else:
 		initBuildDir(config, generator)
 
-	baseCmd		= ['cmake', '--build', '.']
+	baseCmd		= [config.getCMakePath(), '--build', '.']
 	buildArgs	= generator.getBuildArgs(config.getBuildType())
 
 	pushWorkingDir(config.getBuildDir())

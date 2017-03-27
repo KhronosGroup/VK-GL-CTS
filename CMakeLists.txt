@@ -5,6 +5,11 @@ cmake_minimum_required(VERSION 2.8)
 # dEQP Target.
 set(DEQP_TARGET "default" CACHE STRING "dEQP Target (default, android...)")
 
+if (DEFINED DEQP_TARGET_TOOLCHAIN)
+	# \note Toolchain must be included before project() command
+	include(targets/${DEQP_TARGET}/${DEQP_TARGET_TOOLCHAIN}.cmake)
+endif ()
+
 project(dEQP-Core-${DEQP_TARGET})
 
 include(framework/delibs/cmake/Defs.cmake NO_POLICY_SCOPE)

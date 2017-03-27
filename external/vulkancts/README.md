@@ -29,11 +29,12 @@ Requirements
  * Android NDK r11
  * Android SDK with: SDK Tools, SDK Platform-tools, SDK Build-tools, and API 22
  * Java Development Kit (JDK)
- * Apache Ant
- * Windows: either NMake or JOM in PATH
+ * Windows: either NMake or Ninja in PATH
 
-See `android/scripts/common.py` for a list locations where the build system
-expects to find these.
+If you have downloaded Android SDK tools, you can install necessary components
+by running:
+
+	tools/android update sdk --no-ui --all --filter tools,platform-tools,build-tools-25.0.2,android-22
 
 
 Building CTS
@@ -78,21 +79,21 @@ Release build can be done by using -DCMAKE_BUILD_TYPE=Release
 
 ### Android
 
-Following command will build CTS into android/package/bin/dEQP-debug.apk.
+Following command will build dEQP.apk:
 
-	python android/scripts/build.py
+	python scripts/android/build_apk.py
 
 The package can be installed by either running:
 
-	python android/scripts/install.py
+	python scripts/android/install_apk.py
 
 By default the CTS package will contain libdeqp.so built for armeabi-v7a, arm64-v8a,
-and x86 ABIs, but that can be changed in android/scripts/common.py script.
+x86, and x86_64 ABIs, but that can be changed using --abis command line option.
 
 To pick which ABI to use at install time, following commands must be used
 instead:
 
-	adb install --abi <ABI name> android/package/bin/dEQP-debug.apk /data/local/tmp/dEQP-debug.apk
+	adb install --abi <ABI name> <build-root>/package/dEQP.apk /data/local/tmp/dEQP-debug.apk
 
 
 Building Mustpass
