@@ -1101,7 +1101,7 @@ bool AtomicCounterBufferStorageTestCase::initTestCaseGlobal()
 	m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-	m_gl.bufferStorage(GL_COPY_READ_BUFFER, m_helper_bo_size, DE_NULL, GL_MAP_READ_BIT); /* flags */
+	m_gl.bufferStorage(GL_COPY_READ_BUFFER, m_helper_bo_size_rounded, DE_NULL, GL_MAP_READ_BIT); /* flags */
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferStorage() call failed.");
 
 	/* Set up the vertex array object */
@@ -1305,6 +1305,13 @@ bool BufferTextureStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 	m_gl.useProgram(m_po);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUseProgram() call failed.");
 
+	m_gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_ssbo);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+
+	m_gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, /* index */
+						m_ssbo);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferBase() call failed.");
+
 	/* Set up bindings for the copy ops */
 	m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
 	m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_sparse_bo);
@@ -1478,10 +1485,6 @@ bool BufferTextureStorageTestCase::initTestCaseGlobal()
 
 	m_gl.bufferData(GL_SHADER_STORAGE_BUFFER, m_ssbo_zero_data_size, m_ssbo_zero_data, GL_STATIC_DRAW);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferData() call failed.");
-
-	m_gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, /* index */
-						m_ssbo);
-	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferBase() call failed.");
 
 	/* During execution, we will need to use a helper buffer object. The BO will hold
 	 * data we will be copying into the sparse buffer object for each iteration.
@@ -3233,6 +3236,9 @@ bool PixelPackBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
 	} /* for (three iterations) */
 
+	m_gl.bindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+
 	return result;
 }
 
@@ -3547,11 +3553,17 @@ bool PixelUnpackBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_fla
 		/* Clean up the base mip-map's contents before we proceeding with updating it
 		 * with data downloaded from the BO, in order to avoid situation where silently
 		 * failing glTexSubImage2D() calls slip past unnoticed */
+		m_gl.bindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+
 		m_gl.texSubImage2D(GL_TEXTURE_2D, 0, /* level */
 						   0,				 /* xoffset */
 						   0,				 /* yoffset */
 						   m_to_width, m_to_height, GL_RGBA, GL_UNSIGNED_BYTE, m_to_data_zero);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glTexSubImage2D() call failed.");
+
+		m_gl.bindBuffer(GL_PIXEL_UNPACK_BUFFER, m_sparse_bo);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
 		/* Update the base mip-map's contents */
 		m_gl.texSubImage2D(GL_TEXTURE_2D, 0, /* level */
@@ -3626,6 +3638,9 @@ bool PixelUnpackBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_fla
 									 m_sparse_bo_size_rounded, GL_FALSE); /* commit */
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
 	} /* for (three iterations) */
+
+	m_gl.bindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
 	return result;
 }
@@ -4507,10 +4522,13 @@ bool QueryBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 		/* Copy the query result to the sparse buffer */
 		for (unsigned int n_getter_call = 0; n_getter_call < 4; ++n_getter_call)
 		{
+			glw::GLsizei result_n_bytes;
+
 			switch (n_getter_call)
 			{
 			case 0:
 			{
+				result_n_bytes = sizeof(glw::GLint);
 				m_gl.getQueryObjectiv(m_qo, GL_QUERY_RESULT, (glw::GLint*)0); /* params */
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetQueryObjectiv() call failed.");
 
@@ -4519,6 +4537,7 @@ bool QueryBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 
 			case 1:
 			{
+				result_n_bytes = sizeof(glw::GLint);
 				m_gl.getQueryObjectuiv(m_qo, GL_QUERY_RESULT, (glw::GLuint*)0); /* params */
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetQueryObjectuiv() call failed.");
 
@@ -4527,6 +4546,7 @@ bool QueryBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 
 			case 2:
 			{
+				result_n_bytes = sizeof(glw::GLint64);
 				m_gl.getQueryObjecti64v(m_qo, GL_QUERY_RESULT, (glw::GLint64*)0);
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetQueryObjecti64v() call failed.");
 
@@ -4535,6 +4555,7 @@ bool QueryBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 
 			case 3:
 			{
+				result_n_bytes = sizeof(glw::GLint64);
 				m_gl.getQueryObjectui64v(m_qo, GL_QUERY_RESULT, (glw::GLuint64*)0);
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetQueryObjectui64v() call failed.");
 
@@ -4555,22 +4576,24 @@ bool QueryBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 				m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_helper_bo);
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
+				m_gl.clearBufferData(GL_COPY_WRITE_BUFFER, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &data_r8_zero);
+				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClearBufferData() call failed.");
+
 				m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
 									   0,											 /* writeOffset */
-									   sizeof(unsigned int));
+									   result_n_bytes);
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
 
 				result_ptr = (const glw::GLint64*)m_gl.mapBuffer(GL_COPY_WRITE_BUFFER, GL_READ_ONLY);
-
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBuffer() call failed.");
 
 				if (*result_ptr != m_n_triangles)
 				{
 					m_testCtx.getLog() << tcu::TestLog::Message
-									   << "Invalid query result stored in a sparse buffer. Expected:"
+									   << "Invalid query result stored in a sparse buffer. Found: "
 										  "["
 									   << *result_ptr << "]"
-														 ", expected:"
+														 ", expected: "
 														 "["
 									   << m_n_triangles << "]" << tcu::TestLog::EndMessage;
 
@@ -4579,9 +4602,6 @@ bool QueryBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 
 				m_gl.unmapBuffer(GL_COPY_WRITE_BUFFER);
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUnmapBuffer() call failed.");
-
-				m_gl.clearBufferData(GL_COPY_WRITE_BUFFER, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &data_r8_zero);
-				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClearBufferData() call failed.");
 			} /* for (all query getter call types) */
 		}	 /* if (should_commit_page) */
 	}		  /* for (both iterations) */
@@ -4626,7 +4646,7 @@ bool QueryBufferStorageTestCase::initTestCaseGlobal()
 	m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_helper_bo);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-	m_gl.bufferStorage(GL_COPY_WRITE_BUFFER, sizeof(unsigned int), DE_NULL, /* data */
+	m_gl.bufferStorage(GL_COPY_WRITE_BUFFER, sizeof(glw::GLint64), DE_NULL, /* data */
 					   GL_MAP_READ_BIT);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferStorage() call failed.");
 
@@ -5630,8 +5650,8 @@ bool TransformFeedbackBufferStorageTestCase::execute(glw::GLuint sparse_bo_stora
 			m_gl.bindBuffer(GL_ARRAY_BUFFER, mappable_bo_id);
 			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-			result_ptr = (unsigned int*)m_gl.mapBufferRange(GL_ARRAY_BUFFER, mappable_bo_start_offset,
-															n_result_bytes_total, GL_MAP_READ_BIT);
+			result_ptr = (unsigned int*)m_gl.mapBufferRange(GL_ARRAY_BUFFER, mappable_bo_start_offset, m_result_bo_size,
+															GL_MAP_READ_BIT);
 
 			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBufferRange() call failed.");
 
@@ -5724,12 +5744,6 @@ bool TransformFeedbackBufferStorageTestCase::execute(glw::GLuint sparse_bo_stora
 							}
 						}
 
-						retrieved_instance_id = *result_instance_id_traveller_ptr;
-						result_instance_id_traveller_ptr += result_instance_id_stride;
-
-						retrieved_vertex_id = *result_vertex_id_traveller_ptr;
-						result_vertex_id_traveller_ptr += result_vertex_id_stride;
-
 						/* Only perform the check if the offsets refer to pages with physical backing.
 						 *
 						 * Note that, on platforms, whose page size % 4 != 0, the values can land partially in the no-man's land,
@@ -5747,6 +5761,12 @@ bool TransformFeedbackBufferStorageTestCase::execute(glw::GLuint sparse_bo_stora
 								1) /
 							   m_page_size) %
 							  2) == 0);
+
+						retrieved_instance_id = *result_instance_id_traveller_ptr;
+						result_instance_id_traveller_ptr += result_instance_id_stride;
+
+						retrieved_vertex_id = *result_vertex_id_traveller_ptr;
+						result_vertex_id_traveller_ptr += result_vertex_id_stride;
 
 						if ((result_instance_id_page_has_physical_backing &&
 							 retrieved_instance_id != expected_instance_id) ||
@@ -6329,6 +6349,13 @@ bool UniformBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 		m_gl.useProgram(m_po);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUseProgram() call failed.");
 
+		m_gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, m_tf_bo);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+
+		m_gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, /* index */
+							m_tf_bo);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferBase() call failed.");
+
 		m_gl.beginTransformFeedback(GL_POINTS);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBeginTransformFeedback() call failed.");
 
@@ -6362,10 +6389,9 @@ bool UniformBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 			}
 			else
 			{
-				/* Read ops applied against non-committed sparse buffers should return 0, so the comparison
-				 * performed in the vertex shader should result in 1 being written to the TF region.
+				/* Read ops applied against non-committed sparse buffers return an undefined value.
 				 */
-				expected_value = (n_vertex == 0) ? 1 : 0;
+				continue;
 			}
 
 			if (expected_value != retrieved_value)
@@ -6497,10 +6523,6 @@ bool UniformBufferStorageTestCase::initTestCaseGlobal()
 	m_gl.bufferStorage(GL_TRANSFORM_FEEDBACK_BUFFER, tfbo_size, DE_NULL, /* data */
 					   GL_MAP_READ_BIT);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferStorage() call failed.");
-
-	m_gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, /* index */
-						m_tf_bo);
-	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferBase() call failed.");
 
 	/* Set up the UBO contents. We're actually setting up an immutable BO here,
 	 * but we'll use its contents for a copy op, executed at the beginning of
