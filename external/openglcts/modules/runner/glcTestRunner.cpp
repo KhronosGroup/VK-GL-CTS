@@ -204,6 +204,26 @@ static string getApiName(glu::ApiType apiType)
 		return "gles31";
 	else if (apiType == glu::ApiType::es(3, 2))
 		return "gles32";
+	else if (apiType == glu::ApiType::core(3, 0))
+		return "gl30";
+	else if (apiType == glu::ApiType::core(3, 1))
+		return "gl31";
+	else if (apiType == glu::ApiType::core(3, 2))
+		return "gl32";
+	else if (apiType == glu::ApiType::core(3, 3))
+		return "gl33";
+	else if (apiType == glu::ApiType::core(4, 0))
+		return "gl40";
+	else if (apiType == glu::ApiType::core(4, 1))
+		return "gl41";
+	else if (apiType == glu::ApiType::core(4, 2))
+		return "gl42";
+	else if (apiType == glu::ApiType::core(4, 3))
+		return "gl43";
+	else if (apiType == glu::ApiType::core(4, 4))
+		return "gl44";
+	else if (apiType == glu::ApiType::core(4, 5))
+		return "gl45";
 	else
 		throw std::runtime_error("Unknown context type");
 }
@@ -383,71 +403,34 @@ static void getTestRunsForES(glu::ApiType type, const ConfigList& configs, vecto
 
 static void getTestRunsForGL(glu::ApiType type, const ConfigList& configs, vector<TestRunParams>& runs)
 {
-	const char* packageName = DE_NULL;
-
-	if (type == glu::ApiType::core(3, 0))
-		packageName = "GL30-CTS";
-	else if (type == glu::ApiType::core(3, 1))
-		packageName = "GL31-CTS";
-	else if (type == glu::ApiType::core(3, 2))
-		packageName = "GL32-CTS";
-	else if (type == glu::ApiType::core(3, 3))
-		packageName = "GL33-CTS";
-	else if (type == glu::ApiType::core(4, 0))
-		packageName = "GL40-CTS";
-	else if (type == glu::ApiType::core(4, 1))
-		packageName = "GL41-CTS";
-	else if (type == glu::ApiType::core(4, 2))
-		packageName = "GL42-CTS";
-	else if (type == glu::ApiType::core(4, 3))
-		packageName = "GL43-CTS";
-	else if (type == glu::ApiType::core(4, 4))
-		packageName = "GL44-CTS";
-	else if (type == glu::ApiType::core(4, 5))
-		packageName = "GL45-CTS";
-	else
-		throw std::runtime_error("Unknown context type");
-
-	DE_ASSERT(packageName);
-
-	struct RunParams
-	{
-		int			width;
-		int			height;
-		int			baseSeed;
-		const char* fboConfig; //!< Fbo config arg, or null if not used.
-	};
-
-	static const RunParams firstConfigParams[] = { { 64, 64, 1, DE_NULL },
-												   { 113, 47, 2, DE_NULL },
-												   { 64, -1, 3, "rgba8888d24s8" },
-												   { -1, 64, 3, "rgba8888d24s8" } };
-
-	static const RunParams otherConfigParams[] = { { 64, 64, 1, DE_NULL }, { 113, 47, 2, DE_NULL } };
+#include "glcKhronosMustpassGl.hpp"
 
 	for (vector<Config>::const_iterator cfgIter = configs.configs.begin(); cfgIter != configs.configs.end(); ++cfgIter)
 	{
-		const bool isFirst = cfgIter == configs.configs.begin();
-		const int  numRunParams =
-			isFirst ? DE_LENGTH_OF_ARRAY(firstConfigParams) : DE_LENGTH_OF_ARRAY(otherConfigParams);
-		const RunParams* runParams = isFirst ? firstConfigParams : otherConfigParams;
+		const bool isFirst		= cfgIter == configs.configs.begin();
+		const int  numRunParams = isFirst ? DE_LENGTH_OF_ARRAY(khronos_mustpass_gl_first_cfg) :
+										   DE_LENGTH_OF_ARRAY(khronos_mustpass_gl_other_cfg);
+		const RunParams* runParams = isFirst ? khronos_mustpass_gl_first_cfg : khronos_mustpass_gl_other_cfg;
 
 		for (int runNdx = 0; runNdx < numRunParams; runNdx++)
 		{
-			const std::string width  = de::toString(runParams[runNdx].width);
-			const std::string height = de::toString(runParams[runNdx].height);
-			const std::string seed   = de::toString(runParams[runNdx].baseSeed);
+			if (type != runParams[runNdx].apiType)
+				continue;
+
+			string	apiName = getApiName(runParams[runNdx].apiType);
+			const int width   = runParams[runNdx].surfaceWidth;
+			const int height  = runParams[runNdx].surfaceHeight;
+			const int seed	= runParams[runNdx].baseSeed;
 
 			TestRunParams params;
 
-			params.logFilename = string("config-") + de::toString(cfgIter->id) + "-run-" + de::toString(runNdx) +
-								 "-width-" + de::toString(width) + "-height-" + de::toString(height) + "-seed-" + seed +
-								 ".qpa";
+			params.logFilename =
+				getLogFileName(apiName, runParams[runNdx].configName, cfgIter->id, runNdx, width, height, seed);
 
-			params.args.push_back(string("--deqp-case=") + packageName + ".*");
-			params.args.push_back(string("--deqp-surface-width=") + width);
-			params.args.push_back(string("--deqp-surface-height=") + height);
-			params.args.push_back(string("--deqp-base-seed=") + seed);
+			getBaseOptions(params.args, mustpassDir, apiName, runParams[runNdx].configName,
+						   runParams[runNdx].screenRotation, width, height);
+			params.args.push_back(string("--deqp-base-seed=") + de::toString(seed));
+
 			appendConfigArgs(*cfgIter, params.args, runParams[runNdx].fboConfig);
 
 			runs.push_back(params);
