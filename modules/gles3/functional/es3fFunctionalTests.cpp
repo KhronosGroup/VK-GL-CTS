@@ -201,6 +201,7 @@ public:
 		addChild(new ShaderLibraryTest			(m_context, "swizzle_math_operations",	"Swizzle Math Operations Tests"));
 		addChild(new ShaderLibraryTest			(m_context, "functions",				"Function Tests"));
 		addChild(new ShaderLibraryTest			(m_context, "arrays",					"Array Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "large_constant_arrays",	"Large Constant Array Tests"));
 		addChild(new ShaderLibraryTest			(m_context, "keywords",					"Keyword Tests"));
 		addChild(new ShaderLibraryTest			(m_context, "qualification_order",		"Order Of Qualification Tests"));
 		addChild(new ShaderLibraryTest			(m_context, "scoping",					"Scoping of Declarations"));
