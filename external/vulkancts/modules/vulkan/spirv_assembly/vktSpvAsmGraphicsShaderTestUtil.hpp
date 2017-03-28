@@ -135,12 +135,13 @@ class GraphicsInterfaces
 {
 public:
 						GraphicsInterfaces	()
+							: rndMode	(static_cast<RoundingModeFlags>(0))
 						{}
 
 						GraphicsInterfaces	(const GraphicsInterfaces& that)
 							: inputs	(that.inputs)
 							, outputs	(that.outputs)
-							, rndMode	(static_cast<RoundingModeFlags>(0))
+							, rndMode	(that.rndMode)
 						{}
 
 	void				setInputOutput		(const Interface& input, const Interface&  output)
