@@ -346,7 +346,7 @@ tcu::TestStatus Texture2DShadowTestInstance::iterate (void)
 
 	{
 		const tcu::PixelFormat		pixelFormat			= getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
-		tcu::LodPrecision			lodPrecision		(tcu::LodPrecision::RULE_VULKAN);
+		tcu::LodPrecision			lodPrecision;
 		tcu::TexComparePrecision	texComparePrecision;
 
 		lodPrecision.derivateBits			= 18;
@@ -562,7 +562,7 @@ tcu::TestStatus TextureCubeShadowTestInstance::iterate (void)
 
 		{
 			const tcu::PixelFormat		pixelFormat			= getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
-			tcu::LodPrecision			lodPrecision		(tcu::LodPrecision::RULE_VULKAN);
+			tcu::LodPrecision			lodPrecision;
 			tcu::TexComparePrecision	texComparePrecision;
 
 			lodPrecision.derivateBits			= 10;
@@ -774,7 +774,7 @@ tcu::TestStatus Texture2DArrayShadowTestInstance::iterate (void)
 
 	{
 		const tcu::PixelFormat		pixelFormat			= getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
-		tcu::LodPrecision			lodPrecision		(tcu::LodPrecision::RULE_VULKAN);
+		tcu::LodPrecision			lodPrecision;
 		tcu::TexComparePrecision	texComparePrecision;
 
 		lodPrecision.derivateBits			= 18;
