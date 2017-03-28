@@ -912,7 +912,7 @@ void TextureBorderClampTest::verifyImage (const tcu::Surface&							renderedFram
 {
 	const tcu::PixelFormat	pixelFormat		= m_context.getRenderTarget().getPixelFormat();
 
-	tcu::LodPrecision		lodPrecision	(tcu::LodPrecision::RULE_OPENGL);
+	tcu::LodPrecision		lodPrecision;
 	std::vector<float>		texCoord;
 	bool					verificationOk;
 
@@ -2211,7 +2211,7 @@ void TextureBorderClampPerAxisCase3D::verifyImage (const tcu::Surface&							ren
 	const tcu::IVec4				colorBits			= tcu::max(glu::TextureTestUtil::getBitsVec(pixelFormat) - tcu::IVec4(colorErrorBits), tcu::IVec4(0));
 	tcu::Surface					reference			(renderedFrame.getWidth(), renderedFrame.getHeight());
 	tcu::Surface					errorMask			(renderedFrame.getWidth(), renderedFrame.getHeight());
-	tcu::LodPrecision				lodPrecision		(tcu::LodPrecision::RULE_OPENGL);
+	tcu::LodPrecision				lodPrecision;
 	tcu::LookupPrecision			lookupPrecision;
 	int								numFailedPixels;
 

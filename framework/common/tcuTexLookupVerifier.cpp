@@ -2117,24 +2117,7 @@ Vec4 computeFloatingPointThreshold (const IVec4& bits, const Vec4& value)
 	return computeFloatingPointError(value, bits);
 }
 
-Vec2 computeOpenGLLodBoundsFromDerivates (const float dudx, const float dvdx, const float dwdx, const float dudy, const float dvdy, const float dwdy, const LodPrecision& prec)
-{
-	const float		mu			= de::max(deFloatAbs(dudx), deFloatAbs(dudy));
-	const float		mv			= de::max(deFloatAbs(dvdx), deFloatAbs(dvdy));
-	const float		mw			= de::max(deFloatAbs(dwdx), deFloatAbs(dwdy));
-	const float		minDBound	= de::max(de::max(mu, mv), mw);
-	const float		maxDBound	= mu + mv + mw;
-	const float		minDErr		= computeFloatingPointError(minDBound, prec.derivateBits);
-	const float		maxDErr		= computeFloatingPointError(maxDBound, prec.derivateBits);
-	const float		minLod		= deFloatLog2(minDBound-minDErr);
-	const float		maxLod		= deFloatLog2(maxDBound+maxDErr);
-	const float		lodErr		= computeFixedPointError(prec.lodBits);
-
-	DE_ASSERT(minLod <= maxLod);
-	return Vec2(minLod-lodErr, maxLod+lodErr);
-}
-
-Vec2 computeVulkanLodBoundsFromDerivates (const float dudx, const float dvdx, const float dwdx, const float dudy, const float dvdy, const float dwdy, const LodPrecision& prec)
+Vec2 computeLodBoundsFromDerivates (const float dudx, const float dvdx, const float dwdx, const float dudy, const float dvdy, const float dwdy, const LodPrecision& prec)
 {
 	const float		mux			= deFloatAbs(dudx);
 	const float		mvx			= deFloatAbs(dvdx);
@@ -2170,14 +2153,6 @@ Vec2 computeVulkanLodBoundsFromDerivates (const float dudx, const float dvdx, co
 
 	DE_ASSERT(minLod <= maxLod);
 	return Vec2(minLod-lodErr, maxLod+lodErr);
-}
-
-Vec2 computeLodBoundsFromDerivates (const float dudx, const float dvdx, const float dwdx, const float dudy, const float dvdy, const float dwdy, const LodPrecision& prec)
-{
-	if (prec.rule == LodPrecision::RULE_VULKAN)
-		return computeVulkanLodBoundsFromDerivates(dudx, dvdx, dwdx, dudy, dvdy, dwdy, prec);
-	else
-		return computeOpenGLLodBoundsFromDerivates(dudx, dvdx, dwdx, dudy, dvdy, dwdy, prec);
 }
 
 Vec2 computeLodBoundsFromDerivates (const float dudx, const float dvdx, const float dudy, const float dvdy, const LodPrecision& prec)
