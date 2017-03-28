@@ -6347,7 +6347,7 @@ bool UniformBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBuffer() call failed.");
 
 		for (unsigned int n_vertex = 0; n_vertex < m_n_ubo_uints && result_local;
-			 ++n_vertex, ubo_data_offset = static_cast<unsigned int>(ubo_data_offset + sizeof(unsigned int)))
+			 ++n_vertex, ubo_data_offset = static_cast<unsigned int>(ubo_data_offset + 4 * sizeof(unsigned int)))
 		{
 			const bool is_ub_data_physically_backed = (ubo_data_offset >= ubo_commit_start_offset &&
 													   ubo_data_offset < (ubo_commit_start_offset + ubo_commit_size)) ?
@@ -6421,7 +6421,9 @@ bool UniformBufferStorageTestCase::initTestCaseGlobal()
 	/* Determine the number of uints we can access at once from a single VS invocation */
 	DE_ASSERT(gl_max_uniform_block_size_value >= 1);
 
-	m_n_ubo_uints = static_cast<unsigned int>(gl_max_uniform_block_size_value / sizeof(unsigned int));
+	/* Account for the fact that in std140 layout, array elements will be rounded up
+	 * to the size of a vec4, i.e. 16 bytes. */
+	m_n_ubo_uints = static_cast<unsigned int>(gl_max_uniform_block_size_value / (4 * sizeof(unsigned int)));
 
 	/* Prepare the test program */
 	std::stringstream vs_body_define_sstream;
@@ -6432,7 +6434,7 @@ bool UniformBufferStorageTestCase::initTestCaseGlobal()
 								   "\n";
 
 	const char* vs_body_main = "\n"
-							   "uniform data\n"
+							   "layout(std140) uniform data\n"
 							   "{\n"
 							   "    uint data_input[N_UBO_UINTS];"
 							   "};\n"
@@ -6511,10 +6513,10 @@ bool UniformBufferStorageTestCase::initTestCaseGlobal()
 	m_ubo_data			   = new (std::nothrow) unsigned char[m_sparse_bo_data_size];
 	ubo_data_traveller_ptr = (unsigned int*)m_ubo_data;
 
-	for (unsigned int n_vertex = 0; n_vertex < m_sparse_bo_data_size / sizeof(unsigned int); ++n_vertex)
+	for (unsigned int n_vertex = 0; n_vertex < m_sparse_bo_data_size / (4 * sizeof(unsigned int)); ++n_vertex)
 	{
 		*ubo_data_traveller_ptr = n_vertex;
-		ubo_data_traveller_ptr++;
+		ubo_data_traveller_ptr += 4;
 	}
 
 	m_gl.genBuffers(1, &m_helper_bo);

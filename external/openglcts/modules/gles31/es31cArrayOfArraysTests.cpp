@@ -7746,17 +7746,15 @@ void InteractionStorageBuffers3<API>::test_shader_compilation(
 	} /* for (int var_type_index = 0; ...) */
 }
 
-/* Generates the shader source code for the InteractionInterfaceArrays
- * array tests, and attempts to compile each test shader, for both
- * vertex and fragment shaders.
+/* Generates the shader source code for the InteractionInterfaceArrays1
+ * array test, and attempts to compile the test shader.
  *
  * @tparam API               Tested API descriptor
  *
- * @param tested_shader_type The type of shader that is being tested
- *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
+ * @param tested_shader_type The type of shader that is being tested.
  */
 template <class API>
-void InteractionInterfaceArrays<API>::test_shader_compilation(
+void InteractionInterfaceArrays1<API>::test_shader_compilation(
 	typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
 	/* Shader source with invalid buffer (buffer cannot be of arrays of arrays type). */
@@ -7768,63 +7766,6 @@ void InteractionInterfaceArrays<API>::test_shader_compilation(
 													 "} myBuffers[2][2];\n\n"
 													 "void main()\n"
 													 "{\n";
-	/* Shader source with invalid input (input cannot be of arrays of arrays type). */
-	const std::string invalid_input_shader_source[] = { "in  float input_variable", "[2][2];\n"
-																					"out float output_variable",
-														";\n\n"
-														"void main()\n"
-														"{\n"
-														"    output_variable",
-														" = input_variable", "[0][0];\n" };
-	/* Shader source with invalid output (output cannot be of arrays of arrays type). */
-	const std::string invalid_output_shader_source[] = { "out float output_variable", "[2][2];\n\n"
-																					  "void main()\n"
-																					  "{\n"
-																					  "    output_variable",
-														 "[0][0] = 0.0;\n"
-														 "    output_variable",
-														 "[0][1] = 1.0;\n"
-														 "    output_variable",
-														 "[1][0] = 2.0;\n"
-														 "    output_variable",
-														 "[1][1] = 3.0;\n" };
-	/* Shader source with invalid uniform block (uniform block cannot be of arrays of arrays type). */
-	const std::string invalid_uniform_block_shader_source = "layout(std140) uniform MyUniformBlock\n"
-															"{\n"
-															"    float f;\n"
-															"    int   i;\n"
-															"    uint  ui;\n"
-															"} myUniformBlocks[2][2];\n\n"
-															"void main()\n"
-															"{\n";
-	/* Shader source with invalid input (input cannot be of arrays of arrays type). */
-	const std::string input_block_shader_source[] = { "in  InBlock {\n"
-													  "    float input_variable;\n"
-													  "} in_block",
-
-													  "[2][2];\n"
-													  "out float output_variable;\n"
-													  "\n"
-													  "void main()\n"
-													  "{\n"
-													  "    output_variable = in_block",
-													  "[0][0].input_variable;\n" };
-	/* Shader source with invalid output (output cannot be of arrays of arrays type). */
-	const std::string output_block_shader_source[] = { "out OutBlock {\n"
-													   "    float output_variable;\n"
-													   "} out_block",
-													   "[2][2];\n"
-													   "\n"
-													   "void main()\n"
-													   "{\n"
-													   "    out_block",
-													   "[0][0].output_variable = 0.0;\n"
-													   "    out_block",
-													   "[0][1].output_variable = 1.0;\n"
-													   "    out_block",
-													   "[1][0].output_variable = 2.0;\n"
-													   "    out_block",
-													   "[1][1].output_variable = 3.0;\n" };
 
 	/* Verify that buffer arrays of arrays type is rejected. */
 	{
@@ -7834,101 +7775,435 @@ void InteractionInterfaceArrays<API>::test_shader_compilation(
 
 		EXECUTE_SHADER_TEST(API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS, tested_shader_type, source);
 	}
+}
 
-	/* Verify that INPUTs arrays of arrays type is rejected. */
-	if (TestCaseBase<API>::COMPUTE_SHADER_TYPE != tested_shader_type)
+/* Generates the shader source code for the InteractionInterfaceArrays2
+ * array test, and attempts to compile the test shader.
+ *
+ * @tparam API              Tested API descriptor
+ *
+ * @param input_shader_type The type of shader that is being tested.
+ */
+template <class API>
+void InteractionInterfaceArrays2<API>::test_shader_compilation(
+	typename TestCaseBase<API>::TestShaderType input_shader_type)
+{
+	/* Shader source with invalid input (input cannot be of arrays of arrays type). */
+	const std::string input_variable_shader_source[] = { "in  float inout_variable", "[2][2];\n"
+																					 "out float result",
+														 ";\n\n"
+														 "void main()\n"
+														 "{\n"
+														 "    result",
+														 " = inout_variable", "[0][0];\n" };
+	/* Shader source with invalid output (output cannot be of arrays of arrays type). */
+	const std::string output_variable_shader_source[] = { "out float inout_variable",
+														  "[2][2];\n\n"
+														  "void main()\n"
+														  "{\n"
+														  "    inout_variable",
+														  "[0][0] = 0.0;\n"
+														  "    inout_variable",
+														  "[0][1] = 1.0;\n"
+														  "    inout_variable",
+														  "[1][0] = 2.0;\n"
+														  "    inout_variable",
+														  "[1][1] = 3.0;\n" };
+
+	const typename TestCaseBase<API>::TestShaderType& output_shader_type =
+		this->get_output_shader_type(input_shader_type);
+	std::string input_source;
+	std::string output_source;
+
+	this->prepare_sources(input_shader_type, output_shader_type, input_variable_shader_source,
+						  output_variable_shader_source, input_source, output_source);
+
+	/* Verify that INPUTs and OUTPUTs arrays of arrays type is rejected. */
+	if (TestCaseBase<API>::COMPUTE_SHADER_TYPE != input_shader_type)
 	{
-		std::string source;
-
-		source += invalid_input_shader_source[0];
-
-		if ((TestCaseBase<API>::GEOMETRY_SHADER_TYPE == tested_shader_type) ||
-			(TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type) ||
-			(TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE == tested_shader_type))
+		if (API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS)
 		{
-			source += "[]";
+
+			if (API::USE_ALL_SHADER_STAGES)
+			{
+				const std::string& compute_shader_source = empty_string;
+				const std::string& fragment_shader_source =
+					this->prepare_fragment_shader(input_shader_type, input_source, output_source);
+				const std::string& geometry_shader_source =
+					this->prepare_geometry_shader(input_shader_type, input_source, output_source);
+				const std::string& tess_ctrl_shader_source =
+					this->prepare_tess_ctrl_shader_source(input_shader_type, input_source, output_source);
+				const std::string& tess_eval_shader_source =
+					this->prepare_tess_eval_shader_source(input_shader_type, input_source, output_source);
+				const std::string& vertex_shader_source =
+					this->prepare_vertex_shader(input_shader_type, input_source, output_source);
+
+				this->execute_positive_test(vertex_shader_source, tess_ctrl_shader_source, tess_eval_shader_source,
+											geometry_shader_source, fragment_shader_source, compute_shader_source, true,
+											false);
+			}
+			else
+			{
+				const std::string& fragment_shader_source =
+					this->prepare_fragment_shader(input_shader_type, input_source, output_source);
+				const std::string& vertex_shader_source =
+					this->prepare_vertex_shader(input_shader_type, input_source, output_source);
+
+				this->execute_positive_test(vertex_shader_source, fragment_shader_source, true, false);
+			}
+		}
+		else
+		{
+			this->execute_negative_test(input_shader_type, input_source);
+			this->execute_negative_test(output_shader_type, output_source);
+		}
+	}
+}
+
+/** Gets the shader type to test for the outputs
+ *
+ * @tparam API              Tested API descriptor
+ *
+ * @param input_shader_type The type of input shader that is being tested
+ **/
+template <class API>
+const typename TestCaseBase<API>::TestShaderType InteractionInterfaceArrays2<API>::get_output_shader_type(
+	const typename TestCaseBase<API>::TestShaderType& input_shader_type)
+{
+	switch (input_shader_type)
+	{
+	case TestCaseBase<API>::VERTEX_SHADER_TYPE:
+		return TestCaseBase<API>::FRAGMENT_SHADER_TYPE;
+
+	case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
+		if (API::USE_ALL_SHADER_STAGES)
+		{
+			return TestCaseBase<API>::GEOMETRY_SHADER_TYPE;
+		}
+		else
+		{
+			return TestCaseBase<API>::VERTEX_SHADER_TYPE;
 		}
 
-		source += invalid_input_shader_source[1];
+	case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
+		break;
 
-		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type)
-		{
-			source += "[]";
-		}
+	case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
+		return TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE;
 
-		source += invalid_input_shader_source[2];
+	case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE:
+		return TestCaseBase<API>::VERTEX_SHADER_TYPE;
 
-		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type)
-		{
-			source += "[gl_InvocationID]";
-		}
+	case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
+		return TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE;
 
-		source += invalid_input_shader_source[3];
-
-		if ((TestCaseBase<API>::GEOMETRY_SHADER_TYPE == tested_shader_type) ||
-			(TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE == tested_shader_type))
-		{
-			source += "[0]";
-		}
-
-		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type)
-		{
-			source += "[gl_InvocationID]";
-		}
-
-		source += invalid_input_shader_source[4];
-
-		DEFAULT_MAIN_ENDING(tested_shader_type, source);
-
-		EXECUTE_SHADER_TEST(API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS, tested_shader_type, source);
+	default:
+		TCU_FAIL("Unrecognized shader type.");
+		break;
 	}
 
-	/* Verify that OUTPUTs arrays of arrays type is rejected. */
-	if (TestCaseBase<API>::COMPUTE_SHADER_TYPE != tested_shader_type)
+	return input_shader_type;
+}
+
+/** Prepare fragment shader
+ *
+ * @tparam API              Tested API descriptor
+ *
+ * @param input_shader_type The type of input shader that is being tested
+ * @param input_source      Shader in case we want to test inputs for this shader
+ * @param output_source     Shader in case we want to test outputs for this shader
+ **/
+template <class API>
+const std::string InteractionInterfaceArrays2<API>::prepare_fragment_shader(
+	const typename TestCaseBase<API>::TestShaderType& input_shader_type, const std::string& input_source,
+	const std::string& output_source)
+{
+	switch (input_shader_type)
 	{
-		std::string source;
+	case TestCaseBase<API>::VERTEX_SHADER_TYPE:
+		return output_source;
 
-		source += invalid_output_shader_source[0];
+	case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
+		return input_source;
 
-		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type)
-		{
-			source += "[]";
-		}
+	case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
+	case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
+	case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE:
+	case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
+		break;
 
-		source += invalid_output_shader_source[1];
-
-		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type)
-		{
-			source += "[gl_InvocationID]";
-		}
-
-		source += invalid_output_shader_source[2];
-
-		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type)
-		{
-			source += "[gl_InvocationID]";
-		}
-
-		source += invalid_output_shader_source[3];
-
-		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type)
-		{
-			source += "[gl_InvocationID]";
-		}
-
-		source += invalid_output_shader_source[4];
-
-		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type)
-		{
-			source += "[gl_InvocationID]";
-		}
-
-		source += invalid_output_shader_source[5];
-
-		DEFAULT_MAIN_ENDING(tested_shader_type, source);
-
-		EXECUTE_SHADER_TEST(API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS, tested_shader_type, source);
+	default:
+		TCU_FAIL("Unrecognized shader type.");
+		break;
 	}
+
+	return default_fragment_shader_source;
+}
+
+/** Prepare geometry shader
+ *
+ * @tparam API              Tested API descriptor
+ *
+ * @param input_shader_type The type of input shader that is being tested
+ * @param input_source      Shader in case we want to test inputs for this shader
+ * @param output_source     Shader in case we want to test outputs for this shader
+ **/
+template <class API>
+const std::string InteractionInterfaceArrays2<API>::prepare_geometry_shader(
+	const typename TestCaseBase<API>::TestShaderType& input_shader_type, const std::string& input_source,
+	const std::string& output_source)
+{
+	switch (input_shader_type)
+	{
+	case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
+		if (API::USE_ALL_SHADER_STAGES)
+		{
+			return output_source;
+		}
+		break;
+
+	case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
+		return input_source;
+
+	case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
+	case TestCaseBase<API>::VERTEX_SHADER_TYPE:
+	case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE:
+	case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
+		break;
+
+	default:
+		TCU_FAIL("Unrecognized shader type.");
+		break;
+	}
+
+	return default_geometry_shader_source;
+}
+
+/** Prepare tessellation control shader
+ *
+ * @tparam API              Tested API descriptor
+ *
+ * @param input_shader_type The type of input shader that is being tested
+ * @param input_source      Shader in case we want to test inputs for this shader
+ * @param output_source     Shader in case we want to test outputs for this shader
+ **/
+template <class API>
+const std::string InteractionInterfaceArrays2<API>::prepare_tess_ctrl_shader_source(
+	const typename TestCaseBase<API>::TestShaderType& input_shader_type, const std::string& input_source,
+	const std::string& output_source)
+{
+	switch (input_shader_type)
+	{
+	case TestCaseBase<API>::VERTEX_SHADER_TYPE:
+	case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
+	case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
+	case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
+		break;
+
+	case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE:
+		return input_source;
+
+	case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
+		return output_source;
+
+	default:
+		TCU_FAIL("Unrecognized shader type.");
+		break;
+	}
+
+	return default_tc_shader_source;
+}
+
+/** Prepare tessellation evaluation shader
+ *
+ * @tparam API              Tested API descriptor
+ *
+ * @param input_shader_type The type of input shader that is being tested
+ * @param input_source      Shader in case we want to test inputs for this shader
+ * @param output_source     Shader in case we want to test outputs for this shader
+ **/
+template <class API>
+const std::string InteractionInterfaceArrays2<API>::prepare_tess_eval_shader_source(
+	const typename TestCaseBase<API>::TestShaderType& input_shader_type, const std::string& input_source,
+	const std::string& output_source)
+{
+	switch (input_shader_type)
+	{
+	case TestCaseBase<API>::VERTEX_SHADER_TYPE:
+	case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
+	case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
+	case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE:
+		break;
+
+	case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
+		return output_source;
+
+	case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
+		return input_source;
+
+	default:
+		TCU_FAIL("Unrecognized shader type.");
+		break;
+	}
+
+	return default_te_shader_source;
+}
+
+/** Prepare vertex shader
+ *
+ * @tparam API              Tested API descriptor
+ *
+ * @param input_shader_type The type of input shader that is being tested
+ * @param input_source      Shader in case we want to test inputs for this shader
+ * @param output_source     Shader in case we want to test outputs for this shader
+ **/
+template <class API>
+const std::string InteractionInterfaceArrays2<API>::prepare_vertex_shader(
+	const typename TestCaseBase<API>::TestShaderType& input_shader_type, const std::string& input_source,
+	const std::string& output_source)
+{
+	switch (input_shader_type)
+	{
+	case TestCaseBase<API>::VERTEX_SHADER_TYPE:
+		return input_source;
+
+	case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
+		if (!API::USE_ALL_SHADER_STAGES)
+		{
+			return output_source;
+		}
+		break;
+
+	case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE:
+		return output_source;
+
+	case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
+	case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
+	case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
+		break;
+
+	default:
+		TCU_FAIL("Unrecognized shader type.");
+		break;
+	}
+
+	return default_vertex_shader_source;
+}
+
+/** Prepare the inputs and outputs shaders
+ *
+ * @tparam API                 Tested API descriptor
+ *
+ * @param input_shader_type    The type of input shader that is being tested
+ * @param output_shader_type   The type of output shader that is being tested
+ * @param input_shader_source  Snippet used to prepare the input shader
+ * @param output_shader_source Snippet used to prepare the output shader
+ * @param input_source         Resulting input shader
+ * @param output_source        Resulting output shader
+ **/
+template <class API>
+void InteractionInterfaceArrays2<API>::prepare_sources(
+	const typename TestCaseBase<API>::TestShaderType& input_shader_type,
+	const typename TestCaseBase<API>::TestShaderType& output_shader_type, const std::string* input_shader_source,
+	const std::string* output_shader_source, std::string& input_source, std::string& output_source)
+{
+	if (TestCaseBase<API>::COMPUTE_SHADER_TYPE != input_shader_type)
+	{
+		input_source += input_shader_source[0];
+		output_source += output_shader_source[0];
+
+		if ((TestCaseBase<API>::GEOMETRY_SHADER_TYPE == input_shader_type) ||
+			(TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == input_shader_type) ||
+			(TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE == input_shader_type))
+		{
+			input_source += "[]";
+		}
+
+		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == output_shader_type)
+		{
+			output_source += "[]";
+		}
+
+		input_source += input_shader_source[1];
+		output_source += output_shader_source[1];
+
+		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == input_shader_type)
+		{
+			input_source += "[]";
+		}
+
+		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == output_shader_type)
+		{
+			output_source += "[gl_InvocationID]";
+		}
+
+		input_source += input_shader_source[2];
+		output_source += output_shader_source[2];
+
+		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == input_shader_type)
+		{
+			input_source += "[gl_InvocationID]";
+		}
+
+		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == output_shader_type)
+		{
+			output_source += "[gl_InvocationID]";
+		}
+
+		input_source += input_shader_source[3];
+		output_source += output_shader_source[3];
+
+		if ((TestCaseBase<API>::GEOMETRY_SHADER_TYPE == input_shader_type) ||
+			(TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE == input_shader_type))
+		{
+			input_source += "[0]";
+		}
+
+		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == input_shader_type)
+		{
+			input_source += "[gl_InvocationID]";
+		}
+
+		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == output_shader_type)
+		{
+			output_source += "[gl_InvocationID]";
+		}
+
+		input_source += input_shader_source[4];
+		output_source += output_shader_source[4];
+
+		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == output_shader_type)
+		{
+			output_source += "[gl_InvocationID]";
+		}
+
+		output_source += output_shader_source[5];
+
+		DEFAULT_MAIN_ENDING(input_shader_type, input_source);
+		DEFAULT_MAIN_ENDING(output_shader_type, output_source);
+	}
+}
+
+/* Generates the shader source code for the InteractionInterfaceArrays3
+ * array test, and attempts to compile the test shader.
+ *
+ * @tparam API               Tested API descriptor
+ *
+ * @param tested_shader_type The type of shader that is being tested.
+ */
+template <class API>
+void InteractionInterfaceArrays3<API>::test_shader_compilation(
+	typename TestCaseBase<API>::TestShaderType tested_shader_type)
+{
+	/* Shader source with invalid uniform block (uniform block cannot be of arrays of arrays type). */
+	const std::string invalid_uniform_block_shader_source = "layout(std140) uniform MyUniformBlock\n"
+															"{\n"
+															"    float f;\n"
+															"    int   i;\n"
+															"    uint  ui;\n"
+															"} myUniformBlocks[2][2];\n\n"
+															"void main()\n"
+															"{\n";
 
 	/* Verify that uniform block arrays of arrays type is rejected. */
 	{
@@ -7938,86 +8213,95 @@ void InteractionInterfaceArrays<API>::test_shader_compilation(
 
 		EXECUTE_SHADER_TEST(API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS, tested_shader_type, source);
 	}
+}
 
-	/* Verifies if arrays of arrays of input blocks are accepted */
-	if ((TestCaseBase<API>::VERTEX_SHADER_TYPE != tested_shader_type) &&
-		(TestCaseBase<API>::COMPUTE_SHADER_TYPE != tested_shader_type))
+/* Generates the shader source code for the InteractionInterfaceArrays4
+ * array test, and attempts to compile the test shader.
+ *
+ * @tparam API              Tested API descriptor
+ *
+ * @param input_shader_type The type of shader that is being tested.
+ */
+template <class API>
+void InteractionInterfaceArrays4<API>::test_shader_compilation(
+	typename TestCaseBase<API>::TestShaderType input_shader_type)
+{
+	/* Shader source with invalid input (input cannot be of arrays of arrays type). */
+	const std::string input_block_shader_source[] = { "in  InOutBlock {\n"
+													  "    float inout_variable;\n"
+													  "} inout_block",
+													  "[2][2];\n"
+													  "out float result",
+													  ";\n\n"
+													  "void main()\n"
+													  "{\n"
+													  "    result",
+													  " = inout_block", "[0][0].inout_variable;\n" };
+	/* Shader source with invalid output (output cannot be of arrays of arrays type). */
+	const std::string output_block_shader_source[] = { "out InOutBlock {\n"
+													   "    float inout_variable;\n"
+													   "} inout_block",
+													   "[2][2];\n"
+													   "\n"
+													   "void main()\n"
+													   "{\n"
+													   "    inout_block",
+													   "[0][0].inout_variable = 0.0;\n"
+													   "    inout_block",
+													   "[0][1].inout_variable = 1.0;\n"
+													   "    inout_block",
+													   "[1][0].inout_variable = 2.0;\n"
+													   "    inout_block",
+													   "[1][1].inout_variable = 3.0;\n" };
+
+	const typename TestCaseBase<API>::TestShaderType& output_shader_type =
+		this->get_output_shader_type(input_shader_type);
+	std::string input_source;
+	std::string output_source;
+
+	this->prepare_sources(input_shader_type, output_shader_type, input_block_shader_source, output_block_shader_source,
+						  input_source, output_source);
+
+	/* Verify that INPUTs and OUTPUTs arrays of arrays type is rejected. */
+	if ((TestCaseBase<API>::VERTEX_SHADER_TYPE != input_shader_type) &&
+		(TestCaseBase<API>::COMPUTE_SHADER_TYPE != input_shader_type))
 	{
-		std::string source;
-
-		source += input_block_shader_source[0];
-
-		if ((TestCaseBase<API>::GEOMETRY_SHADER_TYPE == tested_shader_type) ||
-			(TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type) ||
-			(TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE == tested_shader_type))
+		if (API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS && API::ALLOW_IN_OUT_INTERFACE_BLOCKS)
 		{
-			source += "[]";
+
+			if (API::USE_ALL_SHADER_STAGES)
+			{
+				const std::string& compute_shader_source = empty_string;
+				const std::string& fragment_shader_source =
+					this->prepare_fragment_shader(input_shader_type, input_source, output_source);
+				const std::string& geometry_shader_source =
+					this->prepare_geometry_shader(input_shader_type, input_source, output_source);
+				const std::string& tess_ctrl_shader_source =
+					this->prepare_tess_ctrl_shader_source(input_shader_type, input_source, output_source);
+				const std::string& tess_eval_shader_source =
+					this->prepare_tess_eval_shader_source(input_shader_type, input_source, output_source);
+				const std::string& vertex_shader_source =
+					this->prepare_vertex_shader(input_shader_type, input_source, output_source);
+
+				this->execute_positive_test(vertex_shader_source, tess_ctrl_shader_source, tess_eval_shader_source,
+											geometry_shader_source, fragment_shader_source, compute_shader_source, true,
+											false);
+			}
+			else
+			{
+				const std::string& fragment_shader_source =
+					this->prepare_fragment_shader(input_shader_type, input_source, output_source);
+				const std::string& vertex_shader_source =
+					this->prepare_vertex_shader(input_shader_type, input_source, output_source);
+
+				this->execute_positive_test(vertex_shader_source, fragment_shader_source, true, false);
+			}
 		}
-
-		source += input_block_shader_source[1];
-
-		if ((TestCaseBase<API>::GEOMETRY_SHADER_TYPE == tested_shader_type) ||
-			(TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type) ||
-			(TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE == tested_shader_type))
+		else
 		{
-			source += "[0]";
+			this->execute_negative_test(input_shader_type, input_source);
+			this->execute_negative_test(output_shader_type, output_source);
 		}
-
-		source += input_block_shader_source[2];
-
-		DEFAULT_MAIN_ENDING(tested_shader_type, source);
-
-		EXECUTE_SHADER_TEST(API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS && API::ALLOW_IN_OUT_INTERFACE_BLOCKS,
-							tested_shader_type, source);
-	}
-
-	/* Verifies if arrays of arrays of output blocks are accepted */
-	if ((TestCaseBase<API>::FRAGMENT_SHADER_TYPE != tested_shader_type) &&
-		(TestCaseBase<API>::COMPUTE_SHADER_TYPE != tested_shader_type))
-	{
-		std::string source;
-
-		source = output_block_shader_source[0];
-
-		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type)
-		{
-			source += "[]";
-		}
-
-		source += output_block_shader_source[1];
-
-		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type)
-		{
-			source += "[gl_InvocationID]";
-		}
-
-		source += output_block_shader_source[2];
-
-		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type)
-		{
-			source += "[gl_InvocationID]";
-		}
-
-		source += output_block_shader_source[3];
-
-		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type)
-		{
-			source += "[gl_InvocationID]";
-		}
-
-		source += output_block_shader_source[4];
-
-		if (TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE == tested_shader_type)
-		{
-			source += "[gl_InvocationID]";
-		}
-
-		source += output_block_shader_source[5];
-
-		DEFAULT_MAIN_ENDING(tested_shader_type, source);
-
-		EXECUTE_SHADER_TEST(API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS && API::ALLOW_IN_OUT_INTERFACE_BLOCKS,
-							tested_shader_type, source);
 	}
 }
 
@@ -10553,7 +10837,10 @@ void initTests(TestCaseGroup& group, glcts::Context& context)
 	group.addChild(new glcts::ArraysOfArrays::InteractionUniformBuffers1<API>(context));
 	group.addChild(new glcts::ArraysOfArrays::InteractionUniformBuffers2<API>(context));
 	group.addChild(new glcts::ArraysOfArrays::InteractionUniformBuffers3<API>(context));
-	group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays<API>(context));
+	group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays1<API>(context));
+	group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays2<API>(context));
+	group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays3<API>(context));
+	group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays4<API>(context));
 
 	if (API::USE_STORAGE_BLOCK)
 	{

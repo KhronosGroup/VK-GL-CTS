@@ -307,8 +307,8 @@ def genSpecCPPIncludeFile (specFilename, mustpass):
 	fileBody += "};\n"
 	fileBody += "\n"
 
-	gtf_wrapper_open = "#if defined (DEQP_GTF_AVAILABLE)\n"
-	gtf_wrapper_close = "#endif // defined (DEQP_GTF_AVAILABLE)\n"
+	gtf_wrapper_open = "#if defined(DEQP_GTF_AVAILABLE)\n"
+	gtf_wrapper_close = "#endif // defined(DEQP_GTF_AVAILABLE)\n"
 	android_wrapper_open = "#if DE_OS == DE_OS_ANDROID\n"
 	android_wrapper_close = "#endif // DE_OS == DE_OS_ANDROID\n"
 	TABLE_ELEM_PATTERN	= "{apiType} {configName} {glConfigName} {screenRotation} {baseSeed} {fboConfig} {surfaceWidth} {surfaceHeight}"
@@ -333,7 +333,7 @@ def genSpecCPPIncludeFile (specFilename, mustpass):
 			elemFinal = ""
 			elemContent = TABLE_ELEM_PATTERN.format(apiType = pApiType, configName = pConfigName, glConfigName = pGLConfig, screenRotation = pRotation, baseSeed = pSeed, fboConfig = pFBOConfig, surfaceWidth = pWidth, surfaceHeight = pHeight)
 			elem = "\t{ " + elemContent + " },\n"
-			if package.module.name[-3:] == "GTF":
+			if package.module.name[:3] == "GTF":
 				elemFinal += gtf_wrapper_open
 
 			if config.os == "android":
@@ -344,7 +344,7 @@ def genSpecCPPIncludeFile (specFilename, mustpass):
 			if config.os == "android":
 				elemFinal += android_wrapper_close
 
-			if package.module.name[-3:] == "GTF":
+			if package.module.name[:3] == "GTF":
 				elemFinal += gtf_wrapper_close
 
 			if package.useforfirsteglconfig == True:

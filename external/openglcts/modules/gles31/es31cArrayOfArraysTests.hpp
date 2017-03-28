@@ -2067,21 +2067,18 @@ protected:
 };
 
 template <class API>
-class InteractionInterfaceArrays : public TestCaseBase<API>
+class InteractionInterfaceArrays1 : public TestCaseBase<API>
 {
 public:
 	/* Public methods */
-	InteractionInterfaceArrays(Context& context)
-		: TestCaseBase<API>(context, "InteractionInterfaceArrays",
-							" Verifies that 2-dimensional arrays of all interface resources\n"
-							" available to a shader stage are correctly rejected. This includes,\n"
-							" where applicable, interface variables, interface blocks, and shader\n"
-							" storage buffer objects.\n")
+	InteractionInterfaceArrays1(Context& context)
+		: TestCaseBase<API>(context, "InteractionInterfaceArrays1", " Verifies that 2-dimensional arrays of shader\n"
+																	" storage buffer objects are correctly rejected.\n")
 	{
 		/* Left empty on purpose */
 	}
 
-	virtual ~InteractionInterfaceArrays()
+	virtual ~InteractionInterfaceArrays1()
 	{
 		/* Left empty on purpose */
 	}
@@ -2089,6 +2086,99 @@ public:
 protected:
 	/* Protected methods */
 	void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+};
+
+template <class API>
+class InteractionInterfaceArrays2 : public TestCaseBase<API>
+{
+public:
+	/* Public methods */
+	InteractionInterfaceArrays2(Context& context, const glw::GLchar* name, const glw::GLchar* description)
+		: TestCaseBase<API>(context, name, description)
+	{
+		/* Left empty on purpose */
+	}
+
+	InteractionInterfaceArrays2(Context& context)
+		: TestCaseBase<API>(context, "InteractionInterfaceArrays2",
+							" Verifies that 2-dimensional arrays of input and output variables\n"
+							" are correctly rejected.\n")
+	{
+		/* Left empty on purpose */
+	}
+
+	virtual ~InteractionInterfaceArrays2()
+	{
+		/* Left empty on purpose */
+	}
+
+protected:
+	/* Protected methods */
+	const typename TestCaseBase<API>::TestShaderType get_output_shader_type(
+		const typename TestCaseBase<API>::TestShaderType& input_shader_type);
+	const std::string prepare_fragment_shader(const typename TestCaseBase<API>::TestShaderType& input_shader_type,
+											  const std::string& input_source, const std::string& output_source);
+	const std::string prepare_geometry_shader(const typename TestCaseBase<API>::TestShaderType& input_shader_type,
+											  const std::string& input_source, const std::string& output_source);
+	const std::string prepare_tess_ctrl_shader_source(
+		const typename TestCaseBase<API>::TestShaderType& input_shader_type, const std::string& input_source,
+		const std::string& output_source);
+	const std::string prepare_tess_eval_shader_source(
+		const typename TestCaseBase<API>::TestShaderType& input_shader_type, const std::string& input_source,
+		const std::string& output_source);
+	const std::string prepare_vertex_shader(const typename TestCaseBase<API>::TestShaderType& input_shader_type,
+											const std::string& input_source, const std::string& output_source);
+	void prepare_sources(const typename TestCaseBase<API>::TestShaderType& input_shader_type,
+						 const typename TestCaseBase<API>::TestShaderType& output_shader_type,
+						 const std::string* input_shader_source, const std::string* output_shader_source,
+						 std::string& input_source, std::string& output_source);
+	void test_shader_compilation(typename TestCaseBase<API>::TestShaderType input_shader_type);
+};
+
+template <class API>
+class InteractionInterfaceArrays3 : public TestCaseBase<API>
+{
+public:
+	/* Public methods */
+	InteractionInterfaceArrays3(Context& context)
+		: TestCaseBase<API>(context, "InteractionInterfaceArrays3",
+							" Verifies that 2-dimensional arrays of uniform interface blocks\n"
+							" are correctly rejected.\n")
+	{
+		/* Left empty on purpose */
+	}
+
+	virtual ~InteractionInterfaceArrays3()
+	{
+		/* Left empty on purpose */
+	}
+
+protected:
+	/* Protected methods */
+	void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+};
+
+template <class API>
+class InteractionInterfaceArrays4 : public InteractionInterfaceArrays2<API>
+{
+public:
+	/* Public methods */
+	InteractionInterfaceArrays4(Context& context)
+		: InteractionInterfaceArrays2<API>(context, "InteractionInterfaceArrays4",
+										   " Verifies that 2-dimensional arrays of input and output interface blocks\n"
+										   " are correctly rejected.\n")
+	{
+		/* Left empty on purpose */
+	}
+
+	virtual ~InteractionInterfaceArrays4()
+	{
+		/* Left empty on purpose */
+	}
+
+protected:
+	/* Protected methods */
+	void test_shader_compilation(typename TestCaseBase<API>::TestShaderType input_shader_type);
 };
 
 /** Implements test AtomicDeclaration, desription follows:

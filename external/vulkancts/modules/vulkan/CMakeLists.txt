@@ -23,6 +23,7 @@ add_subdirectory(clipping)
 add_subdirectory(fragment_ops)
 add_subdirectory(geometry)
 add_subdirectory(texture)
+add_subdirectory(robustness)
 
 include_directories(
 	api
@@ -48,6 +49,7 @@ include_directories(
 	fragment_ops
 	texture
 	geometry
+	robustness
 	)
 
 set(DEQP_VK_SRCS
@@ -98,6 +100,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-fragment-ops
 	deqp-vk-texture
 	deqp-vk-geometry
+	deqp-vk-robustness
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

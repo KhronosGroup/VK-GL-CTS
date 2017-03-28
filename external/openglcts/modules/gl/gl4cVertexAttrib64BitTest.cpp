@@ -3466,14 +3466,16 @@ void VAOTest::initBufferObjects()
 	 * e) dmat4x2: (4 * 2 * 2) components: 16 float components
 	 * f) int:     (1)         components:  1 int   component
 	 * g) float:   (1)         component:   1 float components
+	 * h) padding: 4 bytes because fp64 buffer needs 8 bytes alignment
 	 *                                 (+)------
-	 *                                    (42 float + 1 int) components times 1024 batches: 43008 floats, 1024 ints
+	 *                                    (42 float + 1 int + 4 bytes padding) components times 1024 batches: 43008 floats, 1024 ints
 	 *
 	 * Don't forget about instanced draw calls. We'll be XFBing data for either 1 or m_n_draw_call_instances
 	 * instances.
 	 */
+	const unsigned int xfb_dat_pad = sizeof(int);
 	const unsigned int xfb_data_size =
-		static_cast<unsigned int>((42 * sizeof(float) + sizeof(int)) * 1024 * m_n_draw_call_instances);
+		static_cast<unsigned int>((42 * sizeof(float) + sizeof(int) + xfb_dat_pad) * 1024 * m_n_draw_call_instances);
 
 	gl.bindBuffer(GL_ARRAY_BUFFER, m_bo_id_result);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed.");
@@ -3596,8 +3598,8 @@ void VAOTest::initProgramObject()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateProgram() call failed.");
 
 	/* Configure XFB */
-	const char* xfb_varyings[] = { "out_bo1_dmat3",  "out_bo1_double",  "out_bo1_int",  "out_bo1_dvec2",
-								   "out_bo1_float2", "out_bo2_dmat4x2", "out_bo2_float" };
+	const char* xfb_varyings[] = { "out_bo1_dmat3",  "out_bo1_double",  "out_bo1_int",   "out_bo1_dvec2",
+								   "out_bo1_float2", "out_bo2_dmat4x2", "out_bo2_float", "gl_SkipComponents1" };
 	const unsigned int n_xfb_varyings = sizeof(xfb_varyings) / sizeof(xfb_varyings[0]);
 
 	gl.transformFeedbackVaryings(m_po_id, n_xfb_varyings, xfb_varyings, GL_INTERLEAVED_ATTRIBS);
@@ -3619,7 +3621,7 @@ void VAOTest::initProgramObject()
 	m_xfb_bo2_float_offset   = m_xfb_bo2_dmat4x2_offset + m_xfb_bo2_dmat4x2_size;
 	m_xfb_bo2_float_size	 = sizeof(float);
 	m_xfb_total_size = m_xfb_bo1_dmat3_size + m_xfb_bo1_double_size + m_xfb_bo1_int_size + m_xfb_bo1_dvec2_size +
-					   m_xfb_bo1_float2_size + m_xfb_bo2_dmat4x2_size + m_xfb_bo2_float_size;
+					   m_xfb_bo1_float2_size + m_xfb_bo2_dmat4x2_size + m_xfb_bo2_float_size + sizeof(int);
 
 	/* Build the test program object */
 	const char* vs_code = "#version 400\n"

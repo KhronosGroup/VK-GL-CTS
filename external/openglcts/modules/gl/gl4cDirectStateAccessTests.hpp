@@ -6449,7 +6449,12 @@ private:
 	glw::GLint	m_reference_compressed_2D_format;
 	glw::GLint	m_reference_compressed_3D_format;
 	glw::GLint	m_reference_compressed_rectangle_format;
-	glw::GLuint   m_format_compressed_not_matching;
+	glw::GLint	m_not_matching_compressed_1D_format;
+	glw::GLint	m_not_matching_compressed_1D_size;
+	glw::GLint	m_not_matching_compressed_2D_format;
+	glw::GLint	m_not_matching_compressed_2D_size;
+	glw::GLint	m_not_matching_compressed_3D_format;
+	glw::GLint	m_not_matching_compressed_3D_size;
 
 	void Prepare();
 	bool Test1D();
