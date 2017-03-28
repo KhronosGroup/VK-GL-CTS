@@ -376,7 +376,7 @@ TextureCubeArrayFilteringCase::IterateResult TextureCubeArrayFilteringCase::iter
 			const tcu::PixelFormat	pixelFormat		= renderCtx.getRenderTarget().getPixelFormat();
 			const tcu::IVec4		coordBits		= tcu::IVec4(10);
 			const tcu::IVec4		colorBits		= max(getBitsVec(pixelFormat) - (isNearestOnly ? 1 : 2), tcu::IVec4(0)); // 1 inaccurate bit if nearest only, 2 otherwise
-			tcu::LodPrecision		lodPrecision;
+			tcu::LodPrecision		lodPrecision	(tcu::LodPrecision::RULE_OPENGL);
 			tcu::LookupPrecision	lookupPrecision;
 
 			lodPrecision.derivateBits		= 10;
