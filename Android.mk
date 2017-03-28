@@ -819,6 +819,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolOcclusionTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationTests.cpp \
+	external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleResolveTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktOpaqueTypeIndexingTests.cpp \

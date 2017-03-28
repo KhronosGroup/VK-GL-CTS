@@ -7,6 +7,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassTests.hpp
 	vktRenderPassMultisampleTests.cpp
 	vktRenderPassMultisampleTests.hpp
+	vktRenderPassMultisampleResolveTests.cpp
+	vktRenderPassMultisampleResolveTests.hpp
 	)
 
 set(DEQP_VK_RENDER_PASS_LIBS
