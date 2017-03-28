@@ -2656,101 +2656,53 @@ bool IndirectDispatchBufferStorageTestCase::execute(glw::GLuint sparse_bo_storag
 
 	m_expected_ac_value = zero_ac_value;
 
-	/* Run the test in three iterations:
-	 *
-	 * 1) All arguments are located in committed memory page(s).
-	 * 2) None of the arguments are located in committed memory page(s).
-	 * 3) Some of the arguments are located in committed memory page(s),
-	 *    and some aren't.
+	/* Run the test only in a configuration where all arguments are local in
+	 * committed memory page(s): reading arguments from uncommitted pages means
+	 * reading undefined data, which can result in huge dispatches that
+	 * effectively hang the test.
 	 */
-	for (unsigned int n_iteration = 0; n_iteration < 3; ++n_iteration)
+	m_gl.bufferPageCommitmentARB(GL_DISPATCH_INDIRECT_BUFFER, 0,	 /* offset */
+								 m_sparse_bo_size_rounded, GL_TRUE); /* commit */
+
+	m_expected_ac_value += m_global_wg_size_x * m_local_wg_size_x;
+
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call(s) failed.");
+
+	/* Copy the indirect dispatch call args data from the helper BO to the sparse BO */
+	m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
+	m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_sparse_bo);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+
+	m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
+						   m_dispatch_draw_call_args_start_offset, sizeof(unsigned int) * 3);
+
+	/* Run the program */
+	m_gl.dispatchComputeIndirect(m_dispatch_draw_call_args_start_offset);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDispatchComputeIndirect() call failed.");
+
+	/* Extract the AC value and verify it */
+	const unsigned int* ac_data_ptr =
+		(const unsigned int*)m_gl.mapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 12, /* offset */
+												 4,							   /* length */
+												 GL_MAP_READ_BIT);
+
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBufferRange() call failed.");
+
+	if (*ac_data_ptr != m_expected_ac_value && result)
 	{
-		/* Commit the pages in the iteration-specific manner */
-		switch (n_iteration)
-		{
-		case 0:
-		{
-			m_gl.bufferPageCommitmentARB(GL_DISPATCH_INDIRECT_BUFFER, 0,	 /* offset */
-										 m_sparse_bo_size_rounded, GL_TRUE); /* commit */
+		m_testCtx.getLog() << tcu::TestLog::Message << "Invalid atomic counter value encountered. "
+													   "Expected value: ["
+						   << m_expected_ac_value << "]"
+													 ", found:"
+													 "["
+						   << *ac_data_ptr << "]." << tcu::TestLog::EndMessage;
 
-			m_expected_ac_value += m_global_wg_size_x * m_local_wg_size_x;
+		result = false;
+	}
 
-			break;
-		}
-
-		case 1:
-		{
-			m_gl.bufferPageCommitmentARB(GL_DISPATCH_INDIRECT_BUFFER, 0,	  /* offset */
-										 m_sparse_bo_size_rounded, GL_FALSE); /* commit */
-
-			break;
-		}
-
-		case 2:
-		{
-			const unsigned int n_args_size = sizeof(unsigned int) * 3;
-			const unsigned int decommit_page_start_index =
-				(m_dispatch_draw_call_args_start_offset + (n_args_size / 2)) / m_page_size;
-			const unsigned int n_pages_to_decommit = (unsigned int)de::min(
-				(int)((m_sparse_bo_size_rounded - decommit_page_start_index * m_page_size) / m_page_size), (int)1);
-
-			DE_ASSERT(decommit_page_start_index != 0);
-
-			m_gl.bufferPageCommitmentARB(GL_DISPATCH_INDIRECT_BUFFER, 0, /* offset */
-										 decommit_page_start_index * m_page_size, GL_TRUE);
-			m_gl.bufferPageCommitmentARB(GL_DISPATCH_INDIRECT_BUFFER, decommit_page_start_index * m_page_size,
-										 n_pages_to_decommit * m_page_size, GL_FALSE);
-
-			break;
-		}
-
-		default:
-		{
-			TCU_FAIL("Unrecognized iteratino index");
-		}
-		} /* switch (n_iteration) */
-
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call(s) failed.");
-
-		/* Copy the indirect dispatch call args data from the helper BO to the sparse BO */
-		m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
-		m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_sparse_bo);
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
-
-		m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
-							   m_dispatch_draw_call_args_start_offset, sizeof(unsigned int) * 3);
-
-		/* Run the program */
-		m_gl.dispatchComputeIndirect(m_dispatch_draw_call_args_start_offset);
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDispatchComputeIndirect() call failed.");
-
-		/* Extract the AC value and verify it */
-		const unsigned int* ac_data_ptr =
-			(const unsigned int*)m_gl.mapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 12, /* offset */
-													 4,							   /* length */
-													 GL_MAP_READ_BIT);
-
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBufferRange() call failed.");
-
-		if (*ac_data_ptr != m_expected_ac_value && result)
-		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "Invalid atomic counter value encountered at iteration "
-														   "["
-							   << n_iteration << "]"
-												 ". Expected value:"
-												 "["
-							   << m_expected_ac_value << "]"
-														 ", found:"
-														 "["
-							   << *ac_data_ptr << "]." << tcu::TestLog::EndMessage;
-
-			result = false;
-		}
-
-		/* Unmap the buffer before we move on with the next iteration */
-		m_gl.unmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUnmapBuffer() call failed.");
-	} /* for (all three iterations) */
+	/* Unmap the buffer before we move on with the next iteration */
+	m_gl.unmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUnmapBuffer() call failed.");
 
 	return result;
 }
