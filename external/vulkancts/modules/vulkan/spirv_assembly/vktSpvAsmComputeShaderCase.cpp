@@ -24,6 +24,7 @@
 #include "vktSpvAsmComputeShaderCase.hpp"
 
 #include "deSharedPtr.hpp"
+#include "deSTLUtil.hpp"
 
 #include "vkBuilderUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -49,15 +50,24 @@ typedef de::SharedPtr<BufferHandleUp>				BufferHandleSp;
  * The memory is created as host visible and passed back as a vk::Allocation
  * instance via outMemory.
  *//*--------------------------------------------------------------------*/
-Move<VkBuffer> createBufferAndBindMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocator& allocator, size_t numBytes, AllocationMp* outMemory)
+Move<VkBuffer> createBufferAndBindMemory (const DeviceInterface& vkdi, const VkDevice& device, VkDescriptorType dtype, Allocator& allocator, size_t numBytes, AllocationMp* outMemory)
 {
-	const VkBufferCreateInfo bufferCreateInfo =
+	VkBufferUsageFlagBits		usageBit		= (VkBufferUsageFlagBits)0;
+
+	switch (dtype)
+	{
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:	usageBit = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT; break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:	usageBit = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT; break;
+		default:								DE_ASSERT(false);
+	}
+
+	const VkBufferCreateInfo bufferCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// sType
 		DE_NULL,								// pNext
 		0u,										// flags
 		numBytes,								// size
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,		// usage
+		usageBit,								// usage
 		VK_SHARING_MODE_EXCLUSIVE,				// sharingMode
 		0u,										// queueFamilyCount
 		DE_NULL,								// pQueueFamilyIndices
@@ -90,17 +100,16 @@ void fillMemoryWithValue (const DeviceInterface& vkdi, const VkDevice& device, A
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Create a descriptor set layout with numBindings descriptors
+ * \brief Create a descriptor set layout with the given descriptor types
  *
- * All descriptors are created for shader storage buffer objects and
- * compute pipeline.
+ * All descriptors are created for compute pipeline.
  *//*--------------------------------------------------------------------*/
-Move<VkDescriptorSetLayout> createDescriptorSetLayout (const DeviceInterface& vkdi, const VkDevice& device, size_t numBindings)
+Move<VkDescriptorSetLayout> createDescriptorSetLayout (const DeviceInterface& vkdi, const VkDevice& device, const vector<VkDescriptorType>& dtypes)
 {
 	DescriptorSetLayoutBuilder builder;
 
-	for (size_t bindingNdx = 0; bindingNdx < numBindings; ++bindingNdx)
-		builder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+	for (size_t bindingNdx = 0; bindingNdx < dtypes.size(); ++bindingNdx)
+		builder.addSingleBinding(dtypes[bindingNdx], VK_SHADER_STAGE_COMPUTE_BIT);
 
 	return builder.build(vkdi, device);
 }
@@ -108,9 +117,9 @@ Move<VkDescriptorSetLayout> createDescriptorSetLayout (const DeviceInterface& vk
 /*--------------------------------------------------------------------*//*!
  * \brief Create a pipeline layout with one descriptor set
  *//*--------------------------------------------------------------------*/
-Move<VkPipelineLayout> createPipelineLayout (const DeviceInterface& vkdi, const VkDevice& device, VkDescriptorSetLayout descriptorSetLayout)
+Move<VkPipelineLayout> createPipelineLayout (const DeviceInterface& vkdi, const VkDevice& device, VkDescriptorSetLayout descriptorSetLayout, const vkt::SpirVAssembly::BufferSp& pushConstants)
 {
-	const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
+	VkPipelineLayoutCreateInfo		createInfo	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// sType
 		DE_NULL,										// pNext
@@ -121,30 +130,47 @@ Move<VkPipelineLayout> createPipelineLayout (const DeviceInterface& vkdi, const 
 		DE_NULL,										// pPushConstantRanges
 	};
 
-	return createPipelineLayout(vkdi, device, &pipelineLayoutCreateInfo);
+	VkPushConstantRange				range		=
+	{
+		VK_SHADER_STAGE_COMPUTE_BIT,					// stageFlags
+		0,												// offset
+		0,												// size
+	};
+
+	if (pushConstants != DE_NULL)
+	{
+		range.size							= static_cast<deUint32>(pushConstants->getNumBytes());
+		createInfo.pushConstantRangeCount	= 1;
+		createInfo.pPushConstantRanges		= &range;
+	}
+
+	return createPipelineLayout(vkdi, device, &createInfo);
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Create a one-time descriptor pool for one descriptor set
- *
- * The pool supports numDescriptors storage buffer descriptors.
+ * \brief Create a one-time descriptor pool for one descriptor set that
+ * support the given descriptor types.
  *//*--------------------------------------------------------------------*/
-inline Move<VkDescriptorPool> createDescriptorPool (const DeviceInterface& vkdi, const VkDevice& device, deUint32 numDescriptors)
+inline Move<VkDescriptorPool> createDescriptorPool (const DeviceInterface& vkdi, const VkDevice& device, const vector<VkDescriptorType>& dtypes)
 {
-	return DescriptorPoolBuilder()
-		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, numDescriptors)
-		.build(vkdi, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, /* maxSets = */ 1);
+	DescriptorPoolBuilder builder;
+
+	for (size_t typeNdx = 0; typeNdx < dtypes.size(); ++typeNdx)
+		builder.addType(dtypes[typeNdx], 1);
+
+	return builder.build(vkdi, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, /* maxSets = */ 1);
 }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Create a descriptor set
  *
- * The descriptor set's layout should contain numViews descriptors.
- * All the descriptors represent buffer views, and they are sequentially
- * binded to binding point starting from 0.
+ * The descriptor set's layout contains the given descriptor types,
+ * sequentially binded to binding points starting from 0.
  *//*--------------------------------------------------------------------*/
-Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface& vkdi, const VkDevice& device, VkDescriptorPool pool, VkDescriptorSetLayout layout, size_t numViews, const vector<VkDescriptorBufferInfo>& descriptorInfos)
+Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface& vkdi, const VkDevice& device, VkDescriptorPool pool, VkDescriptorSetLayout layout, const vector<VkDescriptorType>& dtypes, const vector<VkDescriptorBufferInfo>& descriptorInfos)
 {
+	DE_ASSERT(dtypes.size() == descriptorInfos.size());
+
 	const VkDescriptorSetAllocateInfo	allocInfo	=
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -157,8 +183,8 @@ Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface& vkdi, const Vk
 	Move<VkDescriptorSet>				descriptorSet	= allocateDescriptorSet(vkdi, device, &allocInfo);
 	DescriptorSetUpdateBuilder			builder;
 
-	for (deUint32 descriptorNdx = 0; descriptorNdx < numViews; ++descriptorNdx)
-		builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(descriptorNdx), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfos[descriptorNdx]);
+	for (deUint32 descriptorNdx = 0; descriptorNdx < dtypes.size(); ++descriptorNdx)
+		builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(descriptorNdx), dtypes[descriptorNdx], &descriptorInfos[descriptorNdx]);
 	builder.update(vkdi, device);
 
 	return descriptorSet;
@@ -284,7 +310,19 @@ SpvAsmComputeShaderInstance::SpvAsmComputeShaderInstance (Context& ctx, const Co
 
 tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 {
-	const VkPhysicalDeviceFeatures&		features = m_context.getDeviceFeatures();
+	const VkPhysicalDeviceFeatures&		features			= m_context.getDeviceFeatures();
+	const vector<std::string>&			extensions			= m_context.getDeviceExtensions();
+
+	for (deUint32 extNdx = 0; extNdx < m_shaderSpec.extensions.size(); ++extNdx)
+	{
+		const std::string&				ext					= m_shaderSpec.extensions[extNdx];
+
+		if (!de::contains(extensions.begin(), extensions.end(), ext))
+		{
+			TCU_THROW(NotSupportedError, (std::string("Device extension not supported: ") + ext).c_str());
+		}
+	}
+
 	const DeviceInterface&				vkdi				= m_context.getDeviceInterface();
 	const VkDevice&						device				= m_context.getDevice();
 	Allocator&							allocator			= m_context.getDefaultAllocator();
@@ -304,18 +342,23 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	vector<BufferHandleSp>				inputBuffers;
 	vector<BufferHandleSp>				outputBuffers;
 	vector<VkDescriptorBufferInfo>		descriptorInfos;
+	vector<VkDescriptorType>			descriptorTypes;
 
 	DE_ASSERT(!m_shaderSpec.outputs.empty());
-	const size_t						numBuffers			= m_shaderSpec.inputs.size() + m_shaderSpec.outputs.size();
 
 	// Create buffer object, allocate storage, and create view for all input/output buffers.
 
-	for (size_t inputNdx = 0; inputNdx < m_shaderSpec.inputs.size(); ++inputNdx)
+	for (deUint32 inputNdx = 0; inputNdx < m_shaderSpec.inputs.size(); ++inputNdx)
 	{
+		if (m_shaderSpec.inputTypes.count(inputNdx) != 0)
+			descriptorTypes.push_back(m_shaderSpec.inputTypes.at(inputNdx));
+		else
+			descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
 		AllocationMp		alloc;
 		const BufferSp&		input		= m_shaderSpec.inputs[inputNdx];
 		const size_t		numBytes	= input->getNumBytes();
-		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, allocator, numBytes, &alloc));
+		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descriptorTypes.back(), allocator, numBytes, &alloc));
 
 		setMemory(vkdi, device, &*alloc, numBytes, input->data());
 		descriptorInfos.push_back(vk::makeDescriptorBufferInfo(**buffer, 0u, numBytes));
@@ -323,12 +366,14 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		inputAllocs.push_back(de::SharedPtr<Allocation>(alloc.release()));
 	}
 
-	for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
+	for (deUint32 outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
 	{
+		descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
 		AllocationMp		alloc;
 		const BufferSp&		output		= m_shaderSpec.outputs[outputNdx];
 		const size_t		numBytes	= output->getNumBytes();
-		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, allocator, numBytes, &alloc));
+		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descriptorTypes.back(), allocator, numBytes, &alloc));
 
 		fillMemoryWithValue(vkdi, device, &*alloc, numBytes, 0xff);
 		descriptorInfos.push_back(vk::makeDescriptorBufferInfo(**buffer, 0u, numBytes));
@@ -338,10 +383,10 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 	// Create layouts and descriptor set.
 
-	Unique<VkDescriptorSetLayout>		descriptorSetLayout	(createDescriptorSetLayout(vkdi, device, numBuffers));
-	Unique<VkPipelineLayout>			pipelineLayout		(createPipelineLayout(vkdi, device, *descriptorSetLayout));
-	Unique<VkDescriptorPool>			descriptorPool		(createDescriptorPool(vkdi, device, (deUint32)numBuffers));
-	Unique<VkDescriptorSet>				descriptorSet		(createDescriptorSet(vkdi, device, *descriptorPool, *descriptorSetLayout, numBuffers, descriptorInfos));
+	Unique<VkDescriptorSetLayout>		descriptorSetLayout	(createDescriptorSetLayout(vkdi, device, descriptorTypes));
+	Unique<VkPipelineLayout>			pipelineLayout		(createPipelineLayout(vkdi, device, *descriptorSetLayout, m_shaderSpec.pushConstants));
+	Unique<VkDescriptorPool>			descriptorPool		(createDescriptorPool(vkdi, device, descriptorTypes));
+	Unique<VkDescriptorSet>				descriptorSet		(createDescriptorSet(vkdi, device, *descriptorPool, *descriptorSetLayout, descriptorTypes, descriptorInfos));
 
 	// Create compute shader and pipeline.
 
@@ -368,6 +413,13 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	VK_CHECK(vkdi.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
 	vkdi.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
 	vkdi.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, DE_NULL);
+	if (m_shaderSpec.pushConstants != DE_NULL)
+	{
+		const deUint32	size	= static_cast<deUint32>(m_shaderSpec.pushConstants->getNumBytes());
+		const void*		data	= m_shaderSpec.pushConstants->data();
+
+		vkdi.cmdPushConstants(*cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, /* offset = */ 0, /* size = */ size, data);
+	}
 	vkdi.cmdDispatch(*cmdBuffer, numWorkGroups.x(), numWorkGroups.y(), numWorkGroups.z());
 	VK_CHECK(vkdi.endCommandBuffer(*cmdBuffer));
 

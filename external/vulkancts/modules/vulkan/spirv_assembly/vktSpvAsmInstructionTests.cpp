@@ -5320,7 +5320,6 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	createTestsForAllStages("vec4float32", defaultColors, defaultColors, fragments, opUndefTests.get());
 
 	fragments["pre_main"] =
-		"%v2f32 = OpTypeVector %f32 2\n"
 		"%m2x2f32 = OpTypeMatrix %v2f32 2\n";
 	fragments["testfun"] =
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
@@ -5704,7 +5703,9 @@ tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
 
 	getDefaultColors(defaultColors);
 	getInvertedDefaultColors(invertedColors);
-	addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), "same_module", "", createCombinedModule, runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
+	addFunctionCaseWithPrograms<InstanceContext>(
+			moduleTests.get(), "same_module", "", createCombinedModule, runAndVerifyDefaultPipeline,
+			createInstanceContext(combinedPipeline, map<string, string>()));
 
 	const char* numbers[] =
 	{
@@ -5728,11 +5729,15 @@ tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
 		// If there are an odd number, the color should be flipped.
 		if ((permutation.vertexPermutation + permutation.geometryPermutation + permutation.tesscPermutation + permutation.tessePermutation + permutation.fragmentPermutation) % 2 == 0)
 		{
-			addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline, createInstanceContext(pipeline, defaultColors, defaultColors, map<string, string>()));
+			addFunctionCaseWithPrograms<InstanceContext>(
+					moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline,
+					createInstanceContext(pipeline, defaultColors, defaultColors, map<string, string>()));
 		}
 		else
 		{
-			addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline, createInstanceContext(pipeline, defaultColors, invertedColors, map<string, string>()));
+			addFunctionCaseWithPrograms<InstanceContext>(
+					moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline,
+					createInstanceContext(pipeline, defaultColors, invertedColors, map<string, string>()));
 		}
 	}
 	return moduleTests.release();
@@ -6637,25 +6642,17 @@ tcu::TestCaseGroup* createUConvertTests (tcu::TestContext& testCtx)
 	return group.release();
 }
 
-enum NumberType
-{
-	TYPE_INT,
-	TYPE_UINT,
-	TYPE_FLOAT,
-	TYPE_END,
-};
-
 const string getNumberTypeName (const NumberType type)
 {
-	if (type == TYPE_INT)
+	if (type == NUMBERTYPE_INT32)
 	{
 		return "int";
 	}
-	else if (type == TYPE_UINT)
+	else if (type == NUMBERTYPE_UINT32)
 	{
 		return "uint";
 	}
-	else if (type == TYPE_FLOAT)
+	else if (type == NUMBERTYPE_FLOAT32)
 	{
 		return "float";
 	}
@@ -6683,15 +6680,15 @@ const string repeatString (const string& str, int times)
 
 const string getRandomConstantString (const NumberType type, de::Random& rnd)
 {
-	if (type == TYPE_INT)
+	if (type == NUMBERTYPE_INT32)
 	{
 		return numberToString<deInt32>(getInt(rnd));
 	}
-	else if (type == TYPE_UINT)
+	else if (type == NUMBERTYPE_UINT32)
 	{
 		return numberToString<deUint32>(rnd.getUint32());
 	}
-	else if (type == TYPE_FLOAT)
+	else if (type == NUMBERTYPE_FLOAT32)
 	{
 		return numberToString<float>(rnd.getFloat());
 	}
@@ -6802,7 +6799,7 @@ void createCompositeCases (vector<map<string, string> >& testCases, de::Random& 
 	createArrayCompositeCases(testCases, rnd, type);
 	createStructCompositeCases(testCases, rnd, type);
 	// Matrix only supports float types
-	if (type == TYPE_FLOAT)
+	if (type == NUMBERTYPE_FLOAT32)
 	{
 		createMatrixCompositeCases(testCases, rnd, type);
 	}
@@ -6812,9 +6809,9 @@ const string getAssemblyTypeDeclaration (const NumberType type)
 {
 	switch (type)
 	{
-		case TYPE_INT:		return "OpTypeInt 32 1";
-		case TYPE_UINT:		return "OpTypeInt 32 0";
-		case TYPE_FLOAT:	return "OpTypeFloat 32";
+		case NUMBERTYPE_INT32:		return "OpTypeInt 32 1";
+		case NUMBERTYPE_UINT32:		return "OpTypeInt 32 0";
+		case NUMBERTYPE_FLOAT32:	return "OpTypeFloat 32";
 		default:			DE_ASSERT(false); return "";
 	}
 }
@@ -6909,7 +6906,7 @@ tcu::TestCaseGroup* createOpCompositeInsertGroup (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opcompositeinsert", "Test the OpCompositeInsert instruction"));
 	de::Random						rnd		(deStringHash(group->getName()));
 
-	for (int type = TYPE_INT; type != TYPE_END; ++type)
+	for (int type = NUMBERTYPE_INT32; type != NUMBERTYPE_END32; ++type)
 	{
 		NumberType						numberType		= NumberType(type);
 		const string					typeName		= getNumberTypeName(numberType);
@@ -6927,21 +6924,21 @@ tcu::TestCaseGroup* createOpCompositeInsertGroup (tcu::TestContext& testCtx)
 
 			switch (numberType)
 			{
-				case TYPE_INT:
+				case NUMBERTYPE_INT32:
 				{
 					deInt32 number = getInt(rnd);
 					spec.inputs.push_back(createCompositeBuffer<deInt32>(number));
 					spec.outputs.push_back(createCompositeBuffer<deInt32>(number));
 					break;
 				}
-				case TYPE_UINT:
+				case NUMBERTYPE_UINT32:
 				{
 					deUint32 number = rnd.getUint32();
 					spec.inputs.push_back(createCompositeBuffer<deUint32>(number));
 					spec.outputs.push_back(createCompositeBuffer<deUint32>(number));
 					break;
 				}
-				case TYPE_FLOAT:
+				case NUMBERTYPE_FLOAT32:
 				{
 					float number = rnd.getFloat();
 					spec.inputs.push_back(createCompositeBuffer<float>(number));
@@ -7087,7 +7084,7 @@ tcu::TestCaseGroup* createOpInBoundsAccessChainGroup (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opinboundsaccesschain", "Test the OpInBoundsAccessChain instruction"));
 	de::Random						rnd				(deStringHash(group->getName()));
 
-	for (int type = TYPE_INT; type != TYPE_END; ++type)
+	for (int type = NUMBERTYPE_INT32; type != NUMBERTYPE_END32; ++type)
 	{
 		NumberType						numberType	= NumberType(type);
 		const string					typeName	= getNumberTypeName(numberType);
@@ -7111,21 +7108,21 @@ tcu::TestCaseGroup* createOpInBoundsAccessChainGroup (tcu::TestContext& testCtx)
 
 			switch (numberType)
 			{
-				case TYPE_INT:
+				case NUMBERTYPE_INT32:
 				{
 					deInt32 number = getInt(rnd);
 					spec.inputs.push_back(createCompositeBuffer<deInt32>(number));
 					spec.outputs.push_back(createCompositeBuffer<deInt32>(number));
 					break;
 				}
-				case TYPE_UINT:
+				case NUMBERTYPE_UINT32:
 				{
 					deUint32 number = rnd.getUint32();
 					spec.inputs.push_back(createCompositeBuffer<deUint32>(number));
 					spec.outputs.push_back(createCompositeBuffer<deUint32>(number));
 					break;
 				}
-				case TYPE_FLOAT:
+				case NUMBERTYPE_FLOAT32:
 				{
 					float number = rnd.getFloat();
 					spec.inputs.push_back(createCompositeBuffer<float>(number));
@@ -7267,7 +7264,7 @@ tcu::TestCaseGroup* createShaderDefaultOutputGroup (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "shader_default_output", "Test shader default output."));
 	de::Random						rnd		(deStringHash(group->getName()));
 
-	for (int type = TYPE_INT; type != TYPE_END; ++type)
+	for (int type = NUMBERTYPE_INT32; type != NUMBERTYPE_END32; ++type)
 	{
 		NumberType						numberType	= NumberType(type);
 		const string					typeName	= getNumberTypeName(numberType);
@@ -7284,7 +7281,7 @@ tcu::TestCaseGroup* createShaderDefaultOutputGroup (tcu::TestContext& testCtx)
 
 			switch (numberType)
 			{
-				case TYPE_INT:
+				case NUMBERTYPE_INT32:
 				{
 					deInt32 number = getInt(rnd);
 					spec.inputs.push_back(createCompositeBuffer<deInt32>(number));
@@ -7292,7 +7289,7 @@ tcu::TestCaseGroup* createShaderDefaultOutputGroup (tcu::TestContext& testCtx)
 					params["constValue"] = numberToString(number);
 					break;
 				}
-				case TYPE_UINT:
+				case NUMBERTYPE_UINT32:
 				{
 					deUint32 number = rnd.getUint32();
 					spec.inputs.push_back(createCompositeBuffer<deUint32>(number));
@@ -7300,7 +7297,7 @@ tcu::TestCaseGroup* createShaderDefaultOutputGroup (tcu::TestContext& testCtx)
 					params["constValue"] = numberToString(number);
 					break;
 				}
-				case TYPE_FLOAT:
+				case NUMBERTYPE_FLOAT32:
 				{
 					float number = rnd.getFloat();
 					spec.inputs.push_back(createCompositeBuffer<float>(number));
