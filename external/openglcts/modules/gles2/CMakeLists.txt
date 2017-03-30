@@ -3,8 +3,6 @@
 set(GLCTS_GLES2_SRCS
 	es2cTestPackage.cpp
 	es2cTestPackage.hpp
-	tes2CapabilityTests.cpp
-	tes2CapabilityTests.hpp
 	)
 
 set(GLCTS_GLES2_LIBS
