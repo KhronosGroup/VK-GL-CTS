@@ -555,8 +555,26 @@ void RenderingContext::makeCurrent (const EGLSurface& surface)
 
 void RenderingContext::initGLFunctions (glw::Functions *gl)
 {
-	const char* extensions[] = { "GL_KHR_robustness" };
-	m_eglTestCtx.initGLFunctions(gl, attribListToContextType(m_attribList).getAPI(), DE_LENGTH_OF_ARRAY(extensions), &extensions[0]);
+	// \todo [2017-03-23 pyry] Current version has 2 somewhat ugly hacks:
+	//
+	// 1) Core functions are loaded twice. We need glGetString(i) to query supported
+	//    extensions to determine if we need to load EXT or KHR-suffixed robustness
+	//    functions. This could be fixed by exposing glw::FunctionLoader in EglTestContext
+	//    for example.
+	//
+	// 2) We assume that calling code will check for KHR_robustness or EXT_robustness
+	//    support after calling initGLFunctions(). We could move the check here.
+
+	const glu::ApiType	apiType	= attribListToContextType(m_attribList).getAPI();
+
+	m_eglTestCtx.initGLFunctions(gl, apiType);
+
+	{
+		const char* const	robustnessExt	= glu::hasExtension(*gl, apiType, "GL_KHR_robustness") ? "GL_KHR_robustness" : "GL_EXT_robustness";
+		const char* const	extensions[]	= { robustnessExt };
+
+		m_eglTestCtx.initGLFunctions(gl, apiType, DE_LENGTH_OF_ARRAY(extensions), &extensions[0]);
+	}
 }
 
 EGLContext RenderingContext::getContext (void)
