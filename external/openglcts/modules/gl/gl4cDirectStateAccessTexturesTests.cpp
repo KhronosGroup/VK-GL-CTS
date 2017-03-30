@@ -9113,7 +9113,12 @@ SubImageErrorsTest::SubImageErrorsTest(deqp::Context& context)
 	, m_reference_compressed_2D_format(0)
 	, m_reference_compressed_3D_format(0)
 	, m_reference_compressed_rectangle_format(0)
-	, m_format_compressed_not_matching(0)
+	, m_not_matching_compressed_1D_format(0)
+	, m_not_matching_compressed_1D_size(0)
+	, m_not_matching_compressed_2D_format(0)
+	, m_not_matching_compressed_2D_size(0)
+	, m_not_matching_compressed_3D_format(0)
+	, m_not_matching_compressed_3D_size(0)
 {
 	/* Intentionally left blank. */
 }
@@ -9480,8 +9485,107 @@ void SubImageErrorsTest::Prepare()
 	gl.getIntegerv(GL_MAX_TEXTURE_SIZE, &m_max_texture_size);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv has failed");
 
-	m_format_compressed_not_matching =
-		GL_COMPRESSED_RED_RGTC1; /* The exact compressed format is not know (implementation chooses it), but it will be one og GL_COMPRESSED_*RG*  - so this one will always be non matching. */
+	glw::GLenum not_matching_format					   = GL_RED;
+	glw::GLenum not_matching_internalformat_compressed = GL_COMPRESSED_RED;
+
+	/* 1D Compressed with a non matching format. We need to do all the allocation to get the correct image size */
+	glw::GLuint to_1D_compressed_not_matching;
+
+	gl.createTextures(GL_TEXTURE_1D, 1, &to_1D_compressed_not_matching);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateTextures has failed");
+
+	gl.bindTexture(GL_TEXTURE_1D, to_1D_compressed_not_matching);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
+
+	gl.texImage1D(GL_TEXTURE_1D, 0, not_matching_internalformat_compressed, s_reference_width, 0, s_reference_format,
+				  GL_UNSIGNED_BYTE, s_reference);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D has failed");
+
+	is_compressed = 0;
+
+	gl.getTexLevelParameteriv(GL_TEXTURE_1D, 0, GL_TEXTURE_COMPRESSED, &is_compressed);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glTetTexLevelParameteriv has failed");
+
+	if (is_compressed)
+	{
+		gl.getTexLevelParameteriv(GL_TEXTURE_1D, 0, GL_TEXTURE_INTERNAL_FORMAT, &m_not_matching_compressed_1D_format);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexLevelParameteriv has failed");
+
+		m_not_matching_compressed_1D_size = 0;
+
+		gl.getTexLevelParameteriv(GL_TEXTURE_1D, 0, GL_TEXTURE_COMPRESSED_IMAGE_SIZE,
+								  &m_not_matching_compressed_1D_size);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexLevelParameteriv has failed");
+	}
+
+	gl.deleteTextures(1, &to_1D_compressed_not_matching);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateTextures has failed");
+
+	/* 2D Compressed with a non matching format. We need to do all the allocation to get the correct image size */
+	glw::GLuint to_2D_compressed_not_matching;
+
+	gl.createTextures(GL_TEXTURE_2D, 1, &to_2D_compressed_not_matching);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateTextures has failed");
+
+	gl.bindTexture(GL_TEXTURE_2D, to_2D_compressed_not_matching);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
+
+	gl.texImage2D(GL_TEXTURE_2D, 0, not_matching_internalformat_compressed, s_reference_width, s_reference_height, 0,
+				  not_matching_format, GL_UNSIGNED_BYTE, s_reference);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage2D has failed");
+
+	is_compressed = 0;
+
+	gl.getTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED, &is_compressed);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glTetTexLevelParameteriv has failed");
+
+	if (is_compressed)
+	{
+		gl.getTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &m_not_matching_compressed_2D_format);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexLevelParameteriv has failed");
+
+		m_not_matching_compressed_2D_size = 0;
+
+		gl.getTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED_IMAGE_SIZE,
+								  &m_not_matching_compressed_2D_size);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexLevelParameteriv has failed");
+	}
+
+	gl.deleteTextures(1, &to_2D_compressed_not_matching);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateTextures has failed");
+
+	/* 3D Compressed with a non matching format. We need to do all the allocation to get the correct image size */
+	glw::GLuint to_3D_compressed_not_matching;
+
+	gl.createTextures(GL_TEXTURE_3D, 1, &to_3D_compressed_not_matching);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateTextures has failed");
+
+	gl.bindTexture(GL_TEXTURE_3D, to_3D_compressed_not_matching);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
+
+	gl.texImage3D(GL_TEXTURE_3D, 0, not_matching_internalformat_compressed, s_reference_width, s_reference_height,
+				  s_reference_depth, 0, not_matching_format, GL_UNSIGNED_BYTE, s_reference);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage3D has failed");
+
+	is_compressed = 0;
+
+	gl.getTexLevelParameteriv(GL_TEXTURE_3D, 0, GL_TEXTURE_COMPRESSED, &is_compressed);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glTetTexLevelParameteriv has failed");
+
+	if (is_compressed)
+	{
+		gl.getTexLevelParameteriv(GL_TEXTURE_3D, 0, GL_TEXTURE_INTERNAL_FORMAT, &m_not_matching_compressed_3D_format);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexLevelParameteriv has failed");
+
+		m_not_matching_compressed_3D_size = 0;
+
+		gl.getTexLevelParameteriv(GL_TEXTURE_3D, 0, GL_TEXTURE_COMPRESSED_IMAGE_SIZE,
+								  &m_not_matching_compressed_3D_size);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexLevelParameteriv has failed");
+	}
+
+	gl.deleteTextures(1, &to_3D_compressed_not_matching);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateTextures has failed");
 }
 
 /** @brief Test (negative) of TextureSubImage1D
@@ -10235,7 +10339,7 @@ bool SubImageErrorsTest::Test1DCompressed()
 		 commands do not provide for image format conversion. */
 		{
 			gl.compressedTextureSubImage1D(m_to_1D_compressed, 0, 0, s_reference_width,
-										   m_format_compressed_not_matching, m_reference_compressed_1D_size,
+										   m_not_matching_compressed_1D_format, m_not_matching_compressed_1D_size,
 										   m_reference_compressed_1D);
 			is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glCompressedTextureSubImage1D",
 									  "format does not match the internal format of the texture image being modified, "
@@ -10345,7 +10449,7 @@ bool SubImageErrorsTest::Test2DCompressed()
 		 commands do not provide for image format conversion. */
 		{
 			gl.compressedTextureSubImage2D(m_to_2D_compressed, 0, 0, 0, s_reference_width, s_reference_height,
-										   m_format_compressed_not_matching, m_reference_compressed_2D_size,
+										   m_not_matching_compressed_2D_format, m_not_matching_compressed_2D_size,
 										   m_reference_compressed_2D);
 			is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glCompressedTextureSubImage2D",
 									  "format does not match the internal format of the texture image being modified, "
@@ -10468,8 +10572,8 @@ bool SubImageErrorsTest::Test3DCompressed()
 		 commands do not provide for image format conversion. */
 		{
 			gl.compressedTextureSubImage3D(m_to_3D_compressed, 0, 0, 0, 0, s_reference_width, s_reference_height,
-										   s_reference_depth, m_format_compressed_not_matching,
-										   m_reference_compressed_3D_size, m_reference_compressed_3D);
+										   s_reference_depth, m_not_matching_compressed_3D_format,
+										   m_not_matching_compressed_3D_size, m_reference_compressed_3D);
 			is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glCompressedTextureSubImage3D",
 									  "format does not match the internal format of the texture image being modified, "
 									  "since these commands do not provide for image format conversion.");
@@ -10662,7 +10766,12 @@ void SubImageErrorsTest::Clean()
 	m_reference_compressed_2D_size			= 0;
 	m_reference_compressed_3D_size			= 0;
 	m_reference_compressed_rectangle_size   = 0;
-	m_format_compressed_not_matching		= 0;
+	m_not_matching_compressed_1D_format		= 0;
+	m_not_matching_compressed_1D_size		= 0;
+	m_not_matching_compressed_2D_format		= 0;
+	m_not_matching_compressed_2D_size		= 0;
+	m_not_matching_compressed_3D_format		= 0;
+	m_not_matching_compressed_3D_size		= 0;
 
 	while (GL_NO_ERROR != gl.getError())
 		;

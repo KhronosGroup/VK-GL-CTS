@@ -38,8 +38,8 @@ OPENGL_INC_DIR		= os.path.join(OPENGL_DIR, "wrapper")
 GL_SOURCE			= khr_util.registry_cache.RegistrySource(
 						"https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry",
 						"xml/gl.xml",
-						"db2965fc26513b254e2f964171f79e416a05fe29",
-						"c4a4e241dc63ed3d1c4cd50451e5baef330dbb51dd3ecb278be80a5779f5b348")
+						"9302c6a6963864cba6c43d7eee0f4afcdcec2084",
+						"10d9bc8a475c60e127343c751b6e993923c1e40574277a49d80b158e3faafe6d")
 
 EXTENSIONS			= [
 	'GL_KHR_texture_compression_astc_ldr',
@@ -73,6 +73,7 @@ EXTENSIONS			= [
 	'GL_EXT_debug_marker',
 	'GL_IMG_texture_compression_pvrtc',
 	'GL_OES_EGL_image',
+	'GL_OES_EGL_image_external',
 	'GL_OES_compressed_ETC1_RGB8_texture',
 	'GL_OES_compressed_paletted_texture',
 	'GL_OES_required_internalformat',
@@ -84,6 +85,7 @@ EXTENSIONS			= [
 	'GL_OES_standard_derivatives',
 	'GL_OES_stencil1',
 	'GL_OES_stencil4',
+	'GL_OES_surfaceless_context',
 	'GL_OES_mapbuffer',
 	'GL_OES_vertex_array_object',
 	'GL_OES_viewport_array',
@@ -105,6 +107,7 @@ EXTENSIONS			= [
 	'GL_ARB_tessellation_shader',
 	'GL_ARB_texture_barrier',
 	'GL_ARB_texture_filter_minmax',
+	'GL_ARB_texture_gather',
 	'GL_ARB_texture_storage',
 	'GL_ARB_texture_storage_multisample',
 	'GL_ARB_texture_multisample',

@@ -43,6 +43,7 @@
 
 // debase
 #include "deInt32.h"
+#include "deFloat16.h"
 #include "deMath.h"
 #include "deSha1.h"
 #include "deMemory.h"
@@ -159,10 +160,11 @@ public:
 
 	void init (void)
 	{
-		addChild(new SelfCheckCase(m_testCtx, "int32",	"deInt32_selfTest()",	deInt32_selfTest));
-		addChild(new SelfCheckCase(m_testCtx, "math",	"deMath_selfTest()",	deMath_selfTest));
-		addChild(new SelfCheckCase(m_testCtx, "sha1",	"deSha1_selfTest()",	deSha1_selfTest));
-		addChild(new SelfCheckCase(m_testCtx, "memory",	"deMemory_selfTest()",	deMemory_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "int32",		"deInt32_selfTest()",	deInt32_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "float16",	"deFloat16_selfTest()",	deFloat16_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "math",		"deMath_selfTest()",	deMath_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "sha1",		"deSha1_selfTest()",	deSha1_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "memory",		"deMemory_selfTest()",	deMemory_selfTest));
 	}
 };
 

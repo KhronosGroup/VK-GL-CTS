@@ -162,10 +162,12 @@ EGLContext createGLContext (const Library&					egl,
 
 		if (resetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
 		{
-			if (glu::isContextTypeES(contextType))
-				TCU_THROW(InternalError, "Specifying reset notification strategy is not allowed when creating OpenGL ES contexts");
-
-			attribList.push_back(EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_KHR);
+			if (getVersion(egl, display) >= Version(1, 5) || glu::isContextTypeGLCore(contextType) || glu::isContextTypeGLCompatibility(contextType))
+				attribList.push_back(EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_KHR);
+			else if (hasExtension(egl, display, "EGL_EXT_create_context_robustness"))
+				attribList.push_back(EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT);
+			else
+				TCU_THROW(NotSupportedError, "EGL 1.5 or EGL_EXT_create_context_robustness is required for creating robust context");
 
 			if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)
 				attribList.push_back(EGL_NO_RESET_NOTIFICATION_KHR);

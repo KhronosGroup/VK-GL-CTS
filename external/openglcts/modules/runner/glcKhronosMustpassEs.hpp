@@ -35,20 +35,50 @@ struct RunParams
 
 static const RunParams khronos_mustpass_es_first_cfg[] = {
 	{ glu::ApiType::es(2, 0), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(2, 0), "gtf-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(2, 0), "gtf-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(2, 0), "gtf-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(2, 0), "gtf-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
+	{ glu::ApiType::es(2, 0), "gtf-egl", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
+	{ glu::ApiType::es(2, 0), "gtf-egl", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
+#endif // defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 0), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 0), "gtf-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 0), "gtf-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 0), "gtf-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 0), "gtf-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+#endif // defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 1), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 1), "gtf-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 1), "gtf-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 1), "gtf-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 1), "gtf-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+#endif // defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
 	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
@@ -57,14 +87,26 @@ static const RunParams khronos_mustpass_es_first_cfg[] = {
 
 static const RunParams khronos_mustpass_es_other_cfg[] = {
 	{ glu::ApiType::es(2, 0), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(2, 0), "gtf-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(2, 0), "gtf-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
+#endif // defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 0), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 0), "gtf-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 0), "gtf-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
+#endif // defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 1), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 1), "gtf-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 1), "gtf-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
+#endif // defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
 };

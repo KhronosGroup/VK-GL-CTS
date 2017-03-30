@@ -55,6 +55,11 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 	// Create compute program
 	std::ostringstream	src;
 
+	const std::string	typeImgComp					= getImageComponentTypeName(m_format);
+	const std::string	typeImgCompVec4				= getImageComponentVec4TypeName(m_format);
+	const std::string	typeImageSparse				= getSparseImageTypeName();
+	const std::string	typeUniformConstImageSparse	= getUniformConstSparseImageTypeName();
+
 	src << "OpCapability Shader\n"
 		<< "OpCapability ImageCubeArray\n"
 		<< "OpCapability SparseResidency\n"
@@ -104,38 +109,37 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 		<< "%type_uint						= OpTypeInt 32 0\n"
 		<< "%type_ivec2						= OpTypeVector %type_int  2\n"
 		<< "%type_ivec3						= OpTypeVector %type_int  3\n"
+		<< "%type_ivec4						= OpTypeVector %type_int  4\n"
 		<< "%type_uvec3						= OpTypeVector %type_uint 3\n"
 		<< "%type_uvec4						= OpTypeVector %type_uint 4\n"
-		<< "%type_img_comp					= " << getOpTypeImageComponent(m_format) << "\n"
-		<< "%type_img_comp_vec4				= OpTypeVector %type_img_comp 4\n"
-		<< "%type_struct_int_img_comp_vec4	= OpTypeStruct %type_int %type_img_comp_vec4\n"
+		<< "%type_struct_int_img_comp_vec4	= OpTypeStruct %type_int " << typeImgCompVec4 << "\n"
 
 		<< "%type_input_uint		= OpTypePointer Input %type_uint\n"
 		<< "%type_input_uvec3		= OpTypePointer Input %type_uvec3\n"
 
 		<< "%type_function_int			 = OpTypePointer Function %type_int\n"
-		<< "%type_function_img_comp_vec4 = OpTypePointer Function %type_img_comp_vec4\n"
+		<< "%type_function_img_comp_vec4 = OpTypePointer Function " << typeImgCompVec4 << "\n"
 
 		<< "%type_void				= OpTypeVoid\n"
 		<< "%type_void_func			= OpTypeFunction %type_void\n"
 
-		// Sparse image type declaration
-		<< sparseImageTypeDecl("%type_image_sparse", "%type_img_comp")
-		<< "%type_uniformconst_image_sparse		= OpTypePointer UniformConstant %type_image_sparse\n"
+		// Sparse image without sampler type declaration
+		<< "%type_image_sparse = " << getOpTypeImageSparse(m_imageType, m_format, typeImgComp, false) << "\n"
+		<< "%type_uniformconst_image_sparse = OpTypePointer UniformConstant %type_image_sparse\n"
 
-		// Texels image type declaration
-		<< "%type_image_texels					= " << getOpTypeImageSparse(m_imageType, m_format, "%type_img_comp", false) << "\n"
-		<< "%type_uniformconst_image_texels		= OpTypePointer UniformConstant %type_image_texels\n"
+		// Sparse image with sampler type declaration
+		<< "%type_image_sparse_with_sampler = " << getOpTypeImageSparse(m_imageType, m_format, typeImgComp, true) << "\n"
+		<< "%type_uniformconst_image_sparse_with_sampler = OpTypePointer UniformConstant %type_image_sparse_with_sampler\n"
 
 		// Residency image type declaration
 		<< "%type_image_residency				= " << getOpTypeImageResidency(m_imageType) << "\n"
 		<< "%type_uniformconst_image_residency	= OpTypePointer UniformConstant %type_image_residency\n"
 
 		// Declare sparse image variable
-		<< "%uniform_image_sparse = OpVariable %type_uniformconst_image_sparse UniformConstant\n"
+		<< "%uniform_image_sparse = OpVariable " << typeUniformConstImageSparse << " UniformConstant\n"
 
 		// Declare output image variable for storing texels
-		<< "%uniform_image_texels = OpVariable %type_uniformconst_image_texels UniformConstant\n"
+		<< "%uniform_image_texels = OpVariable %type_uniformconst_image_sparse UniformConstant\n"
 
 		// Declare output image variable for storing residency information
 		<< "%uniform_image_residency = OpVariable %type_uniformconst_image_residency UniformConstant\n"
@@ -201,20 +205,20 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 		<< "%label_in_range_z = OpLabel\n"
 
 		// Load sparse image
-		<< "%local_image_sparse = OpLoad %type_image_sparse %uniform_image_sparse\n"
+		<< "%local_image_sparse = OpLoad " << typeImageSparse << " %uniform_image_sparse\n"
 
 		// Call OpImageSparse*
 		<< sparseImageOpString("%local_sparse_op_result", "%type_struct_int_img_comp_vec4", "%local_image_sparse", coordString, "%constant_int_0") << "\n"
 
 		// Load the texel from the sparse image to local variable for OpImageSparse*
-		<< "%local_img_comp_vec4 = OpCompositeExtract %type_img_comp_vec4 %local_sparse_op_result 1\n"
+		<< "%local_img_comp_vec4 = OpCompositeExtract " << typeImgCompVec4 << " %local_sparse_op_result 1\n"
 
 		// Load residency code for OpImageSparse*
 		<< "%local_residency_code = OpCompositeExtract %type_int %local_sparse_op_result 0\n"
 		// End Call OpImageSparse*
 
 		// Load texels image
-		<< "%local_image_texels = OpLoad %type_image_texels %uniform_image_texels\n"
+		<< "%local_image_texels = OpLoad %type_image_sparse %uniform_image_texels\n"
 
 		// Write the texel to output image via OpImageWrite
 		<< "OpImageWrite %local_image_texels " << coordString << " %local_img_comp_vec4\n"
@@ -255,13 +259,14 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 	programCollection.spirvAsmSources.add("compute") << src.str();
 }
 
-std::string SparseCaseOpImageSparseFetch::sparseImageTypeDecl (const std::string& imageType, const std::string& componentType) const
+std::string	SparseCaseOpImageSparseFetch::getSparseImageTypeName (void) const
 {
-	std::ostringstream src;
+	return "%type_image_sparse_with_sampler";
+}
 
-	src << imageType << " = " << getOpTypeImageSparse(m_imageType, m_format, componentType, true) << "\n";
-
-	return src.str();
+std::string	SparseCaseOpImageSparseFetch::getUniformConstSparseImageTypeName (void) const
+{
+	return "%type_uniformconst_image_sparse_with_sampler";
 }
 
 std::string	SparseCaseOpImageSparseFetch::sparseImageOpString  (const std::string& resultVariable,
@@ -277,13 +282,14 @@ std::string	SparseCaseOpImageSparseFetch::sparseImageOpString  (const std::strin
 	return src.str();
 }
 
-std::string SparseCaseOpImageSparseRead::sparseImageTypeDecl (const std::string& imageType, const std::string& componentType) const
+std::string	SparseCaseOpImageSparseRead::getSparseImageTypeName (void) const
 {
-	std::ostringstream src;
+	return "%type_image_sparse";
+}
 
-	src << imageType << " = " << getOpTypeImageSparse(m_imageType, m_format, componentType, false) << "\n";
-
-	return src.str();
+std::string	SparseCaseOpImageSparseRead::getUniformConstSparseImageTypeName (void) const
+{
+	return "%type_uniformconst_image_sparse";
 }
 
 std::string	SparseCaseOpImageSparseRead::sparseImageOpString (const std::string& resultVariable,

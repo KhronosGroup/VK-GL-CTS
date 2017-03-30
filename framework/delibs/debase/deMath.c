@@ -46,7 +46,7 @@ deRoundingMode deGetRoundingMode (void)
 		case _RC_CHOP:	return DE_ROUNDINGMODE_TO_ZERO;
 		case _RC_UP:	return DE_ROUNDINGMODE_TO_POSITIVE_INF;
 		case _RC_DOWN:	return DE_ROUNDINGMODE_TO_NEGATIVE_INF;
-		case _RC_NEAR:	return DE_ROUNDINGMODE_TO_NEAREST;
+		case _RC_NEAR:	return DE_ROUNDINGMODE_TO_NEAREST_EVEN;
 		default:		return DE_ROUNDINGMODE_LAST;
 	}
 #elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
@@ -56,7 +56,7 @@ deRoundingMode deGetRoundingMode (void)
 		case FE_TOWARDZERO:	return DE_ROUNDINGMODE_TO_ZERO;
 		case FE_UPWARD:		return DE_ROUNDINGMODE_TO_POSITIVE_INF;
 		case FE_DOWNWARD:	return DE_ROUNDINGMODE_TO_NEGATIVE_INF;
-		case FE_TONEAREST:	return DE_ROUNDINGMODE_TO_NEAREST;
+		case FE_TONEAREST:	return DE_ROUNDINGMODE_TO_NEAREST_EVEN;
 		default:			return DE_ROUNDINGMODE_LAST;
 	}
 #else
@@ -76,7 +76,7 @@ deBool deSetRoundingMode (deRoundingMode mode)
 		case DE_ROUNDINGMODE_TO_ZERO:			flag = _RC_CHOP;	break;
 		case DE_ROUNDINGMODE_TO_POSITIVE_INF:	flag = _RC_UP;		break;
 		case DE_ROUNDINGMODE_TO_NEGATIVE_INF:	flag = _RC_DOWN;	break;
-		case DE_ROUNDINGMODE_TO_NEAREST:		flag = _RC_NEAR;	break;
+		case DE_ROUNDINGMODE_TO_NEAREST_EVEN:	flag = _RC_NEAR;	break;
 		default:
 			DE_ASSERT(DE_FALSE);
 	}
@@ -92,7 +92,7 @@ deBool deSetRoundingMode (deRoundingMode mode)
 		case DE_ROUNDINGMODE_TO_ZERO:			flag = FE_TOWARDZERO;	break;
 		case DE_ROUNDINGMODE_TO_POSITIVE_INF:	flag = FE_UPWARD;		break;
 		case DE_ROUNDINGMODE_TO_NEGATIVE_INF:	flag = FE_DOWNWARD;		break;
-		case DE_ROUNDINGMODE_TO_NEAREST:		flag = FE_TONEAREST;	break;
+		case DE_ROUNDINGMODE_TO_NEAREST_EVEN:	flag = FE_TONEAREST;	break;
 		default:
 			DE_ASSERT(DE_FALSE);
 	}

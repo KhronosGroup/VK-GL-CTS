@@ -1267,6 +1267,79 @@ MovePtr<tcu::Texture3DView> getTexture3DView (const TestTexture& testTexture, co
 	return MovePtr<tcu::Texture3DView>(new tcu::Texture3DView((int)levels.size(), &levels[0]));
 }
 
+bool validateResultImage (const TestTexture&					texture,
+						  const VkImageViewType					imageViewType,
+						  const VkImageSubresourceRange&		subresource,
+						  const tcu::Sampler&					sampler,
+						  const vk::VkComponentMapping&			componentMapping,
+						  const tcu::ConstPixelBufferAccess&	coordAccess,
+						  const tcu::Vec2&						lodBounds,
+						  const tcu::LookupPrecision&			lookupPrecision,
+						  const tcu::Vec4&						lookupScale,
+						  const tcu::Vec4&						lookupBias,
+						  const tcu::ConstPixelBufferAccess&	resultAccess,
+						  const tcu::PixelBufferAccess&			errorAccess)
+{
+	std::vector<tcu::ConstPixelBufferAccess>	levels;
+
+	switch (imageViewType)
+	{
+		case VK_IMAGE_VIEW_TYPE_1D:
+		{
+			UniquePtr<tcu::Texture1DView>			texView(getTexture1DView(texture, subresource, levels));
+
+			return validateResultImage(*texView, sampler, componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+		}
+
+		case VK_IMAGE_VIEW_TYPE_1D_ARRAY:
+		{
+			UniquePtr<tcu::Texture1DArrayView>		texView(getTexture1DArrayView(texture, subresource, levels));
+
+			return validateResultImage(*texView, sampler, componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+		}
+
+		case VK_IMAGE_VIEW_TYPE_2D:
+		{
+			UniquePtr<tcu::Texture2DView>			texView(getTexture2DView(texture, subresource, levels));
+
+			return validateResultImage(*texView, sampler, componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+		}
+
+		case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
+		{
+			UniquePtr<tcu::Texture2DArrayView>		texView(getTexture2DArrayView(texture, subresource, levels));
+
+			return validateResultImage(*texView, sampler, componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+		}
+
+		case VK_IMAGE_VIEW_TYPE_CUBE:
+		{
+			UniquePtr<tcu::TextureCubeView>			texView(getTextureCubeView(texture, subresource, levels));
+
+			return validateResultImage(*texView, sampler, componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+		}
+
+		case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:
+		{
+			UniquePtr<tcu::TextureCubeArrayView>	texView(getTextureCubeArrayView(texture, subresource, levels));
+
+			return validateResultImage(*texView, sampler, componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+			break;
+		}
+
+		case VK_IMAGE_VIEW_TYPE_3D:
+		{
+			UniquePtr<tcu::Texture3DView>			texView(getTexture3DView(texture, subresource, levels));
+
+			return validateResultImage(*texView, sampler, componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
+		}
+
+		default:
+			DE_ASSERT(false);
+			return false;
+	}
+}
+
 } // anonymous
 
 tcu::TestStatus ImageSamplingInstance::verifyImage (void)
@@ -1280,6 +1353,7 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 	ReferenceRenderer					refRenderer				(m_renderSize.x(), m_renderSize.y(), 1, colorFormat, depthStencilFormat, &rrProgram);
 
 	bool								compareOkAll			= true;
+	bool								anyWarnings				= false;
 
 	tcu::Vec4							lookupScale				(1.0f);
 	tcu::Vec4							lookupBias				(0.0f);
@@ -1304,6 +1378,9 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 		tcu::TextureLevel					errorMask		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), (int)m_renderSize.x(), (int)m_renderSize.y());
 		const tcu::PixelBufferAccess		errorAccess		= errorMask.getAccess();
 
+		const bool							allowSnorm8Bug	= m_texture->getTextureFormat().type == tcu::TextureFormat::SNORM_INT8 &&
+															  (m_samplerParams.minFilter == VK_FILTER_LINEAR || m_samplerParams.magFilter == VK_FILTER_LINEAR);
+
 		tcu::LookupPrecision				lookupPrecision;
 
 		// Set precision requirements - very low for these tests as
@@ -1319,85 +1396,59 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
 		{
 			// Read back result image
-			UniquePtr<tcu::TextureLevel>		result(readColorAttachment(m_context.getDeviceInterface(),
-				m_context.getDevice(),
-				m_context.getUniversalQueue(),
-				m_context.getUniversalQueueFamilyIndex(),
-				m_context.getDefaultAllocator(),
-				**m_colorImages[imgNdx],
-				m_colorFormat,
-				m_renderSize));
-			const tcu::ConstPixelBufferAccess	resultAccess = result->getAccess();
+			UniquePtr<tcu::TextureLevel>		result			(readColorAttachment(m_context.getDeviceInterface(),
+																					 m_context.getDevice(),
+																					 m_context.getUniversalQueue(),
+																					 m_context.getUniversalQueueFamilyIndex(),
+																					 m_context.getDefaultAllocator(),
+																					 **m_colorImages[imgNdx],
+																					 m_colorFormat,
+																					 m_renderSize));
+			const tcu::ConstPixelBufferAccess	resultAccess	= result->getAccess();
+			bool								compareOk		= validateResultImage(*m_texture,
+																					  m_imageViewType,
+																					  subresource,
+																					  sampler,
+																					  m_componentMapping,
+																					  coordAccess,
+																					  lodBounds,
+																					  lookupPrecision,
+																					  lookupScale,
+																					  lookupBias,
+																					  resultAccess,
+																					  errorAccess);
 
-			bool								compareOk	 = true;
-
-			switch (m_imageViewType)
+			if (!compareOk && allowSnorm8Bug)
 			{
-				case VK_IMAGE_VIEW_TYPE_1D:
-				{
-					std::vector<tcu::ConstPixelBufferAccess>	levels;
-					UniquePtr<tcu::Texture1DView>				texView(getTexture1DView(*m_texture, subresource, levels));
+				// HW waiver (VK-GL-CTS issue: 229)
+				//
+				// Due to an error in bit replication of the fixed point SNORM values, linear filtered
+				// negative SNORM values will differ slightly from ideal precision in the last bit, moving
+				// the values towards 0.
+				//
+				// This occurs on all members of the PowerVR Rogue family of GPUs
+				tcu::LookupPrecision	relaxedPrecision;
 
-					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-					break;
-				}
+				relaxedPrecision.colorThreshold += tcu::Vec4(4.f / 255.f);
 
-				case VK_IMAGE_VIEW_TYPE_1D_ARRAY:
-				{
-					std::vector<tcu::ConstPixelBufferAccess>	levels;
-					UniquePtr<tcu::Texture1DArrayView>			texView(getTexture1DArrayView(*m_texture, subresource, levels));
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message
+					<< "Warning: Strict validation failed, re-trying with lower precision for SNORM8 format"
+					<< tcu::TestLog::EndMessage;
+				anyWarnings = true;
 
-					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-					break;
-				}
-
-				case VK_IMAGE_VIEW_TYPE_2D:
-				{
-					std::vector<tcu::ConstPixelBufferAccess>	levels;
-					UniquePtr<tcu::Texture2DView>				texView(getTexture2DView(*m_texture, subresource, levels));
-
-					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-					break;
-				}
-
-				case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
-				{
-					std::vector<tcu::ConstPixelBufferAccess>	levels;
-					UniquePtr<tcu::Texture2DArrayView>			texView(getTexture2DArrayView(*m_texture, subresource, levels));
-
-					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-					break;
-				}
-
-				case VK_IMAGE_VIEW_TYPE_CUBE:
-				{
-					std::vector<tcu::ConstPixelBufferAccess>	levels;
-					UniquePtr<tcu::TextureCubeView>				texView(getTextureCubeView(*m_texture, subresource, levels));
-
-					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-					break;
-				}
-
-				case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:
-				{
-					std::vector<tcu::ConstPixelBufferAccess>	levels;
-					UniquePtr<tcu::TextureCubeArrayView>		texView(getTextureCubeArrayView(*m_texture, subresource, levels));
-
-					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-					break;
-				}
-
-				case VK_IMAGE_VIEW_TYPE_3D:
-				{
-					std::vector<tcu::ConstPixelBufferAccess>	levels;
-					UniquePtr<tcu::Texture3DView>				texView(getTexture3DView(*m_texture, subresource, levels));
-
-					compareOk = validateResultImage(*texView, sampler, m_componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-					break;
-				}
-
-				default:
-					DE_ASSERT(false);
+				compareOk = validateResultImage(*m_texture,
+												m_imageViewType,
+												subresource,
+												sampler,
+												m_componentMapping,
+												coordAccess,
+												lodBounds,
+												relaxedPrecision,
+												lookupScale,
+												lookupBias,
+												resultAccess,
+												errorAccess);
 			}
 
 			if (!compareOk)
@@ -1410,7 +1461,12 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 	}
 
 	if (compareOkAll)
-		return tcu::TestStatus::pass("Result image matches reference");
+	{
+		if (anyWarnings)
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Inaccurate filtering results");
+		else
+			return tcu::TestStatus::pass("Result image matches reference");
+	}
 	else
 		return tcu::TestStatus::fail("Image mismatch");
 }

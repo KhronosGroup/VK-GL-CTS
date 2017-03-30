@@ -314,7 +314,7 @@ tcu::TestNode::IterateResult GPUShader5FmaPrecision<S>::iterate(void)
 
 	deRoundingMode previousRoundingMode = deGetRoundingMode();
 
-	deSetRoundingMode(DE_ROUNDINGMODE_TO_NEAREST);
+	deSetRoundingMode(DE_ROUNDINGMODE_TO_NEAREST_EVEN);
 	for (glw::GLuint i = 0; i < m_n_elements; ++i)
 	{
 		for (glw::GLuint j = 0; j < S; ++j)

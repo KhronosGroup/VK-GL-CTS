@@ -76,6 +76,7 @@
 #include "vktFragmentOperationsTests.hpp"
 #include "vktTextureTests.hpp"
 #include "vktGeometryTests.hpp"
+#include "vktRobustnessTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -398,6 +399,7 @@ void TestPackage::init (void)
 	addChild(FragmentOperations::createTests(m_testCtx));
 	addChild(texture::createTests			(m_testCtx));
 	addChild(geometry::createTests			(m_testCtx));
+	addChild(robustness::createTests		(m_testCtx));
 }
 
 } // vkt

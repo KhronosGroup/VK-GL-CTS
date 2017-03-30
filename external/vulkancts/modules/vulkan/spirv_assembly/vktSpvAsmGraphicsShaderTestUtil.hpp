@@ -4,7 +4,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 #include "tcuRGBA.hpp"
 
 #include "vkPrograms.hpp"
+#include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include "deRandom.hpp"
@@ -42,11 +43,199 @@ namespace vkt
 namespace SpirVAssembly
 {
 
+typedef vk::Unique<VkBuffer>										BufferHandleUp;
+typedef de::SharedPtr<BufferHandleUp>								BufferHandleSp;
 typedef vk::Unique<vk::VkShaderModule>								ModuleHandleUp;
 typedef de::SharedPtr<ModuleHandleUp>								ModuleHandleSp;
 typedef std::pair<std::string, vk::VkShaderStageFlagBits>			EntryToStage;
 typedef std::map<std::string, std::vector<EntryToStage> >			ModuleMap;
 typedef std::map<vk::VkShaderStageFlagBits, std::vector<deInt32> >	StageToSpecConstantMap;
+typedef std::pair<vk::VkDescriptorType, BufferSp>					Resource;
+
+enum NumberType
+{
+	NUMBERTYPE_INT32,
+	NUMBERTYPE_UINT32,
+	NUMBERTYPE_FLOAT32,
+	NUMBERTYPE_END32,		// Marks the end of 32-bit scalar types
+	NUMBERTYPE_INT16,
+	NUMBERTYPE_UINT16,
+	NUMBERTYPE_FLOAT16,
+};
+
+typedef enum RoundingModeFlags_e
+{
+	ROUNDINGMODE_RTE = 0x1,	// Round to nearest even
+	ROUNDINGMODE_RTZ = 0x2,	// Round to zero
+} RoundingModeFlags;
+
+typedef bool (*GraphicsVerifyIOFunc) (const std::vector<Resource>&		inputs,
+									  const std::vector<AllocationSp>&	outputAllocations,
+									  const std::vector<Resource>&		expectedOutputs,
+									  tcu::TestLog&						log);
+
+// Resources used by graphics-pipeline-based tests.
+struct GraphicsResources
+{
+	// Resources used as inputs.
+	std::vector<Resource>	inputs;
+	// Resources used as outputs. The data supplied will be used as
+	// the expected outputs for the corresponding bindings by default.
+	// If other behaviors are needed, please provide a custom verifyIO.
+	std::vector<Resource>	outputs;
+	// If null, a default verification will be performed by comparing the
+	// memory pointed to by outputAllocations  and the contents of
+	// expectedOutputs. Otherwise the function pointed to by verifyIO will
+	// be called. If true is returned, then the test case is assumed to
+	// have passed, if false is returned, then the test case is assumed
+	// to have failed.
+	GraphicsVerifyIOFunc	verifyIO;
+
+							GraphicsResources()
+								: verifyIO	(DE_NULL)
+							{}
+};
+
+// Interface data type.
+struct IFDataType
+{
+						IFDataType			(deUint32 numE, NumberType elementT)
+							: numElements	(numE)
+							, elementType	(elementT)
+						{
+							DE_ASSERT(numE > 0 && numE < 5);
+							DE_ASSERT(elementT != NUMBERTYPE_END32);
+						}
+
+						IFDataType			(const IFDataType& that)
+							: numElements	(that.numElements)
+							, elementType	(that.elementType)
+						{}
+
+	deUint32			getElementNumBytes	(void) const;
+	deUint32			getNumBytes			(void) const { return numElements * getElementNumBytes(); }
+
+	vk::VkFormat		getVkFormat			(void) const;
+
+	tcu::TextureFormat	getTextureFormat	(void) const;
+
+	std::string			str					(void) const;
+
+	bool				elementIs32bit		(void) const { return elementType < NUMBERTYPE_END32; }
+	bool				isVector			(void) const { return numElements > 1; }
+
+	deUint32			numElements;
+	NumberType			elementType;
+};
+
+typedef std::pair<IFDataType, BufferSp>			Interface;
+
+// Interface variables used by graphics-pipeline-based tests.
+class GraphicsInterfaces
+{
+public:
+						GraphicsInterfaces	()
+							: rndMode	(static_cast<RoundingModeFlags>(0))
+						{}
+
+						GraphicsInterfaces	(const GraphicsInterfaces& that)
+							: inputs	(that.inputs)
+							, outputs	(that.outputs)
+							, rndMode	(that.rndMode)
+						{}
+
+	void				setInputOutput		(const Interface& input, const Interface&  output)
+						{
+							inputs.clear();
+							outputs.clear();
+							inputs.push_back(input);
+							outputs.push_back(output);
+						}
+
+	const IFDataType&	getInputType		(void) const
+						{
+							DE_ASSERT(inputs.size() == 1);
+							return inputs.front().first;
+						}
+
+	const IFDataType&	getOutputType		(void) const
+						{
+							DE_ASSERT(outputs.size() == 1);
+							return outputs.front().first;
+						}
+
+	const BufferSp&		getInputBuffer		(void) const
+						{
+							DE_ASSERT(inputs.size() == 1);
+							return inputs.front().second;
+						}
+
+	const BufferSp&		getOutputBuffer		(void) const
+						{
+							DE_ASSERT(outputs.size() == 1);
+							return outputs.front().second;
+						}
+
+	bool				empty				(void) const
+						{
+							return inputs.size() == 0;
+						}
+
+	void				setRoundingMode		(RoundingModeFlags flag)
+						{
+							rndMode = flag;
+						}
+	RoundingModeFlags	getRoundingMode		(void) const
+						{
+							return rndMode;
+						}
+private:
+	// vector<Interface> acts as a null-able Interface here. Canonically we should use
+	// std::unique_ptr, but sadly we cannot leverage C++11 in dEQP. dEQP has its own
+	// de::UniquePtr, but still cumbersome to use in InstanceContext and do copies
+	// at various places.
+	// Public methods should make sure that there are less than two elements in both
+	// members and both members have the same number of elements.
+	std::vector<Interface>	inputs;
+	std::vector<Interface>	outputs;
+	RoundingModeFlags		rndMode;
+
+};
+
+struct PushConstants
+{
+public:
+							PushConstants (void)
+							{}
+
+							PushConstants (const PushConstants& that)
+								: pcs	(that.pcs)
+							{}
+
+	void					setPushConstant	(const BufferSp& pc)
+							{
+								pcs.clear();
+								pcs.push_back(pc);
+							}
+
+	bool					empty (void) const
+							{
+								return pcs.empty();
+							}
+
+	const BufferSp&			getBuffer(void) const
+							{
+								DE_ASSERT(pcs.size() == 1);
+								return pcs[0];
+							}
+
+private:
+	// Right now we only support one field in the push constant block.
+	std::vector<BufferSp>	pcs;
+};
+
+// Returns the corresponding buffer usage flag bit for the given descriptor type.
+VkBufferUsageFlagBits getMatchingBufferUsageFlagBit(VkDescriptorType dType);
 
 // Context for a specific test instantiation. For example, an instantiation
 // may test colors yellow/magenta/cyan/mauve in a tesselation shader
@@ -62,17 +251,37 @@ struct InstanceContext
 	StageToSpecConstantMap					specConstants;
 	bool									hasTessellation;
 	vk::VkShaderStageFlagBits				requiredStages;
+	std::vector<std::string>				requiredDeviceExtensions;
+	std::vector<std::string>				requiredDeviceFeatures;
+	PushConstants							pushConstants;
+	// Possible resources used by the graphics pipeline.
+	// If it is not empty, a single descriptor set (number 0) will be allocated
+	// to point to all resources specified. Binding numbers are allocated in
+	// accord with the resources' order in the vector; outputs are allocated
+	// after inputs.
+	GraphicsResources						resources;
+	// Possible interface variables use by the graphics pipeline.
+	// If it is not empty, input/output variables will be set up for shader stages
+	// in the test. Both the input and output variable will take location #2 in the
+	// pipeline for all stages, except that the output variable in the fragment
+	// stage will take location #1.
+	GraphicsInterfaces						interfaces;
 	qpTestResult							failResult;
 	std::string								failMessageTemplate;	//!< ${reason} in the template will be replaced with a detailed failure message
 
 	InstanceContext (const tcu::RGBA							(&inputs)[4],
 					 const tcu::RGBA							(&outputs)[4],
 					 const std::map<std::string, std::string>&	testCodeFragments_,
-					 const StageToSpecConstantMap&				specConstants_);
+					 const StageToSpecConstantMap&				specConstants_,
+					 const PushConstants&						pushConsants_,
+					 const GraphicsResources&					resources_,
+					 const GraphicsInterfaces&					interfaces_,
+					 const std::vector<std::string>&			extensions_,
+					 const std::vector<std::string>&			features_);
 
 	InstanceContext (const InstanceContext& other);
 
-	std::string getSpecializedFailMessage (const std::string&	failureReason);
+	std::string getSpecializedFailMessage (const std::string& failureReason);
 };
 
 // A description of a shader to be used for a single stage of the graphics pipeline.
@@ -137,14 +346,19 @@ InstanceContext createInstanceContext (const ShaderElement							(&elements)[N],
 									   const tcu::RGBA								(&outputColors)[4],
 									   const std::map<std::string, std::string>&	testCodeFragments,
 									   const StageToSpecConstantMap&				specConstants,
+									   const PushConstants&							pushConstants,
+									   const GraphicsResources&						resources,
+									   const GraphicsInterfaces&					interfaces,
+									   const std::vector<std::string>&				extensions,
+									   const std::vector<std::string>&				features,
 									   const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
 									   const std::string&							failMessageTemplate	= std::string())
 {
-	InstanceContext ctx (inputColors, outputColors, testCodeFragments, specConstants);
+	InstanceContext ctx (inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources, interfaces, extensions, features);
 	for (size_t i = 0; i < N; ++i)
 	{
 		ctx.moduleMap[elements[i].moduleName].push_back(std::make_pair(elements[i].entryName, elements[i].stage));
-		ctx.requiredStages = static_cast<vk::VkShaderStageFlagBits>(ctx.requiredStages | elements[i].stage);
+		ctx.requiredStages = static_cast<VkShaderStageFlagBits>(ctx.requiredStages | elements[i].stage);
 	}
 	ctx.failResult				= failResult;
 	if (!failMessageTemplate.empty())
@@ -152,13 +366,16 @@ InstanceContext createInstanceContext (const ShaderElement							(&elements)[N],
 	return ctx;
 }
 
+// The same as createInstanceContext above, without extensions, spec constants, and resources.
 template<size_t N>
 inline InstanceContext createInstanceContext (const ShaderElement						(&elements)[N],
 											  tcu::RGBA									(&inputColors)[4],
 											  const tcu::RGBA							(&outputColors)[4],
 											  const std::map<std::string, std::string>&	testCodeFragments)
 {
-	return createInstanceContext(elements, inputColors, outputColors, testCodeFragments, StageToSpecConstantMap());
+	return createInstanceContext(elements, inputColors, outputColors, testCodeFragments,
+								 StageToSpecConstantMap(), PushConstants(), GraphicsResources(),
+								 GraphicsInterfaces(), std::vector<std::string>(), std::vector<std::string>());
 }
 
 // The same as createInstanceContext above, but with default colors.
@@ -171,11 +388,17 @@ InstanceContext createInstanceContext (const ShaderElement							(&elements)[N],
 	return createInstanceContext(elements, defaultColors, defaultColors, testCodeFragments);
 }
 
+
 void createTestsForAllStages (const std::string&						name,
 							  const tcu::RGBA							(&inputColors)[4],
 							  const tcu::RGBA							(&outputColors)[4],
 							  const std::map<std::string, std::string>&	testCodeFragments,
 							  const std::vector<deInt32>&				specConstants,
+							  const PushConstants&						pushConstants,
+							  const GraphicsResources&					resources,
+							  const GraphicsInterfaces&					interfaces,
+							  const std::vector<std::string>&			extensions,
+							  const std::vector<std::string>&			features,
 							  tcu::TestCaseGroup*						tests,
 							  const qpTestResult						failResult			= QP_TEST_RESULT_FAIL,
 							  const std::string&						failMessageTemplate	= std::string());
@@ -188,8 +411,96 @@ inline void createTestsForAllStages (const std::string&							name,
 									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
 									 const std::string&							failMessageTemplate	= std::string())
 {
-	std::vector<deInt32> noSpecConstants;
-	createTestsForAllStages(name, inputColors, outputColors, testCodeFragments, noSpecConstants, tests, failResult, failMessageTemplate);
+	std::vector<deInt32>		noSpecConstants;
+	PushConstants				noPushConstants;
+	GraphicsResources			noResources;
+	GraphicsInterfaces			noInterfaces;
+	std::vector<std::string>	noExtensions;
+	std::vector<std::string>	noFeatures;
+
+	createTestsForAllStages(
+			name, inputColors, outputColors, testCodeFragments, noSpecConstants, noPushConstants,
+			noResources, noInterfaces, noExtensions, noFeatures, tests, failResult, failMessageTemplate);
+}
+
+inline void createTestsForAllStages (const std::string&							name,
+									 const tcu::RGBA							(&inputColors)[4],
+									 const tcu::RGBA							(&outputColors)[4],
+									 const std::map<std::string, std::string>&	testCodeFragments,
+									 const std::vector<deInt32>&				specConstants,
+									 tcu::TestCaseGroup*						tests,
+									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
+									 const std::string&							failMessageTemplate	= std::string())
+{
+	PushConstants					noPushConstants;
+	GraphicsResources				noResources;
+	GraphicsInterfaces				noInterfaces;
+	std::vector<std::string>		noExtensions;
+	std::vector<std::string>		noFeatures;
+
+	createTestsForAllStages(
+			name, inputColors, outputColors, testCodeFragments, specConstants, noPushConstants,
+			noResources, noInterfaces, noExtensions, noFeatures, tests, failResult, failMessageTemplate);
+}
+
+inline void createTestsForAllStages (const std::string&							name,
+									 const tcu::RGBA							(&inputColors)[4],
+									 const tcu::RGBA							(&outputColors)[4],
+									 const std::map<std::string, std::string>&	testCodeFragments,
+									 const GraphicsResources&					resources,
+									 const std::vector<std::string>&			extensions,
+									 tcu::TestCaseGroup*						tests,
+									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
+									 const std::string&							failMessageTemplate	= std::string())
+{
+	std::vector<deInt32>		noSpecConstants;
+	PushConstants				noPushConstants;
+	GraphicsInterfaces			noInterfaces;
+	std::vector<std::string>	noFeatures;
+
+	createTestsForAllStages(
+			name, inputColors, outputColors, testCodeFragments, noSpecConstants, noPushConstants,
+			resources, noInterfaces, extensions, noFeatures, tests, failResult, failMessageTemplate);
+}
+
+inline void createTestsForAllStages (const std::string& name,
+									 const tcu::RGBA							(&inputColors)[4],
+									 const tcu::RGBA							(&outputColors)[4],
+									 const std::map<std::string, std::string>&	testCodeFragments,
+									 const GraphicsInterfaces					interfaces,
+									 const std::vector<std::string>&			extensions,
+									 tcu::TestCaseGroup*						tests,
+									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
+									 const std::string&							failMessageTemplate	= std::string())
+{
+	GraphicsResources			noResources;
+	std::vector<deInt32>		noSpecConstants;
+	std::vector<std::string>	noFeatures;
+	PushConstants				noPushConstants;
+
+	createTestsForAllStages(
+			name, inputColors, outputColors, testCodeFragments, noSpecConstants, noPushConstants,
+			noResources, interfaces, extensions, noFeatures, tests, failResult, failMessageTemplate);
+}
+
+inline void createTestsForAllStages (const std::string& name,
+									 const tcu::RGBA							(&inputColors)[4],
+									 const tcu::RGBA							(&outputColors)[4],
+									 const std::map<std::string, std::string>&	testCodeFragments,
+									 const PushConstants&						pushConstants,
+									 const GraphicsResources&					resources,
+									 const std::vector<std::string>&			extensions,
+									 tcu::TestCaseGroup*						tests,
+									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
+									 const std::string&							failMessageTemplate	= std::string())
+{
+	std::vector<deInt32>			noSpecConstants;
+	GraphicsInterfaces				noInterfaces;
+	std::vector<std::string>		noFeatures;
+
+	createTestsForAllStages(
+			name, inputColors, outputColors, testCodeFragments, noSpecConstants, pushConstants,
+			resources, noInterfaces, extensions, noFeatures, tests, failResult, failMessageTemplate);
 }
 
 // Sets up and runs a Vulkan pipeline, then spot-checks the resulting image.
@@ -202,6 +513,25 @@ tcu::TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext i
 // stage and passthrough fragments for all other stages.  Uses default colors
 // for input and expected output.
 void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const std::map<std::string, std::string>& fragments);
+
+// Given the original 32-bit float value, computes the corresponding 16-bit
+// float value under the given rounding mode flags and compares with the
+// returned 16-bit float value. Returns true if they are considered as equal.
+//
+// The following equivalence criteria are respected:
+// * Positive and negative zeros are considered equivalent.
+// * Denormalized floats are allowed to be flushed to zeros.
+// * Different bit patterns of NaNs are allowed.
+// * For the rest, require exactly the same bit pattern.
+bool compare16BitFloat (float original, deUint16 returned, RoundingModeFlags flags, tcu::TestLog& log);
+
+// Compare the returned 32-bit float against its expected value.
+//
+// The following equivalence criteria are respected:
+// * Denormalized floats are allowed to be flushed to zeros.
+// * Different bit patterns of NaNs/Infs are allowed.
+// * For the rest, use C++ float equivalence check.
+bool compare32BitFloat (float expected, float returned, tcu::TestLog& log);
 
 } // SpirVAssembly
 } // vkt
