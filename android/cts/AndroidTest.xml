@@ -24,7 +24,7 @@
 		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="unspecified"/>
-		<option name="runtime-hint" value="24m"/>
+		<option name="runtime-hint" value="23m"/>
 		<option name="deqp-config-required" value="true"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
@@ -33,7 +33,7 @@
 		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="unspecified"/>
-		<option name="runtime-hint" value="40m"/>
+		<option name="runtime-hint" value="46m"/>
 		<option name="deqp-config-required" value="true"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
@@ -42,7 +42,7 @@
 		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="unspecified"/>
-		<option name="runtime-hint" value="1h15m"/>
+		<option name="runtime-hint" value="1h50m"/>
 		<option name="deqp-config-required" value="true"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
@@ -51,7 +51,7 @@
 		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="0"/>
-		<option name="runtime-hint" value="7m"/>
+		<option name="runtime-hint" value="1m"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-GLES3"/>
@@ -59,7 +59,7 @@
 		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="90"/>
-		<option name="runtime-hint" value="7m"/>
+		<option name="runtime-hint" value="1m"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-GLES3"/>
@@ -67,7 +67,7 @@
 		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="180"/>
-		<option name="runtime-hint" value="7m"/>
+		<option name="runtime-hint" value="1m"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-GLES3"/>
@@ -75,7 +75,7 @@
 		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="270"/>
-		<option name="runtime-hint" value="7m"/>
+		<option name="runtime-hint" value="1m"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-GLES3"/>
@@ -83,7 +83,7 @@
 		<option name="deqp-gl-config-name" value="rgba8888d24s8ms4"/>
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="unspecified"/>
-		<option name="runtime-hint" value="10m"/>
+		<option name="runtime-hint" value="1m"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-GLES3"/>
@@ -91,7 +91,7 @@
 		<option name="deqp-gl-config-name" value="rgb565d0s0ms0"/>
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="unspecified"/>
-		<option name="runtime-hint" value="10m"/>
+		<option name="runtime-hint" value="1m"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-GLES31"/>
@@ -99,7 +99,7 @@
 		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="unspecified"/>
-		<option name="runtime-hint" value="7h30m"/>
+		<option name="runtime-hint" value="1h40m"/>
 		<option name="deqp-config-required" value="true"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
@@ -153,6 +153,6 @@
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-VK"/>
 		<option name="deqp-caselist-file" value="vk-master.txt"/>
-		<option name="runtime-hint" value="3h45m"/>
+		<option name="runtime-hint" value="2h29m"/>
 	</test>
 </configuration>
