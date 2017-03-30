@@ -207,7 +207,7 @@ NYC_EGL_PKG						= Package(module = EGL_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= NYC_EGL_COMMON_FILTERS,
-				      runtime		= "24m"),
+				      runtime		= "11m"),
 	])
 
 NYC_GLES2_COMMON_FILTERS			= [
@@ -220,7 +220,7 @@ NYC_GLES2_PKG					= Package(module = GLES2_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= NYC_GLES2_COMMON_FILTERS,
-					  runtime		= "40m"),
+					  runtime		= "30m"),
 	])
 
 NYC_GLES3_COMMON_FILTERS		= [
@@ -233,32 +233,32 @@ NYC_GLES3_PKG					= Package(module = GLES3_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= NYC_GLES3_COMMON_FILTERS,
-					  runtime		= "1h15m"),
+					  runtime		= "1h50min"),
 		# Rotations
 		Configuration(name			= "rotate-portrait",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "0",
 					  surfacetype	= "window",
 					  filters		= NYC_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")],
-					  runtime		= "7m"),
+					  runtime		= "5m"),
 		Configuration(name			= "rotate-landscape",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "90",
 					  surfacetype	= "window",
 					  filters		= NYC_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")],
-					  runtime		= "7m"),
+					  runtime		= "5m"),
 		Configuration(name			= "rotate-reverse-portrait",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "180",
 					  surfacetype	= "window",
 					  filters		= NYC_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")],
-					  runtime		= "7m"),
+					  runtime		= "5m"),
 		Configuration(name			= "rotate-reverse-landscape",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "270",
 					  surfacetype	= "window",
 					  filters		= NYC_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")],
-					  runtime		= "7m"),
+					  runtime		= "5m"),
 
 		# MSAA
 		Configuration(name			= "multisample",
@@ -287,7 +287,7 @@ NYC_GLES31_PKG					= Package(module = GLES31_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= NYC_GLES31_COMMON_FILTERS,
-					  runtime		= "7h30m"),
+					  runtime		= "4h40m"),
 
 		# Rotations
 		Configuration(name			= "rotate-portrait",
@@ -338,7 +338,7 @@ NYC_VULKAN_FILTERS				= [
 NYC_VULKAN_PKG					= Package(module = VULKAN_MODULE, configurations = [
 		Configuration(name			= "master",
 					  filters		= NYC_VULKAN_FILTERS,
-					  runtime		= "3h45m"),
+					  runtime		= "1h11m"),
 	])
 
 # Master
@@ -355,7 +355,7 @@ MASTER_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 					  surfacetype	= "window",
 					  required		= True,
 					  filters		= MASTER_EGL_COMMON_FILTERS,
-				      runtime		= "24m"),
+				      runtime		= "23m"),
 	])
 
 MASTER_GLES2_COMMON_FILTERS		= [
@@ -371,7 +371,7 @@ MASTER_GLES2_PKG				= Package(module = GLES2_MODULE, configurations = [
 					  surfacetype	= "window",
 					  required		= True,
 					  filters		= MASTER_GLES2_COMMON_FILTERS,
-					  runtime		= "40m"),
+					  runtime		= "46m"),
 	])
 
 MASTER_GLES3_COMMON_FILTERS		= [
@@ -389,32 +389,32 @@ MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 					  surfacetype	= "window",
 					  required		= True,
 					  filters		= MASTER_GLES3_COMMON_FILTERS,
-					  runtime		= "1h15m"),
+					  runtime		= "1h50m"),
 		# Rotations
 		Configuration(name			= "rotate-portrait",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "0",
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")],
-					  runtime		= "7m"),
+					  runtime		= "1m"),
 		Configuration(name			= "rotate-landscape",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "90",
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")],
-					  runtime		= "7m"),
+					  runtime		= "1m"),
 		Configuration(name			= "rotate-reverse-portrait",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "180",
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")],
-					  runtime		= "7m"),
+					  runtime		= "1m"),
 		Configuration(name			= "rotate-reverse-landscape",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "270",
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")],
-					  runtime		= "7m"),
+					  runtime		= "1m"),
 
 		# MSAA
 		Configuration(name			= "multisample",
@@ -423,7 +423,7 @@ MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-multisample.txt"),
 																	 exclude("gles3-multisample-issues.txt")],
-					  runtime		= "10m"),
+					  runtime		= "1m"),
 
 		# Pixel format
 		Configuration(name			= "565-no-depth-no-stencil",
@@ -432,7 +432,7 @@ MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt"),
 																	 exclude("gles3-pixelformat-issues.txt")],
-					  runtime		= "10m"),
+					  runtime		= "1m"),
 	])
 
 MASTER_GLES31_COMMON_FILTERS	= [
@@ -450,7 +450,7 @@ MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 					  surfacetype	= "window",
 					  required		= True,
 					  filters		= MASTER_GLES31_COMMON_FILTERS,
-					  runtime		= "7h30m"),
+					  runtime		= "1h40m"),
 
 		# Rotations
 		Configuration(name			= "rotate-portrait",
@@ -504,7 +504,7 @@ MASTER_VULKAN_FILTERS			= [
 MASTER_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
 		Configuration(name			= "master",
 					  filters		= MASTER_VULKAN_FILTERS,
-					  runtime		= "3h45m"),
+					  runtime		= "2h29m"),
 	])
 
 MUSTPASS_LISTS				= [
