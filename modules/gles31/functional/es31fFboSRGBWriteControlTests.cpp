@@ -35,6 +35,7 @@
 #include "gluPixelTransfer.hpp"
 #include "glsTextureTestUtil.hpp"
 #include "tcuVectorUtil.hpp"
+#include "gluStrUtil.hpp"
 
 namespace deqp
 {
@@ -1771,6 +1772,106 @@ bool FboSRGBCopyToLinearCase::verifyResult (void)
 		return false;
 }
 
+class FboSRGBUnsupportedEnumCase : public TestCase
+{
+public:
+					FboSRGBUnsupportedEnumCase	(Context& context, const char* const name, const char* const description);
+					~FboSRGBUnsupportedEnumCase	(void);
+
+	void			init						(void);
+	void			deinit						(void);
+	bool			isInvalidEnum				(std::string functionName);
+	IterateResult	iterate						(void);
+};
+
+FboSRGBUnsupportedEnumCase::FboSRGBUnsupportedEnumCase	(Context& context, const char* const name, const char* const description)
+	: TestCase						(context, name, description)
+{
+}
+
+FboSRGBUnsupportedEnumCase::~FboSRGBUnsupportedEnumCase (void)
+{
+	FboSRGBUnsupportedEnumCase::deinit();
+}
+
+void FboSRGBUnsupportedEnumCase::init (void)
+{
+	// extension requirements for test
+	if (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) || m_context.getContextInfo().isExtensionSupported("GL_EXT_sRGB_write_control"))
+		TCU_THROW(NotSupportedError, "Test requires extension GL_EXT_sRGB_write_control to be unsupported and a context version less than 3.2");
+}
+
+void FboSRGBUnsupportedEnumCase::deinit (void)
+{
+}
+
+bool FboSRGBUnsupportedEnumCase::isInvalidEnum (std::string functionName)
+{
+	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
+	tcu::TestLog&			log			= m_context.getTestContext().getLog();
+	bool					isOk		= true;
+	glw::GLenum				error		= GL_NO_ERROR;
+
+	log << tcu::TestLog::Message << "Checking call to " << functionName << tcu::TestLog::EndMessage;
+
+	std::ostringstream		message;
+	gl.getError();
+
+	if (error != GL_INVALID_ENUM)
+	{
+		message << functionName << " returned wrong value [" << glu::getErrorStr(error) << ", expected " << glu::getErrorStr(GL_INVALID_ENUM) << "]";
+		log << tcu::TestLog::Message << message.str() << tcu::TestLog::EndMessage;
+		isOk = false;
+	}
+
+	return isOk;
+}
+
+FboSRGBUnsupportedEnumCase::IterateResult FboSRGBUnsupportedEnumCase::iterate (void)
+{
+	// TEST INFO:
+	// API tests that check calls using enum GL_FRAMEBUFFER_SRGB return GL_INVALID_ENUM  when GL_EXT_sRGB_write_control is not supported
+
+	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
+	bool					allPass		= true;
+	glw::GLboolean			bEnabled	= GL_FALSE;
+	glw::GLfloat			fEnabled	= 0;
+	glw::GLint				iEnabled	= 0;
+	glw::GLint64			lEnabled	= 0;
+
+	m_context.getTestContext().getLog() << tcu::TestLog::Message
+										<< "Check calls using enum GL_FRAMEBUFFER_SRGB return GL_INVALID_ENUM  when GL_EXT_sRGB_write_control is not supported\n\n"
+										<< tcu::TestLog::EndMessage;
+
+	gl.enable(GL_FRAMEBUFFER_SRGB);
+	allPass &= isInvalidEnum("glEnable()");
+
+	gl.disable(GL_FRAMEBUFFER_SRGB);
+	allPass &= isInvalidEnum("glDisable()");
+
+	gl.isEnabled(GL_FRAMEBUFFER_SRGB);
+	allPass &= isInvalidEnum("glIsEnabled()");
+
+	gl.getBooleanv(GL_FRAMEBUFFER_SRGB, &bEnabled);
+	allPass &= isInvalidEnum("glGetBooleanv()");
+
+	gl.getFloatv(GL_FRAMEBUFFER_SRGB, &fEnabled);
+	allPass &= isInvalidEnum("glGetFloatv()");
+
+	gl.getIntegerv(GL_FRAMEBUFFER_SRGB, &iEnabled);
+	allPass &= isInvalidEnum("glGetIntegerv()");
+
+	gl.getInteger64v(GL_FRAMEBUFFER_SRGB, &lEnabled);
+	allPass &= isInvalidEnum("glGetInteger64v()");
+
+	if (allPass)
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	else
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+
+	return STOP;
+}
+
 } // anonymous
 
 FboSRGBWriteControlTests::FboSRGBWriteControlTests	(Context& context)
@@ -1789,6 +1890,9 @@ void FboSRGBWriteControlTests::init (void)
 	this->addChild(new FboSRGBToggleBlendCase			(m_context, "framebuffer_srgb_enabled_blend",					"toggle framebuffer srgb settings with blend disabled"));
 	this->addChild(new FboSRGBRenderTargetIgnoreCase	(m_context, "framebuffer_srgb_enabled_render_target_ignore",	"enable framebuffer srgb, non-srgb render target should ignore"));
 	this->addChild(new FboSRGBCopyToLinearCase			(m_context, "framebuffer_srgb_enabled_copy_to_linear",			"no conversion when blittering between framebuffer srgb and linear"));
+
+	// negative
+	this->addChild(new FboSRGBUnsupportedEnumCase		(m_context, "framebuffer_srgb_unsupported_enum",				"check error codes for query functions when extension is not supported"));
 }
 
 }
