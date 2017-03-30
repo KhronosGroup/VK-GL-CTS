@@ -311,11 +311,9 @@ public:
 	void		setTextureUnit		(const deUint32 textureUnit);
 	void		setIsActive			(const bool isActive);
 
-	deUint32	getHandle			(void) const;
 	bool		getIsActive			(void) const;
 
 	void		bindToTexture		(void);
-	void		unbindFromTexture	(void);
 
 private:
 	const glw::Functions*		m_gl;
@@ -387,11 +385,6 @@ void SRGBTestSampler::setIsActive (const bool isActive)
 	m_isActive = isActive;
 }
 
-deUint32 SRGBTestSampler::getHandle (void) const
-{
-	return m_samplerHandle;
-}
-
 bool SRGBTestSampler::getIsActive (void) const
 {
 	return m_isActive;
@@ -400,11 +393,6 @@ bool SRGBTestSampler::getIsActive (void) const
 void SRGBTestSampler::bindToTexture (void)
 {
 	m_gl->bindSampler(m_textureUnit, m_samplerHandle);
-}
-
-void SRGBTestSampler::unbindFromTexture (void)
-{
-	m_gl->bindSampler(m_textureUnit, 0);
 }
 
 class SRGBTestTexture
@@ -430,7 +418,6 @@ public:
 	deUint32	getHandle			(void) const;
 	deUint32	getGLTargetType		(void) const;
 	SRGBDecode	getDecode			(void) const;
-	bool		getHasSampler		(void) const;
 
 	void		upload				(void);
 
@@ -565,11 +552,6 @@ SRGBDecode SRGBTestTexture::getDecode (void) const
 	return m_decoding;
 }
 
-bool SRGBTestTexture::getHasSampler (void) const
-{
-	return m_hasSampler;
-}
-
 void SRGBTestTexture::upload (void)
 {
 	m_source.upload();
@@ -604,14 +586,11 @@ public:
 	void							setToggleRequired		(bool toggleRequired);
 	void							setUniformToggle		(int location, bool toggleDecodeValue);
 
-	int								getUniformTotal			(void) const;
 	const std::vector<UniformData>&	getUniformDataList		(void) const;
 	const UniformData&				getUniformAtLocation	(int location) const;
 	int								getUniformLocation		(const std::string& name);
 	deUint32						getHandle				(void) const;
 	bool							getBlendRequired		(void) const;
-	bool							getToggleRequired		(void) const;
-	const std::string&				getFragmentShader		(void) const;
 
 private:
 	std::string						genFunctionCall			(ShaderSamplingType samplingType, const int uniformIdx);
@@ -713,11 +692,6 @@ void SRGBTestProgram::setUniformToggle (int location, bool toggleDecodeValue)
 	}
 }
 
-int SRGBTestProgram::getUniformTotal (void) const
-{
-	return (int)m_uniformDataList.size();
-}
-
 const std::vector<UniformData>& SRGBTestProgram::getUniformDataList (void) const
 {
 	return m_uniformDataList;
@@ -750,16 +724,6 @@ glw::GLuint SRGBTestProgram::getHandle (void) const
 bool SRGBTestProgram::getBlendRequired (void) const
 {
 	return m_blendRequired;
-}
-
-bool SRGBTestProgram::getToggleRequired (void) const
-{
-	return m_toggleRequired;
-}
-
-const std::string& SRGBTestProgram::getFragmentShader (void) const
-{
-	return m_shaderFragment;
 }
 
 std::string SRGBTestProgram::genFunctionCall (ShaderSamplingType samplingType, const int uniformIdx)
@@ -904,12 +868,7 @@ public:
 
 	void					setSamplingGroup				(const ShaderSamplingGroup samplingGroup);
 	void					setSamplingLocations			(const int px, const int py);
-	void					setShaderProgramBlendRequired	(const int programIdx, const bool blend);
-	void					setShaderProgramToggleRequired	(const int programIdx, const bool toggle);
 	void					setUniformToggle				(const int programIdx, const std::string& uniformName, bool toggleDecode);
-
-	deUint32				getShaderProgramHandle			(const int programIdx) const;
-	deUint32				getTextureHandle				(const int textureIdx) const;
 
 	void					addTexture						(const glu::TextureTestUtil::TextureType	targetType,
 															 const int									width,
@@ -1102,32 +1061,6 @@ void SRGBTestCase::setSamplingLocations (const int px, const int py)
 {
 	m_px = px;
 	m_py = py;
-}
-
-void SRGBTestCase::setShaderProgramBlendRequired (const int programIdx, const bool blend)
-{
-	m_shaderProgramList[programIdx]->setBlendRequired(blend);
-}
-
-void SRGBTestCase::setShaderProgramToggleRequired (const int programIdx, const bool toggle)
-{
-	m_shaderProgramList[programIdx]->setToggleRequired(toggle);
-}
-
-void SRGBTestCase::setUniformToggle (const int programIdx, const std::string& uniformName, bool toggleDecodeValue)
-{
-	int uniformLocation = m_shaderProgramList[programIdx]->getUniformLocation(uniformName);
-	m_shaderProgramList[programIdx]->setUniformToggle(uniformLocation, toggleDecodeValue);
-}
-
-deUint32 SRGBTestCase::getShaderProgramHandle (const int programIdx) const
-{
-	return m_shaderProgramList[programIdx]->getHandle();
-}
-
-deUint32 SRGBTestCase::getTextureHandle (const int textureIdx) const
-{
-	return m_textureSourceList[textureIdx]->getHandle();
 }
 
 void SRGBTestCase::addTexture (	const glu::TextureTestUtil::TextureType	targetType,
