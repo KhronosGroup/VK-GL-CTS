@@ -190,18 +190,20 @@ InstanceContext::InstanceContext (const RGBA						(&inputs)[4],
 								  const GraphicsResources&			resources_,
 								  const GraphicsInterfaces&			interfaces_,
 								  const vector<string>&				extensions_,
-								  const vector<string>&				features_)
-	: testCodeFragments			(testCodeFragments_)
-	, specConstants				(specConstants_)
-	, hasTessellation			(false)
-	, requiredStages			(static_cast<VkShaderStageFlagBits>(0))
-	, requiredDeviceExtensions	(extensions_)
-	, requiredDeviceFeatures	(features_)
-	, pushConstants				(pushConsants_)
-	, resources					(resources_)
-	, interfaces				(interfaces_)
-	, failResult				(QP_TEST_RESULT_FAIL)
-	, failMessageTemplate		("${reason}")
+								  const vector<string>&				features_,
+								  ExtensionFeatures					extensionFeatures_)
+	: testCodeFragments				(testCodeFragments_)
+	, specConstants					(specConstants_)
+	, hasTessellation				(false)
+	, requiredStages				(static_cast<VkShaderStageFlagBits>(0))
+	, requiredDeviceExtensions		(extensions_)
+	, requiredDeviceFeatures		(features_)
+	, requestedExtensionFeatures	(extensionFeatures_)
+	, pushConstants					(pushConsants_)
+	, resources						(resources_)
+	, interfaces					(interfaces_)
+	, failResult					(QP_TEST_RESULT_FAIL)
+	, failMessageTemplate			("${reason}")
 {
 	inputColors[0]		= inputs[0];
 	inputColors[1]		= inputs[1];
@@ -215,18 +217,19 @@ InstanceContext::InstanceContext (const RGBA						(&inputs)[4],
 }
 
 InstanceContext::InstanceContext (const InstanceContext& other)
-	: moduleMap					(other.moduleMap)
-	, testCodeFragments			(other.testCodeFragments)
-	, specConstants				(other.specConstants)
-	, hasTessellation			(other.hasTessellation)
-	, requiredStages			(other.requiredStages)
-	, requiredDeviceExtensions	(other.requiredDeviceExtensions)
-	, requiredDeviceFeatures	(other.requiredDeviceFeatures)
-	, pushConstants				(other.pushConstants)
-	, resources					(other.resources)
-	, interfaces				(other.interfaces)
-	, failResult				(other.failResult)
-	, failMessageTemplate		(other.failMessageTemplate)
+	: moduleMap						(other.moduleMap)
+	, testCodeFragments				(other.testCodeFragments)
+	, specConstants					(other.specConstants)
+	, hasTessellation				(other.hasTessellation)
+	, requiredStages				(other.requiredStages)
+	, requiredDeviceExtensions		(other.requiredDeviceExtensions)
+	, requiredDeviceFeatures		(other.requiredDeviceFeatures)
+	, requestedExtensionFeatures	(other.requestedExtensionFeatures)
+	, pushConstants					(other.pushConstants)
+	, resources						(other.resources)
+	, interfaces					(other.interfaces)
+	, failResult					(other.failResult)
+	, failMessageTemplate			(other.failMessageTemplate)
 {
 	inputColors[0]		= other.inputColors[0];
 	inputColors[1]		= other.inputColors[1];
@@ -2021,11 +2024,12 @@ Move<VkBuffer> createBufferForResource(const DeviceInterface& vk, const VkDevice
 	return createBuffer(vk, vkDevice, &resourceBufferParams);
 }
 
-
 TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instance)
 {
 	const VkDevice								vkDevice				= context.getDevice();
+	const VkPhysicalDevice						vkPhysicalDevice		= context.getPhysicalDevice();
 	const DeviceInterface&						vk						= context.getDeviceInterface();
+	const InstanceInterface&					vkInstance				= context.getInstanceInterface();
 	const VkQueue								queue					= context.getUniversalQueue();
 	const deUint32								queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	const tcu::UVec2							renderSize				(256, 256);
@@ -2087,6 +2091,12 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				throw tcu::InternalError(std::string("Unimplemented physical device feature: ") + feature);
 			}
 		}
+	}
+
+	// 16bit storage features
+	{
+		if (!is16BitStorageFeaturesSupported(vkInstance, vkPhysicalDevice, instance.requestedExtensionFeatures.ext16BitStorage))
+			TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 	}
 
 	de::Random(seed).shuffle(instance.inputColors, instance.inputColors+4);
@@ -3348,6 +3358,7 @@ void createTestsForAllStages (const std::string&			name,
 							  const GraphicsInterfaces&		interfaces,
 							  const vector<string>&			extensions,
 							  const vector<string>&			features,
+							  ExtensionFeatures				extensionFeatures,
 							  tcu::TestCaseGroup*			tests,
 							  const qpTestResult			failResult,
 							  const string&					failMessageTemplate)
@@ -3379,35 +3390,35 @@ void createTestsForAllStages (const std::string&			name,
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_vert", "", addShaderCodeCustomVertex, runAndVerifyDefaultPipeline,
 			createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, extensionFeatures, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_tessc", "", addShaderCodeCustomTessControl, runAndVerifyDefaultPipeline,
 			createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, extensionFeatures, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_tesse", "", addShaderCodeCustomTessEval, runAndVerifyDefaultPipeline,
 			createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, extensionFeatures, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_GEOMETRY_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_geom", "", addShaderCodeCustomGeometry, runAndVerifyDefaultPipeline,
 			createInstanceContext(geomPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, extensionFeatures, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_FRAGMENT_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_frag", "", addShaderCodeCustomFragment, runAndVerifyDefaultPipeline,
 			createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, extensionFeatures, failResult, failMessageTemplate));
 }
 
 void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const map<string, string>& fragments)
@@ -3427,7 +3438,8 @@ void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const map<stri
 			runAndVerifyDefaultPipeline, createInstanceContext(
 				pipelineStages, defaultColors, defaultColors, fragments,
 				StageToSpecConstantMap(), PushConstants(), GraphicsResources(),
-				GraphicsInterfaces(), vector<string>(), vector<string>()));
+				GraphicsInterfaces(), vector<string>(), vector<string>(),
+				ExtensionFeatures()));
 }
 
 } // SpirVAssembly

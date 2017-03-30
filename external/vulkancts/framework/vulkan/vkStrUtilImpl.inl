@@ -210,6 +210,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHX:					return "VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHX";
 		case VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHX:								return "VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHX";
 		case VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHX:							return "VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHX";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX:							return "VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX:				return "VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_CMD_PROCESS_COMMANDS_INFO_NVX:							return "VK_STRUCTURE_TYPE_CMD_PROCESS_COMMANDS_INFO_NVX";
@@ -3554,6 +3555,19 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSparseImageForm
 	s << "\tsamples = " << value.samples << '\n';
 	s << "\tusage = " << getImageUsageFlagsStr(value.usage) << '\n';
 	s << "\ttiling = " << value.tiling << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevice16BitStorageFeaturesKHR& value)
+{
+	s << "VkPhysicalDevice16BitStorageFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstorageUniformBufferBlock16 = " << value.storageUniformBufferBlock16 << '\n';
+	s << "\tstorageUniform16 = " << value.storageUniform16 << '\n';
+	s << "\tstoragePushConstant16 = " << value.storagePushConstant16 << '\n';
+	s << "\tstorageInputOutput16 = " << value.storageInputOutput16 << '\n';
 	s << '}';
 	return s;
 }

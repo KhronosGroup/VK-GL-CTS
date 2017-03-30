@@ -13,6 +13,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmInstructionTests.hpp
 	vktSpvAsmTests.cpp
 	vktSpvAsmTests.hpp
+	vktSpvAsmUtils.cpp
+	vktSpvAsmUtils.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS

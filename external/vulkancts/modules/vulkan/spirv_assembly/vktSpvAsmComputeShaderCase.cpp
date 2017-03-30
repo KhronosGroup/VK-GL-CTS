@@ -337,6 +337,17 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		throw tcu::NotSupportedError("shaderInt64 feature is not supported");
 	}
 
+	{
+		const InstanceInterface&			vki					= m_context.getInstanceInterface();
+		const VkPhysicalDevice				physicalDevice		= m_context.getPhysicalDevice();
+
+		// 16bit storage features
+		{
+			if (!is16BitStorageFeaturesSupported(vki, physicalDevice, m_shaderSpec.requestedExtensionFeatures.ext16BitStorage))
+				TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
+		}
+	}
+
 	vector<AllocationSp>				inputAllocs;
 	vector<AllocationSp>				outputAllocs;
 	vector<BufferHandleSp>				inputBuffers;
