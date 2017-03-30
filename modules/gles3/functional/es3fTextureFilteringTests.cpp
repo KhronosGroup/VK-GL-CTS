@@ -34,6 +34,11 @@
 #include "deString.h"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
+#include "gluContextInfo.hpp"
+#include "deUniquePtr.hpp"
+
+using de::MovePtr;
+using glu::ContextInfo;
 
 namespace deqp
 {
@@ -60,6 +65,17 @@ enum
 	TEX3D_MIN_VIEWPORT_WIDTH	= 64,
 	TEX3D_MIN_VIEWPORT_HEIGHT	= 64
 };
+
+namespace
+{
+
+void checkSupport (const glu::ContextInfo& info, deUint32 internalFormat)
+{
+	if (internalFormat == GL_SR8_EXT && !info.isExtensionSupported("GL_EXT_texture_sRGB_R8"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+}
+
+} // anonymous
 
 class Texture2DFilteringCase : public tcu::TestCase
 {
@@ -157,6 +173,8 @@ Texture2DFilteringCase::~Texture2DFilteringCase (void)
 
 void Texture2DFilteringCase::init (void)
 {
+	checkSupport(m_renderCtxInfo, m_internalFormat);
+
 	try
 	{
 		if (!m_filenames.empty())
@@ -436,6 +454,8 @@ TextureCubeFilteringCase::~TextureCubeFilteringCase (void)
 
 void TextureCubeFilteringCase::init (void)
 {
+	checkSupport(m_renderCtxInfo, m_internalFormat);
+
 	try
 	{
 		if (!m_filenames.empty())
@@ -731,6 +751,8 @@ Texture2DArrayFilteringCase::~Texture2DArrayFilteringCase (void)
 
 void Texture2DArrayFilteringCase::init (void)
 {
+	checkSupport(m_context.getContextInfo(), m_internalFormat);
+
 	try
 	{
 		const tcu::TextureFormat		texFmt		= glu::mapGLInternalFormat(m_internalFormat);
@@ -996,6 +1018,8 @@ Texture3DFilteringCase::~Texture3DFilteringCase (void)
 
 void Texture3DFilteringCase::init (void)
 {
+	checkSupport(m_context.getContextInfo(), m_internalFormat);
+
 	try
 	{
 		const tcu::TextureFormat		texFmt		= glu::mapGLInternalFormat(m_internalFormat);
@@ -1274,6 +1298,7 @@ void TextureFilteringTests::init (void)
 		{ "rgba4",			GL_RGBA4			},
 		{ "rgb5_a1",		GL_RGB5_A1			},
 		{ "srgb8_alpha8",	GL_SRGB8_ALPHA8		},
+		{ "srgb_r8",		GL_SR8_EXT			},
 		{ "rgb10_a2",		GL_RGB10_A2			}
 	};
 

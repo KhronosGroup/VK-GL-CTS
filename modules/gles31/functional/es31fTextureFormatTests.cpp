@@ -51,6 +51,12 @@ using namespace glu::TextureTestUtil;
 
 using tcu::Sampler;
 
+struct SupportedExtensions
+{
+	bool cubeMapArray;
+	bool sRGBR8;
+};
+
 static tcu::CubeFace getCubeFaceFromNdx (int ndx)
 {
 	switch (ndx)
@@ -66,6 +72,21 @@ static tcu::CubeFace getCubeFaceFromNdx (int ndx)
 			return tcu::CUBEFACE_LAST;
 	}
 }
+
+namespace
+{
+
+SupportedExtensions checkSupport (const glu::ContextInfo& renderCtxInfoid)
+{
+	SupportedExtensions supportedExtensions;
+
+	supportedExtensions.cubeMapArray = renderCtxInfoid.isExtensionSupported("GL_EXT_texture_cube_map_array");
+	supportedExtensions.sRGBR8 = renderCtxInfoid.isExtensionSupported("GL_EXT_texture_sRGB_R8");
+
+	return supportedExtensions;
+}
+
+} // anonymous
 
 // TextureCubeArrayFormatCase
 
@@ -84,7 +105,6 @@ private:
 										TextureCubeArrayFormatCase	(const TextureCubeArrayFormatCase& other);
 	TextureCubeArrayFormatCase&			operator=					(const TextureCubeArrayFormatCase& other);
 
-	bool								checkSupport				(void);
 	bool								testLayerFace				(int layerNdx);
 
 	glu::RenderContext&					m_renderCtx;
@@ -136,7 +156,10 @@ TextureCubeArrayFormatCase::~TextureCubeArrayFormatCase (void)
 
 void TextureCubeArrayFormatCase::init (void)
 {
-	if (checkSupport())
+	const SupportedExtensions supportedExtensions = checkSupport(m_renderCtxInfo);
+
+	if ((supportedExtensions.cubeMapArray && m_format != GL_SR8_EXT) ||
+		(supportedExtensions.cubeMapArray && m_format == GL_SR8_EXT && supportedExtensions.sRGBR8))
 	{
 		m_texture = m_dataType != GL_NONE
 				  ? new glu::TextureCubeArray(m_renderCtx, m_format, m_dataType, m_size, m_depth)	// Implicit internal format.
@@ -154,7 +177,11 @@ void TextureCubeArrayFormatCase::init (void)
 	}
 	else
 	{
-		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Cube map arrays not supported");
+		if (supportedExtensions.cubeMapArray == false)
+			m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Cube map arrays not supported");
+
+		if (supportedExtensions.sRGBR8 == false)
+			m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "texture srgb r8 not supported");
 	}
 }
 
@@ -164,12 +191,6 @@ void TextureCubeArrayFormatCase::deinit (void)
 	m_texture = DE_NULL;
 
 	m_renderer.clear();
-}
-
-bool TextureCubeArrayFormatCase::checkSupport (void)
-{
-	const bool supportsES32 = glu::contextSupports(m_renderCtx.getType(), glu::ApiType::es(3, 2));
-	return supportsES32 || m_renderCtxInfo.isExtensionSupported("GL_EXT_texture_cube_map_array");
 }
 
 bool TextureCubeArrayFormatCase::testLayerFace (int layerFaceNdx)
@@ -451,6 +472,7 @@ void TextureFormatTests::init (void)
 		{ "rgba8",				GL_RGBA8,			},
 		{ "rgba8i",				GL_RGBA8I,			},
 		{ "rgba8ui",			GL_RGBA8UI,			},
+		{ "srgb_r8",			GL_SR8_EXT,			},
 		{ "srgb8_alpha8",		GL_SRGB8_ALPHA8,	},
 		{ "rgb10_a2",			GL_RGB10_A2,		},
 		{ "rgb10_a2ui",			GL_RGB10_A2UI,		},

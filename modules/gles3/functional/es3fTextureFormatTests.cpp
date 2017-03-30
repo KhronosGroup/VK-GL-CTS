@@ -44,10 +44,15 @@
 #include "deRandom.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
+#include "gluContextInfo.hpp"
+#include "deUniquePtr.hpp"
 
 using std::vector;
 using std::string;
 using tcu::TestLog;
+
+using de::MovePtr;
+using glu::ContextInfo;
 
 namespace deqp
 {
@@ -61,13 +66,24 @@ using namespace deqp::gls::TextureTestUtil;
 using namespace glu::TextureTestUtil;
 using tcu::Sampler;
 
+namespace
+{
+
+void checkSupport (const glu::ContextInfo& info, deUint32 internalFormat)
+{
+	if (internalFormat == GL_SR8_EXT && !info.isExtensionSupported("GL_EXT_texture_sRGB_R8"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+}
+
+} // anonymous
+
 // Texture2DFormatCase
 
 class Texture2DFormatCase : public tcu::TestCase
 {
 public:
-							Texture2DFormatCase		(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height);
-							Texture2DFormatCase		(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 internalFormat, int width, int height);
+							Texture2DFormatCase		(tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height);
+							Texture2DFormatCase		(tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 internalFormat, int width, int height);
 							~Texture2DFormatCase	(void);
 
 	void					init					(void);
@@ -79,6 +95,7 @@ private:
 	Texture2DFormatCase&	operator=				(const Texture2DFormatCase& other);
 
 	glu::RenderContext&		m_renderCtx;
+	const glu::ContextInfo&	m_renderCtxInfo;
 
 	deUint32				m_format;
 	deUint32				m_dataType;
@@ -89,27 +106,29 @@ private:
 	TextureRenderer			m_renderer;
 };
 
-Texture2DFormatCase::Texture2DFormatCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height)
-	: TestCase		(testCtx, name, description)
-	, m_renderCtx	(renderCtx)
-	, m_format		(format)
-	, m_dataType	(dataType)
-	, m_width		(width)
-	, m_height		(height)
-	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+Texture2DFormatCase::Texture2DFormatCase (tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height)
+	: TestCase			(testCtx, name, description)
+	, m_renderCtx		(context.getRenderContext())
+	, m_renderCtxInfo	(context.getContextInfo())
+	, m_format			(format)
+	, m_dataType		(dataType)
+	, m_width			(width)
+	, m_height			(height)
+	, m_texture			(DE_NULL)
+	, m_renderer		(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
-Texture2DFormatCase::Texture2DFormatCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 internalFormat, int width, int height)
-	: TestCase		(testCtx, name, description)
-	, m_renderCtx	(renderCtx)
-	, m_format		(internalFormat)
-	, m_dataType	(GL_NONE)
-	, m_width		(width)
-	, m_height		(height)
-	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+Texture2DFormatCase::Texture2DFormatCase (tcu::TestContext& testCtx,  Context& context, const char* name, const char* description, deUint32 internalFormat, int width, int height)
+	: TestCase			(testCtx, name, description)
+	, m_renderCtx		(context.getRenderContext())
+	, m_renderCtxInfo	(context.getContextInfo())
+	, m_format			(internalFormat)
+	, m_dataType		(GL_NONE)
+	, m_width			(width)
+	, m_height			(height)
+	, m_texture			(DE_NULL)
+	, m_renderer		(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -120,6 +139,8 @@ Texture2DFormatCase::~Texture2DFormatCase (void)
 
 void Texture2DFormatCase::init (void)
 {
+	checkSupport(m_renderCtxInfo, m_format);
+
 	TestLog&				log		= m_testCtx.getLog();
 	tcu::TextureFormat		fmt		= m_dataType ? glu::mapGLTransferFormat(m_format, m_dataType) : glu::mapGLInternalFormat(m_format);
 	tcu::TextureFormatInfo	spec	= tcu::getTextureFormatInfo(fmt);
@@ -222,8 +243,8 @@ Texture2DFormatCase::IterateResult Texture2DFormatCase::iterate (void)
 class TextureCubeFormatCase : public tcu::TestCase
 {
 public:
-							TextureCubeFormatCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height);
-							TextureCubeFormatCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 internalFormat, int width, int height);
+							TextureCubeFormatCase	(tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height);
+							TextureCubeFormatCase	(tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 internalFormat, int width, int height);
 							~TextureCubeFormatCase	(void);
 
 	void					init					(void);
@@ -237,6 +258,7 @@ private:
 	bool					testFace				(tcu::CubeFace face);
 
 	glu::RenderContext&		m_renderCtx;
+	const glu::ContextInfo&	m_renderCtxInfo;
 
 	deUint32				m_format;
 	deUint32				m_dataType;
@@ -250,31 +272,33 @@ private:
 	bool					m_isOk;
 };
 
-TextureCubeFormatCase::TextureCubeFormatCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height)
-	: TestCase		(testCtx, name, description)
-	, m_renderCtx	(renderCtx)
-	, m_format		(format)
-	, m_dataType	(dataType)
-	, m_width		(width)
-	, m_height		(height)
-	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
-	, m_curFace		(0)
-	, m_isOk		(false)
+TextureCubeFormatCase::TextureCubeFormatCase (tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height)
+	: TestCase			(testCtx, name, description)
+	, m_renderCtx		(context.getRenderContext())
+	, m_renderCtxInfo	(context.getContextInfo())
+	, m_format			(format)
+	, m_dataType		(dataType)
+	, m_width			(width)
+	, m_height			(height)
+	, m_texture			(DE_NULL)
+	, m_renderer		(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_curFace			(0)
+	, m_isOk			(false)
 {
 }
 
-TextureCubeFormatCase::TextureCubeFormatCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 internalFormat, int width, int height)
-	: TestCase		(testCtx, name, description)
-	, m_renderCtx	(renderCtx)
-	, m_format		(internalFormat)
-	, m_dataType	(GL_NONE)
-	, m_width		(width)
-	, m_height		(height)
-	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
-	, m_curFace		(0)
-	, m_isOk		(false)
+TextureCubeFormatCase::TextureCubeFormatCase (tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 internalFormat, int width, int height)
+	: TestCase			(testCtx, name, description)
+	, m_renderCtx		(context.getRenderContext())
+	, m_renderCtxInfo	(context.getContextInfo())
+	, m_format			(internalFormat)
+	, m_dataType		(GL_NONE)
+	, m_width			(width)
+	, m_height			(height)
+	, m_texture			(DE_NULL)
+	, m_renderer		(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_curFace			(0)
+	, m_isOk			(false)
 {
 }
 
@@ -285,6 +309,8 @@ TextureCubeFormatCase::~TextureCubeFormatCase (void)
 
 void TextureCubeFormatCase::init (void)
 {
+	checkSupport(m_renderCtxInfo, m_format);
+
 	TestLog&				log		= m_testCtx.getLog();
 	tcu::TextureFormat		fmt		= m_dataType ? glu::mapGLTransferFormat(m_format, m_dataType) : glu::mapGLInternalFormat(m_format);
 	tcu::TextureFormatInfo	spec	= tcu::getTextureFormatInfo(fmt);
@@ -417,8 +443,8 @@ TextureCubeFormatCase::IterateResult TextureCubeFormatCase::iterate (void)
 class Texture2DArrayFormatCase : public tcu::TestCase
 {
 public:
-										Texture2DArrayFormatCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height, int numLayers);
-										Texture2DArrayFormatCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 internalFormat, int width, int height, int numLayers);
+										Texture2DArrayFormatCase	(tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height, int numLayers);
+										Texture2DArrayFormatCase	(tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 internalFormat, int width, int height, int numLayers);
 										~Texture2DArrayFormatCase	(void);
 
 	void								init						(void);
@@ -432,6 +458,7 @@ private:
 	bool								testLayer					(int layerNdx);
 
 	glu::RenderContext&					m_renderCtx;
+	const glu::ContextInfo&				m_renderCtxInfo;
 
 	deUint32							m_format;
 	deUint32							m_dataType;
@@ -445,31 +472,33 @@ private:
 	int									m_curLayer;
 };
 
-Texture2DArrayFormatCase::Texture2DArrayFormatCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height, int numLayers)
-	: TestCase		(testCtx, name, description)
-	, m_renderCtx	(renderCtx)
-	, m_format		(format)
-	, m_dataType	(dataType)
-	, m_width		(width)
-	, m_height		(height)
-	, m_numLayers	(numLayers)
-	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
-	, m_curLayer	(0)
+Texture2DArrayFormatCase::Texture2DArrayFormatCase (tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height, int numLayers)
+	: TestCase			(testCtx, name, description)
+	, m_renderCtx		(context.getRenderContext())
+	, m_renderCtxInfo	(context.getContextInfo())
+	, m_format			(format)
+	, m_dataType		(dataType)
+	, m_width			(width)
+	, m_height			(height)
+	, m_numLayers		(numLayers)
+	, m_texture			(DE_NULL)
+	, m_renderer		(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_curLayer		(0)
 {
 }
 
-Texture2DArrayFormatCase::Texture2DArrayFormatCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 internalFormat, int width, int height, int numLayers)
-	: TestCase		(testCtx, name, description)
-	, m_renderCtx	(renderCtx)
-	, m_format		(internalFormat)
-	, m_dataType	(GL_NONE)
-	, m_width		(width)
-	, m_height		(height)
-	, m_numLayers	(numLayers)
-	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
-	, m_curLayer	(0)
+Texture2DArrayFormatCase::Texture2DArrayFormatCase (tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 internalFormat, int width, int height, int numLayers)
+	: TestCase			(testCtx, name, description)
+	, m_renderCtx		(context.getRenderContext())
+	, m_renderCtxInfo	(context.getContextInfo())
+	, m_format			(internalFormat)
+	, m_dataType		(GL_NONE)
+	, m_width			(width)
+	, m_height			(height)
+	, m_numLayers		(numLayers)
+	, m_texture			(DE_NULL)
+	, m_renderer		(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_curLayer		(0)
 {
 }
 
@@ -480,6 +509,8 @@ Texture2DArrayFormatCase::~Texture2DArrayFormatCase (void)
 
 void Texture2DArrayFormatCase::init (void)
 {
+	checkSupport(m_renderCtxInfo, m_format);
+
 	m_texture = m_dataType != GL_NONE
 			  ? new glu::Texture2DArray(m_renderCtx, m_format, m_dataType, m_width, m_height, m_numLayers)	// Implicit internal format.
 			  : new glu::Texture2DArray(m_renderCtx, m_format, m_width, m_height, m_numLayers);				// Explicit internal format.
@@ -569,8 +600,8 @@ Texture2DArrayFormatCase::IterateResult Texture2DArrayFormatCase::iterate (void)
 class Texture3DFormatCase : public tcu::TestCase
 {
 public:
-										Texture3DFormatCase		(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height, int depth);
-										Texture3DFormatCase		(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 internalFormat, int width, int height, int depth);
+										Texture3DFormatCase		(tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height, int depth);
+										Texture3DFormatCase		(tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 internalFormat, int width, int height, int depth);
 										~Texture3DFormatCase	(void);
 
 	void								init					(void);
@@ -584,6 +615,7 @@ private:
 	bool								testSlice				(int sliceNdx);
 
 	glu::RenderContext&					m_renderCtx;
+	const glu::ContextInfo&				m_renderCtxInfo;
 
 	deUint32							m_format;
 	deUint32							m_dataType;
@@ -597,31 +629,33 @@ private:
 	int									m_curSlice;
 };
 
-Texture3DFormatCase::Texture3DFormatCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height, int depth)
-	: TestCase		(testCtx, name, description)
-	, m_renderCtx	(renderCtx)
-	, m_format		(format)
-	, m_dataType	(dataType)
-	, m_width		(width)
-	, m_height		(height)
-	, m_depth		(depth)
-	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
-	, m_curSlice	(0)
+Texture3DFormatCase::Texture3DFormatCase (tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 format, deUint32 dataType, int width, int height, int depth)
+	: TestCase			(testCtx, name, description)
+	, m_renderCtx		(context.getRenderContext())
+	, m_renderCtxInfo	(context.getContextInfo())
+	, m_format			(format)
+	, m_dataType		(dataType)
+	, m_width			(width)
+	, m_height			(height)
+	, m_depth			(depth)
+	, m_texture			(DE_NULL)
+	, m_renderer		(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_curSlice		(0)
 {
 }
 
-Texture3DFormatCase::Texture3DFormatCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 internalFormat, int width, int height, int depth)
-	: TestCase		(testCtx, name, description)
-	, m_renderCtx	(renderCtx)
-	, m_format		(internalFormat)
-	, m_dataType	(GL_NONE)
-	, m_width		(width)
-	, m_height		(height)
-	, m_depth		(depth)
-	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
-	, m_curSlice	(0)
+Texture3DFormatCase::Texture3DFormatCase (tcu::TestContext& testCtx, Context& context, const char* name, const char* description, deUint32 internalFormat, int width, int height, int depth)
+	: TestCase			(testCtx, name, description)
+	, m_renderCtx		(context.getRenderContext())
+	, m_renderCtxInfo	(context.getContextInfo())
+	, m_format			(internalFormat)
+	, m_dataType		(GL_NONE)
+	, m_width			(width)
+	, m_height			(height)
+	, m_depth			(depth)
+	, m_texture			(DE_NULL)
+	, m_renderer		(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_curSlice		(0)
 {
 }
 
@@ -632,6 +666,8 @@ Texture3DFormatCase::~Texture3DFormatCase (void)
 
 void Texture3DFormatCase::init (void)
 {
+	checkSupport(m_renderCtxInfo, m_format);
+
 	m_texture = m_dataType != GL_NONE
 			  ? new glu::Texture3D(m_renderCtx, m_format, m_dataType, m_width, m_height, m_depth)	// Implicit internal format.
 			  : new glu::Texture3D(m_renderCtx, m_format, m_width, m_height, m_depth);				// Explicit internal format.
@@ -1305,14 +1341,14 @@ void TextureFormatTests::init (void)
 		string	nameBase		= texFormats[formatNdx].name;
 		string	descriptionBase	= string(glu::getTextureFormatName(format)) + ", " + glu::getTypeName(dataType);
 
-		unsizedGroup->addChild(new Texture2DFormatCase			(m_testCtx, m_context.getRenderContext(),	(nameBase + "_2d_pot").c_str(),			(descriptionBase + ", GL_TEXTURE_2D").c_str(),			format, dataType, 128, 128));
-		unsizedGroup->addChild(new Texture2DFormatCase			(m_testCtx, m_context.getRenderContext(),	(nameBase + "_2d_npot").c_str(),		(descriptionBase + ", GL_TEXTURE_2D").c_str(),			format, dataType,  63, 112));
-		unsizedGroup->addChild(new TextureCubeFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_cube_pot").c_str(),		(descriptionBase + ", GL_TEXTURE_CUBE_MAP").c_str(),	format, dataType,  64,  64));
-		unsizedGroup->addChild(new TextureCubeFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_cube_npot").c_str(),		(descriptionBase + ", GL_TEXTURE_CUBE_MAP").c_str(),	format, dataType,  57,  57));
-		unsizedGroup->addChild(new Texture2DArrayFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_2d_array_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D_ARRAY").c_str(),	format, dataType,  64,  64,  8));
-		unsizedGroup->addChild(new Texture2DArrayFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_2d_array_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D_ARRAY").c_str(),	format, dataType,  63,  57,  7));
-		unsizedGroup->addChild(new Texture3DFormatCase			(m_testCtx, m_context.getRenderContext(),	(nameBase + "_3d_pot").c_str(),			(descriptionBase + ", GL_TEXTURE_3D").c_str(),			format, dataType,   8,  32, 16));
-		unsizedGroup->addChild(new Texture3DFormatCase			(m_testCtx, m_context.getRenderContext(),	(nameBase + "_3d_npot").c_str(),		(descriptionBase + ", GL_TEXTURE_3D").c_str(),			format, dataType,  11,  31,  7));
+		unsizedGroup->addChild(new Texture2DFormatCase			(m_testCtx, m_context,	(nameBase + "_2d_pot").c_str(),			(descriptionBase + ", GL_TEXTURE_2D").c_str(),			format, dataType, 128, 128));
+		unsizedGroup->addChild(new Texture2DFormatCase			(m_testCtx, m_context,	(nameBase + "_2d_npot").c_str(),		(descriptionBase + ", GL_TEXTURE_2D").c_str(),			format, dataType,  63, 112));
+		unsizedGroup->addChild(new TextureCubeFormatCase		(m_testCtx, m_context,	(nameBase + "_cube_pot").c_str(),		(descriptionBase + ", GL_TEXTURE_CUBE_MAP").c_str(),	format, dataType,  64,  64));
+		unsizedGroup->addChild(new TextureCubeFormatCase		(m_testCtx, m_context,	(nameBase + "_cube_npot").c_str(),		(descriptionBase + ", GL_TEXTURE_CUBE_MAP").c_str(),	format, dataType,  57,  57));
+		unsizedGroup->addChild(new Texture2DArrayFormatCase		(m_testCtx, m_context,	(nameBase + "_2d_array_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D_ARRAY").c_str(),	format, dataType,  64,  64,  8));
+		unsizedGroup->addChild(new Texture2DArrayFormatCase		(m_testCtx, m_context,	(nameBase + "_2d_array_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D_ARRAY").c_str(),	format, dataType,  63,  57,  7));
+		unsizedGroup->addChild(new Texture3DFormatCase			(m_testCtx, m_context,	(nameBase + "_3d_pot").c_str(),			(descriptionBase + ", GL_TEXTURE_3D").c_str(),			format, dataType,   8,  32, 16));
+		unsizedGroup->addChild(new Texture3DFormatCase			(m_testCtx, m_context,	(nameBase + "_3d_npot").c_str(),		(descriptionBase + ", GL_TEXTURE_3D").c_str(),			format, dataType,  11,  31,  7));
 	}
 
 	struct
@@ -1331,6 +1367,7 @@ void TextureFormatTests::init (void)
 		{ "rgba8i",				GL_RGBA8I,			},
 		{ "rgba8ui",			GL_RGBA8UI,			},
 		{ "srgb8_alpha8",		GL_SRGB8_ALPHA8,	},
+		{ "srgb_r8",			GL_SR8_EXT,			},
 		{ "rgb10_a2",			GL_RGB10_A2,		},
 		{ "rgb10_a2ui",			GL_RGB10_A2UI,		},
 		{ "rgba4",				GL_RGBA4,			},
@@ -1392,14 +1429,14 @@ void TextureFormatTests::init (void)
 		string	nameBase		= sizedColorFormats[formatNdx].name;
 		string	descriptionBase	= glu::getTextureFormatName(internalFormat);
 
-		sized2DGroup->addChild		(new Texture2DFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D").c_str(),			internalFormat, 128, 128));
-		sized2DGroup->addChild		(new Texture2DFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D").c_str(),			internalFormat,  63, 112));
-		sizedCubeGroup->addChild	(new TextureCubeFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP").c_str(),	internalFormat,  64,  64));
-		sizedCubeGroup->addChild	(new TextureCubeFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP").c_str(),	internalFormat,  57,  57));
-		sized2DArrayGroup->addChild	(new Texture2DArrayFormatCase	(m_testCtx, m_context.getRenderContext(),	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D_ARRAY").c_str(),	internalFormat,  64,  64,  8));
-		sized2DArrayGroup->addChild	(new Texture2DArrayFormatCase	(m_testCtx, m_context.getRenderContext(),	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D_ARRAY").c_str(),	internalFormat,  63,  57,  7));
-		sized3DGroup->addChild		(new Texture3DFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_3D").c_str(),			internalFormat,   8,  32, 16));
-		sized3DGroup->addChild		(new Texture3DFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_3D").c_str(),			internalFormat,  11,  31,  7));
+		sized2DGroup->addChild		(new Texture2DFormatCase		(m_testCtx, m_context,	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D").c_str(),			internalFormat, 128, 128));
+		sized2DGroup->addChild		(new Texture2DFormatCase		(m_testCtx, m_context,	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D").c_str(),			internalFormat,  63, 112));
+		sizedCubeGroup->addChild	(new TextureCubeFormatCase		(m_testCtx, m_context,	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP").c_str(),	internalFormat,  64,  64));
+		sizedCubeGroup->addChild	(new TextureCubeFormatCase		(m_testCtx, m_context,	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP").c_str(),	internalFormat,  57,  57));
+		sized2DArrayGroup->addChild	(new Texture2DArrayFormatCase	(m_testCtx, m_context,	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D_ARRAY").c_str(),	internalFormat,  64,  64,  8));
+		sized2DArrayGroup->addChild	(new Texture2DArrayFormatCase	(m_testCtx, m_context,	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D_ARRAY").c_str(),	internalFormat,  63,  57,  7));
+		sized3DGroup->addChild		(new Texture3DFormatCase		(m_testCtx, m_context,	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_3D").c_str(),			internalFormat,   8,  32, 16));
+		sized3DGroup->addChild		(new Texture3DFormatCase		(m_testCtx, m_context,	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_3D").c_str(),			internalFormat,  11,  31,  7));
 	}
 
 	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(sizedDepthStencilFormats); formatNdx++)
@@ -1408,12 +1445,12 @@ void TextureFormatTests::init (void)
 		string	nameBase		= sizedDepthStencilFormats[formatNdx].name;
 		string	descriptionBase	= glu::getTextureFormatName(internalFormat);
 
-		sized2DGroup->addChild		(new Texture2DFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D").c_str(),			internalFormat, 128, 128));
-		sized2DGroup->addChild		(new Texture2DFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D").c_str(),			internalFormat,  63, 112));
-		sizedCubeGroup->addChild	(new TextureCubeFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP").c_str(),	internalFormat,  64,  64));
-		sizedCubeGroup->addChild	(new TextureCubeFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP").c_str(),	internalFormat,  57,  57));
-		sized2DArrayGroup->addChild	(new Texture2DArrayFormatCase	(m_testCtx, m_context.getRenderContext(),	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D_ARRAY").c_str(),	internalFormat,  64,  64,  8));
-		sized2DArrayGroup->addChild	(new Texture2DArrayFormatCase	(m_testCtx, m_context.getRenderContext(),	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D_ARRAY").c_str(),	internalFormat,  63,  57,  7));
+		sized2DGroup->addChild		(new Texture2DFormatCase		(m_testCtx, m_context,	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D").c_str(),			internalFormat, 128, 128));
+		sized2DGroup->addChild		(new Texture2DFormatCase		(m_testCtx, m_context,	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D").c_str(),			internalFormat,  63, 112));
+		sizedCubeGroup->addChild	(new TextureCubeFormatCase		(m_testCtx, m_context,	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP").c_str(),	internalFormat,  64,  64));
+		sizedCubeGroup->addChild	(new TextureCubeFormatCase		(m_testCtx, m_context,	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP").c_str(),	internalFormat,  57,  57));
+		sized2DArrayGroup->addChild	(new Texture2DArrayFormatCase	(m_testCtx, m_context,	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D_ARRAY").c_str(),	internalFormat,  64,  64,  8));
+		sized2DArrayGroup->addChild	(new Texture2DArrayFormatCase	(m_testCtx, m_context,	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D_ARRAY").c_str(),	internalFormat,  63,  57,  7));
 	}
 
 	// ETC-1 compressed formats.
