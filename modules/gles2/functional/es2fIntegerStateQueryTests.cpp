@@ -589,9 +589,9 @@ void GetFloatVerifier::verifyUnsignedIntegerGreaterOrEqual (tcu::TestContext& te
 	if (!state.verifyValidity(testCtx))
 		return;
 
-	if (GLuint(state) < GLfloat(reference))
+	if (state < GLfloat(reference))
 	{
-		testCtx.getLog() << TestLog::Message << "// ERROR: expected greater or equal to " << GLfloat(reference) << "; got " << GLuint(state) << TestLog::EndMessage;
+		testCtx.getLog() << TestLog::Message << "// ERROR: expected greater or equal to " << GLfloat(reference) << "; got " << state << TestLog::EndMessage;
 		if (testCtx.getTestResult() == QP_TEST_RESULT_PASS)
 			testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid float value");
 	}
