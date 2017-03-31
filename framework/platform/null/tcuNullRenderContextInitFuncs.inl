@@ -547,6 +547,7 @@ gl->pointParameteriv								= glPointParameteriv;
 gl->pointSize										= glPointSize;
 gl->polygonMode										= glPolygonMode;
 gl->polygonOffset									= glPolygonOffset;
+gl->polygonOffsetClampEXT							= glPolygonOffsetClampEXT;
 gl->popDebugGroup									= glPopDebugGroup;
 gl->popGroupMarkerEXT								= glPopGroupMarkerEXT;
 gl->primitiveBoundingBox							= glPrimitiveBoundingBox;

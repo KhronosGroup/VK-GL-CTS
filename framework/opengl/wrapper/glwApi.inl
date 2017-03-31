@@ -547,6 +547,7 @@
 #define			glPointSize											glwPointSize
 #define			glPolygonMode										glwPolygonMode
 #define			glPolygonOffset										glwPolygonOffset
+#define			glPolygonOffsetClampEXT								glwPolygonOffsetClampEXT
 #define			glPopDebugGroup										glwPopDebugGroup
 #define			glPopGroupMarkerEXT									glwPopGroupMarkerEXT
 #define			glPrimitiveBoundingBox								glwPrimitiveBoundingBox
@@ -1435,6 +1436,7 @@ void			glwPointParameteriv									(GLenum pname, const GLint *params);
 void			glwPointSize										(GLfloat size);
 void			glwPolygonMode										(GLenum face, GLenum mode);
 void			glwPolygonOffset									(GLfloat factor, GLfloat units);
+void			glwPolygonOffsetClampEXT							(GLfloat factor, GLfloat units, GLfloat clamp);
 void			glwPopDebugGroup									();
 void			glwPopGroupMarkerEXT								();
 void			glwPrimitiveBoundingBox								(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);

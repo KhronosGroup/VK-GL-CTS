@@ -116,6 +116,11 @@ if (de::contains(extSet, "GL_EXT_debug_marker"))
 	gl->pushGroupMarkerEXT		= (glPushGroupMarkerEXTFunc)	loader->get("glPushGroupMarkerEXT");
 }
 
+if (de::contains(extSet, "GL_EXT_polygon_offset_clamp"))
+{
+	gl->polygonOffsetClampEXT	= (glPolygonOffsetClampEXTFunc)	loader->get("glPolygonOffsetClampEXT");
+}
+
 if (de::contains(extSet, "GL_OES_EGL_image"))
 {
 	gl->eglImageTargetRenderbufferStorageOES	= (glEGLImageTargetRenderbufferStorageOESFunc)	loader->get("glEGLImageTargetRenderbufferStorageOES");

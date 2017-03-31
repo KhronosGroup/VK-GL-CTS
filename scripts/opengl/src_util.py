@@ -73,6 +73,7 @@ EXTENSIONS			= [
 	'GL_EXT_texture_sRGB_R8',
 	'GL_EXT_texture_sRGB_RG8',
 	'GL_EXT_debug_marker',
+	'GL_EXT_polygon_offset_clamp',
 	'GL_IMG_texture_compression_pvrtc',
 	'GL_OES_EGL_image',
 	'GL_OES_EGL_image_external',
