@@ -1821,3 +1821,11 @@ struct VkPresentTimesInfoGOOGLE
 	const VkPresentTimeGOOGLE*	pTimes;
 };
 
+struct VkPhysicalDeviceVariablePointerFeaturesKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		variablePointersStorageBuffer;
+	VkBool32		variablePointers;
+};
+

@@ -233,15 +233,17 @@ InstanceContext::InstanceContext (const RGBA						(&inputs)[4],
 								  const GraphicsInterfaces&			interfaces_,
 								  const vector<string>&				extensions_,
 								  const vector<string>&				features_,
-								  ExtensionFeatures					extensionFeatures_)
+								  VulkanFeatures					vulkanFeatures_,
+								  VkShaderStageFlags				customizedStages_)
 	: testCodeFragments				(testCodeFragments_)
 	, specConstants					(specConstants_)
 	, hasTessellation				(false)
 	, requiredStages				(static_cast<VkShaderStageFlagBits>(0))
 	, requiredDeviceExtensions		(extensions_)
 	, requiredDeviceFeatures		(features_)
-	, requestedExtensionFeatures	(extensionFeatures_)
+	, requestedFeatures				(vulkanFeatures_)
 	, pushConstants					(pushConsants_)
+	, customizedStages				(customizedStages_)
 	, resources						(resources_)
 	, interfaces					(interfaces_)
 	, failResult					(QP_TEST_RESULT_FAIL)
@@ -266,8 +268,9 @@ InstanceContext::InstanceContext (const InstanceContext& other)
 	, requiredStages				(other.requiredStages)
 	, requiredDeviceExtensions		(other.requiredDeviceExtensions)
 	, requiredDeviceFeatures		(other.requiredDeviceFeatures)
-	, requestedExtensionFeatures	(other.requestedExtensionFeatures)
+	, requestedFeatures				(other.requestedFeatures)
 	, pushConstants					(other.pushConstants)
+	, customizedStages				(other.customizedStages)
 	, resources						(other.resources)
 	, interfaces					(other.interfaces)
 	, failResult					(other.failResult)
@@ -798,8 +801,20 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"%isUniqueIdZero = OpFunction %bool None %bool_function\n"
 		"%getId_label = OpLabel\n"
 		"%primitive_id = OpLoad %i32 %BP_gl_PrimitiveID\n"
-		"%is_id_0 = OpIEqual %bool %primitive_id %c_i32_0\n"
-		"OpReturnValue %is_id_0\n"
+		"%is_primitive_0 = OpIEqual %bool %primitive_id %c_i32_0\n"
+		"%TC_0_loc = OpAccessChain %ip_f32 %BP_gl_TessCoord %c_u32_0\n"
+		"%TC_1_loc = OpAccessChain %ip_f32 %BP_gl_TessCoord %c_u32_1\n"
+		"%TC_2_loc = OpAccessChain %ip_f32 %BP_gl_TessCoord %c_u32_2\n"
+		"%TC_W_0 = OpLoad %f32 %TC_0_loc\n"
+		"%TC_W_1 = OpLoad %f32 %TC_1_loc\n"
+		"%TC_W_2 = OpLoad %f32 %TC_2_loc\n"
+		"%is_W_0_1 = OpFOrdEqual %bool %TC_W_0 %c_f32_1\n"
+		"%is_W_1_0 = OpFOrdEqual %bool %TC_W_1 %c_f32_0\n"
+		"%is_W_2_0 = OpFOrdEqual %bool %TC_W_2 %c_f32_0\n"
+		"%is_tessCoord_1_0 = OpLogicalAnd %bool %is_W_0_1 %is_W_1_0\n"
+		"%is_tessCoord_1_0_0 = OpLogicalAnd %bool %is_tessCoord_1_0 %is_W_2_0\n"
+		"%is_unique_id_0 = OpLogicalAnd %bool %is_tessCoord_1_0_0 %is_primitive_0\n"
+		"OpReturnValue %is_unique_id_0\n"
 		"OpFunctionEnd\n"
 
 		"${testfun}\n";
@@ -874,12 +889,15 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"%BP_per_vertex_in = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
 		"%BP_a3_per_vertex_in = OpTypeArray %BP_per_vertex_in %c_u32_3\n"
 		"%BP_ip_a3_per_vertex_in = OpTypePointer Input %BP_a3_per_vertex_in\n"
+		"%BP_pp_i32 = OpTypePointer Private %i32\n"
+		"%BP_pp_v4i32 = OpTypePointer Private %v4i32\n"
 
 		"%BP_gl_in = OpVariable %BP_ip_a3_per_vertex_in Input\n"
 		"%BP_out_color = OpVariable %op_v4f32 Output\n"
 		"%BP_in_color = OpVariable %ip_a3v4f32 Input\n"
 		"%BP_gl_PrimitiveID = OpVariable %ip_i32 Input\n"
 		"%BP_out_gl_position = OpVariable %op_v4f32 Output\n"
+		"%BP_vertexIdInCurrentPatch = OpVariable %BP_pp_v4i32 Private\n"
 		"${pre_main:opt}\n"
 		"${IF_variable:opt}\n"
 
@@ -887,6 +905,9 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"%BP_label = OpLabel\n"
 
 		"${IF_carryforward:opt}\n"
+
+		"%BP_primitiveId = OpLoad %i32 %BP_gl_PrimitiveID\n"
+		"%BP_addr_vertexIdInCurrentPatch = OpAccessChain %BP_pp_i32 %BP_vertexIdInCurrentPatch %BP_primitiveId\n"
 
 		"%BP_gl_in_0_gl_position = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_0 %c_i32_0\n"
 		"%BP_gl_in_1_gl_position = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_1 %c_i32_0\n"
@@ -904,8 +925,11 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"%BP_in_color_1 = OpLoad %v4f32 %BP_in_color_1_ptr\n"
 		"%BP_in_color_2 = OpLoad %v4f32 %BP_in_color_2_ptr\n"
 
+		"OpStore %BP_addr_vertexIdInCurrentPatch %c_i32_0\n"
 		"%BP_transformed_in_color_0 = OpFunctionCall %v4f32 %test_code %BP_in_color_0\n"
+		"OpStore %BP_addr_vertexIdInCurrentPatch %c_i32_1\n"
 		"%BP_transformed_in_color_1 = OpFunctionCall %v4f32 %test_code %BP_in_color_1\n"
+		"OpStore %BP_addr_vertexIdInCurrentPatch %c_i32_2\n"
 		"%BP_transformed_in_color_2 = OpFunctionCall %v4f32 %test_code %BP_in_color_2\n"
 
 
@@ -929,8 +953,12 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"%isUniqueIdZero = OpFunction %bool None %bool_function\n"
 		"%getId_label = OpLabel\n"
 		"%primitive_id = OpLoad %i32 %BP_gl_PrimitiveID\n"
-		"%is_id_0 = OpIEqual %bool %primitive_id %c_i32_0\n"
-		"OpReturnValue %is_id_0\n"
+		"%addr_vertexIdInCurrentPatch = OpAccessChain %BP_pp_i32 %BP_vertexIdInCurrentPatch %primitive_id\n"
+		"%vertexIdInCurrentPatch = OpLoad %i32 %addr_vertexIdInCurrentPatch\n"
+		"%is_primitive_0 = OpIEqual %bool %primitive_id %c_i32_0\n"
+		"%is_vertex_0 = OpIEqual %bool %vertexIdInCurrentPatch %c_i32_0\n"
+		"%is_unique_id_0 = OpLogicalAnd %bool %is_primitive_0 %is_vertex_0\n"
+		"OpReturnValue %is_unique_id_0\n"
 		"OpFunctionEnd\n"
 
 		"${testfun}\n";
@@ -2188,8 +2216,33 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	// 16bit storage features
 	{
-		if (!is16BitStorageFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedExtensionFeatures.ext16BitStorage))
+		if (!is16BitStorageFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.ext16BitStorage))
 			TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
+	}
+
+	// Variable Pointers features
+	{
+		if (!isVariablePointersFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.extVariablePointers))
+			TCU_THROW(NotSupportedError, "Requested Variable Pointer features not supported");
+
+		if (instance.requestedFeatures.extVariablePointers)
+		{
+			// The device doesn't have the vertexPipelineStoresAndAtomics feature, but the test requires the feature for
+			// vertex, tesselation, and geometry stages.
+			if (features.vertexPipelineStoresAndAtomics == DE_FALSE &&
+				instance.requestedFeatures.coreFeatures.vertexPipelineStoresAndAtomics == DE_TRUE &&
+			    (instance.customizedStages & vk::VK_SHADER_STAGE_VERTEX_BIT ||
+				 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT ||
+				 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
+				 instance.customizedStages & vk::VK_SHADER_STAGE_GEOMETRY_BIT))
+				TCU_THROW(NotSupportedError, "This VK_KHR_variable_pointers extension test requires vertexPipelineStoresAndAtomics device feature.");
+
+			// The device doesn't have the fragmentStoresAndAtomics feature, but the test requires this feature for the fragment stage.
+			if (features.fragmentStoresAndAtomics == DE_FALSE &&
+			    instance.requestedFeatures.coreFeatures.fragmentStoresAndAtomics == DE_TRUE &&
+				instance.customizedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT)
+				TCU_THROW(NotSupportedError, "This VK_KHR_variable_pointers extension test requires fragmentStoresAndAtomics device feature.");
+		}
 	}
 
 	// defer device and other resource creation until after feature checks
@@ -3479,7 +3532,7 @@ void createTestsForAllStages (const std::string&			name,
 							  const GraphicsInterfaces&		interfaces,
 							  const vector<string>&			extensions,
 							  const vector<string>&			features,
-							  ExtensionFeatures				extensionFeatures,
+							  VulkanFeatures				vulkanFeatures,
 							  tcu::TestCaseGroup*			tests,
 							  const qpTestResult			failResult,
 							  const string&					failMessageTemplate)
@@ -3511,35 +3564,35 @@ void createTestsForAllStages (const std::string&			name,
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_vert", "", addShaderCodeCustomVertex, runAndVerifyDefaultPipeline,
 			createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, extensionFeatures, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_VERTEX_BIT, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_tessc", "", addShaderCodeCustomTessControl, runAndVerifyDefaultPipeline,
 			createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, extensionFeatures, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_tesse", "", addShaderCodeCustomTessEval, runAndVerifyDefaultPipeline,
 			createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, extensionFeatures, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_GEOMETRY_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_geom", "", addShaderCodeCustomGeometry, runAndVerifyDefaultPipeline,
 			createInstanceContext(geomPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, extensionFeatures, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_GEOMETRY_BIT, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_FRAGMENT_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_frag", "", addShaderCodeCustomFragment, runAndVerifyDefaultPipeline,
 			createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, extensionFeatures, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_FRAGMENT_BIT, failResult, failMessageTemplate));
 }
 
 void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const map<string, string>& fragments)
@@ -3560,7 +3613,7 @@ void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const map<stri
 				pipelineStages, defaultColors, defaultColors, fragments,
 				StageToSpecConstantMap(), PushConstants(), GraphicsResources(),
 				GraphicsInterfaces(), vector<string>(), vector<string>(),
-				ExtensionFeatures()));
+				VulkanFeatures(), vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
 }
 
 } // SpirVAssembly

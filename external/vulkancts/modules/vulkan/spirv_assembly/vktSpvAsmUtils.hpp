@@ -46,15 +46,23 @@ enum Extension16BitStorageFeatureBits
 };
 typedef deUint32 Extension16BitStorageFeatures;
 
-struct ExtensionFeatures
+enum ExtensionVariablePointersFeaturesBits
 {
-	Extension16BitStorageFeatures	ext16BitStorage;
+	EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER	= (1u << 1),
+	EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS				= (1u << 2),
+};
+typedef deUint32 ExtensionVariablePointersFeatures;
 
-	ExtensionFeatures	(void)
-		: ext16BitStorage	(0)
-	{}
-	explicit ExtensionFeatures	(Extension16BitStorageFeatures	ext16BitStorage_)
-		: ext16BitStorage	(ext16BitStorage_)
+struct VulkanFeatures
+{
+	Extension16BitStorageFeatures		ext16BitStorage;
+	ExtensionVariablePointersFeatures	extVariablePointers;
+	vk::VkPhysicalDeviceFeatures		coreFeatures;
+
+	VulkanFeatures				(void)
+		: ext16BitStorage		(0)
+		, extVariablePointers	(0)
+		, coreFeatures			(vk::VkPhysicalDeviceFeatures())
 	{}
 };
 
@@ -63,6 +71,12 @@ bool is16BitStorageFeaturesSupported (const vk::InstanceInterface&	vkInstance,
 									  vk::VkPhysicalDevice			device,
 									  const std::vector<std::string>& instanceExtensions,
 									  Extension16BitStorageFeatures	toCheck);
+
+// Returns true if the given variable pointers extension features in `toCheck` are all supported.
+bool isVariablePointersFeaturesSupported (const vk::InstanceInterface&		vkInstance,
+										  vk::VkPhysicalDevice				device,
+									      const std::vector<std::string>&   instanceExtensions,
+										  ExtensionVariablePointersFeatures toCheck);
 
 // Creates a Vulkan logical device with the requiredExtensions enabled and all other extensions disabled.
 // The logical device will be created from the instance and physical device in the given context.

@@ -387,3 +387,4 @@ std::ostream&	operator<<	(std::ostream& s, const VkRefreshCycleDurationGOOGLE& v
 std::ostream&	operator<<	(std::ostream& s, const VkPastPresentationTimingGOOGLE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentTimeGOOGLE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentTimesInfoGOOGLE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVariablePointerFeaturesKHR& value);

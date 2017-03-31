@@ -53,6 +53,7 @@
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
+#include "vktSpvAsmVariablePointersTests.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include <cmath>
@@ -7439,7 +7440,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createShaderDefaultOutputGroup(testCtx));
 
 	computeTests->addChild(create16BitStorageComputeGroup(testCtx));
-
+	computeTests->addChild(createVariablePointersComputeGroup(testCtx));
 	{
 		de::MovePtr<tcu::TestCaseGroup>	computeAndroidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
 
@@ -7483,6 +7484,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	}
 
 	graphicsTests->addChild(create16BitStorageGraphicsGroup(testCtx));
+	graphicsTests->addChild(createVariablePointersGraphicsGroup(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());

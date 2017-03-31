@@ -202,6 +202,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR:						return "VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR";
 		case VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR:							return "VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR:				return "VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR";
 		case VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR:				return "VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR:			return "VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR";
@@ -4023,6 +4024,17 @@ std::ostream& operator<< (std::ostream& s, const VkPresentTimesInfoGOOGLE& value
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tswapchainCount = " << value.swapchainCount << '\n';
 	s << "\tpTimes = " << value.pTimes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVariablePointerFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceVariablePointerFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvariablePointersStorageBuffer = " << value.variablePointersStorageBuffer << '\n';
+	s << "\tvariablePointers = " << value.variablePointers << '\n';
 	s << '}';
 	return s;
 }
