@@ -1101,7 +1101,7 @@ bool AtomicCounterBufferStorageTestCase::initTestCaseGlobal()
 	m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-	m_gl.bufferStorage(GL_COPY_READ_BUFFER, m_helper_bo_size, DE_NULL, GL_MAP_READ_BIT); /* flags */
+	m_gl.bufferStorage(GL_COPY_READ_BUFFER, m_helper_bo_size_rounded, DE_NULL, GL_MAP_READ_BIT); /* flags */
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferStorage() call failed.");
 
 	/* Set up the vertex array object */
@@ -1305,6 +1305,13 @@ bool BufferTextureStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 	m_gl.useProgram(m_po);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUseProgram() call failed.");
 
+	m_gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_ssbo);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+
+	m_gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, /* index */
+						m_ssbo);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferBase() call failed.");
+
 	/* Set up bindings for the copy ops */
 	m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
 	m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_sparse_bo);
@@ -1478,10 +1485,6 @@ bool BufferTextureStorageTestCase::initTestCaseGlobal()
 
 	m_gl.bufferData(GL_SHADER_STORAGE_BUFFER, m_ssbo_zero_data_size, m_ssbo_zero_data, GL_STATIC_DRAW);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferData() call failed.");
-
-	m_gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, /* index */
-						m_ssbo);
-	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferBase() call failed.");
 
 	/* During execution, we will need to use a helper buffer object. The BO will hold
 	 * data we will be copying into the sparse buffer object for each iteration.
@@ -1988,9 +1991,13 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 	{
 		bool			  result_local = true;
 		const _test_case& test_case	= *test_iterator;
+		const glw::GLuint dst_bo_id =
+			test_case.dst_bo_is_sparse ? m_sparse_bos[test_case.dst_bo_sparse_id] : m_immutable_bo;
+		const glw::GLuint src_bo_id =
+			test_case.src_bo_is_sparse ? m_sparse_bos[test_case.src_bo_sparse_id] : m_immutable_bo;
 
 		/* Initialize immutable BO data (if used) */
-		if (test_case.dst_bo_id == m_immutable_bo || test_case.src_bo_id == m_immutable_bo)
+		if (dst_bo_id == m_immutable_bo || src_bo_id == m_immutable_bo)
 		{
 			m_gl.bindBuffer(GL_ARRAY_BUFFER, m_immutable_bo);
 			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
@@ -2003,35 +2010,43 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 		/* Initialize sparse BO data storage */
 		for (unsigned int n_sparse_bo = 0; n_sparse_bo < sizeof(m_sparse_bos) / sizeof(m_sparse_bos[0]); ++n_sparse_bo)
 		{
-			const bool is_dst_bo = (test_case.dst_bo_id == m_sparse_bos[n_sparse_bo]);
-			const bool is_src_bo = (test_case.src_bo_id == m_sparse_bos[n_sparse_bo]);
+			const bool is_dst_bo = (dst_bo_id == m_sparse_bos[n_sparse_bo]);
+			const bool is_src_bo = (src_bo_id == m_sparse_bos[n_sparse_bo]);
 
-			if (is_dst_bo || is_src_bo)
+			if (!is_dst_bo && !is_src_bo)
+				continue;
+
+			m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
+			m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_sparse_bos[n_sparse_bo]);
+			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call(s) failed.");
+
+			if (is_dst_bo)
 			{
-				m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
-				m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_sparse_bos[n_sparse_bo]);
-				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
-
-				m_gl.bufferPageCommitmentARB(
-					GL_COPY_WRITE_BUFFER,
-					(is_dst_bo) ? test_case.dst_bo_commit_start_offset : test_case.src_bo_commit_start_offset,
-					(is_dst_bo) ? test_case.dst_bo_commit_size : test_case.src_bo_commit_size, GL_TRUE); /* commit */
+				m_gl.bufferPageCommitmentARB(GL_COPY_WRITE_BUFFER, test_case.dst_bo_commit_start_offset,
+											 test_case.dst_bo_commit_size, GL_TRUE); /* commit */
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
-
-				m_gl.bufferSubData(GL_COPY_READ_BUFFER, 0, /* offset */
-								   m_sparse_bo_size_rounded, m_ref_data[1 + n_sparse_bo]);
-				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferSubData() call failed.");
-
-				m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
-									   0,											 /* writeOffset */
-									   m_sparse_bo_size_rounded);
-				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
 			}
+
+			if (is_src_bo)
+			{
+				m_gl.bufferPageCommitmentARB(GL_COPY_WRITE_BUFFER, test_case.src_bo_commit_start_offset,
+											 test_case.src_bo_commit_size, GL_TRUE); /* commit */
+				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
+			}
+
+			m_gl.bufferSubData(GL_COPY_READ_BUFFER, 0, /* offset */
+							   m_sparse_bo_size_rounded, m_ref_data[1 + n_sparse_bo]);
+			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferSubData() call failed.");
+
+			m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
+								   0,											 /* writeOffset */
+								   m_sparse_bo_size_rounded);
+			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
 		} /* for (both sparse BOs) */
 
 		/* Set up the bindings */
-		m_gl.bindBuffer(GL_COPY_READ_BUFFER, test_case.src_bo_id);
-		m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, test_case.dst_bo_id);
+		m_gl.bindBuffer(GL_COPY_READ_BUFFER, src_bo_id);
+		m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, dst_bo_id);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
 		/* Issue the copy op */
@@ -2043,7 +2058,7 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 		 * been a sparse BO, so copy its storage to a helper immutable BO */
 		const unsigned short* dst_bo_data_ptr = NULL;
 
-		m_gl.bindBuffer(GL_COPY_READ_BUFFER, test_case.dst_bo_id);
+		m_gl.bindBuffer(GL_COPY_READ_BUFFER, dst_bo_id);
 		m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_helper_bo);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
@@ -2086,13 +2101,13 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 						m_testCtx.getLog()
 							<< tcu::TestLog::Message << "Malformed data found in the copy op's destination BO, "
 														"preceding the region modified by the copy op. "
-							<< "Destination BO id:" << test_case.dst_bo_id << " ("
+							<< "Destination BO id:" << dst_bo_id << " ("
 							<< ((test_case.dst_bo_is_sparse) ? "sparse buffer)" : "immutable buffer)")
 							<< ", commited region: " << test_case.dst_bo_commit_start_offset << ":"
 							<< (test_case.dst_bo_commit_start_offset + test_case.dst_bo_commit_size)
 							<< ", copy region: " << test_case.dst_bo_start_offset << ":"
 							<< (test_case.dst_bo_start_offset + test_case.n_bytes_to_copy)
-							<< ". Source BO id:" << test_case.src_bo_id << " ("
+							<< ". Source BO id:" << src_bo_id << " ("
 							<< ((test_case.src_bo_is_sparse) ? "sparse buffer)" : "immutable buffer)")
 							<< ", commited region: " << test_case.src_bo_commit_start_offset << ":"
 							<< (test_case.src_bo_commit_start_offset + test_case.src_bo_commit_size)
@@ -2130,13 +2145,13 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 				{
 					m_testCtx.getLog() << tcu::TestLog::Message
 									   << "Malformed data found in the copy op's destination BO. "
-									   << "Destination BO id:" << test_case.dst_bo_id << " ("
+									   << "Destination BO id:" << dst_bo_id << " ("
 									   << ((test_case.dst_bo_is_sparse) ? "sparse buffer)" : "immutable buffer)")
 									   << ", commited region: " << test_case.dst_bo_commit_start_offset << ":"
 									   << (test_case.dst_bo_commit_start_offset + test_case.dst_bo_commit_size)
 									   << ", copy region: " << test_case.dst_bo_start_offset << ":"
 									   << (test_case.dst_bo_start_offset + test_case.n_bytes_to_copy)
-									   << ". Source BO id:" << test_case.src_bo_id << " ("
+									   << ". Source BO id:" << src_bo_id << " ("
 									   << ((test_case.src_bo_is_sparse) ? "sparse buffer)" : "immutable buffer)")
 									   << ", commited region: " << test_case.src_bo_commit_start_offset << ":"
 									   << (test_case.src_bo_commit_start_offset + test_case.src_bo_commit_size)
@@ -2180,13 +2195,13 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 						m_testCtx.getLog()
 							<< tcu::TestLog::Message << "Malformed data found in the copy op's destination BO, "
 														"following the region modified by the copy op. "
-							<< "Destination BO id:" << test_case.dst_bo_id << " ("
+							<< "Destination BO id:" << dst_bo_id << " ("
 							<< ((test_case.dst_bo_is_sparse) ? "sparse buffer)" : "immutable buffer)")
 							<< ", commited region: " << test_case.dst_bo_commit_start_offset << ":"
 							<< (test_case.dst_bo_commit_start_offset + test_case.dst_bo_commit_size)
 							<< ", copy region: " << test_case.dst_bo_start_offset << ":"
 							<< (test_case.dst_bo_start_offset + test_case.n_bytes_to_copy)
-							<< ". Source BO id:" << test_case.src_bo_id << " ("
+							<< ". Source BO id:" << src_bo_id << " ("
 							<< ((test_case.src_bo_is_sparse) ? "sparse buffer)" : "immutable buffer)")
 							<< ", commited region: " << test_case.src_bo_commit_start_offset << ":"
 							<< (test_case.src_bo_commit_start_offset + test_case.src_bo_commit_size)
@@ -2208,8 +2223,8 @@ bool CopyOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 		/* Clean up */
 		for (unsigned int n_sparse_bo = 0; n_sparse_bo < sizeof(m_sparse_bos) / sizeof(m_sparse_bos[0]); ++n_sparse_bo)
 		{
-			const bool is_dst_bo = (test_case.dst_bo_id == m_sparse_bos[n_sparse_bo]);
-			const bool is_src_bo = (test_case.src_bo_id == m_sparse_bos[n_sparse_bo]);
+			const bool is_dst_bo = (dst_bo_id == m_sparse_bos[n_sparse_bo]);
+			const bool is_src_bo = (src_bo_id == m_sparse_bos[n_sparse_bo]);
 
 			if (is_dst_bo || is_src_bo)
 			{
@@ -2307,9 +2322,7 @@ bool CopyOpsBufferStorageTestCase::initTestCaseIteration(glw::GLuint sparse_bo)
 {
 	bool result = true;
 
-	/* Cache the BO id, if not cached already */
-	DE_ASSERT(m_sparse_bos[0] == 0 || m_sparse_bos[0] == sparse_bo);
-
+	/* Remember the BO id */
 	m_sparse_bos[0] = sparse_bo;
 
 	/* Initialize test cases, if this is the first call to initTestCaseIteration() */
@@ -2351,10 +2364,10 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 	for (unsigned int n_bo_configuration = 0; n_bo_configuration < 4; /* as per the comment */
 		 ++n_bo_configuration, ++n_test_case)
 	{
-		glw::GLuint		dst_bo_id		 = 0;
+		glw::GLuint		dst_bo_sparse_id = 0;
 		bool			dst_bo_is_sparse = false;
 		unsigned short* dst_bo_ref_data  = DE_NULL;
-		glw::GLuint		src_bo_id		 = 0;
+		glw::GLuint		src_bo_sparse_id = 0;
 		bool			src_bo_is_sparse = false;
 		unsigned short* src_bo_ref_data  = DE_NULL;
 
@@ -2362,10 +2375,10 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 		{
 		case 0:
 		{
-			dst_bo_id		 = m_sparse_bos[0];
+			dst_bo_sparse_id = 0;
 			dst_bo_is_sparse = true;
 			dst_bo_ref_data  = m_ref_data[1];
-			src_bo_id		 = m_sparse_bos[1];
+			src_bo_sparse_id = 1;
 			src_bo_is_sparse = true;
 			src_bo_ref_data  = m_ref_data[2];
 
@@ -2374,10 +2387,9 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 
 		case 1:
 		{
-			dst_bo_id		 = m_sparse_bos[0];
+			dst_bo_sparse_id = 0;
 			dst_bo_is_sparse = true;
 			dst_bo_ref_data  = m_ref_data[1];
-			src_bo_id		 = m_immutable_bo;
 			src_bo_is_sparse = false;
 			src_bo_ref_data  = m_ref_data[0];
 
@@ -2386,10 +2398,9 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 
 		case 2:
 		{
-			dst_bo_id		 = m_immutable_bo;
 			dst_bo_is_sparse = false;
 			dst_bo_ref_data  = m_ref_data[0];
-			src_bo_id		 = m_sparse_bos[0];
+			src_bo_sparse_id = 0;
 			src_bo_is_sparse = true;
 			src_bo_ref_data  = m_ref_data[1];
 
@@ -2398,10 +2409,10 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 
 		case 3:
 		{
-			dst_bo_id		 = m_sparse_bos[0];
+			dst_bo_sparse_id = 0;
 			dst_bo_is_sparse = true;
 			dst_bo_ref_data  = m_ref_data[1];
-			src_bo_id		 = m_sparse_bos[0];
+			src_bo_sparse_id = 0;
 			src_bo_is_sparse = true;
 			src_bo_ref_data  = m_ref_data[1];
 
@@ -2515,7 +2526,7 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 
 				test_case.dst_bo_commit_size		 = dst_bo_commit_size;
 				test_case.dst_bo_commit_start_offset = dst_bo_commit_start_offset;
-				test_case.dst_bo_id					 = dst_bo_id;
+				test_case.dst_bo_sparse_id			 = dst_bo_sparse_id;
 				test_case.dst_bo_is_sparse			 = dst_bo_is_sparse;
 				test_case.dst_bo_ref_data			 = dst_bo_ref_data;
 				test_case.dst_bo_start_offset		 = static_cast<glw::GLint>(sizeof(short) * n_test_case);
@@ -2523,20 +2534,18 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 					m_sparse_bo_size_rounded / 2 - test_case.dst_bo_start_offset - sizeof(short) * n_test_case);
 				test_case.src_bo_commit_size		 = src_bo_commit_size;
 				test_case.src_bo_commit_start_offset = src_bo_commit_start_offset;
-				test_case.src_bo_id					 = src_bo_id;
+				test_case.src_bo_sparse_id			 = src_bo_sparse_id;
 				test_case.src_bo_is_sparse			 = src_bo_is_sparse;
 				test_case.src_bo_ref_data			 = src_bo_ref_data;
 				test_case.src_bo_start_offset		 = m_sparse_bo_size_rounded / 2;
 
 				DE_ASSERT(test_case.dst_bo_commit_size >= 0);
 				DE_ASSERT(test_case.dst_bo_commit_start_offset >= 0);
-				DE_ASSERT(test_case.dst_bo_id != 0);
 				DE_ASSERT(test_case.dst_bo_ref_data != DE_NULL);
 				DE_ASSERT(test_case.dst_bo_start_offset >= 0);
 				DE_ASSERT(test_case.n_bytes_to_copy >= 0);
 				DE_ASSERT(test_case.src_bo_commit_size >= 0);
 				DE_ASSERT(test_case.src_bo_commit_start_offset >= 0);
-				DE_ASSERT(test_case.src_bo_id != 0);
 				DE_ASSERT(test_case.src_bo_ref_data != DE_NULL);
 				DE_ASSERT(test_case.src_bo_start_offset >= 0);
 
@@ -2647,101 +2656,53 @@ bool IndirectDispatchBufferStorageTestCase::execute(glw::GLuint sparse_bo_storag
 
 	m_expected_ac_value = zero_ac_value;
 
-	/* Run the test in three iterations:
-	 *
-	 * 1) All arguments are located in committed memory page(s).
-	 * 2) None of the arguments are located in committed memory page(s).
-	 * 3) Some of the arguments are located in committed memory page(s),
-	 *    and some aren't.
+	/* Run the test only in a configuration where all arguments are local in
+	 * committed memory page(s): reading arguments from uncommitted pages means
+	 * reading undefined data, which can result in huge dispatches that
+	 * effectively hang the test.
 	 */
-	for (unsigned int n_iteration = 0; n_iteration < 3; ++n_iteration)
+	m_gl.bufferPageCommitmentARB(GL_DISPATCH_INDIRECT_BUFFER, 0,	 /* offset */
+								 m_sparse_bo_size_rounded, GL_TRUE); /* commit */
+
+	m_expected_ac_value += m_global_wg_size_x * m_local_wg_size_x;
+
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call(s) failed.");
+
+	/* Copy the indirect dispatch call args data from the helper BO to the sparse BO */
+	m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
+	m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_sparse_bo);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+
+	m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
+						   m_dispatch_draw_call_args_start_offset, sizeof(unsigned int) * 3);
+
+	/* Run the program */
+	m_gl.dispatchComputeIndirect(m_dispatch_draw_call_args_start_offset);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDispatchComputeIndirect() call failed.");
+
+	/* Extract the AC value and verify it */
+	const unsigned int* ac_data_ptr =
+		(const unsigned int*)m_gl.mapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 12, /* offset */
+												 4,							   /* length */
+												 GL_MAP_READ_BIT);
+
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBufferRange() call failed.");
+
+	if (*ac_data_ptr != m_expected_ac_value && result)
 	{
-		/* Commit the pages in the iteration-specific manner */
-		switch (n_iteration)
-		{
-		case 0:
-		{
-			m_gl.bufferPageCommitmentARB(GL_DISPATCH_INDIRECT_BUFFER, 0,	 /* offset */
-										 m_sparse_bo_size_rounded, GL_TRUE); /* commit */
+		m_testCtx.getLog() << tcu::TestLog::Message << "Invalid atomic counter value encountered. "
+													   "Expected value: ["
+						   << m_expected_ac_value << "]"
+													 ", found:"
+													 "["
+						   << *ac_data_ptr << "]." << tcu::TestLog::EndMessage;
 
-			m_expected_ac_value += m_global_wg_size_x * m_local_wg_size_x;
+		result = false;
+	}
 
-			break;
-		}
-
-		case 1:
-		{
-			m_gl.bufferPageCommitmentARB(GL_DISPATCH_INDIRECT_BUFFER, 0,	  /* offset */
-										 m_sparse_bo_size_rounded, GL_FALSE); /* commit */
-
-			break;
-		}
-
-		case 2:
-		{
-			const unsigned int n_args_size = sizeof(unsigned int) * 3;
-			const unsigned int decommit_page_start_index =
-				(m_dispatch_draw_call_args_start_offset + (n_args_size / 2)) / m_page_size;
-			const unsigned int n_pages_to_decommit = (unsigned int)de::min(
-				(int)((m_sparse_bo_size_rounded - decommit_page_start_index * m_page_size) / m_page_size), (int)1);
-
-			DE_ASSERT(decommit_page_start_index != 0);
-
-			m_gl.bufferPageCommitmentARB(GL_DISPATCH_INDIRECT_BUFFER, 0, /* offset */
-										 decommit_page_start_index * m_page_size, GL_TRUE);
-			m_gl.bufferPageCommitmentARB(GL_DISPATCH_INDIRECT_BUFFER, decommit_page_start_index * m_page_size,
-										 n_pages_to_decommit * m_page_size, GL_FALSE);
-
-			break;
-		}
-
-		default:
-		{
-			TCU_FAIL("Unrecognized iteratino index");
-		}
-		} /* switch (n_iteration) */
-
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call(s) failed.");
-
-		/* Copy the indirect dispatch call args data from the helper BO to the sparse BO */
-		m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
-		m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_sparse_bo);
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
-
-		m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
-							   m_dispatch_draw_call_args_start_offset, sizeof(unsigned int) * 3);
-
-		/* Run the program */
-		m_gl.dispatchComputeIndirect(m_dispatch_draw_call_args_start_offset);
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDispatchComputeIndirect() call failed.");
-
-		/* Extract the AC value and verify it */
-		const unsigned int* ac_data_ptr =
-			(const unsigned int*)m_gl.mapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 12, /* offset */
-													 4,							   /* length */
-													 GL_MAP_READ_BIT);
-
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBufferRange() call failed.");
-
-		if (*ac_data_ptr != m_expected_ac_value && result)
-		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "Invalid atomic counter value encountered at iteration "
-														   "["
-							   << n_iteration << "]"
-												 ". Expected value:"
-												 "["
-							   << m_expected_ac_value << "]"
-														 ", found:"
-														 "["
-							   << *ac_data_ptr << "]." << tcu::TestLog::EndMessage;
-
-			result = false;
-		}
-
-		/* Unmap the buffer before we move on with the next iteration */
-		m_gl.unmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUnmapBuffer() call failed.");
-	} /* for (all three iterations) */
+	/* Unmap the buffer before we move on with the next iteration */
+	m_gl.unmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUnmapBuffer() call failed.");
 
 	return result;
 }
@@ -3233,6 +3194,9 @@ bool PixelPackBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
 	} /* for (three iterations) */
 
+	m_gl.bindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+
 	return result;
 }
 
@@ -3547,11 +3511,17 @@ bool PixelUnpackBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_fla
 		/* Clean up the base mip-map's contents before we proceeding with updating it
 		 * with data downloaded from the BO, in order to avoid situation where silently
 		 * failing glTexSubImage2D() calls slip past unnoticed */
+		m_gl.bindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+
 		m_gl.texSubImage2D(GL_TEXTURE_2D, 0, /* level */
 						   0,				 /* xoffset */
 						   0,				 /* yoffset */
 						   m_to_width, m_to_height, GL_RGBA, GL_UNSIGNED_BYTE, m_to_data_zero);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glTexSubImage2D() call failed.");
+
+		m_gl.bindBuffer(GL_PIXEL_UNPACK_BUFFER, m_sparse_bo);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
 		/* Update the base mip-map's contents */
 		m_gl.texSubImage2D(GL_TEXTURE_2D, 0, /* level */
@@ -3626,6 +3596,9 @@ bool PixelUnpackBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_fla
 									 m_sparse_bo_size_rounded, GL_FALSE); /* commit */
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
 	} /* for (three iterations) */
+
+	m_gl.bindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
 	return result;
 }
@@ -4507,10 +4480,13 @@ bool QueryBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 		/* Copy the query result to the sparse buffer */
 		for (unsigned int n_getter_call = 0; n_getter_call < 4; ++n_getter_call)
 		{
+			glw::GLsizei result_n_bytes;
+
 			switch (n_getter_call)
 			{
 			case 0:
 			{
+				result_n_bytes = sizeof(glw::GLint);
 				m_gl.getQueryObjectiv(m_qo, GL_QUERY_RESULT, (glw::GLint*)0); /* params */
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetQueryObjectiv() call failed.");
 
@@ -4519,6 +4495,7 @@ bool QueryBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 
 			case 1:
 			{
+				result_n_bytes = sizeof(glw::GLint);
 				m_gl.getQueryObjectuiv(m_qo, GL_QUERY_RESULT, (glw::GLuint*)0); /* params */
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetQueryObjectuiv() call failed.");
 
@@ -4527,6 +4504,7 @@ bool QueryBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 
 			case 2:
 			{
+				result_n_bytes = sizeof(glw::GLint64);
 				m_gl.getQueryObjecti64v(m_qo, GL_QUERY_RESULT, (glw::GLint64*)0);
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetQueryObjecti64v() call failed.");
 
@@ -4535,6 +4513,7 @@ bool QueryBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 
 			case 3:
 			{
+				result_n_bytes = sizeof(glw::GLint64);
 				m_gl.getQueryObjectui64v(m_qo, GL_QUERY_RESULT, (glw::GLuint64*)0);
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetQueryObjectui64v() call failed.");
 
@@ -4555,22 +4534,24 @@ bool QueryBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 				m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_helper_bo);
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
+				m_gl.clearBufferData(GL_COPY_WRITE_BUFFER, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &data_r8_zero);
+				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClearBufferData() call failed.");
+
 				m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
 									   0,											 /* writeOffset */
-									   sizeof(unsigned int));
+									   result_n_bytes);
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
 
 				result_ptr = (const glw::GLint64*)m_gl.mapBuffer(GL_COPY_WRITE_BUFFER, GL_READ_ONLY);
-
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBuffer() call failed.");
 
 				if (*result_ptr != m_n_triangles)
 				{
 					m_testCtx.getLog() << tcu::TestLog::Message
-									   << "Invalid query result stored in a sparse buffer. Expected:"
+									   << "Invalid query result stored in a sparse buffer. Found: "
 										  "["
 									   << *result_ptr << "]"
-														 ", expected:"
+														 ", expected: "
 														 "["
 									   << m_n_triangles << "]" << tcu::TestLog::EndMessage;
 
@@ -4579,9 +4560,6 @@ bool QueryBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 
 				m_gl.unmapBuffer(GL_COPY_WRITE_BUFFER);
 				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUnmapBuffer() call failed.");
-
-				m_gl.clearBufferData(GL_COPY_WRITE_BUFFER, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &data_r8_zero);
-				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClearBufferData() call failed.");
 			} /* for (all query getter call types) */
 		}	 /* if (should_commit_page) */
 	}		  /* for (both iterations) */
@@ -4626,7 +4604,7 @@ bool QueryBufferStorageTestCase::initTestCaseGlobal()
 	m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_helper_bo);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-	m_gl.bufferStorage(GL_COPY_WRITE_BUFFER, sizeof(unsigned int), DE_NULL, /* data */
+	m_gl.bufferStorage(GL_COPY_WRITE_BUFFER, sizeof(glw::GLint64), DE_NULL, /* data */
 					   GL_MAP_READ_BIT);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferStorage() call failed.");
 
@@ -5630,8 +5608,8 @@ bool TransformFeedbackBufferStorageTestCase::execute(glw::GLuint sparse_bo_stora
 			m_gl.bindBuffer(GL_ARRAY_BUFFER, mappable_bo_id);
 			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-			result_ptr = (unsigned int*)m_gl.mapBufferRange(GL_ARRAY_BUFFER, mappable_bo_start_offset,
-															n_result_bytes_total, GL_MAP_READ_BIT);
+			result_ptr = (unsigned int*)m_gl.mapBufferRange(GL_ARRAY_BUFFER, mappable_bo_start_offset, m_result_bo_size,
+															GL_MAP_READ_BIT);
 
 			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBufferRange() call failed.");
 
@@ -5724,12 +5702,6 @@ bool TransformFeedbackBufferStorageTestCase::execute(glw::GLuint sparse_bo_stora
 							}
 						}
 
-						retrieved_instance_id = *result_instance_id_traveller_ptr;
-						result_instance_id_traveller_ptr += result_instance_id_stride;
-
-						retrieved_vertex_id = *result_vertex_id_traveller_ptr;
-						result_vertex_id_traveller_ptr += result_vertex_id_stride;
-
 						/* Only perform the check if the offsets refer to pages with physical backing.
 						 *
 						 * Note that, on platforms, whose page size % 4 != 0, the values can land partially in the no-man's land,
@@ -5747,6 +5719,12 @@ bool TransformFeedbackBufferStorageTestCase::execute(glw::GLuint sparse_bo_stora
 								1) /
 							   m_page_size) %
 							  2) == 0);
+
+						retrieved_instance_id = *result_instance_id_traveller_ptr;
+						result_instance_id_traveller_ptr += result_instance_id_stride;
+
+						retrieved_vertex_id = *result_vertex_id_traveller_ptr;
+						result_vertex_id_traveller_ptr += result_vertex_id_stride;
 
 						if ((result_instance_id_page_has_physical_backing &&
 							 retrieved_instance_id != expected_instance_id) ||
@@ -6329,6 +6307,13 @@ bool UniformBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 		m_gl.useProgram(m_po);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUseProgram() call failed.");
 
+		m_gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, m_tf_bo);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+
+		m_gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, /* index */
+							m_tf_bo);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferBase() call failed.");
+
 		m_gl.beginTransformFeedback(GL_POINTS);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBeginTransformFeedback() call failed.");
 
@@ -6362,10 +6347,9 @@ bool UniformBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 			}
 			else
 			{
-				/* Read ops applied against non-committed sparse buffers should return 0, so the comparison
-				 * performed in the vertex shader should result in 1 being written to the TF region.
+				/* Read ops applied against non-committed sparse buffers return an undefined value.
 				 */
-				expected_value = (n_vertex == 0) ? 1 : 0;
+				continue;
 			}
 
 			if (expected_value != retrieved_value)
@@ -6497,10 +6481,6 @@ bool UniformBufferStorageTestCase::initTestCaseGlobal()
 	m_gl.bufferStorage(GL_TRANSFORM_FEEDBACK_BUFFER, tfbo_size, DE_NULL, /* data */
 					   GL_MAP_READ_BIT);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferStorage() call failed.");
-
-	m_gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, /* index */
-						m_tf_bo);
-	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferBase() call failed.");
 
 	/* Set up the UBO contents. We're actually setting up an immutable BO here,
 	 * but we'll use its contents for a copy op, executed at the beginning of
