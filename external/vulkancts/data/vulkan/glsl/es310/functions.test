@@ -426,6 +426,7 @@ group datatypes "Function Parameter Data Types"
 		both ""
 			#version 310 es
 			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			bool func (bool a)
@@ -453,6 +454,7 @@ group datatypes "Function Parameter Data Types"
 		both ""
 			#version 310 es
 			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			bool func (bvec2 a)
@@ -480,6 +482,7 @@ group datatypes "Function Parameter Data Types"
 		both ""
 			#version 310 es
 			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			bool func (bvec3 a)
@@ -507,6 +510,7 @@ group datatypes "Function Parameter Data Types"
 		both ""
 			#version 310 es
 			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			bool func (bvec4 a)
@@ -1555,6 +1559,7 @@ group qualifiers "Function Parameter Qualifiers"
 		both ""
 			#version 310 es
 			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			bool func (in bool a)
@@ -1585,6 +1590,7 @@ group qualifiers "Function Parameter Qualifiers"
 		both ""
 			#version 310 es
 			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (out bool a)
@@ -1614,6 +1620,7 @@ group qualifiers "Function Parameter Qualifiers"
 		both ""
 			#version 310 es
 			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			void func (inout bool a)
@@ -1643,6 +1650,7 @@ group qualifiers "Function Parameter Qualifiers"
 		both ""
 			#version 310 es
 			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			bool func (const bool a)
@@ -1999,6 +2007,7 @@ group overloading "Function Overloading"
 		both ""
 			#version 310 es
 			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			bool func (bool a) { return !a; }
@@ -2328,6 +2337,7 @@ group array_arguments "Arrays as Arguments"
 		both ""
 			#version 310 es
 			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			bool func (in bool a[4])
@@ -2364,6 +2374,7 @@ group array_arguments "Arrays as Arguments"
 		both ""
 			#version 310 es
 			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			bool func (in bool a[4])
@@ -3076,6 +3087,7 @@ group misc "Miscellaneous"
 		both ""
 			#version 310 es
 			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int func (float a, int b, bool c, int d)
@@ -3108,6 +3120,7 @@ group misc "Miscellaneous"
 		both ""
 			#version 310 es
 			precision highp float;
+			precision highp int;
 			${DECLARATIONS}
 
 			int g;

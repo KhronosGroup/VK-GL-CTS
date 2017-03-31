@@ -96,6 +96,19 @@ Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
 
+	// VK_EXT_swapchain_colorspace adds new surface formats. Driver can enumerate
+	// the formats regardless of whether VK_EXT_swapchain_colorspace was enabled,
+	// but using them without enabling the extension is not allowed. Thus we have
+	// two options:
+	//
+	// 1) Filter out non-core formats to stay within valid usage.
+	//
+	// 2) Enable VK_EXT_swapchain colorspace if advertised by the driver.
+	//
+	// We opt for (2) as it provides basic coverage for the extension as a bonus.
+	if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_swapchain_colorspace")))
+		extensions.push_back("VK_EXT_swapchain_colorspace");
+
 	checkAllSupported(supportedExtensions, extensions);
 
 	return createDefaultInstance(vkp, vector<string>(), extensions, pAllocator);
