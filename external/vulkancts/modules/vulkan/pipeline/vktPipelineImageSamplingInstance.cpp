@@ -160,6 +160,9 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 	if (!isSupportedSamplableFormat(context.getInstanceInterface(), context.getPhysicalDevice(), imageFormat))
 		throw tcu::NotSupportedError(std::string("Unsupported format for sampling: ") + getFormatName(imageFormat));
 
+	if ((deUint32)imageCount > context.getDeviceProperties().limits.maxColorAttachments)
+		throw tcu::NotSupportedError(std::string("Unsupported render target count: ") + de::toString(imageCount));
+
 	if ((samplerParams.minFilter == VK_FILTER_LINEAR ||
 		 samplerParams.magFilter == VK_FILTER_LINEAR ||
 		 samplerParams.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR) &&
