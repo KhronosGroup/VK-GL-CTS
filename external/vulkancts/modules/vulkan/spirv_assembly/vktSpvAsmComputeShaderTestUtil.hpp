@@ -108,7 +108,7 @@ struct ComputeShaderSpec
 	std::vector<deUint32>					specConstants;
 	BufferSp								pushConstants;
 	std::vector<std::string>				extensions;
-	ExtensionFeatures						requestedExtensionFeatures;
+	VulkanFeatures							requestedVulkanFeatures;
 	qpTestResult							failResult;
 	std::string								failMessage;
 	// If null, a default verification will be performed by comparing the memory pointed to by outputAllocations
@@ -120,7 +120,7 @@ struct ComputeShaderSpec
 											ComputeShaderSpec (void)
 												: entryPoint					("main")
 												, pushConstants					(DE_NULL)
-												, requestedExtensionFeatures	()
+												, requestedVulkanFeatures		()
 												, failResult					(QP_TEST_RESULT_FAIL)
 												, failMessage					("Output doesn't match with expected")
 												, verifyIO						(DE_NULL)

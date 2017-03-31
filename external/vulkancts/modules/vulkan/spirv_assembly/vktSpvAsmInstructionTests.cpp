@@ -52,6 +52,7 @@
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
+#include "vktSpvAsmVariablePointersTests.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include <cmath>
@@ -6784,7 +6785,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
 	computeTests->addChild(createShaderDefaultOutputGroup(testCtx));
 	computeTests->addChild(create16BitStorageComputeGroup(testCtx));
-
+	computeTests->addChild(createVariablePointersComputeGroup(testCtx));
 	graphicsTests->addChild(createOpNopTests(testCtx));
 	graphicsTests->addChild(createOpSourceTests(testCtx));
 	graphicsTests->addChild(createOpSourceContinuedTests(testCtx));
@@ -6808,6 +6809,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createFRemTests(testCtx));
 
 	graphicsTests->addChild(create16BitStorageGraphicsGroup(testCtx));
+	graphicsTests->addChild(createVariablePointersGraphicsGroup(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());

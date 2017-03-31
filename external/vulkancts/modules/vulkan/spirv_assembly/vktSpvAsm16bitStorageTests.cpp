@@ -117,16 +117,17 @@ static const Capability	CAPABILITIES[]	=
 	{"uniform",					"StorageUniform16",				"Block",		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER},
 };
 
-ExtensionFeatures	get16BitStorageFeatures	(const char* cap)
+VulkanFeatures	get16BitStorageFeatures	(const char* cap)
 {
+	VulkanFeatures features;
 	if (string(cap) == "uniform_buffer_block")
-		return ExtensionFeatures(EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK);
+		features.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+	else if (string(cap) == "uniform")
+		features.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM;
+	else
+		DE_ASSERT(false && "not supported");
 
-	if (string(cap) == "uniform")
-		return ExtensionFeatures(EXT16BITSTORAGEFEATURES_UNIFORM);
-
-	DE_ASSERT(false && "not supported");
-	return ExtensionFeatures(0);
+	return features;
 }
 
 
@@ -613,7 +614,7 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 				spec.inputs.push_back(BufferSp(new Float16Buffer(float16Data)));
 				spec.outputs.push_back(BufferSp(new Float32Buffer(float32Data)));
 				spec.extensions.push_back("VK_KHR_16bit_storage");
-				spec.requestedExtensionFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
 				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 			}
@@ -707,7 +708,7 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 				else
 					spec.outputs.push_back(BufferSp(new Int32Buffer(uOutputs)));
 				spec.extensions.push_back("VK_KHR_16bit_storage");
-				spec.requestedExtensionFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
 				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 			}
@@ -863,7 +864,7 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 
 			spec.outputs.push_back(BufferSp(new Float32Buffer(float32Data)));
 			spec.extensions.push_back("VK_KHR_16bit_storage");
-			spec.requestedExtensionFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
+			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
 
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 		}
@@ -952,7 +953,7 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 			else
 				spec.outputs.push_back(BufferSp(new Int32Buffer(uOutputs)));
 			spec.extensions.push_back("VK_KHR_16bit_storage");
-			spec.requestedExtensionFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
+			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
 
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName, testName, spec));
 		}
@@ -1341,7 +1342,7 @@ void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
 					// So put dummy data in the expected values.
 					spec.outputs.push_back(BufferSp(new Float16Buffer(float16DummyData)));
 					spec.extensions.push_back("VK_KHR_16bit_storage");
-					spec.requestedExtensionFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+					spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
 					group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 				}
@@ -1420,7 +1421,7 @@ void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
 				spec.inputs.push_back(BufferSp(new Int32Buffer(inputs)));
 				spec.outputs.push_back(BufferSp(new Int16Buffer(outputs)));
 				spec.extensions.push_back("VK_KHR_16bit_storage");
-				spec.requestedExtensionFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
 				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 			}
@@ -1845,8 +1846,8 @@ void addGraphics16BitStorageInputOutputFloat32To16Group (tcu::TestCaseGroup* tes
 		}
 	};
 
-	ExtensionFeatures	extensionFeatures;
-	extensionFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
+	VulkanFeatures	requiredFeatures;
+	requiredFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
 
 	for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(cases); ++caseIdx)
 		for (deUint32 rndModeIdx = 0; rndModeIdx < DE_LENGTH_OF_ARRAY(rndModes); ++rndModeIdx)
@@ -1878,7 +1879,7 @@ void addGraphics16BitStorageInputOutputFloat32To16Group (tcu::TestCaseGroup* tes
 				}
 				interfaces.setInputOutput(std::make_pair(IFDataType(cases[caseIdx].numElements, NUMBERTYPE_FLOAT32), BufferSp(new Float32Buffer(subInputs))),
 										  std::make_pair(IFDataType(cases[caseIdx].numElements, NUMBERTYPE_FLOAT16), BufferSp(new Float16Buffer(subOutputs))));
-				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, interfaces, extensions, testGroup, extensionFeatures);
+				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, interfaces, extensions, testGroup, requiredFeatures);
 			}
 		}
 }
@@ -1966,8 +1967,8 @@ void addGraphics16BitStorageInputOutputFloat16To32Group (tcu::TestCaseGroup* tes
 		}
 	};
 
-	ExtensionFeatures	extensionFeatures;
-	extensionFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
+	VulkanFeatures	requiredFeatures;
+	requiredFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
 
 	for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(cases); ++caseIdx)
 	{
@@ -1993,7 +1994,7 @@ void addGraphics16BitStorageInputOutputFloat16To32Group (tcu::TestCaseGroup* tes
 			}
 			interfaces.setInputOutput(std::make_pair(IFDataType(cases[caseIdx].numElements, NUMBERTYPE_FLOAT16), BufferSp(new Float16Buffer(subInputs))),
 									  std::make_pair(IFDataType(cases[caseIdx].numElements, NUMBERTYPE_FLOAT32), BufferSp(new Float32Buffer(subOutputs))));
-			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, interfaces, extensions, testGroup, extensionFeatures);
+			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, interfaces, extensions, testGroup, requiredFeatures);
 		}
 	}
 }
@@ -2081,8 +2082,8 @@ void addGraphics16BitStorageInputOutputInt32To16Group (tcu::TestCaseGroup* testG
 		{"vector_uint",	vecInterfaceOpFunc,		vecPreMain,		"v4u32",	"v4u16",	"0",	"OpUConvert",	4 * 4,	4},
 	};
 
-	ExtensionFeatures	extensionFeatures;
-	extensionFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
+	VulkanFeatures	requiredFeatures;
+	requiredFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
 
 	for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(cases); ++caseIdx)
 	{
@@ -2122,7 +2123,7 @@ void addGraphics16BitStorageInputOutputInt32To16Group (tcu::TestCaseGroup* testG
 				interfaces.setInputOutput(std::make_pair(IFDataType(cases[caseIdx].numElements, NUMBERTYPE_UINT32), BufferSp(new Int32Buffer(subInputs))),
 										  std::make_pair(IFDataType(cases[caseIdx].numElements, NUMBERTYPE_UINT16), BufferSp(new Int16Buffer(subOutputs))));
 			}
-			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, interfaces, extensions, testGroup, extensionFeatures);
+			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, interfaces, extensions, testGroup, requiredFeatures);
 		}
 	}
 }
@@ -2221,8 +2222,8 @@ void addGraphics16BitStorageInputOutputInt16To32Group (tcu::TestCaseGroup* testG
 		{"vector_uint",	vecIfOpFunc,	vecPreMain,		"v4u32",	"v4u16",	"0",	"OpUConvert",	4 * 4,	4},
 	};
 
-	ExtensionFeatures	extensionFeatures;
-	extensionFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
+	VulkanFeatures	requiredFeatures;
+	requiredFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
 
 	for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(cases); ++caseIdx)
 	{
@@ -2265,7 +2266,7 @@ void addGraphics16BitStorageInputOutputInt16To32Group (tcu::TestCaseGroup* testG
 				interfaces.setInputOutput(std::make_pair(IFDataType(cases[caseIdx].numElements, NUMBERTYPE_UINT16), BufferSp(new Int16Buffer(subInputs))),
 										  std::make_pair(IFDataType(cases[caseIdx].numElements, NUMBERTYPE_UINT32), BufferSp(new Int32Buffer(subOutputs))));
 			}
-			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, interfaces, extensions, testGroup, extensionFeatures);
+			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, interfaces, extensions, testGroup, requiredFeatures);
 		}
 	}
 }
@@ -2281,14 +2282,14 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 	const deUint32						numDataPoints		= 64;
 	vector<deFloat16>					float16Data			(getFloat16s(rnd, numDataPoints));
 	vector<float>						float32Data;
-	ExtensionFeatures		extensionFeatures;
+	VulkanFeatures						requiredFeatures;
 
 	float32Data.reserve(numDataPoints);
 	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
 		float32Data.push_back(deFloat16To32(float16Data[numIdx]));
 
 	extensions.push_back("VK_KHR_16bit_storage");
-	extensionFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
+	requiredFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
 
 	fragments["capability"]				= "OpCapability StoragePushConstant16\n";
 	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"";
@@ -2372,7 +2373,7 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 
 		fragments["testfun"]	= testFun.specialize(specs);
 
-		createTestsForAllStages("scalar", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, extensionFeatures);
+		createTestsForAllStages("scalar", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
 	}
 
 	{  // Vector cases
@@ -2411,7 +2412,7 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 
 		fragments["testfun"]	= testFun.specialize(specs);
 
-		createTestsForAllStages("vector", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, extensionFeatures);
+		createTestsForAllStages("vector", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
 	}
 
 	{  // Matrix cases
@@ -2463,7 +2464,7 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 
 		fragments["testfun"]	= testFun.specialize(specs);
 
-		createTestsForAllStages("matrix", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, extensionFeatures);
+		createTestsForAllStages("matrix", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
 	}
 }
 
@@ -2481,7 +2482,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 	vector<string>						extensions;
 	const deUint16						signBitMask			= 0x8000;
 	const deUint32						signExtendMask		= 0xffff0000;
-	ExtensionFeatures		extensionFeatures;
+	VulkanFeatures						requiredFeatures;
 
 	sOutputs.reserve(inputs.size());
 	uOutputs.reserve(inputs.size());
@@ -2496,7 +2497,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 	}
 
 	extensions.push_back("VK_KHR_16bit_storage");
-	extensionFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
+	requiredFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
 
 	fragments["capability"]				= "OpCapability StoragePushConstant16\n";
 	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"";
@@ -2580,7 +2581,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 
 			resources.outputs.clear();
 			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(sOutputs))));
-			createTestsForAllStages("sint_scalar", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, extensionFeatures);
+			createTestsForAllStages("sint_scalar", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
 		}
 		{  // signed int
 			map<string, string>		specs;
@@ -2597,7 +2598,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 
 			resources.outputs.clear();
 			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(uOutputs))));
-			createTestsForAllStages("uint_scalar", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, extensionFeatures);
+			createTestsForAllStages("uint_scalar", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
 		}
 	}
 
@@ -2643,7 +2644,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 
 			resources.outputs.clear();
 			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(sOutputs))));
-			createTestsForAllStages("sint_vector", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, extensionFeatures);
+			createTestsForAllStages("sint_vector", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
 		}
 		{  // signed int
 			map<string, string>		specs;
@@ -2661,7 +2662,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 
 			resources.outputs.clear();
 			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(uOutputs))));
-			createTestsForAllStages("uint_vector", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, extensionFeatures);
+			createTestsForAllStages("uint_vector", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
 		}
 	}
 }
