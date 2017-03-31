@@ -9,6 +9,10 @@ set(DEQP_VK_WSI_SRCS
 	vktWsiSurfaceTests.hpp
 	vktWsiSwapchainTests.cpp
 	vktWsiSwapchainTests.hpp
+	vktWsiIncrementalPresentTests.cpp
+	vktWsiIncrementalPresentTests.hpp
+	vktWsiDisplayTimingTests.cpp
+	vktWsiDisplayTimingTests.hpp
 	)
 
 set(DEQP_VK_WSI_LIBS

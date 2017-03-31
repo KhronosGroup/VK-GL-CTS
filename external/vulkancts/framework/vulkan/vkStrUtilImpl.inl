@@ -185,6 +185,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT:									return "VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR:										return "VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR:				return "VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX:							return "VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX:				return "VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX";
@@ -192,6 +193,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_CMD_RESERVE_SPACE_FOR_COMMANDS_INFO_NVX:					return "VK_STRUCTURE_TYPE_CMD_RESERVE_SPACE_FOR_COMMANDS_INFO_NVX";
 		case VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_LIMITS_NVX:					return "VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_LIMITS_NVX";
 		case VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_FEATURES_NVX:					return "VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_FEATURES_NVX";
+		case VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE:								return "VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE";
 		default:																		return DE_NULL;
 	}
 }
@@ -817,8 +819,21 @@ const char* getColorSpaceKHRName (VkColorSpaceKHR value)
 {
 	switch (value)
 	{
-		case VK_COLOR_SPACE_SRGB_NONLINEAR_KHR:	return "VK_COLOR_SPACE_SRGB_NONLINEAR_KHR";
-		default:								return DE_NULL;
+		case VK_COLOR_SPACE_SRGB_NONLINEAR_KHR:			return "VK_COLOR_SPACE_SRGB_NONLINEAR_KHR";
+		case VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT:	return "VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT";
+		case VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT:	return "VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT";
+		case VK_COLOR_SPACE_DCI_P3_LINEAR_EXT:			return "VK_COLOR_SPACE_DCI_P3_LINEAR_EXT";
+		case VK_COLOR_SPACE_DCI_P3_NONLINEAR_EXT:		return "VK_COLOR_SPACE_DCI_P3_NONLINEAR_EXT";
+		case VK_COLOR_SPACE_BT709_LINEAR_EXT:			return "VK_COLOR_SPACE_BT709_LINEAR_EXT";
+		case VK_COLOR_SPACE_BT709_NONLINEAR_EXT:		return "VK_COLOR_SPACE_BT709_NONLINEAR_EXT";
+		case VK_COLOR_SPACE_BT2020_LINEAR_EXT:			return "VK_COLOR_SPACE_BT2020_LINEAR_EXT";
+		case VK_COLOR_SPACE_HDR10_ST2084_EXT:			return "VK_COLOR_SPACE_HDR10_ST2084_EXT";
+		case VK_COLOR_SPACE_DOLBYVISION_EXT:			return "VK_COLOR_SPACE_DOLBYVISION_EXT";
+		case VK_COLOR_SPACE_HDR10_HLG_EXT:				return "VK_COLOR_SPACE_HDR10_HLG_EXT";
+		case VK_COLOR_SPACE_ADOBERGB_LINEAR_EXT:		return "VK_COLOR_SPACE_ADOBERGB_LINEAR_EXT";
+		case VK_COLOR_SPACE_ADOBERGB_NONLINEAR_EXT:		return "VK_COLOR_SPACE_ADOBERGB_NONLINEAR_EXT";
+		case VK_COLOR_SPACE_PASS_THROUGH_EXT:			return "VK_COLOR_SPACE_PASS_THROUGH_EXT";
+		default:										return DE_NULL;
 	}
 }
 
@@ -3463,6 +3478,36 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSparseImageForm
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkRectLayerKHR& value)
+{
+	s << "VkRectLayerKHR = {\n";
+	s << "\toffset = " << value.offset << '\n';
+	s << "\textent = " << value.extent << '\n';
+	s << "\tlayer = " << value.layer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentRegionKHR& value)
+{
+	s << "VkPresentRegionKHR = {\n";
+	s << "\trectangleCount = " << value.rectangleCount << '\n';
+	s << "\tpRectangles = " << value.pRectangles << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentRegionsKHR& value)
+{
+	s << "VkPresentRegionsKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchainCount = " << value.swapchainCount << '\n';
+	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value)
 {
 	s << "VkDebugReportCallbackCreateInfoEXT = {\n";
@@ -3837,6 +3882,46 @@ std::ostream& operator<< (std::ostream& s, const VkDescriptorUpdateTemplateCreat
 	s << "\tpipelineBindPoint = " << value.pipelineBindPoint << '\n';
 	s << "\tpipelineLayout = " << value.pipelineLayout << '\n';
 	s << "\tset = " << value.set << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRefreshCycleDurationGOOGLE& value)
+{
+	s << "VkRefreshCycleDurationGOOGLE = {\n";
+	s << "\trefreshDuration = " << value.refreshDuration << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPastPresentationTimingGOOGLE& value)
+{
+	s << "VkPastPresentationTimingGOOGLE = {\n";
+	s << "\tpresentID = " << value.presentID << '\n';
+	s << "\tdesiredPresentTime = " << value.desiredPresentTime << '\n';
+	s << "\tactualPresentTime = " << value.actualPresentTime << '\n';
+	s << "\tearliestPresentTime = " << value.earliestPresentTime << '\n';
+	s << "\tpresentMargin = " << value.presentMargin << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentTimeGOOGLE& value)
+{
+	s << "VkPresentTimeGOOGLE = {\n";
+	s << "\tpresentID = " << value.presentID << '\n';
+	s << "\tdesiredPresentTime = " << value.desiredPresentTime << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentTimesInfoGOOGLE& value)
+{
+	s << "VkPresentTimesInfoGOOGLE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchainCount = " << value.swapchainCount << '\n';
+	s << "\tpTimes = " << value.pTimes << '\n';
 	s << '}';
 	return s;
 }

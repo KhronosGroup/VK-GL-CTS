@@ -35,6 +35,9 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkStrUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include "vkQueryUtil.hpp"
+#include "vkMemUtil.hpp"
 
 #include "tcuTexLookupVerifier.hpp"
 #include "tcuTestLog.hpp"
@@ -62,6 +65,89 @@ using std::string;
 
 namespace
 {
+
+tcu::FloatFormat getConversionPrecision (VkFormat format)
+{
+	const tcu::FloatFormat	reallyLow	(0, 0, 8, false, tcu::YES);
+	const tcu::FloatFormat	fp16		(-14, 15, 10, false);
+	const tcu::FloatFormat	fp32		(-126, 127, 23, true);
+
+	switch (format)
+	{
+	    case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
+		case VK_FORMAT_R5G6B5_UNORM_PACK16:
+		case VK_FORMAT_A1R5G5B5_UNORM_PACK16:
+			return reallyLow;
+
+		case VK_FORMAT_R8_UNORM:
+		case VK_FORMAT_R8_SNORM:
+		case VK_FORMAT_R8G8_UNORM:
+		case VK_FORMAT_R8G8_SNORM:
+		case VK_FORMAT_R8G8B8A8_UNORM:
+		case VK_FORMAT_R8G8B8A8_SNORM:
+		case VK_FORMAT_B8G8R8A8_UNORM:
+		case VK_FORMAT_A8B8G8R8_UNORM_PACK32:
+		case VK_FORMAT_A8B8G8R8_SNORM_PACK32:
+		case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+			return fp16;
+
+		case VK_FORMAT_R16_SFLOAT:
+		case VK_FORMAT_R16G16_SFLOAT:
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
+			return fp16;
+
+		case VK_FORMAT_R32_SFLOAT:
+		case VK_FORMAT_R32G32_SFLOAT:
+		case VK_FORMAT_R32G32B32A32_SFLOAT:
+			return fp32;
+
+		default:
+			DE_FATAL("Precision not defined for format");
+			return fp32;
+	}
+}
+
+tcu::FloatFormat getFilteringPrecision (VkFormat format)
+{
+	const tcu::FloatFormat	reallyLow	(0, 0, 6, false, tcu::YES);
+	const tcu::FloatFormat	low			(0, 0, 7, false, tcu::YES);
+	const tcu::FloatFormat	fp16		(-14, 15, 10, false);
+	const tcu::FloatFormat	fp32		(-126, 127, 23, true);
+
+	switch (format)
+	{
+	    case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
+		case VK_FORMAT_R5G6B5_UNORM_PACK16:
+		case VK_FORMAT_A1R5G5B5_UNORM_PACK16:
+			return reallyLow;
+
+		case VK_FORMAT_R8_UNORM:
+		case VK_FORMAT_R8_SNORM:
+		case VK_FORMAT_R8G8_UNORM:
+		case VK_FORMAT_R8G8_SNORM:
+		case VK_FORMAT_R8G8B8A8_UNORM:
+		case VK_FORMAT_R8G8B8A8_SNORM:
+		case VK_FORMAT_B8G8R8A8_UNORM:
+		case VK_FORMAT_A8B8G8R8_UNORM_PACK32:
+		case VK_FORMAT_A8B8G8R8_SNORM_PACK32:
+		case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+			return low;
+
+		case VK_FORMAT_R16_SFLOAT:
+		case VK_FORMAT_R16G16_SFLOAT:
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
+			return fp16;
+
+		case VK_FORMAT_R32_SFLOAT:
+		case VK_FORMAT_R32G32_SFLOAT:
+		case VK_FORMAT_R32G32B32A32_SFLOAT:
+			return fp32;
+
+		default:
+			DE_FATAL("Precision not defined for format");
+			return fp32;
+	}
+}
 
 using namespace shaderexecutor;
 
@@ -568,106 +654,85 @@ public:
 	virtual std::vector<SampleArguments>		getSampleArgs	(void) const = 0;
 
 protected:
-	DataGenerator (void) {}
+												DataGenerator	(void) {}
 };
 
 class TextureFilteringTestInstance : public TestInstance
 {
 public:
-	TextureFilteringTestInstance (Context&						ctx,
-								  const TestCaseData&			testCaseData,
-								  ShaderExecutor&				shaderExecutor,
-								  de::MovePtr<DataGenerator>	gen)
+										TextureFilteringTestInstance	(Context&					ctx,
+																		 const TestCaseData&		testCaseData,
+																		 const ShaderSpec&			shaderSpec,
+																		 de::MovePtr<DataGenerator>	gen);
 
-		: TestInstance				(ctx)
-		, m_imParams				(testCaseData.imParams)
-		, m_samplerParams			(testCaseData.samplerParams)
-		, m_sampleLookupSettings	(testCaseData.sampleLookupSettings)
-		, m_shaderExecutor			(shaderExecutor)
-		, m_ctx						(ctx)
-		, m_vki						(m_ctx.getInstanceInterface())
-		, m_vkd						(m_ctx.getDeviceInterface())
-		, m_instance				(m_ctx.getInstance())
-		, m_physicalDevice			(m_ctx.getPhysicalDevice())
-		, m_device					(m_ctx.getDevice())
-		, m_uqfi					(m_ctx.getUniversalQueueFamilyIndex())
-		, m_pba						(testCaseData.pba)
-		, m_gen						(gen.release())
-	{
-		for (deUint8 compNdx = 0; compNdx < 3; ++compNdx)
-		{
-			DE_ASSERT(m_imParams.size[compNdx] > 0);
-		}
-
-		m_imExtent.width  = m_imParams.size[0];
-		m_imExtent.height = m_imParams.size[1];
-		m_imExtent.depth  = m_imParams.size[2];
-	}
-
-	virtual TestStatus iterate (void)
-	{
-		return runTest();
-	}
+	virtual TestStatus					iterate							(void) { return runTest(); }
 
 protected:
-	TestStatus	runTest			(void);
-	bool		isSupported		(void);
-	void		createResources (void);
-	void		execute			(void);
-	bool		verify			(void);
+	TestStatus							runTest							(void);
+	bool								isSupported						(void);
+	void								createResources					(void);
+	void								execute							(void);
+	bool								verify							(void);
 
-	tcu::Sampler mapTcuSampler	(void);
+	tcu::Sampler						mapTcuSampler					(void) const;
 
-	const ImageViewParameters&			m_imParams;
-	const SamplerParameters&			m_samplerParams;
-	const SampleLookupSettings&			m_sampleLookupSettings;
+	const glu::ShaderType				m_shaderType;
+	const ShaderSpec					m_shaderSpec;
+	const ImageViewParameters			m_imParams;
+	const SamplerParameters				m_samplerParams;
+	const SampleLookupSettings			m_sampleLookupSettings;
 
 	std::vector<SampleArguments>		m_sampleArguments;
 	deUint32							m_numSamples;
-
-	ShaderExecutor&						m_shaderExecutor;
-	Context&							m_ctx;
-	const InstanceInterface&			m_vki;
-	const DeviceInterface&				m_vkd;
-	VkInstance							m_instance;
-	VkPhysicalDevice					m_physicalDevice;
-	VkDevice							m_device;
-	deUint32							m_uqfi;
-
-	VkExtent3D							m_imExtent;
-
-    int									m_coordBits;
-	int									m_mipmapBits;
 
 	de::MovePtr<Allocation>				m_imAllocation;
 	Move<VkImage>						m_im;
 	Move<VkImageView>					m_imView;
 	Move<VkSampler>						m_sampler;
 
-	std::vector<ConstPixelBufferAccess> m_pba;
+	Move<VkDescriptorSetLayout>			m_extraResourcesLayout;
+	Move<VkDescriptorPool>				m_extraResourcesPool;
+	Move<VkDescriptorSet>				m_extraResourcesSet;
+
+	de::MovePtr<ShaderExecutor>			m_executor;
+
+	std::vector<ConstPixelBufferAccess> m_levels;
 	de::MovePtr<DataGenerator>			m_gen;
 
 	std::vector<Vec4>					m_resultSamples;
 	std::vector<Vec4>					m_resultCoords;
 };
 
+TextureFilteringTestInstance::TextureFilteringTestInstance (Context&					ctx,
+															const TestCaseData&			testCaseData,
+															const ShaderSpec&			shaderSpec,
+															de::MovePtr<DataGenerator>	gen)
+	: TestInstance				(ctx)
+	, m_shaderType				(testCaseData.shaderType)
+	, m_shaderSpec				(shaderSpec)
+	, m_imParams				(testCaseData.imParams)
+	, m_samplerParams			(testCaseData.samplerParams)
+	, m_sampleLookupSettings	(testCaseData.sampleLookupSettings)
+	, m_levels					(testCaseData.pba)
+	, m_gen						(gen.release())
+{
+	for (deUint8 compNdx = 0; compNdx < 3; ++compNdx)
+		DE_ASSERT(m_imParams.size[compNdx] > 0);
+}
+
 TestStatus TextureFilteringTestInstance::runTest (void)
 {
 	if (!isSupported())
-	{
 	    TCU_THROW(NotSupportedError, "Unsupported combination of filtering and image format");
-	}
 
 	TCU_CHECK(m_gen->generate());
-	m_pba =   m_gen->getPba();
+	m_levels = m_gen->getPba();
 
 	m_sampleArguments = m_gen->getSampleArgs();
 	m_numSamples = (deUint32)m_sampleArguments.size();
 
 	createResources();
-	initializeImage(m_ctx, m_im.get(), &m_pba[0], m_imParams);
-
-	m_shaderExecutor.addSamplerUniform(0, m_imView.get(), m_sampler.get());
+	initializeImage(m_context, m_im.get(), &m_levels[0], m_imParams);
 
 	deUint64 startTime, endTime;
 
@@ -675,21 +740,21 @@ TestStatus TextureFilteringTestInstance::runTest (void)
 	execute();
 	endTime = deGetMicroseconds();
 
-	m_ctx.getTestContext().getLog() << TestLog::Message
-									<< "Execution time: "
-									<< endTime - startTime
-									<< "us"
-									<< TestLog::EndMessage;
+	m_context.getTestContext().getLog() << TestLog::Message
+										<< "Execution time: "
+										<< endTime - startTime
+										<< "us"
+										<< TestLog::EndMessage;
 
     startTime = deGetMicroseconds();
 	bool result = verify();
     endTime = deGetMicroseconds();
 
-	m_ctx.getTestContext().getLog() << TestLog::Message
-									<< "Verification time: "
-									<< endTime - startTime
-									<< "us"
-									<< TestLog::EndMessage;
+	m_context.getTestContext().getLog() << TestLog::Message
+										<< "Verification time: "
+										<< endTime - startTime
+										<< "us"
+										<< TestLog::EndMessage;
 
 	if (result)
 	{
@@ -706,18 +771,20 @@ bool TextureFilteringTestInstance::verify (void)
 {
 	// \todo [2016-06-24 collinbaker] Handle cubemaps
 
-	m_coordBits  = (deUint8) m_ctx.getDeviceProperties().limits.subTexelPrecisionBits;
-	m_mipmapBits = (deUint8) m_ctx.getDeviceProperties().limits.mipmapPrecisionBits;
+	const int				coordBits			= (int)m_context.getDeviceProperties().limits.subTexelPrecisionBits;
+	const int				mipmapBits			= (int)m_context.getDeviceProperties().limits.mipmapPrecisionBits;
+	const int				maxPrintedFailures	= 5;
+	int						failCount			= 0;
 
-	SampleVerifier verifier(m_imParams,
-							m_samplerParams,
-							m_sampleLookupSettings,
-							m_coordBits,
-							m_mipmapBits,
-							m_pba);
+	const SampleVerifier	verifier			(m_imParams,
+												 m_samplerParams,
+												 m_sampleLookupSettings,
+												 coordBits,
+												 mipmapBits,
+												 getConversionPrecision(m_imParams.format),
+												 getFilteringPrecision(m_imParams.format),
+												 m_levels);
 
-	const int maxPrintedFailures = 5;
-	int failCount = 0;
 
 	for (deUint32 sampleNdx = 0; sampleNdx < m_numSamples; ++sampleNdx)
 	{
@@ -729,7 +796,7 @@ bool TextureFilteringTestInstance::verify (void)
 				std::string report;
 				verifier.verifySampleReport(m_sampleArguments[sampleNdx], m_resultSamples[sampleNdx], report);
 
-				m_ctx.getTestContext().getLog()
+				m_context.getTestContext().getLog()
 					<< TestLog::Section("Failed sample", "Failed sample")
 					<< TestLog::Message
 					<< "Sample " << sampleNdx << ".\n"
@@ -743,7 +810,7 @@ bool TextureFilteringTestInstance::verify (void)
 		}
 	}
 
-	m_ctx.getTestContext().getLog()
+	m_context.getTestContext().getLog()
 		<< TestLog::Message
 		<< "Passed " << m_numSamples - failCount << " out of " << m_numSamples << "."
 		<< TestLog::EndMessage;
@@ -793,7 +860,7 @@ void TextureFilteringTestInstance::execute (void)
 		reinterpret_cast<void*>(&resultCoordsTemp[0])
 	};
 
-	m_shaderExecutor.execute(m_ctx, m_numSamples, inputs, outputs);
+	m_executor->execute(m_numSamples, inputs, outputs, *m_extraResourcesSet);
 
 	m_resultSamples.resize(m_numSamples);
 	m_resultCoords .resize(m_numSamples);
@@ -816,42 +883,46 @@ void TextureFilteringTestInstance::createResources (void)
 {
 	// Create VkImage
 
-	const VkImageCreateFlags imCreateFlags =
-		(m_imParams.dim == IMG_DIM_CUBE) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+	const DeviceInterface&		vkd				= m_context.getDeviceInterface();
+	const VkDevice				device			= m_context.getDevice();
 
-	const VkImageCreateInfo imCreateInfo =
+	const deUint32				queueFamily		= m_context.getUniversalQueueFamilyIndex();
+	const VkImageCreateFlags	imCreateFlags	=(m_imParams.dim == IMG_DIM_CUBE) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+
+	const VkImageCreateInfo		imCreateInfo	=
 	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,							// sType
-		DE_NULL,														// pNext
-		imCreateFlags,													// flags
-	    mapImageType(m_imParams.dim),									// imageType
-	    m_imParams.format,												// format
-		m_imExtent,														// extent
-	    (deUint32)m_imParams.levels,									// mipLevels
-	    (deUint32)m_imParams.arrayLayers,								// arrayLayers
-		VK_SAMPLE_COUNT_1_BIT,											// samples
-		VK_IMAGE_TILING_OPTIMAL,										// tiling
-		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,	// usage
-		VK_SHARING_MODE_EXCLUSIVE,										// sharingMode
-		1,																// queueFamilyIndexCount
-		&m_uqfi,														// pQueueFamilyIndices
-		VK_IMAGE_LAYOUT_UNDEFINED										// initialLayout
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		DE_NULL,
+		imCreateFlags,
+	    mapImageType(m_imParams.dim),
+	    m_imParams.format,
+		makeExtent3D(m_imParams.size[0], m_imParams.size[1], m_imParams.size[2]),
+	    (deUint32)m_imParams.levels,
+	    (deUint32)m_imParams.arrayLayers,
+		VK_SAMPLE_COUNT_1_BIT,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_SHARING_MODE_EXCLUSIVE,
+		1,
+		&queueFamily,
+		VK_IMAGE_LAYOUT_UNDEFINED
 	};
 
-    m_im = createImage(m_vkd, m_device, &imCreateInfo);
+    m_im = createImage(vkd, device, &imCreateInfo);
 
 	// Allocate memory for image
 
 	VkMemoryRequirements imMemReq;
-	m_vkd.getImageMemoryRequirements(m_device, m_im.get(), &imMemReq);
+	vkd.getImageMemoryRequirements(device, m_im.get(), &imMemReq);
 
-	m_imAllocation = m_ctx.getDefaultAllocator().allocate(imMemReq, MemoryRequirement::Any);
-	VK_CHECK(m_vkd.bindImageMemory(m_device, m_im.get(), m_imAllocation->getMemory(), m_imAllocation->getOffset()));
+	m_imAllocation = m_context.getDefaultAllocator().allocate(imMemReq, MemoryRequirement::Any);
+	VK_CHECK(vkd.bindImageMemory(device, m_im.get(), m_imAllocation->getMemory(), m_imAllocation->getOffset()));
 
 	// Create VkImageView
 
 	// \todo [2016-06-23 collinbaker] Pick aspectMask based on image type (i.e. support depth and/or stencil images)
-	VkImageSubresourceRange imViewSubresourceRange =
+	DE_ASSERT(m_imParams.dim != IMG_DIM_CUBE); // \todo Support cube maps
+	const VkImageSubresourceRange imViewSubresourceRange =
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,			// aspectMask
 		0,									// baseMipLevel
@@ -859,11 +930,6 @@ void TextureFilteringTestInstance::createResources (void)
 		0,									// baseArrayLayer
 		(deUint32)m_imParams.arrayLayers	// layerCount
 	};
-
-	if (m_imParams.dim == IMG_DIM_CUBE)
-	{
-		imViewSubresourceRange.layerCount *= 6;
-	}
 
 	const VkComponentMapping imViewCompMap =
 	{
@@ -885,44 +951,122 @@ void TextureFilteringTestInstance::createResources (void)
 		imViewSubresourceRange						// subresourceRange
 	};
 
-	m_imView = createImageView(m_vkd, m_device, &imViewCreateInfo);
+	m_imView = createImageView(vkd, device, &imViewCreateInfo);
 
 	// Create VkSampler
 
 	const VkSamplerCreateInfo samplerCreateInfo = mapSamplerCreateInfo(m_samplerParams);
-	m_sampler = createSampler(m_vkd, m_device, &samplerCreateInfo);
+	m_sampler = createSampler(vkd, device, &samplerCreateInfo);
+
+	// Create additional descriptors
+
+	{
+		const VkDescriptorSetLayoutBinding		bindings[]	=
+		{
+			{ 0u,	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	1u,		VK_SHADER_STAGE_ALL,	DE_NULL		},
+		};
+		const VkDescriptorSetLayoutCreateInfo	layoutInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			DE_NULL,
+			(VkDescriptorSetLayoutCreateFlags)0u,
+			DE_LENGTH_OF_ARRAY(bindings),
+			bindings,
+		};
+
+		m_extraResourcesLayout = createDescriptorSetLayout(vkd, device, &layoutInfo);
+	}
+
+	{
+		const VkDescriptorPoolSize			poolSizes[]	=
+		{
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	1u	},
+		};
+		const VkDescriptorPoolCreateInfo	poolInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			DE_NULL,
+			(VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+			1u,		// maxSets
+			DE_LENGTH_OF_ARRAY(poolSizes),
+			poolSizes,
+		};
+
+		m_extraResourcesPool = createDescriptorPool(vkd, device, &poolInfo);
+	}
+
+	{
+		const VkDescriptorSetAllocateInfo	allocInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+			*m_extraResourcesPool,
+			1u,
+			&m_extraResourcesLayout.get(),
+		};
+
+		m_extraResourcesSet = allocateDescriptorSet(vkd, device, &allocInfo);
+	}
+
+	{
+		const VkDescriptorImageInfo		imageInfo			=
+		{
+			*m_sampler,
+			*m_imView,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		};
+		const VkWriteDescriptorSet		descriptorWrite		=
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			DE_NULL,
+			*m_extraResourcesSet,
+			0u,		// dstBinding
+			0u,		// dstArrayElement
+			1u,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			&imageInfo,
+			(const VkDescriptorBufferInfo*)DE_NULL,
+			(const VkBufferView*)DE_NULL,
+		};
+
+		vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+	}
+
+	m_executor = de::MovePtr<ShaderExecutor>(createExecutor(m_context, m_shaderType, m_shaderSpec, *m_extraResourcesLayout));
+}
+
+VkFormatFeatureFlags getRequiredFormatFeatures (const SamplerParameters& samplerParams)
+{
+	VkFormatFeatureFlags	features	= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+
+	if (samplerParams.minFilter	 == VK_FILTER_LINEAR ||
+		samplerParams.magFilter	 == VK_FILTER_LINEAR ||
+		samplerParams.mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
+	{
+		features |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
+	}
+
+	return features;
 }
 
 bool TextureFilteringTestInstance::isSupported (void)
 {
-	const VkImageCreateFlags imCreateFlags =
-		(m_imParams.dim == IMG_DIM_CUBE) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+	const VkImageCreateFlags		imCreateFlags		= (m_imParams.dim == IMG_DIM_CUBE) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+	const VkFormatFeatureFlags		reqImFeatures		= getRequiredFormatFeatures(m_samplerParams);
 
-	VkImageFormatProperties imFormatProperties;
-	VkFormatProperties		formatProperties;
-
-	m_vki.getPhysicalDeviceImageFormatProperties(m_physicalDevice,
-												 m_imParams.format,
-												 mapImageType(m_imParams.dim),
-												 VK_IMAGE_TILING_OPTIMAL,
-												 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-												 imCreateFlags,
-												 &imFormatProperties);
-
-	m_vki.getPhysicalDeviceFormatProperties(	 m_physicalDevice,
-												 m_imParams.format,
-												 &formatProperties);
+	const VkImageFormatProperties	imFormatProperties	= getPhysicalDeviceImageFormatProperties(m_context.getInstanceInterface(),
+																								 m_context.getPhysicalDevice(),
+																								 m_imParams.format,
+																								 mapImageType(m_imParams.dim),
+																								 VK_IMAGE_TILING_OPTIMAL,
+																								 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+																								 imCreateFlags);
+	const VkFormatProperties		formatProperties	= getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(),
+																							m_context.getPhysicalDevice(),
+																							m_imParams.format);
 
 	// \todo [2016-06-23 collinbaker] Check image parameters against imFormatProperties
-
-	VkFormatFeatureFlags reqImFeatures = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
-
-	if (m_samplerParams.minFilter	 == VK_FILTER_LINEAR ||
-		m_samplerParams.magFilter	 == VK_FILTER_LINEAR ||
-		m_samplerParams.mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
-	{
-		reqImFeatures |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
-	}
+	DE_UNREF(imFormatProperties);
 
 	return (formatProperties.optimalTilingFeatures & reqImFeatures) == reqImFeatures;
 }
@@ -930,74 +1074,68 @@ bool TextureFilteringTestInstance::isSupported (void)
 class TextureFilteringTestCase : public TestCase
 {
 public:
-	TextureFilteringTestCase (tcu::TestContext& testCtx,
-							  const char* name,
-							  const char* description)
+	TextureFilteringTestCase (tcu::TestContext&	testCtx,
+							  const char*		name,
+							  const char*		description)
 		: TestCase(testCtx, name, description)
 	{
 	}
 
-	void init (void);
+	void initSpec (void);
 
 	virtual void initPrograms (vk::SourceCollections& programCollection) const
 	{
-		DE_ASSERT(m_executor);
-		m_executor->setShaderSources(programCollection);
+		generateSources(m_testCaseData.shaderType, m_shaderSpec, programCollection);
 	}
 
 	virtual de::MovePtr<DataGenerator> createGenerator (void) const = 0;
 
 	virtual TestInstance* createInstance (Context& ctx) const
 	{
-		return new TextureFilteringTestInstance(ctx, m_testCaseData, *m_executor, createGenerator());
+		return new TextureFilteringTestInstance(ctx, m_testCaseData, m_shaderSpec, createGenerator());
 	}
 
 protected:
 	de::MovePtr<ShaderExecutor> m_executor;
 	TestCaseData				m_testCaseData;
+	ShaderSpec					m_shaderSpec;
 };
 
-void TextureFilteringTestCase::init (void)
+void TextureFilteringTestCase::initSpec (void)
 {
-	ShaderSpec shaderSpec;
-	shaderSpec.source = genLookupCode(m_testCaseData.imParams,
-									  m_testCaseData.samplerParams,
-									  m_testCaseData.sampleLookupSettings);
-	shaderSpec.source += "\nsampledCoord = coord;";
+	m_shaderSpec.source = genLookupCode(m_testCaseData.imParams,
+										m_testCaseData.samplerParams,
+										m_testCaseData.sampleLookupSettings);
+	m_shaderSpec.source += "\nsampledCoord = coord;";
 
-	shaderSpec.outputs.push_back(Symbol("result", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
-	shaderSpec.outputs.push_back(Symbol("sampledCoord", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
-	shaderSpec.inputs .push_back(Symbol("coord", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
-	shaderSpec.inputs .push_back(Symbol("layer", glu::VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP)));
-	shaderSpec.inputs .push_back(Symbol("dRef", glu::VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP)));
-	shaderSpec.inputs .push_back(Symbol("dPdx", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
-	shaderSpec.inputs .push_back(Symbol("dPdy", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
-	shaderSpec.inputs .push_back(Symbol("lod", glu::VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP)));
+	m_shaderSpec.outputs.push_back(Symbol("result", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+	m_shaderSpec.outputs.push_back(Symbol("sampledCoord", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+	m_shaderSpec.inputs .push_back(Symbol("coord", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+	m_shaderSpec.inputs .push_back(Symbol("layer", glu::VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP)));
+	m_shaderSpec.inputs .push_back(Symbol("dRef", glu::VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP)));
+	m_shaderSpec.inputs .push_back(Symbol("dPdx", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+	m_shaderSpec.inputs .push_back(Symbol("dPdy", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+	m_shaderSpec.inputs .push_back(Symbol("lod", glu::VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP)));
 
-	shaderSpec.globalDeclarations = "layout(set=0, binding=0) uniform highp ";
-	shaderSpec.globalDeclarations += genSamplerDeclaration(m_testCaseData.imParams,
+	m_shaderSpec.globalDeclarations = "layout(set=" + de::toString((int)EXTRA_RESOURCES_DESCRIPTOR_SET_INDEX) + ", binding=0) uniform highp ";
+	m_shaderSpec.globalDeclarations += genSamplerDeclaration(m_testCaseData.imParams,
 														   m_testCaseData.samplerParams);
-	shaderSpec.globalDeclarations += " testSampler;";
-
-	m_executor = de::MovePtr<ShaderExecutor>(createExecutor(m_testCaseData.shaderType, shaderSpec));
-	DE_ASSERT(m_executor);
-
-	m_testCtx.getLog() << *m_executor;
+	m_shaderSpec.globalDeclarations += " testSampler;";
 }
 
 class Texture2DGradientTestCase : public TextureFilteringTestCase
 {
 public:
-	Texture2DGradientTestCase (TestContext& testCtx,
-							   const char* name,
-							   const char* desc,
-							   TextureFormat format,
-							   IVec3 dimensions,
-							   VkFilter magFilter,
-							   VkFilter minFilter,
-							   VkSamplerMipmapMode mipmapFilter,
-							   VkSamplerAddressMode wrappingMode,
-							   bool useDerivatives)
+	Texture2DGradientTestCase (TestContext&			testCtx,
+							   const char*			name,
+							   const char*			desc,
+							   TextureFormat		format,
+							   IVec3				dimensions,
+							   VkFilter				magFilter,
+							   VkFilter				minFilter,
+							   VkSamplerMipmapMode	mipmapFilter,
+							   VkSamplerAddressMode	wrappingMode,
+							   bool					useDerivatives)
 
 		: TextureFilteringTestCase	(testCtx, name, desc)
 		, m_format					(format)
@@ -1009,7 +1147,7 @@ public:
 		, m_useDerivatives			(useDerivatives)
 	{
 		m_testCaseData = genTestCaseData();
-		init();
+		initSpec();
 	}
 
 protected:
@@ -1030,18 +1168,18 @@ protected:
 
 		const SamplerParameters samplerParameters =
 		{
-			m_magFilter, // magFilter
-			m_minFilter, // minFilter
-			m_mipmapFilter, // mipmapFilter
-		    m_wrappingMode, // wrappingModeU
-			m_wrappingMode, // wrappingModeV
-			m_wrappingMode, // wrappingModeW
-			VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE, // borderColor
-			0.0f, // lodBias
-			-1.0f, // minLod
-			50.0f, // maxLod
-			false, // isUnnormalized
-			false // isCompare
+			m_magFilter,
+			m_minFilter,
+			m_mipmapFilter,
+			m_wrappingMode,
+			m_wrappingMode,
+			m_wrappingMode,
+			VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+			0.0f,
+			-1.0f,
+			50.0f,
+			false,
+			false
 		};
 
 		const deUint8 numLevels = (deUint8) (1 + deLog2Floor32(de::max(m_dimensions[0],
@@ -1049,12 +1187,12 @@ protected:
 
 		const ImageViewParameters imParameters =
 		{
-			IMG_DIM_2D, // dim
-			mapTextureFormat(m_format), // format
-			m_dimensions, // size
-			numLevels, // levels
-			false, // isArrayed
-			1, // arrayLayers
+			IMG_DIM_2D,
+			mapTextureFormat(m_format),
+			m_dimensions,
+			numLevels,
+			false,
+			1,
 		};
 
 		const TestCaseData data =
@@ -1207,7 +1345,7 @@ TestCaseGroup* create2DFormatTests (TestContext& testCtx)
 	de::MovePtr<TestCaseGroup> tests(
 		new TestCaseGroup(testCtx, "formats", "Various image formats"));
 
-    VkFormat formats[] =
+    const VkFormat formats[] =
 	{
 	    VK_FORMAT_B4G4R4A4_UNORM_PACK16,
 		VK_FORMAT_R5G6B5_UNORM_PACK16,
