@@ -162,105 +162,6 @@ group varying "Varying linkage"
 			""
 		end
 
-		# differing precision tests
-		case differing_precision_1
-			version 310 es
-			desc "varying declared as highp in vertex shader, but mediump in fragment shader"
-			values
-			{
-				input float in0		= [ -1.25 | -25.55 | 1.0 | 2.25 | 3.4 | 16.0 ];
-				output float out0	= [ -1.25 | -25.55 | 1.0 | 2.25 | 3.4 | 16.0 ];
-			}
-
-			vertex ""
-				#version 310 es
-				${VERTEX_DECLARATIONS}
-				layout(location = 0) out highp float var;
-				void main()
-				{
-					var = in0;
-					${VERTEX_OUTPUT}
-				}
-			""
-			fragment ""
-				#version 310 es
-				precision highp float;
-				${FRAGMENT_DECLARATIONS}
-				layout(location = 0) in mediump float var;
-				void main()
-				{
-					out0 = var;
-					${FRAGMENT_OUTPUT}
-				}
-			""
-		end
-
-		# differing precision tests
-		case differing_precision_2
-			version 310 es
-			desc "varying declared as highp in vertex shader, but lowp in fragment shader"
-			values
-			{
-				input float in0		= [ -1.25 | -25.56 | 1.0 | 2.25 | 3.4 | 16.0 ];
-				output float out0	= [ -1.25 | -25.56 | 1.0 | 2.25 | 3.4 | 16.0 ];
-			}
-
-			vertex ""
-				#version 310 es
-				${VERTEX_DECLARATIONS}
-				layout(location = 0) out highp vec2 var;
-				void main()
-				{
-					var = vec2(in0, 2.0*in0);
-					${VERTEX_OUTPUT}
-				}
-			""
-			fragment ""
-				#version 310 es
-				precision highp float;
-				${FRAGMENT_DECLARATIONS}
-				layout(location = 0) in lowp vec2 var;
-				void main()
-				{
-					out0 = var.y - var.x;
-					${FRAGMENT_OUTPUT}
-				}
-			""
-		end
-
-		# differing precision tests
-		case differing_precision_3
-			version 310 es
-			desc "varying declared as lowp in vertex shader, but mediump in fragment shader"
-			values
-			{
-				input float in0		= [ -1.25 | -25.0 | 1.0 | 2.25 | 3.4 | 16.0 ];
-				output float out0	= [ -1.25 | -25.0 | 1.0 | 2.25 | 3.4 | 16.0 ];
-			}
-
-			vertex ""
-				#version 310 es
-				${VERTEX_DECLARATIONS}
-				layout(location = 0) out lowp vec4 var;
-				void main()
-				{
-					var = vec4(in0, 2.0*in0, -in0, -in0);
-					${VERTEX_OUTPUT}
-				}
-			""
-			fragment ""
-				#version 310 es
-				precision highp float;
-				${FRAGMENT_DECLARATIONS}
-				layout(location = 0) in mediump vec4 var;
-				void main()
-				{
-					out0 = var.x + var.y + var.z + var.w;
-					${FRAGMENT_OUTPUT}
-				}
-			""
-		end
-
 		# different interpolation
 		case differing_interpolation_2
 			version 310 es
@@ -381,7 +282,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) out mediump float var;
+				layout(location = 0) out float var;
 				void main()
 				{
 					var = in0;
@@ -412,7 +313,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) out mediump vec2 var;
+				layout(location = 0) out vec2 var;
 				void main()
 				{
 					var = in0;
@@ -443,7 +344,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) out mediump vec3 var;
+				layout(location = 0) out vec3 var;
 				void main()
 				{
 					var = in0;
@@ -474,7 +375,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) out mediump vec4 var;
+				layout(location = 0) out vec4 var;
 				void main()
 				{
 					var = in0;
@@ -505,7 +406,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) out mediump mat2 var;
+				layout(location = 0) out mat2 var;
 				void main()
 				{
 					var = in0;
@@ -536,7 +437,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) out mediump mat2x3 var;
+				layout(location = 0) out mat2x3 var;
 				void main()
 				{
 					var = in0;
@@ -567,7 +468,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) out mediump mat2x4 var;
+				layout(location = 0) out mat2x4 var;
 				void main()
 				{
 					var = in0;
@@ -598,7 +499,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) out mediump mat3x2 var;
+				layout(location = 0) out mat3x2 var;
 				void main()
 				{
 					var = in0;
@@ -629,7 +530,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) out mediump mat3 var;
+				layout(location = 0) out mat3 var;
 				void main()
 				{
 					var = in0;
@@ -660,7 +561,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) out mediump mat3x4 var;
+				layout(location = 0) out mat3x4 var;
 				void main()
 				{
 					var = in0;
@@ -691,7 +592,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) out mediump mat4x2 var;
+				layout(location = 0) out mat4x2 var;
 				void main()
 				{
 					var = in0;
@@ -722,7 +623,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) out mediump mat4x3 var;
+				layout(location = 0) out mat4x3 var;
 				void main()
 				{
 					var = in0;
@@ -753,7 +654,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) out mediump mat4 var;
+				layout(location = 0) out mat4 var;
 				void main()
 				{
 					var = in0;
@@ -1808,7 +1709,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) smooth out mediump vec4 var;
+				layout(location = 0) smooth out vec4 var;
 				void main()
 				{
 					var = in0;
@@ -1839,7 +1740,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) centroid out mediump vec4 var;
+				layout(location = 0) centroid out vec4 var;
 				void main()
 				{
 					var = in0;
@@ -1870,7 +1771,7 @@ group varying "Varying linkage"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(location = 0) flat out mediump vec4 var;
+				layout(location = 0) flat out vec4 var;
 				void main()
 				{
 					var = in0;

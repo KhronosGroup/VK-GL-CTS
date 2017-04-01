@@ -1434,6 +1434,27 @@ struct VkPhysicalDeviceSparseImageFormatInfo2KHR
 	VkImageTiling			tiling;
 };
 
+struct VkRectLayerKHR
+{
+	VkOffset2D	offset;
+	VkExtent2D	extent;
+	deUint32	layer;
+};
+
+struct VkPresentRegionKHR
+{
+	deUint32				rectangleCount;
+	const VkRectLayerKHR*	pRectangles;
+};
+
+struct VkPresentRegionsKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	deUint32					swapchainCount;
+	const VkPresentRegionKHR*	pRegions;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;
@@ -1714,5 +1735,33 @@ struct VkDescriptorUpdateTemplateCreateInfoKHR
 	VkPipelineBindPoint							pipelineBindPoint;
 	VkPipelineLayout							pipelineLayout;
 	deUint32									set;
+};
+
+struct VkRefreshCycleDurationGOOGLE
+{
+	deUint64	refreshDuration;
+};
+
+struct VkPastPresentationTimingGOOGLE
+{
+	deUint32	presentID;
+	deUint64	desiredPresentTime;
+	deUint64	actualPresentTime;
+	deUint64	earliestPresentTime;
+	deUint64	presentMargin;
+};
+
+struct VkPresentTimeGOOGLE
+{
+	deUint32	presentID;
+	deUint64	desiredPresentTime;
+};
+
+struct VkPresentTimesInfoGOOGLE
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	deUint32					swapchainCount;
+	const VkPresentTimeGOOGLE*	pTimes;
 };
 

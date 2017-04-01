@@ -25,12 +25,19 @@
 
 #include "vktOpaqueTypeIndexingTests.hpp"
 
+#include "vkRefUtil.hpp"
+#include "vkImageUtil.hpp"
+#include "vkMemUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include "vkQueryUtil.hpp"
+
 #include "tcuTexture.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuVectorUtil.hpp"
 #include "tcuTextureUtil.hpp"
 
 #include "deStringUtil.hpp"
+#include "deSharedPtr.hpp"
 #include "deRandom.hpp"
 
 #include "vktShaderExecutor.hpp"
@@ -44,6 +51,100 @@ namespace shaderexecutor
 
 namespace
 {
+
+using de::UniquePtr;
+using de::MovePtr;
+using de::SharedPtr;
+using std::vector;
+
+using namespace vk;
+
+typedef SharedPtr<Unique<VkSampler> > VkSamplerSp;
+
+// Buffer helper
+
+class Buffer
+{
+public:
+								Buffer				(Context& context, VkBufferUsageFlags usage, size_t size);
+
+	VkBuffer					getBuffer			(void) const { return *m_buffer;					}
+	void*						getHostPtr			(void) const { return m_allocation->getHostPtr();	}
+	void						flush				(void);
+	void						invalidate			(void);
+
+private:
+	const DeviceInterface&		m_vkd;
+	const VkDevice				m_device;
+	const Unique<VkBuffer>		m_buffer;
+	const UniquePtr<Allocation>	m_allocation;
+};
+
+typedef de::SharedPtr<Buffer> BufferSp;
+
+Move<VkBuffer> createBuffer (const DeviceInterface& vkd, VkDevice device, VkDeviceSize size, VkBufferUsageFlags usageFlags)
+{
+	const VkBufferCreateInfo	createInfo		=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		DE_NULL,
+		(VkBufferCreateFlags)0,
+		size,
+		usageFlags,
+		VK_SHARING_MODE_EXCLUSIVE,
+		0u,
+		DE_NULL
+	};
+	return createBuffer(vkd, device, &createInfo);
+}
+
+MovePtr<Allocation> allocateAndBindMemory (const DeviceInterface& vkd, VkDevice device, Allocator& allocator, VkBuffer buffer)
+{
+	MovePtr<Allocation>		alloc	(allocator.allocate(getBufferMemoryRequirements(vkd, device, buffer), MemoryRequirement::HostVisible));
+
+	VK_CHECK(vkd.bindBufferMemory(device, buffer, alloc->getMemory(), alloc->getOffset()));
+
+	return alloc;
+}
+
+Buffer::Buffer (Context& context, VkBufferUsageFlags usage, size_t size)
+	: m_vkd			(context.getDeviceInterface())
+	, m_device		(context.getDevice())
+	, m_buffer		(createBuffer			(context.getDeviceInterface(),
+											 context.getDevice(),
+											 (VkDeviceSize)size,
+											 usage))
+	, m_allocation	(allocateAndBindMemory	(context.getDeviceInterface(),
+											 context.getDevice(),
+											 context.getDefaultAllocator(),
+											 *m_buffer))
+{
+}
+
+void Buffer::flush (void)
+{
+	flushMappedMemoryRange(m_vkd, m_device, m_allocation->getMemory(), m_allocation->getOffset(), VK_WHOLE_SIZE);
+}
+
+void Buffer::invalidate (void)
+{
+	invalidateMappedMemoryRange(m_vkd, m_device, m_allocation->getMemory(), m_allocation->getOffset(), VK_WHOLE_SIZE);
+}
+
+MovePtr<Buffer> createUniformIndexBuffer (Context& context, int numIndices, const int* indices)
+{
+	MovePtr<Buffer>		buffer	(new Buffer(context, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(int)*numIndices));
+	int* const			bufPtr	= (int*)buffer->getHostPtr();
+
+	for (int ndx = 0; ndx < numIndices; ++ndx)
+		bufPtr[ndx] = indices[ndx];
+
+	buffer->flush();
+
+	return buffer;
+}
+
+// Tests
 
 enum IndexExprType
 {
@@ -75,21 +176,34 @@ public:
 																	 const glu::ShaderType		shaderType,
 																	 const IndexExprType		indexExprType);
 	virtual								~OpaqueTypeIndexingCase		(void);
+
 	virtual void						initPrograms				(vk::SourceCollections& programCollection) const
 										{
-											m_executor->setShaderSources(programCollection);
+											generateSources(m_shaderType, m_shaderSpec, programCollection);
 										}
-	virtual TestInstance*				createInstance				(Context& context) const = 0;
-	void								init						(void);
 
 protected:
 	const char*							m_name;
 	const glu::ShaderType				m_shaderType;
 	const IndexExprType					m_indexExprType;
 	ShaderSpec							m_shaderSpec;
-	de::MovePtr<ShaderExecutor>			m_executor;
-	UniformSetup*						m_uniformSetup;
 };
+
+OpaqueTypeIndexingCase::OpaqueTypeIndexingCase (tcu::TestContext&			testCtx,
+												const char*					name,
+												const char*					description,
+												const glu::ShaderType		shaderType,
+												const IndexExprType			indexExprType)
+	: TestCase			(testCtx, name, description)
+	, m_name			(name)
+	, m_shaderType		(shaderType)
+	, m_indexExprType	(indexExprType)
+{
+}
+
+OpaqueTypeIndexingCase::~OpaqueTypeIndexingCase (void)
+{
+}
 
 class OpaqueTypeIndexingTestInstance : public TestInstance
 {
@@ -97,9 +211,7 @@ public:
 										OpaqueTypeIndexingTestInstance		(Context&					context,
 																			 const glu::ShaderType		shaderType,
 																			 const ShaderSpec&			shaderSpec,
-																			 ShaderExecutor&			executor,
 																			 const char*				name,
-																			 UniformSetup*				uniformSetup,
 																			 const IndexExprType		indexExprType);
 	virtual								~OpaqueTypeIndexingTestInstance		(void);
 
@@ -114,42 +226,12 @@ protected:
 	const ShaderSpec&					m_shaderSpec;
 	const char*							m_name;
 	const IndexExprType					m_indexExprType;
-	ShaderExecutor&						m_executor;
-	UniformSetup*						m_uniformSetup;
 };
-
-OpaqueTypeIndexingCase::OpaqueTypeIndexingCase (tcu::TestContext&			testCtx,
-												const char*					name,
-												const char*					description,
-												const glu::ShaderType		shaderType,
-												const IndexExprType			indexExprType)
-	: TestCase			(testCtx, name, description)
-	, m_name			(name)
-	, m_shaderType		(shaderType)
-	, m_indexExprType	(indexExprType)
-	, m_executor		(DE_NULL)
-	, m_uniformSetup	(new UniformSetup())
-{
-}
-
-OpaqueTypeIndexingCase::~OpaqueTypeIndexingCase (void)
-{
-}
-
-void OpaqueTypeIndexingCase::init (void)
-{
-	DE_ASSERT(!m_executor);
-
-	m_executor = de::MovePtr<ShaderExecutor>(createExecutor(m_shaderType, m_shaderSpec));
-	m_testCtx.getLog() << *m_executor;
-}
 
 OpaqueTypeIndexingTestInstance::OpaqueTypeIndexingTestInstance (Context&					context,
 																const glu::ShaderType		shaderType,
 																const ShaderSpec&			shaderSpec,
-																ShaderExecutor&				executor,
 																const char*					name,
-																UniformSetup*				uniformSetup,
 																const IndexExprType			indexExprType)
 	: TestInstance		(context)
 	, m_testCtx			(context.getTestContext())
@@ -157,8 +239,6 @@ OpaqueTypeIndexingTestInstance::OpaqueTypeIndexingTestInstance (Context&					con
 	, m_shaderSpec		(shaderSpec)
 	, m_name			(name)
 	, m_indexExprType	(indexExprType)
-	, m_executor		(executor)
-	, m_uniformSetup	(uniformSetup)
 {
 }
 
@@ -195,38 +275,14 @@ void OpaqueTypeIndexingTestInstance::checkSupported (const VkDescriptorType desc
 	}
 }
 
-static deUint32 getFirstFreeBindingLocation (const glu::ShaderType shaderType)
+static void declareUniformIndexVars (std::ostream& str, deUint32 bindingLocation, const char* varPrefix, int numVars)
 {
-	deUint32 location;
+	str << "layout(set = " << EXTRA_RESOURCES_DESCRIPTOR_SET_INDEX << ", binding = " << bindingLocation << ", std140) uniform Indices\n{\n";
 
-	switch (shaderType)
-	{
-		case glu::SHADERTYPE_TESSELLATION_CONTROL:
-		case glu::SHADERTYPE_TESSELLATION_EVALUATION:
-		case glu::SHADERTYPE_COMPUTE:
-			// 0 - input buffer
-			// 1 - output buffer
-			location = 2u;
-			break;
-
-		default:
-			location = 0u;
-			break;
-	}
-
-	return location;
-}
-
-static void declareUniformIndexVars (std::ostream& str, const char* varPrefix, int numVars, deUint32& bindingLocation)
-{
 	for (int varNdx = 0; varNdx < numVars; varNdx++)
-		str << "layout(set = 0, binding = " << bindingLocation++ << ") uniform buf" << varNdx << " { highp int " << varPrefix << varNdx << "; }" << ";\n";
-}
+		str << "\thighp int " << varPrefix << varNdx << ";\n";
 
-static void uploadUniformIndices (UniformSetup* uniformSetup, int numIndices, const int* indices, deUint32& bindingLocation)
-{
-	for (int varNdx = 0; varNdx < numIndices; varNdx++)
-		uniformSetup->addData(new UniformData<int>(bindingLocation++, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, indices[varNdx]));
+	str << "};\n";
 }
 
 static TextureType getTextureType (glu::DataType samplerType)
@@ -407,6 +463,246 @@ static vk::VkImageViewType getVkImageViewType (TextureType texType)
 	}
 }
 
+//! Test image with 1-pixel dimensions and no mipmaps
+class TestImage
+{
+public:
+								TestImage		(Context& context, TextureType texType, tcu::TextureFormat format, const void* colorValue);
+
+	VkImageView					getImageView	(void) const { return *m_imageView; }
+
+private:
+	const Unique<VkImage>		m_image;
+	const UniquePtr<Allocation>	m_allocation;
+	const Unique<VkImageView>	m_imageView;
+};
+
+Move<VkImage> createTestImage (const DeviceInterface& vkd, VkDevice device, TextureType texType, tcu::TextureFormat format)
+{
+	const VkImageCreateInfo		createInfo		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		DE_NULL,
+		(texType == TEXTURE_TYPE_CUBE ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (VkImageCreateFlags)0),
+		getVkImageType(texType),
+		mapTextureFormat(format),
+		makeExtent3D(1, 1, 1),
+		1u,
+		(texType == TEXTURE_TYPE_CUBE) ? 6u : 1u,
+		VK_SAMPLE_COUNT_1_BIT,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+		VK_SHARING_MODE_EXCLUSIVE,
+		0u,
+		DE_NULL,
+		VK_IMAGE_LAYOUT_UNDEFINED
+	};
+
+	return createImage(vkd, device, &createInfo);
+}
+
+de::MovePtr<Allocation> allocateAndBindMemory (const DeviceInterface& vkd, VkDevice device, Allocator& allocator, VkImage image)
+{
+	de::MovePtr<Allocation>		alloc	= allocator.allocate(getImageMemoryRequirements(vkd, device, image), MemoryRequirement::Any);
+
+	VK_CHECK(vkd.bindImageMemory(device, image, alloc->getMemory(), alloc->getOffset()));
+
+	return alloc;
+}
+
+Move<VkImageView> createTestImageView (const DeviceInterface& vkd, VkDevice device, VkImage image, TextureType texType, tcu::TextureFormat format)
+{
+	const bool					isDepthImage	= format.order == tcu::TextureFormat::D;
+	const VkImageViewCreateInfo	createInfo		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		DE_NULL,
+		(VkImageViewCreateFlags)0,
+		image,
+		getVkImageViewType(texType),
+		mapTextureFormat(format),
+		{
+			VK_COMPONENT_SWIZZLE_IDENTITY,
+			VK_COMPONENT_SWIZZLE_IDENTITY,
+			VK_COMPONENT_SWIZZLE_IDENTITY,
+			VK_COMPONENT_SWIZZLE_IDENTITY,
+		},
+		{
+			(VkImageAspectFlags)(isDepthImage ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT),
+			0u,
+			1u,
+			0u,
+			(texType == TEXTURE_TYPE_CUBE ? 6u : 1u)
+		}
+	};
+
+	return createImageView(vkd, device, &createInfo);
+}
+
+TestImage::TestImage (Context& context, TextureType texType, tcu::TextureFormat format, const void* colorValue)
+	: m_image		(createTestImage		(context.getDeviceInterface(), context.getDevice(), texType, format))
+	, m_allocation	(allocateAndBindMemory	(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_image))
+	, m_imageView	(createTestImageView	(context.getDeviceInterface(), context.getDevice(), *m_image, texType, format))
+{
+	const DeviceInterface&		vkd					= context.getDeviceInterface();
+	const VkDevice				device				= context.getDevice();
+
+	const size_t				pixelSize			= (size_t)format.getPixelSize();
+	const deUint32				numLayers			= (texType == TEXTURE_TYPE_CUBE) ? 6u : 1u;
+	const size_t				numReplicas			= (size_t)numLayers;
+	const size_t				stagingBufferSize	= pixelSize*numReplicas;
+
+	const VkBufferCreateInfo	stagingBufferInfo	=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		DE_NULL,
+		(VkBufferCreateFlags)0u,
+		(VkDeviceSize)stagingBufferSize,
+		(VkBufferCreateFlags)VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_SHARING_MODE_EXCLUSIVE,
+		0u,
+		DE_NULL,
+	};
+	const Unique<VkBuffer>		stagingBuffer		(createBuffer(vkd, device, &stagingBufferInfo));
+	const UniquePtr<Allocation>	alloc				(context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vkd, device, *stagingBuffer), MemoryRequirement::HostVisible));
+
+	VK_CHECK(vkd.bindBufferMemory(device, *stagingBuffer, alloc->getMemory(), alloc->getOffset()));
+
+	for (size_t ndx = 0; ndx < numReplicas; ++ndx)
+		deMemcpy((deUint8*)alloc->getHostPtr() + ndx*pixelSize, colorValue, pixelSize);
+
+	{
+		const VkCommandPoolCreateInfo		cmdPoolInfo		=
+		{
+			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+			DE_NULL,
+			(VkCommandPoolCreateFlags)VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+			context.getUniversalQueueFamilyIndex(),
+		};
+		const Unique<VkCommandPool>			cmdPool			(createCommandPool(vkd, device, &cmdPoolInfo));
+		const VkCommandBufferAllocateInfo	allocInfo		=
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+			DE_NULL,
+			*cmdPool,
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			1u,
+		};
+		const Unique<VkCommandBuffer>		cmdBuf			(allocateCommandBuffer(vkd, device, &allocInfo));
+		const VkCommandBufferBeginInfo		beginInfo		=
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			DE_NULL,
+			(VkCommandBufferUsageFlags)VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
+		};
+		const VkImageAspectFlags			imageAspect		= (VkImageAspectFlags)(format.order == tcu::TextureFormat::D ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
+		const VkBufferImageCopy				copyInfo		=
+		{
+			0u,
+			1u,
+			1u,
+			{
+				imageAspect,
+				0u,
+				0u,
+				numLayers
+			},
+			{ 0u, 0u, 0u },
+			{ 1u, 1u, 1u }
+		};
+		const VkImageMemoryBarrier			preCopyBarrier	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			DE_NULL,
+			(VkAccessFlags)0u,
+			(VkAccessFlags)VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			*m_image,
+			{
+				imageAspect,
+				0u,
+				1u,
+				0u,
+				numLayers
+			}
+		};
+		const VkImageMemoryBarrier			postCopyBarrier	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			DE_NULL,
+			(VkAccessFlags)VK_ACCESS_TRANSFER_WRITE_BIT,
+			(VkAccessFlags)VK_ACCESS_SHADER_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			*m_image,
+			{
+				imageAspect,
+				0u,
+				1u,
+				0u,
+				numLayers
+			}
+		};
+
+		VK_CHECK(vkd.beginCommandBuffer(*cmdBuf, &beginInfo));
+		vkd.cmdPipelineBarrier(*cmdBuf,
+							   (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT,
+							   (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
+							   (VkDependencyFlags)0u,
+							   0u,
+							   (const VkMemoryBarrier*)DE_NULL,
+							   0u,
+							   (const VkBufferMemoryBarrier*)DE_NULL,
+							   1u,
+							   &preCopyBarrier);
+		vkd.cmdCopyBufferToImage(*cmdBuf, *stagingBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyInfo);
+		vkd.cmdPipelineBarrier(*cmdBuf,
+							   (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
+							   (VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+							   (VkDependencyFlags)0u,
+							   0u,
+							   (const VkMemoryBarrier*)DE_NULL,
+							   0u,
+							   (const VkBufferMemoryBarrier*)DE_NULL,
+							   1u,
+							   &postCopyBarrier);
+		VK_CHECK(vkd.endCommandBuffer(*cmdBuf));
+
+		{
+			const VkFenceCreateInfo		fenceInfo	=
+			{
+				VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+				DE_NULL,
+				(VkFenceCreateFlags)0,
+			};
+			const Unique<VkFence>		fence		(createFence(vkd, device, &fenceInfo));
+			const VkSubmitInfo			submitInfo	=
+			{
+				VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				DE_NULL,
+				0u,
+				(const VkSemaphore*)DE_NULL,
+				(const VkPipelineStageFlags*)DE_NULL,
+				1u,
+				&cmdBuf.get(),
+				0u,
+				(const VkSemaphore*)DE_NULL,
+			};
+
+			VK_CHECK(vkd.queueSubmit(context.getUniversalQueue(), 1u, &submitInfo, *fence));
+			VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), VK_TRUE, ~0ull));
+		}
+	}
+}
+
+typedef SharedPtr<TestImage> TestImageSp;
+
 // SamplerIndexingCaseInstance
 
 class SamplerIndexingCaseInstance : public OpaqueTypeIndexingTestInstance
@@ -422,11 +718,9 @@ public:
 								SamplerIndexingCaseInstance		(Context&					context,
 																 const glu::ShaderType		shaderType,
 																 const ShaderSpec&			shaderSpec,
-																 ShaderExecutor&			executor,
 																 const char*				name,
 																 glu::DataType				samplerType,
 																 const IndexExprType		indexExprType,
-																 UniformSetup*				uniformSetup,
 																 const std::vector<int>&	lookupIndices);
 	virtual						~SamplerIndexingCaseInstance	(void);
 
@@ -434,19 +728,17 @@ public:
 
 protected:
 	const glu::DataType			m_samplerType;
-	const std::vector<int>&		m_lookupIndices;
+	const std::vector<int>		m_lookupIndices;
 };
 
 SamplerIndexingCaseInstance::SamplerIndexingCaseInstance (Context&						context,
 														  const glu::ShaderType			shaderType,
 														  const ShaderSpec&				shaderSpec,
-														  ShaderExecutor&				executor,
 														  const char*					name,
 														  glu::DataType					samplerType,
 														  const IndexExprType			indexExprType,
-														  UniformSetup*					uniformSetup,
 														  const std::vector<int>&		lookupIndices)
-	: OpaqueTypeIndexingTestInstance	(context, shaderType, shaderSpec, executor, name, uniformSetup, indexExprType)
+	: OpaqueTypeIndexingTestInstance	(context, shaderType, shaderSpec, name, indexExprType)
 	, m_samplerType						(samplerType)
 	, m_lookupIndices					(lookupIndices)
 {
@@ -473,14 +765,12 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate (void)
 	const glu::DataType				outputType			= getSamplerOutputType(m_samplerType);
 	const tcu::TextureFormat		texFormat			= getSamplerTextureFormat(m_samplerType);
 	const int						outLookupStride		= numInvocations*getDataTypeScalarSize(outputType);
-	std::vector<float>				coords;
-	std::vector<deUint32>			outData;
-	std::vector<deUint8>			texData				(numSamplers * texFormat.getPixelSize());
+	vector<float>					coords;
+	vector<deUint32>				outData;
+	vector<deUint8>					texData				(numSamplers * texFormat.getPixelSize());
 	const tcu::PixelBufferAccess	refTexAccess		(texFormat, numSamplers, 1, 1, &texData[0]);
 	de::Random						rnd					(deInt32Hash(m_samplerType) ^ deInt32Hash(m_shaderType) ^ deInt32Hash(m_indexExprType));
 	const TextureType				texType				= getTextureType(m_samplerType);
-	const vk::VkImageType			imageType			= getVkImageType(texType);
-	const vk::VkImageViewType		imageViewType		= getVkImageViewType(texType);
 	const tcu::Sampler::FilterMode	filterMode			= (isShadowSampler(m_samplerType) || isIntegerFormat(texFormat)) ? tcu::Sampler::NEAREST : tcu::Sampler::LINEAR;
 
 	// The shadow sampler with unnormalized coordinates is only used with the reference texture. Actual samplers in shaders use normalized coords.
@@ -490,6 +780,15 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate (void)
 																				tcu::Sampler::COMPAREMODE_LESS)
 																: tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE,
 																				filterMode, filterMode);
+
+	const DeviceInterface&			vkd					= m_context.getDeviceInterface();
+	const VkDevice					device				= m_context.getDevice();
+	vector<TestImageSp>				images;
+	vector<VkSamplerSp>				samplers;
+	MovePtr<Buffer>					indexBuffer;
+	Move<VkDescriptorSetLayout>		extraResourcesLayout;
+	Move<VkDescriptorPool>			extraResourcesSetPool;
+	Move<VkDescriptorSet>			extraResourcesSet;
 
 	checkSupported(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
@@ -530,20 +829,132 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate (void)
 
 	outData.resize(numLookups*outLookupStride);
 
+	for (int ndx = 0; ndx < numSamplers; ++ndx)
 	{
-		std::vector<void*>		inputs;
-		std::vector<void*>		outputs;
-		std::vector<int>		expandedIndices;
-		deUint32				bindingLocation		= getFirstFreeBindingLocation(m_shaderType);
-
-		inputs.push_back(&coords[0]);
+		images.push_back(TestImageSp(new TestImage(m_context, texType, texFormat, &texData[ndx * texFormat.getPixelSize()])));
 
 		{
-			tcu::Sampler sampler		= refSampler;
-			sampler.normalizedCoords	= true;
+			tcu::Sampler	samplerCopy	(refSampler);
+			samplerCopy.normalizedCoords = true;
 
-			m_uniformSetup->addData(new SamplerUniformData(bindingLocation++, (deUint32)numSamplers, sampler, texFormat, tcu::IVec3(1, 1, 1), imageType, imageViewType, &texData[0]));
+			{
+				const VkSamplerCreateInfo	samplerParams	= mapSampler(samplerCopy, texFormat);
+				samplers.push_back(VkSamplerSp(new Unique<VkSampler>(createSampler(vkd, device, &samplerParams))));
+			}
 		}
+	}
+
+	if (m_indexExprType == INDEX_EXPR_TYPE_UNIFORM)
+		indexBuffer = createUniformIndexBuffer(m_context, numLookups, &m_lookupIndices[0]);
+
+	{
+		const VkDescriptorSetLayoutBinding		bindings[]	=
+		{
+			{ 0u,						VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	(deUint32)numSamplers,		VK_SHADER_STAGE_ALL,	DE_NULL		},
+			{ (deUint32)numSamplers,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			1u,							VK_SHADER_STAGE_ALL,	DE_NULL		}
+		};
+		const VkDescriptorSetLayoutCreateInfo	layoutInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			DE_NULL,
+			(VkDescriptorSetLayoutCreateFlags)0u,
+			DE_LENGTH_OF_ARRAY(bindings),
+			bindings,
+		};
+
+		extraResourcesLayout = createDescriptorSetLayout(vkd, device, &layoutInfo);
+	}
+
+	{
+		const VkDescriptorPoolSize			poolSizes[]	=
+		{
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	(deUint32)numSamplers	},
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			1u,						}
+		};
+		const VkDescriptorPoolCreateInfo	poolInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			DE_NULL,
+			(VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+			1u,		// maxSets
+			DE_LENGTH_OF_ARRAY(poolSizes),
+			poolSizes,
+		};
+
+		extraResourcesSetPool = createDescriptorPool(vkd, device, &poolInfo);
+	}
+
+	{
+		const VkDescriptorSetAllocateInfo	allocInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+			*extraResourcesSetPool,
+			1u,
+			&extraResourcesLayout.get(),
+		};
+
+		extraResourcesSet = allocateDescriptorSet(vkd, device, &allocInfo);
+	}
+
+	{
+		vector<VkDescriptorImageInfo>	imageInfos			(numSamplers);
+		const VkWriteDescriptorSet		descriptorWrite		=
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			DE_NULL,
+			*extraResourcesSet,
+			0u,		// dstBinding
+			0u,		// dstArrayElement
+			(deUint32)numSamplers,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			&imageInfos[0],
+			(const VkDescriptorBufferInfo*)DE_NULL,
+			(const VkBufferView*)DE_NULL,
+		};
+
+		for (int ndx = 0; ndx < numSamplers; ++ndx)
+		{
+			imageInfos[ndx].sampler		= **samplers[ndx];
+			imageInfos[ndx].imageView	= images[ndx]->getImageView();
+			imageInfos[ndx].imageLayout	= VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		}
+
+		vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+	}
+
+	if (indexBuffer)
+	{
+		const VkDescriptorBufferInfo	bufferInfo	=
+		{
+			indexBuffer->getBuffer(),
+			0u,
+			VK_WHOLE_SIZE
+		};
+		const VkWriteDescriptorSet		descriptorWrite		=
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			DE_NULL,
+			*extraResourcesSet,
+			(deUint32)numSamplers,	// dstBinding
+			0u,						// dstArrayElement
+			1u,
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			(const VkDescriptorImageInfo*)DE_NULL,
+			&bufferInfo,
+			(const VkBufferView*)DE_NULL,
+		};
+
+		vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+	}
+
+	{
+		std::vector<void*>			inputs;
+		std::vector<void*>			outputs;
+		std::vector<int>			expandedIndices;
+		UniquePtr<ShaderExecutor>	executor		(createExecutor(m_context, m_shaderType, m_shaderSpec, *extraResourcesLayout));
+
+		inputs.push_back(&coords[0]);
 
 		if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
 		{
@@ -557,15 +968,11 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate (void)
 			for (int lookupNdx = 0; lookupNdx < numLookups; lookupNdx++)
 				inputs.push_back(&expandedIndices[lookupNdx*numInvocations]);
 		}
-		else if (m_indexExprType == INDEX_EXPR_TYPE_UNIFORM)
-			uploadUniformIndices(m_uniformSetup, numLookups, &m_lookupIndices[0], bindingLocation);
 
 		for (int lookupNdx = 0; lookupNdx < numLookups; lookupNdx++)
 			outputs.push_back(&outData[outLookupStride*lookupNdx]);
 
-		m_executor.setUniforms(m_uniformSetup);
-
-		m_executor.execute(m_context, numInvocations, &inputs[0], &outputs[0]);
+		executor->execute(numInvocations, &inputs[0], &outputs[0], *extraResourcesSet);
 	}
 
 	{
@@ -729,18 +1136,15 @@ TestInstance* SamplerIndexingCase::createInstance (Context& ctx) const
 	return new SamplerIndexingCaseInstance(ctx,
 										   m_shaderType,
 										   m_shaderSpec,
-										   *m_executor,
 										   m_name,
 										   m_samplerType,
 										   m_indexExprType,
-										   m_uniformSetup,
 										   m_lookupIndices);
 }
 
 void SamplerIndexingCase::createShaderSpec (void)
 {
 	de::Random			rnd				(deInt32Hash(m_samplerType) ^ deInt32Hash(m_shaderType) ^ deInt32Hash(m_indexExprType));
-	deUint32			binding			= getFirstFreeBindingLocation(m_shaderType);
 	const char*			samplersName	= "texSampler";
 	const char*			coordsName		= "coords";
 	const char*			indicesPrefix	= "index";
@@ -761,7 +1165,7 @@ void SamplerIndexingCase::createShaderSpec (void)
 		global << "const highp int indexBase = 1;\n";
 
 	global <<
-		"layout(set = 0, binding = " << binding++ << ") uniform highp " << getDataTypeName(m_samplerType) << " " << samplersName << "[" << m_numSamplers << "];\n";
+		"layout(set = " << EXTRA_RESOURCES_DESCRIPTOR_SET_INDEX << ", binding = 0) uniform highp " << getDataTypeName(m_samplerType) << " " << samplersName << "[" << m_numSamplers << "];\n";
 
 	if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
 	{
@@ -772,7 +1176,7 @@ void SamplerIndexingCase::createShaderSpec (void)
 		}
 	}
 	else if (m_indexExprType == INDEX_EXPR_TYPE_UNIFORM)
-		declareUniformIndexVars(global, indicesPrefix, m_numLookups, binding);
+		declareUniformIndexVars(global, (deUint32)m_numSamplers, indicesPrefix, m_numLookups);
 
 	for (int lookupNdx = 0; lookupNdx < m_numLookups; lookupNdx++)
 	{
@@ -819,11 +1223,9 @@ public:
 									BlockArrayIndexingCaseInstance	(Context&						context,
 																	 const glu::ShaderType			shaderType,
 																	 const ShaderSpec&				shaderSpec,
-																	 ShaderExecutor&				executor,
 																	 const char*					name,
 																	 BlockType						blockType,
 																	 const IndexExprType			indexExprType,
-																	 UniformSetup*					uniformSetup,
 																	 const std::vector<int>&		readIndices,
 																	 const std::vector<deUint32>&	inValues);
 	virtual							~BlockArrayIndexingCaseInstance	(void);
@@ -839,14 +1241,12 @@ private:
 BlockArrayIndexingCaseInstance::BlockArrayIndexingCaseInstance (Context&						context,
 																const glu::ShaderType			shaderType,
 																const ShaderSpec&				shaderSpec,
-																ShaderExecutor&					executor,
 																const char*						name,
 																BlockType						blockType,
 																const IndexExprType				indexExprType,
-																UniformSetup*					uniformSetup,
 																const std::vector<int>&			readIndices,
 																const std::vector<deUint32>&	inValues)
-	: OpaqueTypeIndexingTestInstance	(context, shaderType, shaderSpec, executor, name, uniformSetup, indexExprType)
+	: OpaqueTypeIndexingTestInstance	(context, shaderType, shaderSpec, name, indexExprType)
 	, m_blockType						(blockType)
 	, m_readIndices						(readIndices)
 	, m_inValues						(inValues)
@@ -863,64 +1263,184 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate (void)
 	const int					numReads			= NUM_READS;
 	std::vector<deUint32>		outValues			(numInvocations*numReads);
 
+	tcu::TestLog&				log					= m_context.getTestContext().getLog();
+	tcu::TestStatus				testResult			= tcu::TestStatus::pass("Pass");
+
+	std::vector<int>			expandedIndices;
+	std::vector<void*>			inputs;
+	std::vector<void*>			outputs;
+	const VkBufferUsageFlags	bufferUsage			= m_blockType == BLOCKTYPE_UNIFORM ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	const VkDescriptorType		descriptorType		= m_blockType == BLOCKTYPE_UNIFORM ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+	const DeviceInterface&		vkd					= m_context.getDeviceInterface();
+	const VkDevice				device				= m_context.getDevice();
+
+	// \note Using separate buffer per element - might want to test
+	// offsets & single buffer in the future.
+	vector<BufferSp>			buffers				(m_inValues.size());
+	MovePtr<Buffer>				indexBuffer;
+
+	Move<VkDescriptorSetLayout>	extraResourcesLayout;
+	Move<VkDescriptorPool>		extraResourcesSetPool;
+	Move<VkDescriptorSet>		extraResourcesSet;
+
+	checkSupported(descriptorType);
+
+	for (size_t bufferNdx = 0; bufferNdx < m_inValues.size(); ++bufferNdx)
 	{
-		tcu::TestLog&			log					= m_context.getTestContext().getLog();
-		tcu::TestStatus			testResult			= tcu::TestStatus::pass("Pass");
-		std::vector<int>		expandedIndices;
-		std::vector<void*>		inputs;
-		std::vector<void*>		outputs;
-		deUint32				bindingLocation		= getFirstFreeBindingLocation(m_shaderType);
-		VkDescriptorType		descriptorType		= m_blockType == BLOCKTYPE_UNIFORM ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		buffers[bufferNdx] = BufferSp(new Buffer(m_context, bufferUsage, sizeof(deUint32)));
+		*(deUint32*)buffers[bufferNdx]->getHostPtr() = m_inValues[bufferNdx];
+		buffers[bufferNdx]->flush();
+	}
 
-		checkSupported(descriptorType);
+	if (m_indexExprType == INDEX_EXPR_TYPE_UNIFORM)
+		indexBuffer = createUniformIndexBuffer(m_context, numReads, &m_readIndices[0]);
 
-		m_uniformSetup->addData(new UniformArrayData<deUint32>(bindingLocation++, descriptorType, m_inValues));
-
-		if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
+	{
+		const VkDescriptorSetLayoutBinding		bindings[]	=
 		{
-			expandedIndices.resize(numInvocations * m_readIndices.size());
+			{ 0u,							descriptorType,						(deUint32)m_inValues.size(),	VK_SHADER_STAGE_ALL,	DE_NULL		},
+			{ (deUint32)m_inValues.size(),	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	1u,								VK_SHADER_STAGE_ALL,	DE_NULL		}
+		};
+		const VkDescriptorSetLayoutCreateInfo	layoutInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			DE_NULL,
+			(VkDescriptorSetLayoutCreateFlags)0u,
+			DE_LENGTH_OF_ARRAY(bindings),
+			bindings,
+		};
 
-			for (int readNdx = 0; readNdx < numReads; readNdx++)
-			{
-				int* dst = &expandedIndices[numInvocations*readNdx];
-				std::fill(dst, dst+numInvocations, m_readIndices[readNdx]);
-			}
+		extraResourcesLayout = createDescriptorSetLayout(vkd, device, &layoutInfo);
+	}
 
-			for (int readNdx = 0; readNdx < numReads; readNdx++)
-				inputs.push_back(&expandedIndices[readNdx*numInvocations]);
+	{
+		const VkDescriptorPoolSize			poolSizes[]	=
+		{
+			{ descriptorType,						(deUint32)m_inValues.size()	},
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	1u,							}
+		};
+		const VkDescriptorPoolCreateInfo	poolInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			DE_NULL,
+			(VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+			1u,		// maxSets
+			DE_LENGTH_OF_ARRAY(poolSizes),
+			poolSizes,
+		};
+
+		extraResourcesSetPool = createDescriptorPool(vkd, device, &poolInfo);
+	}
+
+	{
+		const VkDescriptorSetAllocateInfo	allocInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+			*extraResourcesSetPool,
+			1u,
+			&extraResourcesLayout.get(),
+		};
+
+		extraResourcesSet = allocateDescriptorSet(vkd, device, &allocInfo);
+	}
+
+	{
+		vector<VkDescriptorBufferInfo>	bufferInfos			(m_inValues.size());
+		const VkWriteDescriptorSet		descriptorWrite		=
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			DE_NULL,
+			*extraResourcesSet,
+			0u,		// dstBinding
+			0u,		// dstArrayElement
+			(deUint32)m_inValues.size(),
+			descriptorType,
+			(const VkDescriptorImageInfo*)DE_NULL,
+			&bufferInfos[0],
+			(const VkBufferView*)DE_NULL,
+		};
+
+		for (size_t ndx = 0; ndx < m_inValues.size(); ++ndx)
+		{
+			bufferInfos[ndx].buffer		= buffers[ndx]->getBuffer();
+			bufferInfos[ndx].offset		= 0u;
+			bufferInfos[ndx].range		= VK_WHOLE_SIZE;
 		}
-		else if (m_indexExprType == INDEX_EXPR_TYPE_UNIFORM)
-			uploadUniformIndices(m_uniformSetup, numReads, &m_readIndices[0], bindingLocation);
+
+		vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+	}
+
+	if (indexBuffer)
+	{
+		const VkDescriptorBufferInfo	bufferInfo	=
+		{
+			indexBuffer->getBuffer(),
+			0u,
+			VK_WHOLE_SIZE
+		};
+		const VkWriteDescriptorSet		descriptorWrite		=
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			DE_NULL,
+			*extraResourcesSet,
+			(deUint32)m_inValues.size(),	// dstBinding
+			0u,								// dstArrayElement
+			1u,
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			(const VkDescriptorImageInfo*)DE_NULL,
+			&bufferInfo,
+			(const VkBufferView*)DE_NULL,
+		};
+
+		vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+	}
+
+	if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
+	{
+		expandedIndices.resize(numInvocations * m_readIndices.size());
 
 		for (int readNdx = 0; readNdx < numReads; readNdx++)
-			outputs.push_back(&outValues[readNdx*numInvocations]);
-
-		m_executor.setUniforms(m_uniformSetup);
-
-		m_executor.execute(m_context, numInvocations, inputs.empty() ? DE_NULL : &inputs[0], &outputs[0]);
-
-		for (int invocationNdx = 0; invocationNdx < numInvocations; invocationNdx++)
 		{
-			for (int readNdx = 0; readNdx < numReads; readNdx++)
-			{
-				const deUint32	refValue	= m_inValues[m_readIndices[readNdx]];
-				const deUint32	resValue	= outValues[readNdx*numInvocations + invocationNdx];
-
-				if (refValue != resValue)
-				{
-					log << tcu::TestLog::Message << "ERROR: at invocation " << invocationNdx
-						<< ", read " << readNdx << ": expected "
-						<< tcu::toHex(refValue) << ", got " << tcu::toHex(resValue)
-						<< tcu::TestLog::EndMessage;
-
-					if (testResult.getCode() == QP_TEST_RESULT_PASS)
-						testResult = tcu::TestStatus::fail("Invalid result value");
-				}
-			}
+			int* dst = &expandedIndices[numInvocations*readNdx];
+			std::fill(dst, dst+numInvocations, m_readIndices[readNdx]);
 		}
 
-		return testResult;
+		for (int readNdx = 0; readNdx < numReads; readNdx++)
+			inputs.push_back(&expandedIndices[readNdx*numInvocations]);
 	}
+
+	for (int readNdx = 0; readNdx < numReads; readNdx++)
+		outputs.push_back(&outValues[readNdx*numInvocations]);
+
+	{
+		UniquePtr<ShaderExecutor>	executor	(createExecutor(m_context, m_shaderType, m_shaderSpec, *extraResourcesLayout));
+
+		executor->execute(numInvocations, inputs.empty() ? DE_NULL : &inputs[0], &outputs[0], *extraResourcesSet);
+	}
+
+	for (int invocationNdx = 0; invocationNdx < numInvocations; invocationNdx++)
+	{
+		for (int readNdx = 0; readNdx < numReads; readNdx++)
+		{
+			const deUint32	refValue	= m_inValues[m_readIndices[readNdx]];
+			const deUint32	resValue	= outValues[readNdx*numInvocations + invocationNdx];
+
+			if (refValue != resValue)
+			{
+				log << tcu::TestLog::Message << "ERROR: at invocation " << invocationNdx
+					<< ", read " << readNdx << ": expected "
+					<< tcu::toHex(refValue) << ", got " << tcu::toHex(resValue)
+					<< tcu::TestLog::EndMessage;
+
+				if (testResult.getCode() == QP_TEST_RESULT_PASS)
+					testResult = tcu::TestStatus::fail("Invalid result value");
+			}
+		}
+	}
+
+	return testResult;
 }
 
 class BlockArrayIndexingCase : public OpaqueTypeIndexingCase
@@ -971,11 +1491,9 @@ TestInstance* BlockArrayIndexingCase::createInstance (Context& ctx) const
 	return new BlockArrayIndexingCaseInstance(ctx,
 											  m_shaderType,
 											  m_shaderSpec,
-											  *m_executor,
 											  m_name,
 											  m_blockType,
 											  m_indexExprType,
-											  m_uniformSetup,
 											  m_readIndices,
 											  m_inValues);
 }
@@ -985,7 +1503,6 @@ void BlockArrayIndexingCase::createShaderSpec (void)
 	const int			numInstances	= BlockArrayIndexingCaseInstance::NUM_INSTANCES;
 	const int			numReads		= BlockArrayIndexingCaseInstance::NUM_READS;
 	de::Random			rnd				(deInt32Hash(m_shaderType) ^ deInt32Hash(m_blockType) ^ deInt32Hash(m_indexExprType));
-	deUint32			binding			= getFirstFreeBindingLocation(m_shaderType);
 	const char*			blockName		= "Block";
 	const char*			instanceName	= "block";
 	const char*			indicesPrefix	= "index";
@@ -1006,7 +1523,7 @@ void BlockArrayIndexingCase::createShaderSpec (void)
 		global << "const highp int indexBase = 1;\n";
 
 	global <<
-		"layout(set = 0, binding = " << binding++ << ") " << interfaceName << " " << blockName << "\n"
+		"layout(set = " << EXTRA_RESOURCES_DESCRIPTOR_SET_INDEX << ", binding = 0) " << interfaceName << " " << blockName << "\n"
 		"{\n"
 		"	highp uint value;\n"
 		"} " << instanceName << "[" << numInstances << "];\n";
@@ -1020,7 +1537,7 @@ void BlockArrayIndexingCase::createShaderSpec (void)
 		}
 	}
 	else if (m_indexExprType == INDEX_EXPR_TYPE_UNIFORM)
-		declareUniformIndexVars(global, indicesPrefix, numReads, binding);
+		declareUniformIndexVars(global, (deUint32)m_inValues.size(), indicesPrefix, numReads);
 
 	for (int readNdx = 0; readNdx < numReads; readNdx++)
 	{
@@ -1059,9 +1576,7 @@ public:
 								AtomicCounterIndexingCaseInstance	(Context&					context,
 																	 const glu::ShaderType		shaderType,
 																	 const ShaderSpec&			shaderSpec,
-																	 ShaderExecutor&			executor,
 																	 const char*				name,
-																	 UniformSetup*				uniformSetup,
 																	 const std::vector<int>&	opIndices,
 																	 const IndexExprType		indexExprType);
 	virtual						~AtomicCounterIndexingCaseInstance	(void);
@@ -1075,12 +1590,10 @@ private:
 AtomicCounterIndexingCaseInstance::AtomicCounterIndexingCaseInstance (Context&					context,
 																	  const glu::ShaderType		shaderType,
 																	  const ShaderSpec&			shaderSpec,
-																	  ShaderExecutor&			executor,
 																	  const char*				name,
-																	  UniformSetup*				uniformSetup,
 																	  const std::vector<int>&	opIndices,
 																	  const IndexExprType		indexExprType)
-	: OpaqueTypeIndexingTestInstance	(context, shaderType, shaderSpec, executor, name, uniformSetup, indexExprType)
+	: OpaqueTypeIndexingTestInstance	(context, shaderType, shaderSpec, name, indexExprType)
 	, m_opIndices						(opIndices)
 {
 }
@@ -1099,39 +1612,147 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate (void)
 	std::vector<void*>			inputs;
 	std::vector<void*>			outputs;
 	std::vector<deUint32>		outValues			(numInvocations*numOps);
-	deUint32					bindingLocation		= getFirstFreeBindingLocation(m_shaderType);
 
-	const deUint32 atomicCounterLocation = bindingLocation++;
+	const DeviceInterface&		vkd					= m_context.getDeviceInterface();
+	const VkDevice				device				= m_context.getDevice();
+
+	// \note Using separate buffer per element - might want to test
+	// offsets & single buffer in the future.
+	Buffer						atomicOpBuffer		(m_context, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, sizeof(deUint32)*numCounters);
+	MovePtr<Buffer>				indexBuffer;
+
+	Move<VkDescriptorSetLayout>	extraResourcesLayout;
+	Move<VkDescriptorPool>		extraResourcesSetPool;
+	Move<VkDescriptorSet>		extraResourcesSet;
 
 	checkSupported(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
+	deMemset(atomicOpBuffer.getHostPtr(), 0, sizeof(deUint32)*numCounters);
+	atomicOpBuffer.flush();
+
+	if (m_indexExprType == INDEX_EXPR_TYPE_UNIFORM)
+		indexBuffer = createUniformIndexBuffer(m_context, numOps, &m_opIndices[0]);
+
 	{
-		DE_ASSERT(numCounters <= 4);
-		// Add the atomic counters' base value, all zero.
-		m_uniformSetup->addData(new UniformData<tcu::Mat4>(atomicCounterLocation, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, tcu::Mat4(0.0)));
-
-		if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
+		const VkDescriptorSetLayoutBinding		bindings[]	=
 		{
-			expandedIndices.resize(numInvocations * m_opIndices.size());
+			{ 0u,	VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,	1u,	VK_SHADER_STAGE_ALL,	DE_NULL		},
+			{ 1u,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	1u,	VK_SHADER_STAGE_ALL,	DE_NULL		}
+		};
+		const VkDescriptorSetLayoutCreateInfo	layoutInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			DE_NULL,
+			(VkDescriptorSetLayoutCreateFlags)0u,
+			DE_LENGTH_OF_ARRAY(bindings),
+			bindings,
+		};
 
-			for (int opNdx = 0; opNdx < numOps; opNdx++)
-			{
-				int* dst = &expandedIndices[numInvocations*opNdx];
-				std::fill(dst, dst+numInvocations, m_opIndices[opNdx]);
-			}
+		extraResourcesLayout = createDescriptorSetLayout(vkd, device, &layoutInfo);
+	}
 
-			for (int opNdx = 0; opNdx < numOps; opNdx++)
-				inputs.push_back(&expandedIndices[opNdx*numInvocations]);
-		}
-		else if (m_indexExprType == INDEX_EXPR_TYPE_UNIFORM)
-			uploadUniformIndices(m_uniformSetup, numOps, &m_opIndices[0], bindingLocation);
+	{
+		const VkDescriptorPoolSize			poolSizes[]	=
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,	1u,	},
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	1u,	}
+		};
+		const VkDescriptorPoolCreateInfo	poolInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			DE_NULL,
+			(VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+			1u,		// maxSets
+			DE_LENGTH_OF_ARRAY(poolSizes),
+			poolSizes,
+		};
+
+		extraResourcesSetPool = createDescriptorPool(vkd, device, &poolInfo);
+	}
+
+	{
+		const VkDescriptorSetAllocateInfo	allocInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+			*extraResourcesSetPool,
+			1u,
+			&extraResourcesLayout.get(),
+		};
+
+		extraResourcesSet = allocateDescriptorSet(vkd, device, &allocInfo);
+	}
+
+	{
+		const VkDescriptorBufferInfo	bufferInfo			=
+		{
+			atomicOpBuffer.getBuffer(),
+			0u,
+			VK_WHOLE_SIZE
+		};
+		const VkWriteDescriptorSet		descriptorWrite		=
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			DE_NULL,
+			*extraResourcesSet,
+			0u,		// dstBinding
+			0u,		// dstArrayElement
+			1u,
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+			(const VkDescriptorImageInfo*)DE_NULL,
+			&bufferInfo,
+			(const VkBufferView*)DE_NULL,
+		};
+
+		vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+	}
+
+	if (indexBuffer)
+	{
+		const VkDescriptorBufferInfo	bufferInfo	=
+		{
+			indexBuffer->getBuffer(),
+			0u,
+			VK_WHOLE_SIZE
+		};
+		const VkWriteDescriptorSet		descriptorWrite		=
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			DE_NULL,
+			*extraResourcesSet,
+			1u,		// dstBinding
+			0u,		// dstArrayElement
+			1u,
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			(const VkDescriptorImageInfo*)DE_NULL,
+			&bufferInfo,
+			(const VkBufferView*)DE_NULL,
+		};
+
+		vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+	}
+
+	if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
+	{
+		expandedIndices.resize(numInvocations * m_opIndices.size());
 
 		for (int opNdx = 0; opNdx < numOps; opNdx++)
-			outputs.push_back(&outValues[opNdx*numInvocations]);
+		{
+			int* dst = &expandedIndices[numInvocations*opNdx];
+			std::fill(dst, dst+numInvocations, m_opIndices[opNdx]);
+		}
 
-		m_executor.setUniforms(m_uniformSetup);
+		for (int opNdx = 0; opNdx < numOps; opNdx++)
+			inputs.push_back(&expandedIndices[opNdx*numInvocations]);
+	}
 
-		m_executor.execute(m_context, numInvocations, inputs.empty() ? DE_NULL : &inputs[0], &outputs[0]);
+	for (int opNdx = 0; opNdx < numOps; opNdx++)
+		outputs.push_back(&outValues[opNdx*numInvocations]);
+
+	{
+		UniquePtr<ShaderExecutor>	executor	(createExecutor(m_context, m_shaderType, m_shaderSpec, *extraResourcesLayout));
+
+		executor->execute(numInvocations, inputs.empty() ? DE_NULL : &inputs[0], &outputs[0], *extraResourcesSet);
 	}
 
 	{
@@ -1146,8 +1767,9 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate (void)
 
 		// Read counter values
 		{
-			const void* mapPtr = m_executor.getBufferPtr(atomicCounterLocation);
+			const void* mapPtr = atomicOpBuffer.getHostPtr();
 			DE_ASSERT(mapPtr != DE_NULL);
+			atomicOpBuffer.invalidate();
 			std::copy((const deUint32*)mapPtr, (const deUint32*)mapPtr + numCounters, &counterValues[0]);
 		}
 
@@ -1260,9 +1882,7 @@ TestInstance* AtomicCounterIndexingCase::createInstance (Context& ctx) const
 	return new AtomicCounterIndexingCaseInstance(ctx,
 												 m_shaderType,
 												 m_shaderSpec,
-												 *m_executor,
 												 m_name,
-												 m_uniformSetup,
 												 m_opIndices,
 												 m_indexExprType);
 }
@@ -1271,7 +1891,6 @@ void AtomicCounterIndexingCase::createShaderSpec (void)
 {
 	const int				numCounters		= AtomicCounterIndexingCaseInstance::NUM_COUNTERS;
 	const int				numOps			= AtomicCounterIndexingCaseInstance::NUM_OPS;
-	deUint32				binding			= getFirstFreeBindingLocation(m_shaderType);
 	de::Random				rnd				(deInt32Hash(m_shaderType) ^ deInt32Hash(m_indexExprType));
 
 	for (int opNdx = 0; opNdx < numOps; opNdx++)
@@ -1289,7 +1908,7 @@ void AtomicCounterIndexingCase::createShaderSpec (void)
 			global << "const highp int indexBase = 1;\n";
 
 		global <<
-			"layout(set = 0, binding = " << binding++ << ") buffer AtomicBuffer { highp uint counter[" << numCounters << "]; };\n";
+			"layout(set = " << EXTRA_RESOURCES_DESCRIPTOR_SET_INDEX << ", binding = 0, std430) buffer AtomicBuffer { highp uint counter[" << numCounters << "]; };\n";
 
 		if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
 		{
@@ -1300,7 +1919,7 @@ void AtomicCounterIndexingCase::createShaderSpec (void)
 			}
 		}
 		else if (m_indexExprType == INDEX_EXPR_TYPE_UNIFORM)
-			declareUniformIndexVars(global, indicesPrefix, numOps, binding);
+			declareUniformIndexVars(global, 1, indicesPrefix, numOps);
 
 		for (int opNdx = 0; opNdx < numOps; opNdx++)
 		{

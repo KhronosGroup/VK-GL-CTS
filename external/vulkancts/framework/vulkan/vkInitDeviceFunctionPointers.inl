@@ -150,3 +150,5 @@ m_vk.createDescriptorUpdateTemplateKHR					= (CreateDescriptorUpdateTemplateKHRF
 m_vk.destroyDescriptorUpdateTemplateKHR					= (DestroyDescriptorUpdateTemplateKHRFunc)				GET_PROC_ADDR("vkDestroyDescriptorUpdateTemplateKHR");
 m_vk.updateDescriptorSetWithTemplateKHR					= (UpdateDescriptorSetWithTemplateKHRFunc)				GET_PROC_ADDR("vkUpdateDescriptorSetWithTemplateKHR");
 m_vk.cmdPushDescriptorSetWithTemplateKHR				= (CmdPushDescriptorSetWithTemplateKHRFunc)				GET_PROC_ADDR("vkCmdPushDescriptorSetWithTemplateKHR");
+m_vk.getRefreshCycleDurationGOOGLE						= (GetRefreshCycleDurationGOOGLEFunc)					GET_PROC_ADDR("vkGetRefreshCycleDurationGOOGLE");
+m_vk.getPastPresentationTimingGOOGLE					= (GetPastPresentationTimingGOOGLEFunc)					GET_PROC_ADDR("vkGetPastPresentationTimingGOOGLE");
