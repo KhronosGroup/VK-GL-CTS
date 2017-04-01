@@ -67,16 +67,18 @@ SampleVerifier::SampleVerifier (const ImageViewParameters&						imParams,
 								const SampleLookupSettings&						sampleLookupSettings,
 								int												coordBits,
 								int												mipmapBits,
-								const std::vector<tcu::ConstPixelBufferAccess>&	pba)
-// \todo [2016-07-29 collinbaker] Get rid of magic numbers
-	: m_internalFormat			(-14, 15, 10, true) // fp16 format
-	, m_imParams				(imParams)
+								const tcu::FloatFormat&							conversionPrecision,
+								const tcu::FloatFormat&							filteringPrecision,
+								const std::vector<tcu::ConstPixelBufferAccess>&	levels)
+	: m_imParams				(imParams)
 	, m_samplerParams			(samplerParams)
 	, m_sampleLookupSettings	(sampleLookupSettings)
 	, m_coordBits				(coordBits)
 	, m_mipmapBits				(mipmapBits)
+	, m_conversionPrecision		(conversionPrecision)
+	, m_filteringPrecision		(filteringPrecision)
 	, m_unnormalizedDim			(calcUnnormalizedDim(imParams.dim))
-	, m_pba						(pba)
+	, m_levels					(levels)
 {
 
 }
@@ -85,7 +87,7 @@ bool SampleVerifier::coordOutOfRange (const IVec3& coord, int compNdx, int level
 {
 	DE_ASSERT(compNdx >= 0 && compNdx < 3);
 
-	return coord[compNdx] < 0 || coord[compNdx] >= m_pba[level].getSize()[compNdx];
+	return coord[compNdx] < 0 || coord[compNdx] >= m_levels[level].getSize()[compNdx];
 }
 
 void SampleVerifier::fetchTexelWrapped (const IVec3&	coord,
@@ -98,18 +100,29 @@ void SampleVerifier::fetchTexelWrapped (const IVec3&	coord,
 
 	if (m_imParams.dim == IMG_DIM_1D)
 	{
-	    pixelPtr = m_pba[level].getPixelPtr(coord[0], layer, 0);
+	    pixelPtr = m_levels[level].getPixelPtr(coord[0], layer, 0);
 	}
 	else if (m_imParams.dim == IMG_DIM_2D || m_imParams.dim == IMG_DIM_CUBE)
 	{
-		pixelPtr = m_pba[level].getPixelPtr(coord[0], coord[1], layer);
+		pixelPtr = m_levels[level].getPixelPtr(coord[0], coord[1], layer);
 	}
 	else
 	{
-		pixelPtr = m_pba[level].getPixelPtr(coord[0], coord[1], coord[2]);
+		pixelPtr = m_levels[level].getPixelPtr(coord[0], coord[1], coord[2]);
 	}
 
-	convertFormat(pixelPtr, mapVkFormat(m_imParams.format), m_internalFormat, resultMin, resultMax);
+	convertFormat(pixelPtr, mapVkFormat(m_imParams.format), m_conversionPrecision, resultMin, resultMax);
+
+#if defined(DE_DEBUG)
+	// Make sure tcuTexture agrees
+	const tcu::ConstPixelBufferAccess&	levelAccess	= m_levels[level];
+	const tcu::Vec4						refPix		= (m_imParams.dim == IMG_DIM_1D) ? levelAccess.getPixel(coord[0], layer, 0)
+													: (m_imParams.dim == IMG_DIM_2D || m_imParams.dim == IMG_DIM_CUBE) ? levelAccess.getPixel(coord[0], coord[1], layer)
+													: levelAccess.getPixel(coord[0], coord[1], coord[2]);
+
+	for (int c = 0; c < 4; c++)
+		DE_ASSERT(de::inRange(refPix[c], resultMin[c], resultMax[c]));
+#endif
 }
 
 void SampleVerifier::fetchTexel (const IVec3&	coordIn,
@@ -148,7 +161,7 @@ void SampleVerifier::fetchTexel (const IVec3&	coordIn,
 			int		newFace = 0;
 
 			wrapCubemapEdge(coord.swizzle(0, 1),
-							m_pba[level].getSize().swizzle(0, 1),
+							m_levels[level].getSize().swizzle(0, 1),
 							arrayFace,
 							newCoord,
 							newFace);
@@ -164,7 +177,7 @@ void SampleVerifier::fetchTexel (const IVec3&	coordIn,
 			IVec2 cornerCoords[3];
 
 			wrapCubemapCorner(coord.swizzle(0, 1),
-							  m_pba[level].getSize().swizzle(0, 1),
+							  m_levels[level].getSize().swizzle(0, 1),
 							  arrayFace,
 							  faces[1],
 							  faces[2],
@@ -182,11 +195,11 @@ void SampleVerifier::fetchTexel (const IVec3&	coordIn,
 
 				if (isSrgb)
 				{
-				    cornerTexels[ndx] += sRGBToLinear(m_pba[level].getPixel(cornerCoords[ndx][0], cornerCoords[ndx][1], cornerLayer));
+				    cornerTexels[ndx] += sRGBToLinear(m_levels[level].getPixel(cornerCoords[ndx][0], cornerCoords[ndx][1], cornerLayer));
 				}
 				else
 				{
-					cornerTexels[ndx] += m_pba[level].getPixel(cornerCoords[ndx][0], cornerCoords[ndx][1], cornerLayer);
+					cornerTexels[ndx] += m_levels[level].getPixel(cornerCoords[ndx][0], cornerCoords[ndx][1], cornerLayer);
 				}
 			}
 
@@ -225,7 +238,7 @@ void SampleVerifier::fetchTexel (const IVec3&	coordIn,
 
 		for (int compNdx = 0; compNdx < 3; ++compNdx)
 		{
-			const int size = m_pba[level].getSize()[compNdx];
+			const int size = m_levels[level].getSize()[compNdx];
 
 			coord[compNdx] = wrapTexelCoord(coord[compNdx], size, wrappingModes[compNdx]);
 		}
@@ -298,13 +311,13 @@ void SampleVerifier::getFilteredSample1D (const IVec3&	texelBase,
 
     for (int i = 0; i < 2; ++i)
 	{
-		const Interval weightInterval = m_internalFormat.roundOut(Interval(i == 0 ? 1.0f - weight : weight), false);
+		const Interval weightInterval = m_filteringPrecision.roundOut(Interval(i == 0 ? 1.0f - weight : weight), false);
 
 		for (int compNdx = 0; compNdx < 4; ++compNdx)
 		{
 			const Interval texelInterval(false, texelsMin[i][compNdx], texelsMax[i][compNdx]);
 
-			resultIntervals[compNdx] = m_internalFormat.roundOut(resultIntervals[compNdx] + weightInterval * texelInterval, false);
+			resultIntervals[compNdx] = m_filteringPrecision.roundOut(resultIntervals[compNdx] + weightInterval * texelInterval, false);
 		}
 	}
 
@@ -343,17 +356,17 @@ void SampleVerifier::getFilteredSample2D (const IVec3&	texelBase,
 
 	for (int i = 0; i < 2; ++i)
 	{
-		const Interval iWeightInterval = m_internalFormat.roundOut(Interval(i == 0 ? 1.0f - weights[1] : weights[1]), false);
+		const Interval iWeightInterval = m_filteringPrecision.roundOut(Interval(i == 0 ? 1.0f - weights[1] : weights[1]), false);
 
 		for (int j = 0; j < 2; ++j)
 		{
-		    const Interval jWeightInterval = m_internalFormat.roundOut(iWeightInterval * Interval(j == 0 ? 1.0f - weights[0] : weights[0]), false);
+		    const Interval jWeightInterval = m_filteringPrecision.roundOut(iWeightInterval * Interval(j == 0 ? 1.0f - weights[0] : weights[0]), false);
 
 			for (int compNdx = 0; compNdx < 4; ++compNdx)
 			{
 				const Interval texelInterval(false, texelsMin[2 * i + j][compNdx], texelsMax[2 * i + j][compNdx]);
 
-				resultIntervals[compNdx] = m_internalFormat.roundOut(resultIntervals[compNdx] + jWeightInterval * texelInterval, false);
+				resultIntervals[compNdx] = m_filteringPrecision.roundOut(resultIntervals[compNdx] + jWeightInterval * texelInterval, false);
 			}
 		}
 	}
@@ -395,21 +408,21 @@ void SampleVerifier::getFilteredSample3D (const IVec3&	texelBase,
 
 	for (int i = 0; i < 2; ++i)
 	{
-	    const Interval iWeightInterval = m_internalFormat.roundOut(Interval(i == 0 ? 1.0f - weights[2] : weights[2]), false);
+	    const Interval iWeightInterval = m_filteringPrecision.roundOut(Interval(i == 0 ? 1.0f - weights[2] : weights[2]), false);
 
 		for (int j = 0; j < 2; ++j)
 		{
-		    const Interval jWeightInterval = m_internalFormat.roundOut(iWeightInterval * Interval(j == 0 ? 1.0f - weights[1] : weights[1]), false);
+		    const Interval jWeightInterval = m_filteringPrecision.roundOut(iWeightInterval * Interval(j == 0 ? 1.0f - weights[1] : weights[1]), false);
 
 			for (int k = 0; k < 2; ++k)
 			{
-			    const Interval kWeightInterval = m_internalFormat.roundOut(jWeightInterval * Interval(k == 0 ? 1.0f - weights[0] : weights[0]), false);
+			    const Interval kWeightInterval = m_filteringPrecision.roundOut(jWeightInterval * Interval(k == 0 ? 1.0f - weights[0] : weights[0]), false);
 
 				for (int compNdx = 0; compNdx < 4; ++compNdx)
 				{
 					const Interval texelInterval(false, texelsMin[4 * i + 2 * j + k][compNdx], texelsMax[4 * i + 2 * j + k][compNdx]);
 
-					resultIntervals[compNdx] = m_internalFormat.roundOut(resultIntervals[compNdx] + kWeightInterval * texelInterval, false);
+					resultIntervals[compNdx] = m_filteringPrecision.roundOut(resultIntervals[compNdx] + kWeightInterval * texelInterval, false);
 				}
 			}
 		}
@@ -556,7 +569,7 @@ bool SampleVerifier::verifySampleFiltered (const Vec4&			result,
 				const Interval idealSampleHi(false, idealSampleHiMin[compNdx], idealSampleHiMax[compNdx]);
 
 				const Interval idealSample
-					= m_internalFormat.roundOut(Interval(weight) * idealSampleLo + Interval(1.0f - weight) * idealSampleHi, false);
+					= m_filteringPrecision.roundOut(Interval(weight) * idealSampleLo + Interval(1.0f - weight) * idealSampleHi, false);
 
 				idealSampleMin[compNdx] = (float)idealSample.lo();
 				idealSampleMax[compNdx] = (float)idealSample.hi();
@@ -704,7 +717,7 @@ bool SampleVerifier::verifySampleMipmapLevel (const SampleArguments&	args,
 	const FloatFormat coordFormat(-32, 32, 16, true);
 
 	calcUnnormalizedCoordRange(coord,
-							   m_pba[level].getSize(),
+							   m_levels[level].getSize(),
 							   coordFormat,
 							   unnormalizedCoordMin[0],
 							   unnormalizedCoordMax[0]);
@@ -721,7 +734,7 @@ bool SampleVerifier::verifySampleMipmapLevel (const SampleArguments&	args,
 	if (mipmapFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
 	{
 		calcUnnormalizedCoordRange(coord,
-								   m_pba[level+1].getSize(),
+								   m_levels[level+1].getSize(),
 								   coordFormat,
 								   unnormalizedCoordMin[1],
 								   unnormalizedCoordMax[1]);

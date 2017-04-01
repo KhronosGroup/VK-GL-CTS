@@ -201,3 +201,5 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDescriptorUpdateTemplateKHRFun
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDescriptorUpdateTemplateKHRFunc)				(VkDevice device, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* UpdateDescriptorSetWithTemplateKHRFunc)				(VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const void* pData);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPushDescriptorSetWithTemplateKHRFunc)				(VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, VkPipelineLayout layout, deUint32 set, const void* pData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetRefreshCycleDurationGOOGLEFunc)						(VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPastPresentationTimingGOOGLEFunc)					(VkDevice device, VkSwapchainKHR swapchain, deUint32* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings);

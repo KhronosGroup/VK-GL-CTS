@@ -55,6 +55,34 @@ std::string getOpTypeImageComponent (const tcu::TextureFormat& format)
 	}
 }
 
+std::string getImageComponentTypeName (const tcu::TextureFormat& format)
+{
+	switch (tcu::getTextureChannelClass(format.type))
+	{
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			return "%type_uint";
+		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			return "%type_int";
+		default:
+			DE_ASSERT(0);
+			return "";
+	}
+}
+
+std::string getImageComponentVec4TypeName (const tcu::TextureFormat& format)
+{
+	switch (tcu::getTextureChannelClass(format.type))
+	{
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			return "%type_uvec4";
+		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			return "%type_ivec4";
+		default:
+			DE_ASSERT(0);
+			return "";
+	}
+}
+
 std::string getOpTypeImageSparse (const ImageType			imageType,
 								  const tcu::TextureFormat&	format,
 								  const std::string&		componentType,

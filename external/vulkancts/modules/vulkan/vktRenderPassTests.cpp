@@ -1550,6 +1550,7 @@ public:
 
 	deUint32						getInputAttachmentCount			(void) const { return (deUint32)m_inputAttachments.size(); }
 	deUint32						getInputAttachmentIndex			(deUint32 attachmentNdx) const { return m_inputAttachments[attachmentNdx].getAttachment(); }
+	VkImageLayout					getInputAttachmentLayout		(deUint32 attachmentNdx) const { return m_inputAttachments[attachmentNdx].getImageLayout(); }
 
 	deUint32						getColorAttachmentCount			(void) const { return (deUint32)m_colorAttachments.size(); }
 	VkImageLayout					getColorAttachmentLayout		(deUint32 attachmentNdx) const { return m_colorAttachments[attachmentNdx].getImageLayout(); }
@@ -1948,10 +1949,11 @@ public:
 
 					for (deUint32 inputAttachmentNdx = 0; inputAttachmentNdx < renderInfo.getInputAttachmentCount(); inputAttachmentNdx++)
 					{
-						const Attachment			attachmentInfo	= attachmentInfos[renderInfo.getInputAttachmentIndex(inputAttachmentNdx)];
-						const tcu::TextureFormat	format			= mapVkFormat(attachmentInfo.getFormat());
-						const bool					isDepthFormat	= tcu::hasDepthComponent(format.order);
-						const bool					isStencilFormat	= tcu::hasStencilComponent(format.order);
+						const Attachment			attachmentInfo			= attachmentInfos[renderInfo.getInputAttachmentIndex(inputAttachmentNdx)];
+						const tcu::TextureFormat	format					= mapVkFormat(attachmentInfo.getFormat());
+						const bool					isDepthFormat			= tcu::hasDepthComponent(format.order);
+						const bool					isStencilFormat			= tcu::hasStencilComponent(format.order);
+						const VkImageLayout			inputAttachmentLayout	= renderInfo.getInputAttachmentLayout(inputAttachmentNdx);
 
 						if (isDepthFormat && isStencilFormat)
 						{
@@ -1960,7 +1962,7 @@ public:
 								{
 									(VkSampler)0,
 									attachmentViews[renderInfo.getInputAttachmentIndex(inputAttachmentNdx)].first,
-									VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+									inputAttachmentLayout
 								};
 								imageInfos[bindingIndex] = imageInfo;
 
@@ -1989,7 +1991,7 @@ public:
 								{
 									(VkSampler)0,
 									attachmentViews[renderInfo.getInputAttachmentIndex(inputAttachmentNdx)].second,
-									VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+									inputAttachmentLayout
 								};
 								imageInfos[bindingIndex] = imageInfo;
 
@@ -2020,7 +2022,7 @@ public:
 							{
 								(VkSampler)0,
 								attachmentViews[renderInfo.getInputAttachmentIndex(inputAttachmentNdx)].first,
-								VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+								inputAttachmentLayout
 							};
 							imageInfos[bindingIndex] = imageInfo;
 
@@ -2170,34 +2172,38 @@ public:
 
 			if (m_renderInfo.getDepthStencilAttachmentIndex() && (m_renderInfo.getInputAttachmentIndex(inputAttachmentNdx) == *m_renderInfo.getDepthStencilAttachmentIndex()))
 			{
-					const VkImageMemoryBarrier	barrier   =
-					{
-						VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// sType;
-						DE_NULL,										// pNext;
+				const tcu::TextureFormat	format		= mapVkFormat(m_renderInfo.getDepthStencilAttachment()->getFormat());
+				const bool					hasDepth	= hasDepthComponent(format.order);
+				const bool					hasStencil	= hasStencilComponent(format.order);
+				const VkImageMemoryBarrier	barrier		=
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// sType;
+					DE_NULL,										// pNext;
 
-						VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,	// srcAccessMask
-						VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// dstAccessMask
+					VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,	// srcAccessMask
+					VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// dstAccessMask
 
-						VK_IMAGE_LAYOUT_GENERAL,						// oldLayout
-						VK_IMAGE_LAYOUT_GENERAL,						// newLayout;
+					VK_IMAGE_LAYOUT_GENERAL,						// oldLayout
+					VK_IMAGE_LAYOUT_GENERAL,						// newLayout;
 
-						VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex;
-						VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex;
 
-						m_depthStencilAttachmentImage,					// image;
-						{												// subresourceRange;
-							VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,	// aspect;
-							0,															// baseMipLevel;
-							1,															// mipLevels;
-							0,															// baseArraySlice;
-							1															// arraySize;
-						}
-					};
+					m_depthStencilAttachmentImage,					// image;
+					{												// subresourceRange;
+						(hasDepth ? (VkImageAspectFlags)VK_IMAGE_ASPECT_DEPTH_BIT : 0u)
+							| (hasStencil ? (VkImageAspectFlags)VK_IMAGE_ASPECT_STENCIL_BIT : 0u),	// aspect;
+						0,															// baseMipLevel;
+						1,															// mipLevels;
+						0,															// baseArraySlice;
+						1															// arraySize;
+					}
+				};
 
-					srcStages |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-					dstStages |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+				srcStages |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+				dstStages |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
-					selfDeps.push_back(barrier);
+				selfDeps.push_back(barrier);
 			}
 		}
 

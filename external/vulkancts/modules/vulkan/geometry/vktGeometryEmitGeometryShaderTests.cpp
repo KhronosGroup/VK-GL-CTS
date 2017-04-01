@@ -141,7 +141,7 @@ void EmitTest::initPrograms (SourceCollections& sourceCollections) const
 		std::ostringstream src;
 		src	<< "#version 310 es\n"
 			<< "layout(location = 0) out mediump vec4 fragColor;\n"
-			<< "layout(location = 0) in mediump vec4 v_frag_FragColor;\n"
+			<< "layout(location = 0) in highp vec4 v_frag_FragColor;\n"
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "	fragColor = v_frag_FragColor;\n"
