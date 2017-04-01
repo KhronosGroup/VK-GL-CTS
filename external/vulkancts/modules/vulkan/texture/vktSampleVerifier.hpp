@@ -127,7 +127,9 @@ public:
 										 const SampleLookupSettings&						sampleLookupSettings,
 										 int												coordBits,
 										 int												mipmapBits,
-										 const std::vector<tcu::ConstPixelBufferAccess>&	pba);
+										 const tcu::FloatFormat&							conversionPrecision,
+										 const tcu::FloatFormat&							filteringPrecision,
+										 const std::vector<tcu::ConstPixelBufferAccess>&	levels);
 
 	bool verifySample					(const SampleArguments&								args,
 										 const tcu::Vec4&									result) const;
@@ -227,18 +229,18 @@ private:
 										 deInt32&											stepMin,
 										 deInt32&											stepMax) const;
 
-	const tcu::FloatFormat							m_internalFormat;
-
 	const ImageViewParameters&						m_imParams;
 	const SamplerParameters&						m_samplerParams;
 	const SampleLookupSettings&						m_sampleLookupSettings;
 
     const int										m_coordBits;
 	const int										m_mipmapBits;
+	const tcu::FloatFormat							m_conversionPrecision;
+	const tcu::FloatFormat							m_filteringPrecision;
 
 	const int										m_unnormalizedDim;
 
-	const std::vector<tcu::ConstPixelBufferAccess>&	m_pba;
+	const std::vector<tcu::ConstPixelBufferAccess>&	m_levels;
 };
 
 } // texture

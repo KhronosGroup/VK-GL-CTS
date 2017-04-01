@@ -181,6 +181,13 @@ void ImageTest::initPrograms (SourceCollections& sourceCollections) const
 TestInstance* ImageTest::createInstance (Context& context) const
 {
 	tcu::UVec2 renderSize;
+	const VkPhysicalDeviceFeatures&	features = context.getDeviceFeatures();
+
+	// Using an loop to index into an array of images requires shaderSampledImageArrayDynamicIndexing
+	if (m_imageCount > 1 && features.shaderSampledImageArrayDynamicIndexing == VK_FALSE)
+	{
+		TCU_THROW(NotSupportedError, "shaderSampledImageArrayDynamicIndexing feature is not supported");
+	}
 
 	if (m_imageViewType == VK_IMAGE_VIEW_TYPE_1D || m_imageViewType == VK_IMAGE_VIEW_TYPE_2D)
 	{
