@@ -234,9 +234,9 @@ void VaryingTest::initPrograms (SourceCollections& sourceCollections) const
 		src	<< "#version 310 es\n"
 			<<"layout(location = 0) out highp vec4 fragColor;\n";
 		if (m_varyingTestSpec.geometryOutputs >= GEOMETRY_ONE)
-			src	<<"layout(location = 0) in mediump vec4 v_frag_0;\n";
+			src	<<"layout(location = 0) in highp vec4 v_frag_0;\n";
 		if (m_varyingTestSpec.geometryOutputs == GEOMETRY_TWO)
-			src	<<"layout(location = 1) in mediump vec4 v_frag_1;\n";
+			src	<<"layout(location = 1) in highp vec4 v_frag_1;\n";
 
 		src	<<"void main (void)\n"
 			<<"{\n";

@@ -786,6 +786,8 @@ tcu::TestStatus DrawTestInstance<DrawIndexedParams>::iterate (void)
 
 	deMemcpy(indexAlloc->getHostPtr(), &(m_data.indexes[0]), bufferSize);
 
+	vk::flushMappedMemoryRange(m_vk, vkDevice, indexAlloc->getMemory(), indexAlloc->getOffset(), bufferSize);
+
 	m_vk.cmdBindIndexBuffer(*m_cmdBuffer, *indexBuffer, 0u, m_data.indexType);
 	m_vk.cmdDrawIndexed(*m_cmdBuffer, m_data.params.indexCount, m_data.params.instanceCount, m_data.params.firstIndex, m_data.params.vertexOffset, m_data.params.firstInstance);
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
@@ -911,6 +913,8 @@ tcu::TestStatus DrawTestInstance<DrawIndirectParams>::iterate (void)
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *indirectBuffer, indirectAlloc->getMemory(), indirectAlloc->getOffset()));
 
 		deMemcpy(indirectAlloc->getHostPtr(), &(m_data.commands[0]), (size_t)indirectInfoSize);
+
+		vk::flushMappedMemoryRange(m_vk, vkDevice, indirectAlloc->getMemory(), indirectAlloc->getOffset(), indirectInfoSize);
 	}
 
 	// If multiDrawIndirect not supported execute single calls
@@ -1074,6 +1078,8 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *indirectBuffer, indirectAlloc->getMemory(), indirectAlloc->getOffset()));
 
 		deMemcpy(indirectAlloc->getHostPtr(), &(m_data.commands[0]), (size_t)indirectInfoSize);
+
+		vk::flushMappedMemoryRange(m_vk, vkDevice, indirectAlloc->getMemory(), indirectAlloc->getOffset(), indirectInfoSize);
 	}
 
 	const deUint32	bufferSize = (deUint32)(m_data.indexes.size() * sizeof(deUint32));
@@ -1100,6 +1106,8 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *indexBuffer, indexAlloc->getMemory(), indexAlloc->getOffset()));
 
 	deMemcpy(indexAlloc->getHostPtr(), &(m_data.indexes[0]), bufferSize);
+
+	vk::flushMappedMemoryRange(m_vk, vkDevice, indexAlloc->getMemory(), indexAlloc->getOffset(), bufferSize);
 
 	m_vk.cmdBindIndexBuffer(*m_cmdBuffer, *indexBuffer, 0u, m_data.indexType);
 

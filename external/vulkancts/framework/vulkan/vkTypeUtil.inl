@@ -384,6 +384,14 @@ inline VkDisplayPlanePropertiesKHR makeDisplayPlanePropertiesKHR (VkDisplayKHR c
 	return res;
 }
 
+inline VkPresentRegionKHR makePresentRegionKHR (deUint32 rectangleCount, const VkRectLayerKHR* pRectangles)
+{
+	VkPresentRegionKHR res;
+	res.rectangleCount	= rectangleCount;
+	res.pRectangles		= pRectangles;
+	return res;
+}
+
 inline VkIndirectCommandsTokenNVX makeIndirectCommandsTokenNVX (VkIndirectCommandsTokenTypeNVX tokenType, VkBuffer buffer, VkDeviceSize offset)
 {
 	VkIndirectCommandsTokenNVX res;
@@ -467,5 +475,31 @@ inline VkDescriptorUpdateTemplateEntryKHR makeDescriptorUpdateTemplateEntryKHR (
 	res.descriptorType	= descriptorType;
 	res.offset			= offset;
 	res.stride			= stride;
+	return res;
+}
+
+inline VkRefreshCycleDurationGOOGLE makeRefreshCycleDurationGOOGLE (deUint64 refreshDuration)
+{
+	VkRefreshCycleDurationGOOGLE res;
+	res.refreshDuration	= refreshDuration;
+	return res;
+}
+
+inline VkPastPresentationTimingGOOGLE makePastPresentationTimingGOOGLE (deUint32 presentID, deUint64 desiredPresentTime, deUint64 actualPresentTime, deUint64 earliestPresentTime, deUint64 presentMargin)
+{
+	VkPastPresentationTimingGOOGLE res;
+	res.presentID			= presentID;
+	res.desiredPresentTime	= desiredPresentTime;
+	res.actualPresentTime	= actualPresentTime;
+	res.earliestPresentTime	= earliestPresentTime;
+	res.presentMargin		= presentMargin;
+	return res;
+}
+
+inline VkPresentTimeGOOGLE makePresentTimeGOOGLE (deUint32 presentID, deUint64 desiredPresentTime)
+{
+	VkPresentTimeGOOGLE res;
+	res.presentID			= presentID;
+	res.desiredPresentTime	= desiredPresentTime;
 	return res;
 }

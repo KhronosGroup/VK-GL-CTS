@@ -47,7 +47,6 @@
 #include "deUniquePtr.hpp"
 #include "tcuStringTemplate.hpp"
 
-#include <cmath>
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktTestCaseUtil.hpp"
