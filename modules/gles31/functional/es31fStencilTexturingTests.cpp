@@ -716,7 +716,7 @@ public:
 																					tcu::Sampler::NEAREST,
 																					tcu::Sampler::NEAREST));
 			tcu::LookupPrecision	lookupPrec;
-			tcu::LodPrecision		lodPrec			(tcu::LodPrecision::RULE_OPENGL);
+			tcu::LodPrecision		lodPrec;
 			bool					compareOk;
 
 			lookupPrec.colorMask		= tcu::BVec4(true, true, true, true);
