@@ -217,7 +217,7 @@ tcu::TestStatus Texture2DFilteringTestInstance::iterate (void)
 		const tcu::IVec4		formatBitDepth	= getTextureFormatBitDepth(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
 		const tcu::PixelFormat	pixelFormat		(formatBitDepth[0], formatBitDepth[1], formatBitDepth[2], formatBitDepth[3]);
 		const tcu::IVec4		colorBits		= max(getBitsVec(pixelFormat) - (isNearestOnly ? 1 : 2), tcu::IVec4(0)); // 1 inaccurate bit if nearest only, 2 otherwise
-		tcu::LodPrecision		lodPrecision	(tcu::LodPrecision::RULE_VULKAN);
+		tcu::LodPrecision		lodPrecision;
 		tcu::LookupPrecision	lookupPrecision;
 
 		lodPrecision.derivateBits		= 18;
@@ -434,7 +434,7 @@ tcu::TestStatus TextureCubeFilteringTestInstance::iterate (void)
 			const tcu::IVec4		formatBitDepth	= getTextureFormatBitDepth(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
 			const tcu::PixelFormat	pixelFormat		(formatBitDepth[0], formatBitDepth[1], formatBitDepth[2], formatBitDepth[3]);
 			const tcu::IVec4		colorBits		= max(getBitsVec(pixelFormat) - (isNearestOnly ? 1 : 2), tcu::IVec4(0)); // 1 inaccurate bit if nearest only, 2 otherwise
-			tcu::LodPrecision		lodPrecision	(tcu::LodPrecision::RULE_VULKAN);
+			tcu::LodPrecision		lodPrecision;
 			tcu::LookupPrecision	lookupPrecision;
 
 			lodPrecision.derivateBits		= 10;
@@ -635,7 +635,7 @@ tcu::TestStatus Texture2DArrayFilteringTestInstance::iterate (void)
 		const tcu::IVec4		formatBitDepth	= getTextureFormatBitDepth(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
 		const tcu::PixelFormat	pixelFormat		(formatBitDepth[0], formatBitDepth[1], formatBitDepth[2], formatBitDepth[3]);
 		const tcu::IVec4		colorBits		= max(getBitsVec(pixelFormat) - (isNearestOnly ? 1 : 2), tcu::IVec4(0)); // 1 inaccurate bit if nearest only, 2 otherwise
-		tcu::LodPrecision		lodPrecision	(tcu::LodPrecision::RULE_VULKAN);
+		tcu::LodPrecision		lodPrecision;
 		tcu::LookupPrecision	lookupPrecision;
 
 		lodPrecision.derivateBits		= 18;
@@ -813,7 +813,7 @@ tcu::TestStatus Texture3DFilteringTestInstance::iterate (void)
 		const tcu::IVec4		formatBitDepth	= getTextureFormatBitDepth(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
 		const tcu::PixelFormat	pixelFormat		(formatBitDepth[0], formatBitDepth[1], formatBitDepth[2], formatBitDepth[3]);
 		const tcu::IVec4		colorBits		= max(getBitsVec(pixelFormat) - (isNearestOnly ? 1 : 2), tcu::IVec4(0)); // 1 inaccurate bit if nearest only, 2 otherwise
-		tcu::LodPrecision		lodPrecision	(tcu::LodPrecision::RULE_VULKAN);
+		tcu::LodPrecision		lodPrecision;
 		tcu::LookupPrecision	lookupPrecision;
 
 		lodPrecision.derivateBits		= 18;
