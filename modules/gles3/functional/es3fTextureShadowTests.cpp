@@ -362,7 +362,7 @@ Texture2DShadowCase::IterateResult Texture2DShadowCase::iterate (void)
 
 	{
 		const tcu::PixelFormat		pixelFormat		= m_context.getRenderTarget().getPixelFormat();
-		tcu::LodPrecision			lodPrecision	(tcu::LodPrecision::RULE_OPENGL);
+		tcu::LodPrecision			lodPrecision;
 		tcu::TexComparePrecision	texComparePrecision;
 
 		lodPrecision.derivateBits			= 18;
@@ -652,7 +652,7 @@ TextureCubeShadowCase::IterateResult TextureCubeShadowCase::iterate (void)
 
 		{
 			const tcu::PixelFormat		pixelFormat		= m_context.getRenderTarget().getPixelFormat();
-			tcu::LodPrecision			lodPrecision	(tcu::LodPrecision::RULE_OPENGL);
+			tcu::LodPrecision			lodPrecision;
 			tcu::TexComparePrecision	texComparePrecision;
 
 			lodPrecision.derivateBits			= 10;
@@ -928,7 +928,7 @@ Texture2DArrayShadowCase::IterateResult Texture2DArrayShadowCase::iterate (void)
 
 	{
 		const tcu::PixelFormat		pixelFormat		= m_context.getRenderTarget().getPixelFormat();
-		tcu::LodPrecision			lodPrecision	(tcu::LodPrecision::RULE_OPENGL);
+		tcu::LodPrecision			lodPrecision;
 		tcu::TexComparePrecision	texComparePrecision;
 
 		lodPrecision.derivateBits			= 18;
