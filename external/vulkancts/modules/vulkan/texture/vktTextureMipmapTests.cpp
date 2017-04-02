@@ -335,7 +335,7 @@ tcu::TestStatus Texture2DMipmapTestInstance::iterate (void)
 		tcu::Surface			referenceFrame	(viewportWidth, viewportHeight);
 		tcu::Surface			errorMask		(viewportWidth, viewportHeight);
 		tcu::LookupPrecision	lookupPrec;
-		tcu::LodPrecision		lodPrec;
+		tcu::LodPrecision		lodPrec			(tcu::LodPrecision::RULE_VULKAN);
 		int						numFailedPixels	= 0;
 
 		lookupPrec.coordBits		= tcu::IVec3(20, 20, 0);
@@ -569,7 +569,7 @@ tcu::TestStatus TextureCubeMipmapTestInstance::iterate (void)
 		tcu::Surface			errorMask			(viewportWidth, viewportHeight);
 		int						numFailedPixels		= 0;
 		tcu::LookupPrecision	lookupPrec;
-		tcu::LodPrecision		lodPrec;
+		tcu::LodPrecision		lodPrec				(tcu::LodPrecision::RULE_VULKAN);
 
 		// Params for rendering reference
 		refParams.sampler					= util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT, m_testParameters.minFilter, m_testParameters.magFilter);
@@ -849,7 +849,7 @@ tcu::TestStatus Texture3DMipmapTestInstance::iterate (void)
 		tcu::Surface			referenceFrame	(viewportWidth, viewportHeight);
 		tcu::Surface			errorMask		(viewportWidth, viewportHeight);
 		tcu::LookupPrecision	lookupPrec;
-		tcu::LodPrecision		lodPrec;
+		tcu::LodPrecision		lodPrec			(tcu::LodPrecision::RULE_VULKAN);
 		int						numFailedPixels	= 0;
 
 		lookupPrec.coordBits		= tcu::IVec3(20, 20, 20);
@@ -1032,7 +1032,7 @@ tcu::TestStatus Texture2DLodControlTestInstance::iterate (void)
 		tcu::Surface			referenceFrame	(viewportWidth, viewportHeight);
 		tcu::Surface			errorMask		(viewportWidth, viewportHeight);
 		tcu::LookupPrecision	lookupPrec;
-		tcu::LodPrecision		lodPrec;
+		tcu::LodPrecision		lodPrec			(tcu::LodPrecision::RULE_VULKAN);
 		int						numFailedPixels	= 0;
 
 		lookupPrec.coordBits		= tcu::IVec3(20, 20, 0);
@@ -1289,7 +1289,7 @@ tcu::TestStatus TextureCubeLodControlTestInstance::iterate (void)
 		tcu::Surface			errorMask			(viewportWidth, viewportHeight);
 		int						numFailedPixels		= 0;
 		tcu::LookupPrecision	lookupPrec;
-		tcu::LodPrecision		lodPrec;
+		tcu::LodPrecision		lodPrec				(tcu::LodPrecision::RULE_VULKAN);
 
 		// Params for rendering reference
 		refParams.sampler					= util::createSampler(wrapS, wrapT, m_testParameters.minFilter, magFilter);
@@ -1557,7 +1557,7 @@ tcu::TestStatus Texture3DLodControlTestInstance::iterate (void)
 		tcu::Surface			referenceFrame	(viewportWidth, viewportHeight);
 		tcu::Surface			errorMask		(viewportWidth, viewportHeight);
 		tcu::LookupPrecision	lookupPrec;
-		tcu::LodPrecision		lodPrec;
+		tcu::LodPrecision		lodPrec			(tcu::LodPrecision::RULE_VULKAN);
 		int						numFailedPixels	= 0;
 
 		lookupPrec.coordBits		= tcu::IVec3(20, 20, 20);
