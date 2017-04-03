@@ -64,7 +64,8 @@ VULKAN_1_0_1_PKG	= Package(module = VULKAN_MODULE, configurations = [
 		  Configuration(name		= "default",
 						filters		= [include("master.txt"),
 									   exclude("test-issues.txt"),
-									   exclude("excluded-tests.txt")]),
+									   exclude("excluded-tests.txt"),
+									   exclude("waivers.txt")]),
 	 ])
 
 MUSTPASS_LISTS		= [
