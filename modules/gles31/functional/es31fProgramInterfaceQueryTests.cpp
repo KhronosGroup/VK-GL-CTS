@@ -436,7 +436,6 @@ public:
 	bool		isStagePresent		(glu::ShaderType stage) const;
 	bool		isStageReferencing	(glu::ShaderType stage) const;
 
-	deUint32	getPresentMask		(void) const;
 	deUint32	getReferencingMask	(void) const;
 
 	const glu::GLSLVersion	m_version;
@@ -492,17 +491,6 @@ bool ShaderSet::isStageReferencing (glu::ShaderType stage) const
 {
 	DE_ASSERT(stage < glu::SHADERTYPE_LAST);
 	return m_stageReferencing[stage];
-}
-
-deUint32 ShaderSet::getPresentMask (void) const
-{
-	deUint32 mask = 0;
-	for (deUint32 stage = 0; stage < glu::SHADERTYPE_LAST; ++stage)
-	{
-		if (m_stagePresent[stage])
-			mask |= (1u << stage);
-	}
-	return mask;
 }
 
 deUint32 ShaderSet::getReferencingMask (void) const

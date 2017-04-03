@@ -125,7 +125,7 @@ static inline int imod (int a, int b)
 
 static inline int mirror (int a)
 {
-	return a >= 0.0f ? a : -(1 + a);
+	return a >= 0 ? a : -(1 + a);
 }
 
 int wrap (Sampler::WrapMode mode, int c, int size)

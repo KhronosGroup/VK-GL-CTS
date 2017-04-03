@@ -2068,12 +2068,12 @@ void ReferenceContext::framebufferTextureLayer (deUint32 target, deUint32 attach
 			if (texObj->getType() == Texture::TYPE_2D_ARRAY || texObj->getType() == Texture::TYPE_CUBE_MAP_ARRAY)
 			{
 				RC_IF_ERROR((layer < 0) || (layer >= GL_MAX_ARRAY_TEXTURE_LAYERS),		GL_INVALID_VALUE,		RC_RET_VOID);
-				RC_IF_ERROR((level < 0) || (level > deFloatLog2(GL_MAX_TEXTURE_SIZE)),	GL_INVALID_VALUE,		RC_RET_VOID);
+				RC_IF_ERROR((level < 0) || (level > deLog2Floor32(GL_MAX_TEXTURE_SIZE)),GL_INVALID_VALUE,		RC_RET_VOID);
 			}
 			else if	(texObj->getType() == Texture::TYPE_3D)
 			{
 				RC_IF_ERROR((layer < 0) || (layer >= GL_MAX_3D_TEXTURE_SIZE),				GL_INVALID_VALUE,		RC_RET_VOID);
-				RC_IF_ERROR((level < 0) || (level > deFloatLog2(GL_MAX_3D_TEXTURE_SIZE)),	GL_INVALID_VALUE,		RC_RET_VOID);
+				RC_IF_ERROR((level < 0) || (level > deLog2Floor32(GL_MAX_3D_TEXTURE_SIZE)),	GL_INVALID_VALUE,		RC_RET_VOID);
 			}
 		}
 
