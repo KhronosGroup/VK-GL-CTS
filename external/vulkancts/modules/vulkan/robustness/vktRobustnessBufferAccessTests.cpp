@@ -798,8 +798,8 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 	{
 		struct IndicesBuffer
 		{
-			int32_t inIndex;
-			int32_t outIndex;
+			deInt32 inIndex;
+			deInt32 outIndex;
 		};
 
 		IndicesBuffer indices = { 0, 0 };
