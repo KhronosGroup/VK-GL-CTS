@@ -96,5 +96,5 @@ def gen (registry):
 	writeInlFile(os.path.join(EGL_WRAPPER_DIR, "eglwApi.inl"), src)
 	writeInlFile(os.path.join(EGL_WRAPPER_DIR, "eglwEnumsC.inl"), indentLines(map(enumDefinitionC, defaultIface.enums)))
 	genCommandList(noExtIface, commandWrapperDefinition, EGL_WRAPPER_DIR, "eglwImpl.inl")
-	genCommandList(extOnlyIface, commandWrapperDefinition, EGL_WRAPPER_DIR, "eglwImplExt.inl", True)
+	genCommandList(extOnlyIface, commandWrapperDefinition, EGL_WRAPPER_DIR, "eglwImplExt.inl")
 

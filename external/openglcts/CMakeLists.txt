@@ -6,6 +6,9 @@ set(GTF_HOME     "${KC_CTS_HOME}/src/GTF_ES"            CACHE STRING "Home direc
 if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	# -Wconversion generates a LOT of warnings in this code base
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-conversion")
+
+	# Same for -Wunused-function
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function")
 endif ()
 
 if (EXISTS "${GTF_HOME}/CMakeLists.txt")

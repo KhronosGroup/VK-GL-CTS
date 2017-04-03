@@ -158,7 +158,7 @@ void RenderCase::executeForConfig (EGLDisplay display, EGLConfig config)
 
 		try
 		{
-			std::auto_ptr<eglu::NativePixmap>	pixmap		(pixmapFactory.createPixmap(&nativeDisplay, display, config, DE_NULL, width, height));
+			de::UniquePtr<eglu::NativePixmap>	pixmap		(pixmapFactory.createPixmap(&nativeDisplay, display, config, DE_NULL, width, height));
 			EGLSurface							eglSurface	= createPixmapSurface(nativeDisplay, *pixmap, display, config, DE_NULL);
 			eglu::UniqueSurface					surface		(egl, display, eglSurface);
 
