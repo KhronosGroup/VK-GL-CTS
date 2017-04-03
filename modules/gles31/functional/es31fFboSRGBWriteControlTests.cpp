@@ -1814,13 +1814,11 @@ bool FboSRGBUnsupportedEnumCase::isInvalidEnum (std::string functionName)
 
 	log << tcu::TestLog::Message << "Checking call to " << functionName << tcu::TestLog::EndMessage;
 
-	std::ostringstream		message;
-	gl.getError();
+	error = gl.getError();
 
 	if (error != GL_INVALID_ENUM)
 	{
-		message << functionName << " returned wrong value [" << glu::getErrorStr(error) << ", expected " << glu::getErrorStr(GL_INVALID_ENUM) << "]";
-		log << tcu::TestLog::Message << message.str() << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::Message << " returned wrong value [" << glu::getErrorStr(error) << ", expected " << glu::getErrorStr(GL_INVALID_ENUM) << "]" << tcu::TestLog::EndMessage;
 		isOk = false;
 	}
 
