@@ -99,6 +99,7 @@ EXTENSIONS			= [
 	'GL_ARB_indirect_parameters',
 	'GL_ARB_internalformat_query',
 	'GL_ARB_instanced_arrays',
+	'GL_ARB_multi_draw_indirect',
 	'GL_ARB_parallel_shader_compile',
 	'GL_ARB_program_interface_query',
 	'GL_ARB_separate_shader_objects',
