@@ -361,7 +361,7 @@ void exceed_atomic_counters_limit (NegativeTestContext& ctx)
 	std::ostringstream	shaderBody;
 
 	shaderDecl	<< "layout(binding = 0, offset = 0) uniform atomic_uint u_atomic0;\n"
-				<< "layout(binding = 0, offset = " << sizeof(GLuint) * getResourceLimit(ctx, GL_MAX_COMPUTE_ATOMIC_COUNTERS) << ") uniform atomic_uint u_atomic1;\n"
+				<< "layout(binding = " << sizeof(GLuint) * getResourceLimit(ctx, GL_MAX_COMPUTE_ATOMIC_COUNTERS) << ", offset = 0) uniform atomic_uint u_atomic1;\n"
 				<< "\n"
 				<< "layout(binding = 0) buffer Output {\n"
 				<< "    uint value;\n"
