@@ -52,7 +52,7 @@ typedef de::SharedPtr<BufferHandleUp>				BufferHandleSp;
  *//*--------------------------------------------------------------------*/
 Move<VkBuffer> createBufferAndBindMemory (const DeviceInterface& vkdi, const VkDevice& device, VkDescriptorType dtype, Allocator& allocator, size_t numBytes, AllocationMp* outMemory)
 {
-	VkBufferUsageFlagBits		usageBit		= (VkBufferUsageFlagBits)0;
+	VkBufferUsageFlags			usageBit		= (VkBufferUsageFlags)0;
 
 	switch (dtype)
 	{

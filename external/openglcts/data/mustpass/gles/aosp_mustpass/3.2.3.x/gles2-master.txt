@@ -12543,9 +12543,6 @@ dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb565
 dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb565_stencil_index8
 dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb565_depth_component16
 dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb565_depth_component16_stencil_index8
-dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb5_a1
-dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb5_a1_stencil_index8
-dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb5_a1_depth_component16
 dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb5_a1_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgba4
 dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgba4_stencil_index8
@@ -12557,7 +12554,6 @@ dEQP-GLES2.functional.fbo.render.stencil_clear.tex2d_rgba_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil_clear.tex2d_rgba_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil_clear.rbo_rgb565_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil_clear.rbo_rgb565_depth_component16_stencil_index8
-dEQP-GLES2.functional.fbo.render.stencil_clear.rbo_rgb5_a1_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil_clear.rbo_rgb5_a1_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil_clear.rbo_rgba4_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil_clear.rbo_rgba4_depth_component16_stencil_index8

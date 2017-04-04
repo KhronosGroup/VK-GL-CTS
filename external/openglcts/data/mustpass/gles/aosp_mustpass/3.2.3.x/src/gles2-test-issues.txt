@@ -86,3 +86,9 @@ dEQP-GLES2.functional.shaders.random.texture.vertex.39
 
 #VK-GL-CTS 249
 dEQP-GLES2.functional.fragment_ops.interaction.basic_shader.61
+
+#VK-GL-CTS 347
+dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb5_a1
+dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb5_a1_stencil_index8
+dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb5_a1_depth_component16
+dEQP-GLES2.functional.fbo.render.stencil_clear.rbo_rgb5_a1_stencil_index8
