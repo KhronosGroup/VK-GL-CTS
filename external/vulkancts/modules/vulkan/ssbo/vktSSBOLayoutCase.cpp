@@ -2142,6 +2142,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	{
 		for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
 		{
+			const vk::VkBuffer uniformBuffer = m_uniformBuffers[blockNdx].get()->get();
+
 			const vk::VkBufferMemoryBarrier barrier	=
 			{
 				vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
@@ -2150,7 +2152,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 				vk::VK_ACCESS_HOST_READ_BIT,
 				VK_QUEUE_FAMILY_IGNORED,
 				VK_QUEUE_FAMILY_IGNORED,
-				static_cast<vk::VkBuffer>(*m_uniformBuffers[blockNdx]),
+				uniformBuffer,
 				0u,
 				static_cast<vk::VkDeviceSize>(bufferSizes[blockNdx])
 			};
@@ -2159,6 +2161,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	}
 	else
 	{
+		const vk::VkBuffer uniformBuffer = m_uniformBuffers[0].get()->get();
+
 		vk::VkDeviceSize totalSize	= 0;
 		for (size_t bufferNdx = 0; bufferNdx < bufferSizes.size(); bufferNdx++)
 			totalSize += bufferSizes[bufferNdx];
@@ -2171,7 +2175,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 			vk::VK_ACCESS_HOST_READ_BIT,
 			VK_QUEUE_FAMILY_IGNORED,
 			VK_QUEUE_FAMILY_IGNORED,
-			static_cast<vk::VkBuffer>(*m_uniformBuffers[0]),
+			uniformBuffer,
 			0u,
 			totalSize
 		};
