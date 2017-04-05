@@ -43412,3 +43412,4 @@ dEQP-GLES3.functional.lifetime.attach.deleted_output.renderbuffer_framebuffer
 dEQP-GLES3.functional.lifetime.attach.deleted_output.buffer_transform_feedback
 dEQP-GLES3.functional.lifetime.delete_active.transform_feedback
 dEQP-GLES3.functional.default_vertex_array_object.vertex_attrib_divisor
+dEQP-GLES3.functional.shaders.invalid_implicit_conversions.*
