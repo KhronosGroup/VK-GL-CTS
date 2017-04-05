@@ -366,6 +366,52 @@ GLCTS_3_2_3_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
 					filters		= GLCTS_3_2_3_GLES31_COMMON_FILTERS + [include("gles31-pixelformat.txt")]),
 	])
 
+GLCTS_3_2_3_GLES32_KHR_COMMON_FILTERS	= [
+		include("gles32-khr-master.txt"),
+		exclude("gles32-khr-test-issues.txt")
+	]
+
+GLCTS_3_2_3_GLES32_KHR_PKG_1CFG			= Package(module = ES32KHR_MODULE, configurations = [
+		# Master
+		Configuration(name			= "khr-master",
+					surfacewidth	= "64",
+					surfaceheight	= "64",
+					baseseed		= "1",
+					filters			= GLCTS_3_2_3_GLES32_KHR_COMMON_FILTERS),
+		Configuration(name			= "khr-master",
+					surfacewidth	= "113",
+					surfaceheight	= "47",
+					baseseed		= "2",
+					filters			= GLCTS_3_2_3_GLES32_KHR_COMMON_FILTERS),
+		Configuration(name			= "khr-master",
+					surfacewidth	= "64",
+					surfaceheight	= "-1",
+					baseseed		= "3",
+					fboconfig		= "rgba8888d24s8",
+					filters			= GLCTS_3_2_3_GLES32_KHR_COMMON_FILTERS),
+		Configuration(name			= "khr-master",
+					surfacewidth	= "-1",
+					surfaceheight	= "64",
+					baseseed		= "3",
+					fboconfig		= "rgba8888d24s8",
+					filters			= GLCTS_3_2_3_GLES32_KHR_COMMON_FILTERS),
+	])
+
+GLCTS_3_2_3_GLES32_KHR_PKG_N1CFG		= Package(module = ES32KHR_MODULE, useforfirsteglconfig = False, configurations = [
+		# Master
+		Configuration(name			= "khr-master",
+					surfacewidth	= "64",
+					surfaceheight	= "64",
+					baseseed		= "1",
+					filters			= GLCTS_3_2_3_GLES32_KHR_COMMON_FILTERS),
+		Configuration(name			= "khr-master",
+					surfacewidth	= "113",
+					surfaceheight	= "47",
+					baseseed		= "2",
+					filters			= GLCTS_3_2_3_GLES32_KHR_COMMON_FILTERS),
+	])
+
+
 # master
 MASTER_EGL_COMMON_FILTERS			= [include("egl-master.txt"),
 										exclude("egl-test-issues.txt"),
@@ -834,8 +880,8 @@ MUSTPASS_LISTS				= [
 						GLCTS_GLES31_GTF_PKG_1CFG,
 						GLCTS_GLES31_KHR_PKG_N1CFG,
 						GLCTS_GLES31_GTF_PKG_N1CFG,
-						GLCTS_GLES32_KHR_PKG_1CFG,
-						GLCTS_GLES32_KHR_PKG_N1CFG,
+						GLCTS_3_2_3_GLES32_KHR_PKG_1CFG,
+						GLCTS_3_2_3_GLES32_KHR_PKG_N1CFG,
 						]),
 
 	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "3.2.3.x", isCurrent=True,
