@@ -39,6 +39,7 @@
 #include "glwEnums.hpp"
 
 #include "deSTLUtil.hpp"
+#include "deStringUtil.hpp"
 #include "deThread.hpp"
 #include "deSharedPtr.hpp"
 
@@ -1236,9 +1237,9 @@ glu::ProgramSources ShadersOOB::genNonComputeSource (void)
 	{
 		const char* const readWriteStatement = (m_isRead)
 											 ? "	color.x = color_out[u_index];\n"
-											 : "	color[u_index] = color_out.x;\n";
+											 : "	color[u_index] = color_out[0];\n";
 
-		shaderBody	<< "	highp vec4 color_out = vec4(1.0f);\n"
+		shaderBody	<< "	highp float color_out[4] = float[4](0.25f, 0.5f, 0.75f, 1.0f);\n"
 					<< readWriteStatement;
 	}
 	else
@@ -1247,12 +1248,12 @@ glu::ProgramSources ShadersOOB::genNonComputeSource (void)
 
 		shaderDecl << "layout(std140, binding = 0) " << ((m_isUBO) ? "uniform" : "buffer") << " Block\n"
 			<< "{\n"
-			<< "	highp vec4 color_out;\n"
+			<< "	highp float color_out[4];\n"
 			<< "} " << resName << "[" << s_numBindings << "];\n";
 
 		const std::string readWriteStatement = (m_isRead)
 											 ? "	color.x = " + resName + "[0].color_out[u_index];\n"
-											 : "	color[u_index] = " + resName + "[0].color_out.x;\n";
+											 : "	color[u_index] = " + resName + "[0].color_out[0];\n";
 
 		shaderBody << readWriteStatement;
 	}
@@ -1309,6 +1310,17 @@ glu::ProgramSources ShadersOOB::genSources (void)
 
 void ShadersOOB::setup (void)
 {
+	if (!m_isUBO && !m_isLocalArray && (m_shaderType == SHADERTYPE_VERT || m_shaderType == SHADERTYPE_VERT_AND_FRAG))
+	{
+		// Check implementation limits for vertex shader SSBO
+		int vertexShaderStorageBlockSupported = -1;
+
+		GLU_CHECK_GLW_CALL(m_gl, getIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &vertexShaderStorageBlockSupported));
+
+		if (vertexShaderStorageBlockSupported < (int)m_buffers.size())
+			TCU_THROW(NotSupportedError, ("Test requires GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS >= " + de::toString((int)m_buffers.size()) + ", got " + de::toString(vertexShaderStorageBlockSupported)).c_str());
+	}
+
 	glu::ShaderProgram program(m_gl, genSources());
 
 	m_log << program;
