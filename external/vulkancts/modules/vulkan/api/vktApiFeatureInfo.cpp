@@ -674,6 +674,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_maintenance1",
 		"VK_KHR_push_descriptor",
 		"VK_KHR_descriptor_update_template",
+		"VK_KHR_incremental_present",
 		"VK_KHR_shared_presentable_image",
 	};
 
