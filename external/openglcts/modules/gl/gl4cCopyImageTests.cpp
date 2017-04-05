@@ -5103,7 +5103,7 @@ IncompatibleFormatsCompressionTest::IncompatibleFormatsCompressionTest(deqp::Con
 
 		/* Skip 1D targets, not supported */
 		if ((GL_TEXTURE_1D == tex_target) || (GL_TEXTURE_1D_ARRAY == tex_target) || (GL_TEXTURE_3D == tex_target) ||
-			(GL_TEXTURE_RECTANGLE == tex_target) || (GL_RENDERBUFFER == tex_target))
+			(GL_TEXTURE_RECTANGLE == tex_target) || (GL_RENDERBUFFER == tex_target) || (GL_TEXTURE_CUBE_MAP_ARRAY == tex_target))
 		{
 			continue;
 		}
