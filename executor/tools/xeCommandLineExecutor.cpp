@@ -31,6 +31,7 @@
 #include "deCommandLine.hpp"
 #include "deDirectoryIterator.hpp"
 #include "deStringUtil.hpp"
+#include "deUniquePtr.hpp"
 
 #include "deString.h"
 
@@ -604,7 +605,7 @@ void runExecutor (const CommandLine& cmdLine)
 		readLogFile(&batchResult, cmdLine.inFile.c_str());
 
 	// Initialize commLink.
-	std::auto_ptr<xe::CommLink> commLink(createCommLink(cmdLine));
+	de::UniquePtr<xe::CommLink> commLink(createCommLink(cmdLine));
 
 	xe::BatchExecutor executor(cmdLine.targetCfg, commLink.get(), &root, testSet, &batchResult, &infoLog);
 

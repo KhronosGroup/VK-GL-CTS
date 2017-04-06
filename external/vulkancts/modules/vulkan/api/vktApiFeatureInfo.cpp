@@ -472,14 +472,14 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		}
 	}
 
-	if (limits->viewportBoundsRange[0] > -2 * limits->maxViewportDimensions[0])
+	if (limits->viewportBoundsRange[0] > float(-2 * limits->maxViewportDimensions[0]))
 	{
 		log << TestLog::Message << "limit validation failed, viewPortBoundsRange[0] of " << limits->viewportBoundsRange[0]
 			<< "is larger than -2*maxViewportDimension[0] of " << -2*limits->maxViewportDimensions[0] << TestLog::EndMessage;
 		limitsOk = false;
 	}
 
-	if (limits->viewportBoundsRange[1] < 2 * limits->maxViewportDimensions[1] - 1)
+	if (limits->viewportBoundsRange[1] < float(2 * limits->maxViewportDimensions[1] - 1))
 	{
 		log << TestLog::Message << "limit validation failed, viewportBoundsRange[1] of " << limits->viewportBoundsRange[1]
 			<< "is less than 2*maxViewportDimension[1] of " << 2*limits->maxViewportDimensions[1] << TestLog::EndMessage;
@@ -673,6 +673,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_maintenance1",
 		"VK_KHR_push_descriptor",
 		"VK_KHR_descriptor_update_template",
+		"VK_KHR_incremental_present",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);
@@ -1887,6 +1888,10 @@ bool isRequiredImageParameterCombination (const VkPhysicalDeviceFeatures&	device
 
 	// Support for 1D, and sliced 3D compressed formats is optional
 	if (isCompressedFormat(format) && (imageType == VK_IMAGE_TYPE_1D || imageType == VK_IMAGE_TYPE_3D))
+		return false;
+
+	// Support for 1D and 3D depth/stencil textures is optional
+	if (isDepthStencilFormat(format) && (imageType == VK_IMAGE_TYPE_1D || imageType == VK_IMAGE_TYPE_3D))
 		return false;
 
 	DE_ASSERT(deviceFeatures.sparseBinding || (createFlags & (VK_IMAGE_CREATE_SPARSE_BINDING_BIT|VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)) == 0);

@@ -29,7 +29,9 @@ namespace vk
 
 PlatformDriver::PlatformDriver (const tcu::FunctionLibrary& library)
 {
-#define GET_PROC_ADDR(NAME) library.getFunction(NAME)
+	m_vk.getInstanceProcAddr	= (GetInstanceProcAddrFunc)library.getFunction("vkGetInstanceProcAddr");
+
+#define GET_PROC_ADDR(NAME) m_vk.getInstanceProcAddr(DE_NULL, NAME)
 #include "vkInitPlatformFunctionPointers.inl"
 #undef GET_PROC_ADDR
 }

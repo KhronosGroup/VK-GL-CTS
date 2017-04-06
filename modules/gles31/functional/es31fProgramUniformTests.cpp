@@ -829,7 +829,6 @@ public:
 		FEATURE_ARRAY_FIRST_ELEM_NAME_NO_INDEX	= 1<<8
 	};
 
-								UniformCase		(Context& context, const char* name, const char* description, CaseShaderType caseType, const SharedPtr<const UniformCollection>& uniformCollection);
 								UniformCase		(Context& context, const char* name, const char* description, CaseShaderType caseType, const SharedPtr<const UniformCollection>& uniformCollection, deUint32 features);
 	virtual						~UniformCase	(void);
 
@@ -940,15 +939,6 @@ UniformCase::UniformCase (Context& context, const char* const name, const char* 
 	: TestCase				(context, name, description)
 	, CallLogWrapper		(context.getRenderContext().getFunctions(), m_testCtx.getLog())
 	, m_features			(features)
-	, m_uniformCollection	(uniformCollection)
-	, m_caseShaderType		(caseShaderType)
-{
-}
-
-UniformCase::UniformCase (Context& context, const char* const name, const char* const description, const CaseShaderType caseShaderType, const SharedPtr<const UniformCollection>& uniformCollection)
-	: TestCase				(context, name, description)
-	, CallLogWrapper		(context.getRenderContext().getFunctions(), m_testCtx.getLog())
-	, m_features			(0)
 	, m_uniformCollection	(uniformCollection)
 	, m_caseShaderType		(caseShaderType)
 {
