@@ -201,6 +201,7 @@ bool GeometryShaderLayeredRendering::buildProgramForLRTest(_layered_rendering_te
  **/
 tcu::TestNode::IterateResult GeometryShaderLayeredRendering::iterate(void)
 {
+	const glu::ContextType& context_type = m_context.getRenderContext().getType();
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	/* Helper variables to support shader compilation process */
@@ -334,6 +335,12 @@ tcu::TestNode::IterateResult GeometryShaderLayeredRendering::iterate(void)
 
 	gl.getIntegerv(m_glExtTokens.LAYER_PROVOKING_VERTEX, &layer_provoking_vertex_gl_value);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv() failed for GL_LAYER_PROVOKING_VERTEX_EXT pname");
+
+	if (!glu::isContextTypeES(context_type) && ((glw::GLenum)layer_provoking_vertex_gl_value == GL_PROVOKING_VERTEX))
+	{
+		gl.getIntegerv(GL_PROVOKING_VERTEX, &layer_provoking_vertex_gl_value);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv() failed for GL_PROVOKING_VERTEX pname");
+	}
 
 	if ((glw::GLenum)layer_provoking_vertex_gl_value == m_glExtTokens.FIRST_VERTEX_CONVENTION)
 	{
