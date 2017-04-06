@@ -1085,10 +1085,10 @@ const ExprP<Void>& voidP (void)
 template <typename T0 = Void, typename T1 = Void, typename T2 = Void, typename T3 = Void>
 struct Tuple4
 {
-	explicit Tuple4 (const T0& e0 = T0(),
-					 const T1& e1 = T1(),
-					 const T2& e2 = T2(),
-					 const T3& e3 = T3())
+	explicit Tuple4 (const T0 e0 = T0(),
+					 const T1 e1 = T1(),
+					 const T2 e2 = T2(),
+					 const T3 e3 = T3())
 		: a	(e0)
 		, b	(e1)
 		, c	(e2)

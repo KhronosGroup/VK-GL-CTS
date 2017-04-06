@@ -68,10 +68,10 @@ static rr::GenericVecType mapDataTypeToGenericVecType(glu::DataType type)
 template <typename T>
 static tcu::Vector<T, 4> castVectorSaturate (const tcu::Vec4& in)
 {
-	return tcu::Vector<T, 4>((in.x() + 0.5f >= std::numeric_limits<T>::max()) ? (std::numeric_limits<T>::max()) : ((in.x() - 0.5f <= std::numeric_limits<T>::min()) ? (std::numeric_limits<T>::min()) : (T(in.x()))),
-	                         (in.y() + 0.5f >= std::numeric_limits<T>::max()) ? (std::numeric_limits<T>::max()) : ((in.y() - 0.5f <= std::numeric_limits<T>::min()) ? (std::numeric_limits<T>::min()) : (T(in.y()))),
-							 (in.z() + 0.5f >= std::numeric_limits<T>::max()) ? (std::numeric_limits<T>::max()) : ((in.z() - 0.5f <= std::numeric_limits<T>::min()) ? (std::numeric_limits<T>::min()) : (T(in.z()))),
-							 (in.w() + 0.5f >= std::numeric_limits<T>::max()) ? (std::numeric_limits<T>::max()) : ((in.w() - 0.5f <= std::numeric_limits<T>::min()) ? (std::numeric_limits<T>::min()) : (T(in.w()))));
+	return tcu::Vector<T, 4>(((double)in.x() + 0.5 >= (double)std::numeric_limits<T>::max()) ? (std::numeric_limits<T>::max()) : (((double)in.x() - 0.5 <= (double)std::numeric_limits<T>::min()) ? (std::numeric_limits<T>::min()) : (T(in.x()))),
+	                         ((double)in.y() + 0.5 >= (double)std::numeric_limits<T>::max()) ? (std::numeric_limits<T>::max()) : (((double)in.y() - 0.5 <= (double)std::numeric_limits<T>::min()) ? (std::numeric_limits<T>::min()) : (T(in.y()))),
+							 ((double)in.z() + 0.5 >= (double)std::numeric_limits<T>::max()) ? (std::numeric_limits<T>::max()) : (((double)in.z() - 0.5 <= (double)std::numeric_limits<T>::min()) ? (std::numeric_limits<T>::min()) : (T(in.z()))),
+							 ((double)in.w() + 0.5 >= (double)std::numeric_limits<T>::max()) ? (std::numeric_limits<T>::max()) : (((double)in.w() - 0.5 <= (double)std::numeric_limits<T>::min()) ? (std::numeric_limits<T>::min()) : (T(in.w()))));
 }
 
 FlatColorShader::FlatColorShader (glu::DataType outputType)

@@ -30,6 +30,7 @@
 #include "deBlockBuffer.hpp"
 #include "deThread.hpp"
 #include "deStringUtil.hpp"
+#include "deUniquePtr.hpp"
 
 #include "deClock.h"
 #include "deProcess.h"
@@ -45,7 +46,7 @@ using std::vector;
 namespace xs
 {
 
-typedef std::auto_ptr<Message> ScopedMsgPtr;
+typedef de::UniquePtr<Message> ScopedMsgPtr;
 
 class SocketError : public Error
 {

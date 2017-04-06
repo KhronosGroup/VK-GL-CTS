@@ -27,6 +27,7 @@ from build_caselists import Module, getModuleByName, getBuildConfig, genCaseList
 from fnmatch import fnmatch
 from copy import copy
 
+import argparse
 import xml.etree.cElementTree as ElementTree
 import xml.dom.minidom as minidom
 
@@ -372,3 +373,27 @@ def genMustpassLists (mustpassLists, generator, buildCfg):
 
 	for mustpass in mustpassLists:
 		genMustpass(mustpass, moduleCaseLists)
+
+def parseCmdLineArgs ():
+	parser = argparse.ArgumentParser(description = "Build Android CTS mustpass",
+									 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+	parser.add_argument("-b",
+						"--build-dir",
+						dest="buildDir",
+						default=DEFAULT_BUILD_DIR,
+						help="Temporary build directory")
+	parser.add_argument("-t",
+						"--build-type",
+						dest="buildType",
+						default="Debug",
+						help="Build type")
+	parser.add_argument("-c",
+						"--deqp-target",
+						dest="targetName",
+						default=DEFAULT_TARGET,
+						help="dEQP build target")
+	return parser.parse_args()
+
+def parseBuildConfigFromCmdLineArgs ():
+	args = parseCmdLineArgs()
+	return getBuildConfig(args.buildDir, args.targetName, args.buildType)
