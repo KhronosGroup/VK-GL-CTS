@@ -30,5 +30,26 @@ if (NOT X11_FOUND)
 	message(FATAL_ERROR "X11 development package not found")
 endif ()
 
+# Support GLES1, we use pkg-config because some distributions do not ship
+# GLES1 libraries and headers, this way user can override search path by
+# using PKG_CONFIG_PATH environment variable
+FIND_PACKAGE(PkgConfig)
+PKG_CHECK_MODULES(GLES1 glesv1_cm)
+if (GLES1_LIBRARIES)
+	set(DEQP_SUPPORT_GLES1	ON)
+	set(DEQP_GLES1_LIBRARIES ${GLES1_LIBRARIES})
+	set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} -L${GLES1_LIBRARY_DIRS})
+	if ("${PKG_GLES1_INCLUDE_DIRS}" STREQUAL "")
+		# PKG_GLES1_INCLUDE_DIRS empty, see if matching include
+		# path (GLES/gl.h) exists beside library directory
+		set(GLES1_INCLUDE "${GLES1_LIBDIR}/../include")
+		if (EXISTS ${GLES1_INCLUDE}/GLES/gl.h)
+			include_directories(${GLES1_INCLUDE})
+		else()
+			message(FATAL_ERROR "Could not find include path for GLES1 headers")
+		endif (EXISTS ${GLES1_INCLUDE}/GLES/gl.h)
+	endif ("${PKG_GLES1_INCLUDE_DIRS}" STREQUAL "")
+endif (GLES1_LIBRARIES)
+
 set(DEQP_PLATFORM_LIBRARIES ${X11_LIBRARIES})
 include_directories(${X11_INCLUDE_DIR})
