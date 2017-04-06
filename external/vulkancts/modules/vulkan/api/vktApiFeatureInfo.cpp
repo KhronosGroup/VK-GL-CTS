@@ -472,14 +472,14 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		}
 	}
 
-	if (limits->viewportBoundsRange[0] > -2 * limits->maxViewportDimensions[0])
+	if (limits->viewportBoundsRange[0] > float(-2 * limits->maxViewportDimensions[0]))
 	{
 		log << TestLog::Message << "limit validation failed, viewPortBoundsRange[0] of " << limits->viewportBoundsRange[0]
 			<< "is larger than -2*maxViewportDimension[0] of " << -2*limits->maxViewportDimensions[0] << TestLog::EndMessage;
 		limitsOk = false;
 	}
 
-	if (limits->viewportBoundsRange[1] < 2 * limits->maxViewportDimensions[1] - 1)
+	if (limits->viewportBoundsRange[1] < float(2 * limits->maxViewportDimensions[1] - 1))
 	{
 		log << TestLog::Message << "limit validation failed, viewportBoundsRange[1] of " << limits->viewportBoundsRange[1]
 			<< "is less than 2*maxViewportDimension[1] of " << 2*limits->maxViewportDimensions[1] << TestLog::EndMessage;
@@ -673,6 +673,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_maintenance1",
 		"VK_KHR_push_descriptor",
 		"VK_KHR_descriptor_update_template",
+		"VK_KHR_incremental_present",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);

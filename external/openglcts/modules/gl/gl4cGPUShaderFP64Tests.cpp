@@ -34,9 +34,10 @@
 
 #include <iomanip>
 
-#include <deMath.h>
-#include <tcuMatrixUtil.hpp>
-#include <tcuVectorUtil.hpp>
+#include "deMath.h"
+#include "deUniquePtr.hpp"
+#include "tcuMatrixUtil.hpp"
+#include "tcuVectorUtil.hpp"
 
 #include <cstdlib>
 #include <cstring>
@@ -15107,7 +15108,7 @@ bool GPUShaderFP64Test10::test(functionEnum function, const typeDetails& type)
 	}
 
 	Utils::programInfo			  program(m_context);
-	std::auto_ptr<functionObject> function_object(getFunctionObject(function, type));
+	de::UniquePtr<functionObject> function_object(getFunctionObject(function, type));
 
 	prepareProgram(*function_object, program);
 	prepareTestData(*function_object);

@@ -27,6 +27,7 @@
 #include "gluRenderContext.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
+#include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
 #include <cstring>
 
@@ -78,12 +79,22 @@ void RobustnessBase::createRobustContext(glu::ResetNotificationStrategy reset)
 {
 	glu::RenderConfig renderCfg(glu::ContextType(m_context.getRenderContext().getType().getAPI(), glu::CONTEXT_ROBUST));
 
-	glu::parseRenderConfig(&renderCfg, m_context.getTestContext().getCommandLine());
+	const tcu::CommandLine& commandLine = m_context.getTestContext().getCommandLine();
+	glu::parseRenderConfig(&renderCfg, commandLine);
 
-	renderCfg.resetNotificationStrategy = reset;
-	renderCfg.surfaceType				= glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
+	if (commandLine.getSurfaceType() == tcu::SURFACETYPE_WINDOW)
+	{
+		renderCfg.resetNotificationStrategy = reset;
+		renderCfg.surfaceType = glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
+	}
+	else
+	{
+		throw tcu::NotSupportedError("Test not supported in non-windowed context");
+	}
 
-	m_robustContext = glu::createRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), renderCfg);
+	m_robustContext = glu::createRenderContext(m_testCtx.getPlatform(), commandLine, renderCfg);
+
+	m_robustContext->makeCurrent();
 }
 
 void RobustnessBase::releaseRobustContext(void)

@@ -41,3 +41,11 @@ dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.query_status.
 dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.query_status.fragment
 dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.query_status.vertex_and_fragment
 dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.query_status.compute
+dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.shared_context_status.vertex
+dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.shared_context_status.fragment
+dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.shared_context_status.vertex_and_fragment
+dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.shared_context_status.compute
+dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.recover_from_reset.vertex
+dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.recover_from_reset.fragment
+dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.recover_from_reset.vertex_and_fragment
+dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.recover_from_reset.compute

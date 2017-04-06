@@ -136,9 +136,13 @@ public:
 					renderedFrame.getAccess(), renderedAnisotropyFrame.getAccess(), 0.05f, tcu::COMPARE_LOG_RESULT))
 				return tcu::TestStatus::fail("Fail");
 
-			if (floatThresholdCompare (m_context.getTestContext().getLog(), "Expecting comparison to fail", "Expecting comparison to fail",
-					renderedFrame.getAccess(), renderedAnisotropyFrame.getAccess(), Vec4(0.05f), tcu::COMPARE_LOG_RESULT))
-				return tcu::TestStatus::fail("Fail");
+			// Anisotropic filtering is implementation dependent. Expecting differences with minification/magnification filter set to NEAREST is too strict.
+			if (m_refParams.minFilter != tcu::Sampler::NEAREST && m_refParams.magFilter != tcu::Sampler::NEAREST)
+			{
+				if (floatThresholdCompare (m_context.getTestContext().getLog(), "Expecting comparison to fail", "Expecting comparison to fail",
+							   renderedFrame.getAccess(), renderedAnisotropyFrame.getAccess(), Vec4(0.05f), tcu::COMPARE_LOG_RESULT))
+					return tcu::TestStatus::fail("Fail");
+			}
 		}
 		return tcu::TestStatus::pass("Pass");
 	}

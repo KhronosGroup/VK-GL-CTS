@@ -81,7 +81,8 @@ VULKAN_1_0_3_PKG	= Package(module = VULKAN_MODULE, configurations = [
 						filters		= [include("master.txt"),
 									   exclude("test-issues.txt"),
 									   exclude("excluded-tests.txt"),
-									   exclude("android-tests.txt")]),
+									   exclude("android-tests.txt"),
+									   exclude("waivers.txt")]),
 	 ])
 
 MUSTPASS_LISTS		= [

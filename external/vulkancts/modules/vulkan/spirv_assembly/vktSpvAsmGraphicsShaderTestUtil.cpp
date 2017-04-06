@@ -2008,14 +2008,14 @@ Move<VkBuffer> createBufferForResource(const DeviceInterface& vk, const VkDevice
 {
 	const VkBufferCreateInfo	resourceBufferParams	=
 	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,			// sType
-		DE_NULL,										// pNext
-		(VkBufferCreateFlags)0,							// flags
-		(VkDeviceSize)resource.second->getNumBytes(),	// size
-		getMatchingBufferUsageFlagBit(resource.first),	// usage
-		VK_SHARING_MODE_EXCLUSIVE,						// sharingMode
-		1u,												// queueFamilyCount
-		&queueFamilyIndex,								// pQueueFamilyIndices
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,								// sType
+		DE_NULL,															// pNext
+		(VkBufferCreateFlags)0,												// flags
+		(VkDeviceSize)resource.second->getNumBytes(),						// size
+		(VkBufferUsageFlags)getMatchingBufferUsageFlagBit(resource.first),	// usage
+		VK_SHARING_MODE_EXCLUSIVE,											// sharingMode
+		1u,																	// queueFamilyCount
+		&queueFamilyIndex,													// pQueueFamilyIndices
 	};
 
 	return createBuffer(vk, vkDevice, &resourceBufferParams);

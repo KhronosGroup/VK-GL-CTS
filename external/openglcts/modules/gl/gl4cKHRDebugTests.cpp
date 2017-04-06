@@ -34,6 +34,7 @@
 #include "gluStrUtil.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
+#include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
 //
 //#include <string>
@@ -189,9 +190,20 @@ void TestBase::initDebug()
 	glu::RenderConfig renderCfg(
 		glu::ContextType(m_test_base_context.getRenderContext().getType().getAPI(), glu::CONTEXT_DEBUG));
 
-	parseRenderConfig(&renderCfg, m_test_base_context.getTestContext().getCommandLine());
+	const tcu::CommandLine& commandLine = m_test_base_context.getTestContext().getCommandLine();
+	parseRenderConfig(&renderCfg, commandLine);
 
-	m_rc = createRenderContext(platform, m_test_base_context.getTestContext().getCommandLine(), renderCfg);
+	if (commandLine.getSurfaceType() == tcu::SURFACETYPE_WINDOW)
+	{
+		renderCfg.surfaceType = glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
+	}
+	else
+	{
+		throw tcu::NotSupportedError("Test not supported in non-windowed context");
+	}
+
+	m_rc = createRenderContext(platform, commandLine, renderCfg);
+	m_rc->makeCurrent();
 }
 
 /** Prepares non-debug context
@@ -202,9 +214,20 @@ void TestBase::initNonDebug()
 	glu::RenderConfig renderCfg(
 		glu::ContextType(m_test_base_context.getRenderContext().getType().getAPI(), glu::ContextFlags(0)));
 
-	parseRenderConfig(&renderCfg, m_test_base_context.getTestContext().getCommandLine());
+	const tcu::CommandLine& commandLine = m_test_base_context.getTestContext().getCommandLine();
+	parseRenderConfig(&renderCfg, commandLine);
 
-	m_rc = createRenderContext(platform, m_test_base_context.getTestContext().getCommandLine(), renderCfg);
+	if (commandLine.getSurfaceType() == tcu::SURFACETYPE_WINDOW)
+	{
+		renderCfg.surfaceType = glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
+	}
+	else
+	{
+		throw tcu::NotSupportedError("Test not supported in non-windowed context");
+	}
+
+	m_rc = createRenderContext(platform, commandLine, renderCfg);
+	m_rc->makeCurrent();
 }
 
 /** Finalize rendering context
