@@ -2022,7 +2022,6 @@ public:
 			{
 				contextB.makeCurrent(m_eglSurface);
 
-				contextB.initGLFunctions(&gl);
 				gl.getString(GL_VERSION); // arbitrary gl call
 
 				if (gl.getError() != GL_CONTEXT_LOST)
