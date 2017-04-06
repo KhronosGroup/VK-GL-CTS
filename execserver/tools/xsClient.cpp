@@ -24,6 +24,7 @@
 #include "xsDefs.hpp"
 #include "xsProtocol.hpp"
 #include "deSocket.hpp"
+#include "deUniquePtr.hpp"
 
 #include "deString.h"
 
@@ -39,7 +40,7 @@ using std::vector;
 namespace xs
 {
 
-typedef std::auto_ptr<Message> ScopedMsgPtr;
+typedef de::UniquePtr<Message> ScopedMsgPtr;
 
 class SocketError : public Error
 {
