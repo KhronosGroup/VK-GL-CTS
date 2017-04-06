@@ -552,10 +552,10 @@ def writeFunctionPtrTypes (api, filename):
 def writeFunctionPointers (api, filename, functionTypes):
 	writeInlFile(filename, INL_HEADER, indentLines(["%s\t%s;" % (getFunctionTypeName(function), getInterfaceName(function)) for function in api.functions if function.getType() in functionTypes]))
 
-def writeInitFunctionPointers (api, filename, functionTypes):
+def writeInitFunctionPointers (api, filename, functionTypes, cond = None):
 	def makeInitFunctionPointers ():
 		for function in api.functions:
-			if function.getType() in functionTypes:
+			if function.getType() in functionTypes and (cond == None or cond(function)):
 				yield "m_vk.%s\t= (%s)\tGET_PROC_ADDR(\"%s\");" % (getInterfaceName(function), getFunctionTypeName(function), function.name)
 
 	writeInlFile(filename, INL_HEADER, indentLines(makeInitFunctionPointers()))
@@ -929,7 +929,7 @@ if __name__ == "__main__":
 	writeFunctionPointers		(api, os.path.join(VULKAN_DIR, "vkPlatformFunctionPointers.inl"),		functionTypes = platformFuncs)
 	writeFunctionPointers		(api, os.path.join(VULKAN_DIR, "vkInstanceFunctionPointers.inl"),		functionTypes = instanceFuncs)
 	writeFunctionPointers		(api, os.path.join(VULKAN_DIR, "vkDeviceFunctionPointers.inl"),			functionTypes = deviceFuncs)
-	writeInitFunctionPointers	(api, os.path.join(VULKAN_DIR, "vkInitPlatformFunctionPointers.inl"),	functionTypes = platformFuncs)
+	writeInitFunctionPointers	(api, os.path.join(VULKAN_DIR, "vkInitPlatformFunctionPointers.inl"),	functionTypes = platformFuncs,	cond = lambda f: f.name != "vkGetInstanceProcAddr")
 	writeInitFunctionPointers	(api, os.path.join(VULKAN_DIR, "vkInitInstanceFunctionPointers.inl"),	functionTypes = instanceFuncs)
 	writeInitFunctionPointers	(api, os.path.join(VULKAN_DIR, "vkInitDeviceFunctionPointers.inl"),		functionTypes = deviceFuncs)
 	writeFuncPtrInterfaceImpl	(api, os.path.join(VULKAN_DIR, "vkPlatformDriverImpl.inl"),				functionTypes = platformFuncs,	className = "PlatformDriver")

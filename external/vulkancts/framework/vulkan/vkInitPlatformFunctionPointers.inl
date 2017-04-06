@@ -2,6 +2,5 @@
  * be lost! Modify the generating script instead.
  */
 m_vk.createInstance							= (CreateInstanceFunc)							GET_PROC_ADDR("vkCreateInstance");
-m_vk.getInstanceProcAddr					= (GetInstanceProcAddrFunc)						GET_PROC_ADDR("vkGetInstanceProcAddr");
 m_vk.enumerateInstanceExtensionProperties	= (EnumerateInstanceExtensionPropertiesFunc)	GET_PROC_ADDR("vkEnumerateInstanceExtensionProperties");
 m_vk.enumerateInstanceLayerProperties		= (EnumerateInstanceLayerPropertiesFunc)		GET_PROC_ADDR("vkEnumerateInstanceLayerProperties");
