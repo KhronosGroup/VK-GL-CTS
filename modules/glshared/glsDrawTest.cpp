@@ -885,7 +885,7 @@ inline GLValue::Half abs (GLValue::Half val)
 	return GLValue::Half::create(std::fabs(val.to<float>()));
 }
 
-// AttriuteArray
+// AttributeArray
 
 class AttributeArray
 {
@@ -894,7 +894,6 @@ public:
 								~AttributeArray		(void);
 
 	void						data				(DrawTestSpec::Target target, size_t size, const char* data, DrawTestSpec::Usage usage);
-	void						subdata				(DrawTestSpec::Target target, int offset, int size, const char* data);
 	void						setupArray			(bool bound, int offset, int size, DrawTestSpec::InputType inType, DrawTestSpec::OutputType outType, bool normalized, int stride, int instanceDivisor, const rr::GenericVec4& defaultAttrib, bool isPositionAttr, bool bgraComponentOrder);
 	void						bindAttribute		(deUint32 loc);
 	void						bindIndexArray		(DrawTestSpec::Target storage);
@@ -989,24 +988,6 @@ void AttributeArray::data (DrawTestSpec::Target target, size_t size, const char*
 		m_data = new char[size];
 		std::memcpy(m_data, ptr, size);
 	}
-	else
-		DE_ASSERT(false);
-}
-
-void AttributeArray::subdata (DrawTestSpec::Target target, int offset, int size, const char* ptr)
-{
-	m_target = target;
-
-	if (m_storage == DrawTestSpec::STORAGE_BUFFER)
-	{
-		m_ctx.bindBuffer(targetToGL(target), m_glBuffer);
-		GLU_EXPECT_NO_ERROR(m_ctx.getError(), "glBindBuffer()");
-
-		m_ctx.bufferSubData(targetToGL(target), offset, size, ptr);
-		GLU_EXPECT_NO_ERROR(m_ctx.getError(), "glBufferSubData()");
-	}
-	else if (m_storage == DrawTestSpec::STORAGE_USER)
-		std::memcpy(m_data + offset, ptr, size);
 	else
 		DE_ASSERT(false);
 }
@@ -1536,77 +1517,12 @@ public:
 private:
 	template<typename T>
 	static char*			createIndices			(int seed, int elementCount, int offset, int min, int max, int indexBase);
-	static void				setData					(char* data, DrawTestSpec::InputType type, deRandom& rnd, GLValue min, GLValue max);
 
 	static char*			generateBasicArray		(int seed, int elementCount, int componentCount, int offset, int stride, DrawTestSpec::InputType type);
 	template<typename T, typename GLType>
 	static char*			createBasicArray		(int seed, int elementCount, int componentCount, int offset, int stride);
 	static char*			generatePackedArray		(int seed, int elementCount, int componentCount, int offset, int stride);
 };
-
-void RandomArrayGenerator::setData (char* data, DrawTestSpec::InputType type, deRandom& rnd, GLValue min, GLValue max)
-{
-	switch (type)
-	{
-		case DrawTestSpec::INPUTTYPE_FLOAT:
-		{
-			alignmentSafeAssignment<float>(data, getRandom<GLValue::Float>(rnd, min.fl, max.fl));
-			break;
-		}
-
-		case DrawTestSpec::INPUTTYPE_SHORT:
-		{
-			alignmentSafeAssignment<deInt16>(data, getRandom<GLValue::Short>(rnd, min.s, max.s));
-			break;
-		}
-
-		case DrawTestSpec::INPUTTYPE_UNSIGNED_SHORT:
-		{
-			alignmentSafeAssignment<deUint16>(data, getRandom<GLValue::Ushort>(rnd, min.us, max.us));
-			break;
-		}
-
-		case DrawTestSpec::INPUTTYPE_BYTE:
-		{
-			alignmentSafeAssignment<deInt8>(data, getRandom<GLValue::Byte>(rnd, min.b, max.b));
-			break;
-		}
-
-		case DrawTestSpec::INPUTTYPE_UNSIGNED_BYTE:
-		{
-			alignmentSafeAssignment<deUint8>(data, getRandom<GLValue::Ubyte>(rnd, min.ub, max.ub));
-			break;
-		}
-
-		case DrawTestSpec::INPUTTYPE_FIXED:
-		{
-			alignmentSafeAssignment<deInt32>(data, getRandom<GLValue::Fixed>(rnd, min.fi, max.fi));
-			break;
-		}
-
-		case DrawTestSpec::INPUTTYPE_INT:
-		{
-			alignmentSafeAssignment<deInt32>(data, getRandom<GLValue::Int>(rnd, min.i, max.i));
-			break;
-		}
-
-		case DrawTestSpec::INPUTTYPE_UNSIGNED_INT:
-		{
-			alignmentSafeAssignment<deUint32>(data, getRandom<GLValue::Uint>(rnd, min.ui, max.ui));
-			break;
-		}
-
-		case DrawTestSpec::INPUTTYPE_HALF:
-		{
-			alignmentSafeAssignment<deFloat16>(data, getRandom<GLValue::Half>(rnd, min.h, max.h).getValue());
-			break;
-		}
-
-		default:
-			DE_ASSERT(false);
-			break;
-	}
-}
 
 char* RandomArrayGenerator::generateArray (int seed, int elementCount, int componentCount, int offset, int stride, DrawTestSpec::InputType type)
 {

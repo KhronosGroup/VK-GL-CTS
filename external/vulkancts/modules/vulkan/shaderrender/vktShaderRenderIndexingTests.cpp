@@ -205,7 +205,7 @@ void IndexingTestUniformSetup::setup (ShaderRenderCaseInstance& instance, const 
 		else
 			throw tcu::TestError("invalid data type for u_arr");
 
-			instance.addUniform(5u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(Vec4) * 4, arr[0].getPtr());
+		instance.addUniform(5u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(Vec4) * 4, arr[0].getPtr());
 	}
 }
 

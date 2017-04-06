@@ -402,7 +402,6 @@ class BasicInvarianceTest : public InvarianceTest
 {
 public:
 								BasicInvarianceTest		(Context& ctx, const char* name, const char* desc, const std::string& vertexShader1, const std::string& vertexShader2);
-								BasicInvarianceTest		(Context& ctx, const char* name, const char* desc, const std::string& vertexShader1, const std::string& vertexShader2, const std::string& fragmentShader);
 	ShaderPair					genShaders				(void) const;
 
 private:
@@ -427,14 +426,6 @@ BasicInvarianceTest::BasicInvarianceTest (Context& ctx, const char* name, const 
 	, m_vertexShader1	(vertexShader1)
 	, m_vertexShader2	(vertexShader2)
 	, m_fragmentShader	(s_basicFragmentShader)
-{
-}
-
-BasicInvarianceTest::BasicInvarianceTest (Context& ctx, const char* name, const char* desc, const std::string& vertexShader1, const std::string& vertexShader2, const std::string& fragmentShader)
-	: InvarianceTest	(ctx, name, desc)
-	, m_vertexShader1	(vertexShader1)
-	, m_vertexShader2	(vertexShader2)
-	, m_fragmentShader	(fragmentShader)
 {
 }
 
