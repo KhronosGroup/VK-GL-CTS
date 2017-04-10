@@ -100,7 +100,7 @@ std::vector<deUint8> genTestData (deUint32 seed, size_t size)
 	return data;
 }
 
-uint32_t chooseQueueFamilyIndex (const vk::InstanceInterface&	vki,
+deUint32 chooseQueueFamilyIndex (const vk::InstanceInterface&	vki,
 								 vk::VkPhysicalDevice			device,
 								 vk::VkQueueFlags				requireFlags)
 {
