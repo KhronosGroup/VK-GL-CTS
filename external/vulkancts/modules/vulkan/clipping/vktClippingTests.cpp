@@ -279,6 +279,30 @@ enum LineOrientation
 	LINE_ORIENTATION_DIAGONAL,
 };
 
+const VkPointClippingBehaviorKHR invalidClippingBehavior = VK_POINT_CLIPPING_BEHAVIOR_KHR_LAST;
+
+VkPointClippingBehaviorKHR getClippingBehavior (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDevicePointClippingPropertiesKHR	behaviorProperties	=
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES_KHR,	// VkStructureType				sType
+		DE_NULL,															// void*						pNext
+		invalidClippingBehavior												// VkPointClippingBehaviorKHR	pointClippingBehavior
+	};
+	VkPhysicalDeviceProperties2KHR				properties2;
+
+	DE_ASSERT(getPointClippingBehaviorKHRName(invalidClippingBehavior) == DE_NULL);
+
+	deMemset(&properties2, 0, sizeof(properties2));
+
+	properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+	properties2.pNext = &behaviorProperties;
+
+	vk.getPhysicalDeviceProperties2KHR(physicalDevice, &properties2);
+
+	return behaviorProperties.pointClippingBehavior;
+}
+
 void addSimplePrograms (SourceCollections& programCollection, const float pointSize = 0.0f)
 {
 	// Vertex shader
@@ -545,6 +569,29 @@ tcu::TestStatus testLargePoints (Context& context)
 {
 	requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_LARGE_POINTS);
 
+	bool pointClippingOutside = true;
+
+	if (de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance2"))
+	{
+		VkPointClippingBehaviorKHR clippingBehavior = getClippingBehavior(context.getInstanceInterface(), context.getPhysicalDevice());
+
+		switch (clippingBehavior)
+		{
+			case VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES_KHR:		pointClippingOutside = true;				break;
+			case VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY_KHR:	pointClippingOutside = false;				break;
+			case invalidClippingBehavior:								TCU_FAIL("Clipping behavior read failure");	break;
+			default:
+			{
+				TCU_FAIL("Unexpected clipping behavior reported");
+			}
+		}
+	}
+	else
+	{
+		//TODO: Now we have 2 cases {some-points-drawn|nothing}, we should have {all-points-drawn|some-points-drawn|nothing}
+		return tcu::TestStatus::pass("OK");
+	}
+
 	std::vector<Shader> shaders;
 	shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("vert")));
 	shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
@@ -575,10 +622,21 @@ tcu::TestStatus testLargePoints (Context& context)
 	VulkanDrawContext	drawContext(context, drawState, drawCallData, vulkanProgram);
 	drawContext.draw();
 
-	// All pixels must be black -- nothing is drawn.
-	const int numBlackPixels = countPixels(drawContext.getColorPixels(), Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
+	const int	numBlackPixels	= countPixels(drawContext.getColorPixels(), Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
+	bool		result			= false;
 
-	return (numBlackPixels == NUM_RENDER_PIXELS ? tcu::TestStatus::pass("OK") : tcu::TestStatus::fail("Rendered image(s) are incorrect"));
+	if (pointClippingOutside)
+	{
+		// All pixels must be black -- nothing is drawn.
+		result = (numBlackPixels == NUM_RENDER_PIXELS);
+	}
+	else
+	{
+		// Rendering pixels without clipping: some pixels should not be black -- something is drawn.
+		result = (numBlackPixels < NUM_RENDER_PIXELS);
+	}
+
+	return (result ? tcu::TestStatus::pass("OK") : tcu::TestStatus::fail("Rendered image(s) are incorrect"));
 }
 
 //! Wide line clipping
