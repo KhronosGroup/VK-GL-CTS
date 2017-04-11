@@ -1026,7 +1026,13 @@ bool ResourceListTestCase::verifyResourceList (const std::vector<std::string>& r
 	m_testCtx.getLog() << tcu::TestLog::Message << "GL returned resources:" << tcu::TestLog::EndMessage;
 
 	for (int ndx = 0; ndx < (int)resourceList.size(); ++ndx)
-		m_testCtx.getLog() << tcu::TestLog::Message << "\t" << ndx << ": " << resourceList[ndx] << tcu::TestLog::EndMessage;
+	{
+		// dummyZero is a uniform that may be added by
+		// generateProgramInterfaceProgramSources.  Omit it here to avoid
+		// confusion about the output.
+		if (resourceList[ndx] != getDummyZeroUniformName())
+			m_testCtx.getLog() << tcu::TestLog::Message << "\t" << ndx << ": " << resourceList[ndx] << tcu::TestLog::EndMessage;
+	}
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Expected list of resources:" << tcu::TestLog::EndMessage;
 
@@ -1048,8 +1054,11 @@ bool ResourceListTestCase::verifyResourceList (const std::vector<std::string>& r
 	{
 		if (!de::contains(expectedResources.begin(), expectedResources.end(), resourceList[ndx]))
 		{
-			// Ignore all builtin variables, mismatch causes errors otherwise
-			if (deStringBeginsWith(resourceList[ndx].c_str(), "gl_") == DE_FALSE)
+			// Ignore all builtin variables or the variable dummyZero,
+			// mismatch causes errors otherwise.  dummyZero is a uniform that
+			// may be added by generateProgramInterfaceProgramSources.
+			if (deStringBeginsWith(resourceList[ndx].c_str(), "gl_") == DE_FALSE &&
+				resourceList[ndx] != getDummyZeroUniformName())
 			{
 				m_testCtx.getLog() << tcu::TestLog::Message << "Error, resource list contains unexpected resource name " << resourceList[ndx] << tcu::TestLog::EndMessage;
 				error = true;
