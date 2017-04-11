@@ -93,6 +93,7 @@ private:
 	};
 
 	tcu::TestStatus					iterate							(void);
+	TestParameters					fillMissingParameters			(const TestParameters&						parameters);
 	void							createMultiViewDevices			(void);
 	void							madeShaderModule				(map<VkShaderStageFlagBits,ShaderModuleSP>& shaderModule, vector<VkPipelineShaderStageCreateInfo>& shaderStageParams);
 	Move<VkPipeline>				makeGraphicsPipeline			(const VkRenderPass							renderPass,
@@ -103,7 +104,7 @@ private:
 	void							readImage						(VkImage image, const tcu::PixelBufferAccess& dst);
 	bool							checkImage						(tcu::ConstPixelBufferAccess& dst);
 
-	const TestParameters&			m_parameters;
+	const TestParameters			m_parameters;
 	VkFormat						m_colorFormat;
 	const deUint32					m_squareCount;
 	Move<VkDevice>					m_logicalDevice;
@@ -118,7 +119,7 @@ private:
 
 MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, const TestParameters& parameters)
 	: TestInstance		(context)
-	, m_parameters		(parameters)
+	, m_parameters		(fillMissingParameters(parameters))
 	, m_colorFormat		(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_squareCount		(4u)
 {
@@ -280,6 +281,43 @@ tcu::TestStatus MultiViewRenderTestInstance::iterate (void)
 	if (!checkImage(dst))
 		return tcu::TestStatus::fail("Fail");
 	return tcu::TestStatus::pass("Pass");
+}
+
+TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestParameters& parameters)
+{
+	if (!parameters.viewMasks.empty())
+		return parameters;
+	else
+	{
+		const InstanceInterface&	instance		= m_context.getInstanceInterface();
+		const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
+
+		VkPhysicalDeviceMultiviewPropertiesKHX multiviewProperties =
+		{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHX,	// VkStructureType	sType;
+			DE_NULL,													// void*			pNext;
+			0u,															// deUint32			maxMultiviewViewCount;
+			0u															// deUint32			maxMultiviewInstanceIndex;
+		};
+
+		VkPhysicalDeviceProperties2KHR deviceProperties2;
+		deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+		deviceProperties2.pNext = &multiviewProperties;
+
+		instance.getPhysicalDeviceProperties2KHR(physicalDevice, &deviceProperties2);
+
+		TestParameters newParameters = parameters;
+		newParameters.extent.depth = multiviewProperties.maxMultiviewViewCount;
+
+		const deUint32 maxViewMask = (1u << multiviewProperties.maxMultiviewViewCount) - 1u;
+
+		vector<deUint32> viewMasks;
+		for (deUint32 mask = 1u; mask <= maxViewMask; mask = mask << 1u)
+			viewMasks.push_back(mask);
+		newParameters.viewMasks = viewMasks;
+
+		return newParameters;
+	}
 }
 
 void MultiViewRenderTestInstance::createMultiViewDevices (void)
@@ -932,7 +970,10 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 	viewMasks[4].push_back(1u);		//0001
 	viewMasks[4].push_back(8u);		//1000
 
-	for(deUint32 mask = 1u; mask < 1024u; mask = mask << 1u)
+	const deUint32 minSupportedMultiviewViewCount	= 6u;
+	const deUint32 maxViewMask						= (1u << minSupportedMultiviewViewCount) - 1u;
+
+	for(deUint32 mask = 1u; mask <= maxViewMask; mask = mask << 1u)
 		viewMasks[5].push_back(mask);
 
 	for(int shaderTypeNdx = VIEW_INDEX_NOT_USE; shaderTypeNdx < VIEW_INDEX_LAST; ++shaderTypeNdx)
@@ -951,6 +992,15 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 					masks<<"_";
 			}
 			groupShader->addChild(new MultiViewRenderTestsCase(testCtx, masks.str().c_str(), "", parameters));
+		}
+
+		// maxMultiviewViewCount case
+		{
+			const VkExtent3D		incompleteExtent3D	= { 16u, 16u, 0u };
+			const vector<deUint32>	dummyMasks;
+			const TestParameters	parameters			= { incompleteExtent3D, dummyMasks, (ViewIndex)shaderTypeNdx };
+
+			groupShader->addChild(new MultiViewRenderTestsCase(testCtx, "max_multi_view_view_count", "", parameters));
 		}
 
 		if (VIEW_INDEX_NOT_USE == shaderTypeNdx)
