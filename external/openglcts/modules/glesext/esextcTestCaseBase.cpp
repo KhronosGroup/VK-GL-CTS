@@ -230,31 +230,42 @@ void TestCaseBase::initGLSLSpecializationMap()
 
 	if (glu::isContextTypeES(m_context.getRenderContext().getType()))
 	{
-		m_specializationMap["OUT_PER_VERTEX_DECL"]			  = "\n";
-		m_specializationMap["IN_PER_VERTEX_DECL"]			  = "\n";
-		m_specializationMap["OUT_PER_VERTEX_DECL_POINT_SIZE"] = "\n";
-		m_specializationMap["IN_PER_VERTEX_DECL_POINT_SIZE"]  = "\n";
-		m_specializationMap["IN_DATA_DECL"]					  = "\n";
-		m_specializationMap["POSITION_WITH_IN_DATA"]		  = "gl_Position = gl_in[0].gl_Position;\n";
-		m_specializationMap["OUT_PER_VERTEX_TCS_DECL"]		  = "\n";
+		m_specializationMap["IN_PER_VERTEX_DECL_ARRAY"]				= "\n";
+		m_specializationMap["IN_PER_VERTEX_DECL_ARRAY_POINT_SIZE"]  = "\n";
+		m_specializationMap["OUT_PER_VERTEX_DECL"]					= "\n";
+		m_specializationMap["OUT_PER_VERTEX_DECL_POINT_SIZE"]		= "\n";
+		m_specializationMap["OUT_PER_VERTEX_DECL_ARRAY"]			= "\n";
+		m_specializationMap["OUT_PER_VERTEX_DECL_ARRAY_POINT_SIZE"] = "\n";
+		m_specializationMap["IN_DATA_DECL"]							= "\n";
+		m_specializationMap["POSITION_WITH_IN_DATA"]				= "gl_Position = gl_in[0].gl_Position;\n";
 	}
 	else
 	{
+		m_specializationMap["IN_PER_VERTEX_DECL_ARRAY"] = "in gl_PerVertex {\n"
+														  "    vec4 gl_Position;\n"
+														  "} gl_in[];\n";
+		m_specializationMap["IN_PER_VERTEX_DECL_ARRAY_POINT_SIZE"] = "in gl_PerVertex {\n"
+																	 "    vec4 gl_Position;\n"
+																	 "    float gl_PointSize;\n"
+																	 "} gl_in[];\n";
 		m_specializationMap["OUT_PER_VERTEX_DECL"] = "out gl_PerVertex {\n"
 													 "    vec4 gl_Position;\n"
 													 "};\n";
-		m_specializationMap["IN_PER_VERTEX_DECL"] = "in  gl_PerVertex { vec4 gl_Position; } gl_in[];\n";
-		m_specializationMap["OUT_PER_VERTEX_DECL_POINT_SIZE"] =
-			"out gl_PerVertex { vec4 gl_Position; float gl_PointSize;} gl_out[];\n";
-		m_specializationMap["IN_PER_VERTEX_DECL_POINT_SIZE"] =
-			"in  gl_PerVertex { vec4 gl_Position; float gl_PointSize;} gl_in[]\n";
+		m_specializationMap["OUT_PER_VERTEX_DECL_POINT_SIZE"] = "out gl_PerVertex {\n"
+																"    vec4 gl_Position;\n"
+																"    float gl_PointSize;\n"
+																"};\n";
+		m_specializationMap["OUT_PER_VERTEX_DECL_ARRAY"] = "out gl_PerVertex {\n"
+														   "    vec4 gl_Position;\n"
+														   "} gl_out[];\n";
+		m_specializationMap["OUT_PER_VERTEX_DECL_ARRAY_POINT_SIZE"] = "out gl_PerVertex {\n"
+																	  "    vec4 gl_Position;\n"
+																	  "    float gl_PointSize;\n"
+																	  "} gl_out[];\n";
 		m_specializationMap["IN_DATA_DECL"] = "in Data {\n"
 											  "    vec4 pos;\n"
 											  "} input_data[1];\n";
-		m_specializationMap["POSITION_WITH_IN_DATA"]   = "gl_Position = input_data[0].pos;\n";
-		m_specializationMap["OUT_PER_VERTEX_TCS_DECL"] = "out gl_PerVertex {\n"
-														 "    vec4 gl_Position;\n"
-														 "} gl_out[];\n";
+		m_specializationMap["POSITION_WITH_IN_DATA"] = "gl_Position = input_data[0].pos;\n";
 	}
 }
 
