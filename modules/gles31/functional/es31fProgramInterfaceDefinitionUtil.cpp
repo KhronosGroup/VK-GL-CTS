@@ -1475,6 +1475,21 @@ std::vector<std::string> getProgramInterfaceResourceList (const ProgramInterface
 	return resources;
 }
 
+/**
+ * Name of the dummy uniform added by generateProgramInterfaceProgramSources
+ *
+ * A uniform named "dummyZero" is added by
+ * generateProgramInterfaceProgramSources.  It is used in expressions to
+ * prevent various program resources from being eliminated by the GLSL
+ * compiler's optimizer.
+ *
+ * \sa deqp::gles31::Functional::ProgramInterfaceDefinition::generateProgramInterfaceProgramSources
+ */
+const char* getDummyZeroUniformName()
+{
+	return "dummyZero";
+}
+
 glu::ProgramSources generateProgramInterfaceProgramSources (const ProgramInterfaceDefinition::Program* program)
 {
 	glu::ProgramSources sources;
@@ -1513,9 +1528,10 @@ glu::ProgramSources generateProgramInterfaceProgramSources (const ProgramInterfa
 
 		// Use inputs and outputs so that they won't be removed by the optimizer
 
-		usageBuf <<	"highp vec4 readInputs()\n"
+		usageBuf <<	"highp uniform vec4 " << getDummyZeroUniformName() << "; // Default value is vec4(0.0).\n"
+					"highp vec4 readInputs()\n"
 					"{\n"
-					"	highp vec4 retValue = vec4(0.0);\n";
+					"	highp vec4 retValue = " << getDummyZeroUniformName() << ";\n";
 
 		// User-defined inputs
 
