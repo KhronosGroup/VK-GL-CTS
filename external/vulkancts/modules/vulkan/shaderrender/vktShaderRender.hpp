@@ -572,7 +572,7 @@ private:
 																					 deUint32						arrayLayers,
 																					 vk::VkImage					destImage);
 
-	void												checkSparseSupport			(const vk::VkImageType imageType) const;
+	void												checkSparseSupport			(const vk::VkImageCreateInfo&	imageInfo) const;
 
 	void												uploadSparseImage			(const tcu::TextureFormat&		texFormat,
 																					 const TextureData&				textureData,
