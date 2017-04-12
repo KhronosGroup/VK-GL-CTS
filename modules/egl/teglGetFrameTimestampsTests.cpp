@@ -148,6 +148,49 @@ struct FrameTimes
 	EGLnsecsANDROID	readsDone;
 };
 
+
+struct TimestampInfo
+{
+	TimestampInfo()
+		: required(false)
+		, supported(false)
+		, supportedIndex(0)
+	{
+	}
+
+	TimestampInfo(bool required_, bool supported_, size_t supportedIndex_)
+		: required(required_)
+		, supported(supported_)
+		, supportedIndex(supportedIndex_)
+	{
+	}
+
+	bool	required;
+	bool	supported;
+	size_t	supportedIndex;
+};
+
+typedef std::map<eglw::EGLint, TimestampInfo> TimestampInfoMap;
+
+EGLnsecsANDROID getTimestamp(eglw::EGLint name, TimestampInfoMap& map, const std::vector<EGLnsecsANDROID>& supportedValues)
+{
+	TimestampInfo& info = map[name];
+	return info.supported ? supportedValues[info.supportedIndex] : EGL_TIMESTAMP_INVALID_ANDROID;
+}
+
+void populateFrameTimes(FrameTimes* frameTimes, TimestampInfoMap& map, const std::vector<EGLnsecsANDROID>& supportedValues)
+{
+	frameTimes->requestedPresent			=	getTimestamp(EGL_REQUESTED_PRESENT_TIME_ANDROID, map, supportedValues);
+	frameTimes->renderingComplete			=	getTimestamp(EGL_RENDERING_COMPLETE_TIME_ANDROID, map, supportedValues);
+	frameTimes->latch						=	getTimestamp(EGL_COMPOSITION_LATCH_TIME_ANDROID, map, supportedValues);
+	frameTimes->firstCompositionStart		=	getTimestamp(EGL_FIRST_COMPOSITION_START_TIME_ANDROID, map, supportedValues);
+	frameTimes->lastCompositionStart		=	getTimestamp(EGL_LAST_COMPOSITION_START_TIME_ANDROID, map, supportedValues);
+	frameTimes->firstCompositionGpuFinished	=	getTimestamp(EGL_FIRST_COMPOSITION_GPU_FINISHED_TIME_ANDROID, map, supportedValues);
+	frameTimes->displayPresent				=	getTimestamp(EGL_DISPLAY_PRESENT_TIME_ANDROID, map, supportedValues);
+	frameTimes->dequeueReady				=	getTimestamp(EGL_DEQUEUE_READY_TIME_ANDROID, map, supportedValues);
+	frameTimes->readsDone					=	getTimestamp(EGL_READS_DONE_TIME_ANDROID, map, supportedValues);
+}
+
 bool timestampValid (EGLnsecsANDROID timestamp)
 {
 	return (timestamp >= 0) || (timestamp == EGL_TIMESTAMP_PENDING_ANDROID);
@@ -460,28 +503,37 @@ void GetFrameTimestampTest::executeForConfig (EGLDisplay display, EGLConfig conf
 
 	try
 	{
-		const eglw::EGLint frameTimestampNames[] =
-		{
-			EGL_REQUESTED_PRESENT_TIME_ANDROID,
-			EGL_RENDERING_COMPLETE_TIME_ANDROID,
-			EGL_COMPOSITION_LATCH_TIME_ANDROID,
-			EGL_FIRST_COMPOSITION_START_TIME_ANDROID,
-			EGL_LAST_COMPOSITION_START_TIME_ANDROID,
-			EGL_FIRST_COMPOSITION_GPU_FINISHED_TIME_ANDROID,
-			EGL_DISPLAY_PRESENT_TIME_ANDROID,
-			EGL_DEQUEUE_READY_TIME_ANDROID,
-			EGL_READS_DONE_TIME_ANDROID,
-		};
-		const size_t frameTimestampCount = DE_LENGTH_OF_ARRAY(frameTimestampNames);
+		// EGL_DISPLAY_PRESENT_TIME_ANDROID support is currently optional
+		// but should be required once HWC1 is no longer supported.
+		// All HWC2 devices should support EGL_DISPLAY_PRESENT_TIME_ANDROID.
+		TimestampInfoMap timestamps;
+		timestamps[EGL_REQUESTED_PRESENT_TIME_ANDROID]				=	TimestampInfo(true,		false, 0);
+		timestamps[EGL_RENDERING_COMPLETE_TIME_ANDROID]				=	TimestampInfo(true,		false, 0);
+		timestamps[EGL_COMPOSITION_LATCH_TIME_ANDROID]				=	TimestampInfo(true,		false, 0);
+		timestamps[EGL_FIRST_COMPOSITION_START_TIME_ANDROID]		=	TimestampInfo(true,		false, 0);
+		timestamps[EGL_LAST_COMPOSITION_START_TIME_ANDROID]			=	TimestampInfo(true,		false, 0);
+		timestamps[EGL_FIRST_COMPOSITION_GPU_FINISHED_TIME_ANDROID]	=	TimestampInfo(true,		false, 0);
+		timestamps[EGL_DISPLAY_PRESENT_TIME_ANDROID]				=	TimestampInfo(false,	false, 0);
+		timestamps[EGL_DEQUEUE_READY_TIME_ANDROID]					=	TimestampInfo(true,		false, 0);
+		timestamps[EGL_READS_DONE_TIME_ANDROID]						=	TimestampInfo(true,		false, 0);
 
 		const eglw::EGLint invalidTimestampName = EGL_READS_DONE_TIME_ANDROID + 1;
 
-		// Verify required timestamps are supported.
-		for (size_t i = 0; i < frameTimestampCount; i++)
+		// Verify required timestamps are supported and populate supportedNames.
+		std::vector<eglw::EGLint> supportedNames;
+		for (TimestampInfoMap::iterator i = timestamps.begin(); i != timestamps.end(); i++)
 		{
-			const bool supported = m_eglGetFrameTimestampSupportedANDROID(display, *surface, frameTimestampNames[i]) != EGL_FALSE;
+			TimestampInfo& info = i->second;
+			info.supported = m_eglGetFrameTimestampSupportedANDROID(display, *surface, i->first) != EGL_FALSE;
 			EGLU_CHECK_MSG(egl, "eglGetFrameTimestampSupportedANDROID failed.");
-			TCU_CHECK_MSG(supported, "Required timestamp not supported.");
+
+			if (info.supported)
+			{
+				info.supportedIndex = supportedNames.size();
+				supportedNames.push_back(i->first);
+			}
+			else
+				TCU_CHECK_MSG(!info.required, "Required timestamp not supported.");
 		}
 
 		// Verify unsupported timestamps are reported properly.
@@ -590,24 +642,15 @@ void GetFrameTimestampTest::executeForConfig (EGLDisplay display, EGLConfig conf
 			const size_t frameDelay = 5;
 			if (i >= frameDelay)
 			{
-				FrameTimes&		frame5ago									=	frameTimes[i-frameDelay];
-				EGLnsecsANDROID frameTimestampValues[frameTimestampCount]	=	{ 0 };
 				// \todo [2017-01-25 brianderson] Remove this work around once reads done is fixed.
-				const bool verifyReadsDone									=	i > (frameDelay + 3);
+				const bool verifyReadsDone	=	i > (frameDelay + 3);
+				FrameTimes&		frame5ago	=	frameTimes[i-frameDelay];
+				std::vector<EGLnsecsANDROID> supportedValues(supportedNames.size(), 0);
 
 				CHECK_NAKED_EGL_CALL(egl, m_eglGetFrameTimestampsANDROID(
-					display, *surface, frame5ago.frameId, frameTimestampCount,
-					frameTimestampNames, frameTimestampValues));
-
-				frame5ago.requestedPresent				=	frameTimestampValues[0];
-				frame5ago.renderingComplete				=	frameTimestampValues[1];
-				frame5ago.latch							=	frameTimestampValues[2];
-				frame5ago.firstCompositionStart			=	frameTimestampValues[3];
-				frame5ago.lastCompositionStart			=	frameTimestampValues[4];
-				frame5ago.firstCompositionGpuFinished	=	frameTimestampValues[5];
-				frame5ago.displayPresent				=	frameTimestampValues[6];
-				frame5ago.dequeueReady					=	frameTimestampValues[7];
-				frame5ago.readsDone						=	frameTimestampValues[8];
+					display, *surface, frame5ago.frameId, static_cast<eglw::EGLint>(supportedNames.size()),
+					&supportedNames[0], &supportedValues[0]));
+				populateFrameTimes(&frame5ago, timestamps, supportedValues);
 
 				verifySingleFrame(frame5ago, m_result, verifyReadsDone);
 				if (i >= frameDelay + 1)
@@ -623,34 +666,26 @@ void GetFrameTimestampTest::executeForConfig (EGLDisplay display, EGLConfig conf
 		// No additional swaps should be necessary.
 		FrameTimes&				lastFrame				=	frameTimes.back();
 		const EGLnsecsANDROID	pollingDeadline			=	lastFrame.swapBufferBeginNs + 1000000000;
-		bool					finalTimestampAvaiable	=	false;
+		bool					finalTimestampAvailable	=	false;
 
 		do
 		{
-			EGLnsecsANDROID frameTimestampValues[frameTimestampCount] = { 0 };
+			std::vector<EGLnsecsANDROID> supportedValues(supportedNames.size(), 0);
 			CHECK_NAKED_EGL_CALL(egl, m_eglGetFrameTimestampsANDROID(
-				display, *surface, lastFrame.frameId, frameTimestampCount,
-				frameTimestampNames, frameTimestampValues));
+				display, *surface, lastFrame.frameId, static_cast<eglw::EGLint>(supportedNames.size()),
+				&supportedNames[0], &supportedValues[0]));
+			populateFrameTimes(&lastFrame, timestamps, supportedValues);
 
-			lastFrame.requestedPresent				=	frameTimestampValues[0];
-			lastFrame.renderingComplete				=	frameTimestampValues[1];
-			lastFrame.latch							=	frameTimestampValues[2];
-			lastFrame.firstCompositionStart			=	frameTimestampValues[3];
-			lastFrame.lastCompositionStart			=	frameTimestampValues[4];
-			lastFrame.firstCompositionGpuFinished	=	frameTimestampValues[5];
-			lastFrame.displayPresent				=	frameTimestampValues[6];
-			lastFrame.dequeueReady					=	frameTimestampValues[7];
-			lastFrame.readsDone						=	frameTimestampValues[8];
+			// Poll for present if it's supported.
+			// Otherwise, poll for firstCompositionStart.
+			if (timestamps[EGL_DISPLAY_PRESENT_TIME_ANDROID].supported)
+				finalTimestampAvailable = !timestampPending(lastFrame.displayPresent);
+			else
+				finalTimestampAvailable = !timestampPending(lastFrame.firstCompositionStart);
+		} while (!finalTimestampAvailable && (getNanoseconds() < pollingDeadline));
 
-			if (!timestampPending(lastFrame.displayPresent))
-				finalTimestampAvaiable = true;
-
-			if (getNanoseconds() > pollingDeadline)
-				break;
-		} while (!finalTimestampAvaiable);
-
-		m_result.check(finalTimestampAvaiable, "Timed out polling for timestamps of last swap.");
-		m_result.check((lastFrame.requestedPresent >= 0), "Rendering complete of last swap not avaiable.");
+		m_result.check(finalTimestampAvailable, "Timed out polling for timestamps of last swap.");
+		m_result.check((lastFrame.requestedPresent >= 0), "Requested present of last swap not avaiable.");
 		m_result.check((lastFrame.renderingComplete >= 0), "Rendering complete of last swap not avaiable.");
 		m_result.check((lastFrame.latch >= 0), "Latch of last swap not avaiable.");
 		m_result.check((lastFrame.firstCompositionStart >= 0), "First composite time of last swap not avaiable.");
