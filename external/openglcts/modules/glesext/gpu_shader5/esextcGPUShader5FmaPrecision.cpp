@@ -171,6 +171,9 @@ void					  GPUShader5FmaPrecision<S>::initTest(void)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create program object!");
 
 	/* Set up transform feedback */
+	gl.enable(GL_RASTERIZER_DISCARD);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glEnable(GL_RASTERIZER_DISCARD) call failed");
+
 	const char* varyings[] = { "resultFma", "resultStd" };
 
 	gl.transformFeedbackVaryings(m_po_id, 2, varyings, GL_SEPARATE_ATTRIBS);

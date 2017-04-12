@@ -633,7 +633,8 @@ public:
 		}
 		else if (stage == 1)
 		{ // TCS
-			const char* const glsl_vs = "#version 430 core" NL "void main() { gl_Position = vec4(0.0, 0.0, 0.0, 1.0);}";
+			const char* const glsl_vs = "#version 430 core" NL "out gl_PerVertex { vec4 gl_Position; };" NL
+										"void main() { gl_Position = vec4(0.0, 0.0, 0.0, 1.0);}";
 			const char* const glsl_tes = "#version 430 core" NL "layout(quads, point_mode) in;" NL "void main() {}";
 			std::string		  tcs	  = GenShader<T>(stage, ms_and_1d, subroutine);
 			const char* const glsl_tcs = tcs.c_str();
@@ -646,8 +647,9 @@ public:
 		}
 		else if (stage == 2)
 		{ // TES
-			const char* const glsl_vs = "#version 430 core" NL "void main() { gl_Position = vec4(0.0, 0.0, 0.0, 1.0);}";
-			std::string		  tes	 = GenShader<T>(stage, ms_and_1d, subroutine);
+			const char* const glsl_vs = "#version 430 core" NL "out gl_PerVertex { vec4 gl_Position; };" NL
+										"void main() { gl_Position = vec4(0.0, 0.0, 0.0, 1.0);}";
+			std::string		  tes	  = GenShader<T>(stage, ms_and_1d, subroutine);
 			const char* const glsl_tes = tes.c_str();
 			m_program[0]			   = glCreateShaderProgramv(GL_VERTEX_SHADER, 1, &glsl_vs);
 			m_program[1]			   = glCreateShaderProgramv(GL_TESS_EVALUATION_SHADER, 1, &glsl_tes);
@@ -656,7 +658,8 @@ public:
 		}
 		else if (stage == 3)
 		{ // GS
-			const char* const glsl_vs = "#version 430 core" NL "void main() { gl_Position = vec4(0.0, 0.0, 0.0, 1.0);}";
+			const char* const glsl_vs = "#version 430 core" NL "out gl_PerVertex { vec4 gl_Position; };" NL
+										"void main() { gl_Position = vec4(0.0, 0.0, 0.0, 1.0);}";
 			std::string		  gs	  = GenShader<T>(stage, ms_and_1d, subroutine);
 			const char* const glsl_gs = gs.c_str();
 			m_program[0]			  = glCreateShaderProgramv(GL_VERTEX_SHADER, 1, &glsl_vs);
@@ -673,7 +676,8 @@ public:
 		}
 		else if (stage == 5)
 		{ // FS
-			const char* const glsl_vs = "#version 430 core" NL "void main() { gl_Position = vec4(0.0, 0.0, 0.0, 1.0);}";
+			const char* const glsl_vs = "#version 430 core" NL "out gl_PerVertex { vec4 gl_Position; };" NL
+										"void main() { gl_Position = vec4(0.0, 0.0, 0.0, 1.0);}";
 			std::string		  fs	  = GenShader<T>(stage, ms_and_1d, subroutine);
 			const char* const glsl_fs = fs.c_str();
 			m_program[0]			  = glCreateShaderProgramv(GL_VERTEX_SHADER, 1, &glsl_vs);

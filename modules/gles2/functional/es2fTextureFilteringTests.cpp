@@ -299,7 +299,7 @@ Texture2DFilteringCase::IterateResult Texture2DFilteringCase::iterate (void)
 		const bool				isNearestOnly	= m_minFilter == GL_NEAREST && m_magFilter == GL_NEAREST;
 		const tcu::PixelFormat	pixelFormat		= m_renderCtx.getRenderTarget().getPixelFormat();
 		const tcu::IVec4		colorBits		= max(getBitsVec(pixelFormat) - (isNearestOnly ? 1 : 2), tcu::IVec4(0)); // 1 inaccurate bit if nearest only, 2 otherwise
-		tcu::LodPrecision		lodPrecision	(tcu::LodPrecision::RULE_OPENGL);
+		tcu::LodPrecision		lodPrecision;
 		tcu::LookupPrecision	lookupPrecision;
 
 		lodPrecision.derivateBits		= 7;
@@ -585,7 +585,7 @@ TextureCubeFilteringCase::IterateResult TextureCubeFilteringCase::iterate (void)
 			const bool				isNearestOnly	= m_minFilter == GL_NEAREST && m_magFilter == GL_NEAREST;
 			const tcu::PixelFormat	pixelFormat		= m_renderCtx.getRenderTarget().getPixelFormat();
 			const tcu::IVec4		colorBits		= max(getBitsVec(pixelFormat) - (isNearestOnly ? 1 : 2), tcu::IVec4(0)); // 1 inaccurate bit if nearest only, 2 otherwise
-			tcu::LodPrecision		lodPrecision	(tcu::LodPrecision::RULE_OPENGL);
+			tcu::LodPrecision		lodPrecision;
 			tcu::LookupPrecision	lookupPrecision;
 
 			lodPrecision.derivateBits		= 5;

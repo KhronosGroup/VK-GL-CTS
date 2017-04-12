@@ -1371,6 +1371,25 @@ void Utils::makeTextureComplete(deqp::Context& context, GLenum target, GLuint id
 
 		gl.texParameteri(target, GL_TEXTURE_MAX_LEVEL, max_level);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "TexParameteri");
+
+		/* Integer textures won't be complete with the default min filter
+		 * of GL_NEAREST_MIPMAP_LINEAR (or GL_LINEAR for rectangle textures)
+		 * and default mag filter of GL_LINEAR, so switch to nearest.
+		 */
+		if (GL_TEXTURE_2D_MULTISAMPLE != target && GL_TEXTURE_2D_MULTISAMPLE_ARRAY != target)
+		{
+			gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			if (GL_TEXTURE_RECTANGLE != target)
+			{
+				gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "TexParameteri");
+			}
+			else
+			{
+				gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "TexParameteri");
+			}
+		}
 	}
 
 	/* Clean binding point */
@@ -5084,7 +5103,7 @@ IncompatibleFormatsCompressionTest::IncompatibleFormatsCompressionTest(deqp::Con
 
 		/* Skip 1D targets, not supported */
 		if ((GL_TEXTURE_1D == tex_target) || (GL_TEXTURE_1D_ARRAY == tex_target) || (GL_TEXTURE_3D == tex_target) ||
-			(GL_TEXTURE_RECTANGLE == tex_target) || (GL_RENDERBUFFER == tex_target))
+			(GL_TEXTURE_RECTANGLE == tex_target) || (GL_RENDERBUFFER == tex_target) || (GL_TEXTURE_CUBE_MAP_ARRAY == tex_target))
 		{
 			continue;
 		}

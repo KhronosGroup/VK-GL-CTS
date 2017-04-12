@@ -13343,9 +13343,9 @@ GPUShaderFP64Test10::functionObject::functionObject(functionEnum function_enum, 
 glw::GLuint GPUShaderFP64Test10::functionObject::getArgumentComponents(glw::GLuint argument) const
 {
 	const Utils::_variable_type type		  = getArgumentType(argument);
-	const glw::GLuint			n_componenets = Utils::getNumberOfComponentsForVariableType(type);
+	const glw::GLuint			n_components  = Utils::getNumberOfComponentsForVariableType(type);
 
-	return n_componenets;
+	return n_components;
 }
 
 /** Get size in bytes of single component of <argument>
@@ -13407,9 +13407,9 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getArgumentStride() const
 glw::GLuint GPUShaderFP64Test10::functionObject::getArgumentStride(glw::GLuint argument) const
 {
 	const glw::GLuint component_size = getArgumentComponentSize(argument);
-	const glw::GLuint n_componenets  = getArgumentComponents(argument);
+	const glw::GLuint n_components   = getArgumentComponents(argument);
 
-	return n_componenets * component_size;
+	return n_components * component_size;
 }
 
 /** Get function enumeration
@@ -13439,9 +13439,9 @@ const glw::GLchar* GPUShaderFP64Test10::functionObject::getName() const
 glw::GLuint GPUShaderFP64Test10::functionObject::getResultComponents(glw::GLuint result) const
 {
 	const Utils::_variable_type type		  = getResultType(result);
-	const glw::GLuint			n_componenets = Utils::getNumberOfComponentsForVariableType(type);
+	const glw::GLuint			n_components  = Utils::getNumberOfComponentsForVariableType(type);
 
-	return n_componenets;
+	return n_components;
 }
 
 /** Get number of results
@@ -13466,6 +13466,7 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getResultOffset(glw::GLuint res
 	for (glw::GLuint i = 0; i < result; ++i)
 	{
 		offset += getResultStride(i);
+		offset = deAlign32(offset, getBaseTypeSize(i));
 	}
 
 	return offset;
@@ -13480,11 +13481,24 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getResultOffset(glw::GLuint res
 glw::GLuint GPUShaderFP64Test10::functionObject::getResultStride(glw::GLuint result) const
 {
 	const Utils::_variable_type type		   = getResultType(result);
+	const glw::GLuint			n_components   = Utils::getNumberOfComponentsForVariableType(type);
+
+	return n_components * getBaseTypeSize(result);
+}
+
+/** Get size in bytes of <result> base component.
+ *
+ * @param result Result ordinal, starts with 0
+ *
+ * @return Alignment
+ **/
+glw::GLuint GPUShaderFP64Test10::functionObject::getBaseTypeSize(glw::GLuint result) const
+{
+	const Utils::_variable_type type		   = getResultType(result);
 	const Utils::_variable_type base_type	  = Utils::getBaseVariableType(type);
 	const glw::GLuint			base_type_size = Utils::getBaseVariableTypeComponentSize(base_type);
-	const glw::GLuint			n_componenets  = Utils::getNumberOfComponentsForVariableType(type);
 
-	return n_componenets * base_type_size;
+	return base_type_size;
 }
 
 /** Get stride in bytes of all results.
@@ -13493,15 +13507,21 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getResultStride(glw::GLuint res
  **/
 glw::GLuint GPUShaderFP64Test10::functionObject::getResultStride() const
 {
-	const glw::GLuint n_results = getResultCount();
-	glw::GLuint		  stride	= 0;
+	const glw::GLuint n_results	= getResultCount();
+	glw::GLuint		  stride	   = 0;
+	glw::GLuint		  maxAlignment = 0;
 
 	for (glw::GLuint i = 0; i < n_results; ++i)
 	{
+		const glw::GLuint alignment = getBaseTypeSize(i);
 		stride += getResultStride(i);
+		stride		 = deAlign32(stride, alignment);
+		maxAlignment = deMaxu32(maxAlignment, alignment);
 	}
 
-	return stride;
+	// The stride of all results must also be aligned,
+	// so results for next vertex are aligned.
+	return deAlign32(stride, maxAlignment);
 }
 
 /** Get type of <result>.

@@ -803,6 +803,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fDrawTests.cpp \
 	modules/gles31/functional/es31fFboColorbufferTests.cpp \
 	modules/gles31/functional/es31fFboNoAttachmentTests.cpp \
+	modules/gles31/functional/es31fFboSRGBWriteControlTests.cpp \
 	modules/gles31/functional/es31fFboTestCase.cpp \
 	modules/gles31/functional/es31fFboTestUtil.cpp \
 	modules/gles31/functional/es31fFramebufferDefaultStateQueryTests.cpp \

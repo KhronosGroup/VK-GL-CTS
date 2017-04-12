@@ -447,9 +447,11 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glMemoryBarrierByRegionFunc)								(G
 typedef GLW_APICALL void			(GLW_APIENTRY* glMinSampleShadingFunc)									(GLfloat value);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawArraysFunc)									(GLenum mode, const GLint *first, const GLsizei *count, GLsizei drawcount);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawArraysIndirectFunc)							(GLenum mode, const void *indirect, GLsizei drawcount, GLsizei stride);
+typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawArraysIndirectCountARBFunc)					(GLenum mode, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawElementsFunc)									(GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawElementsBaseVertexFunc)						(GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount, const GLint *basevertex);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawElementsIndirectFunc)							(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride);
+typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawElementsIndirectCountARBFunc)					(GLenum mode, GLenum type, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiTexBufferEXTFunc)									(GLenum texunit, GLenum target, GLenum internalformat, GLuint buffer);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiTexCoordPointerEXTFunc)							(GLenum texunit, GLint size, GLenum type, GLsizei stride, const void *pointer);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiTexEnvfEXTFunc)									(GLenum texunit, GLenum target, GLenum pname, GLfloat param);
