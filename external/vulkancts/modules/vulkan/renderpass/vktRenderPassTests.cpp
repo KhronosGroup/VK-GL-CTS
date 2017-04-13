@@ -662,23 +662,27 @@ private:
 class RenderPass
 {
 public:
-										RenderPass		(const vector<Attachment>&			attachments,
-														 const vector<Subpass>&				subpasses,
-														 const vector<SubpassDependency>&	dependencies)
+														RenderPass		(const vector<Attachment>&							attachments,
+																		 const vector<Subpass>&								subpasses,
+																		 const vector<SubpassDependency>&					dependencies,
+																		 const vector<VkInputAttachmentAspectReferenceKHR>	inputAspects = vector<VkInputAttachmentAspectReferenceKHR>())
 		: m_attachments		(attachments)
 		, m_subpasses		(subpasses)
 		, m_dependencies	(dependencies)
+		, m_inputAspects	(inputAspects)
 	{
 	}
 
-	const vector<Attachment>&			getAttachments	(void) const { return m_attachments;	}
-	const vector<Subpass>&				getSubpasses	(void) const { return m_subpasses;		}
-	const vector<SubpassDependency>&	getDependencies	(void) const { return m_dependencies;	}
+	const vector<Attachment>&							getAttachments	(void) const { return m_attachments;	}
+	const vector<Subpass>&								getSubpasses	(void) const { return m_subpasses;		}
+	const vector<SubpassDependency>&					getDependencies	(void) const { return m_dependencies;	}
+	const vector<VkInputAttachmentAspectReferenceKHR>	getInputAspects	(void) const { return m_inputAspects;	}
 
 private:
-	const vector<Attachment>			m_attachments;
-	const vector<Subpass>				m_subpasses;
-	const vector<SubpassDependency>		m_dependencies;
+	const vector<Attachment>							m_attachments;
+	const vector<Subpass>								m_subpasses;
+	const vector<SubpassDependency>						m_dependencies;
+	const vector<VkInputAttachmentAspectReferenceKHR>	m_inputAspects;
 };
 
 struct TestConfig
@@ -774,6 +778,20 @@ void logRenderPassInfo (TestLog&			log,
 
 			log << TestLog::Message << "InitialLayout: " << attachment.getInitialLayout() << TestLog::EndMessage;
 			log << TestLog::Message << "FinalLayout: " << attachment.getFinalLayout() << TestLog::EndMessage;
+		}
+	}
+
+	if (!renderPass.getInputAspects().empty())
+	{
+		const tcu::ScopedLogSection	inputAspectSection	(log, "InputAspects", "InputAspects");
+
+		for (size_t aspectNdx = 0; aspectNdx < renderPass.getInputAspects().size(); aspectNdx++)
+		{
+			const VkInputAttachmentAspectReferenceKHR&	inputAspect	(renderPass.getInputAspects()[aspectNdx]);
+
+			log << TestLog::Message << "Subpass: " << inputAspect.subpass << TestLog::EndMessage;
+			log << TestLog::Message << "InputAttachmentIndex: " << inputAspect.inputAttachmentIndex << TestLog::EndMessage;
+			log << TestLog::Message << "AspectFlags: " << getImageAspectFlagsStr(inputAspect.aspectMask) << TestLog::EndMessage;
 		}
 	}
 
@@ -1127,12 +1145,12 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 									 VkDevice				device,
 									 const RenderPass&		renderPassInfo)
 {
-	const size_t							perSubpassAttachmentReferenceLists = 4;
-	vector<VkAttachmentDescription>			attachments;
-	vector<VkSubpassDescription>			subpasses;
-	vector<VkSubpassDependency>				dependencies;
-	vector<vector<VkAttachmentReference> >	attachmentReferenceLists(renderPassInfo.getSubpasses().size() * perSubpassAttachmentReferenceLists);
-	vector<vector<deUint32> >				preserveAttachments(renderPassInfo.getSubpasses().size());
+	const size_t								perSubpassAttachmentReferenceLists = 4;
+	vector<VkAttachmentDescription>				attachments;
+	vector<VkSubpassDescription>				subpasses;
+	vector<VkSubpassDependency>					dependencies;
+	vector<vector<VkAttachmentReference> >		attachmentReferenceLists(renderPassInfo.getSubpasses().size() * perSubpassAttachmentReferenceLists);
+	vector<vector<deUint32> >					preserveAttachments(renderPassInfo.getSubpasses().size());
 
 	for (size_t attachmentNdx = 0; attachmentNdx < renderPassInfo.getAttachments().size(); attachmentNdx++)
 		attachments.push_back(createAttachmentDescription(renderPassInfo.getAttachments()[attachmentNdx]));
@@ -1143,11 +1161,37 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 	for (size_t depNdx = 0; depNdx < renderPassInfo.getDependencies().size(); depNdx++)
 		dependencies.push_back(createSubpassDependency(renderPassInfo.getDependencies()[depNdx]));
 
+	if (renderPassInfo.getInputAspects().empty())
 	{
 		const VkRenderPassCreateInfo	createInfo	=
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
 			DE_NULL,
+			(VkRenderPassCreateFlags)0u,
+			(deUint32)attachments.size(),
+			(attachments.empty() ? DE_NULL : &attachments[0]),
+			(deUint32)subpasses.size(),
+			(subpasses.empty() ? DE_NULL : &subpasses[0]),
+			(deUint32)dependencies.size(),
+			(dependencies.empty() ? DE_NULL : &dependencies[0])
+		};
+
+		return createRenderPass(vk, device, &createInfo);
+	}
+	else
+	{
+		const VkRenderPassInputAttachmentAspectCreateInfoKHR	inputAspectCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO_KHR,
+			DE_NULL,
+
+			(deUint32)renderPassInfo.getInputAspects().size(),
+			renderPassInfo.getInputAspects().data(),
+		};
+		const VkRenderPassCreateInfo							createInfo				=
+		{
+			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+			&inputAspectCreateInfo,
 			(VkRenderPassCreateFlags)0u,
 			(deUint32)attachments.size(),
 			(attachments.empty() ? DE_NULL : &attachments[0]),
@@ -4287,6 +4331,12 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
 	}
 
+	if (!renderPassInfo.getInputAspects().empty())
+	{
+		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), string("VK_KHR_maintenance2")))
+			TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance2 not supported.");
+	}
+
 	initializeAttachmentIsLazy(attachmentIsLazy, renderPassInfo.getAttachments(), config.imageMemory);
 	initializeImageClearValues(rng, imageClearValues, renderPassInfo.getAttachments(), attachmentIsLazy);
 	initializeAttachmentImageUsage(context, attachmentImageUsage, renderPassInfo, attachmentIsLazy, imageClearValues);
@@ -5483,102 +5533,133 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 					const VkAttachmentStoreOp		storeOp			= storeOps[storeOpNdx].op;
 					de::MovePtr<tcu::TestCaseGroup>	storeOpGroup	(new tcu::TestCaseGroup(testCtx, storeOps[storeOpNdx].str, storeOps[storeOpNdx].str));
 
-					for (size_t renderTypeNdx = 0; renderTypeNdx < DE_LENGTH_OF_ARRAY(renderTypes); renderTypeNdx++)
+					for (size_t useInputAspectNdx = 0; useInputAspectNdx < 2; useInputAspectNdx++)
 					{
+						const bool useInputAspect = useInputAspectNdx != 0;
+
+						for (size_t renderTypeNdx = 0; renderTypeNdx < DE_LENGTH_OF_ARRAY(renderTypes); renderTypeNdx++)
 						{
-							vector<Attachment>			attachments;
-							vector<Subpass>				subpasses;
-							vector<SubpassDependency>	deps;
-
-							attachments.push_back(Attachment(format,
-															 VK_SAMPLE_COUNT_1_BIT,
-															 loadOp,
-															 storeOp,
-															 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-															 VK_ATTACHMENT_STORE_OP_DONT_CARE,
-															 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-															 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
-
-							attachments.push_back(Attachment(vk::VK_FORMAT_R8G8B8A8_UNORM,
-															 VK_SAMPLE_COUNT_1_BIT,
-															 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-															 VK_ATTACHMENT_STORE_OP_STORE,
-															 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-															 VK_ATTACHMENT_STORE_OP_DONT_CARE,
-															 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-															 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
-
-							subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
-														0u,
-														vector<AttachmentReference>(),
-														vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
-														vector<AttachmentReference>(),
-														AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
-														vector<deUint32>()));
-							subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
-														0u,
-														vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)),
-														vector<AttachmentReference>(1, AttachmentReference(1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
-														vector<AttachmentReference>(),
-														AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
-														vector<deUint32>()));
-
-							deps.push_back(SubpassDependency(0, 1,
-
-															vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-															vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-
-															vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-															vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-															vk::VK_DEPENDENCY_BY_REGION_BIT));
-
 							{
-								const RenderPass renderPass (attachments, subpasses, deps);
+								vector<Attachment>							attachments;
+								vector<Subpass>								subpasses;
+								vector<SubpassDependency>					deps;
+								vector<VkInputAttachmentAspectReferenceKHR>	inputAspects;
 
-								addFunctionCaseWithPrograms<TestConfig>(storeOpGroup.get(), renderTypes[renderTypeNdx].str, renderTypes[renderTypeNdx].str, createTestShaders, renderPassTest, TestConfig(renderPass, renderTypes[renderTypeNdx].types, TestConfig::COMMANDBUFFERTYPES_INLINE, TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, 89246, allocationKind));
+								attachments.push_back(Attachment(format,
+																 VK_SAMPLE_COUNT_1_BIT,
+																 loadOp,
+																 storeOp,
+																 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																 VK_ATTACHMENT_STORE_OP_DONT_CARE,
+																 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+								attachments.push_back(Attachment(vk::VK_FORMAT_R8G8B8A8_UNORM,
+																 VK_SAMPLE_COUNT_1_BIT,
+																 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																 VK_ATTACHMENT_STORE_OP_STORE,
+																 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																 VK_ATTACHMENT_STORE_OP_DONT_CARE,
+																 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+								subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
+															0u,
+															vector<AttachmentReference>(),
+															vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
+															vector<AttachmentReference>(),
+															AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
+															vector<deUint32>()));
+								subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
+															0u,
+															vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)),
+															vector<AttachmentReference>(1, AttachmentReference(1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
+															vector<AttachmentReference>(),
+															AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
+															vector<deUint32>()));
+
+								deps.push_back(SubpassDependency(0, 1,
+
+																vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+																vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+
+																vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+																vk::VK_DEPENDENCY_BY_REGION_BIT));
+
+								if (useInputAspect)
+								{
+									const VkInputAttachmentAspectReferenceKHR inputAspect =
+									{
+										0u,
+										0u,
+										VK_IMAGE_ASPECT_COLOR_BIT
+									};
+
+									inputAspects.push_back(inputAspect);
+								}
+
+								{
+									const RenderPass renderPass (attachments, subpasses, deps, inputAspects);
+
+									addFunctionCaseWithPrograms<TestConfig>(storeOpGroup.get(), renderTypes[renderTypeNdx].str + string(useInputAspect ? "_use_input_aspect" : ""), renderTypes[renderTypeNdx].str, createTestShaders, renderPassTest, TestConfig(renderPass, renderTypes[renderTypeNdx].types, TestConfig::COMMANDBUFFERTYPES_INLINE, TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, 89246, allocationKind));
+								}
 							}
-						}
-						{
-							vector<Attachment>			attachments;
-							vector<Subpass>				subpasses;
-							vector<SubpassDependency>	deps;
-
-							attachments.push_back(Attachment(format,
-															 VK_SAMPLE_COUNT_1_BIT,
-															 loadOp,
-															 storeOp,
-															 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-															 VK_ATTACHMENT_STORE_OP_DONT_CARE,
-															 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-															 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
-
-							subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
-														0u,
-														vector<AttachmentReference>(),
-														vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
-														vector<AttachmentReference>(),
-														AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
-														vector<deUint32>()));
-							subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
-														0u,
-														vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_GENERAL)),
-														vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_GENERAL)),
-														vector<AttachmentReference>(),
-														AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
-														vector<deUint32>()));
-
-							deps.push_back(SubpassDependency(0, 1,
-															vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-															vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-
-															vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-															vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-															vk::VK_DEPENDENCY_BY_REGION_BIT));
-
 							{
-								const RenderPass renderPass (attachments, subpasses, deps);
+								vector<Attachment>							attachments;
+								vector<Subpass>								subpasses;
+								vector<SubpassDependency>					deps;
+								vector<VkInputAttachmentAspectReferenceKHR>	inputAspects;
 
-								addFunctionCaseWithPrograms<TestConfig>(storeOpGroup.get(), string("self_dep_") + renderTypes[renderTypeNdx].str, string("self_dep_") + renderTypes[renderTypeNdx].str, createTestShaders, renderPassTest, TestConfig(renderPass, renderTypes[renderTypeNdx].types, TestConfig::COMMANDBUFFERTYPES_INLINE, TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, 89246, allocationKind));
+								attachments.push_back(Attachment(format,
+																 VK_SAMPLE_COUNT_1_BIT,
+																 loadOp,
+																 storeOp,
+																 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																 VK_ATTACHMENT_STORE_OP_DONT_CARE,
+																 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+								subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
+															0u,
+															vector<AttachmentReference>(),
+															vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
+															vector<AttachmentReference>(),
+															AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
+															vector<deUint32>()));
+								subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
+															0u,
+															vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_GENERAL)),
+															vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_GENERAL)),
+															vector<AttachmentReference>(),
+															AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
+															vector<deUint32>()));
+
+								deps.push_back(SubpassDependency(0, 1,
+																vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+																vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+
+																vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+																vk::VK_DEPENDENCY_BY_REGION_BIT));
+
+								if (useInputAspect)
+								{
+									const VkInputAttachmentAspectReferenceKHR inputAspect =
+									{
+										0u,
+										0u,
+										VK_IMAGE_ASPECT_COLOR_BIT
+									};
+
+									inputAspects.push_back(inputAspect);
+								}
+
+								{
+									const RenderPass renderPass (attachments, subpasses, deps, inputAspects);
+
+									addFunctionCaseWithPrograms<TestConfig>(storeOpGroup.get(), string("self_dep_") + renderTypes[renderTypeNdx].str + (useInputAspect ? "_use_input_aspect" : ""), string("self_dep_") + renderTypes[renderTypeNdx].str, createTestShaders, renderPassTest, TestConfig(renderPass, renderTypes[renderTypeNdx].types, TestConfig::COMMANDBUFFERTYPES_INLINE, TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, 89246, allocationKind));
+								}
 							}
 						}
 					}
@@ -5598,8 +5679,11 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 	// Depth stencil formats
 	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_coreDepthStencilFormats); formatNdx++)
 	{
-		const VkFormat					vkFormat		= s_coreDepthStencilFormats[formatNdx];
-		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatToName(vkFormat).c_str(), de::toString(vkFormat).c_str()));
+		const VkFormat					vkFormat			= s_coreDepthStencilFormats[formatNdx];
+		const tcu::TextureFormat		format				= mapVkFormat(vkFormat);
+		const bool						isStencilAttachment	= hasStencilComponent(format.order);
+		const bool						isDepthAttachment	= hasDepthComponent(format.order);
+		de::MovePtr<tcu::TestCaseGroup>	formatGroup			(new tcu::TestCaseGroup(testCtx, formatToName(vkFormat).c_str(), de::toString(vkFormat).c_str()));
 
 		for (size_t loadOpNdx = 0; loadOpNdx < DE_LENGTH_OF_ARRAY(loadOps); loadOpNdx++)
 		{
@@ -5608,9 +5692,6 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 
 			for (size_t renderTypeNdx = 0; renderTypeNdx < DE_LENGTH_OF_ARRAY(renderTypes); renderTypeNdx++)
 			{
-				const tcu::TextureFormat	format				= mapVkFormat(vkFormat);
-				const bool					isStencilAttachment	= hasStencilComponent(format.order);
-				const bool					isDepthAttachment	= hasDepthComponent(format.order);
 				const RenderPass			renderPass			(vector<Attachment>(1, Attachment(vkFormat,
 																				  VK_SAMPLE_COUNT_1_BIT,
 																				  isDepthAttachment ? loadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -5647,108 +5728,144 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 					const VkAttachmentStoreOp		storeOp			= storeOps[storeOpNdx].op;
 					de::MovePtr<tcu::TestCaseGroup>	storeOpGroup	(new tcu::TestCaseGroup(testCtx, storeOps[storeOpNdx].str, storeOps[storeOpNdx].str));
 
-					for (size_t renderTypeNdx = 0; renderTypeNdx < DE_LENGTH_OF_ARRAY(renderTypes); renderTypeNdx++)
+					for (size_t useInputAspectNdx = 0; useInputAspectNdx < 2; useInputAspectNdx++)
 					{
+						const bool useInputAspect = useInputAspectNdx != 0;
+
+						for (size_t renderTypeNdx = 0; renderTypeNdx < DE_LENGTH_OF_ARRAY(renderTypes); renderTypeNdx++)
 						{
-							vector<Attachment>			attachments;
-							vector<Subpass>				subpasses;
-							vector<SubpassDependency>	deps;
-
-							attachments.push_back(Attachment(vkFormat,
-															 VK_SAMPLE_COUNT_1_BIT,
-															 loadOp,
-															 storeOp,
-															 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-															 VK_ATTACHMENT_STORE_OP_DONT_CARE,
-															 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-															 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
-
-							attachments.push_back(Attachment(vk::VK_FORMAT_R8G8B8A8_UNORM,
-															 VK_SAMPLE_COUNT_1_BIT,
-															 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-															 VK_ATTACHMENT_STORE_OP_STORE,
-															 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-															 VK_ATTACHMENT_STORE_OP_DONT_CARE,
-															 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-															 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
-
-							subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
-														0u,
-														vector<AttachmentReference>(),
-														vector<AttachmentReference>(),
-														vector<AttachmentReference>(),
-														AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
-														vector<deUint32>()));
-							subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
-														0u,
-														vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)),
-														vector<AttachmentReference>(1, AttachmentReference(1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
-														vector<AttachmentReference>(),
-														AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
-														vector<deUint32>()));
-
-							deps.push_back(SubpassDependency(0, 1,
-															vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-															vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-
-															vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-															vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-															0u));
-
-							deps.push_back(SubpassDependency(1, 1,
-															vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-															vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-
-															vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-															vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-															vk::VK_DEPENDENCY_BY_REGION_BIT));
 							{
-								const RenderPass renderPass (attachments, subpasses, deps);
+								vector<Attachment>							attachments;
+								vector<Subpass>								subpasses;
+								vector<SubpassDependency>					deps;
+								vector<VkInputAttachmentAspectReferenceKHR>	inputAspects;
 
-								addFunctionCaseWithPrograms<TestConfig>(storeOpGroup.get(), renderTypes[renderTypeNdx].str, renderTypes[renderTypeNdx].str, createTestShaders, renderPassTest, TestConfig(renderPass, renderTypes[renderTypeNdx].types, TestConfig::COMMANDBUFFERTYPES_INLINE, TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, 89246, allocationKind));
+								attachments.push_back(Attachment(vkFormat,
+																 VK_SAMPLE_COUNT_1_BIT,
+																 loadOp,
+																 storeOp,
+																 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																 VK_ATTACHMENT_STORE_OP_DONT_CARE,
+																 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+																 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+
+								attachments.push_back(Attachment(vk::VK_FORMAT_R8G8B8A8_UNORM,
+																 VK_SAMPLE_COUNT_1_BIT,
+																 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																 VK_ATTACHMENT_STORE_OP_STORE,
+																 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																 VK_ATTACHMENT_STORE_OP_DONT_CARE,
+																 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+								subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
+															0u,
+															vector<AttachmentReference>(),
+															vector<AttachmentReference>(),
+															vector<AttachmentReference>(),
+															AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
+															vector<deUint32>()));
+								subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
+															0u,
+															vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)),
+															vector<AttachmentReference>(1, AttachmentReference(1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
+															vector<AttachmentReference>(),
+															AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
+															vector<deUint32>()));
+
+								deps.push_back(SubpassDependency(0, 1,
+																vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+																vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+
+																vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+																0u));
+
+								deps.push_back(SubpassDependency(1, 1,
+																vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+																vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+
+																vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+																vk::VK_DEPENDENCY_BY_REGION_BIT));
+
+								if (useInputAspect)
+								{
+									const VkInputAttachmentAspectReferenceKHR inputAspect =
+									{
+										0u,
+										0u,
+										(isDepthAttachment ? (VkImageAspectFlags)VK_IMAGE_ASPECT_DEPTH_BIT : 0u)
+											| (isStencilAttachment ? (VkImageAspectFlags)VK_IMAGE_ASPECT_STENCIL_BIT : 0u)
+									};
+
+									inputAspects.push_back(inputAspect);
+								}
+
+								{
+									const RenderPass renderPass (attachments, subpasses, deps, inputAspects);
+
+									addFunctionCaseWithPrograms<TestConfig>(storeOpGroup.get(), renderTypes[renderTypeNdx].str + string(useInputAspect ? "_use_input_aspect" : ""), renderTypes[renderTypeNdx].str, createTestShaders, renderPassTest, TestConfig(renderPass, renderTypes[renderTypeNdx].types, TestConfig::COMMANDBUFFERTYPES_INLINE, TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, 89246, allocationKind));
+								}
 							}
-						}
-						{
-							vector<Attachment>			attachments;
-							vector<Subpass>				subpasses;
-							vector<SubpassDependency>	deps;
-
-							attachments.push_back(Attachment(vkFormat,
-															 VK_SAMPLE_COUNT_1_BIT,
-															 loadOp,
-															 storeOp,
-															 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-															 VK_ATTACHMENT_STORE_OP_DONT_CARE,
-															 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-															 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
-
-							subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
-														0u,
-														vector<AttachmentReference>(),
-														vector<AttachmentReference>(),
-														vector<AttachmentReference>(),
-														AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
-														vector<deUint32>()));
-							subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
-														0u,
-														vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_GENERAL)),
-														vector<AttachmentReference>(),
-														vector<AttachmentReference>(),
-														AttachmentReference(0, VK_IMAGE_LAYOUT_GENERAL),
-														vector<deUint32>()));
-
-							deps.push_back(SubpassDependency(0, 1,
-															vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-															vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-
-															vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-															vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-															vk::VK_DEPENDENCY_BY_REGION_BIT));
-
 							{
-								const RenderPass renderPass (attachments, subpasses, deps);
+								vector<Attachment>							attachments;
+								vector<Subpass>								subpasses;
+								vector<SubpassDependency>					deps;
+								vector<VkInputAttachmentAspectReferenceKHR>	inputAspects;
 
-								addFunctionCaseWithPrograms<TestConfig>(storeOpGroup.get(), string("self_dep_") + renderTypes[renderTypeNdx].str, string("self_dep_") + renderTypes[renderTypeNdx].str, createTestShaders, renderPassTest, TestConfig(renderPass, renderTypes[renderTypeNdx].types, TestConfig::COMMANDBUFFERTYPES_INLINE, TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, 89246, allocationKind));
+								attachments.push_back(Attachment(vkFormat,
+																 VK_SAMPLE_COUNT_1_BIT,
+																 loadOp,
+																 storeOp,
+																 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																 VK_ATTACHMENT_STORE_OP_DONT_CARE,
+																 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+																 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+
+								subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
+															0u,
+															vector<AttachmentReference>(),
+															vector<AttachmentReference>(),
+															vector<AttachmentReference>(),
+															AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
+															vector<deUint32>()));
+								subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
+															0u,
+															vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_GENERAL)),
+															vector<AttachmentReference>(),
+															vector<AttachmentReference>(),
+															AttachmentReference(0, VK_IMAGE_LAYOUT_GENERAL),
+															vector<deUint32>()));
+
+								deps.push_back(SubpassDependency(0, 1,
+																vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+																vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+
+																vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+																vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+																vk::VK_DEPENDENCY_BY_REGION_BIT));
+
+
+								if (useInputAspect)
+								{
+									const VkInputAttachmentAspectReferenceKHR inputAspect =
+									{
+										0u,
+										0u,
+
+										(isDepthAttachment ? (VkImageAspectFlags)VK_IMAGE_ASPECT_DEPTH_BIT : 0u)
+											| (isStencilAttachment ? (VkImageAspectFlags)VK_IMAGE_ASPECT_STENCIL_BIT : 0u)
+									};
+
+									inputAspects.push_back(inputAspect);
+								}
+
+								{
+									const RenderPass renderPass (attachments, subpasses, deps, inputAspects);
+
+									addFunctionCaseWithPrograms<TestConfig>(storeOpGroup.get(), string("self_dep_") + renderTypes[renderTypeNdx].str + (useInputAspect ? "_use_input_aspect" : ""), string("self_dep_") + renderTypes[renderTypeNdx].str, createTestShaders, renderPassTest, TestConfig(renderPass, renderTypes[renderTypeNdx].types, TestConfig::COMMANDBUFFERTYPES_INLINE, TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, 89246, allocationKind));
+								}
 							}
 						}
 					}
