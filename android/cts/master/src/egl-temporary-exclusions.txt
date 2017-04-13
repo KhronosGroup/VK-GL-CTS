@@ -1,0 +1,1 @@
+dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.*
