@@ -591,10 +591,16 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 		VK_FALSE,														// VkBool32                                    primitiveRestartEnable;
 	};
 
+	const VkPipelineTessellationDomainOriginStateCreateInfoKHR tessellationDomainOriginStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO_KHR,
+		DE_NULL,
+		(!m_tessellationDomainOrigin ? VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR : *m_tessellationDomainOrigin)
+	};
 	const VkPipelineTessellationStateCreateInfo pipelineTessellationStateInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,		// VkStructureType                             sType;
-		DE_NULL,														// const void*                                 pNext;
+		(!m_tessellationDomainOrigin ? DE_NULL : &tessellationDomainOriginStateInfo),
 		(VkPipelineTessellationStateCreateFlags)0,						// VkPipelineTessellationStateCreateFlags      flags;
 		m_patchControlPoints,											// uint32_t                                    patchControlPoints;
 	};
