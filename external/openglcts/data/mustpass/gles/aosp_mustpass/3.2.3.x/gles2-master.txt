@@ -15969,7 +15969,6 @@ dEQP-GLES2.functional.draw.random.69
 dEQP-GLES2.functional.draw.random.70
 dEQP-GLES2.functional.draw.random.71
 dEQP-GLES2.functional.flush_finish.wait
-dEQP-GLES2.functional.flush_finish.flush
 dEQP-GLES2.functional.flush_finish.finish_wait
 dEQP-GLES2.functional.default_vertex_attrib.float.vertex_attrib_1f
 dEQP-GLES2.functional.default_vertex_attrib.float.vertex_attrib_2f
