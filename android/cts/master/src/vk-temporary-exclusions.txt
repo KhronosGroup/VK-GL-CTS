@@ -1,1 +1,3 @@
 dEQP-VK.ubo.random.all_shared_buffer.48
+dEQP-VK.wsi.android.incremental_present.scale_down.fifo.incremental_present
+dEQP-VK.wsi.android.incremental_present.scale_down.fifo.reference
