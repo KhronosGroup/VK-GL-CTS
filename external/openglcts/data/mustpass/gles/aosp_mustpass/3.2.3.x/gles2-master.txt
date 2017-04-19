@@ -13614,7 +13614,6 @@ dEQP-GLES2.functional.negative_api.texture.copytexsubimage2d_level_max_cube_pos
 dEQP-GLES2.functional.negative_api.texture.copytexsubimage2d_neg_offset
 dEQP-GLES2.functional.negative_api.texture.copytexsubimage2d_offset_allowed
 dEQP-GLES2.functional.negative_api.texture.copytexsubimage2d_neg_wdt_hgt
-dEQP-GLES2.functional.negative_api.texture.copytexsubimage2d_incomplete_framebuffer
 dEQP-GLES2.functional.negative_api.texture.deletetextures_invalid_number
 dEQP-GLES2.functional.negative_api.texture.deletetextures_invalid_number_bind
 dEQP-GLES2.functional.negative_api.texture.generatemipmap_invalid_target
