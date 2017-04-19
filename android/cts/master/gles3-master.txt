@@ -19248,6 +19248,12 @@ dEQP-GLES3.functional.shaders.constant_expressions.builtin_functions.geometric.n
 dEQP-GLES3.functional.shaders.constant_expressions.builtin_functions.geometric.normalize_vec3_fragment
 dEQP-GLES3.functional.shaders.constant_expressions.builtin_functions.geometric.normalize_vec4_vertex
 dEQP-GLES3.functional.shaders.constant_expressions.builtin_functions.geometric.normalize_vec4_fragment
+dEQP-GLES3.functional.shaders.metamorphic.synthetic.variant_1
+dEQP-GLES3.functional.shaders.metamorphic.synthetic.variant_2
+dEQP-GLES3.functional.shaders.metamorphic.synthetic.variant_3
+dEQP-GLES3.functional.shaders.metamorphic.synthetic.variant_4
+dEQP-GLES3.functional.shaders.metamorphic.bubblesort_flag.variant_1
+dEQP-GLES3.functional.shaders.metamorphic.bubblesort_flag.variant_2
 dEQP-GLES3.functional.shaders.random.basic_expression.vertex.0
 dEQP-GLES3.functional.shaders.random.basic_expression.vertex.1
 dEQP-GLES3.functional.shaders.random.basic_expression.vertex.2
