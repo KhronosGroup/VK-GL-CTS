@@ -1086,16 +1086,27 @@ void NegativeTextureApiTests::init (void)
 		});
 	ES2F_ADD_API_CASE(copytexsubimage2d_incomplete_framebuffer, "Invalid glCopyTexSubImage2D() usage",
 		{
-			GLuint texture;
-			glGenTextures(1, &texture);
-			glBindTexture(GL_TEXTURE_2D, texture);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-
 			m_log << tcu::TestLog::Section("", "GL_INVALID_FRAMEBUFFER_OPERATION is generated if the currently bound framebuffer is not framebuffer complete.");
+
+			GLuint texture[2];
 			GLuint fbo;
+
+			glGenTextures			(2, texture);
+			glBindTexture			(GL_TEXTURE_2D, texture[0]);
+			glTexImage2D			(GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+			glBindTexture			(GL_TEXTURE_CUBE_MAP, texture[1]);
+			glTexImage2D			(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+			glTexImage2D			(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+			glTexImage2D			(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+			glTexImage2D			(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+			glTexImage2D			(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+			glTexImage2D			(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+			expectError(GL_NO_ERROR);
+
 			glGenFramebuffers(1, &fbo);
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glCheckFramebufferStatus(GL_FRAMEBUFFER);
+			expectError(GL_NO_ERROR);
 
 			glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 0, 0);
 			expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
@@ -1114,9 +1125,10 @@ void NegativeTextureApiTests::init (void)
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glDeleteFramebuffers(1, &fbo);
+			glDeleteTextures(2, texture);
+
 			m_log << tcu::TestLog::EndSection;
 
-			glDeleteTextures(1, &texture);
 		});
 
 	// glDeleteTextures
