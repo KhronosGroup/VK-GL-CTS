@@ -2186,13 +2186,16 @@ deUint8 LineRenderCase::checkLineContinuity (const tcu::ConstPixelBufferAccess& 
 		++totalPixels;
 	}
 
-	if (missedPixels > 0 && --messageLimitCounter >= 0)
+	if (missedPixels > 0)
 	{
-		m_testCtx.getLog()
-			<< tcu::TestLog::Message
-			<< "Found non-continuous " << ((advance.x() == 1)  ? ("horizontal") : ("vertical")) << " line near " << begin << ". "
-			<< "Missed pixels: " << missedPixels
-			<< tcu::TestLog::EndMessage;
+		if (--messageLimitCounter >= 0)
+		{
+			m_testCtx.getLog()
+				<< tcu::TestLog::Message
+				<< "Found non-continuous " << ((advance.x() == 1)  ? ("horizontal") : ("vertical")) << " line near " << begin << ". "
+				<< "Missed pixels: " << missedPixels
+				<< tcu::TestLog::EndMessage;
+		}
 		// allow 10% missing pixels for warning
 		if (missedPixels <= deRoundFloatToInt32((float)totalPixels * 0.1f))
 			errorMask = SCANRESULT_LINE_CONT_WARN_BIT;
