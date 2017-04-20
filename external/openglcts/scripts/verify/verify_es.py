@@ -103,10 +103,10 @@ def verifyConfigFile (filename, type):
 
 def verifyMustpassCases(package, mustpassCases, type):
 	messages = []
-	apiToTest = { "es32" : ["gles32", "gles31", "gles3", "gles2"],
-				"es31" : ["gles31", "gles3", "gles2"],
-				"es3"  : ["gles3", "gles2"],
-				"es2"  : ["gles2"]}
+	apiToTest = { "es32" : ["gles32", "gles31", "gles3", "gles2", "egl"],
+				"es31" : ["gles31", "gles3", "gles2", "egl"],
+				"es3"  : ["gles3", "gles2", "egl"],
+				"es2"  : ["gles2", "egl"]}
 
 	for mustpass in mustpassCases:
 		mustpassXML = os.path.join(mustpass, "mustpass.xml")
