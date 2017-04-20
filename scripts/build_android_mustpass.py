@@ -502,6 +502,7 @@ MASTER_VULKAN_FILTERS			= [
 		exclude("vk-not-applicable.txt"),
 		exclude("vk-excluded-tests.txt"),
 		exclude("vk-test-issues.txt"),
+		exclude("vk-waivers.txt"),
 		exclude("vk-temporary-exclusions.txt")
 	]
 MASTER_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
