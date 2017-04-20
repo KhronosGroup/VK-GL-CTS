@@ -17037,3 +17037,4 @@ dEQP-GLES2.functional.lifetime.attach.deleted_output.renderbuffer_framebuffer
 dEQP-GLES2.functional.debug_marker.supported
 dEQP-GLES2.functional.debug_marker.random
 dEQP-GLES2.functional.debug_marker.invalid
+dEQP-GLES2.functional.shaders.invalid_implicit_conversions.*
