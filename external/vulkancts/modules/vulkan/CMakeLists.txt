@@ -24,6 +24,7 @@ add_subdirectory(fragment_ops)
 add_subdirectory(geometry)
 add_subdirectory(texture)
 add_subdirectory(robustness)
+add_subdirectory(renderpass)
 add_subdirectory(multiview)
 
 include_directories(
@@ -51,6 +52,7 @@ include_directories(
 	texture
 	geometry
 	robustness
+	renderpass
 	multiview
 	)
 
@@ -63,8 +65,6 @@ set(DEQP_VK_SRCS
 	vktTestPackage.hpp
 	vktShaderLibrary.cpp
 	vktShaderLibrary.hpp
-	vktRenderPassTests.cpp
-	vktRenderPassTests.hpp
 	vktTestGroupUtil.cpp
 	vktTestGroupUtil.hpp
 	vktInfoTests.cpp
@@ -103,6 +103,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-texture
 	deqp-vk-geometry
 	deqp-vk-robustness
+	deqp-vk-render-pass
 	deqp-vk-multiview
 	)
 
