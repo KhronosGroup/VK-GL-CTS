@@ -202,69 +202,6 @@ void logAttribList (const EglTestContext& eglTestCtx, const EGLint* attribList)
 										 << TestLog::EndMessage;
 }
 
-void parseAttributeValues (const EGLint* attribList, EGLint& majorVersion, EGLint& minorVersion, EGLint& robustAccessExt)
-{
-	const EGLint* iter = attribList;
-
-	while ((*iter) != EGL_NONE)
-	{
-		switch (*iter)
-		{
-			case EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT:
-				iter++;
-				robustAccessExt = *iter;
-				iter++;
-				break;
-
-			case EGL_CONTEXT_MAJOR_VERSION_KHR:
-				iter++;
-				majorVersion = (*iter);
-				iter++;
-				break;
-
-			case EGL_CONTEXT_MINOR_VERSION_KHR:
-				iter++;
-				minorVersion = (*iter);
-				iter++;
-				break;
-
-			case EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT:
-				iter++;
-				iter++;
-				break;
-
-			default:
-				DE_FATAL("Unsupported EGL attribute");
-		}
-	}
-}
-
-glu::ContextType attribListToContextType (const EGLint* attribList)
-{
-	EGLint				majorVersion	= 1;
-	EGLint				minorVersion	= 0;
-	EGLint				robustAccessExt = 0;
-
-	glu::ContextFlags	flags			= glu::ContextFlags(0);
-	const glu::Profile	profile			= glu::PROFILE_ES;
-	parseAttributeValues(attribList, majorVersion, minorVersion, robustAccessExt);
-
-	return glu::ContextType(majorVersion, minorVersion, profile, flags);
-}
-
-void checkRequiredGLRobustnessExtension (const EGLint* attribList, const glw::Functions& gl)
-{
-	EGLint				majorVersion			= 1;
-	EGLint				minorVersion			= 0;
-	EGLint				robustAccessExt			= 0;
-	parseAttributeValues(attribList, majorVersion, minorVersion, robustAccessExt);
-
-	glu::ApiType		apiType					= glu::ApiType::es(majorVersion, minorVersion);
-
-	if (!glu::hasExtension(gl, apiType, "GL_KHR_robustness") && !glu::hasExtension(gl, apiType, "GL_EXT_robustness"))
-		TCU_THROW(NotSupportedError, (string("GL_KHR_robustness and GL_EXT_robustness") + " not supported").c_str());
-}
-
 class RobustnessTestCase: public TestCase
 {
 public:
@@ -331,8 +268,6 @@ private:
 	EGLConfig				getEGLConfig			(void);
 
 	eglu::NativeWindow*		m_window;
-	glu::ContextType		m_glContextType;
-
 };
 
 RobustnessTestCase::Params::Params (const string&				name,
@@ -445,6 +380,19 @@ void RobustnessTestCase::initEGLSurface (void)
 	m_eglSurface								=	eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, m_eglConfig, DE_NULL);
 }
 
+glu::ApiType paramsToApiType (const RobustnessTestCase::Params& params)
+{
+	EGLint				minorVersion	= 0;
+	if (params.getShaderType()		 == SHADERTYPE_COMPUTE	||
+		params.getResourceType()	 == RESOURCETYPE_SSBO	||
+		params.getContextResetType() == CONTEXTRESETTYPE_SHADER_OOB)
+	{
+		minorVersion = 1;
+	}
+
+	return glu::ApiType::es(3, minorVersion);
+}
+
 void RobustnessTestCase::checkRequiredEGLExtensions (const EGLint* attribList)
 {
 	set<string>		requiredExtensions;
@@ -490,6 +438,34 @@ void RobustnessTestCase::checkRequiredEGLExtensions (const EGLint* attribList)
 	}
 }
 
+void checkRequiredGLSupport (const glw::Functions& gl, glu::ApiType requiredApi)
+{
+	if (!glu::hasExtension(gl, requiredApi, "GL_KHR_robustness") && !glu::hasExtension(gl, requiredApi, "GL_EXT_robustness"))
+	{
+		TCU_THROW(NotSupportedError, (string("GL_KHR_robustness and GL_EXT_robustness") + " not supported").c_str());
+	}
+	else
+	{
+		int realMinorVersion = 0;
+		gl.getIntegerv(GL_MINOR_VERSION, &realMinorVersion);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Get minor version failed");
+
+		if (realMinorVersion < requiredApi.getMinorVersion())
+			TCU_THROW(NotSupportedError, "Test case requires GLES 3.1");
+	}
+}
+
+void checkGLSupportForParams (const glw::Functions& gl, const RobustnessTestCase::Params& params)
+{
+	int minorVersion = 0;
+	if (params.getShaderType()		  == SHADERTYPE_COMPUTE	||
+		params.getResourceType()	  == RESOURCETYPE_SSBO	||
+		params.getContextResetType() == CONTEXTRESETTYPE_SHADER_OOB)
+	{
+		minorVersion = 1;
+	}
+	checkRequiredGLSupport(gl, glu::ApiType::es(3, minorVersion));
+}
 
 class RenderingContext
 {
@@ -501,7 +477,7 @@ public:
 																 const EGLContext&		sharedContext);
 							~RenderingContext					(void);
 
-	void					initGLFunctions						(glw::Functions* gl);
+	void					initGLFunctions						(glw::Functions* gl, const glu::ApiType apiType);
 	void					makeCurrent							(const EGLSurface& surface);
 	EGLContext				getContext							(void);
 
@@ -561,7 +537,7 @@ void RenderingContext::makeCurrent (const EGLSurface& surface)
 	EGLU_CHECK_CALL(m_egl, makeCurrent(m_display, surface, surface, m_context));
 }
 
-void RenderingContext::initGLFunctions (glw::Functions *gl)
+void RenderingContext::initGLFunctions (glw::Functions *gl, const glu::ApiType apiType)
 {
 	// \todo [2017-03-23 pyry] Current version has 2 somewhat ugly hacks:
 	//
@@ -572,8 +548,6 @@ void RenderingContext::initGLFunctions (glw::Functions *gl)
 	//
 	// 2) We assume that calling code will check for KHR_robustness or EXT_robustness
 	//    support after calling initGLFunctions(). We could move the check here.
-
-	const glu::ApiType	apiType	= attribListToContextType(m_attribList).getAPI();
 
 	m_eglTestCtx.initGLFunctions(gl, apiType);
 
@@ -978,7 +952,7 @@ FixedFunctionOOB::~FixedFunctionOOB (void)
 glu::ProgramSources FixedFunctionOOB::genSources (void)
 {
 	const char* const vert =
-		"#version 310 es\n"
+		"#version 300 es\n"
 		"in highp vec4 a_position;\n"
 		"void main (void)\n"
 		"{\n"
@@ -986,7 +960,7 @@ glu::ProgramSources FixedFunctionOOB::genSources (void)
 		"}\n";
 
 	const char* const frag =
-		"#version 310 es\n"
+		"#version 300 es\n"
 		"layout(location = 0) out highp vec4 fragColor;\n"
 		"void main (void)\n"
 		"{\n"
@@ -1436,7 +1410,7 @@ public:
 		const EGLint attribList[] =
 		{
 			EGL_CONTEXT_CLIENT_VERSION, 3,
-			EGL_CONTEXT_MINOR_VERSION_KHR, 1,
+			EGL_CONTEXT_MINOR_VERSION_KHR, 0,
 			EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, EGL_TRUE,
 			EGL_NONE
 		};
@@ -1447,8 +1421,11 @@ public:
 		context.makeCurrent(m_eglSurface);
 
 		glw::Functions gl;
-		context.initGLFunctions(&gl);
-		checkRequiredGLRobustnessExtension(attribList, gl);
+		{
+			const glu::ApiType apiType(3, 0, glu::PROFILE_ES);
+			context.initGLFunctions(&gl, apiType);
+			checkRequiredGLSupport(gl, apiType);
+		}
 
 		deUint8 robustAccessGL;
 		gl.getBooleanv(GL_CONTEXT_ROBUST_ACCESS_EXT, &robustAccessGL);
@@ -1486,7 +1463,7 @@ public:
 		const EGLint attribList[] =
 		{
 			EGL_CONTEXT_CLIENT_VERSION, 3,
-			EGL_CONTEXT_MINOR_VERSION_KHR, 1,
+			EGL_CONTEXT_MINOR_VERSION_KHR, 0,
 			EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, EGL_TRUE,
 			EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT, EGL_NO_RESET_NOTIFICATION,
 			EGL_NONE
@@ -1498,8 +1475,11 @@ public:
 		context.makeCurrent(m_eglSurface);
 
 		glw::Functions gl;
-		context.initGLFunctions(&gl);
-		checkRequiredGLRobustnessExtension(attribList, gl);
+		{
+			const glu::ApiType apiType(3, 0, glu::PROFILE_ES);
+			context.initGLFunctions(&gl, apiType);
+			checkRequiredGLSupport(gl, apiType);
+		}
 
 		deUint8 robustAccessGL;
 		gl.getBooleanv(GL_CONTEXT_ROBUST_ACCESS_EXT, &robustAccessGL);
@@ -1543,7 +1523,7 @@ public:
 		const EGLint attribList[] =
 		{
 			EGL_CONTEXT_CLIENT_VERSION, 3,
-			EGL_CONTEXT_MINOR_VERSION_KHR, 1,
+			EGL_CONTEXT_MINOR_VERSION_KHR, 0,
 			EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, EGL_TRUE,
 			EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT, EGL_LOSE_CONTEXT_ON_RESET,
 			EGL_NONE
@@ -1555,9 +1535,11 @@ public:
 		context.makeCurrent(m_eglSurface);
 
 		glw::Functions gl;
-		context.initGLFunctions(&gl);
-		checkRequiredGLRobustnessExtension(attribList, gl);
-
+		{
+			const glu::ApiType apiType(3, 0, glu::PROFILE_ES);
+			context.initGLFunctions(&gl, apiType);
+			checkRequiredGLSupport(gl, apiType);
+		}
 		glw::GLint reset = 0;
 		gl.getIntegerv(GL_RESET_NOTIFICATION_STRATEGY, &reset);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv()");
@@ -1630,7 +1612,7 @@ TestCase::IterateResult ContextResetCase::iterate (void)
 	const EGLint attribList[] =
 	{
 		EGL_CONTEXT_CLIENT_VERSION, 3,
-		EGL_CONTEXT_MINOR_VERSION_KHR, 1,
+		EGL_CONTEXT_MINOR_VERSION_KHR, 0,
 		EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, (m_params.getRobustAccessType() == ROBUSTACCESS_TRUE) ? EGL_TRUE : EGL_FALSE,
 		EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT, EGL_LOSE_CONTEXT_ON_RESET,
 		EGL_NONE
@@ -1641,8 +1623,11 @@ TestCase::IterateResult ContextResetCase::iterate (void)
 	RenderingContext context(m_eglTestCtx, attribList, m_eglConfig, m_eglDisplay, EGL_NO_CONTEXT);
 	context.makeCurrent(m_eglSurface);
 
-	context.initGLFunctions(&gl);
-	checkRequiredGLRobustnessExtension(attribList, gl);
+	{
+		const glu::ApiType apiType = paramsToApiType(m_params);
+		context.initGLFunctions(&gl, apiType);
+		checkGLSupportForParams(gl, m_params);
+	}
 
 	execute(gl);
 
@@ -1865,7 +1850,7 @@ public:
 		const EGLint attribListA[] =
 		{
 			EGL_CONTEXT_CLIENT_VERSION, 3,
-			EGL_CONTEXT_MINOR_VERSION_KHR, 1,
+			EGL_CONTEXT_MINOR_VERSION_KHR, 0,
 			EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, EGL_TRUE,
 			EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT, EGL_NO_RESET_NOTIFICATION,
 			EGL_NONE
@@ -1874,7 +1859,7 @@ public:
 		const EGLint attribListB[] =
 		{
 			EGL_CONTEXT_CLIENT_VERSION, 3,
-			EGL_CONTEXT_MINOR_VERSION_KHR, 1,
+			EGL_CONTEXT_MINOR_VERSION_KHR, 0,
 			EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, EGL_TRUE,
 			EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT, EGL_LOSE_CONTEXT_ON_RESET,
 			EGL_NONE
@@ -1985,7 +1970,7 @@ public:
 		const EGLint attribListShared[] =
 		{
 			EGL_CONTEXT_CLIENT_VERSION, 3,
-			EGL_CONTEXT_MINOR_VERSION_KHR, 1,
+			EGL_CONTEXT_MINOR_VERSION_KHR, 0,
 			EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, EGL_TRUE,
 			EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT, EGL_LOSE_CONTEXT_ON_RESET,
 			EGL_NONE
@@ -2002,8 +1987,8 @@ public:
 		contextA.makeCurrent(m_eglSurface);
 
 		glw::Functions gl;
-		contextA.initGLFunctions(&gl);
-		checkRequiredGLRobustnessExtension(attribListShared, gl);
+		contextA.initGLFunctions(&gl, paramsToApiType(m_params));
+		checkGLSupportForParams(gl, m_params);
 
 		DE_ASSERT(m_params.getContextResetType() == CONTEXTRESETTYPE_INFINITE_LOOP);
 		de::UniquePtr<ContextReset> contextReset(new InfiniteLoop(gl, log, m_params.getShaderType()));
@@ -2061,7 +2046,7 @@ public:
 		const EGLint attribList[] =
 		{
 			EGL_CONTEXT_CLIENT_VERSION, 3,
-			EGL_CONTEXT_MINOR_VERSION_KHR, 1,
+			EGL_CONTEXT_MINOR_VERSION_KHR, 0,
 			EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT, EGL_LOSE_CONTEXT_ON_RESET,
 			EGL_NONE
 		};
@@ -2115,7 +2100,7 @@ public:
 		const EGLint attribList[] =
 		{
 			EGL_CONTEXT_CLIENT_VERSION, 3,
-			EGL_CONTEXT_MINOR_VERSION_KHR, 1,
+			EGL_CONTEXT_MINOR_VERSION_KHR, 0,
 			EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, EGL_TRUE,
 			EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT, EGL_LOSE_CONTEXT_ON_RESET,
 			EGL_NONE
@@ -2128,8 +2113,8 @@ public:
 		contextA.makeCurrent(m_eglSurface);
 
 		glw::Functions gl;
-		contextA.initGLFunctions(&gl);
-		checkRequiredGLRobustnessExtension(attribList, gl);
+		contextA.initGLFunctions(&gl, paramsToApiType(m_params));
+		checkGLSupportForParams(gl, m_params);
 
 		DE_ASSERT(m_params.getContextResetType() == CONTEXTRESETTYPE_INFINITE_LOOP);
 		de::UniquePtr<ContextReset> contextReset(new InfiniteLoop(gl, log, m_params.getShaderType()));

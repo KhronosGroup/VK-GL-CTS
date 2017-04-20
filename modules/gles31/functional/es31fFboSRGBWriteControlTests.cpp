@@ -469,12 +469,11 @@ void TestVertexData::unbind (void) const
 class TestTexture2D
 {
 public:
-								TestTexture2D		(Context& context, const deUint32 internalFormatValue, const deUint32 transferFormatValue, const deUint32 transferTypeValue, const tcu::Vec4 imageColorValue, const int idx);
+								TestTexture2D		(Context& context, const deUint32 internalFormatValue, const deUint32 transferFormatValue, const deUint32 transferTypeValue, const tcu::Vec4 imageColorValue);
 								~TestTexture2D		(void);
 
 	int							getTextureUnit		(void) const;
 	deUint32					getHandle			(void) const;
-	int							getIdx				(void) const;
 
 	void						bind				(const int textureUnit);
 	void						unbind				(void) const;
@@ -488,17 +487,15 @@ private:
 	int							m_height;
 	tcu::TextureLevel			m_imageData;
 	int							m_textureUnit;
-	const int					m_idx;
 };
 
-TestTexture2D::TestTexture2D	(Context& context, const deUint32 internalFormat, const deUint32 transferFormat, const deUint32 transferType, const tcu::Vec4 imageColor, const int idx)
+TestTexture2D::TestTexture2D	(Context& context, const deUint32 internalFormat, const deUint32 transferFormat, const deUint32 transferType, const tcu::Vec4 imageColor)
 	: m_gl						(&context.getRenderContext().getFunctions())
 	, m_internalFormat			(internalFormat)
 	, m_transferFormat			(tcu::TextureFormat(glu::mapGLTransferFormat(transferFormat, transferType)))
 	, m_width					(TestTextureSizes::WIDTH)
 	, m_height					(TestTextureSizes::HEIGHT)
 	, m_imageData				(tcu::TextureLevel(glu::mapGLInternalFormat(internalFormat), m_width, m_height, 1))
-	, m_idx						(idx)
 {
 	// fill image data with a solid test color
 	tcu::clear(m_imageData.getAccess(), tcu::Vec4(0.0f));
@@ -536,11 +533,6 @@ deUint32 TestTexture2D::getHandle (void) const
 	return m_handle;
 }
 
-int TestTexture2D::getIdx (void) const
-{
-	return m_idx;
-}
-
 void TestTexture2D::bind (const int textureUnit)
 {
 	m_textureUnit = textureUnit;
@@ -563,10 +555,8 @@ public:
 	void										setTargetType			(const deUint32 targetType);
 
 	FboType										getType					(void) const;
-	deUint32									getHandle				(void) const;
 	deUint32									getColorAttachment		(void) const;
 	int											getIdx					(void) const;
-	deUint32									getTargetType			(void) const;
 
 	void										bind					(void);
 	void										unbind					(void);
@@ -630,11 +620,6 @@ FboType TestFramebuffer::getType (void) const
 	return m_type;
 }
 
-deUint32 TestFramebuffer::getHandle (void) const
-{
-	return **m_referenceSource;
-}
-
 deUint32 TestFramebuffer::getColorAttachment (void) const
 {
 	return m_colorAttachment;
@@ -643,11 +628,6 @@ deUint32 TestFramebuffer::getColorAttachment (void) const
 int TestFramebuffer::getIdx (void) const
 {
 	return m_idx;
-}
-
-deUint32 TestFramebuffer::getTargetType (void) const
-{
-	return m_targetType;
 }
 
 void TestFramebuffer::bind (void)
@@ -675,7 +655,6 @@ public:
 										~TestShaderProgram		(void);
 
 	glw::GLuint							getHandle				(void) const;
-	int									getSamplerTotal			(void) const;
 
 	void								use						(void) const;
 	void								unuse					(void) const;
@@ -765,11 +744,6 @@ TestShaderProgram::~TestShaderProgram (void)
 deUint32 TestShaderProgram::getHandle (void) const
 {
 	return m_referenceSource->getProgram();
-}
-
-int TestShaderProgram::getSamplerTotal (void) const
-{
-	return m_samplerTotal;
 }
 
 void TestShaderProgram::use (void) const
@@ -876,10 +850,10 @@ Renderer::Renderer				(Context& context)
 	, m_blendConfigList			(getBlendingConfigList())
 	, m_hasShaderProgramInfo	(false)
 {
-	TextureSp textureLinear(new TestTexture2D(m_context, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, getTestColorLinear(), 0));
+	TextureSp textureLinear(new TestTexture2D(m_context, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, getTestColorLinear()));
 	m_textureSourceList.push_back(textureLinear);
 
-	TextureSp textureSRGB(new TestTexture2D(m_context, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE, getTestColorLinear(), 1));
+	TextureSp textureSRGB(new TestTexture2D(m_context, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE, getTestColorLinear()));
 	m_textureSourceList.push_back(textureSRGB);
 }
 
@@ -1082,7 +1056,7 @@ void Renderer::createFBOwithColorAttachment (const std::vector<FBOConfig> fboCon
 	const int size = (int)fboConfigList.size();
 	for (int idx = 0; idx < size; idx++)
 	{
-		TextureSp texture(new TestTexture2D(m_context, fboConfigList[idx].textureInternalFormat, GL_RGBA, GL_UNSIGNED_BYTE, fboConfigList[idx].textureColor, idx));
+		TextureSp texture(new TestTexture2D(m_context, fboConfigList[idx].textureInternalFormat, GL_RGBA, GL_UNSIGNED_BYTE, fboConfigList[idx].textureColor));
 		m_fboTextureList.push_back(texture);
 
 		bool isSRGB;
