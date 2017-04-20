@@ -3556,6 +3556,14 @@ void glwMultiDrawArraysIndirect (GLenum mode, const void *indirect, GLsizei draw
 	gl->multiDrawArraysIndirect(mode, indirect, drawcount, stride);
 }
 
+void glwMultiDrawArraysIndirectCountARB (GLenum mode, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiDrawArraysIndirectCountARB(mode, indirect, drawcount, maxdrawcount, stride);
+}
+
 void glwMultiDrawElements (GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -3578,6 +3586,14 @@ void glwMultiDrawElementsIndirect (GLenum mode, GLenum type, const void *indirec
 	if (!gl)
 		return;
 	gl->multiDrawElementsIndirect(mode, type, indirect, drawcount, stride);
+}
+
+void glwMultiDrawElementsIndirectCountARB (GLenum mode, GLenum type, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiDrawElementsIndirectCountARB(mode, type, indirect, drawcount, maxdrawcount, stride);
 }
 
 void glwMultiTexBufferEXT (GLenum texunit, GLenum target, GLenum internalformat, GLuint buffer)

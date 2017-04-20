@@ -92,3 +92,6 @@ dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb5_a1
 dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb5_a1_stencil_index8
 dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb5_a1_depth_component16
 dEQP-GLES2.functional.fbo.render.stencil_clear.rbo_rgb5_a1_stencil_index8
+
+#VK-GL-CTS 380
+dEQP-GLES2.functional.negative_api.texture.copytexsubimage2d_incomplete_framebuffer

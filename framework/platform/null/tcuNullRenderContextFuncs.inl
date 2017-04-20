@@ -3729,6 +3729,16 @@ GLW_APICALL void GLW_APIENTRY glMultiDrawArraysIndirect (GLenum mode, const void
 
 }
 
+GLW_APICALL void GLW_APIENTRY glMultiDrawArraysIndirectCountARB (GLenum mode, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
+{
+	DE_UNREF(mode);
+	DE_UNREF(indirect);
+	DE_UNREF(drawcount);
+	DE_UNREF(maxdrawcount);
+	DE_UNREF(stride);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glMultiDrawElements (GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount)
 {
 	DE_UNREF(mode);
@@ -3756,6 +3766,17 @@ GLW_APICALL void GLW_APIENTRY glMultiDrawElementsIndirect (GLenum mode, GLenum t
 	DE_UNREF(type);
 	DE_UNREF(indirect);
 	DE_UNREF(drawcount);
+	DE_UNREF(stride);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glMultiDrawElementsIndirectCountARB (GLenum mode, GLenum type, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
+{
+	DE_UNREF(mode);
+	DE_UNREF(type);
+	DE_UNREF(indirect);
+	DE_UNREF(drawcount);
+	DE_UNREF(maxdrawcount);
 	DE_UNREF(stride);
 
 }

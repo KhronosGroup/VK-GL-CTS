@@ -695,6 +695,12 @@ if (de::contains(extSet, "GL_ARB_get_program_binary"))
 	gl->programParameteri	= (glProgramParameteriFunc)	loader->get("glProgramParameteri");
 }
 
+if (de::contains(extSet, "GL_ARB_indirect_parameters"))
+{
+	gl->multiDrawArraysIndirectCountARB		= (glMultiDrawArraysIndirectCountARBFunc)	loader->get("glMultiDrawArraysIndirectCountARB");
+	gl->multiDrawElementsIndirectCountARB	= (glMultiDrawElementsIndirectCountARBFunc)	loader->get("glMultiDrawElementsIndirectCountARB");
+}
+
 if (de::contains(extSet, "GL_ARB_internalformat_query"))
 {
 	gl->getInternalformativ	= (glGetInternalformativFunc)	loader->get("glGetInternalformativ");

@@ -447,9 +447,11 @@
 #define			glMinSampleShading									glwMinSampleShading
 #define			glMultiDrawArrays									glwMultiDrawArrays
 #define			glMultiDrawArraysIndirect							glwMultiDrawArraysIndirect
+#define			glMultiDrawArraysIndirectCountARB					glwMultiDrawArraysIndirectCountARB
 #define			glMultiDrawElements									glwMultiDrawElements
 #define			glMultiDrawElementsBaseVertex						glwMultiDrawElementsBaseVertex
 #define			glMultiDrawElementsIndirect							glwMultiDrawElementsIndirect
+#define			glMultiDrawElementsIndirectCountARB					glwMultiDrawElementsIndirectCountARB
 #define			glMultiTexBufferEXT									glwMultiTexBufferEXT
 #define			glMultiTexCoordPointerEXT							glwMultiTexCoordPointerEXT
 #define			glMultiTexEnvfEXT									glwMultiTexEnvfEXT
@@ -1284,9 +1286,11 @@ void			glwMemoryBarrierByRegion							(GLbitfield barriers);
 void			glwMinSampleShading									(GLfloat value);
 void			glwMultiDrawArrays									(GLenum mode, const GLint *first, const GLsizei *count, GLsizei drawcount);
 void			glwMultiDrawArraysIndirect							(GLenum mode, const void *indirect, GLsizei drawcount, GLsizei stride);
+void			glwMultiDrawArraysIndirectCountARB					(GLenum mode, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride);
 void			glwMultiDrawElements								(GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount);
 void			glwMultiDrawElementsBaseVertex						(GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount, const GLint *basevertex);
 void			glwMultiDrawElementsIndirect						(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride);
+void			glwMultiDrawElementsIndirectCountARB				(GLenum mode, GLenum type, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride);
 void			glwMultiTexBufferEXT								(GLenum texunit, GLenum target, GLenum internalformat, GLuint buffer);
 void			glwMultiTexCoordPointerEXT							(GLenum texunit, GLint size, GLenum type, GLsizei stride, const void *pointer);
 void			glwMultiTexEnvfEXT									(GLenum texunit, GLenum target, GLenum pname, GLfloat param);
