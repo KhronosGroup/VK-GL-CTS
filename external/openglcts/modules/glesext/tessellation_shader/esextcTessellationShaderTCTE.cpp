@@ -1993,13 +1993,13 @@ std::string TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::getTes
 													"\n";
 	if (should_pass_pointsize_data)
 	{
-		result_code << "${IN_PER_VERTEX_DECL_POINT_SIZE}";
-		result_code << "${OUT_PER_VERTEX_DECL_POINT_SIZE}";
+		result_code << "${IN_PER_VERTEX_DECL_ARRAY_POINT_SIZE}";
+		result_code << "${OUT_PER_VERTEX_DECL_ARRAY_POINT_SIZE}";
 	}
 	else
 	{
-		result_code << "${IN_PER_VERTEX_DECL}";
-		result_code << "${OUT_PER_VERTEX_DECL}";
+		result_code << "${IN_PER_VERTEX_DECL_ARRAY}";
+		result_code << "${OUT_PER_VERTEX_DECL_ARRAY}";
 	}
 	result_code << "out OUT_TC\n"
 				   "{\n"
@@ -2079,12 +2079,12 @@ std::string TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::getTes
 					  "\n";
 	if (should_pass_pointsize_data)
 	{
-		result_sstream << "${IN_PER_VERTEX_DECL_POINT_SIZE}";
+		result_sstream << "${IN_PER_VERTEX_DECL_ARRAY_POINT_SIZE}";
 		result_sstream << "${OUT_PER_VERTEX_DECL_POINT_SIZE}";
 	}
 	else
 	{
-		result_sstream << "${IN_PER_VERTEX_DECL}";
+		result_sstream << "${IN_PER_VERTEX_DECL_ARRAY}";
 		result_sstream << "${OUT_PER_VERTEX_DECL}";
 	}
 	result_sstream << "in OUT_TC\n"

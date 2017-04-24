@@ -44,6 +44,7 @@
 #include "gl4cPostDepthCoverageTests.hpp"
 #include "gl4cProgramInterfaceQueryTests.hpp"
 #include "gl4cRobustnessTests.hpp"
+#include "gl4cShaderAtomicCounterOpsTests.hpp"
 #include "gl4cShaderAtomicCountersTests.hpp"
 #include "gl4cShaderImageLoadStoreTests.hpp"
 #include "gl4cShaderImageSizeTests.hpp"
@@ -335,6 +336,7 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::SparseTexture2Tests(getContext()));
 		addChild(new gl4cts::SparseTextureClampTests(getContext()));
 		addChild(new gl4cts::TextureFilterMinmax(getContext()));
+		addChild(new gl4cts::ShaderAtomicCounterOps(getContext()));
 	}
 	catch (...)
 	{
