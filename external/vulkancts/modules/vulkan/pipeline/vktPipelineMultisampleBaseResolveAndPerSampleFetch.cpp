@@ -830,19 +830,6 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 		// Perform a draw
 		deviceInterface.cmdDraw(*commandBuffer, vertexDataDesc.verticesCount, 1u, 0u, 0u);
 
-		// Change imageMS layout for input attachment compatibility
-		const VkImageMemoryBarrier imageMSInputAttachmentBarrier = makeImageMemoryBarrier
-		(
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			**imageMS,
-			fullImageRange
-		);
-
-		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageMSInputAttachmentBarrier);
-
 		for (deUint32 sampleNdx = 0u; sampleNdx < numSamples; ++sampleNdx)
 		{
 			deviceInterface.cmdNextSubpass(*commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
