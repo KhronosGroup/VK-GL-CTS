@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 9302c6a6963864cba6c43d7eee0f4afcdcec2084.
+ * Generated from Khronos GL API description (gl.xml) revision 967f96c92bae15baa1a4326a55222984befdc9ed.
  */
 
 if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
@@ -89,9 +89,9 @@ if (de::contains(extSet, "GL_EXT_draw_elements_base_vertex"))
 
 if (de::contains(extSet, "GL_EXT_texture_storage"))
 {
-	gl->texStorage1DEXT		= (glTexStorage1DEXTFunc)		loader->get("glTexStorage1DEXT");
-	gl->texStorage2DEXT		= (glTexStorage2DEXTFunc)		loader->get("glTexStorage2DEXT");
-	gl->texStorage3DEXT		= (glTexStorage3DEXTFunc)		loader->get("glTexStorage3DEXT");
+	gl->texStorage1D		= (glTexStorage1DFunc)			loader->get("glTexStorage1DEXT");
+	gl->texStorage2D		= (glTexStorage2DFunc)			loader->get("glTexStorage2DEXT");
+	gl->texStorage3D		= (glTexStorage3DFunc)			loader->get("glTexStorage3DEXT");
 	gl->textureStorage1DEXT	= (glTextureStorage1DEXTFunc)	loader->get("glTextureStorage1DEXT");
 	gl->textureStorage2DEXT	= (glTextureStorage2DEXTFunc)	loader->get("glTextureStorage2DEXT");
 	gl->textureStorage3DEXT	= (glTextureStorage3DEXTFunc)	loader->get("glTextureStorage3DEXT");
@@ -124,12 +124,12 @@ if (de::contains(extSet, "GL_OES_EGL_image"))
 
 if (de::contains(extSet, "GL_OES_texture_3D"))
 {
-	gl->compressedTexImage3DOES		= (glCompressedTexImage3DOESFunc)		loader->get("glCompressedTexImage3DOES");
-	gl->compressedTexSubImage3DOES	= (glCompressedTexSubImage3DOESFunc)	loader->get("glCompressedTexSubImage3DOES");
-	gl->copyTexSubImage3DOES		= (glCopyTexSubImage3DOESFunc)			loader->get("glCopyTexSubImage3DOES");
-	gl->framebufferTexture3DOES		= (glFramebufferTexture3DOESFunc)		loader->get("glFramebufferTexture3DOES");
-	gl->texImage3DOES				= (glTexImage3DOESFunc)					loader->get("glTexImage3DOES");
-	gl->texSubImage3DOES			= (glTexSubImage3DOESFunc)				loader->get("glTexSubImage3DOES");
+	gl->compressedTexImage3D	= (glCompressedTexImage3DFunc)		loader->get("glCompressedTexImage3DOES");
+	gl->compressedTexSubImage3D	= (glCompressedTexSubImage3DFunc)	loader->get("glCompressedTexSubImage3DOES");
+	gl->copyTexSubImage3D		= (glCopyTexSubImage3DFunc)			loader->get("glCopyTexSubImage3DOES");
+	gl->framebufferTexture3D	= (glFramebufferTexture3DFunc)		loader->get("glFramebufferTexture3DOES");
+	gl->texImage3D				= (glTexImage3DFunc)				loader->get("glTexImage3DOES");
+	gl->texSubImage3D			= (glTexSubImage3DFunc)				loader->get("glTexSubImage3DOES");
 }
 
 if (de::contains(extSet, "GL_OES_texture_storage_multisample_2d_array"))

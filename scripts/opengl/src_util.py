@@ -38,8 +38,8 @@ OPENGL_INC_DIR		= os.path.join(OPENGL_DIR, "wrapper")
 GL_SOURCE			= khr_util.registry_cache.RegistrySource(
 						"https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry",
 						"xml/gl.xml",
-						"9302c6a6963864cba6c43d7eee0f4afcdcec2084",
-						"10d9bc8a475c60e127343c751b6e993923c1e40574277a49d80b158e3faafe6d")
+						"967f96c92bae15baa1a4326a55222984befdc9ed",
+						"f281f2dc6b2206a8852670d161e15fa43723dac5042a991ff4e1702e29d7403d")
 
 EXTENSIONS			= [
 	'GL_KHR_texture_compression_astc_ldr',
@@ -127,13 +127,7 @@ EXTENSIONS			= [
 def getGLRegistry ():
 	return khr_util.registry_cache.getRegistry(GL_SOURCE)
 
-# return the name of a core command corresponding to an extension command.
-# Ideally this should be done using the alias attribute of commands, but dEQP
-# just strips the extension suffix.
-def getCoreName (name):
-	return re.sub('[A-Z]+$', '', name)
-
-def getHybridInterface ():
+def getHybridInterface (stripAliasedExtCommands = True):
 	# This is a bit awkward, since we have to create a strange hybrid
 	# interface that includes both GL and ES features and extensions.
 	registry = getGLRegistry()
@@ -153,13 +147,19 @@ def getHybridInterface ():
 		# extensions to be included.
 		spec.addExtension(extension, 'gles2', 'core', force=True)
 
-	# Remove redundant extension commands that are already provided by core.
-	for commandName in list(spec.commands):
-		coreName = getCoreName(commandName)
-		if coreName != commandName and coreName in spec.commands:
-			spec.commands.remove(commandName)
+	iface = khr_util.registry.createInterface(registry, spec, 'gles2')
 
-	return khr_util.registry.createInterface(registry, spec, 'gles2')
+	if stripAliasedExtCommands:
+		# Remove redundant extension commands that are already provided by core.
+		strippedCmds = []
+
+		for command in iface.commands:
+			if command.alias == None:
+				strippedCmds.append(command)
+
+		iface.commands = strippedCmds
+
+	return iface
 
 def getInterface (registry, api, version=None, profile=None, **kwargs):
 	spec = khr_util.registry.spec(registry, api, version, profile, **kwargs)

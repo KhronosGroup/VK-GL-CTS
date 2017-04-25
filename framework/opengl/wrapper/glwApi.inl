@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 9302c6a6963864cba6c43d7eee0f4afcdcec2084.
+ * Generated from Khronos GL API description (gl.xml) revision 967f96c92bae15baa1a4326a55222984befdc9ed.
  */
 #define			glActiveShaderProgram								glwActiveShaderProgram
 #define			glActiveTexture										glwActiveTexture
@@ -51,6 +51,7 @@
 #define			glBufferSubData										glwBufferSubData
 #define			glCheckFramebufferStatus							glwCheckFramebufferStatus
 #define			glCheckNamedFramebufferStatus						glwCheckNamedFramebufferStatus
+#define			glCheckNamedFramebufferStatusEXT					glwCheckNamedFramebufferStatusEXT
 #define			glClampColor										glwClampColor
 #define			glClear												glwClear
 #define			glClearBufferData									glwClearBufferData
@@ -63,7 +64,9 @@
 #define			glClearDepth										glwClearDepth
 #define			glClearDepthf										glwClearDepthf
 #define			glClearNamedBufferData								glwClearNamedBufferData
+#define			glClearNamedBufferDataEXT							glwClearNamedBufferDataEXT
 #define			glClearNamedBufferSubData							glwClearNamedBufferSubData
+#define			glClearNamedBufferSubDataEXT						glwClearNamedBufferSubDataEXT
 #define			glClearNamedFramebufferfi							glwClearNamedFramebufferfi
 #define			glClearNamedFramebufferfv							glwClearNamedFramebufferfv
 #define			glClearNamedFramebufferiv							glwClearNamedFramebufferiv
@@ -86,11 +89,9 @@
 #define			glCompressedTexImage1D								glwCompressedTexImage1D
 #define			glCompressedTexImage2D								glwCompressedTexImage2D
 #define			glCompressedTexImage3D								glwCompressedTexImage3D
-#define			glCompressedTexImage3DOES							glwCompressedTexImage3DOES
 #define			glCompressedTexSubImage1D							glwCompressedTexSubImage1D
 #define			glCompressedTexSubImage2D							glwCompressedTexSubImage2D
 #define			glCompressedTexSubImage3D							glwCompressedTexSubImage3D
-#define			glCompressedTexSubImage3DOES						glwCompressedTexSubImage3DOES
 #define			glCompressedTextureImage1DEXT						glwCompressedTextureImage1DEXT
 #define			glCompressedTextureImage2DEXT						glwCompressedTextureImage2DEXT
 #define			glCompressedTextureImage3DEXT						glwCompressedTextureImage3DEXT
@@ -113,7 +114,6 @@
 #define			glCopyTexSubImage1D									glwCopyTexSubImage1D
 #define			glCopyTexSubImage2D									glwCopyTexSubImage2D
 #define			glCopyTexSubImage3D									glwCopyTexSubImage3D
-#define			glCopyTexSubImage3DOES								glwCopyTexSubImage3DOES
 #define			glCopyTextureImage1DEXT								glwCopyTextureImage1DEXT
 #define			glCopyTextureImage2DEXT								glwCopyTextureImage2DEXT
 #define			glCopyTextureSubImage1D								glwCopyTextureSubImage1D
@@ -163,8 +163,8 @@
 #define			glDisable											glwDisable
 #define			glDisableClientStateIndexedEXT						glwDisableClientStateIndexedEXT
 #define			glDisableClientStateiEXT							glwDisableClientStateiEXT
-#define			glDisableIndexedEXT									glwDisableIndexedEXT
 #define			glDisableVertexArrayAttrib							glwDisableVertexArrayAttrib
+#define			glDisableVertexArrayAttribEXT						glwDisableVertexArrayAttribEXT
 #define			glDisableVertexArrayEXT								glwDisableVertexArrayEXT
 #define			glDisableVertexAttribArray							glwDisableVertexAttribArray
 #define			glDisablei											glwDisablei
@@ -194,8 +194,8 @@
 #define			glEnable											glwEnable
 #define			glEnableClientStateIndexedEXT						glwEnableClientStateIndexedEXT
 #define			glEnableClientStateiEXT								glwEnableClientStateiEXT
-#define			glEnableIndexedEXT									glwEnableIndexedEXT
 #define			glEnableVertexArrayAttrib							glwEnableVertexArrayAttrib
+#define			glEnableVertexArrayAttribEXT						glwEnableVertexArrayAttribEXT
 #define			glEnableVertexArrayEXT								glwEnableVertexArrayEXT
 #define			glEnableVertexAttribArray							glwEnableVertexAttribArray
 #define			glEnablei											glwEnablei
@@ -208,6 +208,7 @@
 #define			glFlush												glwFlush
 #define			glFlushMappedBufferRange							glwFlushMappedBufferRange
 #define			glFlushMappedNamedBufferRange						glwFlushMappedNamedBufferRange
+#define			glFlushMappedNamedBufferRangeEXT					glwFlushMappedNamedBufferRangeEXT
 #define			glFramebufferDrawBufferEXT							glwFramebufferDrawBufferEXT
 #define			glFramebufferDrawBuffersEXT							glwFramebufferDrawBuffersEXT
 #define			glFramebufferParameteri								glwFramebufferParameteri
@@ -217,7 +218,6 @@
 #define			glFramebufferTexture1D								glwFramebufferTexture1D
 #define			glFramebufferTexture2D								glwFramebufferTexture2D
 #define			glFramebufferTexture3D								glwFramebufferTexture3D
-#define			glFramebufferTexture3DOES							glwFramebufferTexture3DOES
 #define			glFramebufferTextureLayer							glwFramebufferTextureLayer
 #define			glFrontFace											glwFrontFace
 #define			glGenBuffers										glwGenBuffers
@@ -232,6 +232,7 @@
 #define			glGenerateMipmap									glwGenerateMipmap
 #define			glGenerateMultiTexMipmapEXT							glwGenerateMultiTexMipmapEXT
 #define			glGenerateTextureMipmap								glwGenerateTextureMipmap
+#define			glGenerateTextureMipmapEXT							glwGenerateTextureMipmapEXT
 #define			glGetActiveAtomicCounterBufferiv					glwGetActiveAtomicCounterBufferiv
 #define			glGetActiveAttrib									glwGetActiveAttrib
 #define			glGetActiveSubroutineName							glwGetActiveSubroutineName
@@ -244,7 +245,6 @@
 #define			glGetActiveUniformsiv								glwGetActiveUniformsiv
 #define			glGetAttachedShaders								glwGetAttachedShaders
 #define			glGetAttribLocation									glwGetAttribLocation
-#define			glGetBooleanIndexedvEXT								glwGetBooleanIndexedvEXT
 #define			glGetBooleani_v										glwGetBooleani_v
 #define			glGetBooleanv										glwGetBooleanv
 #define			glGetBufferParameteri64v							glwGetBufferParameteri64v
@@ -254,23 +254,22 @@
 #define			glGetCompressedMultiTexImageEXT						glwGetCompressedMultiTexImageEXT
 #define			glGetCompressedTexImage								glwGetCompressedTexImage
 #define			glGetCompressedTextureImage							glwGetCompressedTextureImage
+#define			glGetCompressedTextureImageEXT						glwGetCompressedTextureImageEXT
 #define			glGetCompressedTextureSubImage						glwGetCompressedTextureSubImage
 #define			glGetDebugMessageLog								glwGetDebugMessageLog
-#define			glGetDoubleIndexedvEXT								glwGetDoubleIndexedvEXT
 #define			glGetDoublei_v										glwGetDoublei_v
 #define			glGetDoublev										glwGetDoublev
 #define			glGetError											glwGetError
-#define			glGetFloatIndexedvEXT								glwGetFloatIndexedvEXT
 #define			glGetFloati_v										glwGetFloati_v
 #define			glGetFloatv											glwGetFloatv
 #define			glGetFragDataIndex									glwGetFragDataIndex
 #define			glGetFragDataLocation								glwGetFragDataLocation
 #define			glGetFramebufferAttachmentParameteriv				glwGetFramebufferAttachmentParameteriv
 #define			glGetFramebufferParameteriv							glwGetFramebufferParameteriv
+#define			glGetFramebufferParameterivEXT						glwGetFramebufferParameterivEXT
 #define			glGetGraphicsResetStatus							glwGetGraphicsResetStatus
 #define			glGetInteger64i_v									glwGetInteger64i_v
 #define			glGetInteger64v										glwGetInteger64v
-#define			glGetIntegerIndexedvEXT								glwGetIntegerIndexedvEXT
 #define			glGetIntegeri_v										glwGetIntegeri_v
 #define			glGetIntegerv										glwGetIntegerv
 #define			glGetInternalformatSampleivNV						glwGetInternalformatSampleivNV
@@ -291,10 +290,15 @@
 #define			glGetMultisamplefv									glwGetMultisamplefv
 #define			glGetNamedBufferParameteri64v						glwGetNamedBufferParameteri64v
 #define			glGetNamedBufferParameteriv							glwGetNamedBufferParameteriv
+#define			glGetNamedBufferParameterivEXT						glwGetNamedBufferParameterivEXT
 #define			glGetNamedBufferPointerv							glwGetNamedBufferPointerv
+#define			glGetNamedBufferPointervEXT							glwGetNamedBufferPointervEXT
 #define			glGetNamedBufferSubData								glwGetNamedBufferSubData
+#define			glGetNamedBufferSubDataEXT							glwGetNamedBufferSubDataEXT
 #define			glGetNamedFramebufferAttachmentParameteriv			glwGetNamedFramebufferAttachmentParameteriv
+#define			glGetNamedFramebufferAttachmentParameterivEXT		glwGetNamedFramebufferAttachmentParameterivEXT
 #define			glGetNamedFramebufferParameteriv					glwGetNamedFramebufferParameteriv
+#define			glGetNamedFramebufferParameterivEXT					glwGetNamedFramebufferParameterivEXT
 #define			glGetNamedProgramLocalParameterIivEXT				glwGetNamedProgramLocalParameterIivEXT
 #define			glGetNamedProgramLocalParameterIuivEXT				glwGetNamedProgramLocalParameterIuivEXT
 #define			glGetNamedProgramLocalParameterdvEXT				glwGetNamedProgramLocalParameterdvEXT
@@ -302,6 +306,7 @@
 #define			glGetNamedProgramStringEXT							glwGetNamedProgramStringEXT
 #define			glGetNamedProgramivEXT								glwGetNamedProgramivEXT
 #define			glGetNamedRenderbufferParameteriv					glwGetNamedRenderbufferParameteriv
+#define			glGetNamedRenderbufferParameterivEXT				glwGetNamedRenderbufferParameterivEXT
 #define			glGetObjectLabel									glwGetObjectLabel
 #define			glGetObjectPtrLabel									glwGetObjectPtrLabel
 #define			glGetPointerIndexedvEXT								glwGetPointerIndexedvEXT
@@ -351,12 +356,19 @@
 #define			glGetTexParameterfv									glwGetTexParameterfv
 #define			glGetTexParameteriv									glwGetTexParameteriv
 #define			glGetTextureImage									glwGetTextureImage
+#define			glGetTextureImageEXT								glwGetTextureImageEXT
 #define			glGetTextureLevelParameterfv						glwGetTextureLevelParameterfv
+#define			glGetTextureLevelParameterfvEXT						glwGetTextureLevelParameterfvEXT
 #define			glGetTextureLevelParameteriv						glwGetTextureLevelParameteriv
+#define			glGetTextureLevelParameterivEXT						glwGetTextureLevelParameterivEXT
 #define			glGetTextureParameterIiv							glwGetTextureParameterIiv
+#define			glGetTextureParameterIivEXT							glwGetTextureParameterIivEXT
 #define			glGetTextureParameterIuiv							glwGetTextureParameterIuiv
+#define			glGetTextureParameterIuivEXT						glwGetTextureParameterIuivEXT
 #define			glGetTextureParameterfv								glwGetTextureParameterfv
+#define			glGetTextureParameterfvEXT							glwGetTextureParameterfvEXT
 #define			glGetTextureParameteriv								glwGetTextureParameteriv
+#define			glGetTextureParameterivEXT							glwGetTextureParameterivEXT
 #define			glGetTextureSubImage								glwGetTextureSubImage
 #define			glGetTransformFeedbackVarying						glwGetTransformFeedbackVarying
 #define			glGetTransformFeedbacki64_v							glwGetTransformFeedbacki64_v
@@ -402,7 +414,6 @@
 #define			glInvalidateTexSubImage								glwInvalidateTexSubImage
 #define			glIsBuffer											glwIsBuffer
 #define			glIsEnabled											glwIsEnabled
-#define			glIsEnabledIndexedEXT								glwIsEnabledIndexedEXT
 #define			glIsEnabledi										glwIsEnabledi
 #define			glIsFramebuffer										glwIsFramebuffer
 #define			glIsProgram											glwIsProgram
@@ -421,7 +432,9 @@
 #define			glMapBuffer											glwMapBuffer
 #define			glMapBufferRange									glwMapBufferRange
 #define			glMapNamedBuffer									glwMapNamedBuffer
+#define			glMapNamedBufferEXT									glwMapNamedBufferEXT
 #define			glMapNamedBufferRange								glwMapNamedBufferRange
+#define			glMapNamedBufferRangeEXT							glwMapNamedBufferRangeEXT
 #define			glMatrixFrustumEXT									glwMatrixFrustumEXT
 #define			glMatrixLoadIdentityEXT								glwMatrixLoadIdentityEXT
 #define			glMatrixLoadTransposedEXT							glwMatrixLoadTransposedEXT
@@ -478,6 +491,7 @@
 #define			glMultiTexSubImage2DEXT								glwMultiTexSubImage2DEXT
 #define			glMultiTexSubImage3DEXT								glwMultiTexSubImage3DEXT
 #define			glNamedBufferData									glwNamedBufferData
+#define			glNamedBufferDataEXT								glwNamedBufferDataEXT
 #define			glNamedBufferPageCommitmentARB						glwNamedBufferPageCommitmentARB
 #define			glNamedBufferPageCommitmentEXT						glwNamedBufferPageCommitmentEXT
 #define			glNamedBufferStorage								glwNamedBufferStorage
@@ -486,14 +500,18 @@
 #define			glNamedFramebufferDrawBuffer						glwNamedFramebufferDrawBuffer
 #define			glNamedFramebufferDrawBuffers						glwNamedFramebufferDrawBuffers
 #define			glNamedFramebufferParameteri						glwNamedFramebufferParameteri
+#define			glNamedFramebufferParameteriEXT						glwNamedFramebufferParameteriEXT
 #define			glNamedFramebufferReadBuffer						glwNamedFramebufferReadBuffer
 #define			glNamedFramebufferRenderbuffer						glwNamedFramebufferRenderbuffer
+#define			glNamedFramebufferRenderbufferEXT					glwNamedFramebufferRenderbufferEXT
 #define			glNamedFramebufferTexture							glwNamedFramebufferTexture
 #define			glNamedFramebufferTexture1DEXT						glwNamedFramebufferTexture1DEXT
 #define			glNamedFramebufferTexture2DEXT						glwNamedFramebufferTexture2DEXT
 #define			glNamedFramebufferTexture3DEXT						glwNamedFramebufferTexture3DEXT
+#define			glNamedFramebufferTextureEXT						glwNamedFramebufferTextureEXT
 #define			glNamedFramebufferTextureFaceEXT					glwNamedFramebufferTextureFaceEXT
 #define			glNamedFramebufferTextureLayer						glwNamedFramebufferTextureLayer
+#define			glNamedFramebufferTextureLayerEXT					glwNamedFramebufferTextureLayerEXT
 #define			glNamedProgramLocalParameter4dEXT					glwNamedProgramLocalParameter4dEXT
 #define			glNamedProgramLocalParameter4dvEXT					glwNamedProgramLocalParameter4dvEXT
 #define			glNamedProgramLocalParameter4fEXT					glwNamedProgramLocalParameter4fEXT
@@ -507,8 +525,10 @@
 #define			glNamedProgramLocalParametersI4uivEXT				glwNamedProgramLocalParametersI4uivEXT
 #define			glNamedProgramStringEXT								glwNamedProgramStringEXT
 #define			glNamedRenderbufferStorage							glwNamedRenderbufferStorage
+#define			glNamedRenderbufferStorageEXT						glwNamedRenderbufferStorageEXT
 #define			glNamedRenderbufferStorageMultisample				glwNamedRenderbufferStorageMultisample
 #define			glNamedRenderbufferStorageMultisampleCoverageEXT	glwNamedRenderbufferStorageMultisampleCoverageEXT
+#define			glNamedRenderbufferStorageMultisampleEXT			glwNamedRenderbufferStorageMultisampleEXT
 #define			glObjectLabel										glwObjectLabel
 #define			glObjectPtrLabel									glwObjectPtrLabel
 #define			glPatchParameterfv									glwPatchParameterfv
@@ -530,7 +550,9 @@
 #define			glProgramBinary										glwProgramBinary
 #define			glProgramParameteri									glwProgramParameteri
 #define			glProgramUniform1d									glwProgramUniform1d
+#define			glProgramUniform1dEXT								glwProgramUniform1dEXT
 #define			glProgramUniform1dv									glwProgramUniform1dv
+#define			glProgramUniform1dvEXT								glwProgramUniform1dvEXT
 #define			glProgramUniform1f									glwProgramUniform1f
 #define			glProgramUniform1fv									glwProgramUniform1fv
 #define			glProgramUniform1i									glwProgramUniform1i
@@ -538,7 +560,9 @@
 #define			glProgramUniform1ui									glwProgramUniform1ui
 #define			glProgramUniform1uiv								glwProgramUniform1uiv
 #define			glProgramUniform2d									glwProgramUniform2d
+#define			glProgramUniform2dEXT								glwProgramUniform2dEXT
 #define			glProgramUniform2dv									glwProgramUniform2dv
+#define			glProgramUniform2dvEXT								glwProgramUniform2dvEXT
 #define			glProgramUniform2f									glwProgramUniform2f
 #define			glProgramUniform2fv									glwProgramUniform2fv
 #define			glProgramUniform2i									glwProgramUniform2i
@@ -546,7 +570,9 @@
 #define			glProgramUniform2ui									glwProgramUniform2ui
 #define			glProgramUniform2uiv								glwProgramUniform2uiv
 #define			glProgramUniform3d									glwProgramUniform3d
+#define			glProgramUniform3dEXT								glwProgramUniform3dEXT
 #define			glProgramUniform3dv									glwProgramUniform3dv
+#define			glProgramUniform3dvEXT								glwProgramUniform3dvEXT
 #define			glProgramUniform3f									glwProgramUniform3f
 #define			glProgramUniform3fv									glwProgramUniform3fv
 #define			glProgramUniform3i									glwProgramUniform3i
@@ -554,7 +580,9 @@
 #define			glProgramUniform3ui									glwProgramUniform3ui
 #define			glProgramUniform3uiv								glwProgramUniform3uiv
 #define			glProgramUniform4d									glwProgramUniform4d
+#define			glProgramUniform4dEXT								glwProgramUniform4dEXT
 #define			glProgramUniform4dv									glwProgramUniform4dv
+#define			glProgramUniform4dvEXT								glwProgramUniform4dvEXT
 #define			glProgramUniform4f									glwProgramUniform4f
 #define			glProgramUniform4fv									glwProgramUniform4fv
 #define			glProgramUniform4i									glwProgramUniform4i
@@ -562,22 +590,31 @@
 #define			glProgramUniform4ui									glwProgramUniform4ui
 #define			glProgramUniform4uiv								glwProgramUniform4uiv
 #define			glProgramUniformMatrix2dv							glwProgramUniformMatrix2dv
+#define			glProgramUniformMatrix2dvEXT						glwProgramUniformMatrix2dvEXT
 #define			glProgramUniformMatrix2fv							glwProgramUniformMatrix2fv
 #define			glProgramUniformMatrix2x3dv							glwProgramUniformMatrix2x3dv
+#define			glProgramUniformMatrix2x3dvEXT						glwProgramUniformMatrix2x3dvEXT
 #define			glProgramUniformMatrix2x3fv							glwProgramUniformMatrix2x3fv
 #define			glProgramUniformMatrix2x4dv							glwProgramUniformMatrix2x4dv
+#define			glProgramUniformMatrix2x4dvEXT						glwProgramUniformMatrix2x4dvEXT
 #define			glProgramUniformMatrix2x4fv							glwProgramUniformMatrix2x4fv
 #define			glProgramUniformMatrix3dv							glwProgramUniformMatrix3dv
+#define			glProgramUniformMatrix3dvEXT						glwProgramUniformMatrix3dvEXT
 #define			glProgramUniformMatrix3fv							glwProgramUniformMatrix3fv
 #define			glProgramUniformMatrix3x2dv							glwProgramUniformMatrix3x2dv
+#define			glProgramUniformMatrix3x2dvEXT						glwProgramUniformMatrix3x2dvEXT
 #define			glProgramUniformMatrix3x2fv							glwProgramUniformMatrix3x2fv
 #define			glProgramUniformMatrix3x4dv							glwProgramUniformMatrix3x4dv
+#define			glProgramUniformMatrix3x4dvEXT						glwProgramUniformMatrix3x4dvEXT
 #define			glProgramUniformMatrix3x4fv							glwProgramUniformMatrix3x4fv
 #define			glProgramUniformMatrix4dv							glwProgramUniformMatrix4dv
+#define			glProgramUniformMatrix4dvEXT						glwProgramUniformMatrix4dvEXT
 #define			glProgramUniformMatrix4fv							glwProgramUniformMatrix4fv
 #define			glProgramUniformMatrix4x2dv							glwProgramUniformMatrix4x2dv
+#define			glProgramUniformMatrix4x2dvEXT						glwProgramUniformMatrix4x2dvEXT
 #define			glProgramUniformMatrix4x2fv							glwProgramUniformMatrix4x2fv
 #define			glProgramUniformMatrix4x3dv							glwProgramUniformMatrix4x3dv
+#define			glProgramUniformMatrix4x3dvEXT						glwProgramUniformMatrix4x3dvEXT
 #define			glProgramUniformMatrix4x3fv							glwProgramUniformMatrix4x3fv
 #define			glProvokingVertex									glwProvokingVertex
 #define			glPushClientAttribDefaultEXT						glwPushClientAttribDefaultEXT
@@ -619,7 +656,6 @@
 #define			glTexImage2DMultisample								glwTexImage2DMultisample
 #define			glTexImage3D										glwTexImage3D
 #define			glTexImage3DMultisample								glwTexImage3DMultisample
-#define			glTexImage3DOES										glwTexImage3DOES
 #define			glTexPageCommitmentARB								glwTexPageCommitmentARB
 #define			glTexParameterIiv									glwTexParameterIiv
 #define			glTexParameterIuiv									glwTexParameterIuiv
@@ -628,39 +664,45 @@
 #define			glTexParameteri										glwTexParameteri
 #define			glTexParameteriv									glwTexParameteriv
 #define			glTexStorage1D										glwTexStorage1D
-#define			glTexStorage1DEXT									glwTexStorage1DEXT
 #define			glTexStorage2D										glwTexStorage2D
-#define			glTexStorage2DEXT									glwTexStorage2DEXT
 #define			glTexStorage2DMultisample							glwTexStorage2DMultisample
 #define			glTexStorage3D										glwTexStorage3D
-#define			glTexStorage3DEXT									glwTexStorage3DEXT
 #define			glTexStorage3DMultisample							glwTexStorage3DMultisample
 #define			glTexSubImage1D										glwTexSubImage1D
 #define			glTexSubImage2D										glwTexSubImage2D
 #define			glTexSubImage3D										glwTexSubImage3D
-#define			glTexSubImage3DOES									glwTexSubImage3DOES
 #define			glTextureBarrier									glwTextureBarrier
 #define			glTextureBuffer										glwTextureBuffer
+#define			glTextureBufferEXT									glwTextureBufferEXT
 #define			glTextureBufferRange								glwTextureBufferRange
+#define			glTextureBufferRangeEXT								glwTextureBufferRangeEXT
 #define			glTextureImage1DEXT									glwTextureImage1DEXT
 #define			glTextureImage2DEXT									glwTextureImage2DEXT
 #define			glTextureImage3DEXT									glwTextureImage3DEXT
 #define			glTexturePageCommitmentEXT							glwTexturePageCommitmentEXT
 #define			glTextureParameterIiv								glwTextureParameterIiv
+#define			glTextureParameterIivEXT							glwTextureParameterIivEXT
 #define			glTextureParameterIuiv								glwTextureParameterIuiv
+#define			glTextureParameterIuivEXT							glwTextureParameterIuivEXT
 #define			glTextureParameterf									glwTextureParameterf
+#define			glTextureParameterfEXT								glwTextureParameterfEXT
 #define			glTextureParameterfv								glwTextureParameterfv
+#define			glTextureParameterfvEXT								glwTextureParameterfvEXT
 #define			glTextureParameteri									glwTextureParameteri
+#define			glTextureParameteriEXT								glwTextureParameteriEXT
 #define			glTextureParameteriv								glwTextureParameteriv
+#define			glTextureParameterivEXT								glwTextureParameterivEXT
 #define			glTextureRenderbufferEXT							glwTextureRenderbufferEXT
 #define			glTextureStorage1D									glwTextureStorage1D
 #define			glTextureStorage1DEXT								glwTextureStorage1DEXT
 #define			glTextureStorage2D									glwTextureStorage2D
 #define			glTextureStorage2DEXT								glwTextureStorage2DEXT
 #define			glTextureStorage2DMultisample						glwTextureStorage2DMultisample
+#define			glTextureStorage2DMultisampleEXT					glwTextureStorage2DMultisampleEXT
 #define			glTextureStorage3D									glwTextureStorage3D
 #define			glTextureStorage3DEXT								glwTextureStorage3DEXT
 #define			glTextureStorage3DMultisample						glwTextureStorage3DMultisample
+#define			glTextureStorage3DMultisampleEXT					glwTextureStorage3DMultisampleEXT
 #define			glTextureSubImage1D									glwTextureSubImage1D
 #define			glTextureSubImage1DEXT								glwTextureSubImage1DEXT
 #define			glTextureSubImage2D									glwTextureSubImage2D
@@ -725,6 +767,7 @@
 #define			glUniformSubroutinesuiv								glwUniformSubroutinesuiv
 #define			glUnmapBuffer										glwUnmapBuffer
 #define			glUnmapNamedBuffer									glwUnmapNamedBuffer
+#define			glUnmapNamedBufferEXT								glwUnmapNamedBufferEXT
 #define			glUseProgram										glwUseProgram
 #define			glUseProgramStages									glwUseProgramStages
 #define			glValidateProgram									glwValidateProgram
@@ -890,6 +933,7 @@ void			glwBufferStorage									(GLenum target, GLsizeiptr size, const void *dat
 void			glwBufferSubData									(GLenum target, GLintptr offset, GLsizeiptr size, const void *data);
 GLenum			glwCheckFramebufferStatus							(GLenum target);
 GLenum			glwCheckNamedFramebufferStatus						(GLuint framebuffer, GLenum target);
+GLenum			glwCheckNamedFramebufferStatusEXT					(GLuint framebuffer, GLenum target);
 void			glwClampColor										(GLenum target, GLenum clamp);
 void			glwClear											(GLbitfield mask);
 void			glwClearBufferData									(GLenum target, GLenum internalformat, GLenum format, GLenum type, const void *data);
@@ -902,7 +946,9 @@ void			glwClearColor										(GLfloat red, GLfloat green, GLfloat blue, GLfloat
 void			glwClearDepth										(GLdouble depth);
 void			glwClearDepthf										(GLfloat d);
 void			glwClearNamedBufferData								(GLuint buffer, GLenum internalformat, GLenum format, GLenum type, const void *data);
+void			glwClearNamedBufferDataEXT							(GLuint buffer, GLenum internalformat, GLenum format, GLenum type, const void *data);
 void			glwClearNamedBufferSubData							(GLuint buffer, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data);
+void			glwClearNamedBufferSubDataEXT						(GLuint buffer, GLenum internalformat, GLsizeiptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data);
 void			glwClearNamedFramebufferfi							(GLuint framebuffer, GLenum buffer, GLint drawbuffer, GLfloat depth, GLint stencil);
 void			glwClearNamedFramebufferfv							(GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLfloat *value);
 void			glwClearNamedFramebufferiv							(GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLint *value);
@@ -925,11 +971,9 @@ void			glwCompressedMultiTexSubImage3DEXT					(GLenum texunit, GLenum target, GL
 void			glwCompressedTexImage1D								(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLint border, GLsizei imageSize, const void *data);
 void			glwCompressedTexImage2D								(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data);
 void			glwCompressedTexImage3D								(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *data);
-void			glwCompressedTexImage3DOES							(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *data);
 void			glwCompressedTexSubImage1D							(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const void *data);
 void			glwCompressedTexSubImage2D							(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data);
 void			glwCompressedTexSubImage3D							(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
-void			glwCompressedTexSubImage3DOES						(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
 void			glwCompressedTextureImage1DEXT						(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLint border, GLsizei imageSize, const void *bits);
 void			glwCompressedTextureImage2DEXT						(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *bits);
 void			glwCompressedTextureImage3DEXT						(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *bits);
@@ -952,7 +996,6 @@ void			glwCopyTexImage2D									(GLenum target, GLint level, GLenum internalfor
 void			glwCopyTexSubImage1D								(GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width);
 void			glwCopyTexSubImage2D								(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 void			glwCopyTexSubImage3D								(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height);
-void			glwCopyTexSubImage3DOES								(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 void			glwCopyTextureImage1DEXT							(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border);
 void			glwCopyTextureImage2DEXT							(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
 void			glwCopyTextureSubImage1D							(GLuint texture, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width);
@@ -1002,8 +1045,8 @@ void			glwDetachShader										(GLuint program, GLuint shader);
 void			glwDisable											(GLenum cap);
 void			glwDisableClientStateIndexedEXT						(GLenum array, GLuint index);
 void			glwDisableClientStateiEXT							(GLenum array, GLuint index);
-void			glwDisableIndexedEXT								(GLenum target, GLuint index);
 void			glwDisableVertexArrayAttrib							(GLuint vaobj, GLuint index);
+void			glwDisableVertexArrayAttribEXT						(GLuint vaobj, GLuint index);
 void			glwDisableVertexArrayEXT							(GLuint vaobj, GLenum array);
 void			glwDisableVertexAttribArray							(GLuint index);
 void			glwDisablei											(GLenum target, GLuint index);
@@ -1033,8 +1076,8 @@ void			glwEGLImageTargetTexture2DOES						(GLenum target, GLeglImageOES image);
 void			glwEnable											(GLenum cap);
 void			glwEnableClientStateIndexedEXT						(GLenum array, GLuint index);
 void			glwEnableClientStateiEXT							(GLenum array, GLuint index);
-void			glwEnableIndexedEXT									(GLenum target, GLuint index);
 void			glwEnableVertexArrayAttrib							(GLuint vaobj, GLuint index);
+void			glwEnableVertexArrayAttribEXT						(GLuint vaobj, GLuint index);
 void			glwEnableVertexArrayEXT								(GLuint vaobj, GLenum array);
 void			glwEnableVertexAttribArray							(GLuint index);
 void			glwEnablei											(GLenum target, GLuint index);
@@ -1047,6 +1090,7 @@ void			glwFinish											();
 void			glwFlush											();
 void			glwFlushMappedBufferRange							(GLenum target, GLintptr offset, GLsizeiptr length);
 void			glwFlushMappedNamedBufferRange						(GLuint buffer, GLintptr offset, GLsizeiptr length);
+void			glwFlushMappedNamedBufferRangeEXT					(GLuint buffer, GLintptr offset, GLsizeiptr length);
 void			glwFramebufferDrawBufferEXT							(GLuint framebuffer, GLenum mode);
 void			glwFramebufferDrawBuffersEXT						(GLuint framebuffer, GLsizei n, const GLenum *bufs);
 void			glwFramebufferParameteri							(GLenum target, GLenum pname, GLint param);
@@ -1056,7 +1100,6 @@ void			glwFramebufferTexture								(GLenum target, GLenum attachment, GLuint te
 void			glwFramebufferTexture1D								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 void			glwFramebufferTexture2D								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 void			glwFramebufferTexture3D								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
-void			glwFramebufferTexture3DOES							(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
 void			glwFramebufferTextureLayer							(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer);
 void			glwFrontFace										(GLenum mode);
 void			glwGenBuffers										(GLsizei n, GLuint *buffers);
@@ -1071,6 +1114,7 @@ void			glwGenVertexArrays									(GLsizei n, GLuint *arrays);
 void			glwGenerateMipmap									(GLenum target);
 void			glwGenerateMultiTexMipmapEXT						(GLenum texunit, GLenum target);
 void			glwGenerateTextureMipmap							(GLuint texture);
+void			glwGenerateTextureMipmapEXT							(GLuint texture, GLenum target);
 void			glwGetActiveAtomicCounterBufferiv					(GLuint program, GLuint bufferIndex, GLenum pname, GLint *params);
 void			glwGetActiveAttrib									(GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
 void			glwGetActiveSubroutineName							(GLuint program, GLenum shadertype, GLuint index, GLsizei bufsize, GLsizei *length, GLchar *name);
@@ -1083,7 +1127,6 @@ void			glwGetActiveUniformName								(GLuint program, GLuint uniformIndex, GLsi
 void			glwGetActiveUniformsiv								(GLuint program, GLsizei uniformCount, const GLuint *uniformIndices, GLenum pname, GLint *params);
 void			glwGetAttachedShaders								(GLuint program, GLsizei maxCount, GLsizei *count, GLuint *shaders);
 GLint			glwGetAttribLocation								(GLuint program, const GLchar *name);
-void			glwGetBooleanIndexedvEXT							(GLenum target, GLuint index, GLboolean *data);
 void			glwGetBooleani_v									(GLenum target, GLuint index, GLboolean *data);
 void			glwGetBooleanv										(GLenum pname, GLboolean *data);
 void			glwGetBufferParameteri64v							(GLenum target, GLenum pname, GLint64 *params);
@@ -1093,23 +1136,22 @@ void			glwGetBufferSubData									(GLenum target, GLintptr offset, GLsizeiptr s
 void			glwGetCompressedMultiTexImageEXT					(GLenum texunit, GLenum target, GLint lod, void *img);
 void			glwGetCompressedTexImage							(GLenum target, GLint level, void *img);
 void			glwGetCompressedTextureImage						(GLuint texture, GLint level, GLsizei bufSize, void *pixels);
+void			glwGetCompressedTextureImageEXT						(GLuint texture, GLenum target, GLint lod, void *img);
 void			glwGetCompressedTextureSubImage						(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLsizei bufSize, void *pixels);
 GLuint			glwGetDebugMessageLog								(GLuint count, GLsizei bufSize, GLenum *sources, GLenum *types, GLuint *ids, GLenum *severities, GLsizei *lengths, GLchar *messageLog);
-void			glwGetDoubleIndexedvEXT								(GLenum target, GLuint index, GLdouble *data);
 void			glwGetDoublei_v										(GLenum target, GLuint index, GLdouble *data);
 void			glwGetDoublev										(GLenum pname, GLdouble *data);
 GLenum			glwGetError											();
-void			glwGetFloatIndexedvEXT								(GLenum target, GLuint index, GLfloat *data);
 void			glwGetFloati_v										(GLenum target, GLuint index, GLfloat *data);
 void			glwGetFloatv										(GLenum pname, GLfloat *data);
 GLint			glwGetFragDataIndex									(GLuint program, const GLchar *name);
 GLint			glwGetFragDataLocation								(GLuint program, const GLchar *name);
 void			glwGetFramebufferAttachmentParameteriv				(GLenum target, GLenum attachment, GLenum pname, GLint *params);
 void			glwGetFramebufferParameteriv						(GLenum target, GLenum pname, GLint *params);
+void			glwGetFramebufferParameterivEXT						(GLuint framebuffer, GLenum pname, GLint *params);
 GLenum			glwGetGraphicsResetStatus							();
 void			glwGetInteger64i_v									(GLenum target, GLuint index, GLint64 *data);
 void			glwGetInteger64v									(GLenum pname, GLint64 *data);
-void			glwGetIntegerIndexedvEXT							(GLenum target, GLuint index, GLint *data);
 void			glwGetIntegeri_v									(GLenum target, GLuint index, GLint *data);
 void			glwGetIntegerv										(GLenum pname, GLint *data);
 void			glwGetInternalformatSampleivNV						(GLenum target, GLenum internalformat, GLsizei samples, GLenum pname, GLsizei bufSize, GLint *params);
@@ -1130,10 +1172,15 @@ void			glwGetMultiTexParameterivEXT						(GLenum texunit, GLenum target, GLenum 
 void			glwGetMultisamplefv									(GLenum pname, GLuint index, GLfloat *val);
 void			glwGetNamedBufferParameteri64v						(GLuint buffer, GLenum pname, GLint64 *params);
 void			glwGetNamedBufferParameteriv						(GLuint buffer, GLenum pname, GLint *params);
+void			glwGetNamedBufferParameterivEXT						(GLuint buffer, GLenum pname, GLint *params);
 void			glwGetNamedBufferPointerv							(GLuint buffer, GLenum pname, void **params);
+void			glwGetNamedBufferPointervEXT						(GLuint buffer, GLenum pname, void **params);
 void			glwGetNamedBufferSubData							(GLuint buffer, GLintptr offset, GLsizeiptr size, void *data);
+void			glwGetNamedBufferSubDataEXT							(GLuint buffer, GLintptr offset, GLsizeiptr size, void *data);
 void			glwGetNamedFramebufferAttachmentParameteriv			(GLuint framebuffer, GLenum attachment, GLenum pname, GLint *params);
+void			glwGetNamedFramebufferAttachmentParameterivEXT		(GLuint framebuffer, GLenum attachment, GLenum pname, GLint *params);
 void			glwGetNamedFramebufferParameteriv					(GLuint framebuffer, GLenum pname, GLint *param);
+void			glwGetNamedFramebufferParameterivEXT				(GLuint framebuffer, GLenum pname, GLint *params);
 void			glwGetNamedProgramLocalParameterIivEXT				(GLuint program, GLenum target, GLuint index, GLint *params);
 void			glwGetNamedProgramLocalParameterIuivEXT				(GLuint program, GLenum target, GLuint index, GLuint *params);
 void			glwGetNamedProgramLocalParameterdvEXT				(GLuint program, GLenum target, GLuint index, GLdouble *params);
@@ -1141,6 +1188,7 @@ void			glwGetNamedProgramLocalParameterfvEXT				(GLuint program, GLenum target, 
 void			glwGetNamedProgramStringEXT							(GLuint program, GLenum target, GLenum pname, void *string);
 void			glwGetNamedProgramivEXT								(GLuint program, GLenum target, GLenum pname, GLint *params);
 void			glwGetNamedRenderbufferParameteriv					(GLuint renderbuffer, GLenum pname, GLint *params);
+void			glwGetNamedRenderbufferParameterivEXT				(GLuint renderbuffer, GLenum pname, GLint *params);
 void			glwGetObjectLabel									(GLenum identifier, GLuint name, GLsizei bufSize, GLsizei *length, GLchar *label);
 void			glwGetObjectPtrLabel								(const void *ptr, GLsizei bufSize, GLsizei *length, GLchar *label);
 void			glwGetPointerIndexedvEXT							(GLenum target, GLuint index, void **data);
@@ -1190,12 +1238,19 @@ void			glwGetTexParameterIuiv								(GLenum target, GLenum pname, GLuint *param
 void			glwGetTexParameterfv								(GLenum target, GLenum pname, GLfloat *params);
 void			glwGetTexParameteriv								(GLenum target, GLenum pname, GLint *params);
 void			glwGetTextureImage									(GLuint texture, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels);
+void			glwGetTextureImageEXT								(GLuint texture, GLenum target, GLint level, GLenum format, GLenum type, void *pixels);
 void			glwGetTextureLevelParameterfv						(GLuint texture, GLint level, GLenum pname, GLfloat *params);
+void			glwGetTextureLevelParameterfvEXT					(GLuint texture, GLenum target, GLint level, GLenum pname, GLfloat *params);
 void			glwGetTextureLevelParameteriv						(GLuint texture, GLint level, GLenum pname, GLint *params);
+void			glwGetTextureLevelParameterivEXT					(GLuint texture, GLenum target, GLint level, GLenum pname, GLint *params);
 void			glwGetTextureParameterIiv							(GLuint texture, GLenum pname, GLint *params);
+void			glwGetTextureParameterIivEXT						(GLuint texture, GLenum target, GLenum pname, GLint *params);
 void			glwGetTextureParameterIuiv							(GLuint texture, GLenum pname, GLuint *params);
+void			glwGetTextureParameterIuivEXT						(GLuint texture, GLenum target, GLenum pname, GLuint *params);
 void			glwGetTextureParameterfv							(GLuint texture, GLenum pname, GLfloat *params);
+void			glwGetTextureParameterfvEXT							(GLuint texture, GLenum target, GLenum pname, GLfloat *params);
 void			glwGetTextureParameteriv							(GLuint texture, GLenum pname, GLint *params);
+void			glwGetTextureParameterivEXT							(GLuint texture, GLenum target, GLenum pname, GLint *params);
 void			glwGetTextureSubImage								(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, GLsizei bufSize, void *pixels);
 void			glwGetTransformFeedbackVarying						(GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLsizei *size, GLenum *type, GLchar *name);
 void			glwGetTransformFeedbacki64_v						(GLuint xfb, GLenum pname, GLuint index, GLint64 *param);
@@ -1241,7 +1296,6 @@ void			glwInvalidateTexImage								(GLuint texture, GLint level);
 void			glwInvalidateTexSubImage							(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth);
 GLboolean		glwIsBuffer											(GLuint buffer);
 GLboolean		glwIsEnabled										(GLenum cap);
-GLboolean		glwIsEnabledIndexedEXT								(GLenum target, GLuint index);
 GLboolean		glwIsEnabledi										(GLenum target, GLuint index);
 GLboolean		glwIsFramebuffer									(GLuint framebuffer);
 GLboolean		glwIsProgram										(GLuint program);
@@ -1260,7 +1314,9 @@ void			glwLogicOp											(GLenum opcode);
 void *			glwMapBuffer										(GLenum target, GLenum access);
 void *			glwMapBufferRange									(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
 void *			glwMapNamedBuffer									(GLuint buffer, GLenum access);
+void *			glwMapNamedBufferEXT								(GLuint buffer, GLenum access);
 void *			glwMapNamedBufferRange								(GLuint buffer, GLintptr offset, GLsizeiptr length, GLbitfield access);
+void *			glwMapNamedBufferRangeEXT							(GLuint buffer, GLintptr offset, GLsizeiptr length, GLbitfield access);
 void			glwMatrixFrustumEXT									(GLenum mode, GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar);
 void			glwMatrixLoadIdentityEXT							(GLenum mode);
 void			glwMatrixLoadTransposedEXT							(GLenum mode, const GLdouble *m);
@@ -1317,6 +1373,7 @@ void			glwMultiTexSubImage1DEXT							(GLenum texunit, GLenum target, GLint leve
 void			glwMultiTexSubImage2DEXT							(GLenum texunit, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels);
 void			glwMultiTexSubImage3DEXT							(GLenum texunit, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
 void			glwNamedBufferData									(GLuint buffer, GLsizeiptr size, const void *data, GLenum usage);
+void			glwNamedBufferDataEXT								(GLuint buffer, GLsizeiptr size, const void *data, GLenum usage);
 void			glwNamedBufferPageCommitmentARB						(GLuint buffer, GLintptr offset, GLsizeiptr size, GLboolean commit);
 void			glwNamedBufferPageCommitmentEXT						(GLuint buffer, GLintptr offset, GLsizeiptr size, GLboolean commit);
 void			glwNamedBufferStorage								(GLuint buffer, GLsizeiptr size, const void *data, GLbitfield flags);
@@ -1325,14 +1382,18 @@ void			glwNamedCopyBufferSubDataEXT						(GLuint readBuffer, GLuint writeBuffer,
 void			glwNamedFramebufferDrawBuffer						(GLuint framebuffer, GLenum buf);
 void			glwNamedFramebufferDrawBuffers						(GLuint framebuffer, GLsizei n, const GLenum *bufs);
 void			glwNamedFramebufferParameteri						(GLuint framebuffer, GLenum pname, GLint param);
+void			glwNamedFramebufferParameteriEXT					(GLuint framebuffer, GLenum pname, GLint param);
 void			glwNamedFramebufferReadBuffer						(GLuint framebuffer, GLenum src);
 void			glwNamedFramebufferRenderbuffer						(GLuint framebuffer, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+void			glwNamedFramebufferRenderbufferEXT					(GLuint framebuffer, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
 void			glwNamedFramebufferTexture							(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level);
 void			glwNamedFramebufferTexture1DEXT						(GLuint framebuffer, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 void			glwNamedFramebufferTexture2DEXT						(GLuint framebuffer, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 void			glwNamedFramebufferTexture3DEXT						(GLuint framebuffer, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
+void			glwNamedFramebufferTextureEXT						(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level);
 void			glwNamedFramebufferTextureFaceEXT					(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLenum face);
 void			glwNamedFramebufferTextureLayer						(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint layer);
+void			glwNamedFramebufferTextureLayerEXT					(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint layer);
 void			glwNamedProgramLocalParameter4dEXT					(GLuint program, GLenum target, GLuint index, GLdouble x, GLdouble y, GLdouble z, GLdouble w);
 void			glwNamedProgramLocalParameter4dvEXT					(GLuint program, GLenum target, GLuint index, const GLdouble *params);
 void			glwNamedProgramLocalParameter4fEXT					(GLuint program, GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
@@ -1346,8 +1407,10 @@ void			glwNamedProgramLocalParametersI4ivEXT				(GLuint program, GLenum target, 
 void			glwNamedProgramLocalParametersI4uivEXT				(GLuint program, GLenum target, GLuint index, GLsizei count, const GLuint *params);
 void			glwNamedProgramStringEXT							(GLuint program, GLenum target, GLenum format, GLsizei len, const void *string);
 void			glwNamedRenderbufferStorage							(GLuint renderbuffer, GLenum internalformat, GLsizei width, GLsizei height);
+void			glwNamedRenderbufferStorageEXT						(GLuint renderbuffer, GLenum internalformat, GLsizei width, GLsizei height);
 void			glwNamedRenderbufferStorageMultisample				(GLuint renderbuffer, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
 void			glwNamedRenderbufferStorageMultisampleCoverageEXT	(GLuint renderbuffer, GLsizei coverageSamples, GLsizei colorSamples, GLenum internalformat, GLsizei width, GLsizei height);
+void			glwNamedRenderbufferStorageMultisampleEXT			(GLuint renderbuffer, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
 void			glwObjectLabel										(GLenum identifier, GLuint name, GLsizei length, const GLchar *label);
 void			glwObjectPtrLabel									(const void *ptr, GLsizei length, const GLchar *label);
 void			glwPatchParameterfv									(GLenum pname, const GLfloat *values);
@@ -1369,7 +1432,9 @@ void			glwPrimitiveRestartIndex							(GLuint index);
 void			glwProgramBinary									(GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
 void			glwProgramParameteri								(GLuint program, GLenum pname, GLint value);
 void			glwProgramUniform1d									(GLuint program, GLint location, GLdouble v0);
+void			glwProgramUniform1dEXT								(GLuint program, GLint location, GLdouble x);
 void			glwProgramUniform1dv								(GLuint program, GLint location, GLsizei count, const GLdouble *value);
+void			glwProgramUniform1dvEXT								(GLuint program, GLint location, GLsizei count, const GLdouble *value);
 void			glwProgramUniform1f									(GLuint program, GLint location, GLfloat v0);
 void			glwProgramUniform1fv								(GLuint program, GLint location, GLsizei count, const GLfloat *value);
 void			glwProgramUniform1i									(GLuint program, GLint location, GLint v0);
@@ -1377,7 +1442,9 @@ void			glwProgramUniform1iv								(GLuint program, GLint location, GLsizei coun
 void			glwProgramUniform1ui								(GLuint program, GLint location, GLuint v0);
 void			glwProgramUniform1uiv								(GLuint program, GLint location, GLsizei count, const GLuint *value);
 void			glwProgramUniform2d									(GLuint program, GLint location, GLdouble v0, GLdouble v1);
+void			glwProgramUniform2dEXT								(GLuint program, GLint location, GLdouble x, GLdouble y);
 void			glwProgramUniform2dv								(GLuint program, GLint location, GLsizei count, const GLdouble *value);
+void			glwProgramUniform2dvEXT								(GLuint program, GLint location, GLsizei count, const GLdouble *value);
 void			glwProgramUniform2f									(GLuint program, GLint location, GLfloat v0, GLfloat v1);
 void			glwProgramUniform2fv								(GLuint program, GLint location, GLsizei count, const GLfloat *value);
 void			glwProgramUniform2i									(GLuint program, GLint location, GLint v0, GLint v1);
@@ -1385,7 +1452,9 @@ void			glwProgramUniform2iv								(GLuint program, GLint location, GLsizei coun
 void			glwProgramUniform2ui								(GLuint program, GLint location, GLuint v0, GLuint v1);
 void			glwProgramUniform2uiv								(GLuint program, GLint location, GLsizei count, const GLuint *value);
 void			glwProgramUniform3d									(GLuint program, GLint location, GLdouble v0, GLdouble v1, GLdouble v2);
+void			glwProgramUniform3dEXT								(GLuint program, GLint location, GLdouble x, GLdouble y, GLdouble z);
 void			glwProgramUniform3dv								(GLuint program, GLint location, GLsizei count, const GLdouble *value);
+void			glwProgramUniform3dvEXT								(GLuint program, GLint location, GLsizei count, const GLdouble *value);
 void			glwProgramUniform3f									(GLuint program, GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
 void			glwProgramUniform3fv								(GLuint program, GLint location, GLsizei count, const GLfloat *value);
 void			glwProgramUniform3i									(GLuint program, GLint location, GLint v0, GLint v1, GLint v2);
@@ -1393,7 +1462,9 @@ void			glwProgramUniform3iv								(GLuint program, GLint location, GLsizei coun
 void			glwProgramUniform3ui								(GLuint program, GLint location, GLuint v0, GLuint v1, GLuint v2);
 void			glwProgramUniform3uiv								(GLuint program, GLint location, GLsizei count, const GLuint *value);
 void			glwProgramUniform4d									(GLuint program, GLint location, GLdouble v0, GLdouble v1, GLdouble v2, GLdouble v3);
+void			glwProgramUniform4dEXT								(GLuint program, GLint location, GLdouble x, GLdouble y, GLdouble z, GLdouble w);
 void			glwProgramUniform4dv								(GLuint program, GLint location, GLsizei count, const GLdouble *value);
+void			glwProgramUniform4dvEXT								(GLuint program, GLint location, GLsizei count, const GLdouble *value);
 void			glwProgramUniform4f									(GLuint program, GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
 void			glwProgramUniform4fv								(GLuint program, GLint location, GLsizei count, const GLfloat *value);
 void			glwProgramUniform4i									(GLuint program, GLint location, GLint v0, GLint v1, GLint v2, GLint v3);
@@ -1401,22 +1472,31 @@ void			glwProgramUniform4iv								(GLuint program, GLint location, GLsizei coun
 void			glwProgramUniform4ui								(GLuint program, GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3);
 void			glwProgramUniform4uiv								(GLuint program, GLint location, GLsizei count, const GLuint *value);
 void			glwProgramUniformMatrix2dv							(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
+void			glwProgramUniformMatrix2dvEXT						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
 void			glwProgramUniformMatrix2fv							(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void			glwProgramUniformMatrix2x3dv						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
+void			glwProgramUniformMatrix2x3dvEXT						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
 void			glwProgramUniformMatrix2x3fv						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void			glwProgramUniformMatrix2x4dv						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
+void			glwProgramUniformMatrix2x4dvEXT						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
 void			glwProgramUniformMatrix2x4fv						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void			glwProgramUniformMatrix3dv							(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
+void			glwProgramUniformMatrix3dvEXT						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
 void			glwProgramUniformMatrix3fv							(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void			glwProgramUniformMatrix3x2dv						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
+void			glwProgramUniformMatrix3x2dvEXT						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
 void			glwProgramUniformMatrix3x2fv						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void			glwProgramUniformMatrix3x4dv						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
+void			glwProgramUniformMatrix3x4dvEXT						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
 void			glwProgramUniformMatrix3x4fv						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void			glwProgramUniformMatrix4dv							(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
+void			glwProgramUniformMatrix4dvEXT						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
 void			glwProgramUniformMatrix4fv							(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void			glwProgramUniformMatrix4x2dv						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
+void			glwProgramUniformMatrix4x2dvEXT						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
 void			glwProgramUniformMatrix4x2fv						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void			glwProgramUniformMatrix4x3dv						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
+void			glwProgramUniformMatrix4x3dvEXT						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value);
 void			glwProgramUniformMatrix4x3fv						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void			glwProvokingVertex									(GLenum mode);
 void			glwPushClientAttribDefaultEXT						(GLbitfield mask);
@@ -1458,7 +1538,6 @@ void			glwTexImage2D										(GLenum target, GLint level, GLint internalformat,
 void			glwTexImage2DMultisample							(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 void			glwTexImage3D										(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels);
 void			glwTexImage3DMultisample							(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations);
-void			glwTexImage3DOES									(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels);
 void			glwTexPageCommitmentARB								(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLboolean commit);
 void			glwTexParameterIiv									(GLenum target, GLenum pname, const GLint *params);
 void			glwTexParameterIuiv									(GLenum target, GLenum pname, const GLuint *params);
@@ -1467,39 +1546,45 @@ void			glwTexParameterfv									(GLenum target, GLenum pname, const GLfloat *pa
 void			glwTexParameteri									(GLenum target, GLenum pname, GLint param);
 void			glwTexParameteriv									(GLenum target, GLenum pname, const GLint *params);
 void			glwTexStorage1D										(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width);
-void			glwTexStorage1DEXT									(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width);
 void			glwTexStorage2D										(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
-void			glwTexStorage2DEXT									(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 void			glwTexStorage2DMultisample							(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 void			glwTexStorage3D										(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
-void			glwTexStorage3DEXT									(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
 void			glwTexStorage3DMultisample							(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations);
 void			glwTexSubImage1D									(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const void *pixels);
 void			glwTexSubImage2D									(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels);
 void			glwTexSubImage3D									(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
-void			glwTexSubImage3DOES									(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
 void			glwTextureBarrier									();
 void			glwTextureBuffer									(GLuint texture, GLenum internalformat, GLuint buffer);
+void			glwTextureBufferEXT									(GLuint texture, GLenum target, GLenum internalformat, GLuint buffer);
 void			glwTextureBufferRange								(GLuint texture, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizeiptr size);
+void			glwTextureBufferRangeEXT							(GLuint texture, GLenum target, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizeiptr size);
 void			glwTextureImage1DEXT								(GLuint texture, GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, const void *pixels);
 void			glwTextureImage2DEXT								(GLuint texture, GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void *pixels);
 void			glwTextureImage3DEXT								(GLuint texture, GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels);
 void			glwTexturePageCommitmentEXT							(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLboolean commit);
 void			glwTextureParameterIiv								(GLuint texture, GLenum pname, const GLint *params);
+void			glwTextureParameterIivEXT							(GLuint texture, GLenum target, GLenum pname, const GLint *params);
 void			glwTextureParameterIuiv								(GLuint texture, GLenum pname, const GLuint *params);
+void			glwTextureParameterIuivEXT							(GLuint texture, GLenum target, GLenum pname, const GLuint *params);
 void			glwTextureParameterf								(GLuint texture, GLenum pname, GLfloat param);
+void			glwTextureParameterfEXT								(GLuint texture, GLenum target, GLenum pname, GLfloat param);
 void			glwTextureParameterfv								(GLuint texture, GLenum pname, const GLfloat *param);
+void			glwTextureParameterfvEXT							(GLuint texture, GLenum target, GLenum pname, const GLfloat *params);
 void			glwTextureParameteri								(GLuint texture, GLenum pname, GLint param);
+void			glwTextureParameteriEXT								(GLuint texture, GLenum target, GLenum pname, GLint param);
 void			glwTextureParameteriv								(GLuint texture, GLenum pname, const GLint *param);
+void			glwTextureParameterivEXT							(GLuint texture, GLenum target, GLenum pname, const GLint *params);
 void			glwTextureRenderbufferEXT							(GLuint texture, GLenum target, GLuint renderbuffer);
 void			glwTextureStorage1D									(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width);
 void			glwTextureStorage1DEXT								(GLuint texture, GLenum target, GLsizei levels, GLenum internalformat, GLsizei width);
 void			glwTextureStorage2D									(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 void			glwTextureStorage2DEXT								(GLuint texture, GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 void			glwTextureStorage2DMultisample						(GLuint texture, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
+void			glwTextureStorage2DMultisampleEXT					(GLuint texture, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 void			glwTextureStorage3D									(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
 void			glwTextureStorage3DEXT								(GLuint texture, GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
 void			glwTextureStorage3DMultisample						(GLuint texture, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations);
+void			glwTextureStorage3DMultisampleEXT					(GLuint texture, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations);
 void			glwTextureSubImage1D								(GLuint texture, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const void *pixels);
 void			glwTextureSubImage1DEXT								(GLuint texture, GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const void *pixels);
 void			glwTextureSubImage2D								(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels);
@@ -1564,6 +1649,7 @@ void			glwUniformMatrix4x3fv								(GLint location, GLsizei count, GLboolean tr
 void			glwUniformSubroutinesuiv							(GLenum shadertype, GLsizei count, const GLuint *indices);
 GLboolean		glwUnmapBuffer										(GLenum target);
 GLboolean		glwUnmapNamedBuffer									(GLuint buffer);
+GLboolean		glwUnmapNamedBufferEXT								(GLuint buffer);
 void			glwUseProgram										(GLuint program);
 void			glwUseProgramStages									(GLuint pipeline, GLbitfield stages, GLuint program);
 void			glwValidateProgram									(GLuint program);
