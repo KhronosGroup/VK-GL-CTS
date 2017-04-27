@@ -454,7 +454,7 @@
 #define			glMatrixScalefEXT									glwMatrixScalefEXT
 #define			glMatrixTranslatedEXT								glwMatrixTranslatedEXT
 #define			glMatrixTranslatefEXT								glwMatrixTranslatefEXT
-#define			glMaxShaderCompilerThreadsARB						glwMaxShaderCompilerThreadsARB
+#define			glMaxShaderCompilerThreadsKHR						glwMaxShaderCompilerThreadsKHR
 #define			glMemoryBarrier										glwMemoryBarrier
 #define			glMemoryBarrierByRegion								glwMemoryBarrierByRegion
 #define			glMinSampleShading									glwMinSampleShading
@@ -1337,7 +1337,7 @@ void			glwMatrixScaledEXT									(GLenum mode, GLdouble x, GLdouble y, GLdouble
 void			glwMatrixScalefEXT									(GLenum mode, GLfloat x, GLfloat y, GLfloat z);
 void			glwMatrixTranslatedEXT								(GLenum mode, GLdouble x, GLdouble y, GLdouble z);
 void			glwMatrixTranslatefEXT								(GLenum mode, GLfloat x, GLfloat y, GLfloat z);
-void			glwMaxShaderCompilerThreadsARB						(GLuint count);
+void			glwMaxShaderCompilerThreadsKHR						(GLuint count);
 void			glwMemoryBarrier									(GLbitfield barriers);
 void			glwMemoryBarrierByRegion							(GLbitfield barriers);
 void			glwMinSampleShading									(GLfloat value);

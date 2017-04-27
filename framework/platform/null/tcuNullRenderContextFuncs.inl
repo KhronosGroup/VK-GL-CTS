@@ -3789,7 +3789,7 @@ GLW_APICALL void GLW_APIENTRY glMatrixTranslatefEXT (GLenum mode, GLfloat x, GLf
 
 }
 
-GLW_APICALL void GLW_APIENTRY glMaxShaderCompilerThreadsARB (GLuint count)
+GLW_APICALL void GLW_APIENTRY glMaxShaderCompilerThreadsKHR (GLuint count)
 {
 	DE_UNREF(count);
 

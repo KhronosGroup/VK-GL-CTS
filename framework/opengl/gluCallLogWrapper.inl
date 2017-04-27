@@ -3396,11 +3396,11 @@ void CallLogWrapper::glMatrixTranslatefEXT (glw::GLenum mode, glw::GLfloat x, gl
 	m_gl.matrixTranslatefEXT(mode, x, y, z);
 }
 
-void CallLogWrapper::glMaxShaderCompilerThreadsARB (glw::GLuint count)
+void CallLogWrapper::glMaxShaderCompilerThreadsKHR (glw::GLuint count)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMaxShaderCompilerThreadsARB(" << count << ");" << TestLog::EndMessage;
-	m_gl.maxShaderCompilerThreadsARB(count);
+		m_log << TestLog::Message << "glMaxShaderCompilerThreadsKHR(" << count << ");" << TestLog::EndMessage;
+	m_gl.maxShaderCompilerThreadsKHR(count);
 }
 
 void CallLogWrapper::glMemoryBarrier (glw::GLbitfield barriers)

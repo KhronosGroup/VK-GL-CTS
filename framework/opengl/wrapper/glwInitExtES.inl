@@ -33,6 +33,11 @@ if (de::contains(extSet, "GL_KHR_robustness"))
 	gl->readnPixels				= (glReadnPixelsFunc)				loader->get("glReadnPixelsKHR");
 }
 
+if (de::contains(extSet, "GL_KHR_parallel_shader_compile"))
+{
+	gl->maxShaderCompilerThreadsKHR	= (glMaxShaderCompilerThreadsKHRFunc)	loader->get("glMaxShaderCompilerThreadsKHR");
+}
+
 if (de::contains(extSet, "GL_EXT_tessellation_shader"))
 {
 	gl->patchParameteri	= (glPatchParameteriFunc)	loader->get("glPatchParameteriEXT");

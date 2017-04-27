@@ -3612,12 +3612,12 @@ void glwMatrixTranslatefEXT (GLenum mode, GLfloat x, GLfloat y, GLfloat z)
 	gl->matrixTranslatefEXT(mode, x, y, z);
 }
 
-void glwMaxShaderCompilerThreadsARB (GLuint count)
+void glwMaxShaderCompilerThreadsKHR (GLuint count)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->maxShaderCompilerThreadsARB(count);
+	gl->maxShaderCompilerThreadsKHR(count);
 }
 
 void glwMemoryBarrier (GLbitfield barriers)

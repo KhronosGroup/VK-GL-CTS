@@ -454,7 +454,7 @@ glMatrixScaledEXTFunc									matrixScaledEXT;
 glMatrixScalefEXTFunc									matrixScalefEXT;
 glMatrixTranslatedEXTFunc								matrixTranslatedEXT;
 glMatrixTranslatefEXTFunc								matrixTranslatefEXT;
-glMaxShaderCompilerThreadsARBFunc						maxShaderCompilerThreadsARB;
+glMaxShaderCompilerThreadsKHRFunc						maxShaderCompilerThreadsKHR;
 glMemoryBarrierFunc										memoryBarrier;
 glMemoryBarrierByRegionFunc								memoryBarrierByRegion;
 glMinSampleShadingFunc									minSampleShading;

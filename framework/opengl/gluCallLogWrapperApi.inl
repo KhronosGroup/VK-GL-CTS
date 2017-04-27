@@ -454,7 +454,7 @@ void					glMatrixScaledEXT									(glw::GLenum mode, glw::GLdouble x, glw::GLdo
 void					glMatrixScalefEXT									(glw::GLenum mode, glw::GLfloat x, glw::GLfloat y, glw::GLfloat z);
 void					glMatrixTranslatedEXT								(glw::GLenum mode, glw::GLdouble x, glw::GLdouble y, glw::GLdouble z);
 void					glMatrixTranslatefEXT								(glw::GLenum mode, glw::GLfloat x, glw::GLfloat y, glw::GLfloat z);
-void					glMaxShaderCompilerThreadsARB						(glw::GLuint count);
+void					glMaxShaderCompilerThreadsKHR						(glw::GLuint count);
 void					glMemoryBarrier										(glw::GLbitfield barriers);
 void					glMemoryBarrierByRegion								(glw::GLbitfield barriers);
 void					glMinSampleShading									(glw::GLfloat value);

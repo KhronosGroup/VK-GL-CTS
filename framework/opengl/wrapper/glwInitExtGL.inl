@@ -32,6 +32,11 @@ if (de::contains(extSet, "GL_KHR_robustness"))
 	gl->readnPixels				= (glReadnPixelsFunc)				loader->get("glReadnPixels");
 }
 
+if (de::contains(extSet, "GL_KHR_parallel_shader_compile"))
+{
+	gl->maxShaderCompilerThreadsKHR	= (glMaxShaderCompilerThreadsKHRFunc)	loader->get("glMaxShaderCompilerThreadsKHR");
+}
+
 if (de::contains(extSet, "GL_EXT_direct_state_access"))
 {
 	gl->bindMultiTextureEXT								= (glBindMultiTextureEXTFunc)								loader->get("glBindMultiTextureEXT");
@@ -724,7 +729,7 @@ if (de::contains(extSet, "GL_ARB_multi_draw_indirect"))
 
 if (de::contains(extSet, "GL_ARB_parallel_shader_compile"))
 {
-	gl->maxShaderCompilerThreadsARB	= (glMaxShaderCompilerThreadsARBFunc)	loader->get("glMaxShaderCompilerThreadsARB");
+	gl->maxShaderCompilerThreadsKHR	= (glMaxShaderCompilerThreadsKHRFunc)	loader->get("glMaxShaderCompilerThreadsARB");
 }
 
 if (de::contains(extSet, "GL_ARB_program_interface_query"))

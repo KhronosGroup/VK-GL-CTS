@@ -26,6 +26,7 @@
 #include "glcExposedExtensionsTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcInfoTests.hpp"
+#include "glcParallelShaderCompileTests.hpp"
 #include "glcShaderIndexingTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderLibrary.hpp"
@@ -157,6 +158,7 @@ void ES30TestPackage::init(void)
 		addChild(new ShaderTests(getContext()));
 		addChild(new glcts::TextureFilterAnisotropicTests(getContext()));
 		addChild(new glcts::ExposedExtensionsTests(getContext()));
+		addChild(new glcts::ParallelShaderCompileTests(getContext()));
 	}
 	catch (...)
 	{

@@ -454,7 +454,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glMatrixScaledEXTFunc)									(GLenum
 typedef GLW_APICALL void			(GLW_APIENTRY* glMatrixScalefEXTFunc)									(GLenum mode, GLfloat x, GLfloat y, GLfloat z);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMatrixTranslatedEXTFunc)								(GLenum mode, GLdouble x, GLdouble y, GLdouble z);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMatrixTranslatefEXTFunc)								(GLenum mode, GLfloat x, GLfloat y, GLfloat z);
-typedef GLW_APICALL void			(GLW_APIENTRY* glMaxShaderCompilerThreadsARBFunc)						(GLuint count);
+typedef GLW_APICALL void			(GLW_APIENTRY* glMaxShaderCompilerThreadsKHRFunc)						(GLuint count);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMemoryBarrierFunc)										(GLbitfield barriers);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMemoryBarrierByRegionFunc)								(GLbitfield barriers);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMinSampleShadingFunc)									(GLfloat value);
