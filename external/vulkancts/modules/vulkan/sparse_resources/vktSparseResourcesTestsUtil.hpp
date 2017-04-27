@@ -333,9 +333,6 @@ vk::Move<vk::VkRenderPass>		makeRenderPass					(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device,
 																 const vk::VkFormat					colorFormat);
 
-vk::Move<vk::VkRenderPass>		makeRenderPassWithoutAttachments(const vk::DeviceInterface&			vk,
-																 const vk::VkDevice					device);
-
 vk::Move<vk::VkFramebuffer>		makeFramebuffer					(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device,
 																 const vk::VkRenderPass				renderPass,
@@ -343,10 +340,6 @@ vk::Move<vk::VkFramebuffer>		makeFramebuffer					(const vk::DeviceInterface&			v
 																 const deUint32						width,
 																 const deUint32						height,
 																 const deUint32						layers);
-
-vk::Move<vk::VkFramebuffer>	makeFramebufferWithoutAttachments	(const vk::DeviceInterface&			vk,
-																 const vk::VkDevice					device,
-																 const vk::VkRenderPass				renderPass);
 
 void							beginRenderPass					(const vk::DeviceInterface&				vk,
 																 const vk::VkCommandBuffer				commandBuffer,
