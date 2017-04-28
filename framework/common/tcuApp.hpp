@@ -71,10 +71,10 @@ public:
 protected:
 	void					cleanup				(void);
 
-	void					onWatchdogTimeout	(void);
+	void					onWatchdogTimeout	(qpTimeoutReason reason);
 	void					onCrash				(void);
 
-	static void				onWatchdogTimeout	(qpWatchDog* watchDog, void* userPtr);
+	static void				onWatchdogTimeout	(qpWatchDog* watchDog, void* userPtr, qpTimeoutReason reason);
 	static void				onCrash				(qpCrashHandler* crashHandler, void* userPtr);
 
 	Platform&				m_platform;

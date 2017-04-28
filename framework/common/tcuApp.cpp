@@ -209,10 +209,10 @@ const TestRunStatus& App::getResult (void) const
 	return m_testExecutor->getStatus();
 }
 
-void App::onWatchdogTimeout (qpWatchDog* watchDog, void* userPtr)
+void App::onWatchdogTimeout (qpWatchDog* watchDog, void* userPtr, qpTimeoutReason reason)
 {
 	DE_UNREF(watchDog);
-	static_cast<App*>(userPtr)->onWatchdogTimeout();
+	static_cast<App*>(userPtr)->onWatchdogTimeout(reason);
 }
 
 void App::onCrash (qpCrashHandler* crashHandler, void* userPtr)
@@ -221,7 +221,7 @@ void App::onCrash (qpCrashHandler* crashHandler, void* userPtr)
 	static_cast<App*>(userPtr)->onCrash();
 }
 
-void App::onWatchdogTimeout (void)
+void App::onWatchdogTimeout (qpTimeoutReason reason)
 {
 	if (!m_crashLock.tryLock() || m_crashed)
 		return; // In crash handler already.
@@ -229,7 +229,7 @@ void App::onWatchdogTimeout (void)
 	m_crashed = true;
 
 	m_testCtx->getLog().terminateCase(QP_TEST_RESULT_TIMEOUT);
-	die("Watchdog timer timeout");
+	die("Watchdog timer timeout for %s", (reason == QP_TIMEOUT_REASON_INTERVAL_LIMIT ? "touch interval" : "total time"));
 }
 
 static void writeCrashToLog (void* userPtr, const char* infoString)
