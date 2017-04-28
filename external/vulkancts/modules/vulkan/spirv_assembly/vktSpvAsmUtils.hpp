@@ -24,8 +24,11 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "vkMemUtil.hpp"
+#include "vkRef.hpp"
 #include "vkTypeUtil.hpp"
 
+#include <string>
 #include <vector>
 
 namespace vkt
@@ -59,6 +62,21 @@ bool is16BitStorageFeaturesSupported (const vk::InstanceInterface&	vkInstance,
 									  vk::VkPhysicalDevice			device,
 									  const std::vector<std::string>& instanceExtensions,
 									  Extension16BitStorageFeatures	toCheck);
+
+// Creates a Vulkan logical device with the requiredExtensions enabled and all other extensions disabled.
+// The logical device will be created from the given instance and physical device. A single queue will
+// be created from the given queue family.
+vk::Move<vk::VkDevice> createDeviceWithExtensions (const vk::InstanceInterface&		vki,
+												   vk::VkPhysicalDevice				physicalDevice,
+												   deUint32							queueFamilyIndex,
+												   const std::vector<std::string>&	supportedExtensions,
+												   const std::vector<std::string>&	requiredExtensions);
+
+// Creates a SimpleAllocator on the given device.
+vk::Allocator* createAllocator (const vk::InstanceInterface& instanceInterface,
+								const vk::VkPhysicalDevice physicalDevice,
+								const vk::DeviceInterface& deviceInterface,
+								const vk::VkDevice device);
 
 } // SpirVAssembly
 } // vkt

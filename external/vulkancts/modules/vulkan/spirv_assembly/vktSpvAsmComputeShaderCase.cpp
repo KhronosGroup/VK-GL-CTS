@@ -28,6 +28,7 @@
 
 #include "vkBuilderUtil.hpp"
 #include "vkMemUtil.hpp"
+#include "vkPlatform.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -272,12 +273,16 @@ namespace SpirVAssembly
 class SpvAsmComputeShaderInstance : public TestInstance
 {
 public:
-								SpvAsmComputeShaderInstance	(Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features);
-	tcu::TestStatus				iterate						(void);
+										SpvAsmComputeShaderInstance	(Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features);
+	tcu::TestStatus						iterate						(void);
 
 private:
-	const ComputeShaderSpec&	m_shaderSpec;
-	const ComputeTestFeatures	m_features;
+	const Unique<VkDevice>				m_device;
+	const DeviceDriver					m_deviceInterface;
+	const VkQueue						m_queue;
+	const de::UniquePtr<vk::Allocator>	m_allocator;
+	const ComputeShaderSpec&			m_shaderSpec;
+	const ComputeTestFeatures			m_features;
 };
 
 // ComputeShaderTestCase implementations
@@ -302,39 +307,31 @@ TestInstance* SpvAsmComputeShaderCase::createInstance (Context& ctx) const
 // ComputeShaderTestInstance implementations
 
 SpvAsmComputeShaderInstance::SpvAsmComputeShaderInstance (Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features)
-	: TestInstance	(ctx)
-	, m_shaderSpec	(spec)
-	, m_features	(features)
+	: TestInstance		(ctx)
+	, m_device			(createDeviceWithExtensions(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), ctx.getUniversalQueueFamilyIndex(), ctx.getDeviceExtensions(), spec.extensions))
+	, m_deviceInterface	(ctx.getInstanceInterface(), *m_device)
+	, m_queue			(getDeviceQueue(m_deviceInterface, *m_device, ctx.getUniversalQueueFamilyIndex(), 0))
+	, m_allocator		(createAllocator(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), m_deviceInterface, *m_device))
+	, m_shaderSpec		(spec)
+	, m_features		(features)
 {
 }
 
 tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 {
 	const VkPhysicalDeviceFeatures&		features			= m_context.getDeviceFeatures();
-	const vector<std::string>&			extensions			= m_context.getDeviceExtensions();
-
-	for (deUint32 extNdx = 0; extNdx < m_shaderSpec.extensions.size(); ++extNdx)
-	{
-		const std::string&				ext					= m_shaderSpec.extensions[extNdx];
-
-		if (!de::contains(extensions.begin(), extensions.end(), ext))
-		{
-			TCU_THROW(NotSupportedError, (std::string("Device extension not supported: ") + ext).c_str());
-		}
-	}
-
-	const DeviceInterface&				vkdi				= m_context.getDeviceInterface();
-	const VkDevice&						device				= m_context.getDevice();
-	Allocator&							allocator			= m_context.getDefaultAllocator();
+	const DeviceInterface&				vkdi				= m_deviceInterface;
+	const VkDevice&						device				= *m_device;
+	Allocator&							allocator			= *m_allocator;
 
 	if ((m_features == COMPUTE_TEST_USES_INT16 || m_features == COMPUTE_TEST_USES_INT16_INT64) && !features.shaderInt16)
 	{
-		throw tcu::NotSupportedError("shaderInt16 feature is not supported");
+		TCU_THROW(NotSupportedError, "shaderInt16 feature is not supported");
 	}
 
 	if ((m_features == COMPUTE_TEST_USES_INT64 || m_features == COMPUTE_TEST_USES_INT16_INT64) && !features.shaderInt64)
 	{
-		throw tcu::NotSupportedError("shaderInt64 feature is not supported");
+		TCU_THROW(NotSupportedError, "shaderInt64 feature is not supported");
 	}
 
 	{
@@ -451,7 +448,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		(const VkSemaphore*)DE_NULL,
 	};
 
-	VK_CHECK(vkdi.queueSubmit(m_context.getUniversalQueue(), 1, &submitInfo, *cmdCompleteFence));
+	VK_CHECK(vkdi.queueSubmit(m_queue, 1, &submitInfo, *cmdCompleteFence));
 	VK_CHECK(vkdi.waitForFences(device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
 
 	// Check output.

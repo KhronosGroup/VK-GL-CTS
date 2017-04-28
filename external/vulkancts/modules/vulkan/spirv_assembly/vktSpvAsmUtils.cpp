@@ -25,6 +25,8 @@
 
 #include "deMemory.h"
 #include "deSTLUtil.hpp"
+#include "vkQueryUtil.hpp"
+#include "vkRefUtil.hpp"
 
 namespace vkt
 {
@@ -32,6 +34,21 @@ namespace SpirVAssembly
 {
 
 using namespace vk;
+
+namespace
+{
+
+VkPhysicalDeviceFeatures filterDefaultDeviceFeatures (const VkPhysicalDeviceFeatures& deviceFeatures)
+{
+	VkPhysicalDeviceFeatures enabledDeviceFeatures = deviceFeatures;
+
+	// Disable robustness by default, as it has an impact on performance on some HW.
+	enabledDeviceFeatures.robustBufferAccess = false;
+
+	return enabledDeviceFeatures;
+}
+
+} // anonymous
 
 bool is16BitStorageFeaturesSupported (const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions, Extension16BitStorageFeatures toCheck)
 {
@@ -69,6 +86,65 @@ bool is16BitStorageFeaturesSupported (const InstanceInterface& vki, VkPhysicalDe
 		return false;
 
 	return true;
+}
+
+Move<VkDevice> createDeviceWithExtensions (const InstanceInterface&			vki,
+										   VkPhysicalDevice					physicalDevice,
+										   const deUint32					queueFamilyIndex,
+										   const std::vector<std::string>&	supportedExtensions,
+										   const std::vector<std::string>&	requiredExtensions)
+{
+	std::vector<const char*>		extensions			(requiredExtensions.size());
+
+	for (deUint32 extNdx = 0; extNdx < requiredExtensions.size(); ++extNdx)
+	{
+		const std::string&	ext = requiredExtensions[extNdx];
+
+		// Check that all required extensions are supported first.
+		if (!de::contains(supportedExtensions.begin(), supportedExtensions.end(), ext))
+		{
+			TCU_THROW(NotSupportedError, (std::string("Device extension not supported: ") + ext).c_str());
+		}
+
+		extensions[extNdx] = ext.c_str();
+	}
+
+	const float						queuePriorities[]	= { 1.0f };
+	const VkDeviceQueueCreateInfo	queueInfos[]		=
+	{
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+			DE_NULL,
+			(VkDeviceQueueCreateFlags)0,
+			queueFamilyIndex,
+			DE_LENGTH_OF_ARRAY(queuePriorities),
+			&queuePriorities[0]
+		}
+	};
+	const VkPhysicalDeviceFeatures	features			= filterDefaultDeviceFeatures(getPhysicalDeviceFeatures(vki, physicalDevice));
+	const VkDeviceCreateInfo		deviceParams		=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		DE_NULL,
+		(VkDeviceCreateFlags)0,
+		DE_LENGTH_OF_ARRAY(queueInfos),
+		&queueInfos[0],
+		0u,
+		DE_NULL,
+		(deUint32)extensions.size(),
+		&extensions[0],
+		&features
+	};
+
+	return vk::createDevice(vki, physicalDevice, &deviceParams);
+}
+
+Allocator* createAllocator (const InstanceInterface& instanceInterface, const VkPhysicalDevice physicalDevice, const DeviceInterface& deviceInterface, const VkDevice device)
+{
+	const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(instanceInterface, physicalDevice);
+
+	// \todo [2015-07-24 jarkko] support allocator selection/configuration from command line (or compile time)
+	return new SimpleAllocator(deviceInterface, device, memoryProperties);
 }
 
 } // SpirVAssembly

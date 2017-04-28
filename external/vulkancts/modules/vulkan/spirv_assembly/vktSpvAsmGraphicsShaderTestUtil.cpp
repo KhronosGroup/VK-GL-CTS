@@ -28,6 +28,7 @@
 
 #include "vkDefs.hpp"
 #include "vkMemUtil.hpp"
+#include "vkPlatform.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -2081,12 +2082,13 @@ Move<VkBuffer> createBufferForResource(const DeviceInterface& vk, const VkDevice
 
 TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instance)
 {
-	const VkDevice								vkDevice				= context.getDevice();
-	const VkPhysicalDevice						vkPhysicalDevice		= context.getPhysicalDevice();
-	const DeviceInterface&						vk						= context.getDeviceInterface();
 	const InstanceInterface&					vkInstance				= context.getInstanceInterface();
-	const VkQueue								queue					= context.getUniversalQueue();
+	const VkPhysicalDevice						vkPhysicalDevice		= context.getPhysicalDevice();
 	const deUint32								queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	// Create a dedicated logic device with required extensions enabled for this test case.
+	const Unique<VkDevice>						vkDevice				(createDeviceWithExtensions(vkInstance, vkPhysicalDevice, queueFamilyIndex, context.getDeviceExtensions(), instance.requiredDeviceExtensions));
+	const DeviceDriver							vk						(vkInstance, *vkDevice);
+	const VkQueue								queue					= getDeviceQueue(vk, *vkDevice, queueFamilyIndex, 0);
 	const tcu::UVec2							renderSize				(256, 256);
 	vector<ModuleHandleSp>						modules;
 	map<VkShaderStageFlagBits, VkShaderModule>	moduleByStage;
@@ -2099,6 +2101,8 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	const deUint32								numResources			= static_cast<deUint32>(instance.resources.inputs.size() + instance.resources.outputs.size());
 	const bool									needInterface			= !instance.interfaces.empty();
 	const VkPhysicalDeviceFeatures&				features				= context.getDeviceFeatures();
+	const de::UniquePtr<Allocator>				allocatorUptr			(createAllocator(vkInstance, vkPhysicalDevice, vk, *vkDevice));
+	Allocator&									allocator				= *allocatorUptr;
 
 	supportsGeometry		= features.geometryShader == VK_TRUE;
 	supportsTessellation	= features.tessellationShader == VK_TRUE;
@@ -2114,21 +2118,6 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		!supportsGeometry)
 	{
 		throw tcu::NotSupportedError(std::string("Geometry not supported"));
-	}
-
-	{
-		const vector<string>& supportedExtensions = context.getDeviceExtensions();
-		const deUint32 extCount = static_cast<deUint32>(instance.requiredDeviceExtensions.size());
-
-		for (deUint32 extNdx = 0; extNdx < extCount; ++extNdx)
-		{
-			const string& ext = instance.requiredDeviceExtensions[extNdx];
-
-			if (std::find(supportedExtensions.begin(), supportedExtensions.end(), ext) == supportedExtensions.end())
-			{
-				throw tcu::NotSupportedError(std::string("Device extension not supported: ") + ext);
-			}
-		}
 	}
 
 	{
@@ -2200,10 +2189,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		1u,										//	deUint32			queueFamilyCount;
 		&queueFamilyIndex,						//	const deUint32*		pQueueFamilyIndices;
 	};
-	const Unique<VkBuffer>					vertexBuffer			(createBuffer(vk, vkDevice, &vertexBufferParams));
-	const UniquePtr<Allocation>				vertexBufferMemory		(context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *vertexBuffer), MemoryRequirement::HostVisible));
+	const Unique<VkBuffer>					vertexBuffer			(createBuffer(vk, *vkDevice, &vertexBufferParams));
+	const UniquePtr<Allocation>				vertexBufferMemory		(allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *vertexBuffer), MemoryRequirement::HostVisible));
 
-	VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset()));
+	VK_CHECK(vk.bindBufferMemory(*vkDevice, *vertexBuffer, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset()));
 
 	const VkDeviceSize						imageSizeBytes			= (VkDeviceSize)(sizeof(deUint32)*renderSize.x()*renderSize.y());
 	const VkBufferCreateInfo				readImageBufferParams	=
@@ -2217,10 +2206,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		1u,											//	deUint32			queueFamilyCount;
 		&queueFamilyIndex,							//	const deUint32*		pQueueFamilyIndices;
 	};
-	const Unique<VkBuffer>					readImageBuffer			(createBuffer(vk, vkDevice, &readImageBufferParams));
-	const UniquePtr<Allocation>				readImageBufferMemory	(context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), MemoryRequirement::HostVisible));
+	const Unique<VkBuffer>					readImageBuffer			(createBuffer(vk, *vkDevice, &readImageBufferParams));
+	const UniquePtr<Allocation>				readImageBufferMemory	(allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *readImageBuffer), MemoryRequirement::HostVisible));
 
-	VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
+	VK_CHECK(vk.bindBufferMemory(*vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 
 	VkImageCreateInfo						imageParams				=
 	{
@@ -2241,10 +2230,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		VK_IMAGE_LAYOUT_UNDEFINED,												//	VkImageLayout		initialLayout;
 	};
 
-	const Unique<VkImage>					image					(createImage(vk, vkDevice, &imageParams));
-	const UniquePtr<Allocation>				imageMemory				(context.getDefaultAllocator().allocate(getImageMemoryRequirements(vk, vkDevice, *image), MemoryRequirement::Any));
+	const Unique<VkImage>					image					(createImage(vk, *vkDevice, &imageParams));
+	const UniquePtr<Allocation>				imageMemory				(allocator.allocate(getImageMemoryRequirements(vk, *vkDevice, *image), MemoryRequirement::Any));
 
-	VK_CHECK(vk.bindImageMemory(vkDevice, *image, imageMemory->getMemory(), imageMemory->getOffset()));
+	VK_CHECK(vk.bindImageMemory(*vkDevice, *image, imageMemory->getMemory(), imageMemory->getOffset()));
 
 	if (needInterface)
 	{
@@ -2266,9 +2255,9 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			&queueFamilyIndex,							//	const deUint32*		pQueueFamilyIndices;
 		};
 
-		vertexInputBuffer = createBuffer(vk, vkDevice, &vertexInputParams);
-		vertexInputMemory = context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *vertexInputBuffer), MemoryRequirement::HostVisible);
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexInputBuffer, vertexInputMemory->getMemory(), vertexInputMemory->getOffset()));
+		vertexInputBuffer = createBuffer(vk, *vkDevice, &vertexInputParams);
+		vertexInputMemory = allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *vertexInputBuffer), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(*vkDevice, *vertexInputBuffer, vertexInputMemory->getMemory(), vertexInputMemory->getOffset()));
 
 		// Create an additional buffer and backing memory for an output variable.
 		const VkDeviceSize						fragOutputImgSize		= (VkDeviceSize)(instance.interfaces.getOutputType().getNumBytes() * renderSize.x() * renderSize.y());
@@ -2283,17 +2272,17 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			1u,											//	deUint32			queueFamilyCount;
 			&queueFamilyIndex,							//	const deUint32*		pQueueFamilyIndices;
 		};
-		fragOutputBuffer = createBuffer(vk, vkDevice, &fragOutputParams);
-		fragOutputMemory = context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *fragOutputBuffer), MemoryRequirement::HostVisible);
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *fragOutputBuffer, fragOutputMemory->getMemory(), fragOutputMemory->getOffset()));
+		fragOutputBuffer = createBuffer(vk, *vkDevice, &fragOutputParams);
+		fragOutputMemory = allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *fragOutputBuffer), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(*vkDevice, *fragOutputBuffer, fragOutputMemory->getMemory(), fragOutputMemory->getOffset()));
 
 		// Create an additional image and backing memory for attachment.
 		// Reuse the previous imageParams since we only need to change the image format.
 		imageParams.format		= instance.interfaces.getOutputType().getVkFormat();
-		fragOutputImage			= createImage(vk, vkDevice, &imageParams);
-		fragOutputImageMemory	= context.getDefaultAllocator().allocate(getImageMemoryRequirements(vk, vkDevice, *fragOutputImage), MemoryRequirement::Any);
+		fragOutputImage			= createImage(vk, *vkDevice, &imageParams);
+		fragOutputImageMemory	= allocator.allocate(getImageMemoryRequirements(vk, *vkDevice, *fragOutputImage), MemoryRequirement::Any);
 
-		VK_CHECK(vk.bindImageMemory(vkDevice, *fragOutputImage, fragOutputImageMemory->getMemory(), fragOutputImageMemory->getOffset()));
+		VK_CHECK(vk.bindImageMemory(*vkDevice, *fragOutputImage, fragOutputImageMemory->getMemory(), fragOutputImageMemory->getOffset()));
 	}
 
 	vector<VkAttachmentDescription>			colorAttDescs			;
@@ -2378,7 +2367,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		renderPassParams.attachmentCount += 1;
 	}
 
-	const Unique<VkRenderPass>				renderPass				(createRenderPass(vk, vkDevice, &renderPassParams));
+	const Unique<VkRenderPass>				renderPass				(createRenderPass(vk, *vkDevice, &renderPassParams));
 
 	const VkImageViewCreateInfo				colorAttViewParams		=
 	{
@@ -2402,7 +2391,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			1u,												//	deUint32			arraySize;
 		},												//	VkImageSubresourceRange		subresourceRange;
 	};
-	const Unique<VkImageView>				colorAttView			(createImageView(vk, vkDevice, &colorAttViewParams));
+	const Unique<VkImageView>				colorAttView			(createImageView(vk, *vkDevice, &colorAttViewParams));
 
 	vector<VkImageView>						attViews				;
 	attViews.push_back(*colorAttView);
@@ -2433,10 +2422,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		{
 			const Resource&					resource				= instance.resources.inputs[inputNdx];
 			// Create buffer and allocate memory.
-			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, vkDevice, resource, queueFamilyIndex);
-			de::MovePtr<Allocation>			resourceMemory			= context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
+			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
+			de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
 
-			VK_CHECK(vk.bindBufferMemory(vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
+			VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
 			// Copy data to memory.
 			const VkMappedMemoryRange		range					=
@@ -2449,7 +2438,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			};
 
 			deMemcpy(resourceMemory->getHostPtr(), resource.second->data(), resource.second->getNumBytes());
-			VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
+			VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
 
 			inResourceMemories.push_back(AllocationSp(resourceMemory.release()));
 			inResourceBuffers.push_back(BufferHandleSp(new BufferHandleUp(resourceBuffer)));
@@ -2479,10 +2468,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		{
 			const Resource&					resource				= instance.resources.outputs[outputNdx];
 			// Create buffer and allocate memory.
-			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, vkDevice, resource, queueFamilyIndex);
-			de::MovePtr<Allocation>			resourceMemory			= context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
+			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
+			de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
 
-			VK_CHECK(vk.bindBufferMemory(vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
+			VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
 			// Fill memory with all ones.
 			const VkMappedMemoryRange		range					=
@@ -2495,7 +2484,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			};
 
 			deMemset((deUint8*)resourceMemory->getHostPtr(), 0xff, resource.second->getNumBytes());
-			VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
+			VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
 
 			outResourceMemories.push_back(AllocationSp(resourceMemory.release()));
 			outResourceBuffers.push_back(BufferHandleSp(new BufferHandleUp(resourceBuffer)));
@@ -2529,7 +2518,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			numResources,											// bindingCount
 			setLayoutBindings.data(),								// pBindings
 		};
-		setLayout													= createDescriptorSetLayout(vk, vkDevice, &setLayoutParams);
+		setLayout													= createDescriptorSetLayout(vk, *vkDevice, &setLayoutParams);
 		rawSetLayout												= *setLayout;
 
 		const VkDescriptorPoolCreateInfo		poolParams			=
@@ -2541,7 +2530,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			numResources,											// poolSizeCount
 			poolSizes.data(),										// pPoolSizes
 		};
-		descriptorPool												= createDescriptorPool(vk, vkDevice, &poolParams);
+		descriptorPool												= createDescriptorPool(vk, *vkDevice, &poolParams);
 
 		const VkDescriptorSetAllocateInfo		setAllocParams		=
 		{
@@ -2551,7 +2540,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			1u,														// descriptorSetCount
 			&rawSetLayout,											// pSetLayouts
 		};
-		VK_CHECK(vk.allocateDescriptorSets(vkDevice, &setAllocParams, &rawSet));
+		VK_CHECK(vk.allocateDescriptorSets(*vkDevice, &setAllocParams, &rawSet));
 
 		// Update descriptor set.
 		vector<VkWriteDescriptorSet>			writeSpecs			;
@@ -2608,7 +2597,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			};
 			writeSpecs.push_back(writeSpec);
 		}
-		vk.updateDescriptorSets(vkDevice, numResources, writeSpecs.data(), 0, DE_NULL);
+		vk.updateDescriptorSets(*vkDevice, numResources, writeSpecs.data(), 0, DE_NULL);
 	}
 
 	// Pipeline layout
@@ -2641,14 +2630,14 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		pipelineLayoutParams.setLayoutCount								= 1;
 		pipelineLayoutParams.pSetLayouts								= &rawSetLayout;
 	}
-	const Unique<VkPipelineLayout>			pipelineLayout			(createPipelineLayout(vk, vkDevice, &pipelineLayoutParams));
+	const Unique<VkPipelineLayout>			pipelineLayout			(createPipelineLayout(vk, *vkDevice, &pipelineLayoutParams));
 
 	// Pipeline
 	vector<VkPipelineShaderStageCreateInfo>		shaderStageParams;
 	// We need these vectors to make sure that information about specialization constants for each stage can outlive createGraphicsPipeline().
 	vector<vector<VkSpecializationMapEntry> >	specConstantEntries;
 	vector<VkSpecializationInfo>				specializationInfos;
-	createPipelineShaderStages(vk, vkDevice, instance, context, modules, shaderStageParams);
+	createPipelineShaderStages(vk, *vkDevice, instance, context, modules, shaderStageParams);
 
 	// And we don't want the reallocation of these vectors to invalidate pointers pointing to their contents.
 	specConstantEntries.reserve(shaderStageParams.size());
@@ -2924,7 +2913,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		0u,														//	deInt32											basePipelineIndex;
 	};
 
-	const Unique<VkPipeline>				pipeline				(createGraphicsPipeline(vk, vkDevice, DE_NULL, &pipelineParams));
+	const Unique<VkPipeline>				pipeline				(createGraphicsPipeline(vk, *vkDevice, DE_NULL, &pipelineParams));
 
 	if (needInterface)
 	{
@@ -2950,7 +2939,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				1u,												//	deUint32			arraySize;
 			},													//	VkImageSubresourceRange		subresourceRange;
 		};
-		fragOutputImageView = createImageView(vk, vkDevice, &fragOutputViewParams);
+		fragOutputImageView = createImageView(vk, *vkDevice, &fragOutputViewParams);
 		attViews.push_back(*fragOutputImageView);
 	}
 
@@ -2971,12 +2960,12 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	if (needInterface)
 		framebufferParams.attachmentCount += 1;
 
-	const Unique<VkFramebuffer>				framebuffer				(createFramebuffer(vk, vkDevice, &framebufferParams));
+	const Unique<VkFramebuffer>				framebuffer				(createFramebuffer(vk, *vkDevice, &framebufferParams));
 
-	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, *vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 
 	// Command buffer
-	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, *vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkCommandBufferBeginInfo			cmdBufBeginParams		=
 	{
@@ -3183,7 +3172,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		void*						vertexBufPtr	= vertexBufferMemory->getHostPtr();
 
 		deMemcpy(vertexBufPtr, &vertexData[0], sizeof(vertexData));
-		VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
+		VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
 	}
 
 	if (needInterface)
@@ -3219,7 +3208,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			VK_WHOLE_SIZE,							//	VkDeviceSize	size;
 		};
 
-		VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
+		VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
 	}
 
 	// Submit & wait for completion
@@ -3230,7 +3219,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			DE_NULL,								//	const void*			pNext;
 			0u,										//	VkFenceCreateFlags	flags;
 		};
-		const Unique<VkFence>	fence		(createFence(vk, vkDevice, &fenceParams));
+		const Unique<VkFence>	fence		(createFence(vk, *vkDevice, &fenceParams));
 		const VkSubmitInfo		submitInfo	=
 		{
 			VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -3245,7 +3234,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		};
 
 		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), DE_TRUE, ~0ull));
+		VK_CHECK(vk.waitForFences(*vkDevice, 1u, &fence.get(), DE_TRUE, ~0ull));
 	}
 
 	const void* imagePtr	= readImageBufferMemory->getHostPtr();
@@ -3262,7 +3251,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			imageSizeBytes,							//	VkDeviceSize	size;
 		};
 
-		VK_CHECK(vk.invalidateMappedMemoryRanges(vkDevice, 1u, &range));
+		VK_CHECK(vk.invalidateMappedMemoryRanges(*vkDevice, 1u, &range));
 		context.getTestContext().getLog() << TestLog::Image("Result", "Result", pixelBuffer);
 	}
 
@@ -3278,7 +3267,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				VK_WHOLE_SIZE,									//	VkDeviceSize	size;
 			};
 
-			VK_CHECK(vk.invalidateMappedMemoryRanges(vkDevice, 1u, &range));
+			VK_CHECK(vk.invalidateMappedMemoryRanges(*vkDevice, 1u, &range));
 		}
 	}
 
