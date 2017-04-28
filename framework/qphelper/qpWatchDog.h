@@ -27,7 +27,15 @@
 
 typedef struct qpWatchDog_s	qpWatchDog;
 
-typedef void		(*qpWatchDogFunc)		(qpWatchDog* dog, void* userPtr);
+typedef enum qpTimeoutReason_e
+{
+	QP_TIMEOUT_REASON_INTERVAL_LIMIT = 0,
+	QP_TIMEOUT_REASON_TOTAL_LIMIT,
+
+	QP_TIMEOUT_REASON_LAST
+} qpTimeoutReason;
+
+typedef void		(*qpWatchDogFunc)		(qpWatchDog* dog, void* userPtr, qpTimeoutReason reason);
 
 DE_BEGIN_EXTERN_C
 
