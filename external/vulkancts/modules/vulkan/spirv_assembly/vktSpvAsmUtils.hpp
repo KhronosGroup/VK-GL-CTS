@@ -26,6 +26,8 @@
 #include "vkDefs.hpp"
 #include "vkTypeUtil.hpp"
 
+#include <vector>
+
 namespace vkt
 {
 namespace SpirVAssembly
@@ -55,6 +57,7 @@ struct ExtensionFeatures
 // Returns true if the given 16bit storage extension features in `toCheck` are all supported.
 bool is16BitStorageFeaturesSupported (const vk::InstanceInterface&	vkInstance,
 									  vk::VkPhysicalDevice			device,
+									  const std::vector<std::string>& instanceExtensions,
 									  Extension16BitStorageFeatures	toCheck);
 
 } // SpirVAssembly

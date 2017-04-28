@@ -24,6 +24,7 @@
 #include "vktSpvAsmUtils.hpp"
 
 #include "deMemory.h"
+#include "deSTLUtil.hpp"
 
 namespace vkt
 {
@@ -32,7 +33,7 @@ namespace SpirVAssembly
 
 using namespace vk;
 
-bool is16BitStorageFeaturesSupported (const InstanceInterface& vki, VkPhysicalDevice device, Extension16BitStorageFeatures toCheck)
+bool is16BitStorageFeaturesSupported (const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions, Extension16BitStorageFeatures toCheck)
 {
 	VkPhysicalDevice16BitStorageFeaturesKHR	extensionFeatures	=
 	{
@@ -49,7 +50,11 @@ bool is16BitStorageFeaturesSupported (const InstanceInterface& vki, VkPhysicalDe
 	features.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
 	features.pNext	= &extensionFeatures;
 
-	vki.getPhysicalDeviceFeatures2KHR(device, &features);
+	// Call the getter only if supported. Otherwise above "zero" defaults are used
+	if (de::contains(instanceExtensions.begin(), instanceExtensions.end(), "VK_KHR_get_physical_device_properties2"))
+	{
+		vki.getPhysicalDeviceFeatures2KHR(device, &features);
+	}
 
 	if ((toCheck & EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK) != 0 && extensionFeatures.storageUniformBufferBlock16 == VK_FALSE)
 		return false;

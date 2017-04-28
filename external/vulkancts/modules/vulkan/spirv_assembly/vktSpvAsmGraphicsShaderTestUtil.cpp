@@ -2150,7 +2150,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	// 16bit storage features
 	{
-		if (!is16BitStorageFeaturesSupported(vkInstance, vkPhysicalDevice, instance.requestedExtensionFeatures.ext16BitStorage))
+		if (!is16BitStorageFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedExtensionFeatures.ext16BitStorage))
 			TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 	}
 

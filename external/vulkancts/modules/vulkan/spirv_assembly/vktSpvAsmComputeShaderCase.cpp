@@ -343,7 +343,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 		// 16bit storage features
 		{
-			if (!is16BitStorageFeaturesSupported(vki, physicalDevice, m_shaderSpec.requestedExtensionFeatures.ext16BitStorage))
+			if (!is16BitStorageFeaturesSupported(vki, physicalDevice, m_context.getInstanceExtensions(), m_shaderSpec.requestedExtensionFeatures.ext16BitStorage))
 				TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 		}
 	}
