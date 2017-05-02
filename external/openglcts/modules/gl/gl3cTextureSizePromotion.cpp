@@ -870,9 +870,10 @@ bool FunctionalTest::checkDestinationTexture(TextureInternalFormatDescriptor des
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels have failed");
 
 			/* Setup expected value. */
+			/* Signed fixed-point read color are clamped to [0, 1] by default */
 			glw::GLfloat expected_value = isChannelTypeNone(descriptor, channel) ?
 											  ((channel == ALPHA_COMPONENT) ? 1.f : 0.f) :
-											  s_source_texture_data_sn[channel];
+											  deFloatClamp(s_source_texture_data_sn[channel], 0, 1);
 
 			/* Compare expected and fetched values. */
 			if (fabs(pixel - expected_value) <= getMinPrecision(descriptor, channel))
@@ -1157,7 +1158,7 @@ const glw::GLfloat FunctionalTest::s_source_texture_data_sn[] = { -0.125f, 0.25f
 
 const glw::GLint FunctionalTest::s_source_texture_data_i[] = { -1, 2, -3, 4 };
 
-const glw::GLuint FunctionalTest::s_source_texture_data_ui[] = { 1, 2, 3, 4 };
+const glw::GLuint FunctionalTest::s_source_texture_data_ui[] = { 4, 3, 2, 1 };
 
 const glw::GLfloat FunctionalTest::s_destination_texture_data_f[] = {
 	5.f
