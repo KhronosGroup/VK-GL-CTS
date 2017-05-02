@@ -379,8 +379,7 @@ MASTER_GLES3_COMMON_FILTERS		= [
 		exclude("gles3-hw-issues.txt"),
 		exclude("gles3-driver-issues.txt"),
 		exclude("gles3-test-issues.txt"),
-		exclude("gles3-spec-issues.txt"),
-		exclude("gles3-temporary-exclusions.txt")
+		exclude("gles3-spec-issues.txt")
 	]
 MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 		# Master
@@ -501,8 +500,7 @@ MASTER_VULKAN_FILTERS			= [
 		exclude("vk-not-applicable.txt"),
 		exclude("vk-excluded-tests.txt"),
 		exclude("vk-test-issues.txt"),
-		exclude("vk-waivers.txt"),
-		exclude("vk-temporary-exclusions.txt")
+		exclude("vk-waivers.txt")
 	]
 MASTER_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
 		Configuration(name			= "master",
