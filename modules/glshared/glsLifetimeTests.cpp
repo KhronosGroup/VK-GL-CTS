@@ -37,6 +37,8 @@
 #include "gluPixelTransfer.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluDefs.hpp"
+#include "gluTextureUtil.hpp"
+#include "gluStrUtil.hpp"
 #include "glwFunctions.hpp"
 
 #include <vector>
@@ -358,18 +360,178 @@ GLuint TextureFboAttacher::getAttachment (GLuint fbo)
 	return getFboAttachment(gl(), fbo, GL_TEXTURE);
 }
 
+static bool isTextureFormatColorRenderable (const glu::RenderContext& renderCtx, const glu::TransferFormat& format)
+{
+	const glw::Functions&	gl			= renderCtx.getFunctions();
+	deUint32				curFbo		= ~0u;
+	deUint32				curTex		= ~0u;
+	deUint32				testFbo		= 0u;
+	deUint32				testTex		= 0u;
+	GLenum					status		= GL_NONE;
+
+	GLU_CHECK_GLW_CALL(gl, getIntegerv(GL_FRAMEBUFFER_BINDING, (deInt32*)&curFbo));
+	GLU_CHECK_GLW_CALL(gl, getIntegerv(GL_TEXTURE_BINDING_2D, (deInt32*)&curTex));
+
+	try
+	{
+		GLU_CHECK_GLW_CALL(gl, genTextures(1, &testTex));
+		GLU_CHECK_GLW_CALL(gl, bindTexture(GL_TEXTURE_2D, testTex));
+		GLU_CHECK_GLW_CALL(gl, texImage2D(GL_TEXTURE_2D, 0, format.format, FRAMEBUFFER_SIZE, FRAMEBUFFER_SIZE, 0,
+										  format.format, format.dataType, DE_NULL));
+
+		GLU_CHECK_GLW_CALL(gl, genFramebuffers(1, &testFbo));
+		GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, testFbo));
+		GLU_CHECK_GLW_CALL(gl, framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, testTex, 0));
+
+		status = gl.checkFramebufferStatus(GL_FRAMEBUFFER);
+		GLU_CHECK_GLW_MSG(gl, "glCheckFramebufferStatus(GL_FRAMEBUFFER)");
+
+		GLU_CHECK_GLW_CALL(gl, bindTexture(GL_TEXTURE_2D, curTex));
+		GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, curFbo));
+
+		GLU_CHECK_GLW_CALL(gl, deleteTextures(1, &testTex));
+		GLU_CHECK_GLW_CALL(gl, deleteFramebuffers(1, &testFbo));
+	}
+	catch (...)
+	{
+		if (testTex != 0)
+			gl.deleteTextures(1, &testTex);
+
+		if (testFbo != 0)
+			gl.deleteFramebuffers(1, &testFbo);
+
+		throw;
+	}
+
+	if (status == GL_FRAMEBUFFER_COMPLETE)
+		return true;
+	else if (status == GL_FRAMEBUFFER_UNSUPPORTED)
+		return false;
+	else
+		TCU_THROW(TestError, (std::string("glCheckFramebufferStatus() returned invalid result code ")
+							  + de::toString(glu::getFramebufferStatusStr(status))).c_str());
+}
+
+static glu::TransferFormat getRenderableColorTextureFormat (const glu::RenderContext& renderCtx)
+{
+	if (glu::contextSupports(renderCtx.getType(), glu::ApiType::es(3,0)))
+		return glu::TransferFormat(GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4);
+
+	{
+		const glu::TransferFormat	candidates[]	=
+		{
+			glu::TransferFormat(GL_RGBA,	GL_UNSIGNED_SHORT_4_4_4_4),
+			glu::TransferFormat(GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1),
+			glu::TransferFormat(GL_RGB,		GL_UNSIGNED_SHORT_5_6_5),
+			glu::TransferFormat(GL_RGBA,	GL_UNSIGNED_BYTE),
+		};
+
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(candidates); ++ndx)
+		{
+			if (isTextureFormatColorRenderable(renderCtx, candidates[ndx]))
+				return candidates[ndx];
+		}
+	}
+
+	return glu::TransferFormat(GL_NONE, GL_NONE);
+}
+
 void TextureFboAttacher::initStorage (void)
 {
+	const glu::TransferFormat	format	= getRenderableColorTextureFormat(getRenderContext());
+
+	if (format.format == GL_NONE)
+		TCU_THROW(NotSupportedError, "No renderable texture format found");
+
 	GLU_CHECK_CALL_ERROR(
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, FRAMEBUFFER_SIZE, FRAMEBUFFER_SIZE, 0,
-					 GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, DE_NULL),
+		glTexImage2D(GL_TEXTURE_2D, 0, format.format, FRAMEBUFFER_SIZE, FRAMEBUFFER_SIZE, 0,
+					 format.format, format.dataType, DE_NULL),
 		gl().getError());
+}
+
+static bool isRenderbufferFormatColorRenderable (const glu::RenderContext& renderCtx, const deUint32 format)
+{
+	const glw::Functions&	gl			= renderCtx.getFunctions();
+	deUint32				curFbo		= ~0u;
+	deUint32				curRbo		= ~0u;
+	deUint32				testFbo		= 0u;
+	deUint32				testRbo		= 0u;
+	GLenum					status		= GL_NONE;
+
+	GLU_CHECK_GLW_CALL(gl, getIntegerv(GL_FRAMEBUFFER_BINDING, (deInt32*)&curFbo));
+	GLU_CHECK_GLW_CALL(gl, getIntegerv(GL_RENDERBUFFER_BINDING, (deInt32*)&curRbo));
+
+	try
+	{
+		GLU_CHECK_GLW_CALL(gl, genRenderbuffers(1, &testRbo));
+		GLU_CHECK_GLW_CALL(gl, bindRenderbuffer(GL_RENDERBUFFER, testRbo));
+		GLU_CHECK_GLW_CALL(gl, renderbufferStorage(GL_RENDERBUFFER, format, FRAMEBUFFER_SIZE, FRAMEBUFFER_SIZE));
+
+		GLU_CHECK_GLW_CALL(gl, genFramebuffers(1, &testFbo));
+		GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, testFbo));
+		GLU_CHECK_GLW_CALL(gl, framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, testRbo));
+
+		status = gl.checkFramebufferStatus(GL_FRAMEBUFFER);
+		GLU_CHECK_GLW_MSG(gl, "glCheckFramebufferStatus(GL_FRAMEBUFFER)");
+
+		GLU_CHECK_GLW_CALL(gl, bindRenderbuffer(GL_RENDERBUFFER, curRbo));
+		GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, curFbo));
+
+		GLU_CHECK_GLW_CALL(gl, deleteRenderbuffers(1, &testRbo));
+		GLU_CHECK_GLW_CALL(gl, deleteFramebuffers(1, &testFbo));
+	}
+	catch (...)
+	{
+		if (testRbo != 0)
+			gl.deleteRenderbuffers(1, &testRbo);
+
+		if (testFbo != 0)
+			gl.deleteFramebuffers(1, &testFbo);
+
+		throw;
+	}
+
+	if (status == GL_FRAMEBUFFER_COMPLETE)
+		return true;
+	else if (status == GL_FRAMEBUFFER_UNSUPPORTED)
+		return false;
+	else
+		TCU_THROW(TestError, (std::string("glCheckFramebufferStatus() returned invalid result code ")
+							  + de::toString(glu::getFramebufferStatusStr(status))).c_str());
+}
+
+static deUint32 getRenderableColorRenderbufferFormat (const glu::RenderContext& renderCtx)
+{
+	if (glu::contextSupports(renderCtx.getType(), glu::ApiType::es(3,0)))
+		return GL_RGBA4;
+
+	{
+		const deUint32	candidates[]	=
+		{
+			GL_RGBA4,
+			GL_RGB5_A1,
+			GL_RGB565,
+		};
+
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(candidates); ++ndx)
+		{
+			if (isRenderbufferFormatColorRenderable(renderCtx, candidates[ndx]))
+				return candidates[ndx];
+		}
+	}
+
+	return GL_NONE;
 }
 
 void RboFboAttacher::initStorage (void)
 {
+	const deUint32	format	= getRenderableColorRenderbufferFormat(getRenderContext());
+
+	if (format == GL_NONE)
+		TCU_THROW(TestError, "No color-renderable renderbuffer format found");
+
 	GLU_CHECK_CALL_ERROR(
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA4, FRAMEBUFFER_SIZE, FRAMEBUFFER_SIZE),
+		glRenderbufferStorage(GL_RENDERBUFFER, format, FRAMEBUFFER_SIZE, FRAMEBUFFER_SIZE),
 		gl().getError());
 }
 
