@@ -1386,11 +1386,14 @@ bool isImageSizeSupported (const VkImageType imageType, const tcu::UVec3& imageS
 	}
 }
 
-void ShaderRenderCaseInstance::checkSparseSupport (const VkImageType imageType) const
+void ShaderRenderCaseInstance::checkSparseSupport (const VkImageCreateInfo& imageInfo) const
 {
 	const InstanceInterface&		instance		= getInstanceInterface();
 	const VkPhysicalDevice			physicalDevice	= getPhysicalDevice();
 	const VkPhysicalDeviceFeatures	deviceFeatures	= getPhysicalDeviceFeatures(instance, physicalDevice);
+
+	const std::vector<VkSparseImageFormatProperties> sparseImageFormatPropVec = getPhysicalDeviceSparseImageFormatProperties(
+		instance, physicalDevice, imageInfo.format, imageInfo.imageType, imageInfo.samples, imageInfo.usage, imageInfo.tiling);
 
 	if (!deviceFeatures.shaderResourceResidency)
 		TCU_THROW(NotSupportedError, "Required feature: shaderResourceResidency.");
@@ -1398,11 +1401,14 @@ void ShaderRenderCaseInstance::checkSparseSupport (const VkImageType imageType) 
 	if (!deviceFeatures.sparseBinding)
 		TCU_THROW(NotSupportedError, "Required feature: sparseBinding.");
 
-	if (imageType == VK_IMAGE_TYPE_2D && !deviceFeatures.sparseResidencyImage2D)
+	if (imageInfo.imageType == VK_IMAGE_TYPE_2D && !deviceFeatures.sparseResidencyImage2D)
 		TCU_THROW(NotSupportedError, "Required feature: sparseResidencyImage2D.");
 
-	if (imageType == VK_IMAGE_TYPE_3D && !deviceFeatures.sparseResidencyImage3D)
+	if (imageInfo.imageType == VK_IMAGE_TYPE_3D && !deviceFeatures.sparseResidencyImage3D)
 		TCU_THROW(NotSupportedError, "Required feature: sparseResidencyImage3D.");
+
+	if (sparseImageFormatPropVec.size() == 0)
+		TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
 }
 
 void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		texFormat,
@@ -2036,7 +2042,6 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 
 	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
 	{
-		checkSparseSupport(imageType);
 		imageCreateFlags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
 	}
 
@@ -2063,6 +2068,11 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 		&queueFamilyIndex,												// const deUint32*			pQueueFamilyIndices;
 		VK_IMAGE_LAYOUT_UNDEFINED										// VkImageLayout			initialLayout;
 	};
+
+	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
+	{
+		checkSparseSupport(imageParams);
+	}
 
 	vkTexture		= createImage(vk, vkDevice, &imageParams);
 	allocation		= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *vkTexture), MemoryRequirement::Any);
