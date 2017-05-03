@@ -676,6 +676,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_descriptor_update_template",
 		"VK_KHR_incremental_present",
 		"VK_KHR_shared_presentable_image",
+		"VK_KHR_storage_buffer_storage_class",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);

@@ -209,7 +209,21 @@ std::string getShaderStageSource (const GlslSource& program, glu::ShaderType sha
 	if (program.sources[shaderType].size() != 1)
 		TCU_THROW(InternalError, "Linking multiple compilation units is not supported");
 
-	return program.sources[shaderType][0];
+	if ((program.buildOptions.flags & GlslBuildOptions::FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS) != 0)
+	{
+		// Hack to inject #pragma right after first #version statement
+		std::string src			= program.sources[shaderType][0];
+		size_t		injectPos	= 0;
+
+		if (de::beginsWith(src, "#version"))
+			injectPos = src.find('\n') + 1;
+
+		src.insert(injectPos, "#pragma use_storage_buffer\n");
+
+		return src;
+	}
+	else
+		return program.sources[shaderType][0];
 }
 
 } // anonymous

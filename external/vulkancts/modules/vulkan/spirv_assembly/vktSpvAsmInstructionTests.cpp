@@ -409,16 +409,22 @@ struct OpAtomicCase
 						, numOutputElements (_numOutputElements) {}
 };
 
-tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStorageBuffer)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opatomic", "Test the OpAtomic* opcodes"));
-	de::Random						rnd				(deStringHash(group->getName()));
-	const int						numElements		= 1000000;
+	de::MovePtr<tcu::TestCaseGroup>	group				(new tcu::TestCaseGroup(testCtx,
+																				useStorageBuffer ? "opatomic_storage_buffer" : "opatomic",
+																				"Test the OpAtomic* opcodes"));
+	de::Random						rnd					(deStringHash(group->getName()));
+	const int						numElements			= 1000000;
 	vector<OpAtomicCase>			cases;
 
 	const StringTemplate			shaderTemplate	(
 
-		string(getComputeAsmShaderPreamble()) +
+		string("OpCapability Shader\n") +
+		(useStorageBuffer ? "OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n" : "") +
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n" +
 
 		"OpSource GLSL 430\n"
 		"OpName %main           \"main\"\n"
@@ -426,27 +432,34 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		"OpDecorate %buf BufferBlock\n"
+		"OpDecorate %buf ${BLOCK_DECORATION}\n"
 		"OpDecorate %indata DescriptorSet 0\n"
 		"OpDecorate %indata Binding 0\n"
 		"OpDecorate %i32arr ArrayStride 4\n"
 		"OpMemberDecorate %buf 0 Offset 0\n"
 
-		"OpDecorate %sumbuf BufferBlock\n"
+		"OpDecorate %sumbuf ${BLOCK_DECORATION}\n"
 		"OpDecorate %sum DescriptorSet 0\n"
 		"OpDecorate %sum Binding 1\n"
 		"OpMemberDecorate %sumbuf 0 Coherent\n"
 		"OpMemberDecorate %sumbuf 0 Offset 0\n"
 
-		+ string(getComputeAsmCommonTypes()) +
+		"%void      = OpTypeVoid\n"
+		"%voidf     = OpTypeFunction %void\n"
+		"%u32       = OpTypeInt 32 0\n"
+		"%i32       = OpTypeInt 32 1\n"
+		"%uvec3     = OpTypeVector %u32 3\n"
+		"%uvec3ptr  = OpTypePointer Input %uvec3\n"
+		"%i32ptr    = OpTypePointer ${BLOCK_POINTER_TYPE} %i32\n"
+		"%i32arr    = OpTypeRuntimeArray %i32\n"
 
 		"%buf       = OpTypeStruct %i32arr\n"
-		"%bufptr    = OpTypePointer Uniform %buf\n"
-		"%indata    = OpVariable %bufptr Uniform\n"
+		"%bufptr    = OpTypePointer ${BLOCK_POINTER_TYPE} %buf\n"
+		"%indata    = OpVariable %bufptr ${BLOCK_POINTER_TYPE}\n"
 
 		"%sumbuf    = OpTypeStruct %i32arr\n"
-		"%sumbufptr = OpTypePointer Uniform %sumbuf\n"
-		"%sum       = OpVariable %sumbufptr Uniform\n"
+		"%sumbufptr = OpTypePointer ${BLOCK_POINTER_TYPE} %sumbuf\n"
+		"%sum       = OpVariable %sumbufptr ${BLOCK_POINTER_TYPE}\n"
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%minusone  = OpConstant %i32 -1\n"
@@ -499,9 +512,14 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx)
 		vector<deInt32>				inputInts		(numElements, 0);
 		vector<deInt32>				expected		(cases[caseNdx].numOutputElements, -1);
 
-		specializations["INDEX"]		= (cases[caseNdx].numOutputElements == 1) ? "%zero" : "%x";
-		specializations["INSTRUCTION"]	= cases[caseNdx].assembly;
-		spec.assembly					= shaderTemplate.specialize(specializations);
+		specializations["INDEX"]				= (cases[caseNdx].numOutputElements == 1) ? "%zero" : "%x";
+		specializations["INSTRUCTION"]			= cases[caseNdx].assembly;
+		specializations["BLOCK_DECORATION"]		= useStorageBuffer ? "Block" : "BufferBlock";
+		specializations["BLOCK_POINTER_TYPE"]	= useStorageBuffer ? "StorageBuffer" : "Uniform";
+		spec.assembly							= shaderTemplate.specialize(specializations);
+
+		if (useStorageBuffer)
+			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 
 		fillRandomScalars(rnd, 1, 100, &inputInts[0], numElements);
 		for (size_t ndx = 0; ndx < numElements; ++ndx)
@@ -7385,7 +7403,8 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 	computeTests->addChild(createOpNopGroup(testCtx));
 	computeTests->addChild(createOpFUnordGroup(testCtx));
-	computeTests->addChild(createOpAtomicGroup(testCtx));
+	computeTests->addChild(createOpAtomicGroup(testCtx, false));
+	computeTests->addChild(createOpAtomicGroup(testCtx, true)); // Using new StorageBuffer decoration
 	computeTests->addChild(createOpLineGroup(testCtx));
 	computeTests->addChild(createOpNoLineGroup(testCtx));
 	computeTests->addChild(createOpConstantNullGroup(testCtx));
