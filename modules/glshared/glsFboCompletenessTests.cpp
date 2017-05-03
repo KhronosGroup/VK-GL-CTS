@@ -228,7 +228,7 @@ static const FormatExtEntry s_esExtFormats[] =
 		GLS_ARRAY_RANGE(s_oesPackedDepthStencilSizedFormats)
 	},
 	{
-		"GL_OES_packed_depth_stencil",
+		"GL_OES_packed_depth_stencil GL_OES_depth_texture",
 		DEPTH_RENDERABLE | STENCIL_RENDERABLE | TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_oesPackedDepthStencilTexFormats)
 	},
