@@ -33,6 +33,7 @@
 #include "tcuVectorType.hpp"
 #include "tcuVectorUtil.hpp"
 #include "tcuTexLookupVerifier.hpp"
+#include "tcuTestLog.hpp"
 
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"

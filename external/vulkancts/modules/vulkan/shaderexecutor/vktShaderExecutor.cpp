@@ -1423,9 +1423,9 @@ void VertexShaderExecutor::generateSources (const ShaderSpec& shaderSpec, Source
 {
 	const FragmentOutputLayout	outputLayout	(computeFragmentOutputLayout(shaderSpec.outputs));
 
-	programCollection.glslSources.add("vert") << glu::VertexSource(generateVertexShader(shaderSpec, "a_", "vtx_out_"));
+	programCollection.glslSources.add("vert") << glu::VertexSource(generateVertexShader(shaderSpec, "a_", "vtx_out_")) << shaderSpec.buildOptions;
 	/* \todo [2015-09-11 hegedusd] set useIntOutputs parameter if needed. */
-	programCollection.glslSources.add("frag") << glu::FragmentSource(generatePassthroughFragmentShader(shaderSpec, false, outputLayout.locationMap, "vtx_out_", "o_"));
+	programCollection.glslSources.add("frag") << glu::FragmentSource(generatePassthroughFragmentShader(shaderSpec, false, outputLayout.locationMap, "vtx_out_", "o_")) << shaderSpec.buildOptions;
 }
 
 // GeometryShaderExecutor
@@ -1457,12 +1457,12 @@ void GeometryShaderExecutor::generateSources (const ShaderSpec& shaderSpec, Sour
 {
 	const FragmentOutputLayout	outputLayout	(computeFragmentOutputLayout(shaderSpec.outputs));
 
-	programCollection.glslSources.add("vert") << glu::VertexSource(generatePassthroughVertexShader(shaderSpec.inputs, "a_", "vtx_out_"));
+	programCollection.glslSources.add("vert") << glu::VertexSource(generatePassthroughVertexShader(shaderSpec.inputs, "a_", "vtx_out_")) << shaderSpec.buildOptions;
 
-	programCollection.glslSources.add("geom") << glu::GeometrySource(generateGeometryShader(shaderSpec, "vtx_out_", "geom_out_"));
+	programCollection.glslSources.add("geom") << glu::GeometrySource(generateGeometryShader(shaderSpec, "vtx_out_", "geom_out_")) << shaderSpec.buildOptions;
 
 	/* \todo [2015-09-18 rsipka] set useIntOutputs parameter if needed. */
-	programCollection.glslSources.add("frag") << glu::FragmentSource(generatePassthroughFragmentShader(shaderSpec, false, outputLayout.locationMap, "geom_out_", "o_"));
+	programCollection.glslSources.add("frag") << glu::FragmentSource(generatePassthroughFragmentShader(shaderSpec, false, outputLayout.locationMap, "geom_out_", "o_")) << shaderSpec.buildOptions;
 
 }
 
@@ -1491,9 +1491,9 @@ void FragmentShaderExecutor::generateSources (const ShaderSpec& shaderSpec, Sour
 {
 	const FragmentOutputLayout	outputLayout	(computeFragmentOutputLayout(shaderSpec.outputs));
 
-	programCollection.glslSources.add("vert") << glu::VertexSource(generatePassthroughVertexShader(shaderSpec.inputs, "a_", "vtx_out_"));
+	programCollection.glslSources.add("vert") << glu::VertexSource(generatePassthroughVertexShader(shaderSpec.inputs, "a_", "vtx_out_")) << shaderSpec.buildOptions;
 	/* \todo [2015-09-11 hegedusd] set useIntOutputs parameter if needed. */
-	programCollection.glslSources.add("frag") << glu::FragmentSource(generateFragmentShader(shaderSpec, false, outputLayout.locationMap, "vtx_out_", "o_"));
+	programCollection.glslSources.add("frag") << glu::FragmentSource(generateFragmentShader(shaderSpec, false, outputLayout.locationMap, "vtx_out_", "o_")) << shaderSpec.buildOptions;
 }
 
 // Shared utilities for compute and tess executors
@@ -1897,7 +1897,7 @@ std::string ComputeShaderExecutor::generateComputeShader (const ShaderSpec& spec
 
 void ComputeShaderExecutor::generateSources (const ShaderSpec& shaderSpec, SourceCollections& programCollection)
 {
-	programCollection.glslSources.add("compute") << glu::ComputeSource(generateComputeShader(shaderSpec));
+	programCollection.glslSources.add("compute") << glu::ComputeSource(generateComputeShader(shaderSpec)) << shaderSpec.buildOptions;
 }
 
 void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, void* const* outputs, VkDescriptorSet extraResources)
@@ -2715,10 +2715,10 @@ static std::string generateEmptyTessEvalShader ()
 
 void TessControlExecutor::generateSources (const ShaderSpec& shaderSpec, SourceCollections& programCollection)
 {
-	programCollection.glslSources.add("vert") << glu::VertexSource(generateVertexShaderForTess());
-	programCollection.glslSources.add("tess_control") << glu::TessellationControlSource(generateTessControlShader(shaderSpec));
-	programCollection.glslSources.add("tess_eval") << glu::TessellationEvaluationSource(generateEmptyTessEvalShader());
-	programCollection.glslSources.add("frag") << glu::FragmentSource(generateEmptyFragmentSource());
+	programCollection.glslSources.add("vert") << glu::VertexSource(generateVertexShaderForTess()) << shaderSpec.buildOptions;
+	programCollection.glslSources.add("tess_control") << glu::TessellationControlSource(generateTessControlShader(shaderSpec)) << shaderSpec.buildOptions;
+	programCollection.glslSources.add("tess_eval") << glu::TessellationEvaluationSource(generateEmptyTessEvalShader()) << shaderSpec.buildOptions;
+	programCollection.glslSources.add("frag") << glu::FragmentSource(generateEmptyFragmentSource()) << shaderSpec.buildOptions;
 }
 
 void TessControlExecutor::execute (int numValues, const void* const* inputs, void* const* outputs, VkDescriptorSet extraResources)
@@ -2812,10 +2812,10 @@ std::string TessEvaluationExecutor::generateTessEvalShader (const ShaderSpec& sh
 
 void TessEvaluationExecutor::generateSources (const ShaderSpec& shaderSpec, SourceCollections& programCollection)
 {
-	programCollection.glslSources.add("vert") << glu::VertexSource(generateVertexShaderForTess());
-	programCollection.glslSources.add("tess_control") << glu::TessellationControlSource(generatePassthroughTessControlShader());
-	programCollection.glslSources.add("tess_eval") << glu::TessellationEvaluationSource(generateTessEvalShader(shaderSpec));
-	programCollection.glslSources.add("frag") << glu::FragmentSource(generateEmptyFragmentSource());
+	programCollection.glslSources.add("vert") << glu::VertexSource(generateVertexShaderForTess()) << shaderSpec.buildOptions;
+	programCollection.glslSources.add("tess_control") << glu::TessellationControlSource(generatePassthroughTessControlShader()) << shaderSpec.buildOptions;
+	programCollection.glslSources.add("tess_eval") << glu::TessellationEvaluationSource(generateTessEvalShader(shaderSpec)) << shaderSpec.buildOptions;
+	programCollection.glslSources.add("frag") << glu::FragmentSource(generateEmptyFragmentSource()) << shaderSpec.buildOptions;
 }
 
 void TessEvaluationExecutor::execute (int numValues, const void* const* inputs, void* const* outputs, VkDescriptorSet extraResources)

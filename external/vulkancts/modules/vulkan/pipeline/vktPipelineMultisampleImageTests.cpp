@@ -37,6 +37,7 @@
 #include "vkImageUtil.hpp"
 
 #include "tcuTextureUtil.hpp"
+#include "tcuTestLog.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"

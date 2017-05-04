@@ -36,6 +36,7 @@
 
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuTestLog.hpp"
 
 #include "deRandom.hpp"
 #include "deMath.h"

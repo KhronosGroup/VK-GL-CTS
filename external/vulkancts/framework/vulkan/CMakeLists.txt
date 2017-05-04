@@ -49,6 +49,8 @@ set(VKUTIL_SRCS
 	vkBufferWithMemory.hpp
 	vkImageWithMemory.cpp
 	vkImageWithMemory.hpp
+	vkGlslProgram.cpp
+	vkGlslProgram.hpp
 	)
 
 set(VKUTIL_LIBS

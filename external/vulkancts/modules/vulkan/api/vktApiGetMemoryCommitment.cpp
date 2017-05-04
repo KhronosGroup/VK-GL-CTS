@@ -33,6 +33,8 @@
 #include "vktTestCase.hpp"
 #include "vkTypeUtil.cpp"
 
+#include "tcuTestLog.hpp"
+
 using namespace vk;
 using tcu::TestLog;
 

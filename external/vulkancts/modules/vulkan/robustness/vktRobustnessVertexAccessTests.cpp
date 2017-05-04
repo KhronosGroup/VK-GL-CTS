@@ -33,6 +33,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "tcuTestLog.hpp"
 #include "deMath.h"
 #include "deUniquePtr.hpp"
 #include <vector>

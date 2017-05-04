@@ -34,6 +34,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkDebugReportUtil.cpp \
 	external/vulkancts/framework/vulkan/vkDefs.cpp \
 	external/vulkancts/framework/vulkan/vkDeviceUtil.cpp \
+	external/vulkancts/framework/vulkan/vkGlslProgram.cpp \
 	external/vulkancts/framework/vulkan/vkGlslToSpirV.cpp \
 	external/vulkancts/framework/vulkan/vkImageUtil.cpp \
 	external/vulkancts/framework/vulkan/vkImageWithMemory.cpp \
