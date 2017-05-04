@@ -45,6 +45,8 @@ set(VKUTIL_SRCS
 	vkWsiUtil.hpp
 	vkDebugReportUtil.cpp
 	vkDebugReportUtil.hpp
+	vkGlslProgram.cpp
+	vkGlslProgram.hpp
 	)
 
 set(VKUTIL_LIBS

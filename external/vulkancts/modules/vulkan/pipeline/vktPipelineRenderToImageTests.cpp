@@ -38,6 +38,7 @@
 
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuTestLog.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"

@@ -39,6 +39,8 @@
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 
+#include "tcuTestLog.hpp"
+
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
 #include "deMath.h"

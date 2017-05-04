@@ -83,9 +83,9 @@
 namespace // compilation
 {
 
-vk::ProgramBinary* compileProgram (const glu::ProgramSources& source, glu::ShaderProgramInfo* buildInfo)
+vk::ProgramBinary* compileProgram (const vk::GlslSource& source, glu::ShaderProgramInfo* buildInfo)
 {
-	return vk::buildProgram(source, vk::PROGRAM_FORMAT_SPIRV, buildInfo);
+	return vk::buildProgram(source, buildInfo);
 }
 
 vk::ProgramBinary* compileProgram (const vk::SpirVAsmSource& source, vk::SpirVProgramInfo* buildInfo)

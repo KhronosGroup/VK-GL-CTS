@@ -28,6 +28,7 @@
 
 #include "deUniquePtr.hpp"
 #include "tcuCommandLine.hpp"
+#include "tcuTestLog.hpp"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deString.h"

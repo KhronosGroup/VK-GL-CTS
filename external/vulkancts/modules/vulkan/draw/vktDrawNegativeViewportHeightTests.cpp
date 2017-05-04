@@ -35,6 +35,7 @@
 #include "tcuVector.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuTestLog.hpp"
 
 #include "deSharedPtr.hpp"
 

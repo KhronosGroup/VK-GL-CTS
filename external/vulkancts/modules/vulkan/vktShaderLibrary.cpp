@@ -1757,7 +1757,7 @@ void ShaderCase::initPrograms (SourceCollections& sourceCollection) const
 		{
 			if (!specializedSources[progNdx].sources[shaderType].empty())
 			{
-				glu::ProgramSources& curSrc	= sourceCollection.glslSources.add(getShaderName((glu::ShaderType)shaderType, progNdx));
+				vk::GlslSource& curSrc	= sourceCollection.glslSources.add(getShaderName((glu::ShaderType)shaderType, progNdx));
 				curSrc.sources[shaderType] = specializedSources[progNdx].sources[shaderType];
 			}
 		}

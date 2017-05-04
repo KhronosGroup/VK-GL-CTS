@@ -32,6 +32,7 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorType.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuTestLog.hpp"
 
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
