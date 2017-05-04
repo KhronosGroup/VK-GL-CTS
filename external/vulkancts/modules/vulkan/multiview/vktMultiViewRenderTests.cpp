@@ -289,6 +289,9 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 		return parameters;
 	else
 	{
+		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), "VK_KHX_multiview"))
+			throw tcu::NotSupportedError("VK_KHX_multiview is not supported");
+
 		const InstanceInterface&	instance		= m_context.getInstanceInterface();
 		const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
 
