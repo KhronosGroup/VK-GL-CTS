@@ -978,28 +978,28 @@ tcu::TestNode::IterateResult ClearTest::iterate()
 			is_ok &= TestClearNamedBufferData<glw::GLubyte, true>(GL_RGBA8, 4, GL_RGBA, GL_UNSIGNED_BYTE, reference);
 
 			/* unsigned byte component ClearNamedBufferData tests */
-			is_ok &= TestClearNamedBufferData<glw::GLubyte, false>(GL_R8UI, 1, GL_RED, GL_UNSIGNED_BYTE, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLubyte, false>(GL_RG8UI, 2, GL_RG, GL_UNSIGNED_BYTE, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLubyte, false>(GL_RGBA8UI, 4, GL_RGBA, GL_UNSIGNED_BYTE, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLubyte, false>(GL_R8UI, 1, GL_RED_INTEGER, GL_UNSIGNED_BYTE, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLubyte, false>(GL_RG8UI, 2, GL_RG_INTEGER, GL_UNSIGNED_BYTE, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLubyte, false>(GL_RGBA8UI, 4, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, reference);
 
 			/* unsigned byte component ClearNamedBufferSubData tests */
-			is_ok &= TestClearNamedBufferData<glw::GLubyte, true>(GL_R8UI, 1, GL_RED, GL_UNSIGNED_BYTE, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLubyte, true>(GL_RG8UI, 2, GL_RG, GL_UNSIGNED_BYTE, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLubyte, true>(GL_RGBA8UI, 4, GL_RGBA, GL_UNSIGNED_BYTE, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLubyte, true>(GL_R8UI, 1, GL_RED_INTEGER, GL_UNSIGNED_BYTE, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLubyte, true>(GL_RG8UI, 2, GL_RG_INTEGER, GL_UNSIGNED_BYTE, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLubyte, true>(GL_RGBA8UI, 4, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, reference);
 		}
 
 		{
 			/* signed byte component ClearNamedBufferData tests */
 			glw::GLbyte reference[4] = { 5, 1, -2, 3 };
 
-			is_ok &= TestClearNamedBufferData<glw::GLbyte, false>(GL_R8I, 1, GL_RED, GL_BYTE, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLbyte, false>(GL_RG8I, 2, GL_RG, GL_BYTE, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLbyte, false>(GL_RGBA8I, 4, GL_RGBA, GL_BYTE, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLbyte, false>(GL_R8I, 1, GL_RED_INTEGER, GL_BYTE, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLbyte, false>(GL_RG8I, 2, GL_RG_INTEGER, GL_BYTE, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLbyte, false>(GL_RGBA8I, 4, GL_RGBA_INTEGER, GL_BYTE, reference);
 
 			/* signed byte component ClearNamedBufferSubData tests */
-			is_ok &= TestClearNamedBufferData<glw::GLbyte, true>(GL_R8I, 1, GL_RED, GL_BYTE, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLbyte, true>(GL_RG8I, 2, GL_RG, GL_BYTE, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLbyte, true>(GL_RGBA8I, 4, GL_RGBA, GL_BYTE, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLbyte, true>(GL_R8I, 1, GL_RED_INTEGER, GL_BYTE, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLbyte, true>(GL_RG8I, 2, GL_RG_INTEGER, GL_BYTE, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLbyte, true>(GL_RGBA8I, 4, GL_RGBA_INTEGER, GL_BYTE, reference);
 		}
 
 		{
@@ -1017,62 +1017,62 @@ tcu::TestNode::IterateResult ClearTest::iterate()
 			is_ok &= TestClearNamedBufferData<glw::GLushort, true>(GL_RGBA16, 4, GL_RGBA, GL_UNSIGNED_SHORT, reference);
 
 			/* unsigned short component ClearNamedBufferData tests */
-			is_ok &= TestClearNamedBufferData<glw::GLushort, false>(GL_R16UI, 1, GL_RED, GL_UNSIGNED_SHORT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLushort, false>(GL_RG16UI, 2, GL_RG, GL_UNSIGNED_SHORT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLushort, false>(GL_R16UI, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLushort, false>(GL_RG16UI, 2, GL_RG_INTEGER, GL_UNSIGNED_SHORT, reference);
 			is_ok &=
-				TestClearNamedBufferData<glw::GLushort, false>(GL_RGBA16UI, 4, GL_RGBA, GL_UNSIGNED_SHORT, reference);
+				TestClearNamedBufferData<glw::GLushort, false>(GL_RGBA16UI, 4, GL_RGBA_INTEGER, GL_UNSIGNED_SHORT, reference);
 
 			/* unsigned short component ClearNamedBufferSubData tests */
-			is_ok &= TestClearNamedBufferData<glw::GLushort, true>(GL_R16UI, 1, GL_RED, GL_UNSIGNED_SHORT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLushort, true>(GL_RG16UI, 2, GL_RG, GL_UNSIGNED_SHORT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLushort, true>(GL_R16UI, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLushort, true>(GL_RG16UI, 2, GL_RG_INTEGER, GL_UNSIGNED_SHORT, reference);
 			is_ok &=
-				TestClearNamedBufferData<glw::GLushort, true>(GL_RGBA16UI, 4, GL_RGBA, GL_UNSIGNED_SHORT, reference);
+				TestClearNamedBufferData<glw::GLushort, true>(GL_RGBA16UI, 4, GL_RGBA_INTEGER, GL_UNSIGNED_SHORT, reference);
 		}
 
 		{
 			/* signed short component ClearNamedBufferData tests */
 			glw::GLshort reference[4] = { 5, 1, -2, 3 };
 
-			is_ok &= TestClearNamedBufferData<glw::GLshort, false>(GL_R16I, 1, GL_RED, GL_SHORT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLshort, false>(GL_RG16I, 2, GL_RG, GL_SHORT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLshort, false>(GL_RGBA16I, 4, GL_RGBA, GL_SHORT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLshort, false>(GL_R16I, 1, GL_RED_INTEGER, GL_SHORT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLshort, false>(GL_RG16I, 2, GL_RG_INTEGER, GL_SHORT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLshort, false>(GL_RGBA16I, 4, GL_RGBA_INTEGER, GL_SHORT, reference);
 
 			/* signed short component ClearNamedBufferSubData tests */
-			is_ok &= TestClearNamedBufferData<glw::GLshort, true>(GL_R16I, 1, GL_RED, GL_SHORT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLshort, true>(GL_RG16I, 2, GL_RG, GL_SHORT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLshort, true>(GL_RGBA16I, 4, GL_RGBA, GL_SHORT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLshort, true>(GL_R16I, 1, GL_RED_INTEGER, GL_SHORT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLshort, true>(GL_RG16I, 2, GL_RG_INTEGER, GL_SHORT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLshort, true>(GL_RGBA16I, 4, GL_RGBA_INTEGER, GL_SHORT, reference);
 		}
 
 		{
 			/* unsigned int component ClearNamedBufferData tests */
 			glw::GLuint reference[4] = { 5, 1, 2, 3 };
 
-			is_ok &= TestClearNamedBufferData<glw::GLuint, false>(GL_R32UI, 1, GL_RED, GL_UNSIGNED_INT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLuint, false>(GL_RG32UI, 2, GL_RG, GL_UNSIGNED_INT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLuint, false>(GL_RGB32UI, 3, GL_RGB, GL_UNSIGNED_INT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLuint, false>(GL_RGBA32UI, 4, GL_RGBA, GL_UNSIGNED_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLuint, false>(GL_R32UI, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLuint, false>(GL_RG32UI, 2, GL_RG_INTEGER, GL_UNSIGNED_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLuint, false>(GL_RGB32UI, 3, GL_RGB_INTEGER, GL_UNSIGNED_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLuint, false>(GL_RGBA32UI, 4, GL_RGBA_INTEGER, GL_UNSIGNED_INT, reference);
 
 			/* unsigned int component ClearNamedBufferSubData tests */
-			is_ok &= TestClearNamedBufferData<glw::GLuint, true>(GL_R32UI, 1, GL_RED, GL_UNSIGNED_INT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLuint, true>(GL_RG32UI, 2, GL_RG, GL_UNSIGNED_INT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLuint, true>(GL_RGB32UI, 3, GL_RGB, GL_UNSIGNED_INT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLuint, true>(GL_RGBA32UI, 4, GL_RGBA, GL_UNSIGNED_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLuint, true>(GL_R32UI, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLuint, true>(GL_RG32UI, 2, GL_RG_INTEGER, GL_UNSIGNED_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLuint, true>(GL_RGB32UI, 3, GL_RGB_INTEGER, GL_UNSIGNED_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLuint, true>(GL_RGBA32UI, 4, GL_RGBA_INTEGER, GL_UNSIGNED_INT, reference);
 		}
 
 		{
 			/* signed int component ClearNamedBufferData tests */
 			glw::GLint reference[4] = { 5, 1, -2, 3 };
 
-			is_ok &= TestClearNamedBufferData<glw::GLint, false>(GL_R32I, 1, GL_RED, GL_INT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLint, false>(GL_RG32I, 2, GL_RG, GL_INT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLint, false>(GL_RGB32I, 3, GL_RGB, GL_INT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLint, false>(GL_RGBA32I, 4, GL_RGBA, GL_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLint, false>(GL_R32I, 1, GL_RED_INTEGER, GL_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLint, false>(GL_RG32I, 2, GL_RG_INTEGER, GL_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLint, false>(GL_RGB32I, 3, GL_RGB_INTEGER, GL_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLint, false>(GL_RGBA32I, 4, GL_RGBA_INTEGER, GL_INT, reference);
 
 			/* signed int component ClearNamedBufferSubData tests */
-			is_ok &= TestClearNamedBufferData<glw::GLint, true>(GL_R32I, 1, GL_RED, GL_INT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLint, true>(GL_RG32I, 2, GL_RG, GL_INT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLint, true>(GL_RGB32I, 3, GL_RGB, GL_INT, reference);
-			is_ok &= TestClearNamedBufferData<glw::GLint, true>(GL_RGBA32I, 4, GL_RGBA, GL_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLint, true>(GL_R32I, 1, GL_RED_INTEGER, GL_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLint, true>(GL_RG32I, 2, GL_RG_INTEGER, GL_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLint, true>(GL_RGB32I, 3, GL_RGB_INTEGER, GL_INT, reference);
+			is_ok &= TestClearNamedBufferData<glw::GLint, true>(GL_RGBA32I, 4, GL_RGBA_INTEGER, GL_INT, reference);
 		}
 
 		{
