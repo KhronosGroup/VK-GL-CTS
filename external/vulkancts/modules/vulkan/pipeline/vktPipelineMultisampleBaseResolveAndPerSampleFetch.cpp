@@ -26,6 +26,7 @@
 #include "vktPipelineMakeUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "tcuTestLog.hpp"
 #include <vector>
 
 namespace vkt

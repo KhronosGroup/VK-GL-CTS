@@ -41,6 +41,7 @@
 #include "deUniquePtr.hpp"
 
 #include "tcuTextureUtil.hpp"
+#include "tcuTestLog.hpp"
 
 #include <string>
 #include <vector>

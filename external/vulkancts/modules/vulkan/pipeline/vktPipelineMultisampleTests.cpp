@@ -37,6 +37,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuTestLog.hpp"
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
 #include "deStringUtil.hpp"

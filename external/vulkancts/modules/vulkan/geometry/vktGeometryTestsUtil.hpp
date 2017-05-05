@@ -33,6 +33,7 @@
 #include "vktTestCase.hpp"
 
 #include "tcuVector.hpp"
+#include "tcuTexture.hpp"
 
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"

@@ -31,6 +31,7 @@
 #include "rrRenderState.hpp"
 #include "rrPrimitiveTypes.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuTestLog.hpp"
 #include "deArrayUtil.hpp"
 #include "vkBuilderUtil.hpp"
 

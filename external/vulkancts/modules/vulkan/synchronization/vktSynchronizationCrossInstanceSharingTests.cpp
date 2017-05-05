@@ -34,6 +34,7 @@
 #include "vktExternalMemoryUtil.hpp"
 
 #include "tcuResultCollector.hpp"
+#include "tcuTestLog.hpp"
 
 using tcu::TestLog;
 using namespace vkt::ExternalMemoryUtil;
