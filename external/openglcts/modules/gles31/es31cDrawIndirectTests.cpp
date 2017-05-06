@@ -1739,7 +1739,7 @@ struct CBufferBindRange : public DrawIndirectBase
 		result.sub_result(DataCompare(dataRef, dataWidth, dataHeight, dataTest, dataWidth, dataHeight));
 
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
-		result.sub_result(BindingPointCheck(0));
+		result.sub_result(BindingPointCheck<api>(0));
 
 		glBindBufferRange(GL_DRAW_INDIRECT_BUFFER, 0, _buffer, 0, dataTest.size() * sizeof(unsigned int) / 4);
 		result.sub_result(BindingPointCheck<api>(_buffer));
@@ -1824,7 +1824,7 @@ struct CBufferBindBase : public DrawIndirectBase
 
 		GetBufferSubData<api>(GL_DRAW_INDIRECT_BUFFER, 0, dataTest.size() * sizeof(unsigned int), &dataTest[0]);
 		result.sub_result(DataCompare(dataRef1, dataWidth, dataHeight, dataTest, dataWidth, dataHeight));
-		result.sub_result(BindingPointCheck(_buffers[0]));
+		result.sub_result(BindingPointCheck<api>(_buffers[0]));
 
 		glBindBufferBase(GL_DRAW_INDIRECT_BUFFER, 0, _buffers[1]);
 		result.sub_result(BindingPointCheck<api>(_buffers[1]));
