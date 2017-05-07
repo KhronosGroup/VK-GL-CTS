@@ -667,6 +667,21 @@ VkResult DeviceDriver::getSwapchainStatusKHR (VkDevice device, VkSwapchainKHR sw
 	return m_vk.getSwapchainStatusKHR(device, swapchain);
 }
 
+void DeviceDriver::getImageMemoryRequirements2KHR (VkDevice device, const VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements) const
+{
+	m_vk.getImageMemoryRequirements2KHR(device, pInfo, pMemoryRequirements);
+}
+
+void DeviceDriver::getBufferMemoryRequirements2KHR (VkDevice device, const VkBufferMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements) const
+{
+	m_vk.getBufferMemoryRequirements2KHR(device, pInfo, pMemoryRequirements);
+}
+
+void DeviceDriver::getImageSparseMemoryRequirements2KHR (VkDevice device, const VkImageSparseMemoryRequirementsInfo2KHR* pInfo, deUint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2KHR* pSparseMemoryRequirements) const
+{
+	m_vk.getImageSparseMemoryRequirements2KHR(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
+}
+
 VkResult DeviceDriver::getRefreshCycleDurationGOOGLE (VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties) const
 {
 	return m_vk.getRefreshCycleDurationGOOGLE(device, swapchain, pDisplayTimingProperties);
