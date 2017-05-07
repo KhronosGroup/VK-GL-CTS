@@ -1524,6 +1524,41 @@ struct VkSurfaceFormat2KHR
 	VkSurfaceFormatKHR	surfaceFormat;
 };
 
+struct VkBufferMemoryRequirementsInfo2KHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBuffer		buffer;
+};
+
+struct VkImageMemoryRequirementsInfo2KHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkImage			image;
+};
+
+struct VkImageSparseMemoryRequirementsInfo2KHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkImage			image;
+};
+
+struct VkMemoryRequirements2KHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkMemoryRequirements	memoryRequirements;
+};
+
+struct VkSparseImageMemoryRequirements2KHR
+{
+	VkStructureType					sType;
+	void*							pNext;
+	VkSparseImageMemoryRequirements	memoryRequirements;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;

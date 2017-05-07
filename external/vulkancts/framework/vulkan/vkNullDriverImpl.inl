@@ -1222,6 +1222,28 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceFormats2KHR (VkPhysicalDe
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements2KHR (VkDevice device, const VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL getBufferMemoryRequirements2KHR (VkDevice device, const VkBufferMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL getImageSparseMemoryRequirements2KHR (VkDevice device, const VkImageSparseMemoryRequirementsInfo2KHR* pInfo, deUint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2KHR* pSparseMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pSparseMemoryRequirementCount);
+	DE_UNREF(pSparseMemoryRequirements);
+}
+
 VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage)
 {
 	DE_UNREF(instance);
@@ -1530,6 +1552,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplateKHR,	updateDescriptorSetWithTemplateKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetWithTemplateKHR,	cmdPushDescriptorSetWithTemplateKHR),
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainStatusKHR,					getSwapchainStatusKHR),
+	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements2KHR,		getImageMemoryRequirements2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetBufferMemoryRequirements2KHR,		getBufferMemoryRequirements2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetImageSparseMemoryRequirements2KHR,	getImageSparseMemoryRequirements2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHX,				getMemoryWin32HandleKHX),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandlePropertiesKHX,		getMemoryWin32HandlePropertiesKHX),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryFdKHX,						getMemoryFdKHX),

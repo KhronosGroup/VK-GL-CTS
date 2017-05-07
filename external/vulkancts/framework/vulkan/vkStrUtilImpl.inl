@@ -202,6 +202,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR:						return "VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR";
 		case VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR:							return "VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR";
+		case VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR:			return "VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR:			return "VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_IMAGE_SPARSE_MEMORY_REQUIREMENTS_INFO_2_KHR:		return "VK_STRUCTURE_TYPE_IMAGE_SPARSE_MEMORY_REQUIREMENTS_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR:						return "VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR";
+		case VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2_KHR:			return "VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2_KHR";
 		default:																return DE_NULL;
 	}
 }
@@ -3608,6 +3613,56 @@ std::ostream& operator<< (std::ostream& s, const VkSurfaceFormat2KHR& value)
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsurfaceFormat = " << value.surfaceFormat << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBufferMemoryRequirementsInfo2KHR& value)
+{
+	s << "VkBufferMemoryRequirementsInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageMemoryRequirementsInfo2KHR& value)
+{
+	s << "VkImageMemoryRequirementsInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timage = " << value.image << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageSparseMemoryRequirementsInfo2KHR& value)
+{
+	s << "VkImageSparseMemoryRequirementsInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timage = " << value.image << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryRequirements2KHR& value)
+{
+	s << "VkMemoryRequirements2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryRequirements = " << value.memoryRequirements << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSparseImageMemoryRequirements2KHR& value)
+{
+	s << "VkSparseImageMemoryRequirements2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryRequirements = " << value.memoryRequirements << '\n';
 	s << '}';
 	return s;
 }
