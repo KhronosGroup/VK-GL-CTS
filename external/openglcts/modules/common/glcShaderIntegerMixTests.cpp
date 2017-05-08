@@ -146,8 +146,10 @@ class ShaderIntegerMixPrototypesCase : public ShaderIntegerMixCase
 {
 public:
 	ShaderIntegerMixPrototypesCase(Context& context, const char* name, const char* description,
-								   glu::GLSLVersion glslVersion, bool _use_extension)
-		: ShaderIntegerMixCase(context, name, description, glslVersion), use_extension(_use_extension)
+								   glu::GLSLVersion glslVersion, bool _use_extension, bool _is_negative_testing)
+		: ShaderIntegerMixCase(context, name, description, glslVersion)
+		, use_extension(_use_extension)
+		, is_negative_testing(_is_negative_testing)
 	{
 		// empty
 	}
@@ -159,6 +161,7 @@ public:
 
 protected:
 	bool use_extension;
+	bool is_negative_testing;
 
 	virtual qpTestResult test()
 	{
@@ -202,13 +205,25 @@ protected:
 			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_shader_integer_mix"))
 				return QP_TEST_RESULT_NOT_SUPPORTED;
 		}
+		else if (is_negative_testing)
+		{
+			v				 = glslVersionIsES(m_glslVersion) ? glu::GLSL_VERSION_300_ES : glu::GLSL_VERSION_330;
+			extension_enable = "";
+		}
 		else
 		{
 			v				 = m_glslVersion;
 			extension_enable = "";
-
-			if (m_glslVersion < glu::GLSL_VERSION_310_ES)
-				return QP_TEST_RESULT_NOT_SUPPORTED;
+			if (glslVersionIsES(m_glslVersion))
+			{
+				if (m_glslVersion < glu::GLSL_VERSION_310_ES)
+					return QP_TEST_RESULT_NOT_SUPPORTED;
+			}
+			else
+			{
+				if (m_glslVersion < glu::GLSL_VERSION_450)
+					return QP_TEST_RESULT_NOT_SUPPORTED;
+			}
 		}
 
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(shader_targets); i++)
@@ -229,7 +244,15 @@ protected:
 			GLint compileSuccess = 0;
 			gl.getShaderiv(shader, GL_COMPILE_STATUS, &compileSuccess);
 
-			if (!compileSuccess)
+			if (is_negative_testing)
+			{
+				if (compileSuccess)
+				{
+					TCU_FAIL("The shader compilation was expected to fail, but it was successful.");
+					pass = false;
+				}
+			}
+			else if (!compileSuccess)
 			{
 				GLchar infoLog[1000];
 
@@ -531,10 +554,14 @@ void ShaderIntegerMixTests::init(void)
 											m_glslVersion));
 	addChild(new ShaderIntegerMixPrototypesCase(m_context, "prototypes-extension",
 												"Verify availability of all function signatures with the extension.",
-												m_glslVersion, true));
+												m_glslVersion, true, false));
 	addChild(new ShaderIntegerMixPrototypesCase(
 		m_context, "prototypes", "Verify availability of all function signatures with the proper GLSL version.",
-		m_glslVersion, false));
+		m_glslVersion, false, false));
+	addChild(new ShaderIntegerMixPrototypesCase(
+		m_context, "prototypes-negative",
+		"Verify compilation fails if the GLSL version does not support shader_integer_mix", m_glslVersion, false,
+		true));
 
 	static const char* types_to_test[] = { "ivec4", "uvec4", "bvec4" };
 
