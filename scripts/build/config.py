@@ -23,10 +23,9 @@
 import os
 import sys
 import copy
-import platform
 import multiprocessing
 
-from common import which, DEQP_DIR
+from common import which, HostInfo, DEQP_DIR
 
 try:
 	import _winreg
@@ -39,6 +38,7 @@ class BuildConfig:
 		self.buildDir		= buildDir
 		self.buildType		= buildType
 		self.args			= copy.copy(args)
+		self.cmakePath		= BuildConfig.findCMake()
 
 	def getSrcPath (self):
 		return self.srcPath
@@ -51,6 +51,22 @@ class BuildConfig:
 
 	def getArgs (self):
 		return self.args
+
+	def getCMakePath (self):
+		return self.cmakePath
+
+	@staticmethod
+	def findCMake ():
+		if which("cmake") == None:
+			possiblePaths = [
+				"/Applications/CMake.app/Contents/bin/cmake"
+			]
+			for path in possiblePaths:
+				if os.path.exists(path):
+					return path
+
+		# Fall back to PATH - may fail later
+		return "cmake"
 
 class CMakeGenerator:
 	def __init__ (self, name, isMultiConfig = False, extraBuildArgs = []):
@@ -90,7 +106,7 @@ class NMakeGenerator(CMakeGenerator):
 		CMakeGenerator.__init__(self, "NMake Makefiles")
 
 	def isAvailable (self):
-		return which('nmake.exe') != None
+		return which('nmake') != None
 
 class NinjaGenerator(CMakeGenerator):
 	def __init__(self):
@@ -117,14 +133,14 @@ class VSProjectGenerator(CMakeGenerator):
 
 	@staticmethod
 	def getNativeArch ():
-		arch = platform.machine().lower()
+		bits = HostInfo.getArchBits()
 
-		if arch == 'x86':
+		if bits == 32:
 			return VSProjectGenerator.ARCH_32BIT
-		elif arch == 'amd64':
+		elif bits == 64:
 			return VSProjectGenerator.ARCH_64BIT
 		else:
-			raise Exception("Unhandled arch '%s'" % arch)
+			raise Exception("Unhandled bits '%s'" % bits)
 
 	@staticmethod
 	def registryKeyAvailable (root, arch, name):

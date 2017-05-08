@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 9302c6a6963864cba6c43d7eee0f4afcdcec2084.
+ * Generated from Khronos GL API description (gl.xml) revision 967f96c92bae15baa1a4326a55222984befdc9ed.
  */
 
 GLW_APICALL void GLW_APIENTRY glActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -384,6 +384,14 @@ GLW_APICALL GLenum GLW_APIENTRY glCheckNamedFramebufferStatus (GLuint framebuffe
 	return (GLenum)0;
 }
 
+GLW_APICALL GLenum GLW_APIENTRY glCheckNamedFramebufferStatusEXT (GLuint framebuffer, GLenum target)
+{
+	DE_UNREF(framebuffer);
+	DE_UNREF(target);
+
+	return (GLenum)0;
+}
+
 GLW_APICALL void GLW_APIENTRY glClampColor (GLenum target, GLenum clamp)
 {
 	DE_UNREF(target);
@@ -483,7 +491,29 @@ GLW_APICALL void GLW_APIENTRY glClearNamedBufferData (GLuint buffer, GLenum inte
 
 }
 
+GLW_APICALL void GLW_APIENTRY glClearNamedBufferDataEXT (GLuint buffer, GLenum internalformat, GLenum format, GLenum type, const void *data)
+{
+	DE_UNREF(buffer);
+	DE_UNREF(internalformat);
+	DE_UNREF(format);
+	DE_UNREF(type);
+	DE_UNREF(data);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glClearNamedBufferSubData (GLuint buffer, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data)
+{
+	DE_UNREF(buffer);
+	DE_UNREF(internalformat);
+	DE_UNREF(offset);
+	DE_UNREF(size);
+	DE_UNREF(format);
+	DE_UNREF(type);
+	DE_UNREF(data);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glClearNamedBufferSubDataEXT (GLuint buffer, GLenum internalformat, GLsizeiptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data)
 {
 	DE_UNREF(buffer);
 	DE_UNREF(internalformat);
@@ -737,20 +767,6 @@ GLW_APICALL void GLW_APIENTRY glCompressedTexImage3D (GLenum target, GLint level
 
 }
 
-GLW_APICALL void GLW_APIENTRY glCompressedTexImage3DOES (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *data)
-{
-	DE_UNREF(target);
-	DE_UNREF(level);
-	DE_UNREF(internalformat);
-	DE_UNREF(width);
-	DE_UNREF(height);
-	DE_UNREF(depth);
-	DE_UNREF(border);
-	DE_UNREF(imageSize);
-	DE_UNREF(data);
-
-}
-
 GLW_APICALL void GLW_APIENTRY glCompressedTexSubImage1D (GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const void *data)
 {
 	DE_UNREF(target);
@@ -778,22 +794,6 @@ GLW_APICALL void GLW_APIENTRY glCompressedTexSubImage2D (GLenum target, GLint le
 }
 
 GLW_APICALL void GLW_APIENTRY glCompressedTexSubImage3D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data)
-{
-	DE_UNREF(target);
-	DE_UNREF(level);
-	DE_UNREF(xoffset);
-	DE_UNREF(yoffset);
-	DE_UNREF(zoffset);
-	DE_UNREF(width);
-	DE_UNREF(height);
-	DE_UNREF(depth);
-	DE_UNREF(format);
-	DE_UNREF(imageSize);
-	DE_UNREF(data);
-
-}
-
-GLW_APICALL void GLW_APIENTRY glCompressedTexSubImage3DOES (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data)
 {
 	DE_UNREF(target);
 	DE_UNREF(level);
@@ -1096,20 +1096,6 @@ GLW_APICALL void GLW_APIENTRY glCopyTexSubImage2D (GLenum target, GLint level, G
 }
 
 GLW_APICALL void GLW_APIENTRY glCopyTexSubImage3D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height)
-{
-	DE_UNREF(target);
-	DE_UNREF(level);
-	DE_UNREF(xoffset);
-	DE_UNREF(yoffset);
-	DE_UNREF(zoffset);
-	DE_UNREF(x);
-	DE_UNREF(y);
-	DE_UNREF(width);
-	DE_UNREF(height);
-
-}
-
-GLW_APICALL void GLW_APIENTRY glCopyTexSubImage3DOES (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height)
 {
 	DE_UNREF(target);
 	DE_UNREF(level);
@@ -1504,14 +1490,14 @@ GLW_APICALL void GLW_APIENTRY glDisableClientStateiEXT (GLenum array, GLuint ind
 
 }
 
-GLW_APICALL void GLW_APIENTRY glDisableIndexedEXT (GLenum target, GLuint index)
+GLW_APICALL void GLW_APIENTRY glDisableVertexArrayAttrib (GLuint vaobj, GLuint index)
 {
-	DE_UNREF(target);
+	DE_UNREF(vaobj);
 	DE_UNREF(index);
 
 }
 
-GLW_APICALL void GLW_APIENTRY glDisableVertexArrayAttrib (GLuint vaobj, GLuint index)
+GLW_APICALL void GLW_APIENTRY glDisableVertexArrayAttribEXT (GLuint vaobj, GLuint index)
 {
 	DE_UNREF(vaobj);
 	DE_UNREF(index);
@@ -1759,14 +1745,14 @@ GLW_APICALL void GLW_APIENTRY glEnableClientStateiEXT (GLenum array, GLuint inde
 
 }
 
-GLW_APICALL void GLW_APIENTRY glEnableIndexedEXT (GLenum target, GLuint index)
+GLW_APICALL void GLW_APIENTRY glEnableVertexArrayAttrib (GLuint vaobj, GLuint index)
 {
-	DE_UNREF(target);
+	DE_UNREF(vaobj);
 	DE_UNREF(index);
 
 }
 
-GLW_APICALL void GLW_APIENTRY glEnableVertexArrayAttrib (GLuint vaobj, GLuint index)
+GLW_APICALL void GLW_APIENTRY glEnableVertexArrayAttribEXT (GLuint vaobj, GLuint index)
 {
 	DE_UNREF(vaobj);
 	DE_UNREF(index);
@@ -1843,6 +1829,14 @@ GLW_APICALL void GLW_APIENTRY glFlushMappedBufferRange (GLenum target, GLintptr 
 }
 
 GLW_APICALL void GLW_APIENTRY glFlushMappedNamedBufferRange (GLuint buffer, GLintptr offset, GLsizeiptr length)
+{
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(length);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glFlushMappedNamedBufferRangeEXT (GLuint buffer, GLintptr offset, GLsizeiptr length)
 {
 	DE_UNREF(buffer);
 	DE_UNREF(offset);
@@ -1929,17 +1923,6 @@ GLW_APICALL void GLW_APIENTRY glFramebufferTexture3D (GLenum target, GLenum atta
 
 }
 
-GLW_APICALL void GLW_APIENTRY glFramebufferTexture3DOES (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset)
-{
-	DE_UNREF(target);
-	DE_UNREF(attachment);
-	DE_UNREF(textarget);
-	DE_UNREF(texture);
-	DE_UNREF(level);
-	DE_UNREF(zoffset);
-
-}
-
 GLW_APICALL void GLW_APIENTRY glFramebufferTextureLayer (GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer)
 {
 	DE_UNREF(target);
@@ -1972,6 +1955,13 @@ GLW_APICALL void GLW_APIENTRY glGenerateMultiTexMipmapEXT (GLenum texunit, GLenu
 GLW_APICALL void GLW_APIENTRY glGenerateTextureMipmap (GLuint texture)
 {
 	DE_UNREF(texture);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glGenerateTextureMipmapEXT (GLuint texture, GLenum target)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
 
 }
 
@@ -2088,14 +2078,6 @@ GLW_APICALL void GLW_APIENTRY glGetAttachedShaders (GLuint program, GLsizei maxC
 
 }
 
-GLW_APICALL void GLW_APIENTRY glGetBooleanIndexedvEXT (GLenum target, GLuint index, GLboolean *data)
-{
-	DE_UNREF(target);
-	DE_UNREF(index);
-	DE_UNREF(data);
-
-}
-
 GLW_APICALL void GLW_APIENTRY glGetBooleani_v (GLenum target, GLuint index, GLboolean *data)
 {
 	DE_UNREF(target);
@@ -2163,6 +2145,15 @@ GLW_APICALL void GLW_APIENTRY glGetCompressedTextureImage (GLuint texture, GLint
 
 }
 
+GLW_APICALL void GLW_APIENTRY glGetCompressedTextureImageEXT (GLuint texture, GLenum target, GLint lod, void *img)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
+	DE_UNREF(lod);
+	DE_UNREF(img);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glGetCompressedTextureSubImage (GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLsizei bufSize, void *pixels)
 {
 	DE_UNREF(texture);
@@ -2192,14 +2183,6 @@ GLW_APICALL GLuint GLW_APIENTRY glGetDebugMessageLog (GLuint count, GLsizei bufS
 	return (GLuint)0;
 }
 
-GLW_APICALL void GLW_APIENTRY glGetDoubleIndexedvEXT (GLenum target, GLuint index, GLdouble *data)
-{
-	DE_UNREF(target);
-	DE_UNREF(index);
-	DE_UNREF(data);
-
-}
-
 GLW_APICALL void GLW_APIENTRY glGetDoublei_v (GLenum target, GLuint index, GLdouble *data)
 {
 	DE_UNREF(target);
@@ -2211,14 +2194,6 @@ GLW_APICALL void GLW_APIENTRY glGetDoublei_v (GLenum target, GLuint index, GLdou
 GLW_APICALL void GLW_APIENTRY glGetDoublev (GLenum pname, GLdouble *data)
 {
 	DE_UNREF(pname);
-	DE_UNREF(data);
-
-}
-
-GLW_APICALL void GLW_APIENTRY glGetFloatIndexedvEXT (GLenum target, GLuint index, GLfloat *data)
-{
-	DE_UNREF(target);
-	DE_UNREF(index);
 	DE_UNREF(data);
 
 }
@@ -2264,6 +2239,14 @@ GLW_APICALL void GLW_APIENTRY glGetFramebufferParameteriv (GLenum target, GLenum
 
 }
 
+GLW_APICALL void GLW_APIENTRY glGetFramebufferParameterivEXT (GLuint framebuffer, GLenum pname, GLint *params)
+{
+	DE_UNREF(framebuffer);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
 GLW_APICALL GLenum GLW_APIENTRY glGetGraphicsResetStatus (void)
 {
 
@@ -2281,14 +2264,6 @@ GLW_APICALL void GLW_APIENTRY glGetInteger64i_v (GLenum target, GLuint index, GL
 GLW_APICALL void GLW_APIENTRY glGetInteger64v (GLenum pname, GLint64 *data)
 {
 	DE_UNREF(pname);
-	DE_UNREF(data);
-
-}
-
-GLW_APICALL void GLW_APIENTRY glGetIntegerIndexedvEXT (GLenum target, GLuint index, GLint *data)
-{
-	DE_UNREF(target);
-	DE_UNREF(index);
 	DE_UNREF(data);
 
 }
@@ -2458,6 +2433,14 @@ GLW_APICALL void GLW_APIENTRY glGetNamedBufferParameteriv (GLuint buffer, GLenum
 
 }
 
+GLW_APICALL void GLW_APIENTRY glGetNamedBufferParameterivEXT (GLuint buffer, GLenum pname, GLint *params)
+{
+	DE_UNREF(buffer);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glGetNamedBufferPointerv (GLuint buffer, GLenum pname, void **params)
 {
 	DE_UNREF(buffer);
@@ -2466,7 +2449,24 @@ GLW_APICALL void GLW_APIENTRY glGetNamedBufferPointerv (GLuint buffer, GLenum pn
 
 }
 
+GLW_APICALL void GLW_APIENTRY glGetNamedBufferPointervEXT (GLuint buffer, GLenum pname, void **params)
+{
+	DE_UNREF(buffer);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glGetNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizeiptr size, void *data)
+{
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(size);
+	DE_UNREF(data);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glGetNamedBufferSubDataEXT (GLuint buffer, GLintptr offset, GLsizeiptr size, void *data)
 {
 	DE_UNREF(buffer);
 	DE_UNREF(offset);
@@ -2484,11 +2484,28 @@ GLW_APICALL void GLW_APIENTRY glGetNamedFramebufferAttachmentParameteriv (GLuint
 
 }
 
+GLW_APICALL void GLW_APIENTRY glGetNamedFramebufferAttachmentParameterivEXT (GLuint framebuffer, GLenum attachment, GLenum pname, GLint *params)
+{
+	DE_UNREF(framebuffer);
+	DE_UNREF(attachment);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glGetNamedFramebufferParameteriv (GLuint framebuffer, GLenum pname, GLint *param)
 {
 	DE_UNREF(framebuffer);
 	DE_UNREF(pname);
 	DE_UNREF(param);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glGetNamedFramebufferParameterivEXT (GLuint framebuffer, GLenum pname, GLint *params)
+{
+	DE_UNREF(framebuffer);
+	DE_UNREF(pname);
+	DE_UNREF(params);
 
 }
 
@@ -2547,6 +2564,14 @@ GLW_APICALL void GLW_APIENTRY glGetNamedProgramivEXT (GLuint program, GLenum tar
 }
 
 GLW_APICALL void GLW_APIENTRY glGetNamedRenderbufferParameteriv (GLuint renderbuffer, GLenum pname, GLint *params)
+{
+	DE_UNREF(renderbuffer);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glGetNamedRenderbufferParameterivEXT (GLuint renderbuffer, GLenum pname, GLint *params)
 {
 	DE_UNREF(renderbuffer);
 	DE_UNREF(pname);
@@ -2952,9 +2977,30 @@ GLW_APICALL void GLW_APIENTRY glGetTextureImage (GLuint texture, GLint level, GL
 
 }
 
+GLW_APICALL void GLW_APIENTRY glGetTextureImageEXT (GLuint texture, GLenum target, GLint level, GLenum format, GLenum type, void *pixels)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
+	DE_UNREF(level);
+	DE_UNREF(format);
+	DE_UNREF(type);
+	DE_UNREF(pixels);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glGetTextureLevelParameterfv (GLuint texture, GLint level, GLenum pname, GLfloat *params)
 {
 	DE_UNREF(texture);
+	DE_UNREF(level);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glGetTextureLevelParameterfvEXT (GLuint texture, GLenum target, GLint level, GLenum pname, GLfloat *params)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
 	DE_UNREF(level);
 	DE_UNREF(pname);
 	DE_UNREF(params);
@@ -2970,9 +3016,28 @@ GLW_APICALL void GLW_APIENTRY glGetTextureLevelParameteriv (GLuint texture, GLin
 
 }
 
+GLW_APICALL void GLW_APIENTRY glGetTextureLevelParameterivEXT (GLuint texture, GLenum target, GLint level, GLenum pname, GLint *params)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
+	DE_UNREF(level);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glGetTextureParameterIiv (GLuint texture, GLenum pname, GLint *params)
 {
 	DE_UNREF(texture);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glGetTextureParameterIivEXT (GLuint texture, GLenum target, GLenum pname, GLint *params)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
 	DE_UNREF(pname);
 	DE_UNREF(params);
 
@@ -2986,6 +3051,15 @@ GLW_APICALL void GLW_APIENTRY glGetTextureParameterIuiv (GLuint texture, GLenum 
 
 }
 
+GLW_APICALL void GLW_APIENTRY glGetTextureParameterIuivEXT (GLuint texture, GLenum target, GLenum pname, GLuint *params)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glGetTextureParameterfv (GLuint texture, GLenum pname, GLfloat *params)
 {
 	DE_UNREF(texture);
@@ -2994,9 +3068,27 @@ GLW_APICALL void GLW_APIENTRY glGetTextureParameterfv (GLuint texture, GLenum pn
 
 }
 
+GLW_APICALL void GLW_APIENTRY glGetTextureParameterfvEXT (GLuint texture, GLenum target, GLenum pname, GLfloat *params)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glGetTextureParameteriv (GLuint texture, GLenum pname, GLint *params)
 {
 	DE_UNREF(texture);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glGetTextureParameterivEXT (GLuint texture, GLenum target, GLenum pname, GLint *params)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
 	DE_UNREF(pname);
 	DE_UNREF(params);
 
@@ -3396,14 +3488,6 @@ GLW_APICALL GLboolean GLW_APIENTRY glIsEnabled (GLenum cap)
 	return (GLboolean)0;
 }
 
-GLW_APICALL GLboolean GLW_APIENTRY glIsEnabledIndexedEXT (GLenum target, GLuint index)
-{
-	DE_UNREF(target);
-	DE_UNREF(index);
-
-	return (GLboolean)0;
-}
-
 GLW_APICALL GLboolean GLW_APIENTRY glIsEnabledi (GLenum target, GLuint index)
 {
 	DE_UNREF(target);
@@ -3523,7 +3607,25 @@ GLW_APICALL void * GLW_APIENTRY glMapNamedBuffer (GLuint buffer, GLenum access)
 	return (void *)0;
 }
 
+GLW_APICALL void * GLW_APIENTRY glMapNamedBufferEXT (GLuint buffer, GLenum access)
+{
+	DE_UNREF(buffer);
+	DE_UNREF(access);
+
+	return (void *)0;
+}
+
 GLW_APICALL void * GLW_APIENTRY glMapNamedBufferRange (GLuint buffer, GLintptr offset, GLsizeiptr length, GLbitfield access)
+{
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(length);
+	DE_UNREF(access);
+
+	return (void *)0;
+}
+
+GLW_APICALL void * GLW_APIENTRY glMapNamedBufferRangeEXT (GLuint buffer, GLintptr offset, GLsizeiptr length, GLbitfield access)
 {
 	DE_UNREF(buffer);
 	DE_UNREF(offset);
@@ -4051,6 +4153,15 @@ GLW_APICALL void GLW_APIENTRY glNamedBufferData (GLuint buffer, GLsizeiptr size,
 
 }
 
+GLW_APICALL void GLW_APIENTRY glNamedBufferDataEXT (GLuint buffer, GLsizeiptr size, const void *data, GLenum usage)
+{
+	DE_UNREF(buffer);
+	DE_UNREF(size);
+	DE_UNREF(data);
+	DE_UNREF(usage);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glNamedBufferPageCommitmentARB (GLuint buffer, GLintptr offset, GLsizeiptr size, GLboolean commit)
 {
 	DE_UNREF(buffer);
@@ -4120,6 +4231,14 @@ GLW_APICALL void GLW_APIENTRY glNamedFramebufferParameteri (GLuint framebuffer, 
 
 }
 
+GLW_APICALL void GLW_APIENTRY glNamedFramebufferParameteriEXT (GLuint framebuffer, GLenum pname, GLint param)
+{
+	DE_UNREF(framebuffer);
+	DE_UNREF(pname);
+	DE_UNREF(param);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glNamedFramebufferReadBuffer (GLuint framebuffer, GLenum src)
 {
 	DE_UNREF(framebuffer);
@@ -4128,6 +4247,15 @@ GLW_APICALL void GLW_APIENTRY glNamedFramebufferReadBuffer (GLuint framebuffer, 
 }
 
 GLW_APICALL void GLW_APIENTRY glNamedFramebufferRenderbuffer (GLuint framebuffer, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer)
+{
+	DE_UNREF(framebuffer);
+	DE_UNREF(attachment);
+	DE_UNREF(renderbuffertarget);
+	DE_UNREF(renderbuffer);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glNamedFramebufferRenderbufferEXT (GLuint framebuffer, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer)
 {
 	DE_UNREF(framebuffer);
 	DE_UNREF(attachment);
@@ -4176,6 +4304,15 @@ GLW_APICALL void GLW_APIENTRY glNamedFramebufferTexture3DEXT (GLuint framebuffer
 
 }
 
+GLW_APICALL void GLW_APIENTRY glNamedFramebufferTextureEXT (GLuint framebuffer, GLenum attachment, GLuint texture, GLint level)
+{
+	DE_UNREF(framebuffer);
+	DE_UNREF(attachment);
+	DE_UNREF(texture);
+	DE_UNREF(level);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glNamedFramebufferTextureFaceEXT (GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLenum face)
 {
 	DE_UNREF(framebuffer);
@@ -4187,6 +4324,16 @@ GLW_APICALL void GLW_APIENTRY glNamedFramebufferTextureFaceEXT (GLuint framebuff
 }
 
 GLW_APICALL void GLW_APIENTRY glNamedFramebufferTextureLayer (GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint layer)
+{
+	DE_UNREF(framebuffer);
+	DE_UNREF(attachment);
+	DE_UNREF(texture);
+	DE_UNREF(level);
+	DE_UNREF(layer);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glNamedFramebufferTextureLayerEXT (GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint layer)
 {
 	DE_UNREF(framebuffer);
 	DE_UNREF(attachment);
@@ -4329,6 +4476,15 @@ GLW_APICALL void GLW_APIENTRY glNamedRenderbufferStorage (GLuint renderbuffer, G
 
 }
 
+GLW_APICALL void GLW_APIENTRY glNamedRenderbufferStorageEXT (GLuint renderbuffer, GLenum internalformat, GLsizei width, GLsizei height)
+{
+	DE_UNREF(renderbuffer);
+	DE_UNREF(internalformat);
+	DE_UNREF(width);
+	DE_UNREF(height);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glNamedRenderbufferStorageMultisample (GLuint renderbuffer, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height)
 {
 	DE_UNREF(renderbuffer);
@@ -4344,6 +4500,16 @@ GLW_APICALL void GLW_APIENTRY glNamedRenderbufferStorageMultisampleCoverageEXT (
 	DE_UNREF(renderbuffer);
 	DE_UNREF(coverageSamples);
 	DE_UNREF(colorSamples);
+	DE_UNREF(internalformat);
+	DE_UNREF(width);
+	DE_UNREF(height);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glNamedRenderbufferStorageMultisampleEXT (GLuint renderbuffer, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height)
+{
+	DE_UNREF(renderbuffer);
+	DE_UNREF(samples);
 	DE_UNREF(internalformat);
 	DE_UNREF(width);
 	DE_UNREF(height);
@@ -4502,7 +4668,24 @@ GLW_APICALL void GLW_APIENTRY glProgramUniform1d (GLuint program, GLint location
 
 }
 
+GLW_APICALL void GLW_APIENTRY glProgramUniform1dEXT (GLuint program, GLint location, GLdouble x)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(x);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glProgramUniform1dv (GLuint program, GLint location, GLsizei count, const GLdouble *value)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(count);
+	DE_UNREF(value);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glProgramUniform1dvEXT (GLuint program, GLint location, GLsizei count, const GLdouble *value)
 {
 	DE_UNREF(program);
 	DE_UNREF(location);
@@ -4571,7 +4754,25 @@ GLW_APICALL void GLW_APIENTRY glProgramUniform2d (GLuint program, GLint location
 
 }
 
+GLW_APICALL void GLW_APIENTRY glProgramUniform2dEXT (GLuint program, GLint location, GLdouble x, GLdouble y)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(x);
+	DE_UNREF(y);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glProgramUniform2dv (GLuint program, GLint location, GLsizei count, const GLdouble *value)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(count);
+	DE_UNREF(value);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glProgramUniform2dvEXT (GLuint program, GLint location, GLsizei count, const GLdouble *value)
 {
 	DE_UNREF(program);
 	DE_UNREF(location);
@@ -4644,7 +4845,26 @@ GLW_APICALL void GLW_APIENTRY glProgramUniform3d (GLuint program, GLint location
 
 }
 
+GLW_APICALL void GLW_APIENTRY glProgramUniform3dEXT (GLuint program, GLint location, GLdouble x, GLdouble y, GLdouble z)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(x);
+	DE_UNREF(y);
+	DE_UNREF(z);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glProgramUniform3dv (GLuint program, GLint location, GLsizei count, const GLdouble *value)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(count);
+	DE_UNREF(value);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glProgramUniform3dvEXT (GLuint program, GLint location, GLsizei count, const GLdouble *value)
 {
 	DE_UNREF(program);
 	DE_UNREF(location);
@@ -4721,7 +4941,27 @@ GLW_APICALL void GLW_APIENTRY glProgramUniform4d (GLuint program, GLint location
 
 }
 
+GLW_APICALL void GLW_APIENTRY glProgramUniform4dEXT (GLuint program, GLint location, GLdouble x, GLdouble y, GLdouble z, GLdouble w)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(x);
+	DE_UNREF(y);
+	DE_UNREF(z);
+	DE_UNREF(w);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glProgramUniform4dv (GLuint program, GLint location, GLsizei count, const GLdouble *value)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(count);
+	DE_UNREF(value);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glProgramUniform4dvEXT (GLuint program, GLint location, GLsizei count, const GLdouble *value)
 {
 	DE_UNREF(program);
 	DE_UNREF(location);
@@ -4800,6 +5040,16 @@ GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix2dv (GLuint program, GLint l
 
 }
 
+GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix2dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(count);
+	DE_UNREF(transpose);
+	DE_UNREF(value);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix2fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
 {
 	DE_UNREF(program);
@@ -4811,6 +5061,16 @@ GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix2fv (GLuint program, GLint l
 }
 
 GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix2x3dv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(count);
+	DE_UNREF(transpose);
+	DE_UNREF(value);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix2x3dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
 {
 	DE_UNREF(program);
 	DE_UNREF(location);
@@ -4840,6 +5100,16 @@ GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix2x4dv (GLuint program, GLint
 
 }
 
+GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix2x4dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(count);
+	DE_UNREF(transpose);
+	DE_UNREF(value);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix2x4fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
 {
 	DE_UNREF(program);
@@ -4851,6 +5121,16 @@ GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix2x4fv (GLuint program, GLint
 }
 
 GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix3dv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(count);
+	DE_UNREF(transpose);
+	DE_UNREF(value);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix3dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
 {
 	DE_UNREF(program);
 	DE_UNREF(location);
@@ -4880,6 +5160,16 @@ GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix3x2dv (GLuint program, GLint
 
 }
 
+GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix3x2dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(count);
+	DE_UNREF(transpose);
+	DE_UNREF(value);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix3x2fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
 {
 	DE_UNREF(program);
@@ -4891,6 +5181,16 @@ GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix3x2fv (GLuint program, GLint
 }
 
 GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix3x4dv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(count);
+	DE_UNREF(transpose);
+	DE_UNREF(value);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix3x4dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
 {
 	DE_UNREF(program);
 	DE_UNREF(location);
@@ -4920,6 +5220,16 @@ GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix4dv (GLuint program, GLint l
 
 }
 
+GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix4dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(count);
+	DE_UNREF(transpose);
+	DE_UNREF(value);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix4fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
 {
 	DE_UNREF(program);
@@ -4940,6 +5250,16 @@ GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix4x2dv (GLuint program, GLint
 
 }
 
+GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix4x2dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(count);
+	DE_UNREF(transpose);
+	DE_UNREF(value);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix4x2fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
 {
 	DE_UNREF(program);
@@ -4951,6 +5271,16 @@ GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix4x2fv (GLuint program, GLint
 }
 
 GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix4x3dv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(count);
+	DE_UNREF(transpose);
+	DE_UNREF(value);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glProgramUniformMatrix4x3dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
 {
 	DE_UNREF(program);
 	DE_UNREF(location);
@@ -5306,21 +5636,6 @@ GLW_APICALL void GLW_APIENTRY glTexImage3DMultisample (GLenum target, GLsizei sa
 
 }
 
-GLW_APICALL void GLW_APIENTRY glTexImage3DOES (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels)
-{
-	DE_UNREF(target);
-	DE_UNREF(level);
-	DE_UNREF(internalformat);
-	DE_UNREF(width);
-	DE_UNREF(height);
-	DE_UNREF(depth);
-	DE_UNREF(border);
-	DE_UNREF(format);
-	DE_UNREF(type);
-	DE_UNREF(pixels);
-
-}
-
 GLW_APICALL void GLW_APIENTRY glTexPageCommitmentARB (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLboolean commit)
 {
 	DE_UNREF(target);
@@ -5392,26 +5707,7 @@ GLW_APICALL void GLW_APIENTRY glTexStorage1D (GLenum target, GLsizei levels, GLe
 
 }
 
-GLW_APICALL void GLW_APIENTRY glTexStorage1DEXT (GLenum target, GLsizei levels, GLenum internalformat, GLsizei width)
-{
-	DE_UNREF(target);
-	DE_UNREF(levels);
-	DE_UNREF(internalformat);
-	DE_UNREF(width);
-
-}
-
 GLW_APICALL void GLW_APIENTRY glTexStorage2D (GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height)
-{
-	DE_UNREF(target);
-	DE_UNREF(levels);
-	DE_UNREF(internalformat);
-	DE_UNREF(width);
-	DE_UNREF(height);
-
-}
-
-GLW_APICALL void GLW_APIENTRY glTexStorage2DEXT (GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height)
 {
 	DE_UNREF(target);
 	DE_UNREF(levels);
@@ -5433,17 +5729,6 @@ GLW_APICALL void GLW_APIENTRY glTexStorage2DMultisample (GLenum target, GLsizei 
 }
 
 GLW_APICALL void GLW_APIENTRY glTexStorage3D (GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth)
-{
-	DE_UNREF(target);
-	DE_UNREF(levels);
-	DE_UNREF(internalformat);
-	DE_UNREF(width);
-	DE_UNREF(height);
-	DE_UNREF(depth);
-
-}
-
-GLW_APICALL void GLW_APIENTRY glTexStorage3DEXT (GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth)
 {
 	DE_UNREF(target);
 	DE_UNREF(levels);
@@ -5508,22 +5793,6 @@ GLW_APICALL void GLW_APIENTRY glTexSubImage3D (GLenum target, GLint level, GLint
 
 }
 
-GLW_APICALL void GLW_APIENTRY glTexSubImage3DOES (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels)
-{
-	DE_UNREF(target);
-	DE_UNREF(level);
-	DE_UNREF(xoffset);
-	DE_UNREF(yoffset);
-	DE_UNREF(zoffset);
-	DE_UNREF(width);
-	DE_UNREF(height);
-	DE_UNREF(depth);
-	DE_UNREF(format);
-	DE_UNREF(type);
-	DE_UNREF(pixels);
-
-}
-
 GLW_APICALL void GLW_APIENTRY glTextureBarrier (void)
 {
 
@@ -5537,9 +5806,29 @@ GLW_APICALL void GLW_APIENTRY glTextureBuffer (GLuint texture, GLenum internalfo
 
 }
 
+GLW_APICALL void GLW_APIENTRY glTextureBufferEXT (GLuint texture, GLenum target, GLenum internalformat, GLuint buffer)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
+	DE_UNREF(internalformat);
+	DE_UNREF(buffer);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glTextureBufferRange (GLuint texture, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizeiptr size)
 {
 	DE_UNREF(texture);
+	DE_UNREF(internalformat);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(size);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glTextureBufferRangeEXT (GLuint texture, GLenum target, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizeiptr size)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
 	DE_UNREF(internalformat);
 	DE_UNREF(buffer);
 	DE_UNREF(offset);
@@ -5614,9 +5903,27 @@ GLW_APICALL void GLW_APIENTRY glTextureParameterIiv (GLuint texture, GLenum pnam
 
 }
 
+GLW_APICALL void GLW_APIENTRY glTextureParameterIivEXT (GLuint texture, GLenum target, GLenum pname, const GLint *params)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glTextureParameterIuiv (GLuint texture, GLenum pname, const GLuint *params)
 {
 	DE_UNREF(texture);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glTextureParameterIuivEXT (GLuint texture, GLenum target, GLenum pname, const GLuint *params)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
 	DE_UNREF(pname);
 	DE_UNREF(params);
 
@@ -5630,11 +5937,29 @@ GLW_APICALL void GLW_APIENTRY glTextureParameterf (GLuint texture, GLenum pname,
 
 }
 
+GLW_APICALL void GLW_APIENTRY glTextureParameterfEXT (GLuint texture, GLenum target, GLenum pname, GLfloat param)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
+	DE_UNREF(pname);
+	DE_UNREF(param);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glTextureParameterfv (GLuint texture, GLenum pname, const GLfloat *param)
 {
 	DE_UNREF(texture);
 	DE_UNREF(pname);
 	DE_UNREF(param);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glTextureParameterfvEXT (GLuint texture, GLenum target, GLenum pname, const GLfloat *params)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
+	DE_UNREF(pname);
+	DE_UNREF(params);
 
 }
 
@@ -5646,11 +5971,29 @@ GLW_APICALL void GLW_APIENTRY glTextureParameteri (GLuint texture, GLenum pname,
 
 }
 
+GLW_APICALL void GLW_APIENTRY glTextureParameteriEXT (GLuint texture, GLenum target, GLenum pname, GLint param)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
+	DE_UNREF(pname);
+	DE_UNREF(param);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glTextureParameteriv (GLuint texture, GLenum pname, const GLint *param)
 {
 	DE_UNREF(texture);
 	DE_UNREF(pname);
 	DE_UNREF(param);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glTextureParameterivEXT (GLuint texture, GLenum target, GLenum pname, const GLint *params)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
+	DE_UNREF(pname);
+	DE_UNREF(params);
 
 }
 
@@ -5713,6 +6056,18 @@ GLW_APICALL void GLW_APIENTRY glTextureStorage2DMultisample (GLuint texture, GLs
 
 }
 
+GLW_APICALL void GLW_APIENTRY glTextureStorage2DMultisampleEXT (GLuint texture, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
+	DE_UNREF(samples);
+	DE_UNREF(internalformat);
+	DE_UNREF(width);
+	DE_UNREF(height);
+	DE_UNREF(fixedsamplelocations);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glTextureStorage3D (GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth)
 {
 	DE_UNREF(texture);
@@ -5739,6 +6094,19 @@ GLW_APICALL void GLW_APIENTRY glTextureStorage3DEXT (GLuint texture, GLenum targ
 GLW_APICALL void GLW_APIENTRY glTextureStorage3DMultisample (GLuint texture, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations)
 {
 	DE_UNREF(texture);
+	DE_UNREF(samples);
+	DE_UNREF(internalformat);
+	DE_UNREF(width);
+	DE_UNREF(height);
+	DE_UNREF(depth);
+	DE_UNREF(fixedsamplelocations);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glTextureStorage3DMultisampleEXT (GLuint texture, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations)
+{
+	DE_UNREF(texture);
+	DE_UNREF(target);
 	DE_UNREF(samples);
 	DE_UNREF(internalformat);
 	DE_UNREF(width);
@@ -6325,6 +6693,13 @@ GLW_APICALL GLboolean GLW_APIENTRY glUnmapBuffer (GLenum target)
 }
 
 GLW_APICALL GLboolean GLW_APIENTRY glUnmapNamedBuffer (GLuint buffer)
+{
+	DE_UNREF(buffer);
+
+	return (GLboolean)0;
+}
+
+GLW_APICALL GLboolean GLW_APIENTRY glUnmapNamedBufferEXT (GLuint buffer)
 {
 	DE_UNREF(buffer);
 
