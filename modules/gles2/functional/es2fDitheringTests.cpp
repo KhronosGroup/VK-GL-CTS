@@ -317,11 +317,12 @@ bool DitheringCase::drawAndCheckGradient (const bool isVerticallyIncreasing, con
 	{
 		const int	increasingDirectionSize	= isVerticallyIncreasing ? renderedImg.getHeight() : renderedImg.getWidth();
 		const int	constantDirectionSize	= isVerticallyIncreasing ? renderedImg.getWidth() : renderedImg.getHeight();
-		bool		colorHasChanged			= false;
 
 		for (int incrPos = 0; incrPos < increasingDirectionSize; incrPos++)
 		{
-			tcu::RGBA prevConstantDirectionPix;
+			bool		colorHasChanged			= false;
+			tcu::RGBA	prevConstantDirectionPix;
+
 			for (int constPos = 0; constPos < constantDirectionSize; constPos++)
 			{
 				const int			x		= isVerticallyIncreasing ? constPos : incrPos;
