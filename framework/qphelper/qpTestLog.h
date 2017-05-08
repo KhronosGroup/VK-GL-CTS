@@ -195,7 +195,6 @@ deBool			qpTestLog_startCase				(qpTestLog* log, const char* testCasePath, qpTes
 deBool			qpTestLog_endCase				(qpTestLog* log, qpTestResult result, const char* description);
 deBool			qpTestLog_terminateCase			(qpTestLog* log, qpTestResult result);
 
-deBool			qpTestLog_writeMessage			(qpTestLog* log, const char* format, ...) DE_PRINTF_FUNC_ATTR(2,3);
 deBool			qpTestLog_startSection			(qpTestLog* log, const char* name, const char* description);
 deBool			qpTestLog_endSection			(qpTestLog* log);
 deBool			qpTestLog_writeText				(qpTestLog* log, const char* name, const char* description, qpKeyValueTag tag, const char* value);
