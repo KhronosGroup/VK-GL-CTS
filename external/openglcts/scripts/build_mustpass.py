@@ -22,6 +22,8 @@
 import os
 import sys
 
+from collections import OrderedDict
+
 from build_caselists import Module, getModuleByName, DEFAULT_BUILD_DIR, DEFAULT_TARGET
 from mustpass import Project, Package, Mustpass, Configuration, include, exclude, genMustpassLists
 
@@ -47,27 +49,31 @@ COPYRIGHT_DECLARATION = """\
  *     limitations under the License.
 */"""
 
-CTS_AOSP_MP_DATA_DIR					= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gles", "aosp_mustpass")
+buildPath						= DEFAULT_BUILD_DIR.format(targetName = DEFAULT_TARGET, buildType = "Release")
 
-CTS_AOSP_MP_DEVICE_DIR					= "gl_cts/data/mustpass/gles/aosp_mustpass"
+#-------------------------------------------------- ES MUSTPASS----------------------------------------------------------------------
 
-CTS_MP_INC_DIR							= os.path.join(DEQP_DIR, "external", "openglcts", "modules", "runner")
+CTS_AOSP_MP_DATA_DIR			= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gles", "aosp_mustpass")
 
-CTS_AOSP_MP_ES_PROJECT					= Project(name = "AOSP Mustpass ES", path = CTS_AOSP_MP_DATA_DIR, incpath = CTS_MP_INC_DIR, devicepath = CTS_AOSP_MP_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
+CTS_AOSP_MP_DEVICE_DIR			= "gl_cts/data/mustpass/gles/aosp_mustpass"
 
-CTS_KHR_MP_DATA_DIR						= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gles", "khronos_mustpass")
+CTS_MP_INC_DIR					= os.path.join(DEQP_DIR, "external", "openglcts", "modules", "runner")
 
-CTS_KHR_MP_DEVICE_DIR					= "gl_cts/data/mustpass/gles/khronos_mustpass"
+CTS_AOSP_MP_ES_PROJECT			= Project(name = "AOSP Mustpass ES", path = CTS_AOSP_MP_DATA_DIR, incpath = CTS_MP_INC_DIR, devicepath = CTS_AOSP_MP_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
 
-CTS_KHR_MP_ES_PROJECT					= Project(name = "Khronos Mustpass ES", path = CTS_KHR_MP_DATA_DIR, incpath = CTS_MP_INC_DIR, devicepath = CTS_KHR_MP_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
+CTS_KHR_MP_DATA_DIR				= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gles", "khronos_mustpass")
 
-CTS_AOSP_MP_EGL_DEVICE_DIR				= "gl_cts/data/mustpass/egl/aosp_mustpass"
+CTS_KHR_MP_DEVICE_DIR			= "gl_cts/data/mustpass/gles/khronos_mustpass"
 
-CTS_AOSP_MP_EGL_DATA_DIR				= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "egl", "aosp_mustpass")
+CTS_KHR_MP_ES_PROJECT			= Project(name = "Khronos Mustpass ES", path = CTS_KHR_MP_DATA_DIR, incpath = CTS_MP_INC_DIR, devicepath = CTS_KHR_MP_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
 
-CTS_AOSP_MP_EGL_PROJECT					= Project(name = "AOSP Mustpass EGL", path = CTS_AOSP_MP_EGL_DATA_DIR, incpath = CTS_MP_INC_DIR, devicepath = CTS_AOSP_MP_EGL_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
+CTS_AOSP_MP_EGL_DEVICE_DIR		= "gl_cts/data/mustpass/egl/aosp_mustpass"
 
-EGL_MODULE                   = getModuleByName("dEQP-EGL")
+CTS_AOSP_MP_EGL_DATA_DIR		= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "egl", "aosp_mustpass")
+
+CTS_AOSP_MP_EGL_PROJECT			= Project(name = "AOSP Mustpass EGL", path = CTS_AOSP_MP_EGL_DATA_DIR, incpath = CTS_MP_INC_DIR, devicepath = CTS_AOSP_MP_EGL_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
+
+EGL_MODULE						= getModuleByName("dEQP-EGL")
 ES2CTS_MODULE					= getModuleByName("dEQP-GLES2")
 ES3CTS_MODULE					= getModuleByName("dEQP-GLES3")
 ES31CTS_MODULE					= getModuleByName("dEQP-GLES31")
@@ -838,7 +844,7 @@ GLCTS_GLES32_KHR_PKG_N1CFG			= Package(module = ES32KHR_MODULE, useforfirsteglco
 					filters			= [include("gles32-khr-master.txt")]),
 	])
 
-MUSTPASS_LISTS				= [
+ES_MUSTPASS_LISTS		= [
 	# 3.2.2.x
 	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "3.2.2.x", isCurrent=False,
 			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
@@ -916,11 +922,77 @@ MUSTPASS_LISTS				= [
 
 	]
 
-buildPath                   = DEFAULT_BUILD_DIR.format(targetName = DEFAULT_TARGET, buildType = "Release")
-BUILD_CONFIG				= BuildConfig(buildPath, "Debug", ["-DDEQP_TARGET=%s" % DEFAULT_TARGET, "-DGLCTS_GTF_TARGET=gles32"])
+ES_BUILD_CONFIG				= BuildConfig(buildPath, "Debug", ["-DDEQP_TARGET=%s" % DEFAULT_TARGET, "-DGLCTS_GTF_TARGET=gles32"])
+
+#-------------------------------------------------- GL MUSTPASS----------------------------------------------------------------------
+
+GL_CTS_MP_INC_DIR					= os.path.join(DEQP_DIR, "external", "openglcts", "modules", "runner")
+
+GL_CTS_KHR_MP_DATA_DIR				= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gl", "khronos_mustpass")
+
+GL_CTS_KHR_MP_DEVICE_DIR			= "gl_cts/data/mustpass/gl/khronos_mustpass"
+
+GL_CTS_KHR_MP_PROJECT				= Project(name = "Khronos Mustpass GL", path = GL_CTS_KHR_MP_DATA_DIR, incpath = GL_CTS_MP_INC_DIR, devicepath = GL_CTS_KHR_MP_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
+
+GL_MODULES							= OrderedDict([
+			('KHR-GL45', ['master',		[include('gl45-master.txt')]]),
+			('KHR-GL44', ['master',		[include('gl44-master.txt')]]),
+			('KHR-GL43', ['master',		[include('gl43-master.txt')]]),
+			('KHR-GL42', ['master',		[include('gl42-master.txt')]]),
+			('KHR-GL41', ['master',		[include('gl41-master.txt')]]),
+			('KHR-GL40', ['master',		[include('gl40-master.txt')]]),
+			('KHR-GL33', ['master',		[include('gl33-master.txt')]]),
+			('KHR-GL32', ['master',		[include('gl32-master.txt')]]),
+			('KHR-GL31', ['master',		[include('gl31-master.txt')]]),
+			('KHR-GL30', ['master',		[include('gl30-master.txt')]]),
+			('GTF-GL45', ['gtf-master',	[include('gl45-gtf-master.txt')]]),
+			('GTF-GL44', ['gtf-master',	[include('gl44-gtf-master.txt')]]),
+			('GTF-GL43', ['gtf-master',	[include('gl43-gtf-master.txt')]]),
+			('GTF-GL42', ['gtf-master',	[include('gl42-gtf-master.txt')]]),
+			('GTF-GL41', ['gtf-master',	[include('gl41-gtf-master.txt')]]),
+			('GTF-GL40', ['gtf-master',	[include('gl40-gtf-master.txt')]]),
+			('GTF-GL33', ['gtf-master',	[include('gl33-gtf-master.txt')]]),
+			('GTF-GL32', ['gtf-master',	[include('gl32-gtf-master.txt')]]),
+			('GTF-GL31', ['gtf-master',	[include('gl31-gtf-master.txt')]]),
+			('GTF-GL30', ['gtf-master',	[include('gl30-gtf-master.txt')]])
+		])
+
+def generateGLMustpass():
+		gl_packages = []
+		for packageName in GL_MODULES:
+			cfgName			= GL_MODULES[packageName][0]
+			cfgFilter		= GL_MODULES[packageName][1]
+			config_w64xh64	= Configuration(name = cfgName, surfacewidth = "64", surfaceheight = "64", baseseed = "1", filters = cfgFilter)
+			config_w113xh47	= Configuration(name = cfgName, surfacewidth = "113", surfaceheight = "47", baseseed = "2", filters = cfgFilter)
+			config_w64		= Configuration(name = cfgName, surfacewidth = "64", surfaceheight = "-1", baseseed = "3", fboconfig = "rgba8888d24s8", filters = cfgFilter)
+			config_h64		= Configuration(name = cfgName, surfacewidth = "-1", surfaceheight = "64", baseseed = "3", fboconfig = "rgba8888d24s8", filters = cfgFilter)
+
+			pgkModule		= getModuleByName(packageName)
+			pkg0			= Package(module = pgkModule,
+										useforfirsteglconfig = True,
+										configurations = [
+											config_w64xh64, config_w113xh47, config_w64, config_h64
+										]
+									)
+			pkg1			= Package(module = pgkModule,
+										useforfirsteglconfig = False,
+										configurations = [
+											config_w64xh64, config_w113xh47,
+										]
+									)
+			gl_packages.append(pkg0)
+			gl_packages.append(pkg1)
+
+		mustpass = [Mustpass(project = GL_CTS_KHR_MP_PROJECT, version = "4.5.5.x", isCurrent=True, packages = gl_packages)]
+		return mustpass
+
+GL_BUILD_CONFIG					= BuildConfig(buildPath, "Debug", ["-DDEQP_TARGET=%s" % DEFAULT_TARGET, "-DGLCTS_GTF_TARGET=gl"])
 
 if __name__ == "__main__":
 	gtfCMakeLists = os.path.join(DEQP_DIR, "external", "kc-cts", "src", "GTF_ES", "CMakeLists.txt")
 	if os.path.isfile(gtfCMakeLists) == False:
 		raise Exception("GTF sources not found. GTF module is required to build the mustpass files")
-	genMustpassLists(MUSTPASS_LISTS, ANY_GENERATOR, BUILD_CONFIG)
+	genMustpassLists(ES_MUSTPASS_LISTS, ANY_GENERATOR, ES_BUILD_CONFIG)
+	gl_mustpass_lists = generateGLMustpass()
+	genMustpassLists(gl_mustpass_lists, ANY_GENERATOR, GL_BUILD_CONFIG)
+

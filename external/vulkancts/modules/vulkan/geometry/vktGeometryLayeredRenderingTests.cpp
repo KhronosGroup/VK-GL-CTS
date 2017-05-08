@@ -40,6 +40,7 @@
 
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuTestLog.hpp"
 
 namespace vkt
 {

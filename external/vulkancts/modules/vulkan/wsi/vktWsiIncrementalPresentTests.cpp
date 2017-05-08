@@ -38,6 +38,7 @@
 
 #include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
+#include "tcuTestLog.hpp"
 
 #include <vector>
 #include <string>

@@ -321,28 +321,28 @@ are needed in order to build an Android binary:
 
 An Android binary (for ES 3.2) can be built using command:
 
-	python external/openglcts/scripts/build_android.py
+	python scripts/android/build_apk.py --target=openglcts
 
 If Khronos Confidential CTS is present then the script will set `GLCTS_GTF_TARGET`
 to `gles32` by default.
 It is possible to specify a different `GLCTS_GTF_TARGET` target by invoking the script
-with the `--glcts-gtf-target` option, e.g.:
+with the `--kc-cts-target` option, e.g.:
 
-	python external/openglcts/scripts/build_android.py --glcts-gtf-target=gles31
+	python scripts/android/build_apk.py --target=openglcts --kc-cts-target=gles31
 
-Available values for `--glcts-gtf-target` are `gles32`, `gles31`, `gles3`, `gles2` and `gl`.
+Available values for `--kc-cts-target` are `gles32`, `gles31`, `gles3`, `gles2` and `gl`.
 
 The package can be installed by either running:
 
-	python android/scripts/install.py
+	python scripts/android/install_apk.py --target=openglcts
 
 By default the CTS package will contain libdeqp.so built for `armeabi-v7a`, `arm64-v8a`,
-`x86`, and `x86_64` ABIs, but that can be changed in `android/scripts/common.py` script.
+`x86`, and `x86_64` ABIs, but that can be changed with `--abis` command line option.
 
 To pick which ABI to use at install time, following commands must be used
 instead:
 
-	adb install --abi <ABI name> android/openglcts/bin/dEQP-debug.apk /data/local/tmp/dEQP-debug.apk
+	adb install --abi <ABI name> <build root>/Khronos-CTS.apk /data/local/tmp/Khronos-CTS.apk
 
 The script assumes some default install locations, which should be changed based
 on your environment. It is a good idea to check at least variables

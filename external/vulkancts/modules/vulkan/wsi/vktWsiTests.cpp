@@ -27,6 +27,7 @@
 
 #include "vktWsiSurfaceTests.hpp"
 #include "vktWsiSwapchainTests.hpp"
+#include "vktWsiDisplayTests.hpp"
 #include "vktWsiIncrementalPresentTests.hpp"
 #include "vktWsiDisplayTimingTests.hpp"
 
@@ -54,6 +55,8 @@ void createWsiTests (tcu::TestCaseGroup* apiTests)
 
 		addTestGroup(apiTests, getName(wsiType), "", createTypeSpecificTests, wsiType);
 	}
+
+	addTestGroup(apiTests, "display", "Display coverage tests", createDisplayCoverageTests);
 }
 
 } // anonymous

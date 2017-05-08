@@ -26,6 +26,7 @@
 #include "vktPipelineMultisampleTestsUtil.hpp"
 #include "vktPipelineMakeUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "tcuTestLog.hpp"
 #include <vector>
 
 namespace vkt

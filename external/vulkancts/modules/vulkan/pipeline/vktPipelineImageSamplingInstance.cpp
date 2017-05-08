@@ -32,6 +32,7 @@
 #include "vkRefUtil.hpp"
 #include "tcuTexLookupVerifier.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuTestLog.hpp"
 #include "deSTLUtil.hpp"
 
 namespace vkt

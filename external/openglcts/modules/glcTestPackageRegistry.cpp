@@ -149,87 +149,87 @@ static tcu::TestPackage* createES32Package(tcu::TestContext& testCtx)
 
 static tcu::TestPackage* createGL30Package(tcu::TestContext& testCtx)
 {
-	return new gl3cts::GL30TestPackage(testCtx, "GL30-CTS");
+	return new gl3cts::GL30TestPackage(testCtx, "KHR-GL30");
 }
 static tcu::TestPackage* createGL31Package(tcu::TestContext& testCtx)
 {
-	return new gl3cts::GL31TestPackage(testCtx, "GL31-CTS");
+	return new gl3cts::GL31TestPackage(testCtx, "KHR-GL31");
 }
 static tcu::TestPackage* createGL32Package(tcu::TestContext& testCtx)
 {
-	return new gl3cts::GL32TestPackage(testCtx, "GL32-CTS");
+	return new gl3cts::GL32TestPackage(testCtx, "KHR-GL32");
 }
 static tcu::TestPackage* createGL33Package(tcu::TestContext& testCtx)
 {
-	return new gl3cts::GL33TestPackage(testCtx, "GL33-CTS");
+	return new gl3cts::GL33TestPackage(testCtx, "KHR-GL33");
 }
 
 static tcu::TestPackage* createGL40Package(tcu::TestContext& testCtx)
 {
-	return new gl4cts::GL40TestPackage(testCtx, "GL40-CTS");
+	return new gl4cts::GL40TestPackage(testCtx, "KHR-GL40");
 }
 static tcu::TestPackage* createGL41Package(tcu::TestContext& testCtx)
 {
-	return new gl4cts::GL41TestPackage(testCtx, "GL41-CTS");
+	return new gl4cts::GL41TestPackage(testCtx, "KHR-GL41");
 }
 static tcu::TestPackage* createGL42Package(tcu::TestContext& testCtx)
 {
-	return new gl4cts::GL42TestPackage(testCtx, "GL42-CTS");
+	return new gl4cts::GL42TestPackage(testCtx, "KHR-GL42");
 }
 static tcu::TestPackage* createGL43Package(tcu::TestContext& testCtx)
 {
-	return new gl4cts::GL43TestPackage(testCtx, "GL43-CTS");
+	return new gl4cts::GL43TestPackage(testCtx, "KHR-GL43");
 }
 static tcu::TestPackage* createGL44Package(tcu::TestContext& testCtx)
 {
-	return new gl4cts::GL44TestPackage(testCtx, "GL44-CTS");
+	return new gl4cts::GL44TestPackage(testCtx, "KHR-GL44");
 }
 static tcu::TestPackage* createGL45Package(tcu::TestContext& testCtx)
 {
-	return new gl4cts::GL45TestPackage(testCtx, "GL45-CTS");
+	return new gl4cts::GL45TestPackage(testCtx, "KHR-GL45");
 }
 
 #if defined(DEQP_GTF_AVAILABLE)
 static tcu::TestPackage* createGL30GTFPackage(tcu::TestContext& testCtx)
 {
-	return new gtf::gl30::TestPackage(testCtx, "GL30-GTF");
+	return new gtf::gl30::TestPackage(testCtx, "GTF-GL30");
 }
 static tcu::TestPackage* createGL31GTFPackage(tcu::TestContext& testCtx)
 {
-	return new gtf::gl31::TestPackage(testCtx, "GL31-GTF");
+	return new gtf::gl31::TestPackage(testCtx, "GTF-GL31");
 }
 static tcu::TestPackage* createGL32GTFPackage(tcu::TestContext& testCtx)
 {
-	return new gtf::gl32::TestPackage(testCtx, "GL32-GTF");
+	return new gtf::gl32::TestPackage(testCtx, "GTF-GL32");
 }
 static tcu::TestPackage* createGL33GTFPackage(tcu::TestContext& testCtx)
 {
-	return new gtf::gl32::TestPackage(testCtx, "GL33-GTF");
+	return new gtf::gl32::TestPackage(testCtx, "GTF-GL33");
 }
 
 static tcu::TestPackage* createGL40GTFPackage(tcu::TestContext& testCtx)
 {
-	return new gtf::gl40::TestPackage(testCtx, "GL40-GTF");
+	return new gtf::gl40::TestPackage(testCtx, "GTF-GL40");
 }
 static tcu::TestPackage* createGL41GTFPackage(tcu::TestContext& testCtx)
 {
-	return new gtf::gl41::TestPackage(testCtx, "GL41-GTF");
+	return new gtf::gl41::TestPackage(testCtx, "GTF-GL41");
 }
 static tcu::TestPackage* createGL42GTFPackage(tcu::TestContext& testCtx)
 {
-	return new gtf::gl42::TestPackage(testCtx, "GL42-GTF");
+	return new gtf::gl42::TestPackage(testCtx, "GTF-GL42");
 }
 static tcu::TestPackage* createGL43GTFPackage(tcu::TestContext& testCtx)
 {
-	return new gtf::gl43::TestPackage(testCtx, "GL43-GTF");
+	return new gtf::gl43::TestPackage(testCtx, "GTF-GL43");
 }
 static tcu::TestPackage* createGL44GTFPackage(tcu::TestContext& testCtx)
 {
-	return new gtf::gl44::TestPackage(testCtx, "GL44-GTF");
+	return new gtf::gl44::TestPackage(testCtx, "GTF-GL44");
 }
 static tcu::TestPackage* createGL45GTFPackage(tcu::TestContext& testCtx)
 {
-	return new gtf::gl45::TestPackage(testCtx, "GL45-GTF");
+	return new gtf::gl45::TestPackage(testCtx, "GTF-GL45");
 }
 #endif
 
@@ -272,30 +272,30 @@ void registerPackages(void)
 
 	registry->registerPackage("KHR-GLES32", createES32Package);
 
-	registry->registerPackage("GL30-CTS", createGL30Package);
-	registry->registerPackage("GL31-CTS", createGL31Package);
-	registry->registerPackage("GL32-CTS", createGL32Package);
-	registry->registerPackage("GL33-CTS", createGL33Package);
+	registry->registerPackage("KHR-GL30", createGL30Package);
+	registry->registerPackage("KHR-GL31", createGL31Package);
+	registry->registerPackage("KHR-GL32", createGL32Package);
+	registry->registerPackage("KHR-GL33", createGL33Package);
 
-	registry->registerPackage("GL40-CTS", createGL40Package);
-	registry->registerPackage("GL41-CTS", createGL41Package);
-	registry->registerPackage("GL42-CTS", createGL42Package);
-	registry->registerPackage("GL43-CTS", createGL43Package);
-	registry->registerPackage("GL44-CTS", createGL44Package);
-	registry->registerPackage("GL45-CTS", createGL45Package);
+	registry->registerPackage("KHR-GL40", createGL40Package);
+	registry->registerPackage("KHR-GL41", createGL41Package);
+	registry->registerPackage("KHR-GL42", createGL42Package);
+	registry->registerPackage("KHR-GL43", createGL43Package);
+	registry->registerPackage("KHR-GL44", createGL44Package);
+	registry->registerPackage("KHR-GL45", createGL45Package);
 
 #if defined(DEQP_GTF_AVAILABLE)
-	registry->registerPackage("GL30-GTF", createGL30GTFPackage);
-	registry->registerPackage("GL31-GTF", createGL31GTFPackage);
-	registry->registerPackage("GL32-GTF", createGL32GTFPackage);
-	registry->registerPackage("GL33-GTF", createGL33GTFPackage);
+	registry->registerPackage("GTF-GL30", createGL30GTFPackage);
+	registry->registerPackage("GTF-GL31", createGL31GTFPackage);
+	registry->registerPackage("GTF-GL32", createGL32GTFPackage);
+	registry->registerPackage("GTF-GL33", createGL33GTFPackage);
 
-	registry->registerPackage("GL40-GTF", createGL40GTFPackage);
-	registry->registerPackage("GL41-GTF", createGL41GTFPackage);
-	registry->registerPackage("GL42-GTF", createGL42GTFPackage);
-	registry->registerPackage("GL43-GTF", createGL43GTFPackage);
-	registry->registerPackage("GL44-GTF", createGL44GTFPackage);
-	registry->registerPackage("GL45-GTF", createGL45GTFPackage);
+	registry->registerPackage("GTF-GL40", createGL40GTFPackage);
+	registry->registerPackage("GTF-GL41", createGL41GTFPackage);
+	registry->registerPackage("GTF-GL42", createGL42GTFPackage);
+	registry->registerPackage("GTF-GL43", createGL43GTFPackage);
+	registry->registerPackage("GTF-GL44", createGL44GTFPackage);
+	registry->registerPackage("GTF-GL45", createGL45GTFPackage);
 #endif
 }
 }
