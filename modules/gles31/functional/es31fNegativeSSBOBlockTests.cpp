@@ -76,16 +76,7 @@ public:
 	void			setSingleValue						(const SsboArgData argData);
 	bool			setAllValues						(const std::vector<SsboArgData> argDataList);
 
-	const std::string&	getContextVersion				(void) const;
-	const std::string&	getStdFormat					(void) const;
-	const std::string&	getBindingPoint					(void) const;
-	const std::string&	getMatrixOrder					(void) const;
-	const std::string&	getMemberType					(void) const;
-	const std::string&	getMemberName					(void) const;
-	const std::string&	getMemberFixedArrayName			(void) const;
-	const std::string&	getMemberVariableArray			(void) const;
 	bool				getMemberReorder				(void) const;
-	int					getNumberMembers				(void) const;
 
 	void				resetValues						(void);
 
@@ -177,54 +168,9 @@ bool SsboArgs::setAllValues (const std::vector<SsboArgData> argDataList)
 	return true;
 }
 
-const std::string& SsboArgs::getContextVersion (void) const
-{
-	return m_negativeContextVersion;
-}
-
-const std::string& SsboArgs::getStdFormat (void) const
-{
-	return m_stdFormat;
-}
-
-const std::string& SsboArgs::getBindingPoint (void) const
-{
-	return m_bindingPoint;
-}
-
-const std::string& SsboArgs::getMatrixOrder (void) const
-{
-	return m_matrixOrder;
-}
-
-const std::string& SsboArgs::getMemberType (void) const
-{
-	return m_memberType;
-}
-
-const std::string& SsboArgs::getMemberName (void) const
-{
-	return m_memberName;
-}
-
-const std::string& SsboArgs::getMemberFixedArrayName (void) const
-{
-	return m_memberFixedArrayerName;
-}
-
-const std::string& SsboArgs::getMemberVariableArray (void) const
-{
-	return m_memberVariableArray;
-}
-
 bool SsboArgs::getMemberReorder (void) const
 {
 	return m_memberReorder;
-}
-
-int SsboArgs::getNumberMembers (void) const
-{
-	return m_numberMembers;
 }
 
 void SsboArgs::resetValues (void)
