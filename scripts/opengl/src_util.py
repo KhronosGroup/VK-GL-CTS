@@ -54,6 +54,7 @@ EXTENSIONS			= [
 	'GL_EXT_primitive_bounding_box',
 	'GL_OES_EGL_image',
 	'GL_OES_compressed_ETC1_RGB8_texture',
+	'GL_OES_compressed_paletted_texture',
 	'GL_OES_texture_half_float',
 	'GL_OES_texture_storage_multisample_2d_array',
 	'GL_OES_sample_shading',
