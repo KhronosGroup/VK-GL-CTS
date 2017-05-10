@@ -80,8 +80,7 @@ public:
 							  const glw::GLdouble& right_blue, const glw::GLdouble& right_alpha);
 
 	static bool comparePixels(glw::GLuint left_pixel_size, const glw::GLubyte* left_pixel_data,
-							  glw::GLuint right_pixel_size, const glw::GLubyte* right_pixel_data,
-							  const glw::GLenum format);
+							  glw::GLuint right_pixel_size, const glw::GLubyte* right_pixel_data);
 
 	static void deleteTexture(deqp::Context& context, glw::GLenum target, glw::GLuint name);
 
@@ -481,127 +480,6 @@ bool Utils::comparePixels(GLenum left_internal_format, const GLdouble& left_red,
 	return true;
 }
 
-#define RGB9E5_EXPONENT_BITS 5
-#define RGB9E5_MANTISSA_BITS 9
-#define RGB9E5_EXP_BIAS 15
-#define R11FG11FB10F_EXP_BIAS 15
-
-typedef struct
-{
-	unsigned int r : RGB9E5_MANTISSA_BITS;
-	unsigned int g : RGB9E5_MANTISSA_BITS;
-	unsigned int b : RGB9E5_MANTISSA_BITS;
-	unsigned int biasedexponent : RGB9E5_EXPONENT_BITS;
-} BitsOfRGB9E5;
-
-typedef struct
-{
-	unsigned int r : 11;
-	unsigned int g : 11;
-	unsigned int b : 10;
-} BitsOfR11FG11FB10F;
-
-typedef union {
-	unsigned int raw;
-	BitsOfRGB9E5 field;
-} rgb9e5;
-
-typedef union {
-	unsigned int	   raw;
-	BitsOfR11FG11FB10F field;
-} r11fg11fb10f;
-
-void rgb9e5_to_float3(rgb9e5 v, float retval[3])
-{
-	int   exponent = v.field.biasedexponent - RGB9E5_EXP_BIAS - RGB9E5_MANTISSA_BITS;
-	float scale	= (float)pow(2.0, (double)exponent);
-
-	retval[0] = v.field.r * scale;
-	retval[1] = v.field.g * scale;
-	retval[2] = v.field.b * scale;
-}
-
-// This function will expand a 10-bit or 11-bit float
-// based on the rules described in 2.3.4.3 and 2.3.4.4
-float expandFloat(const unsigned int compressed, const unsigned int numMantissaBits)
-{
-	unsigned int divisor = (unsigned int)deFloatPow(2, (float)numMantissaBits);
-	float		 retval  = 0.0;
-	unsigned int exponent, mantissa;
-
-	exponent = compressed / divisor;
-	mantissa = compressed % divisor;
-	if (exponent == 0 && mantissa == 0)
-		retval = 0.0;
-	else if (exponent == 0 && mantissa != 0)
-		retval = deFloatPow(2.f, -14.f) * ((float)mantissa / (float)divisor);
-	else if (0 < exponent && exponent < 31)
-		retval = deFloatPow(2.f, (float)exponent - 15.f) * (1.f + (float)mantissa / (float)divisor);
-	else if (exponent == 31 && mantissa == 0)
-		retval = INFINITY;
-	else if (exponent == 31 && mantissa != 0)
-		retval = NAN;
-	else
-		DE_ASSERT(DE_FALSE && "Invalid exponent and mantissa");
-
-	return retval;
-}
-
-void r11fg11fb10f_to_float3(r11fg11fb10f v, float retval[3])
-{
-	retval[0] = expandFloat(v.field.r, 6);
-	retval[1] = expandFloat(v.field.g, 6);
-	retval[2] = expandFloat(v.field.b, 5);
-}
-
-bool compareRGB9E5(const void* ptr1, const void* ptr2, int num)
-{
-	rgb9e5* data1 = (rgb9e5*)ptr1;
-	rgb9e5* data2 = (rgb9e5*)ptr2;
-
-	float value1[3];
-	float value2[3];
-
-	for (int i = 0; i<num>> 2; ++i)
-	{
-		rgb9e5_to_float3(data1[i], value1);
-		rgb9e5_to_float3(data2[i], value2);
-
-		for (int j = 0; j < 3; ++j)
-		{
-			if (value1[j] != value2[j])
-			{
-				return false;
-			}
-		}
-	}
-	return true;
-}
-
-bool compareR11FG11FB10F(const void* ptr1, const void* ptr2, int num)
-{
-	r11fg11fb10f* data1 = (r11fg11fb10f*)ptr1;
-	r11fg11fb10f* data2 = (r11fg11fb10f*)ptr2;
-
-	float value1[3];
-	float value2[3];
-
-	for (int i = 0; i<num>> 2; ++i)
-	{
-		r11fg11fb10f_to_float3(data1[i], value1);
-		r11fg11fb10f_to_float3(data2[i], value2);
-
-		for (int j = 0; j < 3; ++j)
-		{
-			if (value1[j] != value2[j])
-			{
-				return false;
-			}
-		}
-	}
-	return true;
-}
-
 /** Compare two pixels with memcmp
  *
  * @param left_pixel_size  Size of left pixel
@@ -612,18 +490,9 @@ bool compareR11FG11FB10F(const void* ptr1, const void* ptr2, int num)
  * @return true if memory match, false otherwise
  **/
 bool Utils::comparePixels(GLuint left_pixel_size, const GLubyte* left_pixel_data, GLuint right_pixel_size,
-						  const GLubyte* right_pixel_data, const GLenum format)
+						  const GLubyte* right_pixel_data)
 {
 	const GLuint pixel_size = (left_pixel_size >= right_pixel_size) ? left_pixel_size : right_pixel_size;
-
-	if (format == GL_RGB9_E5)
-	{
-		return compareRGB9E5(left_pixel_data, right_pixel_data, pixel_size);
-	}
-	else if (format == GL_R11F_G11F_B10F)
-	{
-		return compareR11FG11FB10F(left_pixel_data, right_pixel_data, pixel_size);
-	}
 
 	return 0 == memcmp(left_pixel_data, right_pixel_data, pixel_size);
 }
@@ -3088,8 +2957,7 @@ bool FunctionalTest::compareImages(const targetDesc& left_desc, const GLubyte* l
 			const GLubyte* right_pixel_data = right_line_data + right_pixel_offset;
 
 			/* Compare */
-			if (false == Utils::comparePixels(left_pixel_size, left_pixel_data, right_pixel_size, right_pixel_data,
-											  left_desc.m_internal_format))
+			if (false == Utils::comparePixels(left_pixel_size, left_pixel_data, right_pixel_size, right_pixel_data))
 			{
 				if (false == Utils::unpackAndComaprePixels(left_desc.m_format, left_desc.m_type,
 														   left_desc.m_internal_format, left_pixel_data,
@@ -3881,8 +3749,7 @@ bool SmokeTest::compareImages(const testCase& test_case, const GLubyte* left_dat
 			const GLubyte* right_pixel_data = right_line_data + pixel_offset;
 
 			/* Compare */
-			if (false == Utils::comparePixels(pixel_size, left_pixel_data, pixel_size, right_pixel_data,
-											  test_case.m_internal_format))
+			if (false == Utils::comparePixels(pixel_size, left_pixel_data, pixel_size, right_pixel_data))
 			{
 				if (false == Utils::unpackAndComaprePixels(
 								 test_case.m_format, test_case.m_type, test_case.m_internal_format, left_pixel_data,
