@@ -51,21 +51,24 @@ struct TestConfig
 								TestConfig		(const ResourceDescription&						resource_,
 												 OperationName									writeOp_,
 												 OperationName									readOp_,
-												 vk::VkExternalMemoryHandleTypeFlagBitsKHX		memoryHandleType_,
-												 vk::VkExternalSemaphoreHandleTypeFlagBitsKHX	semaphoreHandleType_)
+												 vk::VkExternalMemoryHandleTypeFlagBitsKHR		memoryHandleType_,
+												 vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	semaphoreHandleType_,
+												 bool											dedicated_)
 		: resource				(resource_)
 		, writeOp				(writeOp_)
 		, readOp				(readOp_)
 		, memoryHandleType		(memoryHandleType_)
 		, semaphoreHandleType	(semaphoreHandleType_)
+		, dedicated				(dedicated_)
 	{
 	}
 
 	const ResourceDescription							resource;
 	const OperationName									writeOp;
 	const OperationName									readOp;
-	const vk::VkExternalMemoryHandleTypeFlagBitsKHX		memoryHandleType;
-	const vk::VkExternalSemaphoreHandleTypeFlagBitsKHX	semaphoreHandleType;
+	const vk::VkExternalMemoryHandleTypeFlagBitsKHR		memoryHandleType;
+	const vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	semaphoreHandleType;
+	const bool											dedicated;
 };
 
 bool checkQueueFlags (vk::VkQueueFlags availableFlags, const vk::VkQueueFlags neededFlags)
@@ -152,13 +155,13 @@ bool DeviceId::operator== (const DeviceId& other) const
 DeviceId getDeviceId (const vk::InstanceInterface&	vki,
 					  vk::VkPhysicalDevice			physicalDevice)
 {
-	vk::VkPhysicalDeviceIDPropertiesKHX			propertiesId;
+	vk::VkPhysicalDeviceIDPropertiesKHR			propertiesId;
 	vk::VkPhysicalDeviceProperties2KHR			properties;
 
 	deMemset(&properties, 0, sizeof(properties));
 	deMemset(&propertiesId, 0, sizeof(propertiesId));
 
-	propertiesId.sType	= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHX;
+	propertiesId.sType	= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR;
 
 	properties.sType	= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
 	properties.pNext	= &propertiesId;
@@ -176,8 +179,8 @@ vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface& vkp)
 
 		extensions.push_back("VK_KHR_get_physical_device_properties2");
 
-		extensions.push_back("VK_KHX_external_semaphore_capabilities");
-		extensions.push_back("VK_KHX_external_memory_capabilities");
+		extensions.push_back("VK_KHR_external_semaphore_capabilities");
+		extensions.push_back("VK_KHR_external_memory_capabilities");
 
 		return vk::createDefaultInstance(vkp, std::vector<std::string>(), extensions);
 	}
@@ -214,30 +217,37 @@ vk::VkPhysicalDevice getPhysicalDevice (const vk::InstanceInterface& vki, vk::Vk
 
 vk::Move<vk::VkDevice> createDevice (const vk::InstanceInterface&					vki,
 									 vk::VkPhysicalDevice							physicalDevice,
-									 vk::VkExternalMemoryHandleTypeFlagBitsKHX		memoryHandleType,
-									 vk::VkExternalSemaphoreHandleTypeFlagBitsKHX	semaphoreHandleType)
+									 vk::VkExternalMemoryHandleTypeFlagBitsKHR		memoryHandleType,
+									 vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	semaphoreHandleType,
+									 bool											dedicated)
 {
 	const float										priority				= 0.0f;
 	const std::vector<vk::VkQueueFamilyProperties>	queueFamilyProperties	= vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 	std::vector<deUint32>							queueFamilyIndices		(queueFamilyProperties.size(), 0xFFFFFFFFu);
 	std::vector<const char*>						extensions;
 
-	extensions.push_back("VK_KHX_external_semaphore");
-	extensions.push_back("VK_KHX_external_memory");
+	if (dedicated)
+		extensions.push_back("VK_KHR_dedicated_allocation");
 
-	if (memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHX
-		|| semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_FENCE_FD_BIT_KHX
-		|| semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHX)
+	extensions.push_back("VK_KHR_get_memory_requirements2");
+	extensions.push_back("VK_KHR_external_semaphore");
+	extensions.push_back("VK_KHR_external_memory");
+
+	if (memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR
+		|| semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR
+		|| semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
 	{
-		extensions.push_back("VK_KHX_external_semaphore_fd");
-		extensions.push_back("VK_KHX_external_memory_fd");
+		extensions.push_back("VK_KHR_external_semaphore_fd");
+		extensions.push_back("VK_KHR_external_memory_fd");
 	}
 
-	if (memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHX
-		|| semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHX)
+	if (memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
+		|| memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR
+		|| semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
+		|| semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)
 	{
-		extensions.push_back("VK_KHX_external_semaphore_win32");
-		extensions.push_back("VK_KHX_external_memory_win32");
+		extensions.push_back("VK_KHR_external_semaphore_win32");
+		extensions.push_back("VK_KHR_external_memory_win32");
 	}
 
 	try
@@ -336,11 +346,34 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 de::MovePtr<vk::Allocation> allocateAndBindMemory (const vk::DeviceInterface&					vkd,
 												   vk::VkDevice									device,
 												   vk::VkBuffer									buffer,
-												   vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType)
+												   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+												   bool											dedicated)
 {
-	const vk::VkMemoryRequirements	requirements	= vk::getBufferMemoryRequirements(vkd, device, buffer);
+	const vk::VkBufferMemoryRequirementsInfo2KHR	requirementInfo	=
+	{
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR,
+		DE_NULL,
+		buffer
+	};
+	vk::VkMemoryDedicatedRequirementsKHR			dedicatedRequirements =
+	{
+		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
+		DE_NULL,
+		VK_FALSE,
+		VK_FALSE
+	};
+	vk::VkMemoryRequirements2KHR					requirements	=
+	{
+		vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
+		&dedicatedRequirements,
+		{ 0u, 0u, 0u, }
+	};
+	vkd.getBufferMemoryRequirements2KHR(device, &requirementInfo, &requirements);
 
-	vk::Move<vk::VkDeviceMemory> memory = allocateExportableMemory(vkd, device, requirements, externalType);
+	if (!dedicated && dedicatedRequirements.requiresDedicatedAllocation)
+		TCU_THROW(NotSupportedError, "Memory requires dedicated allocation");
+
+	vk::Move<vk::VkDeviceMemory> memory = allocateExportableMemory(vkd, device, requirements.memoryRequirements, externalType, dedicated ? buffer : (vk::VkBuffer)0);
 	VK_CHECK(vkd.bindBufferMemory(device, buffer, *memory, 0u));
 
 	return de::MovePtr<vk::Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
@@ -349,11 +382,34 @@ de::MovePtr<vk::Allocation> allocateAndBindMemory (const vk::DeviceInterface&			
 de::MovePtr<vk::Allocation> allocateAndBindMemory (const vk::DeviceInterface&					vkd,
 												   vk::VkDevice									device,
 												   vk::VkImage									image,
-												   vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType)
+												   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+												   bool											dedicated)
 {
-	const vk::VkMemoryRequirements	requirements	= vk::getImageMemoryRequirements(vkd, device, image);
+	const vk::VkImageMemoryRequirementsInfo2KHR	requirementInfo	=
+	{
+		vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,
+		DE_NULL,
+		image
+	};
+	vk::VkMemoryDedicatedRequirementsKHR			dedicatedRequirements =
+	{
+		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
+		DE_NULL,
+		VK_FALSE,
+		VK_FALSE
+	};
+	vk::VkMemoryRequirements2KHR					requirements	=
+	{
+		vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
+		&dedicatedRequirements,
+		{ 0u, 0u, 0u, }
+	};
+	vkd.getImageMemoryRequirements2KHR(device, &requirementInfo, &requirements);
 
-	vk::Move<vk::VkDeviceMemory> memory = allocateExportableMemory(vkd, device, requirements, externalType);
+	if (!dedicated && dedicatedRequirements.requiresDedicatedAllocation)
+		TCU_THROW(NotSupportedError, "Memomry requires dedicated allocation");
+
+	vk::Move<vk::VkDeviceMemory> memory = allocateExportableMemory(vkd, device, requirements.memoryRequirements, externalType, dedicated ? image : (vk::VkImage)0);
 	VK_CHECK(vkd.bindImageMemory(device, image, *memory, 0u));
 
 	return de::MovePtr<vk::Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
@@ -365,7 +421,8 @@ de::MovePtr<Resource> createResource (const vk::DeviceInterface&				vkd,
 									  const std::vector<deUint32>&				queueFamilyIndices,
 									  const OperationSupport&					readOp,
 									  const OperationSupport&					writeOp,
-									  vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType)
+									  vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+									  bool										dedicated)
 {
 	if (resourceDesc.type == RESOURCE_TYPE_IMAGE)
 	{
@@ -390,11 +447,11 @@ de::MovePtr<Resource> createResource (const vk::DeviceInterface&				vkd,
 			0u,
 			1u
 		};
-		const vk::VkExternalMemoryImageCreateInfoKHX externalInfo =
+		const vk::VkExternalMemoryImageCreateInfoKHR externalInfo =
 		{
-			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHX,
+			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
 			DE_NULL,
-			(vk::VkExternalMemoryHandleTypeFlagsKHX)externalType
+			(vk::VkExternalMemoryHandleTypeFlagsKHR)externalType
 		};
 		const vk::VkImageCreateInfo			createInfo				=
 		{
@@ -418,7 +475,7 @@ de::MovePtr<Resource> createResource (const vk::DeviceInterface&				vkd,
 		};
 
 		vk::Move<vk::VkImage>			image		= vk::createImage(vkd, device, &createInfo);
-		de::MovePtr<vk::Allocation>		allocation	= allocateAndBindMemory(vkd, device, *image, externalType);
+		de::MovePtr<vk::Allocation>		allocation	= allocateAndBindMemory(vkd, device, *image, externalType, dedicated);
 
 		return de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
 	}
@@ -427,11 +484,11 @@ de::MovePtr<Resource> createResource (const vk::DeviceInterface&				vkd,
 		const vk::VkDeviceSize							offset			= 0u;
 		const vk::VkDeviceSize							size			= static_cast<vk::VkDeviceSize>(resourceDesc.size.x());
 		const vk::VkBufferUsageFlags					usage			= readOp.getResourceUsageFlags() | writeOp.getResourceUsageFlags();
-		const vk:: VkExternalMemoryBufferCreateInfoKHX	externalInfo	=
+		const vk:: VkExternalMemoryBufferCreateInfoKHR	externalInfo	=
 		{
-			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO_KHX,
+			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO_KHR,
 			DE_NULL,
-			(vk::VkExternalMemoryHandleTypeFlagsKHX)externalType
+			(vk::VkExternalMemoryHandleTypeFlagsKHR)externalType
 		};
 		const vk::VkBufferCreateInfo					createInfo		=
 		{
@@ -446,7 +503,7 @@ de::MovePtr<Resource> createResource (const vk::DeviceInterface&				vkd,
 			&queueFamilyIndices[0]
 		};
 		vk::Move<vk::VkBuffer>		buffer		= vk::createBuffer(vkd, device, &createInfo);
-		de::MovePtr<vk::Allocation>	allocation	= allocateAndBindMemory(vkd, device, *buffer, externalType);
+		de::MovePtr<vk::Allocation>	allocation	= allocateAndBindMemory(vkd, device, *buffer, externalType, dedicated);
 
 		return de::MovePtr<Resource>(new Resource(resourceDesc.type, buffer, allocation, offset, size));
 	}
@@ -456,25 +513,30 @@ de::MovePtr<vk::Allocation> importAndBindMemory (const vk::DeviceInterface&					
 												 vk::VkDevice								device,
 												 vk::VkBuffer								buffer,
 												 NativeHandle&								nativeHandle,
-												 vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType)
+												 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+												 bool										dedicated)
 {
 	const vk::VkMemoryRequirements	requirements	= vk::getBufferMemoryRequirements(vkd, device, buffer);
+	vk::Move<vk::VkDeviceMemory>	memory			= dedicated
+													? importDedicatedMemory(vkd, device, buffer, requirements, externalType, nativeHandle)
+													: importMemory(vkd, device, requirements, externalType, nativeHandle);
 
-	vk::Move<vk::VkDeviceMemory> memory = importMemory(vkd, device, requirements, externalType, nativeHandle);
 	VK_CHECK(vkd.bindBufferMemory(device, buffer, *memory, 0u));
 
 	return de::MovePtr<vk::Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
 }
 
 de::MovePtr<vk::Allocation> importAndBindMemory (const vk::DeviceInterface&					vkd,
-												   vk::VkDevice									device,
-												   vk::VkImage									image,
-												   NativeHandle&								nativeHandle,
-												   vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType)
+												 vk::VkDevice								device,
+												 vk::VkImage								image,
+												 NativeHandle&								nativeHandle,
+												 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+												 bool										dedicated)
 {
-	const vk::VkMemoryRequirements				requirements		= vk::getImageMemoryRequirements(vkd, device, image);
-
-	vk::Move<vk::VkDeviceMemory> memory = importMemory(vkd, device, requirements, externalType, nativeHandle);
+	const vk::VkMemoryRequirements	requirements	= vk::getImageMemoryRequirements(vkd, device, image);
+	vk::Move<vk::VkDeviceMemory>	memory			= dedicated
+													? importDedicatedMemory(vkd, device, image, requirements, externalType, nativeHandle)
+													: importMemory(vkd, device, requirements, externalType, nativeHandle);
 	VK_CHECK(vkd.bindImageMemory(device, image, *memory, 0u));
 
 	return de::MovePtr<vk::Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
@@ -487,7 +549,8 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 									  const OperationSupport&					readOp,
 									  const OperationSupport&					writeOp,
 									  NativeHandle&								nativeHandle,
-									  vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType)
+									  vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+									  bool										dedicated)
 {
 	if (resourceDesc.type == RESOURCE_TYPE_IMAGE)
 	{
@@ -512,11 +575,11 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			0u,
 			1u
 		};
-		const vk:: VkExternalMemoryImageCreateInfoKHX externalInfo =
+		const vk:: VkExternalMemoryImageCreateInfoKHR externalInfo =
 		{
-			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHX,
+			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
 			DE_NULL,
-			(vk::VkExternalMemoryHandleTypeFlagsKHX)externalType
+			(vk::VkExternalMemoryHandleTypeFlagsKHR)externalType
 		};
 		const vk::VkImageCreateInfo			createInfo				=
 		{
@@ -540,7 +603,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 		};
 
 		vk::Move<vk::VkImage>			image		= vk::createImage(vkd, device, &createInfo);
-		de::MovePtr<vk::Allocation>		allocation	= importAndBindMemory(vkd, device, *image, nativeHandle, externalType);
+		de::MovePtr<vk::Allocation>		allocation	= importAndBindMemory(vkd, device, *image, nativeHandle, externalType, dedicated);
 
 		return de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
 	}
@@ -549,11 +612,11 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 		const vk::VkDeviceSize							offset			= 0u;
 		const vk::VkDeviceSize							size			= static_cast<vk::VkDeviceSize>(resourceDesc.size.x());
 		const vk::VkBufferUsageFlags					usage			= readOp.getResourceUsageFlags() | writeOp.getResourceUsageFlags();
-		const vk:: VkExternalMemoryBufferCreateInfoKHX	externalInfo	=
+		const vk:: VkExternalMemoryBufferCreateInfoKHR	externalInfo	=
 		{
-			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO_KHX,
+			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO_KHR,
 			DE_NULL,
-			(vk::VkExternalMemoryHandleTypeFlagsKHX)externalType
+			(vk::VkExternalMemoryHandleTypeFlagsKHR)externalType
 		};
 		const vk::VkBufferCreateInfo					createInfo		=
 		{
@@ -568,7 +631,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			&queueFamilyIndices[0]
 		};
 		vk::Move<vk::VkBuffer>		buffer		= vk::createBuffer(vkd, device, &createInfo);
-		de::MovePtr<vk::Allocation>	allocation	= importAndBindMemory(vkd, device, *buffer, nativeHandle, externalType);
+		de::MovePtr<vk::Allocation>	allocation	= importAndBindMemory(vkd, device, *buffer, nativeHandle, externalType, dedicated);
 
 		return de::MovePtr<Resource>(new Resource(resourceDesc.type, buffer, allocation, offset, size));
 	}
@@ -603,7 +666,7 @@ void recordWriteBarrier (const vk::DeviceInterface&	vkd,
 			readSync.imageLayout,
 
 			writeQueueFamilyIndex,
-			VK_QUEUE_FAMILY_EXTERNAL_KHX,
+			VK_QUEUE_FAMILY_EXTERNAL_KHR,
 
 			resource.getImage().handle,
 			resource.getImage().subresourceRange
@@ -622,7 +685,7 @@ void recordWriteBarrier (const vk::DeviceInterface&	vkd,
 			dstAccessMask,
 
 			writeQueueFamilyIndex,
-			VK_QUEUE_FAMILY_EXTERNAL_KHX,
+			VK_QUEUE_FAMILY_EXTERNAL_KHR,
 
 			resource.getBuffer().handle,
 			0u,
@@ -661,7 +724,7 @@ void recordReadBarrier (const vk::DeviceInterface&	vkd,
 			writeSync.imageLayout,
 			readSync.imageLayout,
 
-			VK_QUEUE_FAMILY_EXTERNAL_KHX,
+			VK_QUEUE_FAMILY_EXTERNAL_KHR,
 			readQueueFamilyIndex,
 
 			resource.getImage().handle,
@@ -680,7 +743,7 @@ void recordReadBarrier (const vk::DeviceInterface&	vkd,
 			srcAccessMask,
 			dstAccessMask,
 
-			VK_QUEUE_FAMILY_EXTERNAL_KHX,
+			VK_QUEUE_FAMILY_EXTERNAL_KHR,
 			readQueueFamilyIndex,
 
 			resource.getBuffer().handle,
@@ -733,8 +796,8 @@ private:
 	const vk::Unique<vk::VkDevice>						m_deviceB;
 	const vk::DeviceDriver								m_vkdB;
 
-	const vk::VkExternalSemaphoreHandleTypeFlagBitsKHX	m_semaphoreHandleType;
-	const vk::VkExternalMemoryHandleTypeFlagBitsKHX		m_memoryHandleType;
+	const vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	m_semaphoreHandleType;
+	const vk::VkExternalMemoryHandleTypeFlagBitsKHR		m_memoryHandleType;
 
 	// \todo Should this be moved to the group same way as in the other tests?
 	PipelineCacheData									m_pipelineCacheData;
@@ -756,7 +819,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_physicalDeviceA			(getPhysicalDevice(m_vkiA, *m_instanceA, context.getTestContext().getCommandLine()))
 	, m_queueFamiliesA			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
 	, m_queueFamilyIndicesA		(getFamilyIndices(m_queueFamiliesA))
-	, m_deviceA					(createDevice(m_vkiA, m_physicalDeviceA, m_config.memoryHandleType, m_config.semaphoreHandleType))
+	, m_deviceA					(createDevice(m_vkiA, m_physicalDeviceA, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated))
 	, m_vkdA					(m_vkiA, *m_deviceA)
 
 	, m_instanceB				(createInstance(context.getPlatformInterface()))
@@ -765,7 +828,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_physicalDeviceB			(getPhysicalDevice(m_vkiB, *m_instanceB, getDeviceId(m_vkiA, m_physicalDeviceA)))
 	, m_queueFamiliesB			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiB, m_physicalDeviceB))
 	, m_queueFamilyIndicesB		(getFamilyIndices(m_queueFamiliesB))
-	, m_deviceB					(createDevice(m_vkiB, m_physicalDeviceB, m_config.memoryHandleType, m_config.semaphoreHandleType))
+	, m_deviceB					(createDevice(m_vkiB, m_physicalDeviceB, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated))
 	, m_vkdB					(m_vkiB, *m_deviceB)
 
 	, m_semaphoreHandleType		(m_config.semaphoreHandleType)
@@ -780,9 +843,9 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	// Check resource support
 	if (m_config.resource.type == RESOURCE_TYPE_IMAGE)
 	{
-		const vk::VkPhysicalDeviceExternalImageFormatInfoKHX	externalInfo		=
+		const vk::VkPhysicalDeviceExternalImageFormatInfoKHR	externalInfo		=
 		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHX,
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHR,
 			DE_NULL,
 			m_memoryHandleType
 		};
@@ -796,9 +859,9 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 			m_supportReadOp->getResourceUsageFlags() | m_supportWriteOp->getResourceUsageFlags(),
 			0u
 		};
-		vk::VkExternalImageFormatPropertiesKHX			externalProperties	=
+		vk::VkExternalImageFormatPropertiesKHR			externalProperties	=
 		{
-			vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHX,
+			vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHR,
 			DE_NULL,
 			{ 0u, 0u, 0u }
 		};
@@ -815,63 +878,65 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 			}
 		};
 
-		vk::VkResult result = m_vkiA.getPhysicalDeviceImageFormatProperties2KHR(m_physicalDeviceA, &imageFormatInfo, &formatProperties);
-		if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Unsupported image format");
+		{
+			const vk::VkResult res = m_vkiA.getPhysicalDeviceImageFormatProperties2KHR(m_physicalDeviceA, &imageFormatInfo, &formatProperties);
 
-		VK_CHECK(result);
+			if (res == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+				TCU_THROW(NotSupportedError, "Image format not supported");
 
-		// \todo How to log this nicely?
+			VK_CHECK(res); // Check other errors
+		}
+
 		log << TestLog::Message << "External image format properties: " << imageFormatInfo << "\n"<< externalProperties << TestLog::EndMessage;
 
-		if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHX) == 0)
+		if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR) == 0)
 			TCU_THROW(NotSupportedError, "Exporting image resource not supported");
 
-		if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHX) == 0)
+		if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
 			TCU_THROW(NotSupportedError, "Importing image resource not supported");
 	}
 	else
 	{
-		const vk::VkPhysicalDeviceExternalBufferInfoKHX	info	=
+		const vk::VkPhysicalDeviceExternalBufferInfoKHR	info	=
 		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO_KHX,
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO_KHR,
 			DE_NULL,
 
 			0u,
 			m_supportReadOp->getResourceUsageFlags() | m_supportWriteOp->getResourceUsageFlags(),
 			m_memoryHandleType
 		};
-		vk::VkExternalBufferPropertiesKHX				properties			=
+		vk::VkExternalBufferPropertiesKHR				properties			=
 		{
-			vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES_KHX,
+			vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES_KHR,
 			DE_NULL,
 			{ 0u, 0u, 0u}
 		};
-		m_vkiA.getPhysicalDeviceExternalBufferPropertiesKHX(m_physicalDeviceA, &info, &properties);
+		m_vkiA.getPhysicalDeviceExternalBufferPropertiesKHR(m_physicalDeviceA, &info, &properties);
 
 		log << TestLog::Message << "External buffer properties: " << info << "\n" << properties << TestLog::EndMessage;
 
-		if ((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHX) == 0
-				|| (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHX) == 0)
+		if ((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR) == 0
+				|| (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
 			TCU_THROW(NotSupportedError, "Exporting and importing memory type not supported");
 	}
 
 	// Check semaphore support
 	{
-		const vk::VkPhysicalDeviceExternalSemaphoreInfoKHX	info		=
+		const vk::VkPhysicalDeviceExternalSemaphoreInfoKHR	info		=
 		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO_KHX,
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO_KHR,
 			DE_NULL,
 			m_semaphoreHandleType
 		};
-		vk::VkExternalSemaphorePropertiesKHX				properties;
+		vk::VkExternalSemaphorePropertiesKHR				properties;
 
-		m_vkiA.getPhysicalDeviceExternalSemaphorePropertiesKHX(m_physicalDeviceA, &info, &properties);
+		m_vkiA.getPhysicalDeviceExternalSemaphorePropertiesKHR(m_physicalDeviceA, &info, &properties);
 
 		log << TestLog::Message << info << "\n" << properties << TestLog::EndMessage;
 
-		if ((properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT_KHX) == 0
-				|| (properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT_KHX) == 0)
+		if ((properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT_KHR) == 0
+				|| (properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT_KHR) == 0)
 			TCU_THROW(NotSupportedError, "Exporting and importing semaphore type not supported");
 	}
 }
@@ -880,18 +945,25 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 {
 	TestLog&								log					(m_context.getTestContext().getLog());
 
+	const deUint32							queueFamilyA		= (deUint32)m_queueANdx;
+	const deUint32							queueFamilyB		= (deUint32)m_queueBNdx;
+
+	const tcu::ScopedLogSection				queuePairSection	(log,
+																	"WriteQueue-" + de::toString(queueFamilyA) + "-ReadQueue-" + de::toString(queueFamilyB),
+																	"WriteQueue-" + de::toString(queueFamilyA) + "-ReadQueue-" + de::toString(queueFamilyB));
+
+	const vk::Unique<vk::VkSemaphore>		semaphoreA			(createExportableSemaphore(m_vkdA, *m_deviceA, m_semaphoreHandleType));
+	const vk::Unique<vk::VkSemaphore>		semaphoreB			(createSemaphore(m_vkdB, *m_deviceB));
+
+	const de::UniquePtr<Resource>			resourceA			(createResource(m_vkdA, *m_deviceA, m_config.resource, m_queueFamilyIndicesA, *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType, m_config.dedicated));
+
+	NativeHandle							nativeMemoryHandle;
+	getMemoryNative(m_vkdA, *m_deviceA, resourceA->getMemory(), m_memoryHandleType, nativeMemoryHandle);
+
+	const de::UniquePtr<Resource>			resourceB			(importResource(m_vkdB, *m_deviceB, m_config.resource, m_queueFamilyIndicesB, *m_supportReadOp, *m_supportWriteOp, nativeMemoryHandle, m_memoryHandleType, m_config.dedicated));
+
 	try
 	{
-		const deUint32							queueFamilyA		= (deUint32)m_queueANdx;
-		const deUint32							queueFamilyB		= (deUint32)m_queueBNdx;
-
-		const tcu::ScopedLogSection				queuePairSection	(log,
-																	 "WriteQueue-" + de::toString(queueFamilyA) + "-ReadQueue-" + de::toString(queueFamilyB),
-																	 "WriteQueue-" + de::toString(queueFamilyA) + "-ReadQueue-" + de::toString(queueFamilyB));
-
-		const vk::Unique<vk::VkSemaphore>		semaphoreA			(createExportableSemaphore(m_vkdA, *m_deviceA, m_semaphoreHandleType));
-		const vk::Unique<vk::VkSemaphore>		semaphoreB			(createSemaphore(m_vkdB, *m_deviceB));
-
 		const vk::VkQueue						queueA				(getQueue(m_vkdA, *m_deviceA, queueFamilyA));
 		const vk::Unique<vk::VkCommandPool>		commandPoolA		(createCommandPool(m_vkdA, *m_deviceA, queueFamilyA));
 		const vk::Unique<vk::VkCommandBuffer>	commandBufferA		(createCommandBuffer(m_vkdA, *m_deviceA, *commandPoolA));
@@ -901,8 +973,6 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 
 		if (!checkQueueFlags(m_queueFamiliesA[m_queueANdx].queueFlags , m_supportWriteOp->getQueueFlags(operationContextA)))
 			TCU_THROW(NotSupportedError, "Operation not supported by the source queue");
-
-		const de::UniquePtr<Resource>			resourceA			(createResource(m_vkdA, *m_deviceA, m_config.resource, m_queueFamilyIndicesA, *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType));
 
 		const vk::VkQueue						queueB				(getQueue(m_vkdB, *m_deviceB, queueFamilyB));
 		const vk::Unique<vk::VkCommandPool>		commandPoolB		(createCommandPool(m_vkdB, *m_deviceB, queueFamilyB));
@@ -914,24 +984,11 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 		if (!checkQueueFlags(m_queueFamiliesB[m_queueBNdx].queueFlags , m_supportReadOp->getQueueFlags(operationContextB)))
 			TCU_THROW(NotSupportedError, "Operation not supported by the destination queue");
 
-		NativeHandle							nativeMemoryHandle;
-		getMemoryNative(m_vkdA, *m_deviceA, resourceA->getMemory(), m_memoryHandleType, nativeMemoryHandle);
-
-		const de::UniquePtr<Resource>			resourceB			(importResource(m_vkdB, *m_deviceB, m_config.resource, m_queueFamilyIndicesB, *m_supportReadOp, *m_supportWriteOp, nativeMemoryHandle, m_memoryHandleType));
-
 		const de::UniquePtr<Operation>			writeOp				(m_supportWriteOp->build(operationContextA, *resourceA));
 		const de::UniquePtr<Operation>			readOp				(m_supportReadOp->build(operationContextB, *resourceB));
 
 		const SyncInfo							writeSync			= writeOp->getSyncInfo();
 		const SyncInfo							readSync			= readOp->getSyncInfo();
-
-		if (getHandleTypePermanence(m_semaphoreHandleType) == PERMANENCE_PERMANENT)
-		{
-			NativeHandle	nativeSemaphoreHandle;
-
-			getSemaphoreNative(m_vkdA, *m_deviceA, *semaphoreA, m_semaphoreHandleType, nativeSemaphoreHandle);
-			importSemaphore(m_vkdB, *m_deviceB, *semaphoreB, m_semaphoreHandleType, nativeSemaphoreHandle);
-		}
 
 		beginCommandBuffer(m_vkdA, *commandBufferA);
 		writeOp->recordCommands(*commandBufferA);
@@ -963,12 +1020,11 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 
 			VK_CHECK(m_vkdA.queueSubmit(queueA, 1u, &submitInfo, DE_NULL));
 
-			if (getHandleTypePermanence(m_semaphoreHandleType) == PERMANENCE_TEMPORARY)
 			{
 				NativeHandle	nativeSemaphoreHandle;
 
 				getSemaphoreNative(m_vkdA, *m_deviceA, *semaphoreA, m_semaphoreHandleType, nativeSemaphoreHandle);
-				importSemaphore(m_vkdB, *m_deviceB, *semaphoreB, m_semaphoreHandleType, nativeSemaphoreHandle);
+				importSemaphore(m_vkdB, *m_deviceB, *semaphoreB, m_semaphoreHandleType, nativeSemaphoreHandle, 0u);
 			}
 		}
 		{
@@ -1098,59 +1154,72 @@ tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx)
 {
 	const struct
 	{
-		vk::VkExternalMemoryHandleTypeFlagBitsKHX		memoryType;
-		vk::VkExternalSemaphoreHandleTypeFlagBitsKHX	semaphoreType;
+		vk::VkExternalMemoryHandleTypeFlagBitsKHR		memoryType;
+		vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	semaphoreType;
 		const char*										nameSuffix;
 	} cases[] =
 	{
 		{
-			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHX,
-			vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHX,
+			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
+			vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
 			"_fd"
 		},
 		{
-			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHX,
-			vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_FENCE_FD_BIT_KHX,
+			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
+			vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR,
 			"_fence_fd"
 		},
 		{
-			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHX,
-			vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHX,
+			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR,
+			vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR,
+			"_win32_kmt"
+		},
+		{
+			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,
+			vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,
 			"_win32"
 		},
 	};
 	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "cross_instance", ""));
 
-	for (size_t writeOpNdx = 0; writeOpNdx < DE_LENGTH_OF_ARRAY(s_writeOps); ++writeOpNdx)
-	for (size_t readOpNdx = 0; readOpNdx < DE_LENGTH_OF_ARRAY(s_readOps); ++readOpNdx)
+	for (size_t dedicatedNdx = 0; dedicatedNdx < 2; dedicatedNdx++)
 	{
-		const OperationName	writeOp		= s_writeOps[writeOpNdx];
-		const OperationName	readOp		= s_readOps[readOpNdx];
-		const std::string	opGroupName	= getOperationName(writeOp) + "_" + getOperationName(readOp);
-		bool				empty		= true;
+		const bool						dedicated		(dedicatedNdx == 1);
+		de::MovePtr<tcu::TestCaseGroup>	dedicatedGroup	(new tcu::TestCaseGroup(testCtx, dedicated ? "dedicated" : "suballocated", ""));
 
-		de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(testCtx, opGroupName.c_str(), ""));
-
-		for (size_t resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
+		for (size_t writeOpNdx = 0; writeOpNdx < DE_LENGTH_OF_ARRAY(s_writeOps); ++writeOpNdx)
+		for (size_t readOpNdx = 0; readOpNdx < DE_LENGTH_OF_ARRAY(s_readOps); ++readOpNdx)
 		{
-			const ResourceDescription&	resource	= s_resources[resourceNdx];
+			const OperationName	writeOp		= s_writeOps[writeOpNdx];
+			const OperationName	readOp		= s_readOps[readOpNdx];
+			const std::string	opGroupName	= getOperationName(writeOp) + "_" + getOperationName(readOp);
+			bool				empty		= true;
 
-			for (size_t caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
+			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(testCtx, opGroupName.c_str(), ""));
+
+			for (size_t resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
-				std::string	name= getResourceName(resource) + cases[caseNdx].nameSuffix;
+				const ResourceDescription&	resource	= s_resources[resourceNdx];
 
-				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
+				for (size_t caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
 				{
-					const TestConfig config (resource, writeOp, readOp, cases[caseNdx].memoryType, cases[caseNdx].semaphoreType);
+					std::string	name= getResourceName(resource) + cases[caseNdx].nameSuffix;
 
-					opGroup->addChild(new InstanceFactory1<SharingTestInstance, TestConfig, Progs>(testCtx, tcu::NODETYPE_SELF_VALIDATE,  name, "", Progs(), config));
-					empty = false;
+					if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
+					{
+						const TestConfig config (resource, writeOp, readOp, cases[caseNdx].memoryType, cases[caseNdx].semaphoreType, dedicated);
+
+						opGroup->addChild(new InstanceFactory1<SharingTestInstance, TestConfig, Progs>(testCtx, tcu::NODETYPE_SELF_VALIDATE,  name, "", Progs(), config));
+						empty = false;
+					}
 				}
 			}
+
+			if (!empty)
+				dedicatedGroup->addChild(opGroup.release());
 		}
 
-		if (!empty)
-			group->addChild(opGroup.release());
+		group->addChild(dedicatedGroup.release());
 	}
 
 	return group.release();

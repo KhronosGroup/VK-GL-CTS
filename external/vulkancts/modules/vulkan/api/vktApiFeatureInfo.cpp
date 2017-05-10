@@ -657,6 +657,8 @@ void checkInstanceExtensions (tcu::ResultCollector& results, const vector<string
 		"VK_KHR_xlib_surface",
 		"VK_KHR_get_physical_device_properties2",
 		"VK_KHR_get_surface_capabilities2",
+		"VK_KHR_external_memory_capabilities",
+		"VK_KHR_external_semaphore_capabilities",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedInstanceKhrExtensions), s_allowedInstanceKhrExtensions);
@@ -677,6 +679,12 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_incremental_present",
 		"VK_KHR_shared_presentable_image",
 		"VK_KHR_storage_buffer_storage_class",
+		"VK_KHR_external_memory",
+		"VK_KHR_external_memory_fd",
+		"VK_KHR_external_memory_win32",
+		"VK_KHR_external_semaphore",
+		"VK_KHR_external_semaphore_fd",
+		"VK_KHR_external_semaphore_win32",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);

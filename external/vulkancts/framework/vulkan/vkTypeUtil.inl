@@ -404,9 +404,9 @@ inline VkDescriptorUpdateTemplateEntryKHR makeDescriptorUpdateTemplateEntryKHR (
 	return res;
 }
 
-inline VkExternalMemoryPropertiesKHX makeExternalMemoryPropertiesKHX (VkExternalMemoryFeatureFlagsKHX externalMemoryFeatures, VkExternalMemoryHandleTypeFlagsKHX exportFromImportedHandleTypes, VkExternalMemoryHandleTypeFlagsKHX compatibleHandleTypes)
+inline VkExternalMemoryPropertiesKHR makeExternalMemoryPropertiesKHR (VkExternalMemoryFeatureFlagsKHR externalMemoryFeatures, VkExternalMemoryHandleTypeFlagsKHR exportFromImportedHandleTypes, VkExternalMemoryHandleTypeFlagsKHR compatibleHandleTypes)
 {
-	VkExternalMemoryPropertiesKHX res;
+	VkExternalMemoryPropertiesKHR res;
 	res.externalMemoryFeatures			= externalMemoryFeatures;
 	res.exportFromImportedHandleTypes	= exportFromImportedHandleTypes;
 	res.compatibleHandleTypes			= compatibleHandleTypes;

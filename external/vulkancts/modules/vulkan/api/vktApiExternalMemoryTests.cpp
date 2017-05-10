@@ -49,6 +49,7 @@
 #if (DE_OS == DE_OS_WIN32)
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
+#	include <Dxgi1_2.h>
 #endif
 
 using tcu::TestLog;
@@ -60,6 +61,65 @@ namespace api
 {
 namespace
 {
+
+vk::VkMemoryDedicatedRequirementsKHR getMemoryDedicatedRequirements (const vk::DeviceInterface&	vkd,
+																	 vk::VkDevice				device,
+																	 vk::VkBuffer				buffer)
+{
+	const vk::VkBufferMemoryRequirementsInfo2KHR	requirementInfo			=
+	{
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR,
+		DE_NULL,
+		buffer
+	};
+	vk::VkMemoryDedicatedRequirementsKHR			dedicatedRequirements	=
+	{
+		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
+		DE_NULL,
+		VK_FALSE,
+		VK_FALSE
+	};
+	vk::VkMemoryRequirements2KHR					requirements			=
+	{
+		vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
+		&dedicatedRequirements,
+		{ 0u, 0u, 0u }
+	};
+
+	vkd.getBufferMemoryRequirements2KHR(device, &requirementInfo, &requirements);
+
+	return dedicatedRequirements;
+}
+
+vk::VkMemoryDedicatedRequirementsKHR getMemoryDedicatedRequirements (const vk::DeviceInterface&	vkd,
+																	 vk::VkDevice				device,
+																	 vk::VkImage				image)
+{
+	const vk::VkImageMemoryRequirementsInfo2KHR	requirementInfo			=
+	{
+		vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,
+		DE_NULL,
+		image
+	};
+	vk::VkMemoryDedicatedRequirementsKHR		dedicatedRequirements	=
+	{
+		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
+		DE_NULL,
+		VK_FALSE,
+		VK_FALSE
+	};
+	vk::VkMemoryRequirements2KHR				requirements			=
+	{
+		vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
+		&dedicatedRequirements,
+		{ 0u, 0u, 0u }
+	};
+
+	vkd.getImageMemoryRequirements2KHR(device, &requirementInfo, &requirements);
+
+	return dedicatedRequirements;
+}
+
 void writeHostMemory (const vk::DeviceInterface&	vkd,
 					  vk::VkDevice					device,
 					  vk::VkDeviceMemory			memory,
@@ -116,18 +176,18 @@ deUint32 chooseQueueFamilyIndex (const vk::InstanceInterface&	vki,
 }
 
 vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface&						vkp,
-										 const vk::VkExternalSemaphoreHandleTypeFlagsKHX	externalSemaphoreTypes,
-										 const vk::VkExternalMemoryHandleTypeFlagsKHX		externalMemoryTypes)
+										 const vk::VkExternalSemaphoreHandleTypeFlagsKHR	externalSemaphoreTypes,
+										 const vk::VkExternalMemoryHandleTypeFlagsKHR		externalMemoryTypes)
 {
 	std::vector<std::string> instanceExtensions;
 
 	instanceExtensions.push_back("VK_KHR_get_physical_device_properties2");
 
 	if (externalSemaphoreTypes != 0)
-		instanceExtensions.push_back("VK_KHX_external_semaphore_capabilities");
+		instanceExtensions.push_back("VK_KHR_external_semaphore_capabilities");
 
 	if (externalMemoryTypes != 0)
-		instanceExtensions.push_back("VK_KHX_external_memory_capabilities");
+		instanceExtensions.push_back("VK_KHR_external_memory_capabilities");
 
 	try
 	{
@@ -144,42 +204,49 @@ vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface&						vkp,
 
 vk::Move<vk::VkDevice> createDevice (const vk::InstanceInterface&						vki,
 									 vk::VkPhysicalDevice								physicalDevice,
-									 const vk::VkExternalSemaphoreHandleTypeFlagsKHX	externalSemaphoreTypes,
-									 const vk::VkExternalMemoryHandleTypeFlagsKHX		externalMemoryTypes,
-									 deUint32											queueFamilyIndex)
+									 const vk::VkExternalSemaphoreHandleTypeFlagsKHR	externalSemaphoreTypes,
+									 const vk::VkExternalMemoryHandleTypeFlagsKHR		externalMemoryTypes,
+									 deUint32											queueFamilyIndex,
+									 bool												useDedicatedAllocs = false)
 {
 	std::vector<const char*>	deviceExtensions;
 
 	if ((externalSemaphoreTypes
-			& (vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_FENCE_FD_BIT_KHX
-				| vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHX)) != 0)
+			& (vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR
+				| vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)) != 0)
 	{
-		deviceExtensions.push_back("VK_KHX_external_semaphore_fd");
+		deviceExtensions.push_back("VK_KHR_external_semaphore_fd");
+	}
+
+	if (useDedicatedAllocs)
+	{
+		deviceExtensions.push_back("VK_KHR_dedicated_allocation");
+		deviceExtensions.push_back("VK_KHR_get_memory_requirements2");
 	}
 
 	if ((externalMemoryTypes
-			& vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHX) != 0)
+			& vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR) != 0)
 	{
-		deviceExtensions.push_back("VK_KHX_external_memory_fd");
+		deviceExtensions.push_back("VK_KHR_external_memory_fd");
 	}
 
 	if ((externalSemaphoreTypes
-			& (vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHX
-				| vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT_KHX
-				| vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHX)) != 0)
+			& (vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
+				| vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT_KHR
+				| vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)) != 0)
 	{
-		deviceExtensions.push_back("VK_KHX_external_semaphore_win32");
+		deviceExtensions.push_back("VK_KHR_external_semaphore_win32");
 	}
 
 	if ((externalMemoryTypes
-			& (vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHX
-			   | vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHX
-			   | vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT_KHX
-			   | vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT_KHX
-			   | vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT_KHX
-			   | vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT_KHX)) != 0)
+			& (vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
+			   | vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR
+			   | vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT_KHR
+			   | vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT_KHR
+			   | vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT_KHR
+			   | vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT_KHR)) != 0)
 	{
-		deviceExtensions.push_back("VK_KHX_external_memory_win32");
+		deviceExtensions.push_back("VK_KHR_external_memory_win32");
 	}
 
 	const float								priority				= 0.5f;
@@ -238,75 +305,80 @@ vk::VkQueue getQueue (const vk::DeviceInterface&	vkd,
 
 void checkSemaphoreSupport (const vk::InstanceInterface&					vki,
 							vk::VkPhysicalDevice							device,
-							vk::VkExternalSemaphoreHandleTypeFlagBitsKHX	externalType)
+							vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType)
 {
-	const vk::VkPhysicalDeviceExternalSemaphoreInfoKHX	info			=
+	const vk::VkPhysicalDeviceExternalSemaphoreInfoKHR	info			=
 	{
-		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO_KHX,
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO_KHR,
 		DE_NULL,
 		externalType
 	};
-	vk::VkExternalSemaphorePropertiesKHX				properties	=
+	vk::VkExternalSemaphorePropertiesKHR				properties	=
 	{
-		vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES_KHX,
+		vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES_KHR,
 		DE_NULL,
 		0u,
 		0u,
 		0u
 	};
 
-	vki.getPhysicalDeviceExternalSemaphorePropertiesKHX(device, &info, &properties);
+	vki.getPhysicalDeviceExternalSemaphorePropertiesKHR(device, &info, &properties);
 
-	if ((properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT_KHX) == 0)
+	if ((properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT_KHR) == 0)
 		TCU_THROW(NotSupportedError, "Semaphore doesn't support exporting in external type");
 
-	if ((properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT_KHX) == 0)
+	if ((properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT_KHR) == 0)
 		TCU_THROW(NotSupportedError, "Semaphore doesn't support exporting in external type");
 }
 
 void checkBufferSupport (const vk::InstanceInterface&				vki,
 						 vk::VkPhysicalDevice						device,
-						 vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType,
+						 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
 						 vk::VkBufferViewCreateFlags				createFlag,
-						 vk::VkBufferUsageFlags						usageFlag)
+						 vk::VkBufferUsageFlags						usageFlag,
+						 bool										dedicated)
 {
-	const vk::VkPhysicalDeviceExternalBufferInfoKHX	info			=
+	const vk::VkPhysicalDeviceExternalBufferInfoKHR	info			=
 	{
-		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO_KHX,
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO_KHR,
 		DE_NULL,
 
 		createFlag,
 		usageFlag,
 		externalType
 	};
-	vk::VkExternalBufferPropertiesKHX				properties		=
+	vk::VkExternalBufferPropertiesKHR				properties		=
 	{
-		vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES_KHX,
+		vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES_KHR,
 		DE_NULL,
 
 		{ 0u, 0u, 0u }
 	};
 
-	vki.getPhysicalDeviceExternalBufferPropertiesKHX(device, &info, &properties);
+	vki.getPhysicalDeviceExternalBufferPropertiesKHR(device, &info, &properties);
 
-	if ((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHX) == 0)
+	if ((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR) == 0)
 		TCU_THROW(NotSupportedError, "External handle type doesn't support exporting buffer");
 
-	if ((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHX) == 0)
+	if ((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
 		TCU_THROW(NotSupportedError, "External handle type doesn't support importing buffer");
+
+	if (!dedicated && (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR) != 0)
+		TCU_THROW(NotSupportedError, "External handle type requires dedicated allocation");
 }
 
 void checkImageSupport (const vk::InstanceInterface&				vki,
 						 vk::VkPhysicalDevice						device,
-						 vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType,
+						 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
 						 vk::VkImageViewCreateFlags					createFlag,
 						 vk::VkImageUsageFlags						usageFlag,
 						 vk::VkFormat								format,
-						 vk::VkImageTiling							tiling)
+						 vk::VkImageTiling							tiling,
+						 bool										dedicated)
 {
-	const vk::VkPhysicalDeviceExternalImageFormatInfoKHX	externalInfo	=
+	const vk::VkPhysicalDeviceExternalImageFormatInfoKHR	externalInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHX,
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHR,
 		DE_NULL,
 		externalType
 	};
@@ -321,9 +393,9 @@ void checkImageSupport (const vk::InstanceInterface&				vki,
 		usageFlag,
 		createFlag,
 	};
-	vk::VkExternalImageFormatPropertiesKHX					externalProperties	=
+	vk::VkExternalImageFormatPropertiesKHR					externalProperties	=
 	{
-		vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHX,
+		vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHR,
 		DE_NULL,
 		{ 0u, 0u, 0u }
 	};
@@ -342,11 +414,14 @@ void checkImageSupport (const vk::InstanceInterface&				vki,
 
 	vki.getPhysicalDeviceImageFormatProperties2KHR(device, &info, &properties);
 
-	if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHX) == 0)
+	if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR) == 0)
 		TCU_THROW(NotSupportedError, "External handle type doesn't support exporting image");
 
-	if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHX) == 0)
+	if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
 		TCU_THROW(NotSupportedError, "External handle type doesn't support importing image");
+
+	if (!dedicated && (externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR) != 0)
+		TCU_THROW(NotSupportedError, "External handle type requires dedicated allocation");
 }
 
 void submitDummySignal (const vk::DeviceInterface&	vkd,
@@ -396,7 +471,7 @@ void submitDummyWait (const vk::DeviceInterface&	vkd,
 	VK_CHECK(vkd.queueSubmit(queue, 1, &submit, (vk::VkFence)0u));
 }
 
-tcu::TestStatus testSemaphoreQueries (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testSemaphoreQueries (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHR externalType)
 {
 	const vk::PlatformInterface&		vkp				(context.getPlatformInterface());
 	const vk::Unique<vk::VkInstance>	instance		(createInstance(vkp, externalType, 0u));
@@ -405,67 +480,154 @@ tcu::TestStatus testSemaphoreQueries (Context& context, vk::VkExternalSemaphoreH
 
 	TestLog&							log				= context.getTestContext().getLog();
 
-	const vk::VkPhysicalDeviceExternalSemaphoreInfoKHX	info			=
+	const vk::VkPhysicalDeviceExternalSemaphoreInfoKHR	info			=
 	{
-		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO_KHX,
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO_KHR,
 		DE_NULL,
 		externalType
 	};
-	vk::VkExternalSemaphorePropertiesKHX				properties	=
+	vk::VkExternalSemaphorePropertiesKHR				properties	=
 	{
-		vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES_KHX,
+		vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES_KHR,
 		DE_NULL,
 		0u,
 		0u,
 		0u
 	};
 
-	vki.getPhysicalDeviceExternalSemaphorePropertiesKHX(device, &info, &properties);
+	vki.getPhysicalDeviceExternalSemaphorePropertiesKHR(device, &info, &properties);
 	log << TestLog::Message << properties << TestLog::EndMessage;
 
 	TCU_CHECK(properties.pNext == DE_NULL);
-	TCU_CHECK(properties.sType == vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES_KHX);
+	TCU_CHECK(properties.sType == vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES_KHR);
 
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus testSemaphoreImportTwice (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+struct SemaphoreTestConfig
 {
+													SemaphoreTestConfig	(vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType_,
+																		 Permanence										permanence_)
+		: externalType		(externalType_)
+		, permanence		(permanence_)
+	{
+	}
+
+	vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType;
+	Permanence										permanence;
+};
+
+tcu::TestStatus testSemaphoreWin32Create (Context&					context,
+										  const SemaphoreTestConfig	config)
+{
+#if (DE_OS == DE_OS_WIN32)
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device			(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
-		const vk::DeviceDriver				vkd				(vki, *device);
-		const vk::VkQueue					queue			(getQueue(vkd, *device, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>					device			(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::DeviceDriver							vkd				(vki, *device);
+		const vk::VkQueue								queue			(getQueue(vkd, *device, queueFamilyIndex));
+		const vk::VkExportSemaphoreWin32HandleInfoKHR	win32ExportInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR,
+			DE_NULL,
 
-		const vk::Unique<vk::VkSemaphore>	semaphore		(createExportableSemaphore(vkd, *device, externalType));
+			(vk::pt::Win32SecurityAttributesPtr)DE_NULL,
+			DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
+			DE_NULL
+		};
+		const vk::VkExportSemaphoreCreateInfoKHR		exportCreateInfo=
+		{
+			vk::VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR,
+			&win32ExportInfo,
+			(vk::VkExternalMemoryHandleTypeFlagsKHR)config.externalType
+		};
+		const vk::VkSemaphoreCreateInfo					createInfo		=
+		{
+			vk::VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+			&exportCreateInfo,
+			0u
+		};
+		const vk::Unique<vk::VkSemaphore>				semaphore		(vk::createSemaphore(vkd, *device, &createInfo));
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+		if (transference == TRANSFERENCE_COPY)
 			submitDummySignal(vkd, queue, *semaphore);
 
 		NativeHandle						handleA;
-		getSemaphoreNative(vkd, *device, *semaphore, externalType, handleA);
+		getSemaphoreNative(vkd, *device, *semaphore, config.externalType, handleA);
+
+		{
+			const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
+			const vk::Unique<vk::VkSemaphore>	semaphoreA	(createAndImportSemaphore(vkd, *device, config.externalType, handleA, flags));
+
+			if (transference == TRANSFERENCE_COPY)
+				submitDummyWait(vkd, queue, *semaphoreA);
+			else if (transference == TRANSFERENCE_REFERENCE)
+			{
+				submitDummySignal(vkd, queue, *semaphore);
+				submitDummyWait(vkd, queue, *semaphoreA);
+			}
+			else
+				DE_FATAL("Unknown transference.");
+
+			VK_CHECK(vkd.queueWaitIdle(queue));
+		}
+
+		return tcu::TestStatus::pass("Pass");
+	}
+#else
+	DE_UNREF(context);
+	DE_UNREF(config);
+	TCU_THROW(NotSupportedError, "Platform doesn't support win32 handles");
+#endif
+}
+
+tcu::TestStatus testSemaphoreImportTwice (Context&					context,
+										  const SemaphoreTestConfig	config)
+{
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::Unique<vk::VkDevice>		device			(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::DeviceDriver				vkd				(vki, *device);
+		const vk::VkQueue					queue			(getQueue(vkd, *device, queueFamilyIndex));
+		const vk::Unique<vk::VkSemaphore>	semaphore		(createExportableSemaphore(vkd, *device, config.externalType));
+
+		if (transference == TRANSFERENCE_COPY)
+			submitDummySignal(vkd, queue, *semaphore);
+
+		NativeHandle						handleA;
+		getSemaphoreNative(vkd, *device, *semaphore, config.externalType, handleA);
 
 		{
 			NativeHandle						handleB		(handleA);
-			const vk::Unique<vk::VkSemaphore>	semaphoreA	(createAndImportSemaphore(vkd, *device, externalType, handleA));
-			const vk::Unique<vk::VkSemaphore>	semaphoreB	(createAndImportSemaphore(vkd, *device, externalType, handleB));
+			const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
+			const vk::Unique<vk::VkSemaphore>	semaphoreA	(createAndImportSemaphore(vkd, *device, config.externalType, handleA, flags));
+			const vk::Unique<vk::VkSemaphore>	semaphoreB	(createAndImportSemaphore(vkd, *device, config.externalType, handleB, flags));
 
-			if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+			if (transference == TRANSFERENCE_COPY)
 				submitDummyWait(vkd, queue, *semaphoreA);
-			else if (getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT)
+			else if (transference == TRANSFERENCE_REFERENCE)
 			{
 				submitDummySignal(vkd, queue, *semaphoreA);
 				submitDummyWait(vkd, queue, *semaphoreB);
 			}
 			else
-				DE_FATAL("Unknow permanence.");
+				DE_FATAL("Unknown transference.");
 
 			VK_CHECK(vkd.queueWaitIdle(queue));
 		}
@@ -474,43 +636,46 @@ tcu::TestStatus testSemaphoreImportTwice (Context& context, vk::VkExternalSemaph
 	}
 }
 
-tcu::TestStatus testSemaphoreImportReimport (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testSemaphoreImportReimport (Context&					context,
+											 const SemaphoreTestConfig	config)
 {
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device			(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device			(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd				(vki, *device);
 		const vk::VkQueue					queue			(getQueue(vkd, *device, queueFamilyIndex));
 
-		const vk::Unique<vk::VkSemaphore>	semaphoreA		(createExportableSemaphore(vkd, *device, externalType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreA		(createExportableSemaphore(vkd, *device, config.externalType));
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+		if (transference == TRANSFERENCE_COPY)
 			submitDummySignal(vkd, queue, *semaphoreA);
 
 		NativeHandle						handleA;
-		getSemaphoreNative(vkd, *device, *semaphoreA, externalType, handleA);
+		getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handleA);
 
 		NativeHandle						handleB		(handleA);
-		const vk::Unique<vk::VkSemaphore>	semaphoreB	(createAndImportSemaphore(vkd, *device, externalType, handleA));
+		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkSemaphore>	semaphoreB	(createAndImportSemaphore(vkd, *device, config.externalType, handleA, flags));
 
-		importSemaphore(vkd, *device, *semaphoreB, externalType, handleB);
+		importSemaphore(vkd, *device, *semaphoreB, config.externalType, handleB, flags);
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+		if (transference == TRANSFERENCE_COPY)
 			submitDummyWait(vkd, queue, *semaphoreB);
-		else if (getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT)
+		else if (transference == TRANSFERENCE_REFERENCE)
 		{
 			submitDummySignal(vkd, queue, *semaphoreA);
 			submitDummyWait(vkd, queue, *semaphoreB);
 		}
 		else
-			DE_FATAL("Unknow permanence.");
+			DE_FATAL("Unknown transference.");
 
 		VK_CHECK(vkd.queueWaitIdle(queue));
 
@@ -518,33 +683,33 @@ tcu::TestStatus testSemaphoreImportReimport (Context& context, vk::VkExternalSem
 	}
 }
 
-tcu::TestStatus testSemaphoreSignalExportImportWait (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testSemaphoreSignalExportImportWait (Context&					context,
+													 const SemaphoreTestConfig	config)
 {
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device				(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device				(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd					(vki, *device);
 		const vk::VkQueue					queue				(getQueue(vkd, *device, queueFamilyIndex));
-
-		const vk::Unique<vk::VkSemaphore>	semaphoreA			(createExportableSemaphore(vkd, *device, externalType));
-
+		const vk::Unique<vk::VkSemaphore>	semaphoreA			(createExportableSemaphore(vkd, *device, config.externalType));
 
 		submitDummySignal(vkd, queue, *semaphoreA);
 
 		{
 			NativeHandle	handle;
 
-			getSemaphoreNative(vkd, *device, *semaphoreA, externalType, handle);
+			getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handle);
 
 			{
-				const vk::Unique<vk::VkSemaphore>	semaphoreB	(createAndImportSemaphore(vkd, *device, externalType, handle));
+				const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
+				const vk::Unique<vk::VkSemaphore>	semaphoreB	(createAndImportSemaphore(vkd, *device, config.externalType, handle, flags));
 				submitDummyWait(vkd, queue, *semaphoreB);
 
 				VK_CHECK(vkd.queueWaitIdle(queue));
@@ -555,31 +720,33 @@ tcu::TestStatus testSemaphoreSignalExportImportWait (Context& context, vk::VkExt
 	}
 }
 
-tcu::TestStatus testSemaphoreExportSignalImportWait (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testSemaphoreExportSignalImportWait (Context&					context,
+													 const SemaphoreTestConfig	config)
 {
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+	const vk::VkSemaphoreImportFlagsKHR	flags				= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
 
-	DE_ASSERT(getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT);
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
+	DE_ASSERT(getHandelTypeTransferences(config.externalType) == TRANSFERENCE_REFERENCE);
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device				(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device				(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd					(vki, *device);
 		const vk::VkQueue					queue				(getQueue(vkd, *device, queueFamilyIndex));
 
-		const vk::Unique<vk::VkSemaphore>	semaphoreA			(createExportableSemaphore(vkd, *device, externalType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreA			(createExportableSemaphore(vkd, *device, config.externalType));
 		NativeHandle						handle;
 
-		getSemaphoreNative(vkd, *device, *semaphoreA, externalType, handle);
+		getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handle);
 
 		submitDummySignal(vkd, queue, *semaphoreA);
 		{
 			{
-				const vk::Unique<vk::VkSemaphore>	semaphoreB	(createAndImportSemaphore(vkd, *device, externalType, handle));
+				const vk::Unique<vk::VkSemaphore>	semaphoreB	(createAndImportSemaphore(vkd, *device, config.externalType, handle, flags));
 
 				submitDummyWait(vkd, queue, *semaphoreB);
 				VK_CHECK(vkd.queueWaitIdle(queue));
@@ -590,28 +757,30 @@ tcu::TestStatus testSemaphoreExportSignalImportWait (Context& context, vk::VkExt
 	}
 }
 
-tcu::TestStatus testSemaphoreExportImportSignalWait (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testSemaphoreExportImportSignalWait (Context&					context,
+													 const SemaphoreTestConfig	config)
 {
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	DE_ASSERT(getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT);
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
+	DE_ASSERT(getHandelTypeTransferences(config.externalType) == TRANSFERENCE_REFERENCE);
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device				(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
-		const vk::DeviceDriver				vkd					(vki, *device);
-		const vk::VkQueue					queue				(getQueue(vkd, *device, queueFamilyIndex));
+		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::DeviceDriver				vkd			(vki, *device);
+		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
-		const vk::Unique<vk::VkSemaphore>	semaphoreA			(createExportableSemaphore(vkd, *device, externalType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
 		NativeHandle						handle;
 
-		getSemaphoreNative(vkd, *device, *semaphoreA, externalType, handle);
+		getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handle);
 
-		const vk::Unique<vk::VkSemaphore>	semaphoreB	(createAndImportSemaphore(vkd, *device, externalType, handle));
+		const vk::Unique<vk::VkSemaphore>	semaphoreB	(createAndImportSemaphore(vkd, *device, config.externalType, handle, flags));
 
 		submitDummySignal(vkd, queue, *semaphoreA);
 		submitDummyWait(vkd, queue, *semaphoreB);
@@ -622,91 +791,47 @@ tcu::TestStatus testSemaphoreExportImportSignalWait (Context& context, vk::VkExt
 	}
 }
 
-tcu::TestStatus testSemaphoreSignalImport (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testSemaphoreSignalImport (Context&						context,
+										   const SemaphoreTestConfig	config)
 {
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device				(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
-		const vk::DeviceDriver				vkd					(vki, *device);
-		const vk::VkQueue					queue				(getQueue(vkd, *device, queueFamilyIndex));
-
-		const vk::Unique<vk::VkSemaphore>	semaphoreA			(createExportableSemaphore(vkd, *device, externalType));
-		const vk::Unique<vk::VkSemaphore>	semaphoreB			(createSemaphore(vkd, *device));
-		NativeHandle						handle;
-
-		submitDummySignal(vkd, queue, *semaphoreB);
-		VK_CHECK(vkd.queueWaitIdle(queue));
-
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
-			submitDummySignal(vkd, queue, *semaphoreA);
-
-		getSemaphoreNative(vkd, *device, *semaphoreA, externalType, handle);
-
-		importSemaphore(vkd, *device, *semaphoreB, externalType, handle);
-
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
-			submitDummyWait(vkd, queue, *semaphoreB);
-		else if (getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT)
-		{
-			submitDummySignal(vkd, queue, *semaphoreA);
-			submitDummyWait(vkd, queue, *semaphoreB);
-		}
-		else
-			DE_FATAL("Unknow permanence.");
-
-		VK_CHECK(vkd.queueWaitIdle(queue));
-
-		return tcu::TestStatus::pass("Pass");
-	}
-}
-
-tcu::TestStatus testSemaphoreSignalWaitImport (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
-{
-	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
-	const vk::InstanceDriver			vki					(vkp, *instance);
-	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
-	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
-
-	{
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
+		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
-		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, externalType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
 		const vk::Unique<vk::VkSemaphore>	semaphoreB	(createSemaphore(vkd, *device));
 		NativeHandle						handle;
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
-			submitDummySignal(vkd, queue, *semaphoreA);
-
-		getSemaphoreNative(vkd, *device, *semaphoreA, externalType, handle);
-
 		submitDummySignal(vkd, queue, *semaphoreB);
-		submitDummyWait(vkd, queue, *semaphoreB);
-
 		VK_CHECK(vkd.queueWaitIdle(queue));
 
-		importSemaphore(vkd, *device, *semaphoreB, externalType, handle);
+		if (transference == TRANSFERENCE_COPY)
+			submitDummySignal(vkd, queue, *semaphoreA);
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+		getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handle);
+
+		importSemaphore(vkd, *device, *semaphoreB, config.externalType, handle, flags);
+
+		if (transference == TRANSFERENCE_COPY)
 			submitDummyWait(vkd, queue, *semaphoreB);
-		else if (getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT)
+		else if (transference == TRANSFERENCE_REFERENCE)
 		{
 			submitDummySignal(vkd, queue, *semaphoreA);
 			submitDummyWait(vkd, queue, *semaphoreB);
 		}
 		else
-			DE_FATAL("Unknow permanence.");
+			DE_FATAL("Unknown transference.");
 
 		VK_CHECK(vkd.queueWaitIdle(queue));
 
@@ -714,41 +839,87 @@ tcu::TestStatus testSemaphoreSignalWaitImport (Context& context, vk::VkExternalS
 	}
 }
 
-tcu::TestStatus testSemaphoreMultipleExports (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testSemaphoreSignalWaitImport (Context&						context,
+											   const SemaphoreTestConfig	config)
 {
-	const size_t						exportCount			= 4 * 1024;
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
+		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
-		const vk::Unique<vk::VkSemaphore>	semaphore	(createExportableSemaphore(vkd, *device, externalType));
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
-			submitDummySignal(vkd, queue, *semaphore);
+		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreB	(createSemaphore(vkd, *device));
+		NativeHandle						handle;
+
+		if (transference == TRANSFERENCE_COPY)
+			submitDummySignal(vkd, queue, *semaphoreA);
+
+		getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handle);
+
+		submitDummySignal(vkd, queue, *semaphoreB);
+		submitDummyWait(vkd, queue, *semaphoreB);
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+
+		importSemaphore(vkd, *device, *semaphoreB, config.externalType, handle, flags);
+
+		if (transference == TRANSFERENCE_COPY)
+			submitDummyWait(vkd, queue, *semaphoreB);
+		else if (transference == TRANSFERENCE_REFERENCE)
+		{
+			submitDummySignal(vkd, queue, *semaphoreA);
+			submitDummyWait(vkd, queue, *semaphoreB);
+		}
+		else
+			DE_FATAL("Unknown transference.");
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+
+		return tcu::TestStatus::pass("Pass");
+	}
+}
+
+tcu::TestStatus testSemaphoreMultipleExports (Context&					context,
+											  const SemaphoreTestConfig	config)
+{
+	const size_t						exportCount			= 4 * 1024;
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::DeviceDriver				vkd			(vki, *device);
+		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
+		const vk::Unique<vk::VkSemaphore>	semaphore	(createExportableSemaphore(vkd, *device, config.externalType));
 
 		for (size_t exportNdx = 0; exportNdx < exportCount; exportNdx++)
 		{
 			NativeHandle handle;
-			getSemaphoreNative(vkd, *device, *semaphore, externalType, handle);
+
+			if (transference == TRANSFERENCE_COPY)
+				submitDummySignal(vkd, queue, *semaphore);
+
+			getSemaphoreNative(vkd, *device, *semaphore, config.externalType, handle);
 		}
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
-			submitDummyWait(vkd, queue, *semaphore);
-		else if (getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT)
-		{
-			submitDummySignal(vkd, queue, *semaphore);
-			submitDummyWait(vkd, queue, *semaphore);
-		}
-		else
-			DE_FATAL("Unknow permanence.");
+		submitDummySignal(vkd, queue, *semaphore);
+		submitDummyWait(vkd, queue, *semaphore);
 
 		VK_CHECK(vkd.queueWaitIdle(queue));
 	}
@@ -756,44 +927,50 @@ tcu::TestStatus testSemaphoreMultipleExports (Context& context, vk::VkExternalSe
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus testSemaphoreMultipleImports (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testSemaphoreMultipleImports (Context&					context,
+											  const SemaphoreTestConfig	config)
 {
 	const size_t						importCount			= 4 * 1024;
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
+		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
-		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, externalType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
 		NativeHandle						handleA;
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+		if (transference == TRANSFERENCE_COPY)
 			submitDummySignal(vkd, queue, *semaphoreA);
 
-		getSemaphoreNative(vkd, *device, *semaphoreA, externalType, handleA);
+		getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handleA);
 
 		for (size_t importNdx = 0; importNdx < importCount; importNdx++)
 		{
 			NativeHandle						handleB		(handleA);
-			const vk::Unique<vk::VkSemaphore>	semaphoreB	(createAndImportSemaphore(vkd, *device, externalType, handleB));
+			const vk::Unique<vk::VkSemaphore>	semaphoreB	(createAndImportSemaphore(vkd, *device, config.externalType, handleB, flags));
 		}
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+		if (transference == TRANSFERENCE_COPY)
+		{
+			importSemaphore(vkd, *device, *semaphoreA, config.externalType, handleA, flags);
 			submitDummyWait(vkd, queue, *semaphoreA);
-		else if (getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT)
+		}
+		else if (transference == TRANSFERENCE_REFERENCE)
 		{
 			submitDummySignal(vkd, queue, *semaphoreA);
 			submitDummyWait(vkd, queue, *semaphoreA);
 		}
 		else
-			DE_FATAL("Unknow permanence.");
+			DE_FATAL("Unknown transference.");
 
 		VK_CHECK(vkd.queueWaitIdle(queue));
 	}
@@ -801,86 +978,127 @@ tcu::TestStatus testSemaphoreMultipleImports (Context& context, vk::VkExternalSe
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus testSemaphorePermanence (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testSemaphoreTransference (Context&						context,
+										   const SemaphoreTestConfig	config)
 {
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device				(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
-		const vk::DeviceDriver				vkd					(vki, *device);
-		const vk::VkQueue					queue				(getQueue(vkd, *device, queueFamilyIndex));
+		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::DeviceDriver				vkd			(vki, *device);
+		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
-		const vk::Unique<vk::VkSemaphore>	semaphoreA			(createExportableSemaphore(vkd, *device, externalType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
 		NativeHandle						handle;
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
-			submitDummySignal(vkd, queue, *semaphoreA);
+		submitDummySignal(vkd, queue, *semaphoreA);
 
-		getSemaphoreNative(vkd, *device, *semaphoreA, externalType, handle);
+		getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handle);
 
 		{
-			const vk::Unique<vk::VkSemaphore>	semaphoreB			(createAndImportSemaphore(vkd, *device, externalType, handle));
+			const vk::Unique<vk::VkSemaphore>	semaphoreB			(createAndImportSemaphore(vkd, *device, config.externalType, handle, flags));
 
-			if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+			if (config.permanence == PERMANENCE_PERMANENT)
 			{
-				submitDummyWait(vkd, queue, *semaphoreB);
-				VK_CHECK(vkd.queueWaitIdle(queue));
+				if (transference == TRANSFERENCE_COPY)
+				{
+					submitDummySignal(vkd, queue, *semaphoreA);
+					submitDummyWait(vkd, queue, *semaphoreB);
+					VK_CHECK(vkd.queueWaitIdle(queue));
 
-				submitDummySignal(vkd, queue, *semaphoreA);
-				submitDummySignal(vkd, queue, *semaphoreB);
+					submitDummySignal(vkd, queue, *semaphoreB);
 
-				submitDummyWait(vkd, queue, *semaphoreA);
-				submitDummyWait(vkd, queue, *semaphoreB);
-				VK_CHECK(vkd.queueWaitIdle(queue));
+					submitDummyWait(vkd, queue, *semaphoreA);
+					submitDummyWait(vkd, queue, *semaphoreB);
+					VK_CHECK(vkd.queueWaitIdle(queue));
+				}
+				else if (transference== TRANSFERENCE_REFERENCE)
+				{
+					submitDummyWait(vkd, queue, *semaphoreB);
+					VK_CHECK(vkd.queueWaitIdle(queue));
+
+					submitDummySignal(vkd, queue, *semaphoreA);
+					submitDummyWait(vkd, queue, *semaphoreB);
+
+					submitDummySignal(vkd, queue, *semaphoreB);
+					submitDummyWait(vkd, queue, *semaphoreA);
+					VK_CHECK(vkd.queueWaitIdle(queue));
+				}
+				else
+					DE_FATAL("Unknown transference.");
 			}
-			else if (getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT)
+			else if (config.permanence == PERMANENCE_TEMPORARY)
 			{
-				submitDummySignal(vkd, queue, *semaphoreA);
-				submitDummyWait(vkd, queue, *semaphoreB);
-				VK_CHECK(vkd.queueWaitIdle(queue));
+				if (transference == TRANSFERENCE_COPY)
+				{
+					submitDummySignal(vkd, queue, *semaphoreA);
+					submitDummyWait(vkd, queue, *semaphoreB);
+					VK_CHECK(vkd.queueWaitIdle(queue));
 
-				submitDummySignal(vkd, queue, *semaphoreB);
-				submitDummyWait(vkd, queue, *semaphoreA);
-				VK_CHECK(vkd.queueWaitIdle(queue));
+					submitDummySignal(vkd, queue, *semaphoreB);
+
+					submitDummyWait(vkd, queue, *semaphoreA);
+					submitDummyWait(vkd, queue, *semaphoreB);
+					VK_CHECK(vkd.queueWaitIdle(queue));
+				}
+				else if (transference== TRANSFERENCE_REFERENCE)
+				{
+					submitDummyWait(vkd, queue, *semaphoreB);
+					VK_CHECK(vkd.queueWaitIdle(queue));
+
+					submitDummySignal(vkd, queue, *semaphoreA);
+					submitDummySignal(vkd, queue, *semaphoreB);
+
+					submitDummyWait(vkd, queue, *semaphoreB);
+					submitDummyWait(vkd, queue, *semaphoreA);
+					VK_CHECK(vkd.queueWaitIdle(queue));
+				}
+				else
+					DE_FATAL("Unknown transference.");
 			}
 			else
-				DE_FATAL("Unknow permanence.");
+				DE_FATAL("Unknown permanence.");
 		}
 
 		return tcu::TestStatus::pass("Pass");
 	}
 }
 
-tcu::TestStatus testSemaphoreFdDup (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testSemaphoreFdDup (Context&					context,
+									const SemaphoreTestConfig	config)
 {
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
+		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
 		TestLog&							log			= context.getTestContext().getLog();
-		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, externalType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+		if (transference == TRANSFERENCE_COPY)
 			submitDummySignal(vkd, queue, *semaphoreA);
 
 		{
-			const NativeHandle	fd		(getSemaphoreFd(vkd, *device, *semaphoreA, externalType));
+			const NativeHandle	fd		(getSemaphoreFd(vkd, *device, *semaphoreA, config.externalType));
 			NativeHandle		newFd	(dup(fd.getFd()));
 
 			if (newFd.getFd() < 0)
@@ -889,17 +1107,17 @@ tcu::TestStatus testSemaphoreFdDup (Context& context, vk::VkExternalSemaphoreHan
 			TCU_CHECK_MSG(newFd.getFd() >= 0, "Failed to call dup() for semaphores fd");
 
 			{
-				const vk::Unique<vk::VkSemaphore> semaphoreB (createAndImportSemaphore(vkd, *device, externalType, newFd));
+				const vk::Unique<vk::VkSemaphore> semaphoreB (createAndImportSemaphore(vkd, *device, config.externalType, newFd, flags));
 
-				if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+				if (transference == TRANSFERENCE_COPY)
 					submitDummyWait(vkd, queue, *semaphoreB);
-				else if (getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT)
+				else if (transference == TRANSFERENCE_REFERENCE)
 				{
 					submitDummySignal(vkd, queue, *semaphoreA);
 					submitDummyWait(vkd, queue, *semaphoreB);
 				}
 				else
-					DE_FATAL("Unknow permanence.");
+					DE_FATAL("Unknown permanence.");
 			}
 		}
 
@@ -909,36 +1127,43 @@ tcu::TestStatus testSemaphoreFdDup (Context& context, vk::VkExternalSemaphoreHan
 	}
 #else
 	DE_UNREF(context);
-	DE_UNREF(externalType);
+	DE_UNREF(config);
 	TCU_THROW(NotSupportedError, "Platform doesn't support dup()");
 #endif
 }
 
-tcu::TestStatus testSemaphoreFdDup2 (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testSemaphoreFdDup2 (Context&					context,
+									 const SemaphoreTestConfig	config)
 {
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
+		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
 		TestLog&							log			= context.getTestContext().getLog();
-		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, externalType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreB	(createExportableSemaphore(vkd, *device, config.externalType));
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+		if (transference == TRANSFERENCE_COPY)
+		{
 			submitDummySignal(vkd, queue, *semaphoreA);
+			submitDummySignal(vkd, queue, *semaphoreB);
+		}
 
 		{
-			const NativeHandle	fd			(getSemaphoreFd(vkd, *device, *semaphoreA, externalType));
-			NativeHandle		secondFd	(getSemaphoreFd(vkd, *device, *semaphoreA, externalType));
+			const NativeHandle	fd			(getSemaphoreFd(vkd, *device, *semaphoreA, config.externalType));
+			NativeHandle		secondFd	(getSemaphoreFd(vkd, *device, *semaphoreB, config.externalType));
 			int					newFd		(dup2(fd.getFd(), secondFd.getFd()));
 
 			if (newFd < 0)
@@ -947,17 +1172,17 @@ tcu::TestStatus testSemaphoreFdDup2 (Context& context, vk::VkExternalSemaphoreHa
 			TCU_CHECK_MSG(newFd >= 0, "Failed to call dup2() for semaphores fd");
 
 			{
-				const vk::Unique<vk::VkSemaphore> semaphoreB (createAndImportSemaphore(vkd, *device, externalType, secondFd));
+				const vk::Unique<vk::VkSemaphore> semaphoreC (createAndImportSemaphore(vkd, *device, config.externalType, secondFd, flags));
 
-				if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
-					submitDummyWait(vkd, queue, *semaphoreB);
-				else if (getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT)
+				if (transference == TRANSFERENCE_COPY)
+					submitDummyWait(vkd, queue, *semaphoreC);
+				else if (transference == TRANSFERENCE_REFERENCE)
 				{
 					submitDummySignal(vkd, queue, *semaphoreA);
-					submitDummyWait(vkd, queue, *semaphoreB);
+					submitDummyWait(vkd, queue, *semaphoreC);
 				}
 				else
-					DE_FATAL("Unknow permanence.");
+					DE_FATAL("Unknown permanence.");
 			}
 		}
 
@@ -967,37 +1192,44 @@ tcu::TestStatus testSemaphoreFdDup2 (Context& context, vk::VkExternalSemaphoreHa
 	}
 #else
 	DE_UNREF(context);
-	DE_UNREF(externalType);
+	DE_UNREF(config);
 	TCU_THROW(NotSupportedError, "Platform doesn't support dup2()");
 #endif
 }
 
-tcu::TestStatus testSemaphoreFdDup3 (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testSemaphoreFdDup3 (Context&					context,
+									 const SemaphoreTestConfig	config)
 {
 #if (DE_OS == DE_OS_UNIX) && defined(_GNU_SOURCE)
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
 		TestLog&							log			= context.getTestContext().getLog();
-		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, externalType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreB	(createExportableSemaphore(vkd, *device, config.externalType));
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+		if (transference == TRANSFERENCE_COPY)
+		{
 			submitDummySignal(vkd, queue, *semaphoreA);
+			submitDummySignal(vkd, queue, *semaphoreB);
+		}
 
 		{
-			const NativeHandle	fd			(getSemaphoreFd(vkd, *device, *semaphoreA, externalType));
-			NativeHandle		secondFd	(getSemaphoreFd(vkd, *device, *semaphoreA, externalType));
-			const int			newFd		(dup3(fd.getFd(), secondFd.getFd(), 0));
+			const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
+			const NativeHandle					fd			(getSemaphoreFd(vkd, *device, *semaphoreA, config.externalType));
+			NativeHandle						secondFd	(getSemaphoreFd(vkd, *device, *semaphoreB, config.externalType));
+			const int							newFd		(dup3(fd.getFd(), secondFd.getFd(), 0));
 
 			if (newFd < 0)
 				log << TestLog::Message << "dup3() failed: '" << strerror(errno) << "'" << TestLog::EndMessage;
@@ -1005,17 +1237,17 @@ tcu::TestStatus testSemaphoreFdDup3 (Context& context, vk::VkExternalSemaphoreHa
 			TCU_CHECK_MSG(newFd >= 0, "Failed to call dup3() for semaphores fd");
 
 			{
-				const vk::Unique<vk::VkSemaphore> semaphoreB (createAndImportSemaphore(vkd, *device, externalType, secondFd));
+				const vk::Unique<vk::VkSemaphore> semaphoreC (createAndImportSemaphore(vkd, *device, config.externalType, secondFd, flags));
 
-				if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
-					submitDummyWait(vkd, queue, *semaphoreB);
-				else if (getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT)
+				if (transference == TRANSFERENCE_COPY)
+					submitDummyWait(vkd, queue, *semaphoreC);
+				else if (transference == TRANSFERENCE_REFERENCE)
 				{
 					submitDummySignal(vkd, queue, *semaphoreA);
-					submitDummyWait(vkd, queue, *semaphoreB);
+					submitDummyWait(vkd, queue, *semaphoreC);
 				}
 				else
-					DE_FATAL("Unknow permanence.");
+					DE_FATAL("Unknown permanence.");
 			}
 		}
 
@@ -1025,34 +1257,36 @@ tcu::TestStatus testSemaphoreFdDup3 (Context& context, vk::VkExternalSemaphoreHa
 	}
 #else
 	DE_UNREF(context);
-	DE_UNREF(externalType);
+	DE_UNREF(config);
 	TCU_THROW(NotSupportedError, "Platform doesn't support dup3()");
 #endif
 }
 
-tcu::TestStatus testSemaphoreFdSendOverSocket (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testSemaphoreFdSendOverSocket (Context&						context,
+											   const SemaphoreTestConfig	config)
 {
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	checkSemaphoreSupport(vki, physicalDevice, externalType);
+	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
 		TestLog&							log			= context.getTestContext().getLog();
-		const vk::Unique<vk::VkSemaphore>	semaphore	(createExportableSemaphore(vkd, *device, externalType));
+		const vk::Unique<vk::VkSemaphore>	semaphore	(createExportableSemaphore(vkd, *device, config.externalType));
 
-		if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+		if (transference == TRANSFERENCE_COPY)
 			submitDummySignal(vkd, queue, *semaphore);
 
-		const NativeHandle	fd	(getSemaphoreFd(vkd, *device, *semaphore, externalType));
+		const NativeHandle	fd	(getSemaphoreFd(vkd, *device, *semaphore, config.externalType));
 
 		{
 			int sv[2];
@@ -1126,10 +1360,11 @@ tcu::TestStatus testSemaphoreFdSendOverSocket (Context& context, vk::VkExternalS
 					}
 					else
 					{
-						const cmsghdr* const	cmsg	= CMSG_FIRSTHDR(&msg);
-						int						newFd_;
+						const vk::VkSemaphoreImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
+						const cmsghdr* const				cmsg	= CMSG_FIRSTHDR(&msg);
+						int									newFd_;
 						deMemcpy(&newFd_, CMSG_DATA(cmsg), sizeof(int));
-						NativeHandle			newFd	(newFd_);
+						NativeHandle						newFd	(newFd_);
 
 						TCU_CHECK(cmsg->cmsg_level == SOL_SOCKET);
 						TCU_CHECK(cmsg->cmsg_type == SCM_RIGHTS);
@@ -1138,17 +1373,17 @@ tcu::TestStatus testSemaphoreFdSendOverSocket (Context& context, vk::VkExternalS
 						TCU_CHECK_MSG(newFd.getFd() >= 0, "Didn't receive valid fd from socket");
 
 						{
-							const vk::Unique<vk::VkSemaphore> newSemaphore (createAndImportSemaphore(vkd, *device, externalType, newFd));
+							const vk::Unique<vk::VkSemaphore> newSemaphore (createAndImportSemaphore(vkd, *device, config.externalType, newFd, flags));
 
-							if (getHandleTypePermanence(externalType) == PERMANENCE_TEMPORARY)
+							if (transference == TRANSFERENCE_COPY)
 								submitDummyWait(vkd, queue, *newSemaphore);
-							else if (getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT)
+							else if (transference == TRANSFERENCE_REFERENCE)
 							{
 								submitDummySignal(vkd, queue, *newSemaphore);
 								submitDummyWait(vkd, queue, *newSemaphore);
 							}
 							else
-								DE_FATAL("Unknow permanence.");
+								DE_FATAL("Unknown permanence.");
 
 							VK_CHECK(vkd.queueWaitIdle(queue));
 						}
@@ -1161,21 +1396,21 @@ tcu::TestStatus testSemaphoreFdSendOverSocket (Context& context, vk::VkExternalS
 	return tcu::TestStatus::pass("Pass");
 #else
 	DE_UNREF(context);
-	DE_UNREF(externalType);
+	DE_UNREF(config);
 	TCU_THROW(NotSupportedError, "Platform doesn't support sending file descriptors over socket");
 #endif
 }
 
-tcu::TestStatus testBufferQueries (Context& context, vk::VkExternalMemoryHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testBufferQueries (Context& context, vk::VkExternalMemoryHandleTypeFlagBitsKHR externalType)
 {
-	const vk::VkBufferCreateFlags		createFlags[]	=
+	const vk::VkBufferCreateFlags		createFlags[]		=
 	{
 		0u,
 		vk::VK_BUFFER_CREATE_SPARSE_BINDING_BIT,
-		vk::VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,
-		vk::VK_BUFFER_CREATE_SPARSE_ALIASED_BIT
+		vk::VK_BUFFER_CREATE_SPARSE_BINDING_BIT|vk::VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,
+		vk::VK_BUFFER_CREATE_SPARSE_BINDING_BIT|vk::VK_BUFFER_CREATE_SPARSE_ALIASED_BIT
 	};
-	const vk::VkBufferUsageFlags		usageFlags[]	=
+	const vk::VkBufferUsageFlags		usageFlags[]		=
 	{
 		vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -1187,41 +1422,105 @@ tcu::TestStatus testBufferQueries (Context& context, vk::VkExternalMemoryHandleT
 		vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT
 	};
-	const vk::PlatformInterface&		vkp			(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance	(createInstance(vkp, 0u, externalType));
-	const vk::InstanceDriver			vki			(vkp, *instance);
-	const vk::VkPhysicalDevice			device		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const vk::VkPhysicalDeviceFeatures	deviceFeatures		(vk::getPhysicalDeviceFeatures(vki, physicalDevice));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	TestLog&							log			= context.getTestContext().getLog();
+	// VkDevice is only created if physical device claims to support any of these types.
+	vk::Move<vk::VkDevice>				device;
+	de::MovePtr<vk::DeviceDriver>		vkd;
+	bool								deviceHasDedicated	= false;
+
+	TestLog&							log					= context.getTestContext().getLog();
 
 	for (size_t createFlagNdx = 0; createFlagNdx < DE_LENGTH_OF_ARRAY(createFlags); createFlagNdx++)
 	for (size_t usageFlagNdx = 0; usageFlagNdx < DE_LENGTH_OF_ARRAY(usageFlags); usageFlagNdx++)
 	{
 		const vk::VkBufferViewCreateFlags				createFlag		= createFlags[createFlagNdx];
 		const vk::VkBufferUsageFlags					usageFlag		= usageFlags[usageFlagNdx];
-		const vk::VkPhysicalDeviceExternalBufferInfoKHX	info			=
+		const vk::VkPhysicalDeviceExternalBufferInfoKHR	info			=
 		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO_KHX,
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO_KHR,
 			DE_NULL,
-
 			createFlag,
 			usageFlag,
 			externalType
 		};
-		vk::VkExternalBufferPropertiesKHX				properties		=
+		vk::VkExternalBufferPropertiesKHR				properties		=
 		{
-			vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES_KHX,
+			vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES_KHR,
 			DE_NULL,
-
 			{ 0u, 0u, 0u }
 		};
 
-		vki.getPhysicalDeviceExternalBufferPropertiesKHX(device, &info, &properties);
+		if (((createFlag & vk::VK_BUFFER_CREATE_SPARSE_BINDING_BIT) != 0) &&
+			(deviceFeatures.sparseBinding == VK_FALSE))
+			continue;
+
+		if (((createFlag & vk::VK_BUFFER_CREATE_SPARSE_ALIASED_BIT) != 0) &&
+			(deviceFeatures.sparseResidencyAliased == VK_FALSE))
+			continue;
+
+		if (((createFlag & vk::VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT) != 0) &&
+			(deviceFeatures.sparseResidencyBuffer == VK_FALSE))
+			continue;
+
+		vki.getPhysicalDeviceExternalBufferPropertiesKHR(physicalDevice, &info, &properties);
 
 		log << TestLog::Message << properties << TestLog::EndMessage;
 
-		TCU_CHECK(properties.sType == vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES_KHX);
+		TCU_CHECK(properties.sType == vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES_KHR);
 		TCU_CHECK(properties.pNext == DE_NULL);
+		// \todo [2017-06-06 pyry] Can we validate anything else? Compatible types?
+
+		if ((properties.externalMemoryProperties.externalMemoryFeatures & (vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR|vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR)) != 0)
+		{
+			const bool	requiresDedicated	= (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR) != 0;
+
+			if (!device || (requiresDedicated && !deviceHasDedicated))
+			{
+				// \note We need to re-create with dedicated mem extensions if previous device instance didn't have them
+				try
+				{
+					device				= createDevice(vki, physicalDevice, 0u, externalType, queueFamilyIndex, requiresDedicated);
+					vkd					= de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(vki, *device));
+					deviceHasDedicated	= requiresDedicated;
+				}
+				catch (const tcu::NotSupportedError& e)
+				{
+					log << e;
+					TCU_FAIL("Physical device claims to support handle type but required extensions are not supported");
+				}
+			}
+		}
+
+		if ((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR) != 0)
+		{
+			DE_ASSERT(!!device);
+			DE_ASSERT(vkd);
+
+			if (deviceHasDedicated)
+			{
+				const vk::Unique<vk::VkBuffer>				buffer						(createExternalBuffer(*vkd, *device, queueFamilyIndex, externalType, 1024u, createFlag, usageFlag));
+				const vk::VkMemoryDedicatedRequirementsKHR	reqs						(getMemoryDedicatedRequirements(*vkd, *device, *buffer));
+				const bool									propertiesRequiresDedicated	= (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR) != 0;
+				const bool									objectRequiresDedicated		= (reqs.requiresDedicatedAllocation != VK_FALSE);
+
+				if (propertiesRequiresDedicated != objectRequiresDedicated)
+					TCU_FAIL("vkGetPhysicalDeviceExternalBufferProperties and vkGetBufferMemoryRequirements2 report different dedicated requirements");
+			}
+			else
+			{
+				// We can't query whether dedicated memory is required or not on per-object basis.
+				// This check should be redundant as the code above tries to create device with
+				// VK_KHR_dedicated_allocation & VK_KHR_get_memory_requirements2 if dedicated memory
+				// is required. However, checking again doesn't hurt.
+				TCU_CHECK((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR) == 0);
+			}
+		}
 	}
 
 	return tcu::TestStatus::pass("Pass");
@@ -1229,16 +1528,109 @@ tcu::TestStatus testBufferQueries (Context& context, vk::VkExternalMemoryHandleT
 
 struct MemoryTestConfig
 {
-												MemoryTestConfig	(vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType_,
-																	 bool										hostVisible_)
+												MemoryTestConfig	(vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType_,
+																	 bool										hostVisible_,
+																	 bool										dedicated_)
 		: externalType	(externalType_)
 		, hostVisible	(hostVisible_)
+		, dedicated		(dedicated_)
 	{
 	}
 
-	vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType;
+	vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType;
 	bool										hostVisible;
+	bool										dedicated;
 };
+
+#if (DE_OS == DE_OS_WIN32)
+deUint32 chooseMemoryType (deUint32 bits)
+{
+	if (bits == 0)
+		TCU_THROW(NotSupportedError, "No compatible memory type found");
+
+	return deCtz32(bits);
+}
+#endif
+
+tcu::TestStatus testMemoryWin32Create (Context& context, MemoryTestConfig config)
+{
+#if (DE_OS == DE_OS_WIN32)
+	const vk::PlatformInterface&				vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>			instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::InstanceDriver					vki					(vkp, *instance);
+	const vk::VkPhysicalDevice					physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32								queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+	const vk::Unique<vk::VkDevice>				device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex));
+	const vk::DeviceDriver						vkd					(vki, *device);
+	const vk::VkBufferUsageFlags				usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	const deUint32								seed				= 1261033864u;
+	const vk::VkDeviceSize						bufferSize			= 1024;
+	const std::vector<deUint8>					testData			(genTestData(seed, (size_t)bufferSize));
+
+	const vk::VkPhysicalDeviceMemoryProperties	memoryProps			= vk::getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+	const deUint32								compatibleMemTypes	= vk::getCompatibleMemoryTypes(memoryProps, config.hostVisible ? vk::MemoryRequirement::HostVisible : vk::MemoryRequirement::Any);
+
+	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
+
+	// \note Buffer is only allocated to get memory requirements
+	const vk::Unique<vk::VkBuffer>				buffer				(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+	const vk::VkMemoryRequirements				requirements		(getBufferMemoryRequirements(vkd, *device, *buffer));
+	const vk::VkExportMemoryWin32HandleInfoKHR	win32Info			=
+	{
+		vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR,
+		DE_NULL,
+
+		(vk::pt::Win32SecurityAttributesPtr)DE_NULL,
+		DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
+		DE_NULL
+	};
+	const vk::VkExportMemoryAllocateInfoKHR		exportInfo			=
+	{
+		vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
+		&win32Info,
+		(vk::VkExternalMemoryHandleTypeFlagsKHR)config.externalType
+	};
+	const vk::VkMemoryAllocateInfo				info				=
+	{
+		vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		&exportInfo,
+		requirements.size,
+		chooseMemoryType(requirements.memoryTypeBits & compatibleMemTypes)
+	};
+	const vk::Unique<vk::VkDeviceMemory>		memory				(vk::allocateMemory(vkd, *device, &info));
+	NativeHandle								handleA;
+
+	if (config.hostVisible)
+		writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
+
+	getMemoryNative(vkd, *device, *memory, config.externalType, handleA);
+
+	{
+		const vk::Unique<vk::VkDeviceMemory>	memoryA	(importMemory(vkd, *device, requirements, config.externalType, handleA));
+
+		if (config.hostVisible)
+		{
+			const std::vector<deUint8>		testDataA		(genTestData(seed ^ 124798807u, (size_t)bufferSize));
+			const std::vector<deUint8>		testDataB		(genTestData(seed ^ 970834278u, (size_t)bufferSize));
+
+			checkHostMemory(vkd, *device, *memoryA, testData.size(), &testData[0]);
+			checkHostMemory(vkd, *device, *memory,  testData.size(), &testData[0]);
+
+			writeHostMemory(vkd, *device, *memoryA, testDataA.size(), &testDataA[0]);
+			writeHostMemory(vkd, *device, *memory,  testDataA.size(), &testDataB[0]);
+
+			checkHostMemory(vkd, *device, *memoryA, testData.size(), &testDataB[0]);
+			checkHostMemory(vkd, *device, *memory,  testData.size(), &testDataB[0]);
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+#else
+	DE_UNREF(context);
+	DE_UNREF(config);
+	TCU_THROW(NotSupportedError, "Platform doesn't support win32 handles");
+#endif
+}
 
 tcu::TestStatus testMemoryImportTwice (Context& context, MemoryTestConfig config)
 {
@@ -1254,22 +1646,21 @@ tcu::TestStatus testMemoryImportTwice (Context& context, MemoryTestConfig config
 	const vk::VkDeviceSize					bufferSize			= 1024;
 	const std::vector<deUint8>				testData			(genTestData(seed, (size_t)bufferSize));
 
-	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage);
+	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
 	// \note Buffer is only allocated to get memory requirements
-	const vk::Unique<vk::VkBuffer>			buffer				(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, usage));
-	const vk::VkMemoryRequirements			requirements		(vk::getBufferMemoryRequirements(vkd, *device, *buffer));
-	const vk::Unique<vk::VkDeviceMemory>	memory				(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible));
+	const vk::Unique<vk::VkBuffer>			buffer				(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+	const vk::VkMemoryRequirements			requirements		(getBufferMemoryRequirements(vkd, *device, *buffer));
+	const vk::Unique<vk::VkDeviceMemory>	memory				(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0));
 	NativeHandle							handleA;
-	NativeHandle							handleB;
 
 	if (config.hostVisible)
 		writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
 
 	getMemoryNative(vkd, *device, *memory, config.externalType, handleA);
-	getMemoryNative(vkd, *device, *memory, config.externalType, handleB);
 
 	{
+		NativeHandle							handleB	(handleA);
 		const vk::Unique<vk::VkDeviceMemory>	memoryA	(importMemory(vkd, *device, requirements, config.externalType, handleA));
 		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, handleB));
 
@@ -1305,12 +1696,12 @@ tcu::TestStatus testMemoryMultimpleImports (Context& context, MemoryTestConfig c
 	const vk::VkBufferUsageFlags			usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkDeviceSize					bufferSize			= 1024;
 
-	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage);
+	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
 	// \note Buffer is only allocated to get memory requirements
-	const vk::Unique<vk::VkBuffer>			buffer				(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, usage));
-	const vk::VkMemoryRequirements			requirements		(vk::getBufferMemoryRequirements(vkd, *device, *buffer));
-	const vk::Unique<vk::VkDeviceMemory>	memory				(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible));
+	const vk::Unique<vk::VkBuffer>			buffer				(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+	const vk::VkMemoryRequirements			requirements		(getBufferMemoryRequirements(vkd, *device, *buffer));
+	const vk::Unique<vk::VkDeviceMemory>	memory				(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0));
 	NativeHandle							handleA;
 
 	getMemoryNative(vkd, *device, *memory, config.externalType, handleA);
@@ -1337,12 +1728,12 @@ tcu::TestStatus testMemoryMultimpleExports (Context& context, MemoryTestConfig c
 	const vk::VkBufferUsageFlags			usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkDeviceSize					bufferSize			= 1024;
 
-	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage);
+	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
 	// \note Buffer is only allocated to get memory requirements
-	const vk::Unique<vk::VkBuffer>			buffer				(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, usage));
-	const vk::VkMemoryRequirements			requirements		(vk::getBufferMemoryRequirements(vkd, *device, *buffer));
-	const vk::Unique<vk::VkDeviceMemory>	memory				(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible));
+	const vk::Unique<vk::VkBuffer>			buffer				(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+	const vk::VkMemoryRequirements			requirements		(getBufferMemoryRequirements(vkd, *device, *buffer));
+	const vk::Unique<vk::VkDeviceMemory>	memory				(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0));
 
 	for (size_t ndx = 0; ndx < count; ndx++)
 	{
@@ -1372,12 +1763,12 @@ tcu::TestStatus testMemoryFdDup (Context& context, MemoryTestConfig config)
 		const deUint32							seed			= 851493858u;
 		const std::vector<deUint8>				testData		(genTestData(seed, (size_t)bufferSize));
 
-		checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage);
+		checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
 		// \note Buffer is only allocated to get memory requirements
-		const vk::Unique<vk::VkBuffer>			buffer			(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, usage));
-		const vk::VkMemoryRequirements			requirements	(vk::getBufferMemoryRequirements(vkd, *device, *buffer));
-		const vk::Unique<vk::VkDeviceMemory>	memory			(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible));
+		const vk::Unique<vk::VkBuffer>			buffer			(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+		const vk::VkMemoryRequirements			requirements	(getBufferMemoryRequirements(vkd, *device, *buffer));
+		const vk::Unique<vk::VkDeviceMemory>	memory			(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0));
 
 		if (config.hostVisible)
 			writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
@@ -1432,12 +1823,12 @@ tcu::TestStatus testMemoryFdDup2 (Context& context, MemoryTestConfig config)
 		const deUint32							seed			= 224466865u;
 		const std::vector<deUint8>				testData		(genTestData(seed, (size_t)bufferSize));
 
-		checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage);
+		checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
 		// \note Buffer is only allocated to get memory requirements
-		const vk::Unique<vk::VkBuffer>			buffer			(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, usage));
-		const vk::VkMemoryRequirements			requirements	(vk::getBufferMemoryRequirements(vkd, *device, *buffer));
-		const vk::Unique<vk::VkDeviceMemory>	memory			(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible));
+		const vk::Unique<vk::VkBuffer>			buffer			(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+		const vk::VkMemoryRequirements			requirements	(getBufferMemoryRequirements(vkd, *device, *buffer));
+		const vk::Unique<vk::VkDeviceMemory>	memory			(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0));
 
 		if (config.hostVisible)
 			writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
@@ -1493,12 +1884,12 @@ tcu::TestStatus testMemoryFdDup3 (Context& context, MemoryTestConfig config)
 		const deUint32							seed			= 2554088961u;
 		const std::vector<deUint8>				testData		(genTestData(seed, (size_t)bufferSize));
 
-		checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage);
+		checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
 		// \note Buffer is only allocated to get memory requirements
-		const vk::Unique<vk::VkBuffer>			buffer			(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, usage));
-		const vk::VkMemoryRequirements			requirements	(vk::getBufferMemoryRequirements(vkd, *device, *buffer));
-		const vk::Unique<vk::VkDeviceMemory>	memory			(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible));
+		const vk::Unique<vk::VkBuffer>			buffer			(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+		const vk::VkMemoryRequirements			requirements	(getBufferMemoryRequirements(vkd, *device, *buffer));
+		const vk::Unique<vk::VkDeviceMemory>	memory			(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0));
 
 		if (config.hostVisible)
 			writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
@@ -1554,12 +1945,12 @@ tcu::TestStatus testMemoryFdSendOverSocket (Context& context, MemoryTestConfig c
 		const deUint32							seed				= 3403586456u;
 		const std::vector<deUint8>				testData			(genTestData(seed, (size_t)bufferSize));
 
-		checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage);
+		checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
 		// \note Buffer is only allocated to get memory requirements
-		const vk::Unique<vk::VkBuffer>			buffer				(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, usage));
-		const vk::VkMemoryRequirements			requirements		(vk::getBufferMemoryRequirements(vkd, *device, *buffer));
-		const vk::Unique<vk::VkDeviceMemory>	memory				(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible));
+		const vk::Unique<vk::VkBuffer>			buffer				(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+		const vk::VkMemoryRequirements			requirements		(getBufferMemoryRequirements(vkd, *device, *buffer));
+		const vk::Unique<vk::VkDeviceMemory>	memory				(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0));
 
 		if (config.hostVisible)
 			writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
@@ -1676,33 +2067,47 @@ tcu::TestStatus testMemoryFdSendOverSocket (Context& context, MemoryTestConfig c
 #endif
 }
 
-tcu::TestStatus testBufferBindExportImportBind (Context& context, vk::VkExternalMemoryHandleTypeFlagBitsKHX externalType)
+struct BufferTestConfig
+{
+												BufferTestConfig	(vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType_,
+																	 bool										dedicated_)
+		: externalType	(externalType_)
+		, dedicated		(dedicated_)
+	{
+	}
+
+	vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType;
+	bool										dedicated;
+};
+
+tcu::TestStatus testBufferBindExportImportBind (Context&				context,
+												const BufferTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, externalType, queueFamilyIndex));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex, config.dedicated));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkBufferUsageFlags			usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkDeviceSize					bufferSize			= 1024;
 
-	checkBufferSupport(vki, physicalDevice, externalType, 0u, usage);
+	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
 	// \note Buffer is only allocated to get memory requirements
-	const vk::Unique<vk::VkBuffer>			bufferA				(createExternalBuffer(vkd, *device, queueFamilyIndex, externalType, bufferSize, usage));
-	const vk::VkMemoryRequirements			requirements		(vk::getBufferMemoryRequirements(vkd, *device, *bufferA));
-	const vk::Unique<vk::VkDeviceMemory>	memoryA				(allocateExportableMemory(vkd, *device, requirements, externalType));
+	const vk::Unique<vk::VkBuffer>			bufferA				(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+	const vk::VkMemoryRequirements			requirements		(getBufferMemoryRequirements(vkd, *device, *bufferA));
+	const vk::Unique<vk::VkDeviceMemory>	memoryA				(allocateExportableMemory(vkd, *device, requirements, config.externalType, config.dedicated ? *bufferA : (vk::VkBuffer)0));
 	NativeHandle							handle;
 
 	VK_CHECK(vkd.bindBufferMemory(*device, *bufferA, *memoryA, 0u));
 
-	getMemoryNative(vkd, *device, *memoryA, externalType, handle);
+	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
 
 	{
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, externalType, handle));
-		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, externalType, bufferSize, usage));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, handle));
+		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 
 		VK_CHECK(vkd.bindBufferMemory(*device, *bufferB, *memoryB, 0u));
 	}
@@ -1710,32 +2115,33 @@ tcu::TestStatus testBufferBindExportImportBind (Context& context, vk::VkExternal
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus testBufferExportBindImportBind (Context& context, vk::VkExternalMemoryHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testBufferExportBindImportBind (Context&				context,
+												const BufferTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, externalType, queueFamilyIndex));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex, config.dedicated));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkBufferUsageFlags			usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkDeviceSize					bufferSize			= 1024;
 
-	checkBufferSupport(vki, physicalDevice, externalType, 0u, usage);
+	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
 	// \note Buffer is only allocated to get memory requirements
-	const vk::Unique<vk::VkBuffer>			bufferA				(createExternalBuffer(vkd, *device, queueFamilyIndex, externalType, bufferSize, usage));
-	const vk::VkMemoryRequirements			requirements		(vk::getBufferMemoryRequirements(vkd, *device, *bufferA));
-	const vk::Unique<vk::VkDeviceMemory>	memoryA				(allocateExportableMemory(vkd, *device, requirements, externalType));
+	const vk::Unique<vk::VkBuffer>			bufferA				(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+	const vk::VkMemoryRequirements			requirements		(getBufferMemoryRequirements(vkd, *device, *bufferA));
+	const vk::Unique<vk::VkDeviceMemory>	memoryA				(allocateExportableMemory(vkd, *device, requirements, config.externalType, config.dedicated ? *bufferA : (vk::VkBuffer)0));
 	NativeHandle							handle;
 
-	getMemoryNative(vkd, *device, *memoryA, externalType, handle);
+	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
 	VK_CHECK(vkd.bindBufferMemory(*device, *bufferA, *memoryA, 0u));
 
 	{
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, externalType, handle));
-		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, externalType, bufferSize, usage));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, handle));
+		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 
 		VK_CHECK(vkd.bindBufferMemory(*device, *bufferB, *memoryB, 0u));
 	}
@@ -1743,31 +2149,32 @@ tcu::TestStatus testBufferExportBindImportBind (Context& context, vk::VkExternal
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus testBufferExportImportBindBind (Context& context, vk::VkExternalMemoryHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testBufferExportImportBindBind (Context&				context,
+												const BufferTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, externalType, queueFamilyIndex));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex, config.dedicated));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkBufferUsageFlags			usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkDeviceSize					bufferSize			= 1024;
 
-	checkBufferSupport(vki, physicalDevice, externalType, 0u, usage);
+	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
 	// \note Buffer is only allocated to get memory requirements
-	const vk::Unique<vk::VkBuffer>			bufferA				(createExternalBuffer(vkd, *device, queueFamilyIndex, externalType, bufferSize, usage));
-	const vk::VkMemoryRequirements			requirements		(vk::getBufferMemoryRequirements(vkd, *device, *bufferA));
-	const vk::Unique<vk::VkDeviceMemory>	memoryA				(allocateExportableMemory(vkd, *device, requirements, externalType));
+	const vk::Unique<vk::VkBuffer>			bufferA				(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+	const vk::VkMemoryRequirements			requirements		(getBufferMemoryRequirements(vkd, *device, *bufferA));
+	const vk::Unique<vk::VkDeviceMemory>	memoryA				(allocateExportableMemory(vkd, *device, requirements, config.externalType, config.dedicated ? *bufferA : (vk::VkBuffer)0));
 	NativeHandle							handle;
 
-	getMemoryNative(vkd, *device, *memoryA, externalType, handle);
+	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
 
 	{
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, externalType, handle));
-		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, externalType, bufferSize, usage));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, handle));
+		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 
 		VK_CHECK(vkd.bindBufferMemory(*device, *bufferA, *memoryA, 0u));
 		VK_CHECK(vkd.bindBufferMemory(*device, *bufferB, *memoryB, 0u));
@@ -1776,19 +2183,19 @@ tcu::TestStatus testBufferExportImportBindBind (Context& context, vk::VkExternal
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus testImageQueries (Context& context, vk::VkExternalMemoryHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testImageQueries (Context& context, vk::VkExternalMemoryHandleTypeFlagBitsKHR externalType)
 {
-	const vk::VkImageCreateFlags		createFlags[]	=
+	const vk::VkImageCreateFlags		createFlags[]		=
 	{
 		0u,
 		vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT,
-		vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,
-		vk::VK_IMAGE_CREATE_SPARSE_ALIASED_BIT,
+		vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT|vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,
+		vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT|vk::VK_IMAGE_CREATE_SPARSE_ALIASED_BIT,
 		vk::VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,
 		vk::VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
 		vk::VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR
 	};
-	const vk::VkImageUsageFlags			usageFlags[]	=
+	const vk::VkImageUsageFlags			usageFlags[]		=
 	{
 		vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 		vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -1799,12 +2206,19 @@ tcu::TestStatus testImageQueries (Context& context, vk::VkExternalMemoryHandleTy
 		vk::VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
 		vk::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
 	};
-	const vk::PlatformInterface&		vkp				(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance		(createInstance(vkp, 0u, externalType));
-	const vk::InstanceDriver			vki				(vkp, *instance);
-	const vk::VkPhysicalDevice			device			(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const vk::VkPhysicalDeviceFeatures	deviceFeatures		(vk::getPhysicalDeviceFeatures(vki, physicalDevice));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
-	TestLog&							log				= context.getTestContext().getLog();
+	// VkDevice is only created if physical device claims to support any of these types.
+	vk::Move<vk::VkDevice>				device;
+	de::MovePtr<vk::DeviceDriver>		vkd;
+	bool								deviceHasDedicated	= false;
+
+	TestLog&							log					= context.getTestContext().getLog();
 
 	for (size_t createFlagNdx = 0; createFlagNdx < DE_LENGTH_OF_ARRAY(createFlags); createFlagNdx++)
 	for (size_t usageFlagNdx = 0; usageFlagNdx < DE_LENGTH_OF_ARRAY(usageFlags); usageFlagNdx++)
@@ -1814,9 +2228,9 @@ tcu::TestStatus testImageQueries (Context& context, vk::VkExternalMemoryHandleTy
 		const vk::VkFormat										format			= vk::VK_FORMAT_R8G8B8A8_UNORM;
 		const vk::VkImageType									type			= vk::VK_IMAGE_TYPE_2D;
 		const vk::VkImageTiling									tiling			= vk::VK_IMAGE_TILING_OPTIMAL;
-		const vk::VkPhysicalDeviceExternalImageFormatInfoKHX	externalInfo	=
+		const vk::VkPhysicalDeviceExternalImageFormatInfoKHR	externalInfo	=
 		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHX,
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHR,
 			DE_NULL,
 			externalType
 		};
@@ -1831,9 +2245,9 @@ tcu::TestStatus testImageQueries (Context& context, vk::VkExternalMemoryHandleTy
 			usageFlag,
 			createFlag,
 		};
-		vk::VkExternalImageFormatPropertiesKHX					externalProperties	=
+		vk::VkExternalImageFormatPropertiesKHR					externalProperties	=
 		{
-			vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHX,
+			vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHR,
 			DE_NULL,
 			{ 0u, 0u, 0u }
 		};
@@ -1850,24 +2264,97 @@ tcu::TestStatus testImageQueries (Context& context, vk::VkExternalMemoryHandleTy
 			}
 		};
 
-		vki.getPhysicalDeviceImageFormatProperties2KHR(device, &info, &properties);
+		if (((createFlag & vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT) != 0) &&
+			(deviceFeatures.sparseBinding == VK_FALSE))
+			continue;
+
+		if (((createFlag & vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT) != 0) &&
+			(deviceFeatures.sparseResidencyImage2D == VK_FALSE))
+			continue;
+
+		if (((createFlag & vk::VK_IMAGE_CREATE_SPARSE_ALIASED_BIT) != 0) &&
+			(deviceFeatures.sparseResidencyAliased == VK_FALSE))
+			continue;
+
+		vki.getPhysicalDeviceImageFormatProperties2KHR(physicalDevice, &info, &properties);
 
 		log << TestLog::Message << externalProperties << TestLog::EndMessage;
-		TCU_CHECK(externalProperties.sType == vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHX);
+		TCU_CHECK(externalProperties.sType == vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHR);
 		TCU_CHECK(externalProperties.pNext == DE_NULL);
+		// \todo [2017-06-06 pyry] Can we validate anything else? Compatible types?
+
+		if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & (vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR|vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR)) != 0)
+		{
+			const bool	requiresDedicated	= (externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR) != 0;
+
+			if (!device || (requiresDedicated && !deviceHasDedicated))
+			{
+				// \note We need to re-create with dedicated mem extensions if previous device instance didn't have them
+				try
+				{
+					device				= createDevice(vki, physicalDevice, 0u, externalType, queueFamilyIndex, requiresDedicated);
+					vkd					= de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(vki, *device));
+					deviceHasDedicated	= requiresDedicated;
+				}
+				catch (const tcu::NotSupportedError& e)
+				{
+					log << e;
+					TCU_FAIL("Physical device claims to support handle type but required extensions are not supported");
+				}
+			}
+		}
+
+		if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR) != 0)
+		{
+			DE_ASSERT(!!device);
+			DE_ASSERT(vkd);
+
+			if (deviceHasDedicated)
+			{
+				const vk::Unique<vk::VkImage>				image						(createExternalImage(*vkd, *device, queueFamilyIndex, externalType, format, 16u, 16u, tiling, createFlag, usageFlag));
+				const vk::VkMemoryDedicatedRequirementsKHR	reqs						(getMemoryDedicatedRequirements(*vkd, *device, *image));
+				const bool									propertiesRequiresDedicated	= (externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR) != 0;
+				const bool									objectRequiresDedicated		= (reqs.requiresDedicatedAllocation != VK_FALSE);
+
+				if (propertiesRequiresDedicated != objectRequiresDedicated)
+					TCU_FAIL("vkGetPhysicalDeviceExternalBufferProperties and vkGetBufferMemoryRequirements2 report different dedicated requirements");
+			}
+			else
+			{
+				// We can't query whether dedicated memory is required or not on per-object basis.
+				// This check should be redundant as the code above tries to create device with
+				// VK_KHR_dedicated_allocation & VK_KHR_get_memory_requirements2 if dedicated memory
+				// is required. However, checking again doesn't hurt.
+				TCU_CHECK((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR) == 0);
+			}
+		}
 	}
 
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus testImageBindExportImportBind (Context& context, vk::VkExternalMemoryHandleTypeFlagBitsKHX externalType)
+struct ImageTestConfig
+{
+												ImageTestConfig	(vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType_,
+																 bool										dedicated_)
+		: externalType	(externalType_)
+		, dedicated		(dedicated_)
+	{
+	}
+
+	vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType;
+	bool										dedicated;
+};
+
+tcu::TestStatus testImageBindExportImportBind (Context&					context,
+											   const ImageTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, externalType, queueFamilyIndex));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex, config.dedicated));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkImageUsageFlags				usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkFormat						format				= vk::VK_FORMAT_R8G8B8A8_UNORM;
@@ -1875,20 +2362,20 @@ tcu::TestStatus testImageBindExportImportBind (Context& context, vk::VkExternalM
 	const deUint32							height				= 64u;
 	const vk::VkImageTiling					tiling				= vk::VK_IMAGE_TILING_OPTIMAL;
 
-	checkImageSupport(vki, physicalDevice, externalType, 0u, usage, format, tiling);
+	checkImageSupport(vki, physicalDevice, config.externalType, 0u, usage, format, tiling, config.dedicated);
 
-	const vk::Unique<vk::VkImage>			imageA				(createExternalImage(vkd, *device, queueFamilyIndex, externalType, format, width, height, tiling, usage));
-	const vk::VkMemoryRequirements			requirements		(vk::getImageMemoryRequirements(vkd, *device, *imageA));
-	const vk::Unique<vk::VkDeviceMemory>	memoryA				(allocateExportableMemory(vkd, *device, requirements, externalType));
+	const vk::Unique<vk::VkImage>			imageA				(createExternalImage(vkd, *device, queueFamilyIndex, config.externalType, format, width, height, tiling, 0u, usage));
+	const vk::VkMemoryRequirements			requirements		(getImageMemoryRequirements(vkd, *device, *imageA));
+	const vk::Unique<vk::VkDeviceMemory>	memoryA				(allocateExportableMemory(vkd, *device, requirements, config.externalType, config.dedicated ? *imageA : (vk::VkImage)0));
 	NativeHandle							handle;
 
 	VK_CHECK(vkd.bindImageMemory(*device, *imageA, *memoryA, 0u));
 
-	getMemoryNative(vkd, *device, *memoryA, externalType, handle);
+	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
 
 	{
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, externalType, handle));
-		const vk::Unique<vk::VkImage>			imageB	(createExternalImage(vkd, *device, queueFamilyIndex, externalType, format, width, height, tiling, usage));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, handle));
+		const vk::Unique<vk::VkImage>			imageB	(createExternalImage(vkd, *device, queueFamilyIndex, config.externalType, format, width, height, tiling, 0u, usage));
 
 		VK_CHECK(vkd.bindImageMemory(*device, *imageB, *memoryB, 0u));
 	}
@@ -1896,14 +2383,15 @@ tcu::TestStatus testImageBindExportImportBind (Context& context, vk::VkExternalM
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus testImageExportBindImportBind (Context& context, vk::VkExternalMemoryHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testImageExportBindImportBind (Context&					context,
+											   const ImageTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, externalType, queueFamilyIndex));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex, config.dedicated));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkImageUsageFlags				usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkFormat						format				= vk::VK_FORMAT_R8G8B8A8_UNORM;
@@ -1911,19 +2399,19 @@ tcu::TestStatus testImageExportBindImportBind (Context& context, vk::VkExternalM
 	const deUint32							height				= 64u;
 	const vk::VkImageTiling					tiling				= vk::VK_IMAGE_TILING_OPTIMAL;
 
-	checkImageSupport(vki, physicalDevice, externalType, 0u, usage, format, tiling);
+	checkImageSupport(vki, physicalDevice, config.externalType, 0u, usage, format, tiling, config.dedicated);
 
-	const vk::Unique<vk::VkImage>			imageA				(createExternalImage(vkd, *device, queueFamilyIndex, externalType, format, width, height, tiling, usage));
-	const vk::VkMemoryRequirements			requirements		(vk::getImageMemoryRequirements(vkd, *device, *imageA));
-	const vk::Unique<vk::VkDeviceMemory>	memoryA				(allocateExportableMemory(vkd, *device, requirements, externalType));
+	const vk::Unique<vk::VkImage>			imageA				(createExternalImage(vkd, *device, queueFamilyIndex, config.externalType, format, width, height, tiling, 0u, usage));
+	const vk::VkMemoryRequirements			requirements		(getImageMemoryRequirements(vkd, *device, *imageA));
+	const vk::Unique<vk::VkDeviceMemory>	memoryA				(allocateExportableMemory(vkd, *device, requirements, config.externalType, config.dedicated ? *imageA : (vk::VkImage)0));
 	NativeHandle							handle;
 
-	getMemoryNative(vkd, *device, *memoryA, externalType, handle);
+	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
 	VK_CHECK(vkd.bindImageMemory(*device, *imageA, *memoryA, 0u));
 
 	{
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, externalType, handle));
-		const vk::Unique<vk::VkImage>			imageB	(createExternalImage(vkd, *device, queueFamilyIndex, externalType, format, width, height, tiling, usage));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, handle));
+		const vk::Unique<vk::VkImage>			imageB	(createExternalImage(vkd, *device, queueFamilyIndex, config.externalType, format, width, height, tiling, 0u, usage));
 
 		VK_CHECK(vkd.bindImageMemory(*device, *imageB, *memoryB, 0u));
 	}
@@ -1931,14 +2419,15 @@ tcu::TestStatus testImageExportBindImportBind (Context& context, vk::VkExternalM
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus testImageExportImportBindBind (Context& context, vk::VkExternalMemoryHandleTypeFlagBitsKHX externalType)
+tcu::TestStatus testImageExportImportBindBind (Context&					context,
+											   const ImageTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, externalType, queueFamilyIndex));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex, config.dedicated));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkImageUsageFlags				usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkFormat						format				= vk::VK_FORMAT_R8G8B8A8_UNORM;
@@ -1946,19 +2435,19 @@ tcu::TestStatus testImageExportImportBindBind (Context& context, vk::VkExternalM
 	const deUint32							height				= 64u;
 	const vk::VkImageTiling					tiling				= vk::VK_IMAGE_TILING_OPTIMAL;
 
-	checkImageSupport(vki, physicalDevice, externalType, 0u, usage, format, tiling);
+	checkImageSupport(vki, physicalDevice, config.externalType, 0u, usage, format, tiling, config.dedicated);
 
 	// \note Image is only allocated to get memory requirements
-	const vk::Unique<vk::VkImage>			imageA				(createExternalImage(vkd, *device, queueFamilyIndex, externalType, format, width, height, tiling, usage));
-	const vk::VkMemoryRequirements			requirements		(vk::getImageMemoryRequirements(vkd, *device, *imageA));
-	const vk::Unique<vk::VkDeviceMemory>	memoryA				(allocateExportableMemory(vkd, *device, requirements, externalType));
+	const vk::Unique<vk::VkImage>			imageA				(createExternalImage(vkd, *device, queueFamilyIndex, config.externalType, format, width, height, tiling, 0u, usage));
+	const vk::VkMemoryRequirements			requirements		(getImageMemoryRequirements(vkd, *device, *imageA));
+	const vk::Unique<vk::VkDeviceMemory>	memoryA				(allocateExportableMemory(vkd, *device, requirements, config.externalType, config.dedicated ? *imageA : (vk::VkImage)0));
 	NativeHandle							handle;
 
-	getMemoryNative(vkd, *device, *memoryA, externalType, handle);
+	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
 
 	{
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, externalType, handle));
-		const vk::Unique<vk::VkImage>			imageB	(createExternalImage(vkd, *device, queueFamilyIndex, externalType, format, width, height, tiling, usage));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, handle));
+		const vk::Unique<vk::VkImage>			imageB	(createExternalImage(vkd, *device, queueFamilyIndex, config.externalType, format, width, height, tiling, 0u, usage));
 
 		VK_CHECK(vkd.bindImageMemory(*device, *imageA, *memoryA, 0u));
 		VK_CHECK(vkd.bindImageMemory(*device, *imageB, *memoryB, 0u));
@@ -1967,35 +2456,62 @@ tcu::TestStatus testImageExportImportBindBind (Context& context, vk::VkExternalM
 	return tcu::TestStatus::pass("Pass");
 }
 
-de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx, vk::VkExternalSemaphoreHandleTypeFlagBitsKHX externalType)
+de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx, vk::VkExternalSemaphoreHandleTypeFlagBitsKHR externalType)
 {
+	const struct
+	{
+		const char* const	name;
+		const Permanence	permanence;
+	} permanences[] =
+	{
+		{ "temporary", PERMANENCE_TEMPORARY	},
+		{ "permanent", PERMANENCE_PERMANENT	}
+	};
+
 	de::MovePtr<tcu::TestCaseGroup> semaphoreGroup (new tcu::TestCaseGroup(testCtx, externalSemaphoreTypeToName(externalType), externalSemaphoreTypeToName(externalType)));
 
-	addFunctionCase(semaphoreGroup.get(), "info",						"Test external semaphore queries.",										testSemaphoreQueries,					externalType);
-	addFunctionCase(semaphoreGroup.get(), "import_twice",				"Test importing semaphore twice.",										testSemaphoreImportTwice,				externalType);
-	addFunctionCase(semaphoreGroup.get(), "reimport",					"Test importing again over previously imported semaphore.",				testSemaphoreImportReimport,			externalType);
-	addFunctionCase(semaphoreGroup.get(), "import_multiple_times",		"Test importing sempaher multiple times.",								testSemaphoreMultipleImports,			externalType);
-	addFunctionCase(semaphoreGroup.get(), "signal_export_import_wait",	"Test signaling, exporting, importing and waiting for the sempahore.",	testSemaphoreSignalExportImportWait,	externalType);
-	addFunctionCase(semaphoreGroup.get(), "signal_import",				"Test signaling and importing the semaphore.",							testSemaphoreSignalImport,				externalType);
-	addFunctionCase(semaphoreGroup.get(), "permanence",					"Test semaphores permanence.",											testSemaphorePermanence,				externalType);
+	addFunctionCase(semaphoreGroup.get(), "info",	"Test external semaphore queries.",	testSemaphoreQueries,	externalType);
 
-	if (getHandleTypePermanence(externalType) == PERMANENCE_PERMANENT)
+	for (size_t permanenceNdx = 0; permanenceNdx < DE_LENGTH_OF_ARRAY(permanences); permanenceNdx++)
 	{
-		addFunctionCase(semaphoreGroup.get(), "signal_wait_import",			"Test signaling and then waiting for the the sepmahore.",				testSemaphoreSignalWaitImport,			externalType);
-		addFunctionCase(semaphoreGroup.get(), "export_signal_import_wait",	"Test exporting, signaling, importing and waiting for the semaphore.",	testSemaphoreExportSignalImportWait,	externalType);
-		addFunctionCase(semaphoreGroup.get(), "export_import_signal_wait",	"Test exporting, importing, signaling and waiting for the semaphore.",	testSemaphoreExportImportSignalWait,	externalType);
-	}
+		const Permanence			permanence		(permanences[permanenceNdx].permanence);
+		const char* const			permanenceName	(permanences[permanenceNdx].name);
+		const SemaphoreTestConfig	config			(externalType, permanence);
 
-	if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_FENCE_FD_BIT_KHX
-		|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHX)
-	{
-		// \note Not supported on WIN32 handles
-		addFunctionCase(semaphoreGroup.get(), "export_multiple_times",	"Test exporting semaphore multiple times.",		testSemaphoreMultipleExports,	externalType);
+		if (!isSupportedPermanence(externalType, permanence))
+			continue;
 
-		addFunctionCase(semaphoreGroup.get(), "dup",					"Test calling dup() on exported semaphore.",	testSemaphoreFdDup,				externalType);
-		addFunctionCase(semaphoreGroup.get(), "dup2",					"Test calling dup2() on exported semaphore.",	testSemaphoreFdDup2,			externalType);
-		addFunctionCase(semaphoreGroup.get(), "dup3",					"Test calling dup3() on exported semaphore.",	testSemaphoreFdDup3,			externalType);
-		addFunctionCase(semaphoreGroup.get(), "send_over_socket",		"Test sending semaphore fd over socket.",		testSemaphoreFdSendOverSocket,	externalType);
+		if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
+			|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)
+		{
+			addFunctionCase(semaphoreGroup.get(), std::string("create_win32_") + permanenceName,	"Test creating semaphore with win32 properties.",	testSemaphoreWin32Create,	config);
+		}
+
+		addFunctionCase(semaphoreGroup.get(), std::string("import_twice_") + permanenceName,				"Test importing semaphore twice.",										testSemaphoreImportTwice,				config);
+		addFunctionCase(semaphoreGroup.get(), std::string("reimport_") + permanenceName,					"Test importing again over previously imported semaphore.",				testSemaphoreImportReimport,			config);
+		addFunctionCase(semaphoreGroup.get(), std::string("import_multiple_times_") + permanenceName,		"Test importing semaphore multiple times.",								testSemaphoreMultipleImports,			config);
+		addFunctionCase(semaphoreGroup.get(), std::string("signal_export_import_wait_") + permanenceName,	"Test signaling, exporting, importing and waiting for the sempahore.",	testSemaphoreSignalExportImportWait,	config);
+		addFunctionCase(semaphoreGroup.get(), std::string("signal_import_") + permanenceName,				"Test signaling and importing the semaphore.",							testSemaphoreSignalImport,				config);
+		addFunctionCase(semaphoreGroup.get(), std::string("transference_") + permanenceName,				"Test semaphores transference.",										testSemaphoreTransference,				config);
+
+		if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR
+			|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
+		{
+			// \note Not supported on WIN32 handles
+			addFunctionCase(semaphoreGroup.get(), std::string("export_multiple_times_") + permanenceName,	"Test exporting semaphore multiple times.",		testSemaphoreMultipleExports,	config);
+
+			addFunctionCase(semaphoreGroup.get(), std::string("dup_") + permanenceName,						"Test calling dup() on exported semaphore.",	testSemaphoreFdDup,				config);
+			addFunctionCase(semaphoreGroup.get(), std::string("dup2_") + permanenceName,					"Test calling dup2() on exported semaphore.",	testSemaphoreFdDup2,			config);
+			addFunctionCase(semaphoreGroup.get(), std::string("dup3_") + permanenceName,					"Test calling dup3() on exported semaphore.",	testSemaphoreFdDup3,			config);
+			addFunctionCase(semaphoreGroup.get(), std::string("send_over_socket_") + permanenceName,		"Test sending semaphore fd over socket.",		testSemaphoreFdSendOverSocket,	config);
+		}
+
+		if (getHandelTypeTransferences(externalType) == TRANSFERENCE_REFERENCE)
+		{
+			addFunctionCase(semaphoreGroup.get(), std::string("signal_wait_import_") + permanenceName,			"Test signaling and then waiting for the the sepmahore.",				testSemaphoreSignalWaitImport,			config);
+			addFunctionCase(semaphoreGroup.get(), std::string("export_signal_import_wait_") + permanenceName,	"Test exporting, signaling, importing and waiting for the semaphore.",	testSemaphoreExportSignalImportWait,	config);
+			addFunctionCase(semaphoreGroup.get(), std::string("export_import_signal_wait_") + permanenceName,	"Test exporting, importing, signaling and waiting for the semaphore.",	testSemaphoreExportImportSignalWait,	config);
+		}
 	}
 
 	return semaphoreGroup;
@@ -2005,52 +2521,77 @@ de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> semaphoreGroup (new tcu::TestCaseGroup(testCtx, "semaphore", "Tests for external semaphores."));
 
-	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_FENCE_FD_BIT_KHX).release());
-	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHX).release());
-	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHX).release());
-	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHX).release());
+	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR).release());
+	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR).release());
+	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR).release());
+	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR).release());
 
 	return semaphoreGroup;
 }
 
-de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk::VkExternalMemoryHandleTypeFlagBitsKHX externalType)
+de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk::VkExternalMemoryHandleTypeFlagBitsKHR externalType)
 {
 	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, externalMemoryTypeToName(externalType), "Tests for external memory"));
 
-	addFunctionCase(group.get(), "import_twice",						"Test importing memory object twice.",			testMemoryImportTwice,			MemoryTestConfig(externalType, false));
-	addFunctionCase(group.get(), "import_twice_host_visible",			"Test importing memory object twice.",			testMemoryImportTwice,			MemoryTestConfig(externalType, true));
-
-	addFunctionCase(group.get(), "import_multiple_times",				"Test importing memory object multiple times.",	testMemoryMultimpleImports,		MemoryTestConfig(externalType, false));
-	addFunctionCase(group.get(), "import_multiple_times_host_visible",	"Test importing memory object multiple times.",	testMemoryMultimpleImports,		MemoryTestConfig(externalType, true));
-
-	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHX)
+	for (size_t dedicatedNdx = 0; dedicatedNdx < 2; dedicatedNdx++)
 	{
-		addFunctionCase(group.get(), "dup",									"Test calling dup() on exported memory.",	testMemoryFdDup,			MemoryTestConfig(externalType, false));
-		addFunctionCase(group.get(), "dup_host_visible",					"Test calling dup() on exported memory.",	testMemoryFdDup,			MemoryTestConfig(externalType, true));
+		const bool						dedicated		(dedicatedNdx == 1);
+		de::MovePtr<tcu::TestCaseGroup>	dedicatedGroup	(new tcu::TestCaseGroup(testCtx, dedicated ? "dedicated" : "suballocated", ""));
 
-		addFunctionCase(group.get(), "dup2",								"Test calling dup2() on exported memory.",	testMemoryFdDup2,			MemoryTestConfig(externalType, false));
-		addFunctionCase(group.get(), "dup2_host_visible",					"Test calling dup2() on exported memory.",	testMemoryFdDup2,			MemoryTestConfig(externalType, true));
+		for (size_t hostVisibleNdx = 0; hostVisibleNdx < 2; hostVisibleNdx++)
+		{
+			const bool						hostVisible			(hostVisibleNdx == 1);
+			de::MovePtr<tcu::TestCaseGroup>	hostVisibleGroup	(new tcu::TestCaseGroup(testCtx, hostVisible ? "host_visible" : "device_only", ""));
+			const MemoryTestConfig			memoryConfig		(externalType, hostVisible, dedicated);
 
-		addFunctionCase(group.get(), "dup3",								"Test calling dup3() on exported memory.",	testMemoryFdDup3,			MemoryTestConfig(externalType, false));
-		addFunctionCase(group.get(), "dup3_host_visible",					"Test calling dup3() on exported memory.",	testMemoryFdDup3,			MemoryTestConfig(externalType, true));
+			if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
+				|| externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)
+			{
+				addFunctionCase(hostVisibleGroup.get(), "create_win32",	"Test creating memory with win32 properties .",		testMemoryWin32Create,	memoryConfig);
+			}
 
-		addFunctionCase(group.get(), "send_over_socket",					"Test sending memory fd over socket.",		testMemoryFdSendOverSocket,	MemoryTestConfig(externalType, false));
-		addFunctionCase(group.get(), "send_over_socket_host_visible",		"Test sending memory fd over socket.",		testMemoryFdSendOverSocket,	MemoryTestConfig(externalType, true));
+			addFunctionCase(hostVisibleGroup.get(), "import_twice",				"Test importing memory object twice.",			testMemoryImportTwice,		memoryConfig);
+			addFunctionCase(hostVisibleGroup.get(), "import_multiple_times",	"Test importing memory object multiple times.",	testMemoryMultimpleImports,	memoryConfig);
 
-		// \note Not supported on WIN32 handles
-		addFunctionCase(group.get(), "export_multiple_times",				"Test exporting memory multiple times.",	testMemoryMultimpleExports,	MemoryTestConfig(externalType, false));
-		addFunctionCase(group.get(), "export_multiple_times_host_visible",	"Test exporting memory multiple times.",	testMemoryMultimpleExports,	MemoryTestConfig(externalType, true));
+			if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
+			{
+				addFunctionCase(hostVisibleGroup.get(), "dup",									"Test calling dup() on exported memory.",	testMemoryFdDup,			memoryConfig);
+				addFunctionCase(hostVisibleGroup.get(), "dup2",									"Test calling dup2() on exported memory.",	testMemoryFdDup2,			memoryConfig);
+				addFunctionCase(hostVisibleGroup.get(), "dup3",									"Test calling dup3() on exported memory.",	testMemoryFdDup3,			memoryConfig);
+				addFunctionCase(hostVisibleGroup.get(), "send_over_socket",						"Test sending memory fd over socket.",		testMemoryFdSendOverSocket,	memoryConfig);
+				// \note Not supported on WIN32 handles
+				addFunctionCase(hostVisibleGroup.get(), "export_multiple_times",				"Test exporting memory multiple times.",	testMemoryMultimpleExports,	memoryConfig);
+			}
+
+			dedicatedGroup->addChild(hostVisibleGroup.release());
+		}
+
+		{
+			de::MovePtr<tcu::TestCaseGroup>	bufferGroup		(new tcu::TestCaseGroup(testCtx, "buffer", ""));
+			const BufferTestConfig			bufferConfig	(externalType, dedicated);
+
+			addFunctionCase(bufferGroup.get(), "info",						"External buffer memory info query.",						testBufferQueries,				externalType);
+			addFunctionCase(bufferGroup.get(), "bind_export_import_bind",	"Test binding, exporting, importing and binding buffer.",	testBufferBindExportImportBind,	bufferConfig);
+			addFunctionCase(bufferGroup.get(), "export_bind_import_bind",	"Test exporting, binding, importing and binding buffer.",	testBufferExportBindImportBind,	bufferConfig);
+			addFunctionCase(bufferGroup.get(), "export_import_bind_bind",	"Test exporting, importind and binding buffer.",			testBufferExportImportBindBind,	bufferConfig);
+
+			dedicatedGroup->addChild(bufferGroup.release());
+		}
+
+		{
+			de::MovePtr<tcu::TestCaseGroup> imageGroup	(new tcu::TestCaseGroup(testCtx, "image", ""));
+			const ImageTestConfig			imageConfig	(externalType, dedicated);
+
+			addFunctionCase(imageGroup.get(), "info",						"External image memory info query.",						testImageQueries,				externalType);
+			addFunctionCase(imageGroup.get(), "bind_export_import_bind",	"Test binding, exporting, importing and binding image.",	testImageBindExportImportBind,	imageConfig);
+			addFunctionCase(imageGroup.get(), "export_bind_import_bind",	"Test exporting, binding, importing and binding image.",	testImageExportBindImportBind,	imageConfig);
+			addFunctionCase(imageGroup.get(), "export_import_bind_bind",	"Test exporting, importind and binding image.",				testImageExportImportBindBind,	imageConfig);
+
+			dedicatedGroup->addChild(imageGroup.release());
+		}
+
+		group->addChild(dedicatedGroup.release());
 	}
-
-	addFunctionCase(group.get(), "buffer_info",						"External buffer memory info query.",						testBufferQueries,				externalType);
-	addFunctionCase(group.get(), "buffer_bind_export_import_bind",	"Test binding, exporting, importing and binding buffer.",	testBufferBindExportImportBind,	externalType);
-	addFunctionCase(group.get(), "buffer_export_bind_import_bind",	"Test exporting, binding, importing and binding buffer.",	testBufferExportBindImportBind,	externalType);
-	addFunctionCase(group.get(), "buffer_export_import_bind_bind",	"Test exporting, importind and binding buffer.",			testBufferExportImportBindBind,	externalType);
-
-	addFunctionCase(group.get(), "image_info",						"External buffer memory info query.",						testImageQueries,					externalType);
-	addFunctionCase(group.get(), "image_bind_export_import_bind",	"Test binding, exporting, importing and binding buffer.",	testImageBindExportImportBind,		externalType);
-	addFunctionCase(group.get(), "image_export_bind_import_bind",	"Test exporting, binding, importing and binding buffer.",	testImageExportBindImportBind,		externalType);
-	addFunctionCase(group.get(), "image_export_import_bind_bind",	"Test exporting, importind and binding buffer.",			testImageExportImportBindBind,		externalType);
 
 	return group;
 }
@@ -2059,9 +2600,9 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "memory", "Tests for external memory"));
 
-	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHX).release());
-	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHX).release());
-	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHX).release());
+	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR).release());
+	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR).release());
+	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR).release());
 
 	return group;
 }

@@ -682,44 +682,44 @@ void DeviceDriver::getImageSparseMemoryRequirements2KHR (VkDevice device, const 
 	m_vk.getImageSparseMemoryRequirements2KHR(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
 }
 
-VkResult DeviceDriver::getMemoryWin32HandleKHX (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, pt::Win32Handle* pHandle) const
+VkResult DeviceDriver::getMemoryWin32HandleKHR (VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const
 {
-	return m_vk.getMemoryWin32HandleKHX(device, memory, handleType, pHandle);
+	return m_vk.getMemoryWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);
 }
 
-VkResult DeviceDriver::getMemoryWin32HandlePropertiesKHX (VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHX handleType, pt::Win32Handle handle, VkMemoryWin32HandlePropertiesKHX* pMemoryWin32HandleProperties) const
+VkResult DeviceDriver::getMemoryWin32HandlePropertiesKHR (VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHR handleType, pt::Win32Handle handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties) const
 {
-	return m_vk.getMemoryWin32HandlePropertiesKHX(device, handleType, handle, pMemoryWin32HandleProperties);
+	return m_vk.getMemoryWin32HandlePropertiesKHR(device, handleType, handle, pMemoryWin32HandleProperties);
 }
 
-VkResult DeviceDriver::getMemoryFdKHX (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, int* pFd) const
+VkResult DeviceDriver::getMemoryFdKHR (VkDevice device, const VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd) const
 {
-	return m_vk.getMemoryFdKHX(device, memory, handleType, pFd);
+	return m_vk.getMemoryFdKHR(device, pGetFdInfo, pFd);
 }
 
-VkResult DeviceDriver::getMemoryFdPropertiesKHX (VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHX handleType, int fd, VkMemoryFdPropertiesKHX* pMemoryFdProperties) const
+VkResult DeviceDriver::getMemoryFdPropertiesKHR (VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHR handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties) const
 {
-	return m_vk.getMemoryFdPropertiesKHX(device, handleType, fd, pMemoryFdProperties);
+	return m_vk.getMemoryFdPropertiesKHR(device, handleType, fd, pMemoryFdProperties);
 }
 
-VkResult DeviceDriver::importSemaphoreWin32HandleKHX (VkDevice device, const VkImportSemaphoreWin32HandleInfoKHX* pImportSemaphoreWin32HandleInfo) const
+VkResult DeviceDriver::importSemaphoreWin32HandleKHR (VkDevice device, const VkImportSemaphoreWin32HandleInfoKHR* pImportSemaphoreWin32HandleInfo) const
 {
-	return m_vk.importSemaphoreWin32HandleKHX(device, pImportSemaphoreWin32HandleInfo);
+	return m_vk.importSemaphoreWin32HandleKHR(device, pImportSemaphoreWin32HandleInfo);
 }
 
-VkResult DeviceDriver::getSemaphoreWin32HandleKHX (VkDevice device, VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, pt::Win32Handle* pHandle) const
+VkResult DeviceDriver::getSemaphoreWin32HandleKHR (VkDevice device, const VkSemaphoreGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const
 {
-	return m_vk.getSemaphoreWin32HandleKHX(device, semaphore, handleType, pHandle);
+	return m_vk.getSemaphoreWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);
 }
 
-VkResult DeviceDriver::importSemaphoreFdKHX (VkDevice device, const VkImportSemaphoreFdInfoKHX* pImportSemaphoreFdInfo) const
+VkResult DeviceDriver::importSemaphoreFdKHR (VkDevice device, const VkImportSemaphoreFdInfoKHR* pImportSemaphoreFdInfo) const
 {
-	return m_vk.importSemaphoreFdKHX(device, pImportSemaphoreFdInfo);
+	return m_vk.importSemaphoreFdKHR(device, pImportSemaphoreFdInfo);
 }
 
-VkResult DeviceDriver::getSemaphoreFdKHX (VkDevice device, VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, int* pFd) const
+VkResult DeviceDriver::getSemaphoreFdKHR (VkDevice device, const VkSemaphoreGetFdInfoKHR* pGetFdInfo, int* pFd) const
 {
-	return m_vk.getSemaphoreFdKHX(device, semaphore, handleType, pFd);
+	return m_vk.getSemaphoreFdKHR(device, pGetFdInfo, pFd);
 }
 
 VkResult DeviceDriver::getRefreshCycleDurationGOOGLE (VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties) const

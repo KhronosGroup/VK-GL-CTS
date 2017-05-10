@@ -1613,83 +1613,85 @@ struct VkPhysicalDeviceMultiviewPropertiesKHX
 	deUint32		maxMultiviewInstanceIndex;
 };
 
-struct VkExternalMemoryPropertiesKHX
+struct VkExternalMemoryPropertiesKHR
 {
-	VkExternalMemoryFeatureFlagsKHX		externalMemoryFeatures;
-	VkExternalMemoryHandleTypeFlagsKHX	exportFromImportedHandleTypes;
-	VkExternalMemoryHandleTypeFlagsKHX	compatibleHandleTypes;
+	VkExternalMemoryFeatureFlagsKHR		externalMemoryFeatures;
+	VkExternalMemoryHandleTypeFlagsKHR	exportFromImportedHandleTypes;
+	VkExternalMemoryHandleTypeFlagsKHR	compatibleHandleTypes;
 };
 
-struct VkPhysicalDeviceExternalImageFormatInfoKHX
+struct VkPhysicalDeviceExternalImageFormatInfoKHR
 {
 	VkStructureType							sType;
 	const void*								pNext;
-	VkExternalMemoryHandleTypeFlagBitsKHX	handleType;
+	VkExternalMemoryHandleTypeFlagBitsKHR	handleType;
 };
 
-struct VkExternalImageFormatPropertiesKHX
+struct VkExternalImageFormatPropertiesKHR
 {
 	VkStructureType					sType;
 	void*							pNext;
-	VkExternalMemoryPropertiesKHX	externalMemoryProperties;
+	VkExternalMemoryPropertiesKHR	externalMemoryProperties;
 };
 
-struct VkPhysicalDeviceExternalBufferInfoKHX
+struct VkPhysicalDeviceExternalBufferInfoKHR
 {
 	VkStructureType							sType;
 	const void*								pNext;
 	VkBufferCreateFlags						flags;
 	VkBufferUsageFlags						usage;
-	VkExternalMemoryHandleTypeFlagBitsKHX	handleType;
+	VkExternalMemoryHandleTypeFlagBitsKHR	handleType;
 };
 
-struct VkExternalBufferPropertiesKHX
+struct VkExternalBufferPropertiesKHR
 {
 	VkStructureType					sType;
 	void*							pNext;
-	VkExternalMemoryPropertiesKHX	externalMemoryProperties;
+	VkExternalMemoryPropertiesKHR	externalMemoryProperties;
 };
 
-struct VkPhysicalDeviceIDPropertiesKHX
+struct VkPhysicalDeviceIDPropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	deUint8			deviceUUID[VK_UUID_SIZE];
 	deUint8			driverUUID[VK_UUID_SIZE];
-	deUint8			deviceLUID[VK_LUID_SIZE_KHX];
+	deUint8			deviceLUID[VK_LUID_SIZE_KHR];
+	deUint32		deviceNodeMask;
 	VkBool32		deviceLUIDValid;
 };
 
-struct VkExternalMemoryImageCreateInfoKHX
+struct VkExternalMemoryImageCreateInfoKHR
 {
 	VkStructureType						sType;
 	const void*							pNext;
-	VkExternalMemoryHandleTypeFlagsKHX	handleTypes;
+	VkExternalMemoryHandleTypeFlagsKHR	handleTypes;
 };
 
-struct VkExternalMemoryBufferCreateInfoKHX
+struct VkExternalMemoryBufferCreateInfoKHR
 {
 	VkStructureType						sType;
 	const void*							pNext;
-	VkExternalMemoryHandleTypeFlagsKHX	handleTypes;
+	VkExternalMemoryHandleTypeFlagsKHR	handleTypes;
 };
 
-struct VkExportMemoryAllocateInfoKHX
+struct VkExportMemoryAllocateInfoKHR
 {
 	VkStructureType						sType;
 	const void*							pNext;
-	VkExternalMemoryHandleTypeFlagsKHX	handleTypes;
+	VkExternalMemoryHandleTypeFlagsKHR	handleTypes;
 };
 
-struct VkImportMemoryWin32HandleInfoKHX
+struct VkImportMemoryWin32HandleInfoKHR
 {
 	VkStructureType							sType;
 	const void*								pNext;
-	VkExternalMemoryHandleTypeFlagBitsKHX	handleType;
+	VkExternalMemoryHandleTypeFlagBitsKHR	handleType;
 	pt::Win32Handle							handle;
+	char*									name;
 };
 
-struct VkExportMemoryWin32HandleInfoKHX
+struct VkExportMemoryWin32HandleInfoKHR
 {
 	VkStructureType					sType;
 	const void*						pNext;
@@ -1698,29 +1700,45 @@ struct VkExportMemoryWin32HandleInfoKHX
 	char*							name;
 };
 
-struct VkMemoryWin32HandlePropertiesKHX
+struct VkMemoryWin32HandlePropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	deUint32		memoryTypeBits;
 };
 
-struct VkImportMemoryFdInfoKHX
+struct VkMemoryGetWin32HandleInfoKHR
 {
 	VkStructureType							sType;
 	const void*								pNext;
-	VkExternalMemoryHandleTypeFlagBitsKHX	handleType;
+	VkDeviceMemory							memory;
+	VkExternalMemoryHandleTypeFlagBitsKHR	handleType;
+};
+
+struct VkImportMemoryFdInfoKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkExternalMemoryHandleTypeFlagBitsKHR	handleType;
 	int										fd;
 };
 
-struct VkMemoryFdPropertiesKHX
+struct VkMemoryFdPropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	deUint32		memoryTypeBits;
 };
 
-struct VkWin32KeyedMutexAcquireReleaseInfoKHX
+struct VkMemoryGetFdInfoKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkDeviceMemory							memory;
+	VkExternalMemoryHandleTypeFlagBitsKHR	handleType;
+};
+
+struct VkWin32KeyedMutexAcquireReleaseInfoKHR
 {
 	VkStructureType			sType;
 	const void*				pNext;
@@ -1733,39 +1751,41 @@ struct VkWin32KeyedMutexAcquireReleaseInfoKHX
 	const deUint64*			pReleaseKeys;
 };
 
-struct VkPhysicalDeviceExternalSemaphoreInfoKHX
+struct VkPhysicalDeviceExternalSemaphoreInfoKHR
 {
 	VkStructureType								sType;
 	const void*									pNext;
-	VkExternalSemaphoreHandleTypeFlagBitsKHX	handleType;
+	VkExternalSemaphoreHandleTypeFlagBitsKHR	handleType;
 };
 
-struct VkExternalSemaphorePropertiesKHX
+struct VkExternalSemaphorePropertiesKHR
 {
 	VkStructureType							sType;
 	void*									pNext;
-	VkExternalSemaphoreHandleTypeFlagsKHX	exportFromImportedHandleTypes;
-	VkExternalSemaphoreHandleTypeFlagsKHX	compatibleHandleTypes;
-	VkExternalSemaphoreFeatureFlagsKHX		externalSemaphoreFeatures;
+	VkExternalSemaphoreHandleTypeFlagsKHR	exportFromImportedHandleTypes;
+	VkExternalSemaphoreHandleTypeFlagsKHR	compatibleHandleTypes;
+	VkExternalSemaphoreFeatureFlagsKHR		externalSemaphoreFeatures;
 };
 
-struct VkExportSemaphoreCreateInfoKHX
+struct VkExportSemaphoreCreateInfoKHR
 {
 	VkStructureType							sType;
 	const void*								pNext;
-	VkExternalSemaphoreHandleTypeFlagsKHX	handleTypes;
+	VkExternalSemaphoreHandleTypeFlagsKHR	handleTypes;
 };
 
-struct VkImportSemaphoreWin32HandleInfoKHX
+struct VkImportSemaphoreWin32HandleInfoKHR
 {
-	VkStructureType							sType;
-	const void*								pNext;
-	VkSemaphore								semaphore;
-	VkExternalSemaphoreHandleTypeFlagsKHX	handleType;
-	pt::Win32Handle							handle;
+	VkStructureType								sType;
+	const void*									pNext;
+	VkSemaphore									semaphore;
+	VkSemaphoreImportFlagsKHR					flags;
+	VkExternalSemaphoreHandleTypeFlagBitsKHR	handleType;
+	pt::Win32Handle								handle;
+	char*										name;
 };
 
-struct VkExportSemaphoreWin32HandleInfoKHX
+struct VkExportSemaphoreWin32HandleInfoKHR
 {
 	VkStructureType					sType;
 	const void*						pNext;
@@ -1774,7 +1794,7 @@ struct VkExportSemaphoreWin32HandleInfoKHX
 	char*							name;
 };
 
-struct VkD3D12FenceSubmitInfoKHX
+struct VkD3D12FenceSubmitInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
@@ -1784,13 +1804,30 @@ struct VkD3D12FenceSubmitInfoKHX
 	const deUint64*	pSignalSemaphoreValues;
 };
 
-struct VkImportSemaphoreFdInfoKHX
+struct VkSemaphoreGetWin32HandleInfoKHR
 {
 	VkStructureType								sType;
 	const void*									pNext;
 	VkSemaphore									semaphore;
-	VkExternalSemaphoreHandleTypeFlagBitsKHX	handleType;
+	VkExternalSemaphoreHandleTypeFlagBitsKHR	handleType;
+};
+
+struct VkImportSemaphoreFdInfoKHR
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	VkSemaphore									semaphore;
+	VkSemaphoreImportFlagsKHR					flags;
+	VkExternalSemaphoreHandleTypeFlagBitsKHR	handleType;
 	int											fd;
+};
+
+struct VkSemaphoreGetFdInfoKHR
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	VkSemaphore									semaphore;
+	VkExternalSemaphoreHandleTypeFlagBitsKHR	handleType;
 };
 
 struct VkRefreshCycleDurationGOOGLE

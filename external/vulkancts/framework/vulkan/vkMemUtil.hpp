@@ -140,6 +140,8 @@ void*					mapMemory					(const DeviceInterface& vkd, VkDevice device, VkDeviceMe
 void					flushMappedMemoryRange		(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
 void					invalidateMappedMemoryRange	(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
 
+deUint32				getCompatibleMemoryTypes	(const VkPhysicalDeviceMemoryProperties& deviceMemProps, MemoryRequirement requirement);
+
 } // vk
 
 #endif // _VKMEMUTIL_HPP

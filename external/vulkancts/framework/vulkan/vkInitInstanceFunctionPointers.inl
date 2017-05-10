@@ -49,5 +49,5 @@ m_vk.getPhysicalDeviceSurfaceFormats2KHR				= (GetPhysicalDeviceSurfaceFormats2K
 m_vk.createDebugReportCallbackEXT						= (CreateDebugReportCallbackEXTFunc)						GET_PROC_ADDR("vkCreateDebugReportCallbackEXT");
 m_vk.destroyDebugReportCallbackEXT						= (DestroyDebugReportCallbackEXTFunc)						GET_PROC_ADDR("vkDestroyDebugReportCallbackEXT");
 m_vk.debugReportMessageEXT								= (DebugReportMessageEXTFunc)								GET_PROC_ADDR("vkDebugReportMessageEXT");
-m_vk.getPhysicalDeviceExternalBufferPropertiesKHX		= (GetPhysicalDeviceExternalBufferPropertiesKHXFunc)		GET_PROC_ADDR("vkGetPhysicalDeviceExternalBufferPropertiesKHX");
-m_vk.getPhysicalDeviceExternalSemaphorePropertiesKHX	= (GetPhysicalDeviceExternalSemaphorePropertiesKHXFunc)		GET_PROC_ADDR("vkGetPhysicalDeviceExternalSemaphorePropertiesKHX");
+m_vk.getPhysicalDeviceExternalBufferPropertiesKHR		= (GetPhysicalDeviceExternalBufferPropertiesKHRFunc)		GET_PROC_ADDR("vkGetPhysicalDeviceExternalBufferPropertiesKHR");
+m_vk.getPhysicalDeviceExternalSemaphorePropertiesKHR	= (GetPhysicalDeviceExternalSemaphorePropertiesKHRFunc)		GET_PROC_ADDR("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR");

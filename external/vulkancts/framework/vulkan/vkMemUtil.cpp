@@ -69,14 +69,13 @@ HostPtr::~HostPtr (void)
 
 deUint32 selectMatchingMemoryType (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement)
 {
-	for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < deviceMemProps.memoryTypeCount; memoryTypeNdx++)
-	{
-		if ((allowedMemTypeBits & (1u << memoryTypeNdx)) != 0 &&
-			requirement.matchesHeap(deviceMemProps.memoryTypes[memoryTypeNdx].propertyFlags))
-			return memoryTypeNdx;
-	}
+	const deUint32	compatibleTypes	= getCompatibleMemoryTypes(deviceMemProps, requirement);
+	const deUint32	candidates		= allowedMemTypeBits & compatibleTypes;
 
-	TCU_THROW(NotSupportedError, "No compatible memory type found");
+	if (candidates == 0)
+		TCU_THROW(NotSupportedError, "No compatible memory type found");
+
+	return (deUint32)deCtz32(candidates);
 }
 
 bool isHostVisibleMemory (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 memoryTypeNdx)
@@ -303,6 +302,19 @@ void invalidateMappedMemoryRange (const DeviceInterface& vkd, VkDevice device, V
 	};
 
 	VK_CHECK(vkd.invalidateMappedMemoryRanges(device, 1u, &range));
+}
+
+deUint32 getCompatibleMemoryTypes (const VkPhysicalDeviceMemoryProperties& deviceMemProps, MemoryRequirement requirement)
+{
+	deUint32	compatibleTypes	= 0u;
+
+	for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < deviceMemProps.memoryTypeCount; memoryTypeNdx++)
+	{
+		if (requirement.matchesHeap(deviceMemProps.memoryTypes[memoryTypeNdx].propertyFlags))
+			compatibleTypes |= (1u << memoryTypeNdx);
+	}
+
+	return compatibleTypes;
 }
 
 } // vk

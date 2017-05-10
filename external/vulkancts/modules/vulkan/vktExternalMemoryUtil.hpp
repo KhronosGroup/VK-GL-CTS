@@ -66,8 +66,8 @@ private:
 	NativeHandle&		operator=		(const NativeHandle&);
 };
 
-const char*						externalSemaphoreTypeToName	(vk::VkExternalSemaphoreHandleTypeFlagBitsKHX type);
-const char*						externalMemoryTypeToName	(vk::VkExternalMemoryHandleTypeFlagBitsKHX type);
+const char*						externalSemaphoreTypeToName	(vk::VkExternalSemaphoreHandleTypeFlagBitsKHR type);
+const char*						externalMemoryTypeToName	(vk::VkExternalMemoryHandleTypeFlagBitsKHR type);
 
 enum Permanence
 {
@@ -75,81 +75,118 @@ enum Permanence
 	PERMANENCE_TEMPORARY
 };
 
-Permanence						getHandleTypePermanence		(vk::VkExternalSemaphoreHandleTypeFlagBitsKHX type);
+enum Transference
+{
+	TRANSFERENCE_COPY = 0,
+	TRANSFERENCE_REFERENCE
+};
 
-int								getMemoryFd					(const vk::DeviceInterface&					vkd,
-															 vk::VkDevice								device,
-															 vk::VkDeviceMemory							memory,
-															 vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType);
+bool							isSupportedPermanence				(vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	type,
+																	 Permanence										permanence);
+Transference					getHandelTypeTransferences			(vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	type);
 
-void							getMemoryNative				(const vk::DeviceInterface&					vkd,
-															 vk::VkDevice								device,
-															 vk::VkDeviceMemory							memory,
-															 vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType,
-															 NativeHandle&								nativeHandle);
+int								getMemoryFd							(const vk::DeviceInterface&					vkd,
+																	 vk::VkDevice								device,
+																	 vk::VkDeviceMemory							memory,
+																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType);
 
-vk::Move<vk::VkSemaphore>		createExportableSemaphore	(const vk::DeviceInterface&						vkd,
-															 vk::VkDevice									device,
-															 vk::VkExternalSemaphoreHandleTypeFlagBitsKHX	externalType);
+void							getMemoryNative						(const vk::DeviceInterface&					vkd,
+																	 vk::VkDevice								device,
+																	 vk::VkDeviceMemory							memory,
+																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+																	 NativeHandle&								nativeHandle);
 
-int								getSemaphoreFd				(const vk::DeviceInterface&						vkd,
-															 vk::VkDevice									device,
-															 vk::VkSemaphore								semaphore,
-															 vk::VkExternalSemaphoreHandleTypeFlagBitsKHX	externalType);
+vk::Move<vk::VkSemaphore>		createExportableSemaphore			(const vk::DeviceInterface&						vkd,
+																	 vk::VkDevice									device,
+																	 vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType);
 
-void							getSemaphoreNative			(const vk::DeviceInterface&						vkd,
-															 vk::VkDevice									device,
-															 vk::VkSemaphore								semaphore,
-															 vk::VkExternalSemaphoreHandleTypeFlagBitsKHX	externalType,
-															 NativeHandle&									nativeHandle);
+int								getSemaphoreFd						(const vk::DeviceInterface&						vkd,
+																	 vk::VkDevice									device,
+																	 vk::VkSemaphore								semaphore,
+																	 vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType);
 
-void							importSemaphore				(const vk::DeviceInterface&						vkd,
-															 const vk::VkDevice								device,
-															 const vk::VkSemaphore							semaphore,
-															 vk::VkExternalSemaphoreHandleTypeFlagBitsKHX	externalType,
-															 NativeHandle&									handle);
+void							getSemaphoreNative					(const vk::DeviceInterface&						vkd,
+																	 vk::VkDevice									device,
+																	 vk::VkSemaphore								semaphore,
+																	 vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType,
+																	 NativeHandle&									nativeHandle);
 
-vk::Move<vk::VkSemaphore>		createAndImportSemaphore	(const vk::DeviceInterface&						vkd,
-															 const vk::VkDevice								device,
-															 vk::VkExternalSemaphoreHandleTypeFlagBitsKHX	externalType,
-															 NativeHandle&									handle);
+void							importSemaphore						(const vk::DeviceInterface&						vkd,
+																	 const vk::VkDevice								device,
+																	 const vk::VkSemaphore							semaphore,
+																	 vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType,
+																	 NativeHandle&									handle,
+																	 vk::VkSemaphoreImportFlagsKHR					flags);
 
-vk::Move<vk::VkDeviceMemory>	allocateExportableMemory	(const vk::DeviceInterface&					vkd,
-															 vk::VkDevice								device,
-															 const vk::VkMemoryRequirements&			requirements,
-															 vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType);
+vk::Move<vk::VkSemaphore>		createAndImportSemaphore			(const vk::DeviceInterface&						vkd,
+																	 const vk::VkDevice								device,
+																	 vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType,
+																	 NativeHandle&									handle,
+																	 vk::VkSemaphoreImportFlagsKHR					flags);
+
+// If buffer is not null use dedicated allocation
+vk::Move<vk::VkDeviceMemory>	allocateExportableMemory			(const vk::DeviceInterface&					vkd,
+																	 vk::VkDevice								device,
+																	 const vk::VkMemoryRequirements&			requirements,
+																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+																	 vk::VkBuffer								buffer);
+
+// If image is not null use dedicated allocation
+vk::Move<vk::VkDeviceMemory>	allocateExportableMemory			(const vk::DeviceInterface&					vkd,
+																	 vk::VkDevice								device,
+																	 const vk::VkMemoryRequirements&			requirements,
+																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+																	 vk::VkImage								image);
 
 // \note hostVisible argument is strict. Setting it to false will cause NotSupportedError to be thrown if non-host visible memory doesn't exist.
-vk::Move<vk::VkDeviceMemory>	allocateExportableMemory	(const vk::InstanceInterface&				vki,
-															 vk::VkPhysicalDevice						physicalDevice,
-															 const vk::DeviceInterface&					vkd,
-															 vk::VkDevice								device,
-															 const vk::VkMemoryRequirements&			requirements,
-															 vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType,
-															 bool										hostVisible);
+// If buffer is not null use dedicated allocation
+vk::Move<vk::VkDeviceMemory>	allocateExportableMemory			(const vk::InstanceInterface&				vki,
+																	 vk::VkPhysicalDevice						physicalDevice,
+																	 const vk::DeviceInterface&					vkd,
+																	 vk::VkDevice								device,
+																	 const vk::VkMemoryRequirements&			requirements,
+																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+																	 bool										hostVisible,
+																	 vk::VkBuffer								buffer);
 
-vk::Move<vk::VkDeviceMemory>	importMemory				(const vk::DeviceInterface&					vkd,
-															 vk::VkDevice								device,
-															 const vk::VkMemoryRequirements&			requirements,
-															 vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType,
-															 NativeHandle&								handle);
+vk::Move<vk::VkDeviceMemory>	importMemory						(const vk::DeviceInterface&					vkd,
+																	 vk::VkDevice								device,
+																	 const vk::VkMemoryRequirements&			requirements,
+																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+																	 NativeHandle&								handle);
 
-vk::Move<vk::VkBuffer>			createExternalBuffer		(const vk::DeviceInterface&					vkd,
-															 vk::VkDevice								device,
-															 deUint32									queueFamilyIndex,
-															 vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType,
-															 vk::VkDeviceSize							size,
-															 vk::VkBufferUsageFlags						usage);
+vk::Move<vk::VkDeviceMemory>	importDedicatedMemory				(const vk::DeviceInterface&					vkd,
+																	 vk::VkDevice								device,
+																	 vk::VkBuffer								buffer,
+																	 const vk::VkMemoryRequirements&			requirements,
+																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+																	 NativeHandle&								handle);
 
-vk::Move<vk::VkImage>			createExternalImage			(const vk::DeviceInterface&					vkd,
-															 vk::VkDevice								device,
-															 deUint32									queueFamilyIndex,
-															 vk::VkExternalMemoryHandleTypeFlagBitsKHX	externalType,
-															 vk::VkFormat								format,
-															 deUint32									width,
-															 deUint32									height,
-															 vk::VkImageTiling							tiling,
-															 vk::VkImageUsageFlags						usage);
+vk::Move<vk::VkDeviceMemory>	importDedicatedMemory				(const vk::DeviceInterface&					vkd,
+																	 vk::VkDevice								device,
+																	 vk::VkImage								image,
+																	 const vk::VkMemoryRequirements&			requirements,
+																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+																	 NativeHandle&								handle);
+
+vk::Move<vk::VkBuffer>			createExternalBuffer				(const vk::DeviceInterface&					vkd,
+																	 vk::VkDevice								device,
+																	 deUint32									queueFamilyIndex,
+																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+																	 vk::VkDeviceSize							size,
+																	 vk::VkBufferCreateFlags					createFlags,
+																	 vk::VkBufferUsageFlags						usageFlags);
+
+vk::Move<vk::VkImage>			createExternalImage					(const vk::DeviceInterface&					vkd,
+																	 vk::VkDevice								device,
+																	 deUint32									queueFamilyIndex,
+																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+																	 vk::VkFormat								format,
+																	 deUint32									width,
+																	 deUint32									height,
+																	 vk::VkImageTiling							tiling,
+																	 vk::VkImageCreateFlags						createFlags,
+																	 vk::VkImageUsageFlags						usageFlags);
 
 } // ExternalMemoryUtil
 } // vkt
