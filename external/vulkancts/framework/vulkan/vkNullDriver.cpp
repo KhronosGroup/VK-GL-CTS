@@ -233,18 +233,6 @@ public:
 										~SwapchainKHR	(void) {}
 };
 
-class IndirectCommandsLayoutNVX
-{
-public:
-	IndirectCommandsLayoutNVX (VkDevice, const VkIndirectCommandsLayoutCreateInfoNVX*) {}
-};
-
-class ObjectTableNVX
-{
-public:
-	ObjectTableNVX (VkDevice, const VkObjectTableCreateInfoNVX*) {}
-};
-
 void* allocateHeap (const VkMemoryAllocateInfo* pAllocInfo)
 {
 	// \todo [2015-12-03 pyry] Alignment requirements?

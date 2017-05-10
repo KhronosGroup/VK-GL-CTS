@@ -49,4 +49,3 @@ m_vk.getPhysicalDeviceSurfaceFormats2KHR				= (GetPhysicalDeviceSurfaceFormats2K
 m_vk.createDebugReportCallbackEXT						= (CreateDebugReportCallbackEXTFunc)						GET_PROC_ADDR("vkCreateDebugReportCallbackEXT");
 m_vk.destroyDebugReportCallbackEXT						= (DestroyDebugReportCallbackEXTFunc)						GET_PROC_ADDR("vkDestroyDebugReportCallbackEXT");
 m_vk.debugReportMessageEXT								= (DebugReportMessageEXTFunc)								GET_PROC_ADDR("vkDebugReportMessageEXT");
-m_vk.getPhysicalDeviceExternalImageFormatPropertiesNV	= (GetPhysicalDeviceExternalImageFormatPropertiesNVFunc)	GET_PROC_ADDR("vkGetPhysicalDeviceExternalImageFormatPropertiesNV");

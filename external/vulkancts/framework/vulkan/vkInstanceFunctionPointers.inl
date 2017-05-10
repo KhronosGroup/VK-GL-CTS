@@ -49,4 +49,3 @@ GetPhysicalDeviceSurfaceFormats2KHRFunc					getPhysicalDeviceSurfaceFormats2KHR;
 CreateDebugReportCallbackEXTFunc						createDebugReportCallbackEXT;
 DestroyDebugReportCallbackEXTFunc						destroyDebugReportCallbackEXT;
 DebugReportMessageEXTFunc								debugReportMessageEXT;
-GetPhysicalDeviceExternalImageFormatPropertiesNVFunc	getPhysicalDeviceExternalImageFormatPropertiesNV;
