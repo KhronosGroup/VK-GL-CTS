@@ -1968,9 +1968,12 @@ void OpaqueTypeIndexingTests::init (void)
 		const char*		name;
 	} shaderTypes[] =
 	{
-		{ glu::SHADERTYPE_VERTEX,		"vertex"	},
-		{ glu::SHADERTYPE_FRAGMENT,		"fragment"	},
-		{ glu::SHADERTYPE_COMPUTE,		"compute"	}
+		{ glu::SHADERTYPE_VERTEX,					"vertex"	},
+		{ glu::SHADERTYPE_FRAGMENT,					"fragment"	},
+		{ glu::SHADERTYPE_GEOMETRY,					"geometry"	},
+		{ glu::SHADERTYPE_TESSELLATION_CONTROL,		"tess_ctrl"	},
+		{ glu::SHADERTYPE_TESSELLATION_EVALUATION,	"tess_eval"	},
+		{ glu::SHADERTYPE_COMPUTE,					"compute"	}
 	};
 
 	// .sampler
