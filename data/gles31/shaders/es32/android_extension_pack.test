@@ -282,8 +282,8 @@ group extension_directive "Extension directive"
 			{
 				tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
 				// set bounding box to (-1,-1,-1, 1) .. (1,1,1,1)
-				gl_BoundingBoxEXT[0] = vec4(tc_in[0]-2.0, tc_in[1]-2.0, tc_in[2]-2.0, 1.0);
-				gl_BoundingBoxEXT[1] = vec4(tc_in[0], tc_in[1], tc_in[2], 1.0);
+				gl_BoundingBox[0] = vec4(tc_in[0]-2.0, tc_in[1]-2.0, tc_in[2]-2.0, 1.0);
+				gl_BoundingBox[1] = vec4(tc_in[0], tc_in[1], tc_in[2], 1.0);
 				${TESSELLATION_CONTROL_OUTPUT}
 			}
 		""
