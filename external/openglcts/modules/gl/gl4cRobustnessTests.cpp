@@ -1245,6 +1245,17 @@ tcu::TestNode::IterateResult GetnUniformTest::iterate()
 	program.Init(cs /* cs */, "" /* fs */, "" /* gs */, "" /* tcs */, "" /* tes */, "" /* vs */);
 	program.Use();
 
+	/* Shader storage buffer */
+	GLuint buf;
+	gl.genBuffers(1, &buf);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GenBuffers");
+
+	gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "BindBufferBase");
+
+	gl.bufferData(GL_SHADER_STORAGE_BUFFER, 16, DE_NULL, GL_STREAM_DRAW);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "BufferData");
+
 	/* passing uniform values */
 	gl.programUniform4fv(program.m_id, 11, 1, input4f);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "ProgramUniform4fv");
@@ -1297,13 +1308,15 @@ tcu::TestNode::IterateResult GetnUniformTest::iterate()
 		m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 	}
 
+	gl.deleteBuffers(1, &buf);
+
 	/* Done */
 	return tcu::TestNode::STOP;
 }
 
 std::string GetnUniformTest::getComputeShader()
 {
-	static const GLchar* cs = "#version 320 es\n"
+	static const GLchar* cs = "#version 430\n"
 							  "\n"
 							  "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 							  "\n"
@@ -1311,9 +1324,11 @@ std::string GetnUniformTest::getComputeShader()
 							  "layout (location = 12) uniform ivec3 inputi;\n"
 							  "layout (location = 13) uniform uvec4 inputu;\n"
 							  "\n"
-							  "shared float valuef;\n"
-							  "shared int valuei;\n"
-							  "shared uint valueu;\n"
+							  "layout (std140, binding = 0) buffer ssbo {"
+							  "   float valuef;\n"
+							  "   int valuei;\n"
+							  "   uint valueu;\n"
+							  "};\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
