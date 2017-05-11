@@ -207,7 +207,7 @@ std::string TexelFetchTest::getFragmentShader(bool is_case_valid)
 										 "                      in  lowp vec2      gs_fs_tex_coord;\n"
 										 "layout (location = 0) out lowp TYPE      out_fs_color;\n"
 										 "\n"
-										 "layout (binding = 0) uniform lowp SAMPLER uni_texture;\n"
+										 "layout (location = 0) uniform lowp SAMPLER uni_texture;\n"
 										 "\n"
 										 "void main()\n"
 										 "{\n"
