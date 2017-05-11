@@ -42,6 +42,7 @@
 #include "gluObjectWrapper.hpp"
 #include "gluStrUtil.hpp"
 #include "tcuTestLog.hpp"
+#include "deStringUtil.hpp"
 
 namespace deqp
 {
@@ -1318,7 +1319,7 @@ void SRGBTestCase::render (void)
 	{
 		gl.activeTexture(GL_TEXTURE0 + (glw::GLenum)textureSourceIdx);
 		gl.bindTexture(m_textureSourceList[textureSourceIdx]->getGLTargetType(), m_textureSourceList[textureSourceIdx]->getHandle());
-		glw::GLuint samplerUniformLocationID = gl.getUniformLocation(m_shaderProgramList[0]->getHandle(), m_shaderProgramList[0]->getUniformAtLocation(textureSourceIdx).name.c_str());
+		glw::GLuint samplerUniformLocationID = gl.getUniformLocation(m_shaderProgramList[0]->getHandle(), (std::string("uTexture") + de::toString(textureSourceIdx)).c_str());
 		TCU_CHECK(samplerUniformLocationID != (glw::GLuint)-1);
 		gl.uniform1i(samplerUniformLocationID, (glw::GLenum)textureSourceIdx);
 	}
@@ -1742,7 +1743,7 @@ void DecodeToggledCase::render (void)
 		{
 			gl.activeTexture(GL_TEXTURE0 + (glw::GLenum)textureSourceIdx);
 			gl.bindTexture(m_textureSourceList[textureSourceIdx]->getGLTargetType(), m_textureSourceList[textureSourceIdx]->getHandle());
-			glw::GLuint samplerUniformLocationID = gl.getUniformLocation(m_shaderProgramList[programIdx]->getHandle(), m_shaderProgramList[programIdx]->getUniformAtLocation(textureSourceIdx).name.c_str());
+			glw::GLuint samplerUniformLocationID = gl.getUniformLocation(m_shaderProgramList[programIdx]->getHandle(), (std::string("uTexture") + de::toString(textureSourceIdx)).c_str());
 			TCU_CHECK(samplerUniformLocationID != (glw::GLuint) - 1);
 			gl.uniform1i(samplerUniformLocationID, (glw::GLenum)textureSourceIdx);
 		}
