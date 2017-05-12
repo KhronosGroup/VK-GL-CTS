@@ -350,6 +350,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkSharedPresentSurfaceCapabilit
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSurfaceInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceCapabilities2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceFormat2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryDedicatedRequirementsKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryDedicatedAllocateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferMemoryRequirementsInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageMemoryRequirementsInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageSparseMemoryRequirementsInfo2KHR& value);

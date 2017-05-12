@@ -1524,6 +1524,22 @@ struct VkSurfaceFormat2KHR
 	VkSurfaceFormatKHR	surfaceFormat;
 };
 
+struct VkMemoryDedicatedRequirementsKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		prefersDedicatedAllocation;
+	VkBool32		requiresDedicatedAllocation;
+};
+
+struct VkMemoryDedicatedAllocateInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkImage			image;
+	VkBuffer		buffer;
+};
+
 struct VkBufferMemoryRequirementsInfo2KHR
 {
 	VkStructureType	sType;
