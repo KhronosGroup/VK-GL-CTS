@@ -637,6 +637,11 @@ void DeviceDriver::trimCommandPoolKHR (VkDevice device, VkCommandPool commandPoo
 	m_vk.trimCommandPoolKHR(device, commandPool, flags);
 }
 
+VkResult DeviceDriver::getSwapchainStatusKHR (VkDevice device, VkSwapchainKHR swapchain) const
+{
+	return m_vk.getSwapchainStatusKHR(device, swapchain);
+}
+
 VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, VkDebugMarkerObjectTagInfoEXT* pTagInfo) const
 {
 	return m_vk.debugMarkerSetObjectTagEXT(device, pTagInfo);
