@@ -186,6 +186,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT:									return "VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR:										return "VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR";
+		case VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR:					return "VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR:				return "VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX:							return "VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX:				return "VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX";
@@ -194,6 +195,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_LIMITS_NVX:					return "VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_LIMITS_NVX";
 		case VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_FEATURES_NVX:					return "VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_FEATURES_NVX";
 		case VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE:								return "VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR:								return "VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR";
+		case VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR:									return "VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR";
 		default:																		return DE_NULL;
 	}
 }
@@ -490,6 +494,7 @@ const char* getImageLayoutName (VkImageLayout value)
 		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:				return "VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL";
 		case VK_IMAGE_LAYOUT_PREINITIALIZED:					return "VK_IMAGE_LAYOUT_PREINITIALIZED";
 		case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:					return "VK_IMAGE_LAYOUT_PRESENT_SRC_KHR";
+		case VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR:				return "VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR";
 		default:												return DE_NULL;
 	}
 }
@@ -841,11 +846,13 @@ const char* getPresentModeKHRName (VkPresentModeKHR value)
 {
 	switch (value)
 	{
-		case VK_PRESENT_MODE_IMMEDIATE_KHR:		return "VK_PRESENT_MODE_IMMEDIATE_KHR";
-		case VK_PRESENT_MODE_MAILBOX_KHR:		return "VK_PRESENT_MODE_MAILBOX_KHR";
-		case VK_PRESENT_MODE_FIFO_KHR:			return "VK_PRESENT_MODE_FIFO_KHR";
-		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:	return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
-		default:								return DE_NULL;
+		case VK_PRESENT_MODE_IMMEDIATE_KHR:					return "VK_PRESENT_MODE_IMMEDIATE_KHR";
+		case VK_PRESENT_MODE_MAILBOX_KHR:					return "VK_PRESENT_MODE_MAILBOX_KHR";
+		case VK_PRESENT_MODE_FIFO_KHR:						return "VK_PRESENT_MODE_FIFO_KHR";
+		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:				return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
+		case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:		return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
+		case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:	return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+		default:											return DE_NULL;
 	}
 }
 
@@ -3504,6 +3511,46 @@ std::ostream& operator<< (std::ostream& s, const VkPresentRegionsKHR& value)
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tswapchainCount = " << value.swapchainCount << '\n';
 	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSurfaceInfo2KHR& value)
+{
+	s << "VkPhysicalDeviceSurfaceInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsurface = " << value.surface << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSurfaceCapabilities2KHR& value)
+{
+	s << "VkSurfaceCapabilities2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsurfaceCapabilities = " << value.surfaceCapabilities << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSurfaceFormat2KHR& value)
+{
+	s << "VkSurfaceFormat2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsurfaceFormat = " << value.surfaceFormat << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSharedPresentSurfaceCapabilitiesKHR& value)
+{
+	s << "VkSharedPresentSurfaceCapabilitiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsharedPresentSupportedUsageFlags = " << getImageUsageFlagsStr(value.sharedPresentSupportedUsageFlags) << '\n';
 	s << '}';
 	return s;
 }

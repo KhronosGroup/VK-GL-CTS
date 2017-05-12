@@ -656,6 +656,7 @@ void checkInstanceExtensions (tcu::ResultCollector& results, const vector<string
 		"VK_KHR_xcb_surface",
 		"VK_KHR_xlib_surface",
 		"VK_KHR_get_physical_device_properties2",
+		"VK_KHR_get_surface_capabilities2",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedInstanceKhrExtensions), s_allowedInstanceKhrExtensions);
@@ -674,6 +675,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_push_descriptor",
 		"VK_KHR_descriptor_update_template",
 		"VK_KHR_incremental_present",
+		"VK_KHR_shared_presentable_image",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);
