@@ -787,6 +787,7 @@ KHR-GLES31.core.layout_binding.buffer_layout_binding_atomicAdd_VertexShader
 KHR-GLES31.core.shader_integer_mix.define
 KHR-GLES31.core.shader_integer_mix.prototypes-extension
 KHR-GLES31.core.shader_integer_mix.prototypes
+KHR-GLES31.core.shader_integer_mix.prototypes-negative
 KHR-GLES31.core.shader_integer_mix.mix-ivec4
 KHR-GLES31.core.shader_integer_mix.mix-uvec4
 KHR-GLES31.core.shader_integer_mix.mix-bvec4

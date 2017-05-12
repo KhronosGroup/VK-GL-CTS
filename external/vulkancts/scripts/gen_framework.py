@@ -118,6 +118,10 @@ INSTANCE_FUNCTIONS	= [
 
 	# VK_NVX_device_generated_commands
 	"vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX",
+
+	# VK_KHR_get_surface_capabilities2
+	"vkGetPhysicalDeviceSurfaceCapabilities2KHR",
+	"vkGetPhysicalDeviceSurfaceFormats2KHR",
 ]
 
 DEFINITIONS			= [

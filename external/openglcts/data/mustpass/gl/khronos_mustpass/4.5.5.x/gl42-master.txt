@@ -2581,6 +2581,7 @@ KHR-GL42.shaders.uniform_block.random.all_shared_buffer.19
 KHR-GL42.shaders.shader_integer_mix.define
 KHR-GL42.shaders.shader_integer_mix.prototypes-extension
 KHR-GL42.shaders.shader_integer_mix.prototypes
+KHR-GL42.shaders.shader_integer_mix.prototypes-negative
 KHR-GL42.shaders.shader_integer_mix.mix-ivec4
 KHR-GL42.shaders.shader_integer_mix.mix-uvec4
 KHR-GL42.shaders.shader_integer_mix.mix-bvec4

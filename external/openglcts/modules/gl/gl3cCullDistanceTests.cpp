@@ -1821,7 +1821,7 @@ void CullDistance::FunctionalTest::configureVAO(glw::GLuint clipdistances_array_
 		1
 	}; /* vertex x offsets to subgrid cell origin for point primitive    */
 	const glw::GLuint offsets_point_draw_y[1] = {
-		2
+		1
 	}; /* vertex y offsets to subgrid cell origin for point primitive    */
 	const glw::GLuint offsets_point_checkpoint_x[1] = {
 		1
@@ -1841,7 +1841,8 @@ void CullDistance::FunctionalTest::configureVAO(glw::GLuint clipdistances_array_
 	const glw::GLuint offsets_triangle_checkpoint_y[3] = {
 		1, sub_grid_cell_size - 2, 1
 	}; /* pixel y offsets to subgrid cell origin for triangle primitive  */
-
+	const glw::GLfloat offsets_pixel_center_x = (primitive_mode == PRIMITIVE_MODE_POINTS) ? 0.5f : 0;
+	const glw::GLfloat offsets_pixel_center_y = (primitive_mode == PRIMITIVE_MODE_POINTS) ? 0.5f : 0;
 	/* Clear data left from previous tests. */
 	m_bo_data.clear();
 
@@ -2032,9 +2033,11 @@ void CullDistance::FunctionalTest::configureVAO(glw::GLuint clipdistances_array_
 						glw::GLint sub_cell_origin_y = cell_y * grid_cell_size + n_sub_cell_y * sub_grid_cell_size;
 						/* Normalized texture coordinates of vertex draw position. */
 						glw::GLfloat x =
-							glw::GLfloat(sub_cell_origin_x + vertex_draw_pixel_offset_x) / glw::GLfloat(m_to_width);
+							(glw::GLfloat(sub_cell_origin_x + vertex_draw_pixel_offset_x) + offsets_pixel_center_x) /
+							glw::GLfloat(m_to_width);
 						glw::GLfloat y =
-							glw::GLfloat(sub_cell_origin_y + vertex_draw_pixel_offset_y) / glw::GLfloat(m_to_height);
+							(glw::GLfloat(sub_cell_origin_y + vertex_draw_pixel_offset_y) + offsets_pixel_center_y) /
+							glw::GLfloat(m_to_height);
 						/* Normalized texture coordinates of vertex checkpoint position. */
 						glw::GLfloat checkpoint_x = glw::GLfloat(sub_cell_origin_x + vertex_checkpoint_pixel_offset_x) /
 													glw::GLfloat(m_to_width);
