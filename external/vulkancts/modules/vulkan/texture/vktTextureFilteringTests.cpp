@@ -119,6 +119,11 @@ Texture2DFilteringTestInstance::Texture2DFilteringTestInstance (Context& context
 	const tcu::Vec4					cBias		= fmtInfo.valueMin;
 	const tcu::Vec4					cScale		= fmtInfo.valueMax-fmtInfo.valueMin;
 
+	if ((testParameters.wrapS == Sampler::MIRRORED_ONCE ||
+		testParameters.wrapT == Sampler::MIRRORED_ONCE) &&
+		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
+		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
+
 	// Create 2 textures.
 	m_textures.reserve(2);
 	for (int ndx = 0; ndx < 2; ndx++)
@@ -308,6 +313,11 @@ TextureCubeFilteringTestInstance::TextureCubeFilteringTestInstance (Context& con
 	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
 	const tcu::Vec4					cBias		= fmtInfo.valueMin;
 	const tcu::Vec4					cScale		= fmtInfo.valueMax-fmtInfo.valueMin;
+
+	if ((testParameters.wrapS == Sampler::MIRRORED_ONCE ||
+		testParameters.wrapT == Sampler::MIRRORED_ONCE) &&
+		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
+		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
 
 	m_textures.reserve(2);
 	for (int ndx = 0; ndx < 2; ndx++)
@@ -526,6 +536,11 @@ Texture2DArrayFilteringTestInstance::Texture2DArrayFilteringTestInstance (Contex
 	const tcu::Vec4					cBias		= fmtInfo.valueMin;
 	const int						numLevels	= deLog2Floor32(de::max(m_testParameters.width, m_testParameters.height)) + 1;
 
+	if ((testParameters.wrapS == Sampler::MIRRORED_ONCE ||
+		testParameters.wrapT == Sampler::MIRRORED_ONCE) &&
+		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
+		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
+
 	// Create textures.
 	m_textures.reserve(2);
 	for (int ndx = 0; ndx < 2; ndx++)
@@ -723,6 +738,12 @@ Texture3DFilteringTestInstance::Texture3DFilteringTestInstance (Context& context
 	const tcu::Vec4					cScale		= fmtInfo.valueMax-fmtInfo.valueMin;
 	const tcu::Vec4					cBias		= fmtInfo.valueMin;
 	const int						numLevels	= deLog2Floor32(de::max(de::max(m_testParameters.width, m_testParameters.height), m_testParameters.depth)) + 1;
+
+	if ((testParameters.wrapS == Sampler::MIRRORED_ONCE ||
+		testParameters.wrapT == Sampler::MIRRORED_ONCE ||
+		testParameters.wrapR == Sampler::MIRRORED_ONCE) &&
+		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
+		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
 
 	// Create textures.
 	m_textures.reserve(2);
