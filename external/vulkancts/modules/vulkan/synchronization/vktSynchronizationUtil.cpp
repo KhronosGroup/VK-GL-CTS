@@ -441,45 +441,6 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&	vk,
 	return createRenderPass(vk, device, &renderPassInfo);
 }
 
-Move<VkRenderPass> makeRenderPassWithoutAttachments (const DeviceInterface&	vk,
-													 const VkDevice			device)
-{
-	const VkAttachmentReference unusedAttachment =
-	{
-		VK_ATTACHMENT_UNUSED,								// deUint32			attachment;
-		VK_IMAGE_LAYOUT_UNDEFINED							// VkImageLayout	layout;
-	};
-
-	const VkSubpassDescription subpassDescription =
-	{
-		(VkSubpassDescriptionFlags)0,						// VkSubpassDescriptionFlags		flags;
-		VK_PIPELINE_BIND_POINT_GRAPHICS,					// VkPipelineBindPoint				pipelineBindPoint;
-		0u,													// deUint32							inputAttachmentCount;
-		DE_NULL,											// const VkAttachmentReference*		pInputAttachments;
-		0u,													// deUint32							colorAttachmentCount;
-		DE_NULL,											// const VkAttachmentReference*		pColorAttachments;
-		DE_NULL,											// const VkAttachmentReference*		pResolveAttachments;
-		&unusedAttachment,									// const VkAttachmentReference*		pDepthStencilAttachment;
-		0u,													// deUint32							preserveAttachmentCount;
-		DE_NULL												// const deUint32*					pPreserveAttachments;
-	};
-
-	const VkRenderPassCreateInfo renderPassInfo =
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		(VkRenderPassCreateFlags)0,							// VkRenderPassCreateFlags			flags;
-		0u,													// deUint32							attachmentCount;
-		DE_NULL,											// const VkAttachmentDescription*	pAttachments;
-		1u,													// deUint32							subpassCount;
-		&subpassDescription,								// const VkSubpassDescription*		pSubpasses;
-		0u,													// deUint32							dependencyCount;
-		DE_NULL												// const VkSubpassDependency*		pDependencies;
-	};
-
-	return createRenderPass(vk, device, &renderPassInfo);
-}
-
 Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,
 									 const VkDevice				device,
 									 const VkRenderPass			renderPass,
@@ -498,25 +459,6 @@ Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,
 		width,											// uint32_t                                    width;
 		height,											// uint32_t                                    height;
 		layers,											// uint32_t                                    layers;
-	};
-
-	return createFramebuffer(vk, device, &framebufferInfo);
-}
-
-Move<VkFramebuffer> makeFramebufferWithoutAttachments (const DeviceInterface&		vk,
-													   const VkDevice				device,
-													   const VkRenderPass			renderPass)
-{
-	const VkFramebufferCreateInfo framebufferInfo = {
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType                             sType;
-		DE_NULL,										// const void*                                 pNext;
-		(VkFramebufferCreateFlags)0,					// VkFramebufferCreateFlags                    flags;
-		renderPass,										// VkRenderPass                                renderPass;
-		0u,												// uint32_t                                    attachmentCount;
-		DE_NULL,										// const VkImageView*                          pAttachments;
-		0u,												// uint32_t                                    width;
-		0u,												// uint32_t                                    height;
-		0u,												// uint32_t                                    layers;
 	};
 
 	return createFramebuffer(vk, device, &framebufferInfo);

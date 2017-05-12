@@ -482,9 +482,9 @@ Move<VkFramebuffer> makeFramebufferWithoutAttachments (const DeviceInterface&		v
 		renderPass,										// VkRenderPass                                renderPass;
 		0u,												// uint32_t                                    attachmentCount;
 		DE_NULL,										// const VkImageView*                          pAttachments;
-		0u,												// uint32_t                                    width;
-		0u,												// uint32_t                                    height;
-		0u,												// uint32_t                                    layers;
+		1u,												// uint32_t                                    width;
+		1u,												// uint32_t                                    height;
+		1u,												// uint32_t                                    layers;
 	};
 
 	return createFramebuffer(vk, device, &framebufferInfo);

@@ -193,7 +193,7 @@ void BuildInfoTests::init (void)
 	addChild(new BuildEnumCase				(m_testCtx, "de_compiler",				"DE_COMPILER",		DE_COMPILER,							getCompilerName));
 	addChild(new BuildInfoStringCase		(m_testCtx, "de_ptr_size",				"DE_PTR_SIZE",		de::toString(DE_PTR_SIZE).c_str()));
 	addChild(new BuildEnumCase				(m_testCtx, "de_endianness",			"DE_ENDIANNESS",	DE_ENDIANNESS,							getEndiannessName));
-	addChild(new EndiannessConsistencyCase	(m_testCtx, "de_endianness_consitent",	"DE_ENDIANNESS"));
+	addChild(new EndiannessConsistencyCase	(m_testCtx, "de_endianness_consistent", "DE_ENDIANNESS"));
 }
 
 } // dit
