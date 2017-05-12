@@ -149,6 +149,11 @@ T nextFlagExcluding (T value, T excludedFlags)
 	return static_cast<T>(tmp);
 }
 
+bool validValueVkBool32 (const VkBool32 value)
+{
+	return (value == VK_FALSE || value == VK_TRUE);
+}
+
 class IBufferMemoryRequirements
 {
 public:
@@ -502,6 +507,125 @@ void BufferMemoryRequirementsExtended::updateMemoryRequirements (const DeviceInt
 	}
 }
 
+
+class BufferMemoryRequirementsDedicatedAllocation : public BufferMemoryRequirementsExtended
+{
+	static tcu::TestStatus testEntryPoint	(Context&									context,
+											 const VkBufferCreateFlags					bufferFlags);
+
+protected:
+	virtual void addFunctionTestCase		(tcu::TestCaseGroup*						group,
+											 const std::string&							name,
+											 const std::string&							desc,
+											 VkBufferCreateFlags						arg0);
+
+	virtual void preTestChecks				(Context&									context,
+											 const InstanceInterface&					vki,
+											 const VkPhysicalDevice						physDevice,
+											 const VkBufferCreateFlags					flags);
+
+	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
+											 const VkDevice								device,
+											 const VkDeviceSize							size,
+											 const VkBufferCreateFlags					flags,
+											 const VkBufferUsageFlags					usage,
+											 const bool									all);
+
+	virtual void verifyMemoryRequirements	(tcu::ResultCollector&						result,
+											 const VkPhysicalDeviceMemoryProperties&	deviceMemoryProperties,
+											 const VkPhysicalDeviceLimits&				limits,
+											 const VkBufferCreateFlags					bufferFlags,
+											 const VkBufferUsageFlags					usage);
+
+protected:
+	VkBool32	m_allUsageFlagsPrefersDedicatedAllocation;
+	VkBool32	m_allUsageFlagsRequiresDedicatedAllocation;
+
+	VkBool32	m_currentTestPrefersDedicatedAllocation;
+	VkBool32	m_currentTestRequiresDedicatedAllocation;
+};
+
+
+tcu::TestStatus BufferMemoryRequirementsDedicatedAllocation::testEntryPoint(Context& context, const VkBufferCreateFlags bufferFlags)
+{
+	BufferMemoryRequirementsDedicatedAllocation test;
+
+	return test.execTest(context, bufferFlags);
+}
+
+void BufferMemoryRequirementsDedicatedAllocation::addFunctionTestCase (tcu::TestCaseGroup*	group,
+																	   const std::string&	name,
+																	   const std::string&	desc,
+																	   VkBufferCreateFlags	arg0)
+{
+	addFunctionCase(group, name, desc, testEntryPoint, arg0);
+}
+
+void BufferMemoryRequirementsDedicatedAllocation::preTestChecks (Context&					context,
+																 const InstanceInterface&	vki,
+																 const VkPhysicalDevice		physDevice,
+																 const VkBufferCreateFlags	flags)
+{
+	const std::string extensionName("VK_KHR_dedicated_allocation");
+
+	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
+		TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+
+	BufferMemoryRequirementsExtended::preTestChecks(context, vki, physDevice, flags);
+}
+
+void BufferMemoryRequirementsDedicatedAllocation::updateMemoryRequirements (const DeviceInterface&		vk,
+																			const VkDevice				device,
+																			const VkDeviceSize			size,
+																			const VkBufferCreateFlags	flags,
+																			const VkBufferUsageFlags	usage,
+																			const bool					all)
+{
+	const deUint32						invalidVkBool32			= static_cast<deUint32>(~0);
+
+	VkMemoryDedicatedRequirementsKHR	dedicatedRequirements	=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,	// VkStructureType	sType
+		DE_NULL,												// void*			pNext
+		invalidVkBool32,										// VkBool32			prefersDedicatedAllocation
+		invalidVkBool32											// VkBool32			requiresDedicatedAllocation
+	};
+
+	if (all)
+	{
+		m_allUsageFlagsRequirements					= getBufferMemoryRequirements2(vk, device, size, flags, usage, &dedicatedRequirements);
+		m_allUsageFlagsPrefersDedicatedAllocation	= dedicatedRequirements.prefersDedicatedAllocation;
+		m_allUsageFlagsRequiresDedicatedAllocation	= dedicatedRequirements.requiresDedicatedAllocation;
+
+		TCU_CHECK(validValueVkBool32(m_allUsageFlagsPrefersDedicatedAllocation));
+		// Test design expects m_allUsageFlagsRequiresDedicatedAllocation to be false
+		TCU_CHECK(m_allUsageFlagsRequiresDedicatedAllocation == VK_FALSE);
+	}
+	else
+	{
+		m_currentTestRequirements					= getBufferMemoryRequirements2(vk, device, size, flags, usage, &dedicatedRequirements);
+		m_currentTestPrefersDedicatedAllocation		= dedicatedRequirements.prefersDedicatedAllocation;
+		m_currentTestRequiresDedicatedAllocation	= dedicatedRequirements.requiresDedicatedAllocation;
+	}
+}
+
+void BufferMemoryRequirementsDedicatedAllocation::verifyMemoryRequirements (tcu::ResultCollector&					result,
+																			const VkPhysicalDeviceMemoryProperties&	deviceMemoryProperties,
+																			const VkPhysicalDeviceLimits&			limits,
+																			const VkBufferCreateFlags				bufferFlags,
+																			const VkBufferUsageFlags				usage)
+{
+	BufferMemoryRequirementsExtended::verifyMemoryRequirements(result, deviceMemoryProperties, limits, bufferFlags, usage);
+
+	result.check(validValueVkBool32(m_currentTestPrefersDedicatedAllocation),
+		"Invalid VkBool32 value in m_currentTestPrefersDedicatedAllocation");
+
+	result.check(m_currentTestRequiresDedicatedAllocation == VK_FALSE,
+		"Regular (non-shared) objects must not require dedicated allocations");
+
+	result.check(m_currentTestPrefersDedicatedAllocation == VK_FALSE || m_currentTestPrefersDedicatedAllocation == VK_FALSE,
+		"Preferred and required flags for dedicated memory cannot be set to true at the same time");
+}
 
 
 struct ImageTestParams
@@ -1087,6 +1211,97 @@ void ImageMemoryRequirementsExtended::updateMemoryRequirements (const DeviceInte
 }
 
 
+class ImageMemoryRequirementsDedicatedAllocation : public ImageMemoryRequirementsExtended
+{
+public:
+	static tcu::TestStatus testEntryPoint	(Context&									context,
+											 const ImageTestParams						params);
+
+protected:
+	virtual void addFunctionTestCase		(tcu::TestCaseGroup*						group,
+											 const std::string&							name,
+											 const std::string&							desc,
+											 const ImageTestParams						arg0);
+
+	virtual void preTestChecks				(Context&									context,
+											 const InstanceInterface&					vki,
+											 const VkPhysicalDevice						physDevice,
+											 const VkImageCreateFlags					flags);
+
+	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
+											 const VkDevice								device);
+
+	virtual void verifyMemoryRequirements	(tcu::ResultCollector&						result,
+											 const VkPhysicalDeviceMemoryProperties&	deviceMemoryProperties);
+
+protected:
+	VkBool32	m_currentTestPrefersDedicatedAllocation;
+	VkBool32	m_currentTestRequiresDedicatedAllocation;
+};
+
+
+tcu::TestStatus ImageMemoryRequirementsDedicatedAllocation::testEntryPoint (Context& context, const ImageTestParams params)
+{
+	ImageMemoryRequirementsDedicatedAllocation test;
+
+	return test.execTest(context, params);
+}
+
+void ImageMemoryRequirementsDedicatedAllocation::addFunctionTestCase (tcu::TestCaseGroup*		group,
+																	  const std::string&		name,
+																	  const std::string&		desc,
+																	  const ImageTestParams		arg0)
+{
+	addFunctionCase(group, name, desc, testEntryPoint, arg0);
+}
+
+void ImageMemoryRequirementsDedicatedAllocation::preTestChecks (Context&					context,
+																const InstanceInterface&	vki,
+																const VkPhysicalDevice		physDevice,
+																const VkImageCreateFlags	createFlags)
+{
+	const std::string extensionName("VK_KHR_dedicated_allocation");
+
+	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
+		TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+
+	ImageMemoryRequirementsExtended::preTestChecks (context, vki, physDevice, createFlags);
+}
+
+
+void ImageMemoryRequirementsDedicatedAllocation::updateMemoryRequirements (const DeviceInterface&	vk,
+																		   const VkDevice			device)
+{
+	const deUint32						invalidVkBool32			= static_cast<deUint32>(~0);
+
+	VkMemoryDedicatedRequirementsKHR	dedicatedRequirements	=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,	// VkStructureType	sType
+		DE_NULL,												// void*			pNext
+		invalidVkBool32,										// VkBool32			prefersDedicatedAllocation
+		invalidVkBool32											// VkBool32			requiresDedicatedAllocation
+	};
+
+	m_currentTestRequirements					= getImageMemoryRequirements2(vk, device, m_currentTestImageInfo, &dedicatedRequirements);
+	m_currentTestPrefersDedicatedAllocation		= dedicatedRequirements.prefersDedicatedAllocation;
+	m_currentTestRequiresDedicatedAllocation	= dedicatedRequirements.requiresDedicatedAllocation;
+}
+
+void ImageMemoryRequirementsDedicatedAllocation::verifyMemoryRequirements (tcu::ResultCollector&						result,
+																		   const VkPhysicalDeviceMemoryProperties&	deviceMemoryProperties)
+{
+	ImageMemoryRequirementsExtended::verifyMemoryRequirements(result, deviceMemoryProperties);
+
+	result.check(validValueVkBool32(m_currentTestPrefersDedicatedAllocation),
+		"Non-bool value in m_currentTestPrefersDedicatedAllocation");
+
+	result.check(m_currentTestRequiresDedicatedAllocation == VK_FALSE,
+		"Test design expects m_currentTestRequiresDedicatedAllocation to be false");
+
+	result.check(m_currentTestPrefersDedicatedAllocation == VK_FALSE || m_currentTestPrefersDedicatedAllocation == VK_FALSE,
+		"Preferred and required flags for dedicated memory cannot be set to true at the same time");
+}
+
 void populateCoreTestGroup (tcu::TestCaseGroup* group)
 {
 	BufferMemoryRequirementsOriginal	bufferTest;
@@ -1105,6 +1320,15 @@ void populateExtendedTestGroup (tcu::TestCaseGroup* group)
 	imageTest.populateTestGroup(group);
 }
 
+void populateDedicatedAllocationTestGroup(tcu::TestCaseGroup* group)
+{
+	BufferMemoryRequirementsDedicatedAllocation	bufferTest;
+	ImageMemoryRequirementsDedicatedAllocation	imageTest;
+
+	bufferTest.populateTestGroup(group);
+	imageTest.populateTestGroup(group);
+}
+
 } // anonymous
 
 
@@ -1114,6 +1338,7 @@ tcu::TestCaseGroup* createRequirementsTests (tcu::TestContext& testCtx)
 
 	requirementsGroup->addChild(createTestGroup(testCtx, "core",					"Memory requirements tests with core functionality",						populateCoreTestGroup));
 	requirementsGroup->addChild(createTestGroup(testCtx, "extended",				"Memory requirements tests with extension VK_KHR_get_memory_requirements2",	populateExtendedTestGroup));
+	requirementsGroup->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Memory requirements tests with extension VK_KHR_dedicated_allocation",		populateDedicatedAllocationTestGroup));
 
 	return requirementsGroup.release();
 }

@@ -331,3 +331,7 @@ dEQP-VK.glsl.builtin_var.fragdepth.*
 
 #VK-GL-CTS 656
 dEQP-VK.glsl.builtin_var.fragcoord_msaa.*
+
+#VK-GL-CTS 657
+dEQP-VK.memory.requirements.dedicated_allocation.buffer.*
+dEQP-VK.memory.requirements.dedicated_allocation.image.*

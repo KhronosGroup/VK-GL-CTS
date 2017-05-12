@@ -4293,6 +4293,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormats2KHR(
     VkSurfaceFormat2KHR*                        pSurfaceFormats);
 #endif
 
+<<<<<<< HEAD
 #define VK_KHR_external_fence_capabilities 1
 #define VK_LUID_SIZE_KHR                  8
 #define VK_KHR_EXTERNAL_FENCE_CAPABILITIES_SPEC_VERSION 1
@@ -4438,6 +4439,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetFenceFdKHR(
     int*                                        pFd);
 #endif
 
+=======
+>>>>>>> 6c472cc5... Test VK_KHR_dedicated_allocation mem requirement queries
 #define VK_KHR_dedicated_allocation 1
 #define VK_KHR_DEDICATED_ALLOCATION_SPEC_VERSION 1
 #define VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME "VK_KHR_dedicated_allocation"
@@ -4456,7 +4459,10 @@ typedef struct VkMemoryDedicatedAllocateInfoKHR {
     VkBuffer           buffer;
 } VkMemoryDedicatedAllocateInfoKHR;
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6c472cc5... Test VK_KHR_dedicated_allocation mem requirement queries
 #define VK_KHR_get_memory_requirements2 1
 #define VK_KHR_GET_MEMORY_REQUIREMENTS_2_SPEC_VERSION 1
 #define VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME "VK_KHR_get_memory_requirements2"
