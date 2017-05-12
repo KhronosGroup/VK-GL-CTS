@@ -573,6 +573,12 @@ void BaseVertexGroup::init (void)
 		{
 			const std::string iterationDesc = std::string("base vertex ") + de::toString(indexTest.baseVertex[iterationNdx]);
 			spec.baseVertex	= indexTest.baseVertex[iterationNdx];
+			// spec.indexMin + spec.baseVertex can not be a negative value
+			if (spec.indexMin + spec.baseVertex < 0)
+			{
+				spec.indexMax -= (spec.indexMin + spec.baseVertex);
+				spec.indexMin -= (spec.indexMin + spec.baseVertex);
+			}
 			test->addIteration(spec, iterationDesc.c_str());
 		}
 
