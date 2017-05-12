@@ -904,6 +904,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/vktTestPackage.cpp \
 	external/vulkancts/modules/vulkan/vktTestPackageEntry.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayTimingTests.cpp \
+	external/vulkancts/modules/vulkan/wsi/vktWsiIncrementalPresentTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSharedPresentableImageTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSwapchainTests.cpp \
@@ -982,6 +983,7 @@ deqp_compile_flags := \
 	-DDEQP_GLES2_RUNTIME_LOAD=1 \
 	-DQP_SUPPORT_PNG=1 \
 	-Wconversion \
+	-fwrapv \
 	-Wno-sign-conversion
 
 LOCAL_SHARED_LIBRARIES := \
@@ -1001,7 +1003,7 @@ LOCAL_CFLAGS += \
 	$(deqp_compile_flags)
 
 LOCAL_SDK_VERSION := 22
-LOCAL_CPPFLAGS += -Wno-non-virtual-dtor -fwrapv
+LOCAL_CPPFLAGS += -Wno-non-virtual-dtor -Wno-delete-non-virtual-dtor
 LOCAL_NDK_STL_VARIANT := gnustl_static
 LOCAL_RTTI_FLAG := -frtti -fexceptions
 LOCAL_MULTILIB := both
