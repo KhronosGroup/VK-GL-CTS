@@ -24,6 +24,8 @@ set(GLCTS_COMMON_SRCS
 	glcFragDepthTests.hpp
 	glcInfoTests.cpp
 	glcInfoTests.hpp
+	glcNoDefaultContextPackage.cpp
+	glcNoDefaultContextPackage.hpp
 	glcRobustBufferAccessBehaviorTests.cpp
 	glcRobustBufferAccessBehaviorTests.hpp
 	glcShaderIndexingTests.cpp
