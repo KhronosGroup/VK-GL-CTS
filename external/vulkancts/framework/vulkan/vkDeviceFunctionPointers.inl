@@ -128,6 +128,7 @@ AcquireNextImageKHRFunc								acquireNextImageKHR;
 QueuePresentKHRFunc									queuePresentKHR;
 CreateSharedSwapchainsKHRFunc						createSharedSwapchainsKHR;
 TrimCommandPoolKHRFunc								trimCommandPoolKHR;
+GetSwapchainStatusKHRFunc							getSwapchainStatusKHR;
 DebugMarkerSetObjectTagEXTFunc						debugMarkerSetObjectTagEXT;
 DebugMarkerSetObjectNameEXTFunc						debugMarkerSetObjectNameEXT;
 CmdDebugMarkerBeginEXTFunc							cmdDebugMarkerBeginEXT;

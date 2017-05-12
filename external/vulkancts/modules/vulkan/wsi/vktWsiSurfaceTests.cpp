@@ -47,6 +47,7 @@
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
+#include "deMemory.h"
 
 namespace vk
 {
@@ -59,6 +60,25 @@ inline bool operator!= (const VkSurfaceFormatKHR& a, const VkSurfaceFormatKHR& b
 inline bool operator== (const VkSurfaceFormatKHR& a, const VkSurfaceFormatKHR& b)
 {
 	return !(a != b);
+}
+
+inline bool operator!= (const VkExtent2D& a, const VkExtent2D& b)
+{
+	return (a.width != b.width) || (a.height != b.height);
+}
+
+inline bool operator!= (const VkSurfaceCapabilitiesKHR& a, const VkSurfaceCapabilitiesKHR& b)
+{
+	return (a.minImageCount				!= b.minImageCount)				||
+		   (a.maxImageCount				!= b.maxImageCount)				||
+		   (a.currentExtent				!= b.currentExtent)				||
+		   (a.minImageExtent			!= b.minImageExtent)			||
+		   (a.maxImageExtent			!= b.maxImageExtent)			||
+		   (a.maxImageArrayLayers		!= b.maxImageArrayLayers)		||
+		   (a.supportedTransforms		!= b.supportedTransforms)		||
+		   (a.currentTransform			!= b.currentTransform)			||
+		   (a.supportedCompositeAlpha	!= b.supportedCompositeAlpha)	||
+		   (a.supportedUsageFlags		!= b.supportedUsageFlags);
 }
 
 } // vk
@@ -155,9 +175,10 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
 										const Extensions&				supportedExtensions,
 										Type							wsiType,
+										const vector<string>			extraExtensions,
 										const VkAllocationCallbacks*	pAllocator	= DE_NULL)
 {
-	vector<string>	extensions;
+	vector<string>	extensions	= extraExtensions;
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
@@ -179,6 +200,18 @@ struct InstanceHelper
 		, instance				(createInstanceWithWsi(context.getPlatformInterface(),
 													   supportedExtensions,
 													   wsiType,
+													   vector<string>(),
+													   pAllocator))
+		, vki					(context.getPlatformInterface(), *instance)
+	{}
+
+	InstanceHelper (Context& context, Type wsiType, const vector<string>& extensions, const VkAllocationCallbacks* pAllocator = DE_NULL)
+		: supportedExtensions	(enumerateInstanceExtensionProperties(context.getPlatformInterface(),
+																	  DE_NULL))
+		, instance				(createInstanceWithWsi(context.getPlatformInterface(),
+													   supportedExtensions,
+													   wsiType,
+													   extensions,
 													   pAllocator))
 		, vki					(context.getPlatformInterface(), *instance)
 	{}
@@ -464,6 +497,64 @@ tcu::TestStatus querySurfaceCapabilitiesTest (Context& context, Type wsiType)
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+tcu::TestStatus querySurfaceCapabilities2Test (Context& context, Type wsiType)
+{
+	tcu::TestLog&					log						= context.getTestContext().getLog();
+	tcu::ResultCollector			results					(log);
+
+	const InstanceHelper			instHelper				(context, wsiType, vector<string>(1, string("VK_KHR_get_surface_capabilities2")));
+	const NativeObjects				native					(context, instHelper.supportedExtensions, wsiType);
+	const Unique<VkSurfaceKHR>		surface					(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
+	const vector<VkPhysicalDevice>	physicalDevices			= enumeratePhysicalDevices(instHelper.vki, *instHelper.instance);
+
+	for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
+	{
+		if (isSupportedByAnyQueue(instHelper.vki, physicalDevices[deviceNdx], *surface))
+		{
+			const VkSurfaceCapabilitiesKHR	refCapabilities	= getPhysicalDeviceSurfaceCapabilities(instHelper.vki,
+																								   physicalDevices[deviceNdx],
+																								   *surface);
+			VkSurfaceCapabilities2KHR		extCapabilities;
+
+			deMemset(&extCapabilities, 0xcd, sizeof(VkSurfaceCapabilities2KHR));
+			extCapabilities.sType	= VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
+			extCapabilities.pNext	= DE_NULL;
+
+			{
+				const VkPhysicalDeviceSurfaceInfo2KHR	surfaceInfo	=
+				{
+					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
+					DE_NULL,
+					*surface
+				};
+				VkPhysicalDeviceSurfaceInfo2KHR			infoCopy;
+
+				deMemcpy(&infoCopy, &surfaceInfo, sizeof(VkPhysicalDeviceSurfaceInfo2KHR));
+
+				VK_CHECK(instHelper.vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevices[deviceNdx], &surfaceInfo, &extCapabilities));
+
+				results.check(deMemoryEqual(&surfaceInfo, &infoCopy, sizeof(VkPhysicalDeviceSurfaceInfo2KHR)) == DE_TRUE, "Driver wrote into input struct");
+			}
+
+			results.check(extCapabilities.sType == VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR &&
+						  extCapabilities.pNext == DE_NULL,
+						  "sType/pNext modified");
+
+			if (refCapabilities != extCapabilities.surfaceCapabilities)
+			{
+				log << TestLog::Message
+					<< "Device " << deviceNdx
+					<< ": expected " << refCapabilities
+					<< ", got " << extCapabilities.surfaceCapabilities
+					<< TestLog::EndMessage;
+				results.fail("Mismatch between VK_KHR_surface and VK_KHR_surface2 query results");
+			}
+		}
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
 void validateSurfaceFormats (tcu::ResultCollector& results, Type wsiType, const vector<VkSurfaceFormatKHR>& formats)
 {
 	const VkSurfaceFormatKHR*	requiredFormats		= DE_NULL;
@@ -489,6 +580,13 @@ void validateSurfaceFormats (tcu::ResultCollector& results, Type wsiType, const 
 		if (!de::contains(formats.begin(), formats.end(), requiredFormat))
 			results.fail(de::toString(requiredFormat) + " not supported");
 	}
+
+	// Check that there are no duplicates
+	for (size_t ndx = 1; ndx < formats.size(); ++ndx)
+	{
+		if (de::contains(formats.begin(), formats.begin() + ndx, formats[ndx]))
+			results.fail("Found duplicate entry " + de::toString(formats[ndx]));
+	}
 }
 
 tcu::TestStatus querySurfaceFormatsTest (Context& context, Type wsiType)
@@ -513,6 +611,99 @@ tcu::TestStatus querySurfaceFormatsTest (Context& context, Type wsiType)
 
 			validateSurfaceFormats(results, wsiType, formats);
 			CheckPhysicalDeviceSurfaceFormatsIncompleteResult()(results, instHelper.vki, physicalDevices[deviceNdx], *surface, formats.size());
+		}
+		// else skip query as surface is not supported by the device
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
+tcu::TestStatus querySurfaceFormats2Test (Context& context, Type wsiType)
+{
+	tcu::TestLog&					log				= context.getTestContext().getLog();
+	tcu::ResultCollector			results			(log);
+
+	const InstanceHelper			instHelper		(context, wsiType, vector<string>(1, string("VK_KHR_get_surface_capabilities2")));
+	const NativeObjects				native			(context, instHelper.supportedExtensions, wsiType);
+	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
+	const vector<VkPhysicalDevice>	physicalDevices	= enumeratePhysicalDevices(instHelper.vki, *instHelper.instance);
+
+	for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
+	{
+		if (isSupportedByAnyQueue(instHelper.vki, physicalDevices[deviceNdx], *surface))
+		{
+			const vector<VkSurfaceFormatKHR>		refFormats	= getPhysicalDeviceSurfaceFormats(instHelper.vki,
+																								  physicalDevices[deviceNdx],
+																								  *surface);
+			const VkPhysicalDeviceSurfaceInfo2KHR	surfaceInfo	=
+			{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
+				DE_NULL,
+				*surface
+			};
+			deUint32								numFormats	= 0;
+
+			VK_CHECK(instHelper.vki.getPhysicalDeviceSurfaceFormats2KHR(physicalDevices[deviceNdx], &surfaceInfo, &numFormats, DE_NULL));
+
+			if ((size_t)numFormats != refFormats.size())
+				results.fail("vkGetPhysicalDeviceSurfaceFormats2KHR() returned different number of formats");
+
+			if (numFormats > 0)
+			{
+				vector<VkSurfaceFormat2KHR>	formats	(numFormats);
+
+				for (size_t ndx = 0; ndx < formats.size(); ++ndx)
+				{
+					formats[ndx].sType = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR;
+					formats[ndx].pNext = DE_NULL;
+				}
+
+				VK_CHECK(instHelper.vki.getPhysicalDeviceSurfaceFormats2KHR(physicalDevices[deviceNdx], &surfaceInfo, &numFormats, &formats[0]));
+
+				if ((size_t)numFormats != formats.size())
+					results.fail("Format count changed between calls");
+
+				{
+					vector<VkSurfaceFormatKHR>	extFormats	(formats.size());
+
+					for (size_t ndx = 0; ndx < formats.size(); ++ndx)
+					{
+						results.check(formats[ndx].sType == VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR &&
+									  formats[ndx].pNext == DE_NULL,
+									  "sType/pNext modified");
+						extFormats[ndx] = formats[ndx].surfaceFormat;
+					}
+
+					for (size_t ndx = 0; ndx < refFormats.size(); ++ndx)
+					{
+						if (!de::contains(extFormats.begin(), extFormats.end(), refFormats[ndx]))
+							results.fail(de::toString(refFormats[ndx]) + " missing from extended query");
+					}
+				}
+
+				// Check VK_INCOMPLETE
+				{
+					vector<VkSurfaceFormat2KHR>	formatsClone	(formats);
+					deUint32					numToSupply		= numFormats/2;
+					VkResult					queryResult;
+
+					ValidateQueryBits::fillBits(formatsClone.begin() + numToSupply, formatsClone.end());
+
+					queryResult = instHelper.vki.getPhysicalDeviceSurfaceFormats2KHR(physicalDevices[deviceNdx], &surfaceInfo, &numToSupply, &formatsClone[0]);
+
+					results.check(queryResult == VK_INCOMPLETE, "Expected VK_INCOMPLETE");
+					results.check(ValidateQueryBits::checkBits(formatsClone.begin() + numToSupply, formatsClone.end()),
+								  "Driver wrote past last element");
+
+					for (size_t ndx = 0; ndx < (size_t)numToSupply; ++ndx)
+					{
+						results.check(formatsClone[ndx].sType == VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR &&
+									  formatsClone[ndx].pNext == DE_NULL &&
+									  formatsClone[ndx].surfaceFormat == formats[ndx].surfaceFormat,
+									  "Returned element " + de::toString(ndx) + " is different");
+					}
+				}
+			}
 		}
 		// else skip query as surface is not supported by the device
 	}
@@ -688,7 +879,9 @@ void createSurfaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 	addFunctionCase(testGroup, "create_simulate_oom",		"Create surface with simulating OOM",	createSurfaceSimulateOOMTest,		wsiType);
 	addFunctionCase(testGroup, "query_support",				"Query surface support",				querySurfaceSupportTest,			wsiType);
 	addFunctionCase(testGroup, "query_capabilities",		"Query surface capabilities",			querySurfaceCapabilitiesTest,		wsiType);
+	addFunctionCase(testGroup, "query_capabilities2",		"Query extended surface capabilities",	querySurfaceCapabilities2Test,		wsiType);
 	addFunctionCase(testGroup, "query_formats",				"Query surface formats",				querySurfaceFormatsTest,			wsiType);
+	addFunctionCase(testGroup, "query_formats2",			"Query extended surface formats",		querySurfaceFormats2Test,			wsiType);
 	addFunctionCase(testGroup, "query_present_modes",		"Query surface present modes",			querySurfacePresentModesTest,		wsiType);
 	addFunctionCase(testGroup, "destroy_null_handle",		"Destroy VK_NULL_HANDLE surface",		destroyNullHandleSurfaceTest,		wsiType);
 
