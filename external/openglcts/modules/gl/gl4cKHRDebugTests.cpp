@@ -1314,6 +1314,12 @@ tcu::TestNode::IterateResult ReceiveingMessagesTest::iterate()
 	}
 
 	/*
+	 * Ignore spurious performance messages
+	 */
+	m_gl->debugMessageControl(GL_DONT_CARE /* source */, GL_DEBUG_TYPE_PERFORMANCE /* type */,
+							  GL_DONT_CARE /* severity */, 0 /* counts */, 0 /* ids */, GL_FALSE /* enabled */);
+
+	/*
 	 * - insert a message with DebugMessageInsert;
 	 * - inspect message log to check if the message is reported;
 	 * - inspect message log again, there should be no messages;

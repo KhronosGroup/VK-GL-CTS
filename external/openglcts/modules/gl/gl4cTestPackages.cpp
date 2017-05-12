@@ -68,6 +68,7 @@
 #include "glcInfoTests.hpp"
 #include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcSampleVariablesTests.hpp"
+#include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderLibrary.hpp"
 #include "glcShaderMultisampleInterpolationTests.hpp"
 #include "glcViewportArrayTests.hpp"
@@ -305,6 +306,19 @@ void GL44TestPackage::init(void)
 
 // GL45TestPackage
 
+class GL45ShaderTests : public deqp::TestCaseGroup
+{
+public:
+	GL45ShaderTests(deqp::Context& context) : TestCaseGroup(context, "shaders45", "Shading Language Tests")
+	{
+	}
+
+	void init(void)
+	{
+		addChild(new deqp::ShaderIntegerMixTests(getContext(), glu::GLSL_VERSION_450));
+	}
+};
+
 GL45TestPackage::GL45TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
 								 glu::ContextType renderContextType)
 	: GL44TestPackage(testCtx, packageName, packageName, renderContextType)
@@ -323,6 +337,7 @@ void GL45TestPackage::init(void)
 
 	try
 	{
+		addChild(new GL45ShaderTests(getContext()));
 		addChild(new gl4cts::ClipControlTests(getContext(), gl4cts::ClipControlTests::API_GL_45core));
 		addChild(new gl4cts::DirectStateAccess::Tests(getContext()));
 		addChild(new gl4cts::GetTextureSubImage::Tests(getContext()));

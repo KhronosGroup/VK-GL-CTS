@@ -2581,6 +2581,7 @@ KHR-GL45.shaders.uniform_block.random.all_shared_buffer.19
 KHR-GL45.shaders.shader_integer_mix.define
 KHR-GL45.shaders.shader_integer_mix.prototypes-extension
 KHR-GL45.shaders.shader_integer_mix.prototypes
+KHR-GL45.shaders.shader_integer_mix.prototypes-negative
 KHR-GL45.shaders.shader_integer_mix.mix-ivec4
 KHR-GL45.shaders.shader_integer_mix.mix-uvec4
 KHR-GL45.shaders.shader_integer_mix.mix-bvec4
@@ -4587,6 +4588,13 @@ KHR-GL45.texture_buffer.texture_buffer_active_uniform_validation_fragment_shader
 KHR-GL45.texture_buffer.texture_buffer_active_uniform_validation_compute_shader
 KHR-GL45.texture_buffer.texture_buffer_buffer_parameters
 KHR-GL45.texture_buffer.texture_buffer_precision
+KHR-GL45.shaders45.shader_integer_mix.define
+KHR-GL45.shaders45.shader_integer_mix.prototypes-extension
+KHR-GL45.shaders45.shader_integer_mix.prototypes
+KHR-GL45.shaders45.shader_integer_mix.prototypes-negative
+KHR-GL45.shaders45.shader_integer_mix.mix-ivec4
+KHR-GL45.shaders45.shader_integer_mix.mix-uvec4
+KHR-GL45.shaders45.shader_integer_mix.mix-bvec4
 KHR-GL45.clip_control.initial
 KHR-GL45.clip_control.modify_get
 KHR-GL45.clip_control.errors

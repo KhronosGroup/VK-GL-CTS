@@ -519,6 +519,12 @@ TextureFilterMinmaxParameterQueriesTestCase::TextureFilterMinmaxParameterQueries
  */
 tcu::TestNode::IterateResult TextureFilterMinmaxParameterQueriesTestCase::iterate()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_texture_filter_minmax"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	testReductionModeQueriesDefaultValues(gl);
@@ -647,6 +653,12 @@ TextureFilterMinmaxFilteringTestCaseBase::TextureFilterMinmaxFilteringTestCaseBa
 */
 tcu::TestNode::IterateResult TextureFilterMinmaxFilteringTestCaseBase::iterate()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_texture_filter_minmax"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
 	const glu::RenderContext& renderContext = m_context.getRenderContext();
 	const glw::Functions&	 gl			= renderContext.getFunctions();
 
@@ -766,6 +778,12 @@ TextureFilterMinmaxSupportTestCase::TextureFilterMinmaxSupportTestCase(deqp::Con
 */
 tcu::TestNode::IterateResult TextureFilterMinmaxSupportTestCase::iterate()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_texture_filter_minmax"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
 	const glu::RenderContext& renderContext = m_context.getRenderContext();
 	const glw::Functions&	 gl			= renderContext.getFunctions();
 

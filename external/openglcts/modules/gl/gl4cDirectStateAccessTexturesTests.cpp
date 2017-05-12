@@ -8655,7 +8655,7 @@ bool StorageErrorsTest::Test1D()
 	 described above. */
 	{
 		gl.textureStorage1D(m_to_2D, 1, GL_R8, 8);
-		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glTextureStorage1D",
+		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glTextureStorage1D",
 								  "the effective target of texture is not one of the accepted targets.");
 	}
 
@@ -8713,7 +8713,7 @@ bool StorageErrorsTest::Test2D()
 	 described above. */
 	{
 		gl.textureStorage2D(m_to_1D, 1, GL_R8, 8, 8);
-		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glTextureStorage2D",
+		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glTextureStorage2D",
 								  "the effective target of texture is not one of the accepted targets.");
 	}
 
@@ -8784,7 +8784,7 @@ bool StorageErrorsTest::Test3D()
 	 described above. */
 	{
 		gl.textureStorage3D(m_to_1D, 1, GL_R8, 8, 8, 8);
-		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glTextureStorage3D",
+		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glTextureStorage3D",
 								  "the effective target of texture is not one of the accepted targets.");
 	}
 
