@@ -1455,6 +1455,34 @@ struct VkPresentRegionsKHR
 	const VkPresentRegionKHR*	pRegions;
 };
 
+struct VkPhysicalDeviceSurfaceInfo2KHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkSurfaceKHR	surface;
+};
+
+struct VkSurfaceCapabilities2KHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkSurfaceCapabilitiesKHR	surfaceCapabilities;
+};
+
+struct VkSurfaceFormat2KHR
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkSurfaceFormatKHR	surfaceFormat;
+};
+
+struct VkSharedPresentSurfaceCapabilitiesKHR
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkImageUsageFlags	sharedPresentSupportedUsageFlags;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;

@@ -128,6 +128,7 @@ virtual VkResult	acquireNextImageKHR								(VkDevice device, VkSwapchainKHR swa
 virtual VkResult	queuePresentKHR									(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) const;
 virtual VkResult	createSharedSwapchainsKHR						(VkDevice device, deUint32 swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains) const;
 virtual void		trimCommandPoolKHR								(VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlagsKHR flags) const;
+virtual VkResult	getSwapchainStatusKHR							(VkDevice device, VkSwapchainKHR swapchain) const;
 virtual VkResult	debugMarkerSetObjectTagEXT						(VkDevice device, VkDebugMarkerObjectTagInfoEXT* pTagInfo) const;
 virtual VkResult	debugMarkerSetObjectNameEXT						(VkDevice device, VkDebugMarkerObjectNameInfoEXT* pNameInfo) const;
 virtual void		cmdDebugMarkerBeginEXT							(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const;
