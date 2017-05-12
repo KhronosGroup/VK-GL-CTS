@@ -51,19 +51,19 @@ namespace vk
 class Allocation
 {
 public:
-	virtual					~Allocation	(void);
+	virtual					~Allocation		(void);
 
 	//! Get VkDeviceMemory backing this allocation
-	VkDeviceMemory			getMemory	(void) const { return m_memory;							}
+	VkDeviceMemory			getMemory		(void) const { return m_memory;							}
 
 	//! Get offset in VkDeviceMemory for this allocation
-	VkDeviceSize			getOffset	(void) const { return m_offset;							}
+	VkDeviceSize			getOffset		(void) const { return m_offset;							}
 
 	//! Get host pointer for this allocation. Only available for host-visible allocations
-	void*					getHostPtr	(void) const { DE_ASSERT(m_hostPtr); return m_hostPtr;	}
+	void*					getHostPtr		(void) const { DE_ASSERT(m_hostPtr); return m_hostPtr;	}
 
 protected:
-							Allocation	(VkDeviceMemory memory, VkDeviceSize offset, void* hostPtr);
+							Allocation		(VkDeviceMemory memory, VkDeviceSize offset, void* hostPtr);
 
 private:
 	const VkDeviceMemory	m_memory;
