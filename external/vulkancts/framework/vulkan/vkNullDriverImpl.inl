@@ -1222,6 +1222,43 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceFormats2KHR (VkPhysicalDe
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalFencePropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalFenceInfoKHR* pExternalFenceInfo, VkExternalFencePropertiesKHR* pExternalFenceProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pExternalFenceInfo);
+	DE_UNREF(pExternalFenceProperties);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL importFenceWin32HandleKHR (VkDevice device, const VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pImportFenceWin32HandleInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getFenceWin32HandleKHR (VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetWin32HandleInfo);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL importFenceFdKHR (VkDevice device, const VkImportFenceFdInfoKHR* pImportFenceFdInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pImportFenceFdInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getFenceFdKHR (VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetFdInfo);
+	DE_UNREF(pFd);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements2KHR (VkDevice device, const VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements)
 {
 	DE_UNREF(device);
@@ -1406,6 +1443,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties2KHR,	getPhysicalDeviceSparseImageFormatProperties2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2KHR,			getPhysicalDeviceSurfaceCapabilities2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormats2KHR,				getPhysicalDeviceSurfaceFormats2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFencePropertiesKHR,		getPhysicalDeviceExternalFencePropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,						createDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,						destroyDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,								debugReportMessageEXT),
@@ -1548,6 +1586,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplateKHR,	updateDescriptorSetWithTemplateKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetWithTemplateKHR,	cmdPushDescriptorSetWithTemplateKHR),
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainStatusKHR,					getSwapchainStatusKHR),
+	VK_NULL_FUNC_ENTRY(vkImportFenceWin32HandleKHR,				importFenceWin32HandleKHR),
+	VK_NULL_FUNC_ENTRY(vkGetFenceWin32HandleKHR,				getFenceWin32HandleKHR),
+	VK_NULL_FUNC_ENTRY(vkImportFenceFdKHR,						importFenceFdKHR),
+	VK_NULL_FUNC_ENTRY(vkGetFenceFdKHR,							getFenceFdKHR),
 	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements2KHR,		getImageMemoryRequirements2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetBufferMemoryRequirements2KHR,		getBufferMemoryRequirements2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetImageSparseMemoryRequirements2KHR,	getImageSparseMemoryRequirements2KHR),

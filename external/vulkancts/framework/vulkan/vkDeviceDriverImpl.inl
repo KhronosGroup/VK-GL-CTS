@@ -667,6 +667,26 @@ VkResult DeviceDriver::getSwapchainStatusKHR (VkDevice device, VkSwapchainKHR sw
 	return m_vk.getSwapchainStatusKHR(device, swapchain);
 }
 
+VkResult DeviceDriver::importFenceWin32HandleKHR (VkDevice device, const VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo) const
+{
+	return m_vk.importFenceWin32HandleKHR(device, pImportFenceWin32HandleInfo);
+}
+
+VkResult DeviceDriver::getFenceWin32HandleKHR (VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const
+{
+	return m_vk.getFenceWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);
+}
+
+VkResult DeviceDriver::importFenceFdKHR (VkDevice device, const VkImportFenceFdInfoKHR* pImportFenceFdInfo) const
+{
+	return m_vk.importFenceFdKHR(device, pImportFenceFdInfo);
+}
+
+VkResult DeviceDriver::getFenceFdKHR (VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd) const
+{
+	return m_vk.getFenceFdKHR(device, pGetFdInfo, pFd);
+}
+
 void DeviceDriver::getImageMemoryRequirements2KHR (VkDevice device, const VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements) const
 {
 	m_vk.getImageMemoryRequirements2KHR(device, pInfo, pMemoryRequirements);

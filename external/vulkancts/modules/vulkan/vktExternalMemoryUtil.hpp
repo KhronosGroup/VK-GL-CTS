@@ -67,6 +67,7 @@ private:
 };
 
 const char*						externalSemaphoreTypeToName	(vk::VkExternalSemaphoreHandleTypeFlagBitsKHR type);
+const char*						externalFenceTypeToName		(vk::VkExternalFenceHandleTypeFlagBitsKHR type);
 const char*						externalMemoryTypeToName	(vk::VkExternalMemoryHandleTypeFlagBitsKHR type);
 
 enum Permanence
@@ -84,6 +85,10 @@ enum Transference
 bool							isSupportedPermanence				(vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	type,
 																	 Permanence										permanence);
 Transference					getHandelTypeTransferences			(vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	type);
+
+bool							isSupportedPermanence				(vk::VkExternalFenceHandleTypeFlagBitsKHR		type,
+																	 Permanence										permanence);
+Transference					getHandelTypeTransferences			(vk::VkExternalFenceHandleTypeFlagBitsKHR		type);
 
 int								getMemoryFd							(const vk::DeviceInterface&					vkd,
 																	 vk::VkDevice								device,
@@ -123,6 +128,39 @@ vk::Move<vk::VkSemaphore>		createAndImportSemaphore			(const vk::DeviceInterface
 																	 vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType,
 																	 NativeHandle&									handle,
 																	 vk::VkSemaphoreImportFlagsKHR					flags);
+
+vk::Move<vk::VkFence>			createExportableFence				(const vk::DeviceInterface&						vkd,
+																	 vk::VkDevice									device,
+																	 vk::VkExternalFenceHandleTypeFlagBitsKHR		externalType);
+
+int								getFenceFd							(const vk::DeviceInterface&						vkd,
+																	 vk::VkDevice									device,
+																	 vk::VkFence									fence,
+																	 vk::VkExternalFenceHandleTypeFlagBitsKHR		externalType);
+
+void							getFenceNative						(const vk::DeviceInterface&						vkd,
+																	 vk::VkDevice									device,
+																	 vk::VkFence									fence,
+																	 vk::VkExternalFenceHandleTypeFlagBitsKHR		externalType,
+																	 NativeHandle&									nativeHandle);
+
+void							importFence							(const vk::DeviceInterface&						vkd,
+																	 const vk::VkDevice								device,
+																	 const vk::VkFence								fence,
+																	 vk::VkExternalFenceHandleTypeFlagBitsKHR		externalType,
+																	 NativeHandle&									handle,
+																	 vk::VkFenceImportFlagsKHR						flags);
+
+vk::Move<vk::VkFence>			createAndImportFence				(const vk::DeviceInterface&						vkd,
+																	 const vk::VkDevice								device,
+																	 vk::VkExternalFenceHandleTypeFlagBitsKHR		externalType,
+																	 NativeHandle&									handle,
+																	 vk::VkFenceImportFlagsKHR						flags);
+
+vk::Move<vk::VkDeviceMemory>	allocateExportableMemory			(const vk::DeviceInterface&					vkd,
+																	 vk::VkDevice								device,
+																	 const vk::VkMemoryRequirements&			requirements,
+																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType);
 
 // If buffer is not null use dedicated allocation
 vk::Move<vk::VkDeviceMemory>	allocateExportableMemory			(const vk::DeviceInterface&					vkd,

@@ -183,6 +183,11 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPushDescriptorSetWithTemplateKHRFunc
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainStatusKHRFunc)								(VkDevice device, VkSwapchainKHR swapchain);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSurfaceCapabilities2KHRFunc)			(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSurfaceFormats2KHRFunc)				(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, deUint32* pSurfaceFormatCount, VkSurfaceFormat2KHR* pSurfaceFormats);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceExternalFencePropertiesKHRFunc)		(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalFenceInfoKHR* pExternalFenceInfo, VkExternalFencePropertiesKHR* pExternalFenceProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportFenceWin32HandleKHRFunc)							(VkDevice device, const VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetFenceWin32HandleKHRFunc)							(VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportFenceFdKHRFunc)									(VkDevice device, const VkImportFenceFdInfoKHR* pImportFenceFdInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetFenceFdKHRFunc)										(VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageMemoryRequirements2KHRFunc)					(VkDevice device, const VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetBufferMemoryRequirements2KHRFunc)					(VkDevice device, const VkBufferMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageSparseMemoryRequirements2KHRFunc)				(VkDevice device, const VkImageSparseMemoryRequirementsInfo2KHR* pInfo, deUint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2KHR* pSparseMemoryRequirements);

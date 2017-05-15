@@ -1524,6 +1524,75 @@ struct VkSurfaceFormat2KHR
 	VkSurfaceFormatKHR	surfaceFormat;
 };
 
+struct VkPhysicalDeviceExternalFenceInfoKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkExternalFenceHandleTypeFlagBitsKHR	handleType;
+};
+
+struct VkExternalFencePropertiesKHR
+{
+	VkStructureType						sType;
+	void*								pNext;
+	VkExternalFenceHandleTypeFlagsKHR	exportFromImportedHandleTypes;
+	VkExternalFenceHandleTypeFlagsKHR	compatibleHandleTypes;
+	VkExternalFenceFeatureFlagsKHR		externalFenceFeatures;
+};
+
+struct VkExportFenceCreateInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkExternalFenceHandleTypeFlagsKHR	handleTypes;
+};
+
+struct VkImportFenceWin32HandleInfoKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkFence									fence;
+	VkFenceImportFlagsKHR					flags;
+	VkExternalFenceHandleTypeFlagBitsKHR	handleType;
+	pt::Win32Handle							handle;
+	char*									name;
+};
+
+struct VkExportFenceWin32HandleInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	pt::Win32SecurityAttributesPtr	pAttributes;
+	deUint32						dwAccess;
+	char*							name;
+};
+
+struct VkFenceGetWin32HandleInfoKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkFence									fence;
+	VkExternalFenceHandleTypeFlagBitsKHR	handleType;
+};
+
+struct VkImportFenceFdInfoKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkFence									fence;
+	VkFenceImportFlagsKHR					flags;
+	VkExternalFenceHandleTypeFlagBitsKHR	handleType;
+	int										fd;
+};
+
+struct VkFenceGetFdInfoKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkFence									fence;
+	VkExternalFenceHandleTypeFlagBitsKHR	handleType;
+};
+
 struct VkMemoryDedicatedRequirementsKHR
 {
 	VkStructureType	sType;
