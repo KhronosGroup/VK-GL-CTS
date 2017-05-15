@@ -177,7 +177,8 @@ deUint32 chooseQueueFamilyIndex (const vk::InstanceInterface&	vki,
 
 vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface&						vkp,
 										 const vk::VkExternalSemaphoreHandleTypeFlagsKHR	externalSemaphoreTypes,
-										 const vk::VkExternalMemoryHandleTypeFlagsKHR		externalMemoryTypes)
+										 const vk::VkExternalMemoryHandleTypeFlagsKHR		externalMemoryTypes,
+										 const vk::VkExternalFenceHandleTypeFlagsKHR		externalFenceTypes)
 {
 	std::vector<std::string> instanceExtensions;
 
@@ -188,6 +189,9 @@ vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface&						vkp,
 
 	if (externalMemoryTypes != 0)
 		instanceExtensions.push_back("VK_KHR_external_memory_capabilities");
+
+	if (externalFenceTypes != 0)
+		instanceExtensions.push_back("VK_KHR_external_fence_capabilities");
 
 	try
 	{
@@ -206,6 +210,7 @@ vk::Move<vk::VkDevice> createDevice (const vk::InstanceInterface&						vki,
 									 vk::VkPhysicalDevice								physicalDevice,
 									 const vk::VkExternalSemaphoreHandleTypeFlagsKHR	externalSemaphoreTypes,
 									 const vk::VkExternalMemoryHandleTypeFlagsKHR		externalMemoryTypes,
+									 const vk::VkExternalFenceHandleTypeFlagsKHR		externalFenceTypes,
 									 deUint32											queueFamilyIndex,
 									 bool												useDedicatedAllocs = false)
 {
@@ -216,6 +221,13 @@ vk::Move<vk::VkDevice> createDevice (const vk::InstanceInterface&						vki,
 				| vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)) != 0)
 	{
 		deviceExtensions.push_back("VK_KHR_external_semaphore_fd");
+	}
+
+	if ((externalFenceTypes
+			& (vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR
+				| vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)) != 0)
+	{
+		deviceExtensions.push_back("VK_KHR_external_fence_fd");
 	}
 
 	if (useDedicatedAllocs)
@@ -232,10 +244,16 @@ vk::Move<vk::VkDevice> createDevice (const vk::InstanceInterface&						vki,
 
 	if ((externalSemaphoreTypes
 			& (vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
-				| vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT_KHR
 				| vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)) != 0)
 	{
 		deviceExtensions.push_back("VK_KHR_external_semaphore_win32");
+	}
+
+	if ((externalFenceTypes
+			& (vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
+				| vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)) != 0)
+	{
+		deviceExtensions.push_back("VK_KHR_external_fence_win32");
 	}
 
 	if ((externalMemoryTypes
@@ -328,7 +346,35 @@ void checkSemaphoreSupport (const vk::InstanceInterface&					vki,
 		TCU_THROW(NotSupportedError, "Semaphore doesn't support exporting in external type");
 
 	if ((properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT_KHR) == 0)
-		TCU_THROW(NotSupportedError, "Semaphore doesn't support exporting in external type");
+		TCU_THROW(NotSupportedError, "Semaphore doesn't support importing in external type");
+}
+
+void checkFenceSupport (const vk::InstanceInterface&				vki,
+						vk::VkPhysicalDevice						device,
+						vk::VkExternalFenceHandleTypeFlagBitsKHR	externalType)
+{
+	const vk::VkPhysicalDeviceExternalFenceInfoKHR	info			=
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO_KHR,
+		DE_NULL,
+		externalType
+	};
+	vk::VkExternalFencePropertiesKHR				properties	=
+	{
+		vk::VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES_KHR,
+		DE_NULL,
+		0u,
+		0u,
+		0u
+	};
+
+	vki.getPhysicalDeviceExternalFencePropertiesKHR(device, &info, &properties);
+
+	if ((properties.externalFenceFeatures & vk::VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT_KHR) == 0)
+		TCU_THROW(NotSupportedError, "Fence doesn't support exporting in external type");
+
+	if ((properties.externalFenceFeatures & vk::VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT_KHR) == 0)
+		TCU_THROW(NotSupportedError, "Fence doesn't support importing in external type");
 }
 
 void checkBufferSupport (const vk::InstanceInterface&				vki,
@@ -471,10 +517,33 @@ void submitDummyWait (const vk::DeviceInterface&	vkd,
 	VK_CHECK(vkd.queueSubmit(queue, 1, &submit, (vk::VkFence)0u));
 }
 
+void submitDummySignal (const vk::DeviceInterface&	vkd,
+						vk::VkQueue					queue,
+						vk::VkFence					fence)
+{
+	const vk::VkSubmitInfo submit =
+	{
+		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		DE_NULL,
+
+		0u,
+		DE_NULL,
+		DE_NULL,
+
+		0u,
+		DE_NULL,
+
+		0u,
+		DE_NULL
+	};
+
+	VK_CHECK(vkd.queueSubmit(queue, 1, &submit, fence));
+}
+
 tcu::TestStatus testSemaphoreQueries (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHR externalType)
 {
 	const vk::PlatformInterface&		vkp				(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance		(createInstance(vkp, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance		(createInstance(vkp, externalType, 0u, 0u));
 	const vk::InstanceDriver			vki				(vkp, *instance);
 	const vk::VkPhysicalDevice			device			(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 
@@ -523,7 +592,7 @@ tcu::TestStatus testSemaphoreWin32Create (Context&					context,
 #if (DE_OS == DE_OS_WIN32)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -531,7 +600,7 @@ tcu::TestStatus testSemaphoreWin32Create (Context&					context,
 	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>					device			(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>					device			(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver							vkd				(vki, *device);
 		const vk::VkQueue								queue			(getQueue(vkd, *device, queueFamilyIndex));
 		const vk::VkExportSemaphoreWin32HandleInfoKHR	win32ExportInfo	=
@@ -594,7 +663,7 @@ tcu::TestStatus testSemaphoreImportTwice (Context&					context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -602,7 +671,7 @@ tcu::TestStatus testSemaphoreImportTwice (Context&					context,
 	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device			(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device			(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd				(vki, *device);
 		const vk::VkQueue					queue			(getQueue(vkd, *device, queueFamilyIndex));
 		const vk::Unique<vk::VkSemaphore>	semaphore		(createExportableSemaphore(vkd, *device, config.externalType));
@@ -641,7 +710,7 @@ tcu::TestStatus testSemaphoreImportReimport (Context&					context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -649,7 +718,7 @@ tcu::TestStatus testSemaphoreImportReimport (Context&					context,
 	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device			(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device			(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd				(vki, *device);
 		const vk::VkQueue					queue			(getQueue(vkd, *device, queueFamilyIndex));
 
@@ -687,7 +756,7 @@ tcu::TestStatus testSemaphoreSignalExportImportWait (Context&					context,
 													 const SemaphoreTestConfig	config)
 {
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -695,7 +764,7 @@ tcu::TestStatus testSemaphoreSignalExportImportWait (Context&					context,
 	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device				(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device				(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd					(vki, *device);
 		const vk::VkQueue					queue				(getQueue(vkd, *device, queueFamilyIndex));
 		const vk::Unique<vk::VkSemaphore>	semaphoreA			(createExportableSemaphore(vkd, *device, config.externalType));
@@ -724,7 +793,7 @@ tcu::TestStatus testSemaphoreExportSignalImportWait (Context&					context,
 													 const SemaphoreTestConfig	config)
 {
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -734,7 +803,7 @@ tcu::TestStatus testSemaphoreExportSignalImportWait (Context&					context,
 	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device				(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device				(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd					(vki, *device);
 		const vk::VkQueue					queue				(getQueue(vkd, *device, queueFamilyIndex));
 
@@ -761,7 +830,7 @@ tcu::TestStatus testSemaphoreExportImportSignalWait (Context&					context,
 													 const SemaphoreTestConfig	config)
 {
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -771,7 +840,7 @@ tcu::TestStatus testSemaphoreExportImportSignalWait (Context&					context,
 
 	{
 		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
@@ -796,7 +865,7 @@ tcu::TestStatus testSemaphoreSignalImport (Context&						context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -805,7 +874,7 @@ tcu::TestStatus testSemaphoreSignalImport (Context&						context,
 
 	{
 		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
@@ -844,7 +913,7 @@ tcu::TestStatus testSemaphoreSignalWaitImport (Context&						context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -853,7 +922,7 @@ tcu::TestStatus testSemaphoreSignalWaitImport (Context&						context,
 
 	{
 		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
@@ -895,7 +964,7 @@ tcu::TestStatus testSemaphoreMultipleExports (Context&					context,
 	const size_t						exportCount			= 4 * 1024;
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -903,7 +972,7 @@ tcu::TestStatus testSemaphoreMultipleExports (Context&					context,
 	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 		const vk::Unique<vk::VkSemaphore>	semaphore	(createExportableSemaphore(vkd, *device, config.externalType));
@@ -933,7 +1002,7 @@ tcu::TestStatus testSemaphoreMultipleImports (Context&					context,
 	const size_t						importCount			= 4 * 1024;
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -942,7 +1011,7 @@ tcu::TestStatus testSemaphoreMultipleImports (Context&					context,
 
 	{
 		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
@@ -983,7 +1052,7 @@ tcu::TestStatus testSemaphoreTransference (Context&						context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -992,7 +1061,7 @@ tcu::TestStatus testSemaphoreTransference (Context&						context,
 
 	{
 		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
@@ -1078,7 +1147,7 @@ tcu::TestStatus testSemaphoreFdDup (Context&					context,
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1087,7 +1156,7 @@ tcu::TestStatus testSemaphoreFdDup (Context&					context,
 
 	{
 		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
@@ -1138,7 +1207,7 @@ tcu::TestStatus testSemaphoreFdDup2 (Context&					context,
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1147,7 +1216,7 @@ tcu::TestStatus testSemaphoreFdDup2 (Context&					context,
 
 	{
 		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
@@ -1169,7 +1238,7 @@ tcu::TestStatus testSemaphoreFdDup2 (Context&					context,
 			if (newFd < 0)
 				log << TestLog::Message << "dup2() failed: '" << strerror(errno) << "'" << TestLog::EndMessage;
 
-			TCU_CHECK_MSG(newFd >= 0, "Failed to call dup2() for semaphores fd");
+			TCU_CHECK_MSG(newFd >= 0, "Failed to call dup2() for fences fd");
 
 			{
 				const vk::Unique<vk::VkSemaphore> semaphoreC (createAndImportSemaphore(vkd, *device, config.externalType, secondFd, flags));
@@ -1203,7 +1272,7 @@ tcu::TestStatus testSemaphoreFdDup3 (Context&					context,
 #if (DE_OS == DE_OS_UNIX) && defined(_GNU_SOURCE)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1211,7 +1280,7 @@ tcu::TestStatus testSemaphoreFdDup3 (Context&					context,
 	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
@@ -1234,7 +1303,7 @@ tcu::TestStatus testSemaphoreFdDup3 (Context&					context,
 			if (newFd < 0)
 				log << TestLog::Message << "dup3() failed: '" << strerror(errno) << "'" << TestLog::EndMessage;
 
-			TCU_CHECK_MSG(newFd >= 0, "Failed to call dup3() for semaphores fd");
+			TCU_CHECK_MSG(newFd >= 0, "Failed to call dup3() for fences fd");
 
 			{
 				const vk::Unique<vk::VkSemaphore> semaphoreC (createAndImportSemaphore(vkd, *device, config.externalType, secondFd, flags));
@@ -1268,7 +1337,7 @@ tcu::TestStatus testSemaphoreFdSendOverSocket (Context&						context,
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1276,7 +1345,7 @@ tcu::TestStatus testSemaphoreFdSendOverSocket (Context&						context,
 	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
 
 	{
-		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>		device		(createDevice(vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
 		const vk::DeviceDriver				vkd			(vki, *device);
 		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
 
@@ -1401,6 +1470,1012 @@ tcu::TestStatus testSemaphoreFdSendOverSocket (Context&						context,
 #endif
 }
 
+tcu::TestStatus testFenceQueries (Context& context, vk::VkExternalFenceHandleTypeFlagBitsKHR externalType)
+{
+	const vk::PlatformInterface&		vkp				(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance		(createInstance(vkp, 0u, 0u, externalType));
+	const vk::InstanceDriver			vki				(vkp, *instance);
+	const vk::VkPhysicalDevice			device			(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+
+	TestLog&							log				= context.getTestContext().getLog();
+
+	const vk::VkPhysicalDeviceExternalFenceInfoKHR	info			=
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO_KHR,
+		DE_NULL,
+		externalType
+	};
+	vk::VkExternalFencePropertiesKHR				properties	=
+	{
+		vk::VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES_KHR,
+		DE_NULL,
+		0u,
+		0u,
+		0u
+	};
+
+	vki.getPhysicalDeviceExternalFencePropertiesKHR(device, &info, &properties);
+	log << TestLog::Message << properties << TestLog::EndMessage;
+
+	TCU_CHECK(properties.pNext == DE_NULL);
+	TCU_CHECK(properties.sType == vk::VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES_KHR);
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+struct FenceTestConfig
+{
+												FenceTestConfig	(vk::VkExternalFenceHandleTypeFlagBitsKHR	externalType_,
+																 Permanence									permanence_)
+		: externalType		(externalType_)
+		, permanence		(permanence_)
+	{
+	}
+
+	vk::VkExternalFenceHandleTypeFlagBitsKHR	externalType;
+	Permanence									permanence;
+};
+
+
+tcu::TestStatus testFenceWin32Create (Context&				context,
+									  const FenceTestConfig	config)
+{
+#if (DE_OS == DE_OS_WIN32)
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::Unique<vk::VkDevice>				device			(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver						vkd				(vki, *device);
+		const vk::VkQueue							queue			(getQueue(vkd, *device, queueFamilyIndex));
+		const vk::VkExportFenceWin32HandleInfoKHR	win32ExportInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_EXPORT_FENCE_WIN32_HANDLE_INFO_KHR,
+			DE_NULL,
+
+			(vk::pt::Win32SecurityAttributesPtr)DE_NULL,
+			DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
+			DE_NULL
+		};
+		const vk::VkExportFenceCreateInfoKHR		exportCreateInfo=
+		{
+			vk::VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO_KHR,
+			&win32ExportInfo,
+			(vk::VkExternalFenceHandleTypeFlagsKHR)config.externalType
+		};
+		const vk::VkFenceCreateInfo					createInfo		=
+		{
+			vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+			&exportCreateInfo,
+			0u
+		};
+		const vk::Unique<vk::VkFence>				fence		(vk::createFence(vkd, *device, &createInfo));
+
+		if (transference == TRANSFERENCE_COPY)
+			submitDummySignal(vkd, queue, *fence);
+
+		NativeHandle						handleA;
+		getFenceNative(vkd, *device, *fence, config.externalType, handleA);
+
+		{
+			const vk::VkFenceImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+			const vk::Unique<vk::VkFence>	fenceA	(createAndImportFence(vkd, *device, config.externalType, handleA, flags));
+
+			if (transference == TRANSFERENCE_COPY)
+				VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceA, VK_TRUE, ~0ull));
+			else if (transference == TRANSFERENCE_REFERENCE)
+			{
+				submitDummySignal(vkd, queue, *fence);
+				VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceA, VK_TRUE, ~0ull));
+			}
+			else
+				DE_FATAL("Unknown transference.");
+
+			VK_CHECK(vkd.queueWaitIdle(queue));
+		}
+
+		return tcu::TestStatus::pass("Pass");
+	}
+#else
+	DE_UNREF(context);
+	DE_UNREF(config);
+	TCU_THROW(NotSupportedError, "Platform doesn't support win32 handles");
+#endif
+}
+
+tcu::TestStatus testFenceImportTwice (Context&				context,
+									  const FenceTestConfig	config)
+{
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::Unique<vk::VkDevice>	device		(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd			(vki, *device);
+		const vk::VkQueue				queue		(getQueue(vkd, *device, queueFamilyIndex));
+		const vk::Unique<vk::VkFence>	fence		(createExportableFence(vkd, *device, config.externalType));
+
+		if (transference == TRANSFERENCE_COPY)
+			submitDummySignal(vkd, queue, *fence);
+
+		NativeHandle						handleA;
+		getFenceNative(vkd, *device, *fence, config.externalType, handleA);
+
+		{
+			NativeHandle					handleB	(handleA);
+			const vk::VkFenceImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+			const vk::Unique<vk::VkFence>	fenceA	(createAndImportFence(vkd, *device, config.externalType, handleA, flags));
+			const vk::Unique<vk::VkFence>	fenceB	(createAndImportFence(vkd, *device, config.externalType, handleB, flags));
+
+			if (transference == TRANSFERENCE_COPY)
+				VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceA, VK_TRUE, ~0ull));
+			else if (transference == TRANSFERENCE_REFERENCE)
+			{
+				submitDummySignal(vkd, queue, *fenceA);
+				VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+			}
+			else
+				DE_FATAL("Unknown transference.");
+
+			VK_CHECK(vkd.queueWaitIdle(queue));
+		}
+
+		return tcu::TestStatus::pass("Pass");
+	}
+}
+
+tcu::TestStatus testFenceImportReimport (Context&				context,
+										 const FenceTestConfig	config)
+{
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::Unique<vk::VkDevice>	device	(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd		(vki, *device);
+		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
+
+		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+
+		if (transference == TRANSFERENCE_COPY)
+			submitDummySignal(vkd, queue, *fenceA);
+
+		NativeHandle					handleA;
+		getFenceNative(vkd, *device, *fenceA, config.externalType, handleA);
+
+		NativeHandle					handleB	(handleA);
+		const vk::VkFenceImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkFence>	fenceB	(createAndImportFence(vkd, *device, config.externalType, handleA, flags));
+
+		importFence(vkd, *device, *fenceB, config.externalType, handleB, flags);
+
+		if (transference == TRANSFERENCE_COPY)
+			VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+		else if (transference == TRANSFERENCE_REFERENCE)
+		{
+			submitDummySignal(vkd, queue, *fenceA);
+			VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+		}
+		else
+			DE_FATAL("Unknown transference.");
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+
+		return tcu::TestStatus::pass("Pass");
+	}
+}
+
+tcu::TestStatus testFenceSignalExportImportWait (Context&				context,
+												 const FenceTestConfig	config)
+{
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::Unique<vk::VkDevice>	device	(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd		(vki, *device);
+		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
+		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+
+		submitDummySignal(vkd, queue, *fenceA);
+
+		{
+			NativeHandle	handle;
+
+			getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
+
+			{
+				const vk::VkFenceImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+				const vk::Unique<vk::VkFence>	fenceB	(createAndImportFence(vkd, *device, config.externalType, handle, flags));
+				VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+
+				VK_CHECK(vkd.queueWaitIdle(queue));
+			}
+		}
+
+		return tcu::TestStatus::pass("Pass");
+	}
+}
+
+tcu::TestStatus testFenceExportSignalImportWait (Context&				context,
+												 const FenceTestConfig	config)
+{
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+	const vk::VkFenceImportFlagsKHR		flags				= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+
+	DE_ASSERT(getHandelTypeTransferences(config.externalType) == TRANSFERENCE_REFERENCE);
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::Unique<vk::VkDevice>	device	(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd		(vki, *device);
+		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
+
+		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+		NativeHandle					handle;
+
+		getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
+
+		submitDummySignal(vkd, queue, *fenceA);
+		{
+			{
+				const vk::Unique<vk::VkFence>	fenceB	(createAndImportFence(vkd, *device, config.externalType, handle, flags));
+
+				VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+				VK_CHECK(vkd.queueWaitIdle(queue));
+			}
+		}
+
+		return tcu::TestStatus::pass("Pass");
+	}
+}
+
+tcu::TestStatus testFenceExportImportSignalWait (Context&				context,
+												 const FenceTestConfig	config)
+{
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	DE_ASSERT(getHandelTypeTransferences(config.externalType) == TRANSFERENCE_REFERENCE);
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::VkFenceImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>	device		(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd			(vki, *device);
+		const vk::VkQueue				queue		(getQueue(vkd, *device, queueFamilyIndex));
+
+		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+		NativeHandle					handle;
+
+		getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
+
+		const vk::Unique<vk::VkFence>	fenceB	(createAndImportFence(vkd, *device, config.externalType, handle, flags));
+
+		submitDummySignal(vkd, queue, *fenceA);
+		VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+
+		return tcu::TestStatus::pass("Pass");
+	}
+}
+
+tcu::TestStatus testFenceSignalImport (Context&					context,
+									   const FenceTestConfig	config)
+{
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::VkFenceImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>	device	(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd		(vki, *device);
+		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
+
+		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+		const vk::Unique<vk::VkFence>	fenceB	(createFence(vkd, *device));
+		NativeHandle					handle;
+
+		submitDummySignal(vkd, queue, *fenceB);
+		VK_CHECK(vkd.queueWaitIdle(queue));
+
+		if (transference == TRANSFERENCE_COPY)
+			submitDummySignal(vkd, queue, *fenceA);
+
+		getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
+
+		importFence(vkd, *device, *fenceB, config.externalType, handle, flags);
+
+		if (transference == TRANSFERENCE_COPY)
+			VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+		else if (transference == TRANSFERENCE_REFERENCE)
+		{
+			submitDummySignal(vkd, queue, *fenceA);
+			VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+		}
+		else
+			DE_FATAL("Unknown transference.");
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+
+		return tcu::TestStatus::pass("Pass");
+	}
+}
+
+tcu::TestStatus testFenceReset (Context&				context,
+								const FenceTestConfig	config)
+{
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::VkFenceImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>	device	(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd		(vki, *device);
+		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
+
+		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+		const vk::Unique<vk::VkFence>	fenceB	(createFence(vkd, *device));
+		const vk::Unique<vk::VkFence>	fenceC	(createFence(vkd, *device));
+		NativeHandle					handle;
+
+		submitDummySignal(vkd, queue, *fenceB);
+		VK_CHECK(vkd.queueWaitIdle(queue));
+
+		submitDummySignal(vkd, queue, *fenceA);
+
+		getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
+		importFence(vkd, *device, *fenceB, config.externalType, handle, flags);
+		{
+			NativeHandle	handleB	(handle);
+			importFence(vkd, *device, *fenceC, config.externalType, handleB, flags);
+		}
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+		VK_CHECK(vkd.resetFences(*device, 1u, &*fenceB));
+
+		if (config.permanence == PERMANENCE_TEMPORARY || transference == TRANSFERENCE_COPY)
+		{
+			// vkResetFences() should restore fenceBs prior payload and reset that no affecting fenceCs payload
+			// or fenceB should be separate copy of the payload and not affect fenceC
+			VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceC, VK_TRUE, ~0ull));
+
+			// vkResetFences() should have restored fenceBs prior state and should be now reset
+			// or fenceB should have it's separate payload
+			submitDummySignal(vkd, queue, *fenceB);
+			VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+		}
+		else if (config.permanence == PERMANENCE_PERMANENT)
+		{
+			DE_ASSERT(transference == TRANSFERENCE_REFERENCE);
+
+			// Reset fences should have reset all of the fences
+			submitDummySignal(vkd, queue, *fenceC);
+
+			VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceA, VK_TRUE, ~0ull));
+			VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+			VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceC, VK_TRUE, ~0ull));
+		}
+		else
+			DE_FATAL("Unknown permanence");
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+
+		return tcu::TestStatus::pass("Pass");
+	}
+}
+
+tcu::TestStatus testFenceSignalWaitImport (Context&					context,
+										   const FenceTestConfig	config)
+{
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::VkFenceImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>	device		(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd			(vki, *device);
+		const vk::VkQueue				queue		(getQueue(vkd, *device, queueFamilyIndex));
+
+		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+		const vk::Unique<vk::VkFence>	fenceB	(createFence(vkd, *device));
+		NativeHandle					handle;
+
+		if (transference == TRANSFERENCE_COPY)
+			submitDummySignal(vkd, queue, *fenceA);
+
+		getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
+
+		submitDummySignal(vkd, queue, *fenceB);
+		VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+
+		importFence(vkd, *device, *fenceB, config.externalType, handle, flags);
+
+		if (transference == TRANSFERENCE_COPY)
+			VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+		else if (transference == TRANSFERENCE_REFERENCE)
+		{
+			submitDummySignal(vkd, queue, *fenceA);
+			VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+		}
+		else
+			DE_FATAL("Unknown transference.");
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+
+		return tcu::TestStatus::pass("Pass");
+	}
+}
+
+tcu::TestStatus testFenceMultipleExports (Context&				context,
+										  const FenceTestConfig	config)
+{
+	const size_t						exportCount			= 4 * 1024;
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::Unique<vk::VkDevice>	device	(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd		(vki, *device);
+		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
+		const vk::Unique<vk::VkFence>	fence	(createExportableFence(vkd, *device, config.externalType));
+
+		for (size_t exportNdx = 0; exportNdx < exportCount; exportNdx++)
+		{
+			NativeHandle handle;
+
+			if (transference == TRANSFERENCE_COPY)
+				submitDummySignal(vkd, queue, *fence);
+
+			getFenceNative(vkd, *device, *fence, config.externalType, handle);
+		}
+
+		submitDummySignal(vkd, queue, *fence);
+		VK_CHECK(vkd.waitForFences(*device, 1u, &*fence, VK_TRUE, ~0ull));
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus testFenceMultipleImports (Context&				context,
+										  const FenceTestConfig	config)
+{
+	const size_t						importCount			= 4 * 1024;
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::VkFenceImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>	device	(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd		(vki, *device);
+		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
+		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+		NativeHandle					handleA;
+
+		if (transference == TRANSFERENCE_COPY)
+			submitDummySignal(vkd, queue, *fenceA);
+
+		getFenceNative(vkd, *device, *fenceA, config.externalType, handleA);
+
+		for (size_t importNdx = 0; importNdx < importCount; importNdx++)
+		{
+			NativeHandle					handleB		(handleA);
+			const vk::Unique<vk::VkFence>	fenceB	(createAndImportFence(vkd, *device, config.externalType, handleB, flags));
+		}
+
+		if (transference == TRANSFERENCE_COPY)
+		{
+			importFence(vkd, *device, *fenceA, config.externalType, handleA, flags);
+			VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceA, VK_TRUE, ~0ull));
+		}
+		else if (transference == TRANSFERENCE_REFERENCE)
+		{
+			submitDummySignal(vkd, queue, *fenceA);
+			VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceA, VK_TRUE, ~0ull));
+		}
+		else
+			DE_FATAL("Unknown transference.");
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus testFenceTransference (Context&					context,
+									   const FenceTestConfig	config)
+{
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::VkFenceImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>	device	(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd		(vki, *device);
+		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
+
+		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+		NativeHandle					handle;
+
+		submitDummySignal(vkd, queue, *fenceA);
+
+		getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
+
+		{
+			const vk::Unique<vk::VkFence>	fenceB	(createAndImportFence(vkd, *device, config.externalType, handle, flags));
+
+			if (config.permanence == PERMANENCE_PERMANENT)
+			{
+				if (transference == TRANSFERENCE_COPY)
+				{
+					submitDummySignal(vkd, queue, *fenceA);
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.queueWaitIdle(queue));
+
+					VK_CHECK(vkd.resetFences(*device, 1u, &*fenceB));
+					submitDummySignal(vkd, queue, *fenceB);
+
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceA, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.queueWaitIdle(queue));
+				}
+				else if (transference== TRANSFERENCE_REFERENCE)
+				{
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.queueWaitIdle(queue));
+
+					VK_CHECK(vkd.resetFences(*device, 1u, &*fenceB));
+					submitDummySignal(vkd, queue, *fenceA);
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+
+					VK_CHECK(vkd.resetFences(*device, 1u, &*fenceA));
+					submitDummySignal(vkd, queue, *fenceB);
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceA, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.queueWaitIdle(queue));
+				}
+				else
+					DE_FATAL("Unknown transference.");
+			}
+			else if (config.permanence == PERMANENCE_TEMPORARY)
+			{
+				if (transference == TRANSFERENCE_COPY)
+				{
+					submitDummySignal(vkd, queue, *fenceA);
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.queueWaitIdle(queue));
+
+					VK_CHECK(vkd.resetFences(*device, 1u, &*fenceB));
+					submitDummySignal(vkd, queue, *fenceB);
+
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceA, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.queueWaitIdle(queue));
+				}
+				else if (transference == TRANSFERENCE_REFERENCE)
+				{
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.queueWaitIdle(queue));
+
+					VK_CHECK(vkd.resetFences(*device, 1u, &*fenceA));
+					VK_CHECK(vkd.resetFences(*device, 1u, &*fenceB));
+					submitDummySignal(vkd, queue, *fenceA);
+					submitDummySignal(vkd, queue, *fenceB);
+
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceA, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.queueWaitIdle(queue));
+				}
+				else
+					DE_FATAL("Unknown transference.");
+			}
+			else
+				DE_FATAL("Unknown permanence.");
+		}
+
+		return tcu::TestStatus::pass("Pass");
+	}
+}
+
+tcu::TestStatus testFenceFdDup (Context&				context,
+								const FenceTestConfig	config)
+{
+#if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::VkFenceImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>	device	(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd		(vki, *device);
+		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
+
+		TestLog&						log		= context.getTestContext().getLog();
+		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+
+		if (transference == TRANSFERENCE_COPY)
+			submitDummySignal(vkd, queue, *fenceA);
+
+		{
+			const NativeHandle	fd		(getFenceFd(vkd, *device, *fenceA, config.externalType));
+			NativeHandle		newFd	(dup(fd.getFd()));
+
+			if (newFd.getFd() < 0)
+				log << TestLog::Message << "dup() failed: '" << strerror(errno) << "'" << TestLog::EndMessage;
+
+			TCU_CHECK_MSG(newFd.getFd() >= 0, "Failed to call dup() for fences fd");
+
+			{
+				const vk::Unique<vk::VkFence> fenceB (createAndImportFence(vkd, *device, config.externalType, newFd, flags));
+
+				if (transference == TRANSFERENCE_COPY)
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+				else if (transference == TRANSFERENCE_REFERENCE)
+				{
+					submitDummySignal(vkd, queue, *fenceA);
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+				}
+				else
+					DE_FATAL("Unknown permanence.");
+			}
+		}
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+
+		return tcu::TestStatus::pass("Pass");
+	}
+#else
+	DE_UNREF(context);
+	DE_UNREF(config);
+	TCU_THROW(NotSupportedError, "Platform doesn't support dup()");
+#endif
+}
+
+tcu::TestStatus testFenceFdDup2 (Context&				context,
+								 const FenceTestConfig	config)
+{
+#if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::VkFenceImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+		const vk::Unique<vk::VkDevice>	device	(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd		(vki, *device);
+		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
+
+		TestLog&						log		= context.getTestContext().getLog();
+		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+		const vk::Unique<vk::VkFence>	fenceB	(createExportableFence(vkd, *device, config.externalType));
+
+		if (transference == TRANSFERENCE_COPY)
+		{
+			submitDummySignal(vkd, queue, *fenceA);
+			submitDummySignal(vkd, queue, *fenceB);
+		}
+
+		{
+			const NativeHandle	fd			(getFenceFd(vkd, *device, *fenceA, config.externalType));
+			NativeHandle		secondFd	(getFenceFd(vkd, *device, *fenceB, config.externalType));
+			int					newFd		(dup2(fd.getFd(), secondFd.getFd()));
+
+			if (newFd < 0)
+				log << TestLog::Message << "dup2() failed: '" << strerror(errno) << "'" << TestLog::EndMessage;
+
+			TCU_CHECK_MSG(newFd >= 0, "Failed to call dup2() for fences fd");
+
+			{
+				const vk::Unique<vk::VkFence> fenceC (createAndImportFence(vkd, *device, config.externalType, secondFd, flags));
+
+				if (transference == TRANSFERENCE_COPY)
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceC, VK_TRUE, ~0ull));
+				else if (transference == TRANSFERENCE_REFERENCE)
+				{
+					submitDummySignal(vkd, queue, *fenceA);
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceC, VK_TRUE, ~0ull));
+				}
+				else
+					DE_FATAL("Unknown permanence.");
+			}
+		}
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+
+		return tcu::TestStatus::pass("Pass");
+	}
+#else
+	DE_UNREF(context);
+	DE_UNREF(config);
+	TCU_THROW(NotSupportedError, "Platform doesn't support dup2()");
+#endif
+}
+
+tcu::TestStatus testFenceFdDup3 (Context&				context,
+								 const FenceTestConfig	config)
+{
+#if (DE_OS == DE_OS_UNIX) && defined(_GNU_SOURCE)
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::Unique<vk::VkDevice>	device	(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd		(vki, *device);
+		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
+
+		TestLog&						log		= context.getTestContext().getLog();
+		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+		const vk::Unique<vk::VkFence>	fenceB	(createExportableFence(vkd, *device, config.externalType));
+
+		if (transference == TRANSFERENCE_COPY)
+		{
+			submitDummySignal(vkd, queue, *fenceA);
+			submitDummySignal(vkd, queue, *fenceB);
+		}
+
+		{
+			const vk::VkFenceImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+			const NativeHandle				fd			(getFenceFd(vkd, *device, *fenceA, config.externalType));
+			NativeHandle					secondFd	(getFenceFd(vkd, *device, *fenceB, config.externalType));
+			const int						newFd		(dup3(fd.getFd(), secondFd.getFd(), 0));
+
+			if (newFd < 0)
+				log << TestLog::Message << "dup3() failed: '" << strerror(errno) << "'" << TestLog::EndMessage;
+
+			TCU_CHECK_MSG(newFd >= 0, "Failed to call dup3() for fences fd");
+
+			{
+				const vk::Unique<vk::VkFence> fenceC (createAndImportFence(vkd, *device, config.externalType, secondFd, flags));
+
+				if (transference == TRANSFERENCE_COPY)
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceC, VK_TRUE, ~0ull));
+				else if (transference == TRANSFERENCE_REFERENCE)
+				{
+					submitDummySignal(vkd, queue, *fenceA);
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceC, VK_TRUE, ~0ull));
+				}
+				else
+					DE_FATAL("Unknown permanence.");
+			}
+		}
+
+		VK_CHECK(vkd.queueWaitIdle(queue));
+
+		return tcu::TestStatus::pass("Pass");
+	}
+#else
+	DE_UNREF(context);
+	DE_UNREF(config);
+	TCU_THROW(NotSupportedError, "Platform doesn't support dup3()");
+#endif
+}
+
+tcu::TestStatus testFenceFdSendOverSocket (Context&					context,
+										   const FenceTestConfig	config)
+{
+#if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
+	const Transference					transference		(getHandelTypeTransferences(config.externalType));
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::InstanceDriver			vki					(vkp, *instance);
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::Unique<vk::VkDevice>	device	(createDevice(vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd		(vki, *device);
+		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
+
+		TestLog&						log		= context.getTestContext().getLog();
+		const vk::Unique<vk::VkFence>	fence	(createExportableFence(vkd, *device, config.externalType));
+
+		if (transference == TRANSFERENCE_COPY)
+			submitDummySignal(vkd, queue, *fence);
+
+		const NativeHandle	fd	(getFenceFd(vkd, *device, *fence, config.externalType));
+
+		{
+			int sv[2];
+
+			if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) != 0)
+			{
+				log << TestLog::Message << "Failed to create socket pair: '" << strerror(errno) << "'" << TestLog::EndMessage;
+				TCU_FAIL("Failed to create socket pair");
+			}
+
+			{
+				const NativeHandle	srcSocket	(sv[0]);
+				const NativeHandle	dstSocket	(sv[1]);
+				std::string			sendData	("deqp");
+
+				// Send FD
+				{
+					const int			fdRaw	(fd.getFd());
+					msghdr				msg;
+					cmsghdr*			cmsg;
+					char				buffer[CMSG_SPACE(sizeof(int))];
+					iovec				iov		= { &sendData[0], sendData.length()};
+
+					deMemset(&msg, 0, sizeof(msg));
+
+					msg.msg_control		= buffer;
+					msg.msg_controllen	= sizeof(buffer);
+					msg.msg_iovlen		= 1;
+					msg.msg_iov			= &iov;
+
+					cmsg				= CMSG_FIRSTHDR(&msg);
+					cmsg->cmsg_level	= SOL_SOCKET;
+					cmsg->cmsg_type		= SCM_RIGHTS;
+					cmsg->cmsg_len		= CMSG_LEN(sizeof(int));
+
+					deMemcpy(CMSG_DATA(cmsg), &fdRaw, sizeof(int));
+					msg.msg_controllen = cmsg->cmsg_len;
+
+					if (sendmsg(srcSocket.getFd(), &msg, 0) < 0)
+					{
+						log << TestLog::Message << "Failed to send fd over socket: '" << strerror(errno) << "'" << TestLog::EndMessage;
+						TCU_FAIL("Failed to send fd over socket");
+					}
+				}
+
+				// Recv FD
+				{
+					msghdr			msg;
+					char			buffer[CMSG_SPACE(sizeof(int))];
+					std::string		recvData	(4, '\0');
+					iovec			iov			= { &recvData[0], recvData.length() };
+
+					deMemset(&msg, 0, sizeof(msg));
+
+					msg.msg_control		= buffer;
+					msg.msg_controllen	= sizeof(buffer);
+					msg.msg_iovlen		= 1;
+					msg.msg_iov			= &iov;
+
+					const ssize_t	bytes = recvmsg(dstSocket.getFd(), &msg, 0);
+
+					if (bytes < 0)
+					{
+						log << TestLog::Message << "Failed to recv fd over socket: '" << strerror(errno) << "'" << TestLog::EndMessage;
+						TCU_FAIL("Failed to recv fd over socket");
+
+					}
+					else if (bytes != (ssize_t)sendData.length())
+					{
+						TCU_FAIL("recvmsg() returned unpexpected number of bytes");
+					}
+					else
+					{
+						const vk::VkFenceImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
+						const cmsghdr* const				cmsg	= CMSG_FIRSTHDR(&msg);
+						int									newFd_;
+						deMemcpy(&newFd_, CMSG_DATA(cmsg), sizeof(int));
+						NativeHandle						newFd	(newFd_);
+
+						TCU_CHECK(cmsg->cmsg_level == SOL_SOCKET);
+						TCU_CHECK(cmsg->cmsg_type == SCM_RIGHTS);
+						TCU_CHECK(cmsg->cmsg_len == CMSG_LEN(sizeof(int)));
+						TCU_CHECK(recvData == sendData);
+						TCU_CHECK_MSG(newFd.getFd() >= 0, "Didn't receive valid fd from socket");
+
+						{
+							const vk::Unique<vk::VkFence> newFence (createAndImportFence(vkd, *device, config.externalType, newFd, flags));
+
+							if (transference == TRANSFERENCE_COPY)
+								VK_CHECK(vkd.waitForFences(*device, 1u, &*newFence, VK_TRUE, ~0ull));
+							else if (transference == TRANSFERENCE_REFERENCE)
+							{
+								submitDummySignal(vkd, queue, *newFence);
+								VK_CHECK(vkd.waitForFences(*device, 1u, &*newFence, VK_TRUE, ~0ull));
+							}
+							else
+								DE_FATAL("Unknown permanence.");
+
+							VK_CHECK(vkd.queueWaitIdle(queue));
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+#else
+	DE_UNREF(context);
+	DE_UNREF(config);
+	TCU_THROW(NotSupportedError, "Platform doesn't support sending file descriptors over socket");
+#endif
+}
+
 tcu::TestStatus testBufferQueries (Context& context, vk::VkExternalMemoryHandleTypeFlagBitsKHR externalType)
 {
 	const vk::VkBufferCreateFlags		createFlags[]		=
@@ -1423,7 +2498,7 @@ tcu::TestStatus testBufferQueries (Context& context, vk::VkExternalMemoryHandleT
 		vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT
 	};
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const vk::VkPhysicalDeviceFeatures	deviceFeatures		(vk::getPhysicalDeviceFeatures(vki, physicalDevice));
@@ -1485,7 +2560,7 @@ tcu::TestStatus testBufferQueries (Context& context, vk::VkExternalMemoryHandleT
 				// \note We need to re-create with dedicated mem extensions if previous device instance didn't have them
 				try
 				{
-					device				= createDevice(vki, physicalDevice, 0u, externalType, queueFamilyIndex, requiresDedicated);
+					device				= createDevice(vki, physicalDevice, 0u, externalType, 0u, queueFamilyIndex, requiresDedicated);
 					vkd					= de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(vki, *device));
 					deviceHasDedicated	= requiresDedicated;
 				}
@@ -1556,11 +2631,11 @@ tcu::TestStatus testMemoryWin32Create (Context& context, MemoryTestConfig config
 {
 #if (DE_OS == DE_OS_WIN32)
 	const vk::PlatformInterface&				vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>			instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>			instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver					vki					(vkp, *instance);
 	const vk::VkPhysicalDevice					physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32								queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>				device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex));
+	const vk::Unique<vk::VkDevice>				device				(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex));
 	const vk::DeviceDriver						vkd					(vki, *device);
 	const vk::VkBufferUsageFlags				usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const deUint32								seed				= 1261033864u;
@@ -1635,11 +2710,11 @@ tcu::TestStatus testMemoryWin32Create (Context& context, MemoryTestConfig config
 tcu::TestStatus testMemoryImportTwice (Context& context, MemoryTestConfig config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkBufferUsageFlags			usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const deUint32							seed				= 1261033864u;
@@ -1687,11 +2762,11 @@ tcu::TestStatus testMemoryMultimpleImports (Context& context, MemoryTestConfig c
 {
 	const size_t							count				= 4 * 1024;
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkBufferUsageFlags			usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkDeviceSize					bufferSize			= 1024;
@@ -1719,11 +2794,11 @@ tcu::TestStatus testMemoryMultimpleExports (Context& context, MemoryTestConfig c
 {
 	const size_t							count				= 4 * 1024;
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkBufferUsageFlags			usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkDeviceSize					bufferSize			= 1024;
@@ -1748,13 +2823,13 @@ tcu::TestStatus testMemoryFdDup (Context& context, MemoryTestConfig config)
 {
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
 	{
-		const vk::Unique<vk::VkDevice>			device			(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>			device			(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver					vkd				(vki, *device);
 
 		TestLog&								log				= context.getTestContext().getLog();
@@ -1808,13 +2883,13 @@ tcu::TestStatus testMemoryFdDup2 (Context& context, MemoryTestConfig config)
 {
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
 	{
-		const vk::Unique<vk::VkDevice>			device			(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>			device			(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver					vkd				(vki, *device);
 
 		TestLog&								log				= context.getTestContext().getLog();
@@ -1869,13 +2944,13 @@ tcu::TestStatus testMemoryFdDup3 (Context& context, MemoryTestConfig config)
 {
 #if (DE_OS == DE_OS_UNIX) && defined(_GNU_SOURCE)
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
 	{
-		const vk::Unique<vk::VkDevice>			device			(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>			device			(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver					vkd				(vki, *device);
 
 		TestLog&								log				= context.getTestContext().getLog();
@@ -1930,13 +3005,13 @@ tcu::TestStatus testMemoryFdSendOverSocket (Context& context, MemoryTestConfig c
 {
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const vk::PlatformInterface&				vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>			instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>			instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver					vki					(vkp, *instance);
 	const vk::VkPhysicalDevice					physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32								queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
 
 	{
-		const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex));
+		const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex));
 		const vk::DeviceDriver					vkd					(vki, *device);
 
 		TestLog&								log					= context.getTestContext().getLog();
@@ -2084,11 +3159,11 @@ tcu::TestStatus testBufferBindExportImportBind (Context&				context,
 												const BufferTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex, config.dedicated));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex, config.dedicated));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkBufferUsageFlags			usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkDeviceSize					bufferSize			= 1024;
@@ -2119,11 +3194,11 @@ tcu::TestStatus testBufferExportBindImportBind (Context&				context,
 												const BufferTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex, config.dedicated));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex, config.dedicated));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkBufferUsageFlags			usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkDeviceSize					bufferSize			= 1024;
@@ -2153,11 +3228,11 @@ tcu::TestStatus testBufferExportImportBindBind (Context&				context,
 												const BufferTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex, config.dedicated));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex, config.dedicated));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkBufferUsageFlags			usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkDeviceSize					bufferSize			= 1024;
@@ -2207,7 +3282,7 @@ tcu::TestStatus testImageQueries (Context& context, vk::VkExternalMemoryHandleTy
 		vk::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
 	};
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const vk::VkPhysicalDeviceFeatures	deviceFeatures		(vk::getPhysicalDeviceFeatures(vki, physicalDevice));
@@ -2292,7 +3367,7 @@ tcu::TestStatus testImageQueries (Context& context, vk::VkExternalMemoryHandleTy
 				// \note We need to re-create with dedicated mem extensions if previous device instance didn't have them
 				try
 				{
-					device				= createDevice(vki, physicalDevice, 0u, externalType, queueFamilyIndex, requiresDedicated);
+					device				= createDevice(vki, physicalDevice, 0u, externalType, 0u, queueFamilyIndex, requiresDedicated);
 					vkd					= de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(vki, *device));
 					deviceHasDedicated	= requiresDedicated;
 				}
@@ -2350,11 +3425,11 @@ tcu::TestStatus testImageBindExportImportBind (Context&					context,
 											   const ImageTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex, config.dedicated));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex, config.dedicated));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkImageUsageFlags				usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkFormat						format				= vk::VK_FORMAT_R8G8B8A8_UNORM;
@@ -2387,11 +3462,11 @@ tcu::TestStatus testImageExportBindImportBind (Context&					context,
 											   const ImageTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex, config.dedicated));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex, config.dedicated));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkImageUsageFlags				usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkFormat						format				= vk::VK_FORMAT_R8G8B8A8_UNORM;
@@ -2423,11 +3498,11 @@ tcu::TestStatus testImageExportImportBindBind (Context&					context,
 											   const ImageTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, queueFamilyIndex, config.dedicated));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex, config.dedicated));
 	const vk::DeviceDriver					vkd					(vki, *device);
 	const vk::VkImageUsageFlags				usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const vk::VkFormat						format				= vk::VK_FORMAT_R8G8B8A8_UNORM;
@@ -2454,6 +3529,79 @@ tcu::TestStatus testImageExportImportBindBind (Context&					context,
 	}
 
 	return tcu::TestStatus::pass("Pass");
+}
+de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx, vk::VkExternalFenceHandleTypeFlagBitsKHR externalType)
+{
+	const struct
+	{
+		const char* const	name;
+		const Permanence	permanence;
+	} permanences[] =
+	{
+		{ "temporary", PERMANENCE_TEMPORARY	},
+		{ "permanent", PERMANENCE_PERMANENT	}
+	};
+
+	de::MovePtr<tcu::TestCaseGroup> fenceGroup (new tcu::TestCaseGroup(testCtx, externalFenceTypeToName(externalType), externalFenceTypeToName(externalType)));
+
+	addFunctionCase(fenceGroup.get(), "info",	"Test external fence queries.",	testFenceQueries,	externalType);
+
+	for (size_t permanenceNdx = 0; permanenceNdx < DE_LENGTH_OF_ARRAY(permanences); permanenceNdx++)
+	{
+		const Permanence		permanence		(permanences[permanenceNdx].permanence);
+		const char* const		permanenceName	(permanences[permanenceNdx].name);
+		const FenceTestConfig	config			(externalType, permanence);
+
+		if (!isSupportedPermanence(externalType, permanence))
+			continue;
+
+		if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
+			|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)
+		{
+			addFunctionCase(fenceGroup.get(), std::string("create_win32_") + permanenceName,	"Test creating fence with win32 properties.",	testFenceWin32Create,	config);
+		}
+
+		addFunctionCase(fenceGroup.get(), std::string("import_twice_") + permanenceName,				"Test importing fence twice.",											testFenceImportTwice,				config);
+		addFunctionCase(fenceGroup.get(), std::string("reimport_") + permanenceName,					"Test importing again over previously imported fence.",					testFenceImportReimport,			config);
+		addFunctionCase(fenceGroup.get(), std::string("import_multiple_times_") + permanenceName,		"Test importing fence multiple times.",									testFenceMultipleImports,			config);
+		addFunctionCase(fenceGroup.get(), std::string("signal_export_import_wait_") + permanenceName,	"Test signaling, exporting, importing and waiting for the sempahore.",	testFenceSignalExportImportWait,	config);
+		addFunctionCase(fenceGroup.get(), std::string("signal_import_") + permanenceName,				"Test signaling and importing the fence.",								testFenceSignalImport,				config);
+		addFunctionCase(fenceGroup.get(), std::string("reset_") + permanenceName,						"Test resetting the fence.",											testFenceReset,						config);
+		addFunctionCase(fenceGroup.get(), std::string("transference_") + permanenceName,				"Test fences transference.",											testFenceTransference,				config);
+
+		if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR
+			|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
+		{
+			// \note Not supported on WIN32 handles
+			addFunctionCase(fenceGroup.get(), std::string("export_multiple_times_") + permanenceName,	"Test exporting fence multiple times.",		testFenceMultipleExports,	config);
+
+			addFunctionCase(fenceGroup.get(), std::string("dup_") + permanenceName,						"Test calling dup() on exported fence.",	testFenceFdDup,				config);
+			addFunctionCase(fenceGroup.get(), std::string("dup2_") + permanenceName,					"Test calling dup2() on exported fence.",	testFenceFdDup2,			config);
+			addFunctionCase(fenceGroup.get(), std::string("dup3_") + permanenceName,					"Test calling dup3() on exported fence.",	testFenceFdDup3,			config);
+			addFunctionCase(fenceGroup.get(), std::string("send_over_socket_") + permanenceName,		"Test sending fence fd over socket.",		testFenceFdSendOverSocket,	config);
+		}
+
+		if (getHandelTypeTransferences(externalType) == TRANSFERENCE_REFERENCE)
+		{
+			addFunctionCase(fenceGroup.get(), std::string("signal_wait_import_") + permanenceName,			"Test signaling and then waiting for the the sepmahore.",			testFenceSignalWaitImport,			config);
+			addFunctionCase(fenceGroup.get(), std::string("export_signal_import_wait_") + permanenceName,	"Test exporting, signaling, importing and waiting for the fence.",	testFenceExportSignalImportWait,	config);
+			addFunctionCase(fenceGroup.get(), std::string("export_import_signal_wait_") + permanenceName,	"Test exporting, importing, signaling and waiting for the fence.",	testFenceExportImportSignalWait,	config);
+		}
+	}
+
+	return fenceGroup;
+}
+
+de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> fenceGroup (new tcu::TestCaseGroup(testCtx, "fence", "Tests for external fences."));
+
+	fenceGroup->addChild(createFenceTests(testCtx, vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR).release());
+	fenceGroup->addChild(createFenceTests(testCtx, vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR).release());
+	fenceGroup->addChild(createFenceTests(testCtx, vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR).release());
+	fenceGroup->addChild(createFenceTests(testCtx, vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR).release());
+
+	return fenceGroup;
 }
 
 de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx, vk::VkExternalSemaphoreHandleTypeFlagBitsKHR externalType)
@@ -2615,6 +3763,7 @@ tcu::TestCaseGroup* createExternalMemoryTests (tcu::TestContext& testCtx)
 
 	group->addChild(createSemaphoreTests(testCtx).release());
 	group->addChild(createMemoryTests(testCtx).release());
+	group->addChild(createFenceTests(testCtx).release());
 
 	return group.release();
 }

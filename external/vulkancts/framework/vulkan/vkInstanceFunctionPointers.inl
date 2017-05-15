@@ -46,6 +46,7 @@ GetPhysicalDeviceMemoryProperties2KHRFunc				getPhysicalDeviceMemoryProperties2K
 GetPhysicalDeviceSparseImageFormatProperties2KHRFunc	getPhysicalDeviceSparseImageFormatProperties2KHR;
 GetPhysicalDeviceSurfaceCapabilities2KHRFunc			getPhysicalDeviceSurfaceCapabilities2KHR;
 GetPhysicalDeviceSurfaceFormats2KHRFunc					getPhysicalDeviceSurfaceFormats2KHR;
+GetPhysicalDeviceExternalFencePropertiesKHRFunc			getPhysicalDeviceExternalFencePropertiesKHR;
 CreateDebugReportCallbackEXTFunc						createDebugReportCallbackEXT;
 DestroyDebugReportCallbackEXTFunc						destroyDebugReportCallbackEXT;
 DebugReportMessageEXTFunc								debugReportMessageEXT;

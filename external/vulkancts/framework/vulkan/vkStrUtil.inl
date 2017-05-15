@@ -163,6 +163,9 @@ tcu::Format::Bitfield<32>	getSurfaceTransformFlagsKHRStr					(VkSurfaceTransform
 tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr					(VkCompositeAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getSwapchainCreateFlagsKHRStr					(VkSwapchainCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr					(VkDisplayPlaneAlphaFlagsKHR value);
+tcu::Format::Bitfield<32>	getExternalFenceHandleTypeFlagsKHRStr			(VkExternalFenceHandleTypeFlagsKHR value);
+tcu::Format::Bitfield<32>	getExternalFenceFeatureFlagsKHRStr				(VkExternalFenceFeatureFlagsKHR value);
+tcu::Format::Bitfield<32>	getFenceImportFlagsKHRStr						(VkFenceImportFlagsKHR value);
 tcu::Format::Bitfield<32>	getDebugReportFlagsEXTStr						(VkDebugReportFlagsEXT value);
 tcu::Format::Bitfield<32>	getExternalMemoryHandleTypeFlagsKHRStr			(VkExternalMemoryHandleTypeFlagsKHR value);
 tcu::Format::Bitfield<32>	getExternalMemoryFeatureFlagsKHRStr				(VkExternalMemoryFeatureFlagsKHR value);
@@ -351,6 +354,14 @@ std::ostream&	operator<<	(std::ostream& s, const VkSharedPresentSurfaceCapabilit
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSurfaceInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceCapabilities2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceFormat2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalFenceInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalFencePropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExportFenceCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportFenceWin32HandleInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExportFenceWin32HandleInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkFenceGetWin32HandleInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportFenceFdInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkFenceGetFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryDedicatedRequirementsKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryDedicatedAllocateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferMemoryRequirementsInfo2KHR& value);

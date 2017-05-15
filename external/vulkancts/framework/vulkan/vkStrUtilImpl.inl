@@ -204,6 +204,14 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR:		return "VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE:						return "VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE";
 		case VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR:			return "VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO_KHR:					return "VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_IMPORT_FENCE_WIN32_HANDLE_INFO_KHR:				return "VK_STRUCTURE_TYPE_IMPORT_FENCE_WIN32_HANDLE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_EXPORT_FENCE_WIN32_HANDLE_INFO_KHR:				return "VK_STRUCTURE_TYPE_EXPORT_FENCE_WIN32_HANDLE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_FENCE_GET_WIN32_HANDLE_INFO_KHR:					return "VK_STRUCTURE_TYPE_FENCE_GET_WIN32_HANDLE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR:						return "VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR";
+		case VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR:							return "VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR:						return "VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR";
 		case VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR:							return "VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR";
@@ -1421,6 +1429,37 @@ tcu::Format::Bitfield<32> getDisplayPlaneAlphaFlagsKHRStr (VkDisplayPlaneAlphaFl
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR,						"VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR,					"VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR,	"VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getExternalFenceHandleTypeFlagsKHRStr (VkExternalFenceHandleTypeFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,			"VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,		"VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR,	"VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR,				"VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getExternalFenceFeatureFlagsKHRStr (VkExternalFenceFeatureFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT_KHR,	"VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT_KHR,	"VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getFenceImportFlagsKHRStr (VkFenceImportFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_FENCE_IMPORT_TEMPORARY_BIT_KHR,	"VK_FENCE_IMPORT_TEMPORARY_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3630,6 +3669,99 @@ std::ostream& operator<< (std::ostream& s, const VkSurfaceFormat2KHR& value)
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsurfaceFormat = " << value.surfaceFormat << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalFenceInfoKHR& value)
+{
+	s << "VkPhysicalDeviceExternalFenceInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalFencePropertiesKHR& value)
+{
+	s << "VkExternalFencePropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\texportFromImportedHandleTypes = " << getExternalFenceHandleTypeFlagsKHRStr(value.exportFromImportedHandleTypes) << '\n';
+	s << "\tcompatibleHandleTypes = " << getExternalFenceHandleTypeFlagsKHRStr(value.compatibleHandleTypes) << '\n';
+	s << "\texternalFenceFeatures = " << getExternalFenceFeatureFlagsKHRStr(value.externalFenceFeatures) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportFenceCreateInfoKHR& value)
+{
+	s << "VkExportFenceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleTypes = " << getExternalFenceHandleTypeFlagsKHRStr(value.handleTypes) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportFenceWin32HandleInfoKHR& value)
+{
+	s << "VkImportFenceWin32HandleInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfence = " << value.fence << '\n';
+	s << "\tflags = " << getFenceImportFlagsKHRStr(value.flags) << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportFenceWin32HandleInfoKHR& value)
+{
+	s << "VkExportFenceWin32HandleInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpAttributes = " << value.pAttributes << '\n';
+	s << "\tdwAccess = " << value.dwAccess << '\n';
+	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFenceGetWin32HandleInfoKHR& value)
+{
+	s << "VkFenceGetWin32HandleInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfence = " << value.fence << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportFenceFdInfoKHR& value)
+{
+	s << "VkImportFenceFdInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfence = " << value.fence << '\n';
+	s << "\tflags = " << getFenceImportFlagsKHRStr(value.flags) << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\tfd = " << value.fd << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFenceGetFdInfoKHR& value)
+{
+	s << "VkFenceGetFdInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfence = " << value.fence << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
 	s << '}';
 	return s;
 }
