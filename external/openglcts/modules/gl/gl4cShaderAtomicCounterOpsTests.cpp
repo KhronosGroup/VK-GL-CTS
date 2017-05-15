@@ -648,8 +648,8 @@ ShaderAtomicCounterOpsBitwiseTestCase::ShaderAtomicCounterOpsBitwiseTestCase(deq
 
 void ShaderAtomicCounterOpsBitwiseTestCase::setOperations()
 {
-	glw::GLuint input = 0b1011101101;
-	glw::GLuint param = 0b1110101001;
+	glw::GLuint input = 0x2ED; // 0b1011101101;
+	glw::GLuint param = 0x3A9; // 0b1110101001;
 
 	addOperation(new AtomicOperationAnd(input, param));
 	addOperation(new AtomicOperationOr(input, param));
