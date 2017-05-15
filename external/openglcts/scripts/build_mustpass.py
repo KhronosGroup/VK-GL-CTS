@@ -873,7 +873,7 @@ ES_MUSTPASS_LISTS		= [
 			packages = [GLCTS_GLES2_PKG, GLCTS_3_2_2_GLES3_PKG, GLCTS_3_2_2_GLES31_PKG]),
 
 	# 3.2.3.x
-	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "3.2.3.x", isCurrent=True,
+	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "3.2.3.x", isCurrent=False,
 			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
 						GLCTS_GLES2_GTF_PKG_1CFG,
 						GLCTS_GLES2_KHR_PKG_N1CFG,
@@ -890,11 +890,30 @@ ES_MUSTPASS_LISTS		= [
 						GLCTS_3_2_3_GLES32_KHR_PKG_N1CFG,
 						]),
 
-	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "3.2.3.x", isCurrent=True,
+	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "3.2.3.x", isCurrent=False,
 			packages = [GLCTS_3_2_3_GLES2_PKG, GLCTS_3_2_3_GLES3_PKG, GLCTS_3_2_3_GLES31_PKG]),
 
-	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "3.2.3.x", isCurrent=True,
+	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "3.2.3.x", isCurrent=False,
 			packages = [GLCTS_3_2_3_EGL_PKG]),
+
+	# 3.2.4.x
+	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "3.2.4.x", isCurrent=True,
+			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
+						GLCTS_GLES2_KHR_PKG_N1CFG,
+						GLCTS_GLES3_KHR_PKG_1CFG,
+						GLCTS_GLES3_KHR_PKG_N1CFG,
+						GLCTS_GLES31_KHR_PKG_1CFG,
+						GLCTS_GLES31_KHR_PKG_N1CFG,
+						GLCTS_3_2_3_GLES32_KHR_PKG_1CFG,
+						GLCTS_3_2_3_GLES32_KHR_PKG_N1CFG,
+						]),
+
+	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "3.2.4.x", isCurrent=True,
+			packages = [GLCTS_3_2_3_GLES2_PKG, GLCTS_3_2_3_GLES3_PKG, GLCTS_3_2_3_GLES31_PKG]),
+
+	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "3.2.4.x", isCurrent=True,
+			packages = [GLCTS_3_2_3_EGL_PKG]),
+
 	# master
 
 	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "master", isCurrent=False,
