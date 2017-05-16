@@ -40,18 +40,6 @@ namespace vkt
 namespace drawutil
 {
 
-struct Shader
-{
-	vk::VkShaderStageFlagBits	stage;
-	const vk::ProgramBinary*	binary;
-
-	Shader (const vk::VkShaderStageFlagBits stage_, const vk::ProgramBinary& binary_)
-		: stage		(stage_)
-		, binary	(&binary_)
-	{
-	}
-};
-
 struct DrawState
 {
 	vk::VkPrimitiveTopology			topology;
@@ -100,8 +88,8 @@ public:
 	virtual void							draw					(void) = 0;
 	virtual tcu::ConstPixelBufferAccess		getColorPixels			(void) const = 0;
 protected:
-		const DrawState&					m_drawState;
-		const DrawCallData&					m_drawCallData;
+	const DrawState&						m_drawState;
+	const DrawCallData&						m_drawCallData;
 };
 
 class ReferenceDrawContext : public DrawContext
@@ -125,17 +113,37 @@ private:
 	tcu::TextureLevel						m_refImage;
 };
 
-struct VulkanProgram
+struct VulkanShader
 {
-	const std::vector<Shader>&			shaders;
-	vk::Move<vk::VkImageView>			depthImageView;
-	vk::Move<vk::VkDescriptorSetLayout>	descriptorSetLayout;
-	vk::Move<vk::VkDescriptorSet>		descriptorSet;
+	vk::VkShaderStageFlagBits	stage;
+	const vk::ProgramBinary*	binary;
 
-	VulkanProgram		(const std::vector<Shader>&			shaders_)
-		: shaders		(shaders_)
+	VulkanShader (const vk::VkShaderStageFlagBits stage_, const vk::ProgramBinary& binary_)
+		: stage		(stage_)
+		, binary	(&binary_)
 	{
 	}
+};
+
+struct VulkanProgram
+{
+	std::vector<VulkanShader>	shaders;
+	vk::VkImageView				depthImageView;		// \todo [2017-06-06 pyry] This shouldn't be here? Doesn't logically belong to program
+	vk::VkDescriptorSetLayout	descriptorSetLayout;
+	vk::VkDescriptorSet			descriptorSet;
+
+	VulkanProgram (const std::vector<VulkanShader>& shaders_)
+		: shaders				(shaders_)
+		, depthImageView		(0)
+		, descriptorSetLayout	(0)
+		, descriptorSet			(0)
+	{}
+
+	VulkanProgram (void)
+		: depthImageView		(0)
+		, descriptorSetLayout	(0)
+		, descriptorSet			(0)
+	{}
 };
 
 class VulkanDrawContext : public DrawContext
@@ -144,7 +152,7 @@ public:
 											VulkanDrawContext	(Context&				context,
 																 const DrawState&		drawState,
 																 const DrawCallData&	drawCallData,
-																 VulkanProgram&			vulkanProgram);
+																 const VulkanProgram&	vulkanProgram);
 	virtual									~VulkanDrawContext	(void);
 	virtual void							draw				(void);
 	virtual tcu::ConstPixelBufferAccess		getColorPixels		(void) const;
@@ -154,7 +162,7 @@ private:
 		MAX_NUM_SHADER_MODULES					= 5,
 	};
 	Context&									m_context;
-	VulkanProgram&								m_program;
+	const VulkanProgram&						m_program;
 	de::MovePtr<vk::ImageWithMemory>			m_colorImage;
 	de::MovePtr<vk::ImageWithMemory>			m_resolveImage;
 	de::MovePtr<vk::BufferWithMemory>			m_colorAttachmentBuffer;

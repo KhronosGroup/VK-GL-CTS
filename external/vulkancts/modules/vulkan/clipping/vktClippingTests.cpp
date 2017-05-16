@@ -395,9 +395,9 @@ tcu::TestStatus testPrimitivesInside (Context& context, const VkPrimitiveTopolog
 			break;
 	}
 
-	std::vector<Shader> shaders;
-	shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("vert")));
-	shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
+	std::vector<VulkanShader> shaders;
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT,		context.getBinaryCollection().get("vert")));
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
 
 	tcu::TestLog&	log			= context.getTestContext().getLog();
 	int				numPassed	= 0;
@@ -436,9 +436,9 @@ tcu::TestStatus testPrimitivesInside (Context& context, const VkPrimitiveTopolog
 //! Primitives fully outside the clip volume.
 tcu::TestStatus testPrimitivesOutside (Context& context, const VkPrimitiveTopology topology)
 {
-	std::vector<Shader> shaders;
-	shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("vert")));
-	shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
+	std::vector<VulkanShader> shaders;
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT,		context.getBinaryCollection().get("vert")));
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
 
 	tcu::TestLog&	log			= context.getTestContext().getLog();
 	int				numPassed	= 0;
@@ -481,9 +481,9 @@ tcu::TestStatus testPrimitivesDepthClamp (Context& context, const VkPrimitiveTop
 {
 	requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_DEPTH_CLAMP);
 
-	std::vector<Shader> shaders;
-	shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("vert")));
-	shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
+	std::vector<VulkanShader> shaders;
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT,		context.getBinaryCollection().get("vert")));
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
 
 	const int		numCases		= 4;
 	const IVec2		regionSize		= IVec2(RENDER_SIZE/2, RENDER_SIZE);	//! size of the clamped region
@@ -592,9 +592,9 @@ tcu::TestStatus testLargePoints (Context& context)
 		return tcu::TestStatus::pass("OK");
 	}
 
-	std::vector<Shader> shaders;
-	shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("vert")));
-	shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
+	std::vector<VulkanShader> shaders;
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT,		context.getBinaryCollection().get("vert")));
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
 
 	std::vector<Vec4> vertices;
 	{
@@ -646,9 +646,9 @@ tcu::TestStatus testWideLines (Context& context, const LineOrientation lineOrien
 {
 	requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_WIDE_LINES);
 
-	std::vector<Shader> shaders;
-	shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("vert")));
-	shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
+	std::vector<VulkanShader> shaders;
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT,		context.getBinaryCollection().get("vert")));
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
 
 	const float delta = 0.1f;  // much smaller than the line width
 
@@ -986,16 +986,16 @@ tcu::TestStatus testClipDistance (Context& context, const CaseDefinition caseDef
 			return tcu::TestStatus::fail("maxCombinedClipAndCullDistances smaller than the minimum required by the spec");
 	}
 
-	std::vector<Shader> shaders;
-	shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("vert")));
-	shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
+	std::vector<VulkanShader> shaders;
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT,		context.getBinaryCollection().get("vert")));
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
 	if (caseDef.enableTessellation)
 	{
-		shaders.push_back(Shader(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		context.getBinaryCollection().get("tesc")));
-		shaders.push_back(Shader(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	context.getBinaryCollection().get("tese")));
+		shaders.push_back(VulkanShader(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,	context.getBinaryCollection().get("tesc")));
+		shaders.push_back(VulkanShader(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	context.getBinaryCollection().get("tese")));
 	}
 	if (caseDef.enableGeometry)
-		shaders.push_back(Shader(VK_SHADER_STAGE_GEOMETRY_BIT,	context.getBinaryCollection().get("geom")));
+		shaders.push_back(VulkanShader(VK_SHADER_STAGE_GEOMETRY_BIT,	context.getBinaryCollection().get("geom")));
 
 	const int numBars = MAX_COMBINED_CLIP_AND_CULL_DISTANCES;
 
@@ -1102,9 +1102,9 @@ tcu::TestStatus testComplementarity (Context& context, const int numClipDistance
 		requireFeatures(vki, physDevice, FEATURE_SHADER_CLIP_DISTANCE);
 	}
 
-	std::vector<Shader> shaders;
-	shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("vert")));
-	shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
+	std::vector<VulkanShader> shaders;
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT,		context.getBinaryCollection().get("vert")));
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
 
 	std::vector<Vec4> vertices;
 	{

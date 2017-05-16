@@ -50,13 +50,16 @@ struct Symbol
 //! Complete shader specification.
 struct ShaderSpec
 {
+	glu::GLSLVersion		glslVersion;
 	std::vector<Symbol>		inputs;
 	std::vector<Symbol>		outputs;
 	std::string				globalDeclarations;	//!< These are placed into global scope. Can contain uniform declarations for example.
 	std::string				source;				//!< Source snippet to be executed.
 	vk::GlslBuildOptions	buildOptions;
 
-	ShaderSpec (void) {}
+	ShaderSpec (void)
+		: glslVersion(glu::GLSL_VERSION_310_ES)
+	{}
 };
 
 enum

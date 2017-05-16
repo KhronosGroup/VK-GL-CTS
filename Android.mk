@@ -925,7 +925,13 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSharedPresentableImageTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSwapchainTests.cpp \
-	external/vulkancts/modules/vulkan/wsi/vktWsiTests.cpp
+	external/vulkancts/modules/vulkan/wsi/vktWsiTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrConversionTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrFormatTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrImageQueryTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrUtil.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrViewTests.cpp
 
 LOCAL_C_INCLUDES := \
 	frameworks/native/opengl/include \
@@ -990,7 +996,8 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/tessellation \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/texture \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo \
-	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi
+	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/ycbcr \
 
 deqp_compile_flags := \
 	-DDEQP_SUPPORT_GLES1=1 \

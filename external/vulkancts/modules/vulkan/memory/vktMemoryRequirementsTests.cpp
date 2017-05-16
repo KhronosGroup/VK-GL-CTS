@@ -32,6 +32,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkStrUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkImageUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -48,6 +49,7 @@ namespace
 {
 using namespace vk;
 using de::MovePtr;
+using tcu::TestLog;
 
 Move<VkBuffer> makeBuffer (const DeviceInterface& vk, const VkDevice device, const VkDeviceSize size, const VkBufferCreateFlags flags, const VkBufferUsageFlags usage)
 {
@@ -630,6 +632,19 @@ void BufferMemoryRequirementsDedicatedAllocation::verifyMemoryRequirements (tcu:
 
 struct ImageTestParams
 {
+	ImageTestParams (VkImageCreateFlags		flags_,
+					 VkImageTiling			tiling_,
+					 bool					transient_)
+	: flags		(flags_)
+	, tiling	(tiling_)
+	, transient	(transient_)
+	{
+	}
+
+	ImageTestParams (void)
+	{
+	}
+
 	VkImageCreateFlags		flags;
 	VkImageTiling			tiling;
 	bool					transient;
@@ -690,20 +705,12 @@ protected:
 											 const VkPhysicalDeviceMemoryProperties&	deviceMemoryProperties);
 
 private:
-	virtual bool isUsageMatchesFeatures		(const VkImageUsageFlags					usage,
-											 const VkFormatFeatureFlags					featureFlags);
-
 	virtual bool isImageSupported			(const InstanceInterface&					vki,
 											 const VkPhysicalDevice						physDevice,
 											 const VkImageCreateInfo&					info);
 
-	virtual VkExtent3D makeExtentForImage	(const VkImageType							imageType);
-
 	virtual bool isFormatMatchingAspect		(const VkFormat								format,
 											 const VkImageAspectFlags					aspect);
-
-
-	virtual std::string getImageInfoString	(const VkImageCreateInfo&					imageInfo);
 
 protected:
 	VkImageCreateInfo		m_currentTestImageInfo;
@@ -844,7 +851,7 @@ void ImageMemoryRequirementsOriginal::verifyMemoryRequirements (tcu::ResultColle
 	}
 }
 
-bool ImageMemoryRequirementsOriginal::isUsageMatchesFeatures (const VkImageUsageFlags usage, const VkFormatFeatureFlags featureFlags)
+bool isUsageMatchesFeatures (const VkImageUsageFlags usage, const VkFormatFeatureFlags featureFlags)
 {
 	if ((usage & VK_IMAGE_USAGE_SAMPLED_BIT) && (featureFlags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
 		return true;
@@ -862,6 +869,15 @@ bool ImageMemoryRequirementsOriginal::isUsageMatchesFeatures (const VkImageUsage
 bool ImageMemoryRequirementsOriginal::isImageSupported (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkImageCreateInfo& info)
 {
 	DE_ASSERT(info.extent.width >= 1u && info.extent.height >= 1u && info.extent.depth >= 1u);
+
+	if (isYCbCrFormat(info.format)
+		&& (info.imageType != VK_IMAGE_TYPE_2D
+			|| info.mipLevels != 1
+			|| info.arrayLayers != 1
+			|| info.samples != VK_SAMPLE_COUNT_1_BIT))
+	{
+		return false;
+	}
 
 	if (info.imageType == VK_IMAGE_TYPE_1D)
 	{
@@ -1010,7 +1026,7 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const InstanceInterface&
 	return result == VK_SUCCESS;
 }
 
-VkExtent3D ImageMemoryRequirementsOriginal::makeExtentForImage (const VkImageType imageType)
+VkExtent3D makeExtentForImage (const VkImageType imageType)
 {
 	VkExtent3D extent = { 64u, 64u, 4u };
 
@@ -1032,7 +1048,7 @@ bool ImageMemoryRequirementsOriginal::isFormatMatchingAspect (const VkFormat for
 	return (aspect == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) == isDepthStencilFormat;
 }
 
-std::string ImageMemoryRequirementsOriginal::getImageInfoString (const VkImageCreateInfo& imageInfo)
+std::string getImageInfoString (const VkImageCreateInfo& imageInfo)
 {
 	std::ostringstream str;
 
@@ -1062,6 +1078,227 @@ std::string ImageMemoryRequirementsOriginal::getImageInfoString (const VkImageCr
 
 tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, const ImageTestParams params)
 {
+	const VkFormat				formats[]		=
+	{
+		VK_FORMAT_R4G4_UNORM_PACK8,
+		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+		VK_FORMAT_B4G4R4A4_UNORM_PACK16,
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_B5G6R5_UNORM_PACK16,
+		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
+		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
+		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+		VK_FORMAT_R8_UNORM,
+		VK_FORMAT_R8_SNORM,
+		VK_FORMAT_R8_USCALED,
+		VK_FORMAT_R8_SSCALED,
+		VK_FORMAT_R8_UINT,
+		VK_FORMAT_R8_SINT,
+		VK_FORMAT_R8_SRGB,
+		VK_FORMAT_R8G8_UNORM,
+		VK_FORMAT_R8G8_SNORM,
+		VK_FORMAT_R8G8_USCALED,
+		VK_FORMAT_R8G8_SSCALED,
+		VK_FORMAT_R8G8_UINT,
+		VK_FORMAT_R8G8_SINT,
+		VK_FORMAT_R8G8_SRGB,
+		VK_FORMAT_R8G8B8_UNORM,
+		VK_FORMAT_R8G8B8_SNORM,
+		VK_FORMAT_R8G8B8_USCALED,
+		VK_FORMAT_R8G8B8_SSCALED,
+		VK_FORMAT_R8G8B8_UINT,
+		VK_FORMAT_R8G8B8_SINT,
+		VK_FORMAT_R8G8B8_SRGB,
+		VK_FORMAT_B8G8R8_UNORM,
+		VK_FORMAT_B8G8R8_SNORM,
+		VK_FORMAT_B8G8R8_USCALED,
+		VK_FORMAT_B8G8R8_SSCALED,
+		VK_FORMAT_B8G8R8_UINT,
+		VK_FORMAT_B8G8R8_SINT,
+		VK_FORMAT_B8G8R8_SRGB,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_SNORM,
+		VK_FORMAT_R8G8B8A8_USCALED,
+		VK_FORMAT_R8G8B8A8_SSCALED,
+		VK_FORMAT_R8G8B8A8_UINT,
+		VK_FORMAT_R8G8B8A8_SINT,
+		VK_FORMAT_R8G8B8A8_SRGB,
+		VK_FORMAT_B8G8R8A8_UNORM,
+		VK_FORMAT_B8G8R8A8_SNORM,
+		VK_FORMAT_B8G8R8A8_USCALED,
+		VK_FORMAT_B8G8R8A8_SSCALED,
+		VK_FORMAT_B8G8R8A8_UINT,
+		VK_FORMAT_B8G8R8A8_SINT,
+		VK_FORMAT_B8G8R8A8_SRGB,
+		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_USCALED_PACK32,
+		VK_FORMAT_A8B8G8R8_SSCALED_PACK32,
+		VK_FORMAT_A8B8G8R8_UINT_PACK32,
+		VK_FORMAT_A8B8G8R8_SINT_PACK32,
+		VK_FORMAT_A8B8G8R8_SRGB_PACK32,
+		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+		VK_FORMAT_A2R10G10B10_SNORM_PACK32,
+		VK_FORMAT_A2R10G10B10_USCALED_PACK32,
+		VK_FORMAT_A2R10G10B10_SSCALED_PACK32,
+		VK_FORMAT_A2R10G10B10_UINT_PACK32,
+		VK_FORMAT_A2R10G10B10_SINT_PACK32,
+		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+		VK_FORMAT_A2B10G10R10_SNORM_PACK32,
+		VK_FORMAT_A2B10G10R10_USCALED_PACK32,
+		VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
+		VK_FORMAT_A2B10G10R10_UINT_PACK32,
+		VK_FORMAT_A2B10G10R10_SINT_PACK32,
+		VK_FORMAT_R16_UNORM,
+		VK_FORMAT_R16_SNORM,
+		VK_FORMAT_R16_USCALED,
+		VK_FORMAT_R16_SSCALED,
+		VK_FORMAT_R16_UINT,
+		VK_FORMAT_R16_SINT,
+		VK_FORMAT_R16_SFLOAT,
+		VK_FORMAT_R16G16_UNORM,
+		VK_FORMAT_R16G16_SNORM,
+		VK_FORMAT_R16G16_USCALED,
+		VK_FORMAT_R16G16_SSCALED,
+		VK_FORMAT_R16G16_UINT,
+		VK_FORMAT_R16G16_SINT,
+		VK_FORMAT_R16G16_SFLOAT,
+		VK_FORMAT_R16G16B16_UNORM,
+		VK_FORMAT_R16G16B16_SNORM,
+		VK_FORMAT_R16G16B16_USCALED,
+		VK_FORMAT_R16G16B16_SSCALED,
+		VK_FORMAT_R16G16B16_UINT,
+		VK_FORMAT_R16G16B16_SINT,
+		VK_FORMAT_R16G16B16_SFLOAT,
+		VK_FORMAT_R16G16B16A16_UNORM,
+		VK_FORMAT_R16G16B16A16_SNORM,
+		VK_FORMAT_R16G16B16A16_USCALED,
+		VK_FORMAT_R16G16B16A16_SSCALED,
+		VK_FORMAT_R16G16B16A16_UINT,
+		VK_FORMAT_R16G16B16A16_SINT,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
+		VK_FORMAT_R32_UINT,
+		VK_FORMAT_R32_SINT,
+		VK_FORMAT_R32_SFLOAT,
+		VK_FORMAT_R32G32_UINT,
+		VK_FORMAT_R32G32_SINT,
+		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32_UINT,
+		VK_FORMAT_R32G32B32_SINT,
+		VK_FORMAT_R32G32B32_SFLOAT,
+		VK_FORMAT_R32G32B32A32_UINT,
+		VK_FORMAT_R32G32B32A32_SINT,
+		VK_FORMAT_R32G32B32A32_SFLOAT,
+		VK_FORMAT_R64_UINT,
+		VK_FORMAT_R64_SINT,
+		VK_FORMAT_R64_SFLOAT,
+		VK_FORMAT_R64G64_UINT,
+		VK_FORMAT_R64G64_SINT,
+		VK_FORMAT_R64G64_SFLOAT,
+		VK_FORMAT_R64G64B64_UINT,
+		VK_FORMAT_R64G64B64_SINT,
+		VK_FORMAT_R64G64B64_SFLOAT,
+		VK_FORMAT_R64G64B64A64_UINT,
+		VK_FORMAT_R64G64B64A64_SINT,
+		VK_FORMAT_R64G64B64A64_SFLOAT,
+		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+		VK_FORMAT_D16_UNORM,
+		VK_FORMAT_X8_D24_UNORM_PACK32,
+		VK_FORMAT_D32_SFLOAT,
+		VK_FORMAT_S8_UINT,
+		VK_FORMAT_D16_UNORM_S8_UINT,
+		VK_FORMAT_D24_UNORM_S8_UINT,
+		VK_FORMAT_D32_SFLOAT_S8_UINT,
+		VK_FORMAT_BC1_RGB_UNORM_BLOCK,
+		VK_FORMAT_BC1_RGB_SRGB_BLOCK,
+		VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
+		VK_FORMAT_BC1_RGBA_SRGB_BLOCK,
+		VK_FORMAT_BC2_UNORM_BLOCK,
+		VK_FORMAT_BC2_SRGB_BLOCK,
+		VK_FORMAT_BC3_UNORM_BLOCK,
+		VK_FORMAT_BC3_SRGB_BLOCK,
+		VK_FORMAT_BC4_UNORM_BLOCK,
+		VK_FORMAT_BC4_SNORM_BLOCK,
+		VK_FORMAT_BC5_UNORM_BLOCK,
+		VK_FORMAT_BC5_SNORM_BLOCK,
+		VK_FORMAT_BC6H_UFLOAT_BLOCK,
+		VK_FORMAT_BC6H_SFLOAT_BLOCK,
+		VK_FORMAT_BC7_UNORM_BLOCK,
+		VK_FORMAT_BC7_SRGB_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
+		VK_FORMAT_EAC_R11_UNORM_BLOCK,
+		VK_FORMAT_EAC_R11_SNORM_BLOCK,
+		VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
+		VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
+		VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
+		VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
+		VK_FORMAT_ASTC_5x4_UNORM_BLOCK,
+		VK_FORMAT_ASTC_5x4_SRGB_BLOCK,
+		VK_FORMAT_ASTC_5x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_5x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_6x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_6x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
+		VK_FORMAT_ASTC_8x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_8x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_8x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_8x6_SRGB_BLOCK,
+		VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
+		VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x6_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x8_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
+		VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
+		VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
+		VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
+		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
+		VK_FORMAT_G8B8G8R8_422_UNORM_KHR,
+		VK_FORMAT_B8G8R8G8_422_UNORM_KHR,
+		VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR,
+		VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR,
+		VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM_KHR,
+		VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR,
+		VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM_KHR,
+		VK_FORMAT_R10X6_UNORM_PACK16_KHR,
+		VK_FORMAT_R10X6G10X6_UNORM_2PACK16_KHR,
+		VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16_KHR,
+		VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR,
+		VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR,
+		VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR,
+		VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR,
+		VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR,
+		VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR,
+		VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16_KHR,
+		VK_FORMAT_R12X4_UNORM_PACK16_KHR,
+		VK_FORMAT_R12X4G12X4_UNORM_2PACK16_KHR,
+		VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16_KHR,
+		VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR,
+		VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR,
+		VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR,
+		VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR,
+		VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR,
+		VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR,
+		VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16_KHR,
+		VK_FORMAT_G16B16G16R16_422_UNORM_KHR,
+		VK_FORMAT_B16G16R16G16_422_UNORM_KHR,
+		VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM_KHR,
+		VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR,
+		VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR,
+		VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR,
+		VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR
+	};
 	const DeviceInterface&		vk				= context.getDeviceInterface();
 	const InstanceInterface&	vki				= context.getInstanceInterface();
 	const VkDevice				device			= context.getDevice();
@@ -1087,62 +1324,66 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 		const VkImageAspectFlags	aspect					= allAspects[loopAspectNdx];
 		deUint32					previousMemoryTypeBits	= notInitializedBits;
 
-		for (VkFormat loopFormat = VK_FORMAT_R4G4_UNORM_PACK8; loopFormat <= VK_FORMAT_ASTC_12x12_SRGB_BLOCK; loopFormat = nextEnum(loopFormat))
-		if  (isFormatMatchingAspect(loopFormat, aspect))
+		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{
-			// memoryTypeBits may differ between depth/stencil formats
-			if (aspect == depthStencilAspect)
-				previousMemoryTypeBits = notInitializedBits;
+			const VkFormat format = formats[formatNdx];
 
-			for (VkImageType			loopImageType	= VK_IMAGE_TYPE_1D;					loopImageType	!= VK_IMAGE_TYPE_LAST;					loopImageType	= nextEnum(loopImageType))
-			for (VkImageCreateFlags		loopCreateFlags	= (VkImageCreateFlags)0;			loopCreateFlags	<= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;	loopCreateFlags	= nextFlagExcluding(loopCreateFlags, sparseFlags))
-			for (VkImageUsageFlags		loopUsageFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;	loopUsageFlags	<= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;	loopUsageFlags	= nextFlagExcluding(loopUsageFlags, transientFlags))
-			for (VkSampleCountFlagBits	loopSampleCount	= VK_SAMPLE_COUNT_1_BIT;			loopSampleCount	<= VK_SAMPLE_COUNT_16_BIT;				loopSampleCount	= nextFlag(loopSampleCount))
+			if  (isFormatMatchingAspect(format, aspect))
 			{
-				const VkImageCreateFlags	actualCreateFlags	= loopCreateFlags | params.flags;
-				const VkImageUsageFlags		actualUsageFlags	= loopUsageFlags  | (params.transient ? VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT : (VkImageUsageFlagBits)0);
-				const bool					isCube				= (actualCreateFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) != 0u;
-				const VkImageCreateInfo		imageInfo			=
+				// memoryTypeBits may differ between depth/stencil formats
+				if (aspect == depthStencilAspect)
+					previousMemoryTypeBits = notInitializedBits;
+
+				for (VkImageType			loopImageType	= VK_IMAGE_TYPE_1D;					loopImageType	!= VK_IMAGE_TYPE_LAST;					loopImageType	= nextEnum(loopImageType))
+				for (VkImageCreateFlags		loopCreateFlags	= (VkImageCreateFlags)0;			loopCreateFlags	<= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;	loopCreateFlags	= nextFlagExcluding(loopCreateFlags, sparseFlags))
+				for (VkImageUsageFlags		loopUsageFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;	loopUsageFlags	<= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;	loopUsageFlags	= nextFlagExcluding(loopUsageFlags, transientFlags))
+				for (VkSampleCountFlagBits	loopSampleCount	= VK_SAMPLE_COUNT_1_BIT;			loopSampleCount	<= VK_SAMPLE_COUNT_16_BIT;				loopSampleCount	= nextFlag(loopSampleCount))
 				{
-					VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType          sType;
-					DE_NULL,									// const void*              pNext;
-					actualCreateFlags,							// VkImageCreateFlags       flags;
-					loopImageType,								// VkImageType              imageType;
-					loopFormat,									// VkFormat                 format;
-					makeExtentForImage(loopImageType),			// VkExtent3D               extent;
-					1u,											// uint32_t                 mipLevels;
-					(isCube ? 6u : 1u),							// uint32_t                 arrayLayers;
-					loopSampleCount,							// VkSampleCountFlagBits    samples;
-					params.tiling,								// VkImageTiling            tiling;
-					actualUsageFlags,							// VkImageUsageFlags        usage;
-					VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode            sharingMode;
-					0u,											// uint32_t                 queueFamilyIndexCount;
-					DE_NULL,									// const uint32_t*          pQueueFamilyIndices;
-					VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout            initialLayout;
-				};
+					const VkImageCreateFlags	actualCreateFlags	= loopCreateFlags | params.flags;
+					const VkImageUsageFlags		actualUsageFlags	= loopUsageFlags  | (params.transient ? VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT : (VkImageUsageFlagBits)0);
+					const bool					isCube				= (actualCreateFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) != 0u;
+					const VkImageCreateInfo		imageInfo			=
+					{
+						VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType          sType;
+						DE_NULL,									// const void*              pNext;
+						actualCreateFlags,							// VkImageCreateFlags       flags;
+						loopImageType,								// VkImageType              imageType;
+						format,									// VkFormat                 format;
+						makeExtentForImage(loopImageType),			// VkExtent3D               extent;
+						1u,											// uint32_t                 mipLevels;
+						(isCube ? 6u : 1u),							// uint32_t                 arrayLayers;
+						loopSampleCount,							// VkSampleCountFlagBits    samples;
+						params.tiling,								// VkImageTiling            tiling;
+						actualUsageFlags,							// VkImageUsageFlags        usage;
+						VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode            sharingMode;
+						0u,											// uint32_t                 queueFamilyIndexCount;
+						DE_NULL,									// const uint32_t*          pQueueFamilyIndices;
+						VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout            initialLayout;
+					};
 
-				m_currentTestImageInfo = imageInfo;
+					m_currentTestImageInfo = imageInfo;
 
-				if (!isImageSupported(vki, physDevice, m_currentTestImageInfo))
-					continue;
+					if (!isImageSupported(vki, physDevice, m_currentTestImageInfo))
+						continue;
 
-				log << tcu::TestLog::Message << "- " << getImageInfoString(m_currentTestImageInfo) << tcu::TestLog::EndMessage;
-				++numCheckedImages;
+					log << tcu::TestLog::Message << "- " << getImageInfoString(m_currentTestImageInfo) << tcu::TestLog::EndMessage;
+					++numCheckedImages;
 
-				tcu::ResultCollector result(log, "ERROR: ");
+					tcu::ResultCollector result(log, "ERROR: ");
 
-				updateMemoryRequirements(vk, device);
+					updateMemoryRequirements(vk, device);
 
-				verifyMemoryRequirements(result, memoryProperties);
+					verifyMemoryRequirements(result, memoryProperties);
 
-				// For the same tiling, transient usage, and sparse flags, (and format, if D/S) memoryTypeBits must be the same for all images
-				result.check((previousMemoryTypeBits == notInitializedBits) || (m_currentTestRequirements.memoryTypeBits == previousMemoryTypeBits),
-								"memoryTypeBits differ from the ones in the previous image configuration");
+					// For the same tiling, transient usage, and sparse flags, (and format, if D/S) memoryTypeBits must be the same for all images
+					result.check((previousMemoryTypeBits == notInitializedBits) || (m_currentTestRequirements.memoryTypeBits == previousMemoryTypeBits),
+									"memoryTypeBits differ from the ones in the previous image configuration");
 
-				if (result.getResult() != QP_TEST_RESULT_PASS)
-					allPass = false;
+					if (result.getResult() != QP_TEST_RESULT_PASS)
+						allPass = false;
 
-				previousMemoryTypeBits = m_currentTestRequirements.memoryTypeBits;
+					previousMemoryTypeBits = m_currentTestRequirements.memoryTypeBits;
+				}
 			}
 		}
 	}
@@ -1320,13 +1561,247 @@ void populateExtendedTestGroup (tcu::TestCaseGroup* group)
 	imageTest.populateTestGroup(group);
 }
 
-void populateDedicatedAllocationTestGroup(tcu::TestCaseGroup* group)
+void populateDedicatedAllocationTestGroup (tcu::TestCaseGroup* group)
 {
 	BufferMemoryRequirementsDedicatedAllocation	bufferTest;
 	ImageMemoryRequirementsDedicatedAllocation	imageTest;
 
 	bufferTest.populateTestGroup(group);
 	imageTest.populateTestGroup(group);
+}
+
+bool isMultiplaneImageSupported (const InstanceInterface&	vki,
+								 const VkPhysicalDevice		physicalDevice,
+								 const VkImageCreateInfo&	info)
+{
+	if ((info.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) && info.imageType != VK_IMAGE_TYPE_2D)
+		return false;
+
+	if ((info.usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) &&
+		(info.usage & (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)) == 0u)
+		return false;
+
+	const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physicalDevice);
+
+	if (info.flags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)
+	{
+		DE_ASSERT(info.tiling == VK_IMAGE_TILING_OPTIMAL);
+
+		if (info.imageType == VK_IMAGE_TYPE_2D && !features.sparseResidencyImage2D)
+			return false;
+	}
+
+	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(vki, physicalDevice, info.format);
+	const VkFormatFeatureFlags	formatFeatures		= (info.tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures
+																							 : formatProperties.optimalTilingFeatures);
+
+	if (!isUsageMatchesFeatures(info.usage, formatFeatures))
+		return false;
+
+	VkImageFormatProperties		imageFormatProperties;
+	const VkResult				result				= vki.getPhysicalDeviceImageFormatProperties(
+														physicalDevice, info.format, info.imageType, info.tiling, info.usage, info.flags, &imageFormatProperties);
+
+	if (result == VK_SUCCESS)
+	{
+		if (info.arrayLayers > imageFormatProperties.maxArrayLayers)
+			return false;
+		if (info.mipLevels > imageFormatProperties.maxMipLevels)
+			return false;
+		if ((info.samples & imageFormatProperties.sampleCounts) == 0u)
+			return false;
+	}
+
+	return result == VK_SUCCESS;
+}
+
+tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
+{
+	const VkFormat multiplaneFormats[] =
+	{
+		VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR,
+		VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR,
+		VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM_KHR,
+		VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR,
+		VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM_KHR,
+		VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR,
+		VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR,
+		VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR,
+		VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR,
+		VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16_KHR,
+		VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR,
+		VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR,
+		VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR,
+		VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR,
+		VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16_KHR,
+		VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM_KHR,
+		VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR,
+		VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR,
+		VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR
+	};
+	{
+		const std::string extensionName("VK_KHR_get_memory_requirements2");
+
+		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
+			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+	}
+	{
+		const std::string extensionName("VK_KHR_sampler_ycbcr_conversion");
+
+		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
+			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+	}
+
+	const DeviceInterface&					vk					= context.getDeviceInterface();
+	const InstanceInterface&				vki					= context.getInstanceInterface();
+	const VkDevice							device				= context.getDevice();
+	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
+	const VkImageCreateFlags				sparseFlags			= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
+	const VkImageUsageFlags					transientFlags		= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+	tcu::TestLog&							log					= context.getTestContext().getLog();
+	tcu::ResultCollector					result				(log, "ERROR: ");
+	deUint32								errorCount			= 0;
+
+	log << TestLog::Message << "Memory properties: " << memoryProperties << TestLog::EndMessage;
+
+	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(multiplaneFormats); formatNdx++)
+	{
+		for (VkImageCreateFlags		loopCreateFlags	= (VkImageCreateFlags)0;			loopCreateFlags	<= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;	loopCreateFlags	= nextFlagExcluding(loopCreateFlags, sparseFlags))
+		for (VkImageUsageFlags		loopUsageFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;	loopUsageFlags	<= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;	loopUsageFlags	= nextFlagExcluding(loopUsageFlags, transientFlags))
+		{
+			const VkFormat				format				= multiplaneFormats[formatNdx];
+			const VkImageCreateFlags	actualCreateFlags	= loopCreateFlags | params.flags;
+			const VkImageUsageFlags		actualUsageFlags	= loopUsageFlags  | (params.transient ? VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT : (VkImageUsageFlagBits)0);
+			const VkImageCreateInfo		imageInfo			=
+			{
+				VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType          sType;
+				DE_NULL,								// const void*              pNext;
+				actualCreateFlags,						// VkImageCreateFlags       flags;
+				VK_IMAGE_TYPE_2D,						// VkImageType              imageType;
+				format,									// VkFormat                 format;
+				{ 64u, 64u, 1u, },						// VkExtent3D               extent;
+				1u,										// uint32_t                 mipLevels;
+				1u,										// uint32_t                 arrayLayers;
+				VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits    samples;
+				params.tiling,							// VkImageTiling            tiling;
+				actualUsageFlags,						// VkImageUsageFlags        usage;
+				VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode            sharingMode;
+				0u,										// uint32_t                 queueFamilyIndexCount;
+				DE_NULL,								// const uint32_t*          pQueueFamilyIndices;
+				VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout            initialLayout;
+			};
+
+			if (isMultiplaneImageSupported(vki, physicalDevice, imageInfo))
+			{
+				const Unique<VkImage>			image			(createImage(vk, device, &imageInfo));
+
+				log << tcu::TestLog::Message << "- " << getImageInfoString(imageInfo) << tcu::TestLog::EndMessage;
+
+				for (deUint32 planeNdx = 0; planeNdx < (deUint32)getPlaneCount(format); planeNdx++)
+				{
+					const VkImageAspectFlagBits					aspect		= getPlaneAspect(planeNdx);
+					const VkImagePlaneMemoryRequirementsInfoKHR	aspectInfo	=
+					{
+						VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO_KHR,
+						DE_NULL,
+						aspect
+					};
+					const VkImageMemoryRequirementsInfo2KHR		info		=
+					{
+						VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,
+						(actualCreateFlags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) == 0 ? DE_NULL : &aspectInfo,
+						*image
+					};
+					VkMemoryRequirements2KHR					requirements	=
+					{
+						VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
+						DE_NULL,
+						{ 0u, 0u, 0u }
+					};
+
+					vk.getImageMemoryRequirements2KHR(device, &info, &requirements);
+
+					log << TestLog::Message << "Aspect: " << getImageAspectFlagsStr(aspect) << ", Requirements: " << requirements << TestLog::EndMessage;
+
+					result.check(deIsPowerOfTwo64(static_cast<deUint64>(requirements.memoryRequirements.alignment)), "VkMemoryRequirements alignment isn't power of two");
+
+					if (result.check(requirements.memoryRequirements.memoryTypeBits != 0, "No supported memory types"))
+					{
+						bool	hasHostVisibleType	= false;
+
+						for (deUint32 memoryTypeIndex = 0; (0x1u << memoryTypeIndex) <= requirements.memoryRequirements.memoryTypeBits; memoryTypeIndex++)
+						{
+							if (result.check(memoryTypeIndex < memoryProperties.memoryTypeCount, "Unknown memory type bits set in memory requirements"))
+							{
+								const VkMemoryPropertyFlags	propertyFlags	(memoryProperties.memoryTypes[memoryTypeIndex].propertyFlags);
+
+								if (propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+									hasHostVisibleType = true;
+
+								if (propertyFlags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT)
+								{
+									result.check((imageInfo.usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) != 0u,
+										"Memory type includes VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT for a non-transient attachment image");
+								}
+							}
+							else
+								break;
+						}
+
+						result.check(params.tiling != VK_IMAGE_TILING_LINEAR || hasHostVisibleType, "Required memory type doesn't include VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT");
+					}
+				}
+			}
+		}
+	}
+
+	if (errorCount > 1)
+		return tcu::TestStatus(result.getResult(), "Failed " + de::toString(errorCount) + " cases.");
+	else
+		return tcu::TestStatus(result.getResult(), result.getMessage());
+}
+
+void populateMultiplaneTestGroup (tcu::TestCaseGroup* group)
+{
+	const struct
+	{
+		VkImageCreateFlags		flags;
+		bool					transient;
+		const char* const		name;
+	} imageFlagsCases[] =
+	{
+		{ (VkImageCreateFlags)0,																								false,	"regular"					},
+		{ (VkImageCreateFlags)0,																								true,	"transient"					},
+		{ VK_IMAGE_CREATE_SPARSE_BINDING_BIT,																					false,	"sparse"					},
+		{ VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,											false,	"sparse_residency"			},
+		{ VK_IMAGE_CREATE_SPARSE_BINDING_BIT											| VK_IMAGE_CREATE_SPARSE_ALIASED_BIT,	false,	"sparse_aliased"			},
+		{ VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT		| VK_IMAGE_CREATE_SPARSE_ALIASED_BIT,	false,	"sparse_residency_aliased"	},
+	};
+	const struct
+	{
+		VkImageTiling	value;
+		const char*		name;
+	} tilings[] =
+	{
+		{ VK_IMAGE_TILING_OPTIMAL,	"optimal"	},
+		{ VK_IMAGE_TILING_LINEAR,	"linear"	}
+	};
+
+	for (size_t flagsNdx = 0; flagsNdx < DE_LENGTH_OF_ARRAY(imageFlagsCases); ++flagsNdx)
+	for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(tilings); ++tilingNdx)
+	{
+		const VkImageCreateFlags	flags		= imageFlagsCases[flagsNdx].flags;
+		const bool					transient	= imageFlagsCases[flagsNdx].transient;
+		const VkImageTiling			tiling		= tilings[tilingNdx].value;
+		const ImageTestParams		params		(flags, tiling, transient);
+		const std::string			name		= std::string(imageFlagsCases[flagsNdx].name) + "_" + tilings[tilingNdx].name;
+
+		if (tiling == VK_IMAGE_TILING_LINEAR && (flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) != 0)
+			continue;
+
+		addFunctionCase(group, name, name, testMultiplaneImages, params);
+	}
 }
 
 } // anonymous
@@ -1339,6 +1814,7 @@ tcu::TestCaseGroup* createRequirementsTests (tcu::TestContext& testCtx)
 	requirementsGroup->addChild(createTestGroup(testCtx, "core",					"Memory requirements tests with core functionality",						populateCoreTestGroup));
 	requirementsGroup->addChild(createTestGroup(testCtx, "extended",				"Memory requirements tests with extension VK_KHR_get_memory_requirements2",	populateExtendedTestGroup));
 	requirementsGroup->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Memory requirements tests with extension VK_KHR_dedicated_allocation",		populateDedicatedAllocationTestGroup));
+	requirementsGroup->addChild(createTestGroup(testCtx, "multiplane_image",		"Memory requirements tests with vkGetImagePlaneMemoryRequirements",			populateMultiplaneTestGroup));
 
 	return requirementsGroup.release();
 }
