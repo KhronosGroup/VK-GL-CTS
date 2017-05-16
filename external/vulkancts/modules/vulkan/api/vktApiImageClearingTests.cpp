@@ -74,6 +74,27 @@ deUint32 getNumMipLevels (const VkExtent3D& baseExtent, const deUint32 maxMipLev
 	return std::min(static_cast<deUint32>(deFloatLog2(static_cast<float>(widestEdge))) + 1u, maxMipLevels);
 }
 
+deUint32 greatestCommonDivisor (const deUint32 a, const deUint32 b)
+{
+	/* Find GCD */
+	deUint32 temp;
+	deUint32 x=a;
+	deUint32 y=b;
+
+	while (x%b != 0)
+	{
+		temp = y;
+		y = x%y;
+		x = temp;
+	}
+	return y;
+}
+
+deUint32 lowestCommonMultiple (const deUint32 a, const deUint32 b)
+{
+	return (a*b)/greatestCommonDivisor(a,b);
+}
+
 std::vector<deUint32> getImageMipLevelSizes (const deUint32 pixelSize, const VkExtent3D& baseExtent, const deUint32 numMipLevels, const deUint32 perLevelAlignment = 1u)
 {
 	std::vector<deUint32> results(numMipLevels);
@@ -81,7 +102,8 @@ std::vector<deUint32> getImageMipLevelSizes (const deUint32 pixelSize, const VkE
 	for (deUint32 mipLevel = 0; mipLevel < numMipLevels; ++mipLevel)
 	{
 		const VkExtent3D extent = getMipLevelExtent(baseExtent, mipLevel);
-		results[mipLevel] = static_cast<deUint32>(deAlignSize(extent.width * extent.height * extent.depth * pixelSize, perLevelAlignment));
+		results[mipLevel] = static_cast<deUint32>(extent.width * extent.height * extent.depth * pixelSize);
+		results[mipLevel] = ((results[mipLevel] + perLevelAlignment-1) / perLevelAlignment) * perLevelAlignment;
 	}
 
 	return results;
@@ -772,7 +794,11 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAs
 														  aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT ? getStencilCopyFormat(m_params.imageFormat) :
 														  TextureFormat();
 	const deUint32						pixelSize		= getPixelSize(tcuFormat);
-	const deUint32						alignment		= 4;	// subsequent mip levels aligned to 4 bytes
+	deUint32							alignment		= 4;	// subsequent mip levels aligned to 4 bytes
+
+	if (!getIsDepthFormat(m_params.imageFormat) && !getIsStencilFormat(m_params.imageFormat))
+		alignment = lowestCommonMultiple(pixelSize, alignment); // alignment must be multiple of pixel size, if not D/S.
+
 	const std::vector<deUint32>			mipLevelSizes	= getImageMipLevelSizes(pixelSize, m_params.imageExtent, m_imageMipLevels, alignment);
 	const VkDeviceSize					imageTotalSize	= std::accumulate(mipLevelSizes.begin(), mipLevelSizes.end(), 0u);
 
