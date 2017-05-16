@@ -1194,7 +1194,7 @@ tcu::TestStatus BaseLineTestInstance::iterate (void)
 			scene.lines.swap(lines);
 			scene.lineWidth = lineWidth;
 
-			if (!verifyClippedTriangulatedLineGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog()))
+			if (!verifyRelaxedLineGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog()))
 				m_allIterationsPassed = false;
 		}
 	}
