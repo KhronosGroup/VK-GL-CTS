@@ -588,7 +588,6 @@ public:
 	void							setUniformToggle		(int location, bool toggleDecodeValue);
 
 	const std::vector<UniformData>&	getUniformDataList		(void) const;
-	const UniformData&				getUniformAtLocation	(int location) const;
 	int								getUniformLocation		(const std::string& name);
 	deUint32						getHandle				(void) const;
 	bool							getBlendRequired		(void) const;
@@ -696,11 +695,6 @@ void SRGBTestProgram::setUniformToggle (int location, bool toggleDecodeValue)
 const std::vector<UniformData>& SRGBTestProgram::getUniformDataList (void) const
 {
 	return m_uniformDataList;
-}
-
-const UniformData& SRGBTestProgram::getUniformAtLocation (int location) const
-{
-	return m_uniformDataList[location];
 }
 
 int SRGBTestProgram::getUniformLocation (const std::string& name)
