@@ -278,6 +278,12 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSwapchainTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrConversionTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrFormatTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrImageQueryTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrUtil.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrViewTests.cpp \
 	framework/common/tcuApp.cpp \
 	framework/common/tcuArray.cpp \
 	framework/common/tcuAstcUtil.cpp \
@@ -987,6 +993,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo \
 	$(deqp_dir)/external/vulkancts/modules/vulkan \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/ycbcr \
 	$(deqp_dir)/framework/common \
 	$(deqp_dir)/framework/delibs/debase \
 	$(deqp_dir)/framework/delibs/decpp \

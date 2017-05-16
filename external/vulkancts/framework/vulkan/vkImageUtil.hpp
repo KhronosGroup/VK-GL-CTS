@@ -115,6 +115,7 @@ const PlanarFormatDescription&	getYCbCrPlanarFormatDescription	(VkFormat format)
 int								getPlaneCount					(VkFormat format);
 VkImageAspectFlagBits			getPlaneAspect					(deUint32 planeNdx);
 deUint32						getAspectPlaneNdx				(VkImageAspectFlagBits planeAspect);
+bool							isChromaSubsampled				(VkFormat format);
 
 tcu::PixelBufferAccess			getChannelAccess				(const PlanarFormatDescription&	formatInfo,
 																 const tcu::UVec2&				size,

@@ -26,6 +26,7 @@ add_subdirectory(texture)
 add_subdirectory(robustness)
 add_subdirectory(renderpass)
 add_subdirectory(multiview)
+add_subdirectory(ycbcr)
 
 include_directories(
 	api
@@ -54,6 +55,7 @@ include_directories(
 	robustness
 	renderpass
 	multiview
+	ycbcr
 	)
 
 set(DEQP_VK_SRCS
@@ -105,6 +107,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-robustness
 	deqp-vk-render-pass
 	deqp-vk-multiview
+	deqp-vk-ycbcr
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

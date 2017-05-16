@@ -361,13 +361,13 @@ tcu::ConstPixelBufferAccess ReferenceDrawContext::getColorPixels (void) const
 										m_refImage.getAccess().getDataPtr());
 }
 
-VulkanDrawContext::VulkanDrawContext (  Context&				context,
-										const DrawState&		drawState,
-										const DrawCallData&		drawCallData,
-										VulkanProgram&	vulkanProgram)
-	: DrawContext						(drawState, drawCallData)
-	, m_context							(context)
-	, m_program							(vulkanProgram)
+VulkanDrawContext::VulkanDrawContext ( Context&				context,
+									  const DrawState&		drawState,
+									  const DrawCallData&	drawCallData,
+									  const VulkanProgram&	vulkanProgram)
+	: DrawContext	(drawState, drawCallData)
+	, m_context		(context)
+	, m_program		(vulkanProgram)
 {
 	const DeviceInterface&	vk						= m_context.getDeviceInterface();
 	const VkDevice			device					= m_context.getDevice();
@@ -436,7 +436,7 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 		if (!vulkanProgram.descriptorSetLayout)
 			m_pipelineLayout = makePipelineLayoutWithoutDescriptors(vk, device);
 		else
-			m_pipelineLayout = makePipelineLayout(vk, device, vulkanProgram.descriptorSetLayout.get());
+			m_pipelineLayout = makePipelineLayout(vk, device, vulkanProgram.descriptorSetLayout);
 	}
 
 	// Renderpass
@@ -486,10 +486,10 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 		};
 
 		attachmentDescriptions.push_back(attachDescriptors[0]);
-		if (vulkanProgram.depthImageView)
+		if (!!vulkanProgram.depthImageView)
 			attachmentDescriptions.push_back(attachDescriptors[1]);
 
-		deUint32 depthReferenceNdx = vulkanProgram.depthImageView ? 1 : 2;
+		deUint32 depthReferenceNdx = !!vulkanProgram.depthImageView ? 1 : 2;
 		const VkSubpassDescription subpassDescription =
 		{
 			(VkSubpassDescriptionFlags)0,						// VkSubpassDescriptionFlags		flags;
@@ -525,8 +525,8 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 		std::vector<VkImageView>	attachmentBindInfos;
 		deUint32					numAttachments;
 		attachmentBindInfos.push_back(*m_colorImageView);
-		if (vulkanProgram.depthImageView)
-			attachmentBindInfos.push_back(*vulkanProgram.depthImageView);
+		if (!!vulkanProgram.depthImageView)
+			attachmentBindInfos.push_back(vulkanProgram.depthImageView);
 
 		numAttachments = (deUint32)(attachmentBindInfos.size());
 		const VkFramebufferCreateInfo framebufferInfo = {
@@ -755,15 +755,15 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 		const VkDeviceSize zeroOffset = 0ull;
 
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		if (vulkanProgram.descriptorSet)
-			vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &*vulkanProgram.descriptorSet, 0u, DE_NULL);
+		if (!!vulkanProgram.descriptorSet)
+			vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &vulkanProgram.descriptorSet, 0u, DE_NULL);
 
 		// Begin render pass
 		{
 			std::vector<VkClearValue> clearValues;
 
 			clearValues.push_back(makeClearValueColor(Vec4(0.0f, 0.0f, 0.0f, 1.0f)));
-			if (vulkanProgram.depthImageView)
+			if (!!vulkanProgram.depthImageView)
 				clearValues.push_back(makeClearValueDepthStencil(0.0, 0));
 
 			const VkRect2D		renderArea =

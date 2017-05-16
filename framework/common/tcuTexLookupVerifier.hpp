@@ -85,6 +85,11 @@ struct LodPrecision
 		, lodBits		(16)
 	{
 	}
+
+	LodPrecision (int derivateBits_, int lodBits_)
+		: derivateBits	(derivateBits_)
+		, lodBits		(lodBits_)
+	{}
 };
 
 enum TexLookupScaleMode
