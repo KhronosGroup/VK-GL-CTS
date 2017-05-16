@@ -38,96 +38,6 @@ INL_HEADER = """\
  */\
 """
 
-PLATFORM_FUNCTIONS	= [
-	"vkCreateInstance",
-	"vkGetInstanceProcAddr",
-	"vkEnumerateInstanceExtensionProperties",
-	"vkEnumerateInstanceLayerProperties",
-]
-INSTANCE_FUNCTIONS	= [
-	"vkDestroyInstance",
-	"vkEnumeratePhysicalDevices",
-	"vkGetPhysicalDeviceFeatures",
-	"vkGetPhysicalDeviceFormatProperties",
-	"vkGetPhysicalDeviceImageFormatProperties",
-	"vkGetPhysicalDeviceSparseImageFormatProperties",
-	"vkGetPhysicalDeviceLimits",
-	"vkGetPhysicalDeviceProperties",
-	"vkGetPhysicalDeviceQueueFamilyProperties",
-	"vkGetPhysicalDeviceMemoryProperties",
-	"vkEnumerateDeviceExtensionProperties",
-	"vkEnumerateDeviceLayerProperties",
-	"vkCreateDevice",
-	"vkGetDeviceProcAddr",
-
-	# VK_KHR_surface
-	"vkDestroySurfaceKHR",
-	"vkGetPhysicalDeviceSurfaceSupportKHR",
-	"vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
-	"vkGetPhysicalDeviceSurfaceFormatsKHR",
-	"vkGetPhysicalDeviceSurfacePresentModesKHR",
-
-	# VK_KHR_display
-	"vkGetPhysicalDeviceDisplayPropertiesKHR",
-	"vkGetPhysicalDeviceDisplayPlanePropertiesKHR",
-	"vkGetDisplayPlaneSupportedDisplaysKHR",
-	"vkGetDisplayModePropertiesKHR",
-	"vkCreateDisplayModeKHR",
-	"vkGetDisplayPlaneCapabilitiesKHR",
-	"vkCreateDisplayPlaneSurfaceKHR",
-
-	# VK_KHR_xlib_surface
-	"vkCreateXlibSurfaceKHR",
-	"vkGetPhysicalDeviceXlibPresentationSupportKHR",
-
-	# VK_KHR_xcb_surface
-	"vkCreateXcbSurfaceKHR",
-	"vkGetPhysicalDeviceXcbPresentationSupportKHR",
-
-	# VK_KHR_wayland_surface
-	"vkCreateWaylandSurfaceKHR",
-	"vkGetPhysicalDeviceWaylandPresentationSupportKHR",
-
-	# VK_KHR_mir_surface
-	"vkCreateMirSurfaceKHR",
-	"vkGetPhysicalDeviceMirPresentationSupportKHR",
-
-	# VK_KHR_android_surface
-	"vkCreateAndroidSurfaceKHR",
-
-	# VK_KHR_win32_surface
-	"vkCreateWin32SurfaceKHR",
-	"vkGetPhysicalDeviceWin32PresentationSupportKHR",
-
-	# VK_KHR_get_physical_device_properties2
-	"vkGetPhysicalDeviceFeatures2KHR",
-	"vkGetPhysicalDeviceProperties2KHR",
-	"vkGetPhysicalDeviceFormatProperties2KHR",
-	"vkGetPhysicalDeviceQueueFamilyProperties2KHR",
-	"vkGetPhysicalDeviceImageFormatProperties2KHR",
-	"vkGetPhysicalDeviceMemoryProperties2KHR",
-	"vkGetPhysicalDeviceSparseImageFormatProperties2KHR",
-
-	# VK_EXT_debug_report
-	"vkCreateDebugReportCallbackEXT",
-	"vkDestroyDebugReportCallbackEXT",
-	"vkDebugReportMessageEXT",
-
-	# VK_NV_external_memory_capabilities
-	"vkGetPhysicalDeviceExternalImageFormatPropertiesNV",
-
-	# VK_NVX_device_generated_commands
-	"vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX",
-
-	# VK_KHR_external_*
-	"vkGetPhysicalDeviceExternalBufferPropertiesKHX",
-	"vkGetPhysicalDeviceExternalSemaphorePropertiesKHX",
-
-	# VK_KHR_get_surface_capabilities2
-	"vkGetPhysicalDeviceSurfaceCapabilities2KHR",
-	"vkGetPhysicalDeviceSurfaceFormats2KHR",
-]
-
 DEFINITIONS			= [
 	("VK_API_VERSION",						"deUint32"),
 	("VK_MAX_PHYSICAL_DEVICE_NAME_SIZE",	"size_t"),
@@ -249,12 +159,21 @@ class Function:
 		self.arguments	= arguments
 
 	def getType (self):
-		if self.name in PLATFORM_FUNCTIONS:
+		# Special functions
+		if self.name == "vkGetInstanceProcAddr":
 			return Function.TYPE_PLATFORM
-		elif self.name in INSTANCE_FUNCTIONS:
+		elif self.name == "vkGetDeviceProcAddr":
 			return Function.TYPE_INSTANCE
-		else:
+
+		assert len(self.arguments) > 0
+		firstArgType = self.arguments[0].type
+
+		if firstArgType in ["VkInstance", "VkPhysicalDevice"]:
+			return Function.TYPE_INSTANCE
+		elif firstArgType in ["VkDevice", "VkCommandBuffer", "VkQueue"]:
 			return Function.TYPE_DEVICE
+		else:
+			return Function.TYPE_PLATFORM
 
 class API:
 	def __init__ (self, definitions, handles, enums, bitfields, compositeTypes, functions):

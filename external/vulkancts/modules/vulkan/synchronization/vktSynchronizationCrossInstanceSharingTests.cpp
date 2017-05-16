@@ -847,7 +847,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 		log << TestLog::Message << "External buffer properties: " << info << "\n" << properties << TestLog::EndMessage;
 
 		if ((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHX) == 0
-				|| (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_NV) == 0)
+				|| (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHX) == 0)
 			TCU_THROW(NotSupportedError, "Exporting and importing memory type not supported");
 	}
 

@@ -169,28 +169,16 @@ VKAPI_ATTR VkResult VKAPI_CALL createWin32SurfaceKHR (VkInstance instance, const
 	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL createDebugReportCallbackEXT (VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pCallback = allocateNonDispHandle<DebugReportCallbackEXT, VkDebugReportCallbackEXT>(instance, pCreateInfo, pAllocator)));
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL createIndirectCommandsLayoutNVX (VkDevice device, const VkIndirectCommandsLayoutCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNVX* pIndirectCommandsLayout)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pIndirectCommandsLayout = allocateNonDispHandle<IndirectCommandsLayoutNVX, VkIndirectCommandsLayoutNVX>(device, pCreateInfo, pAllocator)));
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL createObjectTableNVX (VkDevice device, const VkObjectTableCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkObjectTableNVX* pObjectTable)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pObjectTable = allocateNonDispHandle<ObjectTableNVX, VkObjectTableNVX>(device, pCreateInfo, pAllocator)));
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL createDescriptorUpdateTemplateKHR (VkDevice device, const VkDescriptorUpdateTemplateCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorUpdateTemplateKHR* pDescriptorUpdateTemplate)
 {
 	DE_UNREF(pAllocator);
 	VK_NULL_RETURN((*pDescriptorUpdateTemplate = allocateNonDispHandle<DescriptorUpdateTemplateKHR, VkDescriptorUpdateTemplateKHR>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createDebugReportCallbackEXT (VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pCallback = allocateNonDispHandle<DebugReportCallbackEXT, VkDebugReportCallbackEXT>(instance, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyInstance (VkInstance instance, const VkAllocationCallbacks* pAllocator)
@@ -329,28 +317,16 @@ VKAPI_ATTR void VKAPI_CALL destroySwapchainKHR (VkDevice device, VkSwapchainKHR 
 	freeNonDispHandle<SwapchainKHR, VkSwapchainKHR>(swapchain, pAllocator);
 }
 
-VKAPI_ATTR void VKAPI_CALL destroyDebugReportCallbackEXT (VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator)
-{
-	DE_UNREF(instance);
-	freeNonDispHandle<DebugReportCallbackEXT, VkDebugReportCallbackEXT>(callback, pAllocator);
-}
-
-VKAPI_ATTR void VKAPI_CALL destroyIndirectCommandsLayoutNVX (VkDevice device, VkIndirectCommandsLayoutNVX indirectCommandsLayout, const VkAllocationCallbacks* pAllocator)
-{
-	DE_UNREF(device);
-	freeNonDispHandle<IndirectCommandsLayoutNVX, VkIndirectCommandsLayoutNVX>(indirectCommandsLayout, pAllocator);
-}
-
-VKAPI_ATTR void VKAPI_CALL destroyObjectTableNVX (VkDevice device, VkObjectTableNVX objectTable, const VkAllocationCallbacks* pAllocator)
-{
-	DE_UNREF(device);
-	freeNonDispHandle<ObjectTableNVX, VkObjectTableNVX>(objectTable, pAllocator);
-}
-
 VKAPI_ATTR void VKAPI_CALL destroyDescriptorUpdateTemplateKHR (VkDevice device, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
 	freeNonDispHandle<DescriptorUpdateTemplateKHR, VkDescriptorUpdateTemplateKHR>(descriptorUpdateTemplate, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyDebugReportCallbackEXT (VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(instance);
+	freeNonDispHandle<DebugReportCallbackEXT, VkDebugReportCallbackEXT>(callback, pAllocator);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceExtensionProperties (const char* pLayerName, deUint32* pPropertyCount, VkExtensionProperties* pProperties)
@@ -748,12 +724,12 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirect (VkCommandBuffer commandBuffer
 	DE_UNREF(stride);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDispatch (VkCommandBuffer commandBuffer, deUint32 x, deUint32 y, deUint32 z)
+VKAPI_ATTR void VKAPI_CALL cmdDispatch (VkCommandBuffer commandBuffer, deUint32 groupCountX, deUint32 groupCountY, deUint32 groupCountZ)
 {
 	DE_UNREF(commandBuffer);
-	DE_UNREF(x);
-	DE_UNREF(y);
-	DE_UNREF(z);
+	DE_UNREF(groupCountX);
+	DE_UNREF(groupCountY);
+	DE_UNREF(groupCountZ);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdDispatchIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset)
@@ -1195,6 +1171,40 @@ VKAPI_ATTR void VKAPI_CALL trimCommandPoolKHR (VkDevice device, VkCommandPool co
 	DE_UNREF(flags);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetKHR (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, deUint32 set, deUint32 descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pipelineBindPoint);
+	DE_UNREF(layout);
+	DE_UNREF(set);
+	DE_UNREF(descriptorWriteCount);
+	DE_UNREF(pDescriptorWrites);
+}
+
+VKAPI_ATTR void VKAPI_CALL updateDescriptorSetWithTemplateKHR (VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const void* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(descriptorSet);
+	DE_UNREF(descriptorUpdateTemplate);
+	DE_UNREF(pData);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetWithTemplateKHR (VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, VkPipelineLayout layout, deUint32 set, const void* pData)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(descriptorUpdateTemplate);
+	DE_UNREF(layout);
+	DE_UNREF(set);
+	DE_UNREF(pData);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getSwapchainStatusKHR (VkDevice device, VkSwapchainKHR swapchain)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceCapabilities2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities)
 {
 	DE_UNREF(physicalDevice);
@@ -1212,13 +1222,6 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceFormats2KHR (VkPhysicalDe
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getSwapchainStatusKHR (VkDevice device, VkSwapchainKHR swapchain)
-{
-	DE_UNREF(device);
-	DE_UNREF(swapchain);
-	return VK_SUCCESS;
-}
-
 VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage)
 {
 	DE_UNREF(instance);
@@ -1229,81 +1232,6 @@ VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugRe
 	DE_UNREF(messageCode);
 	DE_UNREF(pLayerPrefix);
 	DE_UNREF(pMessage);
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL debugMarkerSetObjectTagEXT (VkDevice device, VkDebugMarkerObjectTagInfoEXT* pTagInfo)
-{
-	DE_UNREF(device);
-	DE_UNREF(pTagInfo);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL debugMarkerSetObjectNameEXT (VkDevice device, VkDebugMarkerObjectNameInfoEXT* pNameInfo)
-{
-	DE_UNREF(device);
-	DE_UNREF(pNameInfo);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerBeginEXT (VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(pMarkerInfo);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerEndEXT (VkCommandBuffer commandBuffer)
-{
-	DE_UNREF(commandBuffer);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerInsertEXT (VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(pMarkerInfo);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(buffer);
-	DE_UNREF(offset);
-	DE_UNREF(countBuffer);
-	DE_UNREF(countBufferOffset);
-	DE_UNREF(maxDrawCount);
-	DE_UNREF(stride);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(buffer);
-	DE_UNREF(offset);
-	DE_UNREF(countBuffer);
-	DE_UNREF(countBufferOffset);
-	DE_UNREF(maxDrawCount);
-	DE_UNREF(stride);
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceExternalImageFormatPropertiesNV (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkExternalMemoryHandleTypeFlagsNV externalHandleType, VkExternalImageFormatPropertiesNV* pExternalImageFormatProperties)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(format);
-	DE_UNREF(type);
-	DE_UNREF(tiling);
-	DE_UNREF(usage);
-	DE_UNREF(flags);
-	DE_UNREF(externalHandleType);
-	DE_UNREF(pExternalImageFormatProperties);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandleNV (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle)
-{
-	DE_UNREF(device);
-	DE_UNREF(memory);
-	DE_UNREF(handleType);
-	DE_UNREF(pHandle);
-	return VK_SUCCESS;
 }
 
 VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalBufferPropertiesKHX (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfoKHX* pExternalBufferInfo, VkExternalBufferPropertiesKHX* pExternalBufferProperties)
@@ -1322,12 +1250,30 @@ VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandleKHX (VkDevice device, VkDevic
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandlePropertiesKHX (VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHX handleType, pt::Win32Handle handle, VkMemoryWin32HandlePropertiesKHX* pMemoryWin32HandleProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(handleType);
+	DE_UNREF(handle);
+	DE_UNREF(pMemoryWin32HandleProperties);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getMemoryFdKHX (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, int* pFd)
 {
 	DE_UNREF(device);
 	DE_UNREF(memory);
 	DE_UNREF(handleType);
 	DE_UNREF(pFd);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryFdPropertiesKHX (VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHX handleType, int fd, VkMemoryFdPropertiesKHX* pMemoryFdProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(handleType);
+	DE_UNREF(fd);
+	DE_UNREF(pMemoryFdProperties);
 	return VK_SUCCESS;
 }
 
@@ -1368,72 +1314,6 @@ VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreFdKHX (VkDevice device, VkSemaphore s
 	DE_UNREF(handleType);
 	DE_UNREF(pFd);
 	return VK_SUCCESS;
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdProcessCommandsNVX (VkCommandBuffer commandBuffer, const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(pProcessCommandsInfo);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdReserveSpaceForCommandsNVX (VkCommandBuffer commandBuffer, const VkCmdReserveSpaceForCommandsInfoNVX* pReserveSpaceInfo)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(pReserveSpaceInfo);
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL registerObjectsNVX (VkDevice device, VkObjectTableNVX objectTable, deUint32 objectCount, const VkObjectTableEntryNVX* const* ppObjectTableEntries, const deUint32* pObjectIndices)
-{
-	DE_UNREF(device);
-	DE_UNREF(objectTable);
-	DE_UNREF(objectCount);
-	DE_UNREF(ppObjectTableEntries);
-	DE_UNREF(pObjectIndices);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL unregisterObjectsNVX (VkDevice device, VkObjectTableNVX objectTable, deUint32 objectCount, const VkObjectEntryTypeNVX* pObjectEntryTypes, const deUint32* pObjectIndices)
-{
-	DE_UNREF(device);
-	DE_UNREF(objectTable);
-	DE_UNREF(objectCount);
-	DE_UNREF(pObjectEntryTypes);
-	DE_UNREF(pObjectIndices);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceGeneratedCommandsPropertiesNVX (VkPhysicalDevice physicalDevice, VkDeviceGeneratedCommandsFeaturesNVX* pFeatures, VkDeviceGeneratedCommandsLimitsNVX* pLimits)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(pFeatures);
-	DE_UNREF(pLimits);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetKHR (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, deUint32 set, deUint32 descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(pipelineBindPoint);
-	DE_UNREF(layout);
-	DE_UNREF(set);
-	DE_UNREF(descriptorWriteCount);
-	DE_UNREF(pDescriptorWrites);
-}
-
-VKAPI_ATTR void VKAPI_CALL updateDescriptorSetWithTemplateKHR (VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const void* pData)
-{
-	DE_UNREF(device);
-	DE_UNREF(descriptorSet);
-	DE_UNREF(descriptorUpdateTemplate);
-	DE_UNREF(pData);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetWithTemplateKHR (VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, VkPipelineLayout layout, deUint32 set, const void* pData)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(descriptorUpdateTemplate);
-	DE_UNREF(layout);
-	DE_UNREF(set);
-	DE_UNREF(pData);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL getRefreshCycleDurationGOOGLE (VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties)
@@ -1511,10 +1391,8 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,						createDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,						destroyDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,								debugReportMessageEXT),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalImageFormatPropertiesNV,	getPhysicalDeviceExternalImageFormatPropertiesNV),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferPropertiesKHX,		getPhysicalDeviceExternalBufferPropertiesKHX),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphorePropertiesKHX,	getPhysicalDeviceExternalSemaphorePropertiesKHX),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX,	getPhysicalDeviceGeneratedCommandsPropertiesNVX),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -1646,34 +1524,20 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkQueuePresentKHR,						queuePresentKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateSharedSwapchainsKHR,				createSharedSwapchainsKHR),
 	VK_NULL_FUNC_ENTRY(vkTrimCommandPoolKHR,					trimCommandPoolKHR),
-	VK_NULL_FUNC_ENTRY(vkGetSwapchainStatusKHR,					getSwapchainStatusKHR),
-	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectTagEXT,			debugMarkerSetObjectTagEXT),
-	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectNameEXT,			debugMarkerSetObjectNameEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,				cmdDebugMarkerBeginEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerEndEXT,					cmdDebugMarkerEndEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerInsertEXT,				cmdDebugMarkerInsertEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountAMD,				cmdDrawIndirectCountAMD),
-	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountAMD,		cmdDrawIndexedIndirectCountAMD),
-	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleNV,				getMemoryWin32HandleNV),
-	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHX,				getMemoryWin32HandleKHX),
-	VK_NULL_FUNC_ENTRY(vkGetMemoryFdKHX,						getMemoryFdKHX),
-	VK_NULL_FUNC_ENTRY(vkImportSemaphoreWin32HandleKHX,			importSemaphoreWin32HandleKHX),
-	VK_NULL_FUNC_ENTRY(vkGetSemaphoreWin32HandleKHX,			getSemaphoreWin32HandleKHX),
-	VK_NULL_FUNC_ENTRY(vkImportSemaphoreFdKHX,					importSemaphoreFdKHX),
-	VK_NULL_FUNC_ENTRY(vkGetSemaphoreFdKHX,						getSemaphoreFdKHX),
-	VK_NULL_FUNC_ENTRY(vkCmdProcessCommandsNVX,					cmdProcessCommandsNVX),
-	VK_NULL_FUNC_ENTRY(vkCmdReserveSpaceForCommandsNVX,			cmdReserveSpaceForCommandsNVX),
-	VK_NULL_FUNC_ENTRY(vkCreateIndirectCommandsLayoutNVX,		createIndirectCommandsLayoutNVX),
-	VK_NULL_FUNC_ENTRY(vkDestroyIndirectCommandsLayoutNVX,		destroyIndirectCommandsLayoutNVX),
-	VK_NULL_FUNC_ENTRY(vkCreateObjectTableNVX,					createObjectTableNVX),
-	VK_NULL_FUNC_ENTRY(vkDestroyObjectTableNVX,					destroyObjectTableNVX),
-	VK_NULL_FUNC_ENTRY(vkRegisterObjectsNVX,					registerObjectsNVX),
-	VK_NULL_FUNC_ENTRY(vkUnregisterObjectsNVX,					unregisterObjectsNVX),
 	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetKHR,				cmdPushDescriptorSetKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateDescriptorUpdateTemplateKHR,		createDescriptorUpdateTemplateKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorUpdateTemplateKHR,	destroyDescriptorUpdateTemplateKHR),
 	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplateKHR,	updateDescriptorSetWithTemplateKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetWithTemplateKHR,	cmdPushDescriptorSetWithTemplateKHR),
+	VK_NULL_FUNC_ENTRY(vkGetSwapchainStatusKHR,					getSwapchainStatusKHR),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHX,				getMemoryWin32HandleKHX),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandlePropertiesKHX,		getMemoryWin32HandlePropertiesKHX),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryFdKHX,						getMemoryFdKHX),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryFdPropertiesKHX,				getMemoryFdPropertiesKHX),
+	VK_NULL_FUNC_ENTRY(vkImportSemaphoreWin32HandleKHX,			importSemaphoreWin32HandleKHX),
+	VK_NULL_FUNC_ENTRY(vkGetSemaphoreWin32HandleKHX,			getSemaphoreWin32HandleKHX),
+	VK_NULL_FUNC_ENTRY(vkImportSemaphoreFdKHX,					importSemaphoreFdKHX),
+	VK_NULL_FUNC_ENTRY(vkGetSemaphoreFdKHX,						getSemaphoreFdKHX),
 	VK_NULL_FUNC_ENTRY(vkGetRefreshCycleDurationGOOGLE,			getRefreshCycleDurationGOOGLE),
 	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingGOOGLE,		getPastPresentationTimingGOOGLE),
 };
