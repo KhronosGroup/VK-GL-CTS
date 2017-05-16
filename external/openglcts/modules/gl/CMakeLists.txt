@@ -54,8 +54,6 @@ set(GLCTS_GL_SRCS
 	gl4cMapBufferAlignmentTests.hpp
 	gl4cMultiBindTests.cpp
 	gl4cMultiBindTests.hpp
-	gl4cRobustnessTests.cpp
-	gl4cRobustnessTests.hpp
 	gl4cShaderAtomicCountersTests.cpp
 	gl4cShaderAtomicCountersTests.hpp
 	gl4cShaderGroupVoteTests.cpp

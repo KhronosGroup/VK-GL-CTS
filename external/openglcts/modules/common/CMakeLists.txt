@@ -26,6 +26,8 @@ set(GLCTS_COMMON_SRCS
 	glcInfoTests.hpp
 	glcNoErrorTests.cpp
 	glcNoErrorTests.hpp
+	glcRobustnessTests.cpp
+	glcRobustnessTests.hpp
 	glcRobustBufferAccessBehaviorTests.cpp
 	glcRobustBufferAccessBehaviorTests.hpp
 	glcShaderIndexingTests.cpp

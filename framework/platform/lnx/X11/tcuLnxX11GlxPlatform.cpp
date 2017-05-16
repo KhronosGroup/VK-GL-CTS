@@ -374,9 +374,6 @@ GLXContext GlxVisual::createContext (const GlxContextFactory&		factory,
 
 	if (resetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
 	{
-		if (glu::isContextTypeES(contextType))
-			TCU_THROW(InternalError, "Specifying reset notification strategy is not allowed when creating OpenGL ES contexts");
-
 		attribs.push_back(GLX_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB);
 
 		if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)

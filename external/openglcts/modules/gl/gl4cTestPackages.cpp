@@ -44,7 +44,6 @@
 #include "gl4cParallelShaderCompileTests.hpp"
 #include "gl4cPostDepthCoverageTests.hpp"
 #include "gl4cProgramInterfaceQueryTests.hpp"
-#include "gl4cRobustnessTests.hpp"
 #include "gl4cShaderAtomicCounterOpsTests.hpp"
 #include "gl4cShaderAtomicCountersTests.hpp"
 #include "gl4cShaderBallotTests.hpp"
@@ -349,7 +348,6 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::ClipControlTests(getContext(), gl4cts::ClipControlTests::API_GL_45core));
 		addChild(new gl4cts::DirectStateAccess::Tests(getContext()));
 		addChild(new gl4cts::GetTextureSubImage::Tests(getContext()));
-		addChild(new gl4cts::RobustnessTests(getContext()));
 		addChild(new gl4cts::TextureBarrierTests(getContext(), gl4cts::TextureBarrierTests::API_GL_45core));
 		addChild(new gl4cts::ConditionalRenderInverted::Tests(getContext()));
 		addChild(new gl4cts::Sync::Tests(getContext()));

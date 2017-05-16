@@ -308,10 +308,6 @@ KHR-GLES32.context_flags.context_flags.noFlagsSetCase
 KHR-GLES32.context_flags.context_flags.debugFlagSetCase
 KHR-GLES32.context_flags.context_flags.robustFlagSetCase
 KHR-GLES32.context_flags.context_flags.allFlagsSetCase
-KHR-GLES32.robust.robustness.noResetNotification
-KHR-GLES32.robust.robustness.loseContextOnReset
-KHR-GLES32.robust.robustness.getnuniform
-KHR-GLES32.robust.robustness.readnpixels
 KHR-GLES32.robust.robust_buffer_access_behavior.vertex_buffer_objects
 KHR-GLES32.robust.robust_buffer_access_behavior.texel_fetch
 KHR-GLES32.robust.robust_buffer_access_behavior.image_load_store

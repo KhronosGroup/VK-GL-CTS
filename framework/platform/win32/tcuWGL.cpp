@@ -483,9 +483,6 @@ Context::Context (const Core*						core,
 
 	if (resetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
 	{
-		if (glu::isContextTypeES(ctxType))
-			TCU_THROW(InternalError, "Specifying reset notification strategy is not allowed when creating OpenGL ES contexts");
-
 		attribList.push_back(WGL_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB);
 
 		if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)

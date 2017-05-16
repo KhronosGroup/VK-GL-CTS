@@ -4743,10 +4743,6 @@ KHR-GL45.direct_state_access.textures_level_parameter_errors
 KHR-GL45.direct_state_access.textures_parameter_errors
 KHR-GL45.get_texture_sub_image.errors_test
 KHR-GL45.get_texture_sub_image.functional_test
-KHR-GL45.robustness.noResetNotification
-KHR-GL45.robustness.loseContextOnReset
-KHR-GL45.robustness.getnuniform
-KHR-GL45.robustness.readnpixels
 KHR-GL45.texture_barrier.disjoint-texels
 KHR-GL45.texture_barrier.overlapping-texels
 KHR-GL45.texture_barrier.same-texel-rw

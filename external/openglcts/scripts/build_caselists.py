@@ -48,6 +48,7 @@ MODULES = [
 	Module("KHR-GLES2",		"GLES2"),
 	Module("KHR-GLES31",	"GLES31"),
 	Module("KHR-GLES32",	"GLES32"),
+	Module("KHR-NoContext",	"NOCTX"),
 	Module("GTF-GLES2",		"GLES2" ),
 	Module("GTF-GLES3",		"GLES3" ),
 	Module("GTF-GLES31",	"GLES31"),
