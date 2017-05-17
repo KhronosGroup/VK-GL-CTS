@@ -687,6 +687,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_external_semaphore",
 		"VK_KHR_external_semaphore_fd",
 		"VK_KHR_external_semaphore_win32",
+        "VK_KHR_win32_keyed_mutex",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);
