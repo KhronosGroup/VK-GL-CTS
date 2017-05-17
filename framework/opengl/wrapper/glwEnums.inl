@@ -707,6 +707,8 @@
 #define GL_UNSIGNED_INT_24_8											0x84FA
 #define GL_UNSIGNED_INT_24_8_OES										0x84FA
 #define GL_MAX_TEXTURE_LOD_BIAS											0x84FD
+#define GL_TEXTURE_MAX_ANISOTROPY_EXT									0x84FE
+#define GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT								0x84FF
 #define GL_TEXTURE_LOD_BIAS												0x8501
 #define GL_INCR_WRAP													0x8507
 #define GL_DECR_WRAP													0x8508

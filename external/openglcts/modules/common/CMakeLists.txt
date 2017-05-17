@@ -56,6 +56,8 @@ set(GLCTS_COMMON_SRCS
 	glcTestCaseWrapper.hpp
 	glcTestPackage.cpp
 	glcTestPackage.hpp
+	glcTextureFilterAnisotropicTests.cpp
+	glcTextureFilterAnisotropicTests.hpp
 	glcUniformBlockCase.cpp
 	glcUniformBlockCase.hpp
 	glcUniformBlockTests.cpp

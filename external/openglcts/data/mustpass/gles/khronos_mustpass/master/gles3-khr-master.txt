@@ -2558,3 +2558,5 @@ KHR-GLES3.shaders.shader_integer_mix.mix-uvec4
 KHR-GLES3.shaders.shader_integer_mix.mix-bvec4
 KHR-GLES3.shaders.negative.initialize
 KHR-GLES3.shaders.negative.constant_sequence
+KHR-GLES3.texture_filter_anisotropic.queries
+KHR-GLES3.texture_filter_anisotropic.drawing
