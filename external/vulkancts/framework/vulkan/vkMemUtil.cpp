@@ -202,6 +202,73 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memRe
 	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr));
 }
 
+static MovePtr<Allocation> allocateDedicated (const InstanceInterface&		vki,
+											  const DeviceInterface&		vkd,
+											  const VkPhysicalDevice&		physDevice,
+											  const VkDevice				device,
+											  const VkMemoryRequirements&	memReqs,
+											  const MemoryRequirement		requirement,
+											  const void*					pNext)
+{
+	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physDevice);
+	const deUint32							memoryTypeNdx		= selectMatchingMemoryType(memoryProperties, memReqs.memoryTypeBits, requirement);
+	const VkMemoryAllocateInfo				allocInfo			=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType	sType
+		pNext,									//	const void*		pNext
+		memReqs.size,							//	VkDeviceSize	allocationSize
+		memoryTypeNdx,							//	deUint32		memoryTypeIndex
+	};
+	Move<VkDeviceMemory>					mem					= allocateMemory(vkd, device, &allocInfo);
+	MovePtr<HostPtr>						hostPtr;
+
+	if (requirement & MemoryRequirement::HostVisible)
+	{
+		DE_ASSERT(isHostVisibleMemory(memoryProperties, allocInfo.memoryTypeIndex));
+		hostPtr = MovePtr<HostPtr>(new HostPtr(vkd, device, *mem, 0u, allocInfo.allocationSize, 0u));
+	}
+
+	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr));
+}
+
+de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
+										   const DeviceInterface&	vkd,
+										   const VkPhysicalDevice&	physDevice,
+										   const VkDevice			device,
+										   const VkBuffer			buffer,
+										   MemoryRequirement		requirement)
+{
+	const VkMemoryRequirements					memoryRequirements		= getBufferMemoryRequirements(vkd, device, buffer);
+	const VkMemoryDedicatedAllocateInfoKHR		dedicatedAllocationInfo	=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,				// VkStructureType		sType
+		DE_NULL,															// const void*			pNext
+		DE_NULL,															// VkImage				image
+		buffer																// VkBuffer				buffer
+	};
+
+	return allocateDedicated(vki, vkd, physDevice, device, memoryRequirements, requirement, &dedicatedAllocationInfo);
+}
+
+de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
+										   const DeviceInterface&	vkd,
+										   const VkPhysicalDevice&	physDevice,
+										   const VkDevice			device,
+										   const VkImage			image,
+										   MemoryRequirement		requirement)
+{
+	const VkMemoryRequirements				memoryRequirements		= getImageMemoryRequirements(vkd, device, image);
+	const VkMemoryDedicatedAllocateInfoKHR	dedicatedAllocationInfo	=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,			// VkStructureType		sType
+		DE_NULL,														// const void*			pNext
+		image,															// VkImage				image
+		DE_NULL															// VkBuffer				buffer
+	};
+
+	return allocateDedicated(vki, vkd, physDevice, device, memoryRequirements, requirement, &dedicatedAllocationInfo);
+}
+
 void* mapMemory (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags)
 {
 	void* hostPtr = DE_NULL;

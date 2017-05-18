@@ -4161,6 +4161,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormats2KHR(
     VkSurfaceFormat2KHR*                        pSurfaceFormats);
 #endif
 
+
 #define VK_KHR_dedicated_allocation 1
 #define VK_KHR_DEDICATED_ALLOCATION_SPEC_VERSION 1
 #define VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME "VK_KHR_dedicated_allocation"
@@ -4178,6 +4179,7 @@ typedef struct VkMemoryDedicatedAllocateInfoKHR {
     VkImage            image;
     VkBuffer           buffer;
 } VkMemoryDedicatedAllocateInfoKHR;
+
 
 #define VK_KHR_get_memory_requirements2 1
 #define VK_KHR_GET_MEMORY_REQUIREMENTS_2_SPEC_VERSION 1
@@ -4235,6 +4237,8 @@ VKAPI_ATTR void VKAPI_CALL vkGetImageSparseMemoryRequirements2KHR(
     uint32_t*                                   pSparseMemoryRequirementCount,
     VkSparseImageMemoryRequirements2KHR*        pSparseMemoryRequirements);
 #endif
+
+
 
 #define VK_EXT_debug_report 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugReportCallbackEXT)

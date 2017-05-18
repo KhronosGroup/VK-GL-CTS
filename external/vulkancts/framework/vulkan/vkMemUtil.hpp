@@ -133,9 +133,12 @@ private:
 	const VkPhysicalDeviceMemoryProperties	m_memProps;
 };
 
-void*	mapMemory					(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags);
-void	flushMappedMemoryRange		(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
-void	invalidateMappedMemoryRange	(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
+de::MovePtr<Allocation>	allocateDedicated			(const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice& physDevice, const VkDevice device, const VkBuffer buffer, MemoryRequirement requirement);
+de::MovePtr<Allocation>	allocateDedicated			(const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice& physDevice, const VkDevice device, const VkImage image, MemoryRequirement requirement);
+
+void*					mapMemory					(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags);
+void					flushMappedMemoryRange		(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
+void					invalidateMappedMemoryRange	(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
 
 } // vk
 
