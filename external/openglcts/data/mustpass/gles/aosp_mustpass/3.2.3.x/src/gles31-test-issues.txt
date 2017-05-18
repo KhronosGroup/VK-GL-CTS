@@ -61,9 +61,3 @@ dEQP-GLES31.functional.tessellation.user_defined_io.negative.es32.per_vertex_inc
 
 #VK-GL-CTS 256
 dEQP-GLES31.functional.android_extension_pack.shaders.es32.extension_directive.ext_primitive_bounding_box
-
-#VK-GL-CTS 429
-dEQP-GLES31.functional.debug.negative_coverage.get_error.vertex_array.draw_elements_base_vertex_invalid_map
-dEQP-GLES31.functional.debug.negative_coverage.get_error.vertex_array.draw_elements_instanced_base_vertex_invalid_map
-dEQP-GLES31.functional.debug.negative_coverage.get_error.vertex_array.draw_range_elements_base_vertex_invalid_map
-
