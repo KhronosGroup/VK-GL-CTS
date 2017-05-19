@@ -814,7 +814,12 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 				0u,
 			}
 		};
-		VK_CHECK(m_vkiA.getPhysicalDeviceImageFormatProperties2KHR(m_physicalDeviceA, &imageFormatInfo, &formatProperties));
+
+		vk::VkResult result = m_vkiA.getPhysicalDeviceImageFormatProperties2KHR(m_physicalDeviceA, &imageFormatInfo, &formatProperties);
+		if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Unsupported image format");
+
+		VK_CHECK(result);
 
 		// \todo How to log this nicely?
 		log << TestLog::Message << "External image format properties: " << imageFormatInfo << "\n"<< externalProperties << TestLog::EndMessage;
