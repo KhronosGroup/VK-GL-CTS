@@ -1655,6 +1655,27 @@ struct VkMemoryDedicatedAllocateInfoKHR
 	VkBuffer		buffer;
 };
 
+struct VkProtectedSubmitInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		protectedSubmit;
+};
+
+struct VkPhysicalDeviceProtectedMemoryFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		protectedMemory;
+};
+
+struct VkPhysicalDeviceProtectedMemoryPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		protectedNoFault;
+};
+
 struct VkBufferMemoryRequirementsInfo2KHR
 {
 	VkStructureType	sType;

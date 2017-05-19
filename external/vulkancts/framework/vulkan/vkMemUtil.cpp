@@ -105,6 +105,7 @@ const MemoryRequirement MemoryRequirement::Any				= MemoryRequirement(0x0u);
 const MemoryRequirement MemoryRequirement::HostVisible		= MemoryRequirement(MemoryRequirement::FLAG_HOST_VISIBLE);
 const MemoryRequirement MemoryRequirement::Coherent			= MemoryRequirement(MemoryRequirement::FLAG_COHERENT);
 const MemoryRequirement MemoryRequirement::LazilyAllocated	= MemoryRequirement(MemoryRequirement::FLAG_LAZY_ALLOCATION);
+const MemoryRequirement MemoryRequirement::Protected		= MemoryRequirement(MemoryRequirement::FLAG_PROTECTED);
 
 bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 {
@@ -113,6 +114,8 @@ bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 		DE_FATAL("Coherent memory must be host-visible");
 	if ((m_flags & FLAG_HOST_VISIBLE) && (m_flags & FLAG_LAZY_ALLOCATION))
 		DE_FATAL("Lazily allocated memory cannot be mappable");
+	if ((m_flags & FLAG_PROTECTED) && (m_flags & FLAG_HOST_VISIBLE))
+		DE_FATAL("Protected memory cannot be mappable");
 
 	// host-visible
 	if ((m_flags & FLAG_HOST_VISIBLE) && !(heapFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
@@ -124,6 +127,10 @@ bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 
 	// lazy
 	if ((m_flags & FLAG_LAZY_ALLOCATION) && !(heapFlags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT))
+		return false;
+
+	// protected
+	if ((m_flags & FLAG_PROTECTED) && !(heapFlags & VK_MEMORY_PROPERTY_PROTECTED_BIT_KHR))
 		return false;
 
 	return true;

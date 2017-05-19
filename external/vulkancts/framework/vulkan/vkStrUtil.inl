@@ -149,6 +149,7 @@ tcu::Format::Bitfield<32>	getSampleCountFlagsStr							(VkSampleCountFlags value
 tcu::Format::Bitfield<32>	getQueueFlagsStr								(VkQueueFlags value);
 tcu::Format::Bitfield<32>	getMemoryPropertyFlagsStr						(VkMemoryPropertyFlags value);
 tcu::Format::Bitfield<32>	getMemoryHeapFlagsStr							(VkMemoryHeapFlags value);
+tcu::Format::Bitfield<32>	getDeviceQueueCreateFlagsStr					(VkDeviceQueueCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineStageFlagsStr						(VkPipelineStageFlags value);
 tcu::Format::Bitfield<32>	getImageAspectFlagsStr							(VkImageAspectFlags value);
 tcu::Format::Bitfield<32>	getSparseImageFormatFlagsStr					(VkSparseImageFormatFlags value);
@@ -193,7 +194,6 @@ tcu::Format::Bitfield<32>	getMemoryAllocateFlagsKHXStr					(VkMemoryAllocateFlag
 tcu::Format::Bitfield<32>	getDeviceGroupPresentModeFlagsKHXStr			(VkDeviceGroupPresentModeFlagsKHX value);
 tcu::Format::Bitfield<32>	getInstanceCreateFlagsStr						(VkInstanceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceCreateFlagsStr							(VkDeviceCreateFlags value);
-tcu::Format::Bitfield<32>	getDeviceQueueCreateFlagsStr					(VkDeviceQueueCreateFlags value);
 tcu::Format::Bitfield<32>	getMemoryMapFlagsStr							(VkMemoryMapFlags value);
 tcu::Format::Bitfield<32>	getSemaphoreCreateFlagsStr						(VkSemaphoreCreateFlags value);
 tcu::Format::Bitfield<32>	getEventCreateFlagsStr							(VkEventCreateFlags value);
@@ -389,6 +389,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkImportFenceFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFenceGetFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryDedicatedRequirementsKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryDedicatedAllocateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkProtectedSubmitInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProtectedMemoryFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProtectedMemoryPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferMemoryRequirementsInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageMemoryRequirementsInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageSparseMemoryRequirementsInfo2KHR& value);

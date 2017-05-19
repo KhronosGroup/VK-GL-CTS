@@ -163,6 +163,10 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineTimestampTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexInputTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexUtil.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemAttachmentLoadTests.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemImageValidator.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemTests.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemUtils.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolOcclusionTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolStatisticsTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolTests.cpp \
@@ -995,6 +999,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/memory \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/multiview \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/pipeline \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/protected_memory \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/query_pool \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/rasterization \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/renderpass \

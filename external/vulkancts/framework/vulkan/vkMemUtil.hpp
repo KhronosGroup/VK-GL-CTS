@@ -79,6 +79,7 @@ public:
 	static const MemoryRequirement	HostVisible;
 	static const MemoryRequirement	Coherent;
 	static const MemoryRequirement	LazilyAllocated;
+	static const MemoryRequirement	Protected;
 
 	inline MemoryRequirement		operator|			(MemoryRequirement requirement) const
 	{
@@ -104,6 +105,7 @@ private:
 		FLAG_HOST_VISIBLE		= 1u << 0u,
 		FLAG_COHERENT			= 1u << 1u,
 		FLAG_LAZY_ALLOCATION	= 1u << 2u,
+		FLAG_PROTECTED			= 1u << 3u,
 	};
 };
 

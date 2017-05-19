@@ -81,6 +81,7 @@
 #include "vktMultiViewTests.hpp"
 #include "vktSubgroupsTests.hpp"
 #include "vktYCbCrTests.hpp"
+#include "vktProtectedMemTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -408,6 +409,7 @@ void TestPackage::init (void)
 	addChild(MultiView::createTests			(m_testCtx));
 	addChild(subgroups::createTests			(m_testCtx));
 	addChild(ycbcr::createTests				(m_testCtx));
+	addChild(ProtectedMem::createTests		(m_testCtx));
 }
 
 } // vkt

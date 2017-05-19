@@ -28,6 +28,7 @@ add_subdirectory(renderpass)
 add_subdirectory(multiview)
 add_subdirectory(subgroups)
 add_subdirectory(ycbcr)
+add_subdirectory(protected_memory)
 
 include_directories(
 	api
@@ -58,6 +59,7 @@ include_directories(
 	multiview
 	subgroups
 	ycbcr
+	protected_memory
 	)
 
 set(DEQP_VK_SRCS
@@ -113,6 +115,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-multiview
 	deqp-vk-subgroups
 	deqp-vk-ycbcr
+	deqp-vk-protected-memory
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

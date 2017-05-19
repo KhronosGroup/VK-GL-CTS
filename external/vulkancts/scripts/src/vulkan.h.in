@@ -301,6 +301,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID = 1000129004,
     VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_EXTERNAL_FORMAT_PROPERTIES_ANDROID = 1000129005,
     VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID = 1000129006,
+    VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO_KHR = 1000145000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES_KHR = 1000145001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES_KHR = 1000145002,
     VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR = 1000146000,
     VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR = 1000146001,
     VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR = 1000147000,
@@ -1030,6 +1033,7 @@ typedef enum VkImageCreateFlagBits {
     VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR = 0x00000100,
     VK_IMAGE_CREATE_ALIAS_BIT_KHR = 0x00000400,
     VK_IMAGE_CREATE_DISJOINT_BIT_KHR = 0x00000200,
+    VK_IMAGE_CREATE_PROTECTED_BIT_KHR = 0x00000800,
     VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkImageCreateFlagBits;
 typedef VkFlags VkImageCreateFlags;
@@ -1051,6 +1055,7 @@ typedef enum VkQueueFlagBits {
     VK_QUEUE_COMPUTE_BIT = 0x00000002,
     VK_QUEUE_TRANSFER_BIT = 0x00000004,
     VK_QUEUE_SPARSE_BINDING_BIT = 0x00000008,
+    VK_QUEUE_PROTECTED_BIT_KHR = 0x00000010,
     VK_QUEUE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkQueueFlagBits;
 typedef VkFlags VkQueueFlags;
@@ -1061,6 +1066,7 @@ typedef enum VkMemoryPropertyFlagBits {
     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT = 0x00000004,
     VK_MEMORY_PROPERTY_HOST_CACHED_BIT = 0x00000008,
     VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT = 0x00000010,
+    VK_MEMORY_PROPERTY_PROTECTED_BIT_KHR = 0x00000020,
     VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkMemoryPropertyFlagBits;
 typedef VkFlags VkMemoryPropertyFlags;
@@ -1072,6 +1078,11 @@ typedef enum VkMemoryHeapFlagBits {
 } VkMemoryHeapFlagBits;
 typedef VkFlags VkMemoryHeapFlags;
 typedef VkFlags VkDeviceCreateFlags;
+
+typedef enum VkDeviceQueueCreateFlagBits {
+    VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT_KHR = 0x00000001,
+    VK_DEVICE_QUEUE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+} VkDeviceQueueCreateFlagBits;
 typedef VkFlags VkDeviceQueueCreateFlags;
 
 typedef enum VkPipelineStageFlagBits {
@@ -1161,6 +1172,7 @@ typedef enum VkBufferCreateFlagBits {
     VK_BUFFER_CREATE_SPARSE_BINDING_BIT = 0x00000001,
     VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT = 0x00000002,
     VK_BUFFER_CREATE_SPARSE_ALIASED_BIT = 0x00000004,
+    VK_BUFFER_CREATE_PROTECTED_BIT_KHR = 0x00000008,
     VK_BUFFER_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkBufferCreateFlagBits;
 typedef VkFlags VkBufferCreateFlags;
@@ -1295,6 +1307,7 @@ typedef VkFlags VkDependencyFlags;
 typedef enum VkCommandPoolCreateFlagBits {
     VK_COMMAND_POOL_CREATE_TRANSIENT_BIT = 0x00000001,
     VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT = 0x00000002,
+    VK_COMMAND_POOL_CREATE_PROTECTED_BIT_KHR = 0x00000004,
     VK_COMMAND_POOL_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkCommandPoolCreateFlagBits;
 typedef VkFlags VkCommandPoolCreateFlags;
@@ -4502,6 +4515,27 @@ typedef struct VkMemoryDedicatedAllocateInfoKHR {
     VkBuffer           buffer;
 } VkMemoryDedicatedAllocateInfoKHR;
 
+#define VK_KHR_protected_memory 1
+#define VK_KHR_PROTECTED_MEMORY_SPEC_VERSION 1
+#define VK_KHR_PROTECTED_MEMORY_EXTENSION_NAME "VK_KHR_protected_memory"
+
+typedef struct VkProtectedSubmitInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkBool32           protectedSubmit;
+} VkProtectedSubmitInfoKHR;
+
+typedef struct VkPhysicalDeviceProtectedMemoryFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           protectedMemory;
+} VkPhysicalDeviceProtectedMemoryFeaturesKHR;
+
+typedef struct VkPhysicalDeviceProtectedMemoryPropertiesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           protectedNoFault;
+} VkPhysicalDeviceProtectedMemoryPropertiesKHR;
 
 #define VK_KHR_get_memory_requirements2 1
 #define VK_KHR_GET_MEMORY_REQUIREMENTS_2_SPEC_VERSION 1

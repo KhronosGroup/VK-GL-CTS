@@ -249,6 +249,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID:				return "VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID";
 		case VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_EXTERNAL_FORMAT_PROPERTIES_ANDROID:	return "VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_EXTERNAL_FORMAT_PROPERTIES_ANDROID";
 		case VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID:										return "VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID";
+		case VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO_KHR:									return "VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR:						return "VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR:						return "VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR";
@@ -1166,6 +1169,7 @@ tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR,				"VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_ALIAS_BIT_KHR,							"VK_IMAGE_CREATE_ALIAS_BIT_KHR"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_DISJOINT_BIT_KHR,						"VK_IMAGE_CREATE_DISJOINT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_PROTECTED_BIT_KHR,						"VK_IMAGE_CREATE_PROTECTED_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1193,6 +1197,7 @@ tcu::Format::Bitfield<32> getQueueFlagsStr (VkQueueFlags value)
 		tcu::Format::BitDesc(VK_QUEUE_COMPUTE_BIT,			"VK_QUEUE_COMPUTE_BIT"),
 		tcu::Format::BitDesc(VK_QUEUE_TRANSFER_BIT,			"VK_QUEUE_TRANSFER_BIT"),
 		tcu::Format::BitDesc(VK_QUEUE_SPARSE_BINDING_BIT,	"VK_QUEUE_SPARSE_BINDING_BIT"),
+		tcu::Format::BitDesc(VK_QUEUE_PROTECTED_BIT_KHR,	"VK_QUEUE_PROTECTED_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1206,6 +1211,7 @@ tcu::Format::Bitfield<32> getMemoryPropertyFlagsStr (VkMemoryPropertyFlags value
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,		"VK_MEMORY_PROPERTY_HOST_COHERENT_BIT"),
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_CACHED_BIT,		"VK_MEMORY_PROPERTY_HOST_CACHED_BIT"),
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT,	"VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_PROTECTED_BIT_KHR,		"VK_MEMORY_PROPERTY_PROTECTED_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1216,6 +1222,15 @@ tcu::Format::Bitfield<32> getMemoryHeapFlagsStr (VkMemoryHeapFlags value)
 	{
 		tcu::Format::BitDesc(VK_MEMORY_HEAP_DEVICE_LOCAL_BIT,		"VK_MEMORY_HEAP_DEVICE_LOCAL_BIT"),
 		tcu::Format::BitDesc(VK_MEMORY_HEAP_MULTI_INSTANCE_BIT_KHX,	"VK_MEMORY_HEAP_MULTI_INSTANCE_BIT_KHX"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getDeviceQueueCreateFlagsStr (VkDeviceQueueCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT_KHR,	"VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1327,6 +1342,7 @@ tcu::Format::Bitfield<32> getBufferCreateFlagsStr (VkBufferCreateFlags value)
 		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_BINDING_BIT,	"VK_BUFFER_CREATE_SPARSE_BINDING_BIT"),
 		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,	"VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT"),
 		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,	"VK_BUFFER_CREATE_SPARSE_ALIASED_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_PROTECTED_BIT_KHR,	"VK_BUFFER_CREATE_PROTECTED_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1475,6 +1491,7 @@ tcu::Format::Bitfield<32> getCommandPoolCreateFlagsStr (VkCommandPoolCreateFlags
 	{
 		tcu::Format::BitDesc(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,				"VK_COMMAND_POOL_CREATE_TRANSIENT_BIT"),
 		tcu::Format::BitDesc(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	"VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_COMMAND_POOL_CREATE_PROTECTED_BIT_KHR,			"VK_COMMAND_POOL_CREATE_PROTECTED_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1736,11 +1753,6 @@ tcu::Format::Bitfield<32> getInstanceCreateFlagsStr (VkInstanceCreateFlags value
 }
 
 tcu::Format::Bitfield<32> getDeviceCreateFlagsStr (VkDeviceCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getDeviceQueueCreateFlagsStr (VkDeviceQueueCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -4043,6 +4055,36 @@ std::ostream& operator<< (std::ostream& s, const VkMemoryDedicatedAllocateInfoKH
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\timage = " << value.image << '\n';
 	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkProtectedSubmitInfoKHR& value)
+{
+	s << "VkProtectedSubmitInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tprotectedSubmit = " << value.protectedSubmit << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProtectedMemoryFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceProtectedMemoryFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tprotectedMemory = " << value.protectedMemory << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProtectedMemoryPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceProtectedMemoryPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tprotectedNoFault = " << value.protectedNoFault << '\n';
 	s << '}';
 	return s;
 }

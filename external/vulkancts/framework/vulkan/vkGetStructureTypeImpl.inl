@@ -451,6 +451,21 @@ template<> VkStructureType getStructureType<VkMemoryDedicatedAllocateInfoKHR> (v
 	return VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkProtectedSubmitInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceProtectedMemoryFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceProtectedMemoryPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkBufferMemoryRequirementsInfo2KHR> (void)
 {
 	return VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR;
