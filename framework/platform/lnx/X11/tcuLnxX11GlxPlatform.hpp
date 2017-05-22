@@ -1,5 +1,5 @@
-#ifndef _TCUX11PLATFORM_HPP
-#define _TCUX11PLATFORM_HPP
+#ifndef _TCULNXX11GLXPLATFORM_HPP
+#define _TCULNXX11GLXPLATFORM_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
@@ -20,11 +20,27 @@
  *
  *//*!
  * \file
- * \brief X11 Platform.
+ * \brief Platform that uses X11 via GLX.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuPlatform.hpp"
+#include "gluContextFactory.hpp"
+#include "deUniquePtr.hpp"
+#include "tcuLnxX11.hpp"
 
-tcu::Platform* createPlatform (void);
+namespace tcu
+{
+namespace lnx
+{
+namespace x11
+{
+namespace glx
+{
 
-#endif // _TCUX11PLATFORM_HPP
+de::MovePtr<glu::ContextFactory> createContextFactory (EventState& eventState);
+
+} // glx
+} // lnx
+} // x11
+} // tcu
+
+#endif // _TCULNXX11GLXPLATFORM_HPP

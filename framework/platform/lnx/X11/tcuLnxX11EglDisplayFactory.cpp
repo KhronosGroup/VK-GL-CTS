@@ -18,16 +18,20 @@
  *
  *//*!
  * \file
- * \brief X11Egl Platform.
+ * \brief X11Egl Display Factory.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuX11EglPlatform.hpp"
+#include "tcuLnxX11EglDisplayFactory.hpp"
+#include "tcuLnxX11.hpp"
 #include "egluGLContextFactory.hpp"
 #include "eglwLibrary.hpp"
 #include "eglwFunctions.hpp"
 #include "eglwEnums.hpp"
+#include "deUniquePtr.hpp"
 
 namespace tcu
+{
+namespace lnx
 {
 namespace x11
 {
@@ -286,17 +290,12 @@ NativeDisplay* DisplayFactory::createDisplay (const eglw::EGLAttrib* attribList)
 	return new Display(x11Display);
 }
 
-Platform::Platform (EventState& eventState)
+NativeDisplayFactory* createDisplayFactory (EventState& eventState)
 {
-	m_nativeDisplayFactoryRegistry.registerFactory(new DisplayFactory(eventState));
+	return new DisplayFactory(eventState);
 }
-
-MovePtr<ContextFactory> Platform::createContextFactory (void)
-{
-	return MovePtr<ContextFactory>(new GLContextFactory(m_nativeDisplayFactoryRegistry));
-}
-
 
 } // egl
 } // x11
+} // lnx
 } // tcu

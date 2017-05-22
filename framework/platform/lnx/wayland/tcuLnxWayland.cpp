@@ -23,7 +23,7 @@
  * \brief wayland utilities.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuWayland.hpp"
+#include "tcuLnxWayland.hpp"
 #include "gluRenderConfig.hpp"
 #include "deMemory.h"
 
@@ -31,29 +31,11 @@
 
 namespace tcu
 {
+namespace lnx
+{
 namespace wayland
 {
 
-EventState::EventState (void)
-	: m_quit(false)
-{
-}
-
-EventState::~EventState (void)
-{
-}
-
-void EventState::setQuitFlag (bool quit)
-{
-	de::ScopedLock lock(m_mutex);
-	m_quit = quit;
-}
-
-bool EventState::getQuitFlag (void)
-{
-	de::ScopedLock lock(m_mutex);
-	return m_quit;
-}
 const struct wl_registry_listener Display::s_registryListener =
 {
 	Display::handleGlobal,
@@ -231,4 +213,5 @@ Window::~Window (void)
 }
 
 } // wayland
+} // lnx
 } // tcu

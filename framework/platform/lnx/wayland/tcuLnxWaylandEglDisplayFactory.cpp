@@ -20,16 +20,20 @@
  *
  *//*!
  * \file
- * \brief wayland Egl Platform.
+ * \brief wayland Egl Display Factory.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuWaylandEglPlatform.hpp"
+#include "tcuLnxWaylandEglDisplayFactory.hpp"
+#include "tcuLnxWayland.hpp"
 #include "egluGLContextFactory.hpp"
 #include "eglwLibrary.hpp"
 #include "eglwFunctions.hpp"
 #include "eglwEnums.hpp"
+#include "deUniquePtr.hpp"
 
 namespace tcu
+{
+namespace lnx
 {
 namespace wayland
 {
@@ -187,16 +191,12 @@ NativeDisplay* DisplayFactory::createDisplay (const eglw::EGLAttrib* attribList)
 	return new Display(waylandDisplay);
 }
 
-Platform::Platform (EventState& eventState)
+NativeDisplayFactory* createDisplayFactory (EventState& eventState)
 {
-	m_nativeDisplayFactoryRegistry.registerFactory(new DisplayFactory(eventState));
-}
-
-MovePtr<ContextFactory> Platform::createContextFactory (void)
-{
-	return MovePtr<ContextFactory>(new GLContextFactory(m_nativeDisplayFactoryRegistry));
+	return new DisplayFactory(eventState);
 }
 
 } // egl
 } // wayland
+} // lnx
 } // tcu

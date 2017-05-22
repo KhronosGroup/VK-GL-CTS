@@ -1,5 +1,5 @@
-#ifndef _TCUX11EGLPLATFORM_HPP
-#define _TCUX11EGLPLATFORM_HPP
+#ifndef _TCULNXX11EGLDISPLAYFACTORY_HPP
+#define _TCULNXX11EGLDISPLAYFACTORY_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
@@ -20,32 +20,26 @@
  *
  *//*!
  * \file
- * \brief X11Egl Platform.
+ * \brief X11Egl Display Factory.
  *//*--------------------------------------------------------------------*/
 
-#include "deUniquePtr.hpp"
-#include "egluPlatform.hpp"
-#include "gluContextFactory.hpp"
-#include "tcuX11.hpp"
+#include "tcuLnx.hpp"
+#include "egluNativeDisplay.hpp"
 
 namespace tcu
+{
+namespace lnx
 {
 namespace x11
 {
 namespace egl
 {
 
-class Platform : public eglu::Platform
-{
-public:
-										Platform				(EventState& eventState);
-										~Platform				(void) {}
-
-	de::MovePtr<glu::ContextFactory>	createContextFactory	(void);
-};
+eglu::NativeDisplayFactory* createDisplayFactory (EventState& eventState);
 
 }
 } // x11
+} // lnx
 } // tcu
 
-#endif // _TCUX11EGLPLATFORM_HPP
+#endif // _TCULNXX11EGLDISPLAYFACTORY_HPP

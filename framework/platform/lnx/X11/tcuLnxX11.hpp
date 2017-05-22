@@ -1,5 +1,5 @@
-#ifndef _TCUX11_HPP
-#define _TCUX11_HPP
+#ifndef _TCULNXX11_HPP
+#define _TCULNXX11_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
@@ -26,7 +26,7 @@
 #include "tcuDefs.hpp"
 #include "gluRenderConfig.hpp"
 #include "gluPlatform.hpp"
-#include "deMutex.hpp"
+#include "tcuLnx.hpp"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -35,30 +35,10 @@
 
 namespace tcu
 {
+namespace lnx
+{
 namespace x11
 {
-enum
-{
-	DEFAULT_WINDOW_WIDTH	= 400,
-	DEFAULT_WINDOW_HEIGHT	= 300
-};
-
-class EventState
-{
-public:
-				EventState	(void);
-	virtual		~EventState	(void);
-	void		setQuitFlag	(bool quit);
-	bool		getQuitFlag	(void);
-
-protected:
-	de::Mutex	m_mutex;
-	bool		m_quit;
-
-private:
-				EventState	(const EventState&);
-	EventState&	operator=	(const EventState&);
-};
 
 class DisplayBase
 {
@@ -147,6 +127,7 @@ private:
 };
 
 } // x11
+} // lnx
 } // tcu
 
-#endif // _TCUX11_HPP
+#endif // _TCULNXX11_HPP
