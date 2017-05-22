@@ -21,8 +21,7 @@
  * \brief Platform that uses X11 via GLX.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuX11GlxPlatform.hpp"
-#include "tcuX11Platform.hpp"
+#include "tcuLnxX11GlxPlatform.hpp"
 
 #include "tcuRenderTarget.hpp"
 #include "glwInitFunctions.hpp"
@@ -36,6 +35,8 @@
 #include <GL/glx.h>
 
 namespace tcu
+{
+namespace lnx
 {
 namespace x11
 {
@@ -186,7 +187,7 @@ private:
 
 extern "C"
 {
-	static int tcuX11GlxErrorHandler (::Display* display, XErrorEvent* event)
+	static int tcuLnxX11GlxErrorHandler (::Display* display, XErrorEvent* event)
 	{
 		char buf[80];
 		XGetErrorText(display, event->error_code, buf, sizeof(buf));
@@ -205,7 +206,7 @@ GlxContextFactory::GlxContextFactory (EventState& eventState)
 					reinterpret_cast<const GLubyte*>("glXCreateContextAttribsARB")))))
 	, m_eventState					(eventState)
 {
-	XSetErrorHandler(tcuX11GlxErrorHandler);
+	XSetErrorHandler(tcuLnxX11GlxErrorHandler);
 }
 
 RenderContext* GlxContextFactory::createContext (const RenderConfig&	config,
@@ -738,4 +739,5 @@ MovePtr<ContextFactory> createContextFactory (EventState& eventState)
 
 } // glx
 } // x11
+} // lnx
 } // tcu

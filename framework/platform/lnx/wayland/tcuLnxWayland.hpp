@@ -1,5 +1,5 @@
-#ifndef _TCUWAYLAND_HPP
-#define _TCUWAYLAND_HPP
+#ifndef _TCULNXWAYLAND_HPP
+#define _TCULNXWAYLAND_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
@@ -28,39 +28,17 @@
 #include "tcuDefs.hpp"
 #include "gluRenderConfig.hpp"
 #include "gluPlatform.hpp"
-#include "deMutex.hpp"
+#include "tcuLnx.hpp"
 
 #include <wayland-client.h>
 #include <wayland-egl.h>
 
 namespace tcu
 {
+namespace lnx
+{
 namespace wayland
 {
-
-enum
-{
-	DEFAULT_WINDOW_WIDTH	= 400,
-	DEFAULT_WINDOW_HEIGHT	= 300
-};
-
-class EventState
-{
-public:
-							EventState				(void);
-	virtual					~EventState				(void);
-
-	void					setQuitFlag				(bool quit);
-	bool					getQuitFlag				(void);
-
-protected:
-	de::Mutex				m_mutex;
-	bool					m_quit;
-
-private:
-							EventState				(const EventState&);
-	EventState&				operator=				(const EventState&);
-};
 
 class Display
 {
@@ -127,6 +105,7 @@ private:
 };
 
 } // wayland
+} // lnx
 } // tcu
 
-#endif // _TCUWAYLAND_HPP
+#endif // _TCULNXWAYLAND_HPP

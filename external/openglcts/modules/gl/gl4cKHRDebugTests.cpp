@@ -493,6 +493,8 @@ tcu::TestNode::IterateResult APIErrorsTest::iterate()
 		GLuint invalid_id = 1;
 		m_gl->genTextures(1, &texture_id);
 		GLU_EXPECT_NO_ERROR(m_gl->getError(), "GenTextures");
+		m_gl->bindTexture(GL_TEXTURE_BUFFER, texture_id);
+		GLU_EXPECT_NO_ERROR(m_gl->getError(), "BindTexture");
 
 		try
 		{

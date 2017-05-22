@@ -19,36 +19,70 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			win32/tcuWin32VulkanPlatform.cpp
 			)
 
-	elseif ((DE_OS_IS_UNIX OR DE_OS_IS_OSX) AND DEQP_USE_X11)
-		message(STATUS "DEQP_SUPPORT_GLX        = ${DEQP_SUPPORT_GLX}")
-		if (DEQP_SUPPORT_GLX)
-			add_definitions(-DDEQP_SUPPORT_GLX=1)
-		endif ()
+	elseif ((DE_OS_IS_UNIX OR DE_OS_IS_OSX) AND (DEQP_USE_X11 OR DEQP_USE_WAYLAND))
 
 		set(TCUTIL_PLATFORM_SRCS
-			X11/tcuX11.cpp
-			X11/tcuX11.hpp
-			X11/tcuX11EglPlatform.hpp
-			X11/tcuX11EglPlatform.cpp
-			X11/tcuX11Platform.hpp
-			X11/tcuX11Platform.cpp
-			X11/tcuX11VulkanPlatform.hpp
-			X11/tcuX11VulkanPlatform.cpp
-			)
-		if (DEQP_USE_XCB)
+			lnx/tcuLnx.cpp
+			lnx/tcuLnx.cpp
+			lnx/tcuLnxPlatform.cpp
+			lnx/tcuLnxPlatform.hpp
+			lnx/tcuLnxEglPlatform.hpp
+			lnx/tcuLnxEglPlatform.cpp
+			lnx/tcuLnxVulkanPlatform.hpp
+			lnx/tcuLnxVulkanPlatform.cpp
+		)
+
+		include_directories(lnx)
+
+		if (DEQP_USE_X11)
+			add_definitions(-DDEQP_SUPPORT_X11=1)
+			include_directories(lnx/X11)
+
+			message(STATUS "DEQP_SUPPORT_GLX        = ${DEQP_SUPPORT_GLX}")
+
+			if (DEQP_SUPPORT_GLX)
+				add_definitions(-DDEQP_SUPPORT_GLX=1)
+			endif ()
+
 			set(TCUTIL_PLATFORM_SRCS
 				${TCUTIL_PLATFORM_SRCS}
-				X11/tcuX11Xcb.hpp
-				X11/tcuX11Xcb.cpp
+				lnx/X11/tcuLnxX11.cpp
+				lnx/X11/tcuLnxX11.hpp
+				lnx/X11/tcuLnxX11EglDisplayFactory.hpp
+				lnx/X11/tcuLnxX11EglDisplayFactory.cpp
 				)
+
+			if (DEQP_USE_XCB)
+				set(TCUTIL_PLATFORM_SRCS
+					${TCUTIL_PLATFORM_SRCS}
+					lnx/X11/tcuLnxX11Xcb.hpp
+					lnx/X11/tcuLnxX11Xcb.cpp
+					)
+			endif()
+
+			if (DEQP_SUPPORT_GLX)
+				set(TCUTIL_PLATFORM_SRCS
+					${TCUTIL_PLATFORM_SRCS}
+					lnx/X11/tcuLnxX11GlxPlatform.hpp
+					lnx/X11/tcuLnxX11GlxPlatform.cpp
+				)
+			endif()
 		endif()
-		if (DEQP_SUPPORT_GLX)
+
+		if (DEQP_USE_WAYLAND)
+			add_definitions(-DDEQP_SUPPORT_WAYLAND=1)
+			include_directories(lnx/wayland)
+
 			set(TCUTIL_PLATFORM_SRCS
 				${TCUTIL_PLATFORM_SRCS}
-				X11/tcuX11GlxPlatform.hpp
-				X11/tcuX11GlxPlatform.cpp
+				lnx/wayland/tcuLnxWayland.hpp
+				lnx/wayland/tcuLnxWayland.cpp
+				lnx/wayland/tcuLnxWaylandEglDisplayFactory.cpp
+				lnx/wayland/tcuLnxWaylandEglDisplayFactory.hpp
 				)
+			include_directories(wayland)
 		endif()
+
 	elseif (DE_OS_IS_ANDROID)
 		set(TCUTIL_PLATFORM_SRCS
 			android/tcuAndroidExecService.cpp
@@ -120,10 +154,15 @@ if (DEQP_USE_X11)
 	if (DEQP_USE_XCB)
 		find_package(XCB REQUIRED)
 		target_link_libraries(tcutil-platform ${XCB_LIBRARIES})
-                add_definitions(-DDEQP_SUPPORT_XCB=1)
+		add_definitions(-DDEQP_SUPPORT_XCB=1)
 	endif ()
 	if (DEQP_SUPPORT_GLX)
 	  # GLX functions don't currently have wrappers, so link directly to libGL.
 	  target_link_libraries(tcutil-platform GL)
+	endif ()
+	if (DEQP_USE_WAYLAND)
+		find_package(Wayland REQUIRED)
+		target_link_libraries(tcutil-platform ${WAYLAND_LIBRARIES})
+		add_definitions(-DDEQP_SUPPORT_WAYLAND=1)
 	endif ()
 endif ()

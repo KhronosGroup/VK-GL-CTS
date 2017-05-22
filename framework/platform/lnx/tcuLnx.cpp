@@ -1,10 +1,8 @@
-#ifndef _TCUX11VULKANPLATFORM_HPP
-#define _TCUX11VULKANPLATFORM_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
  *
- * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright 2017 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,33 +18,37 @@
  *
  *//*!
  * \file
- * \brief X11Vulkan Platform.
+ * \brief Linux utilities.
  *//*--------------------------------------------------------------------*/
 
-#include "vkWsiPlatform.hpp"
-#include "vkPlatform.hpp"
-#include "tcuX11.hpp"
+#include "tcuLnx.hpp"
+
 
 namespace tcu
 {
-namespace x11
+namespace lnx
 {
 
-class VulkanPlatform : public vk::Platform
+EventState::EventState (void)
+	: m_quit(false)
 {
-public:
-						VulkanPlatform		(EventState& eventState);
-	vk::wsi::Display*	createWsiDisplay	(vk::wsi::Type wsiType) const;
-	vk::Library*		createLibrary		(void) const;
-	void				describePlatform	(std::ostream& dst) const;
-	void				getMemoryLimits		(vk::PlatformMemoryLimits& limits) const;
+}
 
-private :
-	 EventState&		m_eventState;
-};
+EventState::~EventState (void)
+{
+}
 
+void EventState::setQuitFlag (bool quit)
+{
+	de::ScopedLock lock(m_mutex);
+	m_quit = quit;
+}
 
-} // x11
+bool EventState::getQuitFlag (void)
+{
+	de::ScopedLock lock(m_mutex);
+	return m_quit;
+}
+
+} // lnx
 } // tcu
-
-#endif // _TCUX11VULKANPLATFORM_HPP

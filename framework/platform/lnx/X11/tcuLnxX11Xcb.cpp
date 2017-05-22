@@ -21,10 +21,12 @@
  * \brief X11 using XCB utilities.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuX11Xcb.hpp"
+#include "tcuLnxX11Xcb.hpp"
 #include "deMemory.h"
 
 namespace tcu
+{
+namespace lnx
 {
 namespace x11
 {
@@ -166,4 +168,5 @@ void XcbWindow::setDimensions (int width, int height)
 }
 
 } // xcb
+} // lnx
 } // tcu
