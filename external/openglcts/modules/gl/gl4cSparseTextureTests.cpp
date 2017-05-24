@@ -1557,12 +1557,15 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 			return false;
 		}
 
-		Texture::Storage(gl, target, 1, format, width, height + maxTextureSize, depth);
-		if (!SparseTextureUtils::verifyError(mLog, "TexStorage [!GL_TEXTURE_3D wrong height]", gl.getError(),
-											 GL_INVALID_VALUE))
+		if (target != GL_TEXTURE_1D_ARRAY)
 		{
-			Texture::Delete(gl, texture);
-			return false;
+			Texture::Storage(gl, target, 1, format, width, height + maxTextureSize, depth);
+			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [!GL_TEXTURE_3D wrong height]", gl.getError(),
+												 GL_INVALID_VALUE))
+			{
+				Texture::Delete(gl, texture);
+				return false;
+			}
 		}
 
 		GLint maxArrayTextureLayers;
@@ -1575,17 +1578,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 			return false;
 		}
 
-		if (target == GL_TEXTURE_1D_ARRAY)
-		{
-			Texture::Storage(gl, target, 1, format, width, height + maxArrayTextureLayers, 0);
-			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [ARRAY wrong height]", gl.getError(),
-												 GL_INVALID_VALUE))
-			{
-				Texture::Delete(gl, texture);
-				return false;
-			}
-		}
-		else if ((target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY))
+		if (target == GL_TEXTURE_1D_ARRAY || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY)
 		{
 			Texture::Storage(gl, target, 1, format, width, height, depth + maxArrayTextureLayers);
 			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [ARRAY wrong depth]", gl.getError(),
