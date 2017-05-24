@@ -1358,7 +1358,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageVirtualPageSizeIndexError(
 	depth = SparseTextureUtils::getTargetDepth(target);
 
 	Texture::Storage(gl, target, 1, format, 8, 8, depth);
-	if (!SparseTextureUtils::verifyError(mLog, "TexStorage", gl.getError(), GL_NO_ERROR))
+	if (!SparseTextureUtils::verifyError(mLog, "TexStorage", gl.getError(), GL_INVALID_OPERATION))
 	{
 		Texture::Delete(gl, texture);
 		return false;
