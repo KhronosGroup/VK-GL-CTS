@@ -2178,7 +2178,7 @@ void SparseTexture2LookupTestCase::init()
 	mSupportedInternalFormats.push_back(GL_DEPTH_COMPONENT16);
 
 	FunctionToken f;
-	f = FunctionToken("sparseTextureARB", "");
+	f = FunctionToken("sparseTextureARB", "<CUBE_REFZ_DEF>");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_CUBE_MAP);
@@ -2449,12 +2449,13 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 	if ((target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_CUBE_MAP_ARRAY) &&
 		funcName.find("Fetch", 0) == std::string::npos)
 	{
-		s.cubeMapCoordDef = "    if (point.z == 0) coord.xyz = vec3(1, coord.y * 2 - 1, -coord.x * 2 + 1);\n"
-							"    if (point.z == 1) coord.xyz = vec3(-1, coord.y * 2 - 1, coord.x * 2 - 1);\n"
-							"    if (point.z == 2) coord.xyz = vec3(coord.x * 2 - 1, 1, coord.y * 2 - 1);\n"
-							"    if (point.z == 3) coord.xyz = vec3(coord.x * 2 - 1, -1, -coord.y * 2 + 1);\n"
-							"    if (point.z == 4) coord.xyz = vec3(coord.x * 2 - 1, coord.y * 2 - 1, 1);\n"
-							"    if (point.z == 5) coord.xyz = vec3(-coord.x * 2 + 1, coord.y * 2 - 1, -1);\n";
+		s.cubeMapCoordDef = "    int face = point.z % 6;\n"
+							"    if (face == 0) coord.xyz = vec3(1, coord.y * 2 - 1, -coord.x * 2 + 1);\n"
+							"    if (face == 1) coord.xyz = vec3(-1, coord.y * 2 - 1, coord.x * 2 - 1);\n"
+							"    if (face == 2) coord.xyz = vec3(coord.x * 2 - 1, 1, coord.y * 2 - 1);\n"
+							"    if (face == 3) coord.xyz = vec3(coord.x * 2 - 1, -1, -coord.y * 2 + 1);\n"
+							"    if (face == 4) coord.xyz = vec3(coord.x * 2 - 1, coord.y * 2 - 1, 1);\n"
+							"    if (face == 5) coord.xyz = vec3(-coord.x * 2 + 1, coord.y * 2 - 1, -1);\n";
 	}
 
 	if (s.coordDef.empty())
@@ -2491,7 +2492,7 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 			s.coordDef += s.refZDef;
 		}
 		else
-			funcToken.arguments += s.refZDef;
+			s.cubeMapArrayRefZDef = s.refZDef;
 
 		s.componentDef = ".r";
 	}
@@ -2815,6 +2816,7 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 		replaceToken("<EPSILON>", s.epsilon.c_str(), shader);
 		replaceToken("<SAMPLE_DEF>", s.sampleDef.c_str(), shader);
 		replaceToken("<REFZ_DEF>", s.refZDef.c_str(), shader);
+		replaceToken("<CUBE_REFZ_DEF>", s.cubeMapArrayRefZDef.c_str(), shader);
 		replaceToken("<POINT_COORD>", s.pointCoord.c_str(), shader);
 		replaceToken("<COMPONENT_DEF>", s.componentDef.c_str(), shader);
 		replaceToken("<CUBE_MAP_COORD_DEF>", s.cubeMapCoordDef.c_str(), shader);

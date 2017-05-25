@@ -199,7 +199,7 @@ void SparseTextureClampLookupResidencyTestCase::init()
 	mSupportedInternalFormats.push_back(GL_DEPTH_COMPONENT16);
 
 	FunctionToken f;
-	f = FunctionToken("sparseTextureClampARB", ", <LOD>");
+	f = FunctionToken("sparseTextureClampARB", "<CUBE_REFZ_DEF>, <LOD>");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_CUBE_MAP);
@@ -261,7 +261,8 @@ bool SparseTextureClampLookupResidencyTestCase::funcAllowed(GLint target, GLint 
 
 	if (format == GL_DEPTH_COMPONENT16)
 	{
-		if (target == GL_TEXTURE_CUBE_MAP_ARRAY && funcToken.name == "sparseTextureGradClampARB")
+		if (target == GL_TEXTURE_CUBE_MAP_ARRAY &&
+			(funcToken.name == "sparseTextureGradClampARB" || funcToken.name == "textureGradClampARB"))
 			return false;
 	}
 
@@ -374,6 +375,7 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 			replaceToken("<EPSILON>", s.epsilon.c_str(), fragment);
 			replaceToken("<SAMPLE_DEF>", s.sampleDef.c_str(), fragment);
 			replaceToken("<REFZ_DEF>", s.refZDef.c_str(), fragment);
+			replaceToken("<CUBE_REFZ_DEF>", s.cubeMapArrayRefZDef.c_str(), fragment);
 			replaceToken("<POINT_COORD>", s.pointCoord.c_str(), fragment);
 			replaceToken("<COMPONENT_DEF>", s.componentDef.c_str(), fragment);
 			replaceToken("<CUBE_MAP_COORD_DEF>", s.cubeMapCoordDef.c_str(), fragment);
@@ -480,6 +482,15 @@ void SparseTextureClampLookupResidencyTestCase::draw(GLint target, GLint layer, 
 		floatCoord = glu::va::Float("inCoord", 3, 4, 0, texCoord3D);
 	else if (target == GL_TEXTURE_CUBE_MAP)
 		floatCoord = glu::va::Float("inCoord", 3, 4, 0, texCoordCubeMap[layer]);
+	else if (target == GL_TEXTURE_CUBE_MAP_ARRAY)
+	{
+		GLfloat		  layerCoord			   = GLfloat(layer) / 6.0f + 0.01f;
+		const GLfloat texCoordCubeMapArray[16] = { 0.0f, 0.0f, layerCoord, GLfloat(layer),
+												   1.0f, 0.0f, layerCoord, GLfloat(layer),
+												   0.0f, 1.0f, layerCoord, GLfloat(layer),
+												   1.0f, 1.0f, layerCoord, GLfloat(layer) };
+		floatCoord = glu::va::Float("inCoord", 4, 4, 0, texCoordCubeMapArray);
+	}
 	else
 		floatCoord = glu::va::Float("inCoord", 2, 4, 0, texCoord2D);
 
@@ -510,7 +521,7 @@ void SparseTextureClampLookupColorTestCase::init()
 	mSupportedInternalFormats.push_back(GL_DEPTH_COMPONENT16);
 
 	FunctionToken f;
-	f = FunctionToken("sparseTextureClampARB", ", <LOD>");
+	f = FunctionToken("sparseTextureClampARB", "<CUBE_REFZ_DEF>, <LOD>");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_CUBE_MAP);
@@ -518,7 +529,7 @@ void SparseTextureClampLookupColorTestCase::init()
 	f.allowedTargets.insert(GL_TEXTURE_3D);
 	mFunctions.push_back(f);
 
-	f = FunctionToken("textureClampARB", ", <LOD>");
+	f = FunctionToken("textureClampARB", "<CUBE_REFZ_DEF>, <LOD>");
 	f.allowedTargets.insert(GL_TEXTURE_1D);
 	f.allowedTargets.insert(GL_TEXTURE_1D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_2D);
@@ -866,6 +877,7 @@ bool SparseTextureClampLookupColorTestCase::verifyLookupTextureData(const Functi
 			replaceToken("<EPSILON>", s.epsilon.c_str(), fragment);
 			replaceToken("<SAMPLE_DEF>", s.sampleDef.c_str(), fragment);
 			replaceToken("<REFZ_DEF>", s.refZDef.c_str(), fragment);
+			replaceToken("<CUBE_REFZ_DEF>", s.cubeMapArrayRefZDef.c_str(), fragment);
 			replaceToken("<POINT_COORD>", s.pointCoord.c_str(), fragment);
 			replaceToken("<COMPONENT_DEF>", s.componentDef.c_str(), fragment);
 			replaceToken("<CUBE_MAP_COORD_DEF>", s.cubeMapCoordDef.c_str(), fragment);
