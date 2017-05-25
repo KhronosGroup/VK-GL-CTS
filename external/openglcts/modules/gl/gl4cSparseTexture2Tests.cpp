@@ -1688,7 +1688,7 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 		Texture::GetData(gl, level, target, transferFormat.format, transferFormat.dataType, (GLvoid*)out_data);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
 
-		//Verify only committed region
+		//Verify only uncommitted region
 		for (GLint x = widthCommitted; x < width; ++x)
 			for (GLint y = 0; y < height; ++y)
 				for (GLint z = 0; z < depth; ++z)
@@ -1721,7 +1721,7 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 		GLubyte* exp_data = vecExpData.data();
 		GLubyte* out_data = vecOutData.data();
 
-		deMemset(exp_data, 255, texSize);
+		deMemset(exp_data, 0, texSize);
 
 		for (size_t i = 0; i < subTargets.size(); ++i)
 		{
@@ -1734,7 +1734,7 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 			Texture::GetData(gl, level, subTarget, transferFormat.format, transferFormat.dataType, (GLvoid*)out_data);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
 
-			//Verify only committed region
+			//Verify only uncommitted region
 			for (GLint x = widthCommitted; x < width; ++x)
 				for (GLint y = 0; y < height; ++y)
 					for (GLint z = 0; z < depth; ++z)
