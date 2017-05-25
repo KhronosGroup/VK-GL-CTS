@@ -2482,7 +2482,9 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 	{
 		if (target != GL_TEXTURE_CUBE_MAP_ARRAY)
 		{
-			if (s.coordType == "vec2")
+			if (s.coordType == "float")
+				s.coordType = "vec3";
+			else if (s.coordType == "vec2")
 				s.coordType = "vec3";
 			else if (s.coordType == "vec3")
 				s.coordType = "vec4";
@@ -2528,7 +2530,9 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 	// Set size vector for shadow samplers and non-gether functions selected
 	else
 	{
-		if (s.coordType == "vec3" && target == GL_TEXTURE_1D_ARRAY)
+		if (s.coordType == "vec3" && target == GL_TEXTURE_1D)
+			s.sizeDef = "<TEX_WIDTH>, 1 , 1";
+		else if (s.coordType == "vec3" && target == GL_TEXTURE_1D_ARRAY)
 			s.sizeDef = "<TEX_WIDTH>, <TEX_DEPTH>, 1";
 		else if (s.coordType == "vec3")
 			s.sizeDef = "<TEX_WIDTH>, <TEX_HEIGHT>, 1";
