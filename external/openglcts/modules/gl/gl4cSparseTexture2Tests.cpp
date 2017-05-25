@@ -1368,7 +1368,6 @@ tcu::TestNode::IterateResult UncommittedRegionsAccessTestCase::iterate()
 					writeDataToTexture(gl, target, format, texture, l);
 					result = result && UncommittedReads(gl, target, format, texture, l);
 					result = result && UncommittedAtomicOperations(gl, target, format, texture, l);
-					result = result && UncommittedDepthStencil(gl, target, format, texture, l);
 				}
 
 				if (!result)
