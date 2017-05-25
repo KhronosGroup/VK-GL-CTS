@@ -723,8 +723,12 @@ bool SparseTextureClampLookupColorTestCase::writeDataToTexture(const Functions& 
 			// Adjust shader source to texture format
 			TokenStrings s = createShaderTokens(target, format, sample);
 
+			GLint convFormat = format;
+			if (format == GL_DEPTH_COMPONENT16)
+				convFormat = GL_R16;
+
 			// Change expected result as it has to be adjusted to different levels
-			s.resultExpected = generateExpectedResult(s.returnType, level);
+			s.resultExpected = generateExpectedResult(s.returnType, level, convFormat);
 
 			replaceToken("<INPUT_TYPE>", s.inputType.c_str(), shader);
 			replaceToken("<POINT_TYPE>", s.pointType.c_str(), shader);
@@ -735,10 +739,6 @@ bool SparseTextureClampLookupColorTestCase::writeDataToTexture(const Functions& 
 
 			ProgramSources sources;
 			sources << ComputeSource(shader);
-
-			GLint convFormat = format;
-			if (format == GL_DEPTH_COMPONENT16)
-				convFormat = GL_R16;
 
 			// Build and run shader
 			ShaderProgram program(m_context.getRenderContext(), sources);
@@ -854,7 +854,7 @@ bool SparseTextureClampLookupColorTestCase::verifyLookupTextureData(const Functi
 			TokenStringsExt s = createLookupShaderTokens(target, format, level, sample, f);
 
 			// Change expected result as it has to be adjusted to different levels
-			s.resultExpected = generateExpectedResult(s.returnType, level);
+			s.resultExpected = generateExpectedResult(s.returnType, level, format);
 
 			replaceToken("<COORD_TYPE>", s.coordType.c_str(), vertex);
 
@@ -1100,9 +1100,12 @@ std::string SparseTextureClampLookupColorTestCase::generateFunctionDef(std::stri
  *
  * @return Returns shader source token that represent expected lookup result value.
  */
-std::string SparseTextureClampLookupColorTestCase::generateExpectedResult(std::string returnType, GLint level)
+std::string SparseTextureClampLookupColorTestCase::generateExpectedResult(std::string returnType, GLint level,
+																		  GLint format)
 {
-	if (returnType == "vec4")
+	if (format == GL_DEPTH_COMPONENT16)
+		return std::string("(1, 0, 0, 0)");
+	else if (returnType == "vec4")
 		return std::string("(") + de::toString(0.5f + (float)level / 10) + std::string(", 0, 0, 1)");
 	else
 		return std::string("(") + de::toString(level * 10) + std::string(", 0, 0, 1)");
