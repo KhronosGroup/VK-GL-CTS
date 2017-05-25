@@ -2321,21 +2321,28 @@ bool SparseTextureCommitmentTestCase::verifyInvalidValueErrors(const Functions& 
 	sparseAllocateTexture(gl, target, format, texture, 1);
 
 	// Case 1 - commitment offset not multiple of page size in corresponding dimension
-	texPageCommitment(gl, target, format, texture, 0, 1, 0, 0, mState.pageSizeX, mState.pageSizeY, mState.pageSizeZ,
-					  GL_TRUE);
-	result = SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment offsetX not multiple of page size X]",
-											 gl.getError(), GL_INVALID_VALUE);
-	if (!result)
-		goto verifing_invalid_value_end;
-
-	texPageCommitment(gl, target, format, texture, 0, 0, 1, 0, mState.pageSizeX, mState.pageSizeY, mState.pageSizeZ,
-					  GL_TRUE);
-	result = SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment offsetY not multiple of page size Y]",
-											 gl.getError(), GL_INVALID_VALUE);
-	if (!result)
-		goto verifing_invalid_value_end;
-
-	if (target == GL_TEXTURE_3D || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY)
+	if (mState.pageSizeX > 1)
+	{
+		texPageCommitment(gl, target, format, texture, 0, 1, 0, 0, mState.pageSizeX, mState.pageSizeY, mState.pageSizeZ,
+						  GL_TRUE);
+		result =
+			SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment offsetX not multiple of page size X]",
+											gl.getError(), GL_INVALID_VALUE);
+		if (!result)
+			goto verifing_invalid_value_end;
+	}
+	if (mState.pageSizeY > 1)
+	{
+		texPageCommitment(gl, target, format, texture, 0, 0, 1, 0, mState.pageSizeX, mState.pageSizeY, mState.pageSizeZ,
+						  GL_TRUE);
+		result =
+			SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment offsetY not multiple of page size Y]",
+											gl.getError(), GL_INVALID_VALUE);
+		if (!result)
+			goto verifing_invalid_value_end;
+	}
+	if ((target == GL_TEXTURE_3D || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY) &&
+		(mState.minDepth % mState.pageSizeZ))
 	{
 		texPageCommitment(gl, target, format, texture, 0, 0, 0, mState.minDepth, mState.pageSizeX, mState.pageSizeY,
 						  mState.pageSizeZ, GL_TRUE);
