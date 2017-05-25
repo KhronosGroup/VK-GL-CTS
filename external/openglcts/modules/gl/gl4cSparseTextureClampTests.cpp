@@ -316,9 +316,6 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 	// Expected data is 255 because
 	deMemset(exp_data, 255, texSize);
 
-	// Make token copy to work on
-	FunctionToken f = funcToken;
-
 	// Create verifying texture
 	GLint  verifyTarget = GL_TEXTURE_2D;
 	GLuint verifyTexture;
@@ -350,6 +347,9 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 
 			std::string vertex   = stc_vertex_common;
 			std::string fragment = stc_fragment_lookupResidency;
+
+			// Make token copy to work on
+			FunctionToken f = funcToken;
 
 			// Adjust shader source to texture format
 			TokenStringsExt s = createLookupShaderTokens(target, format, level, sample, f);
@@ -802,9 +802,6 @@ bool SparseTextureClampLookupColorTestCase::verifyLookupTextureData(const Functi
 	// Expected data is 255 because
 	deMemset(exp_data, 255, texSize);
 
-	// Make token copy to work on
-	FunctionToken f = funcToken;
-
 	// Create verifying texture
 	GLint  verifyTarget = GL_TEXTURE_2D;
 	GLuint verifyTexture;
@@ -836,6 +833,9 @@ bool SparseTextureClampLookupColorTestCase::verifyLookupTextureData(const Functi
 
 			std::string vertex   = stc_vertex_common;
 			std::string fragment = stc_fragment_lookupColor;
+
+			// Make token copy to work on
+			FunctionToken f = funcToken;
 
 			std::string functionDef = generateFunctionDef(f.name);
 
