@@ -163,7 +163,15 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineTimestampTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexInputTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexUtil.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemAttachmentClearTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemAttachmentLoadTests.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemBlitImageTests.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemBufferValidator.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemClearColorImageTests.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemCopyBufferToImageTests.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemCopyImageTests.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemCopyImageToBufferTests.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemFillUpdateCopyBufferTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemImageValidator.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemUtils.cpp \

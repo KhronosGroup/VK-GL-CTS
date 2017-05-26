@@ -4,12 +4,28 @@ set(DEQP_VK_PROTECTED_MEMORY_SRCS
 	vktProtectedMemContext.hpp
 	vktProtectedMemUtils.cpp
 	vktProtectedMemUtils.hpp
+	vktProtectedMemTests.cpp
+	vktProtectedMemTests.hpp
 	vktProtectedMemImageValidator.cpp
 	vktProtectedMemImageValidator.hpp
 	vktProtectedMemAttachmentLoadTests.cpp
 	vktProtectedMemAttachmentLoadTests.hpp
-	vktProtectedMemTests.cpp
-	vktProtectedMemTests.hpp
+	vktProtectedMemAttachmentClearTests.cpp
+	vktProtectedMemAttachmentClearTests.hpp
+	vktProtectedMemCopyImageTests.cpp
+	vktProtectedMemCopyImageTests.hpp
+	vktProtectedMemBlitImageTests.cpp
+	vktProtectedMemBlitImageTests.hpp
+	vktProtectedMemClearColorImageTests.cpp
+	vktProtectedMemClearColorImageTests.hpp
+	vktProtectedMemBufferValidator.cpp
+	vktProtectedMemBufferValidator.hpp
+	vktProtectedMemFillUpdateCopyBufferTests.cpp
+	vktProtectedMemFillUpdateCopyBufferTests.hpp
+	vktProtectedMemCopyImageToBufferTests.hpp
+	vktProtectedMemCopyImageToBufferTests.cpp
+	vktProtectedMemCopyBufferToImageTests.hpp
+	vktProtectedMemCopyBufferToImageTests.cpp
 	)
 
 set(DEQP_VK_PROTECTED_MEMORY_LIBS

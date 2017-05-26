@@ -28,6 +28,13 @@
 #include "vktTestGroupUtil.hpp"
 
 #include "vktProtectedMemAttachmentLoadTests.hpp"
+#include "vktProtectedMemAttachmentClearTests.hpp"
+#include "vktProtectedMemCopyImageTests.hpp"
+#include "vktProtectedMemBlitImageTests.hpp"
+#include "vktProtectedMemClearColorImageTests.hpp"
+#include "vktProtectedMemFillUpdateCopyBufferTests.hpp"
+#include "vktProtectedMemCopyImageToBufferTests.hpp"
+#include "vktProtectedMemCopyBufferToImageTests.hpp"
 
 namespace vkt
 {
@@ -42,7 +49,28 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> attachmentTestGroup (new tcu::TestCaseGroup(testCtx, "attachment", "Protected Memory Attachment Tests"));
 		attachmentTestGroup->addChild(createAttachmentLoadTests(testCtx));
+		attachmentTestGroup->addChild(createAttachmentClearTests(testCtx));
 		protectedTests->addChild(attachmentTestGroup.release());
+	}
+
+	// Image test case group
+	{
+		de::MovePtr<tcu::TestCaseGroup> imageTestGroup (new tcu::TestCaseGroup(testCtx, "image", "Protected Memory Image Tests"));
+		imageTestGroup->addChild(createCopyImageTests(testCtx));
+		imageTestGroup->addChild(createBlitImageTests(testCtx));
+		imageTestGroup->addChild(createClearColorImageTests(testCtx));
+		imageTestGroup->addChild(createCopyBufferToImageTests(testCtx));
+		protectedTests->addChild(imageTestGroup.release());
+	}
+
+	// Buffer test case group
+	{
+		de::MovePtr<tcu::TestCaseGroup> bufferTestGroup (new tcu::TestCaseGroup(testCtx, "buffer", "Protected Memory Buffer Tests"));
+		bufferTestGroup->addChild(createFillBufferTests(testCtx));
+		bufferTestGroup->addChild(createUpdateBufferTests(testCtx));
+		bufferTestGroup->addChild(createCopyBufferTests(testCtx));
+		bufferTestGroup->addChild(createCopyImageToFloatBufferTests(testCtx));
+		protectedTests->addChild(bufferTestGroup.release());
 	}
 
 	return protectedTests.release();
