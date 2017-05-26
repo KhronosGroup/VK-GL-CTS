@@ -798,7 +798,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 		};
 		vk::VkExternalImageFormatPropertiesKHX			externalProperties	=
 		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHX,
+			vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHX,
 			DE_NULL,
 			{ 0u, 0u, 0u }
 		};
