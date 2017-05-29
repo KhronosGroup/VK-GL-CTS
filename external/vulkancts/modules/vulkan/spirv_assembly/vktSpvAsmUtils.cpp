@@ -151,7 +151,7 @@ Move<VkDevice> createDeviceWithExtensions (Context&							context,
 		0u,
 		DE_NULL,
 		(deUint32)extensions.size(),
-		&extensions[0],
+		extensions.empty() ? DE_NULL : &extensions[0],
 		&features
 	};
 
