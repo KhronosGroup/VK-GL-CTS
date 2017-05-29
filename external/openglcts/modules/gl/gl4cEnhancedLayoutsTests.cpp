@@ -19916,7 +19916,7 @@ XFBStrideOfEmptyListTest::XFBStrideOfEmptyListTest(deqp::Context& context)
  *
  * @return true if proper error is reported
  **/
-bool XFBStrideOfEmptyListTest::executeDrawCall(GLuint test_case_index)
+bool XFBStrideOfEmptyListTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl		= m_context.getRenderContext().getFunctions();
 	bool			 result = true;
@@ -20209,7 +20209,7 @@ XFBStrideOfEmptyListAndAPITest::XFBStrideOfEmptyListAndAPITest(deqp::Context& co
  *
  * @return true if proper error is reported
  **/
-bool XFBStrideOfEmptyListAndAPITest::executeDrawCall(GLuint test_case_index)
+bool XFBStrideOfEmptyListAndAPITest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl		= m_context.getRenderContext().getFunctions();
 	bool			 result = true;
@@ -24404,7 +24404,7 @@ XFBStrideTest::XFBStrideTest(deqp::Context& context)
  *
  * @return true
  **/
-bool XFBStrideTest::executeDrawCall(GLuint test_case_index)
+bool XFBStrideTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl				= m_context.getRenderContext().getFunctions();
 	GLenum			 primitive_type = GL_PATCHES;
@@ -25783,7 +25783,7 @@ XFBCaptureInactiveOutputVariableTest::XFBCaptureInactiveOutputVariableTest(deqp:
  *
  * @return true
  **/
-bool XFBCaptureInactiveOutputVariableTest::executeDrawCall(GLuint test_case_index)
+bool XFBCaptureInactiveOutputVariableTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl				= m_context.getRenderContext().getFunctions();
 	GLenum			 primitive_type = GL_PATCHES;
@@ -26152,7 +26152,7 @@ XFBCaptureInactiveOutputComponentTest::XFBCaptureInactiveOutputComponentTest(deq
  *
  * @return true
  **/
-bool XFBCaptureInactiveOutputComponentTest::executeDrawCall(GLuint test_case_index)
+bool XFBCaptureInactiveOutputComponentTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl				= m_context.getRenderContext().getFunctions();
 	GLenum			 primitive_type = GL_PATCHES;
@@ -26590,7 +26590,7 @@ XFBCaptureInactiveOutputBlockMemberTest::XFBCaptureInactiveOutputBlockMemberTest
  *
  * @return true
  **/
-bool XFBCaptureInactiveOutputBlockMemberTest::executeDrawCall(GLuint test_case_index)
+bool XFBCaptureInactiveOutputBlockMemberTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl				= m_context.getRenderContext().getFunctions();
 	GLenum			 primitive_type = GL_PATCHES;
@@ -26936,7 +26936,7 @@ XFBCaptureStructTest::XFBCaptureStructTest(deqp::Context& context)
  *
  * @return true
  **/
-bool XFBCaptureStructTest::executeDrawCall(GLuint test_case_index)
+bool XFBCaptureStructTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl				= m_context.getRenderContext().getFunctions();
 	GLenum			 primitive_type = GL_PATCHES;

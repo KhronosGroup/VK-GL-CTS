@@ -3412,7 +3412,7 @@ public:
 protected:
 	/* Protected methods */
 	using BufferTestBase::executeDrawCall;
-	virtual bool executeDrawCall(glw::GLuint test_case_index);
+	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
 
 	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
 
@@ -3474,7 +3474,7 @@ public:
 protected:
 	/* Protected methods */
 	using BufferTestBase::executeDrawCall;
-	virtual bool executeDrawCall(glw::GLuint test_case_index);
+	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
 	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
 
 	virtual void getCapturedVaryings(glw::GLuint test_case_index, Utils::Program::NameVector& captured_varyings);
@@ -4235,7 +4235,7 @@ protected:
 	/* Protected methods */
 	using BufferTestBase::executeDrawCall;
 
-	virtual bool executeDrawCall(glw::GLuint test_case_index);
+	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
 	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
 
 	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
@@ -4438,7 +4438,7 @@ public:
 protected:
 	/* Protected methods */
 	using BufferTestBase::executeDrawCall;
-	virtual bool executeDrawCall(glw::GLuint test_case_index);
+	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
 	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
 
 	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
@@ -4513,7 +4513,7 @@ public:
 protected:
 	/* Protected methods */
 	using BufferTestBase::executeDrawCall;
-	virtual bool executeDrawCall(glw::GLuint test_case_index);
+	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
 
 	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
 
@@ -4574,7 +4574,7 @@ public:
 protected:
 	/* Protected methods */
 	using BufferTestBase::executeDrawCall;
-	virtual bool executeDrawCall(glw::GLuint test_case_index);
+	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
 	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
 
 	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
@@ -4636,7 +4636,7 @@ public:
 protected:
 	/* Protected methods */
 	using BufferTestBase::executeDrawCall;
-	virtual bool executeDrawCall(glw::GLuint test_case_index);
+	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
 
 	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
 
