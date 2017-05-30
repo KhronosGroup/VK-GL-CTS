@@ -84,6 +84,7 @@ LinuxPlatform::LinuxPlatform (void)
 
 tcu::Platform* createPlatform (void)
 {
+#if defined (DEQP_SUPPORT_X11)
 	// From man:XinitThreads(3):
 	//
 	//     The XInitThreads function initializes Xlib support for concurrent
@@ -91,6 +92,7 @@ tcu::Platform* createPlatform (void)
 	//     a multi-threaded program calls, and it must complete before any other
 	//     Xlib call is made.
 	DE_CHECK_RUNTIME_ERR(XInitThreads() != 0);
+#endif // DEQP_SUPPORT_X11
 
 	return new tcu::lnx::LinuxPlatform();
 }

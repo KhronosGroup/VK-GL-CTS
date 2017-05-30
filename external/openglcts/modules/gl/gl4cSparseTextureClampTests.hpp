@@ -90,7 +90,7 @@ private:
 private:
 	/* Private methods */
 	std::string generateFunctionDef(std::string funcName);
-	std::string generateExpectedResult(std::string returnType, GLint level);
+	std::string generateExpectedResult(std::string returnType, GLint level, GLint format);
 };
 
 /** Test group which encapsulates all sparse texture conformance tests */

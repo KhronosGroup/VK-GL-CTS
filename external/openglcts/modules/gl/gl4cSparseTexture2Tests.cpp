@@ -1368,7 +1368,6 @@ tcu::TestNode::IterateResult UncommittedRegionsAccessTestCase::iterate()
 					writeDataToTexture(gl, target, format, texture, l);
 					result = result && UncommittedReads(gl, target, format, texture, l);
 					result = result && UncommittedAtomicOperations(gl, target, format, texture, l);
-					result = result && UncommittedDepthStencil(gl, target, format, texture, l);
 				}
 
 				if (!result)
@@ -1688,7 +1687,7 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 		Texture::GetData(gl, level, target, transferFormat.format, transferFormat.dataType, (GLvoid*)out_data);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
 
-		//Verify only committed region
+		//Verify only uncommitted region
 		for (GLint x = widthCommitted; x < width; ++x)
 			for (GLint y = 0; y < height; ++y)
 				for (GLint z = 0; z < depth; ++z)
@@ -1721,7 +1720,7 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 		GLubyte* exp_data = vecExpData.data();
 		GLubyte* out_data = vecOutData.data();
 
-		deMemset(exp_data, 255, texSize);
+		deMemset(exp_data, 0, texSize);
 
 		for (size_t i = 0; i < subTargets.size(); ++i)
 		{
@@ -1734,7 +1733,7 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 			Texture::GetData(gl, level, subTarget, transferFormat.format, transferFormat.dataType, (GLvoid*)out_data);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
 
-			//Verify only committed region
+			//Verify only uncommitted region
 			for (GLint x = widthCommitted; x < width; ++x)
 				for (GLint y = 0; y < height; ++y)
 					for (GLint z = 0; z < depth; ++z)
@@ -2178,7 +2177,7 @@ void SparseTexture2LookupTestCase::init()
 	mSupportedInternalFormats.push_back(GL_DEPTH_COMPONENT16);
 
 	FunctionToken f;
-	f = FunctionToken("sparseTextureARB", "");
+	f = FunctionToken("sparseTextureARB", "<CUBE_REFZ_DEF>");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_CUBE_MAP);
@@ -2449,12 +2448,13 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 	if ((target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_CUBE_MAP_ARRAY) &&
 		funcName.find("Fetch", 0) == std::string::npos)
 	{
-		s.cubeMapCoordDef = "    if (point.z == 0) coord.xyz = vec3(1, coord.y * 2 - 1, -coord.x * 2 + 1);\n"
-							"    if (point.z == 1) coord.xyz = vec3(-1, coord.y * 2 - 1, coord.x * 2 - 1);\n"
-							"    if (point.z == 2) coord.xyz = vec3(coord.x * 2 - 1, 1, coord.y * 2 - 1);\n"
-							"    if (point.z == 3) coord.xyz = vec3(coord.x * 2 - 1, -1, -coord.y * 2 + 1);\n"
-							"    if (point.z == 4) coord.xyz = vec3(coord.x * 2 - 1, coord.y * 2 - 1, 1);\n"
-							"    if (point.z == 5) coord.xyz = vec3(-coord.x * 2 + 1, coord.y * 2 - 1, -1);\n";
+		s.cubeMapCoordDef = "    int face = point.z % 6;\n"
+							"    if (face == 0) coord.xyz = vec3(1, coord.y * 2 - 1, -coord.x * 2 + 1);\n"
+							"    if (face == 1) coord.xyz = vec3(-1, coord.y * 2 - 1, coord.x * 2 - 1);\n"
+							"    if (face == 2) coord.xyz = vec3(coord.x * 2 - 1, 1, coord.y * 2 - 1);\n"
+							"    if (face == 3) coord.xyz = vec3(coord.x * 2 - 1, -1, -coord.y * 2 + 1);\n"
+							"    if (face == 4) coord.xyz = vec3(coord.x * 2 - 1, coord.y * 2 - 1, 1);\n"
+							"    if (face == 5) coord.xyz = vec3(-coord.x * 2 + 1, coord.y * 2 - 1, -1);\n";
 	}
 
 	if (s.coordDef.empty())
@@ -2482,14 +2482,16 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 	{
 		if (target != GL_TEXTURE_CUBE_MAP_ARRAY)
 		{
-			if (s.coordType == "vec2")
+			if (s.coordType == "float")
+				s.coordType = "vec3";
+			else if (s.coordType == "vec2")
 				s.coordType = "vec3";
 			else if (s.coordType == "vec3")
 				s.coordType = "vec4";
 			s.coordDef += s.refZDef;
 		}
 		else
-			funcToken.arguments += s.refZDef;
+			s.cubeMapArrayRefZDef = s.refZDef;
 
 		s.componentDef = ".r";
 	}
@@ -2528,7 +2530,9 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 	// Set size vector for shadow samplers and non-gether functions selected
 	else
 	{
-		if (s.coordType == "vec3" && target == GL_TEXTURE_1D_ARRAY)
+		if (s.coordType == "vec3" && target == GL_TEXTURE_1D)
+			s.sizeDef = "<TEX_WIDTH>, 1 , 1";
+		else if (s.coordType == "vec3" && target == GL_TEXTURE_1D_ARRAY)
 			s.sizeDef = "<TEX_WIDTH>, <TEX_DEPTH>, 1";
 		else if (s.coordType == "vec3")
 			s.sizeDef = "<TEX_WIDTH>, <TEX_HEIGHT>, 1";
@@ -2811,6 +2815,7 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 		replaceToken("<EPSILON>", s.epsilon.c_str(), shader);
 		replaceToken("<SAMPLE_DEF>", s.sampleDef.c_str(), shader);
 		replaceToken("<REFZ_DEF>", s.refZDef.c_str(), shader);
+		replaceToken("<CUBE_REFZ_DEF>", s.cubeMapArrayRefZDef.c_str(), shader);
 		replaceToken("<POINT_COORD>", s.pointCoord.c_str(), shader);
 		replaceToken("<COMPONENT_DEF>", s.componentDef.c_str(), shader);
 		replaceToken("<CUBE_MAP_COORD_DEF>", s.cubeMapCoordDef.c_str(), shader);
