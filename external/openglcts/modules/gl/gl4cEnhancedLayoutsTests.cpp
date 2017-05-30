@@ -2408,13 +2408,13 @@ const glw::GLchar* Shader::GetStageName(STAGES stage)
 		result = "vertex";
 		break;
 	case TESS_CTRL:
-		result = "tesselation control";
+		result = "tessellation control";
 		break;
 	case TESS_EVAL:
-		result = "tesselation evaluation";
+		result = "tessellation evaluation";
 		break;
 	case GEOMETRY:
-		result = "geomtery";
+		result = "geometry";
 		break;
 	case FRAGMENT:
 		result = "fragment";
@@ -2618,19 +2618,19 @@ Program::~Program()
 
 /** Initialize program instance
  *
- * @param compute_shader                Compute shader source code
- * @param fragment_shader               Fragment shader source code
- * @param geometry_shader               Geometry shader source code
- * @param tesselation_control_shader    Tesselation control shader source code
- * @param tesselation_evaluation_shader Tesselation evaluation shader source code
- * @param vertex_shader                 Vertex shader source code
- * @param captured_varyings             Vector of variables to be captured with transfrom feedback
- * @param capture_interleaved           Select mode of transform feedback (separate or interleaved)
- * @param is_separable                  Selects if monolithic or separable program should be built. Defaults to false
+ * @param compute_shader                    Compute shader source code
+ * @param fragment_shader                   Fragment shader source code
+ * @param geometry_shader                   Geometry shader source code
+ * @param tessellation_control_shader       Tessellation control shader source code
+ * @param tessellation_evaluation_shader    Tessellation evaluation shader source code
+ * @param vertex_shader                     Vertex shader source code
+ * @param captured_varyings                 Vector of variables to be captured with transfrom feedback
+ * @param capture_interleaved               Select mode of transform feedback (separate or interleaved)
+ * @param is_separable                      Selects if monolithic or separable program should be built. Defaults to false
  **/
 void Program::Init(const std::string& compute_shader, const std::string& fragment_shader,
-				   const std::string& geometry_shader, const std::string& tesselation_control_shader,
-				   const std::string& tesselation_evaluation_shader, const std::string& vertex_shader,
+				   const std::string& geometry_shader, const std::string& tessellation_control_shader,
+				   const std::string& tessellation_evaluation_shader, const std::string& vertex_shader,
 				   const NameVector& captured_varyings, bool capture_interleaved, bool is_separable)
 {
 	/* Delete previous program */
@@ -2643,8 +2643,8 @@ void Program::Init(const std::string& compute_shader, const std::string& fragmen
 	m_compute.Init(Shader::COMPUTE, compute_shader);
 	m_fragment.Init(Shader::FRAGMENT, fragment_shader);
 	m_geometry.Init(Shader::GEOMETRY, geometry_shader);
-	m_tess_ctrl.Init(Shader::TESS_CTRL, tesselation_control_shader);
-	m_tess_eval.Init(Shader::TESS_EVAL, tesselation_evaluation_shader);
+	m_tess_ctrl.Init(Shader::TESS_CTRL, tessellation_control_shader);
+	m_tess_eval.Init(Shader::TESS_EVAL, tessellation_evaluation_shader);
 	m_vertex.Init(Shader::VERTEX, vertex_shader);
 
 	/* Create program, set up transform feedback and attach shaders */
@@ -2671,29 +2671,29 @@ void Program::Init(const std::string& compute_shader, const std::string& fragmen
 	}
 	catch (const LinkageException& exc)
 	{
-		throw BuildException(exc.what(), compute_shader, fragment_shader, geometry_shader, tesselation_control_shader,
-							 tesselation_evaluation_shader, vertex_shader);
+		throw BuildException(exc.what(), compute_shader, fragment_shader, geometry_shader, tessellation_control_shader,
+							 tessellation_evaluation_shader, vertex_shader);
 	}
 }
 
 /** Initialize program instance
  *
- * @param compute_shader                Compute shader source code
- * @param fragment_shader               Fragment shader source code
- * @param geometry_shader               Geometry shader source code
- * @param tesselation_control_shader    Tesselation control shader source code
- * @param tesselation_evaluation_shader Tesselation evaluation shader source code
- * @param vertex_shader                 Vertex shader source code
- * @param is_separable                  Selects if monolithic or separable program should be built. Defaults to false
+ * @param compute_shader                    Compute shader source code
+ * @param fragment_shader                   Fragment shader source code
+ * @param geometry_shader                   Geometry shader source code
+ * @param tessellation_control_shader       Tessellation control shader source code
+ * @param tessellation_evaluation_shader    Tessellation evaluation shader source code
+ * @param vertex_shader                     Vertex shader source code
+ * @param is_separable                      Selects if monolithic or separable program should be built. Defaults to false
  **/
 void Program::Init(const std::string& compute_shader, const std::string& fragment_shader,
-				   const std::string& geometry_shader, const std::string& tesselation_control_shader,
-				   const std::string& tesselation_evaluation_shader, const std::string& vertex_shader,
+				   const std::string& geometry_shader, const std::string& tessellation_control_shader,
+				   const std::string& tessellation_evaluation_shader, const std::string& vertex_shader,
 				   bool is_separable)
 {
 	NameVector captured_varying;
 
-	Init(compute_shader, fragment_shader, geometry_shader, tesselation_control_shader, tesselation_evaluation_shader,
+	Init(compute_shader, fragment_shader, geometry_shader, tessellation_control_shader, tessellation_evaluation_shader,
 		 vertex_shader, captured_varying, true, is_separable);
 }
 
@@ -3092,8 +3092,8 @@ GLint Program::GetUniformLocation(const Functions& gl, GLuint id, const std::str
  * @param compute_shader   Source code for compute stage
  * @param fragment_shader  Source code for fragment stage
  * @param geometry_shader  Source code for geometry stage
- * @param tess_ctrl_shader Source code for tesselation control stage
- * @param tess_eval_shader Source code for tesselation evaluation stage
+ * @param tess_ctrl_shader Source code for tessellation control stage
+ * @param tess_eval_shader Source code for tessellation evaluation stage
  * @param vertex_shader    Source code for vertex stage
  **/
 Program::BuildException::BuildException(const glw::GLchar* error_message, const std::string compute_shader,
@@ -5456,7 +5456,7 @@ bool TestBase::test()
 	/* GL entry points */
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Tesselation patch set up */
+	/* Tessellation patch set up */
 	gl.patchParameteri(GL_PATCH_VERTICES, 1);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "PatchParameteri");
 
@@ -6890,8 +6890,8 @@ void TextureTestBase::prepareSSBs(GLuint test_case_index, Utils::ProgramInterfac
  * @param program           Program
  * @param fs_buffer         Buffer for fragment shader stage
  * @param gs_buffer         Buffer for geometry shader stage
- * @param tcs_buffer        Buffer for tesselation control shader stage
- * @param tes_buffer        Buffer for tesselation evaluation shader stage
+ * @param tcs_buffer        Buffer for tessellation control shader stage
+ * @param tes_buffer        Buffer for tessellation evaluation shader stage
  * @param vs_buffer         Buffer for vertex shader stage
  **/
 void TextureTestBase::prepareSSBs(GLuint test_case_index, Utils::ProgramInterface& program_interface,
@@ -7037,8 +7037,8 @@ void TextureTestBase::prepareUniforms(GLuint test_case_index, Utils::ProgramInte
  * @param program           Program
  * @param fs_buffer         Buffer for fragment shader stage
  * @param gs_buffer         Buffer for geometry shader stage
- * @param tcs_buffer        Buffer for tesselation control shader stage
- * @param tes_buffer        Buffer for tesselation evaluation shader stage
+ * @param tcs_buffer        Buffer for tessellation control shader stage
+ * @param tes_buffer        Buffer for tessellation evaluation shader stage
  * @param vs_buffer         Buffer for vertex shader stage
  **/
 void TextureTestBase::prepareUniforms(GLuint test_case_index, Utils::ProgramInterface& program_interface,
@@ -7077,8 +7077,8 @@ void TextureTestBase::prepareUniforms(GLuint test_case_index, Utils::ProgramInte
  * @param program           Program
  * @param fs_buffer         Buffer for fragment shader stage
  * @param gs_buffer         Buffer for geometry shader stage
- * @param tcs_buffer        Buffer for tesselation control shader stage
- * @param tes_buffer        Buffer for tesselation evaluation shader stage
+ * @param tcs_buffer        Buffer for tessellation control shader stage
+ * @param tes_buffer        Buffer for tessellation evaluation shader stage
  * @param vs_buffer         Buffer for vertex shader stage
  **/
 void TextureTestBase::prepareUniforms(GLuint test_case_index, Utils::ProgramInterface& program_interface,
@@ -13861,7 +13861,7 @@ void VaryingBlockMemberLocationsTest::testInit()
 VaryingBlockAutomaticMemberLocationsTest::VaryingBlockAutomaticMemberLocationsTest(deqp::Context& context)
 	: NegativeTestBase(
 		  context, "varying_block_automatic_member_locations",
-		  "Test verifies that compiler assigns subsequent locations to block members, even if this casue error")
+		  "Test verifies that compiler assigns subsequent locations to block members, even if this causes errors")
 {
 }
 
@@ -26044,7 +26044,7 @@ std::string XFBCaptureInactiveOutputVariableTest::getTestCaseName(glw::GLuint te
 		name = "vertex";
 		break;
 	case TEST_TES:
-		name = "tesselation evaluation";
+		name = "tessellation evaluation";
 		break;
 	case TEST_GS:
 		name = "geometry";
@@ -26478,7 +26478,7 @@ std::string XFBCaptureInactiveOutputComponentTest::getTestCaseName(glw::GLuint t
 		name = "vertex";
 		break;
 	case TEST_TES:
-		name = "tesselation evaluation";
+		name = "tessellation evaluation";
 		break;
 	case TEST_GS:
 		name = "geometry";
@@ -26856,7 +26856,7 @@ std::string XFBCaptureInactiveOutputBlockMemberTest::getTestCaseName(glw::GLuint
 		name = "vertex";
 		break;
 	case TEST_TES:
-		name = "tesselation evaluation";
+		name = "tessellation evaluation";
 		break;
 	case TEST_GS:
 		name = "geometry";
@@ -27206,7 +27206,7 @@ std::string XFBCaptureStructTest::getTestCaseName(glw::GLuint test_case_index)
 		name = "vertex";
 		break;
 	case TEST_TES:
-		name = "tesselation evaluation";
+		name = "tessellation evaluation";
 		break;
 	case TEST_GS:
 		name = "geometry";

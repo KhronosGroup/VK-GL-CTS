@@ -752,12 +752,12 @@ public:
 
 	/* Init & Release */
 	void Init(const std::string& compute_shader, const std::string& fragment_shader, const std::string& geometry_shader,
-			  const std::string& tesselation_control_shader, const std::string& tesselation_evaluation_shader,
+			  const std::string& tessellation_control_shader, const std::string& tessellation_evaluation_shader,
 			  const std::string& vertex_shader, const NameVector& captured_varyings, bool capture_interleaved,
 			  bool is_separable);
 
 	void Init(const std::string& compute_shader, const std::string& fragment_shader, const std::string& geometry_shader,
-			  const std::string& tesselation_control_shader, const std::string& tesselation_evaluation_shader,
+			  const std::string& tessellation_control_shader, const std::string& tessellation_evaluation_shader,
 			  const std::string& vertex_shader, bool is_separable);
 
 	void Release();
@@ -3229,7 +3229,7 @@ private:
  *
  * Test verifies that fragment data location API works as expected.
  *
- * This test implements Texture algorithm. Tesselation shaders are not
+ * This test implements Texture algorithm. Tessellation shaders are not
  * necessary and can be omitted. "result" is not necessary and can be omitted.
  * Test following code snippet in fragment shader:
  *
@@ -3351,7 +3351,7 @@ private:
  * xfb_buffer and xfb_offset = 0. Use separate buffers for each stage.
  *
  * Test pass if outputs from geometry shader are captured, while outputs from:
- * vertex and tesselation stages are ignored.
+ * vertex and tessellation stages are ignored.
  **/
 class XFBAllStagesTest : public BufferTestBase
 {
