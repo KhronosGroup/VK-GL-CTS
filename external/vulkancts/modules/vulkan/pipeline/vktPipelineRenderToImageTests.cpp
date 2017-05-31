@@ -917,7 +917,9 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 
 	const Unique<VkShaderModule>	vertexModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>	fragmentModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("frag"), 0u));
-	const Unique<VkRenderPass>		renderPass		(makeRenderPass				(vk, device, caseDef.colorFormat, caseDef.depthStencilFormat, static_cast<deUint32>(numSlices)));
+	const Unique<VkRenderPass>		renderPass		(makeRenderPass				(vk, device, caseDef.colorFormat, caseDef.depthStencilFormat, static_cast<deUint32>(numSlices),
+																				 (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+																															 : VK_IMAGE_LAYOUT_UNDEFINED));
 	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout			(vk, device));
 	vector<SharedPtrVkPipeline>		pipelines;
 
@@ -961,6 +963,42 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 
 		deMemcpy(vertexBufferAlloc->getHostPtr(), &vertices[0], static_cast<std::size_t>(vertexBufferSize));
 		flushMappedMemoryRange(vk, device, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexBufferSize);
+	}
+
+	// Prepare color image upfront for rendering to individual slices.  3D slices aren't separate subresources, so they shouldn't be transitioned
+	// during each subpass like array layers.
+	if (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D)
+	{
+		const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+		const Unique<VkCommandBuffer>	cmdBuffer	(makeCommandBuffer(vk, device, *cmdPool));
+
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		const VkImageMemoryBarrier	imageBarrier	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType            sType;
+			DE_NULL,											// const void*                pNext;
+			(VkAccessFlags)0,									// VkAccessFlags              srcAccessMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags              dstAccessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout              oldLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout              newLayout;
+			VK_QUEUE_FAMILY_IGNORED,							// uint32_t                   srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,							// uint32_t                   dstQueueFamilyIndex;
+			*colorImage,										// VkImage                    image;
+			{													// VkImageSubresourceRange    subresourceRange;
+				VK_IMAGE_ASPECT_COLOR_BIT,							// VkImageAspectFlags    aspectMask;
+				0u,													// uint32_t              baseMipLevel;
+				1u,													// uint32_t              levelCount;
+				0u,													// uint32_t              baseArrayLayer;
+				static_cast<deUint32>(imageSize.w()),				// uint32_t              layerCount;
+			}
+		};
+
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u,
+								0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+
+		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	}
 
 	// For each image layer or slice (3D), create an attachment and a pipeline
