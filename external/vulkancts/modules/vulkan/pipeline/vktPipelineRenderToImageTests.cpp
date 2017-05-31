@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2017 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -297,7 +297,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 								   const VkDevice				device,
 								   const VkFormat				colorFormat,
-								   const deUint32				numLayers)
+								   const deUint32				numLayers,
+								   const VkImageLayout			initialColorImageLayout			= VK_IMAGE_LAYOUT_UNDEFINED)
 {
 	const VkAttachmentDescription colorAttachmentDescription =
 	{
@@ -308,7 +309,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp;
 		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp;
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp;
-		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					initialLayout;
+		initialColorImageLayout,					// VkImageLayout					initialLayout;
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout					finalLayout;
 	};
 	const vector<VkAttachmentDescription> attachmentDescriptions(numLayers, colorAttachmentDescription);
@@ -574,7 +575,9 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 	const Unique<VkShaderModule>	vertexModule		(createShaderModule			(vk, device, context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>	fragmentModule		(createShaderModule			(vk, device, context.getBinaryCollection().get("frag"), 0u));
-	const Unique<VkRenderPass>		renderPass			(makeRenderPass				(vk, device, caseDef.colorFormat, static_cast<deUint32>(numLayers)));
+	const Unique<VkRenderPass>		renderPass			(makeRenderPass				(vk, device, caseDef.colorFormat, static_cast<deUint32>(numLayers),
+																					 (caseDef.imageType == VK_IMAGE_VIEW_TYPE_3D) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+																																  : VK_IMAGE_LAYOUT_UNDEFINED));
 	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout			(vk, device));
 	vector<SharedPtrVkPipeline>		pipeline;
 	const Unique<VkCommandPool>		cmdPool				(makeCommandPool  (vk, device, queueFamilyIndex));
@@ -622,6 +625,29 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	framebuffer = makeFramebuffer(vk, device, *renderPass, numLayers, &attachmentHandles[0], static_cast<deUint32>(caseDef.renderSize.x()), static_cast<deUint32>(caseDef.renderSize.y()));
 
 	beginCommandBuffer(vk, *cmdBuffer);
+
+	// Prepare color image upfront for rendering to individual slices.  3D slices aren't separate subresources, so they shouldn't be transitioned
+	// during each subpass like array layers.
+	if (caseDef.imageType == VK_IMAGE_VIEW_TYPE_3D)
+	{
+		const VkImageMemoryBarrier	imageBarrier	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType            sType;
+			DE_NULL,											// const void*                pNext;
+			(VkAccessFlags)0,									// VkAccessFlags              srcAccessMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags              dstAccessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout              oldLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout              newLayout;
+			VK_QUEUE_FAMILY_IGNORED,							// uint32_t                   srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,							// uint32_t                   dstQueueFamilyIndex;
+			*colorImage,										// VkImage                    image;
+			makeColorSubresourceRange(0, caseDef.numLayers)		// VkImageSubresourceRange    subresourceRange;
+		};
+
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u,
+								0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+	}
+
 	{
 		const vector<VkClearValue>	clearValues			(numLayers, getClearValue(caseDef.colorFormat));
 		const VkRect2D				renderArea			=
