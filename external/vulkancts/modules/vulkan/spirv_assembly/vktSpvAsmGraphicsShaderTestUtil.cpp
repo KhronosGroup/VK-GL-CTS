@@ -1023,6 +1023,7 @@ map<string, string> passthruInterface(const IFDataType& data_type)
 		}
 
 		fragments["capability"]		= "OpCapability StorageInputOutput16\n";
+		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 
 		if (data_type.isVector())
 		{

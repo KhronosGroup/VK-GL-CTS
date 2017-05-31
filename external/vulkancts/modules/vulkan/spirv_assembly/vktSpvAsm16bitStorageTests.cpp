@@ -453,6 +453,7 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 	const StringTemplate			shaderTemplate	(
 		"OpCapability Shader\n"
 		"OpCapability ${capability}\n"
+		"OpExtension \"SPV_KHR_16bit_storage\"\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %main \"main\" %id\n"
 		"OpExecutionMode %main LocalSize 1 1 1\n"
@@ -722,6 +723,7 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 	const StringTemplate			shaderTemplate	(
 		"OpCapability Shader\n"
 		"OpCapability StoragePushConstant16\n"
+		"OpExtension \"SPV_KHR_16bit_storage\"\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %main \"main\" %id\n"
 		"OpExecutionMode %main LocalSize 1 1 1\n"
@@ -1172,6 +1174,7 @@ void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
 	const StringTemplate			shaderTemplate	(
 		"OpCapability Shader\n"
 		"OpCapability ${capability}\n"
+		"OpExtension \"SPV_KHR_16bit_storage\"\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %main \"main\" %id\n"
 		"OpExecutionMode %main LocalSize 1 1 1\n"
@@ -1762,7 +1765,7 @@ void addGraphics16BitStorageInputOutputFloat32To16Group (tcu::TestCaseGroup* tes
 	extensions.push_back("VK_KHR_16bit_storage");
 
 	fragments["capability"]				= "OpCapability StorageInputOutput16\n";
-	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"";
+	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 
 	getDefaultColors(defaultColors);
 
@@ -1897,7 +1900,7 @@ void addGraphics16BitStorageInputOutputFloat16To32Group (tcu::TestCaseGroup* tes
 	extensions.push_back("VK_KHR_16bit_storage");
 
 	fragments["capability"]				= "OpCapability StorageInputOutput16\n";
-	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"";
+	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 
 	getDefaultColors(defaultColors);
 
@@ -2016,7 +2019,7 @@ void addGraphics16BitStorageInputOutputInt32To16Group (tcu::TestCaseGroup* testG
 	extensions.push_back("VK_KHR_16bit_storage");
 
 	fragments["capability"]				= "OpCapability StorageInputOutput16\n";
-	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"";
+	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 
 	getDefaultColors(defaultColors);
 
@@ -2156,7 +2159,7 @@ void addGraphics16BitStorageInputOutputInt16To32Group (tcu::TestCaseGroup* testG
 	extensions.push_back("VK_KHR_16bit_storage");
 
 	fragments["capability"]				= "OpCapability StorageInputOutput16\n";
-	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"";
+	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 
 	getDefaultColors(defaultColors);
 
