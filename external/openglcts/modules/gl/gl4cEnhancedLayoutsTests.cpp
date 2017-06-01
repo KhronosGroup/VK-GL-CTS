@@ -15580,7 +15580,7 @@ VaryingComponentWithoutLocationTest::VaryingComponentWithoutLocationTest(deqp::C
  **/
 std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
-	static const GLchar* var_definition = "layout (component = COMPONENT) flat DIRECTION TYPE gokuARRAY;\n";
+	static const GLchar* var_definition = "layout (component = COMPONENT) FLAT DIRECTION TYPE gokuARRAY;\n";
 	static const GLchar* input_use		= "    if (TYPE(0) == gokuINDEX)\n"
 									 "    {\n"
 									 "        result += vec4(1, 0.5, 0.25, 0.125);\n"
@@ -15615,7 +15615,7 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    fs_out += result;\n"
+									 "    fs_out = result;\n"
 									 "}\n"
 									 "\n";
 	static const GLchar* gs = "#version 430 core\n"
@@ -15750,7 +15750,7 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 									  "\n"
 									  "VARIABLE_USE"
 									  "\n"
-									  "    tes_gs += result;\n"
+									  "    tes_gs = result;\n"
 									  "}\n"
 									  "\n";
 	static const GLchar* vs = "#version 430 core\n"
@@ -15778,7 +15778,7 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    vs_tcs += result;\n"
+									 "    vs_tcs = result;\n"
 									 "}\n"
 									 "\n";
 
@@ -15795,6 +15795,7 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 		size_t		  temp;
 		const GLchar* type_name = test_case.m_type.GetGLSLTypeName();
 		const GLchar* var_use   = input_use;
+		const GLchar* flat		= "flat";
 
 		if (false == test_case.m_is_input)
 		{
@@ -15826,6 +15827,7 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 			break;
 		case Utils::Shader::VERTEX:
 			source = vs_tested;
+			flat   = "";
 			break;
 		default:
 			TCU_FAIL("Invalid enum");
@@ -15835,6 +15837,7 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
 		position = temp;
 		Utils::replaceToken("COMPONENT", position, buffer, source);
+		Utils::replaceToken("FLAT", position, flat, source);
 		Utils::replaceToken("DIRECTION", position, direction, source);
 		Utils::replaceToken("ARRAY", position, array, source);
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
