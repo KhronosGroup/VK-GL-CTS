@@ -6140,6 +6140,12 @@ bool NegativeTestBase::testCase(GLuint test_case_index)
 
 		if (is_build_error != is_failure_expected)
 		{
+			if (!is_build_error)
+			{
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Unexpected success: " << tcu::TestLog::EndMessage;
+				Utils::Shader::LogSource(m_context, cs_source, Utils::Shader::COMPUTE);
+			}
 			test_case_result = false;
 		}
 	}
@@ -6207,6 +6213,16 @@ bool NegativeTestBase::testCase(GLuint test_case_index)
 
 		if (is_build_error != is_failure_expected)
 		{
+			if (!is_build_error)
+			{
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Unexpected success: " << tcu::TestLog::EndMessage;
+				Utils::Shader::LogSource(m_context, vs_source, Utils::Shader::VERTEX);
+				Utils::Shader::LogSource(m_context, tcs_source, Utils::Shader::TESS_CTRL);
+				Utils::Shader::LogSource(m_context, tes_source, Utils::Shader::TESS_EVAL);
+				Utils::Shader::LogSource(m_context, gs_source, Utils::Shader::GEOMETRY);
+				Utils::Shader::LogSource(m_context, fs_source, Utils::Shader::FRAGMENT);
+			}
 			test_case_result = false;
 		}
 	}
