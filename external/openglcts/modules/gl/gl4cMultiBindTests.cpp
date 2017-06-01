@@ -3776,6 +3776,8 @@ tcu::TestNode::IterateResult DispatchBindTexturesTest::iterate()
 			Texture::Bind(gl, texture[i].m_id, target);
 			Texture::SubImage(gl, target, 0 /* level */, 0 /* x */, 0 /* y */, 0 /* z */, width, height, depth,
 							  GL_RED_INTEGER, GL_UNSIGNED_INT, &data);
+			gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			break;
 		}
 
