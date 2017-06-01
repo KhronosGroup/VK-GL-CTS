@@ -55,7 +55,7 @@ struct ValidationData {
 
 template<typename T>
 struct ValidationDataStorage {
-	const T				values;
+	T					values;
 };
 
 typedef ValidationData<tcu::UVec4>	ValidationDataUVec4;
@@ -162,7 +162,7 @@ void BufferValidator<T>::printReferenceInfo (ProtectedContext& ctx) const
 	{
 		ctx.getTestContext().getLog()
 				<< tcu::TestLog::Message << "Reference values: \n"
-				<< "1: " << m_refData.values << "\n"
+				<< "1: " << m_refDataStorage.values << "\n"
 				<< tcu::TestLog::EndMessage;
 	}
 }

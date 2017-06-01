@@ -35,6 +35,7 @@
 #include "vktProtectedMemFillUpdateCopyBufferTests.hpp"
 #include "vktProtectedMemCopyImageToBufferTests.hpp"
 #include "vktProtectedMemCopyBufferToImageTests.hpp"
+#include "vktProtectedMemStorageBufferTests.hpp"
 
 namespace vkt
 {
@@ -73,6 +74,14 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		protectedTests->addChild(bufferTestGroup.release());
 	}
 
+	// Storage buffer test case group
+	{
+		de::MovePtr<tcu::TestCaseGroup> ssboTestGroup (new tcu::TestCaseGroup(testCtx, "ssbo", "Storage Buffer Tests"));
+		ssboTestGroup->addChild(createReadStorageBufferTests(testCtx));
+		ssboTestGroup->addChild(createWriteStorageBufferTests(testCtx));
+		ssboTestGroup->addChild(createAtomicStorageBufferTests(testCtx));
+		protectedTests->addChild(ssboTestGroup.release());
+	}
 	return protectedTests.release();
 
 }

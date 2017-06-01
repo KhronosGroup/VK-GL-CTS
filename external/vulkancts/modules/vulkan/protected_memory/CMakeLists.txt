@@ -26,6 +26,8 @@ set(DEQP_VK_PROTECTED_MEMORY_SRCS
 	vktProtectedMemCopyImageToBufferTests.cpp
 	vktProtectedMemCopyBufferToImageTests.hpp
 	vktProtectedMemCopyBufferToImageTests.cpp
+	vktProtectedMemStorageBufferTests.cpp
+	vktProtectedMemStorageBufferTests.hpp
 	)
 
 set(DEQP_VK_PROTECTED_MEMORY_LIBS

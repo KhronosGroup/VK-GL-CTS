@@ -33,6 +33,7 @@
 #include "vkPlatform.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
+#include "tcuVector.hpp"
 
 namespace vkt
 {
@@ -45,6 +46,9 @@ enum ProtectionMode {
 	PROTECTION_DISABLED	= 0,
 	PROTECTION_ENABLED	= 1,
 };
+
+typedef std::vector<vk::VkVertexInputBindingDescription>	VertexBindings;
+typedef std::vector<vk::VkVertexInputAttributeDescription>	VertexAttribs;
 
 vk::Move<vk::VkInstance>			makeProtectedMemInstance			(const vk::PlatformInterface&		vkp,
 																		 bool								isValidationEnabled);
@@ -112,6 +116,18 @@ vk::Move<vk::VkCommandPool>			makeCommandPool						(const vk::DeviceInterface&		
 																		 const vk::VkDevice&				device,
 																		 ProtectionMode						protectionMode,
 																		 const deUint32						queueFamilyIdx);
+
+
+vk::Move<vk::VkPipeline>			makeGraphicsPipeline				(const vk::DeviceInterface&			vk,
+																		 const vk::VkDevice					device,
+																		 const vk::VkPipelineLayout			pipelineLayout,
+																		 const vk::VkRenderPass				renderPass,
+																		 const vk::VkShaderModule			vertexShaderModule,
+																		 const vk::VkShaderModule			fragmentShaderModule,
+																		 const VertexBindings&				vertexBindings,
+																		 const VertexAttribs&				vertexAttribs,
+																		 const tcu::UVec2&					renderSize,
+																		 const vk::VkPrimitiveTopology		topology);
 
 } // ProtectedMem
 } // vkt
