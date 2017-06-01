@@ -3968,7 +3968,7 @@ tcu::TestNode::IterateResult DispatchBindImageTexturesTest::iterate()
 	GLuint sum			= 0;
 
 	/* Get max */
-	gl.getIntegerv(GL_MAX_IMAGE_UNITS, &max_textures);
+	gl.getIntegerv(GL_MAX_COMPUTE_IMAGE_UNIFORMS, &max_textures);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
 
 	/* Textures */
