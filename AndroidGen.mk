@@ -82,6 +82,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/compute/vktComputeShaderBuiltinVarTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeTestsUtil.cpp \
+	external/vulkancts/modules/vulkan/device_group/vktDeviceGroupRendering.cpp \
 	external/vulkancts/modules/vulkan/draw/vktBasicDrawTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawBaseClass.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawBufferObjectUtil.cpp \
@@ -1009,6 +1010,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/binding_model \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/clipping \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/compute \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/device_group \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/draw \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/dynamic_state \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/fragment_ops \

@@ -12,6 +12,7 @@ add_subdirectory(dynamic_state)
 add_subdirectory(ssbo)
 add_subdirectory(query_pool)
 add_subdirectory(draw)
+add_subdirectory(device_group)
 add_subdirectory(compute)
 add_subdirectory(image)
 add_subdirectory(wsi)
@@ -43,6 +44,7 @@ include_directories(
 	ssbo
 	query_pool
 	draw
+	device_group
 	compute
 	image
 	wsi
@@ -99,6 +101,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-ssbo
 	deqp-vk-query-pool
 	deqp-vk-draw
+	deqp-vk-device-group
 	deqp-vk-compute
 	deqp-vk-image
 	deqp-vk-wsi
