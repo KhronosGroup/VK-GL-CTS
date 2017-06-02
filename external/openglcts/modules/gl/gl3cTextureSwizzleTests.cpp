@@ -3819,6 +3819,7 @@ tcu::TestNode::IterateResult FunctionalTest::iterate()
 				/* Skip formats not supported by FBO */
 				if (false == fillSourceTexture(format_idx, tgt_idx))
 				{
+					deinitTextures();
 					continue;
 				}
 
@@ -3826,14 +3827,19 @@ tcu::TestNode::IterateResult FunctionalTest::iterate()
 
 				for (size_t access_idx = 0; access_idx < n_texture_access; ++access_idx)
 				{
-
-#endif /* FUNCTIONAL_TEST_ALL_ACCESS_ROUTINES */
-
 					/* Skip invalid cases */
 					if (false == isTargetSuppByAccess(access_idx, tgt_idx))
 					{
 						continue;
 					}
+#else /* FUNCTIONAL_TEST_ALL_ACCESS_ROUTINES */
+					/* Skip invalid cases */
+					if (false == isTargetSuppByAccess(access_idx, tgt_idx))
+					{
+						deinitTextures();
+						continue;
+					}
+#endif /* FUNCTIONAL_TEST_ALL_ACCESS_ROUTINES */
 
 #if FUNCTIONAL_TEST_ALL_SWIZZLE_COMBINATIONS
 
@@ -3896,7 +3902,7 @@ tcu::TestNode::IterateResult FunctionalTest::iterate()
 				} /* iteration over access routines - only when enabled */
 
 #endif /* FUNCTIONAL_TEST_ALL_ACCESS_ROUTINES */
-
+				deinitTextures();
 			} /* try */
 			catch (wrongResults& exc)
 			{
@@ -3904,14 +3910,15 @@ tcu::TestNode::IterateResult FunctionalTest::iterate()
 				m_context.getTestContext().getLog() << tcu::TestLog::Message << exc.what() << tcu::TestLog::EndMessage;
 
 				test_result = false;
+				deinitTextures();
 			}
 			catch (...)
 			{
+				deinitTextures();
 				throw;
 			}
 		} /* iteration over texture targets */
 
-		deinitTextures();
 	} /* iteration over texture formats */
 
 	/* Set result */

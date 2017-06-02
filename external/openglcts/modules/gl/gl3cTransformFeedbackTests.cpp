@@ -2781,7 +2781,7 @@ void gl3cts::TransformFeedback::CaptureVertexInterleaved::clean(void)
 
 	if (m_renderbuffer)
 	{
-		gl.deleteFramebuffers(1, &m_renderbuffer);
+		gl.deleteRenderbuffers(1, &m_renderbuffer);
 
 		m_renderbuffer = 0;
 	}
@@ -4588,6 +4588,20 @@ void gl3cts::TransformFeedback::DrawXFB::clean()
 
 		m_vao_id = 0;
 	}
+
+	if (m_fbo_id)
+	{
+		gl.deleteFramebuffers(1, &m_fbo_id);
+
+		m_fbo_id = 0;
+	}
+
+	if (m_rbo_id)
+	{
+		gl.deleteRenderbuffers(1, &m_rbo_id);
+
+		m_rbo_id = 0;
+	}
 }
 
 void gl3cts::TransformFeedback::DrawXFB::drawForCapture(bool begin_xfb, bool pause_xfb, bool resume_xfb, bool end_xfb)
@@ -5717,6 +5731,20 @@ void gl3cts::TransformFeedback::DrawXFBStream::clean()
 
 		m_vao_id = 0;
 	}
+
+	if (m_fbo_id)
+	{
+		gl.deleteFramebuffers(1, &m_fbo_id);
+
+		m_fbo_id = 0;
+	}
+
+	if (m_rbo_id)
+	{
+		gl.deleteRenderbuffers(1, &m_rbo_id);
+
+		m_rbo_id = 0;
+	}
 }
 
 const glw::GLchar* gl3cts::TransformFeedback::DrawXFBStream::s_vertex_shader_blank = "#version 130\n"
@@ -6097,6 +6125,20 @@ void gl3cts::TransformFeedback::DrawXFBInstanced::clean()
 		gl.deleteVertexArrays(1, &m_vao_id);
 
 		m_vao_id = 0;
+	}
+
+	if (m_fbo_id)
+	{
+		gl.deleteFramebuffers(1, &m_fbo_id);
+
+		m_fbo_id = 0;
+	}
+
+	if (m_rbo_id)
+	{
+		gl.deleteRenderbuffers(1, &m_rbo_id);
+
+		m_rbo_id = 0;
 	}
 }
 
@@ -6541,6 +6583,20 @@ void gl3cts::TransformFeedback::DrawXFBStreamInstanced::clean()
 		gl.deleteVertexArrays(1, &m_vao_id);
 
 		m_vao_id = 0;
+	}
+
+	if (m_fbo_id)
+	{
+		gl.deleteFramebuffers(1, &m_fbo_id);
+
+		m_fbo_id = 0;
+	}
+
+	if (m_rbo_id)
+	{
+		gl.deleteRenderbuffers(1, &m_rbo_id);
+
+		m_rbo_id = 0;
 	}
 }
 
