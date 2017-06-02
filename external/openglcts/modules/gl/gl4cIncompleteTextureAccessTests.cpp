@@ -347,7 +347,7 @@ void SamplerTest::PrepareFramebuffer()
 	gl.genRenderbuffers(1, &m_rbo);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenRenderbuffers has failed");
 
-	gl.bindRenderbuffer(GL_RENDERBUFFER, m_fbo);
+	gl.bindRenderbuffer(GL_RENDERBUFFER, m_rbo);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindRenderbuffer has failed");
 
 	gl.renderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, 1 /* x size */, 1 /* y size */);
