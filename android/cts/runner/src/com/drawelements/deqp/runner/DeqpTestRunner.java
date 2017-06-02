@@ -176,6 +176,11 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         mAbi = abi;
     }
 
+    @Override
+    public IAbi getAbi() {
+        return mAbi;
+    }
+
     /**
      * {@inheritDoc}
      */
