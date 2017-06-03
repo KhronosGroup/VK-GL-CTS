@@ -30,6 +30,10 @@
 #include "gluPlatform.hpp"
 #include "vkPlatform.hpp"
 
+#if defined (DEQP_SUPPORT_X11)
+#	include <X11/Xlib.h>
+#endif // DEQP_SUPPORT_X11
+
 #if defined (DEQP_SUPPORT_GLX)
 #	include "tcuLnxX11GlxPlatform.hpp"
 #endif // DEQP_SUPPORT_GLX
