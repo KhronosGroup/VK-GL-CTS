@@ -369,6 +369,11 @@ void resetStateES (const RenderContext& renderCtx, const ContextInfo& ctxInfo)
 
 		gl.enable		(GL_DITHER);
 
+		if (ctxInfo.isExtensionSupported("GL_EXT_sRGB_write_control"))
+		{
+			gl.enable		(GL_FRAMEBUFFER_SRGB);
+		}
+
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Pixel operation state reset failed");
 	}
 
