@@ -1583,7 +1583,6 @@ AtomicCounterIndexingCaseInstance::~AtomicCounterIndexingCaseInstance (void)
 
 tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate (void)
 {
-	// \todo [2015-12-02 elecro] Add vertexPipelineStoresAndAtomics feature check.
 	const int					numInvocations		= NUM_INVOCATIONS;
 	const int					numCounters			= NUM_COUNTERS;
 	const int					numOps				= NUM_OPS;
@@ -1592,8 +1591,29 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate (void)
 	std::vector<void*>			outputs;
 	std::vector<deUint32>		outValues			(numInvocations*numOps);
 
-	const DeviceInterface&		vkd					= m_context.getDeviceInterface();
-	const VkDevice				device				= m_context.getDevice();
+	const DeviceInterface&			vkd				= m_context.getDeviceInterface();
+	const VkDevice					device			= m_context.getDevice();
+	const VkPhysicalDeviceFeatures& deviceFeatures	= m_context.getDeviceFeatures();
+
+	//Check stores and atomic operation support.
+	switch (m_shaderType)
+	{
+		case glu::SHADERTYPE_VERTEX:
+		case glu::SHADERTYPE_TESSELLATION_CONTROL:
+		case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+		case glu::SHADERTYPE_GEOMETRY:
+			if(!deviceFeatures.vertexPipelineStoresAndAtomics)
+				TCU_THROW(NotSupportedError, "Stores and atomic operations are not supported in Vertex, Tessellation, and Geometry shader.");
+			break;
+		case glu::SHADERTYPE_FRAGMENT:
+			if(!deviceFeatures.fragmentStoresAndAtomics)
+				TCU_THROW(NotSupportedError, "Stores and atomic operations are not supported in fragment shader.");
+			break;
+		case glu::SHADERTYPE_COMPUTE:
+			break;
+		default:
+			throw tcu::InternalError("Unsupported shader type");
+	}
 
 	// \note Using separate buffer per element - might want to test
 	// offsets & single buffer in the future.
