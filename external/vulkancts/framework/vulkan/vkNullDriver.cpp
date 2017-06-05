@@ -233,18 +233,6 @@ public:
 										~SwapchainKHR	(void) {}
 };
 
-class IndirectCommandsLayoutNVX
-{
-public:
-	IndirectCommandsLayoutNVX (VkDevice, const VkIndirectCommandsLayoutCreateInfoNVX*) {}
-};
-
-class ObjectTableNVX
-{
-public:
-	ObjectTableNVX (VkDevice, const VkObjectTableCreateInfoNVX*) {}
-};
-
 void* allocateHeap (const VkMemoryAllocateInfo* pAllocInfo)
 {
 	// \todo [2015-12-03 pyry] Alignment requirements?
@@ -473,11 +461,6 @@ void DescriptorPool::reset (void)
 
 extern "C"
 {
-
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL getInstanceProcAddr (VkInstance instance, const char* pName)
-{
-	return reinterpret_cast<Instance*>(instance)->getProcAddr(pName);
-}
 
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL getDeviceProcAddr (VkDevice device, const char* pName)
 {
@@ -755,7 +738,9 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceMemoryProperties (VkPhysicalDevice, 
 
 	props->memoryTypeCount				= 1u;
 	props->memoryTypes[0].heapIndex		= 0u;
-	props->memoryTypes[0].propertyFlags	= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	props->memoryTypes[0].propertyFlags	= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+										| VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+										| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
 	props->memoryHeapCount				= 1u;
 	props->memoryHeaps[0].size			= 1ull << 31;
@@ -962,7 +947,34 @@ VKAPI_ATTR VkResult VKAPI_CALL createSharedSwapchainsKHR (VkDevice device, deUin
 	return VK_SUCCESS;
 }
 
+// \note getInstanceProcAddr is a little bit special:
+// vkNullDriverImpl.inl needs it to define s_platformFunctions but
+// getInstanceProcAddr() implementation needs other entry points from
+// vkNullDriverImpl.inl.
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL getInstanceProcAddr (VkInstance instance, const char* pName);
+
 #include "vkNullDriverImpl.inl"
+
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL getInstanceProcAddr (VkInstance instance, const char* pName)
+{
+	if (instance)
+	{
+		return reinterpret_cast<Instance*>(instance)->getProcAddr(pName);
+	}
+	else
+	{
+		const std::string	name	= pName;
+
+		if (name == "vkCreateInstance")
+			return (PFN_vkVoidFunction)createInstance;
+		else if (name == "vkEnumerateInstanceExtensionProperties")
+			return (PFN_vkVoidFunction)enumerateInstanceExtensionProperties;
+		else if (name == "vkEnumerateInstanceLayerProperties")
+			return (PFN_vkVoidFunction)enumerateInstanceLayerProperties;
+		else
+			return (PFN_vkVoidFunction)DE_NULL;
+	}
+}
 
 } // extern "C"
 

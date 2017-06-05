@@ -441,11 +441,16 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 
 	const vk::VkClearColorValue clearColor = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 	const CmdBufferBeginInfo beginInfo;
+	int firstInstanceIndicesCount = 1;
+
+	// Require 'drawIndirectFirstInstance' feature to run non-zero firstInstance indirect draw tests.
+	if (m_context.getDeviceFeatures().drawIndirectFirstInstance)
+		firstInstanceIndicesCount = DE_LENGTH_OF_ARRAY(firstInstanceIndices);
 
 	for (int instanceCountNdx = 0; instanceCountNdx < DE_LENGTH_OF_ARRAY(instanceCounts); instanceCountNdx++)
 	{
 		const deUint32 instanceCount = instanceCounts[instanceCountNdx];
-		for (int firstInstanceIndexNdx = 0; firstInstanceIndexNdx < DE_LENGTH_OF_ARRAY(firstInstanceIndices); firstInstanceIndexNdx++)
+		for (int firstInstanceIndexNdx = 0; firstInstanceIndexNdx < firstInstanceIndicesCount; firstInstanceIndexNdx++)
 		{
 			const deUint32 firstInstance = firstInstanceIndices[firstInstanceIndexNdx];
 

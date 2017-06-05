@@ -383,32 +383,33 @@ void TessellationShaderXFB::initTest()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() failed for tessellation control shader");
 
 	/* Test creating a tessellation control shader program with feedback.
-	 * For Desktop, this will succeed, and so we use this program for our
-	 * testing.
-	 * For ES, this will fail, and so we will create a different program
-	 * without the feedback varyings that we can use for our testing. (We
-	 * can safely ignore the return value for the expected failure case.
+	 * For Desktop, if GL_NV_gpu_shader5 is available this will succeed, and
+	 * so we'll use it for our testing.
+	 * For ES, and for Desktop implementations that don't have
+	 * GL_NV_gpu_shader5, this will fail, and so we will create a different
+	 * program without the feedback varyings that we can use for our testing.
+	 * (We can safely ignore the return value for the expected failure case.
 	 * In the event that the failure case incorrectly succeeds,
 	 * createSeparableProgram will generate a test failure exception.)
 	 */
+
 	bool tc_feedback_valid;
-	if (glu::isContextTypeES(m_context.getRenderContext().getType()))
-	{
-		tc_feedback_valid = false;
-	}
-	else
+	if (!glu::isContextTypeES(m_context.getRenderContext().getType()) && isExtensionSupported("GL_NV_gpu_shader5"))
 	{
 		tc_feedback_valid = true;
 	}
+	else
+	{
+		tc_feedback_valid = false;
+	}
 
-	const glw::GLchar* tcs_varying_names[4] = { "BLOCK_INOUT[0].value", "BLOCK_INOUT[1].value", "BLOCK_INOUT[2].value",
-												"BLOCK_INOUT[3].value" };
+	/* Create a tessellation control shader program */
+	m_tc_program_id = createSeparableProgram(m_glExtTokens.TESS_CONTROL_SHADER, 1, /* n_strings */
+											 &tc_body, 1,						   /* n_varyings */
+											 &varying_name,						   /* varyings */
+											 tc_feedback_valid);				   /* should_succeed */
 
-	m_tc_program_id = createSeparableProgram(m_glExtTokens.TESS_CONTROL_SHADER, 1,  /* n_strings */
-											 &tc_body, 4,							/* n_varyings */
-											 tcs_varying_names, tc_feedback_valid); /* should_succeed */
-
-	if (glu::isContextTypeES(m_context.getRenderContext().getType()))
+	if (!tc_feedback_valid)
 	{
 		/* Create a valid tessellation control shader program for ES */
 		m_tc_program_id = createSeparableProgram(m_glExtTokens.TESS_CONTROL_SHADER, 1, /* n_strings */

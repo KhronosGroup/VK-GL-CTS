@@ -237,6 +237,7 @@ protected:
 		std::string coordDef;
 		std::string cubeMapCoordDef;
 		std::string refZDef;
+		std::string cubeMapArrayRefZDef;
 		std::string offsetDim;
 		std::string offsetType;
 		std::string nOffsetType;

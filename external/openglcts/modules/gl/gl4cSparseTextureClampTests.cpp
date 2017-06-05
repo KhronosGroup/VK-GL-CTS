@@ -199,7 +199,7 @@ void SparseTextureClampLookupResidencyTestCase::init()
 	mSupportedInternalFormats.push_back(GL_DEPTH_COMPONENT16);
 
 	FunctionToken f;
-	f = FunctionToken("sparseTextureClampARB", ", <LOD>");
+	f = FunctionToken("sparseTextureClampARB", "<CUBE_REFZ_DEF>, <LOD>");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_CUBE_MAP);
@@ -261,7 +261,8 @@ bool SparseTextureClampLookupResidencyTestCase::funcAllowed(GLint target, GLint 
 
 	if (format == GL_DEPTH_COMPONENT16)
 	{
-		if (target == GL_TEXTURE_CUBE_MAP_ARRAY && funcToken.name == "sparseTextureGradClampARB")
+		if (target == GL_TEXTURE_CUBE_MAP_ARRAY &&
+			(funcToken.name == "sparseTextureGradClampARB" || funcToken.name == "textureGradClampARB"))
 			return false;
 	}
 
@@ -316,9 +317,6 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 	// Expected data is 255 because
 	deMemset(exp_data, 255, texSize);
 
-	// Make token copy to work on
-	FunctionToken f = funcToken;
-
 	// Create verifying texture
 	GLint  verifyTarget = GL_TEXTURE_2D;
 	GLuint verifyTexture;
@@ -351,6 +349,9 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 			std::string vertex   = stc_vertex_common;
 			std::string fragment = stc_fragment_lookupResidency;
 
+			// Make token copy to work on
+			FunctionToken f = funcToken;
+
 			// Adjust shader source to texture format
 			TokenStringsExt s = createLookupShaderTokens(target, format, level, sample, f);
 
@@ -374,6 +375,7 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 			replaceToken("<EPSILON>", s.epsilon.c_str(), fragment);
 			replaceToken("<SAMPLE_DEF>", s.sampleDef.c_str(), fragment);
 			replaceToken("<REFZ_DEF>", s.refZDef.c_str(), fragment);
+			replaceToken("<CUBE_REFZ_DEF>", s.cubeMapArrayRefZDef.c_str(), fragment);
 			replaceToken("<POINT_COORD>", s.pointCoord.c_str(), fragment);
 			replaceToken("<COMPONENT_DEF>", s.componentDef.c_str(), fragment);
 			replaceToken("<CUBE_MAP_COORD_DEF>", s.cubeMapCoordDef.c_str(), fragment);
@@ -480,6 +482,15 @@ void SparseTextureClampLookupResidencyTestCase::draw(GLint target, GLint layer, 
 		floatCoord = glu::va::Float("inCoord", 3, 4, 0, texCoord3D);
 	else if (target == GL_TEXTURE_CUBE_MAP)
 		floatCoord = glu::va::Float("inCoord", 3, 4, 0, texCoordCubeMap[layer]);
+	else if (target == GL_TEXTURE_CUBE_MAP_ARRAY)
+	{
+		GLfloat		  layerCoord			   = GLfloat(layer) / 6.0f + 0.01f;
+		const GLfloat texCoordCubeMapArray[16] = { 0.0f, 0.0f, layerCoord, GLfloat(layer),
+												   1.0f, 0.0f, layerCoord, GLfloat(layer),
+												   0.0f, 1.0f, layerCoord, GLfloat(layer),
+												   1.0f, 1.0f, layerCoord, GLfloat(layer) };
+		floatCoord = glu::va::Float("inCoord", 4, 4, 0, texCoordCubeMapArray);
+	}
 	else
 		floatCoord = glu::va::Float("inCoord", 2, 4, 0, texCoord2D);
 
@@ -510,7 +521,7 @@ void SparseTextureClampLookupColorTestCase::init()
 	mSupportedInternalFormats.push_back(GL_DEPTH_COMPONENT16);
 
 	FunctionToken f;
-	f = FunctionToken("sparseTextureClampARB", ", <LOD>");
+	f = FunctionToken("sparseTextureClampARB", "<CUBE_REFZ_DEF>, <LOD>");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_CUBE_MAP);
@@ -518,7 +529,7 @@ void SparseTextureClampLookupColorTestCase::init()
 	f.allowedTargets.insert(GL_TEXTURE_3D);
 	mFunctions.push_back(f);
 
-	f = FunctionToken("textureClampARB", ", <LOD>");
+	f = FunctionToken("textureClampARB", "<CUBE_REFZ_DEF>, <LOD>");
 	f.allowedTargets.insert(GL_TEXTURE_1D);
 	f.allowedTargets.insert(GL_TEXTURE_1D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_2D);
@@ -712,8 +723,12 @@ bool SparseTextureClampLookupColorTestCase::writeDataToTexture(const Functions& 
 			// Adjust shader source to texture format
 			TokenStrings s = createShaderTokens(target, format, sample);
 
+			GLint convFormat = format;
+			if (format == GL_DEPTH_COMPONENT16)
+				convFormat = GL_R16;
+
 			// Change expected result as it has to be adjusted to different levels
-			s.resultExpected = generateExpectedResult(s.returnType, level);
+			s.resultExpected = generateExpectedResult(s.returnType, level, convFormat);
 
 			replaceToken("<INPUT_TYPE>", s.inputType.c_str(), shader);
 			replaceToken("<POINT_TYPE>", s.pointType.c_str(), shader);
@@ -724,10 +739,6 @@ bool SparseTextureClampLookupColorTestCase::writeDataToTexture(const Functions& 
 
 			ProgramSources sources;
 			sources << ComputeSource(shader);
-
-			GLint convFormat = format;
-			if (format == GL_DEPTH_COMPONENT16)
-				convFormat = GL_R16;
 
 			// Build and run shader
 			ShaderProgram program(m_context.getRenderContext(), sources);
@@ -802,9 +813,6 @@ bool SparseTextureClampLookupColorTestCase::verifyLookupTextureData(const Functi
 	// Expected data is 255 because
 	deMemset(exp_data, 255, texSize);
 
-	// Make token copy to work on
-	FunctionToken f = funcToken;
-
 	// Create verifying texture
 	GLint  verifyTarget = GL_TEXTURE_2D;
 	GLuint verifyTexture;
@@ -837,13 +845,16 @@ bool SparseTextureClampLookupColorTestCase::verifyLookupTextureData(const Functi
 			std::string vertex   = stc_vertex_common;
 			std::string fragment = stc_fragment_lookupColor;
 
+			// Make token copy to work on
+			FunctionToken f = funcToken;
+
 			std::string functionDef = generateFunctionDef(f.name);
 
 			// Adjust shader source to texture format
 			TokenStringsExt s = createLookupShaderTokens(target, format, level, sample, f);
 
 			// Change expected result as it has to be adjusted to different levels
-			s.resultExpected = generateExpectedResult(s.returnType, level);
+			s.resultExpected = generateExpectedResult(s.returnType, level, format);
 
 			replaceToken("<COORD_TYPE>", s.coordType.c_str(), vertex);
 
@@ -866,6 +877,7 @@ bool SparseTextureClampLookupColorTestCase::verifyLookupTextureData(const Functi
 			replaceToken("<EPSILON>", s.epsilon.c_str(), fragment);
 			replaceToken("<SAMPLE_DEF>", s.sampleDef.c_str(), fragment);
 			replaceToken("<REFZ_DEF>", s.refZDef.c_str(), fragment);
+			replaceToken("<CUBE_REFZ_DEF>", s.cubeMapArrayRefZDef.c_str(), fragment);
 			replaceToken("<POINT_COORD>", s.pointCoord.c_str(), fragment);
 			replaceToken("<COMPONENT_DEF>", s.componentDef.c_str(), fragment);
 			replaceToken("<CUBE_MAP_COORD_DEF>", s.cubeMapCoordDef.c_str(), fragment);
@@ -1088,9 +1100,12 @@ std::string SparseTextureClampLookupColorTestCase::generateFunctionDef(std::stri
  *
  * @return Returns shader source token that represent expected lookup result value.
  */
-std::string SparseTextureClampLookupColorTestCase::generateExpectedResult(std::string returnType, GLint level)
+std::string SparseTextureClampLookupColorTestCase::generateExpectedResult(std::string returnType, GLint level,
+																		  GLint format)
 {
-	if (returnType == "vec4")
+	if (format == GL_DEPTH_COMPONENT16)
+		return std::string("(1, 0, 0, 0)");
+	else if (returnType == "vec4")
 		return std::string("(") + de::toString(0.5f + (float)level / 10) + std::string(", 0, 0, 1)");
 	else
 		return std::string("(") + de::toString(level * 10) + std::string(", 0, 0, 1)");

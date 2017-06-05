@@ -25,6 +25,7 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuSurface.hpp"
 #include "deMath.h"
 
 #include <vector>
@@ -101,6 +102,14 @@ struct RasterizationArguments
 	int blueBits;
 };
 
+struct VerifyTriangleGroupRasterizationLogStash
+{
+	int				missingPixels;
+	int				unexpectedPixels;
+	tcu::Surface	errorMask;
+	bool			result;
+};
+
 /*--------------------------------------------------------------------*//*!
  * \brief Calculates triangle coverage at given pixel
  * Calculates the coverage of a triangle given by three vertices. The
@@ -116,10 +125,11 @@ CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1
  * by RasterizationArguments. Triangles should not be z-clipped.
  *
  * Triangle colors are not used. The triangle is expected to be white.
+ * If logStash is not NULL the results are not logged, but copied to stash.
  *
  * Returns false if invalid rasterization is found.
  *//*--------------------------------------------------------------------*/
-bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const TriangleSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, VerificationMode mode = VERIFICATIONMODE_STRICT);
+bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const TriangleSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, VerificationMode mode = VERIFICATIONMODE_STRICT, VerifyTriangleGroupRasterizationLogStash* logStash = DE_NULL);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify line rasterization result
@@ -144,6 +154,16 @@ bool verifyLineGroupRasterization (const tcu::Surface& surface, const LineSceneS
  * Returns false if invalid rasterization is found.
  *//*--------------------------------------------------------------------*/
 bool verifyClippedTriangulatedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Verify line rasterization result both clipped and non-clipped
+ *
+ * For details please see verifyLineGroupRasterization and
+ * verifyClippedTriangulatedLineGroupRasterization
+ *
+ * Returns false if both rasterizations are invalid.
+ *//*--------------------------------------------------------------------*/
+bool verifyRelaxedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify point rasterization result

@@ -274,7 +274,9 @@ bool VertexArrayIndirectDrawingBaseCase::verify()
 	std::vector<GLubyte> pixels;
 	pixels.resize(width * height);
 
+	gl.pixelStorei(GL_PACK_ALIGNMENT, 1);
 	gl.readPixels(0, 0, width, height, GL_RED, GL_UNSIGNED_BYTE, pixels.data());
+	gl.pixelStorei(GL_PACK_ALIGNMENT, 4);
 
 	//Verify first quad
 	for (int y = 2; y < height - 2; ++y)

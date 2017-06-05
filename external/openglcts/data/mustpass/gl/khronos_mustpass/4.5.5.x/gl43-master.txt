@@ -3856,3 +3856,7 @@ KHR-GL43.sparse_texture_tests.SparseDSATextureCommitment
 KHR-GL43.indirect_parameters_tests.ParameterBufferOperations
 KHR-GL43.indirect_parameters_tests.MultiDrawArraysIndirectCount
 KHR-GL43.indirect_parameters_tests.MultiDrawElementsIndirectCount
+KHR-GL43.shader_ballot_tests.ShaderBallotAvailability
+KHR-GL43.shader_ballot_tests.ShaderBallotBitmasks
+KHR-GL43.shader_ballot_tests.ShaderBallotFunctionBallot
+KHR-GL43.shader_ballot_tests.ShaderBallotFunctionRead

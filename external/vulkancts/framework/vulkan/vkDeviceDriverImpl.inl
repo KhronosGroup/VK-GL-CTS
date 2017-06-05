@@ -467,9 +467,9 @@ void DeviceDriver::cmdDrawIndexedIndirect (VkCommandBuffer commandBuffer, VkBuff
 	m_vk.cmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, stride);
 }
 
-void DeviceDriver::cmdDispatch (VkCommandBuffer commandBuffer, deUint32 x, deUint32 y, deUint32 z) const
+void DeviceDriver::cmdDispatch (VkCommandBuffer commandBuffer, deUint32 groupCountX, deUint32 groupCountY, deUint32 groupCountZ) const
 {
-	m_vk.cmdDispatch(commandBuffer, x, y, z);
+	m_vk.cmdDispatch(commandBuffer, groupCountX, groupCountY, groupCountZ);
 }
 
 void DeviceDriver::cmdDispatchIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset) const
@@ -637,91 +637,6 @@ void DeviceDriver::trimCommandPoolKHR (VkDevice device, VkCommandPool commandPoo
 	m_vk.trimCommandPoolKHR(device, commandPool, flags);
 }
 
-VkResult DeviceDriver::getSwapchainStatusKHR (VkDevice device, VkSwapchainKHR swapchain) const
-{
-	return m_vk.getSwapchainStatusKHR(device, swapchain);
-}
-
-VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, VkDebugMarkerObjectTagInfoEXT* pTagInfo) const
-{
-	return m_vk.debugMarkerSetObjectTagEXT(device, pTagInfo);
-}
-
-VkResult DeviceDriver::debugMarkerSetObjectNameEXT (VkDevice device, VkDebugMarkerObjectNameInfoEXT* pNameInfo) const
-{
-	return m_vk.debugMarkerSetObjectNameEXT(device, pNameInfo);
-}
-
-void DeviceDriver::cmdDebugMarkerBeginEXT (VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const
-{
-	m_vk.cmdDebugMarkerBeginEXT(commandBuffer, pMarkerInfo);
-}
-
-void DeviceDriver::cmdDebugMarkerEndEXT (VkCommandBuffer commandBuffer) const
-{
-	m_vk.cmdDebugMarkerEndEXT(commandBuffer);
-}
-
-void DeviceDriver::cmdDebugMarkerInsertEXT (VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const
-{
-	m_vk.cmdDebugMarkerInsertEXT(commandBuffer, pMarkerInfo);
-}
-
-void DeviceDriver::cmdDrawIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const
-{
-	m_vk.cmdDrawIndirectCountAMD(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
-}
-
-void DeviceDriver::cmdDrawIndexedIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const
-{
-	m_vk.cmdDrawIndexedIndirectCountAMD(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
-}
-
-VkResult DeviceDriver::getMemoryWin32HandleNV (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle) const
-{
-	return m_vk.getMemoryWin32HandleNV(device, memory, handleType, pHandle);
-}
-
-void DeviceDriver::cmdProcessCommandsNVX (VkCommandBuffer commandBuffer, const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo) const
-{
-	m_vk.cmdProcessCommandsNVX(commandBuffer, pProcessCommandsInfo);
-}
-
-void DeviceDriver::cmdReserveSpaceForCommandsNVX (VkCommandBuffer commandBuffer, const VkCmdReserveSpaceForCommandsInfoNVX* pReserveSpaceInfo) const
-{
-	m_vk.cmdReserveSpaceForCommandsNVX(commandBuffer, pReserveSpaceInfo);
-}
-
-VkResult DeviceDriver::createIndirectCommandsLayoutNVX (VkDevice device, const VkIndirectCommandsLayoutCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNVX* pIndirectCommandsLayout) const
-{
-	return m_vk.createIndirectCommandsLayoutNVX(device, pCreateInfo, pAllocator, pIndirectCommandsLayout);
-}
-
-void DeviceDriver::destroyIndirectCommandsLayoutNVX (VkDevice device, VkIndirectCommandsLayoutNVX indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const
-{
-	m_vk.destroyIndirectCommandsLayoutNVX(device, indirectCommandsLayout, pAllocator);
-}
-
-VkResult DeviceDriver::createObjectTableNVX (VkDevice device, const VkObjectTableCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkObjectTableNVX* pObjectTable) const
-{
-	return m_vk.createObjectTableNVX(device, pCreateInfo, pAllocator, pObjectTable);
-}
-
-void DeviceDriver::destroyObjectTableNVX (VkDevice device, VkObjectTableNVX objectTable, const VkAllocationCallbacks* pAllocator) const
-{
-	m_vk.destroyObjectTableNVX(device, objectTable, pAllocator);
-}
-
-VkResult DeviceDriver::registerObjectsNVX (VkDevice device, VkObjectTableNVX objectTable, deUint32 objectCount, const VkObjectTableEntryNVX* const* ppObjectTableEntries, const deUint32* pObjectIndices) const
-{
-	return m_vk.registerObjectsNVX(device, objectTable, objectCount, ppObjectTableEntries, pObjectIndices);
-}
-
-VkResult DeviceDriver::unregisterObjectsNVX (VkDevice device, VkObjectTableNVX objectTable, deUint32 objectCount, const VkObjectEntryTypeNVX* pObjectEntryTypes, const deUint32* pObjectIndices) const
-{
-	return m_vk.unregisterObjectsNVX(device, objectTable, objectCount, pObjectEntryTypes, pObjectIndices);
-}
-
 void DeviceDriver::cmdPushDescriptorSetKHR (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, deUint32 set, deUint32 descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites) const
 {
 	m_vk.cmdPushDescriptorSetKHR(commandBuffer, pipelineBindPoint, layout, set, descriptorWriteCount, pDescriptorWrites);
@@ -745,6 +660,11 @@ void DeviceDriver::updateDescriptorSetWithTemplateKHR (VkDevice device, VkDescri
 void DeviceDriver::cmdPushDescriptorSetWithTemplateKHR (VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, VkPipelineLayout layout, deUint32 set, const void* pData) const
 {
 	m_vk.cmdPushDescriptorSetWithTemplateKHR(commandBuffer, descriptorUpdateTemplate, layout, set, pData);
+}
+
+VkResult DeviceDriver::getSwapchainStatusKHR (VkDevice device, VkSwapchainKHR swapchain) const
+{
+	return m_vk.getSwapchainStatusKHR(device, swapchain);
 }
 
 VkResult DeviceDriver::getRefreshCycleDurationGOOGLE (VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties) const

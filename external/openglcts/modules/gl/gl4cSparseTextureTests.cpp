@@ -1358,7 +1358,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageVirtualPageSizeIndexError(
 	depth = SparseTextureUtils::getTargetDepth(target);
 
 	Texture::Storage(gl, target, 1, format, 8, 8, depth);
-	if (!SparseTextureUtils::verifyError(mLog, "TexStorage", gl.getError(), GL_NO_ERROR))
+	if (!SparseTextureUtils::verifyError(mLog, "TexStorage", gl.getError(), GL_INVALID_OPERATION))
 	{
 		Texture::Delete(gl, texture);
 		return false;
@@ -1557,12 +1557,15 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 			return false;
 		}
 
-		Texture::Storage(gl, target, 1, format, width, height + maxTextureSize, depth);
-		if (!SparseTextureUtils::verifyError(mLog, "TexStorage [!GL_TEXTURE_3D wrong height]", gl.getError(),
-											 GL_INVALID_VALUE))
+		if (target != GL_TEXTURE_1D_ARRAY)
 		{
-			Texture::Delete(gl, texture);
-			return false;
+			Texture::Storage(gl, target, 1, format, width, height + maxTextureSize, depth);
+			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [!GL_TEXTURE_3D wrong height]", gl.getError(),
+												 GL_INVALID_VALUE))
+			{
+				Texture::Delete(gl, texture);
+				return false;
+			}
 		}
 
 		GLint maxArrayTextureLayers;
@@ -1575,17 +1578,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 			return false;
 		}
 
-		if (target == GL_TEXTURE_1D_ARRAY)
-		{
-			Texture::Storage(gl, target, 1, format, width, height + maxArrayTextureLayers, 0);
-			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [ARRAY wrong height]", gl.getError(),
-												 GL_INVALID_VALUE))
-			{
-				Texture::Delete(gl, texture);
-				return false;
-			}
-		}
-		else if ((target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY))
+		if (target == GL_TEXTURE_1D_ARRAY || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY)
 		{
 			Texture::Storage(gl, target, 1, format, width, height, depth + maxArrayTextureLayers);
 			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [ARRAY wrong depth]", gl.getError(),
@@ -2321,21 +2314,28 @@ bool SparseTextureCommitmentTestCase::verifyInvalidValueErrors(const Functions& 
 	sparseAllocateTexture(gl, target, format, texture, 1);
 
 	// Case 1 - commitment offset not multiple of page size in corresponding dimension
-	texPageCommitment(gl, target, format, texture, 0, 1, 0, 0, mState.pageSizeX, mState.pageSizeY, mState.pageSizeZ,
-					  GL_TRUE);
-	result = SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment offsetX not multiple of page size X]",
-											 gl.getError(), GL_INVALID_VALUE);
-	if (!result)
-		goto verifing_invalid_value_end;
-
-	texPageCommitment(gl, target, format, texture, 0, 0, 1, 0, mState.pageSizeX, mState.pageSizeY, mState.pageSizeZ,
-					  GL_TRUE);
-	result = SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment offsetY not multiple of page size Y]",
-											 gl.getError(), GL_INVALID_VALUE);
-	if (!result)
-		goto verifing_invalid_value_end;
-
-	if (target == GL_TEXTURE_3D || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY)
+	if (mState.pageSizeX > 1)
+	{
+		texPageCommitment(gl, target, format, texture, 0, 1, 0, 0, mState.pageSizeX, mState.pageSizeY, mState.pageSizeZ,
+						  GL_TRUE);
+		result =
+			SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment offsetX not multiple of page size X]",
+											gl.getError(), GL_INVALID_VALUE);
+		if (!result)
+			goto verifing_invalid_value_end;
+	}
+	if (mState.pageSizeY > 1)
+	{
+		texPageCommitment(gl, target, format, texture, 0, 0, 1, 0, mState.pageSizeX, mState.pageSizeY, mState.pageSizeZ,
+						  GL_TRUE);
+		result =
+			SparseTextureUtils::verifyError(mLog, "texPageCommitment [commitment offsetY not multiple of page size Y]",
+											gl.getError(), GL_INVALID_VALUE);
+		if (!result)
+			goto verifing_invalid_value_end;
+	}
+	if ((target == GL_TEXTURE_3D || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY) &&
+		(mState.minDepth % mState.pageSizeZ))
 	{
 		texPageCommitment(gl, target, format, texture, 0, 0, 0, mState.minDepth, mState.pageSizeX, mState.pageSizeY,
 						  mState.pageSizeZ, GL_TRUE);
