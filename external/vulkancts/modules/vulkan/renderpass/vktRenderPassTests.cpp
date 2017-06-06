@@ -2167,7 +2167,11 @@ public:
 		}
 
 		if (!selfDeps.empty())
+		{
+			DE_ASSERT(srcStages != 0);
+			DE_ASSERT(dstStages != 0);
 			vk.cmdPipelineBarrier(commandBuffer, srcStages, dstStages, VK_DEPENDENCY_BY_REGION_BIT, 0, DE_NULL, 0, DE_NULL, (deUint32)selfDeps.size(), &selfDeps[0]);
+		}
 
 		if (m_renderInfo.getRenderQuad())
 		{
@@ -3913,6 +3917,13 @@ void initializeAttachmentImageUsage (Context &context, vector<VkImageUsageFlags>
 				attachmentImageUsage[attachmentNdx] |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 			attachmentImageUsage[attachmentNdx] |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		}
+		else
+		{
+			const VkImageUsageFlags allowedTransientBits = static_cast<VkImageUsageFlags>(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
+
+			attachmentImageUsage[attachmentNdx] &= allowedTransientBits;
+			attachmentImageUsage[attachmentNdx] |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
 		}
 	}
 }
