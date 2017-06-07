@@ -10470,8 +10470,17 @@ bool SubImageErrorsTest::Test2DCompressed()
 			gl.compressedTextureSubImage2D(m_to_rectangle_compressed, 0, 0, 0, s_reference_width, s_reference_height,
 										   m_reference_compressed_rectangle_format,
 										   m_reference_compressed_rectangle_size, m_reference_compressed_rectangle);
-			is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glCompressedTextureSubImage2D",
-									  "texture is not the name of an existing texture object.");
+
+			if (m_context.getContextInfo().isExtensionSupported("GL_NV_texture_rectangle_compressed"))
+			{
+				is_ok &= CheckErrorAndLog(m_context, GL_NO_ERROR, "glCompressedTextureSubImage2D",
+										  "a rectangle texture object is used with this function.");
+			}
+			else
+			{
+				is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glCompressedTextureSubImage2D",
+										  "a rectangle texture object is used with this function.");
+			}
 		}
 	}
 
