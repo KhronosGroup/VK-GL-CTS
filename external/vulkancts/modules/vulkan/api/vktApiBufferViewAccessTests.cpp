@@ -336,6 +336,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_uniformBuffer, m_uniformBufferAlloc->getMemory(), 0));
 		deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), (size_t)uniformSize);
+		flushMappedMemoryRange(vk, vkDevice, m_uniformBufferAlloc->getMemory(), m_uniformBufferAlloc->getOffset(), uniformSize);
 
 		const VkBufferViewCreateInfo viewInfo =
 		{
@@ -835,6 +836,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 
 	generateBuffer(uniformData, m_testCase.bufferSize, factor);
 	deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), (size_t)uniformSize);
+	flushMappedMemoryRange(vk, vkDevice, m_uniformBufferAlloc->getMemory(), m_uniformBufferAlloc->getOffset(), uniformSize);
 
 	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
 	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
