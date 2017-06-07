@@ -2261,6 +2261,7 @@ tcu::TestStatus createMaxConcurrentTest (Context& context, typename Object::Para
 			context.getTestContext().touchWatchdog();
 	}
 
+	context.getTestContext().touchWatchdog();
 	objects.clear();
 
 	return tcu::TestStatus::pass("Ok");
