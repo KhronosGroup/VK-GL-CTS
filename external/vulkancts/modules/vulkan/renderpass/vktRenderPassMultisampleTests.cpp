@@ -1973,6 +1973,9 @@ struct Programs
 					const UVec4	bits		(tcu::getTextureFormatBitDepth(format).cast<deUint32>());
 					const IVec4 minValue	(0);
 					const IVec4 range		((UVec4(1u) << tcu::min(bits, UVec4(30))).cast<deInt32>());
+					const IVec4 maxV		((UVec4(1u) << (bits - UVec4(1u))).cast<deInt32>());
+					const IVec4 clampMax	(maxV - 1);
+					const IVec4 clampMin	(-maxV);
 					std::ostringstream		fragmentShader;
 
 					fragmentShader <<
@@ -2019,8 +2022,11 @@ struct Programs
 						}
 					}
 
+					// The spec doesn't define whether signed-integers are clamped on output,
+					// so we'll clamp them explicitly to have well-defined outputs.
 					fragmentShader <<
-						"\to_color = ivec4(color[0], color[1], color[2], color[3]);\n"
+						"\to_color = clamp(ivec4(color[0], color[1], color[2], color[3]), " <<
+						"ivec4" << clampMin << ", ivec4" << clampMax << ");\n" <<
 						"}\n";
 
 					dst.glslSources.add("quad-frag") << glu::FragmentSource(fragmentShader.str());
