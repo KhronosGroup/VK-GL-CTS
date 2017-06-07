@@ -287,7 +287,9 @@ bool ShaderDrawParametersTestBase::verify()
 	std::vector<GLubyte> pixels;
 	pixels.resize(width * height * 3);
 
+	gl.pixelStorei(GL_PACK_ALIGNMENT, 1);
 	gl.readPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
+	gl.pixelStorei(GL_PACK_ALIGNMENT, 4);
 
 	std::vector<ResultPoint>::iterator it;
 	for (it = m_resultPoints.begin(); it != m_resultPoints.end(); ++it)
