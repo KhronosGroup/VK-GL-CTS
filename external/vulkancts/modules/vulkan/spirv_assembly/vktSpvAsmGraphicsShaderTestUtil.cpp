@@ -183,15 +183,31 @@ VkBufferUsageFlagBits getMatchingBufferUsageFlagBit(VkDescriptorType dType)
 	return (VkBufferUsageFlagBits)0;
 }
 
-static void requireFormatUsageSupport(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, VkFormat format, VkImageUsageFlags requiredUsageFlags)
+static void requireFormatUsageSupport(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, VkFormat format, VkImageTiling imageTiling, VkImageUsageFlags requiredUsageFlags)
 {
-	VkFormatProperties	properties;
+	VkFormatProperties		properties;
+	VkFormatFeatureFlags	tilingFeatures	= 0;
 
 	vki.getPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
 
+	switch (imageTiling)
+	{
+		case VK_IMAGE_TILING_LINEAR:
+			tilingFeatures = properties.linearTilingFeatures;
+			break;
+
+		case VK_IMAGE_TILING_OPTIMAL:
+			tilingFeatures = properties.optimalTilingFeatures;
+			break;
+
+		default:
+			DE_ASSERT(false);
+			break;
+	}
+
 	if ((requiredUsageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) != 0)
 	{
-		if ((properties.bufferFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
+		if ((tilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Image format cannot be used as color attachment");
 		requiredUsageFlags ^= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	}
@@ -199,7 +215,7 @@ static void requireFormatUsageSupport(const InstanceInterface& vki, VkPhysicalDe
 
 	if ((requiredUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) != 0)
 	{
-		if ((properties.bufferFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR) == 0)
+		if ((tilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR) == 0)
 			TCU_THROW(NotSupportedError, "Image format cannot be used as transfer source");
 		requiredUsageFlags ^= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	}
@@ -2320,7 +2336,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		imageParams.format		= instance.interfaces.getOutputType().getVkFormat();
 
 		// Check the usage bits on the given image format are supported.
-		requireFormatUsageSupport(vkInstance, vkPhysicalDevice, imageParams.format, imageParams.usage);
+		requireFormatUsageSupport(vkInstance, vkPhysicalDevice, imageParams.format, imageParams.tiling, imageParams.usage);
 
 		fragOutputImage			= createImage(vk, *vkDevice, &imageParams);
 		fragOutputImageMemory	= allocator.allocate(getImageMemoryRequirements(vk, *vkDevice, *fragOutputImage), MemoryRequirement::Any);
