@@ -266,6 +266,10 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_FENCE_GET_WIN32_HANDLE_INFO_KHR = 1000114002,
     VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR = 1000115000,
     VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR = 1000115001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES_KHR = 1000117000,
+    VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO_KHR = 1000117001,
+    VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR = 1000117002,
+    VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO_KHR = 1000117003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR = 1000119000,
     VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR = 1000119001,
     VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR = 1000119002,
@@ -557,6 +561,8 @@ typedef enum VkImageLayout {
     VK_IMAGE_LAYOUT_PREINITIALIZED = 8,
     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR = 1000001002,
     VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR = 1000111000,
+    VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR = 1000117000,
+    VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR = 1000117001,
     VK_IMAGE_LAYOUT_BEGIN_RANGE = VK_IMAGE_LAYOUT_UNDEFINED,
     VK_IMAGE_LAYOUT_END_RANGE = VK_IMAGE_LAYOUT_PREINITIALIZED,
     VK_IMAGE_LAYOUT_RANGE_SIZE = (VK_IMAGE_LAYOUT_PREINITIALIZED - VK_IMAGE_LAYOUT_UNDEFINED + 1),
@@ -944,6 +950,8 @@ typedef enum VkImageCreateFlagBits {
     VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT = 0x00000010,
     VK_IMAGE_CREATE_BIND_SFR_BIT_KHX = 0x00000040,
     VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR = 0x00000020,
+    VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR = 0x00000080,
+    VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR = 0x00000100,
     VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkImageCreateFlagBits;
 typedef VkFlags VkImageCreateFlags;
@@ -4135,6 +4143,60 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainStatusKHR(
     VkDevice                                    device,
     VkSwapchainKHR                              swapchain);
 #endif
+
+#define VK_KHR_maintenance2 1
+#define VK_KHR_MAINTENANCE2_SPEC_VERSION  1
+#define VK_KHR_MAINTENANCE2_EXTENSION_NAME "VK_KHR_maintenance2"
+
+
+typedef enum VkPointClippingBehaviorKHR {
+    VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES_KHR = 0,
+    VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY_KHR = 1,
+    VK_POINT_CLIPPING_BEHAVIOR_BEGIN_RANGE_KHR = VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES_KHR,
+    VK_POINT_CLIPPING_BEHAVIOR_END_RANGE_KHR = VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY_KHR,
+    VK_POINT_CLIPPING_BEHAVIOR_RANGE_SIZE_KHR = (VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY_KHR - VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES_KHR + 1),
+    VK_POINT_CLIPPING_BEHAVIOR_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkPointClippingBehaviorKHR;
+
+typedef enum VkTessellationDomainOriginKHR {
+    VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR = 0,
+    VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT_KHR = 1,
+    VK_TESSELLATION_DOMAIN_ORIGIN_BEGIN_RANGE_KHR = VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR,
+    VK_TESSELLATION_DOMAIN_ORIGIN_END_RANGE_KHR = VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT_KHR,
+    VK_TESSELLATION_DOMAIN_ORIGIN_RANGE_SIZE_KHR = (VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT_KHR - VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR + 1),
+    VK_TESSELLATION_DOMAIN_ORIGIN_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkTessellationDomainOriginKHR;
+
+typedef struct VkPhysicalDevicePointClippingPropertiesKHR {
+    VkStructureType               sType;
+    void*                         pNext;
+    VkPointClippingBehaviorKHR    pointClippingBehavior;
+} VkPhysicalDevicePointClippingPropertiesKHR;
+
+typedef struct VkInputAttachmentAspectReferenceKHR {
+    uint32_t              subpass;
+    uint32_t              inputAttachmentIndex;
+    VkImageAspectFlags    aspectMask;
+} VkInputAttachmentAspectReferenceKHR;
+
+typedef struct VkRenderPassInputAttachmentAspectCreateInfoKHR {
+    VkStructureType                               sType;
+    const void*                                   pNext;
+    uint32_t                                      aspectReferenceCount;
+    const VkInputAttachmentAspectReferenceKHR*    pAspectReferences;
+} VkRenderPassInputAttachmentAspectCreateInfoKHR;
+
+typedef struct VkImageViewUsageCreateInfoKHR {
+    VkStructureType      sType;
+    const void*          pNext;
+    VkImageUsageFlags    usage;
+} VkImageViewUsageCreateInfoKHR;
+
+typedef struct VkPipelineTessellationDomainOriginStateCreateInfoKHR {
+    VkStructureType                  sType;
+    const void*                      pNext;
+    VkTessellationDomainOriginKHR    domainOrigin;
+} VkPipelineTessellationDomainOriginStateCreateInfoKHR;
 
 #define VK_KHR_get_surface_capabilities2 1
 #define VK_KHR_GET_SURFACE_CAPABILITIES_2_SPEC_VERSION 1
