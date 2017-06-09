@@ -727,6 +727,7 @@ LOCAL_SRC_FILES := \
 	modules/gles3/functional/es3fShaderInvarianceTests.cpp \
 	modules/gles3/functional/es3fShaderLoopTests.cpp \
 	modules/gles3/functional/es3fShaderMatrixTests.cpp \
+	modules/gles3/functional/es3fShaderMetamorphicTests.cpp \
 	modules/gles3/functional/es3fShaderOperatorTests.cpp \
 	modules/gles3/functional/es3fShaderPackingFunctionTests.cpp \
 	modules/gles3/functional/es3fShaderPrecisionTests.cpp \
