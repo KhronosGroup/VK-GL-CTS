@@ -1,4 +1,4 @@
-﻿/*-------------------------------------------------------------------------
+/*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
@@ -29,6 +29,7 @@
 #include "vkPlatform.hpp"
 #include "vkStrUtil.hpp"
 #include "vkRef.hpp"
+#include "vkRefUtil.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -38,6 +39,7 @@
 #include "tcuFormatUtil.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuResultCollector.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deString.h"
@@ -527,6 +529,14 @@ struct CheckEnumeratePhysicalDevicesIncompleteResult : public CheckIncompleteRes
 	}
 };
 
+struct CheckEnumeratePhysicalDeviceGroupsIncompleteResult : public CheckIncompleteResult<VkPhysicalDeviceGroupPropertiesKHX>
+{
+	void getResult (Context& context, VkPhysicalDeviceGroupPropertiesKHX* data)
+	{
+		m_result = context.getInstanceInterface().enumeratePhysicalDeviceGroupsKHX(context.getInstance(), &m_count, data);
+	}
+};
+
 struct CheckEnumerateInstanceLayerPropertiesIncompleteResult : public CheckIncompleteResult<VkLayerProperties>
 {
 	void getResult (Context& context, VkLayerProperties* data)
@@ -583,6 +593,38 @@ tcu::TestStatus enumeratePhysicalDevices (Context& context)
 		log << TestLog::Message << ndx << ": " << devices[ndx] << TestLog::EndMessage;
 
 	CheckEnumeratePhysicalDevicesIncompleteResult()(context, results, devices.size());
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
+Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, const char* extensionName)
+{
+	const vector<VkExtensionProperties>	instanceExts = enumerateInstanceExtensionProperties(vkp, DE_NULL);
+	vector<string>						enabledExts;
+
+	if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
+		TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
+
+	enabledExts.push_back(extensionName);
+
+	return createDefaultInstance(vkp, vector<string>() /* layers */, enabledExts);
+}
+
+tcu::TestStatus enumeratePhysicalDeviceGroupsKHX (Context& context)
+{
+	TestLog&											log				= context.getTestContext().getLog();
+	tcu::ResultCollector								results			(log);
+	const PlatformInterface&							vkp				= context.getPlatformInterface();
+	const Unique<VkInstance>							instance		(createInstanceWithExtension(vkp, "VK_KHX_device_group_creation"));
+	const InstanceDriver								vki				(vkp, *instance);
+	const vector<VkPhysicalDeviceGroupPropertiesKHX>	devicegroups	= enumeratePhysicalDeviceGroupsKHX(vki, *instance);
+
+	log << TestLog::Integer("NumDevices", "Number of device groups", "", QP_KEY_TAG_NONE, deInt64(devicegroups.size()));
+
+	for (size_t ndx = 0; ndx < devicegroups.size(); ndx++)
+		log << TestLog::Message << ndx << ": " << devicegroups[ndx] << TestLog::EndMessage;
+
+	CheckEnumeratePhysicalDeviceGroupsIncompleteResult()(context, results, devicegroups.size());
 
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
@@ -1254,6 +1296,117 @@ tcu::TestStatus deviceMemoryProperties (Context& context)
 	return tcu::TestStatus::pass("Querying memory properties succeeded");
 }
 
+tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
+{
+	TestLog&							log						= context.getTestContext().getLog();
+	const PlatformInterface&			vkp						= context.getPlatformInterface();
+	const Unique<VkInstance>			instance				(createInstanceWithExtension(vkp, "VK_KHX_device_group_creation"));
+	const InstanceDriver				vki						(vkp, *instance);
+	const tcu::CommandLine&				cmdLine					= context.getTestContext().getCommandLine();
+	const deUint32						devGroupIdx				= cmdLine.getVKDeviceGroupId() - 1;
+	const deUint32						deviceIdx				= context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
+	const float							queuePriority			= 1.0f;
+	VkPhysicalDeviceMemoryProperties	memProps;
+	VkPeerMemoryFeatureFlagsKHX*		peerMemFeatures;
+	deUint8								buffer					[sizeof(VkPeerMemoryFeatureFlagsKHX) + GUARD_SIZE];
+	deUint32							numPhysicalDevices		= 0;
+	deUint32							queueFamilyIndex		= 0;
+
+	const vector<VkPhysicalDeviceGroupPropertiesKHX>		deviceGroupProps = enumeratePhysicalDeviceGroupsKHX(vki, *instance);
+	std::vector<const char*>								deviceExtensions;
+	deviceExtensions.push_back("VK_KHX_device_group");
+	deviceExtensions.push_back("VK_KHR_swapchain");
+
+	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
+	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
+	{
+		if (queueProps[queueNdx].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			queueFamilyIndex = (deUint32)queueNdx;
+	}
+	const VkDeviceQueueCreateInfo		deviceQueueCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,			//type
+		DE_NULL,											//pNext
+		(VkDeviceQueueCreateFlags)0u,						//flags
+		queueFamilyIndex,									//queueFamilyIndex;
+		1u,													//queueCount;
+		&queuePriority,										//pQueuePriorities;
+	};
+
+	// Need atleast 2 devices for peer memory features
+	numPhysicalDevices = deviceGroupProps[devGroupIdx].physicalDeviceCount;
+	if (numPhysicalDevices < 2)
+		TCU_THROW(NotSupportedError, "Need a device Group with atleast 2 physical devices.");
+
+	// Create device groups
+	const VkDeviceGroupDeviceCreateInfoKHX					deviceGroupInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHX,	//stype
+		DE_NULL,												//pNext
+		deviceGroupProps[devGroupIdx].physicalDeviceCount,		//physicalDeviceCount
+		deviceGroupProps[devGroupIdx].physicalDevices			//physicalDevices
+	};
+	const VkDeviceCreateInfo								deviceCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,				//sType;
+		&deviceGroupInfo,									//pNext;
+		(VkDeviceCreateFlags)0u,							//flags
+		1,													//queueRecordCount;
+		&deviceQueueCreateInfo,								//pRequestedQueues;
+		0,													//layerCount;
+		DE_NULL,											//ppEnabledLayerNames;
+		deUint32(deviceExtensions.size()),					//extensionCount;
+		&deviceExtensions[0],								//ppEnabledExtensionNames;
+		DE_NULL,											//pEnabledFeatures;
+	};
+
+	Move<VkDevice>		deviceGroup = createDevice(vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
+	const DeviceDriver	vk	(vki, *deviceGroup);
+	context.getInstanceInterface().getPhysicalDeviceMemoryProperties(deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &memProps);
+
+	peerMemFeatures = reinterpret_cast<VkPeerMemoryFeatureFlagsKHX*>(buffer);
+	deMemset(buffer, GUARD_VALUE, sizeof(buffer));
+
+	for (deUint32 heapIndex = 0; heapIndex < memProps.memoryHeapCount; heapIndex++)
+	{
+		for (deUint32 localDeviceIndex = 0; localDeviceIndex < numPhysicalDevices; localDeviceIndex++)
+		{
+			for (deUint32 remoteDeviceIndex = 0; remoteDeviceIndex < numPhysicalDevices; remoteDeviceIndex++)
+			{
+				if (localDeviceIndex != remoteDeviceIndex)
+				{
+					vk.getDeviceGroupPeerMemoryFeaturesKHX(deviceGroup.get(), heapIndex, localDeviceIndex, remoteDeviceIndex, peerMemFeatures);
+
+					// Check guard
+					for (deInt32 ndx = 0; ndx < GUARD_SIZE; ndx++)
+					{
+						if (buffer[ndx + sizeof(VkPeerMemoryFeatureFlagsKHX)] != GUARD_VALUE)
+						{
+							log << TestLog::Message << "deviceGroupPeerMemoryFeatures - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
+							return tcu::TestStatus::fail("deviceGroupPeerMemoryFeatures buffer overflow");
+						}
+					}
+
+					VkPeerMemoryFeatureFlagsKHX requiredFlag = VK_PEER_MEMORY_FEATURE_COPY_DST_BIT_KHX;
+					VkPeerMemoryFeatureFlagsKHX maxValidFlag = VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT_KHX|VK_PEER_MEMORY_FEATURE_COPY_DST_BIT_KHX |
+																VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT_KHX|VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT_KHX;
+					if ((!(*peerMemFeatures & requiredFlag)) ||
+						*peerMemFeatures > maxValidFlag)
+						return tcu::TestStatus::fail("deviceGroupPeerMemoryFeatures invalid flag");
+
+					log << TestLog::Message << "deviceGroup = " << deviceGroup.get() << TestLog::EndMessage
+						<< TestLog::Message << "heapIndex = " << heapIndex << TestLog::EndMessage
+						<< TestLog::Message << "localDeviceIndex = " << localDeviceIndex << TestLog::EndMessage
+						<< TestLog::Message << "remoteDeviceIndex = " << remoteDeviceIndex << TestLog::EndMessage
+						<< TestLog::Message << "PeerMemoryFeatureFlags = " << *peerMemFeatures << TestLog::EndMessage;
+				}
+			} // remote device
+		} // local device
+	} // heap Index
+
+	return tcu::TestStatus::pass("Querying deviceGroup peer memory features succeeded");
+}
+
 // \todo [2016-01-22 pyry] Optimize by doing format -> flags mapping instead
 
 VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
@@ -1611,7 +1764,7 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 		if ((supported & required) != required)
 		{
 			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-								    << "  required: " << getFormatFeatureFlagsStr(required) << "\n  "
+									<< "  required: " << getFormatFeatureFlagsStr(required) << "\n  "
 									<< "  missing: " << getFormatFeatureFlagsStr(~supported & required)
 				<< TestLog::EndMessage;
 			allOk = false;
@@ -2079,7 +2232,7 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 
 	if (hasKhrMaintenance1 && (supportedFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0)
 	{
-		results.check((supportedFeatures & (VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR | VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR)) != 0,
+		results.check((supportedFeatures & (VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR|VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR)) != 0,
 					  "A sampled image format must have VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR and VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR format feature flags set");
 	}
 
@@ -2138,7 +2291,7 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 				results.check(imageType != VK_IMAGE_TYPE_3D || properties.maxArrayLayers == 1, "Invalid maxArrayLayers for 3D image");
 
 				if (tiling == VK_IMAGE_TILING_OPTIMAL && imageType == VK_IMAGE_TYPE_2D && !(curCreateFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) &&
-					 ((supportedFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)) ||
+					 ((supportedFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT|VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)) ||
 					 ((supportedFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) && deviceFeatures.shaderStorageImageMultisample)))
 				{
 					const VkSampleCountFlags	requiredSampleCounts	= getRequiredOptimalTilingSampleCounts(deviceLimits, format, curUsageFlags);
@@ -2198,19 +2351,6 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 }
 
 // VK_KHR_get_physical_device_properties2
-
-Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, const char* extensionName)
-{
-	const vector<VkExtensionProperties>	instanceExts	= enumerateInstanceExtensionProperties(vkp, DE_NULL);
-	vector<string>						enabledExts;
-
-	if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
-		TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
-
-	enabledExts.push_back(extensionName);
-
-	return createDefaultInstance(vkp, vector<string>() /* layers */, enabledExts);
-}
 
 tcu::TestStatus deviceFeatures2 (Context& context)
 {
@@ -2708,6 +2848,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		de::MovePtr<tcu::TestCaseGroup> instanceInfoTests	(new tcu::TestCaseGroup(testCtx, "instance", "Instance Information Tests"));
 
 		addFunctionCase(instanceInfoTests.get(), "physical_devices",		"Physical devices",			enumeratePhysicalDevices);
+		addFunctionCase(instanceInfoTests.get(), "physical_device_groups",	"Physical devices Groups",	enumeratePhysicalDeviceGroupsKHX);
 		addFunctionCase(instanceInfoTests.get(), "layers",					"Layers",					enumerateInstanceLayers);
 		addFunctionCase(instanceInfoTests.get(), "extensions",				"Extensions",				enumerateInstanceExtensions);
 
@@ -2725,6 +2866,14 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		addFunctionCase(deviceInfoTests.get(), "extensions",				"Extensions",				enumerateDeviceExtensions);
 
 		infoTests->addChild(deviceInfoTests.release());
+	}
+
+	{
+		de::MovePtr<tcu::TestCaseGroup> deviceGroupInfoTests (new tcu::TestCaseGroup(testCtx, "device_group", "Device Group Information Tests"));
+
+		addFunctionCase(deviceGroupInfoTests.get(), "peer_memory_features",	"Device Group peer memory features",				deviceGroupPeerMemoryFeatures);
+
+		infoTests->addChild(deviceGroupInfoTests.release());
 	}
 
 	infoTests->addChild(createTestGroup(testCtx, "format_properties",		"VkGetPhysicalDeviceFormatProperties() Tests",		createFormatTests));

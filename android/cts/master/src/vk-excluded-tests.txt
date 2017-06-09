@@ -287,3 +287,6 @@ dEQP-VK.spirv_assembly.instruction.compute.opfunord.*
 
 # New tests from AOSP
 dEQP-VK.texture.explicit_lod.*
+
+# Issue 110: Excluded wsi android tests as they require android loader support
+dEQP-VK.wsi.android.surface.query_devgroup_*
