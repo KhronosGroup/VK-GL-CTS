@@ -1310,15 +1310,17 @@ glu::ProgramSources ShadersOOB::genSources (void)
 
 void ShadersOOB::setup (void)
 {
-	if (!m_isUBO && !m_isLocalArray && (m_shaderType == SHADERTYPE_VERT || m_shaderType == SHADERTYPE_VERT_AND_FRAG))
+	if (!m_isUBO && !m_isLocalArray && (m_shaderType != SHADERTYPE_COMPUTE))
 	{
-		// Check implementation limits for vertex shader SSBO
-		int vertexShaderStorageBlockSupported = -1;
+		// Check implementation limits for shader SSBO
+		int shaderStorageBlockSupported = -1;
+		const bool isVertex = (m_shaderType == SHADERTYPE_VERT || m_shaderType == SHADERTYPE_VERT_AND_FRAG) ? true : false;
+		string shaderTypeStr = isVertex ? "GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS" : "GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS";
 
-		GLU_CHECK_GLW_CALL(m_gl, getIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &vertexShaderStorageBlockSupported));
+		GLU_CHECK_GLW_CALL(m_gl, getIntegerv(isVertex ? GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS : GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS, &shaderStorageBlockSupported));
 
-		if (vertexShaderStorageBlockSupported < (int)m_buffers.size())
-			TCU_THROW(NotSupportedError, ("Test requires GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS >= " + de::toString((int)m_buffers.size()) + ", got " + de::toString(vertexShaderStorageBlockSupported)).c_str());
+		if (shaderStorageBlockSupported < (int)m_buffers.size())
+			TCU_THROW(NotSupportedError, ("Test requires " + shaderTypeStr + " >= " + de::toString((int)m_buffers.size()) + ", got " + de::toString(shaderStorageBlockSupported)).c_str());
 	}
 
 	glu::ShaderProgram program(m_gl, genSources());
