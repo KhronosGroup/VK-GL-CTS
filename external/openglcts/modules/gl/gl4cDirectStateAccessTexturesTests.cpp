@@ -4381,6 +4381,7 @@ CompressedSubImageTest::CompressedSubImageTest(deqp::Context& context)
 	: deqp::TestCase(context, "textures_compressed_subimage", "Texture Compressed SubImage Test")
 	, m_to(0)
 	, m_to_aux(0)
+	, m_compressed_texture_data(DE_NULL)
 	, m_reference(DE_NULL)
 	, m_result(DE_NULL)
 	, m_reference_size(0)
@@ -4487,6 +4488,57 @@ void CompressedSubImageTest::TextureImage<3>(glw::GLint internalformat)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage3D has failed");
 }
 
+/** @brief Prepare texture data for the auxiliary texture.
+ *
+ *  @tparam D      Texture dimensions.
+ *
+ *  @note parameters as passed to compressedTexImage*
+ */
+template <>
+void CompressedSubImageTest::CompressedTexImage<1>(glw::GLint internalformat)
+{
+	/* Shortcut for GL functionality. */
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	gl.compressedTexImage1D(TextureTarget<1>(), 0, internalformat, s_texture_width, 0, m_reference_size,
+							m_compressed_texture_data);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage1D has failed");
+}
+
+/** @brief Prepare texture data for the auxiliary texture.
+ *
+ *  @tparam D      Texture dimensions.
+ *
+ *  @note parameters as passed to compressedTexImage*
+ */
+template <>
+void CompressedSubImageTest::CompressedTexImage<2>(glw::GLint internalformat)
+{
+	/* Shortcut for GL functionality. */
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	gl.compressedTexImage2D(TextureTarget<2>(), 0, internalformat, s_texture_width, s_texture_height, 0,
+							m_reference_size, m_compressed_texture_data);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D has failed");
+}
+
+/** @brief Prepare texture data for the auxiliary texture.
+ *
+ *  @tparam D      Texture dimensions.
+ *
+ *  @note parameters as passed to compressedTexImage*
+ */
+template <>
+void CompressedSubImageTest::CompressedTexImage<3>(glw::GLint internalformat)
+{
+	/* Shortcut for GL functionality. */
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	gl.compressedTexImage3D(TextureTarget<3>(), 0, internalformat, s_texture_width, s_texture_height, s_texture_depth,
+							0, m_reference_size, m_compressed_texture_data);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage3D has failed");
+}
+
 /** @brief Prepare texture data for the compressed texture.
  *
  *  @tparam D      Texture dimenisons.
@@ -4504,7 +4556,11 @@ bool CompressedSubImageTest::CompressedTextureSubImage<1>(glw::GLint internalfor
 	/* Load texture image with tested function. */
 	if (m_reference_size)
 	{
-		gl.compressedTextureSubImage1D(m_to, 0, 0, s_texture_width, internalformat, m_reference_size, m_reference);
+		for (glw::GLuint block = 0; block < s_block_count; ++block)
+		{
+			gl.compressedTextureSubImage1D(m_to, 0, s_texture_width * block, s_texture_width, internalformat,
+										   m_reference_size, m_compressed_texture_data);
+		}
 	}
 	else
 	{
@@ -4544,10 +4600,16 @@ bool CompressedSubImageTest::CompressedTextureSubImage<2>(glw::GLint internalfor
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Load texture image with tested function. */
-	gl.compressedTextureSubImage2D(m_to, 0, 0, 0, s_texture_width, s_texture_height, internalformat, m_reference_size,
-								   m_reference);
-
+	for (glw::GLuint y = 0; y < s_block_2d_size_y; ++y)
+	{
+		for (glw::GLuint x = 0; x < s_block_2d_size_x; ++x)
+		{
+			/* Load texture image with tested function. */
+			gl.compressedTextureSubImage2D(m_to, 0, s_texture_width * x, s_texture_height * y, s_texture_width,
+										   s_texture_height, internalformat, m_reference_size,
+										   m_compressed_texture_data);
+		}
+	}
 	/* Check errors. */
 	glw::GLenum error;
 
@@ -4578,9 +4640,19 @@ bool CompressedSubImageTest::CompressedTextureSubImage<3>(glw::GLint internalfor
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Load texture image with tested function. */
-	gl.compressedTextureSubImage3D(m_to, 0, 0, 0, 0, s_texture_width, s_texture_height, s_texture_depth, internalformat,
-								   m_reference_size, m_reference);
+	for (glw::GLuint z = 0; z < s_block_3d_size; ++z)
+	{
+		for (glw::GLuint y = 0; y < s_block_3d_size; ++y)
+		{
+			for (glw::GLuint x = 0; x < s_block_3d_size; ++x)
+			{
+				/* Load texture image with tested function. */
+				gl.compressedTextureSubImage3D(m_to, 0, s_texture_width * x, s_texture_height * y, s_texture_depth * z,
+											   s_texture_width, s_texture_height, s_texture_depth, internalformat,
+											   m_reference_size, m_compressed_texture_data);
+			}
+		}
+	}
 
 	/* Check errors. */
 	glw::GLenum error;
@@ -4614,7 +4686,7 @@ void CompressedSubImageTest::PrepareReferenceData(glw::GLenum internalformat)
 	TextureImage<D>(internalformat);
 
 	/* Sanity checks. */
-	if (DE_NULL != m_reference)
+	if ((DE_NULL != m_reference) || (DE_NULL != m_compressed_texture_data))
 	{
 		throw 0;
 	}
@@ -4633,13 +4705,35 @@ void CompressedSubImageTest::PrepareReferenceData(glw::GLenum internalformat)
 		if (compressed_texture_size)
 		{
 			/* Prepare storage. */
-			m_reference = new glw::GLubyte[compressed_texture_size];
+			m_compressed_texture_data = new glw::GLubyte[compressed_texture_size];
 
-			if (DE_NULL != m_reference)
+			if (DE_NULL != m_compressed_texture_data)
 			{
 				m_reference_size = compressed_texture_size;
 			}
 			else
+			{
+				throw 0;
+			}
+
+			/* Download the source compressed texture image. */
+			gl.getCompressedTexImage(TextureTarget<D>(), 0, m_compressed_texture_data);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetCompressedTexImage has failed");
+
+			// Upload the source compressed texture image to the texture object.
+			// Some compressed texture format can be emulated by the driver (like the ETC2/EAC formats)
+			// The compressed data sent by CompressedTexImage will be stored uncompressed by the driver
+			// and will be re-compressed if the application call glGetCompressedTexImage.
+			// The compression/decompression is not lossless, so when this happen it's possible for the source
+			// and destination (from glGetCompressedTexImage) compressed data to be different.
+			// To avoid that we will store both the source (in m_compressed_texture_data) and the destination
+			// (in m_reference). The destination will be used later to make sure getCompressedTextureSubImage
+			// return the expected value
+			CompressedTexImage<D>(internalformat);
+
+			m_reference = new glw::GLubyte[m_reference_size];
+
+			if (DE_NULL == m_reference)
 			{
 				throw 0;
 			}
@@ -4666,7 +4760,8 @@ void CompressedSubImageTest::PrepareStorage<1>(glw::GLenum internalformat)
 	gl.bindTexture(TextureTarget<1>(), m_to);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
 
-	gl.texImage1D(TextureTarget<1>(), 0, internalformat, s_texture_width, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	gl.texImage1D(TextureTarget<1>(), 0, internalformat, s_texture_width * s_block_count, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+				  NULL);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D has failed");
 }
 
@@ -4685,8 +4780,8 @@ void CompressedSubImageTest::PrepareStorage<2>(glw::GLenum internalformat)
 	gl.bindTexture(TextureTarget<2>(), m_to);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
 
-	gl.texImage2D(TextureTarget<2>(), 0, internalformat, s_texture_width, s_texture_height, 0, GL_RGBA,
-				  GL_UNSIGNED_BYTE, NULL);
+	gl.texImage2D(TextureTarget<2>(), 0, internalformat, s_texture_width * s_block_2d_size_x,
+				  s_texture_height * s_block_2d_size_y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D has failed");
 }
 
@@ -4705,47 +4800,102 @@ void CompressedSubImageTest::PrepareStorage<3>(glw::GLenum internalformat)
 	gl.bindTexture(TextureTarget<3>(), m_to);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
 
-	gl.texImage3D(TextureTarget<3>(), 0, internalformat, s_texture_width, s_texture_height, s_texture_depth, 0, GL_RGBA,
-				  GL_UNSIGNED_BYTE, NULL);
+	gl.texImage3D(TextureTarget<3>(), 0, internalformat, s_texture_width * s_block_3d_size,
+				  s_texture_height * s_block_3d_size, s_texture_depth * s_block_3d_size, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+				  NULL);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D has failed");
 }
 
-/** @brief Compre results with the reference.
+/** @brief Compare results with the reference.
  *
  *  @tparam T      Type.
  *  @tparam S      Size (# of components).
  *  @tparam N      Is normalized.
  *
- *  @param [in] target              Texture target.
  *  @param [in] internalformat      Texture internal format.
  *
  *  @return True if equal, false otherwise.
  */
-bool CompressedSubImageTest::CheckData(glw::GLenum target, glw::GLenum internalformat)
+template <glw::GLuint D>
+bool CompressedSubImageTest::CheckData(glw::GLenum internalformat)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	/* Check texture content with reference. */
-	m_result = new glw::GLubyte[m_reference_size];
+	m_result = new glw::GLubyte[m_reference_size * s_block_count];
 
 	if (DE_NULL == m_result)
 	{
 		throw 0;
 	}
 
-	gl.getCompressedTexImage(target, 0, m_result);
+	gl.getCompressedTexImage(TextureTarget<D>(), 0, m_result);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetCompressedTexImage has failed");
+	for (glw::GLuint block = 0; block < s_block_count; ++block)
+	{
+		for (glw::GLuint i = 0; i < m_reference_size; ++i)
+		{
+			if (m_reference[i] != m_result[block * m_reference_size + i])
+			{
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "glCompressedTextureSubImage*D created texture with data "
+					<< DataToString(m_reference_size, m_reference) << " however texture contains data "
+					<< DataToString(m_reference_size, &(m_result[block * m_reference_size])) << ". Texture target was "
+					<< glu::getTextureTargetStr(TextureTarget<D>()) << " and internal format was "
+					<< glu::getTextureFormatStr(internalformat) << ". Test fails." << tcu::TestLog::EndMessage;
+
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+/** @brief Compare results with the reference.
+ *
+ *  @tparam T      Type.
+ *  @tparam S      Size (# of components).
+ *  @tparam N      Is normalized.
+ *
+ *  @param [in] internalformat      Texture internal format.
+ *
+ *  @return True if equal, false otherwise.
+ */
+template <>
+bool CompressedSubImageTest::CheckData<3>(glw::GLenum internalformat)
+{
+	/* Shortcut for GL functionality. */
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	/* Check texture content with reference. */
+	m_result = new glw::GLubyte[m_reference_size * s_block_count];
+
+	if (DE_NULL == m_result)
+	{
+		throw 0;
+	}
+
+	gl.getCompressedTexImage(TextureTarget<3>(), 0, m_result);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetCompressedTexImage has failed");
 
-	for (glw::GLuint i = 0; i < m_reference_size; ++i)
+	glw::GLuint reference_layer_size = m_reference_size / s_texture_depth;
+
+	for (glw::GLuint i = 0; i < m_reference_size * s_block_count; ++i)
 	{
-		if (m_reference[i] != m_result[i])
+		// we will read the result one bytes at the time and compare with the reference
+		// for each bytes of the result image we need to figure out which byte in the reference image it corresponds to
+		glw::GLuint refIdx		= i % reference_layer_size;
+		glw::GLuint refLayerIdx = (i / (reference_layer_size * s_block_3d_size * s_block_3d_size)) % s_texture_depth;
+		if (m_reference[refLayerIdx * reference_layer_size + refIdx] != m_result[i])
 		{
 			m_context.getTestContext().getLog()
-				<< tcu::TestLog::Message << "glCompressedTextureSubImage*D created texture with data "
-				<< DataToString(m_reference_size, m_reference) << " however texture contains data "
-				<< DataToString(m_reference_size, m_result) << ". Texture target was "
-				<< glu::getTextureTargetStr(target) << " and internal format was "
+				<< tcu::TestLog::Message << "glCompressedTextureSubImage3D created texture with data "
+				<< DataToString(reference_layer_size, &(m_reference[refLayerIdx * reference_layer_size]))
+				<< " however texture contains data "
+				<< DataToString(reference_layer_size, &(m_result[i % reference_layer_size])) << ". Texture target was "
+				<< glu::getTextureTargetStr(TextureTarget<3>()) << " and internal format was "
 				<< glu::getTextureFormatStr(internalformat) << ". Test fails." << tcu::TestLog::EndMessage;
 
 			return false;
@@ -4754,7 +4904,6 @@ bool CompressedSubImageTest::CheckData(glw::GLenum target, glw::GLenum internalf
 
 	return true;
 }
-
 /** @brief Test case function.
  *
  *  @tparam D       Number of texture dimensions.
@@ -4782,7 +4931,7 @@ bool CompressedSubImageTest::Test(glw::GLenum internalformat)
 	/* If compressed reference data was generated than compare values. */
 	if (m_reference)
 	{
-		if (!CheckData(TextureTarget<D>(), internalformat))
+		if (!CheckData<D>(internalformat))
 		{
 			CleanAll();
 
@@ -4823,6 +4972,13 @@ void CompressedSubImageTest::CleanAll()
 		delete[] m_reference;
 
 		m_reference = DE_NULL;
+	}
+
+	if (DE_NULL != m_compressed_texture_data)
+	{
+		delete[] m_compressed_texture_data;
+
+		m_compressed_texture_data = DE_NULL;
 	}
 
 	if (DE_NULL != m_result)
@@ -4994,9 +5150,13 @@ const glw::GLubyte CompressedSubImageTest::s_texture_data[] = {
 };
 
 /** Reference data parameters. */
-const glw::GLuint CompressedSubImageTest::s_texture_width  = 4;
-const glw::GLuint CompressedSubImageTest::s_texture_height = 4;
-const glw::GLuint CompressedSubImageTest::s_texture_depth  = 4;
+const glw::GLuint CompressedSubImageTest::s_texture_width   = 4;
+const glw::GLuint CompressedSubImageTest::s_texture_height  = 4;
+const glw::GLuint CompressedSubImageTest::s_texture_depth   = 4;
+const glw::GLuint CompressedSubImageTest::s_block_count		= 8;
+const glw::GLuint CompressedSubImageTest::s_block_2d_size_x = 4;
+const glw::GLuint CompressedSubImageTest::s_block_2d_size_y = 2;
+const glw::GLuint CompressedSubImageTest::s_block_3d_size   = 2;
 
 /******************************** Copy SubImage Test Implementation   ********************************/
 
@@ -7367,7 +7527,8 @@ const glw::GLubyte GetImageTest::s_texture_data[] = { 0x0,  0x0,  0x0,  0xff, 0x
 													  0xff, 0x0,  0xa2, 0xe8, 0xff, 0x22, 0xb1, 0x4c, 0xff };
 
 /** Reference data (compressed). */
-const glw::GLubyte GetImageTest::s_texture_data_compressed[] = { 0xa6, 0x39, 0x9, 0xf1, 0x88, 0x8b, 0x75, 0x85 };
+const glw::GLubyte GetImageTest::s_texture_data_compressed[] = { 0x90, 0x2b, 0x8f, 0x0f, 0xfe, 0x0f, 0x98, 0x99,
+																 0x99, 0x99, 0x59, 0x8f, 0x8c, 0xa6, 0xb7, 0x71 };
 
 /** Reference data parameters. */
 const glw::GLuint GetImageTest::s_texture_width			  = 4;
@@ -7471,8 +7632,8 @@ tcu::TestNode::IterateResult GetImageTest::iterate()
 			gl.bindTexture(GL_TEXTURE_2D, texture);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
 
-			gl.compressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB8_ETC2, s_texture_width, s_texture_height, 0,
-									s_texture_size_compressed, s_texture_data_compressed);
+			gl.compressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_BPTC_UNORM, s_texture_width, s_texture_height,
+									0, s_texture_size_compressed, s_texture_data_compressed);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D has failed");
 
 			/* Quering image with tested function. */
