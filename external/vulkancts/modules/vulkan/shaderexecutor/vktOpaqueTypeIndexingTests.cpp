@@ -571,6 +571,8 @@ TestImage::TestImage (Context& context, TextureType texType, tcu::TextureFormat 
 	for (size_t ndx = 0; ndx < numReplicas; ++ndx)
 		deMemcpy((deUint8*)alloc->getHostPtr() + ndx*pixelSize, colorValue, pixelSize);
 
+	flushMappedMemoryRange(vkd, device, alloc->getMemory(), alloc->getOffset(), VK_WHOLE_SIZE);
+
 	{
 		const VkCommandPoolCreateInfo		cmdPoolInfo		=
 		{
