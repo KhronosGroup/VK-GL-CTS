@@ -17,6 +17,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageTexture.hpp
 	vktImageMultisampleLoadStoreTests.cpp
 	vktImageMultisampleLoadStoreTests.hpp
+	vktImageCompressionTranscodingSupport.cpp
+	vktImageCompressionTranscodingSupport.hpp
 	vktImageLoadStoreUtil.cpp
 	vktImageLoadStoreUtil.hpp
 	)
