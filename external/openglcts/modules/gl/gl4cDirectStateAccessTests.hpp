@@ -1183,7 +1183,7 @@ private:
 														const glw::GLvoid* data, glw::GLbitfield flags);
 	typedef void(GLW_APIENTRY* PFNGLCOPYNAMEDBUFFERSUBDATA)(glw::GLuint readBuffer, glw::GLuint writeBuffer,
 															glw::GLintptr readOffset, glw::GLintptr writeOffset,
-															glw::GLsizei size);
+															glw::GLsizeiptr size);
 
 	PFNGLNAMEDBUFFERDATA		m_pNamedBufferData;
 	PFNGLNAMEDBUFFERSUBDATA		m_pNamedBufferSubData;
@@ -1953,7 +1953,7 @@ private:
 															 const glw::GLvoid* data);
 	typedef void(GLW_APIENTRY* PFNGLCOPYNAMEDBUFFERSUBDATA)(glw::GLuint readBuffer, glw::GLuint writeBuffer,
 															glw::GLintptr readOffset, glw::GLintptr writeOffset,
-															glw::GLsizei size);
+															glw::GLsizeiptr size);
 	typedef void(GLW_APIENTRY* PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset,
 																 glw::GLsizei length);
 	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERPARAMETERI64V)(glw::GLuint buffer, glw::GLenum pname,
@@ -2103,7 +2103,7 @@ private:
 															 const glw::GLvoid* data);
 	typedef void(GLW_APIENTRY* PFNGLCOPYNAMEDBUFFERSUBDATA)(glw::GLuint readBuffer, glw::GLuint writeBuffer,
 															glw::GLintptr readOffset, glw::GLintptr writeOffset,
-															glw::GLsizei size);
+															glw::GLsizeiptr size);
 	typedef void(GLW_APIENTRY* PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset,
 																 glw::GLsizei length);
 	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERPARAMETERI64V)(glw::GLuint buffer, glw::GLenum pname,

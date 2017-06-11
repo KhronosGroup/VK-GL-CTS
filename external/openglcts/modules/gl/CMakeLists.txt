@@ -60,6 +60,8 @@ set(GLCTS_GL_SRCS
 	gl4cShaderAtomicCountersTests.hpp
 	gl4cShaderGroupVoteTests.cpp
 	gl4cShaderGroupVoteTests.hpp
+	gl4cShaderDrawParametersTests.cpp
+	gl4cShaderDrawParametersTests.hpp
 	gl4cTextureGatherTests.hpp
 	gl4cTextureGatherTests.cpp
 	gl4cProgramInterfaceQueryTests.hpp
@@ -82,6 +84,8 @@ set(GLCTS_GL_SRCS
 	gl4cShaderSubroutineTests.hpp
 	gl4cShaderImageLoadStoreTests.cpp
 	gl4cShaderImageLoadStoreTests.hpp
+	gl4cShaderViewportLayerArrayTests.cpp
+	gl4cShaderViewportLayerArrayTests.hpp
 	gl4cShadingLanguage420PackTests.cpp
 	gl4cShadingLanguage420PackTests.hpp
 	gl4cStencilTexturingTests.cpp

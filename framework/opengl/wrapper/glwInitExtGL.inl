@@ -711,6 +711,12 @@ if (de::contains(extSet, "GL_ARB_instanced_arrays"))
 	gl->vertexAttribDivisor	= (glVertexAttribDivisorFunc)	loader->get("glVertexAttribDivisorARB");
 }
 
+if (de::contains(extSet, "GL_ARB_multi_draw_indirect"))
+{
+	gl->multiDrawArraysIndirect		= (glMultiDrawArraysIndirectFunc)	loader->get("glMultiDrawArraysIndirect");
+	gl->multiDrawElementsIndirect	= (glMultiDrawElementsIndirectFunc)	loader->get("glMultiDrawElementsIndirect");
+}
+
 if (de::contains(extSet, "GL_ARB_parallel_shader_compile"))
 {
 	gl->maxShaderCompilerThreadsARB	= (glMaxShaderCompilerThreadsARBFunc)	loader->get("glMaxShaderCompilerThreadsARB");

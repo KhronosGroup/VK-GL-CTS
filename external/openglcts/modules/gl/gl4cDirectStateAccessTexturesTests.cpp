@@ -13292,26 +13292,26 @@ tcu::TestNode::IterateResult ParameterErrorsTest::iterate()
 		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameteriv",
 								  "texture is not the name of an existing texture object.");
 
-		/* Check that INVALID_ENUM error is generated if the effective target is
+		/* Check that INVALID_OPERATION error is generated if the effective target is
 		 not one of the supported texture targets (eg. TEXTURE_BUFFER). */
 		gl.getTextureParameterfv(texture_buffer, GL_TEXTURE_TARGET, storef);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameterfv",
+			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameterfv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 
 		gl.getTextureParameterIiv(texture_buffer, GL_TEXTURE_TARGET, storei);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameterIiv",
+			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameterIiv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 
 		gl.getTextureParameterIuiv(texture_buffer, GL_TEXTURE_TARGET, storeu);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameterIuiv",
+			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameterIuiv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 
 		gl.getTextureParameteriv(texture_buffer, GL_TEXTURE_TARGET, storei);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameteriv",
+			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameteriv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 	}
 	catch (...)

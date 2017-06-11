@@ -47,12 +47,14 @@
 #include "gl4cShaderAtomicCounterOpsTests.hpp"
 #include "gl4cShaderAtomicCountersTests.hpp"
 #include "gl4cShaderBallotTests.hpp"
+#include "gl4cShaderDrawParametersTests.hpp"
 #include "gl4cShaderGroupVoteTests.hpp"
 #include "gl4cShaderImageLoadStoreTests.hpp"
 #include "gl4cShaderImageSizeTests.hpp"
 #include "gl4cShaderStorageBufferObjectTests.hpp"
 #include "gl4cShaderSubroutineTests.hpp"
 #include "gl4cShaderTextureImageSamplesTests.hpp"
+#include "gl4cShaderViewportLayerArrayTests.hpp"
 #include "gl4cShadingLanguage420PackTests.hpp"
 #include "gl4cSparseBufferTests.hpp"
 #include "gl4cSparseTexture2Tests.hpp"
@@ -356,6 +358,8 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::TextureFilterMinmax(getContext()));
 		addChild(new gl4cts::ShaderAtomicCounterOps(getContext()));
 		addChild(new gl4cts::ShaderGroupVote(getContext()));
+		addChild(new gl4cts::ShaderDrawParametersTests(getContext()));
+		addChild(new gl4cts::ShaderViewportLayerArray(getContext()));
 	}
 	catch (...)
 	{
