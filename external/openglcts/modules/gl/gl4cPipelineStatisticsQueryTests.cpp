@@ -1653,6 +1653,8 @@ PipelineStatisticsQueryTestFunctionalBase::PipelineStatisticsQueryTestFunctional
 	, m_vbo_id(0)
 	, m_to_height(64)
 	, m_to_width(64)
+	, m_current_draw_call_type(PipelineStatisticsQueryUtilities::DRAW_CALL_TYPE_COUNT)
+	, m_current_primitive_type(PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_COUNT)
 	, m_indirect_draw_call_baseinstance_argument(0)
 	, m_indirect_draw_call_basevertex_argument(0)
 	, m_indirect_draw_call_count_argument(0)
@@ -4289,9 +4291,8 @@ bool PipelineStatisticsQueryTestFunctional8::executeTest(glw::GLenum current_que
 
 			/* Compare it against query result values */
 			result &= PipelineStatisticsQueryUtilities::verifyResultValues(
-				run_result, 1, &expected_value, m_qo_id != 0, /* should_check_qo_bo_values */
-				current_query_target, &m_current_draw_call_type, &m_current_primitive_type,
-				false, /* is_primitive_restart_enabled */
+				run_result, 1, &expected_value, m_qo_id != 0,  /* should_check_qo_bo_values */
+				current_query_target, DE_NULL, DE_NULL, false, /* is_primitive_restart_enabled */
 				m_testCtx, PipelineStatisticsQueryUtilities::VERIFICATION_TYPE_EQUAL_OR_GREATER);
 		} /* if (run results were obtained successfully) */
 	}	 /* for (both iterations) */
