@@ -702,6 +702,16 @@ void DeviceDriver::getImageSparseMemoryRequirements2KHR (VkDevice device, const 
 	m_vk.getImageSparseMemoryRequirements2KHR(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
 }
 
+VkResult DeviceDriver::createSamplerYcbcrConversionKHR (VkDevice device, const VkSamplerYcbcrConversionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSamplerYcbcrConversionKHR* pYcbcrConversion) const
+{
+	return m_vk.createSamplerYcbcrConversionKHR(device, pCreateInfo, pAllocator, pYcbcrConversion);
+}
+
+void DeviceDriver::destroySamplerYcbcrConversionKHR (VkDevice device, VkSamplerYcbcrConversionKHR YcbcrConversion, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroySamplerYcbcrConversionKHR(device, YcbcrConversion, pAllocator);
+}
+
 VkResult DeviceDriver::getMemoryWin32HandleKHR (VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const
 {
 	return m_vk.getMemoryWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);

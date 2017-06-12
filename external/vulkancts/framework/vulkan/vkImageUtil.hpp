@@ -63,6 +63,69 @@ VkSamplerCreateInfo			mapSampler					(const tcu::Sampler& sampler, const tcu::Te
 
 void						imageUtilSelfTest			(void);
 
+// \todo [2017-05-18 pyry] Consider moving this to tcu
+struct PlanarFormatDescription
+{
+	enum
+	{
+		MAX_CHANNELS	= 4,
+		MAX_PLANES		= 3
+	};
+
+	enum ChannelFlags
+	{
+		CHANNEL_R	= (1u<<0),	// Has "R" (0) channel
+		CHANNEL_G	= (1u<<1),	// Has "G" (1) channel
+		CHANNEL_B	= (1u<<2),	// Has "B" (2) channel
+		CHANNEL_A	= (1u<<3),	// Has "A" (3) channel
+	};
+
+	struct Plane
+	{
+		deUint8		elementSizeBytes;
+		deUint8		widthDivisor;
+		deUint8		heightDivisor;
+	};
+
+	struct Channel
+	{
+		deUint8		planeNdx;
+		deUint8		type;				// tcu::TextureChannelClass value
+		deUint8		offsetBits;			// Offset in element in bits
+		deUint8		sizeBits;			// Value size in bits
+		deUint8		strideBytes;		// Pixel stride (in bytes), usually plane elementSize
+	};
+
+	deUint8		numPlanes;
+	deUint8		presentChannels;
+	Plane		planes[MAX_PLANES];
+	Channel		channels[MAX_CHANNELS];
+
+	inline bool hasChannelNdx (deUint32 ndx) const
+	{
+		DE_ASSERT(de::inBounds(ndx, 0u, 4u));
+		return (presentChannels & (1u<<ndx)) != 0;
+	}
+};
+
+bool							isYCbCrFormat					(VkFormat format);
+PlanarFormatDescription			getPlanarFormatDescription		(VkFormat format);
+const PlanarFormatDescription&	getYCbCrPlanarFormatDescription	(VkFormat format);
+int								getPlaneCount					(VkFormat format);
+VkImageAspectFlagBits			getPlaneAspect					(deUint32 planeNdx);
+deUint32						getAspectPlaneNdx				(VkImageAspectFlagBits planeAspect);
+
+tcu::PixelBufferAccess			getChannelAccess				(const PlanarFormatDescription&	formatInfo,
+																 const tcu::UVec2&				size,
+																 const deUint32*				planeRowPitches,
+																 void* const*					planePtrs,
+																 deUint32						channelNdx);
+tcu::ConstPixelBufferAccess		getChannelAccess				(const PlanarFormatDescription&	formatInfo,
+																 const tcu::UVec2&				size,
+																 const deUint32*				planeRowPitches,
+																 const void* const*				planePtrs,
+																 deUint32						channelNdx);
+
 } // vk
 
 #endif // _VKIMAGEUTIL_HPP

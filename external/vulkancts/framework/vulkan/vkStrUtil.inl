@@ -42,6 +42,9 @@ const char*	getPresentModeKHRName					(VkPresentModeKHR value);
 const char*	getDescriptorUpdateTemplateTypeKHRName	(VkDescriptorUpdateTemplateTypeKHR value);
 const char*	getPointClippingBehaviorKHRName			(VkPointClippingBehaviorKHR value);
 const char*	getTessellationDomainOriginKHRName		(VkTessellationDomainOriginKHR value);
+const char*	getSamplerYcbcrModelConversionKHRName	(VkSamplerYcbcrModelConversionKHR value);
+const char*	getSamplerYcbcrRangeKHRName				(VkSamplerYcbcrRangeKHR value);
+const char*	getChromaLocationKHRName				(VkChromaLocationKHR value);
 const char*	getDebugReportObjectTypeEXTName			(VkDebugReportObjectTypeEXT value);
 const char*	getDebugReportErrorEXTName				(VkDebugReportErrorEXT value);
 
@@ -86,6 +89,9 @@ inline tcu::Format::Enum<VkPresentModeKHR>					getPresentModeKHRStr					(VkPrese
 inline tcu::Format::Enum<VkDescriptorUpdateTemplateTypeKHR>	getDescriptorUpdateTemplateTypeKHRStr	(VkDescriptorUpdateTemplateTypeKHR value)	{ return tcu::Format::Enum<VkDescriptorUpdateTemplateTypeKHR>(getDescriptorUpdateTemplateTypeKHRName, value);	}
 inline tcu::Format::Enum<VkPointClippingBehaviorKHR>		getPointClippingBehaviorKHRStr			(VkPointClippingBehaviorKHR value)			{ return tcu::Format::Enum<VkPointClippingBehaviorKHR>(getPointClippingBehaviorKHRName, value);					}
 inline tcu::Format::Enum<VkTessellationDomainOriginKHR>		getTessellationDomainOriginKHRStr		(VkTessellationDomainOriginKHR value)		{ return tcu::Format::Enum<VkTessellationDomainOriginKHR>(getTessellationDomainOriginKHRName, value);			}
+inline tcu::Format::Enum<VkSamplerYcbcrModelConversionKHR>	getSamplerYcbcrModelConversionKHRStr	(VkSamplerYcbcrModelConversionKHR value)	{ return tcu::Format::Enum<VkSamplerYcbcrModelConversionKHR>(getSamplerYcbcrModelConversionKHRName, value);		}
+inline tcu::Format::Enum<VkSamplerYcbcrRangeKHR>			getSamplerYcbcrRangeKHRStr				(VkSamplerYcbcrRangeKHR value)				{ return tcu::Format::Enum<VkSamplerYcbcrRangeKHR>(getSamplerYcbcrRangeKHRName, value);							}
+inline tcu::Format::Enum<VkChromaLocationKHR>				getChromaLocationKHRStr					(VkChromaLocationKHR value)					{ return tcu::Format::Enum<VkChromaLocationKHR>(getChromaLocationKHRName, value);								}
 inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>		getDebugReportObjectTypeEXTStr			(VkDebugReportObjectTypeEXT value)			{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);					}
 inline tcu::Format::Enum<VkDebugReportErrorEXT>				getDebugReportErrorEXTStr				(VkDebugReportErrorEXT value)				{ return tcu::Format::Enum<VkDebugReportErrorEXT>(getDebugReportErrorEXTName, value);							}
 
@@ -130,6 +136,9 @@ inline std::ostream&	operator<<	(std::ostream& s, VkPresentModeKHR value)					{ 
 inline std::ostream&	operator<<	(std::ostream& s, VkDescriptorUpdateTemplateTypeKHR value)	{ return s << getDescriptorUpdateTemplateTypeKHRStr(value);	}
 inline std::ostream&	operator<<	(std::ostream& s, VkPointClippingBehaviorKHR value)			{ return s << getPointClippingBehaviorKHRStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, VkTessellationDomainOriginKHR value)		{ return s << getTessellationDomainOriginKHRStr(value);		}
+inline std::ostream&	operator<<	(std::ostream& s, VkSamplerYcbcrModelConversionKHR value)	{ return s << getSamplerYcbcrModelConversionKHRStr(value);	}
+inline std::ostream&	operator<<	(std::ostream& s, VkSamplerYcbcrRangeKHR value)				{ return s << getSamplerYcbcrRangeKHRStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkChromaLocationKHR value)				{ return s << getChromaLocationKHRStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)			{ return s << getDebugReportObjectTypeEXTStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportErrorEXT value)				{ return s << getDebugReportErrorEXTStr(value);				}
 
@@ -381,6 +390,12 @@ std::ostream&	operator<<	(std::ostream& s, const VkImageSparseMemoryRequirements
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryRequirements2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSparseImageMemoryRequirements2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageFormatListCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSamplerYcbcrConversionCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSamplerYcbcrConversionInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBindImagePlaneMemoryInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImagePlaneMemoryRequirementsInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSamplerYcbcrConversionImageFormatPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassMultiviewCreateInfoKHX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewFeaturesKHX& value);

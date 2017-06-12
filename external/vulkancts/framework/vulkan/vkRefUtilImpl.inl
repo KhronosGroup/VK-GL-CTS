@@ -130,6 +130,12 @@ void Deleter<VkDescriptorUpdateTemplateKHR>::operator() (VkDescriptorUpdateTempl
 	m_deviceIface->destroyDescriptorUpdateTemplateKHR(m_device, obj, m_allocator);
 }
 
+template<>
+void Deleter<VkSamplerYcbcrConversionKHR>::operator() (VkSamplerYcbcrConversionKHR obj) const
+{
+	m_deviceIface->destroySamplerYcbcrConversionKHR(m_device, obj, m_allocator);
+}
+
 } // refdetails
 
 Move<VkInstance> createInstance (const PlatformInterface& vk, const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
@@ -340,6 +346,13 @@ Move<VkDescriptorUpdateTemplateKHR> createDescriptorUpdateTemplateKHR (const Dev
 	VkDescriptorUpdateTemplateKHR object = 0;
 	VK_CHECK(vk.createDescriptorUpdateTemplateKHR(device, pCreateInfo, pAllocator, &object));
 	return Move<VkDescriptorUpdateTemplateKHR>(check<VkDescriptorUpdateTemplateKHR>(object), Deleter<VkDescriptorUpdateTemplateKHR>(vk, device, pAllocator));
+}
+
+Move<VkSamplerYcbcrConversionKHR> createSamplerYcbcrConversionKHR (const DeviceInterface& vk, VkDevice device, const VkSamplerYcbcrConversionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkSamplerYcbcrConversionKHR object = 0;
+	VK_CHECK(vk.createSamplerYcbcrConversionKHR(device, pCreateInfo, pAllocator, &object));
+	return Move<VkSamplerYcbcrConversionKHR>(check<VkSamplerYcbcrConversionKHR>(object), Deleter<VkSamplerYcbcrConversionKHR>(vk, device, pAllocator));
 }
 
 Move<VkDebugReportCallbackEXT> createDebugReportCallbackEXT (const InstanceInterface& vk, VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)

@@ -141,6 +141,8 @@ virtual VkResult	getFenceFdKHR							(VkDevice device, const VkFenceGetFdInfoKHR
 virtual void		getImageMemoryRequirements2KHR			(VkDevice device, const VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements) const = 0;
 virtual void		getBufferMemoryRequirements2KHR			(VkDevice device, const VkBufferMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements) const = 0;
 virtual void		getImageSparseMemoryRequirements2KHR	(VkDevice device, const VkImageSparseMemoryRequirementsInfo2KHR* pInfo, deUint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2KHR* pSparseMemoryRequirements) const = 0;
+virtual VkResult	createSamplerYcbcrConversionKHR			(VkDevice device, const VkSamplerYcbcrConversionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSamplerYcbcrConversionKHR* pYcbcrConversion) const = 0;
+virtual void		destroySamplerYcbcrConversionKHR		(VkDevice device, VkSamplerYcbcrConversionKHR YcbcrConversion, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult	getMemoryWin32HandleKHR					(VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const = 0;
 virtual VkResult	getMemoryWin32HandlePropertiesKHR		(VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHR handleType, pt::Win32Handle handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties) const = 0;
 virtual VkResult	getMemoryFdKHR							(VkDevice device, const VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd) const = 0;
