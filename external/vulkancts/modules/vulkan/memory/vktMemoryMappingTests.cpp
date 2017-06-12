@@ -43,6 +43,7 @@
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "deSTLUtil.hpp"
+#include "deMath.h"
 
 #include <string>
 #include <vector>
@@ -82,6 +83,14 @@ T roundUpToMultiple (const T& a, const T& b)
 {
 	return b * (a / b + (a % b != 0 ? 1 : 0));
 }
+
+enum AllocationKind
+{
+	ALLOCATION_KIND_SUBALLOCATED										= 0,
+	ALLOCATION_KIND_DEDICATED_BUFFER									= 1,
+	ALLOCATION_KIND_DEDICATED_IMAGE										= 2,
+	ALLOCATION_KIND_LAST
+};
 
 // \note Bit vector that guarantees that each value takes only one bit.
 // std::vector<bool> is often optimized to only take one bit for each bool, but
@@ -293,12 +302,136 @@ size_t computeDeviceMemorySystemMemFootprint (const DeviceInterface& vk, VkDevic
 	}
 }
 
+Move<VkImage> makeImage (const DeviceInterface& vk, VkDevice device, VkDeviceSize size, deUint32 queueFamilyIndex)
+{
+	const VkDeviceSize					sizeInPixels					= (size + 3u) / 4u;
+	const deUint32						sqrtSize						= static_cast<deUint32>(deFloatCeil(deFloatSqrt(static_cast<float>(sizeInPixels))));
+	const deUint32						powerOfTwoSize					= deMaxu32(deSmallestGreaterOrEquallPowerOfTwoU32(sqrtSize), 4096u);
+	const VkImageCreateInfo				colorImageParams				=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,							// VkStructureType			sType;
+		DE_NULL,														// const void*				pNext;
+		0u,																// VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,												// VkImageType				imageType;
+		VK_FORMAT_R8G8B8A8_UINT,										// VkFormat					format;
+		{
+			powerOfTwoSize,
+			powerOfTwoSize,
+			1u
+		},																// VkExtent3D				extent;
+		1u,																// deUint32					mipLevels;
+		1u,																// deUint32					arraySize;
+		VK_SAMPLE_COUNT_1_BIT,											// deUint32					samples;
+		VK_IMAGE_TILING_LINEAR,											// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,										// VkSharingMode			sharingMode;
+		1u,																// deUint32					queueFamilyCount;
+		&queueFamilyIndex,												// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,										// VkImageLayout			initialLayout;
+	};
+
+	return createImage(vk, device, &colorImageParams);
+}
+
+Move<VkBuffer> makeBuffer(const DeviceInterface& vk, VkDevice device, VkDeviceSize size, deUint32 queueFamilyIndex)
+{
+	const VkBufferCreateInfo			bufferParams					=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,							//	VkStructureType			sType;
+		DE_NULL,														//	const void*				pNext;
+		0u,																//	VkBufferCreateFlags		flags;
+		size,															//	VkDeviceSize			size;
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, //	VkBufferUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,										//	VkSharingMode			sharingMode;
+		1u,																//	deUint32				queueFamilyCount;
+		&queueFamilyIndex,												//	const deUint32*			pQueueFamilyIndices;
+	};
+	return vk::createBuffer(vk, device, &bufferParams, (const VkAllocationCallbacks*)DE_NULL);
+}
+
+VkMemoryRequirements getImageMemoryRequirements(const DeviceInterface& vk, VkDevice device, Move<VkImage>& image)
+{
+	VkImageMemoryRequirementsInfo2KHR	info							=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,			// VkStructureType			sType
+		DE_NULL,														// const void*				pNext
+		*image															// VkImage					image
+	};
+	VkMemoryDedicatedRequirementsKHR	dedicatedRequirements			=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,			// VkStructureType			sType
+		DE_NULL,														// const void*				pNext
+		VK_FALSE,														// VkBool32					prefersDedicatedAllocation
+		VK_FALSE														// VkBool32					requiresDedicatedAllocation
+	};
+	VkMemoryRequirements2KHR			req2							=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,					// VkStructureType			sType
+		&dedicatedRequirements,											// void*					pNext
+		{0, 0, 0}														// VkMemoryRequirements		memoryRequirements
+	};
+
+	vk.getImageMemoryRequirements2KHR(device, &info, &req2);
+
+	return req2.memoryRequirements;
+}
+
+VkMemoryRequirements getBufferMemoryRequirements(const DeviceInterface& vk, VkDevice device, Move<VkBuffer>& buffer)
+{
+	VkBufferMemoryRequirementsInfo2KHR	info							=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR,		// VkStructureType			sType
+		DE_NULL,														// const void*				pNext
+		*buffer															// VkImage					image
+	};
+	VkMemoryDedicatedRequirementsKHR	dedicatedRequirements			=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,			// VkStructureType			sType
+		DE_NULL,														// const void*				pNext
+		VK_FALSE,														// VkBool32					prefersDedicatedAllocation
+		VK_FALSE														// VkBool32					requiresDedicatedAllocation
+	};
+	VkMemoryRequirements2KHR			req2							=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,				// VkStructureType		sType
+		&dedicatedRequirements,										// void*				pNext
+		{0, 0, 0}													// VkMemoryRequirements	memoryRequirements
+	};
+
+	vk.getBufferMemoryRequirements2KHR(device, &info, &req2);
+
+	return req2.memoryRequirements;
+}
+
 Move<VkDeviceMemory> allocMemory (const DeviceInterface& vk, VkDevice device, VkDeviceSize pAllocInfo_allocationSize, deUint32 pAllocInfo_memoryTypeIndex)
 {
-	const VkMemoryAllocateInfo pAllocInfo =
+	const VkMemoryAllocateInfo			pAllocInfo						=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		DE_NULL,
+		pAllocInfo_allocationSize,
+		pAllocInfo_memoryTypeIndex,
+	};
+	return allocateMemory(vk, device, &pAllocInfo);
+}
+
+Move<VkDeviceMemory> allocMemory (const DeviceInterface& vk, VkDevice device, VkDeviceSize pAllocInfo_allocationSize, deUint32 pAllocInfo_memoryTypeIndex, Move<VkImage>& image, Move<VkBuffer>& buffer)
+{
+	DE_ASSERT((!image) || (!buffer));
+
+	const VkMemoryDedicatedAllocateInfoKHR
+										dedicatedAllocateInfo			=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,			// VkStructureType		sType
+		DE_NULL,														// const void*			pNext
+		*image,															// VkImage				image
+		*buffer															// VkBuffer				buffer
+	};
+
+	const VkMemoryAllocateInfo			pAllocInfo						=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		!image && !buffer ? DE_NULL : &dedicatedAllocateInfo,
 		pAllocInfo_allocationSize,
 		pAllocInfo_memoryTypeIndex,
 	};
@@ -321,6 +454,7 @@ struct TestConfig
 {
 	TestConfig (void)
 		: allocationSize	(~(VkDeviceSize)0)
+		, allocationKind	(ALLOCATION_KIND_SUBALLOCATED)
 	{
 	}
 
@@ -331,6 +465,7 @@ struct TestConfig
 	vector<MemoryRange>	flushMappings;
 	vector<MemoryRange>	invalidateMappings;
 	bool				remap;
+	AllocationKind		allocationKind;
 };
 
 bool compareAndLogBuffer (TestLog& log, size_t size, const deUint8* result, const deUint8* reference)
@@ -385,17 +520,30 @@ bool compareAndLogBuffer (TestLog& log, size_t size, const deUint8* result, cons
 
 tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 {
-	TestLog&								log					= context.getTestContext().getLog();
-	tcu::ResultCollector					result				(log);
-	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
-	const VkDevice							device				= context.getDevice();
-	const InstanceInterface&				vki					= context.getInstanceInterface();
-	const DeviceInterface&					vkd					= context.getDeviceInterface();
-	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+	TestLog&								log							= context.getTestContext().getLog();
+	tcu::ResultCollector					result						(log);
+	bool									atLeastOneTestPerformed		= false;
+	const VkPhysicalDevice					physicalDevice				= context.getPhysicalDevice();
+	const VkDevice							device						= context.getDevice();
+	const InstanceInterface&				vki							= context.getInstanceInterface();
+	const DeviceInterface&					vkd							= context.getDeviceInterface();
+	const VkPhysicalDeviceMemoryProperties	memoryProperties			= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 	// \todo [2016-05-27 misojarvi] Remove once drivers start reporting correctly nonCoherentAtomSize that is at least 1.
-	const VkDeviceSize						nonCoherentAtomSize	= context.getDeviceProperties().limits.nonCoherentAtomSize != 0
-																? context.getDeviceProperties().limits.nonCoherentAtomSize
-																: 1;
+	const VkDeviceSize						nonCoherentAtomSize			= context.getDeviceProperties().limits.nonCoherentAtomSize != 0
+																		? context.getDeviceProperties().limits.nonCoherentAtomSize
+																		: 1;
+	const deUint32							queueFamilyIndex			= context.getUniversalQueueFamilyIndex();
+
+	if (config.allocationKind == ALLOCATION_KIND_DEDICATED_IMAGE
+	||	config.allocationKind == ALLOCATION_KIND_DEDICATED_BUFFER)
+	{
+		const std::vector<std::string>&		extensions					= context.getDeviceExtensions();
+		const deBool						isSupported					= std::find(extensions.begin(), extensions.end(), "VK_KHR_dedicated_allocation") != extensions.end();
+		if (!isSupported)
+		{
+			TCU_THROW(NotSupportedError, "Not supported");
+		}
+	}
 
 	{
 		const tcu::ScopedLogSection	section	(log, "TestCaseInfo", "TestCaseInfo");
@@ -429,17 +577,57 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 		try
 		{
 			const tcu::ScopedLogSection		section		(log, "MemoryType" + de::toString(memoryTypeIndex), "MemoryType" + de::toString(memoryTypeIndex));
-			const VkMemoryType&				memoryType	= memoryProperties.memoryTypes[memoryTypeIndex];
+			const vk::VkMemoryType&			memoryType	= memoryProperties.memoryTypes[memoryTypeIndex];
 			const VkMemoryHeap&				memoryHeap	= memoryProperties.memoryHeaps[memoryType.heapIndex];
 			const VkDeviceSize				atomSize	= (memoryType.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0
 														? 1
 														: nonCoherentAtomSize;
 
+			VkDeviceSize					allocationSize				= config.allocationSize * atomSize;
+			vk::VkMemoryRequirements		req							=
+			{
+				(VkDeviceSize)allocationSize,
+				(VkDeviceSize)0,
+				~(deUint32)0u
+			};
+			Move<VkImage>					image;
+			Move<VkBuffer>					buffer;
+
+			if (config.allocationKind == ALLOCATION_KIND_DEDICATED_IMAGE)
+			{
+				image = makeImage(vkd, device, allocationSize, queueFamilyIndex);
+				req = getImageMemoryRequirements(vkd, device, image);
+			}
+			else if (config.allocationKind == ALLOCATION_KIND_DEDICATED_BUFFER)
+			{
+				buffer = makeBuffer(vkd, device, allocationSize, queueFamilyIndex);
+				req = getBufferMemoryRequirements(vkd, device, buffer);
+			}
+			allocationSize = req.size;
+			VkDeviceSize					mappingSize					= config.mapping.size * atomSize;
+			VkDeviceSize					mappingOffset				= config.mapping.offset * atomSize;
+			if (config.mapping.size == config.allocationSize && config.mapping.offset == 0u)
+			{
+				mappingSize = allocationSize;
+			}
+
 			log << TestLog::Message << "MemoryType: " << memoryType << TestLog::EndMessage;
 			log << TestLog::Message << "MemoryHeap: " << memoryHeap << TestLog::EndMessage;
 			log << TestLog::Message << "AtomSize: " << atomSize << TestLog::EndMessage;
-			log << TestLog::Message << "AllocationSize: " << config.allocationSize * atomSize <<  TestLog::EndMessage;
-			log << TestLog::Message << "Mapping, offset: " << config.mapping.offset * atomSize << ", size: " << config.mapping.size * atomSize << TestLog::EndMessage;
+			log << TestLog::Message << "AllocationSize: " << allocationSize << TestLog::EndMessage;
+			log << TestLog::Message << "Mapping, offset: " << mappingOffset << ", size: " << mappingSize << TestLog::EndMessage;
+
+			if ((req.memoryTypeBits & (1u << memoryTypeIndex)) == 0)
+			{
+				static const char* const allocationKindName[] =
+				{
+					"suballocation",
+					"dedicated allocation of buffers",
+					"dedicated allocation of images"
+				};
+				log << TestLog::Message << "Memory type does not support " << allocationKindName[static_cast<deUint32>(config.allocationKind)] << '.' << TestLog::EndMessage;
+				continue;
+			}
 
 			if (!config.flushMappings.empty())
 			{
@@ -461,31 +649,32 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 			{
 				log << TestLog::Message << "Memory type doesn't support mapping." << TestLog::EndMessage;
 			}
-			else if (memoryHeap.size <= 4 * atomSize * config.allocationSize)
+			else if (memoryHeap.size <= 4 * allocationSize)
 			{
-				log << TestLog::Message << "Memory types heap is too small." << TestLog::EndMessage;
+				log << TestLog::Message << "Memory type's heap is too small." << TestLog::EndMessage;
 			}
 			else
 			{
-				const Unique<VkDeviceMemory>	memory				(allocMemory(vkd, device, config.allocationSize * atomSize, memoryTypeIndex));
+				atLeastOneTestPerformed = true;
+				const Unique<VkDeviceMemory>	memory				(allocMemory(vkd, device, allocationSize, memoryTypeIndex, image, buffer));
 				de::Random						rng					(config.seed);
-				vector<deUint8>					reference			((size_t)(config.allocationSize * atomSize));
+				vector<deUint8>					reference			((size_t)(allocationSize));
 				deUint8*						mapping				= DE_NULL;
 
 				{
 					void* ptr;
-					VK_CHECK(vkd.mapMemory(device, *memory, config.mapping.offset * atomSize, config.mapping.size * atomSize, 0u, &ptr));
+					VK_CHECK(vkd.mapMemory(device, *memory, mappingOffset, mappingSize, 0u, &ptr));
 					TCU_CHECK(ptr);
 
 					mapping = (deUint8*)ptr;
 				}
 
-				for (VkDeviceSize ndx = 0; ndx < config.mapping.size * atomSize; ndx++)
+				for (VkDeviceSize ndx = 0; ndx < mappingSize; ndx++)
 				{
 					const deUint8 val = rng.getUint8();
 
 					mapping[ndx]												= val;
-					reference[(size_t)(config.mapping.offset * atomSize + ndx)]	= val;
+					reference[(size_t)(mappingOffset + ndx)]	= val;
 				}
 
 				if (!config.flushMappings.empty())
@@ -514,7 +703,7 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 				{
 					void* ptr;
 					vkd.unmapMemory(device, *memory);
-					VK_CHECK(vkd.mapMemory(device, *memory, config.mapping.offset * atomSize, config.mapping.size * atomSize, 0u, &ptr));
+					VK_CHECK(vkd.mapMemory(device, *memory, mappingOffset, mappingSize, 0u, &ptr));
 					TCU_CHECK(ptr);
 
 					mapping = (deUint8*)ptr;
@@ -539,10 +728,10 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 						ranges.push_back(range);
 					}
 
-					VK_CHECK(vkd.invalidateMappedMemoryRanges(device, (deUint32)ranges.size(), &ranges[0]));
+					VK_CHECK(vkd.invalidateMappedMemoryRanges(device, static_cast<deUint32>(ranges.size()), &ranges[0]));
 				}
 
-				if (!compareAndLogBuffer(log, (size_t)(config.mapping.size * atomSize), mapping, &reference[(size_t)(config.mapping.offset * atomSize)]))
+				if (!compareAndLogBuffer(log, static_cast<size_t>(mappingSize), mapping, &reference[static_cast<size_t>(mappingOffset)]))
 					result.fail("Unexpected values read from mapped memory.");
 
 				vkd.unmapMemory(device, *memory);
@@ -553,6 +742,9 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 			result.fail(error.getMessage());
 		}
 	}
+
+	if (!atLeastOneTestPerformed)
+		result.addResult(QP_TEST_RESULT_NOT_SUPPORTED, "No suitable memory kind found to perform test.");
 
 	return tcu::TestStatus(result.getResult(), result.getMessage());
 }
@@ -1349,7 +1541,8 @@ enum Op
 TestConfig subMappedConfig (VkDeviceSize				allocationSize,
 							const MemoryRange&			mapping,
 							Op							op,
-							deUint32					seed)
+							deUint32					seed,
+							AllocationKind				allocationKind)
 {
 	TestConfig config;
 
@@ -1357,6 +1550,7 @@ TestConfig subMappedConfig (VkDeviceSize				allocationSize,
 	config.seed				= seed;
 	config.mapping			= mapping;
 	config.remap			= false;
+	config.allocationKind	= allocationKind;
 
 	switch (op)
 	{
@@ -1435,16 +1629,24 @@ TestConfig subMappedConfig (VkDeviceSize				allocationSize,
 
 TestConfig fullMappedConfig (VkDeviceSize	allocationSize,
 							 Op				op,
-							 deUint32		seed)
+							 deUint32		seed,
+							 AllocationKind	allocationKind)
 {
-	return subMappedConfig(allocationSize, MemoryRange(0, allocationSize), op, seed);
+	return subMappedConfig(allocationSize, MemoryRange(0, allocationSize), op, seed, allocationKind);
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "mapping", "Memory mapping tests."));
+	de::MovePtr<tcu::TestCaseGroup>		group							(new tcu::TestCaseGroup(testCtx, "mapping", "Memory mapping tests."));
+	de::MovePtr<tcu::TestCaseGroup>		dedicated						(new tcu::TestCaseGroup(testCtx, "dedicated_alloc", "Dedicated memory mapping tests."));
+	de::MovePtr<tcu::TestCaseGroup>		sets[]							=
+	{
+		de::MovePtr<tcu::TestCaseGroup> (new tcu::TestCaseGroup(testCtx, "suballocation", "Suballocated memory mapping tests.")),
+		de::MovePtr<tcu::TestCaseGroup> (new tcu::TestCaseGroup(testCtx, "buffer", "Buffer dedicated memory mapping tests.")),
+		de::MovePtr<tcu::TestCaseGroup> (new tcu::TestCaseGroup(testCtx, "image", "Image dedicated memory mapping tests."))
+	};
 
 	const VkDeviceSize allocationSizes[] =
 	{
@@ -1481,6 +1683,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 	};
 
 	// .full
+	for (size_t allocationKindNdx = 0; allocationKindNdx < ALLOCATION_KIND_LAST; allocationKindNdx++)
 	{
 		de::MovePtr<tcu::TestCaseGroup> fullGroup (new tcu::TestCaseGroup(testCtx, "full", "Map memory completely."));
 
@@ -1494,7 +1697,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 				const Op			op		= ops[opNdx].op;
 				const char* const	name	= ops[opNdx].name;
 				const deUint32		seed	= (deUint32)(opNdx * allocationSizeNdx);
-				const TestConfig	config	= fullMappedConfig(allocationSize, op, seed);
+				const TestConfig	config	= fullMappedConfig(allocationSize, op, seed, static_cast<AllocationKind>(allocationKindNdx));
 
 				addFunctionCase(allocationSizeGroup.get(), name, name, testMemoryMapping, config);
 			}
@@ -1502,10 +1705,11 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 			fullGroup->addChild(allocationSizeGroup.release());
 		}
 
-		group->addChild(fullGroup.release());
+		sets[allocationKindNdx]->addChild(fullGroup.release());
 	}
 
 	// .sub
+	for (size_t allocationKindNdx = 0; allocationKindNdx < ALLOCATION_KIND_LAST; allocationKindNdx++)
 	{
 		de::MovePtr<tcu::TestCaseGroup> subGroup (new tcu::TestCaseGroup(testCtx, "sub", "Map part of the memory."));
 
@@ -1540,7 +1744,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 						const deUint32		seed	= (deUint32)(opNdx * allocationSizeNdx);
 						const Op			op		= ops[opNdx].op;
 						const char* const	name	= ops[opNdx].name;
-						const TestConfig	config	= subMappedConfig(allocationSize, MemoryRange(offset, size), op, seed);
+						const TestConfig	config	= subMappedConfig(allocationSize, MemoryRange(offset, size), op, seed, static_cast<AllocationKind>(allocationKindNdx));
 
 						addFunctionCase(sizeGroup.get(), name, name, testMemoryMapping, config);
 					}
@@ -1554,7 +1758,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 			subGroup->addChild(allocationSizeGroup.release());
 		}
 
-		group->addChild(subGroup.release());
+		sets[allocationKindNdx]->addChild(subGroup.release());
 	}
 
 	// .random
@@ -1570,8 +1774,13 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 			randomGroup->addChild(new InstanceFactory1<RandomMemoryMappingInstance, deUint32>(testCtx, tcu::NODETYPE_SELF_VALIDATE, de::toString(ndx), "Random case", seed));
 		}
 
-		group->addChild(randomGroup.release());
+		sets[static_cast<deUint32>(ALLOCATION_KIND_SUBALLOCATED)]->addChild(randomGroup.release());
 	}
+
+	group->addChild(sets[0].release());
+	dedicated->addChild(sets[1].release());
+	dedicated->addChild(sets[2].release());
+	group->addChild(dedicated.release());
 
 	return group.release();
 }

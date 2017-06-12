@@ -236,6 +236,55 @@ DE_INLINE deBool deIsPowerOfTwoSize (size_t a)
 }
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Roud a value up to a power-of-two.
+ * \param a Input value.
+ * \return Smallest power-of-two value that is greater or equal to an input value.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deUint32 deSmallestGreaterOrEquallPowerOfTwoU32 (deUint32 a)
+{
+	--a;
+	a |= a >> 1u;
+	a |= a >> 2u;
+	a |= a >> 4u;
+	a |= a >> 8u;
+	a |= a >> 16u;
+	return ++a;
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Roud a value up to a power-of-two.
+ * \param a Input value.
+ * \return Smallest power-of-two value that is greater or equal to an input value.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deUint64 deSmallestGreaterOrEquallPowerOfTwoU64 (deUint64 a)
+{
+	--a;
+	a |= a >> 1u;
+	a |= a >> 2u;
+	a |= a >> 4u;
+	a |= a >> 8u;
+	a |= a >> 16u;
+	a |= a >> 32u;
+	return ++a;
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Roud a value up to a power-of-two.
+ * \param a Input value.
+ * \return Smallest power-of-two value that is greater or equal to an input value.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE size_t deSmallestGreaterOrEquallPowerOfTwoSize (size_t a)
+{
+#if (DE_PTR_SIZE == 4)
+	return deSmallestGreaterOrEquallPowerOfTwoU32(a);
+#elif (DE_PTR_SIZE == 8)
+	return deSmallestGreaterOrEquallPowerOfTwoU64(a);
+#else
+#	error "Invalid DE_PTR_SIZE"
+#endif
+}
+
+/*--------------------------------------------------------------------*//*!
  * \brief Check if an integer is aligned to given power-of-two size.
  * \param a		Input value.
  * \param align	Alignment to check for.
@@ -405,12 +454,6 @@ DE_INLINE int deLog2Ceil32 (deInt32 a)
 		return log2floor;
 	else
 		return log2floor+1;
-}
-
-/* \todo [2012-04-28 pyry] Badly named, deprecated variant of deLog2Ceil32(). Remove once code has been fixed. */
-DE_INLINE deUint32 deLog2Clz(deInt32 a)
-{
-	return (deUint32)deLog2Ceil32(a);
 }
 
 /*--------------------------------------------------------------------*//*!
