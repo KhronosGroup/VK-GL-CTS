@@ -2197,6 +2197,8 @@ bool StorageAndSubImageTest::CreateTexture()
 								  TestReferenceDataHeight<D>(), TestReferenceDataDepth<D>(), Format<S, N>(), Type<T>(),
 								  ReferenceData<T, N>()))
 		{
+			glTexParameteri(TextureTarget<D>(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(TextureTarget<D>(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			return true;
 		}
 	}
