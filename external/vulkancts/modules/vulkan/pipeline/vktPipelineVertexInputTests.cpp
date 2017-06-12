@@ -1731,7 +1731,7 @@ void createMultipleAttributeCases (deUint32 depth, deUint32 firstNdx, Compatible
 			VertexInputTest::AttributeInfo attributeInfo;
 			attributeInfo.glslType	= (VertexInputTest::GlslType)currentNdx;
 			attributeInfo.inputRate	= (depth % 2 == 0) ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
-			attributeInfo.vkType	= VK_FORMAT_LAST;
+			attributeInfo.vkType	= VK_FORMAT_UNDEFINED;
 
 			newAttributeInfos.push_back(attributeInfo);
 		}

@@ -108,6 +108,20 @@ TYPE_SUBSTITUTIONS		= [
 
 EXTENSION_POSTFIXES		= ["KHR", "EXT", "NV", "NVX", "KHX"]
 
+def typeNameToEnumValue (name):
+	name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name[2:])
+	name = re.sub(r'([a-zA-Z])([0-9])', r'\1_\2', name)
+	name = name.upper()
+
+	# Patch irregularities
+	name = name.replace("YCB_CR_", "YCBCR_")
+	name = name.replace("WIN_32_", "WIN32_")
+	name = name.replace("16_BIT_", "16BIT_")
+	name = name.replace("D_3_D_12_", "D3D12_")
+	name = name.replace("_IDPROPERTIES_", "_ID_PROPERTIES_")
+
+	return name
+
 class Handle:
 	TYPE_DISP		= 0
 	TYPE_NONDISP	= 1
@@ -117,8 +131,7 @@ class Handle:
 		self.name	= name
 
 	def getHandleType (self):
-		name = re.sub(r'([a-z])([A-Z])', r'\1_\2', self.name)
-		return "HANDLE_TYPE_" + name[3:].upper()
+		return "HANDLE_TYPE_" + typeNameToEnumValue(self.name)
 
 class Enum:
 	def __init__ (self, name, values):
@@ -689,6 +702,18 @@ def writeRefUtilImpl (api, filename):
 
 	writeInlFile(filename, INL_HEADER, makeRefUtilImpl())
 
+def writeStructTraitsImpl (api, filename):
+	def gen ():
+		for type in api.compositeTypes:
+			if type.getClassName() == "struct" and type.members[0].name == "sType":
+				yield "template<> VkStructureType getStructureType<%s> (void)" % type.name
+				yield "{"
+				yield "\treturn VK_STRUCTURE_TYPE_%s;" % typeNameToEnumValue(type.name)
+				yield "}"
+				yield ""
+
+	writeInlFile(filename, INL_HEADER, gen())
+
 def writeNullDriverImpl (api, filename):
 	def genNullDriverImpl ():
 		specialFuncNames	= [
@@ -697,15 +722,21 @@ def writeNullDriverImpl (api, filename):
 				"vkGetInstanceProcAddr",
 				"vkGetDeviceProcAddr",
 				"vkEnumeratePhysicalDevices",
+				"vkEnumerateInstanceExtensionProperties",
+				"vkEnumerateDeviceExtensionProperties",
 				"vkGetPhysicalDeviceFeatures",
+				"vkGetPhysicalDeviceFeatures2KHR",
 				"vkGetPhysicalDeviceProperties",
+				"vkGetPhysicalDeviceProperties2KHR",
 				"vkGetPhysicalDeviceQueueFamilyProperties",
 				"vkGetPhysicalDeviceMemoryProperties",
 				"vkGetPhysicalDeviceFormatProperties",
 				"vkGetPhysicalDeviceImageFormatProperties",
 				"vkGetDeviceQueue",
 				"vkGetBufferMemoryRequirements",
+				"vkGetBufferMemoryRequirements2KHR",
 				"vkGetImageMemoryRequirements",
+				"vkGetImageMemoryRequirements2KHR",
 				"vkMapMemory",
 				"vkAllocateDescriptorSets",
 				"vkFreeDescriptorSets",
@@ -870,5 +901,6 @@ if __name__ == "__main__":
 	writeStrUtilImpl			(api, os.path.join(VULKAN_DIR, "vkStrUtilImpl.inl"))
 	writeRefUtilProto			(api, os.path.join(VULKAN_DIR, "vkRefUtil.inl"))
 	writeRefUtilImpl			(api, os.path.join(VULKAN_DIR, "vkRefUtilImpl.inl"))
+	writeStructTraitsImpl		(api, os.path.join(VULKAN_DIR, "vkGetStructureTypeImpl.inl"))
 	writeNullDriverImpl			(api, os.path.join(VULKAN_DIR, "vkNullDriverImpl.inl"))
 	writeTypeUtil				(api, os.path.join(VULKAN_DIR, "vkTypeUtil.inl"))

@@ -46,6 +46,7 @@ std::vector<VkSparseImageFormatProperties>		getPhysicalDeviceSparseImageFormatPr
 
 VkMemoryRequirements							getBufferMemoryRequirements						(const DeviceInterface& vk, VkDevice device, VkBuffer buffer);
 VkMemoryRequirements							getImageMemoryRequirements						(const DeviceInterface& vk, VkDevice device, VkImage image);
+VkMemoryRequirements							getImagePlaneMemoryRequirements					(const DeviceInterface& vk, VkDevice device, VkImage image, VkImageAspectFlagBits planeAspect);
 std::vector<VkSparseImageMemoryRequirements>	getImageSparseMemoryRequirements				(const DeviceInterface& vk, VkDevice device, VkImage image);
 
 std::vector<VkLayerProperties>					enumerateInstanceLayerProperties				(const PlatformInterface& vkp);
@@ -105,6 +106,24 @@ bool										isExtensionSupported					(const std::vector<VkExtensionProperties>
 template<typename LayerIterator>
 bool										isLayerSupported						(LayerIterator begin, LayerIterator end, const RequiredLayer& required);
 bool										isLayerSupported						(const std::vector<VkLayerProperties>& layers, const RequiredLayer& required);
+
+const void*									findStructureInChain					(const void* first, VkStructureType type);
+void*										findStructureInChain					(void* first, VkStructureType type);
+
+template<typename StructType>
+VkStructureType								getStructureType						(void);
+
+template<typename StructType>
+const StructType*							findStructure							(const void* first)
+{
+	return reinterpret_cast<const StructType*>(findStructureInChain(first, getStructureType<StructType>()));
+}
+
+template<typename StructType>
+StructType*									findStructure							(void* first)
+{
+	return reinterpret_cast<StructType*>(findStructureInChain(first, getStructureType<StructType>()));
+}
 
 namespace ValidateQueryBits
 {

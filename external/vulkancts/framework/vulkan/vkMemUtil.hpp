@@ -141,6 +141,7 @@ void					flushMappedMemoryRange		(const DeviceInterface& vkd, VkDevice device, V
 void					invalidateMappedMemoryRange	(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
 
 deUint32				getCompatibleMemoryTypes	(const VkPhysicalDeviceMemoryProperties& deviceMemProps, MemoryRequirement requirement);
+void					bindImagePlaneMemory		(const DeviceInterface&	vkd, VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset, VkImageAspectFlagBits planeAspect);
 
 } // vk
 

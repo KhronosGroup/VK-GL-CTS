@@ -1680,6 +1680,55 @@ struct VkSparseImageMemoryRequirements2KHR
 	VkSparseImageMemoryRequirements	memoryRequirements;
 };
 
+struct VkSamplerYcbcrConversionCreateInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkFormat							format;
+	VkSamplerYcbcrModelConversionKHR	YcbcrModel;
+	VkSamplerYcbcrRangeKHR				YcbcrRange;
+	VkComponentMapping					components;
+	VkChromaLocationKHR					xChromaOffset;
+	VkChromaLocationKHR					yChromaOffset;
+	VkFilter							chromaFilter;
+	VkBool32							forceExplicitReconstruction;
+};
+
+struct VkSamplerYcbcrConversionInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkSamplerYcbcrConversionKHR	conversion;
+};
+
+struct VkBindImagePlaneMemoryInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImageAspectFlagBits	planeAspect;
+};
+
+struct VkImagePlaneMemoryRequirementsInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImageAspectFlagBits	planeAspect;
+};
+
+struct VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		samplerYcbcrConversion;
+};
+
+struct VkSamplerYcbcrConversionImageFormatPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		combinedImageSamplerDescriptorCount;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;

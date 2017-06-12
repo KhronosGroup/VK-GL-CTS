@@ -141,6 +141,8 @@ GetFenceFdKHRFunc							getFenceFdKHR;
 GetImageMemoryRequirements2KHRFunc			getImageMemoryRequirements2KHR;
 GetBufferMemoryRequirements2KHRFunc			getBufferMemoryRequirements2KHR;
 GetImageSparseMemoryRequirements2KHRFunc	getImageSparseMemoryRequirements2KHR;
+CreateSamplerYcbcrConversionKHRFunc			createSamplerYcbcrConversionKHR;
+DestroySamplerYcbcrConversionKHRFunc		destroySamplerYcbcrConversionKHR;
 GetMemoryWin32HandleKHRFunc					getMemoryWin32HandleKHR;
 GetMemoryWin32HandlePropertiesKHRFunc		getMemoryWin32HandlePropertiesKHR;
 GetMemoryFdKHRFunc							getMemoryFdKHR;
