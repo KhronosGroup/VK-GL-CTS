@@ -165,6 +165,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessUtil.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessVertexAccessTests.cpp \
+	external/vulkancts/modules/vulkan/shaderexecutor/vktAtomicOperationTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktOpaqueTypeIndexingTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBuiltinPrecisionTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBuiltinTests.cpp \

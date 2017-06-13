@@ -59,6 +59,7 @@
 #include "vktShaderRenderTextureGatherTests.hpp"
 #include "vktShaderBuiltinTests.hpp"
 #include "vktOpaqueTypeIndexingTests.hpp"
+#include "vktAtomicOperationTests.hpp"
 #include "vktUniformBlockTests.hpp"
 #include "vktDynamicStateTests.hpp"
 #include "vktSSBOLayoutTests.hpp"
@@ -355,6 +356,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	// ShaderExecutor-based tests
 	glslTests->addChild(shaderexecutor::createBuiltinTests				(testCtx));
 	glslTests->addChild(shaderexecutor::createOpaqueTypeIndexingTests	(testCtx));
+	glslTests->addChild(shaderexecutor::createAtomicOperationTests		(testCtx));
 }
 
 // TestPackage
