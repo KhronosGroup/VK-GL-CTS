@@ -1441,6 +1441,16 @@ struct VkPhysicalDevicePushDescriptorPropertiesKHR
 	deUint32		maxPushDescriptors;
 };
 
+struct VkPhysicalDevice16BitStorageFeaturesKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		storageUniformBufferBlock16;
+	VkBool32		storageUniform16;
+	VkBool32		storagePushConstant16;
+	VkBool32		storageInputOutput16;
+};
+
 struct VkRectLayerKHR
 {
 	VkOffset2D	offset;

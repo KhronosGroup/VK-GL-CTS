@@ -336,6 +336,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMemoryPropertie
 std::ostream&	operator<<	(std::ostream& s, const VkSparseImageFormatProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSparseImageFormatInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushDescriptorPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice16BitStorageFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRectLayerKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionsKHR& value);

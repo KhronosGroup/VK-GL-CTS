@@ -170,6 +170,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR:			return "VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR:								return "VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR:		return "VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE:						return "VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE";
@@ -3411,6 +3412,19 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePushDescriptorP
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaxPushDescriptors = " << value.maxPushDescriptors << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevice16BitStorageFeaturesKHR& value)
+{
+	s << "VkPhysicalDevice16BitStorageFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstorageUniformBufferBlock16 = " << value.storageUniformBufferBlock16 << '\n';
+	s << "\tstorageUniform16 = " << value.storageUniform16 << '\n';
+	s << "\tstoragePushConstant16 = " << value.storagePushConstant16 << '\n';
+	s << "\tstorageInputOutput16 = " << value.storageInputOutput16 << '\n';
 	s << '}';
 	return s;
 }

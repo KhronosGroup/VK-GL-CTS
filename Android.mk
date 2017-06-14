@@ -855,8 +855,10 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesTestsUtil.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmComputeShaderCase.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmComputeShaderTestUtil.cpp \
+	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmGraphicsShaderTestUtil.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmInstructionTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmTests.cpp \
+	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmUtils.cpp \
 	external/vulkancts/modules/vulkan/ssbo/vktSSBOLayoutCase.cpp \
 	external/vulkancts/modules/vulkan/ssbo/vktSSBOLayoutTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicEventTests.cpp \

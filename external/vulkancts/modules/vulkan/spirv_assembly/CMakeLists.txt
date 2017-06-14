@@ -7,10 +7,14 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmComputeShaderCase.hpp
 	vktSpvAsmComputeShaderTestUtil.cpp
 	vktSpvAsmComputeShaderTestUtil.hpp
+	vktSpvAsmGraphicsShaderTestUtil.cpp
+	vktSpvAsmGraphicsShaderTestUtil.hpp
 	vktSpvAsmInstructionTests.cpp
 	vktSpvAsmInstructionTests.hpp
 	vktSpvAsmTests.cpp
 	vktSpvAsmTests.hpp
+	vktSpvAsmUtils.cpp
+	vktSpvAsmUtils.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS

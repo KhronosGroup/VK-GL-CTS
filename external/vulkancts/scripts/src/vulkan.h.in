@@ -224,6 +224,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR = 1000059007,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR = 1000059008,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR = 1000080000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR = 1000083000,
     VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR = 1000084000,
     VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR = 1000085000,
     VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE = 1000092000,
@@ -3952,6 +3953,19 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPushDescriptorSetKHR(
     uint32_t                                    descriptorWriteCount,
     const VkWriteDescriptorSet*                 pDescriptorWrites);
 #endif
+
+#define VK_KHR_16bit_storage 1
+#define VK_KHR_16BIT_STORAGE_SPEC_VERSION 1
+#define VK_KHR_16BIT_STORAGE_EXTENSION_NAME "VK_KHR_16bit_storage"
+
+typedef struct VkPhysicalDevice16BitStorageFeaturesKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkBool32           storageUniformBufferBlock16;
+    VkBool32           storageUniform16;
+    VkBool32           storagePushConstant16;
+    VkBool32           storageInputOutput16;
+} VkPhysicalDevice16BitStorageFeaturesKHR;
 
 #define VK_KHR_incremental_present 1
 #define VK_KHR_INCREMENTAL_PRESENT_SPEC_VERSION 1
