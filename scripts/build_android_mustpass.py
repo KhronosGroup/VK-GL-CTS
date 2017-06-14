@@ -346,7 +346,8 @@ NYC_VULKAN_PKG					= Package(module = VULKAN_MODULE, configurations = [
 MASTER_EGL_COMMON_FILTERS		= [include("egl-master.txt"),
 								   exclude("egl-test-issues.txt"),
 								   exclude("egl-internal-api-tests.txt"),
-								   exclude("egl-manual-robustness.txt")]
+								   exclude("egl-manual-robustness.txt"),
+								   exclude("egl-driver-issues.txt")]
 MASTER_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",

@@ -417,7 +417,6 @@ dEQP-EGL.functional.choose_config.random.all
 dEQP-EGL.functional.choose_config.color_component_type_ext.dont_care
 dEQP-EGL.functional.choose_config.color_component_type_ext.fixed
 dEQP-EGL.functional.choose_config.color_component_type_ext.float
-dEQP-EGL.functional.color_clears.single_context.gles1.rgb565_window
 dEQP-EGL.functional.color_clears.single_context.gles1.rgb565_pixmap
 dEQP-EGL.functional.color_clears.single_context.gles1.rgb565_pbuffer
 dEQP-EGL.functional.color_clears.single_context.gles1.rgb888_window
