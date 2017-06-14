@@ -68,6 +68,8 @@ set(GLCTS_COMMON_SRCS
 	glcTestSubcase.hpp
 	glcExtTokens.cpp
 	glcExtTokens.hpp
+	glcLimitTest.inl
+	glcLimitTest.hpp
 	)
 
 set(GLCTS_COMMON_LIBS

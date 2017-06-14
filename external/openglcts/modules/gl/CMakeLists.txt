@@ -124,6 +124,8 @@ set(GLCTS_GL_SRCS
 	gl4cPostDepthCoverageTests.hpp
 	gl4cIndirectParametersTests.cpp
 	gl4cIndirectParametersTests.hpp
+	gl4cLimitsTests.cpp
+	gl4cLimitsTests.hpp
 	)
 
 set(GLCTS_GL_LIBS

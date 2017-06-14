@@ -38,6 +38,7 @@
 #include "gl4cIncompleteTextureAccessTests.hpp"
 #include "gl4cIndirectParametersTests.hpp"
 #include "gl4cKHRDebugTests.hpp"
+#include "gl4cLimitsTests.hpp"
 #include "gl4cMapBufferAlignmentTests.hpp"
 #include "gl4cMultiBindTests.hpp"
 #include "gl4cParallelShaderCompileTests.hpp"
@@ -362,6 +363,7 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::ShaderGroupVote(getContext()));
 		addChild(new gl4cts::ShaderDrawParametersTests(getContext()));
 		addChild(new gl4cts::ShaderViewportLayerArray(getContext()));
+		addChild(new gl4cts::LimitsTests(getContext()));
 	}
 	catch (...)
 	{
