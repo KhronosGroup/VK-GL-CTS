@@ -31,7 +31,7 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createVertexInputTests (tcu::TestContext& testCtx);
+void createVertexInputTests (tcu::TestCaseGroup* vertexInputTests);
 
 } // pipeline
 } // vkt

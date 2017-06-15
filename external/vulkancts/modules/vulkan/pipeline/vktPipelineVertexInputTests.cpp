@@ -23,7 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineVertexInputTests.hpp"
-#include "vktPipelineCombinationsIterator.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
@@ -40,6 +40,7 @@
 #include "tcuImageCompare.hpp"
 #include "deFloat16.h"
 #include "deMemory.h"
+#include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 
@@ -184,19 +185,6 @@ private:
 	const BindingMapping					m_bindingMapping;
 	const AttributeLayout					m_attributeLayout;
 	bool									m_usesDoubleType;
-};
-
-class GlslTypeCombinationsIterator : public CombinationsIterator< std::vector<VertexInputTest::GlslType> >
-{
-public:
-													GlslTypeCombinationsIterator	(deUint32 numValues, deUint32 combinationSize);
-	virtual											~GlslTypeCombinationsIterator	(void) {}
-
-protected:
-	virtual std::vector<VertexInputTest::GlslType>	getCombinationValue				(const std::vector<deUint32>& combination);
-
-private:
-	std::vector<VertexInputTest::GlslType>			m_combinationValue;
 };
 
 class VertexInputInstance : public vkt::TestInstance
@@ -662,21 +650,6 @@ tcu::Vec4 VertexInputTest::getFormatThreshold (VkFormat format)
 	}
 
 	return Vec4(0.001f);
-}
-
-GlslTypeCombinationsIterator::GlslTypeCombinationsIterator (deUint32 numValues, deUint32 combinationSize)
-	: CombinationsIterator< std::vector<VertexInputTest::GlslType> >	(numValues, combinationSize)
-	, m_combinationValue												(std::vector<VertexInputTest::GlslType>(combinationSize))
-{
-	DE_ASSERT(numValues <= VertexInputTest::GLSL_TYPE_COUNT);
-}
-
-std::vector<VertexInputTest::GlslType> GlslTypeCombinationsIterator::getCombinationValue (const std::vector<deUint32>& combination)
-{
-	for (size_t combinationItemNdx = 0; combinationItemNdx < combination.size(); combinationItemNdx++)
-		m_combinationValue[combinationItemNdx] = (VertexInputTest::GlslType)combination[combinationItemNdx];
-
-	return m_combinationValue;
 }
 
 VertexInputInstance::VertexInputInstance (Context&												context,
@@ -1439,27 +1412,12 @@ std::string getAttributeInfoCaseName (const VertexInputTest::AttributeInfo& attr
 	std::ostringstream	caseName;
 	const std::string	formatName	= getFormatName(attributeInfo.vkType);
 
-	caseName << VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].name << "_as_" << de::toLower(formatName.substr(10)) << "_rate_";
+	caseName << "as_" << de::toLower(formatName.substr(10)) << "_rate_";
 
 	if (attributeInfo.inputRate == VK_VERTEX_INPUT_RATE_VERTEX)
 		caseName <<  "vertex";
 	else
 		caseName <<  "instance";
-
-	return caseName.str();
-}
-
-std::string getAttributeInfosCaseName (const std::vector<VertexInputTest::AttributeInfo>& attributeInfos)
-{
-	std::ostringstream caseName;
-
-	for (size_t attributeNdx = 0; attributeNdx < attributeInfos.size(); attributeNdx++)
-	{
-		caseName << getAttributeInfoCaseName(attributeInfos[attributeNdx]);
-
-		if (attributeNdx < attributeInfos.size() - 1)
-			caseName << "-";
-	}
 
 	return caseName.str();
 }
@@ -1496,7 +1454,7 @@ struct CompatibleFormats
 	std::vector<VkFormat>		compatibleVkFormats;
 };
 
-de::MovePtr<tcu::TestCaseGroup> createSingleAttributeTests (tcu::TestContext& testCtx)
+void createSingleAttributeCases (tcu::TestCaseGroup* singleAttributeTests, VertexInputTest::GlslType glslType)
 {
 	const VkFormat vertexFormats[] =
 	{
@@ -1577,44 +1535,92 @@ de::MovePtr<tcu::TestCaseGroup> createSingleAttributeTests (tcu::TestContext& te
 		VK_FORMAT_R64G64B64A64_SFLOAT,
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	singleAttributeTests (new tcu::TestCaseGroup(testCtx, "single_attribute", "Uses one attribute"));
-
 	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(vertexFormats); formatNdx++)
 	{
-		for (int glslTypeNdx = 0; glslTypeNdx < VertexInputTest::GLSL_TYPE_COUNT; glslTypeNdx++)
+		if (VertexInputTest::isCompatibleType(vertexFormats[formatNdx], glslType))
 		{
-			if (VertexInputTest::isCompatibleType(vertexFormats[formatNdx], (VertexInputTest::GlslType)glslTypeNdx))
-			{
-				// Create test case for RATE_VERTEX
-				VertexInputTest::AttributeInfo attributeInfo;
-				attributeInfo.vkType	= vertexFormats[formatNdx];
-				attributeInfo.glslType	= (VertexInputTest::GlslType)glslTypeNdx;
-				attributeInfo.inputRate	= VK_VERTEX_INPUT_RATE_VERTEX;
+			// Create test case for RATE_VERTEX
+			VertexInputTest::AttributeInfo attributeInfo;
+			attributeInfo.vkType = vertexFormats[formatNdx];
+			attributeInfo.glslType = glslType;
+			attributeInfo.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-				singleAttributeTests->addChild(new VertexInputTest(testCtx,
-																   getAttributeInfoCaseName(attributeInfo),
-																   getAttributeInfoDescription(attributeInfo),
-																   std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
-																   VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
-																   VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
+			singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
+															   getAttributeInfoCaseName(attributeInfo),
+															   getAttributeInfoDescription(attributeInfo),
+															   std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
+															   VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
+															   VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
 
-				// Create test case for RATE_INSTANCE
-				attributeInfo.inputRate	= VK_VERTEX_INPUT_RATE_INSTANCE;
+			// Create test case for RATE_INSTANCE
+			attributeInfo.inputRate	= VK_VERTEX_INPUT_RATE_INSTANCE;
 
-				singleAttributeTests->addChild(new VertexInputTest(testCtx,
-																   getAttributeInfoCaseName(attributeInfo),
-																   getAttributeInfoDescription(attributeInfo),
-																   std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
-																   VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
-																   VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
-			}
+			singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
+															   getAttributeInfoCaseName(attributeInfo),
+															   getAttributeInfoDescription(attributeInfo),
+															   std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
+															   VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
+															   VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
 		}
 	}
-
-	return singleAttributeTests;
 }
 
-de::MovePtr<tcu::TestCaseGroup> createMultipleAttributeTests (tcu::TestContext& testCtx)
+void createSingleAttributeTests (tcu::TestCaseGroup* singleAttributeTests)
+{
+	for (int glslTypeNdx = 0; glslTypeNdx < VertexInputTest::GLSL_TYPE_COUNT; glslTypeNdx++)
+	{
+		VertexInputTest::GlslType glslType = (VertexInputTest::GlslType)glslTypeNdx;
+		addTestGroup(singleAttributeTests, VertexInputTest::s_glslTypeDescriptions[glslType].name, "", createSingleAttributeCases, glslType);
+	}
+}
+
+// Create all unique GlslType combinations recursively
+void createMultipleAttributeCases (deUint32 depth, deUint32 firstNdx, CompatibleFormats* compatibleFormats, de::Random& randomFunc, tcu::TestCaseGroup& testGroup, VertexInputTest::BindingMapping bindingMapping, VertexInputTest::AttributeLayout attributeLayout, const std::vector<VertexInputTest::AttributeInfo>& attributeInfos = std::vector<VertexInputTest::AttributeInfo>(0))
+{
+	tcu::TestContext& testCtx = testGroup.getTestContext();
+
+	// Exclude double values, which are not included in vertexFormats
+	for (deUint32 currentNdx = firstNdx; currentNdx < VertexInputTest::GLSL_TYPE_DOUBLE - depth; currentNdx++)
+	{
+		std::vector <VertexInputTest::AttributeInfo> newAttributeInfos = attributeInfos;
+
+		{
+			VertexInputTest::AttributeInfo attributeInfo;
+			attributeInfo.glslType	= (VertexInputTest::GlslType)currentNdx;
+			attributeInfo.inputRate	= (depth % 2 == 0) ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
+			attributeInfo.vkType	= VK_FORMAT_LAST;
+
+			newAttributeInfos.push_back(attributeInfo);
+		}
+
+		// Add test case
+		if (depth == 0)
+		{
+			// Select a random compatible format for each attribute
+			for (size_t i = 0; i < newAttributeInfos.size(); i++)
+			{
+				const std::vector<VkFormat>& formats = compatibleFormats[newAttributeInfos[i].glslType].compatibleVkFormats;
+				newAttributeInfos[i].vkType = formats[randomFunc.getUint32() % formats.size()];
+			}
+
+			const std::string caseName = VertexInputTest::s_glslTypeDescriptions[currentNdx].name;
+			const std::string caseDesc = getAttributeInfosDescription(newAttributeInfos);
+
+			testGroup.addChild(new VertexInputTest(testCtx, caseName, caseDesc, newAttributeInfos, bindingMapping, attributeLayout));
+		}
+		// Add test group
+		else
+		{
+			const std::string				name			= VertexInputTest::s_glslTypeDescriptions[currentNdx].name;
+			de::MovePtr<tcu::TestCaseGroup>	newTestGroup	(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+
+			createMultipleAttributeCases(depth - 1u, currentNdx + 1u, compatibleFormats, randomFunc, *newTestGroup, bindingMapping, attributeLayout, newAttributeInfos);
+			testGroup.addChild(newTestGroup.release());
+		}
+	}
+}
+
+void createMultipleAttributeTests (tcu::TestCaseGroup* multipleAttributeTests)
 {
 	// Required vertex formats, unpacked
 	const VkFormat vertexFormats[] =
@@ -1661,8 +1667,6 @@ de::MovePtr<tcu::TestCaseGroup> createMultipleAttributeTests (tcu::TestContext& 
 		VK_FORMAT_R32G32B32A32_SFLOAT
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	multipleAttributeTests (new tcu::TestCaseGroup(testCtx, "multiple_attributes", "Uses more than one attribute"));
-
 	// Find compatible VK formats for each GLSL vertex type
 	CompatibleFormats compatibleFormats[VertexInputTest::GLSL_TYPE_COUNT];
 	{
@@ -1676,60 +1680,32 @@ de::MovePtr<tcu::TestCaseGroup> createMultipleAttributeTests (tcu::TestContext& 
 		}
 	}
 
-	de::Random						randomFunc							(102030);
-	GlslTypeCombinationsIterator	glslTypeCombinationsItr				(VertexInputTest::GLSL_TYPE_DOUBLE, 3); // Exclude double values, which are not included in vertexFormats
-	de::MovePtr<tcu::TestCaseGroup> oneToOneAttributeTests				(new tcu::TestCaseGroup(testCtx, "attributes", ""));
-	de::MovePtr<tcu::TestCaseGroup> oneToManyAttributeTests				(new tcu::TestCaseGroup(testCtx, "attributes", ""));
-	de::MovePtr<tcu::TestCaseGroup> oneToManySequentialAttributeTests	(new tcu::TestCaseGroup(testCtx, "attributes_sequential", ""));
+	de::Random                      randomFunc(102030);
+	tcu::TestContext&				testCtx = multipleAttributeTests->getTestContext();
+	de::MovePtr<tcu::TestCaseGroup> oneToOneAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes", ""));
+	de::MovePtr<tcu::TestCaseGroup> oneToManyAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes", ""));
+	de::MovePtr<tcu::TestCaseGroup> oneToManySequentialAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes_sequential", ""));
 
-	while (glslTypeCombinationsItr.hasNext())
-	{
-		const std::vector<VertexInputTest::GlslType>	glslTypes		= glslTypeCombinationsItr.next();
-		std::vector<VertexInputTest::AttributeInfo>		attributeInfos	(glslTypes.size());
+	createMultipleAttributeCases(2u, 0u, compatibleFormats, randomFunc, *oneToOneAttributeTests,			VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,	VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED);
+	createMultipleAttributeCases(2u, 0u, compatibleFormats, randomFunc, *oneToManyAttributeTests,			VertexInputTest::BINDING_MAPPING_ONE_TO_MANY,	VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED);
+	createMultipleAttributeCases(2u, 0u, compatibleFormats, randomFunc, *oneToManySequentialAttributeTests,	VertexInputTest::BINDING_MAPPING_ONE_TO_MANY,	VertexInputTest::ATTRIBUTE_LAYOUT_SEQUENTIAL);
 
-		for (size_t attributeNdx = 0; attributeNdx < attributeInfos.size(); attributeNdx++)
-		{
-			DE_ASSERT(!compatibleFormats[glslTypes[attributeNdx]].compatibleVkFormats.empty());
-
-			// Select a random compatible format
-			const std::vector<VkFormat>& formats = compatibleFormats[glslTypes[attributeNdx]].compatibleVkFormats;
-			const VkFormat format = formats[randomFunc.getUint32() % formats.size()];
-
-			attributeInfos[attributeNdx].glslType	= glslTypes[attributeNdx];
-			attributeInfos[attributeNdx].inputRate	= (attributeNdx % 2 == 0) ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
-			attributeInfos[attributeNdx].vkType		= format;
-		}
-
-		const std::string	caseName	= getAttributeInfosCaseName(attributeInfos);
-		const std::string	caseDesc	= getAttributeInfosDescription(attributeInfos);
-
-		oneToOneAttributeTests->addChild(new VertexInputTest(testCtx, caseName, caseDesc, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_ONE, VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
-		oneToManyAttributeTests->addChild(new VertexInputTest(testCtx, caseName, caseDesc, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_MANY, VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
-		oneToManySequentialAttributeTests->addChild(new VertexInputTest(testCtx, caseName, caseDesc, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_MANY, VertexInputTest::ATTRIBUTE_LAYOUT_SEQUENTIAL));
-	}
-
-	de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests	(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
+	de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
 	bindingOneToOneTests->addChild(oneToOneAttributeTests.release());
 	multipleAttributeTests->addChild(bindingOneToOneTests.release());
 
-	de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests	(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
+	de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
 	bindingOneToManyTests->addChild(oneToManyAttributeTests.release());
 	bindingOneToManyTests->addChild(oneToManySequentialAttributeTests.release());
 	multipleAttributeTests->addChild(bindingOneToManyTests.release());
-
-	return multipleAttributeTests;
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createVertexInputTests (tcu::TestContext& testCtx)
+void createVertexInputTests (tcu::TestCaseGroup* vertexInputTests)
 {
-	de::MovePtr<tcu::TestCaseGroup>	vertexInputTests (new tcu::TestCaseGroup(testCtx, "vertex_input", ""));
-
-	vertexInputTests->addChild(createSingleAttributeTests(testCtx).release());
-	vertexInputTests->addChild(createMultipleAttributeTests(testCtx).release());
-
-	return vertexInputTests.release();
+	addTestGroup(vertexInputTests, "single_attribute", "Uses one attribute", createSingleAttributeTests);
+	addTestGroup(vertexInputTests, "multiple_attributes", "Uses more than one attribute", createMultipleAttributeTests);
 }
 
 } // pipeline

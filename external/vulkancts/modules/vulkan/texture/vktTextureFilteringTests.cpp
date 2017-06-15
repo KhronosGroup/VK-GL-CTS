@@ -870,7 +870,7 @@ tcu::TestStatus Texture3DFilteringTestInstance::iterate (void)
 	return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
 }
 
-bool verifierCanBeUsed(const VkFormat format, const Sampler::FilterMode minFilter, const Sampler::FilterMode magFilter)
+bool verifierCanBeUsed (const VkFormat format, const Sampler::FilterMode minFilter, const Sampler::FilterMode magFilter)
 {
 	const tcu::TextureFormat				textureFormat		= mapVkFormat(format);
 	const tcu::TextureChannelClass			textureChannelClass	= tcu::getTextureChannelClass(textureFormat.type);
@@ -1005,13 +1005,14 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
 		{
+			const string					filterGroupName	= filterableFormatsByType[fmtNdx].name;
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
 				const Sampler::FilterMode	minFilter		= minFilterModes[filterNdx].mode;
-				const char* const			filterName		= minFilterModes[filterNdx].name;
 				const bool					isMipmap		= minFilter != Sampler::NEAREST && minFilter != Sampler::LINEAR;
-				const char* const			formatName		= filterableFormatsByType[fmtNdx].name;
-				const string				name			= string(formatName) + "_" + filterName;
+				const string				name			= minFilterModes[filterNdx].name;
 				Texture2DTestCaseParameters	testParameters;
 
 				testParameters.format		= filterableFormatsByType[fmtNdx].format;
@@ -1029,20 +1030,23 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				// Some combinations of the tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
 				{
-					formatsGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+					filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
 				}
 			}
+			formatsGroup->addChild(filterGroup.release());
 		}
 
 		// Sizes.
 		for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes2D); sizeNdx++)
 		{
+			const string					filterGroupName = de::toString(sizes2D[sizeNdx].width) + "x" + de::toString(sizes2D[sizeNdx].height);
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
 				const Sampler::FilterMode	minFilter		= minFilterModes[filterNdx].mode;
-				const char* const			filterName		= minFilterModes[filterNdx].name;
 				const bool					isMipmap		= minFilter != Sampler::NEAREST && minFilter != Sampler::LINEAR;
-				const string				name			= de::toString(sizes2D[sizeNdx].width) + "x" + de::toString(sizes2D[sizeNdx].height) + "_" + filterName;
+				const string				name			= minFilterModes[filterNdx].name;
 				Texture2DTestCaseParameters	testParameters;
 
 				testParameters.format		= VK_FORMAT_R8G8B8A8_UNORM;
@@ -1055,20 +1059,27 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
-				sizesGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+				filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
 			}
+			sizesGroup->addChild(filterGroup.release());
 		}
 
 		// Wrap modes.
 		for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); minFilterNdx++)
 		{
+			de::MovePtr<tcu::TestCaseGroup>	minFilterGroup(new tcu::TestCaseGroup(testCtx, minFilterModes[minFilterNdx].name, ""));
+
 			for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilterModes); magFilterNdx++)
 			{
+				de::MovePtr<tcu::TestCaseGroup>	magFilterGroup(new tcu::TestCaseGroup(testCtx, magFilterModes[magFilterNdx].name, ""));
+
 				for (int wrapSNdx = 0; wrapSNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapSNdx++)
 				{
+					de::MovePtr<tcu::TestCaseGroup>	wrapSGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapSNdx].name, ""));
+
 					for (int wrapTNdx = 0; wrapTNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapTNdx++)
 					{
-						const string	name		= string(minFilterModes[minFilterNdx].name) + "_" + magFilterModes[magFilterNdx].name + "_" + wrapModes[wrapSNdx].name + "_" + wrapModes[wrapTNdx].name;
+						const string	name		= wrapModes[wrapTNdx].name;
 						Texture2DTestCaseParameters	testParameters;
 
 						testParameters.format		= VK_FORMAT_R8G8B8A8_UNORM;
@@ -1081,10 +1092,13 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 						testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
-						combinationsGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+						wrapSGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
 					}
+					magFilterGroup->addChild(wrapSGroup.release());
 				}
+				minFilterGroup->addChild(magFilterGroup.release());
 			}
+			combinationsGroup->addChild(minFilterGroup.release());
 		}
 
 		group2D->addChild(formatsGroup.release());
@@ -1106,13 +1120,14 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
 		{
+			const string					filterGroupName = filterableFormatsByType[fmtNdx].name;
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
 				const Sampler::FilterMode				minFilter	= minFilterModes[filterNdx].mode;
-				const char* const						filterName	= minFilterModes[filterNdx].name;
 				const bool								isMipmap	= minFilter != Sampler::NEAREST && minFilter != Sampler::LINEAR;
-				const char* const						formatName	= filterableFormatsByType[fmtNdx].name;
-				const string							name		= string(formatName) + "_" + filterName;
+				const string							name		= minFilterModes[filterNdx].name;
 				TextureCubeFilteringTestCaseParameters	testParameters;
 
 				testParameters.format					= filterableFormatsByType[fmtNdx].format;
@@ -1130,20 +1145,23 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				// Some tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
 				{
-					formatsGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+					filterGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
 				}
 			}
+			formatsGroup->addChild(filterGroup.release());
 		}
 
 		// Sizes.
 		for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizesCube); sizeNdx++)
 		{
+			const string					filterGroupName = de::toString(sizesCube[sizeNdx].size) + "x" + de::toString(sizesCube[sizeNdx].size);
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
 				const Sampler::FilterMode				minFilter		= minFilterModes[filterNdx].mode;
-				const char* const						filterName		= minFilterModes[filterNdx].name;
 				const bool								isMipmap		= minFilter != Sampler::NEAREST && minFilter != Sampler::LINEAR;
-				const string							name			= de::toString(sizesCube[sizeNdx].size) + "x" + de::toString(sizesCube[sizeNdx].size) + "_" + filterName;
+				const string							name			= minFilterModes[filterNdx].name;
 				TextureCubeFilteringTestCaseParameters	testParameters;
 
 				testParameters.format					= VK_FORMAT_R8G8B8A8_UNORM;
@@ -1156,21 +1174,28 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 				testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 
-				sizesGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+				filterGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
 
 			}
+			sizesGroup->addChild(filterGroup.release());
 		}
 
 		// Filter/wrap mode combinations.
 		for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); minFilterNdx++)
 		{
+			de::MovePtr<tcu::TestCaseGroup>	minFilterGroup(new tcu::TestCaseGroup(testCtx, minFilterModes[minFilterNdx].name, ""));
+
 			for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilterModes); magFilterNdx++)
 			{
+				de::MovePtr<tcu::TestCaseGroup>	magFilterGroup(new tcu::TestCaseGroup(testCtx, magFilterModes[magFilterNdx].name, ""));
+
 				for (int wrapSNdx = 0; wrapSNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapSNdx++)
 				{
+					de::MovePtr<tcu::TestCaseGroup>	wrapSGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapSNdx].name, ""));
+
 					for (int wrapTNdx = 0; wrapTNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapTNdx++)
 					{
-						const string							name			= string(minFilterModes[minFilterNdx].name) + "_" + magFilterModes[magFilterNdx].name + "_" + wrapModes[wrapSNdx].name + "_" + wrapModes[wrapTNdx].name;
+						const string							name			= wrapModes[wrapTNdx].name;
 						TextureCubeFilteringTestCaseParameters	testParameters;
 
 						testParameters.format					= VK_FORMAT_R8G8B8A8_UNORM;
@@ -1183,10 +1208,13 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 						testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 
-						combinationsGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+						wrapSGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
 					}
+					magFilterGroup->addChild(wrapSGroup.release());
 				}
+				minFilterGroup->addChild(magFilterGroup.release());
 			}
+			combinationsGroup->addChild(minFilterGroup.release());
 		}
 
 		// Cases with no visible cube edges.
@@ -1228,6 +1256,9 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
 		{
+			const string					filterGroupName = filterableFormatsByType[fmtNdx].name;
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
 				const Sampler::FilterMode			minFilter		= minFilterModes[filterNdx].mode;
@@ -1253,20 +1284,24 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				// Some tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
 				{
-					formatsGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+					filterGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
 				}
 			}
+			formatsGroup->addChild(filterGroup.release());
 		}
 
 		// Sizes.
 		for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes2DArray); sizeNdx++)
 		{
+			const string					filterGroupName = de::toString(sizes2DArray[sizeNdx].width) + "x" + de::toString(sizes2DArray[sizeNdx].height) + "x" + de::toString(sizes2DArray[sizeNdx].numLayers);
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
 				const Sampler::FilterMode			minFilter		= minFilterModes[filterNdx].mode;
 				const char* const					filterName		= minFilterModes[filterNdx].name;
 				const bool							isMipmap		= minFilter != Sampler::NEAREST && minFilter != Sampler::LINEAR;
-				const string						name			= de::toString(sizes2DArray[sizeNdx].width) + "x" + de::toString(sizes2DArray[sizeNdx].height) + "x" + de::toString(sizes2DArray[sizeNdx].numLayers) + "_" + filterName;
+				const string						name			= filterName;
 				Texture2DArrayTestCaseParameters	testParameters;
 
 				testParameters.format		= VK_FORMAT_R8G8B8A8_UNORM;
@@ -1280,20 +1315,27 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 				testParameters.programs.push_back(PROGRAM_2D_ARRAY_FLOAT);
 
-				sizesGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+				filterGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
 			}
+			sizesGroup->addChild(filterGroup.release());
 		}
 
 		// Wrap modes.
 		for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); minFilterNdx++)
 		{
+			de::MovePtr<tcu::TestCaseGroup>	minFilterGroup(new tcu::TestCaseGroup(testCtx, minFilterModes[minFilterNdx].name, ""));
+
 			for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilterModes); magFilterNdx++)
 			{
+				de::MovePtr<tcu::TestCaseGroup>	magFilterGroup(new tcu::TestCaseGroup(testCtx, magFilterModes[magFilterNdx].name, ""));
+
 				for (int wrapSNdx = 0; wrapSNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapSNdx++)
 				{
+					de::MovePtr<tcu::TestCaseGroup>	wrapSGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapSNdx].name, ""));
+
 					for (int wrapTNdx = 0; wrapTNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapTNdx++)
 					{
-						const string						name			= string(minFilterModes[minFilterNdx].name) + "_" + magFilterModes[magFilterNdx].name + "_" + wrapModes[wrapSNdx].name + "_" + wrapModes[wrapTNdx].name;
+						const string						name			= wrapModes[wrapTNdx].name;
 						Texture2DArrayTestCaseParameters	testParameters;
 
 						testParameters.format		= VK_FORMAT_R8G8B8A8_UNORM;
@@ -1307,10 +1349,13 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 						testParameters.programs.push_back(PROGRAM_2D_ARRAY_FLOAT);
 
-						combinationsGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+						wrapSGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
 					}
+					magFilterGroup->addChild(wrapSGroup.release());
 				}
+				minFilterGroup->addChild(magFilterGroup.release());
 			}
+			combinationsGroup->addChild(minFilterGroup.release());
 		}
 
 		group2DArray->addChild(formatsGroup.release());
@@ -1331,6 +1376,9 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
 		{
+			const string					filterGroupName = filterableFormatsByType[fmtNdx].name;
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
 				const Sampler::FilterMode	minFilter		= minFilterModes[filterNdx].mode;
@@ -1357,20 +1405,24 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				// Some tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
 				{
-					formatsGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+					filterGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
 				}
 			}
+			formatsGroup->addChild(filterGroup.release());
 		}
 
 		// Sizes.
 		for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes3D); sizeNdx++)
 		{
+			const string					filterGroupName = de::toString(sizes3D[sizeNdx].width) + "x" + de::toString(sizes3D[sizeNdx].height) + "x" + de::toString(sizes3D[sizeNdx].depth);
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
 				const Sampler::FilterMode		minFilter		= minFilterModes[filterNdx].mode;
 				const char* const				filterName		= minFilterModes[filterNdx].name;
 				const bool						isMipmap		= minFilter != Sampler::NEAREST && minFilter != Sampler::LINEAR;
-				const string					name			= de::toString(sizes3D[sizeNdx].width) + "x" + de::toString(sizes3D[sizeNdx].height) + "x" + de::toString(sizes3D[sizeNdx].depth) + "_" + filterName;
+				const string					name			= filterName;
 				Texture3DTestCaseParameters		testParameters;
 
 				testParameters.format		= VK_FORMAT_R8G8B8A8_UNORM;
@@ -1385,22 +1437,31 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 
-				sizesGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+				filterGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
 			}
+			sizesGroup->addChild(filterGroup.release());
 		}
 
 		// Wrap modes.
 		for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); minFilterNdx++)
 		{
+			de::MovePtr<tcu::TestCaseGroup>	minFilterGroup(new tcu::TestCaseGroup(testCtx, minFilterModes[minFilterNdx].name, ""));
+
 			for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilterModes); magFilterNdx++)
 			{
+				de::MovePtr<tcu::TestCaseGroup>	magFilterGroup(new tcu::TestCaseGroup(testCtx, magFilterModes[magFilterNdx].name, ""));
+
 				for (int wrapSNdx = 0; wrapSNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapSNdx++)
 				{
+					de::MovePtr<tcu::TestCaseGroup>	wrapSGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapSNdx].name, ""));
+
 					for (int wrapTNdx = 0; wrapTNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapTNdx++)
 					{
+						de::MovePtr<tcu::TestCaseGroup>	wrapTGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapTNdx].name, ""));
+
 						for (int wrapRNdx = 0; wrapRNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapRNdx++)
 						{
-							const string				name			= string(minFilterModes[minFilterNdx].name) + "_" + magFilterModes[magFilterNdx].name + "_" + wrapModes[wrapSNdx].name + "_" + wrapModes[wrapTNdx].name + "_" + wrapModes[wrapRNdx].name;
+							const string				name			= wrapModes[wrapRNdx].name;
 							Texture3DTestCaseParameters	testParameters;
 
 							testParameters.format		= VK_FORMAT_R8G8B8A8_UNORM;
@@ -1415,11 +1476,15 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 							testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 
-							combinationsGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+							wrapTGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
 						}
+						wrapSGroup->addChild(wrapTGroup.release());
 					}
+					magFilterGroup->addChild(wrapSGroup.release());
 				}
+				minFilterGroup->addChild(magFilterGroup.release());
 			}
+			combinationsGroup->addChild(minFilterGroup.release());
 		}
 
 		group3D->addChild(formatsGroup.release());
