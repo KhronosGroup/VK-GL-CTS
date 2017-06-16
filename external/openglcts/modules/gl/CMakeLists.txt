@@ -116,6 +116,8 @@ set(GLCTS_GL_SRCS
 	gl4cSparseTexture2Tests.hpp
 	gl4cSparseTextureClampTests.cpp
 	gl4cSparseTextureClampTests.hpp
+	gl4cSpirvExtensionsTests.cpp
+	gl4cSpirvExtensionsTests.hpp
 	gl4cParallelShaderCompileTests.cpp
 	gl4cParallelShaderCompileTests.hpp
 	gl4cPostDepthCoverageTests.cpp

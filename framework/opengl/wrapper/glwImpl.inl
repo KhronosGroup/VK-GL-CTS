@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
+ * Generated from Khronos GL API description (gl.xml) revision a27ed07cbf0a6240dcc7ac030f975af0c85d51a0.
  */
 
 void glwActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -692,14 +692,6 @@ void glwCompressedTexImage3D (GLenum target, GLint level, GLenum internalformat,
 	gl->compressedTexImage3D(target, level, internalformat, width, height, depth, border, imageSize, data);
 }
 
-void glwCompressedTexImage3DOES (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *data)
-{
-	const glw::Functions* gl = glw::getCurrentThreadFunctions();
-	if (!gl)
-		return;
-	gl->compressedTexImage3DOES(target, level, internalformat, width, height, depth, border, imageSize, data);
-}
-
 void glwCompressedTexSubImage1D (GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const void *data)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -722,14 +714,6 @@ void glwCompressedTexSubImage3D (GLenum target, GLint level, GLint xoffset, GLin
 	if (!gl)
 		return;
 	gl->compressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
-}
-
-void glwCompressedTexSubImage3DOES (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data)
-{
-	const glw::Functions* gl = glw::getCurrentThreadFunctions();
-	if (!gl)
-		return;
-	gl->compressedTexSubImage3DOES(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
 }
 
 void glwCompressedTextureImage1DEXT (GLuint texture, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLint border, GLsizei imageSize, const void *bits)
@@ -906,14 +890,6 @@ void glwCopyTexSubImage3D (GLenum target, GLint level, GLint xoffset, GLint yoff
 	if (!gl)
 		return;
 	gl->copyTexSubImage3D(target, level, xoffset, yoffset, zoffset, x, y, width, height);
-}
-
-void glwCopyTexSubImage3DOES (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height)
-{
-	const glw::Functions* gl = glw::getCurrentThreadFunctions();
-	if (!gl)
-		return;
-	gl->copyTexSubImage3DOES(target, level, xoffset, yoffset, zoffset, x, y, width, height);
 }
 
 void glwCopyTextureImage1DEXT (GLuint texture, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border)
@@ -1746,14 +1722,6 @@ void glwFramebufferTexture3D (GLenum target, GLenum attachment, GLenum textarget
 	if (!gl)
 		return;
 	gl->framebufferTexture3D(target, attachment, textarget, texture, level, zoffset);
-}
-
-void glwFramebufferTexture3DOES (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset)
-{
-	const glw::Functions* gl = glw::getCurrentThreadFunctions();
-	if (!gl)
-		return;
-	gl->framebufferTexture3DOES(target, attachment, textarget, texture, level, zoffset);
 }
 
 void glwFramebufferTextureLayer (GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer)
@@ -5268,14 +5236,6 @@ void glwTexImage3DMultisample (GLenum target, GLsizei samples, GLenum internalfo
 	gl->texImage3DMultisample(target, samples, internalformat, width, height, depth, fixedsamplelocations);
 }
 
-void glwTexImage3DOES (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels)
-{
-	const glw::Functions* gl = glw::getCurrentThreadFunctions();
-	if (!gl)
-		return;
-	gl->texImage3DOES(target, level, internalformat, width, height, depth, border, format, type, pixels);
-}
-
 void glwTexPageCommitmentARB (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLboolean commit)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -5394,14 +5354,6 @@ void glwTexSubImage3D (GLenum target, GLint level, GLint xoffset, GLint yoffset,
 	if (!gl)
 		return;
 	gl->texSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
-}
-
-void glwTexSubImage3DOES (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels)
-{
-	const glw::Functions* gl = glw::getCurrentThreadFunctions();
-	if (!gl)
-		return;
-	gl->texSubImage3DOES(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 }
 
 void glwTextureBarrier (void)

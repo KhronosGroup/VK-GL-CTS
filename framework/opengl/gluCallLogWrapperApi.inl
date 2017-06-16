@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
+ * Generated from Khronos GL API description (gl.xml) revision a27ed07cbf0a6240dcc7ac030f975af0c85d51a0.
  */
 void					glActiveShaderProgram								(glw::GLuint pipeline, glw::GLuint program);
 void					glActiveTexture										(glw::GLenum texture);
@@ -89,11 +89,9 @@ void					glCompressedMultiTexSubImage3DEXT					(glw::GLenum texunit, glw::GLenum
 void					glCompressedTexImage1D								(glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLint border, glw::GLsizei imageSize, const void *data);
 void					glCompressedTexImage2D								(glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLint border, glw::GLsizei imageSize, const void *data);
 void					glCompressedTexImage3D								(glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLsizei imageSize, const void *data);
-void					glCompressedTexImage3DOES							(glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLsizei imageSize, const void *data);
 void					glCompressedTexSubImage1D							(glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLsizei width, glw::GLenum format, glw::GLsizei imageSize, const void *data);
 void					glCompressedTexSubImage2D							(glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLsizei width, glw::GLsizei height, glw::GLenum format, glw::GLsizei imageSize, const void *data);
 void					glCompressedTexSubImage3D							(glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLsizei imageSize, const void *data);
-void					glCompressedTexSubImage3DOES						(glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLsizei imageSize, const void *data);
 void					glCompressedTextureImage1DEXT						(glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLint border, glw::GLsizei imageSize, const void *bits);
 void					glCompressedTextureImage2DEXT						(glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLint border, glw::GLsizei imageSize, const void *bits);
 void					glCompressedTextureImage3DEXT						(glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLsizei imageSize, const void *bits);
@@ -116,7 +114,6 @@ void					glCopyTexImage2D									(glw::GLenum target, glw::GLint level, glw::GL
 void					glCopyTexSubImage1D									(glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint x, glw::GLint y, glw::GLsizei width);
 void					glCopyTexSubImage2D									(glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height);
 void					glCopyTexSubImage3D									(glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height);
-void					glCopyTexSubImage3DOES								(glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height);
 void					glCopyTextureImage1DEXT								(glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLint border);
 void					glCopyTextureImage2DEXT								(glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height, glw::GLint border);
 void					glCopyTextureSubImage1D								(glw::GLuint texture, glw::GLint level, glw::GLint xoffset, glw::GLint x, glw::GLint y, glw::GLsizei width);
@@ -221,7 +218,6 @@ void					glFramebufferTexture								(glw::GLenum target, glw::GLenum attachment
 void					glFramebufferTexture1D								(glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level);
 void					glFramebufferTexture2D								(glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level);
 void					glFramebufferTexture3D								(glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level, glw::GLint zoffset);
-void					glFramebufferTexture3DOES							(glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level, glw::GLint zoffset);
 void					glFramebufferTextureLayer							(glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLint layer);
 void					glFrontFace											(glw::GLenum mode);
 void					glGenBuffers										(glw::GLsizei n, glw::GLuint *buffers);
@@ -661,7 +657,6 @@ void					glTexImage2D										(glw::GLenum target, glw::GLint level, glw::GLint
 void					glTexImage2DMultisample								(glw::GLenum target, glw::GLsizei samples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLboolean fixedsamplelocations);
 void					glTexImage3D										(glw::GLenum target, glw::GLint level, glw::GLint internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLenum format, glw::GLenum type, const void *pixels);
 void					glTexImage3DMultisample								(glw::GLenum target, glw::GLsizei samples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLboolean fixedsamplelocations);
-void					glTexImage3DOES										(glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLenum format, glw::GLenum type, const void *pixels);
 void					glTexPageCommitmentARB								(glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLboolean commit);
 void					glTexParameterIiv									(glw::GLenum target, glw::GLenum pname, const glw::GLint *params);
 void					glTexParameterIuiv									(glw::GLenum target, glw::GLenum pname, const glw::GLuint *params);
@@ -677,7 +672,6 @@ void					glTexStorage3DMultisample							(glw::GLenum target, glw::GLsizei sampl
 void					glTexSubImage1D										(glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLsizei width, glw::GLenum format, glw::GLenum type, const void *pixels);
 void					glTexSubImage2D										(glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLsizei width, glw::GLsizei height, glw::GLenum format, glw::GLenum type, const void *pixels);
 void					glTexSubImage3D										(glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLenum type, const void *pixels);
-void					glTexSubImage3DOES									(glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLenum type, const void *pixels);
 void					glTextureBarrier									(void);
 void					glTextureBuffer										(glw::GLuint texture, glw::GLenum internalformat, glw::GLuint buffer);
 void					glTextureBufferEXT									(glw::GLuint texture, glw::GLenum target, glw::GLenum internalformat, glw::GLuint buffer);

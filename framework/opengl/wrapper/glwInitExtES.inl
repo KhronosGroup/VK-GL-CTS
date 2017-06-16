@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
+ * Generated from Khronos GL API description (gl.xml) revision a27ed07cbf0a6240dcc7ac030f975af0c85d51a0.
  */
 
 if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
@@ -129,12 +129,12 @@ if (de::contains(extSet, "GL_OES_EGL_image"))
 
 if (de::contains(extSet, "GL_OES_texture_3D"))
 {
-	gl->compressedTexImage3DOES		= (glCompressedTexImage3DOESFunc)		loader->get("glCompressedTexImage3DOES");
-	gl->compressedTexSubImage3DOES	= (glCompressedTexSubImage3DOESFunc)	loader->get("glCompressedTexSubImage3DOES");
-	gl->copyTexSubImage3DOES		= (glCopyTexSubImage3DOESFunc)			loader->get("glCopyTexSubImage3DOES");
-	gl->framebufferTexture3DOES		= (glFramebufferTexture3DOESFunc)		loader->get("glFramebufferTexture3DOES");
-	gl->texImage3DOES				= (glTexImage3DOESFunc)					loader->get("glTexImage3DOES");
-	gl->texSubImage3DOES			= (glTexSubImage3DOESFunc)				loader->get("glTexSubImage3DOES");
+	gl->compressedTexImage3D	= (glCompressedTexImage3DFunc)		loader->get("glCompressedTexImage3DOES");
+	gl->compressedTexSubImage3D	= (glCompressedTexSubImage3DFunc)	loader->get("glCompressedTexSubImage3DOES");
+	gl->copyTexSubImage3D		= (glCopyTexSubImage3DFunc)			loader->get("glCopyTexSubImage3DOES");
+	gl->framebufferTexture3D	= (glFramebufferTexture3DFunc)		loader->get("glFramebufferTexture3DOES");
+	gl->texImage3D				= (glTexImage3DFunc)				loader->get("glTexImage3DOES");
+	gl->texSubImage3D			= (glTexSubImage3DFunc)				loader->get("glTexSubImage3DOES");
 }
 
 if (de::contains(extSet, "GL_OES_texture_storage_multisample_2d_array"))

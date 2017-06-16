@@ -4940,3 +4940,4 @@ KHR-GL45.limits.max_compute_work_group_size
 KHR-GL45.polygon_offset_clamp.PolygonOffsetClampAvailability
 KHR-GL45.polygon_offset_clamp.PolygonOffsetClampMinMax
 KHR-GL45.polygon_offset_clamp.PolygonOffsetClampZeroInfinity
+KHR-GL45.spirv_extensions.spirv_extensions_queries

@@ -60,6 +60,7 @@
 #include "gl4cSparseTexture2Tests.hpp"
 #include "gl4cSparseTextureClampTests.hpp"
 #include "gl4cSparseTextureTests.hpp"
+#include "gl4cSpirvExtensionsTests.hpp"
 #include "gl4cStencilTexturingTests.hpp"
 #include "gl4cSyncTests.hpp"
 #include "gl4cTextureBarrierTests.hpp"
@@ -366,6 +367,7 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::ShaderViewportLayerArray(getContext()));
 		addChild(new gl4cts::LimitsTests(getContext()));
 		addChild(new glcts::PolygonOffsetClamp(getContext()));
+		addChild(new gl4cts::SpirvExtensionsTests(getContext()));
 	}
 	catch (...)
 	{

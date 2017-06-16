@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
+ * Generated from Khronos GL API description (gl.xml) revision a27ed07cbf0a6240dcc7ac030f975af0c85d51a0.
  */
 
 GLW_APICALL void GLW_APIENTRY glActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -767,20 +767,6 @@ GLW_APICALL void GLW_APIENTRY glCompressedTexImage3D (GLenum target, GLint level
 
 }
 
-GLW_APICALL void GLW_APIENTRY glCompressedTexImage3DOES (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *data)
-{
-	DE_UNREF(target);
-	DE_UNREF(level);
-	DE_UNREF(internalformat);
-	DE_UNREF(width);
-	DE_UNREF(height);
-	DE_UNREF(depth);
-	DE_UNREF(border);
-	DE_UNREF(imageSize);
-	DE_UNREF(data);
-
-}
-
 GLW_APICALL void GLW_APIENTRY glCompressedTexSubImage1D (GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const void *data)
 {
 	DE_UNREF(target);
@@ -808,22 +794,6 @@ GLW_APICALL void GLW_APIENTRY glCompressedTexSubImage2D (GLenum target, GLint le
 }
 
 GLW_APICALL void GLW_APIENTRY glCompressedTexSubImage3D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data)
-{
-	DE_UNREF(target);
-	DE_UNREF(level);
-	DE_UNREF(xoffset);
-	DE_UNREF(yoffset);
-	DE_UNREF(zoffset);
-	DE_UNREF(width);
-	DE_UNREF(height);
-	DE_UNREF(depth);
-	DE_UNREF(format);
-	DE_UNREF(imageSize);
-	DE_UNREF(data);
-
-}
-
-GLW_APICALL void GLW_APIENTRY glCompressedTexSubImage3DOES (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data)
 {
 	DE_UNREF(target);
 	DE_UNREF(level);
@@ -1126,20 +1096,6 @@ GLW_APICALL void GLW_APIENTRY glCopyTexSubImage2D (GLenum target, GLint level, G
 }
 
 GLW_APICALL void GLW_APIENTRY glCopyTexSubImage3D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height)
-{
-	DE_UNREF(target);
-	DE_UNREF(level);
-	DE_UNREF(xoffset);
-	DE_UNREF(yoffset);
-	DE_UNREF(zoffset);
-	DE_UNREF(x);
-	DE_UNREF(y);
-	DE_UNREF(width);
-	DE_UNREF(height);
-
-}
-
-GLW_APICALL void GLW_APIENTRY glCopyTexSubImage3DOES (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height)
 {
 	DE_UNREF(target);
 	DE_UNREF(level);
@@ -1957,17 +1913,6 @@ GLW_APICALL void GLW_APIENTRY glFramebufferTexture2D (GLenum target, GLenum atta
 }
 
 GLW_APICALL void GLW_APIENTRY glFramebufferTexture3D (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset)
-{
-	DE_UNREF(target);
-	DE_UNREF(attachment);
-	DE_UNREF(textarget);
-	DE_UNREF(texture);
-	DE_UNREF(level);
-	DE_UNREF(zoffset);
-
-}
-
-GLW_APICALL void GLW_APIENTRY glFramebufferTexture3DOES (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset)
 {
 	DE_UNREF(target);
 	DE_UNREF(attachment);
@@ -5699,21 +5644,6 @@ GLW_APICALL void GLW_APIENTRY glTexImage3DMultisample (GLenum target, GLsizei sa
 
 }
 
-GLW_APICALL void GLW_APIENTRY glTexImage3DOES (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels)
-{
-	DE_UNREF(target);
-	DE_UNREF(level);
-	DE_UNREF(internalformat);
-	DE_UNREF(width);
-	DE_UNREF(height);
-	DE_UNREF(depth);
-	DE_UNREF(border);
-	DE_UNREF(format);
-	DE_UNREF(type);
-	DE_UNREF(pixels);
-
-}
-
 GLW_APICALL void GLW_APIENTRY glTexPageCommitmentARB (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLboolean commit)
 {
 	DE_UNREF(target);
@@ -5856,22 +5786,6 @@ GLW_APICALL void GLW_APIENTRY glTexSubImage2D (GLenum target, GLint level, GLint
 }
 
 GLW_APICALL void GLW_APIENTRY glTexSubImage3D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels)
-{
-	DE_UNREF(target);
-	DE_UNREF(level);
-	DE_UNREF(xoffset);
-	DE_UNREF(yoffset);
-	DE_UNREF(zoffset);
-	DE_UNREF(width);
-	DE_UNREF(height);
-	DE_UNREF(depth);
-	DE_UNREF(format);
-	DE_UNREF(type);
-	DE_UNREF(pixels);
-
-}
-
-GLW_APICALL void GLW_APIENTRY glTexSubImage3DOES (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels)
 {
 	DE_UNREF(target);
 	DE_UNREF(level);

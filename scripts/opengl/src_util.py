@@ -36,10 +36,10 @@ EGL_DIR				= os.path.normpath(os.path.join(SCRIPTS_DIR, "..", "..", "framework",
 OPENGL_INC_DIR		= os.path.join(OPENGL_DIR, "wrapper")
 
 GL_SOURCE			= khr_util.registry_cache.RegistrySource(
-						"https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry",
+						"git@gitlab.khronos.org:opengl/registry.git",
 						"xml/gl.xml",
-						"97558118d4a8ab2af749867899555273c20827ce",
-						"2475e1ff6d69048e67a49188d8be09195b261ed96b2b4108a0f7d7a459834674")
+						"a27ed07cbf0a6240dcc7ac030f975af0c85d51a0",
+						"3b653b7b49fe271f16c73b64251087103801632d6f381110cf8b2f1dbe301e15")
 
 EXTENSIONS			= [
 	'GL_KHR_texture_compression_astc_ldr',
@@ -111,6 +111,7 @@ EXTENSIONS			= [
 	'GL_ARB_shader_viewport_layer_array',
 	'GL_ARB_sparse_buffer',
 	'GL_ARB_sparse_texture',
+	'GL_ARB_spirv_extensions',
 	'GL_ARB_tessellation_shader',
 	'GL_ARB_texture_barrier',
 	'GL_ARB_texture_filter_minmax',

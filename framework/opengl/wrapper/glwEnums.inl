@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
+ * Generated from Khronos GL API description (gl.xml) revision a27ed07cbf0a6240dcc7ac030f975af0c85d51a0.
  */
 #define GL_DEPTH_BUFFER_BIT												0x00000100
 #define GL_STENCIL_BUFFER_BIT											0x00000400
@@ -1759,3 +1759,5 @@
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR						0x93DC
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12							0x93DD
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR						0x93DD
+#define GL_SPIR_V_EXTENSIONS											0x9553
+#define GL_NUM_SPIR_V_EXTENSIONS										0x9554
