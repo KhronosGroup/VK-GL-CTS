@@ -572,6 +572,8 @@ TestImage::TestImage (Context& context, TextureType texType, tcu::TextureFormat 
 	for (size_t ndx = 0; ndx < numReplicas; ++ndx)
 		deMemcpy((deUint8*)alloc->getHostPtr() + ndx*pixelSize, colorValue, pixelSize);
 
+	flushMappedMemoryRange(vkd, device, alloc->getMemory(), alloc->getOffset(), VK_WHOLE_SIZE);
+
 	{
 		const Unique<VkCommandPool>		cmdPool			(createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex()));
 		const Unique<VkCommandBuffer>	cmdBuf			(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));

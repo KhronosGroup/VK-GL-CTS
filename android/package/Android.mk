@@ -31,7 +31,8 @@ LOCAL_JNI_SHARED_LIBRARIES := libdeqp
 LOCAL_ASSET_DIR := \
 	$(LOCAL_PATH)/../../data \
 	$(LOCAL_PATH)/../../external/vulkancts/data \
-	$(LOCAL_PATH)/../../../../prebuilts/deqp/spirv
+	$(LOCAL_PATH)/../../../../prebuilts/deqp/spirv \
+	$(LOCAL_PATH)/../../external/graphicsfuzz/data
 
 LOCAL_PACKAGE_NAME := com.drawelements.deqp
 LOCAL_MULTILIB := both

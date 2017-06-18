@@ -261,7 +261,7 @@ inline bool imageCompare (tcu::TestLog& log, const tcu::ConstPixelBufferAccess& 
 			tcu::COMPARE_LOG_RESULT);
 	}
 	else
-		return tcu::fuzzyCompare(log, "Result", "Image comparison result", reference, result, 0.05f, tcu::COMPARE_LOG_RESULT);
+		return tcu::fuzzyCompare(log, "Result", "Image comparison result", reference, result, 0.053f, tcu::COMPARE_LOG_RESULT);
 }
 
 class DrawTestInstanceBase : public TestInstance
