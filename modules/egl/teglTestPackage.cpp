@@ -65,6 +65,7 @@
 #include "teglMutableRenderBufferTests.hpp"
 #include "teglGetFrameTimestampsTests.hpp"
 #include "teglRobustnessTests.hpp"
+#include "teglWideColorTests.hpp"
 
 namespace deqp
 {
@@ -142,6 +143,7 @@ public:
 		addChild(new MutableRenderBufferTests	(m_eglTestCtx));
 		addChild(createGetFrameTimestampsTests	(m_eglTestCtx));
 		addChild(createRobustnessTests			(m_eglTestCtx));
+		addChild(createWideColorTests			(m_eglTestCtx));
 	}
 };
 

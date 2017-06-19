@@ -41,7 +41,11 @@ TYPED_VALUES = [
 
 def enumValue (enum, typePrefix = ""):
 	if enum.name in TYPED_VALUES:
-		return enum.value.replace("(EGL", "(%sEGL" % typePrefix)
+          # incoming is EGL_CAST(<type>, <value>)
+          n,v = enum.value.split(",", 1)
+          # output is ((<typePrefix>::<type>)<value>)
+          return "((%s%s)%s" % (typePrefix, n.replace("EGL_CAST(", ""), v)
+
 	else:
 		return normalizeConstant(enum.value)
 

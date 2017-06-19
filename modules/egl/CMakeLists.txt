@@ -101,6 +101,8 @@ set(DEQP_EGL_SRCS
 	teglThreadCleanUpTests.cpp
 	teglRobustnessTests.hpp
 	teglRobustnessTests.cpp
+	teglWideColorTests.hpp
+	teglWideColorTests.cpp
 	)
 
 set(DEQP_EGL_LIBS
