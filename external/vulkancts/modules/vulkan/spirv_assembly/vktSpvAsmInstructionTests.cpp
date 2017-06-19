@@ -2310,9 +2310,17 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
+		"%uvec2     = OpTypeVector %u32 2\n"
+		"%bvec3     = OpTypeVector %bool 3\n"
+		"%fvec4     = OpTypeVector %f32 4\n"
+		"%fmat33    = OpTypeMatrix %fvec3 3\n"
+		"%const100  = OpConstant %u32 100\n"
+		"%uarr100   = OpTypeArray %i32 %const100\n"
+		"%struct    = OpTypeStruct %f32 %i32 %u32\n"
+		"%pointer   = OpTypePointer Function %i32\n"
+		+ string(getComputeAsmInputOutputBuffer()) +
 
-		"${TYPE}\n"
 		"%null      = OpConstantNull ${TYPE}\n"
 
 		"%id        = OpVariable %uvec3ptr Input\n"
@@ -3397,9 +3405,18 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
-
-		"${TYPE}\n"
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
+		"%uvec2     = OpTypeVector %u32 2\n"
+		"%fvec4     = OpTypeVector %f32 4\n"
+		"%fmat33    = OpTypeMatrix %fvec3 3\n"
+		"%image     = OpTypeImage %f32 2D 0 0 0 1 Unknown\n"
+		"%sampler   = OpTypeSampler\n"
+		"%simage    = OpTypeSampledImage %image\n"
+		"%const100  = OpConstant %u32 100\n"
+		"%uarr100   = OpTypeArray %i32 %const100\n"
+		"%struct    = OpTypeStruct %f32 %i32 %u32\n"
+		"%pointer   = OpTypePointer Function %i32\n"
+		+ string(getComputeAsmInputOutputBuffer()) +
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
