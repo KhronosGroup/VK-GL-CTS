@@ -771,7 +771,7 @@ bool gl3cts::TransformFeedback::APIErrors::testExtension1(void)
 
 	unsigned short int invalid_name = 1;
 
-	while (gl.isProgram(invalid_name))
+	while (gl.isProgram(invalid_name) || gl.isShader(invalid_name))
 	{
 		++invalid_name;
 
