@@ -21788,7 +21788,7 @@ void XFBBlockMemberStrideTest::getShaderInterface(GLuint /* test_case_index */, 
 {
 	static const GLchar* gs = "layout (xfb_buffer = 0, xfb_offset = 0) out Goku {\n"
 							  "                             vec4 gohan;\n"
-							  "    layout (xfb_stride = 32) vec4 goten;\n"
+							  "    layout (xfb_stride = 48) vec4 goten;\n"
 							  "                             vec4 chichi;\n"
 							  "};\n"
 							  "layout(binding = 0) uniform gs_block {\n"
@@ -21844,7 +21844,7 @@ bool XFBBlockMemberStrideTest::inspectProgram(GLuint /* test_case_index*/, Utils
 	if ((0 != gohan_offset) || (16 != goten_offset) || (32 != chichi_offset))
 	{
 		out_stream << "Got wrong offset: [" << gohan_offset << ", " << goten_offset << ", " << chichi_offset
-				   << "] expected: [0, 16, 48]";
+				   << "] expected: [0, 16, 32]";
 		return false;
 	}
 
