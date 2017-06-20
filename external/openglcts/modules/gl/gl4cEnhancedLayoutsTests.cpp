@@ -19331,16 +19331,18 @@ void FragmentDataLocationAPITest::prepareFramebuffer(Utils::Framebuffer& framebu
 
 	/* Set up drawbuffers */
 	const Functions& gl = m_context.getRenderContext().getFunctions();
-	//  1. There are only 4 outputs in fragment shader, so only need to do buffer mapping for 4 attachments,
-	//  2. another issue is each output variable has a location, it is the fragment color index, so the index of
-	//  GL_COLOR_ATTACHMENT in glDrawBuffers() should keep the same with the location, to make test correct,
-	//  we needt to change the above code of glDrawBuffers() as :
-	GLint  buffers_size = 4;
-	GLenum buffers[]	= { GLenum(GL_COLOR_ATTACHMENT0 + m_chichi_location),
-						 GLenum(GL_COLOR_ATTACHMENT0 + m_goku_location),
-						 GLenum(GL_COLOR_ATTACHMENT0 + m_goten_location),
-						 GLenum(GL_COLOR_ATTACHMENT0 + m_gohan_location) };
-	gl.drawBuffers(buffers_size, buffers);
+	// The fragment shader can have more than 4 color outputs, but it only care about 4 (goku, gohan, goten, chichi).
+	// We will first initialize all draw buffers to NONE and then set the real value for the 4 outputs we care about
+	GLint maxDrawBuffers = 0;
+	gl.getIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
+
+	std::vector<GLenum> buffers(maxDrawBuffers, GL_NONE);
+	buffers[m_chichi_location] = GLenum(GL_COLOR_ATTACHMENT0 + m_chichi_location);
+	buffers[m_goten_location]  = GLenum(GL_COLOR_ATTACHMENT0 + m_goten_location);
+	buffers[m_goku_location]   = GLenum(GL_COLOR_ATTACHMENT0 + m_goku_location);
+	buffers[m_gohan_location]  = GLenum(GL_COLOR_ATTACHMENT0 + m_gohan_location);
+
+	gl.drawBuffers(maxDrawBuffers, buffers.data());
 	GLU_EXPECT_NO_ERROR(gl.getError(), "DrawBuffers");
 }
 
