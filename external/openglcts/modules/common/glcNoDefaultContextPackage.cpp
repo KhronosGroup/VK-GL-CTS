@@ -22,6 +22,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "glcNoDefaultContextPackage.hpp"
+#include "glcContextFlagsTests.hpp"
 #include "glcNoErrorTests.hpp"
 #include "glcRobustnessTests.hpp"
 #include "gluRenderContext.hpp"
@@ -89,6 +90,7 @@ void NoDefaultContextPackage::init(void)
 
 	tcu::TestCaseGroup* gl45Group = new tcu::TestCaseGroup(getTestContext(), "gl45", "");
 	gl45Group->addChild(new glcts::RobustnessTests(getTestContext(), glu::ApiType::core(4, 5)));
+	gl45Group->addChild(new glcts::ContextFlagsTests(getTestContext(), glu::ApiType::core(4, 5)));
 	addChild(gl45Group);
 
 	tcu::TestCaseGroup* es2Group = new tcu::TestCaseGroup(getTestContext(), "es2", "");
@@ -97,6 +99,7 @@ void NoDefaultContextPackage::init(void)
 
 	tcu::TestCaseGroup* es32Group = new tcu::TestCaseGroup(getTestContext(), "es32", "");
 	es32Group->addChild(new glcts::RobustnessTests(getTestContext(), glu::ApiType::es(3, 2)));
+	es32Group->addChild(new glcts::ContextFlagsTests(getTestContext(), glu::ApiType::es(3, 2)));
 	addChild(es32Group);
 }
 

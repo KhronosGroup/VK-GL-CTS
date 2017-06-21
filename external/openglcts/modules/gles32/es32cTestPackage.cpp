@@ -23,7 +23,6 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "es32cTestPackage.hpp"
-#include "es32cContextFlagsTests.hpp"
 #include "es32cRobustBufferAccessBehaviorTests.hpp"
 #include "esextcTestPackage.hpp"
 #include "glcFragDepthTests.hpp"
@@ -156,9 +155,6 @@ void ES32TestPackage::init(void)
 		coreGroup->addChild(new glcts::TextureBufferTests(getContext(), extParams));
 		coreGroup->addChild(new glcts::DrawBuffersIndexedTests(getContext(), extParams));
 		addChild(coreGroup);
-		tcu::TestCaseGroup* contextFlagsGroup = new tcu::TestCaseGroup(getTestContext(), "context_flags", "");
-		contextFlagsGroup->addChild(new es32cts::ContextFlagsTests(getContext()));
-		addChild(contextFlagsGroup);
 		tcu::TestCaseGroup* robustGroup = new tcu::TestCaseGroup(getTestContext(), "robust", "");
 		robustGroup->addChild(new es32cts::RobustBufferAccessBehaviorTests(getContext()));
 		addChild(robustGroup);
