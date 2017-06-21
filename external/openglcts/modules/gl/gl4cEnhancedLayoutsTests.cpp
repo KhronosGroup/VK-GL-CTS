@@ -16564,10 +16564,6 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 									"    {\n"
 									"        result += vec4(1, 0.5, 0.25, 0.125);\n"
 									"    }\n";
-	static const GLchar* test_both = "    if (TYPE(0) == gohanINDEX)\n"
-									 "    {\n"
-									 "        result = vec4(goten.xxxx);\n"
-									 "    }\n";
 	static const GLchar* fs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
@@ -16776,11 +16772,6 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 		const GLchar* type_name = test_case.m_type.GetGLSLTypeName();
 		const GLchar* var_use   = test_one;
 
-		if (true == test_case.m_use_both)
-		{
-			var_use = test_both;
-		}
-
 		if (true == is_flat_req)
 		{
 			flat = "flat";
@@ -16904,7 +16895,7 @@ bool InputComponentAliasingTest::isFailureExpected(GLuint test_case_index)
 {
 	testCase& test_case = m_test_cases[test_case_index];
 
-	return !((Utils::Shader::VERTEX == test_case.m_stage) && (false == test_case.m_use_both));
+	return (Utils::Shader::VERTEX != test_case.m_stage);
 }
 
 /** Prepare all test cases
@@ -16912,17 +16903,23 @@ bool InputComponentAliasingTest::isFailureExpected(GLuint test_case_index)
  **/
 void InputComponentAliasingTest::testInit()
 {
-	static const GLuint n_components_per_location = 4;
 	const GLuint		n_types					  = getTypesNumber();
 
 	for (GLuint i = 0; i < n_types; ++i)
 	{
-		const Utils::Type& type				= getType(i);
-		const GLuint	   n_req_components = type.m_n_rows;
-		const GLuint	   valid_component  = n_components_per_location - n_req_components;
-
+		const Utils::Type& type						 = getType(i);
+		const bool		   use_double				 = (Utils::Type::Double == type.m_basic_type);
+		const GLuint	   n_components_per_location = use_double ? 2 : 4;
+		const GLuint	   n_req_components			 = type.m_n_rows;
+		const GLint		   valid_component			 = (GLint)n_components_per_location - (GLint)n_req_components;
+		const GLuint	   component_size			 = use_double ? 2 : 1;
 		/* Skip matrices */
 		if (1 != type.m_n_columns)
+		{
+			continue;
+		}
+		/* Skip dvec3/dvec4 which doesn't support the component qualifier */
+		if (valid_component < 0)
 		{
 			continue;
 		}
@@ -16934,26 +16931,20 @@ void InputComponentAliasingTest::testInit()
 				continue;
 			}
 
-			for (GLuint gohan = 0; gohan <= valid_component; ++gohan)
+			for (GLuint gohan = 0; gohan <= (GLuint)valid_component; ++gohan)
 			{
 				const GLint first_aliasing = gohan - n_req_components + 1;
 				const GLint last_aliasing  = gohan + n_req_components - 1;
 
 				const GLuint goten_start = std::max(0, first_aliasing);
-				const GLuint goten_stop  = std::min((GLint)valid_component, last_aliasing);
+				const GLuint goten_stop  = std::min(valid_component, last_aliasing);
 
 				for (GLuint goten = goten_start; goten <= goten_stop; ++goten)
 				{
-					testCase test_case = { gohan, goten, (Utils::Shader::STAGES)stage, type, false };
+					testCase test_case = { gohan * component_size, goten * component_size, (Utils::Shader::STAGES)stage,
+										   type };
 
 					m_test_cases.push_back(test_case);
-
-					if (Utils::Shader::VERTEX == test_case.m_stage)
-					{
-						test_case.m_use_both = true;
-
-						m_test_cases.push_back(test_case);
-					}
 				}
 			}
 		}

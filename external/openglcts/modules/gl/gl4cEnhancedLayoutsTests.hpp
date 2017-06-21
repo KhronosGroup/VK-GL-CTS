@@ -2914,7 +2914,6 @@ private:
 		glw::GLuint			  m_component_goten;
 		Utils::Shader::STAGES m_stage;
 		Utils::Type			  m_type;
-		bool				  m_use_both;
 	};
 
 	/* Private fields */
