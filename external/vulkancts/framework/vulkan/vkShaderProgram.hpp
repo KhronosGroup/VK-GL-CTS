@@ -1,5 +1,5 @@
-#ifndef _VKGLSLPROGRAM_HPP
-#define _VKGLSLPROGRAM_HPP
+#ifndef _VKSHADERPROGRAM_HPP
+#define _VKSHADERPROGRAM_HPP
 /*-------------------------------------------------------------------------
  * Vulkan CTS Framework
  * --------------------
@@ -20,7 +20,7 @@
  *
  *//*!
  * \file
- * \brief GLSL source program.
+ * \brief Shader (GLSL/HLSL) source program.
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
@@ -36,7 +36,7 @@ class TestLog;
 namespace vk
 {
 
-struct GlslBuildOptions
+struct ShaderBuildOptions
 {
 	enum Flags
 	{
@@ -47,30 +47,48 @@ struct GlslBuildOptions
 	SpirvVersion	targetVersion;
 	deUint32		flags;
 
-	GlslBuildOptions (SpirvVersion targetVersion_, deUint32 flags_)
+	ShaderBuildOptions (SpirvVersion targetVersion_, deUint32 flags_)
 		: targetVersion	(targetVersion_)
 		, flags			(flags_)
 	{}
 
-	GlslBuildOptions (void)
+	ShaderBuildOptions (void)
 		: targetVersion	(SPIRV_VERSION_1_0)
 		, flags			(0u)
 	{}
 };
 
-struct GlslSource
+enum ShaderLanguage
 {
-	std::vector<std::string>	sources[glu::SHADERTYPE_LAST];
-	GlslBuildOptions			buildOptions;
+	SHADER_LANGUAGE_GLSL = 0,
+	SHADER_LANGUAGE_HLSL,
 
-								GlslSource (void) {}
-
-	GlslSource&					operator<<			(const glu::ShaderSource& shaderSource)	{ sources[shaderSource.shaderType].push_back(shaderSource.source);	return *this;	}
-	GlslSource&					operator<<			(const GlslBuildOptions& buildOptions_)	{ buildOptions = buildOptions_;										return *this;	}
+	SHADER_LANGUAGE_LAST
 };
 
-tcu::TestLog&	operator<<		(tcu::TestLog& log, const GlslSource& glslSource);
+struct GlslSource
+{
+	static const ShaderLanguage	shaderLanguage = SHADER_LANGUAGE_GLSL;
+	std::vector<std::string>	sources[glu::SHADERTYPE_LAST];
+	ShaderBuildOptions			buildOptions;
+
+	GlslSource&					operator<<		(const glu::ShaderSource& shaderSource);
+	GlslSource&					operator<<		(const ShaderBuildOptions& buildOptions_);
+};
+
+struct HlslSource
+{
+	static const ShaderLanguage	shaderLanguage = SHADER_LANGUAGE_HLSL;
+	std::vector<std::string>	sources[glu::SHADERTYPE_LAST];
+	ShaderBuildOptions			buildOptions;
+
+	HlslSource&					operator<<		(const glu::ShaderSource& shaderSource);
+	HlslSource&					operator<<		(const ShaderBuildOptions& buildOptions_);
+};
+
+tcu::TestLog&	operator<<		(tcu::TestLog& log, const GlslSource& shaderSource);
+tcu::TestLog&	operator<<		(tcu::TestLog& log, const HlslSource& shaderSource);
 
 } // vk
 
-#endif // _VKGLSLPROGRAM_HPP
+#endif // _VKSHADERPROGRAM_HPP

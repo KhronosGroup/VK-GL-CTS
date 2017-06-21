@@ -34,8 +34,6 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkDebugReportUtil.cpp \
 	external/vulkancts/framework/vulkan/vkDefs.cpp \
 	external/vulkancts/framework/vulkan/vkDeviceUtil.cpp \
-	external/vulkancts/framework/vulkan/vkGlslProgram.cpp \
-	external/vulkancts/framework/vulkan/vkGlslToSpirV.cpp \
 	external/vulkancts/framework/vulkan/vkImageUtil.cpp \
 	external/vulkancts/framework/vulkan/vkImageWithMemory.cpp \
 	external/vulkancts/framework/vulkan/vkMemUtil.cpp \
@@ -45,6 +43,8 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkQueryUtil.cpp \
 	external/vulkancts/framework/vulkan/vkRef.cpp \
 	external/vulkancts/framework/vulkan/vkRefUtil.cpp \
+	external/vulkancts/framework/vulkan/vkShaderProgram.cpp \
+	external/vulkancts/framework/vulkan/vkShaderToSpirV.cpp \
 	external/vulkancts/framework/vulkan/vkSpirVAsm.cpp \
 	external/vulkancts/framework/vulkan/vkSpirVProgram.cpp \
 	external/vulkancts/framework/vulkan/vkStrUtil.cpp \

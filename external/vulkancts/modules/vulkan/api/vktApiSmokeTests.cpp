@@ -102,7 +102,7 @@ void createShaderProgs (SourceCollections& dst)
 {
 	dst.glslSources.add("test") << glu::VertexSource(
 		"#version 310 es\n"
-		"in highp vec4 a_position;\n"
+		"layout(location = 0) in highp vec4 a_position;\n"
 		"void main (void) { gl_Position = a_position; }\n");
 }
 

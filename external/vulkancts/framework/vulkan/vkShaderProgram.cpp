@@ -18,17 +18,41 @@
  *
  *//*!
  * \file
- * \brief GLSL source program.
+ * \brief Shader source program.
  *//*--------------------------------------------------------------------*/
 
-#include "vkGlslProgram.hpp"
+#include "vkShaderProgram.hpp"
 
 #include "tcuTestLog.hpp"
 
 namespace vk
 {
 
-tcu::TestLog& operator<< (tcu::TestLog& log, const GlslSource& glslSource)
+GlslSource& GlslSource::operator<< (const glu::ShaderSource& shaderSource)
+{
+	sources[shaderSource.shaderType].push_back(shaderSource.source);
+	return *this;
+}
+
+GlslSource& GlslSource::operator<< (const ShaderBuildOptions& buildOptions_)
+{
+	buildOptions = buildOptions_;
+	return *this;
+}
+
+HlslSource& HlslSource::operator<< (const glu::ShaderSource& shaderSource)
+{
+	sources[shaderSource.shaderType].push_back(shaderSource.source);
+	return *this;
+}
+
+HlslSource& HlslSource::operator<< (const ShaderBuildOptions& buildOptions_)
+{
+	buildOptions = buildOptions_;
+	return *this;
+}
+
+tcu::TestLog& logShader(tcu::TestLog& log, const std::vector<std::string> (&sources)[glu::SHADERTYPE_LAST])
 {
 	log << tcu::TestLog::ShaderProgram(false, "(Source only)");
 
@@ -36,10 +60,10 @@ tcu::TestLog& operator<< (tcu::TestLog& log, const GlslSource& glslSource)
 	{
 		for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; shaderType++)
 		{
-			for (size_t shaderNdx = 0; shaderNdx < glslSource.sources[shaderType].size(); shaderNdx++)
+			for (size_t shaderNdx = 0; shaderNdx < sources[shaderType].size(); shaderNdx++)
 			{
 				log << tcu::TestLog::Shader(glu::getLogShaderType((glu::ShaderType)shaderType),
-											glslSource.sources[shaderType][shaderNdx],
+											sources[shaderType][shaderNdx],
 											false, "");
 			}
 		}
@@ -53,6 +77,16 @@ tcu::TestLog& operator<< (tcu::TestLog& log, const GlslSource& glslSource)
 	log << tcu::TestLog::EndShaderProgram;
 
 	return log;
+}
+
+tcu::TestLog& operator<< (tcu::TestLog& log, const GlslSource& shaderSource)
+{
+	return logShader(log, shaderSource.sources);
+}
+
+tcu::TestLog& operator<< (tcu::TestLog& log, const HlslSource& shaderSource)
+{
+	return logShader(log, shaderSource.sources);
 }
 
 } // vk

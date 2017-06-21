@@ -1,5 +1,5 @@
-#ifndef _VKGLSLTOSPIRV_HPP
-#define _VKGLSLTOSPIRV_HPP
+#ifndef _VKSHADERTOSPIRV_HPP
+#define _VKSHADERTOSPIRV_HPP
 /*-------------------------------------------------------------------------
  * Vulkan CTS Framework
  * --------------------
@@ -20,7 +20,7 @@
  *
  *//*!
  * \file
- * \brief GLSL to SPIR-V.
+ * \brief Shading language (GLSL/HLSL) to SPIR-V.
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
@@ -48,6 +48,21 @@ namespace vk
 bool	compileGlslToSpirV		(const GlslSource& src, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo);
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Compile HLSL program to SPIR-V binary
+ * \param src
+ * \param dst
+ * \param buildInfo
+ * \return True if compilation and linking succeeded, false otherwise
+ *
+ * If deqp was built without glslang (and thus compiler is not available)
+ * tcu::NotSupportedError will be thrown instead.
+ *
+ * \note No linking is currently supported so src may contain source
+ *       for only one shader stage.
+ *//*--------------------------------------------------------------------*/
+bool	compileHlslToSpirV		(const HlslSource& src, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo);
+
+/*--------------------------------------------------------------------*//*!
  * \brief Strip SPIR-V binary
  * \param src
  * \param dst
@@ -61,4 +76,4 @@ void	stripSpirVDebugInfo		(const size_t numSrcInstrs, const deUint32* srcInstrs,
 
 } // vk
 
-#endif // _VKGLSLTOSPIRV_HPP
+#endif // _VKSHADERTOSPIRV_HPP

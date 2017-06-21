@@ -23,8 +23,8 @@ set(VKUTIL_SRCS
 	vkMemUtil.hpp
 	vkDeviceUtil.cpp
 	vkDeviceUtil.hpp
-	vkGlslToSpirV.cpp
-	vkGlslToSpirV.hpp
+	vkShaderToSpirV.cpp
+	vkShaderToSpirV.hpp
 	vkSpirVAsm.hpp
 	vkSpirVAsm.cpp
 	vkSpirVProgram.hpp
@@ -49,12 +49,12 @@ set(VKUTIL_SRCS
 	vkBufferWithMemory.hpp
 	vkImageWithMemory.cpp
 	vkImageWithMemory.hpp
-	vkGlslProgram.cpp
-	vkGlslProgram.hpp
 	vkBufferWithMemory.cpp
 	vkBufferWithMemory.hpp
 	vkImageWithMemory.cpp
 	vkImageWithMemory.hpp
+	vkShaderProgram.cpp
+	vkShaderProgram.hpp
 	)
 
 set(VKUTIL_LIBS
@@ -70,7 +70,7 @@ if (DEQP_HAVE_GLSLANG)
 	#       that cause all sorts of warnings to appear.
 	if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 		set_source_files_properties(
-			FILES vkGlslToSpirV.cpp
+			FILES vkShaderToSpirV.cpp
 			PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS} -std=c++11")
 	endif ()
 

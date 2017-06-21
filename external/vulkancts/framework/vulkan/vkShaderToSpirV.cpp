@@ -18,10 +18,10 @@
  *
  *//*!
  * \file
- * \brief GLSL to SPIR-V.
+ * \brief Shading language (GLSL/HLSL) to SPIR-V.
  *//*--------------------------------------------------------------------*/
 
-#include "vkGlslToSpirV.hpp"
+#include "vkShaderToSpirV.hpp"
 #include "deArrayUtil.hpp"
 #include "deSingleton.h"
 #include "deMemory.h"
@@ -191,28 +191,28 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 	builtin->maxSamples									= 4;
 };
 
-int getNumShaderStages (const GlslSource& program)
+int getNumShaderStages (const std::vector<std::string>* sources)
 {
 	int numShaderStages = 0;
 
 	for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; ++shaderType)
 	{
-		if (!program.sources[shaderType].empty())
+		if (!sources[shaderType].empty())
 			numShaderStages += 1;
 	}
 
 	return numShaderStages;
 }
 
-std::string getShaderStageSource (const GlslSource& program, glu::ShaderType shaderType)
+std::string getShaderStageSource (const std::vector<std::string>* sources, const ShaderBuildOptions buildOptions, glu::ShaderType shaderType)
 {
-	if (program.sources[shaderType].size() != 1)
+	if (sources[shaderType].size() != 1)
 		TCU_THROW(InternalError, "Linking multiple compilation units is not supported");
 
-	if ((program.buildOptions.flags & GlslBuildOptions::FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS) != 0)
+	if ((buildOptions.flags & ShaderBuildOptions::FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS) != 0)
 	{
 		// Hack to inject #pragma right after first #version statement
-		std::string src			= program.sources[shaderType][0];
+		std::string src			= sources[shaderType][0];
 		size_t		injectPos	= 0;
 
 		if (de::beginsWith(src, "#version"))
@@ -223,30 +223,33 @@ std::string getShaderStageSource (const GlslSource& program, glu::ShaderType sha
 		return src;
 	}
 	else
-		return program.sources[shaderType][0];
+		return sources[shaderType][0];
 }
 
-EShMessages getCompileFlags (const GlslBuildOptions& buildOpts)
+EShMessages getCompileFlags (const ShaderBuildOptions& buildOpts, const ShaderLanguage shaderLanguage)
 {
 	EShMessages		flags	= (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
 
-	if ((buildOpts.flags & GlslBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS) != 0)
+	if ((buildOpts.flags & ShaderBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS) != 0)
 		flags = (EShMessages)(flags | EShMsgHlslOffsets);
+
+	if (shaderLanguage == SHADER_LANGUAGE_HLSL)
+		flags = (EShMessages)(flags | EShMsgReadHlsl);
 
 	return flags;
 }
 
 } // anonymous
 
-bool compileGlslToSpirV (const GlslSource& program, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo)
+bool compileShaderToSpirV (const std::vector<std::string>* sources, const ShaderBuildOptions& buildOptions, const ShaderLanguage shaderLanguage, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo)
 {
 	TBuiltInResource	builtinRes;
-	const EShMessages	compileFlags	= getCompileFlags(program.buildOptions);
+	const EShMessages	compileFlags	= getCompileFlags(buildOptions, shaderLanguage);
 
-	if (program.buildOptions.targetVersion != SPIRV_VERSION_1_0)
+	if (buildOptions.targetVersion != SPIRV_VERSION_1_0)
 		TCU_THROW(InternalError, "Unsupported SPIR-V target version");
 
-	if (getNumShaderStages(program) > 1)
+	if (getNumShaderStages(sources) > 1)
 		TCU_THROW(InternalError, "Linking multiple shader stages into a single SPIR-V binary is not supported");
 
 	prepareGlslang();
@@ -255,17 +258,23 @@ bool compileGlslToSpirV (const GlslSource& program, std::vector<deUint32>* dst, 
 	// \note Compiles only first found shader
 	for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; shaderType++)
 	{
-		if (!program.sources[shaderType].empty())
+		if (!sources[shaderType].empty())
 		{
-			const std::string&		srcText				= getShaderStageSource(program, (glu::ShaderType)shaderType);
+			const std::string&		srcText				= getShaderStageSource(sources, buildOptions, (glu::ShaderType)shaderType);
 			const char*				srcPtrs[]			= { srcText.c_str() };
 			const int				srcLengths[]		= { (int)srcText.size() };
 			const EShLanguage		shaderStage			= getGlslangStage(glu::ShaderType(shaderType));
 			glslang::TShader		shader				(shaderStage);
-			glslang::TProgram		program;
+			glslang::TProgram		glslangProgram;
 
 			shader.setStrings(srcPtrs, DE_LENGTH_OF_ARRAY(srcPtrs));
-			program.addShader(&shader);
+			glslangProgram.addShader(&shader);
+
+			if (shaderLanguage == SHADER_LANGUAGE_HLSL)
+			{
+				// Entry point assumed to be named main.
+				shader.setEntryPoint("main");
+			}
 
 			{
 				const deUint64	compileStartTime	= deGetMicroseconds();
@@ -285,16 +294,16 @@ bool compileGlslToSpirV (const GlslSource& program, std::vector<deUint32>* dst, 
 			if (buildInfo->shaders[0].compileOk)
 			{
 				const deUint64	linkStartTime	= deGetMicroseconds();
-				const int		linkRes			= program.link(compileFlags);
+				const int		linkRes			= glslangProgram.link(compileFlags);
 
-				buildInfo->program.infoLog		= program.getInfoLog(); // \todo [2015-11-05 scygan] Include debug log?
+				buildInfo->program.infoLog		= glslangProgram.getInfoLog(); // \todo [2015-11-05 scygan] Include debug log?
 				buildInfo->program.linkOk		= (linkRes != 0);
 				buildInfo->program.linkTimeUs	= deGetMicroseconds()-linkStartTime;
 			}
 
 			if (buildInfo->program.linkOk)
 			{
-				const glslang::TIntermediate* const	intermediate	= program.getIntermediate(shaderStage);
+				const glslang::TIntermediate* const	intermediate	= glslangProgram.getIntermediate(shaderStage);
 				glslang::GlslangToSpv(*intermediate, *dst);
 			}
 
@@ -303,6 +312,16 @@ bool compileGlslToSpirV (const GlslSource& program, std::vector<deUint32>* dst, 
 	}
 
 	TCU_THROW(InternalError, "Can't compile empty program");
+}
+
+bool compileGlslToSpirV (const GlslSource& program, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo)
+{
+	return compileShaderToSpirV(program.sources, program.buildOptions, program.shaderLanguage, dst, buildInfo);
+}
+
+bool compileHlslToSpirV (const HlslSource& program, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo)
+{
+	return compileShaderToSpirV(program.sources, program.buildOptions, program.shaderLanguage, dst, buildInfo);
 }
 
 void stripSpirVDebugInfo (const size_t numSrcInstrs, const deUint32* srcInstrs, std::vector<deUint32>* dst)
@@ -320,6 +339,11 @@ void stripSpirVDebugInfo (const size_t numSrcInstrs, const deUint32* srcInstrs, 
 bool compileGlslToSpirV (const GlslSource&, std::vector<deUint32>*, glu::ShaderProgramInfo*)
 {
 	TCU_THROW(NotSupportedError, "GLSL to SPIR-V compilation not supported (DEQP_HAVE_GLSLANG not defined)");
+}
+
+bool compileHlslToSpirV (const HlslSource&, std::vector<deUint32>*, glu::ShaderProgramInfo*)
+{
+	TCU_THROW(NotSupportedError, "HLSL to SPIR-V compilation not supported (DEQP_HAVE_GLSLANG not defined)");
 }
 
 void stripSpirVDebugInfo (const size_t, const deUint32*, std::vector<deUint32>*)
