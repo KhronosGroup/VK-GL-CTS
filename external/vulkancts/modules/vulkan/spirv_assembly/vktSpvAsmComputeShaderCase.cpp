@@ -277,10 +277,6 @@ public:
 	tcu::TestStatus						iterate						(void);
 
 private:
-	const Unique<VkDevice>				m_device;
-	const DeviceDriver					m_deviceInterface;
-	const VkQueue						m_queue;
-	const de::UniquePtr<vk::Allocator>	m_allocator;
 	const ComputeShaderSpec&			m_shaderSpec;
 	const ComputeTestFeatures			m_features;
 };
@@ -308,10 +304,6 @@ TestInstance* SpvAsmComputeShaderCase::createInstance (Context& ctx) const
 
 SpvAsmComputeShaderInstance::SpvAsmComputeShaderInstance (Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features)
 	: TestInstance		(ctx)
-	, m_device			(createDeviceWithExtensions(ctx, ctx.getUniversalQueueFamilyIndex(), ctx.getDeviceExtensions(), spec.extensions))
-	, m_deviceInterface	(ctx.getInstanceInterface(), *m_device)
-	, m_queue			(getDeviceQueue(m_deviceInterface, *m_device, ctx.getUniversalQueueFamilyIndex(), 0))
-	, m_allocator		(createAllocator(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), m_deviceInterface, *m_device))
 	, m_shaderSpec		(spec)
 	, m_features		(features)
 {
@@ -320,9 +312,6 @@ SpvAsmComputeShaderInstance::SpvAsmComputeShaderInstance (Context& ctx, const Co
 tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 {
 	const VkPhysicalDeviceFeatures&		features			= m_context.getDeviceFeatures();
-	const DeviceInterface&				vkdi				= m_deviceInterface;
-	const VkDevice&						device				= *m_device;
-	Allocator&							allocator			= *m_allocator;
 
 	if ((m_features == COMPUTE_TEST_USES_INT16 || m_features == COMPUTE_TEST_USES_INT16_INT64) && !features.shaderInt16)
 	{
@@ -344,6 +333,15 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 				TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 		}
 	}
+
+	// defer device and resource creation until after feature checks
+	const Unique<VkDevice>				vkDevice			(createDeviceWithExtensions(m_context, m_context.getUniversalQueueFamilyIndex(), m_context.getDeviceExtensions(), m_shaderSpec.extensions));
+	const VkDevice&						device				= *vkDevice;
+	const DeviceDriver					vkDeviceInterface	(m_context.getInstanceInterface(), device);
+	const DeviceInterface&				vkdi				= vkDeviceInterface;
+	const de::UniquePtr<vk::Allocator>	vkAllocator			(createAllocator(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), vkDeviceInterface, device));
+	Allocator&							allocator			= *vkAllocator;
+	const VkQueue						queue				(getDeviceQueue(vkDeviceInterface, device, m_context.getUniversalQueueFamilyIndex(), 0));
 
 	vector<AllocationSp>				inputAllocs;
 	vector<AllocationSp>				outputAllocs;
@@ -448,7 +446,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		(const VkSemaphore*)DE_NULL,
 	};
 
-	VK_CHECK(vkdi.queueSubmit(m_queue, 1, &submitInfo, *cmdCompleteFence));
+	VK_CHECK(vkdi.queueSubmit(queue, 1, &submitInfo, *cmdCompleteFence));
 	VK_CHECK(vkdi.waitForFences(device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
 
 	// Check output.

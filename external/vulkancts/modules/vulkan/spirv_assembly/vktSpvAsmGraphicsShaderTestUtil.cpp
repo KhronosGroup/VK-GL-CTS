@@ -2141,12 +2141,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	const VkPhysicalDevice						vkPhysicalDevice		= context.getPhysicalDevice();
 	const deUint32								queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	// Create a dedicated logic device with required extensions enabled for this test case.
-	const Unique<VkDevice>						vkDevice				(createDeviceWithExtensions(context, queueFamilyIndex, context.getDeviceExtensions(), instance.requiredDeviceExtensions));
-	const DeviceDriver							vk						(vkInstance, *vkDevice);
-	const VkQueue								queue					= getDeviceQueue(vk, *vkDevice, queueFamilyIndex, 0);
 	const tcu::UVec2							renderSize				(256, 256);
-	vector<ModuleHandleSp>						modules;
-	map<VkShaderStageFlagBits, VkShaderModule>	moduleByStage;
 	const int									testSpecificSeed		= 31354125;
 	const int									seed					= context.getTestContext().getCommandLine().getBaseSeed() ^ testSpecificSeed;
 	bool										supportsGeometry		= false;
@@ -2156,8 +2151,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	const deUint32								numResources			= static_cast<deUint32>(instance.resources.inputs.size() + instance.resources.outputs.size());
 	const bool									needInterface			= !instance.interfaces.empty();
 	const VkPhysicalDeviceFeatures&				features				= context.getDeviceFeatures();
-	const de::UniquePtr<Allocator>				allocatorUptr			(createAllocator(vkInstance, vkPhysicalDevice, vk, *vkDevice));
-	Allocator&									allocator				= *allocatorUptr;
+
 
 	supportsGeometry		= features.geometryShader == VK_TRUE;
 	supportsTessellation	= features.tessellationShader == VK_TRUE;
@@ -2197,6 +2191,15 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		if (!is16BitStorageFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedExtensionFeatures.ext16BitStorage))
 			TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 	}
+
+	// defer device and other resource creation until after feature checks
+	const Unique<VkDevice>						vkDevice				(createDeviceWithExtensions(context, queueFamilyIndex, context.getDeviceExtensions(), instance.requiredDeviceExtensions));
+	const DeviceDriver							vk						(vkInstance, *vkDevice);
+	const VkQueue								queue					= getDeviceQueue(vk, *vkDevice, queueFamilyIndex, 0);
+	const de::UniquePtr<Allocator>				allocatorUptr			(createAllocator(vkInstance, vkPhysicalDevice, vk, *vkDevice));
+	Allocator&									allocator				= *allocatorUptr;
+	vector<ModuleHandleSp>						modules;
+	map<VkShaderStageFlagBits, VkShaderModule>	moduleByStage;
 
 	de::Random(seed).shuffle(instance.inputColors, instance.inputColors+4);
 	de::Random(seed).shuffle(instance.outputColors, instance.outputColors+4);
