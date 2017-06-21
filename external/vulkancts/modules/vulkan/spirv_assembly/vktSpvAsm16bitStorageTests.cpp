@@ -944,7 +944,7 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 			specs["convert"]		= cTypes[tyIdx].opcode;
 
 			spec.assembly			= shaderTemplate.specialize(specs);
-			spec.numWorkGroups		= IVec3(numElements, 1, 1);
+			spec.numWorkGroups		= IVec3(cTypes[tyIdx].count, 1, 1);
 			spec.pushConstants		= BufferSp(new Int16Buffer(inputs));
 
 			if (cTypes[tyIdx].isSigned)
