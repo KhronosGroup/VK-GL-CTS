@@ -74,6 +74,7 @@
 #include "glcPolygonOffsetClampTests.hpp"
 #include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcSampleVariablesTests.hpp"
+#include "glcShaderConstExprTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderLibrary.hpp"
 #include "glcShaderMultisampleInterpolationTests.hpp"
@@ -241,6 +242,7 @@ void GL43TestPackage::init(void)
 		addChild(new gl4cts::SparseTextureTests(getContext()));
 		addChild(new gl4cts::IndirectParametersTests(getContext()));
 		addChild(new gl4cts::ShaderBallotTests(getContext()));
+		addChild(new glcts::ShaderConstExprTests(getContext()));
 	}
 	catch (...)
 	{
