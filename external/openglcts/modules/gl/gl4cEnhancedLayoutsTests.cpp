@@ -9299,6 +9299,21 @@ GLuint UniformBlockMemberInvalidOffsetAlignmentTest::getTestCaseNumber()
 	return static_cast<GLuint>(m_test_cases.size());
 }
 
+/** Get the maximum size for an uniform block
+ *
+ * @return The maximum size in basic machine units of a uniform block.
+ **/
+GLint UniformBlockMemberInvalidOffsetAlignmentTest::getMaxBlockSize()
+{
+	const Functions& gl		  = m_context.getRenderContext().getFunctions();
+	GLint			 max_size = 0;
+
+	gl.getIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &max_size);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+	return max_size;
+}
+
 /** Selects if "compute" stage is relevant for test
  *
  * @param test_case_index Index of test case
@@ -9337,25 +9352,20 @@ bool UniformBlockMemberInvalidOffsetAlignmentTest::isStageSupported(Utils::Shade
  **/
 void UniformBlockMemberInvalidOffsetAlignmentTest::testInit()
 {
-	const Functions& gl		  = m_context.getRenderContext().getFunctions();
-	GLint			 max_size = 0;
-	const GLuint	 n_types  = getTypesNumber();
-	bool			 stage_support[Utils::Shader::STAGE_MAX];
+	const GLuint n_types = getTypesNumber();
+	bool		 stage_support[Utils::Shader::STAGE_MAX];
 
 	for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 	{
 		stage_support[stage] = isStageSupported((Utils::Shader::STAGES)stage);
 	}
 
-	gl.getIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &max_size);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
-
 	for (GLuint i = 0; i < n_types; ++i)
 	{
 		const Utils::Type& type		  = getType(i);
 		const GLuint	   alignment  = type.GetBaseAlignment(false);
 		const GLuint	   type_size  = type.GetSize(true);
-		const GLuint	   sec_to_end = max_size - 2 * type_size;
+		const GLuint	   sec_to_end = getMaxBlockSize() - 2 * type_size;
 
 		for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 		{
@@ -10997,6 +11007,21 @@ SSBMemberInvalidOffsetAlignmentTest::SSBMemberInvalidOffsetAlignmentTest(deqp::C
 		  "Test verifies that invalid alignment of offset qualifiers cause compilation failure")
 {
 	/* Nothing to be done here */
+}
+
+/** Get the maximum size for a shader storage block
+ *
+ * @return The maximum size in basic machine units of a shader storage block.
+ **/
+GLint SSBMemberInvalidOffsetAlignmentTest::getMaxBlockSize()
+{
+	const Functions& gl		  = m_context.getRenderContext().getFunctions();
+	GLint			 max_size = 0;
+
+	gl.getIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE, &max_size);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+	return max_size;
 }
 
 /** Source for given test case and stage
