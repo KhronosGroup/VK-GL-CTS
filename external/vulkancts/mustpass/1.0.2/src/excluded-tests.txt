@@ -293,3 +293,6 @@ dEQP-VK.texture.mipmap.2d.projected.*
 
 #VK-GL-CTS 526
 dEQP-VK.pipeline.render_to_image.*.huge.*
+
+#VK-GL-CTS 534
+dEQP-VK.api.copy_and_blit.*.resolve_image.diff_image_size.*
