@@ -160,7 +160,7 @@ std::vector<deUint8> genTestData (deUint32 seed, size_t size)
 	return data;
 }
 
-uint32_t chooseQueueFamilyIndex (const vk::InstanceInterface&	vki,
+deUint32 chooseQueueFamilyIndex (const vk::InstanceInterface&	vki,
 								 vk::VkPhysicalDevice			device,
 								 vk::VkQueueFlags				requireFlags)
 {
@@ -2112,7 +2112,7 @@ tcu::TestStatus testFenceTransference (Context&					context,
 					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
 					VK_CHECK(vkd.queueWaitIdle(queue));
 
-					VK_CHECK(vkd.resetFences(*device, 1u, &*fenceA));
+					VK_CHECK(vkd.resetFences(*device, 1u, &*fenceB));
 					submitDummySignal(vkd, queue, *fenceB);
 
 					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceA, VK_TRUE, ~0ull));
@@ -2225,13 +2225,17 @@ tcu::TestStatus testFenceFdDup2 (Context&				context,
 
 		TestLog&						log		= context.getTestContext().getLog();
 		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+		const vk::Unique<vk::VkFence>	fenceB	(createExportableFence(vkd, *device, config.externalType));
 
 		if (transference == TRANSFERENCE_COPY)
+		{
 			submitDummySignal(vkd, queue, *fenceA);
+			submitDummySignal(vkd, queue, *fenceB);
+		}
 
 		{
 			const NativeHandle	fd			(getFenceFd(vkd, *device, *fenceA, config.externalType));
-			NativeHandle		secondFd	(getFenceFd(vkd, *device, *fenceA, config.externalType));
+			NativeHandle		secondFd	(getFenceFd(vkd, *device, *fenceB, config.externalType));
 			int					newFd		(dup2(fd.getFd(), secondFd.getFd()));
 
 			if (newFd < 0)
@@ -2240,14 +2244,14 @@ tcu::TestStatus testFenceFdDup2 (Context&				context,
 			TCU_CHECK_MSG(newFd >= 0, "Failed to call dup2() for fences fd");
 
 			{
-				const vk::Unique<vk::VkFence> fenceB (createAndImportFence(vkd, *device, config.externalType, secondFd, flags));
+				const vk::Unique<vk::VkFence> fenceC (createAndImportFence(vkd, *device, config.externalType, secondFd, flags));
 
 				if (transference == TRANSFERENCE_COPY)
-					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceC, VK_TRUE, ~0ull));
 				else if (transference == TRANSFERENCE_REFERENCE)
 				{
 					submitDummySignal(vkd, queue, *fenceA);
-					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceC, VK_TRUE, ~0ull));
 				}
 				else
 					DE_FATAL("Unknown permanence.");
@@ -2285,14 +2289,18 @@ tcu::TestStatus testFenceFdDup3 (Context&				context,
 
 		TestLog&						log		= context.getTestContext().getLog();
 		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+		const vk::Unique<vk::VkFence>	fenceB	(createExportableFence(vkd, *device, config.externalType));
 
 		if (transference == TRANSFERENCE_COPY)
+		{
 			submitDummySignal(vkd, queue, *fenceA);
+			submitDummySignal(vkd, queue, *fenceB);
+		}
 
 		{
 			const vk::VkFenceImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
 			const NativeHandle				fd			(getFenceFd(vkd, *device, *fenceA, config.externalType));
-			NativeHandle					secondFd	(getFenceFd(vkd, *device, *fenceA, config.externalType));
+			NativeHandle					secondFd	(getFenceFd(vkd, *device, *fenceB, config.externalType));
 			const int						newFd		(dup3(fd.getFd(), secondFd.getFd(), 0));
 
 			if (newFd < 0)
@@ -2301,14 +2309,14 @@ tcu::TestStatus testFenceFdDup3 (Context&				context,
 			TCU_CHECK_MSG(newFd >= 0, "Failed to call dup3() for fences fd");
 
 			{
-				const vk::Unique<vk::VkFence> fenceB (createAndImportFence(vkd, *device, config.externalType, secondFd, flags));
+				const vk::Unique<vk::VkFence> fenceC (createAndImportFence(vkd, *device, config.externalType, secondFd, flags));
 
 				if (transference == TRANSFERENCE_COPY)
-					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceC, VK_TRUE, ~0ull));
 				else if (transference == TRANSFERENCE_REFERENCE)
 				{
 					submitDummySignal(vkd, queue, *fenceA);
-					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
+					VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceC, VK_TRUE, ~0ull));
 				}
 				else
 					DE_FATAL("Unknown permanence.");
