@@ -424,7 +424,12 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	if (!multiviewFeatures.multiview)
 		TCU_THROW(NotSupportedError, "MultiView not supported");
 
-	if (TEST_TYPE_VIEW_INDEX_IN_GEOMETRY == m_parameters.viewIndex && !multiviewFeatures.multiviewGeometryShader)
+	bool requiresGeomShader = (TEST_TYPE_VIEW_INDEX_IN_GEOMETRY == m_parameters.viewIndex) ||
+								(TEST_TYPE_INPUT_ATTACHMENTS == m_parameters.viewIndex) ||
+								(TEST_TYPE_SECONDARY_CMD_BUFFER == m_parameters.viewIndex) ||
+								(TEST_TYPE_CLEAR_ATTACHMENTS == m_parameters.viewIndex);
+
+	if (requiresGeomShader && !multiviewFeatures.multiviewGeometryShader)
 		TCU_THROW(NotSupportedError, "Geometry shader is not supported");
 
 	if (TEST_TYPE_VIEW_INDEX_IN_TESELLATION == m_parameters.viewIndex && !multiviewFeatures.multiviewTessellationShader)
