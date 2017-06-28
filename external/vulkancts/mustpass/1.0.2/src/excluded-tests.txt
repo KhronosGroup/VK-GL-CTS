@@ -299,3 +299,6 @@ dEQP-VK.api.copy_and_blit.*.resolve_image.diff_image_size.*
 
 #VK-GL-CTS 535
 dEQP-VK.renderpass.*.multisample.*
+
+#VK-GL-CTS 538
+dEQP-VK.renderpass.*.multisample_resolve.*
