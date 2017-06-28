@@ -955,7 +955,7 @@ struct PipelineCache
 
 	static deUint32 getMaxConcurrent (Context&)
 	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+		return 128;
 	}
 
 	struct Parameters
