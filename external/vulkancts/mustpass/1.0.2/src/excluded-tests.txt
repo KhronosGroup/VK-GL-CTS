@@ -279,6 +279,9 @@ dEQP-VK.clipping.clip_volume.clipped.large_points
 dEQP-VK.clipping.clip_volume.clipped.wide_lines_axis_aligned
 dEQP-VK.clipping.clip_volume.clipped.wide_lines_diagonal
 
+# Vulkan issue 382: vkCmdBlitImage filtering behavior underspecified
+dEQP-VK.api.copy_and_blit.core.blit_image.all_formats*_nearest
+
 # Issue 431: Excluded copies and blitting tests
 dEQP-VK.api.copy_and_blit.core.blit_image.simple_tests.scaling_and_offset.b8g8r8a8_unorm_linear
 
@@ -302,3 +305,23 @@ dEQP-VK.renderpass.*.multisample.*
 
 #VK-GL-CTS 538
 dEQP-VK.renderpass.*.multisample_resolve.*
+
+#VK-GL-CTS 542
+dEQP-VK.pipeline.render_to_image.*.mipmap.*
+dEQP-VK.api.image_clearing.*.*multiple_layers
+dEQP-VK.pipeline.render_to_image.*.small.r8g8b8a8_unorm_d16_unorm
+dEQP-VK.pipeline.render_to_image.*.small.r32_uint_d16_unorm
+dEQP-VK.pipeline.render_to_image.*.small.r16g16_sint_d16_unorm
+dEQP-VK.pipeline.render_to_image.*.small.r32g32b32a32_sfloat_d16_unorm
+dEQP-VK.pipeline.render_to_image.*.small.r8g8b8a8_unorm_s8_uint
+dEQP-VK.pipeline.render_to_image.*.small.r32_uint_s8_uint
+dEQP-VK.pipeline.render_to_image.*.small.r16g16_sint_s8_uint
+dEQP-VK.pipeline.render_to_image.*.small.r32g32b32a32_sfloat_s8_uint
+dEQP-VK.pipeline.render_to_image.*.small.r8g8b8a8_unorm_d24_unorm_s8_uint
+dEQP-VK.pipeline.render_to_image.*.small.r32_uint_d24_unorm_s8_uint
+dEQP-VK.pipeline.render_to_image.*.small.r16g16_sint_d24_unorm_s8_uint
+dEQP-VK.pipeline.render_to_image.*.small.r32g32b32a32_sfloat_d24_unorm_s8_uint
+dEQP-VK.pipeline.render_to_image.*.small.r8g8b8a8_unorm_d32_sfloat_s8_uint
+dEQP-VK.pipeline.render_to_image.*.small.r32_uint_d32_sfloat_s8_uint
+dEQP-VK.pipeline.render_to_image.*.small.r16g16_sint_d32_sfloat_s8_uint
+dEQP-VK.pipeline.render_to_image.*.small.r32g32b32a32_sfloat_d32_sfloat_s8_uint
