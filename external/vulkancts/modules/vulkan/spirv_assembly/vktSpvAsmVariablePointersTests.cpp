@@ -242,6 +242,7 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		"OpDecorate %outdata DescriptorSet 0\n"
 		"OpDecorate %outdata Binding 3\n"
 		"OpDecorate %f32arr ArrayStride 4\n"
+		"OpDecorate %sb_f32ptr ArrayStride 4\n"
 		"OpDecorate %buf Block\n"
 		"OpMemberDecorate %buf 0 Offset 0\n"
 
@@ -675,6 +676,8 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		"OpDecorate %arr2_v4float        ArrayStride 16		\n"
 		"OpDecorate %arr2_inner_struct   ArrayStride 64		\n"
 		"OpDecorate %mat2x2_inner_struct ArrayStride 128	\n"
+		"OpDecorate %outer_struct_ptr    ArrayStride 256	\n"
+		"OpDecorate %v4f32_ptr           ArrayStride 16		\n"
 	);
 
 	const string types (
@@ -1293,6 +1296,7 @@ void addVariablePointersGraphicsGroup (tcu::TestCaseGroup* testGroup)
 		"OpMemberDecorate %buf 0 Offset 0\n"
 		"OpDecorate %buf Block\n"
 		"OpDecorate %ra_f32 ArrayStride 4\n"
+		"OpDecorate %sb_f32 ArrayStride 4\n"
 		"OpDecorate %indata_a DescriptorSet 0\n"
 		"OpDecorate %indata_b DescriptorSet 0\n"
 		"OpDecorate %indata_s DescriptorSet 0\n"
@@ -1661,6 +1665,8 @@ void addTwoInputBufferReadOnlyVariablePointersGraphicsGroup (tcu::TestCaseGroup*
 		"OpDecorate %arr2_v4float        ArrayStride 16			\n"
 		"OpDecorate %arr2_inner_struct   ArrayStride 64			\n"
 		"OpDecorate %mat2x2_inner_struct ArrayStride 128		\n"
+		"OpDecorate %sb_buf              ArrayStride 256		\n"
+		"OpDecorate %v4f32_ptr           ArrayStride 16			\n"
 
 		"OpDecorate					%outer_struct Block			\n"
 
@@ -2049,6 +2055,8 @@ void addSingleInputBufferReadOnlyVariablePointersGraphicsGroup (tcu::TestCaseGro
 		"OpDecorate %arr2_v4float        ArrayStride 16			\n"
 		"OpDecorate %arr2_inner_struct   ArrayStride 64			\n"
 		"OpDecorate %mat2x2_inner_struct ArrayStride 128		\n"
+		"OpDecorate %outer_struct_ptr    ArrayStride 256		\n"
+		"OpDecorate %v4f32_ptr           ArrayStride 16			\n"
 
 		// Set the Offsets
 		"OpMemberDecorate			%input_buffer 0 Offset 0	\n"
