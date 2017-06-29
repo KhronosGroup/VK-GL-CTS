@@ -9,6 +9,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageAtomicOperationTests.hpp
 	vktImageLoadStoreTests.cpp
 	vktImageLoadStoreTests.hpp
+	vktImageMutableTests.cpp
+	vktImageMutableTests.hpp
 	vktImageQualifiersTests.cpp
 	vktImageQualifiersTests.hpp
 	vktImageSizeTests.cpp
