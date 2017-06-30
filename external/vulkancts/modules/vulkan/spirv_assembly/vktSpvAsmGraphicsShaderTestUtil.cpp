@@ -2154,12 +2154,15 @@ bool compare32BitFloat (float expected, float returned, tcu::TestLog& log)
 
 Move<VkBuffer> createBufferForResource(const DeviceInterface& vk, const VkDevice vkDevice, const Resource& resource, deUint32 queueFamilyIndex)
 {
+	vector<deUint8>	resourceBytes;
+	resource.second->getBytes(resourceBytes);
+
 	const VkBufferCreateInfo	resourceBufferParams	=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,								// sType
 		DE_NULL,															// pNext
 		(VkBufferCreateFlags)0,												// flags
-		(VkDeviceSize)resource.second->getNumBytes(),						// size
+		(VkDeviceSize)resourceBytes.size(),									// size
 		(VkBufferUsageFlags)getMatchingBufferUsageFlagBit(resource.first),	// usage
 		VK_SHARING_MODE_EXCLUSIVE,											// sharingMode
 		1u,																	// queueFamilyCount
@@ -2363,7 +2366,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		// Test instantialization only provides four data points, each
 		// for one triangle. So we need allocate space of three times of
 		// input buffer's size.
-		const deUint32							inputNumBytes			= deUint32(instance.interfaces.getInputBuffer()->getNumBytes() * 3);
+		vector<deUint8>							inputBufferBytes;
+		instance.interfaces.getInputBuffer()->getBytes(inputBufferBytes);
+
+		const deUint32							inputNumBytes			= deUint32(inputBufferBytes.size() * 3);
 		// Create an additional buffer and backing memory for one input variable.
 		const VkBufferCreateInfo				vertexInputParams		=
 		{
@@ -2550,6 +2556,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			// Create buffer and allocate memory.
 			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
 			de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
+			vector<deUint8>					resourceBytes;
 
 			VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
@@ -2563,7 +2570,8 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				VK_WHOLE_SIZE,										//	VkDeviceSize	size;
 			};
 
-			deMemcpy(resourceMemory->getHostPtr(), resource.second->data(), resource.second->getNumBytes());
+			resource.second->getBytes(resourceBytes);
+			deMemcpy(resourceMemory->getHostPtr(), &resourceBytes.front(), resourceBytes.size());
 			VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
 
 			inResourceMemories.push_back(AllocationSp(resourceMemory.release()));
@@ -2596,6 +2604,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			// Create buffer and allocate memory.
 			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
 			de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
+			vector<deUint8>					resourceBytes;
 
 			VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
@@ -2609,7 +2618,8 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				VK_WHOLE_SIZE,										//	VkDeviceSize	size;
 			};
 
-			deMemset((deUint8*)resourceMemory->getHostPtr(), 0xff, resource.second->getNumBytes());
+			resource.second->getBytes(resourceBytes);
+			deMemset((deUint8*)resourceMemory->getHostPtr(), 0xff, resourceBytes.size());
 			VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
 
 			outResourceMemories.push_back(AllocationSp(resourceMemory.release()));
@@ -2746,7 +2756,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	};
 	if (hasPushConstants)
 	{
-		pushConstantRange.size						= static_cast<deUint32>(instance.pushConstants.getBuffer()->getNumBytes());
+		vector<deUint8> pushConstantsBytes;
+		instance.pushConstants.getBuffer()->getBytes(pushConstantsBytes);
+
+		pushConstantRange.size						= static_cast<deUint32>(pushConstantsBytes.size());
 		pipelineLayoutParams.pushConstantRangeCount	= 1;
 		pipelineLayoutParams.pPushConstantRanges	= &pushConstantRange;
 	}
@@ -3182,8 +3195,11 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	}
 	if (hasPushConstants)
 	{
-		const deUint32	size	= static_cast<deUint32>(instance.pushConstants.getBuffer()->getNumBytes());
-		const void*		data	= instance.pushConstants.getBuffer()->data();
+		vector<deUint8> pushConstantsBytes;
+		instance.pushConstants.getBuffer()->getBytes(pushConstantsBytes);
+
+		const deUint32	size	= static_cast<deUint32>(pushConstantsBytes.size());
+		const void*		data	= &pushConstantsBytes.front();
 
 		vk.cmdPushConstants(*cmdBuf, *pipelineLayout, VK_SHADER_STAGE_ALL_GRAPHICS, 0, size, data);
 	}
@@ -3303,8 +3319,11 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	if (needInterface)
 	{
+		vector<deUint8> inputBufferBytes;
+		instance.interfaces.getInputBuffer()->getBytes(inputBufferBytes);
+
 		const deUint32				typNumBytes		= instance.interfaces.getInputType().getNumBytes();
-		const deUint32				bufNumBytes		= static_cast<deUint32>(instance.interfaces.getInputBuffer()->getNumBytes());
+		const deUint32				bufNumBytes		= static_cast<deUint32>(inputBufferBytes.size());
 
 		// Require that the test instantation provides four output values.
 		DE_ASSERT(bufNumBytes == 4 * typNumBytes);
@@ -3313,7 +3332,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		// we need to provide the same vertex attribute for the same triangle. That means, duplicate each
 		// value three times for all four values.
 
-		const deUint8*				provided		= static_cast<const deUint8*>(instance.interfaces.getInputBuffer()->data());
+		const deUint8*				provided		= static_cast<const deUint8*>(&inputBufferBytes.front());
 		vector<deUint8>				data;
 
 		data.reserve(3 * bufNumBytes);
@@ -3433,9 +3452,15 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	// Check that the contents in the ouput variable matches expected.
 	if (needInterface)
 	{
+		vector<deUint8>						inputBufferBytes;
+		vector<deUint8>						outputBufferBytes;
+
+		instance.interfaces.getInputBuffer()->getBytes(inputBufferBytes);
+		instance.interfaces.getOutputBuffer()->getBytes(outputBufferBytes);
+
 		const IFDataType&					outputType				= instance.interfaces.getOutputType();
-		const void*							inputData				= instance.interfaces.getInputBuffer()->data();
-		const void*							outputData				= instance.interfaces.getOutputBuffer()->data();
+		const void*							inputData				= &inputBufferBytes.front();
+		const void*							outputData				= &outputBufferBytes.front();
 		vector<std::pair<int, int> >		positions;
 		const tcu::ConstPixelBufferAccess	fragOutputBufferAccess	(outputType.getTextureFormat(), renderSize.x(), renderSize.y(), 1, fragOutputMemory->getHostPtr());
 
@@ -3525,7 +3550,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		}
 		else
 		{
-			if (deMemCmp(expected->data(), outResourceMemories[outputNdx]->getHostPtr(), expected->getNumBytes()))
+			vector<deUint8> expectedBytes;
+			expected->getBytes(expectedBytes);
+
+			if (deMemCmp(&expectedBytes.front(), outResourceMemories[outputNdx]->getHostPtr(), expectedBytes.size()))
 				return tcu::TestStatus::fail("Resource returned doesn't match bitwisely with expected");
 		}
 	}
