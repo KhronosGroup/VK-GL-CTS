@@ -325,3 +325,6 @@ dEQP-VK.pipeline.render_to_image.*.small.r8g8b8a8_unorm_d32_sfloat_s8_uint
 dEQP-VK.pipeline.render_to_image.*.small.r32_uint_d32_sfloat_s8_uint
 dEQP-VK.pipeline.render_to_image.*.small.r16g16_sint_d32_sfloat_s8_uint
 dEQP-VK.pipeline.render_to_image.*.small.r32g32b32a32_sfloat_d32_sfloat_s8_uint
+
+#VK-GL-CTS 543
+dEQP-VK.spirv_assembly.instruction.graphics.variable_pointers.graphics.writes*tess*
