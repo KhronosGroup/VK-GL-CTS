@@ -3368,15 +3368,13 @@ void TessellationShaderTCTEgl_TessLevel::initTestDescriptor(_tessellation_test_t
 						  "\n"
 						  "void main()\n"
 						  "{\n"
-						  "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-						  "    if (gl_InvocationID == 0) {\n"
-						  "        gl_TessLevelInner[0]                           = inner_tess_levels[0];\n"
-						  "        gl_TessLevelInner[1]                           = inner_tess_levels[1];\n"
-						  "        gl_TessLevelOuter[0]                           = outer_tess_levels[0];\n"
-						  "        gl_TessLevelOuter[1]                           = outer_tess_levels[1];\n"
-						  "        gl_TessLevelOuter[2]                           = outer_tess_levels[2];\n"
-						  "        gl_TessLevelOuter[3]                           = outer_tess_levels[3];\n"
-						  "   }\n"
+						  "    gl_out           [gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+						  "    gl_TessLevelInner[0]                           = inner_tess_levels[0];\n"
+						  "    gl_TessLevelInner[1]                           = inner_tess_levels[1];\n"
+						  "    gl_TessLevelOuter[0]                           = outer_tess_levels[0];\n"
+						  "    gl_TessLevelOuter[1]                           = outer_tess_levels[1];\n"
+						  "    gl_TessLevelOuter[2]                           = outer_tess_levels[2];\n"
+						  "    gl_TessLevelOuter[3]                           = outer_tess_levels[3];\n"
 						  "}\n";
 
 	if (test_type == TESSELLATION_TEST_TYPE_TCS_TES)
@@ -3390,16 +3388,14 @@ void TessellationShaderTCTEgl_TessLevel::initTestDescriptor(_tessellation_test_t
 						  "\n"
 						  "${TESSELLATION_SHADER_REQUIRE}\n"
 						  "\n"
-						  "layout (quads, point_mode, VERTEX_SPACING_MODE) in;\n"
+						  "layout (isolines, point_mode, VERTEX_SPACING_MODE) in;\n"
 						  "\n"
 						  "out vec2 result_tess_level_inner;\n"
 						  "out vec4 result_tess_level_outer;\n"
 						  "\n"
 						  "void main()\n"
 						  "{\n"
-						  "    vec4 p1 = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
-						  "    vec4 p2 = mix(gl_in[2].gl_Position,gl_in[3].gl_Position,gl_TessCoord.x);\n"
-						  "    gl_Position = mix(p1, p2, gl_TessCoord.y);\n"
+						  "    gl_Position = gl_in[0].gl_Position;\n"
 						  "\n"
 						  "    result_tess_level_inner = vec2(gl_TessLevelInner[0],\n"
 						  "                                   gl_TessLevelInner[1]);\n"
@@ -3539,8 +3535,8 @@ tcu::TestNode::IterateResult TessellationShaderTCTEgl_TessLevel::iterate(void)
 	/* Initialize ES test objects */
 	initTest();
 
-	/* Our program object takes a single quad per patch */
-	gl.patchParameteri(m_glExtTokens.PATCH_VERTICES, 4);
+	/* Our program object takes a single vertex per patch */
+	gl.patchParameteri(m_glExtTokens.PATCH_VERTICES, 1);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glPatchParameteriEXT() call failed");
 
 	/* Prepare for rendering */
@@ -3569,11 +3565,6 @@ tcu::TestNode::IterateResult TessellationShaderTCTEgl_TessLevel::iterate(void)
 												tessellation_level_combinations[n_combination * 6 + 3],
 												tessellation_level_combinations[n_combination * 6 + 4],
 												tessellation_level_combinations[n_combination * 6 + 5] };
-
-			TessellationShaderUtils tessUtils(gl, this);
-			const unsigned int		n_rendered_vertices = tessUtils.getAmountOfVerticesGeneratedByTessellator(
-				TESSELLATION_SHADER_PRIMITIVE_MODE_QUADS, inner_tess_level, outer_tess_level,
-				test_iterator->vertex_spacing, true); /* is_point_mode_enabled */
 
 			/* Test type determines how the tessellation levels should be set. */
 			gl.useProgram(test_iterator->po_id);
@@ -3618,10 +3609,31 @@ tcu::TestNode::IterateResult TessellationShaderTCTEgl_TessLevel::iterate(void)
 			} /* switch (test_iterator->type) */
 
 			/* Set up storage properties for the buffer object, to which XFBed data will be
-			 * written.
-			 */
-			const unsigned int n_bytes_needed =
-				static_cast<unsigned int>(n_rendered_vertices * (2 /* vec2 */ + 4 /* vec4 */) * sizeof(float));
+			 * written:
+			 *
+			 * op(Outer[0])   tells how many times amount of points should be multiplied.
+			 * op(Outer[1])+1 tells how many points we will receive.
+			 *
+			 * where op() defines an operator, behavior of which is determined by the vertex
+			 * ordering mode specified in tessellation evaluation shader.
+			 *
+			 * Hence, we should be expecting Outer[0] * (Outer[1] + 1) points.
+			 **/
+			float outer_level0_clamped = 0.0f;
+			float outer_level1_clamped = 0.0f;
+
+			TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
+				TESSELLATION_SHADER_VERTEX_SPACING_EQUAL, outer_tess_level[0], m_gl_max_tess_gen_level_value,
+				DE_NULL, /* out_clamped */
+				&outer_level0_clamped);
+			TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
+				test_iterator->vertex_spacing, outer_tess_level[1], m_gl_max_tess_gen_level_value,
+				DE_NULL, /* out_clamped */
+				&outer_level1_clamped);
+
+			const unsigned int n_bytes_needed = static_cast<unsigned int>(
+				(unsigned int)(outer_level0_clamped) * (unsigned int)(outer_level1_clamped + 1) *
+				(2 /* vec2 */ + 4 /* vec4 */) * sizeof(float));
 
 			gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, n_bytes_needed, NULL /* data */, GL_STATIC_DRAW);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed");
@@ -3631,7 +3643,7 @@ tcu::TestNode::IterateResult TessellationShaderTCTEgl_TessLevel::iterate(void)
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glBeginTransformFeedback() call failed");
 			{
 				/* A single vertex will do, since we configured GL_PATCH_VERTICES_EXT to be 1 */
-				gl.drawArrays(GL_PATCHES_EXT, 0 /* first */, 4 /* count */);
+				gl.drawArrays(GL_PATCHES_EXT, 0 /* first */, 1 /* count */);
 
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawArrays() call failed");
 			}
