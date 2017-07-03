@@ -1328,6 +1328,8 @@ KHR-GLES3.shaders.preprocessor.extensions.invalid_behavior_1_vertex
 KHR-GLES3.shaders.preprocessor.extensions.invalid_behavior_1_fragment
 KHR-GLES3.shaders.preprocessor.extensions.invalid_behavior_2_vertex
 KHR-GLES3.shaders.preprocessor.extensions.invalid_behavior_2_fragment
+KHR-GLES3.shaders.preprocessor.extensions.invalid_behavior_3_vertex
+KHR-GLES3.shaders.preprocessor.extensions.invalid_behavior_3_fragment
 KHR-GLES3.shaders.preprocessor.extensions.invalid_char_in_name_vertex
 KHR-GLES3.shaders.preprocessor.extensions.invalid_char_in_name_fragment
 KHR-GLES3.shaders.preprocessor.extensions.invalid_char_in_behavior_vertex
