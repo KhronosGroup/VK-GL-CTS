@@ -21,10 +21,15 @@
 #-------------------------------------------------------------------------
 
 import os
+import sys
 import urllib2
 import hashlib
 
 import registry
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+from build.common import *
 
 BASE_URL = ""
 
@@ -53,18 +58,49 @@ class RegistrySource:
 	def getRevision (self):
 		return self.revision
 
-	def getSourceUrl (self):
-		return "%s/%s/%s" % (self.repository, self.revision, self.filename)
+	def getRepo (self):
+		return self.repository
+
+	def getRevision (self):
+		return self.revision
+
+	def getFilename (self):
+		return self.filename
 
 def computeChecksum (data):
 	return hashlib.sha256(data).hexdigest()
 
-def fetchUrl (url):
-	req		= urllib2.urlopen(url)
-	data	= req.read()
+def makeSourceUrl (repository, revision, filename):
+	return "%s/%s/%s" % (repository, revision, filename)
+
+def checkoutGit (repository, revision, fullDstPath):
+	if not os.path.exists(fullDstPath):
+		execute(["git", "clone", "--no-checkout", repository, fullDstPath])
+
+	pushWorkingDir(fullDstPath)
+	try:
+		execute(["git", "fetch", repository, "+refs/heads/*:refs/remotes/origin/*"])
+		execute(["git", "checkout", revision])
+	finally:
+		popWorkingDir()
+
+def checkoutFile (repository, revision, filename, cacheDir):
+	try:
+		req		= urllib2.urlopen(makeSourceUrl(repository, revision, filename))
+		data	= req.read()
+	except IOError:
+		fullDstPath = os.path.join(cacheDir, "git")
+
+		checkoutGit(repository, revision, fullDstPath)
+		f		= open(os.path.join(fullDstPath, filename), "r")
+		data	= f.read()
+		f.close()
+	except:
+		print "Unexpected error:", sys.exc_info()[0]
+
 	return data
 
-def fetchFile (dstPath, url, checksum):
+def fetchFile (dstPath, repository, revision, filename, checksum, cacheDir):
 	def writeFile (filename, data):
 		f = open(filename, 'wb')
 		f.write(data)
@@ -73,8 +109,8 @@ def fetchFile (dstPath, url, checksum):
 	if not os.path.exists(os.path.dirname(dstPath)):
 		os.makedirs(os.path.dirname(dstPath))
 
-	print "Fetching %s" % url
-	data		= fetchUrl(url)
+	print "Fetching %s/%s@%s" % (repository, filename, revision)
+	data		= checkoutFile(repository, revision, filename, cacheDir)
 	gotChecksum	= computeChecksum(data)
 
 	if checksum != gotChecksum:
@@ -106,7 +142,7 @@ def getRegistry (source):
 	cachePath	= os.path.join(cacheDir, source.getCacheFilename())
 
 	if not checkFile(cachePath, source.checksum):
-		fetchFile(cachePath, source.getSourceUrl(), source.getChecksum())
+		fetchFile(cachePath, source.getRepo(), source.getRevision(), source.getFilename(), source.getChecksum(), cacheDir)
 
 	parsedReg	= registry.parse(cachePath)
 
