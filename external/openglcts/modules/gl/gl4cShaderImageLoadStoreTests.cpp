@@ -4710,12 +4710,11 @@ class BasicGLSLMisc : public ShaderImageLoadStoreBase
 			"#version 420 core" NL "layout(location = 0) out vec4 o_color;" NL
 			"layout(rgba32f) coherent volatile restrict uniform image2D g_image_layer0;" NL
 			"layout(rgba32f) volatile uniform image2D g_image_layer1;" NL
-			"vec4 Load(layout(rgba32f) volatile image2D image, ivec2 coord) {" NL "  return imageLoad(image, coord);" NL
-			"}" NL "void main() {" NL "  ivec2 coord = ivec2(gl_FragCoord.xy);" NL
+			"void main() {" NL "  ivec2 coord = ivec2(gl_FragCoord.xy);" NL
 			"  imageStore(g_image_layer0, coord, vec4(1.0));" NL "  memoryBarrier();" NL
 			"  imageStore(g_image_layer0, coord, vec4(2.0));" NL "  memoryBarrier();" NL
 			"  imageStore(g_image_layer0, coord, vec4(0.0, 1.0, 0.0, 1.0));" NL "  memoryBarrier();" NL
-			"  o_color = imageLoad(g_image_layer0, coord) + Load(g_image_layer1, coord);" NL "}";
+			"  o_color = imageLoad(g_image_layer0, coord) + imageLoad(g_image_layer1, coord);" NL "}";
 		m_program = BuildProgram(src_vs, NULL, NULL, NULL, src_fs);
 
 		CreateFullViewportQuad(&m_vao, &m_vbo, NULL);
