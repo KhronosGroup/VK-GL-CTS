@@ -121,9 +121,10 @@ inline bool isInClearRange (const UVec4& clearCoords, const deUint32 x, const de
 	{
 		// Only layers in range passed to clear command are cleared
 
-		const deUint32 clearBaseLayer = (imageViewLayerRange ? imageViewLayerRange->baseArrayLayer : 0) + attachmentClearLayerRange->baseArrayLayer;
+		const deUint32	clearBaseLayer	= (imageViewLayerRange ? imageViewLayerRange->baseArrayLayer : 0) + attachmentClearLayerRange->baseArrayLayer;
+		const deUint32	clearLayerCount	= (attachmentClearLayerRange->layerCount == VK_REMAINING_ARRAY_LAYERS) ? imageViewLayerRange->layerCount : clearBaseLayer + attachmentClearLayerRange->layerCount;
 
-		if ((arrayLayer < clearBaseLayer) || (arrayLayer >= (clearBaseLayer + attachmentClearLayerRange->layerCount)))
+		if ((arrayLayer < clearBaseLayer) || (arrayLayer >= (clearLayerCount)))
 		{
 			return false;
 		}
@@ -1564,20 +1565,30 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 	const ImageLayerParams imageLayerParamsToTest[] =
 	{
 		{
-			1u,					// imageLayerCount
-			{0u, 1u},			// imageViewRange
-			{0u, 1u},			// clearLayerRange
-			DE_NULL				// testName
+			1u,									// imageLayerCount
+			{0u, 1u},							// imageViewRange
+			{0u, 1u},							// clearLayerRange
+			DE_NULL								// testName
 		},
 		{
-			16u,				// imageLayerCount
-			{3u, 12u},			// imageViewRange
-			{2u, 5u},			// clearLayerRange
-			"multiple_layers"	// testName
+			16u,								// imageLayerCount
+			{3u, 12u},							// imageViewRange
+			{2u, 5u},							// clearLayerRange
+			"multiple_layers"					// testName
 		},
+		{
+			16u,								// imageLayerCount
+			{ 3u, 12u },						// imageViewRange
+			{ 8u, VK_REMAINING_ARRAY_LAYERS },	// clearLayerRange
+			"remaining_array_layers"			// testName
+		}
 	};
 
+	// Include test cases with VK_REMAINING_ARRAY_LAYERS when using vkCmdClearColorImage
 	const size_t	numOfImageLayerParamsToTest				= DE_LENGTH_OF_ARRAY(imageLayerParamsToTest);
+
+	// Exclude test cases with VK_REMAINING_ARRAY_LAYERS when using vkCmdClearAttachments
+	const size_t	numOfAttachmentLayerParamsToTest		= numOfImageLayerParamsToTest - 1;
 
 	// Clear color image
 	{
@@ -1676,7 +1687,7 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 	// Clear color attachment
 	{
 		for (size_t imageFormatIndex = 0; imageFormatIndex < numOfColorImageFormatsToTest; ++imageFormatIndex)
-		for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfImageLayerParamsToTest; ++imageLayerParamsIndex)
+		for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfAttachmentLayerParamsToTest; ++imageLayerParamsIndex)
 		{
 			const VkFormat		format		= colorImageFormatsToTest[imageFormatIndex];
 
@@ -1712,7 +1723,7 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 	// Clear depth/stencil attachment
 	{
 		for (size_t imageFormatIndex = 0; imageFormatIndex < numOfDepthStencilImageFormatsToTest; ++imageFormatIndex)
-		for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfImageLayerParamsToTest; ++imageLayerParamsIndex)
+		for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfAttachmentLayerParamsToTest; ++imageLayerParamsIndex)
 		{
 			const TestParams testParams =
 			{
