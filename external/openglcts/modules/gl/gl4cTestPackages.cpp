@@ -69,6 +69,7 @@
 #include "gl4cVertexAttrib64BitTest.hpp"
 #include "gl4cVertexAttribBindingTests.hpp"
 #include "glcBlendEquationAdvancedTests.hpp"
+#include "glcExposedExtensionsTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcSampleVariablesTests.hpp"
@@ -125,6 +126,7 @@ void GL40TestPackage::init(void)
 		addChild(new gl4cts::ShaderSubroutineTests(getContext()));
 		addChild(
 			new gl4cts::TextureBarrierTests(getContext(), gl4cts::TextureBarrierTests::API_GL_ARB_texture_barrier));
+		addChild(new glcts::ExposedExtensionsTests(getContext()));
 	}
 	catch (...)
 	{

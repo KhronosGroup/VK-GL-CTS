@@ -2815,6 +2815,7 @@ KHR-GL42.texture_barrier_ARB.disjoint-texels
 KHR-GL42.texture_barrier_ARB.overlapping-texels
 KHR-GL42.texture_barrier_ARB.same-texel-rw
 KHR-GL42.texture_barrier_ARB.same-texel-rw-multipass
+KHR-GL42.exposed_extensions.validate_extensions
 KHR-GL42.vertex_attrib_64bit.api_errors
 KHR-GL42.vertex_attrib_64bit.get_vertex_attrib
 KHR-GL42.vertex_attrib_64bit.limits_test

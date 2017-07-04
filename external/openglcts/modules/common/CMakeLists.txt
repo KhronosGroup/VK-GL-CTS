@@ -20,6 +20,8 @@ set(GLCTS_COMMON_SRCS
 	glcConfigPackage.hpp
 	glcContext.cpp
 	glcContext.hpp
+	glcExposedExtensionsTests.cpp
+	glcExposedExtensionsTests.hpp
 	glcFragDepthTests.cpp
 	glcFragDepthTests.hpp
 	glcInfoTests.cpp

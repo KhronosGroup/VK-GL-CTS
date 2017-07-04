@@ -2560,3 +2560,4 @@ KHR-GLES3.shaders.negative.initialize
 KHR-GLES3.shaders.negative.constant_sequence
 KHR-GLES3.texture_filter_anisotropic.queries
 KHR-GLES3.texture_filter_anisotropic.drawing
+KHR-GLES3.exposed_extensions.validate_extensions
