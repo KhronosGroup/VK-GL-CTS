@@ -471,6 +471,11 @@ template<> VkStructureType getStructureType<VkSparseImageMemoryRequirements2KHR>
 	return VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2_KHR;
 }
 
+template<> VkStructureType getStructureType<VkImageFormatListCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkSamplerYcbcrConversionCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO_KHR;

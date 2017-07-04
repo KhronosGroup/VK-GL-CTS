@@ -392,6 +392,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkImageMemoryRequirementsInfo2K
 std::ostream&	operator<<	(std::ostream& s, const VkImageSparseMemoryRequirementsInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryRequirements2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSparseImageMemoryRequirements2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageFormatListCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerYcbcrConversionCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerYcbcrConversionInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindImagePlaneMemoryInfoKHR& value);

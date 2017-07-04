@@ -97,6 +97,7 @@ struct CaseDef
 	VkFormat		viewFormat;
 	enum Upload		upload;
 	enum Download	download;
+	bool			isFormatListTest;
 };
 
 static const deUint32 COLOR_TABLE_SIZE = 4;
@@ -414,28 +415,44 @@ Move<VkImage> makeImage (const DeviceInterface&		vk,
 						 VkImageCreateFlags			flags,
 						 VkImageType				imageType,
 						 const VkFormat				format,
+						 const VkFormat				viewFormat,
+						 const bool					useImageFormatList,
 						 const IVec3&				size,
 						 const deUint32				numMipLevels,
 						 const deUint32				numLayers,
 						 const VkImageUsageFlags	usage)
 {
+	const VkFormat formatList[2] =
+	{
+		format,
+		viewFormat
+	};
+
+	const VkImageFormatListCreateInfoKHR formatListInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,	// VkStructureType			sType;
+		DE_NULL,												// const void*				pNext;
+		2u,														// uint32_t					viewFormatCount
+		formatList												// const VkFormat*			pViewFormats
+	};
+
 	const VkImageCreateInfo imageParams =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType			sType;
-		DE_NULL,									// const void*				pNext;
-		flags,										// VkImageCreateFlags		flags;
-		imageType,									// VkImageType				imageType;
-		format,										// VkFormat					format;
-		makeExtent3D(size),							// VkExtent3D				extent;
-		numMipLevels,								// deUint32					mipLevels;
-		numLayers,									// deUint32					arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits	samples;
-		VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling			tiling;
-		usage,										// VkImageUsageFlags		usage;
-		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode			sharingMode;
-		0u,											// deUint32					queueFamilyIndexCount;
-		DE_NULL,									// const deUint32*			pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			initialLayout;
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,					// VkStructureType			sType;
+		useImageFormatList ? &formatListInfo : DE_NULL,			// const void*				pNext;
+		flags,													// VkImageCreateFlags		flags;
+		imageType,												// VkImageType				imageType;
+		format,													// VkFormat					format;
+		makeExtent3D(size),										// VkExtent3D				extent;
+		numMipLevels,											// deUint32					mipLevels;
+		numLayers,												// deUint32					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,									// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,								// VkImageTiling			tiling;
+		usage,													// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,								// VkSharingMode			sharingMode;
+		0u,														// deUint32					queueFamilyIndexCount;
+		DE_NULL,												// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout			initialLayout;
 	};
 	return createImage(vk, device, &imageParams);
 }
@@ -1065,7 +1082,8 @@ void UploadDownloadExecutor::run(Context& context, VkBuffer buffer)
 
 	const VkImageUsageFlags		imageUsage	= getImageUsageForTestCase(m_caseDef);
 	const VkImageCreateFlags	imageFlags	= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | (m_haveMaintenance2 ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR : 0);
-	m_image									= makeImage(m_vk, m_device, imageFlags, getImageType(m_caseDef.imageType), m_caseDef.imageFormat, m_caseDef.size, 1u, m_caseDef.numLayers, imageUsage);
+	m_image									= makeImage(m_vk, m_device, imageFlags, getImageType(m_caseDef.imageType), m_caseDef.imageFormat, m_caseDef.viewFormat,
+														m_caseDef.isFormatListTest, m_caseDef.size, 1u, m_caseDef.numLayers, imageUsage);
 	m_imageAlloc							= bindImage(m_vk, m_device, m_allocator, *m_image, MemoryRequirement::Any);
 
 	switch (m_caseDef.upload)
@@ -1394,7 +1412,7 @@ void UploadDownloadExecutor::downloadTexture(Context& context, VkBuffer buffer)
 {
 	// Create output image with download result
 	const VkImageUsageFlags	usageFlags	= VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-	m_dTex.outImage						= makeImage(m_vk, m_device, 0u, VK_IMAGE_TYPE_2D, m_caseDef.viewFormat, m_caseDef.size, 1u, m_caseDef.numLayers, usageFlags);
+	m_dTex.outImage						= makeImage(m_vk, m_device, 0u, VK_IMAGE_TYPE_2D, m_caseDef.viewFormat, m_caseDef.viewFormat, false, m_caseDef.size, 1u, m_caseDef.numLayers, usageFlags);
 	m_dTex.outImageAlloc				= bindImage(m_vk, m_device, m_allocator, *m_dTex.outImage, MemoryRequirement::Any);
 	m_dTex.outImageView					= makeImageView(m_vk, m_device, *m_dTex.outImage, getImageViewType(m_caseDef.imageType), m_caseDef.viewFormat, makeColorSubresourceRange(0, m_caseDef.numLayers));
 
@@ -1475,7 +1493,7 @@ void UploadDownloadExecutor::downloadLoad(Context& context, VkBuffer buffer)
 {
 	// Create output image with download result
 	const VkImageUsageFlags usageFlags	= VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-	m_dLoad.outImage					= makeImage(m_vk, m_device, 0u, VK_IMAGE_TYPE_2D, m_caseDef.viewFormat, m_caseDef.size, 1u, m_caseDef.numLayers, usageFlags);
+	m_dLoad.outImage					= makeImage(m_vk, m_device, 0u, VK_IMAGE_TYPE_2D, m_caseDef.viewFormat, m_caseDef.viewFormat, false, m_caseDef.size, 1u, m_caseDef.numLayers, usageFlags);
 	m_dLoad.outImageAlloc				= bindImage(m_vk, m_device, m_allocator, *m_dLoad.outImage, MemoryRequirement::Any);
 	m_dLoad.outImageView				= makeImageView(m_vk, m_device, *m_dLoad.outImage, getImageViewType(m_caseDef.imageType), m_caseDef.viewFormat, makeColorSubresourceRange(0, m_caseDef.numLayers));
 
@@ -1655,6 +1673,10 @@ tcu::TestStatus testMutable (Context& context, const CaseDef caseDef)
 	const VkPhysicalDevice			physDevice	= context.getPhysicalDevice();
 	Allocator&						allocator	= context.getDefaultAllocator();
 
+	// If this is a VK_KHR_image_format_list test, check that the extension is supported
+	if (caseDef.isFormatListTest && !de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_image_format_list"))
+		TCU_THROW(NotSupportedError, "VK_KHR_image_format_list not supported");
+
 	// Check required features on the format for the required upload/download methods
 	VkFormatProperties	imageFormatProps, viewFormatProps;
 	vki.getPhysicalDeviceFormatProperties(physDevice, caseDef.imageFormat, &imageFormatProps);
@@ -1762,7 +1784,7 @@ tcu::TestCaseGroup* createImageMutableTests (TestContext& testCtx)
 				for (int upload = 0; upload < UPLOAD_LAST; upload++)
 				for (int download = 0; download < DOWNLOAD_LAST; download++)
 				{
-					const CaseDef caseDef =
+					CaseDef caseDef =
 					{
 						texture.type(),
 						texture.layerSize(),
@@ -1770,11 +1792,16 @@ tcu::TestCaseGroup* createImageMutableTests (TestContext& testCtx)
 						s_formats[imageFormatNdx],
 						s_formats[viewFormatNdx],
 						static_cast<enum Upload>(upload),
-						static_cast<enum Download>(download)
+						static_cast<enum Download>(download),
+						false
 					};
 
-					const std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" + getFormatShortString(s_formats[viewFormatNdx]) +
+					std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" + getFormatShortString(s_formats[viewFormatNdx]) +
 						"_" + getUploadString(upload) + "_" + getDownloadString(download);
+					addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", initPrograms, testMutable, caseDef);
+
+					caseDef.isFormatListTest = true;
+					caseName += "_format_list";
 					addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", initPrograms, testMutable, caseDef);
 				}
 			}
