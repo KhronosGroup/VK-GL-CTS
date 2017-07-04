@@ -1680,6 +1680,14 @@ struct VkSparseImageMemoryRequirements2KHR
 	VkSparseImageMemoryRequirements	memoryRequirements;
 };
 
+struct VkImageFormatListCreateInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		viewFormatCount;
+	const VkFormat*	pViewFormats;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;
