@@ -2696,10 +2696,10 @@ void PixelValue::setValue (size_t ndx, bool value)
 	DE_ASSERT(ndx < 4);
 	DE_ASSERT(m_status <= 0xFFu);
 
-	m_status |= (deUint16)(0x1u << (ndx * 2));
+	m_status = (deUint16)(m_status | (deUint16)(0x1u << (ndx * 2)));
 
 	if (value)
-		m_status |= (deUint16)(0x1u << (ndx * 2 + 1));
+		m_status = (deUint16)(m_status | (deUint16)(0x1u << (ndx * 2 + 1)));
 	else
 		m_status &= (deUint16)~(0x1u << (deUint16)(ndx * 2 + 1));
 
