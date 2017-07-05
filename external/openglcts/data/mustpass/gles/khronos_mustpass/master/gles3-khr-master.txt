@@ -1144,6 +1144,8 @@ KHR-GLES3.shaders.preprocessor.predefined_macros.if_gl_es_vertex
 KHR-GLES3.shaders.preprocessor.predefined_macros.if_gl_es_fragment
 KHR-GLES3.shaders.preprocessor.predefined_macros.if_version_vertex
 KHR-GLES3.shaders.preprocessor.predefined_macros.if_version_fragment
+KHR-GLES3.shaders.preprocessor.predefined_macros.invalid_token_pasting_vertex
+KHR-GLES3.shaders.preprocessor.predefined_macros.invalid_token_pasting_fragment
 KHR-GLES3.shaders.preprocessor.conditional_inclusion.basic_1_vertex
 KHR-GLES3.shaders.preprocessor.conditional_inclusion.basic_1_fragment
 KHR-GLES3.shaders.preprocessor.conditional_inclusion.basic_2_vertex
