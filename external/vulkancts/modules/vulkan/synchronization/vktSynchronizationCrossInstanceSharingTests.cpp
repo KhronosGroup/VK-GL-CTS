@@ -152,11 +152,6 @@ bool DeviceId::operator== (const DeviceId& other) const
 	return deMemCmp(m_deviceUUID, other.m_deviceUUID, sizeof(m_deviceUUID)) == 0;
 }
 
-bool DeviceId::operator|= (const DeviceId& other) const
-{
-	return !(*this == other);
-}
-
 DeviceId getDeviceId (const vk::InstanceInterface&	vki,
 					  vk::VkPhysicalDevice			physicalDevice)
 {
