@@ -23065,7 +23065,7 @@ void XFBVertexStreamsTest::getShaderBody(GLuint /* test_case_index */, Utils::Sh
 							  "    EmitStreamVertex(2);\n"
 							  "    EndStreamPrimitive(2);\n";
 
-	static const GLchar* fs = "    fs_out = gohan + goku + goten + picolo + vegeta + bulma;\n";
+	static const GLchar* fs = "    fs_out = gohan + goku + goten;\n";
 
 	const GLchar* assignments = "";
 	switch (stage)
@@ -23117,9 +23117,6 @@ void XFBVertexStreamsTest::getShaderInterface(GLuint /* test_case_index */, Util
 	static const GLchar* fs = "in vec4 goku;\n"
 							  "in vec4 gohan;\n"
 							  "in vec4 goten;\n"
-							  "in vec4 picolo;\n"
-							  "in vec4 vegeta;\n"
-							  "in vec4 bulma;\n"
 							  "\n"
 							  "out vec4 fs_out;\n";
 
