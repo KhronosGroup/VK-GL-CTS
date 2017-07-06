@@ -5051,6 +5051,12 @@ const glw::GLchar* BufferTest<T, S, N>::FragmentShaderDeclaration()
 
 /** @class StorageAndSubImageTest
  *
+ *  @tparam T      Type.
+ *  @tparam S      Size.
+ *  @tparam N      Is normalized.
+ *  @tparam D      Texture dimension.
+ *  @tparam I      Choose between SubImage and Storage tests.
+ *
  *      Make test for following DSA storage functions:
  *       -  TextureStorage1D,
  *       -  TextureStorage2D,
@@ -5109,11 +5115,12 @@ const glw::GLchar* BufferTest<T, S, N>::FragmentShaderDeclaration()
  *
  *      Release all objects.
  */
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
 class StorageAndSubImageTest : public deqp::TestCase, Reference
 {
 public:
 	/* Public member functions. */
-	StorageAndSubImageTest(deqp::Context& context);
+	StorageAndSubImageTest(deqp::Context& context, const char* name);
 
 	virtual tcu::TestNode::IterateResult iterate();
 
@@ -5123,55 +5130,36 @@ private:
 	StorageAndSubImageTest& operator=(const StorageAndSubImageTest& other);
 
 	/* Private member functions. */
-	template <glw::GLint S, glw::GLuint D>
 	static glw::GLuint TestReferenceDataCount();
 
-	template <glw::GLuint D>
 	static glw::GLuint	TestReferenceDataWidth();
 
-	template <glw::GLuint D>
 	static glw::GLuint	TestReferenceDataHeight();
 
-	template <glw::GLuint D>
 	static glw::GLuint	TestReferenceDataDepth();
 
-	template <typename T, glw::GLint S, glw::GLuint D>
 	static glw::GLuint TestReferenceDataSize();
 
-	template <typename T, bool N, glw::GLuint D>
 	static const glw::GLchar* FragmentShaderDeclaration();
 
-	template <glw::GLuint	 D>
 	static const glw::GLchar* FragmentShaderTail();
 
-	template <glw::GLuint D>
 	static glw::GLenum	TextureTarget();
 
-	template <glw::GLuint D, bool I>
-	bool TextureSubImage(glw::GLenum target, glw::GLuint texture, glw::GLint level, glw::GLint internalformat,
+	bool TextureSubImage(glw::GLenum target, glw::GLuint texture, glw::GLint level,
 						 glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
 						 glw::GLenum type, const glw::GLvoid* data);
 
-	template <glw::GLuint D, bool I>
 	bool TextureStorage(glw::GLenum target, glw::GLuint texture, glw::GLsizei levels, glw::GLenum internalformat,
 						glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth);
 
-	template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
 	bool CreateTexture();
 
-	template <typename T, glw::GLint S, bool N, glw::GLuint D>
 	bool Check();
 
-	template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
 	bool Test();
 
-	template <typename T, bool N, glw::GLuint D, bool I>
-	bool LoopTestOverS(bool skip_rgb);
-
-	template <typename T, bool N, bool I>
-	bool LoopTestOverDOverS(bool skip_rgb);
-
-	void PrepareFramebuffer(const glw::GLenum internal_format, const glw::GLuint D);
+	void PrepareFramebuffer(const glw::GLenum internal_format);
 	void PrepareProgram(const glw::GLchar* variable_declaration, const glw::GLchar* tail);
 	void PrepareVertexArray();
 	void Draw();
