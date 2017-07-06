@@ -357,11 +357,9 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 		TestParameters newParameters = parameters;
 		newParameters.extent.depth = multiviewProperties.maxMultiviewViewCount;
 
-		const deUint32 maxViewMask = (1u << multiviewProperties.maxMultiviewViewCount) - 1u;
-
-		vector<deUint32> viewMasks;
-		for (deUint32 mask = 1u; mask <= maxViewMask; mask = mask << 1u)
-			viewMasks.push_back(mask);
+		vector<deUint32> viewMasks(multiviewProperties.maxMultiviewViewCount);
+		for (deUint32 i = 0; i < multiviewProperties.maxMultiviewViewCount; i++)
+			viewMasks[i] = 1 << i;
 		newParameters.viewMasks = viewMasks;
 
 		return newParameters;
