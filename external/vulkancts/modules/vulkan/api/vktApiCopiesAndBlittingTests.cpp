@@ -1044,6 +1044,31 @@ tcu::TestStatus CopyImageToImage::checkTestResult (tcu::ConstPixelBufferAccess r
 			if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", m_expectedTextureLevel->getAccess(), result, fThreshold, tcu::COMPARE_LOG_RESULT))
 				return tcu::TestStatus::fail("CopiesAndBlitting test");
 		}
+		else if (isSnormFormat(mapTextureFormat(result.getFormat())))
+		{
+			// There may be an ambiguity between two possible binary representations of 1.0.
+			// Get rid of that by expanding the data to floats and re-normalizing again.
+
+			tcu::TextureLevel resultSnorm	(result.getFormat(), result.getWidth(), result.getHeight(), result.getDepth());
+			{
+				tcu::TextureLevel resultFloat	(tcu::TextureFormat(resultSnorm.getFormat().order, tcu::TextureFormat::FLOAT), resultSnorm.getWidth(), resultSnorm.getHeight(), resultSnorm.getDepth());
+
+				tcu::copy(resultFloat.getAccess(), result);
+				tcu::copy(resultSnorm, resultFloat.getAccess());
+			}
+
+			tcu::TextureLevel expectedSnorm	(m_expectedTextureLevel->getFormat(), m_expectedTextureLevel->getWidth(), m_expectedTextureLevel->getHeight(), m_expectedTextureLevel->getDepth());
+
+			{
+				tcu::TextureLevel expectedFloat	(tcu::TextureFormat(expectedSnorm.getFormat().order, tcu::TextureFormat::FLOAT), expectedSnorm.getWidth(), expectedSnorm.getHeight(), expectedSnorm.getDepth());
+
+				tcu::copy(expectedFloat.getAccess(), m_expectedTextureLevel->getAccess());
+				tcu::copy(expectedSnorm, expectedFloat.getAccess());
+			}
+
+			if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", expectedSnorm.getAccess(), resultSnorm.getAccess(), uThreshold, tcu::COMPARE_LOG_RESULT))
+				return tcu::TestStatus::fail("CopiesAndBlitting test");
+		}
 		else
 		{
 			if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", m_expectedTextureLevel->getAccess(), result, uThreshold, tcu::COMPARE_LOG_RESULT))
