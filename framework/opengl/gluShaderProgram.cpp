@@ -132,6 +132,65 @@ void Shader::compile (void)
 	}
 }
 
+void Shader::specialize (const char* entryPoint, glw::GLuint numSpecializationConstants,
+						 const glw::GLuint* constantIndex, const glw::GLuint* constantValue)
+{
+	m_info.compileOk		= false;
+	m_info.compileTimeUs	= 0;
+	m_info.infoLog.clear();
+
+	{
+		deUint64 compileStart = deGetMicroseconds();
+		m_gl.specializeShader(m_shader, entryPoint, numSpecializationConstants, constantIndex, constantValue);
+		m_info.compileTimeUs = deGetMicroseconds() - compileStart;
+	}
+
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glSpecializeShader()");
+
+	// Query status
+	{
+		int compileStatus = 0;
+
+		m_gl.getShaderiv(m_shader, GL_COMPILE_STATUS, &compileStatus);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetShaderiv()");
+
+		m_info.compileOk = compileStatus != GL_FALSE;
+	}
+
+	// Query log
+	{
+		int infoLogLen = 0;
+		int unusedLen;
+
+		m_gl.getShaderiv(m_shader, GL_INFO_LOG_LENGTH, &infoLogLen);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetShaderiv()");
+
+		if (infoLogLen > 0)
+		{
+			// The INFO_LOG_LENGTH query and the buffer query implementations have
+			// very commonly off-by-one errors. Try to work around these issues.
+
+			// add tolerance for off-by-one in log length, buffer write, and for terminator
+			std::vector<char> infoLog(infoLogLen + 3, '\0');
+
+			// claim buf size is one smaller to protect from off-by-one writing over buffer bounds
+			m_gl.getShaderInfoLog(m_shader, (int)infoLog.size() - 1, &unusedLen, &infoLog[0]);
+			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetShaderInfoLog()");
+
+			if (infoLog[(int)(infoLog.size()) - 1] != '\0')
+			{
+				// return whole buffer if null terminator was overwritten
+				m_info.infoLog = std::string(&infoLog[0], infoLog.size());
+			}
+			else
+			{
+				// read as C string. infoLog is guaranteed to be 0-terminated
+				m_info.infoLog = std::string(&infoLog[0]);
+			}
+		}
+	}
+}
+
 // Program
 
 static bool getProgramLinkStatus (const glw::Functions& gl, deUint32 program)
@@ -312,10 +371,22 @@ ShaderProgram::ShaderProgram (const RenderContext& renderCtx, const ProgramSourc
 	init(renderCtx.getFunctions(), sources);
 }
 
+ShaderProgram::ShaderProgram (const RenderContext& renderCtx, const ProgramBinaries& binaries)
+	: m_program(renderCtx.getFunctions())
+{
+	init(renderCtx.getFunctions(), binaries);
+}
+
 ShaderProgram::ShaderProgram (const glw::Functions& gl, const ProgramSources& sources)
 	: m_program(gl)
 {
 	init(gl, sources);
+}
+
+ShaderProgram::ShaderProgram (const glw::Functions& gl, const ProgramBinaries& binaries)
+	: m_program(gl)
+{
+	init(gl, binaries);
 }
 
 void ShaderProgram::init (const glw::Functions& gl, const ProgramSources& sources)
@@ -372,6 +443,85 @@ void ShaderProgram::init (const glw::Functions& gl, const ProgramSources& source
 			for (int shaderNdx = 0; shaderNdx < (int)m_shaders[shaderType].size(); ++shaderNdx)
 				delete m_shaders[shaderType][shaderNdx];
 		throw;
+	}
+}
+
+void ShaderProgram::init (const glw::Functions& gl, const ProgramBinaries& binaries)
+{
+	try
+	{
+		bool shadersOk = true;
+
+		for (deUint32 binaryNdx = 0; binaryNdx < binaries.binaries.size(); ++binaryNdx)
+		{
+			ShaderBinary shaderBinary = binaries.binaries[binaryNdx];
+			if (!shaderBinary.binary.empty())
+			{
+				const char* binary	= (const char*)shaderBinary.binary.data();
+				const int	length	= (int)(shaderBinary.binary.size() * sizeof(deUint32));
+
+				DE_ASSERT(shaderBinary.shaderEntryPoints.size() == shaderBinary.shaderTypes.size());
+
+				std::vector<Shader*> shaders;
+				for (deUint32 shaderTypeNdx = 0; shaderTypeNdx < shaderBinary.shaderTypes.size(); ++shaderTypeNdx)
+				{
+					ShaderType shaderType = shaderBinary.shaderTypes[shaderTypeNdx];
+
+					Shader* shader = new Shader(gl, ShaderType(shaderType));
+
+					m_shaders[shaderType].reserve(m_shaders[shaderType].size() + 1);
+					m_shaders[shaderType].push_back(shader);
+					shaders.push_back(shader);
+				}
+
+				setBinary(gl, shaders, binaries.binaryFormat, binary, length);
+
+				for (deUint32 shaderNdx = 0; shaderNdx < shaders.size(); ++shaderNdx)
+				{
+					shaders[shaderNdx]->specialize(shaderBinary.shaderEntryPoints[shaderNdx].c_str(),
+												   (deUint32)shaderBinary.specializationIndices.size(),
+												   shaderBinary.specializationIndices.data(),
+												   shaderBinary.specializationValues.data());
+
+					shadersOk = shadersOk && shaders[shaderNdx]->getCompileStatus();
+				}
+			}
+		}
+
+		if (shadersOk)
+		{
+			for (int shaderType = 0; shaderType < SHADERTYPE_LAST; shaderType++)
+				for (int shaderNdx = 0; shaderNdx < (int)m_shaders[shaderType].size(); ++shaderNdx)
+					m_program.attachShader(m_shaders[shaderType][shaderNdx]->getShader());
+
+			m_program.link();
+		}
+	}
+	catch (...)
+	{
+		for (int shaderType = 0; shaderType < SHADERTYPE_LAST; shaderType++)
+			for (int shaderNdx = 0; shaderNdx < (int)m_shaders[shaderType].size(); ++shaderNdx)
+				delete m_shaders[shaderType][shaderNdx];
+		throw;
+	}
+}
+
+void ShaderProgram::setBinary (const glw::Functions& gl, std::vector<Shader*>& shaders, glw::GLenum binaryFormat, const void* binaryData, const int length)
+{
+	std::vector<glw::GLuint> shaderVec;
+	for (deUint32 shaderNdx = 0; shaderNdx < shaders.size(); ++shaderNdx)
+		shaderVec.push_back(shaders[shaderNdx]->getShader());
+
+	gl.shaderBinary((glw::GLsizei)shaderVec.size(), shaderVec.data(), binaryFormat, binaryData, length);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderBinary");
+
+	for (deUint32 shaderNdx = 0; shaderNdx < shaders.size(); ++shaderNdx)
+	{
+		glw::GLint shaderState;
+		gl.getShaderiv(shaders[shaderNdx]->getShader(), GL_SPIR_V_BINARY_ARB, &shaderState);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "getShaderiv");
+
+		DE_ASSERT(shaderState == GL_TRUE);
 	}
 }
 
