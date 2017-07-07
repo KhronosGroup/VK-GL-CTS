@@ -35,6 +35,7 @@
 #include "gl4cEnhancedLayoutsTests.hpp"
 #include "gl4cGPUShaderFP64Tests.hpp"
 #include "gl4cGetTextureSubImageTests.hpp"
+#include "gl4cGlSpirvTests.hpp"
 #include "gl4cIncompleteTextureAccessTests.hpp"
 #include "gl4cIndirectParametersTests.hpp"
 #include "gl4cKHRDebugTests.hpp"
@@ -372,6 +373,7 @@ void GL45TestPackage::init(void)
 		addChild(new glcts::PolygonOffsetClamp(getContext()));
 		addChild(new glcts::SeparableProgramsTransformFeedbackTests(getContext()));
 		addChild(new gl4cts::SpirvExtensionsTests(getContext()));
+		addChild(new gl4cts::GlSpirvTests(getContext()));
 	}
 	catch (...)
 	{

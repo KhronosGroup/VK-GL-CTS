@@ -100,6 +100,7 @@ EXTENSIONS			= [
 	'GL_ARB_draw_elements_base_vertex',
 	'GL_ARB_direct_state_access',
 	'GL_ARB_get_program_binary',
+	'GL_ARB_gl_spirv',
 	'GL_ARB_indirect_parameters',
 	'GL_ARB_internalformat_query',
 	'GL_ARB_instanced_arrays',

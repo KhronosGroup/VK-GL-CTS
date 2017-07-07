@@ -705,6 +705,11 @@ if (de::contains(extSet, "GL_ARB_get_program_binary"))
 	gl->programParameteri	= (glProgramParameteriFunc)	loader->get("glProgramParameteri");
 }
 
+if (de::contains(extSet, "GL_ARB_gl_spirv"))
+{
+	gl->specializeShader	= (glSpecializeShaderFunc)	loader->get("glSpecializeShaderARB");
+}
+
 if (de::contains(extSet, "GL_ARB_indirect_parameters"))
 {
 	gl->multiDrawArraysIndirectCount	= (glMultiDrawArraysIndirectCountFunc)		loader->get("glMultiDrawArraysIndirectCountARB");
