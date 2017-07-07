@@ -13717,13 +13717,11 @@ std::string VaryingBlockMemberLocationsTest::getShaderSource(GLuint test_case_in
 		}
 	}
 
+	// Geometry shader inputs, tessellation control shader inputs and outputs, and tessellation evaluation
+	// inputs all have an additional level of arrayness relative to other shader inputs and outputs.
 	switch (stage)
 	{
 	case Utils::Shader::FRAGMENT:
-		break;
-	case Utils::Shader::GEOMETRY:
-		array = "[]";
-		index = "[0]";
 		break;
 	case Utils::Shader::TESS_CTRL:
 		array = "[]";
@@ -13731,6 +13729,7 @@ std::string VaryingBlockMemberLocationsTest::getShaderSource(GLuint test_case_in
 		break;
 	// geometry shader's input must have one more dimension than tessellation evaluation shader's output,
 	// the GS input block is an array, so the DS output can't be declared as an array
+	case Utils::Shader::GEOMETRY:
 	case Utils::Shader::TESS_EVAL:
 	{
 		if (std::string(direction) == std::string("in")) // match HS output and DS input
