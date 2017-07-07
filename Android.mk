@@ -309,7 +309,7 @@ LOCAL_SRC_FILES := \
 	modules/egl/teglVGRenderUtil.cpp \
 	modules/egl/teglMultiContextTests.cpp \
 	modules/egl/teglThreadCleanUpTests.cpp \
-    modules/gles2/tes2CapabilityTests.cpp \
+	modules/gles2/tes2CapabilityTests.cpp \
 	modules/gles2/tes2Context.cpp \
 	modules/gles2/tes2InfoTests.cpp \
 	modules/gles2/tes2TestCase.cpp \
@@ -567,6 +567,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fFboNoAttachmentTests.cpp \
 	modules/gles31/functional/es31fFboTestCase.cpp \
 	modules/gles31/functional/es31fFboTestUtil.cpp \
+	modules/gles31/functional/es31fFboSRGBWriteControlTests.cpp \
 	modules/gles31/functional/es31fFunctionalTests.cpp \
 	modules/gles31/functional/es31fGeometryShaderTests.cpp \
 	modules/gles31/functional/es31fIndirectComputeDispatchTests.cpp \
@@ -599,6 +600,8 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fNegativeTestShared.cpp \
 	modules/gles31/functional/es31fNegativeTextureApiTests.cpp \
 	modules/gles31/functional/es31fNegativeVertexArrayApiTests.cpp \
+	modules/gles31/functional/es31fNegativeSampleVariablesTests.cpp \
+	modules/gles31/functional/es31fNegativeShaderFramebufferFetchTests.cpp \
 	modules/gles31/functional/es31fOpaqueTypeIndexingTests.cpp \
 	modules/gles31/functional/es31fPrimitiveBoundingBoxTests.cpp \
 	modules/gles31/functional/es31fProgramInterfaceDefinition.cpp \
@@ -613,6 +616,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fShaderAtomicOpTests.cpp \
 	modules/gles31/functional/es31fShaderBuiltinConstantTests.cpp \
 	modules/gles31/functional/es31fShaderCommonFunctionTests.cpp \
+	modules/gles31/functional/es31fShaderFramebufferFetchTests.cpp \
 	modules/gles31/functional/es31fShaderHelperInvocationTests.cpp \
 	modules/gles31/functional/es31fShaderImageLoadStoreTests.cpp \
 	modules/gles31/functional/es31fShaderIntegerFunctionTests.cpp \
