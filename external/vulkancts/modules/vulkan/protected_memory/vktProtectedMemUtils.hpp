@@ -140,6 +140,17 @@ vk::Move<vk::VkPipeline>			makeGraphicsPipeline				(const vk::DeviceInterface&		
 																		 const tcu::UVec2&					renderSize,
 																		 const vk::VkPrimitiveTopology		topology);
 
+vk::Move<vk::VkPipeline>			makeGraphicsPipeline				(const vk::DeviceInterface&			vk,
+																		 const vk::VkDevice					device,
+																		 const vk::VkPipelineLayout			pipelineLayout,
+																		 const vk::VkRenderPass				renderPass,
+																		 const vk::VkShaderModule			vertexShaderModule,
+																		 const vk::VkShaderModule			fragmentShaderModule,
+																		 const VertexBindings&				vertexBindings,
+																		 const VertexAttribs&				vertexAttribs,
+																		 const tcu::UVec2&					renderSize,
+																		 const vk::VkPrimitiveTopology		topology);
+
 } // ProtectedMem
 } // vkt
 

@@ -25,15 +25,18 @@
 #include "vktProtectedMemImageValidator.hpp"
 
 #include "tcuTestLog.hpp"
+#include "tcuStringTemplate.hpp"
 
 #include "vkBuilderUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkImageUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
 
 #include "vktProtectedMemUtils.hpp"
 #include "vktProtectedMemContext.hpp"
+
 namespace vkt
 {
 namespace ProtectedMem
@@ -42,13 +45,13 @@ namespace ProtectedMem
 void ImageValidator::initPrograms (vk::SourceCollections& programCollection) const
 {
 	// Layout:
-	//  set = 0, location = 0 -> uniform sampler2D u_protectedImage
+	//  set = 0, location = 0 -> uniform *sampler2D u_protectedImage
 	//  set = 0, location = 1 -> buffer ProtectedHelper (2 * uint)
 	//  set = 0, location = 2 -> uniform Data (2 * vec2 + 4 * vec4)
 	const char* validatorShader = "#version 450\n"
 					  "layout(local_size_x = 1) in;\n"
 					  "\n"
-					  "layout(set=0, binding=0) uniform sampler2D u_protectedImage;\n"
+					  "layout(set=0, binding=0) uniform ${SAMPLER_TYPE} u_protectedImage;\n"
 					  "\n"
 					  "layout(set=0, binding=1) buffer ProtectedHelper\n"
 					  "{\n"
@@ -98,7 +101,12 @@ void ImageValidator::initPrograms (vk::SourceCollections& programCollection) con
 					  "}\n";
 
 	programCollection.glslSources.add("ResetSSBO") << glu::ComputeSource(resetSSBOShader);
-	programCollection.glslSources.add("ImageValidator") << glu::ComputeSource(validatorShader);
+
+	std::map<std::string, std::string> validationParams;
+	validationParams["SAMPLER_TYPE"] = isIntFormat(m_imageFormat)	? "isampler2D" :
+									   isUintFormat(m_imageFormat)	? "usampler2D" : "sampler2D";
+
+	programCollection.glslSources.add("ImageValidator") << glu::ComputeSource(tcu::StringTemplate(validatorShader).specialize(validationParams));
 }
 
 bool ImageValidator::validateImage (ProtectedContext& ctx, const ValidationData& refData,

@@ -173,6 +173,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemCopyImageToBufferTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemFillUpdateCopyBufferTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemImageValidator.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemShaderImageAccessTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemStorageBufferTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemUtils.cpp \

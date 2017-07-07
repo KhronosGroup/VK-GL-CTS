@@ -584,6 +584,7 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline (const vk::DeviceInterface&		vk,
 			DE_NULL														// const VkSpecializationInfo*			pSpecializationInfo;
 		}
 	};
+
 	const vk::VkPipelineVertexInputStateCreateInfo		vertexInputStateParams		=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
@@ -594,6 +595,7 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline (const vk::DeviceInterface&		vk,
 		(deUint32)vertexAttribs.size(),									// deUint32									attributeCount;
 		vertexAttribs.data()											// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 	};
+
 	const vk::VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateParams	=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
@@ -602,6 +604,7 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline (const vk::DeviceInterface&		vk,
 		topology,															// VkPrimitiveTopology						topology;
 		VK_FALSE															// VkBool32									primitiveRestartEnable;
 	};
+
 	const vk::VkViewport								viewport					=
 	{
 		0.0f,						// float	originX;
@@ -611,11 +614,13 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline (const vk::DeviceInterface&		vk,
 		0.0f,						// float	minDepth;
 		1.0f						// float	maxDepth;
 	};
+
 	const vk::VkRect2D									scissor						=
 	{
 		{ 0, 0 },								// VkOffset2D	offset;
 		{ renderSize.x(), renderSize.y() }		// VkExtent2D	extent;
 	};
+
 	const vk::VkPipelineViewportStateCreateInfo			viewportStateParams			=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,		// VkStructureType						sType;
@@ -626,6 +631,7 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline (const vk::DeviceInterface&		vk,
 		1u,																// deUint32								scissorsCount;
 		&scissor,														// const VkRect2D*						pScissors;
 	};
+
 	const vk::VkPipelineRasterizationStateCreateInfo	rasterStateParams			=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType							sType;
@@ -642,6 +648,7 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline (const vk::DeviceInterface&		vk,
 		0.0f,															// float									slopeScaledDepthBias;
 		1.0f,															// float									lineWidth;
 	};
+
 	const vk::VkPipelineMultisampleStateCreateInfo		multisampleStateParams		=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
@@ -654,6 +661,7 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline (const vk::DeviceInterface&		vk,
 		VK_FALSE,														// VkBool32									alphaToCoverageEnable;
 		VK_FALSE														// VkBool32									alphaToOneEnable;
 	};
+
 	const vk::VkPipelineColorBlendAttachmentState		colorBlendAttachmentState	=
 	{
 		VK_FALSE,														// VkBool32			blendEnable;
@@ -668,6 +676,7 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline (const vk::DeviceInterface&		vk,
 		 vk::VK_COLOR_COMPONENT_B_BIT |
 		 vk::VK_COLOR_COMPONENT_A_BIT),									// VkChannelFlags	channelWriteMask;
 	};
+
 	const vk::VkPipelineColorBlendStateCreateInfo		colorBlendStateParams		=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
@@ -679,6 +688,7 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline (const vk::DeviceInterface&		vk,
 		&colorBlendAttachmentState,										// const VkPipelineColorBlendAttachmentState*	pAttachments;
 		{ 0.0f, 0.0f, 0.0f, 0.0f },										// float										blendConst[4];
 	};
+
 	const vk::VkGraphicsPipelineCreateInfo				graphicsPipelineParams		=
 	{
 		vk::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,			// VkStructureType									sType;
@@ -701,6 +711,7 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline (const vk::DeviceInterface&		vk,
 		0u,																// VkPipeline										basePipelineHandle;
 		0u																// deInt32											basePipelineIndex;
 	};
+
 	return vk::createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineParams);
 }
 
@@ -714,7 +725,6 @@ const char* getCmdBufferTypeStr (const CmdBufferType cmdBufferType)
 		default: DE_FATAL("Invalid command buffer type"); return "";
 	}
 }
-
 
 } // ProtectedMem
 } // vkt

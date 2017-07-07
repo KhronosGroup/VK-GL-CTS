@@ -36,14 +36,15 @@ namespace ProtectedMem
 class ProtectedContext;
 
 struct ValidationData {
-	const tcu::Vec4	coords[4];
-	const tcu::Vec4	values[4];
+	tcu::Vec4	coords[4];
+	tcu::Vec4	values[4];
 };
 
 class ImageValidator
 {
 public:
-							ImageValidator	(void)
+							ImageValidator	(vk::VkFormat imageFormat = vk::VK_FORMAT_R8G8B8A8_UNORM)
+								: m_imageFormat	(imageFormat)
 							{}
 							~ImageValidator	() {}
 	void					initPrograms	(vk::SourceCollections&	programCollection) const;
@@ -52,6 +53,9 @@ public:
 											 const ValidationData&	refData,
 											 const vk::VkImage		image,
 											 const vk::VkFormat		imageFormat) const;
+
+private:
+	const vk::VkFormat		m_imageFormat;
 };
 
 } // ProtectedMem

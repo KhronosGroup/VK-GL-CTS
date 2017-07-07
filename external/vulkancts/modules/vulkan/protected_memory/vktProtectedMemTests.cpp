@@ -36,6 +36,7 @@
 #include "vktProtectedMemCopyImageToBufferTests.hpp"
 #include "vktProtectedMemCopyBufferToImageTests.hpp"
 #include "vktProtectedMemStorageBufferTests.hpp"
+#include "vktProtectedMemShaderImageAccessTests.hpp"
 
 namespace vkt
 {
@@ -61,6 +62,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		imageTestGroup->addChild(createBlitImageTests(testCtx));
 		imageTestGroup->addChild(createClearColorImageTests(testCtx));
 		imageTestGroup->addChild(createCopyBufferToImageTests(testCtx));
+		imageTestGroup->addChild(createShaderImageAccessTests(testCtx));
 		protectedTests->addChild(imageTestGroup.release());
 	}
 
@@ -82,6 +84,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		ssboTestGroup->addChild(createAtomicStorageBufferTests(testCtx));
 		protectedTests->addChild(ssboTestGroup.release());
 	}
+
 	return protectedTests.release();
 
 }
