@@ -21,7 +21,7 @@ LOCAL_MODULE := CtsDeqpTestCases
 LOCAL_MODULE_TAGS := optional
 
 # Tag this module as a cts test artifact
-LOCAL_COMPATIBILITY_SUITE := cts general-tests
+LOCAL_COMPATIBILITY_SUITE := cts vts general-tests
 
 LOCAL_SDK_VERSION := 22
 
