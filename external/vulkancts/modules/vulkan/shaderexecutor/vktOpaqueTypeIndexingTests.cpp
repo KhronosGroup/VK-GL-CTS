@@ -39,6 +39,7 @@
 #include "deStringUtil.hpp"
 #include "deSharedPtr.hpp"
 #include "deRandom.hpp"
+#include "deSTLUtil.hpp"
 
 #include "vktShaderExecutor.hpp"
 
@@ -1222,11 +1223,17 @@ public:
 		NUM_READS			= 4
 	};
 
+	enum Flags
+	{
+		FLAG_USE_STORAGE_BUFFER	= (1<<0)	// Use VK_KHR_storage_buffer_storage_class
+	};
+
 									BlockArrayIndexingCaseInstance	(Context&						context,
 																	 const glu::ShaderType			shaderType,
 																	 const ShaderSpec&				shaderSpec,
 																	 const char*					name,
 																	 BlockType						blockType,
+																	 const deUint32					flags,
 																	 const IndexExprType			indexExprType,
 																	 const std::vector<int>&		readIndices,
 																	 const std::vector<deUint32>&	inValues);
@@ -1236,6 +1243,7 @@ public:
 
 private:
 	const BlockType					m_blockType;
+	const deUint32					m_flags;
 	const std::vector<int>&			m_readIndices;
 	const std::vector<deUint32>&	m_inValues;
 };
@@ -1245,11 +1253,13 @@ BlockArrayIndexingCaseInstance::BlockArrayIndexingCaseInstance (Context&						co
 																const ShaderSpec&				shaderSpec,
 																const char*						name,
 																BlockType						blockType,
+																const deUint32					flags,
 																const IndexExprType				indexExprType,
 																const std::vector<int>&			readIndices,
 																const std::vector<deUint32>&	inValues)
 	: OpaqueTypeIndexingTestInstance	(context, shaderType, shaderSpec, name, indexExprType)
 	, m_blockType						(blockType)
+	, m_flags							(flags)
 	, m_readIndices						(readIndices)
 	, m_inValues						(inValues)
 {
@@ -1287,6 +1297,12 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate (void)
 	Move<VkDescriptorSet>		extraResourcesSet;
 
 	checkSupported(descriptorType);
+
+	if ((m_flags & FLAG_USE_STORAGE_BUFFER) != 0)
+	{
+		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), "VK_KHR_storage_buffer_storage_class"))
+			TCU_THROW(NotSupportedError, "VK_KHR_storage_buffer_storage_class is not supported");
+	}
 
 	for (size_t bufferNdx = 0; bufferNdx < m_inValues.size(); ++bufferNdx)
 	{
@@ -1453,7 +1469,8 @@ public:
 															 const char*				description,
 															 BlockType					blockType,
 															 IndexExprType				indexExprType,
-															 const glu::ShaderType		shaderType);
+															 const glu::ShaderType		shaderType,
+															 deUint32					flags = 0u);
 	virtual						~BlockArrayIndexingCase		(void);
 
 	virtual TestInstance*		createInstance				(Context& ctx) const;
@@ -1465,6 +1482,7 @@ private:
 	void						createShaderSpec			(void);
 
 	const BlockType				m_blockType;
+	const deUint32				m_flags;
 	std::vector<int>			m_readIndices;
 	std::vector<deUint32>		m_inValues;
 };
@@ -1474,9 +1492,11 @@ BlockArrayIndexingCase::BlockArrayIndexingCase (tcu::TestContext&			testCtx,
 												const char*					description,
 												BlockType					blockType,
 												IndexExprType				indexExprType,
-												const glu::ShaderType		shaderType)
+												const glu::ShaderType		shaderType,
+												deUint32					flags)
 	: OpaqueTypeIndexingCase	(testCtx, name, description, shaderType, indexExprType)
 	, m_blockType				(blockType)
+	, m_flags					(flags)
 	, m_readIndices				(BlockArrayIndexingCaseInstance::NUM_READS)
 	, m_inValues				(BlockArrayIndexingCaseInstance::NUM_INSTANCES)
 {
@@ -1495,6 +1515,7 @@ TestInstance* BlockArrayIndexingCase::createInstance (Context& ctx) const
 											  m_shaderSpec,
 											  m_name,
 											  m_blockType,
+											  m_flags,
 											  m_indexExprType,
 											  m_readIndices,
 											  m_inValues);
@@ -1563,6 +1584,9 @@ void BlockArrayIndexingCase::createShaderSpec (void)
 
 	m_shaderSpec.globalDeclarations	= global.str();
 	m_shaderSpec.source				= code.str();
+
+	if ((m_flags & BlockArrayIndexingCaseInstance::FLAG_USE_STORAGE_BUFFER) != 0)
+		m_shaderSpec.buildOptions.flags |= vk::GlslBuildOptions::FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS;
 }
 
 class AtomicCounterIndexingCaseInstance : public OpaqueTypeIndexingTestInstance
@@ -2011,9 +2035,12 @@ void OpaqueTypeIndexingTests::init (void)
 		const char*		name;
 	} shaderTypes[] =
 	{
-		{ glu::SHADERTYPE_VERTEX,		"vertex"	},
-		{ glu::SHADERTYPE_FRAGMENT,		"fragment"	},
-		{ glu::SHADERTYPE_COMPUTE,		"compute"	}
+		{ glu::SHADERTYPE_VERTEX,					"vertex"	},
+		{ glu::SHADERTYPE_FRAGMENT,					"fragment"	},
+		{ glu::SHADERTYPE_GEOMETRY,					"geometry"	},
+		{ glu::SHADERTYPE_TESSELLATION_CONTROL,		"tess_ctrl"	},
+		{ glu::SHADERTYPE_TESSELLATION_EVALUATION,	"tess_eval"	},
+		{ glu::SHADERTYPE_COMPUTE,					"compute"	}
 	};
 
 	// .sampler
@@ -2057,6 +2084,12 @@ void OpaqueTypeIndexingTests::init (void)
 				tcu::TestCaseGroup* const	shaderGroup		= new tcu::TestCaseGroup(m_testCtx, shaderTypes[shaderTypeNdx].name, "");
 				indexGroup->addChild(shaderGroup);
 
+				// \note [pyry] In Vulkan CTS 1.0.2 sampler groups should not cover tess/geom stages
+				if ((shaderType != glu::SHADERTYPE_VERTEX)		&&
+					(shaderType != glu::SHADERTYPE_FRAGMENT)	&&
+					(shaderType != glu::SHADERTYPE_COMPUTE))
+					continue;
+
 				for (int samplerTypeNdx = 0; samplerTypeNdx < DE_LENGTH_OF_ARRAY(samplerTypes); samplerTypeNdx++)
 				{
 					const glu::DataType	samplerType	= samplerTypes[samplerTypeNdx];
@@ -2071,11 +2104,13 @@ void OpaqueTypeIndexingTests::init (void)
 
 	// .ubo / .ssbo / .atomic_counter
 	{
-		tcu::TestCaseGroup* const	uboGroup	= new tcu::TestCaseGroup(m_testCtx, "ubo",				"Uniform Block Instance Array Indexing Tests");
-		tcu::TestCaseGroup* const	ssboGroup	= new tcu::TestCaseGroup(m_testCtx, "ssbo",				"Buffer Block Instance Array Indexing Tests");
-		tcu::TestCaseGroup* const	acGroup		= new tcu::TestCaseGroup(m_testCtx, "atomic_counter",	"Atomic Counter Array Indexing Tests");
+		tcu::TestCaseGroup* const	uboGroup			= new tcu::TestCaseGroup(m_testCtx, "ubo",								"Uniform Block Instance Array Indexing Tests");
+		tcu::TestCaseGroup* const	ssboGroup			= new tcu::TestCaseGroup(m_testCtx, "ssbo",								"Buffer Block Instance Array Indexing Tests");
+		tcu::TestCaseGroup* const	ssboStorageBufGroup	= new tcu::TestCaseGroup(m_testCtx, "ssbo_storage_buffer_decoration",	"Buffer Block (new StorageBuffer decoration) Instance Array Indexing Tests");
+		tcu::TestCaseGroup* const	acGroup				= new tcu::TestCaseGroup(m_testCtx, "atomic_counter",					"Atomic Counter Array Indexing Tests");
 		addChild(uboGroup);
 		addChild(ssboGroup);
+		addChild(ssboStorageBufGroup);
 		addChild(acGroup);
 
 		for (int indexTypeNdx = 0; indexTypeNdx < DE_LENGTH_OF_ARRAY(indexingTypes); indexTypeNdx++)
@@ -2089,11 +2124,20 @@ void OpaqueTypeIndexingTests::init (void)
 				const glu::ShaderType	shaderType		= shaderTypes[shaderTypeNdx].type;
 				const std::string		name			= std::string(indexExprName) + "_" + shaderTypes[shaderTypeNdx].name;
 
-				uboGroup->addChild	(new BlockArrayIndexingCase		(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_UNIFORM,	indexExprType, shaderType));
-				acGroup->addChild	(new AtomicCounterIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, indexExprType, shaderType));
+				// \note [pyry] In Vulkan CTS 1.0.2 ubo/ssbo/atomic_counter groups should not cover tess/geom stages
+				if ((shaderType == glu::SHADERTYPE_VERTEX)		||
+					(shaderType == glu::SHADERTYPE_FRAGMENT)	||
+					(shaderType == glu::SHADERTYPE_COMPUTE))
+				{
+					uboGroup->addChild	(new BlockArrayIndexingCase		(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_UNIFORM,	indexExprType, shaderType));
+					acGroup->addChild	(new AtomicCounterIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, indexExprType, shaderType));
+
+					if (indexExprType == INDEX_EXPR_TYPE_CONST_LITERAL || indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
+						ssboGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_BUFFER, indexExprType, shaderType));
+				}
 
 				if (indexExprType == INDEX_EXPR_TYPE_CONST_LITERAL || indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
-					ssboGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_BUFFER, indexExprType, shaderType));
+					ssboStorageBufGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_BUFFER, indexExprType, shaderType, (deUint32)BlockArrayIndexingCaseInstance::FLAG_USE_STORAGE_BUFFER));
 			}
 		}
 	}

@@ -396,15 +396,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 	const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
 	m_cmdPool = vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
 
-	const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		*m_cmdPool,											// VkCommandPool			commandPool;
-		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		1u,													// deUint32					bufferCount;
-	};
-	m_cmdBuffer = vk::allocateCommandBuffer(m_vk, device, &cmdBufferAllocateInfo);
+	m_cmdBuffer = vk::allocateCommandBuffer(m_vk, device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	const vk::Unique<vk::VkShaderModule> vs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get("InstancedDrawVert"), 0));
 	const vk::Unique<vk::VkShaderModule> fs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get("InstancedDrawFrag"), 0));

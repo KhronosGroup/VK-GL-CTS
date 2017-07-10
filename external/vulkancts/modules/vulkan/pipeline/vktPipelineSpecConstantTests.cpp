@@ -498,7 +498,7 @@ tcu::TestStatus ComputeTestInstance::iterate (void)
 	const Unique<VkShaderModule>   shaderModule  (createShaderModule (vk, device, m_context.getBinaryCollection().get("comp"), 0));
 	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout (vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>       pipeline      (makeComputePipeline(vk, device, *pipelineLayout, *shaderModule, pSpecInfo));
-	const Unique<VkCommandPool>    cmdPool       (makeCommandPool    (vk, device, queueFamilyIndex));
+	const Unique<VkCommandPool>    cmdPool       (createCommandPool  (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>  cmdBuffer     (makeCommandBuffer  (vk, device, *cmdPool));
 
 	beginCommandBuffer(vk, *cmdBuffer);
@@ -623,7 +623,7 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 	const Unique<VkRenderPass>     renderPass    (makeRenderPass    (vk, device, imageFormat));
 	const Unique<VkFramebuffer>    framebuffer   (makeFramebuffer	(vk, device, *renderPass, 1u, &colorImageView.get(), static_cast<deUint32>(renderSize.x()), static_cast<deUint32>(renderSize.y())));
 	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkCommandPool>    cmdPool       (makeCommandPool   (vk, device, queueFamilyIndex));
+	const Unique<VkCommandPool>    cmdPool       (createCommandPool (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>  cmdBuffer     (makeCommandBuffer (vk, device, *cmdPool));
 
 	GraphicsPipelineBuilder pipelineBuilder;

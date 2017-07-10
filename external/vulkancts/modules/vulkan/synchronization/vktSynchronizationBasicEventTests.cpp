@@ -83,7 +83,7 @@ tcu::TestStatus deviceResetSetEventCase (Context& context)
 	const VkDevice					device				= context.getDevice();
 	const VkQueue					queue				= context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	const Unique<VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
 	const VkSubmitInfo				submitInfo			=
 														{
@@ -97,13 +97,7 @@ tcu::TestStatus deviceResetSetEventCase (Context& context)
 															0u,								// deUint32						signalSemaphoreCount;
 															DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
 														};
-	const VkEventCreateInfo			eventInfo			=
-														{
-															VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,
-															DE_NULL,
-															0
-														};
-	const Unique<VkEvent>			event				(createEvent(vk, device, &eventInfo, DE_NULL));
+	const Unique<VkEvent>			event				(createEvent(vk, device));
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdSetEvent(*cmdBuffer, *event, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
@@ -134,14 +128,8 @@ tcu::TestStatus deviceWaitForEventCase (Context& context)
 	const VkDevice					device				= context.getDevice();
 	const VkQueue					queue				= context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	const VkFenceCreateInfo			fenceInfo			=
-														{
-															VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType		sType;
-															DE_NULL,							 // const void*			pNext;
-															0u,									 // VkFenceCreateFlags	flags;
-														};
-	const Unique<VkFence>			fence				(createFence(vk, device, &fenceInfo));
-	const Unique<VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
+	const Unique<VkFence>			fence				(createFence(vk, device));
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
 	const VkSubmitInfo				submitInfo			=
 														{
@@ -187,14 +175,8 @@ tcu::TestStatus singleSubmissionCase (Context& context)
 	const VkDevice					device				= context.getDevice();
 	const VkQueue					queue				= context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	const VkFenceCreateInfo			fenceInfo			=
-														{
-															VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType		sType;
-															DE_NULL,							 // const void*			pNext;
-															0u,									 // VkFenceCreateFlags	flags;
-														};
-	const Unique<VkFence>			fence				(createFence(vk, device, &fenceInfo));
-	const Unique<VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
+	const Unique<VkFence>			fence				(createFence(vk, device));
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Move<VkCommandBuffer>		ptrCmdBuffer[COUNT]	= {makeCommandBuffer(vk, device, *cmdPool), makeCommandBuffer(vk, device, *cmdPool)};
 	VkCommandBuffer					cmdBuffers[COUNT]	= {*ptrCmdBuffer[SET], *ptrCmdBuffer[WAIT]};
 	const VkSubmitInfo				submitInfo			=
@@ -209,13 +191,7 @@ tcu::TestStatus singleSubmissionCase (Context& context)
 															0u,								// deUint32						signalSemaphoreCount;
 															DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
 														};
-	const VkEventCreateInfo			eventInfo			=
-														{
-															VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,
-															DE_NULL,
-															0
-														};
-	const Unique<VkEvent>			event				(createEvent(vk, device, &eventInfo, DE_NULL));
+	const Unique<VkEvent>			event				(createEvent(vk, device));
 
 	beginCommandBuffer(vk, cmdBuffers[SET]);
 	vk.cmdSetEvent(cmdBuffers[SET], *event, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
@@ -239,15 +215,13 @@ tcu::TestStatus multiSubmissionCase (Context& context)
 	const VkDevice					device				= context.getDevice();
 	const VkQueue					queue				= context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	const VkFenceCreateInfo			fenceInfo			=
-														{
-															VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType		sType;
-															DE_NULL,							 // const void*			pNext;
-															0u,									 // VkFenceCreateFlags	flags;
-														};
-	const Move<VkFence>				ptrFence[COUNT]		= {createFence(vk, device, &fenceInfo), createFence(vk, device, &fenceInfo)};
+	const Move<VkFence>				ptrFence[COUNT]		=
+	{
+		createFence(vk, device),
+		createFence(vk, device)
+	};
 	VkFence							fence[COUNT]		= {*ptrFence[SET], *ptrFence[WAIT]};
-	const Unique<VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Move<VkCommandBuffer>		ptrCmdBuffer[COUNT]	= {makeCommandBuffer(vk, device, *cmdPool), makeCommandBuffer(vk, device, *cmdPool)};
 	VkCommandBuffer					cmdBuffers[COUNT]	= {*ptrCmdBuffer[SET], *ptrCmdBuffer[WAIT]};
 	const VkSubmitInfo				submitInfo[COUNT]	=
@@ -275,13 +249,7 @@ tcu::TestStatus multiSubmissionCase (Context& context)
 																DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
 															}
 														};
-	const VkEventCreateInfo			eventInfo			=
-														{
-															VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,
-															DE_NULL,
-															0
-														};
-	const Unique<VkEvent>			event				(createEvent(vk, device, &eventInfo, DE_NULL));
+	const Unique<VkEvent>			event				(createEvent(vk, device));
 
 	beginCommandBuffer(vk, cmdBuffers[SET]);
 	vk.cmdSetEvent(cmdBuffers[SET], *event, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
@@ -307,14 +275,8 @@ tcu::TestStatus secondaryCommandBufferCase (Context& context)
 	const VkDevice							device					= context.getDevice();
 	const VkQueue							queue					= context.getUniversalQueue();
 	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-	const VkFenceCreateInfo					fenceInfo				=
-																	{
-																		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType		sType;
-																		DE_NULL,							 // const void*			pNext;
-																		0u,									 // VkFenceCreateFlags	flags;
-																	};
-	const Unique<VkFence>					fence					(createFence(vk, device, &fenceInfo));
-	const Unique<VkCommandPool>				cmdPool					(makeCommandPool(vk, device, queueFamilyIndex));
+	const Unique<VkFence>					fence					(createFence(vk, device));
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Move<VkCommandBuffer>				primaryCmdBuffer		(makeCommandBuffer(vk, device, *cmdPool));
 	const VkCommandBufferAllocateInfo		cmdBufferInfo			=
 																	{
@@ -338,13 +300,7 @@ tcu::TestStatus secondaryCommandBufferCase (Context& context)
 																		0u,								// deUint32						signalSemaphoreCount;
 																		DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
 																	};
-	const VkEventCreateInfo					eventInfo				=
-																	{
-																		VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,
-																		DE_NULL,
-																		0
-																	};
-	const Unique<VkEvent>					event					(createEvent(vk, device, &eventInfo, DE_NULL));
+	const Unique<VkEvent>					event					(createEvent(vk, device));
 
 	const VkCommandBufferInheritanceInfo	secCmdBufInheritInfo	=
 																	{

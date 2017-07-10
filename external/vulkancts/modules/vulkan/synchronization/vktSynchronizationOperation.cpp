@@ -88,6 +88,8 @@ class VertexGrid
 {
 public:
 	VertexGrid (OperationContext& context)
+		: m_vertexFormat (VK_FORMAT_R32G32B32A32_SFLOAT)
+		, m_vertexStride (tcu::getPixelSize(mapVkFormat(m_vertexFormat)))
 	{
 		const DeviceInterface&	vk			= context.getDeviceInterface();
 		const VkDevice			device		= context.getDevice();
@@ -103,35 +105,37 @@ public:
 			m_vertexData.push_back(tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f));
 			m_vertexData.push_back(tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f));
 		}
-		m_vertexFormat							= VK_FORMAT_R32G32B32A32_SFLOAT;
-		m_vertexStride							= tcu::getPixelSize(mapVkFormat(m_vertexFormat));
-		const VkDeviceSize vertexDataSizeBytes	= m_vertexData.size() * sizeof(m_vertexData[0]);
-
-		m_vertexBuffer = de::MovePtr<Buffer>(new Buffer(vk, device, allocator,
-			makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
-
-		DE_ASSERT(sizeof(m_vertexData[0]) == m_vertexStride);
 
 		{
-			const Allocation& alloc = m_vertexBuffer->getAllocation();
-			deMemcpy(alloc.getHostPtr(), &m_vertexData[0], static_cast<std::size_t>(vertexDataSizeBytes));
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), vertexDataSizeBytes);
+			const VkDeviceSize vertexDataSizeBytes = m_vertexData.size() * sizeof(m_vertexData[0]);
+
+			m_vertexBuffer = de::MovePtr<Buffer>(new Buffer(vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
+			DE_ASSERT(sizeof(m_vertexData[0]) == m_vertexStride);
+
+			{
+				const Allocation& alloc = m_vertexBuffer->getAllocation();
+
+				deMemcpy(alloc.getHostPtr(), &m_vertexData[0], static_cast<std::size_t>(vertexDataSizeBytes));
+				flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), vertexDataSizeBytes);
+			}
 		}
 
 		// Indices
 		{
-			const VkDeviceSize indexBufferSizeBytes	= sizeof(deUint32) * m_vertexData.size();
-			const deUint32 numIndices					= static_cast<deUint32>(m_vertexData.size());
-			m_indexBuffer							= de::MovePtr<Buffer>(new Buffer(vk, device, allocator,
-				makeBufferCreateInfo(indexBufferSizeBytes, VK_BUFFER_USAGE_INDEX_BUFFER_BIT), MemoryRequirement::HostVisible));
+			const VkDeviceSize	indexBufferSizeBytes	= sizeof(deUint32) * m_vertexData.size();
+			const deUint32		numIndices				= static_cast<deUint32>(m_vertexData.size());
 
-			const Allocation&	alloc	= m_indexBuffer->getAllocation();
-			deUint32* const		pData	= static_cast<deUint32*>(alloc.getHostPtr());
+			m_indexBuffer = de::MovePtr<Buffer>(new Buffer(vk, device, allocator, makeBufferCreateInfo(indexBufferSizeBytes, VK_BUFFER_USAGE_INDEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 
-			for (deUint32 i = 0; i < numIndices; ++i)
-				pData[i] = i;
+			{
+				const Allocation&	alloc	= m_indexBuffer->getAllocation();
+				deUint32* const		pData	= static_cast<deUint32*>(alloc.getHostPtr());
 
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), indexBufferSizeBytes);
+				for (deUint32 i = 0; i < numIndices; ++i)
+					pData[i] = i;
+
+				flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), indexBufferSizeBytes);
+			}
 		}
 	}
 
@@ -144,8 +148,8 @@ public:
 	VkBuffer	getIndexBuffer		(void) const { return **m_indexBuffer; }
 
 private:
-	VkFormat					m_vertexFormat;
-	deUint32					m_vertexStride;
+	const VkFormat				m_vertexFormat;
+	const deUint32				m_vertexStride;
 	std::vector<tcu::Vec4>		m_vertexData;
 	de::MovePtr<Buffer>			m_vertexBuffer;
 	de::MovePtr<Buffer>			m_indexBuffer;
@@ -154,22 +158,21 @@ private:
 //! Add flags for all shader stages required to support a particular stage (e.g. fragment requires vertex as well).
 VkShaderStageFlags getRequiredStages (const VkShaderStageFlagBits stage)
 {
-	if (stage & VK_SHADER_STAGE_COMPUTE_BIT)
-	{
-		DE_ASSERT(stage == VK_SHADER_STAGE_COMPUTE_BIT);
-		return stage;
-	}
-	else
-		DE_ASSERT((stage & VK_SHADER_STAGE_COMPUTE_BIT) == 0);
+	VkShaderStageFlags flags = 0;
 
-	VkShaderStageFlags flags = 0u;
+	DE_ASSERT(stage == VK_SHADER_STAGE_COMPUTE_BIT || (stage & VK_SHADER_STAGE_COMPUTE_BIT) == 0);
 
 	if (stage & VK_SHADER_STAGE_ALL_GRAPHICS)
 		flags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
 	if (stage & (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT))
 		flags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+
 	if (stage & VK_SHADER_STAGE_GEOMETRY_BIT)
 		flags |= VK_SHADER_STAGE_GEOMETRY_BIT;
+
+	if (stage & VK_SHADER_STAGE_COMPUTE_BIT)
+		flags |= VK_SHADER_STAGE_COMPUTE_BIT;
 
 	return flags;
 }
@@ -183,10 +186,13 @@ void requireFeaturesForSSBOAccess (OperationContext& context, const VkShaderStag
 
 	if (usedStages & VK_SHADER_STAGE_FRAGMENT_BIT)
 		flags |= FEATURE_FRAGMENT_STORES_AND_ATOMICS;
+
 	if (usedStages & (VK_SHADER_STAGE_ALL_GRAPHICS & (~VK_SHADER_STAGE_FRAGMENT_BIT)))
 		flags |= FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS;
+
 	if (usedStages & VK_SHADER_STAGE_GEOMETRY_BIT)
 		flags |= FEATURE_GEOMETRY_SHADER;
+
 	if (usedStages & (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT))
 		flags |= FEATURE_TESSELLATION_SHADER;
 
@@ -198,14 +204,14 @@ Data getHostBufferData (const OperationContext& context, const Buffer& hostBuffe
 	const DeviceInterface&	vk		= context.getDeviceInterface();
 	const VkDevice			device	= context.getDevice();
 	const Allocation&		alloc	= hostBuffer.getAllocation();
-
-	invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), size);
-
-	const Data data =
+	const Data				data	=
 	{
 		static_cast<std::size_t>(size),					// std::size_t		size;
 		static_cast<deUint8*>(alloc.getHostPtr()),		// const deUint8*	data;
 	};
+
+	invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), size);
+
 	return data;
 }
 
@@ -223,7 +229,7 @@ void assertValidShaderStage (const VkShaderStageFlagBits stage)
 			break;
 
 		default:
-			DE_ASSERT(0);
+			DE_FATAL("Invalid shader stage");
 			break;
 	}
 }
@@ -241,7 +247,7 @@ VkPipelineStageFlags pipelineStageFlagsFromShaderStageFlagBits (const VkShaderSt
 
 		// Other usages are probably an error, so flag that.
 		default:
-			DE_ASSERT(0);
+			DE_FATAL("Invalid shader stage");
 			return (VkPipelineStageFlags)0;
 	}
 }
@@ -249,8 +255,8 @@ VkPipelineStageFlags pipelineStageFlagsFromShaderStageFlagBits (const VkShaderSt
 //! Fill destination buffer with a repeating pattern.
 void fillPattern (void* const pData, const VkDeviceSize size)
 {
-	static const deUint8 pattern[] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 };
-	deUint8* const		 pBytes	   = static_cast<deUint8*>(pData);
+	static const deUint8	pattern[]	= { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 };
+	deUint8* const			pBytes		= static_cast<deUint8*>(pData);
 
 	for (deUint32 i = 0; i < size; ++i)
 		pBytes[i] = pattern[i % DE_LENGTH_OF_ARRAY(pattern)];
@@ -382,7 +388,7 @@ VkImageViewType getImageViewType (const VkImageType imageType)
 		case VK_IMAGE_TYPE_3D:		return VK_IMAGE_VIEW_TYPE_3D;
 
 		default:
-			DE_ASSERT(0);
+			DE_FATAL("Unknown image type");
 			return VK_IMAGE_VIEW_TYPE_LAST;
 	}
 }
@@ -399,7 +405,7 @@ std::string getShaderImageType (const VkFormat format, const VkImageType imageTy
 		case VK_IMAGE_TYPE_3D:	return formatPart + "image3D";
 
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unknown image type");
 			return DE_NULL;
 	}
 }
@@ -418,7 +424,7 @@ std::string getShaderImageFormatQualifier (const VkFormat format)
 		case tcu::TextureFormat::RGBA:	orderPart = "rgba";	break;
 
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unksupported texture channel order");
 			break;
 	}
 
@@ -442,11 +448,11 @@ std::string getShaderImageFormatQualifier (const VkFormat format)
 		case tcu::TextureFormat::SNORM_INT8:		typePart = "8_snorm";	break;
 
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unksupported texture channel type");
 			break;
 	}
 
-	return std::string() + orderPart + typePart;
+	return std::string(orderPart) + typePart;
 }
 
 namespace FillUpdateBuffer
@@ -474,13 +480,21 @@ public:
 
 		if (m_bufferOp == BUFFER_OP_FILL)
 		{
-			const std::size_t size = m_data.size() / sizeof(m_fillValue);
-			deUint32* pData = reinterpret_cast<deUint32*>(&m_data[0]);
+			const std::size_t	size	= m_data.size() / sizeof(m_fillValue);
+			deUint32* const		pData	= reinterpret_cast<deUint32*>(&m_data[0]);
+
 			for (deUint32 i = 0; i < size; ++i)
 				pData[i] = m_fillValue;
 		}
 		else if (m_bufferOp == BUFFER_OP_UPDATE)
+		{
 			fillPattern(&m_data[0], m_data.size());
+		}
+		else
+		{
+			// \todo Really??
+			// Do nothing
+		}
 	}
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
@@ -491,6 +505,11 @@ public:
 			vk.cmdFillBuffer(cmdBuffer, m_resource.getBuffer().handle, m_resource.getBuffer().offset, m_resource.getBuffer().size, m_fillValue);
 		else if (m_bufferOp == BUFFER_OP_UPDATE)
 			vk.cmdUpdateBuffer(cmdBuffer, m_resource.getBuffer().handle, m_resource.getBuffer().offset, m_resource.getBuffer().size, reinterpret_cast<deUint32*>(&m_data[0]));
+		else
+		{
+			// \todo Really??
+			// Do nothing
+		}
 	}
 
 	SyncInfo getSyncInfo (void) const
@@ -501,6 +520,7 @@ public:
 			VK_ACCESS_TRANSFER_WRITE_BIT,		// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
 		};
+
 		return syncInfo;
 	}
 
@@ -572,20 +592,20 @@ public:
 		, m_resource	(resource)
 		, m_mode		(mode)
 	{
-		const DeviceInterface&	vk			= m_context.getDeviceInterface();
-		const VkDevice			device		= m_context.getDevice();
-		Allocator&				allocator	= m_context.getAllocator();
+		const DeviceInterface&		vk				= m_context.getDeviceInterface();
+		const VkDevice				device			= m_context.getDevice();
+		Allocator&					allocator		= m_context.getAllocator();
+		const VkBufferUsageFlags	hostBufferUsage	= (m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_TRANSFER_DST_BIT : VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
-		const VkBufferUsageFlags hostBufferUsage = (m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_TRANSFER_DST_BIT : VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-
-		m_hostBuffer = de::MovePtr<Buffer>(new Buffer(
-			vk, device, allocator, makeBufferCreateInfo(m_resource.getBuffer().size, hostBufferUsage), MemoryRequirement::HostVisible));
+		m_hostBuffer = de::MovePtr<Buffer>(new Buffer(vk, device, allocator, makeBufferCreateInfo(m_resource.getBuffer().size, hostBufferUsage), MemoryRequirement::HostVisible));
 
 		const Allocation& alloc = m_hostBuffer->getAllocation();
+
 		if (m_mode == ACCESS_MODE_READ)
 			deMemset(alloc.getHostPtr(), 0, static_cast<size_t>(m_resource.getBuffer().size));
 		else
 			fillPattern(alloc.getHostPtr(), m_resource.getBuffer().size);
+
 		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_resource.getBuffer().size);
 	}
 
@@ -3407,6 +3427,25 @@ OperationContext::OperationContext (Context& context, PipelineCacheData& pipelin
 {
 }
 
+OperationContext::OperationContext (const vk::InstanceInterface&				vki,
+									const vk::DeviceInterface&					vkd,
+									vk::VkPhysicalDevice						physicalDevice,
+									vk::VkDevice								device,
+									vk::Allocator&								allocator,
+									const std::vector<std::string>&				deviceExtensions,
+									vk::ProgramCollection<vk::ProgramBinary>&	programCollection,
+									PipelineCacheData&							pipelineCacheData)
+	: m_vki					(vki)
+	, m_vk					(vkd)
+	, m_physicalDevice		(physicalDevice)
+	, m_device				(device)
+	, m_allocator			(allocator)
+	, m_progCollection		(programCollection)
+	, m_pipelineCacheData	(pipelineCacheData)
+	, m_deviceExtensions	(deviceExtensions)
+{
+}
+
 Resource::Resource (OperationContext& context, const ResourceDescription& desc, const deUint32 usage, const vk::VkSharingMode sharingMode, const std::vector<deUint32>& queueFamilyIndex)
 	: m_type	(desc.type)
 {
@@ -3456,6 +3495,47 @@ Resource::Resource (OperationContext& context, const ResourceDescription& desc, 
 	}
 	else
 		DE_ASSERT(0);
+}
+
+Resource::Resource (ResourceType				type,
+					vk::Move<vk::VkBuffer>		buffer,
+					de::MovePtr<vk::Allocation>	allocation,
+					vk::VkDeviceSize			offset,
+					vk::VkDeviceSize			size)
+	: m_type	(type)
+	, m_buffer	(new Buffer(buffer, allocation))
+{
+	DE_ASSERT(type != RESOURCE_TYPE_IMAGE);
+
+	m_bufferData.handle	= m_buffer->get();
+	m_bufferData.offset	= offset;
+	m_bufferData.size	= size;
+}
+
+Resource::Resource (vk::Move<vk::VkImage>			image,
+					de::MovePtr<vk::Allocation>		allocation,
+					const vk::VkExtent3D&			extent,
+					vk::VkImageType					imageType,
+					vk::VkFormat					format,
+					vk::VkImageSubresourceRange		subresourceRange,
+					vk::VkImageSubresourceLayers	subresourceLayers)
+	: m_type	(RESOURCE_TYPE_IMAGE)
+	, m_image	(new Image(image, allocation))
+{
+	m_imageData.handle				= m_image->get();
+	m_imageData.extent				= extent;
+	m_imageData.imageType			= imageType;
+	m_imageData.format				= format;
+	m_imageData.subresourceRange	= subresourceRange;
+	m_imageData.subresourceLayers	= subresourceLayers;
+}
+
+vk::VkDeviceMemory Resource::getMemory (void) const
+{
+	if (m_type == RESOURCE_TYPE_IMAGE)
+		return m_image->getAllocation().getMemory();
+	else
+		return m_buffer->getAllocation().getMemory();
 }
 
 //! \note This function exists for performance reasons. We're creating a lot of tests and checking requirements here

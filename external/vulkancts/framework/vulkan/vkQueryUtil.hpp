@@ -52,6 +52,8 @@ std::vector<VkExtensionProperties>				enumerateInstanceExtensionProperties			(co
 std::vector<VkLayerProperties>					enumerateDeviceLayerProperties					(const InstanceInterface& vki, VkPhysicalDevice physicalDevice);
 std::vector<VkExtensionProperties>				enumerateDeviceExtensionProperties				(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const char* layerName);
 
+VkQueue											getDeviceQueue									(const DeviceInterface& vkd, VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex);
+
 // Feature / extension support
 
 bool											isShaderStageSupported							(const VkPhysicalDeviceFeatures& deviceFeatures, VkShaderStageFlagBits stage);

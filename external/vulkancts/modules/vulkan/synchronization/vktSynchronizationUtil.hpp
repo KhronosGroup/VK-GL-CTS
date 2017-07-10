@@ -44,12 +44,18 @@ public:
 														 vk::Allocator&					allocator,
 														 const vk::VkBufferCreateInfo&	bufferCreateInfo,
 														 const vk::MemoryRequirement	memoryRequirement)
+		: m_buffer		(createBuffer(vk, device, &bufferCreateInfo))
+		, m_allocation	(allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement))
+	{
+		VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
+	}
 
-											: m_buffer		(createBuffer(vk, device, &bufferCreateInfo))
-											, m_allocation	(allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement))
-										{
-											VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
-										}
+										Buffer			(vk::Move<vk::VkBuffer>			buffer,
+														 de::MovePtr<vk::Allocation>	allocation)
+		: m_buffer		(buffer)
+		, m_allocation	(allocation)
+	{
+	}
 
 	const vk::VkBuffer&					get				(void) const { return *m_buffer; }
 	const vk::VkBuffer&					operator*		(void) const { return get(); }
@@ -72,12 +78,17 @@ public:
 														 vk::Allocator&					allocator,
 														 const vk::VkImageCreateInfo&	imageCreateInfo,
 														 const vk::MemoryRequirement	memoryRequirement)
-
-											: m_image		(createImage(vk, device, &imageCreateInfo))
-											, m_allocation	(allocator.allocate(getImageMemoryRequirements(vk, device, *m_image), memoryRequirement))
-										{
-											VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
-										}
+		: m_image		(createImage(vk, device, &imageCreateInfo))
+		, m_allocation	(allocator.allocate(getImageMemoryRequirements(vk, device, *m_image), memoryRequirement))
+	{
+		VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
+	}
+										Image			(vk::Move<vk::VkImage>&			image,
+														 de::MovePtr<vk::Allocation>&	allocation)
+		: m_image		(image)
+		, m_allocation	(allocation)
+	{
+	}
 
 	const vk::VkImage&					get				(void) const { return *m_image; }
 	const vk::VkImage&					operator*		(void) const { return get(); }
@@ -213,7 +224,6 @@ struct ImageResource
 
 vk::VkBufferCreateInfo			makeBufferCreateInfo						(const vk::VkDeviceSize bufferSize, const vk::VkBufferUsageFlags usage);
 vk::VkImageCreateInfo			makeImageCreateInfo							(const vk::VkImageType imageType, const vk::VkExtent3D& extent, const vk::VkFormat format, const vk::VkImageUsageFlags usage);
-vk::Move<vk::VkCommandPool>		makeCommandPool								(const vk::DeviceInterface& vk, const vk::VkDevice device, const deUint32 queueFamilyIndex);
 vk::Move<vk::VkCommandBuffer>	makeCommandBuffer							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkCommandPool commandPool);
 vk::Move<vk::VkDescriptorSet>	makeDescriptorSet							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorPool descriptorPool, const vk::VkDescriptorSetLayout setLayout);
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout descriptorSetLayout);
@@ -222,7 +232,6 @@ vk::Move<vk::VkPipeline>		makeComputePipeline							(const vk::DeviceInterface& 
 vk::Move<vk::VkRenderPass>		makeRenderPass								(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat);
 vk::Move<vk::VkFramebuffer>		makeFramebuffer								(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkRenderPass renderPass, const vk::VkImageView colorAttachment, const deUint32 width, const deUint32 height, const deUint32 layers);
 vk::Move<vk::VkImageView>		makeImageView								(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkImage image, const vk::VkImageViewType viewType, const vk::VkFormat format, const vk::VkImageSubresourceRange subresourceRange);
-vk::Move<vk::VkEvent>			makeEvent									(const vk::DeviceInterface& vk, const vk::VkDevice device);
 vk::VkBufferImageCopy			makeBufferImageCopy							(const vk::VkImageSubresourceLayers subresourceLayers, const vk::VkExtent3D extent);
 vk::VkMemoryBarrier				makeMemoryBarrier							(const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask);
 vk::VkBufferMemoryBarrier		makeBufferMemoryBarrier						(const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask, const vk::VkBuffer buffer, const vk::VkDeviceSize offset, const vk::VkDeviceSize bufferSizeBytes);

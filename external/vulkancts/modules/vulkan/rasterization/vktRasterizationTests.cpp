@@ -217,17 +217,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 	DescriptorSetLayoutBuilder					descriptorSetLayoutBuilder;
 
 	// Command Pool
-	{
-		const VkCommandPoolCreateInfo			cmdPoolCreateInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					// VkStructureType             sType;
-			DE_NULL,													// const void*                 pNext;
-			VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			// VkCommandPoolCreateFlags    flags;
-			queueFamilyIndex											// deUint32                    queueFamilyIndex;
-		};
-
-		m_commandPool = createCommandPool(vkd, vkDevice, &cmdPoolCreateInfo, DE_NULL);
-	}
+	m_commandPool = createCommandPool(vkd, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 
 	// Image
 	{
@@ -546,16 +536,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 	}
 
 	// Fence
-	{
-		const VkFenceCreateInfo					fenceParams					=
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			VK_FENCE_CREATE_SIGNALED_BIT			// VkFenceCreateFlags	flags;
-		};
-
-		m_fence = createFence(vkd, vkDevice, &fenceParams);
-	}
+	m_fence = createFence(vkd, vkDevice);
 
 	// Result Buffer
 	{
@@ -806,18 +787,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 	}
 
 	// Create Command Buffer
-	{
-		const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// VkStructureType             sType;
-			DE_NULL,													// const void*                 pNext;
-			*m_commandPool,												// VkCommandPool               commandPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,							// VkCommandBufferLevel        level;
-			1															// deUint32                    commandBufferCount;
-		};
-
-		commandBuffer = allocateCommandBuffer(vkd, vkDevice, &cmdBufferAllocateInfo);
-	}
+	commandBuffer = allocateCommandBuffer(vkd, vkDevice, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	// Begin Command Buffer
 	{
