@@ -105,11 +105,29 @@ enum OperationName
 	OPERATION_NAME_READ_VERTEX_INPUT,
 };
 
-//! Similar to Context, but allows test instance to decide which resources are used by the operation.
-//! E.g. this is needed when we want operation to work on a particular queue instead of the universal queue.
+// Similar to Context, but allows test instance to decide which resources are used by the operation.
+// E.g. this is needed when we want operation to work on a particular queue instead of the universal queue.
 class OperationContext
 {
 public:
+												OperationContext		(Context&			context,
+																		 PipelineCacheData&	pipelineCacheData);
+
+												OperationContext		(Context&					context,
+																		 PipelineCacheData&			pipelineCacheData,
+																		 const vk::DeviceInterface&	vk,
+																		 const vk::VkDevice			device,
+																		 vk::Allocator&				allocator);
+
+												OperationContext		(const vk::InstanceInterface&				vki,
+																		 const vk::DeviceInterface&					vkd,
+																		 vk::VkPhysicalDevice						physicalDevice,
+																		 vk::VkDevice								device,
+																		 vk::Allocator&								allocator,
+																		 const std::vector<std::string>&			deviceExtensions,
+																		 vk::ProgramCollection<vk::ProgramBinary>&	programCollection,
+																		 PipelineCacheData&							pipelineCacheData);
+
 	const vk::InstanceInterface&				getInstanceInterface	(void) const { return m_vki; }
 	const vk::DeviceInterface&					getDeviceInterface		(void) const { return m_vk; }
 	vk::VkPhysicalDevice						getPhysicalDevice		(void) const { return m_physicalDevice; }
@@ -118,9 +136,6 @@ public:
 	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection		(void) const { return m_progCollection; }
 	PipelineCacheData&							getPipelineCacheData	(void) const { return m_pipelineCacheData; }
 	const std::vector<std::string>&				getDeviceExtensions		(void) const { return m_deviceExtensions;}
-
-	OperationContext (Context& context, PipelineCacheData& pipelineCacheData);
-	OperationContext (Context& context, PipelineCacheData& pipelineCacheData, const vk::DeviceInterface& vk, const vk::VkDevice device, vk::Allocator& allocator);
 
 private:
 	const vk::InstanceInterface&				m_vki;
@@ -132,37 +147,57 @@ private:
 	PipelineCacheData&							m_pipelineCacheData;
 	const std::vector<std::string>&				m_deviceExtensions;
 
-	OperationContext (const OperationContext&);	// "deleted"
-	OperationContext& operator= (const OperationContext&);
+	// Disabled
+												OperationContext		(const OperationContext&);
+	OperationContext&							operator=				(const OperationContext&);
 };
 
-//! Common interface to images and buffers used by operations.
+// Common interface to images and buffers used by operations.
 class Resource
 {
 public:
-									Resource			(OperationContext& context, const ResourceDescription& desc, const deUint32 usage,
-														 const vk::VkSharingMode sharingMode = vk::VK_SHARING_MODE_EXCLUSIVE, const std::vector<deUint32>& queueFamilyIndex = std::vector<deUint32>());
+							Resource	(OperationContext&				context,
+										 const ResourceDescription&		desc,
+										 const deUint32					usage,
+										 const vk::VkSharingMode		sharingMode = vk::VK_SHARING_MODE_EXCLUSIVE,
+										 const std::vector<deUint32>&	queueFamilyIndex = std::vector<deUint32>());
 
-	ResourceType					getType				(void) const { return m_type; }
-	const BufferResource&			getBuffer			(void) const { return m_bufferData; }
-	const ImageResource&			getImage			(void) const { return m_imageData; }
+							Resource	(ResourceType					type,
+										 vk::Move<vk::VkBuffer>			buffer,
+										 de::MovePtr<vk::Allocation>	allocation,
+										 vk::VkDeviceSize				offset,
+										 vk::VkDeviceSize				size);
+
+							Resource	(vk::Move<vk::VkImage>			image,
+										 de::MovePtr<vk::Allocation>	allocation,
+										 const vk::VkExtent3D&			extent,
+										 vk::VkImageType				imageType,
+										 vk::VkFormat					format,
+										 vk::VkImageSubresourceRange	subresourceRange,
+										 vk::VkImageSubresourceLayers	subresourceLayers);
+
+	ResourceType			getType		(void) const { return m_type; }
+	const BufferResource&	getBuffer	(void) const { return m_bufferData; }
+	const ImageResource&	getImage	(void) const { return m_imageData; }
+
+	vk::VkDeviceMemory		getMemory	(void) const;
 
 private:
-	const ResourceType				m_type;
-	de::MovePtr<Buffer>				m_buffer;
-	BufferResource					m_bufferData;
-	de::MovePtr<Image>				m_image;
-	ImageResource					m_imageData;
+	const ResourceType		m_type;
+	de::MovePtr<Buffer>		m_buffer;
+	BufferResource			m_bufferData;
+	de::MovePtr<Image>		m_image;
+	ImageResource			m_imageData;
 };
 
-//! \note Meaning of image layout is different for read and write types of operations:
-//!       read  - the layout image must be in before being passed to the read operation
-//!       write - the layout image will be in after the write operation has finished
+// \note Meaning of image layout is different for read and write types of operations:
+//       read  - the layout image must be in before being passed to the read operation
+//       write - the layout image will be in after the write operation has finished
 struct SyncInfo
 {
-	vk::VkPipelineStageFlags	stageMask;		//!< pipeline stage where read/write takes place
-	vk::VkAccessFlags			accessMask;		//!< type of access that is performed
-	vk::VkImageLayout			imageLayout;	//!< src (for reads) or dst (for writes) image layout
+	vk::VkPipelineStageFlags	stageMask;		// pipeline stage where read/write takes place
+	vk::VkAccessFlags			accessMask;		// type of access that is performed
+	vk::VkImageLayout			imageLayout;	// src (for reads) or dst (for writes) image layout
 };
 
 struct Data
@@ -171,28 +206,28 @@ struct Data
 	const deUint8*				data;
 };
 
-//! Abstract operation on a resource
-//! \note Meaning of getData is different for read and write operations:
-//!       read  - data actually read by the operation
-//!       write - expected data that operation was supposed to write
-//! \note It's assumed that recordCommands is called only once (i.e. no multiple command buffers are using these commands).
+// Abstract operation on a resource
+// \note Meaning of getData is different for read and write operations:
+//       read  - data actually read by the operation
+//       write - expected data that operation was supposed to write
+// \note It's assumed that recordCommands is called only once (i.e. no multiple command buffers are using these commands).
 class Operation
 {
 public:
-							Operation		(void) {}
-	virtual					~Operation		(void) {}
+						Operation		(void) {}
+	virtual				~Operation		(void) {}
 
-	virtual void			recordCommands	(const vk::VkCommandBuffer cmdBuffer) = 0;	//!< commands that carry out this operation
-	virtual SyncInfo		getSyncInfo		(void) const = 0;							//!< data required to properly synchronize this operation
-	virtual Data			getData			(void) const = 0;							//!< get raw data that was written to or read from actual resource
+	virtual void		recordCommands	(const vk::VkCommandBuffer cmdBuffer) = 0;	// commands that carry out this operation
+	virtual SyncInfo	getSyncInfo		(void) const = 0;							// data required to properly synchronize this operation
+	virtual Data		getData			(void) const = 0;							// get raw data that was written to or read from actual resource
 
 private:
-							Operation		(const Operation& rhs);
-	Operation&				operator=		(const Operation& rhs);
+						Operation		(const Operation&);
+	Operation&			operator=		(const Operation&);
 };
 
-//! A helper class to init programs and create the operation when context becomes available.
-//! Throws OperationInvalidResourceError when resource and operation combination is not possible (e.g. buffer-specific op on an image).
+// A helper class to init programs and create the operation when context becomes available.
+// Throws OperationInvalidResourceError when resource and operation combination is not possible (e.g. buffer-specific op on an image).
 class OperationSupport
 {
 public:
@@ -206,8 +241,8 @@ public:
 	virtual de::MovePtr<Operation>	build					(OperationContext& context, Resource& resource) const = 0;
 
 private:
-									OperationSupport		(const OperationSupport& rhs);
-	OperationSupport&				operator=				(const OperationSupport& rhs);
+									OperationSupport		(const OperationSupport&);
+	OperationSupport&				operator=				(const OperationSupport&);
 };
 
 bool							isResourceSupported		(const OperationName opName, const ResourceDescription& resourceDesc);

@@ -26,6 +26,7 @@
 
 #include "deRandom.hpp"
 #include "deMath.h"
+#include "deSTLUtil.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "deArrayUtil.hpp"
@@ -34,6 +35,7 @@
 #include "vkMemUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -59,6 +61,73 @@ using namespace tcu;
 
 namespace
 {
+
+enum AllocationKind
+{
+	ALLOCATION_KIND_SUBALLOCATED,
+	ALLOCATION_KIND_DEDICATED,
+};
+
+
+de::MovePtr<Allocation> allocateBuffer (const InstanceInterface&	vki,
+										const DeviceInterface&		vkd,
+										const VkPhysicalDevice&		physDevice,
+										const VkDevice				device,
+										const VkBuffer&				buffer,
+										const MemoryRequirement		requirement,
+										Allocator&					allocator,
+										AllocationKind				allocationKind)
+{
+	switch (allocationKind)
+	{
+		case ALLOCATION_KIND_SUBALLOCATED:
+		{
+			const VkMemoryRequirements memoryRequirements = getBufferMemoryRequirements(vkd, device, buffer);
+
+			return allocator.allocate(memoryRequirements, requirement);
+		}
+
+		case ALLOCATION_KIND_DEDICATED:
+		{
+			return allocateDedicated(vki, vkd, physDevice, device, buffer, requirement);
+		}
+
+		default:
+		{
+			TCU_THROW(InternalError, "Invalid allocation kind");
+		}
+	}
+}
+
+de::MovePtr<Allocation> allocateImage (const InstanceInterface&		vki,
+									   const DeviceInterface&		vkd,
+									   const VkPhysicalDevice&		physDevice,
+									   const VkDevice				device,
+									   const VkImage&				image,
+									   const MemoryRequirement		requirement,
+									   Allocator&					allocator,
+									   AllocationKind				allocationKind)
+{
+	switch (allocationKind)
+	{
+		case ALLOCATION_KIND_SUBALLOCATED:
+		{
+			const VkMemoryRequirements memoryRequirements = getImageMemoryRequirements(vkd, device, image);
+
+			return allocator.allocate(memoryRequirements, requirement);
+		}
+
+		case ALLOCATION_KIND_DEDICATED:
+		{
+			return allocateDedicated(vki, vkd, physDevice, device, image, requirement);
+		}
+
+		default:
+		{
+			TCU_THROW(InternalError, "Invalid allocation kind");
+		}
+	}
+}
 
 VkExtent3D getMipLevelExtent (VkExtent3D baseExtent, const deUint32 mipLevel)
 {
@@ -397,6 +466,7 @@ struct TestParams
 	VkClearValue	initValue;
 	VkClearValue	clearValue[2];		//!< the second value is used with more than one mip map
 	LayerRange		clearLayerRange;
+	AllocationKind	allocationKind;
 };
 
 class ImageClearingTestInstance : public vkt::TestInstance
@@ -495,6 +565,13 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 	, m_renderPass				(m_isAttachmentFormat ? createRenderPass(params.imageFormat) : vk::Move<vk::VkRenderPass>())
 	, m_frameBuffer				(m_isAttachmentFormat ? createFrameBuffer(*m_imageView, *m_renderPass, params.imageExtent.width, params.imageExtent.height, params.imageViewLayerRange.layerCount) : vk::Move<vk::VkFramebuffer>())
 {
+	if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
+	{
+		const std::string extensionName("VK_KHR_dedicated_allocation");
+
+		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
+			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+	}
 }
 
 VkImageViewType ImageClearingTestInstance::getCorrespondingImageViewType (VkImageType imageType, ViewType viewType) const
@@ -589,7 +666,7 @@ VkImageFormatProperties ImageClearingTestInstance::getImageFormatProperties (voi
 
 de::MovePtr<Allocation> ImageClearingTestInstance::allocateAndBindImageMemory (VkImage image) const
 {
-	de::MovePtr<Allocation>	imageMemory	(m_allocator.allocate(getImageMemoryRequirements(m_vkd, m_device, image), MemoryRequirement::Any));
+	de::MovePtr<Allocation>	imageMemory	(allocateImage(m_vki, m_vkd, m_context.getPhysicalDevice(), m_device, image, MemoryRequirement::Any, m_allocator, m_params.allocationKind));
 	VK_CHECK(m_vkd.bindImageMemory(m_device, image, imageMemory->getMemory(), imageMemory->getOffset()));
 	return imageMemory;
 }
@@ -858,7 +935,7 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAs
 		};
 
 		buffer		= createBuffer(m_vkd, m_device, &bufferParams);
-		bufferAlloc	= m_allocator.allocate(getBufferMemoryRequirements(m_vkd, m_device, *buffer), MemoryRequirement::HostVisible);
+		bufferAlloc	= allocateBuffer(m_vki, m_vkd, m_context.getPhysicalDevice(), m_device, *buffer, MemoryRequirement::HostVisible, m_allocator, m_params.allocationKind);
 		VK_CHECK(m_vkd.bindBufferMemory(m_device, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
 	}
 
@@ -1346,13 +1423,8 @@ const char* getImageTypeCaseName (VkImageType type)
 	return de::getSizedArrayElement<VK_IMAGE_TYPE_LAST>(s_names, type);
 }
 
-} // anonymous
-
-TestCaseGroup* createImageClearingTests (TestContext& testCtx)
+TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCaseGroup* imageClearingTests, AllocationKind allocationKind)
 {
-	// Main testgroup.
-	de::MovePtr<TestCaseGroup>	imageClearingTests						(new TestCaseGroup(testCtx, "image_clearing", "Image Clearing Tests"));
-
 	de::MovePtr<TestCaseGroup>	colorImageClearTests					(new TestCaseGroup(testCtx, "clear_color_image", "Color Image Clear Tests"));
 	de::MovePtr<TestCaseGroup>	depthStencilImageClearTests				(new TestCaseGroup(testCtx, "clear_depth_stencil_image", "Color Depth/Stencil Image Tests"));
 	de::MovePtr<TestCaseGroup>	colorAttachmentClearTests				(new TestCaseGroup(testCtx, "clear_color_attachment", "Color Color Attachment Tests"));
@@ -1636,6 +1708,7 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 					makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),				// VkClearValue		clearValue[1];
 				},
 				imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange       clearLayerRange;
+				allocationKind														// AllocationKind	allocationKind;
 			};
 
 			std::ostringstream	testCaseName;
@@ -1671,6 +1744,7 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 					makeClearValueDepthStencil(0.3f, 0x04),								// VkClearValue		clearValue[1];
 				},
 				imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange       clearLayerRange;
+				allocationKind														// AllocationKind	allocationKind;
 			};
 
 			std::ostringstream	testCaseName;
@@ -1705,6 +1779,7 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 					makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),			// VkClearValue		clearValue[1];
 				},
 				imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,	// LayerRange       clearLayerRange;
+				allocationKind													// AllocationKind	allocationKind;
 			};
 
 			std::ostringstream	testCaseName;
@@ -1739,6 +1814,7 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 					makeClearValueDepthStencil(0.3f, 0x04),							// VkClearValue		clearValue[1];
 				},
 				imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,	// LayerRange       clearLayerRange;
+				allocationKind													// AllocationKind	allocationKind;
 			};
 
 			std::ostringstream	testCaseName;
@@ -1753,6 +1829,28 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 		imageClearingTests->addChild(depthStencilAttachmentClearTests.release());
 		imageClearingTests->addChild(partialDepthStencilAttachmentClearTests.release());
 	}
+
+	return imageClearingTests;
+}
+
+void createCoreImageClearingTests (tcu::TestCaseGroup* group)
+{
+	createImageClearingTestsCommon(group->getTestContext(), group, ALLOCATION_KIND_SUBALLOCATED);
+}
+
+void createDedicatedAllocationImageClearingTests (tcu::TestCaseGroup* group)
+{
+	createImageClearingTestsCommon(group->getTestContext(), group, ALLOCATION_KIND_DEDICATED);
+}
+
+} // anonymous
+
+TestCaseGroup* createImageClearingTests (TestContext& testCtx)
+{
+	de::MovePtr<TestCaseGroup>	imageClearingTests	(new TestCaseGroup(testCtx, "image_clearing", "Image Clearing Tests"));
+
+	imageClearingTests->addChild(createTestGroup(testCtx, "core",					"Core Image Clearing Tests",							createCoreImageClearingTests));
+	imageClearingTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Image Clearing Tests For Dedicated Memory Allocation",	createDedicatedAllocationImageClearingTests));
 
 	return imageClearingTests.release();
 }

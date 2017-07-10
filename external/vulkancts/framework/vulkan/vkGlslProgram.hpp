@@ -38,6 +38,11 @@ namespace vk
 
 struct GlslBuildOptions
 {
+	enum Flags
+	{
+		FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS	= (1u<<0)
+	};
+
 	SpirvVersion	targetVersion;
 	deUint32		flags;
 

@@ -1176,7 +1176,7 @@ Move<VkPipeline> createSplitPipeline (const DeviceInterface&							vkd,
 	return createGraphicsPipeline(vkd, device, DE_NULL, &createInfo);
 }
 
-vector<VkPipelineSp> createSplitPipelines (const DeviceInterface&								vkd,
+vector<VkPipelineSp> createSplitPipelines (const DeviceInterface&							vkd,
 										 VkDevice											device,
 										 VkRenderPass										renderPass,
 										 VkPipelineLayout									pipelineLayout,
