@@ -173,6 +173,20 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2_KHR";
 		case VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR:						return "VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHX:								return "VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHX";
+		case VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO_KHX:									return "VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO_KHX";
+		case VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHX:									return "VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHX";
+		case VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO_KHX:						return "VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO_KHX";
+		case VK_STRUCTURE_TYPE_DEVICE_GROUP_COMMAND_BUFFER_BEGIN_INFO_KHX:					return "VK_STRUCTURE_TYPE_DEVICE_GROUP_COMMAND_BUFFER_BEGIN_INFO_KHX";
+		case VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHX:								return "VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHX";
+		case VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO_KHX:							return "VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO_KHX";
+		case VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHX:						return "VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHX";
+		case VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_INFO_KHX:								return "VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_INFO_KHX";
+		case VK_STRUCTURE_TYPE_DEVICE_GROUP_SWAPCHAIN_CREATE_INFO_KHX:						return "VK_STRUCTURE_TYPE_DEVICE_GROUP_SWAPCHAIN_CREATE_INFO_KHX";
+		case VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_DEVICE_GROUP_INFO_KHX:					return "VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_DEVICE_GROUP_INFO_KHX";
+		case VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO_KHX:						return "VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO_KHX";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES_KHX:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES_KHX";
+		case VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHX:							return "VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHX";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO_KHR";
@@ -1562,6 +1576,39 @@ tcu::Format::Bitfield<32> getSemaphoreImportFlagsKHRStr (VkSemaphoreImportFlagsK
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR,	"VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getPeerMemoryFeatureFlagsKHXStr (VkPeerMemoryFeatureFlagsKHX value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT_KHX,		"VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT_KHX"),
+		tcu::Format::BitDesc(VK_PEER_MEMORY_FEATURE_COPY_DST_BIT_KHX,		"VK_PEER_MEMORY_FEATURE_COPY_DST_BIT_KHX"),
+		tcu::Format::BitDesc(VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT_KHX,	"VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT_KHX"),
+		tcu::Format::BitDesc(VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT_KHX,	"VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT_KHX"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getMemoryAllocateFlagsKHXStr (VkMemoryAllocateFlagsKHX value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT_KHX,	"VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT_KHX"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getDeviceGroupPresentModeFlagsKHXStr (VkDeviceGroupPresentModeFlagsKHX value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHX,				"VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHX"),
+		tcu::Format::BitDesc(VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHX,				"VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHX"),
+		tcu::Format::BitDesc(VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHX,					"VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHX"),
+		tcu::Format::BitDesc(VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHX,	"VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHX"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4312,6 +4359,180 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVariablePointer
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvariablePointersStorageBuffer = " << value.variablePointersStorageBuffer << '\n';
 	s << "\tvariablePointers = " << value.variablePointers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryAllocateFlagsInfoKHX& value)
+{
+	s << "VkMemoryAllocateFlagsInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getMemoryAllocateFlagsKHXStr(value.flags) << '\n';
+	s << "\tdeviceMask = " << value.deviceMask << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceGroupRenderPassBeginInfoKHX& value)
+{
+	s << "VkDeviceGroupRenderPassBeginInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceMask = " << value.deviceMask << '\n';
+	s << "\tdeviceRenderAreaCount = " << value.deviceRenderAreaCount << '\n';
+	s << "\tpDeviceRenderAreas = " << value.pDeviceRenderAreas << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceGroupCommandBufferBeginInfoKHX& value)
+{
+	s << "VkDeviceGroupCommandBufferBeginInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceMask = " << value.deviceMask << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceGroupSubmitInfoKHX& value)
+{
+	s << "VkDeviceGroupSubmitInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\twaitSemaphoreCount = " << value.waitSemaphoreCount << '\n';
+	s << "\tpWaitSemaphoreDeviceIndices = " << value.pWaitSemaphoreDeviceIndices << '\n';
+	s << "\tcommandBufferCount = " << value.commandBufferCount << '\n';
+	s << "\tpCommandBufferDeviceMasks = " << value.pCommandBufferDeviceMasks << '\n';
+	s << "\tsignalSemaphoreCount = " << value.signalSemaphoreCount << '\n';
+	s << "\tpSignalSemaphoreDeviceIndices = " << value.pSignalSemaphoreDeviceIndices << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceGroupBindSparseInfoKHX& value)
+{
+	s << "VkDeviceGroupBindSparseInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tresourceDeviceIndex = " << value.resourceDeviceIndex << '\n';
+	s << "\tmemoryDeviceIndex = " << value.memoryDeviceIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceGroupPresentCapabilitiesKHX& value)
+{
+	s << "VkDeviceGroupPresentCapabilitiesKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentMask = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.presentMask), DE_ARRAY_END(value.presentMask)) << '\n';
+	s << "\tmodes = " << getDeviceGroupPresentModeFlagsKHXStr(value.modes) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageSwapchainCreateInfoKHX& value)
+{
+	s << "VkImageSwapchainCreateInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchain = " << value.swapchain << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBindBufferMemoryDeviceGroupInfoKHX& value)
+{
+	s << "VkBindBufferMemoryDeviceGroupInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceIndexCount = " << value.deviceIndexCount << '\n';
+	s << "\tpDeviceIndices = " << value.pDeviceIndices << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBindImageMemoryDeviceGroupInfoKHX& value)
+{
+	s << "VkBindImageMemoryDeviceGroupInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceIndexCount = " << value.deviceIndexCount << '\n';
+	s << "\tpDeviceIndices = " << value.pDeviceIndices << '\n';
+	s << "\tSFRRectCount = " << value.SFRRectCount << '\n';
+	s << "\tpSFRRects = " << value.pSFRRects << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBindImageMemorySwapchainInfoKHX& value)
+{
+	s << "VkBindImageMemorySwapchainInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchain = " << value.swapchain << '\n';
+	s << "\timageIndex = " << value.imageIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAcquireNextImageInfoKHX& value)
+{
+	s << "VkAcquireNextImageInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchain = " << value.swapchain << '\n';
+	s << "\ttimeout = " << value.timeout << '\n';
+	s << "\tsemaphore = " << value.semaphore << '\n';
+	s << "\tfence = " << value.fence << '\n';
+	s << "\tdeviceMask = " << value.deviceMask << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceGroupPresentInfoKHX& value)
+{
+	s << "VkDeviceGroupPresentInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchainCount = " << value.swapchainCount << '\n';
+	s << "\tpDeviceMasks = " << value.pDeviceMasks << '\n';
+	s << "\tmode = " << value.mode << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceGroupSwapchainCreateInfoKHX& value)
+{
+	s << "VkDeviceGroupSwapchainCreateInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmodes = " << getDeviceGroupPresentModeFlagsKHXStr(value.modes) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceGroupPropertiesKHX& value)
+{
+	s << "VkPhysicalDeviceGroupPropertiesKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tphysicalDeviceCount = " << value.physicalDeviceCount << '\n';
+	s << "\tphysicalDevices = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.physicalDevices), DE_ARRAY_END(value.physicalDevices)) << '\n';
+	s << "\tsubsetAllocation = " << value.subsetAllocation << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceGroupDeviceCreateInfoKHX& value)
+{
+	s << "VkDeviceGroupDeviceCreateInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tphysicalDeviceCount = " << value.physicalDeviceCount << '\n';
+	s << "\tpPhysicalDevices = " << value.pPhysicalDevices << '\n';
 	s << '}';
 	return s;
 }

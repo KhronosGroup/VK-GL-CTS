@@ -206,5 +206,13 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportSemaphoreFdKHRFunc)								(Vk
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSemaphoreFdKHRFunc)									(VkDevice device, const VkSemaphoreGetFdInfoKHR* pGetFdInfo, int* pFd);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetRefreshCycleDurationGOOGLEFunc)						(VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPastPresentationTimingGOOGLEFunc)					(VkDevice device, VkSwapchainKHR swapchain, deUint32* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceGroupPeerMemoryFeaturesKHXFunc)				(VkDevice device, deUint32 heapIndex, deUint32 localDeviceIndex, deUint32 remoteDeviceIndex, VkPeerMemoryFeatureFlagsKHX* pPeerMemoryFeatures);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDeviceMaskKHXFunc)								(VkCommandBuffer commandBuffer, deUint32 deviceMask);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceGroupPresentCapabilitiesKHXFunc)				(VkDevice device, VkDeviceGroupPresentCapabilitiesKHX* pDeviceGroupPresentCapabilities);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceGroupSurfacePresentModesKHXFunc)				(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHX* pModes);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireNextImage2KHXFunc)								(VkDevice device, const VkAcquireNextImageInfoKHX* pAcquireInfo, deUint32* pImageIndex);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchBaseKHXFunc)								(VkCommandBuffer commandBuffer, deUint32 baseGroupX, deUint32 baseGroupY, deUint32 baseGroupZ, deUint32 groupCountX, deUint32 groupCountY, deUint32 groupCountZ);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDevicePresentRectanglesKHXFunc)				(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pRectCount, VkRect2D* pRects);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* EnumeratePhysicalDeviceGroupsKHXFunc)					(VkInstance instance, deUint32* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupPropertiesKHX* pPhysicalDeviceGroupProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindBufferMemory2KHRFunc)								(VkDevice device, deUint32 bindInfoCount, const VkBindBufferMemoryInfoKHR* pBindInfos);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindImageMemory2KHRFunc)								(VkDevice device, deUint32 bindInfoCount, const VkBindImageMemoryInfoKHR* pBindInfos);

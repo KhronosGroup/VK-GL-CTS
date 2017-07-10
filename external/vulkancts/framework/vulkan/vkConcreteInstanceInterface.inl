@@ -52,3 +52,5 @@ virtual void				destroyDebugReportCallbackEXT						(VkInstance instance, VkDebug
 virtual void				debugReportMessageEXT								(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage) const;
 virtual void				getPhysicalDeviceExternalBufferPropertiesKHR		(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfoKHR* pExternalBufferInfo, VkExternalBufferPropertiesKHR* pExternalBufferProperties) const;
 virtual void				getPhysicalDeviceExternalSemaphorePropertiesKHR		(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalSemaphoreInfoKHR* pExternalSemaphoreInfo, VkExternalSemaphorePropertiesKHR* pExternalSemaphoreProperties) const;
+virtual VkResult			getPhysicalDevicePresentRectanglesKHX				(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pRectCount, VkRect2D* pRects) const;
+virtual VkResult			enumeratePhysicalDeviceGroupsKHX					(VkInstance instance, deUint32* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupPropertiesKHX* pPhysicalDeviceGroupProperties) const;

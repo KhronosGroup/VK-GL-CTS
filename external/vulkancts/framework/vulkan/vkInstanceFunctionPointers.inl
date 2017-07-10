@@ -52,3 +52,5 @@ DestroyDebugReportCallbackEXTFunc						destroyDebugReportCallbackEXT;
 DebugReportMessageEXTFunc								debugReportMessageEXT;
 GetPhysicalDeviceExternalBufferPropertiesKHRFunc		getPhysicalDeviceExternalBufferPropertiesKHR;
 GetPhysicalDeviceExternalSemaphorePropertiesKHRFunc		getPhysicalDeviceExternalSemaphorePropertiesKHR;
+GetPhysicalDevicePresentRectanglesKHXFunc				getPhysicalDevicePresentRectanglesKHX;
+EnumeratePhysicalDeviceGroupsKHXFunc					enumeratePhysicalDeviceGroupsKHX;

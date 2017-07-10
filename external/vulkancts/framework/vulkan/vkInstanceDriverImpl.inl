@@ -256,3 +256,13 @@ void InstanceDriver::getPhysicalDeviceExternalSemaphorePropertiesKHR (VkPhysical
 {
 	m_vk.getPhysicalDeviceExternalSemaphorePropertiesKHR(physicalDevice, pExternalSemaphoreInfo, pExternalSemaphoreProperties);
 }
+
+VkResult InstanceDriver::getPhysicalDevicePresentRectanglesKHX (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pRectCount, VkRect2D* pRects) const
+{
+	return m_vk.getPhysicalDevicePresentRectanglesKHX(physicalDevice, surface, pRectCount, pRects);
+}
+
+VkResult InstanceDriver::enumeratePhysicalDeviceGroupsKHX (VkInstance instance, deUint32* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupPropertiesKHX* pPhysicalDeviceGroupProperties) const
+{
+	return m_vk.enumeratePhysicalDeviceGroupsKHX(instance, pPhysicalDeviceGroupCount, pPhysicalDeviceGroupProperties);
+}

@@ -47,6 +47,7 @@ DEFINITIONS			= [
 	("VK_MAX_MEMORY_TYPES",					"size_t"),
 	("VK_MAX_MEMORY_HEAPS",					"size_t"),
 	("VK_MAX_DESCRIPTION_SIZE",				"size_t"),
+	("VK_MAX_DEVICE_GROUP_SIZE_KHX",		"size_t"),
 	("VK_ATTACHMENT_UNUSED",				"deUint32"),
 	("VK_SUBPASS_EXTERNAL",					"deUint32"),
 	("VK_QUEUE_FAMILY_IGNORED",				"deUint32"),

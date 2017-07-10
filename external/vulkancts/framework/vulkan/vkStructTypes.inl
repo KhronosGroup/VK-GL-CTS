@@ -1971,6 +1971,135 @@ struct VkPhysicalDeviceVariablePointerFeaturesKHR
 	VkBool32		variablePointers;
 };
 
+struct VkMemoryAllocateFlagsInfoKHX
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkMemoryAllocateFlagsKHX	flags;
+	deUint32					deviceMask;
+};
+
+struct VkDeviceGroupRenderPassBeginInfoKHX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		deviceMask;
+	deUint32		deviceRenderAreaCount;
+	const VkRect2D*	pDeviceRenderAreas;
+};
+
+struct VkDeviceGroupCommandBufferBeginInfoKHX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		deviceMask;
+};
+
+struct VkDeviceGroupSubmitInfoKHX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		waitSemaphoreCount;
+	const deUint32*	pWaitSemaphoreDeviceIndices;
+	deUint32		commandBufferCount;
+	const deUint32*	pCommandBufferDeviceMasks;
+	deUint32		signalSemaphoreCount;
+	const deUint32*	pSignalSemaphoreDeviceIndices;
+};
+
+struct VkDeviceGroupBindSparseInfoKHX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		resourceDeviceIndex;
+	deUint32		memoryDeviceIndex;
+};
+
+struct VkDeviceGroupPresentCapabilitiesKHX
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	deUint32							presentMask[VK_MAX_DEVICE_GROUP_SIZE_KHX];
+	VkDeviceGroupPresentModeFlagsKHX	modes;
+};
+
+struct VkImageSwapchainCreateInfoKHX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkSwapchainKHR	swapchain;
+};
+
+struct VkBindBufferMemoryDeviceGroupInfoKHX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		deviceIndexCount;
+	const deUint32*	pDeviceIndices;
+};
+
+struct VkBindImageMemoryDeviceGroupInfoKHX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		deviceIndexCount;
+	const deUint32*	pDeviceIndices;
+	deUint32		SFRRectCount;
+	const VkRect2D*	pSFRRects;
+};
+
+struct VkBindImageMemorySwapchainInfoKHX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkSwapchainKHR	swapchain;
+	deUint32		imageIndex;
+};
+
+struct VkAcquireNextImageInfoKHX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkSwapchainKHR	swapchain;
+	deUint64		timeout;
+	VkSemaphore		semaphore;
+	VkFence			fence;
+	deUint32		deviceMask;
+};
+
+struct VkDeviceGroupPresentInfoKHX
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	deUint32							swapchainCount;
+	const deUint32*						pDeviceMasks;
+	VkDeviceGroupPresentModeFlagBitsKHX	mode;
+};
+
+struct VkDeviceGroupSwapchainCreateInfoKHX
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkDeviceGroupPresentModeFlagsKHX	modes;
+};
+
+struct VkPhysicalDeviceGroupPropertiesKHX
+{
+	VkStructureType		sType;
+	void*				pNext;
+	deUint32			physicalDeviceCount;
+	VkPhysicalDevice	physicalDevices[VK_MAX_DEVICE_GROUP_SIZE_KHX];
+	VkBool32			subsetAllocation;
+};
+
+struct VkDeviceGroupDeviceCreateInfoKHX
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	deUint32				physicalDeviceCount;
+	const VkPhysicalDevice*	pPhysicalDevices;
+};
+
 struct VkBindBufferMemoryInfoKHR
 {
 	VkStructureType	sType;

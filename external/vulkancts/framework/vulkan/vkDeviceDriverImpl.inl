@@ -752,6 +752,36 @@ VkResult DeviceDriver::getPastPresentationTimingGOOGLE (VkDevice device, VkSwapc
 	return m_vk.getPastPresentationTimingGOOGLE(device, swapchain, pPresentationTimingCount, pPresentationTimings);
 }
 
+void DeviceDriver::getDeviceGroupPeerMemoryFeaturesKHX (VkDevice device, deUint32 heapIndex, deUint32 localDeviceIndex, deUint32 remoteDeviceIndex, VkPeerMemoryFeatureFlagsKHX* pPeerMemoryFeatures) const
+{
+	m_vk.getDeviceGroupPeerMemoryFeaturesKHX(device, heapIndex, localDeviceIndex, remoteDeviceIndex, pPeerMemoryFeatures);
+}
+
+void DeviceDriver::cmdSetDeviceMaskKHX (VkCommandBuffer commandBuffer, deUint32 deviceMask) const
+{
+	m_vk.cmdSetDeviceMaskKHX(commandBuffer, deviceMask);
+}
+
+VkResult DeviceDriver::getDeviceGroupPresentCapabilitiesKHX (VkDevice device, VkDeviceGroupPresentCapabilitiesKHX* pDeviceGroupPresentCapabilities) const
+{
+	return m_vk.getDeviceGroupPresentCapabilitiesKHX(device, pDeviceGroupPresentCapabilities);
+}
+
+VkResult DeviceDriver::getDeviceGroupSurfacePresentModesKHX (VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHX* pModes) const
+{
+	return m_vk.getDeviceGroupSurfacePresentModesKHX(device, surface, pModes);
+}
+
+VkResult DeviceDriver::acquireNextImage2KHX (VkDevice device, const VkAcquireNextImageInfoKHX* pAcquireInfo, deUint32* pImageIndex) const
+{
+	return m_vk.acquireNextImage2KHX(device, pAcquireInfo, pImageIndex);
+}
+
+void DeviceDriver::cmdDispatchBaseKHX (VkCommandBuffer commandBuffer, deUint32 baseGroupX, deUint32 baseGroupY, deUint32 baseGroupZ, deUint32 groupCountX, deUint32 groupCountY, deUint32 groupCountZ) const
+{
+	m_vk.cmdDispatchBaseKHX(commandBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
+}
+
 VkResult DeviceDriver::bindBufferMemory2KHR (VkDevice device, deUint32 bindInfoCount, const VkBindBufferMemoryInfoKHR* pBindInfos) const
 {
 	return m_vk.bindBufferMemory2KHR(device, bindInfoCount, pBindInfos);

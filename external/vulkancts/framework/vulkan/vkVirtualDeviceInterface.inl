@@ -151,5 +151,11 @@ virtual VkResult	importSemaphoreFdKHR					(VkDevice device, const VkImportSemaph
 virtual VkResult	getSemaphoreFdKHR						(VkDevice device, const VkSemaphoreGetFdInfoKHR* pGetFdInfo, int* pFd) const = 0;
 virtual VkResult	getRefreshCycleDurationGOOGLE			(VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties) const = 0;
 virtual VkResult	getPastPresentationTimingGOOGLE			(VkDevice device, VkSwapchainKHR swapchain, deUint32* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings) const = 0;
+virtual void		getDeviceGroupPeerMemoryFeaturesKHX		(VkDevice device, deUint32 heapIndex, deUint32 localDeviceIndex, deUint32 remoteDeviceIndex, VkPeerMemoryFeatureFlagsKHX* pPeerMemoryFeatures) const = 0;
+virtual void		cmdSetDeviceMaskKHX						(VkCommandBuffer commandBuffer, deUint32 deviceMask) const = 0;
+virtual VkResult	getDeviceGroupPresentCapabilitiesKHX	(VkDevice device, VkDeviceGroupPresentCapabilitiesKHX* pDeviceGroupPresentCapabilities) const = 0;
+virtual VkResult	getDeviceGroupSurfacePresentModesKHX	(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHX* pModes) const = 0;
+virtual VkResult	acquireNextImage2KHX					(VkDevice device, const VkAcquireNextImageInfoKHX* pAcquireInfo, deUint32* pImageIndex) const = 0;
+virtual void		cmdDispatchBaseKHX						(VkCommandBuffer commandBuffer, deUint32 baseGroupX, deUint32 baseGroupY, deUint32 baseGroupZ, deUint32 groupCountX, deUint32 groupCountY, deUint32 groupCountZ) const = 0;
 virtual VkResult	bindBufferMemory2KHR					(VkDevice device, deUint32 bindInfoCount, const VkBindBufferMemoryInfoKHR* pBindInfos) const = 0;
 virtual VkResult	bindImageMemory2KHR						(VkDevice device, deUint32 bindInfoCount, const VkBindImageMemoryInfoKHR* pBindInfos) const = 0;

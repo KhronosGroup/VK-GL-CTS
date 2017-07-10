@@ -1388,6 +1388,72 @@ VKAPI_ATTR VkResult VKAPI_CALL getPastPresentationTimingGOOGLE (VkDevice device,
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL getDeviceGroupPeerMemoryFeaturesKHX (VkDevice device, deUint32 heapIndex, deUint32 localDeviceIndex, deUint32 remoteDeviceIndex, VkPeerMemoryFeatureFlagsKHX* pPeerMemoryFeatures)
+{
+	DE_UNREF(device);
+	DE_UNREF(heapIndex);
+	DE_UNREF(localDeviceIndex);
+	DE_UNREF(remoteDeviceIndex);
+	DE_UNREF(pPeerMemoryFeatures);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetDeviceMaskKHX (VkCommandBuffer commandBuffer, deUint32 deviceMask)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(deviceMask);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDeviceGroupPresentCapabilitiesKHX (VkDevice device, VkDeviceGroupPresentCapabilitiesKHX* pDeviceGroupPresentCapabilities)
+{
+	DE_UNREF(device);
+	DE_UNREF(pDeviceGroupPresentCapabilities);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDeviceGroupSurfacePresentModesKHX (VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHX* pModes)
+{
+	DE_UNREF(device);
+	DE_UNREF(surface);
+	DE_UNREF(pModes);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL acquireNextImage2KHX (VkDevice device, const VkAcquireNextImageInfoKHX* pAcquireInfo, deUint32* pImageIndex)
+{
+	DE_UNREF(device);
+	DE_UNREF(pAcquireInfo);
+	DE_UNREF(pImageIndex);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDispatchBaseKHX (VkCommandBuffer commandBuffer, deUint32 baseGroupX, deUint32 baseGroupY, deUint32 baseGroupZ, deUint32 groupCountX, deUint32 groupCountY, deUint32 groupCountZ)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(baseGroupX);
+	DE_UNREF(baseGroupY);
+	DE_UNREF(baseGroupZ);
+	DE_UNREF(groupCountX);
+	DE_UNREF(groupCountY);
+	DE_UNREF(groupCountZ);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDevicePresentRectanglesKHX (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pRectCount, VkRect2D* pRects)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(surface);
+	DE_UNREF(pRectCount);
+	DE_UNREF(pRects);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceGroupsKHX (VkInstance instance, deUint32* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupPropertiesKHX* pPhysicalDeviceGroupProperties)
+{
+	DE_UNREF(instance);
+	DE_UNREF(pPhysicalDeviceGroupCount);
+	DE_UNREF(pPhysicalDeviceGroupProperties);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL bindBufferMemory2KHR (VkDevice device, deUint32 bindInfoCount, const VkBindBufferMemoryInfoKHR* pBindInfos)
 {
 	DE_UNREF(device);
@@ -1465,6 +1531,8 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,								debugReportMessageEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferPropertiesKHR,		getPhysicalDeviceExternalBufferPropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphorePropertiesKHR,	getPhysicalDeviceExternalSemaphorePropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDevicePresentRectanglesKHX,				getPhysicalDevicePresentRectanglesKHX),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroupsKHX,					enumeratePhysicalDeviceGroupsKHX),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -1619,6 +1687,12 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetSemaphoreFdKHR,						getSemaphoreFdKHR),
 	VK_NULL_FUNC_ENTRY(vkGetRefreshCycleDurationGOOGLE,			getRefreshCycleDurationGOOGLE),
 	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingGOOGLE,		getPastPresentationTimingGOOGLE),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupPeerMemoryFeaturesKHX,	getDeviceGroupPeerMemoryFeaturesKHX),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDeviceMaskKHX,					cmdSetDeviceMaskKHX),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupPresentCapabilitiesKHX,	getDeviceGroupPresentCapabilitiesKHX),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupSurfacePresentModesKHX,	getDeviceGroupSurfacePresentModesKHX),
+	VK_NULL_FUNC_ENTRY(vkAcquireNextImage2KHX,					acquireNextImage2KHX),
+	VK_NULL_FUNC_ENTRY(vkCmdDispatchBaseKHX,					cmdDispatchBaseKHX),
 	VK_NULL_FUNC_ENTRY(vkBindBufferMemory2KHR,					bindBufferMemory2KHR),
 	VK_NULL_FUNC_ENTRY(vkBindImageMemory2KHR,					bindImageMemory2KHR),
 };
