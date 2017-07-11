@@ -500,14 +500,14 @@ const glw::GLchar* Type::GetGLSLTypeName() const
  *
  * @return Number of columns times:
  *          - 2 when type is double with 3 or 4 rows,
- *          - 1 otherwise.
+ *          - 1 otherwise or if it's a vertex shader input.
  **/
-GLuint Type::GetLocations() const
+GLuint Type::GetLocations(bool is_vs_input) const
 {
 	GLuint n_loc_per_column;
 
 	/* 1 or 2 doubles any for rest */
-	if ((2 >= m_n_rows) || (Double != m_basic_type))
+	if ((2 >= m_n_rows) || (Double != m_basic_type) || is_vs_input)
 	{
 		n_loc_per_column = 1;
 	}
@@ -5119,7 +5119,7 @@ GLint TestBase::getLastInputLocation(Utils::Shader::STAGES stage, const Utils::T
 
 #endif
 
-	const GLuint n_req_location = type.GetLocations() * array_length;
+	const GLuint n_req_location = type.GetLocations(stage == Utils::Shader::VERTEX) * array_length;
 
 	return n_avl_locations - n_req_location; /* last is max - 1 */
 }
