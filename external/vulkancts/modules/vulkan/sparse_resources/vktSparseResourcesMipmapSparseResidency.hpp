@@ -32,6 +32,7 @@ namespace sparse
 {
 
 tcu::TestCaseGroup* createMipmapSparseResidencyTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createDeviceGroupMipmapSparseResidencyTests(tcu::TestContext& testCtx);
 
 } // sparse
 } // vkt

@@ -32,6 +32,7 @@ namespace sparse
 {
 
 tcu::TestCaseGroup* createImageSparseMemoryAliasingTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createDeviceGroupImageSparseMemoryAliasingTests(tcu::TestContext& testCtx);
 
 } // sparse
 } // vkt

@@ -32,6 +32,7 @@ namespace sparse
 {
 
 tcu::TestCaseGroup* createImageSparseResidencyTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createDeviceGroupImageSparseResidencyTests(tcu::TestContext& testCtx);
 
 } // sparse
 } // vkt

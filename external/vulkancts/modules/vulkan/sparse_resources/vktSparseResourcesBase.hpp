@@ -28,6 +28,7 @@
 #include "vkRef.hpp"
 #include "vkPlatform.hpp"
 #include "deUniquePtr.hpp"
+#include "tcuCommandLine.hpp"
 
 #include <map>
 #include <vector>
@@ -58,18 +59,33 @@ struct QueueRequirements
 class SparseResourcesBaseInstance : public TestInstance
 {
 public:
-	SparseResourcesBaseInstance (Context &context) : TestInstance(context) {}
+	SparseResourcesBaseInstance (Context &context, bool useDeviceGroups = false)
+		: TestInstance			(context)
+		, m_numPhysicalDevices	(1)
+		, m_useDeviceGroups		(useDeviceGroups)
+	{
+		const tcu::CommandLine&	cmdLine	= context.getTestContext().getCommandLine();
+		m_deviceGroupIdx				= cmdLine.getVKDeviceGroupId() - 1;
+	}
+	bool		usingDeviceGroups() { return m_useDeviceGroups; }
 
 protected:
 	typedef std::vector<QueueRequirements>				QueueRequirementsVec;
 
+	deUint32											m_numPhysicalDevices;
+
 	void												createDeviceSupportingQueues	(const QueueRequirementsVec& queueRequirements);
 	const Queue&										getQueue						(const vk::VkQueueFlags queueFlags, const deUint32 queueIndex) const;
-	const vk::DeviceInterface&							getDeviceInterface				(void) const { return *m_deviceDriver; }
-	vk::VkDevice										getDevice						(void) const { return *m_logicalDevice; }
-	vk::Allocator&										getAllocator					(void)		 { return *m_allocator; }
+	const vk::DeviceInterface&							getDeviceInterface				(void) const		{ return *m_deviceDriver; }
+	vk::VkDevice										getDevice						(void) const		{ return *m_logicalDevice; }
+	vk::Allocator&										getAllocator					(void)				{ return *m_allocator; }
+	vk::VkPhysicalDevice								getPhysicalDevice				(deUint32 i = 0)	{ return m_physicalDevices[i];}
 
 private:
+	bool												m_useDeviceGroups;
+	deUint32											m_deviceGroupIdx;
+	vk::Move<vk::VkInstance>							m_deviceGroupInstance;
+	std::vector<vk::VkPhysicalDevice>					m_physicalDevices;
 	std::map<vk::VkQueueFlags, std::vector<Queue> >		m_queues;
 	de::MovePtr<vk::DeviceDriver>						m_deviceDriver;
 	vk::Move<vk::VkDevice>								m_logicalDevice;

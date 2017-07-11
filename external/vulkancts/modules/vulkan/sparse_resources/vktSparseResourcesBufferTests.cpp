@@ -68,8 +68,8 @@ typedef SharedPtr<UniquePtr<Allocation> > AllocationSp;
 
 enum
 {
-	RENDER_SIZE	= 128,				//!< framebuffer size in pixels
-	GRID_SIZE	= RENDER_SIZE / 8,	//!< number of grid tiles in a row
+	RENDER_SIZE		= 128,				//!< framebuffer size in pixels
+	GRID_SIZE		= RENDER_SIZE / 8,	//!< number of grid tiles in a row
 };
 
 enum TestFlagBits
@@ -78,6 +78,7 @@ enum TestFlagBits
 	TEST_FLAG_ALIASED				= 1u << 0,	//!< sparseResidencyAliased
 	TEST_FLAG_RESIDENCY				= 1u << 1,	//!< sparseResidencyBuffer
 	TEST_FLAG_NON_RESIDENT_STRICT	= 1u << 2,	//!< residencyNonResidentStrict
+	TEST_FLAG_ENABLE_DEVICE_GROUPS	= 1u << 3,	//!< device groups are enabled
 };
 typedef deUint32 TestFlags;
 
@@ -584,7 +585,9 @@ public:
 	void draw (const DeviceInterface&	vk,
 			   const VkDevice			device,
 			   const VkQueue			queue,
-			   const Delegate&			drawDelegate) const
+			   const Delegate&			drawDelegate,
+			   const bool				useDeviceGroups,
+			   const deUint32			deviceID) const
 	{
 		beginCommandBuffer(vk, *m_cmdBuffer);
 
@@ -668,7 +671,7 @@ public:
 		}
 
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
-		submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+		submitCommandsAndWait(vk, device, queue, *m_cmdBuffer, 0U, DE_NULL, DE_NULL, 0U, DE_NULL, useDeviceGroups, deviceID);
 	}
 
 private:
@@ -697,7 +700,8 @@ private:
 	Renderer&	operator=	(const Renderer&);
 };
 
-void bindSparseBuffer (const DeviceInterface& vk, const VkDevice device, const VkQueue sparseQueue, const VkBuffer buffer, const SparseAllocation& sparseAllocation)
+void bindSparseBuffer (const DeviceInterface& vk, const VkDevice device, const VkQueue sparseQueue, const VkBuffer buffer, const SparseAllocation& sparseAllocation,
+						const bool useDeviceGroups, deUint32 resourceDevId, deUint32 memoryDeviceId)
 {
 	const VkSparseBufferMemoryBindInfo sparseBufferMemoryBindInfo =
 	{
@@ -706,20 +710,28 @@ void bindSparseBuffer (const DeviceInterface& vk, const VkDevice device, const V
 		&sparseAllocation.memoryBinds[0],							// const VkSparseMemoryBind*    pBinds;
 	};
 
+	const VkDeviceGroupBindSparseInfoKHR devGroupBindSparseInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO_KHR,		//VkStructureType							sType;
+		DE_NULL,													//const void*								pNext;
+		resourceDevId,												//deUint32									resourceDeviceIndex;
+		memoryDeviceId,												//deUint32									memoryDeviceIndex;
+	};
+
 	const VkBindSparseInfo bindInfo =
 	{
-		VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,					// VkStructureType                             sType;
-		DE_NULL,											// const void*                                 pNext;
-		0u,													// uint32_t                                    waitSemaphoreCount;
-		DE_NULL,											// const VkSemaphore*                          pWaitSemaphores;
-		1u,													// uint32_t                                    bufferBindCount;
-		&sparseBufferMemoryBindInfo,						// const VkSparseBufferMemoryBindInfo*         pBufferBinds;
-		0u,													// uint32_t                                    imageOpaqueBindCount;
-		DE_NULL,											// const VkSparseImageOpaqueMemoryBindInfo*    pImageOpaqueBinds;
-		0u,													// uint32_t                                    imageBindCount;
-		DE_NULL,											// const VkSparseImageMemoryBindInfo*          pImageBinds;
-		0u,													// uint32_t                                    signalSemaphoreCount;
-		DE_NULL,											// const VkSemaphore*                          pSignalSemaphores;
+		VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,							// VkStructureType                             sType;
+		useDeviceGroups ? &devGroupBindSparseInfo : DE_NULL,		// const void*                                 pNext;
+		0u,															// uint32_t                                    waitSemaphoreCount;
+		DE_NULL,													// const VkSemaphore*                          pWaitSemaphores;
+		1u,															// uint32_t                                    bufferBindCount;
+		&sparseBufferMemoryBindInfo,								// const VkSparseBufferMemoryBindInfo*         pBufferBinds;
+		0u,															// uint32_t                                    imageOpaqueBindCount;
+		DE_NULL,													// const VkSparseImageOpaqueMemoryBindInfo*    pImageOpaqueBinds;
+		0u,															// uint32_t                                    imageBindCount;
+		DE_NULL,													// const VkSparseImageMemoryBindInfo*          pImageBinds;
+		0u,															// uint32_t                                    signalSemaphoreCount;
+		DE_NULL,													// const VkSemaphore*                          pSignalSemaphores;
 	};
 
 	const Unique<VkFence> fence(createFence(vk, device));
@@ -732,7 +744,7 @@ class SparseBufferTestInstance : public SparseResourcesBaseInstance, Renderer::D
 {
 public:
 	SparseBufferTestInstance (Context& context, const TestFlags flags)
-		: SparseResourcesBaseInstance	(context)
+		: SparseResourcesBaseInstance	(context, (flags & TEST_FLAG_ENABLE_DEVICE_GROUPS) != 0)
 		, m_aliased						((flags & TEST_FLAG_ALIASED)   != 0)
 		, m_residency					((flags & TEST_FLAG_RESIDENCY) != 0)
 		, m_nonResidentStrict			((flags & TEST_FLAG_NON_RESIDENT_STRICT) != 0)
@@ -740,7 +752,14 @@ public:
 		, m_colorFormat					(VK_FORMAT_R8G8B8A8_UNORM)
 		, m_colorBufferSize				(m_renderSize.x() * m_renderSize.y() * tcu::getPixelSize(mapVkFormat(m_colorFormat)))
 	{
-		const VkPhysicalDeviceFeatures	features	= getPhysicalDeviceFeatures(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+		{
+			QueueRequirementsVec requirements;
+			requirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
+			requirements.push_back(QueueRequirements(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 1u));
+
+			createDeviceSupportingQueues(requirements);
+		}
+		const VkPhysicalDeviceFeatures	features	= getPhysicalDeviceFeatures(m_context.getInstanceInterface(), getPhysicalDevice());
 
 		if (!features.sparseBinding)
 			TCU_THROW(NotSupportedError, "Missing feature: sparseBinding");
@@ -753,14 +772,6 @@ public:
 
 		if (m_nonResidentStrict && !m_context.getDeviceProperties().sparseProperties.residencyNonResidentStrict)
 			TCU_THROW(NotSupportedError, "Missing sparse property: residencyNonResidentStrict");
-
-		{
-			QueueRequirementsVec requirements;
-			requirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
-			requirements.push_back(QueueRequirements(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 1u));
-
-			createDeviceSupportingQueues(requirements);
-		}
 
 		const DeviceInterface& vk		= getDeviceInterface();
 		m_sparseQueue					= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0u);
@@ -809,16 +820,18 @@ protected:
 
 	void draw (const VkPrimitiveTopology	topology,
 			   const VkDescriptorSetLayout	descriptorSetLayout	= DE_NULL,
-			   Renderer::SpecializationMap	specMap				= Renderer::SpecializationMap())
+			   Renderer::SpecializationMap	specMap				= Renderer::SpecializationMap(),
+			   bool							useDeviceGroups		= false,
+			   deUint32						deviceID			= 0)
 	{
 		const UniquePtr<Renderer> renderer(new Renderer(
 			getDeviceInterface(), getDevice(), getAllocator(), m_universalQueue.queueFamilyIndex, descriptorSetLayout,
 			m_context.getBinaryCollection(), "vert", "frag", *m_colorBuffer, m_renderSize, m_colorFormat, Vec4(1.0f, 0.0f, 0.0f, 1.0f), topology, specMap));
 
-		renderer->draw(getDeviceInterface(), getDevice(), m_universalQueue.queueHandle, *this);
+		renderer->draw(getDeviceInterface(), getDevice(), m_universalQueue.queueHandle, *this, useDeviceGroups, deviceID);
 	}
 
-	tcu::TestStatus verifyDrawResult (void) const
+	bool isResultImageCorrect (void) const
 	{
 		invalidateMappedMemoryRange(getDeviceInterface(), getDevice(), m_colorBufferAlloc->getMemory(), 0ull, m_colorBufferSize);
 
@@ -827,10 +840,7 @@ protected:
 		m_context.getTestContext().getLog()
 			<< tcu::LogImageSet("Result", "Result") << tcu::LogImage("color0", "", resultImage) << tcu::TestLog::EndImageSet;
 
-		if (imageHasErrorPixels(resultImage))
-			return tcu::TestStatus::fail("Some buffer values were incorrect");
-		else
-			return tcu::TestStatus::pass("Pass");
+		return !imageHasErrorPixels(resultImage);
 	}
 
 	const bool							m_aliased;
@@ -958,180 +968,195 @@ public:
 		MovePtr<SparseAllocation>	sparseAllocation;
 		Move<VkBuffer>				sparseBuffer;
 		Move<VkBuffer>				sparseBufferAliased;
+		bool						setupDescriptors	= true;
 
-		// Set up the sparse buffer
+		// Go through all physical devices
+		for (deUint32 physDevID = 0; physDevID < m_numPhysicalDevices; physDevID++)
 		{
-			VkBufferCreateInfo	referenceBufferCreateInfo	= getSparseBufferCreateInfo(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-			const VkDeviceSize	minChunkSize				= 512u;	// make sure the smallest allocation is at least this big
-			deUint32			numMaxChunks				= 0u;
+			const deUint32	firstDeviceID	= physDevID;
+			const deUint32	secondDeviceID	= (firstDeviceID + 1) % m_numPhysicalDevices;
 
-			// Check how many chunks we can allocate given the alignment and size requirements of UBOs
+			// Set up the sparse buffer
 			{
-				const UniquePtr<SparseAllocation> minAllocation(SparseAllocationBuilder()
-					.addMemoryBind()
-					.build(vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize));
+				VkBufferCreateInfo	referenceBufferCreateInfo	= getSparseBufferCreateInfo(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+				const VkDeviceSize	minChunkSize				= 512u;	// make sure the smallest allocation is at least this big
+				deUint32			numMaxChunks				= 0u;
 
-				numMaxChunks = deMaxu32(static_cast<deUint32>(m_context.getDeviceProperties().limits.maxUniformBufferRange / minAllocation->resourceSize), 1u);
-			}
+				// Check how many chunks we can allocate given the alignment and size requirements of UBOs
+				{
+					const UniquePtr<SparseAllocation> minAllocation(SparseAllocationBuilder()
+						.addMemoryBind()
+						.build(vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize));
 
-			if (numMaxChunks < 4)
-			{
-				sparseAllocation = SparseAllocationBuilder()
-					.addMemoryBind()
-					.build(vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize);
-			}
-			else
-			{
-				// Try to use a non-trivial memory allocation scheme to make it different from a non-sparse binding
-				SparseAllocationBuilder builder;
-				builder.addMemoryBind();
+					numMaxChunks = deMaxu32(static_cast<deUint32>(m_context.getDeviceProperties().limits.maxUniformBufferRange / minAllocation->resourceSize), 1u);
+				}
 
-				if (m_residency)
-					builder.addResourceHole();
+				if (numMaxChunks < 4)
+				{
+					sparseAllocation = SparseAllocationBuilder()
+						.addMemoryBind()
+						.build(vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize);
+				}
+				else
+				{
+					// Try to use a non-trivial memory allocation scheme to make it different from a non-sparse binding
+					SparseAllocationBuilder builder;
+					builder.addMemoryBind();
 
-				builder
-					.addMemoryAllocation()
-					.addMemoryHole()
-					.addMemoryBind();
+					if (m_residency)
+						builder.addResourceHole();
+
+					builder
+						.addMemoryAllocation()
+						.addMemoryHole()
+						.addMemoryBind();
+
+					if (m_aliased)
+						builder.addAliasedMemoryBind(0u, 0u);
+
+					sparseAllocation = builder.build(vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize);
+					DE_ASSERT(sparseAllocation->resourceSize <= m_context.getDeviceProperties().limits.maxUniformBufferRange);
+				}
+
+				// Create the buffer
+				referenceBufferCreateInfo.size	= sparseAllocation->resourceSize;
+				sparseBuffer					= makeBuffer(vk, getDevice(), referenceBufferCreateInfo);
+				bindSparseBuffer(vk, getDevice(), m_sparseQueue.queueHandle, *sparseBuffer, *sparseAllocation, usingDeviceGroups(), firstDeviceID, secondDeviceID);
 
 				if (m_aliased)
-					builder.addAliasedMemoryBind(0u, 0u);
-
-				sparseAllocation = builder.build(vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize);
-				DE_ASSERT(sparseAllocation->resourceSize <= m_context.getDeviceProperties().limits.maxUniformBufferRange);
-			}
-
-			// Create the buffer
-			referenceBufferCreateInfo.size	= sparseAllocation->resourceSize;
-			sparseBuffer					= makeBuffer(vk, getDevice(), referenceBufferCreateInfo);
-			bindSparseBuffer(vk, getDevice(), m_sparseQueue.queueHandle, *sparseBuffer, *sparseAllocation);
-
-			if (m_aliased)
-			{
-				sparseBufferAliased = makeBuffer(vk, getDevice(), referenceBufferCreateInfo);
-				bindSparseBuffer(vk, getDevice(), m_sparseQueue.queueHandle, *sparseBufferAliased, *sparseAllocation);
-			}
-		}
-
-		// Set uniform data
-		{
-			const bool					hasAliasedChunk		= (m_aliased && sparseAllocation->memoryBinds.size() > 1u);
-			const VkDeviceSize			chunkSize			= sparseAllocation->resourceSize / sparseAllocation->numResourceChunks;
-			const VkDeviceSize			stagingBufferSize	= sparseAllocation->resourceSize - (hasAliasedChunk ? chunkSize : 0);
-			const deUint32				numBufferEntries	= static_cast<deUint32>(stagingBufferSize / sizeof(IVec4));
-
-			const Unique<VkBuffer>		stagingBuffer		(makeBuffer(vk, getDevice(), makeBufferCreateInfo(stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT)));
-			const UniquePtr<Allocation>	stagingBufferAlloc	(bindBuffer(vk, getDevice(), getAllocator(), *stagingBuffer, MemoryRequirement::HostVisible));
-
-			{
-				// If aliased chunk is used, the staging buffer is smaller than the sparse buffer and we don't overwrite the last chunk
-				IVec4* const pData = static_cast<IVec4*>(stagingBufferAlloc->getHostPtr());
-				for (deUint32 i = 0; i < numBufferEntries; ++i)
-					pData[i] = IVec4(3*i ^ 127, 0, 0, 0);
-
-				flushMappedMemoryRange(vk, getDevice(), stagingBufferAlloc->getMemory(), stagingBufferAlloc->getOffset(), stagingBufferSize);
-
-				const VkBufferCopy copyRegion =
 				{
-					0ull,						// VkDeviceSize    srcOffset;
-					0ull,						// VkDeviceSize    dstOffset;
-					stagingBufferSize,			// VkDeviceSize    size;
+					sparseBufferAliased = makeBuffer(vk, getDevice(), referenceBufferCreateInfo);
+					bindSparseBuffer(vk, getDevice(), m_sparseQueue.queueHandle, *sparseBufferAliased, *sparseAllocation, usingDeviceGroups(), firstDeviceID, secondDeviceID);
+				}
+			}
+
+			// Set uniform data
+			{
+				const bool					hasAliasedChunk		= (m_aliased && sparseAllocation->memoryBinds.size() > 1u);
+				const VkDeviceSize			chunkSize			= sparseAllocation->resourceSize / sparseAllocation->numResourceChunks;
+				const VkDeviceSize			stagingBufferSize	= sparseAllocation->resourceSize - (hasAliasedChunk ? chunkSize : 0);
+				const deUint32				numBufferEntries	= static_cast<deUint32>(stagingBufferSize / sizeof(IVec4));
+
+				const Unique<VkBuffer>		stagingBuffer		(makeBuffer(vk, getDevice(), makeBufferCreateInfo(stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT)));
+				const UniquePtr<Allocation>	stagingBufferAlloc	(bindBuffer(vk, getDevice(), getAllocator(), *stagingBuffer, MemoryRequirement::HostVisible));
+
+				{
+					// If aliased chunk is used, the staging buffer is smaller than the sparse buffer and we don't overwrite the last chunk
+					IVec4* const pData = static_cast<IVec4*>(stagingBufferAlloc->getHostPtr());
+					for (deUint32 i = 0; i < numBufferEntries; ++i)
+						pData[i] = IVec4(3*i ^ 127, 0, 0, 0);
+
+					flushMappedMemoryRange(vk, getDevice(), stagingBufferAlloc->getMemory(), stagingBufferAlloc->getOffset(), stagingBufferSize);
+
+					const VkBufferCopy copyRegion =
+					{
+						0ull,						// VkDeviceSize    srcOffset;
+						0ull,						// VkDeviceSize    dstOffset;
+						stagingBufferSize,			// VkDeviceSize    size;
+					};
+
+					const Unique<VkCommandPool>		cmdPool		(makeCommandPool(vk, getDevice(), m_universalQueue.queueFamilyIndex));
+					const Unique<VkCommandBuffer>	cmdBuffer	(allocateCommandBuffer(vk, getDevice(), *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+					beginCommandBuffer	(vk, *cmdBuffer);
+					vk.cmdCopyBuffer	(*cmdBuffer, *stagingBuffer, *sparseBuffer, 1u, &copyRegion);
+					endCommandBuffer	(vk, *cmdBuffer);
+
+					submitCommandsAndWait(vk, getDevice(), m_universalQueue.queueHandle, *cmdBuffer, 0u, DE_NULL, DE_NULL, 0, DE_NULL, usingDeviceGroups(), firstDeviceID);
+					// Once the fence is signaled, the write is also available to the aliasing buffer.
+				}
+			}
+
+			// Make sure that we don't try to access a larger range than is allowed. This only applies to a single chunk case.
+			const deUint32 maxBufferRange = deMinu32(static_cast<deUint32>(sparseAllocation->resourceSize), m_context.getDeviceProperties().limits.maxUniformBufferRange);
+
+			// Descriptor sets
+			{
+				// Setup only once
+				if (setupDescriptors)
+				{
+					m_descriptorSetLayout = DescriptorSetLayoutBuilder()
+						.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+						.build(vk, getDevice());
+
+					m_descriptorPool = DescriptorPoolBuilder()
+						.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+						.build(vk, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+					m_descriptorSet = makeDescriptorSet(vk, getDevice(), *m_descriptorPool, *m_descriptorSetLayout);
+					setupDescriptors = false;
+				}
+
+				const VkBuffer					buffer				= (m_aliased ? *sparseBufferAliased : *sparseBuffer);
+				const VkDescriptorBufferInfo	sparseBufferInfo	= makeDescriptorBufferInfo(buffer, 0ull, maxBufferRange);
+
+				DescriptorSetUpdateBuilder()
+					.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &sparseBufferInfo)
+					.update(vk, getDevice());
+			}
+
+			// Vertex data
+			{
+				const Vec4 vertexData[] =
+				{
+					Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+					Vec4(-1.0f,  1.0f, 0.0f, 1.0f),
+					Vec4( 1.0f, -1.0f, 0.0f, 1.0f),
+					Vec4( 1.0f,  1.0f, 0.0f, 1.0f),
 				};
 
-				const Unique<VkCommandPool>		cmdPool		(makeCommandPool(vk, getDevice(), m_universalQueue.queueFamilyIndex));
-				const Unique<VkCommandBuffer>	cmdBuffer	(allocateCommandBuffer(vk, getDevice(), *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+				const VkDeviceSize	vertexBufferSize	= sizeof(vertexData);
 
-				beginCommandBuffer	(vk, *cmdBuffer);
-				vk.cmdCopyBuffer	(*cmdBuffer, *stagingBuffer, *sparseBuffer, 1u, &copyRegion);
-				endCommandBuffer	(vk, *cmdBuffer);
+				m_vertexBuffer		= makeBuffer(vk, getDevice(), makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+				m_vertexBufferAlloc	= bindBuffer(vk, getDevice(), getAllocator(), *m_vertexBuffer, MemoryRequirement::HostVisible);
 
-				submitCommandsAndWait(vk, getDevice(), m_universalQueue.queueHandle, *cmdBuffer);
-				// Once the fence is signaled, the write is also available to the aliasing buffer.
-			}
-		}
-
-		// Make sure that we don't try to access a larger range than is allowed. This only applies to a single chunk case.
-		const deUint32 maxBufferRange = deMinu32(static_cast<deUint32>(sparseAllocation->resourceSize), m_context.getDeviceProperties().limits.maxUniformBufferRange);
-
-		// Descriptor sets
-		{
-			m_descriptorSetLayout = DescriptorSetLayoutBuilder()
-				.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-				.build(vk, getDevice());
-
-			m_descriptorPool = DescriptorPoolBuilder()
-				.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-				.build(vk, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-
-			m_descriptorSet = makeDescriptorSet(vk, getDevice(), *m_descriptorPool, *m_descriptorSetLayout);
-
-			const VkBuffer					buffer				= (m_aliased ? *sparseBufferAliased : *sparseBuffer);
-			const VkDescriptorBufferInfo	sparseBufferInfo	= makeDescriptorBufferInfo(buffer, 0ull, maxBufferRange);
-
-			DescriptorSetUpdateBuilder()
-				.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &sparseBufferInfo)
-				.update(vk, getDevice());
-		}
-
-		// Vertex data
-		{
-			const Vec4 vertexData[] =
-			{
-				Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
-				Vec4(-1.0f,  1.0f, 0.0f, 1.0f),
-				Vec4( 1.0f, -1.0f, 0.0f, 1.0f),
-				Vec4( 1.0f,  1.0f, 0.0f, 1.0f),
-			};
-
-			const VkDeviceSize	vertexBufferSize	= sizeof(vertexData);
-
-			m_vertexBuffer		= makeBuffer(vk, getDevice(), makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
-			m_vertexBufferAlloc	= bindBuffer(vk, getDevice(), getAllocator(), *m_vertexBuffer, MemoryRequirement::HostVisible);
-
-			deMemcpy(m_vertexBufferAlloc->getHostPtr(), &vertexData[0], vertexBufferSize);
-			flushMappedMemoryRange(vk, getDevice(), m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferSize);
-		}
-
-		// Draw
-		{
-			std::vector<deInt32> specializationData;
-			{
-				const deUint32	numBufferEntries	= maxBufferRange / static_cast<deUint32>(sizeof(IVec4));
-				const deUint32	numEntriesPerChunk	= numBufferEntries / sparseAllocation->numResourceChunks;
-
-				specializationData.push_back(numBufferEntries);
-				specializationData.push_back(numEntriesPerChunk);
+				deMemcpy(m_vertexBufferAlloc->getHostPtr(), &vertexData[0], vertexBufferSize);
+				flushMappedMemoryRange(vk, getDevice(), m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferSize);
 			}
 
-			const VkSpecializationMapEntry	specMapEntries[] =
+			// Draw
 			{
+				std::vector<deInt32> specializationData;
 				{
-					1u,					// uint32_t    constantID;
-					0u,					// uint32_t    offset;
-					sizeof(deInt32),	// size_t      size;
-				},
+					const deUint32	numBufferEntries	= maxBufferRange / static_cast<deUint32>(sizeof(IVec4));
+					const deUint32	numEntriesPerChunk	= numBufferEntries / sparseAllocation->numResourceChunks;
+
+					specializationData.push_back(numBufferEntries);
+					specializationData.push_back(numEntriesPerChunk);
+				}
+
+				const VkSpecializationMapEntry	specMapEntries[] =
 				{
-					2u,					// uint32_t    constantID;
-					sizeof(deInt32),	// uint32_t    offset;
-					sizeof(deInt32),	// size_t      size;
-				},
-			};
+					{
+						1u,					// uint32_t    constantID;
+						0u,					// uint32_t    offset;
+						sizeof(deInt32),	// size_t      size;
+					},
+					{
+						2u,					// uint32_t    constantID;
+						sizeof(deInt32),	// uint32_t    offset;
+						sizeof(deInt32),	// size_t      size;
+					},
+				};
 
-			const VkSpecializationInfo specInfo =
-			{
-				DE_LENGTH_OF_ARRAY(specMapEntries),		// uint32_t                           mapEntryCount;
-				specMapEntries,							// const VkSpecializationMapEntry*    pMapEntries;
-				sizeInBytes(specializationData),		// size_t                             dataSize;
-				getDataOrNullptr(specializationData),	// const void*                        pData;
-			};
+				const VkSpecializationInfo specInfo =
+				{
+					DE_LENGTH_OF_ARRAY(specMapEntries),		// uint32_t                           mapEntryCount;
+					specMapEntries,							// const VkSpecializationMapEntry*    pMapEntries;
+					sizeInBytes(specializationData),		// size_t                             dataSize;
+					getDataOrNullptr(specializationData),	// const void*                        pData;
+				};
 
-			Renderer::SpecializationMap	specMap;
-			specMap[VK_SHADER_STAGE_FRAGMENT_BIT] = &specInfo;
+				Renderer::SpecializationMap	specMap;
+				specMap[VK_SHADER_STAGE_FRAGMENT_BIT] = &specInfo;
 
-			draw(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, *m_descriptorSetLayout, specMap);
+				draw(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, *m_descriptorSetLayout, specMap, usingDeviceGroups(), firstDeviceID);
+			}
+
+			if(!isResultImageCorrect())
+				return tcu::TestStatus::fail("Some buffer values were incorrect");
 		}
-
-		return verifyDrawResult();
+		return tcu::TestStatus::pass("Pass");
 	}
 
 private:
@@ -1246,61 +1271,74 @@ public:
 		referenceBufferCreateInfo.size	= m_sparseAllocation->resourceSize;
 		m_sparseBuffer					= makeBuffer(vk, getDevice(), referenceBufferCreateInfo);
 
-		// Bind the memory
-		bindSparseBuffer(vk, getDevice(), m_sparseQueue.queueHandle, *m_sparseBuffer, *m_sparseAllocation);
 
 		m_perDrawBufferOffset	= m_sparseAllocation->resourceSize / m_sparseAllocation->numResourceChunks;
 		m_stagingBufferSize		= 2 * m_perDrawBufferOffset;
 		m_stagingBuffer			= makeBuffer(vk, getDevice(), makeBufferCreateInfo(m_stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
 		m_stagingBufferAlloc	= bindBuffer(vk, getDevice(), getAllocator(), *m_stagingBuffer, MemoryRequirement::HostVisible);
+
+
 	}
 
 	tcu::TestStatus iterate (void)
 	{
-		initializeBuffers();
-
 		const DeviceInterface&	vk	= getDeviceInterface();
 
-		// Upload to the sparse buffer
+		for (deUint32 physDevID = 0; physDevID < m_numPhysicalDevices; physDevID++)
 		{
-			flushMappedMemoryRange(vk, getDevice(), m_stagingBufferAlloc->getMemory(), m_stagingBufferAlloc->getOffset(), m_stagingBufferSize);
+			const deUint32	firstDeviceID	= physDevID;
+			const deUint32	secondDeviceID	= (firstDeviceID + 1) % m_numPhysicalDevices;
 
-			VkDeviceSize	firstChunkOffset	= 0ull;
-			VkDeviceSize	secondChunkOffset	= m_perDrawBufferOffset;
+			// Bind the memory
+			bindSparseBuffer(vk, getDevice(), m_sparseQueue.queueHandle, *m_sparseBuffer, *m_sparseAllocation, usingDeviceGroups(), firstDeviceID, secondDeviceID);
 
-			if (m_residency)
-				secondChunkOffset += m_perDrawBufferOffset;
+			initializeBuffers();
 
-			if (m_aliased)
-				firstChunkOffset = secondChunkOffset + m_perDrawBufferOffset;
-
-			const VkBufferCopy copyRegions[] =
+			// Upload to the sparse buffer
 			{
+				flushMappedMemoryRange(vk, getDevice(), m_stagingBufferAlloc->getMemory(), m_stagingBufferAlloc->getOffset(), m_stagingBufferSize);
+
+				VkDeviceSize	firstChunkOffset	= 0ull;
+				VkDeviceSize	secondChunkOffset	= m_perDrawBufferOffset;
+
+				if (m_residency)
+					secondChunkOffset += m_perDrawBufferOffset;
+
+				if (m_aliased)
+					firstChunkOffset = secondChunkOffset + m_perDrawBufferOffset;
+
+				const VkBufferCopy copyRegions[] =
 				{
-					0ull,						// VkDeviceSize    srcOffset;
-					firstChunkOffset,			// VkDeviceSize    dstOffset;
-					m_perDrawBufferOffset,		// VkDeviceSize    size;
-				},
-				{
-					m_perDrawBufferOffset,		// VkDeviceSize    srcOffset;
-					secondChunkOffset,			// VkDeviceSize    dstOffset;
-					m_perDrawBufferOffset,		// VkDeviceSize    size;
-				},
-			};
+					{
+						0ull,						// VkDeviceSize    srcOffset;
+						firstChunkOffset,			// VkDeviceSize    dstOffset;
+						m_perDrawBufferOffset,		// VkDeviceSize    size;
+					},
+					{
+						m_perDrawBufferOffset,		// VkDeviceSize    srcOffset;
+						secondChunkOffset,			// VkDeviceSize    dstOffset;
+						m_perDrawBufferOffset,		// VkDeviceSize    size;
+					},
+				};
 
-			const Unique<VkCommandPool>		cmdPool		(makeCommandPool(vk, getDevice(), m_universalQueue.queueFamilyIndex));
-			const Unique<VkCommandBuffer>	cmdBuffer	(allocateCommandBuffer(vk, getDevice(), *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+				const Unique<VkCommandPool>		cmdPool		(makeCommandPool(vk, getDevice(), m_universalQueue.queueFamilyIndex));
+				const Unique<VkCommandBuffer>	cmdBuffer	(allocateCommandBuffer(vk, getDevice(), *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-			beginCommandBuffer	(vk, *cmdBuffer);
-			vk.cmdCopyBuffer	(*cmdBuffer, *m_stagingBuffer, *m_sparseBuffer, DE_LENGTH_OF_ARRAY(copyRegions), copyRegions);
-			endCommandBuffer	(vk, *cmdBuffer);
+				beginCommandBuffer	(vk, *cmdBuffer);
+				vk.cmdCopyBuffer	(*cmdBuffer, *m_stagingBuffer, *m_sparseBuffer, DE_LENGTH_OF_ARRAY(copyRegions), copyRegions);
+				endCommandBuffer	(vk, *cmdBuffer);
 
-			submitCommandsAndWait(vk, getDevice(), m_universalQueue.queueHandle, *cmdBuffer);
+				submitCommandsAndWait(vk, getDevice(), m_universalQueue.queueHandle, *cmdBuffer, 0u, DE_NULL, DE_NULL, 0, DE_NULL, usingDeviceGroups(), firstDeviceID);
+			}
+
+
+			Renderer::SpecializationMap	specMap;
+			draw(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, DE_NULL, specMap, usingDeviceGroups(), firstDeviceID);
+
+			if(!isResultImageCorrect())
+				return tcu::TestStatus::fail("Some buffer values were incorrect");
 		}
-
-		draw(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-
-		return verifyDrawResult();
+		return tcu::TestStatus::pass("Pass");
 	}
 
 protected:
@@ -1523,23 +1561,28 @@ void populateTestGroup (tcu::TestCaseGroup* parentGroup)
 		TestFlags		flags;
 	} groups[] =
 	{
-		{ "sparse_binding",							0u														},
-		{ "sparse_binding_aliased",					TEST_FLAG_ALIASED,										},
-		{ "sparse_residency",						TEST_FLAG_RESIDENCY,									},
-		{ "sparse_residency_aliased",				TEST_FLAG_RESIDENCY | TEST_FLAG_ALIASED,				},
-		{ "sparse_residency_non_resident_strict",	TEST_FLAG_RESIDENCY | TEST_FLAG_NON_RESIDENT_STRICT,	},
+		{ "sparse_binding",										0u,													},
+		{ "sparse_binding_aliased",								TEST_FLAG_ALIASED,									},
+		{ "sparse_residency",									TEST_FLAG_RESIDENCY,								},
+		{ "sparse_residency_aliased",							TEST_FLAG_RESIDENCY | TEST_FLAG_ALIASED,			},
+		{ "sparse_residency_non_resident_strict",				TEST_FLAG_RESIDENCY | TEST_FLAG_NON_RESIDENT_STRICT,},
 	};
 
 	const int numGroupsIncludingNonResidentStrict	= DE_LENGTH_OF_ARRAY(groups);
 	const int numGroupsDefaultList					= numGroupsIncludingNonResidentStrict - 1;
+	std::string devGroupPrefix						= "device_group_";
 
 	// Transfer
 	{
 		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "transfer", ""));
 		{
 			MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(parentGroup->getTestContext(), "sparse_binding", ""));
-			addBufferSparseBindingTests(subGroup.get());
+			addBufferSparseBindingTests(subGroup.get(), false);
 			group->addChild(subGroup.release());
+
+			MovePtr<tcu::TestCaseGroup> subGroupDeviceGroups(new tcu::TestCaseGroup(parentGroup->getTestContext(), "device_group_sparse_binding", ""));
+			addBufferSparseBindingTests(subGroupDeviceGroups.get(), true);
+			group->addChild(subGroupDeviceGroups.release());
 		}
 		parentGroup->addChild(group.release());
 	}
@@ -1549,13 +1592,21 @@ void populateTestGroup (tcu::TestCaseGroup* parentGroup)
 		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "ssbo", ""));
 		{
 			MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(parentGroup->getTestContext(), "sparse_binding_aliased", ""));
-			addBufferSparseMemoryAliasingTests(subGroup.get());
+			addBufferSparseMemoryAliasingTests(subGroup.get(), false);
 			group->addChild(subGroup.release());
+
+			MovePtr<tcu::TestCaseGroup> subGroupDeviceGroups(new tcu::TestCaseGroup(parentGroup->getTestContext(), "device_group_sparse_binding_aliased", ""));
+			addBufferSparseMemoryAliasingTests(subGroupDeviceGroups.get(), true);
+			group->addChild(subGroupDeviceGroups.release());
 		}
 		{
 			MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(parentGroup->getTestContext(), "sparse_residency", ""));
-			addBufferSparseResidencyTests(subGroup.get());
+			addBufferSparseResidencyTests(subGroup.get(), false);
 			group->addChild(subGroup.release());
+
+			MovePtr<tcu::TestCaseGroup> subGroupDeviceGroups(new tcu::TestCaseGroup(parentGroup->getTestContext(), "device_group_sparse_residency", ""));
+			addBufferSparseResidencyTests(subGroupDeviceGroups.get(), true);
+			group->addChild(subGroupDeviceGroups.release());
 		}
 		parentGroup->addChild(group.release());
 	}
@@ -1565,8 +1616,13 @@ void populateTestGroup (tcu::TestCaseGroup* parentGroup)
 		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "ubo", ""));
 
 		for (int groupNdx = 0u; groupNdx < numGroupsIncludingNonResidentStrict; ++groupNdx)
+		{
 			group->addChild(createTestInstanceWithPrograms<UBOTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(), "", initProgramsDrawWithUBO, groups[groupNdx].flags));
-
+		}
+		for (int groupNdx = 0u; groupNdx < numGroupsIncludingNonResidentStrict; ++groupNdx)
+		{
+			group->addChild(createTestInstanceWithPrograms<UBOTestInstance>(group->getTestContext(), (devGroupPrefix + groups[groupNdx].name).c_str(), "", initProgramsDrawWithUBO, groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
+		}
 		parentGroup->addChild(group.release());
 	}
 
@@ -1575,7 +1631,13 @@ void populateTestGroup (tcu::TestCaseGroup* parentGroup)
 		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "vertex_buffer", ""));
 
 		for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
+		{
 			group->addChild(createTestInstanceWithPrograms<VertexBufferTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(), "", initProgramsDrawGrid, groups[groupNdx].flags));
+		}
+		for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
+		{
+			group->addChild(createTestInstanceWithPrograms<VertexBufferTestInstance>(group->getTestContext(), (devGroupPrefix + groups[groupNdx].name).c_str(), "", initProgramsDrawGrid, groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
+		}
 
 		parentGroup->addChild(group.release());
 	}
@@ -1585,7 +1647,13 @@ void populateTestGroup (tcu::TestCaseGroup* parentGroup)
 		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "index_buffer", ""));
 
 		for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
+		{
 			group->addChild(createTestInstanceWithPrograms<IndexBufferTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(), "", initProgramsDrawGrid, groups[groupNdx].flags));
+		}
+		for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
+		{
+			group->addChild(createTestInstanceWithPrograms<IndexBufferTestInstance>(group->getTestContext(), (devGroupPrefix + groups[groupNdx].name).c_str(), "", initProgramsDrawGrid, groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
+		}
 
 		parentGroup->addChild(group.release());
 	}
@@ -1595,7 +1663,13 @@ void populateTestGroup (tcu::TestCaseGroup* parentGroup)
 		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "indirect_buffer", ""));
 
 		for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
+		{
 			group->addChild(createTestInstanceWithPrograms<IndirectBufferTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(), "", initProgramsDrawGrid, groups[groupNdx].flags));
+		}
+		for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
+		{
+			group->addChild(createTestInstanceWithPrograms<IndirectBufferTestInstance>(group->getTestContext(), (devGroupPrefix +  groups[groupNdx].name).c_str(), "", initProgramsDrawGrid, groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
+		}
 
 		parentGroup->addChild(group.release());
 	}
