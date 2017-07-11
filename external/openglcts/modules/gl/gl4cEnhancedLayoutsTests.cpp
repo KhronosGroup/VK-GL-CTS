@@ -22752,31 +22752,26 @@ void XFBOverrideQualifiersWithAPITest::getBufferDescriptors(glw::GLuint				  tes
 	const std::vector<GLubyte>& vegeta_data = type.GenerateData();
 	const std::vector<GLubyte>& trunks_data = type.GenerateData();
 	const std::vector<GLubyte>& goku_data   = type.GenerateData();
-	const std::vector<GLubyte>& gohan_data  = type.GenerateData();
 
 	Utils::s_rand								= gen_start;
 	const std::vector<GLubyte>& vegeta_data_pck = type.GenerateDataPacked();
-	/*
-	 The xfb varying goku is -0.375, it is expected to equal to xfb.m_expected_data[0], xfb.m_expected_data[0] is assigned from goku_data_pck(-0.5)
-	 how can make them equal ? is it as designed?  Add the following statement,  which can make sure goku_data_pck equals to goku_data
-	 */
+	type.GenerateDataPacked(); // generate the data for trunks
 	const std::vector<GLubyte>& goku_data_pck = type.GenerateDataPacked();
 
 	const GLuint type_size	 = static_cast<GLuint>(vegeta_data.size());
 	const GLuint type_size_pck = static_cast<GLuint>(vegeta_data_pck.size());
 
 	/* Uniform data */
-	uniform.m_initial_data.resize(4 * type_size);
+	uniform.m_initial_data.resize(3 * type_size);
 	memcpy(&uniform.m_initial_data[0] + 0, &vegeta_data[0], type_size);
 	memcpy(&uniform.m_initial_data[0] + type_size, &trunks_data[0], type_size);
 	memcpy(&uniform.m_initial_data[0] + 2 * type_size, &goku_data[0], type_size);
-	memcpy(&uniform.m_initial_data[0] + 3 * type_size, &gohan_data[0], type_size);
 
 	/* XFB data */
-	xfb.m_initial_data.resize(4 * type_size_pck);
-	xfb.m_expected_data.resize(4 * type_size_pck);
+	xfb.m_initial_data.resize(3 * type_size_pck);
+	xfb.m_expected_data.resize(3 * type_size_pck);
 
-	for (GLuint i = 0; i < 4 * type_size_pck; ++i)
+	for (GLuint i = 0; i < 3 * type_size_pck; ++i)
 	{
 		xfb.m_initial_data[i]  = (glw::GLubyte)i;
 		xfb.m_expected_data[i] = (glw::GLubyte)i;
@@ -22794,10 +22789,9 @@ void XFBOverrideQualifiersWithAPITest::getBufferDescriptors(glw::GLuint				  tes
 void XFBOverrideQualifiersWithAPITest::getCapturedVaryings(glw::GLuint /* test_case_index */,
 														   Utils::Program::NameVector& captured_varyings)
 {
-	captured_varyings.resize(2);
+	captured_varyings.resize(1);
 
 	captured_varyings[0] = "trunks";
-	captured_varyings[1] = "gohan";
 }
 
 /** Get body of main function for given shader stage
@@ -22814,10 +22808,9 @@ void XFBOverrideQualifiersWithAPITest::getShaderBody(GLuint test_case_index, Uti
 
 	static const GLchar* gs = "    vegeta = uni_vegeta;\n"
 							  "    trunks = uni_trunks;\n"
-							  "    goku   = uni_goku;\n"
-							  "    gohan  = uni_gohan;\n";
+							  "    goku   = uni_goku;\n";
 	static const GLchar* fs = "    fs_out = vec4(0);\n"
-							  "    if (TYPE(1) == gohan + goku + trunks + vegeta)\n"
+							  "    if (TYPE(1) == goku + trunks + vegeta)\n"
 							  "    {\n"
 							  "        fs_out = vec4(1);\n"
 							  "    }\n";
@@ -22859,7 +22852,6 @@ void XFBOverrideQualifiersWithAPITest::getShaderInterface(GLuint test_case_index
 							  "layout (xfb_offset = 2 * sizeof_type) flat out TYPE vegeta;\n"
 							  "                                      flat out TYPE trunks;\n"
 							  "layout (xfb_offset = 0)               flat out TYPE goku;\n"
-							  "                                      flat out TYPE gohan;\n"
 							  "\n"
 							  /*
 		 There is no packing qualifier for uniform block gs_block, according to spec, it should be "shared" by default,
@@ -22874,12 +22866,10 @@ void XFBOverrideQualifiersWithAPITest::getShaderInterface(GLuint test_case_index
 							  "    TYPE uni_vegeta;\n"
 							  "    TYPE uni_trunks;\n"
 							  "    TYPE uni_goku;\n"
-							  "    TYPE uni_gohan;\n"
 							  "};\n";
 	static const GLchar* fs = "flat in TYPE vegeta;\n"
 							  "flat in TYPE trunks;\n"
 							  "flat in TYPE goku;\n"
-							  "flat in TYPE gohan;\n"
 							  "\n"
 							  "out vec4 fs_out;\n";
 
@@ -22945,7 +22935,7 @@ bool XFBOverrideQualifiersWithAPITest::inspectProgram(GLuint test_case_index, Ut
 {
 	GLint			   stride	= 0;
 	const Utils::Type& type		 = getType(test_case_index);
-	const GLuint	   type_size = type.GetSize();
+	const GLuint	   type_size = type.GetSize(false);
 
 	program.GetResource(GL_TRANSFORM_FEEDBACK_BUFFER, 0 /* index */, GL_TRANSFORM_FEEDBACK_BUFFER_STRIDE,
 						1 /* buf_size */, &stride);
