@@ -6431,7 +6431,7 @@ std::string TextureTestBase::getVerificationSnippet(GLuint /* test_case_index */
 	for (GLuint i = 0; i < si.m_inputs.size(); ++i)
 	{
 		const Utils::Variable& var				= *si.m_inputs[i];
-		const std::string&	 var_verification = getVariableVerifcation("", var.m_data, var.m_descriptor, in_flavour);
+		const std::string&	 var_verification = getVariableVerification("", var.m_data, var.m_descriptor, in_flavour);
 
 		Utils::insertElementOfList(var_verification.c_str(), separator, position, verification);
 	}
@@ -6441,7 +6441,7 @@ std::string TextureTestBase::getVerificationSnippet(GLuint /* test_case_index */
 	{
 		const Utils::Variable& var = *si.m_uniforms[i];
 		const std::string&	 var_verification =
-			getVariableVerifcation("", var.m_data, var.m_descriptor, Utils::Variable::BASIC);
+			getVariableVerification("", var.m_data, var.m_descriptor, Utils::Variable::BASIC);
 
 		Utils::insertElementOfList(var_verification.c_str(), separator, position, verification);
 	}
@@ -6451,7 +6451,7 @@ std::string TextureTestBase::getVerificationSnippet(GLuint /* test_case_index */
 	{
 		const Utils::Variable& var = *si.m_ssb_blocks[i];
 		const std::string&	 var_verification =
-			getVariableVerifcation("", var.m_data, var.m_descriptor, Utils::Variable::BASIC);
+			getVariableVerification("", var.m_data, var.m_descriptor, Utils::Variable::BASIC);
 
 		Utils::insertElementOfList(var_verification.c_str(), separator, position, verification);
 	}
@@ -6602,9 +6602,9 @@ std::string TextureTestBase::getVariablePassthrough(const std::string&				   in_
  *
  * @return Code that does (EXPECTED != VALUE) ||
  **/
-std::string TextureTestBase::getVariableVerifcation(const std::string& parent_name, const GLvoid* data,
-													const Utils::Variable::Descriptor& variable,
-													Utils::Variable::FLAVOUR		   flavour)
+std::string TextureTestBase::getVariableVerification(const std::string& parent_name, const GLvoid* data,
+													 const Utils::Variable::Descriptor& variable,
+													 Utils::Variable::FLAVOUR			flavour)
 {
 	static const GLchar* logic_op   = " ||\n        ";
 	const GLuint		 n_elements = (0 == variable.m_n_array_elements) ? 1 : variable.m_n_array_elements;
@@ -6652,7 +6652,7 @@ std::string TextureTestBase::getVariableVerifcation(const std::string& parent_na
 
 				/* Get verification of member */
 				const std::string& verification =
-					getVariableVerifcation(name, (GLubyte*)data_ptr + member.m_offset, member, Utils::Variable::BASIC);
+					getVariableVerification(name, (GLubyte*)data_ptr + member.m_offset, member, Utils::Variable::BASIC);
 
 				Utils::insertElementOfList(verification.c_str(), logic_op, position, result);
 			}
