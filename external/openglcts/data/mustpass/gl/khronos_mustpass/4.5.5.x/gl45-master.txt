@@ -4547,6 +4547,7 @@ KHR-GL45.texture_cube_map_array.texture_size_tesselation_con_sh
 KHR-GL45.texture_cube_map_array.texture_size_tesselation_ev_sh
 KHR-GL45.texture_cube_map_array.texture_size_fragment_sh
 KHR-GL45.texture_cube_map_array.texture_size_compute_sh
+KHR-GL45.texture_cube_map_array.etc2_texture
 KHR-GL45.texture_border_clamp.border_color_errors
 KHR-GL45.texture_border_clamp.texparameteri_errors
 KHR-GL45.texture_border_clamp.gettexparameteri_errors

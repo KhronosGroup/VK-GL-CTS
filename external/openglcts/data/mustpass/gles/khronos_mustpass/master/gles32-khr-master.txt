@@ -250,6 +250,7 @@ KHR-GLES32.core.texture_cube_map_array.texture_size_tesselation_con_sh
 KHR-GLES32.core.texture_cube_map_array.texture_size_tesselation_ev_sh
 KHR-GLES32.core.texture_cube_map_array.texture_size_fragment_sh
 KHR-GLES32.core.texture_cube_map_array.texture_size_compute_sh
+KHR-GLES32.core.texture_cube_map_array.etc2_texture
 KHR-GLES32.core.texture_border_clamp.border_color_errors
 KHR-GLES32.core.texture_border_clamp.texparameteri_errors
 KHR-GLES32.core.texture_border_clamp.gettexparameteri_errors
