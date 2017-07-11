@@ -520,14 +520,23 @@ GLuint Type::GetLocations() const
 	return n_loc_per_column * m_n_columns;
 }
 
-/** Get size of the type in bytes. Note that this routine assumes tightly packing
+/** Get size of the type in bytes.
+ * Note that this routine doesn't consider arrays and assumes
+ * column_major matrices.
  *
- * @return Formula Number of columns * number of rows * sizeof(base_type)
+ * @return Formula:
+ *          - If std140 packaging and matrix; number of columns * base alignment
+ *          - Otherwise; number of elements * sizeof(base_type)
  **/
-GLuint Type::GetSize() const
+GLuint Type::GetSize(const bool is_std140) const
 {
 	const GLuint basic_type_size = GetTypeSize(m_basic_type);
 	const GLuint n_elements		 = m_n_columns * m_n_rows;
+
+	if (is_std140 && m_n_columns > 1)
+	{
+		return m_n_columns * GetBaseAlignment(false);
+	}
 
 	return basic_type_size * n_elements;
 }
@@ -9290,6 +9299,21 @@ GLuint UniformBlockMemberInvalidOffsetAlignmentTest::getTestCaseNumber()
 	return static_cast<GLuint>(m_test_cases.size());
 }
 
+/** Get the maximum size for an uniform block
+ *
+ * @return The maximum size in basic machine units of a uniform block.
+ **/
+GLint UniformBlockMemberInvalidOffsetAlignmentTest::getMaxBlockSize()
+{
+	const Functions& gl		  = m_context.getRenderContext().getFunctions();
+	GLint			 max_size = 0;
+
+	gl.getIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &max_size);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+	return max_size;
+}
+
 /** Selects if "compute" stage is relevant for test
  *
  * @param test_case_index Index of test case
@@ -9328,25 +9352,20 @@ bool UniformBlockMemberInvalidOffsetAlignmentTest::isStageSupported(Utils::Shade
  **/
 void UniformBlockMemberInvalidOffsetAlignmentTest::testInit()
 {
-	const Functions& gl		  = m_context.getRenderContext().getFunctions();
-	GLint			 max_size = 0;
-	const GLuint	 n_types  = getTypesNumber();
-	bool			 stage_support[Utils::Shader::STAGE_MAX];
+	const GLuint n_types = getTypesNumber();
+	bool		 stage_support[Utils::Shader::STAGE_MAX];
 
 	for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 	{
 		stage_support[stage] = isStageSupported((Utils::Shader::STAGES)stage);
 	}
 
-	gl.getIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &max_size);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
-
 	for (GLuint i = 0; i < n_types; ++i)
 	{
 		const Utils::Type& type		  = getType(i);
 		const GLuint	   alignment  = type.GetBaseAlignment(false);
-		const GLuint	   type_size  = type.GetSize();
-		const GLuint	   sec_to_end = max_size - 2 * type_size;
+		const GLuint	   type_size  = type.GetSize(true);
+		const GLuint	   sec_to_end = getMaxBlockSize() - 2 * type_size;
 
 		for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 		{
@@ -10988,6 +11007,21 @@ SSBMemberInvalidOffsetAlignmentTest::SSBMemberInvalidOffsetAlignmentTest(deqp::C
 		  "Test verifies that invalid alignment of offset qualifiers cause compilation failure")
 {
 	/* Nothing to be done here */
+}
+
+/** Get the maximum size for a shader storage block
+ *
+ * @return The maximum size in basic machine units of a shader storage block.
+ **/
+GLint SSBMemberInvalidOffsetAlignmentTest::getMaxBlockSize()
+{
+	const Functions& gl		  = m_context.getRenderContext().getFunctions();
+	GLint			 max_size = 0;
+
+	gl.getIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE, &max_size);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+	return max_size;
 }
 
 /** Source for given test case and stage
@@ -16555,10 +16589,6 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 									"    {\n"
 									"        result += vec4(1, 0.5, 0.25, 0.125);\n"
 									"    }\n";
-	static const GLchar* test_both = "    if (TYPE(0) == gohanINDEX)\n"
-									 "    {\n"
-									 "        result = vec4(goten.xxxx);\n"
-									 "    }\n";
 	static const GLchar* fs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
@@ -16767,11 +16797,6 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 		const GLchar* type_name = test_case.m_type.GetGLSLTypeName();
 		const GLchar* var_use   = test_one;
 
-		if (true == test_case.m_use_both)
-		{
-			var_use = test_both;
-		}
-
 		if (true == is_flat_req)
 		{
 			flat = "flat";
@@ -16895,7 +16920,7 @@ bool InputComponentAliasingTest::isFailureExpected(GLuint test_case_index)
 {
 	testCase& test_case = m_test_cases[test_case_index];
 
-	return !((Utils::Shader::VERTEX == test_case.m_stage) && (false == test_case.m_use_both));
+	return (Utils::Shader::VERTEX != test_case.m_stage);
 }
 
 /** Prepare all test cases
@@ -16903,17 +16928,23 @@ bool InputComponentAliasingTest::isFailureExpected(GLuint test_case_index)
  **/
 void InputComponentAliasingTest::testInit()
 {
-	static const GLuint n_components_per_location = 4;
 	const GLuint		n_types					  = getTypesNumber();
 
 	for (GLuint i = 0; i < n_types; ++i)
 	{
-		const Utils::Type& type				= getType(i);
-		const GLuint	   n_req_components = type.m_n_rows;
-		const GLuint	   valid_component  = n_components_per_location - n_req_components;
-
+		const Utils::Type& type						 = getType(i);
+		const bool		   use_double				 = (Utils::Type::Double == type.m_basic_type);
+		const GLuint	   n_components_per_location = use_double ? 2 : 4;
+		const GLuint	   n_req_components			 = type.m_n_rows;
+		const GLint		   valid_component			 = (GLint)n_components_per_location - (GLint)n_req_components;
+		const GLuint	   component_size			 = use_double ? 2 : 1;
 		/* Skip matrices */
 		if (1 != type.m_n_columns)
+		{
+			continue;
+		}
+		/* Skip dvec3/dvec4 which doesn't support the component qualifier */
+		if (valid_component < 0)
 		{
 			continue;
 		}
@@ -16925,26 +16956,20 @@ void InputComponentAliasingTest::testInit()
 				continue;
 			}
 
-			for (GLuint gohan = 0; gohan <= valid_component; ++gohan)
+			for (GLuint gohan = 0; gohan <= (GLuint)valid_component; ++gohan)
 			{
 				const GLint first_aliasing = gohan - n_req_components + 1;
 				const GLint last_aliasing  = gohan + n_req_components - 1;
 
 				const GLuint goten_start = std::max(0, first_aliasing);
-				const GLuint goten_stop  = std::min((GLint)valid_component, last_aliasing);
+				const GLuint goten_stop  = std::min(valid_component, last_aliasing);
 
 				for (GLuint goten = goten_start; goten <= goten_stop; ++goten)
 				{
-					testCase test_case = { gohan, goten, (Utils::Shader::STAGES)stage, type, false };
+					testCase test_case = { gohan * component_size, goten * component_size, (Utils::Shader::STAGES)stage,
+										   type };
 
 					m_test_cases.push_back(test_case);
-
-					if (Utils::Shader::VERTEX == test_case.m_stage)
-					{
-						test_case.m_use_both = true;
-
-						m_test_cases.push_back(test_case);
-					}
 				}
 			}
 		}
@@ -19322,16 +19347,18 @@ void FragmentDataLocationAPITest::prepareFramebuffer(Utils::Framebuffer& framebu
 
 	/* Set up drawbuffers */
 	const Functions& gl = m_context.getRenderContext().getFunctions();
-	//  1. There are only 4 outputs in fragment shader, so only need to do buffer mapping for 4 attachments,
-	//  2. another issue is each output variable has a location, it is the fragment color index, so the index of
-	//  GL_COLOR_ATTACHMENT in glDrawBuffers() should keep the same with the location, to make test correct,
-	//  we needt to change the above code of glDrawBuffers() as :
-	GLint  buffers_size = 4;
-	GLenum buffers[]	= { GLenum(GL_COLOR_ATTACHMENT0 + m_chichi_location),
-						 GLenum(GL_COLOR_ATTACHMENT0 + m_goku_location),
-						 GLenum(GL_COLOR_ATTACHMENT0 + m_goten_location),
-						 GLenum(GL_COLOR_ATTACHMENT0 + m_gohan_location) };
-	gl.drawBuffers(buffers_size, buffers);
+	// The fragment shader can have more than 4 color outputs, but it only care about 4 (goku, gohan, goten, chichi).
+	// We will first initialize all draw buffers to NONE and then set the real value for the 4 outputs we care about
+	GLint maxDrawBuffers = 0;
+	gl.getIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
+
+	std::vector<GLenum> buffers(maxDrawBuffers, GL_NONE);
+	buffers[m_chichi_location] = GLenum(GL_COLOR_ATTACHMENT0 + m_chichi_location);
+	buffers[m_goten_location]  = GLenum(GL_COLOR_ATTACHMENT0 + m_goten_location);
+	buffers[m_goku_location]   = GLenum(GL_COLOR_ATTACHMENT0 + m_goku_location);
+	buffers[m_gohan_location]  = GLenum(GL_COLOR_ATTACHMENT0 + m_gohan_location);
+
+	gl.drawBuffers(maxDrawBuffers, buffers.data());
 	GLU_EXPECT_NO_ERROR(gl.getError(), "DrawBuffers");
 }
 
@@ -24122,12 +24149,12 @@ std::string XFBGlobalBufferTest::getShaderSource(GLuint test_case_index, Utils::
 		"flat in TYPE chichi;\n"
 		"flat in TYPE bulma;\n"
 		"in Vegeta {\n"
-		"    TYPE trunk;\n"
-		"    TYPE bra;\n"
+		"    flat TYPE trunk;\n"
+		"    flat TYPE bra;\n"
 		"} vegeta;\n"
 		"in Goku {\n"
-		"    TYPE gohan;\n"
-		"    TYPE goten;\n"
+		"    flat TYPE gohan;\n"
+		"    flat TYPE goten;\n"
 		"} goku;\n"
 		"\n"
 		"out vec4 fs_out;\n"
@@ -24226,12 +24253,12 @@ std::string XFBGlobalBufferTest::getShaderSource(GLuint test_case_index, Utils::
 								"layout (                xfb_offset = 2 * type_size) flat out TYPE chichi;\n"
 								"layout (xfb_buffer = 1, xfb_offset = 0)             flat out TYPE bulma;\n"
 								"layout (xfb_buffer = 1, xfb_offset = 1 * type_size) out Vegeta {\n"
-								"    TYPE trunk;\n"
-								"    TYPE bra;\n"
+								"    flat TYPE trunk;\n"
+								"    flat TYPE bra;\n"
 								"} vegeta;\n"
 								"layout (                xfb_offset = 0)             out Goku {\n"
-								"    TYPE gohan;\n"
-								"    TYPE goten;\n"
+								"    flat TYPE gohan;\n"
+								"    flat TYPE goten;\n"
 								"} goku;\n"
 								"\n"
 								// Uniform block must be declared with std140, otherwise each block member is not packed

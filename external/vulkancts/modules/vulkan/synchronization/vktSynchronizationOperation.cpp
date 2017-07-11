@@ -560,9 +560,11 @@ public:
 
 	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
-		if (std::find(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1") == context.getDeviceExtensions().end() ||
-			BUFFER_OP_UPDATE != m_bufferOp)
+		if (m_bufferOp == BUFFER_OP_FILL &&
+			!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1"))
+		{
 			return VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT;
+		}
 
 		return VK_QUEUE_TRANSFER_BIT;
 	}
@@ -3288,10 +3290,13 @@ public:
 
 		vk.cmdDraw(cmdBuffer, static_cast<deUint32>(dataSizeBytes / sizeof(tcu::UVec4)), 1u, 0u, 0u);
 
-		const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_outputBuffer, 0u, m_resource.getBuffer().size);
-		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
-
 		endRenderPass(vk, cmdBuffer);
+
+		// Insert a barrier so data written by the shader is available to the host
+		{
+			const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_outputBuffer, 0u, m_resource.getBuffer().size);
+			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+		}
 	}
 
 	SyncInfo getSyncInfo (void) const

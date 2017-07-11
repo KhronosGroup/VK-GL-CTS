@@ -49,6 +49,7 @@ namespace gl4cts
 {
 namespace DirectStateAccess
 {
+
 /** @brief Direct State Access Tests Group constructor.
  *
  *  @param [in] context     OpenGL context.
@@ -157,7 +158,44 @@ void Tests::init()
 
 	/* Direct State Access of Tetxure Objects */
 	addChild(new Textures::CreationTest(m_context));
-	addChild(new Textures::BufferTest(m_context));
+
+	addChild(new Textures::BufferTest<glw::GLbyte, 1, false>(m_context, "textures_buffer_r8i"));
+	addChild(new Textures::BufferTest<glw::GLbyte, 2, false>(m_context, "textures_buffer_rg8i"));
+	addChild(new Textures::BufferTest<glw::GLbyte, 4, false>(m_context, "textures_buffer_rgba8i"));
+
+	addChild(new Textures::BufferTest<glw::GLubyte, 1, false>(m_context, "textures_buffer_r8ui"));
+	addChild(new Textures::BufferTest<glw::GLubyte, 2, false>(m_context, "textures_buffer_rg8ui"));
+	addChild(new Textures::BufferTest<glw::GLubyte, 4, false>(m_context, "textures_buffer_rgba8ui"));
+	addChild(new Textures::BufferTest<glw::GLubyte, 1, true>(m_context, "textures_buffer_r8ui_unorm"));
+	addChild(new Textures::BufferTest<glw::GLubyte, 2, true>(m_context, "textures_buffer_rg8ui_unorm"));
+	addChild(new Textures::BufferTest<glw::GLubyte, 4, true>(m_context, "textures_buffer_rgba8ui_unorm"));
+
+	addChild(new Textures::BufferTest<glw::GLshort, 1, false>(m_context, "textures_buffer_r16i"));
+	addChild(new Textures::BufferTest<glw::GLshort, 2, false>(m_context, "textures_buffer_rg16i"));
+	addChild(new Textures::BufferTest<glw::GLshort, 4, false>(m_context, "textures_buffer_rgba16i"));
+
+	addChild(new Textures::BufferTest<glw::GLushort, 1, false>(m_context, "textures_buffer_r16ui"));
+	addChild(new Textures::BufferTest<glw::GLushort, 2, false>(m_context, "textures_buffer_rg16ui"));
+	addChild(new Textures::BufferTest<glw::GLushort, 4, false>(m_context, "textures_buffer_rgba16ui"));
+	addChild(new Textures::BufferTest<glw::GLushort, 1, true>(m_context, "textures_buffer_r16ui_unorm"));
+	addChild(new Textures::BufferTest<glw::GLushort, 2, true>(m_context, "textures_buffer_rg16ui_unorm"));
+	addChild(new Textures::BufferTest<glw::GLushort, 4, true>(m_context, "textures_buffer_rgba16ui_unorm"));
+
+	addChild(new Textures::BufferTest<glw::GLint, 1, false>(m_context, "textures_buffer_r32i"));
+	addChild(new Textures::BufferTest<glw::GLint, 2, false>(m_context, "textures_buffer_rg32i"));
+	addChild(new Textures::BufferTest<glw::GLint, 3, false>(m_context, "textures_buffer_rgb32i"));
+	addChild(new Textures::BufferTest<glw::GLint, 4, false>(m_context, "textures_buffer_rgba32i"));
+
+	addChild(new Textures::BufferTest<glw::GLuint, 1, false>(m_context, "textures_buffer_r32ui"));
+	addChild(new Textures::BufferTest<glw::GLuint, 2, false>(m_context, "textures_buffer_rg32ui"));
+	addChild(new Textures::BufferTest<glw::GLuint, 3, false>(m_context, "textures_buffer_rgb32ui"));
+	addChild(new Textures::BufferTest<glw::GLuint, 4, false>(m_context, "textures_buffer_rgba32ui"));
+
+	addChild(new Textures::BufferTest<glw::GLfloat, 1, true>(m_context, "textures_buffer_r32f"));
+	addChild(new Textures::BufferTest<glw::GLfloat, 2, true>(m_context, "textures_buffer_rg32f"));
+	addChild(new Textures::BufferTest<glw::GLfloat, 3, true>(m_context, "textures_buffer_rgb32f"));
+	addChild(new Textures::BufferTest<glw::GLfloat, 4, true>(m_context, "textures_buffer_rgba32f"));
+
 	addChild(new Textures::StorageAndSubImageTest(m_context));
 	addChild(new Textures::StorageMultisampleTest(m_context));
 	addChild(new Textures::CompressedSubImageTest(m_context));

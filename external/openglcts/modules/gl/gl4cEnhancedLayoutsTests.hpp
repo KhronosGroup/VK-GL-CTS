@@ -66,9 +66,9 @@ public:
 	std::string GetGLSLConstructor(const glw::GLvoid* data) const;
 	const glw::GLchar* GetGLSLTypeName() const;
 	glw::GLuint		   GetLocations() const;
-	glw::GLuint		   GetSize() const;
-	glw::GLenum		   GetTypeGLenum() const;
-	glw::GLuint		   GetNumComponents() const;
+	glw::GLuint GetSize(const bool is_std140 = false) const;
+	glw::GLenum GetTypeGLenum() const;
+	glw::GLuint GetNumComponents() const;
 
 	/* Public static routines */
 	/* Functionality */
@@ -1610,6 +1610,7 @@ protected:
 
 	virtual std::string getTestCaseName(glw::GLuint test_case_index);
 	virtual glw::GLuint getTestCaseNumber();
+	virtual glw::GLint  getMaxBlockSize();
 	virtual bool isComputeRelevant(glw::GLuint test_case_index);
 	virtual bool isFailureExpected(glw::GLuint test_case_index);
 	virtual bool isStageSupported(Utils::Shader::STAGES stage);
@@ -1902,8 +1903,9 @@ private:
  *
  * Test verifies that offset alignment rules are enforced.
  *
- * Modify UniformBlockMemberInvalidOffsetAlignment to test shader storage block
- * instead of uniform block
+ * Modify UniformBlockMemberInvalidOffsetAlignment to test shader
+ * storage block against MAX_SHADER_STORAGE_BLOCK_SIZE instead of
+ * uniform block
  **/
 class SSBMemberInvalidOffsetAlignmentTest : public UniformBlockMemberInvalidOffsetAlignmentTest
 {
@@ -1917,6 +1919,7 @@ public:
 
 protected:
 	/* Methods to be implemented by child class */
+	virtual glw::GLint  getMaxBlockSize();
 	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
 	virtual bool isStageSupported(Utils::Shader::STAGES stage);
@@ -2914,7 +2917,6 @@ private:
 		glw::GLuint			  m_component_goten;
 		Utils::Shader::STAGES m_stage;
 		Utils::Type			  m_type;
-		bool				  m_use_both;
 	};
 
 	/* Private fields */

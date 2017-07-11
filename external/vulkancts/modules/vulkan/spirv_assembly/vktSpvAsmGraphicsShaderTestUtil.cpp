@@ -2260,6 +2260,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	vector<ModuleHandleSp>						modules;
 	map<VkShaderStageFlagBits, VkShaderModule>	moduleByStage;
 
+
 	de::Random(seed).shuffle(instance.inputColors, instance.inputColors+4);
 	de::Random(seed).shuffle(instance.outputColors, instance.outputColors+4);
 	const Vec4								vertexData[]			=

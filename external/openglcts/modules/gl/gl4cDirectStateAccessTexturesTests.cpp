@@ -723,10 +723,16 @@ bool Reference::Compare(const T a, const T b)
 
 /** @brief Buffer Test constructor.
  *
+ *  @tparam T      Type.
+ *  @tparam S      Size.
+ *  @tparam N      Is normalized.
+ *
  *  @param [in] context     OpenGL context.
+ *  @param [in] name     Name of the test.
  */
-BufferTest::BufferTest(deqp::Context& context)
-	: deqp::TestCase(context, "textures_buffer", "Texture Buffer Objects Test")
+template <typename T, glw::GLint S, bool N>
+BufferTest<T, S, N>::BufferTest(deqp::Context& context, const char* name)
+	: deqp::TestCase(context, name, "Texture Buffer Objects Test")
 	, m_fbo(0)
 	, m_rbo(0)
 	, m_po(0)
@@ -739,102 +745,32 @@ BufferTest::BufferTest(deqp::Context& context)
 
 /** @brief Count of reference data to be teted.
  *
- *  @tparam S      Size (# of components).
- *
  *  @return Count.
  */
-template <glw::GLint S>
-glw::GLuint			 BufferTest::TestReferenceDataCount()
+template <typename T, glw::GLint S, bool N>
+glw::GLuint BufferTest<T, S, N>::TestReferenceDataCount()
 {
 	return s_fbo_size_x * S;
 }
 
 /** @brief Size of reference data to be teted..
  *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *
  *  @return Size.
  */
-template <typename T, glw::GLint S>
-glw::GLuint BufferTest::TestReferenceDataSize()
+template <typename T, glw::GLint S, bool N>
+glw::GLuint BufferTest<T, S, N>::TestReferenceDataSize()
 {
-	return static_cast<glw::GLint>(TestReferenceDataCount<S>() * sizeof(T));
-}
-
-/** @brief Fragment shader part selector.
- *
- *  @tparam T      Type.
- *  @tparam N      Is normalized.
- *
- *  @return Array of characters with source code.
- */
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLbyte, false>()
-{
-	return s_fragment_shader_idecl_lowp;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLubyte, false>()
-{
-	return s_fragment_shader_udecl_lowp;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLshort, false>()
-{
-	return s_fragment_shader_idecl_mediump;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLushort, false>()
-{
-	return s_fragment_shader_udecl_mediump;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLint, false>()
-{
-	return s_fragment_shader_idecl_highp;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLuint, false>()
-{
-	return s_fragment_shader_udecl_highp;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLubyte, true>()
-{
-	return s_fragment_shader_fdecl_lowp;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLushort, true>()
-{
-	return s_fragment_shader_fdecl_mediump;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLfloat, true>()
-{
-	return s_fragment_shader_fdecl_highp;
+	return static_cast<glw::GLint>(TestReferenceDataCount() * sizeof(T));
 }
 
 /** @brief Create buffer textuew.
  *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *  @tparam N      Is normalized.
- *
- *  @param [in] use_range)version       Uses TextureBufferRange instead TextureBuffer.
+ *  @param [in] use_range_version       Uses TextureBufferRange instead TextureBuffer.
  *
  *  @return True if succeded, false otherwise.
  */
 template <typename T, glw::GLint S, bool N>
-bool BufferTest::CreateBufferTexture(bool use_range_version)
+bool BufferTest<T, S, N>::CreateBufferTexture(bool use_range_version)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -861,19 +797,19 @@ bool BufferTest::CreateBufferTexture(bool use_range_version)
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv has failed");
 
 		const glw::GLuint b_offset = alignment;
-		const glw::GLuint b_size   = TestReferenceDataSize<T, S>() + b_offset;
+		const glw::GLuint b_size   = TestReferenceDataSize() + b_offset;
 
 		gl.bufferData(GL_TEXTURE_BUFFER, b_size, NULL, GL_STATIC_DRAW);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData has failed");
 
-		gl.bufferSubData(GL_TEXTURE_BUFFER, b_offset, TestReferenceDataSize<T, S>(), ReferenceData<T, N>());
+		gl.bufferSubData(GL_TEXTURE_BUFFER, b_offset, TestReferenceDataSize(), ReferenceData<T, N>());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferSubdata has failed");
 
-		gl.textureBufferRange(m_to, InternalFormat<T, S, N>(), m_bo, b_offset, TestReferenceDataSize<T, S>());
+		gl.textureBufferRange(m_to, InternalFormat<T, S, N>(), m_bo, b_offset, TestReferenceDataSize());
 	}
 	else
 	{
-		gl.bufferData(GL_TEXTURE_BUFFER, TestReferenceDataSize<T, S>(), ReferenceData<T, N>(), GL_STATIC_DRAW);
+		gl.bufferData(GL_TEXTURE_BUFFER, TestReferenceDataSize(), ReferenceData<T, N>(), GL_STATIC_DRAW);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBufferData has failed");
 
 		gl.textureBuffer(m_to, InternalFormat<T, S, N>(), m_bo);
@@ -905,7 +841,8 @@ bool BufferTest::CreateBufferTexture(bool use_range_version)
  *
  *  @return if the framebuffer returned is supported
  */
-bool BufferTest::PrepareFramebuffer(const glw::GLenum internal_format)
+template <typename T, glw::GLint S, bool N>
+bool BufferTest<T, S, N>::PrepareFramebuffer(const glw::GLenum internal_format)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -932,7 +869,7 @@ bool BufferTest::PrepareFramebuffer(const glw::GLenum internal_format)
 	if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_UNSUPPORTED)
-			return false;
+			throw tcu::NotSupportedError("unsupported framebuffer configuration");
 		else
 			throw 0;
 	}
@@ -954,7 +891,8 @@ bool BufferTest::PrepareFramebuffer(const glw::GLenum internal_format)
  *
  *  @param [in] variable_declaration    Choose variable declaration of the fragment shader.
  */
-void BufferTest::PrepareProgram(const glw::GLchar* variable_declaration)
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::PrepareProgram(const glw::GLchar* variable_declaration)
 {
 	/* Shortcut for GL functionality */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1105,7 +1043,8 @@ void BufferTest::PrepareProgram(const glw::GLchar* variable_declaration)
 
 /** @brief Create VAO.
  */
-void BufferTest::PrepareVertexArray()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::PrepareVertexArray()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1119,7 +1058,8 @@ void BufferTest::PrepareVertexArray()
 
 /** @brief Test's draw function.
  */
-void BufferTest::Draw()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::Draw()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1139,20 +1079,16 @@ void BufferTest::Draw()
 
 /** @brief Compre results with the reference.
  *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *  @tparam N      Is normalized.
- *
  *  @return True if equal, false otherwise.
  */
 template <typename T, glw::GLint S, bool N>
-bool BufferTest::Check()
+bool BufferTest<T, S, N>::Check()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	/* Fetching data. */
-	std::vector<T> result(TestReferenceDataCount<S>());
+	std::vector<T> result(TestReferenceDataCount());
 
 	gl.pixelStorei(GL_UNPACK_ALIGNMENT, sizeof(T));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glPixelStorei has failed");
@@ -1160,14 +1096,14 @@ bool BufferTest::Check()
 	gl.pixelStorei(GL_PACK_ALIGNMENT, sizeof(T));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glPixelStorei has failed");
 
-	gl.readnPixels(0, 0, s_fbo_size_x, s_fbo_size_y, Format<S, N>(), Type<T>(), TestReferenceDataSize<T, S>(),
+	gl.readnPixels(0, 0, s_fbo_size_x, s_fbo_size_y, Format<S, N>(), Type<T>(), TestReferenceDataSize(),
 				   (glw::GLvoid*)(&result[0]));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels has failed");
 
 	/* Comparison. */
 	bool is_ok = true;
 
-	for (glw::GLuint i = 0; i < TestReferenceDataCount<S>(); ++i)
+	for (glw::GLuint i = 0; i < TestReferenceDataCount(); ++i)
 	{
 		if (!Compare<T>(result[i], ReferenceData<T, N>()[i]))
 		{
@@ -1182,16 +1118,12 @@ bool BufferTest::Check()
 
 /** @brief Test function.
  *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *  @tparam N      Is normalized.
- *
  *  @param [in] use_range_version   Uses TextureBufferRange instead TextureBuffer.
  *
  *  @return True if succeeded, false otherwise.
  */
 template <typename T, glw::GLint S, bool N>
-bool BufferTest::Test(bool use_range_version)
+bool BufferTest<T, S, N>::Test(bool use_range_version)
 {
 	/* Setup. */
 	if (!PrepareFramebuffer(InternalFormat<T, S, N>()))
@@ -1208,7 +1140,7 @@ bool BufferTest::Test(bool use_range_version)
 		return true;
 	}
 
-	if (!CreateBufferTexture<T, S, N>(use_range_version))
+	if (!CreateBufferTexture(use_range_version))
 	{
 		CleanFramebuffer();
 		CleanErrors();
@@ -1220,7 +1152,7 @@ bool BufferTest::Test(bool use_range_version)
 	Draw();
 
 	/* Compare results with reference. */
-	bool result = Check<T, S, N>();
+	bool result = Check();
 
 	/* Cleanup. */
 	CleanFramebuffer();
@@ -1231,45 +1163,10 @@ bool BufferTest::Test(bool use_range_version)
 	return result;
 }
 
-/** @brief Lopp test function over S.
- *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *  @tparam N      Is normalized.
- *
- *  @param [in] use_range_version   Uses TextureBufferRange instead TextureBuffer.
- *  @param [in] skip_rgb            Skip test of S = 3 (needed for some formats).
- *
- *  @return True if tests succeeded, false otherwise.
- */
-template <typename T, bool N>
-bool BufferTest::LoopTestOverS(bool use_range_version, bool skip_rgb)
-{
-	/* Prepare one program per test loop. */
-	PrepareProgram(FragmentShaderDeclaration<T, N>());
-
-	/* Run tests. */
-	bool result = Test<T, 4, N>(use_range_version);
-
-	if (!skip_rgb)
-	{
-		result &= Test<T, 3, N>(use_range_version);
-	}
-
-	result &= Test<T, 2, N>(use_range_version);
-	result &= Test<T, 1, N>(use_range_version);
-
-	/* Cleanup.*/
-	CleanProgram();
-	CleanErrors();
-
-	/* Pass result. */
-	return result;
-}
-
 /** @brief Clean GL objects
  */
-void BufferTest::CleanBufferTexture()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::CleanBufferTexture()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1293,7 +1190,8 @@ void BufferTest::CleanBufferTexture()
 
 /** @brief Clean GL objects
  */
-void BufferTest::CleanFramebuffer()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::CleanFramebuffer()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1317,7 +1215,8 @@ void BufferTest::CleanFramebuffer()
 
 /** @brief Clean GL objects
  */
-void BufferTest::CleanProgram()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::CleanProgram()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1335,7 +1234,8 @@ void BufferTest::CleanProgram()
 
 /** @brief Clean errors.
  */
-void BufferTest::CleanErrors()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::CleanErrors()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1347,7 +1247,8 @@ void BufferTest::CleanErrors()
 
 /** @brief Clean GL objects
  */
-void BufferTest::CleanVertexArray()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::CleanVertexArray()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1366,7 +1267,8 @@ void BufferTest::CleanVertexArray()
  *
  *  @return Iteration result.
  */
-tcu::TestNode::IterateResult BufferTest::iterate()
+template <typename T, glw::GLint S, bool N>
+tcu::TestNode::IterateResult BufferTest<T, S, N>::iterate()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1390,21 +1292,20 @@ tcu::TestNode::IterateResult BufferTest::iterate()
 	{
 		PrepareVertexArray();
 
+		PrepareProgram(FragmentShaderDeclaration());
+
 		for (glw::GLuint i = 0; i < 2; ++i)
 		{
 			bool use_range = (i == 1);
-
-			is_ok &= LoopTestOverS<glw::GLbyte, false>(use_range, true);
-			is_ok &= LoopTestOverS<glw::GLubyte, false>(use_range, true);
-			is_ok &= LoopTestOverS<glw::GLshort, false>(use_range, true);
-			is_ok &= LoopTestOverS<glw::GLushort, false>(use_range, true);
-			is_ok &= LoopTestOverS<glw::GLint, false>(use_range, false);
-			is_ok &= LoopTestOverS<glw::GLuint, false>(use_range, false);
-
-			is_ok &= LoopTestOverS<glw::GLubyte, true>(use_range, true);
-			is_ok &= LoopTestOverS<glw::GLushort, true>(use_range, true);
-			is_ok &= LoopTestOverS<glw::GLfloat, true>(use_range, false);
+			is_ok &= Test(use_range);
+			CleanErrors();
 		}
+
+		CleanProgram();
+	}
+	catch (tcu::NotSupportedError e)
+	{
+		throw e;
 	}
 	catch (...)
 	{
@@ -1444,66 +1345,115 @@ tcu::TestNode::IterateResult BufferTest::iterate()
 }
 
 /* Vertex shader source code. */
-const glw::GLchar* BufferTest::s_vertex_shader = "#version 450\n"
-												 "\n"
-												 "void main()\n"
-												 "{\n"
-												 "    switch(gl_VertexID)\n"
-												 "    {\n"
-												 "        case 0:\n"
-												 "            gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
-												 "            break;\n"
-												 "        case 1:\n"
-												 "            gl_Position = vec4( 1.0, 1.0, 0.0, 1.0);\n"
-												 "            break;\n"
-												 "        case 2:\n"
-												 "            gl_Position = vec4(-1.0,-1.0, 0.0, 1.0);\n"
-												 "            break;\n"
-												 "        case 3:\n"
-												 "            gl_Position = vec4( 1.0,-1.0, 0.0, 1.0);\n"
-												 "            break;\n"
-												 "    }\n"
-												 "}\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_vertex_shader = "#version 450\n"
+														  "\n"
+														  "void main()\n"
+														  "{\n"
+														  "    switch(gl_VertexID)\n"
+														  "    {\n"
+														  "        case 0:\n"
+														  "            gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
+														  "            break;\n"
+														  "        case 1:\n"
+														  "            gl_Position = vec4( 1.0, 1.0, 0.0, 1.0);\n"
+														  "            break;\n"
+														  "        case 2:\n"
+														  "            gl_Position = vec4(-1.0,-1.0, 0.0, 1.0);\n"
+														  "            break;\n"
+														  "        case 3:\n"
+														  "            gl_Position = vec4( 1.0,-1.0, 0.0, 1.0);\n"
+														  "            break;\n"
+														  "    }\n"
+														  "}\n";
 
 /* Fragment shader source program. */
-const glw::GLchar* BufferTest::s_fragment_shader_head = "#version 450\n"
-														"\n"
-														"layout(pixel_center_integer) in vec4 gl_FragCoord;\n"
-														"\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_head = "#version 450\n"
+																 "\n"
+																 "layout(pixel_center_integer) in vec4 gl_FragCoord;\n"
+																 "\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_fdecl_lowp = "uniform samplerBuffer texture_input;\n"
-															  "out     vec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_fdecl_lowp = "uniform samplerBuffer texture_input;\n"
+																	   "out     vec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_idecl_lowp = "uniform isamplerBuffer texture_input;\n"
-															  "out     ivec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_idecl_lowp = "uniform isamplerBuffer texture_input;\n"
+																	   "out     ivec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_udecl_lowp = "uniform usamplerBuffer texture_input;\n"
-															  "out     uvec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_udecl_lowp = "uniform usamplerBuffer texture_input;\n"
+																	   "out     uvec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_fdecl_mediump = "uniform samplerBuffer texture_input;\n"
-																 "out     vec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_fdecl_mediump = "uniform samplerBuffer texture_input;\n"
+																		  "out     vec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_idecl_mediump = "uniform isamplerBuffer texture_input;\n"
-																 "out     ivec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_idecl_mediump = "uniform isamplerBuffer texture_input;\n"
+																		  "out     ivec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_udecl_mediump = "uniform usamplerBuffer texture_input;\n"
-																 "out     uvec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_udecl_mediump = "uniform usamplerBuffer texture_input;\n"
+																		  "out     uvec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_fdecl_highp = "uniform samplerBuffer texture_input;\n"
-															   "out     vec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_fdecl_highp = "uniform samplerBuffer texture_input;\n"
+																		"out     vec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_idecl_highp = "uniform isamplerBuffer texture_input;\n"
-															   "out     ivec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_idecl_highp = "uniform isamplerBuffer texture_input;\n"
+																		"out     ivec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_udecl_highp = "uniform usamplerBuffer texture_input;\n"
-															   "out     uvec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_udecl_highp = "uniform usamplerBuffer texture_input;\n"
+																		"out     uvec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_tail =
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_tail =
 	"\n"
 	"void main()\n"
 	"{\n"
 	"    texture_output = texelFetch(texture_input, int(gl_FragCoord.x));\n"
 	"}\n";
+
+template class BufferTest<glw::GLbyte, 1, false>;
+template class BufferTest<glw::GLbyte, 2, false>;
+template class BufferTest<glw::GLbyte, 4, false>;
+
+template class BufferTest<glw::GLubyte, 1, false>;
+template class BufferTest<glw::GLubyte, 2, false>;
+template class BufferTest<glw::GLubyte, 4, false>;
+template class BufferTest<glw::GLubyte, 1, true>;
+template class BufferTest<glw::GLubyte, 2, true>;
+template class BufferTest<glw::GLubyte, 4, true>;
+
+template class BufferTest<glw::GLshort, 1, false>;
+template class BufferTest<glw::GLshort, 2, false>;
+template class BufferTest<glw::GLshort, 4, false>;
+
+template class BufferTest<glw::GLushort, 1, false>;
+template class BufferTest<glw::GLushort, 2, false>;
+template class BufferTest<glw::GLushort, 4, false>;
+template class BufferTest<glw::GLushort, 1, true>;
+template class BufferTest<glw::GLushort, 2, true>;
+template class BufferTest<glw::GLushort, 4, true>;
+
+template class BufferTest<glw::GLint, 1, false>;
+template class BufferTest<glw::GLint, 2, false>;
+template class BufferTest<glw::GLint, 3, false>;
+template class BufferTest<glw::GLint, 4, false>;
+
+template class BufferTest<glw::GLuint, 1, false>;
+template class BufferTest<glw::GLuint, 2, false>;
+template class BufferTest<glw::GLuint, 3, false>;
+template class BufferTest<glw::GLuint, 4, false>;
+
+template class BufferTest<glw::GLfloat, 1, true>;
+template class BufferTest<glw::GLfloat, 2, true>;
+template class BufferTest<glw::GLfloat, 3, true>;
+template class BufferTest<glw::GLfloat, 4, true>;
 
 /******************************** Storage and SubImage Test Implementation   ********************************/
 
@@ -2247,6 +2197,8 @@ bool StorageAndSubImageTest::CreateTexture()
 								  TestReferenceDataHeight<D>(), TestReferenceDataDepth<D>(), Format<S, N>(), Type<T>(),
 								  ReferenceData<T, N>()))
 		{
+			glTexParameteri(TextureTarget<D>(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(TextureTarget<D>(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			return true;
 		}
 	}
@@ -10520,8 +10472,17 @@ bool SubImageErrorsTest::Test2DCompressed()
 			gl.compressedTextureSubImage2D(m_to_rectangle_compressed, 0, 0, 0, s_reference_width, s_reference_height,
 										   m_reference_compressed_rectangle_format,
 										   m_reference_compressed_rectangle_size, m_reference_compressed_rectangle);
-			is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glCompressedTextureSubImage2D",
-									  "texture is not the name of an existing texture object.");
+
+			if (m_context.getContextInfo().isExtensionSupported("GL_NV_texture_rectangle_compressed"))
+			{
+				is_ok &= CheckErrorAndLog(m_context, GL_NO_ERROR, "glCompressedTextureSubImage2D",
+										  "a rectangle texture object is used with this function.");
+			}
+			else
+			{
+				is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glCompressedTextureSubImage2D",
+										  "a rectangle texture object is used with this function.");
+			}
 		}
 	}
 

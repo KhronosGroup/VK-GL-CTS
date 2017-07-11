@@ -36,6 +36,7 @@
 #include "tcuDefs.hpp"
 
 #include <string>
+#include <typeinfo>
 
 namespace gl4cts
 {
@@ -4883,6 +4884,10 @@ private:
  *
  *  @brief Direct State Access of texture buffers.
  *
+ *  @tparam T      Type.
+ *  @tparam S      Size.
+ *  @tparam N      Is normalized.
+ *
  *  Test follows the steps:
  *
  *      Make test for following DSA functions:
@@ -4940,11 +4945,12 @@ private:
  *
  *          Release all objects.
  */
+template <typename T, glw::GLint S, bool N>
 class BufferTest : public deqp::TestCase, Reference
 {
 public:
 	/* Public member functions. */
-	BufferTest(deqp::Context& context);
+	BufferTest(deqp::Context& context, const char* name);
 
 	virtual tcu::TestNode::IterateResult iterate();
 
@@ -4954,25 +4960,16 @@ private:
 	BufferTest& operator=(const BufferTest& other);
 
 	/* Private member functions. */
-	template <glw::GLint S>
 	static glw::GLuint   TestReferenceDataCount();
 
-	template <typename T, glw::GLint S>
 	static glw::GLuint TestReferenceDataSize();
 
-	template <typename T, bool N>
 	static const glw::GLchar* FragmentShaderDeclaration();
 
-	template <typename T, glw::GLint S, bool N>
 	bool CreateBufferTexture(bool use_range_version);
 
-	template <typename T, glw::GLint S, bool N>
 	bool Check();
 
-	template <typename T, bool N>
-	bool LoopTestOverS(bool use_range_version, bool skip_rgb);
-
-	template <typename T, glw::GLint S, bool N>
 	bool Test(bool use_range_version);
 
 	bool PrepareFramebuffer(const glw::GLenum internal_format);
@@ -5009,6 +5006,47 @@ private:
 	static const glw::GLchar* s_fragment_shader_udecl_highp;
 	static const glw::GLchar* s_fragment_shader_tail;
 };
+
+/** @brief Fragment shader part selector.
+ *
+ *  @return Array of characters with source code.
+ */
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::FragmentShaderDeclaration()
+{
+	if (typeid(T) == typeid(glw::GLbyte))
+	{
+		return s_fragment_shader_idecl_lowp;
+	}
+
+	if (typeid(T) == typeid(glw::GLubyte))
+	{
+		return N ? s_fragment_shader_fdecl_lowp : s_fragment_shader_udecl_lowp;
+	}
+
+	if (typeid(T) == typeid(glw::GLshort))
+	{
+		return s_fragment_shader_idecl_mediump;
+	}
+
+	if (typeid(T) == typeid(glw::GLushort))
+	{
+		return N ? s_fragment_shader_fdecl_mediump : s_fragment_shader_udecl_mediump;
+	}
+
+	if (typeid(T) == typeid(glw::GLint))
+	{
+		return s_fragment_shader_idecl_highp;
+	}
+
+	if (typeid(T) == typeid(glw::GLuint))
+	{
+		return s_fragment_shader_udecl_highp;
+	}
+
+	return s_fragment_shader_fdecl_highp;
+}
+
 /* BufferTest class */
 
 /** @class StorageAndSubImageTest

@@ -2063,6 +2063,12 @@ void OpaqueTypeIndexingTests::init (void)
 				tcu::TestCaseGroup* const	shaderGroup		= new tcu::TestCaseGroup(m_testCtx, shaderTypes[shaderTypeNdx].name, "");
 				indexGroup->addChild(shaderGroup);
 
+				// \note [pyry] In Vulkan CTS 1.0.2 sampler groups should not cover tess/geom stages
+				if ((shaderType != glu::SHADERTYPE_VERTEX)		&&
+					(shaderType != glu::SHADERTYPE_FRAGMENT)	&&
+					(shaderType != glu::SHADERTYPE_COMPUTE))
+					continue;
+
 				for (int samplerTypeNdx = 0; samplerTypeNdx < DE_LENGTH_OF_ARRAY(samplerTypes); samplerTypeNdx++)
 				{
 					const glu::DataType	samplerType	= samplerTypes[samplerTypeNdx];
@@ -2097,11 +2103,17 @@ void OpaqueTypeIndexingTests::init (void)
 				const glu::ShaderType	shaderType		= shaderTypes[shaderTypeNdx].type;
 				const std::string		name			= std::string(indexExprName) + "_" + shaderTypes[shaderTypeNdx].name;
 
-				uboGroup->addChild	(new BlockArrayIndexingCase		(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_UNIFORM,	indexExprType, shaderType));
-				acGroup->addChild	(new AtomicCounterIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, indexExprType, shaderType));
+				// \note [pyry] In Vulkan CTS 1.0.2 ubo/ssbo/atomic_counter groups should not cover tess/geom stages
+				if ((shaderType == glu::SHADERTYPE_VERTEX)		||
+					(shaderType == glu::SHADERTYPE_FRAGMENT)	||
+					(shaderType == glu::SHADERTYPE_COMPUTE))
+				{
+					uboGroup->addChild	(new BlockArrayIndexingCase		(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_UNIFORM,	indexExprType, shaderType));
+					acGroup->addChild	(new AtomicCounterIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, indexExprType, shaderType));
 
-				if (indexExprType == INDEX_EXPR_TYPE_CONST_LITERAL || indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
-					ssboGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_BUFFER, indexExprType, shaderType));
+					if (indexExprType == INDEX_EXPR_TYPE_CONST_LITERAL || indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
+						ssboGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_BUFFER, indexExprType, shaderType));
+				}
 
 				if (indexExprType == INDEX_EXPR_TYPE_CONST_LITERAL || indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
 					ssboStorageBufGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_BUFFER, indexExprType, shaderType, (deUint32)BlockArrayIndexingCaseInstance::FLAG_USE_STORAGE_BUFFER));

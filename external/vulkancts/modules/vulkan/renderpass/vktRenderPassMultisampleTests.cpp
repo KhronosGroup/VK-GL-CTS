@@ -1176,7 +1176,7 @@ Move<VkPipeline> createSplitPipeline (const DeviceInterface&							vkd,
 	return createGraphicsPipeline(vkd, device, DE_NULL, &createInfo);
 }
 
-vector<VkPipeline> createSplitPipelines (const DeviceInterface&								vkd,
+vector<VkPipelineSp> createSplitPipelines (const DeviceInterface&							vkd,
 										 VkDevice											device,
 										 VkRenderPass										renderPass,
 										 VkPipelineLayout									pipelineLayout,
@@ -1185,20 +1185,10 @@ vector<VkPipeline> createSplitPipelines (const DeviceInterface&								vkd,
 										 deUint32											height,
 										 deUint32											sampleCount)
 {
-	vector<VkPipeline> pipelines (deDivRoundUp32(sampleCount, MAX_COLOR_ATTACHMENT_COUNT), (VkPipeline)0u);
+	std::vector<VkPipelineSp> pipelines (deDivRoundUp32(sampleCount, MAX_COLOR_ATTACHMENT_COUNT), (VkPipelineSp)0u);
 
-	try
-	{
-		for (size_t ndx = 0; ndx < pipelines.size(); ndx++)
-			pipelines[ndx] = createSplitPipeline(vkd, device, renderPass, (deUint32)(ndx + 1), pipelineLayout, binaryCollection, width, height, sampleCount).disown();
-	}
-	catch (...)
-	{
-		for (size_t ndx = 0; ndx < pipelines.size(); ndx++)
-			vkd.destroyPipeline(device, pipelines[ndx], DE_NULL);
-
-		throw;
-	}
+	for (size_t ndx = 0; ndx < pipelines.size(); ndx++)
+		pipelines[ndx] = safeSharedPtr(new Unique<VkPipeline>(createSplitPipeline(vkd, device, renderPass, (deUint32)(ndx + 1), pipelineLayout, binaryCollection, width, height, sampleCount)));
 
 	return pipelines;
 }
@@ -1377,7 +1367,7 @@ private:
 
 	const Unique<VkDescriptorSetLayout>				m_splitDescriptorSetLayout;
 	const Unique<VkPipelineLayout>					m_splitPipelineLayout;
-	const vector<VkPipeline>						m_splitPipelines;
+	const std::vector<VkPipelineSp>					m_splitPipelines;
 	const Unique<VkDescriptorPool>					m_splitDescriptorPool;
 	const Unique<VkDescriptorSet>					m_splitDescriptorSet;
 
@@ -1482,7 +1472,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 	{
 		vkd.cmdNextSubpass(*commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_splitPipelines[splitPipelineNdx]);
+		vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **m_splitPipelines[splitPipelineNdx]);
 		vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_splitPipelineLayout, 0u, 1u,  &*m_splitDescriptorSet, 0u, DE_NULL);
 		vkd.cmdPushConstants(*commandBuffer, *m_splitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(splitPipelineNdx), &splitPipelineNdx);
 		vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);

@@ -692,6 +692,142 @@ tcu::TestStatus createDeviceFeatures2Test (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
+struct Feature
+{
+	const char*	name;
+	size_t		offset;
+};
+
+#define FEATURE_ITEM(MEMBER) {#MEMBER, DE_OFFSET_OF(VkPhysicalDeviceFeatures, MEMBER)}
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
+{
+	tcu::TestLog&				log						= context.getTestContext().getLog();
+	tcu::ResultCollector		resultCollector			(log);
+	const PlatformInterface&	platformInterface		= context.getPlatformInterface();
+	const Unique<VkInstance>	instance				(createDefaultInstance(platformInterface));
+	const InstanceDriver		instanceDriver			(platformInterface, instance.get());
+	const VkPhysicalDevice		physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
+	const deUint32				queueFamilyIndex		= 0;
+	const deUint32				queueCount				= 1;
+	const float					queuePriority			= 1.0f;
+	VkPhysicalDeviceFeatures	physicalDeviceFeatures;
+
+	instanceDriver.getPhysicalDeviceFeatures(physicalDevice, &physicalDeviceFeatures);
+
+	static const Feature features[] =
+	{
+		FEATURE_ITEM(robustBufferAccess),
+		FEATURE_ITEM(fullDrawIndexUint32),
+		FEATURE_ITEM(imageCubeArray),
+		FEATURE_ITEM(independentBlend),
+		FEATURE_ITEM(geometryShader),
+		FEATURE_ITEM(tessellationShader),
+		FEATURE_ITEM(sampleRateShading),
+		FEATURE_ITEM(dualSrcBlend),
+		FEATURE_ITEM(logicOp),
+		FEATURE_ITEM(multiDrawIndirect),
+		FEATURE_ITEM(drawIndirectFirstInstance),
+		FEATURE_ITEM(depthClamp),
+		FEATURE_ITEM(depthBiasClamp),
+		FEATURE_ITEM(fillModeNonSolid),
+		FEATURE_ITEM(depthBounds),
+		FEATURE_ITEM(wideLines),
+		FEATURE_ITEM(largePoints),
+		FEATURE_ITEM(alphaToOne),
+		FEATURE_ITEM(multiViewport),
+		FEATURE_ITEM(samplerAnisotropy),
+		FEATURE_ITEM(textureCompressionETC2),
+		FEATURE_ITEM(textureCompressionASTC_LDR),
+		FEATURE_ITEM(textureCompressionBC),
+		FEATURE_ITEM(occlusionQueryPrecise),
+		FEATURE_ITEM(pipelineStatisticsQuery),
+		FEATURE_ITEM(vertexPipelineStoresAndAtomics),
+		FEATURE_ITEM(fragmentStoresAndAtomics),
+		FEATURE_ITEM(shaderTessellationAndGeometryPointSize),
+		FEATURE_ITEM(shaderImageGatherExtended),
+		FEATURE_ITEM(shaderStorageImageExtendedFormats),
+		FEATURE_ITEM(shaderStorageImageMultisample),
+		FEATURE_ITEM(shaderStorageImageReadWithoutFormat),
+		FEATURE_ITEM(shaderStorageImageWriteWithoutFormat),
+		FEATURE_ITEM(shaderUniformBufferArrayDynamicIndexing),
+		FEATURE_ITEM(shaderSampledImageArrayDynamicIndexing),
+		FEATURE_ITEM(shaderStorageBufferArrayDynamicIndexing),
+		FEATURE_ITEM(shaderStorageImageArrayDynamicIndexing),
+		FEATURE_ITEM(shaderClipDistance),
+		FEATURE_ITEM(shaderCullDistance),
+		FEATURE_ITEM(shaderFloat64),
+		FEATURE_ITEM(shaderInt64),
+		FEATURE_ITEM(shaderInt16),
+		FEATURE_ITEM(shaderResourceResidency),
+		FEATURE_ITEM(shaderResourceMinLod),
+		FEATURE_ITEM(sparseBinding),
+		FEATURE_ITEM(sparseResidencyBuffer),
+		FEATURE_ITEM(sparseResidencyImage2D),
+		FEATURE_ITEM(sparseResidencyImage3D),
+		FEATURE_ITEM(sparseResidency2Samples),
+		FEATURE_ITEM(sparseResidency4Samples),
+		FEATURE_ITEM(sparseResidency8Samples),
+		FEATURE_ITEM(sparseResidency16Samples),
+		FEATURE_ITEM(sparseResidencyAliased),
+		FEATURE_ITEM(variableMultisampleRate),
+		FEATURE_ITEM(inheritedQueries)
+	};
+
+	const int	numFeatures		= DE_LENGTH_OF_ARRAY(features);
+	int			numErrors		= 0;
+
+	for (int featureNdx = 0; featureNdx < numFeatures; featureNdx++)
+	{
+		// Test only features that are not supported.
+		if (*(((VkBool32*)((deUint8*)(&physicalDeviceFeatures) + features[featureNdx].offset))))
+			continue;
+
+		VkPhysicalDeviceFeatures enabledFeatures;
+
+		for (int i = 0; i < numFeatures; i++)
+			*((VkBool32*)((deUint8*)(&enabledFeatures) + features[i].offset)) = (i == featureNdx ? VK_TRUE : VK_FALSE);
+
+		const VkDeviceQueueCreateInfo	deviceQueueCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+			DE_NULL,
+			(VkDeviceQueueCreateFlags)0u,
+			queueFamilyIndex,
+			queueCount,
+			&queuePriority
+		};
+		const VkDeviceCreateInfo		deviceCreateInfo		=
+		{
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+			DE_NULL,
+			(VkDeviceCreateFlags)0u,
+			1,
+			&deviceQueueCreateInfo,
+			0,
+			DE_NULL,
+			0,
+			DE_NULL,
+			&enabledFeatures
+		};
+
+		VkDevice		device;
+		const VkResult	res	= instanceDriver.createDevice(physicalDevice, &deviceCreateInfo, DE_NULL, &device);
+
+		if (res != VK_ERROR_FEATURE_NOT_PRESENT)
+		{
+			numErrors++;
+			resultCollector.fail("Not returning VK_ERROR_FEATURE_NOT_PRESENT when creating device with feature "
+								 + de::toString(features[featureNdx].name) + ", which was reported as unsupported.");
+		}
+	}
+
+	if (numErrors > 1)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling " + de::toString(numErrors) + " unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
@@ -707,6 +843,7 @@ tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_extensions",	"", createDeviceWithUnsupportedExtensionsTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_various_queue_counts",		"", createDeviceWithVariousQueueCountsTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_features2",					"", createDeviceFeatures2Test);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_features",		"", createDeviceWithUnsupportedFeaturesTest);
 
 	return deviceInitializationTests.release();
 }

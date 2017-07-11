@@ -1868,11 +1868,11 @@ tcu::TestStatus testFenceReset (Context&				context,
 		submitDummySignal(vkd, queue, *fenceA);
 
 		getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
-		importFence(vkd, *device, *fenceB, config.externalType, handle, flags);
 		{
-			NativeHandle	handleB	(handle);
-			importFence(vkd, *device, *fenceC, config.externalType, handleB, flags);
+			NativeHandle					handleB	(handle);
+			importFence(vkd, *device, *fenceB, config.externalType, handleB, flags);
 		}
+		importFence(vkd, *device, *fenceC, config.externalType, handle, flags);
 
 		VK_CHECK(vkd.queueWaitIdle(queue));
 		VK_CHECK(vkd.resetFences(*device, 1u, &*fenceB));

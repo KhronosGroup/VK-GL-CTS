@@ -48,6 +48,7 @@ VERSION				= '1.5'
 EXTENSIONS			= [
 	# \todo [2014-12-05 pyry] Use 1.5 core functions/enums instead
 	"EGL_KHR_create_context",
+	"EGL_KHR_create_context_no_error",
 	"EGL_KHR_lock_surface",
 	"EGL_KHR_image_base",
 	"EGL_KHR_fence_sync",

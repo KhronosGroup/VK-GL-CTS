@@ -1,3 +1,2 @@
-#VK-GL-CTS 354i
-KHR-GLES32.context_flags.*
+#VK-GL-CTS 354
 KHR-GLES32.robust.*

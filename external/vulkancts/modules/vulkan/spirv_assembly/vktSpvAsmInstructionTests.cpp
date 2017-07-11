@@ -445,6 +445,7 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		"OpMemberDecorate %sumbuf 0 Coherent\n"
 		"OpMemberDecorate %sumbuf 0 Offset 0\n"
 
+		+ string(getComputeAsmCommonTypes()) +
 		"%void      = OpTypeVoid\n"
 		"%voidf     = OpTypeFunction %void\n"
 		"%u32       = OpTypeInt 32 0\n"
@@ -3900,6 +3901,7 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 		"%struct    = OpTypeStruct %f32 %i32 %u32\n"
 		"%pointer   = OpTypePointer Function %i32\n"
 		+ string(getComputeAsmInputOutputBuffer()) +
+
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
 
@@ -7439,8 +7441,6 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
 	computeTests->addChild(createShaderDefaultOutputGroup(testCtx));
 
-	computeTests->addChild(create16BitStorageComputeGroup(testCtx));
-	computeTests->addChild(createVariablePointersComputeGroup(testCtx));
 	{
 		de::MovePtr<tcu::TestCaseGroup>	computeAndroidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
 
@@ -7450,6 +7450,8 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 		computeTests->addChild(computeAndroidTests.release());
 	}
 
+	computeTests->addChild(create16BitStorageComputeGroup(testCtx));
+	computeTests->addChild(createVariablePointersComputeGroup(testCtx));
 	graphicsTests->addChild(createOpNopTests(testCtx));
 	graphicsTests->addChild(createOpSourceTests(testCtx));
 	graphicsTests->addChild(createOpSourceContinuedTests(testCtx));

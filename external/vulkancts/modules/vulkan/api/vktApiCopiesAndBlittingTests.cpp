@@ -32,8 +32,8 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorType.hpp"
 #include "tcuVectorUtil.hpp"
-#include "tcuTexLookupVerifier.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuTexLookupVerifier.hpp"
 
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -4210,6 +4210,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params3DTo2D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params3DTo2D.allocationKind				= allocationKind;
 
+		for (deUint32 slicesLayersNdx = 0; slicesLayersNdx < slicesLayers; ++slicesLayersNdx)
 		{
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
@@ -4623,6 +4624,7 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocatio
 		group->addChild(new BufferToBufferTestCase(testCtx, "whole", "Whole buffer", params));
 	}
 
+	// Filter is VK_FILTER_NEAREST.
 	{
 		TestParams			params;
 		params.src.buffer.size	= defaultFourthSize;
@@ -4996,7 +4998,6 @@ void addBlittingImageSimpleMirrorSubregionsTests (tcu::TestCaseGroup* group, All
 				{defaultSize, 0, 1}
 			}					// VkOffset3D				dstOffset[2];
 		};
-
 		CopyRegion	region;
 		region.imageBlit = imageBlit;
 		params.regions.push_back(region);
@@ -5577,8 +5578,8 @@ const VkFormat	compatibleFormatsFloats[]	=
 	VK_FORMAT_R64G64_SFLOAT,
 	VK_FORMAT_R64G64B64_SFLOAT,
 	VK_FORMAT_R64G64B64A64_SFLOAT,
-	VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-	VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+//	VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+//	VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
 //	VK_FORMAT_BC1_RGB_UNORM_BLOCK,
 //	VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
 //	VK_FORMAT_BC2_UNORM_BLOCK,
