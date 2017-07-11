@@ -1156,8 +1156,8 @@ private:
 
 	ResourceDescription			m_resourceDesc;
 
-	uint64_t					m_sharedMemSize;
-	uint64_t					m_sharedMemOffset;
+	deUint64					m_sharedMemSize;
+	deUint64					m_sharedMemOffset;
 	HANDLE						m_sharedMemHandle[BUFFER_COUNT];
 	bool						m_isMemNtHandle;
 
@@ -1585,9 +1585,9 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate (void)
 
 		{
 			vk::VkDeviceMemory							memory			= resourceWrite->getMemory();
-			uint64_t									keyInit			= DX11Operation::KEYED_MUTEX_VK_WRITE;
-			uint32_t									timeout			= 0xFFFFFFFF; // INFINITE
-			uint64_t									keyExternal		= DX11Operation::KEYED_MUTEX_DX_COPY;
+			deUint64									keyInit			= DX11Operation::KEYED_MUTEX_VK_WRITE;
+			deUint32									timeout			= 0xFFFFFFFF; // INFINITE
+			deUint64									keyExternal		= DX11Operation::KEYED_MUTEX_DX_COPY;
 			vk::VkWin32KeyedMutexAcquireReleaseInfoKHR	keyedMutexInfo	=
 			{
 				vk::VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR,
@@ -1626,9 +1626,9 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate (void)
 
 		{
 			vk::VkDeviceMemory							memory			= resourceRead->getMemory();
-			uint64_t									keyInternal		= DX11Operation::KEYED_MUTEX_VK_VERIFY;
-			uint32_t									timeout			= 0xFFFFFFFF; // INFINITE
-			uint64_t									keyExternal		= DX11Operation::KEYED_MUTEX_DONE;
+			deUint64									keyInternal		= DX11Operation::KEYED_MUTEX_VK_VERIFY;
+			deUint32									timeout			= 0xFFFFFFFF; // INFINITE
+			deUint64									keyExternal		= DX11Operation::KEYED_MUTEX_DONE;
 			vk::VkWin32KeyedMutexAcquireReleaseInfoKHR	keyedMutexInfo	=
 			{
 				vk::VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR,
