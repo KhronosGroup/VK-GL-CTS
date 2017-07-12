@@ -90,14 +90,10 @@ def rotate(l, n) :
 	return l[n:] + l[:n]
 
 class SwizzleCase(ShaderCase):
-	def __init__(self, name, precision, dataType, swizzle1, swizzle2, inputs1, inputs2, operator, outputs):
+	def __init__(self, name, swizzle1, swizzle2, inputs1, inputs2, operator, outputs):
 		self.name	= name
-		self.precision	= precision
-		self.dataType	= dataType
 		self.swizzle1	= swizzle1
 		self.swizzle2	= swizzle2
-		self.inputs1	= inputs1
-		self.inputs2	= inputs2
 		self.inputs	= inputs1 + inputs2
 		self.outputs	= outputs
 		self.op		= "out0 = in0.%s %s in1.%s;" % (swizzle1, operator, swizzle2)
@@ -183,8 +179,6 @@ for operator in OPERATORS:
 					caseName = "%s_%s_%s_%s" % (precision, dataType, swizzle1, swizzle2)
 
 					case = SwizzleCase(	caseName,
-								precision,
-								dataType,
 								swizzle1,
 								swizzle2,
 								[("%s in0" % dataType, operands1)],
