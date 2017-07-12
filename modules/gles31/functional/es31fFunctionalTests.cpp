@@ -91,6 +91,7 @@
 #include "es31fDefaultVertexArrayObjectTests.hpp"
 #include "es31fSRGBDecodeTests.hpp"
 #include "es31fDrawElementsBaseVertexTests.hpp"
+#include "es31fShaderFramebufferFetchTests.hpp"
 
 namespace deqp
 {
@@ -202,6 +203,7 @@ public:
 		addChild(new ShaderHelperInvocationTests		(m_context));
 		addChild(new ShaderLibraryTest					(m_context, "implicit_conversions", "GL_EXT_shader_implicit_conversions Tests"));
 		addChild(new ShaderLibraryTest					(m_context, "uniform_block", "Uniform block tests"));
+		addChild(new ShaderFramebufferFetchTests		(m_context));
 	}
 };
 
