@@ -173,6 +173,13 @@ void logAttribList (const EglTestContext& eglTestCtx, const EGLint* attribList)
 				iter++;
 				break;
 
+			case EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_KHR:
+				iter++;
+				attribListString << "EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_KHR, "
+								 << eglResetNotificationStrategyToString(*iter) << ", ";
+				iter++;
+				break;
+
 			case EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT:
 				iter++;
 				attribListString << "EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, ";
@@ -1892,6 +1899,61 @@ public:
 	}
 };
 
+class InvalidNotificationEnumCase : public RobustnessTestCase
+{
+public:
+	InvalidNotificationEnumCase (EglTestContext& eglTestCtx, const char* name, const char* description)
+		: RobustnessTestCase (eglTestCtx, name, description) {}
+
+	TestCase::IterateResult	iterate	(void)
+	{
+		TestLog&		log		=	m_testCtx.getLog();
+		const Library&	egl		=	m_eglTestCtx.getLibrary();
+		bool			isOk	=	true;
+
+		log << tcu::TestLog::Message
+			<< "EGL_BAD_ATTRIBUTE is generated if EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_KHR is used with EGL versions <= 1.4\n\n"
+			<< tcu::TestLog::EndMessage;
+
+		const EGLint attribList[] =
+		{
+			EGL_CONTEXT_CLIENT_VERSION, 3,
+			EGL_CONTEXT_MINOR_VERSION_KHR, 1,
+			EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_KHR, EGL_NO_RESET_NOTIFICATION,
+			EGL_NONE
+		};
+
+		if (eglu::getVersion(egl, m_eglDisplay) >= eglu::Version(1, 5))
+		{
+			m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Test requires EGL version to be under 1.5");
+			return STOP;
+		}
+
+		logAttribList(m_eglTestCtx, attribList);
+		EGLContext context = egl.createContext(m_eglDisplay, m_eglConfig, EGL_NO_CONTEXT, attribList);
+
+		const EGLenum error = egl.getError();
+		if (error != EGL_BAD_ATTRIBUTE)
+		{
+			log << TestLog::Message
+				<< "Test failed! eglCreateContext() returned with error [" << eglu::getErrorStr(error) << ", expected " << eglu::getErrorStr(EGL_BAD_ATTRIBUTE) << "]"
+				<< TestLog::EndMessage;
+
+			isOk = false;
+		}
+
+		if (context != EGL_NO_CONTEXT)
+			egl.destroyContext(m_eglDisplay, context);
+
+		if (isOk)
+			m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		else
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+
+		return STOP;
+	}
+};
+
 class SharedContextResetCase : public RobustnessTestCase
 {
 public:
@@ -2405,8 +2467,9 @@ TestCaseGroup* createRobustnessTests (EglTestContext& eglTestCtx)
 
 	// invalid context creation cases
 	{
-		negativeContextTestGroup->addChild(new InvalidContextCase		(eglTestCtx, "invalid_robust_context_creation",			"Create a non-robust context but specify a reset notification strategy"));
-		negativeContextTestGroup->addChild(new InvalidShareContextCase	(eglTestCtx, "invalid_robust_shared_context_creation",	"Create a context share group with conflicting reset notification strategies"));
+		negativeContextTestGroup->addChild(new InvalidContextCase			(eglTestCtx, "invalid_robust_context_creation",			"Create a non-robust context but specify a reset notification strategy"));
+		negativeContextTestGroup->addChild(new InvalidShareContextCase		(eglTestCtx, "invalid_robust_shared_context_creation",	"Create a context share group with conflicting reset notification strategies"));
+		negativeContextTestGroup->addChild(new InvalidNotificationEnumCase	(eglTestCtx, "invalid_notification_strategy_enum",		"Create a robust context using EGL 1.5 only enum with EGL versions <= 1.4" ));
 	}
 
 	shadersTestGroup->addChild(infiniteLoopTestGroup);
