@@ -176,7 +176,7 @@ static const FormatExtEntry s_es2ExtFormats[] =
 	},
 	{
 		"DEQP_gles3_core_compatible",
-		(deUint32)(REQUIRED_RENDERABLE | TEXTURE_VALID | COLOR_RENDERABLE),
+		(deUint32)(REQUIRED_RENDERABLE | TEXTURE_VALID | COLOR_RENDERABLE | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_es3NoExtTextureColorRenderableFormats)
 	},
 	{
