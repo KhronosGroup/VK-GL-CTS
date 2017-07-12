@@ -71,6 +71,8 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fFboTestCase.hpp
 	es31fFboTestUtil.cpp
 	es31fFboTestUtil.hpp
+	es31fFboSRGBWriteControlTests.cpp
+	es31fFboSRGBWriteControlTests.hpp
 	es31fTextureFilteringTests.cpp
 	es31fTextureFilteringTests.hpp
 	es31fTextureFormatTests.hpp

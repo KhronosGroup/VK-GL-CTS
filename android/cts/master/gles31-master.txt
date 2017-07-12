@@ -17894,6 +17894,11 @@ dEQP-GLES31.functional.fbo.no_attachments.maximums.size
 dEQP-GLES31.functional.fbo.no_attachments.maximums.samples
 dEQP-GLES31.functional.fbo.no_attachments.maximums.all
 dEQP-GLES31.functional.fbo.completeness.no_attachments
+dEQP-GLES31.functional.fbo.srgb_write_control.framebuffer_srgb_enabled
+dEQP-GLES31.functional.fbo.srgb_write_control.framebuffer_srgb_enabled_col_attach
+dEQP-GLES31.functional.fbo.srgb_write_control.framebuffer_srgb_enabled_blend
+dEQP-GLES31.functional.fbo.srgb_write_control.framebuffer_srgb_enabled_render_target_ignore
+dEQP-GLES31.functional.fbo.srgb_write_control.framebuffer_srgb_enabled_copy_to_linear
 dEQP-GLES31.functional.program_interface_query.buffer_limited_query.resource_name_query
 dEQP-GLES31.functional.program_interface_query.buffer_limited_query.resource_query
 dEQP-GLES31.functional.program_interface_query.uniform.resource_list.default_block.var
