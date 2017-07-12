@@ -76,6 +76,7 @@
 #include "es31fDebugTests.hpp"
 #include "es31fFboColorbufferTests.hpp"
 #include "es31fFboNoAttachmentTests.hpp"
+#include "es31fFboSRGBWriteControlTests.hpp"
 #include "es31fProgramInterfaceQueryTests.hpp"
 #include "es31fTextureGatherTests.hpp"
 #include "es31fTextureFormatTests.hpp"
@@ -294,6 +295,7 @@ public:
 		addChild(new FboColorTests						(m_context));
 		addChild(createFboNoAttachmentTests				(m_context));
 		addChild(createFboNoAttachmentCompletenessTests	(m_context));
+		addChild(new FboSRGBWriteControlTests			(m_context));
 	}
 };
 
