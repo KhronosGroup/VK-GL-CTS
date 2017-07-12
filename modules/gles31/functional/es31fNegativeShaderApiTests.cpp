@@ -2503,6 +2503,126 @@ void compile_compute_shader (NegativeTestContext& ctx)
 	ctx.endSection();
 }
 
+void srgb_decode_samplerparameteri (NegativeTestContext& ctx)
+{
+	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+
+	GLuint	sampler		= 0x1234;
+	GLint	samplerMode	= -1;
+
+	ctx.glGenSamplers(1, &sampler);
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is GL_TEXTURE_SRGB_DECODE_EXT and the value of param(s) is not a valid value (one of DECODE_EXT, or SKIP_DECODE_EXT).");
+	ctx.glSamplerParameteri(sampler, GL_TEXTURE_SRGB_DECODE_EXT, samplerMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteSamplers(1, &sampler);
+}
+
+void srgb_decode_samplerparameterf (NegativeTestContext& ctx)
+{
+	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+
+	GLuint	sampler	= 0x1234;
+	GLfloat	samplerMode	= -1.0f;
+
+	ctx.glGenSamplers(1, &sampler);
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is GL_TEXTURE_SRGB_DECODE_EXT and the value of param(s) is not a valid value (one of DECODE_EXT, or SKIP_DECODE_EXT).");
+	ctx.glSamplerParameterf(sampler, GL_TEXTURE_SRGB_DECODE_EXT, samplerMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteSamplers(1, &sampler);
+}
+
+void srgb_decode_samplerparameteriv (NegativeTestContext& ctx)
+{
+	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+
+	int		params[1]	= { GL_LINEAR };
+	GLuint	sampler		= 0x1234;
+
+	ctx.glGenSamplers(1, &sampler);
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is GL_TEXTURE_SRGB_DECODE_EXT and the value of param(s) is not a valid value (one of DECODE_EXT, or SKIP_DECODE_EXT).");
+	params[0] = -1;
+	ctx.glSamplerParameteriv(sampler, GL_TEXTURE_SRGB_DECODE_EXT, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteSamplers(1, &sampler);
+}
+
+void srgb_decode_samplerparameterfv (NegativeTestContext& ctx)
+{
+	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+
+	float	params[1]	= { GL_LINEAR };
+	GLuint	sampler		= 0x1234;
+
+	ctx.glGenSamplers(1, &sampler);
+
+	params[0] = -1.0f;
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is GL_TEXTURE_SRGB_DECODE_EXT and the value of param(s) is not a valid value (one of DECODE_EXT, or SKIP_DECODE_EXT).");
+	ctx.glSamplerParameterfv(sampler, GL_TEXTURE_SRGB_DECODE_EXT, &params[0]);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteSamplers(1, &sampler);
+}
+
+void srgb_decode_samplerparameterIiv (NegativeTestContext& ctx)
+{
+	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		TCU_THROW(NotSupportedError, "glSamplerParameterIiv is not supported.");
+
+	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+
+	GLint	samplerMode[]	= {GL_DEPTH_COMPONENT, GL_STENCIL_INDEX};
+	GLuint	sampler			= 0x1234;
+
+	ctx.glGenSamplers(1, &sampler);
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is GL_TEXTURE_SRGB_DECODE_EXT and the value of param(s) is not a valid value (one of DECODE_EXT, or SKIP_DECODE_EXT).");
+	samplerMode[0] = -1;
+	samplerMode[1] = -1;
+	ctx.glSamplerParameterIiv(sampler, GL_TEXTURE_SRGB_DECODE_EXT, samplerMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteSamplers(1, &sampler);
+}
+
+void srgb_decode_samplerparameterIuiv (NegativeTestContext& ctx)
+{
+	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		TCU_THROW(NotSupportedError, "glSamplerParameterIuiv is not supported.");
+
+	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+
+	GLuint	samplerMode[]	= {GL_DEPTH_COMPONENT, GL_STENCIL_INDEX};
+	GLuint	sampler			= 0x1234;
+
+	ctx.glGenSamplers(1, &sampler);
+
+	ctx.beginSection("GL_INVALID_ENUM is generated if pname is GL_TEXTURE_SRGB_DECODE_EXT and the value of param(s) is not a valid value (one of DECODE_EXT, or SKIP_DECODE_EXT).");
+	samplerMode[0] = GL_DONT_CARE;
+	samplerMode[1] = GL_DONT_CARE;
+	ctx.glSamplerParameterIuiv(sampler, GL_TEXTURE_SRGB_DECODE_EXT, samplerMode);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.glDeleteSamplers(1, &sampler);
+}
+
 std::vector<FunctionContainer> getNegativeShaderApiTestFunctions ()
 {
 	FunctionContainer funcs[] =
@@ -2533,7 +2653,7 @@ std::vector<FunctionContainer> getNegativeShaderApiTestFunctions ()
 		{sampler_parameterf,					"sampler_parameterf",					"Invalid glSamplerParameterf() usage"		   },
 		{sampler_parameterfv,					"sampler_parameterfv",					"Invalid glSamplerParameterfv() usage"		   },
 		{sampler_parameterIiv,					"sampler_parameterIiv",					"Invalid glSamplerParameterIiv() usage"		   },
-		{sampler_parameterIuiv,					"sampler_parameterIuiv",				"Invalid glSamplerParameterIuiv() usage"		   },
+		{sampler_parameterIuiv,					"sampler_parameterIuiv",				"Invalid glSamplerParameterIuiv() usage"	   },
 		{get_attrib_location,					"get_attrib_location",					"Invalid glGetAttribLocation() usage"		   },
 		{get_uniform_location,					"get_uniform_location",					"Invalid glGetUniformLocation() usage"		   },
 		{bind_attrib_location,					"bind_attrib_location",					"Invalid glBindAttribLocation() usage"		   },
@@ -2574,6 +2694,12 @@ std::vector<FunctionContainer> getNegativeShaderApiTestFunctions ()
 		{transform_feedback_varyings,			"transform_feedback_varyings",			"Invalid glTransformFeedbackVaryings() usage"  },
 		{compile_compute_shader,				"compile_compute_shader",				"Invalid Compute Shader compilation"		   },
 		{link_compute_shader,					"link_compute_shader",					"Invalid Compute Shader linkage"			   },
+		{srgb_decode_samplerparameteri,			"srgb_decode_samplerparameteri",		"Invalid glSamplerParameteri() usage srgb"	   },
+		{srgb_decode_samplerparameterf,			"srgb_decode_samplerparameterf",		"Invalid glSamplerParameterf() usage srgb"	   },
+		{srgb_decode_samplerparameteriv,		"srgb_decode_samplerparameteriv",		"Invalid glSamplerParameteriv() usage srgb"	   },
+		{srgb_decode_samplerparameterfv,		"srgb_decode_samplerparameterfv",		"Invalid glSamplerParameterfv() usage srgb"	   },
+		{srgb_decode_samplerparameterIiv,		"srgb_decode_samplerparameterIiv",		"Invalid glSamplerParameterIiv() usage srgb"   },
+		{srgb_decode_samplerparameterIuiv,		"srgb_decode_samplerparameterIuiv",		"Invalid glSamplerParameterIiuv() usage srgb"  },
 	};
 
 	return std::vector<FunctionContainer>(DE_ARRAY_BEGIN(funcs), DE_ARRAY_END(funcs));
