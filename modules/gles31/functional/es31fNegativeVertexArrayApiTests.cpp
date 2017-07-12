@@ -721,8 +721,12 @@ void draw_elements_base_vertex_invalid_map (NegativeTestContext& ctx)
 
 void draw_elements_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
 {
-	GLfloat				vertices[1];
-	glu::ShaderProgram	program	(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::GeometrySource(geometryShaderSource));
+	GLfloat						vertices[1];
+	map<string, string>			args;
+	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	args["GLSL_VERSION_STRING"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+
+	glu::ShaderProgram			program(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::VertexSource(tcu::StringTemplate(vertexShaderSource).specialize(args)) << glu::GeometrySource(geometryShaderSource));
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if a geometry shader is active and mode is incompatible with the input primitive type of the geometry shader in the currently installed program object.");
 	ctx.glUseProgram(program.getProgram());
@@ -1102,7 +1106,10 @@ void draw_elements_instanced_base_vertex_invalid_map (NegativeTestContext& ctx)
 void draw_elements_instanced_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
 {
 	GLfloat						vertices[1];
-	glu::ShaderProgram			geometryProgram	(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::GeometrySource(geometryShaderSource));
+	map<string, string>			args;
+	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	args["GLSL_VERSION_STRING"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	glu::ShaderProgram			geometryProgram(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::VertexSource(tcu::StringTemplate(vertexShaderSource).specialize(args)) << glu::GeometrySource(geometryShaderSource));
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if a geometry shader is active and mode is incompatible with the input primitive type of the geometry shader in the currently installed program object.");
 	ctx.glUseProgram(geometryProgram.getProgram());
@@ -1383,8 +1390,11 @@ void draw_range_elements_base_vertex_invalid_map (NegativeTestContext& ctx)
 
 void draw_range_elements_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
 {
-	GLfloat				vertices[1];
-	glu::ShaderProgram	geometryProgram	(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::GeometrySource(geometryShaderSource));
+	GLfloat						vertices[1];
+	map<string, string>			args;
+	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	args["GLSL_VERSION_STRING"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	glu::ShaderProgram			geometryProgram(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::VertexSource(tcu::StringTemplate(vertexShaderSource).specialize(args)) << glu::GeometrySource(geometryShaderSource));
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if a geometry shader is active and mode is incompatible with the input primitive type of the geometry shader in the currently installed program object.");
 	ctx.glUseProgram(geometryProgram.getProgram());
