@@ -3642,7 +3642,9 @@ tcu::TestCase::IterateResult GLES2ThreadedSharingTest::iterate (void)
 		int readyThreads = 0;
 		for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
 		{
-			if (m_threads[threadNdx]->getStatus() != tcu::ThreadUtil::Thread::THREADSTATUS_RUNNING)
+			const tcu::ThreadUtil::Thread::ThreadStatus status = m_threads[threadNdx]->getStatus();
+
+			if (status != tcu::ThreadUtil::Thread::THREADSTATUS_RUNNING && status != tcu::ThreadUtil::Thread::THREADSTATUS_NOT_STARTED)
 				readyThreads++;
 		}
 
