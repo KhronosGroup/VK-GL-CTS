@@ -399,7 +399,8 @@ void FramebufferFetchTestCase::genFramebufferWithTexture (const tcu::Vec4& color
 
 void FramebufferFetchTestCase::genAttachementTexture (const tcu::Vec4& color)
 {
-	tcu::TextureLevel	data	(glu::mapGLTransferFormat(m_transferFmt.format, m_transferFmt.dataType), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 1);
+	tcu::TextureLevel			data					(glu::mapGLTransferFormat(m_transferFmt.format, m_transferFmt.dataType), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 1);
+	tcu::TextureChannelClass	textureChannelClass =	tcu::getTextureChannelClass(m_texFmt.type);
 
 	m_gl.genTextures(1, &m_texColorBuffer);
 	m_gl.bindTexture(GL_TEXTURE_2D, m_texColorBuffer);
@@ -410,7 +411,12 @@ void FramebufferFetchTestCase::genAttachementTexture (const tcu::Vec4& color)
 	m_gl.texParameteri(GL_TEXTURE_2D,	GL_TEXTURE_MIN_FILTER,	m_isFilterable ? GL_LINEAR : GL_NEAREST);
 	m_gl.texParameteri(GL_TEXTURE_2D,	GL_TEXTURE_MAG_FILTER,	m_isFilterable ? GL_LINEAR : GL_NEAREST);
 
-	clear(data.getAccess(), color);
+	if (textureChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
+		tcu::clear(data.getAccess(), color.asUint());
+	else if (textureChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
+		tcu::clear(data.getAccess(), color.asInt());
+	else
+		tcu::clear(data.getAccess(), color);
 
 	m_gl.texImage2D(GL_TEXTURE_2D, 0, m_format, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 0, m_transferFmt.format, m_transferFmt.dataType, data.getAccess().getDataPtr());
 	m_gl.bindTexture(GL_TEXTURE_2D, 0);
@@ -558,8 +564,15 @@ TextureFormatTestCase::TextureFormatTestCase (Context& context, const char* name
 
 tcu::TextureLevel TextureFormatTestCase::genReferenceTexture (const tcu::Vec4& fbColor, const tcu::Vec4& uniformColor)
 {
-	tcu::TextureLevel	reference	(glu::mapGLTransferFormat(m_transferFmt.format, m_transferFmt.dataType), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 1);
-	tcu::clear(reference.getAccess(), fbColor + uniformColor);
+	tcu::TextureLevel			reference			(glu::mapGLTransferFormat(m_transferFmt.format, m_transferFmt.dataType), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 1);
+	tcu::TextureChannelClass	textureChannelClass = tcu::getTextureChannelClass(m_texFmt.type);
+
+	if (textureChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
+		tcu::clear(reference.getAccess(), fbColor.asUint() + uniformColor.asUint());
+	else if (textureChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
+		tcu::clear(reference.getAccess(), fbColor.asInt() + uniformColor.asInt());
+	else
+		tcu::clear(reference.getAccess(), fbColor + uniformColor);
 
 	return reference;
 }
@@ -599,7 +612,7 @@ public:
 
 private:
 	void				genFramebufferWithTextures			(const vector<tcu::Vec4>& colors);
-	void				genAttachementTextures				(const vector<tcu::Vec4>& colors);
+	void				genAttachmentTextures				(const vector<tcu::Vec4>& colors);
 	tcu::TextureLevel	genReferenceTexture					(const tcu::Vec4& fbColor, const tcu::Vec4& uniformColor);
 	glu::ProgramSources genShaderSources					(void);
 
@@ -644,7 +657,7 @@ void MultipleRenderTargetsTestCase::genFramebufferWithTextures (const vector<tcu
 	m_gl.genFramebuffers(1, &m_framebuffer);
 	m_gl.bindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
 
-	genAttachementTextures(colors);
+	genAttachmentTextures(colors);
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(m_texColorBuffers); ++i)
 		m_gl.framebufferTexture2D(GL_FRAMEBUFFER, m_colorBuffers[i], GL_TEXTURE_2D, m_texColorBuffers[i], 0);
@@ -655,7 +668,7 @@ void MultipleRenderTargetsTestCase::genFramebufferWithTextures (const vector<tcu
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "genFramebufferWithTextures()");
 }
 
-void MultipleRenderTargetsTestCase::genAttachementTextures (const vector<tcu::Vec4>& colors)
+void MultipleRenderTargetsTestCase::genAttachmentTextures (const vector<tcu::Vec4>& colors)
 {
 	tcu::TextureLevel	data	(glu::mapGLTransferFormat(m_transferFmt.format, m_transferFmt.dataType), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 1);
 
@@ -676,7 +689,7 @@ void MultipleRenderTargetsTestCase::genAttachementTextures (const vector<tcu::Ve
 	}
 
 	m_gl.bindTexture(GL_TEXTURE_2D, 0);
-	GLU_EXPECT_NO_ERROR(m_gl.getError(), "genAttachementTextures()");
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "genAttachmentTextures()");
 }
 
 tcu::TextureLevel MultipleRenderTargetsTestCase::genReferenceTexture (const tcu::Vec4& fbColor, const tcu::Vec4& uniformColor)
