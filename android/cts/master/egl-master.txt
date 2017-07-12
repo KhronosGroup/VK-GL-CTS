@@ -3620,3 +3620,4 @@ dEQP-EGL.functional.robustness.reset_context.fixed_function_pipeline.reset_statu
 dEQP-EGL.functional.robustness.reset_context.fixed_function_pipeline.reset_status.vertex_buffer_out_of_bounds
 dEQP-EGL.functional.robustness.negative_context.invalid_robust_context_creation
 dEQP-EGL.functional.robustness.negative_context.invalid_robust_shared_context_creation
+dEQP-EGL.functional.robustness.negative_context.invalid_notification_strategy_enum
