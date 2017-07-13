@@ -920,6 +920,13 @@ bool TextureLayerAttachmentTest::Test(glw::GLenum attachment, bool is_color_atta
 	gl.bindTexture(texture_target, m_to);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
 
+	// Lower the layers count when multiple levels are requested to limit the amount of memory required
+	layers = deMax32(1, (glw::GLint)((deUint64)layers / (1ull<<(deUint64)(2*(levels-1)))));
+	if (GL_TEXTURE_CUBE_MAP_ARRAY == texture_target)
+	{
+		layers = deMax32(6, (layers / 6) * 6);
+	}
+
 	if (GL_TEXTURE_2D_MULTISAMPLE_ARRAY == texture_target)
 	{
 		gl.texStorage3DMultisample(texture_target, 1, internalformat, (glw::GLuint)std::pow((double)2, (double)levels),
@@ -1191,7 +1198,19 @@ glw::GLuint TextureLayerAttachmentTest::MaxTextureLevels(glw::GLenum texture_tar
 		return 1;
 
 	case GL_TEXTURE_2D_ARRAY:
+
+		gl.getIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer has failed");
+
+		return (glw::GLuint)std::log((double)max_texture_size);
+
 	case GL_TEXTURE_CUBE_MAP_ARRAY:
+
+		gl.getIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE , &max_texture_size);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer has failed");
+
+		return (glw::GLuint)std::log((double)max_texture_size);
+
 	case GL_TEXTURE_3D:
 
 		gl.getIntegerv(GL_MAX_3D_TEXTURE_SIZE, &max_texture_size);
@@ -1219,16 +1238,22 @@ glw::GLuint TextureLayerAttachmentTest::MaxTextureLayers(glw::GLenum texture_tar
 
 	switch (texture_target)
 	{
-	case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
-	case GL_TEXTURE_2D_ARRAY:
 	case GL_TEXTURE_3D:
 		gl.getIntegerv(GL_MAX_3D_TEXTURE_SIZE, &max_texture_size);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer has failed");
 
 		return max_texture_size;
 
+	case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+	case GL_TEXTURE_2D_ARRAY:
+
+		gl.getIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_texture_size);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer has failed");
+
+		return max_texture_size;
+
 	case GL_TEXTURE_CUBE_MAP_ARRAY:
-		gl.getIntegerv(GL_MAX_3D_TEXTURE_SIZE, &max_texture_size);
+		gl.getIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_texture_size);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer has failed");
 
 		return (max_texture_size / 6) * 6; /* Make sure that max_texture_size is dividable by 6 */
@@ -4065,7 +4090,7 @@ void GetAttachmentParametersTest::CreateRenderbufferFramebuffer(bool depth, bool
 	gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffers has failed");
 
-	gl.genRenderbuffers(3, m_rbo);
+	gl.genRenderbuffers(2, m_rbo);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenRenderbuffers has failed");
 
 	gl.bindRenderbuffer(GL_RENDERBUFFER, m_rbo[0]);

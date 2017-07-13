@@ -28,8 +28,12 @@
 #include "deStringUtil.hpp"
 #include "tcuFormatUtil.hpp"
 #include "gluRenderConfig.hpp"
+#include "glwEnums.hpp"
 
 #include <map>
+#include <sstream>
+#include <iterator>
+#include <set>
 
 #include <WinGDI.h>
 
@@ -111,22 +115,26 @@
 #define WGL_NO_RESET_NOTIFICATION_ARB				0x8261
 #define WGL_LOSE_CONTEXT_ON_RESET_ARB				0x8252
 
+// WGL ARB_create_context_no_error
+#define WGL_CONTEXT_OPENGL_NO_ERROR_ARB				0x31B3
+
 DE_BEGIN_EXTERN_C
 
 // WGL core
-typedef HGLRC	(WINAPI* wglCreateContextFunc)				(HDC hdc);
-typedef BOOL	(WINAPI* wglDeleteContextFunc)				(HGLRC hglrc);
-typedef BOOL	(WINAPI* wglMakeCurrentFunc)				(HDC hdc, HGLRC hglrc);
-typedef PROC	(WINAPI* wglGetProcAddressFunc)				(LPCSTR lpszProc);
-typedef BOOL	(WINAPI* wglSwapLayerBuffersFunc)			(HDC dhc, UINT fuPlanes);
+typedef HGLRC		(WINAPI* wglCreateContextFunc)				(HDC hdc);
+typedef BOOL		(WINAPI* wglDeleteContextFunc)				(HGLRC hglrc);
+typedef BOOL		(WINAPI* wglMakeCurrentFunc)				(HDC hdc, HGLRC hglrc);
+typedef PROC		(WINAPI* wglGetProcAddressFunc)				(LPCSTR lpszProc);
+typedef BOOL		(WINAPI* wglSwapLayerBuffersFunc)			(HDC dhc, UINT fuPlanes);
 
 // WGL_ARB_pixel_format
-typedef BOOL	(WINAPI* wglGetPixelFormatAttribivARBFunc)	(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, int *piValues);
-typedef BOOL	(WINAPI* wglGetPixelFormatAttribfvARBFunc)	(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, FLOAT *pfValues);
-typedef BOOL	(WINAPI* wglChoosePixelFormatARBFunc)		(HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
+typedef BOOL		(WINAPI* wglGetPixelFormatAttribivARBFunc)	(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, int *piValues);
+typedef BOOL		(WINAPI* wglGetPixelFormatAttribfvARBFunc)	(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, FLOAT *pfValues);
+typedef BOOL		(WINAPI* wglChoosePixelFormatARBFunc)		(HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
 
 // WGL_ARB_create_context
-typedef HGLRC	(WINAPI* wglCreateContextAttribsARBFunc)	(HDC hdc, HGLRC hshareContext, const int* attribList);
+typedef HGLRC		(WINAPI* wglCreateContextAttribsARBFunc)	(HDC hdc, HGLRC hshareContext, const int* attribList);
+typedef const char*	(WINAPI* wglGetExtensionsStringARBFunc)		(HDC hdc);
 
 DE_END_EXTERN_C
 
@@ -153,6 +161,7 @@ struct Functions
 
 	// WGL_ARB_create_context
 	wglCreateContextAttribsARBFunc		createContextAttribsARB;
+	wglGetExtensionsStringARBFunc		getExtensionsStringARB;
 
 	Functions (void)
 		: createContext				(DE_NULL)
@@ -164,6 +173,7 @@ struct Functions
 		, getPixelFormatAttribfvARB	(DE_NULL)
 		, choosePixelFormatARB		(DE_NULL)
 		, createContextAttribsARB	(DE_NULL)
+		, getExtensionsStringARB	(DE_NULL)
 	{
 	}
 };
@@ -178,10 +188,12 @@ public:
 
 	const Functions&			getFunctions	(void) const	{ return m_functions;	}
 	const de::DynamicLibrary&	getGLLibrary	(void) const	{ return m_library;		}
+	bool						isWglExtensionSupported (const char* extName) const;
 
 private:
 	de::DynamicLibrary			m_library;
 	Functions					m_functions;
+	std::set<std::string>		m_extensions;
 };
 
 Library::Library (HINSTANCE instance)
@@ -235,6 +247,7 @@ Library::Library (HINSTANCE instance)
 
 	// WGL_ARB_create_context
 	m_functions.createContextAttribsARB		= (wglCreateContextAttribsARBFunc)m_functions.getProcAddress("wglCreateContextAttribsARB");
+	m_functions.getExtensionsStringARB		= (wglGetExtensionsStringARBFunc)m_functions.getProcAddress("wglGetExtensionsStringARB");
 
 	m_functions.makeCurrent(tmpWindow.getDeviceContext(), NULL);
 	m_functions.deleteContext(tmpCtx);
@@ -242,12 +255,23 @@ Library::Library (HINSTANCE instance)
 	if (!m_functions.getPixelFormatAttribivARB	||
 		!m_functions.getPixelFormatAttribfvARB	||
 		!m_functions.choosePixelFormatARB		||
-		!m_functions.createContextAttribsARB)
+		!m_functions.createContextAttribsARB	||
+		!m_functions.getExtensionsStringARB)
 		throw ResourceError("Failed to load WGL extension functions");
+
+	const char* extensions = m_functions.getExtensionsStringARB(tmpWindow.getDeviceContext());
+	std::istringstream extStream(extensions);
+	m_extensions = std::set<std::string>(std::istream_iterator<std::string>(extStream),
+										 std::istream_iterator<std::string>());
 }
 
 Library::~Library (void)
 {
+}
+
+bool Library::isWglExtensionSupported (const char* extName) const
+{
+	return m_extensions.find(extName) != m_extensions.end();
 }
 
 // Core
@@ -439,6 +463,17 @@ Context::Context (const Core*						core,
 		if ((ctxType.getFlags() & glu::CONTEXT_ROBUST) != 0)
 			flags |= WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB;
 
+		if ((ctxType.getFlags() & glu::CONTEXT_NO_ERROR) != 0)
+		{
+			if (core->getLibrary()->isWglExtensionSupported("WGL_ARB_create_context_no_error"))
+			{
+				attribList.push_back(WGL_CONTEXT_OPENGL_NO_ERROR_ARB);
+				attribList.push_back(1);
+			}
+			else
+				TCU_THROW(NotSupportedError, "WGL_ARB_create_context_no_error is required for creating no-error contexts");
+		}
+
 		if (flags != 0)
 		{
 			attribList.push_back(WGL_CONTEXT_FLAGS_ARB);
@@ -448,9 +483,6 @@ Context::Context (const Core*						core,
 
 	if (resetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
 	{
-		if (glu::isContextTypeES(ctxType))
-			TCU_THROW(InternalError, "Specifying reset notification strategy is not allowed when creating OpenGL ES contexts");
-
 		attribList.push_back(WGL_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB);
 
 		if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)
@@ -477,7 +509,7 @@ Context::Context (const Core*						core,
 	attribList.push_back(0);
 
 	// Create context
-    m_context = wgl.createContextAttribsARB(deviceCtx, (HGLRC)0, &attribList[0]);
+	m_context = wgl.createContextAttribsARB(deviceCtx, (HGLRC)0, &attribList[0]);
 
 	if (!m_context)
 		TCU_THROW(ResourceError, "Failed to create WGL context");

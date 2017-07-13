@@ -2815,3 +2815,4 @@ KHR-GL40.texture_barrier_ARB.disjoint-texels
 KHR-GL40.texture_barrier_ARB.overlapping-texels
 KHR-GL40.texture_barrier_ARB.same-texel-rw
 KHR-GL40.texture_barrier_ARB.same-texel-rw-multipass
+KHR-GL40.exposed_extensions.validate_extensions

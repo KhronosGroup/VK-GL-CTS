@@ -2261,6 +2261,7 @@ tcu::TestStatus createMaxConcurrentTest (Context& context, typename Object::Para
 			context.getTestContext().touchWatchdog();
 	}
 
+	context.getTestContext().touchWatchdog();
 	objects.clear();
 
 	return tcu::TestStatus::pass("Ok");
@@ -2311,10 +2312,13 @@ private:
 template<typename Object>
 tcu::TestStatus multithreadedCreateSharedResourcesTest (Context& context, typename Object::Parameters params)
 {
+	TestLog&							log			= context.getTestContext().getLog();
 	const deUint32						numThreads	= getDefaultTestThreadCount();
 	const Environment					env			(context, numThreads);
 	const typename Object::Resources	res			(env, params);
 	ThreadGroup							threads;
+
+	log << TestLog::Message << "numThreads = " << numThreads << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < numThreads; ndx++)
 		threads.add(MovePtr<ThreadGroupThread>(new CreateThread<Object>(env, res, params)));
@@ -2327,10 +2331,13 @@ tcu::TestStatus multithreadedCreatePerThreadResourcesTest (Context& context, typ
 {
 	typedef SharedPtr<typename Object::Resources>	ResPtr;
 
+	TestLog&			log			= context.getTestContext().getLog();
 	const deUint32		numThreads	= getDefaultTestThreadCount();
 	const Environment	env			(context, 1u);
 	vector<ResPtr>		resources	(numThreads);
 	ThreadGroup			threads;
+
+	log << TestLog::Message << "numThreads = " << numThreads << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < numThreads; ndx++)
 	{
@@ -2369,12 +2376,15 @@ tcu::TestStatus multithreadedCreatePerThreadDeviceTest (Context& context, typena
 	typedef SharedPtr<EnvClone>						EnvPtr;
 	typedef SharedPtr<typename Object::Resources>	ResPtr;
 
+	TestLog&					log				= context.getTestContext().getLog();
 	const deUint32				numThreads		= getDefaultTestThreadCount();
 	const Device::Parameters	deviceParams	= getDefaulDeviceParameters(context);
 	const Environment			sharedEnv		(context, numThreads);			// For creating Device's
 	vector<EnvPtr>				perThreadEnv	(numThreads);
 	vector<ResPtr>				resources		(numThreads);
 	ThreadGroup					threads;
+
+	log << TestLog::Message << "numThreads = " << numThreads << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < numThreads; ndx++)
 	{

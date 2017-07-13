@@ -84,6 +84,12 @@ enum Constants
 	MASK_WHD				= (1 | 2 | 4 | 0),
 };
 
+enum AllocationKind
+{
+	ALLOCATION_KIND_SUBALLOCATED = 0,
+	ALLOCATION_KIND_DEDICATED,
+};
+
 static const float	REFERENCE_DEPTH_VALUE	= 1.0f;
 static const Vec4	COLOR_TABLE[]			=
 {
@@ -103,6 +109,7 @@ struct CaseDef
 	IVec4			imageSizeHint;			//!< (w, h, d, layers), a component may have a symbolic value MAX_SIZE
 	VkFormat		colorFormat;
 	VkFormat		depthStencilFormat;		//! A depth/stencil format, or UNDEFINED if not used
+	AllocationKind	allocationKind;
 };
 
 template<typename T>
@@ -158,6 +165,62 @@ inline int maxLayersOrDepth (const IVec4& size)
 {
 	// This is safe because 3D images must have layers (w) = 1
 	return deMax32(size.z(), size.w());
+}
+
+de::MovePtr<Allocation> bindBuffer (const InstanceInterface&	vki,
+									const DeviceInterface&		vkd,
+									const VkPhysicalDevice&		physDevice,
+									const VkDevice				device,
+									const VkBuffer&				buffer,
+									const MemoryRequirement		requirement,
+									Allocator&					allocator,
+									AllocationKind				allocationKind)
+{
+	switch (allocationKind)
+	{
+		case ALLOCATION_KIND_SUBALLOCATED:
+		{
+			return ::vkt::pipeline::bindBuffer(vkd, device, allocator, buffer, requirement);
+		}
+
+		case ALLOCATION_KIND_DEDICATED:
+		{
+			return bindBufferDedicated(vki, vkd, physDevice, device, buffer, requirement);
+		}
+
+		default:
+		{
+			TCU_THROW(InternalError, "Invalid allocation kind");
+		}
+	}
+}
+
+de::MovePtr<Allocation> bindImage (const InstanceInterface&		vki,
+								   const DeviceInterface&		vkd,
+								   const VkPhysicalDevice&		physDevice,
+								   const VkDevice				device,
+								   const VkImage&				image,
+								   const MemoryRequirement		requirement,
+								   Allocator&					allocator,
+								   AllocationKind				allocationKind)
+{
+	switch (allocationKind)
+	{
+		case ALLOCATION_KIND_SUBALLOCATED:
+		{
+			return ::vkt::pipeline::bindImage(vkd, device, allocator, image, requirement);
+		}
+
+		case ALLOCATION_KIND_DEDICATED:
+		{
+			return bindImageDedicated(vki, vkd, physDevice, device, image, requirement);
+		}
+
+		default:
+		{
+			TCU_THROW(InternalError, "Invalid allocation kind");
+		}
+	}
 }
 
 // This is very test specific, so be careful if you want to reuse this code.
@@ -845,7 +908,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 	// Only make enough space for the check region
 	const VkDeviceSize				colorBufferSize		= product(checkSize) * tcu::getPixelSize(mapVkFormat(caseDef.colorFormat));
 	const Unique<VkBuffer>			colorBuffer			(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-	const UniquePtr<Allocation>		colorBufferAlloc	(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
+	const UniquePtr<Allocation>		colorBufferAlloc	(bindBuffer(vki, vk, physDevice, device, *colorBuffer, MemoryRequirement::HostVisible, allocator, caseDef.allocationKind));
 
 	{
 		deMemset(colorBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
@@ -854,7 +917,9 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 
 	const Unique<VkShaderModule>	vertexModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>	fragmentModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("frag"), 0u));
-	const Unique<VkRenderPass>		renderPass		(makeRenderPass				(vk, device, caseDef.colorFormat, caseDef.depthStencilFormat, static_cast<deUint32>(numSlices)));
+	const Unique<VkRenderPass>		renderPass		(makeRenderPass				(vk, device, caseDef.colorFormat, caseDef.depthStencilFormat, static_cast<deUint32>(numSlices),
+																				 (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+																															 : VK_IMAGE_LAYOUT_UNDEFINED));
 	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout			(vk, device));
 	vector<SharedPtrVkPipeline>		pipelines;
 
@@ -875,7 +940,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 
 		colorImage		= makeImage(vk, device, getImageCreateFlags(caseDef.viewType), getImageType(caseDef.viewType), caseDef.colorFormat,
 									imageSize.swizzle(0, 1, 2), 1u, imageSize.w(), imageUsage);
-		colorImageAlloc	= bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any);
+		colorImageAlloc	= bindImage(vki, vk, physDevice, device, *colorImage, MemoryRequirement::Any, allocator, caseDef.allocationKind);
 	}
 
 	// Create a depth/stencil image (always a 2D image, optionally layered)
@@ -885,7 +950,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 
 		depthStencilImage		= makeImage(vk, device, (VkImageCreateFlags)0, VK_IMAGE_TYPE_2D, caseDef.depthStencilFormat,
 											IVec3(imageSize.x(), imageSize.y(), 1), 1u, numSlices, imageUsage);
-		depthStencilImageAlloc	= bindImage(vk, device, allocator, *depthStencilImage, MemoryRequirement::Any);
+		depthStencilImageAlloc	= bindImage(vki, vk, physDevice, device, *depthStencilImage, MemoryRequirement::Any, allocator, caseDef.allocationKind);
 	}
 
 	// Create a vertex buffer
@@ -894,9 +959,46 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 		const VkDeviceSize			vertexBufferSize	= sizeInBytes(vertices);
 
 		vertexBuffer		= makeBuffer(vk, device, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-		vertexBufferAlloc	= bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible);
+		vertexBufferAlloc	= bindBuffer(vki, vk, physDevice, device, *vertexBuffer, MemoryRequirement::HostVisible, allocator, caseDef.allocationKind);
+
 		deMemcpy(vertexBufferAlloc->getHostPtr(), &vertices[0], static_cast<std::size_t>(vertexBufferSize));
 		flushMappedMemoryRange(vk, device, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexBufferSize);
+	}
+
+	// Prepare color image upfront for rendering to individual slices.  3D slices aren't separate subresources, so they shouldn't be transitioned
+	// during each subpass like array layers.
+	if (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D)
+	{
+		const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+		const Unique<VkCommandBuffer>	cmdBuffer	(makeCommandBuffer(vk, device, *cmdPool));
+
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		const VkImageMemoryBarrier	imageBarrier	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType            sType;
+			DE_NULL,											// const void*                pNext;
+			(VkAccessFlags)0,									// VkAccessFlags              srcAccessMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags              dstAccessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout              oldLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout              newLayout;
+			VK_QUEUE_FAMILY_IGNORED,							// uint32_t                   srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,							// uint32_t                   dstQueueFamilyIndex;
+			*colorImage,										// VkImage                    image;
+			{													// VkImageSubresourceRange    subresourceRange;
+				VK_IMAGE_ASPECT_COLOR_BIT,							// VkImageAspectFlags    aspectMask;
+				0u,													// uint32_t              baseMipLevel;
+				1u,													// uint32_t              levelCount;
+				0u,													// uint32_t              baseArrayLayer;
+				static_cast<deUint32>(imageSize.w()),				// uint32_t              layerCount;
+			}
+		};
+
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u,
+								0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+
+		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	}
 
 	// For each image layer or slice (3D), create an attachment and a pipeline
@@ -1084,6 +1186,14 @@ tcu::TestStatus testAttachmentSize (Context& context, const CaseDef caseDef)
 
 	int sizeReductionIndex = 0;
 
+	if (caseDef.allocationKind == ALLOCATION_KIND_DEDICATED)
+	{
+		const std::string extensionName("VK_KHR_dedicated_allocation");
+
+		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
+			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+	}
+
 	for (;;)
 	{
 		try
@@ -1259,13 +1369,21 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 	const int						numMipLevels			= static_cast<int>(mipLevelSizes.size());
 	const bool						useDepthStencil			= (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED);
 
+	if (caseDef.allocationKind == ALLOCATION_KIND_DEDICATED)
+	{
+		const std::string extensionName("VK_KHR_dedicated_allocation");
+
+		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
+			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+	}
+
 	if (useDepthStencil && !isDepthStencilFormatSupported(vki, physDevice, caseDef.depthStencilFormat))
 		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");
 
 	// Create a color buffer big enough to hold all layers and mip levels
 	const VkDeviceSize				colorBufferSize		= sum(mipLevelStorageSizes);
 	const Unique<VkBuffer>			colorBuffer			(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-	const UniquePtr<Allocation>		colorBufferAlloc	(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
+	const UniquePtr<Allocation>		colorBufferAlloc	(bindBuffer(vki, vk, physDevice, device, *colorBuffer, MemoryRequirement::HostVisible, allocator, caseDef.allocationKind));
 
 	{
 		deMemset(colorBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
@@ -1289,7 +1407,7 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 
 		colorImage		= makeImage(vk, device, getImageCreateFlags(caseDef.viewType), getImageType(caseDef.viewType), caseDef.colorFormat,
 									imageSize.swizzle(0, 1, 2), numMipLevels, imageSize.w(), imageUsage);
-		colorImageAlloc	= bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any);
+		colorImageAlloc	= bindImage(vki, vk, physDevice, device, *colorImage, MemoryRequirement::Any, allocator, caseDef.allocationKind);
 	}
 
 	// Create a depth/stencil image (always a 2D image, optionally layered)
@@ -1299,7 +1417,7 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 
 		depthStencilImage		= makeImage(vk, device, (VkImageCreateFlags)0, VK_IMAGE_TYPE_2D, caseDef.depthStencilFormat,
 											IVec3(imageSize.x(), imageSize.y(), 1), numMipLevels, numSlices, imageUsage);
-		depthStencilImageAlloc	= bindImage(vk, device, allocator, *depthStencilImage, MemoryRequirement::Any);
+		depthStencilImageAlloc	= bindImage(vki, vk, physDevice, device, *depthStencilImage, MemoryRequirement::Any, allocator, caseDef.allocationKind);
 	}
 
 	// Create a vertex buffer
@@ -1308,7 +1426,8 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 		const VkDeviceSize			vertexBufferSize	= sizeInBytes(vertices);
 
 		vertexBuffer		= makeBuffer(vk, device, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-		vertexBufferAlloc	= bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible);
+		vertexBufferAlloc	= bindBuffer(vki, vk, physDevice, device, *vertexBuffer, MemoryRequirement::HostVisible, allocator, caseDef.allocationKind);
+
 		deMemcpy(vertexBufferAlloc->getHostPtr(), &vertices[0], static_cast<std::size_t>(vertexBufferSize));
 		flushMappedMemoryRange(vk, device, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexBufferSize);
 	}
@@ -1575,7 +1694,7 @@ vector<IVec4> genSizeCombinations (const IVec4& baselineSize, const deUint32 siz
 	return sizes;
 }
 
-void addTestCasesWithFunctions (tcu::TestCaseGroup* group)
+void addTestCasesWithFunctions (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 {
 	const struct
 	{
@@ -1638,28 +1757,33 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group)
 							*sizeIter,							// IVec4			imageSizeHint;
 							format[formatNdx],					// VkFormat			colorFormat;
 							depthStencilFormat[dsFormatNdx],	// VkFormat			depthStencilFormat;
+							allocationKind						// AllocationKind	allocationKind;
 						};
 						addFunctionCaseWithPrograms(smallGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", initPrograms, testAttachmentSize, caseDef);
 					}
 				}
 				else // All huge cases go into a separate group
 				{
-					MovePtr<tcu::TestCaseGroup>	sizeGroup	(new tcu::TestCaseGroup(group->getTestContext(), getSizeDescription(*sizeIter).c_str(), ""));
-					const VkFormat				colorFormat	= VK_FORMAT_R8G8B8A8_UNORM;
-
-					// Use the same color format for all cases, to reduce the number of permutations
-					for (int dsFormatNdx = 0; dsFormatNdx < DE_LENGTH_OF_ARRAY(depthStencilFormat); ++dsFormatNdx)
+					if (allocationKind != ALLOCATION_KIND_DEDICATED)
 					{
-						const CaseDef caseDef =
+						MovePtr<tcu::TestCaseGroup>	sizeGroup	(new tcu::TestCaseGroup(group->getTestContext(), getSizeDescription(*sizeIter).c_str(), ""));
+						const VkFormat				colorFormat	= VK_FORMAT_R8G8B8A8_UNORM;
+
+						// Use the same color format for all cases, to reduce the number of permutations
+						for (int dsFormatNdx = 0; dsFormatNdx < DE_LENGTH_OF_ARRAY(depthStencilFormat); ++dsFormatNdx)
 						{
-							testCase[caseNdx].viewType,			// VkImageViewType	viewType;
-							*sizeIter,							// IVec4			imageSizeHint;
-							colorFormat,						// VkFormat			colorFormat;
-							depthStencilFormat[dsFormatNdx],	// VkFormat			depthStencilFormat;
-						};
-						addFunctionCaseWithPrograms(sizeGroup.get(), getFormatString(colorFormat, depthStencilFormat[dsFormatNdx]), "", initPrograms, testAttachmentSize, caseDef);
+							const CaseDef caseDef =
+							{
+								testCase[caseNdx].viewType,			// VkImageViewType	viewType;
+								*sizeIter,							// IVec4			imageSizeHint;
+								colorFormat,						// VkFormat			colorFormat;
+								depthStencilFormat[dsFormatNdx],	// VkFormat			depthStencilFormat;
+								allocationKind						// AllocationKind	allocationKind;
+							};
+							addFunctionCaseWithPrograms(sizeGroup.get(), getFormatString(colorFormat, depthStencilFormat[dsFormatNdx]), "", initPrograms, testAttachmentSize, caseDef);
+						}
+						hugeGroup->addChild(sizeGroup.release());
 					}
-					hugeGroup->addChild(sizeGroup.release());
 				}
 			}
 			smallGroup.release();
@@ -1679,6 +1803,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group)
 					testCase[caseNdx].baselineSize,		// IVec4			imageSizeHint;
 					format[formatNdx],					// VkFormat			colorFormat;
 					depthStencilFormat[dsFormatNdx],	// VkFormat			depthStencilFormat;
+					allocationKind						// AllocationKind	allocationKind;
 				};
 				addFunctionCaseWithPrograms(mipmapGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", initPrograms, testRenderToMipMaps, caseDef);
 			}
@@ -1689,11 +1814,26 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group)
 	}
 }
 
+void addCoreRenderToImageTests (tcu::TestCaseGroup* group)
+{
+	addTestCasesWithFunctions(group, ALLOCATION_KIND_SUBALLOCATED);
+}
+
+void addDedicatedAllocationRenderToImageTests (tcu::TestCaseGroup* group)
+{
+	addTestCasesWithFunctions(group, ALLOCATION_KIND_DEDICATED);
+}
+
 } // anonymous ns
 
 tcu::TestCaseGroup* createRenderToImageTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "render_to_image", "Render to image tests", addTestCasesWithFunctions);
+	de::MovePtr<tcu::TestCaseGroup>	renderToImageTests	(new tcu::TestCaseGroup(testCtx, "render_to_image", "Render to image tests"));
+
+	renderToImageTests->addChild(createTestGroup(testCtx, "core",					"Core render to image tests",								addCoreRenderToImageTests));
+	renderToImageTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Render to image tests for dedicated memory allocation",	addDedicatedAllocationRenderToImageTests));
+
+	return renderToImageTests.release();
 }
 
 } // pipeline

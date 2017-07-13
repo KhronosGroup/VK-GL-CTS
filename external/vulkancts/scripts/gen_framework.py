@@ -43,12 +43,14 @@ DEFINITIONS			= [
 	("VK_MAX_PHYSICAL_DEVICE_NAME_SIZE",	"size_t"),
 	("VK_MAX_EXTENSION_NAME_SIZE",			"size_t"),
 	("VK_UUID_SIZE",						"size_t"),
+	("VK_LUID_SIZE_KHR",					"size_t"),
 	("VK_MAX_MEMORY_TYPES",					"size_t"),
 	("VK_MAX_MEMORY_HEAPS",					"size_t"),
 	("VK_MAX_DESCRIPTION_SIZE",				"size_t"),
 	("VK_ATTACHMENT_UNUSED",				"deUint32"),
 	("VK_SUBPASS_EXTERNAL",					"deUint32"),
 	("VK_QUEUE_FAMILY_IGNORED",				"deUint32"),
+	("VK_QUEUE_FAMILY_EXTERNAL_KHR",		"deUint32"),
 	("VK_REMAINING_MIP_LEVELS",				"deUint32"),
 	("VK_REMAINING_ARRAY_LAYERS",			"deUint32"),
 	("VK_WHOLE_SIZE",						"vk::VkDeviceSize"),
@@ -99,7 +101,8 @@ TYPE_SUBSTITUTIONS		= [
 
 	# Platform-specific
 	("DWORD",		"deUint32"),
-	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*")
+	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*"),
+	("LPCWSTR",		"char*"),
 ]
 
 EXTENSION_POSTFIXES		= ["KHR", "EXT", "NV", "NVX", "KHX"]

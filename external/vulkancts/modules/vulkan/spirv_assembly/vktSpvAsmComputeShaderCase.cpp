@@ -28,6 +28,7 @@
 
 #include "vkBuilderUtil.hpp"
 #include "vkMemUtil.hpp"
+#include "vkPlatform.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -272,12 +273,12 @@ namespace SpirVAssembly
 class SpvAsmComputeShaderInstance : public TestInstance
 {
 public:
-								SpvAsmComputeShaderInstance	(Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features);
-	tcu::TestStatus				iterate						(void);
+										SpvAsmComputeShaderInstance	(Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features);
+	tcu::TestStatus						iterate						(void);
 
 private:
-	const ComputeShaderSpec&	m_shaderSpec;
-	const ComputeTestFeatures	m_features;
+	const ComputeShaderSpec&			m_shaderSpec;
+	const ComputeTestFeatures			m_features;
 };
 
 // ComputeShaderTestCase implementations
@@ -302,9 +303,9 @@ TestInstance* SpvAsmComputeShaderCase::createInstance (Context& ctx) const
 // ComputeShaderTestInstance implementations
 
 SpvAsmComputeShaderInstance::SpvAsmComputeShaderInstance (Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features)
-	: TestInstance	(ctx)
-	, m_shaderSpec	(spec)
-	, m_features	(features)
+	: TestInstance		(ctx)
+	, m_shaderSpec		(spec)
+	, m_features		(features)
 {
 }
 
@@ -323,19 +324,41 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		}
 	}
 
-	const DeviceInterface&				vkdi				= m_context.getDeviceInterface();
-	const VkDevice&						device				= m_context.getDevice();
-	Allocator&							allocator			= m_context.getDefaultAllocator();
-
 	if ((m_features == COMPUTE_TEST_USES_INT16 || m_features == COMPUTE_TEST_USES_INT16_INT64) && !features.shaderInt16)
 	{
-		throw tcu::NotSupportedError("shaderInt16 feature is not supported");
+		TCU_THROW(NotSupportedError, "shaderInt16 feature is not supported");
 	}
 
 	if ((m_features == COMPUTE_TEST_USES_INT64 || m_features == COMPUTE_TEST_USES_INT16_INT64) && !features.shaderInt64)
 	{
-		throw tcu::NotSupportedError("shaderInt64 feature is not supported");
+		TCU_THROW(NotSupportedError, "shaderInt64 feature is not supported");
 	}
+
+	{
+		const InstanceInterface&			vki					= m_context.getInstanceInterface();
+		const VkPhysicalDevice				physicalDevice		= m_context.getPhysicalDevice();
+
+		// 16bit storage features
+		{
+			if (!is16BitStorageFeaturesSupported(vki, physicalDevice, m_context.getInstanceExtensions(), m_shaderSpec.requestedVulkanFeatures.ext16BitStorage))
+				TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
+		}
+
+		// VariablePointers features
+		{
+			if (!isVariablePointersFeaturesSupported(vki, physicalDevice, m_context.getInstanceExtensions(), m_shaderSpec.requestedVulkanFeatures.extVariablePointers))
+				TCU_THROW(NotSupportedError, "Request Variable Pointer feature not supported");
+		}
+	}
+
+	// defer device and resource creation until after feature checks
+	const Unique<VkDevice>				vkDevice			(createDeviceWithExtensions(m_context, m_context.getUniversalQueueFamilyIndex(), m_context.getDeviceExtensions(), m_shaderSpec.extensions));
+	const VkDevice&						device				= *vkDevice;
+	const DeviceDriver					vkDeviceInterface	(m_context.getInstanceInterface(), device);
+	const DeviceInterface&				vkdi				= vkDeviceInterface;
+	const de::UniquePtr<vk::Allocator>	vkAllocator			(createAllocator(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), vkDeviceInterface, device));
+	Allocator&							allocator			= *vkAllocator;
+	const VkQueue						queue				(getDeviceQueue(vkDeviceInterface, device, m_context.getUniversalQueueFamilyIndex(), 0));
 
 	vector<AllocationSp>				inputAllocs;
 	vector<AllocationSp>				outputAllocs;
@@ -440,7 +463,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		(const VkSemaphore*)DE_NULL,
 	};
 
-	VK_CHECK(vkdi.queueSubmit(m_context.getUniversalQueue(), 1, &submitInfo, *cmdCompleteFence));
+	VK_CHECK(vkdi.queueSubmit(queue, 1, &submitInfo, *cmdCompleteFence));
 	VK_CHECK(vkdi.waitForFences(device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
 
 	// Check output.

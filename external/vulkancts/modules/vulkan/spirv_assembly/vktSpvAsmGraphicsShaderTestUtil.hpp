@@ -28,6 +28,7 @@
 
 #include "vkPrograms.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
+#include "vktSpvAsmUtils.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include "deRandom.hpp"
@@ -253,7 +254,10 @@ struct InstanceContext
 	vk::VkShaderStageFlagBits				requiredStages;
 	std::vector<std::string>				requiredDeviceExtensions;
 	std::vector<std::string>				requiredDeviceFeatures;
+	VulkanFeatures							requestedFeatures;
 	PushConstants							pushConstants;
+	// Specifies the (one or more) stages that use a customized shader code.
+	VkShaderStageFlags						customizedStages;
 	// Possible resources used by the graphics pipeline.
 	// If it is not empty, a single descriptor set (number 0) will be allocated
 	// to point to all resources specified. Binding numbers are allocated in
@@ -277,7 +281,9 @@ struct InstanceContext
 					 const GraphicsResources&					resources_,
 					 const GraphicsInterfaces&					interfaces_,
 					 const std::vector<std::string>&			extensions_,
-					 const std::vector<std::string>&			features_);
+					 const std::vector<std::string>&			features_,
+					 VulkanFeatures								vulkanFeatures_,
+					 VkShaderStageFlags							customizedStages_);
 
 	InstanceContext (const InstanceContext& other);
 
@@ -351,10 +357,12 @@ InstanceContext createInstanceContext (const ShaderElement							(&elements)[N],
 									   const GraphicsInterfaces&					interfaces,
 									   const std::vector<std::string>&				extensions,
 									   const std::vector<std::string>&				features,
+									   VulkanFeatures								vulkanFeatures,
+									   VkShaderStageFlags							customizedStages,
 									   const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
 									   const std::string&							failMessageTemplate	= std::string())
 {
-	InstanceContext ctx (inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources, interfaces, extensions, features);
+	InstanceContext ctx (inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, customizedStages);
 	for (size_t i = 0; i < N; ++i)
 	{
 		ctx.moduleMap[elements[i].moduleName].push_back(std::make_pair(elements[i].entryName, elements[i].stage));
@@ -375,7 +383,8 @@ inline InstanceContext createInstanceContext (const ShaderElement						(&element
 {
 	return createInstanceContext(elements, inputColors, outputColors, testCodeFragments,
 								 StageToSpecConstantMap(), PushConstants(), GraphicsResources(),
-								 GraphicsInterfaces(), std::vector<std::string>(), std::vector<std::string>());
+								 GraphicsInterfaces(), std::vector<std::string>(), std::vector<std::string>(),
+								 VulkanFeatures(), vk::VK_SHADER_STAGE_ALL);
 }
 
 // The same as createInstanceContext above, but with default colors.
@@ -399,6 +408,7 @@ void createTestsForAllStages (const std::string&						name,
 							  const GraphicsInterfaces&					interfaces,
 							  const std::vector<std::string>&			extensions,
 							  const std::vector<std::string>&			features,
+							  VulkanFeatures							vulkanFeatures,
 							  tcu::TestCaseGroup*						tests,
 							  const qpTestResult						failResult			= QP_TEST_RESULT_FAIL,
 							  const std::string&						failMessageTemplate	= std::string());
@@ -420,7 +430,8 @@ inline void createTestsForAllStages (const std::string&							name,
 
 	createTestsForAllStages(
 			name, inputColors, outputColors, testCodeFragments, noSpecConstants, noPushConstants,
-			noResources, noInterfaces, noExtensions, noFeatures, tests, failResult, failMessageTemplate);
+			noResources, noInterfaces, noExtensions, noFeatures, VulkanFeatures(),
+			tests, failResult, failMessageTemplate);
 }
 
 inline void createTestsForAllStages (const std::string&							name,
@@ -440,7 +451,8 @@ inline void createTestsForAllStages (const std::string&							name,
 
 	createTestsForAllStages(
 			name, inputColors, outputColors, testCodeFragments, specConstants, noPushConstants,
-			noResources, noInterfaces, noExtensions, noFeatures, tests, failResult, failMessageTemplate);
+			noResources, noInterfaces, noExtensions, noFeatures, VulkanFeatures(),
+			tests, failResult, failMessageTemplate);
 }
 
 inline void createTestsForAllStages (const std::string&							name,
@@ -450,6 +462,7 @@ inline void createTestsForAllStages (const std::string&							name,
 									 const GraphicsResources&					resources,
 									 const std::vector<std::string>&			extensions,
 									 tcu::TestCaseGroup*						tests,
+									 VulkanFeatures								vulkanFeatures		= VulkanFeatures(),
 									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
 									 const std::string&							failMessageTemplate	= std::string())
 {
@@ -460,7 +473,8 @@ inline void createTestsForAllStages (const std::string&							name,
 
 	createTestsForAllStages(
 			name, inputColors, outputColors, testCodeFragments, noSpecConstants, noPushConstants,
-			resources, noInterfaces, extensions, noFeatures, tests, failResult, failMessageTemplate);
+			resources, noInterfaces, extensions, noFeatures, vulkanFeatures,
+			tests, failResult, failMessageTemplate);
 }
 
 inline void createTestsForAllStages (const std::string& name,
@@ -470,6 +484,7 @@ inline void createTestsForAllStages (const std::string& name,
 									 const GraphicsInterfaces					interfaces,
 									 const std::vector<std::string>&			extensions,
 									 tcu::TestCaseGroup*						tests,
+									 VulkanFeatures								vulkanFeatures		= VulkanFeatures(),
 									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
 									 const std::string&							failMessageTemplate	= std::string())
 {
@@ -480,7 +495,8 @@ inline void createTestsForAllStages (const std::string& name,
 
 	createTestsForAllStages(
 			name, inputColors, outputColors, testCodeFragments, noSpecConstants, noPushConstants,
-			noResources, interfaces, extensions, noFeatures, tests, failResult, failMessageTemplate);
+			noResources, interfaces, extensions, noFeatures, vulkanFeatures,
+			tests, failResult, failMessageTemplate);
 }
 
 inline void createTestsForAllStages (const std::string& name,
@@ -491,6 +507,7 @@ inline void createTestsForAllStages (const std::string& name,
 									 const GraphicsResources&					resources,
 									 const std::vector<std::string>&			extensions,
 									 tcu::TestCaseGroup*						tests,
+									 VulkanFeatures								vulkanFeatures		= VulkanFeatures(),
 									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
 									 const std::string&							failMessageTemplate	= std::string())
 {
@@ -500,7 +517,8 @@ inline void createTestsForAllStages (const std::string& name,
 
 	createTestsForAllStages(
 			name, inputColors, outputColors, testCodeFragments, noSpecConstants, pushConstants,
-			resources, noInterfaces, extensions, noFeatures, tests, failResult, failMessageTemplate);
+			resources, noInterfaces, extensions, noFeatures, vulkanFeatures,
+			tests, failResult, failMessageTemplate);
 }
 
 // Sets up and runs a Vulkan pipeline, then spot-checks the resulting image.
@@ -520,7 +538,9 @@ void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const std::map
 //
 // The following equivalence criteria are respected:
 // * Positive and negative zeros are considered equivalent.
-// * Denormalized floats are allowed to be flushed to zeros.
+// * Denormalized floats are allowed to be flushed to zeros, including
+//   * Inputted 32bit denormalized float
+//   * Generated 16bit denormalized float
 // * Different bit patterns of NaNs are allowed.
 // * For the rest, require exactly the same bit pattern.
 bool compare16BitFloat (float original, deUint16 returned, RoundingModeFlags flags, tcu::TestLog& log);
@@ -528,7 +548,9 @@ bool compare16BitFloat (float original, deUint16 returned, RoundingModeFlags fla
 // Compare the returned 32-bit float against its expected value.
 //
 // The following equivalence criteria are respected:
-// * Denormalized floats are allowed to be flushed to zeros.
+// * Denormalized floats are allowed to be flushed to zeros, including
+//   * The expected value itself is a denormalized float
+//   * The expected value is a denormalized float if converted to 16bit
 // * Different bit patterns of NaNs/Infs are allowed.
 // * For the rest, use C++ float equivalence check.
 bool compare32BitFloat (float expected, float returned, tcu::TestLog& log);

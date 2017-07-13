@@ -1,10 +1,10 @@
-#ifndef _ES32CCONTEXTFLAGSTESTS_HPP
-#define _ES32CCONTEXTFLAGSTESTS_HPP
+#ifndef _GLCCONTEXTFLAGSTESTS_HPP
+#define _GLCCONTEXTFLAGSTESTS_HPP
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
  *
- * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2017 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,20 +32,23 @@
 #include "glcTestCase.hpp"
 #include "glcTestPackage.hpp"
 
-namespace es32cts
+namespace glcts
 {
 
-class ContextFlagsTests : public deqp::TestCaseGroup
+class ContextFlagsTests : public tcu::TestCaseGroup
 {
 public:
-	ContextFlagsTests(deqp::Context& context);
+	ContextFlagsTests(tcu::TestContext& testCtx, glu::ApiType apiType);
 
 	virtual void init(void);
 
 private:
 	ContextFlagsTests(const ContextFlagsTests& other);
 	ContextFlagsTests& operator=(const ContextFlagsTests& other);
+
+	/* Private members */
+	glu::ApiType m_ApiType;
 };
 }
 
-#endif // _ES32CCONTEXTFLAGSTESTS_HPP
+#endif // _GLCCONTEXTFLAGSTESTS_HPP

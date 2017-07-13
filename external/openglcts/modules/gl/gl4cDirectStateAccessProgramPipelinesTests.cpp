@@ -639,6 +639,9 @@ void FunctionalTest::prepareShaderPrograms()
 
 	glw::GLint status = GL_TRUE;
 
+	gl.validateProgram(m_spo_v);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glValidateProgram call failed.");
+
 	gl.getProgramiv(m_spo_v, GL_VALIDATE_STATUS, &status);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramiv call failed.");
 
@@ -664,6 +667,9 @@ void FunctionalTest::prepareShaderPrograms()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShaderProgramv call failed.");
 
 	status = GL_TRUE;
+
+	gl.validateProgram(m_spo_f);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glValidateProgram call failed.");
 
 	gl.getProgramiv(m_spo_f, GL_VALIDATE_STATUS, &status);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramiv call failed.");

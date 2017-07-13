@@ -82,9 +82,10 @@ EGLContext createGLContext (const Library&					egl,
 							const glu::ContextType&			contextType,
 							glu::ResetNotificationStrategy	resetNotificationStrategy)
 {
-	const bool			khrCreateContextSupported	= hasExtension(egl, display, "EGL_KHR_create_context");
-	EGLContext			context						= EGL_NO_CONTEXT;
-	EGLenum				api							= EGL_NONE;
+	const bool			khrCreateContextSupported			= hasExtension(egl, display, "EGL_KHR_create_context");
+	const bool			khrCreateContextNoErrorSupported	= hasExtension(egl, display, "EGL_KHR_create_context_no_error");
+	EGLContext			context								= EGL_NO_CONTEXT;
+	EGLenum				api									= EGL_NONE;
 	vector<EGLint>		attribList;
 
 	if (glu::isContextTypeES(contextType))
@@ -147,6 +148,17 @@ EGLContext createGLContext (const Library&					egl,
 			}
 			else
 				flags |= EGL_CONTEXT_OPENGL_ROBUST_ACCESS_BIT_KHR;
+		}
+
+		if ((contextType.getFlags() & glu::CONTEXT_NO_ERROR) != 0)
+		{
+			if (khrCreateContextNoErrorSupported)
+			{
+				attribList.push_back(EGL_CONTEXT_OPENGL_NO_ERROR_KHR);
+				attribList.push_back(EGL_TRUE);
+			}
+			else
+				throw tcu::NotSupportedError("EGL_KHR_create_context_no_error is required for creating no-error contexts");
 		}
 
 		if ((contextType.getFlags() & glu::CONTEXT_FORWARD_COMPATIBLE) != 0)

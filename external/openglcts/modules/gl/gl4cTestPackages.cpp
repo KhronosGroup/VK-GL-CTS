@@ -38,12 +38,12 @@
 #include "gl4cIncompleteTextureAccessTests.hpp"
 #include "gl4cIndirectParametersTests.hpp"
 #include "gl4cKHRDebugTests.hpp"
+#include "gl4cLimitsTests.hpp"
 #include "gl4cMapBufferAlignmentTests.hpp"
 #include "gl4cMultiBindTests.hpp"
 #include "gl4cParallelShaderCompileTests.hpp"
 #include "gl4cPostDepthCoverageTests.hpp"
 #include "gl4cProgramInterfaceQueryTests.hpp"
-#include "gl4cRobustnessTests.hpp"
 #include "gl4cShaderAtomicCounterOpsTests.hpp"
 #include "gl4cShaderAtomicCountersTests.hpp"
 #include "gl4cShaderBallotTests.hpp"
@@ -69,12 +69,14 @@
 #include "gl4cVertexAttrib64BitTest.hpp"
 #include "gl4cVertexAttribBindingTests.hpp"
 #include "glcBlendEquationAdvancedTests.hpp"
+#include "glcExposedExtensionsTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcSampleVariablesTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderLibrary.hpp"
 #include "glcShaderMultisampleInterpolationTests.hpp"
+#include "glcTextureFilterAnisotropicTests.hpp"
 #include "glcViewportArrayTests.hpp"
 
 #include "../gles31/es31cArrayOfArraysTests.hpp"
@@ -124,6 +126,7 @@ void GL40TestPackage::init(void)
 		addChild(new gl4cts::ShaderSubroutineTests(getContext()));
 		addChild(
 			new gl4cts::TextureBarrierTests(getContext(), gl4cts::TextureBarrierTests::API_GL_ARB_texture_barrier));
+		addChild(new glcts::ExposedExtensionsTests(getContext()));
 	}
 	catch (...)
 	{
@@ -290,6 +293,7 @@ void GL44TestPackage::init(void)
 		addChild(new deqp::SampleVariablesTests(getContext(), glu::GLSL_VERSION_440));
 		addChild(new deqp::ShaderMultisampleInterpolationTests(getContext(), glu::GLSL_VERSION_440));
 		addChild(new glcts::ShaderTextureImageSamplesTests(getContext()));
+		addChild(new glcts::TextureFilterAnisotropicTests(getContext()));
 
 		glcts::ExtParameters extParams(glu::GLSL_VERSION_440, glcts::EXTENSIONTYPE_NONE);
 		addChild(new glcts::GeometryShaderTests(getContext(), extParams));
@@ -346,7 +350,6 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::ClipControlTests(getContext(), gl4cts::ClipControlTests::API_GL_45core));
 		addChild(new gl4cts::DirectStateAccess::Tests(getContext()));
 		addChild(new gl4cts::GetTextureSubImage::Tests(getContext()));
-		addChild(new gl4cts::RobustnessTests(getContext()));
 		addChild(new gl4cts::TextureBarrierTests(getContext(), gl4cts::TextureBarrierTests::API_GL_45core));
 		addChild(new gl4cts::ConditionalRenderInverted::Tests(getContext()));
 		addChild(new gl4cts::Sync::Tests(getContext()));
@@ -360,6 +363,7 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::ShaderGroupVote(getContext()));
 		addChild(new gl4cts::ShaderDrawParametersTests(getContext()));
 		addChild(new gl4cts::ShaderViewportLayerArray(getContext()));
+		addChild(new gl4cts::LimitsTests(getContext()));
 	}
 	catch (...)
 	{

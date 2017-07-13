@@ -1502,7 +1502,7 @@ void GeometryShaderLocationAliasingTest::deinit()
  **/
 tcu::TestNode::IterateResult GeometryShaderLocationAliasingTest::iterate()
 {
-	bool has_shader_compilation_failed = true;
+	bool has_program_link_succeeded	= true;
 	bool result						   = true;
 
 	/* This test should only run if EXT_geometry_shader is supported. */
@@ -1550,21 +1550,13 @@ tcu::TestNode::IterateResult GeometryShaderLocationAliasingTest::iterate()
 	std::string vs_code_specialized		= specializeShader(1, &dummy_vs_code);
 	const char* vs_code_specialized_raw = vs_code_specialized.c_str();
 
-	if (TestCaseBase::buildProgram(m_po_id, m_gs_id, 1,					 /* n_sh1_body_parts */
-								   &gs_code_specialized_raw, m_vs_id, 1, /* n_sh2_body_parts */
-								   &vs_code_specialized_raw, m_fs_id, 1, /* n_sh3_body_parts */
-								   &fs_code_specialized_raw, &has_shader_compilation_failed))
+	has_program_link_succeeded = TestCaseBase::buildProgram(
+		m_po_id, m_gs_id, 1 /* n_sh1_body_parts */, &gs_code_specialized_raw, m_vs_id, 1 /* n_sh2_body_parts */,
+		&vs_code_specialized_raw, m_fs_id, 1 /* n_sh3_body_parts */, &fs_code_specialized_raw, NULL);
+	if (has_program_link_succeeded)
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message
-						   << "Program object was linked successfully, whereas a failure was expected."
-						   << tcu::TestLog::EndMessage;
-
-		result = false;
-	}
-
-	if (has_shader_compilation_failed)
-	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Shader compilation failed unexpectedly."
+						   << "Program object was compiled and linked successfully, whereas a failure was expected."
 						   << tcu::TestLog::EndMessage;
 
 		result = false;

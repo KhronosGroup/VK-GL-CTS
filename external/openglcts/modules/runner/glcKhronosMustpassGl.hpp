@@ -19,19 +19,7 @@
  * be lost! Modify the generating script instead.
  */
 
-const string mustpassDir = "gl_cts/data/mustpass/gl/khronos_mustpass/4.5.5.x/";
-
-struct RunParams
-{
-	glu::ApiType apiType;
-	const string configName;
-	const char*  glConfigName;
-	const string screenRotation;
-	int			 baseSeed;
-	const char*  fboConfig;
-	int			 surfaceWidth;
-	int			 surfaceHeight;
-};
+const char* mustpassDir = "gl_cts/data/mustpass/gl/khronos_mustpass/4.5.5.x/";
 
 static const RunParams khronos_mustpass_gl_first_cfg[] = {
 	{ glu::ApiType::core(4, 5), "master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },

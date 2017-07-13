@@ -3192,6 +3192,21 @@ group extensions "Extension Tests"
 		""
 	end
 
+	case invalid_behavior_3
+		version 300 es
+		expect compile_fail
+		both ""
+			#version 300 es
+			#extension all : enable
+			precision mediump float;
+			${DECLARATIONS}
+			void main()
+			{
+				${POSITION_FRAG_COLOR} = vec4(1.0);
+			}
+		""
+	end
+
 	case invalid_char_in_name
 		version 300 es
 		expect compile_fail

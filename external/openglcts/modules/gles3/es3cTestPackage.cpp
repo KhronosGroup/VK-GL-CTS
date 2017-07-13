@@ -23,6 +23,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "es3cTestPackage.hpp"
+#include "glcExposedExtensionsTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcShaderIndexingTests.hpp"
@@ -32,6 +33,7 @@
 #include "glcShaderNegativeTests.hpp"
 #include "glcShaderStructTests.hpp"
 #include "glcShaderSwitchTests.hpp"
+#include "glcTextureFilterAnisotropicTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "gluStateReset.hpp"
 #include "glwEnums.hpp"
@@ -151,6 +153,8 @@ void ES30TestPackage::init(void)
 	try
 	{
 		addChild(new ShaderTests(getContext()));
+		addChild(new glcts::TextureFilterAnisotropicTests(getContext()));
+		addChild(new glcts::ExposedExtensionsTests(getContext()));
 	}
 	catch (...)
 	{

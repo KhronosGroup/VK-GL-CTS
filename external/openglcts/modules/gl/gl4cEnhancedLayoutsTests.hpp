@@ -66,9 +66,9 @@ public:
 	std::string GetGLSLConstructor(const glw::GLvoid* data) const;
 	const glw::GLchar* GetGLSLTypeName() const;
 	glw::GLuint		   GetLocations() const;
-	glw::GLuint		   GetSize() const;
-	glw::GLenum		   GetTypeGLenum() const;
-	glw::GLuint		   GetNumComponents() const;
+	glw::GLuint GetSize(const bool is_std140 = false) const;
+	glw::GLenum GetTypeGLenum() const;
+	glw::GLuint GetNumComponents() const;
 
 	/* Public static routines */
 	/* Functionality */
@@ -752,12 +752,12 @@ public:
 
 	/* Init & Release */
 	void Init(const std::string& compute_shader, const std::string& fragment_shader, const std::string& geometry_shader,
-			  const std::string& tesselation_control_shader, const std::string& tesselation_evaluation_shader,
+			  const std::string& tessellation_control_shader, const std::string& tessellation_evaluation_shader,
 			  const std::string& vertex_shader, const NameVector& captured_varyings, bool capture_interleaved,
 			  bool is_separable);
 
 	void Init(const std::string& compute_shader, const std::string& fragment_shader, const std::string& geometry_shader,
-			  const std::string& tesselation_control_shader, const std::string& tesselation_evaluation_shader,
+			  const std::string& tessellation_control_shader, const std::string& tessellation_evaluation_shader,
 			  const std::string& vertex_shader, bool is_separable);
 
 	void Release();
@@ -1217,8 +1217,8 @@ private:
 									   const Utils::Variable::Descriptor& out_variable,
 									   Utils::Variable::FLAVOUR			  out_flavour);
 
-	std::string getVariableVerifcation(const std::string& parent_name, const glw::GLvoid* data,
-									   const Utils::Variable::Descriptor& variable, Utils::Variable::FLAVOUR flavour);
+	std::string getVariableVerification(const std::string& parent_name, const glw::GLvoid* data,
+										const Utils::Variable::Descriptor& variable, Utils::Variable::FLAVOUR flavour);
 
 	void prepareSSB(Utils::Program& program, Utils::Variable& variable, Utils::Buffer& buffer);
 
@@ -1610,6 +1610,7 @@ protected:
 
 	virtual std::string getTestCaseName(glw::GLuint test_case_index);
 	virtual glw::GLuint getTestCaseNumber();
+	virtual glw::GLint  getMaxBlockSize();
 	virtual bool isComputeRelevant(glw::GLuint test_case_index);
 	virtual bool isFailureExpected(glw::GLuint test_case_index);
 	virtual bool isStageSupported(Utils::Shader::STAGES stage);
@@ -1902,8 +1903,9 @@ private:
  *
  * Test verifies that offset alignment rules are enforced.
  *
- * Modify UniformBlockMemberInvalidOffsetAlignment to test shader storage block
- * instead of uniform block
+ * Modify UniformBlockMemberInvalidOffsetAlignment to test shader
+ * storage block against MAX_SHADER_STORAGE_BLOCK_SIZE instead of
+ * uniform block
  **/
 class SSBMemberInvalidOffsetAlignmentTest : public UniformBlockMemberInvalidOffsetAlignmentTest
 {
@@ -1917,6 +1919,7 @@ public:
 
 protected:
 	/* Methods to be implemented by child class */
+	virtual glw::GLint  getMaxBlockSize();
 	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
 	virtual bool isStageSupported(Utils::Shader::STAGES stage);
@@ -2914,7 +2917,6 @@ private:
 		glw::GLuint			  m_component_goten;
 		Utils::Shader::STAGES m_stage;
 		Utils::Type			  m_type;
-		bool				  m_use_both;
 	};
 
 	/* Private fields */
@@ -3229,7 +3231,7 @@ private:
  *
  * Test verifies that fragment data location API works as expected.
  *
- * This test implements Texture algorithm. Tesselation shaders are not
+ * This test implements Texture algorithm. Tessellation shaders are not
  * necessary and can be omitted. "result" is not necessary and can be omitted.
  * Test following code snippet in fragment shader:
  *
@@ -3351,7 +3353,7 @@ private:
  * xfb_buffer and xfb_offset = 0. Use separate buffers for each stage.
  *
  * Test pass if outputs from geometry shader are captured, while outputs from:
- * vertex and tesselation stages are ignored.
+ * vertex and tessellation stages are ignored.
  **/
 class XFBAllStagesTest : public BufferTestBase
 {

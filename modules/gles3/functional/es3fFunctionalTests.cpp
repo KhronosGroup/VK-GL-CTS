@@ -82,6 +82,7 @@
 #include "es3fShaderInvarianceTests.hpp"
 #include "es3fShaderFragDataTests.hpp"
 #include "es3fBuiltinPrecisionTests.hpp"
+#include "es3fShaderMetamorphicTests.hpp"
 
 // Texture tests
 #include "es3fTextureFormatTests.hpp"
@@ -226,7 +227,7 @@ public:
 		addChild(new ShaderInvarianceTests		(m_context));
 		addChild(new ShaderFragDataTests		(m_context));
 		addChild(new ShaderConstExprTests		(m_context));
-
+		addChild(new ShaderMetamorphicTests		(m_context));
 		addChild(new RandomShaderTests			(m_context));
 	}
 };

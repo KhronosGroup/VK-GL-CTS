@@ -568,11 +568,25 @@ tcu::TextureLevel TextureFormatTestCase::genReferenceTexture (const tcu::Vec4& f
 	tcu::TextureChannelClass	textureChannelClass = tcu::getTextureChannelClass(m_texFmt.type);
 
 	if (textureChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
+	{
 		tcu::clear(reference.getAccess(), fbColor.asUint() + uniformColor.asUint());
+	}
 	else if (textureChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
+	{
 		tcu::clear(reference.getAccess(), fbColor.asInt() + uniformColor.asInt());
+	}
 	else
-		tcu::clear(reference.getAccess(), fbColor + uniformColor);
+	{
+		if (tcu::isSRGB(m_texFmt))
+		{
+			const tcu::Vec4	fragmentColor = tcu::sRGBToLinear(fbColor) + uniformColor;
+			tcu::clear(reference.getAccess(), tcu::linearToSRGB(fragmentColor));
+		}
+		else
+		{
+			tcu::clear(reference.getAccess(), fbColor + uniformColor);
+		}
+	}
 
 	return reference;
 }

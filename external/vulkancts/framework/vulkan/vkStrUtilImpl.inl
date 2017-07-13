@@ -65,33 +65,34 @@ const char* getResultName (VkResult value)
 {
 	switch (value)
 	{
-		case VK_SUCCESS:						return "VK_SUCCESS";
-		case VK_NOT_READY:						return "VK_NOT_READY";
-		case VK_TIMEOUT:						return "VK_TIMEOUT";
-		case VK_EVENT_SET:						return "VK_EVENT_SET";
-		case VK_EVENT_RESET:					return "VK_EVENT_RESET";
-		case VK_INCOMPLETE:						return "VK_INCOMPLETE";
-		case VK_ERROR_OUT_OF_HOST_MEMORY:		return "VK_ERROR_OUT_OF_HOST_MEMORY";
-		case VK_ERROR_OUT_OF_DEVICE_MEMORY:		return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
-		case VK_ERROR_INITIALIZATION_FAILED:	return "VK_ERROR_INITIALIZATION_FAILED";
-		case VK_ERROR_DEVICE_LOST:				return "VK_ERROR_DEVICE_LOST";
-		case VK_ERROR_MEMORY_MAP_FAILED:		return "VK_ERROR_MEMORY_MAP_FAILED";
-		case VK_ERROR_LAYER_NOT_PRESENT:		return "VK_ERROR_LAYER_NOT_PRESENT";
-		case VK_ERROR_EXTENSION_NOT_PRESENT:	return "VK_ERROR_EXTENSION_NOT_PRESENT";
-		case VK_ERROR_FEATURE_NOT_PRESENT:		return "VK_ERROR_FEATURE_NOT_PRESENT";
-		case VK_ERROR_INCOMPATIBLE_DRIVER:		return "VK_ERROR_INCOMPATIBLE_DRIVER";
-		case VK_ERROR_TOO_MANY_OBJECTS:			return "VK_ERROR_TOO_MANY_OBJECTS";
-		case VK_ERROR_FORMAT_NOT_SUPPORTED:		return "VK_ERROR_FORMAT_NOT_SUPPORTED";
-		case VK_ERROR_FRAGMENTED_POOL:			return "VK_ERROR_FRAGMENTED_POOL";
-		case VK_ERROR_SURFACE_LOST_KHR:			return "VK_ERROR_SURFACE_LOST_KHR";
-		case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:	return "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR";
-		case VK_SUBOPTIMAL_KHR:					return "VK_SUBOPTIMAL_KHR";
-		case VK_ERROR_OUT_OF_DATE_KHR:			return "VK_ERROR_OUT_OF_DATE_KHR";
-		case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:	return "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR";
-		case VK_ERROR_VALIDATION_FAILED_EXT:	return "VK_ERROR_VALIDATION_FAILED_EXT";
-		case VK_ERROR_INVALID_SHADER_NV:		return "VK_ERROR_INVALID_SHADER_NV";
-		case VK_ERROR_OUT_OF_POOL_MEMORY_KHR:	return "VK_ERROR_OUT_OF_POOL_MEMORY_KHR";
-		default:								return DE_NULL;
+		case VK_SUCCESS:							return "VK_SUCCESS";
+		case VK_NOT_READY:							return "VK_NOT_READY";
+		case VK_TIMEOUT:							return "VK_TIMEOUT";
+		case VK_EVENT_SET:							return "VK_EVENT_SET";
+		case VK_EVENT_RESET:						return "VK_EVENT_RESET";
+		case VK_INCOMPLETE:							return "VK_INCOMPLETE";
+		case VK_ERROR_OUT_OF_HOST_MEMORY:			return "VK_ERROR_OUT_OF_HOST_MEMORY";
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY:			return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
+		case VK_ERROR_INITIALIZATION_FAILED:		return "VK_ERROR_INITIALIZATION_FAILED";
+		case VK_ERROR_DEVICE_LOST:					return "VK_ERROR_DEVICE_LOST";
+		case VK_ERROR_MEMORY_MAP_FAILED:			return "VK_ERROR_MEMORY_MAP_FAILED";
+		case VK_ERROR_LAYER_NOT_PRESENT:			return "VK_ERROR_LAYER_NOT_PRESENT";
+		case VK_ERROR_EXTENSION_NOT_PRESENT:		return "VK_ERROR_EXTENSION_NOT_PRESENT";
+		case VK_ERROR_FEATURE_NOT_PRESENT:			return "VK_ERROR_FEATURE_NOT_PRESENT";
+		case VK_ERROR_INCOMPATIBLE_DRIVER:			return "VK_ERROR_INCOMPATIBLE_DRIVER";
+		case VK_ERROR_TOO_MANY_OBJECTS:				return "VK_ERROR_TOO_MANY_OBJECTS";
+		case VK_ERROR_FORMAT_NOT_SUPPORTED:			return "VK_ERROR_FORMAT_NOT_SUPPORTED";
+		case VK_ERROR_FRAGMENTED_POOL:				return "VK_ERROR_FRAGMENTED_POOL";
+		case VK_ERROR_SURFACE_LOST_KHR:				return "VK_ERROR_SURFACE_LOST_KHR";
+		case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:		return "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR";
+		case VK_SUBOPTIMAL_KHR:						return "VK_SUBOPTIMAL_KHR";
+		case VK_ERROR_OUT_OF_DATE_KHR:				return "VK_ERROR_OUT_OF_DATE_KHR";
+		case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:		return "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR";
+		case VK_ERROR_VALIDATION_FAILED_EXT:		return "VK_ERROR_VALIDATION_FAILED_EXT";
+		case VK_ERROR_INVALID_SHADER_NV:			return "VK_ERROR_INVALID_SHADER_NV";
+		case VK_ERROR_OUT_OF_POOL_MEMORY_KHR:		return "VK_ERROR_OUT_OF_POOL_MEMORY_KHR";
+		case VK_ERROR_INVALID_EXTERNAL_HANDLE_KHR:	return "VK_ERROR_INVALID_EXTERNAL_HANDLE_KHR";
+		default:									return DE_NULL;
 	}
 }
 
@@ -160,6 +161,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR:					return "VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR:					return "VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT:			return "VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHX:			return "VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHX";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHX:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHX";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHX:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHX";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR";
 		case VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2_KHR:							return "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2_KHR";
@@ -169,14 +173,56 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2_KHR";
 		case VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR:			return "VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO_KHR";
+		case VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO_KHR:			return "VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR:			return "VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR:					return "VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR:				return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR:				return "VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_WIN32_HANDLE_PROPERTIES_KHR:				return "VK_STRUCTURE_TYPE_MEMORY_WIN32_HANDLE_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR:				return "VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR:						return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR:							return "VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR";
+		case VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR:		return "VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES_KHR:				return "VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR:				return "VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR:			return "VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR:			return "VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR:						return "VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR:				return "VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR:					return "VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR";
+		case VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR:						return "VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR:								return "VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR:		return "VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE:						return "VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE";
 		case VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR:			return "VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO_KHR:					return "VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_IMPORT_FENCE_WIN32_HANDLE_INFO_KHR:				return "VK_STRUCTURE_TYPE_IMPORT_FENCE_WIN32_HANDLE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_EXPORT_FENCE_WIN32_HANDLE_INFO_KHR:				return "VK_STRUCTURE_TYPE_EXPORT_FENCE_WIN32_HANDLE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_FENCE_GET_WIN32_HANDLE_INFO_KHR:					return "VK_STRUCTURE_TYPE_FENCE_GET_WIN32_HANDLE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR:						return "VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR";
+		case VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR:							return "VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR:						return "VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR";
 		case VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR:							return "VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR:				return "VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR:				return "VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR:			return "VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR:			return "VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_IMAGE_SPARSE_MEMORY_REQUIREMENTS_INFO_2_KHR:		return "VK_STRUCTURE_TYPE_IMAGE_SPARSE_MEMORY_REQUIREMENTS_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR:						return "VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR";
+		case VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2_KHR:			return "VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2_KHR";
 		default:																return DE_NULL;
 	}
 }
@@ -976,6 +1022,7 @@ tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_ALIASED_BIT,			"VK_IMAGE_CREATE_SPARSE_ALIASED_BIT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,			"VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,			"VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_BIND_SFR_BIT_KHX,				"VK_IMAGE_CREATE_BIND_SFR_BIT_KHX"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR,	"VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -1025,7 +1072,8 @@ tcu::Format::Bitfield<32> getMemoryHeapFlagsStr (VkMemoryHeapFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_MEMORY_HEAP_DEVICE_LOCAL_BIT,	"VK_MEMORY_HEAP_DEVICE_LOCAL_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_HEAP_DEVICE_LOCAL_BIT,		"VK_MEMORY_HEAP_DEVICE_LOCAL_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_HEAP_MULTI_INSTANCE_BIT_KHX,	"VK_MEMORY_HEAP_MULTI_INSTANCE_BIT_KHX"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1159,9 +1207,11 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,	"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,		"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,				"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,				"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,					"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,							"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHX,	"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHX"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_KHX,						"VK_PIPELINE_CREATE_DISPATCH_BASE_KHX"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1267,7 +1317,9 @@ tcu::Format::Bitfield<32> getDependencyFlagsStr (VkDependencyFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_DEPENDENCY_BY_REGION_BIT,	"VK_DEPENDENCY_BY_REGION_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_BY_REGION_BIT,			"VK_DEPENDENCY_BY_REGION_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_VIEW_LOCAL_BIT_KHX,		"VK_DEPENDENCY_VIEW_LOCAL_BIT_KHX"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_DEVICE_GROUP_BIT_KHX,	"VK_DEPENDENCY_DEVICE_GROUP_BIT_KHX"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1362,7 +1414,11 @@ tcu::Format::Bitfield<32> getCompositeAlphaFlagsKHRStr (VkCompositeAlphaFlagsKHR
 
 tcu::Format::Bitfield<32> getSwapchainCreateFlagsKHRStr (VkSwapchainCreateFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHX,	"VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHX"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
 tcu::Format::Bitfield<32> getDisplayPlaneAlphaFlagsKHRStr (VkDisplayPlaneAlphaFlagsKHR value)
@@ -1377,6 +1433,37 @@ tcu::Format::Bitfield<32> getDisplayPlaneAlphaFlagsKHRStr (VkDisplayPlaneAlphaFl
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getExternalFenceHandleTypeFlagsKHRStr (VkExternalFenceHandleTypeFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,			"VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,		"VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR,	"VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR,				"VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getExternalFenceFeatureFlagsKHRStr (VkExternalFenceFeatureFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT_KHR,	"VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT_KHR,	"VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getFenceImportFlagsKHRStr (VkFenceImportFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_FENCE_IMPORT_TEMPORARY_BIT_KHR,	"VK_FENCE_IMPORT_TEMPORARY_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getDebugReportFlagsEXTStr (VkDebugReportFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -1386,6 +1473,64 @@ tcu::Format::Bitfield<32> getDebugReportFlagsEXTStr (VkDebugReportFlagsEXT value
 		tcu::Format::BitDesc(VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT,	"VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DEBUG_REPORT_ERROR_BIT_EXT,					"VK_DEBUG_REPORT_ERROR_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DEBUG_REPORT_DEBUG_BIT_EXT,					"VK_DEBUG_REPORT_DEBUG_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsKHRStr (VkExternalMemoryHandleTypeFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,			"VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,		"VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR,	"VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT_KHR,		"VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT_KHR,	"VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT_KHR,			"VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT_KHR,		"VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getExternalMemoryFeatureFlagsKHRStr (VkExternalMemoryFeatureFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR,	"VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR,		"VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR,		"VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getExternalSemaphoreHandleTypeFlagsKHRStr (VkExternalSemaphoreHandleTypeFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,			"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,		"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR,	"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT_KHR,			"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR,				"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getExternalSemaphoreFeatureFlagsKHRStr (VkExternalSemaphoreFeatureFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT_KHR,	"VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT_KHR,	"VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getSemaphoreImportFlagsKHRStr (VkSemaphoreImportFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR,	"VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3415,6 +3560,19 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePushDescriptorP
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevice16BitStorageFeaturesKHR& value)
+{
+	s << "VkPhysicalDevice16BitStorageFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstorageBuffer16BitAccess = " << value.storageBuffer16BitAccess << '\n';
+	s << "\tuniformAndStorageBuffer16BitAccess = " << value.uniformAndStorageBuffer16BitAccess << '\n';
+	s << "\tstoragePushConstant16 = " << value.storagePushConstant16 << '\n';
+	s << "\tstorageInputOutput16 = " << value.storageInputOutput16 << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkRectLayerKHR& value)
 {
 	s << "VkRectLayerKHR = {\n";
@@ -3515,6 +3673,171 @@ std::ostream& operator<< (std::ostream& s, const VkSurfaceFormat2KHR& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalFenceInfoKHR& value)
+{
+	s << "VkPhysicalDeviceExternalFenceInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalFencePropertiesKHR& value)
+{
+	s << "VkExternalFencePropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\texportFromImportedHandleTypes = " << getExternalFenceHandleTypeFlagsKHRStr(value.exportFromImportedHandleTypes) << '\n';
+	s << "\tcompatibleHandleTypes = " << getExternalFenceHandleTypeFlagsKHRStr(value.compatibleHandleTypes) << '\n';
+	s << "\texternalFenceFeatures = " << getExternalFenceFeatureFlagsKHRStr(value.externalFenceFeatures) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportFenceCreateInfoKHR& value)
+{
+	s << "VkExportFenceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleTypes = " << getExternalFenceHandleTypeFlagsKHRStr(value.handleTypes) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportFenceWin32HandleInfoKHR& value)
+{
+	s << "VkImportFenceWin32HandleInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfence = " << value.fence << '\n';
+	s << "\tflags = " << getFenceImportFlagsKHRStr(value.flags) << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportFenceWin32HandleInfoKHR& value)
+{
+	s << "VkExportFenceWin32HandleInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpAttributes = " << value.pAttributes << '\n';
+	s << "\tdwAccess = " << value.dwAccess << '\n';
+	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFenceGetWin32HandleInfoKHR& value)
+{
+	s << "VkFenceGetWin32HandleInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfence = " << value.fence << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportFenceFdInfoKHR& value)
+{
+	s << "VkImportFenceFdInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfence = " << value.fence << '\n';
+	s << "\tflags = " << getFenceImportFlagsKHRStr(value.flags) << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\tfd = " << value.fd << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFenceGetFdInfoKHR& value)
+{
+	s << "VkFenceGetFdInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfence = " << value.fence << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryDedicatedRequirementsKHR& value)
+{
+	s << "VkMemoryDedicatedRequirementsKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tprefersDedicatedAllocation = " << value.prefersDedicatedAllocation << '\n';
+	s << "\trequiresDedicatedAllocation = " << value.requiresDedicatedAllocation << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryDedicatedAllocateInfoKHR& value)
+{
+	s << "VkMemoryDedicatedAllocateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timage = " << value.image << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBufferMemoryRequirementsInfo2KHR& value)
+{
+	s << "VkBufferMemoryRequirementsInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageMemoryRequirementsInfo2KHR& value)
+{
+	s << "VkImageMemoryRequirementsInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timage = " << value.image << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageSparseMemoryRequirementsInfo2KHR& value)
+{
+	s << "VkImageSparseMemoryRequirementsInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timage = " << value.image << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryRequirements2KHR& value)
+{
+	s << "VkMemoryRequirements2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryRequirements = " << value.memoryRequirements << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSparseImageMemoryRequirements2KHR& value)
+{
+	s << "VkSparseImageMemoryRequirements2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryRequirements = " << value.memoryRequirements << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value)
 {
 	s << "VkDebugReportCallbackCreateInfoEXT = {\n";
@@ -3523,6 +3846,339 @@ std::ostream& operator<< (std::ostream& s, const VkDebugReportCallbackCreateInfo
 	s << "\tflags = " << getDebugReportFlagsEXTStr(value.flags) << '\n';
 	s << "\tpfnCallback = " << value.pfnCallback << '\n';
 	s << "\tpUserData = " << value.pUserData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassMultiviewCreateInfoKHX& value)
+{
+	s << "VkRenderPassMultiviewCreateInfoKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsubpassCount = " << value.subpassCount << '\n';
+	s << "\tpViewMasks = " << value.pViewMasks << '\n';
+	s << "\tdependencyCount = " << value.dependencyCount << '\n';
+	s << "\tpViewOffsets = " << value.pViewOffsets << '\n';
+	s << "\tcorrelationMaskCount = " << value.correlationMaskCount << '\n';
+	s << "\tpCorrelationMasks = " << value.pCorrelationMasks << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewFeaturesKHX& value)
+{
+	s << "VkPhysicalDeviceMultiviewFeaturesKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmultiview = " << value.multiview << '\n';
+	s << "\tmultiviewGeometryShader = " << value.multiviewGeometryShader << '\n';
+	s << "\tmultiviewTessellationShader = " << value.multiviewTessellationShader << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewPropertiesKHX& value)
+{
+	s << "VkPhysicalDeviceMultiviewPropertiesKHX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxMultiviewViewCount = " << value.maxMultiviewViewCount << '\n';
+	s << "\tmaxMultiviewInstanceIndex = " << value.maxMultiviewInstanceIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalMemoryPropertiesKHR& value)
+{
+	s << "VkExternalMemoryPropertiesKHR = {\n";
+	s << "\texternalMemoryFeatures = " << getExternalMemoryFeatureFlagsKHRStr(value.externalMemoryFeatures) << '\n';
+	s << "\texportFromImportedHandleTypes = " << getExternalMemoryHandleTypeFlagsKHRStr(value.exportFromImportedHandleTypes) << '\n';
+	s << "\tcompatibleHandleTypes = " << getExternalMemoryHandleTypeFlagsKHRStr(value.compatibleHandleTypes) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalImageFormatInfoKHR& value)
+{
+	s << "VkPhysicalDeviceExternalImageFormatInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalImageFormatPropertiesKHR& value)
+{
+	s << "VkExternalImageFormatPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\texternalMemoryProperties = " << value.externalMemoryProperties << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalBufferInfoKHR& value)
+{
+	s << "VkPhysicalDeviceExternalBufferInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getBufferCreateFlagsStr(value.flags) << '\n';
+	s << "\tusage = " << getBufferUsageFlagsStr(value.usage) << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalBufferPropertiesKHR& value)
+{
+	s << "VkExternalBufferPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\texternalMemoryProperties = " << value.externalMemoryProperties << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceIDPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceIDPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceUUID))) << '\n';
+	s << "\tdriverUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.driverUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.driverUUID))) << '\n';
+	s << "\tdeviceLUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceLUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceLUID))) << '\n';
+	s << "\tdeviceNodeMask = " << value.deviceNodeMask << '\n';
+	s << "\tdeviceLUIDValid = " << value.deviceLUIDValid << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalMemoryImageCreateInfoKHR& value)
+{
+	s << "VkExternalMemoryImageCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleTypes = " << getExternalMemoryHandleTypeFlagsKHRStr(value.handleTypes) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalMemoryBufferCreateInfoKHR& value)
+{
+	s << "VkExternalMemoryBufferCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleTypes = " << getExternalMemoryHandleTypeFlagsKHRStr(value.handleTypes) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportMemoryAllocateInfoKHR& value)
+{
+	s << "VkExportMemoryAllocateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleTypes = " << getExternalMemoryHandleTypeFlagsKHRStr(value.handleTypes) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportMemoryWin32HandleInfoKHR& value)
+{
+	s << "VkImportMemoryWin32HandleInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportMemoryWin32HandleInfoKHR& value)
+{
+	s << "VkExportMemoryWin32HandleInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpAttributes = " << value.pAttributes << '\n';
+	s << "\tdwAccess = " << value.dwAccess << '\n';
+	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryWin32HandlePropertiesKHR& value)
+{
+	s << "VkMemoryWin32HandlePropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryTypeBits = " << value.memoryTypeBits << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryGetWin32HandleInfoKHR& value)
+{
+	s << "VkMemoryGetWin32HandleInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemory = " << value.memory << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportMemoryFdInfoKHR& value)
+{
+	s << "VkImportMemoryFdInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\tfd = " << value.fd << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryFdPropertiesKHR& value)
+{
+	s << "VkMemoryFdPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryTypeBits = " << value.memoryTypeBits << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryGetFdInfoKHR& value)
+{
+	s << "VkMemoryGetFdInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemory = " << value.memory << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkWin32KeyedMutexAcquireReleaseInfoKHR& value)
+{
+	s << "VkWin32KeyedMutexAcquireReleaseInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tacquireCount = " << value.acquireCount << '\n';
+	s << "\tpAcquireSyncs = " << value.pAcquireSyncs << '\n';
+	s << "\tpAcquireKeys = " << value.pAcquireKeys << '\n';
+	s << "\tpAcquireTimeouts = " << value.pAcquireTimeouts << '\n';
+	s << "\treleaseCount = " << value.releaseCount << '\n';
+	s << "\tpReleaseSyncs = " << value.pReleaseSyncs << '\n';
+	s << "\tpReleaseKeys = " << value.pReleaseKeys << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalSemaphoreInfoKHR& value)
+{
+	s << "VkPhysicalDeviceExternalSemaphoreInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalSemaphorePropertiesKHR& value)
+{
+	s << "VkExternalSemaphorePropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\texportFromImportedHandleTypes = " << getExternalSemaphoreHandleTypeFlagsKHRStr(value.exportFromImportedHandleTypes) << '\n';
+	s << "\tcompatibleHandleTypes = " << getExternalSemaphoreHandleTypeFlagsKHRStr(value.compatibleHandleTypes) << '\n';
+	s << "\texternalSemaphoreFeatures = " << getExternalSemaphoreFeatureFlagsKHRStr(value.externalSemaphoreFeatures) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportSemaphoreCreateInfoKHR& value)
+{
+	s << "VkExportSemaphoreCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleTypes = " << getExternalSemaphoreHandleTypeFlagsKHRStr(value.handleTypes) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportSemaphoreWin32HandleInfoKHR& value)
+{
+	s << "VkImportSemaphoreWin32HandleInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphore = " << value.semaphore << '\n';
+	s << "\tflags = " << getSemaphoreImportFlagsKHRStr(value.flags) << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportSemaphoreWin32HandleInfoKHR& value)
+{
+	s << "VkExportSemaphoreWin32HandleInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpAttributes = " << value.pAttributes << '\n';
+	s << "\tdwAccess = " << value.dwAccess << '\n';
+	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkD3D12FenceSubmitInfoKHR& value)
+{
+	s << "VkD3D12FenceSubmitInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\twaitSemaphoreValuesCount = " << value.waitSemaphoreValuesCount << '\n';
+	s << "\tpWaitSemaphoreValues = " << value.pWaitSemaphoreValues << '\n';
+	s << "\tsignalSemaphoreValuesCount = " << value.signalSemaphoreValuesCount << '\n';
+	s << "\tpSignalSemaphoreValues = " << value.pSignalSemaphoreValues << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreGetWin32HandleInfoKHR& value)
+{
+	s << "VkSemaphoreGetWin32HandleInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphore = " << value.semaphore << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportSemaphoreFdInfoKHR& value)
+{
+	s << "VkImportSemaphoreFdInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphore = " << value.semaphore << '\n';
+	s << "\tflags = " << getSemaphoreImportFlagsKHRStr(value.flags) << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\tfd = " << value.fd << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreGetFdInfoKHR& value)
+{
+	s << "VkSemaphoreGetFdInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphore = " << value.semaphore << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
 	s << '}';
 	return s;
 }
@@ -3563,6 +4219,17 @@ std::ostream& operator<< (std::ostream& s, const VkPresentTimesInfoGOOGLE& value
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tswapchainCount = " << value.swapchainCount << '\n';
 	s << "\tpTimes = " << value.pTimes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVariablePointerFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceVariablePointerFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvariablePointersStorageBuffer = " << value.variablePointersStorageBuffer << '\n';
+	s << "\tvariablePointers = " << value.variablePointers << '\n';
 	s << '}';
 	return s;
 }

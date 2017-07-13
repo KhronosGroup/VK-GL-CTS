@@ -279,17 +279,11 @@ dEQP-VK.clipping.clip_volume.clipped.large_points
 dEQP-VK.clipping.clip_volume.clipped.wide_lines_axis_aligned
 dEQP-VK.clipping.clip_volume.clipped.wide_lines_diagonal
 
-# Vulkan issue 382: vkCmdBlitImage filtering behavior underspecified
-dEQP-VK.api.copy_and_blit.blit_image.all_formats*_nearest
-
 # Issue 431: Excluded copies and blitting tests
-dEQP-VK.api.copy_and_blit.blit_image.simple_tests.scaling_and_offset.b8g8r8a8_unorm_linear
+dEQP-VK.api.copy_and_blit.core.blit_image.simple_tests.scaling_and_offset.b8g8r8a8_unorm_linear
 
 # CTS issue 426, spec issue 403
 dEQP-VK.spirv_assembly.instruction.compute.opfunord.*
 
 # New tests from AOSP
 dEQP-VK.texture.explicit_lod.*
-
-# Exclude tests which are not on the Android CTS mustpass list
-dEQP-VK.texture.mipmap.2d.projected.*

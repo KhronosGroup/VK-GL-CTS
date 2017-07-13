@@ -2,7 +2,7 @@
  * OpenGL Conformance Test Suite
  * -----------------------------
  *
- * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2017 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,62 +17,58 @@
  * limitations under the License.
  *
  */ /*!
- * \file
- * \brief
+ * \file glcContextFlagsTests.cpp
+ * \brief Tests veryfing glGetIntegerv(GL_CONTEXT_FLAGS).
  */ /*-------------------------------------------------------------------*/
 
-#include "es32cContextFlagsTests.hpp"
+#include "glcContextFlagsTests.hpp"
 #include "gluRenderContext.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
 
-namespace es32cts
+namespace glcts
 {
 
-class ContextFlagsCase : public deqp::TestCase
+class ContextFlagsCase : public tcu::TestCase
 {
 private:
 	glu::RenderContext* m_caseContext;
 	glu::ContextFlags   m_passedFlags;
 	glw::GLint			m_expectedResult;
+	glu::ApiType		m_ApiType;
+
+	void createContext();
 
 public:
-	ContextFlagsCase(deqp::Context& context, glu::ContextFlags passedFlags, glw::GLint expectedResult, const char* name,
-					 const char* description)
-		: deqp::TestCase(context, name, description)
+	ContextFlagsCase(tcu::TestContext& testCtx, glu::ContextFlags passedFlags, glw::GLint expectedResult,
+					 const char* name, const char* description, glu::ApiType apiType)
+		: tcu::TestCase(testCtx, name, description)
 		, m_caseContext(NULL)
 		, m_passedFlags(passedFlags)
 		, m_expectedResult(expectedResult)
+		, m_ApiType(apiType)
 	{
 	}
 
-	void createContextWithFlags(glu::ContextFlags ctxFlags);
 	void releaseContext(void);
 
 	virtual void		  deinit(void);
 	virtual IterateResult iterate(void);
 };
 
-void ContextFlagsCase::createContextWithFlags(glu::ContextFlags ctxFlags)
+void ContextFlagsCase::createContext()
 {
-	glu::RenderConfig renderCfg(glu::ContextType(m_context.getRenderContext().getType().getAPI(), ctxFlags));
+	glu::RenderConfig renderCfg(glu::ContextType(m_ApiType, m_passedFlags));
 
-	const tcu::CommandLine& commandLine = m_context.getTestContext().getCommandLine();
+	const tcu::CommandLine& commandLine = m_testCtx.getCommandLine();
 	glu::parseRenderConfig(&renderCfg, commandLine);
 
-	if (commandLine.getSurfaceType() == tcu::SURFACETYPE_WINDOW)
-	{
-		renderCfg.surfaceType = glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
-	}
-	else
-	{
+	if (commandLine.getSurfaceType() != tcu::SURFACETYPE_WINDOW)
 		throw tcu::NotSupportedError("Test not supported in non-windowed context");
-	}
 
 	m_caseContext = glu::createRenderContext(m_testCtx.getPlatform(), commandLine, renderCfg);
-	m_caseContext->makeCurrent();
 }
 
 void ContextFlagsCase::releaseContext(void)
@@ -81,7 +77,6 @@ void ContextFlagsCase::releaseContext(void)
 	{
 		delete m_caseContext;
 		m_caseContext = NULL;
-		m_context.getRenderContext().makeCurrent();
 	}
 }
 
@@ -92,10 +87,9 @@ void ContextFlagsCase::deinit(void)
 
 tcu::TestNode::IterateResult ContextFlagsCase::iterate(void)
 {
-	glw::GLint flags = 0;
+	createContext();
 
-	createContextWithFlags(m_passedFlags);
-
+	glw::GLint			  flags = 0;
 	const glw::Functions& gl = m_caseContext->getFunctions();
 	gl.getIntegerv(GL_CONTEXT_FLAGS, &flags);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv");
@@ -114,33 +108,36 @@ tcu::TestNode::IterateResult ContextFlagsCase::iterate(void)
 	return STOP;
 }
 
-ContextFlagsTests::ContextFlagsTests(deqp::Context& context)
-	: TestCaseGroup(context, "context_flags", "Verifies if context flags query results are as expected.")
+ContextFlagsTests::ContextFlagsTests(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: tcu::TestCaseGroup(testCtx, "context_flags", "Verifies if context flags query results are as expected.")
+	, m_ApiType(apiType)
 {
 }
 
 void ContextFlagsTests::init()
 {
-	deqp::TestCaseGroup::init();
+	tcu::TestCaseGroup::init();
 
 	try
 	{
-		addChild(new ContextFlagsCase(m_context, glu::ContextFlags(0), 0, "noFlagsSetCase", "Verifies no flags case."));
-		addChild(new ContextFlagsCase(m_context, glu::CONTEXT_DEBUG, GL_CONTEXT_FLAG_DEBUG_BIT, "debugFlagSetCase",
-									  "Verifies debug flag case.."));
-		addChild(new ContextFlagsCase(m_context, glu::CONTEXT_ROBUST, GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT,
-									  "robustFlagSetCase", "Verifies robust access flag case."));
+		addChild(new ContextFlagsCase(m_testCtx, glu::ContextFlags(0), 0, "no_flags_set_case",
+									  "Verifies no flags case.", m_ApiType));
+		addChild(new ContextFlagsCase(m_testCtx, glu::CONTEXT_DEBUG, GL_CONTEXT_FLAG_DEBUG_BIT, "debug_flag_set_case",
+									  "Verifies debug flag case..", m_ApiType));
+		addChild(new ContextFlagsCase(m_testCtx, glu::CONTEXT_ROBUST, GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT,
+									  "robust_flag_set_case", "Verifies robust access flag case.", m_ApiType));
 
-		addChild(new ContextFlagsCase(m_context, glu::CONTEXT_DEBUG | glu::CONTEXT_ROBUST,
-									  GL_CONTEXT_FLAG_DEBUG_BIT | GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT, "allFlagsSetCase",
-									  "Verifies both debug and robust access flags case."));
+		addChild(new ContextFlagsCase(m_testCtx, glu::CONTEXT_DEBUG | glu::CONTEXT_ROBUST,
+									  GL_CONTEXT_FLAG_DEBUG_BIT | GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT,
+									  "all_flags_set_case", "Verifies both debug and robust access flags case.",
+									  m_ApiType));
 	}
 	catch (...)
 	{
 		// Destroy context.
-		deqp::TestCaseGroup::deinit();
+		tcu::TestCaseGroup::deinit();
 		throw;
 	}
 }
 
-} // es32cts namespace
+} // glcts namespace

@@ -61,7 +61,8 @@ enum ContextFlags
 {
 	CONTEXT_ROBUST				= (1<<0),	//!< Robust context
 	CONTEXT_DEBUG				= (1<<1),	//!< Debug context
-	CONTEXT_FORWARD_COMPATIBLE	= (1<<2)	//!< Forward-compatible context
+	CONTEXT_FORWARD_COMPATIBLE	= (1<<2),	//!< Forward-compatible context
+	CONTEXT_NO_ERROR			= (1<<3)    //!< No error context
 };
 
 inline ContextFlags	operator| (ContextFlags a, ContextFlags b)	{ return ContextFlags((deUint32)a|(deUint32)b);	}
@@ -158,7 +159,7 @@ protected:
 
 	enum
 	{
-		FLAGS_BITS			= 3,
+		FLAGS_BITS			= 4,
 		TOTAL_CONTEXT_BITS	= TOTAL_API_BITS+FLAGS_BITS,
 		FLAGS_SHIFT			= TOTAL_API_BITS
 	};

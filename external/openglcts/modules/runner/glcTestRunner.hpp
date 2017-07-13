@@ -42,6 +42,18 @@ namespace glcts
 
 struct Config;
 
+struct RunParams
+{
+	glu::ApiType apiType;
+	const char*  configName;
+	const char*  glConfigName;
+	const char*  screenRotation;
+	int			 baseSeed;
+	const char*  fboConfig;
+	int			 surfaceWidth;
+	int			 surfaceHeight;
+};
+
 struct TestRunParams
 {
 	std::vector<std::string> args;

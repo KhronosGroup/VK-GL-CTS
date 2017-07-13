@@ -771,7 +771,7 @@ bool gl3cts::TransformFeedback::APIErrors::testExtension1(void)
 
 	unsigned short int invalid_name = 1;
 
-	while (gl.isProgram(invalid_name))
+	while (gl.isProgram(invalid_name) || gl.isShader(invalid_name))
 	{
 		++invalid_name;
 
@@ -3465,6 +3465,12 @@ glw::GLuint gl3cts::TransformFeedback::CheckGetXFBVarying::numberOfAttributes(gl
 
 	/* Setup number of attributes. */
 	glw::GLuint number_of_attributes = max_xfb_components / attribute_components;
+
+	if (s_capture_ways[capture_way] == GL_SEPARATE_ATTRIBS &&
+		number_of_attributes > glw::GLuint(m_max_xfb_separate_attributes))
+	{
+		number_of_attributes = m_max_xfb_separate_attributes;
+	}
 
 	/* Clamp to limits. */
 	if (number_of_attributes * attribute_components > max_total_components)
