@@ -1486,6 +1486,14 @@ KHR-GLES3.shaders.preprocessor.operator_precedence.logical_and_vs_bitwise_and_ve
 KHR-GLES3.shaders.preprocessor.operator_precedence.logical_and_vs_bitwise_and_fragment
 KHR-GLES3.shaders.preprocessor.operator_precedence.logical_or_vs_logical_and_vertex
 KHR-GLES3.shaders.preprocessor.operator_precedence.logical_or_vs_logical_and_fragment
+KHR-GLES3.shaders.literal_parsing.correct_int_literal_vertex
+KHR-GLES3.shaders.literal_parsing.correct_int_literal_fragment
+KHR-GLES3.shaders.literal_parsing.int_overflow_1_vertex
+KHR-GLES3.shaders.literal_parsing.int_overflow_1_fragment
+KHR-GLES3.shaders.literal_parsing.int_overflow_2_vertex
+KHR-GLES3.shaders.literal_parsing.int_overflow_2_fragment
+KHR-GLES3.shaders.literal_parsing.int_wrap_1
+KHR-GLES3.shaders.literal_parsing.int_wrap_2
 KHR-GLES3.shaders.struct.local.basic_vertex
 KHR-GLES3.shaders.struct.local.basic_fragment
 KHR-GLES3.shaders.struct.local.nested_vertex
