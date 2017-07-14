@@ -100,6 +100,11 @@ void fillMemoryWithValue (const DeviceInterface& vkdi, const VkDevice& device, A
 	flushMappedMemoryRange(vkdi, device, destAlloc->getMemory(), destAlloc->getOffset(), numBytes);
 }
 
+void invalidateMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocation* srcAlloc, size_t numBytes)
+{
+	invalidateMappedMemoryRange(vkdi, device, srcAlloc->getMemory(), srcAlloc->getOffset(), numBytes);
+}
+
 /*--------------------------------------------------------------------*//*!
  * \brief Create a descriptor set layout with the given descriptor types
  *
@@ -465,6 +470,12 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 	VK_CHECK(vkdi.queueSubmit(queue, 1, &submitInfo, *cmdCompleteFence));
 	VK_CHECK(vkdi.waitForFences(device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
+
+	// Invalidate output memory ranges before checking on host.
+	for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
+	{
+		invalidateMemory(vkdi, device, outputAllocs[outputNdx].get(), m_shaderSpec.outputs[outputNdx]->getNumBytes());
+	}
 
 	// Check output.
 	if (m_shaderSpec.verifyIO)
