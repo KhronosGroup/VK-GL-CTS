@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 32093.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 void					glActiveShaderProgram							(glw::GLuint pipeline, glw::GLuint program);
 void					glActiveTexture									(glw::GLenum texture);
@@ -62,7 +62,7 @@ void					glClearDepth									(glw::GLdouble depth);
 void					glClearDepthf									(glw::GLfloat d);
 void					glClearNamedBufferData							(glw::GLuint buffer, glw::GLenum internalformat, glw::GLenum format, glw::GLenum type, const void *data);
 void					glClearNamedBufferSubData						(glw::GLuint buffer, glw::GLenum internalformat, glw::GLintptr offset, glw::GLsizeiptr size, glw::GLenum format, glw::GLenum type, const void *data);
-void					glClearNamedFramebufferfi						(glw::GLuint framebuffer, glw::GLenum buffer, const glw::GLfloat depth, glw::GLint stencil);
+void					glClearNamedFramebufferfi						(glw::GLuint framebuffer, glw::GLenum buffer, glw::GLint drawbuffer, glw::GLfloat depth, glw::GLint stencil);
 void					glClearNamedFramebufferfv						(glw::GLuint framebuffer, glw::GLenum buffer, glw::GLint drawbuffer, const glw::GLfloat *value);
 void					glClearNamedFramebufferiv						(glw::GLuint framebuffer, glw::GLenum buffer, glw::GLint drawbuffer, const glw::GLint *value);
 void					glClearNamedFramebufferuiv						(glw::GLuint framebuffer, glw::GLenum buffer, glw::GLint drawbuffer, const glw::GLuint *value);

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 32093.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 #define			glActiveShaderProgram							glwActiveShaderProgram
 #define			glActiveTexture									glwActiveTexture
@@ -722,7 +722,7 @@ void			glwClearDepth									(GLdouble depth);
 void			glwClearDepthf									(GLfloat d);
 void			glwClearNamedBufferData							(GLuint buffer, GLenum internalformat, GLenum format, GLenum type, const void *data);
 void			glwClearNamedBufferSubData						(GLuint buffer, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data);
-void			glwClearNamedFramebufferfi						(GLuint framebuffer, GLenum buffer, const GLfloat depth, GLint stencil);
+void			glwClearNamedFramebufferfi						(GLuint framebuffer, GLenum buffer, GLint drawbuffer, GLfloat depth, GLint stencil);
 void			glwClearNamedFramebufferfv						(GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLfloat *value);
 void			glwClearNamedFramebufferiv						(GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLint *value);
 void			glwClearNamedFramebufferuiv						(GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLuint *value);

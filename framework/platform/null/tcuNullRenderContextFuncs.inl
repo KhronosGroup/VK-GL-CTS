@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 32093.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 
 GLW_APICALL void GLW_APIENTRY glActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -478,10 +478,11 @@ GLW_APICALL void GLW_APIENTRY glClearNamedBufferSubData (GLuint buffer, GLenum i
 
 }
 
-GLW_APICALL void GLW_APIENTRY glClearNamedFramebufferfi (GLuint framebuffer, GLenum buffer, const GLfloat depth, GLint stencil)
+GLW_APICALL void GLW_APIENTRY glClearNamedFramebufferfi (GLuint framebuffer, GLenum buffer, GLint drawbuffer, GLfloat depth, GLint stencil)
 {
 	DE_UNREF(framebuffer);
 	DE_UNREF(buffer);
+	DE_UNREF(drawbuffer);
 	DE_UNREF(depth);
 	DE_UNREF(stencil);
 
