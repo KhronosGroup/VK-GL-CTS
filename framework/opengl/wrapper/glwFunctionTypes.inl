@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 32093.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveShaderProgramFunc)							(GLuint pipeline, GLuint program);
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveTextureFunc)									(GLenum texture);
@@ -62,7 +62,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glClearDepthFunc)									(GLdouble de
 typedef GLW_APICALL void			(GLW_APIENTRY* glClearDepthfFunc)									(GLfloat d);
 typedef GLW_APICALL void			(GLW_APIENTRY* glClearNamedBufferDataFunc)							(GLuint buffer, GLenum internalformat, GLenum format, GLenum type, const void *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glClearNamedBufferSubDataFunc)						(GLuint buffer, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data);
-typedef GLW_APICALL void			(GLW_APIENTRY* glClearNamedFramebufferfiFunc)						(GLuint framebuffer, GLenum buffer, const GLfloat depth, GLint stencil);
+typedef GLW_APICALL void			(GLW_APIENTRY* glClearNamedFramebufferfiFunc)						(GLuint framebuffer, GLenum buffer, GLint drawbuffer, GLfloat depth, GLint stencil);
 typedef GLW_APICALL void			(GLW_APIENTRY* glClearNamedFramebufferfvFunc)						(GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLfloat *value);
 typedef GLW_APICALL void			(GLW_APIENTRY* glClearNamedFramebufferivFunc)						(GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLint *value);
 typedef GLW_APICALL void			(GLW_APIENTRY* glClearNamedFramebufferuivFunc)						(GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLuint *value);
