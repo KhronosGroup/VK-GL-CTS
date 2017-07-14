@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 967f96c92bae15baa1a4326a55222984befdc9ed.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 
 if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
@@ -45,10 +45,10 @@ if (de::contains(extSet, "GL_EXT_geometry_shader"))
 
 if (de::contains(extSet, "GL_EXT_robustness"))
 {
-	gl->getGraphicsResetStatus	= (glGetGraphicsResetStatusFunc)	loader->get("glGetGraphicsResetStatusEXT");
-	gl->getnUniformfv			= (glGetnUniformfvFunc)				loader->get("glGetnUniformfvEXT");
-	gl->getnUniformiv			= (glGetnUniformivFunc)				loader->get("glGetnUniformivEXT");
-	gl->readnPixels				= (glReadnPixelsFunc)				loader->get("glReadnPixelsEXT");
+	gl->getGraphicsResetStatusEXT	= (glGetGraphicsResetStatusEXTFunc)	loader->get("glGetGraphicsResetStatusEXT");
+	gl->getnUniformfvEXT			= (glGetnUniformfvEXTFunc)			loader->get("glGetnUniformfvEXT");
+	gl->getnUniformivEXT			= (glGetnUniformivEXTFunc)			loader->get("glGetnUniformivEXT");
+	gl->readnPixels					= (glReadnPixelsFunc)				loader->get("glReadnPixelsEXT");
 }
 
 if (de::contains(extSet, "GL_EXT_texture_buffer"))

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 967f96c92bae15baa1a4326a55222984befdc9ed.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveShaderProgramFunc)								(GLuint pipeline, GLuint program);
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveTextureFunc)										(GLenum texture);
@@ -268,6 +268,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferAttachmentParameterivF
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferParameterivFunc)							(GLenum target, GLenum pname, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferParameterivEXTFunc)						(GLuint framebuffer, GLenum pname, GLint *params);
 typedef GLW_APICALL GLenum			(GLW_APIENTRY* glGetGraphicsResetStatusFunc)							(void);
+typedef GLW_APICALL GLenum			(GLW_APIENTRY* glGetGraphicsResetStatusEXTFunc)							(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetInteger64i_vFunc)									(GLenum target, GLuint index, GLint64 *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetInteger64vFunc)										(GLenum pname, GLint64 *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetIntegeri_vFunc)										(GLenum target, GLuint index, GLint *data);
@@ -400,7 +401,9 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glGetnCompressedTexImageFunc)							(G
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetnTexImageFunc)										(GLenum target, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformdvFunc)										(GLuint program, GLint location, GLsizei bufSize, GLdouble *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformfvFunc)										(GLuint program, GLint location, GLsizei bufSize, GLfloat *params);
+typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformfvEXTFunc)									(GLuint program, GLint location, GLsizei bufSize, GLfloat *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformivFunc)										(GLuint program, GLint location, GLsizei bufSize, GLint *params);
+typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformivEXTFunc)									(GLuint program, GLint location, GLsizei bufSize, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformuivFunc)									(GLuint program, GLint location, GLsizei bufSize, GLuint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glHintFunc)												(GLenum target, GLenum mode);
 typedef GLW_APICALL void			(GLW_APIENTRY* glInsertEventMarkerEXTFunc)								(GLsizei length, const GLchar *marker);

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 967f96c92bae15baa1a4326a55222984befdc9ed.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 
 GLW_APICALL void GLW_APIENTRY glActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -2253,6 +2253,12 @@ GLW_APICALL GLenum GLW_APIENTRY glGetGraphicsResetStatus (void)
 	return (GLenum)0;
 }
 
+GLW_APICALL GLenum GLW_APIENTRY glGetGraphicsResetStatusEXT (void)
+{
+
+	return (GLenum)0;
+}
+
 GLW_APICALL void GLW_APIENTRY glGetInteger64i_v (GLenum target, GLuint index, GLint64 *data)
 {
 	DE_UNREF(target);
@@ -3368,7 +3374,25 @@ GLW_APICALL void GLW_APIENTRY glGetnUniformfv (GLuint program, GLint location, G
 
 }
 
+GLW_APICALL void GLW_APIENTRY glGetnUniformfvEXT (GLuint program, GLint location, GLsizei bufSize, GLfloat *params)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(bufSize);
+	DE_UNREF(params);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glGetnUniformiv (GLuint program, GLint location, GLsizei bufSize, GLint *params)
+{
+	DE_UNREF(program);
+	DE_UNREF(location);
+	DE_UNREF(bufSize);
+	DE_UNREF(params);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glGetnUniformivEXT (GLuint program, GLint location, GLsizei bufSize, GLint *params)
 {
 	DE_UNREF(program);
 	DE_UNREF(location);

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 967f96c92bae15baa1a4326a55222984befdc9ed.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 #define			glActiveShaderProgram								glwActiveShaderProgram
 #define			glActiveTexture										glwActiveTexture
@@ -268,6 +268,7 @@
 #define			glGetFramebufferParameteriv							glwGetFramebufferParameteriv
 #define			glGetFramebufferParameterivEXT						glwGetFramebufferParameterivEXT
 #define			glGetGraphicsResetStatus							glwGetGraphicsResetStatus
+#define			glGetGraphicsResetStatusEXT							glwGetGraphicsResetStatusEXT
 #define			glGetInteger64i_v									glwGetInteger64i_v
 #define			glGetInteger64v										glwGetInteger64v
 #define			glGetIntegeri_v										glwGetIntegeri_v
@@ -400,7 +401,9 @@
 #define			glGetnTexImage										glwGetnTexImage
 #define			glGetnUniformdv										glwGetnUniformdv
 #define			glGetnUniformfv										glwGetnUniformfv
+#define			glGetnUniformfvEXT									glwGetnUniformfvEXT
 #define			glGetnUniformiv										glwGetnUniformiv
+#define			glGetnUniformivEXT									glwGetnUniformivEXT
 #define			glGetnUniformuiv									glwGetnUniformuiv
 #define			glHint												glwHint
 #define			glInsertEventMarkerEXT								glwInsertEventMarkerEXT
@@ -1150,6 +1153,7 @@ void			glwGetFramebufferAttachmentParameteriv				(GLenum target, GLenum attachme
 void			glwGetFramebufferParameteriv						(GLenum target, GLenum pname, GLint *params);
 void			glwGetFramebufferParameterivEXT						(GLuint framebuffer, GLenum pname, GLint *params);
 GLenum			glwGetGraphicsResetStatus							();
+GLenum			glwGetGraphicsResetStatusEXT						();
 void			glwGetInteger64i_v									(GLenum target, GLuint index, GLint64 *data);
 void			glwGetInteger64v									(GLenum pname, GLint64 *data);
 void			glwGetIntegeri_v									(GLenum target, GLuint index, GLint *data);
@@ -1282,7 +1286,9 @@ void			glwGetnCompressedTexImage							(GLenum target, GLint lod, GLsizei bufSiz
 void			glwGetnTexImage										(GLenum target, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels);
 void			glwGetnUniformdv									(GLuint program, GLint location, GLsizei bufSize, GLdouble *params);
 void			glwGetnUniformfv									(GLuint program, GLint location, GLsizei bufSize, GLfloat *params);
+void			glwGetnUniformfvEXT									(GLuint program, GLint location, GLsizei bufSize, GLfloat *params);
 void			glwGetnUniformiv									(GLuint program, GLint location, GLsizei bufSize, GLint *params);
+void			glwGetnUniformivEXT									(GLuint program, GLint location, GLsizei bufSize, GLint *params);
 void			glwGetnUniformuiv									(GLuint program, GLint location, GLsizei bufSize, GLuint *params);
 void			glwHint												(GLenum target, GLenum mode);
 void			glwInsertEventMarkerEXT								(GLsizei length, const GLchar *marker);

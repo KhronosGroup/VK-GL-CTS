@@ -2490,7 +2490,6 @@ dEQP-EGL.functional.get_proc_address.extension.gl_nv_copy_buffer
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_coverage_sample
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_draw_buffers
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_draw_instanced
-dEQP-EGL.functional.get_proc_address.extension.gl_nv_draw_vulkan_image
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_fragment_coverage_to_color
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_framebuffer_blit
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_framebuffer_mixed_samples
@@ -2523,6 +2522,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_ovr_multiview
 dEQP-EGL.functional.get_proc_address.extension.gl_ovr_multiview_multisampled_render_to_texture
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_alpha_test
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_framebuffer_foveated
+dEQP-EGL.functional.get_proc_address.extension.gl_nv_draw_vulkan_image
 dEQP-EGL.functional.get_proc_address.core.egl
 dEQP-EGL.functional.get_proc_address.core.gles
 dEQP-EGL.functional.get_proc_address.core.gles2

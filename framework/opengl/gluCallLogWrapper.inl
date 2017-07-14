@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 967f96c92bae15baa1a4326a55222984befdc9ed.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 
 void CallLogWrapper::glActiveShaderProgram (glw::GLuint pipeline, glw::GLuint program)
@@ -1936,6 +1936,16 @@ glw::GLenum CallLogWrapper::glGetGraphicsResetStatus (void)
 	return returnValue;
 }
 
+glw::GLenum CallLogWrapper::glGetGraphicsResetStatusEXT (void)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetGraphicsResetStatusEXT(" << ");" << TestLog::EndMessage;
+	glw::GLenum returnValue = m_gl.getGraphicsResetStatusEXT();
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << toHex(returnValue) << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
 void CallLogWrapper::glGetInteger64i_v (glw::GLenum target, glw::GLuint index, glw::GLint64 *data)
 {
 	if (m_enableLog)
@@ -2958,11 +2968,25 @@ void CallLogWrapper::glGetnUniformfv (glw::GLuint program, glw::GLint location, 
 	m_gl.getnUniformfv(program, location, bufSize, params);
 }
 
+void CallLogWrapper::glGetnUniformfvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLfloat *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetnUniformfvEXT(" << program << ", " << location << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getnUniformfvEXT(program, location, bufSize, params);
+}
+
 void CallLogWrapper::glGetnUniformiv (glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLint *params)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetnUniformiv(" << program << ", " << location << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getnUniformiv(program, location, bufSize, params);
+}
+
+void CallLogWrapper::glGetnUniformivEXT (glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLint *params)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetnUniformivEXT(" << program << ", " << location << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getnUniformivEXT(program, location, bufSize, params);
 }
 
 void CallLogWrapper::glGetnUniformuiv (glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLuint *params)

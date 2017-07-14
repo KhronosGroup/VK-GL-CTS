@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 967f96c92bae15baa1a4326a55222984befdc9ed.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 void					glActiveShaderProgram								(glw::GLuint pipeline, glw::GLuint program);
 void					glActiveTexture										(glw::GLenum texture);
@@ -268,6 +268,7 @@ void					glGetFramebufferAttachmentParameteriv				(glw::GLenum target, glw::GLen
 void					glGetFramebufferParameteriv							(glw::GLenum target, glw::GLenum pname, glw::GLint *params);
 void					glGetFramebufferParameterivEXT						(glw::GLuint framebuffer, glw::GLenum pname, glw::GLint *params);
 glw::GLenum				glGetGraphicsResetStatus							(void);
+glw::GLenum				glGetGraphicsResetStatusEXT							(void);
 void					glGetInteger64i_v									(glw::GLenum target, glw::GLuint index, glw::GLint64 *data);
 void					glGetInteger64v										(glw::GLenum pname, glw::GLint64 *data);
 void					glGetIntegeri_v										(glw::GLenum target, glw::GLuint index, glw::GLint *data);
@@ -400,7 +401,9 @@ void					glGetnCompressedTexImage							(glw::GLenum target, glw::GLint lod, glw
 void					glGetnTexImage										(glw::GLenum target, glw::GLint level, glw::GLenum format, glw::GLenum type, glw::GLsizei bufSize, void *pixels);
 void					glGetnUniformdv										(glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLdouble *params);
 void					glGetnUniformfv										(glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLfloat *params);
+void					glGetnUniformfvEXT									(glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLfloat *params);
 void					glGetnUniformiv										(glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLint *params);
+void					glGetnUniformivEXT									(glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLint *params);
 void					glGetnUniformuiv									(glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLuint *params);
 void					glHint												(glw::GLenum target, glw::GLenum mode);
 void					glInsertEventMarkerEXT								(glw::GLsizei length, const glw::GLchar *marker);
