@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
+ * Generated from Khronos GL API description (gl.xml) revision 7ac9c857db1e3a6065485e4e2144151f48a4f1c4.
  */
 
 if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
@@ -120,4 +120,20 @@ if (de::contains(extSet, "GL_KHR_robustness"))
 	gl->getnUniformiv			= (glGetnUniformivFunc)				loader->get("glGetnUniformivKHR");
 	gl->getnUniformuiv			= (glGetnUniformuivFunc)			loader->get("glGetnUniformuivKHR");
 	gl->readnPixels				= (glReadnPixelsFunc)				loader->get("glReadnPixelsKHR");
+}
+
+if (de::contains(extSet, "GL_EXT_draw_elements_base_vertex"))
+{
+	gl->drawElementsBaseVertex			= (glDrawElementsBaseVertexFunc)			loader->get("glDrawElementsBaseVertexEXT");
+	gl->drawElementsInstancedBaseVertex	= (glDrawElementsInstancedBaseVertexFunc)	loader->get("glDrawElementsInstancedBaseVertexEXT");
+	gl->drawRangeElementsBaseVertex		= (glDrawRangeElementsBaseVertexFunc)		loader->get("glDrawRangeElementsBaseVertexEXT");
+	gl->multiDrawElementsBaseVertex		= (glMultiDrawElementsBaseVertexFunc)		loader->get("glMultiDrawElementsBaseVertexEXT");
+}
+
+if (de::contains(extSet, "GL_OES_draw_elements_base_vertex"))
+{
+	gl->drawElementsBaseVertex			= (glDrawElementsBaseVertexFunc)			loader->get("glDrawElementsBaseVertexOES");
+	gl->drawElementsInstancedBaseVertex	= (glDrawElementsInstancedBaseVertexFunc)	loader->get("glDrawElementsInstancedBaseVertexOES");
+	gl->drawRangeElementsBaseVertex		= (glDrawRangeElementsBaseVertexFunc)		loader->get("glDrawRangeElementsBaseVertexOES");
+	gl->multiDrawElementsBaseVertex		= (glMultiDrawElementsBaseVertexFunc)		loader->get("glMultiDrawElementsBaseVertexOES");
 }
