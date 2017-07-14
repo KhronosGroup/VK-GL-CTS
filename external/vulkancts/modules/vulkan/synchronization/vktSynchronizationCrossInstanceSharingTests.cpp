@@ -31,6 +31,7 @@
 #include "vktSynchronizationUtil.hpp"
 #include "vktSynchronizationOperation.hpp"
 #include "vktSynchronizationOperationTestData.hpp"
+#include "vktSynchronizationOperationResources.hpp"
 #include "vktExternalMemoryUtil.hpp"
 
 #include "tcuResultCollector.hpp"
