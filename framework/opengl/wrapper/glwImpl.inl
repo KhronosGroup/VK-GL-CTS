@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 32093.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 
 void glwActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -476,12 +476,12 @@ void glwClearNamedBufferSubData (GLuint buffer, GLenum internalformat, GLintptr 
 	gl->clearNamedBufferSubData(buffer, internalformat, offset, size, format, type, data);
 }
 
-void glwClearNamedFramebufferfi (GLuint framebuffer, GLenum buffer, const GLfloat depth, GLint stencil)
+void glwClearNamedFramebufferfi (GLuint framebuffer, GLenum buffer, GLint drawbuffer, GLfloat depth, GLint stencil)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->clearNamedFramebufferfi(framebuffer, buffer, depth, stencil);
+	gl->clearNamedFramebufferfi(framebuffer, buffer, drawbuffer, depth, stencil);
 }
 
 void glwClearNamedFramebufferfv (GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLfloat *value)
