@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 967f96c92bae15baa1a4326a55222984befdc9ed.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 glActiveShaderProgramFunc								activeShaderProgram;
 glActiveTextureFunc										activeTexture;
@@ -268,6 +268,7 @@ glGetFramebufferAttachmentParameterivFunc				getFramebufferAttachmentParameteriv
 glGetFramebufferParameterivFunc							getFramebufferParameteriv;
 glGetFramebufferParameterivEXTFunc						getFramebufferParameterivEXT;
 glGetGraphicsResetStatusFunc							getGraphicsResetStatus;
+glGetGraphicsResetStatusEXTFunc							getGraphicsResetStatusEXT;
 glGetInteger64i_vFunc									getInteger64i_v;
 glGetInteger64vFunc										getInteger64v;
 glGetIntegeri_vFunc										getIntegeri_v;
@@ -400,7 +401,9 @@ glGetnCompressedTexImageFunc							getnCompressedTexImage;
 glGetnTexImageFunc										getnTexImage;
 glGetnUniformdvFunc										getnUniformdv;
 glGetnUniformfvFunc										getnUniformfv;
+glGetnUniformfvEXTFunc									getnUniformfvEXT;
 glGetnUniformivFunc										getnUniformiv;
+glGetnUniformivEXTFunc									getnUniformivEXT;
 glGetnUniformuivFunc									getnUniformuiv;
 glHintFunc												hint;
 glInsertEventMarkerEXTFunc								insertEventMarkerEXT;

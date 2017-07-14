@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 967f96c92bae15baa1a4326a55222984befdc9ed.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 gl->activeShaderProgram								= glActiveShaderProgram;
 gl->activeTexture									= glActiveTexture;
@@ -268,6 +268,7 @@ gl->getFramebufferAttachmentParameteriv				= glGetFramebufferAttachmentParameter
 gl->getFramebufferParameteriv						= glGetFramebufferParameteriv;
 gl->getFramebufferParameterivEXT					= glGetFramebufferParameterivEXT;
 gl->getGraphicsResetStatus							= glGetGraphicsResetStatus;
+gl->getGraphicsResetStatusEXT						= glGetGraphicsResetStatusEXT;
 gl->getInteger64i_v									= glGetInteger64i_v;
 gl->getInteger64v									= glGetInteger64v;
 gl->getIntegeri_v									= glGetIntegeri_v;
@@ -400,7 +401,9 @@ gl->getnCompressedTexImage							= glGetnCompressedTexImage;
 gl->getnTexImage									= glGetnTexImage;
 gl->getnUniformdv									= glGetnUniformdv;
 gl->getnUniformfv									= glGetnUniformfv;
+gl->getnUniformfvEXT								= glGetnUniformfvEXT;
 gl->getnUniformiv									= glGetnUniformiv;
+gl->getnUniformivEXT								= glGetnUniformivEXT;
 gl->getnUniformuiv									= glGetnUniformuiv;
 gl->hint											= glHint;
 gl->insertEventMarkerEXT							= glInsertEventMarkerEXT;

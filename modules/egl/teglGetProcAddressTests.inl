@@ -1389,15 +1389,6 @@ static const char* s_GL_NV_draw_instanced[] =
 	"glDrawElementsInstancedNV",
 };
 
-static const char* s_GL_NV_draw_vulkan_image[] =
-{
-	"glDrawVkImageNV",
-	"glGetVkProcAddrNV",
-	"glWaitVkSemaphoreNV",
-	"glSignalVkSemaphoreNV",
-	"glSignalVkFenceNV",
-};
-
 static const char* s_GL_NV_fragment_coverage_to_color[] =
 {
 	"glFragmentCoverageColorNV",
@@ -1703,6 +1694,15 @@ static const char* s_GL_QCOM_framebuffer_foveated[] =
 	"glFramebufferFoveationParametersQCOM",
 };
 
+static const char* s_GL_NV_draw_vulkan_image[] =
+{
+	"glDrawVkImageNV",
+	"glGetVkProcAddrNV",
+	"glWaitVkSemaphoreNV",
+	"glSignalVkSemaphoreNV",
+	"glSignalVkFenceNV",
+};
+
 static const struct
 {
 	const char*			name;
@@ -1834,7 +1834,6 @@ static const struct
 	{ "GL_NV_coverage_sample",								DE_LENGTH_OF_ARRAY(s_GL_NV_coverage_sample),							s_GL_NV_coverage_sample								},
 	{ "GL_NV_draw_buffers",									DE_LENGTH_OF_ARRAY(s_GL_NV_draw_buffers),								s_GL_NV_draw_buffers								},
 	{ "GL_NV_draw_instanced",								DE_LENGTH_OF_ARRAY(s_GL_NV_draw_instanced),								s_GL_NV_draw_instanced								},
-	{ "GL_NV_draw_vulkan_image",							DE_LENGTH_OF_ARRAY(s_GL_NV_draw_vulkan_image),							s_GL_NV_draw_vulkan_image							},
 	{ "GL_NV_fragment_coverage_to_color",					DE_LENGTH_OF_ARRAY(s_GL_NV_fragment_coverage_to_color),					s_GL_NV_fragment_coverage_to_color					},
 	{ "GL_NV_framebuffer_blit",								DE_LENGTH_OF_ARRAY(s_GL_NV_framebuffer_blit),							s_GL_NV_framebuffer_blit							},
 	{ "GL_NV_framebuffer_mixed_samples",					DE_LENGTH_OF_ARRAY(s_GL_NV_framebuffer_mixed_samples),					s_GL_NV_framebuffer_mixed_samples					},
@@ -1867,4 +1866,5 @@ static const struct
 	{ "GL_OVR_multiview_multisampled_render_to_texture",	DE_LENGTH_OF_ARRAY(s_GL_OVR_multiview_multisampled_render_to_texture),	s_GL_OVR_multiview_multisampled_render_to_texture	},
 	{ "GL_QCOM_alpha_test",									DE_LENGTH_OF_ARRAY(s_GL_QCOM_alpha_test),								s_GL_QCOM_alpha_test								},
 	{ "GL_QCOM_framebuffer_foveated",						DE_LENGTH_OF_ARRAY(s_GL_QCOM_framebuffer_foveated),						s_GL_QCOM_framebuffer_foveated						},
+	{ "GL_NV_draw_vulkan_image",							DE_LENGTH_OF_ARRAY(s_GL_NV_draw_vulkan_image),							s_GL_NV_draw_vulkan_image							},
 };

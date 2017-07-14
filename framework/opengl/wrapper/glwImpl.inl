@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 967f96c92bae15baa1a4326a55222984befdc9ed.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 
 void glwActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -2124,6 +2124,14 @@ GLenum glwGetGraphicsResetStatus (void)
 	return gl->getGraphicsResetStatus();
 }
 
+GLenum glwGetGraphicsResetStatusEXT (void)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return (GLenum)0;
+	return gl->getGraphicsResetStatusEXT();
+}
+
 void glwGetInteger64i_v (GLenum target, GLuint index, GLint64 *data)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -3180,12 +3188,28 @@ void glwGetnUniformfv (GLuint program, GLint location, GLsizei bufSize, GLfloat 
 	gl->getnUniformfv(program, location, bufSize, params);
 }
 
+void glwGetnUniformfvEXT (GLuint program, GLint location, GLsizei bufSize, GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getnUniformfvEXT(program, location, bufSize, params);
+}
+
 void glwGetnUniformiv (GLuint program, GLint location, GLsizei bufSize, GLint *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->getnUniformiv(program, location, bufSize, params);
+}
+
+void glwGetnUniformivEXT (GLuint program, GLint location, GLsizei bufSize, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getnUniformivEXT(program, location, bufSize, params);
 }
 
 void glwGetnUniformuiv (GLuint program, GLint location, GLsizei bufSize, GLuint *params)
