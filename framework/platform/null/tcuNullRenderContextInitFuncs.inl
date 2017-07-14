@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
+ * Generated from Khronos GL API description (gl.xml) revision 7ac9c857db1e3a6065485e4e2144151f48a4f1c4.
  */
 gl->activeShaderProgram								= glActiveShaderProgram;
 gl->activeTexture									= glActiveTexture;
@@ -89,9 +89,11 @@ gl->compressedMultiTexSubImage3DEXT					= glCompressedMultiTexSubImage3DEXT;
 gl->compressedTexImage1D							= glCompressedTexImage1D;
 gl->compressedTexImage2D							= glCompressedTexImage2D;
 gl->compressedTexImage3D							= glCompressedTexImage3D;
+gl->compressedTexImage3DOES							= glCompressedTexImage3DOES;
 gl->compressedTexSubImage1D							= glCompressedTexSubImage1D;
 gl->compressedTexSubImage2D							= glCompressedTexSubImage2D;
 gl->compressedTexSubImage3D							= glCompressedTexSubImage3D;
+gl->compressedTexSubImage3DOES						= glCompressedTexSubImage3DOES;
 gl->compressedTextureImage1DEXT						= glCompressedTextureImage1DEXT;
 gl->compressedTextureImage2DEXT						= glCompressedTextureImage2DEXT;
 gl->compressedTextureImage3DEXT						= glCompressedTextureImage3DEXT;
@@ -114,6 +116,7 @@ gl->copyTexImage2D									= glCopyTexImage2D;
 gl->copyTexSubImage1D								= glCopyTexSubImage1D;
 gl->copyTexSubImage2D								= glCopyTexSubImage2D;
 gl->copyTexSubImage3D								= glCopyTexSubImage3D;
+gl->copyTexSubImage3DOES							= glCopyTexSubImage3DOES;
 gl->copyTextureImage1DEXT							= glCopyTextureImage1DEXT;
 gl->copyTextureImage2DEXT							= glCopyTextureImage2DEXT;
 gl->copyTextureSubImage1D							= glCopyTextureSubImage1D;
@@ -218,6 +221,7 @@ gl->framebufferTexture								= glFramebufferTexture;
 gl->framebufferTexture1D							= glFramebufferTexture1D;
 gl->framebufferTexture2D							= glFramebufferTexture2D;
 gl->framebufferTexture3D							= glFramebufferTexture3D;
+gl->framebufferTexture3DOES							= glFramebufferTexture3DOES;
 gl->framebufferTextureLayer							= glFramebufferTextureLayer;
 gl->frontFace										= glFrontFace;
 gl->genBuffers										= glGenBuffers;
@@ -268,7 +272,6 @@ gl->getFramebufferAttachmentParameteriv				= glGetFramebufferAttachmentParameter
 gl->getFramebufferParameteriv						= glGetFramebufferParameteriv;
 gl->getFramebufferParameterivEXT					= glGetFramebufferParameterivEXT;
 gl->getGraphicsResetStatus							= glGetGraphicsResetStatus;
-gl->getGraphicsResetStatusEXT						= glGetGraphicsResetStatusEXT;
 gl->getInteger64i_v									= glGetInteger64i_v;
 gl->getInteger64v									= glGetInteger64v;
 gl->getIntegeri_v									= glGetIntegeri_v;
@@ -401,9 +404,7 @@ gl->getnCompressedTexImage							= glGetnCompressedTexImage;
 gl->getnTexImage									= glGetnTexImage;
 gl->getnUniformdv									= glGetnUniformdv;
 gl->getnUniformfv									= glGetnUniformfv;
-gl->getnUniformfvEXT								= glGetnUniformfvEXT;
 gl->getnUniformiv									= glGetnUniformiv;
-gl->getnUniformivEXT								= glGetnUniformivEXT;
 gl->getnUniformuiv									= glGetnUniformuiv;
 gl->hint											= glHint;
 gl->insertEventMarkerEXT							= glInsertEventMarkerEXT;
@@ -659,6 +660,7 @@ gl->texImage2D										= glTexImage2D;
 gl->texImage2DMultisample							= glTexImage2DMultisample;
 gl->texImage3D										= glTexImage3D;
 gl->texImage3DMultisample							= glTexImage3DMultisample;
+gl->texImage3DOES									= glTexImage3DOES;
 gl->texPageCommitmentARB							= glTexPageCommitmentARB;
 gl->texParameterIiv									= glTexParameterIiv;
 gl->texParameterIuiv								= glTexParameterIuiv;
@@ -674,6 +676,7 @@ gl->texStorage3DMultisample							= glTexStorage3DMultisample;
 gl->texSubImage1D									= glTexSubImage1D;
 gl->texSubImage2D									= glTexSubImage2D;
 gl->texSubImage3D									= glTexSubImage3D;
+gl->texSubImage3DOES								= glTexSubImage3DOES;
 gl->textureBarrier									= glTextureBarrier;
 gl->textureBuffer									= glTextureBuffer;
 gl->textureBufferEXT								= glTextureBufferEXT;

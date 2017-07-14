@@ -1115,6 +1115,12 @@ static const char* s_GL_EXT_draw_transform_feedback[] =
 	"glDrawTransformFeedbackInstancedEXT",
 };
 
+static const char* s_GL_EXT_external_buffer[] =
+{
+	"glBufferStorageExternalEXT",
+	"glNamedBufferStorageExternalEXT",
+};
+
 static const char* s_GL_EXT_geometry_shader[] =
 {
 	"glFramebufferTextureEXT",
@@ -1125,6 +1131,38 @@ static const char* s_GL_EXT_instanced_arrays[] =
 	"glDrawArraysInstancedEXT",
 	"glDrawElementsInstancedEXT",
 	"glVertexAttribDivisorEXT",
+};
+
+static const char* s_GL_EXT_memory_object[] =
+{
+	"glBufferStorageMemEXT",
+	"glCreateMemoryObjectsEXT",
+	"glDeleteMemoryObjectsEXT",
+	"glGetMemoryObjectParameterivEXT",
+	"glGetUnsignedBytevEXT",
+	"glGetUnsignedBytei_vEXT",
+	"glIsMemoryObjectEXT",
+	"glMemoryObjectParameterivEXT",
+	"glNamedBufferStorageMemEXT",
+	"glTexStorageMem2DEXT",
+	"glTexStorageMem2DMultisampleEXT",
+	"glTexStorageMem3DEXT",
+	"glTexStorageMem3DMultisampleEXT",
+	"glTextureStorageMem2DEXT",
+	"glTextureStorageMem2DMultisampleEXT",
+	"glTextureStorageMem3DEXT",
+	"glTextureStorageMem3DMultisampleEXT",
+};
+
+static const char* s_GL_EXT_memory_object_fd[] =
+{
+	"glImportMemoryFdEXT",
+};
+
+static const char* s_GL_EXT_memory_object_win32[] =
+{
+	"glImportMemoryWin32HandleEXT",
+	"glImportMemoryWin32NameEXT",
 };
 
 static const char* s_GL_EXT_multi_draw_indirect[] =
@@ -1164,6 +1202,30 @@ static const char* s_GL_EXT_primitive_bounding_box[] =
 static const char* s_GL_EXT_raster_multisample[] =
 {
 	"glRasterSamplesEXT",
+};
+
+static const char* s_GL_EXT_semaphore[] =
+{
+	"glDeleteSemaphoresEXT",
+	"glGenSemaphoresEXT",
+	"glGetSemaphoreParameterui64vEXT",
+	"glGetUnsignedBytevEXT",
+	"glGetUnsignedBytei_vEXT",
+	"glIsSemaphoreEXT",
+	"glSemaphoreParameterui64vEXT",
+	"glSignalSemaphoreEXT",
+	"glWaitSemaphoreEXT",
+};
+
+static const char* s_GL_EXT_semaphore_fd[] =
+{
+	"glImportSemaphoreFdEXT",
+};
+
+static const char* s_GL_EXT_semaphore_win32[] =
+{
+	"glImportSemaphoreWin32HandleEXT",
+	"glImportSemaphoreWin32NameEXT",
 };
 
 static const char* s_GL_EXT_separate_shader_objects[] =
@@ -1257,6 +1319,12 @@ static const char* s_GL_EXT_texture_filter_minmax[] =
 static const char* s_GL_EXT_texture_view[] =
 {
 	"glTextureViewEXT",
+};
+
+static const char* s_GL_EXT_win32_keyed_mutex[] =
+{
+	"glAcquireKeyedMutexWin32EXT",
+	"glReleaseKeyedMutexWin32EXT",
 };
 
 static const char* s_GL_EXT_window_rectangles[] =
@@ -1387,6 +1455,15 @@ static const char* s_GL_NV_draw_instanced[] =
 {
 	"glDrawArraysInstancedNV",
 	"glDrawElementsInstancedNV",
+};
+
+static const char* s_GL_NV_draw_vulkan_image[] =
+{
+	"glDrawVkImageNV",
+	"glGetVkProcAddrNV",
+	"glWaitVkSemaphoreNV",
+	"glSignalVkSemaphoreNV",
+	"glSignalVkFenceNV",
 };
 
 static const char* s_GL_NV_fragment_coverage_to_color[] =
@@ -1694,13 +1771,9 @@ static const char* s_GL_QCOM_framebuffer_foveated[] =
 	"glFramebufferFoveationParametersQCOM",
 };
 
-static const char* s_GL_NV_draw_vulkan_image[] =
+static const char* s_GL_QCOM_shader_framebuffer_fetch_noncoherent[] =
 {
-	"glDrawVkImageNV",
-	"glGetVkProcAddrNV",
-	"glWaitVkSemaphoreNV",
-	"glSignalVkSemaphoreNV",
-	"glSignalVkFenceNV",
+	"glFramebufferFetchBarrierQCOM",
 };
 
 static const struct
@@ -1801,14 +1874,21 @@ static const struct
 	{ "GL_EXT_draw_elements_base_vertex",					DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_elements_base_vertex),					s_GL_EXT_draw_elements_base_vertex					},
 	{ "GL_EXT_draw_instanced",								DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_instanced),							s_GL_EXT_draw_instanced								},
 	{ "GL_EXT_draw_transform_feedback",						DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_transform_feedback),					s_GL_EXT_draw_transform_feedback					},
+	{ "GL_EXT_external_buffer",								DE_LENGTH_OF_ARRAY(s_GL_EXT_external_buffer),							s_GL_EXT_external_buffer							},
 	{ "GL_EXT_geometry_shader",								DE_LENGTH_OF_ARRAY(s_GL_EXT_geometry_shader),							s_GL_EXT_geometry_shader							},
 	{ "GL_EXT_instanced_arrays",							DE_LENGTH_OF_ARRAY(s_GL_EXT_instanced_arrays),							s_GL_EXT_instanced_arrays							},
+	{ "GL_EXT_memory_object",								DE_LENGTH_OF_ARRAY(s_GL_EXT_memory_object),								s_GL_EXT_memory_object								},
+	{ "GL_EXT_memory_object_fd",							DE_LENGTH_OF_ARRAY(s_GL_EXT_memory_object_fd),							s_GL_EXT_memory_object_fd							},
+	{ "GL_EXT_memory_object_win32",							DE_LENGTH_OF_ARRAY(s_GL_EXT_memory_object_win32),						s_GL_EXT_memory_object_win32						},
 	{ "GL_EXT_multi_draw_indirect",							DE_LENGTH_OF_ARRAY(s_GL_EXT_multi_draw_indirect),						s_GL_EXT_multi_draw_indirect						},
 	{ "GL_EXT_multiview_draw_buffers",						DE_LENGTH_OF_ARRAY(s_GL_EXT_multiview_draw_buffers),					s_GL_EXT_multiview_draw_buffers						},
 	{ "GL_EXT_occlusion_query_boolean",						DE_LENGTH_OF_ARRAY(s_GL_EXT_occlusion_query_boolean),					s_GL_EXT_occlusion_query_boolean					},
 	{ "GL_EXT_polygon_offset_clamp",						DE_LENGTH_OF_ARRAY(s_GL_EXT_polygon_offset_clamp),						s_GL_EXT_polygon_offset_clamp						},
 	{ "GL_EXT_primitive_bounding_box",						DE_LENGTH_OF_ARRAY(s_GL_EXT_primitive_bounding_box),					s_GL_EXT_primitive_bounding_box						},
 	{ "GL_EXT_raster_multisample",							DE_LENGTH_OF_ARRAY(s_GL_EXT_raster_multisample),						s_GL_EXT_raster_multisample							},
+	{ "GL_EXT_semaphore",									DE_LENGTH_OF_ARRAY(s_GL_EXT_semaphore),									s_GL_EXT_semaphore									},
+	{ "GL_EXT_semaphore_fd",								DE_LENGTH_OF_ARRAY(s_GL_EXT_semaphore_fd),								s_GL_EXT_semaphore_fd								},
+	{ "GL_EXT_semaphore_win32",								DE_LENGTH_OF_ARRAY(s_GL_EXT_semaphore_win32),							s_GL_EXT_semaphore_win32							},
 	{ "GL_EXT_separate_shader_objects",						DE_LENGTH_OF_ARRAY(s_GL_EXT_separate_shader_objects),					s_GL_EXT_separate_shader_objects					},
 	{ "GL_EXT_shader_pixel_local_storage2",					DE_LENGTH_OF_ARRAY(s_GL_EXT_shader_pixel_local_storage2),				s_GL_EXT_shader_pixel_local_storage2				},
 	{ "GL_EXT_sparse_texture",								DE_LENGTH_OF_ARRAY(s_GL_EXT_sparse_texture),							s_GL_EXT_sparse_texture								},
@@ -1817,6 +1897,7 @@ static const struct
 	{ "GL_EXT_texture_buffer",								DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_buffer),							s_GL_EXT_texture_buffer								},
 	{ "GL_EXT_texture_filter_minmax",						DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_filter_minmax),						s_GL_EXT_texture_filter_minmax						},
 	{ "GL_EXT_texture_view",								DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_view),								s_GL_EXT_texture_view								},
+	{ "GL_EXT_win32_keyed_mutex",							DE_LENGTH_OF_ARRAY(s_GL_EXT_win32_keyed_mutex),							s_GL_EXT_win32_keyed_mutex							},
 	{ "GL_EXT_window_rectangles",							DE_LENGTH_OF_ARRAY(s_GL_EXT_window_rectangles),							s_GL_EXT_window_rectangles							},
 	{ "GL_IMG_bindless_texture",							DE_LENGTH_OF_ARRAY(s_GL_IMG_bindless_texture),							s_GL_IMG_bindless_texture							},
 	{ "GL_IMG_framebuffer_downsample",						DE_LENGTH_OF_ARRAY(s_GL_IMG_framebuffer_downsample),					s_GL_IMG_framebuffer_downsample						},
@@ -1834,6 +1915,7 @@ static const struct
 	{ "GL_NV_coverage_sample",								DE_LENGTH_OF_ARRAY(s_GL_NV_coverage_sample),							s_GL_NV_coverage_sample								},
 	{ "GL_NV_draw_buffers",									DE_LENGTH_OF_ARRAY(s_GL_NV_draw_buffers),								s_GL_NV_draw_buffers								},
 	{ "GL_NV_draw_instanced",								DE_LENGTH_OF_ARRAY(s_GL_NV_draw_instanced),								s_GL_NV_draw_instanced								},
+	{ "GL_NV_draw_vulkan_image",							DE_LENGTH_OF_ARRAY(s_GL_NV_draw_vulkan_image),							s_GL_NV_draw_vulkan_image							},
 	{ "GL_NV_fragment_coverage_to_color",					DE_LENGTH_OF_ARRAY(s_GL_NV_fragment_coverage_to_color),					s_GL_NV_fragment_coverage_to_color					},
 	{ "GL_NV_framebuffer_blit",								DE_LENGTH_OF_ARRAY(s_GL_NV_framebuffer_blit),							s_GL_NV_framebuffer_blit							},
 	{ "GL_NV_framebuffer_mixed_samples",					DE_LENGTH_OF_ARRAY(s_GL_NV_framebuffer_mixed_samples),					s_GL_NV_framebuffer_mixed_samples					},
@@ -1866,5 +1948,5 @@ static const struct
 	{ "GL_OVR_multiview_multisampled_render_to_texture",	DE_LENGTH_OF_ARRAY(s_GL_OVR_multiview_multisampled_render_to_texture),	s_GL_OVR_multiview_multisampled_render_to_texture	},
 	{ "GL_QCOM_alpha_test",									DE_LENGTH_OF_ARRAY(s_GL_QCOM_alpha_test),								s_GL_QCOM_alpha_test								},
 	{ "GL_QCOM_framebuffer_foveated",						DE_LENGTH_OF_ARRAY(s_GL_QCOM_framebuffer_foveated),						s_GL_QCOM_framebuffer_foveated						},
-	{ "GL_NV_draw_vulkan_image",							DE_LENGTH_OF_ARRAY(s_GL_NV_draw_vulkan_image),							s_GL_NV_draw_vulkan_image							},
+	{ "GL_QCOM_shader_framebuffer_fetch_noncoherent",		DE_LENGTH_OF_ARRAY(s_GL_QCOM_shader_framebuffer_fetch_noncoherent),		s_GL_QCOM_shader_framebuffer_fetch_noncoherent		},
 };

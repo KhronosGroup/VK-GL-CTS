@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
+ * Generated from Khronos GL API description (gl.xml) revision 7ac9c857db1e3a6065485e4e2144151f48a4f1c4.
  */
 
 if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
@@ -573,6 +573,12 @@ if (de::contains(extSet, "GL_ARB_compute_shader"))
 	gl->dispatchComputeIndirect	= (glDispatchComputeIndirectFunc)	loader->get("glDispatchComputeIndirect");
 }
 
+if (de::contains(extSet, "GL_ARB_draw_instanced"))
+{
+	gl->drawArraysInstanced		= (glDrawArraysInstancedFunc)	loader->get("glDrawArraysInstancedARB");
+	gl->drawElementsInstanced	= (glDrawElementsInstancedFunc)	loader->get("glDrawElementsInstancedARB");
+}
+
 if (de::contains(extSet, "GL_ARB_draw_elements_base_vertex"))
 {
 	gl->drawElementsBaseVertex			= (glDrawElementsBaseVertexFunc)			loader->get("glDrawElementsBaseVertex");
@@ -698,6 +704,16 @@ if (de::contains(extSet, "GL_ARB_indirect_parameters"))
 if (de::contains(extSet, "GL_ARB_internalformat_query"))
 {
 	gl->getInternalformativ	= (glGetInternalformativFunc)	loader->get("glGetInternalformativ");
+}
+
+if (de::contains(extSet, "GL_ARB_instanced_arrays"))
+{
+	gl->vertexAttribDivisor	= (glVertexAttribDivisorFunc)	loader->get("glVertexAttribDivisorARB");
+}
+
+if (de::contains(extSet, "GL_ARB_parallel_shader_compile"))
+{
+	gl->maxShaderCompilerThreadsARB	= (glMaxShaderCompilerThreadsARBFunc)	loader->get("glMaxShaderCompilerThreadsARB");
 }
 
 if (de::contains(extSet, "GL_ARB_program_interface_query"))

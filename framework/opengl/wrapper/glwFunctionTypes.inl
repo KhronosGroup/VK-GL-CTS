@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
+ * Generated from Khronos GL API description (gl.xml) revision 7ac9c857db1e3a6065485e4e2144151f48a4f1c4.
  */
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveShaderProgramFunc)								(GLuint pipeline, GLuint program);
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveTextureFunc)										(GLenum texture);
@@ -89,9 +89,11 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedMultiTexSubImage3DEXTFunc)
 typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedTexImage1DFunc)								(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLint border, GLsizei imageSize, const void *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedTexImage2DFunc)								(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedTexImage3DFunc)								(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *data);
+typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedTexImage3DOESFunc)							(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedTexSubImage1DFunc)							(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const void *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedTexSubImage2DFunc)							(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedTexSubImage3DFunc)							(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
+typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedTexSubImage3DOESFunc)						(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedTextureImage1DEXTFunc)						(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLint border, GLsizei imageSize, const void *bits);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedTextureImage2DEXTFunc)						(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *bits);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedTextureImage3DEXTFunc)						(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *bits);
@@ -114,6 +116,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glCopyTexImage2DFunc)									(GLenum 
 typedef GLW_APICALL void			(GLW_APIENTRY* glCopyTexSubImage1DFunc)									(GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCopyTexSubImage2DFunc)									(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCopyTexSubImage3DFunc)									(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+typedef GLW_APICALL void			(GLW_APIENTRY* glCopyTexSubImage3DOESFunc)								(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCopyTextureImage1DEXTFunc)								(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCopyTextureImage2DEXTFunc)								(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCopyTextureSubImage1DFunc)								(GLuint texture, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width);
@@ -218,6 +221,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTextureFunc)								(GLen
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture1DFunc)								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture2DFunc)								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture3DFunc)								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
+typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture3DOESFunc)							(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTextureLayerFunc)							(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFrontFaceFunc)											(GLenum mode);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGenBuffersFunc)										(GLsizei n, GLuint *buffers);
@@ -268,7 +272,6 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferAttachmentParameterivF
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferParameterivFunc)							(GLenum target, GLenum pname, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferParameterivEXTFunc)						(GLuint framebuffer, GLenum pname, GLint *params);
 typedef GLW_APICALL GLenum			(GLW_APIENTRY* glGetGraphicsResetStatusFunc)							(void);
-typedef GLW_APICALL GLenum			(GLW_APIENTRY* glGetGraphicsResetStatusEXTFunc)							(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetInteger64i_vFunc)									(GLenum target, GLuint index, GLint64 *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetInteger64vFunc)										(GLenum pname, GLint64 *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetIntegeri_vFunc)										(GLenum target, GLuint index, GLint *data);
@@ -401,9 +404,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glGetnCompressedTexImageFunc)							(G
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetnTexImageFunc)										(GLenum target, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformdvFunc)										(GLuint program, GLint location, GLsizei bufSize, GLdouble *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformfvFunc)										(GLuint program, GLint location, GLsizei bufSize, GLfloat *params);
-typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformfvEXTFunc)									(GLuint program, GLint location, GLsizei bufSize, GLfloat *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformivFunc)										(GLuint program, GLint location, GLsizei bufSize, GLint *params);
-typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformivEXTFunc)									(GLuint program, GLint location, GLsizei bufSize, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformuivFunc)									(GLuint program, GLint location, GLsizei bufSize, GLuint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glHintFunc)												(GLenum target, GLenum mode);
 typedef GLW_APICALL void			(GLW_APIENTRY* glInsertEventMarkerEXTFunc)								(GLsizei length, const GLchar *marker);
@@ -659,6 +660,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glTexImage2DFunc)										(GLenum tar
 typedef GLW_APICALL void			(GLW_APIENTRY* glTexImage2DMultisampleFunc)								(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTexImage3DFunc)										(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTexImage3DMultisampleFunc)								(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations);
+typedef GLW_APICALL void			(GLW_APIENTRY* glTexImage3DOESFunc)										(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTexPageCommitmentARBFunc)								(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLboolean commit);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTexParameterIivFunc)									(GLenum target, GLenum pname, const GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTexParameterIuivFunc)									(GLenum target, GLenum pname, const GLuint *params);
@@ -674,6 +676,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glTexStorage3DMultisampleFunc)							(
 typedef GLW_APICALL void			(GLW_APIENTRY* glTexSubImage1DFunc)										(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const void *pixels);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTexSubImage2DFunc)										(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTexSubImage3DFunc)										(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
+typedef GLW_APICALL void			(GLW_APIENTRY* glTexSubImage3DOESFunc)									(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTextureBarrierFunc)									(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTextureBufferFunc)										(GLuint texture, GLenum internalformat, GLuint buffer);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTextureBufferEXTFunc)									(GLuint texture, GLenum target, GLenum internalformat, GLuint buffer);

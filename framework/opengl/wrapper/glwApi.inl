@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
+ * Generated from Khronos GL API description (gl.xml) revision 7ac9c857db1e3a6065485e4e2144151f48a4f1c4.
  */
 #define			glActiveShaderProgram								glwActiveShaderProgram
 #define			glActiveTexture										glwActiveTexture
@@ -89,9 +89,11 @@
 #define			glCompressedTexImage1D								glwCompressedTexImage1D
 #define			glCompressedTexImage2D								glwCompressedTexImage2D
 #define			glCompressedTexImage3D								glwCompressedTexImage3D
+#define			glCompressedTexImage3DOES							glwCompressedTexImage3DOES
 #define			glCompressedTexSubImage1D							glwCompressedTexSubImage1D
 #define			glCompressedTexSubImage2D							glwCompressedTexSubImage2D
 #define			glCompressedTexSubImage3D							glwCompressedTexSubImage3D
+#define			glCompressedTexSubImage3DOES						glwCompressedTexSubImage3DOES
 #define			glCompressedTextureImage1DEXT						glwCompressedTextureImage1DEXT
 #define			glCompressedTextureImage2DEXT						glwCompressedTextureImage2DEXT
 #define			glCompressedTextureImage3DEXT						glwCompressedTextureImage3DEXT
@@ -114,6 +116,7 @@
 #define			glCopyTexSubImage1D									glwCopyTexSubImage1D
 #define			glCopyTexSubImage2D									glwCopyTexSubImage2D
 #define			glCopyTexSubImage3D									glwCopyTexSubImage3D
+#define			glCopyTexSubImage3DOES								glwCopyTexSubImage3DOES
 #define			glCopyTextureImage1DEXT								glwCopyTextureImage1DEXT
 #define			glCopyTextureImage2DEXT								glwCopyTextureImage2DEXT
 #define			glCopyTextureSubImage1D								glwCopyTextureSubImage1D
@@ -218,6 +221,7 @@
 #define			glFramebufferTexture1D								glwFramebufferTexture1D
 #define			glFramebufferTexture2D								glwFramebufferTexture2D
 #define			glFramebufferTexture3D								glwFramebufferTexture3D
+#define			glFramebufferTexture3DOES							glwFramebufferTexture3DOES
 #define			glFramebufferTextureLayer							glwFramebufferTextureLayer
 #define			glFrontFace											glwFrontFace
 #define			glGenBuffers										glwGenBuffers
@@ -268,7 +272,6 @@
 #define			glGetFramebufferParameteriv							glwGetFramebufferParameteriv
 #define			glGetFramebufferParameterivEXT						glwGetFramebufferParameterivEXT
 #define			glGetGraphicsResetStatus							glwGetGraphicsResetStatus
-#define			glGetGraphicsResetStatusEXT							glwGetGraphicsResetStatusEXT
 #define			glGetInteger64i_v									glwGetInteger64i_v
 #define			glGetInteger64v										glwGetInteger64v
 #define			glGetIntegeri_v										glwGetIntegeri_v
@@ -401,9 +404,7 @@
 #define			glGetnTexImage										glwGetnTexImage
 #define			glGetnUniformdv										glwGetnUniformdv
 #define			glGetnUniformfv										glwGetnUniformfv
-#define			glGetnUniformfvEXT									glwGetnUniformfvEXT
 #define			glGetnUniformiv										glwGetnUniformiv
-#define			glGetnUniformivEXT									glwGetnUniformivEXT
 #define			glGetnUniformuiv									glwGetnUniformuiv
 #define			glHint												glwHint
 #define			glInsertEventMarkerEXT								glwInsertEventMarkerEXT
@@ -659,6 +660,7 @@
 #define			glTexImage2DMultisample								glwTexImage2DMultisample
 #define			glTexImage3D										glwTexImage3D
 #define			glTexImage3DMultisample								glwTexImage3DMultisample
+#define			glTexImage3DOES										glwTexImage3DOES
 #define			glTexPageCommitmentARB								glwTexPageCommitmentARB
 #define			glTexParameterIiv									glwTexParameterIiv
 #define			glTexParameterIuiv									glwTexParameterIuiv
@@ -674,6 +676,7 @@
 #define			glTexSubImage1D										glwTexSubImage1D
 #define			glTexSubImage2D										glwTexSubImage2D
 #define			glTexSubImage3D										glwTexSubImage3D
+#define			glTexSubImage3DOES									glwTexSubImage3DOES
 #define			glTextureBarrier									glwTextureBarrier
 #define			glTextureBuffer										glwTextureBuffer
 #define			glTextureBufferEXT									glwTextureBufferEXT
@@ -974,9 +977,11 @@ void			glwCompressedMultiTexSubImage3DEXT					(GLenum texunit, GLenum target, GL
 void			glwCompressedTexImage1D								(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLint border, GLsizei imageSize, const void *data);
 void			glwCompressedTexImage2D								(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data);
 void			glwCompressedTexImage3D								(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *data);
+void			glwCompressedTexImage3DOES							(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *data);
 void			glwCompressedTexSubImage1D							(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const void *data);
 void			glwCompressedTexSubImage2D							(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data);
 void			glwCompressedTexSubImage3D							(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
+void			glwCompressedTexSubImage3DOES						(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
 void			glwCompressedTextureImage1DEXT						(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLint border, GLsizei imageSize, const void *bits);
 void			glwCompressedTextureImage2DEXT						(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *bits);
 void			glwCompressedTextureImage3DEXT						(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *bits);
@@ -999,6 +1004,7 @@ void			glwCopyTexImage2D									(GLenum target, GLint level, GLenum internalfor
 void			glwCopyTexSubImage1D								(GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width);
 void			glwCopyTexSubImage2D								(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 void			glwCopyTexSubImage3D								(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+void			glwCopyTexSubImage3DOES								(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 void			glwCopyTextureImage1DEXT							(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border);
 void			glwCopyTextureImage2DEXT							(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
 void			glwCopyTextureSubImage1D							(GLuint texture, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width);
@@ -1103,6 +1109,7 @@ void			glwFramebufferTexture								(GLenum target, GLenum attachment, GLuint te
 void			glwFramebufferTexture1D								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 void			glwFramebufferTexture2D								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 void			glwFramebufferTexture3D								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
+void			glwFramebufferTexture3DOES							(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
 void			glwFramebufferTextureLayer							(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer);
 void			glwFrontFace										(GLenum mode);
 void			glwGenBuffers										(GLsizei n, GLuint *buffers);
@@ -1153,7 +1160,6 @@ void			glwGetFramebufferAttachmentParameteriv				(GLenum target, GLenum attachme
 void			glwGetFramebufferParameteriv						(GLenum target, GLenum pname, GLint *params);
 void			glwGetFramebufferParameterivEXT						(GLuint framebuffer, GLenum pname, GLint *params);
 GLenum			glwGetGraphicsResetStatus							();
-GLenum			glwGetGraphicsResetStatusEXT						();
 void			glwGetInteger64i_v									(GLenum target, GLuint index, GLint64 *data);
 void			glwGetInteger64v									(GLenum pname, GLint64 *data);
 void			glwGetIntegeri_v									(GLenum target, GLuint index, GLint *data);
@@ -1286,9 +1292,7 @@ void			glwGetnCompressedTexImage							(GLenum target, GLint lod, GLsizei bufSiz
 void			glwGetnTexImage										(GLenum target, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels);
 void			glwGetnUniformdv									(GLuint program, GLint location, GLsizei bufSize, GLdouble *params);
 void			glwGetnUniformfv									(GLuint program, GLint location, GLsizei bufSize, GLfloat *params);
-void			glwGetnUniformfvEXT									(GLuint program, GLint location, GLsizei bufSize, GLfloat *params);
 void			glwGetnUniformiv									(GLuint program, GLint location, GLsizei bufSize, GLint *params);
-void			glwGetnUniformivEXT									(GLuint program, GLint location, GLsizei bufSize, GLint *params);
 void			glwGetnUniformuiv									(GLuint program, GLint location, GLsizei bufSize, GLuint *params);
 void			glwHint												(GLenum target, GLenum mode);
 void			glwInsertEventMarkerEXT								(GLsizei length, const GLchar *marker);
@@ -1544,6 +1548,7 @@ void			glwTexImage2D										(GLenum target, GLint level, GLint internalformat,
 void			glwTexImage2DMultisample							(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 void			glwTexImage3D										(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels);
 void			glwTexImage3DMultisample							(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations);
+void			glwTexImage3DOES									(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels);
 void			glwTexPageCommitmentARB								(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLboolean commit);
 void			glwTexParameterIiv									(GLenum target, GLenum pname, const GLint *params);
 void			glwTexParameterIuiv									(GLenum target, GLenum pname, const GLuint *params);
@@ -1559,6 +1564,7 @@ void			glwTexStorage3DMultisample							(GLenum target, GLsizei samples, GLenum 
 void			glwTexSubImage1D									(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const void *pixels);
 void			glwTexSubImage2D									(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels);
 void			glwTexSubImage3D									(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
+void			glwTexSubImage3DOES									(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
 void			glwTextureBarrier									();
 void			glwTextureBuffer									(GLuint texture, GLenum internalformat, GLuint buffer);
 void			glwTextureBufferEXT									(GLuint texture, GLenum target, GLenum internalformat, GLuint buffer);

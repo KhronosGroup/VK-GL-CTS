@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
+ * Generated from Khronos GL API description (gl.xml) revision 7ac9c857db1e3a6065485e4e2144151f48a4f1c4.
  */
 
 if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
@@ -45,10 +45,10 @@ if (de::contains(extSet, "GL_EXT_geometry_shader"))
 
 if (de::contains(extSet, "GL_EXT_robustness"))
 {
-	gl->getGraphicsResetStatusEXT	= (glGetGraphicsResetStatusEXTFunc)	loader->get("glGetGraphicsResetStatusEXT");
-	gl->getnUniformfvEXT			= (glGetnUniformfvEXTFunc)			loader->get("glGetnUniformfvEXT");
-	gl->getnUniformivEXT			= (glGetnUniformivEXTFunc)			loader->get("glGetnUniformivEXT");
-	gl->readnPixels					= (glReadnPixelsFunc)				loader->get("glReadnPixelsEXT");
+	gl->getGraphicsResetStatus	= (glGetGraphicsResetStatusFunc)	loader->get("glGetGraphicsResetStatusEXT");
+	gl->getnUniformfv			= (glGetnUniformfvFunc)				loader->get("glGetnUniformfvEXT");
+	gl->getnUniformiv			= (glGetnUniformivFunc)				loader->get("glGetnUniformivEXT");
+	gl->readnPixels				= (glReadnPixelsFunc)				loader->get("glReadnPixelsEXT");
 }
 
 if (de::contains(extSet, "GL_EXT_texture_buffer"))
@@ -124,12 +124,12 @@ if (de::contains(extSet, "GL_OES_EGL_image"))
 
 if (de::contains(extSet, "GL_OES_texture_3D"))
 {
-	gl->compressedTexImage3D	= (glCompressedTexImage3DFunc)		loader->get("glCompressedTexImage3DOES");
-	gl->compressedTexSubImage3D	= (glCompressedTexSubImage3DFunc)	loader->get("glCompressedTexSubImage3DOES");
-	gl->copyTexSubImage3D		= (glCopyTexSubImage3DFunc)			loader->get("glCopyTexSubImage3DOES");
-	gl->framebufferTexture3D	= (glFramebufferTexture3DFunc)		loader->get("glFramebufferTexture3DOES");
-	gl->texImage3D				= (glTexImage3DFunc)				loader->get("glTexImage3DOES");
-	gl->texSubImage3D			= (glTexSubImage3DFunc)				loader->get("glTexSubImage3DOES");
+	gl->compressedTexImage3DOES		= (glCompressedTexImage3DOESFunc)		loader->get("glCompressedTexImage3DOES");
+	gl->compressedTexSubImage3DOES	= (glCompressedTexSubImage3DOESFunc)	loader->get("glCompressedTexSubImage3DOES");
+	gl->copyTexSubImage3DOES		= (glCopyTexSubImage3DOESFunc)			loader->get("glCopyTexSubImage3DOES");
+	gl->framebufferTexture3DOES		= (glFramebufferTexture3DOESFunc)		loader->get("glFramebufferTexture3DOES");
+	gl->texImage3DOES				= (glTexImage3DOESFunc)					loader->get("glTexImage3DOES");
+	gl->texSubImage3DOES			= (glTexSubImage3DOESFunc)				loader->get("glTexSubImage3DOES");
 }
 
 if (de::contains(extSet, "GL_OES_texture_storage_multisample_2d_array"))
@@ -176,4 +176,12 @@ if (de::contains(extSet, "GL_OES_viewport_array"))
 if (de::contains(extSet, "GL_NV_internalformat_sample_query"))
 {
 	gl->getInternalformatSampleivNV	= (glGetInternalformatSampleivNVFunc)	loader->get("glGetInternalformatSampleivNV");
+}
+
+if (de::contains(extSet, "GL_OES_draw_elements_base_vertex"))
+{
+	gl->drawElementsBaseVertex			= (glDrawElementsBaseVertexFunc)			loader->get("glDrawElementsBaseVertexOES");
+	gl->drawElementsInstancedBaseVertex	= (glDrawElementsInstancedBaseVertexFunc)	loader->get("glDrawElementsInstancedBaseVertexOES");
+	gl->drawRangeElementsBaseVertex		= (glDrawRangeElementsBaseVertexFunc)		loader->get("glDrawRangeElementsBaseVertexOES");
+	gl->multiDrawElementsBaseVertex		= (glMultiDrawElementsBaseVertexFunc)		loader->get("glMultiDrawElementsBaseVertexOES");
 }

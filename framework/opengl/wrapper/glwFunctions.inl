@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
+ * Generated from Khronos GL API description (gl.xml) revision 7ac9c857db1e3a6065485e4e2144151f48a4f1c4.
  */
 glActiveShaderProgramFunc								activeShaderProgram;
 glActiveTextureFunc										activeTexture;
@@ -89,9 +89,11 @@ glCompressedMultiTexSubImage3DEXTFunc					compressedMultiTexSubImage3DEXT;
 glCompressedTexImage1DFunc								compressedTexImage1D;
 glCompressedTexImage2DFunc								compressedTexImage2D;
 glCompressedTexImage3DFunc								compressedTexImage3D;
+glCompressedTexImage3DOESFunc							compressedTexImage3DOES;
 glCompressedTexSubImage1DFunc							compressedTexSubImage1D;
 glCompressedTexSubImage2DFunc							compressedTexSubImage2D;
 glCompressedTexSubImage3DFunc							compressedTexSubImage3D;
+glCompressedTexSubImage3DOESFunc						compressedTexSubImage3DOES;
 glCompressedTextureImage1DEXTFunc						compressedTextureImage1DEXT;
 glCompressedTextureImage2DEXTFunc						compressedTextureImage2DEXT;
 glCompressedTextureImage3DEXTFunc						compressedTextureImage3DEXT;
@@ -114,6 +116,7 @@ glCopyTexImage2DFunc									copyTexImage2D;
 glCopyTexSubImage1DFunc									copyTexSubImage1D;
 glCopyTexSubImage2DFunc									copyTexSubImage2D;
 glCopyTexSubImage3DFunc									copyTexSubImage3D;
+glCopyTexSubImage3DOESFunc								copyTexSubImage3DOES;
 glCopyTextureImage1DEXTFunc								copyTextureImage1DEXT;
 glCopyTextureImage2DEXTFunc								copyTextureImage2DEXT;
 glCopyTextureSubImage1DFunc								copyTextureSubImage1D;
@@ -218,6 +221,7 @@ glFramebufferTextureFunc								framebufferTexture;
 glFramebufferTexture1DFunc								framebufferTexture1D;
 glFramebufferTexture2DFunc								framebufferTexture2D;
 glFramebufferTexture3DFunc								framebufferTexture3D;
+glFramebufferTexture3DOESFunc							framebufferTexture3DOES;
 glFramebufferTextureLayerFunc							framebufferTextureLayer;
 glFrontFaceFunc											frontFace;
 glGenBuffersFunc										genBuffers;
@@ -268,7 +272,6 @@ glGetFramebufferAttachmentParameterivFunc				getFramebufferAttachmentParameteriv
 glGetFramebufferParameterivFunc							getFramebufferParameteriv;
 glGetFramebufferParameterivEXTFunc						getFramebufferParameterivEXT;
 glGetGraphicsResetStatusFunc							getGraphicsResetStatus;
-glGetGraphicsResetStatusEXTFunc							getGraphicsResetStatusEXT;
 glGetInteger64i_vFunc									getInteger64i_v;
 glGetInteger64vFunc										getInteger64v;
 glGetIntegeri_vFunc										getIntegeri_v;
@@ -401,9 +404,7 @@ glGetnCompressedTexImageFunc							getnCompressedTexImage;
 glGetnTexImageFunc										getnTexImage;
 glGetnUniformdvFunc										getnUniformdv;
 glGetnUniformfvFunc										getnUniformfv;
-glGetnUniformfvEXTFunc									getnUniformfvEXT;
 glGetnUniformivFunc										getnUniformiv;
-glGetnUniformivEXTFunc									getnUniformivEXT;
 glGetnUniformuivFunc									getnUniformuiv;
 glHintFunc												hint;
 glInsertEventMarkerEXTFunc								insertEventMarkerEXT;
@@ -659,6 +660,7 @@ glTexImage2DFunc										texImage2D;
 glTexImage2DMultisampleFunc								texImage2DMultisample;
 glTexImage3DFunc										texImage3D;
 glTexImage3DMultisampleFunc								texImage3DMultisample;
+glTexImage3DOESFunc										texImage3DOES;
 glTexPageCommitmentARBFunc								texPageCommitmentARB;
 glTexParameterIivFunc									texParameterIiv;
 glTexParameterIuivFunc									texParameterIuiv;
@@ -674,6 +676,7 @@ glTexStorage3DMultisampleFunc							texStorage3DMultisample;
 glTexSubImage1DFunc										texSubImage1D;
 glTexSubImage2DFunc										texSubImage2D;
 glTexSubImage3DFunc										texSubImage3D;
+glTexSubImage3DOESFunc									texSubImage3DOES;
 glTextureBarrierFunc									textureBarrier;
 glTextureBufferFunc										textureBuffer;
 glTextureBufferEXTFunc									textureBufferEXT;
