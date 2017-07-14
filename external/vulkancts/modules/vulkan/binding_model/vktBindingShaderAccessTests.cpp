@@ -671,14 +671,7 @@ vk::Move<vk::VkCommandPool> SingleTargetRenderInstance::createCommandPool (const
 																		   vk::VkDevice					device,
 																		   deUint32						queueFamilyIndex)
 {
-	const vk::VkCommandPoolCreateInfo createInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-		DE_NULL,
-		vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,	// flags
-		queueFamilyIndex,							// queueFamilyIndex
-	};
-	return vk::createCommandPool(vki, device, &createInfo);
+	return vk::createCommandPool(vki, device, vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 }
 
 void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
@@ -729,20 +722,6 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 		0u,												// offset
 		(vk::VkDeviceSize)pixelDataSize					// size
 	};
-	const vk::VkCommandBufferAllocateInfo	cmdBufAllocInfo				=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		DE_NULL,
-		*m_cmdPool,								// cmdPool
-		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,	// level
-		1u,										// bufferCount
-	};
-	const vk::VkFenceCreateInfo				fenceCreateInfo				=
-	{
-		vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		DE_NULL,
-		0u,												// flags
-	};
 	const vk::VkCommandBufferBeginInfo		cmdBufBeginInfo				=
 	{
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -769,8 +748,8 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 
 	const de::MovePtr<vk::Allocation>		bufferMemory				= allocateAndBindObjectMemory(m_vki, m_device, m_allocator, *buffer, vk::MemoryRequirement::HostVisible);
 
-	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(m_vki, m_device, &cmdBufAllocInfo));
-	const vk::Unique<vk::VkFence>			cmdCompleteFence			(vk::createFence(m_vki, m_device, &fenceCreateInfo));
+	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const vk::Unique<vk::VkFence>			cmdCompleteFence			(vk::createFence(m_vki, m_device));
 	const deUint64							infiniteTimeout				= ~(deUint64)0u;
 
 	// copy content to buffer
@@ -847,14 +826,6 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 			*m_colorAttachmentImage,						// image
 			fullSubrange,									// subresourceRange
 		};
-		const vk::VkCommandBufferAllocateInfo	cmdBufAllocInfo				=
-		{
-			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-			DE_NULL,
-			*m_cmdPool,										// cmdPool
-			vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,			// level
-			1u,												// count
-		};
 		const vk::VkCommandBufferBeginInfo		cmdBufBeginInfo				=
 		{
 			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -862,15 +833,9 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 			vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
 			(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
-		const vk::VkFenceCreateInfo				fenceCreateInfo				=
-		{
-			vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-			DE_NULL,
-			(vk::VkFenceCreateFlags)0,
-		};
 
-		const vk::Unique<vk::VkCommandBuffer>	cmd					(vk::allocateCommandBuffer(m_vki, m_device, &cmdBufAllocInfo));
-		const vk::Unique<vk::VkFence>			fence				(vk::createFence(m_vki, m_device, &fenceCreateInfo));
+		const vk::Unique<vk::VkCommandBuffer>	cmd					(vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+		const vk::Unique<vk::VkFence>			fence				(vk::createFence(m_vki, m_device));
 		const deUint64							infiniteTimeout		= ~(deUint64)0u;
 
 		VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
@@ -1174,28 +1139,12 @@ void SingleCmdRenderInstance::renderToTarget (void)
 		{ 0, 0 },								// offset
 		{ m_targetSize.x(), m_targetSize.y() },	// extent
 	};
-	const vk::VkCommandBufferAllocateInfo				mainCmdBufCreateInfo			=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		DE_NULL,
-		*m_cmdPool,								// cmdPool
-		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,	// level
-		1u,										// count
-	};
 	const vk::VkCommandBufferBeginInfo					mainCmdBufBeginInfo				=
 	{
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
 		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-	const vk::VkCommandBufferAllocateInfo				passCmdBufCreateInfo			=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		DE_NULL,
-		*m_cmdPool,								// cmdPool
-		vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY,	// level
-		1u,										// count
 	};
 	const vk::VkCommandBufferInheritanceInfo			passCmdBufInheritInfo			=
 	{
@@ -1216,12 +1165,6 @@ void SingleCmdRenderInstance::renderToTarget (void)
 		vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,	// flags
 		&passCmdBufInheritInfo,
 	};
-	const vk::VkFenceCreateInfo							fenceCreateInfo				=
-	{
-		vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		DE_NULL,
-		0u,			// flags
-	};
 	const vk::VkClearValue								clearValue					= vk::makeClearValueColorF32(0.0f, 0.0f, 0.0f, 0.0f);
 	const vk::VkRenderPassBeginInfo						renderPassBeginInfo			=
 	{
@@ -1236,9 +1179,9 @@ void SingleCmdRenderInstance::renderToTarget (void)
 
 	const vk::VkPipelineLayout							pipelineLayout				(getPipelineLayout());
 	const vk::Unique<vk::VkPipeline>					pipeline					(createPipeline(pipelineLayout));
-	const vk::Unique<vk::VkCommandBuffer>				mainCmd						(vk::allocateCommandBuffer(m_vki, m_device, &mainCmdBufCreateInfo));
-	const vk::Unique<vk::VkCommandBuffer>				passCmd						((m_isPrimaryCmdBuf) ? (vk::Move<vk::VkCommandBuffer>()) : (vk::allocateCommandBuffer(m_vki, m_device, &passCmdBufCreateInfo)));
-	const vk::Unique<vk::VkFence>						fence						(vk::createFence(m_vki, m_device, &fenceCreateInfo));
+	const vk::Unique<vk::VkCommandBuffer>				mainCmd						(vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const vk::Unique<vk::VkCommandBuffer>				passCmd						((m_isPrimaryCmdBuf) ? (vk::Move<vk::VkCommandBuffer>()) : (vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY)));
+	const vk::Unique<vk::VkFence>						fence						(vk::createFence(m_vki, m_device));
 	const deUint64										infiniteTimeout				= ~(deUint64)0u;
 	const vk::VkSubpassContents							passContents				= (m_isPrimaryCmdBuf) ? (vk::VK_SUBPASS_CONTENTS_INLINE) : (vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
@@ -2209,22 +2152,6 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 		queueFamilyIndex,									// queueFamilyIndex
 	};
 	const vk::Unique<vk::VkCommandPool>				cmdPool				(vk::createCommandPool(m_vki, m_device, &cmdPoolCreateInfo));
-
-	const vk::VkFenceCreateInfo						fenceCreateInfo		=
-	{
-		vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		DE_NULL,
-		0u,			// flags
-	};
-
-	const vk::VkCommandBufferAllocateInfo			cmdBufCreateInfo	=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		DE_NULL,
-		*cmdPool,											// cmdPool
-		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// level
-		1u,													// count
-	};
 	const vk::VkCommandBufferBeginInfo				cmdBufBeginInfo		=
 	{
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -2233,8 +2160,8 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
-	const vk::Unique<vk::VkFence>					cmdCompleteFence	(vk::createFence(m_vki, m_device, &fenceCreateInfo));
-	const vk::Unique<vk::VkCommandBuffer>			cmd					(vk::allocateCommandBuffer(m_vki, m_device, &cmdBufCreateInfo));
+	const vk::Unique<vk::VkFence>					cmdCompleteFence	(vk::createFence(m_vki, m_device));
+	const vk::Unique<vk::VkCommandBuffer>			cmd					(vk::allocateCommandBuffer(m_vki, m_device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const deUint64									infiniteTimeout		= ~(deUint64)0u;
 
 	VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
@@ -3625,12 +3552,6 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	};
 	const vk::Unique<vk::VkBuffer>		dataBuffer					(vk::createBuffer(vki, device, &bufferCreateInfo));
 	const de::MovePtr<vk::Allocation>	dataBufferMemory			= allocateAndBindObjectMemory(vki, device, allocator, *dataBuffer, vk::MemoryRequirement::HostVisible);
-	const vk::VkFenceCreateInfo			fenceCreateInfo				=
-	{
-		vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		DE_NULL,
-		0u,													// flags
-	};
 	const vk::VkBufferMemoryBarrier		preMemoryBarrier			=
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
@@ -3685,14 +3606,6 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 		queueFamilyIndex,									// queueFamilyIndex
 	};
 	const vk::Unique<vk::VkCommandPool>		cmdPool						(vk::createCommandPool(vki, device, &cmdPoolCreateInfo));
-	const vk::VkCommandBufferAllocateInfo	cmdBufCreateInfo			=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		DE_NULL,
-		*cmdPool,											// cmdPool
-		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// level
-		1u,													// count
-	};
 	const vk::VkCommandBufferBeginInfo		cmdBufBeginInfo				=
 	{
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -3701,8 +3614,8 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
-	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(vki, device, &cmdBufCreateInfo));
-	const vk::Unique<vk::VkFence>			cmdCompleteFence			(vk::createFence(vki, device, &fenceCreateInfo));
+	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(vki, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const vk::Unique<vk::VkFence>			cmdCompleteFence			(vk::createFence(vki, device));
 	const deUint64							infiniteTimeout				= ~(deUint64)0u;
 	std::vector<vk::VkBufferImageCopy>		copySlices;
 

@@ -183,7 +183,7 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate (void)
 	const Unique<VkBuffer> sparseBuffer(createBuffer(deviceInterface, getDevice(), &bufferCreateInfo));
 
 	// Create sparse buffer memory bind semaphore
-	const Unique<VkSemaphore> bufferMemoryBindSemaphore(makeSemaphore(deviceInterface, getDevice()));
+	const Unique<VkSemaphore> bufferMemoryBindSemaphore(createSemaphore(deviceInterface, getDevice()));
 
 	const VkMemoryRequirements bufferMemRequirements = getBufferMemoryRequirements(deviceInterface, getDevice(), *sparseBuffer);
 
@@ -257,7 +257,7 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate (void)
 
 	// Create command buffer for compute and data transfer oparations
 	const Unique<VkCommandPool>	  commandPool(makeCommandPool(deviceInterface, getDevice(), computeQueue.queueFamilyIndex));
-	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, getDevice(), *commandPool));
+	const Unique<VkCommandBuffer> commandBuffer(allocateCommandBuffer(deviceInterface, getDevice(), *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording compute and transfer commands
 	beginCommandBuffer(deviceInterface, *commandBuffer);

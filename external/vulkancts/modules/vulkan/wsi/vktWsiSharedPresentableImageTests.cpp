@@ -38,6 +38,7 @@
 
 #include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
+#include "tcuTestLog.hpp"
 
 #include <vector>
 #include <string>
@@ -222,25 +223,6 @@ bool wsiTypeSupportsScaling (vk::wsi::Type wsiType)
 	return vk::wsi::getPlatformProperties(wsiType).swapchainExtent == vk::wsi::PlatformProperties::SWAPCHAIN_EXTENT_SCALED_TO_WINDOW_SIZE;
 }
 
-vk::VkQueue getDeviceQueue (const vk::DeviceInterface& vkd, vk::VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex)
-{
-	vk::VkQueue queue = (vk::VkQueue)0;
-	vkd.getDeviceQueue(device, queueFamilyIndex, queueIndex, &queue);
-	return queue;
-}
-
-vk::Move<vk::VkSemaphore> createSemaphore (const vk::DeviceInterface&	vkd,
-										   vk::VkDevice					device)
-{
-	const vk::VkSemaphoreCreateInfo createInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-		DE_NULL,
-		0u
-	};
-	return vk::createSemaphore(vkd, device, &createInfo);
-}
-
 void initSemaphores (const vk::DeviceInterface&		vkd,
 					 vk::VkDevice					device,
 					 std::vector<vk::VkSemaphore>&	semaphores)
@@ -262,18 +244,6 @@ void deinitSemaphores (const vk::DeviceInterface&	vkd,
 	}
 
 	semaphores.clear();
-}
-
-vk::Move<vk::VkFence> createFence (const vk::DeviceInterface&	vkd,
-								   vk::VkDevice					device)
-{
-	const vk::VkFenceCreateInfo createInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		DE_NULL,
-		0u
-	};
-	return vk::createFence(vkd, device, &createInfo);
 }
 
 void initFences (const vk::DeviceInterface&	vkd,

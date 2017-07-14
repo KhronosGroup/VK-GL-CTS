@@ -116,29 +116,9 @@ VkImageMemoryBarrier makeImageMemoryBarrier	(const VkAccessFlags			srcAccessMask
 	return barrier;
 }
 
-Move<VkCommandPool> makeCommandPool (const DeviceInterface& vk, const VkDevice device, const deUint32 queueFamilyIndex)
-{
-	const VkCommandPoolCreateInfo info =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// VkCommandPoolCreateFlags	flags;
-		queueFamilyIndex,									// deUint32					queueFamilyIndex;
-	};
-	return createCommandPool(vk, device, &info);
-}
-
 Move<VkCommandBuffer> makeCommandBuffer (const DeviceInterface& vk, const VkDevice device, const VkCommandPool commandPool)
 {
-	const VkCommandBufferAllocateInfo info =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType		sType;
-		DE_NULL,											// const void*			pNext;
-		commandPool,										// VkCommandPool		commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,					// VkCommandBufferLevel	level;
-		1u,													// deUint32				commandBufferCount;
-	};
-	return allocateCommandBuffer(vk, device, &info);
+	return allocateCommandBuffer(vk, device, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
 Move<VkDescriptorSet> makeDescriptorSet (const DeviceInterface&			vk,
@@ -257,13 +237,7 @@ void submitCommandsAndWait (const DeviceInterface&	vk,
 							const VkQueue			queue,
 							const VkCommandBuffer	commandBuffer)
 {
-	const VkFenceCreateInfo fenceInfo =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		(VkFenceCreateFlags)0,					// VkFenceCreateFlags	flags;
-	};
-	const Unique<VkFence> fence(createFence(vk, device, &fenceInfo));
+	const Unique<VkFence> fence(createFence(vk, device));
 
 	const VkSubmitInfo submitInfo =
 	{
@@ -316,6 +290,20 @@ MovePtr<Allocation> bindBuffer (const DeviceInterface& vk, const VkDevice device
 {
 	MovePtr<Allocation> alloc(allocator.allocate(getBufferMemoryRequirements(vk, device, buffer), requirement));
 	VK_CHECK(vk.bindBufferMemory(device, buffer, alloc->getMemory(), alloc->getOffset()));
+	return alloc;
+}
+
+MovePtr<Allocation> bindImageDedicated (const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice physDevice, const VkDevice device, const VkImage image, const MemoryRequirement requirement)
+{
+	MovePtr<Allocation> alloc(allocateDedicated(vki, vkd, physDevice, device, image, requirement));
+	VK_CHECK(vkd.bindImageMemory(device, image, alloc->getMemory(), alloc->getOffset()));
+	return alloc;
+}
+
+MovePtr<Allocation> bindBufferDedicated (const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice physDevice, const VkDevice device, const VkBuffer buffer, const MemoryRequirement requirement)
+{
+	MovePtr<Allocation> alloc(allocateDedicated(vki, vkd, physDevice, device, buffer, requirement));
+	VK_CHECK(vkd.bindBufferMemory(device, buffer, alloc->getMemory(), alloc->getOffset()));
 	return alloc;
 }
 

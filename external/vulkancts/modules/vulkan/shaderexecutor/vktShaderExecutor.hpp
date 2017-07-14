@@ -27,6 +27,7 @@
 #include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
 #include "gluVarType.hpp"
+#include "vkGlslProgram.hpp"
 
 #include <vector>
 #include <string>
@@ -53,6 +54,7 @@ struct ShaderSpec
 	std::vector<Symbol>		outputs;
 	std::string				globalDeclarations;	//!< These are placed into global scope. Can contain uniform declarations for example.
 	std::string				source;				//!< Source snippet to be executed.
+	vk::GlslBuildOptions	buildOptions;
 
 	ShaderSpec (void) {}
 };

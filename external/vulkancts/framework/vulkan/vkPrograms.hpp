@@ -26,17 +26,13 @@
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
 #include "vkSpirVProgram.hpp"
-#include "gluShaderProgram.hpp"
+#include "vkGlslProgram.hpp"
+
 #include "deUniquePtr.hpp"
 #include "deSTLUtil.hpp"
 
 #include <vector>
 #include <map>
-
-namespace tcu
-{
-class TestLog;
-} // tcu
 
 namespace vk
 {
@@ -158,8 +154,8 @@ const Program& ProgramCollection<Program>::get (const std::string& name) const
 	return *m_programs.find(name)->second;
 }
 
-typedef vk::ProgramCollection<glu::ProgramSources>	GlslSourceCollection;
-typedef vk::ProgramCollection<vk::SpirVAsmSource>	SpirVAsmCollection;
+typedef ProgramCollection<GlslSource>		GlslSourceCollection;
+typedef ProgramCollection<SpirVAsmSource>	SpirVAsmCollection;
 
 struct SourceCollections
 {
@@ -169,7 +165,7 @@ struct SourceCollections
 
 typedef ProgramCollection<ProgramBinary>		BinaryCollection;
 
-ProgramBinary*			buildProgram		(const glu::ProgramSources& program, ProgramFormat binaryFormat, glu::ShaderProgramInfo* buildInfo);
+ProgramBinary*			buildProgram		(const GlslSource& program, glu::ShaderProgramInfo* buildInfo);
 ProgramBinary*			assembleProgram		(const vk::SpirVAsmSource& program, SpirVProgramInfo* buildInfo);
 void					disassembleProgram	(const ProgramBinary& program, std::ostream* dst);
 bool					validateProgram		(const ProgramBinary& program, std::ostream* dst);

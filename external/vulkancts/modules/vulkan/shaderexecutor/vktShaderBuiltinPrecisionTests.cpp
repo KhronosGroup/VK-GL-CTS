@@ -3077,7 +3077,9 @@ protected:
 		const ExprP<float>	dotNI	= bindExpression("dotNI", ctx, dot(n, i));
 
 		return i - alternatives((n * dotNI) * constant(2.0f),
-								n * (dotNI * constant(2.0f)));
+								alternatives(n * (dotNI * constant(2.0f)),
+											 alternatives(n * dot(i * constant(2.0f), n),
+														  n * dot(i, n * constant(2.0f)))));
 	}
 };
 
