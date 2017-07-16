@@ -31,6 +31,7 @@
 #include "vktSynchronizationUtil.hpp"
 #include "vktSynchronizationOperation.hpp"
 #include "vktSynchronizationOperationTestData.hpp"
+#include "vktSynchronizationOperationResources.hpp"
 #include "vktExternalMemoryUtil.hpp"
 
 #include "tcuResultCollector.hpp"
@@ -219,7 +220,8 @@ vk::Move<vk::VkDevice> createDevice (const vk::InstanceInterface&					vki,
 									 vk::VkPhysicalDevice							physicalDevice,
 									 vk::VkExternalMemoryHandleTypeFlagBitsKHR		memoryHandleType,
 									 vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	semaphoreHandleType,
-									 bool											dedicated)
+									 bool											dedicated,
+									 bool										    khrMemReqSupported)
 {
 	const float										priority				= 0.0f;
 	const std::vector<vk::VkQueueFamilyProperties>	queueFamilyProperties	= vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
@@ -229,7 +231,9 @@ vk::Move<vk::VkDevice> createDevice (const vk::InstanceInterface&					vki,
 	if (dedicated)
 		extensions.push_back("VK_KHR_dedicated_allocation");
 
-	extensions.push_back("VK_KHR_get_memory_requirements2");
+	if (khrMemReqSupported)
+		extensions.push_back("VK_KHR_get_memory_requirements2");
+
 	extensions.push_back("VK_KHR_external_semaphore");
 	extensions.push_back("VK_KHR_external_memory");
 
@@ -347,33 +351,46 @@ de::MovePtr<vk::Allocation> allocateAndBindMemory (const vk::DeviceInterface&			
 												   vk::VkDevice									device,
 												   vk::VkBuffer									buffer,
 												   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
-												   bool											dedicated)
+												   bool											dedicated,
+												   bool											getMemReq2Supported)
 {
-	const vk::VkBufferMemoryRequirementsInfo2KHR	requirementInfo	=
-	{
-		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR,
-		DE_NULL,
-		buffer
-	};
-	vk::VkMemoryDedicatedRequirementsKHR			dedicatedRequirements =
-	{
-		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
-		DE_NULL,
-		VK_FALSE,
-		VK_FALSE
-	};
-	vk::VkMemoryRequirements2KHR					requirements	=
-	{
-		vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
-		&dedicatedRequirements,
-		{ 0u, 0u, 0u, }
-	};
-	vkd.getBufferMemoryRequirements2KHR(device, &requirementInfo, &requirements);
+	vk::VkMemoryRequirements memoryRequirements = { 0u, 0u, 0u, };
 
-	if (!dedicated && dedicatedRequirements.requiresDedicatedAllocation)
-		TCU_THROW(NotSupportedError, "Memory requires dedicated allocation");
+	if (getMemReq2Supported)
+	{
+		const vk::VkBufferMemoryRequirementsInfo2KHR	requirementInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR,
+			DE_NULL,
+			buffer
+		};
+		vk::VkMemoryDedicatedRequirementsKHR			dedicatedRequirements =
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
+			DE_NULL,
+			VK_FALSE,
+			VK_FALSE
+		};
+		vk::VkMemoryRequirements2KHR					requirements =
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
+			&dedicatedRequirements,
+			{ 0u, 0u, 0u, }
+		};
+		vkd.getBufferMemoryRequirements2KHR(device, &requirementInfo, &requirements);
 
-	vk::Move<vk::VkDeviceMemory> memory = allocateExportableMemory(vkd, device, requirements.memoryRequirements, externalType, dedicated ? buffer : (vk::VkBuffer)0);
+		if (!dedicated && dedicatedRequirements.requiresDedicatedAllocation)
+			TCU_THROW(NotSupportedError, "Memory requires dedicated allocation");
+
+		memoryRequirements = requirements.memoryRequirements;
+	}
+	else
+	{
+		vkd.getBufferMemoryRequirements(device, buffer, &memoryRequirements);
+	}
+
+
+	vk::Move<vk::VkDeviceMemory> memory = allocateExportableMemory(vkd, device, memoryRequirements, externalType, dedicated ? buffer : (vk::VkBuffer)0);
 	VK_CHECK(vkd.bindBufferMemory(device, buffer, *memory, 0u));
 
 	return de::MovePtr<vk::Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
@@ -383,33 +400,43 @@ de::MovePtr<vk::Allocation> allocateAndBindMemory (const vk::DeviceInterface&			
 												   vk::VkDevice									device,
 												   vk::VkImage									image,
 												   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
-												   bool											dedicated)
+												   bool											dedicated,
+												   bool											getMemReq2Supported)
 {
-	const vk::VkImageMemoryRequirementsInfo2KHR	requirementInfo	=
-	{
-		vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,
-		DE_NULL,
-		image
-	};
-	vk::VkMemoryDedicatedRequirementsKHR			dedicatedRequirements =
-	{
-		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
-		DE_NULL,
-		VK_FALSE,
-		VK_FALSE
-	};
-	vk::VkMemoryRequirements2KHR					requirements	=
-	{
-		vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
-		&dedicatedRequirements,
-		{ 0u, 0u, 0u, }
-	};
-	vkd.getImageMemoryRequirements2KHR(device, &requirementInfo, &requirements);
+	vk::VkMemoryRequirements memoryRequirements = { 0u, 0u, 0u, };
 
-	if (!dedicated && dedicatedRequirements.requiresDedicatedAllocation)
-		TCU_THROW(NotSupportedError, "Memomry requires dedicated allocation");
+	if (getMemReq2Supported)
+	{
+		const vk::VkImageMemoryRequirementsInfo2KHR	requirementInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,
+			DE_NULL,
+			image
+		};
+		vk::VkMemoryDedicatedRequirementsKHR			dedicatedRequirements =
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
+			DE_NULL,
+			VK_FALSE,
+			VK_FALSE
+		};
+		vk::VkMemoryRequirements2KHR					requirements =
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
+			&dedicatedRequirements,
+			{ 0u, 0u, 0u, }
+		};
+		vkd.getImageMemoryRequirements2KHR(device, &requirementInfo, &requirements);
 
-	vk::Move<vk::VkDeviceMemory> memory = allocateExportableMemory(vkd, device, requirements.memoryRequirements, externalType, dedicated ? image : (vk::VkImage)0);
+		if (!dedicated && dedicatedRequirements.requiresDedicatedAllocation)
+			TCU_THROW(NotSupportedError, "Memory requires dedicated allocation");
+	}
+	else
+	{
+		vkd.getImageMemoryRequirements(device, image, &memoryRequirements);
+	}
+
+	vk::Move<vk::VkDeviceMemory> memory = allocateExportableMemory(vkd, device, memoryRequirements, externalType, dedicated ? image : (vk::VkImage)0);
 	VK_CHECK(vkd.bindImageMemory(device, image, *memory, 0u));
 
 	return de::MovePtr<vk::Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
@@ -422,7 +449,8 @@ de::MovePtr<Resource> createResource (const vk::DeviceInterface&				vkd,
 									  const OperationSupport&					readOp,
 									  const OperationSupport&					writeOp,
 									  vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
-									  bool										dedicated)
+									  bool										dedicated,
+									  bool										getMemReq2Supported)
 {
 	if (resourceDesc.type == RESOURCE_TYPE_IMAGE)
 	{
@@ -475,7 +503,7 @@ de::MovePtr<Resource> createResource (const vk::DeviceInterface&				vkd,
 		};
 
 		vk::Move<vk::VkImage>			image		= vk::createImage(vkd, device, &createInfo);
-		de::MovePtr<vk::Allocation>		allocation	= allocateAndBindMemory(vkd, device, *image, externalType, dedicated);
+		de::MovePtr<vk::Allocation>		allocation	= allocateAndBindMemory(vkd, device, *image, externalType, dedicated, getMemReq2Supported);
 
 		return de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
 	}
@@ -503,7 +531,7 @@ de::MovePtr<Resource> createResource (const vk::DeviceInterface&				vkd,
 			&queueFamilyIndices[0]
 		};
 		vk::Move<vk::VkBuffer>		buffer		= vk::createBuffer(vkd, device, &createInfo);
-		de::MovePtr<vk::Allocation>	allocation	= allocateAndBindMemory(vkd, device, *buffer, externalType, dedicated);
+		de::MovePtr<vk::Allocation>	allocation	= allocateAndBindMemory(vkd, device, *buffer, externalType, dedicated, getMemReq2Supported);
 
 		return de::MovePtr<Resource>(new Resource(resourceDesc.type, buffer, allocation, offset, size));
 	}
@@ -785,6 +813,8 @@ private:
 	const std::vector<vk::VkQueueFamilyProperties>		m_queueFamiliesA;
 	const std::vector<deUint32>							m_queueFamilyIndicesA;
 
+	const bool											m_getMemReq2Supported;
+
 	const vk::Unique<vk::VkDevice>						m_deviceA;
 	const vk::DeviceDriver								m_vkdA;
 
@@ -819,7 +849,8 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_physicalDeviceA			(getPhysicalDevice(m_vkiA, *m_instanceA, context.getTestContext().getCommandLine()))
 	, m_queueFamiliesA			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
 	, m_queueFamilyIndicesA		(getFamilyIndices(m_queueFamiliesA))
-	, m_deviceA					(createDevice(m_vkiA, m_physicalDeviceA, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated))
+	, m_getMemReq2Supported		(de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(), "VK_KHR_get_memory_requirements2"))
+	, m_deviceA					(createDevice(m_vkiA, m_physicalDeviceA, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
 	, m_vkdA					(m_vkiA, *m_deviceA)
 
 	, m_instanceB				(createInstance(context.getPlatformInterface()))
@@ -828,7 +859,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_physicalDeviceB			(getPhysicalDevice(m_vkiB, *m_instanceB, getDeviceId(m_vkiA, m_physicalDeviceA)))
 	, m_queueFamiliesB			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiB, m_physicalDeviceB))
 	, m_queueFamilyIndicesB		(getFamilyIndices(m_queueFamiliesB))
-	, m_deviceB					(createDevice(m_vkiB, m_physicalDeviceB, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated))
+	, m_deviceB					(createDevice(m_vkiB, m_physicalDeviceB, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
 	, m_vkdB					(m_vkiB, *m_deviceB)
 
 	, m_semaphoreHandleType		(m_config.semaphoreHandleType)
@@ -955,7 +986,7 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 	const vk::Unique<vk::VkSemaphore>		semaphoreA			(createExportableSemaphore(m_vkdA, *m_deviceA, m_semaphoreHandleType));
 	const vk::Unique<vk::VkSemaphore>		semaphoreB			(createSemaphore(m_vkdB, *m_deviceB));
 
-	const de::UniquePtr<Resource>			resourceA			(createResource(m_vkdA, *m_deviceA, m_config.resource, m_queueFamilyIndicesA, *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType, m_config.dedicated));
+	const de::UniquePtr<Resource>			resourceA			(createResource(m_vkdA, *m_deviceA, m_config.resource, m_queueFamilyIndicesA, *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType, m_config.dedicated, m_getMemReq2Supported));
 
 	NativeHandle							nativeMemoryHandle;
 	getMemoryNative(m_vkdA, *m_deviceA, resourceA->getMemory(), m_memoryHandleType, nativeMemoryHandle);

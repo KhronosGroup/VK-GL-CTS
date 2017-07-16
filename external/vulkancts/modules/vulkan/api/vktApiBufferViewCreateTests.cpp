@@ -1,4 +1,4 @@
-/*------------------------------------------------------------------------
+/*-------------------------------------------------------------------------
  *  Vulkan Conformance Tests
  * ------------------------
  *
@@ -23,7 +23,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktApiBufferViewCreateTests.hpp"
-
 #include "deStringUtil.hpp"
 #include "deSharedPtr.hpp"
 #include "gluVarType.hpp"
@@ -45,9 +44,10 @@ namespace
 
 enum AllocationKind
 {
-	ALLOCATION_KIND_SUBALLOCATION										= 0,
-	ALLOCATION_KIND_DEDICATED											= 1,
-	ALLOCATION_KIND_LAST
+	ALLOCATION_KIND_SUBALLOCATED = 0,
+	ALLOCATION_KIND_DEDICATED,
+
+	ALLOCATION_KIND_LAST,
 };
 
 class IBufferAllocator;
@@ -391,9 +391,9 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
  tcu::TestCaseGroup* createBufferViewCreateTests						(tcu::TestContext& testCtx)
 {
 	const VkDeviceSize					range							= VK_WHOLE_SIZE;
-	const vk::VkBufferUsageFlagBits		usage[]							= { vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT };
-	const vk::VkFormatFeatureFlagBits	feature[]						= { vk::VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT };
-	const char* const					usageName[]						= { "_uniform", "_storage"};
+	const vk::VkBufferUsageFlags		usage[]							= { vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT };
+	const vk::VkFormatFeatureFlags		feature[]						= { vk::VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT };
+	const char* const					usageName[]						= { "uniform", "storage"};
 
 	de::MovePtr<tcu::TestCaseGroup>		bufferViewTests					(new tcu::TestCaseGroup(testCtx, "create", "BufferView Construction Tests"));
 
@@ -408,25 +408,33 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
 	};
 
 	for (deUint32 allocationKind = 0; allocationKind < ALLOCATION_KIND_LAST; ++allocationKind)
-	for (deUint32 format = vk::VK_FORMAT_UNDEFINED + 1; format < VK_CORE_FORMAT_LAST; format++)
 	for (deUint32 usageNdx = 0; usageNdx < DE_LENGTH_OF_ARRAY(usage); ++usageNdx)
 	{
-		std::ostringstream				testName;
-		std::ostringstream				testDescription;
-		testName << "create_buffer_view_" << format << usageName[usageNdx];
-		testDescription << "vkBufferView test " << testName.str();
+		de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx], ""));
+
+		for (deUint32 format = vk::VK_FORMAT_UNDEFINED + 1; format < VK_CORE_FORMAT_LAST; format++)
 		{
-			BufferViewCaseParameters	testParams						=
+			const std::string				formatName		= de::toLower(getFormatName((VkFormat)format)).substr(10);
+			de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, "suballocation", "BufferView Construction Tests for Suballocated Buffer"));
+
+			const std::string				testName		= de::toLower(getFormatName((VkFormat)format)).substr(10);
+			const std::string				testDescription	= "vkBufferView test " + testName;
+
 			{
-				static_cast<vk::VkFormat>(format),						// VkFormat					format;
-				0,														// VkDeviceSize				offset;
-				range,													// VkDeviceSize				range;
-				usage[usageNdx],										// VkBufferUsageFlags		usage;
-				feature[usageNdx],										// VkFormatFeatureFlags		flags;
-				static_cast<AllocationKind>(allocationKind)				// AllocationKind			bufferAllocationKind;
-			};
-			bufferViewAllocationGroupTests[allocationKind]->addChild(new BufferViewTestCase(testCtx, testName.str(), testDescription.str(), testParams));
+				const BufferViewCaseParameters	testParams					=
+				{
+					static_cast<vk::VkFormat>(format),						// VkFormat					format;
+					0,														// VkDeviceSize				offset;
+					range,													// VkDeviceSize				range;
+					usage[usageNdx],										// VkBufferUsageFlags		usage;
+					feature[usageNdx],										// VkFormatFeatureFlags		flags;
+					static_cast<AllocationKind>(allocationKind)				// AllocationKind			bufferAllocationKind;
+				};
+
+				usageGroup->addChild(new BufferViewTestCase(testCtx, testName.c_str(), testDescription.c_str(), testParams));
+			}
 		}
+		bufferViewAllocationGroupTests[allocationKind]->addChild(usageGroup.release());
 	}
 
 	for (deUint32 subgroupNdx = 0u; subgroupNdx < DE_LENGTH_OF_ARRAY(bufferViewAllocationGroupTests); ++subgroupNdx)

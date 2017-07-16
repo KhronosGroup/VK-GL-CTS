@@ -135,10 +135,6 @@ def runSteps (steps):
 		else:
 			print "Skip: %s" % step.getName()
 
-def runRecipe (steps):
-	allSteps = PREREQUISITES + steps + POST_CHECKS
-	runSteps(allSteps)
-
 COMMON_GCC_CFLAGS	= ["-Werror"]
 COMMON_CLANG_CFLAGS	= COMMON_GCC_CFLAGS + ["-Wno-error=unused-command-line-argument"]
 GCC_32BIT_CFLAGS	= COMMON_GCC_CFLAGS + ["-m32"]
@@ -248,6 +244,11 @@ def parseArgs ():
 						dest="dumpRecipes",
 						action="store_true",
 						help="Print out recipes that have any available actions")
+	parser.add_argument("--skip-prerequisites",
+						dest="skipPrerequisites",
+						action="store_true",
+						help="Skip external dependency fetch")
+
 	return parser.parse_args()
 
 if __name__ == "__main__":
@@ -266,6 +267,7 @@ if __name__ == "__main__":
 
 		print "Running %s" % name
 
-		runRecipe(steps)
+		allSteps = (PREREQUISITES if (args.skipPrerequisites == False) else []) + steps + POST_CHECKS
+		runSteps(allSteps)
 
 		print "All steps completed successfully"

@@ -500,14 +500,14 @@ const glw::GLchar* Type::GetGLSLTypeName() const
  *
  * @return Number of columns times:
  *          - 2 when type is double with 3 or 4 rows,
- *          - 1 otherwise.
+ *          - 1 otherwise or if it's a vertex shader input.
  **/
-GLuint Type::GetLocations() const
+GLuint Type::GetLocations(bool is_vs_input) const
 {
 	GLuint n_loc_per_column;
 
 	/* 1 or 2 doubles any for rest */
-	if ((2 >= m_n_rows) || (Double != m_basic_type))
+	if ((2 >= m_n_rows) || (Double != m_basic_type) || is_vs_input)
 	{
 		n_loc_per_column = 1;
 	}
@@ -5119,7 +5119,7 @@ GLint TestBase::getLastInputLocation(Utils::Shader::STAGES stage, const Utils::T
 
 #endif
 
-	const GLuint n_req_location = type.GetLocations() * array_length;
+	const GLuint n_req_location = type.GetLocations(stage == Utils::Shader::VERTEX) * array_length;
 
 	return n_avl_locations - n_req_location; /* last is max - 1 */
 }
@@ -13717,13 +13717,11 @@ std::string VaryingBlockMemberLocationsTest::getShaderSource(GLuint test_case_in
 		}
 	}
 
+	// Geometry shader inputs, tessellation control shader inputs and outputs, and tessellation evaluation
+	// inputs all have an additional level of arrayness relative to other shader inputs and outputs.
 	switch (stage)
 	{
 	case Utils::Shader::FRAGMENT:
-		break;
-	case Utils::Shader::GEOMETRY:
-		array = "[]";
-		index = "[0]";
 		break;
 	case Utils::Shader::TESS_CTRL:
 		array = "[]";
@@ -13731,6 +13729,7 @@ std::string VaryingBlockMemberLocationsTest::getShaderSource(GLuint test_case_in
 		break;
 	// geometry shader's input must have one more dimension than tessellation evaluation shader's output,
 	// the GS input block is an array, so the DS output can't be declared as an array
+	case Utils::Shader::GEOMETRY:
 	case Utils::Shader::TESS_EVAL:
 	{
 		if (std::string(direction) == std::string("in")) // match HS output and DS input
@@ -21789,7 +21788,7 @@ void XFBBlockMemberStrideTest::getShaderInterface(GLuint /* test_case_index */, 
 {
 	static const GLchar* gs = "layout (xfb_buffer = 0, xfb_offset = 0) out Goku {\n"
 							  "                             vec4 gohan;\n"
-							  "    layout (xfb_stride = 32) vec4 goten;\n"
+							  "    layout (xfb_stride = 48) vec4 goten;\n"
 							  "                             vec4 chichi;\n"
 							  "};\n"
 							  "layout(binding = 0) uniform gs_block {\n"
@@ -21845,7 +21844,7 @@ bool XFBBlockMemberStrideTest::inspectProgram(GLuint /* test_case_index*/, Utils
 	if ((0 != gohan_offset) || (16 != goten_offset) || (32 != chichi_offset))
 	{
 		out_stream << "Got wrong offset: [" << gohan_offset << ", " << goten_offset << ", " << chichi_offset
-				   << "] expected: [0, 16, 48]";
+				   << "] expected: [0, 16, 32]";
 		return false;
 	}
 
@@ -22752,31 +22751,26 @@ void XFBOverrideQualifiersWithAPITest::getBufferDescriptors(glw::GLuint				  tes
 	const std::vector<GLubyte>& vegeta_data = type.GenerateData();
 	const std::vector<GLubyte>& trunks_data = type.GenerateData();
 	const std::vector<GLubyte>& goku_data   = type.GenerateData();
-	const std::vector<GLubyte>& gohan_data  = type.GenerateData();
 
 	Utils::s_rand								= gen_start;
 	const std::vector<GLubyte>& vegeta_data_pck = type.GenerateDataPacked();
-	/*
-	 The xfb varying goku is -0.375, it is expected to equal to xfb.m_expected_data[0], xfb.m_expected_data[0] is assigned from goku_data_pck(-0.5)
-	 how can make them equal ? is it as designed?  Add the following statement,  which can make sure goku_data_pck equals to goku_data
-	 */
+	type.GenerateDataPacked(); // generate the data for trunks
 	const std::vector<GLubyte>& goku_data_pck = type.GenerateDataPacked();
 
 	const GLuint type_size	 = static_cast<GLuint>(vegeta_data.size());
 	const GLuint type_size_pck = static_cast<GLuint>(vegeta_data_pck.size());
 
 	/* Uniform data */
-	uniform.m_initial_data.resize(4 * type_size);
+	uniform.m_initial_data.resize(3 * type_size);
 	memcpy(&uniform.m_initial_data[0] + 0, &vegeta_data[0], type_size);
 	memcpy(&uniform.m_initial_data[0] + type_size, &trunks_data[0], type_size);
 	memcpy(&uniform.m_initial_data[0] + 2 * type_size, &goku_data[0], type_size);
-	memcpy(&uniform.m_initial_data[0] + 3 * type_size, &gohan_data[0], type_size);
 
 	/* XFB data */
-	xfb.m_initial_data.resize(4 * type_size_pck);
-	xfb.m_expected_data.resize(4 * type_size_pck);
+	xfb.m_initial_data.resize(3 * type_size_pck);
+	xfb.m_expected_data.resize(3 * type_size_pck);
 
-	for (GLuint i = 0; i < 4 * type_size_pck; ++i)
+	for (GLuint i = 0; i < 3 * type_size_pck; ++i)
 	{
 		xfb.m_initial_data[i]  = (glw::GLubyte)i;
 		xfb.m_expected_data[i] = (glw::GLubyte)i;
@@ -22794,10 +22788,9 @@ void XFBOverrideQualifiersWithAPITest::getBufferDescriptors(glw::GLuint				  tes
 void XFBOverrideQualifiersWithAPITest::getCapturedVaryings(glw::GLuint /* test_case_index */,
 														   Utils::Program::NameVector& captured_varyings)
 {
-	captured_varyings.resize(2);
+	captured_varyings.resize(1);
 
 	captured_varyings[0] = "trunks";
-	captured_varyings[1] = "gohan";
 }
 
 /** Get body of main function for given shader stage
@@ -22814,10 +22807,9 @@ void XFBOverrideQualifiersWithAPITest::getShaderBody(GLuint test_case_index, Uti
 
 	static const GLchar* gs = "    vegeta = uni_vegeta;\n"
 							  "    trunks = uni_trunks;\n"
-							  "    goku   = uni_goku;\n"
-							  "    gohan  = uni_gohan;\n";
+							  "    goku   = uni_goku;\n";
 	static const GLchar* fs = "    fs_out = vec4(0);\n"
-							  "    if (TYPE(1) == gohan + goku + trunks + vegeta)\n"
+							  "    if (TYPE(1) == goku + trunks + vegeta)\n"
 							  "    {\n"
 							  "        fs_out = vec4(1);\n"
 							  "    }\n";
@@ -22859,7 +22851,6 @@ void XFBOverrideQualifiersWithAPITest::getShaderInterface(GLuint test_case_index
 							  "layout (xfb_offset = 2 * sizeof_type) flat out TYPE vegeta;\n"
 							  "                                      flat out TYPE trunks;\n"
 							  "layout (xfb_offset = 0)               flat out TYPE goku;\n"
-							  "                                      flat out TYPE gohan;\n"
 							  "\n"
 							  /*
 		 There is no packing qualifier for uniform block gs_block, according to spec, it should be "shared" by default,
@@ -22874,12 +22865,10 @@ void XFBOverrideQualifiersWithAPITest::getShaderInterface(GLuint test_case_index
 							  "    TYPE uni_vegeta;\n"
 							  "    TYPE uni_trunks;\n"
 							  "    TYPE uni_goku;\n"
-							  "    TYPE uni_gohan;\n"
 							  "};\n";
 	static const GLchar* fs = "flat in TYPE vegeta;\n"
 							  "flat in TYPE trunks;\n"
 							  "flat in TYPE goku;\n"
-							  "flat in TYPE gohan;\n"
 							  "\n"
 							  "out vec4 fs_out;\n";
 
@@ -22945,7 +22934,7 @@ bool XFBOverrideQualifiersWithAPITest::inspectProgram(GLuint test_case_index, Ut
 {
 	GLint			   stride	= 0;
 	const Utils::Type& type		 = getType(test_case_index);
-	const GLuint	   type_size = type.GetSize();
+	const GLuint	   type_size = type.GetSize(false);
 
 	program.GetResource(GL_TRANSFORM_FEEDBACK_BUFFER, 0 /* index */, GL_TRANSFORM_FEEDBACK_BUFFER_STRIDE,
 						1 /* buf_size */, &stride);
@@ -23076,7 +23065,7 @@ void XFBVertexStreamsTest::getShaderBody(GLuint /* test_case_index */, Utils::Sh
 							  "    EmitStreamVertex(2);\n"
 							  "    EndStreamPrimitive(2);\n";
 
-	static const GLchar* fs = "    fs_out = gohan + goku + goten + picolo + vegeta + bulma;\n";
+	static const GLchar* fs = "    fs_out = gohan + goku + goten;\n";
 
 	const GLchar* assignments = "";
 	switch (stage)
@@ -23128,9 +23117,6 @@ void XFBVertexStreamsTest::getShaderInterface(GLuint /* test_case_index */, Util
 	static const GLchar* fs = "in vec4 goku;\n"
 							  "in vec4 gohan;\n"
 							  "in vec4 goten;\n"
-							  "in vec4 picolo;\n"
-							  "in vec4 vegeta;\n"
-							  "in vec4 bulma;\n"
 							  "\n"
 							  "out vec4 fs_out;\n";
 

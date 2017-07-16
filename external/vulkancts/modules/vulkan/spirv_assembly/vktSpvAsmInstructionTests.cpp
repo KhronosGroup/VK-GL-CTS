@@ -31,6 +31,7 @@
 #include "tcuStringTemplate.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuInterval.hpp"
 
 #include "vkDefs.hpp"
 #include "vkDeviceUtil.hpp"
@@ -872,6 +873,400 @@ tcu::TestCaseGroup* createOpFRemGroup (tcu::TestContext& testCtx)
 	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
 	spec.verifyIO = &compareFRem;
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "", spec));
+
+	return group.release();
+}
+
+bool compareNMin (const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, TestLog&)
+{
+	if (outputAllocs.size() != 1)
+		return false;
+
+	const BufferSp&		expectedOutput			= expectedOutputs[0];
+	const float* const	expectedOutputAsFloat	= static_cast<const float*>(expectedOutput->data());
+	const float* const	outputAsFloat			= static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+
+	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(float); ++idx)
+	{
+		const float f0 = expectedOutputAsFloat[idx];
+		const float f1 = outputAsFloat[idx];
+
+		// For NMin, we accept NaN as output if both inputs were NaN.
+		// Otherwise the NaN is the wrong choise, as on architectures that
+		// do not handle NaN, those are huge values.
+		if (!(tcu::Float32(f1).isNaN() && tcu::Float32(f0).isNaN()) && deFloatAbs(f1 - f0) > 0.00001f)
+			return false;
+	}
+
+	return true;
+}
+
+tcu::TestCaseGroup* createOpNMinGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opnmin", "Test the OpNMin instruction"));
+	ComputeShaderSpec				spec;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 200;
+	vector<float>					inputFloats1	(numElements, 0);
+	vector<float>					inputFloats2	(numElements, 0);
+	vector<float>					outputFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, -10000.f, 10000.f, &inputFloats1[0], numElements);
+	fillRandomScalars(rnd, -10000.f, 10000.f, &inputFloats2[0], numElements);
+
+	// Make the first case a full-NAN case.
+	inputFloats1[0] = TCU_NAN;
+	inputFloats2[0] = TCU_NAN;
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+	{
+		// By default, pick the smallest
+		outputFloats[ndx] = std::min(inputFloats1[ndx], inputFloats2[ndx]);
+
+		// Make half of the cases NaN cases
+		if ((ndx & 1) == 0)
+		{
+			// Alternate between the NaN operand
+			if ((ndx & 2) == 0)
+			{
+				outputFloats[ndx] = inputFloats2[ndx];
+				inputFloats1[ndx] = TCU_NAN;
+			}
+			else
+			{
+				outputFloats[ndx] = inputFloats1[ndx];
+				inputFloats2[ndx] = TCU_NAN;
+			}
+		}
+	}
+
+	spec.assembly =
+		"OpCapability Shader\n"
+		"%std450	= OpExtInstImport \"GLSL.std.450\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		"OpDecorate %buf BufferBlock\n"
+		"OpDecorate %indata1 DescriptorSet 0\n"
+		"OpDecorate %indata1 Binding 0\n"
+		"OpDecorate %indata2 DescriptorSet 0\n"
+		"OpDecorate %indata2 Binding 1\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 2\n"
+		"OpDecorate %f32arr ArrayStride 4\n"
+		"OpMemberDecorate %buf 0 Offset 0\n"
+
+		+ string(getComputeAsmCommonTypes()) +
+
+		"%buf        = OpTypeStruct %f32arr\n"
+		"%bufptr     = OpTypePointer Uniform %buf\n"
+		"%indata1    = OpVariable %bufptr Uniform\n"
+		"%indata2    = OpVariable %bufptr Uniform\n"
+		"%outdata    = OpVariable %bufptr Uniform\n"
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc1    = OpAccessChain %f32ptr %indata1 %zero %x\n"
+		"%inval1    = OpLoad %f32 %inloc1\n"
+		"%inloc2    = OpAccessChain %f32ptr %indata2 %zero %x\n"
+		"%inval2    = OpLoad %f32 %inloc2\n"
+		"%rem       = OpExtInst %f32 %std450 NMin %inval1 %inval2\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"             OpStore %outloc %rem\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n";
+
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats1)));
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
+	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	spec.numWorkGroups = IVec3(numElements, 1, 1);
+	spec.verifyIO = &compareNMin;
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "", spec));
+
+	return group.release();
+}
+
+bool compareNMax (const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, TestLog&)
+{
+	if (outputAllocs.size() != 1)
+		return false;
+
+	const BufferSp&		expectedOutput			= expectedOutputs[0];
+	const float* const	expectedOutputAsFloat	= static_cast<const float*>(expectedOutput->data());
+	const float* const	outputAsFloat			= static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+
+	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(float); ++idx)
+	{
+		const float f0 = expectedOutputAsFloat[idx];
+		const float f1 = outputAsFloat[idx];
+
+		// For NMax, NaN is considered acceptable result, since in
+		// architectures that do not handle NaNs, those are huge values.
+		if (!tcu::Float32(f1).isNaN() && deFloatAbs(f1 - f0) > 0.00001f)
+			return false;
+	}
+
+	return true;
+}
+
+tcu::TestCaseGroup* createOpNMaxGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "opnmax", "Test the OpNMax instruction"));
+	ComputeShaderSpec				spec;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 200;
+	vector<float>					inputFloats1	(numElements, 0);
+	vector<float>					inputFloats2	(numElements, 0);
+	vector<float>					outputFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, -10000.f, 10000.f, &inputFloats1[0], numElements);
+	fillRandomScalars(rnd, -10000.f, 10000.f, &inputFloats2[0], numElements);
+
+	// Make the first case a full-NAN case.
+	inputFloats1[0] = TCU_NAN;
+	inputFloats2[0] = TCU_NAN;
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+	{
+		// By default, pick the biggest
+		outputFloats[ndx] = std::max(inputFloats1[ndx], inputFloats2[ndx]);
+
+		// Make half of the cases NaN cases
+		if ((ndx & 1) == 0)
+		{
+			// Alternate between the NaN operand
+			if ((ndx & 2) == 0)
+			{
+				outputFloats[ndx] = inputFloats2[ndx];
+				inputFloats1[ndx] = TCU_NAN;
+			}
+			else
+			{
+				outputFloats[ndx] = inputFloats1[ndx];
+				inputFloats2[ndx] = TCU_NAN;
+			}
+		}
+	}
+
+	spec.assembly =
+		"OpCapability Shader\n"
+		"%std450	= OpExtInstImport \"GLSL.std.450\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		"OpDecorate %buf BufferBlock\n"
+		"OpDecorate %indata1 DescriptorSet 0\n"
+		"OpDecorate %indata1 Binding 0\n"
+		"OpDecorate %indata2 DescriptorSet 0\n"
+		"OpDecorate %indata2 Binding 1\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 2\n"
+		"OpDecorate %f32arr ArrayStride 4\n"
+		"OpMemberDecorate %buf 0 Offset 0\n"
+
+		+ string(getComputeAsmCommonTypes()) +
+
+		"%buf        = OpTypeStruct %f32arr\n"
+		"%bufptr     = OpTypePointer Uniform %buf\n"
+		"%indata1    = OpVariable %bufptr Uniform\n"
+		"%indata2    = OpVariable %bufptr Uniform\n"
+		"%outdata    = OpVariable %bufptr Uniform\n"
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc1    = OpAccessChain %f32ptr %indata1 %zero %x\n"
+		"%inval1    = OpLoad %f32 %inloc1\n"
+		"%inloc2    = OpAccessChain %f32ptr %indata2 %zero %x\n"
+		"%inval2    = OpLoad %f32 %inloc2\n"
+		"%rem       = OpExtInst %f32 %std450 NMax %inval1 %inval2\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"             OpStore %outloc %rem\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n";
+
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats1)));
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
+	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	spec.numWorkGroups = IVec3(numElements, 1, 1);
+	spec.verifyIO = &compareNMax;
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "", spec));
+
+	return group.release();
+}
+
+bool compareNClamp (const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, TestLog&)
+{
+	if (outputAllocs.size() != 1)
+		return false;
+
+	const BufferSp&		expectedOutput			= expectedOutputs[0];
+	const float* const	expectedOutputAsFloat	= static_cast<const float*>(expectedOutput->data());
+	const float* const	outputAsFloat			= static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+
+	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(float) / 2; ++idx)
+	{
+		const float e0 = expectedOutputAsFloat[idx * 2];
+		const float e1 = expectedOutputAsFloat[idx * 2 + 1];
+		const float res = outputAsFloat[idx];
+
+		// For NClamp, we have two possible outcomes based on
+		// whether NaNs are handled or not.
+		// If either min or max value is NaN, the result is undefined,
+		// so this test doesn't stress those. If the clamped value is
+		// NaN, and NaNs are handled, the result is min; if NaNs are not
+		// handled, they are big values that result in max.
+		// If all three parameters are NaN, the result should be NaN.
+		if (!((tcu::Float32(e0).isNaN() && tcu::Float32(res).isNaN()) ||
+			 (deFloatAbs(e0 - res) < 0.00001f) ||
+			 (deFloatAbs(e1 - res) < 0.00001f)))
+			return false;
+	}
+
+	return true;
+}
+
+tcu::TestCaseGroup* createOpNClampGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opnclamp", "Test the OpNClamp instruction"));
+	ComputeShaderSpec				spec;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 200;
+	vector<float>					inputFloats1	(numElements, 0);
+	vector<float>					inputFloats2	(numElements, 0);
+	vector<float>					inputFloats3	(numElements, 0);
+	vector<float>					outputFloats	(numElements * 2, 0);
+
+	fillRandomScalars(rnd, -10000.f, 10000.f, &inputFloats1[0], numElements);
+	fillRandomScalars(rnd, -10000.f, 10000.f, &inputFloats2[0], numElements);
+	fillRandomScalars(rnd, -10000.f, 10000.f, &inputFloats3[0], numElements);
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+	{
+		// Results are only defined if max value is bigger than min value.
+		if (inputFloats2[ndx] > inputFloats3[ndx])
+		{
+			float t = inputFloats2[ndx];
+			inputFloats2[ndx] = inputFloats3[ndx];
+			inputFloats3[ndx] = t;
+		}
+
+		// By default, do the clamp, setting both possible answers
+		float defaultRes = std::min(std::max(inputFloats1[ndx], inputFloats2[ndx]), inputFloats3[ndx]);
+
+		float maxResA = std::max(inputFloats1[ndx], inputFloats2[ndx]);
+		float maxResB = maxResA;
+
+		// Alternate between the NaN cases
+		if (ndx & 1)
+		{
+			inputFloats1[ndx] = TCU_NAN;
+			// If NaN is handled, the result should be same as the clamp minimum.
+			// If NaN is not handled, the result should clamp to the clamp maximum.
+			maxResA = inputFloats2[ndx];
+			maxResB = inputFloats3[ndx];
+		}
+		else
+		{
+			// Not a NaN case - only one legal result.
+			maxResA = defaultRes;
+			maxResB = defaultRes;
+		}
+
+		outputFloats[ndx * 2] = maxResA;
+		outputFloats[ndx * 2 + 1] = maxResB;
+	}
+
+	// Make the first case a full-NAN case.
+	inputFloats1[0] = TCU_NAN;
+	inputFloats2[0] = TCU_NAN;
+	inputFloats3[0] = TCU_NAN;
+	outputFloats[0] = TCU_NAN;
+	outputFloats[1] = TCU_NAN;
+
+	spec.assembly =
+		"OpCapability Shader\n"
+		"%std450	= OpExtInstImport \"GLSL.std.450\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		"OpDecorate %buf BufferBlock\n"
+		"OpDecorate %indata1 DescriptorSet 0\n"
+		"OpDecorate %indata1 Binding 0\n"
+		"OpDecorate %indata2 DescriptorSet 0\n"
+		"OpDecorate %indata2 Binding 1\n"
+		"OpDecorate %indata3 DescriptorSet 0\n"
+		"OpDecorate %indata3 Binding 2\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 3\n"
+		"OpDecorate %f32arr ArrayStride 4\n"
+		"OpMemberDecorate %buf 0 Offset 0\n"
+
+		+ string(getComputeAsmCommonTypes()) +
+
+		"%buf        = OpTypeStruct %f32arr\n"
+		"%bufptr     = OpTypePointer Uniform %buf\n"
+		"%indata1    = OpVariable %bufptr Uniform\n"
+		"%indata2    = OpVariable %bufptr Uniform\n"
+		"%indata3    = OpVariable %bufptr Uniform\n"
+		"%outdata    = OpVariable %bufptr Uniform\n"
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc1    = OpAccessChain %f32ptr %indata1 %zero %x\n"
+		"%inval1    = OpLoad %f32 %inloc1\n"
+		"%inloc2    = OpAccessChain %f32ptr %indata2 %zero %x\n"
+		"%inval2    = OpLoad %f32 %inloc2\n"
+		"%inloc3    = OpAccessChain %f32ptr %indata3 %zero %x\n"
+		"%inval3    = OpLoad %f32 %inloc3\n"
+		"%rem       = OpExtInst %f32 %std450 NClamp %inval1 %inval2 %inval3\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"             OpStore %outloc %rem\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n";
+
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats1)));
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats3)));
+	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	spec.numWorkGroups = IVec3(numElements, 1, 1);
+	spec.verifyIO = &compareNClamp;
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "", spec));
 
@@ -7440,7 +7835,9 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpCompositeInsertGroup(testCtx));
 	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
 	computeTests->addChild(createShaderDefaultOutputGroup(testCtx));
-
+	computeTests->addChild(createOpNMinGroup(testCtx));
+	computeTests->addChild(createOpNMaxGroup(testCtx));
+	computeTests->addChild(createOpNClampGroup(testCtx));
 	{
 		de::MovePtr<tcu::TestCaseGroup>	computeAndroidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
 
