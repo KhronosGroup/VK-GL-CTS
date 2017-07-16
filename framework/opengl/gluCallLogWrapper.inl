@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 967f96c92bae15baa1a4326a55222984befdc9ed.
+ * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
  */
 
 void CallLogWrapper::glActiveShaderProgram (glw::GLuint pipeline, glw::GLuint program)
@@ -618,6 +618,13 @@ void CallLogWrapper::glCompressedTexImage3D (glw::GLenum target, glw::GLint leve
 	m_gl.compressedTexImage3D(target, level, internalformat, width, height, depth, border, imageSize, data);
 }
 
+void CallLogWrapper::glCompressedTexImage3DOES (glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLsizei imageSize, const void *data)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedTexImage3DOES(" << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << width << ", " << height << ", " << depth << ", " << border << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
+	m_gl.compressedTexImage3DOES(target, level, internalformat, width, height, depth, border, imageSize, data);
+}
+
 void CallLogWrapper::glCompressedTexSubImage1D (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLsizei width, glw::GLenum format, glw::GLsizei imageSize, const void *data)
 {
 	if (m_enableLog)
@@ -637,6 +644,13 @@ void CallLogWrapper::glCompressedTexSubImage3D (glw::GLenum target, glw::GLint l
 	if (m_enableLog)
 		m_log << TestLog::Message << "glCompressedTexSubImage3D(" << getTextureTargetStr(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << getCompressedTextureFormatStr(format) << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.compressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
+}
+
+void CallLogWrapper::glCompressedTexSubImage3DOES (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLsizei imageSize, const void *data)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCompressedTexSubImage3DOES(" << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << toHex(format) << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
+	m_gl.compressedTexSubImage3DOES(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
 }
 
 void CallLogWrapper::glCompressedTextureImage1DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLint border, glw::GLsizei imageSize, const void *bits)
@@ -791,6 +805,13 @@ void CallLogWrapper::glCopyTexSubImage3D (glw::GLenum target, glw::GLint level, 
 	if (m_enableLog)
 		m_log << TestLog::Message << "glCopyTexSubImage3D(" << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << x << ", " << y << ", " << width << ", " << height << ");" << TestLog::EndMessage;
 	m_gl.copyTexSubImage3D(target, level, xoffset, yoffset, zoffset, x, y, width, height);
+}
+
+void CallLogWrapper::glCopyTexSubImage3DOES (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glCopyTexSubImage3DOES(" << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << x << ", " << y << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+	m_gl.copyTexSubImage3DOES(target, level, xoffset, yoffset, zoffset, x, y, width, height);
 }
 
 void CallLogWrapper::glCopyTextureImage1DEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLint border)
@@ -1531,6 +1552,13 @@ void CallLogWrapper::glFramebufferTexture3D (glw::GLenum target, glw::GLenum att
 	if (m_enableLog)
 		m_log << TestLog::Message << "glFramebufferTexture3D(" << toHex(target) << ", " << toHex(attachment) << ", " << toHex(textarget) << ", " << texture << ", " << level << ", " << zoffset << ");" << TestLog::EndMessage;
 	m_gl.framebufferTexture3D(target, attachment, textarget, texture, level, zoffset);
+}
+
+void CallLogWrapper::glFramebufferTexture3DOES (glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level, glw::GLint zoffset)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glFramebufferTexture3DOES(" << toHex(target) << ", " << toHex(attachment) << ", " << toHex(textarget) << ", " << texture << ", " << level << ", " << zoffset << ");" << TestLog::EndMessage;
+	m_gl.framebufferTexture3DOES(target, attachment, textarget, texture, level, zoffset);
 }
 
 void CallLogWrapper::glFramebufferTextureLayer (glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLint layer)
@@ -4810,6 +4838,13 @@ void CallLogWrapper::glTexImage3DMultisample (glw::GLenum target, glw::GLsizei s
 	m_gl.texImage3DMultisample(target, samples, internalformat, width, height, depth, fixedsamplelocations);
 }
 
+void CallLogWrapper::glTexImage3DOES (glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTexImage3DOES(" << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << width << ", " << height << ", " << depth << ", " << border << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.texImage3DOES(target, level, internalformat, width, height, depth, border, format, type, pixels);
+}
+
 void CallLogWrapper::glTexPageCommitmentARB (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLboolean commit)
 {
 	if (m_enableLog)
@@ -4913,6 +4948,13 @@ void CallLogWrapper::glTexSubImage3D (glw::GLenum target, glw::GLint level, glw:
 	if (m_enableLog)
 		m_log << TestLog::Message << "glTexSubImage3D(" << getTextureTargetStr(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << getUncompressedTextureFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
 	m_gl.texSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+}
+
+void CallLogWrapper::glTexSubImage3DOES (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLenum type, const void *pixels)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glTexSubImage3DOES(" << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << toHex(format) << ", " << toHex(type) << ", " << pixels << ");" << TestLog::EndMessage;
+	m_gl.texSubImage3DOES(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 }
 
 void CallLogWrapper::glTextureBarrier (void)
