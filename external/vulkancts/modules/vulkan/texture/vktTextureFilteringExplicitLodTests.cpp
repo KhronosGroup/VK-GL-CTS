@@ -358,26 +358,9 @@ void initializeImage(Context& ctx, VkImage im, const ConstPixelBufferAccess* pba
 	de::UniquePtr<Allocation> bufMem(ctx.getDefaultAllocator().allocate(bufMemReq, MemoryRequirement::HostVisible));
 	VK_CHECK(vkd.bindBufferMemory(dev, buf.get(), bufMem->getMemory(), bufMem->getOffset()));
 
-	const VkCommandPoolCreateInfo copyPoolCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-		DE_NULL,
-		VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
-		uqfi
-	};
+	Unique<VkCommandPool> copyPool(createCommandPool(vkd, dev, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, uqfi));
 
-	Unique<VkCommandPool> copyPool(createCommandPool(vkd, dev, &copyPoolCreateInfo));
-
-	const VkCommandBufferAllocateInfo copyBufferCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		DE_NULL,
-		copyPool.get(),
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		1
-	};
-
-	Unique<VkCommandBuffer> copyBuffer(allocateCommandBuffer(vkd, dev, &copyBufferCreateInfo));
+	Unique<VkCommandBuffer> copyBuffer(allocateCommandBuffer(vkd, dev, *copyPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	std::vector<VkBufferImageCopy> copyRegions;
 

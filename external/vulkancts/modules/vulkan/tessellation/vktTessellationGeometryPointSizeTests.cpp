@@ -331,7 +331,7 @@ tcu::TestStatus test (Context& context, const Flags flags)
 	const Unique<VkFramebuffer>		framebuffer		   (makeFramebuffer						(vk, device, *renderPass, *colorAttachmentView, renderSize.x(), renderSize.y(), 1u));
 	const Unique<VkPipelineLayout>	pipelineLayout	   (makePipelineLayoutWithoutDescriptors(vk, device));
 	const Unique<VkCommandPool>		cmdPool			   (makeCommandPool						(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>	cmdBuffer		   (makeCommandBuffer					(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer>	cmdBuffer		   (allocateCommandBuffer				(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	GraphicsPipelineBuilder			pipelineBuilder;
 

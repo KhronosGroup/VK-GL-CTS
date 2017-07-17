@@ -38,6 +38,7 @@
 
 #include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
+#include "tcuTestLog.hpp"
 #include "deClock.h"
 
 #include <vector>
@@ -49,52 +50,6 @@ using std::string;
 using tcu::Maybe;
 using tcu::UVec2;
 using tcu::TestLog;
-
-namespace vk
-{
-
-Move<VkSemaphore> createSemaphore (const DeviceInterface&		vk,
-								   VkDevice						device,
-								   VkSemaphoreCreateFlags		flags		= (VkSemaphoreCreateFlags)0,
-								   const VkAllocationCallbacks*	pAllocator	= DE_NULL)
-{
-	const VkSemaphoreCreateInfo createInfo =
-	{
-		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-		DE_NULL,
-
-		flags
-	};
-
-	return createSemaphore(vk, device, &createInfo, pAllocator);
-}
-
-Move<VkFence> createFence (const DeviceInterface&		vk,
-						   VkDevice						device,
-						   VkFenceCreateFlags			flags		= (VkFenceCreateFlags)0,
-						   const VkAllocationCallbacks*	pAllocator	= DE_NULL)
-{
-	const VkFenceCreateInfo createInfo =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		DE_NULL,
-
-		flags
-	};
-
-	return createFence(vk, device, &createInfo, pAllocator);
-}
-
-VkQueue getDeviceQueue (const DeviceInterface& vkd, VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex)
-{
-	VkQueue queue;
-
-	vkd.getDeviceQueue(device, queueFamilyIndex, queueIndex, &queue);
-
-	return queue;
-}
-
-} // vk
 
 namespace vkt
 {

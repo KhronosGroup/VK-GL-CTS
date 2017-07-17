@@ -402,17 +402,10 @@ void createVertexInfo (const vector<VertexDesc>& vertexDesc, vector<VkVertexInpu
 void createCommandBuffer (const DeviceInterface& deviceInterface, const VkDevice device, const deUint32 queueFamilyNdx, vk::Move<VkCommandBuffer>* commandBufferRef, vk::Move<VkCommandPool>* commandPoolRef)
 {
 	vk::Move<VkCommandPool>		commandPool;
-	VkCommandPoolCreateInfo		commandPoolInfo;
 	VkCommandBufferAllocateInfo	commandBufferInfo;
 	VkCommandBuffer				commandBuffer;
 
-	deMemset(&commandPoolInfo, 0xcd, sizeof(commandPoolInfo));
-	commandPoolInfo.sType				= VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	commandPoolInfo.pNext				= DE_NULL;
-	commandPoolInfo.flags				= 0;
-	commandPoolInfo.queueFamilyIndex	= queueFamilyNdx;
-
-	commandPool = createCommandPool(deviceInterface, device, &commandPoolInfo, DE_NULL);
+	commandPool = createCommandPool(deviceInterface, device, 0u, queueFamilyNdx);
 
 	deMemset(&commandBufferInfo, 0xcd, sizeof(commandBufferInfo));
 	commandBufferInfo.sType					= VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -1107,19 +1100,6 @@ tcu::TestStatus testFences (Context& context)
 	return TestStatus::pass("synchronization-fences passed");
 }
 
-vk::refdetails::Checked<VkSemaphore> createSemaphore (const DeviceInterface& deviceInterface, const VkDevice& device, const VkAllocationCallbacks* allocationCallbacks)
-{
-	VkSemaphoreCreateInfo		semaCreateInfo;
-	VkSemaphore					semaphore;
-
-	semaCreateInfo.sType		= VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	semaCreateInfo.pNext		= DE_NULL;
-	semaCreateInfo.flags		= 0;
-	VK_CHECK(deviceInterface.createSemaphore(device, &semaCreateInfo, allocationCallbacks, &semaphore));
-
-	return vk::check<VkSemaphore>(semaphore);
-}
-
 tcu::TestStatus testSemaphores (Context& context)
 {
 	TestLog&					log					= context.getTestContext().getLog();
@@ -1131,18 +1111,19 @@ tcu::TestStatus testSemaphores (Context& context)
 	SimpleAllocator				allocator			(deviceInterface,
 													 *device,
 													 getPhysicalDeviceMemoryProperties(instanceInterface, physicalDevice));
-	VkQueue						queue[2];
+	const VkQueue				queue[2]			=
+	{
+		getDeviceQueue(deviceInterface, *device, queueFamilyIdx, 0),
+		getDeviceQueue(deviceInterface, *device, queueFamilyIdx, 1)
+	};
 	VkResult					testStatus;
 	TestContext					testContext1		(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
 	TestContext					testContext2		(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
-	Unique<VkSemaphore>			semaphore			(createSemaphore(deviceInterface, device.get(), (VkAllocationCallbacks*)DE_NULL), Deleter<VkSemaphore>(deviceInterface, device.get(), DE_NULL));
+	Unique<VkSemaphore>			semaphore			(createSemaphore(deviceInterface, *device));
 	VkSubmitInfo				submitInfo[2];
 	VkMappedMemoryRange			range;
 	void*						resultImage;
 	const VkPipelineStageFlags	waitDstStageMask	= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-
-	deviceInterface.getDeviceQueue(device.get(), queueFamilyIdx, 0, &queue[0]);
-	deviceInterface.getDeviceQueue(device.get(), queueFamilyIdx, 1, &queue[1]);
 
 	const tcu::Vec4		vertices1[]			=
 	{
@@ -1243,19 +1224,6 @@ tcu::TestStatus testSemaphores (Context& context)
 	return tcu::TestStatus::pass("synchronization-semaphores passed");
 }
 
-vk::refdetails::Checked<VkEvent> createEvent (const DeviceInterface& deviceInterface, const VkDevice& device, const VkAllocationCallbacks* allocationCallbacks)
-{
-	VkEventCreateInfo		eventCreateInfo;
-	VkEvent					event;
-
-	eventCreateInfo.sType		= VK_STRUCTURE_TYPE_EVENT_CREATE_INFO;
-	eventCreateInfo.pNext		= DE_NULL;
-	eventCreateInfo.flags		= 0;
-	VK_CHECK(deviceInterface.createEvent(device, &eventCreateInfo, allocationCallbacks, &event));
-
-	return vk::check<VkEvent>(event);
-}
-
 tcu::TestStatus testEvents (Context& context)
 {
 	TestLog&					log					= context.getTestContext().getLog();
@@ -1267,7 +1235,7 @@ tcu::TestStatus testEvents (Context& context)
 	VkResult					testStatus;
 	VkResult					eventStatus;
 	TestContext					testContext			(deviceInterface, device, queueFamilyIdx, context.getBinaryCollection(), allocator);
-	Unique<VkEvent>				event				(createEvent(deviceInterface, device, (VkAllocationCallbacks*)DE_NULL), Deleter<VkEvent>(deviceInterface, device, DE_NULL));
+	Unique<VkEvent>				event				(createEvent(deviceInterface, device));
 	VkSubmitInfo				submitInfo;
 	VkMappedMemoryRange			range;
 	void*						resultImage;

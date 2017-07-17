@@ -222,31 +222,6 @@ VkBufferImageCopy makeBufferImageCopy (const VkExtent3D extent,
 	return copyParams;
 }
 
-Move<VkCommandPool> makeCommandPool (const DeviceInterface& vk, const VkDevice device, const deUint32 queueFamilyIndex)
-{
-	const VkCommandPoolCreateInfo commandPoolParams =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// VkCommandPoolCreateFlags	flags;
-		queueFamilyIndex,									// deUint32					queueFamilyIndex;
-	};
-	return createCommandPool(vk, device, &commandPoolParams);
-}
-
-Move<VkCommandBuffer> makeCommandBuffer (const DeviceInterface& vk, const VkDevice device, const VkCommandPool commandPool)
-{
-	const VkCommandBufferAllocateInfo bufferAllocateParams =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		commandPool,										// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,					// VkCommandBufferLevel		level;
-		1u,													// deUint32					bufferCount;
-	};
-	return allocateCommandBuffer(vk, device, &bufferAllocateParams);
-}
-
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,
 										   const VkDescriptorSetLayout	descriptorSetLayout)
@@ -414,13 +389,7 @@ void submitCommandsAndWait (const DeviceInterface&	vk,
 							const VkQueue			queue,
 							const VkCommandBuffer	commandBuffer)
 {
-	const VkFenceCreateInfo	fenceParams =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		0u,										// VkFenceCreateFlags	flags;
-	};
-	const Unique<VkFence> fence(createFence(vk, device, &fenceParams));
+	const Unique<VkFence> fence(createFence(vk, device));
 
 	const VkSubmitInfo submitInfo =
 	{

@@ -37,6 +37,7 @@
 #include "vkImageUtil.hpp"
 
 #include "tcuTextureUtil.hpp"
+#include "tcuTestLog.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
@@ -771,7 +772,7 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&						allocator			= context.getDefaultAllocator();
 
-	const Unique<VkCommandPool>		cmdPool				(makeCommandPool  (vk, device, queueFamilyIndex));
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
 
 	const VkRect2D renderArea = {
@@ -947,7 +948,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	const Unique<VkImage>			colorImage		(makeImage(vk, device, caseDef.colorFormat, caseDef.renderSize, caseDef.numLayers, caseDef.numSamples, colorImageUsage));
 	const UniquePtr<Allocation>		colorImageAlloc	(bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any));
 
-	const Unique<VkCommandPool>		cmdPool			(makeCommandPool  (vk, device, queueFamilyIndex));
+	const Unique<VkCommandPool>		cmdPool			(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer		(makeCommandBuffer(vk, device, *cmdPool));
 
 	const VkRect2D renderArea = {
@@ -1206,7 +1207,7 @@ void renderAndResolve (Context& context, const CaseDef& caseDef, const VkBuffer 
 																   VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>		resolveImageAlloc	(bindImage(vk, device, allocator, *resolveImage, MemoryRequirement::Any));
 
-	const Unique<VkCommandPool>		cmdPool				(makeCommandPool  (vk, device, queueFamilyIndex));
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool  (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
 
 	// Working image barrier, we change it based on which rendering stages were executed so far.

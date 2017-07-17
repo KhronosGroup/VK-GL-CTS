@@ -2517,7 +2517,12 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 	if (numPassingAllocs == 0)
 		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks not called");
 	else if (numPassingAllocs == maxTries)
-		return tcu::TestStatus(QP_TEST_RESULT_COMPATIBILITY_WARNING, "Max iter count reached; OOM testing incomplete");
+	{
+		context.getTestContext().getLog()
+			<< TestLog::Message << "WARNING: Maximum iteration count (" << maxTries << ") reached without object construction passing. "
+								<< "OOM testing incomplete, use --deqp-test-iteration-count= to test with higher limit." << TestLog::EndMessage;
+		return tcu::TestStatus(QP_TEST_RESULT_PASS, "Max iter count reached");
+	}
 	else
 		return tcu::TestStatus::pass("Ok");
 }
