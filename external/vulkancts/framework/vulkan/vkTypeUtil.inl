@@ -392,80 +392,6 @@ inline VkPresentRegionKHR makePresentRegionKHR (deUint32 rectangleCount, const V
 	return res;
 }
 
-inline VkIndirectCommandsTokenNVX makeIndirectCommandsTokenNVX (VkIndirectCommandsTokenTypeNVX tokenType, VkBuffer buffer, VkDeviceSize offset)
-{
-	VkIndirectCommandsTokenNVX res;
-	res.tokenType	= tokenType;
-	res.buffer		= buffer;
-	res.offset		= offset;
-	return res;
-}
-
-inline VkIndirectCommandsLayoutTokenNVX makeIndirectCommandsLayoutTokenNVX (VkIndirectCommandsTokenTypeNVX tokenType, deUint32 bindingUnit, deUint32 dynamicCount, deUint32 divisor)
-{
-	VkIndirectCommandsLayoutTokenNVX res;
-	res.tokenType		= tokenType;
-	res.bindingUnit		= bindingUnit;
-	res.dynamicCount	= dynamicCount;
-	res.divisor			= divisor;
-	return res;
-}
-
-inline VkObjectTableEntryNVX makeObjectTableEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags)
-{
-	VkObjectTableEntryNVX res;
-	res.type	= type;
-	res.flags	= flags;
-	return res;
-}
-
-inline VkObjectTablePipelineEntryNVX makeObjectTablePipelineEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkPipeline pipeline)
-{
-	VkObjectTablePipelineEntryNVX res;
-	res.type		= type;
-	res.flags		= flags;
-	res.pipeline	= pipeline;
-	return res;
-}
-
-inline VkObjectTableDescriptorSetEntryNVX makeObjectTableDescriptorSetEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet)
-{
-	VkObjectTableDescriptorSetEntryNVX res;
-	res.type			= type;
-	res.flags			= flags;
-	res.pipelineLayout	= pipelineLayout;
-	res.descriptorSet	= descriptorSet;
-	return res;
-}
-
-inline VkObjectTableVertexBufferEntryNVX makeObjectTableVertexBufferEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkBuffer buffer)
-{
-	VkObjectTableVertexBufferEntryNVX res;
-	res.type	= type;
-	res.flags	= flags;
-	res.buffer	= buffer;
-	return res;
-}
-
-inline VkObjectTableIndexBufferEntryNVX makeObjectTableIndexBufferEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkBuffer buffer)
-{
-	VkObjectTableIndexBufferEntryNVX res;
-	res.type	= type;
-	res.flags	= flags;
-	res.buffer	= buffer;
-	return res;
-}
-
-inline VkObjectTablePushConstantEntryNVX makeObjectTablePushConstantEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkPipelineLayout pipelineLayout, VkShaderStageFlags stageFlags)
-{
-	VkObjectTablePushConstantEntryNVX res;
-	res.type			= type;
-	res.flags			= flags;
-	res.pipelineLayout	= pipelineLayout;
-	res.stageFlags		= stageFlags;
-	return res;
-}
-
 inline VkDescriptorUpdateTemplateEntryKHR makeDescriptorUpdateTemplateEntryKHR (deUint32 dstBinding, deUint32 dstArrayElement, deUint32 descriptorCount, VkDescriptorType descriptorType, deUintptr offset, deUintptr stride)
 {
 	VkDescriptorUpdateTemplateEntryKHR res;
@@ -475,6 +401,15 @@ inline VkDescriptorUpdateTemplateEntryKHR makeDescriptorUpdateTemplateEntryKHR (
 	res.descriptorType	= descriptorType;
 	res.offset			= offset;
 	res.stride			= stride;
+	return res;
+}
+
+inline VkExternalMemoryPropertiesKHR makeExternalMemoryPropertiesKHR (VkExternalMemoryFeatureFlagsKHR externalMemoryFeatures, VkExternalMemoryHandleTypeFlagsKHR exportFromImportedHandleTypes, VkExternalMemoryHandleTypeFlagsKHR compatibleHandleTypes)
+{
+	VkExternalMemoryPropertiesKHR res;
+	res.externalMemoryFeatures			= externalMemoryFeatures;
+	res.exportFromImportedHandleTypes	= exportFromImportedHandleTypes;
+	res.compatibleHandleTypes			= compatibleHandleTypes;
 	return res;
 }
 

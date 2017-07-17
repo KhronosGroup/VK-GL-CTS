@@ -32,6 +32,7 @@
 #include "vkRefUtil.hpp"
 #include "tcuTexLookupVerifier.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuTestLog.hpp"
 #include "deSTLUtil.hpp"
 
 namespace vkt
@@ -45,6 +46,65 @@ using de::UniquePtr;
 
 namespace
 {
+de::MovePtr<Allocation> allocateBuffer (const InstanceInterface&	vki,
+										const DeviceInterface&		vkd,
+										const VkPhysicalDevice&		physDevice,
+										const VkDevice				device,
+										const VkBuffer&				buffer,
+										const MemoryRequirement		requirement,
+										Allocator&					allocator,
+										AllocationKind				allocationKind)
+{
+	switch (allocationKind)
+	{
+		case ALLOCATION_KIND_SUBALLOCATED:
+		{
+			const VkMemoryRequirements	memoryRequirements	= getBufferMemoryRequirements(vkd, device, buffer);
+
+			return allocator.allocate(memoryRequirements, requirement);
+		}
+
+		case ALLOCATION_KIND_DEDICATED:
+		{
+			return allocateDedicated(vki, vkd, physDevice, device, buffer, requirement);
+		}
+
+		default:
+		{
+			TCU_THROW(InternalError, "Invalid allocation kind");
+		}
+	}
+}
+
+de::MovePtr<Allocation> allocateImage (const InstanceInterface&		vki,
+									   const DeviceInterface&		vkd,
+									   const VkPhysicalDevice&		physDevice,
+									   const VkDevice				device,
+									   const VkImage&				image,
+									   const MemoryRequirement		requirement,
+									   Allocator&					allocator,
+									   AllocationKind				allocationKind)
+{
+	switch (allocationKind)
+	{
+		case ALLOCATION_KIND_SUBALLOCATED:
+		{
+			const VkMemoryRequirements	memoryRequirements	= getImageMemoryRequirements(vkd, device, image);
+
+			return allocator.allocate(memoryRequirements, requirement);
+		}
+
+		case ALLOCATION_KIND_DEDICATED:
+		{
+			return allocateDedicated(vki, vkd, physDevice, device, image, requirement);
+		}
+
+		default:
+		{
+			TCU_THROW(InternalError, "Invalid allocation kind");
+		}
+	}
+}
 
 static VkImageType getCompatibleImageType (VkImageViewType viewType)
 {
@@ -134,8 +194,10 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 											  float								samplerLod,
 											  const std::vector<Vertex4Tex4>&	vertices,
 											  VkDescriptorType					samplingType,
-											  int								imageCount)
+											  int								imageCount,
+											  AllocationKind					allocationKind)
 	: vkt::TestInstance		(context)
+	, m_allocationKind		(allocationKind)
 	, m_samplingType		(samplingType)
 	, m_imageViewType		(imageViewType)
 	, m_imageFormat			(imageFormat)
@@ -150,7 +212,9 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_vertices			(vertices)
 {
+	const InstanceInterface&	vki						= context.getInstanceInterface();
 	const DeviceInterface&		vk						= context.getDeviceInterface();
+	const VkPhysicalDevice		physDevice				= context.getPhysicalDevice();
 	const VkDevice				vkDevice				= context.getDevice();
 	const VkQueue				queue					= context.getUniversalQueue();
 	const deUint32				queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
@@ -202,6 +266,14 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 	if (imageViewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !context.getDeviceFeatures().imageCubeArray)
 		TCU_THROW(NotSupportedError, "imageCubeArray feature is not supported");
 
+	if (m_allocationKind == ALLOCATION_KIND_DEDICATED)
+	{
+		const std::string extensionName("VK_KHR_dedicated_allocation");
+
+		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
+			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+	}
+
 	// Create texture images, views and samplers
 	{
 		VkImageCreateFlags			imageFlags			= 0u;
@@ -245,7 +317,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
 		{
 			m_images[imgNdx] = SharedImagePtr(new UniqueImage(createImage(vk, vkDevice, &imageParams)));
-			m_imageAllocs[imgNdx] = SharedAllocPtr(new UniqueAlloc(memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, **m_images[imgNdx]), MemoryRequirement::Any)));
+			m_imageAllocs[imgNdx] = SharedAllocPtr(new UniqueAlloc(allocateImage(vki, vk, physDevice, vkDevice, **m_images[imgNdx], MemoryRequirement::Any, memAlloc, m_allocationKind)));
 			VK_CHECK(vk.bindImageMemory(vkDevice, **m_images[imgNdx], (*m_imageAllocs[imgNdx])->getMemory(), (*m_imageAllocs[imgNdx])->getOffset()));
 
 			// Upload texture data
@@ -350,7 +422,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
 		{
 			m_colorImages[imgNdx] = SharedImagePtr(new UniqueImage(createImage(vk, vkDevice, &colorImageParams)));
-			m_colorImageAllocs[imgNdx] = SharedAllocPtr(new UniqueAlloc(memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, **m_colorImages[imgNdx]), MemoryRequirement::Any)));
+			m_colorImageAllocs[imgNdx] = SharedAllocPtr(new UniqueAlloc(allocateImage(vki, vk, physDevice, vkDevice, **m_colorImages[imgNdx], MemoryRequirement::Any, memAlloc, m_allocationKind)));
 			VK_CHECK(vk.bindImageMemory(vkDevice, **m_colorImages[imgNdx], (*m_colorImageAllocs[imgNdx])->getMemory(), (*m_colorImageAllocs[imgNdx])->getOffset()));
 
 			const VkImageViewCreateInfo colorAttachmentViewParams =
@@ -684,8 +756,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		DE_ASSERT(vertexBufferSize > 0);
 
 		m_vertexBuffer		= createBuffer(vk, vkDevice, &vertexBufferParams);
-		m_vertexBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_vertexBuffer), MemoryRequirement::HostVisible);
-
+		m_vertexBufferAlloc = allocateBuffer(vki, vk, physDevice, vkDevice, *m_vertexBuffer, MemoryRequirement::HostVisible, memAlloc, m_allocationKind);
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_vertexBuffer, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset()));
 
 		// Load vertices into vertex buffer
@@ -694,29 +765,10 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 	}
 
 	// Create command pool
-	{
-		const VkCommandPoolCreateInfo cmdPoolParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType				sType;
-			DE_NULL,										// const void*					pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCommandPoolCreateFlags	flags;
-			queueFamilyIndex								// deUint32					queueFamilyIndex;
-		};
-
-		m_cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
-	}
+	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
 	{
-		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*m_cmdPool,										// VkCommandPool			commandPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,												// deUint32					bufferCount;
-		};
-
 		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 		{
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
@@ -761,7 +813,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			preAttachmentBarriers[imgNdx].subresourceRange.layerCount		= 1u;
 		}
 
-		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
+		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 
@@ -783,16 +835,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 	}
 
 	// Create fence
-	{
-		const VkFenceCreateInfo fenceParams =
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			0u										// VkFenceCreateFlags	flags;
-		};
-
-		m_fence = createFence(vk, vkDevice, &fenceParams);
-	}
+	m_fence = createFence(vk, vkDevice);
 }
 
 ImageSamplingInstance::~ImageSamplingInstance (void)

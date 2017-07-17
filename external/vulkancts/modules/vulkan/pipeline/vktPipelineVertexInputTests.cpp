@@ -695,6 +695,16 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 	SimpleAllocator				memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 
+	// Check upfront for unsupported features
+	for (size_t attributeNdx = 0; attributeNdx < attributeDescriptions.size(); attributeNdx++)
+	{
+		const VkVertexInputAttributeDescription& attributeDescription = attributeDescriptions[attributeNdx].vkDescription;
+		if (!isSupportedVertexFormat(context, attributeDescription.format))
+		{
+			throw tcu::NotSupportedError(std::string("Unsupported format for vertex input: ") + getFormatName(attributeDescription.format));
+		}
+	}
+
 	// Create color image
 	{
 		const VkImageCreateInfo colorImageParams =
@@ -858,10 +868,6 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 		for (size_t attributeNdx = 0; attributeNdx < attributeDescriptions.size(); attributeNdx++)
 		{
 			const VkVertexInputAttributeDescription& attributeDescription = attributeDescriptions[attributeNdx].vkDescription;
-
-			if (!isSupportedVertexFormat(context, attributeDescription.format))
-				throw tcu::NotSupportedError(std::string("Unsupported format for vertex input: ") + getFormatName(attributeDescription.format));
-
 			vkAttributeDescriptions.push_back(attributeDescription);
 		}
 
@@ -1054,29 +1060,10 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 	}
 
 	// Create command pool
-	{
-		const VkCommandPoolCreateInfo cmdPoolParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,	// VkStructureType				sType;
-			DE_NULL,									// const void*					pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,		// VkCommandPoolCreateFlags		flags;
-			queueFamilyIndex,							// deUint32						queueFamilyIndex;
-		};
-
-		m_cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
-	}
+	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
 	{
-		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*m_cmdPool,										// VkCommandPool			commandPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u												// deUint32					bufferCount;
-		};
-
 		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 		{
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
@@ -1112,7 +1099,7 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange	subresourceRange;
 		};
 
-		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
+		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 
@@ -1155,16 +1142,7 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 	}
 
 	// Create fence
-	{
-		const VkFenceCreateInfo fenceParams =
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			0u										// VkFenceCreateFlags	flags;
-		};
-
-		m_fence = createFence(vk, vkDevice, &fenceParams);
-	}
+	m_fence = createFence(vk, vkDevice);
 }
 
 VertexInputInstance::~VertexInputInstance (void)

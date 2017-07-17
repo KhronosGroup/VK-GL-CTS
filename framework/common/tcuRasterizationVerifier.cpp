@@ -907,7 +907,7 @@ enum ClipMode
 	CLIPMODE_LAST
 };
 
-bool verifyMultisampleLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, ClipMode clipMode)
+bool verifyMultisampleLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, ClipMode clipMode, VerifyTriangleGroupRasterizationLogStash* logStash = DE_NULL)
 {
 	// Multisampled line == 2 triangles
 
@@ -963,7 +963,7 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface& surface, const
 		triangleScene.triangles[lineNdx*2 + 1].positions[2] = tcu::Vec4(lineQuadNormalizedDeviceSpace[3].x(), lineQuadNormalizedDeviceSpace[3].y(), 0.0f, 1.0f);	triangleScene.triangles[lineNdx*2 + 1].sharedEdge[2] = false;
 	}
 
-	return verifyTriangleGroupRasterization(surface, triangleScene, args, log);
+	return verifyTriangleGroupRasterization(surface, triangleScene, args, log, VERIFICATIONMODE_STRICT, logStash);
 }
 
 bool verifyMultisampleLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
@@ -2234,7 +2234,33 @@ CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1
 	}
 }
 
-bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const TriangleSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, VerificationMode mode)
+static void verifyTriangleGroupRasterizationLog (const tcu::Surface& surface, tcu::TestLog& log, VerifyTriangleGroupRasterizationLogStash& logStash)
+{
+	// Output results
+	log << tcu::TestLog::Message << "Verifying rasterization result." << tcu::TestLog::EndMessage;
+
+	if (!logStash.result)
+	{
+		log << tcu::TestLog::Message << "Invalid pixels found:\n\t"
+			<< logStash.missingPixels << " missing pixels. (Marked with purple)\n\t"
+			<< logStash.unexpectedPixels << " incorrectly filled pixels. (Marked with red)\n\t"
+			<< "Unknown (subpixel on edge) pixels are marked with yellow."
+			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result",	"Result",		surface)
+			<< tcu::TestLog::Image("ErrorMask", "ErrorMask",	logStash.errorMask)
+			<< tcu::TestLog::EndImageSet;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "No invalid pixels found." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result", "Result", surface)
+			<< tcu::TestLog::EndImageSet;
+	}
+}
+
+bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const TriangleSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, VerificationMode mode, VerifyTriangleGroupRasterizationLogStash* logStash)
 {
 	DE_ASSERT(mode < VERIFICATIONMODE_LAST);
 
@@ -2252,6 +2278,7 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 	int					subPixelBits				= args.subpixelBits;
 	tcu::TextureLevel	coverageMap					(tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT8), surface.getWidth(), surface.getHeight());
 	tcu::Surface		errorMask					(surface.getWidth(), surface.getHeight());
+	bool				result						= false;
 
 	// subpixel bits in in a valid range?
 
@@ -2368,33 +2395,33 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 		};
 	}
 
-	// Output results
-	log << tcu::TestLog::Message << "Verifying rasterization result." << tcu::TestLog::EndMessage;
-
 	if (((mode == VERIFICATIONMODE_STRICT) && (missingPixels + unexpectedPixels > 0)) ||
 		((mode == VERIFICATIONMODE_WEAK)   && (missingPixels + unexpectedPixels > weakVerificationThreshold)))
 	{
-		log << tcu::TestLog::Message << "Invalid pixels found:\n\t"
-			<< missingPixels << " missing pixels. (Marked with purple)\n\t"
-			<< unexpectedPixels << " incorrectly filled pixels. (Marked with red)\n\t"
-			<< "Unknown (subpixel on edge) pixels are marked with yellow."
-			<< tcu::TestLog::EndMessage;
-		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
-			<< tcu::TestLog::Image("Result",	"Result",		surface)
-			<< tcu::TestLog::Image("ErrorMask", "ErrorMask",	errorMask)
-			<< tcu::TestLog::EndImageSet;
-
-		return false;
+		result = false;
 	}
 	else
 	{
-		log << tcu::TestLog::Message << "No invalid pixels found." << tcu::TestLog::EndMessage;
-		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
-			<< tcu::TestLog::Image("Result", "Result", surface)
-			<< tcu::TestLog::EndImageSet;
-
-		return true;
+		result = true;
 	}
+
+	// Output or stash results
+	{
+		VerifyTriangleGroupRasterizationLogStash* tempLogStash = (logStash == DE_NULL) ? new VerifyTriangleGroupRasterizationLogStash : logStash;
+
+		tempLogStash->result			= result;
+		tempLogStash->missingPixels		= missingPixels;
+		tempLogStash->unexpectedPixels	= unexpectedPixels;
+		tempLogStash->errorMask			= errorMask;
+
+		if (logStash == DE_NULL)
+		{
+			verifyTriangleGroupRasterizationLog(surface, log, *tempLogStash);
+			delete tempLogStash;
+		}
+	}
+
+	return result;
 }
 
 bool verifyLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
@@ -2402,14 +2429,46 @@ bool verifyLineGroupRasterization (const tcu::Surface& surface, const LineSceneS
 	const bool multisampled = args.numSamples != 0;
 
 	if (multisampled)
-		return verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_NO_CLIPPING);
+		return verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_NO_CLIPPING, DE_NULL);
 	else
 		return verifySinglesampleLineGroupRasterization(surface, scene, args, log);
 }
 
 bool verifyClippedTriangulatedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
 {
-	return verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_USE_CLIPPING_BOX);
+	return verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_USE_CLIPPING_BOX, DE_NULL);
+}
+
+bool verifyRelaxedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
+{
+	VerifyTriangleGroupRasterizationLogStash noClippingLogStash;
+	VerifyTriangleGroupRasterizationLogStash useClippingLogStash;
+
+	if (verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_USE_CLIPPING_BOX, &useClippingLogStash))
+	{
+		log << tcu::TestLog::Message << "Relaxed rasterization succeeded with CLIPMODE_USE_CLIPPING_BOX, details follow." << tcu::TestLog::EndMessage;
+
+		verifyTriangleGroupRasterizationLog(surface, log, useClippingLogStash);
+
+		return true;
+	}
+	else if (verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_NO_CLIPPING, &noClippingLogStash))
+	{
+		log << tcu::TestLog::Message << "Relaxed rasterization succeeded with CLIPMODE_NO_CLIPPING, details follow." << tcu::TestLog::EndMessage;
+
+		verifyTriangleGroupRasterizationLog(surface, log, noClippingLogStash);
+
+		return true;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "Relaxed rasterization failed, details follow." << tcu::TestLog::EndMessage;
+
+		verifyTriangleGroupRasterizationLog(surface, log, useClippingLogStash);
+		verifyTriangleGroupRasterizationLog(surface, log, noClippingLogStash);
+
+		return false;
+	}
 }
 
 bool verifyPointGroupRasterization (const tcu::Surface& surface, const PointSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)

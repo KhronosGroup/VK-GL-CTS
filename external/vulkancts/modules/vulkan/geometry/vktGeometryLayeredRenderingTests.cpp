@@ -40,6 +40,7 @@
 
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuTestLog.hpp"
 
 namespace vkt
 {
@@ -931,8 +932,8 @@ tcu::TestStatus test (Context& context, const TestParams params)
 	const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout		(vk, device));
 	const Unique<VkPipeline>		pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, *geometryModule, *fragmentModule,
 																					 makeExtent2D(params.image.size.width, params.image.size.height)));
-	const Unique<VkCommandPool>		cmdPool					(makeCommandPool		(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>	cmdBuffer				(makeCommandBuffer		(vk, device, *cmdPool));
+	const Unique<VkCommandPool>		cmdPool					(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer				(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	zeroBuffer(vk, device, *colorBufferAlloc, colorBufferSize);
 

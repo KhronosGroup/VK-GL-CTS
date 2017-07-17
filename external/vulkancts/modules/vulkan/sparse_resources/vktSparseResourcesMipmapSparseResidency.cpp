@@ -192,7 +192,7 @@ tcu::TestStatus MipmapSparseResidencyInstance::iterate (void)
 	const Unique<VkImage> imageSparse(createImage(deviceInterface, getDevice(), &imageSparseInfo));
 
 	// Create sparse image memory bind semaphore
-	const Unique<VkSemaphore> imageMemoryBindSemaphore(makeSemaphore(deviceInterface, getDevice()));
+	const Unique<VkSemaphore> imageMemoryBindSemaphore(createSemaphore(deviceInterface, getDevice()));
 
 	{
 		// Get sparse image general memory requirements
@@ -312,7 +312,7 @@ tcu::TestStatus MipmapSparseResidencyInstance::iterate (void)
 
 	// Create command buffer for compute and transfer oparations
 	const Unique<VkCommandPool>	  commandPool(makeCommandPool(deviceInterface, getDevice(), computeQueue.queueFamilyIndex));
-	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, getDevice(), *commandPool));
+	const Unique<VkCommandBuffer> commandBuffer(allocateCommandBuffer(deviceInterface, getDevice(), *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	std::vector <VkBufferImageCopy> bufferImageCopy(imageSparseInfo.mipLevels);
 
