@@ -26,6 +26,7 @@
 
 #include "deRandom.hpp"
 #include "deMath.h"
+#include "deSTLUtil.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "deArrayUtil.hpp"
@@ -34,6 +35,7 @@
 #include "vkMemUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -60,6 +62,73 @@ using namespace tcu;
 namespace
 {
 
+enum AllocationKind
+{
+	ALLOCATION_KIND_SUBALLOCATED,
+	ALLOCATION_KIND_DEDICATED,
+};
+
+
+de::MovePtr<Allocation> allocateBuffer (const InstanceInterface&	vki,
+										const DeviceInterface&		vkd,
+										const VkPhysicalDevice&		physDevice,
+										const VkDevice				device,
+										const VkBuffer&				buffer,
+										const MemoryRequirement		requirement,
+										Allocator&					allocator,
+										AllocationKind				allocationKind)
+{
+	switch (allocationKind)
+	{
+		case ALLOCATION_KIND_SUBALLOCATED:
+		{
+			const VkMemoryRequirements memoryRequirements = getBufferMemoryRequirements(vkd, device, buffer);
+
+			return allocator.allocate(memoryRequirements, requirement);
+		}
+
+		case ALLOCATION_KIND_DEDICATED:
+		{
+			return allocateDedicated(vki, vkd, physDevice, device, buffer, requirement);
+		}
+
+		default:
+		{
+			TCU_THROW(InternalError, "Invalid allocation kind");
+		}
+	}
+}
+
+de::MovePtr<Allocation> allocateImage (const InstanceInterface&		vki,
+									   const DeviceInterface&		vkd,
+									   const VkPhysicalDevice&		physDevice,
+									   const VkDevice				device,
+									   const VkImage&				image,
+									   const MemoryRequirement		requirement,
+									   Allocator&					allocator,
+									   AllocationKind				allocationKind)
+{
+	switch (allocationKind)
+	{
+		case ALLOCATION_KIND_SUBALLOCATED:
+		{
+			const VkMemoryRequirements memoryRequirements = getImageMemoryRequirements(vkd, device, image);
+
+			return allocator.allocate(memoryRequirements, requirement);
+		}
+
+		case ALLOCATION_KIND_DEDICATED:
+		{
+			return allocateDedicated(vki, vkd, physDevice, device, image, requirement);
+		}
+
+		default:
+		{
+			TCU_THROW(InternalError, "Invalid allocation kind");
+		}
+	}
+}
+
 VkExtent3D getMipLevelExtent (VkExtent3D baseExtent, const deUint32 mipLevel)
 {
 	baseExtent.width	= std::max(baseExtent.width  >> mipLevel, 1u);
@@ -74,6 +143,27 @@ deUint32 getNumMipLevels (const VkExtent3D& baseExtent, const deUint32 maxMipLev
 	return std::min(static_cast<deUint32>(deFloatLog2(static_cast<float>(widestEdge))) + 1u, maxMipLevels);
 }
 
+deUint32 greatestCommonDivisor (const deUint32 a, const deUint32 b)
+{
+	/* Find GCD */
+	deUint32 temp;
+	deUint32 x=a;
+	deUint32 y=b;
+
+	while (x%b != 0)
+	{
+		temp = y;
+		y = x%y;
+		x = temp;
+	}
+	return y;
+}
+
+deUint32 lowestCommonMultiple (const deUint32 a, const deUint32 b)
+{
+	return (a*b)/greatestCommonDivisor(a,b);
+}
+
 std::vector<deUint32> getImageMipLevelSizes (const deUint32 pixelSize, const VkExtent3D& baseExtent, const deUint32 numMipLevels, const deUint32 perLevelAlignment = 1u)
 {
 	std::vector<deUint32> results(numMipLevels);
@@ -81,19 +171,66 @@ std::vector<deUint32> getImageMipLevelSizes (const deUint32 pixelSize, const VkE
 	for (deUint32 mipLevel = 0; mipLevel < numMipLevels; ++mipLevel)
 	{
 		const VkExtent3D extent = getMipLevelExtent(baseExtent, mipLevel);
-		results[mipLevel] = static_cast<deUint32>(deAlignSize(extent.width * extent.height * extent.depth * pixelSize, perLevelAlignment));
+		results[mipLevel] = static_cast<deUint32>(extent.width * extent.height * extent.depth * pixelSize);
+		results[mipLevel] = ((results[mipLevel] + perLevelAlignment-1) / perLevelAlignment) * perLevelAlignment;
 	}
 
 	return results;
 }
 
-//! Check if a point lies in a cross-like area.
-inline bool isInClearRange (const UVec4& clearCoords, const deUint32 x, const deUint32 y)
+struct LayerRange
 {
+	deUint32 baseArrayLayer;
+	deUint32 layerCount;
+};
+
+inline bool isInClearRange (const UVec4& clearCoords, const deUint32 x, const deUint32 y, deUint32 arrayLayer = 0, tcu::Maybe<LayerRange> imageViewLayerRange = tcu::Maybe<LayerRange>(), tcu::Maybe<LayerRange> attachmentClearLayerRange = tcu::Maybe<LayerRange>())
+{
+	if (attachmentClearLayerRange)
+	{
+		// Only layers in range passed to clear command are cleared
+
+		const deUint32 clearBaseLayer = (imageViewLayerRange ? imageViewLayerRange->baseArrayLayer : 0) + attachmentClearLayerRange->baseArrayLayer;
+
+		if ((arrayLayer < clearBaseLayer) || (arrayLayer >= (clearBaseLayer + attachmentClearLayerRange->layerCount)))
+		{
+			return false;
+		}
+	}
+
+	if (clearCoords == UVec4())
+	{
+		return true;
+	}
+
+	//! Check if a point lies in a cross-like area.
 	return !((x <  clearCoords[0] && y <  clearCoords[1]) ||
 			 (x <  clearCoords[0] && y >= clearCoords[3]) ||
 			 (x >= clearCoords[2] && y <  clearCoords[1]) ||
 			 (x >= clearCoords[2] && y >= clearCoords[3]));
+}
+
+inline bool isInInitialClearRange (bool isAttachmentformat, deUint32 mipLevel, deUint32 arrayLayer, LayerRange imageViewLayerRange)
+{
+	if (!isAttachmentformat)
+	{
+		// initial clear is done using renderpass load op - does not apply for non-renderable formats
+		return false;
+	}
+
+	if (mipLevel > 0)
+	{
+		// intial clear is done using FB bound to level 0 only
+		return false;
+	}
+
+	// Only layers in range bound to framebuffer are cleared to initial color
+	if ((arrayLayer < imageViewLayerRange.baseArrayLayer) || (arrayLayer >= (imageViewLayerRange.baseArrayLayer + imageViewLayerRange.layerCount)))
+	{
+		return false;
+	}
+
+	return true;
 }
 
 // This method is copied from the vktRenderPassTests.cpp. It should be moved to a common place.
@@ -323,8 +460,12 @@ struct TestParams
 	VkImageType		imageType;
 	VkFormat		imageFormat;
 	VkExtent3D		imageExtent;
+	deUint32        imageLayerCount;
+	LayerRange      imageViewLayerRange;
 	VkClearValue	initValue;
 	VkClearValue	clearValue[2];		//!< the second value is used with more than one mip map
+	LayerRange		clearLayerRange;
+	AllocationKind	allocationKind;
 };
 
 class ImageClearingTestInstance : public vkt::TestInstance
@@ -335,10 +476,10 @@ public:
 
 	Move<VkCommandPool>					createCommandPool				(VkCommandPoolCreateFlags commandPoolCreateFlags) const;
 	Move<VkCommandBuffer>				allocatePrimaryCommandBuffer	(VkCommandPool commandPool) const;
-	Move<VkImage>						createImage						(VkImageType imageType, VkFormat format, VkExtent3D extent, VkImageUsageFlags usage) const;
-	Move<VkImageView>					createImageView					(VkImage image, VkImageViewType viewType, VkFormat format, VkImageAspectFlags aspectMask) const;
+	Move<VkImage>						createImage						(VkImageType imageType, VkFormat format, VkExtent3D extent, deUint32 arrayLayerCount, VkImageUsageFlags usage) const;
+	Move<VkImageView>					createImageView					(VkImage image, VkImageViewType viewType, VkFormat format, VkImageAspectFlags aspectMask, LayerRange layerRange) const;
 	Move<VkRenderPass>					createRenderPass				(VkFormat format) const;
-	Move<VkFramebuffer>					createFrameBuffer				(VkImageView imageView, VkRenderPass renderPass, deUint32 imageWidth, deUint32 imageHeight) const;
+	Move<VkFramebuffer>					createFrameBuffer				(VkImageView imageView, VkRenderPass renderPass, deUint32 imageWidth, deUint32 imageHeight, deUint32 imageLayersCount) const;
 
 	void								beginCommandBuffer				(VkCommandBufferUsageFlags usageFlags) const;
 	void								endCommandBuffer				(void) const;
@@ -346,11 +487,16 @@ public:
 	void								beginRenderPass					(VkSubpassContents content, VkClearValue clearValue) const;
 
 	void								pipelineImageBarrier			(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout) const;
-	de::MovePtr<TextureLevelPyramid>	readImage						(VkImageAspectFlags aspectMask) const;
+	de::MovePtr<TextureLevelPyramid>	readImage						(VkImageAspectFlags aspectMask, deUint32 baseLayer) const;
 	tcu::TestStatus						verifyResultImage				(const std::string& successMessage, const UVec4& clearCoords = UVec4()) const;
 
 protected:
-	VkImageViewType						getCorrespondingImageViewType	(VkImageType imageType) const;
+	enum ViewType
+	{
+		VIEW_TYPE_SINGLE,
+		VIEW_TYPE_ARRAY
+	};
+	VkImageViewType						getCorrespondingImageViewType	(VkImageType imageType, ViewType viewType) const;
 	VkImageUsageFlags					getImageUsageFlags				(VkFormat format) const;
 	VkImageAspectFlags					getImageAspectFlags				(VkFormat format) const;
 	bool								getIsAttachmentFormat			(VkFormat format) const;
@@ -405,31 +551,44 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 	, m_image					(createImage(params.imageType,
 											 params.imageFormat,
 											 params.imageExtent,
+											 params.imageLayerCount,
 											 m_imageUsageFlags))
 
 	, m_imageMemory				(allocateAndBindImageMemory(*m_image))
 	, m_imageView				(m_isAttachmentFormat ? createImageView(*m_image,
-												 getCorrespondingImageViewType(params.imageType),
+												 getCorrespondingImageViewType(params.imageType, params.imageLayerCount > 1u ? VIEW_TYPE_ARRAY : VIEW_TYPE_SINGLE),
 												 params.imageFormat,
-												 m_imageAspectFlags) : vk::Move<VkImageView>())
+												 m_imageAspectFlags,
+												 params.imageViewLayerRange) : vk::Move<VkImageView>())
 
 	, m_renderPass				(m_isAttachmentFormat ? createRenderPass(params.imageFormat) : vk::Move<vk::VkRenderPass>())
-	, m_frameBuffer				(m_isAttachmentFormat ? createFrameBuffer(*m_imageView, *m_renderPass, params.imageExtent.width, params.imageExtent.height) : vk::Move<vk::VkFramebuffer>())
+	, m_frameBuffer				(m_isAttachmentFormat ? createFrameBuffer(*m_imageView, *m_renderPass, params.imageExtent.width, params.imageExtent.height, params.imageViewLayerRange.layerCount) : vk::Move<vk::VkFramebuffer>())
 {
+	if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
+	{
+		const std::string extensionName("VK_KHR_dedicated_allocation");
+
+		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
+			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+	}
 }
 
-VkImageViewType ImageClearingTestInstance::getCorrespondingImageViewType (VkImageType imageType) const
+VkImageViewType ImageClearingTestInstance::getCorrespondingImageViewType (VkImageType imageType, ViewType viewType) const
 {
 	switch (imageType)
 	{
-		case VK_IMAGE_TYPE_1D:
-			return VK_IMAGE_VIEW_TYPE_1D;
-		case VK_IMAGE_TYPE_2D:
-			return VK_IMAGE_VIEW_TYPE_2D;
-		case VK_IMAGE_TYPE_3D:
-			return VK_IMAGE_VIEW_TYPE_3D;
-		default:
-			DE_FATAL("Unknown image type!");
+	case VK_IMAGE_TYPE_1D:
+		return (viewType == VIEW_TYPE_ARRAY) ?  VK_IMAGE_VIEW_TYPE_1D_ARRAY : VK_IMAGE_VIEW_TYPE_1D;
+	case VK_IMAGE_TYPE_2D:
+		return (viewType == VIEW_TYPE_ARRAY) ?  VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
+	case VK_IMAGE_TYPE_3D:
+		if (viewType != VIEW_TYPE_SINGLE)
+		{
+			DE_FATAL("Cannot have 3D image array");
+		}
+		return VK_IMAGE_VIEW_TYPE_3D;
+	default:
+		DE_FATAL("Unknown image type!");
 	}
 
 	return VK_IMAGE_VIEW_TYPE_2D;
@@ -506,39 +665,22 @@ VkImageFormatProperties ImageClearingTestInstance::getImageFormatProperties (voi
 
 de::MovePtr<Allocation> ImageClearingTestInstance::allocateAndBindImageMemory (VkImage image) const
 {
-	de::MovePtr<Allocation>	imageMemory	(m_allocator.allocate(getImageMemoryRequirements(m_vkd, m_device, image), MemoryRequirement::Any));
+	de::MovePtr<Allocation>	imageMemory	(allocateImage(m_vki, m_vkd, m_context.getPhysicalDevice(), m_device, image, MemoryRequirement::Any, m_allocator, m_params.allocationKind));
 	VK_CHECK(m_vkd.bindImageMemory(m_device, image, imageMemory->getMemory(), imageMemory->getOffset()));
 	return imageMemory;
 }
 
 Move<VkCommandPool> ImageClearingTestInstance::createCommandPool (VkCommandPoolCreateFlags commandPoolCreateFlags) const
 {
-	const VkCommandPoolCreateInfo			cmdPoolCreateInfo		=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					// VkStructureType             sType;
-		DE_NULL,													// const void*                 pNext;
-		commandPoolCreateFlags,										// VkCommandPoolCreateFlags    flags;
-		m_queueFamilyIndex											// deUint32                    queueFamilyIndex;
-	};
-
-	return vk::createCommandPool(m_vkd, m_device, &cmdPoolCreateInfo, DE_NULL);
+	return vk::createCommandPool(m_vkd, m_device, commandPoolCreateFlags, m_queueFamilyIndex);
 }
 
 Move<VkCommandBuffer> ImageClearingTestInstance::allocatePrimaryCommandBuffer (VkCommandPool commandPool) const
 {
-	const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// VkStructureType             sType;
-		DE_NULL,													// const void*                 pNext;
-		commandPool,												// VkCommandPool               commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							// VkCommandBufferLevel        level;
-		1															// deUint32                    commandBufferCount;
-	};
-
-	return vk::allocateCommandBuffer(m_vkd, m_device, &cmdBufferAllocateInfo);
+	return vk::allocateCommandBuffer(m_vkd, m_device, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
-Move<VkImage> ImageClearingTestInstance::createImage (VkImageType imageType, VkFormat format, VkExtent3D extent, VkImageUsageFlags usage) const
+Move<VkImage> ImageClearingTestInstance::createImage (VkImageType imageType, VkFormat format, VkExtent3D extent, deUint32 arrayLayerCount, VkImageUsageFlags usage) const
 {
 	const VkImageCreateInfo					imageCreateInfo			=
 	{
@@ -549,7 +691,7 @@ Move<VkImage> ImageClearingTestInstance::createImage (VkImageType imageType, VkF
 		format,										// VkFormat					format;
 		extent,										// VkExtent3D				extent;
 		m_imageMipLevels,							// deUint32					mipLevels;
-		1u,											// deUint32					arrayLayers;
+		arrayLayerCount,							// deUint32					arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling			tiling;
 		usage,										// VkImageUsageFlags		usage;
@@ -562,7 +704,7 @@ Move<VkImage> ImageClearingTestInstance::createImage (VkImageType imageType, VkF
 	return vk::createImage(m_vkd, m_device, &imageCreateInfo, DE_NULL);
 }
 
-Move<VkImageView> ImageClearingTestInstance::createImageView (VkImage image, VkImageViewType viewType, VkFormat format, VkImageAspectFlags aspectMask) const
+Move<VkImageView> ImageClearingTestInstance::createImageView (VkImage image, VkImageViewType viewType, VkFormat format, VkImageAspectFlags aspectMask, LayerRange layerRange) const
 {
 	const VkImageViewCreateInfo				imageViewCreateInfo		=
 	{
@@ -582,9 +724,9 @@ Move<VkImageView> ImageClearingTestInstance::createImageView (VkImage image, VkI
 			aspectMask,									// VkImageAspectFlags			aspectMask;
 			0u,											// deUint32						baseMipLevel;
 			1u,											// deUint32						mipLevels;
-			0u,											// deUint32						baseArrayLayer;
-			1u,											// deUint32						arraySize;
-		},											// VkImageSubresourceRange		subresourceRange;
+			layerRange.baseArrayLayer,					// deUint32						baseArrayLayer;
+			layerRange.layerCount,						// deUint32						arraySize;
+		},												// VkImageSubresourceRange		subresourceRange;
 	};
 
 	return vk::createImageView(m_vkd, m_device, &imageViewCreateInfo, DE_NULL);
@@ -670,7 +812,7 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 	return vk::createRenderPass(m_vkd, m_device, &renderPassCreateInfo, DE_NULL);
 }
 
-Move<VkFramebuffer> ImageClearingTestInstance::createFrameBuffer (VkImageView imageView, VkRenderPass renderPass, deUint32 imageWidth, deUint32 imageHeight) const
+Move<VkFramebuffer> ImageClearingTestInstance::createFrameBuffer (VkImageView imageView, VkRenderPass renderPass, deUint32 imageWidth, deUint32 imageHeight, deUint32 imageLayersCount) const
 {
 	const VkImageView						attachmentViews[1]		=
 	{
@@ -687,7 +829,7 @@ Move<VkFramebuffer> ImageClearingTestInstance::createFrameBuffer (VkImageView im
 		attachmentViews,							// const VkImageView*		pAttachments;
 		imageWidth,									// deUint32					width;
 		imageHeight,								// deUint32					height;
-		1u,											// deUint32					layers;
+		imageLayersCount,							// deUint32					layers;
 	};
 
 	return createFramebuffer(m_vkd, m_device, &framebufferCreateInfo, DE_NULL);
@@ -713,14 +855,7 @@ void ImageClearingTestInstance::endCommandBuffer (void) const
 
 void ImageClearingTestInstance::submitCommandBuffer (void) const
 {
-	const VkFenceCreateInfo fenceCreateInfo							=
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,					// VkStructureType       sType;
-		DE_NULL,												// const void*           pNext;
-		0u														// VkFenceCreateFlags    flags;
-	};
-
-	const Unique<VkFence>					fence					(createFence(m_vkd, m_device, &fenceCreateInfo));
+	const Unique<VkFence>					fence					(createFence(m_vkd, m_device));
 
 	const VkSubmitInfo						submitInfo				=
 	{
@@ -758,21 +893,25 @@ void ImageClearingTestInstance::pipelineImageBarrier(VkPipelineStageFlags srcSta
 			0u,											// deUint32				baseMipLevel;
 			VK_REMAINING_MIP_LEVELS,					// deUint32				levelCount;
 			0u,											// deUint32				baseArrayLayer;
-			1u,											// deUint32				layerCount;
+			VK_REMAINING_ARRAY_LAYERS,					// deUint32				layerCount;
 		},											// VkImageSubresourceRange	subresourceRange;
 	};
 
 	m_vkd.cmdPipelineBarrier(*m_commandBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageBarrier);
 }
 
-de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAspectFlags aspectMask) const
+de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAspectFlags aspectMask, deUint32 arrayLayer) const
 {
 	const TextureFormat					tcuFormat		= aspectMask == VK_IMAGE_ASPECT_COLOR_BIT ? mapVkFormat(m_params.imageFormat) :
 														  aspectMask == VK_IMAGE_ASPECT_DEPTH_BIT ? getDepthCopyFormat(m_params.imageFormat) :
 														  aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT ? getStencilCopyFormat(m_params.imageFormat) :
 														  TextureFormat();
 	const deUint32						pixelSize		= getPixelSize(tcuFormat);
-	const deUint32						alignment		= 4;	// subsequent mip levels aligned to 4 bytes
+	deUint32							alignment		= 4;	// subsequent mip levels aligned to 4 bytes
+
+	if (!getIsDepthFormat(m_params.imageFormat) && !getIsStencilFormat(m_params.imageFormat))
+		alignment = lowestCommonMultiple(pixelSize, alignment); // alignment must be multiple of pixel size, if not D/S.
+
 	const std::vector<deUint32>			mipLevelSizes	= getImageMipLevelSizes(pixelSize, m_params.imageExtent, m_imageMipLevels, alignment);
 	const VkDeviceSize					imageTotalSize	= std::accumulate(mipLevelSizes.begin(), mipLevelSizes.end(), 0u);
 
@@ -795,7 +934,7 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAs
 		};
 
 		buffer		= createBuffer(m_vkd, m_device, &bufferParams);
-		bufferAlloc	= m_allocator.allocate(getBufferMemoryRequirements(m_vkd, m_device, *buffer), MemoryRequirement::HostVisible);
+		bufferAlloc	= allocateBuffer(m_vki, m_vkd, m_context.getPhysicalDevice(), m_device, *buffer, MemoryRequirement::HostVisible, m_allocator, m_params.allocationKind);
 		VK_CHECK(m_vkd.bindBufferMemory(m_device, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
 	}
 
@@ -823,12 +962,12 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAs
 			const VkExtent3D		extent	= getMipLevelExtent(m_params.imageExtent, mipLevel);
 			const VkBufferImageCopy	region	=
 			{
-				offset,									// VkDeviceSize				bufferOffset;
-				0u,										// deUint32					bufferRowLength;
-				0u,										// deUint32					bufferImageHeight;
-				{ aspectMask, mipLevel, 0u, 1u },		// VkImageSubresourceLayers	imageSubresource;
-				{ 0, 0, 0 },							// VkOffset3D				imageOffset;
-				extent									// VkExtent3D				imageExtent;
+				offset,										// VkDeviceSize				bufferOffset;
+				0u,											// deUint32					bufferRowLength;
+				0u,											// deUint32					bufferImageHeight;
+				{ aspectMask, mipLevel, arrayLayer, 1u },	// VkImageSubresourceLayers	imageSubresource;
+				{ 0, 0, 0 },								// VkOffset3D				imageOffset;
+				extent										// VkExtent3D				imageExtent;
 			};
 			copyRegions.push_back(region);
 			offset += mipLevelSizes[mipLevel];
@@ -878,27 +1017,34 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAs
 
 tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string& successMessage, const UVec4& clearCoords) const
 {
-	const bool useClearRange = clearCoords != UVec4();
-	DE_ASSERT(!useClearRange || m_params.imageExtent.depth == 1u);
+	DE_ASSERT((clearCoords == UVec4()) || m_params.imageExtent.depth == 1u);
 
 	if (getIsDepthFormat(m_params.imageFormat))
 	{
 		DE_ASSERT(m_imageMipLevels == 1u);
 
-		de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_DEPTH_BIT);
-		std::string							message;
-		float								depthValue;
-
-		for (deUint32 y = 0; y < m_params.imageExtent.height; ++y)
-		for (deUint32 x = 0; x < m_params.imageExtent.width; ++x)
+		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount; ++arrayLayer)
 		{
-			if (!useClearRange || isInClearRange(clearCoords, x, y))
-				depthValue = m_params.clearValue[0].depthStencil.depth;
-			else
-				depthValue = m_params.initValue.depthStencil.depth;
+			de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_DEPTH_BIT, arrayLayer);
+			std::string							message;
+			float								depthValue;
 
-			if (!comparePixelToDepthClearValue(image->getLevel(0), x, y, depthValue, message))
-				return TestStatus::fail("Depth value mismatch! " + message);
+			for (deUint32 y = 0; y < m_params.imageExtent.height; ++y)
+			for (deUint32 x = 0; x < m_params.imageExtent.width; ++x)
+			{
+				if (isInClearRange(clearCoords, x, y, arrayLayer, m_params.imageViewLayerRange, m_params.clearLayerRange))
+					depthValue = m_params.clearValue[0].depthStencil.depth;
+				else
+				if (isInInitialClearRange(m_isAttachmentFormat, 0u /* mipLevel */, arrayLayer, m_params.imageViewLayerRange))
+				{
+					depthValue = m_params.initValue.depthStencil.depth;
+				}
+				else
+					continue;
+
+				if (!comparePixelToDepthClearValue(image->getLevel(0), x, y, depthValue, message))
+					return TestStatus::fail("Depth value mismatch! " + message);
+			}
 		}
 	}
 
@@ -906,45 +1052,62 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 	{
 		DE_ASSERT(m_imageMipLevels == 1u);
 
-		de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_STENCIL_BIT);
-		std::string							message;
-		deUint32							stencilValue;
-
-		for (deUint32 y = 0; y < m_params.imageExtent.height; ++y)
-		for (deUint32 x = 0; x < m_params.imageExtent.width; ++x)
+		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount; ++arrayLayer)
 		{
-			if (!useClearRange || isInClearRange(clearCoords, x, y))
-				stencilValue = m_params.clearValue[0].depthStencil.stencil;
-			else
-				stencilValue = m_params.initValue.depthStencil.stencil;
+			de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_STENCIL_BIT, arrayLayer);
+			std::string							message;
+			deUint32							stencilValue;
 
-			if (!comparePixelToStencilClearValue(image->getLevel(0), x, y, stencilValue, message))
-				return TestStatus::fail("Stencil value mismatch! " + message);
+			for (deUint32 y = 0; y < m_params.imageExtent.height; ++y)
+			for (deUint32 x = 0; x < m_params.imageExtent.width; ++x)
+			{
+				if (isInClearRange(clearCoords, x, y, arrayLayer, m_params.imageViewLayerRange, m_params.clearLayerRange))
+					stencilValue = m_params.clearValue[0].depthStencil.stencil;
+				else
+				if (isInInitialClearRange(m_isAttachmentFormat, 0u /* mipLevel */, arrayLayer, m_params.imageViewLayerRange))
+				{
+					stencilValue = m_params.initValue.depthStencil.stencil;
+				}
+				else
+					continue;
+
+				if (!comparePixelToStencilClearValue(image->getLevel(0), x, y, stencilValue, message))
+					return TestStatus::fail("Stencil value mismatch! " + message);
+			}
 		}
 	}
 
 	if (!isDepthStencilFormat(m_params.imageFormat))
 	{
-		de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_COLOR_BIT);
-		std::string							message;
-		const VkClearColorValue*			pColorValue;
-
-		for (deUint32 mipLevel = 0; mipLevel < m_imageMipLevels; ++mipLevel)
+		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount; ++arrayLayer)
 		{
-			const int			clearColorNdx	= (mipLevel < m_thresholdMipLevel ? 0 : 1);
-			const VkExtent3D	extent			= getMipLevelExtent(m_params.imageExtent, mipLevel);
+			de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_COLOR_BIT, arrayLayer);
+			std::string							message;
+			const VkClearColorValue*			pColorValue;
 
-			for (deUint32 z = 0; z < extent.depth;  ++z)
-			for (deUint32 y = 0; y < extent.height; ++y)
-			for (deUint32 x = 0; x < extent.width;  ++x)
+			for (deUint32 mipLevel = 0; mipLevel < m_imageMipLevels; ++mipLevel)
 			{
-				if (!useClearRange || isInClearRange(clearCoords, x, y))
-					pColorValue = &m_params.clearValue[clearColorNdx].color;
-				else
-					pColorValue = &m_params.initValue.color;
+				const int			clearColorNdx	= (mipLevel < m_thresholdMipLevel ? 0 : 1);
+				const VkExtent3D	extent			= getMipLevelExtent(m_params.imageExtent, mipLevel);
 
-				if (!comparePixelToColorClearValue(image->getLevel(mipLevel), x, y, z, *pColorValue, message))
-					return TestStatus::fail("Color value mismatch! " + message);
+				for (deUint32 z = 0; z < extent.depth;  ++z)
+				for (deUint32 y = 0; y < extent.height; ++y)
+				for (deUint32 x = 0; x < extent.width;  ++x)
+				{
+					if (isInClearRange(clearCoords, x, y, arrayLayer, m_params.imageViewLayerRange, m_params.clearLayerRange))
+						pColorValue = &m_params.clearValue[clearColorNdx].color;
+					else
+					{
+						if (isInInitialClearRange(m_isAttachmentFormat, mipLevel, arrayLayer, m_params.imageViewLayerRange))
+						{
+							pColorValue = &m_params.initValue.color;
+						}
+						else
+							continue;
+					}
+					if (!comparePixelToColorClearValue(image->getLevel(mipLevel), x, y, z, *pColorValue, message))
+						return TestStatus::fail("Color value mismatch! " + message);
+				}
 			}
 		}
 	}
@@ -986,11 +1149,11 @@ TestStatus ClearColorImageTestInstance::iterate (void)
 	std::vector<VkImageSubresourceRange> subresourceRanges;
 
 	if (m_imageMipLevels == 1)
-		subresourceRanges.push_back(makeImageSubresourceRange(m_imageAspectFlags, 0u, 1u, 0u, 1u));
+		subresourceRanges.push_back(makeImageSubresourceRange(m_imageAspectFlags, 0u, 1u, m_params.clearLayerRange.baseArrayLayer, m_params.clearLayerRange.layerCount));
 	else
 	{
-		subresourceRanges.push_back(makeImageSubresourceRange(m_imageAspectFlags,	0u,						m_thresholdMipLevel,		0u, 1u));
-		subresourceRanges.push_back(makeImageSubresourceRange(m_imageAspectFlags,	m_thresholdMipLevel,	VK_REMAINING_MIP_LEVELS,	0u, 1u));
+		subresourceRanges.push_back(makeImageSubresourceRange(m_imageAspectFlags,	0u,						m_thresholdMipLevel,		m_params.clearLayerRange.baseArrayLayer, m_params.clearLayerRange.layerCount));
+		subresourceRanges.push_back(makeImageSubresourceRange(m_imageAspectFlags,	m_thresholdMipLevel,	VK_REMAINING_MIP_LEVELS,	m_params.clearLayerRange.baseArrayLayer, m_params.clearLayerRange.layerCount));
 	}
 
 	beginCommandBuffer(0);
@@ -1045,7 +1208,7 @@ public:
 
 TestStatus ClearDepthStencilImageTestInstance::iterate (void)
 {
-	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(m_imageAspectFlags, 0u, 1u, 0u, 1u);
+	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(m_imageAspectFlags, 0u, 1u, m_params.clearLayerRange.baseArrayLayer, m_params.clearLayerRange.layerCount);
 
 	beginCommandBuffer(0);
 
@@ -1125,8 +1288,8 @@ public:
 					{ 0, 0 },																	// VkOffset2D    offset;
 					{ m_params.imageExtent.width, m_params.imageExtent.height }					// VkExtent2D    extent;
 				},																			// VkRect2D	rect;
-				0u,																			// deUint32	baseArrayLayer;
-				1u																			// deUint32	layerCount;
+				m_params.clearLayerRange.baseArrayLayer,								// deUint32	baseArrayLayer;
+				m_params.clearLayerRange.layerCount,									// deUint32	layerCount;
 			};
 
 			clearRects.push_back(rect);
@@ -1148,16 +1311,16 @@ public:
 						{ 0,							static_cast<deInt32>(clearY)	},		// VkOffset2D    offset;
 						{ m_params.imageExtent.width,	clearHeight						}		// VkExtent2D    extent;
 					},																		// VkRect2D	rect;
-					0u,																		// deUint32	baseArrayLayer;
-					1u																		// deUint32	layerCount;
+					m_params.clearLayerRange.baseArrayLayer,								// deUint32	baseArrayLayer;
+					m_params.clearLayerRange.layerCount										// deUint32	layerCount;
 				},
 				{
 					{
 						{ static_cast<deInt32>(clearX),	0							},			// VkOffset2D    offset;
 						{ clearWidth,					m_params.imageExtent.height	}			// VkExtent2D    extent;
 					},																		// VkRect2D	rect;
-					0u,																		// deUint32	baseArrayLayer;
-					1u																		// deUint32	layerCount;
+					m_params.clearLayerRange.baseArrayLayer,								// deUint32	baseArrayLayer;
+					m_params.clearLayerRange.layerCount										// deUint32	layerCount;
 				}
 			};
 
@@ -1259,13 +1422,8 @@ const char* getImageTypeCaseName (VkImageType type)
 	return de::getSizedArrayElement<VK_IMAGE_TYPE_LAST>(s_names, type);
 }
 
-} // anonymous
-
-TestCaseGroup* createImageClearingTests (TestContext& testCtx)
+TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCaseGroup* imageClearingTests, AllocationKind allocationKind)
 {
-	// Main testgroup.
-	de::MovePtr<TestCaseGroup>	imageClearingTests						(new TestCaseGroup(testCtx, "image_clearing", "Image Clearing Tests"));
-
 	de::MovePtr<TestCaseGroup>	colorImageClearTests					(new TestCaseGroup(testCtx, "clear_color_image", "Color Image Clear Tests"));
 	de::MovePtr<TestCaseGroup>	depthStencilImageClearTests				(new TestCaseGroup(testCtx, "clear_depth_stencil_image", "Color Depth/Stencil Image Tests"));
 	de::MovePtr<TestCaseGroup>	colorAttachmentClearTests				(new TestCaseGroup(testCtx, "clear_color_attachment", "Color Color Attachment Tests"));
@@ -1468,6 +1626,31 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 	};
 	const size_t	numOfDepthStencilImageFormatsToTest		= DE_LENGTH_OF_ARRAY(depthStencilImageFormatsToTest);
 
+	struct ImageLayerParams
+	{
+		deUint32		imageLayerCount;
+		LayerRange		imageViewRange;
+		LayerRange		clearLayerRange;
+		const char*		testName;
+	};
+	const ImageLayerParams imageLayerParamsToTest[] =
+	{
+		{
+			1u,					// imageLayerCount
+			{0u, 1u},			// imageViewRange
+			{0u, 1u},			// clearLayerRange
+			DE_NULL				// testName
+		},
+		{
+			16u,				// imageLayerCount
+			{3u, 12u},			// imageViewRange
+			{2u, 5u},			// clearLayerRange
+			"multiple_layers"	// testName
+		},
+	};
+
+	const size_t	numOfImageLayerParamsToTest				= DE_LENGTH_OF_ARRAY(imageLayerParamsToTest);
+
 	// Clear color image
 	{
 		const VkImageType			imageTypesToTest[]		=
@@ -1487,23 +1670,40 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 
 		for (size_t	imageTypeIndex = 0; imageTypeIndex < numOfImageTypesToTest; ++imageTypeIndex)
 		for (size_t imageFormatIndex = 0; imageFormatIndex < numOfColorImageFormatsToTest; ++imageFormatIndex)
+		for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfImageLayerParamsToTest; ++imageLayerParamsIndex)
 		{
+
+			if (imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount > 1u && imageTypesToTest[imageTypeIndex] == VK_IMAGE_TYPE_3D)
+			{
+				// 3D ARRAY images are not supported
+				continue;
+			}
+
 			const VkFormat		format		= colorImageFormatsToTest[imageFormatIndex];
 			const TestParams	testParams	=
 			{
-				false,														// bool				useSingleMipLevel;
-				imageTypesToTest[imageTypeIndex],							// VkImageType		imageType;
-				format,														// VkFormat			imageFormat;
-				imageDimensionsByType[imageTypeIndex],						// VkExtent3D		imageExtent;
-				makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),		// VkClearValue		initValue;
+				false,																// bool				useSingleMipLevel;
+				imageTypesToTest[imageTypeIndex],									// VkImageType		imageType;
+				format,																// VkFormat			imageFormat;
+				imageDimensionsByType[imageTypeIndex],								// VkExtent3D		imageExtent;
+				imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32         imageLayerCount;
 				{
-					makeClearColorValue(format, 0.1f, 0.5f, 0.3f, 0.9f),	// VkClearValue		clearValue[0];
-					makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),	// VkClearValue		clearValue[1];
-				}
+					0u,
+					imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount
+				},																	// LayerRange		imageViewLayerRange;
+				makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),				// VkClearValue		initValue;
+				{
+					makeClearColorValue(format, 0.1f, 0.5f, 0.3f, 0.9f),				// VkClearValue		clearValue[0];
+					makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),				// VkClearValue		clearValue[1];
+				},
+				imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange       clearLayerRange;
+				allocationKind														// AllocationKind	allocationKind;
 			};
 
 			std::ostringstream	testCaseName;
 			testCaseName << getImageTypeCaseName(testParams.imageType) << "_" << getFormatCaseName(format);
+			if (imageLayerParamsToTest[imageLayerParamsIndex].testName != DE_NULL)
+				testCaseName << "_" << imageLayerParamsToTest[imageLayerParamsIndex].testName;
 
 			colorImageClearTests->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Clear Color Image", testParams));
 		}
@@ -1513,25 +1713,33 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 
 	// Clear depth/stencil image
 	{
-		TestParams testParams =
-		{
-			true,											// bool				useSingleMipLevel;
-			VK_IMAGE_TYPE_2D,								// VkImageType		imageType;
-			VK_FORMAT_UNDEFINED,							// VkFormat			format;
-			{ 256, 256, 1 },								// VkExtent3D		extent;
-			makeClearValueDepthStencil(0.5f, 0x03),			// VkClearValue		initValue
-			{
-				makeClearValueDepthStencil(0.1f, 0x06),		// VkClearValue		clearValue[0];
-				makeClearValueDepthStencil(0.3f, 0x04),		// VkClearValue		clearValue[1];
-			}
-		};
-
 		for (size_t imageFormatIndex = 0; imageFormatIndex < numOfDepthStencilImageFormatsToTest; ++imageFormatIndex)
+		for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfImageLayerParamsToTest; ++imageLayerParamsIndex)
 		{
-			testParams.imageFormat = depthStencilImageFormatsToTest[imageFormatIndex];
+			const TestParams testParams =
+			{
+				true,																// bool				useSingleMipLevel;
+				VK_IMAGE_TYPE_2D,													// VkImageType		imageType;
+				depthStencilImageFormatsToTest[imageFormatIndex],					// VkFormat			format;
+				{ 256, 256, 1 },													// VkExtent3D		extent;
+				imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32         imageLayerCount;
+				{
+					0u,
+					imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount
+				},																	// LayerRange		imageViewLayerRange;
+				makeClearValueDepthStencil(0.5f, 0x03),								// VkClearValue		initValue
+				{
+					makeClearValueDepthStencil(0.1f, 0x06),								// VkClearValue		clearValue[0];
+					makeClearValueDepthStencil(0.3f, 0x04),								// VkClearValue		clearValue[1];
+				},
+				imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange       clearLayerRange;
+				allocationKind														// AllocationKind	allocationKind;
+			};
 
 			std::ostringstream	testCaseName;
 			testCaseName << getImageTypeCaseName(testParams.imageType) << "_" << getFormatCaseName(testParams.imageFormat);
+			if (imageLayerParamsToTest[imageLayerParamsIndex].testName != DE_NULL)
+				testCaseName << "_" << imageLayerParamsToTest[imageLayerParamsIndex].testName;
 
 			depthStencilImageClearTests->addChild(new InstanceFactory1<ClearDepthStencilImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Clear Depth/Stencil Image", testParams));
 		}
@@ -1542,23 +1750,31 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 	// Clear color attachment
 	{
 		for (size_t imageFormatIndex = 0; imageFormatIndex < numOfColorImageFormatsToTest; ++imageFormatIndex)
+		for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfImageLayerParamsToTest; ++imageLayerParamsIndex)
 		{
 			const VkFormat		format		= colorImageFormatsToTest[imageFormatIndex];
-			const TestParams	testParams	=
+
+			const TestParams	testParams =
 			{
-				true,														// bool				useSingleMipLevel;
-				VK_IMAGE_TYPE_2D,											// VkImageType		imageType;
-				format,														// VkFormat			format;
-				{ 256, 256, 1 },											// VkExtent3D		extent;
-				makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),		// VkClearValue		initValue
+				true,															// bool				useSingleMipLevel;
+				VK_IMAGE_TYPE_2D,												// VkImageType		imageType;
+				format,															// VkFormat			format;
+				{ 256, 256, 1 },												// VkExtent3D		extent;
+				imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,	// deUint32         imageLayerCount;
+				imageLayerParamsToTest[imageLayerParamsIndex].imageViewRange,	// LayerRange		imageViewLayerRange;
+				makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),			// VkClearValue		initValue
 				{
-					makeClearColorValue(format, 0.1f, 0.5f, 0.3f, 0.9f),	// VkClearValue		clearValue[0];
-					makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),	// VkClearValue		clearValue[1];
-				}
+					makeClearColorValue(format, 0.1f, 0.5f, 0.3f, 0.9f),			// VkClearValue		clearValue[0];
+					makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),			// VkClearValue		clearValue[1];
+				},
+				imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,	// LayerRange       clearLayerRange;
+				allocationKind													// AllocationKind	allocationKind;
 			};
 
 			std::ostringstream	testCaseName;
 			testCaseName << getImageTypeCaseName(testParams.imageType) << "_" << getFormatCaseName(format);
+			if (imageLayerParamsToTest[imageLayerParamsIndex].testName != DE_NULL)
+				testCaseName << "_" << imageLayerParamsToTest[imageLayerParamsIndex].testName;
 
 			colorAttachmentClearTests->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Clear Color Attachment", testParams));
 			partialColorAttachmentClearTests->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Partial Clear Color Attachment", testParams));
@@ -1570,25 +1786,30 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 
 	// Clear depth/stencil attachment
 	{
-		TestParams testParams =
-		{
-			true,											// bool				useSingleMipLevel;
-			VK_IMAGE_TYPE_2D,								// VkImageType		imageType;
-			VK_FORMAT_UNDEFINED,							// VkFormat			format;
-			{ 256, 256, 1 },								// VkExtent3D		extent;
-			makeClearValueDepthStencil(0.5f, 0x03),			// VkClearValue		initValue
-			{
-				makeClearValueDepthStencil(0.1f, 0x06),		// VkClearValue		clearValue[0];
-				makeClearValueDepthStencil(0.3f, 0x04),		// VkClearValue		clearValue[1];
-			}
-		};
-
 		for (size_t imageFormatIndex = 0; imageFormatIndex < numOfDepthStencilImageFormatsToTest; ++imageFormatIndex)
+		for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfImageLayerParamsToTest; ++imageLayerParamsIndex)
 		{
-			testParams.imageFormat = depthStencilImageFormatsToTest[imageFormatIndex];
+			const TestParams testParams =
+			{
+				true,															// bool				useSingleMipLevel;
+				VK_IMAGE_TYPE_2D,												// VkImageType		imageType;
+				depthStencilImageFormatsToTest[imageFormatIndex],				// VkFormat			format;
+				{ 256, 256, 1 },												// VkExtent3D		extent;
+				imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,	// deUint32         imageLayerCount;
+				imageLayerParamsToTest[imageLayerParamsIndex].imageViewRange,	// LayerRange		imageViewLayerRange;
+				makeClearValueDepthStencil(0.5f, 0x03),							// VkClearValue		initValue
+				{
+					makeClearValueDepthStencil(0.1f, 0x06),							// VkClearValue		clearValue[0];
+					makeClearValueDepthStencil(0.3f, 0x04),							// VkClearValue		clearValue[1];
+				},
+				imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,	// LayerRange       clearLayerRange;
+				allocationKind													// AllocationKind	allocationKind;
+			};
 
 			std::ostringstream	testCaseName;
 			testCaseName << getImageTypeCaseName(testParams.imageType) << "_" << getFormatCaseName(testParams.imageFormat);
+			if (imageLayerParamsToTest[imageLayerParamsIndex].testName != DE_NULL)
+				testCaseName << "_" << imageLayerParamsToTest[imageLayerParamsIndex].testName;
 
 			depthStencilAttachmentClearTests->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Clear Depth/Stencil Attachment", testParams));
 			partialDepthStencilAttachmentClearTests->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Parital Clear Depth/Stencil Attachment", testParams));
@@ -1597,6 +1818,28 @@ TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 		imageClearingTests->addChild(depthStencilAttachmentClearTests.release());
 		imageClearingTests->addChild(partialDepthStencilAttachmentClearTests.release());
 	}
+
+	return imageClearingTests;
+}
+
+void createCoreImageClearingTests (tcu::TestCaseGroup* group)
+{
+	createImageClearingTestsCommon(group->getTestContext(), group, ALLOCATION_KIND_SUBALLOCATED);
+}
+
+void createDedicatedAllocationImageClearingTests (tcu::TestCaseGroup* group)
+{
+	createImageClearingTestsCommon(group->getTestContext(), group, ALLOCATION_KIND_DEDICATED);
+}
+
+} // anonymous
+
+TestCaseGroup* createImageClearingTests (TestContext& testCtx)
+{
+	de::MovePtr<TestCaseGroup>	imageClearingTests	(new TestCaseGroup(testCtx, "image_clearing", "Image Clearing Tests"));
+
+	imageClearingTests->addChild(createTestGroup(testCtx, "core",					"Core Image Clearing Tests",							createCoreImageClearingTests));
+	imageClearingTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Image Clearing Tests For Dedicated Memory Allocation",	createDedicatedAllocationImageClearingTests));
 
 	return imageClearingTests.release();
 }

@@ -95,6 +95,13 @@ private:
 
 #define VK_CORE_FORMAT_LAST		((vk::VkFormat)(vk::VK_FORMAT_ASTC_12x12_SRGB_BLOCK+1))
 
+enum SpirvVersion
+{
+	SPIRV_VERSION_1_0	= 0,	//!< SPIR-V 1.0
+
+	SPIRV_VERSION_LAST
+};
+
 namespace wsi
 {
 

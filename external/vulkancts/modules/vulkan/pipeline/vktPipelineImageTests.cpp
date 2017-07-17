@@ -49,15 +49,17 @@ namespace
 class ImageTest : public vkt::TestCase
 {
 public:
-							ImageTest				(tcu::TestContext&	testContext,
-													 const char*		name,
-													 const char*		description,
-													 VkDescriptorType	samplingType,
-													 VkImageViewType	imageViewType,
-													 VkFormat			imageFormat,
-													 const tcu::IVec3&	imageSize,
-													 int				imageCount,
-													 int				arraySize);
+							ImageTest				(tcu::TestContext&				testContext,
+													 const char*					name,
+													 const char*					description,
+
+													 AllocationKind		allocationKind,
+													 VkDescriptorType				samplingType,
+													 VkImageViewType				imageViewType,
+													 VkFormat						imageFormat,
+													 const tcu::IVec3&				imageSize,
+													 int							imageCount,
+													 int							arraySize);
 
 	virtual void			initPrograms			(SourceCollections& sourceCollections) const;
 	virtual TestInstance*	createInstance			(Context& context) const;
@@ -72,17 +74,19 @@ public:
 													 int imageCount);
 
 private:
-	VkDescriptorType		m_samplingType;
-	VkImageViewType			m_imageViewType;
-	VkFormat				m_imageFormat;
-	tcu::IVec3				m_imageSize;
-	int						m_imageCount;
-	int						m_arraySize;
+	AllocationKind		m_allocationKind;
+	VkDescriptorType	m_samplingType;
+	VkImageViewType		m_imageViewType;
+	VkFormat			m_imageFormat;
+	tcu::IVec3			m_imageSize;
+	int					m_imageCount;
+	int					m_arraySize;
 };
 
 ImageTest::ImageTest (tcu::TestContext&	testContext,
 					  const char*		name,
 					  const char*		description,
+					  AllocationKind	allocationKind,
 					  VkDescriptorType	samplingType,
 					  VkImageViewType	imageViewType,
 					  VkFormat			imageFormat,
@@ -91,6 +95,7 @@ ImageTest::ImageTest (tcu::TestContext&	testContext,
 					  int				arraySize)
 
 	: vkt::TestCase		(testContext, name, description)
+	, m_allocationKind	(allocationKind)
 	, m_samplingType	(samplingType)
 	, m_imageViewType	(imageViewType)
 	, m_imageFormat		(imageFormat)
@@ -232,7 +237,7 @@ TestInstance* ImageTest::createInstance (Context& context) const
 		false																	// VkBool32					unnormalizedCoordinates;
 	};
 
-	return new ImageSamplingInstance(context, renderSize, m_imageViewType, m_imageFormat, m_imageSize, m_arraySize, componentMapping, subresourceRange, samplerParams, 0.0f, vertices, m_samplingType, m_imageCount);
+	return new ImageSamplingInstance(context, renderSize, m_imageViewType, m_imageFormat, m_imageSize, m_arraySize, componentMapping, subresourceRange, samplerParams, 0.0f, vertices, m_samplingType, m_imageCount, m_allocationKind);
 }
 
 std::string ImageTest::getGlslSamplerType (const tcu::TextureFormat& format, VkImageViewType type)
@@ -406,7 +411,7 @@ std::string getSizeName (VkImageViewType viewType, const tcu::IVec3& size, int a
 	return caseName.str();
 }
 
-de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx, VkDescriptorType samplingType, VkImageViewType imageViewType, VkFormat imageFormat, int imageCount)
+de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx, AllocationKind allocationKind, VkDescriptorType samplingType, VkImageViewType imageViewType, VkFormat imageFormat, int imageCount)
 {
 	using tcu::IVec3;
 
@@ -538,6 +543,7 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx,
 			imageSizeTests->addChild(new ImageTest(testCtx,
 												   getSizeName(imageViewType, imageSizes[sizeNdx], arraySizes[arraySizeNdx]).c_str(),
 												   "",
+												   allocationKind,
 												   samplingType,
 												   imageViewType,
 												   imageFormat,
@@ -550,26 +556,33 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx,
 	return imageSizeTests;
 }
 
-void createImageCountTests (tcu::TestCaseGroup* parentGroup, tcu::TestContext& testCtx, VkDescriptorType samplingType, VkImageViewType imageViewType, VkFormat imageFormat)
+void createImageCountTests (tcu::TestCaseGroup* parentGroup, tcu::TestContext& testCtx, AllocationKind allocationKind, VkDescriptorType samplingType, VkImageViewType imageViewType, VkFormat imageFormat)
 {
-	const int imageCounts[] = { 1, 4, 8 };
+	const int		coreImageCounts[]					= { 1, 4, 8 };
+	const int		dedicatedAllocationImageCounts[]	= { 1 };
+	const int*		imageCounts							= (allocationKind == ALLOCATION_KIND_DEDICATED)
+														  ? dedicatedAllocationImageCounts
+														  : coreImageCounts;
+	const size_t	imageCountsLength					= (allocationKind == ALLOCATION_KIND_DEDICATED)
+														  ? DE_LENGTH_OF_ARRAY(dedicatedAllocationImageCounts)
+														  : DE_LENGTH_OF_ARRAY(coreImageCounts);
 
-	for (size_t countNdx = 0; countNdx < DE_LENGTH_OF_ARRAY(imageCounts); countNdx++)
+	for (size_t countNdx = 0; countNdx < imageCountsLength; countNdx++)
 	{
 		std::ostringstream	caseName;
 		caseName << "count_" << imageCounts[countNdx];
 		de::MovePtr<tcu::TestCaseGroup>	countGroup(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
-		de::MovePtr<tcu::TestCaseGroup> sizeTests = createImageSizeTests(testCtx, samplingType, imageViewType, imageFormat, imageCounts[countNdx]);
+		de::MovePtr<tcu::TestCaseGroup> sizeTests = createImageSizeTests(testCtx, allocationKind, samplingType, imageViewType, imageFormat, imageCounts[countNdx]);
 
 		countGroup->addChild(sizeTests.release());
 		parentGroup->addChild(countGroup.release());
 	}
 }
 
-de::MovePtr<tcu::TestCaseGroup> createImageFormatTests (tcu::TestContext& testCtx, VkDescriptorType samplingType, VkImageViewType imageViewType)
+de::MovePtr<tcu::TestCaseGroup> createImageFormatTests (tcu::TestContext& testCtx, AllocationKind allocationKind, VkDescriptorType samplingType, VkImageViewType imageViewType)
 {
 	// All supported dEQP formats that are not intended for depth or stencil.
-	const VkFormat formats[] =
+	const VkFormat coreFormats[]					=
 	{
 		VK_FORMAT_R4G4_UNORM_PACK8,
 		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
@@ -691,10 +704,22 @@ de::MovePtr<tcu::TestCaseGroup> createImageFormatTests (tcu::TestContext& testCt
 		VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
 		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
 	};
+	// Formats to test with dedicated allocation
+	const VkFormat	dedicatedAllocationFormats[]	=
+	{
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R16_SFLOAT,
+	};
+	const VkFormat*	formats							= (allocationKind == ALLOCATION_KIND_DEDICATED)
+													  ? dedicatedAllocationFormats
+													  : coreFormats;
+	const size_t	formatsLength					= (allocationKind == ALLOCATION_KIND_DEDICATED)
+													  ? DE_LENGTH_OF_ARRAY(dedicatedAllocationFormats)
+													  : DE_LENGTH_OF_ARRAY(coreFormats);
 
 	de::MovePtr<tcu::TestCaseGroup>	imageFormatTests(new tcu::TestCaseGroup(testCtx, "format", "Tests samplable formats"));
 
-	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+	for (size_t formatNdx = 0; formatNdx < formatsLength; formatNdx++)
 	{
 		const VkFormat	format = formats[formatNdx];
 
@@ -708,7 +733,7 @@ de::MovePtr<tcu::TestCaseGroup> createImageFormatTests (tcu::TestContext& testCt
 		de::MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(testCtx,
 			getFormatCaseName(format).c_str(),
 			(std::string("Samples a texture of format ") + getFormatName(format)).c_str()));
-		createImageCountTests(formatGroup.get(), testCtx, samplingType, imageViewType, format);
+		createImageCountTests(formatGroup.get(), testCtx, allocationKind, samplingType, imageViewType, format);
 
 		imageFormatTests->addChild(formatGroup.release());
 	}
@@ -716,7 +741,7 @@ de::MovePtr<tcu::TestCaseGroup> createImageFormatTests (tcu::TestContext& testCt
 	return imageFormatTests;
 }
 
-de::MovePtr<tcu::TestCaseGroup> createImageViewTypeTests (tcu::TestContext& testCtx, VkDescriptorType samplingType)
+de::MovePtr<tcu::TestCaseGroup> createImageViewTypeTests (tcu::TestContext& testCtx, AllocationKind allocationKind, VkDescriptorType samplingType)
 {
 	const struct
 	{
@@ -740,7 +765,7 @@ de::MovePtr<tcu::TestCaseGroup> createImageViewTypeTests (tcu::TestContext& test
 	{
 		const VkImageViewType			viewType = imageViewTypes[viewTypeNdx].type;
 		de::MovePtr<tcu::TestCaseGroup>	viewTypeGroup(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name, (std::string("Uses a ") + imageViewTypes[viewTypeNdx].name + " view").c_str()));
-		de::MovePtr<tcu::TestCaseGroup>	formatTests = createImageFormatTests(testCtx, samplingType, viewType);
+		de::MovePtr<tcu::TestCaseGroup>	formatTests = createImageFormatTests(testCtx, allocationKind, samplingType, viewType);
 
 		viewTypeGroup->addChild(formatTests.release());
 		imageViewTypeTests->addChild(viewTypeGroup.release());
@@ -749,7 +774,7 @@ de::MovePtr<tcu::TestCaseGroup> createImageViewTypeTests (tcu::TestContext& test
 	return imageViewTypeTests;
 }
 
-de::MovePtr<tcu::TestCaseGroup> createImageSamplingTypeTests (tcu::TestContext& testCtx)
+de::MovePtr<tcu::TestCaseGroup> createImageSamplingTypeTests (tcu::TestContext& testCtx, AllocationKind allocationKind)
 {
 	VkDescriptorType samplingTypes[] =
 	{
@@ -763,7 +788,7 @@ de::MovePtr<tcu::TestCaseGroup> createImageSamplingTypeTests (tcu::TestContext& 
 	{
 		const char* smpTypeName = samplingTypes[smpTypeNdx] == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ? "combined" : "separate";
 		de::MovePtr<tcu::TestCaseGroup>	samplingTypeGroup(new tcu::TestCaseGroup(testCtx, smpTypeName, (std::string("Uses a ") + smpTypeName + " sampler").c_str()));
-		de::MovePtr<tcu::TestCaseGroup>	viewTypeTests = createImageViewTypeTests(testCtx, samplingTypes[smpTypeNdx]);
+		de::MovePtr<tcu::TestCaseGroup>	viewTypeTests = createImageViewTypeTests(testCtx, allocationKind, samplingTypes[smpTypeNdx]);
 
 		samplingTypeGroup->addChild(viewTypeTests.release());
 		imageSamplingTypeTests->addChild(samplingTypeGroup.release());
@@ -772,14 +797,35 @@ de::MovePtr<tcu::TestCaseGroup> createImageSamplingTypeTests (tcu::TestContext& 
 	return imageSamplingTypeTests;
 }
 
+de::MovePtr<tcu::TestCaseGroup> createSuballocationTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	suballocationTestsGroup(new tcu::TestCaseGroup(testCtx, "suballocation", "Suballocation Image Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	samplingTypeTests = createImageSamplingTypeTests(testCtx, ALLOCATION_KIND_SUBALLOCATED);
+
+	suballocationTestsGroup->addChild(samplingTypeTests.release());
+
+	return suballocationTestsGroup;
+}
+
+de::MovePtr<tcu::TestCaseGroup> createDedicatedAllocationTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	dedicatedAllocationTestsGroup(new tcu::TestCaseGroup(testCtx, "dedicated_allocation", "Image Tests For Dedicated Allocation"));
+	de::MovePtr<tcu::TestCaseGroup>	samplingTypeTests = createImageSamplingTypeTests(testCtx, ALLOCATION_KIND_DEDICATED);
+
+	dedicatedAllocationTestsGroup->addChild(samplingTypeTests.release());
+
+	return dedicatedAllocationTestsGroup;
+}
 } // anonymous
 
 tcu::TestCaseGroup* createImageTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> imageTests(new tcu::TestCaseGroup(testCtx, "image", "Image tests"));
-	de::MovePtr<tcu::TestCaseGroup> samplingTypeTests = createImageSamplingTypeTests(testCtx);
+	de::MovePtr<tcu::TestCaseGroup> imageSuballocationTests = createSuballocationTests(testCtx);
+	de::MovePtr<tcu::TestCaseGroup> imageDedicatedAllocationTests = createDedicatedAllocationTests(testCtx);
 
-	imageTests->addChild(samplingTypeTests.release());
+	imageTests->addChild(imageSuballocationTests.release());
+	imageTests->addChild(imageDedicatedAllocationTests.release());
 
 	return imageTests.release();
 }

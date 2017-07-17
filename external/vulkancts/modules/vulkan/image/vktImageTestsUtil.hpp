@@ -105,14 +105,6 @@ deUint32	getNumPixels		(const ImageType imageType, const tcu::UVec3& imageSize);
 deUint32	getDimensions		(const ImageType imageType);								//!< Coordinate dimension used for addressing (e.g. 3 (x,y,z) for 2d array)
 deUint32	getLayerDimensions	(const ImageType imageType);								//!< Coordinate dimension used for addressing a single layer (e.g. 2 (x,y) for 2d array)
 
-vk::Move<vk::VkCommandPool>		makeCommandPool					(const vk::DeviceInterface&			vk,
-																 const vk::VkDevice					device,
-																 const deUint32						queueFamilyIndex);
-
-vk::Move<vk::VkCommandBuffer>	makeCommandBuffer				(const vk::DeviceInterface&			vk,
-																 const vk::VkDevice					device,
-																 const vk::VkCommandPool			commandPool);
-
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout				(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device,
 																 const vk::VkDescriptorSetLayout	descriptorSetLayout);

@@ -306,16 +306,7 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 		//todo [scygan] get proper queueFamilyIndex
 		CmdPoolCreateInfo copyCmdPoolCreateInfo(0);
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
-
-		const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,											// const void*				pNext;
-			*copyCmdPool,										// VkCommandPool			commandPool;
-			vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,													// deUint32					bufferCount;
-		};
-		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, &cmdBufferAllocateInfo));
+		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, *copyCmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		CmdBufferBeginInfo beginInfo;
 		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));
@@ -402,6 +393,9 @@ void Image::readLinear (vk::VkOffset3D				offset,
 						vk::VkImageAspectFlagBits	aspect,
 						void *						data)
 {
+	DE_ASSERT(mipLevel < m_levelCount);
+	DE_ASSERT(arrayElement < m_layerCount);
+
 	vk::VkImageSubresource imageSubResource = { (vk::VkImageAspectFlags)aspect, mipLevel, arrayElement };
 
 	vk::VkSubresourceLayout imageLayout;
@@ -410,7 +404,10 @@ void Image::readLinear (vk::VkOffset3D				offset,
 	m_vk.getImageSubresourceLayout(m_device, object(), &imageSubResource, &imageLayout);
 
 	const deUint8* srcPtr = reinterpret_cast<const deUint8*>(getBoundMemory().getHostPtr());
-	srcPtr += imageLayout.offset + getPixelOffset(offset, imageLayout.rowPitch, imageLayout.depthPitch, mipLevel, arrayElement);
+	srcPtr += imageLayout.offset;
+	srcPtr += offset.z * imageLayout.depthPitch;
+	srcPtr += offset.y * imageLayout.rowPitch;
+	srcPtr += offset.x;
 
 	MemoryOp::unpack(vk::mapVkFormat(m_format).getPixelSize(), width, height, depth,
 		imageLayout.rowPitch, imageLayout.depthPitch, srcPtr, data);
@@ -440,16 +437,7 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 		//todo [scygan] get proper queueFamilyIndex
 		CmdPoolCreateInfo copyCmdPoolCreateInfo(0);
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
-
-		const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,											// const void*				pNext;
-			*copyCmdPool,										// VkCommandPool			commandPool;
-			vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,													// deUint32					bufferCount;
-		};
-		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, &cmdBufferAllocateInfo));
+		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, *copyCmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		CmdBufferBeginInfo beginInfo;
 		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));
@@ -591,17 +579,7 @@ void Image::upload (vk::VkQueue					queue,
 		//todo [scygan] get proper queueFamilyIndex
 		CmdPoolCreateInfo copyCmdPoolCreateInfo(0);
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
-
-		const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,											// const void*				pNext;
-			*copyCmdPool,										// VkCommandPool			commandPool;
-			vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,													// deUint32					bufferCount;
-		};
-
-		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, &cmdBufferAllocateInfo));
+		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, *copyCmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		CmdBufferBeginInfo beginInfo;
 		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));
@@ -713,16 +691,7 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 		//todo [scygan] get proper queueFamilyIndex
 		CmdPoolCreateInfo copyCmdPoolCreateInfo(0);
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
-
-		const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,											// const void*				pNext;
-			*copyCmdPool,										// VkCommandPool			commandPool;
-			vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,													// deUint32					bufferCount;
-		};
-		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, &cmdBufferAllocateInfo));
+		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, *copyCmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		CmdBufferBeginInfo beginInfo;
 		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));
@@ -793,6 +762,9 @@ void Image::uploadLinear (vk::VkOffset3D			offset,
 						  vk::VkImageAspectFlagBits	aspect,
 						  const void *				data)
 {
+	DE_ASSERT(mipLevel < m_levelCount);
+	DE_ASSERT(arrayElement < m_layerCount);
+
 	vk::VkSubresourceLayout imageLayout;
 
 	vk::VkImageSubresource imageSubResource = { (vk::VkImageAspectFlags)aspect, mipLevel, arrayElement};
@@ -801,47 +773,13 @@ void Image::uploadLinear (vk::VkOffset3D			offset,
 													&imageLayout);
 
 	deUint8* destPtr = reinterpret_cast<deUint8*>(getBoundMemory().getHostPtr());
-
-	destPtr += imageLayout.offset + getPixelOffset(offset, imageLayout.rowPitch, imageLayout.depthPitch, mipLevel, arrayElement);
+	destPtr += imageLayout.offset;
+	destPtr += offset.z * imageLayout.depthPitch;
+	destPtr += offset.y * imageLayout.rowPitch;
+	destPtr += offset.x;
 
 	MemoryOp::pack(vk::mapVkFormat(m_format).getPixelSize(), width, height, depth,
 		imageLayout.rowPitch, imageLayout.depthPitch, data, destPtr);
-}
-
-vk::VkDeviceSize Image::getPixelOffset (vk::VkOffset3D		offset,
-										vk::VkDeviceSize	rowPitch,
-										vk::VkDeviceSize	depthPitch,
-										unsigned int		level,
-										unsigned int		layer)
-{
-	DE_ASSERT(level < m_levelCount);
-	DE_ASSERT(layer < m_layerCount);
-
-	vk::VkDeviceSize mipLevelSizes[32];
-	vk::VkDeviceSize mipLevelRectSizes[32];
-	tcu::IVec3 mipExtend
-	= tcu::IVec3(m_extent.width, m_extent.height, m_extent.depth);
-
-	vk::VkDeviceSize arrayElemSize = 0;
-	for (unsigned int i = 0; i < m_levelCount && (mipExtend[0] > 1 || mipExtend[1] > 1 || mipExtend[2] > 1); ++i)
-	{
-		// Rect size is just a 3D image size;
-		mipLevelSizes[i] = mipExtend[2] * depthPitch;
-
-		arrayElemSize += mipLevelSizes[0];
-
-		mipExtend = tcu::max(mipExtend / 2, tcu::IVec3(1));
-	}
-
-	vk::VkDeviceSize pixelOffset = layer * arrayElemSize;
-	for (size_t i = 0; i < level; ++i) {
-		pixelOffset += mipLevelSizes[i];
-	}
-	pixelOffset += offset.z * mipLevelRectSizes[level];
-	pixelOffset += offset.y * rowPitch;
-	pixelOffset += offset.x;
-
-	return pixelOffset;
 }
 
 void Image::bindMemory (de::MovePtr<vk::Allocation> allocation)

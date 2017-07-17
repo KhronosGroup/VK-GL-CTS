@@ -35,6 +35,7 @@
 #include "tcuVector.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuTestLog.hpp"
 
 #include "deSharedPtr.hpp"
 
@@ -246,18 +247,9 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 
 	// Command buffer
 
-	const CmdPoolCreateInfo		cmdPoolCreateInfo	(queueFamilyIndex);
-	const Unique<VkCommandPool>	cmdPool				(createCommandPool(vk, device, &cmdPoolCreateInfo));
-
-	const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		*cmdPool,											// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,					// VkCommandBufferLevel		level;
-		1u,													// deUint32					bufferCount;
-	};
-	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
+	const CmdPoolCreateInfo			cmdPoolCreateInfo	(queueFamilyIndex);
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, &cmdPoolCreateInfo));
+	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Draw
 
@@ -306,13 +298,7 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 
 	// Submit
 	{
-		const VkFenceCreateInfo fenceInfo	=
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,		// VkStructureType       sType;
-			DE_NULL,									// const void*           pNext;
-			(VkFenceCreateFlags)0,						// VkFenceCreateFlags    flags;
-		};
-		const Unique<VkFence>	fence		(createFence(vk, device, &fenceInfo));
+		const Unique<VkFence>	fence		(createFence(vk, device));
 		const VkSubmitInfo		submitInfo	=
 		{
 			VK_STRUCTURE_TYPE_SUBMIT_INFO,				// VkStructureType                sType;
