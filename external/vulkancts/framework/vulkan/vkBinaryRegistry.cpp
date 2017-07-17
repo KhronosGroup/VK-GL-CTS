@@ -30,6 +30,7 @@
 #include "deString.h"
 #include "deInt32.h"
 #include "deFile.h"
+#include "deMemory.h"
 
 #include <sstream>
 #include <fstream>

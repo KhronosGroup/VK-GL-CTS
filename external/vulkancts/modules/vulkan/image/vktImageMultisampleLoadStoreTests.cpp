@@ -41,6 +41,7 @@
 #include "deUniquePtr.hpp"
 
 #include "tcuTextureUtil.hpp"
+#include "tcuTestLog.hpp"
 
 #include <string>
 #include <vector>
@@ -316,9 +317,9 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 	// Prepare commands
 
-	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout	(vk, device, *descriptorSetLayout));
-	const Unique<VkCommandPool>		cmdPool			(makeCommandPool	(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>	cmdBuffer		(makeCommandBuffer	(vk, device, *cmdPool));
+	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, *descriptorSetLayout));
+	const Unique<VkCommandPool>		cmdPool			(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const tcu::IVec3				workSize				= (caseDef.singleLayerBind ? caseDef.texture.layerSize() : caseDef.texture.size());
 	const int						loopNumLayers			= (caseDef.singleLayerBind ? numLayers : 1);

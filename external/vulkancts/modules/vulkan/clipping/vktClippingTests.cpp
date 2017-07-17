@@ -29,6 +29,7 @@
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "tcuTestLog.hpp"
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 #include "deRandom.hpp"
