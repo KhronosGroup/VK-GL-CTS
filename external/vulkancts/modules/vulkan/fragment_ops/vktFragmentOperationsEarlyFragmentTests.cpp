@@ -38,6 +38,8 @@
 #include "vkQueryUtil.hpp"
 #include "vkImageUtil.hpp"
 
+#include "tcuTestLog.hpp"
+
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 
@@ -685,8 +687,8 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 	const Unique<VkPipelineLayout>	pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>		pipeline	  (makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, renderSize,
 												  (m_testMode == MODE_DEPTH), (m_testMode == MODE_STENCIL)));
-	const Unique<VkCommandPool>		cmdPool		  (makeCommandPool(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>	cmdBuffer	  (makeCommandBuffer(vk, device, *cmdPool));
+	const Unique<VkCommandPool>		cmdPool		  (createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer	  (allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Draw commands
 

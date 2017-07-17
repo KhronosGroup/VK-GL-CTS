@@ -365,7 +365,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	const Unique<VkRenderPass>	   renderPass			(makeRenderPass						 (vk, device, colorFormat));
 	const Unique<VkFramebuffer>	   framebuffer			(makeFramebuffer					 (vk, device, *renderPass, *colorAttachmentView, renderSize.x(), renderSize.y(), 1u));
 	const Unique<VkCommandPool>	   cmdPool				(makeCommandPool					 (vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>  cmdBuffer			(makeCommandBuffer					 (vk, device, *cmdPool));
+	const Unique<VkCommandBuffer>  cmdBuffer			(allocateCommandBuffer				 (vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const Unique<VkPipelineLayout> pipelineLayout		(makePipelineLayoutWithoutDescriptors(vk, device));
 
 	const int inPatchSize = (caseDef.primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? 3 : 4);

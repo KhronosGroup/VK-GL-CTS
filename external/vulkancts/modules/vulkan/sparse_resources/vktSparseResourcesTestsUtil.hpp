@@ -142,10 +142,6 @@ vk::Move<vk::VkCommandPool>		makeCommandPool						(const vk::DeviceInterface&			
 																	 const vk::VkDevice					device,
 																	 const deUint32						queueFamilyIndex);
 
-vk::Move<vk::VkCommandBuffer>	makeCommandBuffer					(const vk::DeviceInterface&			vk,
-																	 const vk::VkDevice					device,
-																	 const vk::VkCommandPool			commandPool);
-
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout					(const vk::DeviceInterface&			vk,
 																	 const vk::VkDevice					device,
 																	 const vk::VkDescriptorSetLayout	descriptorSetLayout = DE_NULL);
@@ -174,13 +170,6 @@ vk::Move<vk::VkDescriptorSet>	makeDescriptorSet					(const vk::DeviceInterface&	
 																	 const vk::VkDevice					device,
 																	 const vk::VkDescriptorPool			descriptorPool,
 																	 const vk::VkDescriptorSetLayout	setLayout);
-
-vk::Move<vk::VkSemaphore>		makeSemaphore						(const vk::DeviceInterface&			vk,
-																	 const vk::VkDevice					device);
-
-vk::Move<vk::VkFence>			makeFence							(const vk::DeviceInterface&			vk,
-																	 const vk::VkDevice					device,
-																	 const vk::VkFenceCreateFlags		flags	= 0u);
 
 vk::Move<vk::VkFramebuffer>		makeFramebuffer						(const vk::DeviceInterface&			vk,
 																	 const vk::VkDevice					device,

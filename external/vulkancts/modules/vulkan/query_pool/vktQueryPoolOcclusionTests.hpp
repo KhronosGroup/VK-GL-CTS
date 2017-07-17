@@ -28,8 +28,8 @@
 
 namespace vkt
 {
-	namespace QueryPool
-	{
+namespace QueryPool
+{
 
 class QueryPoolOcclusionTests : public tcu::TestCaseGroup
 {

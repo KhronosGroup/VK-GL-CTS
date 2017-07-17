@@ -36,15 +36,12 @@ const char*	getPipelineBindPointName				(VkPipelineBindPoint value);
 const char*	getCommandBufferLevelName				(VkCommandBufferLevel value);
 const char*	getIndexTypeName						(VkIndexType value);
 const char*	getSubpassContentsName					(VkSubpassContents value);
+const char*	getObjectTypeName						(VkObjectType value);
 const char*	getColorSpaceKHRName					(VkColorSpaceKHR value);
 const char*	getPresentModeKHRName					(VkPresentModeKHR value);
+const char*	getDescriptorUpdateTemplateTypeKHRName	(VkDescriptorUpdateTemplateTypeKHR value);
 const char*	getDebugReportObjectTypeEXTName			(VkDebugReportObjectTypeEXT value);
 const char*	getDebugReportErrorEXTName				(VkDebugReportErrorEXT value);
-const char*	getRasterizationOrderAMDName			(VkRasterizationOrderAMD value);
-const char*	getValidationCheckEXTName				(VkValidationCheckEXT value);
-const char*	getIndirectCommandsTokenTypeNVXName		(VkIndirectCommandsTokenTypeNVX value);
-const char*	getObjectEntryTypeNVXName				(VkObjectEntryTypeNVX value);
-const char*	getDescriptorUpdateTemplateTypeKHRName	(VkDescriptorUpdateTemplateTypeKHR value);
 
 inline tcu::Format::Enum<VkPipelineCacheHeaderVersion>		getPipelineCacheHeaderVersionStr		(VkPipelineCacheHeaderVersion value)		{ return tcu::Format::Enum<VkPipelineCacheHeaderVersion>(getPipelineCacheHeaderVersionName, value);				}
 inline tcu::Format::Enum<VkResult>							getResultStr							(VkResult value)							{ return tcu::Format::Enum<VkResult>(getResultName, value);														}
@@ -81,15 +78,12 @@ inline tcu::Format::Enum<VkPipelineBindPoint>				getPipelineBindPointStr					(Vk
 inline tcu::Format::Enum<VkCommandBufferLevel>				getCommandBufferLevelStr				(VkCommandBufferLevel value)				{ return tcu::Format::Enum<VkCommandBufferLevel>(getCommandBufferLevelName, value);								}
 inline tcu::Format::Enum<VkIndexType>						getIndexTypeStr							(VkIndexType value)							{ return tcu::Format::Enum<VkIndexType>(getIndexTypeName, value);												}
 inline tcu::Format::Enum<VkSubpassContents>					getSubpassContentsStr					(VkSubpassContents value)					{ return tcu::Format::Enum<VkSubpassContents>(getSubpassContentsName, value);									}
+inline tcu::Format::Enum<VkObjectType>						getObjectTypeStr						(VkObjectType value)						{ return tcu::Format::Enum<VkObjectType>(getObjectTypeName, value);												}
 inline tcu::Format::Enum<VkColorSpaceKHR>					getColorSpaceKHRStr						(VkColorSpaceKHR value)						{ return tcu::Format::Enum<VkColorSpaceKHR>(getColorSpaceKHRName, value);										}
 inline tcu::Format::Enum<VkPresentModeKHR>					getPresentModeKHRStr					(VkPresentModeKHR value)					{ return tcu::Format::Enum<VkPresentModeKHR>(getPresentModeKHRName, value);										}
+inline tcu::Format::Enum<VkDescriptorUpdateTemplateTypeKHR>	getDescriptorUpdateTemplateTypeKHRStr	(VkDescriptorUpdateTemplateTypeKHR value)	{ return tcu::Format::Enum<VkDescriptorUpdateTemplateTypeKHR>(getDescriptorUpdateTemplateTypeKHRName, value);	}
 inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>		getDebugReportObjectTypeEXTStr			(VkDebugReportObjectTypeEXT value)			{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);					}
 inline tcu::Format::Enum<VkDebugReportErrorEXT>				getDebugReportErrorEXTStr				(VkDebugReportErrorEXT value)				{ return tcu::Format::Enum<VkDebugReportErrorEXT>(getDebugReportErrorEXTName, value);							}
-inline tcu::Format::Enum<VkRasterizationOrderAMD>			getRasterizationOrderAMDStr				(VkRasterizationOrderAMD value)				{ return tcu::Format::Enum<VkRasterizationOrderAMD>(getRasterizationOrderAMDName, value);						}
-inline tcu::Format::Enum<VkValidationCheckEXT>				getValidationCheckEXTStr				(VkValidationCheckEXT value)				{ return tcu::Format::Enum<VkValidationCheckEXT>(getValidationCheckEXTName, value);								}
-inline tcu::Format::Enum<VkIndirectCommandsTokenTypeNVX>	getIndirectCommandsTokenTypeNVXStr		(VkIndirectCommandsTokenTypeNVX value)		{ return tcu::Format::Enum<VkIndirectCommandsTokenTypeNVX>(getIndirectCommandsTokenTypeNVXName, value);			}
-inline tcu::Format::Enum<VkObjectEntryTypeNVX>				getObjectEntryTypeNVXStr				(VkObjectEntryTypeNVX value)				{ return tcu::Format::Enum<VkObjectEntryTypeNVX>(getObjectEntryTypeNVXName, value);								}
-inline tcu::Format::Enum<VkDescriptorUpdateTemplateTypeKHR>	getDescriptorUpdateTemplateTypeKHRStr	(VkDescriptorUpdateTemplateTypeKHR value)	{ return tcu::Format::Enum<VkDescriptorUpdateTemplateTypeKHR>(getDescriptorUpdateTemplateTypeKHRName, value);	}
 
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineCacheHeaderVersion value)		{ return s << getPipelineCacheHeaderVersionStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, VkResult value)							{ return s << getResultStr(value);							}
@@ -126,15 +120,12 @@ inline std::ostream&	operator<<	(std::ostream& s, VkPipelineBindPoint value)				
 inline std::ostream&	operator<<	(std::ostream& s, VkCommandBufferLevel value)				{ return s << getCommandBufferLevelStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkIndexType value)						{ return s << getIndexTypeStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkSubpassContents value)					{ return s << getSubpassContentsStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkObjectType value)						{ return s << getObjectTypeStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkColorSpaceKHR value)					{ return s << getColorSpaceKHRStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkPresentModeKHR value)					{ return s << getPresentModeKHRStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkDescriptorUpdateTemplateTypeKHR value)	{ return s << getDescriptorUpdateTemplateTypeKHRStr(value);	}
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)			{ return s << getDebugReportObjectTypeEXTStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportErrorEXT value)				{ return s << getDebugReportErrorEXTStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkRasterizationOrderAMD value)			{ return s << getRasterizationOrderAMDStr(value);			}
-inline std::ostream&	operator<<	(std::ostream& s, VkValidationCheckEXT value)				{ return s << getValidationCheckEXTStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkIndirectCommandsTokenTypeNVX value)		{ return s << getIndirectCommandsTokenTypeNVXStr(value);	}
-inline std::ostream&	operator<<	(std::ostream& s, VkObjectEntryTypeNVX value)				{ return s << getObjectEntryTypeNVXStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkDescriptorUpdateTemplateTypeKHR value)	{ return s << getDescriptorUpdateTemplateTypeKHRStr(value);	}
 
 tcu::Format::Bitfield<32>	getFormatFeatureFlagsStr						(VkFormatFeatureFlags value);
 tcu::Format::Bitfield<32>	getImageUsageFlagsStr							(VkImageUsageFlags value);
@@ -159,6 +150,7 @@ tcu::Format::Bitfield<32>	getColorComponentFlagsStr						(VkColorComponentFlags 
 tcu::Format::Bitfield<32>	getDescriptorSetLayoutCreateFlagsStr			(VkDescriptorSetLayoutCreateFlags value);
 tcu::Format::Bitfield<32>	getDescriptorPoolCreateFlagsStr					(VkDescriptorPoolCreateFlags value);
 tcu::Format::Bitfield<32>	getAttachmentDescriptionFlagsStr				(VkAttachmentDescriptionFlags value);
+tcu::Format::Bitfield<32>	getSubpassDescriptionFlagsStr					(VkSubpassDescriptionFlags value);
 tcu::Format::Bitfield<32>	getAccessFlagsStr								(VkAccessFlags value);
 tcu::Format::Bitfield<32>	getDependencyFlagsStr							(VkDependencyFlags value);
 tcu::Format::Bitfield<32>	getCommandPoolCreateFlagsStr					(VkCommandPoolCreateFlags value);
@@ -169,12 +161,17 @@ tcu::Format::Bitfield<32>	getCommandBufferResetFlagsStr					(VkCommandBufferRese
 tcu::Format::Bitfield<32>	getStencilFaceFlagsStr							(VkStencilFaceFlags value);
 tcu::Format::Bitfield<32>	getSurfaceTransformFlagsKHRStr					(VkSurfaceTransformFlagsKHR value);
 tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr					(VkCompositeAlphaFlagsKHR value);
+tcu::Format::Bitfield<32>	getSwapchainCreateFlagsKHRStr					(VkSwapchainCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr					(VkDisplayPlaneAlphaFlagsKHR value);
+tcu::Format::Bitfield<32>	getExternalFenceHandleTypeFlagsKHRStr			(VkExternalFenceHandleTypeFlagsKHR value);
+tcu::Format::Bitfield<32>	getExternalFenceFeatureFlagsKHRStr				(VkExternalFenceFeatureFlagsKHR value);
+tcu::Format::Bitfield<32>	getFenceImportFlagsKHRStr						(VkFenceImportFlagsKHR value);
 tcu::Format::Bitfield<32>	getDebugReportFlagsEXTStr						(VkDebugReportFlagsEXT value);
-tcu::Format::Bitfield<32>	getExternalMemoryHandleTypeFlagsNVStr			(VkExternalMemoryHandleTypeFlagsNV value);
-tcu::Format::Bitfield<32>	getExternalMemoryFeatureFlagsNVStr				(VkExternalMemoryFeatureFlagsNV value);
-tcu::Format::Bitfield<32>	getIndirectCommandsLayoutUsageFlagsNVXStr		(VkIndirectCommandsLayoutUsageFlagsNVX value);
-tcu::Format::Bitfield<32>	getObjectEntryUsageFlagsNVXStr					(VkObjectEntryUsageFlagsNVX value);
+tcu::Format::Bitfield<32>	getExternalMemoryHandleTypeFlagsKHRStr			(VkExternalMemoryHandleTypeFlagsKHR value);
+tcu::Format::Bitfield<32>	getExternalMemoryFeatureFlagsKHRStr				(VkExternalMemoryFeatureFlagsKHR value);
+tcu::Format::Bitfield<32>	getExternalSemaphoreHandleTypeFlagsKHRStr		(VkExternalSemaphoreHandleTypeFlagsKHR value);
+tcu::Format::Bitfield<32>	getExternalSemaphoreFeatureFlagsKHRStr			(VkExternalSemaphoreFeatureFlagsKHR value);
+tcu::Format::Bitfield<32>	getSemaphoreImportFlagsKHRStr					(VkSemaphoreImportFlagsKHR value);
 tcu::Format::Bitfield<32>	getInstanceCreateFlagsStr						(VkInstanceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceCreateFlagsStr							(VkDeviceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceQueueCreateFlagsStr					(VkDeviceQueueCreateFlags value);
@@ -201,8 +198,6 @@ tcu::Format::Bitfield<32>	getSamplerCreateFlagsStr						(VkSamplerCreateFlags va
 tcu::Format::Bitfield<32>	getDescriptorPoolResetFlagsStr					(VkDescriptorPoolResetFlags value);
 tcu::Format::Bitfield<32>	getFramebufferCreateFlagsStr					(VkFramebufferCreateFlags value);
 tcu::Format::Bitfield<32>	getRenderPassCreateFlagsStr						(VkRenderPassCreateFlags value);
-tcu::Format::Bitfield<32>	getSubpassDescriptionFlagsStr					(VkSubpassDescriptionFlags value);
-tcu::Format::Bitfield<32>	getSwapchainCreateFlagsKHRStr					(VkSwapchainCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayModeCreateFlagsKHRStr					(VkDisplayModeCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplaySurfaceCreateFlagsKHRStr				(VkDisplaySurfaceCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getXlibSurfaceCreateFlagsKHRStr					(VkXlibSurfaceCreateFlagsKHR value);
@@ -348,46 +343,64 @@ std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyProperties2KHR& va
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMemoryProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSparseImageFormatProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSparseImageFormatInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushDescriptorPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice16BitStorageFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRectLayerKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionsKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDescriptorUpdateTemplateEntryKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDescriptorUpdateTemplateCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSharedPresentSurfaceCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSurfaceInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceCapabilities2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceFormat2KHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkSharedPresentSurfaceCapabilitiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalFenceInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalFencePropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExportFenceCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportFenceWin32HandleInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExportFenceWin32HandleInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkFenceGetWin32HandleInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportFenceFdInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkFenceGetFdInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryDedicatedRequirementsKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryDedicatedAllocateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBufferMemoryRequirementsInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageMemoryRequirementsInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageSparseMemoryRequirementsInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryRequirements2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSparseImageMemoryRequirements2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateRasterizationOrderAMD& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectTagInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerMarkerInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationImageCreateInfoNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationBufferCreateInfoNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationMemoryAllocateInfoNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkExternalImageFormatPropertiesNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkExternalMemoryImageCreateInfoNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkExportMemoryAllocateInfoNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryWin32HandleInfoNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkExportMemoryWin32HandleInfoNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkWin32KeyedMutexAcquireReleaseInfoNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkValidationFlagsEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDeviceGeneratedCommandsFeaturesNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDeviceGeneratedCommandsLimitsNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsTokenNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsLayoutTokenNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsLayoutCreateInfoNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkCmdProcessCommandsInfoNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkCmdReserveSpaceForCommandsInfoNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkObjectTableCreateInfoNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkObjectTableEntryNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkObjectTablePipelineEntryNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkObjectTableDescriptorSetEntryNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkObjectTableVertexBufferEntryNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkObjectTableIndexBufferEntryNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkObjectTablePushConstantEntryNVX& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushDescriptorPropertiesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDescriptorUpdateTemplateEntryKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDescriptorUpdateTemplateCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderPassMultiviewCreateInfoKHX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewFeaturesKHX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewPropertiesKHX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalMemoryPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalImageFormatInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalImageFormatPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalBufferInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalBufferPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceIDPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalMemoryImageCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalMemoryBufferCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExportMemoryAllocateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryWin32HandleInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExportMemoryWin32HandleInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryWin32HandlePropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetWin32HandleInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryFdInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryFdPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetFdInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkWin32KeyedMutexAcquireReleaseInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalSemaphoreInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalSemaphorePropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExportSemaphoreCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportSemaphoreWin32HandleInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExportSemaphoreWin32HandleInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkD3D12FenceSubmitInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreGetWin32HandleInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportSemaphoreFdInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreGetFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRefreshCycleDurationGOOGLE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPastPresentationTimingGOOGLE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentTimeGOOGLE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentTimesInfoGOOGLE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVariablePointerFeaturesKHR& value);

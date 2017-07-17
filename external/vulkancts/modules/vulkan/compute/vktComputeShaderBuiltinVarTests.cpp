@@ -440,7 +440,7 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 		VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, resultBufferSize);
 
 	const Unique<VkCommandPool> cmdPool(makeCommandPool(m_vki, m_device, m_queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(m_vki, m_device, *cmdPool));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(m_vki, m_device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 	beginCommandBuffer(m_vki, *cmdBuffer);

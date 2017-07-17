@@ -230,12 +230,6 @@ public:
 	vk::Allocation				getBoundMemory		(void) const											{ return *m_allocation; }
 
 private:
-	vk::VkDeviceSize			getPixelOffset		(vk::VkOffset3D							offset,
-													 vk::VkDeviceSize						rowPitch,
-													 vk::VkDeviceSize						depthPitch,
-													 unsigned int							mipLevel,
-													 unsigned int							arrayElement);
-
 								Image				(const vk::DeviceInterface&				vk,
 													 vk::VkDevice							device,
 													 vk::VkFormat							format,
