@@ -177,3 +177,11 @@ if (de::contains(extSet, "GL_NV_internalformat_sample_query"))
 {
 	gl->getInternalformatSampleivNV	= (glGetInternalformatSampleivNVFunc)	loader->get("glGetInternalformatSampleivNV");
 }
+
+if (de::contains(extSet, "GL_OES_draw_elements_base_vertex"))
+{
+	gl->drawElementsBaseVertex			= (glDrawElementsBaseVertexFunc)			loader->get("glDrawElementsBaseVertexOES");
+	gl->drawElementsInstancedBaseVertex	= (glDrawElementsInstancedBaseVertexFunc)	loader->get("glDrawElementsInstancedBaseVertexOES");
+	gl->drawRangeElementsBaseVertex		= (glDrawRangeElementsBaseVertexFunc)		loader->get("glDrawRangeElementsBaseVertexOES");
+	gl->multiDrawElementsBaseVertex		= (glMultiDrawElementsBaseVertexFunc)		loader->get("glMultiDrawElementsBaseVertexOES");
+}

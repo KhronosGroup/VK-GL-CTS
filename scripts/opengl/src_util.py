@@ -127,6 +127,7 @@ EXTENSIONS			= [
 	'GL_ARB_vertex_attrib_binding',
 	'GL_NV_deep_texture3D',
 	'GL_NV_internalformat_sample_query',
+	'GL_OES_draw_elements_base_vertex',
 ]
 
 def getGLRegistry ():
