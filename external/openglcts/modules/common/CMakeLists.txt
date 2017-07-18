@@ -86,6 +86,7 @@ set(GLCTS_COMMON_SRCS
 	glcExtTokens.hpp
 	glcLimitTest.inl
 	glcLimitTest.hpp
+	glcWaiver.hpp
 	)
 
 set(GLCTS_COMMON_LIBS

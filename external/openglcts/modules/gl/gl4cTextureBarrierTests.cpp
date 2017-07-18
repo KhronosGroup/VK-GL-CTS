@@ -45,6 +45,8 @@
 #include "glw.h"
 #include "glwFunctions.hpp"
 
+#include "glcWaiver.hpp"
+
 namespace gl4cts
 {
 
@@ -149,6 +151,10 @@ protected:
 		const tcu::RenderTarget& renderTarget = m_context.getRenderContext().getRenderTarget();
 		m_width								  = renderTarget.getWidth();
 		m_height							  = renderTarget.getHeight();
+
+#ifdef WAIVER_WITH_BUG_13788
+		m_width = m_width >= 16383 ? 16382 : m_width;
+#endif
 
 		const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
