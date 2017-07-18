@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 7fdf7d3a1ad50afa03968db889b68af211da6e27.
+ * Generated from Khronos EGL API description (egl.xml) revision 13a26984991216cbf9a44fbf390f95dc05b5493a.
  */
 #define EGL_PBUFFER_BIT										0x0001
 #define EGL_PIXMAP_BIT										0x0002
@@ -124,9 +124,11 @@
 #define EGL_ALPHA_FORMAT									0x3088
 #define EGL_COLORSPACE_sRGB									0x3089
 #define EGL_GL_COLORSPACE_SRGB								0x3089
+#define EGL_GL_COLORSPACE_SRGB_KHR							0x3089
 #define EGL_VG_COLORSPACE_sRGB								0x3089
 #define EGL_COLORSPACE_LINEAR								0x308A
 #define EGL_GL_COLORSPACE_LINEAR							0x308A
+#define EGL_GL_COLORSPACE_LINEAR_KHR						0x308A
 #define EGL_VG_COLORSPACE_LINEAR							0x308A
 #define EGL_ALPHA_FORMAT_NONPRE								0x308B
 #define EGL_ALPHA_FORMAT_NONPRE								0x308B
@@ -151,6 +153,7 @@
 #define EGL_MULTISAMPLE_RESOLVE_BOX							0x309B
 #define EGL_CL_EVENT_HANDLE									0x309C
 #define EGL_GL_COLORSPACE									0x309D
+#define EGL_GL_COLORSPACE_KHR								0x309D
 #define EGL_OPENGL_ES_API									0x30A0
 #define EGL_OPENVG_API										0x30A1
 #define EGL_OPENGL_API										0x30A2
@@ -267,3 +270,9 @@
 #define EGL_COLOR_COMPONENT_TYPE_EXT						0x3339
 #define EGL_COLOR_COMPONENT_TYPE_FIXED_EXT					0x333A
 #define EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT					0x333B
+#define EGL_GL_COLORSPACE_BT2020_LINEAR_EXT					0x333F
+#define EGL_GL_COLORSPACE_BT2020_PQ_EXT						0x3340
+#define EGL_GL_COLORSPACE_SCRGB_LINEAR_EXT					0x3350
+#define EGL_GL_COLORSPACE_SCRGB_EXT							0x3351
+#define EGL_GL_COLORSPACE_DISPLAY_P3_LINEAR_EXT				0x3362
+#define EGL_GL_COLORSPACE_DISPLAY_P3_EXT					0x3363

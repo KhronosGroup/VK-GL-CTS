@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 7fdf7d3a1ad50afa03968db889b68af211da6e27.
+ * Generated from Khronos EGL API description (egl.xml) revision 13a26984991216cbf9a44fbf390f95dc05b5493a.
  */
 
 static const char* s_EGL14[] =
@@ -541,6 +541,11 @@ static const char* s_EGL_KHR_debug[] =
 	"eglQueryDebugKHR",
 };
 
+static const char* s_EGL_KHR_display_reference[] =
+{
+	"eglQueryDisplayAttribKHR",
+};
+
 static const char* s_EGL_KHR_fence_sync[] =
 {
 	"eglClientWaitSyncKHR",
@@ -709,6 +714,17 @@ static const char* s_EGL_NV_system_time[] =
 {
 	"eglGetSystemTimeFrequencyNV",
 	"eglGetSystemTimeNV",
+};
+
+static const char* s_EGL_EXT_compositor[] =
+{
+	"eglCompositorSetContextListEXT",
+	"eglCompositorSetContextAttributesEXT",
+	"eglCompositorSetWindowListEXT",
+	"eglCompositorSetWindowAttributesEXT",
+	"eglCompositorBindTexWindowEXT",
+	"eglCompositorSetSizeEXT",
+	"eglCompositorSwapPolicyEXT",
 };
 
 static const char* s_GL_APPLE_copy_texture_levels[] =
@@ -1799,6 +1815,7 @@ static const struct
 	{ "EGL_HI_clientpixmap",								DE_LENGTH_OF_ARRAY(s_EGL_HI_clientpixmap),								s_EGL_HI_clientpixmap								},
 	{ "EGL_KHR_cl_event2",									DE_LENGTH_OF_ARRAY(s_EGL_KHR_cl_event2),								s_EGL_KHR_cl_event2									},
 	{ "EGL_KHR_debug",										DE_LENGTH_OF_ARRAY(s_EGL_KHR_debug),									s_EGL_KHR_debug										},
+	{ "EGL_KHR_display_reference",							DE_LENGTH_OF_ARRAY(s_EGL_KHR_display_reference),						s_EGL_KHR_display_reference							},
 	{ "EGL_KHR_fence_sync",									DE_LENGTH_OF_ARRAY(s_EGL_KHR_fence_sync),								s_EGL_KHR_fence_sync								},
 	{ "EGL_KHR_image",										DE_LENGTH_OF_ARRAY(s_EGL_KHR_image),									s_EGL_KHR_image										},
 	{ "EGL_KHR_image_base",									DE_LENGTH_OF_ARRAY(s_EGL_KHR_image_base),								s_EGL_KHR_image_base								},
@@ -1826,6 +1843,7 @@ static const struct
 	{ "EGL_NV_stream_sync",									DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_sync),								s_EGL_NV_stream_sync								},
 	{ "EGL_NV_sync",										DE_LENGTH_OF_ARRAY(s_EGL_NV_sync),										s_EGL_NV_sync										},
 	{ "EGL_NV_system_time",									DE_LENGTH_OF_ARRAY(s_EGL_NV_system_time),								s_EGL_NV_system_time								},
+	{ "EGL_EXT_compositor",									DE_LENGTH_OF_ARRAY(s_EGL_EXT_compositor),								s_EGL_EXT_compositor								},
 	{ "GL_APPLE_copy_texture_levels",						DE_LENGTH_OF_ARRAY(s_GL_APPLE_copy_texture_levels),						s_GL_APPLE_copy_texture_levels						},
 	{ "GL_APPLE_framebuffer_multisample",					DE_LENGTH_OF_ARRAY(s_GL_APPLE_framebuffer_multisample),					s_GL_APPLE_framebuffer_multisample					},
 	{ "GL_APPLE_sync",										DE_LENGTH_OF_ARRAY(s_GL_APPLE_sync),									s_GL_APPLE_sync										},

@@ -30,7 +30,7 @@
  * Each function takes qpTestLog pointer. Operations are done on that log
  * instance.
  *
- * When function takes a 'name' parameter, that name is exepected to
+ * When function takes a 'name' parameter, that name is expected to
  * be a unique identifier within the scope of one test case. Test case
  * begins with a call to qpTestLog_startCase and ends with a call to
  * qpTestLog_endCase or qpTestLog_terminateCase. The human readable
