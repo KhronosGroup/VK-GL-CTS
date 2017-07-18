@@ -29,6 +29,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuVector.hpp"
 #include "vkMemUtil.hpp"
+#include "vktSpvAsmUtils.hpp"
 
 #include <string>
 #include <vector>
@@ -108,6 +109,7 @@ struct ComputeShaderSpec
 	std::vector<deUint32>					specConstants;
 	BufferSp								pushConstants;
 	std::vector<std::string>				extensions;
+	VulkanFeatures							requestedVulkanFeatures;
 	qpTestResult							failResult;
 	std::string								failMessage;
 	// If null, a default verification will be performed by comparing the memory pointed to by outputAllocations
@@ -117,11 +119,12 @@ struct ComputeShaderSpec
 	ComputeVerifyIOFunc						verifyIO;
 
 											ComputeShaderSpec (void)
-												: entryPoint	("main")
-												, pushConstants	(DE_NULL)
-												, failResult	(QP_TEST_RESULT_FAIL)
-												, failMessage	("Output doesn't match with expected")
-												, verifyIO		(DE_NULL)
+												: entryPoint					("main")
+												, pushConstants					(DE_NULL)
+												, requestedVulkanFeatures		()
+												, failResult					(QP_TEST_RESULT_FAIL)
+												, failMessage					("Output doesn't match with expected")
+												, verifyIO						(DE_NULL)
 											{}
 };
 

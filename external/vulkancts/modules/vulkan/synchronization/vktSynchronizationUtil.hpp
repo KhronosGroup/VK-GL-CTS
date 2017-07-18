@@ -44,12 +44,18 @@ public:
 														 vk::Allocator&					allocator,
 														 const vk::VkBufferCreateInfo&	bufferCreateInfo,
 														 const vk::MemoryRequirement	memoryRequirement)
+		: m_buffer		(createBuffer(vk, device, &bufferCreateInfo))
+		, m_allocation	(allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement))
+	{
+		VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
+	}
 
-											: m_buffer		(createBuffer(vk, device, &bufferCreateInfo))
-											, m_allocation	(allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement))
-										{
-											VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
-										}
+										Buffer			(vk::Move<vk::VkBuffer>			buffer,
+														 de::MovePtr<vk::Allocation>	allocation)
+		: m_buffer		(buffer)
+		, m_allocation	(allocation)
+	{
+	}
 
 	const vk::VkBuffer&					get				(void) const { return *m_buffer; }
 	const vk::VkBuffer&					operator*		(void) const { return get(); }
@@ -72,12 +78,17 @@ public:
 														 vk::Allocator&					allocator,
 														 const vk::VkImageCreateInfo&	imageCreateInfo,
 														 const vk::MemoryRequirement	memoryRequirement)
-
-											: m_image		(createImage(vk, device, &imageCreateInfo))
-											, m_allocation	(allocator.allocate(getImageMemoryRequirements(vk, device, *m_image), memoryRequirement))
-										{
-											VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
-										}
+		: m_image		(createImage(vk, device, &imageCreateInfo))
+		, m_allocation	(allocator.allocate(getImageMemoryRequirements(vk, device, *m_image), memoryRequirement))
+	{
+		VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
+	}
+										Image			(vk::Move<vk::VkImage>&			image,
+														 de::MovePtr<vk::Allocation>&	allocation)
+		: m_image		(image)
+		, m_allocation	(allocation)
+	{
+	}
 
 	const vk::VkImage&					get				(void) const { return *m_image; }
 	const vk::VkImage&					operator*		(void) const { return get(); }

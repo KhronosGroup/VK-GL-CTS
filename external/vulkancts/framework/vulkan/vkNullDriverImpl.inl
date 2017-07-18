@@ -1222,6 +1222,65 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceFormats2KHR (VkPhysicalDe
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalFencePropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalFenceInfoKHR* pExternalFenceInfo, VkExternalFencePropertiesKHR* pExternalFenceProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pExternalFenceInfo);
+	DE_UNREF(pExternalFenceProperties);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL importFenceWin32HandleKHR (VkDevice device, const VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pImportFenceWin32HandleInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getFenceWin32HandleKHR (VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetWin32HandleInfo);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL importFenceFdKHR (VkDevice device, const VkImportFenceFdInfoKHR* pImportFenceFdInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pImportFenceFdInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getFenceFdKHR (VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetFdInfo);
+	DE_UNREF(pFd);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements2KHR (VkDevice device, const VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL getBufferMemoryRequirements2KHR (VkDevice device, const VkBufferMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL getImageSparseMemoryRequirements2KHR (VkDevice device, const VkImageSparseMemoryRequirementsInfo2KHR* pInfo, deUint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2KHR* pSparseMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pSparseMemoryRequirementCount);
+	DE_UNREF(pSparseMemoryRequirements);
+}
+
 VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage)
 {
 	DE_UNREF(instance);
@@ -1232,6 +1291,84 @@ VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugRe
 	DE_UNREF(messageCode);
 	DE_UNREF(pLayerPrefix);
 	DE_UNREF(pMessage);
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalBufferPropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfoKHR* pExternalBufferInfo, VkExternalBufferPropertiesKHR* pExternalBufferProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pExternalBufferInfo);
+	DE_UNREF(pExternalBufferProperties);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandleKHR (VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetWin32HandleInfo);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandlePropertiesKHR (VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHR handleType, pt::Win32Handle handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(handleType);
+	DE_UNREF(handle);
+	DE_UNREF(pMemoryWin32HandleProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryFdKHR (VkDevice device, const VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetFdInfo);
+	DE_UNREF(pFd);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryFdPropertiesKHR (VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHR handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(handleType);
+	DE_UNREF(fd);
+	DE_UNREF(pMemoryFdProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalSemaphorePropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalSemaphoreInfoKHR* pExternalSemaphoreInfo, VkExternalSemaphorePropertiesKHR* pExternalSemaphoreProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pExternalSemaphoreInfo);
+	DE_UNREF(pExternalSemaphoreProperties);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL importSemaphoreWin32HandleKHR (VkDevice device, const VkImportSemaphoreWin32HandleInfoKHR* pImportSemaphoreWin32HandleInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pImportSemaphoreWin32HandleInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreWin32HandleKHR (VkDevice device, const VkSemaphoreGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetWin32HandleInfo);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL importSemaphoreFdKHR (VkDevice device, const VkImportSemaphoreFdInfoKHR* pImportSemaphoreFdInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pImportSemaphoreFdInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreFdKHR (VkDevice device, const VkSemaphoreGetFdInfoKHR* pGetFdInfo, int* pFd)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetFdInfo);
+	DE_UNREF(pFd);
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL getRefreshCycleDurationGOOGLE (VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties)
@@ -1306,9 +1443,12 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties2KHR,	getPhysicalDeviceSparseImageFormatProperties2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2KHR,			getPhysicalDeviceSurfaceCapabilities2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormats2KHR,				getPhysicalDeviceSurfaceFormats2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFencePropertiesKHR,		getPhysicalDeviceExternalFencePropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,						createDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,						destroyDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,								debugReportMessageEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferPropertiesKHR,		getPhysicalDeviceExternalBufferPropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphorePropertiesKHR,	getPhysicalDeviceExternalSemaphorePropertiesKHR),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -1446,6 +1586,21 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplateKHR,	updateDescriptorSetWithTemplateKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetWithTemplateKHR,	cmdPushDescriptorSetWithTemplateKHR),
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainStatusKHR,					getSwapchainStatusKHR),
+	VK_NULL_FUNC_ENTRY(vkImportFenceWin32HandleKHR,				importFenceWin32HandleKHR),
+	VK_NULL_FUNC_ENTRY(vkGetFenceWin32HandleKHR,				getFenceWin32HandleKHR),
+	VK_NULL_FUNC_ENTRY(vkImportFenceFdKHR,						importFenceFdKHR),
+	VK_NULL_FUNC_ENTRY(vkGetFenceFdKHR,							getFenceFdKHR),
+	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements2KHR,		getImageMemoryRequirements2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetBufferMemoryRequirements2KHR,		getBufferMemoryRequirements2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetImageSparseMemoryRequirements2KHR,	getImageSparseMemoryRequirements2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHR,				getMemoryWin32HandleKHR),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandlePropertiesKHR,		getMemoryWin32HandlePropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryFdKHR,						getMemoryFdKHR),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryFdPropertiesKHR,				getMemoryFdPropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkImportSemaphoreWin32HandleKHR,			importSemaphoreWin32HandleKHR),
+	VK_NULL_FUNC_ENTRY(vkGetSemaphoreWin32HandleKHR,			getSemaphoreWin32HandleKHR),
+	VK_NULL_FUNC_ENTRY(vkImportSemaphoreFdKHR,					importSemaphoreFdKHR),
+	VK_NULL_FUNC_ENTRY(vkGetSemaphoreFdKHR,						getSemaphoreFdKHR),
 	VK_NULL_FUNC_ENTRY(vkGetRefreshCycleDurationGOOGLE,			getRefreshCycleDurationGOOGLE),
 	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingGOOGLE,		getPastPresentationTimingGOOGLE),
 };

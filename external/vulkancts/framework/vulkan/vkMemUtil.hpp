@@ -51,19 +51,19 @@ namespace vk
 class Allocation
 {
 public:
-	virtual					~Allocation	(void);
+	virtual					~Allocation		(void);
 
 	//! Get VkDeviceMemory backing this allocation
-	VkDeviceMemory			getMemory	(void) const { return m_memory;							}
+	VkDeviceMemory			getMemory		(void) const { return m_memory;							}
 
 	//! Get offset in VkDeviceMemory for this allocation
-	VkDeviceSize			getOffset	(void) const { return m_offset;							}
+	VkDeviceSize			getOffset		(void) const { return m_offset;							}
 
 	//! Get host pointer for this allocation. Only available for host-visible allocations
-	void*					getHostPtr	(void) const { DE_ASSERT(m_hostPtr); return m_hostPtr;	}
+	void*					getHostPtr		(void) const { DE_ASSERT(m_hostPtr); return m_hostPtr;	}
 
 protected:
-							Allocation	(VkDeviceMemory memory, VkDeviceSize offset, void* hostPtr);
+							Allocation		(VkDeviceMemory memory, VkDeviceSize offset, void* hostPtr);
 
 private:
 	const VkDeviceMemory	m_memory;
@@ -133,8 +133,13 @@ private:
 	const VkPhysicalDeviceMemoryProperties	m_memProps;
 };
 
-void	flushMappedMemoryRange		(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
-void	invalidateMappedMemoryRange	(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
+de::MovePtr<Allocation>	allocateDedicated			(const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice& physDevice, const VkDevice device, const VkBuffer buffer, MemoryRequirement requirement);
+de::MovePtr<Allocation>	allocateDedicated			(const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice& physDevice, const VkDevice device, const VkImage image, MemoryRequirement requirement);
+
+void*					mapMemory					(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags);
+void					flushMappedMemoryRange		(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
+void					invalidateMappedMemoryRange	(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
+deUint32				getCompatibleMemoryTypes	(const VkPhysicalDeviceMemoryProperties& deviceMemProps, MemoryRequirement requirement);
 
 } // vk
 

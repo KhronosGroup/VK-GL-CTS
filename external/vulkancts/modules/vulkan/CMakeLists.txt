@@ -69,6 +69,8 @@ set(DEQP_VK_SRCS
 	vktInfoTests.hpp
 	vktDrawUtil.cpp
 	vktDrawUtil.hpp
+	vktExternalMemoryUtil.cpp
+	vktExternalMemoryUtil.hpp
 	)
 
 set(DEQP_VK_LIBS

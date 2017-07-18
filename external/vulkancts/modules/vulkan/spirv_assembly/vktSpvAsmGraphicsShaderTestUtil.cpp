@@ -28,6 +28,7 @@
 
 #include "vkDefs.hpp"
 #include "vkMemUtil.hpp"
+#include "vkPlatform.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -182,6 +183,47 @@ VkBufferUsageFlagBits getMatchingBufferUsageFlagBit(VkDescriptorType dType)
 	return (VkBufferUsageFlagBits)0;
 }
 
+static void requireFormatUsageSupport(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, VkFormat format, VkImageTiling imageTiling, VkImageUsageFlags requiredUsageFlags)
+{
+	VkFormatProperties		properties;
+	VkFormatFeatureFlags	tilingFeatures	= 0;
+
+	vki.getPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
+
+	switch (imageTiling)
+	{
+		case VK_IMAGE_TILING_LINEAR:
+			tilingFeatures = properties.linearTilingFeatures;
+			break;
+
+		case VK_IMAGE_TILING_OPTIMAL:
+			tilingFeatures = properties.optimalTilingFeatures;
+			break;
+
+		default:
+			DE_ASSERT(false);
+			break;
+	}
+
+	if ((requiredUsageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) != 0)
+	{
+		if ((tilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
+			TCU_THROW(NotSupportedError, "Image format cannot be used as color attachment");
+		requiredUsageFlags ^= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	}
+
+
+	if ((requiredUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) != 0)
+	{
+		if ((tilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR) == 0)
+			TCU_THROW(NotSupportedError, "Image format cannot be used as transfer source");
+		requiredUsageFlags ^= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	}
+
+
+	DE_ASSERT(!requiredUsageFlags && "checking other image usage bits not supported yet");
+}
+
 InstanceContext::InstanceContext (const RGBA						(&inputs)[4],
 								  const RGBA						(&outputs)[4],
 								  const map<string, string>&		testCodeFragments_,
@@ -190,18 +232,22 @@ InstanceContext::InstanceContext (const RGBA						(&inputs)[4],
 								  const GraphicsResources&			resources_,
 								  const GraphicsInterfaces&			interfaces_,
 								  const vector<string>&				extensions_,
-								  const vector<string>&				features_)
-	: testCodeFragments			(testCodeFragments_)
-	, specConstants				(specConstants_)
-	, hasTessellation			(false)
-	, requiredStages			(static_cast<VkShaderStageFlagBits>(0))
-	, requiredDeviceExtensions	(extensions_)
-	, requiredDeviceFeatures	(features_)
-	, pushConstants				(pushConsants_)
-	, resources					(resources_)
-	, interfaces				(interfaces_)
-	, failResult				(QP_TEST_RESULT_FAIL)
-	, failMessageTemplate		("${reason}")
+								  const vector<string>&				features_,
+								  VulkanFeatures					vulkanFeatures_,
+								  VkShaderStageFlags				customizedStages_)
+	: testCodeFragments				(testCodeFragments_)
+	, specConstants					(specConstants_)
+	, hasTessellation				(false)
+	, requiredStages				(static_cast<VkShaderStageFlagBits>(0))
+	, requiredDeviceExtensions		(extensions_)
+	, requiredDeviceFeatures		(features_)
+	, requestedFeatures				(vulkanFeatures_)
+	, pushConstants					(pushConsants_)
+	, customizedStages				(customizedStages_)
+	, resources						(resources_)
+	, interfaces					(interfaces_)
+	, failResult					(QP_TEST_RESULT_FAIL)
+	, failMessageTemplate			("${reason}")
 {
 	inputColors[0]		= inputs[0];
 	inputColors[1]		= inputs[1];
@@ -215,18 +261,20 @@ InstanceContext::InstanceContext (const RGBA						(&inputs)[4],
 }
 
 InstanceContext::InstanceContext (const InstanceContext& other)
-	: moduleMap					(other.moduleMap)
-	, testCodeFragments			(other.testCodeFragments)
-	, specConstants				(other.specConstants)
-	, hasTessellation			(other.hasTessellation)
-	, requiredStages			(other.requiredStages)
-	, requiredDeviceExtensions	(other.requiredDeviceExtensions)
-	, requiredDeviceFeatures	(other.requiredDeviceFeatures)
-	, pushConstants				(other.pushConstants)
-	, resources					(other.resources)
-	, interfaces				(other.interfaces)
-	, failResult				(other.failResult)
-	, failMessageTemplate		(other.failMessageTemplate)
+	: moduleMap						(other.moduleMap)
+	, testCodeFragments				(other.testCodeFragments)
+	, specConstants					(other.specConstants)
+	, hasTessellation				(other.hasTessellation)
+	, requiredStages				(other.requiredStages)
+	, requiredDeviceExtensions		(other.requiredDeviceExtensions)
+	, requiredDeviceFeatures		(other.requiredDeviceFeatures)
+	, requestedFeatures				(other.requestedFeatures)
+	, pushConstants					(other.pushConstants)
+	, customizedStages				(other.customizedStages)
+	, resources						(other.resources)
+	, interfaces					(other.interfaces)
+	, failResult					(other.failResult)
+	, failMessageTemplate			(other.failMessageTemplate)
 {
 	inputColors[0]		= other.inputColors[0];
 	inputColors[1]		= other.inputColors[1];
@@ -327,6 +375,7 @@ void createPipelineShaderStages (const DeviceInterface&						vk,
 	"%v4bool = OpTypeVector %bool 4\n"															\
 																								\
 	"%v4f32_function = OpTypeFunction %v4f32 %v4f32\n"											\
+	"%bool_function = OpTypeFunction %bool\n"													\
 	"%fun = OpTypeFunction %void\n"																\
 																								\
 	"%ip_f32 = OpTypePointer Input %f32\n"														\
@@ -462,6 +511,14 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"OpReturn\n"
 		"OpFunctionEnd\n"
 		"${interface_op_func:opt}\n"
+
+		"%isUniqueIdZero = OpFunction %bool None %bool_function\n"
+		"%getId_label = OpLabel\n"
+		"%vert_id = OpLoad %i32 %BP_gl_VertexIndex\n"
+		"%is_id_0 = OpIEqual %bool %vert_id %c_i32_0\n"
+		"OpReturnValue %is_id_0\n"
+		"OpFunctionEnd\n"
+
 		"${testfun}\n";
 	return tcu::StringTemplate(vertexShaderBoilerplate).specialize(fragments);
 }
@@ -497,13 +554,14 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"${capability:opt}\n"
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint TessellationControl %BP_main \"main\" %BP_out_color %BP_gl_InvocationID %BP_in_color %BP_gl_out %BP_gl_in %BP_gl_TessLevelOuter %BP_gl_TessLevelInner ${IF_entrypoint:opt} \n"
+		"OpEntryPoint TessellationControl %BP_main \"main\" %BP_out_color %BP_gl_InvocationID %BP_gl_PrimitiveID %BP_in_color %BP_gl_out %BP_gl_in %BP_gl_TessLevelOuter %BP_gl_TessLevelInner ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
 		"${debug:opt}\n"
 		"OpName %BP_main \"main\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
 		"OpName %BP_out_color \"out_color\"\n"
 		"OpName %BP_gl_InvocationID \"gl_InvocationID\"\n"
+		"OpName %BP_gl_PrimitiveID \"gl_PrimitiveID\"\n"
 		"OpName %BP_in_color \"in_color\"\n"
 		"OpName %BP_gl_PerVertex \"gl_PerVertex\"\n"
 		"OpMemberName %BP_gl_PerVertex 0 \"gl_Position\"\n"
@@ -521,6 +579,7 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"OpName %BP_gl_TessLevelInner \"gl_TessLevelInner\"\n"
 		"OpDecorate %BP_out_color Location 1\n"
 		"OpDecorate %BP_gl_InvocationID BuiltIn InvocationId\n"
+		"OpDecorate %BP_gl_PrimitiveID BuiltIn PrimitiveId\n"
 		"OpDecorate %BP_in_color Location 1\n"
 		"OpMemberDecorate %BP_gl_PerVertex 0 BuiltIn Position\n"
 		"OpMemberDecorate %BP_gl_PerVertex 1 BuiltIn PointSize\n"
@@ -543,6 +602,7 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		SPIRV_ASSEMBLY_ARRAYS
 		"%BP_out_color = OpVariable %op_a3v4f32 Output\n"
 		"%BP_gl_InvocationID = OpVariable %ip_i32 Input\n"
+		"%BP_gl_PrimitiveID = OpVariable %ip_i32 Input\n"
 		"%BP_in_color = OpVariable %ip_a32v4f32 Input\n"
 		"%BP_gl_PerVertex = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
 		"%BP_a3_gl_PerVertex = OpTypeArray %BP_gl_PerVertex %c_u32_3\n"
@@ -589,6 +649,17 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"OpReturn\n"
 		"OpFunctionEnd\n"
 		"${interface_op_func:opt}\n"
+
+		"%isUniqueIdZero = OpFunction %bool None %bool_function\n"
+		"%getId_label = OpLabel\n"
+		"%invocation_id = OpLoad %i32 %BP_gl_InvocationID\n"
+		"%primitive_id = OpLoad %i32 %BP_gl_PrimitiveID\n"
+		"%is_invocation_0 = OpIEqual %bool %invocation_id %c_i32_0\n"
+		"%is_primitive_0 = OpIEqual %bool %primitive_id %c_i32_0\n"
+		"%is_id_0 = OpLogicalAnd %bool %is_invocation_0 %is_primitive_0\n"
+		"OpReturnValue %is_id_0\n"
+		"OpFunctionEnd\n"
+
 		"${testfun}\n";
 	return tcu::StringTemplate(tessControlShaderBoilerplate).specialize(fragments);
 }
@@ -625,7 +696,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"${capability:opt}\n"
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint TessellationEvaluation %BP_main \"main\" %BP_stream %BP_gl_TessCoord %BP_gl_in %BP_out_color %BP_in_color ${IF_entrypoint:opt} \n"
+		"OpEntryPoint TessellationEvaluation %BP_main \"main\" %BP_stream %BP_gl_TessCoord %BP_gl_PrimitiveID %BP_gl_in %BP_out_color %BP_in_color ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main Triangles\n"
 		"OpExecutionMode %BP_main SpacingEqual\n"
 		"OpExecutionMode %BP_main VertexOrderCcw\n"
@@ -640,6 +711,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_stream \"\"\n"
 		"OpName %BP_gl_TessCoord \"gl_TessCoord\"\n"
 		"OpName %BP_gl_PerVertexIn \"gl_PerVertex\"\n"
+		"OpName %BP_gl_PrimitiveID \"gl_PrimitiveID\"\n"
 		"OpMemberName %BP_gl_PerVertexIn 0 \"gl_Position\"\n"
 		"OpMemberName %BP_gl_PerVertexIn 1 \"gl_PointSize\"\n"
 		"OpMemberName %BP_gl_PerVertexIn 2 \"gl_ClipDistance\"\n"
@@ -652,6 +724,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"OpMemberDecorate %BP_gl_PerVertexOut 2 BuiltIn ClipDistance\n"
 		"OpMemberDecorate %BP_gl_PerVertexOut 3 BuiltIn CullDistance\n"
 		"OpDecorate %BP_gl_PerVertexOut Block\n"
+		"OpDecorate %BP_gl_PrimitiveID BuiltIn PrimitiveId\n"
 		"OpDecorate %BP_gl_TessCoord BuiltIn TessCoord\n"
 		"OpMemberDecorate %BP_gl_PerVertexIn 0 BuiltIn Position\n"
 		"OpMemberDecorate %BP_gl_PerVertexIn 1 BuiltIn PointSize\n"
@@ -669,6 +742,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"%BP_op_gl_PerVertexOut = OpTypePointer Output %BP_gl_PerVertexOut\n"
 		"%BP_stream = OpVariable %BP_op_gl_PerVertexOut Output\n"
 		"%BP_gl_TessCoord = OpVariable %ip_v3f32 Input\n"
+		"%BP_gl_PrimitiveID = OpVariable %op_i32 Input\n"
 		"%BP_gl_PerVertexIn = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
 		"%BP_a32_gl_PerVertexIn = OpTypeArray %BP_gl_PerVertexIn %c_u32_32\n"
 		"%BP_ip_a32_gl_PerVertexIn = OpTypePointer Input %BP_a32_gl_PerVertexIn\n"
@@ -729,6 +803,26 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"OpReturn\n"
 		"OpFunctionEnd\n"
 		"${interface_op_func:opt}\n"
+
+		"%isUniqueIdZero = OpFunction %bool None %bool_function\n"
+		"%getId_label = OpLabel\n"
+		"%primitive_id = OpLoad %i32 %BP_gl_PrimitiveID\n"
+		"%is_primitive_0 = OpIEqual %bool %primitive_id %c_i32_0\n"
+		"%TC_0_loc = OpAccessChain %ip_f32 %BP_gl_TessCoord %c_u32_0\n"
+		"%TC_1_loc = OpAccessChain %ip_f32 %BP_gl_TessCoord %c_u32_1\n"
+		"%TC_2_loc = OpAccessChain %ip_f32 %BP_gl_TessCoord %c_u32_2\n"
+		"%TC_W_0 = OpLoad %f32 %TC_0_loc\n"
+		"%TC_W_1 = OpLoad %f32 %TC_1_loc\n"
+		"%TC_W_2 = OpLoad %f32 %TC_2_loc\n"
+		"%is_W_0_1 = OpFOrdEqual %bool %TC_W_0 %c_f32_1\n"
+		"%is_W_1_0 = OpFOrdEqual %bool %TC_W_1 %c_f32_0\n"
+		"%is_W_2_0 = OpFOrdEqual %bool %TC_W_2 %c_f32_0\n"
+		"%is_tessCoord_1_0 = OpLogicalAnd %bool %is_W_0_1 %is_W_1_0\n"
+		"%is_tessCoord_1_0_0 = OpLogicalAnd %bool %is_tessCoord_1_0 %is_W_2_0\n"
+		"%is_unique_id_0 = OpLogicalAnd %bool %is_tessCoord_1_0_0 %is_primitive_0\n"
+		"OpReturnValue %is_unique_id_0\n"
+		"OpFunctionEnd\n"
+
 		"${testfun}\n";
 	return tcu::StringTemplate(tessEvalBoilerplate).specialize(fragments);
 }
@@ -768,12 +862,13 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"${capability:opt}\n"
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_in %BP_out_color %BP_in_color ${IF_entrypoint:opt} \n"
+		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_PrimitiveID %BP_gl_in %BP_out_color %BP_in_color ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main Triangles\n"
 		"OpExecutionMode %BP_main OutputTriangleStrip\n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
 		"${debug:opt}\n"
 		"OpName %BP_main \"main\"\n"
+		"OpName %BP_gl_PrimitiveID \"gl_PrimitiveID\"\n"
 		"OpName %BP_per_vertex_in \"gl_PerVertex\"\n"
 		"OpMemberName %BP_per_vertex_in 0 \"gl_Position\"\n"
 		"OpMemberName %BP_per_vertex_in 1 \"gl_PointSize\"\n"
@@ -783,6 +878,7 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_out_color \"out_color\"\n"
 		"OpName %BP_in_color \"in_color\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
+		"OpDecorate %BP_gl_PrimitiveID BuiltIn PrimitiveId\n"
 		"OpDecorate %BP_out_gl_position BuiltIn Position\n"
 		"OpMemberDecorate %BP_per_vertex_in 0 BuiltIn Position\n"
 		"OpMemberDecorate %BP_per_vertex_in 1 BuiltIn PointSize\n"
@@ -799,11 +895,15 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"%BP_per_vertex_in = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
 		"%BP_a3_per_vertex_in = OpTypeArray %BP_per_vertex_in %c_u32_3\n"
 		"%BP_ip_a3_per_vertex_in = OpTypePointer Input %BP_a3_per_vertex_in\n"
+		"%BP_pp_i32 = OpTypePointer Private %i32\n"
+		"%BP_pp_v4i32 = OpTypePointer Private %v4i32\n"
 
 		"%BP_gl_in = OpVariable %BP_ip_a3_per_vertex_in Input\n"
 		"%BP_out_color = OpVariable %op_v4f32 Output\n"
 		"%BP_in_color = OpVariable %ip_a3v4f32 Input\n"
+		"%BP_gl_PrimitiveID = OpVariable %ip_i32 Input\n"
 		"%BP_out_gl_position = OpVariable %op_v4f32 Output\n"
+		"%BP_vertexIdInCurrentPatch = OpVariable %BP_pp_v4i32 Private\n"
 		"${pre_main:opt}\n"
 		"${IF_variable:opt}\n"
 
@@ -811,6 +911,9 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"%BP_label = OpLabel\n"
 
 		"${IF_carryforward:opt}\n"
+
+		"%BP_primitiveId = OpLoad %i32 %BP_gl_PrimitiveID\n"
+		"%BP_addr_vertexIdInCurrentPatch = OpAccessChain %BP_pp_i32 %BP_vertexIdInCurrentPatch %BP_primitiveId\n"
 
 		"%BP_gl_in_0_gl_position = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_0 %c_i32_0\n"
 		"%BP_gl_in_1_gl_position = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_1 %c_i32_0\n"
@@ -828,8 +931,11 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"%BP_in_color_1 = OpLoad %v4f32 %BP_in_color_1_ptr\n"
 		"%BP_in_color_2 = OpLoad %v4f32 %BP_in_color_2_ptr\n"
 
+		"OpStore %BP_addr_vertexIdInCurrentPatch %c_i32_0\n"
 		"%BP_transformed_in_color_0 = OpFunctionCall %v4f32 %test_code %BP_in_color_0\n"
+		"OpStore %BP_addr_vertexIdInCurrentPatch %c_i32_1\n"
 		"%BP_transformed_in_color_1 = OpFunctionCall %v4f32 %test_code %BP_in_color_1\n"
+		"OpStore %BP_addr_vertexIdInCurrentPatch %c_i32_2\n"
 		"%BP_transformed_in_color_2 = OpFunctionCall %v4f32 %test_code %BP_in_color_2\n"
 
 
@@ -849,6 +955,18 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpReturn\n"
 		"OpFunctionEnd\n"
 		"${interface_op_func:opt}\n"
+
+		"%isUniqueIdZero = OpFunction %bool None %bool_function\n"
+		"%getId_label = OpLabel\n"
+		"%primitive_id = OpLoad %i32 %BP_gl_PrimitiveID\n"
+		"%addr_vertexIdInCurrentPatch = OpAccessChain %BP_pp_i32 %BP_vertexIdInCurrentPatch %primitive_id\n"
+		"%vertexIdInCurrentPatch = OpLoad %i32 %addr_vertexIdInCurrentPatch\n"
+		"%is_primitive_0 = OpIEqual %bool %primitive_id %c_i32_0\n"
+		"%is_vertex_0 = OpIEqual %bool %vertexIdInCurrentPatch %c_i32_0\n"
+		"%is_unique_id_0 = OpLogicalAnd %bool %is_primitive_0 %is_vertex_0\n"
+		"OpReturnValue %is_unique_id_0\n"
+		"OpFunctionEnd\n"
+
 		"${testfun}\n";
 	return tcu::StringTemplate(geometryShaderBoilerplate).specialize(fragments);
 }
@@ -874,20 +992,23 @@ string makeFragmentShaderAssembly(const map<string, string>& fragments)
 		"${capability:opt}\n"
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint Fragment %BP_main \"main\" %BP_vtxColor %BP_fragColor ${IF_entrypoint:opt} \n"
+		"OpEntryPoint Fragment %BP_main \"main\" %BP_vtxColor %BP_fragColor %BP_gl_FragCoord ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main OriginUpperLeft\n"
 		"${debug:opt}\n"
 		"OpName %BP_main \"main\"\n"
+		"OpName %BP_gl_FragCoord \"fragCoord\"\n"
 		"OpName %BP_fragColor \"fragColor\"\n"
 		"OpName %BP_vtxColor \"vtxColor\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
 		"OpDecorate %BP_fragColor Location 0\n"
 		"OpDecorate %BP_vtxColor Location 1\n"
+		"OpDecorate %BP_gl_FragCoord BuiltIn FragCoord\n"
 		"${IF_decoration:opt}\n"
 		"${decoration:opt}\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
 		SPIRV_ASSEMBLY_ARRAYS
+		"%BP_gl_FragCoord = OpVariable %ip_v4f32 Input\n"
 		"%BP_fragColor = OpVariable %op_v4f32 Output\n"
 		"%BP_vtxColor = OpVariable %ip_v4f32 Input\n"
 		"${pre_main:opt}\n"
@@ -901,6 +1022,19 @@ string makeFragmentShaderAssembly(const map<string, string>& fragments)
 		"OpReturn\n"
 		"OpFunctionEnd\n"
 		"${interface_op_func:opt}\n"
+
+		"%isUniqueIdZero = OpFunction %bool None %bool_function\n"
+		"%getId_label = OpLabel\n"
+		"%loc_x_coord = OpAccessChain %ip_f32 %BP_gl_FragCoord %c_i32_0\n"
+		"%loc_y_coord = OpAccessChain %ip_f32 %BP_gl_FragCoord %c_i32_1\n"
+		"%x_coord = OpLoad %f32 %loc_x_coord\n"
+		"%y_coord = OpLoad %f32 %loc_y_coord\n"
+		"%is_x_idx0 = OpFOrdEqual %bool %x_coord %c_f32_0_5\n"
+		"%is_y_idx0 = OpFOrdEqual %bool %y_coord %c_f32_0_5\n"
+		"%is_frag_0 = OpLogicalAnd %bool %is_x_idx0 %is_y_idx0\n"
+		"OpReturnValue %is_frag_0\n"
+		"OpFunctionEnd\n"
+
 		"${testfun}\n";
 	return tcu::StringTemplate(fragmentShaderBoilerplate).specialize(fragments);
 }
@@ -939,6 +1073,7 @@ map<string, string> passthruInterface(const IFDataType& data_type)
 		}
 
 		fragments["capability"]		= "OpCapability StorageInputOutput16\n";
+		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 
 		if (data_type.isVector())
 		{
@@ -1008,7 +1143,8 @@ map<string, string> fillInterfacePlaceholderFrag (void)
 		" %IF_input = OpVariable %ip_${input_type} Input\n"
 		"%IF_output = OpVariable %op_${output_type} Output\n";
 	fragments["IF_decoration"]		=
-		"OpDecorate  %IF_input Location 2\n"
+		"OpDecorate %IF_input Flat\n"
+		"OpDecorate %IF_input Location 2\n"
 		"OpDecorate %IF_output Location 1\n";  // Fragment shader should write to location #1.
 	fragments["IF_carryforward"]	=
 		"%IF_input_val = OpLoad %${input_type} %IF_input\n"
@@ -1938,6 +2074,10 @@ bool compare16BitFloat (float original, deUint16 returned, RoundingModeFlags fla
 		return false;
 	}
 
+	// Any denormalized value input into a shader may be flushed to 0.
+	if (originalFloat.isDenorm() && returnedFloat.isZero())
+		return true;
+
 	// Inf are always turned into Inf with the same sign, too.
 	if (originalFloat.isInf())
 	{
@@ -1966,7 +2106,7 @@ bool compare16BitFloat (float original, deUint16 returned, RoundingModeFlags fla
 
 		const Float16	expectedFloat	(deFloat32To16Round(original, deRoundingMode(bitNdx)));
 
-		// Denormalized numbers can be flushed to zero.
+		// Any denormalized value potentially generated by any instruction in a shader may be flushed to 0.
 		if (expectedFloat.isDenorm() && returnedFloat.isZero())
 			return true;
 
@@ -1984,9 +2124,17 @@ bool compare32BitFloat (float expected, float returned, tcu::TestLog& log)
 	const Float32	expectedFloat	(expected);
 	const Float32	returnedFloat	(returned);
 
-	// Denormalized numbers can be flushed to zero
+	// Any denormalized value potentially generated by any instruction in a shader may be flushed to 0.
 	if (expectedFloat.isDenorm() && returnedFloat.isZero())
 		return true;
+
+	{
+		const Float16	originalFloat	(deFloat32To16(expected));
+
+		// Any denormalized value input into a shader may be flushed to 0.
+		if (originalFloat.isDenorm() && returnedFloat.isZero())
+			return true;
+	}
 
 	if (expectedFloat.isNaN())
 	{
@@ -2021,16 +2169,13 @@ Move<VkBuffer> createBufferForResource(const DeviceInterface& vk, const VkDevice
 	return createBuffer(vk, vkDevice, &resourceBufferParams);
 }
 
-
 TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instance)
 {
-	const VkDevice								vkDevice				= context.getDevice();
-	const DeviceInterface&						vk						= context.getDeviceInterface();
-	const VkQueue								queue					= context.getUniversalQueue();
+	const InstanceInterface&					vkInstance				= context.getInstanceInterface();
+	const VkPhysicalDevice						vkPhysicalDevice		= context.getPhysicalDevice();
 	const deUint32								queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	// Create a dedicated logic device with required extensions enabled for this test case.
 	const tcu::UVec2							renderSize				(256, 256);
-	vector<ModuleHandleSp>						modules;
-	map<VkShaderStageFlagBits, VkShaderModule>	moduleByStage;
 	const int									testSpecificSeed		= 31354125;
 	const int									seed					= context.getTestContext().getCommandLine().getBaseSeed() ^ testSpecificSeed;
 	bool										supportsGeometry		= false;
@@ -2058,21 +2203,6 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	}
 
 	{
-		const vector<string>& supportedExtensions = context.getDeviceExtensions();
-		const deUint32 extCount = static_cast<deUint32>(instance.requiredDeviceExtensions.size());
-
-		for (deUint32 extNdx = 0; extNdx < extCount; ++extNdx)
-		{
-			const string& ext = instance.requiredDeviceExtensions[extNdx];
-
-			if (std::find(supportedExtensions.begin(), supportedExtensions.end(), ext) == supportedExtensions.end())
-			{
-				throw tcu::NotSupportedError(std::string("Device extension not supported: ") + ext);
-			}
-		}
-	}
-
-	{
 		for (deUint32 featureNdx = 0; featureNdx < instance.requiredDeviceFeatures.size(); ++featureNdx)
 		{
 			const string& feature = instance.requiredDeviceFeatures[featureNdx];
@@ -2088,6 +2218,47 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			}
 		}
 	}
+
+	// 16bit storage features
+	{
+		if (!is16BitStorageFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.ext16BitStorage))
+			TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
+	}
+
+	// Variable Pointers features
+	{
+		if (!isVariablePointersFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.extVariablePointers))
+			TCU_THROW(NotSupportedError, "Requested Variable Pointer features not supported");
+
+		if (instance.requestedFeatures.extVariablePointers)
+		{
+			// The device doesn't have the vertexPipelineStoresAndAtomics feature, but the test requires the feature for
+			// vertex, tesselation, and geometry stages.
+			if (features.vertexPipelineStoresAndAtomics == DE_FALSE &&
+				instance.requestedFeatures.coreFeatures.vertexPipelineStoresAndAtomics == DE_TRUE &&
+			    (instance.customizedStages & vk::VK_SHADER_STAGE_VERTEX_BIT ||
+				 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT ||
+				 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
+				 instance.customizedStages & vk::VK_SHADER_STAGE_GEOMETRY_BIT))
+				TCU_THROW(NotSupportedError, "This VK_KHR_variable_pointers extension test requires vertexPipelineStoresAndAtomics device feature.");
+
+			// The device doesn't have the fragmentStoresAndAtomics feature, but the test requires this feature for the fragment stage.
+			if (features.fragmentStoresAndAtomics == DE_FALSE &&
+			    instance.requestedFeatures.coreFeatures.fragmentStoresAndAtomics == DE_TRUE &&
+				instance.customizedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT)
+				TCU_THROW(NotSupportedError, "This VK_KHR_variable_pointers extension test requires fragmentStoresAndAtomics device feature.");
+		}
+	}
+
+	// defer device and other resource creation until after feature checks
+	const Unique<VkDevice>						vkDevice				(createDeviceWithExtensions(context, queueFamilyIndex, context.getDeviceExtensions(), instance.requiredDeviceExtensions));
+	const DeviceDriver							vk						(vkInstance, *vkDevice);
+	const VkQueue								queue					= getDeviceQueue(vk, *vkDevice, queueFamilyIndex, 0);
+	const de::UniquePtr<Allocator>				allocatorUptr			(createAllocator(vkInstance, vkPhysicalDevice, vk, *vkDevice));
+	Allocator&									allocator				= *allocatorUptr;
+	vector<ModuleHandleSp>						modules;
+	map<VkShaderStageFlagBits, VkShaderModule>	moduleByStage;
+
 
 	de::Random(seed).shuffle(instance.inputColors, instance.inputColors+4);
 	de::Random(seed).shuffle(instance.outputColors, instance.outputColors+4);
@@ -2135,10 +2306,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		1u,										//	deUint32			queueFamilyCount;
 		&queueFamilyIndex,						//	const deUint32*		pQueueFamilyIndices;
 	};
-	const Unique<VkBuffer>					vertexBuffer			(createBuffer(vk, vkDevice, &vertexBufferParams));
-	const UniquePtr<Allocation>				vertexBufferMemory		(context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *vertexBuffer), MemoryRequirement::HostVisible));
+	const Unique<VkBuffer>					vertexBuffer			(createBuffer(vk, *vkDevice, &vertexBufferParams));
+	const UniquePtr<Allocation>				vertexBufferMemory		(allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *vertexBuffer), MemoryRequirement::HostVisible));
 
-	VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset()));
+	VK_CHECK(vk.bindBufferMemory(*vkDevice, *vertexBuffer, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset()));
 
 	const VkDeviceSize						imageSizeBytes			= (VkDeviceSize)(sizeof(deUint32)*renderSize.x()*renderSize.y());
 	const VkBufferCreateInfo				readImageBufferParams	=
@@ -2152,10 +2323,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		1u,											//	deUint32			queueFamilyCount;
 		&queueFamilyIndex,							//	const deUint32*		pQueueFamilyIndices;
 	};
-	const Unique<VkBuffer>					readImageBuffer			(createBuffer(vk, vkDevice, &readImageBufferParams));
-	const UniquePtr<Allocation>				readImageBufferMemory	(context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), MemoryRequirement::HostVisible));
+	const Unique<VkBuffer>					readImageBuffer			(createBuffer(vk, *vkDevice, &readImageBufferParams));
+	const UniquePtr<Allocation>				readImageBufferMemory	(allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *readImageBuffer), MemoryRequirement::HostVisible));
 
-	VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
+	VK_CHECK(vk.bindBufferMemory(*vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 
 	VkImageCreateInfo						imageParams				=
 	{
@@ -2176,10 +2347,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		VK_IMAGE_LAYOUT_UNDEFINED,												//	VkImageLayout		initialLayout;
 	};
 
-	const Unique<VkImage>					image					(createImage(vk, vkDevice, &imageParams));
-	const UniquePtr<Allocation>				imageMemory				(context.getDefaultAllocator().allocate(getImageMemoryRequirements(vk, vkDevice, *image), MemoryRequirement::Any));
+	const Unique<VkImage>					image					(createImage(vk, *vkDevice, &imageParams));
+	const UniquePtr<Allocation>				imageMemory				(allocator.allocate(getImageMemoryRequirements(vk, *vkDevice, *image), MemoryRequirement::Any));
 
-	VK_CHECK(vk.bindImageMemory(vkDevice, *image, imageMemory->getMemory(), imageMemory->getOffset()));
+	VK_CHECK(vk.bindImageMemory(*vkDevice, *image, imageMemory->getMemory(), imageMemory->getOffset()));
 
 	if (needInterface)
 	{
@@ -2201,9 +2372,9 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			&queueFamilyIndex,							//	const deUint32*		pQueueFamilyIndices;
 		};
 
-		vertexInputBuffer = createBuffer(vk, vkDevice, &vertexInputParams);
-		vertexInputMemory = context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *vertexInputBuffer), MemoryRequirement::HostVisible);
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexInputBuffer, vertexInputMemory->getMemory(), vertexInputMemory->getOffset()));
+		vertexInputBuffer = createBuffer(vk, *vkDevice, &vertexInputParams);
+		vertexInputMemory = allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *vertexInputBuffer), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(*vkDevice, *vertexInputBuffer, vertexInputMemory->getMemory(), vertexInputMemory->getOffset()));
 
 		// Create an additional buffer and backing memory for an output variable.
 		const VkDeviceSize						fragOutputImgSize		= (VkDeviceSize)(instance.interfaces.getOutputType().getNumBytes() * renderSize.x() * renderSize.y());
@@ -2218,17 +2389,21 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			1u,											//	deUint32			queueFamilyCount;
 			&queueFamilyIndex,							//	const deUint32*		pQueueFamilyIndices;
 		};
-		fragOutputBuffer = createBuffer(vk, vkDevice, &fragOutputParams);
-		fragOutputMemory = context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *fragOutputBuffer), MemoryRequirement::HostVisible);
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *fragOutputBuffer, fragOutputMemory->getMemory(), fragOutputMemory->getOffset()));
+		fragOutputBuffer = createBuffer(vk, *vkDevice, &fragOutputParams);
+		fragOutputMemory = allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *fragOutputBuffer), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(*vkDevice, *fragOutputBuffer, fragOutputMemory->getMemory(), fragOutputMemory->getOffset()));
 
 		// Create an additional image and backing memory for attachment.
 		// Reuse the previous imageParams since we only need to change the image format.
 		imageParams.format		= instance.interfaces.getOutputType().getVkFormat();
-		fragOutputImage			= createImage(vk, vkDevice, &imageParams);
-		fragOutputImageMemory	= context.getDefaultAllocator().allocate(getImageMemoryRequirements(vk, vkDevice, *fragOutputImage), MemoryRequirement::Any);
 
-		VK_CHECK(vk.bindImageMemory(vkDevice, *fragOutputImage, fragOutputImageMemory->getMemory(), fragOutputImageMemory->getOffset()));
+		// Check the usage bits on the given image format are supported.
+		requireFormatUsageSupport(vkInstance, vkPhysicalDevice, imageParams.format, imageParams.tiling, imageParams.usage);
+
+		fragOutputImage			= createImage(vk, *vkDevice, &imageParams);
+		fragOutputImageMemory	= allocator.allocate(getImageMemoryRequirements(vk, *vkDevice, *fragOutputImage), MemoryRequirement::Any);
+
+		VK_CHECK(vk.bindImageMemory(*vkDevice, *fragOutputImage, fragOutputImageMemory->getMemory(), fragOutputImageMemory->getOffset()));
 	}
 
 	vector<VkAttachmentDescription>			colorAttDescs			;
@@ -2313,7 +2488,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		renderPassParams.attachmentCount += 1;
 	}
 
-	const Unique<VkRenderPass>				renderPass				(createRenderPass(vk, vkDevice, &renderPassParams));
+	const Unique<VkRenderPass>				renderPass				(createRenderPass(vk, *vkDevice, &renderPassParams));
 
 	const VkImageViewCreateInfo				colorAttViewParams		=
 	{
@@ -2337,7 +2512,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			1u,												//	deUint32			arraySize;
 		},												//	VkImageSubresourceRange		subresourceRange;
 	};
-	const Unique<VkImageView>				colorAttView			(createImageView(vk, vkDevice, &colorAttViewParams));
+	const Unique<VkImageView>				colorAttView			(createImageView(vk, *vkDevice, &colorAttViewParams));
 
 	vector<VkImageView>						attViews				;
 	attViews.push_back(*colorAttView);
@@ -2368,10 +2543,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		{
 			const Resource&					resource				= instance.resources.inputs[inputNdx];
 			// Create buffer and allocate memory.
-			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, vkDevice, resource, queueFamilyIndex);
-			de::MovePtr<Allocation>			resourceMemory			= context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
+			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
+			de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
 
-			VK_CHECK(vk.bindBufferMemory(vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
+			VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
 			// Copy data to memory.
 			const VkMappedMemoryRange		range					=
@@ -2384,7 +2559,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			};
 
 			deMemcpy(resourceMemory->getHostPtr(), resource.second->data(), resource.second->getNumBytes());
-			VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
+			VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
 
 			inResourceMemories.push_back(AllocationSp(resourceMemory.release()));
 			inResourceBuffers.push_back(BufferHandleSp(new BufferHandleUp(resourceBuffer)));
@@ -2414,10 +2589,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		{
 			const Resource&					resource				= instance.resources.outputs[outputNdx];
 			// Create buffer and allocate memory.
-			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, vkDevice, resource, queueFamilyIndex);
-			de::MovePtr<Allocation>			resourceMemory			= context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
+			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
+			de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
 
-			VK_CHECK(vk.bindBufferMemory(vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
+			VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
 			// Fill memory with all ones.
 			const VkMappedMemoryRange		range					=
@@ -2430,7 +2605,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			};
 
 			deMemset((deUint8*)resourceMemory->getHostPtr(), 0xff, resource.second->getNumBytes());
-			VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
+			VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
 
 			outResourceMemories.push_back(AllocationSp(resourceMemory.release()));
 			outResourceBuffers.push_back(BufferHandleSp(new BufferHandleUp(resourceBuffer)));
@@ -2464,7 +2639,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			numResources,											// bindingCount
 			setLayoutBindings.data(),								// pBindings
 		};
-		setLayout													= createDescriptorSetLayout(vk, vkDevice, &setLayoutParams);
+		setLayout													= createDescriptorSetLayout(vk, *vkDevice, &setLayoutParams);
 		rawSetLayout												= *setLayout;
 
 		const VkDescriptorPoolCreateInfo		poolParams			=
@@ -2476,7 +2651,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			numResources,											// poolSizeCount
 			poolSizes.data(),										// pPoolSizes
 		};
-		descriptorPool												= createDescriptorPool(vk, vkDevice, &poolParams);
+		descriptorPool												= createDescriptorPool(vk, *vkDevice, &poolParams);
 
 		const VkDescriptorSetAllocateInfo		setAllocParams		=
 		{
@@ -2486,7 +2661,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			1u,														// descriptorSetCount
 			&rawSetLayout,											// pSetLayouts
 		};
-		VK_CHECK(vk.allocateDescriptorSets(vkDevice, &setAllocParams, &rawSet));
+		VK_CHECK(vk.allocateDescriptorSets(*vkDevice, &setAllocParams, &rawSet));
 
 		// Update descriptor set.
 		vector<VkWriteDescriptorSet>			writeSpecs			;
@@ -2543,7 +2718,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			};
 			writeSpecs.push_back(writeSpec);
 		}
-		vk.updateDescriptorSets(vkDevice, numResources, writeSpecs.data(), 0, DE_NULL);
+		vk.updateDescriptorSets(*vkDevice, numResources, writeSpecs.data(), 0, DE_NULL);
 	}
 
 	// Pipeline layout
@@ -2576,14 +2751,14 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		pipelineLayoutParams.setLayoutCount								= 1;
 		pipelineLayoutParams.pSetLayouts								= &rawSetLayout;
 	}
-	const Unique<VkPipelineLayout>			pipelineLayout			(createPipelineLayout(vk, vkDevice, &pipelineLayoutParams));
+	const Unique<VkPipelineLayout>			pipelineLayout			(createPipelineLayout(vk, *vkDevice, &pipelineLayoutParams));
 
 	// Pipeline
 	vector<VkPipelineShaderStageCreateInfo>		shaderStageParams;
 	// We need these vectors to make sure that information about specialization constants for each stage can outlive createGraphicsPipeline().
 	vector<vector<VkSpecializationMapEntry> >	specConstantEntries;
 	vector<VkSpecializationInfo>				specializationInfos;
-	createPipelineShaderStages(vk, vkDevice, instance, context, modules, shaderStageParams);
+	createPipelineShaderStages(vk, *vkDevice, instance, context, modules, shaderStageParams);
 
 	// And we don't want the reallocation of these vectors to invalidate pointers pointing to their contents.
 	specConstantEntries.reserve(shaderStageParams.size());
@@ -2859,7 +3034,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		0u,														//	deInt32											basePipelineIndex;
 	};
 
-	const Unique<VkPipeline>				pipeline				(createGraphicsPipeline(vk, vkDevice, DE_NULL, &pipelineParams));
+	const Unique<VkPipeline>				pipeline				(createGraphicsPipeline(vk, *vkDevice, DE_NULL, &pipelineParams));
 
 	if (needInterface)
 	{
@@ -2885,7 +3060,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				1u,												//	deUint32			arraySize;
 			},													//	VkImageSubresourceRange		subresourceRange;
 		};
-		fragOutputImageView = createImageView(vk, vkDevice, &fragOutputViewParams);
+		fragOutputImageView = createImageView(vk, *vkDevice, &fragOutputViewParams);
 		attViews.push_back(*fragOutputImageView);
 	}
 
@@ -2906,12 +3081,12 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	if (needInterface)
 		framebufferParams.attachmentCount += 1;
 
-	const Unique<VkFramebuffer>				framebuffer				(createFramebuffer(vk, vkDevice, &framebufferParams));
+	const Unique<VkFramebuffer>				framebuffer				(createFramebuffer(vk, *vkDevice, &framebufferParams));
 
-	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, *vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 
 	// Command buffer
-	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, *vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkCommandBufferBeginInfo			cmdBufBeginParams		=
 	{
@@ -3118,7 +3293,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		void*						vertexBufPtr	= vertexBufferMemory->getHostPtr();
 
 		deMemcpy(vertexBufPtr, &vertexData[0], sizeof(vertexData));
-		VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
+		VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
 	}
 
 	if (needInterface)
@@ -3154,7 +3329,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			VK_WHOLE_SIZE,							//	VkDeviceSize	size;
 		};
 
-		VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
+		VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
 	}
 
 	// Submit & wait for completion
@@ -3165,7 +3340,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			DE_NULL,								//	const void*			pNext;
 			0u,										//	VkFenceCreateFlags	flags;
 		};
-		const Unique<VkFence>	fence		(createFence(vk, vkDevice, &fenceParams));
+		const Unique<VkFence>	fence		(createFence(vk, *vkDevice, &fenceParams));
 		const VkSubmitInfo		submitInfo	=
 		{
 			VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -3180,7 +3355,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		};
 
 		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), DE_TRUE, ~0ull));
+		VK_CHECK(vk.waitForFences(*vkDevice, 1u, &fence.get(), DE_TRUE, ~0ull));
 	}
 
 	const void* imagePtr	= readImageBufferMemory->getHostPtr();
@@ -3197,8 +3372,23 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			imageSizeBytes,							//	VkDeviceSize	size;
 		};
 
-		VK_CHECK(vk.invalidateMappedMemoryRanges(vkDevice, 1u, &range));
+		VK_CHECK(vk.invalidateMappedMemoryRanges(*vkDevice, 1u, &range));
 		context.getTestContext().getLog() << TestLog::Image("Result", "Result", pixelBuffer);
+	}
+
+	if (needInterface)
+	{
+		const VkDeviceSize			fragOutputImgSize	= (VkDeviceSize)(instance.interfaces.getOutputType().getNumBytes() * renderSize.x() * renderSize.y());
+		const VkMappedMemoryRange	range				=
+		{
+			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	//	VkStructureType	sType;
+			DE_NULL,								//	const void*		pNext;
+			fragOutputMemory->getMemory(),			//	VkDeviceMemory	mem;
+			0,										//	VkDeviceSize	offset;
+			fragOutputImgSize,						//	VkDeviceSize	size;
+		};
+
+		VK_CHECK(vk.invalidateMappedMemoryRanges(*vkDevice, 1u, &range));
 	}
 
 	{ // Make sure all output resources are ready.
@@ -3213,7 +3403,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				VK_WHOLE_SIZE,									//	VkDeviceSize	size;
 			};
 
-			VK_CHECK(vk.invalidateMappedMemoryRanges(vkDevice, 1u, &range));
+			VK_CHECK(vk.invalidateMappedMemoryRanges(*vkDevice, 1u, &range));
 		}
 	}
 
@@ -3348,6 +3538,7 @@ void createTestsForAllStages (const std::string&			name,
 							  const GraphicsInterfaces&		interfaces,
 							  const vector<string>&			extensions,
 							  const vector<string>&			features,
+							  VulkanFeatures				vulkanFeatures,
 							  tcu::TestCaseGroup*			tests,
 							  const qpTestResult			failResult,
 							  const string&					failMessageTemplate)
@@ -3379,35 +3570,35 @@ void createTestsForAllStages (const std::string&			name,
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_vert", "", addShaderCodeCustomVertex, runAndVerifyDefaultPipeline,
 			createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_VERTEX_BIT, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_tessc", "", addShaderCodeCustomTessControl, runAndVerifyDefaultPipeline,
 			createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_tesse", "", addShaderCodeCustomTessEval, runAndVerifyDefaultPipeline,
 			createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_GEOMETRY_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_geom", "", addShaderCodeCustomGeometry, runAndVerifyDefaultPipeline,
 			createInstanceContext(geomPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_GEOMETRY_BIT, failResult, failMessageTemplate));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_FRAGMENT_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(
 			tests, name + "_frag", "", addShaderCodeCustomFragment, runAndVerifyDefaultPipeline,
 			createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, failResult, failMessageTemplate));
+				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_FRAGMENT_BIT, failResult, failMessageTemplate));
 }
 
 void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const map<string, string>& fragments)
@@ -3427,7 +3618,8 @@ void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const map<stri
 			runAndVerifyDefaultPipeline, createInstanceContext(
 				pipelineStages, defaultColors, defaultColors, fragments,
 				StageToSpecConstantMap(), PushConstants(), GraphicsResources(),
-				GraphicsInterfaces(), vector<string>(), vector<string>()));
+				GraphicsInterfaces(), vector<string>(), vector<string>(),
+				VulkanFeatures(), vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
 }
 
 } // SpirVAssembly
