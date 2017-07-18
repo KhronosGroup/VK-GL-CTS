@@ -105,7 +105,7 @@ class SourcePackage (Source):
 		dstPath		= os.path.join(EXTERNAL_DIR, self.baseDir, self.archiveDir, self.filename)
 
 		if checksum != self.checksum:
-			raise Exception("Checksum mismatch for %s, exepected %s, got %s" % (self.filename, self.checksum, checksum))
+			raise Exception("Checksum mismatch for %s, expected %s, got %s" % (self.filename, self.checksum, checksum))
 
 		if not os.path.exists(os.path.dirname(dstPath)):
 			os.mkdir(os.path.dirname(dstPath))

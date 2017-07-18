@@ -78,7 +78,7 @@ def fetchFile (dstPath, url, checksum):
 	gotChecksum	= computeChecksum(data)
 
 	if checksum != gotChecksum:
-		raise Exception("Checksum mismatch, exepected %s, got %s" % (checksum, gotChecksum))
+		raise Exception("Checksum mismatch, expected %s, got %s" % (checksum, gotChecksum))
 
 	writeFile(dstPath, data)
 
