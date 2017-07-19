@@ -160,21 +160,24 @@ vk::Move<vk::VkFence>			createAndImportFence				(const vk::DeviceInterface&					
 vk::Move<vk::VkDeviceMemory>	allocateExportableMemory			(const vk::DeviceInterface&					vkd,
 																	 vk::VkDevice								device,
 																	 const vk::VkMemoryRequirements&			requirements,
-																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType);
+																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+																	 deUint32&									exportedMemoryTypeIndex);
 
 // If buffer is not null use dedicated allocation
 vk::Move<vk::VkDeviceMemory>	allocateExportableMemory			(const vk::DeviceInterface&					vkd,
 																	 vk::VkDevice								device,
 																	 const vk::VkMemoryRequirements&			requirements,
 																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
-																	 vk::VkBuffer								buffer);
+																	 vk::VkBuffer								buffer,
+																	 deUint32&									exportedMemoryTypeIndex);
 
 // If image is not null use dedicated allocation
 vk::Move<vk::VkDeviceMemory>	allocateExportableMemory			(const vk::DeviceInterface&					vkd,
 																	 vk::VkDevice								device,
 																	 const vk::VkMemoryRequirements&			requirements,
 																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
-																	 vk::VkImage								image);
+																	 vk::VkImage								image,
+																	 deUint32&									exportedMemoryTypeIndex);
 
 // \note hostVisible argument is strict. Setting it to false will cause NotSupportedError to be thrown if non-host visible memory doesn't exist.
 // If buffer is not null use dedicated allocation
@@ -185,12 +188,14 @@ vk::Move<vk::VkDeviceMemory>	allocateExportableMemory			(const vk::InstanceInter
 																	 const vk::VkMemoryRequirements&			requirements,
 																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
 																	 bool										hostVisible,
-																	 vk::VkBuffer								buffer);
+																	 vk::VkBuffer								buffer,
+																	 deUint32&									exportedMemoryTypeIndex);
 
 vk::Move<vk::VkDeviceMemory>	importMemory						(const vk::DeviceInterface&					vkd,
 																	 vk::VkDevice								device,
 																	 const vk::VkMemoryRequirements&			requirements,
 																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+																	 deUint32									memoryTypeIndex,
 																	 NativeHandle&								handle);
 
 vk::Move<vk::VkDeviceMemory>	importDedicatedMemory				(const vk::DeviceInterface&					vkd,
@@ -198,6 +203,7 @@ vk::Move<vk::VkDeviceMemory>	importDedicatedMemory				(const vk::DeviceInterface
 																	 vk::VkBuffer								buffer,
 																	 const vk::VkMemoryRequirements&			requirements,
 																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+																	 deUint32									memoryTypeIndex,
 																	 NativeHandle&								handle);
 
 vk::Move<vk::VkDeviceMemory>	importDedicatedMemory				(const vk::DeviceInterface&					vkd,
@@ -205,6 +211,7 @@ vk::Move<vk::VkDeviceMemory>	importDedicatedMemory				(const vk::DeviceInterface
 																	 vk::VkImage								image,
 																	 const vk::VkMemoryRequirements&			requirements,
 																	 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+																	 deUint32									memoryTypeIndex,
 																	 NativeHandle&								handle);
 
 vk::Move<vk::VkBuffer>			createExternalBuffer				(const vk::DeviceInterface&					vkd,
