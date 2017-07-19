@@ -77,13 +77,15 @@ public:
 								FillUpdateCopyBufferTestInstance	(Context&					ctx,
 																	 const deUint32				fillValue,
 																	 const BufferValidator<T>&	validator,
-																	 CmdType					cmdType);
+																	 CmdType					cmdType,
+																	 const CmdBufferType		cmdBufferType);
 	virtual tcu::TestStatus		iterate								(void);
 
 private:
 	const deUint32				m_fillValue;
 	const BufferValidator<T>&	m_validator;
 	CmdType						m_cmdType;
+	const CmdBufferType			m_cmdBufferType;
 };
 
 
@@ -95,18 +97,20 @@ public:
 															 const std::string&		name,
 															 deUint32				fillValue,
 															 ValidationData<T>		data,
-															 CmdType				cmdType)
-								: TestCase		(testCtx, name, getTestTypeName(cmdType))
-								, m_fillValue	(fillValue)
-								, m_validator	(data)
-								, m_cmdType		(cmdType)
+															 CmdType				cmdType,
+															 CmdBufferType			cmdBufferType)
+								: TestCase			(testCtx, name, getTestTypeName(cmdType))
+								, m_fillValue		(fillValue)
+								, m_validator		(data)
+								, m_cmdType			(cmdType)
+								, m_cmdBufferType	(cmdBufferType)
 							{
 							}
 
 	virtual					~FillUpdateCopyBufferTestCase	(void) {}
 	virtual TestInstance*	createInstance					(Context& ctx) const
 							{
-								return new FillUpdateCopyBufferTestInstance<T>(ctx, m_fillValue, m_validator, m_cmdType);
+								return new FillUpdateCopyBufferTestInstance<T>(ctx, m_fillValue, m_validator, m_cmdType, m_cmdBufferType);
 							}
 	virtual void			initPrograms					(vk::SourceCollections& programCollection) const
 							{
@@ -116,17 +120,20 @@ private:
 	deUint32				m_fillValue;
 	BufferValidator<T>		m_validator;
 	CmdType					m_cmdType;
+	CmdBufferType			m_cmdBufferType;
 };
 
 template<typename T>
 FillUpdateCopyBufferTestInstance<T>::FillUpdateCopyBufferTestInstance	(Context&					ctx,
 																		 const deUint32				fillValue,
 																		 const BufferValidator<T>&	validator,
-																		 CmdType					cmdType)
+																		 CmdType					cmdType,
+																		 const CmdBufferType		cmdBufferType)
 	: ProtectedTestInstance	(ctx)
 	, m_fillValue			(fillValue)
 	, m_validator			(validator)
 	, m_cmdType				(cmdType)
+	, m_cmdBufferType		(cmdBufferType)
 {
 }
 
@@ -159,9 +166,28 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 
 	vk::Unique<vk::VkCommandPool>		cmdPool				(makeCommandPool(vk, device, PROTECTION_ENABLED, queueFamilyIndex));
 	vk::Unique<vk::VkCommandBuffer>		cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	vk::Unique<vk::VkCommandBuffer>		secondaryCmdBuffer	(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY));
+	vk::VkCommandBuffer					targetCmdBuffer		= (m_cmdBufferType == CMD_BUFFER_SECONDARY) ? *secondaryCmdBuffer : *cmdBuffer;
 
 	// Begin cmd buffer
 	beginCommandBuffer(vk, *cmdBuffer);
+
+	if (m_cmdBufferType == CMD_BUFFER_SECONDARY)
+	{
+		// Begin secondary command buffer
+		const vk::VkCommandBufferInheritanceInfo	secCmdBufInheritInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+			DE_NULL,
+			(vk::VkRenderPass)0u,										// renderPass
+			0u,															// subpass
+			(vk::VkFramebuffer)0u,										// framebuffer
+			VK_FALSE,													// occlusionQueryEnable
+			(vk::VkQueryControlFlags)0u,								// queryFlags
+			(vk::VkQueryPipelineStatisticFlags)0u,						// pipelineStatistics
+		};
+		beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, secCmdBufInheritInfo);
+	}
 
 	switch (m_cmdType) {
 		case FILL_BUFFER:
@@ -178,7 +204,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 					0u,												// VkDeviceSize			offset
 					VK_WHOLE_SIZE,									// VkDeviceSize			size
 				};
-				vk.cmdPipelineBarrier(*cmdBuffer,
+				vk.cmdPipelineBarrier(targetCmdBuffer,
 									  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 									  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 									  (vk::VkDependencyFlags) 0,
@@ -186,7 +212,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 									  1, &startFillBufferBarrier,
 									  0, (const vk::VkImageMemoryBarrier *) DE_NULL);
 				// Fill buffer
-				vk.cmdFillBuffer(*cmdBuffer, **dstBuffer, 0u, VK_WHOLE_SIZE, m_fillValue);
+				vk.cmdFillBuffer(targetCmdBuffer, **dstBuffer, 0u, VK_WHOLE_SIZE, m_fillValue);
 				break;
 			}
 
@@ -204,7 +230,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 					0u,												// VkDeviceSize			offset
 					VK_WHOLE_SIZE,									// VkDeviceSize			size
 				};
-				vk.cmdPipelineBarrier(*cmdBuffer,
+				vk.cmdPipelineBarrier(targetCmdBuffer,
 									  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 									  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 									  (vk::VkDependencyFlags) 0,
@@ -215,7 +241,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 				deUint32 data[BUFFER_SIZE];
 				for (size_t ndx = 0; ndx < BUFFER_SIZE; ndx++)
 					data[ndx] = m_fillValue;
-				vk.cmdUpdateBuffer(*cmdBuffer, **dstBuffer, 0u, bufferSize, (const deUint32 *) &data);
+				vk.cmdUpdateBuffer(targetCmdBuffer, **dstBuffer, 0u, bufferSize, (const deUint32 *) &data);
 				break;
 			}
 
@@ -234,14 +260,14 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 					0u,												// VkDeviceSize			offset
 					VK_WHOLE_SIZE,									// VkDeviceSize			size
 				};
-				vk.cmdPipelineBarrier(*cmdBuffer,
+				vk.cmdPipelineBarrier(targetCmdBuffer,
 									  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 									  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 									  (vk::VkDependencyFlags) 0,
 									  0, (const vk::VkMemoryBarrier *) DE_NULL,
 									  1, &startBufferBarrier,
 									  0, (const vk::VkImageMemoryBarrier *) DE_NULL);
-				vk.cmdFillBuffer(*cmdBuffer, **srcBuffer, 0u, VK_WHOLE_SIZE, m_fillValue);
+				vk.cmdFillBuffer(targetCmdBuffer, **srcBuffer, 0u, VK_WHOLE_SIZE, m_fillValue);
 
 				// Barrier to change accessMask to transfer read bit for source buffer
 				const vk::VkBufferMemoryBarrier startCopyBufferBarrier	=
@@ -276,7 +302,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 					startCopyBufferBarrier,
 					dstBufferBarrier
 				};
-				vk.cmdPipelineBarrier(*cmdBuffer,
+				vk.cmdPipelineBarrier(targetCmdBuffer,
 									  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 									  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 									  (vk::VkDependencyFlags)0,
@@ -290,7 +316,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 					0ull,								// VkDeviceSize		dstOffset;
 					bufferSize							// VkDeviceSize		size;
 				};
-				vk.cmdCopyBuffer(*cmdBuffer, **srcBuffer, **dstBuffer, 1u, &copyBufferRegion);
+				vk.cmdCopyBuffer(targetCmdBuffer, **srcBuffer, **dstBuffer, 1u, &copyBufferRegion);
 				break;
 			}
 
@@ -312,13 +338,19 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 			0u,													// VkDeviceSize			offset
 			VK_WHOLE_SIZE,										// VkDeviceSize			size
 		};
-		vk.cmdPipelineBarrier(*cmdBuffer,
+		vk.cmdPipelineBarrier(targetCmdBuffer,
 							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  1, &endBufferBarrier,
 							  0, (const vk::VkImageMemoryBarrier*)DE_NULL);
+	}
+
+	if (m_cmdBufferType == CMD_BUFFER_SECONDARY)
+	{
+		VK_CHECK(vk.endCommandBuffer(*secondaryCmdBuffer));
+		vk.cmdExecuteCommands(*cmdBuffer, 1u, &secondaryCmdBuffer.get());
 	}
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
@@ -338,7 +370,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 		return tcu::TestStatus::fail("Something went really wrong");
 }
 
-tcu::TestCaseGroup*	createFillUpdateCopyBufferFloatTests (tcu::TestContext& testCtx, CmdType cmdType)
+tcu::TestCaseGroup*	createFillUpdateCopyBufferFloatTests (tcu::TestContext& testCtx, CmdType cmdType, CmdBufferType cmdBufferType)
 {
 	struct {
 		const union {
@@ -397,7 +429,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferFloatTests (tcu::TestContext& test
 
 		const std::string name = "test_" + de::toString(ndx + 1);
 		staticTests->addChild(new FillUpdateCopyBufferTestCase<tcu::Vec4>(
-							testCtx, name.c_str(), testData[ndx].fillValue.uint, testData[ndx].data, cmdType));
+							testCtx, name.c_str(), testData[ndx].fillValue.uint, testData[ndx].data, cmdType, cmdBufferType));
 	}
 
 	/* Add a few randomized tests */
@@ -427,21 +459,27 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferFloatTests (tcu::TestContext& test
 		DE_ASSERT(data.positions[2].x() < MAX_POSITION);
 		DE_ASSERT(data.positions[3].x() < MAX_POSITION);
 
-		randomTests->addChild(new FillUpdateCopyBufferTestCase<tcu::Vec4>(testCtx, name.c_str(), fillValue.uint, data, cmdType));
+		randomTests->addChild(new FillUpdateCopyBufferTestCase<tcu::Vec4>(testCtx, name.c_str(), fillValue.uint, data, cmdType, cmdBufferType));
 	}
 
+	const std::string				groupName		= getCmdBufferTypeStr(cmdBufferType);
+	de::MovePtr<tcu::TestCaseGroup>	primaryGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str(), (desc + " using " + groupName.c_str() + " command buffer").c_str()));
+	primaryGroup->addChild(staticTests.release());
+	primaryGroup->addChild(randomTests.release());
+
+	return primaryGroup.release();
+}
+
+tcu::TestCaseGroup*	createFillUpdateCopyBufferFloatTests (tcu::TestContext& testCtx, CmdType cmdType)
+{
+	const std::string desc = std::string(getTestTypeName(cmdType)) + " (float)";
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "float_buffer", desc.c_str()));
-	{
-		de::MovePtr<tcu::TestCaseGroup> primaryGroup (new tcu::TestCaseGroup(testCtx, "primary", (desc + " using primary command buffer").c_str()));
-		primaryGroup->addChild(staticTests.release());
-		primaryGroup->addChild(randomTests.release());
-
-		testGroup->addChild(primaryGroup.release());
-	}
+	testGroup->addChild(createFillUpdateCopyBufferFloatTests(testCtx, cmdType, CMD_BUFFER_PRIMARY));
+	testGroup->addChild(createFillUpdateCopyBufferFloatTests(testCtx, cmdType, CMD_BUFFER_SECONDARY));
 	return testGroup.release();
 }
 
-tcu::TestCaseGroup*	createFillUpdateCopyBufferIntegerTests (tcu::TestContext& testCtx, CmdType cmdType)
+tcu::TestCaseGroup*	createFillUpdateCopyBufferIntegerTests (tcu::TestContext& testCtx, CmdType cmdType, CmdBufferType cmdBufferType)
 {
 	struct {
 		const union {
@@ -500,7 +538,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferIntegerTests (tcu::TestContext& te
 
 		const std::string name = "test_" + de::toString(ndx + 1);
 		staticTests->addChild(new FillUpdateCopyBufferTestCase<tcu::IVec4>(
-							testCtx, name.c_str(), testData[ndx].fillValue.uint, testData[ndx].data, cmdType));
+							testCtx, name.c_str(), testData[ndx].fillValue.uint, testData[ndx].data, cmdType, cmdBufferType));
 	}
 
 	/* Add a few randomized tests */
@@ -530,21 +568,27 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferIntegerTests (tcu::TestContext& te
 		DE_ASSERT(data.positions[2].x() < MAX_POSITION);
 		DE_ASSERT(data.positions[3].x() < MAX_POSITION);
 
-		randomTests->addChild(new FillUpdateCopyBufferTestCase<tcu::IVec4>(testCtx, name.c_str(), fillValue.uint, data, cmdType));
+		randomTests->addChild(new FillUpdateCopyBufferTestCase<tcu::IVec4>(testCtx, name.c_str(), fillValue.uint, data, cmdType, cmdBufferType));
 	}
 
+	const std::string				groupName		= getCmdBufferTypeStr(cmdBufferType);
+	de::MovePtr<tcu::TestCaseGroup>	primaryGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str(), (desc + " using " + groupName.c_str() + " command buffer").c_str()));
+	primaryGroup->addChild(staticTests.release());
+	primaryGroup->addChild(randomTests.release());
+
+	return primaryGroup.release();
+}
+
+tcu::TestCaseGroup*	createFillUpdateCopyBufferIntegerTests (tcu::TestContext& testCtx, CmdType cmdType)
+{
+	const std::string desc = std::string(getTestTypeName(cmdType)) + " (integer)";
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "integer_buffer", desc.c_str()));
-	{
-		de::MovePtr<tcu::TestCaseGroup> primaryGroup (new tcu::TestCaseGroup(testCtx, "primary", (desc + " using primary command buffer").c_str()));
-		primaryGroup->addChild(staticTests.release());
-		primaryGroup->addChild(randomTests.release());
-
-		testGroup->addChild(primaryGroup.release());
-	}
+	testGroup->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, cmdType, CMD_BUFFER_PRIMARY));
+	testGroup->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, cmdType, CMD_BUFFER_SECONDARY));
 	return testGroup.release();
 }
 
-tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& testCtx, CmdType cmdType)
+tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& testCtx, CmdType cmdType, CmdBufferType cmdBufferType)
 {
 	struct {
 		deUint32					fillValue;
@@ -600,7 +644,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& t
 
 		const std::string name = "test_" + de::toString(ndx + 1);
 		staticTests->addChild(new FillUpdateCopyBufferTestCase<tcu::UVec4>(
-							testCtx, name.c_str(), testData[ndx].fillValue, testData[ndx].data, cmdType));
+							testCtx, name.c_str(), testData[ndx].fillValue, testData[ndx].data, cmdType, cmdBufferType));
 	}
 
 	/* Add a few randomized tests */
@@ -626,43 +670,58 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& t
 		DE_ASSERT(data.positions[2].x() < MAX_POSITION);
 		DE_ASSERT(data.positions[3].x() < MAX_POSITION);
 
-		randomTests->addChild(new FillUpdateCopyBufferTestCase<tcu::UVec4>(testCtx, name.c_str(), fillValue, data, cmdType));
+		randomTests->addChild(new FillUpdateCopyBufferTestCase<tcu::UVec4>(testCtx, name.c_str(), fillValue, data, cmdType, cmdBufferType));
 	}
 
+	const std::string				groupName		= getCmdBufferTypeStr(cmdBufferType);
+	de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str(), (desc + " using " + groupName.c_str() + " command buffer").c_str()));
+	testGroup->addChild(staticTests.release());
+	testGroup->addChild(randomTests.release());
+
+	return testGroup.release();
+}
+
+tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& testCtx, CmdType cmdType)
+{
+	const std::string desc = std::string(getTestTypeName(cmdType)) + " (unsinged)";
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "unsigned_buffer", desc.c_str()));
-	{
-		de::MovePtr<tcu::TestCaseGroup> primaryGroup (new tcu::TestCaseGroup(testCtx, "primary", (desc + " using primary command buffer").c_str()));
-		primaryGroup->addChild(staticTests.release());
-		primaryGroup->addChild(randomTests.release());
-
-		testGroup->addChild(primaryGroup.release());
-	}
+	testGroup->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, cmdType, CMD_BUFFER_PRIMARY));
+	testGroup->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, cmdType, CMD_BUFFER_SECONDARY));
 	return testGroup.release();
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createFillBufferTests(tcu::TestContext& testCtx) {
+tcu::TestCaseGroup*	createFillBufferTests (tcu::TestContext& testCtx)
+{
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "fill", "Fill Buffer Tests"));
+
 	testGroup->addChild(createFillUpdateCopyBufferFloatTests(testCtx, FILL_BUFFER));
 	testGroup->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, FILL_BUFFER));
 	testGroup->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, FILL_BUFFER));
+
 	return testGroup.release();
 }
 
-tcu::TestCaseGroup* createUpdateBufferTests(tcu::TestContext& testCtx) {
+tcu::TestCaseGroup*	createUpdateBufferTests (tcu::TestContext& testCtx)
+{
 	de::MovePtr<tcu::TestCaseGroup> updateTests (new tcu::TestCaseGroup(testCtx, "update", "Update Buffer Tests"));
-	updateTests->addChild(createFillUpdateCopyBufferFloatTests(testCtx, UPDATE_BUFFER));
-	updateTests->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, UPDATE_BUFFER));
-	updateTests->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, UPDATE_BUFFER));
+
+	updateTests->addChild(createFillUpdateCopyBufferFloatTests(testCtx, FILL_BUFFER));
+	updateTests->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, FILL_BUFFER));
+	updateTests->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, FILL_BUFFER));
+
 	return updateTests.release();
 }
 
-tcu::TestCaseGroup* createCopyBufferTests(tcu::TestContext& testCtx) {
+tcu::TestCaseGroup*	createCopyBufferTests (tcu::TestContext& testCtx)
+{
 	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, "copy", "Copy Buffer Tests"));
-	copyTests->addChild(createFillUpdateCopyBufferFloatTests(testCtx, COPY_BUFFER));
-	copyTests->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, COPY_BUFFER));
-	copyTests->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, COPY_BUFFER));
+
+	copyTests->addChild(createFillUpdateCopyBufferFloatTests(testCtx, FILL_BUFFER));
+	copyTests->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, FILL_BUFFER));
+	copyTests->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, FILL_BUFFER));
+
 	return copyTests.release();
 }
 

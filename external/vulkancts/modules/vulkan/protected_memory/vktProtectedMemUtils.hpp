@@ -87,6 +87,18 @@ vk::Move<vk::VkFramebuffer>			createFramebuffer					(ProtectedContext&					conte
 vk::Move<vk::VkPipelineLayout>		createPipelineLayout				(ProtectedContext&					context,
 																		 deUint32							layoutCount,
 																		 vk::VkDescriptorSetLayout*			setLayouts);
+
+typedef vk::VkCommandBufferInheritanceInfo CmdBuffInheritance;
+enum CmdBufferType {
+	CMD_BUFFER_PRIMARY,
+	CMD_BUFFER_SECONDARY,
+};
+
+const char*							getCmdBufferTypeStr					(const CmdBufferType				cmdBufferType);
+void								beginSecondaryCommandBuffer			(const vk::DeviceInterface&			vk,
+																		 const vk::VkCommandBuffer			secondaryCmdBuffer,
+																		 const CmdBuffInheritance			secCmdBufInheritInfo);
+
 void								beginCommandBuffer					(const vk::DeviceInterface&			vk,
 																		 const vk::VkCommandBuffer			commandBuffer);
 vk::VkResult						queueSubmit							(ProtectedContext&					context,
@@ -116,7 +128,6 @@ vk::Move<vk::VkCommandPool>			makeCommandPool						(const vk::DeviceInterface&		
 																		 const vk::VkDevice&				device,
 																		 ProtectionMode						protectionMode,
 																		 const deUint32						queueFamilyIdx);
-
 
 vk::Move<vk::VkPipeline>			makeGraphicsPipeline				(const vk::DeviceInterface&			vk,
 																		 const vk::VkDevice					device,

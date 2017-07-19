@@ -57,7 +57,8 @@ public:
 								AttachmentClearTestInstance	(Context&					ctx,
 															 const vk::VkClearValue&	clearValue,
 															 const ValidationData&		refData,
-															 const ImageValidator&		validator);
+															 const ImageValidator&		validator,
+															 const CmdBufferType		cmdBufferType);
 	virtual tcu::TestStatus		iterate						(void);
 
 private:
@@ -65,6 +66,7 @@ private:
 	const vk::VkClearValue&		m_clearValue;
 	const ValidationData&		m_refData;
 	const ImageValidator&		m_validator;
+	const CmdBufferType			m_cmdBufferType;
 };
 
 
@@ -74,17 +76,19 @@ public:
 							AttachmentClearTestCase		(tcu::TestContext&		testCtx,
 														 const std::string&		name,
 														 vk::VkClearValue		clearValue,
-														 ValidationData			data)
-								: TestCase		(testCtx, name, "Clear attachment.")
-								, m_clearValue	(clearValue)
-								, m_refData		(data)
+														 ValidationData			data,
+														 CmdBufferType			cmdBufferType)
+								: TestCase			(testCtx, name, "Clear attachment.")
+								, m_clearValue		(clearValue)
+								, m_refData			(data)
+								, m_cmdBufferType	(cmdBufferType)
 							{
 							}
 
 	virtual					~AttachmentClearTestCase	(void) {}
 	virtual TestInstance*	createInstance				(Context& ctx) const
 							{
-								return new AttachmentClearTestInstance(ctx, m_clearValue, m_refData, m_validator);
+								return new AttachmentClearTestInstance(ctx, m_clearValue, m_refData, m_validator, m_cmdBufferType);
 							}
 	virtual void			initPrograms				(vk::SourceCollections&	programCollection) const
 							{
@@ -94,17 +98,20 @@ private:
 	vk::VkClearValue		m_clearValue;
 	ValidationData			m_refData;
 	ImageValidator			m_validator;
+	CmdBufferType			m_cmdBufferType;
 };
 
 AttachmentClearTestInstance::AttachmentClearTestInstance	(Context&					ctx,
 															 const vk::VkClearValue&	clearValue,
 															 const ValidationData&		refData,
-															 const ImageValidator&		validator)
+															 const ImageValidator&		validator,
+															 const CmdBufferType		cmdBufferType)
 	: ProtectedTestInstance	(ctx)
 	, m_imageFormat			(vk::VK_FORMAT_R8G8B8A8_UNORM)
 	, m_clearValue			(clearValue)
 	, m_refData				(refData)
 	, m_validator			(validator)
+	, m_cmdBufferType		(cmdBufferType)
 {
 }
 
@@ -129,6 +136,8 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
 
 	vk::Unique<vk::VkCommandPool>		cmdPool				(makeCommandPool(vk, device, PROTECTION_ENABLED, queueFamilyIndex));
 	vk::Unique<vk::VkCommandBuffer>		cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	vk::Unique<vk::VkCommandBuffer>		secondaryCmdBuffer	(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY));
+	vk::VkCommandBuffer					targetCmdBuffer		= (m_cmdBufferType == CMD_BUFFER_SECONDARY) ? *secondaryCmdBuffer : *cmdBuffer;
 
 	// Begin cmd buffer
 	beginCommandBuffer(vk, *cmdBuffer);
@@ -182,7 +191,27 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
 		&clearValue												// pClearValues
 	};
 
-	vk.cmdBeginRenderPass(*cmdBuffer, &passBeginInfo, vk::VK_SUBPASS_CONTENTS_INLINE);
+	const vk::VkSubpassContents			subpassContents		= m_cmdBufferType == CMD_BUFFER_SECONDARY
+															  ? vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+															  : vk::VK_SUBPASS_CONTENTS_INLINE;
+	vk.cmdBeginRenderPass(*cmdBuffer, &passBeginInfo, subpassContents);
+
+	if (m_cmdBufferType == CMD_BUFFER_SECONDARY)
+	{
+		// Begin secondary command buffer
+		const vk::VkCommandBufferInheritanceInfo	bufferInheritanceInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,		// sType
+			DE_NULL,													// pNext
+			*renderPass,												// renderPass
+			0u,															// subpass
+			*framebuffer,												// framebuffer
+			VK_FALSE,													// occlusionQueryEnable
+			(vk::VkQueryControlFlags)0u,								// queryFlags
+			(vk::VkQueryPipelineStatisticFlags)0u,						// pipelineStatistics
+		};
+		beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, bufferInheritanceInfo);
+	}
 
 	{
 		const vk::VkClearAttachment		pAttachments		=
@@ -212,7 +241,13 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
 			0u,													// deUint32				baseArrayLayer;
 			1u													// deUint32				layerCount;
 		};
-		vk.cmdClearAttachments(*cmdBuffer, 1u, &pAttachments, 1u, &clearRect);
+		vk.cmdClearAttachments(targetCmdBuffer, 1u, &pAttachments, 1u, &clearRect);
+	}
+
+	if (m_cmdBufferType == CMD_BUFFER_SECONDARY)
+	{
+		VK_CHECK(vk.endCommandBuffer(*secondaryCmdBuffer));
+		vk.cmdExecuteCommands(*cmdBuffer, 1u, &secondaryCmdBuffer.get());
 	}
 
 	vk.cmdEndRenderPass(*cmdBuffer);
@@ -265,9 +300,7 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
 		return tcu::TestStatus::fail("Something went really wrong");
 }
 
-} // anonymous
-
-tcu::TestCaseGroup*	createAttachmentClearTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createAttachmentClearTests (tcu::TestContext& testCtx, CmdBufferType cmdBufferType)
 {
 	struct {
 		const vk::VkClearValue		clearValue;
@@ -336,7 +369,7 @@ tcu::TestCaseGroup*	createAttachmentClearTests (tcu::TestContext& testCtx)
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
 		const std::string name = "clear_" +  de::toString(ndx + 1);
-		clearStaticTests->addChild(new AttachmentClearTestCase(testCtx, name.c_str(), testData[ndx].clearValue, testData[ndx].data));
+		clearStaticTests->addChild(new AttachmentClearTestCase(testCtx, name.c_str(), testData[ndx].clearValue, testData[ndx].data, cmdBufferType));
 	}
 
 	/* Add a few randomized tests */
@@ -362,17 +395,26 @@ tcu::TestCaseGroup*	createAttachmentClearTests (tcu::TestContext& testCtx)
 			{ refValue, refValue, refValue, refValue }
 		};
 
-		clearRandomTests->addChild(new AttachmentClearTestCase(testCtx, name.c_str(), clearValue, data));
+		clearRandomTests->addChild(new AttachmentClearTestCase(testCtx, name.c_str(), clearValue, data, cmdBufferType));
 	}
 
+	std::string groupName = getCmdBufferTypeStr(cmdBufferType);
+	std::string groupDesc = "Attachment Clear Op Tests with " + groupName + " command buffer";
+	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
+	clearTests->addChild(clearStaticTests.release());
+	clearTests->addChild(clearRandomTests.release());
+	return clearTests.release();
+}
+
+} // anonymous
+
+tcu::TestCaseGroup*	createAttachmentClearTests (tcu::TestContext& testCtx)
+{
 	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, "clear_op", "Attachment Clear Op Tests"));
-	{
-		de::MovePtr<tcu::TestCaseGroup> primaryTests (new tcu::TestCaseGroup(testCtx, "primary", "Attachment Clear Op Tests using primary command buffer"));
-		primaryTests->addChild(clearStaticTests.release());
-		primaryTests->addChild(clearRandomTests.release());
 
-		clearTests->addChild(primaryTests.release());
-	}
+	clearTests->addChild(createAttachmentClearTests(testCtx, CMD_BUFFER_PRIMARY));
+	clearTests->addChild(createAttachmentClearTests(testCtx, CMD_BUFFER_SECONDARY));
+
 	return clearTests.release();
 }
 

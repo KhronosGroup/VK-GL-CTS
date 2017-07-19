@@ -391,6 +391,23 @@ void beginCommandBuffer (const vk::DeviceInterface& vk, const vk::VkCommandBuffe
 	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &beginInfo));
 }
 
+void beginSecondaryCommandBuffer (const vk::DeviceInterface&				vk,
+								  const vk::VkCommandBuffer					secondaryCmdBuffer,
+								  const vk::VkCommandBufferInheritanceInfo	bufferInheritanceInfo)
+{
+	const vk::VkCommandBufferUsageFlags	flags		= bufferInheritanceInfo.renderPass != DE_NULL
+													  ? (vk::VkCommandBufferUsageFlags)vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
+													  : (vk::VkCommandBufferUsageFlags)0u;
+	const vk::VkCommandBufferBeginInfo	beginInfo	=
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// sType
+		DE_NULL,													// pNext
+		flags,														// flags
+		&bufferInheritanceInfo,										// pInheritanceInfo
+	};
+	VK_CHECK(vk.beginCommandBuffer(secondaryCmdBuffer, &beginInfo));
+}
+
 
 vk::VkResult queueSubmit (ProtectedContext&		context,
 						  ProtectionMode		protectionMode,
@@ -686,6 +703,18 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline (const vk::DeviceInterface&		vk,
 	};
 	return vk::createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineParams);
 }
+
+const char* getCmdBufferTypeStr (const CmdBufferType cmdBufferType)
+{
+	switch (cmdBufferType)
+	{
+		case CMD_BUFFER_PRIMARY:	return "primary";
+		case CMD_BUFFER_SECONDARY:	return "secondary";
+
+		default: DE_FATAL("Invalid command buffer type"); return "";
+	}
+}
+
 
 } // ProtectedMem
 } // vkt

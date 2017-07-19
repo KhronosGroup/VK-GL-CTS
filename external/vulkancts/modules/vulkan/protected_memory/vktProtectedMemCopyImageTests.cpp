@@ -57,7 +57,8 @@ public:
 									CopyImageTestInstance	(Context&						ctx,
 															 const vk::VkClearColorValue&	clearColorValue,
 															 const ValidationData&			refData,
-															 const ImageValidator&			validator);
+															 const ImageValidator&			validator,
+															 const CmdBufferType			cmdBufferType);
 virtual tcu::TestStatus				iterate					 (void);
 
 private:
@@ -65,6 +66,7 @@ private:
 	const vk::VkClearColorValue&	m_clearColorValue;
 	const ValidationData&			m_refData;
 	const ImageValidator&			m_validator;
+	const CmdBufferType				m_cmdBufferType;
 };
 
 class CopyImageTestCase : public TestCase
@@ -73,17 +75,19 @@ public:
 								CopyImageTestCase		(tcu::TestContext&			testCtx,
 														 const std::string&			name,
 														 vk::VkClearColorValue		clearColorValue,
-														 ValidationData				data)
+														 ValidationData				data,
+														 CmdBufferType				cmdBufferType)
 									: TestCase			(testCtx, name, "Clear and copy image.")
 									, m_clearColorValue	(clearColorValue)
 									, m_refData			(data)
+									, m_cmdBufferType	(cmdBufferType)
 								{
 								}
 
 	virtual						~CopyImageTestCase		(void) {}
 	virtual TestInstance*		createInstance			(Context& ctx) const
 								{
-									return new CopyImageTestInstance(ctx, m_clearColorValue, m_refData, m_validator);
+									return new CopyImageTestInstance(ctx, m_clearColorValue, m_refData, m_validator, m_cmdBufferType);
 								}
 	virtual void				initPrograms			(vk::SourceCollections& programCollection) const
 								{
@@ -93,17 +97,20 @@ private:
 	vk::VkClearColorValue		m_clearColorValue;
 	ValidationData				m_refData;
 	ImageValidator				m_validator;
+	CmdBufferType				m_cmdBufferType;
 };
 
 CopyImageTestInstance::CopyImageTestInstance	(Context&						ctx,
 												 const vk::VkClearColorValue&	clearColorValue,
 												 const ValidationData&			refData,
-												 const ImageValidator&			validator)
+												 const ImageValidator&			validator,
+												 const CmdBufferType			cmdBufferType)
 	: ProtectedTestInstance		(ctx)
 	, m_imageFormat				(vk::VK_FORMAT_R8G8B8A8_UNORM)
 	, m_clearColorValue			(clearColorValue)
 	, m_refData					(refData)
 	, m_validator				(validator)
+	, m_cmdBufferType			(cmdBufferType)
 {
 }
 
@@ -132,9 +139,28 @@ tcu::TestStatus CopyImageTestInstance::iterate()
 
 	vk::Unique<vk::VkCommandPool>		cmdPool				(makeCommandPool(vk, device, PROTECTION_ENABLED, queueFamilyIndex));
 	vk::Unique<vk::VkCommandBuffer>		cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	vk::Unique<vk::VkCommandBuffer>		secondaryCmdBuffer	(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY));
+	vk::VkCommandBuffer					targetCmdBuffer		= (m_cmdBufferType == CMD_BUFFER_SECONDARY) ? *secondaryCmdBuffer : *cmdBuffer;
 
 	// Begin cmd buffer
 	beginCommandBuffer(vk, *cmdBuffer);
+
+	if (m_cmdBufferType == CMD_BUFFER_SECONDARY)
+	{
+		// Begin secondary command buffer
+		const vk::VkCommandBufferInheritanceInfo	secCmdBufInheritInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+			DE_NULL,
+			(vk::VkRenderPass)0u,										// renderPass
+			0u,															// subpass
+			(vk::VkFramebuffer)0u,										// framebuffer
+			VK_FALSE,													// occlusionQueryEnable
+			(vk::VkQueryControlFlags)0u,								// queryFlags
+			(vk::VkQueryPipelineStatisticFlags)0u,						// pipelineStatistics
+		};
+		beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, secCmdBufInheritInfo);
+	}
 
 	// Start image barrier for source image.
 	{
@@ -158,7 +184,7 @@ tcu::TestStatus CopyImageTestInstance::iterate()
 			}
 		};
 
-		vk.cmdPipelineBarrier(*cmdBuffer,
+		vk.cmdPipelineBarrier(targetCmdBuffer,
 							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 							  (vk::VkDependencyFlags)0,
@@ -176,7 +202,7 @@ tcu::TestStatus CopyImageTestInstance::iterate()
 		0u,								// uint32_t				baseArrayLayer
 		1u,								// uint32_t				layerCount
 	};
-	vk.cmdClearColorImage(*cmdBuffer, **colorImageSrc, vk::VK_IMAGE_LAYOUT_GENERAL, &m_clearColorValue, 1, &subresourceRange);
+	vk.cmdClearColorImage(targetCmdBuffer, **colorImageSrc, vk::VK_IMAGE_LAYOUT_GENERAL, &m_clearColorValue, 1, &subresourceRange);
 
 	// Image barrier to change accessMask to transfer read bit for source image.
 	{
@@ -200,7 +226,7 @@ tcu::TestStatus CopyImageTestInstance::iterate()
 			}
 		};
 
-		vk.cmdPipelineBarrier(*cmdBuffer,
+		vk.cmdPipelineBarrier(targetCmdBuffer,
 							  vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 							  (vk::VkDependencyFlags)0,
@@ -231,7 +257,7 @@ tcu::TestStatus CopyImageTestInstance::iterate()
 			}
 		};
 
-		vk.cmdPipelineBarrier(*cmdBuffer,
+		vk.cmdPipelineBarrier(targetCmdBuffer,
 							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 							  (vk::VkDependencyFlags)0,
@@ -259,7 +285,7 @@ tcu::TestStatus CopyImageTestInstance::iterate()
 		imageExtent,							// VkExtent3D				extent;
 
 	};
-	vk.cmdCopyImage(*cmdBuffer, **colorImageSrc, vk::VK_IMAGE_LAYOUT_GENERAL,
+	vk.cmdCopyImage(targetCmdBuffer, **colorImageSrc, vk::VK_IMAGE_LAYOUT_GENERAL,
 					**colorImage, vk::VK_IMAGE_LAYOUT_GENERAL, 1u, &copyImageRegion);
 
 	{
@@ -282,13 +308,19 @@ tcu::TestStatus CopyImageTestInstance::iterate()
 				1u,												// subresourceRange
 			}
 		};
-		vk.cmdPipelineBarrier(*cmdBuffer,
+		vk.cmdPipelineBarrier(targetCmdBuffer,
 							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
 							  1, &endImgBarrier);
+	}
+
+	if (m_cmdBufferType == CMD_BUFFER_SECONDARY)
+	{
+		VK_CHECK(vk.endCommandBuffer(*secondaryCmdBuffer));
+		vk.cmdExecuteCommands(*cmdBuffer, 1u, &secondaryCmdBuffer.get());
 	}
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
@@ -308,9 +340,7 @@ tcu::TestStatus CopyImageTestInstance::iterate()
 		return tcu::TestStatus::fail("Something went really wrong");
 }
 
-} // anonymous
-
-tcu::TestCaseGroup*	createCopyImageTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createCopyImageTests (tcu::TestContext& testCtx, CmdBufferType cmdBufferType)
 {
 	struct {
 		const vk::VkClearColorValue		clearColorValue;
@@ -379,7 +409,7 @@ tcu::TestCaseGroup*	createCopyImageTests (tcu::TestContext& testCtx)
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
 		const std::string name = "copy_" + de::toString(ndx + 1);
-		copyStaticTests->addChild(new CopyImageTestCase(testCtx, name.c_str(), testData[ndx].clearColorValue, testData[ndx].data));
+		copyStaticTests->addChild(new CopyImageTestCase(testCtx, name.c_str(), testData[ndx].clearColorValue, testData[ndx].data, cmdBufferType));
 	}
 
 	/* Add a few randomized tests */
@@ -404,18 +434,26 @@ tcu::TestCaseGroup*	createCopyImageTests (tcu::TestContext& testCtx)
 			  tcu::Vec4(rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f)) },
 			{ refValue, refValue, refValue, refValue }
 		};
-
-		copyRandomTests->addChild(new CopyImageTestCase(testCtx, name.c_str(), clearValue.color, data));
+		copyRandomTests->addChild(new CopyImageTestCase(testCtx, name.c_str(), clearValue.color, data, cmdBufferType));
 	}
 
+	std::string groupName = getCmdBufferTypeStr(cmdBufferType);
+	std::string groupDesc = "Copy Image Tests with " + groupName + " command buffer";
+	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
+	copyTests->addChild(copyStaticTests.release());
+	copyTests->addChild(copyRandomTests.release());
+	return copyTests.release();
+}
+
+} // anonymous
+
+tcu::TestCaseGroup*	createCopyImageTests (tcu::TestContext& testCtx)
+{
 	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, "copy", "Copy Image Tests"));
-	{
-		de::MovePtr<tcu::TestCaseGroup> primaryTests (new tcu::TestCaseGroup(testCtx, "primary", "Copy Image Tests using primary command buffer"));
-		primaryTests->addChild(copyStaticTests.release());
-		primaryTests->addChild(copyRandomTests.release());
 
-		copyTests->addChild(primaryTests.release());
-	}
+	copyTests->addChild(createCopyImageTests(testCtx, CMD_BUFFER_PRIMARY));
+	copyTests->addChild(createCopyImageTests(testCtx, CMD_BUFFER_SECONDARY));
+
 	return copyTests.release();
 }
 
