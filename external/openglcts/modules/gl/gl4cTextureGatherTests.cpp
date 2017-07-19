@@ -50,32 +50,6 @@ using tcu::UVec4;
 namespace
 {
 
-static tcu::TestLog* currentLog;
-void setOutput(tcu::TestLog& log)
-{
-	currentLog = &log;
-}
-
-void Output(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-
-	const int   MAX_OUTPUT_STRING_SIZE = 40000;
-	static char temp[MAX_OUTPUT_STRING_SIZE];
-
-	vsnprintf(temp, MAX_OUTPUT_STRING_SIZE - 1, format, args);
-	temp[MAX_OUTPUT_STRING_SIZE - 1] = '\0';
-
-	char* logLine = strtok(temp, "\n");
-	while (logLine != NULL)
-	{
-		currentLog->writeMessage(logLine);
-		logLine = strtok(NULL, "\n");
-	}
-	va_end(args);
-}
-
 class TGBase : public deqp::SubcaseBase
 {
 public:
@@ -211,26 +185,34 @@ public:
 					switch (type)
 					{
 					case GL_VERTEX_SHADER:
-						Output("*** Vertex Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Vertex Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_CONTROL_SHADER:
-						Output("*** Tessellation Control Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Control Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_EVALUATION_SHADER:
-						Output("*** Tessellation Evaluation Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Evaluation Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_GEOMETRY_SHADER:
-						Output("*** Geometry Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Geometry Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_FRAGMENT_SHADER:
-						Output("*** Fragment Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Fragment Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_COMPUTE_SHADER:
-						Output("*** Compute Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Compute Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					default:
-						Output("*** Unknown Shader ***\n");
-						break;
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Unknown Shader ***" << tcu::TestLog::EndMessage;
 					}
 
 					GLint res;
@@ -244,7 +226,8 @@ public:
 					{
 						std::vector<GLchar> source(length);
 						glGetShaderSource(shaders[i], length, NULL, &source[0]);
-						Output("%s\n", &source[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &source[0] << tcu::TestLog::EndMessage;
 					}
 
 					glGetShaderiv(shaders[i], GL_INFO_LOG_LENGTH, &length);
@@ -252,7 +235,8 @@ public:
 					{
 						std::vector<GLchar> log(length);
 						glGetShaderInfoLog(shaders[i], length, NULL, &log[0]);
-						Output("%s\n", &log[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 					}
 				}
 			}
@@ -263,7 +247,7 @@ public:
 			{
 				std::vector<GLchar> log(length);
 				glGetProgramInfoLog(program, length, NULL, &log[0]);
-				Output("%s\n", &log[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 			}
 		}
 
@@ -989,9 +973,11 @@ public:
 		glReadPixels(0, 0, 1, 1, GL_RGBA, GL_FLOAT, &data);
 		if (!ColorEqual(data, Expected(), g_color_eps))
 		{
-			Output("Expected %f, %f, %f, %f, got: %f, %f, %f, %f, epsilon: %f, %f, %f, %f", Expected().x(),
-				   Expected().y(), Expected().z(), Expected().w(), data.x(), data.y(), data.z(), data.w(),
-				   g_color_eps.x(), g_color_eps.y(), g_color_eps.z(), g_color_eps.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected " << Expected().x() << ", " << Expected().y() << ", "
+				<< Expected().z() << ", " << Expected().w() << ", got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << ", epsilon: " << g_color_eps.x() << ", " << g_color_eps.y() << ", "
+				<< g_color_eps.z() << ", " << g_color_eps.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1075,7 +1061,10 @@ public:
 		if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_compute_shader") ||
 			!m_context.getContextInfo().isExtensionSupported("GL_ARB_compute_shader"))
 		{
-			Output("GL_ARB_compute_shader or GL_ARB_compute_shader not supported, skipping compute stage");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected "
+				<< "GL_ARB_compute_shader or GL_ARB_compute_shader not supported, skipping compute stage"
+				<< tcu::TestLog::EndMessage;
 			return NO_ERROR;
 		}
 		else
@@ -1120,8 +1109,10 @@ public:
 		data = static_cast<Vec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Vec4), GL_MAP_READ_BIT));
 		if (!ColorEqual(data[0], Expected(), g_color_eps))
 		{ // for unorms
-			Output("Expected %f, %f, %f, %f, got: %f, %f, %f, %f, epsilon: %f, %f, %f, %f", Expected().x(),
-				   Expected().y(), Expected().z(), Expected().w(), data[0].x(), data[0].y(), data[0].z(), data[0].w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected " << Expected().x() << ", " << Expected().y() << ", "
+				<< Expected().z() << ", " << Expected().w() << " got: " << data[0].x() << ", " << data[0].y() << ", "
+				<< data[0].z() << ", " << data[0].w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1210,7 +1201,9 @@ public:
 		glReadPixels(0, 0, 1, 1, GL_RGBA_INTEGER, GL_INT, &data);
 		if (data != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected 0, 4, 8, 12, got: %d, %d, %d, %d", data.x(), data.y(), data.z(), data.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected 0, 4, 8, 12, got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1222,8 +1215,10 @@ public:
 		data = static_cast<IVec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(IVec4), GL_MAP_READ_BIT));
 		if (data[0] != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected %d, %d, %d, %d, got: %d, %d, %d, %d, epsilon: %f, %f, %f, %f", Expected().x(),
-				   Expected().y(), Expected().z(), Expected().w(), data[0].x(), data[0].y(), data[0].z(), data[0].w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected " << Expected().x() << ", " << Expected().y() << ", "
+				<< Expected().z() << ", " << Expected().w() << ", got: " << data[0].x() << ", " << data[0].y() << ", "
+				<< data[0].z() << ", " << data[0].w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1273,7 +1268,9 @@ public:
 		glReadPixels(0, 0, 1, 1, GL_RGBA_INTEGER, GL_UNSIGNED_INT, &data);
 		if (data != IVec4(2, 6, 10, 14))
 		{
-			Output("Expected 2, 6, 10, 14, got: %d, %d, %d, %d", data.x(), data.y(), data.z(), data.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected 2, 6, 10, 14, got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1285,8 +1282,10 @@ public:
 		data = static_cast<IVec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(IVec4), GL_MAP_READ_BIT));
 		if (data[0] != IVec4(2, 6, 10, 14))
 		{
-			Output("Expected %d, %d, %d, %d, got: %d, %d, %d, %d, epsilon: %f, %f, %f, %f", Expected().x(),
-				   Expected().y(), Expected().z(), Expected().w(), data[0].x(), data[0].y(), data[0].z(), data[0].w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected " << Expected().x() << ", " << Expected().y() << ", "
+				<< Expected().z() << ", " << Expected().w() << ", got: " << data[0].x() << ", " << data[0].y() << ", "
+				<< data[0].z() << ", " << data[0].w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1428,7 +1427,9 @@ public:
 		glReadPixels(0, 0, 1, 1, GL_RGBA_INTEGER, GL_INT, &data);
 		if (data != IVec4(3, 7, 11, 15))
 		{
-			Output("Expected 3, 7, 11, 15, got: %d, %d, %d, %d", data.x(), data.y(), data.z(), data.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected 3, 7, 11, 15, got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1440,8 +1441,10 @@ public:
 		data = static_cast<IVec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(IVec4), GL_MAP_READ_BIT));
 		if (data[0] != IVec4(3, 7, 11, 15))
 		{
-			Output("Expected %d, %d, %d, %d, got: %d, %d, %d, %d", Expected().x(), Expected().y(), Expected().z(),
-				   Expected().w(), data[0].x(), data[0].y(), data[0].z(), data[0].w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected " << Expected().x() << ", " << Expected().y() << ", "
+				<< Expected().z() << ", " << Expected().w() << ", got: " << data[0].x() << ", " << data[0].y() << ", "
+				<< data[0].z() << ", " << data[0].w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1494,7 +1497,9 @@ public:
 		glReadPixels(0, 0, 1, 1, GL_RGBA_INTEGER, GL_UNSIGNED_INT, &data);
 		if (data != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected 0, 4, 8, 12, got: %d, %d, %d, %d", data.x(), data.y(), data.z(), data.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected 0, 4, 8, 12, got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1506,8 +1511,10 @@ public:
 		data = static_cast<IVec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(IVec4), GL_MAP_READ_BIT));
 		if (data[0] != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected %d, %d, %d, %d, got: %d, %d, %d, %d", Expected().x(), Expected().y(), Expected().z(),
-				   Expected().w(), data[0].x(), data[0].y(), data[0].z(), data[0].w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected " << Expected().x() << ", " << Expected().y() << ", "
+				<< Expected().z() << ", " << Expected().w() << ", got: " << data[0].x() << ", " << data[0].y() << ", "
+				<< data[0].z() << ", " << data[0].w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1712,7 +1719,9 @@ public:
 		glReadPixels(0, 0, 1, 1, GL_RGBA_INTEGER, GL_INT, &data);
 		if (data != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected 0, 4, 8, 12, got: %d, %d, %d, %d", data.x(), data.y(), data.z(), data.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected 0, 4, 8, 12, got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1724,8 +1733,10 @@ public:
 		data = static_cast<IVec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(IVec4), GL_MAP_READ_BIT));
 		if (data[0] != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected %d, %d, %d, %d, got: %d, %d, %d, %d", Expected().x(), Expected().y(), Expected().z(),
-				   Expected().w(), data[0].x(), data[0].y(), data[0].z(), data[0].w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected " << Expected().x() << ", " << Expected().y() << ", "
+				<< Expected().z() << ", " << Expected().w() << ", got: " << data[0].x() << ", " << data[0].y() << ", "
+				<< data[0].z() << ", " << data[0].w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1778,7 +1789,9 @@ public:
 		glReadPixels(0, 0, 1, 1, GL_RGBA_INTEGER, GL_INT, &data);
 		if (data != IVec4(1, 5, 9, 13))
 		{
-			Output("Expected 1, 5, 9, 13, got: %d, %d, %d, %d", data.x(), data.y(), data.z(), data.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected 1, 5, 9, 13, got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1790,8 +1803,10 @@ public:
 		data = static_cast<IVec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(IVec4), GL_MAP_READ_BIT));
 		if (data[0] != IVec4(1, 5, 9, 13))
 		{
-			Output("Expected %d, %d, %d, %d, got: %d, %d, %d, %d", Expected().x(), Expected().y(), Expected().z(),
-				   Expected().w(), data[0].x(), data[0].y(), data[0].z(), data[0].w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected " << Expected().x() << ", " << Expected().y() << ", "
+				<< Expected().z() << ", " << Expected().w() << ", got: " << data[0].x() << ", " << data[0].y() << ", "
+				<< data[0].z() << ", " << data[0].w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1844,7 +1859,9 @@ public:
 		glReadPixels(0, 0, 1, 1, GL_RGBA_INTEGER, GL_INT, &data);
 		if (data != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected 0, 4, 8, 12, got: %d, %d, %d, %d", data.x(), data.y(), data.z(), data.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected 0, 4, 8, 12, got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1856,8 +1873,10 @@ public:
 		data = static_cast<IVec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(IVec4), GL_MAP_READ_BIT));
 		if (data[0] != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected %d, %d, %d, %d, got: %d, %d, %d, %d", Expected().x(), Expected().y(), Expected().z(),
-				   Expected().w(), data[0].x(), data[0].y(), data[0].z(), data[0].w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected " << Expected().x() << ", " << Expected().y() << ", "
+				<< Expected().z() << ", " << Expected().w() << ", got: " << data[0].x() << ", " << data[0].y() << ", "
+				<< data[0].z() << ", " << data[0].w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -2039,7 +2058,9 @@ public:
 		glReadPixels(0, 0, 1, 1, GL_RGBA_INTEGER, GL_INT, &data);
 		if (data != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected 0, 4, 8, 12, got: %d, %d, %d, %d", data.x(), data.y(), data.z(), data.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected 0, 4, 8, 12, got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -2051,8 +2072,10 @@ public:
 		data = static_cast<IVec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(IVec4), GL_MAP_READ_BIT));
 		if (data[0] != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected %d, %d, %d, %d, got: %d, %d, %d, %d", Expected().x(), Expected().y(), Expected().z(),
-				   Expected().w(), data[0].x(), data[0].y(), data[0].z(), data[0].w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected " << Expected().x() << ", " << Expected().y() << ", "
+				<< Expected().z() << ", " << Expected().w() << ", got: " << data[0].x() << ", " << data[0].y() << ", "
+				<< data[0].z() << ", " << data[0].w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -2115,7 +2138,9 @@ public:
 		glReadPixels(0, 0, 1, 1, GL_RGBA_INTEGER, GL_UNSIGNED_INT, &data);
 		if (data != UVec4(0, 4, 8, 12))
 		{
-			Output("Expected 0, 4, 8, 12, got: %d, %d, %d, %d", data.x(), data.y(), data.z(), data.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected 0, 4, 8, 12, got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -2127,8 +2152,10 @@ public:
 		data = static_cast<IVec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(IVec4), GL_MAP_READ_BIT));
 		if (data[0] != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected %d, %d, %d, %d, got: %d, %d, %d, %d", Expected().x(), Expected().y(), Expected().z(),
-				   Expected().w(), data[0].x(), data[0].y(), data[0].z(), data[0].w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected " << Expected().x() << ", " << Expected().y() << ", "
+				<< Expected().z() << ", " << Expected().w() << ", got: " << data[0].x() << ", " << data[0].y() << ", "
+				<< data[0].z() << ", " << data[0].w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -2295,7 +2322,9 @@ public:
 		glReadPixels(0, 0, 1, 1, GL_RGBA_INTEGER, GL_INT, &data);
 		if (data != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected 0, 4, 8, 12, got: %d, %d, %d, %d", data.x(), data.y(), data.z(), data.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected 0, 4, 8, 12, got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -2307,8 +2336,10 @@ public:
 		data = static_cast<IVec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(IVec4), GL_MAP_READ_BIT));
 		if (data[0] != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected %d, %d, %d, %d, got: %d, %d, %d, %d", Expected().x(), Expected().y(), Expected().z(),
-				   Expected().w(), data[0].x(), data[0].y(), data[0].z(), data[0].w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected " << Expected().x() << ", " << Expected().y() << ", "
+				<< Expected().z() << ", " << Expected().w() << ", got: " << data[0].x() << ", " << data[0].y() << ", "
+				<< data[0].z() << ", " << data[0].w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -2361,7 +2392,9 @@ public:
 		glReadPixels(0, 0, 1, 1, GL_RGBA_INTEGER, GL_UNSIGNED_INT, &data);
 		if (data != UVec4(0, 4, 8, 12))
 		{
-			Output("Expected 0, 4, 8, 12, got: %d, %d, %d, %d", data.x(), data.y(), data.z(), data.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected 0, 4, 8, 12, got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -2373,8 +2406,10 @@ public:
 		data = static_cast<IVec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(IVec4), GL_MAP_READ_BIT));
 		if (data[0] != IVec4(0, 4, 8, 12))
 		{
-			Output("Expected %d, %d, %d, %d, got: %d, %d, %d, %d", Expected().x(), Expected().y(), Expected().z(),
-				   Expected().w(), data[0].x(), data[0].y(), data[0].z(), data[0].w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected " << Expected().x() << ", " << Expected().y() << ", "
+				<< Expected().z() << ", " << Expected().w() << ", got: " << data[0].x() << ", " << data[0].y() << ", "
+				<< data[0].z() << ", " << data[0].w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -3100,7 +3135,9 @@ class TriangleDraw : public GatherBase
 		{
 			if (read[i] != Vec4(0.75))
 			{
-				Output("Got: %f %f %f %f, expected vec4(0.25)", read[i].x(), read[i].y(), read[i].z(), read[i].w());
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Got: " << read[i].x() << " " << read[i].y() << " " << read[i].z()
+					<< " " << read[i].w() << ", expected vec4(0.25)" << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -3260,8 +3297,10 @@ class GatherGeometryShader : public GatherBase
 		glReadPixels(0, 0, 1, 1, GL_RGBA, GL_FLOAT, &data);
 		if (!ColorEqual(data, Vec4(0, 1, 0, 1), g_color_eps))
 		{
-			Output("Expected Vec4(0, 1, 0, 1), got: %f, %f, %f, %f, epsilon: %f, %f, %f, %f", data.x(), data.y(),
-				   data.z(), data.w(), g_color_eps.x(), g_color_eps.y(), g_color_eps.z(), g_color_eps.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected Vec4(0, 1, 0, 1), got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << ", epsilon: " << g_color_eps.x() << ", " << g_color_eps.y() << ", "
+				<< g_color_eps.z() << ", " << g_color_eps.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -3415,8 +3454,10 @@ class GatherTesselationShader : public GatherBase
 		glReadPixels(0, 0, 1, 1, GL_RGBA, GL_FLOAT, &data);
 		if (!ColorEqual(data, Vec4(0, 1, 0, 1), g_color_eps))
 		{
-			Output("Expected Vec4(0, 1, 0, 1), got: %f, %f, %f, %f, epsilon: %f, %f, %f, %f", data.x(), data.y(),
-				   data.z(), data.w(), g_color_eps.x(), g_color_eps.y(), g_color_eps.z(), g_color_eps.w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected Vec4(0, 1, 0, 1), got: " << data.x() << ", " << data.y() << ", "
+				<< data.z() << ", " << data.w() << ", epsilon: " << g_color_eps.x() << ", " << g_color_eps.y() << ", "
+				<< g_color_eps.z() << ", " << g_color_eps.w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -3481,7 +3522,6 @@ TextureGatherTests::~TextureGatherTests(void)
 void TextureGatherTests::init()
 {
 	using namespace deqp;
-	setOutput(m_context.getTestContext().getLog());
 	addChild(new TestSubcase(m_context, "api-enums", TestSubcase::Create<GatherEnumsTest>));
 	addChild(new TestSubcase(m_context, "gather-glsl-compile", TestSubcase::Create<GatherGLSLCompile>));
 	addChild(new TestSubcase(m_context, "plain-gather-float-2d-rgba", TestSubcase::Create<PlainGatherFloat2DRgba>));
