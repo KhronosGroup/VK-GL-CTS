@@ -35,6 +35,10 @@
 #define GLX_GLXEXT_PROTOTYPES
 #include <GL/glx.h>
 
+#ifndef GLX_CONTEXT_OPENGL_NO_ERROR_ARB
+#define GLX_CONTEXT_OPENGL_NO_ERROR_ARB 0x31B3
+#endif
+
 namespace tcu
 {
 namespace lnx
