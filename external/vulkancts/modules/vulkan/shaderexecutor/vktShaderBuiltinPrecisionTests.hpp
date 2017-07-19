@@ -46,6 +46,32 @@ private:
 	BuiltinPrecisionTests&			operator=							(const BuiltinPrecisionTests&);		// not allowed!
 };
 
+class BuiltinPrecision16BitTests : public tcu::TestCaseGroup
+{
+public:
+									BuiltinPrecision16BitTests			(tcu::TestContext& testCtx);
+	virtual							~BuiltinPrecision16BitTests			(void);
+
+	virtual void					init								(void);
+
+private:
+									BuiltinPrecision16BitTests			(const BuiltinPrecisionTests&);		// not allowed!
+	BuiltinPrecision16BitTests&		operator=							(const BuiltinPrecisionTests&);		// not allowed!
+};
+
+class BuiltinPrecision16Storage32BitTests : public tcu::TestCaseGroup
+{
+public:
+												BuiltinPrecision16Storage32BitTests	(tcu::TestContext& testCtx);
+	virtual										~BuiltinPrecision16Storage32BitTests	(void);
+
+	virtual void								init(void);
+
+private:
+												BuiltinPrecision16Storage32BitTests	(const BuiltinPrecisionTests&);		// not allowed!
+	BuiltinPrecision16Storage32BitTests&		operator=								(const BuiltinPrecisionTests&);		// not allowed!
+};
+
 } // shaderexecutor
 } // vkt
 

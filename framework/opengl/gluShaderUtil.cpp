@@ -295,6 +295,15 @@ const char* getDataTypeName (DataType dataType)
 		"f16vec2",
 		"f16vec3",
 		"f16vec4",
+		"f16mat2",
+		"f16mat2x3",
+		"f16mat2x4",
+		"f16mat3x2",
+		"f16mat3",
+		"f16mat3x4",
+		"f16mat4x2",
+		"f16mat4x3",
+		"f16mat4",
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_names) == TYPE_LAST);
@@ -420,6 +429,15 @@ int getDataTypeScalarSize (DataType dataType)
 		2,		// f16vec2
 		3,		// f16vec3
 		4,		// f16vec4
+		4,		// f16mat2
+		6,		// f16mat2x3
+		8,		// f16mat2x4
+		6,		// f16mat3x2
+		9,		// f16mat3
+		12,		// f16mat3x4
+		8,		// f16mat4x2
+		12,		// f16mat4x3
+		16,		// f16mat4
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_sizes) == TYPE_LAST);
@@ -545,11 +563,154 @@ DataType getDataTypeScalarType (DataType dataType)
 		TYPE_FLOAT16,							// f16vec2
 		TYPE_FLOAT16,							// f16vec3
 		TYPE_FLOAT16,							// f16vec4
+		TYPE_FLOAT16,							// f16mat2
+		TYPE_FLOAT16,							// f16mat2x3
+		TYPE_FLOAT16,							// f16mat2x4
+		TYPE_FLOAT16,							// f16mat3x2
+		TYPE_FLOAT16,							// f16mat3
+		TYPE_FLOAT16,							// f16mat3x4
+		TYPE_FLOAT16,							// f16mat4x2
+		TYPE_FLOAT16,							// f16mat4x3
+		TYPE_FLOAT16,							// f16mat4
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_scalarTypes) == TYPE_LAST);
 	DE_ASSERT(deInBounds32((int)dataType, 0, DE_LENGTH_OF_ARRAY(s_scalarTypes)));
 	return s_scalarTypes[(int)dataType];
+}
+
+DataType getDataTypeFloat16Scalars (DataType dataType)
+{
+	static const DataType s_floatTypes[] =
+	{
+		TYPE_INVALID,			// invalid
+		TYPE_FLOAT16,			// float
+		TYPE_FLOAT16_VEC2,		// vec2
+		TYPE_FLOAT16_VEC3,		// vec3
+		TYPE_FLOAT16_VEC4,		// vec4
+		TYPE_FLOAT16_MAT2,		// mat2
+		TYPE_FLOAT16_MAT2X3,	// mat2x3
+		TYPE_FLOAT16_MAT2X4,	// mat2x4
+		TYPE_FLOAT16_MAT3X2,	// mat3x2
+		TYPE_FLOAT16_MAT3,		// mat3
+		TYPE_FLOAT16_MAT3X4,	// mat3x4
+		TYPE_FLOAT16_MAT4X2,	// mat4x2
+		TYPE_FLOAT16_MAT4X3,	// mat4x3
+		TYPE_FLOAT16_MAT4,		// mat4
+		TYPE_FLOAT16,			// double
+		TYPE_FLOAT16_VEC2,		// dvec2
+		TYPE_FLOAT16_VEC3,		// dvec3
+		TYPE_FLOAT16_VEC4,		// dvec4
+		TYPE_FLOAT16_MAT2,		// dmat2
+		TYPE_FLOAT16_MAT2X3,	// dmat2x3
+		TYPE_FLOAT16_MAT2X4,	// dmat2x4
+		TYPE_FLOAT16_MAT3X2,	// dmat3x2
+		TYPE_FLOAT16_MAT3,		// dmat3
+		TYPE_FLOAT16_MAT3X4,	// dmat3x4
+		TYPE_FLOAT16_MAT4X2,	// dmat4x2
+		TYPE_FLOAT16_MAT4X3,	// dmat4x3
+		TYPE_FLOAT16_MAT4,		// dmat4
+		TYPE_FLOAT16,			// int
+		TYPE_FLOAT16_VEC2,		// ivec2
+		TYPE_FLOAT16_VEC3,		// ivec3
+		TYPE_FLOAT16_VEC4,		// ivec4
+		TYPE_FLOAT16,			// uint
+		TYPE_FLOAT16_VEC2,		// uvec2
+		TYPE_FLOAT16_VEC3,		// uvec3
+		TYPE_FLOAT16_VEC4,		// uvec4
+		TYPE_FLOAT16,			// bool
+		TYPE_FLOAT16_VEC2,		// bvec2
+		TYPE_FLOAT16_VEC3,		// bvec3
+		TYPE_FLOAT16_VEC4,		// bvec4
+		TYPE_INVALID,			// sampler1D
+		TYPE_INVALID,			// sampler2D
+		TYPE_INVALID,			// samplerCube
+		TYPE_INVALID,			// sampler1DArray
+		TYPE_INVALID,			// sampler2DArray
+		TYPE_INVALID,			// sampler3D
+		TYPE_INVALID,			// samplerCubeArray
+		TYPE_INVALID,			// sampler1DShadow
+		TYPE_INVALID,			// sampler2DShadow
+		TYPE_INVALID,			// samplerCubeShadow
+		TYPE_INVALID,			// sampler1DArrayShadow
+		TYPE_INVALID,			// sampler2DArrayShadow
+		TYPE_INVALID,			// samplerCubeArrayShadow
+		TYPE_INVALID,			// isampler1D
+		TYPE_INVALID,			// isampler2D
+		TYPE_INVALID,			// isamplerCube
+		TYPE_INVALID,			// isampler1DArray
+		TYPE_INVALID,			// isampler2DArray
+		TYPE_INVALID,			// isampler3D
+		TYPE_INVALID,			// isamplerCubeArray
+		TYPE_INVALID,			// usampler1D
+		TYPE_INVALID,			// usampler2D
+		TYPE_INVALID,			// usamplerCube
+		TYPE_INVALID,			// usampler1DArray
+		TYPE_INVALID,			// usampler2DArray
+		TYPE_INVALID,			// usampler3D
+		TYPE_INVALID,			// usamplerCubeArray
+		TYPE_INVALID,			// sampler2DMS
+		TYPE_INVALID,			// isampler2DMS
+		TYPE_INVALID,			// usampler2DMS
+		TYPE_INVALID,			// image2D
+		TYPE_INVALID,			// imageCube
+		TYPE_INVALID,			// image2DArray
+		TYPE_INVALID,			// image3D
+		TYPE_INVALID,			// imageCubeArray
+		TYPE_INVALID,			// iimage2D
+		TYPE_INVALID,			// iimageCube
+		TYPE_INVALID,			// iimage2DArray
+		TYPE_INVALID,			// iimage3D
+		TYPE_INVALID,			// iimageCubeArray
+		TYPE_INVALID,			// uimage2D
+		TYPE_INVALID,			// uimageCube
+		TYPE_INVALID,			// uimage2DArray
+		TYPE_INVALID,			// uimage3D
+		TYPE_INVALID,			// uimageCubeArray
+		TYPE_INVALID,			// atomic_uint
+		TYPE_INVALID,			// samplerBuffer
+		TYPE_INVALID,			// isamplerBuffer
+		TYPE_INVALID,			// usamplerBuffer
+		TYPE_INVALID,			// sampler2DMSArray
+		TYPE_INVALID,			// isampler2DMSArray
+		TYPE_INVALID,			// usampler2DMSArray
+		TYPE_INVALID,			// imageBuffer
+		TYPE_INVALID,			// iimageBuffer
+		TYPE_INVALID,			// uimageBuffer
+		TYPE_FLOAT16,			// uint8_t
+		TYPE_FLOAT16_VEC2,		// u8vec2
+		TYPE_FLOAT16_VEC3,		// u8vec3
+		TYPE_FLOAT16_VEC4,		// u8vec4
+		TYPE_FLOAT16,			// int8_t
+		TYPE_FLOAT16_VEC2,		// i8vec2
+		TYPE_FLOAT16_VEC3,		// i8vec3
+		TYPE_FLOAT16_VEC4,		// i8vec4
+		TYPE_FLOAT16,			// uint16_t
+		TYPE_FLOAT16_VEC2,		// u16vec2
+		TYPE_FLOAT16_VEC3,		// u16vec3
+		TYPE_FLOAT16_VEC4,		// u16vec4
+		TYPE_FLOAT16,			// int16_t
+		TYPE_FLOAT16_VEC2,		// i16vec2
+		TYPE_FLOAT16_VEC3,		// i16vec3
+		TYPE_FLOAT16_VEC4,		// i16vec4
+		TYPE_FLOAT16,			// float16_t
+		TYPE_FLOAT16_VEC2,		// f16vec2
+		TYPE_FLOAT16_VEC3,		// f16vec3
+		TYPE_FLOAT16_VEC4,		// f16vec4
+		TYPE_FLOAT16_MAT2,		// f16mat2
+		TYPE_FLOAT16_MAT2X3,	// f16mat2x3
+		TYPE_FLOAT16_MAT2X4,	// f16mat2x4
+		TYPE_FLOAT16_MAT3X2,	// f16mat3x2
+		TYPE_FLOAT16_MAT3,		// f16mat3
+		TYPE_FLOAT16_MAT3X4,	// f16mat3x4
+		TYPE_FLOAT16_MAT4X2,	// f16mat4x2
+		TYPE_FLOAT16_MAT4X3,	// f16mat4x3
+		TYPE_FLOAT16_MAT4,		// f16mat4
+	};
+
+	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_floatTypes) == TYPE_LAST);
+	DE_ASSERT(deInBounds32((int)dataType, 0, DE_LENGTH_OF_ARRAY(s_floatTypes)));
+	return s_floatTypes[(int)dataType];
 }
 
 DataType getDataTypeFloatScalars (DataType dataType)
@@ -670,6 +831,15 @@ DataType getDataTypeFloatScalars (DataType dataType)
 		TYPE_FLOAT_VEC2,	// f16vec2
 		TYPE_FLOAT_VEC3,	// f16vec3
 		TYPE_FLOAT_VEC4,	// f16vec4
+		TYPE_FLOAT_MAT2,	// f16mat2
+		TYPE_FLOAT_MAT2X3,	// f16mat2x3
+		TYPE_FLOAT_MAT2X4,	// f16mat2x4
+		TYPE_FLOAT_MAT3X2,	// f16mat3x2
+		TYPE_FLOAT_MAT3,	// f16mat3
+		TYPE_FLOAT_MAT3X4,	// f16mat3x4
+		TYPE_FLOAT_MAT4X2,	// f16mat4x2
+		TYPE_FLOAT_MAT4X3,	// f16mat4x3
+		TYPE_FLOAT_MAT4,	// f16mat4
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_floatTypes) == TYPE_LAST);
@@ -795,6 +965,15 @@ DataType getDataTypeDoubleScalars (DataType dataType)
 		TYPE_DOUBLE_VEC2,	// f16vec2
 		TYPE_DOUBLE_VEC3,	// f16vec3
 		TYPE_DOUBLE_VEC4,	// f16vec4
+		TYPE_DOUBLE_MAT2,	// f16mat2
+		TYPE_DOUBLE_MAT2X3,	// f16mat2x3
+		TYPE_DOUBLE_MAT2X4,	// f16mat2x4
+		TYPE_DOUBLE_MAT3X2,	// f16mat3x2
+		TYPE_DOUBLE_MAT3,	// f16mat3
+		TYPE_DOUBLE_MAT3X4,	// f16mat3x4
+		TYPE_DOUBLE_MAT4X2,	// f16mat4x2
+		TYPE_DOUBLE_MAT4X3,	// f16mat4x3
+		TYPE_DOUBLE_MAT4,	// f16mat4
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_doubleTypes) == TYPE_LAST);
@@ -871,6 +1050,15 @@ int getDataTypeMatrixNumRows (DataType dataType)
 		case TYPE_DOUBLE_MAT4X2:	return 2;
 		case TYPE_DOUBLE_MAT4X3:	return 3;
 		case TYPE_DOUBLE_MAT4:		return 4;
+		case TYPE_FLOAT16_MAT2:		return 2;
+		case TYPE_FLOAT16_MAT2X3:	return 3;
+		case TYPE_FLOAT16_MAT2X4:	return 4;
+		case TYPE_FLOAT16_MAT3X2:	return 2;
+		case TYPE_FLOAT16_MAT3:		return 3;
+		case TYPE_FLOAT16_MAT3X4:	return 4;
+		case TYPE_FLOAT16_MAT4X2:	return 2;
+		case TYPE_FLOAT16_MAT4X3:	return 3;
+		case TYPE_FLOAT16_MAT4:		return 4;
 		default:
 			DE_ASSERT(false);
 			return 0;
@@ -899,6 +1087,15 @@ int getDataTypeMatrixNumColumns (DataType dataType)
 		case TYPE_DOUBLE_MAT4X2:	return 4;
 		case TYPE_DOUBLE_MAT4X3:	return 4;
 		case TYPE_DOUBLE_MAT4:		return 4;
+		case TYPE_FLOAT16_MAT2:		return 2;
+		case TYPE_FLOAT16_MAT2X3:	return 2;
+		case TYPE_FLOAT16_MAT2X4:	return 2;
+		case TYPE_FLOAT16_MAT3X2:	return 3;
+		case TYPE_FLOAT16_MAT3:		return 3;
+		case TYPE_FLOAT16_MAT3X4:	return 3;
+		case TYPE_FLOAT16_MAT4X2:	return 4;
+		case TYPE_FLOAT16_MAT4X3:	return 4;
+		case TYPE_FLOAT16_MAT4:		return 4;
 		default:
 			DE_ASSERT(false);
 			return 0;

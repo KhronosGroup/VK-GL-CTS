@@ -348,6 +348,7 @@ public:
 		scalarBlockLayoutFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
 		float16Int8Features.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
 
+
 		if (isPhysicalDeviceFeatures2Supported(apiVersion, instanceExtensions))
 		{
 			void** nextPtr = &coreFeatures.pNext;

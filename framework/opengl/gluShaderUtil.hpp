@@ -233,6 +233,15 @@ enum DataType
 	TYPE_FLOAT16_VEC2,
 	TYPE_FLOAT16_VEC3,
 	TYPE_FLOAT16_VEC4,
+	TYPE_FLOAT16_MAT2,
+	TYPE_FLOAT16_MAT2X3,
+	TYPE_FLOAT16_MAT2X4,
+	TYPE_FLOAT16_MAT3X2,
+	TYPE_FLOAT16_MAT3,
+	TYPE_FLOAT16_MAT3X4,
+	TYPE_FLOAT16_MAT4X2,
+	TYPE_FLOAT16_MAT4X3,
+	TYPE_FLOAT16_MAT4,
 
 	TYPE_LAST
 };
@@ -240,6 +249,7 @@ enum DataType
 const char*		getDataTypeName				(DataType dataType);
 int				getDataTypeScalarSize		(DataType dataType);
 DataType		getDataTypeScalarType		(DataType dataType);
+DataType		getDataTypeFloat16Scalars	(DataType dataType);
 DataType		getDataTypeFloatScalars		(DataType dataType);
 DataType		getDataTypeDoubleScalars	(DataType dataType);
 DataType		getDataTypeVector			(DataType scalarType, int size);
@@ -250,24 +260,74 @@ DataType		getDataTypeBoolVec			(int vecSize);
 DataType		getDataTypeMatrix			(int numCols, int numRows);
 DataType		getDataTypeFromGLType		(deUint32 glType);
 
-inline bool		isDataTypeFloatOrVec		(DataType dataType)	{ return (dataType >= TYPE_FLOAT)      && (dataType <= TYPE_FLOAT_VEC4);   }
-inline bool		isDataTypeDoubleOrDVec		(DataType dataType)	{ return (dataType >= TYPE_DOUBLE)     && (dataType <= TYPE_DOUBLE_VEC4);  }
-inline bool		isDataTypeMatrix			(DataType dataType)	{ return ((dataType >= TYPE_FLOAT_MAT2) && (dataType <= TYPE_FLOAT_MAT4)) || ((dataType >= TYPE_DOUBLE_MAT2) && (dataType <= TYPE_DOUBLE_MAT4));  }
-inline bool		isDataTypeIntOrIVec			(DataType dataType)	{ return (dataType >= TYPE_INT)        && (dataType <= TYPE_INT_VEC4);     }
-inline bool		isDataTypeUintOrUVec		(DataType dataType)	{ return (dataType >= TYPE_UINT)       && (dataType <= TYPE_UINT_VEC4);    }
-inline bool		isDataTypeBoolOrBVec		(DataType dataType)	{ return (dataType >= TYPE_BOOL)       && (dataType <= TYPE_BOOL_VEC4);    }
-inline bool		isDataTypeScalar			(DataType dataType) { return (dataType == TYPE_FLOAT) || (dataType == TYPE_DOUBLE) ||(dataType == TYPE_INT) || (dataType == TYPE_UINT) || (dataType == TYPE_BOOL) || (dataType == TYPE_UINT8) || (dataType == TYPE_INT8) || (dataType == TYPE_UINT16) || (dataType == TYPE_INT16) || (dataType == TYPE_FLOAT16); }
-inline bool		isDataTypeVector			(DataType dataType) { return deInRange32(dataType, TYPE_FLOAT_VEC2, TYPE_FLOAT_VEC4) || deInRange32(dataType, TYPE_DOUBLE_VEC2, TYPE_DOUBLE_VEC4) || deInRange32(dataType, TYPE_INT_VEC2, TYPE_INT_VEC4) || deInRange32(dataType, TYPE_UINT_VEC2, TYPE_UINT_VEC4) || deInRange32(dataType, TYPE_BOOL_VEC2, TYPE_BOOL_VEC4) || deInRange32(dataType, TYPE_UINT8_VEC2, TYPE_UINT8_VEC4) || deInRange32(dataType, TYPE_INT8_VEC2, TYPE_INT8_VEC4) || deInRange32(dataType, TYPE_UINT16_VEC2, TYPE_UINT16_VEC4) || deInRange32(dataType, TYPE_INT16_VEC2, TYPE_INT16_VEC4) || deInRange32(dataType, TYPE_FLOAT16_VEC2, TYPE_FLOAT16_VEC4); }
-inline bool		isDataTypeScalarOrVector	(DataType dataType) { return deInRange32(dataType, TYPE_FLOAT, TYPE_FLOAT_VEC4) || deInRange32(dataType, TYPE_DOUBLE, TYPE_DOUBLE_VEC4) || deInRange32(dataType, TYPE_INT, TYPE_INT_VEC4) || deInRange32(dataType, TYPE_UINT, TYPE_UINT_VEC4) || deInRange32(dataType, TYPE_BOOL, TYPE_BOOL_VEC4) || deInRange32(dataType, TYPE_UINT8, TYPE_UINT8_VEC4) || deInRange32(dataType, TYPE_INT8, TYPE_INT8_VEC4) || deInRange32(dataType, TYPE_UINT16, TYPE_UINT16_VEC4) || deInRange32(dataType, TYPE_INT16, TYPE_INT16_VEC4) || deInRange32(dataType, TYPE_FLOAT16, TYPE_FLOAT16_VEC4); }
-inline bool		isDataTypeSampler			(DataType dataType)	{ return (dataType >= TYPE_SAMPLER_1D) && (dataType <= TYPE_UINT_SAMPLER_2D_MULTISAMPLE); }
-inline bool		isDataTypeImage				(DataType dataType)	{ return (dataType >= TYPE_IMAGE_2D) && (dataType <= TYPE_UINT_IMAGE_3D); }
-inline bool		isDataTypeSamplerMultisample(DataType dataType)	{ return (dataType >= TYPE_SAMPLER_2D_MULTISAMPLE) && (dataType <= TYPE_UINT_SAMPLER_2D_MULTISAMPLE); }
-inline bool		isDataTypeAtomicCounter		(DataType dataType)	{ return dataType == TYPE_UINT_ATOMIC_COUNTER; }
-inline bool		isDataTypeSamplerBuffer		(DataType dataType)	{ return (dataType >= TYPE_SAMPLER_BUFFER) && (dataType <= TYPE_UINT_SAMPLER_BUFFER); }
-inline bool		isDataTypeSamplerMSArray	(DataType dataType)	{ return (dataType >= TYPE_SAMPLER_2D_MULTISAMPLE_ARRAY) && (dataType <= TYPE_UINT_SAMPLER_2D_MULTISAMPLE_ARRAY); }
-inline bool		isDataTypeImageBuffer		(DataType dataType)	{ return (dataType >= TYPE_IMAGE_BUFFER) && (dataType <= TYPE_UINT_IMAGE_BUFFER); }
-inline bool		isDataTypeExplicitPrecision	(DataType dataType)	{ return deInRange32(dataType, TYPE_UINT8, TYPE_UINT8_VEC4) || deInRange32(dataType, TYPE_INT8, TYPE_INT8_VEC4) || deInRange32(dataType, TYPE_UINT16, TYPE_UINT16_VEC4) || deInRange32(dataType, TYPE_INT16, TYPE_INT16_VEC4) || deInRange32(dataType, TYPE_FLOAT16, TYPE_FLOAT16_VEC4); }
-inline bool		dataTypeSupportsPrecisionModifier(DataType dataType)	{ return !isDataTypeBoolOrBVec(dataType) && !isDataTypeExplicitPrecision(dataType);    }
+inline bool		isDataTypeFloat16OrVec				(DataType dataType)	{ return (dataType >= TYPE_FLOAT16)    && (dataType <= TYPE_FLOAT16_MAT4); }
+inline bool		isDataTypeFloatOrVec				(DataType dataType)	{ return (dataType >= TYPE_FLOAT)      && (dataType <= TYPE_FLOAT_VEC4);   }
+inline bool		isDataTypeFloatType					(DataType dataType)	{ return (dataType >= TYPE_FLOAT)      && (dataType <= TYPE_FLOAT_MAT4);   }
+inline bool		isDataTypeDoubleOrDVec				(DataType dataType)	{ return (dataType >= TYPE_DOUBLE)     && (dataType <= TYPE_DOUBLE_VEC4);  }
+inline bool		isDataTypeMatrix					(DataType dataType)	{
+																			return ((dataType >= TYPE_FLOAT_MAT2) && (dataType <= TYPE_FLOAT_MAT4))
+																				|| ((dataType >= TYPE_DOUBLE_MAT2) && (dataType <= TYPE_DOUBLE_MAT4))
+																				|| ((dataType >= TYPE_FLOAT16_MAT2) && (dataType <= TYPE_FLOAT16_MAT4))
+																				;
+																		}
+inline bool		isDataTypeIntOrIVec					(DataType dataType)	{ return (dataType >= TYPE_INT)        && (dataType <= TYPE_INT_VEC4);     }
+inline bool		isDataTypeUintOrUVec				(DataType dataType)	{ return (dataType >= TYPE_UINT)       && (dataType <= TYPE_UINT_VEC4);    }
+inline bool		isDataTypeBoolOrBVec				(DataType dataType)	{ return (dataType >= TYPE_BOOL)       && (dataType <= TYPE_BOOL_VEC4);    }
+inline bool		isDataTypeScalar					(DataType dataType) {
+																			return (dataType == TYPE_FLOAT)
+																				|| (dataType == TYPE_DOUBLE)
+																				|| (dataType == TYPE_INT)
+																				|| (dataType == TYPE_UINT)
+																				|| (dataType == TYPE_BOOL)
+																				|| (dataType == TYPE_UINT8)
+																				|| (dataType == TYPE_INT8)
+																				|| (dataType == TYPE_UINT16)
+																				|| (dataType == TYPE_INT16)
+																				|| (dataType == TYPE_FLOAT16)
+																				;
+																		}
+inline bool		isDataTypeVector					(DataType dataType) {
+																			return deInRange32(dataType, TYPE_FLOAT_VEC2, TYPE_FLOAT_VEC4)
+																				|| deInRange32(dataType, TYPE_DOUBLE_VEC2, TYPE_DOUBLE_VEC4)
+																				|| deInRange32(dataType, TYPE_INT_VEC2, TYPE_INT_VEC4)
+																				|| deInRange32(dataType, TYPE_UINT_VEC2, TYPE_UINT_VEC4)
+																				|| deInRange32(dataType, TYPE_BOOL_VEC2, TYPE_BOOL_VEC4)
+																				|| deInRange32(dataType, TYPE_UINT8_VEC2, TYPE_UINT8_VEC4)
+																				|| deInRange32(dataType, TYPE_INT8_VEC2, TYPE_INT8_VEC4)
+																				|| deInRange32(dataType, TYPE_UINT16_VEC2, TYPE_UINT16_VEC4)
+																				|| deInRange32(dataType, TYPE_INT16_VEC2, TYPE_INT16_VEC4)
+																				|| deInRange32(dataType, TYPE_FLOAT16_VEC2, TYPE_FLOAT16_VEC4)
+																				;
+																		}
+inline bool		isDataTypeScalarOrVector			(DataType dataType) {
+																			return deInRange32(dataType, TYPE_FLOAT, TYPE_FLOAT_VEC4)
+																				|| deInRange32(dataType, TYPE_DOUBLE, TYPE_DOUBLE_VEC4)
+																				|| deInRange32(dataType, TYPE_INT, TYPE_INT_VEC4)
+																				|| deInRange32(dataType, TYPE_UINT, TYPE_UINT_VEC4)
+																				|| deInRange32(dataType, TYPE_BOOL, TYPE_BOOL_VEC4)
+																				|| deInRange32(dataType, TYPE_UINT8, TYPE_UINT8_VEC4)
+																				|| deInRange32(dataType, TYPE_INT8, TYPE_INT8_VEC4)
+																				|| deInRange32(dataType, TYPE_UINT16, TYPE_UINT16_VEC4)
+																				|| deInRange32(dataType, TYPE_INT16, TYPE_INT16_VEC4)
+																				|| deInRange32(dataType, TYPE_FLOAT16, TYPE_FLOAT16_VEC4)
+																				;
+																		}
+inline bool		isDataTypeSampler					(DataType dataType)	{ return (dataType >= TYPE_SAMPLER_1D) && (dataType <= TYPE_UINT_SAMPLER_2D_MULTISAMPLE); }
+inline bool		isDataTypeImage						(DataType dataType)	{ return (dataType >= TYPE_IMAGE_2D) && (dataType <= TYPE_UINT_IMAGE_3D); }
+inline bool		isDataTypeSamplerMultisample		(DataType dataType)	{ return (dataType >= TYPE_SAMPLER_2D_MULTISAMPLE) && (dataType <= TYPE_UINT_SAMPLER_2D_MULTISAMPLE); }
+inline bool		isDataTypeAtomicCounter				(DataType dataType)	{ return dataType == TYPE_UINT_ATOMIC_COUNTER; }
+inline bool		isDataTypeSamplerBuffer				(DataType dataType)	{ return (dataType >= TYPE_SAMPLER_BUFFER) && (dataType <= TYPE_UINT_SAMPLER_BUFFER); }
+inline bool		isDataTypeSamplerMSArray			(DataType dataType)	{ return (dataType >= TYPE_SAMPLER_2D_MULTISAMPLE_ARRAY) && (dataType <= TYPE_UINT_SAMPLER_2D_MULTISAMPLE_ARRAY); }
+inline bool		isDataTypeImageBuffer				(DataType dataType)	{ return (dataType >= TYPE_IMAGE_BUFFER) && (dataType <= TYPE_UINT_IMAGE_BUFFER); }
+inline bool		isDataTypeExplicitPrecision			(DataType dataType)	{
+																			return deInRange32(dataType, TYPE_UINT8, TYPE_UINT8_VEC4)
+																				|| deInRange32(dataType, TYPE_INT8, TYPE_INT8_VEC4)
+																				|| deInRange32(dataType, TYPE_UINT16, TYPE_UINT16_VEC4)
+																				|| deInRange32(dataType, TYPE_INT16, TYPE_INT16_VEC4)
+																				|| deInRange32(dataType, TYPE_FLOAT16, TYPE_FLOAT16_VEC4)
+																				;
+																		}
+inline bool		dataTypeSupportsPrecisionModifier	(DataType dataType)	{ return !isDataTypeBoolOrBVec(dataType) && !isDataTypeExplicitPrecision(dataType);    }
 
 int				getDataTypeMatrixNumRows	(DataType dataType);
 int				getDataTypeMatrixNumColumns	(DataType dataType);
@@ -278,19 +338,29 @@ int				getDataTypeNumComponents	(DataType dataType);
 template <typename T>
 struct DataTypeTraits;
 
-template <> struct DataTypeTraits<float>		{ enum { DATATYPE = TYPE_FLOAT			}; };
-template <> struct DataTypeTraits<bool>			{ enum { DATATYPE = TYPE_BOOL			}; };
-template <> struct DataTypeTraits<int>			{ enum { DATATYPE = TYPE_INT			}; };
-template <> struct DataTypeTraits<deUint32>		{ enum { DATATYPE = TYPE_UINT			}; };
-template <> struct DataTypeTraits<tcu::Mat2>	{ enum { DATATYPE = TYPE_FLOAT_MAT2		}; };
-template <> struct DataTypeTraits<tcu::Mat2x3>	{ enum { DATATYPE = TYPE_FLOAT_MAT2X3	}; };
-template <> struct DataTypeTraits<tcu::Mat2x4>	{ enum { DATATYPE = TYPE_FLOAT_MAT2X4	}; };
-template <> struct DataTypeTraits<tcu::Mat3x2>	{ enum { DATATYPE = TYPE_FLOAT_MAT3X2	}; };
-template <> struct DataTypeTraits<tcu::Mat3>	{ enum { DATATYPE = TYPE_FLOAT_MAT3		}; };
-template <> struct DataTypeTraits<tcu::Mat3x4>	{ enum { DATATYPE = TYPE_FLOAT_MAT3X4	}; };
-template <> struct DataTypeTraits<tcu::Mat4x2>	{ enum { DATATYPE = TYPE_FLOAT_MAT4X2	}; };
-template <> struct DataTypeTraits<tcu::Mat4x3>	{ enum { DATATYPE = TYPE_FLOAT_MAT4X3	}; };
-template <> struct DataTypeTraits<tcu::Mat4>	{ enum { DATATYPE = TYPE_FLOAT_MAT4		}; };
+template <> struct DataTypeTraits<deUint16>			{ enum { DATATYPE = TYPE_FLOAT16			}; };
+template <> struct DataTypeTraits<float>			{ enum { DATATYPE = TYPE_FLOAT				}; };
+template <> struct DataTypeTraits<bool>				{ enum { DATATYPE = TYPE_BOOL				}; };
+template <> struct DataTypeTraits<int>				{ enum { DATATYPE = TYPE_INT				}; };
+template <> struct DataTypeTraits<deUint32>			{ enum { DATATYPE = TYPE_UINT				}; };
+template <> struct DataTypeTraits<tcu::Mat2>		{ enum { DATATYPE = TYPE_FLOAT_MAT2			}; };
+template <> struct DataTypeTraits<tcu::Mat2x3>		{ enum { DATATYPE = TYPE_FLOAT_MAT2X3		}; };
+template <> struct DataTypeTraits<tcu::Mat2x4>		{ enum { DATATYPE = TYPE_FLOAT_MAT2X4		}; };
+template <> struct DataTypeTraits<tcu::Mat3x2>		{ enum { DATATYPE = TYPE_FLOAT_MAT3X2		}; };
+template <> struct DataTypeTraits<tcu::Mat3>		{ enum { DATATYPE = TYPE_FLOAT_MAT3			}; };
+template <> struct DataTypeTraits<tcu::Mat3x4>		{ enum { DATATYPE = TYPE_FLOAT_MAT3X4		}; };
+template <> struct DataTypeTraits<tcu::Mat4x2>		{ enum { DATATYPE = TYPE_FLOAT_MAT4X2		}; };
+template <> struct DataTypeTraits<tcu::Mat4x3>		{ enum { DATATYPE = TYPE_FLOAT_MAT4X3		}; };
+template <> struct DataTypeTraits<tcu::Mat4>		{ enum { DATATYPE = TYPE_FLOAT_MAT4			}; };
+template <> struct DataTypeTraits<tcu::Mat2_16b>	{ enum { DATATYPE = TYPE_FLOAT16_MAT2		}; };
+template <> struct DataTypeTraits<tcu::Mat2x3_16b>	{ enum { DATATYPE = TYPE_FLOAT16_MAT2X3		}; };
+template <> struct DataTypeTraits<tcu::Mat2x4_16b>	{ enum { DATATYPE = TYPE_FLOAT16_MAT2X4		}; };
+template <> struct DataTypeTraits<tcu::Mat3x2_16b>	{ enum { DATATYPE = TYPE_FLOAT16_MAT3X2		}; };
+template <> struct DataTypeTraits<tcu::Mat3_16b>	{ enum { DATATYPE = TYPE_FLOAT16_MAT3		}; };
+template <> struct DataTypeTraits<tcu::Mat3x4_16b>	{ enum { DATATYPE = TYPE_FLOAT16_MAT3X4		}; };
+template <> struct DataTypeTraits<tcu::Mat4x2_16b>	{ enum { DATATYPE = TYPE_FLOAT16_MAT4X2		}; };
+template <> struct DataTypeTraits<tcu::Mat4x3_16b>	{ enum { DATATYPE = TYPE_FLOAT16_MAT4X3		}; };
+template <> struct DataTypeTraits<tcu::Mat4_16b>	{ enum { DATATYPE = TYPE_FLOAT16_MAT4		}; };
 
 template <typename T, int Size>
 struct DataTypeTraits<tcu::Vector<T, Size> >
