@@ -751,7 +751,7 @@ protected:
 		const int		numWorkGroups	= numValues/workGroupSize;
 		const int		numBits			= m_precision == PRECISION_HIGHP ? 32 :
 										  m_precision == PRECISION_MEDIUMP ? 16 : 8;
-		const deUint32	compareMask		= (m_type == TYPE_UINT || numBits == 32) ? ~0u : (1u<<numBits)-1u;
+		const deUint32	compareMask		= numBits == 32 ? ~0u : (1u<<numBits)-1u;
 
 		for (int groupNdx = 0; groupNdx < numWorkGroups; groupNdx++)
 		{
