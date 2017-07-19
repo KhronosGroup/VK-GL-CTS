@@ -342,6 +342,7 @@ public:
 		float16Int8Features.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
 		vertexAttributeDivisorFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT;
 
+
 		if (isPhysicalDeviceFeatures2Supported(apiVersion, instanceExtensions))
 		{
 			void** nextPtr = &coreFeatures.pNext;
