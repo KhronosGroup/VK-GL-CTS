@@ -238,13 +238,6 @@ dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.depth24_stencil8
 
 #VK-GL-CTS 252
 dEQP-GLES2.functional.negative_api.state.get_framebuffer_attachment_parameteriv
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_tex2d
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_pos_x
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_pos_y
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_pos_z
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_neg_x
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_neg_y
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_neg_z
 dEQP-GLES2.functional.negative_api.texture.texsubimage2d_neg_wdt_hgt
 
 #VK-GL-CTS 253
