@@ -1462,6 +1462,29 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 			DE_NULL
 		};
 		vkd.cmdBeginRenderPass(*commandBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		// Stencil needs to be cleared if it exists.
+		if (tcu::hasStencilComponent(mapVkFormat(m_srcFormat).order))
+		{
+			const VkClearAttachment clearAttachment =
+			{
+				VK_IMAGE_ASPECT_STENCIL_BIT,						// VkImageAspectFlags	aspectMask;
+				0,													// deUint32				colorAttachment;
+				makeClearValueDepthStencil(0, 0)					// VkClearValue			clearValue;
+			};
+
+			const VkClearRect clearRect =
+			{
+				{
+					{ 0u, 0u },
+					{ m_width, m_height }
+				},
+				0,													// deUint32	baseArrayLayer;
+				1													// deUint32	layerCount;
+			};
+
+			vkd.cmdClearAttachments(*commandBuffer, 1, &clearAttachment, 1, &clearRect);
+		}
 	}
 
 	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
