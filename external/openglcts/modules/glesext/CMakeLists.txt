@@ -172,6 +172,8 @@ set(GLCTS_ESEXT_SRCS
     texture_buffer/esextcTextureBufferTextureBufferRange.hpp
     texture_cube_map_array/esextcTextureCubeMapArrayColorDepthAttachments.cpp
     texture_cube_map_array/esextcTextureCubeMapArrayColorDepthAttachments.hpp
+    texture_cube_map_array/esextcTextureCubeMapArrayETC2Support.cpp
+    texture_cube_map_array/esextcTextureCubeMapArrayETC2Support.hpp
     texture_cube_map_array/esextcTextureCubeMapArrayFBOIncompleteness.cpp
     texture_cube_map_array/esextcTextureCubeMapArrayFBOIncompleteness.hpp
     texture_cube_map_array/esextcTextureCubeMapArrayGenerateMipMap.cpp

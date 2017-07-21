@@ -459,7 +459,7 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 				(VkAttachmentDescriptionFlags)0,					// VkAttachmentDescriptionFlags		flags
 				m_drawState.depthFormat,							// VkFormat							format
 				(VkSampleCountFlagBits)m_drawState.numSamples,		// VkSampleCountFlagBits			samples
-				VK_ATTACHMENT_LOAD_OP_LOAD,							// VkAttachmentLoadOp				loadOp
+				VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp
 				VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp
 				VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp
@@ -760,7 +760,11 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 
 		// Begin render pass
 		{
-			const VkClearValue	clearValue	= makeClearValueColor(Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+			std::vector<VkClearValue> clearValues;
+
+			clearValues.push_back(makeClearValueColor(Vec4(0.0f, 0.0f, 0.0f, 1.0f)));
+			if (vulkanProgram.depthImageView)
+				clearValues.push_back(makeClearValueDepthStencil(0.0, 0));
 
 			const VkRect2D		renderArea =
 			{
@@ -774,8 +778,8 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 				*m_renderPass,														// VkRenderPass									renderPass;
 				*m_framebuffer,														// VkFramebuffer								framebuffer;
 				renderArea,															// VkRect2D										renderArea;
-				1u,																	// uint32_t										clearValueCount;
-				&clearValue,														// const VkClearValue*							pClearValues;
+				static_cast<uint32_t>(clearValues.size()),							// uint32_t										clearValueCount;
+				&clearValues[0],													// const VkClearValue*							pClearValues;
 			};
 
 			vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);

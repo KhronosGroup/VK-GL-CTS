@@ -1373,9 +1373,16 @@ void TessControlExecutor::execute (int numValues, const void* const* inputs, voi
 
 	gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, OUTPUT_BUFFER_BINDING, getOutputBuffer());
 
+	deUint32 vertexArray;
+	gl.genVertexArrays(1, &vertexArray);
+	gl.bindVertexArray(vertexArray);
+
 	// Render patches
 	gl.patchParameteri(GL_PATCH_VERTICES, 3);
 	gl.drawArrays(GL_PATCHES, 0, 3*numValues);
+
+	gl.bindVertexArray(0);
+	gl.deleteVertexArrays(1, &vertexArray);
 
 	// Read back data
 	readOutputBuffer(outputs, numValues);
@@ -1491,9 +1498,16 @@ void TessEvaluationExecutor::execute (int numValues, const void* const* inputs, 
 
 	gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, OUTPUT_BUFFER_BINDING, getOutputBuffer());
 
+	deUint32 vertexArray;
+	gl.genVertexArrays(1, &vertexArray);
+	gl.bindVertexArray(vertexArray);
+
 	// Render patches
 	gl.patchParameteri(GL_PATCH_VERTICES, 2);
 	gl.drawArrays(GL_PATCHES, 0, alignedValues);
+
+	gl.bindVertexArray(0);
+	gl.deleteVertexArrays(1, &vertexArray);
 
 	// Read back data
 	readOutputBuffer(outputs, numValues);

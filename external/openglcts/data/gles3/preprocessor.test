@@ -1525,6 +1525,23 @@ group predefined_macros "Predefined Macros Tests"
 		""
 	end
 
+	case invalid_token_pasting
+		version 300 es
+		expect compile_fail
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+			#define OUT(N) token##N
+
+			void main()
+			{
+				float token0 = 1.0;
+				${POSITION_FRAG_COLOR} = vec4(OUT(0));
+			}
+		""
+	end
+
 end # predefined_macros
 
 group conditional_inclusion "Conditional Inclusion Tests"

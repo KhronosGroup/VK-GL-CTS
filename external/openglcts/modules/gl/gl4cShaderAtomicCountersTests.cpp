@@ -44,33 +44,6 @@ using tcu::UVec4;
 namespace
 {
 
-static tcu::TestLog* currentLog;
-
-void setOutput(tcu::TestLog& log)
-{
-	currentLog = &log;
-}
-
-void Output(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-
-	const int   MAX_OUTPUT_STRING_SIZE = 40000;
-	static char temp[MAX_OUTPUT_STRING_SIZE];
-
-	vsnprintf(temp, MAX_OUTPUT_STRING_SIZE - 1, format, args);
-	temp[MAX_OUTPUT_STRING_SIZE - 1] = '\0';
-
-	char* logLine = strtok(temp, "\n");
-	while (logLine != NULL)
-	{
-		currentLog->writeMessage(logLine);
-		logLine = strtok(NULL, "\n");
-	}
-	va_end(args);
-}
-
 class SACSubcaseBase : public deqp::SubcaseBase
 {
 public:
@@ -143,7 +116,8 @@ public:
 		glGetProgramInfoLog(program, sizeof(log), &length, log);
 		if (length > 1)
 		{
-			Output("Program Info Log:\n%s\n", log);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Program Info Log:\n"
+												<< log << tcu::TestLog::EndMessage;
 		}
 	}
 
@@ -209,7 +183,7 @@ public:
 		{
 			std::vector<GLchar> log(length);
 			glGetProgramInfoLog(program, length, NULL, &log[0]);
-			Output("%s\n", &log[0]);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 		}
 		return status == GL_TRUE;
 	}
@@ -226,7 +200,8 @@ public:
 			glGetProgramInfoLog(program, sizeof(log), &length, log);
 			if (length > 1)
 			{
-				Output("Program Info Log:\n%s\n", log);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Program Info Log:\n"
+													<< log << tcu::TestLog::EndMessage;
 			}
 		}
 		return program;
@@ -379,11 +354,14 @@ public:
 
 		GLint i;
 		glGetIntegerv(e, &i);
-		Output("%s = %d\n", GLenumToString(e), i);
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << GLenumToString(e) << " = " << i << tcu::TestLog::EndMessage;
 		if (i < expected)
 		{
 			ok = false;
-			Output("%s state is incorrect (GetIntegerv, is: %d, expected: %d)\n", GLenumToString(e), i, expected);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << GLenumToString(e) << " state is incorrect (GetIntegerv, is: " << i
+				<< ", expected: " << expected << ")" << tcu::TestLog::EndMessage;
 		}
 
 		GLint64 i64;
@@ -391,8 +369,9 @@ public:
 		if (i64 < static_cast<GLint64>(expected))
 		{
 			ok = false;
-			Output("%s state is incorrect (GetInteger64v, is: %d, expected: %d)\n", GLenumToString(e),
-				   static_cast<GLint>(i64), expected);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << GLenumToString(e)
+												<< " state is incorrect (GetInteger64v, is: " << static_cast<GLint>(i64)
+												<< ", expected: " << expected << ")" << tcu::TestLog::EndMessage;
 		}
 
 		GLfloat f;
@@ -400,7 +379,9 @@ public:
 		if (f < static_cast<GLfloat>(expected))
 		{
 			ok = false;
-			Output("%s state is incorrect (GetFloatv, is: %f, expected: %d)\n", GLenumToString(e), f, expected);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << GLenumToString(e) << " state is incorrect (GetFloatv, is: " << f
+				<< ", expected: " << expected << ")" << tcu::TestLog::EndMessage;
 		}
 
 		GLdouble d;
@@ -408,7 +389,9 @@ public:
 		if (d < static_cast<GLdouble>(expected))
 		{
 			ok = false;
-			Output("%s state is incorrect (GetDoublev, is: %f, expected: %d)\n", GLenumToString(e), d, expected);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << GLenumToString(e) << " state is incorrect (GetDoublev, is: " << d
+				<< ", expected: " << expected << ")" << tcu::TestLog::EndMessage;
 		}
 
 		GLboolean b;
@@ -426,7 +409,9 @@ public:
 		if (i != expected)
 		{
 			ok = false;
-			Output("%s state is incorrect (GetIntegerv, is: %d, expected: %d)\n", GLenumToString(e), i, expected);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << GLenumToString(e) << " state is incorrect (GetIntegerv, is: " << i
+				<< ", expected: " << expected << ")" << tcu::TestLog::EndMessage;
 		}
 
 		GLint64 i64;
@@ -434,8 +419,9 @@ public:
 		if (i64 != static_cast<GLint64>(expected))
 		{
 			ok = false;
-			Output("%s state is incorrect (GetInteger64v, is: %d, expected: %d)\n", GLenumToString(e),
-				   static_cast<GLint>(i64), expected);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << GLenumToString(e)
+												<< " state is incorrect (GetInteger64v, is: " << static_cast<GLint>(i64)
+												<< ", expected: " << expected << ")" << tcu::TestLog::EndMessage;
 		}
 
 		GLfloat f;
@@ -443,7 +429,9 @@ public:
 		if (f != static_cast<GLfloat>(expected))
 		{
 			ok = false;
-			Output("%s state is incorrect (GetFloatv, is: %f, expected: %d)\n", GLenumToString(e), f, expected);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << GLenumToString(e) << " state is incorrect (GetFloatv, is: " << f
+				<< ", expected: " << expected << ")" << tcu::TestLog::EndMessage;
 		}
 
 		GLdouble d;
@@ -451,7 +439,9 @@ public:
 		if (d != static_cast<GLdouble>(expected))
 		{
 			ok = false;
-			Output("%s state is incorrect (GetDoublev, is: %f, expected: %d)\n", GLenumToString(e), d, expected);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << GLenumToString(e) << " state is incorrect (GetDoublev, is: " << d
+				<< ", expected: " << expected << ")" << tcu::TestLog::EndMessage;
 		}
 
 		GLboolean b;
@@ -459,8 +449,9 @@ public:
 		if (b != (expected ? GL_TRUE : GL_FALSE))
 		{
 			ok = false;
-			Output("%s state is incorrect (GetBooleanv, is: %d, expected: %d)\n", GLenumToString(e), b,
-				   expected ? GL_TRUE : GL_FALSE);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << GLenumToString(e) << " state is incorrect (GetBooleanv, is: " << b
+				<< ", expected: " << (expected ? GL_TRUE : GL_FALSE) << ")" << tcu::TestLog::EndMessage;
 		}
 
 		return ok;
@@ -475,9 +466,10 @@ public:
 		if (i != binding)
 		{
 			ok = false;
-			Output("GL_ATOMIC_COUNTER_BUFFER_BINDING state is incorrect (GetIntegeri_v, is: %d, expected: %d, index: "
-				   "%u)\n",
-				   i, binding, index);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "GL_ATOMIC_COUNTER_BUFFER_BINDING state is incorrect (GetIntegeri_v, is: " << i
+				<< ", expected: " << binding << ", index: " << index << ")" << tcu::TestLog::EndMessage;
 		}
 
 		GLint64 i64;
@@ -485,9 +477,10 @@ public:
 		if (i64 != static_cast<GLint64>(binding))
 		{
 			ok = false;
-			Output("GL_ATOMIC_COUNTER_BUFFER_BINDING state is incorrect (GetInteger64i_v, is: %d, expected: %d, index: "
-				   "%u)\n",
-				   static_cast<GLint>(i64), binding, index);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_ATOMIC_COUNTER_BUFFER_BINDING state is incorrect (GetInteger64i_v, is: "
+				<< static_cast<GLint>(i64) << ", expected: " << binding << ", index: " << index << ")"
+				<< tcu::TestLog::EndMessage;
 		}
 
 		GLfloat f;
@@ -495,9 +488,10 @@ public:
 		if (f != static_cast<GLfloat>(binding))
 		{
 			ok = false;
-			Output(
-				"GL_ATOMIC_COUNTER_BUFFER_BINDING state is incorrect (GetFloati_v, is: %f, expected: %d, index: %u)\n",
-				f, binding, index);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "GL_ATOMIC_COUNTER_BUFFER_BINDING state is incorrect (GetFloati_v, is: " << f
+				<< ", expected: " << binding << ", index: " << index << ")" << tcu::TestLog::EndMessage;
 		}
 
 		GLdouble d;
@@ -505,9 +499,10 @@ public:
 		if (d != static_cast<GLdouble>(binding))
 		{
 			ok = false;
-			Output(
-				"GL_ATOMIC_COUNTER_BUFFER_BINDING state is incorrect (GetDoublei_v, is: %f, expected: %d, index: %u)\n",
-				d, binding, index);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "GL_ATOMIC_COUNTER_BUFFER_BINDING state is incorrect (GetDoublei_v, is: " << d
+				<< ", expected: " << binding << ", index: " << index << ")" << tcu::TestLog::EndMessage;
 		}
 
 		GLboolean b;
@@ -515,26 +510,32 @@ public:
 		if (b != (binding ? GL_TRUE : GL_FALSE))
 		{
 			ok = false;
-			Output("GL_ATOMIC_COUNTER_BUFFER_BINDING state is incorrect (GetBooleani_v, is: %d, expected: %d, index: "
-				   "%u)\n",
-				   b, binding ? GL_TRUE : GL_FALSE, index);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "GL_ATOMIC_COUNTER_BUFFER_BINDING state is incorrect (GetBooleani_v, is: " << d
+				<< ", expected: " << (binding ? GL_TRUE : GL_FALSE) << ", index: " << index << ")"
+				<< tcu::TestLog::EndMessage;
 		}
 
 		glGetInteger64i_v(GL_ATOMIC_COUNTER_BUFFER_START, index, &i64);
 		if (i64 != start)
 		{
 			ok = false;
-			Output("GL_ATOMIC_COUNTER_BUFFER_START state is incorrect (GetInteger64i_v, is: %d, expected: %d, index: "
-				   "%u)\n",
-				   static_cast<GLint>(i64), static_cast<GLint>(start), index);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "GL_ATOMIC_COUNTER_BUFFER_START state is incorrect (GetInteger64i_v, is: " << static_cast<GLint>(i64)
+				<< ", expected: " << static_cast<GLint>(start) << ", index: " << index << ")"
+				<< tcu::TestLog::EndMessage;
 		}
 		glGetInteger64i_v(GL_ATOMIC_COUNTER_BUFFER_SIZE, index, &i64);
 		if (i64 != size && i64 != 0)
 		{
 			ok = false;
-			Output("GL_ATOMIC_COUNTER_BUFFER_SIZE state is incorrect (GetInteger64i_v, is: %d, expected: (%d or 0), "
-				   "index: %u)\n",
-				   static_cast<GLint>(i64), static_cast<GLint>(size), index);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "GL_ATOMIC_COUNTER_BUFFER_SIZE state is incorrect (GetInteger64i_v, is: " << static_cast<GLint>(i64)
+				<< ", expected: " << static_cast<GLint>(size) << ", index: " << index << ")"
+				<< tcu::TestLog::EndMessage;
 		}
 
 		return ok;
@@ -549,7 +550,9 @@ public:
 		glGetUniformIndices(prog, 1, &uniform_name, &index);
 		if (index != uniform_index)
 		{
-			Output("Uniform: %s: Bad index returned by glGetUniformIndices.\n", uniform_name);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Uniform: " << uniform_name
+				<< ": Bad index returned by glGetUniformIndices." << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 
@@ -563,34 +566,44 @@ public:
 		glGetActiveUniformName(prog, uniform_index, sizeof(name), &length, name);
 		if (strcmp(name, uniform_name))
 		{
-			Output("Uniform: %s: Bad name returned by glGetActiveUniformName.\n", uniform_name);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Uniform: " << uniform_name
+				<< ": Bad name returned by glGetActiveUniformName." << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 		if (length != uniform_length)
 		{
-			Output("Uniform: %s: Length is %d should be %d.\n", uniform_name, length, uniform_length);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Uniform: " << uniform_name << ": Length is " << length << " should be "
+				<< uniform_length << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 
 		glGetActiveUniform(prog, uniform_index, sizeof(name), &length, &size, &type, name);
 		if (strcmp(name, uniform_name))
 		{
-			Output("Uniform: %s: Bad name returned by glGetActiveUniform.\n", uniform_name);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Uniform: " << uniform_name << ": Bad name returned by glGetActiveUniform."
+				<< tcu::TestLog::EndMessage;
 			ok = false;
 		}
 		if (length != uniform_length)
 		{
-			Output("Uniform: %s: Length is %d should be %d.\n", uniform_name, length, uniform_length);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Uniform: " << uniform_name << ": Length is " << length << " should be "
+				<< uniform_length << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 		if (size != uniform_size)
 		{
-			Output("Uniform: %s: Size is %d should be %d.\n", uniform_name, size, uniform_size);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Uniform: " << uniform_name << ": Size is "
+												<< size << " should be " << uniform_size << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 		if (type != static_cast<GLenum>(uniform_type))
 		{
-			Output("Uniform: %s: Type is %d should be %d.\n", uniform_name, type, uniform_type);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Uniform: " << uniform_name << ": Type is "
+												<< type << " should be " << uniform_type << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 
@@ -598,58 +611,71 @@ public:
 		glGetActiveUniformsiv(prog, 1, &uniform_index, GL_UNIFORM_TYPE, &param);
 		if (param != uniform_type)
 		{
-			Output("Uniform: %s: Type is %d should be %d.\n", uniform_name, param, uniform_type);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Uniform: " << uniform_name << ": Type is "
+												<< param << " should be " << uniform_type << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 		glGetActiveUniformsiv(prog, 1, &uniform_index, GL_UNIFORM_SIZE, &param);
 		if (param != uniform_size)
 		{
-			Output("Uniform: %s: GL_UNIFORM_SIZE is %d should be %d.\n", uniform_name, param, uniform_size);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Uniform: " << uniform_name << ": GL_UNIFORM_SIZE is " << param
+				<< " should be " << uniform_size << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 		glGetActiveUniformsiv(prog, 1, &uniform_index, GL_UNIFORM_NAME_LENGTH, &param);
 		if (param != (uniform_length + 1))
 		{
-			Output("Uniform: %s: GL_UNIFORM_NAME_LENGTH is %d should be %d.\n", uniform_name, param,
-				   uniform_length + 1);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Uniform: " << uniform_name << ": GL_UNIFORM_NAME_LENGTH is " << param
+				<< " should be " << (uniform_length + 1) << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 		glGetActiveUniformsiv(prog, 1, &uniform_index, GL_UNIFORM_BLOCK_INDEX, &param);
 		if (param != -1)
 		{
-			Output("Uniform: %s: GL_UNIFORM_BLOCK_INDEX should be -1.\n", uniform_name);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Uniform: " << uniform_name
+												<< ": GL_UNIFORM_BLOCK_INDEX should be -1." << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 		glGetActiveUniformsiv(prog, 1, &uniform_index, GL_UNIFORM_OFFSET, &param);
 		if (param != uniform_offset)
 		{
-			Output("Uniform: %s: GL_UNIFORM_OFFSET is %d should be %d.\n", uniform_name, param, uniform_offset);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Uniform: " << uniform_name << ": GL_UNIFORM_OFFSET is " << param
+				<< " should be " << uniform_offset << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 		glGetActiveUniformsiv(prog, 1, &uniform_index, GL_UNIFORM_ARRAY_STRIDE, &param);
 		if (param != uniform_array_stride)
 		{
-			Output("Uniform: %s: GL_UNIFORM_ARRAY_STRIDE is %d should be %d.\n", uniform_name, param,
-				   uniform_array_stride);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Uniform: " << uniform_name << ": GL_UNIFORM_ARRAY_STRIDE is " << param
+				<< " should be " << uniform_array_stride << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 		glGetActiveUniformsiv(prog, 1, &uniform_index, GL_UNIFORM_MATRIX_STRIDE, &param);
 		if (param != 0)
 		{
-			Output("Uniform: %s: GL_UNIFORM_MATRIX_STRIDE should be 0 is %d.\n", uniform_name, param);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Uniform: " << uniform_name << ": GL_UNIFORM_MATRIX_STRIDE should be 0 is "
+				<< param << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 		glGetActiveUniformsiv(prog, 1, &uniform_index, GL_UNIFORM_IS_ROW_MAJOR, &param);
 		if (param != 0)
 		{
-			Output("Uniform: %s: GL_UNIFORM_IS_ROW_MAJOR should be 0 is %d.\n", uniform_name, param);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Uniform: " << uniform_name << ": GL_UNIFORM_IS_ROW_MAJOR should be 0 is "
+				<< param << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 		glGetActiveUniformsiv(prog, 1, &uniform_index, GL_UNIFORM_ATOMIC_COUNTER_BUFFER_INDEX, &param);
 		if (param != static_cast<GLint>(buffer_index))
 		{
-			Output("Uniform: %s: GL_UNIFORM_ATOMIC_COUNTER_BUFFER_INDEX is %d should be %d.\n", uniform_name, param,
-				   buffer_index);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Uniform: " << uniform_name
+												<< ": GL_UNIFORM_ATOMIC_COUNTER_BUFFER_INDEX is " << param
+												<< " should be " << buffer_index << tcu::TestLog::EndMessage;
 			ok = false;
 		}
 
@@ -661,10 +687,11 @@ public:
 		std::sort(values, values + size);
 		for (GLuint i = 0; i < size; ++i)
 		{
-			Output("%u\n", values[i]);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << values[i] << tcu::TestLog::EndMessage;
 			if (values[i] != i + min_value)
 			{
-				Output("Counter value is %u should be %u.\n", values[i], i + min_value);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Counter value is " << values[i]
+													<< " should be " << (i + min_value) << tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -678,7 +705,8 @@ public:
 		glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, offset, 4, &value);
 		if (value != expected_value)
 		{
-			Output("Counter value is %u should be %u.\n", value, expected_value);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Counter value is " << value
+												<< " should be " << expected_value << tcu::TestLog::EndMessage;
 			return false;
 		}
 		return true;
@@ -720,43 +748,53 @@ public:
 		glGetBufferParameteri64v(GL_ATOMIC_COUNTER_BUFFER, GL_BUFFER_SIZE, &i64);
 		if (i64 != size_)
 		{
-			Output("BUFFER_SIZE is %d should be %d.\n", static_cast<GLint>(i64), static_cast<GLint>(size_));
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "BUFFER_SIZE is " << static_cast<GLint>(i64) << " should be "
+				<< static_cast<GLint>(size_) << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetBufferParameteriv(GL_ATOMIC_COUNTER_BUFFER, GL_BUFFER_USAGE, &i);
 		if (i != static_cast<GLint>(usage_))
 		{
-			Output("BUFFER_USAGE is %d should be %d.\n", i, usage_);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "BUFFER_USAGE is " << i << " should be "
+												<< usage_ << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetBufferParameteriv(GL_ATOMIC_COUNTER_BUFFER, GL_BUFFER_ACCESS, &i);
 		if (i != static_cast<GLint>(access_))
 		{
-			Output("BUFFER_ACCESS is %d should be %d.\n", i, access_);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "BUFFER_ACCESS is " << i << " should be "
+												<< access_ << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetBufferParameteriv(GL_ATOMIC_COUNTER_BUFFER, GL_BUFFER_ACCESS_FLAGS, &i);
 		if (i != access_flags_)
 		{
-			Output("BUFFER_ACCESS_FLAGS is %d should be %d.\n", i, access_flags_);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "BUFFER_ACCESS_FLAGS is " << i
+												<< " should be " << access_flags_ << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetBufferParameteriv(GL_ATOMIC_COUNTER_BUFFER, GL_BUFFER_MAPPED, &i);
 		if (i != mapped_)
 		{
-			Output("BUFFER_MAPPED is %d should be %d.\n", i, mapped_);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "BUFFER_MAPPED is " << i << " should be "
+												<< mapped_ << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetBufferParameteri64v(GL_ATOMIC_COUNTER_BUFFER, GL_BUFFER_MAP_OFFSET, &i64);
 		if (i64 != map_offset_)
 		{
-			Output("BUFFER_MAP_OFFSET is %d should be %d.\n", static_cast<GLint>(i64), static_cast<GLint>(map_offset_));
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "BUFFER_MAP_OFFSET is " << static_cast<GLint>(i64) << " should be "
+				<< map_offset_ << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetBufferParameteri64v(GL_ATOMIC_COUNTER_BUFFER, GL_BUFFER_MAP_LENGTH, &i64);
 		if (i64 != map_length_)
 		{
-			Output("BUFFER_MAP_LENGTH is %d should be %d.\n", static_cast<GLint>(i64), static_cast<GLint>(map_length_));
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "BUFFER_MAP_LENGTH is " << static_cast<GLint>(i64) << " should be "
+				<< static_cast<GLint>(map_length_) << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -764,7 +802,8 @@ public:
 		glGetBufferPointerv(GL_ATOMIC_COUNTER_BUFFER, GL_BUFFER_MAP_POINTER, &ptr);
 		if (ptr != map_pointer_)
 		{
-			Output("BUFFER_MAP_POINTER is %p should be %p.\n", ptr, map_pointer_);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "BUFFER_MAP_POINTER is " << ptr
+												<< " should be " << map_pointer_ << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -904,7 +943,8 @@ class BasicBufferOperations : public SACSubcaseBase
 		{
 			if (data[i] != i)
 			{
-				Output("data[%u] is: %u should be: %u\n", i, data[i], i);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "data[" << i << "] is: " << data[i]
+													<< "should be: " << i << tcu::TestLog::EndMessage;
 				res = ERROR;
 			}
 		}
@@ -924,7 +964,8 @@ class BasicBufferOperations : public SACSubcaseBase
 		{
 			if (ptr[i] != i * 2)
 			{
-				Output("data[%u] is: %u should be: %u\n", i, data[i], i * 2);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "data[" << i << "] is: " << data[i]
+													<< "should be: " << (i * 2) << tcu::TestLog::EndMessage;
 				res = ERROR;
 			}
 		}
@@ -943,7 +984,8 @@ class BasicBufferOperations : public SACSubcaseBase
 		{
 			if (data[i] != i * 3)
 			{
-				Output("data[%u] is: %u should be: %u\n", i, data[i], i * 3);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "data[" << i << "] is: " << data[i]
+													<< "should be: " << (i * 3) << tcu::TestLog::EndMessage;
 				res = ERROR;
 			}
 		}
@@ -1047,7 +1089,8 @@ class BasicBufferBind : public SACSubcaseBase
 	{
 		GLint bindings;
 		glGetIntegerv(GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS, &bindings);
-		Output("MAX_ATOMIC_COUNTER_BUFFER_BINDINGS: %d\n", bindings);
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "MAX_ATOMIC_COUNTER_BUFFER_BINDINGS: " << bindings << tcu::TestLog::EndMessage;
 
 		if (!CheckGetCommands(GL_ATOMIC_COUNTER_BUFFER_BINDING, 0))
 			return ERROR;
@@ -1109,7 +1152,9 @@ class BasicBufferBind : public SACSubcaseBase
 		glGetIntegerv(GL_ATOMIC_COUNTER_BUFFER_BINDING, &i);
 		if (i != 0)
 		{
-			Output("Generic binding point should be 0 after deleting bound buffer object.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Generic binding point should be 0 after deleting bound buffer object."
+				<< tcu::TestLog::EndMessage;
 			res = ERROR;
 		}
 		for (GLint index = 0; index < bindings; ++index)
@@ -1117,7 +1162,9 @@ class BasicBufferBind : public SACSubcaseBase
 			glGetIntegeri_v(GL_ATOMIC_COUNTER_BUFFER_BINDING, static_cast<GLuint>(index), &i);
 			if (i != 0)
 			{
-				Output("Binding point %u should be 0 after deleting bound buffer object.\n", index);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Binding point %u should be 0 after deleting bound buffer object."
+					<< tcu::TestLog::EndMessage;
 				res = ERROR;
 			}
 		}
@@ -1251,7 +1298,8 @@ class BasicProgramQuery : public SACSubcaseBase
 		glGetProgramiv(prog_, GL_ACTIVE_ATOMIC_COUNTER_BUFFERS, reinterpret_cast<GLint*>(&active_buffers));
 		if (active_buffers != 1)
 		{
-			Output("GL_ACTIVE_ATOMIC_COUNTER_BUFFERS is %u should be %d.\n", active_buffers, 1);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_ACTIVE_ATOMIC_COUNTER_BUFFERS is "
+												<< active_buffers << " should be 1." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		GLint buffers_binding_index;
@@ -1261,64 +1309,79 @@ class BasicProgramQuery : public SACSubcaseBase
 		glGetActiveAtomicCounterBufferiv(prog_, buffers_binding_index, GL_ATOMIC_COUNTER_BUFFER_DATA_SIZE, &i);
 		if (i < 32)
 		{
-			Output("GL_ATOMIC_COUNTER_BUFFER_DATA_SIZE is %d should be at least %d.\n", i, 32);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_ATOMIC_COUNTER_BUFFER_DATA_SIZE is "
+												<< i << " should be 32." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetActiveAtomicCounterBufferiv(prog_, buffers_binding_index, GL_ATOMIC_COUNTER_BUFFER_ACTIVE_ATOMIC_COUNTERS,
 										 &i);
 		if (i != 7)
 		{
-			Output("GL_ATOMIC_COUNTER_BUFFER_ACTIVE_ATOMIC_COUNTERS is %d should be %d.\n", i, 8);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_ATOMIC_COUNTER_BUFFER_ACTIVE_ATOMIC_COUNTERS is " << i
+				<< " should be 8." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		GLint indices[7] = { -1, -1, -1, -1, -1, -1, -1 };
 		glGetActiveAtomicCounterBufferiv(prog_, buffers_binding_index,
 										 GL_ATOMIC_COUNTER_BUFFER_ACTIVE_ATOMIC_COUNTER_INDICES, indices);
-		Output("GL_ATOMIC_COUNTER_BUFFER_ACTIVE_ATOMIC_COUNTER_INDICES:\n");
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message
+			<< "GL_ATOMIC_COUNTER_BUFFER_ACTIVE_ATOMIC_COUNTER_INDICES:" << tcu::TestLog::EndMessage;
 		for (i = 0; i < 7; ++i)
 		{
-			Output("%d ", indices[i]);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << indices[i] << tcu::TestLog::EndMessage;
 			if (indices[i] == -1)
 			{
-				Output("Index -1 found!\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Index -1 found!" << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
-		Output("\n");
 
 		glGetActiveAtomicCounterBufferiv(prog_, buffers_binding_index,
 										 GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_VERTEX_SHADER, &i);
 		if (i != GL_FALSE)
 		{
-			Output("GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_VERTEX_SHADER is %d should be %d.\n", i, 0);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_VERTEX_SHADER is " << i
+				<< " should be 0." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetActiveAtomicCounterBufferiv(prog_, buffers_binding_index,
 										 GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_TESS_CONTROL_SHADER, &i);
 		if (i != GL_FALSE)
 		{
-			Output("GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_TESS_CONTROL_SHADER is %d should be %d.\n", i, 0);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_TESS_CONTROL_SHADER is " << i
+				<< " should be 0." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetActiveAtomicCounterBufferiv(prog_, buffers_binding_index,
 										 GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_TESS_EVALUATION_SHADER, &i);
 		if (i != GL_FALSE)
 		{
-			Output("GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_TESS_EVALUATION_SHADER is %d should be %d.\n", i, 0);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_TESS_EVALUATION_SHADER is " << i
+				<< " should be 0." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetActiveAtomicCounterBufferiv(prog_, buffers_binding_index,
 										 GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_GEOMETRY_SHADER, &i);
 		if (i != GL_FALSE)
 		{
-			Output("GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_GEOMETRY_SHADER is %d should be %d.\n", i, 0);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_GEOMETRY_SHADER is " << i
+				<< " should be 0." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetActiveAtomicCounterBufferiv(prog_, buffers_binding_index,
 										 GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_FRAGMENT_SHADER, &i);
 		if (i != GL_TRUE)
 		{
-			Output("GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_FRAGMENT_SHADER is %d should be %d.\n", i, 1);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_FRAGMENT_SHADER is " << i
+				<< " should be 1." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -1328,7 +1391,8 @@ class BasicProgramQuery : public SACSubcaseBase
 		glGetProgramiv(prog_, GL_ACTIVE_UNIFORMS, reinterpret_cast<GLint*>(&active_uniforms));
 		if (active_uniforms != 7)
 		{
-			Output("GL_ACTIVE_UNIFORMS is %u should be %d.\n", active_uniforms, 8);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_ACTIVE_UNIFORMS is " << active_uniforms
+												<< " should be 8." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		for (GLuint index = 0; index < active_uniforms; ++index)
@@ -1378,7 +1442,9 @@ class BasicProgramQuery : public SACSubcaseBase
 
 		if (ValidateReadBuffer(Vec4(0, 1, 0, 1)) != NO_ERROR)
 		{
-			Output("Render target color should be (0.0, 1.0, 0.0, 1.0).\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Render target color should be (0.0, 1.0, 0.0, 1.0)."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -2355,7 +2421,8 @@ class AdvancedUsageDrawUpdateDraw : public SACSubcaseBase
 		{
 			if (data[i] != 896)
 			{
-				Output("Counter value is %u should be %u.\n", data[i], 896);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Counter value is " << data[i]
+													<< " should be 896." << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -2366,7 +2433,8 @@ class AdvancedUsageDrawUpdateDraw : public SACSubcaseBase
 		{
 			if (data[i] != 1152)
 			{
-				Output("Counter value is %u should be %u.\n", data[i], 896);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Counter value is " << data[i]
+													<< " should be 896." << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -3038,15 +3106,19 @@ class NegativeAPI : public SACSubcaseBase
 		glGetActiveAtomicCounterBufferiv(prog_, 1, GL_ATOMIC_COUNTER_BUFFER_BINDING, &i);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("glGetActiveAtomicCounterBufferiv should generate INAVLID_VALUE when"
-				   " index is greater than or equal GL_ACTIVE_ATOMIC_COUNTER_BUFFERS.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glGetActiveAtomicCounterBufferiv should generate INAVLID_VALUE when"
+											" index is greater than or equal GL_ACTIVE_ATOMIC_COUNTER_BUFFERS."
+				<< tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		glGetActiveAtomicCounterBufferiv(prog_, 7, GL_ATOMIC_COUNTER_BUFFER_BINDING, &i);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("glGetActiveAtomicCounterBufferiv should generate INAVLID_VALUE when"
-				   " index is greater than or equal GL_ACTIVE_ATOMIC_COUNTER_BUFFERS.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glGetActiveAtomicCounterBufferiv should generate INAVLID_VALUE when"
+											" index is greater than or equal GL_ACTIVE_ATOMIC_COUNTER_BUFFERS."
+				<< tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		GLint res;
@@ -3056,22 +3128,28 @@ class NegativeAPI : public SACSubcaseBase
 		glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, res, buffer);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("glBindBufferBase should generate INVALID_VALUE when"
-				   " index is greater than or equal GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glBindBufferBase should generate INAVLID_VALUE when"
+											" index is greater than or equal GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS."
+				<< tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, res, buffer, 0, 4);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("glBindBufferRange should generate INVALID_VALUE when"
-				   " index is greater than or equal GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glBindBufferRange should generate INAVLID_VALUE when"
+											" index is greater than or equal GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS."
+				<< tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, res - 1, buffer, 3, 4);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("glBindBufferRange should generate INVALID_VALUE when"
-				   " <offset> is not a multiple of four\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glBindBufferRange should generate INVALID_VALUE when"
+											" <offset> is not a multiple of four"
+				<< tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		return error;
@@ -3133,7 +3211,10 @@ class NegativeGLSL : public SACSubcaseBase
 		glGetProgramiv(prog_, GL_LINK_STATUS, &status);
 		if (status == GL_TRUE)
 		{
-			Output("Link should fail because ac_counter0 and ac_counter2 uses same binding and same offset.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "Link should fail because ac_counter0 and ac_counter2 uses same binding and same offset."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -3198,7 +3279,9 @@ class NegativeUBO : public SACSubcaseBase
 		glGetShaderiv(sh, GL_COMPILE_STATUS, &status_comp);
 		if (status_comp != GL_TRUE)
 		{
-			Output("Unexpected error during vertex shader compilation.");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Unexpected error during vertex shader compilation."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glDeleteShader(sh);
@@ -3215,7 +3298,9 @@ class NegativeUBO : public SACSubcaseBase
 		glGetProgramiv(prog_, GL_LINK_STATUS, &status);
 		if (status_comp == GL_TRUE && status == GL_TRUE)
 		{
-			Output("Expected error during fragment shader compilation or linking.");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected error during fragment shader compilation or linking."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -3286,7 +3371,9 @@ class NegativeSSBO : public SACSubcaseBase
 		glGetShaderiv(sh, GL_COMPILE_STATUS, &status_comp);
 		if (status_comp != GL_TRUE)
 		{
-			Output("Unexpected error during vertex shader compilation.");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Unexpected error during vertex shader compilation."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glDeleteShader(sh);
@@ -3303,7 +3390,9 @@ class NegativeSSBO : public SACSubcaseBase
 		glGetProgramiv(prog_, GL_LINK_STATUS, &status);
 		if (status_comp == GL_TRUE && status == GL_TRUE)
 		{
-			Output("Expected error during fragment shader compilation or linking.");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected error during fragment shader compilation or linking."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -3368,7 +3457,9 @@ class NegativeUniform : public SACSubcaseBase
 		glGetShaderiv(sh, GL_COMPILE_STATUS, &status_comp);
 		if (status_comp != GL_TRUE)
 		{
-			Output("Unexpected error during vertex shader compilation.");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Unexpected error during vertex shader compilation."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glDeleteShader(sh);
@@ -3385,7 +3476,9 @@ class NegativeUniform : public SACSubcaseBase
 		glGetProgramiv(prog_, GL_LINK_STATUS, &status);
 		if (status_comp == GL_TRUE && status == GL_TRUE)
 		{
-			Output("Expected error during fragment shader compilation or linking.");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected error during fragment shader compilation or linking."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -3451,7 +3544,9 @@ class NegativeArray : public SACSubcaseBase
 		glGetShaderiv(sh, GL_COMPILE_STATUS, &status_comp);
 		if (status_comp != GL_TRUE)
 		{
-			Output("Unexpected error during vertex shader compilation.");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Unexpected error during vertex shader compilation."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glDeleteShader(sh);
@@ -3468,7 +3563,9 @@ class NegativeArray : public SACSubcaseBase
 		glGetProgramiv(prog_, GL_LINK_STATUS, &status);
 		if (status_comp == GL_TRUE && status == GL_TRUE)
 		{
-			Output("Expected error during fragment shader compilation or linking.");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected error during fragment shader compilation or linking."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -3695,26 +3792,34 @@ public:
 					switch (type)
 					{
 					case GL_VERTEX_SHADER:
-						Output("*** Vertex Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Vertex Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_CONTROL_SHADER:
-						Output("*** Tessellation Control Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Control Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_EVALUATION_SHADER:
-						Output("*** Tessellation Evaluation Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Evaluation Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_GEOMETRY_SHADER:
-						Output("*** Geometry Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Geometry Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_FRAGMENT_SHADER:
-						Output("*** Fragment Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Fragment Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_COMPUTE_SHADER:
-						Output("*** Compute Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Compute Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					default:
-						Output("*** Unknown Shader ***\n");
-						break;
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Unknown Shader ***" << tcu::TestLog::EndMessage;
 					}
 
 					GLint res;
@@ -3729,7 +3834,8 @@ public:
 					{
 						std::vector<GLchar> source(length);
 						glGetShaderSource(shaders[i], length, NULL, &source[0]);
-						Output("%s\n", &source[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &source[0] << tcu::TestLog::EndMessage;
 					}
 
 					// shader info log
@@ -3738,7 +3844,8 @@ public:
 					{
 						std::vector<GLchar> log(length);
 						glGetShaderInfoLog(shaders[i], length, NULL, &log[0]);
-						Output("%s\n", &log[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 					}
 				}
 			}
@@ -3750,7 +3857,7 @@ public:
 			{
 				std::vector<GLchar> log(length);
 				glGetProgramInfoLog(program, length, NULL, &log[0]);
-				Output("%s\n", &log[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 			}
 		}
 
@@ -3816,12 +3923,16 @@ public:
 		{
 			if (data[i] != data[i + 1])
 			{
-				Output("Pair of values should be equal, got: %d, %d\n", data[i], data[i + 1]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Pair of values should be equal, got: " << data[i] << ", "
+					<< data[i + 1] << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 			if (i < 510 && data[i] == data[i + 2])
 			{
-				Output("Too many same values found: %d, index: %d\n", data[i], i);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Too many same values found: " << data[i] << ", index: " << i
+					<< tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -4027,7 +4138,9 @@ class NegativeArithmetic : public SACSubcaseBase
 		glGetShaderiv(sh, GL_COMPILE_STATUS, &status_comp);
 		if (status_comp != GL_TRUE)
 		{
-			Output("Unexpected error during vertex shader compilation.");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Unexpected error during vertex shader compilation."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glDeleteShader(sh);
@@ -4044,7 +4157,9 @@ class NegativeArithmetic : public SACSubcaseBase
 		glGetProgramiv(prog_, GL_LINK_STATUS, &status);
 		if (status_comp == GL_TRUE && status == GL_TRUE)
 		{
-			Output("Expected error during fragment shader compilation or linking.");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected error during fragment shader compilation or linking."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -4144,7 +4259,8 @@ class AdvancedManyDrawCalls2 : public SACSubcaseBase
 			if (data[0] != 100)
 			{
 				status = ERROR;
-				Output("AC buffer content is %u, sholud be 100.\n", data[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "AC buffer content is " << data[0]
+													<< ", sholud be 100." << tcu::TestLog::EndMessage;
 			}
 			glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
@@ -4158,7 +4274,8 @@ class AdvancedManyDrawCalls2 : public SACSubcaseBase
 				if (data[i] != i)
 				{
 					status = ERROR;
-					Output("data[%u] is %u, should be %u.\n", i, data[i], i);
+					m_context.getTestContext().getLog() << tcu::TestLog::Message << "data[" << i << "] is " << data[i]
+														<< ", should be " << i << tcu::TestLog::EndMessage;
 				}
 			}
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -4198,7 +4315,10 @@ class AdvancedUsageMultipleComputeDispatches : public SACSubcaseBase
 		if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_compute_shader") ||
 			!m_context.getContextInfo().isExtensionSupported("GL_ARB_shader_storage_buffer_object"))
 		{
-			Output("GL_ARB_compute_shader or GL_ARB_shader_storage_buffer_object not supported, skipping test\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "GL_ARB_compute_shader or GL_ARB_shader_storage_buffer_object not supported, skipping test"
+				<< tcu::TestLog::EndMessage;
 			return NO_ERROR;
 		}
 
@@ -4244,7 +4364,8 @@ class AdvancedUsageMultipleComputeDispatches : public SACSubcaseBase
 			if (data[0] != 100)
 			{
 				status = ERROR;
-				Output("AC buffer content is %u, sholud be 100.\n", data[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "AC buffer content is " << data[0]
+													<< ", sholud be 100." << tcu::TestLog::EndMessage;
 			}
 			glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
@@ -4258,7 +4379,8 @@ class AdvancedUsageMultipleComputeDispatches : public SACSubcaseBase
 				if (data[i] != i)
 				{
 					status = ERROR;
-					Output("data[%u] is %u, should be %u.\n", i, data[i], i);
+					m_context.getTestContext().getLog() << tcu::TestLog::Message << "data[" << i << "] is " << data[0]
+														<< ", sholud be " << i << tcu::TestLog::EndMessage;
 				}
 			}
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -4298,7 +4420,10 @@ public:
 		if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_compute_shader") ||
 			!m_context.getContextInfo().isExtensionSupported("GL_ARB_shader_storage_buffer_object"))
 		{
-			Output("GL_ARB_compute_shader or GL_ARB_shader_storage_buffer_object not supported, skipping test\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "GL_ARB_compute_shader or GL_ARB_shader_storage_buffer_object not supported, skipping test"
+				<< tcu::TestLog::EndMessage;
 			return NO_ERROR;
 		}
 
@@ -4369,7 +4494,8 @@ public:
 		data = static_cast<GLuint*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT));
 		if (data[0] != 1u)
 		{
-			Output("Expected 1, got: %d", data[0]);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected 1, got: " << data[0] << tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -4399,7 +4525,6 @@ ShaderAtomicCountersTests::~ShaderAtomicCountersTests(void)
 void ShaderAtomicCountersTests::init()
 {
 	using namespace deqp;
-	setOutput(m_context.getTestContext().getLog());
 	addChild(
 		new TestSubcase(m_context, "advanced-usage-many-counters", TestSubcase::Create<AdvancedUsageManyCounters>));
 	addChild(new TestSubcase(m_context, "basic-buffer-operations", TestSubcase::Create<BasicBufferOperations>));

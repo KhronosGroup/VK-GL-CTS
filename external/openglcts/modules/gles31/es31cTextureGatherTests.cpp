@@ -45,33 +45,6 @@ using tcu::UVec4;
 namespace
 {
 
-static tcu::TestLog* currentLog;
-
-void setOutput(tcu::TestLog& log)
-{
-	currentLog = &log;
-}
-
-void Output(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-
-	const int   MAX_OUTPUT_STRING_SIZE = 40000;
-	static char temp[MAX_OUTPUT_STRING_SIZE];
-
-	vsnprintf(temp, MAX_OUTPUT_STRING_SIZE - 1, format, args);
-	temp[MAX_OUTPUT_STRING_SIZE - 1] = '\0';
-
-	char* logLine = strtok(temp, "\n");
-	while (logLine != NULL)
-	{
-		currentLog->writeMessage(logLine);
-		logLine = strtok(NULL, "\n");
-	}
-	va_end(args);
-}
-
 class TGBase : public glcts::SubcaseBase
 {
 public:
@@ -176,17 +149,20 @@ public:
 					switch (type)
 					{
 					case GL_VERTEX_SHADER:
-						Output("*** Vertex Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Vertex Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_FRAGMENT_SHADER:
-						Output("*** Fragment Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Fragment Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_COMPUTE_SHADER:
-						Output("*** Compute Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Compute Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					default:
-						Output("*** Unknown Shader ***\n");
-						break;
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Unknown Shader ***" << tcu::TestLog::EndMessage;
 					}
 
 					GLint res;
@@ -200,7 +176,8 @@ public:
 					{
 						std::vector<GLchar> source(length);
 						glGetShaderSource(shaders[i], length, NULL, &source[0]);
-						Output("%s\n", &source[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &source[0] << tcu::TestLog::EndMessage;
 					}
 
 					glGetShaderiv(shaders[i], GL_INFO_LOG_LENGTH, &length);
@@ -208,7 +185,8 @@ public:
 					{
 						std::vector<GLchar> log(length);
 						glGetShaderInfoLog(shaders[i], length, NULL, &log[0]);
-						Output("%s\n", &log[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 					}
 				}
 			}
@@ -219,7 +197,7 @@ public:
 			{
 				std::vector<GLchar> log(length);
 				glGetProgramInfoLog(program, length, NULL, &log[0]);
-				Output("%s\n", &log[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 			}
 		}
 
@@ -885,7 +863,9 @@ public:
 		glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
 		if (data[0] != 0 || data[1] != 255 || data[2] != 0 || data[3] != 255)
 		{
-			Output("Expected Vec4(0, 255, 0, 255), got: %d, %d, %d, %d", data[0], data[1], data[2], data[3]);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected Vec4(0, 255, 0, 255), got: " << data[0] << ", " << data[1] << ", "
+				<< data[2] << ", " << data[3] << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1003,8 +983,9 @@ public:
 		data = static_cast<Vec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Vec4), GL_MAP_READ_BIT));
 		if (data[0] != Vec4(0, 1, 0, 1))
 		{
-			Output("Expected Vec4(0, 1, 0, 1), got: %f, %f, %f, %f", data[0].x(), data[0].y(), data[0].z(),
-				   data[0].w());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected Vec4(0, 1, 0, 1), got: " << data[0].x() << ", " << data[0].y()
+				<< ", " << data[0].z() << ", " << data[0].w() << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -1705,7 +1686,9 @@ class TriangleDraw : public GatherBase
 			Vec4		   rvec(rdata[0], rdata[1], rdata[2], rdata[3]);
 			if (rvec != Vec4(0.75))
 			{
-				Output("Got: %f %f %f %f, expected vec4(0.75)", rvec.x(), rvec.y(), rvec.z(), rvec.w());
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Got: " << rvec.x() << " " << rvec.y() << " " << rvec.z() << " "
+					<< rvec.w() << ", expected vec4(0.75)" << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -1838,7 +1821,6 @@ TextureGatherTests::~TextureGatherTests(void)
 void TextureGatherTests::init()
 {
 	using namespace glcts;
-	setOutput(m_context.getTestContext().getLog());
 	addChild(new TestSubcase(m_context, "api-enums", TestSubcase::Create<GatherEnumsTest>));
 	addChild(new TestSubcase(m_context, "gather-glsl-compile", TestSubcase::Create<GatherGLSLCompile>));
 	addChild(new TestSubcase(m_context, "plain-gather-float-2d", TestSubcase::Create<PlainGatherFloat2D>));

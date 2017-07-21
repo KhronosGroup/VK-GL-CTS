@@ -23,6 +23,7 @@
 
 #include "esextcTextureCubeMapArrayTests.hpp"
 #include "esextcTextureCubeMapArrayColorDepthAttachments.hpp"
+#include "esextcTextureCubeMapArrayETC2Support.hpp"
 #include "esextcTextureCubeMapArrayFBOIncompleteness.hpp"
 #include "esextcTextureCubeMapArrayGenerateMipMap.hpp"
 #include "esextcTextureCubeMapArrayGetterCalls.hpp"
@@ -131,6 +132,11 @@ void TextureCubeMapArrayTests::init(void)
 																"test 10.5"));
 	addChild(new TextureCubeMapArrayTextureSizeRTComputeShader(m_context, m_extParams, "texture_size_compute_sh",
 															   "test 10.6"));
+
+	/* Cube Map Array support for ETC2 textures (Test 11) */
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	if (glu::isContextTypeGLCore(contextType) || glu::contextSupports(contextType, glu::ApiType::es(3, 2)))
+		addChild(new TextureCubeMapArrayETC2Support(m_context, m_extParams, "etc2_texture", "test 11"));
 }
 
 } // namespace glcts

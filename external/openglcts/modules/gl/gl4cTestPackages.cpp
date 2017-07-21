@@ -71,6 +71,7 @@
 #include "glcBlendEquationAdvancedTests.hpp"
 #include "glcExposedExtensionsTests.hpp"
 #include "glcInfoTests.hpp"
+#include "glcPolygonOffsetClampTests.hpp"
 #include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcSampleVariablesTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
@@ -364,6 +365,7 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::ShaderDrawParametersTests(getContext()));
 		addChild(new gl4cts::ShaderViewportLayerArray(getContext()));
 		addChild(new gl4cts::LimitsTests(getContext()));
+		addChild(new glcts::PolygonOffsetClamp(getContext()));
 	}
 	catch (...)
 	{
