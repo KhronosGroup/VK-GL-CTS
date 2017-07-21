@@ -83,6 +83,7 @@ KHR-GLES31.core.shader_atomic_counters.negative-ubo
 KHR-GLES31.core.shader_atomic_counters.negative-uniform
 KHR-GLES31.core.shader_atomic_counters.negative-array
 KHR-GLES31.core.shader_atomic_counters.negative-arithmetic
+KHR-GLES31.core.shader_atomic_counters.negative-unsized-array
 KHR-GLES31.core.texture_gather.api-enums
 KHR-GLES31.core.texture_gather.gather-glsl-compile
 KHR-GLES31.core.texture_gather.plain-gather-float-2d

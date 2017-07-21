@@ -2868,6 +2868,7 @@ KHR-GL45.shader_atomic_counters.negative-ubo
 KHR-GL45.shader_atomic_counters.negative-uniform
 KHR-GL45.shader_atomic_counters.negative-array
 KHR-GL45.shader_atomic_counters.negative-arithmetic
+KHR-GL45.shader_atomic_counters.negative-unsized-array
 KHR-GL45.shader_image_load_store.basic-api-get
 KHR-GL45.shader_image_load_store.basic-api-bind
 KHR-GL45.shader_image_load_store.basic-api-barrier
