@@ -151,3 +151,5 @@ ImportSemaphoreFdKHRFunc					importSemaphoreFdKHR;
 GetSemaphoreFdKHRFunc						getSemaphoreFdKHR;
 GetRefreshCycleDurationGOOGLEFunc			getRefreshCycleDurationGOOGLE;
 GetPastPresentationTimingGOOGLEFunc			getPastPresentationTimingGOOGLE;
+BindBufferMemory2KHRFunc					bindBufferMemory2KHR;
+BindImageMemory2KHRFunc						bindImageMemory2KHR;

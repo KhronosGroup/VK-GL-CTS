@@ -1971,3 +1971,21 @@ struct VkPhysicalDeviceVariablePointerFeaturesKHR
 	VkBool32		variablePointers;
 };
 
+struct VkBindBufferMemoryInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBuffer		buffer;
+	VkDeviceMemory	memory;
+	VkDeviceSize	memoryOffset;
+};
+
+struct VkBindImageMemoryInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkImage			image;
+	VkDeviceMemory	memory;
+	VkDeviceSize	memoryOffset;
+};
+

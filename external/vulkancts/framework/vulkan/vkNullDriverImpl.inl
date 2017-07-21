@@ -1388,6 +1388,22 @@ VKAPI_ATTR VkResult VKAPI_CALL getPastPresentationTimingGOOGLE (VkDevice device,
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL bindBufferMemory2KHR (VkDevice device, deUint32 bindInfoCount, const VkBindBufferMemoryInfoKHR* pBindInfos)
+{
+	DE_UNREF(device);
+	DE_UNREF(bindInfoCount);
+	DE_UNREF(pBindInfos);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL bindImageMemory2KHR (VkDevice device, deUint32 bindInfoCount, const VkBindImageMemoryInfoKHR* pBindInfos)
+{
+	DE_UNREF(device);
+	DE_UNREF(bindInfoCount);
+	DE_UNREF(pBindInfos);
+	return VK_SUCCESS;
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -1603,5 +1619,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetSemaphoreFdKHR,						getSemaphoreFdKHR),
 	VK_NULL_FUNC_ENTRY(vkGetRefreshCycleDurationGOOGLE,			getRefreshCycleDurationGOOGLE),
 	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingGOOGLE,		getPastPresentationTimingGOOGLE),
+	VK_NULL_FUNC_ENTRY(vkBindBufferMemory2KHR,					bindBufferMemory2KHR),
+	VK_NULL_FUNC_ENTRY(vkBindImageMemory2KHR,					bindImageMemory2KHR),
 };
 
