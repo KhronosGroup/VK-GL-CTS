@@ -1,4 +1,4 @@
-/*-------------------------------------------------------------------------
+﻿/*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
@@ -695,6 +695,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_dedicated_allocation",
 		"VK_KHR_variable_pointers",
 		"VK_KHR_relaxed_block_layout",
+		"VK_KHR_bind_memory2",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);

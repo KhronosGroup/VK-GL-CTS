@@ -206,3 +206,5 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportSemaphoreFdKHRFunc)								(Vk
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSemaphoreFdKHRFunc)									(VkDevice device, const VkSemaphoreGetFdInfoKHR* pGetFdInfo, int* pFd);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetRefreshCycleDurationGOOGLEFunc)						(VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPastPresentationTimingGOOGLEFunc)					(VkDevice device, VkSwapchainKHR swapchain, deUint32* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindBufferMemory2KHRFunc)								(VkDevice device, deUint32 bindInfoCount, const VkBindBufferMemoryInfoKHR* pBindInfos);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindImageMemory2KHRFunc)								(VkDevice device, deUint32 bindInfoCount, const VkBindImageMemoryInfoKHR* pBindInfos);

@@ -151,3 +151,5 @@ virtual VkResult	importSemaphoreFdKHR					(VkDevice device, const VkImportSemaph
 virtual VkResult	getSemaphoreFdKHR						(VkDevice device, const VkSemaphoreGetFdInfoKHR* pGetFdInfo, int* pFd) const = 0;
 virtual VkResult	getRefreshCycleDurationGOOGLE			(VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties) const = 0;
 virtual VkResult	getPastPresentationTimingGOOGLE			(VkDevice device, VkSwapchainKHR swapchain, deUint32* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings) const = 0;
+virtual VkResult	bindBufferMemory2KHR					(VkDevice device, deUint32 bindInfoCount, const VkBindBufferMemoryInfoKHR* pBindInfos) const = 0;
+virtual VkResult	bindImageMemory2KHR						(VkDevice device, deUint32 bindInfoCount, const VkBindImageMemoryInfoKHR* pBindInfos) const = 0;

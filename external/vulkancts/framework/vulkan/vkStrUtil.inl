@@ -415,3 +415,5 @@ std::ostream&	operator<<	(std::ostream& s, const VkPastPresentationTimingGOOGLE&
 std::ostream&	operator<<	(std::ostream& s, const VkPresentTimeGOOGLE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentTimesInfoGOOGLE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVariablePointerFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBindBufferMemoryInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBindImageMemoryInfoKHR& value);

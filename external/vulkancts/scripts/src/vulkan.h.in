@@ -281,6 +281,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_IMAGE_SPARSE_MEMORY_REQUIREMENTS_INFO_2_KHR = 1000146002,
     VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR = 1000146003,
     VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2_KHR = 1000146004,
+	VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO_KHR = 1000157000,
+    VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR = 1000157001,
     VK_STRUCTURE_TYPE_BEGIN_RANGE = VK_STRUCTURE_TYPE_APPLICATION_INFO,
     VK_STRUCTURE_TYPE_END_RANGE = VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO,
     VK_STRUCTURE_TYPE_RANGE_SIZE = (VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO - VK_STRUCTURE_TYPE_APPLICATION_INFO + 1),
@@ -952,6 +954,7 @@ typedef enum VkImageCreateFlagBits {
     VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR = 0x00000020,
     VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR = 0x00000080,
     VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR = 0x00000100,
+	VK_IMAGE_CREATE_ALIAS_BIT_KHR = 0x00000400,
     VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkImageCreateFlagBits;
 typedef VkFlags VkImageCreateFlags;
@@ -5036,6 +5039,41 @@ typedef struct VkPhysicalDeviceVariablePointerFeaturesKHR {
     VkBool32           variablePointers;
 } VkPhysicalDeviceVariablePointerFeaturesKHR;
 
+#define VK_KHR_bind_memory2 1
+#define VK_KHR_BIND_MEMORY_2_SPEC_VERSION 1
+#define VK_KHR_BIND_MEMORY_2_EXTENSION_NAME "VK_KHR_bind_memory2"
+
+typedef struct VkBindBufferMemoryInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkBuffer           buffer;
+    VkDeviceMemory     memory;
+    VkDeviceSize       memoryOffset;
+} VkBindBufferMemoryInfoKHR;
+
+typedef struct VkBindImageMemoryInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkImage            image;
+    VkDeviceMemory     memory;
+    VkDeviceSize       memoryOffset;
+} VkBindImageMemoryInfoKHR;
+
+
+typedef VkResult (VKAPI_PTR *PFN_vkBindBufferMemory2KHR)(VkDevice device, uint32_t bindInfoCount, const VkBindBufferMemoryInfoKHR* pBindInfos);
+typedef VkResult (VKAPI_PTR *PFN_vkBindImageMemory2KHR)(VkDevice device, uint32_t bindInfoCount, const VkBindImageMemoryInfoKHR* pBindInfos);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkBindBufferMemory2KHR(
+    VkDevice                                    device,
+    uint32_t                                    bindInfoCount,
+    const VkBindBufferMemoryInfoKHR*            pBindInfos);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory2KHR(
+    VkDevice                                    device,
+    uint32_t                                    bindInfoCount,
+    const VkBindImageMemoryInfoKHR*             pBindInfos);
+#endif
 
 #ifdef __cplusplus
 }

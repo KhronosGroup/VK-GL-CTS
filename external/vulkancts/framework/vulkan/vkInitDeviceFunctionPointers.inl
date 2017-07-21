@@ -151,3 +151,5 @@ m_vk.importSemaphoreFdKHR					= (ImportSemaphoreFdKHRFunc)					GET_PROC_ADDR("vk
 m_vk.getSemaphoreFdKHR						= (GetSemaphoreFdKHRFunc)						GET_PROC_ADDR("vkGetSemaphoreFdKHR");
 m_vk.getRefreshCycleDurationGOOGLE			= (GetRefreshCycleDurationGOOGLEFunc)			GET_PROC_ADDR("vkGetRefreshCycleDurationGOOGLE");
 m_vk.getPastPresentationTimingGOOGLE		= (GetPastPresentationTimingGOOGLEFunc)			GET_PROC_ADDR("vkGetPastPresentationTimingGOOGLE");
+m_vk.bindBufferMemory2KHR					= (BindBufferMemory2KHRFunc)					GET_PROC_ADDR("vkBindBufferMemory2KHR");
+m_vk.bindImageMemory2KHR					= (BindImageMemory2KHRFunc)						GET_PROC_ADDR("vkBindImageMemory2KHR");

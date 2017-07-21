@@ -227,6 +227,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_SPARSE_MEMORY_REQUIREMENTS_INFO_2_KHR:					return "VK_STRUCTURE_TYPE_IMAGE_SPARSE_MEMORY_REQUIREMENTS_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR:									return "VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR";
 		case VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2_KHR:						return "VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2_KHR";
+		case VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO_KHR:									return "VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO_KHR";
+		case VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR:									return "VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR";
 		default:																			return DE_NULL;
 	}
 }
@@ -1052,6 +1054,7 @@ tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR,			"VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR,	"VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR,				"VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_ALIAS_BIT_KHR,							"VK_IMAGE_CREATE_ALIAS_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4309,6 +4312,30 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVariablePointer
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvariablePointersStorageBuffer = " << value.variablePointersStorageBuffer << '\n';
 	s << "\tvariablePointers = " << value.variablePointers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBindBufferMemoryInfoKHR& value)
+{
+	s << "VkBindBufferMemoryInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << "\tmemory = " << value.memory << '\n';
+	s << "\tmemoryOffset = " << value.memoryOffset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBindImageMemoryInfoKHR& value)
+{
+	s << "VkBindImageMemoryInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timage = " << value.image << '\n';
+	s << "\tmemory = " << value.memory << '\n';
+	s << "\tmemoryOffset = " << value.memoryOffset << '\n';
 	s << '}';
 	return s;
 }

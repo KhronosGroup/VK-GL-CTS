@@ -751,3 +751,13 @@ VkResult DeviceDriver::getPastPresentationTimingGOOGLE (VkDevice device, VkSwapc
 {
 	return m_vk.getPastPresentationTimingGOOGLE(device, swapchain, pPresentationTimingCount, pPresentationTimings);
 }
+
+VkResult DeviceDriver::bindBufferMemory2KHR (VkDevice device, deUint32 bindInfoCount, const VkBindBufferMemoryInfoKHR* pBindInfos) const
+{
+	return m_vk.bindBufferMemory2KHR(device, bindInfoCount, pBindInfos);
+}
+
+VkResult DeviceDriver::bindImageMemory2KHR (VkDevice device, deUint32 bindInfoCount, const VkBindImageMemoryInfoKHR* pBindInfos) const
+{
+	return m_vk.bindImageMemory2KHR(device, bindInfoCount, pBindInfos);
+}
