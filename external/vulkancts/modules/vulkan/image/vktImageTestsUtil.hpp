@@ -110,92 +110,95 @@ deUint32				getNumLayers		(const ImageType imageType, const tcu::UVec3& imageSiz
 deUint32				getNumPixels		(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Number of texels in an image
 deUint32				getDimensions		(const ImageType imageType);								//!< Coordinate dimension used for addressing (e.g. 3 (x,y,z) for 2d array)
 deUint32				getLayerDimensions	(const ImageType imageType);								//!< Coordinate dimension used for addressing a single layer (e.g. 2 (x,y) for 2d array)
-std::vector<tcu::UVec3>	getMipLevelSizes	(tcu::UVec3 baseSize);
 
-vk::Move<vk::VkPipelineLayout>	makePipelineLayout				(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkDescriptorSetLayout			descriptorSetLayout);
+vk::Move<vk::VkPipelineLayout>		makePipelineLayout				(const vk::DeviceInterface&					vk,
+																	 const vk::VkDevice							device,
+																	 const vk::VkDescriptorSetLayout			descriptorSetLayout);
 
-vk::Move<vk::VkPipeline>		makeComputePipeline				(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkPipelineLayout					pipelineLayout,
-																 const vk::VkShaderModule					shaderModule);
+vk::Move<vk::VkPipeline>			makeComputePipeline				(const vk::DeviceInterface&					vk,
+																	 const vk::VkDevice							device,
+																	 const vk::VkPipelineLayout					pipelineLayout,
+																	 const vk::VkShaderModule					shaderModule);
 
-vk::Move<vk::VkPipeline>		makeGraphicsPipeline			(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkPipelineLayout					pipelineLayout,
-																 const vk::VkRenderPass						renderPass,
-																 const vk::VkShaderModule					vertexModule,
-																 const vk::VkShaderModule					fragmentModule,
-																 const vk::VkExtent2D						renderSize,
-																 const deUint32								colorAttachmentCount);
+vk::Move<vk::VkPipeline>			makeGraphicsPipeline			(const vk::DeviceInterface&					vk,
+																	 const vk::VkDevice							device,
+																	 const vk::VkPipelineLayout					pipelineLayout,
+																	 const vk::VkRenderPass						renderPass,
+																	 const vk::VkShaderModule					vertexModule,
+																	 const vk::VkShaderModule					fragmentModule,
+																	 const vk::VkExtent2D						renderSize,
+																	 const deUint32								colorAttachmentCount,
+																	 const bool									dynamicSize = false);
 
-vk::Move<vk::VkRenderPass>		makeRenderPass					(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkFormat							inputFormat,
-																 const vk::VkFormat							colorFormat);
+vk::Move<vk::VkRenderPass>			makeRenderPass					(const vk::DeviceInterface&					vk,
+																	 const vk::VkDevice							device,
+																	 const vk::VkFormat							inputFormat,
+																	 const vk::VkFormat							colorFormat);
 
-vk::Move<vk::VkRenderPass>		makeRenderPass					(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device);
+vk::Move<vk::VkRenderPass>			makeRenderPass					(const vk::DeviceInterface&					vk,
+																	 const vk::VkDevice							device);
 
-vk::Move<vk::VkBufferView>		makeBufferView					(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkBuffer							buffer,
-																 const vk::VkFormat							format,
-																 const vk::VkDeviceSize						offset,
-																 const vk::VkDeviceSize						size);
+vk::Move<vk::VkBufferView>			makeBufferView					(const vk::DeviceInterface&					vk,
+																	 const vk::VkDevice							device,
+																	 const vk::VkBuffer							buffer,
+																	 const vk::VkFormat							format,
+																	 const vk::VkDeviceSize						offset,
+																	 const vk::VkDeviceSize						size);
 
-vk::Move<vk::VkImageView>		makeImageView					(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkImage							image,
-																 const vk::VkImageViewType					imageViewType,
-																 const vk::VkFormat							format,
-																 const vk::VkImageSubresourceRange			subresourceRange,
-																 const vk::VkImageViewUsageCreateInfoKHR*	ImageUsageCreateInfoKHR = DE_NULL);
+vk::Move<vk::VkImageView>			makeImageView					(const vk::DeviceInterface&					vk,
+																	 const vk::VkDevice							device,
+																	 const vk::VkImage							image,
+																	 const vk::VkImageViewType					imageViewType,
+																	 const vk::VkFormat							format,
+																	 const vk::VkImageSubresourceRange			subresourceRange,
+																	 const vk::VkImageViewUsageCreateInfoKHR*	ImageUsageCreateInfoKHR = DE_NULL);
 
-vk::Move<vk::VkDescriptorSet>	makeDescriptorSet				(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkDescriptorPool					descriptorPool,
-																 const vk::VkDescriptorSetLayout			setLayout);
+vk::Move<vk::VkDescriptorSet>		makeDescriptorSet				(const vk::DeviceInterface&					vk,
+																	 const vk::VkDevice							device,
+																	 const vk::VkDescriptorPool					descriptorPool,
+																	 const vk::VkDescriptorSetLayout			setLayout);
 
-vk::VkBufferCreateInfo			makeBufferCreateInfo			(const vk::VkDeviceSize						bufferSize,
-																 const vk::VkBufferUsageFlags				usage);
+vk::VkBufferCreateInfo				makeBufferCreateInfo			(const vk::VkDeviceSize						bufferSize,
+																	 const vk::VkBufferUsageFlags				usage);
 
-vk::VkBufferImageCopy			makeBufferImageCopy				(const vk::VkExtent3D						extent,
-																 const deUint32								arraySize);
+vk::VkBufferImageCopy				makeBufferImageCopy				(const vk::VkExtent3D						extent,
+																	 const deUint32								arraySize);
 
-vk::VkBufferMemoryBarrier		makeBufferMemoryBarrier			(const vk::VkAccessFlags					srcAccessMask,
-																 const vk::VkAccessFlags					dstAccessMask,
-																 const vk::VkBuffer							buffer,
-																 const vk::VkDeviceSize						offset,
-																 const vk::VkDeviceSize						bufferSizeBytes);
+vk::VkBufferMemoryBarrier			makeBufferMemoryBarrier			(const vk::VkAccessFlags					srcAccessMask,
+																	 const vk::VkAccessFlags					dstAccessMask,
+																	 const vk::VkBuffer							buffer,
+																	 const vk::VkDeviceSize						offset,
+																	 const vk::VkDeviceSize						bufferSizeBytes);
 
-vk::VkImageMemoryBarrier		makeImageMemoryBarrier			(const vk::VkAccessFlags					srcAccessMask,
-																 const vk::VkAccessFlags					dstAccessMask,
-																 const vk::VkImageLayout					oldLayout,
-																 const vk::VkImageLayout					newLayout,
-																 const vk::VkImage							image,
-																 const vk::VkImageSubresourceRange			subresourceRange);
+vk::VkImageMemoryBarrier			makeImageMemoryBarrier			(const vk::VkAccessFlags					srcAccessMask,
+																	 const vk::VkAccessFlags					dstAccessMask,
+																	 const vk::VkImageLayout					oldLayout,
+																	 const vk::VkImageLayout					newLayout,
+																	 const vk::VkImage							image,
+																	 const vk::VkImageSubresourceRange			subresourceRange);
 
-vk::VkSamplerCreateInfo			makeSamplerCreateInfo			();
+vk::VkImageViewUsageCreateInfoKHR	makeImageViewUsageCreateInfo	(const vk::VkImageUsageFlags				imageUsageFlags);
 
-void							beginCommandBuffer				(const vk::DeviceInterface&					vk,
-																 const vk::VkCommandBuffer					cmdBuffer);
+vk::VkSamplerCreateInfo				makeSamplerCreateInfo			();
 
-void							endCommandBuffer				(const vk::DeviceInterface&					vk,
-																 const vk::VkCommandBuffer					cmdBuffer);
+void								beginCommandBuffer				(const vk::DeviceInterface&					vk,
+																	 const vk::VkCommandBuffer					cmdBuffer);
 
-void							submitCommandsAndWait			(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkQueue							queue,
-																 const vk::VkCommandBuffer					cmdBuffer);
+void								endCommandBuffer				(const vk::DeviceInterface&					vk,
+																	 const vk::VkCommandBuffer					cmdBuffer);
+
+void								submitCommandsAndWait			(const vk::DeviceInterface&					vk,
+																	 const vk::VkDevice							device,
+																	 const vk::VkQueue							queue,
+																	 const vk::VkCommandBuffer					cmdBuffer);
 
 inline vk::VkDeviceSize getImageSizeBytes (const tcu::IVec3& imageSize, const vk::VkFormat format)
 {
 	return tcu::getPixelSize(vk::mapVkFormat(format)) * imageSize.x() * imageSize.y() * imageSize.z();
 }
 
-tcu::UVec3			getCompressedImageResolutionInBlocks	(const vk::VkFormat format, const tcu::UVec3 size);
+tcu::UVec3			getCompressedImageResolutionInBlocks	(const vk::VkFormat format, const tcu::UVec3& size);
+tcu::UVec3			getCompressedImageResolutionBlockCeil	(const vk::VkFormat format, const tcu::UVec3& size);
 vk::VkDeviceSize	getCompressedImageSizeInBytes			(const vk::VkFormat format, const tcu::UVec3& size);
 vk::VkDeviceSize	getUncompressedImageSizeInBytes			(const vk::VkFormat format, const tcu::UVec3& size);
 
@@ -203,7 +206,8 @@ std::string	getFormatShortString (const vk::VkFormat format);
 
 std::vector<tcu::Vec4> createFullscreenQuad (void);
 
-vk::VkBufferImageCopy makeBufferImageCopy (const deUint32 imageWidth, const deUint32 imageHeight);
+vk::VkBufferImageCopy makeBufferImageCopy (const deUint32 imageWidth, const deUint32 imageHeight, const deUint32 mipLevel = 0u, const deUint32 layer = 0u);
+vk::VkBufferImageCopy makeBufferImageCopy (const deUint32 imageWidth, const deUint32 imageHeight, const deUint32 mipLevel, const deUint32 layer, const deUint32 bufferRowLength, const deUint32 bufferImageHeight);
 
 void beginRenderPass (const vk::DeviceInterface&	vk,
 					  const vk::VkCommandBuffer		commandBuffer,
@@ -218,6 +222,9 @@ vk::Move<vk::VkFramebuffer> makeFramebuffer (const vk::DeviceInterface&	vk,
 											 const vk::VkImageView*		pAttachments,
 											 const vk::VkExtent2D&		size,
 											 const deUint32				layersCount);
+
+vk::VkRect2D makeScissor (const deUint32	width,
+						  const deUint32	height);
 
 } // image
 } // vkt
