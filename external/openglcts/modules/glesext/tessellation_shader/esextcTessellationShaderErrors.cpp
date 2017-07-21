@@ -34,38 +34,6 @@
 namespace glcts
 {
 
-namespace
-{
-
-static tcu::TestLog* currentLog;
-
-void setOutput(tcu::TestLog& log)
-{
-	currentLog = &log;
-}
-
-void Output(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-
-	const int   MAX_OUTPUT_STRING_SIZE = 40000;
-	static char temp[MAX_OUTPUT_STRING_SIZE];
-
-	vsnprintf(temp, MAX_OUTPUT_STRING_SIZE - 1, format, args);
-	temp[MAX_OUTPUT_STRING_SIZE - 1] = '\0';
-
-	char* logLine = strtok(temp, "\n");
-	while (logLine != NULL)
-	{
-		currentLog->writeMessage(logLine);
-		logLine = strtok(NULL, "\n");
-	}
-	va_end(args);
-}
-
-} // anonymous namespace
-
 /** Constructor
  *
  * @param context       Test context
@@ -84,7 +52,6 @@ TessellationShaderErrors::TessellationShaderErrors(Context& context, const ExtPa
 /* Instantiates all tests and adds them as children to the node */
 void TessellationShaderErrors::init(void)
 {
-	setOutput(m_context.getTestContext().getLog());
 	addChild(new glcts::TessellationShaderError1InputBlocks(m_context, m_extParams));
 	addChild(new glcts::TessellationShaderError1InputVariables(m_context, m_extParams));
 	addChild(new glcts::TessellationShaderError2OutputBlocks(m_context, m_extParams));
@@ -366,14 +333,17 @@ tcu::TestNode::IterateResult TessellationShaderErrorsTestCaseBase::iterate()
 			gl.getShaderiv(*so_id_ptr, GL_COMPILE_STATUS, &compile_status);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetShaderiv() failed");
 
-			Output("%s shader source:\n%s", so_type.c_str(), so_code_ptr);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << so_type << " shader source:\n"
+												<< so_code_ptr << tcu::TestLog::EndMessage;
+
 			glw::GLint length = 0;
 			gl.getShaderiv(*so_id_ptr, GL_INFO_LOG_LENGTH, &length);
 			if (length > 1)
 			{
 				std::vector<glw::GLchar> log(length);
 				gl.getShaderInfoLog(*so_id_ptr, length, NULL, &log[0]);
-				Output("shader info log\n%s\n", &log[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "shader info log\n"
+													<< &log[0] << tcu::TestLog::EndMessage;
 			}
 
 			switch (expected_compilation_result)
@@ -385,12 +355,14 @@ tcu::TestNode::IterateResult TessellationShaderErrorsTestCaseBase::iterate()
 					/* OK, this is valid. However, it no longer makes sense to try to
 					 * link the program object at this point. */
 					should_try_to_link = false;
-					Output("Compilation failed as allowed.\n");
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Compilation failed as allowed." << tcu::TestLog::EndMessage;
 				}
 				else
 				{
 					/* That's fine. */
-					Output("Compilation passed as allowed.\n");
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Compilation passed as allowed." << tcu::TestLog::EndMessage;
 				}
 
 				break;
@@ -408,7 +380,8 @@ tcu::TestNode::IterateResult TessellationShaderErrorsTestCaseBase::iterate()
 				{
 					/* OK. Mark the program object as non-linkable */
 					should_try_to_link = false;
-					Output("Compilation failed as expected.\n");
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Compilation failed as expected." << tcu::TestLog::EndMessage;
 				}
 
 				break;
@@ -425,7 +398,8 @@ tcu::TestNode::IterateResult TessellationShaderErrorsTestCaseBase::iterate()
 				else
 				{
 					/* That's fine. */
-					Output("Compilation successful as expected.\n");
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Compilation successful as expected." << tcu::TestLog::EndMessage;
 				}
 
 				break;
@@ -464,7 +438,8 @@ tcu::TestNode::IterateResult TessellationShaderErrorsTestCaseBase::iterate()
 			{
 				std::vector<glw::GLchar> log(length);
 				gl.getProgramInfoLog(m_po_ids[n_po], length, NULL, &log[0]);
-				Output("program info log\n%s\n", &log[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "program info log\n"
+													<< &log[0] << tcu::TestLog::EndMessage;
 			}
 
 			switch (expected_linking_result)
@@ -478,7 +453,8 @@ tcu::TestNode::IterateResult TessellationShaderErrorsTestCaseBase::iterate()
 				else
 				{
 					/* That's OK */
-					Output("Linking failed as expected.\n");
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Linking failed as expected." << tcu::TestLog::EndMessage;
 				}
 
 				break;
@@ -493,7 +469,8 @@ tcu::TestNode::IterateResult TessellationShaderErrorsTestCaseBase::iterate()
 				else
 				{
 					/* That's OK */
-					Output("Linking succeeded as expected.\n");
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Linking succeeded as expected." << tcu::TestLog::EndMessage;
 				}
 
 				break;

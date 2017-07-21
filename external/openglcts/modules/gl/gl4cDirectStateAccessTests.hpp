@@ -5537,6 +5537,9 @@ private:
 	void TextureImage(glw::GLint internalformat);
 
 	template <glw::GLuint D>
+	void CompressedTexImage(glw::GLint internalformat);
+
+	template <glw::GLuint D>
 	bool CompressedTextureSubImage(glw::GLint internalformat);
 
 	template <glw::GLuint D>
@@ -5545,7 +5548,8 @@ private:
 	template <glw::GLuint D>
 	void PrepareStorage(glw::GLenum internalformat);
 
-	bool CheckData(glw::GLenum target, glw::GLenum internalformat);
+	template <glw::GLuint D>
+	bool CheckData(glw::GLenum internalformat);
 	void		CleanAll();
 	std::string DataToString(glw::GLuint count, const glw::GLubyte data[]);
 
@@ -5555,6 +5559,7 @@ private:
 	/* Private member variables. */
 	glw::GLuint   m_to;
 	glw::GLuint   m_to_aux;
+	glw::GLubyte* m_compressed_texture_data;
 	glw::GLubyte* m_reference;
 	glw::GLubyte* m_result;
 	glw::GLuint   m_reference_size;
@@ -5565,6 +5570,10 @@ private:
 	static const glw::GLuint  s_texture_width;
 	static const glw::GLuint  s_texture_height;
 	static const glw::GLuint  s_texture_depth;
+	static const glw::GLuint  s_block_count;
+	static const glw::GLuint  s_block_2d_size_x;
+	static const glw::GLuint  s_block_2d_size_y;
+	static const glw::GLuint  s_block_3d_size;
 };
 /* CompressedSubImageTest class */
 

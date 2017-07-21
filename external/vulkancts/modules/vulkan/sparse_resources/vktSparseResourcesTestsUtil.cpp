@@ -770,13 +770,13 @@ deUint32 getImageSizeInBytes(const VkExtent3D& baseExtents, const deUint32 layer
 	return imageSizeInBytes;
 }
 
-VkSparseImageMemoryBind	makeSparseImageMemoryBind  (const DeviceInterface&		vk,
-													const VkDevice				device,
-													const VkDeviceSize			allocationSize,
-													const deUint32				memoryType,
-													const VkImageSubresource&	subresource,
-													const VkOffset3D&			offset,
-													const VkExtent3D&			extent)
+VkSparseImageMemoryBind	makeSparseImageMemoryBind  (const DeviceInterface&			vk,
+													const VkDevice					device,
+													const VkDeviceSize				allocationSize,
+													const deUint32					memoryType,
+													const VkImageSubresource&		subresource,
+													const VkOffset3D&				offset,
+													const VkExtent3D&				extent)
 {
 	const VkMemoryAllocateInfo	allocInfo =
 	{
@@ -801,11 +801,12 @@ VkSparseImageMemoryBind	makeSparseImageMemoryBind  (const DeviceInterface&		vk,
 	return imageMemoryBind;
 }
 
-VkSparseMemoryBind makeSparseMemoryBind	(const DeviceInterface&	vk,
-										 const VkDevice			device,
-										 const VkDeviceSize		allocationSize,
-										 const deUint32			memoryType,
-										 const VkDeviceSize		resourceOffset)
+VkSparseMemoryBind makeSparseMemoryBind	(const DeviceInterface&			vk,
+										 const VkDevice					device,
+										 const VkDeviceSize				allocationSize,
+										 const deUint32					memoryType,
+										 const VkDeviceSize				resourceOffset,
+										 const VkSparseMemoryBindFlags	flags)
 {
 	const VkMemoryAllocateInfo allocInfo =
 	{
@@ -824,7 +825,7 @@ VkSparseMemoryBind makeSparseMemoryBind	(const DeviceInterface&	vk,
 	memoryBind.size				= allocationSize;
 	memoryBind.memory			= deviceMemory;
 	memoryBind.memoryOffset		= 0u;
-	memoryBind.flags			= 0u;
+	memoryBind.flags			= flags;
 
 	return memoryBind;
 }

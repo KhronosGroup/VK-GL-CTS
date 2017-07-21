@@ -48,34 +48,6 @@ using tcu::Mat4;
 namespace
 {
 
-static tcu::TestLog* currentLog;
-
-void setOutput(tcu::TestLog& log)
-{
-	currentLog = &log;
-}
-
-void Output(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-
-	const int MAX_OUTPUT_STRING_SIZE = 40000;
-
-	static char temp[MAX_OUTPUT_STRING_SIZE];
-
-	vsnprintf(temp, MAX_OUTPUT_STRING_SIZE - 1, format, args);
-	temp[MAX_OUTPUT_STRING_SIZE - 1] = '\0';
-
-	char* logLine = strtok(temp, "\n");
-	while (logLine != NULL)
-	{
-		currentLog->writeMessage(logLine);
-		logLine = strtok(NULL, "\n");
-	}
-	va_end(args);
-}
-
 class VertexAttribBindingBase : public deqp::SubcaseBase
 {
 
@@ -152,9 +124,11 @@ public:
 				const int idx = y * fb_w + x;
 				if (!ColorEqual(fb[idx], expected, g_color_eps))
 				{
-					Output("Incorrect framebuffer color at pixel (%d %d). Color is (%f %f %f). "
-						   "Color should be (%f %f %f).\n",
-						   x, y, fb[idx][0], fb[idx][1], fb[idx][2], expected[0], expected[1], expected[2]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Incorrect framebuffer color at pixel (" << x << " " << y
+						<< "). Color is (" << fb[idx][0] << " " << fb[idx][1] << " " << fb[idx][2]
+						<< "). Color should be (" << expected[0] << " " << expected[1] << " " << expected[2] << ")"
+						<< tcu::TestLog::EndMessage;
 					return false;
 				}
 			}
@@ -177,10 +151,11 @@ public:
 				const int idx = y * fb_w + x;
 				if (!ColorEqual(fb[idx], expected, g_color_eps))
 				{
-					Output("Incorrect framebuffer color at pixel (%d %d). Color is (%f %f %f %f). "
-						   "Color should be (%f %f %f %f).\n",
-						   x, y, fb[idx][0], fb[idx][1], fb[idx][2], fb[idx][3], expected[0], expected[1], expected[2],
-						   expected[3]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Incorrect framebuffer color at pixel (" << x << " " << y
+						<< "). Color is (" << fb[idx][0] << " " << fb[idx][1] << " " << fb[idx][2] << " " << fb[idx][3]
+						<< "). Color should be (" << expected[0] << " " << expected[1] << " " << expected[2] << " "
+						<< expected[3] << ")" << tcu::TestLog::EndMessage;
 					return false;
 				}
 			}
@@ -210,25 +185,34 @@ public:
 					switch (type)
 					{
 					case GL_VERTEX_SHADER:
-						Output("*** Vertex Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Vertex Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_CONTROL_SHADER:
-						Output("*** Tessellation Control Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Control Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_EVALUATION_SHADER:
-						Output("*** Tessellation Evaluation Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Evaluation Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_GEOMETRY_SHADER:
-						Output("*** Geometry Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Geometry Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_FRAGMENT_SHADER:
-						Output("*** Fragment Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Fragment Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_COMPUTE_SHADER:
-						Output("*** Compute Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Compute Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					default:
-						Output("*** Unknown Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Unknown Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					}
 					GLint length;
@@ -237,14 +221,16 @@ public:
 					{
 						std::vector<GLchar> source(length);
 						glGetShaderSource(shaders[i], length, NULL, &source[0]);
-						Output("%s\n", &source[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &source[0] << tcu::TestLog::EndMessage;
 					}
 					glGetShaderiv(shaders[i], GL_INFO_LOG_LENGTH, &length);
 					if (length > 0)
 					{
 						std::vector<GLchar> log(length);
 						glGetShaderInfoLog(shaders[i], length, NULL, &log[0]);
-						Output("%s\n", &log[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 					}
 				}
 			}
@@ -254,7 +240,7 @@ public:
 			{
 				std::vector<GLchar> log(length);
 				glGetProgramInfoLog(program, length, NULL, &log[0]);
-				Output("%s\n", &log[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 			}
 		}
 		return status == GL_TRUE ? true : false;
@@ -466,9 +452,11 @@ protected:
 		{
 			if (!ColorEqual(expected_data[i], data[i], Vec4(0.01f)))
 			{
-				Output("Data is: %f %f %f %f, data should be: %f %f %f %f, index is: %d.\n", data[i][0], data[i][1],
-					   data[i][2], data[i][3], expected_data[i][0], expected_data[i][1], expected_data[i][2],
-					   expected_data[i][3], i);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Data is: " << data[i][0] << " " << data[i][1] << " " << data[i][2]
+					<< " " << data[i][3] << ", data should be: " << expected_data[i][0] << " " << expected_data[i][1]
+					<< " " << expected_data[i][2] << " " << expected_data[i][3] << ", index is: " << i
+					<< tcu::TestLog::EndMessage;
 				status = ERROR;
 				break;
 			}
@@ -1597,16 +1585,20 @@ protected:
 		{
 			if (!IsEqual(expected_datai[i], datai[i]))
 			{
-				Output("Datai is: %d %d %d %d, datai should be: %d %d %d %d, index is: %d.\n", datai[i][0], datai[i][1],
-					   datai[i][2], datai[i][3], expected_datai[i][0], expected_datai[i][1], expected_datai[i][2],
-					   expected_datai[i][3], i);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Datai is: " << datai[i][0] << " " << datai[i][1] << " " << datai[i][2]
+					<< " " << datai[i][3] << ", datai should be: " << expected_datai[i][0] << " "
+					<< expected_datai[i][1] << " " << expected_datai[i][2] << " " << expected_datai[i][3]
+					<< ", index is: " << i << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 			if (!IsEqual(expected_dataui[i], dataui[i]))
 			{
-				Output("Dataui is: %u %u %u %u, dataui should be: %u %u %u %u, index is: %d.\n", dataui[i][0],
-					   dataui[i][1], dataui[i][2], dataui[i][3], expected_dataui[i][0], expected_dataui[i][1],
-					   expected_dataui[i][2], expected_dataui[i][3], i);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Dataui is: " << dataui[i][0] << " " << dataui[i][1] << " "
+					<< dataui[i][2] << " " << dataui[i][3] << ", dataui should be: " << expected_dataui[i][0] << " "
+					<< expected_dataui[i][1] << " " << expected_dataui[i][2] << " " << expected_dataui[i][3]
+					<< ", index is: " << i << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -1975,9 +1967,11 @@ protected:
 			{
 				if (expected_data[i][j] != 12345.0 && expected_data[i][j] != data[i][j])
 				{
-					Output("Data is: %f %f %f %f, data should be: %f %f %f %f, index is: %d.\n", data[i][0], data[i][1],
-						   data[i][2], data[i][3], expected_data[i][0], expected_data[i][1], expected_data[i][2],
-						   expected_data[i][3], i);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Data is: " << data[i][0] << " " << data[i][1] << " " << data[i][2]
+						<< " " << data[i][3] << ", data should be: " << expected_data[i][0] << " "
+						<< expected_data[i][1] << " " << expected_data[i][2] << " " << expected_data[i][3]
+						<< ", index is: " << i << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -2157,13 +2151,15 @@ class BasicState1 : public VertexAttribBindingBase
 		glGetIntegerv(GL_MAX_VERTEX_ATTRIB_BINDINGS, &p);
 		if (p < 16)
 		{
-			Output("GL_MAX_VERTEX_ATTRIB_BINDINGS is %d but must be at least 16.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_MAX_VERTEX_ATTRIB_BINDINGS is " << p
+												<< " but must be at least 16." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetIntegerv(GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET, &p);
 		if (p < 2047)
 		{
-			Output("GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET is %d but must be at least 2047.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET is "
+												<< p << " but must be at least 2047." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -2174,26 +2170,30 @@ class BasicState1 : public VertexAttribBindingBase
 			glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_BINDING, &p);
 			if (static_cast<GLint>(i) != p)
 			{
-				Output("GL_VERTEX_ATTRIB_BINDING(%d) is %d should be %d.\n", i, p, i);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_BINDING(" << i
+													<< ") is " << p << " should be " << i << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 			glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, &p);
 			if (p != 0)
 			{
-				Output("GL_VERTEX_ATTRIB_RELATIVE_OFFSET(%d) is %d should be %d.\n", i, p, 0);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_RELATIVE_OFFSET(" << i
+													<< ") is " << p << " should be 0." << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 			GLint64 p64;
 			glGetInteger64i_v(GL_VERTEX_BINDING_OFFSET, i, &p64);
 			if (p64 != 0)
 			{
-				Output("GL_VERTEX_BINDING_OFFSET(%d) should be 0.\n", i);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_BINDING_OFFSET(" << i
+													<< ") should be 0." << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 			glGetIntegeri_v(GL_VERTEX_BINDING_STRIDE, i, &p);
 			if (p != 16)
 			{
-				Output("GL_VERTEX_BINDING_STRIDE(%d) is %d should be 16.\n", i, p);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_BINDING_STRIDE(" << i
+													<< ") is " << p << " should be 16." << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -2201,25 +2201,29 @@ class BasicState1 : public VertexAttribBindingBase
 		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_SIZE, &p);
 		if (p != 2)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_SIZE(0) is %d should be 2.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_SIZE(0) is " << p
+												<< " should be 2." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_TYPE, &p);
 		if (p != GL_BYTE)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_TYPE(0) is %d should be GL_BYTE.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_TYPE(0) is " << p
+												<< " should be GL_BYTE." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, &p);
 		if (p != GL_TRUE)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_NORMALIZED(0) is %d should be GL_TRUE.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_NORMALIZED(0) is "
+												<< p << " should be GL_TRUE." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, &p);
 		if (p != 16)
 		{
-			Output("GL_VERTEX_ATTRIB_RELATIVE_OFFSET(0) is %d should be 16.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_RELATIVE_OFFSET(0) is "
+												<< p << " should be 16." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -2227,25 +2231,29 @@ class BasicState1 : public VertexAttribBindingBase
 		glGetVertexAttribiv(2, GL_VERTEX_ATTRIB_ARRAY_SIZE, &p);
 		if (p != 3)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_SIZE(2) is %d should be 3.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_SIZE(2) is " << p
+												<< " should be 3." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetVertexAttribiv(2, GL_VERTEX_ATTRIB_ARRAY_TYPE, &p);
 		if (p != GL_INT)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_TYPE(2) is %d should be GL_INT.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_TYPE(2) is " << p
+												<< " should be GL_INT." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetVertexAttribiv(2, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, &p);
 		if (p != 512)
 		{
-			Output("GL_VERTEX_ATTRIB_RELATIVE_OFFSET(2) is %d should be 512.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_RELATIVE_OFFSET(2) is "
+												<< p << " should be 512." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetVertexAttribiv(2, GL_VERTEX_ATTRIB_ARRAY_INTEGER, &p);
 		if (p != GL_TRUE)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_INTEGER(2) is %d should be GL_TRUE.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_INTEGER(2) is " << p
+												<< " should be GL_TRUE." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -2253,25 +2261,29 @@ class BasicState1 : public VertexAttribBindingBase
 		glGetVertexAttribiv(15, GL_VERTEX_ATTRIB_ARRAY_SIZE, &p);
 		if (p != 1)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_SIZE(15) is %d should be 1.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_SIZE(15) is " << p
+												<< " should be 1." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetVertexAttribiv(15, GL_VERTEX_ATTRIB_ARRAY_TYPE, &p);
 		if (p != GL_DOUBLE)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_TYPE(15) is %d should be GL_DOUBLE.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_TYPE(15) is " << p
+												<< " should be GL_DOUBLE." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetVertexAttribiv(15, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, &p);
 		if (p != 1024)
 		{
-			Output("GL_VERTEX_ATTRIB_RELATIVE_OFFSET(15) is %d should be 1024.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_TYPE(15) is " << p
+												<< " should be 1024." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetVertexAttribiv(15, GL_VERTEX_ATTRIB_ARRAY_LONG, &p);
 		if (p != GL_TRUE)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_LONG(15) is %d should be GL_TRUE.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_LONG(15) is " << p
+												<< " should be GL_TRUE." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -2301,25 +2313,30 @@ class BasicState1 : public VertexAttribBindingBase
 		glGetInteger64i_v(GL_VERTEX_BINDING_OFFSET, 0, &p64);
 		if (p64 != 1024)
 		{
-			Output("GL_VERTEX_BINDING_OFFSET(0) should be 1024.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_BINDING_OFFSET(0) should be 1024." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetIntegeri_v(GL_VERTEX_BINDING_STRIDE, 0, &p);
 		if (p != 128)
 		{
-			Output("GL_VERTEX_BINDING_STRIDE(0) is %d should be 128.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_BINDING_STRIDE(0) is " << p
+												<< "should be 128." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_STRIDE, &p);
 		if (p != 0)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_STRIDE(0) is %d should be 0.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_STRIDE(0) is " << p
+												<< "should be 0." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &p);
 		if (p != 0)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING(0) is %d should be %d.\n", p, 0);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING(0) is " << p << "should be 0."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -2327,25 +2344,30 @@ class BasicState1 : public VertexAttribBindingBase
 		glGetInteger64i_v(GL_VERTEX_BINDING_OFFSET, 15, &p64);
 		if (p64 != 16)
 		{
-			Output("GL_VERTEX_BINDING_OFFSET(15) should be 16.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_BINDING_OFFSET(15) should be 16." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetIntegeri_v(GL_VERTEX_BINDING_STRIDE, 15, &p);
 		if (p != 32)
 		{
-			Output("GL_VERTEX_BINDING_STRIDE(15) is %d should be 32.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_BINDING_STRIDE(15) is " << p
+												<< " should be 32." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetVertexAttribiv(15, GL_VERTEX_ATTRIB_ARRAY_STRIDE, &p);
 		if (p != 0)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_STRIDE(15) is %d should be 0.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_STRIDE(15) is " << p
+												<< " should be 0." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetVertexAttribiv(15, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &p);
 		if (p != static_cast<GLint>(m_vbo[1]))
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING(15) is %d should be %d.\n", p, m_vbo[1]);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING(15) is " << p << " should be "
+				<< m_vbo[1] << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -2383,12 +2405,16 @@ class BasicState2 : public VertexAttribBindingBase
 			glGetIntegeri_v(GL_VERTEX_BINDING_DIVISOR, i, &p);
 			if (glGetError() != GL_NO_ERROR)
 			{
-				Output("glGetIntegeri_v(GL_VERTEX_BINDING_DIVISOR, ...) command generates error.\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message
+					<< "glGetIntegeri_v(GL_VERTEX_BINDING_DIVISOR, ...) command generates error."
+					<< tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 			if (p != 0)
 			{
-				Output("GL_VERTEX_BINDING_DIVISOR(%u) is %d should be 0.\n", i, p);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_BINDING_DIVISOR(" << i
+													<< ") is " << p << " should be 0." << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -2396,7 +2422,9 @@ class BasicState2 : public VertexAttribBindingBase
 		glGetIntegeri_v(GL_VERTEX_BINDING_DIVISOR, 1, &p);
 		if (p != 2)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_DIVISOR(1) is %d should be 2.\n", p);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_DIVISOR(1) is %d should be 2."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -2444,75 +2472,97 @@ public:
 		glGetVertexAttribiv(index, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &p);
 		if (p != array_enabled)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_ENABLED(%d) is %d should be %d.\n", index, p, array_enabled);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_ENABLED(" << index << ") is " << p << " should be "
+				<< array_enabled << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetVertexAttribiv(index, GL_VERTEX_ATTRIB_ARRAY_SIZE, &p);
 		if (p != array_size)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_SIZE(%d) is %d should be %d.\n", index, p, array_size);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_SIZE(" << index << ") is " << p << " should be "
+				<< array_size << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetVertexAttribiv(index, GL_VERTEX_ATTRIB_ARRAY_STRIDE, &p);
 		if (p != array_stride)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_STRIDE(%d) is %d should be %d.\n", index, p, array_stride);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_STRIDE(" << index << ") is " << p << " should be "
+				<< array_stride << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetVertexAttribiv(index, GL_VERTEX_ATTRIB_ARRAY_TYPE, &p);
 		if (p != array_type)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_TYPE(%d) is 0x%x should be 0x%x.\n", index, p, array_type);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_TYPE(" << index << ") is " << tcu::toHex(p)
+				<< " should be " << tcu::toHex(array_type) << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetVertexAttribiv(index, GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, &p);
 		if (p != array_normalized)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_NORMALIZED(%d) is %d should be %d.\n", index, p, array_normalized);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_NORMALIZED(" << index << ") is " << p
+				<< " should be " << array_normalized << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetVertexAttribiv(index, GL_VERTEX_ATTRIB_ARRAY_INTEGER, &p);
 		if (p != array_integer)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_INTEGER(%d) is %d should be %d.\n", index, p, array_integer);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_INTEGER(" << index << ") is " << p << " should be "
+				<< array_integer << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetVertexAttribiv(index, GL_VERTEX_ATTRIB_ARRAY_LONG, &p);
 		if (p != array_long)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_LONG(%d) is %d should be %d.\n", index, p, array_long);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_LONG(" << index << ") is " << p << " should be "
+				<< array_long << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetVertexAttribiv(index, GL_VERTEX_ATTRIB_ARRAY_DIVISOR, &p);
 		if (p != array_divisor)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_DIVISOR(%d) is %d should be %d.\n", index, p, array_divisor);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_DIVISOR(" << index << ") is " << p << " should be "
+				<< array_divisor << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		void* pp;
 		glGetVertexAttribPointerv(index, GL_VERTEX_ATTRIB_ARRAY_POINTER, &pp);
 		if (reinterpret_cast<deUintptr>(pp) != array_pointer)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_POINTER(%d) is %p should be %p.\n", index, pp,
-				   reinterpret_cast<void*>(array_pointer));
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_POINTER(" << index << ") is "
+				<< reinterpret_cast<deUintptr>(pp) << " should be " << array_pointer << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetVertexAttribiv(index, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &p);
 		if (p != array_buffer_binding)
 		{
-			Output("GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING(%d) is %d should be %d.\n", index, p, array_buffer_binding);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING(" << index << ") is " << p
+				<< " should be " << array_buffer_binding << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetVertexAttribiv(index, GL_VERTEX_ATTRIB_BINDING, &p);
 		if (static_cast<GLint>(binding) != p)
 		{
-			Output("GL_VERTEX_ATTRIB_BINDING(%d) is %d should be %d.\n", index, p, binding);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_ATTRIB_BINDING(" << index
+												<< ") is " << p << " should be " << binding << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetVertexAttribiv(index, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, &p);
 		if (p != relative_offset)
 		{
-			Output("GL_VERTEX_ATTRIB_RELATIVE_OFFSET(%d) is %d should be %d.\n", index, p, relative_offset);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_ATTRIB_RELATIVE_OFFSET(" << index << ") is " << p
+				<< " should be " << relative_offset << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		return status;
@@ -2539,26 +2589,31 @@ public:
 		glGetIntegeri_v(GL_VERTEX_BINDING_BUFFER, index, &p);
 		if (p != buffer)
 		{
-			Output("GL_VERTEX_BINDING_BUFFER(%d) is %d should be %d.\n", index, p, buffer);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_BINDING_BUFFER(" << index
+												<< ") is " << p << " should be " << buffer << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		GLint64 p64;
 		glGetInteger64i_v(GL_VERTEX_BINDING_OFFSET, index, &p64);
 		if (p64 != offset)
 		{
-			Output("GL_VERTEX_BINDING_OFFSET(%d) is %ld should be %ld.\n", index, p64, offset);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_VERTEX_BINDING_OFFSET(" << index << ") is " << p64 << " should be "
+				<< offset << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetIntegeri_v(GL_VERTEX_BINDING_STRIDE, index, &p);
 		if (p != stride)
 		{
-			Output("GL_VERTEX_BINDING_STRIDE(%d) is %d should be %d.\n", index, p, stride);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_BINDING_STRIDE(" << index
+												<< ") is " << p << " should be " << stride << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetIntegeri_v(GL_VERTEX_BINDING_DIVISOR, index, &p);
 		if (p != divisor)
 		{
-			Output("GL_VERTEX_BINDING_DIVISOR(%d) is %d should be %d.\n", index, p, divisor);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_VERTEX_BINDING_DIVISOR(" << index
+												<< ") is " << p << " should be " << divisor << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		return status;
@@ -2602,19 +2657,23 @@ class BasicState3 : public VertexAttribBindingBase
 		glGetIntegerv(GL_MAX_VERTEX_ATTRIB_BINDINGS, &p);
 		if (p < 16)
 		{
-			Output("GL_MAX_VERTEX_ATTRIB_BINDINGS is %d but must be at least 16.\n", p);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_MAX_VERTEX_ATTRIB_BINDINGS is %d but must be at least 16."
+				<< tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetIntegerv(GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET, &p);
 		if (p < 2047)
 		{
-			Output("GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET is %d but must be at least 2047.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET is "
+												<< p << " but must be at least 2047." << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		glGetIntegerv(GL_MAX_VERTEX_ATTRIB_STRIDE, &p);
 		if (p < 2048)
 		{
-			Output("GL_MAX_VERTEX_ATTRIB_STRIDE is %d but must be at least 2048.\n", p);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_MAX_VERTEX_ATTRIB_STRIDE is " << p
+												<< " but must be at least 2048." << tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -2623,7 +2682,8 @@ class BasicState3 : public VertexAttribBindingBase
 		glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &p);
 		if (0 != p)
 		{
-			Output("GL_ELEMENT_ARRAY_BUFFER_BINDING is %d should be %d.\n", p, 0);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_ELEMENT_ARRAY_BUFFER_BINDING is " << p
+												<< " should be 0." << tcu::TestLog::EndMessage;
 			status = false;
 		}
 		for (GLuint i = 0; i < 16; ++i)
@@ -2640,7 +2700,8 @@ class BasicState3 : public VertexAttribBindingBase
 		}
 		if (!status)
 		{
-			Output("Default state check failed.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Default state check failed." << tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -2653,7 +2714,9 @@ class BasicState3 : public VertexAttribBindingBase
 		glVertexAttribFormat(0, 2, GL_BYTE, GL_TRUE, 16);
 		if (!va0.stateVerify() || !vb0.stateVerify())
 		{
-			Output("glVertexAttribFormat state change check failed.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glVertexAttribFormat state change check failed."
+				<< tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -2666,7 +2729,9 @@ class BasicState3 : public VertexAttribBindingBase
 		glVertexAttribLFormat(2, 3, GL_DOUBLE, 512);
 		if (!va2.stateVerify() || !vb2.stateVerify())
 		{
-			Output("glVertexAttribIFormat state change check failed.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glVertexAttribIFormat state change check failed."
+				<< tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -2677,7 +2742,8 @@ class BasicState3 : public VertexAttribBindingBase
 		glBindVertexBuffer(0, m_vbo[0], 2048, 128);
 		if (!va0.stateVerify() || !vb0.stateVerify())
 		{
-			Output("glBindVertexBuffer state change check failed.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glBindVertexBuffer state change check failed." << tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -2688,7 +2754,8 @@ class BasicState3 : public VertexAttribBindingBase
 		glBindVertexBuffer(2, m_vbo[2], 64, 256);
 		if (!va2.stateVerify() || !vb2.stateVerify())
 		{
-			Output("glBindVertexBuffer state change check failed.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glBindVertexBuffer state change check failed." << tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -2697,7 +2764,9 @@ class BasicState3 : public VertexAttribBindingBase
 		va2.array_buffer_binding = m_vbo[0];
 		if (!va0.stateVerify() || !vb0.stateVerify() || !va2.stateVerify() || !vb2.stateVerify())
 		{
-			Output("glVertexAttribBinding state change check failed.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glVertexAttribBinding state change check failed."
+				<< tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -2708,7 +2777,9 @@ class BasicState3 : public VertexAttribBindingBase
 		va0.array_buffer_binding = 0;
 		if (!va0.stateVerify() || !vb0.stateVerify() || !va15.stateVerify() || !vb15.stateVerify())
 		{
-			Output("glVertexAttribBinding state change check failed.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glVertexAttribBinding state change check failed."
+				<< tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -2720,7 +2791,8 @@ class BasicState3 : public VertexAttribBindingBase
 		vb15.stride				  = 32;
 		if (!va0.stateVerify() || !vb0.stateVerify() || !va15.stateVerify() || !vb15.stateVerify())
 		{
-			Output("glBindVertexBuffer state change check failed.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glBindVertexBuffer state change check failed." << tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -2732,7 +2804,9 @@ class BasicState3 : public VertexAttribBindingBase
 		if (!va0.stateVerify() || !vb0.stateVerify() || !va2.stateVerify() || !vb2.stateVerify() ||
 			!va15.stateVerify() || !vb15.stateVerify())
 		{
-			Output("glVertexAttribFormat state change check failed.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glVertexAttribFormat state change check failed."
+				<< tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -2754,7 +2828,9 @@ class BasicState3 : public VertexAttribBindingBase
 		if (!va0.stateVerify() || !vb0.stateVerify() || !va2.stateVerify() || !vb2.stateVerify() ||
 			!va15.stateVerify() || !vb15.stateVerify())
 		{
-			Output("glVertexAttribPointer state change check failed.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glVertexAttribPointer state change check failed."
+				<< tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -2767,7 +2843,8 @@ class BasicState3 : public VertexAttribBindingBase
 		if (!va0.stateVerify() || !vb0.stateVerify() || !va2.stateVerify() || !vb2.stateVerify() ||
 			!va15.stateVerify() || !vb15.stateVerify())
 		{
-			Output("glBindVertexBuffer state change check failed.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glBindVertexBuffer state change check failed." << tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -2811,7 +2888,9 @@ class BasicState4 : public VertexAttribBindingBase
 			vb.divisor		 = i + 7;
 			if (!va.stateVerify() || !vb.stateVerify())
 			{
-				Output("glVertexAttribDivisor state change check failed.\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "glVertexAttribDivisor state change check failed."
+					<< tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -2824,7 +2903,9 @@ class BasicState4 : public VertexAttribBindingBase
 			vb.divisor		 = i;
 			if (!va.stateVerify() || !vb.stateVerify())
 			{
-				Output("glVertexBindingDivisor state change check failed.\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "glVertexBindingDivisor state change check failed."
+					<< tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -2841,7 +2922,9 @@ class BasicState4 : public VertexAttribBindingBase
 		va2.binding = 5;
 		if (!va5.stateVerify() || !vb5.stateVerify() || !va2.stateVerify() || !vb2.stateVerify())
 		{
-			Output("glVertexAttribBinding state change check failed.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glVertexAttribBinding state change check failed."
+				<< tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -2851,7 +2934,9 @@ class BasicState4 : public VertexAttribBindingBase
 		vb2.divisor		  = 23;
 		if (!va5.stateVerify() || !vb5.stateVerify() || !va2.stateVerify() || !vb2.stateVerify())
 		{
-			Output("glVertexAttribDivisor state change check failed.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glVertexAttribDivisor state change check failed."
+				<< tcu::TestLog::EndMessage;
 			status = false;
 		}
 
@@ -3418,7 +3503,9 @@ class AdvancedIterations : public VertexAttribBindingBase
 			glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 16, &data[0]);
 			if (!IsEqual(data, IVec4(10)))
 			{
-				Output("Data is: %d %d %d %d, data should be: 10 10 10 10.\n", data[0], data[1], data[2], data[3]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Data is: " << data[0] << " " << data[1] << " " << data[2] << " "
+					<< data[3] << ", data should be: 10 10 10 10." << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -3455,7 +3542,9 @@ class AdvancedIterations : public VertexAttribBindingBase
 			glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 16, &data[0]);
 			if (!IsEqual(data, IVec4(20)))
 			{
-				Output("Data is: %d %d %d %d, data should be: 20 20 20 20.\n", data[0], data[1], data[2], data[3]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Data is: " << data[0] << " " << data[1] << " " << data[2] << " "
+					<< data[3] << ", data should be: 20 20 20 20." << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -3482,7 +3571,9 @@ class AdvancedIterations : public VertexAttribBindingBase
 			glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 16, &data[0]);
 			if (!IsEqual(data, IVec4(30)))
 			{
-				Output("Data is: %d %d %d %d, data should be: 30 30 30 30.\n", data[0], data[1], data[2], data[3]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Data is: " << data[0] << " " << data[1] << " " << data[2] << " "
+					<< data[3] << ", data should be: 30 30 30 30." << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -3689,7 +3780,8 @@ class NegativeBindVertexBuffer : public VertexAttribBindingBase
 		glBindVertexBuffer(0, 1234, 0, 12);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -3698,20 +3790,23 @@ class NegativeBindVertexBuffer : public VertexAttribBindingBase
 		glBindVertexBuffer(p + 1, m_vbo, 0, 12);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
 		glBindVertexBuffer(0, m_vbo, -10, 12);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glBindVertexBuffer(0, m_vbo, 0, -12);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -3719,7 +3814,8 @@ class NegativeBindVertexBuffer : public VertexAttribBindingBase
 		glBindVertexBuffer(0, m_vbo, 0, 12);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -3763,44 +3859,51 @@ class NegativeVertexAttribFormat : public VertexAttribBindingBase
 		glVertexAttribFormat(p + 1, 4, GL_FLOAT, GL_FALSE, 0);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribIFormat(p + 2, 4, GL_INT, 0);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribLFormat(p + 3, 4, GL_DOUBLE, 0);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
 		glVertexAttribFormat(0, 0, GL_FLOAT, GL_FALSE, 0);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribFormat(0, 5, GL_FLOAT, GL_FALSE, 0);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribIFormat(0, 5, GL_INT, 0);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribLFormat(0, 0, GL_DOUBLE, 0);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribIFormat(0, GL_BGRA, GL_INT, 0);
@@ -3809,7 +3912,8 @@ class NegativeVertexAttribFormat : public VertexAttribBindingBase
 		{
 			//two possible errors here: INVALID_VALUE because GL_BGRA used in *IFormat
 			//function AND INVALID_OPERATION because GL_BGRA used with GL_INT
-			Output("INVALID_OPERATION should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribLFormat(0, GL_BGRA, GL_DOUBLE, 0);
@@ -3818,81 +3922,94 @@ class NegativeVertexAttribFormat : public VertexAttribBindingBase
 		{
 			//two possible errors here: INVALID_VALUE because GL_BGRA used in *IFormat
 			//function AND INVALID_OPERATION because GL_BGRA used with GL_DOUBLE
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribFormat(0, 4, GL_R32F, GL_FALSE, 0);
 		if (glGetError() != GL_INVALID_ENUM)
 		{
-			Output("INVALID_ENUM should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_ENUM should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribIFormat(0, 4, GL_FLOAT, 0);
 		if (glGetError() != GL_INVALID_ENUM)
 		{
-			Output("INVALID_ENUM should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_ENUM should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribLFormat(0, 4, GL_INT, 0);
 		if (glGetError() != GL_INVALID_ENUM)
 		{
-			Output("INVALID_ENUM should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_ENUM should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribFormat(0, GL_BGRA, GL_FLOAT, GL_TRUE, 0);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribFormat(0, 3, GL_INT_2_10_10_10_REV, GL_FALSE, 0);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribFormat(0, GL_BGRA, GL_UNSIGNED_BYTE, GL_FALSE, 0);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetIntegerv(GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET, &p);
 		glVertexAttribFormat(0, 4, GL_FLOAT, GL_FALSE, p + 10);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribIFormat(0, 4, GL_INT, p + 10);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribLFormat(0, 4, GL_DOUBLE, p + 10);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glBindVertexArray(0);
 		glVertexAttribFormat(0, 4, GL_FLOAT, GL_FALSE, 0);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribIFormat(0, 4, GL_INT, 0);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glVertexAttribLFormat(0, 4, GL_DOUBLE, 0);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -3926,21 +4043,24 @@ class NegativeVertexAttribBinding : public VertexAttribBindingBase
 		glVertexAttribBinding(p + 1, 0);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetIntegerv(GL_MAX_VERTEX_ATTRIB_BINDINGS, &p);
 		glVertexAttribBinding(0, p + 1);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glBindVertexArray(0);
 		glVertexAttribBinding(0, 0);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -3973,14 +4093,16 @@ class NegativeVertexAttribDivisor : public VertexAttribBindingBase
 		glVertexBindingDivisor(p + 1, 1);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glBindVertexArray(0);
 		glVertexBindingDivisor(0, 1);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION should be generated.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION should be generated." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -4001,7 +4123,6 @@ VertexAttribBindingTests::~VertexAttribBindingTests(void)
 void VertexAttribBindingTests::init()
 {
 	using namespace deqp;
-	setOutput(m_context.getTestContext().getLog());
 	addChild(new TestSubcase(m_context, "basic-usage", TestSubcase::Create<BasicUsage>));
 	addChild(new TestSubcase(m_context, "basic-input-case1", TestSubcase::Create<BasicInputCase1>));
 	addChild(new TestSubcase(m_context, "basic-input-case2", TestSubcase::Create<BasicInputCase2>));

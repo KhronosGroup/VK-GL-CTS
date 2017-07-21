@@ -4047,6 +4047,13 @@ void CallLogWrapper::glPolygonOffset (glw::GLfloat factor, glw::GLfloat units)
 	m_gl.polygonOffset(factor, units);
 }
 
+void CallLogWrapper::glPolygonOffsetClampEXT (glw::GLfloat factor, glw::GLfloat units, glw::GLfloat clamp)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glPolygonOffsetClampEXT(" << factor << ", " << units << ", " << clamp << ");" << TestLog::EndMessage;
+	m_gl.polygonOffsetClampEXT(factor, units, clamp);
+}
+
 void CallLogWrapper::glPopDebugGroup (void)
 {
 	if (m_enableLog)

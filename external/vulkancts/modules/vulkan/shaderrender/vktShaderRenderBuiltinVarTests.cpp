@@ -624,7 +624,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		fence = createFence(vk, device, &fenceCreateInfo);
 	}
 
-	// Initialize Depth Buffer and Marker Buffer
+	// Initialize Marker Buffer
 	{
 		VkImageAspectFlags	depthImageAspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
 		if (hasStencilComponent(mapVkFormat(m_format).order))
@@ -650,24 +650,6 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 					1u										// uint32_t				arraySize
 				}
 			},
-			{
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType		sType
-				DE_NULL,										// const void*			pNext
-				0,												// VkAccessMask			srcAccessMask
-				VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessMask			dstAccessMask
-				VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout		oldLayout
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout		newLayout
-				VK_QUEUE_FAMILY_IGNORED,						// uint32_t				srcQueueFamilyIndex
-				VK_QUEUE_FAMILY_IGNORED,						// uint32_t				dstQueueFamilyIndex
-				*depthImage,									// VkImage				image
-				{
-					depthImageAspectFlags,					// VkImageAspectFlags	aspectMask
-					0u,										// uint32_t				baseMipLevel
-					1u,										// uint32_t				mipLevels
-					0u,										// uint32_t				baseArray
-					1u										// uint32_t				arraySize
-				}
-			}
 		};
 
 		const VkImageMemoryBarrier imagePostBarrier[] =
@@ -690,25 +672,6 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 					1u										// uint32_t				arraySize
 				}
 			},
-			{
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
-				DE_NULL,											// cont void*			pNext
-				VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlagBits		srcAccessMask
-				VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,		// VkAccessFlagBits		dstAccessMask
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout		oldLayout
-				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout		newLayout
-				VK_QUEUE_FAMILY_IGNORED,							// uint32_t				srcQueueFamilyIndex
-				VK_QUEUE_FAMILY_IGNORED,							// uint32_t				dstQueueFamilyIndex
-				*depthImage,										// VkImage				image
-				{
-					depthImageAspectFlags,						// VkImageAspectFlags	aspectMask
-					0u,											// uint32_t				baseMipLevel
-					1u,											// uint32_t				mipLevels
-					0u,											// uint32_t				baseArray
-					1u											// uint32_t				arraySize
-				}
-
-			}
 		};
 
 		const VkCommandBufferBeginInfo	cmdBufferBeginInfo =
@@ -728,11 +691,8 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 
 		const VkClearValue				colorClearValue	= makeClearValueColor(Vec4(0.0f, 0.0f, 0.0f, 0.0f));
 		const VkImageSubresourceRange	colorClearRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-		const VkClearValue				depthClearValue	= makeClearValueDepthStencil(m_defaultDepthValue, 0);
-		const VkImageSubresourceRange	depthClearRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
 
 		vk.cmdClearColorImage(*transferCmdBuffer, *markerImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &colorClearValue.color, 1u, &colorClearRange);
-		vk.cmdClearDepthStencilImage(*transferCmdBuffer, *depthImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &depthClearValue.depthStencil, 1u, &depthClearRange);
 
 		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 				(VkDependencyFlags)0,

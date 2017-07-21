@@ -557,6 +557,11 @@ if (de::contains(extSet, "GL_EXT_debug_marker"))
 	gl->pushGroupMarkerEXT		= (glPushGroupMarkerEXTFunc)	loader->get("glPushGroupMarkerEXT");
 }
 
+if (de::contains(extSet, "GL_EXT_polygon_offset_clamp"))
+{
+	gl->polygonOffsetClampEXT	= (glPolygonOffsetClampEXTFunc)	loader->get("glPolygonOffsetClampEXT");
+}
+
 if (de::contains(extSet, "GL_ARB_clip_control"))
 {
 	gl->clipControl	= (glClipControlFunc)	loader->get("glClipControl");

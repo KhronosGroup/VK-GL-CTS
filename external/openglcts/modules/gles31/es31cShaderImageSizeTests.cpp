@@ -42,32 +42,6 @@ typedef tcu::Vec4  vec4;
 typedef tcu::IVec4 ivec4;
 typedef tcu::UVec4 uvec4;
 
-static tcu::TestLog* currentLog;
-void setOutput(tcu::TestLog& log)
-{
-	currentLog = &log;
-}
-
-void Output(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-
-	const int   MAX_OUTPUT_STRING_SIZE = 40000;
-	static char temp[MAX_OUTPUT_STRING_SIZE];
-
-	vsnprintf(temp, MAX_OUTPUT_STRING_SIZE - 1, format, args);
-	temp[MAX_OUTPUT_STRING_SIZE - 1] = '\0';
-
-	char* logLine = strtok(temp, "\n");
-	while (logLine != NULL)
-	{
-		currentLog->writeMessage(logLine);
-		logLine = strtok(NULL, "\n");
-	}
-	va_end(args);
-}
-
 const char* const kGLSLVer =
 	"#version 310 es\n" NL "precision highp float;" NL "precision highp int;" NL "precision highp image2D;" NL
 	"precision highp image3D;" NL "precision highp imageCube;" NL "precision highp image2DArray;" NL
@@ -219,32 +193,39 @@ class ImageSizeMachine : public glcts::GLWrapper
 					switch (type)
 					{
 					case GL_VERTEX_SHADER:
-						Output("*** Vertex Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Vertex Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_FRAGMENT_SHADER:
-						Output("*** Fragment Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Fragment Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_COMPUTE_SHADER:
-						Output("*** Compute Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Compute Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					default:
-						Output("*** Unknown Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Unknown Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					}
+
 					GLint length;
 					glGetShaderiv(shaders[i], GL_SHADER_SOURCE_LENGTH, &length);
 					if (length > 0)
 					{
 						std::vector<GLchar> source(length);
 						glGetShaderSource(shaders[i], length, NULL, &source[0]);
-						Output("%s\n", &source[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &source[0] << tcu::TestLog::EndMessage;
 					}
 					glGetShaderiv(shaders[i], GL_INFO_LOG_LENGTH, &length);
 					if (length > 0)
 					{
 						std::vector<GLchar> log(length);
 						glGetShaderInfoLog(shaders[i], length, NULL, &log[0]);
-						Output("%s\n", &log[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 					}
 				}
 			}
@@ -254,7 +235,7 @@ class ImageSizeMachine : public glcts::GLWrapper
 			{
 				std::vector<GLchar> log(length);
 				glGetProgramInfoLog(program, length, NULL, &log[0]);
-				Output("%s\n", &log[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 			}
 		}
 		return status == GL_TRUE ? true : false;
@@ -273,7 +254,8 @@ class ImageSizeMachine : public glcts::GLWrapper
 			glGetShaderInfoLog(shader, sizeof(log), &length, log);
 			if (length > 1)
 			{
-				Output("Shader Info Log:\n%s\n", log);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Shader Info Log:\n"
+													<< log << tcu::TestLog::EndMessage;
 			}
 			return false;
 		}
@@ -293,7 +275,8 @@ class ImageSizeMachine : public glcts::GLWrapper
 			glGetProgramInfoLog(program, sizeof(log), &length, log);
 			if (length > 1)
 			{
-				Output("Program Info Log:\n%s\n", log);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Program Info Log:\n"
+													<< log << tcu::TestLog::EndMessage;
 			}
 			return false;
 		}
@@ -313,14 +296,16 @@ class ImageSizeMachine : public glcts::GLWrapper
 			glShaderSource(sh, 2, src, NULL);
 			if (!CompileShader(sh))
 			{
-				Output("%s%s\n", src[0], src[1]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << src[0] << src[1] << tcu::TestLog::EndMessage;
 				return p;
 			}
 		}
 		if (!LinkProgram(p))
 		{
 			if (!cs.empty())
-				Output("%s%s\n", kGLSLVer, cs.c_str());
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << kGLSLVer << cs << tcu::TestLog::EndMessage;
 			return p;
 		}
 
@@ -340,7 +325,8 @@ class ImageSizeMachine : public glcts::GLWrapper
 			glShaderSource(sh, 2, src, NULL);
 			if (!CompileShader(sh))
 			{
-				Output("%s%s\n", src[0], src[1]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << src[0] << src[1] << tcu::TestLog::EndMessage;
 				if (result)
 					*result = false;
 				return p;
@@ -355,7 +341,8 @@ class ImageSizeMachine : public glcts::GLWrapper
 			glShaderSource(sh, 2, src, NULL);
 			if (!CompileShader(sh))
 			{
-				Output("%s%s\n", src[0], src[1]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << src[0] << src[1] << tcu::TestLog::EndMessage;
 				if (result)
 					*result = false;
 				return p;
@@ -366,9 +353,11 @@ class ImageSizeMachine : public glcts::GLWrapper
 		if (!LinkProgram(p))
 		{
 			if (src_vs)
-				Output("%s%s\n", kGLSLVer, src_vs);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << kGLSLVer << src_vs << tcu::TestLog::EndMessage;
 			if (src_fs)
-				Output("%s%s\n", kGLSLVer, src_fs);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << kGLSLVer << src_fs << tcu::TestLog::EndMessage;
 			if (result)
 				*result = false;
 			return p;
@@ -558,9 +547,11 @@ public:
 		{
 			if (!Equal(map_data[i], expected_result[i]))
 			{
-				Output("Returned value is: (%d %d %d %d). Expected value is: (%d %d %d %d). Image unit is: %d.\n",
-					   map_data[i][0], map_data[i][1], map_data[i][2], map_data[i][3], expected_result[i][0],
-					   expected_result[i][1], expected_result[i][2], expected_result[i][3], i);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Returned value is: (" << map_data[i][0] << " " << map_data[i][1] << " "
+					<< map_data[i][2] << " " << map_data[i][3] << "). Expected value is: (" << expected_result[i][0]
+					<< " " << expected_result[i][1] << " " << expected_result[i][2] << " " << expected_result[i][3]
+					<< "). Image unit is: " << i << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -727,7 +718,8 @@ class NegativeCompileTime : public ShaderImageSizeBase
 
 		GLchar log[1024];
 		glGetShaderInfoLog(sh, sizeof(log), NULL, log);
-		Output("Shader Info Log:\n%s\n", log);
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Shader Info Log:\n"
+											<< log << tcu::TestLog::EndMessage;
 
 		GLint status;
 		glGetShaderiv(sh, GL_COMPILE_STATUS, &status);
@@ -735,7 +727,8 @@ class NegativeCompileTime : public ShaderImageSizeBase
 
 		if (status == GL_TRUE)
 		{
-			Output("Compilation should fail.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Compilation should fail." << tcu::TestLog::EndMessage;
 			return false;
 		}
 		return true;
@@ -755,7 +748,6 @@ ShaderImageSizeTests::~ShaderImageSizeTests(void)
 void ShaderImageSizeTests::init()
 {
 	using namespace glcts;
-	setOutput(m_context.getTestContext().getLog());
 	addChild(new TestSubcase(m_context, "basic-nonMS-vs-float", TestSubcase::Create<BasicNonMS<vec4, 0> >));
 	addChild(new TestSubcase(m_context, "basic-nonMS-vs-int", TestSubcase::Create<BasicNonMS<ivec4, 0> >));
 	addChild(new TestSubcase(m_context, "basic-nonMS-vs-uint", TestSubcase::Create<BasicNonMS<uvec4, 0> >));

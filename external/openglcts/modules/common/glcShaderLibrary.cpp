@@ -165,7 +165,7 @@ private:
 
 	void parseError(const std::string& errorStr);
 	float parseFloatLiteral(const char* str);
-	int parseIntLiteral(const char* str);
+	long long int parseIntLiteral(const char* str);
 	string parseStringLiteral(const char* str);
 	string parseShaderSource(const char* str);
 	void advanceToken(void);
@@ -211,9 +211,9 @@ float ShaderParser::parseFloatLiteral(const char* str)
 	return (float)atof(str);
 }
 
-int ShaderParser::parseIntLiteral(const char* str)
+long long int ShaderParser::parseIntLiteral(const char* str)
 {
-	return atoi(str);
+	return strtoll(str, NULL, 0);
 }
 
 string ShaderParser::parseStringLiteral(const char* str)
