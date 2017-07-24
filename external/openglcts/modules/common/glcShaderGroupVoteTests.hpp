@@ -1,5 +1,5 @@
-#ifndef _GL4CSHADERGROUPVOTETESTS_HPP
-#define _GL4CSHADERGROUPVOTETESTS_HPP
+#ifndef _GLCSHADERGROUPVOTETESTS_HPP
+#define _GLCSHADERGROUPVOTETESTS_HPP
 /*-------------------------------------------------------------------------
 * OpenGL Conformance Test Suite
 * -----------------------------
@@ -19,7 +19,7 @@
 * limitations under the License.
 *
 */ /*!
-* \file  gl4cShaderGroupVoteTests.hpp
+* \file  glcShaderGroupVoteTests.hpp
 * \brief Conformance tests for the ARB_shader_group_vote functionality.
 */ /*-------------------------------------------------------------------*/
 
@@ -29,7 +29,7 @@
 
 #include <string>
 
-namespace gl4cts
+namespace glcts
 {
 class ShaderGroupVoteTestCaseBase : public glcts::TestCaseBase
 {
@@ -41,17 +41,16 @@ public:
 		std::string			m_name;
 		std::string			m_shader;
 		glu::ShaderProgram* m_program;
-		tcu::Vec4			m_desiredColor;
+		tcu::IVec4			m_desiredColor;
 		bool				m_compileOnly;
 
 		/* Private methods */
-		bool validateColor(tcu::Vec4 testedColor, tcu::Vec4 desiredColor);
-		bool validateScreenPixels(deqp::Context& context, tcu::Vec4 desiredColor);
+		bool validateScreenPixels(deqp::Context& context, tcu::IVec4 desiredColor);
 
 	public:
 		/* Public methods */
 		ComputeShader(const std::string& name, const std::string& shader);
-		ComputeShader(const std::string& name, const std::string& shader, const tcu::Vec4& desiredColor);
+		ComputeShader(const std::string& name, const std::string& shader, const tcu::IVec4& desiredColor);
 		~ComputeShader();
 
 		void create(deqp::Context& context);
@@ -60,7 +59,8 @@ public:
 	};
 
 	/* Public methods */
-	ShaderGroupVoteTestCaseBase(deqp::Context& context, const char* name, const char* description);
+	ShaderGroupVoteTestCaseBase(deqp::Context& context, ExtParameters& extParam, const char* name,
+								const char* description);
 
 	void init();
 	void deinit();
@@ -72,7 +72,6 @@ public:
 protected:
 	/* Protected members */
 	bool						m_extensionSupported;
-	std::string					m_glslFunctionPostfix;
 	std::vector<ComputeShader*> m_shaders;
 };
 
@@ -82,18 +81,19 @@ class ShaderGroupVoteAvailabilityTestCase : public ShaderGroupVoteTestCaseBase
 {
 public:
 	/* Public methods */
-	ShaderGroupVoteAvailabilityTestCase(deqp::Context& context);
+	ShaderGroupVoteAvailabilityTestCase(deqp::Context& context, ExtParameters& extParam);
 };
 
 class ShaderGroupVoteFunctionTestCaseBase : public ShaderGroupVoteTestCaseBase
 {
 protected:
 	/* Protected members*/
-	const char* m_shaderBase;
+	std::string m_shaderBase;
 
 public:
 	/* Public methods */
-	ShaderGroupVoteFunctionTestCaseBase(deqp::Context& context, const char* name, const char* description);
+	ShaderGroupVoteFunctionTestCaseBase(deqp::Context& context, ExtParameters& extParam, const char* name,
+										const char* description);
 };
 
 /** Test verifies allInvocationsARB function calls
@@ -102,7 +102,7 @@ class ShaderGroupVoteAllInvocationsTestCase : public ShaderGroupVoteFunctionTest
 {
 public:
 	/* Public methods */
-	ShaderGroupVoteAllInvocationsTestCase(deqp::Context& context);
+	ShaderGroupVoteAllInvocationsTestCase(deqp::Context& context, ExtParameters& extParam);
 };
 
 /** Test verifies anyInvocationARB function calls
@@ -111,7 +111,7 @@ class ShaderGroupVoteAnyInvocationTestCase : public ShaderGroupVoteFunctionTestC
 {
 public:
 	/* Public methods */
-	ShaderGroupVoteAnyInvocationTestCase(deqp::Context& context);
+	ShaderGroupVoteAnyInvocationTestCase(deqp::Context& context, ExtParameters& extParam);
 };
 
 /** Test verifies allInvocationsEqualARB function calls
@@ -120,7 +120,7 @@ class ShaderGroupVoteAllInvocationsEqualTestCase : public ShaderGroupVoteFunctio
 {
 public:
 	/* Public methods */
-	ShaderGroupVoteAllInvocationsEqualTestCase(deqp::Context& context);
+	ShaderGroupVoteAllInvocationsEqualTestCase(deqp::Context& context, ExtParameters& extParam);
 };
 
 /** Test group which encapsulates all ARB_shader_group_vote conformance tests */
@@ -138,4 +138,4 @@ private:
 
 } /* glcts namespace */
 
-#endif // _GL4CSHADERGROUPVOTETESTS_HPP
+#endif // _GLCSHADERGROUPVOTETESTS_HPP
