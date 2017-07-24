@@ -54,3 +54,4 @@ m_vk.getPhysicalDeviceExternalBufferPropertiesKHR		= (GetPhysicalDeviceExternalB
 m_vk.getPhysicalDeviceExternalSemaphorePropertiesKHR	= (GetPhysicalDeviceExternalSemaphorePropertiesKHRFunc)		GET_PROC_ADDR("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR");
 m_vk.getPhysicalDevicePresentRectanglesKHX				= (GetPhysicalDevicePresentRectanglesKHXFunc)				GET_PROC_ADDR("vkGetPhysicalDevicePresentRectanglesKHX");
 m_vk.enumeratePhysicalDeviceGroupsKHX					= (EnumeratePhysicalDeviceGroupsKHXFunc)					GET_PROC_ADDR("vkEnumeratePhysicalDeviceGroupsKHX");
+m_vk.getPhysicalDeviceAndroidHardwareBufferUsageANDROID	= (GetPhysicalDeviceAndroidHardwareBufferUsageANDROIDFunc)	GET_PROC_ADDR("vkGetPhysicalDeviceAndroidHardwareBufferUsageANDROID");

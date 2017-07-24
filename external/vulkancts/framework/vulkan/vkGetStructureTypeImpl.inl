@@ -741,3 +741,38 @@ template<> VkStructureType getStructureType<VkBindImageMemoryInfoKHR> (void)
 	return VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceAndroidHardwareBufferInfoANDROID> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANDROID_HARDWARE_BUFFER_INFO_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkAndroidHardwareBufferUsageANDROID> (void)
+{
+	return VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkMemoryAndroidHardwareBufferPropertiesANDROID> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkImportAndroidHardwareBufferInfoANDROID> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkMemoryGetAndroidHardwareBufferInfoANDROID> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkAndroidHardwareBufferExternalFormatPropertiesANDROID> (void)
+{
+	return VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_EXTERNAL_FORMAT_PROPERTIES_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkExternalFormatANDROID> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID;
+}
+

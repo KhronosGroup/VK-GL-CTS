@@ -266,3 +266,8 @@ VkResult InstanceDriver::enumeratePhysicalDeviceGroupsKHX (VkInstance instance, 
 {
 	return m_vk.enumeratePhysicalDeviceGroupsKHX(instance, pPhysicalDeviceGroupCount, pPhysicalDeviceGroupProperties);
 }
+
+void InstanceDriver::getPhysicalDeviceAndroidHardwareBufferUsageANDROID (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceAndroidHardwareBufferInfoANDROID* pInfo, VkAndroidHardwareBufferUsageANDROID* pUsage) const
+{
+	m_vk.getPhysicalDeviceAndroidHardwareBufferUsageANDROID(physicalDevice, pInfo, pUsage);
+}

@@ -2167,3 +2167,61 @@ struct VkBindImageMemoryInfoKHR
 	VkDeviceSize	memoryOffset;
 };
 
+struct VkPhysicalDeviceAndroidHardwareBufferInfoANDROID
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkFormat			format;
+	VkImageTiling		tiling;
+	VkImageUsageFlags	imageUsage;
+	VkImageCreateFlags	imageFlags;
+};
+
+struct VkAndroidHardwareBufferUsageANDROID
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint64		androidHardwareBufferUsage;
+};
+
+struct VkMemoryAndroidHardwareBufferPropertiesANDROID
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	allocationSize;
+	deUint32		memoryTypeBits;
+};
+
+struct VkImportAndroidHardwareBufferInfoANDROID
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	pt::AndroidHardwareBufferPtr	buffer;
+};
+
+struct VkMemoryGetAndroidHardwareBufferInfoANDROID
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceMemory	memory;
+};
+
+struct VkAndroidHardwareBufferExternalFormatPropertiesANDROID
+{
+	VkStructureType						sType;
+	void*								pNext;
+	deUint32							externalFormat;
+	VkFormatFeatureFlags				formatFeatures;
+	VkSamplerYcbcrModelConversionKHR	suggestedYcbcrModel;
+	VkSamplerYcbcrRangeKHR				suggestedYcbcrRange;
+	VkChromaLocationKHR					suggestedXChromaOffset;
+	VkChromaLocationKHR					suggestedYChromaOffset;
+};
+
+struct VkExternalFormatANDROID
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		externalFormat;
+};
+

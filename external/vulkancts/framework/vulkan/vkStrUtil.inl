@@ -450,3 +450,10 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGroupProperties
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceGroupDeviceCreateInfoKHX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindBufferMemoryInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindImageMemoryInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAndroidHardwareBufferInfoANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferUsageANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryAndroidHardwareBufferPropertiesANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportAndroidHardwareBufferInfoANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetAndroidHardwareBufferInfoANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferExternalFormatPropertiesANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalFormatANDROID& value);

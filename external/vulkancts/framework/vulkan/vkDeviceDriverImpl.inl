@@ -801,3 +801,13 @@ VkResult DeviceDriver::bindImageMemory2KHR (VkDevice device, deUint32 bindInfoCo
 {
 	return m_vk.bindImageMemory2KHR(device, bindInfoCount, pBindInfos);
 }
+
+VkResult DeviceDriver::getMemoryAndroidHardwareBufferPropertiesANDROID (VkDevice device, const pt::AndroidHardwareBufferPtr buffer, VkMemoryAndroidHardwareBufferPropertiesANDROID* pProperties) const
+{
+	return m_vk.getMemoryAndroidHardwareBufferPropertiesANDROID(device, buffer, pProperties);
+}
+
+VkResult DeviceDriver::getMemoryAndroidHardwareBufferANDROID (VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, pt::AndroidHardwareBufferPtr* pBuffer) const
+{
+	return m_vk.getMemoryAndroidHardwareBufferANDROID(device, pInfo, pBuffer);
+}

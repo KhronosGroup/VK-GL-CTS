@@ -86,6 +86,9 @@ PLATFORM_TYPES		= [
 	("HWND",						"Win32WindowHandle",			"void*"),
 	("HANDLE",						"Win32Handle",					"void*"),
 	("const SECURITY_ATTRIBUTES*",	"Win32SecurityAttributesPtr",	"const void*"),
+
+	# VK_ANDROID_external_memory_android_hardware_buffer
+	("AHardwareBuffer*",			"AndroidHardwareBufferPtr",		"void*"),
 ]
 PLATFORM_TYPE_NAMESPACE	= "pt"
 TYPE_SUBSTITUTIONS		= [
@@ -215,8 +218,17 @@ def fixupEnumValues (values):
 
 def fixupType (type):
 	for platformType, substitute, compat in PLATFORM_TYPES:
-		if type == platformType:
-			return PLATFORM_TYPE_NAMESPACE + "::" + substitute
+		baseType = type
+		const = ''
+		indirections = 0
+		if baseType.startswith('const') and not platformType.startswith('const'):
+			baseType = baseType[5:].strip()
+			const = "const "
+		while baseType[-1] == '*' and baseType != platformType:
+			indirections += 1
+			baseType = baseType[:-1]
+		if baseType == platformType:
+			return const + PLATFORM_TYPE_NAMESPACE + "::" + substitute + (indirections * '*')
 
 	for src, dst in TYPE_SUBSTITUTIONS:
 		type = type.replace(src, dst)

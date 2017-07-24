@@ -54,3 +54,4 @@ virtual void				getPhysicalDeviceExternalBufferPropertiesKHR		(VkPhysicalDevice 
 virtual void				getPhysicalDeviceExternalSemaphorePropertiesKHR		(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalSemaphoreInfoKHR* pExternalSemaphoreInfo, VkExternalSemaphorePropertiesKHR* pExternalSemaphoreProperties) const = 0;
 virtual VkResult			getPhysicalDevicePresentRectanglesKHX				(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pRectCount, VkRect2D* pRects) const = 0;
 virtual VkResult			enumeratePhysicalDeviceGroupsKHX					(VkInstance instance, deUint32* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupPropertiesKHX* pPhysicalDeviceGroupProperties) const = 0;
+virtual void				getPhysicalDeviceAndroidHardwareBufferUsageANDROID	(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceAndroidHardwareBufferInfoANDROID* pInfo, VkAndroidHardwareBufferUsageANDROID* pUsage) const = 0;
