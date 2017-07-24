@@ -46,6 +46,8 @@ set(GLCTS_COMMON_SRCS
 	glcSeparableProgramsTransformFeedbackTests.hpp
 	glcShaderConstExprTests.hpp
 	glcShaderConstExprTests.cpp
+	glcShaderGroupVoteTests.cpp
+	glcShaderGroupVoteTests.hpp
 	glcShaderIndexingTests.cpp
 	glcShaderIndexingTests.hpp
 	glcShaderIntegerMixTests.cpp

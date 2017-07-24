@@ -47,7 +47,6 @@
 #include "gl4cShaderAtomicCountersTests.hpp"
 #include "gl4cShaderBallotTests.hpp"
 #include "gl4cShaderDrawParametersTests.hpp"
-#include "gl4cShaderGroupVoteTests.hpp"
 #include "gl4cShaderImageLoadStoreTests.hpp"
 #include "gl4cShaderImageSizeTests.hpp"
 #include "gl4cShaderStorageBufferObjectTests.hpp"
@@ -71,12 +70,13 @@
 #include "glcBlendEquationAdvancedTests.hpp"
 #include "glcExposedExtensionsTests.hpp"
 #include "glcInfoTests.hpp"
-#include "glcPolygonOffsetClampTests.hpp"
 #include "glcParallelShaderCompileTests.hpp"
+#include "glcPolygonOffsetClampTests.hpp"
 #include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcSampleVariablesTests.hpp"
 #include "glcSeparableProgramsTransformFeedbackTests.hpp"
 #include "glcShaderConstExprTests.hpp"
+#include "glcShaderGroupVoteTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderLibrary.hpp"
 #include "glcShaderMultisampleInterpolationTests.hpp"
@@ -365,10 +365,10 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::SparseTextureClampTests(getContext()));
 		addChild(new gl4cts::TextureFilterMinmax(getContext()));
 		addChild(new gl4cts::ShaderAtomicCounterOps(getContext()));
-		addChild(new gl4cts::ShaderGroupVote(getContext()));
 		addChild(new gl4cts::ShaderDrawParametersTests(getContext()));
 		addChild(new gl4cts::ShaderViewportLayerArray(getContext()));
 		addChild(new gl4cts::LimitsTests(getContext()));
+		addChild(new glcts::ShaderGroupVote(getContext()));
 		addChild(new glcts::PolygonOffsetClamp(getContext()));
 		addChild(new glcts::SeparableProgramsTransformFeedbackTests(getContext()));
 		addChild(new gl4cts::SpirvExtensionsTests(getContext()));
