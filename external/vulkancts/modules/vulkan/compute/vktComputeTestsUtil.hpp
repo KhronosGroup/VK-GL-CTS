@@ -87,7 +87,8 @@ vk::Move<vk::VkPipelineLayout>	makePipelineLayout				(const vk::DeviceInterface&
 
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout				(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device,
-																 const vk::VkDescriptorSetLayout	descriptorSetLayout);
+																 const vk::VkDescriptorSetLayout	descriptorSetLayout,
+																 const bool							useDeviceGroups = false);
 
 vk::Move<vk::VkPipeline>		makeComputePipeline				(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device,
@@ -141,7 +142,9 @@ void							endCommandBuffer				(const vk::DeviceInterface&			vk,
 void							submitCommandsAndWait			(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device,
 																 const vk::VkQueue					queue,
-																 const vk::VkCommandBuffer			cmdBuffer);
+																 const vk::VkCommandBuffer			cmdBuffer,
+																 const bool							useDeviceGroups = false,
+																 const deUint32						deviceMask = 1);
 
 inline vk::VkExtent3D makeExtent3D (const tcu::IVec3& vec)
 {

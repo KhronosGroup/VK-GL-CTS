@@ -40,6 +40,7 @@ void createChildren (tcu::TestCaseGroup* computeTests)
 	tcu::TestContext&	testCtx		= computeTests->getTestContext();
 
 	computeTests->addChild(createBasicComputeShaderTests(testCtx));
+	computeTests->addChild(createBasicDeviceGroupComputeShaderTests(testCtx));
 	computeTests->addChild(createIndirectComputeDispatchTests(testCtx));
 	computeTests->addChild(createComputeShaderBuiltinVarTests(testCtx));
 }

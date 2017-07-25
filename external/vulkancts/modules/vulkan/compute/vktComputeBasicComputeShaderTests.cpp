@@ -37,6 +37,9 @@
 #include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkDeviceUtil.hpp"
+
+#include "tcuCommandLine.hpp"
 
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
@@ -2351,6 +2354,615 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Compute succeeded");
 }
 
+vk::Move<VkInstance> createInstanceWithExtensions(const vk::PlatformInterface& vkp, const std::vector<std::string> enableExtensions)
+{
+	std::vector<std::string>					enableExtensionPtrs	 (enableExtensions.size());
+	const std::vector<VkExtensionProperties>	availableExtensions	 = enumerateInstanceExtensionProperties(vkp, DE_NULL);
+	for (size_t extensionID = 0; extensionID < enableExtensions.size(); extensionID++)
+	{
+		if (!isExtensionSupported(availableExtensions, RequiredExtension(enableExtensions[extensionID])))
+			TCU_THROW(NotSupportedError, (enableExtensions[extensionID] + " is not supported").c_str());
+		enableExtensionPtrs[extensionID] = enableExtensions[extensionID];
+	}
+	return createDefaultInstance(vkp, std::vector<std::string>() /* layers */, enableExtensionPtrs);
+}
+
+class ComputeTestInstance : public vkt::TestInstance
+{
+public:
+		ComputeTestInstance		(Context& context)
+		: TestInstance			(context)
+		, m_numPhysDevices		(1)
+		, m_queueFamilyIndex	(0)
+	{
+		createDeviceGroup();
+	}
+
+	void							createDeviceGroup	(void);
+	const vk::DeviceInterface&		getDeviceInterface	(void)			{ return *m_deviceDriver; }
+	vk::VkInstance					getInstance			(void)			{ return *m_deviceGroupInstance; }
+	vk::VkDevice					getDevice			(void)			{ return *m_logicalDevice; }
+	vk::VkPhysicalDevice			getPhysicalDevice	(deUint32 i = 0){ return m_physicalDevices[i]; }
+
+protected:
+	deUint32						m_numPhysDevices;
+	deUint32						m_queueFamilyIndex;
+
+private:
+	vk::Move<vk::VkInstance>			m_deviceGroupInstance;
+	vk::Move<vk::VkDevice>				m_logicalDevice;
+	std::vector<vk::VkPhysicalDevice>	m_physicalDevices;
+	de::MovePtr<vk::DeviceDriver>		m_deviceDriver;
+};
+
+void ComputeTestInstance::createDeviceGroup (void)
+{
+	const tcu::CommandLine&							cmdLine					= m_context.getTestContext().getCommandLine();
+	const deUint32									devGroupIdx				= cmdLine.getVKDeviceGroupId() - 1;
+	const deUint32									physDeviceIdx			= cmdLine.getVKDeviceId() - 1;
+	const float										queuePriority			= 1.0f;
+	const std::vector<std::string>					requiredExtensions		(1, "VK_KHR_device_group_creation");
+	m_deviceGroupInstance													= createInstanceWithExtensions(m_context.getPlatformInterface(), requiredExtensions);
+	std::vector<VkPhysicalDeviceGroupPropertiesKHR>	devGroupProperties		= enumeratePhysicalDeviceGroupsKHR(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
+	m_numPhysDevices														= devGroupProperties[devGroupIdx].physicalDeviceCount;
+	std::vector<const char*>						deviceExtensions;
+	deviceExtensions.push_back("VK_KHR_device_group");
+	deviceExtensions.push_back("VK_KHR_swapchain");
+
+	VkDeviceGroupDeviceCreateInfoKHR				deviceGroupInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,								//stype
+		DE_NULL,																			//pNext
+		devGroupProperties[devGroupIdx].physicalDeviceCount,								//physicalDeviceCount
+		devGroupProperties[devGroupIdx].physicalDevices										//physicalDevices
+	};
+	InstanceDriver									instance				(m_context.getPlatformInterface(), m_deviceGroupInstance.get());
+	const VkPhysicalDeviceFeatures					deviceFeatures	=		getPhysicalDeviceFeatures(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
+	const std::vector<VkQueueFamilyProperties>		queueProps		=		getPhysicalDeviceQueueFamilyProperties(instance, devGroupProperties[devGroupIdx].physicalDevices[physDeviceIdx]);
+
+	m_physicalDevices.resize(m_numPhysDevices);
+	for (deUint32 physDevIdx = 0; physDevIdx < m_numPhysDevices; physDevIdx++)
+		m_physicalDevices[physDevIdx] = devGroupProperties[devGroupIdx].physicalDevices[physDevIdx];
+
+	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
+	{
+		if (queueProps[queueNdx].queueFlags & VK_QUEUE_COMPUTE_BIT)
+			m_queueFamilyIndex = (deUint32)queueNdx;
+	}
+
+	VkDeviceQueueCreateInfo							queueInfo		=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,		// VkStructureType					sType;
+		DE_NULL,										// const void*						pNext;
+		(VkDeviceQueueCreateFlags)0u,					// VkDeviceQueueCreateFlags			flags;
+		m_queueFamilyIndex,								// deUint32							queueFamilyIndex;
+		1u,												// deUint32							queueCount;
+		&queuePriority									// const float*						pQueuePriorities;
+	};
+
+	const VkDeviceCreateInfo						deviceInfo		=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			// VkStructureType					sType;
+		&deviceGroupInfo,								// const void*						pNext;
+		(VkDeviceCreateFlags)0,							// VkDeviceCreateFlags				flags;
+		1u	,											// uint32_t							queueCreateInfoCount;
+		&queueInfo,										// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,												// uint32_t							enabledLayerCount;
+		DE_NULL,										// const char* const*				ppEnabledLayerNames;
+		deUint32(deviceExtensions.size()),				// uint32_t							enabledExtensionCount;
+		&deviceExtensions[0],							// const char* const*				ppEnabledExtensionNames;
+		&deviceFeatures,								// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+	};
+	m_logicalDevice		= createDevice(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
+	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(instance, *m_logicalDevice));
+}
+
+class DispatchBaseTest : public vkt::TestCase
+{
+public:
+						DispatchBaseTest	(tcu::TestContext&	testCtx,
+											const std::string&	name,
+											const std::string&	description,
+											const deUint32		numValues,
+											const tcu::IVec3&	localsize,
+											const tcu::IVec3&	worksize,
+											const tcu::IVec3&	splitsize);
+
+	void				initPrograms		(SourceCollections& sourceCollections) const;
+	TestInstance*		createInstance		(Context&			context) const;
+
+private:
+	const deUint32					m_numValues;
+	const tcu::IVec3				m_localSize;
+	const tcu::IVec3				m_workSize;
+	const tcu::IVec3				m_splitSize;
+};
+
+class DispatchBaseTestInstance : public ComputeTestInstance
+{
+public:
+									DispatchBaseTestInstance	(Context&			context,
+																const deUint32		numValues,
+																const tcu::IVec3&	localsize,
+																const tcu::IVec3&	worksize,
+																const tcu::IVec3&	splitsize);
+
+	tcu::TestStatus					iterate						(void);
+
+private:
+	const deUint32					m_numValues;
+	const tcu::IVec3				m_localSize;
+	const tcu::IVec3				m_workSize;
+	const tcu::IVec3				m_splitWorkSize;
+};
+
+DispatchBaseTest::DispatchBaseTest (tcu::TestContext&	testCtx,
+									const std::string&	name,
+									const std::string&	description,
+									const deUint32		numValues,
+									const tcu::IVec3&	localsize,
+									const tcu::IVec3&	worksize,
+									const tcu::IVec3&	splitsize)
+	: TestCase		(testCtx, name, description)
+	, m_numValues	(numValues)
+	, m_localSize	(localsize)
+	, m_workSize	(worksize)
+	, m_splitSize	(splitsize)
+{
+}
+
+void DispatchBaseTest::initPrograms (SourceCollections& sourceCollections) const
+{
+	std::ostringstream src;
+	src << "#version 310 es\n"
+		<< "layout (local_size_x = " << m_localSize.x() << ", local_size_y = " << m_localSize.y() << ", local_size_z = " << m_localSize.z() << ") in;\n"
+
+		<< "layout(binding = 0) buffer InOut {\n"
+		<< "    uint values[" << de::toString(m_numValues) << "];\n"
+		<< "} sb_inout;\n"
+
+		<< "layout(binding = 1) readonly uniform uniformInput {\n"
+		<< "    uvec3 gridSize;\n"
+		<< "} ubo_in;\n"
+
+		<< "void main (void) {\n"
+		<< "    uvec3 size = ubo_in.gridSize * gl_WorkGroupSize;\n"
+		<< "    uint numValuesPerInv = uint(sb_inout.values.length()) / (size.x*size.y*size.z);\n"
+		<< "    uint index = size.x*size.y*gl_GlobalInvocationID.z + size.x*gl_GlobalInvocationID.y + gl_GlobalInvocationID.x;\n"
+		<< "    uint offset = numValuesPerInv*index;\n"
+		<< "    for (uint ndx = 0u; ndx < numValuesPerInv; ndx++)\n"
+		<< "        sb_inout.values[offset + ndx] = ~sb_inout.values[offset + ndx];\n"
+		<< "}\n";
+
+	sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
+}
+
+TestInstance* DispatchBaseTest::createInstance (Context& context) const
+{
+	return new DispatchBaseTestInstance(context, m_numValues, m_localSize, m_workSize, m_splitSize);
+}
+
+DispatchBaseTestInstance::DispatchBaseTestInstance (Context& context,
+													const deUint32		numValues,
+													const tcu::IVec3&	localsize,
+													const tcu::IVec3&	worksize,
+													const tcu::IVec3&	splitsize)
+
+	: ComputeTestInstance	(context)
+	, m_numValues			(numValues)
+	, m_localSize			(localsize)
+	, m_workSize			(worksize)
+	, m_splitWorkSize		(splitsize)
+{
+	if (m_splitWorkSize.x() > m_workSize.x() ||
+		m_splitWorkSize.y() > m_workSize.y() ||
+		m_splitWorkSize.z() > m_workSize.z() ||
+		(multiplyComponents(m_splitWorkSize) >= multiplyComponents(m_workSize)))
+		TCU_THROW(TestError, "Split work group size too big.");
+}
+
+tcu::TestStatus DispatchBaseTestInstance::iterate (void)
+{
+	const DeviceInterface&	vk					= getDeviceInterface();
+	const VkDevice			device				= getDevice();
+	const VkQueue			queue				= getDeviceQueue(vk, device, m_queueFamilyIndex, 0);
+	SimpleAllocator			allocator			(vk, device, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), getPhysicalDevice()));
+	deUint32				totalWorkloadSize	= 0;
+
+	// Create an uniform and input/output buffer
+	const deUint32 uniformBufSize = 3; // Pass the compute grid size
+	const VkDeviceSize uniformBufferSizeBytes = sizeof(deUint32) * uniformBufSize;
+	const Buffer uniformBuffer(vk, device, allocator, makeBufferCreateInfo(uniformBufferSizeBytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT), MemoryRequirement::HostVisible);
+
+	const VkDeviceSize bufferSizeBytes = sizeof(deUint32) * m_numValues;
+	const Buffer buffer(vk, device, allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+
+	// Fill the buffers with data
+	typedef std::vector<deUint32> data_vector_t;
+	data_vector_t uniformInputData(uniformBufSize);
+	data_vector_t inputData(m_numValues);
+
+	{
+		const Allocation& bufferAllocation = uniformBuffer.getAllocation();
+		deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
+		uniformInputData[0] = *bufferPtr++ = m_workSize.x();
+		uniformInputData[1] = *bufferPtr++ = m_workSize.y();
+		uniformInputData[2] = *bufferPtr++ = m_workSize.z();
+		flushMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), uniformBufferSizeBytes);
+	}
+
+	{
+		de::Random rnd(0x82ce7f);
+		const Allocation& bufferAllocation = buffer.getAllocation();
+		deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
+		for (deUint32 i = 0; i < m_numValues; ++i)
+			inputData[i] = *bufferPtr++ = rnd.getUint32();
+
+		flushMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
+	}
+
+	// Create descriptor set
+	const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+		DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.build(vk, device));
+
+	const Unique<VkDescriptorPool> descriptorPool(
+		DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+	const VkDescriptorBufferInfo bufferDescriptorInfo = makeDescriptorBufferInfo(*buffer, 0ull, bufferSizeBytes);
+	const VkDescriptorBufferInfo uniformBufferDescriptorInfo = makeDescriptorBufferInfo(*uniformBuffer, 0ull, uniformBufferSizeBytes);
+
+	DescriptorSetUpdateBuilder()
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptorInfo)
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uniformBufferDescriptorInfo)
+		.update(vk, device);
+
+	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
+	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout, true));
+	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+
+	const VkBufferMemoryBarrier hostWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer, 0ull, bufferSizeBytes);
+	const VkBufferMemoryBarrier hostUniformWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_UNIFORM_READ_BIT, *uniformBuffer, 0ull, uniformBufferSizeBytes);
+
+	const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
+
+	const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, m_queueFamilyIndex));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	// Start recording commands
+	beginCommandBuffer(vk, *cmdBuffer);
+
+	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &hostUniformWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &hostWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+
+	// Split the workload across all physical devices based on m_splitWorkSize
+	for (deUint32 physDevIdx = 0; physDevIdx < m_numPhysDevices; physDevIdx++)
+	{
+		deUint32 baseGroupX = m_splitWorkSize.x() == m_workSize.x() ? 0 : physDevIdx * m_splitWorkSize.x();
+		deUint32 baseGroupY = m_splitWorkSize.y() == m_workSize.y() ? 0 : physDevIdx * m_splitWorkSize.y();
+		deUint32 baseGroupZ = m_splitWorkSize.z() == m_workSize.z() ? 0 : physDevIdx * m_splitWorkSize.z();
+
+		deUint32 groupCountX = ((physDevIdx == (m_numPhysDevices - 1)) && (m_splitWorkSize.x() != m_workSize.x())) ? m_workSize.x() - baseGroupX : m_splitWorkSize.x();
+		deUint32 groupCountY = ((physDevIdx == (m_numPhysDevices - 1)) && (m_splitWorkSize.y() != m_workSize.y())) ? m_workSize.y() - baseGroupY : m_splitWorkSize.y();
+		deUint32 groupCountZ = ((physDevIdx == (m_numPhysDevices - 1)) && (m_splitWorkSize.z() != m_workSize.z())) ? m_workSize.z() - baseGroupZ : m_splitWorkSize.z();
+
+		totalWorkloadSize += (groupCountX * groupCountY * groupCountZ);
+		vk.cmdDispatchBaseKHR(*cmdBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
+	}
+
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	if (totalWorkloadSize != deUint32(multiplyComponents(m_workSize)))
+		TCU_THROW(TestError, "Not covering the entire workload.");
+
+	// Validate the results
+	const Allocation& bufferAllocation = buffer.getAllocation();
+	invalidateMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
+	const deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
+
+	for (deUint32 ndx = 0; ndx < m_numValues; ++ndx)
+	{
+		const deUint32 res = bufferPtr[ndx];
+		const deUint32 ref = ~inputData[ndx];
+
+		if (res != ref)
+		{
+			std::ostringstream msg;
+			msg << "Comparison failed for InOut.values[" << ndx << "]";
+			return tcu::TestStatus::fail(msg.str());
+		}
+	}
+	return tcu::TestStatus::pass("Compute succeeded");
+}
+
+class DeviceIndexTest : public vkt::TestCase
+{
+public:
+	DeviceIndexTest		(tcu::TestContext&	testCtx,
+											const std::string&	name,
+											const std::string&	description,
+											const deUint32		numValues,
+											const tcu::IVec3&	localsize,
+											const tcu::IVec3&	splitsize);
+
+	void				initPrograms		(SourceCollections& sourceCollections) const;
+	TestInstance*		createInstance		(Context&			context) const;
+
+private:
+	const deUint32					m_numValues;
+	const tcu::IVec3				m_localSize;
+	const tcu::IVec3				m_workSize;
+	const tcu::IVec3				m_splitSize;
+};
+
+class DeviceIndexTestInstance : public ComputeTestInstance
+{
+public:
+									DeviceIndexTestInstance	(Context&			context,
+																const deUint32		numValues,
+																const tcu::IVec3&	localsize,
+																const tcu::IVec3&	worksize);
+	tcu::TestStatus					iterate						(void);
+private:
+	const deUint32					m_numValues;
+	const tcu::IVec3				m_localSize;
+	tcu::IVec3						m_workSize;
+};
+
+DeviceIndexTest::DeviceIndexTest (tcu::TestContext&	testCtx,
+									const std::string&	name,
+									const std::string&	description,
+									const deUint32		numValues,
+									const tcu::IVec3&	localsize,
+									const tcu::IVec3&	worksize)
+	: TestCase		(testCtx, name, description)
+	, m_numValues	(numValues)
+	, m_localSize	(localsize)
+	, m_workSize	(worksize)
+{
+}
+
+void DeviceIndexTest::initPrograms (SourceCollections& sourceCollections) const
+{
+	std::ostringstream src;
+	src << "#version 310 es\n"
+		<< "#extension GL_EXT_device_group : require\n"
+		<< "layout (local_size_x = " << m_localSize.x() << ", local_size_y = " << m_localSize.y() << ", local_size_z = " << m_localSize.z() << ") in;\n"
+
+		<< "layout(binding = 0) buffer InOut {\n"
+		<< "    uint values[" << de::toString(m_numValues) << "];\n"
+		<< "} sb_inout;\n"
+
+		<< "layout(binding = 1) readonly uniform uniformInput {\n"
+		<< "    uint baseOffset[1+" << VK_MAX_DEVICE_GROUP_SIZE_KHR << "];\n"
+		<< "} ubo_in;\n"
+
+		<< "void main (void) {\n"
+		<< "    uvec3 size = gl_NumWorkGroups * gl_WorkGroupSize;\n"
+		<< "    uint numValuesPerInv = uint(sb_inout.values.length()) / (size.x*size.y*size.z);\n"
+		<< "    uint index = size.x*size.y*gl_GlobalInvocationID.z + size.x*gl_GlobalInvocationID.y + gl_GlobalInvocationID.x;\n"
+		<< "    uint offset = numValuesPerInv*index;\n"
+		<< "    for (uint ndx = 0u; ndx < numValuesPerInv; ndx++)\n"
+		<< "        sb_inout.values[offset + ndx] = ubo_in.baseOffset[0] + ubo_in.baseOffset[gl_DeviceIndex + 1];\n"
+		<< "}\n";
+
+	sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
+}
+
+TestInstance* DeviceIndexTest::createInstance (Context& context) const
+{
+	return new DeviceIndexTestInstance(context, m_numValues, m_localSize, m_workSize);
+}
+
+DeviceIndexTestInstance::DeviceIndexTestInstance (Context& context,
+													const deUint32		numValues,
+													const tcu::IVec3&	localsize,
+													const tcu::IVec3&	worksize)
+
+	: ComputeTestInstance	(context)
+	, m_numValues			(numValues)
+	, m_localSize			(localsize)
+	, m_workSize			(worksize)
+{}
+
+tcu::TestStatus DeviceIndexTestInstance::iterate (void)
+{
+	const DeviceInterface&			vk					= getDeviceInterface();
+	const VkDevice					device				= getDevice();
+	const VkQueue					queue				= getDeviceQueue(vk, device, m_queueFamilyIndex, 0);
+	SimpleAllocator					allocator			(vk, device, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), getPhysicalDevice()));
+	const deUint32					allocDeviceMask		= (1 << m_numPhysDevices) - 1;
+	de::Random						rnd					(0x82ce7f);
+	Move<VkBuffer>					sboBuffer;
+	vk::Move<vk::VkDeviceMemory>	sboBufferMemory;
+
+	// Create an uniform and output buffer
+	const deUint32 uniformBufSize = 4 * (1 + VK_MAX_DEVICE_GROUP_SIZE_KHR);
+	const VkDeviceSize uniformBufferSizeBytes = sizeof(deUint32) * uniformBufSize;
+	const Buffer uniformBuffer(vk, device, allocator, makeBufferCreateInfo(uniformBufferSizeBytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT), MemoryRequirement::HostVisible);
+
+	const VkDeviceSize bufferSizeBytes = sizeof(deUint32) * m_numValues;
+	const Buffer checkBuffer(vk, device, allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
+
+	// create SBO buffer
+	{
+		const VkBufferCreateInfo	sboBufferParams =
+		{
+			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,									// sType
+			DE_NULL,																// pNext
+			0u,																		// flags
+			(VkDeviceSize)bufferSizeBytes,											// size
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,	// usage
+			VK_SHARING_MODE_EXCLUSIVE,												// sharingMode
+			1u,																		// queueFamilyIndexCount
+			&m_queueFamilyIndex,														// pQueueFamilyIndices
+		};
+		sboBuffer = createBuffer(vk, device, &sboBufferParams);
+
+		VkMemoryRequirements memReqs = getBufferMemoryRequirements(vk, device, sboBuffer.get());
+		deUint32 memoryTypeNdx = 0;
+		const VkPhysicalDeviceMemoryProperties deviceMemProps = getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), getPhysicalDevice());
+		for ( memoryTypeNdx = 0; memoryTypeNdx < deviceMemProps.memoryTypeCount; memoryTypeNdx++)
+		{
+			if ((memReqs.memoryTypeBits & (1u << memoryTypeNdx)) != 0 &&
+				(deviceMemProps.memoryTypes[memoryTypeNdx].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+				break;
+		}
+		if (memoryTypeNdx == deviceMemProps.memoryTypeCount)
+			TCU_THROW(NotSupportedError, "No compatible memory type found");
+
+		const VkMemoryAllocateFlagsInfoKHR allocDeviceMaskInfo =
+		{
+			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR,	// sType
+			DE_NULL,											// pNext
+			VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT_KHR,				// flags
+			allocDeviceMask,									// deviceMask
+		};
+
+		VkMemoryAllocateInfo		allocInfo =
+		{
+			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,			// sType
+			&allocDeviceMaskInfo,							// pNext
+			memReqs.size,									// allocationSize
+			memoryTypeNdx,									// memoryTypeIndex
+		};
+
+		sboBufferMemory = allocateMemory(vk, device, &allocInfo);
+		VK_CHECK(vk.bindBufferMemory(device, *sboBuffer, sboBufferMemory.get(), 0));
+	}
+
+	// Fill the buffers with data
+	typedef std::vector<deUint32> data_vector_t;
+	data_vector_t uniformInputData(uniformBufSize, 0);
+
+	{
+		const Allocation& bufferAllocation = uniformBuffer.getAllocation();
+		deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
+		for (deUint32 i = 0; i < uniformBufSize; ++i)
+			uniformInputData[i] = *bufferPtr++ = rnd.getUint32() / 10; // divide to prevent overflow in addition
+
+		flushMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), uniformBufferSizeBytes);
+	}
+
+	// Create descriptor set
+	const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+		DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.build(vk, device));
+
+	const Unique<VkDescriptorPool> descriptorPool(
+		DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+	const VkDescriptorBufferInfo bufferDescriptorInfo = makeDescriptorBufferInfo(*sboBuffer, 0ull, bufferSizeBytes);
+	const VkDescriptorBufferInfo uniformBufferDescriptorInfo = makeDescriptorBufferInfo(*uniformBuffer, 0ull, uniformBufferSizeBytes);
+
+	DescriptorSetUpdateBuilder()
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptorInfo)
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uniformBufferDescriptorInfo)
+		.update(vk, device);
+
+	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
+	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout, true));
+	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+
+	const VkBufferMemoryBarrier hostUniformWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_UNIFORM_READ_BIT, *uniformBuffer, 0ull, uniformBufferSizeBytes);
+	const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT , *sboBuffer, 0ull, bufferSizeBytes);
+
+	const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, m_queueFamilyIndex));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	// Verify multiple device masks
+	for (deUint32 physDevMask = 1; physDevMask < (1u << m_numPhysDevices); physDevMask++)
+	{
+		deUint32 constantValPerLoop = 0;
+		{
+			const Allocation& bufferAllocation = uniformBuffer.getAllocation();
+			deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
+			constantValPerLoop = *bufferPtr = rnd.getUint32() / 10;  // divide to prevent overflow in addition
+			flushMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), sizeof(constantValPerLoop));
+		}
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &hostUniformWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+
+		vk.cmdSetDeviceMaskKHR(*cmdBuffer, physDevMask);
+		vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
+
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+
+		endCommandBuffer(vk, *cmdBuffer);
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer, true, physDevMask);
+
+		// Validate the results on all physical devices where compute shader was launched
+		const VkBufferMemoryBarrier srcBufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT , *sboBuffer, 0ull, bufferSizeBytes);
+		const VkBufferMemoryBarrier dstBufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *checkBuffer, 0ull, bufferSizeBytes);
+		const VkBufferCopy	copyParams =
+		{
+			(VkDeviceSize)0u,						// srcOffset
+			(VkDeviceSize)0u,						// dstOffset
+			bufferSizeBytes							// size
+		};
+
+		for (deUint32 physDevIdx = 0; physDevIdx < m_numPhysDevices; physDevIdx++)
+		{
+			if (!(1<<physDevIdx & physDevMask))
+				continue;
+
+			const deUint32 deviceMask = 1 << physDevIdx;
+
+			beginCommandBuffer(vk, *cmdBuffer);
+			vk.cmdSetDeviceMaskKHR(*cmdBuffer, deviceMask);
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT , VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &srcBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+			vk.cmdCopyBuffer(*cmdBuffer, *sboBuffer, *checkBuffer, 1, &copyParams);
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+
+			endCommandBuffer(vk, *cmdBuffer);
+			submitCommandsAndWait(vk, device, queue, *cmdBuffer, true, deviceMask);
+
+			const Allocation& bufferAllocation = checkBuffer.getAllocation();
+			invalidateMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
+			const deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
+
+			for (deUint32 ndx = 0; ndx < m_numValues; ++ndx)
+			{
+				const deUint32 res = bufferPtr[ndx];
+				const deUint32 ref = constantValPerLoop + uniformInputData[4 * (physDevIdx + 1)];
+
+				if (res != ref)
+				{
+					std::ostringstream msg;
+					msg << "Comparison failed on physical device "<< getPhysicalDevice(physDevIdx) <<" ( deviceMask "<< deviceMask <<" ) for InOut.values[" << ndx << "]";
+					return tcu::TestStatus::fail(msg.str());
+				}
+			}
+		}
+	}
+
+	return tcu::TestStatus::pass("Compute succeeded");
+}
+
 namespace EmptyShaderTest
 {
 
@@ -2454,5 +3066,15 @@ tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx)
 	return basicComputeTests.release();
 }
 
+tcu::TestCaseGroup* createBasicDeviceGroupComputeShaderTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> deviceGroupComputeTests(new tcu::TestCaseGroup(testCtx, "device_group", "Basic device group compute tests"));
+
+	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx,	"dispatch_base",	"Compute shader with base groups", 4096,	tcu::IVec3(4,1,2),	tcu::IVec3(32,4,2), tcu::IVec3(4,4,2)));
+	deviceGroupComputeTests->addChild(new DeviceIndexTest(testCtx,	"device_index",		"Compute shader using deviceIndex in SPIRV", 96,	tcu::IVec3(3,2,1),	tcu::IVec3(2,4,1)));
+
+	return deviceGroupComputeTests.release();
+
+}
 } // compute
 } // vkt
