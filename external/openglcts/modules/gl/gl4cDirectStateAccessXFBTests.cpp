@@ -588,7 +588,7 @@ tcu::TestNode::IterateResult BuffersTest::iterate()
 			is_ok &= testStart(1, 0, "glTransformFeedbackBufferRange");
 			is_ok &= testStart(2, s_bo_size / 2, "glTransformFeedbackBufferRange");
 
-			is_ok &= testSize(0, s_bo_size, "glTransformFeedbackBufferBase");
+			is_ok &= testSize(0, 0, "glTransformFeedbackBufferBase");
 			is_ok &= testSize(1, s_bo_size / 2, "glTransformFeedbackBufferRange");
 			is_ok &= testSize(2, s_bo_size / 2, "glTransformFeedbackBufferRange");
 		}
