@@ -82,7 +82,8 @@ public:
 	virtual tcu::TestStatus				createTestBuffer				(VkDeviceSize				size,
 																		 VkBufferUsageFlags			usage,
 																		 Context&					context,
-																		 Move<VkBuffer>&			testBuffer) const = 0;
+																		 Move<VkBuffer>&			testBuffer,
+																		 Move<VkDeviceMemory>&		memory) const = 0;
 };
 
 class BufferSuballocation : public IBufferAllocator
@@ -91,7 +92,8 @@ public:
 	virtual tcu::TestStatus				createTestBuffer				(VkDeviceSize				size,
 																		 VkBufferUsageFlags			usage,
 																		 Context&					context,
-																		 Move<VkBuffer>&			testBuffer) const;
+																		 Move<VkBuffer>&			testBuffer,
+																		 Move<VkDeviceMemory>&		memory) const;
 };
 
 class BufferDedicatedAllocation	: public IBufferAllocator
@@ -100,7 +102,8 @@ public:
 	virtual tcu::TestStatus				createTestBuffer				(VkDeviceSize				size,
 																		 VkBufferUsageFlags			usage,
 																		 Context&					context,
-																		 Move<VkBuffer>&			testBuffer) const;
+																		 Move<VkBuffer>&			testBuffer,
+																		 Move<VkDeviceMemory>&		memory) const;
 };
 
 class BufferViewTestCase : public TestCase
@@ -126,7 +129,8 @@ private:
 tcu::TestStatus BufferSuballocation::createTestBuffer					(VkDeviceSize				size,
 																		 VkBufferUsageFlags			usage,
 																		 Context&					context,
-																		 Move<VkBuffer>&			testBuffer) const
+																		 Move<VkBuffer>&			testBuffer,
+																		 Move<VkDeviceMemory>&		memory) const
 {
 	const VkDevice						vkDevice						= context.getDevice();
 	const DeviceInterface&				vk								= context.getDeviceInterface();
@@ -162,7 +166,6 @@ tcu::TestStatus BufferSuballocation::createTestBuffer					(VkDeviceSize				size,
 		return tcu::TestStatus::fail(errorMsg.str());
 	}
 
-	Move<VkDeviceMemory>				memory;
 	const VkMemoryAllocateInfo			memAlloc						=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,							//	VkStructureType			sType
@@ -189,7 +192,8 @@ tcu::TestStatus BufferSuballocation::createTestBuffer					(VkDeviceSize				size,
 tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				size,
 																		 VkBufferUsageFlags			usage,
 																		 Context&					context,
-																		 Move<VkBuffer>&			testBuffer) const
+																		 Move<VkBuffer>&			testBuffer,
+																		 Move<VkDeviceMemory>&		memory) const
 {
 	const std::vector<std::string>&		extensions						= context.getDeviceExtensions();
 	const deBool						isSupported						= std::find(extensions.begin(), extensions.end(), "VK_KHR_dedicated_allocation") != extensions.end();
@@ -267,7 +271,6 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 	//const VkMemoryType					memoryType						= memoryProperties.memoryTypes[heapTypeIndex];
 	//const VkMemoryHeap					memoryHeap						= memoryProperties.memoryHeaps[memoryType.heapIndex];
 
-	Move<VkDeviceMemory>				memory;
 	vk.getBufferMemoryRequirements2KHR(vkDevice, &info, &memReqs); // get the proper size requirement
 
 	if (size > memReqs.memoryRequirements.size)
@@ -319,6 +322,7 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
 	const DeviceInterface&				vk								= m_context.getDeviceInterface();
 	const VkDeviceSize					size							= 3 * 5 * 7 * 64;
 	Move<VkBuffer>						testBuffer;
+	Move<VkDeviceMemory>				testBufferMemory;
 	VkFormatProperties					properties;
 
 	m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), m_testCase.format, &properties);
@@ -328,11 +332,11 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
 	// Create buffer
 	if (m_testCase.bufferAllocationKind == ALLOCATION_KIND_DEDICATED)
 	{
-		BufferDedicatedAllocation().createTestBuffer(size, m_testCase.usage, m_context, testBuffer);
+		BufferDedicatedAllocation().createTestBuffer(size, m_testCase.usage, m_context, testBuffer, testBufferMemory);
 	}
 	else
 	{
-		BufferSuballocation().createTestBuffer(size, m_testCase.usage, m_context, testBuffer);
+		BufferSuballocation().createTestBuffer(size, m_testCase.usage, m_context, testBuffer, testBufferMemory);
 	}
 
 	{
