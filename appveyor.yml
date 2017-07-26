@@ -1,0 +1,19 @@
+version: '{build}'
+
+clone_depth: 100
+
+os: Visual Studio 2013
+
+environment:
+  matrix:
+    - RECIPE: vs-64-debug
+    - RECIPE: android-mustpass
+    - RECIPE: vulkan-mustpass
+    - RECIPE: gen-inl-files
+
+install:
+  # We need lmxl installed to build gen-inl-files
+  - python -m pip install lxml
+
+build_script:
+  - python ./scripts/check_build_sanity.py -r %RECIPE%
