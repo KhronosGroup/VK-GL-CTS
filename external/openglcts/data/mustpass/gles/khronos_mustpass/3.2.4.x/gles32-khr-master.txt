@@ -225,6 +225,10 @@ KHR-GLES32.core.tessellation_shader.tessellation_invariance.invariance_rule4
 KHR-GLES32.core.tessellation_shader.tessellation_invariance.invariance_rule5
 KHR-GLES32.core.tessellation_shader.tessellation_invariance.invariance_rule6
 KHR-GLES32.core.tessellation_shader.tessellation_invariance.invariance_rule7
+KHR-GLES32.core.tessellation_shader.winding.triangles_ccw
+KHR-GLES32.core.tessellation_shader.winding.triangles_cw
+KHR-GLES32.core.tessellation_shader.winding.quads_ccw
+KHR-GLES32.core.tessellation_shader.winding.quads_cw
 KHR-GLES32.core.texture_cube_map_array.sampling
 KHR-GLES32.core.texture_cube_map_array.color_depth_attachments
 KHR-GLES32.core.texture_cube_map_array.stencil_attachments_mutable_nonlayered

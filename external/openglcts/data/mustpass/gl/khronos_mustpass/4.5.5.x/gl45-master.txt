@@ -5913,6 +5913,10 @@ KHR-GL45.tessellation_shader.tessellation_invariance.invariance_rule4
 KHR-GL45.tessellation_shader.tessellation_invariance.invariance_rule5
 KHR-GL45.tessellation_shader.tessellation_invariance.invariance_rule6
 KHR-GL45.tessellation_shader.tessellation_invariance.invariance_rule7
+KHR-GL45.tessellation_shader.winding.triangles_ccw
+KHR-GL45.tessellation_shader.winding.triangles_cw
+KHR-GL45.tessellation_shader.winding.quads_ccw
+KHR-GL45.tessellation_shader.winding.quads_cw
 KHR-GL45.texture_cube_map_array.sampling
 KHR-GL45.texture_cube_map_array.color_depth_attachments
 KHR-GL45.texture_cube_map_array.stencil_attachments_mutable_nonlayered

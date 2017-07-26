@@ -37,6 +37,7 @@
 #include "esextcTessellationShaderTriangles.hpp"
 #include "esextcTessellationShaderVertexOrdering.hpp"
 #include "esextcTessellationShaderVertexSpacing.hpp"
+#include "esextcTessellationShaderWinding.hpp"
 #include "esextcTessellationShaderXFB.hpp"
 
 namespace glcts
@@ -85,6 +86,7 @@ void TessellationShaderTests::init(void)
 	addChild(new TessellationShaderBarrierTests(m_context, m_extParams));
 	addChild(new TessellationShaderErrors(m_context, m_extParams));
 	addChild(new TessellationShaderInvarianceTests(m_context, m_extParams));
+	addChild(new TesselationShaderWindingTests(m_context, m_extParams));
 }
 
 } // namespace glcts

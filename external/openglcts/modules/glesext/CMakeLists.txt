@@ -121,6 +121,8 @@ set(GLCTS_ESEXT_SRCS
     tessellation_shader/esextcTessellationShaderTriangles.hpp
     tessellation_shader/esextcTessellationShaderUtils.cpp
     tessellation_shader/esextcTessellationShaderUtils.hpp
+    tessellation_shader/esextcTessellationShaderWinding.cpp
+    tessellation_shader/esextcTessellationShaderWinding.hpp
     tessellation_shader/esextcTessellationShaderVertexOrdering.cpp
     tessellation_shader/esextcTessellationShaderVertexOrdering.hpp
     tessellation_shader/esextcTessellationShaderVertexSpacing.cpp
