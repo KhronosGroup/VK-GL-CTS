@@ -120,6 +120,8 @@ public:
 		{
 			m_error = error;
 		}
+
+		m_egl.releaseThread();
 	}
 
 private:
