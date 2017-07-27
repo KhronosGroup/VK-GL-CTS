@@ -39,16 +39,17 @@ using namespace vk;
 
 tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 {
-	const InstanceInterface&	instance			= m_context.getInstanceInterface();
-	const DeviceInterface&		deviceInterface		= m_context.getDeviceInterface();
-	const VkDevice				device				= m_context.getDevice();
-	const VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
-	Allocator&					allocator			= m_context.getDefaultAllocator();
-	const VkQueue				queue				= m_context.getUniversalQueue();
-	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const InstanceInterface&		instance			= m_context.getInstanceInterface();
+	const DeviceInterface&			deviceInterface		= m_context.getDeviceInterface();
+	const VkDevice					device				= m_context.getDevice();
+	const VkPhysicalDevice			physicalDevice		= m_context.getPhysicalDevice();
+	const VkPhysicalDeviceFeatures&	features			= m_context.getDeviceFeatures();
+	Allocator&						allocator			= m_context.getDefaultAllocator();
+	const VkQueue					queue				= m_context.getUniversalQueue();
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
-	VkImageCreateInfo			imageMSInfo;
-	VkImageCreateInfo			imageRSInfo;
+	VkImageCreateInfo				imageMSInfo;
+	VkImageCreateInfo				imageRSInfo;
 
 	// Check if image size does not exceed device limits
 	validateImageSize(instance, physicalDevice, m_imageType, m_imageMSParams.imageSize);
@@ -282,7 +283,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 		DE_NULL,														// const void*								pNext;
 		(VkPipelineMultisampleStateCreateFlags)0u,						// VkPipelineMultisampleStateCreateFlags	flags;
 		imageMSInfo.samples,											// VkSampleCountFlagBits					rasterizationSamples;
-		VK_TRUE,														// VkBool32									sampleShadingEnable;
+		features.sampleRateShading,										// VkBool32									sampleShadingEnable;
 		1.0f,															// float									minSampleShading;
 		DE_NULL,														// const VkSampleMask*						pSampleMask;
 		VK_FALSE,														// VkBool32									alphaToCoverageEnable;
