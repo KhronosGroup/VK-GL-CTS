@@ -2748,8 +2748,8 @@ class InvalidValueTest : public SimpleShaders
 	{
 		long error = NO_ERROR;
 
-		GLint   res;
-		GLsizei len;
+		GLint   res = 0;
+		GLsizei len = 0;
 		GLchar  name[100] = { '\0' };
 		GLenum  props[1]  = { GL_NAME_LENGTH };
 
@@ -2833,8 +2833,8 @@ class InvalidEnumTest : public AtomicCounterSimple
 
 		long error = NO_ERROR;
 
-		GLint   res;
-		GLsizei len;
+		GLint   res = 0;
+		GLsizei len = 0;
 		GLchar  name[100] = { '\0' };
 		GLenum  props[1]  = { GL_TEXTURE_1D };
 
@@ -2895,8 +2895,8 @@ class InvalidOperationTest : public SimpleShaders
 		LinkProgram(program);
 
 		const GLuint sh = glCreateShader(GL_FRAGMENT_SHADER);
-		GLint		 res;
-		GLsizei		 len;
+		GLint		 res = 0;
+		GLsizei		 len = 0;
 		GLchar		 name[100] = { '\0' };
 		GLenum		 props[1]  = { GL_OFFSET };
 
