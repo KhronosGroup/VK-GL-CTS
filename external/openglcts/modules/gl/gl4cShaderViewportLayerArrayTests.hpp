@@ -156,6 +156,7 @@ public:
 	ShaderLayerFramebufferTestCaseBase(deqp::Context& context, const char* name, const char* description, bool layered);
 
 	void init();
+	void deinit();
 
 	tcu::TestNode::IterateResult iterate();
 };
