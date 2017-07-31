@@ -74,6 +74,7 @@
 #include "glcPolygonOffsetClampTests.hpp"
 #include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcSampleVariablesTests.hpp"
+#include "glcSeparableProgramsTransformFeedbackTests.hpp"
 #include "glcShaderConstExprTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderLibrary.hpp"
@@ -368,6 +369,7 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::ShaderViewportLayerArray(getContext()));
 		addChild(new gl4cts::LimitsTests(getContext()));
 		addChild(new glcts::PolygonOffsetClamp(getContext()));
+		addChild(new glcts::SeparableProgramsTransformFeedbackTests(getContext()));
 	}
 	catch (...)
 	{

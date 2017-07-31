@@ -6511,3 +6511,5 @@ KHR-GL45.limits.max_compute_work_group_size
 KHR-GL45.polygon_offset_clamp.PolygonOffsetClampAvailability
 KHR-GL45.polygon_offset_clamp.PolygonOffsetClampMinMax
 KHR-GL45.polygon_offset_clamp.PolygonOffsetClampZeroInfinity
+KHR-GL45.separable_programs_tf.tessellation_active
+KHR-GL45.separable_programs_tf.geometry_active

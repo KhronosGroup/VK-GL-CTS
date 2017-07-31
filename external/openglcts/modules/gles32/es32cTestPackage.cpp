@@ -27,6 +27,7 @@
 #include "esextcTestPackage.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcInfoTests.hpp"
+#include "glcSeparableProgramsTransformFeedbackTests.hpp"
 #include "glcShaderConstExprTests.hpp"
 #include "glcShaderIndexingTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
@@ -156,6 +157,7 @@ void ES32TestPackage::init(void)
 		coreGroup->addChild(new glcts::TextureBufferTests(getContext(), extParams));
 		coreGroup->addChild(new glcts::DrawBuffersIndexedTests(getContext(), extParams));
 		coreGroup->addChild(new glcts::ShaderConstExprTests(getContext()));
+		coreGroup->addChild(new glcts::SeparableProgramsTransformFeedbackTests(getContext()));
 		addChild(coreGroup);
 		tcu::TestCaseGroup* robustGroup = new tcu::TestCaseGroup(getTestContext(), "robust", "");
 		robustGroup->addChild(new es32cts::RobustBufferAccessBehaviorTests(getContext()));

@@ -1001,6 +1001,8 @@ KHR-GLES32.core.constant_expressions.array_normalize_vec3_tess_eval
 KHR-GLES32.core.constant_expressions.array_normalize_vec4_geometry
 KHR-GLES32.core.constant_expressions.array_normalize_vec4_tess_control
 KHR-GLES32.core.constant_expressions.array_normalize_vec4_tess_eval
+KHR-GLES32.core.separable_programs_tf.tessellation_active
+KHR-GLES32.core.separable_programs_tf.geometry_active
 KHR-GLES32.robust.robust_buffer_access_behavior.vertex_buffer_objects
 KHR-GLES32.robust.robust_buffer_access_behavior.texel_fetch
 KHR-GLES32.robust.robust_buffer_access_behavior.image_load_store
