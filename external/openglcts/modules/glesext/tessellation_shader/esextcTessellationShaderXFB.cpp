@@ -805,7 +805,7 @@ tcu::TestNode::IterateResult TessellationShaderXFB::iterate(void)
 				}
 				else
 				{
-					if (gl.getError() != GL_INVALID_OPERATION)
+					if (gl.getError() != GL_INVALID_OPERATION && !didBeginXFBFail)
 					{
 						TCU_FAIL("A draw call made using a program object lacking TES stage has"
 								 " not generated a GL_INVALID_OPERATION as specified");
