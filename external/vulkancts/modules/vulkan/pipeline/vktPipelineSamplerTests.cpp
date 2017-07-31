@@ -61,11 +61,13 @@ public:
 																 float				samplerLod);
 	virtual								~SamplerTest			(void) {}
 
+	tcu::Vec4							swizzle					(tcu::Vec4 inputData, VkComponentMapping componentMapping, float zeroOrOneValue) const;
 	virtual void						initPrograms			(SourceCollections& sourceCollections) const;
 	virtual TestInstance*				createInstance			(Context& context) const;
 	virtual tcu::UVec2					getRenderSize			(VkImageViewType viewType) const;
 	virtual std::vector<Vertex4Tex4>	createVertices			(void) const;
 	virtual VkSamplerCreateInfo			getSamplerCreateInfo	(void) const;
+	virtual VkComponentMapping			getComponentMapping		(void) const;
 
 	static std::string					getGlslSamplerType		(const tcu::TextureFormat& format, VkImageViewType type);
 	static tcu::IVec3					getImageSize			(VkImageViewType viewType, int size);
@@ -110,6 +112,46 @@ public:
 
 private:
 	VkFilter						m_minFilter;
+};
+
+class SamplerMagReduceFilterTest : public SamplerMagFilterTest
+{
+public:
+												SamplerMagReduceFilterTest	(tcu::TestContext&			testContext,
+																			const char*					name,
+																			const char*					description,
+																			VkImageViewType				imageViewType,
+																			VkFormat					imageFormat,
+																			VkComponentMapping			componentMapping,
+																			VkSamplerReductionModeEXT	reductionMode);
+
+	virtual										~SamplerMagReduceFilterTest	(void) {}
+	virtual VkSamplerCreateInfo					getSamplerCreateInfo		(void) const;
+	virtual VkComponentMapping					getComponentMapping			(void) const;
+
+private:
+	const VkSamplerReductionModeCreateInfoEXT	m_reductionCreaterInfo;
+	VkComponentMapping							m_componentMapping;
+};
+
+class SamplerMinReduceFilterTest : public SamplerMinFilterTest
+{
+public:
+												SamplerMinReduceFilterTest	(tcu::TestContext&			testContext,
+																			 const char*				name,
+																			 const char*				description,
+																			 VkImageViewType			imageViewType,
+																			 VkFormat					imageFormat,
+																			 VkComponentMapping			componentMapping,
+																			 VkSamplerReductionModeEXT	reductionMode);
+
+	virtual										~SamplerMinReduceFilterTest	(void) {}
+	virtual VkSamplerCreateInfo					getSamplerCreateInfo		(void) const;
+	virtual VkComponentMapping					getComponentMapping			(void) const;
+
+private:
+	const VkSamplerReductionModeCreateInfoEXT	m_reductionCreaterInfo;
+	VkComponentMapping							m_componentMapping;
 };
 
 class SamplerLodTest : public SamplerTest
@@ -177,6 +219,36 @@ SamplerTest::SamplerTest (tcu::TestContext&	testContext,
 {
 }
 
+tcu::Vec4 SamplerTest::swizzle (tcu::Vec4 inputData, VkComponentMapping componentMapping, float zeroOrOneValue) const
+{
+	// Remove VK_COMPONENT_SWIZZLE_IDENTITY to avoid addressing channelValues[0]
+	const vk::VkComponentMapping nonIdentityMapping =
+	{
+		componentMapping.r == VK_COMPONENT_SWIZZLE_IDENTITY ? VK_COMPONENT_SWIZZLE_R : componentMapping.r,
+		componentMapping.g == VK_COMPONENT_SWIZZLE_IDENTITY ? VK_COMPONENT_SWIZZLE_G : componentMapping.g,
+		componentMapping.b == VK_COMPONENT_SWIZZLE_IDENTITY ? VK_COMPONENT_SWIZZLE_B : componentMapping.b,
+		componentMapping.a == VK_COMPONENT_SWIZZLE_IDENTITY ? VK_COMPONENT_SWIZZLE_A : componentMapping.a
+
+	};
+	// array map with enum VkComponentSwizzle
+	const float channelValues[] =
+	{
+		-1.0f,					// impossible
+		zeroOrOneValue,			// SWIZZLE_0
+		zeroOrOneValue,			// SWIZZLE_1
+		inputData.x(),
+		inputData.y(),
+		inputData.z(),
+		inputData.w(),
+		-1.0f
+	};
+
+	return tcu::Vec4(channelValues[nonIdentityMapping.r],
+					 channelValues[nonIdentityMapping.g],
+					 channelValues[nonIdentityMapping.b],
+					 channelValues[nonIdentityMapping.a]);
+}
+
 void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 {
 	std::ostringstream				vertexSrc;
@@ -188,6 +260,9 @@ void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 	tcu::Vec4						lookupBias;
 
 	getLookupScaleBias(m_imageFormat, lookupScale, lookupBias);
+
+	tcu::Vec4						swizzledScale	= swizzle(lookupScale,	getComponentMapping(), 1.0f);
+	tcu::Vec4						swizzledBias	= swizzle(lookupBias,	getComponentMapping(), 0.0f);
 
 	switch (m_imageViewType)
 	{
@@ -237,7 +312,7 @@ void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 	else
 		fragmentSrc << "texture(texSampler, vtxTexCoords." << texCoordSwizzle << ")" << std::fixed;
 
-	fragmentSrc << " * vec4" << std::scientific << lookupScale << " + vec4" << lookupBias << ";\n"
+	fragmentSrc << " * vec4" << std::scientific << swizzledScale << " + vec4" << swizzledBias << ";\n"
 				<< "}\n";
 
 	sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());
@@ -249,10 +324,13 @@ TestInstance* SamplerTest::createInstance (Context& context) const
 	const tcu::UVec2				renderSize			= getRenderSize(m_imageViewType);
 	const std::vector<Vertex4Tex4>	vertices			= createVertices();
 	const VkSamplerCreateInfo		samplerParams		= getSamplerCreateInfo();
-	const VkComponentMapping		componentMapping	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	const VkComponentMapping		componentMapping	= getComponentMapping();
+
+	const VkImageAspectFlags		imageAspect			= (!isCompressedFormat(m_imageFormat) && hasDepthComponent(mapVkFormat(m_imageFormat).order)) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
 	const VkImageSubresourceRange	subresourceRange	=
 	{
-		VK_IMAGE_ASPECT_COLOR_BIT,								// VkImageAspectFlags	aspectMask;
+		imageAspect,											// VkImageAspectFlags	aspectMask;
 		0u,														// deUint32				baseMipLevel;
 		(deUint32)deLog2Floor32(m_imageSize) + 1,				// deUint32				mipLevels;
 		0u,														// deUint32				baseArrayLayer;
@@ -317,6 +395,12 @@ VkSamplerCreateInfo SamplerTest::getSamplerCreateInfo (void) const
 	};
 
 	return defaultSamplerParams;
+}
+
+VkComponentMapping SamplerTest::getComponentMapping (void) const
+{
+	const VkComponentMapping	componentMapping	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	return componentMapping;
 }
 
 std::string SamplerTest::getGlslSamplerType (const tcu::TextureFormat& format, VkImageViewType type)
@@ -450,6 +534,81 @@ VkSamplerCreateInfo SamplerMinFilterTest::getSamplerCreateInfo (void) const
 }
 
 
+namespace
+{
+
+VkSamplerReductionModeCreateInfoEXT getSamplerReductionCreateInfo (VkSamplerReductionModeEXT reductionMode)
+{
+	const VkSamplerReductionModeCreateInfoEXT	 ret =
+	{
+		VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT,	// VkStructureType				sType
+		DE_NULL,													// const void*					pNext
+		reductionMode												// VkSamplerReductionModeEXT	reductionMode
+	};
+	return ret;
+}
+
+}
+
+
+// SamplerMagReduceFilterTest
+
+SamplerMagReduceFilterTest::SamplerMagReduceFilterTest (tcu::TestContext&	testContext,
+														const char*					name,
+														const char*					description,
+														VkImageViewType				imageViewType,
+														VkFormat					imageFormat,
+														VkComponentMapping			componentMapping,
+														VkSamplerReductionModeEXT	reductionMode)
+	: SamplerMagFilterTest		(testContext, name, description, imageViewType, imageFormat, VK_FILTER_LINEAR)
+	, m_reductionCreaterInfo	(getSamplerReductionCreateInfo(reductionMode))
+	, m_componentMapping		(componentMapping)
+{
+}
+
+VkSamplerCreateInfo SamplerMagReduceFilterTest::getSamplerCreateInfo (void) const
+{
+	VkSamplerCreateInfo samplerParams	= SamplerMagFilterTest::getSamplerCreateInfo();
+
+	samplerParams.pNext					= &m_reductionCreaterInfo;
+
+	return samplerParams;
+}
+
+VkComponentMapping SamplerMagReduceFilterTest::getComponentMapping (void) const
+{
+	return m_componentMapping;
+}
+
+// SamplerMinReduceFilterTest
+
+SamplerMinReduceFilterTest::SamplerMinReduceFilterTest (tcu::TestContext&	testContext,
+														const char*					name,
+														const char*					description,
+														VkImageViewType				imageViewType,
+														VkFormat					imageFormat,
+														VkComponentMapping			componentMapping,
+														VkSamplerReductionModeEXT	reductionMode)
+	: SamplerMinFilterTest		(testContext, name, description, imageViewType, imageFormat, VK_FILTER_LINEAR)
+	, m_reductionCreaterInfo	(getSamplerReductionCreateInfo(reductionMode))
+	, m_componentMapping		(componentMapping)
+{
+}
+
+VkSamplerCreateInfo SamplerMinReduceFilterTest::getSamplerCreateInfo (void) const
+{
+	VkSamplerCreateInfo samplerParams	= SamplerMinFilterTest::getSamplerCreateInfo();
+
+	samplerParams.pNext					= &m_reductionCreaterInfo;
+
+	return samplerParams;
+}
+
+VkComponentMapping SamplerMinReduceFilterTest::getComponentMapping (void) const
+{
+	return m_componentMapping;
+}
+
 // SamplerLodTest
 
 SamplerLodTest::SamplerLodTest (tcu::TestContext&	testContext,
@@ -571,8 +730,8 @@ MovePtr<tcu::TestCaseGroup> createSamplerMagFilterTests (tcu::TestContext& testC
 	MovePtr<tcu::TestCaseGroup> samplerMagFilterTests (new tcu::TestCaseGroup(testCtx, "mag_filter", "Tests for magnification filter"));
 
 	if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
-		samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "linear", "Magnifies image using VK_TEX_FILTER_LINEAR", imageViewType, imageFormat, VK_FILTER_LINEAR));
-	samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "nearest", "Magnifies image using VK_TEX_FILTER_NEAREST", imageViewType, imageFormat, VK_FILTER_NEAREST));
+		samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "linear", "Magnifies image using VK_FILTER_LINEAR", imageViewType, imageFormat, VK_FILTER_LINEAR));
+	samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "nearest", "Magnifies image using VK_FILTER_NEAREST", imageViewType, imageFormat, VK_FILTER_NEAREST));
 
 	return samplerMagFilterTests;
 }
@@ -582,10 +741,87 @@ MovePtr<tcu::TestCaseGroup> createSamplerMinFilterTests (tcu::TestContext& testC
 	MovePtr<tcu::TestCaseGroup> samplerMinFilterTests (new tcu::TestCaseGroup(testCtx, "min_filter", "Tests for minification filter"));
 
 	if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
-		samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "linear", "Minifies image using VK_TEX_FILTER_LINEAR", imageViewType, imageFormat, VK_FILTER_LINEAR));
-	samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "nearest", "Minifies image using VK_TEX_FILTER_NEAREST", imageViewType, imageFormat, VK_FILTER_NEAREST));
+		samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "linear", "Minifies image using VK_FILTER_LINEAR", imageViewType, imageFormat, VK_FILTER_LINEAR));
+	samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "nearest", "Minifies image using VK_FILTER_NEAREST", imageViewType, imageFormat, VK_FILTER_NEAREST));
 
 	return samplerMinFilterTests;
+}
+
+const VkComponentMapping reduceFilterComponentMappings[]	=
+{
+	// filterMinmaxImageComponentMapping  == false - compatible mapping:
+	{ VK_COMPONENT_SWIZZLE_IDENTITY,	VK_COMPONENT_SWIZZLE_ZERO,	VK_COMPONENT_SWIZZLE_ZERO,		VK_COMPONENT_SWIZZLE_ZERO	},
+
+	// other mappings
+	{ VK_COMPONENT_SWIZZLE_R,			VK_COMPONENT_SWIZZLE_G,		VK_COMPONENT_SWIZZLE_B,			VK_COMPONENT_SWIZZLE_A		},
+	{ VK_COMPONENT_SWIZZLE_B,			VK_COMPONENT_SWIZZLE_G,		VK_COMPONENT_SWIZZLE_R,			VK_COMPONENT_SWIZZLE_A		},
+	{ VK_COMPONENT_SWIZZLE_ONE,			VK_COMPONENT_SWIZZLE_R,		VK_COMPONENT_SWIZZLE_R,			VK_COMPONENT_SWIZZLE_R		},
+};
+
+static std::string getShortComponentSwizzleName (VkComponentSwizzle componentSwizzle)
+{
+	const std::string	fullName	= getComponentSwizzleName(componentSwizzle);
+	const char*			prefix		= "VK_COMPONENT_SWIZZLE_";
+
+	DE_ASSERT(de::beginsWith(fullName, prefix));
+
+	return de::toLower(fullName.substr(deStrnlen(prefix, -1)));
+}
+
+static std::string getComponentMappingGroupName (const VkComponentMapping& componentMapping)
+{
+	std::ostringstream name;
+
+	name << "comp_";
+
+	name << getShortComponentSwizzleName(componentMapping.r) << "_"
+		 << getShortComponentSwizzleName(componentMapping.g) << "_"
+		 << getShortComponentSwizzleName(componentMapping.b) << "_"
+		 << getShortComponentSwizzleName(componentMapping.a);
+
+	return name.str();
+}
+
+MovePtr<tcu::TestCaseGroup> createSamplerMagReduceFilterTests (tcu::TestContext& testCtx, VkImageViewType imageViewType, VkFormat imageFormat)
+{
+	MovePtr<tcu::TestCaseGroup> samplerMagReduceFilterTests (new tcu::TestCaseGroup(testCtx, "mag_reduce", "Tests for magnification reduce filter"));
+
+	for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(reduceFilterComponentMappings); ++i)
+	{
+		const VkComponentMapping&	mapping		= reduceFilterComponentMappings[i];
+
+		MovePtr<tcu::TestCaseGroup> componentGroup (new tcu::TestCaseGroup(testCtx, getComponentMappingGroupName(mapping).c_str(), "Group for given view component mapping"));
+
+		if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
+		{
+			componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "average", "Magnifies image using VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT));
+		}
+		componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "min", "Magnifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MIN_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MIN_EXT));
+		componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "max", "Magnifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MAX_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MAX_EXT));
+		samplerMagReduceFilterTests->addChild(componentGroup.release());
+	}
+	return samplerMagReduceFilterTests;
+}
+
+MovePtr<tcu::TestCaseGroup> createSamplerMinReduceFilterTests (tcu::TestContext& testCtx, VkImageViewType imageViewType, VkFormat imageFormat)
+{
+	MovePtr<tcu::TestCaseGroup> samplerMinReduceFilterTests (new tcu::TestCaseGroup(testCtx, "min_reduce", "Tests for minification reduce filter"));
+
+	for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(reduceFilterComponentMappings); ++i)
+	{
+		const VkComponentMapping&	mapping = reduceFilterComponentMappings[i];
+
+		MovePtr<tcu::TestCaseGroup> componentGroup (new tcu::TestCaseGroup(testCtx, getComponentMappingGroupName(mapping).c_str(), "Group for given view component mapping"));
+
+		if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
+		{
+			componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "average", "Minifies image using VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT));
+		}
+		componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "min", "Minifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MIN_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MIN_EXT));
+		componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "max", "Minifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MAX_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MAX_EXT));
+		samplerMinReduceFilterTests->addChild(componentGroup.release());
+	}
+	return samplerMinReduceFilterTests;
 }
 
 MovePtr<tcu::TestCaseGroup> createSamplerLodTests (tcu::TestContext& testCtx, VkImageViewType imageViewType, VkFormat imageFormat, VkSamplerMipmapMode mipmapMode)
@@ -822,6 +1058,10 @@ tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R16G16B16_SFLOAT,
 		VK_FORMAT_R16G16_SINT,
 
+		// More 16/32-bit formats required for testing VK_EXT_sampler_filter_minmax
+		VK_FORMAT_R16_SNORM,
+		VK_FORMAT_R32_SFLOAT,
+
 		// Scaled formats
 		VK_FORMAT_R8G8B8A8_SSCALED,
 		VK_FORMAT_A2R10G10B10_USCALED_PACK32,
@@ -847,6 +1087,14 @@ tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx)
 		VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
 		VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
 		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
+
+		// Depth formats required for testing VK_EXT_sampler_filter_minmax
+		VK_FORMAT_D16_UNORM,
+		VK_FORMAT_X8_D24_UNORM_PACK32,
+		VK_FORMAT_D32_SFLOAT,
+		VK_FORMAT_D16_UNORM_S8_UINT,
+		VK_FORMAT_D24_UNORM_S8_UINT,
+		VK_FORMAT_D32_SFLOAT_S8_UINT,
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> samplerTests		(new tcu::TestCaseGroup(testCtx, "sampler", "Sampler tests"));
@@ -878,14 +1126,18 @@ tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx)
 			{
 				// Do not include minFilter tests with compressed formats.
 				// Randomly generated compressed textures are too noisy and will derive in false positives.
-				de::MovePtr<tcu::TestCaseGroup>	minFilterTests		= createSamplerMinFilterTests(testCtx, viewType, format);
+				de::MovePtr<tcu::TestCaseGroup>	minFilterTests			= createSamplerMinFilterTests(testCtx, viewType, format);
+				de::MovePtr<tcu::TestCaseGroup>	minReduceFilterTests	= createSamplerMinReduceFilterTests(testCtx, viewType, format);
 				formatGroup->addChild(minFilterTests.release());
+				formatGroup->addChild(minReduceFilterTests.release());
 			}
 
-			de::MovePtr<tcu::TestCaseGroup>	magFilterTests		= createSamplerMagFilterTests(testCtx, viewType, format);
-			de::MovePtr<tcu::TestCaseGroup>	mipmapTests			= createSamplerMipmapTests(testCtx, viewType, format);
+			de::MovePtr<tcu::TestCaseGroup>	magFilterTests			= createSamplerMagFilterTests(testCtx, viewType, format);
+			de::MovePtr<tcu::TestCaseGroup>	magReduceFilterTests	= createSamplerMagReduceFilterTests(testCtx, viewType, format);
+			de::MovePtr<tcu::TestCaseGroup>	mipmapTests				= createSamplerMipmapTests(testCtx, viewType, format);
 
 			formatGroup->addChild(magFilterTests.release());
+			formatGroup->addChild(magReduceFilterTests.release());
 			formatGroup->addChild(mipmapTests.release());
 
 			if (viewType != VK_IMAGE_VIEW_TYPE_CUBE && viewType != VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)

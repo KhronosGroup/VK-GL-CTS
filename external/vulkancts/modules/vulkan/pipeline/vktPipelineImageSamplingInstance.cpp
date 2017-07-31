@@ -205,6 +205,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 	, m_layerCount			(layerCount)
 	, m_imageCount			(imageCount)
 	, m_componentMapping	(componentMapping)
+	, m_componentMask		(true)
 	, m_subresourceRange	(subresourceRange)
 	, m_samplerParams		(samplerParams)
 	, m_samplerLod			(samplerLod)
@@ -233,13 +234,61 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		!isLinearFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), imageFormat, VK_IMAGE_TILING_OPTIMAL))
 		throw tcu::NotSupportedError(std::string("Unsupported format for linear filtering: ") + getFormatName(imageFormat));
 
+	if (samplerParams.pNext != DE_NULL)
+	{
+		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(samplerParams.pNext);
+		switch (nextType)
+		{
+			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
+			{
+				if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_EXT_sampler_filter_minmax"))
+					TCU_THROW(NotSupportedError, "VK_EXT_sampler_filter_minmax not supported");
+
+				if (!isMinMaxFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), imageFormat, VK_IMAGE_TILING_OPTIMAL))
+					throw tcu::NotSupportedError(std::string("Unsupported format for min/max filtering: ") + getFormatName(imageFormat));
+
+				VkPhysicalDeviceSamplerFilterMinmaxPropertiesEXT	physicalDeviceSamplerMinMaxProperties =
+				{
+					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT,
+					DE_NULL,
+					DE_FALSE,
+					DE_FALSE
+				};
+				VkPhysicalDeviceProperties2KHR						physicalDeviceProperties;
+				physicalDeviceProperties.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+				physicalDeviceProperties.pNext	= &physicalDeviceSamplerMinMaxProperties;
+
+				vki.getPhysicalDeviceProperties2KHR(context.getPhysicalDevice(), &physicalDeviceProperties);
+
+				if (physicalDeviceSamplerMinMaxProperties.filterMinmaxImageComponentMapping != VK_TRUE)
+				{
+					// If filterMinmaxImageComponentMapping is VK_FALSE the component mapping of the image
+					// view used with min/max filtering must have been created with the r component set to
+					// VK_COMPONENT_SWIZZLE_IDENTITY. Only the r component of the sampled image value is
+					// defined and the other component values are undefined
+
+					m_componentMask = tcu::BVec4(true, false, false, false);
+
+					if (m_componentMapping.r != VK_COMPONENT_SWIZZLE_IDENTITY)
+					{
+						TCU_THROW(NotSupportedError, "filterMinmaxImageComponentMapping is not supported (R mapping is not IDENTITY)");
+					}
+				}
+			}
+			break;
+			default:
+				TCU_FAIL("Unrecognized sType in chained sampler create info");
+		}
+	}
+
+
 	if ((samplerParams.addressModeU == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE ||
 		 samplerParams.addressModeV == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE ||
 		 samplerParams.addressModeW == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE) &&
 		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
 		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
 
-	if (isCompressedFormat(imageFormat) && imageViewType == VK_IMAGE_VIEW_TYPE_3D)
+	if ((isCompressedFormat(imageFormat) || isDepthStencilFormat(imageFormat)) && imageViewType == VK_IMAGE_VIEW_TYPE_3D)
 	{
 		// \todo [2016-01-22 pyry] Mandate VK_ERROR_FORMAT_NOT_SUPPORTED
 		try
@@ -255,11 +304,11 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			if (formatProperties.maxExtent.width == 0 &&
 				formatProperties.maxExtent.height == 0 &&
 				formatProperties.maxExtent.depth == 0)
-				TCU_THROW(NotSupportedError, "3D compressed format not supported");
+				TCU_THROW(NotSupportedError, "3D compressed or depth format not supported");
 		}
 		catch (const Error&)
 		{
-			TCU_THROW(NotSupportedError, "3D compressed format not supported");
+			TCU_THROW(NotSupportedError, "3D compressed or depth format not supported");
 		}
 	}
 
@@ -996,20 +1045,38 @@ tcu::Vector<ScalarType, 4> swizzle (const tcu::Vector<ScalarType, 4>& vec, const
 									  getSwizzledComp(vec, swz.a, 3));
 }
 
-tcu::Vec4 swizzleScaleBias (const tcu::Vec4& vec, const vk::VkComponentMapping& swz)
+/*--------------------------------------------------------------------*//*!
+* \brief Swizzle scale or bias vector by given mapping
+*
+* \param vec scale or bias vector
+* \param swz swizzle component mapping, may include ZERO, ONE, or IDENTITY
+* \param zeroOrOneValue vector value for component swizzled as ZERO or ONE
+* \return swizzled vector
+*//*--------------------------------------------------------------------*/
+tcu::Vec4 swizzleScaleBias (const tcu::Vec4& vec, const vk::VkComponentMapping& swz, float zeroOrOneValue)
 {
+
+	// Remove VK_COMPONENT_SWIZZLE_IDENTITY to avoid addressing channelValues[0]
+	const vk::VkComponentMapping nonIdentitySwz =
+	{
+		swz.r == VK_COMPONENT_SWIZZLE_IDENTITY ? VK_COMPONENT_SWIZZLE_R : swz.r,
+		swz.g == VK_COMPONENT_SWIZZLE_IDENTITY ? VK_COMPONENT_SWIZZLE_G : swz.g,
+		swz.b == VK_COMPONENT_SWIZZLE_IDENTITY ? VK_COMPONENT_SWIZZLE_B : swz.b,
+		swz.a == VK_COMPONENT_SWIZZLE_IDENTITY ? VK_COMPONENT_SWIZZLE_A : swz.a
+	};
+
 	const float channelValues[] =
 	{
-		1.0f, // -1
-		1.0f, // 0
-		1.0f,
+		-1.0f,				// impossible
+		zeroOrOneValue,		// SWIZZLE_ZERO
+		zeroOrOneValue,		// SWIZZLE_ONE
 		vec.x(),
 		vec.y(),
 		vec.z(),
-		vec.w()
+		vec.w(),
 	};
 
-	return tcu::Vec4(channelValues[swz.r], channelValues[swz.g], channelValues[swz.b], channelValues[swz.a]);
+	return tcu::Vec4(channelValues[nonIdentitySwz.r], channelValues[nonIdentitySwz.g], channelValues[nonIdentitySwz.b], channelValues[nonIdentitySwz.a]);
 }
 
 template<typename ScalarType>
@@ -1171,7 +1238,7 @@ bool validateResultImage (const TextureViewType&				texture,
 		// and thus we need to pre-swizzle the texture.
 		UniquePtr<typename TexViewTraits<TextureViewType>::TextureType>	swizzledTex	(createSwizzledCopy(texture, swz));
 
-		return validateResultImage(*swizzledTex, sampler, texCoords, lodBounds, lookupPrecision, swizzleScaleBias(lookupScale, swz), swizzleScaleBias(lookupBias, swz), result, errorMask);
+		return validateResultImage(*swizzledTex, sampler, texCoords, lodBounds, lookupPrecision, swizzleScaleBias(lookupScale, swz, 1.0f), swizzleScaleBias(lookupBias, swz, 0.0f), result, errorMask);
 	}
 }
 
@@ -1462,11 +1529,43 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 		// the point of the test is not to validate accuracy.
 		lookupPrecision.coordBits		= tcu::IVec3(17, 17, 17);
 		lookupPrecision.uvwBits			= tcu::IVec3(5, 5, 5);
-		lookupPrecision.colorMask		= tcu::BVec4(true);
-		lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(max((tcu::IVec4(8, 8, 8, 8) - (isNearestOnly ? 1 : 2)), tcu::IVec4(0))) / swizzleScaleBias(lookupScale, m_componentMapping);
+		lookupPrecision.colorMask		= m_componentMask;
+		lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(max((tcu::IVec4(8, 8, 8, 8) - (isNearestOnly ? 1 : 2)), tcu::IVec4(0))) / swizzleScaleBias(lookupScale, m_componentMapping, 1.0f);
 
 		if (tcu::isSRGB(m_texture->getTextureFormat()))
 			lookupPrecision.colorThreshold += tcu::Vec4(4.f / 255.f);
+
+		de::MovePtr<TestTexture>			textureCopy;
+		TestTexture*						texture			= DE_NULL;
+
+		if (isCombinedDepthStencilType(m_texture->getTextureFormat().type))
+		{
+			// Verification loop does not support reading from combined depth stencil texture levels.
+			// Get rid of stencil component.
+
+			tcu::TextureFormat::ChannelType depthChannelType = tcu::TextureFormat::CHANNELTYPE_LAST;
+
+			switch (m_texture->getTextureFormat().type)
+			{
+			case tcu::TextureFormat::UNSIGNED_INT_16_8_8:
+				depthChannelType = tcu::TextureFormat::UNORM_INT16;
+				break;
+			case tcu::TextureFormat::UNSIGNED_INT_24_8:
+			case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:
+				depthChannelType = tcu::TextureFormat::UNORM_INT24;
+				break;
+			case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+				depthChannelType = tcu::TextureFormat::FLOAT;
+			default:
+				DE_ASSERT("Unhandled texture format type in switch");
+			}
+			textureCopy	= m_texture->copy(tcu::TextureFormat(tcu::TextureFormat::D, depthChannelType));
+			texture		= textureCopy.get();
+		}
+		else
+		{
+			texture		= m_texture.get();
+		}
 
 		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
 		{
@@ -1480,7 +1579,7 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 																					 m_colorFormat,
 																					 m_renderSize));
 			const tcu::ConstPixelBufferAccess	resultAccess	= result->getAccess();
-			bool								compareOk		= validateResultImage(*m_texture,
+			bool								compareOk		= validateResultImage(*texture,
 																					  m_imageViewType,
 																					  subresource,
 																					  sampler,
@@ -1512,7 +1611,7 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 					<< tcu::TestLog::EndMessage;
 				anyWarnings = true;
 
-				compareOk = validateResultImage(*m_texture,
+				compareOk = validateResultImage(*texture,
 												m_imageViewType,
 												subresource,
 												sampler,

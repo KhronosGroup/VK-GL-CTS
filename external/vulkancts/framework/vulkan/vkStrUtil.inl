@@ -47,6 +47,7 @@ const char*	getSamplerYcbcrRangeKHRName				(VkSamplerYcbcrRangeKHR value);
 const char*	getChromaLocationKHRName				(VkChromaLocationKHR value);
 const char*	getDebugReportObjectTypeEXTName			(VkDebugReportObjectTypeEXT value);
 const char*	getDebugReportErrorEXTName				(VkDebugReportErrorEXT value);
+const char*	getSamplerReductionModeEXTName			(VkSamplerReductionModeEXT value);
 
 inline tcu::Format::Enum<VkPipelineCacheHeaderVersion>		getPipelineCacheHeaderVersionStr		(VkPipelineCacheHeaderVersion value)		{ return tcu::Format::Enum<VkPipelineCacheHeaderVersion>(getPipelineCacheHeaderVersionName, value);				}
 inline tcu::Format::Enum<VkResult>							getResultStr							(VkResult value)							{ return tcu::Format::Enum<VkResult>(getResultName, value);														}
@@ -94,6 +95,7 @@ inline tcu::Format::Enum<VkSamplerYcbcrRangeKHR>			getSamplerYcbcrRangeKHRStr			
 inline tcu::Format::Enum<VkChromaLocationKHR>				getChromaLocationKHRStr					(VkChromaLocationKHR value)					{ return tcu::Format::Enum<VkChromaLocationKHR>(getChromaLocationKHRName, value);								}
 inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>		getDebugReportObjectTypeEXTStr			(VkDebugReportObjectTypeEXT value)			{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);					}
 inline tcu::Format::Enum<VkDebugReportErrorEXT>				getDebugReportErrorEXTStr				(VkDebugReportErrorEXT value)				{ return tcu::Format::Enum<VkDebugReportErrorEXT>(getDebugReportErrorEXTName, value);							}
+inline tcu::Format::Enum<VkSamplerReductionModeEXT>			getSamplerReductionModeEXTStr			(VkSamplerReductionModeEXT value)			{ return tcu::Format::Enum<VkSamplerReductionModeEXT>(getSamplerReductionModeEXTName, value);					}
 
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineCacheHeaderVersion value)		{ return s << getPipelineCacheHeaderVersionStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, VkResult value)							{ return s << getResultStr(value);							}
@@ -141,6 +143,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkSamplerYcbcrRangeKHR value)	
 inline std::ostream&	operator<<	(std::ostream& s, VkChromaLocationKHR value)				{ return s << getChromaLocationKHRStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)			{ return s << getDebugReportObjectTypeEXTStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportErrorEXT value)				{ return s << getDebugReportErrorEXTStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkSamplerReductionModeEXT value)			{ return s << getSamplerReductionModeEXTStr(value);			}
 
 tcu::Format::Bitfield<32>	getFormatFeatureFlagsStr						(VkFormatFeatureFlags value);
 tcu::Format::Bitfield<32>	getImageUsageFlagsStr							(VkImageUsageFlags value);
@@ -433,3 +436,5 @@ std::ostream&	operator<<	(std::ostream& s, const VkPresentTimesInfoGOOGLE& value
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVariablePointerFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindBufferMemoryInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindImageMemoryInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSamplerReductionModeCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSamplerFilterMinmaxPropertiesEXT& value);

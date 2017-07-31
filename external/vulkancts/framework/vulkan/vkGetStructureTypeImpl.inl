@@ -671,3 +671,13 @@ template<> VkStructureType getStructureType<VkBindImageMemoryInfoKHR> (void)
 	return VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkSamplerReductionModeCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceSamplerFilterMinmaxPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT;
+}
+

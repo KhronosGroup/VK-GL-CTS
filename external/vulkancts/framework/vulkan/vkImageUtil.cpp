@@ -2297,6 +2297,26 @@ tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
 	// \note minLod & maxLod are not supported by tcu::Sampler. LOD must be clamped
 	//       before passing it to tcu::Texture*::sample*()
 
+	tcu::Sampler::ReductionMode reductionMode = tcu::Sampler::WEIGHTED_AVERAGE;
+
+	if (samplerCreateInfo.pNext != DE_NULL)
+	{
+		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(samplerCreateInfo.pNext);
+		switch (nextType)
+		{
+			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
+			{
+				const VkSamplerReductionModeCreateInfoEXT reductionModeCreateInfo = *reinterpret_cast<const VkSamplerReductionModeCreateInfoEXT*>(samplerCreateInfo.pNext);
+				reductionMode = mapVkSamplerReductionMode(reductionModeCreateInfo.reductionMode);
+				break;
+			}
+			default:
+				TCU_FAIL("Unrecognized sType in chained sampler create info");
+		}
+	}
+
+
+
 	tcu::Sampler sampler(mapVkSamplerAddressMode(samplerCreateInfo.addressModeU),
 						 mapVkSamplerAddressMode(samplerCreateInfo.addressModeV),
 						 mapVkSamplerAddressMode(samplerCreateInfo.addressModeW),
@@ -2308,7 +2328,9 @@ tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
 														 : tcu::Sampler::COMPAREMODE_NONE,
 						 0,
 						 tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
-						 true);
+						 true,
+						 tcu::Sampler::MODE_DEPTH,
+						 reductionMode);
 
 	if (samplerCreateInfo.anisotropyEnable)
 		TCU_THROW(InternalError, "Anisotropic filtering is not supported by tcu::Sampler");
@@ -2377,6 +2399,21 @@ tcu::Sampler::WrapMode mapVkSamplerAddressMode (VkSamplerAddressMode addressMode
 
 	DE_ASSERT(false);
 	return tcu::Sampler::WRAPMODE_LAST;
+}
+
+tcu::Sampler::ReductionMode mapVkSamplerReductionMode (VkSamplerReductionModeEXT reductionMode)
+{
+	switch (reductionMode)
+	{
+		case VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT:	return tcu::Sampler::WEIGHTED_AVERAGE;
+		case VK_SAMPLER_REDUCTION_MODE_MIN_EXT:					return tcu::Sampler::MIN;
+		case VK_SAMPLER_REDUCTION_MODE_MAX_EXT:					return tcu::Sampler::MAX;
+		default:
+			break;
+	}
+
+	DE_ASSERT(false);
+	return tcu::Sampler::REDUCTIONMODE_LAST;
 }
 
 tcu::Sampler::FilterMode mapVkMinTexFilter (VkFilter filter, VkSamplerMipmapMode mipMode)

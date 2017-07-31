@@ -51,6 +51,7 @@ tcu::TextureFormat			getStencilCopyFormat		(VkFormat combinedFormat);
 tcu::Sampler				mapVkSampler				(const VkSamplerCreateInfo& samplerCreateInfo);
 tcu::Sampler::CompareMode	mapVkSamplerCompareOp		(VkCompareOp compareOp);
 tcu::Sampler::WrapMode		mapVkSamplerAddressMode		(VkSamplerAddressMode addressMode);
+tcu::Sampler::ReductionMode mapVkSamplerReductionMode	(VkSamplerReductionModeEXT reductionMode);
 tcu::Sampler::FilterMode	mapVkMinTexFilter			(VkFilter filter, VkSamplerMipmapMode mipMode);
 tcu::Sampler::FilterMode	mapVkMagTexFilter			(VkFilter filter);
 

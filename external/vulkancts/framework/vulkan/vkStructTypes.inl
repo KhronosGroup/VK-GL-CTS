@@ -2046,3 +2046,18 @@ struct VkBindImageMemoryInfoKHR
 	VkDeviceSize	memoryOffset;
 };
 
+struct VkSamplerReductionModeCreateInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkSamplerReductionModeEXT	reductionMode;
+};
+
+struct VkPhysicalDeviceSamplerFilterMinmaxPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		filterMinmaxSingleComponentFormats;
+	VkBool32		filterMinmaxImageComponentMapping;
+};
+
