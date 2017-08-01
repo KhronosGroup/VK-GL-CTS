@@ -27,6 +27,7 @@
 
 #include "glcRobustBufferAccessBehaviorTests.hpp"
 
+#include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -3280,6 +3281,10 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 	return result;
 }
 
+/* StorageBufferTest constants */
+const GLfloat StorageBufferTest::m_destination_data[4]	= { 1.0f, 1.0f, 1.0f, 1.0f };
+const GLfloat StorageBufferTest::m_source_data[4]		= { 2.0f, 3.0f, 4.0f, 5.0f };
+
 /** Constructor
  *
  * @param context Test context
@@ -3287,6 +3292,7 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 StorageBufferTest::StorageBufferTest(deqp::Context& context)
 	: TestCase(context, "storage_buffer", "Verifies that out-of-bound access to SSBO is discared or resutls in 0")
 	, m_test_case(VALID)
+	, m_hasKhrRobustBufferAccess(false)
 {
 	/* Nothing to be done here */
 }
@@ -3307,11 +3313,12 @@ StorageBufferTest::StorageBufferTest(deqp::Context& context, const glw::GLchar* 
  **/
 tcu::TestNode::IterateResult StorageBufferTest::iterate()
 {
-	static const GLfloat destination_data[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	static const GLfloat source_data[4]		 = { 2.0f, 3.0f, 4.0f, 5.0f };
 
 	/* GL entry points */
 	const Functions& gl = m_context.getRenderContext().getFunctions();
+
+	m_hasKhrRobustBufferAccess = m_context.getContextInfo().isExtensionSupported("GL_KHR_robust_buffer_access_behavior") ||
+								 contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 
 	/* Test result indicator */
 	bool test_result = true;
@@ -3328,9 +3335,9 @@ tcu::TestNode::IterateResult StorageBufferTest::iterate()
 		const std::string& cs = getComputeShader();
 
 		/* Buffers initialization */
-		destination_buffer.InitData(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, sizeof(destination_data),
-									destination_data);
-		source_buffer.InitData(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, sizeof(source_data), source_data);
+		destination_buffer.InitData(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, sizeof(m_destination_data),
+									m_destination_data);
+		source_buffer.InitData(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, sizeof(m_source_data), m_source_data);
 
 		destination_buffer.BindBase(0);
 		source_buffer.BindBase(1);
@@ -3350,7 +3357,7 @@ tcu::TestNode::IterateResult StorageBufferTest::iterate()
 		/* Verify results */
 		destination_buffer.Bind();
 		GLfloat* buffer_data =
-			(GLfloat*)gl.mapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(destination_data), GL_MAP_READ_BIT);
+			(GLfloat*)gl.mapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(m_destination_data), GL_MAP_READ_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "MapBufferRange");
 
 		test_result = verifyResults(buffer_data);
@@ -3440,39 +3447,119 @@ std::string StorageBufferTest::getComputeShader()
  **/
 bool StorageBufferTest::verifyResults(GLfloat* buffer_data)
 {
-	static const GLfloat expected_data_valid[4]				  = { 2.0f, 3.0f, 4.0f, 5.0f };
-	static const GLfloat expected_data_invalid_destination[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	static const GLfloat expected_data_invalid_source[4]	  = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-	int size = static_cast<int>(sizeof(GLfloat) * 4);
+	/* KHR_robust_buffer_access_behavior (and also GL 4.5 and later) states
+	 * which values can be expected when reading or writing outside of a
+	 * buffer's range. If supported, we will compare results against those
+	 * expectations.
+	 *
+	 * Otherwise, we will attempt to match results against previously observed
+	 * and valid behavior.
+	 */
+	static const GLfloat expected_data_valid[4]				   = { 2.0f, 3.0f, 4.0f, 5.0f };
+	static const GLfloat expected_data_invalid_source[4]	   = { 0.0f, 0.0f, 0.0f, 0.0f };
+	static const GLfloat expected_data_invalid_destination[4]  = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 	/* Prepare expected data const for proper case*/
-	const GLfloat* expected_data = 0;
-	const GLchar*  name			 = 0;
+	const GLchar*  name				   = 0;
+	bool		   check_expected_data = false;
+	const GLfloat* expected_data	   = 0;
 	switch (m_test_case)
 	{
 	case VALID:
-		expected_data = expected_data_valid;
-		name		  = "valid indices";
+		name				= "valid indices";
+		check_expected_data	= true;
+		expected_data		= expected_data_valid;
 		break;
 	case SOURCE_INVALID:
-		expected_data = expected_data_invalid_source;
-		name		  = "invalid source indices";
+		name				= "invalid source indices";
+		if (m_hasKhrRobustBufferAccess)
+		{
+			for (int b = 0; b < 4; b++)
+			{
+				/* Each out-of-range read can either be 0 or any value within
+				 * the source buffer.
+				 * */
+				bool valid = false;
+				if (buffer_data[b] == 0.0f)
+				{
+					valid = true;
+				}
+				else
+				{
+					for (int c = 0; c < 4 && !valid; c++)
+					{
+						if (buffer_data[b] == m_source_data[c])
+						{
+							valid = true;
+						}
+					}
+				}
+				if (!valid)
+				{
+					m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
+														<< tcu::TestLog::EndMessage;
+				}
+			}
+		}
+		else
+		{
+			check_expected_data	= true;
+			expected_data		= expected_data_invalid_source;
+		}
 		break;
 	case DESTINATION_INVALID:
-		expected_data = expected_data_invalid_destination;
-		name		  = "invalid destination indices";
+		name				= "invalid destination indices";
+		if (m_hasKhrRobustBufferAccess)
+		{
+			for (int b = 0; b < 4; b++)
+			{
+				bool valid = false;
+				/* Each out-of-range write can either be discarded (in which
+				 * case it would have the original destination value) or it
+				 * could write any value within the buffer (so we need to check
+				 * against each possible source value).
+				 */
+				if (buffer_data[b] == m_destination_data[b])
+				{
+					valid = true;
+				}
+				else
+				{
+					for (int c = 0; c < 4 && !valid; c++)
+					{
+						if (buffer_data[b] == m_source_data[c])
+						{
+							valid = true;
+						}
+					}
+				}
+				if (!valid)
+				{
+					m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
+														<< tcu::TestLog::EndMessage;
+				}
+			}
+		}
+		else
+		{
+			check_expected_data	= true;
+			expected_data		= expected_data_invalid_destination;
+		}
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
 	}
 
-	/* Verify buffer data */
-	if (0 != memcmp(expected_data, buffer_data, size))
+	if (check_expected_data)
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
-											<< tcu::TestLog::EndMessage;
-		return false;
+		/* Verify buffer data */
+		int size = static_cast<int>(sizeof(GLfloat) * 4);
+		if (0 != memcmp(expected_data, buffer_data, size))
+		{
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
+												<< tcu::TestLog::EndMessage;
+			return false;
+		}
 	}
 
 	return true;

@@ -513,6 +513,11 @@ protected:
 
 	/* Protected fields */
 	VERSION m_test_case;
+	bool m_hasKhrRobustBufferAccess;
+
+	/* Protected constants */
+	static const glw::GLfloat m_destination_data[4];
+	static const glw::GLfloat m_source_data[4];
 };
 
 /** Implementation of test UniformBuffer. Description follows:
