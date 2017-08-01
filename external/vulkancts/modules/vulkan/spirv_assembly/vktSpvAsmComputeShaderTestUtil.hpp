@@ -133,7 +133,7 @@ struct ComputeShaderSpec
  *//*--------------------------------------------------------------------*/
 
 const char* getComputeAsmShaderPreamble				(void);
-const char* getComputeAsmCommonTypes				(void);
+std::string getComputeAsmCommonTypes				(std::string blockStorageClass = "Uniform");
 const char*	getComputeAsmCommonInt64Types			(void);
 
 /*--------------------------------------------------------------------*//*!
