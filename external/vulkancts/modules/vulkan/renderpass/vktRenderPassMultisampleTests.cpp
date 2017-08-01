@@ -711,6 +711,7 @@ Move<VkPipelineLayout> createRenderPipelineLayout (const DeviceInterface&	vkd,
 
 Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
 									   VkDevice											device,
+									   VkFormat											srcFormat,
 									   VkRenderPass										renderPass,
 									   VkPipelineLayout									pipelineLayout,
 									   const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection,
@@ -718,6 +719,9 @@ Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
 									   deUint32											height,
 									   deUint32											sampleCount)
 {
+	const tcu::TextureFormat		format						(mapVkFormat(srcFormat));
+	const bool						isDepthStencilFormat		(tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order));
+
 	const Unique<VkShaderModule>	vertexShaderModule			(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
 	const Unique<VkShaderModule>	fragmentShaderModule		(createShaderModule(vkd, device, binaryCollection.get("quad-frag"), 0u));
 	const VkSpecializationInfo		emptyShaderSpecializations	=
@@ -876,8 +880,8 @@ Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
 
 		VK_FALSE,
 		VK_LOGIC_OP_COPY,
-		1u,
-		&attachmentBlendState,
+		(isDepthStencilFormat ? 0u : 1u),
+		(isDepthStencilFormat ? DE_NULL : &attachmentBlendState),
 		{ 0.0f, 0.0f, 0.0f, 0.0f }
 	};
 	const VkGraphicsPipelineCreateInfo createInfo =
@@ -1406,7 +1410,7 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_framebuffer					(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_srcImageView, m_dstMultisampleImageViews, m_dstSinglesampleImageViews, m_width, m_height))
 
 	, m_renderPipelineLayout		(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
-	, m_renderPipeline				(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height, m_sampleCount))
+	, m_renderPipeline				(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), m_srcFormat, *m_renderPass, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height, m_sampleCount))
 
 	, m_splitDescriptorSetLayout	(createSplitDescriptorSetLayout(context.getDeviceInterface(), context.getDevice(), m_srcFormat))
 	, m_splitPipelineLayout			(createSplitPipelineLayout(context.getDeviceInterface(), context.getDevice(), *m_splitDescriptorSetLayout))

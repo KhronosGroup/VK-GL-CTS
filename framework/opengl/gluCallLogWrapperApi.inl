@@ -547,6 +547,7 @@ void					glPointParameteriv									(glw::GLenum pname, const glw::GLint *params
 void					glPointSize											(glw::GLfloat size);
 void					glPolygonMode										(glw::GLenum face, glw::GLenum mode);
 void					glPolygonOffset										(glw::GLfloat factor, glw::GLfloat units);
+void					glPolygonOffsetClampEXT								(glw::GLfloat factor, glw::GLfloat units, glw::GLfloat clamp);
 void					glPopDebugGroup										(void);
 void					glPopGroupMarkerEXT									(void);
 void					glPrimitiveBoundingBox								(glw::GLfloat minX, glw::GLfloat minY, glw::GLfloat minZ, glw::GLfloat minW, glw::GLfloat maxX, glw::GLfloat maxY, glw::GLfloat maxZ, glw::GLfloat maxW);

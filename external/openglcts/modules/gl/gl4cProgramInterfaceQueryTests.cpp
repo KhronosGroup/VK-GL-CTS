@@ -36,32 +36,6 @@ using namespace glw;
 namespace
 {
 
-static tcu::TestLog* currentLog;
-void setOutput(tcu::TestLog& log)
-{
-	currentLog = &log;
-}
-
-void Output(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-
-	const int   MAX_OUTPUT_STRING_SIZE = 40000;
-	static char temp[MAX_OUTPUT_STRING_SIZE];
-
-	vsnprintf(temp, MAX_OUTPUT_STRING_SIZE - 1, format, args);
-	temp[MAX_OUTPUT_STRING_SIZE - 1] = '\0';
-
-	char* logLine = strtok(temp, "\n");
-	while (logLine != NULL)
-	{
-		currentLog->writeMessage(logLine);
-		logLine = strtok(NULL, "\n");
-	}
-	va_end(args);
-}
-
 class PIQBase : public deqp::SubcaseBase
 {
 
@@ -112,7 +86,8 @@ protected:
 		glGetProgramInfoLog(program, sizeof(log), &length, log);
 		if (length > 1)
 		{
-			Output("Program Info Log:\n%s\n", log);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Program Info Log:\n"
+												<< log << tcu::TestLog::EndMessage;
 		}
 	}
 
@@ -217,13 +192,15 @@ protected:
 		GLenum tmp = glGetError();
 		if (tmp == expected)
 		{
-			Output("Found expected error\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Found expected error" << tcu::TestLog::EndMessage;
 			error = NO_ERROR; // Error is expected
 		}
 		else
 		{
 			error = ERROR;
-			Output("%d error was expected, found: %d.\n", expected, tmp);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << expected
+												<< " error was expected, found: " << tmp << tcu::TestLog::EndMessage;
 		}
 	}
 
@@ -234,7 +211,8 @@ protected:
 		glGetProgramInterfaceiv(program, programInterface, pname, &res);
 		if (res != expected)
 		{
-			Output("ERROR: Got %d, expected %d\n", res, expected);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "ERROR: Got " << res << ", expected "
+												<< expected << tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 	}
@@ -245,7 +223,8 @@ protected:
 		GLuint res = glGetProgramResourceIndex(program, programInterface, name.c_str());
 		if (res != expected)
 		{
-			Output("ERROR: Got %d, expected %d\n", res, expected);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "ERROR: Got " << res << ", expected "
+												<< expected << tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 	}
@@ -257,7 +236,8 @@ protected:
 		GLuint res = glGetProgramResourceIndex(program, programInterface, name.c_str());
 		if (res == GL_INVALID_INDEX)
 		{
-			Output("ERROR: Got %d, expected number other than -1\n", res);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "ERROR: Got " << res
+												<< ", expected number other than -1" << tcu::TestLog::EndMessage;
 			error = ERROR;
 			return;
 		}
@@ -266,7 +246,8 @@ protected:
 		{
 			if (it->second == res)
 			{
-				Output("ERROR: Duplicated value found: %d\n", res);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "ERROR: Duplicated value found: " << res << tcu::TestLog::EndMessage;
 				error = ERROR;
 				return;
 			}
@@ -283,12 +264,16 @@ protected:
 		glGetProgramResourceName(program, programInterface, index, 1024, &len, name);
 		if (len <= 0 || len > 1023 || name[len - 1] == '\0')
 		{
-			Output("ERROR: Length in glGetProgramResourceName should not count null terminator!\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "ERROR: Length in glGetProgramResourceName should not count null terminator!"
+				<< tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		else if (name != expected || name[len] != '\0')
 		{
-			Output("ERROR: Got %s, expected %s\n", name, expected.c_str());
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "ERROR: Got " << name << ", expected "
+												<< expected << tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 	}
@@ -299,7 +284,8 @@ protected:
 		GLint res = glGetProgramResourceLocation(program, programInterface, name.c_str());
 		if (res != expected)
 		{
-			Output("ERROR: Got %d, expected %d\n", res, expected);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "ERROR: Got " << res << ", expected "
+												<< expected << tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 	}
@@ -311,7 +297,8 @@ protected:
 		GLint res = glGetProgramResourceLocation(program, programInterface, name.c_str());
 		if (res < 0)
 		{
-			Output("ERROR: Got %d, expected not less than 0\n", res);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "ERROR: Got " << res
+												<< ", expected not less than 0" << tcu::TestLog::EndMessage;
 			error = ERROR;
 			return;
 		}
@@ -320,7 +307,8 @@ protected:
 		{
 			if (it->second == res)
 			{
-				Output("ERROR: Duplicated value found: %d\n", res);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "ERROR: Duplicated value found: " << res << tcu::TestLog::EndMessage;
 				error = ERROR;
 				return;
 			}
@@ -340,8 +328,10 @@ protected:
 		if (length != expectedLength || length <= 0)
 		{
 			error = ERROR;
-			Output("ERROR: Got length %d, expected %d\n", length, expectedLength);
-			Output("CALL: glGetProgramResourceiv, with %d, %d\n", programInterface, index);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "ERROR: Got length " << length << ", expected " << expectedLength
+				<< "\nCALL: glGetProgramResourceiv, with " << programInterface << ", " << index
+				<< tcu::TestLog::EndMessage;
 			return;
 		}
 		for (int i = 0; i < length; ++i)
@@ -349,8 +339,10 @@ protected:
 			if (params[i] != expected[i])
 			{
 				error = ERROR;
-				Output("ERROR: Got %d, expected %d at: %d\n", params[i], expected[i], i);
-				Output("CALL: glGetProgramResourceiv, with %d, %d\n", programInterface, index);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "ERROR: Got " << params[i] << ", expected " << expected[i]
+					<< " at: " << i << "\nCALL: glGetProgramResourceiv, with " << programInterface << ", " << index
+					<< tcu::TestLog::EndMessage;
 			}
 		}
 	}
@@ -361,8 +353,9 @@ protected:
 		GLint res = glGetProgramResourceLocationIndex(program, programInterface, name.c_str());
 		if (res != expected)
 		{
-			Output("ERROR: Got %d, expected %d\n", res, expected);
-			Output("CALL: glGetProgramResourceLocationIndex, with %d, %s\n", programInterface, name.c_str());
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "ERROR: Got " << res << ", expected "
+												<< expected << "\nCALL: glGetProgramResourceLocationIndex, with "
+												<< programInterface << ", " << name << tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 	}
@@ -1752,15 +1745,20 @@ class UniformBlockTypes : public PIQBase
 		{
 			if (exp.find(param[i]) == exp.end())
 			{
-				Output("Unexpected index found in active variables of SimpleBlock: %d\n", param[i]);
-				Output("Call: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: GL_UNIFORM_BLOCK\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message
+					<< "Unexpected index found in active variables of SimpleBlock: " << param[i]
+					<< "\nCall: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: GL_UNIFORM_BLOCK"
+					<< tcu::TestLog::EndMessage;
 				glDeleteProgram(program);
 				return ERROR;
 			}
 			else if (length != 3)
 			{
-				Output("Call: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: GL_UNIFORM_BLOCK\n");
-				Output("Expected length: 3, actual length: %d\n", length);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message
+					<< "Call: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: GL_UNIFORM_BLOCK\n"
+					<< "Expected length: 3, actual length: " << length << tcu::TestLog::EndMessage;
 				glDeleteProgram(program);
 				return ERROR;
 			}
@@ -1775,15 +1773,20 @@ class UniformBlockTypes : public PIQBase
 		{
 			if (exp2.find(param[i]) == exp2.end())
 			{
-				Output("Unexpected index found in active variables of NotSoSimpleBlockk: %d\n", param[i]);
-				Output("Call: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: GL_UNIFORM_BLOCK\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message
+					<< "Unexpected index found in active variables of NotSoSimpleBlockk: " << param[i]
+					<< "\nCall: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: GL_UNIFORM_BLOCK"
+					<< tcu::TestLog::EndMessage;
 				glDeleteProgram(program);
 				return ERROR;
 			}
 			else if (length != 3)
 			{
-				Output("Call: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: GL_UNIFORM_BLOCK\n");
-				Output("Expected length: 3, actual length: %d\n", length);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message
+					<< "Call: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: GL_UNIFORM_BLOCK"
+					<< "\nExpected length: 3, actual length: " << length << tcu::TestLog::EndMessage;
 				glDeleteProgram(program);
 				return ERROR;
 			}
@@ -1793,7 +1796,9 @@ class UniformBlockTypes : public PIQBase
 		glGetProgramInterfaceiv(program, GL_UNIFORM_BLOCK, GL_MAX_NUM_ACTIVE_VARIABLES, &res);
 		if (res < 3)
 		{
-			Output("Value of GL_MAX_NUM_ACTIVE_VARIABLES less than 3!\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Value of GL_MAX_NUM_ACTIVE_VARIABLES less than 3!"
+				<< tcu::TestLog::EndMessage;
 			glDeleteProgram(program);
 			return ERROR;
 		}
@@ -2003,13 +2008,17 @@ public:
 		{
 			if (exp.find(param[i]) == exp.end() || length != 2)
 			{
-				Output("Length: %d\n", length);
-				Output("Unexpected index/length found in active variables of ATOMIC_COUNTER_BUFFER: %d\n", param[i]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Length: " << length
+					<< "\nUnexpected index/length found in active variables of ATOMIC_COUNTER_BUFFER: " << param[i]
+					<< tcu::TestLog::EndMessage;
 				glDeleteProgram(program);
 				return ERROR;
 			}
 		}
-		Output("GL_ACTIVE_VARIABLES ok for 1st ATOMIC_COUNTER_BUFFER\n");
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "GL_ACTIVE_VARIABLES ok for 1st ATOMIC_COUNTER_BUFFER"
+			<< tcu::TestLog::EndMessage;
 		std::set<GLuint> exp2;
 		GLint			 param2[bufSize];
 		exp2.insert(indicesU["d"]);
@@ -2020,8 +2029,10 @@ public:
 		{
 			if (exp2.find(param2[i]) == exp2.end() || length != 2)
 			{
-				Output("Length: %d\n", length);
-				Output("Unexpected index/length found in active variables of ATOMIC_COUNTER_BUFFER: %d\n", param2[i]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Length: " << length
+					<< "\nUnexpected index/length found in active variables of ATOMIC_COUNTER_BUFFER: " << param2[i]
+					<< tcu::TestLog::EndMessage;
 				glDeleteProgram(program);
 				return ERROR;
 			}
@@ -2185,9 +2196,10 @@ protected:
 		{
 			if (exp.find(param[i]) == exp.end() || length != 2)
 			{
-				Output("Length: %d\n", length);
-				Output("Unexpected index/length found in active variables of GL_VERTEX_SUBROUTINE_UNIFORM: %d\n",
-					   param[i]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Length: " << length
+					<< "\nUnexpected index/length found in active variables of GL_VERTEX_SUBROUTINE_UNIFORM: "
+					<< param[i] << tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 		}
@@ -2562,26 +2574,34 @@ class SoubroutinesCompute : public PIQBase
 					switch (type)
 					{
 					case GL_VERTEX_SHADER:
-						Output("*** Vertex Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Vertex Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_CONTROL_SHADER:
-						Output("*** Tessellation Control Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Control Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_EVALUATION_SHADER:
-						Output("*** Tessellation Evaluation Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Evaluation Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_GEOMETRY_SHADER:
-						Output("*** Geometry Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Geometry Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_FRAGMENT_SHADER:
-						Output("*** Fragment Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Fragment Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_COMPUTE_SHADER:
-						Output("*** Compute Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Compute Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					default:
-						Output("*** Unknown Shader ***\n");
-						break;
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Unknown Shader ***" << tcu::TestLog::EndMessage;
 					}
 
 					GLint res;
@@ -2596,7 +2616,8 @@ class SoubroutinesCompute : public PIQBase
 					{
 						std::vector<GLchar> source(length);
 						glGetShaderSource(shaders[i], length, NULL, &source[0]);
-						Output("%s\n", &source[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &source[0] << tcu::TestLog::EndMessage;
 					}
 
 					// shader info log
@@ -2605,7 +2626,8 @@ class SoubroutinesCompute : public PIQBase
 					{
 						std::vector<GLchar> log(length);
 						glGetShaderInfoLog(shaders[i], length, NULL, &log[0]);
-						Output("%s\n", &log[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 					}
 				}
 			}
@@ -2617,7 +2639,7 @@ class SoubroutinesCompute : public PIQBase
 			{
 				std::vector<GLchar> log(length);
 				glGetProgramInfoLog(program, length, NULL, &log[0]);
-				Output("%s\n", &log[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 			}
 		}
 
@@ -2731,7 +2753,9 @@ class InvalidValueTest : public SimpleShaders
 		GLchar  name[100] = { '\0' };
 		GLenum  props[1]  = { GL_NAME_LENGTH };
 
-		Output("Case 1: <program> not a name of shader/program object\n");
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Case 1: <program> not a name of shader/program object"
+			<< tcu::TestLog::EndMessage;
 		glGetProgramInterfaceiv(1337u, GL_PROGRAM_INPUT, GL_ACTIVE_RESOURCES, &res);
 		ExpectError(GL_INVALID_VALUE, error);
 		glGetProgramResourceIndex(31337u, GL_PROGRAM_INPUT, "pie");
@@ -2744,22 +2768,27 @@ class InvalidValueTest : public SimpleShaders
 		ExpectError(GL_INVALID_VALUE, error);
 		glGetProgramResourceLocationIndex(1337u, GL_PROGRAM_OUTPUT, "pie");
 		ExpectError(GL_INVALID_VALUE, error);
-		Output("Case 1 finished\n");
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Case 1 finished" << tcu::TestLog::EndMessage;
 
 		GLuint program = CreateProgram(VertexShader().c_str(), FragmentShader().c_str(), false);
 		glBindAttribLocation(program, 0, "position");
 		glBindFragDataLocation(program, 0, "color");
 		LinkProgram(program);
 
-		Output("Case 2: <index> is greater than the number of the active resources in GetProgramResourceName\n");
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message
+			<< "Case 2: <index> is greater than the number of the active resources in GetProgramResourceName"
+			<< tcu::TestLog::EndMessage;
 		glGetProgramResourceName(program, GL_PROGRAM_INPUT, 3000, 1024, &len, name);
 		ExpectError(GL_INVALID_VALUE, error);
-		Output("Case 2 finished\n");
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Case 2 finished" << tcu::TestLog::EndMessage;
 
-		Output("Case 3: <propCount> is zero in GetProgramResourceiv\n");
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Case 3: <propCount> is zero in GetProgramResourceiv"
+			<< tcu::TestLog::EndMessage;
 		glGetProgramResourceiv(program, GL_PROGRAM_INPUT, 0, 0, props, 1024, &len, &res);
 		ExpectError(GL_INVALID_VALUE, error);
-		Output("Case 3 finished\n");
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Case 3 finished" << tcu::TestLog::EndMessage;
 
 		std::string str = "position";
 		glGetProgramResourceName(program, GL_PROGRAM_INPUT, 0, -100, NULL, const_cast<char*>(str.c_str()));
@@ -2809,18 +2838,21 @@ class InvalidEnumTest : public AtomicCounterSimple
 		GLchar  name[100] = { '\0' };
 		GLenum  props[1]  = { GL_TEXTURE_1D };
 
-		Output("Case 1: <programInterface> is ATOMIC_COUNTER_BUFFER in GetProgramResourceIndex or "
-			   "GetProgramResourceName\n");
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Case 1: <programInterface> is ATOMIC_COUNTER_BUFFER "
+			<< "in GetProgramResourceIndex or GetProgramResourceName" << tcu::TestLog::EndMessage;
 		glGetProgramResourceIndex(program, GL_ATOMIC_COUNTER_BUFFER, name);
 		ExpectError(GL_INVALID_ENUM, error);
 		glGetProgramResourceName(program, GL_ATOMIC_COUNTER_BUFFER, 0, 1024, &len, name);
 		ExpectError(GL_INVALID_ENUM, error);
-		Output("Case 1 finished\n");
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Case 1 finished" << tcu::TestLog::EndMessage;
 
-		Output("Case 2: <props> is not a property name supported by the command GetProgramResourceiv\n");
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Case 2: <props> is not a property name supported by "
+			<< "the command GetProgramResourceiv" << tcu::TestLog::EndMessage;
 		glGetProgramResourceiv(program, GL_PROGRAM_INPUT, 0, 1, props, 1024, &len, &res);
 		ExpectError(GL_INVALID_ENUM, error);
-		Output("Case 2 finished\n");
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Case 2 finished" << tcu::TestLog::EndMessage;
 
 		glGetProgramResourceLocation(program, GL_ATOMIC_COUNTER_BUFFER, "position");
 		ExpectError(GL_INVALID_ENUM, error);
@@ -2868,7 +2900,8 @@ class InvalidOperationTest : public SimpleShaders
 		GLchar		 name[100] = { '\0' };
 		GLenum		 props[1]  = { GL_OFFSET };
 
-		Output("Case 1: <program> is the name of a shader object\n");
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Case 1: <program> is the name of a shader object" << tcu::TestLog::EndMessage;
 		glGetProgramInterfaceiv(sh, GL_PROGRAM_INPUT, GL_ACTIVE_RESOURCES, &res);
 		ExpectError(GL_INVALID_OPERATION, error);
 		glGetProgramResourceIndex(sh, GL_PROGRAM_INPUT, "pie");
@@ -2882,24 +2915,28 @@ class InvalidOperationTest : public SimpleShaders
 		glGetProgramResourceLocationIndex(sh, GL_PROGRAM_OUTPUT, "pie");
 		ExpectError(GL_INVALID_OPERATION, error);
 		glDeleteShader(sh);
-		Output("Case 1 finished\n");
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Case 1 finished\n"
+			<< "Case 2: <pname> is not supported in GetProgramInterfacei" << tcu::TestLog::EndMessage;
 
-		Output("Case 2: <pname> is not supported in GetProgramInterfaceiv\n");
 		glGetProgramInterfaceiv(program, GL_PROGRAM_INPUT, GL_MAX_NUM_ACTIVE_VARIABLES, &res);
 		ExpectError(GL_INVALID_OPERATION, error);
-		Output("Case 2 finished\n");
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Case 2 finished\n"
+			<< "Case 3: <props> is not supported in GetProgramResourceiv" << tcu::TestLog::EndMessage;
 
-		Output("Case 3: <props> is not supported in GetProgramResourceiv");
 		glGetProgramResourceiv(program, GL_PROGRAM_INPUT, 0, 1, props, 1024, &len, &res);
 		ExpectError(GL_INVALID_OPERATION, error);
-		Output("Case 3 finished\n");
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Case 3 finished\n"
+			<< "Case 4: <program> has not been linked in GetProgramResourceLocation/GetProgramResourceLocationIndex"
+			<< tcu::TestLog::EndMessage;
 
-		Output("Case 4: <program> has not been linked in GetProgramResourceLocation/GetProgramResourceLocationIndex\n");
 		glGetProgramResourceLocation(program2, GL_PROGRAM_INPUT, "pie");
 		ExpectError(GL_INVALID_OPERATION, error);
 		glGetProgramResourceLocationIndex(program2, GL_PROGRAM_OUTPUT, "pie");
 		ExpectError(GL_INVALID_OPERATION, error);
-		Output("Case 4 finished\n");
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Case 4 finished\n" << tcu::TestLog::EndMessage;
 
 		glDeleteProgram(program);
 		glDeleteProgram(program2);
@@ -2986,8 +3023,10 @@ class ShaderStorageBlock : public SimpleShaders
 		glGetProgramInterfaceiv(program, GL_BUFFER_VARIABLE, GL_ACTIVE_RESOURCES, &res);
 		if (res < 7)
 		{
-			Output("Error on: glGetProgramInterfaceiv, if: GL_BUFFER_VARIABLE, param: GL_ACTIVE_RESOURCES\n");
-			Output("Expected value greater or equal to 7, got %d\n", res);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "Error on: glGetProgramInterfaceiv, if: GL_BUFFER_VARIABLE, param: GL_ACTIVE_RESOURCES\n"
+				<< "Expected value greater or equal to 7, got " << res << tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		VerifyGetProgramInterfaceiv(program, GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, 4, error);
@@ -3114,17 +3153,21 @@ class ShaderStorageBlock : public SimpleShaders
 		{
 			if (exp.find(param[i]) == exp.end())
 			{
-				Output("Unexpected index found in active variables of SimpleBuffer: %d\n", param[i]);
-				Output(
-					"Call: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: GL_SHADER_STORAGE_BLOCK\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message
+					<< "Unexpected index found in active variables of SimpleBuffer: " << param[i]
+					<< "\nCall: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: "
+					   "GL_SHADER_STORAGE_BLOCK"
+					<< tcu::TestLog::EndMessage;
 				glDeleteProgram(program);
 				return ERROR;
 			}
 			else if (length != 3)
 			{
-				Output(
-					"Call: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: GL_SHADER_STORAGE_BLOCK\n");
-				Output("Expected length: 3, actual length: %d\n", length);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Call: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES "
+												"interface: GL_SHADER_STORAGE_BLOCK\n"
+					<< "Expected length: 3, actual length: " << length << tcu::TestLog::EndMessage;
 				glDeleteProgram(program);
 				return ERROR;
 			}
@@ -3139,17 +3182,21 @@ class ShaderStorageBlock : public SimpleShaders
 		{
 			if (exp2.find(param[i]) == exp2.end())
 			{
-				Output("Unexpected index found in active variables of NotSoSimpleBuffer: %d\n", param[i]);
-				Output(
-					"Call: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: GL_SHADER_STORAGE_BLOCK\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message
+					<< "Unexpected index found in active variables of NotSoSimpleBuffer: " << param[i]
+					<< "\nCall: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: "
+					   "GL_SHADER_STORAGE_BLOCK"
+					<< tcu::TestLog::EndMessage;
 				glDeleteProgram(program);
 				return ERROR;
 			}
 			else if (length != 3)
 			{
-				Output(
-					"Call: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES interface: GL_SHADER_STORAGE_BLOCK\n");
-				Output("Expected length: 3, actual length: %d\n", length);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Call: glGetProgramResourceiv, property: GL_ACTIVE_VARIABLES "
+												"interface: GL_SHADER_STORAGE_BLOCK\n"
+					<< "Expected length: 3, actual length: " << length << tcu::TestLog::EndMessage;
 				glDeleteProgram(program);
 				return ERROR;
 			}
@@ -3158,8 +3205,9 @@ class ShaderStorageBlock : public SimpleShaders
 		glGetProgramInterfaceiv(program, GL_SHADER_STORAGE_BLOCK, GL_MAX_NUM_ACTIVE_VARIABLES, &res);
 		if (res < 3)
 		{
-			Output("Value of GL_MAX_NUM_ACTIVE_VARIABLES less than 3!\n");
-			Output("Call: glGetProgramInterfaceiv, interface: GL_SHADER_STORAGE_BLOCK\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Value of GL_MAX_NUM_ACTIVE_VARIABLES less than 3!\n"
+				<< "Call: glGetProgramInterfaceiv, interface: GL_SHADER_STORAGE_BLOCK" << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -3245,9 +3293,10 @@ class TransformFeedbackBuiltin : public SimpleShaders
 			indices[name] = i;
 		}
 
-		Output("Indices of builtins:\n");
-		Output("%d, %d, %d, %d, %d\n", indices["gl_NextBuffer"], indices["gl_SkipComponents1"],
-			   indices["gl_SkipComponents2"], indices["gl_SkipComponents3"], indices["gl_SkipComponents4"]);
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Indices of builtins:\n"
+											<< indices["gl_NextBuffer"] << ", " << indices["gl_SkipComponents1"] << ", "
+											<< indices["gl_SkipComponents2"] << ", " << indices["gl_SkipComponents3"]
+											<< ", " << indices["gl_SkipComponents4"] << tcu::TestLog::EndMessage;
 
 		GLenum props[]	= { GL_NAME_LENGTH, GL_TYPE, GL_ARRAY_SIZE };
 		GLint  expected[] = { 14, GL_NONE, 0 };
@@ -3321,13 +3370,15 @@ class NullLength : public SimpleShaders
 		std::string expected = "color";
 		if (name != expected)
 		{
-			Output("Expected name: %s, got: %s\n", expected.c_str(), name);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Expected name: " << expected
+												<< ", got: " << name << tcu::TestLog::EndMessage;
 			glDeleteProgram(program);
 			return ERROR;
 		}
 		else if (res != 1)
 		{
-			Output("Expected array_size: 1, got: %d\n", res);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected array_size: 1, got: " << res << tcu::TestLog::EndMessage;
 			glDeleteProgram(program);
 			return ERROR;
 		}
@@ -3493,8 +3544,10 @@ class TopLevelArray : public SimpleShaders
 		glGetProgramResourceiv(program, GL_BUFFER_VARIABLE, indicesBV["a[0][0]"], 1, &prop, 1024, &len, &res);
 		if (res <= 0)
 		{
-			Output("Call: glGetProgramResourceiv, interface: GL_BUFFER_VARIABLE, param: GL_TOP_LEVEL_ARRAY_STRIDE\n");
-			Output("Expected value greater than 0, got: %d\n", res);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "Call: glGetProgramResourceiv, interface: GL_BUFFER_VARIABLE, param: GL_TOP_LEVEL_ARRAY_STRIDE\n"
+				<< "Expected value greater than 0, got: " << res << tcu::TestLog::EndMessage;
 			glDeleteProgram(program);
 			return ERROR;
 		}
@@ -3535,7 +3588,8 @@ public:
 			glGetProgramInfoLog(program, sizeof(log), &length, log);
 			if (length > 1)
 			{
-				Output("Program Info Log:\n%s\n", log);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Program Info Log:\n"
+													<< log << tcu::TestLog::EndMessage;
 			}
 		}
 		return program;
@@ -4134,22 +4188,27 @@ class UniformBlockAdvanced : public SimpleShaders
 		glGetProgramResourceiv(program, GL_UNIFORM, indicesU["a"], 1, &prop, 1024, &len, &res);
 		if (res < 1)
 		{
-			Output("ERROR: glGetProgramResourceiv, interface GL_UNIFORM, prop GL_MATRIX_STRIDE\n");
-			Output("Expected value greater than 0, got %d\n", res);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "ERROR: glGetProgramResourceiv, interface GL_UNIFORM, prop GL_MATRIX_STRIDE\n"
+				<< "Expected value greater than 0, got " << res << tcu::TestLog::EndMessage;
 		}
 		prop = GL_OFFSET;
 		glGetProgramResourceiv(program, GL_UNIFORM, indicesU["a"], 1, &prop, 1024, &len, &res);
 		if (res < 0)
 		{
-			Output("ERROR: glGetProgramResourceiv, interface GL_UNIFORM, prop GL_OFFSET\n");
-			Output("Expected value not less than 0, got %d\n", res);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "ERROR: glGetProgramResourceiv, interface GL_UNIFORM, prop GL_OFFSET\n"
+				<< "Expected value not less than 0, got " << res << tcu::TestLog::EndMessage;
 		}
 		prop = GL_ARRAY_STRIDE;
 		glGetProgramResourceiv(program, GL_UNIFORM, indicesU["b"], 1, &prop, 1024, &len, &res);
 		if (res < 1)
 		{
-			Output("ERROR: glGetProgramResourceiv, interface GL_UNIFORM, prop GL_ARRAY_STRIDE\n");
-			Output("Expected value greater than 0, got %d\n", res);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "ERROR: glGetProgramResourceiv, interface GL_UNIFORM, prop GL_ARRAY_STRIDE\n"
+				<< "Expected value greater than 0, got " << res << tcu::TestLog::EndMessage;
 		}
 
 		glDeleteProgram(program);
@@ -4262,18 +4321,21 @@ class BuffLength : public SimpleShaders
 		glGetProgramResourceName(program, GL_UNIFORM, index, 0, NULL, buff);
 		if (buff[0] != 'a' || buff[1] != 'b' || buff[2] != 'c')
 		{
-			Output("ERROR: buff has changed\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "ERROR: buff has changed" << tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		glGetProgramResourceName(program, GL_UNIFORM, index, 2, &length, buff);
 		if (buff[0] != 's' || buff[1] != '\0' || buff[2] != 'c')
 		{
-			Output("ERROR: buff different then expected\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "ERROR: buff different then expected" << tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		if (length != 1)
 		{
-			Output("ERROR: incorrect length, expected 1, got %d\n", length);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "ERROR: incorrect length, expected 1, got "
+												<< length << tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 
@@ -4295,18 +4357,21 @@ class BuffLength : public SimpleShaders
 		glGetProgramResourceiv(program, GL_UNIFORM, index, 13, props, 0, NULL, params);
 		if (params[0] != 1 || params[1] != 2 || params[2] != 3)
 		{
-			Output("ERROR: params has changed\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "ERROR: params has changed" << tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		glGetProgramResourceiv(program, GL_UNIFORM, index, 13, props, 2, &length, params);
 		if (params[0] != 13 || params[1] != GL_FLOAT_VEC4 || params[2] != 3)
 		{
-			Output("ERROR: params has incorrect values\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "ERROR: params has incorrect values" << tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		if (length != 2)
 		{
-			Output("ERROR: incorrect length, expected 2, got %d\n", length);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "ERROR: incorrect length, expected 2, got "
+												<< length << tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 
@@ -4491,26 +4556,34 @@ class ComputeShaderTest : public PIQBase
 					switch (type)
 					{
 					case GL_VERTEX_SHADER:
-						Output("*** Vertex Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Vertex Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_CONTROL_SHADER:
-						Output("*** Tessellation Control Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Control Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_EVALUATION_SHADER:
-						Output("*** Tessellation Evaluation Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Evaluation Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_GEOMETRY_SHADER:
-						Output("*** Geometry Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Geometry Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_FRAGMENT_SHADER:
-						Output("*** Fragment Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Fragment Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_COMPUTE_SHADER:
-						Output("*** Compute Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Compute Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					default:
-						Output("*** Unknown Shader ***\n");
-						break;
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Unknown Shader ***" << tcu::TestLog::EndMessage;
 					}
 
 					GLint res;
@@ -4525,7 +4598,8 @@ class ComputeShaderTest : public PIQBase
 					{
 						std::vector<GLchar> source(length);
 						glGetShaderSource(shaders[i], length, NULL, &source[0]);
-						Output("%s\n", &source[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &source[0] << tcu::TestLog::EndMessage;
 					}
 
 					// shader info log
@@ -4534,7 +4608,8 @@ class ComputeShaderTest : public PIQBase
 					{
 						std::vector<GLchar> log(length);
 						glGetShaderInfoLog(shaders[i], length, NULL, &log[0]);
-						Output("%s\n", &log[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 					}
 				}
 			}
@@ -4546,7 +4621,7 @@ class ComputeShaderTest : public PIQBase
 			{
 				std::vector<GLchar> log(length);
 				glGetProgramInfoLog(program, length, NULL, &log[0]);
-				Output("%s\n", &log[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 			}
 		}
 
@@ -4928,13 +5003,17 @@ class LinkFailure : public SimpleShaders
 		glGetProgramInterfaceiv(program, GL_PROGRAM_INPUT, GL_ACTIVE_RESOURCES, &res);
 		if (res != 0 && res != 1)
 		{
-			Output("Error, expected 0 or 1 active resources, got: %d", res);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Error, expected 0 or 1 active resources, got: " << res
+				<< tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		glGetProgramInterfaceiv(program, GL_PROGRAM_INPUT, GL_MAX_NAME_LENGTH, &res);
 		if (res != 0 && res != 9)
 		{
-			Output("Error, expected 1 or 9 GL_MAX_NAME_LENGTH, got: %d", res);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Error, expected 1 or 9 GL_MAX_NAME_LENGTH, got: " << res
+				<< tcu::TestLog::EndMessage;
 			error = ERROR;
 		}
 		VerifyGetProgramResourceLocation(program, GL_PROGRAM_OUTPUT, "color", -1, error);
@@ -4959,7 +5038,6 @@ ProgramInterfaceQueryTests::~ProgramInterfaceQueryTests(void)
 void ProgramInterfaceQueryTests::init()
 {
 	using namespace deqp;
-	setOutput(m_context.getTestContext().getLog());
 	addChild(new TestSubcase(m_context, "empty-shaders", TestSubcase::Create<NoShaders>));
 	addChild(new TestSubcase(m_context, "simple-shaders", TestSubcase::Create<SimpleShaders>));
 	addChild(new TestSubcase(m_context, "input-types", TestSubcase::Create<InputTypes>));

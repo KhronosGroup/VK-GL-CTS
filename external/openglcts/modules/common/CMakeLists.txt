@@ -32,6 +32,8 @@ set(GLCTS_COMMON_SRCS
 	glcNoErrorTests.hpp
 	glcRobustnessTests.cpp
 	glcRobustnessTests.hpp
+	glcPolygonOffsetClampTests.cpp
+	glcPolygonOffsetClampTests.hpp
 	glcRobustBufferAccessBehaviorTests.cpp
 	glcRobustBufferAccessBehaviorTests.hpp
 	glcShaderIndexingTests.cpp

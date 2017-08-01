@@ -116,6 +116,11 @@ if (de::contains(extSet, "GL_EXT_debug_marker"))
 	gl->pushGroupMarkerEXT		= (glPushGroupMarkerEXTFunc)	loader->get("glPushGroupMarkerEXT");
 }
 
+if (de::contains(extSet, "GL_EXT_polygon_offset_clamp"))
+{
+	gl->polygonOffsetClampEXT	= (glPolygonOffsetClampEXTFunc)	loader->get("glPolygonOffsetClampEXT");
+}
+
 if (de::contains(extSet, "GL_OES_EGL_image"))
 {
 	gl->eglImageTargetRenderbufferStorageOES	= (glEGLImageTargetRenderbufferStorageOESFunc)	loader->get("glEGLImageTargetRenderbufferStorageOES");
@@ -176,4 +181,12 @@ if (de::contains(extSet, "GL_OES_viewport_array"))
 if (de::contains(extSet, "GL_NV_internalformat_sample_query"))
 {
 	gl->getInternalformatSampleivNV	= (glGetInternalformatSampleivNVFunc)	loader->get("glGetInternalformatSampleivNV");
+}
+
+if (de::contains(extSet, "GL_OES_draw_elements_base_vertex"))
+{
+	gl->drawElementsBaseVertex			= (glDrawElementsBaseVertexFunc)			loader->get("glDrawElementsBaseVertexOES");
+	gl->drawElementsInstancedBaseVertex	= (glDrawElementsInstancedBaseVertexFunc)	loader->get("glDrawElementsInstancedBaseVertexOES");
+	gl->drawRangeElementsBaseVertex		= (glDrawRangeElementsBaseVertexFunc)		loader->get("glDrawRangeElementsBaseVertexOES");
+	gl->multiDrawElementsBaseVertex		= (glMultiDrawElementsBaseVertexFunc)		loader->get("glMultiDrawElementsBaseVertexOES");
 }

@@ -50,32 +50,6 @@ enum Target
 	T2DA
 };
 
-static tcu::TestLog* currentLog;
-void setOutput(tcu::TestLog& log)
-{
-	currentLog = &log;
-}
-
-void Output(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-
-	const int   MAX_OUTPUT_STRING_SIZE = 40000;
-	static char temp[MAX_OUTPUT_STRING_SIZE];
-
-	vsnprintf(temp, MAX_OUTPUT_STRING_SIZE - 1, format, args);
-	temp[MAX_OUTPUT_STRING_SIZE - 1] = '\0';
-
-	char* logLine = strtok(temp, "\n");
-	while (logLine != NULL)
-	{
-		currentLog->writeMessage(logLine);
-		logLine = strtok(NULL, "\n");
-	}
-	va_end(args);
-}
-
 const char* const kGLSLVer = "#version 310 es";
 
 const char* const kGLSLSIA = NL "#extension GL_OES_shader_image_atomic : require";
@@ -235,8 +209,9 @@ public:
 		{
 			if (!Equal(map_data[i], expected_value, internalformat))
 			{
-				Output("[%d] Value is: %s. Value should be: %s.\n", i, ToString(map_data[i]).c_str(),
-					   ToString(expected_value).c_str());
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[" << i << "] Value is: " << ToString(map_data[i])
+					<< ". Value should be: " << ToString(expected_value) << tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -251,8 +226,9 @@ public:
 		{
 			if (always)
 			{
-				Output("[%d] Value is: %s. Value should be: %s.\n", i, ToString(map_data[i]).c_str(),
-					   ToString(expected_value).c_str());
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[" << i << "] Value is: " << ToString(map_data[i])
+					<< ". Value should be: " << ToString(expected_value) << tcu::TestLog::EndMessage;
 			}
 		}
 		return true;
@@ -277,11 +253,11 @@ public:
 					fabs(fb[i + 1] / g_color_max[1] - expected[1]) > g_color_eps[1] ||
 					fabs(fb[i + 2] / g_color_max[2] - expected[2]) > g_color_eps[2])
 				{
-
-					Output("Incorrect framebuffer color at pixel (%d %d). Color is (%f %f %f). "
-						   "Color should be (%f %f %f).\n",
-						   x, y, fb[i + 0] / g_color_max[0], fb[i + 1] / g_color_max[1], fb[i + 2] / g_color_max[2],
-						   expected[0], expected[1], expected[2]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Incorrect framebuffer color at pixel (" << x << " " << y
+						<< "). Color is (" << fb[i + 0] / g_color_max[0] << " " << fb[i + 1] / g_color_max[1] << " "
+						<< fb[i + 2] / g_color_max[2] << "Color should be (" << expected[0] << " " << expected[1] << " "
+						<< expected[2] << ")." << tcu::TestLog::EndMessage;
 					return false;
 				}
 			}
@@ -301,7 +277,8 @@ public:
 			glGetShaderInfoLog(shader, sizeof(log), &length, log);
 			if (length > 1)
 			{
-				Output("Shader Info Log:\n%s\n", log);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Shader Info Log:\n"
+													<< log << tcu::TestLog::EndMessage;
 			}
 			return false;
 		}
@@ -321,7 +298,8 @@ public:
 			glGetProgramInfoLog(program, sizeof(log), &length, log);
 			if (length > 1)
 			{
-				Output("Program Info Log:\n%s\n", log);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Program Info Log:\n"
+													<< log << tcu::TestLog::EndMessage;
 			}
 			return false;
 		}
@@ -347,7 +325,8 @@ public:
 			glShaderSource(sh, 2, src, NULL);
 			if (!CompileShader(sh))
 			{
-				Output("%s%s\n", src[0], src[1]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << src[0] << src[1] << tcu::TestLog::EndMessage;
 				return p;
 			}
 		}
@@ -360,16 +339,19 @@ public:
 			glShaderSource(sh, 2, src, NULL);
 			if (!CompileShader(sh))
 			{
-				Output("%s%s\n", src[0], src[1]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << src[0] << src[1] << tcu::TestLog::EndMessage;
 				return p;
 			}
 		}
 		if (!LinkProgram(p))
 		{
 			if (src_vs)
-				Output("%s%s\n", hvs.c_str(), src_vs);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << kGLSLVer << src_vs << tcu::TestLog::EndMessage;
 			if (src_fs)
-				Output("%s%s\n", hfs.c_str(), src_fs);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << kGLSLVer << src_fs << tcu::TestLog::EndMessage;
 			return p;
 		}
 
@@ -392,14 +374,15 @@ public:
 			glShaderSource(sh, 2, src, NULL);
 			if (!CompileShader(sh))
 			{
-				Output("%s%s\n", src[0], src[1]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << src[0] << src[1] << tcu::TestLog::EndMessage;
 				return p;
 			}
 		}
 		if (!LinkProgram(p))
 		{
 			if (!cs.empty())
-				Output("%s%s\n", hcs.c_str(), cs.c_str());
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << hcs << cs << tcu::TestLog::EndMessage;
 			return p;
 		}
 
@@ -416,7 +399,10 @@ public:
 		{
 			GLchar log[1024];
 			glGetProgramInfoLog(p, sizeof(log), NULL, log);
-			Output("Program Info Log:\n%s\n%s\n%s\n%s\n", log, src3[0], src3[1], src3[2]);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Program Info Log:\n"
+												<< src3[0] << "\n"
+												<< src3[1] << "\n"
+												<< src3[2] << tcu::TestLog::EndMessage;
 		}
 		return p;
 	}
@@ -568,14 +554,16 @@ public:
 		glGetIntegeri_v(GL_IMAGE_BINDING_NAME, unit, &i);
 		if (static_cast<GLuint>(i) != texture)
 		{
-			Output("GL_IMAGE_BINDING_NAME is %d should be %d.\n", i, texture);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_IMAGE_BINDING_NAME is " << i
+												<< " should be " << texture << tcu::TestLog::EndMessage;
 			return false;
 		}
 
 		glGetIntegeri_v(GL_IMAGE_BINDING_LEVEL, unit, &i);
 		if (i != level)
 		{
-			Output("GL_IMAGE_BINDING_LEVEL is %d should be %d.\n", i, level);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_IMAGE_BINDING_LEVEL is " << i
+												<< " should be " << level << tcu::TestLog::EndMessage;
 			return false;
 		}
 
@@ -583,28 +571,32 @@ public:
 		glGetBooleani_v(GL_IMAGE_BINDING_LAYERED, unit, &b);
 		if (i != layered || b != layered)
 		{
-			Output("GL_IMAGE_BINDING_LAYERED is %d should be %d.\n", i, layered);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_IMAGE_BINDING_LAYERED is " << i
+												<< " should be " << layered << tcu::TestLog::EndMessage;
 			return false;
 		}
 
 		glGetIntegeri_v(GL_IMAGE_BINDING_LAYER, unit, &i);
 		if (i != layer)
 		{
-			Output("GL_IMAGE_BINDING_LAYER is %d should be %d.\n", i, layer);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_IMAGE_BINDING_LAYER is " << i
+												<< " should be " << layer << tcu::TestLog::EndMessage;
 			return false;
 		}
 
 		glGetIntegeri_v(GL_IMAGE_BINDING_ACCESS, unit, &i);
 		if (static_cast<GLenum>(i) != access)
 		{
-			Output("GL_IMAGE_BINDING_ACCESS is %d should be %d.\n", i, access);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_IMAGE_BINDING_ACCESS is " << i
+												<< " should be " << access << tcu::TestLog::EndMessage;
 			return false;
 		}
 
 		glGetIntegeri_v(GL_IMAGE_BINDING_FORMAT, unit, &i);
 		if (static_cast<GLenum>(i) != format)
 		{
-			Output("GL_IMAGE_BINDING_FORMAT is %d should be %d.\n", i, format);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_IMAGE_BINDING_FORMAT is " << i
+												<< " should be " << format << tcu::TestLog::EndMessage;
 			return false;
 		}
 
@@ -846,32 +838,43 @@ class BasicAPIGet : public ShaderImageLoadStoreBase
 	{
 		if (!CheckMax(GL_MAX_IMAGE_UNITS, 4))
 		{
-			Output("GL_MAX_IMAGE_UNITS value is invalid.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_MAX_IMAGE_UNITS value is invalid." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		if (!CheckMax(GL_MAX_COMBINED_SHADER_OUTPUT_RESOURCES, 4))
 		{
-			Output("GL_MAX_COMBINED_SHADER_OUTPUT_RESOURCES value is invalid.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_MAX_COMBINED_SHADER_OUTPUT_RESOURCES value is invalid."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		if (!CheckMax(GL_MAX_VERTEX_IMAGE_UNIFORMS, 0))
 		{
-			Output("GL_MAX_VERTEX_IMAGE_UNIFORMS value is invalid.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_MAX_VERTEX_IMAGE_UNIFORMS value is invalid."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		if (!CheckMax(GL_MAX_FRAGMENT_IMAGE_UNIFORMS, 0))
 		{
-			Output("GL_MAX_FRAGMENT_IMAGE_UNIFORMS value is invalid.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_MAX_FRAGMENT_IMAGE_UNIFORMS value is invalid."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		if (!CheckMax(GL_MAX_COMBINED_IMAGE_UNIFORMS, 4))
 		{
-			Output("GL_MAX_COMBINED_IMAGE_UNIFORMS value is invalid.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_MAX_COMBINED_IMAGE_UNIFORMS value is invalid."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		if (!CheckMax(GL_MAX_COMPUTE_IMAGE_UNIFORMS, 4))
 		{
-			Output("GL_MAX_COMPUTE_IMAGE_UNIFORMS value is invalid.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_MAX_COMPUTE_IMAGE_UNIFORMS value is invalid."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -896,7 +899,8 @@ class BasicAPIBind : public ShaderImageLoadStoreBase
 		{
 			if (!CheckBinding(index, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI))
 			{
-				Output("Binding point %d has invalid default state.\n", index);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Binding point " << index
+													<< " has invalid default state." << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -931,7 +935,9 @@ class BasicAPIBind : public ShaderImageLoadStoreBase
 			glGetIntegeri_v(GL_IMAGE_BINDING_NAME, index, &name);
 			if (name != 0)
 			{
-				Output("Binding point %d should be set to 0 after texture deletion.\n", index);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Binding point " << index
+					<< " should be set to 0 after texture deletion." << tcu::TestLog::EndMessage;
 				status = false;
 			}
 			if (!CheckBinding(index, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI))
@@ -1023,15 +1029,19 @@ class BasicAPITexParam : public ShaderImageLoadStoreBase
 		glGetTexParameteriv(GL_TEXTURE_2D, GL_IMAGE_FORMAT_COMPATIBILITY_TYPE, &i);
 		if (i != GL_IMAGE_FORMAT_COMPATIBILITY_BY_SIZE)
 		{
-			Output("GL_IMAGE_FORMAT_COMPATIBILITY_TYPE should equal to "
-				   "GL_IMAGE_FORMAT_COMPATIBILITY_BY_SIZE for textures allocated by the GL.");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_IMAGE_FORMAT_COMPATIBILITY_TYPE should equal to "
+											"GL_IMAGE_FORMAT_COMPATIBILITY_BY_SIZE for textures allocated by the GL."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glGetTexParameterfv(GL_TEXTURE_2D, GL_IMAGE_FORMAT_COMPATIBILITY_TYPE, &f);
 		if (static_cast<GLenum>(f) != GL_IMAGE_FORMAT_COMPATIBILITY_BY_SIZE)
 		{
-			Output("GL_IMAGE_FORMAT_COMPATIBILITY_TYPE should equal to "
-				   "GL_IMAGE_FORMAT_COMPATIBILITY_BY_SIZE for textures allocated by the GL.");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_IMAGE_FORMAT_COMPATIBILITY_TYPE should equal to "
+											"GL_IMAGE_FORMAT_COMPATIBILITY_BY_SIZE for textures allocated by the GL."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -1139,9 +1149,11 @@ class BasicAllFormatsStoreFS : public ShaderImageLoadStoreBase
 		{
 			if (!Equal(map_data[i], expected_value, internalformat))
 			{
-				Output("[%d] Value is: %s. Value should be: %s. Format is: %s. Unit is: %d.\n", i,
-					   ToString(map_data[i]).c_str(), ToString(expected_value).c_str(),
-					   FormatEnumToString(internalformat).c_str(), unit);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[" << i << "] Value is: " << ToString(map_data[i])
+					<< ". Value should be: " << ToString(expected_value)
+					<< ". Format is: " << FormatEnumToString(internalformat) << ". Unit is: " << unit
+					<< tcu::TestLog::EndMessage;
 				glDeleteTextures(1, &texture);
 				glUseProgram(0);
 				glDeleteProgram(program);
@@ -1263,9 +1275,11 @@ class BasicAllFormatsStoreCS : public ShaderImageLoadStoreBase
 		{
 			if (!Equal(map_data[i], expected_value, internalformat))
 			{
-				Output("[%d] Value is: %s. Value should be: %s. Format is: %s. Unit is: %d.\n", i,
-					   ToString(map_data[i]).c_str(), ToString(expected_value).c_str(),
-					   FormatEnumToString(internalformat).c_str(), unit);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[" << i << "] Value is: " << ToString(map_data[i])
+					<< ". Value should be: " << ToString(expected_value)
+					<< ". Format is: " << FormatEnumToString(internalformat) << ". Unit is: " << unit
+					<< tcu::TestLog::EndMessage;
 				glDeleteTextures(1, &texture);
 				glUseProgram(0);
 				glDeleteProgram(program);
@@ -1421,9 +1435,11 @@ class BasicAllFormatsLoadFS : public ShaderImageLoadStoreBase
 		{
 			if (!Equal(map_data[i], expected_value, internalformat))
 			{
-				Output("[%d] Value is: %s. Value should be: %s. Format is: %s. Unit is: %d.\n", i,
-					   ToString(map_data[i]).c_str(), ToString(expected_value).c_str(),
-					   FormatEnumToString(internalformat).c_str(), unit);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[" << i << "] Value is: " << ToString(map_data[i])
+					<< ". Value should be: " << ToString(expected_value)
+					<< ". Format is: " << FormatEnumToString(internalformat) << ". Unit is: " << unit
+					<< tcu::TestLog::EndMessage;
 				glUseProgram(0);
 				glDeleteProgram(program);
 				glDeleteTextures(1, &texture);
@@ -1557,9 +1573,11 @@ class BasicAllFormatsLoadCS : public ShaderImageLoadStoreBase
 		{
 			if (!Equal(map_data[i], expected_value, internalformat))
 			{
-				Output("[%d] Value is: %s. Value should be: %s. Format is: %s. Unit is: %d.\n", i,
-					   ToString(map_data[i]).c_str(), ToString(expected_value).c_str(),
-					   FormatEnumToString(internalformat).c_str(), unit);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[" << i << "] Value is: " << ToString(map_data[i])
+					<< ". Value should be: " << ToString(expected_value)
+					<< ". Format is: " << FormatEnumToString(internalformat) << ". Unit is: " << unit
+					<< tcu::TestLog::EndMessage;
 				glUseProgram(0);
 				glDeleteProgram(program);
 				glDeleteTextures(1, &texture);
@@ -1674,8 +1692,10 @@ class BasicAllFormatsLoadStoreComputeStage : public ShaderImageLoadStoreBase
 		{
 			if (!Equal(map_data[i], expected_value, internalformat))
 			{
-				Output("[%d] Value is: %s. Value should be: %s. Format is: %s.\n", i, ToString(map_data[i]).c_str(),
-					   ToString(expected_value).c_str(), FormatEnumToString(internalformat).c_str());
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[" << i << "] Value is: " << ToString(map_data[i])
+					<< ". Value should be: " << ToString(expected_value)
+					<< ". Format is: " << FormatEnumToString(internalformat) << tcu::TestLog::EndMessage;
 				glDeleteTextures(2, texture);
 				glUseProgram(0);
 				glDeleteProgram(program);
@@ -1870,7 +1890,9 @@ class BasicAllTargetsStoreFS : public ShaderImageLoadStoreBase
 			layers = 6;
 		status	 = CompareValues(map_data, kSize, expected_value, internalformat, layers);
 		if (!status)
-			Output("%d target, %s format failed. \n", target, FormatEnumToString(internalformat).c_str());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << target << " target, " << FormatEnumToString(internalformat)
+				<< ". format failed." << tcu::TestLog::EndMessage;
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
 		glDeleteTextures(8, textures);
@@ -2107,7 +2129,9 @@ class BasicAllTargetsStoreCS : public ShaderImageLoadStoreBase
 			layers = 6;
 		status	 = CompareValues(map_data, kSize, expected_value, internalformat, layers);
 		if (!status)
-			Output("%d target, %s format failed. \n", target, FormatEnumToString(internalformat).c_str());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << target << " target, " << FormatEnumToString(internalformat)
+				<< ". format failed." << tcu::TestLog::EndMessage;
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
 		glDeleteTextures(8, textures);
@@ -2359,7 +2383,9 @@ class BasicAllTargetsLoadFS : public ShaderImageLoadStoreBase
 			layers = 6;
 		status	 = CompareValues(map_data, kSize, expected_value, internalformat, layers);
 		if (!status)
-			Output("%d target, %s format failed. \n", target, FormatEnumToString(internalformat).c_str());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << target << " target, " << FormatEnumToString(internalformat)
+				<< ". format failed." << tcu::TestLog::EndMessage;
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
 		glUseProgram(0);
@@ -2570,7 +2596,9 @@ class BasicAllTargetsLoadCS : public ShaderImageLoadStoreBase
 			layers = 6;
 		status	 = CompareValues(map_data, kSize, expected_value, internalformat, layers);
 		if (!status)
-			Output("%d target, %s format failed. \n", target, FormatEnumToString(internalformat).c_str());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << target << " target, " << FormatEnumToString(internalformat)
+				<< ". format failed." << tcu::TestLog::EndMessage;
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
 		glUseProgram(0);
@@ -2769,8 +2797,10 @@ class BasicAllTargetsAtomicFS : public ShaderImageLoadStoreBase
 			if (!Equal(out_data[i], ivec4(10, 10, 10, 10), 0))
 			{
 				status = false;
-				Output("[%d] Atomic operation check failed. (operation/target coded: %s) \n", i,
-					   ToString(out_data[i]).c_str());
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[" << i
+					<< "] Atomic operation check failed. (operation/target coded: " << ToString(out_data[i]) << ")"
+					<< tcu::TestLog::EndMessage;
 			}
 		}
 
@@ -2950,7 +2980,9 @@ class LoadStoreMachine : public ShaderImageLoadStoreBase
 			if (!Equal(out_data[i], ivec4(0, 1, 0, 1), 0))
 			{
 				status = false;
-				Output("[%d] load/store operation check failed. (%s) \n", i, ToString(out_data[i]).c_str());
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[" << i << "] load/store operation check failed. ("
+					<< ToString(out_data[i]) << ")" << tcu::TestLog::EndMessage;
 			}
 		}
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -3182,7 +3214,9 @@ class AtomicMachine : public ShaderImageLoadStoreBase
 			if (!Equal(out_data[i], ivec4(0, 1, 0, 1), 0))
 			{
 				status = false;
-				Output("[%d] Atomic operation check failed. (%s) \n", i, ToString(out_data[i]).c_str());
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[" << i << "] Atomic operation check failed. ("
+					<< ToString(out_data[i]) << ")" << tcu::TestLog::EndMessage;
 			}
 		}
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -3435,8 +3469,9 @@ class BasicGLSLMiscFS : public ShaderImageLoadStoreBase
 			if (!Equal(out_data[i], ivec4(5, 0, 0, 2), 0))
 			{
 				status = false;
-				Output("[%d] Check failed. Received: %s instead of: %s \n", i, ToString(out_data[i]).c_str(),
-					   ToString(ivec4(5, 0, 0, 2)).c_str());
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[" << i << "] Check failed. Received: " << ToString(out_data[i])
+					<< " instead of: " << ToString(ivec4(5, 0, 0, 2)) << tcu::TestLog::EndMessage;
 			}
 		}
 
@@ -3516,8 +3551,9 @@ class BasicGLSLMiscCS : public ShaderImageLoadStoreBase
 			if (!Equal(out_data[i], ivec4(5, 0, 0, 2), 0))
 			{
 				status = false;
-				Output("[%d] Check failed. Received: %s instead of: %s \n", i, ToString(out_data[i]).c_str(),
-					   ToString(ivec4(5, 0, 0, 2)).c_str());
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[" << i << "] Check failed. Received: " << ToString(out_data[i])
+					<< " instead of: " << ToString(ivec4(5, 0, 0, 2)) << tcu::TestLog::EndMessage;
 			}
 		}
 
@@ -3744,8 +3780,9 @@ class BasicGLSLConst : public ShaderImageLoadStoreBase
 
 		if (!Equal(map_data[0], ivec4(0, 1, 0, 1), 0))
 		{
-			Output("[%d] Value is: %s. Value should be: %s.\n", i, ToString(map_data[0]).c_str(),
-				   ToString(ivec4(0, 1, 0, 1)).c_str());
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "[" << i << "] Value is: " << ToString(map_data[0])
+				<< ". Value should be: " << ToString(ivec4(0, 1, 0, 1)) << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
@@ -5010,7 +5047,10 @@ class NegativeUniform : public ShaderImageLoadStoreBase
 
 		if (!status)
 		{
-			Output("glUniform* should generate INVALID_OPERATION if the location refers to an image variable.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "glUniform* should generate INVALID_OPERATION if the location refers to an image variable."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -5030,8 +5070,10 @@ class NegativeUniform : public ShaderImageLoadStoreBase
 
 		if (!status)
 		{
-			Output(
-				"glProgramUniform* should generate INVALID_OPERATION if the location refers to an image variable.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "glProgramUniform* should generate INVALID_OPERATION if the location refers to an image variable."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -5070,37 +5112,52 @@ class NegativeBind : public ShaderImageLoadStoreBase
 		glBindImageTexture(max_image_units, m_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("BindImageTexture should generate INVALID_VALUE if <unit> is greater than or equal to the value of "
-				   "MAX_IMAGE_UNITS.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "BindImageTexture should generate INVALID_VALUE if <unit> is greater than or equal to the value of "
+				   "MAX_IMAGE_UNITS."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
 		glBindImageTexture(0, 123, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("BindImageTexture should generate INVALID_VALUE if <texture> is not the name of an existing texture "
-				   "object.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "BindImageTexture should generate INVALID_VALUE if <texture> is not the name of an existing texture "
+				   "object."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
 		glBindImageTexture(1, m_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("BindImageTexture should generate INVALID_VALUE if <format> is not a legal format.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "BindImageTexture should generate INVALID_VALUE if <format> is not a legal format."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
 		glBindImageTexture(1, m_texture, -1, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("BindImageTexture should generate INVALID_VALUE if <level> is less than zero.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "BindImageTexture should generate INVALID_VALUE if <level> is less than zero."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
 		glBindImageTexture(1, m_texture, 0, GL_FALSE, -1, GL_READ_ONLY, GL_RGBA32F);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("BindImageTexture should generate INVALID_VALUE if <layer> is less than zero.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "BindImageTexture should generate INVALID_VALUE if <layer> is less than zero."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -5109,7 +5166,10 @@ class NegativeBind : public ShaderImageLoadStoreBase
 		glBindImageTexture(1, m_texture2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("BindImageTexture should generate INVALID_OPERATION if <texture> is a mutable texture object.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "BindImageTexture should generate INVALID_OPERATION if <texture> is a mutable texture object."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -5206,7 +5266,8 @@ class NegativeCompileErrors : public ShaderImageLoadStoreBase
 
 		GLchar log[1024];
 		glGetShaderInfoLog(sh, sizeof(log), NULL, log);
-		Output("Shader Info Log:\n%s\n", log);
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Shader Info Log:\n"
+											<< log << tcu::TestLog::EndMessage;
 
 		GLint status;
 		glGetShaderiv(sh, GL_COMPILE_STATUS, &status);
@@ -5214,7 +5275,8 @@ class NegativeCompileErrors : public ShaderImageLoadStoreBase
 
 		if (status == GL_TRUE)
 		{
-			Output("Compilation should fail [compute shader].\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Compilation should fail [compute shader]." << tcu::TestLog::EndMessage;
 			return false;
 		}
 		const char* const fsVer   = "#version 310 es" NL "precision highp float;";
@@ -5224,14 +5286,16 @@ class NegativeCompileErrors : public ShaderImageLoadStoreBase
 		glCompileShader(fsh);
 
 		glGetShaderInfoLog(fsh, sizeof(log), NULL, log);
-		Output("Shader Info Log:\n%s\n", log);
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Shader Info Log:\n"
+											<< log << tcu::TestLog::EndMessage;
 
 		glGetShaderiv(fsh, GL_COMPILE_STATUS, &status);
 		glDeleteShader(fsh);
 
 		if (status == GL_TRUE)
 		{
-			Output("Compilation should fail [fragment shader].\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Compilation should fail [fragment shader]." << tcu::TestLog::EndMessage;
 			return false;
 		}
 
@@ -5293,14 +5357,16 @@ class NegativeLinkErrors : public ShaderImageLoadStoreBase
 		if (status == GL_FALSE)
 		{
 			glDeleteProgram(p);
-			Output("VS compilation should be ok.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "VS compilation should be ok." << tcu::TestLog::EndMessage;
 			return false;
 		}
 		glGetShaderiv(fsh, GL_COMPILE_STATUS, &status);
 		if (status == GL_FALSE)
 		{
 			glDeleteProgram(p);
-			Output("FS compilation should be ok.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "FS compilation should be ok." << tcu::TestLog::EndMessage;
 			return false;
 		}
 
@@ -5308,14 +5374,16 @@ class NegativeLinkErrors : public ShaderImageLoadStoreBase
 
 		GLchar log[1024];
 		glGetProgramInfoLog(p, sizeof(log), NULL, log);
-		Output("Program Info Log:\n%s\n", log);
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Program Info Log:\n"
+											<< log << tcu::TestLog::EndMessage;
 
 		glGetProgramiv(p, GL_LINK_STATUS, &status);
 		glDeleteProgram(p);
 
 		if (status == GL_TRUE)
 		{
-			Output("Link operation should fail.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Link operation should fail." << tcu::TestLog::EndMessage;
 			return false;
 		}
 		return true;
@@ -5336,7 +5404,6 @@ ShaderImageLoadStoreTests::~ShaderImageLoadStoreTests(void)
 void ShaderImageLoadStoreTests::init()
 {
 	using namespace glcts;
-	setOutput(m_context.getTestContext().getLog());
 	addChild(new TestSubcase(m_context, "basic-api-get", TestSubcase::Create<BasicAPIGet>));
 	addChild(new TestSubcase(m_context, "basic-api-bind", TestSubcase::Create<BasicAPIBind>));
 	addChild(new TestSubcase(m_context, "basic-api-barrier", TestSubcase::Create<BasicAPIBarrier>));

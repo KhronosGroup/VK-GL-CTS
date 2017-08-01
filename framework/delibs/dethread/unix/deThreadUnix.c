@@ -35,7 +35,9 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <sched.h>
-#include <sys/syscall.h>
+#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID)
+#	include <sys/syscall.h>
+#endif
 
 #if (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS)
 #	if !defined(_SC_NPROCESSORS_CONF)

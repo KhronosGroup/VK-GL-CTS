@@ -64,10 +64,11 @@ namespace
 
 enum AllocationKind
 {
-	ALLOCATION_KIND_SUBALLOCATED,
+	ALLOCATION_KIND_SUBALLOCATED = 0,
 	ALLOCATION_KIND_DEDICATED,
-};
 
+	ALLOCATION_KIND_LAST,
+};
 
 de::MovePtr<Allocation> allocateBuffer (const InstanceInterface&	vki,
 										const DeviceInterface&		vkd,
@@ -1640,7 +1641,7 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 			1u,									// imageLayerCount
 			{0u, 1u},							// imageViewRange
 			{0u, 1u},							// clearLayerRange
-			DE_NULL								// testName
+			"single_layer"						// testName
 		},
 		{
 			16u,								// imageLayerCount
@@ -1680,152 +1681,159 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 		};
 
 		for (size_t	imageTypeIndex = 0; imageTypeIndex < numOfImageTypesToTest; ++imageTypeIndex)
-		for (size_t imageFormatIndex = 0; imageFormatIndex < numOfColorImageFormatsToTest; ++imageFormatIndex)
-		for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfImageLayerParamsToTest; ++imageLayerParamsIndex)
 		{
+			de::MovePtr<TestCaseGroup> imageTypeGroup(new TestCaseGroup(testCtx, getImageTypeCaseName(imageTypesToTest[imageTypeIndex]), ""));
 
-			if (imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount > 1u && imageTypesToTest[imageTypeIndex] == VK_IMAGE_TYPE_3D)
+			for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfImageLayerParamsToTest; ++imageLayerParamsIndex)
 			{
 				// 3D ARRAY images are not supported
-				continue;
+				if (imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount > 1u && imageTypesToTest[imageTypeIndex] == VK_IMAGE_TYPE_3D)
+					continue;
+
+				de::MovePtr<TestCaseGroup> imageLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
+
+				for (size_t imageFormatIndex = 0; imageFormatIndex < numOfColorImageFormatsToTest; ++imageFormatIndex)
+				{
+					const VkFormat		format			= colorImageFormatsToTest[imageFormatIndex];
+					const std::string	testCaseName	= getFormatCaseName(format);
+					const TestParams	testParams		=
+					{
+						false,																// bool				useSingleMipLevel;
+						imageTypesToTest[imageTypeIndex],									// VkImageType		imageType;
+						format,																// VkFormat			imageFormat;
+						imageDimensionsByType[imageTypeIndex],								// VkExtent3D		imageExtent;
+						imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32         imageLayerCount;
+						{
+							0u,
+							imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount
+						},																	// LayerRange		imageViewLayerRange;
+						makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),				// VkClearValue		initValue;
+						{
+							makeClearColorValue(format, 0.1f, 0.5f, 0.3f, 0.9f),				// VkClearValue		clearValue[0];
+							makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),				// VkClearValue		clearValue[1];
+						},
+						imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange       clearLayerRange;
+						allocationKind														// AllocationKind	allocationKind;
+					};
+
+					imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+				}
+				imageTypeGroup->addChild(imageLayersGroup.release());
 			}
-
-			const VkFormat		format		= colorImageFormatsToTest[imageFormatIndex];
-			const TestParams	testParams	=
-			{
-				false,																// bool				useSingleMipLevel;
-				imageTypesToTest[imageTypeIndex],									// VkImageType		imageType;
-				format,																// VkFormat			imageFormat;
-				imageDimensionsByType[imageTypeIndex],								// VkExtent3D		imageExtent;
-				imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32         imageLayerCount;
-				{
-					0u,
-					imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount
-				},																	// LayerRange		imageViewLayerRange;
-				makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),				// VkClearValue		initValue;
-				{
-					makeClearColorValue(format, 0.1f, 0.5f, 0.3f, 0.9f),				// VkClearValue		clearValue[0];
-					makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),				// VkClearValue		clearValue[1];
-				},
-				imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange       clearLayerRange;
-				allocationKind														// AllocationKind	allocationKind;
-			};
-
-			std::ostringstream	testCaseName;
-			testCaseName << getImageTypeCaseName(testParams.imageType) << "_" << getFormatCaseName(format);
-			if (imageLayerParamsToTest[imageLayerParamsIndex].testName != DE_NULL)
-				testCaseName << "_" << imageLayerParamsToTest[imageLayerParamsIndex].testName;
-
-			colorImageClearTests->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Clear Color Image", testParams));
+			colorImageClearTests->addChild(imageTypeGroup.release());
 		}
-
 		imageClearingTests->addChild(colorImageClearTests.release());
 	}
 
 	// Clear depth/stencil image
 	{
-		for (size_t imageFormatIndex = 0; imageFormatIndex < numOfDepthStencilImageFormatsToTest; ++imageFormatIndex)
 		for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfImageLayerParamsToTest; ++imageLayerParamsIndex)
 		{
-			const TestParams testParams =
+			de::MovePtr<TestCaseGroup> imageLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
+
+			for (size_t imageFormatIndex = 0; imageFormatIndex < numOfDepthStencilImageFormatsToTest; ++imageFormatIndex)
 			{
-				true,																// bool				useSingleMipLevel;
-				VK_IMAGE_TYPE_2D,													// VkImageType		imageType;
-				depthStencilImageFormatsToTest[imageFormatIndex],					// VkFormat			format;
-				{ 256, 256, 1 },													// VkExtent3D		extent;
-				imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32         imageLayerCount;
+				const VkFormat		format			= depthStencilImageFormatsToTest[imageFormatIndex];
+				const std::string	testCaseName	= getFormatCaseName(format);
+				const TestParams	testParams		=
 				{
-					0u,
-					imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount
-				},																	// LayerRange		imageViewLayerRange;
-				makeClearValueDepthStencil(0.5f, 0x03),								// VkClearValue		initValue
-				{
-					makeClearValueDepthStencil(0.1f, 0x06),								// VkClearValue		clearValue[0];
-					makeClearValueDepthStencil(0.3f, 0x04),								// VkClearValue		clearValue[1];
-				},
-				imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange       clearLayerRange;
-				allocationKind														// AllocationKind	allocationKind;
-			};
+					true,																// bool				useSingleMipLevel;
+					VK_IMAGE_TYPE_2D,													// VkImageType		imageType;
+					format,																// VkFormat			format;
+					{ 256, 256, 1 },													// VkExtent3D		extent;
+					imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32         imageLayerCount;
+					{
+						0u,
+						imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount
+					},																	// LayerRange		imageViewLayerRange;
+					makeClearValueDepthStencil(0.5f, 0x03),								// VkClearValue		initValue
+					{
+						makeClearValueDepthStencil(0.1f, 0x06),								// VkClearValue		clearValue[0];
+						makeClearValueDepthStencil(0.3f, 0x04),								// VkClearValue		clearValue[1];
+					},
+					imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange       clearLayerRange;
+					allocationKind														// AllocationKind	allocationKind;
+				};
 
-			std::ostringstream	testCaseName;
-			testCaseName << getImageTypeCaseName(testParams.imageType) << "_" << getFormatCaseName(testParams.imageFormat);
-			if (imageLayerParamsToTest[imageLayerParamsIndex].testName != DE_NULL)
-				testCaseName << "_" << imageLayerParamsToTest[imageLayerParamsIndex].testName;
-
-			depthStencilImageClearTests->addChild(new InstanceFactory1<ClearDepthStencilImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Clear Depth/Stencil Image", testParams));
+				imageLayersGroup->addChild(new InstanceFactory1<ClearDepthStencilImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Depth/Stencil Image", testParams));
+			}
+			depthStencilImageClearTests->addChild(imageLayersGroup.release());
 		}
-
 		imageClearingTests->addChild(depthStencilImageClearTests.release());
 	}
 
 	// Clear color attachment
 	{
-		for (size_t imageFormatIndex = 0; imageFormatIndex < numOfColorImageFormatsToTest; ++imageFormatIndex)
 		for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfAttachmentLayerParamsToTest; ++imageLayerParamsIndex)
 		{
-			const VkFormat		format		= colorImageFormatsToTest[imageFormatIndex];
+			de::MovePtr<TestCaseGroup> colorAttachmentClearLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
+			de::MovePtr<TestCaseGroup> partialColorAttachmentClearLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
 
-			const TestParams	testParams =
+			for (size_t imageFormatIndex = 0; imageFormatIndex < numOfColorImageFormatsToTest; ++imageFormatIndex)
 			{
-				true,															// bool				useSingleMipLevel;
-				VK_IMAGE_TYPE_2D,												// VkImageType		imageType;
-				format,															// VkFormat			format;
-				{ 256, 256, 1 },												// VkExtent3D		extent;
-				imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,	// deUint32         imageLayerCount;
-				imageLayerParamsToTest[imageLayerParamsIndex].imageViewRange,	// LayerRange		imageViewLayerRange;
-				makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),			// VkClearValue		initValue
+				const VkFormat		format			= colorImageFormatsToTest[imageFormatIndex];
+				const std::string	testCaseName	= getFormatCaseName(format);
+				const TestParams	testParams		=
 				{
-					makeClearColorValue(format, 0.1f, 0.5f, 0.3f, 0.9f),			// VkClearValue		clearValue[0];
-					makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),			// VkClearValue		clearValue[1];
-				},
-				imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,	// LayerRange       clearLayerRange;
-				allocationKind													// AllocationKind	allocationKind;
-			};
+					true,															// bool				useSingleMipLevel;
+					VK_IMAGE_TYPE_2D,												// VkImageType		imageType;
+					format,															// VkFormat			format;
+					{ 256, 256, 1 },												// VkExtent3D		extent;
+					imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,	// deUint32         imageLayerCount;
+					imageLayerParamsToTest[imageLayerParamsIndex].imageViewRange,	// LayerRange		imageViewLayerRange;
+					makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),			// VkClearValue		initValue
+					{
+						makeClearColorValue(format, 0.1f, 0.5f, 0.3f, 0.9f),			// VkClearValue		clearValue[0];
+						makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),			// VkClearValue		clearValue[1];
+					},
+					imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,	// LayerRange       clearLayerRange;
+					allocationKind													// AllocationKind	allocationKind;
+				};
 
-			std::ostringstream	testCaseName;
-			testCaseName << getImageTypeCaseName(testParams.imageType) << "_" << getFormatCaseName(format);
-			if (imageLayerParamsToTest[imageLayerParamsIndex].testName != DE_NULL)
-				testCaseName << "_" << imageLayerParamsToTest[imageLayerParamsIndex].testName;
-
-			colorAttachmentClearTests->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Clear Color Attachment", testParams));
-			partialColorAttachmentClearTests->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Partial Clear Color Attachment", testParams));
+				colorAttachmentClearLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Attachment", testParams));
+				partialColorAttachmentClearLayersGroup->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Partial Clear Color Attachment", testParams));
+			}
+			colorAttachmentClearTests->addChild(colorAttachmentClearLayersGroup.release());
+			partialColorAttachmentClearTests->addChild(partialColorAttachmentClearLayersGroup.release());
 		}
-
 		imageClearingTests->addChild(colorAttachmentClearTests.release());
 		imageClearingTests->addChild(partialColorAttachmentClearTests.release());
 	}
 
 	// Clear depth/stencil attachment
 	{
-		for (size_t imageFormatIndex = 0; imageFormatIndex < numOfDepthStencilImageFormatsToTest; ++imageFormatIndex)
 		for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfAttachmentLayerParamsToTest; ++imageLayerParamsIndex)
 		{
-			const TestParams testParams =
+			de::MovePtr<TestCaseGroup> depthStencilLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
+			de::MovePtr<TestCaseGroup> partialDepthStencilLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
+
+			for (size_t imageFormatIndex = 0; imageFormatIndex < numOfDepthStencilImageFormatsToTest; ++imageFormatIndex)
 			{
-				true,															// bool				useSingleMipLevel;
-				VK_IMAGE_TYPE_2D,												// VkImageType		imageType;
-				depthStencilImageFormatsToTest[imageFormatIndex],				// VkFormat			format;
-				{ 256, 256, 1 },												// VkExtent3D		extent;
-				imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,	// deUint32         imageLayerCount;
-				imageLayerParamsToTest[imageLayerParamsIndex].imageViewRange,	// LayerRange		imageViewLayerRange;
-				makeClearValueDepthStencil(0.5f, 0x03),							// VkClearValue		initValue
+				const VkFormat		format			= depthStencilImageFormatsToTest[imageFormatIndex];
+				const std::string	testCaseName	= getFormatCaseName(format);
+				const TestParams	testParams		=
 				{
-					makeClearValueDepthStencil(0.1f, 0x06),							// VkClearValue		clearValue[0];
-					makeClearValueDepthStencil(0.3f, 0x04),							// VkClearValue		clearValue[1];
-				},
-				imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,	// LayerRange       clearLayerRange;
-				allocationKind													// AllocationKind	allocationKind;
-			};
+					true,															// bool				useSingleMipLevel;
+					VK_IMAGE_TYPE_2D,												// VkImageType		imageType;
+					format,															// VkFormat			format;
+					{ 256, 256, 1 },												// VkExtent3D		extent;
+					imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,	// deUint32         imageLayerCount;
+					imageLayerParamsToTest[imageLayerParamsIndex].imageViewRange,	// LayerRange		imageViewLayerRange;
+					makeClearValueDepthStencil(0.5f, 0x03),							// VkClearValue		initValue
+					{
+						makeClearValueDepthStencil(0.1f, 0x06),							// VkClearValue		clearValue[0];
+						makeClearValueDepthStencil(0.3f, 0x04),							// VkClearValue		clearValue[1];
+					},
+					imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,	// LayerRange       clearLayerRange;
+					allocationKind													// AllocationKind	allocationKind;
+				};
 
-			std::ostringstream	testCaseName;
-			testCaseName << getImageTypeCaseName(testParams.imageType) << "_" << getFormatCaseName(testParams.imageFormat);
-			if (imageLayerParamsToTest[imageLayerParamsIndex].testName != DE_NULL)
-				testCaseName << "_" << imageLayerParamsToTest[imageLayerParamsIndex].testName;
-
-			depthStencilAttachmentClearTests->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Clear Depth/Stencil Attachment", testParams));
-			partialDepthStencilAttachmentClearTests->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName.str(), "Parital Clear Depth/Stencil Attachment", testParams));
+				depthStencilLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Depth/Stencil Attachment", testParams));
+				partialDepthStencilLayersGroup->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Parital Clear Depth/Stencil Attachment", testParams));
+			}
+			depthStencilAttachmentClearTests->addChild(depthStencilLayersGroup.release());
+			partialDepthStencilAttachmentClearTests->addChild(partialDepthStencilLayersGroup.release());
 		}
-
 		imageClearingTests->addChild(depthStencilAttachmentClearTests.release());
 		imageClearingTests->addChild(partialDepthStencilAttachmentClearTests.release());
 	}

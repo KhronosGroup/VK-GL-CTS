@@ -44,6 +44,7 @@
 #include "es31cVertexAttribBindingTests.hpp"
 #include "glcBlendEquationAdvancedTests.hpp"
 #include "glcInfoTests.hpp"
+#include "glcPolygonOffsetClampTests.hpp"
 #include "glcSampleVariablesTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderMultisampleInterpolationTests.hpp"
@@ -187,6 +188,7 @@ void ES31TestPackage::init(void)
 		coreGroup->addChild(new glcts::ProgramInterfaceQueryTests(getContext()));
 		coreGroup->addChild(new glcts::FramebufferNoAttachmentsTests(getContext()));
 		coreGroup->addChild(new glcts::ArrayOfArraysTestGroup(getContext()));
+		coreGroup->addChild(new glcts::PolygonOffsetClamp(getContext()));
 
 		glcts::ExtParameters extParams(glu::GLSL_VERSION_310_ES, glcts::EXTENSIONTYPE_OES);
 		coreGroup->addChild(new glcts::GeometryShaderTests(getContext(), extParams));

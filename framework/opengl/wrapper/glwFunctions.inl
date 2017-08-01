@@ -547,6 +547,7 @@ glPointParameterivFunc									pointParameteriv;
 glPointSizeFunc											pointSize;
 glPolygonModeFunc										polygonMode;
 glPolygonOffsetFunc										polygonOffset;
+glPolygonOffsetClampEXTFunc								polygonOffsetClampEXT;
 glPopDebugGroupFunc										popDebugGroup;
 glPopGroupMarkerEXTFunc									popGroupMarkerEXT;
 glPrimitiveBoundingBoxFunc								primitiveBoundingBox;

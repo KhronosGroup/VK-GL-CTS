@@ -4356,6 +4356,14 @@ void glwPolygonOffset (GLfloat factor, GLfloat units)
 	gl->polygonOffset(factor, units);
 }
 
+void glwPolygonOffsetClampEXT (GLfloat factor, GLfloat units, GLfloat clamp)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->polygonOffsetClampEXT(factor, units, clamp);
+}
+
 void glwPopDebugGroup (void)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();

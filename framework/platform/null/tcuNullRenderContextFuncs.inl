@@ -4669,6 +4669,14 @@ GLW_APICALL void GLW_APIENTRY glPolygonOffset (GLfloat factor, GLfloat units)
 
 }
 
+GLW_APICALL void GLW_APIENTRY glPolygonOffsetClampEXT (GLfloat factor, GLfloat units, GLfloat clamp)
+{
+	DE_UNREF(factor);
+	DE_UNREF(units);
+	DE_UNREF(clamp);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glPopDebugGroup (void)
 {
 

@@ -127,6 +127,8 @@ public:
 		addChild(new deqp::ShaderIndexingTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderLoopTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderLibraryGroup(m_context, "preprocessor", "Preprocessor Tests", "preprocessor.test"));
+		addChild(new deqp::ShaderLibraryGroup(m_context, "literal_parsing", "Literal Parsing Tests",
+											  "literal_parsing.test"));
 		addChild(new deqp::ShaderStructTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderSwitchTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::UniformBlockTests(m_context, glu::GLSL_VERSION_300_ES));

@@ -73,33 +73,6 @@ enum BindingSeq
 	bindrangesize
 };
 
-static tcu::TestLog* currentLog;
-
-void setOutput(tcu::TestLog& log)
-{
-	currentLog = &log;
-}
-
-void Output(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-
-	const int   MAX_OUTPUT_STRING_SIZE = 40000;
-	static char temp[MAX_OUTPUT_STRING_SIZE];
-
-	vsnprintf(temp, MAX_OUTPUT_STRING_SIZE - 1, format, args);
-	temp[MAX_OUTPUT_STRING_SIZE - 1] = '\0';
-
-	char* logLine = strtok(temp, "\n");
-	while (logLine != NULL)
-	{
-		currentLog->writeMessage(logLine);
-		logLine = strtok(NULL, "\n");
-	}
-	va_end(args);
-}
-
 const char* const kGLSLVer = "#version 430 core\n";
 
 class ShaderStorageBufferObjectBase : public deqp::SubcaseBase
@@ -235,25 +208,34 @@ public:
 					switch (type)
 					{
 					case GL_VERTEX_SHADER:
-						Output("*** Vertex Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Vertex Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_CONTROL_SHADER:
-						Output("*** Tessellation Control Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Control Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_EVALUATION_SHADER:
-						Output("*** Tessellation Evaluation Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Evaluation Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_GEOMETRY_SHADER:
-						Output("*** Geometry Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Geometry Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_FRAGMENT_SHADER:
-						Output("*** Fragment Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Fragment Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_COMPUTE_SHADER:
-						Output("*** Compute Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Compute Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					default:
-						Output("*** Unknown Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Unknown Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					}
 
@@ -263,14 +245,16 @@ public:
 					{
 						std::vector<GLchar> source(length);
 						glGetShaderSource(shaders[i], length, NULL, &source[0]);
-						Output("%s\n", &source[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &source[0] << tcu::TestLog::EndMessage;
 					}
 					glGetShaderiv(shaders[i], GL_INFO_LOG_LENGTH, &length);
 					if (length > 0)
 					{
 						std::vector<GLchar> log(length);
 						glGetShaderInfoLog(shaders[i], length, NULL, &log[0]);
-						Output("%s\n", &log[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 					}
 				}
 			}
@@ -280,7 +264,7 @@ public:
 			{
 				std::vector<GLchar> log(length);
 				glGetProgramInfoLog(program, length, NULL, &log[0]);
-				Output("%s\n", &log[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 			}
 		}
 
@@ -411,9 +395,11 @@ public:
 			{
 				if (!ColorEqual(display[j * w + i], expected, g_color_eps))
 				{
-					Output("Color at (%d, %d) is (%f %f %f) should be (%f %f %f).\n", x + i, y + j,
-						   display[j * w + i][0], display[j * w + i][1], display[j * w + i][2], expected[0],
-						   expected[1], expected[2]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Color at (" << x + i << ", " << y + j << ") is ("
+						<< display[j * w + i][0] << " " << display[j * w + i][1] << " " << display[j * w + i][2]
+						<< ") should be (" << expected[0] << " " << expected[1] << " " << expected[2] << ")."
+						<< tcu::TestLog::EndMessage;
 					result = false;
 				}
 			}
@@ -446,7 +432,9 @@ public:
 				const int idx = y * width + x;
 				if (!ColorEqual(fb[idx], lb, g_color_eps))
 				{
-					Output("First bad color (%d, %d): %f %f %f\n", x, y, fb[idx][0], fb[idx][1], fb[idx][2]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "First bad color (" << x << ", " << y << "): " << fb[idx][0] << " "
+						<< fb[idx][1] << " " << fb[idx][2] << tcu::TestLog::EndMessage;
 					status = false;
 					bad++;
 				}
@@ -454,7 +442,9 @@ public:
 		}
 		if (!status)
 		{
-			Output("Left-bottom quad checking failed. Bad pixels: %d", bad);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Left-bottom quad checking failed. Bad pixels: " << bad
+				<< tcu::TestLog::EndMessage;
 			//return status;
 		}
 		// right-bottom quad
@@ -465,7 +455,9 @@ public:
 				const int idx = y * width + x;
 				if (!ColorEqual(fb[idx], rb, g_color_eps))
 				{
-					Output("Bad color at (%d, %d): %f %f %f\n", x, y, fb[idx][0], fb[idx][1], fb[idx][2]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Bad color at (" << x << ", " << y << "): " << fb[idx][0] << " "
+						<< fb[idx][1] << " " << fb[idx][2] << tcu::TestLog::EndMessage;
 					status = false;
 					bad++;
 				}
@@ -473,7 +465,9 @@ public:
 		}
 		if (!status)
 		{
-			Output("right-bottom quad checking failed. Bad pixels: %d", bad);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "right-bottom quad checking failed. Bad pixels: " << bad
+				<< tcu::TestLog::EndMessage;
 			//return status;
 		}
 		// right-top quad
@@ -484,7 +478,9 @@ public:
 				const int idx = y * width + x;
 				if (!ColorEqual(fb[idx], rt, g_color_eps))
 				{
-					Output("Bad color at (%d, %d): %f %f %f\n", x, y, fb[idx][0], fb[idx][1], fb[idx][2]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Bad color at (" << x << ", " << y << "): " << fb[idx][0] << " "
+						<< fb[idx][1] << " " << fb[idx][2] << tcu::TestLog::EndMessage;
 					status = false;
 					bad++;
 				}
@@ -492,7 +488,9 @@ public:
 		}
 		if (!status)
 		{
-			Output("right-top quad checking failed. Bad pixels: %d", bad);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "right-top quad checking failed. Bad pixels: " << bad
+				<< tcu::TestLog::EndMessage;
 			//return status;
 		}
 		// left-top quad
@@ -503,7 +501,9 @@ public:
 				const int idx = y * width + x;
 				if (!ColorEqual(fb[idx], lt, g_color_eps))
 				{
-					Output("Bad color at (%d, %d): %f %f %f\n", x, y, fb[idx][0], fb[idx][1], fb[idx][2]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Bad color at (" << x << ", " << y << "): " << fb[idx][0] << " "
+						<< fb[idx][1] << " " << fb[idx][2] << tcu::TestLog::EndMessage;
 					status = false;
 					bad++;
 				}
@@ -511,7 +511,9 @@ public:
 		}
 		if (!status)
 		{
-			Output("left-top quad checking failed. Bad pixels: %d", bad);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "left-top quad checking failed. Bad pixels: " << bad
+				<< tcu::TestLog::EndMessage;
 			//return status;
 		}
 		// middle horizontal line should be black
@@ -522,7 +524,9 @@ public:
 				const int idx = y * width + x;
 				if (!ColorEqual(fb[idx], vec3(0), g_color_eps))
 				{
-					Output("Bad color at (%d, %d): %f %f %f\n", x, y, fb[idx][0], fb[idx][1], fb[idx][2]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Bad color at (" << x << ", " << y << "): " << fb[idx][0] << " "
+						<< fb[idx][1] << " " << fb[idx][2] << tcu::TestLog::EndMessage;
 					status = false;
 					bad++;
 				}
@@ -530,7 +534,9 @@ public:
 		}
 		if (!status)
 		{
-			Output("middle horizontal line checking failed. Bad pixels: %d", bad);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "middle horizontal line checking failed. Bad pixels: " << bad
+				<< tcu::TestLog::EndMessage;
 			//return status;
 		}
 		// middle vertical line should be black
@@ -541,7 +547,9 @@ public:
 				const int idx = y * width + x;
 				if (!ColorEqual(fb[idx], vec3(0), g_color_eps))
 				{
-					Output("Bad color at (%d, %d): %f %f %f\n", x, y, fb[idx][0], fb[idx][1], fb[idx][2]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Bad color at (" << x << ", " << y << "): " << fb[idx][0] << " "
+						<< fb[idx][1] << " " << fb[idx][2] << tcu::TestLog::EndMessage;
 					status = false;
 					bad++;
 				}
@@ -549,13 +557,17 @@ public:
 		}
 		if (!status)
 		{
-			Output("middle vertical line checking failed. Bad pixels: %d", bad);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "middle vertical line checking failed. Bad pixels: " << bad
+				<< tcu::TestLog::EndMessage;
 			//return status;
 		}
 
 		if (bad_pixels)
 			*bad_pixels = bad;
-		Output("Bad pixels:%d, counted bad:%d\n", bad_pixels == NULL ? 0 : *bad_pixels, bad);
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Bad pixels: " << (bad_pixels == NULL ? 0 : *bad_pixels)
+			<< ", counted bad: " << bad << tcu::TestLog::EndMessage;
 		return status;
 	}
 
@@ -762,7 +774,9 @@ class BasicMax : public ShaderStorageBufferObjectBase
 
 			if (!status)
 			{
-				Output("%s is %d should be at least %d.\n", GLenumToString(e), i, static_cast<GLint>(value));
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << GLenumToString(e) << " is " << i << " should be at least "
+					<< static_cast<GLint>(value) << tcu::TestLog::EndMessage;
 			}
 		}
 		else
@@ -778,7 +792,9 @@ class BasicMax : public ShaderStorageBufferObjectBase
 
 			if (!status)
 			{
-				Output("%s is %d should be at most %d.\n", GLenumToString(e), i, static_cast<GLint>(value));
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << GLenumToString(e) << " is " << i << " should be at most "
+					<< static_cast<GLint>(value) << tcu::TestLog::EndMessage;
 			}
 		}
 		return status;
@@ -847,7 +863,8 @@ class BasicBinding : public ShaderStorageBufferObjectBase
 
 		if (!status)
 		{
-			Output("%s is %d should be %d.\n", GLenumToString(e), i, expected);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << GLenumToString(e) << " is " << i
+												<< " should be " << expected << tcu::TestLog::EndMessage;
 		}
 		return status;
 	}
@@ -880,7 +897,8 @@ class BasicBinding : public ShaderStorageBufferObjectBase
 
 		if (!status)
 		{
-			Output("%s at index %d is %d should be %d.\n", GLenumToString(e), index, i, expected);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << GLenumToString(e) << " at index " << index
+												<< " is " << i << " should be " << expected << tcu::TestLog::EndMessage;
 		}
 		return status;
 	}
@@ -1293,7 +1311,9 @@ class BasicStdLayoutBaseVS : public ShaderStorageBufferObjectBase
 		{
 			if (in_data[i] != out_data[i])
 			{
-				Output("Byte at index %3d is %2x should be %2x.\n", static_cast<int>(i), out_data[i], in_data[i]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Byte at index " << static_cast<int>(i) << " is "
+					<< tcu::toHex(out_data[i]) << " should be " << tcu::toHex(in_data[i]) << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -1361,7 +1381,9 @@ class BasicStdLayoutBaseCS : public ShaderStorageBufferObjectBase
 		{
 			if (in_data[i] != out_data[i])
 			{
-				Output("Byte at index %3d is %2x should be %2x.\n", static_cast<int>(i), out_data[i], in_data[i]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Byte at index " << static_cast<int>(i) << " is "
+					<< tcu::toHex(out_data[i]) << " should be " << tcu::toHex(in_data[i]) << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -2323,7 +2345,8 @@ class BasicAtomicCase1 : public ShaderStorageBufferObjectBase
 				{
 					if (data[i] != 7)
 					{
-						Output("uData at index %d is %d should be %d.\n", i, data[i], 7);
+						m_context.getTestContext().getLog() << tcu::TestLog::Message << "uData at index " << i << " is "
+															<< data[i] << " should be 7." << tcu::TestLog::EndMessage;
 						return ERROR;
 					}
 				}
@@ -2337,7 +2360,8 @@ class BasicAtomicCase1 : public ShaderStorageBufferObjectBase
 				{
 					if (data[i] != 7)
 					{
-						Output("iData at index %d is %d should be %d.\n", i, data[i], 7);
+						m_context.getTestContext().getLog() << tcu::TestLog::Message << "iData at index " << i << " is "
+															<< data[i] << " should be 7." << tcu::TestLog::EndMessage;
 						return ERROR;
 					}
 				}
@@ -2423,7 +2447,8 @@ class BasicAtomicCase1CS : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != 7)
 				{
-					Output("uData at index %d is %d should be %d.\n", i, data[i], 7);
+					m_context.getTestContext().getLog() << tcu::TestLog::Message << "uData at index " << i << " is "
+														<< data[i] << " should be 7." << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -2439,7 +2464,8 @@ class BasicAtomicCase1CS : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != 7)
 				{
-					Output("iData at index %d is %d should be %d.\n", i, data[i], 7);
+					m_context.getTestContext().getLog() << tcu::TestLog::Message << "iData at index " << i << " is "
+														<< data[i] << " should be 7." << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -2589,7 +2615,8 @@ class BasicAtomicCase2 : public ShaderStorageBufferObjectBase
 				{
 					if (data[i] != 7)
 					{
-						Output("uData at index %d is %d should be %d.\n", i, data[i], 7);
+						m_context.getTestContext().getLog() << tcu::TestLog::Message << "uData at index " << i << " is "
+															<< data[i] << " should be 7." << tcu::TestLog::EndMessage;
 						return ERROR;
 					}
 				}
@@ -2603,7 +2630,8 @@ class BasicAtomicCase2 : public ShaderStorageBufferObjectBase
 				{
 					if (data[i] != 7)
 					{
-						Output("iData at index %d is %d should be %d.\n", i, data[i], 7);
+						m_context.getTestContext().getLog() << tcu::TestLog::Message << "iData at index " << i << " is "
+															<< data[i] << " should be 7." << tcu::TestLog::EndMessage;
 						return ERROR;
 					}
 				}
@@ -2719,14 +2747,16 @@ class BasicAtomicCase3 : public ShaderStorageBufferObjectBase
 		glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 4, &u);
 		if (u != 20)
 		{
-			Output("Data at offset 0 is %d should be %d.\n", u, 20);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Data at offset 0 is " << u << " should be 20." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		GLint i;
 		glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(GLuint) * 4, 4, &i);
 		if (i != 20)
 		{
-			Output("Data at offset 0 is %d should be %d.\n", i, 20);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Data at offset 0 is " << i << " should be 20." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -2796,7 +2826,8 @@ class BasicAtomicCase3CS : public ShaderStorageBufferObjectBase
 			return ERROR;
 		if (*u != 16)
 		{
-			Output("Data at offset 0 is %d should be %d.\n", *u, 16);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data at offset 0 is " << *u
+												<< " should be 16." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -2805,7 +2836,8 @@ class BasicAtomicCase3CS : public ShaderStorageBufferObjectBase
 			return ERROR;
 		if (*i != 16)
 		{
-			Output("Data at offset 0 is %d should be %d.\n", *i, 16);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data at offset 0 is " << *i
+												<< " should be 16." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -2914,7 +2946,8 @@ class BasicAtomicCase4 : public ShaderStorageBufferObjectBase
 		{
 			if (udata[i] != i)
 			{
-				Output("uData at index %d is %d should be %d.\n", i, udata[i], i);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "uData at index " << i << " is "
+													<< udata[i] << " should be " << i << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -2924,7 +2957,8 @@ class BasicAtomicCase4 : public ShaderStorageBufferObjectBase
 		{
 			if (idata[i] != i)
 			{
-				Output("iData at index %d is %d should be %d.\n", i, idata[i], i);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "iData at index " << i << " is "
+													<< idata[i] << " should be " << i << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -2996,7 +3030,8 @@ class BasicAtomicCase4CS : public ShaderStorageBufferObjectBase
 		{
 			if (udata[i] != i)
 			{
-				Output("uData at index %d is %d should be %d.\n", i, udata[i], i);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "uData at index " << i << " is "
+													<< udata[i] << " should be " << i << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -3008,7 +3043,8 @@ class BasicAtomicCase4CS : public ShaderStorageBufferObjectBase
 		{
 			if (idata[i] != i)
 			{
-				Output("iData at index %d is %d should be %d.\n", i, idata[i], i);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "iData at index " << i << " is "
+													<< idata[i] << " should be " << i << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -3089,8 +3125,10 @@ class BasicStdLayoutBase2VS : public ShaderStorageBufferObjectBase
 			{
 				if (in_data[j][i] != out_data[i])
 				{
-					Output("Byte at index %3d is %2x should be %2x.\n", static_cast<int>(i), out_data[i],
-						   in_data[j][i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Byte at index " << static_cast<int>(i) << " is "
+						<< tcu::toHex(out_data[i]) << " should be " << tcu::toHex(in_data[j][i])
+						<< tcu::TestLog::EndMessage;
 					status = false;
 				}
 			}
@@ -3168,8 +3206,10 @@ class BasicStdLayoutBase2CS : public ShaderStorageBufferObjectBase
 			{
 				if (in_data[j][i] != out_data[i])
 				{
-					Output("Byte at index %3d is %2x should be %2x.\n", static_cast<int>(i), out_data[i],
-						   in_data[j][i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Byte at index " << static_cast<int>(i) << " is "
+						<< tcu::toHex(out_data[i]) << " should be " << tcu::toHex(in_data[j][i])
+						<< tcu::TestLog::EndMessage;
 					status = false;
 				}
 			}
@@ -3801,7 +3841,9 @@ class BasicOperationsBaseVS : public ShaderStorageBufferObjectBase
 		{
 			if (expected_data[i] != out_data[i])
 			{
-				Output("Byte at index %3d is %2x should be %2x.\n", static_cast<int>(i), out_data[i], expected_data[i]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Byte at index " << static_cast<int>(i)
+													<< " is " << tcu::toHex(out_data[i]) << " should be "
+													<< tcu::toHex(expected_data[i]) << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -3877,7 +3919,9 @@ class BasicOperationsBaseCS : public ShaderStorageBufferObjectBase
 		{
 			if (expected_data[i] != out_data[i])
 			{
-				Output("Byte at index %3d is %2x should be %2x.\n", static_cast<int>(i), out_data[i], expected_data[i]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Byte at index " << static_cast<int>(i)
+													<< " is " << tcu::toHex(out_data[i]) << " should be "
+													<< tcu::toHex(expected_data[i]) << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -4180,8 +4224,10 @@ class BasicStdLayoutBase3VS : public ShaderStorageBufferObjectBase
 			{
 				if (in_data[j][i] != out_data[i])
 				{
-					Output("Byte at index %3d is %2x should be %2x.\n", static_cast<int>(i), out_data[i],
-						   in_data[j][i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Byte at index " << static_cast<int>(i) << " is "
+						<< tcu::toHex(out_data[i]) << " should be " << tcu::toHex(in_data[j][i])
+						<< tcu::TestLog::EndMessage;
 					status = false;
 				}
 			}
@@ -4267,8 +4313,10 @@ class BasicStdLayoutBase3CS : public ShaderStorageBufferObjectBase
 			{
 				if (in_data[j][i] != out_data[i])
 				{
-					Output("Byte at index %3d is %2x should be %2x.\n", static_cast<int>(i), out_data[i],
-						   in_data[j][i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Byte at index " << static_cast<int>(i) << " is "
+						<< tcu::toHex(out_data[i]) << " should be " << tcu::toHex(in_data[j][i])
+						<< tcu::TestLog::EndMessage;
 					status = false;
 				}
 			}
@@ -4586,7 +4634,9 @@ class BasicMatrixOperationsBaseVS : public ShaderStorageBufferObjectBase
 		{
 			if (!Equal(expected[i], out_data[i]))
 			{
-				Output("Float at index %3d is %f should be %f.\n", static_cast<int>(i), out_data[i], expected[i]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Float at index " << static_cast<int>(i) << " is " << out_data[i]
+					<< " should be " << expected[i] << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -4664,7 +4714,9 @@ class BasicMatrixOperationsBaseCS : public ShaderStorageBufferObjectBase
 		{
 			if (!Equal(expected[i], out_data[i]))
 			{
-				Output("Float at index %3d is %f should be %f.\n", static_cast<int>(i), out_data[i], expected[i]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Float at index " << static_cast<int>(i) << " is " << out_data[i]
+					<< " should be " << expected[i] << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -5306,8 +5358,11 @@ class AdvancedSwitchBuffersCS : public ShaderStorageBufferObjectBase
 		if (out_data[0] != expected[0] || out_data[1] != expected[1] || out_data[2] != expected[2] ||
 			out_data[3] != expected[3])
 		{
-			Output("Received: %x, %x, %x, %x, but expected: %x, %x, %x, %x\n", out_data[0], out_data[1], out_data[2],
-				   out_data[3], expected[0], expected[1], expected[2], expected[3]);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Received: " << tcu::toHex(out_data[0]) << ", " << tcu::toHex(out_data[1])
+				<< ", " << tcu::toHex(out_data[2]) << ", " << tcu::toHex(out_data[3])
+				<< ", but expected: " << tcu::toHex(expected[0]) << ", " << tcu::toHex(expected[1]) << ", "
+				<< tcu::toHex(expected[2]) << ", " << tcu::toHex(expected[3]) << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -5326,8 +5381,11 @@ class AdvancedSwitchBuffersCS : public ShaderStorageBufferObjectBase
 		if (out_data[0] != expected[0] || out_data[1] != expected[1] || out_data[2] != expected[2] ||
 			out_data[3] != expected[3])
 		{
-			Output("Received: %x, %x, %x, %x, but expected: %x, %x, %x, %x\n", out_data[0], out_data[1], out_data[2],
-				   out_data[3], expected[0], expected[1], expected[2], expected[3]);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Received: " << tcu::toHex(out_data[0]) << ", " << tcu::toHex(out_data[1])
+				<< ", " << tcu::toHex(out_data[2]) << ", " << tcu::toHex(out_data[3])
+				<< ", but expected: " << tcu::toHex(expected[0]) << ", " << tcu::toHex(expected[1]) << ", "
+				<< tcu::toHex(expected[2]) << ", " << tcu::toHex(expected[3]) << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -5556,8 +5614,11 @@ class AdvancedSwitchProgramsCS : public ShaderStorageBufferObjectBase
 		if (out_data[0] != expected[0] || out_data[1] != expected[1] || out_data[2] != expected[2] ||
 			out_data[3] != expected[3])
 		{
-			Output("Received: %x, %x, %x, %x, but expected: %x, %x, %x, %x\n", out_data[0], out_data[1], out_data[2],
-				   out_data[3], expected[0], expected[1], expected[2], expected[3]);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Received: " << tcu::toHex(out_data[0]) << ", " << tcu::toHex(out_data[1])
+				<< ", " << tcu::toHex(out_data[2]) << ", " << tcu::toHex(out_data[3])
+				<< ", but expected: " << tcu::toHex(expected[0]) << ", " << tcu::toHex(expected[1]) << ", "
+				<< tcu::toHex(expected[2]) << ", " << tcu::toHex(expected[3]) << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -6193,8 +6254,10 @@ class AdvancedIndirectAddressingCase1CS : public ShaderStorageBufferObjectBase
 			if (out_data[i * 4 + 0] != expected[i * 4 + 0] || out_data[i * 4 + 1] != expected[i * 4 + 1] ||
 				out_data[i * 4 + 2] != expected[i * 4 + 2])
 			{
-				Output("Received: %f, %f, %f, but expected: %f, %f, %f\n", out_data[i * 4 + 0], out_data[i * 4 + 1],
-					   out_data[i * 4 + 2], expected[i * 4 + 0], expected[i * 4 + 1], expected[i * 4 + 2]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Received: " << out_data[i * 4 + 0] << ", " << out_data[i * 4 + 1]
+					<< ", " << out_data[i * 4 + 2] << ", but expected: " << expected[i * 4 + 0] << ", "
+					<< expected[i * 4 + 1] << ", " << expected[i * 4 + 2] << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -6203,8 +6266,10 @@ class AdvancedIndirectAddressingCase1CS : public ShaderStorageBufferObjectBase
 			if (fabs(out_data[i * 2 + 0] - expected[i * 2 + 0]) > 1e-6 ||
 				fabs(out_data[i * 2 + 1] - expected[i * 2 + 1]) > 1e-6)
 			{
-				Output("Received: %f, %f, but expected: %f, %f\n", out_data[i * 2 + 0], out_data[i * 2 + 1],
-					   expected[i * 2 + 0], expected[i * 2 + 1]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Received: " << out_data[i * 2 + 0] << ", " << out_data[i * 2 + 1]
+					<< ", but expected: " << expected[i * 2 + 0] << ", " << expected[i * 2 + 1]
+					<< tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -6245,8 +6310,10 @@ class AdvancedIndirectAddressingCase1CS : public ShaderStorageBufferObjectBase
 			if (out_data2[i * 4 + 0] != expected2[i * 4 + 0] || out_data2[i * 4 + 1] != expected2[i * 4 + 1] ||
 				out_data2[i * 4 + 2] != expected2[i * 4 + 2])
 			{
-				Output("Received: %f, %f, %f, but expected: %f, %f, %f\n", out_data2[i * 4 + 0], out_data2[i * 4 + 1],
-					   out_data2[i * 4 + 2], expected2[i * 4 + 0], expected2[i * 4 + 1], expected2[i * 4 + 2]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Received: " << out_data2[i * 4 + 0] << ", " << out_data2[i * 4 + 1]
+					<< ", " << out_data2[i * 4 + 2] << ", but expected: " << expected2[i * 4 + 0] << ", "
+					<< expected2[i * 4 + 1] << ", " << expected2[i * 4 + 2] << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -6255,8 +6322,10 @@ class AdvancedIndirectAddressingCase1CS : public ShaderStorageBufferObjectBase
 			if (fabs(out_data2[i * 2 + 0] - expected2[i * 2 + 0]) > 1e-6 ||
 				fabs(out_data2[i * 2 + 1] - expected2[i * 2 + 1]) > 1e-6)
 			{
-				Output("Received: %f, %f, but expected: %f, %f\n", out_data2[i * 2 + 0], out_data2[i * 2 + 1],
-					   expected2[i * 2 + 0], expected2[i * 2 + 1]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Received: " << out_data2[i * 2 + 0] << ", " << out_data2[i * 2 + 1]
+					<< ", but expected: " << expected2[i * 2 + 0] << ", " << expected2[i * 2 + 1]
+					<< tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -6504,8 +6573,10 @@ class AdvancedIndirectAddressingCase2CS : public ShaderStorageBufferObjectBase
 			if (out_data[i * 4 + 0] != expected[0] || out_data[i * 4 + 1] != expected[1] ||
 				out_data[i * 4 + 2] != expected[2])
 			{
-				Output("Received: %f, %f, %f, but expected: %f, %f, %f\n", out_data[i * 4 + 0], out_data[i * 4 + 1],
-					   out_data[i * 4 + 2], expected[0], expected[1], expected[2]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Received: " << out_data[i * 4 + 0] << ", " << out_data[i * 4 + 1]
+					<< ", " << out_data[i * 4 + 2] << ", but expected: " << expected[0] << ", " << expected[1] << ", "
+					<< expected[2] << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -6523,8 +6594,10 @@ class AdvancedIndirectAddressingCase2CS : public ShaderStorageBufferObjectBase
 			if (out_data[i * 4 + 0] != expected[0] || out_data[i * 4 + 1] != expected[1] ||
 				out_data[i * 4 + 2] != expected[2])
 			{
-				Output("Received: %f, %f, %f, but expected: %f, %f, %f\n", out_data[i * 4 + 0], out_data[i * 4 + 1],
-					   out_data[i * 4 + 2], expected[0], expected[1], expected[2]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Received: " << out_data[i * 4 + 0] << ", " << out_data[i * 4 + 1]
+					<< ", " << out_data[i * 4 + 2] << ", but expected: " << expected[0] << ", " << expected[1] << ", "
+					<< expected[2] << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -6708,8 +6781,10 @@ class AdvancedReadWriteCase1CS : public ShaderStorageBufferObjectBase
 		{
 			if (out_data[i * 4 + 3] != data[i * 4])
 			{
-				Output("Received: %d, but expected: %d -> %d -> %d\n", out_data[i * 4 + 3], data[i * 4],
-					   out_data[i * 4 + 1], out_data[i * 4 + 2]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Received: " << out_data[i * 4 + 3] << ", "
+					<< ", but expected: " << data[i * 4] << " -> " << out_data[i * 4 + 1] << " -> "
+					<< out_data[i * 4 + 2] << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -6732,7 +6807,9 @@ class AdvancedReadWriteCase1CS : public ShaderStorageBufferObjectBase
 		{
 			if (out_data[i * 4 + 3] != data[i * 4])
 			{
-				Output("Received: %d, but expected: %d\n", out_data[i * 4 + 3], data[i * 4]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Received: " << out_data[i * 4 + 3] << ", "
+					<< ", but expected: " << data[i * 4] << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -7001,7 +7078,9 @@ class AdvancedUsageSync : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer0] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer0] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7016,7 +7095,9 @@ class AdvancedUsageSync : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer1] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer1] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7031,7 +7112,9 @@ class AdvancedUsageSync : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer2] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer2] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7046,7 +7129,9 @@ class AdvancedUsageSync : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer3] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer3] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7061,7 +7146,9 @@ class AdvancedUsageSync : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer4] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer4] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7076,7 +7163,9 @@ class AdvancedUsageSync : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer5] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer5] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7091,7 +7180,9 @@ class AdvancedUsageSync : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer6] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer6] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7216,7 +7307,9 @@ class AdvancedUsageSyncCS : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer0] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer0] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7233,7 +7326,9 @@ class AdvancedUsageSyncCS : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer1] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer1] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7250,7 +7345,9 @@ class AdvancedUsageSyncCS : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer2] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer2] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7267,7 +7364,9 @@ class AdvancedUsageSyncCS : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer3] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer3] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7284,7 +7383,9 @@ class AdvancedUsageSyncCS : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer4] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer4] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7301,7 +7402,9 @@ class AdvancedUsageSyncCS : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer5] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer5] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7318,7 +7421,9 @@ class AdvancedUsageSyncCS : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer6] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer6] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7404,7 +7509,9 @@ class AdvancedUsageOperators : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer0] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer0] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7419,7 +7526,9 @@ class AdvancedUsageOperators : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer1] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer1] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7496,7 +7605,9 @@ class AdvancedUsageOperatorsCS : public ShaderStorageBufferObjectBase
 			{
 				if (data[i] != ref_data[i])
 				{
-					Output("[Buffer0] Data at index %d is %d should be %d.\n", i, data[i], ref_data[i]);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer0] Data at index " << i << " is " << data[i]
+						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -7600,27 +7711,32 @@ class AdvancedUnsizedArrayLength : public ShaderStorageBufferObjectBase
 			bool status = true;
 			if (data[0] != 7)
 			{
-				Output("Array 0 length is %d should be 7.\n", data[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Array 0 length is " << data[0]
+													<< " should be 7." << tcu::TestLog::EndMessage;
 				status = false;
 			}
 			if (data[1] != 5)
 			{
-				Output("Array 1 length is %d should be 5.\n", data[1]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Array 1 length is " << data[1]
+													<< " should be 5." << tcu::TestLog::EndMessage;
 				status = false;
 			}
 			if (data[2] != 3)
 			{
-				Output("Array 2 length is %d should be 3.\n", data[2]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Array 2 length is " << data[2]
+													<< " should be 3." << tcu::TestLog::EndMessage;
 				status = false;
 			}
 			if (data[3] != 4)
 			{
-				Output("Array 3 length is %d should be 4.\n", data[3]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Array 3 length is " << data[3]
+													<< " should be 4." << tcu::TestLog::EndMessage;
 				status = false;
 			}
 			if (data[4] != 4)
 			{
-				Output("Array 4 length is %d should be 4.\n", data[4]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Array 4 length is " << data[4]
+													<< " should be 4." << tcu::TestLog::EndMessage;
 				status = false;
 			}
 			if (!status)
@@ -7881,12 +7997,16 @@ class AdvancedUnsizedArrayLength2 : public ShaderStorageBufferObjectBase
 				sizes[i] -= 2; // space constrained by offset of range size
 			if ((layout == std140 || layout == std430) && dataout[i] != sizes[i])
 			{
-				Output("Array %d length is %d should be %d.\n", i, dataout[i], sizes[i]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Array " << i << " length is " << dataout[i] << " should be "
+					<< sizes[i] << tcu::TestLog::EndMessage;
 				status = false;
 			}
 			if ((layout == packed || layout == shared) && (dataout[i] > sizes[i]))
 			{
-				Output("Array %d length is %d should be not greater that %d.\n", i, dataout[i], sizes[i]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Array " << i << " length is " << dataout[i]
+					<< " should be not greater that " << sizes[i] << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -7901,7 +8021,8 @@ class AdvancedUnsizedArrayLength2 : public ShaderStorageBufferObjectBase
 			int i = (sizes[4] - 2) * columns[etype][4] * scalars[etype][4];
 			if (dataout[i] != 82)
 			{
-				Output("Array 4 index %d is %d should be 82.\n", i, dataout[i]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Array 4 index " << i << " is "
+													<< dataout[i] << " should be 82." << tcu::TestLog::EndMessage;
 				status = false;
 			}
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -7912,7 +8033,8 @@ class AdvancedUnsizedArrayLength2 : public ShaderStorageBufferObjectBase
 			i = (sizes[6] - 2) * columns[etype][6] * scalars[etype][6];
 			if (dataout[i] != 82)
 			{
-				Output("Array 6 index %d is %d should be 82.\n", i, dataout[i]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Array 6 index " << i << " is "
+													<< dataout[i] << " should be 82." << tcu::TestLog::EndMessage;
 				status = false;
 			}
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -8398,7 +8520,8 @@ class AdvancedMatrixCS : public ShaderStorageBufferObjectBase
 		{
 			if (out_data[i] != expected[i])
 			{
-				Output("Received: %f, but expected: %f\n", out_data[i], expected[i]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Received: " << out_data[i]
+													<< ", but expected: " << expected[i] << tcu::TestLog::EndMessage;
 				status = false;
 			}
 		}
@@ -8433,27 +8556,35 @@ class NegativeAPIBind : public ShaderStorageBufferObjectBase
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindings, 0);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE is generated by BindBufferBase if <target> is\n"
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "INVALID_VALUE is generated by BindBufferBase if <target> is\n"
 				   "SHADER_STORAGE_BUFFER and <index> is greater than or equal to the value of\n"
-				   "MAX_SHADER_STORAGE_BUFFER_BINDINGS.\n");
+				   "MAX_SHADER_STORAGE_BUFFER_BINDINGS."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
 		glBindBufferRange(GL_SHADER_STORAGE_BUFFER, bindings, 0, 0, 0);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE is generated by BindBufferRange if <target> is\n"
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "INVALID_VALUE is generated by BindBufferRange if <target> is\n"
 				   "SHADER_STORAGE_BUFFER and <index> is greater than or equal to the value of\n"
-				   "MAX_SHADER_STORAGE_BUFFER_BINDINGS.\n");
+				   "MAX_SHADER_STORAGE_BUFFER_BINDINGS."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
 		glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 0, alignment - 1, 0);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE is generated by BindBufferRange if <target> is\n"
-				   "SHADER_STORAGE_BUFFER and <offset> is not a multiple of the value of\n"
-				   "SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE is generated by BindBufferRange if <target> is\n"
+											"SHADER_STORAGE_BUFFER and <offset> is not a multiple of the value of\n"
+											"SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -8487,8 +8618,10 @@ class NegativeAPIBlockBinding : public ShaderStorageBufferObjectBase
 		glShaderStorageBlockBinding(p, 0, bindings);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("An INVALID_VALUE error is generated if storageBlockBinding is\n"
-				   "greater than or equal to the value of MAX_SHADER_STORAGE_BUFFER_BINDINGS.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "An INVALID_VALUE error is generated if storageBlockBinding is\n"
+											"greater than or equal to the value of MAX_SHADER_STORAGE_BUFFER_BINDINGS."
+				<< tcu::TestLog::EndMessage;
 			glDeleteProgram(p);
 			return ERROR;
 		}
@@ -8496,8 +8629,10 @@ class NegativeAPIBlockBinding : public ShaderStorageBufferObjectBase
 		glShaderStorageBlockBinding(p, 1, 0);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("An INVALID_VALUE error is generated if storageBlockIndex is not an\n"
-				   "active shader storage block index in program.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "An INVALID_VALUE error is generated if storageBlockIndex is not an\n"
+											"active shader storage block index in program."
+				<< tcu::TestLog::EndMessage;
 			glDeleteProgram(p);
 			return ERROR;
 		}
@@ -8505,8 +8640,10 @@ class NegativeAPIBlockBinding : public ShaderStorageBufferObjectBase
 		glShaderStorageBlockBinding(0, 0, 0);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("An INVALID_VALUE error is generated if program is not the name of either a program or shader "
-				   "object.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "An INVALID_VALUE error is generated if program is not the name of "
+											"either a program or shader object."
+				<< tcu::TestLog::EndMessage;
 			glDeleteProgram(p);
 			return ERROR;
 		}
@@ -8514,7 +8651,10 @@ class NegativeAPIBlockBinding : public ShaderStorageBufferObjectBase
 		glShaderStorageBlockBinding(sh, 0, 0);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("An INVALID_OPERATION error is generated if program is the name of a shader object.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "An INVALID_OPERATION error is generated if program is the name of a shader object."
+				<< tcu::TestLog::EndMessage;
 			glDeleteProgram(p);
 			return ERROR;
 		}
@@ -8640,7 +8780,8 @@ class NegativeGLSLCompileTime : public ShaderStorageBufferObjectBase
 
 		GLchar log[1024];
 		glGetShaderInfoLog(sh, sizeof(log), NULL, log);
-		Output("Shader Info Log:\n%s\n", log);
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Shader Info Log:\n"
+											<< log << tcu::TestLog::EndMessage;
 
 		GLint status;
 		glGetShaderiv(sh, GL_COMPILE_STATUS, &status);
@@ -8648,7 +8789,8 @@ class NegativeGLSLCompileTime : public ShaderStorageBufferObjectBase
 
 		if (status == GL_TRUE)
 		{
-			Output("Compilation should fail.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Compilation should fail." << tcu::TestLog::EndMessage;
 			return false;
 		}
 
@@ -8711,7 +8853,8 @@ class NegativeGLSLLinkTime : public ShaderStorageBufferObjectBase
 			if (status == GL_FALSE)
 			{
 				glDeleteProgram(p);
-				Output("VS0 compilation should be ok.\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "VS0 compilation should be ok." << tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -8729,7 +8872,8 @@ class NegativeGLSLLinkTime : public ShaderStorageBufferObjectBase
 			if (status == GL_FALSE)
 			{
 				glDeleteProgram(p);
-				Output("VS1 compilation should be ok.\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "VS1 compilation should be ok." << tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -8738,7 +8882,8 @@ class NegativeGLSLLinkTime : public ShaderStorageBufferObjectBase
 
 		GLchar log[1024];
 		glGetProgramInfoLog(p, sizeof(log), NULL, log);
-		Output("Program Info Log:\n%s\n", log);
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Program Info Log:\n"
+											<< log << tcu::TestLog::EndMessage;
 
 		GLint status;
 		glGetProgramiv(p, GL_LINK_STATUS, &status);
@@ -8746,7 +8891,8 @@ class NegativeGLSLLinkTime : public ShaderStorageBufferObjectBase
 
 		if (status == GL_TRUE)
 		{
-			Output("Link operation should fail.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Link operation should fail." << tcu::TestLog::EndMessage;
 			return false;
 		}
 
@@ -8769,7 +8915,6 @@ void ShaderStorageBufferObjectTests::init()
 {
 	using namespace deqp;
 
-	setOutput(m_context.getTestContext().getLog());
 	addChild(new TestSubcase(m_context, "basic-basic", TestSubcase::Create<BasicBasic>));
 	addChild(new TestSubcase(m_context, "basic-basic-cs", TestSubcase::Create<BasicBasicCS>));
 	addChild(new TestSubcase(m_context, "basic-max", TestSubcase::Create<BasicMax>));

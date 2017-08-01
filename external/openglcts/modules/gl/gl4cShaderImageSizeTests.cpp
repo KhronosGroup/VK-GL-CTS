@@ -41,32 +41,6 @@ typedef tcu::Vec4  vec4;
 typedef tcu::IVec4 ivec4;
 typedef tcu::UVec4 uvec4;
 
-static tcu::TestLog* currentLog;
-void setOutput(tcu::TestLog& log)
-{
-	currentLog = &log;
-}
-
-void Output(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-
-	const int   MAX_OUTPUT_STRING_SIZE = 40000;
-	static char temp[MAX_OUTPUT_STRING_SIZE];
-
-	vsnprintf(temp, MAX_OUTPUT_STRING_SIZE - 1, format, args);
-	temp[MAX_OUTPUT_STRING_SIZE - 1] = '\0';
-
-	char* logLine = strtok(temp, "\n");
-	while (logLine != NULL)
-	{
-		currentLog->writeMessage(logLine);
-		logLine = strtok(NULL, "\n");
-	}
-	va_end(args);
-}
-
 class ShaderImageSizeBase : public deqp::SubcaseBase
 {
 	virtual std::string Title()
@@ -241,7 +215,9 @@ public:
 				const int idx = yy * w + xx;
 				if (!ColorEqual(fb[idx], expected, g_color_eps))
 				{
-					Output("First bad color: %s.\n", ToString(fb[idx]).c_str());
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "First bad color: " << ToString(fb[idx])
+						<< tcu::TestLog::EndMessage;
 					status = false;
 					return status;
 				}
@@ -274,25 +250,34 @@ public:
 					switch (type)
 					{
 					case GL_VERTEX_SHADER:
-						Output("*** Vertex Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Vertex Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_CONTROL_SHADER:
-						Output("*** Tessellation Control Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Control Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_EVALUATION_SHADER:
-						Output("*** Tessellation Evaluation Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Evaluation Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_GEOMETRY_SHADER:
-						Output("*** Geometry Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Geometry Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_FRAGMENT_SHADER:
-						Output("*** Fragment Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Fragment Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_COMPUTE_SHADER:
-						Output("*** Compute Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Compute Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					default:
-						Output("*** Unknown Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Unknown Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					}
 					GLint length;
@@ -301,14 +286,16 @@ public:
 					{
 						std::vector<GLchar> source(length);
 						glGetShaderSource(shaders[i], length, NULL, &source[0]);
-						Output("%s\n", &source[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &source[0] << tcu::TestLog::EndMessage;
 					}
 					glGetShaderiv(shaders[i], GL_INFO_LOG_LENGTH, &length);
 					if (length > 0)
 					{
 						std::vector<GLchar> log(length);
 						glGetShaderInfoLog(shaders[i], length, NULL, &log[0]);
-						Output("%s\n", &log[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 					}
 				}
 			}
@@ -318,7 +305,7 @@ public:
 			{
 				std::vector<GLchar> log(length);
 				glGetProgramInfoLog(program, length, NULL, &log[0]);
-				Output("%s\n", &log[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 			}
 		}
 		return status == GL_TRUE ? true : false;
@@ -553,25 +540,34 @@ class ImageSizeMachine : public deqp::GLWrapper
 					switch (type)
 					{
 					case GL_VERTEX_SHADER:
-						Output("*** Vertex Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Vertex Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_CONTROL_SHADER:
-						Output("*** Tessellation Control Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Control Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_TESS_EVALUATION_SHADER:
-						Output("*** Tessellation Evaluation Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Tessellation Evaluation Shader ***"
+							<< tcu::TestLog::EndMessage;
 						break;
 					case GL_GEOMETRY_SHADER:
-						Output("*** Geometry Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Geometry Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_FRAGMENT_SHADER:
-						Output("*** Fragment Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Fragment Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_COMPUTE_SHADER:
-						Output("*** Compute Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Compute Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					default:
-						Output("*** Unknown Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Unknown Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					}
 					GLint length;
@@ -580,14 +576,16 @@ class ImageSizeMachine : public deqp::GLWrapper
 					{
 						std::vector<GLchar> source(length);
 						glGetShaderSource(shaders[i], length, NULL, &source[0]);
-						Output("%s\n", &source[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &source[0] << tcu::TestLog::EndMessage;
 					}
 					glGetShaderiv(shaders[i], GL_INFO_LOG_LENGTH, &length);
 					if (length > 0)
 					{
 						std::vector<GLchar> log(length);
 						glGetShaderInfoLog(shaders[i], length, NULL, &log[0]);
-						Output("%s\n", &log[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 					}
 				}
 			}
@@ -597,7 +595,7 @@ class ImageSizeMachine : public deqp::GLWrapper
 			{
 				std::vector<GLchar> log(length);
 				glGetProgramInfoLog(program, length, NULL, &log[0]);
-				Output("%s\n", &log[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 			}
 		}
 		return status == GL_TRUE ? true : false;
@@ -734,9 +732,11 @@ public:
 			{
 				if (data[i] != expected_result[i])
 				{
-					Output("Returned value is: (%d %d %d %d). Expected value is: (%d %d %d %d). Image unit is: %d.\n",
-						   data[i][0], data[i][1], data[i][2], data[i][3], expected_result[i][0], expected_result[i][1],
-						   expected_result[i][2], expected_result[i][3], i + 1);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Returned value is: (" << data[i][0] << " " << data[i][1] << " "
+						<< data[i][2] << " " << data[i][3] << "). Expected value is: (" << expected_result[i][0] << " "
+						<< expected_result[i][1] << " " << expected_result[i][2] << " " << expected_result[i][3]
+						<< "). Image unit is: " << (i + 1) << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -1183,7 +1183,8 @@ class NegativeCompileTime : public ShaderImageSizeBase
 
 		GLchar log[1024];
 		glGetShaderInfoLog(sh, sizeof(log), NULL, log);
-		Output("Shader Info Log:\n%s\n", log);
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Shader Info Log:\n"
+											<< log << tcu::TestLog::EndMessage;
 
 		GLint status;
 		glGetShaderiv(sh, GL_COMPILE_STATUS, &status);
@@ -1191,7 +1192,8 @@ class NegativeCompileTime : public ShaderImageSizeBase
 
 		if (status == GL_TRUE)
 		{
-			Output("Compilation should fail.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Compilation should fail." << tcu::TestLog::EndMessage;
 			return false;
 		}
 		return true;
@@ -1211,7 +1213,6 @@ ShaderImageSizeTests::~ShaderImageSizeTests(void)
 void ShaderImageSizeTests::init()
 {
 	using namespace deqp;
-	setOutput(m_context.getTestContext().getLog());
 	addChild(new TestSubcase(m_context, "basic-nonMS-vs-float", TestSubcase::Create<BasicNonMS<vec4, 0> >));
 	addChild(new TestSubcase(m_context, "basic-nonMS-vs-int", TestSubcase::Create<BasicNonMS<ivec4, 0> >));
 	addChild(new TestSubcase(m_context, "basic-nonMS-vs-uint", TestSubcase::Create<BasicNonMS<uvec4, 0> >));

@@ -703,10 +703,11 @@ void draw_elements_base_vertex (NegativeTestContext& ctx)
 
 void draw_elements_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
 {
+	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
+
 	GLfloat						vertices[1];
 	map<string, string>			args;
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	args["GLSL_VERSION_STRING"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_VERSION_STRING"] = getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES);
 
 	glu::ShaderProgram			program(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::VertexSource(tcu::StringTemplate(vertexShaderSource).specialize(args)) << glu::GeometrySource(geometryShaderSource));
 
@@ -1068,10 +1069,11 @@ void draw_elements_instanced_base_vertex (NegativeTestContext& ctx)
 
 void draw_elements_instanced_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
 {
+	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
+
 	GLfloat						vertices[1];
 	map<string, string>			args;
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	args["GLSL_VERSION_STRING"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_VERSION_STRING"] = getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES);
 	glu::ShaderProgram			geometryProgram(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::VertexSource(tcu::StringTemplate(vertexShaderSource).specialize(args)) << glu::GeometrySource(geometryShaderSource));
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if a geometry shader is active and mode is incompatible with the input primitive type of the geometry shader in the currently installed program object.");
@@ -1288,11 +1290,10 @@ void draw_range_elements_base_vertex (NegativeTestContext& ctx)
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
 
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	GLfloat						vertices[1];
 	map<string, string>			args;
-	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_VERSION_STRING"]			= getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
 
 	ctx.glUseProgram(program.getProgram());
@@ -1335,10 +1336,11 @@ void draw_range_elements_base_vertex (NegativeTestContext& ctx)
 
 void draw_range_elements_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
 {
+	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
+
 	GLfloat						vertices[1];
 	map<string, string>			args;
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	args["GLSL_VERSION_STRING"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_VERSION_STRING"] = getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES);
 	glu::ShaderProgram			geometryProgram(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::VertexSource(tcu::StringTemplate(vertexShaderSource).specialize(args)) << glu::GeometrySource(geometryShaderSource));
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if a geometry shader is active and mode is incompatible with the input primitive type of the geometry shader in the currently installed program object.");

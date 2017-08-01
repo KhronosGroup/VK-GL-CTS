@@ -36,6 +36,7 @@
 #include "vktSynchronizationUtil.hpp"
 #include "vktSynchronizationOperation.hpp"
 #include "vktSynchronizationOperationTestData.hpp"
+#include "vktSynchronizationOperationResources.hpp"
 
 namespace vkt
 {
