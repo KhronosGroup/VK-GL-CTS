@@ -210,6 +210,8 @@ void TestThread::run (void)
 	{
 		getLog() << ThreadLog::BeginMessage << "Unknown exception" << ThreadLog::EndMessage;
 	}
+
+	getLibrary().releaseThread();
 }
 
 bool MultiThreadedTest::execTest (TestThread& thread)
