@@ -190,9 +190,9 @@ class Configuration:
 		if not NDKEnv.isHostOsSupported(self.env.ndk.hostOsName):
 			raise Exception("NDK '%s' is not supported on this machine" % self.env.ndk.hostOsName)
 
-		supportedNDKVersion = 11
-		if self.env.ndk.version[0] != supportedNDKVersion:
-			raise Exception("Android NDK version %d is not supported; build requires NDK version %d" % (self.env.ndk.version[0], supportedNDKVersion))
+		supportedNDKVersion = [11, 15]
+		if self.env.ndk.version[0] not in supportedNDKVersion:
+			raise Exception("Android NDK version %d is not supported; build requires NDK version %s" % (self.env.ndk.version[0], supportedNDKVersion))
 
 		if self.env.sdk.buildToolsVersion == (0,0,0):
 			raise Exception("No build tools directory found at %s" % os.path.join(self.env.sdk.path, "build-tools"))
