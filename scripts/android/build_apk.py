@@ -168,12 +168,12 @@ class Environment:
 		self.ndk		= ndk
 
 class Configuration:
-	def __init__(self, env, buildPath, abis, nativeBuildType, gtfTarget, verbose):
+	def __init__(self, env, buildPath, abis, nativeApi, nativeBuildType, gtfTarget, verbose):
 		self.env				= env
 		self.sourcePath			= DEQP_DIR
 		self.buildPath			= buildPath
 		self.abis				= abis
-		self.nativeApi			= 21
+		self.nativeApi			= nativeApi
 		self.javaApi			= 22
 		self.nativeBuildType	= nativeBuildType
 		self.gtfTarget			= gtfTarget
@@ -856,6 +856,11 @@ def parseArgs ():
 		dest='abis',
 		default=",".join(NDKEnv.getKnownAbis()),
 		help="ABIs to build")
+	parser.add_argument('--native-api',
+		type=int,
+		dest='nativeApi',
+		default=21,
+		help="Android API level to target in native code")
 	parser.add_argument('--sdk',
 		dest='sdkPath',
 		default=defaultSDKPath,
@@ -915,7 +920,7 @@ if __name__ == "__main__":
 	sdk			= SDKEnv(os.path.realpath(args.sdkPath))
 	buildPath	= os.path.realpath(args.buildRoot)
 	env			= Environment(sdk, ndk)
-	config		= Configuration(env, buildPath, abis=args.abis, nativeBuildType=args.nativeBuildType, gtfTarget=args.gtfTarget, verbose=args.verbose)
+	config		= Configuration(env, buildPath, abis=args.abis, nativeApi=args.nativeApi, nativeBuildType=args.nativeBuildType, gtfTarget=args.gtfTarget, verbose=args.verbose)
 
 	try:
 		config.check()
