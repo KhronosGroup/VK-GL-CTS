@@ -13,6 +13,7 @@ KHR-GLES32.shaders.shader_integer_mix.mix-uvec4
 KHR-GLES32.shaders.shader_integer_mix.mix-bvec4
 KHR-GLES32.shaders.negative.initialize
 KHR-GLES32.shaders.negative.constant_sequence
+KHR-GLES32.shaders.negative.used_uniform_precision_matching
 KHR-GLES32.core.geometry_shader.adjacency.adjacency_non_indiced_lines
 KHR-GLES32.core.geometry_shader.adjacency.adjacency_indiced_lines
 KHR-GLES32.core.geometry_shader.adjacency.adjacency_non_indiced_line_strip

@@ -382,7 +382,8 @@ GLCTS_3_2_3_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
 
 GLCTS_3_2_3_GLES32_KHR_COMMON_FILTERS	= [
 		include("gles32-khr-master.txt"),
-		exclude("gles32-khr-test-issues.txt")
+		exclude("gles32-khr-test-issues.txt"),
+		exclude("gles32-khr-spec-issues.txt")
 	]
 
 GLCTS_3_2_3_GLES32_KHR_PKG_1CFG			= Package(module = ES32KHR_MODULE, configurations = [
