@@ -868,6 +868,7 @@ public:
 			// Signal completion.
 			packetIter->signal->increment();
 		}
+		m_egl.releaseThread();
 	}
 
 private:

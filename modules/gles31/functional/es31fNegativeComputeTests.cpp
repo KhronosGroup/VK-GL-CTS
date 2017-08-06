@@ -248,7 +248,7 @@ void exceed_texture_image_units_limit (NegativeTestContext& ctx)
 
 		ctx.beginSection("GL_INVALID_OPERATION error is generated if the sum of the number of active samplers for each active program exceeds the maximum number of texture image units allowed");
 		ctx.glDispatchCompute(1, 1, 1);
-		ctx.expectError(GL_INVALID_VALUE);
+		ctx.expectError(GL_INVALID_OPERATION);
 		ctx.endSection();
 	}
 }
