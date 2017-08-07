@@ -40,7 +40,8 @@ struct GlslBuildOptions
 {
 	enum Flags
 	{
-		FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS	= (1u<<0)
+		FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS	= (1u<<0),
+		FLAG_ALLOW_RELAXED_OFFSETS				= (1u<<1)	// allow block offsets to follow VK_KHR_relaxed_block_layout
 	};
 
 	SpirvVersion	targetVersion;
