@@ -52,33 +52,6 @@ typedef UVec3 uvec3;
 typedef UVec4 uvec4;
 typedef Mat4  mat4;
 
-static tcu::TestLog* currentLog;
-
-void setOutput(tcu::TestLog& log)
-{
-	currentLog = &log;
-}
-
-void Output(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-
-	const int   MAX_OUTPUT_STRING_SIZE = 40000;
-	static char temp[MAX_OUTPUT_STRING_SIZE];
-
-	vsnprintf(temp, MAX_OUTPUT_STRING_SIZE - 1, format, args);
-	temp[MAX_OUTPUT_STRING_SIZE - 1] = '\0';
-
-	char* logLine = strtok(temp, "\n");
-	while (logLine != NULL)
-	{
-		currentLog->writeMessage(logLine);
-		logLine = strtok(NULL, "\n");
-	}
-	va_end(args);
-}
-
 const char* const kGLSLVer = "#version 310 es\n";
 
 class ComputeShaderBase : public glcts::SubcaseBase
@@ -148,16 +121,20 @@ public:
 					switch (type)
 					{
 					case GL_VERTEX_SHADER:
-						Output("*** Vertex Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Vertex Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_FRAGMENT_SHADER:
-						Output("*** Fragment Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Fragment Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					case GL_COMPUTE_SHADER:
-						Output("*** Compute Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Compute Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					default:
-						Output("*** Unknown Shader ***\n");
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "*** Unknown Shader ***" << tcu::TestLog::EndMessage;
 						break;
 					}
 
@@ -172,7 +149,8 @@ public:
 					{
 						std::vector<GLchar> source(length);
 						glGetShaderSource(shaders[i], length, NULL, &source[0]);
-						Output("%s\n", &source[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &source[0] << tcu::TestLog::EndMessage;
 					}
 
 					glGetShaderiv(shaders[i], GL_INFO_LOG_LENGTH, &length);
@@ -180,7 +158,8 @@ public:
 					{
 						std::vector<GLchar> log(length);
 						glGetShaderInfoLog(shaders[i], length, NULL, &log[0]);
-						Output("%s\n", &log[0]);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 					}
 				}
 			}
@@ -191,7 +170,7 @@ public:
 			{
 				std::vector<GLchar> log(length);
 				glGetProgramInfoLog(program, length, NULL, &log[0]);
-				Output("%s\n", &log[0]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
 			}
 		}
 
@@ -304,9 +283,11 @@ public:
 			{
 				if (!ColorEqual(display[j * w + i], expected, g_color_eps))
 				{
-					Output("Color at (%d, %d) is [%f, %f, %f, %f] should be [%f, %f, %f, %f].\n", x + i, y + j,
-						   display[j * w + i].x(), display[j * w + i].y(), display[j * w + i].z(),
-						   display[j * w + i].w(), expected.x(), expected.y(), expected.z(), expected.w());
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Color at (" << x + i << ", " << y + j << ") is ["
+						<< display[j * w + i].x() << ", " << display[j * w + i].y() << ", " << display[j * w + i].z()
+						<< ", " << display[j * w + i].w() << "] should be [" << expected.x() << ", " << expected.y()
+						<< ", " << expected.z() << ", " << expected.w() << "]." << tcu::TestLog::EndMessage;
 					return false;
 				}
 			}
@@ -399,7 +380,9 @@ public:
 				const int idx = y * width + x;
 				if (!ColorEqual(fb[idx], lb, g_color_eps))
 				{
-					Output("First bad color (%d, %d): %f %f %f\n", x, y, fb[idx].x(), fb[idx].y(), fb[idx].z());
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "First bad color (" << x << ", " << y << "): " << fb[idx].x() << " "
+						<< fb[idx].y() << " " << fb[idx].z() << tcu::TestLog::EndMessage;
 					status = false;
 				}
 			}
@@ -412,7 +395,9 @@ public:
 				const int idx = y * width + x;
 				if (!ColorEqual(fb[idx], rb, g_color_eps))
 				{
-					Output("Bad color at (%d, %d): %f %f %f\n", x, y, fb[idx].x(), fb[idx].y(), fb[idx].z());
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Bad color at (" << x << ", " << y << "): " << fb[idx].x() << " "
+						<< fb[idx].y() << " " << fb[idx].z() << tcu::TestLog::EndMessage;
 					status = false;
 				}
 			}
@@ -425,7 +410,9 @@ public:
 				const int idx = y * width + x;
 				if (!ColorEqual(fb[idx], rt, g_color_eps))
 				{
-					Output("Bad color at (%d, %d): %f %f %f\n", x, y, fb[idx].x(), fb[idx].y(), fb[idx].z());
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Bad color at (" << x << ", " << y << "): " << fb[idx].x() << " "
+						<< fb[idx].y() << " " << fb[idx].z() << tcu::TestLog::EndMessage;
 					status = false;
 				}
 			}
@@ -438,7 +425,9 @@ public:
 				const int idx = y * width + x;
 				if (!ColorEqual(fb[idx], lt, g_color_eps))
 				{
-					Output("Bad color at (%d, %d): %f %f %f\n", x, y, fb[idx].x(), fb[idx].y(), fb[idx].z());
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Bad color at (" << x << ", " << y << "): " << fb[idx].x() << " "
+						<< fb[idx].y() << " " << fb[idx].z() << tcu::TestLog::EndMessage;
 					status = false;
 				}
 			}
@@ -451,7 +440,9 @@ public:
 				const int idx = y * width + x;
 				if (!ColorEqual(fb[idx], vec3(0), g_color_eps))
 				{
-					Output("Bad color at (%d, %d): %f %f %f\n", x, y, fb[idx].x(), fb[idx].y(), fb[idx].z());
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Bad color at (" << x << ", " << y << "): " << fb[idx].x() << " "
+						<< fb[idx].y() << " " << fb[idx].z() << tcu::TestLog::EndMessage;
 					status = false;
 				}
 			}
@@ -464,7 +455,9 @@ public:
 				const int idx = y * width + x;
 				if (!ColorEqual(fb[idx], vec3(0), g_color_eps))
 				{
-					Output("Bad color at (%d, %d): %f %f %f\n", x, y, fb[idx].x(), fb[idx].y(), fb[idx].z());
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Bad color at (" << x << ", " << y << "): " << fb[idx].x() << " "
+						<< fb[idx].y() << " " << fb[idx].z() << tcu::TestLog::EndMessage;
 					status = false;
 				}
 			}
@@ -528,7 +521,9 @@ class SimpleCompute : public ComputeShaderBase
 		glGetProgramiv(m_program, GL_COMPUTE_WORK_GROUP_SIZE, v);
 		if (v[0] != 1 || v[1] != 1 || v[2] != 1)
 		{
-			Output("Got %d, %d, %d, expected: 1, 1, 1 in GL_COMPUTE_WORK_GROUP_SIZE check", v[0], v[1], v[2]);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Got " << v[0] << ", " << v[1] << ", " << v[2]
+				<< ", expected: 1, 1, 1 in GL_COMPUTE_WORK_GROUP_SIZE check" << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -628,8 +623,10 @@ class BasicOneWorkGroup : public ComputeShaderBase
 		glGetProgramiv(m_program, GL_COMPUTE_WORK_GROUP_SIZE, v);
 		if (v[0] != local_size_x || v[1] != local_size_y || v[2] != local_size_z)
 		{
-			Output("GL_COMPUTE_LOCAL_WORK_SIZE is (%d %d %d) should be (%d %d %d)\n", v[0], v[1], v[2], local_size_x,
-				   local_size_y, local_size_z);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "GL_COMPUTE_LOCAL_WORK_SIZE is (" << v[0] << " " << v[1] << " " << v[2]
+				<< ") should be (" << local_size_x << " " << local_size_y << " " << local_size_z << ")"
+				<< tcu::TestLog::EndMessage;
 			return false;
 		}
 
@@ -672,7 +669,8 @@ class BasicOneWorkGroup : public ComputeShaderBase
 					const int index = z * local_size_x * local_size_y + y * local_size_x + x;
 					if (!IsEqual(data[index], uvec4(x, y, z, 0)))
 					{
-						Output("Invalid data at offset %d.\n", index);
+						m_context.getTestContext().getLog()
+							<< tcu::TestLog::Message << "Invalid data at offset " << index << tcu::TestLog::EndMessage;
 						ret = false;
 					}
 				}
@@ -864,7 +862,8 @@ class BasicResourceUBO : public ComputeShaderBase
 					{
 						if (!IsEqual(data[index * 12 + i], vec4(static_cast<float>(index * 12 + i))))
 						{
-							Output("Incorrect data at offset %d.\n", index * 12 + i);
+							m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid data at offset "
+																<< index * 12 + i << tcu::TestLog::EndMessage;
 							ret = false;
 						}
 					}
@@ -1040,7 +1039,8 @@ class BasicResourceTexture : public ComputeShaderBase
 		{
 			if (!IsEqual(data[index], vec4(123.0f)))
 			{
-				Output("Incorrect data at index %d.\n", index);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Invalid data at index " << index << tcu::TestLog::EndMessage;
 				ret = false;
 			}
 		}
@@ -1131,14 +1131,17 @@ class BasicResourceImage : public ComputeShaderBase
 			  "  uvec4 color = uvec4(gl_GlobalInvocationID.x + gl_GlobalInvocationID.y);";
 		if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
 		{
-			Output("Function imageAtomicAdd not supported, using imageStore");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Function imageAtomicAdd not supported, using imageStore"
+				<< tcu::TestLog::EndMessage;
 			ss << NL "  imageStore(g_image1, ivec2(gl_GlobalInvocationID), color);" NL
 					 "  uvec4 c = imageLoad(g_image1, ivec2(gl_GlobalInvocationID));" NL
 					 "  imageStore(g_image2, ivec2(gl_GlobalInvocationID), c);" NL "}";
 		}
 		else
 		{
-			Output("Using imageAtomicAdd");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Using imageAtomicAdd" << tcu::TestLog::EndMessage;
 			ss << NL "  imageStore(g_image1, ivec2(gl_GlobalInvocationID), uvec4(0));" NL
 					 "  imageAtomicAdd(g_image1, ivec2(gl_GlobalInvocationID), color.x);" NL
 					 "  uvec4 c = imageLoad(g_image1, ivec2(gl_GlobalInvocationID));" NL
@@ -1229,7 +1232,9 @@ class BasicResourceImage : public ComputeShaderBase
 				const vec4 c = vec4(float(y + x) / 255.0f, 1.0f, 1.0f, 1.0f);
 				if (!ColorEqual(display[y * kWidth + x], c, kColorEps))
 				{
-					Output("Got red: %f , expected %f, at (%d, %d)", display[y * kWidth + x].x(), c.x(), x, y);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Got red: " << display[y * kWidth + x].x() << ", expected " << c.x()
+						<< ", at (" << x << ", " << y << ")" << tcu::TestLog::EndMessage;
 					return false;
 				}
 			}
@@ -1406,7 +1411,8 @@ class BasicResourceAtomicCounter : public ComputeShaderBase
 		{
 			if (data[i] != i)
 			{
-				Output("Value at index %d is %d should be %d.\n", i, data[i], i);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Value at index " << i << " is "
+													<< data[i] << " should be " << i << tcu::TestLog::EndMessage;
 				ret = false;
 			}
 		}
@@ -1419,12 +1425,16 @@ class BasicResourceAtomicCounter : public ComputeShaderBase
 			static_cast<GLuint*>(glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, 2 * sizeof(GLuint), GL_MAP_READ_BIT));
 		if (value[0] != kSize)
 		{
-			Output("Final atomic counter value (buffer 0, offset 0) is %d should be %d.\n", value[0], kSize);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Final atomic counter value (buffer 0, offset 0) is " << value[0]
+				<< " should be " << kSize << tcu::TestLog::EndMessage;
 			ret = false;
 		}
 		if (value[1] != 0)
 		{
-			Output("Final atomic counter value (buffer 0, offset 4) is %d should be %d.\n", value[1], 0);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Final atomic counter value (buffer 0, offset 4) is " << value[1]
+				<< " should be 0" << tcu::TestLog::EndMessage;
 			ret = false;
 		}
 		glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
@@ -1621,7 +1631,8 @@ class BasicResourceUniform : public ComputeShaderBase
 			data = static_cast<int*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int), GL_MAP_READ_BIT));
 			if (data[0] != 1)
 			{
-				Output("Data is %d should be 1.\n", data[0]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Data is " << data[0] << " should be 1." << tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -1743,7 +1754,9 @@ class BasicBuiltinVariables : public ComputeShaderBase
 		{
 			if (!IsEqual(result[index], uvec4(num_groups.x(), num_groups.y(), num_groups.z(), 0)))
 			{
-				Output("gl_NumWorkGroups: Invalid data at index %d.\n", index);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "gl_NumWorkGroups: Invalid data at index " << index
+					<< tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -1752,7 +1765,9 @@ class BasicBuiltinVariables : public ComputeShaderBase
 		{
 			if (!IsEqual(result[index], uvec4(local_size.x(), local_size.y(), local_size.z(), 0)))
 			{
-				Output("gl_WorkGroupSize: Invalid data at index %d.\n", index);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "gl_WorkGroupSize: Invalid data at index " << index
+					<< tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -1766,7 +1781,9 @@ class BasicBuiltinVariables : public ComputeShaderBase
 			expected.z() /= local_size.z();
 			if (!IsEqual(result[index], uvec4(expected.x(), expected.y(), expected.z(), 0)))
 			{
-				Output("gl_WorkGroupID: Invalid data at index %d.\n", index);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "gl_WorkGroupSize: Invalid data at index " << index
+					<< tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -1780,7 +1797,9 @@ class BasicBuiltinVariables : public ComputeShaderBase
 			expected.z() %= local_size.z();
 			if (!IsEqual(result[index], uvec4(expected.x(), expected.y(), expected.z(), 0)))
 			{
-				Output("gl_LocalInvocationID: Invalid data at index %d.\n", index);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "gl_LocalInvocationID: Invalid data at index " << index
+					<< tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -1791,7 +1810,9 @@ class BasicBuiltinVariables : public ComputeShaderBase
 											local_size.y() * num_groups.y());
 			if (!IsEqual(result[index], uvec4(expected.x(), expected.y(), expected.z(), 0)))
 			{
-				Output("gl_GlobalInvocationID: Invalid data at index %d.\n", index);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "gl_GlobalInvocationID: Invalid data at index " << index
+					<< tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -1804,7 +1825,9 @@ class BasicBuiltinVariables : public ComputeShaderBase
 									(coord.z() % local_size.z()) * local_size.x() * local_size.y();
 			if (!IsEqual(result[index], uvec4(expected)))
 			{
-				Output("gl_LocalInvocationIndex: Invalid data at index %d.\n", index);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "gl_LocalInvocationIndex: Invalid data at index " << index
+					<< tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -1886,7 +1909,8 @@ class BasicMax : public ComputeShaderBase
 			glGetIntegeri_v(target, c, &i);
 			if (i < min_values[c])
 			{
-				Output("Is %d should be at least %d.\n", i, min_values[c]);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << i << " should be at least "
+													<< min_values[c] << tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -1895,7 +1919,9 @@ class BasicMax : public ComputeShaderBase
 			glGetInteger64i_v(target, c, &i64);
 			if (static_cast<GLint>(i64) < min_values[c])
 			{
-				Output("Is %d should be at least %d.\n", static_cast<GLint>(i64), min_values[c]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Is " << static_cast<GLint>(i64) << " should be at least "
+					<< min_values[c] << tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -1913,25 +1939,29 @@ class BasicMax : public ComputeShaderBase
 		glGetIntegerv(target, &i);
 		if (i < min_value)
 		{
-			Output("Is %d should be at least %d.\n", i, min_value);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << i << " should be at least "
+												<< min_value << tcu::TestLog::EndMessage;
 			return false;
 		}
 		glGetInteger64v(target, &i64);
 		if (static_cast<GLint>(i64) < min_value)
 		{
-			Output("Is %d should be at least %d.\n", static_cast<GLint>(i64), min_value);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << static_cast<GLint>(i64)
+												<< " should be at least " << min_value << tcu::TestLog::EndMessage;
 			return false;
 		}
 		glGetFloatv(target, &f);
 		if (static_cast<GLint>(f) < min_value)
 		{
-			Output("Is %d should be at least %d.\n", static_cast<GLint>(f), min_value);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << static_cast<GLint>(f)
+												<< " should be at least " << min_value << tcu::TestLog::EndMessage;
 			return false;
 		}
 		glGetBooleanv(target, &b);
 		if (b == GL_FALSE)
 		{
-			Output("Is GL_FALSE should be at least GL_TRUE.\n");
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is GL_FALSE should be at least GL_TRUE."
+												<< min_value << tcu::TestLog::EndMessage;
 			return false;
 		}
 
@@ -2091,7 +2121,8 @@ class NegativeAttachShader : public ComputeShaderBase
 		glGetShaderiv(sh1, GL_SHADER_TYPE, &type);
 		if (static_cast<GLenum>(type) != GL_COMPUTE_SHADER)
 		{
-			Output("SHADER_TYPE should be COMPUTE_SHADER.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "SHADER_TYPE should be COMPUTE_SHADER." << tcu::TestLog::EndMessage;
 			glDeleteShader(sh1);
 			return false;
 		}
@@ -2112,13 +2143,19 @@ class NegativeAttachShader : public ComputeShaderBase
 		glAttachShader(p, sh2);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("GL_INVALID_OPERATION error expected after attaching shader of the same type.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "GL_INVALID_OPERATION error expected after attaching shader of the same type."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glAttachShader(p, sh3);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("GL_INVALID_OPERATION error expected after attaching shader of the same type.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "GL_INVALID_OPERATION error expected after attaching shader of the same type."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -2189,7 +2226,8 @@ class BasicBuildSeparable : public ComputeShaderBase
 		data = static_cast<vec4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(vec4), GL_MAP_READ_BIT));
 		if (!IsEqual(data[0], vec4(1.0f, 2.0f, 3.0f, 4.0f)))
 		{
-			Output("Invalid value!\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Invalid value!" << tcu::TestLog::EndMessage;
 			res = false;
 		}
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -2209,7 +2247,8 @@ class BasicBuildSeparable : public ComputeShaderBase
 
 		if (!IsEqual(data[0], vec4(1.0f, 2.0f, 3.0f, 4.0f)))
 		{
-			Output("Invalid value!\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Invalid value!" << tcu::TestLog::EndMessage;
 			res = false;
 		}
 
@@ -2289,7 +2328,8 @@ class BasicSharedSimple : public ComputeShaderBase
 		{
 			if (result[i] != 1)
 			{
-				Output("Data at index %d is %d should be %d.\n", i, result[i], 1);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data at index " << i << " is "
+													<< result[i] << " should be 1." << tcu::TestLog::EndMessage;
 				res = false;
 			}
 		}
@@ -2413,7 +2453,8 @@ class BasicSharedStruct : public ComputeShaderBase
 		{
 			if (!IsEqual(result[i], vec4(static_cast<float>(i))))
 			{
-				Output("Invalid data at index %d.\n", i);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Invalid data at index " << i << tcu::TestLog::EndMessage;
 				res = false;
 			}
 		}
@@ -2525,7 +2566,8 @@ class BasicDispatchIndirect : public ComputeShaderBase
 		{
 			if (result[i] != i)
 			{
-				Output("Data at index %d is %d should be %d.\n", i, result[i], i);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data at index " << i << " is "
+													<< result[i] << " should be " << i << tcu::TestLog::EndMessage;
 				res = false;
 			}
 		}
@@ -2962,7 +3004,8 @@ class BasicSSOCase3 : public ComputeShaderBase
 			data = static_cast<int*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int), GL_MAP_READ_BIT));
 			if (data[0] != 1)
 			{
-				Output("Data is %d should be 1.\n", data[0]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Data is " << data[0] << " should be 1." << tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -2977,7 +3020,8 @@ class BasicSSOCase3 : public ComputeShaderBase
 			data = static_cast<int*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int), GL_MAP_READ_BIT));
 			if (data[0] != 2)
 			{
-				Output("Data is %d should be 2.\n", data[0]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Data is " << data[0] << " should be 2." << tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -2992,7 +3036,8 @@ class BasicSSOCase3 : public ComputeShaderBase
 			data = static_cast<int*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int), GL_MAP_READ_BIT));
 			if (data[0] != 2)
 			{
-				Output("Data is %d should be 2.\n", data[0]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Data is " << data[0] << " should be 2." << tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -3008,7 +3053,8 @@ class BasicSSOCase3 : public ComputeShaderBase
 			data = static_cast<int*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int), GL_MAP_READ_BIT));
 			if (data[0] != 1)
 			{
-				Output("Data is %d should be 1.\n", data[0]);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Data is " << data[0] << " should be 1." << tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -3092,7 +3138,8 @@ class BasicAtomicCase1 : public ComputeShaderBase
 		{
 			if (data[i] != i)
 			{
-				Output("Data at index %d is %d should be %d.\n", i, data[i], i);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data at index " << i << " is "
+													<< data[i] << " should be " << i << tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 		}
@@ -3105,7 +3152,8 @@ class BasicAtomicCase1 : public ComputeShaderBase
 		{
 			if (data[i] != i)
 			{
-				Output("Data at index %d is %d should be %d.\n", i, data[i], i);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data at index " << i << " is "
+													<< data[i] << " should be " << i << tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 		}
@@ -3226,7 +3274,8 @@ class BasicAtomicCase2 : public ComputeShaderBase
 		{
 			if (udata[i] != 7)
 			{
-				Output("uData at index %d is %d should be %d.\n", i, udata[i], 7);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "uData at index " << i << " is "
+													<< udata[i] << " should be 7." << tcu::TestLog::EndMessage;
 				res = false;
 			}
 		}
@@ -3241,7 +3290,8 @@ class BasicAtomicCase2 : public ComputeShaderBase
 		{
 			if (idata[i] != 7)
 			{
-				Output("iData at index %d is %d should be %d.\n", i, idata[i], 7);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "iData at index " << i << " is "
+													<< idata[i] << " should be 7." << tcu::TestLog::EndMessage;
 				res = false;
 			}
 		}
@@ -3383,7 +3433,8 @@ class BasicAtomicCase3 : public ComputeShaderBase
 		{
 			if (udata[i] != 7)
 			{
-				Output("uData at index %d is %d should be %d.\n", i, udata[i], 7);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "uData at index " << i << " is "
+													<< udata[i] << " should be 7." << tcu::TestLog::EndMessage;
 				ret = false;
 			}
 		}
@@ -3396,7 +3447,8 @@ class BasicAtomicCase3 : public ComputeShaderBase
 		{
 			if (idata[i] != 7)
 			{
-				Output("iData at index %d is %d should be %d.\n", i, idata[i], 7);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "iData at index " << i << " is "
+													<< idata[i] << " should be 7." << tcu::TestLog::EndMessage;
 				ret = false;
 			}
 		}
@@ -3515,7 +3567,8 @@ class AdvancedCopyImage : public ComputeShaderBase
 		{
 			if (data[i] != 0x0f)
 			{
-				Output("Data at index %d is %d should be %d.\n", i, data[i], 0x0f);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data at index " << i << " is "
+													<< data[i] << " should be " << 0x0f << tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -4014,7 +4067,8 @@ class AdvancedPipelineComputeChain : public ComputeShaderBase
 			{
 				if (data[i] != 4)
 				{
-					Output("Data is: %d should be: %d.\n", data[i], 2);
+					m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data is: " << data[i]
+														<< " should be: 2." << tcu::TestLog::EndMessage;
 					error = ERROR;
 				}
 			}
@@ -4031,7 +4085,8 @@ class AdvancedPipelineComputeChain : public ComputeShaderBase
 			{
 				if (data[i] != i)
 				{
-					Output("Data is: %d should be: %d.\n", data[i], i);
+					m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data is: " << data[i]
+														<< " should be: " << i << tcu::TestLog::EndMessage;
 					error = ERROR;
 				}
 			}
@@ -4048,12 +4103,14 @@ class AdvancedPipelineComputeChain : public ComputeShaderBase
 			{
 				if (data[i] != 5)
 				{
-					Output("Data is: %d should be: %d.\n", data[i], 5);
+					m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data is: " << data[i]
+														<< " should be: 5." << tcu::TestLog::EndMessage;
 					error = ERROR;
 				}
 				if (data[i + 256] != 7)
 				{
-					Output("Data is: %d should be: %d.\n", data[i + 256], 7);
+					m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data is: " << data[i + 256]
+														<< " should be: 7." << tcu::TestLog::EndMessage;
 					error = ERROR;
 				}
 			}
@@ -4067,12 +4124,14 @@ class AdvancedPipelineComputeChain : public ComputeShaderBase
 			data = static_cast<mat4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(mat4) * 2, GL_MAP_READ_BIT));
 			if (transpose(data[1]) != translationMatrix(vec3(10.0f, 20.0f, 30.0f)))
 			{
-				Output("Data is incorrect.\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Data is incorrect." << tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 			if (transpose(data[0]) != transpose(translationMatrix(vec3(10.0f, 20.0f, 30.0f))))
 			{
-				Output("Data is incorrect.\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Data is incorrect." << tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -4085,7 +4144,8 @@ class AdvancedPipelineComputeChain : public ComputeShaderBase
 				glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint) * 4, GL_MAP_READ_BIT));
 			if (data[3] != 4)
 			{
-				Output("Data is: %d should be: %d.\n", data[3], 4);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data is: " << data[3]
+													<< " should be: " << 4 << tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 			glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
@@ -4110,7 +4170,8 @@ class AdvancedPipelineComputeChain : public ComputeShaderBase
 			{
 				if (!ColorEqual(data[i], vec4(0.25f, 0.5f, 0.75f, 1.0f), epsilon))
 				{
-					Output("Invalid data at texture.\n");
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Invalid data at texture." << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -4283,8 +4344,9 @@ class AdvancedPipelinePostFS : public ComputeShaderBase
 			{
 				if (!IsEqual(data[i], vec4(1, 1, 0, 1)))
 				{
-					Output("Invalid data at index %d: %d, %d, %d, %d.\n", i, data[i].x(), data[i].y(), data[i].z(),
-						   data[i].w());
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Invalid data at index " << i << ": " << data[i].x() << ", "
+						<< data[i].y() << ", " << data[i].z() << ", " << data[i].w() << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -4439,7 +4501,9 @@ class AdvancedPipelinePostXFB : public ComputeShaderBase
 				glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(float) * 3 * 8, GL_MAP_READ_BIT));
 			if (memcmp(data, in_data, sizeof(float) * 3 * 8) != 0)
 			{
-				Output("Data in shader storage buffer is incorrect.\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Data in shader storage buffer is incorrect."
+					<< tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -4455,7 +4519,8 @@ class AdvancedPipelinePostXFB : public ComputeShaderBase
 				glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(float) * 3 * 8, GL_MAP_READ_BIT));
 			if (memcmp(data, ref_data, sizeof(float) * 3 * 8) != 0)
 			{
-				Output("Data in xfb buffer is incorrect.\n");
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Data in xfb buffer is incorrect." << tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 			glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
@@ -4586,7 +4651,8 @@ class AdvancedSharedIndexing : public ComputeShaderBase
 			{
 				if (!IsEqual(data[i], vec4(0, 1, 0, 1)))
 				{
-					Output("Invalid data at index %d.\n", i);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Invalid data at index " << i << tcu::TestLog::EndMessage;
 					return ERROR;
 				}
 			}
@@ -4684,7 +4750,8 @@ class AdvancedSharedMax : public ComputeShaderBase
 			{
 				if (!IsEqual(data[i], vec4(1.0f)))
 				{
-					Output("Invalid data at index %d.\n", i);
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "Invalid data at index " << i << tcu::TestLog::EndMessage;
 					error = ERROR;
 				}
 			}
@@ -4769,7 +4836,8 @@ class AdvancedResourcesMax : public ComputeShaderBase
 			data = static_cast<GLuint*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT));
 			if (data[0] != (index + 1) * 4)
 			{
-				Output("Data is %d should be %d.\n", data[0], (index + 1) * 4);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data is " << data[0] << " should be "
+													<< ((index + 1) * 4) << tcu::TestLog::EndMessage;
 				ret = false;
 			}
 		}
@@ -4877,9 +4945,11 @@ class NegativeAPINoActiveProgram : public ComputeShaderBase
 		glDispatchCompute(1, 2, 3);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION is generated by DispatchCompute or\n"
-				   "DispatchComputeIndirect if there is no active program for the compute\n"
-				   "shader stage.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION is generated by DispatchCompute or\n"
+											"DispatchComputeIndirect if there is no active program for the compute\n"
+											"shader stage."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -4894,9 +4964,12 @@ class NegativeAPINoActiveProgram : public ComputeShaderBase
 			glDeleteBuffers(1, &buffer);
 			if (glGetError() != GL_INVALID_OPERATION)
 			{
-				Output("INVALID_OPERATION is generated by DispatchCompute or\n"
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message
+					<< "INVALID_OPERATION is generated by DispatchCompute or\n"
 					   "DispatchComputeIndirect if there is no active program for the compute\n"
-					   "shader stage.\n");
+					   "shader stage."
+					<< tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -4915,9 +4988,11 @@ class NegativeAPINoActiveProgram : public ComputeShaderBase
 		glDispatchCompute(1, 2, 3);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION is generated by DispatchCompute or\n"
-				   "DispatchComputeIndirect if there is no active program for the compute\n"
-				   "shader stage.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION is generated by DispatchCompute or\n"
+											"DispatchComputeIndirect if there is no active program for the compute\n"
+											"shader stage."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -4932,9 +5007,12 @@ class NegativeAPINoActiveProgram : public ComputeShaderBase
 			glDeleteBuffers(1, &buffer);
 			if (glGetError() != GL_INVALID_OPERATION)
 			{
-				Output("INVALID_OPERATION is generated by DispatchCompute or\n"
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message
+					<< "INVALID_OPERATION is generated by DispatchCompute or\n"
 					   "DispatchComputeIndirect if there is no active program for the compute\n"
-					   "shader stage.\n");
+					   "shader stage."
+					<< tcu::TestLog::EndMessage;
 				return ERROR;
 			}
 		}
@@ -5002,27 +5080,33 @@ class NegativeAPIWorkGroupCount : public ComputeShaderBase
 		glDispatchCompute(x + 1, 1, 1);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE is generated by DispatchCompute if any of <num_groups_x>,\n"
-				   "<num_groups_y> or <num_groups_z> is greater than the value of\n"
-				   "MAX_COMPUTE_WORK_GROUP_COUNT for the corresponding dimension.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE is generated by DispatchCompute if any of <num_groups_x>,\n"
+											"<num_groups_y> or <num_groups_z> is greater than the value of\n"
+											"MAX_COMPUTE_WORK_GROUP_COUNT for the corresponding dimension."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
 		glDispatchCompute(1, y + 1, 1);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE is generated by DispatchCompute if any of <num_groups_x>,\n"
-				   "<num_groups_y> or <num_groups_z> is greater than the value of\n"
-				   "MAX_COMPUTE_WORK_GROUP_COUNT for the corresponding dimension.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE is generated by DispatchCompute if any of <num_groups_x>,\n"
+											"<num_groups_y> or <num_groups_z> is greater than the value of\n"
+											"MAX_COMPUTE_WORK_GROUP_COUNT for the corresponding dimension."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
 		glDispatchCompute(1, 1, z + 1);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE is generated by DispatchCompute if any of <num_groups_x>,\n"
-				   "<num_groups_y> or <num_groups_z> is greater than the value of\n"
-				   "MAX_COMPUTE_WORK_GROUP_COUNT for the corresponding dimension.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE is generated by DispatchCompute if any of <num_groups_x>,\n"
+											"<num_groups_y> or <num_groups_z> is greater than the value of\n"
+											"MAX_COMPUTE_WORK_GROUP_COUNT for the corresponding dimension."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -5091,25 +5175,32 @@ class NegativeAPIIndirect : public ComputeShaderBase
 		glDispatchComputeIndirect(-2);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE is generated by DispatchComputeIndirect if <indirect> is\n"
-				   "less than zero or not a multiple of four.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE is generated by DispatchComputeIndirect if <indirect> is\n"
+											"less than zero or not a multiple of four."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
 		glDispatchComputeIndirect(3);
 		if (glGetError() != GL_INVALID_VALUE)
 		{
-			Output("INVALID_VALUE is generated by DispatchComputeIndirect if <indirect> is\n"
-				   "less than zero or not a multiple of four.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_VALUE is generated by DispatchComputeIndirect if <indirect> is\n"
+											"less than zero or not a multiple of four."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
 		glDispatchComputeIndirect(16);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION is generated by DispatchComputeIndirect if no buffer is\n"
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "INVALID_OPERATION is generated by DispatchComputeIndirect if no buffer is\n"
 				   "bound to DISPATCH_INDIRECT_BUFFER or if the command would source data\n"
-				   "beyond the end of the bound buffer object.\n");
+				   "beyond the end of the bound buffer object."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -5117,9 +5208,12 @@ class NegativeAPIIndirect : public ComputeShaderBase
 		glDispatchComputeIndirect(0);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION is generated by DispatchComputeIndirect if no buffer is\n"
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "INVALID_OPERATION is generated by DispatchComputeIndirect if no buffer is\n"
 				   "bound to DISPATCH_INDIRECT_BUFFER or if the command would source data\n"
-				   "beyond the end of the bound buffer object.\n");
+				   "beyond the end of the bound buffer object."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -5175,9 +5269,11 @@ class NegativeAPIProgram : public ComputeShaderBase
 		glGetProgramiv(m_program, GL_COMPUTE_WORK_GROUP_SIZE, v);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION is generated by GetProgramiv if <pname> is\n"
-				   "COMPUTE_LOCAL_WORK_SIZE and either the program has not been linked\n"
-				   "successfully, or has been linked but contains no compute shaders.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION is generated by GetProgramiv if <pname> is\n"
+											"COMPUTE_LOCAL_WORK_SIZE and either the program has not been linked\n"
+											"successfully, or has been linked but contains no compute shaders."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -5188,9 +5284,11 @@ class NegativeAPIProgram : public ComputeShaderBase
 		glGetProgramiv(m_program, GL_COMPUTE_WORK_GROUP_SIZE, v);
 		if (glGetError() != GL_INVALID_OPERATION)
 		{
-			Output("INVALID_OPERATION is generated by GetProgramiv if <pname> is\n"
-				   "COMPUTE_LOCAL_WORK_SIZE and either the program has not been linked\n"
-				   "successfully, or has been linked but contains no compute shaders.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "INVALID_OPERATION is generated by GetProgramiv if <pname> is\n"
+											"COMPUTE_LOCAL_WORK_SIZE and either the program has not been linked\n"
+											"successfully, or has been linked but contains no compute shaders."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glDeleteProgram(m_program);
@@ -5223,8 +5321,10 @@ class NegativeAPIProgram : public ComputeShaderBase
 		glGetProgramiv(m_program, GL_LINK_STATUS, &status);
 		if (status == GL_TRUE)
 		{
-			Output("LinkProgram will fail if <program> contains a combination of compute and\n"
-				   "non-compute shaders.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "LinkProgram will fail if <program> contains a combination of compute and\n"
+											"non-compute shaders."
+				<< tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 
@@ -5316,7 +5416,8 @@ class NegativeGLSLCompileTimeErrors : public ComputeShaderBase
 
 		GLchar log[1024];
 		glGetShaderInfoLog(sh, sizeof(log), NULL, log);
-		Output("Shader Info Log:\n%s\n", log);
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Shader Info Log:\n"
+											<< log << tcu::TestLog::EndMessage;
 
 		GLint status;
 		glGetShaderiv(sh, GL_COMPILE_STATUS, &status);
@@ -5324,7 +5425,8 @@ class NegativeGLSLCompileTimeErrors : public ComputeShaderBase
 
 		if (status == GL_TRUE)
 		{
-			Output("Compilation should fail.\n");
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Compilation should fail." << tcu::TestLog::EndMessage;
 			return false;
 		}
 
@@ -5465,7 +5567,8 @@ class BasicWorkGroupSizeIsConst : public ComputeShaderBase
 		{
 			if (data[i] != (i + 25))
 			{
-				Output("Data at index %u is %u should be %u.\n", i, data[i], i + 25);
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data at index " << i << " is "
+													<< data[i] << " should be" << (i + 25) << tcu::TestLog::EndMessage;
 				error = ERROR;
 			}
 		}
@@ -5496,7 +5599,6 @@ ComputeShaderTests::~ComputeShaderTests(void)
 void ComputeShaderTests::init()
 {
 	using namespace glcts;
-	setOutput(m_context.getTestContext().getLog());
 	addChild(new TestSubcase(m_context, "simple-compute", TestSubcase::Create<SimpleCompute>));
 	addChild(new TestSubcase(m_context, "one-work-group", TestSubcase::Create<BasicOneWorkGroup>));
 	addChild(new TestSubcase(m_context, "resource-ubo", TestSubcase::Create<BasicResourceUBO>));

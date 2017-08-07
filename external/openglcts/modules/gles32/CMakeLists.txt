@@ -8,12 +8,8 @@ include_directories(
 set(GLCTS_ES32_SRCS
 	es32cTestPackage.cpp
 	es32cTestPackage.hpp
-	es32cContextFlagsTests.cpp
-	es32cContextFlagsTests.hpp
 	es32cRobustBufferAccessBehaviorTests.cpp
 	es32cRobustBufferAccessBehaviorTests.hpp
-	es32cRobustnessTests.cpp
-	es32cRobustnessTests.hpp
 	)
 
 set(GLCTS_ES32_LIBS

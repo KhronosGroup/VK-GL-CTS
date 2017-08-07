@@ -3879,7 +3879,7 @@ void ImageBlitFromImage::verify (VerifyContext& context, size_t)
 
 			for (deInt32 y = 0; y < m_imageHeight; y++)
 			for (deInt32 x = 0; x < m_imageWidth; x++)
-				refAccess.setPixel(source.getAccess().getPixelUint(int(float(x) * xscale), int(float(y) * yscale)), x, y);
+				refAccess.setPixel(source.getAccess().getPixelUint(int((float(x) + 0.5f) * xscale), int((float(y) + 0.5f) * yscale)), x, y);
 		}
 		else
 			DE_FATAL("Unsupported scale");

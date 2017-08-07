@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 7ac9c857db1e3a6065485e4e2144151f48a4f1c4.
+ * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
  */
 
 if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
@@ -557,6 +557,11 @@ if (de::contains(extSet, "GL_EXT_debug_marker"))
 	gl->pushGroupMarkerEXT		= (glPushGroupMarkerEXTFunc)	loader->get("glPushGroupMarkerEXT");
 }
 
+if (de::contains(extSet, "GL_EXT_polygon_offset_clamp"))
+{
+	gl->polygonOffsetClampEXT	= (glPolygonOffsetClampEXTFunc)	loader->get("glPolygonOffsetClampEXT");
+}
+
 if (de::contains(extSet, "GL_ARB_clip_control"))
 {
 	gl->clipControl	= (glClipControlFunc)	loader->get("glClipControl");
@@ -709,6 +714,12 @@ if (de::contains(extSet, "GL_ARB_internalformat_query"))
 if (de::contains(extSet, "GL_ARB_instanced_arrays"))
 {
 	gl->vertexAttribDivisor	= (glVertexAttribDivisorFunc)	loader->get("glVertexAttribDivisorARB");
+}
+
+if (de::contains(extSet, "GL_ARB_multi_draw_indirect"))
+{
+	gl->multiDrawArraysIndirect		= (glMultiDrawArraysIndirectFunc)	loader->get("glMultiDrawArraysIndirect");
+	gl->multiDrawElementsIndirect	= (glMultiDrawElementsIndirectFunc)	loader->get("glMultiDrawElementsIndirect");
 }
 
 if (de::contains(extSet, "GL_ARB_parallel_shader_compile"))

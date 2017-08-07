@@ -723,10 +723,16 @@ bool Reference::Compare(const T a, const T b)
 
 /** @brief Buffer Test constructor.
  *
+ *  @tparam T      Type.
+ *  @tparam S      Size.
+ *  @tparam N      Is normalized.
+ *
  *  @param [in] context     OpenGL context.
+ *  @param [in] name     Name of the test.
  */
-BufferTest::BufferTest(deqp::Context& context)
-	: deqp::TestCase(context, "textures_buffer", "Texture Buffer Objects Test")
+template <typename T, glw::GLint S, bool N>
+BufferTest<T, S, N>::BufferTest(deqp::Context& context, const char* name)
+	: deqp::TestCase(context, name, "Texture Buffer Objects Test")
 	, m_fbo(0)
 	, m_rbo(0)
 	, m_po(0)
@@ -739,102 +745,32 @@ BufferTest::BufferTest(deqp::Context& context)
 
 /** @brief Count of reference data to be teted.
  *
- *  @tparam S      Size (# of components).
- *
  *  @return Count.
  */
-template <glw::GLint S>
-glw::GLuint			 BufferTest::TestReferenceDataCount()
+template <typename T, glw::GLint S, bool N>
+glw::GLuint BufferTest<T, S, N>::TestReferenceDataCount()
 {
 	return s_fbo_size_x * S;
 }
 
 /** @brief Size of reference data to be teted..
  *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *
  *  @return Size.
  */
-template <typename T, glw::GLint S>
-glw::GLuint BufferTest::TestReferenceDataSize()
+template <typename T, glw::GLint S, bool N>
+glw::GLuint BufferTest<T, S, N>::TestReferenceDataSize()
 {
-	return static_cast<glw::GLint>(TestReferenceDataCount<S>() * sizeof(T));
-}
-
-/** @brief Fragment shader part selector.
- *
- *  @tparam T      Type.
- *  @tparam N      Is normalized.
- *
- *  @return Array of characters with source code.
- */
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLbyte, false>()
-{
-	return s_fragment_shader_idecl_lowp;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLubyte, false>()
-{
-	return s_fragment_shader_udecl_lowp;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLshort, false>()
-{
-	return s_fragment_shader_idecl_mediump;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLushort, false>()
-{
-	return s_fragment_shader_udecl_mediump;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLint, false>()
-{
-	return s_fragment_shader_idecl_highp;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLuint, false>()
-{
-	return s_fragment_shader_udecl_highp;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLubyte, true>()
-{
-	return s_fragment_shader_fdecl_lowp;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLushort, true>()
-{
-	return s_fragment_shader_fdecl_mediump;
-}
-
-template <>
-const glw::GLchar* BufferTest::FragmentShaderDeclaration<glw::GLfloat, true>()
-{
-	return s_fragment_shader_fdecl_highp;
+	return static_cast<glw::GLint>(TestReferenceDataCount() * sizeof(T));
 }
 
 /** @brief Create buffer textuew.
  *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *  @tparam N      Is normalized.
- *
- *  @param [in] use_range)version       Uses TextureBufferRange instead TextureBuffer.
+ *  @param [in] use_range_version       Uses TextureBufferRange instead TextureBuffer.
  *
  *  @return True if succeded, false otherwise.
  */
 template <typename T, glw::GLint S, bool N>
-bool BufferTest::CreateBufferTexture(bool use_range_version)
+bool BufferTest<T, S, N>::CreateBufferTexture(bool use_range_version)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -861,19 +797,19 @@ bool BufferTest::CreateBufferTexture(bool use_range_version)
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv has failed");
 
 		const glw::GLuint b_offset = alignment;
-		const glw::GLuint b_size   = TestReferenceDataSize<T, S>() + b_offset;
+		const glw::GLuint b_size   = TestReferenceDataSize() + b_offset;
 
 		gl.bufferData(GL_TEXTURE_BUFFER, b_size, NULL, GL_STATIC_DRAW);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData has failed");
 
-		gl.bufferSubData(GL_TEXTURE_BUFFER, b_offset, TestReferenceDataSize<T, S>(), ReferenceData<T, N>());
+		gl.bufferSubData(GL_TEXTURE_BUFFER, b_offset, TestReferenceDataSize(), ReferenceData<T, N>());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferSubdata has failed");
 
-		gl.textureBufferRange(m_to, InternalFormat<T, S, N>(), m_bo, b_offset, TestReferenceDataSize<T, S>());
+		gl.textureBufferRange(m_to, InternalFormat<T, S, N>(), m_bo, b_offset, TestReferenceDataSize());
 	}
 	else
 	{
-		gl.bufferData(GL_TEXTURE_BUFFER, TestReferenceDataSize<T, S>(), ReferenceData<T, N>(), GL_STATIC_DRAW);
+		gl.bufferData(GL_TEXTURE_BUFFER, TestReferenceDataSize(), ReferenceData<T, N>(), GL_STATIC_DRAW);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBufferData has failed");
 
 		gl.textureBuffer(m_to, InternalFormat<T, S, N>(), m_bo);
@@ -905,7 +841,8 @@ bool BufferTest::CreateBufferTexture(bool use_range_version)
  *
  *  @return if the framebuffer returned is supported
  */
-bool BufferTest::PrepareFramebuffer(const glw::GLenum internal_format)
+template <typename T, glw::GLint S, bool N>
+bool BufferTest<T, S, N>::PrepareFramebuffer(const glw::GLenum internal_format)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -932,7 +869,7 @@ bool BufferTest::PrepareFramebuffer(const glw::GLenum internal_format)
 	if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_UNSUPPORTED)
-			return false;
+			throw tcu::NotSupportedError("unsupported framebuffer configuration");
 		else
 			throw 0;
 	}
@@ -954,7 +891,8 @@ bool BufferTest::PrepareFramebuffer(const glw::GLenum internal_format)
  *
  *  @param [in] variable_declaration    Choose variable declaration of the fragment shader.
  */
-void BufferTest::PrepareProgram(const glw::GLchar* variable_declaration)
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::PrepareProgram(const glw::GLchar* variable_declaration)
 {
 	/* Shortcut for GL functionality */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1105,7 +1043,8 @@ void BufferTest::PrepareProgram(const glw::GLchar* variable_declaration)
 
 /** @brief Create VAO.
  */
-void BufferTest::PrepareVertexArray()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::PrepareVertexArray()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1119,7 +1058,8 @@ void BufferTest::PrepareVertexArray()
 
 /** @brief Test's draw function.
  */
-void BufferTest::Draw()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::Draw()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1139,20 +1079,16 @@ void BufferTest::Draw()
 
 /** @brief Compre results with the reference.
  *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *  @tparam N      Is normalized.
- *
  *  @return True if equal, false otherwise.
  */
 template <typename T, glw::GLint S, bool N>
-bool BufferTest::Check()
+bool BufferTest<T, S, N>::Check()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	/* Fetching data. */
-	std::vector<T> result(TestReferenceDataCount<S>());
+	std::vector<T> result(TestReferenceDataCount());
 
 	gl.pixelStorei(GL_UNPACK_ALIGNMENT, sizeof(T));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glPixelStorei has failed");
@@ -1160,14 +1096,14 @@ bool BufferTest::Check()
 	gl.pixelStorei(GL_PACK_ALIGNMENT, sizeof(T));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glPixelStorei has failed");
 
-	gl.readnPixels(0, 0, s_fbo_size_x, s_fbo_size_y, Format<S, N>(), Type<T>(), TestReferenceDataSize<T, S>(),
+	gl.readnPixels(0, 0, s_fbo_size_x, s_fbo_size_y, Format<S, N>(), Type<T>(), TestReferenceDataSize(),
 				   (glw::GLvoid*)(&result[0]));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels has failed");
 
 	/* Comparison. */
 	bool is_ok = true;
 
-	for (glw::GLuint i = 0; i < TestReferenceDataCount<S>(); ++i)
+	for (glw::GLuint i = 0; i < TestReferenceDataCount(); ++i)
 	{
 		if (!Compare<T>(result[i], ReferenceData<T, N>()[i]))
 		{
@@ -1182,16 +1118,12 @@ bool BufferTest::Check()
 
 /** @brief Test function.
  *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *  @tparam N      Is normalized.
- *
  *  @param [in] use_range_version   Uses TextureBufferRange instead TextureBuffer.
  *
  *  @return True if succeeded, false otherwise.
  */
 template <typename T, glw::GLint S, bool N>
-bool BufferTest::Test(bool use_range_version)
+bool BufferTest<T, S, N>::Test(bool use_range_version)
 {
 	/* Setup. */
 	if (!PrepareFramebuffer(InternalFormat<T, S, N>()))
@@ -1208,7 +1140,7 @@ bool BufferTest::Test(bool use_range_version)
 		return true;
 	}
 
-	if (!CreateBufferTexture<T, S, N>(use_range_version))
+	if (!CreateBufferTexture(use_range_version))
 	{
 		CleanFramebuffer();
 		CleanErrors();
@@ -1220,7 +1152,7 @@ bool BufferTest::Test(bool use_range_version)
 	Draw();
 
 	/* Compare results with reference. */
-	bool result = Check<T, S, N>();
+	bool result = Check();
 
 	/* Cleanup. */
 	CleanFramebuffer();
@@ -1231,45 +1163,10 @@ bool BufferTest::Test(bool use_range_version)
 	return result;
 }
 
-/** @brief Lopp test function over S.
- *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *  @tparam N      Is normalized.
- *
- *  @param [in] use_range_version   Uses TextureBufferRange instead TextureBuffer.
- *  @param [in] skip_rgb            Skip test of S = 3 (needed for some formats).
- *
- *  @return True if tests succeeded, false otherwise.
- */
-template <typename T, bool N>
-bool BufferTest::LoopTestOverS(bool use_range_version, bool skip_rgb)
-{
-	/* Prepare one program per test loop. */
-	PrepareProgram(FragmentShaderDeclaration<T, N>());
-
-	/* Run tests. */
-	bool result = Test<T, 4, N>(use_range_version);
-
-	if (!skip_rgb)
-	{
-		result &= Test<T, 3, N>(use_range_version);
-	}
-
-	result &= Test<T, 2, N>(use_range_version);
-	result &= Test<T, 1, N>(use_range_version);
-
-	/* Cleanup.*/
-	CleanProgram();
-	CleanErrors();
-
-	/* Pass result. */
-	return result;
-}
-
 /** @brief Clean GL objects
  */
-void BufferTest::CleanBufferTexture()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::CleanBufferTexture()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1293,7 +1190,8 @@ void BufferTest::CleanBufferTexture()
 
 /** @brief Clean GL objects
  */
-void BufferTest::CleanFramebuffer()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::CleanFramebuffer()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1317,7 +1215,8 @@ void BufferTest::CleanFramebuffer()
 
 /** @brief Clean GL objects
  */
-void BufferTest::CleanProgram()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::CleanProgram()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1335,7 +1234,8 @@ void BufferTest::CleanProgram()
 
 /** @brief Clean errors.
  */
-void BufferTest::CleanErrors()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::CleanErrors()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1347,7 +1247,8 @@ void BufferTest::CleanErrors()
 
 /** @brief Clean GL objects
  */
-void BufferTest::CleanVertexArray()
+template <typename T, glw::GLint S, bool N>
+void BufferTest<T, S, N>::CleanVertexArray()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1366,7 +1267,8 @@ void BufferTest::CleanVertexArray()
  *
  *  @return Iteration result.
  */
-tcu::TestNode::IterateResult BufferTest::iterate()
+template <typename T, glw::GLint S, bool N>
+tcu::TestNode::IterateResult BufferTest<T, S, N>::iterate()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1390,21 +1292,20 @@ tcu::TestNode::IterateResult BufferTest::iterate()
 	{
 		PrepareVertexArray();
 
+		PrepareProgram(FragmentShaderDeclaration());
+
 		for (glw::GLuint i = 0; i < 2; ++i)
 		{
 			bool use_range = (i == 1);
-
-			is_ok &= LoopTestOverS<glw::GLbyte, false>(use_range, true);
-			is_ok &= LoopTestOverS<glw::GLubyte, false>(use_range, true);
-			is_ok &= LoopTestOverS<glw::GLshort, false>(use_range, true);
-			is_ok &= LoopTestOverS<glw::GLushort, false>(use_range, true);
-			is_ok &= LoopTestOverS<glw::GLint, false>(use_range, false);
-			is_ok &= LoopTestOverS<glw::GLuint, false>(use_range, false);
-
-			is_ok &= LoopTestOverS<glw::GLubyte, true>(use_range, true);
-			is_ok &= LoopTestOverS<glw::GLushort, true>(use_range, true);
-			is_ok &= LoopTestOverS<glw::GLfloat, true>(use_range, false);
+			is_ok &= Test(use_range);
+			CleanErrors();
 		}
+
+		CleanProgram();
+	}
+	catch (tcu::NotSupportedError e)
+	{
+		throw e;
 	}
 	catch (...)
 	{
@@ -1444,66 +1345,115 @@ tcu::TestNode::IterateResult BufferTest::iterate()
 }
 
 /* Vertex shader source code. */
-const glw::GLchar* BufferTest::s_vertex_shader = "#version 450\n"
-												 "\n"
-												 "void main()\n"
-												 "{\n"
-												 "    switch(gl_VertexID)\n"
-												 "    {\n"
-												 "        case 0:\n"
-												 "            gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
-												 "            break;\n"
-												 "        case 1:\n"
-												 "            gl_Position = vec4( 1.0, 1.0, 0.0, 1.0);\n"
-												 "            break;\n"
-												 "        case 2:\n"
-												 "            gl_Position = vec4(-1.0,-1.0, 0.0, 1.0);\n"
-												 "            break;\n"
-												 "        case 3:\n"
-												 "            gl_Position = vec4( 1.0,-1.0, 0.0, 1.0);\n"
-												 "            break;\n"
-												 "    }\n"
-												 "}\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_vertex_shader = "#version 450\n"
+														  "\n"
+														  "void main()\n"
+														  "{\n"
+														  "    switch(gl_VertexID)\n"
+														  "    {\n"
+														  "        case 0:\n"
+														  "            gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
+														  "            break;\n"
+														  "        case 1:\n"
+														  "            gl_Position = vec4( 1.0, 1.0, 0.0, 1.0);\n"
+														  "            break;\n"
+														  "        case 2:\n"
+														  "            gl_Position = vec4(-1.0,-1.0, 0.0, 1.0);\n"
+														  "            break;\n"
+														  "        case 3:\n"
+														  "            gl_Position = vec4( 1.0,-1.0, 0.0, 1.0);\n"
+														  "            break;\n"
+														  "    }\n"
+														  "}\n";
 
 /* Fragment shader source program. */
-const glw::GLchar* BufferTest::s_fragment_shader_head = "#version 450\n"
-														"\n"
-														"layout(pixel_center_integer) in vec4 gl_FragCoord;\n"
-														"\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_head = "#version 450\n"
+																 "\n"
+																 "layout(pixel_center_integer) in vec4 gl_FragCoord;\n"
+																 "\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_fdecl_lowp = "uniform samplerBuffer texture_input;\n"
-															  "out     vec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_fdecl_lowp = "uniform samplerBuffer texture_input;\n"
+																	   "out     vec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_idecl_lowp = "uniform isamplerBuffer texture_input;\n"
-															  "out     ivec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_idecl_lowp = "uniform isamplerBuffer texture_input;\n"
+																	   "out     ivec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_udecl_lowp = "uniform usamplerBuffer texture_input;\n"
-															  "out     uvec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_udecl_lowp = "uniform usamplerBuffer texture_input;\n"
+																	   "out     uvec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_fdecl_mediump = "uniform samplerBuffer texture_input;\n"
-																 "out     vec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_fdecl_mediump = "uniform samplerBuffer texture_input;\n"
+																		  "out     vec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_idecl_mediump = "uniform isamplerBuffer texture_input;\n"
-																 "out     ivec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_idecl_mediump = "uniform isamplerBuffer texture_input;\n"
+																		  "out     ivec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_udecl_mediump = "uniform usamplerBuffer texture_input;\n"
-																 "out     uvec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_udecl_mediump = "uniform usamplerBuffer texture_input;\n"
+																		  "out     uvec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_fdecl_highp = "uniform samplerBuffer texture_input;\n"
-															   "out     vec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_fdecl_highp = "uniform samplerBuffer texture_input;\n"
+																		"out     vec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_idecl_highp = "uniform isamplerBuffer texture_input;\n"
-															   "out     ivec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_idecl_highp = "uniform isamplerBuffer texture_input;\n"
+																		"out     ivec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_udecl_highp = "uniform usamplerBuffer texture_input;\n"
-															   "out     uvec4          texture_output;\n";
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_udecl_highp = "uniform usamplerBuffer texture_input;\n"
+																		"out     uvec4          texture_output;\n";
 
-const glw::GLchar* BufferTest::s_fragment_shader_tail =
+template <typename T, glw::GLint S, bool N>
+const glw::GLchar* BufferTest<T, S, N>::s_fragment_shader_tail =
 	"\n"
 	"void main()\n"
 	"{\n"
 	"    texture_output = texelFetch(texture_input, int(gl_FragCoord.x));\n"
 	"}\n";
+
+template class BufferTest<glw::GLbyte, 1, false>;
+template class BufferTest<glw::GLbyte, 2, false>;
+template class BufferTest<glw::GLbyte, 4, false>;
+
+template class BufferTest<glw::GLubyte, 1, false>;
+template class BufferTest<glw::GLubyte, 2, false>;
+template class BufferTest<glw::GLubyte, 4, false>;
+template class BufferTest<glw::GLubyte, 1, true>;
+template class BufferTest<glw::GLubyte, 2, true>;
+template class BufferTest<glw::GLubyte, 4, true>;
+
+template class BufferTest<glw::GLshort, 1, false>;
+template class BufferTest<glw::GLshort, 2, false>;
+template class BufferTest<glw::GLshort, 4, false>;
+
+template class BufferTest<glw::GLushort, 1, false>;
+template class BufferTest<glw::GLushort, 2, false>;
+template class BufferTest<glw::GLushort, 4, false>;
+template class BufferTest<glw::GLushort, 1, true>;
+template class BufferTest<glw::GLushort, 2, true>;
+template class BufferTest<glw::GLushort, 4, true>;
+
+template class BufferTest<glw::GLint, 1, false>;
+template class BufferTest<glw::GLint, 2, false>;
+template class BufferTest<glw::GLint, 3, false>;
+template class BufferTest<glw::GLint, 4, false>;
+
+template class BufferTest<glw::GLuint, 1, false>;
+template class BufferTest<glw::GLuint, 2, false>;
+template class BufferTest<glw::GLuint, 3, false>;
+template class BufferTest<glw::GLuint, 4, false>;
+
+template class BufferTest<glw::GLfloat, 1, true>;
+template class BufferTest<glw::GLfloat, 2, true>;
+template class BufferTest<glw::GLfloat, 3, true>;
+template class BufferTest<glw::GLfloat, 4, true>;
 
 /******************************** Storage and SubImage Test Implementation   ********************************/
 
@@ -2247,6 +2197,8 @@ bool StorageAndSubImageTest::CreateTexture()
 								  TestReferenceDataHeight<D>(), TestReferenceDataDepth<D>(), Format<S, N>(), Type<T>(),
 								  ReferenceData<T, N>()))
 		{
+			glTexParameteri(TextureTarget<D>(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(TextureTarget<D>(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			return true;
 		}
 	}
@@ -4429,6 +4381,7 @@ CompressedSubImageTest::CompressedSubImageTest(deqp::Context& context)
 	: deqp::TestCase(context, "textures_compressed_subimage", "Texture Compressed SubImage Test")
 	, m_to(0)
 	, m_to_aux(0)
+	, m_compressed_texture_data(DE_NULL)
 	, m_reference(DE_NULL)
 	, m_result(DE_NULL)
 	, m_reference_size(0)
@@ -4535,6 +4488,57 @@ void CompressedSubImageTest::TextureImage<3>(glw::GLint internalformat)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage3D has failed");
 }
 
+/** @brief Prepare texture data for the auxiliary texture.
+ *
+ *  @tparam D      Texture dimensions.
+ *
+ *  @note parameters as passed to compressedTexImage*
+ */
+template <>
+void CompressedSubImageTest::CompressedTexImage<1>(glw::GLint internalformat)
+{
+	/* Shortcut for GL functionality. */
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	gl.compressedTexImage1D(TextureTarget<1>(), 0, internalformat, s_texture_width, 0, m_reference_size,
+							m_compressed_texture_data);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage1D has failed");
+}
+
+/** @brief Prepare texture data for the auxiliary texture.
+ *
+ *  @tparam D      Texture dimensions.
+ *
+ *  @note parameters as passed to compressedTexImage*
+ */
+template <>
+void CompressedSubImageTest::CompressedTexImage<2>(glw::GLint internalformat)
+{
+	/* Shortcut for GL functionality. */
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	gl.compressedTexImage2D(TextureTarget<2>(), 0, internalformat, s_texture_width, s_texture_height, 0,
+							m_reference_size, m_compressed_texture_data);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D has failed");
+}
+
+/** @brief Prepare texture data for the auxiliary texture.
+ *
+ *  @tparam D      Texture dimensions.
+ *
+ *  @note parameters as passed to compressedTexImage*
+ */
+template <>
+void CompressedSubImageTest::CompressedTexImage<3>(glw::GLint internalformat)
+{
+	/* Shortcut for GL functionality. */
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	gl.compressedTexImage3D(TextureTarget<3>(), 0, internalformat, s_texture_width, s_texture_height, s_texture_depth,
+							0, m_reference_size, m_compressed_texture_data);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage3D has failed");
+}
+
 /** @brief Prepare texture data for the compressed texture.
  *
  *  @tparam D      Texture dimenisons.
@@ -4552,7 +4556,11 @@ bool CompressedSubImageTest::CompressedTextureSubImage<1>(glw::GLint internalfor
 	/* Load texture image with tested function. */
 	if (m_reference_size)
 	{
-		gl.compressedTextureSubImage1D(m_to, 0, 0, s_texture_width, internalformat, m_reference_size, m_reference);
+		for (glw::GLuint block = 0; block < s_block_count; ++block)
+		{
+			gl.compressedTextureSubImage1D(m_to, 0, s_texture_width * block, s_texture_width, internalformat,
+										   m_reference_size, m_compressed_texture_data);
+		}
 	}
 	else
 	{
@@ -4592,10 +4600,16 @@ bool CompressedSubImageTest::CompressedTextureSubImage<2>(glw::GLint internalfor
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Load texture image with tested function. */
-	gl.compressedTextureSubImage2D(m_to, 0, 0, 0, s_texture_width, s_texture_height, internalformat, m_reference_size,
-								   m_reference);
-
+	for (glw::GLuint y = 0; y < s_block_2d_size_y; ++y)
+	{
+		for (glw::GLuint x = 0; x < s_block_2d_size_x; ++x)
+		{
+			/* Load texture image with tested function. */
+			gl.compressedTextureSubImage2D(m_to, 0, s_texture_width * x, s_texture_height * y, s_texture_width,
+										   s_texture_height, internalformat, m_reference_size,
+										   m_compressed_texture_data);
+		}
+	}
 	/* Check errors. */
 	glw::GLenum error;
 
@@ -4626,9 +4640,19 @@ bool CompressedSubImageTest::CompressedTextureSubImage<3>(glw::GLint internalfor
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Load texture image with tested function. */
-	gl.compressedTextureSubImage3D(m_to, 0, 0, 0, 0, s_texture_width, s_texture_height, s_texture_depth, internalformat,
-								   m_reference_size, m_reference);
+	for (glw::GLuint z = 0; z < s_block_3d_size; ++z)
+	{
+		for (glw::GLuint y = 0; y < s_block_3d_size; ++y)
+		{
+			for (glw::GLuint x = 0; x < s_block_3d_size; ++x)
+			{
+				/* Load texture image with tested function. */
+				gl.compressedTextureSubImage3D(m_to, 0, s_texture_width * x, s_texture_height * y, s_texture_depth * z,
+											   s_texture_width, s_texture_height, s_texture_depth, internalformat,
+											   m_reference_size, m_compressed_texture_data);
+			}
+		}
+	}
 
 	/* Check errors. */
 	glw::GLenum error;
@@ -4662,7 +4686,7 @@ void CompressedSubImageTest::PrepareReferenceData(glw::GLenum internalformat)
 	TextureImage<D>(internalformat);
 
 	/* Sanity checks. */
-	if (DE_NULL != m_reference)
+	if ((DE_NULL != m_reference) || (DE_NULL != m_compressed_texture_data))
 	{
 		throw 0;
 	}
@@ -4681,13 +4705,35 @@ void CompressedSubImageTest::PrepareReferenceData(glw::GLenum internalformat)
 		if (compressed_texture_size)
 		{
 			/* Prepare storage. */
-			m_reference = new glw::GLubyte[compressed_texture_size];
+			m_compressed_texture_data = new glw::GLubyte[compressed_texture_size];
 
-			if (DE_NULL != m_reference)
+			if (DE_NULL != m_compressed_texture_data)
 			{
 				m_reference_size = compressed_texture_size;
 			}
 			else
+			{
+				throw 0;
+			}
+
+			/* Download the source compressed texture image. */
+			gl.getCompressedTexImage(TextureTarget<D>(), 0, m_compressed_texture_data);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetCompressedTexImage has failed");
+
+			// Upload the source compressed texture image to the texture object.
+			// Some compressed texture format can be emulated by the driver (like the ETC2/EAC formats)
+			// The compressed data sent by CompressedTexImage will be stored uncompressed by the driver
+			// and will be re-compressed if the application call glGetCompressedTexImage.
+			// The compression/decompression is not lossless, so when this happen it's possible for the source
+			// and destination (from glGetCompressedTexImage) compressed data to be different.
+			// To avoid that we will store both the source (in m_compressed_texture_data) and the destination
+			// (in m_reference). The destination will be used later to make sure getCompressedTextureSubImage
+			// return the expected value
+			CompressedTexImage<D>(internalformat);
+
+			m_reference = new glw::GLubyte[m_reference_size];
+
+			if (DE_NULL == m_reference)
 			{
 				throw 0;
 			}
@@ -4714,7 +4760,8 @@ void CompressedSubImageTest::PrepareStorage<1>(glw::GLenum internalformat)
 	gl.bindTexture(TextureTarget<1>(), m_to);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
 
-	gl.texImage1D(TextureTarget<1>(), 0, internalformat, s_texture_width, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	gl.texImage1D(TextureTarget<1>(), 0, internalformat, s_texture_width * s_block_count, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+				  NULL);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D has failed");
 }
 
@@ -4733,8 +4780,8 @@ void CompressedSubImageTest::PrepareStorage<2>(glw::GLenum internalformat)
 	gl.bindTexture(TextureTarget<2>(), m_to);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
 
-	gl.texImage2D(TextureTarget<2>(), 0, internalformat, s_texture_width, s_texture_height, 0, GL_RGBA,
-				  GL_UNSIGNED_BYTE, NULL);
+	gl.texImage2D(TextureTarget<2>(), 0, internalformat, s_texture_width * s_block_2d_size_x,
+				  s_texture_height * s_block_2d_size_y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D has failed");
 }
 
@@ -4753,47 +4800,102 @@ void CompressedSubImageTest::PrepareStorage<3>(glw::GLenum internalformat)
 	gl.bindTexture(TextureTarget<3>(), m_to);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
 
-	gl.texImage3D(TextureTarget<3>(), 0, internalformat, s_texture_width, s_texture_height, s_texture_depth, 0, GL_RGBA,
-				  GL_UNSIGNED_BYTE, NULL);
+	gl.texImage3D(TextureTarget<3>(), 0, internalformat, s_texture_width * s_block_3d_size,
+				  s_texture_height * s_block_3d_size, s_texture_depth * s_block_3d_size, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+				  NULL);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D has failed");
 }
 
-/** @brief Compre results with the reference.
+/** @brief Compare results with the reference.
  *
  *  @tparam T      Type.
  *  @tparam S      Size (# of components).
  *  @tparam N      Is normalized.
  *
- *  @param [in] target              Texture target.
  *  @param [in] internalformat      Texture internal format.
  *
  *  @return True if equal, false otherwise.
  */
-bool CompressedSubImageTest::CheckData(glw::GLenum target, glw::GLenum internalformat)
+template <glw::GLuint D>
+bool CompressedSubImageTest::CheckData(glw::GLenum internalformat)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	/* Check texture content with reference. */
-	m_result = new glw::GLubyte[m_reference_size];
+	m_result = new glw::GLubyte[m_reference_size * s_block_count];
 
 	if (DE_NULL == m_result)
 	{
 		throw 0;
 	}
 
-	gl.getCompressedTexImage(target, 0, m_result);
+	gl.getCompressedTexImage(TextureTarget<D>(), 0, m_result);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetCompressedTexImage has failed");
+	for (glw::GLuint block = 0; block < s_block_count; ++block)
+	{
+		for (glw::GLuint i = 0; i < m_reference_size; ++i)
+		{
+			if (m_reference[i] != m_result[block * m_reference_size + i])
+			{
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "glCompressedTextureSubImage*D created texture with data "
+					<< DataToString(m_reference_size, m_reference) << " however texture contains data "
+					<< DataToString(m_reference_size, &(m_result[block * m_reference_size])) << ". Texture target was "
+					<< glu::getTextureTargetStr(TextureTarget<D>()) << " and internal format was "
+					<< glu::getTextureFormatStr(internalformat) << ". Test fails." << tcu::TestLog::EndMessage;
+
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+/** @brief Compare results with the reference.
+ *
+ *  @tparam T      Type.
+ *  @tparam S      Size (# of components).
+ *  @tparam N      Is normalized.
+ *
+ *  @param [in] internalformat      Texture internal format.
+ *
+ *  @return True if equal, false otherwise.
+ */
+template <>
+bool CompressedSubImageTest::CheckData<3>(glw::GLenum internalformat)
+{
+	/* Shortcut for GL functionality. */
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	/* Check texture content with reference. */
+	m_result = new glw::GLubyte[m_reference_size * s_block_count];
+
+	if (DE_NULL == m_result)
+	{
+		throw 0;
+	}
+
+	gl.getCompressedTexImage(TextureTarget<3>(), 0, m_result);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetCompressedTexImage has failed");
 
-	for (glw::GLuint i = 0; i < m_reference_size; ++i)
+	glw::GLuint reference_layer_size = m_reference_size / s_texture_depth;
+
+	for (glw::GLuint i = 0; i < m_reference_size * s_block_count; ++i)
 	{
-		if (m_reference[i] != m_result[i])
+		// we will read the result one bytes at the time and compare with the reference
+		// for each bytes of the result image we need to figure out which byte in the reference image it corresponds to
+		glw::GLuint refIdx		= i % reference_layer_size;
+		glw::GLuint refLayerIdx = (i / (reference_layer_size * s_block_3d_size * s_block_3d_size)) % s_texture_depth;
+		if (m_reference[refLayerIdx * reference_layer_size + refIdx] != m_result[i])
 		{
 			m_context.getTestContext().getLog()
-				<< tcu::TestLog::Message << "glCompressedTextureSubImage*D created texture with data "
-				<< DataToString(m_reference_size, m_reference) << " however texture contains data "
-				<< DataToString(m_reference_size, m_result) << ". Texture target was "
-				<< glu::getTextureTargetStr(target) << " and internal format was "
+				<< tcu::TestLog::Message << "glCompressedTextureSubImage3D created texture with data "
+				<< DataToString(reference_layer_size, &(m_reference[refLayerIdx * reference_layer_size]))
+				<< " however texture contains data "
+				<< DataToString(reference_layer_size, &(m_result[i % reference_layer_size])) << ". Texture target was "
+				<< glu::getTextureTargetStr(TextureTarget<3>()) << " and internal format was "
 				<< glu::getTextureFormatStr(internalformat) << ". Test fails." << tcu::TestLog::EndMessage;
 
 			return false;
@@ -4802,7 +4904,6 @@ bool CompressedSubImageTest::CheckData(glw::GLenum target, glw::GLenum internalf
 
 	return true;
 }
-
 /** @brief Test case function.
  *
  *  @tparam D       Number of texture dimensions.
@@ -4830,7 +4931,7 @@ bool CompressedSubImageTest::Test(glw::GLenum internalformat)
 	/* If compressed reference data was generated than compare values. */
 	if (m_reference)
 	{
-		if (!CheckData(TextureTarget<D>(), internalformat))
+		if (!CheckData<D>(internalformat))
 		{
 			CleanAll();
 
@@ -4871,6 +4972,13 @@ void CompressedSubImageTest::CleanAll()
 		delete[] m_reference;
 
 		m_reference = DE_NULL;
+	}
+
+	if (DE_NULL != m_compressed_texture_data)
+	{
+		delete[] m_compressed_texture_data;
+
+		m_compressed_texture_data = DE_NULL;
 	}
 
 	if (DE_NULL != m_result)
@@ -5042,9 +5150,13 @@ const glw::GLubyte CompressedSubImageTest::s_texture_data[] = {
 };
 
 /** Reference data parameters. */
-const glw::GLuint CompressedSubImageTest::s_texture_width  = 4;
-const glw::GLuint CompressedSubImageTest::s_texture_height = 4;
-const glw::GLuint CompressedSubImageTest::s_texture_depth  = 4;
+const glw::GLuint CompressedSubImageTest::s_texture_width   = 4;
+const glw::GLuint CompressedSubImageTest::s_texture_height  = 4;
+const glw::GLuint CompressedSubImageTest::s_texture_depth   = 4;
+const glw::GLuint CompressedSubImageTest::s_block_count		= 8;
+const glw::GLuint CompressedSubImageTest::s_block_2d_size_x = 4;
+const glw::GLuint CompressedSubImageTest::s_block_2d_size_y = 2;
+const glw::GLuint CompressedSubImageTest::s_block_3d_size   = 2;
 
 /******************************** Copy SubImage Test Implementation   ********************************/
 
@@ -7415,7 +7527,8 @@ const glw::GLubyte GetImageTest::s_texture_data[] = { 0x0,  0x0,  0x0,  0xff, 0x
 													  0xff, 0x0,  0xa2, 0xe8, 0xff, 0x22, 0xb1, 0x4c, 0xff };
 
 /** Reference data (compressed). */
-const glw::GLubyte GetImageTest::s_texture_data_compressed[] = { 0xa6, 0x39, 0x9, 0xf1, 0x88, 0x8b, 0x75, 0x85 };
+const glw::GLubyte GetImageTest::s_texture_data_compressed[] = { 0x90, 0x2b, 0x8f, 0x0f, 0xfe, 0x0f, 0x98, 0x99,
+																 0x99, 0x99, 0x59, 0x8f, 0x8c, 0xa6, 0xb7, 0x71 };
 
 /** Reference data parameters. */
 const glw::GLuint GetImageTest::s_texture_width			  = 4;
@@ -7519,8 +7632,8 @@ tcu::TestNode::IterateResult GetImageTest::iterate()
 			gl.bindTexture(GL_TEXTURE_2D, texture);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
 
-			gl.compressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB8_ETC2, s_texture_width, s_texture_height, 0,
-									s_texture_size_compressed, s_texture_data_compressed);
+			gl.compressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_BPTC_UNORM, s_texture_width, s_texture_height,
+									0, s_texture_size_compressed, s_texture_data_compressed);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D has failed");
 
 			/* Quering image with tested function. */
@@ -10520,8 +10633,17 @@ bool SubImageErrorsTest::Test2DCompressed()
 			gl.compressedTextureSubImage2D(m_to_rectangle_compressed, 0, 0, 0, s_reference_width, s_reference_height,
 										   m_reference_compressed_rectangle_format,
 										   m_reference_compressed_rectangle_size, m_reference_compressed_rectangle);
-			is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glCompressedTextureSubImage2D",
-									  "texture is not the name of an existing texture object.");
+
+			if (m_context.getContextInfo().isExtensionSupported("GL_NV_texture_rectangle_compressed"))
+			{
+				is_ok &= CheckErrorAndLog(m_context, GL_NO_ERROR, "glCompressedTextureSubImage2D",
+										  "a rectangle texture object is used with this function.");
+			}
+			else
+			{
+				is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glCompressedTextureSubImage2D",
+										  "a rectangle texture object is used with this function.");
+			}
 		}
 	}
 
@@ -13292,26 +13414,26 @@ tcu::TestNode::IterateResult ParameterErrorsTest::iterate()
 		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameteriv",
 								  "texture is not the name of an existing texture object.");
 
-		/* Check that INVALID_ENUM error is generated if the effective target is
+		/* Check that INVALID_OPERATION error is generated if the effective target is
 		 not one of the supported texture targets (eg. TEXTURE_BUFFER). */
 		gl.getTextureParameterfv(texture_buffer, GL_TEXTURE_TARGET, storef);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameterfv",
+			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameterfv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 
 		gl.getTextureParameterIiv(texture_buffer, GL_TEXTURE_TARGET, storei);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameterIiv",
+			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameterIiv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 
 		gl.getTextureParameterIuiv(texture_buffer, GL_TEXTURE_TARGET, storeu);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameterIuiv",
+			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameterIuiv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 
 		gl.getTextureParameteriv(texture_buffer, GL_TEXTURE_TARGET, storei);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameteriv",
+			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameteriv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 	}
 	catch (...)

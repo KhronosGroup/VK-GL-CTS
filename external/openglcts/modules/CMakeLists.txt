@@ -41,6 +41,7 @@ set(GLCTS_SRCS
 	)
 
 set(GLCTS_LIBS
+	glcts-common-nocontext-package
 	glcts-gl
 	glcts-es2
 	glcts-es3

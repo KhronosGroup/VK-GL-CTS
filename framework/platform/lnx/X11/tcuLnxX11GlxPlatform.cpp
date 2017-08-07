@@ -26,6 +26,7 @@
 #include "tcuRenderTarget.hpp"
 #include "glwInitFunctions.hpp"
 #include "deUniquePtr.hpp"
+#include "glwEnums.hpp"
 
 #include <sstream>
 #include <iterator>
@@ -33,6 +34,10 @@
 
 #define GLX_GLXEXT_PROTOTYPES
 #include <GL/glx.h>
+
+#ifndef GLX_CONTEXT_OPENGL_NO_ERROR_ARB
+#define GLX_CONTEXT_OPENGL_NO_ERROR_ARB 0x31B3
+#endif
 
 namespace tcu
 {
@@ -353,6 +358,17 @@ GLXContext GlxVisual::createContext (const GlxContextFactory&		factory,
 		if ((contextType.getFlags() & glu::CONTEXT_ROBUST) != 0)
 			flags |= GLX_CONTEXT_ROBUST_ACCESS_BIT_ARB;
 
+		if ((contextType.getFlags() & glu::CONTEXT_NO_ERROR) != 0)
+		{
+			if (m_display.isGlxExtensionSupported("GLX_ARB_create_context_no_error"))
+			{
+				attribs.push_back(GLX_CONTEXT_OPENGL_NO_ERROR_ARB);
+				attribs.push_back(True);
+			}
+			else
+				TCU_THROW(NotSupportedError, "GLX_ARB_create_context_no_error is required for creating no-error contexts");
+		}
+
 		if (flags != 0)
 		{
 			attribs.push_back(GLX_CONTEXT_FLAGS_ARB);
@@ -362,9 +378,6 @@ GLXContext GlxVisual::createContext (const GlxContextFactory&		factory,
 
 	if (resetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
 	{
-		if (glu::isContextTypeES(contextType))
-			TCU_THROW(InternalError, "Specifying reset notification strategy is not allowed when creating OpenGL ES contexts");
-
 		attribs.push_back(GLX_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB);
 
 		if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)

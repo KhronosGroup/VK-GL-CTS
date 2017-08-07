@@ -915,6 +915,10 @@ tcu::TestStatus testNoAtt (Context& context, const bool multisample)
 	const VkPhysicalDeviceFeatures		features				= context.getDeviceFeatures();
 	if (!features.fragmentStoresAndAtomics)
 		throw tcu::NotSupportedError("fragmentStoresAndAtomics feature not supported");
+	if (!features.geometryShader && !features.tessellationShader) // Shader uses gl_PrimitiveID
+		throw tcu::NotSupportedError("geometryShader or tessellationShader feature not supported");
+	if (multisample && !features.sampleRateShading) // MS shader uses gl_SampleID
+		throw tcu::NotSupportedError("sampleRateShading feature not supported");
 
 	const DeviceInterface&				vk						= context.getDeviceInterface();
 	const VkDevice						device					= context.getDevice();

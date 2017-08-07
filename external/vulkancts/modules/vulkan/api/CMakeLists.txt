@@ -46,6 +46,7 @@ set(DEQP_VK_API_SRCS
 	)
 
 set(DEQP_VK_API_LIBS
+	deqp-vk-package
 	tcutil
 	vkutil
 	deqp-vk-package

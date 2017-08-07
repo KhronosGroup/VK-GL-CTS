@@ -6884,7 +6884,7 @@ std::string FunctionalTest13::getTessellationControlShaderBody(unsigned int n_id
 					  "    gl_TessLevelOuter[3]                = 1.0;\n"
 					  "    gl_TessLevelInner[0]                = 1.0;\n"
 					  "    gl_TessLevelInner[1]                = 1.0;\n"
-					  "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+					  "    gl_out[gl_InvocationID].gl_Position = gl_in[0].gl_Position;\n"
 					  "    out_tc[gl_InvocationID].data        = in_vs[0].data;\n"
 					  "\n"
 					  "    function(out_tc[gl_InvocationID].data);\n"

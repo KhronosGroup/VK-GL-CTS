@@ -878,15 +878,115 @@ tcu::Vec4 BlendTestInstance::getFormatThreshold (const tcu::TextureFormat& forma
 		return threshold;
 }
 
+bool isLegalExpandableFormat (tcu::TextureFormat::ChannelType channeltype)
+{
+	using tcu::TextureFormat;
+
+	switch (channeltype)
+	{
+		case TextureFormat::UNORM_INT24:
+		case TextureFormat::UNORM_BYTE_44:
+		case TextureFormat::UNORM_SHORT_565:
+		case TextureFormat::UNORM_SHORT_555:
+		case TextureFormat::UNORM_SHORT_4444:
+		case TextureFormat::UNORM_SHORT_5551:
+		case TextureFormat::UNORM_SHORT_1555:
+		case TextureFormat::UNORM_INT_101010:
+		case TextureFormat::SNORM_INT_1010102_REV:
+		case TextureFormat::UNORM_INT_1010102_REV:
+		case TextureFormat::UNSIGNED_BYTE_44:
+		case TextureFormat::UNSIGNED_SHORT_565:
+		case TextureFormat::UNSIGNED_SHORT_4444:
+		case TextureFormat::UNSIGNED_SHORT_5551:
+		case TextureFormat::SIGNED_INT_1010102_REV:
+		case TextureFormat::UNSIGNED_INT_1010102_REV:
+		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
+		case TextureFormat::UNSIGNED_INT_999_E5_REV:
+		case TextureFormat::UNSIGNED_INT_24_8:
+		case TextureFormat::UNSIGNED_INT_24_8_REV:
+		case TextureFormat::UNSIGNED_INT24:
+		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+			return true;
+
+		case TextureFormat::SNORM_INT8:
+		case TextureFormat::SNORM_INT16:
+		case TextureFormat::SNORM_INT32:
+		case TextureFormat::UNORM_INT8:
+		case TextureFormat::UNORM_INT16:
+		case TextureFormat::UNORM_INT32:
+		case TextureFormat::UNSIGNED_INT_16_8_8:
+		case TextureFormat::SIGNED_INT8:
+		case TextureFormat::SIGNED_INT16:
+		case TextureFormat::SIGNED_INT32:
+		case TextureFormat::UNSIGNED_INT8:
+		case TextureFormat::UNSIGNED_INT16:
+		case TextureFormat::UNSIGNED_INT32:
+		case TextureFormat::HALF_FLOAT:
+		case TextureFormat::FLOAT:
+		case TextureFormat::FLOAT64:
+			return false;
+
+		default:
+			DE_FATAL("Unknown texture format");
+	}
+	return false;
+}
+
+bool isSmallerThan8BitFormat (tcu::TextureFormat::ChannelType channeltype)
+{
+	using tcu::TextureFormat;
+
+	// Note: only checks the legal expandable formats
+	// (i.e, formats that have channels that fall outside
+	// the 8, 16 and 32 bit width)
+	switch (channeltype)
+	{
+		case TextureFormat::UNORM_BYTE_44:
+		case TextureFormat::UNORM_SHORT_565:
+		case TextureFormat::UNORM_SHORT_555:
+		case TextureFormat::UNORM_SHORT_4444:
+		case TextureFormat::UNORM_SHORT_5551:
+		case TextureFormat::UNORM_SHORT_1555:
+		case TextureFormat::UNSIGNED_BYTE_44:
+		case TextureFormat::UNSIGNED_SHORT_565:
+		case TextureFormat::UNSIGNED_SHORT_4444:
+		case TextureFormat::UNSIGNED_SHORT_5551:
+			return true;
+
+		case TextureFormat::UNORM_INT24:
+		case TextureFormat::UNORM_INT_101010:
+		case TextureFormat::SNORM_INT_1010102_REV:
+		case TextureFormat::UNORM_INT_1010102_REV:
+		case TextureFormat::SIGNED_INT_1010102_REV:
+		case TextureFormat::UNSIGNED_INT_1010102_REV:
+		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
+		case TextureFormat::UNSIGNED_INT_999_E5_REV:
+		case TextureFormat::UNSIGNED_INT_24_8:
+		case TextureFormat::UNSIGNED_INT_24_8_REV:
+		case TextureFormat::UNSIGNED_INT24:
+		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+			return false;
+
+		default:
+			DE_FATAL("Unknown texture format");
+	}
+
+	return false;
+}
+
 tcu::TestStatus BlendTestInstance::verifyImage (void)
 {
-	const tcu::TextureFormat	tcuColorFormat	= mapVkFormat(m_colorFormat);
-	const tcu::TextureFormat	tcuDepthFormat	= tcu::TextureFormat(); // Undefined depth/stencil format
+	const tcu::TextureFormat	tcuColorFormat		= mapVkFormat(m_colorFormat);
+	const tcu::TextureFormat	tcuColorFormat64	= mapVkFormat(VK_FORMAT_R64G64B64A64_SFLOAT);
+	const tcu::TextureFormat	tcuColorFormat8		= mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM);
+	const tcu::TextureFormat	tcuDepthFormat		= tcu::TextureFormat(); // Undefined depth/stencil format
 	const ColorVertexShader		vertexShader;
-	const ColorFragmentShader	fragmentShader	(tcuColorFormat, tcuDepthFormat);
-	const rr::Program			program			(&vertexShader, &fragmentShader);
-	ReferenceRenderer			refRenderer		(m_renderSize.x(), m_renderSize.y(), 1, tcuColorFormat, tcuDepthFormat, &program);
-	bool						compareOk		= false;
+	const ColorFragmentShader	fragmentShader		(tcuColorFormat, tcuDepthFormat);
+	const rr::Program			program				(&vertexShader, &fragmentShader);
+	ReferenceRenderer			refRenderer			(m_renderSize.x(), m_renderSize.y(), 1, tcuColorFormat, tcuDepthFormat, &program);
+	ReferenceRenderer			refRenderer64		(m_renderSize.x(), m_renderSize.y(), 1, tcuColorFormat64, tcuDepthFormat, &program);
+	ReferenceRenderer			refRenderer8		(m_renderSize.x(), m_renderSize.y(), 1, tcuColorFormat8, tcuDepthFormat, &program);
+	bool						compareOk			= false;
 
 	// Render reference image
 	{
@@ -907,12 +1007,25 @@ tcu::TestStatus BlendTestInstance::verifyImage (void)
 			renderState.fragOps.colorMask				= mapVkColorComponentFlags(BlendTest::s_colorWriteMasks[quadNdx]);
 
 			refRenderer.draw(renderState,
-							 rr::PRIMITIVETYPE_TRIANGLES,
-							 std::vector<Vertex4RGBA>(m_vertices.begin() + quadNdx * 6,
-													  m_vertices.begin() + (quadNdx + 1) * 6));
+							rr::PRIMITIVETYPE_TRIANGLES,
+							std::vector<Vertex4RGBA>(m_vertices.begin() + quadNdx * 6,
+													 m_vertices.begin() + (quadNdx + 1) * 6));
+
+			if (isLegalExpandableFormat(tcuColorFormat.type))
+			{
+				refRenderer64.draw(renderState,
+								   rr::PRIMITIVETYPE_TRIANGLES,
+								   std::vector<Vertex4RGBA>(m_vertices.begin() + quadNdx * 6,
+								   m_vertices.begin() + (quadNdx + 1) * 6));
+
+				if (isSmallerThan8BitFormat(tcuColorFormat.type))
+					refRenderer8.draw(renderState,
+									  rr::PRIMITIVETYPE_TRIANGLES,
+									  std::vector<Vertex4RGBA>(m_vertices.begin() + quadNdx * 6,
+									  m_vertices.begin() + (quadNdx + 1) * 6));
+			}
 		}
 	}
-
 
 	// Compare result with reference image
 	{
@@ -923,6 +1036,9 @@ tcu::TestStatus BlendTestInstance::verifyImage (void)
 		SimpleAllocator						allocator					(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 		de::UniquePtr<tcu::TextureLevel>	result						(readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_colorImage, m_colorFormat, m_renderSize).release());
 		const tcu::Vec4						threshold					(getFormatThreshold(tcuColorFormat));
+		tcu::TextureLevel					refLevel;
+
+		refLevel.setStorage(tcuColorFormat, m_renderSize.x(), m_renderSize.y(), 1);
 
 		compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
 											   "FloatImageCompare",
@@ -931,6 +1047,37 @@ tcu::TestStatus BlendTestInstance::verifyImage (void)
 											   result->getAccess(),
 											   threshold,
 											   tcu::COMPARE_LOG_RESULT);
+
+		if (isLegalExpandableFormat(tcuColorFormat.type))
+		{
+			if (!compareOk && isSmallerThan8BitFormat(tcuColorFormat.type))
+			{
+				// Convert to target format
+				tcu::copy(refLevel.getAccess(), refRenderer8.getAccess());
+
+				compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
+													   "FloatImageCompare",
+													   "Image comparison, 8 bit intermediate format",
+													   refLevel.getAccess(),
+													   result->getAccess(),
+													   threshold,
+													   tcu::COMPARE_LOG_RESULT);
+			}
+
+			if (!compareOk)
+			{
+				// Convert to target format
+				tcu::copy(refLevel.getAccess(), refRenderer64.getAccess());
+
+				compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
+													   "FloatImageCompare",
+													   "Image comparison, 64 bit intermediate format",
+													   refLevel.getAccess(),
+													   result->getAccess(),
+													   threshold,
+													   tcu::COMPARE_LOG_RESULT);
+			}
+		}
 	}
 
 	if (compareOk)

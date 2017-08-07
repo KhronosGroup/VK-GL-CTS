@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 7ac9c857db1e3a6065485e4e2144151f48a4f1c4.
+ * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
  */
 void					glActiveShaderProgram								(glw::GLuint pipeline, glw::GLuint program);
 void					glActiveTexture										(glw::GLenum texture);
@@ -547,6 +547,7 @@ void					glPointParameteriv									(glw::GLenum pname, const glw::GLint *params
 void					glPointSize											(glw::GLfloat size);
 void					glPolygonMode										(glw::GLenum face, glw::GLenum mode);
 void					glPolygonOffset										(glw::GLfloat factor, glw::GLfloat units);
+void					glPolygonOffsetClampEXT								(glw::GLfloat factor, glw::GLfloat units, glw::GLfloat clamp);
 void					glPopDebugGroup										(void);
 void					glPopGroupMarkerEXT									(void);
 void					glPrimitiveBoundingBox								(glw::GLfloat minX, glw::GLfloat minY, glw::GLfloat minZ, glw::GLfloat minW, glw::GLfloat maxX, glw::GLfloat maxY, glw::GLfloat maxZ, glw::GLfloat maxW);

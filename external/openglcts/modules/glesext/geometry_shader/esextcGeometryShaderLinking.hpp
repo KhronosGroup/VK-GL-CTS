@@ -442,7 +442,7 @@ private:
  *     variable declaration:
  *
  *     layout(location = 2) out vec4 test;
- *     layout(location = 2) out ivec2 test2;
+ *     layout(location = 2) out vec4 test2;
  *
  *     Linking of the program object is expected to fail under this
  *     configuration.

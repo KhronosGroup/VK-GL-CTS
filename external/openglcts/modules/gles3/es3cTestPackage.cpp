@@ -23,6 +23,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "es3cTestPackage.hpp"
+#include "glcExposedExtensionsTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcShaderIndexingTests.hpp"
@@ -32,6 +33,7 @@
 #include "glcShaderNegativeTests.hpp"
 #include "glcShaderStructTests.hpp"
 #include "glcShaderSwitchTests.hpp"
+#include "glcTextureFilterAnisotropicTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "gluStateReset.hpp"
 #include "glwEnums.hpp"
@@ -125,6 +127,8 @@ public:
 		addChild(new deqp::ShaderIndexingTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderLoopTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderLibraryGroup(m_context, "preprocessor", "Preprocessor Tests", "preprocessor.test"));
+		addChild(new deqp::ShaderLibraryGroup(m_context, "literal_parsing", "Literal Parsing Tests",
+											  "literal_parsing.test"));
 		addChild(new deqp::ShaderStructTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderSwitchTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::UniformBlockTests(m_context, glu::GLSL_VERSION_300_ES));
@@ -151,6 +155,8 @@ void ES30TestPackage::init(void)
 	try
 	{
 		addChild(new ShaderTests(getContext()));
+		addChild(new glcts::TextureFilterAnisotropicTests(getContext()));
+		addChild(new glcts::ExposedExtensionsTests(getContext()));
 	}
 	catch (...)
 	{

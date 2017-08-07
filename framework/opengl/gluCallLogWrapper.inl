@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 7ac9c857db1e3a6065485e4e2144151f48a4f1c4.
+ * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
  */
 
 void CallLogWrapper::glActiveShaderProgram (glw::GLuint pipeline, glw::GLuint program)
@@ -4045,6 +4045,13 @@ void CallLogWrapper::glPolygonOffset (glw::GLfloat factor, glw::GLfloat units)
 	if (m_enableLog)
 		m_log << TestLog::Message << "glPolygonOffset(" << factor << ", " << units << ");" << TestLog::EndMessage;
 	m_gl.polygonOffset(factor, units);
+}
+
+void CallLogWrapper::glPolygonOffsetClampEXT (glw::GLfloat factor, glw::GLfloat units, glw::GLfloat clamp)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glPolygonOffsetClampEXT(" << factor << ", " << units << ", " << clamp << ");" << TestLog::EndMessage;
+	m_gl.polygonOffsetClampEXT(factor, units, clamp);
 }
 
 void CallLogWrapper::glPopDebugGroup (void)

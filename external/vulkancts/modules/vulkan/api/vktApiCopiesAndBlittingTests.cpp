@@ -1048,6 +1048,31 @@ tcu::TestStatus CopyImageToImage::checkTestResult (tcu::ConstPixelBufferAccess r
 			if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", m_expectedTextureLevel->getAccess(), result, fThreshold, tcu::COMPARE_LOG_RESULT))
 				return tcu::TestStatus::fail("CopiesAndBlitting test");
 		}
+		else if (isSnormFormat(mapTextureFormat(result.getFormat())))
+		{
+			// There may be an ambiguity between two possible binary representations of 1.0.
+			// Get rid of that by expanding the data to floats and re-normalizing again.
+
+			tcu::TextureLevel resultSnorm	(result.getFormat(), result.getWidth(), result.getHeight(), result.getDepth());
+			{
+				tcu::TextureLevel resultFloat	(tcu::TextureFormat(resultSnorm.getFormat().order, tcu::TextureFormat::FLOAT), resultSnorm.getWidth(), resultSnorm.getHeight(), resultSnorm.getDepth());
+
+				tcu::copy(resultFloat.getAccess(), result);
+				tcu::copy(resultSnorm, resultFloat.getAccess());
+			}
+
+			tcu::TextureLevel expectedSnorm	(m_expectedTextureLevel->getFormat(), m_expectedTextureLevel->getWidth(), m_expectedTextureLevel->getHeight(), m_expectedTextureLevel->getDepth());
+
+			{
+				tcu::TextureLevel expectedFloat	(tcu::TextureFormat(expectedSnorm.getFormat().order, tcu::TextureFormat::FLOAT), expectedSnorm.getWidth(), expectedSnorm.getHeight(), expectedSnorm.getDepth());
+
+				tcu::copy(expectedFloat.getAccess(), m_expectedTextureLevel->getAccess());
+				tcu::copy(expectedSnorm, expectedFloat.getAccess());
+			}
+
+			if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", expectedSnorm.getAccess(), resultSnorm.getAccess(), uThreshold, tcu::COMPARE_LOG_RESULT))
+				return tcu::TestStatus::fail("CopiesAndBlitting test");
+		}
 		else
 		{
 			if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", m_expectedTextureLevel->getAccess(), result, uThreshold, tcu::COMPARE_LOG_RESULT))
@@ -1900,8 +1925,8 @@ tcu::TestStatus BlittingImages::iterate (void)
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &srcImageBarrier);
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &dstImageBarrier);
 	vk.cmdBlitImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)m_params.regions.size(), &regions[0], m_params.filter);
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &dstImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
 
@@ -3113,20 +3138,20 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 	const tcu::TextureFormat		dstTcuFormat		= mapVkFormat(m_params.dst.image.format);
 
 	// upload the destination image
-		m_destinationTextureLevel	= de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(dstTcuFormat,
-																				(int)m_params.dst.image.extent.width,
-																				(int)m_params.dst.image.extent.height,
-																				(int)m_params.dst.image.extent.depth));
-		generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.image.extent.width, m_params.dst.image.extent.height, m_params.dst.image.extent.depth);
-		uploadImage(m_destinationTextureLevel->getAccess(), m_destination.get(), m_params.dst.image);
+	m_destinationTextureLevel	= de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(dstTcuFormat,
+																			(int)m_params.dst.image.extent.width,
+																			(int)m_params.dst.image.extent.height,
+																			(int)m_params.dst.image.extent.depth));
+	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.image.extent.width, m_params.dst.image.extent.height, m_params.dst.image.extent.depth);
+	uploadImage(m_destinationTextureLevel->getAccess(), m_destination.get(), m_params.dst.image);
 
-		m_sourceTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(srcTcuFormat,
-																		(int)m_params.src.image.extent.width,
-																		(int)m_params.src.image.extent.height,
-																		(int)m_params.dst.image.extent.depth));
+	m_sourceTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(srcTcuFormat,
+																	(int)m_params.src.image.extent.width,
+																	(int)m_params.src.image.extent.height,
+																	(int)m_params.dst.image.extent.depth));
 
-		generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.dst.image.extent.depth, FILL_MODE_MULTISAMPLE);
-		generateExpectedResult();
+	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.dst.image.extent.depth, FILL_MODE_MULTISAMPLE);
+	generateExpectedResult();
 
 	switch (m_options)
 	{
@@ -3299,7 +3324,7 @@ void ResolveImageToImage::copyMSImageToMSImage (void)
 
 	const VkImageMemoryBarrier		imageBarriers[]		=
 	{
-		//// source image
+		// source image
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 			DE_NULL,									// const void*				pNext;

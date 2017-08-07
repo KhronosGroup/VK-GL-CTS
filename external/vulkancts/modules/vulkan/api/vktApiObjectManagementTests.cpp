@@ -419,6 +419,7 @@ enum
 	MAX_CONCURRENT_INSTANCES		= 32,
 	MAX_CONCURRENT_DEVICES			= 32,
 	MAX_CONCURRENT_SYNC_PRIMITIVES	= 100,
+	MAX_CONCURRENT_PIPELINE_CACHES	= 128,
 	DEFAULT_MAX_CONCURRENT_OBJECTS	= 16*1024,
 };
 
@@ -1131,7 +1132,7 @@ struct PipelineCache
 
 	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
 	{
-		return getSafeObjectCount<PipelineCache>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+		return getSafeObjectCount<PipelineCache>(context, params, MAX_CONCURRENT_PIPELINE_CACHES);
 	}
 
 	static Move<VkPipelineCache> create (const Environment& env, const Resources&, const Parameters&)
@@ -2312,10 +2313,13 @@ private:
 template<typename Object>
 tcu::TestStatus multithreadedCreateSharedResourcesTest (Context& context, typename Object::Parameters params)
 {
+	TestLog&							log			= context.getTestContext().getLog();
 	const deUint32						numThreads	= getDefaultTestThreadCount();
 	const Environment					env			(context, numThreads);
 	const typename Object::Resources	res			(env, params);
 	ThreadGroup							threads;
+
+	log << TestLog::Message << "numThreads = " << numThreads << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < numThreads; ndx++)
 		threads.add(MovePtr<ThreadGroupThread>(new CreateThread<Object>(env, res, params)));
@@ -2328,10 +2332,13 @@ tcu::TestStatus multithreadedCreatePerThreadResourcesTest (Context& context, typ
 {
 	typedef SharedPtr<typename Object::Resources>	ResPtr;
 
+	TestLog&			log			= context.getTestContext().getLog();
 	const deUint32		numThreads	= getDefaultTestThreadCount();
 	const Environment	env			(context, 1u);
 	vector<ResPtr>		resources	(numThreads);
 	ThreadGroup			threads;
+
+	log << TestLog::Message << "numThreads = " << numThreads << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < numThreads; ndx++)
 	{
@@ -2370,12 +2377,15 @@ tcu::TestStatus multithreadedCreatePerThreadDeviceTest (Context& context, typena
 	typedef SharedPtr<EnvClone>						EnvPtr;
 	typedef SharedPtr<typename Object::Resources>	ResPtr;
 
+	TestLog&					log				= context.getTestContext().getLog();
 	const deUint32				numThreads		= getDefaultTestThreadCount();
 	const Device::Parameters	deviceParams	= getDefaulDeviceParameters(context);
 	const Environment			sharedEnv		(context, numThreads);			// For creating Device's
 	vector<EnvPtr>				perThreadEnv	(numThreads);
 	vector<ResPtr>				resources		(numThreads);
 	ThreadGroup					threads;
+
+	log << TestLog::Message << "numThreads = " << numThreads << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < numThreads; ndx++)
 	{

@@ -500,14 +500,14 @@ const glw::GLchar* Type::GetGLSLTypeName() const
  *
  * @return Number of columns times:
  *          - 2 when type is double with 3 or 4 rows,
- *          - 1 otherwise.
+ *          - 1 otherwise or if it's a vertex shader input.
  **/
-GLuint Type::GetLocations() const
+GLuint Type::GetLocations(bool is_vs_input) const
 {
 	GLuint n_loc_per_column;
 
 	/* 1 or 2 doubles any for rest */
-	if ((2 >= m_n_rows) || (Double != m_basic_type))
+	if ((2 >= m_n_rows) || (Double != m_basic_type) || is_vs_input)
 	{
 		n_loc_per_column = 1;
 	}
@@ -520,14 +520,23 @@ GLuint Type::GetLocations() const
 	return n_loc_per_column * m_n_columns;
 }
 
-/** Get size of the type in bytes. Note that this routine assumes tightly packing
+/** Get size of the type in bytes.
+ * Note that this routine doesn't consider arrays and assumes
+ * column_major matrices.
  *
- * @return Formula Number of columns * number of rows * sizeof(base_type)
+ * @return Formula:
+ *          - If std140 packaging and matrix; number of columns * base alignment
+ *          - Otherwise; number of elements * sizeof(base_type)
  **/
-GLuint Type::GetSize() const
+GLuint Type::GetSize(const bool is_std140) const
 {
 	const GLuint basic_type_size = GetTypeSize(m_basic_type);
 	const GLuint n_elements		 = m_n_columns * m_n_rows;
+
+	if (is_std140 && m_n_columns > 1)
+	{
+		return m_n_columns * GetBaseAlignment(false);
+	}
 
 	return basic_type_size * n_elements;
 }
@@ -2408,13 +2417,13 @@ const glw::GLchar* Shader::GetStageName(STAGES stage)
 		result = "vertex";
 		break;
 	case TESS_CTRL:
-		result = "tesselation control";
+		result = "tessellation control";
 		break;
 	case TESS_EVAL:
-		result = "tesselation evaluation";
+		result = "tessellation evaluation";
 		break;
 	case GEOMETRY:
-		result = "geomtery";
+		result = "geometry";
 		break;
 	case FRAGMENT:
 		result = "fragment";
@@ -2618,19 +2627,19 @@ Program::~Program()
 
 /** Initialize program instance
  *
- * @param compute_shader                Compute shader source code
- * @param fragment_shader               Fragment shader source code
- * @param geometry_shader               Geometry shader source code
- * @param tesselation_control_shader    Tesselation control shader source code
- * @param tesselation_evaluation_shader Tesselation evaluation shader source code
- * @param vertex_shader                 Vertex shader source code
- * @param captured_varyings             Vector of variables to be captured with transfrom feedback
- * @param capture_interleaved           Select mode of transform feedback (separate or interleaved)
- * @param is_separable                  Selects if monolithic or separable program should be built. Defaults to false
+ * @param compute_shader                    Compute shader source code
+ * @param fragment_shader                   Fragment shader source code
+ * @param geometry_shader                   Geometry shader source code
+ * @param tessellation_control_shader       Tessellation control shader source code
+ * @param tessellation_evaluation_shader    Tessellation evaluation shader source code
+ * @param vertex_shader                     Vertex shader source code
+ * @param captured_varyings                 Vector of variables to be captured with transfrom feedback
+ * @param capture_interleaved               Select mode of transform feedback (separate or interleaved)
+ * @param is_separable                      Selects if monolithic or separable program should be built. Defaults to false
  **/
 void Program::Init(const std::string& compute_shader, const std::string& fragment_shader,
-				   const std::string& geometry_shader, const std::string& tesselation_control_shader,
-				   const std::string& tesselation_evaluation_shader, const std::string& vertex_shader,
+				   const std::string& geometry_shader, const std::string& tessellation_control_shader,
+				   const std::string& tessellation_evaluation_shader, const std::string& vertex_shader,
 				   const NameVector& captured_varyings, bool capture_interleaved, bool is_separable)
 {
 	/* Delete previous program */
@@ -2643,8 +2652,8 @@ void Program::Init(const std::string& compute_shader, const std::string& fragmen
 	m_compute.Init(Shader::COMPUTE, compute_shader);
 	m_fragment.Init(Shader::FRAGMENT, fragment_shader);
 	m_geometry.Init(Shader::GEOMETRY, geometry_shader);
-	m_tess_ctrl.Init(Shader::TESS_CTRL, tesselation_control_shader);
-	m_tess_eval.Init(Shader::TESS_EVAL, tesselation_evaluation_shader);
+	m_tess_ctrl.Init(Shader::TESS_CTRL, tessellation_control_shader);
+	m_tess_eval.Init(Shader::TESS_EVAL, tessellation_evaluation_shader);
 	m_vertex.Init(Shader::VERTEX, vertex_shader);
 
 	/* Create program, set up transform feedback and attach shaders */
@@ -2671,29 +2680,29 @@ void Program::Init(const std::string& compute_shader, const std::string& fragmen
 	}
 	catch (const LinkageException& exc)
 	{
-		throw BuildException(exc.what(), compute_shader, fragment_shader, geometry_shader, tesselation_control_shader,
-							 tesselation_evaluation_shader, vertex_shader);
+		throw BuildException(exc.what(), compute_shader, fragment_shader, geometry_shader, tessellation_control_shader,
+							 tessellation_evaluation_shader, vertex_shader);
 	}
 }
 
 /** Initialize program instance
  *
- * @param compute_shader                Compute shader source code
- * @param fragment_shader               Fragment shader source code
- * @param geometry_shader               Geometry shader source code
- * @param tesselation_control_shader    Tesselation control shader source code
- * @param tesselation_evaluation_shader Tesselation evaluation shader source code
- * @param vertex_shader                 Vertex shader source code
- * @param is_separable                  Selects if monolithic or separable program should be built. Defaults to false
+ * @param compute_shader                    Compute shader source code
+ * @param fragment_shader                   Fragment shader source code
+ * @param geometry_shader                   Geometry shader source code
+ * @param tessellation_control_shader       Tessellation control shader source code
+ * @param tessellation_evaluation_shader    Tessellation evaluation shader source code
+ * @param vertex_shader                     Vertex shader source code
+ * @param is_separable                      Selects if monolithic or separable program should be built. Defaults to false
  **/
 void Program::Init(const std::string& compute_shader, const std::string& fragment_shader,
-				   const std::string& geometry_shader, const std::string& tesselation_control_shader,
-				   const std::string& tesselation_evaluation_shader, const std::string& vertex_shader,
+				   const std::string& geometry_shader, const std::string& tessellation_control_shader,
+				   const std::string& tessellation_evaluation_shader, const std::string& vertex_shader,
 				   bool is_separable)
 {
 	NameVector captured_varying;
 
-	Init(compute_shader, fragment_shader, geometry_shader, tesselation_control_shader, tesselation_evaluation_shader,
+	Init(compute_shader, fragment_shader, geometry_shader, tessellation_control_shader, tessellation_evaluation_shader,
 		 vertex_shader, captured_varying, true, is_separable);
 }
 
@@ -3092,8 +3101,8 @@ GLint Program::GetUniformLocation(const Functions& gl, GLuint id, const std::str
  * @param compute_shader   Source code for compute stage
  * @param fragment_shader  Source code for fragment stage
  * @param geometry_shader  Source code for geometry stage
- * @param tess_ctrl_shader Source code for tesselation control stage
- * @param tess_eval_shader Source code for tesselation evaluation stage
+ * @param tess_ctrl_shader Source code for tessellation control stage
+ * @param tess_eval_shader Source code for tessellation evaluation stage
  * @param vertex_shader    Source code for vertex stage
  **/
 Program::BuildException::BuildException(const glw::GLchar* error_message, const std::string compute_shader,
@@ -5110,7 +5119,7 @@ GLint TestBase::getLastInputLocation(Utils::Shader::STAGES stage, const Utils::T
 
 #endif
 
-	const GLuint n_req_location = type.GetLocations() * array_length;
+	const GLuint n_req_location = type.GetLocations(stage == Utils::Shader::VERTEX) * array_length;
 
 	return n_avl_locations - n_req_location; /* last is max - 1 */
 }
@@ -5456,7 +5465,7 @@ bool TestBase::test()
 	/* GL entry points */
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Tesselation patch set up */
+	/* Tessellation patch set up */
 	gl.patchParameteri(GL_PATCH_VERTICES, 1);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "PatchParameteri");
 
@@ -6140,6 +6149,12 @@ bool NegativeTestBase::testCase(GLuint test_case_index)
 
 		if (is_build_error != is_failure_expected)
 		{
+			if (!is_build_error)
+			{
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Unexpected success: " << tcu::TestLog::EndMessage;
+				Utils::Shader::LogSource(m_context, cs_source, Utils::Shader::COMPUTE);
+			}
 			test_case_result = false;
 		}
 	}
@@ -6207,6 +6222,16 @@ bool NegativeTestBase::testCase(GLuint test_case_index)
 
 		if (is_build_error != is_failure_expected)
 		{
+			if (!is_build_error)
+			{
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Unexpected success: " << tcu::TestLog::EndMessage;
+				Utils::Shader::LogSource(m_context, vs_source, Utils::Shader::VERTEX);
+				Utils::Shader::LogSource(m_context, tcs_source, Utils::Shader::TESS_CTRL);
+				Utils::Shader::LogSource(m_context, tes_source, Utils::Shader::TESS_EVAL);
+				Utils::Shader::LogSource(m_context, gs_source, Utils::Shader::GEOMETRY);
+				Utils::Shader::LogSource(m_context, fs_source, Utils::Shader::FRAGMENT);
+			}
 			test_case_result = false;
 		}
 	}
@@ -6406,7 +6431,7 @@ std::string TextureTestBase::getVerificationSnippet(GLuint /* test_case_index */
 	for (GLuint i = 0; i < si.m_inputs.size(); ++i)
 	{
 		const Utils::Variable& var				= *si.m_inputs[i];
-		const std::string&	 var_verification = getVariableVerifcation("", var.m_data, var.m_descriptor, in_flavour);
+		const std::string&	 var_verification = getVariableVerification("", var.m_data, var.m_descriptor, in_flavour);
 
 		Utils::insertElementOfList(var_verification.c_str(), separator, position, verification);
 	}
@@ -6416,7 +6441,7 @@ std::string TextureTestBase::getVerificationSnippet(GLuint /* test_case_index */
 	{
 		const Utils::Variable& var = *si.m_uniforms[i];
 		const std::string&	 var_verification =
-			getVariableVerifcation("", var.m_data, var.m_descriptor, Utils::Variable::BASIC);
+			getVariableVerification("", var.m_data, var.m_descriptor, Utils::Variable::BASIC);
 
 		Utils::insertElementOfList(var_verification.c_str(), separator, position, verification);
 	}
@@ -6426,7 +6451,7 @@ std::string TextureTestBase::getVerificationSnippet(GLuint /* test_case_index */
 	{
 		const Utils::Variable& var = *si.m_ssb_blocks[i];
 		const std::string&	 var_verification =
-			getVariableVerifcation("", var.m_data, var.m_descriptor, Utils::Variable::BASIC);
+			getVariableVerification("", var.m_data, var.m_descriptor, Utils::Variable::BASIC);
 
 		Utils::insertElementOfList(var_verification.c_str(), separator, position, verification);
 	}
@@ -6577,9 +6602,9 @@ std::string TextureTestBase::getVariablePassthrough(const std::string&				   in_
  *
  * @return Code that does (EXPECTED != VALUE) ||
  **/
-std::string TextureTestBase::getVariableVerifcation(const std::string& parent_name, const GLvoid* data,
-													const Utils::Variable::Descriptor& variable,
-													Utils::Variable::FLAVOUR		   flavour)
+std::string TextureTestBase::getVariableVerification(const std::string& parent_name, const GLvoid* data,
+													 const Utils::Variable::Descriptor& variable,
+													 Utils::Variable::FLAVOUR			flavour)
 {
 	static const GLchar* logic_op   = " ||\n        ";
 	const GLuint		 n_elements = (0 == variable.m_n_array_elements) ? 1 : variable.m_n_array_elements;
@@ -6627,7 +6652,7 @@ std::string TextureTestBase::getVariableVerifcation(const std::string& parent_na
 
 				/* Get verification of member */
 				const std::string& verification =
-					getVariableVerifcation(name, (GLubyte*)data_ptr + member.m_offset, member, Utils::Variable::BASIC);
+					getVariableVerification(name, (GLubyte*)data_ptr + member.m_offset, member, Utils::Variable::BASIC);
 
 				Utils::insertElementOfList(verification.c_str(), logic_op, position, result);
 			}
@@ -6874,8 +6899,8 @@ void TextureTestBase::prepareSSBs(GLuint test_case_index, Utils::ProgramInterfac
  * @param program           Program
  * @param fs_buffer         Buffer for fragment shader stage
  * @param gs_buffer         Buffer for geometry shader stage
- * @param tcs_buffer        Buffer for tesselation control shader stage
- * @param tes_buffer        Buffer for tesselation evaluation shader stage
+ * @param tcs_buffer        Buffer for tessellation control shader stage
+ * @param tes_buffer        Buffer for tessellation evaluation shader stage
  * @param vs_buffer         Buffer for vertex shader stage
  **/
 void TextureTestBase::prepareSSBs(GLuint test_case_index, Utils::ProgramInterface& program_interface,
@@ -7021,8 +7046,8 @@ void TextureTestBase::prepareUniforms(GLuint test_case_index, Utils::ProgramInte
  * @param program           Program
  * @param fs_buffer         Buffer for fragment shader stage
  * @param gs_buffer         Buffer for geometry shader stage
- * @param tcs_buffer        Buffer for tesselation control shader stage
- * @param tes_buffer        Buffer for tesselation evaluation shader stage
+ * @param tcs_buffer        Buffer for tessellation control shader stage
+ * @param tes_buffer        Buffer for tessellation evaluation shader stage
  * @param vs_buffer         Buffer for vertex shader stage
  **/
 void TextureTestBase::prepareUniforms(GLuint test_case_index, Utils::ProgramInterface& program_interface,
@@ -7061,8 +7086,8 @@ void TextureTestBase::prepareUniforms(GLuint test_case_index, Utils::ProgramInte
  * @param program           Program
  * @param fs_buffer         Buffer for fragment shader stage
  * @param gs_buffer         Buffer for geometry shader stage
- * @param tcs_buffer        Buffer for tesselation control shader stage
- * @param tes_buffer        Buffer for tesselation evaluation shader stage
+ * @param tcs_buffer        Buffer for tessellation control shader stage
+ * @param tes_buffer        Buffer for tessellation evaluation shader stage
  * @param vs_buffer         Buffer for vertex shader stage
  **/
 void TextureTestBase::prepareUniforms(GLuint test_case_index, Utils::ProgramInterface& program_interface,
@@ -9274,6 +9299,21 @@ GLuint UniformBlockMemberInvalidOffsetAlignmentTest::getTestCaseNumber()
 	return static_cast<GLuint>(m_test_cases.size());
 }
 
+/** Get the maximum size for an uniform block
+ *
+ * @return The maximum size in basic machine units of a uniform block.
+ **/
+GLint UniformBlockMemberInvalidOffsetAlignmentTest::getMaxBlockSize()
+{
+	const Functions& gl		  = m_context.getRenderContext().getFunctions();
+	GLint			 max_size = 0;
+
+	gl.getIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &max_size);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+	return max_size;
+}
+
 /** Selects if "compute" stage is relevant for test
  *
  * @param test_case_index Index of test case
@@ -9312,25 +9352,20 @@ bool UniformBlockMemberInvalidOffsetAlignmentTest::isStageSupported(Utils::Shade
  **/
 void UniformBlockMemberInvalidOffsetAlignmentTest::testInit()
 {
-	const Functions& gl		  = m_context.getRenderContext().getFunctions();
-	GLint			 max_size = 0;
-	const GLuint	 n_types  = getTypesNumber();
-	bool			 stage_support[Utils::Shader::STAGE_MAX];
+	const GLuint n_types = getTypesNumber();
+	bool		 stage_support[Utils::Shader::STAGE_MAX];
 
 	for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 	{
 		stage_support[stage] = isStageSupported((Utils::Shader::STAGES)stage);
 	}
 
-	gl.getIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &max_size);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
-
 	for (GLuint i = 0; i < n_types; ++i)
 	{
 		const Utils::Type& type		  = getType(i);
 		const GLuint	   alignment  = type.GetBaseAlignment(false);
-		const GLuint	   type_size  = type.GetSize();
-		const GLuint	   sec_to_end = max_size - 2 * type_size;
+		const GLuint	   type_size  = type.GetSize(true);
+		const GLuint	   sec_to_end = getMaxBlockSize() - 2 * type_size;
 
 		for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 		{
@@ -10972,6 +11007,21 @@ SSBMemberInvalidOffsetAlignmentTest::SSBMemberInvalidOffsetAlignmentTest(deqp::C
 		  "Test verifies that invalid alignment of offset qualifiers cause compilation failure")
 {
 	/* Nothing to be done here */
+}
+
+/** Get the maximum size for a shader storage block
+ *
+ * @return The maximum size in basic machine units of a shader storage block.
+ **/
+GLint SSBMemberInvalidOffsetAlignmentTest::getMaxBlockSize()
+{
+	const Functions& gl		  = m_context.getRenderContext().getFunctions();
+	GLint			 max_size = 0;
+
+	gl.getIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE, &max_size);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+	return max_size;
 }
 
 /** Source for given test case and stage
@@ -13667,13 +13717,11 @@ std::string VaryingBlockMemberLocationsTest::getShaderSource(GLuint test_case_in
 		}
 	}
 
+	// Geometry shader inputs, tessellation control shader inputs and outputs, and tessellation evaluation
+	// inputs all have an additional level of arrayness relative to other shader inputs and outputs.
 	switch (stage)
 	{
 	case Utils::Shader::FRAGMENT:
-		break;
-	case Utils::Shader::GEOMETRY:
-		array = "[]";
-		index = "[0]";
 		break;
 	case Utils::Shader::TESS_CTRL:
 		array = "[]";
@@ -13681,6 +13729,7 @@ std::string VaryingBlockMemberLocationsTest::getShaderSource(GLuint test_case_in
 		break;
 	// geometry shader's input must have one more dimension than tessellation evaluation shader's output,
 	// the GS input block is an array, so the DS output can't be declared as an array
+	case Utils::Shader::GEOMETRY:
 	case Utils::Shader::TESS_EVAL:
 	{
 		if (std::string(direction) == std::string("in")) // match HS output and DS input
@@ -13845,7 +13894,7 @@ void VaryingBlockMemberLocationsTest::testInit()
 VaryingBlockAutomaticMemberLocationsTest::VaryingBlockAutomaticMemberLocationsTest(deqp::Context& context)
 	: NegativeTestBase(
 		  context, "varying_block_automatic_member_locations",
-		  "Test verifies that compiler assigns subsequent locations to block members, even if this casue error")
+		  "Test verifies that compiler assigns subsequent locations to block members, even if this causes errors")
 {
 }
 
@@ -15564,7 +15613,7 @@ VaryingComponentWithoutLocationTest::VaryingComponentWithoutLocationTest(deqp::C
  **/
 std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
-	static const GLchar* var_definition = "layout (component = COMPONENT) flat DIRECTION TYPE gokuARRAY;\n";
+	static const GLchar* var_definition = "layout (component = COMPONENT) FLAT DIRECTION TYPE gokuARRAY;\n";
 	static const GLchar* input_use		= "    if (TYPE(0) == gokuINDEX)\n"
 									 "    {\n"
 									 "        result += vec4(1, 0.5, 0.25, 0.125);\n"
@@ -15599,7 +15648,7 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    fs_out += result;\n"
+									 "    fs_out = result;\n"
 									 "}\n"
 									 "\n";
 	static const GLchar* gs = "#version 430 core\n"
@@ -15734,7 +15783,7 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 									  "\n"
 									  "VARIABLE_USE"
 									  "\n"
-									  "    tes_gs += result;\n"
+									  "    tes_gs = result;\n"
 									  "}\n"
 									  "\n";
 	static const GLchar* vs = "#version 430 core\n"
@@ -15762,7 +15811,7 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    vs_tcs += result;\n"
+									 "    vs_tcs = result;\n"
 									 "}\n"
 									 "\n";
 
@@ -15779,6 +15828,7 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 		size_t		  temp;
 		const GLchar* type_name = test_case.m_type.GetGLSLTypeName();
 		const GLchar* var_use   = input_use;
+		const GLchar* flat		= "flat";
 
 		if (false == test_case.m_is_input)
 		{
@@ -15810,6 +15860,7 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 			break;
 		case Utils::Shader::VERTEX:
 			source = vs_tested;
+			flat   = "";
 			break;
 		default:
 			TCU_FAIL("Invalid enum");
@@ -15819,6 +15870,7 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
 		position = temp;
 		Utils::replaceToken("COMPONENT", position, buffer, source);
+		Utils::replaceToken("FLAT", position, flat, source);
 		Utils::replaceToken("DIRECTION", position, direction, source);
 		Utils::replaceToken("ARRAY", position, array, source);
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
@@ -16536,10 +16588,6 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 									"    {\n"
 									"        result += vec4(1, 0.5, 0.25, 0.125);\n"
 									"    }\n";
-	static const GLchar* test_both = "    if (TYPE(0) == gohanINDEX)\n"
-									 "    {\n"
-									 "        result = vec4(goten.xxxx);\n"
-									 "    }\n";
 	static const GLchar* fs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
@@ -16748,11 +16796,6 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 		const GLchar* type_name = test_case.m_type.GetGLSLTypeName();
 		const GLchar* var_use   = test_one;
 
-		if (true == test_case.m_use_both)
-		{
-			var_use = test_both;
-		}
-
 		if (true == is_flat_req)
 		{
 			flat = "flat";
@@ -16876,7 +16919,7 @@ bool InputComponentAliasingTest::isFailureExpected(GLuint test_case_index)
 {
 	testCase& test_case = m_test_cases[test_case_index];
 
-	return !((Utils::Shader::VERTEX == test_case.m_stage) && (false == test_case.m_use_both));
+	return (Utils::Shader::VERTEX != test_case.m_stage);
 }
 
 /** Prepare all test cases
@@ -16884,17 +16927,23 @@ bool InputComponentAliasingTest::isFailureExpected(GLuint test_case_index)
  **/
 void InputComponentAliasingTest::testInit()
 {
-	static const GLuint n_components_per_location = 4;
 	const GLuint		n_types					  = getTypesNumber();
 
 	for (GLuint i = 0; i < n_types; ++i)
 	{
-		const Utils::Type& type				= getType(i);
-		const GLuint	   n_req_components = type.m_n_rows;
-		const GLuint	   valid_component  = n_components_per_location - n_req_components;
-
+		const Utils::Type& type						 = getType(i);
+		const bool		   use_double				 = (Utils::Type::Double == type.m_basic_type);
+		const GLuint	   n_components_per_location = use_double ? 2 : 4;
+		const GLuint	   n_req_components			 = type.m_n_rows;
+		const GLint		   valid_component			 = (GLint)n_components_per_location - (GLint)n_req_components;
+		const GLuint	   component_size			 = use_double ? 2 : 1;
 		/* Skip matrices */
 		if (1 != type.m_n_columns)
+		{
+			continue;
+		}
+		/* Skip dvec3/dvec4 which doesn't support the component qualifier */
+		if (valid_component < 0)
 		{
 			continue;
 		}
@@ -16906,26 +16955,20 @@ void InputComponentAliasingTest::testInit()
 				continue;
 			}
 
-			for (GLuint gohan = 0; gohan <= valid_component; ++gohan)
+			for (GLuint gohan = 0; gohan <= (GLuint)valid_component; ++gohan)
 			{
 				const GLint first_aliasing = gohan - n_req_components + 1;
 				const GLint last_aliasing  = gohan + n_req_components - 1;
 
 				const GLuint goten_start = std::max(0, first_aliasing);
-				const GLuint goten_stop  = std::min((GLint)valid_component, last_aliasing);
+				const GLuint goten_stop  = std::min(valid_component, last_aliasing);
 
 				for (GLuint goten = goten_start; goten <= goten_stop; ++goten)
 				{
-					testCase test_case = { gohan, goten, (Utils::Shader::STAGES)stage, type, false };
+					testCase test_case = { gohan * component_size, goten * component_size, (Utils::Shader::STAGES)stage,
+										   type };
 
 					m_test_cases.push_back(test_case);
-
-					if (Utils::Shader::VERTEX == test_case.m_stage)
-					{
-						test_case.m_use_both = true;
-
-						m_test_cases.push_back(test_case);
-					}
 				}
 			}
 		}
@@ -19303,16 +19346,18 @@ void FragmentDataLocationAPITest::prepareFramebuffer(Utils::Framebuffer& framebu
 
 	/* Set up drawbuffers */
 	const Functions& gl = m_context.getRenderContext().getFunctions();
-	//  1. There are only 4 outputs in fragment shader, so only need to do buffer mapping for 4 attachments,
-	//  2. another issue is each output variable has a location, it is the fragment color index, so the index of
-	//  GL_COLOR_ATTACHMENT in glDrawBuffers() should keep the same with the location, to make test correct,
-	//  we needt to change the above code of glDrawBuffers() as :
-	GLint  buffers_size = 4;
-	GLenum buffers[]	= { GLenum(GL_COLOR_ATTACHMENT0 + m_chichi_location),
-						 GLenum(GL_COLOR_ATTACHMENT0 + m_goku_location),
-						 GLenum(GL_COLOR_ATTACHMENT0 + m_goten_location),
-						 GLenum(GL_COLOR_ATTACHMENT0 + m_gohan_location) };
-	gl.drawBuffers(buffers_size, buffers);
+	// The fragment shader can have more than 4 color outputs, but it only care about 4 (goku, gohan, goten, chichi).
+	// We will first initialize all draw buffers to NONE and then set the real value for the 4 outputs we care about
+	GLint maxDrawBuffers = 0;
+	gl.getIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
+
+	std::vector<GLenum> buffers(maxDrawBuffers, GL_NONE);
+	buffers[m_chichi_location] = GLenum(GL_COLOR_ATTACHMENT0 + m_chichi_location);
+	buffers[m_goten_location]  = GLenum(GL_COLOR_ATTACHMENT0 + m_goten_location);
+	buffers[m_goku_location]   = GLenum(GL_COLOR_ATTACHMENT0 + m_goku_location);
+	buffers[m_gohan_location]  = GLenum(GL_COLOR_ATTACHMENT0 + m_gohan_location);
+
+	gl.drawBuffers(maxDrawBuffers, buffers.data());
 	GLU_EXPECT_NO_ERROR(gl.getError(), "DrawBuffers");
 }
 
@@ -19900,7 +19945,7 @@ XFBStrideOfEmptyListTest::XFBStrideOfEmptyListTest(deqp::Context& context)
  *
  * @return true if proper error is reported
  **/
-bool XFBStrideOfEmptyListTest::executeDrawCall(GLuint test_case_index)
+bool XFBStrideOfEmptyListTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl		= m_context.getRenderContext().getFunctions();
 	bool			 result = true;
@@ -20193,7 +20238,7 @@ XFBStrideOfEmptyListAndAPITest::XFBStrideOfEmptyListAndAPITest(deqp::Context& co
  *
  * @return true if proper error is reported
  **/
-bool XFBStrideOfEmptyListAndAPITest::executeDrawCall(GLuint test_case_index)
+bool XFBStrideOfEmptyListAndAPITest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl		= m_context.getRenderContext().getFunctions();
 	bool			 result = true;
@@ -21743,7 +21788,7 @@ void XFBBlockMemberStrideTest::getShaderInterface(GLuint /* test_case_index */, 
 {
 	static const GLchar* gs = "layout (xfb_buffer = 0, xfb_offset = 0) out Goku {\n"
 							  "                             vec4 gohan;\n"
-							  "    layout (xfb_stride = 32) vec4 goten;\n"
+							  "    layout (xfb_stride = 48) vec4 goten;\n"
 							  "                             vec4 chichi;\n"
 							  "};\n"
 							  "layout(binding = 0) uniform gs_block {\n"
@@ -21799,7 +21844,7 @@ bool XFBBlockMemberStrideTest::inspectProgram(GLuint /* test_case_index*/, Utils
 	if ((0 != gohan_offset) || (16 != goten_offset) || (32 != chichi_offset))
 	{
 		out_stream << "Got wrong offset: [" << gohan_offset << ", " << goten_offset << ", " << chichi_offset
-				   << "] expected: [0, 16, 48]";
+				   << "] expected: [0, 16, 32]";
 		return false;
 	}
 
@@ -22706,31 +22751,26 @@ void XFBOverrideQualifiersWithAPITest::getBufferDescriptors(glw::GLuint				  tes
 	const std::vector<GLubyte>& vegeta_data = type.GenerateData();
 	const std::vector<GLubyte>& trunks_data = type.GenerateData();
 	const std::vector<GLubyte>& goku_data   = type.GenerateData();
-	const std::vector<GLubyte>& gohan_data  = type.GenerateData();
 
 	Utils::s_rand								= gen_start;
 	const std::vector<GLubyte>& vegeta_data_pck = type.GenerateDataPacked();
-	/*
-	 The xfb varying goku is -0.375, it is expected to equal to xfb.m_expected_data[0], xfb.m_expected_data[0] is assigned from goku_data_pck(-0.5)
-	 how can make them equal ? is it as designed?  Add the following statement,  which can make sure goku_data_pck equals to goku_data
-	 */
+	type.GenerateDataPacked(); // generate the data for trunks
 	const std::vector<GLubyte>& goku_data_pck = type.GenerateDataPacked();
 
 	const GLuint type_size	 = static_cast<GLuint>(vegeta_data.size());
 	const GLuint type_size_pck = static_cast<GLuint>(vegeta_data_pck.size());
 
 	/* Uniform data */
-	uniform.m_initial_data.resize(4 * type_size);
+	uniform.m_initial_data.resize(3 * type_size);
 	memcpy(&uniform.m_initial_data[0] + 0, &vegeta_data[0], type_size);
 	memcpy(&uniform.m_initial_data[0] + type_size, &trunks_data[0], type_size);
 	memcpy(&uniform.m_initial_data[0] + 2 * type_size, &goku_data[0], type_size);
-	memcpy(&uniform.m_initial_data[0] + 3 * type_size, &gohan_data[0], type_size);
 
 	/* XFB data */
-	xfb.m_initial_data.resize(4 * type_size_pck);
-	xfb.m_expected_data.resize(4 * type_size_pck);
+	xfb.m_initial_data.resize(3 * type_size_pck);
+	xfb.m_expected_data.resize(3 * type_size_pck);
 
-	for (GLuint i = 0; i < 4 * type_size_pck; ++i)
+	for (GLuint i = 0; i < 3 * type_size_pck; ++i)
 	{
 		xfb.m_initial_data[i]  = (glw::GLubyte)i;
 		xfb.m_expected_data[i] = (glw::GLubyte)i;
@@ -22748,10 +22788,9 @@ void XFBOverrideQualifiersWithAPITest::getBufferDescriptors(glw::GLuint				  tes
 void XFBOverrideQualifiersWithAPITest::getCapturedVaryings(glw::GLuint /* test_case_index */,
 														   Utils::Program::NameVector& captured_varyings)
 {
-	captured_varyings.resize(2);
+	captured_varyings.resize(1);
 
 	captured_varyings[0] = "trunks";
-	captured_varyings[1] = "gohan";
 }
 
 /** Get body of main function for given shader stage
@@ -22768,10 +22807,9 @@ void XFBOverrideQualifiersWithAPITest::getShaderBody(GLuint test_case_index, Uti
 
 	static const GLchar* gs = "    vegeta = uni_vegeta;\n"
 							  "    trunks = uni_trunks;\n"
-							  "    goku   = uni_goku;\n"
-							  "    gohan  = uni_gohan;\n";
+							  "    goku   = uni_goku;\n";
 	static const GLchar* fs = "    fs_out = vec4(0);\n"
-							  "    if (TYPE(1) == gohan + goku + trunks + vegeta)\n"
+							  "    if (TYPE(1) == goku + trunks + vegeta)\n"
 							  "    {\n"
 							  "        fs_out = vec4(1);\n"
 							  "    }\n";
@@ -22813,7 +22851,6 @@ void XFBOverrideQualifiersWithAPITest::getShaderInterface(GLuint test_case_index
 							  "layout (xfb_offset = 2 * sizeof_type) flat out TYPE vegeta;\n"
 							  "                                      flat out TYPE trunks;\n"
 							  "layout (xfb_offset = 0)               flat out TYPE goku;\n"
-							  "                                      flat out TYPE gohan;\n"
 							  "\n"
 							  /*
 		 There is no packing qualifier for uniform block gs_block, according to spec, it should be "shared" by default,
@@ -22828,12 +22865,10 @@ void XFBOverrideQualifiersWithAPITest::getShaderInterface(GLuint test_case_index
 							  "    TYPE uni_vegeta;\n"
 							  "    TYPE uni_trunks;\n"
 							  "    TYPE uni_goku;\n"
-							  "    TYPE uni_gohan;\n"
 							  "};\n";
 	static const GLchar* fs = "flat in TYPE vegeta;\n"
 							  "flat in TYPE trunks;\n"
 							  "flat in TYPE goku;\n"
-							  "flat in TYPE gohan;\n"
 							  "\n"
 							  "out vec4 fs_out;\n";
 
@@ -22899,7 +22934,7 @@ bool XFBOverrideQualifiersWithAPITest::inspectProgram(GLuint test_case_index, Ut
 {
 	GLint			   stride	= 0;
 	const Utils::Type& type		 = getType(test_case_index);
-	const GLuint	   type_size = type.GetSize();
+	const GLuint	   type_size = type.GetSize(false);
 
 	program.GetResource(GL_TRANSFORM_FEEDBACK_BUFFER, 0 /* index */, GL_TRANSFORM_FEEDBACK_BUFFER_STRIDE,
 						1 /* buf_size */, &stride);
@@ -23030,7 +23065,7 @@ void XFBVertexStreamsTest::getShaderBody(GLuint /* test_case_index */, Utils::Sh
 							  "    EmitStreamVertex(2);\n"
 							  "    EndStreamPrimitive(2);\n";
 
-	static const GLchar* fs = "    fs_out = gohan + goku + goten + picolo + vegeta + bulma;\n";
+	static const GLchar* fs = "    fs_out = gohan + goku + goten;\n";
 
 	const GLchar* assignments = "";
 	switch (stage)
@@ -23082,9 +23117,6 @@ void XFBVertexStreamsTest::getShaderInterface(GLuint /* test_case_index */, Util
 	static const GLchar* fs = "in vec4 goku;\n"
 							  "in vec4 gohan;\n"
 							  "in vec4 goten;\n"
-							  "in vec4 picolo;\n"
-							  "in vec4 vegeta;\n"
-							  "in vec4 bulma;\n"
 							  "\n"
 							  "out vec4 fs_out;\n";
 
@@ -24103,12 +24135,12 @@ std::string XFBGlobalBufferTest::getShaderSource(GLuint test_case_index, Utils::
 		"flat in TYPE chichi;\n"
 		"flat in TYPE bulma;\n"
 		"in Vegeta {\n"
-		"    TYPE trunk;\n"
-		"    TYPE bra;\n"
+		"    flat TYPE trunk;\n"
+		"    flat TYPE bra;\n"
 		"} vegeta;\n"
 		"in Goku {\n"
-		"    TYPE gohan;\n"
-		"    TYPE goten;\n"
+		"    flat TYPE gohan;\n"
+		"    flat TYPE goten;\n"
 		"} goku;\n"
 		"\n"
 		"out vec4 fs_out;\n"
@@ -24207,12 +24239,12 @@ std::string XFBGlobalBufferTest::getShaderSource(GLuint test_case_index, Utils::
 								"layout (                xfb_offset = 2 * type_size) flat out TYPE chichi;\n"
 								"layout (xfb_buffer = 1, xfb_offset = 0)             flat out TYPE bulma;\n"
 								"layout (xfb_buffer = 1, xfb_offset = 1 * type_size) out Vegeta {\n"
-								"    TYPE trunk;\n"
-								"    TYPE bra;\n"
+								"    flat TYPE trunk;\n"
+								"    flat TYPE bra;\n"
 								"} vegeta;\n"
 								"layout (                xfb_offset = 0)             out Goku {\n"
-								"    TYPE gohan;\n"
-								"    TYPE goten;\n"
+								"    flat TYPE gohan;\n"
+								"    flat TYPE goten;\n"
 								"} goku;\n"
 								"\n"
 								// Uniform block must be declared with std140, otherwise each block member is not packed
@@ -24388,7 +24420,7 @@ XFBStrideTest::XFBStrideTest(deqp::Context& context)
  *
  * @return true
  **/
-bool XFBStrideTest::executeDrawCall(GLuint test_case_index)
+bool XFBStrideTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl				= m_context.getRenderContext().getFunctions();
 	GLenum			 primitive_type = GL_PATCHES;
@@ -25767,7 +25799,7 @@ XFBCaptureInactiveOutputVariableTest::XFBCaptureInactiveOutputVariableTest(deqp:
  *
  * @return true
  **/
-bool XFBCaptureInactiveOutputVariableTest::executeDrawCall(GLuint test_case_index)
+bool XFBCaptureInactiveOutputVariableTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl				= m_context.getRenderContext().getFunctions();
 	GLenum			 primitive_type = GL_PATCHES;
@@ -26028,7 +26060,7 @@ std::string XFBCaptureInactiveOutputVariableTest::getTestCaseName(glw::GLuint te
 		name = "vertex";
 		break;
 	case TEST_TES:
-		name = "tesselation evaluation";
+		name = "tessellation evaluation";
 		break;
 	case TEST_GS:
 		name = "geometry";
@@ -26136,7 +26168,7 @@ XFBCaptureInactiveOutputComponentTest::XFBCaptureInactiveOutputComponentTest(deq
  *
  * @return true
  **/
-bool XFBCaptureInactiveOutputComponentTest::executeDrawCall(GLuint test_case_index)
+bool XFBCaptureInactiveOutputComponentTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl				= m_context.getRenderContext().getFunctions();
 	GLenum			 primitive_type = GL_PATCHES;
@@ -26462,7 +26494,7 @@ std::string XFBCaptureInactiveOutputComponentTest::getTestCaseName(glw::GLuint t
 		name = "vertex";
 		break;
 	case TEST_TES:
-		name = "tesselation evaluation";
+		name = "tessellation evaluation";
 		break;
 	case TEST_GS:
 		name = "geometry";
@@ -26574,7 +26606,7 @@ XFBCaptureInactiveOutputBlockMemberTest::XFBCaptureInactiveOutputBlockMemberTest
  *
  * @return true
  **/
-bool XFBCaptureInactiveOutputBlockMemberTest::executeDrawCall(GLuint test_case_index)
+bool XFBCaptureInactiveOutputBlockMemberTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl				= m_context.getRenderContext().getFunctions();
 	GLenum			 primitive_type = GL_PATCHES;
@@ -26840,7 +26872,7 @@ std::string XFBCaptureInactiveOutputBlockMemberTest::getTestCaseName(glw::GLuint
 		name = "vertex";
 		break;
 	case TEST_TES:
-		name = "tesselation evaluation";
+		name = "tessellation evaluation";
 		break;
 	case TEST_GS:
 		name = "geometry";
@@ -26920,7 +26952,7 @@ XFBCaptureStructTest::XFBCaptureStructTest(deqp::Context& context)
  *
  * @return true
  **/
-bool XFBCaptureStructTest::executeDrawCall(GLuint test_case_index)
+bool XFBCaptureStructTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
 {
 	const Functions& gl				= m_context.getRenderContext().getFunctions();
 	GLenum			 primitive_type = GL_PATCHES;
@@ -27190,7 +27222,7 @@ std::string XFBCaptureStructTest::getTestCaseName(glw::GLuint test_case_index)
 		name = "vertex";
 		break;
 	case TEST_TES:
-		name = "tesselation evaluation";
+		name = "tessellation evaluation";
 		break;
 	case TEST_GS:
 		name = "geometry";

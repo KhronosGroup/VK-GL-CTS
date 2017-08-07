@@ -3723,11 +3723,16 @@ tcu::TestNode::IterateResult DispatchBindTexturesTest::iterate()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "DebugMessageCallback");
 #endif /* DEBUG_ENBALE_MESSAGE_CALLBACK */
 
-	GLint  max_textures = 0;
-	GLuint sum			= 0;
+	GLint  max_textures		 = 0;
+	GLint  max_image_samples = 0;
+	GLuint sum				 = 0;
 
 	/* Get max */
 	gl.getIntegerv(GL_MAX_COMPUTE_TEXTURE_IMAGE_UNITS, &max_textures);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+	/* Check if load/store from multisampled images is supported */
+	gl.getIntegerv(GL_MAX_IMAGE_SAMPLES, &max_image_samples);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
 
 	/* Textures */
@@ -3742,7 +3747,9 @@ tcu::TestNode::IterateResult DispatchBindTexturesTest::iterate()
 	/* Prepare */
 	for (GLint i = 0; i < max_textures; ++i)
 	{
-		const GLenum target = getTarget(i);
+		GLenum target = getTarget(i);
+		if (target >= GL_TEXTURE_2D_MULTISAMPLE && max_image_samples == 0)
+			target = GL_TEXTURE_2D;
 
 		GLuint data[width * height * depth];
 
@@ -3776,6 +3783,8 @@ tcu::TestNode::IterateResult DispatchBindTexturesTest::iterate()
 			Texture::Bind(gl, texture[i].m_id, target);
 			Texture::SubImage(gl, target, 0 /* level */, 0 /* x */, 0 /* y */, 0 /* z */, width, height, depth,
 							  GL_RED_INTEGER, GL_UNSIGNED_INT, &data);
+			gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			break;
 		}
 
@@ -3795,9 +3804,10 @@ tcu::TestNode::IterateResult DispatchBindTexturesTest::iterate()
 	ssb_buffer.BindBase(0);
 
 	/* Prepare program */
-	size_t		sam_position = 0;
-	size_t		sum_position = 0;
-	std::string cs_source	= cs;
+	size_t		sam_position	 = 0;
+	size_t		sum_position	 = 0;
+	std::string cs_source		 = cs;
+	GLint		max_target_index = (GLint)(max_image_samples > 0 ? s_n_texture_tragets : s_n_texture_tragets - 2);
 	for (GLint i = 0; i < max_textures; ++i)
 	{
 		size_t sam_start_position = sam_position;
@@ -3811,7 +3821,7 @@ tcu::TestNode::IterateResult DispatchBindTexturesTest::iterate()
 		const GLchar* sampler_type  = 0;
 		const GLchar* sampling_code = 0;
 
-		if (i < (GLint)s_n_texture_tragets)
+		if (i < max_target_index)
 		{
 			coords		  = coordinates[i];
 			sampler_type  = samplers[i];
@@ -3964,11 +3974,16 @@ tcu::TestNode::IterateResult DispatchBindImageTexturesTest::iterate()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "DebugMessageCallback");
 #endif /* DEBUG_ENBALE_MESSAGE_CALLBACK */
 
-	GLint  max_textures = 0;
-	GLuint sum			= 0;
+	GLint  max_textures		 = 0;
+	GLint  max_image_samples = 0;
+	GLuint sum				 = 0;
 
 	/* Get max */
-	gl.getIntegerv(GL_MAX_IMAGE_UNITS, &max_textures);
+	gl.getIntegerv(GL_MAX_COMPUTE_IMAGE_UNIFORMS, &max_textures);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+	/* Check if load/store from multisampled images is supported */
+	gl.getIntegerv(GL_MAX_IMAGE_SAMPLES, &max_image_samples);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
 
 	/* Textures */
@@ -3983,7 +3998,9 @@ tcu::TestNode::IterateResult DispatchBindImageTexturesTest::iterate()
 	/* Prepare */
 	for (GLint i = 0; i < max_textures; ++i)
 	{
-		const GLenum target = getTarget(i);
+		GLenum target = getTarget(i);
+		if (target >= GL_TEXTURE_2D_MULTISAMPLE && max_image_samples == 0)
+			target = GL_TEXTURE_2D;
 
 		GLuint data[width * height * depth];
 
@@ -4036,9 +4053,10 @@ tcu::TestNode::IterateResult DispatchBindImageTexturesTest::iterate()
 	ssb_buffer.BindBase(0);
 
 	/* Prepare program */
-	size_t		load_position = 0;
-	size_t		sum_position  = 0;
-	std::string cs_source	 = cs;
+	size_t		load_position	= 0;
+	size_t		sum_position	 = 0;
+	std::string cs_source		 = cs;
+	GLint		max_target_index = (GLint)(max_image_samples > 0 ? s_n_texture_tragets : s_n_texture_tragets - 2);
 	for (GLint i = 0; i < max_textures; ++i)
 	{
 		size_t load_start_position = load_position;
@@ -4052,7 +4070,7 @@ tcu::TestNode::IterateResult DispatchBindImageTexturesTest::iterate()
 		const GLchar* image_type   = 0;
 		const GLchar* loading_code = 0;
 
-		if (i < (GLint)s_n_texture_tragets)
+		if (i < max_target_index)
 		{
 			coords		 = coordinates[i];
 			image_type   = images[i];

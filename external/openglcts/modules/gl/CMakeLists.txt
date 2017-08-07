@@ -54,12 +54,12 @@ set(GLCTS_GL_SRCS
 	gl4cMapBufferAlignmentTests.hpp
 	gl4cMultiBindTests.cpp
 	gl4cMultiBindTests.hpp
-	gl4cRobustnessTests.cpp
-	gl4cRobustnessTests.hpp
 	gl4cShaderAtomicCountersTests.cpp
 	gl4cShaderAtomicCountersTests.hpp
 	gl4cShaderGroupVoteTests.cpp
 	gl4cShaderGroupVoteTests.hpp
+	gl4cShaderDrawParametersTests.cpp
+	gl4cShaderDrawParametersTests.hpp
 	gl4cTextureGatherTests.hpp
 	gl4cTextureGatherTests.cpp
 	gl4cProgramInterfaceQueryTests.hpp
@@ -82,6 +82,8 @@ set(GLCTS_GL_SRCS
 	gl4cShaderSubroutineTests.hpp
 	gl4cShaderImageLoadStoreTests.cpp
 	gl4cShaderImageLoadStoreTests.hpp
+	gl4cShaderViewportLayerArrayTests.cpp
+	gl4cShaderViewportLayerArrayTests.hpp
 	gl4cShadingLanguage420PackTests.cpp
 	gl4cShadingLanguage420PackTests.hpp
 	gl4cStencilTexturingTests.cpp
@@ -120,6 +122,8 @@ set(GLCTS_GL_SRCS
 	gl4cPostDepthCoverageTests.hpp
 	gl4cIndirectParametersTests.cpp
 	gl4cIndirectParametersTests.hpp
+	gl4cLimitsTests.cpp
+	gl4cLimitsTests.hpp
 	)
 
 set(GLCTS_GL_LIBS

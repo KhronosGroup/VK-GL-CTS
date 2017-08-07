@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 7ac9c857db1e3a6065485e4e2144151f48a4f1c4.
+ * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
  */
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveShaderProgramFunc)								(GLuint pipeline, GLuint program);
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveTextureFunc)										(GLenum texture);
@@ -547,6 +547,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glPointParameterivFunc)									(GLenu
 typedef GLW_APICALL void			(GLW_APIENTRY* glPointSizeFunc)											(GLfloat size);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPolygonModeFunc)										(GLenum face, GLenum mode);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPolygonOffsetFunc)										(GLfloat factor, GLfloat units);
+typedef GLW_APICALL void			(GLW_APIENTRY* glPolygonOffsetClampEXTFunc)								(GLfloat factor, GLfloat units, GLfloat clamp);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPopDebugGroupFunc)										(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPopGroupMarkerEXTFunc)									(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPrimitiveBoundingBoxFunc)								(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);

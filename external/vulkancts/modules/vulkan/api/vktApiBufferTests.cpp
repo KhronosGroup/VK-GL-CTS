@@ -23,7 +23,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktApiBufferTests.hpp"
-
 #include "gluVarType.hpp"
 #include "deStringUtil.hpp"
 #include "tcuTestLog.hpp"
@@ -42,6 +41,14 @@ namespace api
 namespace
 {
 using namespace vk;
+
+enum AllocationKind
+{
+	ALLOCATION_KIND_SUBALLOCATED = 0,
+	ALLOCATION_KIND_DEDICATED,
+
+	ALLOCATION_KIND_LAST,
+};
 
 struct BufferCaseParameters
 {
@@ -300,11 +307,11 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest			(VkDeviceSize				
 		buffer = createBuffer(vk, vkDevice, &bufferParams);
 		vk.getBufferMemoryRequirements(vkDevice, *buffer, &memReqs);
 
-		const deUint32		heapTypeIndex	= (deUint32)deCtz32(memReqs.memoryTypeBits);
-		const VkMemoryType	memoryType		= memoryProperties.memoryTypes[heapTypeIndex];
-		const VkMemoryHeap	memoryHeap		= memoryProperties.memoryHeaps[memoryType.heapIndex];
-		const VkDeviceSize	maxBufferSize	= deAlign64(memoryHeap.size >> 1, memReqs.alignment);
-		const deUint32		shrinkBits		= 4;	// number of bits to shift when reducing the size with each iteration
+		const deUint32					heapTypeIndex					= (deUint32)deCtz32(memReqs.memoryTypeBits);
+		const VkMemoryType				memoryType						= memoryProperties.memoryTypes[heapTypeIndex];
+		const VkMemoryHeap				memoryHeap						= memoryProperties.memoryHeaps[memoryType.heapIndex];
+		const VkDeviceSize				maxBufferSize					= deAlign64(memoryHeap.size >> 1u, memReqs.alignment);
+		const deUint32					shrinkBits						= 4u;	// number of bits to shift when reducing the size with each iteration
 
 		size = std::min(size, maxBufferSize);
 
@@ -606,11 +613,47 @@ tcu::TestStatus							DedicatedAllocationBufferTestInstance::bufferCreateAndAllo
 	return tcu::TestStatus::pass("Pass");
 }
 
-} // anonymous
-
- tcu::TestCaseGroup* createBufferTests									(tcu::TestContext&			testCtx)
+std::string getBufferUsageFlagsName (const VkBufferUsageFlags flags)
 {
-	const VkBufferUsageFlags			bufferUsageModes[]				=
+	switch (flags)
+	{
+		case VK_BUFFER_USAGE_TRANSFER_SRC_BIT:			return "transfer_src";
+		case VK_BUFFER_USAGE_TRANSFER_DST_BIT:			return "transfer_dst";
+		case VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT:	return "uniform_texel";
+		case VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT:	return "storage_texel";
+		case VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT:		return "uniform";
+		case VK_BUFFER_USAGE_STORAGE_BUFFER_BIT:		return "storage";
+		case VK_BUFFER_USAGE_INDEX_BUFFER_BIT:			return "index";
+		case VK_BUFFER_USAGE_VERTEX_BUFFER_BIT:			return "vertex";
+		case VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT:		return "indirect";
+		default:
+			DE_FATAL("Unknown buffer usage flag");
+			return "";
+	}
+}
+
+std::string getBufferCreateFlagsName (const VkBufferCreateFlags flags)
+{
+	std::ostringstream name;
+
+	if (flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT)
+		name << "_binding";
+	if (flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT)
+		name << "_residency";
+	if (flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)
+		name << "_aliased";
+	if (flags == 0u)
+		name << "_zero";
+
+	DE_ASSERT(!name.str().empty());
+
+	return name.str().substr(1);
+}
+
+// Create all VkBufferUsageFlags combinations recursively
+void createBufferUsageCases (tcu::TestCaseGroup& testGroup, const deUint32 firstNdx, const deUint32 bufferUsageFlags, const AllocationKind allocationKind)
+{
+	const VkBufferUsageFlags			bufferUsageModes[]	=
 	{
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -623,58 +666,83 @@ tcu::TestStatus							DedicatedAllocationBufferTestInstance::bufferCreateAndAllo
 		VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT
 	};
 
-	// \note SPARSE_RESIDENCY and SPARSE_ALIASED have to be used together with the SPARSE_BINDING flag.
-	const VkBufferCreateFlags			bufferCreateFlags[]				=
+	tcu::TestContext&					testCtx				= testGroup.getTestContext();
+
+	// Add test groups
+	for (deUint32 currentNdx = firstNdx; currentNdx < DE_LENGTH_OF_ARRAY(bufferUsageModes); currentNdx++)
 	{
-		0,
-		VK_BUFFER_CREATE_SPARSE_BINDING_BIT,
-		VK_BUFFER_CREATE_SPARSE_BINDING_BIT |	VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,
-		VK_BUFFER_CREATE_SPARSE_BINDING_BIT |											VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
-		VK_BUFFER_CREATE_SPARSE_BINDING_BIT |	VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT |	VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
-	};
+		const deUint32					newBufferUsageFlags	= bufferUsageFlags | bufferUsageModes[currentNdx];
+		const std::string				newGroupName		= getBufferUsageFlagsName(bufferUsageModes[currentNdx]);
+		de::MovePtr<tcu::TestCaseGroup>	newTestGroup		(new tcu::TestCaseGroup(testCtx, newGroupName.c_str(), ""));
 
-	de::MovePtr<tcu::TestCaseGroup>		buffersTests					(new tcu::TestCaseGroup(testCtx, "buffer", "Buffer Tests"));
-
-	de::MovePtr<tcu::TestCaseGroup>		regularAllocation				(new tcu::TestCaseGroup(testCtx, "suballocation", "Regular suballocation of memory."));
-
-	const deUint32 maximumValueOfBufferUsageFlags = (1u << (DE_LENGTH_OF_ARRAY(bufferUsageModes) - 1)) - 1u;
-
-	for (deUint32 bufferCreateFlagsNdx = 0u; bufferCreateFlagsNdx < DE_LENGTH_OF_ARRAY(bufferCreateFlags); ++bufferCreateFlagsNdx)
-	for (deUint32 combinedBufferUsageFlags = 1u; combinedBufferUsageFlags <= maximumValueOfBufferUsageFlags; ++combinedBufferUsageFlags)
-	{
-		const BufferCaseParameters		testParams						=
-		{
-			combinedBufferUsageFlags,
-			bufferCreateFlags[bufferCreateFlagsNdx],
-			vk::VK_SHARING_MODE_EXCLUSIVE
-		};
-		std::ostringstream				testName;
-		std::ostringstream				testDescription;
-		testName << "create_buffer_" << combinedBufferUsageFlags << "_" << testParams.flags;
-		testDescription << "vkCreateBuffer test: suballocation of " << combinedBufferUsageFlags << " " << testParams.flags;
-		regularAllocation->addChild(new BuffersTestCase(testCtx, testName.str(), testDescription.str(), testParams));
+		createBufferUsageCases(*newTestGroup, currentNdx + 1u, newBufferUsageFlags, allocationKind);
+		testGroup.addChild(newTestGroup.release());
 	}
 
-	buffersTests->addChild(regularAllocation.release());
-
-	de::MovePtr<tcu::TestCaseGroup>		dedicatedAllocation				(new tcu::TestCaseGroup(testCtx, "dedicated_alloc", "Dedicated allocation of memory."));
-
-	for (deUint32 combinedBufferUsageFlags = 1u; combinedBufferUsageFlags <= maximumValueOfBufferUsageFlags; ++combinedBufferUsageFlags)
+	// Add test cases
+	if (bufferUsageFlags != 0u)
 	{
-		const BufferCaseParameters		testParams						=
+		// \note SPARSE_RESIDENCY and SPARSE_ALIASED have to be used together with the SPARSE_BINDING flag.
+		const VkBufferCreateFlags		bufferCreateFlags[]		=
 		{
-			combinedBufferUsageFlags,
-			bufferCreateFlags[0], // dedicated allocation does not support sparse feature
-			vk::VK_SHARING_MODE_EXCLUSIVE
+			0,
+			VK_BUFFER_CREATE_SPARSE_BINDING_BIT,
+			VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,
+			VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
+			VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
 		};
-		std::ostringstream				testName;
-		std::ostringstream				testDescription;
-		testName << "create_buffer_" << combinedBufferUsageFlags << "_" << testParams.flags;
-		testDescription << "vkCreateBuffer test: dedicated alloc. of " << combinedBufferUsageFlags << " " << testParams.flags;
-		dedicatedAllocation->addChild(new DedicatedAllocationBuffersTestCase(testCtx, testName.str(), testDescription.str(), testParams));
+
+		// Dedicated allocation does not support sparse feature
+		const int						numBufferCreateFlags	= (allocationKind == ALLOCATION_KIND_SUBALLOCATED) ? DE_LENGTH_OF_ARRAY(bufferCreateFlags) : 1;
+
+		de::MovePtr<tcu::TestCaseGroup>	newTestGroup			(new tcu::TestCaseGroup(testCtx, "create", ""));
+
+		for (int bufferCreateFlagsNdx = 0; bufferCreateFlagsNdx < numBufferCreateFlags; bufferCreateFlagsNdx++)
+		{
+			const BufferCaseParameters	testParams	=
+			{
+				bufferUsageFlags,
+				bufferCreateFlags[bufferCreateFlagsNdx],
+				VK_SHARING_MODE_EXCLUSIVE
+			};
+
+			const std::string			allocStr	= (allocationKind == ALLOCATION_KIND_SUBALLOCATED) ? "suballocation of " : "dedicated alloc. of ";
+			const std::string			caseName	= getBufferCreateFlagsName(bufferCreateFlags[bufferCreateFlagsNdx]);
+			const std::string			caseDesc	= "vkCreateBuffer test: " + allocStr + de::toString(bufferUsageFlags) + " " + de::toString(testParams.flags);
+
+			switch (allocationKind)
+			{
+				case ALLOCATION_KIND_SUBALLOCATED:
+					newTestGroup->addChild(new BuffersTestCase(testCtx, caseName.c_str(), caseDesc.c_str(), testParams));
+					break;
+				case ALLOCATION_KIND_DEDICATED:
+					newTestGroup->addChild(new DedicatedAllocationBuffersTestCase(testCtx, caseName.c_str(), caseDesc.c_str(), testParams));
+					break;
+				default:
+					DE_FATAL("Unknown test type");
+			}
+		}
+		testGroup.addChild(newTestGroup.release());
+	}
+}
+
+} // anonymous
+
+ tcu::TestCaseGroup* createBufferTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> buffersTests (new tcu::TestCaseGroup(testCtx, "buffer", "Buffer Tests"));
+
+	{
+		de::MovePtr<tcu::TestCaseGroup>	regularAllocation	(new tcu::TestCaseGroup(testCtx, "suballocation", "Regular suballocation of memory."));
+		createBufferUsageCases(*regularAllocation, 0u, 0u, ALLOCATION_KIND_SUBALLOCATED);
+		buffersTests->addChild(regularAllocation.release());
 	}
 
-	buffersTests->addChild(dedicatedAllocation.release());
+	{
+		de::MovePtr<tcu::TestCaseGroup>	dedicatedAllocation	(new tcu::TestCaseGroup(testCtx, "dedicated_alloc", "Dedicated allocation of memory."));
+		createBufferUsageCases(*dedicatedAllocation, 0u, 0u, ALLOCATION_KIND_DEDICATED);
+		buffersTests->addChild(dedicatedAllocation.release());
+	}
 
 	return buffersTests.release();
 }

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 7ac9c857db1e3a6065485e4e2144151f48a4f1c4.
+ * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
  */
 #define			glActiveShaderProgram								glwActiveShaderProgram
 #define			glActiveTexture										glwActiveTexture
@@ -547,6 +547,7 @@
 #define			glPointSize											glwPointSize
 #define			glPolygonMode										glwPolygonMode
 #define			glPolygonOffset										glwPolygonOffset
+#define			glPolygonOffsetClampEXT								glwPolygonOffsetClampEXT
 #define			glPopDebugGroup										glwPopDebugGroup
 #define			glPopGroupMarkerEXT									glwPopGroupMarkerEXT
 #define			glPrimitiveBoundingBox								glwPrimitiveBoundingBox
@@ -1435,6 +1436,7 @@ void			glwPointParameteriv									(GLenum pname, const GLint *params);
 void			glwPointSize										(GLfloat size);
 void			glwPolygonMode										(GLenum face, GLenum mode);
 void			glwPolygonOffset									(GLfloat factor, GLfloat units);
+void			glwPolygonOffsetClampEXT							(GLfloat factor, GLfloat units, GLfloat clamp);
 void			glwPopDebugGroup									();
 void			glwPopGroupMarkerEXT								();
 void			glwPrimitiveBoundingBox								(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
