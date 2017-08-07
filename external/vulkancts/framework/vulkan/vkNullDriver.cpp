@@ -28,6 +28,10 @@
 #include "tcuFunctionLibrary.hpp"
 #include "deMemory.h"
 
+#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+#	include <android/hardware_buffer.h>
+#endif
+
 #include <stdexcept>
 #include <algorithm>
 
@@ -119,11 +123,17 @@ void freeHandle (Handle handle, const VkAllocationCallbacks* pAllocator)
 		delete obj;
 }
 
-template<typename Object, typename Handle, typename Parent, typename CreateInfo>
+template<typename Object, typename BaseObject, typename Handle, typename Parent, typename CreateInfo>
 Handle allocateNonDispHandle (Parent parent, const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	Object* const	obj		= allocateHandle<Object, Object*>(parent, pCreateInfo, pAllocator);
-	return Handle((deUint64)(deUintptr)obj);
+	return Handle((deUint64)(deUintptr)static_cast<BaseObject*>(obj));
+}
+
+template<typename Object, typename Handle, typename Parent, typename CreateInfo>
+Handle allocateNonDispHandle (Parent parent, const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	return allocateNonDispHandle<Object, Object, Handle, Parent, CreateInfo>(parent, pCreateInfo, pAllocator);
 }
 
 template<typename Object, typename Handle>
@@ -240,6 +250,62 @@ public:
 	SamplerYcbcrConversionKHR (VkDevice, const VkSamplerYcbcrConversionCreateInfoKHR*) {}
 };
 
+class Buffer
+{
+public:
+						Buffer		(VkDevice, const VkBufferCreateInfo* pCreateInfo)
+		: m_size (pCreateInfo->size)
+	{
+	}
+
+	VkDeviceSize		getSize		(void) const { return m_size;	}
+
+private:
+	const VkDeviceSize	m_size;
+};
+
+VkExternalMemoryHandleTypeFlagsKHR getExternalHandleTypes (const VkImageCreateInfo* pCreateInfo)
+{
+	const VkExternalMemoryImageCreateInfoKHR* const	externalInfo	= findStructure<VkExternalMemoryImageCreateInfoKHR>	(pCreateInfo->pNext);
+
+	return externalInfo ? externalInfo->handleTypes : 0u;
+}
+
+class Image
+{
+public:
+												Image					(VkDevice, const VkImageCreateInfo* pCreateInfo)
+		: m_imageType			(pCreateInfo->imageType)
+		, m_format				(pCreateInfo->format)
+		, m_extent				(pCreateInfo->extent)
+		, m_arrayLayers			(pCreateInfo->arrayLayers)
+		, m_samples				(pCreateInfo->samples)
+		, m_usage				(pCreateInfo->usage)
+		, m_flags				(pCreateInfo->flags)
+		, m_externalHandleTypes	(::vk::getExternalHandleTypes(pCreateInfo))
+	{
+	}
+
+	VkImageType									getImageType			(void) const { return m_imageType;				}
+	VkFormat									getFormat				(void) const { return m_format;					}
+	VkExtent3D									getExtent				(void) const { return m_extent;					}
+	uint32_t									getArrayLayers			(void) const { return m_arrayLayers;			}
+	VkSampleCountFlagBits						getSamples				(void) const { return m_samples;				}
+	VkImageUsageFlags							getUsage				(void) const { return m_usage;					}
+	VkImageCreateFlags							getFlags				(void) const { return m_flags;					}
+	VkExternalMemoryHandleTypeFlagsKHR			getExternalHandleTypes	(void) const { return m_externalHandleTypes;	}
+
+private:
+	const VkImageType							m_imageType;
+	const VkFormat								m_format;
+	const VkExtent3D							m_extent;
+	const uint32_t								m_arrayLayers;
+	const VkSampleCountFlagBits					m_samples;
+	const VkImageUsageFlags						m_usage;
+	const VkImageCreateFlags					m_flags;
+	const VkExternalMemoryHandleTypeFlagsKHR	m_externalHandleTypes;
+};
+
 void* allocateHeap (const VkMemoryAllocateInfo* pAllocInfo)
 {
 	// \todo [2015-12-03 pyry] Alignment requirements?
@@ -263,59 +329,137 @@ void freeHeap (void* ptr)
 class DeviceMemory
 {
 public:
-						DeviceMemory	(VkDevice, const VkMemoryAllocateInfo* pAllocInfo)
-							: m_memory(allocateHeap(pAllocInfo))
-						{
-							// \todo [2016-08-03 pyry] In some cases leaving data unintialized would help valgrind analysis,
-							//						   but currently it mostly hinders it.
-							if (m_memory)
-								deMemset(m_memory, 0xcd, (size_t)pAllocInfo->allocationSize);
-						}
-						~DeviceMemory	(void)
-						{
-							freeHeap(m_memory);
-						}
+	virtual			~DeviceMemory	(void) {}
+	virtual void*	map				(void) = 0;
+	virtual void	unmap			(void) = 0;
+};
 
-	void*				getPtr			(void) const { return m_memory; }
+class PrivateDeviceMemory : public DeviceMemory
+{
+public:
+						PrivateDeviceMemory		(VkDevice, const VkMemoryAllocateInfo* pAllocInfo)
+		: m_memory(allocateHeap(pAllocInfo))
+	{
+		// \todo [2016-08-03 pyry] In some cases leaving data unintialized would help valgrind analysis,
+		//						   but currently it mostly hinders it.
+		if (m_memory)
+			deMemset(m_memory, 0xcd, (size_t)pAllocInfo->allocationSize);
+	}
+	virtual				~PrivateDeviceMemory	(void)
+	{
+		freeHeap(m_memory);
+	}
+
+	virtual void*		map						(void) /*override*/ { return m_memory; }
+	virtual void		unmap					(void) /*override*/ {}
 
 private:
 	void* const			m_memory;
 };
 
-class Buffer
+#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+AHardwareBuffer* findOrCreateHwBuffer (const VkMemoryAllocateInfo* pAllocInfo)
+{
+	const VkExportMemoryAllocateInfoKHR* const				exportInfo		= findStructure<VkExportMemoryAllocateInfoKHR>(pAllocInfo->pNext);
+	const VkImportAndroidHardwareBufferInfoANDROID* const	importInfo		= findStructure<VkImportAndroidHardwareBufferInfoANDROID>(pAllocInfo->pNext);
+	const VkMemoryDedicatedAllocateInfoKHR* const			dedicatedInfo	= findStructure<VkMemoryDedicatedAllocateInfoKHR>(pAllocInfo->pNext);
+	const Image* const										image			= dedicatedInfo && !!dedicatedInfo->image ? reinterpret_cast<const Image*>(dedicatedInfo->image.getInternal()) : DE_NULL;
+	AHardwareBuffer*										hwbuffer		= DE_NULL;
+
+	// Import and export aren't mutually exclusive; we can have both simultaneously.
+	DE_ASSERT((importInfo && importInfo->buffer.internal) ||
+		(exportInfo && (exportInfo->handleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID) != 0));
+
+	if (importInfo && importInfo->buffer.internal)
+	{
+		hwbuffer = (AHardwareBuffer*)importInfo->buffer.internal;
+		AHardwareBuffer_acquire(hwbuffer);
+	}
+	else if (exportInfo && (exportInfo->handleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID) != 0)
+	{
+		AHardwareBuffer_Desc hwbufferDesc;
+		deMemset(&hwbufferDesc, 0, sizeof(hwbufferDesc));
+
+		if (image)
+		{
+			hwbufferDesc.width	= image->getExtent().width;
+			hwbufferDesc.height	= image->getExtent().height;
+			hwbufferDesc.layers = image->getArrayLayers();
+			switch (image->getFormat())
+			{
+				case VK_FORMAT_R8G8B8A8_UNORM:
+					hwbufferDesc.format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
+					break;
+				case VK_FORMAT_R8G8B8_UNORM:
+					hwbufferDesc.format = AHARDWAREBUFFER_FORMAT_R8G8B8_UNORM;
+					break;
+				case VK_FORMAT_R5G6B5_UNORM_PACK16:
+					hwbufferDesc.format = AHARDWAREBUFFER_FORMAT_R5G6B5_UNORM;
+					break;
+				case VK_FORMAT_R16G16B16A16_SFLOAT:
+					hwbufferDesc.format = AHARDWAREBUFFER_FORMAT_R16G16B16A16_FLOAT;
+					break;
+				case VK_FORMAT_A2R10G10B10_UNORM_PACK32:
+					hwbufferDesc.format = AHARDWAREBUFFER_FORMAT_R10G10B10A2_UNORM;
+					break;
+				default:
+					DE_FATAL("Unsupported image format for Android hardware buffer export");
+					break;
+			}
+			if ((image->getUsage() & VK_IMAGE_USAGE_SAMPLED_BIT) != 0)
+				hwbufferDesc.usage |= AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
+			if ((image->getUsage() & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) != 0)
+				hwbufferDesc.usage |= AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT;
+			// if ((image->getFlags() & VK_IMAGE_CREATE_PROTECTED_BIT_KHR) != 0)
+			//	hwbufferDesc.usage |= AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT;
+
+			// Make sure we have at least one AHB GPU usage, even if the image doesn't have any
+			// Vulkan usages with corresponding to AHB GPU usages.
+			if ((image->getUsage() & (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)) == 0)
+				hwbufferDesc.usage |= AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
+		}
+		else
+		{
+			hwbufferDesc.width = static_cast<uint32_t>(pAllocInfo->allocationSize);
+			hwbufferDesc.height = 1,
+			hwbufferDesc.layers = 1,
+			hwbufferDesc.format = AHARDWAREBUFFER_FORMAT_BLOB,
+			hwbufferDesc.usage = AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER;
+		}
+
+		AHardwareBuffer_allocate(&hwbufferDesc, &hwbuffer);
+	}
+
+	return hwbuffer;
+}
+
+class ExternalDeviceMemoryAndroid : public DeviceMemory
 {
 public:
-						Buffer		(VkDevice, const VkBufferCreateInfo* pCreateInfo)
-							: m_size(pCreateInfo->size)
-						{}
+						ExternalDeviceMemoryAndroid		(VkDevice, const VkMemoryAllocateInfo* pAllocInfo)
+		: m_hwbuffer(findOrCreateHwBuffer(pAllocInfo))
+	{}
+	virtual				~ExternalDeviceMemoryAndroid	(void)
+	{
+		if (m_hwbuffer)
+			AHardwareBuffer_release(m_hwbuffer);
+	}
 
-	VkDeviceSize		getSize		(void) const { return m_size;	}
+	virtual void*		map								(void) /*override*/
+	{
+		void* p;
+		AHardwareBuffer_lock(m_hwbuffer, AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN | AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN, -1, NULL, &p);
+		return p;
+	}
 
-private:
-	const VkDeviceSize	m_size;
-};
+	virtual void		unmap							(void) /*override*/ { AHardwareBuffer_unlock(m_hwbuffer, NULL); }
 
-class Image
-{
-public:
-								Image			(VkDevice, const VkImageCreateInfo* pCreateInfo)
-									: m_imageType	(pCreateInfo->imageType)
-									, m_format		(pCreateInfo->format)
-									, m_extent		(pCreateInfo->extent)
-									, m_samples		(pCreateInfo->samples)
-								{}
-
-	VkImageType					getImageType	(void) const { return m_imageType;	}
-	VkFormat					getFormat		(void) const { return m_format;		}
-	VkExtent3D					getExtent		(void) const { return m_extent;		}
-	VkSampleCountFlagBits		getSamples		(void) const { return m_samples;	}
+	AHardwareBuffer*	getHwBuffer						(void)				{ return m_hwbuffer;						}
 
 private:
-	const VkImageType			m_imageType;
-	const VkFormat				m_format;
-	const VkExtent3D			m_extent;
-	const VkSampleCountFlagBits	m_samples;
+	AHardwareBuffer* const	m_hwbuffer;
 };
+#endif // (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
 
 class CommandBuffer
 {
@@ -559,7 +703,8 @@ VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceExtensionProperties (const char*
 {
 	static const VkExtensionProperties	s_extensions[]	=
 	{
-		{ "VK_KHR_get_physical_device_properties2", 1u }
+		{ "VK_KHR_get_physical_device_properties2", 1u },
+		{ "VK_KHR_external_memory_capabilities",	1u },
 	};
 
 	if (!pLayerName)
@@ -574,9 +719,14 @@ VKAPI_ATTR VkResult VKAPI_CALL enumerateDeviceExtensionProperties (VkPhysicalDev
 
 	static const VkExtensionProperties	s_extensions[]	=
 	{
-		{ "VK_KHR_get_memory_requirements2",	1u },
-		{ "VK_KHR_bind_memory2",				1u },
-		{ "VK_KHR_sampler_ycbcr_conversion",	1u },
+		{ "VK_KHR_bind_memory2",								1u },
+		{ "VK_KHR_external_memory",							    1u },
+		{ "VK_KHR_get_memory_requirements2",					1u },
+		{ "VK_KHR_maintenance1",								1u },
+		{ "VK_KHR_sampler_ycbcr_conversion",					1u },
+#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+		{ "VK_ANDROID_external_memory_android_hardware_buffer",	1u },
+#endif
 	};
 
 	if (!pLayerName)
@@ -961,21 +1111,22 @@ VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements (VkDevice, VkImage imageHa
 
 VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements2KHR (VkDevice device, const VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements)
 {
-	const VkImagePlaneMemoryRequirementsInfoKHR*	planeReqs	= findStructure<VkImagePlaneMemoryRequirementsInfoKHR>(pInfo->pNext);
+	const VkImagePlaneMemoryRequirementsInfoKHR* const	planeReqs		= findStructure<VkImagePlaneMemoryRequirementsInfoKHR>(pInfo->pNext);
+	VkMemoryDedicatedRequirementsKHR* const				dedicatedReqs	= findStructure<VkMemoryDedicatedRequirementsKHR>(pMemoryRequirements->pNext);
 
 	if (planeReqs)
 	{
-		const deUint32					planeNdx	= getAspectPlaneNdx(planeReqs->planeAspect);
-		const Image*					image		= reinterpret_cast<const Image*>(pInfo->image.getInternal());
-		const VkFormat					format		= image->getFormat();
-		const PlanarFormatDescription	formatDesc	= getPlanarFormatDescription(format);
+		const deUint32						planeNdx			= getAspectPlaneNdx(planeReqs->planeAspect);
+		const Image* const					image				= reinterpret_cast<const Image*>(pInfo->image.getInternal());
+		const VkFormat						format				= image->getFormat();
+		const PlanarFormatDescription		formatDesc			= getPlanarFormatDescription(format);
 
 		DE_ASSERT(de::inBounds<deUint32>(planeNdx, 0u, formatDesc.numPlanes));
 
-		const VkExtent3D				extent		= image->getExtent();
-		const deUint32					planeW		= extent.width / formatDesc.planes[planeNdx].widthDivisor;
-		const deUint32					planeH		= extent.height / formatDesc.planes[planeNdx].heightDivisor;
-		const deUint32					elementSize	= formatDesc.planes[planeNdx].elementSizeBytes;
+		const VkExtent3D					extent				= image->getExtent();
+		const deUint32						planeW				= extent.width / formatDesc.planes[planeNdx].widthDivisor;
+		const deUint32						planeH				= extent.height / formatDesc.planes[planeNdx].heightDivisor;
+		const deUint32						elementSize			= formatDesc.planes[planeNdx].elementSizeBytes;
 
 		pMemoryRequirements->memoryRequirements.memoryTypeBits	= 1u;
 		pMemoryRequirements->memoryRequirements.alignment		= 16u;
@@ -983,16 +1134,77 @@ VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements2KHR (VkDevice device, cons
 	}
 	else
 		getImageMemoryRequirements(device, pInfo->image, &pMemoryRequirements->memoryRequirements);
+
+	if (dedicatedReqs)
+	{
+		const Image* const					image				= reinterpret_cast<const Image*>(pInfo->image.getInternal());
+		VkExternalMemoryHandleTypeFlagsKHR	externalHandleTypes	= image->getExternalHandleTypes();
+
+		dedicatedReqs->prefersDedicatedAllocation		= VK_FALSE;
+
+		if ((externalHandleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID) != 0)
+			dedicatedReqs->requiresDedicatedAllocation	= VK_TRUE;
+		else
+			dedicatedReqs->requiresDedicatedAllocation	= VK_FALSE;
+	}
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL allocateMemory (VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
+{
+	const VkExportMemoryAllocateInfoKHR* const				exportInfo	= findStructure<VkExportMemoryAllocateInfoKHR>(pAllocateInfo->pNext);
+	const VkImportAndroidHardwareBufferInfoANDROID* const	importInfo	= findStructure<VkImportAndroidHardwareBufferInfoANDROID>(pAllocateInfo->pNext);
+
+	if ((exportInfo && (exportInfo->handleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID) != 0)
+		|| (importInfo && importInfo->buffer.internal))
+	{
+#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+		VK_NULL_RETURN((*pMemory = allocateNonDispHandle<ExternalDeviceMemoryAndroid, DeviceMemory, VkDeviceMemory>(device, pAllocateInfo, pAllocator)));
+#else
+		return VK_ERROR_INVALID_EXTERNAL_HANDLE_KHR;
+#endif
+	}
+	else
+	{
+		VK_NULL_RETURN((*pMemory = allocateNonDispHandle<PrivateDeviceMemory, DeviceMemory, VkDeviceMemory>(device, pAllocateInfo, pAllocator)));
+	}
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL mapMemory (VkDevice, VkDeviceMemory memHandle, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData)
 {
-	const DeviceMemory*	memory	= reinterpret_cast<DeviceMemory*>(memHandle.getInternal());
+	DeviceMemory* const	memory	= reinterpret_cast<DeviceMemory*>(memHandle.getInternal());
 
 	DE_UNREF(size);
 	DE_UNREF(flags);
 
-	*ppData = (deUint8*)memory->getPtr() + offset;
+	*ppData = (deUint8*)memory->map() + offset;
+
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL unmapMemory (VkDevice device, VkDeviceMemory memHandle)
+{
+	DeviceMemory* const	memory	= reinterpret_cast<DeviceMemory*>(memHandle.getInternal());
+
+	DE_UNREF(device);
+
+	memory->unmap();
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryAndroidHardwareBufferANDROID (VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, pt::AndroidHardwareBufferPtr* pBuffer)
+{
+	DE_UNREF(device);
+
+#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+	DeviceMemory* const					memory			= reinterpret_cast<ExternalDeviceMemoryAndroid*>(pInfo->memory.getInternal());
+	ExternalDeviceMemoryAndroid* const	androidMemory	= static_cast<ExternalDeviceMemoryAndroid*>(memory);
+
+	AHardwareBuffer* hwbuffer = androidMemory->getHwBuffer();
+	AHardwareBuffer_acquire(hwbuffer);
+	pBuffer->internal = hwbuffer;
+#else
+	DE_UNREF(pInfo);
+	DE_UNREF(pBuffer);
+#endif
 
 	return VK_SUCCESS;
 }
@@ -1080,6 +1292,87 @@ VKAPI_ATTR VkResult VKAPI_CALL createSharedSwapchainsKHR (VkDevice device, deUin
 	for (deUint32 ndx = 0; ndx < swapchainCount; ++ndx)
 	{
 		pSwapchains[ndx] = allocateNonDispHandle<SwapchainKHR, VkSwapchainKHR>(device, pCreateInfos+ndx, pAllocator);
+	}
+
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalBufferPropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfoKHR* pExternalBufferInfo, VkExternalBufferPropertiesKHR* pExternalBufferProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pExternalBufferInfo);
+
+	pExternalBufferProperties->externalMemoryProperties.externalMemoryFeatures = 0;
+	pExternalBufferProperties->externalMemoryProperties.exportFromImportedHandleTypes = 0;
+	pExternalBufferProperties->externalMemoryProperties.compatibleHandleTypes = 0;
+
+#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+	if (pExternalBufferInfo->handleType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		pExternalBufferProperties->externalMemoryProperties.externalMemoryFeatures = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR;
+		pExternalBufferProperties->externalMemoryProperties.exportFromImportedHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
+		pExternalBufferProperties->externalMemoryProperties.compatibleHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
+	}
+#endif
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceImageFormatProperties2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceImageFormatInfo2KHR* pImageFormatInfo, VkImageFormatProperties2KHR* pImageFormatProperties)
+{
+	const VkPhysicalDeviceExternalImageFormatInfoKHR* const	externalInfo		= findStructure<VkPhysicalDeviceExternalImageFormatInfoKHR>(pImageFormatInfo->pNext);
+	VkExternalImageFormatPropertiesKHR*	const				externalProperties	= findStructure<VkExternalImageFormatPropertiesKHR>(pImageFormatProperties->pNext);
+	VkResult												result;
+
+	result = getPhysicalDeviceImageFormatProperties(physicalDevice, pImageFormatInfo->format, pImageFormatInfo->type, pImageFormatInfo->tiling, pImageFormatInfo->usage, pImageFormatInfo->flags, &pImageFormatProperties->imageFormatProperties);
+	if (result != VK_SUCCESS)
+		return result;
+
+	if (externalInfo && externalInfo->handleType != 0)
+	{
+#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+		if (externalInfo->handleType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+			return VK_ERROR_FORMAT_NOT_SUPPORTED;
+
+		if (!(pImageFormatInfo->format == VK_FORMAT_R8G8B8A8_UNORM
+			  || pImageFormatInfo->format == VK_FORMAT_R8G8B8_UNORM
+			  || pImageFormatInfo->format == VK_FORMAT_R5G6B5_UNORM_PACK16
+			  || pImageFormatInfo->format == VK_FORMAT_R16G16B16A16_SFLOAT
+			  || pImageFormatInfo->format == VK_FORMAT_A2R10G10B10_UNORM_PACK32))
+		{
+			return VK_ERROR_FORMAT_NOT_SUPPORTED;
+		}
+
+		if (pImageFormatInfo->type != VK_IMAGE_TYPE_2D)
+			return VK_ERROR_FORMAT_NOT_SUPPORTED;
+
+		if ((pImageFormatInfo->usage & ~(VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+										| VK_IMAGE_USAGE_TRANSFER_DST_BIT
+										| VK_IMAGE_USAGE_SAMPLED_BIT
+										| VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT))
+			!= 0)
+		{
+			return VK_ERROR_FORMAT_NOT_SUPPORTED;
+		}
+
+		if ((pImageFormatInfo->flags & ~(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT
+										/*| VK_IMAGE_CREATE_PROTECTED_BIT_KHR*/
+										/*| VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR*/))
+			!= 0)
+		{
+			return VK_ERROR_FORMAT_NOT_SUPPORTED;
+		}
+
+		if (externalProperties)
+		{
+			externalProperties->externalMemoryProperties.externalMemoryFeatures			= VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR
+																						| VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR
+																						| VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR;
+			externalProperties->externalMemoryProperties.exportFromImportedHandleTypes	= VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
+			externalProperties->externalMemoryProperties.compatibleHandleTypes			= VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
+		}
+#else
+		DE_UNREF(externalProperties);
+		return VK_ERROR_FORMAT_NOT_SUPPORTED;
+#endif
 	}
 
 	return VK_SUCCESS;

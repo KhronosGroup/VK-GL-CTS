@@ -749,7 +749,9 @@ def writeNullDriverImpl (api, filename):
 				"vkGetBufferMemoryRequirements2KHR",
 				"vkGetImageMemoryRequirements",
 				"vkGetImageMemoryRequirements2KHR",
+				"vkAllocateMemory",
 				"vkMapMemory",
+				"vkUnmapMemory",
 				"vkAllocateDescriptorSets",
 				"vkFreeDescriptorSets",
 				"vkResetDescriptorPool",
@@ -757,6 +759,9 @@ def writeNullDriverImpl (api, filename):
 				"vkFreeCommandBuffers",
 				"vkCreateDisplayModeKHR",
 				"vkCreateSharedSwapchainsKHR",
+				"vkGetPhysicalDeviceExternalBufferPropertiesKHR",
+				"vkGetPhysicalDeviceImageFormatProperties2KHR",
+				"vkGetMemoryAndroidHardwareBufferANDROID",
 			]
 		specialFuncs		= [f for f in api.functions if f.name in specialFuncNames]
 		createFuncs			= [f for f in api.functions if (f.name[:8] == "vkCreate" or f.name == "vkAllocateMemory") and not f in specialFuncs]

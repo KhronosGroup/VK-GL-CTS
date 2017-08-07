@@ -13,12 +13,6 @@ VKAPI_ATTR VkResult VKAPI_CALL createDevice (VkPhysicalDevice physicalDevice, co
 	VK_NULL_RETURN((*pDevice = allocateHandle<Device, VkDevice>(physicalDevice, pCreateInfo, pAllocator)));
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL allocateMemory (VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pMemory = allocateNonDispHandle<DeviceMemory, VkDeviceMemory>(device, pAllocateInfo, pAllocator)));
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL createFence (VkDevice device, const VkFenceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence)
 {
 	DE_UNREF(pAllocator);
@@ -375,12 +369,6 @@ VKAPI_ATTR VkResult VKAPI_CALL deviceWaitIdle (VkDevice device)
 {
 	DE_UNREF(device);
 	return VK_SUCCESS;
-}
-
-VKAPI_ATTR void VKAPI_CALL unmapMemory (VkDevice device, VkDeviceMemory memory)
-{
-	DE_UNREF(device);
-	DE_UNREF(memory);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL flushMappedMemoryRanges (VkDevice device, deUint32 memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges)
@@ -1118,14 +1106,6 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFormatProperties2KHR (VkPhysicalDevi
 	DE_UNREF(pFormatProperties);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceImageFormatProperties2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceImageFormatInfo2KHR* pImageFormatInfo, VkImageFormatProperties2KHR* pImageFormatProperties)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(pImageFormatInfo);
-	DE_UNREF(pImageFormatProperties);
-	return VK_SUCCESS;
-}
-
 VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyProperties2KHR (VkPhysicalDevice physicalDevice, deUint32* pQueueFamilyPropertyCount, VkQueueFamilyProperties2KHR* pQueueFamilyProperties)
 {
 	DE_UNREF(physicalDevice);
@@ -1260,13 +1240,6 @@ VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugRe
 	DE_UNREF(messageCode);
 	DE_UNREF(pLayerPrefix);
 	DE_UNREF(pMessage);
-}
-
-VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalBufferPropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfoKHR* pExternalBufferInfo, VkExternalBufferPropertiesKHR* pExternalBufferProperties)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(pExternalBufferInfo);
-	DE_UNREF(pExternalBufferProperties);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandleKHR (VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle)
@@ -1451,14 +1424,6 @@ VKAPI_ATTR VkResult VKAPI_CALL getMemoryAndroidHardwareBufferPropertiesANDROID (
 	DE_UNREF(device);
 	DE_UNREF(buffer);
 	DE_UNREF(pProperties);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getMemoryAndroidHardwareBufferANDROID (VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, pt::AndroidHardwareBufferPtr* pBuffer)
-{
-	DE_UNREF(device);
-	DE_UNREF(pInfo);
-	DE_UNREF(pBuffer);
 	return VK_SUCCESS;
 }
 
