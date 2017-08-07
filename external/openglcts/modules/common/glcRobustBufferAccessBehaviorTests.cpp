@@ -17,10 +17,6 @@
  * limitations under the License.
  *
  */ /*!
- * \file
- * \brief
- */ /*-------------------------------------------------------------------*/
-/**
  * \file  glcRobustBufferAccessBehaviorTests.cpp
  * \brief Implements conformance tests for "Robust Buffer Access Behavior" functionality.
  */ /*-------------------------------------------------------------------*/
@@ -29,6 +25,7 @@
 
 #include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
+#include "gluShaderUtil.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
 #include "tcuTestLog.hpp"
@@ -1016,6 +1013,19 @@ void replaceToken(const GLchar* token, size_t& search_position, const GLchar* te
 	search_position = token_position + text_length;
 }
 
+bool isRobustBufferAccessBehaviorFeatureSupported(deqp::Context& context)
+{
+	glu::ContextType context_type = context.getRenderContext().getType();
+	if (context.getContextInfo().isExtensionSupported("GL_KHR_robust_buffer_access_behavior") ||
+		context.getContextInfo().isExtensionSupported("GL_ARB_robust_buffer_access_behavior") ||
+		contextSupports(context_type, glu::ApiType::core(4, 3)))
+	{
+		return true;
+	}
+	context.getTestContext().setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+	return false;
+}
+
 /** Constructor
  *
  * @param context Test context
@@ -1042,8 +1052,11 @@ VertexBufferObjectsTest::VertexBufferObjectsTest(deqp::Context& context, const c
  **/
 tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 {
+	if (!isRobustBufferAccessBehaviorFeatureSupported(m_context))
+		return STOP;
+
 	static const GLuint invalid_elements[] = {
-		9, 1, 2, 10, 2, 3, 11, 3, 4, 12, 4, 5, 13, 5, 6, 14, 6, 7, 15, 7, 8, 16, 8, 1,
+		9, 1, 12, 10, 2, 3, 11, 3, 4, 12, 4, 5, 13, 5, 6, 14, 6, 7, 15, 7, 8, 16, 8, 1,
 	};
 
 	static const GLuint valid_elements[] = {
@@ -1069,15 +1082,11 @@ tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 	/* GL entry points */
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Test result indicator */
-	bool test_result = true;
-
 	/* Test case objects */
 	Framebuffer framebuffer(m_context);
-	Buffer		invalid_elements_buffer(m_context);
 	Program		program(m_context);
 	Texture		texture(m_context);
-	Buffer		valid_elements_buffer(m_context);
+	Buffer		elements_buffer(m_context);
 	Buffer		vertices_buffer(m_context);
 	VertexArray vao(m_context);
 
@@ -1086,9 +1095,7 @@ tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 	VertexArray::Bind(gl, vao.m_id);
 
 	/* Buffers initialization */
-	invalid_elements_buffer.InitData(GL_ELEMENT_ARRAY_BUFFER, GL_DYNAMIC_DRAW, sizeof(invalid_elements),
-									 invalid_elements);
-	valid_elements_buffer.InitData(GL_ELEMENT_ARRAY_BUFFER, GL_DYNAMIC_DRAW, sizeof(valid_elements), valid_elements);
+	elements_buffer.InitData(GL_ELEMENT_ARRAY_BUFFER, GL_DYNAMIC_DRAW, sizeof(valid_elements), valid_elements);
 	vertices_buffer.InitData(GL_ARRAY_BUFFER, GL_DYNAMIC_DRAW, sizeof(vertices), vertices);
 
 	/* Texture initialization */
@@ -1114,7 +1121,7 @@ tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 	gl.enableVertexAttribArray(0 /* location */);
 
 	/* Binding elements/indices buffer */
-	valid_elements_buffer.Bind();
+	elements_buffer.Bind();
 
 	cleanTexture(texture.m_id);
 
@@ -1126,36 +1133,50 @@ tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid result for valid input"
 											<< tcu::TestLog::EndMessage;
 
-		test_result = false;
-	}
-
-	/* Binding elements/indices buffer */
-	invalid_elements_buffer.Bind();
-
-	cleanTexture(texture.m_id);
-
-	gl.drawElements(GL_TRIANGLES, n_vertices, GL_UNSIGNED_INT, 0 /* indices */);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElements");
-
-	if (false == verifyInvalidResults(texture.m_id))
-	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid result for invalid input"
-											<< tcu::TestLog::EndMessage;
-
-		test_result = false;
-	}
-
-	/* Set result */
-	if (true == test_result)
-	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	}
-	else
-	{
 		m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		return tcu::TestNode::STOP;
+	}
+
+	/* Generate invalid data sets */
+	const GLuint invalid_elements_offsets[] = {
+		0,				 // close fetch
+		4 * 1024,		 // near fetch (4K of the end of the object)
+		1024 * 1024,	 // medium fetch (1MB past the end of the object)
+		10 * 1024 * 1024 // high fetch (10MB beyond the end of the object)
+	};
+	const GLuint invalid_buffers_count = DE_LENGTH_OF_ARRAY(invalid_elements_offsets);
+	const GLuint item_count			   = DE_LENGTH_OF_ARRAY(invalid_elements);
+	GLuint		 invalid_elements_set[invalid_buffers_count][item_count];
+	for (GLuint buffer_index = 0; buffer_index < invalid_buffers_count; ++buffer_index)
+	{
+		for (GLuint item_index = 0; item_index < item_count; ++item_index)
+			invalid_elements_set[buffer_index][item_index] =
+				invalid_elements[item_index] + invalid_elements_offsets[buffer_index];
+	}
+
+	for (GLuint buffer_index = 0; buffer_index < invalid_buffers_count; ++buffer_index)
+	{
+		/* Create elements/indices buffer */
+		elements_buffer.InitData(GL_ELEMENT_ARRAY_BUFFER, GL_DYNAMIC_DRAW, sizeof(invalid_elements_set[buffer_index]),
+								 invalid_elements_set[buffer_index]);
+		elements_buffer.Bind();
+
+		cleanTexture(texture.m_id);
+
+		gl.drawElements(GL_TRIANGLES, n_vertices, GL_UNSIGNED_INT, 0 /* indices */);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElements");
+
+		if (false == verifyInvalidResults(texture.m_id))
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Invalid result for invalid input" << tcu::TestLog::EndMessage;
+			m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+			return tcu::TestNode::STOP;
+		}
 	}
 
 	/* Done */
+	m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	return tcu::TestNode::STOP;
 }
 
@@ -1219,15 +1240,15 @@ void VertexBufferObjectsTest::cleanTexture(glw::GLuint texture_id)
 	Texture::Bind(gl, 0, GL_TEXTURE_2D);
 }
 
-/** Verifies that texutre is filled with 1
+/** Verifies that texutre is not filled with 1
  *
  * @param texture_id Id of texture
  *
- * @return true when image is filled with 1, false otherwise
+ * @return false when image is filled with 1, true otherwise
  **/
 bool VertexBufferObjectsTest::verifyInvalidResults(glw::GLuint texture_id)
 {
-	return verifyResults(texture_id);
+	return !verifyResults(texture_id);
 }
 
 /** Verifies that texutre is filled with 1
@@ -1271,12 +1292,7 @@ bool VertexBufferObjectsTest::verifyResults(glw::GLuint texture_id)
 	for (GLuint i = 0; i < width * height; ++i)
 	{
 		if (255 != pixels[i])
-		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)pixels[i]
-												<< " at offset: " << i << tcu::TestLog::EndMessage;
-
 			return false;
-		}
 	}
 
 	return true;
@@ -1309,6 +1325,9 @@ TexelFetchTest::TexelFetchTest(deqp::Context& context, const glw::GLchar* name, 
  **/
 tcu::TestNode::IterateResult TexelFetchTest::iterate()
 {
+	if (!isRobustBufferAccessBehaviorFeatureSupported(m_context))
+		return STOP;
+
 	/* Constants */
 	static const GLuint height = 16;
 	static const GLuint width  = 16;
@@ -1319,10 +1338,16 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 	/* Test result indicator */
 	bool test_result = true;
 
+	GLuint invalid_fetch_offsets[] = {
+		16,   // near fetch
+		512,  // medium fetch
+		1008, // high fetch
+	};
+	GLuint fetch_offsets_count = sizeof(invalid_fetch_offsets) / sizeof(GLuint);
+
 	/* Iterate over all cases */
 	for (; m_test_case < LAST; m_test_case = (TEST_CASES)((GLuint)m_test_case + 1))
 	{
-		bool   case_result	= true;
 		GLint  level		  = 0;
 		GLenum texture_target = GL_TEXTURE_2D;
 
@@ -1344,13 +1369,9 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 		/* */
 		Texture		destination_texture(m_context);
 		Framebuffer framebuffer(m_context);
-		Program		invalid_program(m_context);
 		Texture		source_texture(m_context);
-		Program		valid_program(m_context);
+		Program		program(m_context);
 		VertexArray vao(m_context);
-
-		const std::string& fs_invalid = getFragmentShader(false);
-		const std::string& fs_valid   = getFragmentShader(true);
 
 		/* Prepare VAO */
 		VertexArray::Generate(gl, vao.m_id);
@@ -1403,14 +1424,13 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 		Framebuffer::AttachTexture(gl, GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, destination_texture.m_id, level,
 								   width, height);
 
-		/* Prepare programs */
-		valid_program.Init("" /* cs */, fs_valid, getGeometryShader(), "" /* tcs */, "" /* tes */, getVertexShader());
-		invalid_program.Init("" /* cs */, fs_invalid, getGeometryShader(), "" /* tcs */, "" /* tes */,
-							 getVertexShader());
+		/* Prepare valid program */
+		program.Init("" /* cs */, getFragmentShader(true), getGeometryShader(), "" /* tcs */, "" /* tes */,
+					 getVertexShader());
 
 		/* Test valid case */
 		/* Set program */
-		Program::Use(gl, valid_program.m_id);
+		Program::Use(gl, program.m_id);
 
 		/* Set texture */
 		gl.activeTexture(GL_TEXTURE0); /* location = 0 */
@@ -1457,43 +1477,35 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 		/* Verification */
 		if (false == verifyValidResults(destination_texture.m_id))
 		{
-			case_result = false;
-		}
-
-		/* Test invalid case */
-		/* Set program */
-		Program::Use(gl, invalid_program.m_id);
-
-		/* Set texture */
-		gl.activeTexture(GL_TEXTURE0); /* location = 0 */
-		GLU_EXPECT_NO_ERROR(gl.getError(), "ActiveTexture");
-		Texture::Bind(gl, source_texture.m_id, texture_target);
-		gl.uniform1i(0 /* location */, 0 /* texture unit */);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
-
-		/* Draw */
-		gl.drawArrays(GL_POINTS, 0 /* first */, 1 /* count */);
-		{
-			/* Get error from draw */
-			GLenum error = gl.getError();
-
-			/* Handle error from draw */
-			GLU_EXPECT_NO_ERROR(error, "DrawArrays");
-		}
-
-		/* Verification */
-		if (false == verifyInvalidResults(destination_texture.m_id))
-		{
-			case_result = false;
-		}
-
-		/* Set test result */
-		if (false == case_result)
-		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
-												<< " failed" << tcu::TestLog::EndMessage;
-
 			test_result = false;
+		}
+
+		/* Test invalid cases */
+		for (GLuint index = 0; index < fetch_offsets_count; ++index)
+		{
+			/* Prepare invalid program */
+			program.Init("" /* cs */, getFragmentShader(false, invalid_fetch_offsets[index]), getGeometryShader(),
+						 "" /* tcs */, "" /* tes */, getVertexShader());
+			Program::Use(gl, program.m_id);
+
+			/* Set texture */
+			gl.activeTexture(GL_TEXTURE0); /* location = 0 */
+			GLU_EXPECT_NO_ERROR(gl.getError(), "ActiveTexture");
+			Texture::Bind(gl, source_texture.m_id, texture_target);
+			gl.uniform1i(0 /* location */, 0 /* texture unit */);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
+
+			/* Draw */
+			gl.drawArrays(GL_POINTS, 0 /* first */, 1 /* count */);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "DrawArrays");
+
+			/* Verification */
+			if (false == verifyInvalidResults(destination_texture.m_id))
+			{
+				test_result = false;
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
+													<< " failed" << tcu::TestLog::EndMessage;
+			}
 		}
 	}
 
@@ -1517,7 +1529,7 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
  *
  * @return string with prepared code
  **/
-std::string TexelFetchTest::getFragmentShader(bool is_case_valid)
+std::string TexelFetchTest::getFragmentShader(bool is_case_valid, GLuint fetch_offset)
 {
 	static const GLchar* plane_0 = "    int   plane  = 0;\n";
 
@@ -1530,24 +1542,20 @@ std::string TexelFetchTest::getFragmentShader(bool is_case_valid)
 
 	static const GLchar* plane_sample_valid = "    int   plane  = gl_SampleID;\n";
 
-	static const GLchar* point_invalid = "    ivec2 point  = ivec2(gs_fs_tex_coord * 16.0) + ivec2(16, 16);\n";
-
-	static const GLchar* point_valid = "    ivec2 point  = ivec2(gs_fs_tex_coord * 16.0);\n";
-
 	static const GLchar* sampler_regular		= "sampler2D";
 	static const GLchar* sampler_regular_u		= "usampler2D";
 	static const GLchar* sampler_multisampled_u = "usampler2DMS";
 
-	static const GLchar* template_code = "#version 430 core\n"
+	static const GLchar* template_code = "VERSION"
 										 "\n"
-										 "                      in      vec2      gs_fs_tex_coord;\n"
-										 "layout (location = 0) out     TYPE      out_fs_color;\n"
-										 "layout (location = 0) uniform SAMPLER uni_texture;\n"
+										 "                      in  lowp vec2      gs_fs_tex_coord;\n"
+										 "layout (location = 0) out lowp TYPE      out_fs_color;\n"
+										 "layout (location = 0) uniform lowp SAMPLER uni_texture;\n"
 										 "\n"
 										 "void main()\n"
 										 "{\n"
 										 "PLANE\n"
-										 "POINT\n"
+										 "    ivec2 point  = ivec2(gs_fs_tex_coord * 16.0) + ivec2(OFFSET);\n"
 										 "    out_fs_color = texelFetch(uni_texture, point, plane);\n"
 										 "}\n"
 										 "\n";
@@ -1556,18 +1564,10 @@ std::string TexelFetchTest::getFragmentShader(bool is_case_valid)
 	static const GLchar* type_uvec4 = "uvec4";
 
 	const GLchar* plane   = plane_0;
-	const GLchar* point   = point_valid;
 	const GLchar* sampler = sampler_regular;
 	const GLchar* type	= type_vec4;
 
-	if ((R8 == m_test_case) || (RG8_SNORM == m_test_case) || (RGBA32F == m_test_case))
-	{
-		if (false == is_case_valid)
-		{
-			point = point_invalid;
-		}
-	}
-	else if (R32UI_MIPMAP == m_test_case)
+	if (R32UI_MIPMAP == m_test_case)
 	{
 		plane   = plane_1;
 		sampler = sampler_regular_u;
@@ -1575,6 +1575,7 @@ std::string TexelFetchTest::getFragmentShader(bool is_case_valid)
 
 		if (false == is_case_valid)
 		{
+			fetch_offset = 0;
 			plane = plane_2;
 		}
 	}
@@ -1586,16 +1587,26 @@ std::string TexelFetchTest::getFragmentShader(bool is_case_valid)
 
 		if (false == is_case_valid)
 		{
+			fetch_offset = 0;
 			plane = plane_sample_invalid;
 		}
 	}
 
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(contextType);
+	const GLchar*	version	 = glu::getGLSLVersionDeclaration(glslVersion);
+
 	size_t		position = 0;
 	std::string source   = template_code;
+	std::stringstream offset;
+	offset << fetch_offset;
+	std::string offset_str = offset.str();
+
+	replaceToken("VERSION", position, version, source);
 	replaceToken("TYPE", position, type, source);
 	replaceToken("SAMPLER", position, sampler, source);
 	replaceToken("PLANE", position, plane, source);
-	replaceToken("POINT", position, point, source);
+	replaceToken("OFFSET", position, offset_str.c_str(), source);
 
 	return source;
 }
@@ -2398,12 +2409,24 @@ ImageLoadStoreTest::ImageLoadStoreTest(deqp::Context& context, const glw::GLchar
  **/
 tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 {
+	if (!isRobustBufferAccessBehaviorFeatureSupported(m_context))
+		return STOP;
+
 	/* Constants */
 	static const GLuint height = 16;
 	static const GLuint width  = 16;
 
 	/* GL entry points */
 	const Functions& gl = m_context.getRenderContext().getFunctions();
+
+	struct FetchingOffset
+	{
+		GLuint coord_offset;
+		GLuint sample_offset;
+	};
+	const FetchingOffset fetching_offsets[] = {
+		{ 16, 4 }, { 512, 4 }, { 1024, 8 }, { 2048, 8 },
+	};
 
 	/* Test result indicator */
 	bool test_result = true;
@@ -2423,16 +2446,10 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 			continue;
 		}
 
-		/* */
+		/* Test case objects */
 		Texture destination_texture(m_context);
-		Program invalid_destination_program(m_context);
-		Program invalid_source_program(m_context);
 		Texture source_texture(m_context);
-		Program valid_program(m_context);
-
-		const std::string& cs_invalid_destination = getComputeShader(DESTINATION_INVALID);
-		const std::string& cs_invalid_source	  = getComputeShader(SOURCE_INVALID);
-		const std::string& cs_valid				  = getComputeShader(VALID);
+		Program program(m_context);
 
 		/* Prepare textures */
 		Texture::Generate(gl, destination_texture.m_id);
@@ -2465,33 +2482,31 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 		prepareTexture(false, destination_texture.m_id);
 		prepareTexture(true, source_texture.m_id);
 
-		/* Prepare programs */
-		invalid_destination_program.Init(cs_invalid_destination, "" /* fs */, "" /* gs */, "" /* tcs */, "" /* tes */,
-										 "" /* vs */);
-		invalid_source_program.Init(cs_invalid_source, "" /* fs */, "" /* gs */, "" /* tcs */, "" /* tes */,
-									"" /* vs */);
-		valid_program.Init(cs_valid, "" /* fs */, "" /* gs */, "" /* tcs */, "" /* tes */, "" /* vs */);
-
-		/* Test invalid source case */
-		/* Set program */
-		invalid_source_program.Use();
-
-		/* Set texture */
-		setTextures(destination_texture.m_id, source_texture.m_id);
-
-		/* Dispatch */
-		gl.dispatchCompute(width, height, 1 /* depth */);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
-
-		/* Verification */
-		if (false == verifyInvalidResults(destination_texture.m_id))
+		/* Test invalid source cases */
+		for (GLuint i = 0; i < DE_LENGTH_OF_ARRAY(fetching_offsets); ++i)
 		{
-			case_result = false;
+			const FetchingOffset& fo = fetching_offsets[i];
+			const std::string&	cs = getComputeShader(SOURCE_INVALID, fo.coord_offset, fo.sample_offset);
+			program.Init(cs, "", "", "", "", "");
+			program.Use();
+
+			/* Set texture */
+			setTextures(destination_texture.m_id, source_texture.m_id);
+
+			/* Dispatch */
+			gl.dispatchCompute(width, height, 1 /* depth */);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
+
+			/* Verification */
+			if (false == verifyInvalidResults(destination_texture.m_id))
+			{
+				case_result = false;
+			}
 		}
 
 		/* Test valid case */
-		/* Set program */
-		valid_program.Use();
+		program.Init(getComputeShader(VALID), "", "", "", "", "");
+		program.Use();
 
 		/* Set texture */
 		setTextures(destination_texture.m_id, source_texture.m_id);
@@ -2506,21 +2521,26 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 			case_result = false;
 		}
 
-		/* Test invalid destination case */
-		/* Set program */
-		invalid_destination_program.Use();
-
-		/* Set texture */
-		setTextures(destination_texture.m_id, source_texture.m_id);
-
-		/* Dispatch */
-		gl.dispatchCompute(width, height, 1 /* depth */);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
-
-		/* Verification */
-		if (false == verifyValidResults(destination_texture.m_id))
+		/* Test invalid destination cases */
+		for (GLuint i = 0; i < DE_LENGTH_OF_ARRAY(fetching_offsets); ++i)
 		{
-			case_result = false;
+			const FetchingOffset& fo = fetching_offsets[i];
+			const std::string&	cs = getComputeShader(DESTINATION_INVALID, fo.coord_offset, fo.sample_offset);
+			program.Init(cs, "", "", "", "", "");
+			program.Use();
+
+			/* Set texture */
+			setTextures(destination_texture.m_id, source_texture.m_id);
+
+			/* Dispatch */
+			gl.dispatchCompute(width, height, 1 /* depth */);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
+
+			/* Verification */
+			if (false == verifyValidResults(destination_texture.m_id))
+			{
+				case_result = false;
+			}
 		}
 
 		/* Set test result */
@@ -2553,37 +2573,37 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
  *
  * @return Source
  **/
-std::string ImageLoadStoreTest::getComputeShader(VERSION version)
+std::string ImageLoadStoreTest::getComputeShader(VERSION version, GLuint coord_offset, GLuint sample_offset)
 {
-	static const GLchar* template_code = "#version 430 core\n"
-										 "\n"
-										 "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-										 "\n"
-										 "layout (location = 1)        writeonly uniform IMAGE uni_destination_image;\n"
-										 "layout (location = 0, FORMAT) readonly  uniform IMAGE uni_source_image;\n"
-										 "\n"
-										 "void main()\n"
-										 "{\n"
-										 "    const ivec2 point_destination = POINT;\n"
-										 "    const ivec2 point_source      = POINT;\n"
-										 "\n"
-										 "COPY"
-										 "}\n"
-										 "\n";
+	static const GLchar* template_code =
+		"#version 430 core\n"
+		"\n"
+		"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+		"\n"
+		"layout (location = 1) writeonly uniform IMAGE uni_destination_image;\n"
+		"layout (location = 0, FORMAT) readonly  uniform IMAGE uni_source_image;\n"
+		"\n"
+		"void main()\n"
+		"{\n"
+		"    const ivec2 point_destination = ivec2(gl_WorkGroupID.xy) + ivec2(COORD_OFFSET);\n"
+		"    const ivec2 point_source      = ivec2(gl_WorkGroupID.xy) + ivec2(COORD_OFFSET);\n"
+		"\n"
+		"COPY"
+		"}\n"
+		"\n";
 
 	static const GLchar* copy_multisampled =
-		"    const TYPE color_0 = imageLoad(uni_source_image, point_source, 0 + OFFSET);\n"
-		"    const TYPE color_1 = imageLoad(uni_source_image, point_source, 1 + OFFSET);\n"
-		"    const TYPE color_2 = imageLoad(uni_source_image, point_source, 2 + OFFSET);\n"
-		"    const TYPE color_3 = imageLoad(uni_source_image, point_source, 3 + OFFSET);\n"
-		"    imageStore(uni_destination_image, point_destination, 0 + OFFSET, color_0);\n"
-		"    imageStore(uni_destination_image, point_destination, 1 + OFFSET, color_1);\n"
-		"    imageStore(uni_destination_image, point_destination, 2 + OFFSET, color_2);\n"
-		"    imageStore(uni_destination_image, point_destination, 3 + OFFSET, color_3);\n";
+		"    const TYPE color_0 = imageLoad(uni_source_image, point_source, 0 + SAMPLE_OFFSET);\n"
+		"    const TYPE color_1 = imageLoad(uni_source_image, point_source, 1 + SAMPLE_OFFSET);\n"
+		"    const TYPE color_2 = imageLoad(uni_source_image, point_source, 2 + SAMPLE_OFFSET);\n"
+		"    const TYPE color_3 = imageLoad(uni_source_image, point_source, 3 + SAMPLE_OFFSET);\n"
+		"    imageStore(uni_destination_image, point_destination, 0 + SAMPLE_OFFSET, color_0);\n"
+		"    imageStore(uni_destination_image, point_destination, 1 + SAMPLE_OFFSET, color_1);\n"
+		"    imageStore(uni_destination_image, point_destination, 2 + SAMPLE_OFFSET, color_2);\n"
+		"    imageStore(uni_destination_image, point_destination, 3 + SAMPLE_OFFSET, color_3);\n";
 
 	static const GLchar* copy_regular =
 		"    const TYPE color = imageLoad(uni_source_image, point_source);\n"
-		"    //imageStore(uni_destination_image, point_destination, vec4(0, 0, 0, 0));\n"
 		"    imageStore(uni_destination_image, point_destination, color);\n";
 
 	static const GLchar* format_r8		  = "r8";
@@ -2591,45 +2611,37 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
 	static const GLchar* format_rgba32f   = "rgba32f";
 	static const GLchar* format_r32ui	 = "r32ui";
 
-	static const GLchar* image_vec4 = "image2D";
-
-	static const GLchar* image_uvec4 = "uimage2D";
-
+	static const GLchar* image_vec4		= "image2D";
+	static const GLchar* image_uvec4	= "uimage2D";
 	static const GLchar* image_uvec4_ms = "uimage2DMS";
-
-	static const GLchar* offset_invalid = "4";
-	static const GLchar* offset_valid   = "0";
-
-	static const GLchar* point_invalid = "ivec2(gl_WorkGroupID.x + 16, gl_WorkGroupID.y + 16)";
-
-	static const GLchar* point_valid = "ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y)";
 
 	static const GLchar* type_vec4  = "vec4";
 	static const GLchar* type_uvec4 = "uvec4";
 
-	const GLchar* copy				 = copy_regular;
-	const GLchar* format			 = format_r8;
-	const GLchar* image				 = image_vec4;
-	const GLchar* offset_destination = offset_valid;
-	const GLchar* offset_source		 = offset_valid;
-	const GLchar* point_destination  = point_valid;
-	const GLchar* point_source		 = point_valid;
-	const GLchar* type				 = type_vec4;
+	const GLchar* copy   = copy_regular;
+	const GLchar* format = format_r8;
+	const GLchar* image  = image_vec4;
+	const GLchar* type   = type_vec4;
 
-	switch (version)
+	std::string src_coord_offset_str("0");
+	std::string dst_coord_offset_str("0");
+	std::string src_sample_offset_str("0");
+	std::string dst_sample_offset_str("0");
+
+	std::stringstream coord_offset_stream;
+	coord_offset_stream << coord_offset;
+	std::stringstream sample_offset_stream;
+	sample_offset_stream << sample_offset;
+
+	if (version == SOURCE_INVALID)
 	{
-	case VALID:
-		break;
-	case SOURCE_INVALID:
-		point_source  = point_invalid;
-		offset_source = offset_invalid;
-		break;
-	case DESTINATION_INVALID:
-		point_destination  = point_invalid;
-		offset_destination = offset_invalid;
-		break;
-	default:
-		TCU_FAIL("Invalid enum");
+		src_coord_offset_str  = coord_offset_stream.str();
+		src_sample_offset_str = sample_offset_stream.str();
+	}
+	else if (version == DESTINATION_INVALID)
+	{
+		dst_coord_offset_str  = coord_offset_stream.str();
+		dst_sample_offset_str = sample_offset_stream.str();
 	}
 
 	switch (m_test_case)
@@ -2648,12 +2660,11 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
 		type   = type_uvec4;
 		break;
 	case R32UI_MULTISAMPLE:
-		copy			  = copy_multisampled;
-		format			  = format_r32ui;
-		image			  = image_uvec4_ms;
-		point_destination = point_valid;
-		point_source	  = point_valid;
-		type			  = type_uvec4;
+		copy		 = copy_multisampled;
+		format		 = format_r32ui;
+		image		 = image_uvec4_ms;
+		coord_offset = 0;
+		type		 = type_uvec4;
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
@@ -2665,8 +2676,8 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
 	replaceToken("IMAGE", position, image, source);
 	replaceToken("FORMAT", position, format, source);
 	replaceToken("IMAGE", position, image, source);
-	replaceToken("POINT", position, point_destination, source);
-	replaceToken("POINT", position, point_source, source);
+	replaceToken("COORD_OFFSET", position, dst_coord_offset_str.c_str(), source);
+	replaceToken("COORD_OFFSET", position, src_coord_offset_str.c_str(), source);
 
 	size_t temp_position = position;
 	replaceToken("COPY", position, copy, source);
@@ -2682,17 +2693,17 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
 		break;
 	case R32UI_MULTISAMPLE:
 		replaceToken("TYPE", position, type, source);
-		replaceToken("OFFSET", position, offset_source, source);
+		replaceToken("SAMPLE_OFFSET", position, src_sample_offset_str.c_str(), source);
 		replaceToken("TYPE", position, type, source);
-		replaceToken("OFFSET", position, offset_source, source);
+		replaceToken("SAMPLE_OFFSET", position, src_sample_offset_str.c_str(), source);
 		replaceToken("TYPE", position, type, source);
-		replaceToken("OFFSET", position, offset_source, source);
+		replaceToken("SAMPLE_OFFSET", position, src_sample_offset_str.c_str(), source);
 		replaceToken("TYPE", position, type, source);
-		replaceToken("OFFSET", position, offset_source, source);
-		replaceToken("OFFSET", position, offset_destination, source);
-		replaceToken("OFFSET", position, offset_destination, source);
-		replaceToken("OFFSET", position, offset_destination, source);
-		replaceToken("OFFSET", position, offset_destination, source);
+		replaceToken("SAMPLE_OFFSET", position, src_sample_offset_str.c_str(), source);
+		replaceToken("SAMPLE_OFFSET", position, dst_sample_offset_str.c_str(), source);
+		replaceToken("SAMPLE_OFFSET", position, dst_sample_offset_str.c_str(), source);
+		replaceToken("SAMPLE_OFFSET", position, dst_sample_offset_str.c_str(), source);
+		replaceToken("SAMPLE_OFFSET", position, dst_sample_offset_str.c_str(), source);
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
@@ -3313,15 +3324,26 @@ StorageBufferTest::StorageBufferTest(deqp::Context& context, const glw::GLchar* 
  **/
 tcu::TestNode::IterateResult StorageBufferTest::iterate()
 {
+	if (!isRobustBufferAccessBehaviorFeatureSupported(m_context))
+		return STOP;
 
 	/* GL entry points */
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
-	m_hasKhrRobustBufferAccess = m_context.getContextInfo().isExtensionSupported("GL_KHR_robust_buffer_access_behavior") ||
-								 contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	m_hasKhrRobustBufferAccess =
+		m_context.getContextInfo().isExtensionSupported("GL_KHR_robust_buffer_access_behavior") ||
+		contextSupports(contextType, glu::ApiType::core(4, 5));
 
 	/* Test result indicator */
 	bool test_result = true;
+
+	GLuint test_offsets[] = {
+		16,				 // close fetch
+		4 * 1024,		 // near fetch (4K of the end of the object)
+		1024 * 1024,	 // medium fetch (1MB past the end of the object)
+		10 * 1024 * 1024 // high fetch (10MB beyond the end of the object)
+	};
 
 	/* Iterate over all cases */
 	while (LAST != m_test_case)
@@ -3331,9 +3353,6 @@ tcu::TestNode::IterateResult StorageBufferTest::iterate()
 		Buffer  source_buffer(m_context);
 		Program program(m_context);
 
-		/* Compute Shader */
-		const std::string& cs = getComputeShader();
-
 		/* Buffers initialization */
 		destination_buffer.InitData(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, sizeof(m_destination_data),
 									m_destination_data);
@@ -3342,28 +3361,32 @@ tcu::TestNode::IterateResult StorageBufferTest::iterate()
 		destination_buffer.BindBase(0);
 		source_buffer.BindBase(1);
 
-		/* Shaders initialization */
-		program.Init(cs, "" /* fs */, "" /* gs */, "" /* tcs */, "" /* tes */, "" /* vs */);
-		program.Use();
+		for (GLuint i = 0; i < DE_LENGTH_OF_ARRAY(test_offsets); ++i)
+		{
+			/* Initialize shader */
+			const std::string& cs = getComputeShader(test_offsets[i]);
+			program.Init(cs, "" /* fs */, "" /* gs */, "" /* tcs */, "" /* tes */, "" /* vs */);
+			program.Use();
 
-		/* Dispatch compute */
-		gl.dispatchCompute(1 /* x */, 1 /* y */, 1 /* z */);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
+			/* Dispatch compute */
+			gl.dispatchCompute(1 /* x */, 1 /* y */, 1 /* z */);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
 
-		/* Set memory barrier */
-		gl.memoryBarrier(GL_ALL_BARRIER_BITS);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "MemoryBarrier");
+			/* Set memory barrier */
+			gl.memoryBarrier(GL_ALL_BARRIER_BITS);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "MemoryBarrier");
 
-		/* Verify results */
-		destination_buffer.Bind();
-		GLfloat* buffer_data =
-			(GLfloat*)gl.mapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(m_destination_data), GL_MAP_READ_BIT);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "MapBufferRange");
+			/* Verify results */
+			destination_buffer.Bind();
+			GLfloat* buffer_data =
+				(GLfloat*)gl.mapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(m_destination_data), GL_MAP_READ_BIT);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "MapBufferRange");
 
-		test_result = verifyResults(buffer_data);
+			test_result &= verifyResults(buffer_data);
 
-		gl.unmapBuffer(GL_SHADER_STORAGE_BUFFER);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "UnmapBuffer");
+			gl.unmapBuffer(GL_SHADER_STORAGE_BUFFER);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "UnmapBuffer");
+		}
 
 		/* Increment */
 		m_test_case = (VERSION)((GLuint)m_test_case + 1);
@@ -3387,7 +3410,7 @@ tcu::TestNode::IterateResult StorageBufferTest::iterate()
  *
  * @return Source
  **/
-std::string StorageBufferTest::getComputeShader()
+std::string StorageBufferTest::getComputeShader(GLuint offset)
 {
 	static const GLchar* cs = "#version 430 core\n"
 							  "\n"
@@ -3410,31 +3433,21 @@ std::string StorageBufferTest::getComputeShader()
 							  "}\n"
 							  "\n";
 
-	const GLchar* destination_offset;
+	std::string   destination_offset("0");
+	std::string   source_offset("0");
 	size_t		  position = 0;
 	std::string   source   = cs;
-	const GLchar* source_offset;
 
-	switch (m_test_case)
-	{
-	case VALID:
-		destination_offset = "0";
-		source_offset	  = "0";
-		break;
-	case SOURCE_INVALID:
-		destination_offset = "0";
-		source_offset	  = "16";
-		break;
-	case DESTINATION_INVALID:
-		destination_offset = "16";
-		source_offset	  = "0";
-		break;
-	default:
-		TCU_FAIL("Invalid enum");
-	}
+	std::stringstream offset_stream;
+	offset_stream << offset;
 
-	replaceToken("OFFSET", position, destination_offset, source);
-	replaceToken("OFFSET", position, source_offset, source);
+	if (m_test_case == SOURCE_INVALID)
+		source_offset = offset_stream.str();
+	else if (m_test_case == DESTINATION_INVALID)
+		destination_offset = offset_stream.str();
+
+	replaceToken("OFFSET", position, destination_offset.c_str(), source);
+	replaceToken("OFFSET", position, source_offset.c_str(), source);
 
 	return source;
 }
@@ -3591,10 +3604,20 @@ UniformBufferTest::UniformBufferTest(deqp::Context& context, const glw::GLchar* 
  **/
 tcu::TestNode::IterateResult UniformBufferTest::iterate()
 {
+	if (!isRobustBufferAccessBehaviorFeatureSupported(m_context))
+		return STOP;
+
 	static const GLfloat destination_data[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	/* The source buffer is packed std140 so we need vec4s */
 	static const GLfloat source_data[16] = {
 		2.0f, 0.0f, 0.0f, 0.0f, 3.0f, 0.0f, 0.0f, 0.0f, 4.0f, 0.0f, 0.0f, 0.0f, 5.0f, 0.0f, 0.0f, 0.0f,
+	};
+
+	GLuint test_offsets[] = {
+		16,				 // close fetch
+		4 * 1024,		 // near fetch (4K of the end of the object)
+		1024 * 1024,	 // medium fetch (1MB past the end of the object)
+		10 * 1024 * 1024 // high fetch (10MB beyond the end of the object)
 	};
 
 	/* GL entry points */
@@ -3611,9 +3634,6 @@ tcu::TestNode::IterateResult UniformBufferTest::iterate()
 		Buffer  source_buffer(m_context);
 		Program program(m_context);
 
-		/* Compute Shader */
-		const std::string& cs = getComputeShader();
-
 		/* Buffers initialization */
 		destination_buffer.InitData(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, sizeof(destination_data),
 									destination_data);
@@ -3622,28 +3642,32 @@ tcu::TestNode::IterateResult UniformBufferTest::iterate()
 		destination_buffer.BindBase(0);
 		source_buffer.BindBase(0);
 
-		/* Shaders initialization */
-		program.Init(cs, "" /* fs */, "" /* gs */, "" /* tcs */, "" /* tes */, "" /* vs */);
-		program.Use();
+		for (GLuint i = 0; i < DE_LENGTH_OF_ARRAY(test_offsets); ++i)
+		{
+			/* Initialize shader */
+			const std::string& cs = getComputeShader(test_offsets[i]);
+			program.Init(cs, "" /* fs */, "" /* gs */, "" /* tcs */, "" /* tes */, "" /* vs */);
+			program.Use();
 
-		/* Dispatch compute */
-		gl.dispatchCompute(1 /* x */, 1 /* y */, 1 /* z */);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
+			/* Dispatch compute */
+			gl.dispatchCompute(1 /* x */, 1 /* y */, 1 /* z */);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
 
-		/* Set memory barrier */
-		gl.memoryBarrier(GL_ALL_BARRIER_BITS);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "MemoryBarrier");
+			/* Set memory barrier */
+			gl.memoryBarrier(GL_ALL_BARRIER_BITS);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "MemoryBarrier");
 
-		/* Verify results */
-		destination_buffer.Bind();
-		GLfloat* buffer_data =
-			(GLfloat*)gl.mapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(destination_data), GL_MAP_READ_BIT);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "MapBufferRange");
+			/* Verify results */
+			destination_buffer.Bind();
+			GLfloat* buffer_data =
+				(GLfloat*)gl.mapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(destination_data), GL_MAP_READ_BIT);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "MapBufferRange");
 
-		test_result = verifyResults(buffer_data);
+			test_result &= verifyResults(buffer_data);
 
-		gl.unmapBuffer(GL_SHADER_STORAGE_BUFFER);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "UnmapBuffer");
+			gl.unmapBuffer(GL_SHADER_STORAGE_BUFFER);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "UnmapBuffer");
+		}
 
 		/* Increment */
 		m_test_case = (VERSION)((GLuint)m_test_case + 1);
@@ -3667,7 +3691,7 @@ tcu::TestNode::IterateResult UniformBufferTest::iterate()
  *
  * @return Source
  **/
-std::string UniformBufferTest::getComputeShader()
+std::string UniformBufferTest::getComputeShader(GLuint offset)
 {
 	static const GLchar* cs = "#version 430 core\n"
 							  "\n"
@@ -3690,27 +3714,19 @@ std::string UniformBufferTest::getComputeShader()
 							  "}\n"
 							  "\n";
 
-	const GLchar* destination_offset;
+	const GLchar* destination_offset = "0";
+	std::string   source_offset("0");
 	size_t		  position = 0;
 	std::string   source   = cs;
-	const GLchar* source_offset;
 
-	switch (m_test_case)
-	{
-	case VALID:
-		destination_offset = "0";
-		source_offset	  = "0";
-		break;
-	case SOURCE_INVALID:
-		destination_offset = "0";
-		source_offset	  = "16";
-		break;
-	default:
-		TCU_FAIL("Invalid enum");
-	}
+	std::stringstream offset_stream;
+	offset_stream << offset;
+
+	if (m_test_case == SOURCE_INVALID)
+		source_offset = offset_stream.str();
 
 	replaceToken("OFFSET", position, destination_offset, source);
-	replaceToken("OFFSET", position, source_offset, source);
+	replaceToken("OFFSET", position, source_offset.c_str(), source);
 
 	return source;
 }
