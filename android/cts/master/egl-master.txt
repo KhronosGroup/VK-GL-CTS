@@ -2489,6 +2489,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_intel_performance_query
 dEQP-EGL.functional.get_proc_address.extension.gl_khr_blend_equation_advanced
 dEQP-EGL.functional.get_proc_address.extension.gl_khr_debug
 dEQP-EGL.functional.get_proc_address.extension.gl_khr_robustness
+dEQP-EGL.functional.get_proc_address.extension.gl_khr_parallel_shader_compile
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_bindless_texture
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_blend_equation_advanced
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_conditional_render
