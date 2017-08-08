@@ -78,7 +78,7 @@ const char* getGLSLVersionDeclaration (GLSLVersion version)
 
 bool glslVersionUsesInOutQualifiers (GLSLVersion version)
 {
-	return de::inRange<int>(version, GLSL_VERSION_300_ES, GLSL_VERSION_320_ES) || de::inRange<int>(version, GLSL_VERSION_330, GLSL_VERSION_430);
+	return de::inRange<int>(version, GLSL_VERSION_300_ES, GLSL_VERSION_320_ES) || de::inRange<int>(version, GLSL_VERSION_330, GLSL_VERSION_450);
 }
 
 bool glslVersionIsES (GLSLVersion version)

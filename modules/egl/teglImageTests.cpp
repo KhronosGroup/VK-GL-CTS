@@ -194,6 +194,15 @@ public:
 
 	IterateResult iterate (void)
 	{
+		const Library& egl = m_eglTestCtx.getLibrary();
+
+		if (eglu::getVersion(egl, m_display) < eglu::Version(1, 5) &&
+			!eglu::hasExtension(egl, m_display, "EGL_KHR_image") &&
+			!eglu::hasExtension(egl, m_display, "EGL_KHR_image_base"))
+		{
+			TCU_THROW(NotSupportedError, "EGLimages not supported");
+		}
+
 #define CHECK_CREATE(MSG, DPY, CONTEXT, SOURCE, ERR) checkCreate(MSG, DPY, #DPY, CONTEXT, #CONTEXT, SOURCE, #SOURCE, ERR)
 		CHECK_CREATE("Testing bad display (-1)...", (EGLDisplay)-1, EGL_NO_CONTEXT, EGL_NONE, EGL_BAD_DISPLAY);
 		CHECK_CREATE("Testing bad context (-1)...", m_display, (EGLContext)-1, EGL_NONE, EGL_BAD_CONTEXT);

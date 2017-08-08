@@ -552,6 +552,7 @@ LOCAL_SRC_FILES := \
 	modules/egl/teglTestPackageEntry.cpp \
 	modules/egl/teglThreadCleanUpTests.cpp \
 	modules/egl/teglVGRenderUtil.cpp \
+	modules/egl/teglWideColorTests.cpp \
 	modules/gles2/accuracy/es2aAccuracyTests.cpp \
 	modules/gles2/accuracy/es2aTextureFilteringTests.cpp \
 	modules/gles2/accuracy/es2aTextureMipmapTests.cpp \

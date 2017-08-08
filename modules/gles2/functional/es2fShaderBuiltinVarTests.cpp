@@ -86,7 +86,8 @@ int ShaderBuiltinConstantCase::getRefValue (void)
 {
 	if (m_varName == "gl_MaxDrawBuffers")
 	{
-		if (m_ctxInfo.isExtensionSupported("GL_EXT_draw_buffers"))
+		if (m_ctxInfo.isExtensionSupported("GL_EXT_draw_buffers") ||
+			m_ctxInfo.isExtensionSupported("GL_NV_draw_buffers"))
 			return m_ctxInfo.getInt(GL_MAX_DRAW_BUFFERS);
 		else
 			return 1;
