@@ -58,6 +58,11 @@ std::string				getShaderImageFormatQualifier	(const tcu::TextureFormat& format);
 std::string				getGlslSamplerType				(const tcu::TextureFormat& format, vk::VkImageViewType type);
 const char*				getGlslInputFormatType			(const vk::VkFormat format);
 const char*				getGlslFormatType				(const vk::VkFormat format);
+const char*				getGlslAttachmentType			(const vk::VkFormat format);
+const char*				getGlslInputAttachmentType		(const vk::VkFormat format);
+bool					isPackedType					(const vk::VkFormat format);
+bool					isComponentSwizzled				(const vk::VkFormat format);
+int						getNumUsedChannels				(const vk::VkFormat format);
 
 class Buffer
 {

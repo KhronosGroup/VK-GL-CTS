@@ -1129,6 +1129,119 @@ const char* getGlslFormatType (const vk::VkFormat format)
 	}
 }
 
+const char* getGlslAttachmentType (const vk::VkFormat format)
+{
+	const tcu::TextureFormat		textureFormat	= mapVkFormat(format);
+	const tcu::TextureChannelClass	channelClass	= tcu::getTextureChannelClass(textureFormat.type);
+
+	switch (channelClass)
+	{
+		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			return "ivec4";
+
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			return "uvec4";
+
+		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+			return "vec4";
+
+		default:
+			DE_FATAL("Unknown channel class");
+			return "";
+	}
+}
+
+const char* getGlslInputAttachmentType (const vk::VkFormat format)
+{
+	const tcu::TextureFormat		textureFormat	= mapVkFormat(format);
+	const tcu::TextureChannelClass	channelClass	= tcu::getTextureChannelClass(textureFormat.type);
+
+	switch (channelClass)
+	{
+		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			return "isubpassInput";
+
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			return "usubpassInput";
+
+		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+			return "subpassInput";
+
+		default:
+			DE_FATAL("Unknown channel class");
+			return "";
+	}
+}
+
+bool isPackedType (const vk::VkFormat format)
+{
+	const tcu::TextureFormat	textureFormat	= mapVkFormat(format);
+
+	DE_STATIC_ASSERT(tcu::TextureFormat::CHANNELTYPE_LAST == 40);
+
+	switch (textureFormat.type)
+	{
+		case tcu::TextureFormat::UNORM_BYTE_44:
+		case tcu::TextureFormat::UNORM_SHORT_565:
+		case tcu::TextureFormat::UNORM_SHORT_555:
+		case tcu::TextureFormat::UNORM_SHORT_4444:
+		case tcu::TextureFormat::UNORM_SHORT_5551:
+		case tcu::TextureFormat::UNORM_SHORT_1555:
+		case tcu::TextureFormat::UNORM_INT_101010:
+		case tcu::TextureFormat::SNORM_INT_1010102_REV:
+		case tcu::TextureFormat::UNORM_INT_1010102_REV:
+		case tcu::TextureFormat::UNSIGNED_BYTE_44:
+		case tcu::TextureFormat::UNSIGNED_SHORT_565:
+		case tcu::TextureFormat::UNSIGNED_SHORT_4444:
+		case tcu::TextureFormat::UNSIGNED_SHORT_5551:
+		case tcu::TextureFormat::SIGNED_INT_1010102_REV:
+		case tcu::TextureFormat::UNSIGNED_INT_1010102_REV:
+		case tcu::TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
+		case tcu::TextureFormat::UNSIGNED_INT_999_E5_REV:
+		case tcu::TextureFormat::UNSIGNED_INT_16_8_8:
+		case tcu::TextureFormat::UNSIGNED_INT_24_8:
+		case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool isComponentSwizzled (const vk::VkFormat format)
+{
+	const tcu::TextureFormat	textureFormat	= mapVkFormat(format);
+
+	DE_STATIC_ASSERT(tcu::TextureFormat::CHANNELORDER_LAST == 21);
+
+	switch (textureFormat.order)
+	{
+		case tcu::TextureFormat::ARGB:
+		case tcu::TextureFormat::BGR:
+		case tcu::TextureFormat::BGRA:
+		case tcu::TextureFormat::sBGR:
+		case tcu::TextureFormat::sBGRA:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+int getNumUsedChannels (const vk::VkFormat format)
+{
+	// make sure this function will be checked if type table is updated
+	DE_STATIC_ASSERT(tcu::TextureFormat::CHANNELORDER_LAST == 21);
+
+	const tcu::TextureFormat	textureFormat	= mapVkFormat(format);
+
+	return getNumUsedChannels(textureFormat.order);
+}
+
 std::string getFormatShortString (const VkFormat format)
 {
 	const std::string fullName = getFormatName(format);
