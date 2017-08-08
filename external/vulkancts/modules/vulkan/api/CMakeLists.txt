@@ -49,6 +49,7 @@ set(DEQP_VK_API_LIBS
 	deqp-vk-package
 	tcutil
 	vkutil
+	deqp-vk-package
 	)
 
 add_library(deqp-vk-api STATIC ${DEQP_VK_API_SRCS})
