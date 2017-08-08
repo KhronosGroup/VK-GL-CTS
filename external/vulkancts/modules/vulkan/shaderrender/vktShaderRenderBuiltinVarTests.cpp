@@ -314,6 +314,9 @@ BuiltinFragDepthCaseInstance::BuiltinFragDepthCaseInstance (Context& context, Vk
 
 		if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
 			throw tcu::NotSupportedError("MarkerImage format not supported as storage image");
+
+		if (m_largeDepthEnable && !de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_EXT_depth_range_unrestricted"))
+			throw tcu::NotSupportedError("large_depth test variants require the VK_EXT_depth_range_unrestricted extension");
 	}
 	catch (const vk::Error& e)
 	{
@@ -1185,12 +1188,6 @@ bool BuiltinFragDepthCaseInstance::validateDepthBuffer (const tcu::ConstPixelBuf
 
 			if (m_largeDepthEnable)
 				expectedValue += m_largeDepthBase;
-
-			if (expectedValue > 1.0f)
-				expectedValue = 1.0f;
-
-			if (expectedValue < 0.0f)
-				expectedValue = 0.0f;
 
 			for (deUint32 sampleNdx = 0; sampleNdx < (deUint32)m_samples; sampleNdx++)
 			{
