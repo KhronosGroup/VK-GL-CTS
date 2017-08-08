@@ -23,6 +23,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageCompressionTranscodingSupport.hpp
 	vktImageLoadStoreUtil.cpp
 	vktImageLoadStoreUtil.hpp
+	vktImageTranscodingSupportTests.cpp
+	vktImageTranscodingSupportTests.hpp
 	)
 
 set(DEQP_VK_IMAGE_LIBS

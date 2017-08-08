@@ -30,6 +30,7 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktImageAtomicOperationTests.hpp"
 #include "vktImageCompressionTranscodingSupport.hpp"
+#include "vktImageTranscodingSupportTests.hpp"
 
 namespace vkt
 {
@@ -52,6 +53,7 @@ void createChildren (tcu::TestCaseGroup* imageTests)
 	imageTests->addChild(createImageSizeTests(testCtx));
 	imageTests->addChild(createImageAtomicOperationTests(testCtx));
 	imageTests->addChild(createImageCompressionTranscodingTests(testCtx));
+	imageTests->addChild(createImageTranscodingSupportTests(testCtx));
 }
 
 } // anonymous
