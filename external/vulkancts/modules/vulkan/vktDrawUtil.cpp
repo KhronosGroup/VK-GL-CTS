@@ -778,7 +778,7 @@ VulkanDrawContext::VulkanDrawContext (  Context&				context,
 				*m_renderPass,														// VkRenderPass									renderPass;
 				*m_framebuffer,														// VkFramebuffer								framebuffer;
 				renderArea,															// VkRect2D										renderArea;
-				static_cast<uint32_t>(clearValues.size()),							// uint32_t										clearValueCount;
+				static_cast<deUint32>(clearValues.size()),							// uint32_t										clearValueCount;
 				&clearValues[0],													// const VkClearValue*							pClearValues;
 			};
 
