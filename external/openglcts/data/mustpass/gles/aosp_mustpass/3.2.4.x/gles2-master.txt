@@ -7738,6 +7738,8 @@ dEQP-GLES2.functional.shaders.builtin_variable.max_vertex_texture_image_units_ve
 dEQP-GLES2.functional.shaders.builtin_variable.max_vertex_texture_image_units_fragment
 dEQP-GLES2.functional.shaders.builtin_variable.max_combined_texture_image_units_vertex
 dEQP-GLES2.functional.shaders.builtin_variable.max_combined_texture_image_units_fragment
+dEQP-GLES2.functional.shaders.builtin_variable.max_draw_buffers_vertex
+dEQP-GLES2.functional.shaders.builtin_variable.max_draw_buffers_fragment
 dEQP-GLES2.functional.shaders.builtin_variable.depth_range_vertex
 dEQP-GLES2.functional.shaders.builtin_variable.depth_range_fragment
 dEQP-GLES2.functional.shaders.builtin_variable.fragcoord_xyz
