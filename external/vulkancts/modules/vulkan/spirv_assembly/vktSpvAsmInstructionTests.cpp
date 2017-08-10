@@ -194,6 +194,57 @@ struct CaseParameter
 //   output_data.elements[x] = -input_data.elements[x];
 // }
 
+
+static string getAsmForOpNopTest(bool useLiteralLocalSize, bool useSpecConstantWorkgroupSize) {
+	std::ostringstream out;
+	out << getComputeAsmShaderPreambleWithoutLocalSize();
+	if (useLiteralLocalSize) {
+		out << "OpExecutionMode %main LocalSize 1 1 1\n";
+	}
+
+	out << "OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+		"OpDecorate %id BuiltIn GlobalInvocationId\n";
+
+	if (useSpecConstantWorkgroupSize) {
+		out << "OpDecorate %spec_0 SpecId 100\n"
+			    "OpDecorate %spec_0 SpecId 100\n"
+			    "OpDecorate %spec_1 SpecId 101\n"
+			    "OpDecorate %spec_2 SpecId 102\n"
+			    "OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize\n";
+	}
+
+	out << getComputeAsmInputOutputBufferTraits()
+		<< getComputeAsmCommonTypes()
+		<< getComputeAsmInputOutputBuffer()
+		<< "%id        = OpVariable %uvec3ptr Input\n"
+		<< "%zero      = OpConstant %i32 0\n";
+
+	if (useSpecConstantWorkgroupSize) {
+		out << "%spec_0   = OpSpecConstant %u32 1\n"
+		"%spec_1   = OpSpecConstant %u32 1\n"
+		"%spec_2   = OpSpecConstant %u32 1\n"
+		"%gl_WorkGroupSize = OpSpecConstantComposite %uvec3 %spec_0 %spec_1 %spec_2\n";
+	}
+
+	out << "%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+
+		"             OpNop\n" // Inside a function body
+
+		"%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval     = OpLoad %f32 %inloc\n"
+		"%neg       = OpFNegate %f32 %inval\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"             OpStore %outloc %neg\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n";
+    return out.str();
+}
+
 tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opnop", "Test the OpNop instruction"));
@@ -208,41 +259,18 @@ tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
 		negativeFloats[ndx] = -positiveFloats[ndx];
 
-	spec.assembly =
-		string(getComputeAsmShaderPreamble()) +
-
-		"OpSource GLSL 430\n"
-		"OpName %main           \"main\"\n"
-		"OpName %id             \"gl_GlobalInvocationID\"\n"
-
-		"OpDecorate %id BuiltIn GlobalInvocationId\n"
-
-		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes())
-
-		+ string(getComputeAsmInputOutputBuffer()) +
-
-		"%id        = OpVariable %uvec3ptr Input\n"
-		"%zero      = OpConstant %i32 0\n"
-
-		"%main      = OpFunction %void None %voidf\n"
-		"%label     = OpLabel\n"
-		"%idval     = OpLoad %uvec3 %id\n"
-		"%x         = OpCompositeExtract %u32 %idval 0\n"
-
-		"             OpNop\n" // Inside a function body
-
-		"%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
-		"%inval     = OpLoad %f32 %inloc\n"
-		"%neg       = OpFNegate %f32 %inval\n"
-		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
-		"             OpStore %outloc %neg\n"
-		"             OpReturn\n"
-		"             OpFunctionEnd\n";
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpNop appearing at different places", spec));
+    spec.assembly = getAsmForOpNopTest(true, false);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize", "OpNop appearing at different places", spec));
+
+    spec.assembly = getAsmForOpNopTest(true, true);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize", "OpNop appearing at different places", spec));
+
+    spec.assembly = getAsmForOpNopTest(false, true);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize", "OpNop appearing at different places", spec));
 
 	return group.release();
 }

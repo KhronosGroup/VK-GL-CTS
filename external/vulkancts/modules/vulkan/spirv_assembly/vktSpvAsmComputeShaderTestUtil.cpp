@@ -37,6 +37,14 @@ const char* getComputeAsmShaderPreamble (void)
 		"OpExecutionMode %main LocalSize 1 1 1\n";
 }
 
+const char* getComputeAsmShaderPreambleWithoutLocalSize (void)
+{
+	return
+		"OpCapability Shader\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n";
+}
+
 std::string getComputeAsmCommonTypes (std::string blockStorageClass)
 {
 	return std::string(
