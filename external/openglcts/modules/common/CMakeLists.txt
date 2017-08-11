@@ -38,6 +38,8 @@ set(GLCTS_COMMON_SRCS
 	glcRobustnessTests.hpp
 	glcPolygonOffsetClampTests.cpp
 	glcPolygonOffsetClampTests.hpp
+	glcParallelShaderCompileTests.cpp
+	glcParallelShaderCompileTests.hpp
 	glcRobustBufferAccessBehaviorTests.cpp
 	glcRobustBufferAccessBehaviorTests.hpp
 	glcSeparableProgramsTransformFeedbackTests.cpp

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
+ * Generated from Khronos GL API description (gl.xml) revision a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90.
  */
 
 if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
@@ -31,6 +31,11 @@ if (de::contains(extSet, "GL_KHR_robustness"))
 	gl->getnUniformiv			= (glGetnUniformivFunc)				loader->get("glGetnUniformivKHR");
 	gl->getnUniformuiv			= (glGetnUniformuivFunc)			loader->get("glGetnUniformuivKHR");
 	gl->readnPixels				= (glReadnPixelsFunc)				loader->get("glReadnPixelsKHR");
+}
+
+if (de::contains(extSet, "GL_KHR_parallel_shader_compile"))
+{
+	gl->maxShaderCompilerThreadsKHR	= (glMaxShaderCompilerThreadsKHRFunc)	loader->get("glMaxShaderCompilerThreadsKHR");
 }
 
 if (de::contains(extSet, "GL_EXT_tessellation_shader"))
@@ -118,7 +123,7 @@ if (de::contains(extSet, "GL_EXT_debug_marker"))
 
 if (de::contains(extSet, "GL_EXT_polygon_offset_clamp"))
 {
-	gl->polygonOffsetClampEXT	= (glPolygonOffsetClampEXTFunc)	loader->get("glPolygonOffsetClampEXT");
+	gl->polygonOffsetClamp	= (glPolygonOffsetClampFunc)	loader->get("glPolygonOffsetClampEXT");
 }
 
 if (de::contains(extSet, "GL_OES_EGL_image"))
@@ -188,5 +193,5 @@ if (de::contains(extSet, "GL_OES_draw_elements_base_vertex"))
 	gl->drawElementsBaseVertex			= (glDrawElementsBaseVertexFunc)			loader->get("glDrawElementsBaseVertexOES");
 	gl->drawElementsInstancedBaseVertex	= (glDrawElementsInstancedBaseVertexFunc)	loader->get("glDrawElementsInstancedBaseVertexOES");
 	gl->drawRangeElementsBaseVertex		= (glDrawRangeElementsBaseVertexFunc)		loader->get("glDrawRangeElementsBaseVertexOES");
-	gl->multiDrawElementsBaseVertex		= (glMultiDrawElementsBaseVertexFunc)		loader->get("glMultiDrawElementsBaseVertexOES");
+	gl->multiDrawElementsBaseVertex		= (glMultiDrawElementsBaseVertexFunc)		loader->get("glMultiDrawElementsBaseVertexEXT");
 }

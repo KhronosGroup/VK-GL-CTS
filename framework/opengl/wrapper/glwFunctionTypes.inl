@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
+ * Generated from Khronos GL API description (gl.xml) revision a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90.
  */
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveShaderProgramFunc)								(GLuint pipeline, GLuint program);
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveTextureFunc)										(GLenum texture);
@@ -458,17 +458,17 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glMatrixScaledEXTFunc)									(GLenum
 typedef GLW_APICALL void			(GLW_APIENTRY* glMatrixScalefEXTFunc)									(GLenum mode, GLfloat x, GLfloat y, GLfloat z);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMatrixTranslatedEXTFunc)								(GLenum mode, GLdouble x, GLdouble y, GLdouble z);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMatrixTranslatefEXTFunc)								(GLenum mode, GLfloat x, GLfloat y, GLfloat z);
-typedef GLW_APICALL void			(GLW_APIENTRY* glMaxShaderCompilerThreadsARBFunc)						(GLuint count);
+typedef GLW_APICALL void			(GLW_APIENTRY* glMaxShaderCompilerThreadsKHRFunc)						(GLuint count);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMemoryBarrierFunc)										(GLbitfield barriers);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMemoryBarrierByRegionFunc)								(GLbitfield barriers);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMinSampleShadingFunc)									(GLfloat value);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawArraysFunc)									(GLenum mode, const GLint *first, const GLsizei *count, GLsizei drawcount);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawArraysIndirectFunc)							(GLenum mode, const void *indirect, GLsizei drawcount, GLsizei stride);
-typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawArraysIndirectCountARBFunc)					(GLenum mode, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride);
+typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawArraysIndirectCountFunc)						(GLenum mode, const void *indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawElementsFunc)									(GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawElementsBaseVertexFunc)						(GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount, const GLint *basevertex);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawElementsIndirectFunc)							(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride);
-typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawElementsIndirectCountARBFunc)					(GLenum mode, GLenum type, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride);
+typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawElementsIndirectCountFunc)					(GLenum mode, GLenum type, const void *indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiTexBufferEXTFunc)									(GLenum texunit, GLenum target, GLenum internalformat, GLuint buffer);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiTexCoordPointerEXTFunc)							(GLenum texunit, GLint size, GLenum type, GLsizei stride, const void *pointer);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiTexEnvfEXTFunc)									(GLenum texunit, GLenum target, GLenum pname, GLfloat param);
@@ -547,7 +547,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glPointParameterivFunc)									(GLenu
 typedef GLW_APICALL void			(GLW_APIENTRY* glPointSizeFunc)											(GLfloat size);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPolygonModeFunc)										(GLenum face, GLenum mode);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPolygonOffsetFunc)										(GLfloat factor, GLfloat units);
-typedef GLW_APICALL void			(GLW_APIENTRY* glPolygonOffsetClampEXTFunc)								(GLfloat factor, GLfloat units, GLfloat clamp);
+typedef GLW_APICALL void			(GLW_APIENTRY* glPolygonOffsetClampFunc)								(GLfloat factor, GLfloat units, GLfloat clamp);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPopDebugGroupFunc)										(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPopGroupMarkerEXTFunc)									(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPrimitiveBoundingBoxFunc)								(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
@@ -648,6 +648,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glScissorIndexedvFunc)									(GLuint
 typedef GLW_APICALL void			(GLW_APIENTRY* glShaderBinaryFunc)										(GLsizei count, const GLuint *shaders, GLenum binaryformat, const void *binary, GLsizei length);
 typedef GLW_APICALL void			(GLW_APIENTRY* glShaderSourceFunc)										(GLuint shader, GLsizei count, const GLchar *const*string, const GLint *length);
 typedef GLW_APICALL void			(GLW_APIENTRY* glShaderStorageBlockBindingFunc)							(GLuint program, GLuint storageBlockIndex, GLuint storageBlockBinding);
+typedef GLW_APICALL void			(GLW_APIENTRY* glSpecializeShaderFunc)									(GLuint shader, const GLchar *pEntryPoint, GLuint numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue);
 typedef GLW_APICALL void			(GLW_APIENTRY* glStencilFuncFunc)										(GLenum func, GLint ref, GLuint mask);
 typedef GLW_APICALL void			(GLW_APIENTRY* glStencilFuncSeparateFunc)								(GLenum face, GLenum func, GLint ref, GLuint mask);
 typedef GLW_APICALL void			(GLW_APIENTRY* glStencilMaskFunc)										(GLuint mask);

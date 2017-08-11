@@ -27,6 +27,7 @@
 #include "glcFragDepthTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcShaderConstExprTests.hpp"
+#include "glcParallelShaderCompileTests.hpp"
 #include "glcShaderIndexingTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderLibrary.hpp"
@@ -161,6 +162,7 @@ void ES30TestPackage::init(void)
 		tcu::TestCaseGroup* coreGroup = new tcu::TestCaseGroup(getTestContext(), "core", "core tests");
 		coreGroup->addChild(new glcts::ShaderConstExprTests(getContext()));
 		addChild(coreGroup);
+		addChild(new glcts::ParallelShaderCompileTests(getContext()));
 	}
 	catch (...)
 	{

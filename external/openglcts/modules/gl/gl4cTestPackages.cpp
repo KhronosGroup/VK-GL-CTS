@@ -41,7 +41,6 @@
 #include "gl4cLimitsTests.hpp"
 #include "gl4cMapBufferAlignmentTests.hpp"
 #include "gl4cMultiBindTests.hpp"
-#include "gl4cParallelShaderCompileTests.hpp"
 #include "gl4cPostDepthCoverageTests.hpp"
 #include "gl4cProgramInterfaceQueryTests.hpp"
 #include "gl4cShaderAtomicCounterOpsTests.hpp"
@@ -60,6 +59,7 @@
 #include "gl4cSparseTexture2Tests.hpp"
 #include "gl4cSparseTextureClampTests.hpp"
 #include "gl4cSparseTextureTests.hpp"
+#include "gl4cSpirvExtensionsTests.hpp"
 #include "gl4cStencilTexturingTests.hpp"
 #include "gl4cSyncTests.hpp"
 #include "gl4cTextureBarrierTests.hpp"
@@ -72,6 +72,7 @@
 #include "glcExposedExtensionsTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcPolygonOffsetClampTests.hpp"
+#include "glcParallelShaderCompileTests.hpp"
 #include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcSampleVariablesTests.hpp"
 #include "glcSeparableProgramsTransformFeedbackTests.hpp"
@@ -358,7 +359,7 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::ConditionalRenderInverted::Tests(getContext()));
 		addChild(new gl4cts::Sync::Tests(getContext()));
 		addChild(new gl4cts::IncompleteTextureAccess::Tests(getContext()));
-		addChild(new gl4cts::ParallelShaderCompileTests(getContext()));
+		addChild(new glcts::ParallelShaderCompileTests(getContext()));
 		addChild(new gl4cts::PostDepthCoverage(getContext()));
 		addChild(new gl4cts::SparseTexture2Tests(getContext()));
 		addChild(new gl4cts::SparseTextureClampTests(getContext()));
@@ -370,6 +371,7 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::LimitsTests(getContext()));
 		addChild(new glcts::PolygonOffsetClamp(getContext()));
 		addChild(new glcts::SeparableProgramsTransformFeedbackTests(getContext()));
+		addChild(new gl4cts::SpirvExtensionsTests(getContext()));
 	}
 	catch (...)
 	{

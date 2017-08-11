@@ -6324,10 +6324,10 @@ KHR-GL45.conditional_render_inverted.coverage
 KHR-GL45.conditional_render_inverted.functional
 KHR-GL45.sync.flush_commands
 KHR-GL45.incomplete_texture_access.sampler
-KHR-GL45.parallel_shader_compile.SimpleQueriesTest
-KHR-GL45.parallel_shader_compile.MaxShaderCompileThreadsTest
-KHR-GL45.parallel_shader_compile.CompilationCompletionNonParallelTest
-KHR-GL45.parallel_shader_compile.CompilationCompletionParallelTest
+KHR-GL45.parallel_shader_compile.simple_queries
+KHR-GL45.parallel_shader_compile.max_shader_compile_threads
+KHR-GL45.parallel_shader_compile.compilation_completion_non_parallel
+KHR-GL45.parallel_shader_compile.compilation_completion_parallel
 KHR-GL45.post_depth_coverage_tests.PostDepthShader
 KHR-GL45.post_depth_coverage_tests.PostDepthSampleMask
 KHR-GL45.sparse_texture2_tests.ShaderExtension
@@ -6513,3 +6513,4 @@ KHR-GL45.polygon_offset_clamp.PolygonOffsetClampMinMax
 KHR-GL45.polygon_offset_clamp.PolygonOffsetClampZeroInfinity
 KHR-GL45.separable_programs_tf.tessellation_active
 KHR-GL45.separable_programs_tf.geometry_active
+KHR-GL45.spirv_extensions.spirv_extensions_queries

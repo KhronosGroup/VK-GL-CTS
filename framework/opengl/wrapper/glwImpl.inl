@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
+ * Generated from Khronos GL API description (gl.xml) revision a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90.
  */
 
 void glwActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -3644,12 +3644,12 @@ void glwMatrixTranslatefEXT (GLenum mode, GLfloat x, GLfloat y, GLfloat z)
 	gl->matrixTranslatefEXT(mode, x, y, z);
 }
 
-void glwMaxShaderCompilerThreadsARB (GLuint count)
+void glwMaxShaderCompilerThreadsKHR (GLuint count)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->maxShaderCompilerThreadsARB(count);
+	gl->maxShaderCompilerThreadsKHR(count);
 }
 
 void glwMemoryBarrier (GLbitfield barriers)
@@ -3692,12 +3692,12 @@ void glwMultiDrawArraysIndirect (GLenum mode, const void *indirect, GLsizei draw
 	gl->multiDrawArraysIndirect(mode, indirect, drawcount, stride);
 }
 
-void glwMultiDrawArraysIndirectCountARB (GLenum mode, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
+void glwMultiDrawArraysIndirectCount (GLenum mode, const void *indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->multiDrawArraysIndirectCountARB(mode, indirect, drawcount, maxdrawcount, stride);
+	gl->multiDrawArraysIndirectCount(mode, indirect, drawcount, maxdrawcount, stride);
 }
 
 void glwMultiDrawElements (GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount)
@@ -3724,12 +3724,12 @@ void glwMultiDrawElementsIndirect (GLenum mode, GLenum type, const void *indirec
 	gl->multiDrawElementsIndirect(mode, type, indirect, drawcount, stride);
 }
 
-void glwMultiDrawElementsIndirectCountARB (GLenum mode, GLenum type, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
+void glwMultiDrawElementsIndirectCount (GLenum mode, GLenum type, const void *indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->multiDrawElementsIndirectCountARB(mode, type, indirect, drawcount, maxdrawcount, stride);
+	gl->multiDrawElementsIndirectCount(mode, type, indirect, drawcount, maxdrawcount, stride);
 }
 
 void glwMultiTexBufferEXT (GLenum texunit, GLenum target, GLenum internalformat, GLuint buffer)
@@ -4356,12 +4356,12 @@ void glwPolygonOffset (GLfloat factor, GLfloat units)
 	gl->polygonOffset(factor, units);
 }
 
-void glwPolygonOffsetClampEXT (GLfloat factor, GLfloat units, GLfloat clamp)
+void glwPolygonOffsetClamp (GLfloat factor, GLfloat units, GLfloat clamp)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->polygonOffsetClampEXT(factor, units, clamp);
+	gl->polygonOffsetClamp(factor, units, clamp);
 }
 
 void glwPopDebugGroup (void)
@@ -5162,6 +5162,14 @@ void glwShaderStorageBlockBinding (GLuint program, GLuint storageBlockIndex, GLu
 	if (!gl)
 		return;
 	gl->shaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
+}
+
+void glwSpecializeShader (GLuint shader, const GLchar *pEntryPoint, GLuint numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->specializeShader(shader, pEntryPoint, numSpecializationConstants, pConstantIndex, pConstantValue);
 }
 
 void glwStencilFunc (GLenum func, GLint ref, GLuint mask)

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
+ * Generated from Khronos GL API description (gl.xml) revision a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90.
  */
 void					glActiveShaderProgram								(glw::GLuint pipeline, glw::GLuint program);
 void					glActiveTexture										(glw::GLenum texture);
@@ -458,17 +458,17 @@ void					glMatrixScaledEXT									(glw::GLenum mode, glw::GLdouble x, glw::GLdo
 void					glMatrixScalefEXT									(glw::GLenum mode, glw::GLfloat x, glw::GLfloat y, glw::GLfloat z);
 void					glMatrixTranslatedEXT								(glw::GLenum mode, glw::GLdouble x, glw::GLdouble y, glw::GLdouble z);
 void					glMatrixTranslatefEXT								(glw::GLenum mode, glw::GLfloat x, glw::GLfloat y, glw::GLfloat z);
-void					glMaxShaderCompilerThreadsARB						(glw::GLuint count);
+void					glMaxShaderCompilerThreadsKHR						(glw::GLuint count);
 void					glMemoryBarrier										(glw::GLbitfield barriers);
 void					glMemoryBarrierByRegion								(glw::GLbitfield barriers);
 void					glMinSampleShading									(glw::GLfloat value);
 void					glMultiDrawArrays									(glw::GLenum mode, const glw::GLint *first, const glw::GLsizei *count, glw::GLsizei drawcount);
 void					glMultiDrawArraysIndirect							(glw::GLenum mode, const void *indirect, glw::GLsizei drawcount, glw::GLsizei stride);
-void					glMultiDrawArraysIndirectCountARB					(glw::GLenum mode, glw::GLintptr indirect, glw::GLintptr drawcount, glw::GLsizei maxdrawcount, glw::GLsizei stride);
+void					glMultiDrawArraysIndirectCount						(glw::GLenum mode, const void *indirect, glw::GLintptr drawcount, glw::GLsizei maxdrawcount, glw::GLsizei stride);
 void					glMultiDrawElements									(glw::GLenum mode, const glw::GLsizei *count, glw::GLenum type, const void *const*indices, glw::GLsizei drawcount);
 void					glMultiDrawElementsBaseVertex						(glw::GLenum mode, const glw::GLsizei *count, glw::GLenum type, const void *const*indices, glw::GLsizei drawcount, const glw::GLint *basevertex);
 void					glMultiDrawElementsIndirect							(glw::GLenum mode, glw::GLenum type, const void *indirect, glw::GLsizei drawcount, glw::GLsizei stride);
-void					glMultiDrawElementsIndirectCountARB					(glw::GLenum mode, glw::GLenum type, glw::GLintptr indirect, glw::GLintptr drawcount, glw::GLsizei maxdrawcount, glw::GLsizei stride);
+void					glMultiDrawElementsIndirectCount					(glw::GLenum mode, glw::GLenum type, const void *indirect, glw::GLintptr drawcount, glw::GLsizei maxdrawcount, glw::GLsizei stride);
 void					glMultiTexBufferEXT									(glw::GLenum texunit, glw::GLenum target, glw::GLenum internalformat, glw::GLuint buffer);
 void					glMultiTexCoordPointerEXT							(glw::GLenum texunit, glw::GLint size, glw::GLenum type, glw::GLsizei stride, const void *pointer);
 void					glMultiTexEnvfEXT									(glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLfloat param);
@@ -547,7 +547,7 @@ void					glPointParameteriv									(glw::GLenum pname, const glw::GLint *params
 void					glPointSize											(glw::GLfloat size);
 void					glPolygonMode										(glw::GLenum face, glw::GLenum mode);
 void					glPolygonOffset										(glw::GLfloat factor, glw::GLfloat units);
-void					glPolygonOffsetClampEXT								(glw::GLfloat factor, glw::GLfloat units, glw::GLfloat clamp);
+void					glPolygonOffsetClamp								(glw::GLfloat factor, glw::GLfloat units, glw::GLfloat clamp);
 void					glPopDebugGroup										(void);
 void					glPopGroupMarkerEXT									(void);
 void					glPrimitiveBoundingBox								(glw::GLfloat minX, glw::GLfloat minY, glw::GLfloat minZ, glw::GLfloat minW, glw::GLfloat maxX, glw::GLfloat maxY, glw::GLfloat maxZ, glw::GLfloat maxW);
@@ -648,6 +648,7 @@ void					glScissorIndexedv									(glw::GLuint index, const glw::GLint *v);
 void					glShaderBinary										(glw::GLsizei count, const glw::GLuint *shaders, glw::GLenum binaryformat, const void *binary, glw::GLsizei length);
 void					glShaderSource										(glw::GLuint shader, glw::GLsizei count, const glw::GLchar *const*string, const glw::GLint *length);
 void					glShaderStorageBlockBinding							(glw::GLuint program, glw::GLuint storageBlockIndex, glw::GLuint storageBlockBinding);
+void					glSpecializeShader									(glw::GLuint shader, const glw::GLchar *pEntryPoint, glw::GLuint numSpecializationConstants, const glw::GLuint *pConstantIndex, const glw::GLuint *pConstantValue);
 void					glStencilFunc										(glw::GLenum func, glw::GLint ref, glw::GLuint mask);
 void					glStencilFuncSeparate								(glw::GLenum face, glw::GLenum func, glw::GLint ref, glw::GLuint mask);
 void					glStencilMask										(glw::GLuint mask);
