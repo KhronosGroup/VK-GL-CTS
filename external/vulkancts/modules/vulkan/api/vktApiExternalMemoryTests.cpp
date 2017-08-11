@@ -3463,8 +3463,10 @@ tcu::TestStatus testImageBindExportImportBind (Context&					context,
 	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
 
 	{
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handle));
 		const vk::Unique<vk::VkImage>			imageB	(createExternalImage(vkd, *device, queueFamilyIndex, config.externalType, format, width, height, tiling, 0u, usage));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(config.dedicated
+														 ? importDedicatedMemory(vkd, *device, *imageB, requirements, config.externalType, exportedMemoryTypeIndex, handle)
+														 : importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handle));
 
 		VK_CHECK(vkd.bindImageMemory(*device, *imageB, *memoryB, 0u));
 	}
@@ -3500,8 +3502,10 @@ tcu::TestStatus testImageExportBindImportBind (Context&					context,
 	VK_CHECK(vkd.bindImageMemory(*device, *imageA, *memoryA, 0u));
 
 	{
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handle));
 		const vk::Unique<vk::VkImage>			imageB	(createExternalImage(vkd, *device, queueFamilyIndex, config.externalType, format, width, height, tiling, 0u, usage));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(config.dedicated
+														 ? importDedicatedMemory(vkd, *device, *imageB, requirements, config.externalType, exportedMemoryTypeIndex, handle)
+														 : importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handle));
 
 		VK_CHECK(vkd.bindImageMemory(*device, *imageB, *memoryB, 0u));
 	}
@@ -3537,8 +3541,10 @@ tcu::TestStatus testImageExportImportBindBind (Context&					context,
 	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
 
 	{
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handle));
 		const vk::Unique<vk::VkImage>			imageB	(createExternalImage(vkd, *device, queueFamilyIndex, config.externalType, format, width, height, tiling, 0u, usage));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(config.dedicated
+														 ? importDedicatedMemory(vkd, *device, *imageB, requirements, config.externalType, exportedMemoryTypeIndex, handle)
+														 : importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handle));
 
 		VK_CHECK(vkd.bindImageMemory(*device, *imageA, *memoryA, 0u));
 		VK_CHECK(vkd.bindImageMemory(*device, *imageB, *memoryB, 0u));
