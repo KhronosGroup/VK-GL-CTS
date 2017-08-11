@@ -24,6 +24,7 @@
 
 #include "vktPipelineMultisampleTests.hpp"
 #include "vktPipelineMultisampleImageTests.hpp"
+#include "vktPipelineMultisampleSampleLocationsExtTests.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
@@ -2953,6 +2954,11 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 	// Load/store on a multisampled rendered image (different kinds of access: color attachment write, storage image, etc.)
 	{
 		multisampleTests->addChild(createMultisampleStorageImageTests(testCtx));
+	}
+
+	// VK_EXT_sample_locations
+	{
+		multisampleTests->addChild(createMultisampleSampleLocationsExtTests(testCtx));
 	}
 
 	return multisampleTests.release();

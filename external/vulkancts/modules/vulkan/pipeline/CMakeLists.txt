@@ -41,6 +41,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineMultisampleShaderBuiltInTests.hpp
 	vktPipelineMultisampleImageTests.cpp
 	vktPipelineMultisampleImageTests.hpp
+	vktPipelineMultisampleSampleLocationsExtTests.cpp
+	vktPipelineMultisampleSampleLocationsExtTests.hpp
 	vktPipelineInputAssemblyTests.cpp
 	vktPipelineInputAssemblyTests.hpp
 	vktPipelineReferenceRenderer.cpp
