@@ -137,6 +137,12 @@ void access_built_in_types_inside_other_shaders (NegativeTestContext& ctx)
 {
 	checkSupported(ctx);
 
+	if ((!ctx.isExtensionSupported("GL_EXT_tessellation_shader") && !ctx.isExtensionSupported("GL_OES_tessellation_shader")) ||
+		(!ctx.isExtensionSupported("GL_EXT_geometry_shader") && !ctx.isExtensionSupported("GL_OES_geometry_shader")))
+	{
+		TCU_THROW(NotSupportedError, "tessellation and geometry shader extensions not supported");
+	}
+
 	std::ostringstream	shader;
 
 	struct testConfig
