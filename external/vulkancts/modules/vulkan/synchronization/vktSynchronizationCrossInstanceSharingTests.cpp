@@ -432,6 +432,8 @@ de::MovePtr<vk::Allocation> allocateAndBindMemory (const vk::DeviceInterface&			
 
 		if (!dedicated && dedicatedRequirements.requiresDedicatedAllocation)
 			TCU_THROW(NotSupportedError, "Memory requires dedicated allocation");
+
+		memoryRequirements = requirements.memoryRequirements;
 	}
 	else
 	{
@@ -855,7 +857,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_physicalDeviceA			(getPhysicalDevice(m_vkiA, *m_instanceA, context.getTestContext().getCommandLine()))
 	, m_queueFamiliesA			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
 	, m_queueFamilyIndicesA		(getFamilyIndices(m_queueFamiliesA))
-	, m_getMemReq2Supported		(de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(), "VK_KHR_get_memory_requirements2"))
+	, m_getMemReq2Supported		(de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_get_memory_requirements2"))
 	, m_deviceA					(createDevice(m_vkiA, m_physicalDeviceA, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
 	, m_vkdA					(m_vkiA, *m_deviceA)
 
@@ -931,6 +933,11 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 
 		if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
 			TCU_THROW(NotSupportedError, "Importing image resource not supported");
+
+		if (!m_config.dedicated && (externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR) != 0)
+		{
+			TCU_THROW(NotSupportedError, "Handle requires dedicated allocation, but test uses suballocated memory");
+		}
 	}
 	else
 	{
@@ -956,6 +963,11 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 		if ((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR) == 0
 				|| (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
 			TCU_THROW(NotSupportedError, "Exporting and importing memory type not supported");
+
+		if (!m_config.dedicated && (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR) != 0)
+		{
+			TCU_THROW(NotSupportedError, "Handle requires dedicated allocation, but test uses suballocated memory");
+		}
 	}
 
 	// Check semaphore support

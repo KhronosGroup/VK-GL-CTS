@@ -151,7 +151,7 @@ deUint32 greatestCommonDivisor (const deUint32 a, const deUint32 b)
 	deUint32 x=a;
 	deUint32 y=b;
 
-	while (x%b != 0)
+	while (x%y != 0)
 	{
 		temp = y;
 		y = x%y;

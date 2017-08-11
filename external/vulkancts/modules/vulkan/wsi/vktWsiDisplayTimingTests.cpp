@@ -486,7 +486,7 @@ vk::Move<vk::VkRenderPass> createRenderPass (const vk::DeviceInterface&	vkd,
 			vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,
 
-			vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			vk::VK_IMAGE_LAYOUT_UNDEFINED,
 			vk::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
 		}
 	};

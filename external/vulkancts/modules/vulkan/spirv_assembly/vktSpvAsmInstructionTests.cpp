@@ -417,7 +417,7 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 																				useStorageBuffer ? "opatomic_storage_buffer" : "opatomic",
 																				"Test the OpAtomic* opcodes"));
 	de::Random						rnd					(deStringHash(group->getName()));
-	const int						numElements			= 1000000;
+	const int						numElements			= 65535;
 	vector<OpAtomicCase>			cases;
 
 	const StringTemplate			shaderTemplate	(
