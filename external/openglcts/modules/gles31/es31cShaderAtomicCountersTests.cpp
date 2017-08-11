@@ -3378,6 +3378,53 @@ class NegativeArithmetic : public BasicUsageCS
 	}
 };
 
+class NegativeUnsizedArray : public SACSubcaseBase
+{
+	virtual std::string Title()
+	{
+		return NL "GLSL errors";
+	}
+
+	virtual std::string Purpose()
+	{
+		return NL "Verify that it is compile-time error to declare an unsized array of atomic_uint..";
+	}
+
+	virtual std::string Method()
+	{
+		return NL "";
+	}
+
+	virtual std::string PassCriteria()
+	{
+		return NL "";
+	}
+
+	virtual long Run()
+	{
+		const char* glsl_fs1 = "#version 310 es" NL "layout(location = 0) out uvec4 o_color[4];"
+							   "  layout(binding = 0, offset = 4) uniform atomic_uint ac_counter[];" NL
+							   "void main() {" NL "  o_color[0] = uvec4(atomicCounterIncrement(ac_counter[0]));" NL "}";
+
+		GLuint sh = glCreateShader(GL_FRAGMENT_SHADER);
+		glShaderSource(sh, 1, &glsl_fs1, NULL);
+		glCompileShader(sh);
+		GLint status_comp;
+		glGetShaderiv(sh, GL_COMPILE_STATUS, &status_comp);
+		glDeleteShader(sh);
+
+		if (status_comp == GL_TRUE)
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected error during fragment shader compilation."
+				<< tcu::TestLog::EndMessage;
+			return ERROR;
+		}
+
+		return NO_ERROR;
+	}
+};
+
 class AdvancedManyDrawCalls2 : public SACSubcaseBase
 {
 
@@ -3729,5 +3776,6 @@ void ShaderAtomicCountersTests::init()
 	addChild(new TestSubcase(m_context, "negative-uniform", TestSubcase::Create<NegativeUniform>));
 	addChild(new TestSubcase(m_context, "negative-array", TestSubcase::Create<NegativeArray>));
 	addChild(new TestSubcase(m_context, "negative-arithmetic", TestSubcase::Create<NegativeArithmetic>));
+	addChild(new TestSubcase(m_context, "negative-unsized-array", TestSubcase::Create<NegativeUnsizedArray>));
 }
 }

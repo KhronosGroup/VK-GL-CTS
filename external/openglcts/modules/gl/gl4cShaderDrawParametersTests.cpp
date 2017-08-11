@@ -756,7 +756,7 @@ void ShaderMultiDrawArraysIndirectCountParametersTestCase::drawCommand()
 {
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
-	gl.multiDrawArraysIndirectCountARB(GL_TRIANGLE_STRIP, 0, 0, 3, sizeof(SDPDrawArraysIndirectCommand));
+	gl.multiDrawArraysIndirectCount(GL_TRIANGLE_STRIP, 0, 0, 3, sizeof(SDPDrawArraysIndirectCommand));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glMultiDrawArraysIndirect");
 }
 
@@ -822,7 +822,7 @@ void ShaderMultiDrawElementsIndirectCountParametersTestCase::drawCommand()
 {
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
-	gl.multiDrawElementsIndirectCountARB(GL_TRIANGLE_STRIP, GL_UNSIGNED_SHORT, 0, 0, 3,
+	gl.multiDrawElementsIndirectCount(GL_TRIANGLE_STRIP, GL_UNSIGNED_SHORT, 0, 0, 3,
 										 sizeof(SDPDrawElementsIndirectCommand));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glMultiDrawElementsIndirect");
 }

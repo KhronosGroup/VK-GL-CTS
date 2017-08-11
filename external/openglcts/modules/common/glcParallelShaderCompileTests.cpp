@@ -2,7 +2,7 @@
  * OpenGL Conformance Test Suite
  * -----------------------------
  *
- * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2016-2017 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,11 @@
 
 /**
  */ /*!
- * \file  gl4cParallelShaderCompileTests.cpp
- * \brief Conformance tests for the GL_ARB_parallel_shader_compile functionality.
+ * \file  glcParallelShaderCompileTests.cpp
+ * \brief Conformance tests for the GL_KHR_parallel_shader_compile functionality.
  */ /*-------------------------------------------------------------------*/
 
-#include "gl4cParallelShaderCompileTests.hpp"
+#include "glcParallelShaderCompileTests.hpp"
 #include "deClock.h"
 #include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
@@ -39,19 +39,19 @@
 using namespace glu;
 using namespace glw;
 
-namespace gl4cts
+namespace glcts
 {
 
-static const char* vShader = "#version 450\n"
-							 "\n"
+static const char* shaderVersionES = "#version 300 es\n";
+static const char* shaderVersionGL = "#version 450\n";
+static const char* vShader		   = "\n"
 							 "in vec3 vertex;\n"
 							 "\n"
 							 "int main() {\n"
 							 "    gl_Position = vec4(vertex, 1);\n"
 							 "}\n";
 
-static const char* fShader = "#version 450\n"
-							 "\n"
+static const char* fShader = "\n"
 							 "out ver4 fragColor;\n"
 							 "\n"
 							 "int main() {\n"
@@ -65,8 +65,8 @@ static const char* fShader = "#version 450\n"
  *  @param description Test description
  */
 SimpleQueriesTest::SimpleQueriesTest(deqp::Context& context)
-	: TestCase(context, "SimpleQueriesTest",
-			   "Tests verifies if simple queries works as expected for MAX_SHADER_COMPILER_THREADS_ARB <pname>")
+	: TestCase(context, "simple_queries",
+			   "Tests verifies if simple queries works as expected for MAX_SHADER_COMPILER_THREADS_KHR <pname>")
 {
 	/* Left blank intentionally */
 }
@@ -77,13 +77,19 @@ SimpleQueriesTest::SimpleQueriesTest(deqp::Context& context)
  */
 tcu::TestNode::IterateResult SimpleQueriesTest::iterate()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_parallel_shader_compile"))
+	const glu::ContextInfo& contextInfo		= m_context.getContextInfo();
+	const glu::ContextType& contextType		= m_context.getRenderContext().getType();
+	const bool				isGL			= glu::isContextTypeGLCore(contextType);
+	const bool				supportParallel	= (isGL && contextInfo.isExtensionSupported("GL_ARB_parallel_shader_compile")) ||
+												contextInfo.isExtensionSupported("GL_KHR_parallel_shader_compile");
+
+	if (!supportParallel)
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
 		return STOP;
 	}
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions&		gl			 = m_context.getRenderContext().getFunctions();
 
 	GLboolean boolValue;
 	GLint	 intValue;
@@ -91,30 +97,48 @@ tcu::TestNode::IterateResult SimpleQueriesTest::iterate()
 	GLfloat   floatValue;
 	GLdouble  doubleValue;
 
-	gl.getBooleanv(GL_MAX_SHADER_COMPILER_THREADS_ARB, &boolValue);
+	bool supportsInt64  = isGL || glu::contextSupports(contextType, glu::ApiType::es(3, 0));
+	bool supportsDouble = isGL;
+
+	gl.getBooleanv(GL_MAX_SHADER_COMPILER_THREADS_KHR, &boolValue);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getBooleanv");
 
-	gl.getIntegerv(GL_MAX_SHADER_COMPILER_THREADS_ARB, &intValue);
+	gl.getIntegerv(GL_MAX_SHADER_COMPILER_THREADS_KHR, &intValue);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
 
-	gl.getInteger64v(GL_MAX_SHADER_COMPILER_THREADS_ARB, &int64Value);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "getInteger64v");
+	if (supportsInt64)
+	{
+		gl.getInteger64v(GL_MAX_SHADER_COMPILER_THREADS_KHR, &int64Value);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "getInteger64v");
+	}
 
-	gl.getFloatv(GL_MAX_SHADER_COMPILER_THREADS_ARB, &floatValue);
+	gl.getFloatv(GL_MAX_SHADER_COMPILER_THREADS_KHR, &floatValue);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getFloatv");
 
-	gl.getDoublev(GL_MAX_SHADER_COMPILER_THREADS_ARB, &doubleValue);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "getDoublev");
-
-	if (boolValue != (intValue != 0) || intValue != (GLint)int64Value || intValue != (GLint)floatValue ||
-		intValue != (GLint)doubleValue)
+	if (supportsDouble)
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Simple queries returned different values: "
-						   << "bool(" << (int)boolValue << "), "
-						   << "int(" << intValue << "), "
-						   << "int64(" << int64Value << "), "
-						   << "float(" << floatValue << "), "
-						   << "double(" << doubleValue << ")" << tcu::TestLog::EndMessage;
+		gl.getDoublev(GL_MAX_SHADER_COMPILER_THREADS_KHR, &doubleValue);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "getDoublev");
+	}
+
+	if (boolValue != (intValue != 0) || intValue != (GLint)floatValue ||
+		(supportsInt64 && intValue != (GLint)int64Value) || (supportsDouble && intValue != (GLint)doubleValue))
+	{
+		tcu::MessageBuilder message = m_testCtx.getLog() << tcu::TestLog::Message;
+
+		message << "Simple queries returned different values: "
+				<< "bool(" << (int)boolValue << "), "
+				<< "int(" << intValue << "), ";
+
+		if (supportsInt64)
+			message << "int64(" << int64Value << "), ";
+
+		message << "float(" << floatValue << ")";
+
+		if (supportsDouble)
+			message << ", double(" << doubleValue << ")";
+
+		message << tcu::TestLog::EndMessage;
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 		return STOP;
@@ -131,8 +155,8 @@ tcu::TestNode::IterateResult SimpleQueriesTest::iterate()
  *  @param description Test description
  */
 MaxShaderCompileThreadsTest::MaxShaderCompileThreadsTest(deqp::Context& context)
-	: TestCase(context, "MaxShaderCompileThreadsTest",
-			   "Tests verifies if MaxShaderCompileThreadsARB function works as expected")
+	: TestCase(context, "max_shader_compile_threads",
+			   "Tests verifies if MaxShaderCompileThreadsKHR function works as expected")
 {
 	/* Left blank intentionally */
 }
@@ -143,7 +167,13 @@ MaxShaderCompileThreadsTest::MaxShaderCompileThreadsTest(deqp::Context& context)
  */
 tcu::TestNode::IterateResult MaxShaderCompileThreadsTest::iterate()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_parallel_shader_compile"))
+	const glu::ContextInfo& contextInfo		= m_context.getContextInfo();
+	const glu::ContextType& contextType		= m_context.getRenderContext().getType();
+	const bool				isGL			= glu::isContextTypeGLCore(contextType);
+	const bool				supportParallel	= (isGL && contextInfo.isExtensionSupported("GL_ARB_parallel_shader_compile")) ||
+												contextInfo.isExtensionSupported("GL_KHR_parallel_shader_compile");
+
+	if (!supportParallel)
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
 		return STOP;
@@ -153,10 +183,10 @@ tcu::TestNode::IterateResult MaxShaderCompileThreadsTest::iterate()
 
 	GLint intValue;
 
-	gl.maxShaderCompilerThreadsARB(0);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "maxShaderCompilerThreadsARB");
+	gl.maxShaderCompilerThreadsKHR(0);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "maxShaderCompilerThreadsKHR");
 
-	gl.getIntegerv(GL_MAX_SHADER_COMPILER_THREADS_ARB, &intValue);
+	gl.getIntegerv(GL_MAX_SHADER_COMPILER_THREADS_KHR, &intValue);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
 
 	if (intValue != 0)
@@ -165,10 +195,10 @@ tcu::TestNode::IterateResult MaxShaderCompileThreadsTest::iterate()
 		return STOP;
 	}
 
-	gl.maxShaderCompilerThreadsARB(0xFFFFFFFF);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "maxShaderCompilerThreadsARB");
+	gl.maxShaderCompilerThreadsKHR(0xFFFFFFFF);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "maxShaderCompilerThreadsKHR");
 
-	gl.getIntegerv(GL_MAX_SHADER_COMPILER_THREADS_ARB, &intValue);
+	gl.getIntegerv(GL_MAX_SHADER_COMPILER_THREADS_KHR, &intValue);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
 
 	if (intValue != GLint(0xFFFFFFFF))
@@ -188,7 +218,7 @@ tcu::TestNode::IterateResult MaxShaderCompileThreadsTest::iterate()
  *  @param description Test description
  */
 CompilationCompletionNonParallelTest::CompilationCompletionNonParallelTest(deqp::Context& context)
-	: TestCase(context, "CompilationCompletionNonParallelTest",
+	: TestCase(context, "compilation_completion_non_parallel",
 			   "Tests verifies if shader COMPLETION_STATUS query works as expected for non parallel compilation")
 {
 	/* Left blank intentionally */
@@ -200,7 +230,13 @@ CompilationCompletionNonParallelTest::CompilationCompletionNonParallelTest(deqp:
  */
 tcu::TestNode::IterateResult CompilationCompletionNonParallelTest::iterate()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_parallel_shader_compile"))
+	const glu::ContextInfo& contextInfo		= m_context.getContextInfo();
+	const glu::ContextType& contextType		= m_context.getRenderContext().getType();
+	const bool				isGL			= glu::isContextTypeGLCore(contextType);
+	const bool				supportParallel	= (isGL && contextInfo.isExtensionSupported("GL_ARB_parallel_shader_compile")) ||
+												contextInfo.isExtensionSupported("GL_KHR_parallel_shader_compile");
+
+	if (!supportParallel)
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
 		return STOP;
@@ -210,28 +246,31 @@ tcu::TestNode::IterateResult CompilationCompletionNonParallelTest::iterate()
 
 	GLint completionStatus;
 
-	gl.maxShaderCompilerThreadsARB(0);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "maxShaderCompilerThreadsARB");
+	gl.maxShaderCompilerThreadsKHR(0);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "maxShaderCompilerThreadsKHR");
 
 	{
 		Program program(gl);
 		Shader  vertexShader(gl, SHADERTYPE_VERTEX);
 		Shader  fragmentShader(gl, SHADERTYPE_FRAGMENT);
 
-		const char* vSources[] = { vShader };
-		const int   vLengths[] = { int(strlen(vShader)) };
-		vertexShader.setSources(1, vSources, vLengths);
+		bool		isContextES   = (glu::isContextTypeES(m_context.getRenderContext().getType()));
+		const char* shaderVersion = isContextES ? shaderVersionES : shaderVersionGL;
 
-		const char* fSources[] = { fShader };
-		const int   fLengths[] = { int(strlen(fShader)) };
-		fragmentShader.setSources(1, fSources, fLengths);
+		const char* vSources[] = { shaderVersion, vShader };
+		const int   vLengths[] = { int(strlen(shaderVersion)), int(strlen(vShader)) };
+		vertexShader.setSources(2, vSources, vLengths);
+
+		const char* fSources[] = { shaderVersion, fShader };
+		const int   fLengths[] = { int(strlen(shaderVersion)), int(strlen(fShader)) };
+		fragmentShader.setSources(2, fSources, fLengths);
 
 		gl.compileShader(vertexShader.getShader());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "compileShader");
 		gl.compileShader(fragmentShader.getShader());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "compileShader");
 
-		gl.getShaderiv(fragmentShader.getShader(), GL_COMPLETION_STATUS_ARB, &completionStatus);
+		gl.getShaderiv(fragmentShader.getShader(), GL_COMPLETION_STATUS_KHR, &completionStatus);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "getShaderiv");
 		if (!completionStatus)
 		{
@@ -244,7 +283,7 @@ tcu::TestNode::IterateResult CompilationCompletionNonParallelTest::iterate()
 		program.attachShader(fragmentShader.getShader());
 		gl.linkProgram(program.getProgram());
 
-		gl.getProgramiv(program.getProgram(), GL_COMPLETION_STATUS_ARB, &completionStatus);
+		gl.getProgramiv(program.getProgram(), GL_COMPLETION_STATUS_KHR, &completionStatus);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "getProgramiv");
 		if (!completionStatus)
 		{
@@ -265,7 +304,7 @@ tcu::TestNode::IterateResult CompilationCompletionNonParallelTest::iterate()
  *  @param description Test description
  */
 CompilationCompletionParallelTest::CompilationCompletionParallelTest(deqp::Context& context)
-	: TestCase(context, "CompilationCompletionParallelTest",
+	: TestCase(context, "compilation_completion_parallel",
 			   "Tests verifies if shader COMPLETION_STATUS query works as expected for parallel compilation")
 {
 	/* Left blank intentionally */
@@ -277,7 +316,13 @@ CompilationCompletionParallelTest::CompilationCompletionParallelTest(deqp::Conte
  */
 tcu::TestNode::IterateResult CompilationCompletionParallelTest::iterate()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_parallel_shader_compile"))
+	const glu::ContextInfo& contextInfo		= m_context.getContextInfo();
+	const glu::ContextType& contextType		= m_context.getRenderContext().getType();
+	const bool				isGL			= glu::isContextTypeGLCore(contextType);
+	const bool				supportParallel	= (isGL && contextInfo.isExtensionSupported("GL_ARB_parallel_shader_compile")) ||
+												contextInfo.isExtensionSupported("GL_KHR_parallel_shader_compile");
+
+	if (!supportParallel)
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
 		return STOP;
@@ -287,13 +332,16 @@ tcu::TestNode::IterateResult CompilationCompletionParallelTest::iterate()
 
 	GLint completionStatus;
 
-	gl.maxShaderCompilerThreadsARB(8);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "maxShaderCompilerThreadsARB");
+	gl.maxShaderCompilerThreadsKHR(8);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "maxShaderCompilerThreadsKHR");
 
 	{
 		Shader   vertexShader(gl, SHADERTYPE_VERTEX);
 		deUint32 fragmentShader[8];
 		deUint32 program[8];
+
+		bool		isContextES   = (glu::isContextTypeES(m_context.getRenderContext().getType()));
+		const char* shaderVersion = isContextES ? shaderVersionES : shaderVersionGL;
 
 		for (int i = 0; i < 8; ++i)
 		{
@@ -301,16 +349,16 @@ tcu::TestNode::IterateResult CompilationCompletionParallelTest::iterate()
 			program[i]		  = gl.createProgram();
 		}
 
-		const char* vSources[] = { vShader };
-		const int   vLengths[] = { int(strlen(vShader)) };
-		vertexShader.setSources(1, vSources, vLengths);
+		const char* vSources[] = { shaderVersion, vShader };
+		const int   vLengths[] = { int(strlen(shaderVersion)), int(strlen(vShader)) };
+		vertexShader.setSources(2, vSources, vLengths);
 
 		//Compilation test
 		for (int i = 0; i < 8; ++i)
 		{
-			const char* fSources[] = { fShader };
-			const int   fLengths[] = { int(strlen(fShader)) };
-			gl.shaderSource(fragmentShader[i], 1, fSources, fLengths);
+			const char* fSources[] = { shaderVersion, fShader };
+			const int   fLengths[] = { int(strlen(shaderVersion)), int(strlen(fShader)) };
+			gl.shaderSource(fragmentShader[i], 2, fSources, fLengths);
 		}
 
 		gl.compileShader(vertexShader.getShader());
@@ -329,7 +377,7 @@ tcu::TestNode::IterateResult CompilationCompletionParallelTest::iterate()
 				completion = 0;
 				for (int i = 0; i < 8; ++i)
 				{
-					gl.getShaderiv(fragmentShader[i], GL_COMPLETION_STATUS_ARB, &completionStatus);
+					gl.getShaderiv(fragmentShader[i], GL_COMPLETION_STATUS_KHR, &completionStatus);
 					GLU_EXPECT_NO_ERROR(gl.getError(), "getShaderiv");
 					if (completionStatus)
 						completion++;
@@ -371,7 +419,7 @@ tcu::TestNode::IterateResult CompilationCompletionParallelTest::iterate()
 				completion = 0;
 				for (int i = 0; i < 8; ++i)
 				{
-					gl.getProgramiv(program[i], GL_COMPLETION_STATUS_ARB, &completionStatus);
+					gl.getProgramiv(program[i], GL_COMPLETION_STATUS_KHR, &completionStatus);
 					GLU_EXPECT_NO_ERROR(gl.getError(), "getProgramiv");
 					if (completionStatus)
 						completion++;
@@ -401,7 +449,7 @@ tcu::TestNode::IterateResult CompilationCompletionParallelTest::iterate()
  */
 ParallelShaderCompileTests::ParallelShaderCompileTests(deqp::Context& context)
 	: TestCaseGroup(context, "parallel_shader_compile",
-					"Verify conformance of CTS_ARB_parallel_shader_compile implementation")
+					"Verify conformance of KHR_parallel_shader_compile implementation")
 {
 }
 
@@ -414,4 +462,4 @@ void ParallelShaderCompileTests::init()
 	addChild(new CompilationCompletionParallelTest(m_context));
 }
 
-} /* gl4cts namespace */
+} /* glcts namespace */

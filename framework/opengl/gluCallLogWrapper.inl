@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
+ * Generated from Khronos GL API description (gl.xml) revision a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90.
  */
 
 void CallLogWrapper::glActiveShaderProgram (glw::GLuint pipeline, glw::GLuint program)
@@ -3424,11 +3424,11 @@ void CallLogWrapper::glMatrixTranslatefEXT (glw::GLenum mode, glw::GLfloat x, gl
 	m_gl.matrixTranslatefEXT(mode, x, y, z);
 }
 
-void CallLogWrapper::glMaxShaderCompilerThreadsARB (glw::GLuint count)
+void CallLogWrapper::glMaxShaderCompilerThreadsKHR (glw::GLuint count)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMaxShaderCompilerThreadsARB(" << count << ");" << TestLog::EndMessage;
-	m_gl.maxShaderCompilerThreadsARB(count);
+		m_log << TestLog::Message << "glMaxShaderCompilerThreadsKHR(" << count << ");" << TestLog::EndMessage;
+	m_gl.maxShaderCompilerThreadsKHR(count);
 }
 
 void CallLogWrapper::glMemoryBarrier (glw::GLbitfield barriers)
@@ -3466,11 +3466,11 @@ void CallLogWrapper::glMultiDrawArraysIndirect (glw::GLenum mode, const void *in
 	m_gl.multiDrawArraysIndirect(mode, indirect, drawcount, stride);
 }
 
-void CallLogWrapper::glMultiDrawArraysIndirectCountARB (glw::GLenum mode, glw::GLintptr indirect, glw::GLintptr drawcount, glw::GLsizei maxdrawcount, glw::GLsizei stride)
+void CallLogWrapper::glMultiDrawArraysIndirectCount (glw::GLenum mode, const void *indirect, glw::GLintptr drawcount, glw::GLsizei maxdrawcount, glw::GLsizei stride)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiDrawArraysIndirectCountARB(" << toHex(mode) << ", " << indirect << ", " << drawcount << ", " << maxdrawcount << ", " << stride << ");" << TestLog::EndMessage;
-	m_gl.multiDrawArraysIndirectCountARB(mode, indirect, drawcount, maxdrawcount, stride);
+		m_log << TestLog::Message << "glMultiDrawArraysIndirectCount(" << toHex(mode) << ", " << indirect << ", " << drawcount << ", " << maxdrawcount << ", " << stride << ");" << TestLog::EndMessage;
+	m_gl.multiDrawArraysIndirectCount(mode, indirect, drawcount, maxdrawcount, stride);
 }
 
 void CallLogWrapper::glMultiDrawElements (glw::GLenum mode, const glw::GLsizei *count, glw::GLenum type, const void *const*indices, glw::GLsizei drawcount)
@@ -3494,11 +3494,11 @@ void CallLogWrapper::glMultiDrawElementsIndirect (glw::GLenum mode, glw::GLenum 
 	m_gl.multiDrawElementsIndirect(mode, type, indirect, drawcount, stride);
 }
 
-void CallLogWrapper::glMultiDrawElementsIndirectCountARB (glw::GLenum mode, glw::GLenum type, glw::GLintptr indirect, glw::GLintptr drawcount, glw::GLsizei maxdrawcount, glw::GLsizei stride)
+void CallLogWrapper::glMultiDrawElementsIndirectCount (glw::GLenum mode, glw::GLenum type, const void *indirect, glw::GLintptr drawcount, glw::GLsizei maxdrawcount, glw::GLsizei stride)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiDrawElementsIndirectCountARB(" << toHex(mode) << ", " << toHex(type) << ", " << indirect << ", " << drawcount << ", " << maxdrawcount << ", " << stride << ");" << TestLog::EndMessage;
-	m_gl.multiDrawElementsIndirectCountARB(mode, type, indirect, drawcount, maxdrawcount, stride);
+		m_log << TestLog::Message << "glMultiDrawElementsIndirectCount(" << toHex(mode) << ", " << toHex(type) << ", " << indirect << ", " << drawcount << ", " << maxdrawcount << ", " << stride << ");" << TestLog::EndMessage;
+	m_gl.multiDrawElementsIndirectCount(mode, type, indirect, drawcount, maxdrawcount, stride);
 }
 
 void CallLogWrapper::glMultiTexBufferEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum internalformat, glw::GLuint buffer)
@@ -4047,11 +4047,11 @@ void CallLogWrapper::glPolygonOffset (glw::GLfloat factor, glw::GLfloat units)
 	m_gl.polygonOffset(factor, units);
 }
 
-void CallLogWrapper::glPolygonOffsetClampEXT (glw::GLfloat factor, glw::GLfloat units, glw::GLfloat clamp)
+void CallLogWrapper::glPolygonOffsetClamp (glw::GLfloat factor, glw::GLfloat units, glw::GLfloat clamp)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glPolygonOffsetClampEXT(" << factor << ", " << units << ", " << clamp << ");" << TestLog::EndMessage;
-	m_gl.polygonOffsetClampEXT(factor, units, clamp);
+		m_log << TestLog::Message << "glPolygonOffsetClamp(" << factor << ", " << units << ", " << clamp << ");" << TestLog::EndMessage;
+	m_gl.polygonOffsetClamp(factor, units, clamp);
 }
 
 void CallLogWrapper::glPopDebugGroup (void)
@@ -4752,6 +4752,13 @@ void CallLogWrapper::glShaderStorageBlockBinding (glw::GLuint program, glw::GLui
 	if (m_enableLog)
 		m_log << TestLog::Message << "glShaderStorageBlockBinding(" << program << ", " << storageBlockIndex << ", " << storageBlockBinding << ");" << TestLog::EndMessage;
 	m_gl.shaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
+}
+
+void CallLogWrapper::glSpecializeShader (glw::GLuint shader, const glw::GLchar *pEntryPoint, glw::GLuint numSpecializationConstants, const glw::GLuint *pConstantIndex, const glw::GLuint *pConstantValue)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glSpecializeShader(" << shader << ", " << getStringStr(pEntryPoint) << ", " << numSpecializationConstants << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(pConstantIndex))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(pConstantValue))) << ");" << TestLog::EndMessage;
+	m_gl.specializeShader(shader, pEntryPoint, numSpecializationConstants, pConstantIndex, pConstantValue);
 }
 
 void CallLogWrapper::glStencilFunc (glw::GLenum func, glw::GLint ref, glw::GLuint mask)

@@ -1851,8 +1851,8 @@ std::string PerVertexValidationTest::getTestIterationName(_test_iteration iterat
 		break;
 
 	case TEST_ITERATION_PERVERTEX_BLOCK_UNDEFINED:
-		result =
-			"No gl_PerVertex block defined in shader programs for all shader stages supported by the running context";
+		result = "No gl_PerVertex block defined in shader programs for all shader stages supported by the running "
+				 "context";
 		break;
 	default:
 		result = "Unknown";
@@ -1907,11 +1907,11 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 		std::stringstream gs_body_sstream;
 
 		*out_min_context_type_ptr = (is_cull_distance_iteration) ? glu::ContextType(4, 5, glu::PROFILE_CORE) :
-																   glu::ContextType(3, 2, glu::PROFILE_CORE);
+																   glu::ContextType(4, 1, glu::PROFILE_CORE);
 		*out_used_shader_stages_ptr = (_shader_stage)(SHADER_STAGE_GEOMETRY | SHADER_STAGE_VERTEX);
 
 		/* Form the geometry shader body */
-		gs_body_sstream << ((!is_cull_distance_iteration) ? "#version 150\n" : "version 450\n")
+		gs_body_sstream << ((!is_cull_distance_iteration) ? "#version 410\n" : "version 450\n")
 						<< "\n"
 						   "layout(points)                   in;\n"
 						   "layout(points, max_vertices = 1) out;\n"
@@ -2057,7 +2057,7 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 			const bool		   is_tc_stage		   = (n_iteration == 0);
 			std::stringstream* current_sstream_ptr = (is_tc_stage) ? &tc_sstream : &te_sstream;
 
-			*current_sstream_ptr << ((is_cull_distance_iteration) ? "#version 450 core\n" : "#version 400\n") << "\n";
+			*current_sstream_ptr << ((is_cull_distance_iteration) ? "#version 450 core\n" : "#version 410\n") << "\n";
 
 			if (is_tc_stage)
 			{
@@ -2196,7 +2196,7 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 			(iteration == TEST_ITERATION_UNDECLARED_OUT_PERVERTEX_VS_GL_CULLDISTANCE_USAGE);
 
 		*out_min_context_type_ptr = (is_cull_distance_iteration) ? glu::ContextType(4, 5, glu::PROFILE_CORE) :
-																   glu::ContextType(4, 0, glu::PROFILE_CORE);
+																   glu::ContextType(4, 1, glu::PROFILE_CORE);
 		*out_used_shader_stages_ptr = (_shader_stage)(SHADER_STAGE_VERTEX);
 
 		/* Determine what the main() body contents should be. */
@@ -2231,9 +2231,7 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 	case TEST_ITERATION_PERVERTEX_DECLARATION_MISMATCH_GS_TC_TE_VS:
 	case TEST_ITERATION_PERVERTEX_DECLARATION_MISMATCH_TC_TE_VS:
 	{
-		*out_min_context_type_ptr = (iteration == TEST_ITERATION_PERVERTEX_DECLARATION_MISMATCH_GS_TC_TE_VS) ?
-										glu::ContextType(4, 0, glu::PROFILE_CORE) :
-										glu::ContextType(3, 2, glu::PROFILE_CORE);
+		*out_min_context_type_ptr   = glu::ContextType(4, 1, glu::PROFILE_CORE);
 		*out_used_shader_stages_ptr = SHADER_STAGE_VERTEX;
 
 		if (iteration == TEST_ITERATION_PERVERTEX_DECLARATION_MISMATCH_GS_TC_TE_VS ||
@@ -2250,7 +2248,7 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 		}
 
 		/* Shader bodies are predefined in this case. */
-		*out_gs_body_ptr = "#version 150\n"
+		*out_gs_body_ptr = "#version 410\n"
 						   "\n"
 						   "layout (points)                   in;\n"
 						   "layout (points, max_vertices = 4) out;\n"
@@ -2270,7 +2268,7 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 						   "    gl_ClipDistance[0] = 0.5;\n"
 						   "    EmitVertex();\n"
 						   "}\n";
-		*out_tc_body_ptr = "#version 400\n"
+		*out_tc_body_ptr = "#version 410\n"
 						   "\n"
 						   "layout (vertices = 4) out;\n"
 						   "\n"
@@ -2288,7 +2286,7 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 						   "{\n"
 						   "    gl_out[gl_InvocationID].gl_PointSize = gl_in[0].gl_PointSize + 1.0;\n"
 						   "}\n";
-		*out_te_body_ptr = "#version 400\n"
+		*out_te_body_ptr = "#version 410\n"
 						   "\n"
 						   "layout (isolines) in;\n"
 						   "\n"
@@ -2308,7 +2306,7 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 						   "{\n"
 						   "    gl_Position = vec4(gl_in[0].gl_PointSize) + gl_in[1].gl_Position;\n"
 						   "}\n";
-		*out_vs_body_ptr = "#version 150\n"
+		*out_vs_body_ptr = "#version 410\n"
 						   "\n"
 						   "out gl_PerVertex\n"
 						   "{\n"
@@ -2325,7 +2323,7 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 
 	case TEST_ITERATION_PERVERTEX_BLOCK_UNDEFINED:
 	{
-		*out_min_context_type_ptr   = glu::ContextType(3, 2, glu::PROFILE_CORE);
+		*out_min_context_type_ptr   = glu::ContextType(4, 1, glu::PROFILE_CORE);
 		*out_used_shader_stages_ptr = SHADER_STAGE_VERTEX;
 
 		if (glu::contextSupports(context_type, glu::ApiType::core(3, 2)))
@@ -2339,7 +2337,7 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 				SHADER_STAGE_TESSELLATION_CONTROL | SHADER_STAGE_TESSELLATION_EVALUATION;
 		}
 
-		*out_gs_body_ptr = "#version 150\n"
+		*out_gs_body_ptr = "#version 410\n"
 						   "\n"
 						   "layout (points)                   in;\n"
 						   "layout (points, max_vertices = 4) out;\n"
@@ -2349,7 +2347,7 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 						   "    gl_Position = vec4(1.0, 2.0, 3.0, 4.0);\n"
 						   "    EmitVertex();\n"
 						   "}\n";
-		*out_tc_body_ptr = "#version 400\n"
+		*out_tc_body_ptr = "#version 410\n"
 						   "\n"
 						   "layout(vertices = 4) out;\n"
 						   "\n"
@@ -2357,7 +2355,7 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 						   "{\n"
 						   "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 						   "}\n";
-		*out_te_body_ptr = "#version 400\n"
+		*out_te_body_ptr = "#version 410\n"
 						   "\n"
 						   "layout (isolines) in;\n"
 						   "\n"
@@ -2365,7 +2363,7 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 						   "{\n"
 						   "    gl_Position = gl_in[0].gl_Position;\n"
 						   "}\n";
-		*out_vs_body_ptr = "#version 130\n"
+		*out_vs_body_ptr = "#version 410\n"
 						   "\n"
 						   "void main()\n"
 						   "{\n"
@@ -2423,10 +2421,10 @@ std::string PerVertexValidationTest::getVertexShaderBody(glu::ContextType contex
 								   iteration != TEST_ITERATION_UNDECLARED_OUT_PERVERTEX_VS_GL_POSITION_USAGE);
 	std::stringstream vs_body_sstream;
 
-	vs_body_sstream << "#version " << ((include_cull_distance) ? "450" : "320") << "\n"
-																				   "\n"
-																				   "in gl_PerVertex\n"
-																				   "{\n";
+	vs_body_sstream << "#version " << ((include_cull_distance) ? "450" : "410") << "\n"
+					<< "\n"
+					   "in gl_PerVertex\n"
+					   "{\n";
 
 	vs_body_sstream << ((include_clip_distance) ? "float gl_ClipDistance[];\n" : "");
 	vs_body_sstream << ((include_pointsize) ? "float gl_PointSize;\n" : "");
@@ -2872,6 +2870,11 @@ bool PerVertexValidationTest::runSeparateShaderTestMode(_test_iteration iteratio
 	/* All done */
 	result = true;
 end:
+	if (!result)
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "Failed test description: " << getTestIterationName(iteration)
+						   << tcu::TestLog::EndMessage;
+	}
 	return result;
 }
 

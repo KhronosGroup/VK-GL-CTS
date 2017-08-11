@@ -1412,6 +1412,11 @@ static const char* s_GL_KHR_robustness[] =
 	"glReadnPixelsKHR",
 };
 
+static const char* s_GL_KHR_parallel_shader_compile[] =
+{
+	"glMaxShaderCompilerThreadsKHR",
+};
+
 static const char* s_GL_NV_bindless_texture[] =
 {
 	"glGetImageHandleNV",
@@ -1683,7 +1688,7 @@ static const char* s_GL_OES_draw_elements_base_vertex[] =
 	"glDrawElementsBaseVertexOES",
 	"glDrawElementsInstancedBaseVertexOES",
 	"glDrawRangeElementsBaseVertexOES",
-	"glMultiDrawElementsBaseVertexOES",
+	"glMultiDrawElementsBaseVertexEXT",
 };
 
 static const char* s_GL_OES_geometry_shader[] =
@@ -1924,6 +1929,7 @@ static const struct
 	{ "GL_KHR_blend_equation_advanced",						DE_LENGTH_OF_ARRAY(s_GL_KHR_blend_equation_advanced),					s_GL_KHR_blend_equation_advanced					},
 	{ "GL_KHR_debug",										DE_LENGTH_OF_ARRAY(s_GL_KHR_debug),										s_GL_KHR_debug										},
 	{ "GL_KHR_robustness",									DE_LENGTH_OF_ARRAY(s_GL_KHR_robustness),								s_GL_KHR_robustness									},
+	{ "GL_KHR_parallel_shader_compile",						DE_LENGTH_OF_ARRAY(s_GL_KHR_parallel_shader_compile),					s_GL_KHR_parallel_shader_compile					},
 	{ "GL_NV_bindless_texture",								DE_LENGTH_OF_ARRAY(s_GL_NV_bindless_texture),							s_GL_NV_bindless_texture							},
 	{ "GL_NV_blend_equation_advanced",						DE_LENGTH_OF_ARRAY(s_GL_NV_blend_equation_advanced),					s_GL_NV_blend_equation_advanced						},
 	{ "GL_NV_conditional_render",							DE_LENGTH_OF_ARRAY(s_GL_NV_conditional_render),							s_GL_NV_conditional_render							},

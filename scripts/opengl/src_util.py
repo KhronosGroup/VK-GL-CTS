@@ -38,8 +38,8 @@ OPENGL_INC_DIR		= os.path.join(OPENGL_DIR, "wrapper")
 GL_SOURCE			= khr_util.registry_cache.RegistrySource(
 						"https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry",
 						"xml/gl.xml",
-						"97558118d4a8ab2af749867899555273c20827ce",
-						"2475e1ff6d69048e67a49188d8be09195b261ed96b2b4108a0f7d7a459834674")
+						"a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90",
+						"bfe070bafe6a0758f23964a078262b45ad163adf7f2dc320f44757908033d107")
 
 EXTENSIONS			= [
 	'GL_KHR_texture_compression_astc_ldr',
@@ -48,6 +48,7 @@ EXTENSIONS			= [
 	'GL_KHR_debug',
 	'GL_KHR_robustness',
 	'GL_KHR_no_error',
+	'GL_KHR_parallel_shader_compile',
 	'GL_EXT_bgra',
 	'GL_EXT_geometry_point_size',
 	'GL_EXT_tessellation_shader',
@@ -111,6 +112,7 @@ EXTENSIONS			= [
 	'GL_ARB_shader_viewport_layer_array',
 	'GL_ARB_sparse_buffer',
 	'GL_ARB_sparse_texture',
+	'GL_ARB_spirv_extensions',
 	'GL_ARB_tessellation_shader',
 	'GL_ARB_texture_barrier',
 	'GL_ARB_texture_filter_minmax',

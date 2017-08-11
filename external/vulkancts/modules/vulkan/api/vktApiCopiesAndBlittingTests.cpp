@@ -389,9 +389,9 @@ void CopiesAndBlittingTestInstance::generateBuffer (tcu::PixelBufferAccess buffe
 			case FILL_MODE_RED:
 				if (tcu::isCombinedDepthStencilType(buffer.getFormat().type))
 				{
-					buffer.setPixDepth(redColor[x % 4], x, y, z);
+					buffer.setPixDepth(redColor[0], x, y, z);
 					if (tcu::hasStencilComponent(buffer.getFormat().order))
-						buffer.setPixStencil(255 * (int)redColor[y % 4], x, y, z);
+						buffer.setPixStencil((int)redColor[3], x, y, z);
 				}
 				else
 					buffer.setPixel(redColor, x, y, z);

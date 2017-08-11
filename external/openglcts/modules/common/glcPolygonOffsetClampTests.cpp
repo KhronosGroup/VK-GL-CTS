@@ -143,8 +143,8 @@ void PolygonOffsetClampAvailabilityTestCase::test(const glw::Functions& gl)
 		GLU_EXPECT_NO_ERROR(gl.getError(), "getBooleanv error occurred");
 	}
 
-	gl.polygonOffsetClampEXT(1.0f, 1.0f, 0.5f);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "polygonOffsetClampEXT error occurred");
+	gl.polygonOffsetClamp(1.0f, 1.0f, 0.5f);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "polygonOffsetClamp error occurred");
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 }
@@ -405,7 +405,7 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions& gl)
 		gl.enable(GL_POLYGON_OFFSET_FILL);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glEnable");
 
-		gl.polygonOffsetClampEXT(m_testValues[i].factor, m_testValues[i].units, m_testValues[i].clamp);
+		gl.polygonOffsetClamp(m_testValues[i].factor, m_testValues[i].units, m_testValues[i].clamp);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glPolygonOffsetClampEXT");
 
 		gl.drawArrays(GL_TRIANGLE_STRIP, 0, 4);

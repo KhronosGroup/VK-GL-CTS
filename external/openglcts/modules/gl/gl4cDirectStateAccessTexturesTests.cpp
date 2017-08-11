@@ -1459,10 +1459,18 @@ template class BufferTest<glw::GLfloat, 4, true>;
 
 /** @brief Storage Test constructor.
  *
+ *  @tparam T      Type.
+ *  @tparam S      Size.
+ *  @tparam N      Is normalized.
+ *  @tparam D      Texture dimension.
+ *  @tparam I      Choose between SubImage and Storage tests.
+ *
  *  @param [in] context     OpenGL context.
+ *  @param [in] name        Name of the test.
  */
-StorageAndSubImageTest::StorageAndSubImageTest(deqp::Context& context)
-	: deqp::TestCase(context, "textures_storage_and_subimage", "Texture Storage and SubImage Test")
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+StorageAndSubImageTest<T, S, N, D, I>::StorageAndSubImageTest(deqp::Context& context, const char* name)
+	: deqp::TestCase(context, name, "Texture Storage and SubImage Test")
 	, m_fbo(0)
 	, m_rbo(0)
 	, m_po(0)
@@ -1474,13 +1482,10 @@ StorageAndSubImageTest::StorageAndSubImageTest(deqp::Context& context)
 
 /** @brief Count of reference data to be teted.
  *
- *  @tparam S      Size (# of components).
- *  @tparam D      Texture dimenisons.
- *
  *  @return Count.
  */
-template <glw::GLint S, glw::GLuint D>
-glw::GLuint StorageAndSubImageTest::TestReferenceDataCount()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+glw::GLuint StorageAndSubImageTest<T, S, N, D, I>::TestReferenceDataCount()
 {
 	return 2 /* 1D */ * ((D > 1) ? 3 : 1) /* 2D */ * ((D > 2) ? 4 : 1) /* 3D */ * S /* components */;
 }
@@ -1493,222 +1498,198 @@ glw::GLuint StorageAndSubImageTest::TestReferenceDataCount()
  *
  *  @return Size.
  */
-template <typename T, glw::GLint S, glw::GLuint D>
-glw::GLuint StorageAndSubImageTest::TestReferenceDataSize()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+glw::GLuint StorageAndSubImageTest<T, S, N, D, I>::TestReferenceDataSize()
 {
-	return static_cast<glw::GLint>(TestReferenceDataCount<S, D>() * sizeof(T));
+	return static_cast<glw::GLint>(TestReferenceDataCount() * sizeof(T));
 }
 
 /** @brief Height, width or depth of reference data to be teted.
  *
- *  @tparam D      Texture dimenisons.
- *
  *  @return Height, width or depth.
  */
-template <>
-glw::GLuint StorageAndSubImageTest::TestReferenceDataHeight<2>()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+glw::GLuint StorageAndSubImageTest<T, S, N, D, I>::TestReferenceDataHeight()
 {
-	return 3;
+	switch (D)
+	{
+	case 2:
+	case 3:
+		return 3;
+	default:
+		return 1;
+	}
 }
 
-template <>
-glw::GLuint StorageAndSubImageTest::TestReferenceDataHeight<3>()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+glw::GLuint StorageAndSubImageTest<T, S, N, D, I>::TestReferenceDataDepth()
 {
-	return 3;
+	switch (D)
+	{
+	case 3:
+		return 4;
+	default:
+		return 1;
+	}
 }
 
-template <>
-glw::GLuint StorageAndSubImageTest::TestReferenceDataDepth<3>()
-{
-	return 4;
-}
-
-template <glw::GLuint D>
-glw::GLuint			  StorageAndSubImageTest::TestReferenceDataWidth()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+glw::GLuint StorageAndSubImageTest<T, S, N, D, I>::TestReferenceDataWidth()
 {
 	return 2;
 }
 
-template <glw::GLuint D>
-glw::GLuint			  StorageAndSubImageTest::TestReferenceDataHeight()
-{
-	return 1;
-}
-
-template <glw::GLuint D>
-glw::GLuint			  StorageAndSubImageTest::TestReferenceDataDepth()
-{
-	return 1;
-}
-
 /** @brief Fragment shader declaration selector.
- *
- *  @tparam T      Type.
- *  @tparam N      Normalized flag.
- *  @tparam D      Texture dimenisons.
  *
  *  @return Frgment shader source code part.
  */
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLbyte, false, 1>()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclaration()
 {
-	return s_fragment_shader_1D_fdecl_lowp;
-}
+	if (typeid(T) == typeid(glw::GLbyte))
+	{
+		switch (D)
+		{
+		case 1:
+			return s_fragment_shader_1D_idecl_lowp;
+		case 2:
+			return s_fragment_shader_2D_idecl_lowp;
+		case 3:
+			return s_fragment_shader_3D_idecl_lowp;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLubyte, false, 1>()
-{
-	return s_fragment_shader_1D_idecl_lowp;
-}
+	if (typeid(T) == typeid(glw::GLubyte))
+	{
+		if (N)
+		{
+			switch (D)
+			{
+			case 1:
+				return s_fragment_shader_1D_fdecl_lowp;
+			case 2:
+				return s_fragment_shader_2D_fdecl_lowp;
+			case 3:
+				return s_fragment_shader_3D_fdecl_lowp;
+			default:
+				DE_ASSERT("invalid texture dimension");
+				return DE_NULL;
+			}
+		}
+		else
+		{
+			switch (D)
+			{
+			case 1:
+				return s_fragment_shader_1D_udecl_lowp;
+			case 2:
+				return s_fragment_shader_2D_udecl_lowp;
+			case 3:
+				return s_fragment_shader_3D_udecl_lowp;
+			default:
+				DE_ASSERT("invalid texture dimension");
+				return DE_NULL;
+			}
+		}
+	}
 
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLshort, false, 1>()
-{
-	return s_fragment_shader_1D_udecl_lowp;
-}
+	if (typeid(T) == typeid(glw::GLshort))
+	{
+		switch (D)
+		{
+		case 1:
+			return s_fragment_shader_1D_idecl_mediump;
+		case 2:
+			return s_fragment_shader_2D_idecl_mediump;
+		case 3:
+			return s_fragment_shader_3D_idecl_mediump;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLushort, false, 1>()
-{
-	return s_fragment_shader_1D_fdecl_mediump;
-}
+	if (typeid(T) == typeid(glw::GLushort))
+	{
+		if (N)
+		{
+			switch (D)
+			{
+			case 1:
+				return s_fragment_shader_1D_fdecl_mediump;
+			case 2:
+				return s_fragment_shader_2D_fdecl_mediump;
+			case 3:
+				return s_fragment_shader_3D_fdecl_mediump;
+			default:
+				DE_ASSERT("invalid texture dimension");
+				return DE_NULL;
+			}
+		}
+		else
+		{
+			switch (D)
+			{
+			case 1:
+				return s_fragment_shader_1D_udecl_mediump;
+			case 2:
+				return s_fragment_shader_2D_udecl_mediump;
+			case 3:
+				return s_fragment_shader_3D_udecl_mediump;
+			default:
+				DE_ASSERT("invalid texture dimension");
+				return DE_NULL;
+			}
+		}
+	}
 
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLint, false, 1>()
-{
-	return s_fragment_shader_1D_idecl_mediump;
-}
+	if (typeid(T) == typeid(glw::GLint))
+	{
+		switch (D)
+		{
+		case 1:
+			return s_fragment_shader_1D_idecl_highp;
+		case 2:
+			return s_fragment_shader_2D_idecl_highp;
+		case 3:
+			return s_fragment_shader_3D_idecl_highp;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLuint, false, 1>()
-{
-	return s_fragment_shader_1D_udecl_mediump;
-}
+	if (typeid(T) == typeid(glw::GLuint))
+	{
+		switch (D)
+		{
+		case 1:
+			return s_fragment_shader_1D_udecl_highp;
+		case 2:
+			return s_fragment_shader_2D_udecl_highp;
+		case 3:
+			return s_fragment_shader_3D_udecl_highp;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLubyte, true, 1>()
-{
-	return s_fragment_shader_1D_fdecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLushort, true, 1>()
-{
-	return s_fragment_shader_1D_idecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLfloat, true, 1>()
-{
-	return s_fragment_shader_1D_udecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLbyte, false, 2>()
-{
-	return s_fragment_shader_2D_fdecl_lowp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLubyte, false, 2>()
-{
-	return s_fragment_shader_2D_idecl_lowp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLshort, false, 2>()
-{
-	return s_fragment_shader_2D_udecl_lowp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLushort, false, 2>()
-{
-	return s_fragment_shader_2D_fdecl_mediump;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLint, false, 2>()
-{
-	return s_fragment_shader_2D_idecl_mediump;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLuint, false, 2>()
-{
-	return s_fragment_shader_2D_udecl_mediump;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLubyte, true, 2>()
-{
-	return s_fragment_shader_2D_fdecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLushort, true, 2>()
-{
-	return s_fragment_shader_2D_idecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLfloat, true, 2>()
-{
-	return s_fragment_shader_2D_udecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLbyte, false, 3>()
-{
-	return s_fragment_shader_3D_fdecl_lowp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLubyte, false, 3>()
-{
-	return s_fragment_shader_3D_idecl_lowp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLshort, false, 3>()
-{
-	return s_fragment_shader_3D_udecl_lowp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLushort, false, 3>()
-{
-	return s_fragment_shader_3D_fdecl_mediump;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLint, false, 3>()
-{
-	return s_fragment_shader_3D_idecl_mediump;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLuint, false, 3>()
-{
-	return s_fragment_shader_3D_udecl_mediump;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLubyte, true, 3>()
-{
-	return s_fragment_shader_3D_fdecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLushort, true, 3>()
-{
-	return s_fragment_shader_3D_idecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLfloat, true, 3>()
-{
-	return s_fragment_shader_3D_udecl_highp;
+	switch (D)
+	{
+	case 1:
+		return s_fragment_shader_1D_fdecl_highp;
+	case 2:
+		return s_fragment_shader_2D_fdecl_highp;
+	case 3:
+		return s_fragment_shader_3D_fdecl_highp;
+	default:
+		DE_ASSERT("invalid texture dimension");
+		return DE_NULL;
+	}
 }
 
 /** @brief Fragment shader tail selector.
@@ -1717,22 +1698,21 @@ const glw::GLchar* StorageAndSubImageTest::FragmentShaderDeclaration<glw::GLfloa
  *
  *  @return Frgment shader source code part.
  */
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderTail<1>()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderTail()
 {
-	return s_fragment_shader_1D_tail;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderTail<2>()
-{
-	return s_fragment_shader_2D_tail;
-}
-
-template <>
-const glw::GLchar* StorageAndSubImageTest::FragmentShaderTail<3>()
-{
-	return s_fragment_shader_3D_tail;
+	switch (D)
+	{
+	case 1:
+		return s_fragment_shader_1D_tail;
+	case 2:
+		return s_fragment_shader_2D_tail;
+	case 3:
+		return s_fragment_shader_3D_tail;
+	default:
+		DE_ASSERT("invalid texture dimension");
+		return DE_NULL;
+	}
 }
 
 /** @brief Texture target selector.
@@ -1741,428 +1721,157 @@ const glw::GLchar* StorageAndSubImageTest::FragmentShaderTail<3>()
  *
  *  @return Texture target.
  */
-template <>
-glw::GLenum StorageAndSubImageTest::TextureTarget<1>()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+glw::GLenum StorageAndSubImageTest<T, S, N, D, I>::TextureTarget()
 {
-	return GL_TEXTURE_1D;
-}
-
-template <>
-glw::GLenum StorageAndSubImageTest::TextureTarget<2>()
-{
-	return GL_TEXTURE_2D;
-}
-
-template <>
-glw::GLenum StorageAndSubImageTest::TextureTarget<3>()
-{
-	return GL_TEXTURE_3D;
+	switch (D)
+	{
+	case 1:
+		return GL_TEXTURE_1D;
+	case 2:
+		return GL_TEXTURE_2D;
+	case 3:
+		return GL_TEXTURE_3D;
+	default:
+		DE_ASSERT("invalid texture dimension");
+		return DE_NULL;
+	}
 }
 
 /** @brief TextureStorage* wrapper.
  *
- *  @tparam D      Texture dimenisons.
- *  @tparam I      Select between legacy/DSA way.
- *
- *  @return true if suuceed (in legacy always or throw), false otherwise.
+ *  @return true if succeed (in legacy always or throw), false otherwise.
  */
-template <>
-bool StorageAndSubImageTest::TextureStorage<1, true>(glw::GLenum target, glw::GLuint texture, glw::GLsizei levels,
-													 glw::GLenum internalformat, glw::GLsizei width,
-													 glw::GLsizei height, glw::GLsizei depth)
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+bool StorageAndSubImageTest<T, S, N, D, I>::TextureStorage(glw::GLenum target, glw::GLuint texture, glw::GLsizei levels,
+														   glw::GLenum internalformat, glw::GLsizei width,
+														   glw::GLsizei height, glw::GLsizei depth)
 {
-	(void)texture;
-	(void)height;
-	(void)depth;
-	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Preparing storage. */
-	gl.texStorage1D(target, levels, internalformat, width);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexStorage1D has failed");
-
-	/* TextureSubImage* (not TextureStorage*) is tested so here we only throw when error occurs. */
-	return true;
-}
-
-/** @brief TextureStorage* wrapper.
- *
- *  @tparam D      Texture dimenisons.
- *  @tparam I      Select between legacy/DSA way.
- *
- *  @return true if suuceed (in legacy always or throw), false otherwise.
- */
-template <>
-bool StorageAndSubImageTest::TextureStorage<2, true>(glw::GLenum target, glw::GLuint texture, glw::GLsizei levels,
-													 glw::GLenum internalformat, glw::GLsizei width,
-													 glw::GLsizei height, glw::GLsizei depth)
-{
-	(void)texture;
-	(void)depth;
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Preparing storage. */
-	gl.texStorage2D(target, levels, internalformat, width, height);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexStorage2D has failed");
-
-	/* TextureSubImage* (not TextureStorage*) is tested so here we only throw when error occurs. */
-	return true;
-}
-
-/** @brief TextureStorage* wrapper.
- *
- *  @tparam D      Texture dimenisons.
- *  @tparam I      Select between legacy/DSA way.
- *
- *  @return true if suuceed (in legacy always or throw), false otherwise.
- */
-template <>
-bool StorageAndSubImageTest::TextureStorage<3, true>(glw::GLenum target, glw::GLuint texture, glw::GLsizei levels,
-													 glw::GLenum internalformat, glw::GLsizei width,
-													 glw::GLsizei height, glw::GLsizei depth)
-{
-	(void)texture;
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Preparing storage. */
-	gl.texStorage3D(target, levels, internalformat, width, height, depth);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexStorage3D has failed");
-
-	/* TextureSubImage* (not TextureStorage*) is tested so here we only throw when error occurs. */
-	return true;
-}
-
-/** @brief TextureStorage* wrapper.
- *
- *  @tparam D      Texture dimenisons.
- *  @tparam I      Select between legacy/DSA way.
- *
- *  @return true if suuceed (in legacy always or throw), false otherwise.
- */
-template <>
-bool StorageAndSubImageTest::TextureStorage<1, false>(glw::GLenum target, glw::GLuint texture, glw::GLsizei levels,
-													  glw::GLenum internalformat, glw::GLsizei width,
-													  glw::GLsizei height, glw::GLsizei depth)
-{
-	(void)target;
-	(void)height;
-	(void)depth;
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Preparing storage. */
-	gl.textureStorage1D(texture, levels, internalformat, width);
-
-	/* Error checking. */
-	glw::GLenum error;
-
-	if (GL_NO_ERROR != (error = gl.getError()))
+	if (I)
 	{
-		/* Log. */
-		m_context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "glTextureStorage1D unexpectedly generated error " << glu::getErrorStr(error)
-			<< " during test with levels " << levels << ", internal format " << internalformat << " and width " << width
-			<< "." << tcu::TestLog::EndMessage;
+		switch (D)
+		{
+		case 1:
+			gl.texStorage1D(target, levels, internalformat, width);
+			break;
+		case 2:
+			gl.texStorage2D(target, levels, internalformat, width, height);
+			break;
+		case 3:
+			gl.texStorage3D(target, levels, internalformat, width, height, depth);
+			break;
+		default:
+			DE_ASSERT("invalid texture dimension");
+		}
 
-		CleanTexture();
-		CleanErrors();
-
-		return false;
+		/* TextureSubImage* (not TextureStorage*) is tested */
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glTexStorage*() has failed");
+		return true;
 	}
-
-	return true;
-}
-
-/** @brief TextureStorage* wrapper.
- *
- *  @tparam D      Texture dimenisons.
- *  @tparam I      Select between legacy/DSA way.
- *
- *  @return true if suuceed (in legacy always or throw), false otherwise.
- */
-template <>
-bool StorageAndSubImageTest::TextureStorage<2, false>(glw::GLenum target, glw::GLuint texture, glw::GLsizei levels,
-													  glw::GLenum internalformat, glw::GLsizei width,
-													  glw::GLsizei height, glw::GLsizei depth)
-{
-	(void)target;
-	(void)depth;
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Preparing storage. */
-	gl.textureStorage2D(texture, levels, internalformat, width, height);
-
-	/* Error checking. */
-	glw::GLenum error;
-
-	if (GL_NO_ERROR != (error = gl.getError()))
+	else
 	{
-		/* Log. */
-		m_context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "glTextureStorage2D unexpectedly generated error " << glu::getErrorStr(error)
-			<< " during test with levels " << levels << ", internal format " << internalformat << ", width " << width
-			<< " and height " << height << "." << tcu::TestLog::EndMessage;
+		switch (D)
+		{
+		case 1:
+			gl.textureStorage1D(texture, levels, internalformat, width);
+			break;
+		case 2:
+			gl.textureStorage2D(texture, levels, internalformat, width, height);
+			break;
+		case 3:
+			gl.textureStorage3D(texture, levels, internalformat, width, height, depth);
+			break;
+		default:
+			DE_ASSERT("invalid texture dimension");
+		}
 
-		CleanTexture();
-		CleanErrors();
+		glw::GLenum error;
+		if (GL_NO_ERROR != (error = gl.getError()))
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glTextureStorage" << D << "D unexpectedly generated error " << glu::getErrorStr(error)
+				<< " during test with levels " << levels << ", internal format " << internalformat
+				<< " width=" << width << " height=" << height << " depth=" << depth
+				<< "." << tcu::TestLog::EndMessage;
 
-		return false;
+			CleanTexture();
+			CleanErrors();
+
+			return false;
+		}
+
+		return true;
 	}
-
-	return true;
-}
-
-/** @brief TextureStorage* wrapper.
- *
- *  @tparam D      Texture dimenisons.
- *  @tparam I      Select between legacy/DSA way.
- *
- *  @return true if suuceed (in legacy always or throw), false otherwise.
- */
-template <>
-bool StorageAndSubImageTest::TextureStorage<3, false>(glw::GLenum target, glw::GLuint texture, glw::GLsizei levels,
-													  glw::GLenum internalformat, glw::GLsizei width,
-													  glw::GLsizei height, glw::GLsizei depth)
-{
-	(void)target;
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Preparing storage. */
-	gl.textureStorage3D(texture, levels, internalformat, width, height, depth);
-
-	/* Error checking. */
-	glw::GLenum error;
-
-	if (GL_NO_ERROR != (error = gl.getError()))
-	{
-		/* Log. */
-		m_context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "glTextureStorage3D unexpectedly generated error " << glu::getErrorStr(error)
-			<< " during test with levels " << levels << ", internal format " << glu::getTextureFormatStr(internalformat)
-			<< ", width " << width << ", height " << height << " and depth " << depth << "."
-			<< tcu::TestLog::EndMessage;
-
-		CleanTexture();
-		CleanErrors();
-
-		return false;
-	}
-
-	return true;
 }
 
 /** @brief TextureSubImage* wrapper.
  *
- *  @tparam D      Texture dimenisons.
- *  @tparam I      Select between legacy/DSA way.
- *
  *  @return true if suuceed (in legacy always or throw), false otherwise.
  */
-template <>
-bool StorageAndSubImageTest::TextureSubImage<1, false>(glw::GLenum target, glw::GLuint texture, glw::GLint level,
-													   glw::GLint internalformat, glw::GLsizei width,
-													   glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
-													   glw::GLenum type, const glw::GLvoid* data)
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+bool StorageAndSubImageTest<T, S, N, D, I>::TextureSubImage(glw::GLenum target, glw::GLuint texture, glw::GLint level,
+															glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth,
+															glw::GLenum format, glw::GLenum type, const glw::GLvoid* data)
 {
-	(void)texture;
-	(void)internalformat;
-	(void)height;
-	(void)depth;
-	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Action. */
-	gl.texSubImage1D(target, level, 0, width, format, type, data);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexSubImage1D has failed");
-
-	/* TextureStorage* (not TextureSubImage) is tested so here we only throw when error occurs. */
-	return true;
-}
-
-/** @brief TextureSubImage* wrapper.
- *
- *  @tparam D      Texture dimenisons.
- *  @tparam I      Select between legacy/DSA way.
- *
- *  @return true if suuceed (in legacy always or throw), false otherwise.
- */
-template <>
-bool StorageAndSubImageTest::TextureSubImage<2, false>(glw::GLenum target, glw::GLuint texture, glw::GLint level,
-													   glw::GLint internalformat, glw::GLsizei width,
-													   glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
-													   glw::GLenum type, const glw::GLvoid* data)
-{
-	(void)texture;
-	(void)internalformat;
-	(void)depth;
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Action. */
-	gl.texSubImage2D(target, level, 0, 0, width, height, format, type, data);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexSubImage2D has failed");
-
-	/* TextureStorage* (not TextureSubImage) is tested so here we only throw when error occurs. */
-	return true;
-}
-
-/** @brief TextureSubImage* wrapper.
- *
- *  @tparam D      Texture dimenisons.
- *  @tparam I      Select between legacy/DSA way.
- *
- *  @return true if suuceed (in legacy always or throw), false otherwise.
- */
-template <>
-bool StorageAndSubImageTest::TextureSubImage<3, false>(glw::GLenum target, glw::GLuint texture, glw::GLint level,
-													   glw::GLint internalformat, glw::GLsizei width,
-													   glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
-													   glw::GLenum type, const glw::GLvoid* data)
-{
-	(void)texture;
-	(void)internalformat;
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Action. */
-	gl.texSubImage3D(target, level, 0, 0, 0, width, height, depth, format, type, data);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexSubImage3D has failed");
-
-	/* TextureStorage* (not TextureSubImage) is tested so here we only throw when error occurs. */
-	return true;
-}
-
-/** @brief TextureSubImage* wrapper.
- *
- *  @tparam D      Texture dimenisons.
- *  @tparam I      Select between legacy/DSA way.
- *
- *  @return true if suuceed (in legacy always or throw), false otherwise.
- */
-template <>
-bool StorageAndSubImageTest::TextureSubImage<1, true>(glw::GLenum target, glw::GLuint texture, glw::GLint level,
-													  glw::GLint internalformat, glw::GLsizei width,
-													  glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
-													  glw::GLenum type, const glw::GLvoid* data)
-{
-	(void)target;
-	(void)internalformat;
-	(void)height;
-	(void)depth;
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Action. */
-	gl.textureSubImage1D(texture, level, 0, width, format, type, data);
-
-	/* Error checking. */
-	glw::GLenum error;
-
-	if (GL_NO_ERROR != (error = gl.getError()))
+	if (I)
 	{
-		/* Log. */
-		m_context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "glTextureSubImage1D unexpectedly generated error " << glu::getErrorStr(error)
-			<< " during test with level " << level << ", width " << width << ", format "
-			<< glu::getTextureFormatStr(format) << " and type " << glu::getTypeStr(type) << "."
-			<< tcu::TestLog::EndMessage;
+		switch (D)
+		{
+		case 1:
+			gl.textureSubImage1D(texture, level, 0, width, format, type, data);
+			break;
+		case 2:
+			gl.textureSubImage2D(texture, level, 0, 0, width, height, format, type, data);
+			break;
+		case 3:
+			gl.textureSubImage3D(texture, level, 0, 0, 0, width, height, depth, format, type, data);
+			break;
+		default:
+			DE_ASSERT("invalid texture dimension");
+		}
 
-		CleanTexture();
-		CleanErrors();
+		glw::GLenum error;
+		if (GL_NO_ERROR != (error = gl.getError()))
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "glTextureSubImage" << D << "D unexpectedly generated error " << glu::getErrorStr(error)
+				<< " during test with level " << level << ", width=" << width << ", height=" << height << ", depth=" << depth
+				<< " format " << glu::getTextureFormatStr(format) << " and type " << glu::getTypeStr(type) << "."
+				<< tcu::TestLog::EndMessage;
 
-		return false;
+			CleanTexture();
+			CleanErrors();
+
+			return false;
+		}
+
+		return true;
 	}
-
-	return true;
-}
-
-/** @brief TextureSubImage* wrapper.
- *
- *  @tparam D      Texture dimenisons.
- *  @tparam I      Select between legacy/DSA way.
- *
- *  @return true if suuceed (in legacy always or throw), false otherwise.
- */
-template <>
-bool StorageAndSubImageTest::TextureSubImage<2, true>(glw::GLenum target, glw::GLuint texture, glw::GLint level,
-													  glw::GLint internalformat, glw::GLsizei width,
-													  glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
-													  glw::GLenum type, const glw::GLvoid* data)
-{
-	(void)target;
-	(void)internalformat;
-	(void)depth;
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Action. */
-	gl.textureSubImage2D(texture, level, 0, 0, width, height, format, type, data);
-
-	/* Error checking. */
-	glw::GLenum error;
-
-	if (GL_NO_ERROR != (error = gl.getError()))
+	else
 	{
-		/* Log. */
-		m_context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "glTextureSubImage2D unexpectedly generated error " << glu::getErrorStr(error)
-			<< " during test with level " << level << ", width " << width << ", height " << height << ", format "
-			<< glu::getTextureFormatStr(format) << " and type " << glu::getTypeStr(type) << "."
-			<< tcu::TestLog::EndMessage;
+		switch (D)
+		{
+		case 1:
+			gl.texSubImage1D(target, level, 0, width, format, type, data);
+			break;
+		case 2:
+			gl.texSubImage2D(target, level, 0, 0, width, height, format, type, data);
+			break;
+		case 3:
+			gl.texSubImage3D(target, level, 0, 0, 0, width, height, depth, format, type, data);
+			break;
+		default:
+			DE_ASSERT("invalid texture dimension");
+		}
 
-		CleanTexture();
-		CleanErrors();
-
-		return false;
+		/* TextureStorage* (not TextureSubImage) is tested */
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glTexSubImage*() has failed");
+		return true;
 	}
-
-	return true;
-}
-
-/** @brief TextureSubImage* wrapper.
- *
- *  @tparam D      Texture dimenisons.
- *  @tparam I      Select between legacy/DSA way.
- *
- *  @return true if suuceed (in legacy always or throw), false otherwise.
- */
-template <>
-bool StorageAndSubImageTest::TextureSubImage<3, true>(glw::GLenum target, glw::GLuint texture, glw::GLint level,
-													  glw::GLint internalformat, glw::GLsizei width,
-													  glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
-													  glw::GLenum type, const glw::GLvoid* data)
-{
-	(void)target;
-	(void)internalformat;
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Action. */
-	gl.textureSubImage3D(texture, level, 0, 0, 0, width, height, depth, format, type, data);
-
-	/* Error checking. */
-	glw::GLenum error;
-
-	if (GL_NO_ERROR != (error = gl.getError()))
-	{
-		/* Log. */
-		m_context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "glTextureSubImage3D unexpectedly generated error " << glu::getErrorStr(error)
-			<< " during test with level " << level << ", width " << width << ", height " << height << ", depth "
-			<< depth << ", format " << glu::getTextureFormatStr(format) << " and type " << glu::getTypeStr(type) << "."
-			<< tcu::TestLog::EndMessage;
-
-		CleanTexture();
-		CleanErrors();
-
-		return false;
-	}
-
-	return true;
 }
 
 /** @brief Create texture.
@@ -2176,7 +1885,7 @@ bool StorageAndSubImageTest::TextureSubImage<3, true>(glw::GLenum target, glw::G
  *  @return True if succeded, false otherwise.
  */
 template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
-bool StorageAndSubImageTest::CreateTexture()
+bool StorageAndSubImageTest<T, S, N, D, I>::CreateTexture()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -2185,20 +1894,19 @@ bool StorageAndSubImageTest::CreateTexture()
 	gl.genTextures(1, &m_to);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures has failed");
 
-	gl.bindTexture(TextureTarget<D>(), m_to);
+	gl.bindTexture(TextureTarget(), m_to);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
 
 	/* Storage creation. */
-	if (TextureStorage<D, I>(TextureTarget<D>(), m_to, 1, InternalFormat<T, S, N>(), TestReferenceDataWidth<D>(),
-							 TestReferenceDataHeight<D>(), TestReferenceDataDepth<D>()))
+	if (TextureStorage(TextureTarget(), m_to, 1, InternalFormat<T, S, N>(), TestReferenceDataWidth(),
+					   TestReferenceDataHeight(), TestReferenceDataDepth()))
 	{
 		/* Data setup. */
-		if (TextureSubImage<D, I>(TextureTarget<D>(), m_to, 0, InternalFormat<T, S, N>(), TestReferenceDataWidth<D>(),
-								  TestReferenceDataHeight<D>(), TestReferenceDataDepth<D>(), Format<S, N>(), Type<T>(),
-								  ReferenceData<T, N>()))
+		if (TextureSubImage(TextureTarget(), m_to, 0, TestReferenceDataWidth(), TestReferenceDataHeight(), TestReferenceDataDepth(),
+							Format<S, N>(), Type<T>(), ReferenceData<T, N>()))
 		{
-			glTexParameteri(TextureTarget<D>(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(TextureTarget<D>(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(TextureTarget(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(TextureTarget(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			return true;
 		}
 	}
@@ -2210,26 +1918,16 @@ bool StorageAndSubImageTest::CreateTexture()
 
 /** @brief Compre results with the reference.
  *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *  @tparam N      Is normalized.
- *
  *  @return True if equal, false otherwise.
  */
-template <typename T, glw::GLint S, bool N, glw::GLuint D>
-bool StorageAndSubImageTest::Check()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+bool StorageAndSubImageTest<T, S, N, D, I>::Check()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	/* Fetching data. */
-	std::vector<T> result(TestReferenceDataCount<S, D>());
-
-	gl.pixelStorei(GL_UNPACK_ALIGNMENT, sizeof(T));
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glPixelStorei has failed");
-
-	gl.pixelStorei(GL_PACK_ALIGNMENT, sizeof(T));
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glPixelStorei has failed");
+	std::vector<T> result(TestReferenceDataCount());
 
 	glw::GLuint fbo_size_x = 0;
 
@@ -2248,12 +1946,12 @@ bool StorageAndSubImageTest::Check()
 		throw 0;
 	}
 
-	gl.readnPixels(0, 0, fbo_size_x, 1, Format<S, N>(), Type<T>(), TestReferenceDataSize<T, S, D>(),
+	gl.readnPixels(0, 0, fbo_size_x, 1, Format<S, N>(), Type<T>(), TestReferenceDataSize(),
 				   (glw::GLvoid*)(&result[0]));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels has failed");
 
 	/* Comparison. */
-	for (glw::GLuint i = 0; i < TestReferenceDataCount<S, D>(); ++i)
+	for (glw::GLuint i = 0; i < TestReferenceDataCount(); ++i)
 	{
 		if (!Compare<T>(result[i], ReferenceData<T, N>()[i]))
 		{
@@ -2266,20 +1964,23 @@ bool StorageAndSubImageTest::Check()
 
 /** @brief Test case function.
  *
- *  @tparam T       Type.
- *  @tparam S       Size (# of components).
- *  @tparam N       Is normalized.
- *  @tparam D       Number of texture dimensions.
- *
  *  @return True if test succeeded, false otherwise.
  */
 template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
-bool StorageAndSubImageTest::Test()
+bool StorageAndSubImageTest<T, S, N, D, I>::Test()
 {
-	/* Setup. */
-	PrepareFramebuffer(InternalFormat<T, S, N>(), D);
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	if (!CreateTexture<T, S, N, D, I>())
+	gl.pixelStorei(GL_UNPACK_ALIGNMENT, sizeof(T));
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glPixelStorei has failed");
+
+	gl.pixelStorei(GL_PACK_ALIGNMENT, sizeof(T));
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glPixelStorei has failed");
+
+	/* Setup. */
+	PrepareFramebuffer(InternalFormat<T, S, N>());
+
+	if (!CreateTexture())
 	{
 		return false;
 	}
@@ -2288,7 +1989,7 @@ bool StorageAndSubImageTest::Test()
 	Draw();
 
 	/* Compare results with reference. */
-	bool result = Check<T, S, N, D>();
+	bool result = Check();
 
 	/* Cleanup. */
 	CleanTexture();
@@ -2299,73 +2000,13 @@ bool StorageAndSubImageTest::Test()
 	return result;
 }
 
-/** @brief Lopp test function over S.
- *
- *  @tparam T      Type.
- *  @tparam N      Is normalized.
- *  @tparam D      Texture dimension.
- *  @tparam I      Choose between SubImage and Storage tests.
- *
- *  @param [in] skip_rgb            Skip test of S = 3 (needed for some formats).
- *
- *  @return True if tests succeeded, false otherwise.
- */
-template <typename T, bool N, glw::GLuint D, bool I>
-bool StorageAndSubImageTest::LoopTestOverS(bool skip_rgb)
-{
-	/* Prepare one program per test loop. */
-	PrepareProgram(FragmentShaderDeclaration<T, N, D>(), FragmentShaderTail<D>());
-
-	/* Run tests. */
-	bool result = true;
-
-	result &= Test<T, 1, N, D, I>();
-
-	result &= Test<T, 2, N, D, I>();
-
-	if (!skip_rgb)
-	{
-		result &= Test<T, 3, N, D, I>();
-	}
-
-	result &= Test<T, 4, N, D, I>();
-
-	/* Cleanup.*/
-	CleanProgram();
-	CleanErrors();
-
-	/* Pass result. */
-	return result;
-}
-
-/** @brief Lopp test function over D and over S.
- *
- *  @tparam T      Type.
- *  @tparam N      Is normalized.
- *  @tparam I      Choose between SubImage and Storage tests.
- *
- *  @param [in] skip_rgb            Skip test of S = 3 (needed for some formats).
- *
- *  @return True if tests succeeded, false otherwise.
- */
-template <typename T, bool N, bool I>
-bool StorageAndSubImageTest::LoopTestOverDOverS(bool skip_rgb)
-{
-	bool result = true;
-
-	result &= LoopTestOverS<T, N, 1, I>(skip_rgb);
-	result &= LoopTestOverS<T, N, 2, I>(skip_rgb);
-	result &= LoopTestOverS<T, N, 3, I>(skip_rgb);
-
-	return result;
-}
-
 /** @brief Function prepares framebuffer with internal format color attachment.
  *         Viewport is set up. Content of the framebuffer is cleared.
  *
  *  @note The function may throw if unexpected error has occured.
  */
-void StorageAndSubImageTest::PrepareFramebuffer(const glw::GLenum internal_format, const glw::GLuint D)
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+void StorageAndSubImageTest<T, S, N, D, I>::PrepareFramebuffer(const glw::GLenum internal_format)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -2408,7 +2049,10 @@ void StorageAndSubImageTest::PrepareFramebuffer(const glw::GLenum internal_forma
 
 	if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		throw 0;
+		if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_UNSUPPORTED)
+			throw tcu::NotSupportedError("unsupported framebuffer configuration");
+		else
+			throw 0;
 	}
 
 	gl.viewport(0, 0, fbo_size_x, 1);
@@ -2427,7 +2071,8 @@ void StorageAndSubImageTest::PrepareFramebuffer(const glw::GLenum internal_forma
  *  @param [in] variable_declaration      Variables declaration part of fragment shader source code.
  *  @param [in] tail                      Tail part of fragment shader source code.
  */
-void StorageAndSubImageTest::PrepareProgram(const glw::GLchar* variable_declaration, const glw::GLchar* tail)
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+void StorageAndSubImageTest<T, S, N, D, I>::PrepareProgram(const glw::GLchar* variable_declaration, const glw::GLchar* tail)
 {
 	/* Shortcut for GL functionality */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -2576,7 +2221,8 @@ void StorageAndSubImageTest::PrepareProgram(const glw::GLchar* variable_declarat
 
 /** @brief Prepare VAO.
  */
-void StorageAndSubImageTest::PrepareVertexArray()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+void StorageAndSubImageTest<T, S, N, D, I>::PrepareVertexArray()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -2590,7 +2236,8 @@ void StorageAndSubImageTest::PrepareVertexArray()
 
 /** @brief Test's draw call.
  */
-void StorageAndSubImageTest::Draw()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+void StorageAndSubImageTest<T, S, N, D, I>::Draw()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -2610,7 +2257,8 @@ void StorageAndSubImageTest::Draw()
 
 /** @brief Clean GL objects, test variables and GL errors.
  */
-void StorageAndSubImageTest::CleanTexture()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+void StorageAndSubImageTest<T, S, N, D, I>::CleanTexture()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -2626,7 +2274,8 @@ void StorageAndSubImageTest::CleanTexture()
 
 /** @brief Clean GL objects, test variables and GL errors.
  */
-void StorageAndSubImageTest::CleanFramebuffer()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+void StorageAndSubImageTest<T, S, N, D, I>::CleanFramebuffer()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -2650,7 +2299,8 @@ void StorageAndSubImageTest::CleanFramebuffer()
 
 /** @brief Clean GL objects, test variables and GL errors.
  */
-void StorageAndSubImageTest::CleanProgram()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+void StorageAndSubImageTest<T, S, N, D, I>::CleanProgram()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -2668,7 +2318,8 @@ void StorageAndSubImageTest::CleanProgram()
 
 /** @brief Clean GL objects, test variables and GL errors.
  */
-void StorageAndSubImageTest::CleanErrors()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+void StorageAndSubImageTest<T, S, N, D, I>::CleanErrors()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -2680,7 +2331,8 @@ void StorageAndSubImageTest::CleanErrors()
 
 /** @brief Clean GL objects, test variables and GL errors.
  */
-void StorageAndSubImageTest::CleanVertexArray()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+void StorageAndSubImageTest<T, S, N, D, I>::CleanVertexArray()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -2699,7 +2351,8 @@ void StorageAndSubImageTest::CleanVertexArray()
  *
  *  @return Iteration result.
  */
-tcu::TestNode::IterateResult StorageAndSubImageTest::iterate()
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+tcu::TestNode::IterateResult StorageAndSubImageTest<T, S, N, D, I>::iterate()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -2722,28 +2375,12 @@ tcu::TestNode::IterateResult StorageAndSubImageTest::iterate()
 	try
 	{
 		PrepareVertexArray();
-
-		/* Test TextureStorage* */
-		is_ok &= LoopTestOverDOverS<glw::GLbyte, false, false>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLubyte, false, false>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLshort, false, false>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLushort, false, false>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLint, false, false>(false);
-		is_ok &= LoopTestOverDOverS<glw::GLuint, false, false>(false);
-		is_ok &= LoopTestOverDOverS<glw::GLubyte, true, false>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLushort, true, false>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLfloat, true, false>(false);
-
-		/* Test TextureSubImage* */
-		is_ok &= LoopTestOverDOverS<glw::GLbyte, false, true>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLubyte, false, true>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLshort, false, true>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLushort, false, true>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLint, false, true>(false);
-		is_ok &= LoopTestOverDOverS<glw::GLuint, false, true>(false);
-		is_ok &= LoopTestOverDOverS<glw::GLubyte, true, true>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLushort, true, true>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLfloat, true, true>(false);
+		PrepareProgram(FragmentShaderDeclaration(), FragmentShaderTail());
+		is_ok = Test();
+	}
+	catch (tcu::NotSupportedError e)
+	{
+		throw e;
 	}
 	catch (...)
 	{
@@ -2783,99 +2420,131 @@ tcu::TestNode::IterateResult StorageAndSubImageTest::iterate()
 }
 
 /* Vertex shader source code. */
-const glw::GLchar* StorageAndSubImageTest::s_vertex_shader = "#version 450\n"
-															 "\n"
-															 "void main()\n"
-															 "{\n"
-															 "    switch(gl_VertexID)\n"
-															 "    {\n"
-															 "        case 0:\n"
-															 "            gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
-															 "            break;\n"
-															 "        case 1:\n"
-															 "            gl_Position = vec4( 1.0, 1.0, 0.0, 1.0);\n"
-															 "            break;\n"
-															 "        case 2:\n"
-															 "            gl_Position = vec4(-1.0,-1.0, 0.0, 1.0);\n"
-															 "            break;\n"
-															 "        case 3:\n"
-															 "            gl_Position = vec4( 1.0,-1.0, 0.0, 1.0);\n"
-															 "            break;\n"
-															 "    }\n"
-															 "}\n";
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_vertex_shader =
+	"#version 450\n"
+	"\n"
+	"void main()\n"
+	"{\n"
+	"    switch(gl_VertexID)\n"
+	"    {\n"
+	"        case 0:\n"
+	"            gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
+	"            break;\n"
+	"        case 1:\n"
+	"            gl_Position = vec4( 1.0, 1.0, 0.0, 1.0);\n"
+	"            break;\n"
+	"        case 2:\n"
+	"            gl_Position = vec4(-1.0,-1.0, 0.0, 1.0);\n"
+	"            break;\n"
+	"        case 3:\n"
+	"            gl_Position = vec4( 1.0,-1.0, 0.0, 1.0);\n"
+	"            break;\n"
+	"    }\n"
+	"}\n";
 
 /* Fragment shader source program. */
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_head =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_head =
 	"#version 450\n"
 	"\n"
 	"layout(pixel_center_integer) in vec4 gl_FragCoord;\n"
 	"\n";
 
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_1D_fdecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_1D_fdecl_lowp =
 	"uniform  sampler1D texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_1D_idecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_1D_idecl_lowp =
 	"uniform isampler1D texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_1D_udecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_1D_udecl_lowp =
 	"uniform usampler1D texture_input;\nout     uvec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_1D_fdecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_1D_fdecl_mediump =
 	"uniform  sampler1D texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_1D_idecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_1D_idecl_mediump =
 	"uniform isampler1D texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_1D_udecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_1D_udecl_mediump =
 	"uniform usampler1D texture_input;\nout     uvec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_1D_fdecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_1D_fdecl_highp =
 	"uniform  sampler1D texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_1D_idecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_1D_idecl_highp =
 	"uniform isampler1D texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_1D_udecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_1D_udecl_highp =
 	"uniform usampler1D texture_input;\nout     uvec4         texture_output;\n";
 
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_2D_fdecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_2D_fdecl_lowp =
 	"uniform  sampler2D texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_2D_idecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_2D_idecl_lowp =
 	"uniform isampler2D texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_2D_udecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_2D_udecl_lowp =
 	"uniform usampler2D texture_input;\nout     uvec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_2D_fdecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_2D_fdecl_mediump =
 	"uniform  sampler2D texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_2D_idecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_2D_idecl_mediump =
 	"uniform isampler2D texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_2D_udecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_2D_udecl_mediump =
 	"uniform usampler2D texture_input;\nout     uvec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_2D_fdecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_2D_fdecl_highp =
 	"uniform  sampler2D texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_2D_idecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_2D_idecl_highp =
 	"uniform isampler2D texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_2D_udecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_2D_udecl_highp =
 	"uniform usampler2D texture_input;\nout     uvec4         texture_output;\n";
 
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_3D_fdecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_3D_fdecl_lowp =
 	"uniform  sampler3D texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_3D_idecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_3D_idecl_lowp =
 	"uniform isampler3D texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_3D_udecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_3D_udecl_lowp =
 	"uniform usampler3D texture_input;\nout     uvec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_3D_fdecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_3D_fdecl_mediump =
 	"uniform  sampler3D texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_3D_idecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_3D_idecl_mediump =
 	"uniform isampler3D texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_3D_udecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_3D_udecl_mediump =
 	"uniform usampler3D texture_input;\nout     uvec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_3D_fdecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_3D_fdecl_highp =
 	"uniform  sampler3D texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_3D_idecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_3D_idecl_highp =
 	"uniform isampler3D texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_3D_udecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_3D_udecl_highp =
 	"uniform usampler3D texture_input;\nout     uvec4         texture_output;\n";
 
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_1D_tail =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_1D_tail =
 	"\n"
 	"void main()\n"
 	"{\n"
 	"    texture_output = texelFetch(texture_input, int(gl_FragCoord.x), 0);\n"
 	"}\n";
 
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_2D_tail =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_2D_tail =
 	"\n"
 	"void main()\n"
 	"{\n"
@@ -2883,13 +2552,212 @@ const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_2D_tail =
 	"0);\n"
 	"}\n";
 
-const glw::GLchar* StorageAndSubImageTest::s_fragment_shader_3D_tail =
+template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
+const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::s_fragment_shader_3D_tail =
 	"\n"
 	"void main()\n"
 	"{\n"
 	"    texture_output = texelFetch(texture_input, ivec3(int(gl_FragCoord.x) % 2, int(floor(gl_FragCoord.x / 2)) % 3, "
 	"int(floor(gl_FragCoord.x / 2 / 3))), 0);\n"
 	"}\n";
+
+template class StorageAndSubImageTest<glw::GLbyte, 1, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLbyte, 2, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLbyte, 4, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLbyte, 1, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLbyte, 2, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLbyte, 4, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLbyte, 1, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLbyte, 2, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLbyte, 4, false, 3, false>;
+
+template class StorageAndSubImageTest<glw::GLubyte, 1, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 2, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 4, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 1, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 2, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 4, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 1, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 2, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 4, false, 3, false>;
+
+template class StorageAndSubImageTest<glw::GLubyte, 1, true, 1, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 2, true, 1, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 4, true, 1, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 1, true, 2, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 2, true, 2, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 4, true, 2, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 1, true, 3, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 2, true, 3, false>;
+template class StorageAndSubImageTest<glw::GLubyte, 4, true, 3, false>;
+
+template class StorageAndSubImageTest<glw::GLshort, 1, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLshort, 2, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLshort, 4, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLshort, 1, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLshort, 2, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLshort, 4, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLshort, 1, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLshort, 2, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLshort, 4, false, 3, false>;
+
+template class StorageAndSubImageTest<glw::GLushort, 1, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLushort, 2, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLushort, 4, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLushort, 1, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLushort, 2, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLushort, 4, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLushort, 1, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLushort, 2, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLushort, 4, false, 3, false>;
+
+template class StorageAndSubImageTest<glw::GLushort, 1, true, 1, false>;
+template class StorageAndSubImageTest<glw::GLushort, 2, true, 1, false>;
+template class StorageAndSubImageTest<glw::GLushort, 4, true, 1, false>;
+template class StorageAndSubImageTest<glw::GLushort, 1, true, 2, false>;
+template class StorageAndSubImageTest<glw::GLushort, 2, true, 2, false>;
+template class StorageAndSubImageTest<glw::GLushort, 4, true, 2, false>;
+template class StorageAndSubImageTest<glw::GLushort, 1, true, 3, false>;
+template class StorageAndSubImageTest<glw::GLushort, 2, true, 3, false>;
+template class StorageAndSubImageTest<glw::GLushort, 4, true, 3, false>;
+
+template class StorageAndSubImageTest<glw::GLint, 1, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLint, 2, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLint, 3, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLint, 4, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLint, 1, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLint, 2, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLint, 3, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLint, 4, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLint, 1, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLint, 2, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLint, 3, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLint, 4, false, 3, false>;
+
+template class StorageAndSubImageTest<glw::GLuint, 1, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLuint, 2, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLuint, 3, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLuint, 4, false, 1, false>;
+template class StorageAndSubImageTest<glw::GLuint, 1, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLuint, 2, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLuint, 3, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLuint, 4, false, 2, false>;
+template class StorageAndSubImageTest<glw::GLuint, 1, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLuint, 2, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLuint, 3, false, 3, false>;
+template class StorageAndSubImageTest<glw::GLuint, 4, false, 3, false>;
+
+template class StorageAndSubImageTest<glw::GLfloat, 1, true, 1, false>;
+template class StorageAndSubImageTest<glw::GLfloat, 2, true, 1, false>;
+template class StorageAndSubImageTest<glw::GLfloat, 3, true, 1, false>;
+template class StorageAndSubImageTest<glw::GLfloat, 4, true, 1, false>;
+template class StorageAndSubImageTest<glw::GLfloat, 1, true, 2, false>;
+template class StorageAndSubImageTest<glw::GLfloat, 2, true, 2, false>;
+template class StorageAndSubImageTest<glw::GLfloat, 3, true, 2, false>;
+template class StorageAndSubImageTest<glw::GLfloat, 4, true, 2, false>;
+template class StorageAndSubImageTest<glw::GLfloat, 1, true, 3, false>;
+template class StorageAndSubImageTest<glw::GLfloat, 2, true, 3, false>;
+template class StorageAndSubImageTest<glw::GLfloat, 3, true, 3, false>;
+template class StorageAndSubImageTest<glw::GLfloat, 4, true, 3, false>;
+
+template class StorageAndSubImageTest<glw::GLbyte, 1, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLbyte, 2, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLbyte, 4, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLbyte, 1, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLbyte, 2, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLbyte, 4, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLbyte, 1, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLbyte, 2, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLbyte, 4, false, 3, true>;
+
+template class StorageAndSubImageTest<glw::GLubyte, 1, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 2, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 4, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 1, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 2, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 4, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 1, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 2, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 4, false, 3, true>;
+
+template class StorageAndSubImageTest<glw::GLubyte, 1, true, 1, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 2, true, 1, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 4, true, 1, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 1, true, 2, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 2, true, 2, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 4, true, 2, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 1, true, 3, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 2, true, 3, true>;
+template class StorageAndSubImageTest<glw::GLubyte, 4, true, 3, true>;
+
+template class StorageAndSubImageTest<glw::GLshort, 1, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLshort, 2, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLshort, 4, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLshort, 1, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLshort, 2, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLshort, 4, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLshort, 1, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLshort, 2, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLshort, 4, false, 3, true>;
+
+template class StorageAndSubImageTest<glw::GLushort, 1, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLushort, 2, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLushort, 4, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLushort, 1, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLushort, 2, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLushort, 4, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLushort, 1, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLushort, 2, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLushort, 4, false, 3, true>;
+
+template class StorageAndSubImageTest<glw::GLushort, 1, true, 1, true>;
+template class StorageAndSubImageTest<glw::GLushort, 2, true, 1, true>;
+template class StorageAndSubImageTest<glw::GLushort, 4, true, 1, true>;
+template class StorageAndSubImageTest<glw::GLushort, 1, true, 2, true>;
+template class StorageAndSubImageTest<glw::GLushort, 2, true, 2, true>;
+template class StorageAndSubImageTest<glw::GLushort, 4, true, 2, true>;
+template class StorageAndSubImageTest<glw::GLushort, 1, true, 3, true>;
+template class StorageAndSubImageTest<glw::GLushort, 2, true, 3, true>;
+template class StorageAndSubImageTest<glw::GLushort, 4, true, 3, true>;
+
+template class StorageAndSubImageTest<glw::GLint, 1, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLint, 2, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLint, 3, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLint, 4, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLint, 1, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLint, 2, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLint, 3, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLint, 4, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLint, 1, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLint, 2, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLint, 3, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLint, 4, false, 3, true>;
+
+template class StorageAndSubImageTest<glw::GLuint, 1, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLuint, 2, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLuint, 3, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLuint, 4, false, 1, true>;
+template class StorageAndSubImageTest<glw::GLuint, 1, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLuint, 2, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLuint, 3, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLuint, 4, false, 2, true>;
+template class StorageAndSubImageTest<glw::GLuint, 1, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLuint, 2, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLuint, 3, false, 3, true>;
+template class StorageAndSubImageTest<glw::GLuint, 4, false, 3, true>;
+
+template class StorageAndSubImageTest<glw::GLfloat, 1, true, 1, true>;
+template class StorageAndSubImageTest<glw::GLfloat, 2, true, 1, true>;
+template class StorageAndSubImageTest<glw::GLfloat, 3, true, 1, true>;
+template class StorageAndSubImageTest<glw::GLfloat, 4, true, 1, true>;
+template class StorageAndSubImageTest<glw::GLfloat, 1, true, 2, true>;
+template class StorageAndSubImageTest<glw::GLfloat, 2, true, 2, true>;
+template class StorageAndSubImageTest<glw::GLfloat, 3, true, 2, true>;
+template class StorageAndSubImageTest<glw::GLfloat, 4, true, 2, true>;
+template class StorageAndSubImageTest<glw::GLfloat, 1, true, 3, true>;
+template class StorageAndSubImageTest<glw::GLfloat, 2, true, 3, true>;
+template class StorageAndSubImageTest<glw::GLfloat, 3, true, 3, true>;
+template class StorageAndSubImageTest<glw::GLfloat, 4, true, 3, true>;
 
 /******************************** Storage Multisample Test Implementation   ********************************/
 

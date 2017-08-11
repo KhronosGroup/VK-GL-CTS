@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
+ * Generated from Khronos GL API description (gl.xml) revision a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90.
  */
 #define			glActiveShaderProgram								glwActiveShaderProgram
 #define			glActiveTexture										glwActiveTexture
@@ -458,17 +458,17 @@
 #define			glMatrixScalefEXT									glwMatrixScalefEXT
 #define			glMatrixTranslatedEXT								glwMatrixTranslatedEXT
 #define			glMatrixTranslatefEXT								glwMatrixTranslatefEXT
-#define			glMaxShaderCompilerThreadsARB						glwMaxShaderCompilerThreadsARB
+#define			glMaxShaderCompilerThreadsKHR						glwMaxShaderCompilerThreadsKHR
 #define			glMemoryBarrier										glwMemoryBarrier
 #define			glMemoryBarrierByRegion								glwMemoryBarrierByRegion
 #define			glMinSampleShading									glwMinSampleShading
 #define			glMultiDrawArrays									glwMultiDrawArrays
 #define			glMultiDrawArraysIndirect							glwMultiDrawArraysIndirect
-#define			glMultiDrawArraysIndirectCountARB					glwMultiDrawArraysIndirectCountARB
+#define			glMultiDrawArraysIndirectCount						glwMultiDrawArraysIndirectCount
 #define			glMultiDrawElements									glwMultiDrawElements
 #define			glMultiDrawElementsBaseVertex						glwMultiDrawElementsBaseVertex
 #define			glMultiDrawElementsIndirect							glwMultiDrawElementsIndirect
-#define			glMultiDrawElementsIndirectCountARB					glwMultiDrawElementsIndirectCountARB
+#define			glMultiDrawElementsIndirectCount					glwMultiDrawElementsIndirectCount
 #define			glMultiTexBufferEXT									glwMultiTexBufferEXT
 #define			glMultiTexCoordPointerEXT							glwMultiTexCoordPointerEXT
 #define			glMultiTexEnvfEXT									glwMultiTexEnvfEXT
@@ -547,7 +547,7 @@
 #define			glPointSize											glwPointSize
 #define			glPolygonMode										glwPolygonMode
 #define			glPolygonOffset										glwPolygonOffset
-#define			glPolygonOffsetClampEXT								glwPolygonOffsetClampEXT
+#define			glPolygonOffsetClamp								glwPolygonOffsetClamp
 #define			glPopDebugGroup										glwPopDebugGroup
 #define			glPopGroupMarkerEXT									glwPopGroupMarkerEXT
 #define			glPrimitiveBoundingBox								glwPrimitiveBoundingBox
@@ -648,6 +648,7 @@
 #define			glShaderBinary										glwShaderBinary
 #define			glShaderSource										glwShaderSource
 #define			glShaderStorageBlockBinding							glwShaderStorageBlockBinding
+#define			glSpecializeShader									glwSpecializeShader
 #define			glStencilFunc										glwStencilFunc
 #define			glStencilFuncSeparate								glwStencilFuncSeparate
 #define			glStencilMask										glwStencilMask
@@ -1347,17 +1348,17 @@ void			glwMatrixScaledEXT									(GLenum mode, GLdouble x, GLdouble y, GLdouble
 void			glwMatrixScalefEXT									(GLenum mode, GLfloat x, GLfloat y, GLfloat z);
 void			glwMatrixTranslatedEXT								(GLenum mode, GLdouble x, GLdouble y, GLdouble z);
 void			glwMatrixTranslatefEXT								(GLenum mode, GLfloat x, GLfloat y, GLfloat z);
-void			glwMaxShaderCompilerThreadsARB						(GLuint count);
+void			glwMaxShaderCompilerThreadsKHR						(GLuint count);
 void			glwMemoryBarrier									(GLbitfield barriers);
 void			glwMemoryBarrierByRegion							(GLbitfield barriers);
 void			glwMinSampleShading									(GLfloat value);
 void			glwMultiDrawArrays									(GLenum mode, const GLint *first, const GLsizei *count, GLsizei drawcount);
 void			glwMultiDrawArraysIndirect							(GLenum mode, const void *indirect, GLsizei drawcount, GLsizei stride);
-void			glwMultiDrawArraysIndirectCountARB					(GLenum mode, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride);
+void			glwMultiDrawArraysIndirectCount						(GLenum mode, const void *indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride);
 void			glwMultiDrawElements								(GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount);
 void			glwMultiDrawElementsBaseVertex						(GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount, const GLint *basevertex);
 void			glwMultiDrawElementsIndirect						(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride);
-void			glwMultiDrawElementsIndirectCountARB				(GLenum mode, GLenum type, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride);
+void			glwMultiDrawElementsIndirectCount					(GLenum mode, GLenum type, const void *indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride);
 void			glwMultiTexBufferEXT								(GLenum texunit, GLenum target, GLenum internalformat, GLuint buffer);
 void			glwMultiTexCoordPointerEXT							(GLenum texunit, GLint size, GLenum type, GLsizei stride, const void *pointer);
 void			glwMultiTexEnvfEXT									(GLenum texunit, GLenum target, GLenum pname, GLfloat param);
@@ -1436,7 +1437,7 @@ void			glwPointParameteriv									(GLenum pname, const GLint *params);
 void			glwPointSize										(GLfloat size);
 void			glwPolygonMode										(GLenum face, GLenum mode);
 void			glwPolygonOffset									(GLfloat factor, GLfloat units);
-void			glwPolygonOffsetClampEXT							(GLfloat factor, GLfloat units, GLfloat clamp);
+void			glwPolygonOffsetClamp								(GLfloat factor, GLfloat units, GLfloat clamp);
 void			glwPopDebugGroup									();
 void			glwPopGroupMarkerEXT								();
 void			glwPrimitiveBoundingBox								(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
@@ -1537,6 +1538,7 @@ void			glwScissorIndexedv									(GLuint index, const GLint *v);
 void			glwShaderBinary										(GLsizei count, const GLuint *shaders, GLenum binaryformat, const void *binary, GLsizei length);
 void			glwShaderSource										(GLuint shader, GLsizei count, const GLchar *const*string, const GLint *length);
 void			glwShaderStorageBlockBinding						(GLuint program, GLuint storageBlockIndex, GLuint storageBlockBinding);
+void			glwSpecializeShader									(GLuint shader, const GLchar *pEntryPoint, GLuint numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue);
 void			glwStencilFunc										(GLenum func, GLint ref, GLuint mask);
 void			glwStencilFuncSeparate								(GLenum face, GLenum func, GLint ref, GLuint mask);
 void			glwStencilMask										(GLuint mask);

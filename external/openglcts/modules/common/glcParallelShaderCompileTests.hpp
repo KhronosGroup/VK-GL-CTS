@@ -1,10 +1,10 @@
-#ifndef _GL4CPARALLELSHADERCOMPILETESTS_HPP
-#define _GL4CPARALLELSHADERCOMPILETESTS_HPP
+#ifndef _GLCPARALLELSHADERCOMPILETESTS_HPP
+#define _GLCPARALLELSHADERCOMPILETESTS_HPP
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
  *
- * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2016-2017 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,19 +25,19 @@
 
 /**
  */ /*!
- * \file  gl4cParallelShaderCompileTests.hpp
- * \brief Conformance tests for the GL_ARB_parallel_shader_compile functionality.
+ * \file  glcParallelShaderCompileTests.hpp
+ * \brief Conformance tests for the GL_KHR_parallel_shader_compile functionality.
  */ /*-------------------------------------------------------------------*/
 #include "glcTestCase.hpp"
 #include "glwDefs.hpp"
 #include "tcuDefs.hpp"
 #include <vector>
 
-namespace gl4cts
+namespace glcts
 {
 
 /** Test verifies if GetBooleanv, GetIntegerv, GetInteger64v, GetFloatv, and GetDoublev
- *  queries for MAX_SHADER_COMPILER_THREADS_ARB <pname> returns the same value.
+ *  queries for MAX_SHADER_COMPILER_THREADS_KHR <pname> returns the same value.
  **/
 class SimpleQueriesTest : public deqp::TestCase
 {
@@ -52,7 +52,7 @@ private:
 	/* Private members */
 };
 
-/** Test verifies if MaxShaderCompilerThreadsARB function works as expected
+/** Test verifies if MaxShaderCompilerThreadsKHR function works as expected
  **/
 class MaxShaderCompileThreadsTest : public deqp::TestCase
 {
@@ -115,4 +115,4 @@ private:
 
 } /* glcts namespace */
 
-#endif // _GL4CPARALLELSHADERCOMPILETESTS_HPP
+#endif // _GLCPARALLELSHADERCOMPILETESTS_HPP

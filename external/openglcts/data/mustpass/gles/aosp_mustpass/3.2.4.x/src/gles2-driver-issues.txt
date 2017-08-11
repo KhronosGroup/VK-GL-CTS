@@ -154,12 +154,6 @@ dEQP-GLES2.functional.shaders.scoping.invalid.redefine_builtin_fragment
 dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_not_vertex
 dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_not_fragment
 
-#VK-GL-CTS 241
-dEQP-GLES2.functional.shaders.builtin_variable.max_varying_vectors_vertex
-dEQP-GLES2.functional.shaders.builtin_variable.max_varying_vectors_fragment
-dEQP-GLES2.functional.shaders.builtin_variable.max_draw_buffers_vertex
-dEQP-GLES2.functional.shaders.builtin_variable.max_draw_buffers_fragment
-
 #VK-GL-CTS 244
 dEQP-GLES2.functional.shaders.fragdata.invalid_assign_to_1
 
@@ -238,13 +232,6 @@ dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.depth24_stencil8
 
 #VK-GL-CTS 252
 dEQP-GLES2.functional.negative_api.state.get_framebuffer_attachment_parameteriv
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_tex2d
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_pos_x
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_pos_y
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_pos_z
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_neg_x
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_neg_y
-dEQP-GLES2.functional.negative_api.texture.copyteximage2d_invalid_border_cube_neg_z
 dEQP-GLES2.functional.negative_api.texture.texsubimage2d_neg_wdt_hgt
 
 #VK-GL-CTS 253

@@ -417,7 +417,7 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 																				useStorageBuffer ? "opatomic_storage_buffer" : "opatomic",
 																				"Test the OpAtomic* opcodes"));
 	de::Random						rnd					(deStringHash(group->getName()));
-	const int						numElements			= 1000000;
+	const int						numElements			= 65535;
 	vector<OpAtomicCase>			cases;
 
 	const StringTemplate			shaderTemplate	(
@@ -446,15 +446,7 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		"OpMemberDecorate %sumbuf 0 Coherent\n"
 		"OpMemberDecorate %sumbuf 0 Offset 0\n"
 
-		+ string(getComputeAsmCommonTypes()) +
-		"%void      = OpTypeVoid\n"
-		"%voidf     = OpTypeFunction %void\n"
-		"%u32       = OpTypeInt 32 0\n"
-		"%i32       = OpTypeInt 32 1\n"
-		"%uvec3     = OpTypeVector %u32 3\n"
-		"%uvec3ptr  = OpTypePointer Input %uvec3\n"
-		"%i32ptr    = OpTypePointer ${BLOCK_POINTER_TYPE} %i32\n"
-		"%i32arr    = OpTypeRuntimeArray %i32\n"
+		+ getComputeAsmCommonTypes("${BLOCK_POINTER_TYPE}") +
 
 		"%buf       = OpTypeStruct %i32arr\n"
 		"%bufptr    = OpTypePointer ${BLOCK_POINTER_TYPE} %buf\n"

@@ -5,6 +5,10 @@ if (DEQP_SUPPORT_WGL)
 	add_definitions(-DGLCTS_SUPPORT_WGL=1)
 endif ()
 
+include_directories(
+	${PROJECT_SOURCE_DIR}/modules/glshared
+	)
+
 set(GLCTS_COMMON_SRCS
 	glcBlendEquationAdvancedTests.cpp
 	glcBlendEquationAdvancedTests.hpp
@@ -34,8 +38,14 @@ set(GLCTS_COMMON_SRCS
 	glcRobustnessTests.hpp
 	glcPolygonOffsetClampTests.cpp
 	glcPolygonOffsetClampTests.hpp
+	glcParallelShaderCompileTests.cpp
+	glcParallelShaderCompileTests.hpp
 	glcRobustBufferAccessBehaviorTests.cpp
 	glcRobustBufferAccessBehaviorTests.hpp
+	glcSeparableProgramsTransformFeedbackTests.cpp
+	glcSeparableProgramsTransformFeedbackTests.hpp
+	glcShaderConstExprTests.hpp
+	glcShaderConstExprTests.cpp
 	glcShaderIndexingTests.cpp
 	glcShaderIndexingTests.hpp
 	glcShaderIntegerMixTests.cpp
@@ -78,6 +88,7 @@ set(GLCTS_COMMON_SRCS
 	glcExtTokens.hpp
 	glcLimitTest.inl
 	glcLimitTest.hpp
+	glcWaiver.hpp
 	)
 
 set(GLCTS_COMMON_LIBS

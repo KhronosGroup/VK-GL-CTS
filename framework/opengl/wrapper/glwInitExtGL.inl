@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
+ * Generated from Khronos GL API description (gl.xml) revision a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90.
  */
 
 if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
@@ -30,6 +30,11 @@ if (de::contains(extSet, "GL_KHR_robustness"))
 	gl->getnUniformiv			= (glGetnUniformivFunc)				loader->get("glGetnUniformiv");
 	gl->getnUniformuiv			= (glGetnUniformuivFunc)			loader->get("glGetnUniformuiv");
 	gl->readnPixels				= (glReadnPixelsFunc)				loader->get("glReadnPixels");
+}
+
+if (de::contains(extSet, "GL_KHR_parallel_shader_compile"))
+{
+	gl->maxShaderCompilerThreadsKHR	= (glMaxShaderCompilerThreadsKHRFunc)	loader->get("glMaxShaderCompilerThreadsKHR");
 }
 
 if (de::contains(extSet, "GL_EXT_direct_state_access"))
@@ -559,7 +564,7 @@ if (de::contains(extSet, "GL_EXT_debug_marker"))
 
 if (de::contains(extSet, "GL_EXT_polygon_offset_clamp"))
 {
-	gl->polygonOffsetClampEXT	= (glPolygonOffsetClampEXTFunc)	loader->get("glPolygonOffsetClampEXT");
+	gl->polygonOffsetClamp	= (glPolygonOffsetClampFunc)	loader->get("glPolygonOffsetClampEXT");
 }
 
 if (de::contains(extSet, "GL_ARB_clip_control"))
@@ -702,8 +707,8 @@ if (de::contains(extSet, "GL_ARB_get_program_binary"))
 
 if (de::contains(extSet, "GL_ARB_indirect_parameters"))
 {
-	gl->multiDrawArraysIndirectCountARB		= (glMultiDrawArraysIndirectCountARBFunc)	loader->get("glMultiDrawArraysIndirectCountARB");
-	gl->multiDrawElementsIndirectCountARB	= (glMultiDrawElementsIndirectCountARBFunc)	loader->get("glMultiDrawElementsIndirectCountARB");
+	gl->multiDrawArraysIndirectCount	= (glMultiDrawArraysIndirectCountFunc)		loader->get("glMultiDrawArraysIndirectCountARB");
+	gl->multiDrawElementsIndirectCount	= (glMultiDrawElementsIndirectCountFunc)	loader->get("glMultiDrawElementsIndirectCountARB");
 }
 
 if (de::contains(extSet, "GL_ARB_internalformat_query"))
@@ -724,7 +729,7 @@ if (de::contains(extSet, "GL_ARB_multi_draw_indirect"))
 
 if (de::contains(extSet, "GL_ARB_parallel_shader_compile"))
 {
-	gl->maxShaderCompilerThreadsARB	= (glMaxShaderCompilerThreadsARBFunc)	loader->get("glMaxShaderCompilerThreadsARB");
+	gl->maxShaderCompilerThreadsKHR	= (glMaxShaderCompilerThreadsKHRFunc)	loader->get("glMaxShaderCompilerThreadsARB");
 }
 
 if (de::contains(extSet, "GL_ARB_program_interface_query"))

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97558118d4a8ab2af749867899555273c20827ce.
+ * Generated from Khronos GL API description (gl.xml) revision a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90.
  */
 
 GLW_APICALL void GLW_APIENTRY glActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -3844,7 +3844,7 @@ GLW_APICALL void GLW_APIENTRY glMatrixTranslatefEXT (GLenum mode, GLfloat x, GLf
 
 }
 
-GLW_APICALL void GLW_APIENTRY glMaxShaderCompilerThreadsARB (GLuint count)
+GLW_APICALL void GLW_APIENTRY glMaxShaderCompilerThreadsKHR (GLuint count)
 {
 	DE_UNREF(count);
 
@@ -3886,7 +3886,7 @@ GLW_APICALL void GLW_APIENTRY glMultiDrawArraysIndirect (GLenum mode, const void
 
 }
 
-GLW_APICALL void GLW_APIENTRY glMultiDrawArraysIndirectCountARB (GLenum mode, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
+GLW_APICALL void GLW_APIENTRY glMultiDrawArraysIndirectCount (GLenum mode, const void *indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
 {
 	DE_UNREF(mode);
 	DE_UNREF(indirect);
@@ -3927,7 +3927,7 @@ GLW_APICALL void GLW_APIENTRY glMultiDrawElementsIndirect (GLenum mode, GLenum t
 
 }
 
-GLW_APICALL void GLW_APIENTRY glMultiDrawElementsIndirectCountARB (GLenum mode, GLenum type, GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
+GLW_APICALL void GLW_APIENTRY glMultiDrawElementsIndirectCount (GLenum mode, GLenum type, const void *indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
 {
 	DE_UNREF(mode);
 	DE_UNREF(type);
@@ -4669,7 +4669,7 @@ GLW_APICALL void GLW_APIENTRY glPolygonOffset (GLfloat factor, GLfloat units)
 
 }
 
-GLW_APICALL void GLW_APIENTRY glPolygonOffsetClampEXT (GLfloat factor, GLfloat units, GLfloat clamp)
+GLW_APICALL void GLW_APIENTRY glPolygonOffsetClamp (GLfloat factor, GLfloat units, GLfloat clamp)
 {
 	DE_UNREF(factor);
 	DE_UNREF(units);
@@ -5566,6 +5566,16 @@ GLW_APICALL void GLW_APIENTRY glShaderStorageBlockBinding (GLuint program, GLuin
 	DE_UNREF(program);
 	DE_UNREF(storageBlockIndex);
 	DE_UNREF(storageBlockBinding);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glSpecializeShader (GLuint shader, const GLchar *pEntryPoint, GLuint numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue)
+{
+	DE_UNREF(shader);
+	DE_UNREF(pEntryPoint);
+	DE_UNREF(numSpecializationConstants);
+	DE_UNREF(pConstantIndex);
+	DE_UNREF(pConstantValue);
 
 }
 

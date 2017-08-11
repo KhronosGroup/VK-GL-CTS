@@ -46,6 +46,7 @@
 #include "glcInfoTests.hpp"
 #include "glcPolygonOffsetClampTests.hpp"
 #include "glcSampleVariablesTests.hpp"
+#include "glcShaderConstExprTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderMultisampleInterpolationTests.hpp"
 #include "glcShaderNegativeTests.hpp"
@@ -177,6 +178,7 @@ void ES31TestPackage::init(void)
 		coreGroup->addChild(new deqp::ShaderMultisampleInterpolationTests(getContext(), glu::GLSL_VERSION_310_ES));
 		coreGroup->addChild(new glcts::LayoutBindingTests(getContext(), glu::GLSL_VERSION_310_ES));
 		coreGroup->addChild(new deqp::ShaderIntegerMixTests(getContext(), glu::GLSL_VERSION_310_ES));
+		coreGroup->addChild(new glcts::ShaderConstExprTests(getContext()));
 		coreGroup->addChild(new glcts::BlendEquationAdvancedTests(getContext(), glu::GLSL_VERSION_310_ES));
 		coreGroup->addChild(new glcts::VertexAttribBindingTests(getContext()));
 		coreGroup->addChild(new glcts::ShaderStorageBufferObjectTests(getContext()));

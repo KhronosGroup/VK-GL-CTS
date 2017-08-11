@@ -431,7 +431,7 @@ bool MultiDrawArraysIndirectCountCase::draw()
 	gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer");
 
-	gl.multiDrawArraysIndirectCountARB(GL_TRIANGLE_STRIP, 0, 0, 2, 0);
+	gl.multiDrawArraysIndirectCount(GL_TRIANGLE_STRIP, 0, 0, 2, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glMultiDrawArraysIndirectCountARB");
 
 	gl.disableVertexAttribArray(0);
@@ -453,7 +453,7 @@ bool MultiDrawArraysIndirectCountCase::verifyErrors()
 	bool result = true;
 
 	// INVALID_VALUE - drawcount offset not multiple of 4
-	gl.multiDrawArraysIndirectCountARB(GL_TRIANGLE_STRIP, 0, 2, 1, 0);
+	gl.multiDrawArraysIndirectCount(GL_TRIANGLE_STRIP, 0, 2, 1, 0);
 	errorCode = gl.getError();
 	if (errorCode != GL_INVALID_VALUE)
 	{
@@ -464,7 +464,7 @@ bool MultiDrawArraysIndirectCountCase::verifyErrors()
 	}
 
 	// INVALID_OPERATION - maxdrawcount greater then parameter buffer size
-	gl.multiDrawArraysIndirectCountARB(GL_TRIANGLE_STRIP, 0, 0, 4, 0);
+	gl.multiDrawArraysIndirectCount(GL_TRIANGLE_STRIP, 0, 0, 4, 0);
 	errorCode = gl.getError();
 	if (errorCode != GL_INVALID_OPERATION)
 	{
@@ -478,7 +478,7 @@ bool MultiDrawArraysIndirectCountCase::verifyErrors()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer");
 
 	// INVALID_OPERATION - GL_PARAMETER_BUFFER_ARB not bound
-	gl.multiDrawArraysIndirectCountARB(GL_TRIANGLE_STRIP, 0, 0, 2, 0);
+	gl.multiDrawArraysIndirectCount(GL_TRIANGLE_STRIP, 0, 0, 2, 0);
 	errorCode = gl.getError();
 	if (errorCode != GL_INVALID_OPERATION)
 	{
@@ -624,7 +624,7 @@ bool MultiDrawElementsIndirectCountCase::draw()
 	gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer");
 
-	gl.multiDrawElementsIndirectCountARB(GL_TRIANGLE_STRIP, GL_UNSIGNED_SHORT, 0, 0, 2, 0);
+	gl.multiDrawElementsIndirectCount(GL_TRIANGLE_STRIP, GL_UNSIGNED_SHORT, 0, 0, 2, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glMultiDrawElementsIndirectCountARB");
 
 	gl.disableVertexAttribArray(0);
@@ -646,7 +646,7 @@ bool MultiDrawElementsIndirectCountCase::verifyErrors()
 	bool result = true;
 
 	// INVALID_VALUE - drawcount offset not multiple of 4
-	gl.multiDrawElementsIndirectCountARB(GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE, 0, 2, 1, 0);
+	gl.multiDrawElementsIndirectCount(GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE, 0, 2, 1, 0);
 	errorCode = gl.getError();
 	if (errorCode != GL_INVALID_VALUE)
 	{
@@ -657,7 +657,7 @@ bool MultiDrawElementsIndirectCountCase::verifyErrors()
 	}
 
 	// INVALID_OPERATION - maxdrawcount greater then parameter buffer size
-	gl.multiDrawElementsIndirectCountARB(GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE, 0, 0, 4, 0);
+	gl.multiDrawElementsIndirectCount(GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE, 0, 0, 4, 0);
 	errorCode = gl.getError();
 	if (errorCode != GL_INVALID_OPERATION)
 	{
@@ -671,7 +671,7 @@ bool MultiDrawElementsIndirectCountCase::verifyErrors()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer");
 
 	// INVALID_OPERATION - GL_PARAMETER_BUFFER_ARB not bound
-	gl.multiDrawElementsIndirectCountARB(GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE, 0, 0, 3, 0);
+	gl.multiDrawElementsIndirectCount(GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE, 0, 0, 3, 0);
 	errorCode = gl.getError();
 	if (errorCode != GL_INVALID_OPERATION)
 	{

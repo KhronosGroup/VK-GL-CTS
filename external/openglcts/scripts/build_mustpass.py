@@ -982,12 +982,12 @@ GL_CTS_KHR_MP_NOCTX_DEVICE_DIR		= "gl_cts/data/mustpass/gl/khronos_mustpass_noct
 GL_CTS_NOCTX_PROJECT				= Project(name = "Khronos Mustpass GL NoContext", path = GL_CTS_KHR_MP_NOCTX_DATA_DIR, incpath = GL_CTS_MP_INC_DIR, devicepath = GL_CTS_KHR_MP_NOCTX_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
 
 GL_MODULES							= OrderedDict([
-			('KHR-GL45',		['master',		[include('gl45-master.txt')]]),
-			('KHR-GL44',		['master',		[include('gl44-master.txt')]]),
-			('KHR-GL43',		['master',		[include('gl43-master.txt')]]),
-			('KHR-GL42',		['master',		[include('gl42-master.txt')]]),
-			('KHR-GL41',		['master',		[include('gl41-master.txt')]]),
-			('KHR-GL40',		['master',		[include('gl40-master.txt')]]),
+			('KHR-GL45',		['master',		[include('gl45-master.txt'), exclude('gl45-test-issues.txt')]]),
+			('KHR-GL44',		['master',		[include('gl44-master.txt'), exclude('gl44-test-issues.txt')]]),
+			('KHR-GL43',		['master',		[include('gl43-master.txt'), exclude('gl43-test-issues.txt')]]),
+			('KHR-GL42',		['master',		[include('gl42-master.txt'), exclude('gl42-test-issues.txt')]]),
+			('KHR-GL41',		['master',		[include('gl41-master.txt'), exclude('gl41-test-issues.txt')]]),
+			('KHR-GL40',		['master',		[include('gl40-master.txt'), exclude('gl40-test-issues.txt')]]),
 			('KHR-GL33',		['master',		[include('gl33-master.txt')]]),
 			('KHR-GL32',		['master',		[include('gl32-master.txt')]]),
 			('KHR-GL31',		['master',		[include('gl31-master.txt')]]),
