@@ -239,7 +239,7 @@ public:
 		addChild(new deqp::ShaderStructTests(m_context, glu::GLSL_VERSION_330));
 		addChild(new deqp::ShaderSwitchTests(m_context, glu::GLSL_VERSION_330));
 		addChild(new deqp::UniformBlockTests(m_context, glu::GLSL_VERSION_330));
-		addChild(new deqp::ShaderIntegerMixTests(m_context, glu::GLSL_VERSION_330));
+		addChild(new deqp::ShaderIntegerMixTests(m_context, glu::GLSL_VERSION_450));
 		addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_330));
 	}
 };
