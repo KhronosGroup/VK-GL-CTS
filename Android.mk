@@ -1038,6 +1038,11 @@ LOCAL_CPPFLAGS += -Wno-non-virtual-dtor -Wno-delete-non-virtual-dtor
 LOCAL_NDK_STL_VARIANT := gnustl_static
 LOCAL_RTTI_FLAG := -frtti -fexceptions
 LOCAL_MULTILIB := both
+LOCAL_TIDY_CHECKS := \
+    -google-build-explicit-make-pair, \
+    -google-global-names-in-headers, \
+    -google-runtime-member-string-references, \
+    -google-runtime-operator, \
 
 include $(BUILD_SHARED_LIBRARY)
 
