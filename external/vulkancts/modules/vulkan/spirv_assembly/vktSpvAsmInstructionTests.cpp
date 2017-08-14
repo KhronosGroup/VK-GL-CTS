@@ -51,6 +51,7 @@
 #include "tcuStringTemplate.hpp"
 
 #include "vktSpvAsm16bitStorageTests.hpp"
+#include "vktSpvAsmUboMatrixPaddingTests.hpp"
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
@@ -7841,6 +7842,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	}
 
 	computeTests->addChild(create16BitStorageComputeGroup(testCtx));
+	computeTests->addChild(createUboMatrixPaddingComputeGroup(testCtx));
 	computeTests->addChild(createVariablePointersComputeGroup(testCtx));
 	graphicsTests->addChild(createOpNopTests(testCtx));
 	graphicsTests->addChild(createOpSourceTests(testCtx));
@@ -7876,6 +7878,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	}
 
 	graphicsTests->addChild(create16BitStorageGraphicsGroup(testCtx));
+	graphicsTests->addChild(createUboMatrixPaddingGraphicsGroup(testCtx));
 	graphicsTests->addChild(createVariablePointersGraphicsGroup(testCtx));
 
 	instructionTests->addChild(computeTests.release());
