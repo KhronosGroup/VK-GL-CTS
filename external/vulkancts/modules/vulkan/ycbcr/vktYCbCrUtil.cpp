@@ -64,6 +64,15 @@ MultiPlaneImageData::MultiPlaneImageData (VkFormat format, const UVec2& size)
 	}
 }
 
+MultiPlaneImageData::MultiPlaneImageData (const MultiPlaneImageData& other)
+	: m_format		(other.m_format)
+	, m_description	(other.m_description)
+	, m_size		(other.m_size)
+{
+	for (deUint32 planeNdx = 0; planeNdx < m_description.numPlanes; ++planeNdx)
+		m_planeData[planeNdx] = other.m_planeData[planeNdx];
+}
+
 MultiPlaneImageData::~MultiPlaneImageData (void)
 {
 }
@@ -113,12 +122,12 @@ tcu::ConstPixelBufferAccess MultiPlaneImageData::getChannelAccess (deUint32 chan
 namespace
 {
 
-void allocateAndUploadStagingBuffers (const DeviceInterface&		vkd,
-									  VkDevice						device,
-									  Allocator&					allocator,
-									  const MultiPlaneImageData&	imageData,
-									  vector<VkBufferSp>*			buffers,
-									  vector<AllocationSp>*			allocations)
+void allocateStagingBuffers (const DeviceInterface&			vkd,
+							 VkDevice						device,
+							 Allocator&						allocator,
+							 const MultiPlaneImageData&		imageData,
+							 vector<VkBufferSp>*			buffers,
+							 vector<AllocationSp>*			allocations)
 {
 	for (deUint32 planeNdx = 0; planeNdx < imageData.getDescription().numPlanes; ++planeNdx)
 	{
@@ -128,20 +137,47 @@ void allocateAndUploadStagingBuffers (const DeviceInterface&		vkd,
 			DE_NULL,
 			(VkBufferCreateFlags)0u,
 			(VkDeviceSize)imageData.getPlaneSize(planeNdx),
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_SHARING_MODE_EXCLUSIVE,
 			0u,
 			(const deUint32*)DE_NULL,
 		};
 		Move<VkBuffer>				buffer		(createBuffer(vkd, device, &bufferInfo));
 		MovePtr<Allocation>			allocation	(allocator.allocate(getBufferMemoryRequirements(vkd, device, *buffer),
-																	MemoryRequirement::HostVisible|MemoryRequirement::Coherent));
+																	MemoryRequirement::HostVisible|MemoryRequirement::Any));
 
 		VK_CHECK(vkd.bindBufferMemory(device, *buffer, allocation->getMemory(), allocation->getOffset()));
-		deMemcpy(allocation->getHostPtr(), imageData.getPlanePtr(planeNdx), imageData.getPlaneSize(planeNdx));
 
 		buffers->push_back(VkBufferSp(new Unique<VkBuffer>(buffer)));
 		allocations->push_back(AllocationSp(allocation.release()));
+	}
+}
+
+void allocateAndWriteStagingBuffers (const DeviceInterface&		vkd,
+									  VkDevice						device,
+									  Allocator&					allocator,
+									  const MultiPlaneImageData&	imageData,
+									  vector<VkBufferSp>*			buffers,
+									  vector<AllocationSp>*			allocations)
+{
+	allocateStagingBuffers(vkd, device, allocator, imageData, buffers, allocations);
+
+	for (deUint32 planeNdx = 0; planeNdx < imageData.getDescription().numPlanes; ++planeNdx)
+	{
+		deMemcpy((*allocations)[planeNdx]->getHostPtr(), imageData.getPlanePtr(planeNdx), imageData.getPlaneSize(planeNdx));
+		flushMappedMemoryRange(vkd, device, (*allocations)[planeNdx]->getMemory(), 0u, VK_WHOLE_SIZE);
+	}
+}
+
+void readStagingBuffers (MultiPlaneImageData*			imageData,
+						 const DeviceInterface&			vkd,
+						 VkDevice						device,
+						 const vector<AllocationSp>&	allocations)
+{
+	for (deUint32 planeNdx = 0; planeNdx < imageData->getDescription().numPlanes; ++planeNdx)
+	{
+		invalidateMappedMemoryRange(vkd, device, allocations[planeNdx]->getMemory(), 0u, VK_WHOLE_SIZE);
+		deMemcpy(imageData->getPlanePtr(planeNdx), allocations[planeNdx]->getHostPtr(), imageData->getPlaneSize(planeNdx));
 	}
 }
 
@@ -278,7 +314,7 @@ void uploadImage (const DeviceInterface&		vkd,
 
 	const PlanarFormatDescription&	formatDesc		= imageData.getDescription();
 
-	allocateAndUploadStagingBuffers(vkd, device, allocator, imageData, &stagingBuffers, &stagingMemory);
+	allocateAndWriteStagingBuffers(vkd, device, allocator, imageData, &stagingBuffers, &stagingMemory);
 
 	{
 		const VkCommandBufferBeginInfo	beginInfo		=
@@ -496,6 +532,251 @@ void fillImageMemory (const vk::DeviceInterface&							vkd,
 
 		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
 		VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
+	}
+}
+
+void downloadImage (const DeviceInterface&	vkd,
+					VkDevice				device,
+					deUint32				queueFamilyNdx,
+					Allocator&				allocator,
+					VkImage					image,
+					MultiPlaneImageData*	imageData,
+					VkAccessFlags			prevAccess,
+					VkImageLayout			initialLayout)
+{
+	const VkQueue					queue			= getDeviceQueue(vkd, device, queueFamilyNdx, 0u);
+	const Unique<VkCommandPool>		cmdPool			(createCommandPool(vkd, device, (VkCommandPoolCreateFlags)0, queueFamilyNdx));
+	const Unique<VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	vector<VkBufferSp>				stagingBuffers;
+	vector<AllocationSp>			stagingMemory;
+
+	const PlanarFormatDescription&	formatDesc		= imageData->getDescription();
+
+	allocateStagingBuffers(vkd, device, allocator, *imageData, &stagingBuffers, &stagingMemory);
+
+	{
+		const VkCommandBufferBeginInfo	beginInfo		=
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			DE_NULL,
+			(VkCommandBufferUsageFlags)VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+			(const VkCommandBufferInheritanceInfo*)DE_NULL
+		};
+
+		VK_CHECK(vkd.beginCommandBuffer(*cmdBuffer, &beginInfo));
+	}
+
+	for (deUint32 planeNdx = 0; planeNdx < imageData->getDescription().numPlanes; ++planeNdx)
+	{
+		const VkImageAspectFlagBits	aspect	= (formatDesc.numPlanes > 1)
+											? getPlaneAspect(planeNdx)
+											: VK_IMAGE_ASPECT_COLOR_BIT;
+		{
+			const VkImageMemoryBarrier		preCopyBarrier	=
+			{
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				DE_NULL,
+				prevAccess,
+				VK_ACCESS_TRANSFER_READ_BIT,
+				initialLayout,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+				image,
+				{
+					aspect,
+					0u,
+					1u,
+					0u,
+					1u
+				}
+			};
+
+			vkd.cmdPipelineBarrier(*cmdBuffer,
+									(VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+									(VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
+									(VkDependencyFlags)0u,
+									0u,
+									(const VkMemoryBarrier*)DE_NULL,
+									0u,
+									(const VkBufferMemoryBarrier*)DE_NULL,
+									1u,
+									&preCopyBarrier);
+		}
+		{
+			const deUint32				planeW	= (formatDesc.numPlanes > 1)
+												? imageData->getSize().x() / formatDesc.planes[planeNdx].widthDivisor
+												: imageData->getSize().x();
+			const deUint32				planeH	= (formatDesc.numPlanes > 1)
+												? imageData->getSize().y() / formatDesc.planes[planeNdx].heightDivisor
+												: imageData->getSize().y();
+			const VkBufferImageCopy		copy	=
+			{
+				0u,		// bufferOffset
+				0u,		// bufferRowLength
+				0u,		// bufferImageHeight
+				{ (VkImageAspectFlags)aspect, 0u, 0u, 1u },
+				makeOffset3D(0u, 0u, 0u),
+				makeExtent3D(planeW, planeH, 1u),
+			};
+
+			vkd.cmdCopyImageToBuffer(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, **stagingBuffers[planeNdx], 1u, &copy);
+		}
+		{
+			const VkBufferMemoryBarrier		postCopyBarrier	=
+			{
+				VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+				DE_NULL,
+				VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_ACCESS_HOST_READ_BIT,
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+				**stagingBuffers[planeNdx],
+				0u,
+				VK_WHOLE_SIZE
+			};
+
+			vkd.cmdPipelineBarrier(*cmdBuffer,
+									(VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
+									(VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+									(VkDependencyFlags)0u,
+									0u,
+									(const VkMemoryBarrier*)DE_NULL,
+									1u,
+									&postCopyBarrier,
+									0u,
+									(const VkImageMemoryBarrier*)DE_NULL);
+		}
+	}
+
+	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
+
+	{
+		const Unique<VkFence>	fence		(createFence(vkd, device));
+		const VkSubmitInfo		submitInfo	=
+		{
+			VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			DE_NULL,
+			0u,
+			(const VkSemaphore*)DE_NULL,
+			(const VkPipelineStageFlags*)DE_NULL,
+			1u,
+			&*cmdBuffer,
+			0u,
+			(const VkSemaphore*)DE_NULL,
+		};
+
+		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
+		VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
+	}
+
+	readStagingBuffers(imageData, vkd, device, stagingMemory);
+}
+
+void readImageMemory (const vk::DeviceInterface&							vkd,
+					  vk::VkDevice											device,
+					  deUint32												queueFamilyNdx,
+					  vk::VkImage											image,
+					  const std::vector<de::SharedPtr<vk::Allocation> >&	allocations,
+					  MultiPlaneImageData*									imageData,
+					  vk::VkAccessFlags										prevAccess,
+					  vk::VkImageLayout										initialLayout)
+{
+	const VkQueue					queue			= getDeviceQueue(vkd, device, queueFamilyNdx, 0u);
+	const Unique<VkCommandPool>		cmdPool			(createCommandPool(vkd, device, (VkCommandPoolCreateFlags)0, queueFamilyNdx));
+	const Unique<VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const PlanarFormatDescription&	formatDesc		= imageData->getDescription();
+
+	{
+		const VkCommandBufferBeginInfo	beginInfo		=
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			DE_NULL,
+			(VkCommandBufferUsageFlags)VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+			(const VkCommandBufferInheritanceInfo*)DE_NULL
+		};
+
+		VK_CHECK(vkd.beginCommandBuffer(*cmdBuffer, &beginInfo));
+	}
+
+	{
+		const VkImageMemoryBarrier		preCopyBarrier	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			DE_NULL,
+			prevAccess,
+			vk::VK_ACCESS_HOST_READ_BIT,
+			initialLayout,
+			VK_IMAGE_LAYOUT_GENERAL,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			image,
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }
+		};
+
+		vkd.cmdPipelineBarrier(*cmdBuffer,
+								(VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT,
+								(VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+								(VkDependencyFlags)0u,
+								0u,
+								(const VkMemoryBarrier*)DE_NULL,
+								0u,
+								(const VkBufferMemoryBarrier*)DE_NULL,
+								1u,
+								&preCopyBarrier);
+	}
+
+	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
+
+	{
+		const Unique<VkFence>	fence		(createFence(vkd, device));
+		const VkSubmitInfo		submitInfo	=
+		{
+			VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			DE_NULL,
+			0u,
+			(const VkSemaphore*)DE_NULL,
+			(const VkPipelineStageFlags*)DE_NULL,
+			1u,
+			&*cmdBuffer,
+			0u,
+			(const VkSemaphore*)DE_NULL,
+		};
+
+		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
+		VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
+	}
+
+	for (deUint32 planeNdx = 0; planeNdx < formatDesc.numPlanes; ++planeNdx)
+	{
+		const VkImageAspectFlagBits			aspect		= (formatDesc.numPlanes > 1)
+														? getPlaneAspect(planeNdx)
+														: VK_IMAGE_ASPECT_COLOR_BIT;
+		const de::SharedPtr<Allocation>&	allocation	= allocations.size() > 1
+														? allocations[planeNdx]
+														: allocations[0];
+		const size_t						planeSize	= imageData->getPlaneSize(planeNdx);
+		const deUint32						planeH		= imageData->getSize().y() / formatDesc.planes[planeNdx].heightDivisor;
+		const VkImageSubresource			subresource	=
+		{
+			aspect,
+			0u,
+			0u,
+		};
+		VkSubresourceLayout			layout;
+
+		vkd.getImageSubresourceLayout(device, image, &subresource, &layout);
+
+		invalidateMappedMemoryRange(vkd, device, allocation->getMemory(), 0u, VK_WHOLE_SIZE);
+
+		for (deUint32 row = 0; row < planeH; ++row)
+		{
+			const size_t		rowSize	= planeSize / planeH;
+			const void* const	srcPtr	= ((const deUint8*)allocation->getHostPtr()) + layout.offset + layout.rowPitch * row;
+			void* const			dstPtr	= ((deUint8*)imageData->getPlanePtr(planeNdx)) + row * rowSize;
+
+			deMemcpy(dstPtr, srcPtr, rowSize);
+		}
 	}
 }
 

@@ -46,6 +46,7 @@ class MultiPlaneImageData
 {
 public:
 										MultiPlaneImageData		(vk::VkFormat format, const tcu::UVec2& size);
+										MultiPlaneImageData		(const MultiPlaneImageData&);
 										~MultiPlaneImageData	(void);
 
 	vk::VkFormat						getFormat				(void) const				{ return m_format;						}
@@ -60,7 +61,6 @@ public:
 	tcu::ConstPixelBufferAccess			getChannelAccess		(deUint32 channelNdx) const;
 
 private:
-										MultiPlaneImageData		(const MultiPlaneImageData&);
 	MultiPlaneImageData&				operator=				(const MultiPlaneImageData&);
 
 	const vk::VkFormat					m_format;
@@ -100,6 +100,24 @@ void										fillImageMemory				(const vk::DeviceInterface&							vkd,
 																		 const MultiPlaneImageData&							imageData,
 																		 vk::VkAccessFlags									nextAccess,
 																		 vk::VkImageLayout									finalLayout);
+
+void										downloadImage				(const vk::DeviceInterface&	vkd,
+																		 vk::VkDevice				device,
+																		 deUint32					queueFamilyNdx,
+																		 vk::Allocator&				allocator,
+																		 vk::VkImage				image,
+																		 MultiPlaneImageData*		imageData,
+																		 vk::VkAccessFlags			prevAccess,
+																		 vk::VkImageLayout			initialLayout);
+
+void										readImageMemory				(const vk::DeviceInterface&							vkd,
+																		 vk::VkDevice										device,
+																		 deUint32											queueFamilyNdx,
+																		 vk::VkImage										image,
+																		 const std::vector<de::SharedPtr<vk::Allocation> >&	memory,
+																		 MultiPlaneImageData*								imageData,
+																		 vk::VkAccessFlags									prevAccess,
+																		 vk::VkImageLayout									initialLayout);
 
 } // ycbcr
 } // vkt

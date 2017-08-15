@@ -844,6 +844,143 @@ PlanarFormatDescription getCorePlanarFormatDescription (VkFormat format)
 
 	switch (format)
 	{
+		case VK_FORMAT_R8_UNORM:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR,
+				{
+				//		Size	WDiv	HDiv
+					{	1,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		unorm,	0,		8,		1 },	// R
+					{	0,		0,		0,		0,		0 },	// G
+					{	0,		0,		0,		0,		0 },	// B
+					{	0,		0,		0,		0,		0 }		// A
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_R8G8_UNORM:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR|chanG,
+				{
+				//		Size	WDiv	HDiv
+					{	2,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		unorm,	0,		8,		2 },	// R
+					{	0,		unorm,	8,		8,		2 },	// G
+					{	0,		0,		0,		0,		0 },	// B
+					{	0,		0,		0,		0,		0 }		// A
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_R16_UNORM:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR,
+				{
+				//		Size	WDiv	HDiv
+					{	2,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		unorm,	0,		16,		2 },	// R
+					{	0,		0,		0,		0,		0 },	// G
+					{	0,		0,		0,		0,		0 },	// B
+					{	0,		0,		0,		0,		0 }		// A
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_R16G16_UNORM:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR|chanG,
+				{
+				//		Size	WDiv	HDiv
+					{	4,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		unorm,	0,		16,		4 },	// R
+					{	0,		unorm,	16,		16,		4 },	// G
+					{	0,		0,		0,		0,		0 },	// B
+					{	0,		0,		0,		0,		0 }		// A
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_B10G11R11_UFLOAT_PACK32:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR|chanG|chanB,
+				{
+				//		Size	WDiv	HDiv
+					{	4,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		unorm,	0,		11,		4 },	// R
+					{	0,		unorm,	11,		11,		4 },	// G
+					{	0,		unorm,	22,		10,		4 },	// B
+					{	0,		0,		0,		0,		0 }		// A
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_R4G4_UNORM_PACK8:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR|chanG,
+				{
+				//		Size	WDiv	HDiv
+					{	1,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		unorm,	4,		4,		1 },	// R
+					{	0,		unorm,	0,		4,		1 },	// G
+					{	0,		0,		0,		0,		0 },	// B
+					{	0,		0,		0,		0,		0 }		// A
+				}
+			};
+			return desc;
+		}
 
 		case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
 		{

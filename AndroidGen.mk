@@ -279,6 +279,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSwapchainTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrConversionTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrCopyTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrFormatTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrImageQueryTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrTests.cpp \
