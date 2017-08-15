@@ -1230,6 +1230,7 @@ enum ShaderInputInterface
 	SHADER_INPUT_SINGLE_DESCRIPTOR = 0,					//!< one descriptor
 	SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS,		//!< multiple descriptors with contiguous binding id's
 	SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS,	//!< multiple descriptors with discontiguous binding id's
+	SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS,		//!< multiple descriptors with large gaps between binding id's
 	SHADER_INPUT_DESCRIPTOR_ARRAY,						//!< descriptor array
 
 	SHADER_INPUT_LAST
@@ -1242,6 +1243,7 @@ deUint32 getInterfaceNumResources (ShaderInputInterface shaderInterface)
 		case SHADER_INPUT_SINGLE_DESCRIPTOR:					return 1u;
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:		return 2u;
 		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:	return 2u;
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:		return 2u;
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:						return 2u;
 
 		default:
@@ -1517,6 +1519,11 @@ vk::Move<vk::VkDescriptorSetLayout> BufferRenderInstance::createDescriptorSetLay
 			builder.addSingleBinding(descriptorType, stageFlags);
 			break;
 
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			builder.addSingleIndexedBinding(descriptorType, stageFlags, 0x7FFEu);
+			builder.addSingleIndexedBinding(descriptorType, stageFlags, 0xFFFEu);
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			builder.addArrayBinding(descriptorType, 2u, stageFlags);
 			break;
@@ -1616,6 +1623,11 @@ void BufferRenderInstance::writeDescriptorSet (const vk::DeviceInterface&			vki,
 			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), descriptorType, &bufferInfos[1]);
 			break;
 
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0x7FFEu), descriptorType, &bufferInfos[0]);
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0xFFFEu), descriptorType, &bufferInfos[1]);
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			updateBuilder.writeArray(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, 2u, bufferInfos);
 			break;
@@ -1680,6 +1692,11 @@ void BufferRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceInter
 			updateEntries.push_back(createTemplateBinding(1u, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(1), 0));
 			break;
 
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(0x7FFEu, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(0), 0));
+			updateEntries.push_back(createTemplateBinding(0xFFFEu, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(1), 0));
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			updateEntries.push_back(createTemplateBinding(0u, 0, 2, descriptorType, updateRegistry.getWriteObjectOffset(0), sizeof(bufferInfos[0])));
 			break;
@@ -1725,6 +1742,7 @@ void BufferRenderInstance::logTestPlan (void) const
 		<< "Single descriptor set. Descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
 			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
@@ -2344,6 +2362,11 @@ vk::Move<vk::VkDescriptorSetLayout> BufferComputeInstance::createDescriptorSetLa
 			builder.addSingleBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT);
 			break;
 
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, 0x7FFEu);
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, 0xFFFEu);
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			builder.addArrayBinding(m_descriptorType, 2u, vk::VK_SHADER_STAGE_COMPUTE_BIT);
 			break;
@@ -2420,6 +2443,11 @@ void BufferComputeInstance::writeDescriptorSet (vk::VkDescriptorSet descriptorSe
 			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(2u), m_descriptorType, &bufferInfos[1]);
 			break;
 
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0x7FFEu), m_descriptorType, &bufferInfos[0]);
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0xFFFEu), m_descriptorType, &bufferInfos[1]);
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			m_updateBuilder.writeArray(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), m_descriptorType, 2u, bufferInfos);
 			break;
@@ -2475,6 +2503,11 @@ void BufferComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptorSet 
 			updateEntries.push_back(createTemplateBinding(2, 0, 1, m_descriptorType, m_updateRegistry.getWriteObjectOffset(2), 0));
 			break;
 
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(0x7FFEu, 0, 1, m_descriptorType, m_updateRegistry.getWriteObjectOffset(1), 0));
+			updateEntries.push_back(createTemplateBinding(0xFFFEu, 0, 1, m_descriptorType, m_updateRegistry.getWriteObjectOffset(2), 0));
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			updateEntries.push_back(createTemplateBinding(1, 0, 2, m_descriptorType, m_updateRegistry.getWriteObjectOffset(1), sizeof(bufferInfos[0])));
 			break;
@@ -2508,6 +2541,7 @@ void BufferComputeInstance::logTestPlan (void) const
 		<< "Single descriptor set. Descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 				(const char*)DE_NULL)
 		<< " source descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType)
@@ -2625,10 +2659,12 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess (void)
 
 	const tcu::Vec4									refQuadrantValue14	= (m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR)						? (colorA2) :
 																		  (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS)		? (colorB2) :
+																		  (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)		? (colorB2) :
 																		  (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)						? (colorB2) :
 																																					(tcu::Vec4(-2.0f));
 	const tcu::Vec4									refQuadrantValue23	= (m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR)						? (colorA1) :
 																		  (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS)		? (colorA1) :
+																		  (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)		? (colorA1) :
 																		  (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)						? (colorA1) :
 																																					(tcu::Vec4(-2.0f));
 	const tcu::Vec4									references[4]		=
@@ -3205,6 +3241,19 @@ std::string BufferDescriptorCase::genResourceDeclarations (vk::VkShaderStageFlag
 				<< "} b_instanceB;\n";
 			break;
 
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			buf	<< "layout(set = 0, binding = " << de::toString(0x7FFEu) << ", std140) " << storageType << " BufferNameA\n"
+				<< "{\n"
+				<< "	highp vec4 colorA;\n"
+				<< "	highp vec4 colorB;\n"
+				<< "} b_instanceA;\n"
+				<< "layout(set = 0, binding = " << de::toString(0xFFFEu) << ", std140) " << storageType << " BufferNameB\n"
+				<< "{\n"
+				<< "	highp vec4 colorA;\n"
+				<< "	highp vec4 colorB;\n"
+				<< "} b_instanceB;\n";
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			buf	<< "layout(set = 0, binding = " << (numUsedBindings) << ", std140) " << storageType << " BufferName\n"
 				<< "{\n"
@@ -3236,6 +3285,13 @@ std::string BufferDescriptorCase::genResourceAccessSource (vk::VkShaderStageFlag
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
+			buf << "	if (quadrant_id == 1 || quadrant_id == 2)\n"
+				<< "		result_color = b_instanceA.colorA;\n"
+				<< "	else\n"
+				<< "		result_color = b_instanceB.colorB;\n";
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
 			buf << "	if (quadrant_id == 1 || quadrant_id == 2)\n"
 				<< "		result_color = b_instanceA.colorA;\n"
 				<< "	else\n"
@@ -7782,6 +7838,10 @@ void createShaderAccessImageTests (tcu::TestCaseGroup*		group,
 		// never overlap
 		DE_ASSERT((s_imageTypes[ndx].flags & resourceFlags) == 0u);
 
+
+		if (dimension == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)
+			continue;
+
 		// SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS only supported in VK_DESCRIPTOR_TYPE_SAMPLER on graphics shaders for now
 		if (dimension == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS &&
 			(descriptorType != vk::VK_DESCRIPTOR_TYPE_SAMPLER || activeStages == vk::VK_SHADER_STAGE_COMPUTE_BIT))
@@ -7826,7 +7886,7 @@ void createShaderAccessTexelBufferTests (tcu::TestCaseGroup*	group,
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_texelBufferTypes); ++ndx)
 	{
-		if (dimension == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS)
+		if (dimension == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS || dimension == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)
 			continue;
 
 		group->addChild(new TexelBufferDescriptorCase(group->getTestContext(),
@@ -7912,7 +7972,7 @@ tcu::TestCaseGroup* createShaderAccessTests (tcu::TestContext& testCtx)
 		const char*	description;
 	} s_bindTypes[] =
 	{
-		{ true,		"primary_cmd_buf",	"Bind in primary command buffer"	},
+		{ true,		"primary_cmd_buf",		"Bind in primary command buffer"	},
 		{ false,	"secondary_cmd_buf",	"Bind in secondary command buffer"	},
 	};
 	static const struct
@@ -8025,6 +8085,7 @@ tcu::TestCaseGroup* createShaderAccessTests (tcu::TestContext& testCtx)
 		{ SHADER_INPUT_SINGLE_DESCRIPTOR,					"single_descriptor",					"Single descriptor"		},
 		{ SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS,		"multiple_contiguous_descriptors",		"Multiple descriptors"	},
 		{ SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS,	"multiple_discontiguous_descriptors",	"Multiple descriptors"	},
+		{ SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS,		"multiple_arbitrary_descriptors",		"Multiple descriptors"	},
 		{ SHADER_INPUT_DESCRIPTOR_ARRAY,					"descriptor_array",						"Descriptor array"		},
 	};
 
