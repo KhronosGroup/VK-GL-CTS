@@ -238,7 +238,13 @@ void MultiViewRenderTestInstance::beforeDraw (void)
 		0u,							//deUint32				baseArrayLayer;
 		m_parameters.extent.depth,	//deUint32				layerCount;
 	};
-	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_ACCESS_TRANSFER_WRITE_BIT);
+
+	const VkClearValue renderPassClearValue = makeClearValueColor(tcu::Vec4(0.0f));
+	m_device->cmdClearColorImage(*m_cmdBuffer, m_colorAttachment->getImage(),  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &renderPassClearValue.color, 1, &subresourceRange);
+
+	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+
 }
 
 void MultiViewRenderTestInstance::afterDraw (void)
@@ -1122,7 +1128,13 @@ void MultiViewAttachmentsTestInstance::beforeDraw (void)
 	};
 	m_device->cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &(*m_descriptorSet), 0u, NULL);
 
-	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_ACCESS_TRANSFER_WRITE_BIT);
+
+	const VkClearValue renderPassClearValue = makeClearValueColor(tcu::Vec4(0.0f));
+	m_device->cmdClearColorImage(*m_cmdBuffer, m_colorAttachment->getImage(),  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &renderPassClearValue.color, 1, &subresourceRange);
+
+	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+
 	imageBarrier(*m_device, *m_cmdBuffer,  m_inputAttachment->getImage(), subresourceRange, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, 0, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
 }
 
