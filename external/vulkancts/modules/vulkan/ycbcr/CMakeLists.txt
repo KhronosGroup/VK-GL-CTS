@@ -18,6 +18,8 @@ set(DEQP_VK_YCBCR_SRCS
 	vktYCbCrTests.hpp
 	vktYCbCrUtil.cpp
 	vktYCbCrUtil.hpp
+	vktYCbCrCopyTests.cpp
+	vktYCbCrCopyTests.hpp
 	)
 
 set(DEQP_VK_YCBCR_LIBS

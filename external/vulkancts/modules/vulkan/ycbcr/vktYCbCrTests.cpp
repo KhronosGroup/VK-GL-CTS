@@ -27,6 +27,7 @@
 #include "vktYCbCrViewTests.hpp"
 #include "vktYCbCrImageQueryTests.hpp"
 #include "vktYCbCrConversionTests.hpp"
+#include "vktYCbCrCopyTests.hpp"
 
 namespace vkt
 {
@@ -44,6 +45,7 @@ void populateTestGroup (tcu::TestCaseGroup* ycbcrTests)
 	ycbcrTests->addChild(createViewTests(testCtx));
 	ycbcrTests->addChild(createImageQueryTests(testCtx));
 	ycbcrTests->addChild(createConversionTests(testCtx));
+	ycbcrTests->addChild(createCopyTests(testCtx));
 }
 
 } // anonymous
