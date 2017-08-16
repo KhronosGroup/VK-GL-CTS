@@ -3150,10 +3150,18 @@ void DrawTest::deinit (void)
 DrawTest::IterateResult DrawTest::iterate (void)
 {
 	const int					specNdx			= (m_iteration / 2);
+	const DrawTestSpec&			spec			= m_specs[specNdx];
+
+	if (spec.drawMethod == DrawTestSpec::DRAWMETHOD_DRAWELEMENTS_BASEVERTEX ||
+		spec.drawMethod == DrawTestSpec::DRAWMETHOD_DRAWELEMENTS_INSTANCED_BASEVERTEX ||
+		spec.drawMethod == DrawTestSpec::DRAWMETHOD_DRAWELEMENTS_RANGED_BASEVERTEX)
+	{
+		TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(m_renderCtx.getType(), glu::ApiType::es(3, 2)), "Tests requires a 3.2 context or higher context version.");
+	}
+
 	const bool					drawStep		= (m_iteration % 2) == 0;
 	const bool					compareStep		= (m_iteration % 2) == 1;
 	const IterateResult			iterateResult	= ((size_t)m_iteration + 1 == m_specs.size()*2) ? (STOP) : (CONTINUE);
-	const DrawTestSpec&			spec			= m_specs[specNdx];
 	const bool					updateProgram	= (m_iteration == 0) || (drawStep && !checkSpecsShaderCompatible(m_specs[specNdx], m_specs[specNdx-1])); // try to use the same shader in all iterations
 	IterationLogSectionEmitter	sectionEmitter	(m_testCtx.getLog(), specNdx, m_specs.size(), m_iteration_descriptions[specNdx], drawStep && m_specs.size()!=1);
 
