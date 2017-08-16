@@ -1144,7 +1144,7 @@ public:
 private:
 	void				create2DTextureArrayMipMaps		(const vector<tcu::Vec4>& colors);
 	tcu::TextureLevel	genReferenceTexture				(int level, const vector<tcu::Vec4>& colors, const tcu::Vec4& uniformColor);
-	void				genReferenceMipmap				(int level, const tcu::Vec4& color, tcu::TextureLevel& reference);
+	void				genReferenceMipmap				(const tcu::Vec4& color, tcu::TextureLevel& reference);
 };
 
 TextureLevelTestCase::TextureLevelTestCase (Context& context, const char* name, const char* desc, deUint32 format)
@@ -1180,30 +1180,19 @@ void TextureLevelTestCase::create2DTextureArrayMipMaps (const vector<tcu::Vec4>&
 
 tcu::TextureLevel TextureLevelTestCase::genReferenceTexture (int level, const vector<tcu::Vec4>& colors, const tcu::Vec4& uniformColor)
 {
-	tcu::TextureLevel	reference	(glu::mapGLTransferFormat(m_transferFmt.format, m_transferFmt.dataType), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 1);
+	tcu::TextureLevel	reference	(glu::mapGLTransferFormat(m_transferFmt.format, m_transferFmt.dataType), VIEWPORT_WIDTH >> level, VIEWPORT_HEIGHT >> level, 1);
 
-	// calculate reference image based on current mipmap level and previously
-	// rendered mipmaps in framebuffer
-	for (int ndx = 0; ndx <= level; ++ndx)
-		genReferenceMipmap(ndx, colors[ndx] + uniformColor, reference);
+	genReferenceMipmap(colors[level] + uniformColor, reference);
 
 	return reference;
 }
 
-void TextureLevelTestCase::genReferenceMipmap (int level, const tcu::Vec4& color, tcu::TextureLevel& reference)
+void TextureLevelTestCase::genReferenceMipmap (const tcu::Vec4& color, tcu::TextureLevel& reference)
 {
-	int	width	= reference.getAccess().getWidth();
-	int	height	= reference.getAccess().getHeight();
-	int	left	= width /2;
-	int	top		= height/2;
-
-	for (int i = 0; i < level; ++i)
-	{
-		width	= de::max(1, width	/ 2);
-		height	= de::max(1, height / 2);
-		left	= width /2;
-		top		= height/2;
-	}
+	const int	width	= reference.getAccess().getWidth();
+	const int	height	= reference.getAccess().getHeight();
+	const int	left	= width  / 2;
+	const int	top		= height / 2;
 
 	clear(getSubregion(reference.getAccess(), left,		0,		0, width-left,	top,		1),	color);
 	clear(getSubregion(reference.getAccess(), 0,		top,	0, left,		height-top,	1), color);
@@ -1214,7 +1203,6 @@ void TextureLevelTestCase::genReferenceMipmap (int level, const tcu::Vec4& color
 TextureLevelTestCase::IterateResult TextureLevelTestCase::iterate (void)
 {
 	const tcu::Vec4		uniformColor	= scaleColorValue(m_texFmt, tcu::Vec4(0.1f, 0.0f, 0.0f, 1.0f));
-	tcu::TextureLevel	result			(getReadPixelFormat(m_texFmt), VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
 	vector<tcu::Vec4>	levelColors;
 
 	levelColors.push_back(scaleColorValue(m_texFmt, tcu::Vec4(0.4f, 0.0f, 0.0f, 1.0f)));
@@ -1233,7 +1221,8 @@ TextureLevelTestCase::IterateResult TextureLevelTestCase::iterate (void)
 		name << "Level "		<< level;
 		desc << "Mipmap level " << level;
 
-		const tcu::ScopedLogSection section			(m_testCtx.getLog(), name.str(), desc.str());
+		const tcu::ScopedLogSection	section			(m_testCtx.getLog(), name.str(), desc.str());
+		tcu::TextureLevel			result			(getReadPixelFormat(m_texFmt), VIEWPORT_WIDTH >> level, VIEWPORT_HEIGHT >> level);
 		tcu::TextureLevel			reference		= genReferenceTexture(level, levelColors, uniformColor);
 
 		m_gl.framebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_texColorBuffer, level);
