@@ -218,6 +218,13 @@ VertexIDCase::~VertexIDCase (void)
 
 void VertexIDCase::init (void)
 {
+	if (m_method == deqp::gls::DrawTestSpec::DRAWMETHOD_DRAWELEMENTS_BASEVERTEX ||
+		m_method == gls::DrawTestSpec::DRAWMETHOD_DRAWELEMENTS_RANGED_BASEVERTEX ||
+		m_method == gls::DrawTestSpec::DRAWMETHOD_DRAWELEMENTS_INSTANCED_BASEVERTEX)
+	{
+		TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
+	}
+
 	m_testCtx.getLog()	<< TestLog::Message
 						<< "gl_VertexID should be the index of the vertex that is being passed to the shader. i.e. indices[i] + basevertex"
 						<< TestLog::EndMessage;
