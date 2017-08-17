@@ -1236,7 +1236,7 @@ TextureLevelTestCase::IterateResult TextureLevelTestCase::iterate (void)
 		const tcu::ScopedLogSection section			(m_testCtx.getLog(), name.str(), desc.str());
 		tcu::TextureLevel			reference		= genReferenceTexture(level, levelColors, uniformColor);
 
-		m_gl.framebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_texColorBuffer, level);
+		m_gl.framebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_texColorBuffer, level, 0);
 
 		genUniformColor(uniformColor);
 		render();
