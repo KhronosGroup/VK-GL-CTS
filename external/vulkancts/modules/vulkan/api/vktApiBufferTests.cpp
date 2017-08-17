@@ -32,6 +32,7 @@
 #include "vkRefUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vktTestCase.hpp"
+#include "tcuPlatform.hpp"
 
 namespace vkt
 {
@@ -40,6 +41,35 @@ namespace api
 namespace
 {
 using namespace vk;
+
+PlatformMemoryLimits getPlatformMemoryLimits (Context& context)
+{
+	PlatformMemoryLimits	memoryLimits;
+
+	context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(memoryLimits);
+
+	return memoryLimits;
+}
+
+VkDeviceSize getMaxBufferSize(const VkDeviceSize& bufferSize,
+							  const VkDeviceSize& alignment,
+							  const PlatformMemoryLimits& limits)
+{
+	VkDeviceSize size = bufferSize;
+
+	if (limits.totalDeviceLocalMemory == 0)
+	{
+		// 'UMA' systems where device memory counts against system memory
+		size = std::min(bufferSize, limits.totalSystemMemory - alignment);
+	}
+	else
+	{
+		// 'LMA' systems where device memory is local to the GPU
+		size = std::min(bufferSize, limits.totalDeviceLocalMemory - alignment);
+	}
+
+	return size;
+}
 
 struct BufferCaseParameters
 {
@@ -243,8 +273,20 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest (VkDeviceSize size)
 		const deUint32		heapTypeIndex	= (deUint32)deCtz32(memReqs.memoryTypeBits);
 		const VkMemoryType	memoryType		= memoryProperties.memoryTypes[heapTypeIndex];
 		const VkMemoryHeap	memoryHeap		= memoryProperties.memoryHeaps[memoryType.heapIndex];
-		const VkDeviceSize	maxBufferSize	= alignDeviceSize(memoryHeap.size >> 1, memReqs.alignment);
 		const deUint32		shrinkBits		= 4;	// number of bits to shift when reducing the size with each iteration
+
+		// Buffer size - Choose half of the reported heap size for the maximum buffer size, we
+		// should attempt to test as large a portion as possible.
+		//
+		// However on a system where device memory is shared with the system, the maximum size
+		// should be tested against the platform memory limits as significant portion of the heap
+		// may already be in use by the operating system and other running processes.
+		const VkDeviceSize  availableBufferSize	= getMaxBufferSize(memoryHeap.size,
+																   memReqs.alignment,
+																   getPlatformMemoryLimits(m_context));
+
+		// For our test buffer size, halve the maximum available size and align
+		const VkDeviceSize maxBufferSize = alignDeviceSize(availableBufferSize >> 1, memReqs.alignment);
 
 		size = std::min(size, maxBufferSize);
 
