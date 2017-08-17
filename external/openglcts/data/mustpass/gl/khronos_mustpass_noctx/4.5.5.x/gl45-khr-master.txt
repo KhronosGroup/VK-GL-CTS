@@ -1,4 +1,3 @@
-KHR-NoContext.gl30.no_error.create_context
 KHR-NoContext.gl45.robustness.no_reset_notification
 KHR-NoContext.gl45.robustness.lose_context_on_reset
 KHR-NoContext.gl45.robustness.getnuniform

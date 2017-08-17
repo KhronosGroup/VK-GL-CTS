@@ -1,4 +1,3 @@
-KHR-NoContext.es2.no_error.create_context
 KHR-NoContext.es32.robustness.no_reset_notification
 KHR-NoContext.es32.robustness.lose_context_on_reset
 KHR-NoContext.es32.robustness.getnuniform

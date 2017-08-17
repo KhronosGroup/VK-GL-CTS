@@ -363,14 +363,17 @@ static void getTestRunsForAOSPES(vector<TestRunParams>& runs, const ConfigList& 
 	}
 }
 
-static void getTestRunsForNoContext(vector<TestRunParams>& runs, const ConfigList& configs, const RunParams* runParams,
+static void getTestRunsForNoContext(glu::ApiType type, vector<TestRunParams>& runs, const ConfigList& configs, const RunParams* runParams,
 									const int numRunParams, const char* mustpassDir)
 {
 	vector<Config>::const_iterator cfgIter = configs.configs.begin();
 
 	for (int i = 0; i < numRunParams; ++i)
 	{
-		const char* apiName = "noctx";
+		if (!glu::contextSupports(glu::ContextType(type), runParams[i].apiType))
+				continue;
+
+		const char* apiName = getApiName(runParams[i].apiType);
 
 		const int width  = runParams[i].surfaceWidth;
 		const int height = runParams[i].surfaceHeight;
@@ -390,10 +393,10 @@ static void getTestRunsForNoContext(vector<TestRunParams>& runs, const ConfigLis
 	}
 }
 
-static void getTestRunsForNoContextES(vector<TestRunParams>& runs, const ConfigList& configs)
+static void getTestRunsForNoContextES(glu::ApiType type, vector<TestRunParams>& runs, const ConfigList& configs)
 {
 #include "glcKhronosMustpassEsNocontext.hpp"
-	getTestRunsForNoContext(runs, configs, khronos_mustpass_es_nocontext_first_cfg,
+	getTestRunsForNoContext(type, runs, configs, khronos_mustpass_es_nocontext_first_cfg,
 							DE_LENGTH_OF_ARRAY(khronos_mustpass_es_nocontext_first_cfg), mustpassDir);
 }
 
@@ -401,7 +404,7 @@ static void getTestRunsForES(glu::ApiType type, const ConfigList& configs, vecto
 {
 	getTestRunsForAOSPEGL(runs, configs);
 	getTestRunsForAOSPES(runs, configs, type);
-	getTestRunsForNoContextES(runs, configs);
+	getTestRunsForNoContextES(type, runs, configs);
 
 #include "glcKhronosMustpassEs.hpp"
 
@@ -439,16 +442,16 @@ static void getTestRunsForES(glu::ApiType type, const ConfigList& configs, vecto
 	}
 }
 
-static void getTestRunsForNoContextGL(vector<TestRunParams>& runs, const ConfigList& configs)
+static void getTestRunsForNoContextGL(glu::ApiType type, vector<TestRunParams>& runs, const ConfigList& configs)
 {
 #include "glcKhronosMustpassGlNocontext.hpp"
-	getTestRunsForNoContext(runs, configs, khronos_mustpass_gl_nocontext_first_cfg,
+	getTestRunsForNoContext(type, runs, configs, khronos_mustpass_gl_nocontext_first_cfg,
 							DE_LENGTH_OF_ARRAY(khronos_mustpass_gl_nocontext_first_cfg), mustpassDir);
 }
 
 static void getTestRunsForGL(glu::ApiType type, const ConfigList& configs, vector<TestRunParams>& runs)
 {
-	getTestRunsForNoContextGL(runs, configs);
+	getTestRunsForNoContextGL(type, runs, configs);
 #include "glcKhronosMustpassGl.hpp"
 
 	for (vector<Config>::const_iterator cfgIter = configs.configs.begin(); cfgIter != configs.configs.end(); ++cfgIter)

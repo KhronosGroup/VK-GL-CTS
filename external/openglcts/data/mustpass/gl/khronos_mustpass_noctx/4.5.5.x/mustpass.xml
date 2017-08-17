@@ -18,7 +18,7 @@
  * be lost! Modify the generating script instead.
  */-->
 	<TestPackage name="Khronos Mustpass GL NoContext">
-		<Configuration caseListFile="noctx-khr-master.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-master" os="any" useForFirstEGLConfig="True"/>
-		<Configuration caseListFile="noctx-khr-master.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=113 --deqp-surface-height=47 --deqp-base-seed=2 --deqp-watchdog=disable" name="khr-master" os="any" useForFirstEGLConfig="True"/>
+		<Configuration caseListFile="gl30-khr-master.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-master" os="any" useForFirstEGLConfig="True"/>
+		<Configuration caseListFile="gl45-khr-master.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-master" os="any" useForFirstEGLConfig="True"/>
 	</TestPackage>
 </Mustpass>
