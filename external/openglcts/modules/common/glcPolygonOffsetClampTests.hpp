@@ -102,7 +102,7 @@ protected:
 
 	float readDepthValue(const glw::Functions& gl, const GLuint readDepthProgramId);
 
-	virtual bool verify(uint32_t caseNo, GLfloat depth, GLfloat offsetDepth, GLfloat offsetClampDepth) = DE_NULL;
+	virtual bool verify(GLuint caseNo, GLfloat depth, GLfloat offsetDepth, GLfloat offsetClampDepth) = DE_NULL;
 };
 
 /** Test verifies if polygon offset clamp works as expected for zero and infinite clamp values
@@ -117,10 +117,10 @@ public:
 
 protected:
 	/* Protected methods */
-	bool verify(uint32_t caseNo, GLfloat depth, GLfloat offsetDepth, GLfloat offsetClampDepth);
+	bool verify(GLuint caseNo, GLfloat depth, GLfloat offsetDepth, GLfloat offsetClampDepth);
 };
 
-/** Test verifies ...
+/** Test verifies if polygon offset clamp works as expected for zero and infinite clamp values
 **/
 class PolygonOffsetClampZeroInfinityTestCase : public PolygonOffsetClampValueTestCaseBase
 {
@@ -132,7 +132,7 @@ public:
 
 protected:
 	/* Protected methods */
-	bool verify(uint32_t caseNo, GLfloat depth, GLfloat offsetDepth, GLfloat offsetClampDepth);
+	bool verify(GLuint caseNo, GLfloat depth, GLfloat offsetDepth, GLfloat offsetClampDepth);
 };
 
 /** Test group which encapsulates all ARB_shader_group_vote conformance tests */
