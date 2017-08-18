@@ -48,11 +48,11 @@ MODULES = [
 	Module("KHR-GLES2",		"GLES2"),
 	Module("KHR-GLES31",	"GLES31"),
 	Module("KHR-GLES32",	"GLES32"),
-	Module("KHR-NoContext",	"NOCTX"),
+	Module("KHR-NOCTX-ES2",	"GLES2"),
+	Module("KHR-NOCTX-ES32","GLES32"),
 	Module("GTF-GLES2",		"GLES2" ),
 	Module("GTF-GLES3",		"GLES3" ),
 	Module("GTF-GLES31",	"GLES31"),
-	Module("KHR-NoContext",	"NOCTX"),
 	Module("KHR-GL45",		"GL45"),
 	Module("KHR-GL44",		"GL44"),
 	Module("KHR-GL43",		"GL43"),
@@ -73,6 +73,8 @@ MODULES = [
 	Module("GTF-GL32",		"GL32"),
 	Module("GTF-GL31",		"GL31"),
 	Module("GTF-GL30",		"GL30"),
+	Module("KHR-NOCTX-GL30","GL30"),
+	Module("KHR-NOCTX-GL45","GL45"),
 ]
 GLCTS_BIN_NAME = "glcts"
 GLCTS_DIR_NAME = "external/openglcts/modules/"
@@ -97,7 +99,10 @@ def getModulesPath (buildCfg):
 	return os.path.join(buildCfg.getBuildDir(), GLCTS_DIR_NAME)
 
 def getCaseListFileName (module, caseListType):
-	return "%s-cases.%s" % (module.name, caseListType)
+	mname = module.name
+	if mname == "KHR-NOCTX-ES2" or mname == "KHR-NOCTX-ES32" or mname == "KHR-NOCTX-GL30" or mname == "KHR-NOCTX-GL45":
+		mname =  "KHR-NoContext"
+	return "%s-cases.%s" % (mname, caseListType)
 
 def getCaseListPath (buildCfg, module, caseListType):
 	workDir = getModulesPath(buildCfg)

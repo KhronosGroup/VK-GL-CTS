@@ -334,6 +334,10 @@ void ReferenceRenderer::render (tcu::Surface* target, const Frame& frame) const
 		const ColoredRect& coloredRect = frame.draws[drawNdx].rect;
 		if (frame.draws[drawNdx].drawType == PartialUpdateTest::DRAWTYPE_GLES2_RENDER || frame.draws[drawNdx].drawType == PartialUpdateTest::DRAWTYPE_GLES2_CLEAR)
 		{
+			// tcu does not support degenerate subregions. Since they correspond to no-op rendering, just skip them.
+			if (coloredRect.bottomLeft.x() == coloredRect.topRight.x() || coloredRect.bottomLeft.y() == coloredRect.topRight.y())
+				continue;
+
 			const tcu::UVec4 color(coloredRect.color.x(), coloredRect.color.y(), coloredRect.color.z(), 255);
 			tcu::clear(tcu::getSubregion(target->getAccess(), coloredRect.bottomLeft.x(), coloredRect.bottomLeft.y(),
 										 coloredRect.topRight.x()-coloredRect.bottomLeft.x(), coloredRect.topRight.y()-coloredRect.bottomLeft.y()), color);

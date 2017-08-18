@@ -285,7 +285,7 @@ def getApiType(apiName):
 		return "glu::ApiType::core(3, 1)"
 	if apiName == "GL30":
 		return "glu::ApiType::core(3, 0)"
-	if apiName == "EGL" or apiName == "NOCTX":
+	if apiName == "EGL":
 		return "glu::ApiType()"
 
 	raise Exception("Unknown API %s" % apiName)

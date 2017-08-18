@@ -22,8 +22,8 @@
 const char* mustpassDir = "gl_cts/data/mustpass/gles/khronos_mustpass_noctx/3.2.4.x/";
 
 static const RunParams khronos_mustpass_es_nocontext_first_cfg[] = {
-	{ glu::ApiType(), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType(), "khr-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
+	{ glu::ApiType::es(2, 0), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 };
 
 #endif // _GLCKHRONOSMUSTPASSESNOCONTEXT_HPP

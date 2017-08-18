@@ -353,7 +353,7 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions& gl)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer");
 
 	bool result = true;
-	for (uint32_t i = 0; i < m_testValues.size(); ++i)
+	for (GLuint i = 0; i < m_testValues.size(); ++i)
 	{
 		// Prepare verification variables
 		GLfloat depthValue			  = 0.0f;
@@ -522,7 +522,7 @@ void PolygonOffsetClampMinMaxTestCase::init()
  *  @param offsetDepth      Case iteration number
  *  @param offsetClampDepth Case iteration number
  */
-bool PolygonOffsetClampMinMaxTestCase::verify(uint32_t caseNo, GLfloat depth, GLfloat offsetDepth,
+bool PolygonOffsetClampMinMaxTestCase::verify(GLuint caseNo, GLfloat depth, GLfloat offsetDepth,
 											  GLfloat offsetClampDepth)
 {
 	// Min offset case
@@ -584,7 +584,7 @@ void PolygonOffsetClampZeroInfinityTestCase::init()
 	m_testValues.push_back(PolygonOffsetClampValues(0.0f, 1000.0f, INFINITY));   // Max Offset, infinity clamp case
 }
 
-bool PolygonOffsetClampZeroInfinityTestCase::verify(uint32_t caseNo, GLfloat depth, GLfloat offsetDepth,
+bool PolygonOffsetClampZeroInfinityTestCase::verify(GLuint caseNo, GLfloat depth, GLfloat offsetDepth,
 													GLfloat offsetClampDepth)
 {
 	DE_UNREF(caseNo);
