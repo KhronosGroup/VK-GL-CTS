@@ -9,6 +9,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmUboMatrixPaddingTests.hpp
 	vktSpvAsmConditionalBranchTests.cpp
 	vktSpvAsmConditionalBranchTests.hpp
+	vktSpvAsmIndexingTests.cpp
+	vktSpvAsmIndexingTests.hpp
 	vktSpvAsmComputeShaderCase.cpp
 	vktSpvAsmComputeShaderCase.hpp
 	vktSpvAsmComputeShaderTestUtil.cpp

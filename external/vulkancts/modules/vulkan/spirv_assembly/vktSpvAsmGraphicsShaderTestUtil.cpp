@@ -2193,13 +2193,13 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	if (hasTessellation && !supportsTessellation)
 	{
-		throw tcu::NotSupportedError(std::string("Tessellation not supported"));
+		TCU_THROW(NotSupportedError, "Tessellation not supported");
 	}
 
 	if ((instance.requiredStages & VK_SHADER_STAGE_GEOMETRY_BIT) &&
 		!supportsGeometry)
 	{
-		throw tcu::NotSupportedError(std::string("Geometry not supported"));
+		TCU_THROW(NotSupportedError, "Geometry not supported");
 	}
 
 	{
@@ -2210,11 +2210,16 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			if (feature == "shaderInt16")
 			{
 				if (features.shaderInt16 != VK_TRUE)
-					throw tcu::NotSupportedError(std::string("Device feature not supported: ") + feature);
+					TCU_THROW(NotSupportedError, "Device feature not supported: shaderInt16");
+			}
+			else if (feature == "shaderInt64")
+			{
+				if (features.shaderInt64 != VK_TRUE)
+					TCU_THROW(NotSupportedError, "Device feature not supported: shaderInt64");
 			}
 			else
 			{
-				throw tcu::InternalError(std::string("Unimplemented physical device feature: ") + feature);
+				TCU_THROW(InternalError, (std::string("Unimplemented physical device feature: ") + feature).c_str());
 			}
 		}
 	}
