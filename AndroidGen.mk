@@ -207,6 +207,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsm16bitStorageTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmComputeShaderCase.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmComputeShaderTestUtil.cpp \
+	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmConditionalBranchTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmGraphicsShaderTestUtil.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmInstructionTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmTests.cpp \
