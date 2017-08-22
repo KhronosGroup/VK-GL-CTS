@@ -27,6 +27,11 @@
 #include "tcuResultCollector.hpp"
 #include "gluRenderContext.hpp"
 
+namespace glu
+{
+class ContextInfo;
+}
+
 namespace sglr
 {
 
@@ -259,6 +264,7 @@ private:
 
 	glu::RenderContext&				m_renderCtx;
 
+	glu::ContextInfo*				m_contextInfo;
 	sglr::ReferenceContextBuffers*	m_refBuffers;
 	sglr::ReferenceContext*			m_refContext;
 	sglr::Context*					m_glesContext;
