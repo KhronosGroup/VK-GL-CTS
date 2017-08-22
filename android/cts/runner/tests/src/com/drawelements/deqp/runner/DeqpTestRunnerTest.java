@@ -30,6 +30,7 @@ import com.android.tradefed.testtype.IAbi;
 import com.android.tradefed.testtype.IRemoteTest;
 import com.android.tradefed.testtype.IRuntimeHintProvider;
 import com.android.tradefed.util.AbiUtils;
+import com.android.tradefed.util.FileUtil;
 import com.android.tradefed.util.IRunUtil;
 import com.android.tradefed.util.RunInterruptedException;
 
@@ -37,6 +38,9 @@ import junit.framework.TestCase;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -80,13 +84,17 @@ public class DeqpTestRunnerTest extends TestCase {
         DEFAULT_INSTANCE_ARGS.iterator().next().put("surfacetype", "window");
     }
 
+    private File mTestsDir = null;
+
     public static class BuildHelperMock extends CompatibilityBuildHelper {
-        public BuildHelperMock(IFolderBuildInfo buildInfo) {
+        private File mTestsDir = null;
+        public BuildHelperMock(IFolderBuildInfo buildInfo, File testsDir) {
             super(buildInfo);
+            mTestsDir = testsDir;
         }
         @Override
         public File getTestsDir() throws FileNotFoundException {
-            return new File("logs");
+            return mTestsDir;
         }
     }
 
@@ -97,27 +105,39 @@ public class DeqpTestRunnerTest extends TestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
+        mTestsDir = FileUtil.createTempDir("deqp-test-cases");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void tearDown() throws Exception {
+        FileUtil.recursiveDelete(mTestsDir);
+        super.tearDown();
     }
 
     private static DeqpTestRunner buildGlesTestRunner(int majorVersion,
                                                       int minorVersion,
-                                                      Collection<TestIdentifier> tests) throws ConfigurationException, FileNotFoundException {
+                                                      Collection<TestIdentifier> tests,
+                                                      File testsDir) throws ConfigurationException, FileNotFoundException {
         StringWriter testlist = new StringWriter();
         for (TestIdentifier test : tests) {
             testlist.write(test.getClassName() + "." + test.getTestName() + "\n");
         }
-        return buildGlesTestRunner(majorVersion, minorVersion, testlist.toString());
+        return buildGlesTestRunner(majorVersion, minorVersion, testlist.toString(), testsDir);
     }
 
-    private static CompatibilityBuildHelper getMockBuildHelper() {
+    private static CompatibilityBuildHelper getMockBuildHelper(File testsDir) {
         IFolderBuildInfo mockIFolderBuildInfo = EasyMock.createMock(IFolderBuildInfo.class);
         EasyMock.replay(mockIFolderBuildInfo);
-        return new BuildHelperMock(mockIFolderBuildInfo);
+        return new BuildHelperMock(mockIFolderBuildInfo, testsDir);
     }
 
     private static DeqpTestRunner buildGlesTestRunner(int majorVersion,
                                                       int minorVersion,
-                                                      String testlist) throws ConfigurationException, FileNotFoundException {
+                                                      String testlist,
+                                                      File testsDir) throws ConfigurationException, FileNotFoundException {
         DeqpTestRunner runner = new DeqpTestRunner();
         OptionSetter setter = new OptionSetter(runner);
 
@@ -132,7 +152,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         runner.setCaselistReader(new StringReader(testlist));
         runner.setAbi(ABI);
-        runner.setBuildHelper(getMockBuildHelper());
+        runner.setBuildHelper(getMockBuildHelper(testsDir));
 
         return runner;
     }
@@ -194,7 +214,7 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         tests.add(testId);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(requiredMajorVersion, requiredMinorVersion, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(requiredMajorVersion, requiredMinorVersion, tests, mTestsDir);
 
         int version = (majorVersion << 16) | minorVersion;
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
@@ -336,7 +356,7 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         tests.add(testId);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         int version = 3 << 16;
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
@@ -503,7 +523,7 @@ public class DeqpTestRunnerTest extends TestCase {
             tests.add(id);
         }
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         int version = 3 << 16;
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
@@ -598,30 +618,15 @@ public class DeqpTestRunnerTest extends TestCase {
         return output.toString();
     }
 
-    private void testFiltering(Set<String> includes,
-                               Set<String> excludes,
-                               List<TestIdentifier> fullTestList,
+    private void testFiltering(DeqpTestRunner deqpTest,
                                String expectedTrie,
                                List<TestIdentifier> expectedTests) throws Exception {
-
-        boolean thereAreTests = !expectedTests.isEmpty();
-        ITestDevice mockDevice = EasyMock.createMock(ITestDevice.class);
-        ITestInvocationListener mockListener
-                = EasyMock.createStrictMock(ITestInvocationListener.class);
-        IDevice mockIDevice = EasyMock.createMock(IDevice.class);
-
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, fullTestList);
-        if (includes != null) {
-            deqpTest.addAllIncludeFilters(includes);
-        }
-        if (excludes != null) {
-            deqpTest.addAllExcludeFilters(excludes);
-        }
-
         int version = 3 << 16;
+        ITestDevice mockDevice = EasyMock.createMock(ITestDevice.class);
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                 .andReturn(Integer.toString(version)).atLeastOnce();
 
+        boolean thereAreTests = !expectedTests.isEmpty();
         if (thereAreTests)
         {
             // only expect to install/uninstall packages if there are any tests
@@ -632,10 +637,12 @@ public class DeqpTestRunnerTest extends TestCase {
                 .andReturn(null).once();
         }
 
-
+        ITestInvocationListener mockListener
+                = EasyMock.createStrictMock(ITestInvocationListener.class);
         mockListener.testRunStarted(getTestId(deqpTest), expectedTests.size());
         EasyMock.expectLastCall().once();
 
+        IDevice mockIDevice = EasyMock.createMock(IDevice.class);
         if (thereAreTests)
         {
             expectRenderConfigQuery(mockDevice, 3, 0);
@@ -696,9 +703,9 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
 
-        Set<String> includes = new HashSet<>();
-        includes.add("dEQP-GLES3.pick_me#*");
-        testFiltering(includes, null, allTests, expectedTrie, activeTests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        deqpTest.addIncludeFilter("dEQP-GLES3.pick_me#*");
+        testFiltering(deqpTest, expectedTrie, activeTests);
     }
 
     public void testRun_trivialExcludeFilter() throws Exception {
@@ -723,9 +730,9 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
 
-        Set<String> excludes = new HashSet<>();
-        excludes.add("dEQP-GLES3.missing#*");
-        testFiltering(null, excludes, allTests, expectedTrie, activeTests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        deqpTest.addExcludeFilter("dEQP-GLES3.missing#*");
+        testFiltering(deqpTest, expectedTrie, activeTests);
     }
 
     public void testRun_includeAndExcludeFilter() throws Exception {
@@ -748,13 +755,17 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{group2{yes}}}";
 
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+
         Set<String> includes = new HashSet<>();
         includes.add("dEQP-GLES3.group2#*");
+        deqpTest.addAllIncludeFilters(includes);
 
         Set<String> excludes = new HashSet<>();
         excludes.add("*foo");
         excludes.add("*thoushallnotpass");
-        testFiltering(includes, excludes, allTests, expectedTrie, activeTests);
+        deqpTest.addAllExcludeFilters(excludes);
+        testFiltering(deqpTest, expectedTrie, activeTests);
     }
 
     public void testRun_includeAll() throws Exception {
@@ -774,10 +785,9 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{group1{mememe,yeah,takeitall},group2{jeba,yes,granted}}}";
 
-        Set<String> includes = new HashSet<>();
-        includes.add("*");
-
-        testFiltering(includes, null, allTests, expectedTrie, allTests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        deqpTest.addIncludeFilter("*");
+        testFiltering(deqpTest, expectedTrie, allTests);
     }
 
     public void testRun_excludeAll() throws Exception {
@@ -797,10 +807,9 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "";
 
-        Set<String> excludes = new HashSet<>();
-        excludes.add("*");
-
-        testFiltering(null, excludes, allTests, expectedTrie, new ArrayList<TestIdentifier>());
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        deqpTest.addExcludeFilter("*");
+        testFiltering(deqpTest, expectedTrie, new ArrayList<TestIdentifier>());
     }
 
     /**
@@ -849,7 +858,7 @@ public class DeqpTestRunnerTest extends TestCase {
             tests.add(id);
         }
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         int version = 3 << 16;
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
@@ -931,7 +940,7 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         tests.add(testId);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
         OptionSetter setter = new OptionSetter(deqpTest);
         // Note: If the rotation is the default unspecified, features are not queried at all
         setter.setOptionValue("deqp-screen-rotation", "90");
@@ -983,7 +992,7 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         tests.add(testId);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         deqpTest.setDevice(mockDevice);
 
@@ -1065,7 +1074,7 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         tests.add(testId);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
         OptionSetter setter = new OptionSetter(deqpTest);
         setter.setOptionValue("deqp-screen-rotation", rotation);
 
@@ -1315,7 +1324,7 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         tests.add(testId);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
         OptionSetter setter = new OptionSetter(deqpTest);
         setter.setOptionValue("deqp-gl-config-name", pixelFormat);
 
@@ -1683,7 +1692,7 @@ public class DeqpTestRunnerTest extends TestCase {
         IDevice mockIDevice = EasyMock.createMock(IDevice.class);
         IRunUtil mockRunUtil = EasyMock.createMock(IRunUtil.class);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         deqpTest.setDevice(mockDevice);
         deqpTest.setRunUtil(mockRunUtil);
@@ -1730,12 +1739,12 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         for (TestIdentifier id : testIds) tests.add(id);
 
-        DeqpTestRunner runner = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner runner = buildGlesTestRunner(3, 0, tests, mTestsDir);
         ArrayList<IRemoteTest> shards = (ArrayList<IRemoteTest>)runner.split();
 
         for (int shardIndex = 0; shardIndex < shards.size(); shardIndex++) {
             DeqpTestRunner shard = (DeqpTestRunner)shards.get(shardIndex);
-            shard.setBuildHelper(getMockBuildHelper());
+            shard.setBuildHelper(getMockBuildHelper(mTestsDir));
 
             ArrayList<TestIdentifier> shardTests = testsForShard.get(shardIndex);
 
@@ -1830,7 +1839,7 @@ public class DeqpTestRunnerTest extends TestCase {
     }
 
     public void testSharding_empty() throws Exception {
-        DeqpTestRunner runner = buildGlesTestRunner(3, 0, new ArrayList<TestIdentifier>());
+        DeqpTestRunner runner = buildGlesTestRunner(3, 0, new ArrayList<TestIdentifier>(), mTestsDir);
         ArrayList<IRemoteTest> shards = (ArrayList<IRemoteTest>)runner.split();
         // Returns null when cannot be sharded.
         assertNull(shards);
@@ -1879,7 +1888,7 @@ public class DeqpTestRunnerTest extends TestCase {
         IDevice mockIDevice = EasyMock.createMock(IDevice.class);
         IRunUtil mockRunUtil = EasyMock.createMock(IRunUtil.class);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         deqpTest.setDevice(mockDevice);
         deqpTest.setRunUtil(mockRunUtil);
@@ -2044,7 +2053,7 @@ public class DeqpTestRunnerTest extends TestCase {
             tests.add(id);
         }
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
         OptionSetter setter = new OptionSetter(deqpTest);
         final long runtimeMs = 123456;
         setter.setOptionValue("runtime-hint", String.valueOf(runtimeMs));
@@ -2113,7 +2122,7 @@ public class DeqpTestRunnerTest extends TestCase {
             testIds.add(new TestIdentifier("dEQP-GLES3.funny.group", String.valueOf(i)));
         }
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, testIds);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, testIds, mTestsDir);
         OptionSetter setter = new OptionSetter(deqpTest);
         final long fullRuntimeMs = testIds.size()*100;
         setter.setOptionValue("runtime-hint", String.valueOf(fullRuntimeMs));
@@ -2139,7 +2148,7 @@ public class DeqpTestRunnerTest extends TestCase {
             testIds.add(new TestIdentifier("dEQP-GLES3.funny.group", String.valueOf(i)));
         }
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, testIds);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, testIds, mTestsDir);
         OptionSetter setter = new OptionSetter(deqpTest);
         final long fullRuntimeMs = testIds.size()*100;
         setter.setOptionValue("runtime-hint", String.valueOf(fullRuntimeMs));
@@ -2192,7 +2201,7 @@ public class DeqpTestRunnerTest extends TestCase {
             tests.add(id);
         }
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         long runtime = deqpTest.getRuntimeHint();
         assertTrue("Runtime for tests must be positive", runtime > 0);
@@ -2251,5 +2260,167 @@ public class DeqpTestRunnerTest extends TestCase {
                 return null;
             }
         });
+    }
+
+    static private void writeStringsToFile(File target, Set<String> strings) throws IOException {
+        try (PrintWriter out = new PrintWriter(new FileWriter(target))) {
+            out.print(String.join(System.lineSeparator(), strings));
+            out.println();
+        }
+    }
+
+    private void addFilterFileForOption(DeqpTestRunner test, Set<String> filters, String option)
+            throws IOException, ConfigurationException {
+        String filterFile = option + ".txt";
+        writeStringsToFile(new File(mTestsDir, filterFile), filters);
+        OptionSetter setter = new OptionSetter(test);
+        setter.setOptionValue(option, filterFile);
+    }
+
+    public void testIncludeFilterFile() throws Exception {
+        final TestIdentifier[] testIds = {
+                new TestIdentifier("dEQP-GLES3.missing", "no"),
+                new TestIdentifier("dEQP-GLES3.missing", "nope"),
+                new TestIdentifier("dEQP-GLES3.missing", "donotwant"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "yes"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "ok"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "accepted"),
+        };
+
+        List<TestIdentifier> allTests = new ArrayList<TestIdentifier>();
+        for (TestIdentifier id : testIds) {
+            allTests.add(id);
+        }
+
+        List<TestIdentifier> activeTests = new ArrayList<TestIdentifier>();
+        activeTests.add(testIds[3]);
+        activeTests.add(testIds[4]);
+        activeTests.add(testIds[5]);
+
+        String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
+
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        Set<String> includes = new HashSet<>();
+        includes.add("dEQP-GLES3.pick_me#*");
+        addFilterFileForOption(deqpTest, includes, "include-filter-file");
+        testFiltering(deqpTest, expectedTrie, activeTests);
+    }
+
+    public void testMissingIncludeFilterFile() throws Exception {
+        final TestIdentifier[] testIds = {
+                new TestIdentifier("dEQP-GLES3.pick_me", "yes"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "ok"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "accepted"),
+        };
+
+        List<TestIdentifier> allTests = new ArrayList<TestIdentifier>();
+        for (TestIdentifier id : testIds) {
+            allTests.add(id);
+        }
+
+        String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
+
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        OptionSetter setter = new OptionSetter(deqpTest);
+        setter.setOptionValue("include-filter-file", "not-a-file.txt");
+        try {
+            testFiltering(deqpTest, expectedTrie, allTests);
+            fail("Test execution should have aborted with exception.");
+        } catch (RuntimeException e) {
+        }
+    }
+
+    public void testExcludeFilterFile() throws Exception {
+        final TestIdentifier[] testIds = {
+                new TestIdentifier("dEQP-GLES3.missing", "no"),
+                new TestIdentifier("dEQP-GLES3.missing", "nope"),
+                new TestIdentifier("dEQP-GLES3.missing", "donotwant"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "yes"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "ok"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "accepted"),
+        };
+
+        List<TestIdentifier> allTests = new ArrayList<TestIdentifier>();
+        for (TestIdentifier id : testIds) {
+            allTests.add(id);
+        }
+
+        List<TestIdentifier> activeTests = new ArrayList<TestIdentifier>();
+        activeTests.add(testIds[3]);
+        activeTests.add(testIds[4]);
+        activeTests.add(testIds[5]);
+
+        String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
+
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        Set<String> excludes = new HashSet<>();
+        excludes.add("dEQP-GLES3.missing#*");
+        addFilterFileForOption(deqpTest, excludes, "exclude-filter-file");
+        testFiltering(deqpTest, expectedTrie, activeTests);
+    }
+
+    public void testFilterComboWithFiles() throws Exception {
+        final TestIdentifier[] testIds = {
+                new TestIdentifier("dEQP-GLES3.group1", "footah"),
+                new TestIdentifier("dEQP-GLES3.group1", "foo"),
+                new TestIdentifier("dEQP-GLES3.group1", "nope"),
+                new TestIdentifier("dEQP-GLES3.group1", "nonotwant"),
+                new TestIdentifier("dEQP-GLES3.group2", "foo"),
+                new TestIdentifier("dEQP-GLES3.group2", "yes"),
+                new TestIdentifier("dEQP-GLES3.group2", "thoushallnotpass"),
+        };
+
+        List<TestIdentifier> allTests = new ArrayList<TestIdentifier>();
+        for (TestIdentifier id : testIds) {
+            allTests.add(id);
+        }
+
+        List<TestIdentifier> activeTests = new ArrayList<TestIdentifier>();
+        activeTests.add(testIds[0]);
+        activeTests.add(testIds[5]);
+
+        String expectedTrie = "{dEQP-GLES3{group1{footah}group2{yes}}}";
+
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+
+        Set<String> includes = new HashSet<>();
+        includes.add("dEQP-GLES3.group2#*");
+        deqpTest.addAllIncludeFilters(includes);
+
+        Set<String> fileIncludes = new HashSet<>();
+        fileIncludes.add("dEQP-GLES3.group1#no*");
+        fileIncludes.add("dEQP-GLES3.group1#foo*");
+        addFilterFileForOption(deqpTest, fileIncludes, "include-filter-file");
+
+        Set<String> fileExcludes = new HashSet<>();
+        fileExcludes.add("*foo");
+        fileExcludes.add("*thoushallnotpass");
+        addFilterFileForOption(deqpTest, fileExcludes, "exclude-filter-file");
+
+        deqpTest.addExcludeFilter("dEQP-GLES3.group1#no*");
+
+        testFiltering(deqpTest, expectedTrie, activeTests);
+    }
+
+    public void testDotToHashConversionInFilters() throws Exception {
+        final TestIdentifier[] testIds = {
+                new TestIdentifier("dEQP-GLES3.missing", "no"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "donotwant"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "yes")
+        };
+
+        List<TestIdentifier> allTests = new ArrayList<TestIdentifier>();
+        for (TestIdentifier id : testIds) {
+            allTests.add(id);
+        }
+
+        List<TestIdentifier> activeTests = new ArrayList<TestIdentifier>();
+        activeTests.add(testIds[2]);
+
+        String expectedTrie = "{dEQP-GLES3{pick_me{yes}}}";
+
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        deqpTest.addIncludeFilter("dEQP-GLES3.pick_me.yes");
+        testFiltering(deqpTest, expectedTrie, activeTests);
     }
 }
