@@ -26,7 +26,7 @@ LOCAL_COMPATIBILITY_SUITE := cts
 LOCAL_SDK_VERSION := 22
 
 LOCAL_SRC_FILES := $(call all-java-files-under, runner/src)
-LOCAL_JAVA_LIBRARIES := cts-tradefed compatibility-host-util tradefed-prebuilt
+LOCAL_JAVA_LIBRARIES := cts-tradefed compatibility-host-util tradefed
 
 DEQP_CASELISTS:=$(sort $(patsubst master/%,%, \
   $(shell cd $(LOCAL_PATH) ; \
