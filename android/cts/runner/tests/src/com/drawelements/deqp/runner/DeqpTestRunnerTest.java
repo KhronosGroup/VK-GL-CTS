@@ -18,7 +18,6 @@ package com.drawelements.deqp.runner;
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
-import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.testrunner.TestIdentifier;
 import com.android.tradefed.build.IFolderBuildInfo;
 import com.android.tradefed.config.ConfigurationException;
@@ -36,10 +35,6 @@ import com.android.tradefed.util.RunInterruptedException;
 
 import junit.framework.TestCase;
 
-import org.easymock.EasyMock;
-import org.easymock.IAnswer;
-import org.easymock.IMocksControl;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.StringReader;
@@ -52,6 +47,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import org.easymock.EasyMock;
+import org.easymock.IAnswer;
+import org.easymock.IMocksControl;
 
 /**
  * Unit tests for {@link DeqpTestRunner}.
@@ -80,43 +79,6 @@ public class DeqpTestRunnerTest extends TestCase {
         DEFAULT_INSTANCE_ARGS.iterator().next().put("rotation", "unspecified");
         DEFAULT_INSTANCE_ARGS.iterator().next().put("surfacetype", "window");
     }
-
-    private static class StubRecovery implements DeqpTestRunner.IRecovery {
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void setSleepProvider(DeqpTestRunner.ISleepProvider sleepProvider) {
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void setDevice(ITestDevice device) {
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void onExecutionProgressed() {
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void recoverConnectionRefused() throws DeviceNotAvailableException {
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void recoverComLinkKilled() throws DeviceNotAvailableException {
-        }
-    };
 
     public static class BuildHelperMock extends CompatibilityBuildHelper {
         public BuildHelperMock(IFolderBuildInfo buildInfo) {
@@ -734,7 +696,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
 
-        Set<String> includes = new HashSet();
+        Set<String> includes = new HashSet<>();
         includes.add("dEQP-GLES3.pick_me#*");
         testFiltering(includes, null, allTests, expectedTrie, activeTests);
     }
@@ -761,7 +723,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
 
-        Set<String> excludes = new HashSet();
+        Set<String> excludes = new HashSet<>();
         excludes.add("dEQP-GLES3.missing#*");
         testFiltering(null, excludes, allTests, expectedTrie, activeTests);
     }
@@ -786,10 +748,10 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{group2{yes}}}";
 
-        Set<String> includes = new HashSet();
+        Set<String> includes = new HashSet<>();
         includes.add("dEQP-GLES3.group2#*");
 
-        Set<String> excludes = new HashSet();
+        Set<String> excludes = new HashSet<>();
         excludes.add("*foo");
         excludes.add("*thoushallnotpass");
         testFiltering(includes, excludes, allTests, expectedTrie, activeTests);
@@ -812,7 +774,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{group1{mememe,yeah,takeitall},group2{jeba,yes,granted}}}";
 
-        Set<String> includes = new HashSet();
+        Set<String> includes = new HashSet<>();
         includes.add("*");
 
         testFiltering(includes, null, allTests, expectedTrie, allTests);
@@ -835,7 +797,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "";
 
-        Set<String> excludes = new HashSet();
+        Set<String> excludes = new HashSet<>();
         excludes.add("*");
 
         testFiltering(null, excludes, allTests, expectedTrie, new ArrayList<TestIdentifier>());
@@ -1113,19 +1075,19 @@ public class DeqpTestRunnerTest extends TestCase {
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                 .andReturn(Integer.toString(version)).atLeastOnce();
 
-        if (!rotation.equals(DeqpTestRunner.BatchRunConfiguration.ROTATION_UNSPECIFIED)) {
+        if (!rotation.equals(BatchRunConfiguration.ROTATION_UNSPECIFIED)) {
             EasyMock.expect(mockDevice.executeShellCommand("pm list features"))
                     .andReturn(featureString);
         }
 
         final boolean isPortraitOrientation =
-                rotation.equals(DeqpTestRunner.BatchRunConfiguration.ROTATION_PORTRAIT) ||
-                rotation.equals(DeqpTestRunner.BatchRunConfiguration.ROTATION_REVERSE_PORTRAIT);
+                rotation.equals(BatchRunConfiguration.ROTATION_PORTRAIT) ||
+                rotation.equals(BatchRunConfiguration.ROTATION_REVERSE_PORTRAIT);
         final boolean isLandscapeOrientation =
-                rotation.equals(DeqpTestRunner.BatchRunConfiguration.ROTATION_LANDSCAPE) ||
-                rotation.equals(DeqpTestRunner.BatchRunConfiguration.ROTATION_REVERSE_LANDSCAPE);
+                rotation.equals(BatchRunConfiguration.ROTATION_LANDSCAPE) ||
+                rotation.equals(BatchRunConfiguration.ROTATION_REVERSE_LANDSCAPE);
         final boolean executable =
-                rotation.equals(DeqpTestRunner.BatchRunConfiguration.ROTATION_UNSPECIFIED) ||
+                rotation.equals(BatchRunConfiguration.ROTATION_UNSPECIFIED) ||
                 (isPortraitOrientation &&
                 featureString.contains(DeqpTestRunner.FEATURE_PORTRAIT)) ||
                 (isLandscapeOrientation &&
@@ -1345,34 +1307,6 @@ public class DeqpTestRunnerTest extends TestCase {
     public void testRun_unsupportedPixelFormat() throws Exception {
         final String pixelFormat = "rgba5658d16m4";
         final TestIdentifier testId = new TestIdentifier("dEQP-GLES3.pixelformat", "test");
-        final String testPath = "dEQP-GLES3.pixelformat.test";
-        final String testTrie = "{dEQP-GLES3{pixelformat{test}}}";
-        final String output = "INSTRUMENTATION_STATUS: dEQP-SessionInfo-Name=releaseName\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=SessionInfo\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-SessionInfo-Value=2014.x\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-SessionInfo-Name=releaseId\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=SessionInfo\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-SessionInfo-Value=0xcafebabe\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-SessionInfo-Name=targetName\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=SessionInfo\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-SessionInfo-Value=android\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=BeginSession\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=BeginTestCase\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-BeginTestCase-TestCasePath=" + testPath + "\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-TestCaseResult-Code=Pass\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-TestCaseResult-Details=Pass\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=TestCaseResult\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=EndTestCase\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=EndSession\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_CODE: 0\r\n";
 
         ITestDevice mockDevice = EasyMock.createMock(ITestDevice.class);
         ITestInvocationListener mockListener
@@ -1435,7 +1369,7 @@ public class DeqpTestRunnerTest extends TestCase {
         PROGRESS,
         FAIL_CONNECTION_REFUSED,
         FAIL_LINK_KILLED,
-    };
+    }
 
     private void runRecoveryWithPattern(DeqpTestRunner.Recovery recovery, RecoveryEvent[] events)
             throws DeviceNotAvailableException {
@@ -1551,6 +1485,7 @@ public class DeqpTestRunnerTest extends TestCase {
         DeqpTestRunner.Recovery recovery = new DeqpTestRunner.Recovery();
         IMocksControl orderedControl = EasyMock.createStrictControl();
         RecoverableTestDevice mockDevice = orderedControl.createMock(RecoverableTestDevice.class);
+        EasyMock.expect(mockDevice.getSerialNumber()).andStubReturn("SERIAL");
         DeqpTestRunner.ISleepProvider mockSleepProvider =
                 orderedControl.createMock(DeqpTestRunner.ISleepProvider.class);
 
@@ -1897,7 +1832,8 @@ public class DeqpTestRunnerTest extends TestCase {
     public void testSharding_empty() throws Exception {
         DeqpTestRunner runner = buildGlesTestRunner(3, 0, new ArrayList<TestIdentifier>());
         ArrayList<IRemoteTest> shards = (ArrayList<IRemoteTest>)runner.split();
-        // \todo [2015-11-23 kalle] What should the result be? The runner or nothing?
+        // Returns null when cannot be sharded.
+        assertNull(shards);
     }
 
     /**
@@ -2189,6 +2125,56 @@ public class DeqpTestRunnerTest extends TestCase {
         assertEquals("Second shard's time not proportional to test count",
                  (fullRuntimeMs*(TEST_COUNT-SHARD_SIZE))/TEST_COUNT,
                  ((IRuntimeHintProvider)shards.get(1)).getRuntimeHint());
+    }
+
+    /**
+     * Test that strict shardable is able to split deterministically the set of tests.
+     */
+    public void testGetTestShard() throws Exception {
+        final int TEST_COUNT = 2237;
+        final int SHARD_COUNT = 4;
+
+        ArrayList<TestIdentifier> testIds = new ArrayList<>(TEST_COUNT);
+        for (int i = 0; i < TEST_COUNT; i++) {
+            testIds.add(new TestIdentifier("dEQP-GLES3.funny.group", String.valueOf(i)));
+        }
+
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, testIds);
+        OptionSetter setter = new OptionSetter(deqpTest);
+        final long fullRuntimeMs = testIds.size()*100;
+        setter.setOptionValue("runtime-hint", String.valueOf(fullRuntimeMs));
+
+        DeqpTestRunner shard1 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 0);
+        assertEquals(559, shard1.getTestInstance().size());
+        int j = 0;
+        // Ensure numbers, and that order is stable
+        for (TestIdentifier t : shard1.getTestInstance().keySet()) {
+            assertEquals(String.format("dEQP-GLES3.funny.group#%s", j),
+                    String.format("%s#%s", t.getClassName(), t.getTestName()));
+            j++;
+        }
+        DeqpTestRunner shard2 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 1);
+        assertEquals(559, shard2.getTestInstance().size());
+        for (TestIdentifier t : shard2.getTestInstance().keySet()) {
+            assertEquals(String.format("dEQP-GLES3.funny.group#%s", j),
+                    String.format("%s#%s", t.getClassName(), t.getTestName()));
+            j++;
+        }
+        DeqpTestRunner shard3 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 2);
+        assertEquals(559, shard3.getTestInstance().size());
+        for (TestIdentifier t : shard3.getTestInstance().keySet()) {
+            assertEquals(String.format("dEQP-GLES3.funny.group#%s", j),
+                    String.format("%s#%s", t.getClassName(), t.getTestName()));
+            j++;
+        }
+        DeqpTestRunner shard4 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 3);
+        assertEquals(560, shard4.getTestInstance().size());
+        for (TestIdentifier t : shard4.getTestInstance().keySet()) {
+            assertEquals(String.format("dEQP-GLES3.funny.group#%s", j),
+                    String.format("%s#%s", t.getClassName(), t.getTestName()));
+            j++;
+        }
+        assertEquals(TEST_COUNT, j);
     }
 
     public void testRuntimeHint_optionNotSet() throws Exception {
