@@ -26,8 +26,8 @@
 #include "glcExposedExtensionsTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcInfoTests.hpp"
-#include "glcShaderConstExprTests.hpp"
 #include "glcParallelShaderCompileTests.hpp"
+#include "glcShaderConstExprTests.hpp"
 #include "glcShaderIndexingTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderLibrary.hpp"
@@ -36,6 +36,7 @@
 #include "glcShaderStructTests.hpp"
 #include "glcShaderSwitchTests.hpp"
 #include "glcTextureFilterAnisotropicTests.hpp"
+#include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "gluStateReset.hpp"
 #include "glwEnums.hpp"
@@ -158,6 +159,7 @@ void ES30TestPackage::init(void)
 	{
 		addChild(new ShaderTests(getContext()));
 		addChild(new glcts::TextureFilterAnisotropicTests(getContext()));
+		addChild(new glcts::TextureRepeatModeTests(getContext()));
 		addChild(new glcts::ExposedExtensionsTests(getContext()));
 		tcu::TestCaseGroup* coreGroup = new tcu::TestCaseGroup(getTestContext(), "core", "core tests");
 		coreGroup->addChild(new glcts::ShaderConstExprTests(getContext()));

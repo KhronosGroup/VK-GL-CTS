@@ -42,6 +42,7 @@
 #include "glcShaderNegativeTests.hpp"
 #include "glcShaderStructTests.hpp"
 #include "glcShaderSwitchTests.hpp"
+#include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "gluStateReset.hpp"
 #include "tcuTestLog.hpp"
@@ -143,6 +144,7 @@ void GL30TestPackage::init(void)
 		addChild(new gl3cts::GPUShader5Tests(getContext()));
 		addChild(new gl3cts::GLSLnoperspectiveTests(getContext()));
 		addChild(new gl3cts::TransformFeedback::Tests(getContext()));
+		addChild(new glcts::TextureRepeatModeTests(getContext()));
 	}
 	catch (...)
 	{
