@@ -2524,18 +2524,60 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+string generateConstantDefinitions (int count)
+{
+	std::stringstream	r;
+	for (int i = 0; i < count; i++)
+		r << "%cf" << (i * 10 + 5) << " = OpConstant %f32 " <<(i * 10 + 5) << ".0\n";
+	return r.str() + string("\n");
+}
+
+string generateSwitchCases (int count)
+{
+	std::stringstream	r;
+	for (int i = 0; i < count; i++)
+		r << " " << i << " %case" << i;
+	return r.str() + string("\n");
+}
+
+string generateSwitchTargets (int count)
+{
+	std::stringstream	r;
+	for (int i = 0; i < count; i++)
+		r << "%case" << i << " = OpLabel\n            OpBranch %phi\n";
+	return r.str() + string("\n");
+}
+
+string generateOpPhiParams (int count)
+{
+	std::stringstream	r;
+	for (int i = 0; i < count; i++)
+		r << " %cf" << (i * 10 + 5) << " %case" << i;
+	return r.str() + string("\n");
+}
+
+string generateIntWidth (int value)
+{
+	std::stringstream	r;
+	r << value;
+	return r.str();
+}
+
 tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opphi", "Test the OpPhi instruction"));
 	ComputeShaderSpec				spec1;
 	ComputeShaderSpec				spec2;
 	ComputeShaderSpec				spec3;
+	ComputeShaderSpec				spec4;
 	de::Random						rnd				(deStringHash(group->getName()));
 	const int						numElements		= 100;
 	vector<float>					inputFloats		(numElements, 0);
 	vector<float>					outputFloats1	(numElements, 0);
 	vector<float>					outputFloats2	(numElements, 0);
 	vector<float>					outputFloats3	(numElements, 0);
+	vector<float>					outputFloats4	(numElements, 0);
+	const int						test4Width		= 1024;
 
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats[0], numElements);
 
@@ -2553,6 +2595,9 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 		}
 		outputFloats2[ndx] = inputFloats[ndx] + 6.5f * 3;
 		outputFloats3[ndx] = 8.5f - inputFloats[ndx];
+
+		int index4 = (int)deFloor(deAbs((float)ndx * inputFloats[ndx]));
+		outputFloats4[ndx] = (float)(index4 % test4Width) * 10.0f + 5.0f;
 	}
 
 	spec1.assembly =
@@ -2704,6 +2749,64 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	spec3.numWorkGroups = IVec3(numElements, 1, 1);
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "swap", "Swap the values of two variables using OpPhi", spec3));
+
+	spec4.assembly =
+		"OpCapability Shader\n"
+		"%ext = OpExtInstImport \"GLSL.std.450\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
+
+		"%id       = OpVariable %uvec3ptr Input\n"
+		"%zero     = OpConstant %i32 0\n"
+		"%cimod    = OpConstant %u32 " + generateIntWidth(test4Width) + "\n"
+
+		+ generateConstantDefinitions(test4Width) +
+
+		"%main     = OpFunction %void None %voidf\n"
+		"%entry    = OpLabel\n"
+		"%idval    = OpLoad %uvec3 %id\n"
+		"%x        = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc    = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval    = OpLoad %f32 %inloc\n"
+		"%xf       = OpConvertUToF %f32 %x\n"
+		"%xm       = OpFMul %f32 %xf %inval\n"
+		"%xa       = OpExtInst %f32 %ext FAbs %xm\n"
+		"%xi       = OpConvertFToU %u32 %xa\n"
+		"%selector = OpUMod %u32 %xi %cimod\n"
+		"            OpSelectionMerge %phi None\n"
+		"            OpSwitch %selector %default "
+
+		+ generateSwitchCases(test4Width) +
+
+		"%default  = OpLabel\n"
+		"            OpUnreachable\n"
+
+		+ generateSwitchTargets(test4Width) +
+
+		"%phi      = OpLabel\n"
+		"%result   = OpPhi %f32"
+
+		+ generateOpPhiParams(test4Width) +
+
+		"%outloc   = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"            OpStore %outloc %result\n"
+		"            OpReturn\n"
+
+		"            OpFunctionEnd\n";
+	spec4.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	spec4.outputs.push_back(BufferSp(new Float32Buffer(outputFloats4)));
+	spec4.numWorkGroups = IVec3(numElements, 1, 1);
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "wide", "OpPhi with a lot of parameters", spec4));
 
 	return group.release();
 }
