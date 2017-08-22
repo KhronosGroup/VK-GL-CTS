@@ -222,7 +222,8 @@ void VertexIDCase::init (void)
 		m_method == gls::DrawTestSpec::DRAWMETHOD_DRAWELEMENTS_RANGED_BASEVERTEX ||
 		m_method == gls::DrawTestSpec::DRAWMETHOD_DRAWELEMENTS_INSTANCED_BASEVERTEX)
 	{
-		TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
+		const bool supportsES32 = contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+		TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_elements_base_vertex"), "GL_EXT_draw_elements_base_vertex is not supported.");
 	}
 
 	m_testCtx.getLog()	<< TestLog::Message
