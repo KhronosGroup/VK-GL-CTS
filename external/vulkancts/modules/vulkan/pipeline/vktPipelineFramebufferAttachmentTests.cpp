@@ -713,7 +713,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 				}
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0u,
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, 2u, imageBarriers);
 
 			const VkImageResolve	region	=
@@ -746,7 +746,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 				}
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+			vk.cmdPipelineBarrier(*cmdBuffer, caseDef.multisample ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, 1u, imageBarriers);
 
 			const VkBufferImageCopy		region				=
