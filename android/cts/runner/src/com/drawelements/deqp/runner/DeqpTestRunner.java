@@ -41,7 +41,6 @@ import com.android.tradefed.testtype.IShardableTest;
 import com.android.tradefed.testtype.IStrictShardableTest;
 import com.android.tradefed.testtype.ITestCollector;
 import com.android.tradefed.testtype.ITestFilterReceiver;
-import com.android.tradefed.testtype.StubTest;
 import com.android.tradefed.util.AbiUtils;
 import com.android.tradefed.util.IRunUtil;
 import com.android.tradefed.util.RunInterruptedException;
@@ -2041,6 +2040,10 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         listener.testRunStarted(getId(), mRemainingTests.size());
 
         try {
+            if (mRemainingTests.isEmpty()) {
+                CLog.d("No tests to run.");
+                return;
+            }
             final boolean isSupportedApi = (isOpenGlEsPackage() && isSupportedGles())
                                             || (isVulkanPackage() && isSupportedVulkan())
                                             || (!isOpenGlEsPackage() && !isVulkanPackage());
@@ -2066,9 +2069,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             // test cases in "NotExecuted" state
             CLog.e("Capability query failed - leaving tests unexecuted.");
             uninstallTestApk();
+        } finally {
+            listener.testRunEnded(System.currentTimeMillis() - startTime, emptyMap);
         }
-
-        listener.testRunEnded(System.currentTimeMillis() - startTime, emptyMap);
     }
 
    /**
@@ -2218,7 +2221,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         // If too many shards were requested, we complete with placeholder.
         if (runners.size() < shardCount) {
             for (int j = runners.size(); j < shardCount; j++) {
-                runners.add(new StubTest());
+                runners.add(new DeqpTestRunner(this,
+                        new LinkedHashMap<TestIdentifier, Set<BatchRunConfiguration>>()));
             }
         }
 
