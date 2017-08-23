@@ -559,14 +559,14 @@ tcu::TestStatus testLargePoints (Context& context)
 		vertices.push_back(Vec4(   p,    p, 0.4f, 1.0f));
 		vertices.push_back(Vec4(   p,   -p, 0.6f, 1.0f));
 		vertices.push_back(Vec4(0.0f,   -p, 0.8f, 1.0f));
-		vertices.push_back(Vec4(   p, 0.0f, 0.9f, 1.0f));
-		vertices.push_back(Vec4(0.0f,    p, 0.1f, 1.0f));
-		vertices.push_back(Vec4(  -p, 0.0f, 0.2f, 1.0f));
+		vertices.push_back(Vec4(   p, 0.0f, 0.7f, 1.0f));
+		vertices.push_back(Vec4(0.0f,    p, 0.5f, 1.0f));
+		vertices.push_back(Vec4(  -p, 0.0f, 0.3f, 1.0f));
 	}
 
 	tcu::TestLog&	log	= context.getTestContext().getLog();
 
-	log << tcu::TestLog::Message << "Drawing several large points just outside the clip volume. Expecting an empty image." << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Drawing several large points just outside the clip volume. Expecting an empty image or all points rendered." << tcu::TestLog::EndMessage;
 
 	DrawState			drawState		(VK_PRIMITIVE_TOPOLOGY_POINT_LIST, RENDER_SIZE, RENDER_SIZE);
 	DrawCallData		drawCallData	(vertices);
@@ -575,10 +575,22 @@ tcu::TestStatus testLargePoints (Context& context)
 	VulkanDrawContext	drawContext(context, drawState, drawCallData, vulkanProgram);
 	drawContext.draw();
 
-	// All pixels must be black -- nothing is drawn.
+	// Popful case: All pixels must be black -- nothing is drawn.
 	const int numBlackPixels = countPixels(drawContext.getColorPixels(), Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
 
-	return (numBlackPixels == NUM_RENDER_PIXELS ? tcu::TestStatus::pass("OK") : tcu::TestStatus::fail("Rendered image(s) are incorrect"));
+	// Pop-free case: All points must be rendered.
+	bool allPointsRendered = true;
+	for (std::vector<Vec4>::iterator i = vertices.begin(); i != vertices.end(); ++i)
+	{
+		if (countPixels(drawContext.getColorPixels(), Vec4(1.0f, i->z(), 0.0f, 1.0f), Vec4(0.01f)) == 0)
+			allPointsRendered = false;
+	}
+
+	// Test passes if nothing or all points are rendered, allowing implementations to use either popful or pop-free point clipping rules.
+	if (numBlackPixels == NUM_RENDER_PIXELS || allPointsRendered)
+		return tcu::TestStatus::pass("OK");
+	else
+		return tcu::TestStatus::fail("Rendered image(s) are incorrect");
 }
 
 //! Wide line clipping
